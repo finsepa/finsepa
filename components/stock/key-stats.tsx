@@ -28,7 +28,7 @@ function StatSection({
   );
 }
 
-export function KeyStats() {
+export function KeyStats({ ticker: _ticker }: { ticker: string }) {
   return (
     <div>
       <h2 className="text-[18px] font-semibold leading-7 text-[#09090B] mb-4">Key Stats</h2>

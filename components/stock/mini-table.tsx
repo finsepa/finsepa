@@ -1,20 +1,62 @@
+ "use client";
+
 import { ArrowUpDown } from "lucide-react";
-import { stockData } from "./data";
+import { getStockDetailMetaFromTicker } from "@/lib/market/stock-detail-meta";
+ import { useEffect, useMemo, useState } from "react";
+ import type { StockPerformance } from "@/lib/market/stock-performance";
 
-const { name, ticker, performance } = stockData;
+ function PerfCellMaybe({ value }: { value: number | null }) {
+   if (value == null || !Number.isFinite(value)) {
+     return <td className="text-center text-[14px] leading-5 tabular-nums px-3 py-3 text-[#71717A]">—</td>;
+   }
+   const isPositive = value >= 0;
+   return (
+     <td
+       className={`text-center text-[14px] leading-5 tabular-nums px-3 py-3 ${
+         isPositive ? "text-[#16A34A]" : "text-[#DC2626]"
+       }`}
+     >
+       {isPositive ? "+" : ""}{value.toFixed(2)}%
+     </td>
+   );
+ }
 
-function PerfCell({ value }: { value: number }) {
-  const isPositive = value >= 0;
-  return (
-    <td className={`text-center text-[14px] leading-5 tabular-nums px-3 py-3 ${
-      isPositive ? "text-[#16A34A]" : "text-[#DC2626]"
-    }`}>
-      {isPositive ? "+" : ""}{value.toFixed(2)}%
-    </td>
-  );
-}
+export function MiniTable({ ticker }: { ticker: string }) {
+  const meta = getStockDetailMetaFromTicker(ticker);
+  const sym = meta.ticker;
+   const [loading, setLoading] = useState(true);
+   const [perf, setPerf] = useState<StockPerformance | null>(null);
 
-export function MiniTable() {
+   useEffect(() => {
+     let mounted = true;
+     async function load() {
+       setLoading(true);
+       try {
+         const res = await fetch(`/api/stocks/${encodeURIComponent(sym)}/performance`, { cache: "no-store" });
+         if (!res.ok) {
+           if (!mounted) return;
+           setPerf(null);
+           setLoading(false);
+           return;
+         }
+         const json = (await res.json()) as StockPerformance;
+         if (!mounted) return;
+         setPerf(json);
+         setLoading(false);
+       } catch {
+         if (!mounted) return;
+         setPerf(null);
+         setLoading(false);
+       }
+     }
+     void load();
+     return () => {
+       mounted = false;
+     };
+   }, [sym]);
+
+   const row = useMemo(() => perf, [perf]);
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full border-collapse">
@@ -37,26 +79,26 @@ export function MiniTable() {
           <tr className="border-b border-[#E4E4E7]">
             <td className="px-3 py-3">
               <div className="flex items-center gap-3">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#009cde] text-white text-[11px] font-bold">
-                  P
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#F4F4F5] text-[#09090B] text-[11px] font-bold border border-[#E4E4E7]">
+                  {sym.slice(0, 1)}
                 </div>
                 <div>
-                  <div className="text-[14px] font-semibold leading-5 text-[#09090B]">{name}</div>
-                  <div className="text-[12px] leading-4 text-[#71717A]">{ticker}</div>
+                  <div className="text-[14px] font-semibold leading-5 text-[#09090B]">{meta.name}</div>
+                  <div className="text-[12px] leading-4 text-[#71717A]">{sym}</div>
                 </div>
               </div>
             </td>
             <td className="text-center text-[14px] leading-5 tabular-nums text-[#09090B] px-3 py-3">
-              ${performance.price.toFixed(2)}
+              {loading || row?.price == null || !Number.isFinite(row.price) ? "—" : `$${row.price.toFixed(2)}`}
             </td>
-            <PerfCell value={performance.d1} />
-            <PerfCell value={performance.d5} />
-            <PerfCell value={performance.m1} />
-            <PerfCell value={performance.m6} />
-            <PerfCell value={performance.ytd} />
-            <PerfCell value={performance.y1} />
-            <PerfCell value={performance.y5} />
-            <PerfCell value={performance.all} />
+            <PerfCellMaybe value={row?.d1 ?? null} />
+            <PerfCellMaybe value={row?.d5 ?? null} />
+            <PerfCellMaybe value={row?.m1 ?? null} />
+            <PerfCellMaybe value={row?.m6 ?? null} />
+            <PerfCellMaybe value={row?.ytd ?? null} />
+            <PerfCellMaybe value={row?.y1 ?? null} />
+            <PerfCellMaybe value={row?.y5 ?? null} />
+            <PerfCellMaybe value={row?.all ?? null} />
           </tr>
         </tbody>
       </table>

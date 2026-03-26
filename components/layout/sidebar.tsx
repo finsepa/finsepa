@@ -16,56 +16,78 @@ import {
   Wallet,
 } from "lucide-react";
 
+const soonBadgeClass =
+  "shrink-0 rounded-md border border-[#E4E4E7] bg-[#F4F4F5] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#71717A]";
+
 const marketItems = [
-  { label: "Screener", icon: Globe, href: "/screener" },
-  { label: "Heatmaps", icon: LayoutGrid, href: "/heatmaps" },
-  { label: "News", icon: Newspaper, href: "/news" },
+  { label: "Screener", icon: Globe, href: "/screener", available: true },
+  { label: "Heatmaps", icon: LayoutGrid, href: "/heatmaps", available: false },
+  { label: "News", icon: Newspaper, href: "/news", available: false },
 ];
 
 const calendarItems = [
-  { label: "Earnings", icon: CalendarDays, href: "/earnings" },
-  { label: "Economy", icon: BookOpen, href: "/economy" },
+  { label: "Earnings", icon: CalendarDays, href: "/earnings", available: false },
+  { label: "Economy", icon: BookOpen, href: "/economy", available: false },
 ];
 
 const dataItems = [
-  { label: "Macro", icon: Compass, href: "/macro" },
-  { label: "Charting", icon: ChartColumn, href: "/charting" },
-  { label: "Comparison", icon: PanelsTopLeft, href: "/comparison" },
+  { label: "Macro", icon: Compass, href: "/macro", available: false },
+  { label: "Charting", icon: ChartColumn, href: "/charting", available: false },
+  { label: "Comparison", icon: PanelsTopLeft, href: "/comparison", available: false },
 ];
 
 const communityItems = [
-  { label: "Superinvestors", icon: Flame, href: "/superinvestors" },
-  { label: "Portfolios", icon: Wallet, href: "/portfolios" },
-  { label: "Posts", icon: Briefcase, href: "/posts" },
+  { label: "Superinvestors", icon: Flame, href: "/superinvestors", available: false },
+  { label: "Portfolios", icon: Wallet, href: "/portfolios", available: false },
+  { label: "Posts", icon: Briefcase, href: "/posts", available: false },
 ];
 
 type NavItem = {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   href: string;
+  available: boolean;
 };
+
+function SidebarRow({ item, pathname }: { item: NavItem; pathname: string }) {
+  const Icon = item.icon;
+  const isActive = item.available && pathname === item.href;
+
+  if (item.available) {
+    return (
+      <Link
+        prefetch
+        href={item.href}
+        className={`flex h-9 items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium leading-5 text-[#09090B] transition-all duration-100 ${
+          isActive ? "bg-[#F4F4F5]" : "hover:bg-[#F4F4F5]"
+        }`}
+      >
+        <Icon className="h-5 w-5 shrink-0 text-[#09090B]" />
+        <span className="min-w-0 flex-1 truncate">{item.label}</span>
+      </Link>
+    );
+  }
+
+  return (
+    <div
+      className="flex h-9 cursor-not-allowed items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium leading-5 text-[#A1A1AA] select-none"
+      aria-disabled="true"
+    >
+      <Icon className="h-5 w-5 shrink-0 text-[#A1A1AA]" />
+      <span className="min-w-0 flex-1 truncate">{item.label}</span>
+      <span className={soonBadgeClass}>Soon</span>
+    </div>
+  );
+}
 
 function SidebarSection({ title, items, pathname }: { title: string; items: NavItem[]; pathname: string }) {
   return (
     <div>
       <p className="mb-1.5 px-3 text-sm font-semibold leading-5 text-[#52525B]">{title}</p>
       <div className="space-y-0.5">
-        {items.map((item) => {
-          const Icon = item.icon;
-          const isActive = pathname === item.href;
-          return (
-            <Link
-              key={item.label}
-              href={item.href}
-              className={`flex h-9 items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium leading-5 text-[#09090B] transition-all duration-100 ${
-                isActive ? "bg-[#F4F4F5]" : "hover:bg-[#F4F4F5]"
-              }`}
-            >
-              <Icon className="h-5 w-5 shrink-0 text-[#09090B]" />
-              <span>{item.label}</span>
-            </Link>
-          );
-        })}
+        {items.map((item) => (
+          <SidebarRow key={item.label} item={item} pathname={pathname} />
+        ))}
       </div>
     </div>
   );
@@ -75,7 +97,7 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="flex min-h-full w-[240px] shrink-0 flex-col px-2 py-5">
+    <aside className="flex h-full min-h-0 w-[240px] shrink-0 flex-col overflow-y-auto rounded-[4px] bg-white px-2 py-5">
       <div className="mb-7 px-3">
         <img src="/logo.svg" alt="Finsepa" width={32} height={32} />
       </div>
@@ -85,19 +107,6 @@ export function Sidebar() {
         <SidebarSection title="Calendar" items={calendarItems} pathname={pathname} />
         <SidebarSection title="Data" items={dataItems} pathname={pathname} />
         <SidebarSection title="Community" items={communityItems} pathname={pathname} />
-      </div>
-
-      <div className="mt-6 border-t border-neutral-200/80 px-0 pt-4">
-        <div className="space-y-0.5">
-          {["For Business", "Get Mobile App"].map((label) => (
-            <div
-              key={label}
-              className="cursor-pointer rounded-lg px-3 py-2 text-sm font-semibold leading-5 text-neutral-400 transition-all duration-100 hover:bg-neutral-200/40 hover:text-neutral-700"
-            >
-              {label}
-            </div>
-          ))}
-        </div>
       </div>
     </aside>
   );

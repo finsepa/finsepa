@@ -1,30 +1,3 @@
-export const stockData = {
-  ticker: "PYPL",
-  name: "PayPal Holdings, Inc.",
-  sector: "Financial Services",
-  earningsDate: "Oct 31, 2024",
-  watchlists: 18274,
-  price: 81.65,
-  change: 26.94,
-  changePct: 50.0,
-  priceTimestamp: "Aug 30, 2024 at 4:00 PM EDT, USD",
-  sentimentBear: 18,
-  sentimentBearCount: 2345,
-  sentimentBull: 78,
-  sentimentBullCount: 11450,
-  performance: {
-    price: 72.61,
-    d1: 0.05,
-    d5: 1.02,
-    m1: 13.17,
-    m6: 20.22,
-    ytd: 17.94,
-    y1: 14.21,
-    y5: -33.58,
-    all: 97.3,
-  },
-};
-
 export const keyStats = {
   basic: [
     { label: "Market Cap", value: "$66.17B" },

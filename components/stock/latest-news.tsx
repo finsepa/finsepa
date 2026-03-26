@@ -1,39 +1,47 @@
-const newsItems = [
-  {
-    id: 1,
-    time: "2 hours ago",
-    source: "TipsRank",
-    headline: "PYPL, SOFI, or SQ: Which Fintech Stock Scores Wall Street's \"Strong Buy\" Rating?",
-    excerpt: "Macroeconomic uncertainty is weighing on consumer spending and consequently impacting fintech companies. That said, the long-term growth story of the companies in the fintech space looks bright, given the rise in e-commerce and digital payment...",
-    tags: ["PYPL", "SOFI", "SQ"],
-  },
-  {
-    id: 2,
-    time: "3 hours ago",
-    source: "CoinMarketCap",
-    headline: "PayPal's Stablecoin PYUSD Surpasses $1 Billion in Market Cap",
-    excerpt: "PayPal's stablecoin, PayPal USD (PYUSD), has reached a significant milestone, surpassing $1 billion in total market capitalization, according to CoinMarketCap.",
-    tags: ["PYPL", "PYUSD"],
-  },
-  {
-    id: 3,
-    time: "9 hours ago",
-    source: "Motley Fool",
-    headline: "Is It Too Late to Buy PayPal Stock?",
-    excerpt: "The digital payments giant might be in a better place than you realize.",
-    tags: ["PYPL"],
-  },
-  {
-    id: 4,
-    time: "14 hours ago",
-    source: "Insider Monkey",
-    headline: "PayPal Holdings, Inc. (PYPL): A Top Contender Among the Best Digital Currency and Payments Stocks",
-    excerpt: "We recently compiled a list of the 7 Best Digital Currency and Payments Stocks To Buy Now. In this article, we are going to take a look at where PayPal Holdings, Inc. stands against the other digital currency and payments stocks.",
-    tags: ["PYPL"],
-  },
-];
+function buildNewsItems(ticker: string) {
+  const t = ticker.trim().toUpperCase();
+  return [
+    {
+      id: 1,
+      time: "2 hours ago",
+      source: "TipsRank",
+      headline: `${t} vs peers: What Wall Street is watching this week`,
+      excerpt:
+        "Macro uncertainty is influencing risk appetite across equities. Here are the catalysts and positioning signals investors are tracking for the week ahead.",
+      tags: [t, "EARNINGS", "MACRO"],
+    },
+    {
+      id: 2,
+      time: "3 hours ago",
+      source: "MarketWatch",
+      headline: `${t} price action: key levels and drivers`,
+      excerpt:
+        "A quick look at recent price moves, volatility, and what could matter next. (Placeholder feed — live news wiring can come later.)",
+      tags: [t],
+    },
+    {
+      id: 3,
+      time: "9 hours ago",
+      source: "Motley Fool",
+      headline: `Is it too late to buy ${t}?`,
+      excerpt:
+        "A long-term view on the business, valuation, and competitive landscape. (Placeholder feed — live news wiring can come later.)",
+      tags: [t],
+    },
+    {
+      id: 4,
+      time: "14 hours ago",
+      source: "Insider Monkey",
+      headline: `${t}: where it stands among notable names in the sector`,
+      excerpt:
+        "We compiled a list of notable stocks in the sector and looked at where this company fits today. (Placeholder feed — live news wiring can come later.)",
+      tags: [t],
+    },
+  ];
+}
 
-export function LatestNews() {
+export function LatestNews({ ticker }: { ticker: string }) {
+  const newsItems = buildNewsItems(ticker);
   return (
     <div>
       {/* Header */}

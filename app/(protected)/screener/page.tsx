@@ -1,17 +1,13 @@
 import { IndexCards } from "@/components/screener/index-cards";
-import { MarketTabs } from "@/components/screener/market-tabs";
-import { ScreenerTabs } from "@/components/screener/screener-tabs";
-import { ScreenerTable } from "@/components/screener/screener-table";
+import { MarketsSection } from "@/components/screener/markets-section";
+import { getTop10ScreenerRows } from "@/lib/screener/top10-quotes";
 
-export default function ScreenerPage() {
+export default async function ScreenerPage() {
+  const rows = await getTop10ScreenerRows();
+
   return (
     <div className="px-9 py-6">
-      <MarketTabs />
-      <IndexCards />
-      <div className="mb-5">
-        <ScreenerTabs />
-      </div>
-      <ScreenerTable />
+      <MarketsSection stockRows={rows} />
     </div>
   );
 }

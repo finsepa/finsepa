@@ -14,7 +14,13 @@ function IconButton({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function Topbar({ userInitials }: { userInitials: string }) {
+export function Topbar({
+  userInitials,
+  avatarUrl,
+}: {
+  userInitials: string;
+  avatarUrl: string | null;
+}) {
   const [searchOpen, setSearchOpen] = useState(false);
 
   return (
@@ -61,7 +67,7 @@ export function Topbar({ userInitials }: { userInitials: string }) {
             </button>
           </div>
 
-          <TopbarUserMenu userInitials={userInitials} />
+          <TopbarUserMenu userInitials={userInitials} avatarUrl={avatarUrl} />
         </div>
       </header>
 

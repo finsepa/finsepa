@@ -37,9 +37,13 @@ export const config = {
   matcher: [
     "/screener",
     "/screener/:path*",
+    "/crypto",
+    "/crypto/:path*",
     "/stock/:path*",
     "/account",
     "/account/:path*",
+    "/watchlist",
+    "/watchlist/:path*",
     "/login",
     "/signup",
   ],

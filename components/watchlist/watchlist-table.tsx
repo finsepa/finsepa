@@ -100,7 +100,7 @@ function GroupSection({ group }: { group: Group }) {
 
           {/* Company */}
           <td className="py-0 pr-4">
-            <Link href={`/stock/${row.ticker}`} className="flex items-center gap-3">
+            <Link href={`/stock/${encodeURIComponent(row.ticker)}`} className="flex items-center gap-3">
               <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[11px] font-bold text-white ${row.logo.bg}`}>
                 {row.logo.text}
               </div>
@@ -151,14 +151,26 @@ export function WatchlistTable() {
         </div>
         <div className="flex items-center gap-2">
           <div className="flex overflow-hidden rounded-lg border border-[#E4E4E7] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
-            <button className="bg-white px-4 py-1.5 text-[13px] font-medium text-[#09090B] hover:bg-[#F4F4F5] transition-colors">Performance</button>
-            <button className="border-l border-[#E4E4E7] bg-white px-4 py-1.5 text-[13px] font-medium text-[#71717A] hover:bg-[#F4F4F5] transition-colors">Fundamentals</button>
+            <button type="button" className="bg-[#F4F4F5] px-4 py-1.5 text-[13px] font-medium text-[#09090B] transition-colors hover:bg-[#EBEBEB]">
+              Performance
+            </button>
+            <button type="button" className="border-l border-[#E4E4E7] bg-white px-4 py-1.5 text-[13px] font-medium text-[#71717A] transition-colors hover:bg-[#F4F4F5]">
+              Fundamentals
+            </button>
           </div>
-          <button className="flex items-center gap-2 rounded-lg border border-[#E4E4E7] bg-white px-3 py-1.5 text-[13px] font-medium text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] hover:bg-[#F4F4F5] transition-colors">
-            <Settings2 className="h-4 w-4" />Customize
+          <button
+            type="button"
+            className="flex items-center gap-2 rounded-lg border border-[#E4E4E7] bg-white px-3 py-1.5 text-[13px] font-medium text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors hover:bg-[#F4F4F5]"
+          >
+            <Settings2 className="h-4 w-4" />
+            Customize
           </button>
-          <button className="flex items-center gap-2 rounded-lg border border-[#E4E4E7] bg-white px-3 py-1.5 text-[13px] font-medium text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] hover:bg-[#F4F4F5] transition-colors">
-            <Plus className="h-4 w-4" />New Asset
+          <button
+            type="button"
+            className="flex items-center gap-2 rounded-lg border border-[#E4E4E7] bg-white px-3 py-1.5 text-[13px] font-medium text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors hover:bg-[#F4F4F5]"
+          >
+            <Plus className="h-4 w-4" />
+            New Asset
           </button>
         </div>
       </div>

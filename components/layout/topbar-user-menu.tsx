@@ -6,12 +6,14 @@ import { useRouter } from "next/navigation";
 import { Menu } from "lucide-react";
 import { PATH_LOGIN } from "@/lib/auth/routes";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { UserAvatar } from "@/components/user/user-avatar";
 
 type TopbarUserMenuProps = {
   userInitials: string;
+  avatarUrl: string | null;
 };
 
-export function TopbarUserMenu({ userInitials }: TopbarUserMenuProps) {
+export function TopbarUserMenu({ userInitials, avatarUrl }: TopbarUserMenuProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
@@ -51,9 +53,7 @@ export function TopbarUserMenu({ userInitials }: TopbarUserMenuProps) {
         className="flex h-9 items-center gap-2 rounded-[10px] border border-[#E4E4E7] bg-white px-2 text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5]"
       >
         <Menu className="h-5 w-5 shrink-0" />
-        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#09090B] text-[11px] font-semibold text-white">
-          {userInitials}
-        </div>
+        <UserAvatar imageSrc={avatarUrl} initials={userInitials} size="sm" />
       </button>
 
       {open ? (

@@ -1,5 +1,15 @@
 import type { User } from "@supabase/supabase-js";
 
+/** Same source as /account: `user_metadata.avatar_url` string, or null. */
+export function avatarUrlFromUser(user: User): string | null {
+  const m = user.user_metadata as Record<string, unknown> | undefined;
+  if (!m) return null;
+  const url = m.avatar_url;
+  if (typeof url !== "string") return null;
+  const t = url.trim();
+  return t ? t : null;
+}
+
 export function displayNameFromUser(user: User): string | null {
   const m = user.user_metadata as Record<string, unknown> | undefined;
   if (!m) return null;

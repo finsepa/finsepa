@@ -1,0 +1,15 @@
+import "server-only";
+
+/**
+ * Server-only provider keys. Import from Route Handlers / Server Actions only.
+ * Client code must never read EODHD_API_KEY or FINNHUB_API_KEY.
+ */
+export function getEodhdApiKey(): string | undefined {
+  const v = process.env.EODHD_API_KEY?.trim();
+  return v || undefined;
+}
+
+export function getFinnhubApiKey(): string | undefined {
+  const v = process.env.FINNHUB_API_KEY?.trim();
+  return v || undefined;
+}

@@ -1,93 +1,98 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Bell, Share2, Plus, Star, ChevronRight, ChevronDown } from "lucide-react";
-import { stockData } from "./data";
+import { ChevronRight } from "lucide-react";
+import { getStockDetailMetaFromTicker } from "@/lib/market/stock-detail-meta";
 
-function ActionButton({ children }: { children: React.ReactNode }) {
-  return (
-    <button className="border border-[#E4E4E7] bg-white rounded-[10px] h-9 w-9 flex items-center justify-center shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] cursor-pointer hover:bg-[#F4F4F5] transition-colors">
-      {children}
-    </button>
-  );
-}
+export function StockHeader({ ticker }: { ticker: string }) {
+  const meta = getStockDetailMetaFromTicker(ticker);
+  const symbol = meta.ticker;
+  const titleName = meta.name;
 
-export function StockHeader() {
-  const {
-    ticker, name, sector, earningsDate, watchlists,
-    price, change, changePct, priceTimestamp,
-    sentimentBear, sentimentBearCount, sentimentBull, sentimentBullCount,
-  } = stockData;
+  const [loading, setLoading] = useState(true);
+  const [price, setPrice] = useState<number | null>(null);
+  const [changePct, setChangePct] = useState<number | null>(null);
 
-  const isPositive = change >= 0;
+  useEffect(() => {
+    let mounted = true;
+    async function load() {
+      setLoading(true);
+      try {
+        // Best-effort: if this ticker is in the top-10 universe, reuse the existing batch API.
+        const res = await fetch("/api/screener/top-ten", { cache: "no-store" });
+        if (!res.ok) {
+          if (!mounted) return;
+          setPrice(null);
+          setChangePct(null);
+          setLoading(false);
+          return;
+        }
+        const json = (await res.json()) as { rows?: Array<{ ticker: string; price: number; changePercent1D: number }> };
+        const rows = Array.isArray(json.rows) ? json.rows : [];
+        const match = rows.find((r) => r.ticker?.toUpperCase?.() === symbol);
+        if (!mounted) return;
+        setPrice(typeof match?.price === "number" ? match!.price : null);
+        setChangePct(typeof match?.changePercent1D === "number" ? match!.changePercent1D : null);
+        setLoading(false);
+      } catch {
+        if (!mounted) return;
+        setPrice(null);
+        setChangePct(null);
+        setLoading(false);
+      }
+    }
+    void load();
+    return () => {
+      mounted = false;
+    };
+  }, [symbol]);
+
+  const derived = useMemo(() => {
+    if (price == null || changePct == null) return { change: null, isPositive: true };
+    const change = (price * changePct) / 100;
+    return { change, isPositive: change >= 0 };
+  }, [price, changePct]);
 
   return (
     <div className="space-y-3">
-      {/* Row 1: Breadcrumb + Sentiment */}
-      <div className="flex items-center justify-between">
+      {/* Row 1: Breadcrumb */}
+      <div className="flex items-center">
         <div className="flex items-center gap-1 text-[14px] text-[#71717A]">
           <Link href="/screener" className="hover:text-[#09090B] transition-colors">Stocks</Link>
           <ChevronRight className="h-3.5 w-3.5" />
-          <span className="text-[#09090B] font-medium">PayPal</span>
-        </div>
-
-        <div className="flex items-center gap-2.5">
-          <span className="text-[13px] text-[#71717A]">Current sentiment:</span>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1">
-              <span className="text-[13px] font-medium text-[#DC2626]">
-                🔴 {sentimentBear}% ({sentimentBearCount.toLocaleString()})
-              </span>
-            </div>
-            <div className="w-28 h-2 rounded-full overflow-hidden bg-[#E4E4E7] flex">
-              <div className="h-full bg-[#DC2626]" style={{ width: `${sentimentBear}%` }} />
-              <div className="h-full bg-[#16A34A]" style={{ width: `${sentimentBull}%` }} />
-            </div>
-            <span className="text-[13px] font-medium text-[#16A34A]">
-              🟢 {sentimentBull}% ({sentimentBullCount.toLocaleString()})
-            </span>
-          </div>
+          <span className="text-[#09090B] font-medium">{symbol}</span>
         </div>
       </div>
 
       {/* Row 2: Logo + Company info + Actions */}
-      <div className="flex items-start justify-between">
-        {/* Left: logo + name/subtitle */}
+      <div className="flex items-start">
         <div className="flex items-center gap-4">
-          {/* PayPal logo placeholder */}
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#009cde] text-white text-[18px] font-bold shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
-            P
-          </div>
+          {/* Logo */}
+          {meta.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element -- remote favicon with onError fallback in-browser
+            <img
+              src={meta.logoUrl}
+              alt=""
+              width={48}
+              height={48}
+              className="h-12 w-12 shrink-0 rounded-xl border border-neutral-200 bg-white object-contain shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]"
+              onError={(e) => {
+                // If logo fails, hide image and rely on initials block below.
+                (e.currentTarget as HTMLImageElement).style.display = "none";
+              }}
+            />
+          ) : null}
+          {!meta.logoUrl ? (
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#F4F4F5] text-[#09090B] text-[18px] font-bold shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] border border-[#E4E4E7]">
+              {meta.ticker.slice(0, 1)}
+            </div>
+          ) : null}
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-[20px] font-semibold leading-7 text-[#09090B]">{name}</h1>
-              <span className="text-[14px] font-medium text-[#71717A]">{ticker}</span>
+              <h1 className="text-[20px] font-semibold leading-7 text-[#09090B]">{titleName}</h1>
+              <span className="text-[14px] font-medium text-[#71717A]">{symbol}</span>
             </div>
-            <div className="mt-0.5 flex items-center gap-1.5 text-[13px] text-[#71717A]">
-              <span>{sector}</span>
-              <span>·</span>
-              <span>Q3, {earningsDate}</span>
-              <span>·</span>
-              <span>{watchlists.toLocaleString()} Watchlists</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Right: action buttons + Buy & Sell */}
-        <div className="flex items-center gap-2">
-          <ActionButton><Bell className="h-4 w-4 text-[#09090B]" /></ActionButton>
-          <ActionButton><Share2 className="h-4 w-4 text-[#09090B]" /></ActionButton>
-          <ActionButton><Plus className="h-4 w-4 text-[#09090B]" /></ActionButton>
-          <ActionButton>
-            <Star className="h-4 w-4 fill-orange-400 text-orange-400" />
-          </ActionButton>
-
-          {/* Buy & Sell with dropdown */}
-          <div className="flex h-9 overflow-hidden rounded-[10px] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
-            <button className="bg-[#2563EB] px-4 text-[14px] font-semibold text-white hover:bg-[#1D4ED8] transition-colors">
-              Buy &amp; Sell
-            </button>
-            <button className="flex items-center justify-center border-l border-[#1D4ED8] bg-[#2563EB] px-2 text-white hover:bg-[#1D4ED8] transition-colors">
-              <ChevronDown className="h-4 w-4" />
-            </button>
           </div>
         </div>
       </div>
@@ -96,14 +101,22 @@ export function StockHeader() {
       <div>
         <div className="flex items-baseline gap-2">
           <span className="text-[28px] font-semibold leading-9 tabular-nums text-[#09090B]">
-            ${price.toFixed(2)}
+            {loading || price == null ? "—" : `$${price.toFixed(2)}`}
           </span>
-          <span className={`text-[15px] font-medium tabular-nums ${isPositive ? "text-[#16A34A]" : "text-[#DC2626]"}`}>
-            {isPositive ? "+" : ""}{change.toFixed(2)} ({isPositive ? "+" : ""}{changePct.toFixed(2)}%)
+          <span
+            className={`text-[15px] font-medium tabular-nums ${
+              derived.isPositive ? "text-[#16A34A]" : "text-[#DC2626]"
+            }`}
+          >
+            {loading || derived.change == null || changePct == null
+              ? "—"
+              : `${derived.isPositive ? "+" : ""}${derived.change.toFixed(2)} (${derived.isPositive ? "+" : ""}${changePct.toFixed(2)}%)`}
           </span>
           <span className="text-[13px] text-[#71717A]">Past year</span>
         </div>
-        <div className="mt-0.5 text-[12px] text-[#71717A]">{priceTimestamp}</div>
+        <div className="mt-0.5 text-[12px] text-[#71717A]">
+          {loading ? "Loading…" : "USD"}
+        </div>
       </div>
     </div>
   );

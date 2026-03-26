@@ -10,8 +10,10 @@ export const PATH_APP_ENTRY = "/screener";
 
 export function isProtectedPath(pathname: string): boolean {
   if (pathname === "/screener" || pathname.startsWith("/screener/")) return true;
+  if (pathname === "/crypto" || pathname.startsWith("/crypto/")) return true;
   if (pathname.startsWith("/stock/")) return true;
   if (pathname === "/account" || pathname.startsWith("/account/")) return true;
+  if (pathname === "/watchlist" || pathname.startsWith("/watchlist/")) return true;
   return false;
 }
 
