@@ -5,13 +5,26 @@ import { unstable_cache } from "next/cache";
 import {
   toSupportedCryptoTicker,
   type SupportedCryptoTicker,
-  CRYPTO_TOP10,
+  ALL_CRYPTO_METAS,
   fetchEodhdCryptoDailyBars,
-  fetchEodhdCryptoFundamentalsHighlights,
 } from "@/lib/market/eodhd-crypto";
+import type { CryptoFundamentalsMeta } from "@/lib/market/eodhd-crypto-fundamentals-meta";
+import { fetchEodhdCryptoFundamentalsMeta } from "@/lib/market/eodhd-crypto-fundamentals-meta";
 import type { EodhdDailyBar } from "@/lib/market/eodhd-eod";
 import { deriveMetricsFromDailyBars, eodFetchWindowUtc, formatMarketCapDisplay } from "@/lib/screener/eod-derived-metrics";
-import { getCryptoLogoUrl, type SupportedCryptoSymbol } from "@/lib/crypto/crypto-logo-url";
+import { getCryptoLogoUrl } from "@/lib/crypto/crypto-logo-url";
+
+export type CryptoAssetLinks = {
+  website: string | null;
+  whitepaper: string | null;
+  github: string | null;
+  twitter: string | null;
+  reddit: string | null;
+  telegram: string | null;
+  discord: string | null;
+  explorers: string[];
+  wallets: string[];
+};
 
 export type CryptoAssetRow = {
   symbol: SupportedCryptoTicker;
@@ -21,8 +34,16 @@ export type CryptoAssetRow = {
   changePercent1M: number | null;
   changePercentYTD: number | null;
   marketCap: string;
+  fullyDilutedMarketCap: string;
+  athMarketCap: string;
+  totalSupply: string;
+  circulatingSupply: string;
+  maxSupply: string;
+  volume24h: string;
+  volumeToMarketCap24h: string;
   sparkline5d: number[];
   logoUrl: string;
+  links: CryptoAssetLinks;
 };
 
 function changePercent(current: number | null, prev: number | null): number | null {
@@ -31,8 +52,75 @@ function changePercent(current: number | null, prev: number | null): number | nu
   return ((current - prev) / prev) * 100;
 }
 
+function fmtUsdDisplay(n: number | null): string {
+  if (n == null || !Number.isFinite(n)) return "-";
+  const raw = formatMarketCapDisplay(n);
+  if (raw === "-") return "-";
+  return raw.startsWith("$") ? raw.slice(1) : raw;
+}
+
+function fmtSupplyDisplay(n: number | null): string {
+  if (n == null || !Number.isFinite(n)) return "-";
+  return n.toLocaleString("en-US", { maximumFractionDigits: 8 });
+}
+
+function fmtRatioDisplay(n: number | null): string {
+  if (n == null || !Number.isFinite(n)) return "-";
+  return `${(n * 100).toFixed(1)}%`;
+}
+
+function mapLinks(fund: CryptoFundamentalsMeta | null): CryptoAssetLinks {
+  if (!fund) {
+    return {
+      website: null,
+      whitepaper: null,
+      github: null,
+      twitter: null,
+      reddit: null,
+      telegram: null,
+      discord: null,
+      explorers: [],
+      wallets: [],
+    };
+  }
+  return {
+    website: fund.website,
+    whitepaper: fund.whitepaper,
+    github: fund.github,
+    twitter: fund.twitter,
+    reddit: fund.reddit,
+    telegram: fund.telegram,
+    discord: fund.discord,
+    explorers: fund.explorers,
+    wallets: fund.wallets,
+  };
+}
+
+function mapFundamentals(fund: CryptoFundamentalsMeta | null): Pick<
+  CryptoAssetRow,
+  | "fullyDilutedMarketCap"
+  | "athMarketCap"
+  | "totalSupply"
+  | "circulatingSupply"
+  | "maxSupply"
+  | "volume24h"
+  | "volumeToMarketCap24h"
+  | "links"
+> {
+  return {
+    fullyDilutedMarketCap: fmtUsdDisplay(fund?.fullyDilutedMarketCapUsd ?? null),
+    athMarketCap: fmtUsdDisplay(fund?.athMarketCapUsd ?? null),
+    totalSupply: fmtSupplyDisplay(fund?.totalSupply ?? null),
+    circulatingSupply: fmtSupplyDisplay(fund?.circulatingSupply ?? null),
+    maxSupply: fmtSupplyDisplay(fund?.maxSupply ?? null),
+    volume24h: fmtUsdDisplay(fund?.volume24hUsd ?? null),
+    volumeToMarketCap24h: fmtRatioDisplay(fund?.volumeToMarketCap24h ?? null),
+    links: mapLinks(fund),
+  };
+}
+
 function findMeta(symbol: SupportedCryptoTicker) {
-  return CRYPTO_TOP10.find((m) => m.symbol === symbol) ?? null;
+  return ALL_CRYPTO_METAS.find((m) => m.symbol.toUpperCase() === symbol.toUpperCase()) ?? null;
 }
 
 async function loadCryptoAssetUncached(symbolOrTicker: string): Promise<CryptoAssetRow | null> {
@@ -42,20 +130,14 @@ async function loadCryptoAssetUncached(symbolOrTicker: string): Promise<CryptoAs
   if (!meta) return null;
 
   const window = eodFetchWindowUtc();
-  const logoUrl = getCryptoLogoUrl(supported as unknown as SupportedCryptoSymbol);
-  // TON fallback: try Toncoin symbol first; if it fails, try the alternate.
+  const logoUrl = getCryptoLogoUrl(supported);
   const tonCandidates =
     meta.symbol === "TON" && meta.eodhdAltSymbols?.length ? [meta.eodhdSymbol, ...meta.eodhdAltSymbols] : [meta.eodhdSymbol];
 
-  if (meta.symbol === "TON") {
-    // Required debugging: only TON row.
-    console.log("[crypto asset TON candidates]", { candidates: tonCandidates, symbol: meta.symbol });
-  }
-
   for (const candidateSymbol of tonCandidates) {
-    const [bars, highlights] = await Promise.allSettled([
+    const [bars, fundResult] = await Promise.allSettled([
       fetchEodhdCryptoDailyBars(candidateSymbol, window.from, window.to),
-      fetchEodhdCryptoFundamentalsHighlights(candidateSymbol),
+      fetchEodhdCryptoFundamentalsMeta(candidateSymbol),
     ]);
 
     const dailyBars: EodhdDailyBar[] | null = bars.status === "fulfilled" ? bars.value : null;
@@ -66,46 +148,38 @@ async function loadCryptoAssetUncached(symbolOrTicker: string): Promise<CryptoAs
     const change1D = changePercent(currentPrice, prevBar?.close ?? null);
     const derived = dailyBars ? deriveMetricsFromDailyBars(dailyBars, currentPrice ?? NaN) : null;
 
-    const marketCapUsd = highlights.status === "fulfilled" ? highlights.value?.marketCapUsd ?? null : null;
+    const fund = fundResult.status === "fulfilled" ? fundResult.value : null;
+    const marketCapUsd = fund?.marketCapUsd ?? null;
     const marketCapRaw = formatMarketCapDisplay(marketCapUsd);
     const marketCap = marketCapRaw.startsWith("$") ? marketCapRaw.slice(1) : marketCapRaw;
 
     const hasPrice = currentPrice != null && Number.isFinite(currentPrice);
     const hasMarketCap = marketCapUsd != null && Number.isFinite(marketCapUsd) && marketCapUsd > 0;
 
-    // Prefer a fully populated result for TON; otherwise return the first with price.
+    const base = {
+      symbol: meta.symbol,
+      name: meta.name,
+      price: currentPrice,
+      changePercent1D: change1D,
+      changePercent1M: derived?.changePercent1M ?? null,
+      changePercentYTD: derived?.changePercentYTD ?? null,
+      marketCap,
+      sparkline5d: derived?.sparkline5d ?? [],
+      logoUrl,
+      ...mapFundamentals(fund),
+    };
+
     if (hasPrice && hasMarketCap) {
-      return {
-        symbol: meta.symbol,
-        name: meta.name,
-        price: currentPrice,
-        changePercent1D: change1D,
-        changePercent1M: derived?.changePercent1M ?? null,
-        changePercentYTD: derived?.changePercentYTD ?? null,
-        marketCap,
-        sparkline5d: derived?.sparkline5d ?? [],
-        logoUrl,
-      };
+      return base;
     }
     if (hasPrice) {
-      return {
-        symbol: meta.symbol,
-        name: meta.name,
-        price: currentPrice,
-        changePercent1D: change1D,
-        changePercent1M: derived?.changePercent1M ?? null,
-        changePercentYTD: derived?.changePercentYTD ?? null,
-        marketCap,
-        sparkline5d: derived?.sparkline5d ?? [],
-        logoUrl,
-      };
+      return base;
     }
   }
 
   return null;
 }
 
-export const getCryptoAsset = unstable_cache(loadCryptoAssetUncached, ["crypto-asset-v2"], {
+export const getCryptoAsset = unstable_cache(loadCryptoAssetUncached, ["crypto-asset-v3"], {
   revalidate: 60,
 });
-

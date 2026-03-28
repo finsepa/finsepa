@@ -2,28 +2,61 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import { readWatchlistLocal, writeWatchlistLocal } from "@/lib/watchlist/local-storage";
+
 function normalizeTicker(t: string): string {
   return t.trim().toUpperCase();
 }
 
-/** Shared client hook for GET /api/watchlist + optimistic POST/DELETE toggles (screener, stock header, etc.). */
+const DEBUG = process.env.NODE_ENV === "development";
+
+function wlLog(...args: unknown[]) {
+  if (DEBUG) console.info("[watchlist client]", ...args);
+}
+
+/**
+ * watched = localStorage ∪ Supabase (merged on load). Best-effort POST/DELETE; UI does not revert on API failure.
+ */
 export function useWatchlist() {
-  const [watched, setWatched] = useState<Set<string>>(new Set());
+  const [watched, setWatched] = useState<Set<string>>(() => new Set());
   const [loaded, setLoaded] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
+    const tickers = readWatchlistLocal();
+    wlLog("hydrate from localStorage", { count: tickers.length, tickers });
+    setWatched(new Set(tickers));
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
     let cancelled = false;
 
     (async () => {
       try {
         const res = await fetch("/api/watchlist", { credentials: "include" });
-        if (!res.ok || cancelled) return;
-        const data = (await res.json()) as { items?: { ticker: string }[] };
-        const items = Array.isArray(data.items) ? data.items : [];
         if (cancelled) return;
-        setWatched(new Set(items.map((i) => normalizeTicker(i.ticker))));
-      } catch {
-        /* keep empty set */
+        if (res.ok) {
+          const data = (await res.json()) as { items?: { ticker: string }[]; warning?: string };
+          const items = Array.isArray(data.items) ? data.items : [];
+          const server = new Set(items.map((i) => normalizeTicker(i.ticker)));
+          wlLog("GET /api/watchlist ok", {
+            serverCount: server.size,
+            warning: data.warning,
+            storage: data.warning ? "local+server_merge" : "server",
+          });
+          setWatched((prev) => {
+            const merged = new Set(prev);
+            for (const t of server) merged.add(t);
+            wlLog("merge server into watched", { prev: [...prev], merged: [...merged] });
+            return merged;
+          });
+        } else {
+          wlLog("GET /api/watchlist failed", { status: res.status });
+        }
+      } catch (e) {
+        wlLog("GET /api/watchlist throw", e);
       } finally {
         if (!cancelled) setLoaded(true);
       }
@@ -32,7 +65,13 @@ export function useWatchlist() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [hydrated]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    writeWatchlistLocal([...watched]);
+    wlLog("persist watched → localStorage", { count: watched.size });
+  }, [watched, hydrated]);
 
   const toggleTicker = useCallback((ticker: string) => {
     const key = normalizeTicker(ticker);
@@ -46,14 +85,18 @@ export function useWatchlist() {
       return next;
     });
 
-    (async () => {
+    wlLog("toggle add/remove", { key, wasWatched, action: wasWatched ? "DELETE" : "POST" });
+
+    void (async () => {
       try {
         if (wasWatched) {
           const res = await fetch(`/api/watchlist?ticker=${encodeURIComponent(key)}`, {
             method: "DELETE",
             credentials: "include",
           });
-          if (!res.ok) throw new Error("delete failed");
+          if (!res.ok) {
+            wlLog("DELETE /api/watchlist failed", { status: res.status, body: await res.text().catch(() => "") });
+          }
         } else {
           const res = await fetch("/api/watchlist", {
             method: "POST",
@@ -61,15 +104,12 @@ export function useWatchlist() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ ticker: key }),
           });
-          if (!res.ok) throw new Error("post failed");
+          if (!res.ok) {
+            wlLog("POST /api/watchlist failed", { status: res.status, body: await res.text().catch(() => "") });
+          }
         }
-      } catch {
-        setWatched((prev) => {
-          const next = new Set(prev);
-          if (wasWatched) next.add(key);
-          else next.delete(key);
-          return next;
-        });
+      } catch (e) {
+        wlLog("toggle API error (UI unchanged)", e);
       }
     })();
   }, []);

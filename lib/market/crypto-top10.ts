@@ -3,7 +3,7 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 
 import { CRYPTO_TOP10, type SupportedCryptoTicker, fetchEodhdCryptoDailyBars, fetchEodhdCryptoFundamentalsHighlights } from "@/lib/market/eodhd-crypto";
-import { getCryptoLogoUrl, type SupportedCryptoSymbol } from "@/lib/crypto/crypto-logo-url";
+import { getCryptoLogoUrl } from "@/lib/crypto/crypto-logo-url";
 import { deriveMetricsFromDailyBars, eodFetchWindowUtc, formatMarketCapDisplay } from "@/lib/screener/eod-derived-metrics";
 import type { EodhdDailyBar } from "@/lib/market/eodhd-eod";
 
@@ -27,7 +27,7 @@ function changePercent(current: number | null, prev: number | null): number | nu
 
 async function buildCryptoRow(meta: (typeof CRYPTO_TOP10)[number]): Promise<CryptoTop10Row> {
   const window = eodFetchWindowUtc();
-  const logoUrl = getCryptoLogoUrl(meta.symbol as SupportedCryptoSymbol);
+  const logoUrl = getCryptoLogoUrl(meta.symbol);
 
   // TON fallback: try Toncoin symbol first; if it fails, try the alternate.
   // This preserves the UI while avoiding broken/incorrect values for only the TON row.

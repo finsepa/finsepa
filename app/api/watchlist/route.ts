@@ -13,8 +13,13 @@ export async function GET() {
   try {
     const supabase = await getSupabaseServerClient();
     const user = await requireAuthUser(supabase);
-    const items = await listWatchlistForUser(supabase, user.id);
-    return NextResponse.json({ items });
+    try {
+      const items = await listWatchlistForUser(supabase, user.id);
+      return NextResponse.json({ items });
+    } catch (dbErr) {
+      console.error("[watchlist GET] listWatchlistForUser failed", dbErr);
+      return NextResponse.json({ items: [], warning: "db_unavailable" as const });
+    }
   } catch (e) {
     if (e instanceof AuthRequiredError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

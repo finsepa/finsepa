@@ -5,7 +5,7 @@ import { LogoSkeleton, PillSkeleton, SkeletonBox, SparklineSkeleton, TextSkeleto
 const stocksColLayout = "grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr_1fr_80px_96px] gap-x-2";
 // rank + coin + price + 1D + 1M + YTD + market cap + sparkline
 const cryptoColLayout = "grid-cols-[48px_2fr_1fr_1fr_1fr_1fr_1fr_96px]";
-const indicesColLayout = "grid-cols-[2fr_1fr_1fr_1fr_1fr_96px]";
+const indicesColLayout = "grid-cols-[40px_2fr_1fr_1fr_1fr_1fr_96px]";
 
 export function IndexCardSkeleton({ name }: { name: string }) {
   return (
@@ -123,7 +123,10 @@ export function CryptoTableSkeleton({ rows = 10 }: { rows?: number }) {
 
 function IndicesRowSkeleton() {
   return (
-    <div className="group grid h-[60px] max-h-[60px] grid-cols-[2fr_1fr_1fr_1fr_1fr_96px] items-center border-b border-[#E4E4E7] px-1 last:border-b-0">
+    <div className="group grid h-[60px] max-h-[60px] grid-cols-[40px_2fr_1fr_1fr_1fr_1fr_96px] items-center border-b border-[#E4E4E7] px-1 last:border-b-0">
+      <div className="flex w-10 shrink-0 items-center justify-center px-3">
+        <SkeletonBox className="h-4 w-4 rounded" />
+      </div>
       <div className="px-4">
         <TextSkeleton wClass="w-[45%] max-w-[180px]" />
       </div>
@@ -150,6 +153,7 @@ export function IndicesTableSkeleton({ rows = 10 }: { rows?: number }) {
   return (
     <div className="overflow-hidden">
       <div className={`grid ${indicesColLayout} items-center border-t border-b border-[#E4E4E7] bg-white px-4 py-3 text-[14px] font-semibold leading-5 text-[#71717A] [&>div]:text-center`}>
+        <div />
         <div className="flex justify-start"><SkeletonBox className="h-3 w-12 rounded" /></div>
         <div className="flex justify-center"><SkeletonBox className="h-3 w-10 rounded" /></div>
         <div className="flex justify-center"><SkeletonBox className="h-3 w-10 rounded" /></div>

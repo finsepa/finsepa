@@ -9,6 +9,8 @@ export type StockPerformance = {
   price: number | null;
   d1: number | null;
   d5: number | null;
+  /** ~7 trading days back vs prior close */
+  d7: number | null;
   m1: number | null;
   m6: number | null;
   ytd: number | null;
@@ -86,9 +88,11 @@ async function loadStockPerformanceUncached(ticker: string): Promise<StockPerfor
   // Trading-day offsets (more accurate than calendar nearest for very short ranges).
   const prev1dClose = closeAtTradingOffset(sorted, 1); // previous trading day close
   const prev5dClose = closeAtTradingOffset(sorted, 5); // ~5 trading days back
+  const prev7dClose = closeAtTradingOffset(sorted, 7); // ~7 trading days back
 
   const d1 = pctChange(price, prev1dClose);
   const d5 = pctChange(price, prev5dClose);
+  const d7 = pctChange(price, prev7dClose);
 
   // Calendar-based ranges use nearest available trading bar to the target date.
   const m1Bar = pickNearestBar(sorted, addMonthsUtc(now, -1).getTime());
@@ -108,12 +112,12 @@ async function loadStockPerformanceUncached(ticker: string): Promise<StockPerfor
   const first = sorted.length ? sorted[0]! : null;
   const all = pctChange(price, first?.close ?? null);
 
-  return { ticker: sym, price, d1, d5, m1, m6, ytd, y1, y5, all };
+  return { ticker: sym, price, d1, d5, d7, m1, m6, ytd, y1, y5, all };
 }
 
 export const getStockPerformance = unstable_cache(
   async (ticker: string) => loadStockPerformanceUncached(ticker),
-  ["stock-performance-v1"],
+  ["stock-performance-v2"],
   { revalidate: 60 },
 );
 

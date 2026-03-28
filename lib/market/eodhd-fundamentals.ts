@@ -7,6 +7,8 @@ export type EodhdFundamentalsHighlights = {
   marketCapUsd: number | null;
   peTrailing: number | null;
   peForward: number | null;
+  /** Short display e.g. "Jan 28, 2026" when provider includes a next/last earnings date */
+  nextEarningsDateDisplay: string | null;
 };
 
 function num(v: unknown): number | null {
@@ -14,6 +16,43 @@ function num(v: unknown): number | null {
   if (typeof v === "string" && v.trim()) {
     const n = Number(v.replace(/,/g, ""));
     return Number.isFinite(n) ? n : null;
+  }
+  return null;
+}
+
+function formatEarningsDateHint(v: unknown): string | null {
+  if (typeof v !== "string" || !v.trim()) return null;
+  const t = Date.parse(v.includes("T") ? v : `${v}T12:00:00.000Z`);
+  if (!Number.isFinite(t)) return null;
+  return new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+}
+
+function extractNextEarningsDateDisplay(
+  highlights: Record<string, unknown> | null,
+  root: Record<string, unknown>,
+): string | null {
+  if (highlights) {
+    const keys = [
+      "NextEarningsDate",
+      "EarningsDate",
+      "UpcomingEarningsDate",
+      "NextEarningDate",
+      "EarningsAnnouncement",
+    ] as const;
+    for (const k of keys) {
+      const f = formatEarningsDateHint(highlights[k]);
+      if (f) return f;
+    }
+  }
+  const earn = root.Earnings;
+  if (earn && typeof earn === "object") {
+    const e = earn as Record<string, unknown>;
+    const dates = e.Dates ?? e.Upcoming;
+    if (dates && typeof dates === "object") {
+      const d = dates as Record<string, unknown>;
+      const f = formatEarningsDateHint(d.NextDate ?? d.nextEarningsDate);
+      if (f) return f;
+    }
   }
   return null;
 }
@@ -58,9 +97,18 @@ export async function fetchEodhdFundamentalsHighlights(ticker: string): Promise<
       if (peForward == null) peForward = num(v.ForwardPE);
     }
 
-    if (marketCapUsd == null && peTrailing == null && peForward == null) return null;
+    const nextEarningsDateDisplay = extractNextEarningsDateDisplay(highlights, root);
 
-    return { marketCapUsd, peTrailing, peForward };
+    if (
+      marketCapUsd == null &&
+      peTrailing == null &&
+      peForward == null &&
+      nextEarningsDateDisplay == null
+    ) {
+      return null;
+    }
+
+    return { marketCapUsd, peTrailing, peForward, nextEarningsDateDisplay };
   } catch {
     return null;
   }

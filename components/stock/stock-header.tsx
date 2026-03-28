@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { getStockDetailMetaFromTicker } from "@/lib/market/stock-detail-meta";
+import { WatchlistStarButton } from "@/components/watchlist/watchlist-star-button";
 
 export function StockHeader({ ticker }: { ticker: string }) {
   const meta = getStockDetailMetaFromTicker(ticker);
@@ -13,7 +14,6 @@ export function StockHeader({ ticker }: { ticker: string }) {
   const [loading, setLoading] = useState(true);
   const [price, setPrice] = useState<number | null>(null);
   const [changePct, setChangePct] = useState<number | null>(null);
-
   useEffect(() => {
     let mounted = true;
     async function load() {
@@ -65,9 +65,9 @@ export function StockHeader({ ticker }: { ticker: string }) {
         </div>
       </div>
 
-      {/* Row 2: Logo + Company info + Actions */}
-      <div className="flex items-start">
-        <div className="flex items-center gap-4">
+      {/* Row 2: Logo + Company info + Watchlist */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-4">
           {/* Logo */}
           {meta.logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element -- remote favicon with onError fallback in-browser
@@ -88,12 +88,16 @@ export function StockHeader({ ticker }: { ticker: string }) {
               {meta.ticker.slice(0, 1)}
             </div>
           ) : null}
-          <div>
-            <div className="flex items-center gap-2">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-[20px] font-semibold leading-7 text-[#09090B]">{titleName}</h1>
               <span className="text-[14px] font-medium text-[#71717A]">{symbol}</span>
             </div>
           </div>
+        </div>
+
+        <div className="group shrink-0">
+          <WatchlistStarButton variant="detail" storageKey={symbol} label={symbol} />
         </div>
       </div>
 

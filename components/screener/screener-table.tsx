@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Star } from "lucide-react";
 import type { ScreenerTableRow } from "@/lib/screener/screener-static";
+import { WatchlistStarToggle } from "@/components/watchlist/watchlist-star-button";
 import { CompanyLogo } from "./company-logo";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
 
@@ -77,35 +77,19 @@ export function ScreenerTable({ rows }: { rows: ScreenerTableRow[] }) {
       {/* Rows */}
       {rows.map((item, index) => {
         const trendPositive = item.trend[item.trend.length - 1] >= item.trend[0];
-        const tickerKey = item.ticker.trim().toUpperCase();
-        const isWatched = loaded && watched.has(tickerKey);
-
         return (
           <div
             key={item.ticker}
             className={`group grid ${colLayout} h-[60px] max-h-[60px] items-center border-b border-[#E4E4E7] px-1 last:border-b-0 transition-colors duration-75 hover:bg-neutral-50`}
           >
-            <div className="flex w-10 shrink-0 items-center justify-center px-3">
-              <button
-                type="button"
-                aria-label={isWatched ? `Remove ${item.ticker} from watchlist` : `Add ${item.ticker} to watchlist`}
-                aria-pressed={isWatched}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  toggleTicker(item.ticker);
-                }}
-                className="flex items-center justify-center rounded-md p-0.5 text-[#09090B] outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/20"
-              >
-                <Star
-                  className={`h-4 w-4 transition-colors ${
-                    isWatched
-                      ? "fill-orange-400 text-orange-400"
-                      : "fill-none text-neutral-300 group-hover:text-neutral-400"
-                  }`}
-                />
-              </button>
-            </div>
+            <WatchlistStarToggle
+              className="flex w-10 shrink-0 items-center justify-center px-3"
+              storageKey={item.ticker}
+              label={item.ticker}
+              watched={watched}
+              loaded={loaded}
+              toggleTicker={toggleTicker}
+            />
 
             <Link
               href={`/stock/${encodeURIComponent(item.ticker)}`}

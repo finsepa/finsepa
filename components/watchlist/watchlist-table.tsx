@@ -1,200 +1,248 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ChevronDown, ChevronRight, MoreHorizontal, Trash2, Settings2, Plus, ArrowUpDown } from "lucide-react";
+import { ArrowUpDown, ChevronDown, ChevronRight } from "lucide-react";
 
-type WatchlistRow = {
-  name: string;
-  ticker: string;
-  price: string;
-  d1: string; d7: string; m1: string; ytd: string;
-  mcap: string; pe: string; earnings: string;
-  logo: { bg: string; text: string };
-  d1pos: boolean; d7pos: boolean; m1pos: boolean; ytdpos: boolean;
-};
+import { CompanyLogo } from "@/components/screener/company-logo";
+import { WatchlistStarToggle } from "@/components/watchlist/watchlist-star-button";
+import type { WatchlistEnrichedItem } from "@/lib/watchlist/enriched-types";
+import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
 
-type Group = { label: string; rows: WatchlistRow[] };
+function formatPrice(n: number | null, kind: "stock" | "crypto" | "index"): string {
+  if (n == null || !Number.isFinite(n)) return "-";
+  if (kind === "crypto" && Math.abs(n) < 1) {
+    return `$${n.toLocaleString("en-US", { maximumFractionDigits: 6 })}`;
+  }
+  return `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
 
-const groups: Group[] = [
-  {
-    label: "Finance",
-    rows: [
-      { name: "Blackrock",           ticker: "BLK",  price: "$901.81",    d1: "+0.36%", d7: "-0.78%", m1: "-0.78%", ytd: "-0.78%",  mcap: "$133.58 B", pe: "34.35", earnings: "Oct 31, 2024", logo: { bg: "bg-neutral-800",  text: "BR" }, d1pos: true,  d7pos: false, m1pos: false, ytdpos: false },
-      { name: "JP Morgan Chase & Co.",ticker: "JPM",  price: "$224.80",    d1: "+0.18%", d7: "-0.78%", m1: "-3.96%", ytd: "-3.96%",  mcap: "$639.59 B", pe: "72.85", earnings: "Oct 31, 2024", logo: { bg: "bg-[#1a3a6b]",   text: "JP" }, d1pos: true,  d7pos: false, m1pos: false, ytdpos: false },
-      { name: "Moody's",             ticker: "MCO",  price: "$487.74",    d1: "+0.05%", d7: "-0.78%", m1: "+0.05%", ytd: "+0.05%",  mcap: "$34.3 B",   pe: "23.38", earnings: "Oct 31, 2024", logo: { bg: "bg-[#0033a0]",   text: "MC" }, d1pos: true,  d7pos: false, m1pos: true,  ytdpos: true  },
-    ],
-  },
-  {
-    label: "Consumer Defensive",
-    rows: [
-      { name: "Costco",  ticker: "COST", price: "$892.38",  d1: "+1.02%", d7: "+0.87%", m1: "-3.85%", ytd: "-3.85%", mcap: "$395.62 B", pe: "55.26", earnings: "Oct 31, 2024", logo: { bg: "bg-[#e8002d]",  text: "CO" }, d1pos: true, d7pos: true, m1pos: false, ytdpos: false },
-      { name: "PepsiCo", ticker: "PEP",  price: "$172.88",  d1: "+1.02%", d7: "+0.87%", m1: "-3.85%", ytd: "-3.85%", mcap: "237.46 B",  pe: "25.06", earnings: "Oct 31, 2024", logo: { bg: "bg-[#004b93]",  text: "PE" }, d1pos: true, d7pos: true, m1pos: false, ytdpos: false },
-    ],
-  },
-  {
-    label: "Tech",
-    rows: [
-      { name: "Apple",  ticker: "AAPL", price: "$207.23", d1: "+1.02%", d7: "+0.87%", m1: "-3.85%", ytd: "-3.85%", mcap: "$3.318 T", pe: "32.3",  earnings: "Oct 31, 2024", logo: { bg: "bg-neutral-800", text: "AP" }, d1pos: true, d7pos: true, m1pos: false, ytdpos: false },
-      { name: "NVIDIA", ticker: "NVDA", price: "$123.61", d1: "+0.24%", d7: "+0.87%", m1: "+0.05%", ytd: "+0.05%", mcap: "$2.928 T", pe: "42.16", earnings: "Oct 31, 2024", logo: { bg: "bg-[#76b900]",    text: "NV" }, d1pos: true, d7pos: true, m1pos: true,  ytdpos: true  },
-    ],
-  },
-  {
-    label: "Crypto",
-    rows: [
-      { name: "Bitcoin",  ticker: "BTC", price: "$61,039.36", d1: "+0.26%", d7: "-0.44%", m1: "+12.13%", ytd: "+38.20%", mcap: "$1.20 T",   pe: "-", earnings: "-", logo: { bg: "bg-[#f7931a]", text: "BT" }, d1pos: true, d7pos: false, m1pos: true, ytdpos: true },
-      { name: "Ethereum", ticker: "ETH", price: "$2,416.07",  d1: "+1.36%", d7: "+1.68%", m1: "+9.9%",   ytd: "+2.71%",  mcap: "$290.83 B", pe: "-", earnings: "-", logo: { bg: "bg-[#627eea]", text: "ET" }, d1pos: true, d7pos: true,  m1pos: true, ytdpos: true },
-    ],
-  },
-];
-
-function ChangeCell({ value, positive }: { value: string; positive?: boolean }) {
-  if (value === "-") return (
-    <td className="px-4 text-center text-[14px] leading-5 tabular-nums text-[#71717A]">-</td>
-  );
-  if (positive === undefined) return (
-    <td className="px-4 text-center text-[14px] leading-5 tabular-nums text-[#09090B]">{value}</td>
-  );
+function ChangeCell({ value }: { value: number | null }) {
+  if (value == null || !Number.isFinite(value)) {
+    return <td className="px-4 text-center text-[14px] leading-5 tabular-nums text-[#71717A]">-</td>;
+  }
+  const positive = value >= 0;
   return (
-    <td className={`px-4 text-center text-[14px] leading-5 tabular-nums font-medium ${positive ? "text-[#16A34A]" : "text-[#DC2626]"}`}>
-      {value}
+    <td
+      className={`px-4 text-center text-[14px] leading-5 tabular-nums font-medium ${
+        positive ? "text-[#16A34A]" : "text-[#DC2626]"
+      }`}
+    >
+      {positive ? "+" : ""}
+      {value.toFixed(2)}%
     </td>
   );
 }
 
-function GroupSection({ group }: { group: Group }) {
+function LogoMark({ name }: { name: string }) {
+  return (
+    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-neutral-200 bg-neutral-100 text-[11px] font-bold text-neutral-600">
+      {name.slice(0, 2).toUpperCase()}
+    </div>
+  );
+}
+
+function GroupSection({
+  label,
+  rows,
+  watched,
+  loaded,
+  toggleTicker,
+}: {
+  label: string;
+  rows: WatchlistEnrichedItem[];
+  watched: Set<string>;
+  loaded: boolean;
+  toggleTicker: (ticker: string) => void;
+}) {
   const [collapsed, setCollapsed] = useState(false);
+
+  if (rows.length === 0) return null;
 
   return (
     <>
-      {/* Group header */}
       <tr className="border-b border-[#E4E4E7]">
-        <td colSpan={11} className="px-4 py-2 bg-white">
-          <div className="flex items-center justify-between">
-            <button
-              onClick={() => setCollapsed(!collapsed)}
-              className="flex items-center gap-2 text-[13px] font-medium text-[#71717A] hover:text-[#09090B] transition-colors"
-            >
-              {collapsed
-                ? <ChevronRight className="h-4 w-4" />
-                : <ChevronDown className="h-4 w-4" />}
-              {group.label}
-            </button>
-            <button className="text-[#71717A] hover:text-[#09090B] transition-colors">
-              <MoreHorizontal className="h-4 w-4" />
-            </button>
-          </div>
+        <td colSpan={10} className="bg-white px-4 py-2">
+          <button
+            type="button"
+            onClick={() => setCollapsed(!collapsed)}
+            className="flex items-center gap-2 text-[13px] font-medium text-[#71717A] transition-colors hover:text-[#09090B]"
+          >
+            {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            {label}
+          </button>
         </td>
       </tr>
 
-      {/* Data rows */}
-      {!collapsed && group.rows.map((row) => (
-        <tr
-          key={row.ticker}
-          className="group h-[60px] max-h-[60px] border-b border-[#E4E4E7] transition-colors duration-75 hover:bg-neutral-50 last:border-b-0 cursor-pointer"
-        >
-          {/* Checkbox */}
-          <td className="w-10 px-4">
-            <div className="h-4 w-4 rounded border border-[#E4E4E7] bg-white" />
-          </td>
+      {!collapsed &&
+        rows.map((row) => (
+          <tr
+            key={row.entryId}
+            className="group h-[60px] max-h-[60px] cursor-pointer border-b border-[#E4E4E7] transition-colors duration-75 last:border-b-0 hover:bg-neutral-50"
+          >
+            <td className="py-0 pr-4">
+              <Link href={row.href} className="flex items-center gap-3">
+                {row.logoUrl ? (
+                  <CompanyLogo name={row.name} logoUrl={row.logoUrl} />
+                ) : (
+                  <LogoMark name={row.symbol} />
+                )}
+                <div className="min-w-0">
+                  <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">{row.name}</div>
+                  <div className="text-[12px] font-normal leading-4 text-[#71717A]">{row.symbol}</div>
+                </div>
+              </Link>
+            </td>
 
-          {/* Company */}
-          <td className="py-0 pr-4">
-            <Link href={`/stock/${encodeURIComponent(row.ticker)}`} className="flex items-center gap-3">
-              <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[11px] font-bold text-white ${row.logo.bg}`}>
-                {row.logo.text}
-              </div>
-              <div className="min-w-0">
-                <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">{row.name}</div>
-                <div className="text-[12px] font-normal leading-4 text-[#71717A]">{row.ticker}</div>
-              </div>
-            </Link>
-          </td>
+            <td className="px-4 text-center text-[14px] font-normal tabular-nums leading-5 text-[#09090B]">
+              {formatPrice(row.price, row.kind)}
+            </td>
 
-          {/* Price */}
-          <td className="px-4 text-center text-[14px] leading-5 font-normal tabular-nums text-[#09090B]">
-            {row.price}
-          </td>
+            <ChangeCell value={row.pct1d} />
+            <ChangeCell value={row.pct7d} />
+            <ChangeCell value={row.pct1m} />
+            <ChangeCell value={row.ytd} />
 
-          <ChangeCell value={row.d1}  positive={row.d1pos} />
-          <ChangeCell value={row.d7}  positive={row.d7pos} />
-          <ChangeCell value={row.m1}  positive={row.m1pos} />
-          <ChangeCell value={row.ytd} positive={row.ytdpos} />
+            <td className="px-4 text-center text-[14px] font-normal tabular-nums leading-5 text-[#09090B]">
+              {row.mcapDisplay}
+            </td>
+            <td className="px-4 text-center text-[14px] font-normal tabular-nums leading-5 text-[#09090B]">
+              {row.peDisplay}
+            </td>
+            <td className="px-4 text-center text-[14px] font-normal leading-5 text-[#09090B]">{row.earningsDisplay}</td>
 
-          {/* M.Cap */}
-          <td className="px-4 text-center text-[14px] leading-5 font-normal tabular-nums text-[#09090B]">{row.mcap}</td>
-          {/* PE */}
-          <td className="px-4 text-center text-[14px] leading-5 font-normal tabular-nums text-[#09090B]">{row.pe}</td>
-          {/* Earnings */}
-          <td className="px-4 text-center text-[14px] leading-5 font-normal text-[#09090B]">{row.earnings}</td>
-
-          {/* Delete — shows on hover */}
-          <td className="w-10 px-4 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button className="text-[#71717A] hover:text-[#DC2626] transition-colors">
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </td>
-        </tr>
-      ))}
+            <td className="w-10 px-4">
+              <WatchlistStarToggle
+                className="flex items-center justify-center"
+                storageKey={row.storageKey}
+                label={row.symbol}
+                watched={watched}
+                loaded={loaded}
+                toggleTicker={toggleTicker}
+              />
+            </td>
+          </tr>
+        ))}
     </>
   );
 }
 
 export function WatchlistTable() {
+  const { watched, loaded, toggleTicker } = useWatchlist();
+  const watchedKey = useMemo(() => [...watched].sort().join("|"), [watched]);
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [stocks, setStocks] = useState<WatchlistEnrichedItem[]>([]);
+  const [crypto, setCrypto] = useState<WatchlistEnrichedItem[]>([]);
+  const [indices, setIndices] = useState<WatchlistEnrichedItem[]>([]);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    const tickers = [...watched];
+    try {
+      if (process.env.NODE_ENV === "development") {
+        console.info("[watchlist page] POST /api/watchlist/enrich", { tickers, count: tickers.length });
+      }
+      const res = await fetch("/api/watchlist/enrich", {
+        method: "POST",
+        credentials: "include",
+        cache: "no-store",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tickers }),
+      });
+      if (!res.ok) {
+        const errText = await res.text().catch(() => "");
+        if (process.env.NODE_ENV === "development") {
+          console.info("[watchlist page] enrich failed", res.status, errText);
+        }
+        setError("Could not load watchlist.");
+        setStocks([]);
+        setCrypto([]);
+        setIndices([]);
+        return;
+      }
+      const data = (await res.json()) as {
+        stocks?: WatchlistEnrichedItem[];
+        crypto?: WatchlistEnrichedItem[];
+        indices?: WatchlistEnrichedItem[];
+      };
+      if (process.env.NODE_ENV === "development") {
+        console.info("[watchlist page] enrich payload", {
+          stocks: data.stocks?.length ?? 0,
+          crypto: data.crypto?.length ?? 0,
+          indices: data.indices?.length ?? 0,
+        });
+      }
+      setStocks(Array.isArray(data.stocks) ? data.stocks : []);
+      setCrypto(Array.isArray(data.crypto) ? data.crypto : []);
+      setIndices(Array.isArray(data.indices) ? data.indices : []);
+    } catch (e) {
+      if (process.env.NODE_ENV === "development") console.info("[watchlist page] enrich catch", e);
+      setError("Could not load watchlist.");
+      setStocks([]);
+      setCrypto([]);
+      setIndices([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [watched]);
+
+  useEffect(() => {
+    void load();
+  }, [load, watchedKey]);
+
+  const empty = !loading && !error && stocks.length === 0 && crypto.length === 0 && indices.length === 0;
+
   return (
     <div className="flex flex-col gap-5">
-      {/* Page header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <h1 className="text-[20px] font-semibold leading-7 text-[#09090B]">Core Watchlist</h1>
-          <ChevronDown className="h-5 w-5 text-[#71717A]" />
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex overflow-hidden rounded-lg border border-[#E4E4E7] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
-            <button type="button" className="bg-[#F4F4F5] px-4 py-1.5 text-[13px] font-medium text-[#09090B] transition-colors hover:bg-[#EBEBEB]">
-              Performance
-            </button>
-            <button type="button" className="border-l border-[#E4E4E7] bg-white px-4 py-1.5 text-[13px] font-medium text-[#71717A] transition-colors hover:bg-[#F4F4F5]">
-              Fundamentals
-            </button>
-          </div>
-          <button
-            type="button"
-            className="flex items-center gap-2 rounded-lg border border-[#E4E4E7] bg-white px-3 py-1.5 text-[13px] font-medium text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors hover:bg-[#F4F4F5]"
-          >
-            <Settings2 className="h-4 w-4" />
-            Customize
-          </button>
-          <button
-            type="button"
-            className="flex items-center gap-2 rounded-lg border border-[#E4E4E7] bg-white px-3 py-1.5 text-[13px] font-medium text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors hover:bg-[#F4F4F5]"
-          >
-            <Plus className="h-4 w-4" />
-            New Asset
-          </button>
-        </div>
+        <h1 className="text-[20px] font-semibold leading-7 text-[#09090B]">Watchlist</h1>
       </div>
 
-      {/* Table */}
-      <table className="w-full border-collapse">
-        <thead>
-          <tr className="border-t border-b border-[#E4E4E7] bg-white">
-            <th className="w-10 px-4 py-3" />
-            <th className="py-3 pr-4 text-left">
-              <div className="flex items-center gap-1.5 text-[14px] font-semibold leading-5 text-[#71717A]">
-                Company <ArrowUpDown className="h-3.5 w-3.5" />
-              </div>
-            </th>
-            {["Price","1D %","7D %","1M %","YTD %","M.Cap","PE","Earnings"].map((h) => (
-              <th key={h} className="px-4 py-3 text-center text-[14px] font-semibold leading-5 text-[#71717A]">{h}</th>
-            ))}
-            <th className="w-10 px-4 py-3" />
-          </tr>
-        </thead>
-        <tbody>
-          {groups.map((g) => <GroupSection key={g.label} group={g} />)}
-        </tbody>
-      </table>
+      {error ? <p className="text-[14px] leading-5 text-[#B91C1C]">{error}</p> : null}
+
+      {loading ? (
+        <p className="text-[14px] leading-5 text-[#71717A]">Loading…</p>
+      ) : empty ? (
+        <div className="flex min-h-[200px] flex-col items-center justify-center rounded-xl border border-[#E4E4E7] bg-white px-6 py-12 text-center">
+          <p className="text-[14px] font-medium text-[#09090B]">No saved assets yet</p>
+          <p className="mt-2 max-w-sm text-sm leading-6 text-[#71717A]">
+            Add stocks from the screener or a stock page, crypto from a crypto asset page, and indices from the markets
+            table. They will show up here.
+          </p>
+          <Link
+            href="/screener"
+            className="mt-6 text-sm font-semibold text-[#09090B] underline decoration-[#E4E4E7] underline-offset-4 transition-colors hover:decoration-[#A1A1AA]"
+          >
+            Go to Markets
+          </Link>
+        </div>
+      ) : (
+        <table className="w-full border-collapse">
+          <thead>
+            <tr className="border-t border-b border-[#E4E4E7] bg-white">
+              <th className="py-3 pr-4 text-left">
+                <div className="flex items-center gap-1.5 text-[14px] font-semibold leading-5 text-[#71717A]">
+                  Asset <ArrowUpDown className="h-3.5 w-3.5" />
+                </div>
+              </th>
+              {["Price", "1D %", "7D %", "1M %", "YTD %", "M.Cap", "PE", "Earnings"].map((h) => (
+                <th key={h} className="px-4 py-3 text-center text-[14px] font-semibold leading-5 text-[#71717A]">
+                  {h}
+                </th>
+              ))}
+              <th className="w-10 px-4 py-3" />
+            </tr>
+          </thead>
+          <tbody>
+            <GroupSection label="Stocks" rows={stocks} watched={watched} loaded={loaded} toggleTicker={toggleTicker} />
+            <GroupSection label="Crypto" rows={crypto} watched={watched} loaded={loaded} toggleTicker={toggleTicker} />
+            <GroupSection label="Indices" rows={indices} watched={watched} loaded={loaded} toggleTicker={toggleTicker} />
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }

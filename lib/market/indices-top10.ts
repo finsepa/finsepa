@@ -15,7 +15,8 @@ export type IndexTableRow = {
   spark5d: number[];
 };
 
-const INDEX_TOP10: { name: string; symbol: string; fallbackValue: number; fallback1D: number; fallbackSpark5d: number[] }[] = [
+/** Search + benchmarks table — fixed universe (EODHD symbols). */
+export const INDEX_TOP10: { name: string; symbol: string; fallbackValue: number; fallback1D: number; fallbackSpark5d: number[] }[] = [
   { name: "S&P 500", symbol: "GSPC.INDX", fallbackValue: 5648.4, fallback1D: 0.44, fallbackSpark5d: [30, 32, 29, 33, 31] },
   { name: "Nasdaq 100", symbol: "NDX.INDX", fallbackValue: 17713.53, fallback1D: 1.13, fallbackSpark5d: [28, 30, 27, 32, 30] },
   { name: "Dow Jones", symbol: "DJI.INDX", fallbackValue: 41563.08, fallback1D: 0.55, fallbackSpark5d: [32, 31, 33, 30, 34] },
@@ -79,6 +80,13 @@ async function loadIndicesTop10Uncached(): Promise<IndexTableRow[]> {
 }
 
 export const getIndicesTop10 = unstable_cache(loadIndicesTop10Uncached, ["indices-top10-v1"], { revalidate: 60 });
+
+/** Resolve display name for a known top-10 index EOD symbol (e.g. GSPC.INDX → "S&P 500"). */
+export function getIndexDisplayMeta(eodSymbol: string): { name: string; symbol: string } | null {
+  const u = eodSymbol.trim().toUpperCase();
+  const hit = INDEX_TOP10.find((e) => e.symbol.toUpperCase() === u);
+  return hit ? { name: hit.name, symbol: hit.symbol } : null;
+}
 
 export function formatIndexValue(value: number): string {
   return value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });

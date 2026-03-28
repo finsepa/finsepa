@@ -2,9 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { IndicesTableSkeleton } from "@/components/markets/markets-skeletons";
+import { WatchlistStarToggle } from "@/components/watchlist/watchlist-star-button";
+import { indexWatchlistKey } from "@/lib/watchlist/constants";
+import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
 
 type IndexRow = {
   name: string;
+  symbol: string;
   value: number;
   change1D: number;
   change1M: number | null;
@@ -58,9 +62,12 @@ function Spark({ points, positive }: { points: number[]; positive: boolean }) {
   );
 }
 
+const colLayout = "grid-cols-[40px_2fr_1fr_1fr_1fr_1fr_96px]";
+
 export function IndicesTable() {
   const [rows, setRows] = useState<IndexRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const { watched, loaded, toggleTicker } = useWatchlist();
 
   useEffect(() => {
     let mounted = true;
@@ -86,7 +93,10 @@ export function IndicesTable() {
 
   return (
     <div className="overflow-hidden">
-      <div className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_96px] items-center border-t border-b border-[#E4E4E7] bg-white px-4 py-3 text-[14px] font-semibold leading-5 text-[#71717A] [&>div]:text-center">
+      <div
+        className={`grid ${colLayout} items-center border-t border-b border-[#E4E4E7] bg-white px-4 py-3 text-[14px] font-semibold leading-5 text-[#71717A] [&>div]:text-center`}
+      >
+        <div />
         <div className="!text-left">Index</div>
         <div>Value</div>
         <div>1D %</div>
@@ -97,11 +107,20 @@ export function IndicesTable() {
 
       {safeRows.map((r) => {
         const positive = r.spark5d.length >= 2 ? r.spark5d[r.spark5d.length - 1]! >= r.spark5d[0]! : r.change1D >= 0;
+        const wlKey = indexWatchlistKey(r.symbol);
         return (
           <div
-            key={r.name}
-            className="group grid h-[60px] max-h-[60px] grid-cols-[2fr_1fr_1fr_1fr_1fr_96px] items-center border-b border-[#E4E4E7] px-1 last:border-b-0 transition-colors duration-75 hover:bg-neutral-50"
+            key={r.symbol}
+            className={`group grid h-[60px] max-h-[60px] ${colLayout} items-center border-b border-[#E4E4E7] px-1 last:border-b-0 transition-colors duration-75 hover:bg-neutral-50`}
           >
+            <WatchlistStarToggle
+              className="flex w-10 shrink-0 items-center justify-center px-3"
+              storageKey={wlKey}
+              label={r.name}
+              watched={watched}
+              loaded={loaded}
+              toggleTicker={toggleTicker}
+            />
             <div className="px-4 text-left text-[14px] font-semibold leading-5 text-[#09090B]">{r.name}</div>
             <div className="text-center font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B]">{formatValue(r.value)}</div>
             <ChangeCell value={r.change1D} />
@@ -116,4 +135,3 @@ export function IndicesTable() {
     </div>
   );
 }
-
