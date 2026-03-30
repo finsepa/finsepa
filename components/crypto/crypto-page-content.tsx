@@ -1,14 +1,18 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronRight, ExternalLink } from "lucide-react";
 
-import { LogoSkeleton, SparklineSkeleton, SkeletonBox } from "@/components/markets/skeleton";
+import type { ChartDisplayState } from "@/components/chart/PriceChart";
+import { PriceChart } from "@/components/chart/PriceChart";
+import { LogoSkeleton, SkeletonBox } from "@/components/markets/skeleton";
+import { ChartControls } from "@/components/stock/chart-controls";
 import { WatchlistStarButton } from "@/components/watchlist/watchlist-star-button";
 import { cryptoWatchlistKey } from "@/lib/watchlist/constants";
 import type { CryptoAssetLinks, CryptoAssetRow } from "@/lib/market/crypto-asset";
+import type { StockChartRange } from "@/lib/market/stock-chart-types";
 
 function formatPercent(value: number | null) {
   if (value == null || !Number.isFinite(value)) return "-";
@@ -29,33 +33,16 @@ function ChangeValue({ value }: { value: number | null }) {
   );
 }
 
-function BigSparkline({ points, positive }: { points: number[]; positive: boolean }) {
-  const w = 320;
-  const h = 110;
-  const series = points.length >= 2 ? points : points.length === 1 ? [points[0]!, points[0]!] : [0, 0];
-  const min = Math.min(...series);
-  const max = Math.max(...series);
-  const range = max - min || 1;
+function formatCryptoUsd(value: number | null) {
+  if (value == null || !Number.isFinite(value)) return "—";
+  const max = value < 1 ? 6 : value < 100 ? 4 : 2;
+  return `$${value.toLocaleString("en-US", { maximumFractionDigits: max, minimumFractionDigits: 2 })}`;
+}
 
-  const pts = series.map((p, i) => {
-    const x = (i / (series.length - 1)) * w;
-    const y = h - ((p - min) / range) * (h - 16) - 8;
-    return `${x.toFixed(1)},${y.toFixed(1)}`;
-  });
-  const polyline = pts.join(" ");
-  const fillPath = `M${pts[0]} L${pts.slice(1).join(" L")} L${w},${h} L0,${h} Z`;
-
-  const stroke = positive ? "#16A34A" : "#DC2626";
-  const fill = positive ? "rgba(22,163,74,0.10)" : "rgba(220,38,38,0.10)";
-  const lastPt = pts[pts.length - 1]?.split(",") ?? ["0", "0"];
-
-  return (
-    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} fill="none" className="w-full">
-      <path d={fillPath} fill={fill} />
-      <polyline points={polyline} fill="none" stroke={stroke} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
-      <circle cx={lastPt[0]} cy={lastPt[1]} r="3.5" fill={stroke} />
-    </svg>
-  );
+function formatCryptoChangeAbs(value: number | null, refPrice: number | null) {
+  if (value == null || !Number.isFinite(value)) return "—";
+  const max = refPrice != null && refPrice < 1 ? 6 : refPrice != null && refPrice < 100 ? 4 : 2;
+  return value.toLocaleString("en-US", { maximumFractionDigits: max, minimumFractionDigits: 2 });
 }
 
 function StatCard({ label, value }: { label: string; value: ReactNode }) {
@@ -131,8 +118,32 @@ function buildLinksSections(links: CryptoAssetLinks) {
 export function CryptoPageContent({ routeSymbol }: { routeSymbol: string }) {
   const [loading, setLoading] = useState(true);
   const [row, setRow] = useState<CryptoAssetRow | null>(null);
+  const [range, setRange] = useState<StockChartRange>("1Y");
+  const [chartUi, setChartUi] = useState<ChartDisplayState>({
+    loading: true,
+    empty: true,
+    displayPrice: null,
+    displayChangePct: null,
+    displayChangeAbs: null,
+    isHovering: false,
+    selectionActive: false,
+    periodLabelOverride: null,
+    priceTimestampLabel: null,
+  });
   const symUpper = routeSymbol.trim().toUpperCase();
   const wlKey = cryptoWatchlistKey(symUpper);
+
+  const onChartDisplay = useCallback((s: ChartDisplayState) => {
+    setChartUi(s);
+  }, []);
+
+  const displayPrice = chartUi.displayPrice;
+  const hasChartChange =
+    chartUi.displayChangePct != null &&
+    chartUi.displayChangeAbs != null &&
+    Number.isFinite(chartUi.displayChangePct) &&
+    Number.isFinite(chartUi.displayChangeAbs);
+  const changePositive = hasChartChange ? chartUi.displayChangeAbs! >= 0 : true;
 
   useEffect(() => {
     let mounted = true;
@@ -163,13 +174,6 @@ export function CryptoPageContent({ routeSymbol }: { routeSymbol: string }) {
   }, [routeSymbol]);
 
   const safeRow = useMemo(() => row, [row]);
-  const positive = safeRow?.changePercent1D != null ? safeRow.changePercent1D >= 0 : (safeRow?.sparkline5d.at(-1) ?? 0) >= (safeRow?.sparkline5d[0] ?? 0);
-
-  const priceDerived = useMemo(() => {
-    if (safeRow?.price == null || safeRow.changePercent1D == null) return { change: null, isPositive: true };
-    const change = (safeRow.price * safeRow.changePercent1D) / 100;
-    return { change, isPositive: change >= 0 };
-  }, [safeRow?.price, safeRow?.changePercent1D]);
 
   const linkSections = safeRow ? buildLinksSections(safeRow.links) : null;
   const hasAnyLinks =
@@ -236,49 +240,31 @@ export function CryptoPageContent({ routeSymbol }: { routeSymbol: string }) {
         </div>
 
         <div>
-          {loading ? (
-            <SkeletonBox className="h-9 w-40 rounded-md" />
-          ) : safeRow ? (
-            <>
-              <div className="flex flex-wrap items-baseline gap-2">
-                <span className="text-[28px] font-semibold leading-9 tabular-nums text-[#09090B]">
-                  {safeRow.price == null || !Number.isFinite(safeRow.price)
-                    ? "—"
-                    : `$${safeRow.price.toLocaleString("en-US", { maximumFractionDigits: safeRow.price < 1 ? 4 : 2 })}`}
-                </span>
-                <span
-                  className={`text-[15px] font-medium tabular-nums ${
-                    priceDerived.isPositive ? "text-[#16A34A]" : "text-[#DC2626]"
-                  }`}
-                >
-                  {safeRow.changePercent1D == null || priceDerived.change == null
-                    ? "—"
-                    : `${priceDerived.isPositive ? "+" : ""}${priceDerived.change.toLocaleString("en-US", {
-                        maximumFractionDigits: safeRow.price! < 1 ? 6 : 2,
-                      })} (${priceDerived.isPositive ? "+" : ""}${safeRow.changePercent1D.toFixed(2)}%)`}
-                </span>
-                <span className="text-[13px] text-[#71717A]">1D</span>
-              </div>
-              <div className="mt-0.5 text-[12px] text-[#71717A]">{loading ? "Loading…" : "USD"}</div>
-            </>
+          <div className="flex flex-wrap items-baseline gap-2">
+            <span className="text-[28px] font-semibold leading-9 tabular-nums text-[#09090B]">
+              {chartUi.loading || displayPrice == null ? "—" : formatCryptoUsd(displayPrice)}
+            </span>
+            <span
+              className={`text-[15px] font-medium tabular-nums ${
+                hasChartChange ? (changePositive ? "text-[#16A34A]" : "text-[#DC2626]") : "text-[#71717A]"
+              }`}
+            >
+              {chartUi.loading || !hasChartChange
+                ? "—"
+                : `${changePositive ? "+" : ""}${formatCryptoChangeAbs(chartUi.displayChangeAbs, displayPrice)} (${changePositive ? "+" : ""}${chartUi.displayChangePct!.toFixed(2)}%)`}
+            </span>
+            <span className="text-[13px] text-[#71717A]">{chartUi.periodLabelOverride ?? range}</span>
+          </div>
+          {chartUi.loading ? (
+            <div className="mt-0.5 text-[12px] text-[#71717A]">Loading…</div>
+          ) : chartUi.empty ? null : chartUi.priceTimestampLabel ? (
+            <div className="mt-0.5 text-[12px] leading-4 text-[#71717A]">{chartUi.priceTimestampLabel}</div>
           ) : null}
         </div>
       </div>
 
-      {/* Chart */}
-      <div className="rounded-xl border border-[#E4E4E7] bg-white px-4 py-4">
-        {loading ? (
-          <SparklineSkeleton className="h-28 w-full" />
-        ) : safeRow ? (
-          safeRow.sparkline5d.length ? (
-            <BigSparkline points={safeRow.sparkline5d} positive={positive} />
-          ) : (
-            <div className="h-28" />
-          )
-        ) : (
-          <div className="h-28" />
-        )}
-      </div>
+      <ChartControls activeRange={range} onRangeChange={setRange} />
+      <PriceChart kind="crypto" symbol={symUpper} range={range} onDisplayChange={onChartDisplay} />
 
       {/* Performance snapshot */}
       {!loading && safeRow ? (

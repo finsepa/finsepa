@@ -1,3 +1,6 @@
+/** Dispatched on window after a successful POST/DELETE to `/api/watchlist` (detail: `{ ticker: string }`). */
+export const WATCHLIST_MUTATED_EVENT = "finsepa:watchlist-mutated" as const;
+
 /** Stored in `watchlist.ticker` alongside plain stock tickers (e.g. AAPL). */
 export const WATCHLIST_CRYPTO_PREFIX = "CRYPTO:" as const;
 

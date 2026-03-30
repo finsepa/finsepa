@@ -49,7 +49,11 @@ export async function GET(request: Request, { params }: Ctx) {
 
   const rawPoints = await getStockChartPoints(routeTicker, range);
   const startSec = rangeStartUnixSeconds(range, new Date());
-  const points = sliceFromNearestTradingPoint(rawPoints, startSec);
+  let points = sliceFromNearestTradingPoint(rawPoints, startSec);
+  // Intraday windows can sit entirely before `startSec` on weekends/holidays after slicing; data load already scoped the range.
+  if ((range === "1D" || range === "5D") && points.length === 0 && rawPoints.length > 0) {
+    points = rawPoints;
+  }
 
   return NextResponse.json({
     ticker: routeTicker,

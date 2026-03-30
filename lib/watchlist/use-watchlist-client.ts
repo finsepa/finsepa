@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import { WATCHLIST_MUTATED_EVENT } from "@/lib/watchlist/constants";
 import { readWatchlistLocal, writeWatchlistLocal } from "@/lib/watchlist/local-storage";
 
 function normalizeTicker(t: string): string {
@@ -96,6 +97,8 @@ export function useWatchlist() {
           });
           if (!res.ok) {
             wlLog("DELETE /api/watchlist failed", { status: res.status, body: await res.text().catch(() => "") });
+          } else if (typeof window !== "undefined") {
+            window.dispatchEvent(new CustomEvent(WATCHLIST_MUTATED_EVENT, { detail: { ticker: key } }));
           }
         } else {
           const res = await fetch("/api/watchlist", {
@@ -106,6 +109,8 @@ export function useWatchlist() {
           });
           if (!res.ok) {
             wlLog("POST /api/watchlist failed", { status: res.status, body: await res.text().catch(() => "") });
+          } else if (typeof window !== "undefined") {
+            window.dispatchEvent(new CustomEvent(WATCHLIST_MUTATED_EVENT, { detail: { ticker: key } }));
           }
         }
       } catch (e) {

@@ -4,6 +4,11 @@ export const PATH_PUBLIC_HOME = "/";
 /** Email + password auth pages */
 export const PATH_LOGIN = "/login";
 export const PATH_SIGNUP = "/signup";
+export const PATH_FORGOT_PASSWORD = "/forgot-password";
+
+/** Password recovery: email link should target `/auth/callback` (PKCE) or `/auth/reset-password` (implicit), per Supabase settings */
+export const PATH_AUTH_CALLBACK = "/auth/callback";
+export const PATH_AUTH_RESET_PASSWORD = "/auth/reset-password";
 
 /** Default destination after sign-in (protected product entry) */
 export const PATH_APP_ENTRY = "/screener";
@@ -17,6 +22,12 @@ export function isProtectedPath(pathname: string): boolean {
   return false;
 }
 
+/** Pages where an already signed-in user is redirected to the app (not recovery completion). */
+export function isAuthGatePagePath(pathname: string): boolean {
+  return pathname === PATH_LOGIN || pathname === PATH_SIGNUP || pathname === PATH_FORGOT_PASSWORD;
+}
+
+/** @deprecated Use `isAuthGatePagePath` — reset-password is excluded so recovery sessions can complete. */
 export function isAuthPagePath(pathname: string): boolean {
-  return pathname === PATH_LOGIN || pathname === PATH_SIGNUP;
+  return isAuthGatePagePath(pathname);
 }

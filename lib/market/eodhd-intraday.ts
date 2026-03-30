@@ -19,11 +19,19 @@ function num(v: unknown): number | null {
 }
 
 function toTimestampUnixSeconds(raw: Record<string, unknown>): number | null {
-  const epoch = raw.epoch;
-  if (typeof epoch === "number" && Number.isFinite(epoch)) return Math.floor(epoch);
-  if (typeof epoch === "string") {
-    const n = num(epoch);
-    if (n != null) return Math.floor(n);
+  // EODHD intraday JSON uses numeric `timestamp` (unix seconds) on each bar.
+  if (typeof raw.timestamp === "number" && Number.isFinite(raw.timestamp)) {
+    const n = raw.timestamp;
+    return n > 1e12 ? Math.floor(n / 1000) : Math.floor(n);
+  }
+  if (typeof raw.epoch === "number" && Number.isFinite(raw.epoch)) {
+    const n = raw.epoch;
+    return n > 1e12 ? Math.floor(n / 1000) : Math.floor(n);
+  }
+  const tsStr = raw.timestamp ?? raw.epoch;
+  if (typeof tsStr === "string") {
+    const n = num(tsStr);
+    if (n != null) return n > 1e12 ? Math.floor(n / 1000) : Math.floor(n);
   }
 
   const date = raw.date;
@@ -78,6 +86,14 @@ export async function fetchEodhdIntraday(
             : null
           : null;
     if (!arr) return null;
+
+    if (process.env.NODE_ENV === "development" && arr.length > 0) {
+      console.info("[eodhd intraday] raw provider row sample", {
+        sym,
+        rowCount: arr.length,
+        firstRow: arr[0],
+      });
+    }
 
     const out: EodhdIntradayBar[] = [];
     for (const rawItem of arr) {

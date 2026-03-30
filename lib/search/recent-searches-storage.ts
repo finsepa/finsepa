@@ -38,3 +38,10 @@ export function recordSearchNavigation(item: SearchAssetItem): void {
   const next = [item, ...prev].slice(0, MAX_RECENT);
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
 }
+
+/** Drops one entry from recents only; does not touch watchlist. */
+export function removeRecentSearchById(id: string): void {
+  if (typeof window === "undefined") return;
+  const next = readRecentSearches().filter((r) => r.id !== id);
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+}

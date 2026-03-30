@@ -6,8 +6,9 @@ import { Search } from "lucide-react";
 
 import type { SearchAssetItem } from "@/lib/search/search-types";
 import type { SearchScope } from "@/lib/search/search-types";
-import { readRecentSearches, recordSearchNavigation } from "@/lib/search/recent-searches-storage";
+import { readRecentSearches, recordSearchNavigation, removeRecentSearchById } from "@/lib/search/recent-searches-storage";
 import { SearchResultRow } from "@/components/search/search-result-row";
+import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
 
 const TABS: { id: SearchScope; label: string }[] = [
   { id: "all", label: "All" },
@@ -28,6 +29,7 @@ function useDebouncedValue<T>(value: T, ms: number): T {
 export function SearchModal({ onClose }: { onClose: () => void }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
+  const { watched, loaded, toggleTicker } = useWatchlist();
 
   const [query, setQuery] = useState("");
   const debounced = useDebouncedValue(query, 220);
@@ -83,6 +85,13 @@ export function SearchModal({ onClose }: { onClose: () => void }) {
     },
     [onClose, router],
   );
+
+  const handleRemoveRecent = useCallback((id: string) => {
+    removeRecentSearchById(id);
+    const next = readRecentSearches();
+    setRecent(next);
+    setHighlight((h) => Math.min(h, Math.max(0, next.length - 1)));
+  }, []);
 
   useEffect(() => {
     function onK(e: KeyboardEvent) {
@@ -180,7 +189,17 @@ export function SearchModal({ onClose }: { onClose: () => void }) {
                 </div>
               ) : (
                 recent.map((item, i) => (
-                  <SearchResultRow key={item.id} item={item} onNavigate={navigateTo} active={highlight === i} />
+                  <SearchResultRow
+                    key={item.id}
+                    variant="recent"
+                    item={item}
+                    onNavigate={navigateTo}
+                    onRemoveRecent={() => handleRemoveRecent(item.id)}
+                    active={highlight === i}
+                    watched={watched}
+                    loaded={loaded}
+                    toggleTicker={toggleTicker}
+                  />
                 ))
               )}
             </>
@@ -192,7 +211,16 @@ export function SearchModal({ onClose }: { onClose: () => void }) {
             </div>
           ) : (
             items.map((item, i) => (
-              <SearchResultRow key={item.id} item={item} onNavigate={navigateTo} active={highlight === i} />
+              <SearchResultRow
+                key={item.id}
+                variant="live"
+                item={item}
+                onNavigate={navigateTo}
+                active={highlight === i}
+                watched={watched}
+                loaded={loaded}
+                toggleTicker={toggleTicker}
+              />
             ))
           )}
         </div>

@@ -13,3 +13,11 @@ export function getFinnhubApiKey(): string | undefined {
   const v = process.env.FINNHUB_API_KEY?.trim();
   return v || undefined;
 }
+
+/** Supabase service role key (server-only). Used for privileged reads (e.g. global watchlist counts). */
+export function getSupabaseServiceRoleKey(): string | undefined {
+  const a = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  if (a) return a;
+  const b = process.env.SUPABASE_SERVICE_KEY?.trim();
+  return b || undefined;
+}

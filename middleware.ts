@@ -1,10 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
-import {
-  isAuthPagePath,
-  isProtectedPath,
-  PATH_APP_ENTRY,
-  PATH_LOGIN,
-} from "@/lib/auth/routes";
+import { isAuthGatePagePath, isProtectedPath, PATH_APP_ENTRY, PATH_LOGIN } from "@/lib/auth/routes";
 import { createSupabaseMiddlewareClient } from "@/lib/supabase/middleware";
 
 export async function middleware(request: NextRequest) {
@@ -22,7 +17,7 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (user && isAuthPagePath(path)) {
+  if (user && isAuthGatePagePath(path)) {
     return NextResponse.redirect(new URL(PATH_APP_ENTRY, request.url));
   }
 
@@ -46,5 +41,8 @@ export const config = {
     "/watchlist/:path*",
     "/login",
     "/signup",
+    "/forgot-password",
+    "/auth/callback",
+    "/auth/reset-password",
   ],
 };

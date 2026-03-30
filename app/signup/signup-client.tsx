@@ -6,14 +6,7 @@ import { useRouter } from "next/navigation";
 import { AuthLogo } from "@/components/auth/auth-logo";
 import { PATH_APP_ENTRY, PATH_LOGIN } from "@/lib/auth/routes";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
-import {
-  AuthDivider,
-  AuthInput,
-  AuthLabel,
-  AuthPrimaryButton,
-  AuthTitleBlock,
-} from "@/components/auth/auth-form-ui";
-import { AuthSocialButtons } from "@/components/auth/auth-social-buttons";
+import { AuthInput, AuthLabel, AuthPrimaryButton, AuthTitleBlock } from "@/components/auth/auth-form-ui";
 
 export function SignupClient() {
   const router = useRouter();
@@ -144,44 +137,12 @@ export function SignupClient() {
           />
         </div>
 
-        <label className="flex items-start gap-2 pt-1 text-sm leading-6 text-[#52525B]">
-          <input
-            type="checkbox"
-            name="terms"
-            className="mt-1 h-4 w-4 rounded border-[#D4D4D8] text-[#09090B] focus:ring-[#09090B]/20"
-            required
-            disabled={loading}
-          />
-          <span>
-            I agree to the{" "}
-            <a
-              href="/terms"
-              className="font-semibold text-[#09090B] underline decoration-[#E4E4E7] underline-offset-4 transition-colors hover:decoration-[#A1A1AA]"
-            >
-              Terms
-            </a>{" "}
-            and{" "}
-            <a
-              href="/privacy"
-              className="font-semibold text-[#09090B] underline decoration-[#E4E4E7] underline-offset-4 transition-colors hover:decoration-[#A1A1AA]"
-            >
-              Privacy Policy
-            </a>
-            .
-          </span>
-        </label>
-
         <div className="pt-2">
           <AuthPrimaryButton type="submit" disabled={loading}>
             {loading ? "Creating account…" : "Sign up"}
           </AuthPrimaryButton>
         </div>
       </form>
-
-      <AuthDivider />
-      <AuthSocialButtons />
-
-      <p className="mt-8 text-xs leading-5 text-[#A1A1AA]">Social sign-in is a UI placeholder for now.</p>
     </div>
   );
 }

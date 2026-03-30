@@ -5,6 +5,8 @@ export type StockChartPoint = {
   /** UNIX seconds (UTC). Compatible with lightweight-charts UTCTimestamp. */
   time: number;
   value: number;
+  /** When API provides an IANA zone, used for price timestamp display. */
+  timeZone?: string;
 };
 
 export type StockChartResponse = {
