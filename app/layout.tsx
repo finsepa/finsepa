@@ -10,6 +10,9 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Finsepa",
   description: "Market intelligence platform",
+  icons: {
+    icon: "/icon.png",
+  },
 };
 
 export default function RootLayout({

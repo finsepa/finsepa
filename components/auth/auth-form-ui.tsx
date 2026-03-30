@@ -38,15 +38,18 @@ export function AuthPrimaryButton({
   children,
   type = "submit",
   disabled,
+  onClick,
 }: {
   children: ReactNode;
   type?: "button" | "submit" | "reset";
   disabled?: boolean;
+  onClick?: () => void;
 }) {
   return (
     <button
       type={type}
       disabled={disabled}
+      onClick={onClick}
       className="flex h-[44px] w-full items-center justify-center rounded-[10px] bg-[#000] px-4 text-sm font-semibold text-white transition-colors duration-100 hover:bg-[#111111] disabled:cursor-not-allowed disabled:opacity-60"
     >
       {children}
