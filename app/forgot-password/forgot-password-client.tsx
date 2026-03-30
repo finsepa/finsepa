@@ -1,10 +1,8 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import Link from "next/link";
-import { AuthLogo } from "@/components/auth/auth-logo";
-import { AuthInput, AuthLabel, AuthPrimaryButton, AuthTitleBlock } from "@/components/auth/auth-form-ui";
-import { PATH_AUTH_CALLBACK, PATH_AUTH_RESET_PASSWORD, PATH_LOGIN } from "@/lib/auth/routes";
+import { AuthInput, AuthLabel, AuthPrimaryButton } from "@/components/auth/auth-form-ui";
+import { PATH_AUTH_CALLBACK, PATH_AUTH_RESET_PASSWORD } from "@/lib/auth/routes";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 export function ForgotPasswordClient() {
@@ -44,27 +42,7 @@ export function ForgotPasswordClient() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-[380px]">
-      <div className="mb-8">
-        <AuthLogo href="/" />
-      </div>
-
-      <AuthTitleBlock
-        title="Reset your password"
-        subtitle={
-          <>
-            Remember your password?{" "}
-            <Link
-              href={PATH_LOGIN}
-              className="font-semibold text-[#09090B] underline decoration-[#E4E4E7] underline-offset-4 transition-colors hover:decoration-[#A1A1AA]"
-            >
-              Log in
-            </Link>
-            .
-          </>
-        }
-      />
-
+    <>
       {sent ? (
         <div
           role="status"
@@ -88,13 +66,11 @@ export function ForgotPasswordClient() {
             <AuthInput type="email" name="email" autoComplete="email" placeholder="you@company.com" required disabled={loading} />
           </div>
 
-          <div className="pt-2">
-            <AuthPrimaryButton type="submit" disabled={loading}>
-              {loading ? "Sending…" : "Send reset link"}
-            </AuthPrimaryButton>
-          </div>
+          <AuthPrimaryButton type="submit" disabled={loading}>
+            {loading ? "Sending…" : "Send reset link"}
+          </AuthPrimaryButton>
         </form>
       )}
-    </div>
+    </>
   );
 }

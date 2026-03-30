@@ -3,8 +3,7 @@
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AuthLogo } from "@/components/auth/auth-logo";
-import { AuthInput, AuthLabel, AuthPrimaryButton, AuthTitleBlock } from "@/components/auth/auth-form-ui";
+import { AuthInput, AuthLabel, AuthPrimaryButton } from "@/components/auth/auth-form-ui";
 import { PATH_APP_ENTRY } from "@/lib/auth/routes";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
@@ -56,97 +55,62 @@ export function LoginClient({ resetSuccess, callbackError }: Props) {
   }
 
   return (
-    <div className="mx-auto w-full max-w-[380px]">
-      <div className="mb-8">
-        <AuthLogo href="/" />
+    <form className="space-y-4" onSubmit={handleSubmit} noValidate>
+      {resetSuccess ? (
+        <div
+          role="status"
+          className="rounded-[10px] border border-[#BBF7D0] bg-[#F0FDF4] px-3 py-2 text-sm leading-5 text-[#166534]"
+        >
+          Your password was updated. You can log in with your new password.
+        </div>
+      ) : null}
+
+      {callbackHint ? (
+        <div
+          role="alert"
+          className="rounded-[10px] border border-[#FECACA] bg-[#FEF2F2] px-3 py-2 text-sm leading-5 text-[#B91C1C]"
+        >
+          {callbackHint}
+        </div>
+      ) : null}
+
+      {errorMessage ? (
+        <div
+          role="alert"
+          className="rounded-[10px] border border-[#FECACA] bg-[#FEF2F2] px-3 py-2 text-sm leading-5 text-[#B91C1C]"
+        >
+          {errorMessage}
+        </div>
+      ) : null}
+
+      <div>
+        <AuthLabel>Email</AuthLabel>
+        <AuthInput type="email" name="email" autoComplete="email" placeholder="you@company.com" required disabled={loading} />
       </div>
 
-      <AuthTitleBlock
-        title="Welcome back"
-        subtitle={
-          <>
-            Sign in to continue.{" "}
-            <Link
-              href="/signup"
-              className="font-semibold text-[#09090B] underline decoration-[#E4E4E7] underline-offset-4 transition-colors hover:decoration-[#A1A1AA]"
-            >
-              Create an account
-            </Link>
-            .
-          </>
-        }
-      />
-
-      <form className="space-y-4" onSubmit={handleSubmit} noValidate>
-        {resetSuccess ? (
-          <div
-            role="status"
-            className="rounded-[10px] border border-[#BBF7D0] bg-[#F0FDF4] px-3 py-2 text-sm leading-5 text-[#166534]"
-          >
-            Your password was updated. You can log in with your new password.
-          </div>
-        ) : null}
-
-        {callbackHint ? (
-          <div
-            role="alert"
-            className="rounded-[10px] border border-[#FECACA] bg-[#FEF2F2] px-3 py-2 text-sm leading-5 text-[#B91C1C]"
-          >
-            {callbackHint}
-          </div>
-        ) : null}
-
-        {errorMessage ? (
-          <div
-            role="alert"
-            className="rounded-[10px] border border-[#FECACA] bg-[#FEF2F2] px-3 py-2 text-sm leading-5 text-[#B91C1C]"
-          >
-            {errorMessage}
-          </div>
-        ) : null}
-
-        <div>
-          <AuthLabel>Email</AuthLabel>
-          <AuthInput type="email" name="email" autoComplete="email" placeholder="you@company.com" required disabled={loading} />
-        </div>
-
-        <div>
-          <AuthLabel>Password</AuthLabel>
-          <AuthInput
-            type="password"
-            name="password"
-            autoComplete="current-password"
-            placeholder="••••••••"
-            required
-            disabled={loading}
-          />
-        </div>
-
-        <div className="flex items-center justify-between pt-1">
-          <label className="flex items-center gap-2 text-sm text-[#52525B]">
-            <input
-              type="checkbox"
-              name="remember"
-              className="h-4 w-4 rounded border-[#D4D4D8] text-[#09090B] focus:ring-[#09090B]/20"
-              disabled={loading}
-            />
-            Remember me
-          </label>
-
+      <div>
+        <AuthLabel>Password</AuthLabel>
+        <AuthInput
+          type="password"
+          name="password"
+          autoComplete="current-password"
+          placeholder="••••••••"
+          required
+          disabled={loading}
+        />
+        <div className="mt-3 flex justify-end">
           <Link
             href="/forgot-password"
             className="text-sm font-semibold text-[#09090B] underline decoration-[#E4E4E7] underline-offset-4 transition-colors hover:decoration-[#A1A1AA]"
           >
-            Forgot password
+            Forgot password?
           </Link>
         </div>
+      </div>
 
-        <div className="pt-2">
-          <AuthPrimaryButton type="submit" disabled={loading}>
-            {loading ? "Signing in…" : "Log in"}
-          </AuthPrimaryButton>
-        </div>
-      </form>
-    </div>
+      <AuthPrimaryButton type="submit" disabled={loading}>
+        {loading ? "Signing in…" : "Log in"}
+      </AuthPrimaryButton>
+    </form>
   );
 }

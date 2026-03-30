@@ -1,14 +1,37 @@
 import type { ReactNode } from "react";
 
+import { AuthBrandMark } from "./auth-brand-mark";
+
 export function AuthVisualPanel({
+  mode = "marketing",
   title = "Market intelligence, refined.",
   subtitle = "Track, screen, and understand markets with a clean, focused workspace.",
   footer,
 }: {
+  mode?: "marketing" | "artwork";
   title?: string;
   subtitle?: string;
   footer?: ReactNode;
 }) {
+  if (mode === "artwork") {
+    return (
+      <div className="relative h-full w-full bg-[#09090B]">
+        <img
+          src="/auth-left-image.png"
+          alt=""
+          aria-hidden
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+        {/* Subtle premium darkening to improve logo contrast */}
+        <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-black/35 via-black/10 to-transparent" />
+
+        <div className="absolute left-6 top-6">
+          <AuthBrandMark className="h-7 w-7 filter invert" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="relative h-full w-full">
       {/* Background */}

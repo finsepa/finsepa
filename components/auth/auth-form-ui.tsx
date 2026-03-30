@@ -9,7 +9,7 @@ export function AuthTitleBlock({
 }) {
   return (
     <div className="mb-7">
-      <h1 className="text-2xl font-semibold tracking-tight text-[#09090B]">{title}</h1>
+      <h1 className="text-[26px] font-semibold tracking-tight text-[#09090B]">{title}</h1>
       <div className="mt-2 text-sm leading-6 text-[#52525B]">{subtitle}</div>
     </div>
   );
@@ -24,9 +24,9 @@ export function AuthInput(props: InputHTMLAttributes<HTMLInputElement>) {
     <input
       {...props}
       className={[
-        "h-10 w-full rounded-[10px] border border-[#E4E4E7] bg-white px-3 text-sm text-[#09090B]",
-        "shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] outline-none transition-all duration-100",
-        "placeholder:text-[#A1A1AA] focus:border-[#D4D4D8] focus:shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06),0_0_0_4px_rgba(9,9,11,0.08)]",
+        "h-10 w-full rounded-[10px] border border-[#E4E4E7] bg-[#F4F4F5] px-3 text-sm text-[#09090B]",
+        "outline-none transition-colors duration-100",
+        "placeholder:text-[#A1A1AA] focus:border-[#D4D4D8] focus:ring-0",
         "disabled:cursor-not-allowed disabled:opacity-60",
         props.className ?? "",
       ].join(" ")}
@@ -47,7 +47,7 @@ export function AuthPrimaryButton({
     <button
       type={type}
       disabled={disabled}
-      className="flex h-10 w-full items-center justify-center rounded-[10px] bg-[#09090B] px-4 text-sm font-semibold text-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.12)] transition-all duration-100 hover:bg-[#18181B] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-[#09090B]"
+      className="flex h-[44px] w-full items-center justify-center rounded-[10px] bg-[#000] px-4 text-sm font-semibold text-white transition-colors duration-100 hover:bg-[#111111] disabled:cursor-not-allowed disabled:opacity-60"
     >
       {children}
     </button>
