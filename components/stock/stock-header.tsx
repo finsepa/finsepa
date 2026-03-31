@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-import { useAnimatedScalar } from "@/components/chart/use-animated-scalar";
+import { useSpringTriplet } from "@/components/chart/use-spring-numbers";
 import { getStockDetailMetaFromTicker } from "@/lib/market/stock-detail-meta";
 import {
   formatHeaderMetaSegment,
@@ -50,9 +50,10 @@ export function StockHeader({
   const symbol = meta.ticker;
   const titleName = headerMeta?.fullName?.trim() ? headerMeta.fullName : meta.name;
 
-  const animPrice = useAnimatedScalar(price);
-  const animAbs = useAnimatedScalar(changeAbs);
-  const animPct = useAnimatedScalar(changePct);
+  const anim = useSpringTriplet(
+    { price, abs: changeAbs, pct: changePct },
+    { stiffness: 520, damping: 38, epsilon: 1e-4 },
+  );
 
   const hasChange = changePct != null && changeAbs != null && Number.isFinite(changePct) && Number.isFinite(changeAbs);
   const isPositive = hasChange ? changeAbs >= 0 : true;
@@ -130,16 +131,16 @@ export function StockHeader({
               chartHovering ? "scale-[1.01]" : "scale-100"
             }`}
           >
-            {chartLoading || animPrice == null ? "—" : `$${animPrice.toFixed(2)}`}
+            {chartLoading || anim.price == null ? "—" : `$${anim.price.toFixed(2)}`}
           </span>
           <span
             className={`text-[15px] font-medium tabular-nums transition-colors duration-200 ease-out ${
               hasChange ? (isPositive ? "text-[#16A34A]" : "text-[#DC2626]") : "text-[#71717A]"
             }`}
           >
-            {chartLoading || !hasChange || animAbs == null || animPct == null
+            {chartLoading || !hasChange || anim.abs == null || anim.pct == null
               ? "—"
-              : `${isPositive ? "+" : ""}${animAbs.toFixed(2)} (${isPositive ? "+" : ""}${animPct.toFixed(2)}%)`}
+              : `${isPositive ? "+" : ""}${anim.abs.toFixed(2)} (${isPositive ? "+" : ""}${anim.pct.toFixed(2)}%)`}
           </span>
           <span className="text-[13px] text-[#71717A]">{periodLabelOverride ?? periodLabel}</span>
         </div>

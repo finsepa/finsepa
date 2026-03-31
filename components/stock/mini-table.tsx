@@ -1,9 +1,11 @@
- "use client";
+"use client";
 
 import { ArrowUpDown } from "lucide-react";
 import { getStockDetailMetaFromTicker } from "@/lib/market/stock-detail-meta";
- import { useEffect, useMemo, useState } from "react";
- import type { StockPerformance } from "@/lib/market/stock-performance";
+import { useEffect, useMemo, useState } from "react";
+import type { StockPerformance } from "@/lib/market/stock-performance";
+import type { StockDetailHeaderMeta } from "@/lib/market/stock-header-meta";
+import { CompanyLogo } from "@/components/screener/company-logo";
 
  function PerfCellMaybe({ value }: { value: number | null }) {
    if (value == null || !Number.isFinite(value)) {
@@ -21,9 +23,19 @@ import { getStockDetailMetaFromTicker } from "@/lib/market/stock-detail-meta";
    );
  }
 
-export function MiniTable({ ticker }: { ticker: string }) {
+export function MiniTable({
+  ticker,
+  headerMeta,
+  headerMetaLoading,
+}: {
+  ticker: string;
+  headerMeta: StockDetailHeaderMeta | null;
+  headerMetaLoading: boolean;
+}) {
   const meta = getStockDetailMetaFromTicker(ticker);
   const sym = meta.ticker;
+  const displayName = headerMeta?.fullName?.trim() ? headerMeta.fullName : meta.name;
+  const logoUrl = headerMeta?.logoUrl?.trim() ? headerMeta.logoUrl : "";
    const [loading, setLoading] = useState(true);
    const [perf, setPerf] = useState<StockPerformance | null>(null);
 
@@ -79,11 +91,13 @@ export function MiniTable({ ticker }: { ticker: string }) {
           <tr className="border-b border-[#E4E4E7]">
             <td className="px-3 py-3">
               <div className="flex items-center gap-3">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#F4F4F5] text-[#09090B] text-[11px] font-bold border border-[#E4E4E7]">
-                  {sym.slice(0, 1)}
-                </div>
+                {headerMetaLoading ? (
+                  <div className="h-8 w-8 shrink-0 rounded-lg border border-[#E4E4E7] bg-[#F4F4F5] animate-pulse" aria-hidden />
+                ) : (
+                  <CompanyLogo name={displayName} logoUrl={logoUrl} />
+                )}
                 <div>
-                  <div className="text-[14px] font-semibold leading-5 text-[#09090B]">{meta.name}</div>
+                  <div className="text-[14px] font-semibold leading-5 text-[#09090B]">{displayName}</div>
                   <div className="text-[12px] leading-4 text-[#71717A]">{sym}</div>
                 </div>
               </div>

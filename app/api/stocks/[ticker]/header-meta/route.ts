@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { fetchEodhdFundamentalsJson, resolveEarningsDateDisplay } from "@/lib/market/eodhd-fundamentals";
+import { companyLogoUrlFromDomain } from "@/lib/screener/company-logo-url";
 import { normalizeWatchlistTicker, WatchlistValidationError } from "@/lib/watchlist/operations";
 import { countWatchlistEntriesForStockTicker } from "@/lib/watchlist/stock-watchlist-count";
 
@@ -36,6 +37,18 @@ export async function GET(_request: Request, { params }: Ctx) {
   const fullNameRaw = general?.Name ?? general?.CompanyName ?? general?.ShortName ?? null;
   const fullName = typeof fullNameRaw === "string" && fullNameRaw.trim() ? fullNameRaw.trim() : null;
 
+  const websiteRaw = general?.WebURL ?? general?.Website ?? general?.URL ?? null;
+  let logoUrl: string | null = null;
+  if (typeof websiteRaw === "string" && websiteRaw.trim()) {
+    try {
+      const u = new URL(websiteRaw.includes("://") ? websiteRaw : `https://${websiteRaw}`);
+      const host = u.hostname.replace(/^www\./, "").trim().toLowerCase();
+      if (host) logoUrl = companyLogoUrlFromDomain(host);
+    } catch {
+      // ignore invalid website URL
+    }
+  }
+
   const sectorRaw = general?.Sector ?? null;
   const sector = typeof sectorRaw === "string" && sectorRaw.trim() ? sectorRaw.trim() : null;
 
@@ -47,6 +60,7 @@ export async function GET(_request: Request, { params }: Ctx) {
   return NextResponse.json({
     ticker: routeTicker,
     fullName,
+    logoUrl,
     sector,
     industry,
     earningsDateDisplay,

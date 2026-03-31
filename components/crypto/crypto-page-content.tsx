@@ -10,6 +10,7 @@ import { PriceChart } from "@/components/chart/PriceChart";
 import { LogoSkeleton, SkeletonBox } from "@/components/markets/skeleton";
 import { ChartControls } from "@/components/stock/chart-controls";
 import { WatchlistStarButton } from "@/components/watchlist/watchlist-star-button";
+import { useSpringTriplet } from "@/components/chart/use-spring-numbers";
 import { cryptoWatchlistKey } from "@/lib/watchlist/constants";
 import type { CryptoAssetLinks, CryptoAssetRow } from "@/lib/market/crypto-asset";
 import type { StockChartRange } from "@/lib/market/stock-chart-types";
@@ -145,6 +146,11 @@ export function CryptoPageContent({ routeSymbol }: { routeSymbol: string }) {
     Number.isFinite(chartUi.displayChangeAbs);
   const changePositive = hasChartChange ? chartUi.displayChangeAbs! >= 0 : true;
 
+  const anim = useSpringTriplet(
+    { price: chartUi.displayPrice, abs: chartUi.displayChangeAbs, pct: chartUi.displayChangePct },
+    { stiffness: 520, damping: 38, epsilon: 1e-4 },
+  );
+
   useEffect(() => {
     let mounted = true;
     async function load() {
@@ -242,7 +248,7 @@ export function CryptoPageContent({ routeSymbol }: { routeSymbol: string }) {
         <div>
           <div className="flex flex-wrap items-baseline gap-2">
             <span className="text-[28px] font-semibold leading-9 tabular-nums text-[#09090B]">
-              {chartUi.loading || displayPrice == null ? "—" : formatCryptoUsd(displayPrice)}
+              {chartUi.loading || anim.price == null ? "—" : formatCryptoUsd(anim.price)}
             </span>
             <span
               className={`text-[15px] font-medium tabular-nums ${
@@ -251,7 +257,7 @@ export function CryptoPageContent({ routeSymbol }: { routeSymbol: string }) {
             >
               {chartUi.loading || !hasChartChange
                 ? "—"
-                : `${changePositive ? "+" : ""}${formatCryptoChangeAbs(chartUi.displayChangeAbs, displayPrice)} (${changePositive ? "+" : ""}${chartUi.displayChangePct!.toFixed(2)}%)`}
+                : `${changePositive ? "+" : ""}${formatCryptoChangeAbs(anim.abs, anim.price)} (${changePositive ? "+" : ""}${anim.pct!.toFixed(2)}%)`}
             </span>
             <span className="text-[13px] text-[#71717A]">{chartUi.periodLabelOverride ?? range}</span>
           </div>

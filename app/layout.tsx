@@ -11,7 +11,8 @@ export const metadata: Metadata = {
   title: "Finsepa",
   description: "Market intelligence platform",
   icons: {
-    icon: "/icon.png",
+    icon: [{ url: "/favicon.ico" }, { url: "/icon.png", type: "image/png" }],
+    apple: "/apple-icon.png",
   },
 };
 

@@ -1,7 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ColorType, LineSeries, LineType, createChart, type UTCTimestamp } from "lightweight-charts";
+import {
+  ColorType,
+  HistogramSeries,
+  LineSeries,
+  LineType,
+  createChart,
+  type IChartApi,
+  type ISeriesApi,
+  type MouseEventParams,
+  type UTCTimestamp,
+} from "lightweight-charts";
 
 import type { ChartingSeriesPoint } from "@/lib/market/charting-series-types";
 import {
@@ -29,6 +39,16 @@ function metricColor(id: ChartingMetricId): string {
   const i = CHARTING_METRIC_IDS.indexOf(id);
   const h = ((i < 0 ? 0 : i) * 47) % 360;
   return `hsl(${h} 52% 42%)`;
+}
+
+function withAlpha(cssColor: string, alpha: number): string {
+  const a = Math.max(0, Math.min(1, alpha));
+  const m = cssColor.match(/^hsl\((\d+)\s+(\d+)%\s+(\d+)%\)$/i);
+  if (!m) return cssColor;
+  const h = Number(m[1]);
+  const s = Number(m[2]);
+  const l = Number(m[3]);
+  return `hsla(${h} ${s}% ${l}% / ${a})`;
 }
 
 function scaleIdForKind(k: ChartingMetricKind): string {
@@ -83,6 +103,7 @@ function formatTableCell(kind: ChartingMetricKind, v: number | null): string {
 }
 
 export type ChartTimeRange = "1Y" | "2Y" | "3Y" | "5Y" | "10Y" | "all";
+export type ChartType = "line" | "bars";
 
 const TIME_RANGE_LABELS: Record<ChartTimeRange, string> = {
   "1Y": "1Y",
@@ -141,6 +162,32 @@ type Props = {
 
 const TIME_RANGE_ORDER: ChartTimeRange[] = ["1Y", "2Y", "3Y", "5Y", "10Y", "all"];
 
+const CHARTING_HEIGHT_STORAGE_KEY = "finsepa:chartingHeightPx";
+const CHARTING_HEIGHT_MIN = 320;
+const CHARTING_HEIGHT_MAX = 600;
+
+function clamp(n: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, n));
+}
+
+function formatPeriodLabel(periodEnd: string, periodMode: "annual" | "quarterly"): string {
+  const s = periodEnd.trim();
+  // Expected: YYYY-MM-DD
+  const year = s.slice(0, 4);
+  if (periodMode === "annual") return year && /^\d{4}$/.test(year) ? year : s;
+  const m = s.slice(5, 7);
+  const mm = /^\d{2}$/.test(m) ? Number(m) : NaN;
+  const q = Number.isFinite(mm) ? Math.min(4, Math.max(1, Math.floor((mm - 1) / 3) + 1)) : null;
+  return year && q ? `Q${q} ${year}` : s;
+}
+
+type HoverState = {
+  x: number;
+  time: UTCTimestamp;
+  periodLabel: string;
+  rows: Array<{ id: ChartingMetricId; label: string; value: string }>;
+} | null;
+
 export function StockChartingTab({ ticker, metricParam }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const pickerWrapRef = useRef<HTMLDivElement>(null);
@@ -148,12 +195,44 @@ export function StockChartingTab({ ticker, metricParam }: Props) {
 
   const [periodMode, setPeriodMode] = useState<"annual" | "quarterly">("annual");
   const [timeRange, setTimeRange] = useState<ChartTimeRange>("all");
+  const [chartType, setChartType] = useState<ChartType>("bars");
+  const [chartHeight, setChartHeight] = useState<number>(CHARTING_HEIGHT_MIN);
   const [points, setPoints] = useState<ChartingSeriesPoint[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<ChartingMetricId[]>(DEFAULT_METRICS);
+  const [hover, setHover] = useState<HoverState>(null);
 
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerQuery, setPickerQuery] = useState("");
+
+  const resizeDragRef = useRef<{
+    active: boolean;
+    startY: number;
+    startH: number;
+  } | null>(null);
+
+  const chartRef = useRef<IChartApi | null>(null);
+  const seriesByMetricRef = useRef<Map<ChartingMetricId, ISeriesApi<any>>>(new Map());
+  const hoverRafRef = useRef<number>(0);
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(CHARTING_HEIGHT_STORAGE_KEY);
+      const n = raw ? Number(raw) : NaN;
+      if (Number.isFinite(n)) setChartHeight(clamp(Math.round(n), CHARTING_HEIGHT_MIN, CHARTING_HEIGHT_MAX));
+      else setChartHeight(CHARTING_HEIGHT_MIN);
+    } catch {
+      setChartHeight(CHARTING_HEIGHT_MIN);
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(CHARTING_HEIGHT_STORAGE_KEY, String(chartHeight));
+    } catch {
+      // ignore
+    }
+  }, [chartHeight]);
 
   useEffect(() => {
     const m = parseChartingMetricParam(metricParam);
@@ -221,6 +300,16 @@ export function StockChartingTab({ ticker, metricParam }: Props) {
     [fullSeries, periodMode, timeRange],
   );
 
+  const timeToRow = useMemo(() => {
+    const m = new Map<number, ChartingSeriesPoint>();
+    for (const row of ordered) {
+      const t = Date.parse(row.periodEnd.includes("T") ? row.periodEnd : `${row.periodEnd}T12:00:00.000Z`);
+      if (!Number.isFinite(t)) continue;
+      m.set(Math.floor(t / 1000), row);
+    }
+    return m;
+  }, [ordered]);
+
   /** Metrics that have ≥1 plotted point in the current time range (for add + pruning selection). */
   const availableInRange = useMemo(() => {
     return CHARTING_METRIC_IDS.filter((id) => seriesData(ordered, id).length > 0);
@@ -286,7 +375,7 @@ export function StockChartingTab({ ticker, metricParam }: Props) {
 
     const chart = createChart(el, {
       width: el.clientWidth,
-      height: 320,
+      height: chartHeight,
       autoSize: false,
       layout: {
         background: { type: ColorType.Solid, color: "#00000000" },
@@ -307,9 +396,12 @@ export function StockChartingTab({ ticker, metricParam }: Props) {
         visible: false,
         borderVisible: false,
       },
-      timeScale: { borderVisible: false },
+      timeScale: { borderVisible: false, rightOffset: 0, barSpacing: chartType === "bars" ? 11 : 9 },
       crosshair: { vertLine: { labelVisible: false }, horzLine: { labelVisible: true } },
     });
+
+    chartRef.current = chart;
+    seriesByMetricRef.current = new Map();
 
     const usedScales = new Set<string>();
 
@@ -319,20 +411,41 @@ export function StockChartingTab({ ticker, metricParam }: Props) {
       const kind = CHARTING_METRIC_KIND[id];
       const scaleId = scaleIdForKind(kind);
       usedScales.add(scaleId);
-      const s = chart.addSeries(LineSeries, {
-        color: metricColor(id),
-        lineWidth: 2,
-        lineType: LineType.Curved,
-        priceScaleId: scaleId,
-        priceFormat: priceFormatForKind(kind),
-        title: CHARTING_METRIC_LABEL[id],
-      });
-      s.setData(data);
+      if (chartType === "bars") {
+        const barColor = withAlpha(metricColor(id), 0.55);
+        const s = chart.addSeries(HistogramSeries, {
+          color: barColor,
+          priceScaleId: scaleId,
+          priceFormat: priceFormatForKind(kind),
+          title: CHARTING_METRIC_LABEL[id],
+          // Overlay bars for multiple metrics; transparency helps readability.
+          // lightweight-charts does not support true grouped bars per timestamp.
+        });
+        s.setData(
+          data.map((d) => ({
+            time: d.time,
+            value: d.value,
+            color: barColor,
+          })),
+        );
+        seriesByMetricRef.current.set(id, s);
+      } else {
+        const s = chart.addSeries(LineSeries, {
+          color: metricColor(id),
+          lineWidth: 2,
+          lineType: LineType.Curved,
+          priceScaleId: scaleId,
+          priceFormat: priceFormatForKind(kind),
+          title: CHARTING_METRIC_LABEL[id],
+        });
+        s.setData(data);
+        seriesByMetricRef.current.set(id, s);
+      }
     }
 
     const scaleOpts = {
       borderVisible: false,
-      scaleMargins: { top: 0.1, bottom: 0.15 },
+      scaleMargins: { top: 0.07, bottom: 0.1 },
     };
     for (const sid of ["usd", "shares", "eps", "pct", "mult"]) {
       if (usedScales.has(sid)) {
@@ -342,18 +455,59 @@ export function StockChartingTab({ ticker, metricParam }: Props) {
 
     chart.timeScale().fitContent();
 
+    const onCrosshairMove = (param: MouseEventParams) => {
+      if (!param.point || param.point.x < 0 || param.time === undefined) {
+        if (hoverRafRef.current) cancelAnimationFrame(hoverRafRef.current);
+        hoverRafRef.current = requestAnimationFrame(() => setHover(null));
+        return;
+      }
+
+      const x = param.point.x;
+      const rawTime = param.time as UTCTimestamp;
+      const timeKey = typeof rawTime === "number" && Number.isFinite(rawTime) ? rawTime : null;
+      if (timeKey == null) {
+        if (hoverRafRef.current) cancelAnimationFrame(hoverRafRef.current);
+        hoverRafRef.current = requestAnimationFrame(() => setHover(null));
+        return;
+      }
+
+      const row = timeToRow.get(timeKey);
+      const periodLabel = row ? formatPeriodLabel(row.periodEnd, periodMode) : String(timeKey);
+
+      const rows: Array<{ id: ChartingMetricId; label: string; value: string }> = [];
+      for (const id of selected) {
+        const series = seriesByMetricRef.current.get(id);
+        if (!series) continue;
+        const d = param.seriesData.get(series as any) as any;
+        const v = d && typeof d === "object" && "value" in d && typeof d.value === "number" ? (d.value as number) : null;
+        rows.push({ id, label: CHARTING_METRIC_LABEL[id], value: formatTableCell(CHARTING_METRIC_KIND[id], v) });
+      }
+
+      if (hoverRafRef.current) cancelAnimationFrame(hoverRafRef.current);
+      hoverRafRef.current = requestAnimationFrame(() => {
+        setHover({ x, time: timeKey, periodLabel, rows });
+      });
+    };
+
+    chart.subscribeCrosshairMove(onCrosshairMove);
+
     const ro = new ResizeObserver(() => {
       const w = el.clientWidth;
-      if (w > 0) chart.resize(w, 320);
+      if (w > 0) chart.resize(w, chartHeight);
     });
     ro.observe(el);
-    chart.resize(el.clientWidth, 320);
+    chart.resize(el.clientWidth, chartHeight);
 
     return () => {
       ro.disconnect();
+      chart.unsubscribeCrosshairMove(onCrosshairMove);
       chart.remove();
+      chartRef.current = null;
+      seriesByMetricRef.current = new Map();
+      if (hoverRafRef.current) cancelAnimationFrame(hoverRafRef.current);
+      setHover(null);
     };
-  }, [ordered, selected, canPlot]);
+  }, [ordered, selected, canPlot, chartType, chartHeight, timeToRow, periodMode]);
 
   const empty = !loading && (!points || points.length === 0);
   const noMetricData = !loading && !empty && !canPlot;
@@ -381,6 +535,26 @@ export function StockChartingTab({ ticker, metricParam }: Props) {
               }`}
             >
               Quarterly
+            </button>
+          </div>
+          <div className="flex rounded-lg border border-[#E4E4E7] bg-white p-0.5 text-[12px]">
+            <button
+              type="button"
+              onClick={() => setChartType("line")}
+              className={`rounded-md px-2.5 py-1.5 font-medium transition-colors ${
+                chartType === "line" ? "bg-[#F4F4F5] text-[#09090B]" : "text-[#71717A] hover:text-[#09090B]"
+              }`}
+            >
+              Line
+            </button>
+            <button
+              type="button"
+              onClick={() => setChartType("bars")}
+              className={`rounded-md px-2.5 py-1.5 font-medium transition-colors ${
+                chartType === "bars" ? "bg-[#F4F4F5] text-[#09090B]" : "text-[#71717A] hover:text-[#09090B]"
+              }`}
+            >
+              Bars
             </button>
           </div>
           <div className="flex flex-wrap items-center gap-1 rounded-lg border border-[#E4E4E7] bg-white p-0.5 text-[12px]">
@@ -501,15 +675,89 @@ export function StockChartingTab({ ticker, metricParam }: Props) {
               No series data for the selected metrics on this symbol.
             </p>
           ) : (
-            <div ref={wrapRef} className="min-h-[320px] w-full overflow-hidden rounded-xl border border-[#E4E4E7] bg-white" />
+            <div className="relative w-full overflow-hidden rounded-xl bg-transparent">
+              <div ref={wrapRef} className="w-full" style={{ height: chartHeight }} />
+              {hover ? (
+                <>
+                  {/* Hover band */}
+                  <div
+                    className="pointer-events-none absolute inset-y-0"
+                    style={{
+                      left: `${Math.max(0, hover.x - 24)}px`,
+                      width: "48px",
+                      background: "rgba(9, 9, 11, 0.04)",
+                    }}
+                  />
+                  {/* Tooltip */}
+                  <div
+                    className="pointer-events-none absolute top-3 z-20 w-[240px] rounded-xl bg-[#09090B] px-3 py-2.5 text-white shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
+                    style={{
+                      left: `${clamp(hover.x + 12, 12, Math.max(12, (wrapRef.current?.clientWidth ?? 0) - 252))}px`,
+                    }}
+                    role="tooltip"
+                    aria-label="Chart tooltip"
+                  >
+                    <div className="text-[12px] font-semibold tracking-wide text-white/90">{hover.periodLabel}</div>
+                    <div className="mt-2 space-y-1">
+                      {hover.rows.map((r) => (
+                        <div key={r.id} className="flex items-baseline justify-between gap-3">
+                          <span className="text-[12px] text-white/70">{r.label}</span>
+                          <span className="text-[12px] font-semibold tabular-nums text-white">{r.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              ) : null}
+              <div
+                role="separator"
+                aria-label="Resize chart"
+                aria-orientation="vertical"
+                className="absolute inset-x-0 bottom-0 h-3 cursor-ns-resize bg-transparent"
+                onPointerDown={(e) => {
+                  if (e.button !== 0) return;
+                  const start = { active: true, startY: e.clientY, startH: chartHeight };
+                  resizeDragRef.current = start;
+                  try {
+                    (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
+                  } catch {
+                    // ignore
+                  }
+                  e.preventDefault();
+                }}
+                onPointerMove={(e) => {
+                  const st = resizeDragRef.current;
+                  if (!st || !st.active) return;
+                  const dy = e.clientY - st.startY;
+                  const next = clamp(Math.round(st.startH + dy), CHARTING_HEIGHT_MIN, CHARTING_HEIGHT_MAX);
+                  setChartHeight(next);
+                }}
+                onPointerUp={(e) => {
+                  const st = resizeDragRef.current;
+                  if (st) st.active = false;
+                  try {
+                    (e.currentTarget as HTMLDivElement).releasePointerCapture(e.pointerId);
+                  } catch {
+                    // ignore
+                  }
+                }}
+              >
+                <div className="pointer-events-none absolute left-1/2 top-1/2 h-0.5 w-12 -translate-x-1/2 -translate-y-1/2 rounded bg-[#E4E4E7]/80" />
+              </div>
+            </div>
           )}
-          <div className="overflow-x-auto rounded-xl border border-[#E4E4E7] bg-white">
-            <table className="w-full min-w-[480px] border-collapse text-[13px]">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[560px] border-collapse">
               <thead>
-                <tr className="border-b border-[#E4E4E7] bg-neutral-50/80">
-                  <th className="px-3 py-2 text-left font-medium text-[#71717A]">Period</th>
+                <tr className="border-t border-b border-[#E4E4E7] bg-white">
+                  <th className="px-4 py-3 text-left text-[14px] font-semibold leading-5 text-[#71717A]">
+                    Period
+                  </th>
                   {selected.map((id) => (
-                    <th key={id} className="px-3 py-2 text-right font-medium text-[#71717A]">
+                    <th
+                      key={id}
+                      className="px-4 py-3 text-right text-[14px] font-semibold leading-5 text-[#71717A]"
+                    >
                       {CHARTING_METRIC_LABEL[id]}
                     </th>
                   ))}
@@ -517,10 +765,18 @@ export function StockChartingTab({ ticker, metricParam }: Props) {
               </thead>
               <tbody>
                 {[...ordered].reverse().map((row) => (
-                  <tr key={row.periodEnd} className="border-b border-[#E4E4E7] last:border-0">
-                    <td className="px-3 py-1.5 text-[#09090B] tabular-nums">{row.periodEnd}</td>
+                  <tr
+                    key={row.periodEnd}
+                    className="border-b border-[#E4E4E7] transition-colors duration-75 hover:bg-neutral-50"
+                  >
+                    <td className="px-4 py-3 text-[14px] leading-5 tabular-nums text-[#09090B]">
+                      {row.periodEnd}
+                    </td>
                     {selected.map((id) => (
-                      <td key={id} className="px-3 py-1.5 text-right tabular-nums text-[#09090B]">
+                      <td
+                        key={id}
+                        className="px-4 py-3 text-right text-[14px] leading-5 tabular-nums text-[#09090B]"
+                      >
                         {formatTableCell(CHARTING_METRIC_KIND[id], rowValue(row, id))}
                       </td>
                     ))}

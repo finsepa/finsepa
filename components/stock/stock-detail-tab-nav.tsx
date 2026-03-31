@@ -1,10 +1,11 @@
 "use client";
 
-export type StockDetailTabId = "overview" | "charting" | "profile";
+export type StockDetailTabId = "overview" | "charting" | "peers" | "profile";
 
 const TABS: { id: StockDetailTabId; label: string }[] = [
   { id: "overview", label: "Overview" },
   { id: "charting", label: "Charting" },
+  { id: "peers", label: "Peers" },
   { id: "profile", label: "Profile" },
 ];
 

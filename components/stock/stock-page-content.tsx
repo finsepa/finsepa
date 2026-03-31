@@ -8,6 +8,7 @@ import type { StockDetailHeaderMeta } from "@/lib/market/stock-header-meta";
 import { chartingMetricToParam, type ChartingMetricId } from "@/lib/market/stock-charting-metrics";
 import { StockDetailTabNav, type StockDetailTabId } from "./stock-detail-tab-nav";
 import { StockChartingTab } from "./stock-charting-tab";
+import { StockPeersTab } from "./stock-peers-tab";
 import { StockProfileTab } from "./stock-profile-tab";
 import { StockHeader } from "./stock-header";
 import { ChartControls } from "./chart-controls";
@@ -19,6 +20,7 @@ import { WATCHLIST_MUTATED_EVENT } from "@/lib/watchlist/constants";
 
 function parseStockHeaderMetaPayload(json: {
   fullName?: unknown;
+  logoUrl?: unknown;
   sector?: unknown;
   industry?: unknown;
   earningsDateDisplay?: unknown;
@@ -26,6 +28,7 @@ function parseStockHeaderMetaPayload(json: {
 }): StockDetailHeaderMeta {
   return {
     fullName: typeof json.fullName === "string" ? json.fullName : null,
+    logoUrl: typeof json.logoUrl === "string" ? json.logoUrl : null,
     sector: typeof json.sector === "string" ? json.sector : null,
     industry: typeof json.industry === "string" ? json.industry : null,
     earningsDateDisplay: typeof json.earningsDateDisplay === "string" ? json.earningsDateDisplay : null,
@@ -34,7 +37,7 @@ function parseStockHeaderMetaPayload(json: {
 }
 
 function tabFromSearchParam(raw: string | null): StockDetailTabId | null {
-  if (raw === "overview" || raw === "charting" || raw === "profile") return raw;
+  if (raw === "overview" || raw === "charting" || raw === "peers" || raw === "profile") return raw;
   return null;
 }
 
@@ -180,7 +183,7 @@ export function StockPageContent({ routeTicker }: { routeTicker?: string }) {
         <>
           <ChartControls activeRange={range} onRangeChange={setRange} />
           <PriceChart kind="stock" symbol={ticker} range={range} onDisplayChange={onChartDisplay} />
-          <MiniTable ticker={ticker} />
+          <MiniTable ticker={ticker} headerMeta={headerMeta} headerMetaLoading={headerMetaLoading} />
           <div className="pt-2">
             <KeyStats ticker={ticker} onRevenueProfitMetricClick={openChartingWithMetric} />
           </div>
@@ -190,6 +193,8 @@ export function StockPageContent({ routeTicker }: { routeTicker?: string }) {
         </>
       ) : activeTab === "charting" ? (
         <StockChartingTab ticker={ticker} metricParam={chartingMetricParam} />
+      ) : activeTab === "peers" ? (
+        <StockPeersTab ticker={ticker} />
       ) : (
         <StockProfileTab ticker={ticker} />
       )}

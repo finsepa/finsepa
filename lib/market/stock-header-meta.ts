@@ -2,6 +2,8 @@
 export type StockDetailHeaderMeta = {
   /** Official full company name when available (e.g. "NVIDIA Corporation"). */
   fullName: string | null;
+  /** Domain favicon URL derived from fundamentals website (may be null). */
+  logoUrl: string | null;
   sector: string | null;
   industry: string | null;
   earningsDateDisplay: string | null;

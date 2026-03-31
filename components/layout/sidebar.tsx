@@ -31,7 +31,7 @@ const calendarItems = [
 ];
 
 const dataItems = [
-  { label: "Macro", icon: Compass, href: "/macro", available: false },
+  { label: "Macro", icon: Compass, href: "/macro", available: true },
   { label: "Charting", icon: ChartColumn, href: "/charting", available: false },
   { label: "Comparison", icon: PanelsTopLeft, href: "/comparison", available: false },
 ];
