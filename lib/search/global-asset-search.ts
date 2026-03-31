@@ -1,11 +1,11 @@
 import "server-only";
 
-import { TOP10_META } from "@/lib/screener/top10-config";
 import { getStockDetailMetaFromTicker } from "@/lib/market/stock-detail-meta";
 import { fetchEodhdSearch, type EodhdSearchRow } from "@/lib/market/eodhd-search";
 import { ALL_CRYPTO_METAS, toSupportedCryptoTicker } from "@/lib/market/eodhd-crypto";
 import { INDEX_TOP10 } from "@/lib/market/indices-top10";
 import { getCryptoLogoUrl } from "@/lib/crypto/crypto-logo-url";
+import { getTop500Universe } from "@/lib/screener/top500-companies";
 import type { SearchAssetItem, SearchScope } from "@/lib/search/search-types";
 
 function norm(s: string): string {
@@ -31,6 +31,29 @@ function stockItemFromTicker(ticker: string, nameFallback?: string): SearchAsset
     route: `/stock/${encodeURIComponent(meta.ticker)}`,
     marketLabel: "US equity",
   };
+}
+
+async function top500StockMatches(q: string, max = 40): Promise<SearchAssetItem[]> {
+  const universe = await getTop500Universe();
+  const n = norm(q);
+  if (!n) return [];
+
+  const hits = universe.filter((u) => norm(u.name).includes(n) || norm(u.ticker).includes(n));
+  hits.sort((a, b) => b.marketCapUsd - a.marketCapUsd || a.ticker.localeCompare(b.ticker));
+
+  return hits.slice(0, max).map((u) => {
+    const t = u.ticker.trim().toUpperCase();
+    return {
+      id: `stock:${t}`,
+      type: "stock",
+      symbol: t,
+      name: u.name,
+      subtitle: "US",
+      logoUrl: null,
+      route: `/stock/${encodeURIComponent(t)}`,
+      marketLabel: "US equity",
+    };
+  });
 }
 
 function indexItem(name: string, symbol: string): SearchAssetItem {
@@ -70,6 +93,7 @@ function parseEodhdRow(row: EodhdSearchRow): SearchAssetItem | null {
   const code = typeof row.Code === "string" ? row.Code.trim() : "";
   const name = typeof row.Name === "string" ? row.Name.trim() : "";
   const typ = typeof row.Type === "string" ? row.Type : "";
+  const exch = typeof row.Exchange === "string" ? row.Exchange.trim().toUpperCase() : "";
 
   if (!code || !name) return null;
 
@@ -87,6 +111,12 @@ function parseEodhdRow(row: EodhdSearchRow): SearchAssetItem | null {
     if (isEtfOrFund(typ)) return null;
     const ticker = code.replace(/\.US$/i, "").replace(/-/g, ".");
     return stockItemFromTicker(ticker, name);
+  }
+
+  // EODHD Search can return US stocks as bare tickers with Exchange="US" (e.g. HOOD).
+  if (!code.includes(".") && exch === "US") {
+    if (isEtfOrFund(typ)) return null;
+    return stockItemFromTicker(code.replace(/-/g, "."), name);
   }
 
   const dot = code.lastIndexOf(".");
@@ -122,37 +152,103 @@ export async function globalAssetSearch(query: string, scope: SearchScope): Prom
   const q = query.trim();
   if (q.length < 1) return [];
 
-  const seen = new Set<string>();
-  const ordered: SearchAssetItem[] = [];
+  const n = norm(q);
 
-  const addFiltered = (item: SearchAssetItem | null) => {
-    if (!item) return;
-    if (scope !== "all" && item.type !== scope) return;
-    if (seen.has(item.id)) return;
-    seen.add(item.id);
-    ordered.push(item);
-  };
+  type Scored = { item: SearchAssetItem; score: number; marketCapUsd: number | null };
+  const candidates: Scored[] = [];
 
-  if (scope === "all" || scope === "crypto") {
-    for (const c of localCryptoMatches(q)) addFiltered(c);
+  function scoreItem(name: string, symbol: string, type: SearchAssetItem["type"]): number {
+    const nn = n;
+    const sym = norm(symbol);
+    const nm = norm(name);
+    if (!nn) return 0;
+
+    const symExact = sym === nn;
+    const symPrefix = sym.startsWith(nn);
+    const symHit = sym.includes(nn);
+    const nameExact = nm === nn;
+    const namePrefix = nm.startsWith(nn);
+    const nameHit = nm.includes(nn);
+
+    let s = 0;
+    if (symExact) s = 1000;
+    else if (symPrefix) s = 850;
+    else if (symHit) s = 750;
+    else if (nameExact) s = 700;
+    else if (namePrefix) s = 650;
+    else if (nameHit) s = 550;
+
+    // Small bias so major index queries don't get drowned by unrelated stocks.
+    if (type === "index") s += 10;
+    return s;
   }
+
+  // Local indices & crypto (fast).
   if (scope === "all" || scope === "indices") {
-    for (const i of localIndexMatches(q)) addFiltered(i);
+    for (const i of localIndexMatches(q)) {
+      candidates.push({ item: i, score: scoreItem(i.name, i.symbol, i.type), marketCapUsd: null });
+    }
   }
-
-  const remote = await fetchEodhdSearch(q, scope === "all" ? 50 : 40);
-  for (const row of remote) {
-    addFiltered(parseEodhdRow(row));
-  }
-
-  if (scope === "stocks" || scope === "all") {
-    for (const ticker of Object.keys(TOP10_META) as (keyof typeof TOP10_META)[]) {
-      const meta = TOP10_META[ticker];
-      if (matchesQuery(meta.name, ticker, q)) {
-        addFiltered(stockItemFromTicker(ticker, meta.name));
-      }
+  if (scope === "all" || scope === "crypto") {
+    for (const c of localCryptoMatches(q)) {
+      candidates.push({ item: c, score: scoreItem(c.name, c.symbol, c.type), marketCapUsd: null });
     }
   }
 
-  return ordered;
+  // Stocks from our top-500 universe (consistent with Screener).
+  if (scope === "all" || scope === "stocks") {
+    const universe = await getTop500Universe();
+    const hits = universe.filter((u) => norm(u.name).includes(n) || norm(u.ticker).includes(n));
+    hits.sort((a, b) => b.marketCapUsd - a.marketCapUsd || a.ticker.localeCompare(b.ticker));
+    const max = scope === "stocks" ? 80 : 40;
+    for (const u of hits.slice(0, max)) {
+      const t = u.ticker.trim().toUpperCase();
+      const item: SearchAssetItem = {
+        id: `stock:${t}`,
+        type: "stock",
+        symbol: t,
+        name: u.name,
+        subtitle: "US",
+        logoUrl: null,
+        route: `/stock/${encodeURIComponent(t)}`,
+        marketLabel: "US equity",
+      };
+      candidates.push({ item, score: scoreItem(item.name, item.symbol, item.type), marketCapUsd: u.marketCapUsd });
+    }
+  }
+
+  // Remote EODHD search (broad coverage across supported universe).
+  const remote = await fetchEodhdSearch(q, scope === "all" ? 60 : 50);
+  for (const row of remote) {
+    const item = parseEodhdRow(row);
+    if (!item) continue;
+    if (scope !== "all" && item.type !== scope) continue;
+    candidates.push({ item, score: scoreItem(item.name, item.symbol, item.type), marketCapUsd: null });
+  }
+
+  // De-dupe by id while keeping the best scoring version.
+  const best = new Map<string, Scored>();
+  for (const c of candidates) {
+    const prev = best.get(c.item.id);
+    if (!prev) best.set(c.item.id, c);
+    else if (c.score > prev.score) best.set(c.item.id, c);
+    else if (c.score === prev.score) {
+      const mcA = c.marketCapUsd ?? -1;
+      const mcB = prev.marketCapUsd ?? -1;
+      if (mcA > mcB) best.set(c.item.id, c);
+    }
+  }
+
+  const out = Array.from(best.values())
+    .filter((c) => c.score > 0)
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      const mcA = a.marketCapUsd ?? -1;
+      const mcB = b.marketCapUsd ?? -1;
+      if (mcB !== mcA) return mcB - mcA;
+      return a.item.symbol.localeCompare(b.item.symbol);
+    })
+    .map((c) => c.item);
+
+  return out.slice(0, scope === "stocks" ? 60 : 50);
 }

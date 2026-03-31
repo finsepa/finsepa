@@ -18,12 +18,14 @@ import type { StockChartRange } from "@/lib/market/stock-chart-types";
 import { WATCHLIST_MUTATED_EVENT } from "@/lib/watchlist/constants";
 
 function parseStockHeaderMetaPayload(json: {
+  fullName?: unknown;
   sector?: unknown;
   industry?: unknown;
   earningsDateDisplay?: unknown;
   watchlistCount?: unknown;
 }): StockDetailHeaderMeta {
   return {
+    fullName: typeof json.fullName === "string" ? json.fullName : null,
     sector: typeof json.sector === "string" ? json.sector : null,
     industry: typeof json.industry === "string" ? json.industry : null,
     earningsDateDisplay: typeof json.earningsDateDisplay === "string" ? json.earningsDateDisplay : null,

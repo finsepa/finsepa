@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { fetchEodhdFundamentalsHighlights } from "@/lib/market/eodhd-fundamentals";
+import { fetchEodhdFundamentalsJson, resolveEarningsDateDisplay } from "@/lib/market/eodhd-fundamentals";
 import { normalizeWatchlistTicker, WatchlistValidationError } from "@/lib/watchlist/operations";
 import { countWatchlistEntriesForStockTicker } from "@/lib/watchlist/stock-watchlist-count";
 
@@ -19,16 +19,37 @@ export async function GET(_request: Request, { params }: Ctx) {
     return NextResponse.json({ error: "Invalid ticker." }, { status: 400 });
   }
 
-  const [fund, watchlistCount] = await Promise.all([
-    fetchEodhdFundamentalsHighlights(routeTicker),
+  const [root, watchlistCount] = await Promise.all([
+    fetchEodhdFundamentalsJson(routeTicker),
     countWatchlistEntriesForStockTicker(routeTicker),
   ]);
 
+  const general =
+    root && typeof root === "object" && root.General && typeof root.General === "object"
+      ? (root.General as Record<string, unknown>)
+      : null;
+  const highlights =
+    root && typeof root === "object" && root.Highlights && typeof root.Highlights === "object"
+      ? (root.Highlights as Record<string, unknown>)
+      : null;
+
+  const fullNameRaw = general?.Name ?? general?.CompanyName ?? general?.ShortName ?? null;
+  const fullName = typeof fullNameRaw === "string" && fullNameRaw.trim() ? fullNameRaw.trim() : null;
+
+  const sectorRaw = general?.Sector ?? null;
+  const sector = typeof sectorRaw === "string" && sectorRaw.trim() ? sectorRaw.trim() : null;
+
+  const industryRaw = general?.Industry ?? null;
+  const industry = typeof industryRaw === "string" && industryRaw.trim() ? industryRaw.trim() : null;
+
+  const earningsDateDisplay = root ? resolveEarningsDateDisplay(highlights, root) : null;
+
   return NextResponse.json({
     ticker: routeTicker,
-    sector: fund?.sector ?? null,
-    industry: fund?.industry ?? null,
-    earningsDateDisplay: fund?.nextEarningsDateDisplay ?? null,
+    fullName,
+    sector,
+    industry,
+    earningsDateDisplay,
     watchlistCount,
   });
 }

@@ -20,13 +20,19 @@ function InitialsMark({ name }: { name: string }) {
 
 export function CompanyLogo({ name, logoUrl }: { name: string; logoUrl: string }) {
   const [failed, setFailed] = useState(false);
-  if (failed) {
+  const normalizedLogoUrl = typeof logoUrl === "string" ? logoUrl.trim() : "";
+  const hasLogoUrl =
+    normalizedLogoUrl.length > 0 &&
+    // Accept absolute URLs, protocol-relative, or root-relative paths.
+    (/^https?:\/\//i.test(normalizedLogoUrl) || normalizedLogoUrl.startsWith("//") || normalizedLogoUrl.startsWith("/"));
+
+  if (failed || !hasLogoUrl) {
     return <InitialsMark name={name} />;
   }
   return (
     // eslint-disable-next-line @next/next/no-img-element -- dynamic remote favicon with onError fallback
     <img
-      src={logoUrl}
+      src={normalizedLogoUrl}
       alt=""
       width={32}
       height={32}

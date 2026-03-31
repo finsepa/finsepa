@@ -48,7 +48,7 @@ export function StockHeader({
 }: Props) {
   const meta = getStockDetailMetaFromTicker(ticker);
   const symbol = meta.ticker;
-  const titleName = meta.name;
+  const titleName = headerMeta?.fullName?.trim() ? headerMeta.fullName : meta.name;
 
   const animPrice = useAnimatedScalar(price);
   const animAbs = useAnimatedScalar(changeAbs);
@@ -91,7 +91,9 @@ export function StockHeader({
           ) : null}
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-[20px] font-semibold leading-7 text-[#09090B]">{titleName}</h1>
+              <h1 className="text-[20px] font-semibold leading-7 text-[#09090B] [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical] overflow-hidden break-words">
+                {titleName}
+              </h1>
               <span className="text-[14px] font-medium text-[#71717A]">{symbol}</span>
             </div>
             {headerMetaLoading ? (

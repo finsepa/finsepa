@@ -1,0 +1,44 @@
+import "server-only";
+
+import { cache } from "react";
+import { unstable_cache } from "next/cache";
+
+import { fetchEodhdTopByMarketCap } from "@/lib/market/eodhd-screener";
+
+export type TopCompanyUniverseRow = {
+  ticker: string;
+  name: string;
+  marketCapUsd: number;
+};
+
+async function buildTop500UniverseUncached(): Promise<TopCompanyUniverseRow[]> {
+  const pages = [0, 100, 200, 300, 400];
+  const settled = await Promise.allSettled(pages.map((offset) => fetchEodhdTopByMarketCap({ limit: 100, offset })));
+
+  const combined: TopCompanyUniverseRow[] = [];
+  for (const s of settled) {
+    if (s.status !== "fulfilled") continue;
+    for (const r of s.value) {
+      combined.push({ ticker: r.ticker, name: r.name, marketCapUsd: r.marketCapUsd });
+    }
+  }
+
+  // De-dupe by ticker (provider occasionally repeats due to listing quirks).
+  const byTicker = new Map<string, TopCompanyUniverseRow>();
+  for (const r of combined) {
+    const prev = byTicker.get(r.ticker);
+    if (!prev || r.marketCapUsd > prev.marketCapUsd) byTicker.set(r.ticker, r);
+  }
+
+  const out = Array.from(byTicker.values());
+  out.sort((a, b) => b.marketCapUsd - a.marketCapUsd || a.ticker.localeCompare(b.ticker));
+  return out.slice(0, 500);
+}
+
+const getTop500UniverseData = unstable_cache(buildTop500UniverseUncached, ["screener-top500-universe-v1"], {
+  revalidate: 60 * 60 * 12, // 12h
+});
+
+/** Cached across requests; returns exactly 500 tickers when available. */
+export const getTop500Universe = cache(async () => getTop500UniverseData());
+

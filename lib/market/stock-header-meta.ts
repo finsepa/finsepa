@@ -1,5 +1,7 @@
 /** Normalized company metadata for the stock detail header (API + UI). */
 export type StockDetailHeaderMeta = {
+  /** Official full company name when available (e.g. "NVIDIA Corporation"). */
+  fullName: string | null;
   sector: string | null;
   industry: string | null;
   earningsDateDisplay: string | null;

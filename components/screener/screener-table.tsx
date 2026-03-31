@@ -55,7 +55,7 @@ function TrendSparkline({ points, positive }: { points: number[]; positive: bool
 
 const colLayout = "grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr_1fr_80px_96px] gap-x-2";
 
-export function ScreenerTable({ rows }: { rows: ScreenerTableRow[] }) {
+export function ScreenerTable({ rows, rankOffset = 0 }: { rows: ScreenerTableRow[]; rankOffset?: number }) {
   const { watched, loaded, toggleTicker } = useWatchlist();
 
   return (
@@ -76,7 +76,9 @@ export function ScreenerTable({ rows }: { rows: ScreenerTableRow[] }) {
 
       {/* Rows */}
       {rows.map((item, index) => {
-        const trendPositive = item.trend[item.trend.length - 1] >= item.trend[0];
+        const first = item.trend[0];
+        const last = item.trend[item.trend.length - 1];
+        const trendPositive = first != null && last != null ? last >= first : item.change1D >= 0;
         return (
           <div
             key={item.ticker}
@@ -96,7 +98,9 @@ export function ScreenerTable({ rows }: { rows: ScreenerTableRow[] }) {
               className="contents"
               aria-label={`Open ${item.name} (${item.ticker})`}
             >
-              <div className="text-center text-[14px] font-semibold leading-5 tabular-nums text-[#71717A]">{index + 1}</div>
+              <div className="text-center text-[14px] font-semibold leading-5 tabular-nums text-[#71717A]">
+                {rankOffset + index + 1}
+              </div>
 
               <div className="flex min-w-0 items-center gap-3 pr-4">
                 <CompanyLogo name={item.name} logoUrl={item.logoUrl} />
@@ -119,7 +123,13 @@ export function ScreenerTable({ rows }: { rows: ScreenerTableRow[] }) {
               <div className="text-center font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B]">{item.pe}</div>
 
               <div className="flex items-center">
-                <TrendSparkline points={item.trend} positive={trendPositive} />
+                {item.trend.length ? (
+                  <TrendSparkline points={item.trend} positive={trendPositive} />
+                ) : (
+                  <span className="inline-flex h-8 w-20 items-center justify-center">
+                    <span className="h-8 w-20 rounded-md bg-[#E4E4E7]" />
+                  </span>
+                )}
               </div>
             </Link>
           </div>

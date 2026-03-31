@@ -22,7 +22,7 @@ const soonBadgeClass =
 const marketItems = [
   { label: "Screener", icon: Globe, href: "/screener", available: true },
   { label: "Heatmaps", icon: LayoutGrid, href: "/heatmaps", available: false },
-  { label: "News", icon: Newspaper, href: "/news", available: false },
+  { label: "News", icon: Newspaper, href: "/news", available: true },
 ];
 
 const calendarItems = [
