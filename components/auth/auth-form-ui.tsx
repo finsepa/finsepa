@@ -60,14 +60,20 @@ export function AuthPrimaryButton({
 export function AuthSecondaryButton({
   children,
   type = "button",
+  disabled,
+  onClick,
 }: {
   children: ReactNode;
   type?: "button" | "submit" | "reset";
+  disabled?: boolean;
+  onClick?: () => void;
 }) {
   return (
     <button
       type={type}
-      className="flex h-10 w-full items-center justify-center gap-2 rounded-[10px] border border-[#E4E4E7] bg-white px-4 text-sm font-semibold text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5]"
+      disabled={disabled}
+      onClick={onClick}
+      className="flex h-10 w-full items-center justify-center gap-2 rounded-[10px] border border-[#E4E4E7] bg-white px-4 text-sm font-semibold text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5] disabled:cursor-not-allowed disabled:opacity-60"
     >
       {children}
     </button>

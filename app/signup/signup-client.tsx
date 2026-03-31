@@ -4,13 +4,49 @@ import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
-import { AuthInput, AuthLabel, AuthPrimaryButton } from "@/components/auth/auth-form-ui";
+import { AuthDivider, AuthInput, AuthLabel, AuthPrimaryButton, AuthSecondaryButton } from "@/components/auth/auth-form-ui";
+import { PATH_APP_ENTRY, PATH_AUTH_CALLBACK } from "@/lib/auth/routes";
+
+function GoogleMark() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4">
+      <path
+        fill="#EA4335"
+        d="M12 10.2v3.9h5.4c-.2 1.3-1.6 3.8-5.4 3.8-3.2 0-5.9-2.7-5.9-5.9S8.8 6.1 12 6.1c1.8 0 3 .8 3.7 1.4l2.5-2.4C16.8 3.8 14.7 3 12 3 7 3 3 7 3 12s4 9 9 9c5.2 0 8.6-3.7 8.6-8.9 0-.6-.1-1-.1-1.4H12z"
+      />
+    </svg>
+  );
+}
 
 export function SignupClient() {
   const router = useRouter();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isDuplicateEmail, setIsDuplicateEmail] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  async function handleGoogle() {
+    setErrorMessage(null);
+    setIsDuplicateEmail(false);
+    if (loading) return;
+    setLoading(true);
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const origin = window.location.origin;
+      const redirectTo = `${origin}${PATH_AUTH_CALLBACK}?next=${encodeURIComponent(PATH_APP_ENTRY)}`;
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo },
+      });
+      if (error) {
+        setErrorMessage(error.message);
+        setLoading(false);
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Something went wrong. Please try again.";
+      setErrorMessage(message);
+      setLoading(false);
+    }
+  }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -84,6 +120,13 @@ export function SignupClient() {
 
   return (
     <form className="space-y-4" onSubmit={handleSubmit} noValidate>
+      <AuthSecondaryButton onClick={handleGoogle} disabled={loading}>
+        <GoogleMark />
+        {loading ? "Redirecting…" : "Continue with Google"}
+      </AuthSecondaryButton>
+
+      <AuthDivider />
+
       {errorMessage ? (
         <div
           role="alert"

@@ -3,8 +3,8 @@
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AuthInput, AuthLabel, AuthPrimaryButton } from "@/components/auth/auth-form-ui";
-import { PATH_APP_ENTRY } from "@/lib/auth/routes";
+import { AuthDivider, AuthInput, AuthLabel, AuthPrimaryButton, AuthSecondaryButton } from "@/components/auth/auth-form-ui";
+import { PATH_APP_ENTRY, PATH_AUTH_CALLBACK } from "@/lib/auth/routes";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 const CALLBACK_ERROR_MESSAGES: Record<string, string> = {
@@ -18,12 +18,48 @@ type Props = {
   callbackError?: string | null;
 };
 
+function GoogleMark() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4">
+      <path
+        fill="#EA4335"
+        d="M12 10.2v3.9h5.4c-.2 1.3-1.6 3.8-5.4 3.8-3.2 0-5.9-2.7-5.9-5.9S8.8 6.1 12 6.1c1.8 0 3 .8 3.7 1.4l2.5-2.4C16.8 3.8 14.7 3 12 3 7 3 3 7 3 12s4 9 9 9c5.2 0 8.6-3.7 8.6-8.9 0-.6-.1-1-.1-1.4H12z"
+      />
+      <path fill="#34A853" d="M3.9 7.3l3.2 2.3C7.9 7.8 9.8 6.1 12 6.1c1.8 0 3 .8 3.7 1.4l2.5-2.4C16.8 3.8 14.7 3 12 3c-3.5 0-6.5 2-8.1 4.3z" opacity=".001" />
+    </svg>
+  );
+}
+
 export function LoginClient({ resetSuccess, callbackError }: Props) {
   const router = useRouter();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const callbackHint = callbackError ? CALLBACK_ERROR_MESSAGES[callbackError] ?? "Something went wrong. Please try again." : null;
+
+  async function handleGoogle() {
+    setErrorMessage(null);
+    if (loading) return;
+    setLoading(true);
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const origin = window.location.origin;
+      const redirectTo = `${origin}${PATH_AUTH_CALLBACK}?next=${encodeURIComponent(PATH_APP_ENTRY)}`;
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo },
+      });
+      if (error) {
+        setErrorMessage(error.message);
+        setLoading(false);
+      }
+      // On success, Supabase redirects away; no further action needed here.
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Something went wrong. Please try again.";
+      setErrorMessage(message);
+      setLoading(false);
+    }
+  }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -56,6 +92,13 @@ export function LoginClient({ resetSuccess, callbackError }: Props) {
 
   return (
     <form className="space-y-4" onSubmit={handleSubmit} noValidate>
+      <AuthSecondaryButton onClick={handleGoogle} disabled={loading}>
+        <GoogleMark />
+        {loading ? "Redirecting…" : "Continue with Google"}
+      </AuthSecondaryButton>
+
+      <AuthDivider />
+
       {resetSuccess ? (
         <div
           role="status"
