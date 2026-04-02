@@ -2,6 +2,8 @@ import "server-only";
 
 import { unstable_cache } from "next/cache";
 
+import { REVALIDATE_HOT } from "@/lib/data/cache-policy";
+
 import { getEodhdApiKey } from "@/lib/env/server";
 import type { StockNewsArticle } from "@/lib/market/stock-news-types";
 import { extractImageUrlFromPlainText, pickBestImageUrl } from "@/lib/market/stock-news-images";
@@ -137,6 +139,6 @@ export async function loadStockNewsUncached(ticker: string): Promise<StockNewsAr
 
 export const getStockNews = unstable_cache(
   async (ticker: string) => loadStockNewsUncached(ticker),
-  ["stock-news-v4"],
-  { revalidate: 60 },
+  ["stock-news-v5"],
+  { revalidate: REVALIDATE_HOT },
 );

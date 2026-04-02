@@ -2,16 +2,24 @@ import "server-only";
 
 import { unstable_cache } from "next/cache";
 
+import { REVALIDATE_HOT_FAST } from "@/lib/data/cache-policy";
 import { fetchEodhdEodDaily } from "@/lib/market/eodhd-eod";
-import { fetchEodhdIntraday } from "@/lib/market/eodhd-intraday";
 import { MARKET_INDICES_TODAY, type MarketIndexConfig } from "@/lib/screener/indices-config";
 
 export type IndexCardData = {
   name: string;
-  price: number;
-  changePercent1D: number;
-  sparklineToday: number[];
+  price: number | null;
+  changePercent1D: number | null;
+  sparklineToday: number[] | null;
 };
+
+// Enable real EODHD fetches only for SPX + NDX.
+// Other cards are placeholders and must not trigger provider calls.
+const ENABLE_REAL_INDICES_EODHD_SYMBOLS = new Set<string>(["GSPC.INDX", "NDX.INDX"]);
+
+function emptyIndexCard(name: string): IndexCardData {
+  return { name, price: null, changePercent1D: null, sparklineToday: [] };
+}
 
 function toUtcDateStr(d: Date): string {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())).toISOString().slice(0, 10);
@@ -32,43 +40,21 @@ function sampleSeries(series: number[], targetPoints: number): number[] {
   return out;
 }
 
-async function buildIndexCard(config: MarketIndexConfig): Promise<IndexCardData> {
+async function buildIndexCardDailyOnly(config: MarketIndexConfig): Promise<IndexCardData> {
   const now = new Date();
-  const toUnix = Math.floor(now.getTime() / 1000);
-  const fromUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0);
-  const fromUnix = Math.floor(fromUtc / 1000);
 
   const todayStr = toUtcDateStr(now);
   const fromDaily = new Date(now);
   fromDaily.setUTCDate(fromDaily.getUTCDate() - 7);
   const fromDailyStr = toUtcDateStr(fromDaily);
 
-  const [intradaySettled, dailySettled] = await Promise.allSettled([
-    fetchEodhdIntraday(config.eodhdSymbol, fromUnix, toUnix, "5m"),
-    fetchEodhdEodDaily(config.eodhdSymbol, fromDailyStr, todayStr),
-  ]);
+  let price: number | null = null;
+  let changePercent1D: number | null = null;
+  let sparklineToday: number[] | null = null;
 
-  const intraday = intradaySettled.status === "fulfilled" ? intradaySettled.value : null;
-  const daily = dailySettled.status === "fulfilled" ? dailySettled.value : null;
-
-  const fallback: IndexCardData = {
-    name: config.name,
-    price: config.fallbackPrice,
-    changePercent1D: config.fallbackChangePercent1D,
-    sparklineToday: config.fallbackSparklineToday,
-  };
-
+  const daily = await fetchEodhdEodDaily(config.eodhdSymbol, fromDailyStr, todayStr);
   const dailyBars = (daily ?? []).filter((b) => Number.isFinite(b.close));
-  const intradayCloses =
-    intraday && intraday.length
-      ? intraday.map((b) => b.close).filter((v) => Number.isFinite(v))
-      : [];
 
-  let price = fallback.price;
-  let changePercent1D = fallback.changePercent1D;
-  let sparklineToday = fallback.sparklineToday;
-
-  // Use daily whenever available for 1D %, and as fallback for price/sparkline.
   if (dailyBars.length >= 1) {
     const lastDaily = dailyBars[dailyBars.length - 1]!;
     price = lastDaily.close;
@@ -80,36 +66,38 @@ async function buildIndexCard(config: MarketIndexConfig): Promise<IndexCardData>
       }
     }
 
-    // If intraday is unavailable, still use recent historical closes for sparkline.
     if (dailyBars.length >= 2) {
-      sparklineToday = sampleSeries(dailyBars.slice(-5).map((b) => b.close), 12);
+      const sampled = sampleSeries(
+        dailyBars.slice(-5).map((b) => b.close),
+        12,
+      );
+      sparklineToday = sampled.length >= 2 ? sampled : null;
     }
-  }
-
-  // Intraday overrides price + sparkline when available.
-  if (intradayCloses.length > 0) {
-    price = intradayCloses[intradayCloses.length - 1]!;
-    sparklineToday = sampleSeries(intradayCloses, 12);
   }
 
   return { name: config.name, price, changePercent1D, sparklineToday };
 }
 
 export async function loadIndicesCardsUncached(): Promise<IndexCardData[]> {
-  const settled = await Promise.allSettled(MARKET_INDICES_TODAY.map((c) => buildIndexCard(c)));
-  return MARKET_INDICES_TODAY.map((c, i) => {
-    const r = settled[i];
-    if (r.status === "fulfilled") return r.value;
-    return {
-      name: c.name,
-      price: c.fallbackPrice,
-      changePercent1D: c.fallbackChangePercent1D,
-      sparklineToday: c.fallbackSparklineToday,
-    };
-  });
+  // Build placeholders for all cards first.
+  const out = MARKET_INDICES_TODAY.map((c) => emptyIndexCard(c.name));
+
+  // Only call the provider for enabled indices (SPX + NDX).
+  const enabled = MARKET_INDICES_TODAY.filter((c) => ENABLE_REAL_INDICES_EODHD_SYMBOLS.has(c.eodhdSymbol));
+  const enabledSettled = await Promise.allSettled(enabled.map((c) => buildIndexCardDailyOnly(c)));
+
+  for (let i = 0; i < enabled.length; i++) {
+    const r = enabledSettled[i];
+    const cfg = enabled[i]!;
+    const idx = out.findIndex((x) => x.name === cfg.name);
+    if (idx < 0) continue;
+    if (r.status === "fulfilled") out[idx] = r.value;
+  }
+
+  return out;
 }
 
-export const getTodayIndexCards = unstable_cache(loadIndicesCardsUncached, ["indices-today-v2"], {
-  revalidate: 30,
+export const getTodayIndexCards = unstable_cache(loadIndicesCardsUncached, ["indices-today-v4"], {
+  revalidate: REVALIDATE_HOT_FAST,
 });
 

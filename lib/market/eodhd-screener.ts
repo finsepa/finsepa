@@ -2,6 +2,9 @@ import "server-only";
 
 import { unstable_cache } from "next/cache";
 
+import { REVALIDATE_STATIC } from "@/lib/data/cache-policy";
+
+import { traceEodhdHttp } from "@/lib/market/provider-trace";
 import { getEodhdApiKey } from "@/lib/env/server";
 
 export type EodhdScreenerRow = {
@@ -11,6 +14,36 @@ export type EodhdScreenerRow = {
   sector?: string;
   industry?: string;
   market_capitalization?: number | string;
+  adjusted_close?: number | string;
+  refund_1d_p?: number | string;
+  refund_5d_p?: number | string;
+  /** When present on screener rows — 1-month total return % (signal field name may vary by package). */
+  refund_1m_p?: number | string;
+  refund_1M_p?: number | string;
+  /** Year-to-date total return % when provided. */
+  refund_ytd_p?: number | string;
+  refund_YTD_p?: number | string;
+  earnings_share?: number | string;
+};
+
+/** One row from the market-cap screener — includes snapshot fields used by the Companies table (no per-ticker fundamentals calls). */
+export type EodhdTopUniverseRow = {
+  ticker: string;
+  name: string;
+  marketCapUsd: number;
+  /** Last EOD adjusted close from screener (stale vs live quote). */
+  adjustedClose: number | null;
+  /** Prior-session 1D % move from screener (used when live quote missing). */
+  refund1dP: number | null;
+  refund5dP: number | null;
+  /** 1M % from screener snapshot when the provider includes it. */
+  refund1mP: number | null;
+  /** YTD % from screener snapshot when the provider includes it. */
+  refundYtdP: number | null;
+  /** Last 5 session adjusted closes (ascending), only when the API returns them on the row. */
+  closes5d: number[] | null;
+  /** Trailing EPS from screener — used with price for implied P/E when fundamentals JSON is not loaded. */
+  earningsShare: number | null;
 };
 
 function num(v: unknown): number | null {
@@ -22,11 +55,42 @@ function num(v: unknown): number | null {
   return null;
 }
 
+/** Prefer explicit signal fields; some accounts use alternate casing. */
+function refund1mFromRaw(r: Record<string, unknown>): number | null {
+  return num(r.refund_1m_p) ?? num(r.refund_1M_p) ?? null;
+}
+
+function refundYtdFromRaw(r: Record<string, unknown>): number | null {
+  return num(r.refund_ytd_p) ?? num(r.refund_YTD_p) ?? null;
+}
+
+/**
+ * If the screener ever returns five session closes on the row, use them for the mini chart (no extra API).
+ */
+function closes5dFromRaw(r: Record<string, unknown>): number[] | null {
+  const keys = ["last_5_adj_close", "last_5_adjusted_close", "adj_close_last_5", "closes_5d"] as const;
+  for (const key of keys) {
+    const v = r[key];
+    if (!Array.isArray(v)) continue;
+    const closes: number[] = [];
+    for (const x of v.slice(0, 5)) {
+      const c = num(x);
+      if (c == null || !(c > 0)) {
+        closes.length = 0;
+        break;
+      }
+      closes.push(c);
+    }
+    if (closes.length === 5) return closes;
+  }
+  return null;
+}
+
 async function fetchEodhdScreenerUncached(args: {
   limit: number;
   offset: number;
   exchangeFilter: "us" | "NYSE" | "NASDAQ";
-}): Promise<Array<{ ticker: string; name: string; marketCapUsd: number }>> {
+}): Promise<EodhdTopUniverseRow[]> {
   const key = getEodhdApiKey();
   if (!key) return [];
 
@@ -46,6 +110,7 @@ async function fetchEodhdScreenerUncached(args: {
   const url = `https://eodhd.com/api/screener?${params.toString()}`;
 
   try {
+    traceEodhdHttp("fetchEodhdScreenerUncached", { offset: args.offset, limit: args.limit });
     const res = await fetch(url, { next: { revalidate: 60 * 60 * 12 } }); // 12h
     if (!res.ok) return [];
     const json = (await res.json()) as unknown;
@@ -53,16 +118,28 @@ async function fetchEodhdScreenerUncached(args: {
     const data = (json as { data?: unknown }).data;
     if (!Array.isArray(data)) return [];
 
-    const out: Array<{ ticker: string; name: string; marketCapUsd: number }> = [];
+    const out: EodhdTopUniverseRow[] = [];
     for (const raw of data) {
       if (!raw || typeof raw !== "object") continue;
       const r = raw as EodhdScreenerRow;
+      const rr = raw as Record<string, unknown>;
       const ticker = typeof r.code === "string" ? r.code.trim().toUpperCase() : "";
       if (!ticker) continue;
       const name = typeof r.name === "string" ? r.name.trim() : "";
       const mc = num(r.market_capitalization);
       if (mc == null || mc <= 0) continue;
-      out.push({ ticker, name: name || ticker, marketCapUsd: mc });
+      out.push({
+        ticker,
+        name: name || ticker,
+        marketCapUsd: mc,
+        adjustedClose: num(r.adjusted_close),
+        refund1dP: num(r.refund_1d_p),
+        refund5dP: num(r.refund_5d_p),
+        refund1mP: refund1mFromRaw(rr),
+        refundYtdP: refundYtdFromRaw(rr),
+        closes5d: closes5dFromRaw(rr),
+        earningsShare: num(r.earnings_share),
+      });
     }
     return out;
   } catch {
@@ -70,15 +147,15 @@ async function fetchEodhdScreenerUncached(args: {
   }
 }
 
-const fetchEodhdScreenerCached = unstable_cache(fetchEodhdScreenerUncached, ["eodhd-screener-v1"], {
-  revalidate: 60 * 60 * 12,
+const fetchEodhdScreenerCached = unstable_cache(fetchEodhdScreenerUncached, ["eodhd-screener-v5-snapshot-perf"], {
+  revalidate: REVALIDATE_STATIC,
 });
 
 export async function fetchEodhdTopByMarketCap(args: {
   limit: number;
   offset: number;
   exchangeFilter?: "us" | "NYSE" | "NASDAQ";
-}): Promise<Array<{ ticker: string; name: string; marketCapUsd: number }>> {
+}): Promise<EodhdTopUniverseRow[]> {
   return fetchEodhdScreenerCached({
     limit: args.limit,
     offset: args.offset,
@@ -116,6 +193,7 @@ export async function fetchEodhdScreenerCandidates(args: {
   const url = `https://eodhd.com/api/screener?${params.toString()}`;
 
   try {
+    traceEodhdHttp("fetchEodhdScreenerCandidates", { limit: args.limit });
     const res = await fetch(url, { next: { revalidate: 60 * 60 } }); // 1h
     if (!res.ok) return [];
     const json = (await res.json()) as unknown;

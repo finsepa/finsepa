@@ -1,5 +1,6 @@
 import "server-only";
 
+import { traceEodhdHttp } from "@/lib/market/provider-trace";
 import { getEodhdApiKey } from "@/lib/env/server";
 import { toEodhdSymbol } from "@/lib/market/eodhd-symbol";
 
@@ -74,6 +75,7 @@ export async function fetchEodhdIntraday(
   const url = `https://eodhd.com/api/intraday/${encodeURIComponent(sym)}?${params.toString()}`;
 
   try {
+    traceEodhdHttp("fetchEodhdIntraday", { symbol: sym });
     const res = await fetch(url, { cache: "no-store" });
     if (!res.ok) return null;
     const data = (await res.json()) as unknown;

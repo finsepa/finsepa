@@ -2,6 +2,7 @@ import "server-only";
 
 import { unstable_cache } from "next/cache";
 
+import { REVALIDATE_HOT } from "@/lib/data/cache-policy";
 import {
   toSupportedCryptoTicker,
   toEodhdCryptoSymbol,
@@ -90,6 +91,6 @@ async function loadCryptoChartPointsUncached(symbol: string, range: StockChartRa
 
 export const getCryptoChartPoints = unstable_cache(
   async (symbol: string, range: StockChartRange) => loadCryptoChartPointsUncached(symbol, range),
-  ["crypto-chart-points-v1"],
-  { revalidate: 60 },
+  ["crypto-chart-points-v2"],
+  { revalidate: REVALIDATE_HOT },
 );

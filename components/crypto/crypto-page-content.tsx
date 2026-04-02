@@ -1,8 +1,9 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { AssetPageTopLoader } from "@/components/layout/asset-page-top-loader";
 import { ChevronRight, ExternalLink } from "lucide-react";
 
 import type { ChartDisplayState } from "@/components/chart/PriceChart";
@@ -11,8 +12,10 @@ import { LogoSkeleton, SkeletonBox } from "@/components/markets/skeleton";
 import { ChartControls } from "@/components/stock/chart-controls";
 import { WatchlistStarButton } from "@/components/watchlist/watchlist-star-button";
 import { useSpringTriplet } from "@/components/chart/use-spring-numbers";
+import { mergeLogoMemory, readLogoMemory } from "@/lib/logos/logo-memory";
 import { cryptoWatchlistKey } from "@/lib/watchlist/constants";
 import type { CryptoAssetLinks, CryptoAssetRow } from "@/lib/market/crypto-asset";
+import type { CryptoPageInitialData } from "@/lib/market/crypto-page-initial-data";
 import type { StockChartRange } from "@/lib/market/stock-chart-types";
 
 function formatPercent(value: number | null) {
@@ -116,9 +119,19 @@ function buildLinksSections(links: CryptoAssetLinks) {
   return { official, network, social };
 }
 
-export function CryptoPageContent({ routeSymbol }: { routeSymbol: string }) {
-  const [loading, setLoading] = useState(true);
-  const [row, setRow] = useState<CryptoAssetRow | null>(null);
+export function CryptoPageContent({
+  routeSymbol,
+  initialData,
+}: {
+  routeSymbol: string;
+  initialData?: CryptoPageInitialData | null;
+}) {
+  const symKey = routeSymbol.trim().toUpperCase();
+  const serverMatch =
+    initialData != null && initialData.routeSymbol.trim().toUpperCase() === symKey ? initialData : null;
+
+  const [loading, setLoading] = useState(!serverMatch);
+  const [row, setRow] = useState<CryptoAssetRow | null>(serverMatch?.asset ?? null);
   const [range, setRange] = useState<StockChartRange>("1Y");
   const [chartUi, setChartUi] = useState<ChartDisplayState>({
     loading: true,
@@ -138,7 +151,6 @@ export function CryptoPageContent({ routeSymbol }: { routeSymbol: string }) {
     setChartUi(s);
   }, []);
 
-  const displayPrice = chartUi.displayPrice;
   const hasChartChange =
     chartUi.displayChangePct != null &&
     chartUi.displayChangeAbs != null &&
@@ -151,12 +163,23 @@ export function CryptoPageContent({ routeSymbol }: { routeSymbol: string }) {
     { stiffness: 520, damping: 38, epsilon: 1e-4 },
   );
 
+  const initialChartMemo = useMemo(
+    () => (serverMatch ? serverMatch.chart : null),
+    [serverMatch],
+  );
+
   useEffect(() => {
     let mounted = true;
     async function load() {
+      if (serverMatch) {
+        if (!mounted) return;
+        setRow(serverMatch.asset);
+        setLoading(false);
+        return;
+      }
       setLoading(true);
       try {
-        const res = await fetch(`/api/crypto/asset/${encodeURIComponent(routeSymbol)}`, { cache: "no-store" });
+        const res = await fetch(`/api/crypto/asset/${encodeURIComponent(routeSymbol)}`);
         if (!res.ok) {
           if (!mounted) return;
           setRow(null);
@@ -177,9 +200,26 @@ export function CryptoPageContent({ routeSymbol }: { routeSymbol: string }) {
     return () => {
       mounted = false;
     };
-  }, [routeSymbol]);
+  }, [routeSymbol, serverMatch]);
 
   const safeRow = useMemo(() => row, [row]);
+
+  // Track failed logo per-symbol; avoids resetting state via effects.
+  const [cryptoLogoFailedFor, setCryptoLogoFailedFor] = useState<string | null>(null);
+  const cryptoLogoFailed = cryptoLogoFailedFor === symUpper;
+  const serverCryptoLogo = safeRow?.logoUrl?.trim() ?? "";
+  const memCryptoLogo = readLogoMemory(symUpper)?.trim() ?? "";
+  const cryptoLogoSrc = useMemo(() => {
+    if (cryptoLogoFailed) return "";
+    return serverCryptoLogo || memCryptoLogo;
+  }, [serverCryptoLogo, memCryptoLogo, cryptoLogoFailed]);
+
+  useEffect(() => {
+    if (serverCryptoLogo) mergeLogoMemory(symUpper, serverCryptoLogo);
+  }, [symUpper, serverCryptoLogo]);
+
+  // No explicit reset effect: when `symUpper`/`serverCryptoLogo` changes, the derived
+  // `cryptoLogoFailed` boolean is naturally falsy until a new load fails.
 
   const linkSections = safeRow ? buildLinksSections(safeRow.links) : null;
   const hasAnyLinks =
@@ -187,7 +227,10 @@ export function CryptoPageContent({ routeSymbol }: { routeSymbol: string }) {
     (linkSections.official.length > 0 || linkSections.network.length > 0 || linkSections.social.length > 0);
 
   return (
-    <div className="space-y-5 px-9 py-6">
+    <div className="relative space-y-5 px-9 py-6">
+      <Suspense fallback={null}>
+        <AssetPageTopLoader />
+      </Suspense>
       {/* Header — aligned with stock detail */}
       <div className="space-y-3">
         <div className="flex items-center">
@@ -204,20 +247,21 @@ export function CryptoPageContent({ routeSymbol }: { routeSymbol: string }) {
           <div className="flex min-w-0 items-center gap-4">
             {loading ? (
               <LogoSkeleton sizeClass="h-12 w-12" />
-            ) : safeRow?.logoUrl ? (
+            ) : cryptoLogoSrc ? (
               // eslint-disable-next-line @next/next/no-img-element -- remote logo
               <img
-                src={safeRow.logoUrl}
+                src={cryptoLogoSrc}
                 alt=""
                 width={48}
                 height={48}
                 className="h-12 w-12 shrink-0 rounded-xl border border-neutral-200 bg-white object-contain shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]"
-                onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).style.display = "none";
+                onError={() => {
+                  setCryptoLogoFailedFor(symUpper);
+                  mergeLogoMemory(symUpper, null);
                 }}
               />
             ) : null}
-            {!loading && safeRow && !safeRow.logoUrl ? (
+            {!loading && safeRow && !cryptoLogoSrc ? (
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-[#E4E4E7] bg-[#F4F4F5] text-[18px] font-bold text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
                 {safeRow.symbol.slice(0, 1)}
               </div>
@@ -270,7 +314,13 @@ export function CryptoPageContent({ routeSymbol }: { routeSymbol: string }) {
       </div>
 
       <ChartControls activeRange={range} onRangeChange={setRange} />
-      <PriceChart kind="crypto" symbol={symUpper} range={range} onDisplayChange={onChartDisplay} />
+      <PriceChart
+        kind="crypto"
+        symbol={symUpper}
+        range={range}
+        onDisplayChange={onChartDisplay}
+        initialChart={initialChartMemo}
+      />
 
       {/* Performance snapshot */}
       {!loading && safeRow ? (

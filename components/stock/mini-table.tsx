@@ -3,7 +3,7 @@
 import { ArrowUpDown } from "lucide-react";
 import { getStockDetailMetaFromTicker } from "@/lib/market/stock-detail-meta";
 import { useEffect, useMemo, useState } from "react";
-import type { StockPerformance } from "@/lib/market/stock-performance";
+import type { StockPerformance } from "@/lib/market/stock-performance-types";
 import type { StockDetailHeaderMeta } from "@/lib/market/stock-header-meta";
 import { CompanyLogo } from "@/components/screener/company-logo";
 
@@ -27,24 +27,32 @@ export function MiniTable({
   ticker,
   headerMeta,
   headerMetaLoading,
+  initialPerformance,
 }: {
   ticker: string;
   headerMeta: StockDetailHeaderMeta | null;
   headerMetaLoading: boolean;
+  /** From server initial payload — avoids an extra round-trip on first paint. */
+  initialPerformance?: StockPerformance | null;
 }) {
   const meta = getStockDetailMetaFromTicker(ticker);
   const sym = meta.ticker;
   const displayName = headerMeta?.fullName?.trim() ? headerMeta.fullName : meta.name;
   const logoUrl = headerMeta?.logoUrl?.trim() ? headerMeta.logoUrl : "";
-   const [loading, setLoading] = useState(true);
-   const [perf, setPerf] = useState<StockPerformance | null>(null);
+  const [loading, setLoading] = useState(() => !initialPerformance);
+  const [perf, setPerf] = useState<StockPerformance | null>(() => initialPerformance ?? null);
 
-   useEffect(() => {
-     let mounted = true;
-     async function load() {
-       setLoading(true);
-       try {
-         const res = await fetch(`/api/stocks/${encodeURIComponent(sym)}/performance`, { cache: "no-store" });
+  useEffect(() => {
+    let mounted = true;
+    async function load() {
+      if (initialPerformance) {
+        setPerf(initialPerformance);
+        setLoading(false);
+        return;
+      }
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/stocks/${encodeURIComponent(sym)}/performance`);
          if (!res.ok) {
            if (!mounted) return;
            setPerf(null);
@@ -62,10 +70,10 @@ export function MiniTable({
        }
      }
      void load();
-     return () => {
-       mounted = false;
-     };
-   }, [sym]);
+    return () => {
+      mounted = false;
+    };
+  }, [sym, initialPerformance]);
 
    const row = useMemo(() => perf, [perf]);
 
@@ -94,7 +102,7 @@ export function MiniTable({
                 {headerMetaLoading ? (
                   <div className="h-8 w-8 shrink-0 rounded-lg border border-[#E4E4E7] bg-[#F4F4F5] animate-pulse" aria-hidden />
                 ) : (
-                  <CompanyLogo name={displayName} logoUrl={logoUrl} />
+                  <CompanyLogo name={displayName} logoUrl={logoUrl} symbol={sym} />
                 )}
                 <div>
                   <div className="text-[14px] font-semibold leading-5 text-[#09090B]">{displayName}</div>

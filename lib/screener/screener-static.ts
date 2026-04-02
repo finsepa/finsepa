@@ -20,10 +20,10 @@ export type ScreenerTableRow = {
   name: string;
   ticker: string;
   logoUrl: string;
-  price: number;
-  change1D: number;
-  change1M: number;
-  changeYTD: number;
+  price: number | null;
+  change1D: number | null;
+  change1M: number | null;
+  changeYTD: number | null;
   marketCap: string;
   pe: string;
   trend: number[];

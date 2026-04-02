@@ -1,13 +1,19 @@
-import { IndexCards } from "@/components/screener/index-cards";
+import { ScreenerBrowserTrace } from "@/components/screener/screener-browser-trace";
 import { MarketsSection } from "@/components/screener/markets-section";
-import { getTop10ScreenerRows } from "@/lib/screener/top10-quotes";
+import { buildScreenerPagePayload } from "@/lib/screener/screener-page-payload";
 
 export default async function ScreenerPage() {
-  const rows = await getTop10ScreenerRows();
+  const payload = await buildScreenerPagePayload();
 
   return (
     <div className="px-9 py-6">
-      <MarketsSection stockRows={rows} />
+      <ScreenerBrowserTrace />
+      <MarketsSection
+        stockRows={payload.stockRows}
+        cryptoRows={payload.cryptoRows}
+        indicesRows={payload.indicesRows}
+        indexCards={payload.indexCards}
+      />
     </div>
   );
 }

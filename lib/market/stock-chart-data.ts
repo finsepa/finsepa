@@ -2,8 +2,10 @@ import "server-only";
 
 import { unstable_cache } from "next/cache";
 
+import { REVALIDATE_HOT } from "@/lib/data/cache-policy";
+
 import { fetchEodhdIntraday, type EodhdIntradayBar } from "@/lib/market/eodhd-intraday";
-import { fetchEodhdEodDaily } from "@/lib/market/eodhd-eod";
+import { fetchEodhdEodDaily, type EodhdDailyBar } from "@/lib/market/eodhd-eod";
 import type { StockChartPoint, StockChartRange } from "@/lib/market/stock-chart-types";
 
 function clampFinite(n: number): number | null {
@@ -65,6 +67,19 @@ async function loadDailyLastNCloses(ticker: string, now: Date, n: number, calend
   const sorted = [...daily].sort((a, b) => a.date.localeCompare(b.date));
   const slice = sorted.slice(-n);
   const points = slice
+    .map((b) => {
+      const t = parseYmdToUnixSeconds(b.date);
+      const v = clampFinite(b.close);
+      if (t == null || v == null) return null;
+      return { time: t, value: v };
+    })
+    .filter(Boolean) as StockChartPoint[];
+  return dedupeAndSort(points);
+}
+
+/** Full series from daily bars — use with {@link sliceStockChartPointsForRange} to match chart range without a second EOD fetch. */
+export function stockChartPointsFromDailyBars(bars: EodhdDailyBar[]): StockChartPoint[] {
+  const points = bars
     .map((b) => {
       const t = parseYmdToUnixSeconds(b.date);
       const v = clampFinite(b.close);
@@ -191,7 +206,7 @@ async function loadStockChartPointsUncached(ticker: string, range: StockChartRan
 
 export const getStockChartPoints = unstable_cache(
   async (ticker: string, range: StockChartRange) => loadStockChartPointsUncached(ticker, range),
-  ["stock-chart-points-v2"],
-  { revalidate: 60 },
+  ["stock-chart-points-v3"],
+  { revalidate: REVALIDATE_HOT },
 );
 

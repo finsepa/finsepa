@@ -23,8 +23,11 @@ function firstNum(hl: Record<string, unknown> | null, keys: string[]): number | 
 
 export type KeyStatsGrowthRow = { label: string; value: string };
 
-export async function fetchEodhdKeyStatsGrowth(ticker: string): Promise<{ rows: KeyStatsGrowthRow[] } | null> {
-  const root = await fetchEodhdFundamentalsJson(ticker);
+export async function fetchEodhdKeyStatsGrowth(
+  ticker: string,
+  fundamentalsRoot?: Record<string, unknown> | null,
+): Promise<{ rows: KeyStatsGrowthRow[] } | null> {
+  const root = fundamentalsRoot ?? (await fetchEodhdFundamentalsJson(ticker));
   if (!root) return null;
 
   const hl = root.Highlights && typeof root.Highlights === "object" ? (root.Highlights as Record<string, unknown>) : null;

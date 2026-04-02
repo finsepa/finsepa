@@ -2,6 +2,8 @@ import "server-only";
 
 import { unstable_cache } from "next/cache";
 
+import { REVALIDATE_HOT } from "@/lib/data/cache-policy";
+
 import { fetchEodhdEodDaily } from "@/lib/market/eodhd-eod";
 import { deriveMetricsFromDailyBars, eodFetchWindowUtc, formatDecimalTrim } from "@/lib/screener/eod-derived-metrics";
 
@@ -79,7 +81,9 @@ async function loadIndicesTop10Uncached(): Promise<IndexTableRow[]> {
   });
 }
 
-export const getIndicesTop10 = unstable_cache(loadIndicesTop10Uncached, ["indices-top10-v1"], { revalidate: 60 });
+export const getIndicesTop10 = unstable_cache(loadIndicesTop10Uncached, ["indices-top10-v2"], {
+  revalidate: REVALIDATE_HOT,
+});
 
 /** Resolve display name for a known top-10 index EOD symbol (e.g. GSPC.INDX → "S&P 500"). */
 export function getIndexDisplayMeta(eodSymbol: string): { name: string; symbol: string } | null {

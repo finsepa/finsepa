@@ -90,7 +90,9 @@ export function useSpringTriplet(target: Triple, opts: SpringOpts = {}): Triple 
         const vNext = (vk + a * dt) * Math.exp(-damping * dt);
         const xNext = xk + vNext * dt;
         vv[key as "price" | "abs" | "pct"] = vNext;
-        (xx as any)[key] = xNext;
+        if (key === "price") xx.price = xNext;
+        else if (key === "abs") xx.abs = xNext;
+        else xx.pct = xNext;
       };
 
       stepOne("price");

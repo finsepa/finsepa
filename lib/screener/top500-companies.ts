@@ -3,13 +3,10 @@ import "server-only";
 import { cache } from "react";
 import { unstable_cache } from "next/cache";
 
-import { fetchEodhdTopByMarketCap } from "@/lib/market/eodhd-screener";
+import { REVALIDATE_STATIC } from "@/lib/data/cache-policy";
+import { type EodhdTopUniverseRow, fetchEodhdTopByMarketCap } from "@/lib/market/eodhd-screener";
 
-export type TopCompanyUniverseRow = {
-  ticker: string;
-  name: string;
-  marketCapUsd: number;
-};
+export type TopCompanyUniverseRow = EodhdTopUniverseRow;
 
 async function buildTop500UniverseUncached(): Promise<TopCompanyUniverseRow[]> {
   const pages = [0, 100, 200, 300, 400];
@@ -19,7 +16,7 @@ async function buildTop500UniverseUncached(): Promise<TopCompanyUniverseRow[]> {
   for (const s of settled) {
     if (s.status !== "fulfilled") continue;
     for (const r of s.value) {
-      combined.push({ ticker: r.ticker, name: r.name, marketCapUsd: r.marketCapUsd });
+      combined.push(r);
     }
   }
 
@@ -35,8 +32,8 @@ async function buildTop500UniverseUncached(): Promise<TopCompanyUniverseRow[]> {
   return out.slice(0, 500);
 }
 
-const getTop500UniverseData = unstable_cache(buildTop500UniverseUncached, ["screener-top500-universe-v1"], {
-  revalidate: 60 * 60 * 12, // 12h
+const getTop500UniverseData = unstable_cache(buildTop500UniverseUncached, ["screener-top500-universe-v5-snapshot-perf"], {
+  revalidate: REVALIDATE_STATIC,
 });
 
 /** Cached across requests; returns exactly 500 tickers when available. */

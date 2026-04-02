@@ -158,6 +158,8 @@ function seriesData(
 type Props = {
   ticker: string;
   metricParam: string | null;
+  initialAnnualPoints?: ChartingSeriesPoint[];
+  initialQuarterlyPoints?: ChartingSeriesPoint[];
 };
 
 const TIME_RANGE_ORDER: ChartTimeRange[] = ["1Y", "2Y", "3Y", "5Y", "10Y", "all"];
@@ -188,17 +190,23 @@ type HoverState = {
   rows: Array<{ id: ChartingMetricId; label: string; value: string }>;
 } | null;
 
-export function StockChartingTab({ ticker, metricParam }: Props) {
+export function StockChartingTab({ ticker, metricParam, initialAnnualPoints, initialQuarterlyPoints }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const pickerWrapRef = useRef<HTMLDivElement>(null);
   const pickerInputRef = useRef<HTMLInputElement>(null);
 
   const [periodMode, setPeriodMode] = useState<"annual" | "quarterly">("annual");
-  const [timeRange, setTimeRange] = useState<ChartTimeRange>("all");
+  // Default to 5Y (not "all") — fewer points → faster chart + table work (~2× less than full history).
+  const [timeRange, setTimeRange] = useState<ChartTimeRange>("5Y");
   const [chartType, setChartType] = useState<ChartType>("bars");
   const [chartHeight, setChartHeight] = useState<number>(CHARTING_HEIGHT_MIN);
-  const [points, setPoints] = useState<ChartingSeriesPoint[] | null>(null);
-  const [loading, setLoading] = useState(true);
+  const seedPoints = useMemo(() => {
+    if (periodMode === "quarterly") return Array.isArray(initialQuarterlyPoints) ? initialQuarterlyPoints : null;
+    return Array.isArray(initialAnnualPoints) ? initialAnnualPoints : null;
+  }, [periodMode, initialAnnualPoints, initialQuarterlyPoints]);
+
+  const [points, setPoints] = useState<ChartingSeriesPoint[] | null>(seedPoints);
+  const [loading, setLoading] = useState(seedPoints == null);
   const [selected, setSelected] = useState<ChartingMetricId[]>(DEFAULT_METRICS);
   const [hover, setHover] = useState<HoverState>(null);
 
@@ -212,7 +220,7 @@ export function StockChartingTab({ ticker, metricParam }: Props) {
   } | null>(null);
 
   const chartRef = useRef<IChartApi | null>(null);
-  const seriesByMetricRef = useRef<Map<ChartingMetricId, ISeriesApi<any>>>(new Map());
+  const seriesByMetricRef = useRef<Map<ChartingMetricId, ISeriesApi<"Line"> | ISeriesApi<"Histogram">>>(new Map());
   const hoverRafRef = useRef<number>(0);
 
   useEffect(() => {
@@ -243,11 +251,17 @@ export function StockChartingTab({ ticker, metricParam }: Props) {
   useEffect(() => {
     let cancelled = false;
     async function load() {
+      // SSR preloaded fundamentals series: render instantly, no client fetch / skeleton flash.
+      if (seedPoints) {
+        setPoints(seedPoints);
+        setLoading(false);
+        return;
+      }
       setLoading(true);
       try {
         const res = await fetch(
           `/api/stocks/${encodeURIComponent(ticker)}/fundamentals-series?period=${periodMode === "quarterly" ? "quarterly" : "annual"}`,
-          { cache: "no-store", credentials: "include" },
+          { credentials: "include" },
         );
         if (!res.ok) {
           if (!cancelled) setPoints(null);
@@ -265,7 +279,7 @@ export function StockChartingTab({ ticker, metricParam }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [ticker, periodMode]);
+  }, [ticker, periodMode, seedPoints]);
 
   useEffect(() => {
     if (!pickerOpen) return;
@@ -310,9 +324,17 @@ export function StockChartingTab({ ticker, metricParam }: Props) {
     return m;
   }, [ordered]);
 
-  /** Metrics that have ≥1 plotted point in the current time range (for add + pruning selection). */
+  /** Metrics that have ≥1 value in-range — single pass over rows (avoids O(metrics × points) seriesData calls). */
   const availableInRange = useMemo(() => {
-    return CHARTING_METRIC_IDS.filter((id) => seriesData(ordered, id).length > 0);
+    const seen = new Set<ChartingMetricId>();
+    for (const row of ordered) {
+      for (const id of CHARTING_METRIC_IDS) {
+        if (seen.has(id)) continue;
+        const v = rowValue(row, id);
+        if (v != null && Number.isFinite(v)) seen.add(id);
+      }
+    }
+    return CHARTING_METRIC_IDS.filter((id) => seen.has(id));
   }, [ordered]);
 
   useEffect(() => {
@@ -373,136 +395,163 @@ export function StockChartingTab({ ticker, metricParam }: Props) {
       return;
     }
 
-    const chart = createChart(el, {
-      width: el.clientWidth,
-      height: chartHeight,
-      autoSize: false,
-      layout: {
-        background: { type: ColorType.Solid, color: "#00000000" },
-        textColor: "#A1A1AA",
-        fontSize: 11,
-        fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
-        attributionLogo: false,
-      },
-      grid: {
-        vertLines: { visible: false },
-        horzLines: { color: "rgba(228, 228, 231, 0.85)" },
-      },
-      rightPriceScale: {
-        visible: false,
-        borderVisible: false,
-      },
-      leftPriceScale: {
-        visible: false,
-        borderVisible: false,
-      },
-      timeScale: { borderVisible: false, rightOffset: 0, barSpacing: chartType === "bars" ? 11 : 9 },
-      crosshair: { vertLine: { labelVisible: false }, horzLine: { labelVisible: true } },
-    });
+    let cancelled = false;
+    let resizeObserver: ResizeObserver | null = null;
 
-    chartRef.current = chart;
-    seriesByMetricRef.current = new Map();
-
-    const usedScales = new Set<string>();
-
-    for (const id of selected) {
-      const data = seriesData(ordered, id);
-      if (!data.length) continue;
-      const kind = CHARTING_METRIC_KIND[id];
-      const scaleId = scaleIdForKind(kind);
-      usedScales.add(scaleId);
-      if (chartType === "bars") {
-        const barColor = withAlpha(metricColor(id), 0.55);
-        const s = chart.addSeries(HistogramSeries, {
-          color: barColor,
-          priceScaleId: scaleId,
-          priceFormat: priceFormatForKind(kind),
-          title: CHARTING_METRIC_LABEL[id],
-          // Overlay bars for multiple metrics; transparency helps readability.
-          // lightweight-charts does not support true grouped bars per timestamp.
-        });
-        s.setData(
-          data.map((d) => ({
-            time: d.time,
-            value: d.value,
-            color: barColor,
-          })),
-        );
-        seriesByMetricRef.current.set(id, s);
-      } else {
-        const s = chart.addSeries(LineSeries, {
-          color: metricColor(id),
-          lineWidth: 2,
-          lineType: LineType.Curved,
-          priceScaleId: scaleId,
-          priceFormat: priceFormatForKind(kind),
-          title: CHARTING_METRIC_LABEL[id],
-        });
-        s.setData(data);
-        seriesByMetricRef.current.set(id, s);
-      }
-    }
-
-    const scaleOpts = {
-      borderVisible: false,
-      scaleMargins: { top: 0.07, bottom: 0.1 },
-    };
-    for (const sid of ["usd", "shares", "eps", "pct", "mult"]) {
-      if (usedScales.has(sid)) {
-        chart.priceScale(sid).applyOptions({ visible: true, ...scaleOpts });
-      }
-    }
-
-    chart.timeScale().fitContent();
-
-    const onCrosshairMove = (param: MouseEventParams) => {
-      if (!param.point || param.point.x < 0 || param.time === undefined) {
-        if (hoverRafRef.current) cancelAnimationFrame(hoverRafRef.current);
-        hoverRafRef.current = requestAnimationFrame(() => setHover(null));
+    const mountChart = () => {
+      if (cancelled) return;
+      if (el.clientWidth < 2) {
+        requestAnimationFrame(mountChart);
         return;
       }
+      requestAnimationFrame(() => {
+        if (cancelled) return;
+        requestAnimationFrame(() => {
+          if (cancelled) return;
 
-      const x = param.point.x;
-      const rawTime = param.time as UTCTimestamp;
-      const timeKey = typeof rawTime === "number" && Number.isFinite(rawTime) ? rawTime : null;
-      if (timeKey == null) {
-        if (hoverRafRef.current) cancelAnimationFrame(hoverRafRef.current);
-        hoverRafRef.current = requestAnimationFrame(() => setHover(null));
-        return;
-      }
+          const chart = createChart(el, {
+            width: el.clientWidth,
+            height: chartHeight,
+            autoSize: false,
+            layout: {
+              background: { type: ColorType.Solid, color: "#00000000" },
+              textColor: "#A1A1AA",
+              fontSize: 11,
+              fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+              attributionLogo: false,
+            },
+            grid: {
+              vertLines: { visible: false },
+              horzLines: { color: "rgba(228, 228, 231, 0.85)" },
+            },
+            rightPriceScale: {
+              visible: false,
+              borderVisible: false,
+            },
+            leftPriceScale: {
+              visible: false,
+              borderVisible: false,
+            },
+            timeScale: { borderVisible: false, rightOffset: 0, barSpacing: chartType === "bars" ? 11 : 9 },
+            crosshair: { vertLine: { labelVisible: false }, horzLine: { labelVisible: true } },
+          });
 
-      const row = timeToRow.get(timeKey);
-      const periodLabel = row ? formatPeriodLabel(row.periodEnd, periodMode) : String(timeKey);
+          chartRef.current = chart;
+          seriesByMetricRef.current = new Map();
 
-      const rows: Array<{ id: ChartingMetricId; label: string; value: string }> = [];
-      for (const id of selected) {
-        const series = seriesByMetricRef.current.get(id);
-        if (!series) continue;
-        const d = param.seriesData.get(series as any) as any;
-        const v = d && typeof d === "object" && "value" in d && typeof d.value === "number" ? (d.value as number) : null;
-        rows.push({ id, label: CHARTING_METRIC_LABEL[id], value: formatTableCell(CHARTING_METRIC_KIND[id], v) });
-      }
+          const usedScales = new Set<string>();
 
-      if (hoverRafRef.current) cancelAnimationFrame(hoverRafRef.current);
-      hoverRafRef.current = requestAnimationFrame(() => {
-        setHover({ x, time: timeKey, periodLabel, rows });
+          for (const id of selected) {
+            const data = seriesData(ordered, id);
+            if (!data.length) continue;
+            const kind = CHARTING_METRIC_KIND[id];
+            const scaleId = scaleIdForKind(kind);
+            usedScales.add(scaleId);
+            if (chartType === "bars") {
+              const barColor = withAlpha(metricColor(id), 0.55);
+              const s = chart.addSeries(HistogramSeries, {
+                color: barColor,
+                priceScaleId: scaleId,
+                priceFormat: priceFormatForKind(kind),
+                title: CHARTING_METRIC_LABEL[id],
+              });
+              s.setData(
+                data.map((d) => ({
+                  time: d.time,
+                  value: d.value,
+                  color: barColor,
+                })),
+              );
+              seriesByMetricRef.current.set(id, s);
+            } else {
+              const s = chart.addSeries(LineSeries, {
+                color: metricColor(id),
+                lineWidth: 2,
+                lineType: LineType.Curved,
+                priceScaleId: scaleId,
+                priceFormat: priceFormatForKind(kind),
+                title: CHARTING_METRIC_LABEL[id],
+              });
+              s.setData(data);
+              seriesByMetricRef.current.set(id, s);
+            }
+          }
+
+          const scaleOpts = {
+            borderVisible: false,
+            scaleMargins: { top: 0.07, bottom: 0.1 },
+          };
+          for (const sid of ["usd", "shares", "eps", "pct", "mult"]) {
+            if (usedScales.has(sid)) {
+              chart.priceScale(sid).applyOptions({ visible: true, ...scaleOpts });
+            }
+          }
+
+          chart.timeScale().fitContent();
+
+          const onCrosshairMove = (param: MouseEventParams) => {
+            if (!param.point || param.point.x < 0 || param.time === undefined) {
+              if (hoverRafRef.current) cancelAnimationFrame(hoverRafRef.current);
+              hoverRafRef.current = requestAnimationFrame(() => setHover(null));
+              return;
+            }
+
+            const x = param.point.x;
+            const rawTime = param.time as UTCTimestamp;
+            const timeKey = typeof rawTime === "number" && Number.isFinite(rawTime) ? rawTime : null;
+            if (timeKey == null) {
+              if (hoverRafRef.current) cancelAnimationFrame(hoverRafRef.current);
+              hoverRafRef.current = requestAnimationFrame(() => setHover(null));
+              return;
+            }
+
+            const row = timeToRow.get(timeKey);
+            const periodLabel = row ? formatPeriodLabel(row.periodEnd, periodMode) : String(timeKey);
+
+            const rows: Array<{ id: ChartingMetricId; label: string; value: string }> = [];
+            for (const id of selected) {
+              const series = seriesByMetricRef.current.get(id);
+              if (!series) continue;
+              const rawPoint = param.seriesData.get(series);
+              const v =
+                rawPoint &&
+                typeof rawPoint === "object" &&
+                rawPoint !== null &&
+                "value" in rawPoint &&
+                typeof (rawPoint as { value: unknown }).value === "number"
+                  ? (rawPoint as { value: number }).value
+                  : null;
+              rows.push({ id, label: CHARTING_METRIC_LABEL[id], value: formatTableCell(CHARTING_METRIC_KIND[id], v) });
+            }
+
+            if (hoverRafRef.current) cancelAnimationFrame(hoverRafRef.current);
+            hoverRafRef.current = requestAnimationFrame(() => {
+              setHover({ x, time: timeKey, periodLabel, rows });
+            });
+          };
+
+          chart.subscribeCrosshairMove(onCrosshairMove);
+
+          resizeObserver = new ResizeObserver(() => {
+            const rw = el.clientWidth;
+            if (rw > 0 && chartRef.current) chartRef.current.resize(rw, chartHeight);
+          });
+          resizeObserver.observe(el);
+          chart.resize(el.clientWidth, chartHeight);
+        });
       });
     };
 
-    chart.subscribeCrosshairMove(onCrosshairMove);
-
-    const ro = new ResizeObserver(() => {
-      const w = el.clientWidth;
-      if (w > 0) chart.resize(w, chartHeight);
-    });
-    ro.observe(el);
-    chart.resize(el.clientWidth, chartHeight);
+    mountChart();
 
     return () => {
-      ro.disconnect();
-      chart.unsubscribeCrosshairMove(onCrosshairMove);
-      chart.remove();
-      chartRef.current = null;
+      cancelled = true;
+      resizeObserver?.disconnect();
+      resizeObserver = null;
+      if (chartRef.current) {
+        chartRef.current.remove();
+        chartRef.current = null;
+      }
       seriesByMetricRef.current = new Map();
       if (hoverRafRef.current) cancelAnimationFrame(hoverRafRef.current);
       setHover(null);

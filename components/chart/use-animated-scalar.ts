@@ -14,8 +14,8 @@ export function useAnimatedScalar(target: number | null, durationMs = 140): numb
     cancelAnimationFrame(frameRef.current);
     if (target == null) {
       currentRef.current = null;
-      setValue(null);
-      return;
+      const id = requestAnimationFrame(() => setValue(null));
+      return () => cancelAnimationFrame(id);
     }
     const from = currentRef.current ?? target;
     const t0 = performance.now();

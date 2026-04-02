@@ -22,6 +22,8 @@ export function useWatchlist() {
   const [watched, setWatched] = useState<Set<string>>(() => new Set());
   const [loaded, setLoaded] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+  /** Set when GET /api/watchlist returns `warning: db_unavailable` — server list could not be loaded. */
+  const [serverListWarning, setServerListWarning] = useState<string | null>(null);
 
   useEffect(() => {
     const tickers = readWatchlistLocal();
@@ -42,6 +44,9 @@ export function useWatchlist() {
           const data = (await res.json()) as { items?: { ticker: string }[]; warning?: string };
           const items = Array.isArray(data.items) ? data.items : [];
           const server = new Set(items.map((i) => normalizeTicker(i.ticker)));
+          setServerListWarning(
+            data.warning === "db_unavailable" ? "Watchlist temporarily unavailable" : null,
+          );
           wlLog("GET /api/watchlist ok", {
             serverCount: server.size,
             warning: data.warning,
@@ -54,9 +59,11 @@ export function useWatchlist() {
             return merged;
           });
         } else {
+          setServerListWarning(null);
           wlLog("GET /api/watchlist failed", { status: res.status });
         }
       } catch (e) {
+        setServerListWarning(null);
         wlLog("GET /api/watchlist throw", e);
       } finally {
         if (!cancelled) setLoaded(true);
@@ -119,5 +126,5 @@ export function useWatchlist() {
     })();
   }, []);
 
-  return { watched, loaded, toggleTicker };
+  return { watched, loaded, toggleTicker, serverListWarning, storageHydrated: hydrated };
 }

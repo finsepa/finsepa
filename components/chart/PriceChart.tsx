@@ -50,6 +50,8 @@ type Props = {
   range: StockChartRange;
   height?: number;
   onDisplayChange?: (state: ChartDisplayState) => void;
+  /** Server-provided series for the default overview range — avoids a duplicate chart fetch on first paint. */
+  initialChart?: { range: StockChartRange; points: StockChartPoint[] } | null;
 };
 
 function isFiniteNumber(v: unknown): v is number {
@@ -90,8 +92,9 @@ function SelectionLayers({ containerWidth, band }: { containerWidth: number; ban
   );
 }
 
-export function PriceChart({ kind, symbol, range, height = 320, onDisplayChange }: Props) {
+export function PriceChart({ kind, symbol, range, height = 320, onDisplayChange, initialChart }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const initialConsumedRef = useRef(false);
   const wrapRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Baseline"> | null>(null);
@@ -111,7 +114,9 @@ export function PriceChart({ kind, symbol, range, height = 320, onDisplayChange 
   const [selectionBand, setSelectionBand] = useState<BandGeom | null>(null);
   const [containerWidth, setContainerWidth] = useState(0);
 
-  pointsRef.current = points;
+  useEffect(() => {
+    pointsRef.current = points;
+  }, [points]);
 
   const metrics = useMemo(
     () => computeChartHeaderMetrics(points, hoverPrice, hoverTimeUnix, selection),
@@ -165,11 +170,17 @@ export function PriceChart({ kind, symbol, range, height = 320, onDisplayChange 
   }, []);
 
   useEffect(() => {
-    setSelection(null);
-    setSelectionBand(null);
-    setDragPreview(null);
-    setHoverTimeUnix(null);
+    queueMicrotask(() => {
+      setSelection(null);
+      setSelectionBand(null);
+      setDragPreview(null);
+      setHoverTimeUnix(null);
+    });
   }, [kind, symbol, range]);
+
+  useEffect(() => {
+    initialConsumedRef.current = false;
+  }, [kind, symbol]);
 
   useEffect(() => {
     const onDoc = (e: MouseEvent) => {
@@ -307,7 +318,6 @@ export function PriceChart({ kind, symbol, range, height = 320, onDisplayChange 
       chartRef.current = null;
       seriesRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [height]);
 
   const handlePointerDown = useCallback(
@@ -391,6 +401,25 @@ export function PriceChart({ kind, symbol, range, height = 320, onDisplayChange 
   useEffect(() => {
     let mounted = true;
     async function load() {
+      if (
+        initialChart &&
+        initialChart.range === range &&
+        initialChart.points.length > 0 &&
+        !initialConsumedRef.current
+      ) {
+        initialConsumedRef.current = true;
+        setLoading(true);
+        setHoverPrice(null);
+        setHoverTimeUnix(null);
+        setSelection(null);
+        setSelectionBand(null);
+        setReady(false);
+        setPoints(initialChart.points);
+        setLoading(false);
+        requestAnimationFrame(() => setReady(true));
+        return;
+      }
+
       setLoading(true);
       setHoverPrice(null);
       setHoverTimeUnix(null);
@@ -402,7 +431,7 @@ export function PriceChart({ kind, symbol, range, height = 320, onDisplayChange 
           ? `/api/stocks/${encodeURIComponent(symbol)}/chart?range=${encodeURIComponent(range)}`
           : `/api/crypto/${encodeURIComponent(symbol)}/chart?range=${encodeURIComponent(range)}`;
       try {
-        const res = await fetch(path, { cache: "no-store", credentials: "include" });
+        const res = await fetch(path, { credentials: "include" });
         if (!res.ok) {
           if (!mounted) return;
           setPoints([]);
@@ -426,7 +455,7 @@ export function PriceChart({ kind, symbol, range, height = 320, onDisplayChange 
     return () => {
       mounted = false;
     };
-  }, [kind, symbol, range]);
+  }, [kind, symbol, range, initialChart]);
 
   // Series data, baseline reference, dashed baseline line, last-point marker
   useEffect(() => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { Star } from "lucide-react";
+import { Star, Trash2 } from "lucide-react";
 
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
 
@@ -82,4 +82,34 @@ type ButtonProps = Omit<ToggleProps, "watched" | "loaded" | "toggleTicker">;
 export function WatchlistStarButton(props: ButtonProps) {
   const { watched, loaded, toggleTicker } = useWatchlist();
   return <WatchlistStarToggle {...props} watched={watched} loaded={loaded} toggleTicker={toggleTicker} />;
+}
+
+/** Watchlist table: remove row (same toggle as star, different affordance). */
+export function WatchlistRowRemoveButton({
+  storageKey,
+  label,
+  toggleTicker,
+  className,
+}: {
+  storageKey: string;
+  label: string;
+  toggleTicker: (ticker: string) => void;
+  className?: string;
+}) {
+  return (
+    <div className={className}>
+      <button
+        type="button"
+        aria-label={`Remove ${label} from watchlist`}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          toggleTicker(storageKey);
+        }}
+        className="flex items-center justify-center rounded-md p-1.5 text-[#A1A1AA] outline-none transition-colors hover:text-red-600 focus-visible:ring-2 focus-visible:ring-[#09090B]/20"
+      >
+        <Trash2 className="h-4 w-4" strokeWidth={1.75} />
+      </button>
+    </div>
+  );
 }

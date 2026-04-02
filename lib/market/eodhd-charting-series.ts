@@ -1,5 +1,9 @@
 import "server-only";
 
+import { unstable_cache } from "next/cache";
+
+import { REVALIDATE_WARM } from "@/lib/data/cache-policy";
+
 import type { ChartingSeriesPoint, FundamentalsSeriesMode } from "@/lib/market/charting-series-types";
 import { fetchEodhdFundamentalsJson } from "@/lib/market/eodhd-fundamentals";
 import {
@@ -291,6 +295,17 @@ function emptyPoint(periodEnd: string): ChartingSeriesPoint {
   };
 }
 
+/**
+ * Build charting series points from an already-fetched fundamentals root.
+ * Use this when you need both annual and quarterly to avoid multiple EODHD fundamentals calls.
+ */
+export function buildChartingPointsFromFundamentalsRoot(
+  root: Record<string, unknown>,
+  mode: FundamentalsSeriesMode,
+): ChartingSeriesPoint[] {
+  return buildMergedPoints(root, mode) ?? [];
+}
+
 function buildMergedPoints(root: Record<string, unknown>, mode: FundamentalsSeriesMode): ChartingSeriesPoint[] | null {
   const isBlock = getFinancialBlock(root, "Income_Statement", mode);
   if (!isBlock) return null;
@@ -353,7 +368,7 @@ export function computeAvailableMetrics(points: ChartingSeriesPoint[]): Charting
   return CHARTING_METRIC_IDS.filter((id) => metricHasSeries(points, id));
 }
 
-export async function fetchChartingSeries(
+async function fetchChartingSeriesUncached(
   ticker: string,
   mode: FundamentalsSeriesMode,
 ): Promise<{ points: ChartingSeriesPoint[]; availableMetrics: ChartingMetricId[] } | null> {
@@ -366,3 +381,9 @@ export async function fetchChartingSeries(
   const availableMetrics = computeAvailableMetrics(points);
   return { points, availableMetrics };
 }
+
+export const fetchChartingSeries = unstable_cache(
+  fetchChartingSeriesUncached,
+  ["eodhd-charting-series-v2"],
+  { revalidate: REVALIDATE_WARM },
+);

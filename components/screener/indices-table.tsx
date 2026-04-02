@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { IndicesTableSkeleton } from "@/components/markets/markets-skeletons";
 import { WatchlistStarToggle } from "@/components/watchlist/watchlist-star-button";
 import { indexWatchlistKey } from "@/lib/watchlist/constants";
@@ -17,6 +17,7 @@ type IndexRow = {
 };
 
 function formatValue(v: number): string {
+  if (!Number.isFinite(v)) return "-";
   return v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
@@ -39,6 +40,13 @@ function ChangeCell({ value }: { value: number | null }) {
 function Spark({ points, positive }: { points: number[]; positive: boolean }) {
   const w = 80;
   const h = 32;
+  if (points.length < 1) {
+    return (
+      <span className="inline-flex h-8 w-20 items-center justify-center">
+        <span className="h-8 w-20 rounded-md bg-[#E4E4E7]" />
+      </span>
+    );
+  }
   const series = points.length >= 2 ? points : points.length === 1 ? [points[0]!, points[0]!] : [0, 0];
   const min = Math.min(...series);
   const max = Math.max(...series);
@@ -62,39 +70,22 @@ function Spark({ points, positive }: { points: number[]; positive: boolean }) {
   );
 }
 
-const colLayout = "grid-cols-[40px_2fr_1fr_1fr_1fr_1fr_96px]";
+const colLayout = "grid-cols-[40px_2fr_1fr_1fr_1fr_1fr_96px] gap-x-2";
 
-export function IndicesTable() {
-  const [rows, setRows] = useState<IndexRow[]>([]);
-  const [loading, setLoading] = useState(true);
+export function IndicesTable({ initialRows }: { initialRows?: IndexRow[] }) {
+  const rows = Array.isArray(initialRows) ? initialRows : [];
   const { watched, loaded, toggleTicker } = useWatchlist();
-
-  useEffect(() => {
-    let mounted = true;
-    async function load() {
-      setLoading(true);
-      const res = await fetch(`/api/screener/indices-top10?ts=${Date.now()}`, { cache: "no-store" });
-      const json = (await res.json()) as { rows?: IndexRow[] };
-      if (!mounted) return;
-      setRows(Array.isArray(json.rows) ? json.rows : []);
-      setLoading(false);
-    }
-    void load();
-    return () => {
-      mounted = false;
-    };
-  }, []);
 
   const safeRows = useMemo(() => rows, [rows]);
 
-  if (loading || safeRows.length === 0) {
+  if (safeRows.length === 0) {
     return <IndicesTableSkeleton rows={10} />;
   }
 
   return (
-    <div className="overflow-hidden">
+    <div className="divide-y divide-[#E4E4E7] border-t border-b border-[#E4E4E7]">
       <div
-        className={`grid ${colLayout} items-center border-t border-b border-[#E4E4E7] bg-white px-4 py-3 text-[14px] font-semibold leading-5 text-[#71717A] [&>div]:text-center`}
+        className={`grid ${colLayout} min-h-[44px] items-center bg-white px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A] [&>div]:text-center`}
       >
         <div />
         <div className="!text-left">Index</div>
@@ -111,7 +102,7 @@ export function IndicesTable() {
         return (
           <div
             key={r.symbol}
-            className={`group grid h-[60px] max-h-[60px] ${colLayout} items-center border-b border-[#E4E4E7] px-1 last:border-b-0 transition-colors duration-75 hover:bg-neutral-50`}
+            className={`group grid h-[60px] max-h-[60px] ${colLayout} items-center bg-white px-1 transition-colors duration-75 hover:bg-neutral-50`}
           >
             <WatchlistStarToggle
               className="flex w-10 shrink-0 items-center justify-center px-3"

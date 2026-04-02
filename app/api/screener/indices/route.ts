@@ -1,17 +1,17 @@
 import { NextResponse } from "next/server";
-
-import { loadIndicesCardsUncached } from "@/lib/screener/indices-today";
-
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+import { REVALIDATE_HOT_FAST } from "@/lib/data/cache-policy";
+import { getSimpleIndexCards } from "@/lib/screener/simple-index-cards";
 
 export async function GET() {
-  const cards = await loadIndicesCardsUncached();
-  // Temporary debug log: verify exact payload served to UI.
-  console.log("[indices-route] payload", JSON.stringify(cards, null, 2));
+  const cards = await getSimpleIndexCards();
+
   return NextResponse.json(
     { cards, fetchedAt: new Date().toISOString() },
-    { headers: { "Cache-Control": "no-store, no-cache, must-revalidate" } },
+    {
+      headers: {
+        "Cache-Control": `public, s-maxage=${REVALIDATE_HOT_FAST}, stale-while-revalidate=${REVALIDATE_HOT_FAST * 2}`,
+      },
+    },
   );
 }
 

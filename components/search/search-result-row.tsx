@@ -1,25 +1,38 @@
 "use client";
 
-import { useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { X } from "lucide-react";
 
 import { WatchlistStarToggle } from "@/components/watchlist/watchlist-star-button";
+import { mergeLogoMemory, readLogoMemory } from "@/lib/logos/logo-memory";
 import type { SearchAssetItem } from "@/lib/search/search-types";
 import { watchlistStorageKeyForSearchItem } from "@/lib/search/watchlist-storage-key";
 
 function LogoBlock({ item }: { item: SearchAssetItem }) {
   const [imgErr, setImgErr] = useState(false);
-  if (item.logoUrl && !imgErr) {
+  const sym = item.symbol.trim().toUpperCase();
+  const fromServer = item.logoUrl?.trim() ?? "";
+  const fromMem = readLogoMemory(sym);
+  const src = fromServer || (fromMem ?? "");
+
+  useEffect(() => {
+    if (fromServer) mergeLogoMemory(sym, fromServer);
+  }, [sym, fromServer]);
+
+  if (src && !imgErr) {
     return (
       // eslint-disable-next-line @next/next/no-img-element -- remote favicon
       <img
-        src={item.logoUrl}
+        src={src}
         alt=""
         width={40}
         height={40}
         className="h-10 w-10 shrink-0 rounded-xl border border-neutral-200 bg-white object-contain"
-        onError={() => setImgErr(true)}
+        onError={() => {
+          setImgErr(true);
+          mergeLogoMemory(sym, null);
+        }}
       />
     );
   }
@@ -55,23 +68,29 @@ type Props = {
   onNavigate: (item: SearchAssetItem) => void;
   onRemoveRecent?: () => void;
   active?: boolean;
-  watched: Set<string>;
+  /** Whether this asset is on the watchlist (avoids passing the full Set each render). */
+  starred: boolean;
   loaded: boolean;
   toggleTicker: (ticker: string) => void;
 };
 
-export function SearchResultRow({
+function SearchResultRowInner({
   item,
   variant,
   onNavigate,
   onRemoveRecent,
   active,
-  watched,
+  starred,
   loaded,
   toggleTicker,
 }: Props) {
   const wlKey = watchlistStorageKeyForSearchItem(item);
   const label = item.symbol;
+
+  const watchedSet = useMemo(() => {
+    const k = wlKey.trim().toUpperCase();
+    return starred ? new Set([k]) : new Set<string>();
+  }, [starred, wlKey]);
 
   const rowClass = `group flex items-center gap-2 px-5 py-3 transition-colors ${
     active ? "bg-[#EEF2FF]" : "hover:bg-[#F4F4F5]"
@@ -101,7 +120,7 @@ export function SearchResultRow({
           className="flex w-8 shrink-0 items-center justify-center"
           storageKey={wlKey}
           label={label}
-          watched={watched}
+          watched={watchedSet}
           loaded={loaded}
           toggleTicker={toggleTicker}
         />
@@ -111,14 +130,13 @@ export function SearchResultRow({
     );
   }
 
-  // recent
   return (
     <div className={rowClass}>
       <WatchlistStarToggle
         className="flex w-8 shrink-0 items-center justify-center"
         storageKey={wlKey}
         label={label}
-        watched={watched}
+        watched={watchedSet}
         loaded={loaded}
         toggleTicker={toggleTicker}
       />
@@ -143,3 +161,5 @@ export function SearchResultRow({
     </div>
   );
 }
+
+export const SearchResultRow = memo(SearchResultRowInner);

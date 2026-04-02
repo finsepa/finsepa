@@ -24,8 +24,11 @@ function numFromRow(row: Record<string, unknown> | null, keys: string[]): number
 
 export type KeyStatsAssetsRow = { label: string; value: string };
 
-export async function fetchEodhdKeyStatsAssetsLiabilities(ticker: string): Promise<{ rows: KeyStatsAssetsRow[] } | null> {
-  const root = await fetchEodhdFundamentalsJson(ticker);
+export async function fetchEodhdKeyStatsAssetsLiabilities(
+  ticker: string,
+  fundamentalsRoot?: Record<string, unknown> | null,
+): Promise<{ rows: KeyStatsAssetsRow[] } | null> {
+  const root = fundamentalsRoot ?? (await fetchEodhdFundamentalsJson(ticker));
   if (!root) return null;
 
   const hl = root.Highlights && typeof root.Highlights === "object" ? (root.Highlights as Record<string, unknown>) : null;
@@ -40,9 +43,9 @@ export async function fetchEodhdKeyStatsAssetsLiabilities(ticker: string): Promi
     "cashAndShortTermInvestments",
     "CashAndShortTermInvestments",
   ]);
-  let longTermDebt = numFromRow(row, ["longTermDebt", "LongTermDebt", "longTermDebtNoncurrent"]);
-  let totalLiab = numFromRow(row, ["totalLiab", "TotalLiab", "totalLiabilities", "TotalLiabilities"]);
-  let equity = numFromRow(row, [
+  const longTermDebt = numFromRow(row, ["longTermDebt", "LongTermDebt", "longTermDebtNoncurrent"]);
+  const totalLiab = numFromRow(row, ["totalLiab", "TotalLiab", "totalLiabilities", "TotalLiabilities"]);
+  const equity = numFromRow(row, [
     "totalStockholderEquity",
     "TotalStockholderEquity",
     "totalStockholdersEquity",

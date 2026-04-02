@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { AssetPageTopLoader } from "@/components/layout/asset-page-top-loader";
 import type { ChartDisplayState } from "@/components/chart/PriceChart";
 import { PriceChart } from "@/components/chart/PriceChart";
 import type { StockDetailHeaderMeta } from "@/lib/market/stock-header-meta";
@@ -15,6 +16,7 @@ import { ChartControls } from "./chart-controls";
 import { MiniTable } from "./mini-table";
 import { KeyStats } from "./key-stats";
 import { LatestNews } from "./latest-news";
+import type { StockPageInitialData } from "@/lib/market/stock-page-initial-data";
 import type { StockChartRange } from "@/lib/market/stock-chart-types";
 import { WATCHLIST_MUTATED_EVENT } from "@/lib/watchlist/constants";
 
@@ -41,7 +43,13 @@ function tabFromSearchParam(raw: string | null): StockDetailTabId | null {
   return null;
 }
 
-export function StockPageContent({ routeTicker }: { routeTicker?: string }) {
+export function StockPageContent({
+  routeTicker,
+  initialPageData,
+}: {
+  routeTicker?: string;
+  initialPageData?: StockPageInitialData | null;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -53,8 +61,10 @@ export function StockPageContent({ routeTicker }: { routeTicker?: string }) {
   const activeTab: StockDetailTabId = tabFromSearchParam(searchParams.get("tab")) ?? "overview";
   const chartingMetricParam = searchParams.get("metric");
 
-  const [headerMeta, setHeaderMeta] = useState<StockDetailHeaderMeta | null>(null);
-  const [headerMetaLoading, setHeaderMetaLoading] = useState(true);
+  const serverHeader =
+    initialPageData?.ticker === ticker ? initialPageData.headerMeta : null;
+  const [headerMeta, setHeaderMeta] = useState<StockDetailHeaderMeta | null>(serverHeader);
+  const [headerMetaLoading, setHeaderMetaLoading] = useState(!serverHeader);
 
   const refetchHeaderMeta = useCallback(async () => {
     setHeaderMetaLoading(true);
@@ -74,29 +84,16 @@ export function StockPageContent({ routeTicker }: { routeTicker?: string }) {
   }, [ticker]);
 
   useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      setHeaderMetaLoading(true);
-      try {
-        const res = await fetch(`/api/stocks/${encodeURIComponent(ticker)}/header-meta`, { cache: "no-store" });
-        if (!res.ok) {
-          if (!cancelled) setHeaderMeta(null);
-          return;
-        }
-        const json = (await res.json()) as Parameters<typeof parseStockHeaderMetaPayload>[0];
-        if (cancelled) return;
-        setHeaderMeta(parseStockHeaderMetaPayload(json));
-      } catch {
-        if (!cancelled) setHeaderMeta(null);
-      } finally {
-        if (!cancelled) setHeaderMetaLoading(false);
-      }
+    // Keep header meta stable after navigation (SSR provides it).
+    // Only refetch when the watchlist mutates for this ticker.
+    if (initialPageData?.ticker === ticker && initialPageData.headerMeta) {
+      setHeaderMeta(initialPageData.headerMeta);
+      setHeaderMetaLoading(false);
+      return;
     }
-    void load();
-    return () => {
-      cancelled = true;
-    };
-  }, [ticker]);
+    setHeaderMeta(serverHeader);
+    setHeaderMetaLoading(!serverHeader);
+  }, [ticker, initialPageData?.ticker, initialPageData?.headerMeta, serverHeader]);
 
   useEffect(() => {
     const onMut = (e: Event) => {
@@ -160,8 +157,16 @@ export function StockPageContent({ routeTicker }: { routeTicker?: string }) {
     setChartUi(s);
   }, []);
 
+  const initialChartMemo = useMemo(
+    () => (initialPageData?.ticker === ticker ? initialPageData.chart : null),
+    [initialPageData, ticker],
+  );
+
   return (
-    <div className="space-y-5 px-9 py-6">
+    <div className="relative space-y-5 px-9 py-6">
+      <Suspense fallback={null}>
+        <AssetPageTopLoader />
+      </Suspense>
       <StockHeader
         ticker={ticker}
         periodLabel={range}
@@ -182,21 +187,49 @@ export function StockPageContent({ routeTicker }: { routeTicker?: string }) {
       {activeTab === "overview" ? (
         <>
           <ChartControls activeRange={range} onRangeChange={setRange} />
-          <PriceChart kind="stock" symbol={ticker} range={range} onDisplayChange={onChartDisplay} />
-          <MiniTable ticker={ticker} headerMeta={headerMeta} headerMetaLoading={headerMetaLoading} />
+          <PriceChart
+            kind="stock"
+            symbol={ticker}
+            range={range}
+            onDisplayChange={onChartDisplay}
+            initialChart={initialChartMemo}
+          />
+          <MiniTable
+            ticker={ticker}
+            headerMeta={headerMeta}
+            headerMetaLoading={headerMetaLoading}
+            initialPerformance={initialPageData?.ticker === ticker ? initialPageData.performance : null}
+          />
           <div className="pt-2">
-            <KeyStats ticker={ticker} onRevenueProfitMetricClick={openChartingWithMetric} />
+            <KeyStats
+              ticker={ticker}
+              initialBundle={initialPageData?.ticker === ticker ? initialPageData.keyStatsBundle : null}
+              onRevenueProfitMetricClick={openChartingWithMetric}
+            />
           </div>
           <div className="pt-2">
-            <LatestNews ticker={ticker} />
+            <LatestNews
+              ticker={ticker}
+              initialItems={initialPageData?.ticker === ticker ? initialPageData.news : undefined}
+            />
           </div>
         </>
       ) : activeTab === "charting" ? (
-        <StockChartingTab ticker={ticker} metricParam={chartingMetricParam} />
+        <StockChartingTab
+          ticker={ticker}
+          metricParam={chartingMetricParam}
+          initialAnnualPoints={initialPageData?.ticker === ticker ? initialPageData.fundamentalsSeriesAnnual : undefined}
+          initialQuarterlyPoints={
+            initialPageData?.ticker === ticker ? initialPageData.fundamentalsSeriesQuarterly : undefined
+          }
+        />
       ) : activeTab === "peers" ? (
         <StockPeersTab ticker={ticker} />
       ) : (
-        <StockProfileTab ticker={ticker} />
+        <StockProfileTab
+          ticker={ticker}
+          initialProfile={initialPageData?.ticker === ticker ? initialPageData.profile : undefined}
+        />
       )}
     </div>
   );

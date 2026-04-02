@@ -16,22 +16,24 @@ import {
   Wallet,
 } from "lucide-react";
 
+import { NAV_EARNINGS_ENABLED, NAV_MACRO_ENABLED, NAV_NEWS_ENABLED } from "@/lib/features/nav-flags";
+
 const soonBadgeClass =
   "shrink-0 rounded-md border border-[#E4E4E7] bg-[#F4F4F5] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#71717A]";
 
 const marketItems = [
   { label: "Screener", icon: Globe, href: "/screener", available: true },
   { label: "Heatmaps", icon: LayoutGrid, href: "/heatmaps", available: false },
-  { label: "News", icon: Newspaper, href: "/news", available: true },
+  { label: "News", icon: Newspaper, href: "/news", available: NAV_NEWS_ENABLED },
 ];
 
 const calendarItems = [
-  { label: "Earnings", icon: CalendarDays, href: "/earnings", available: false },
+  { label: "Earnings", icon: CalendarDays, href: "/earnings", available: NAV_EARNINGS_ENABLED },
   { label: "Economy", icon: BookOpen, href: "/economy", available: false },
 ];
 
 const dataItems = [
-  { label: "Macro", icon: Compass, href: "/macro", available: true },
+  { label: "Macro", icon: Compass, href: "/macro", available: NAV_MACRO_ENABLED },
   { label: "Charting", icon: ChartColumn, href: "/charting", available: false },
   { label: "Comparison", icon: PanelsTopLeft, href: "/comparison", available: false },
 ];
@@ -56,7 +58,7 @@ function SidebarRow({ item, pathname }: { item: NavItem; pathname: string }) {
   if (item.available) {
     return (
       <Link
-        prefetch
+        prefetch={false}
         href={item.href}
         className={`flex h-9 items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium leading-5 text-[#09090B] transition-all duration-100 ${
           isActive ? "bg-[#F4F4F5]" : "hover:bg-[#F4F4F5]"

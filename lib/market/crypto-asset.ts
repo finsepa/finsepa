@@ -2,6 +2,7 @@ import "server-only";
 
 import { unstable_cache } from "next/cache";
 
+import { REVALIDATE_HOT } from "@/lib/data/cache-policy";
 import {
   toSupportedCryptoTicker,
   type SupportedCryptoTicker,
@@ -180,6 +181,6 @@ async function loadCryptoAssetUncached(symbolOrTicker: string): Promise<CryptoAs
   return null;
 }
 
-export const getCryptoAsset = unstable_cache(loadCryptoAssetUncached, ["crypto-asset-v3"], {
-  revalidate: 60,
+export const getCryptoAsset = unstable_cache(loadCryptoAssetUncached, ["crypto-asset-v5"], {
+  revalidate: REVALIDATE_HOT,
 });

@@ -3,6 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Bell, ChevronDown, Folder, Search, SquarePlus, Star } from "lucide-react";
+import {
+  TOPBAR_SHOW_NOTIFICATIONS,
+  TOPBAR_SHOW_PORTFOLIO_BLOCK,
+  TOPBAR_SHOW_QUICK_ADD,
+} from "@/lib/features/topbar-flags";
 import { SearchModal } from "./search-modal";
 import { TopbarUserMenu } from "./topbar-user-menu";
 
@@ -40,9 +45,11 @@ export function Topbar({
 
         {/* Right side */}
         <div className="flex items-center gap-3">
-          <IconButton>
-            <Bell className="h-5 w-5" />
-          </IconButton>
+          {TOPBAR_SHOW_NOTIFICATIONS ? (
+            <IconButton>
+              <Bell className="h-5 w-5" />
+            </IconButton>
+          ) : null}
 
           <Link href="/watchlist">
             <IconButton>
@@ -50,22 +57,30 @@ export function Topbar({
             </IconButton>
           </Link>
 
-          <IconButton>
-            <SquarePlus className="h-5 w-5" />
-          </IconButton>
+          {TOPBAR_SHOW_QUICK_ADD ? (
+            <IconButton>
+              <SquarePlus className="h-5 w-5" />
+            </IconButton>
+          ) : null}
 
-          <div className="h-5 w-px bg-[#E4E4E7]" />
-
-          {/* Balance pill */}
-          <div className="flex h-9 items-center overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5]">
-            <div className="flex items-center gap-2 border-r border-[#E4E4E7] px-3 text-sm font-medium text-[#09090B]">
-              <Folder className="h-5 w-5 shrink-0 text-[#09090B]" />
-              <span>$274,36.40</span>
-            </div>
-            <button className="flex h-full items-center justify-center px-2 text-[#09090B] transition-all duration-100 hover:bg-[#F4F4F5]">
-              <ChevronDown className="h-5 w-5" />
-            </button>
-          </div>
+          {TOPBAR_SHOW_PORTFOLIO_BLOCK ? (
+            <>
+              <div className="h-5 w-px bg-[#E4E4E7]" />
+              {/* Balance pill */}
+              <div className="flex h-9 items-center overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5]">
+                <div className="flex items-center gap-2 border-r border-[#E4E4E7] px-3 text-sm font-medium text-[#09090B]">
+                  <Folder className="h-5 w-5 shrink-0 text-[#09090B]" />
+                  <span>—</span>
+                </div>
+                <button
+                  type="button"
+                  className="flex h-full items-center justify-center px-2 text-[#09090B] transition-all duration-100 hover:bg-[#F4F4F5]"
+                >
+                  <ChevronDown className="h-5 w-5" />
+                </button>
+              </div>
+            </>
+          ) : null}
 
           <TopbarUserMenu userInitials={userInitials} avatarUrl={avatarUrl} />
         </div>

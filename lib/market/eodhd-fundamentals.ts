@@ -1,5 +1,10 @@
 import "server-only";
 
+import { unstable_cache } from "next/cache";
+
+import { REVALIDATE_WARM } from "@/lib/data/cache-policy";
+
+import { traceEodhdHttp } from "@/lib/market/provider-trace";
 import { getEodhdApiKey } from "@/lib/env/server";
 import { toEodhdUsSymbol } from "@/lib/market/eodhd-symbol";
 
@@ -161,9 +166,10 @@ export function resolveEarningsDateDisplay(highlights: Record<string, unknown> |
 
 /**
  * Raw EODHD fundamentals JSON (one HTTP call). Shared by highlights + profile parsers.
+ * Cached per ticker so parallel key-stats / header / profile work shares one upstream request.
  * @see https://eodhd.com/financial-apis/stock-etfs-fundamental-data-feeds/
  */
-export async function fetchEodhdFundamentalsJson(ticker: string): Promise<Record<string, unknown> | null> {
+async function fetchEodhdFundamentalsJsonUncached(ticker: string): Promise<Record<string, unknown> | null> {
   const key = getEodhdApiKey();
   if (!key) return null;
 
@@ -171,7 +177,8 @@ export async function fetchEodhdFundamentalsJson(ticker: string): Promise<Record
   const url = `https://eodhd.com/api/fundamentals/${encodeURIComponent(sym)}?api_token=${encodeURIComponent(key)}&fmt=json`;
 
   try {
-    const res = await fetch(url, { cache: "no-store" });
+    traceEodhdHttp("fetchEodhdFundamentalsJsonUncached", { symbol: sym });
+    const res = await fetch(url, { next: { revalidate: 300 } });
     if (!res.ok) return null;
     const root = (await res.json()) as Record<string, unknown> | null;
     if (!root || typeof root !== "object" || "error" in root) return null;
@@ -179,6 +186,56 @@ export async function fetchEodhdFundamentalsJson(ticker: string): Promise<Record
   } catch {
     return null;
   }
+}
+
+/**
+ * Same HTTP payload as {@link fetchEodhdFundamentalsJson} but skips `unstable_cache`.
+ * Use for explicit refresh flows (e.g. `?refresh=1` on key-stats-bundle).
+ */
+export async function fetchEodhdFundamentalsJsonFresh(ticker: string): Promise<Record<string, unknown> | null> {
+  return fetchEodhdFundamentalsJsonUncached(ticker);
+}
+
+export const fetchEodhdFundamentalsJson = unstable_cache(
+  fetchEodhdFundamentalsJsonUncached,
+  ["eodhd-fundamentals-json-v5"],
+  { revalidate: REVALIDATE_WARM },
+);
+
+/**
+ * Fundamentals for list views (e.g. Screener PE / logo domain). Short data cache to cut repeated work across pagination.
+ */
+export async function fetchEodhdFundamentalsJsonScreener(ticker: string): Promise<Record<string, unknown> | null> {
+  const key = getEodhdApiKey();
+  if (!key) return null;
+
+  const sym = toEodhdUsSymbol(ticker);
+  const url = `https://eodhd.com/api/fundamentals/${encodeURIComponent(sym)}?api_token=${encodeURIComponent(key)}&fmt=json`;
+
+  try {
+    traceEodhdHttp("fetchEodhdFundamentalsJsonScreener", { symbol: sym });
+    const res = await fetch(url, { next: { revalidate: 300 } });
+    if (!res.ok) return null;
+    const root = (await res.json()) as Record<string, unknown> | null;
+    if (!root || typeof root !== "object" || "error" in root) return null;
+    return root;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * USD market cap from a fundamentals JSON root (Highlights / Valuation), or null.
+ * Shared by highlights + earnings calendar filtering.
+ */
+export function extractMarketCapUsdFromFundamentalsRoot(root: Record<string, unknown>): number | null {
+  const hl = root.Highlights && typeof root.Highlights === "object" ? (root.Highlights as Record<string, unknown>) : null;
+  let marketCapUsd = hl
+    ? num(hl.MarketCapitalization ?? hl.MarketCapitalisation ?? hl.MarketCap)
+    : null;
+  const val = root.Valuation && typeof root.Valuation === "object" ? (root.Valuation as Record<string, unknown>) : null;
+  if (marketCapUsd == null && val) marketCapUsd = num(val.MarketCapitalization);
+  return marketCapUsd;
 }
 
 /**
@@ -193,7 +250,7 @@ export async function fetchEodhdFundamentalsHighlights(ticker: string): Promise<
     const hl = root.Highlights;
     const highlights = hl && typeof hl === "object" ? (hl as Record<string, unknown>) : null;
 
-    let marketCapUsd: number | null = null;
+    const marketCapUsd: number | null = extractMarketCapUsdFromFundamentalsRoot(root);
     let peTrailing: number | null = null;
     let peForward: number | null = null;
     let sector: string | null = null;
@@ -207,9 +264,6 @@ export async function fetchEodhdFundamentalsHighlights(ticker: string): Promise<
     }
 
     if (highlights) {
-      marketCapUsd = num(
-        highlights.MarketCapitalization ?? highlights.MarketCapitalisation ?? highlights.MarketCap,
-      );
       peTrailing = num(highlights.PERatio ?? highlights.TrailingPE ?? highlights.PeRatio);
       peForward = num(highlights.ForwardPE ?? highlights.ForwardPe ?? highlights.ForwardPEPS);
     }
@@ -217,7 +271,6 @@ export async function fetchEodhdFundamentalsHighlights(ticker: string): Promise<
     const val = root.Valuation;
     if (val && typeof val === "object") {
       const v = val as Record<string, unknown>;
-      if (marketCapUsd == null) marketCapUsd = num(v.MarketCapitalization);
       if (peTrailing == null) peTrailing = num(v.PERatio ?? v.TrailingPE);
       if (peForward == null) peForward = num(v.ForwardPE);
     }

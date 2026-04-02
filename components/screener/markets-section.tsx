@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ScreenerTableRow } from "@/lib/screener/screener-static";
 import { IndexCards } from "@/components/screener/index-cards";
 import { MarketTabs, type MarketTab } from "@/components/screener/market-tabs";
@@ -9,102 +9,115 @@ import { ScreenerTable } from "@/components/screener/screener-table";
 import { CryptoTable } from "@/components/screener/crypto-table";
 import { IndicesTable } from "@/components/screener/indices-table";
 import { StocksTableSkeleton } from "@/components/markets/markets-skeletons";
+import type { CryptoTop10Row } from "@/lib/market/crypto-top10";
+import type { IndexTableRow } from "@/lib/market/indices-top10";
+import type { IndexCardData } from "@/lib/screener/indices-today";
 
-export function MarketsSection({ stockRows }: { stockRows: ScreenerTableRow[] }) {
+export function MarketsSection({
+  stockRows,
+  cryptoRows,
+  indicesRows,
+  indexCards,
+}: {
+  stockRows: ScreenerTableRow[];
+  cryptoRows: CryptoTop10Row[];
+  indicesRows: IndexTableRow[];
+  indexCards: IndexCardData[];
+}) {
   const [tab, setTab] = useState<MarketTab>("Stocks");
   const [stocksSubTab, setStocksSubTab] = useState<StocksSubTab>("Companies");
   const [companiesPage, setCompaniesPage] = useState(1);
   const [companiesPageSize] = useState(20);
-  const [companiesTotal, setCompaniesTotal] = useState(500);
-  const [companiesRows, setCompaniesRows] = useState<ScreenerTableRow[] | null>(null);
-  const [companiesLoading, setCompaniesLoading] = useState(false);
-  const [companiesError, setCompaniesError] = useState<string | null>(null);
-  const pageCacheRef = useRef(new Map<number, ScreenerTableRow[]>());
-  const inFlightRef = useRef<AbortController | null>(null);
+  const [companiesTotal] = useState(stockRows.length);
+  const [companiesRows] = useState<ScreenerTableRow[]>(stockRows);
+  const [companiesLoading] = useState(false);
+  const [companiesError] = useState<string | null>(null);
+
+  // On-demand upgrades (no skeletons): when user opens Crypto/Indices,
+  // fetch the fuller derived payload once and swap in-place.
+  const [cryptoRowsState, setCryptoRowsState] = useState<CryptoTop10Row[]>(cryptoRows);
+  const [indicesRowsState, setIndicesRowsState] = useState<IndexTableRow[]>(indicesRows);
+  const [cryptoUpgraded, setCryptoUpgraded] = useState(false);
+  const [indicesUpgraded, setIndicesUpgraded] = useState(false);
+
+  useEffect(() => {
+    if (tab !== "Crypto" || cryptoUpgraded) return;
+    // If already fully populated, skip.
+    const needs =
+      cryptoRowsState.some((r) => r.changePercent1M == null || r.changePercentYTD == null || !r.sparkline5d?.length);
+    if (!needs) {
+      setCryptoUpgraded(true);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch("/api/screener/crypto-top10", { cache: "no-store" });
+        const json = (await res.json()) as { rows?: CryptoTop10Row[] };
+        const next = Array.isArray(json.rows) ? json.rows : [];
+        if (cancelled) return;
+        if (next.length) setCryptoRowsState(next);
+      } catch {
+        // keep existing rows
+      } finally {
+        if (!cancelled) setCryptoUpgraded(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [tab, cryptoUpgraded, cryptoRowsState]);
+
+  useEffect(() => {
+    if (tab !== "Indices" || indicesUpgraded) return;
+    const needs = indicesRowsState.some((r) => r.change1M == null || r.changeYTD == null || !r.spark5d?.length);
+    if (!needs) {
+      setIndicesUpgraded(true);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch("/api/screener/indices-top10", { cache: "no-store" });
+        const json = (await res.json()) as { rows?: IndexTableRow[] };
+        const next = Array.isArray(json.rows) ? json.rows : [];
+        if (cancelled) return;
+        if (next.length) setIndicesRowsState(next);
+      } catch {
+        // keep existing rows
+      } finally {
+        if (!cancelled) setIndicesUpgraded(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [tab, indicesUpgraded, indicesRowsState]);
 
   const gainersLosers = useMemo(() => {
-    const sorted = [...stockRows].sort((a, b) => b.change1D - a.change1D);
-    const gainers = sorted.slice(0, 5);
-    const losers = [...sorted].reverse().slice(0, 5);
-    return { gainers, losers };
+    // Static mock ordering: NVDA is the only gainer and AAPL is the only loser.
+    const nvda = stockRows.find((r) => r.ticker === "NVDA");
+    const aapl = stockRows.find((r) => r.ticker === "AAPL");
+    return { gainers: nvda ? [nvda] : [], losers: aapl ? [aapl] : [] };
   }, [stockRows]);
 
   const totalPages = Math.max(1, Math.ceil(companiesTotal / companiesPageSize));
   const safeCompaniesPage = Math.min(totalPages, Math.max(1, companiesPage));
 
-  useEffect(() => {
-    if (tab !== "Stocks" || stocksSubTab !== "Companies") return;
-
-    const cached = pageCacheRef.current.get(safeCompaniesPage);
-    if (cached) {
-      setCompaniesRows(cached);
-      setCompaniesError(null);
-      return;
-    }
-
-    inFlightRef.current?.abort();
-    const ac = new AbortController();
-    inFlightRef.current = ac;
-
-    let mounted = true;
-    async function load() {
-      setCompaniesLoading(true);
-      setCompaniesError(null);
-      setCompaniesRows(null);
-      try {
-        const res = await fetch(
-          `/api/screener/companies?page=${safeCompaniesPage}&pageSize=${companiesPageSize}`,
-          { signal: ac.signal },
-        );
-        if (!res.ok) {
-          if (!mounted) return;
-          setCompaniesRows([]);
-          setCompaniesError("Failed to load companies.");
-          setCompaniesLoading(false);
-          return;
-        }
-        const json = (await res.json()) as { rows?: ScreenerTableRow[]; total?: number };
-        const rows = Array.isArray(json.rows) ? json.rows : [];
-        if (!mounted) return;
-        if (typeof json.total === "number" && Number.isFinite(json.total) && json.total > 0) {
-          setCompaniesTotal(json.total);
-        }
-        pageCacheRef.current.set(safeCompaniesPage, rows);
-        setCompaniesRows(rows);
-        setCompaniesLoading(false);
-
-        // Optional prefetch: warm the next page.
-        const next = safeCompaniesPage + 1;
-        if (next <= totalPages && !pageCacheRef.current.has(next)) {
-          fetch(`/api/screener/companies?page=${next}&pageSize=${companiesPageSize}`).then(async (r) => {
-            if (!r.ok) return;
-            const j = (await r.json()) as { rows?: ScreenerTableRow[] };
-            const rr = Array.isArray(j.rows) ? j.rows : [];
-            pageCacheRef.current.set(next, rr);
-          }).catch(() => {});
-        }
-      } catch (e) {
-        if (!mounted) return;
-        if (e instanceof DOMException && e.name === "AbortError") return;
-        setCompaniesRows([]);
-        setCompaniesError("Failed to load companies.");
-        setCompaniesLoading(false);
-      }
-    }
-    void load();
-    return () => {
-      mounted = false;
-      ac.abort();
-    };
-  }, [tab, stocksSubTab, safeCompaniesPage, companiesPageSize, totalPages]);
+  // Static mock data: no companies API calls.
 
   return (
     <div>
-      <MarketTabs active={tab} onChange={setTab} />
+      <MarketTabs
+        active={tab}
+        onChange={(next) => {
+          setTab(next);
+        }}
+      />
 
       {tab === "Stocks" ? (
         <>
-          <IndexCards />
+          <IndexCards initialCards={indexCards} />
           <div className="mb-5">
             <ScreenerTabs active={stocksSubTab} onChange={setStocksSubTab} />
           </div>
@@ -118,7 +131,7 @@ export function MarketsSection({ stockRows }: { stockRows: ScreenerTableRow[] })
                 </div>
               ) : null}
 
-              {companiesRows ? (
+                      {companiesRows ? (
                 <ScreenerTable rows={companiesRows} rankOffset={(safeCompaniesPage - 1) * companiesPageSize} />
               ) : null}
 
@@ -162,8 +175,8 @@ export function MarketsSection({ stockRows }: { stockRows: ScreenerTableRow[] })
         </>
       ) : null}
 
-      {tab === "Crypto" ? <CryptoTable /> : null}
-      {tab === "Indices" ? <IndicesTable /> : null}
+      {tab === "Crypto" ? <CryptoTable initialRows={cryptoRowsState} /> : null}
+      {tab === "Indices" ? <IndicesTable initialRows={indicesRowsState} /> : null}
     </div>
   );
 }

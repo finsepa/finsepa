@@ -42,7 +42,7 @@ export function MacroPage() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch("/api/macro", { cache: "no-store" });
+        const res = await fetch("/api/macro");
         if (!res.ok) {
           if (!cancelled) {
             setItems([]);

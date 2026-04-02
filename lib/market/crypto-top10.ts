@@ -2,6 +2,8 @@ import "server-only";
 
 import { unstable_cache } from "next/cache";
 
+import { REVALIDATE_HOT } from "@/lib/data/cache-policy";
+
 import { CRYPTO_TOP10, type SupportedCryptoTicker, fetchEodhdCryptoDailyBars, fetchEodhdCryptoFundamentalsHighlights } from "@/lib/market/eodhd-crypto";
 import { getCryptoLogoUrl } from "@/lib/crypto/crypto-logo-url";
 import { deriveMetricsFromDailyBars, eodFetchWindowUtc, formatMarketCapDisplay } from "@/lib/screener/eod-derived-metrics";
@@ -110,7 +112,7 @@ async function loadCryptoTop10Uncached(): Promise<CryptoTop10Row[]> {
   return rows;
 }
 
-export const getCryptoTop10 = unstable_cache(loadCryptoTop10Uncached, ["crypto-top10-v2"], {
-  revalidate: 60,
+export const getCryptoTop10 = unstable_cache(loadCryptoTop10Uncached, ["crypto-top10-v3"], {
+  revalidate: REVALIDATE_HOT,
 });
 

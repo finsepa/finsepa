@@ -17,8 +17,8 @@ export function StockDetailTabNav({
   onTabChange: (tab: StockDetailTabId) => void;
 }) {
   return (
-    <div className="border-b border-[#E4E4E7]">
-      <nav className="flex items-center gap-8" aria-label="Stock sections">
+    <div className="border-b border-solid border-[#E4E4E7]">
+      <nav className="flex items-start gap-5" aria-label="Stock sections">
         {TABS.map(({ id, label }) => {
           const isActive = id === activeTab;
           return (
@@ -26,10 +26,8 @@ export function StockDetailTabNav({
               key={id}
               type="button"
               onClick={() => onTabChange(id)}
-              className={`cursor-pointer border-b-2 pb-2.5 text-[14px] leading-5 transition-colors -mb-px ${
-                isActive
-                  ? "border-[#09090B] font-semibold text-[#09090B]"
-                  : "border-transparent font-medium text-[#71717A] hover:text-[#09090B]"
+              className={`-mb-px cursor-pointer border-b-2 border-solid py-2 text-left text-[14px] font-medium leading-6 text-[#09090B] transition-colors ${
+                isActive ? "border-[#09090B]" : "border-transparent hover:opacity-80"
               }`}
             >
               {label}

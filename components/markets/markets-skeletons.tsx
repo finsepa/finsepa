@@ -3,9 +3,9 @@
 import { LogoSkeleton, PillSkeleton, SkeletonBox, SparklineSkeleton, TextSkeleton } from "@/components/markets/skeleton";
 
 const stocksColLayout = "grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr_1fr_80px_96px] gap-x-2";
-// rank + coin + price + 1D + 1M + YTD + market cap + sparkline
-const cryptoColLayout = "grid-cols-[48px_2fr_1fr_1fr_1fr_1fr_1fr_96px]";
-const indicesColLayout = "grid-cols-[40px_2fr_1fr_1fr_1fr_1fr_96px]";
+// star + rank + coin + price + 1D + 1M + YTD + market cap + sparkline (matches crypto-table)
+const cryptoColLayout = "grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr_1fr_96px] gap-x-2";
+const indicesColLayout = "grid-cols-[40px_2fr_1fr_1fr_1fr_1fr_96px] gap-x-2";
 
 export function IndexCardSkeleton({ name }: { name: string }) {
   return (
@@ -68,7 +68,10 @@ export function StocksTableSkeleton({ rows = 10 }: { rows?: number }) {
 
 function CryptoRowSkeleton() {
   return (
-    <div className="group grid h-[60px] max-h-[60px] grid-cols-[48px_2fr_1fr_1fr_1fr_1fr_1fr_96px] items-center border-b border-[#E4E4E7] px-1 last:border-b-0">
+    <div className={`group grid h-[60px] max-h-[60px] ${cryptoColLayout} items-center bg-white px-1`}>
+      <div className="flex w-10 shrink-0 items-center justify-center px-3">
+        <SkeletonBox className="h-4 w-4 rounded" />
+      </div>
       <div className="flex justify-center">
         <TextSkeleton wClass="w-4" hClass="h-3.5" />
       </div>
@@ -94,7 +97,7 @@ function CryptoRowSkeleton() {
       <div className="flex justify-center">
         <TextSkeleton wClass="w-14" />
       </div>
-      <div className="flex items-center justify-center">
+      <div className="flex items-center">
         <SkeletonBox className="h-8 w-20 rounded-md" />
       </div>
     </div>
@@ -103,16 +106,35 @@ function CryptoRowSkeleton() {
 
 export function CryptoTableSkeleton({ rows = 10 }: { rows?: number }) {
   return (
-    <div className="overflow-hidden">
-      <div className={`grid ${cryptoColLayout} items-center border-t border-b border-[#E4E4E7] bg-white px-4 py-3 text-[14px] font-semibold leading-5 text-[#71717A] [&>div]:text-center`}>
-        <div className="flex justify-center"><SkeletonBox className="h-3 w-6 rounded" /></div>
-        <div className="flex justify-start"><SkeletonBox className="h-3 w-16 rounded" /></div>
-        <div className="flex justify-center"><SkeletonBox className="h-3 w-10 rounded" /></div>
-        <div className="flex justify-center"><SkeletonBox className="h-3 w-10 rounded" /></div>
-        <div className="flex justify-center"><SkeletonBox className="h-3 w-10 rounded" /></div>
-        <div className="flex justify-center"><SkeletonBox className="h-3 w-10 rounded" /></div>
-        <div className="flex justify-center"><SkeletonBox className="h-3 w-10 rounded" /></div>
-        <div className="flex justify-center"><SkeletonBox className="h-3 w-16 rounded" /></div>
+    <div className="divide-y divide-[#E4E4E7] border-t border-b border-[#E4E4E7]">
+      <div
+        className={`grid ${cryptoColLayout} min-h-[44px] items-center bg-white px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A] [&>div]:text-center`}
+      >
+        <div />
+        <div className="flex justify-center">
+          <SkeletonBox className="h-3 w-4 rounded" />
+        </div>
+        <div className="flex justify-start">
+          <SkeletonBox className="h-3 w-16 rounded" />
+        </div>
+        <div className="flex justify-center">
+          <SkeletonBox className="h-3 w-10 rounded" />
+        </div>
+        <div className="flex justify-center">
+          <SkeletonBox className="h-3 w-10 rounded" />
+        </div>
+        <div className="flex justify-center">
+          <SkeletonBox className="h-3 w-10 rounded" />
+        </div>
+        <div className="flex justify-center">
+          <SkeletonBox className="h-3 w-10 rounded" />
+        </div>
+        <div className="flex justify-center">
+          <SkeletonBox className="h-3 w-10 rounded" />
+        </div>
+        <div className="flex justify-center">
+          <SkeletonBox className="h-3 w-16 rounded" />
+        </div>
       </div>
       {Array.from({ length: rows }).map((_, i) => (
         <CryptoRowSkeleton key={i} />
@@ -123,7 +145,7 @@ export function CryptoTableSkeleton({ rows = 10 }: { rows?: number }) {
 
 function IndicesRowSkeleton() {
   return (
-    <div className="group grid h-[60px] max-h-[60px] grid-cols-[40px_2fr_1fr_1fr_1fr_1fr_96px] items-center border-b border-[#E4E4E7] px-1 last:border-b-0">
+    <div className={`group grid h-[60px] max-h-[60px] ${indicesColLayout} items-center bg-white px-1`}>
       <div className="flex w-10 shrink-0 items-center justify-center px-3">
         <SkeletonBox className="h-4 w-4 rounded" />
       </div>
@@ -142,7 +164,7 @@ function IndicesRowSkeleton() {
       <div className="flex justify-center">
         <TextSkeleton wClass="w-12" />
       </div>
-      <div className="flex items-center justify-center">
+      <div className="flex items-center">
         <SkeletonBox className="h-8 w-20 rounded-md" />
       </div>
     </div>
@@ -151,15 +173,29 @@ function IndicesRowSkeleton() {
 
 export function IndicesTableSkeleton({ rows = 10 }: { rows?: number }) {
   return (
-    <div className="overflow-hidden">
-      <div className={`grid ${indicesColLayout} items-center border-t border-b border-[#E4E4E7] bg-white px-4 py-3 text-[14px] font-semibold leading-5 text-[#71717A] [&>div]:text-center`}>
+    <div className="divide-y divide-[#E4E4E7] border-t border-b border-[#E4E4E7]">
+      <div
+        className={`grid ${indicesColLayout} min-h-[44px] items-center bg-white px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A] [&>div]:text-center`}
+      >
         <div />
-        <div className="flex justify-start"><SkeletonBox className="h-3 w-12 rounded" /></div>
-        <div className="flex justify-center"><SkeletonBox className="h-3 w-10 rounded" /></div>
-        <div className="flex justify-center"><SkeletonBox className="h-3 w-10 rounded" /></div>
-        <div className="flex justify-center"><SkeletonBox className="h-3 w-10 rounded" /></div>
-        <div className="flex justify-center"><SkeletonBox className="h-3 w-10 rounded" /></div>
-        <div className="flex justify-center"><SkeletonBox className="h-3 w-16 rounded" /></div>
+        <div className="flex justify-start">
+          <SkeletonBox className="h-3 w-12 rounded" />
+        </div>
+        <div className="flex justify-center">
+          <SkeletonBox className="h-3 w-10 rounded" />
+        </div>
+        <div className="flex justify-center">
+          <SkeletonBox className="h-3 w-10 rounded" />
+        </div>
+        <div className="flex justify-center">
+          <SkeletonBox className="h-3 w-10 rounded" />
+        </div>
+        <div className="flex justify-center">
+          <SkeletonBox className="h-3 w-10 rounded" />
+        </div>
+        <div className="flex justify-center">
+          <SkeletonBox className="h-3 w-16 rounded" />
+        </div>
       </div>
       {Array.from({ length: rows }).map((_, i) => (
         <IndicesRowSkeleton key={i} />

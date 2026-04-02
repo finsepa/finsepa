@@ -13,6 +13,12 @@ export async function middleware(request: NextRequest) {
   const isProtectedPath =
     path === "/screener" ||
     path.startsWith("/screener/") ||
+    path === "/news" ||
+    path.startsWith("/news/") ||
+    path === "/macro" ||
+    path.startsWith("/macro/") ||
+    path === "/earnings" ||
+    path.startsWith("/earnings/") ||
     path === "/crypto" ||
     path.startsWith("/crypto/") ||
     path.startsWith("/stock/") ||
@@ -68,6 +74,9 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     "/screener/:path*",
+    "/news/:path*",
+    "/macro/:path*",
+    "/earnings/:path*",
     "/crypto/:path*",
     "/stock/:path*",
     "/account/:path*",

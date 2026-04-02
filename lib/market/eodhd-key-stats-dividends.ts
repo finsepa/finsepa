@@ -14,8 +14,11 @@ function num(v: unknown): number | null {
 
 export type KeyStatsDividendsRow = { label: string; value: string };
 
-export async function fetchEodhdKeyStatsDividends(ticker: string): Promise<{ rows: KeyStatsDividendsRow[] } | null> {
-  const root = await fetchEodhdFundamentalsJson(ticker);
+export async function fetchEodhdKeyStatsDividends(
+  ticker: string,
+  fundamentalsRoot?: Record<string, unknown> | null,
+): Promise<{ rows: KeyStatsDividendsRow[] } | null> {
+  const root = fundamentalsRoot ?? (await fetchEodhdFundamentalsJson(ticker));
   if (!root) return null;
 
   const hl = root.Highlights && typeof root.Highlights === "object" ? (root.Highlights as Record<string, unknown>) : null;

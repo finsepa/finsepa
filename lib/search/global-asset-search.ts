@@ -1,12 +1,18 @@
 import "server-only";
 
+import { unstable_cache } from "next/cache";
+
+import { REVALIDATE_SEARCH } from "@/lib/data/cache-policy";
+
 import { getStockDetailMetaFromTicker } from "@/lib/market/stock-detail-meta";
 import { fetchEodhdSearch, type EodhdSearchRow } from "@/lib/market/eodhd-search";
 import { ALL_CRYPTO_METAS, toSupportedCryptoTicker } from "@/lib/market/eodhd-crypto";
 import { INDEX_TOP10 } from "@/lib/market/indices-top10";
 import { getCryptoLogoUrl } from "@/lib/crypto/crypto-logo-url";
+import { getCachedStockLogoUrl } from "@/lib/market/stock-logo-url";
 import { getTop500Universe } from "@/lib/screener/top500-companies";
 import type { SearchAssetItem, SearchScope } from "@/lib/search/search-types";
+import { runWithConcurrencyLimit } from "@/lib/utils/run-with-concurrency-limit";
 
 function norm(s: string): string {
   return s.trim().toLowerCase();
@@ -31,29 +37,6 @@ function stockItemFromTicker(ticker: string, nameFallback?: string): SearchAsset
     route: `/stock/${encodeURIComponent(meta.ticker)}`,
     marketLabel: "US equity",
   };
-}
-
-async function top500StockMatches(q: string, max = 40): Promise<SearchAssetItem[]> {
-  const universe = await getTop500Universe();
-  const n = norm(q);
-  if (!n) return [];
-
-  const hits = universe.filter((u) => norm(u.name).includes(n) || norm(u.ticker).includes(n));
-  hits.sort((a, b) => b.marketCapUsd - a.marketCapUsd || a.ticker.localeCompare(b.ticker));
-
-  return hits.slice(0, max).map((u) => {
-    const t = u.ticker.trim().toUpperCase();
-    return {
-      id: `stock:${t}`,
-      type: "stock",
-      symbol: t,
-      name: u.name,
-      subtitle: "US",
-      logoUrl: null,
-      route: `/stock/${encodeURIComponent(t)}`,
-      marketLabel: "US equity",
-    };
-  });
 }
 
 function indexItem(name: string, symbol: string): SearchAssetItem {
@@ -113,7 +96,6 @@ function parseEodhdRow(row: EodhdSearchRow): SearchAssetItem | null {
     return stockItemFromTicker(ticker, name);
   }
 
-  // EODHD Search can return US stocks as bare tickers with Exchange="US" (e.g. HOOD).
   if (!code.includes(".") && exch === "US") {
     if (isEtfOrFund(typ)) return null;
     return stockItemFromTicker(code.replace(/-/g, "."), name);
@@ -148,11 +130,24 @@ function localIndexMatches(q: string): SearchAssetItem[] {
   return out;
 }
 
-export async function globalAssetSearch(query: string, scope: SearchScope): Promise<SearchAssetItem[]> {
-  const q = query.trim();
-  if (q.length < 1) return [];
+async function attachStockLogos(items: SearchAssetItem[]): Promise<SearchAssetItem[]> {
+  const stockSyms = [...new Set(items.filter((i) => i.type === "stock").map((i) => i.symbol.trim().toUpperCase()))];
+  if (stockSyms.length === 0) return items;
+  const urls = await runWithConcurrencyLimit(stockSyms, 8, (sym) => getCachedStockLogoUrl(sym));
+  const bySym = new Map(stockSyms.map((s, i) => [s, urls[i] ?? ""] as const));
+  return items.map((item) => {
+    if (item.type !== "stock") return item;
+    const sym = item.symbol.trim().toUpperCase();
+    const resolved = (bySym.get(sym) ?? "").trim();
+    if (!resolved) return item;
+    return { ...item, logoUrl: resolved };
+  });
+}
 
-  const n = norm(q);
+/** Core search (normalized query). Cached per (qNorm, scope) in {@link globalAssetSearch}. */
+async function runGlobalAssetSearch(qNorm: string, scope: SearchScope): Promise<SearchAssetItem[]> {
+  const n = qNorm;
+  if (n.length < 1) return [];
 
   type Scored = { item: SearchAssetItem; score: number; marketCapUsd: number | null };
   const candidates: Scored[] = [];
@@ -178,27 +173,28 @@ export async function globalAssetSearch(query: string, scope: SearchScope): Prom
     else if (namePrefix) s = 650;
     else if (nameHit) s = 550;
 
-    // Small bias so major index queries don't get drowned by unrelated stocks.
     if (type === "index") s += 10;
     return s;
   }
 
-  // Local indices & crypto (fast).
   if (scope === "all" || scope === "indices") {
-    for (const i of localIndexMatches(q)) {
+    for (const i of localIndexMatches(n)) {
       candidates.push({ item: i, score: scoreItem(i.name, i.symbol, i.type), marketCapUsd: null });
     }
   }
   if (scope === "all" || scope === "crypto") {
-    for (const c of localCryptoMatches(q)) {
+    for (const c of localCryptoMatches(n)) {
       candidates.push({ item: c, score: scoreItem(c.name, c.symbol, c.type), marketCapUsd: null });
     }
   }
 
-  // Stocks from our top-500 universe (consistent with Screener).
   if (scope === "all" || scope === "stocks") {
     const universe = await getTop500Universe();
-    const hits = universe.filter((u) => norm(u.name).includes(n) || norm(u.ticker).includes(n));
+    const hits = universe.filter((u) => {
+      const tL = u.ticker.trim().toLowerCase();
+      const nL = u.name.trim().toLowerCase();
+      return nL.includes(n) || tL.includes(n);
+    });
     hits.sort((a, b) => b.marketCapUsd - a.marketCapUsd || a.ticker.localeCompare(b.ticker));
     const max = scope === "stocks" ? 80 : 40;
     for (const u of hits.slice(0, max)) {
@@ -217,8 +213,7 @@ export async function globalAssetSearch(query: string, scope: SearchScope): Prom
     }
   }
 
-  // Remote EODHD search (broad coverage across supported universe).
-  const remote = await fetchEodhdSearch(q, scope === "all" ? 60 : 50);
+  const remote = await fetchEodhdSearch(n, scope === "all" ? 60 : 50);
   for (const row of remote) {
     const item = parseEodhdRow(row);
     if (!item) continue;
@@ -226,7 +221,6 @@ export async function globalAssetSearch(query: string, scope: SearchScope): Prom
     candidates.push({ item, score: scoreItem(item.name, item.symbol, item.type), marketCapUsd: null });
   }
 
-  // De-dupe by id while keeping the best scoring version.
   const best = new Map<string, Scored>();
   for (const c of candidates) {
     const prev = best.get(c.item.id);
@@ -250,5 +244,23 @@ export async function globalAssetSearch(query: string, scope: SearchScope): Prom
     })
     .map((c) => c.item);
 
-  return out.slice(0, scope === "stocks" ? 60 : 50);
+  const sliced = out.slice(0, scope === "stocks" ? 60 : 50);
+  return attachStockLogos(sliced);
+}
+
+const getCachedGlobalAssetSearch = unstable_cache(
+  async (qNorm: string, scope: SearchScope) => runGlobalAssetSearch(qNorm, scope),
+  ["global-asset-search-v4"],
+  { revalidate: REVALIDATE_SEARCH },
+);
+
+/**
+ * Global asset search. Normalizes the query, dedupes remote + local sources, ranks by match quality.
+ * Results for the same normalized query + scope are cached briefly (~45s) to avoid repeat EODHD work.
+ */
+export async function globalAssetSearch(query: string, scope: SearchScope): Promise<SearchAssetItem[]> {
+  const raw = query.trim();
+  if (raw.length < 1) return [];
+  const qNorm = norm(raw);
+  return getCachedGlobalAssetSearch(qNorm, scope);
 }

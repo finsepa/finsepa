@@ -3,10 +3,10 @@ import type { ScreenerTableRow } from "@/lib/screener/screener-static";
 /** Normalized payload (API / integration contract). */
 export type ScreenerTop10NormalizedQuote = {
   ticker: string;
-  price: number;
-  changePercent1D: number;
-  changePercent1M: number;
-  changePercentYTD: number;
+  price: number | null;
+  changePercent1D: number | null;
+  changePercent1M: number | null;
+  changePercentYTD: number | null;
   marketCap: string;
   pe: string;
   sparkline5d: number[];

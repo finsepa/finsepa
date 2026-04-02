@@ -34,7 +34,7 @@ export function NewsPage() {
       setError(null);
       setItems(null);
       try {
-        const res = await fetch(`/api/news?tab=${encodeURIComponent(tab)}&page=${safePage}`, { cache: "no-store" });
+        const res = await fetch(`/api/news?tab=${encodeURIComponent(tab)}&page=${safePage}`);
         if (!res.ok) {
           if (!cancelled) {
             setItems([]);

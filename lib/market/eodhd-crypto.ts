@@ -73,9 +73,25 @@ const CRYPTO_BY_SYMBOL: Record<string, CryptoMeta> = ALL_CRYPTO_METAS.reduce(
   {} as Record<string, CryptoMeta>,
 );
 
+/**
+ * Resolves a route or provider symbol (e.g. `BTC`, `BTC-USD`, `BTC-USD.CC`) to a supported ticker key.
+ */
 export function toSupportedCryptoTicker(symbolOrTicker: string): SupportedCryptoTicker | null {
-  const s = symbolOrTicker.trim().toUpperCase();
-  return CRYPTO_BY_SYMBOL[s] ? s : null;
+  const raw = symbolOrTicker.trim();
+  if (!raw) return null;
+  let s = raw.toUpperCase();
+  if (CRYPTO_BY_SYMBOL[s]) return s;
+
+  s = s.replace(/\.CC$/i, "");
+  if (CRYPTO_BY_SYMBOL[s]) return s;
+
+  const pair = /^([A-Z0-9]+)-(USD|USDT|EUR|GBP)$/i.exec(s);
+  if (pair) {
+    const base = pair[1]!.toUpperCase();
+    if (CRYPTO_BY_SYMBOL[base]) return base;
+  }
+
+  return null;
 }
 
 export function toEodhdCryptoSymbol(symbolOrTicker: string): string | null {

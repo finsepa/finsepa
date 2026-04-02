@@ -74,19 +74,24 @@ function ProfileDescription({ text }: { text: string | null }) {
   );
 }
 
-export function StockProfileTab({ ticker }: { ticker: string }) {
-  const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<StockProfilePayload | null>(null);
+export function StockProfileTab({ ticker, initialProfile }: { ticker: string; initialProfile?: StockProfilePayload | null }) {
+  const [loading, setLoading] = useState(initialProfile === undefined);
+  const [profile, setProfile] = useState<StockProfilePayload | null>(initialProfile ?? null);
 
   const meta = useMemo(() => getStockDetailMetaFromTicker(ticker), [ticker]);
 
   useEffect(() => {
     let cancelled = false;
     async function load() {
+      // SSR preloaded profile: render instantly, no client fetch / skeleton flash.
+      if (initialProfile !== undefined) {
+        setProfile(initialProfile ?? null);
+        setLoading(false);
+        return;
+      }
       setLoading(true);
       try {
         const res = await fetch(`/api/stocks/${encodeURIComponent(ticker)}/profile`, {
-          cache: "no-store",
           credentials: "include",
         });
         if (!res.ok) {
@@ -105,7 +110,7 @@ export function StockProfileTab({ ticker }: { ticker: string }) {
     return () => {
       cancelled = true;
     };
-  }, [ticker]);
+  }, [ticker, initialProfile]);
 
   const p = profile;
 

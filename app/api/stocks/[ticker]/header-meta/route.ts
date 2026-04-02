@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 
-import { fetchEodhdFundamentalsJson, resolveEarningsDateDisplay } from "@/lib/market/eodhd-fundamentals";
-import { companyLogoUrlFromDomain } from "@/lib/screener/company-logo-url";
+import { getStockDetailHeaderMetaForPage } from "@/lib/market/stock-header-meta-server";
 import { normalizeWatchlistTicker, WatchlistValidationError } from "@/lib/watchlist/operations";
-import { countWatchlistEntriesForStockTicker } from "@/lib/watchlist/stock-watchlist-count";
+import { isSingleAssetMode, isSupportedAsset, SINGLE_ASSET_SYMBOL } from "@/lib/features/single-asset";
+import { getNvdaHeaderMeta } from "@/lib/fixtures/nvda";
 
 type Ctx = { params: Promise<{ ticker: string }> };
 
@@ -20,50 +20,37 @@ export async function GET(_request: Request, { params }: Ctx) {
     return NextResponse.json({ error: "Invalid ticker." }, { status: 400 });
   }
 
-  const [root, watchlistCount] = await Promise.all([
-    fetchEodhdFundamentalsJson(routeTicker),
-    countWatchlistEntriesForStockTicker(routeTicker),
-  ]);
-
-  const general =
-    root && typeof root === "object" && root.General && typeof root.General === "object"
-      ? (root.General as Record<string, unknown>)
-      : null;
-  const highlights =
-    root && typeof root === "object" && root.Highlights && typeof root.Highlights === "object"
-      ? (root.Highlights as Record<string, unknown>)
-      : null;
-
-  const fullNameRaw = general?.Name ?? general?.CompanyName ?? general?.ShortName ?? null;
-  const fullName = typeof fullNameRaw === "string" && fullNameRaw.trim() ? fullNameRaw.trim() : null;
-
-  const websiteRaw = general?.WebURL ?? general?.Website ?? general?.URL ?? null;
-  let logoUrl: string | null = null;
-  if (typeof websiteRaw === "string" && websiteRaw.trim()) {
-    try {
-      const u = new URL(websiteRaw.includes("://") ? websiteRaw : `https://${websiteRaw}`);
-      const host = u.hostname.replace(/^www\./, "").trim().toLowerCase();
-      if (host) logoUrl = companyLogoUrlFromDomain(host);
-    } catch {
-      // ignore invalid website URL
-    }
+  if (isSingleAssetMode() && !isSupportedAsset(routeTicker)) {
+    return NextResponse.json(
+      {
+        ticker: routeTicker,
+        fullName: null,
+        logoUrl: null,
+        sector: null,
+        industry: null,
+        earningsDateDisplay: null,
+        watchlistCount: null,
+      },
+      { headers: { "Cache-Control": "private, s-maxage=120, stale-while-revalidate=300" } },
+    );
   }
 
-  const sectorRaw = general?.Sector ?? null;
-  const sector = typeof sectorRaw === "string" && sectorRaw.trim() ? sectorRaw.trim() : null;
+  const meta = isSingleAssetMode() && isSupportedAsset(routeTicker) && routeTicker.trim().toUpperCase() === SINGLE_ASSET_SYMBOL ? getNvdaHeaderMeta() : await getStockDetailHeaderMetaForPage(routeTicker);
 
-  const industryRaw = general?.Industry ?? null;
-  const industry = typeof industryRaw === "string" && industryRaw.trim() ? industryRaw.trim() : null;
-
-  const earningsDateDisplay = root ? resolveEarningsDateDisplay(highlights, root) : null;
-
-  return NextResponse.json({
-    ticker: routeTicker,
-    fullName,
-    logoUrl,
-    sector,
-    industry,
-    earningsDateDisplay,
-    watchlistCount,
-  });
+  return NextResponse.json(
+    {
+      ticker: routeTicker,
+      fullName: meta.fullName,
+      logoUrl: meta.logoUrl,
+      sector: meta.sector,
+      industry: meta.industry,
+      earningsDateDisplay: meta.earningsDateDisplay,
+      watchlistCount: meta.watchlistCount,
+    },
+    {
+      headers: {
+        "Cache-Control": "private, s-maxage=120, stale-while-revalidate=300",
+      },
+    },
+  );
 }

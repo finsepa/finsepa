@@ -1,11 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
 
 import { CompanyLogo } from "./company-logo";
 import { CryptoTableSkeleton } from "@/components/markets/markets-skeletons";
+import { WatchlistStarToggle } from "@/components/watchlist/watchlist-star-button";
 import type { CryptoTop10Row } from "@/lib/market/crypto-top10";
+import { cryptoWatchlistKey } from "@/lib/watchlist/constants";
+import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
 
 function formatPercent(value: number | null) {
   if (value == null || !Number.isFinite(value)) return "-";
@@ -59,46 +62,21 @@ function Spark({ points, positive }: { points: number[]; positive: boolean }) {
   );
 }
 
-export function CryptoTable() {
-  const [rows, setRows] = useState<CryptoTop10Row[]>([]);
-  const [loading, setLoading] = useState(true);
+const colLayout = "grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr_1fr_96px] gap-x-2";
 
-  useEffect(() => {
-    let mounted = true;
-    async function load() {
-      setLoading(true);
-      try {
-        const res = await fetch("/api/screener/crypto-top10", { cache: "no-store" });
-        if (!res.ok) {
-          if (!mounted) return;
-          setRows([]);
-          setLoading(false);
-          return;
-        }
-        const json = (await res.json()) as { rows?: CryptoTop10Row[] };
-        if (!mounted) return;
-        setRows(Array.isArray(json.rows) ? json.rows : []);
-        setLoading(false);
-      } catch {
-        if (!mounted) return;
-        setRows([]);
-        setLoading(false);
-      }
-    }
-    void load();
-    return () => {
-      mounted = false;
-    };
-  }, []);
+export function CryptoTable({ initialRows }: { initialRows?: CryptoTop10Row[] }) {
+  const rows = Array.isArray(initialRows) ? initialRows : [];
+  const { watched, loaded, toggleTicker } = useWatchlist();
 
   const safeRows = useMemo(() => rows, [rows]);
-  if (loading || safeRows.length === 0) return <CryptoTableSkeleton rows={10} />;
+  if (safeRows.length === 0) return <CryptoTableSkeleton rows={10} />;
 
   return (
-    <div className="overflow-hidden">
+    <div className="divide-y divide-[#E4E4E7] border-t border-b border-[#E4E4E7]">
       <div
-        className="grid grid-cols-[48px_2fr_1fr_1fr_1fr_1fr_1fr_96px] items-center border-t border-b border-[#E4E4E7] bg-white px-4 py-3 text-[14px] font-semibold leading-5 text-[#71717A] [&>div]:text-center"
+        className={`grid ${colLayout} min-h-[44px] items-center bg-white px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A] [&>div]:text-center`}
       >
+        <div />
         <div>#</div>
         <div className="!text-left">Coin</div>
         <div>Price</div>
@@ -111,22 +89,29 @@ export function CryptoTable() {
 
       {safeRows.map((r, i) => {
         const positive = r.changePercent1D != null ? r.changePercent1D >= 0 : (r.sparkline5d.at(-1) ?? 0) >= (r.sparkline5d[0] ?? 0);
+        const wlKey = cryptoWatchlistKey(r.symbol);
         return (
-          <Link
+          <div
             key={r.symbol}
-            href={`/crypto/${encodeURIComponent(r.symbol)}`}
-            className="contents"
-            aria-label={`Open ${r.name} (${r.symbol})`}
+            className={`group grid h-[60px] max-h-[60px] ${colLayout} items-center bg-white px-1 transition-colors duration-75 hover:bg-neutral-50`}
           >
-            <div
-              className="group grid h-[60px] max-h-[60px] grid-cols-[48px_2fr_1fr_1fr_1fr_1fr_1fr_96px] items-center border-b border-[#E4E4E7] px-1 last:border-b-0 transition-colors duration-75 hover:bg-neutral-50"
+            <WatchlistStarToggle
+              className="flex w-10 shrink-0 items-center justify-center px-3"
+              storageKey={wlKey}
+              label={r.symbol}
+              watched={watched}
+              loaded={loaded}
+              toggleTicker={toggleTicker}
+            />
+            <Link
+              href={`/crypto/${encodeURIComponent(r.symbol)}`}
+              className="contents"
+              aria-label={`Open ${r.name} (${r.symbol})`}
             >
-              <div className="text-center text-[14px] font-semibold leading-5 tabular-nums text-[#71717A]">
-                {i + 1}
-              </div>
+              <div className="text-center text-[14px] font-semibold leading-5 tabular-nums text-[#71717A]">{i + 1}</div>
 
               <div className="flex min-w-0 items-center gap-3 pr-4">
-                <CompanyLogo name={r.symbol} logoUrl={r.logoUrl} />
+                <CompanyLogo name={r.symbol} logoUrl={r.logoUrl} symbol={r.symbol} />
                 <div className="min-w-0">
                   <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">{r.name}</div>
                   <div className="text-[12px] font-normal leading-4 text-[#71717A]">{r.symbol}</div>
@@ -143,23 +128,17 @@ export function CryptoTable() {
                   : `$${r.price.toLocaleString("en-US", { maximumFractionDigits: r.price < 1 ? 4 : 2 })}`}
               </div>
 
-              <div className="text-center">
-                <ChangeCell value={r.changePercent1D} />
-              </div>
+              <ChangeCell value={r.changePercent1D} />
 
-              <div className="text-center">
-                <ChangeCell value={r.changePercent1M} />
-              </div>
+              <ChangeCell value={r.changePercent1M} />
 
-              <div className="text-center">
-                <ChangeCell value={r.changePercentYTD} />
-              </div>
+              <ChangeCell value={r.changePercentYTD} />
 
               <div className="text-center font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B]">
-                {r.marketCap}
+                {r.marketCap === "-" ? "-" : r.marketCap}
               </div>
 
-              <div className="flex items-center justify-center">
+              <div className="flex items-center">
                 {r.sparkline5d.length ? (
                   <Spark points={r.sparkline5d} positive={positive} />
                 ) : (
@@ -169,8 +148,8 @@ export function CryptoTable() {
                   </span>
                 )}
               </div>
-            </div>
-          </Link>
+            </Link>
+          </div>
         );
       })}
     </div>

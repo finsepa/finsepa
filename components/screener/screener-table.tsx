@@ -1,16 +1,22 @@
 "use client";
 
 import Link from "next/link";
+import { memo, useMemo } from "react";
 import type { ScreenerTableRow } from "@/lib/screener/screener-static";
 import { WatchlistStarToggle } from "@/components/watchlist/watchlist-star-button";
 import { CompanyLogo } from "./company-logo";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
 
-function formatPercent(value: number) {
+function formatPercentValue(value: number) {
   return `${value > 0 ? "+" : ""}${value.toFixed(2)}%`;
 }
 
-function ChangeCell({ value }: { value: number }) {
+function ChangeCell({ value }: { value: number | null }) {
+  if (value == null || !Number.isFinite(value)) {
+    return (
+      <span className="block text-center text-[14px] leading-5 font-medium text-[#71717A]">-</span>
+    );
+  }
   const positive = value >= 0;
   return (
     <span
@@ -18,7 +24,7 @@ function ChangeCell({ value }: { value: number }) {
         positive ? "text-[#16A34A]" : "text-[#DC2626]"
       }`}
     >
-      {formatPercent(value)}
+      {formatPercentValue(value)}
     </span>
   );
 }
@@ -55,13 +61,86 @@ function TrendSparkline({ points, positive }: { points: number[]; positive: bool
 
 const colLayout = "grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr_1fr_80px_96px] gap-x-2";
 
+type RowProps = {
+  item: ScreenerTableRow;
+  rank: number;
+  starred: boolean;
+  loaded: boolean;
+  toggleTicker: (ticker: string) => void;
+};
+
+const ScreenerDataRow = memo(function ScreenerDataRow({ item, rank, starred, loaded, toggleTicker }: RowProps) {
+  const trend = Array.isArray(item.trend) ? item.trend : [];
+  const first = trend[0];
+  const last = trend[trend.length - 1];
+  const trendPositive =
+    first != null && last != null ? last >= first : item.change1D != null && item.change1D >= 0;
+  const watchedSet = useMemo(() => {
+    const k = item.ticker.trim().toUpperCase();
+    return starred ? new Set([k]) : new Set<string>();
+  }, [item.ticker, starred]);
+
+  return (
+    <div
+      className={`group grid ${colLayout} h-[60px] max-h-[60px] items-center bg-white px-1 transition-colors duration-75 hover:bg-neutral-50`}
+    >
+      <WatchlistStarToggle
+        className="flex w-10 shrink-0 items-center justify-center px-3"
+        storageKey={item.ticker}
+        label={item.ticker}
+        watched={watchedSet}
+        loaded={loaded}
+        toggleTicker={toggleTicker}
+      />
+
+      <Link
+        href={`/stock/${encodeURIComponent(item.ticker)}`}
+        className="contents"
+        aria-label={`Open ${item.name} (${item.ticker})`}
+      >
+        <div className="text-center text-[14px] font-semibold leading-5 tabular-nums text-[#71717A]">{rank}</div>
+
+        <div className="flex min-w-0 items-center gap-3 pr-4">
+          <CompanyLogo name={item.name} logoUrl={item.logoUrl} symbol={item.ticker} />
+          <div className="min-w-0">
+            <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">{item.name}</div>
+            <div className="text-[12px] font-normal leading-4 text-[#71717A]">{item.ticker}</div>
+          </div>
+        </div>
+
+        <div className="text-center font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B]">
+          {item.price != null && Number.isFinite(item.price) ? `$${item.price.toFixed(2)}` : "-"}
+        </div>
+
+        <ChangeCell value={item.change1D} />
+        <ChangeCell value={item.change1M} />
+        <ChangeCell value={item.changeYTD} />
+
+        <div className="text-center font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B]">{item.marketCap}</div>
+
+        <div className="text-center font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B]">{item.pe}</div>
+
+        <div className="flex items-center">
+          {trend.length ? (
+            <TrendSparkline points={trend} positive={trendPositive} />
+          ) : (
+            <span className="inline-flex h-8 w-20 items-center justify-center">
+              <span className="h-8 w-20 rounded-md bg-[#E4E4E7]" />
+            </span>
+          )}
+        </div>
+      </Link>
+    </div>
+  );
+});
+
 export function ScreenerTable({ rows, rankOffset = 0 }: { rows: ScreenerTableRow[]; rankOffset?: number }) {
   const { watched, loaded, toggleTicker } = useWatchlist();
 
   return (
-    <div className="overflow-hidden">
+    <div className="divide-y divide-[#E4E4E7] border-t border-b border-[#E4E4E7]">
       {/* Column headers */}
-      <div className={`grid ${colLayout} items-center border-t border-b border-[#E4E4E7] bg-white px-4 py-3 text-[14px] font-semibold leading-5 text-[#71717A] [&>div]:text-center`}>
+      <div className={`grid ${colLayout} min-h-[44px] items-center bg-white px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A] [&>div]:text-center`}>
         <div />
         <div>#</div>
         <div className="!text-left">Company</div>
@@ -74,67 +153,16 @@ export function ScreenerTable({ rows, rankOffset = 0 }: { rows: ScreenerTableRow
         <div>Last 5 Days</div>
       </div>
 
-      {/* Rows */}
-      {rows.map((item, index) => {
-        const first = item.trend[0];
-        const last = item.trend[item.trend.length - 1];
-        const trendPositive = first != null && last != null ? last >= first : item.change1D >= 0;
-        return (
-          <div
-            key={item.ticker}
-            className={`group grid ${colLayout} h-[60px] max-h-[60px] items-center border-b border-[#E4E4E7] px-1 last:border-b-0 transition-colors duration-75 hover:bg-neutral-50`}
-          >
-            <WatchlistStarToggle
-              className="flex w-10 shrink-0 items-center justify-center px-3"
-              storageKey={item.ticker}
-              label={item.ticker}
-              watched={watched}
-              loaded={loaded}
-              toggleTicker={toggleTicker}
-            />
-
-            <Link
-              href={`/stock/${encodeURIComponent(item.ticker)}`}
-              className="contents"
-              aria-label={`Open ${item.name} (${item.ticker})`}
-            >
-              <div className="text-center text-[14px] font-semibold leading-5 tabular-nums text-[#71717A]">
-                {rankOffset + index + 1}
-              </div>
-
-              <div className="flex min-w-0 items-center gap-3 pr-4">
-                <CompanyLogo name={item.name} logoUrl={item.logoUrl} />
-                <div className="min-w-0">
-                  <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">{item.name}</div>
-                  <div className="text-[12px] font-normal leading-4 text-[#71717A]">{item.ticker}</div>
-                </div>
-              </div>
-
-              <div className="text-center font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B]">
-                ${item.price.toFixed(2)}
-              </div>
-
-              <ChangeCell value={item.change1D} />
-              <ChangeCell value={item.change1M} />
-              <ChangeCell value={item.changeYTD} />
-
-              <div className="text-center font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B]">{item.marketCap}</div>
-
-              <div className="text-center font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B]">{item.pe}</div>
-
-              <div className="flex items-center">
-                {item.trend.length ? (
-                  <TrendSparkline points={item.trend} positive={trendPositive} />
-                ) : (
-                  <span className="inline-flex h-8 w-20 items-center justify-center">
-                    <span className="h-8 w-20 rounded-md bg-[#E4E4E7]" />
-                  </span>
-                )}
-              </div>
-            </Link>
-          </div>
-        );
-      })}
+      {rows.map((item, index) => (
+        <ScreenerDataRow
+          key={item.ticker}
+          item={item}
+          rank={rankOffset + index + 1}
+          starred={watched.has(item.ticker)}
+          loaded={loaded}
+          toggleTicker={toggleTicker}
+        />
+      ))}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { formatIndexValue, getIndexDisplayMeta, getIndicesTop10 } from "@/lib/market/indices-top10";
+import { isSingleAssetMode } from "@/lib/features/single-asset";
 
 type PageProps = {
   params: Promise<{ symbol: string }>;
@@ -8,6 +9,13 @@ type PageProps = {
 export default async function IndexSymbolPage({ params }: PageProps) {
   const { symbol: raw } = await params;
   const symbol = decodeURIComponent(raw).trim();
+
+  if (isSingleAssetMode()) {
+    return (
+      <div className="px-9 py-6 text-[#71717A]">Temporarily unavailable in NVDA-only mode.</div>
+    );
+  }
+
   const meta = getIndexDisplayMeta(symbol);
   const rows = await getIndicesTop10();
   const live = rows.find((r) => r.symbol.toUpperCase() === symbol.toUpperCase());

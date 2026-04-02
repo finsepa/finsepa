@@ -2,31 +2,10 @@ import { NextResponse } from "next/server";
 
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getStockChartPoints } from "@/lib/market/stock-chart-data";
-import { STOCK_CHART_RANGES, type StockChartRange } from "@/lib/market/stock-chart-types";
-
-function isRange(v: string | null): v is StockChartRange {
-  return v != null && (STOCK_CHART_RANGES as readonly string[]).includes(v);
-}
-
-function rangeStartUnixSeconds(range: StockChartRange, now: Date): number | null {
-  const nowSec = Math.floor(now.getTime() / 1000);
-  if (range === "1D") return nowSec - 1 * 24 * 60 * 60;
-  if (range === "5D") return nowSec - 5 * 24 * 60 * 60;
-  if (range === "1M") return nowSec - 30 * 24 * 60 * 60;
-  if (range === "6M") return nowSec - 183 * 24 * 60 * 60;
-  if (range === "1Y") return nowSec - 365 * 24 * 60 * 60;
-  if (range === "YTD") {
-    const ytd = Date.UTC(now.getUTCFullYear(), 0, 1);
-    return Math.floor(ytd / 1000);
-  }
-  return null; // ALL
-}
-
-function sliceFromNearestTradingPoint(points: Array<{ time: number; value: number }>, startSec: number | null) {
-  if (startSec == null) return points;
-  const idx = points.findIndex((p) => p.time >= startSec);
-  return idx === -1 ? [] : points.slice(idx);
-}
+import { isStockChartRange, sliceStockChartPointsForRange } from "@/lib/market/stock-chart-api";
+import type { StockChartRange } from "@/lib/market/stock-chart-types";
+import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
+import { getNvdaChartPoints } from "@/lib/fixtures/nvda";
 
 type Ctx = { params: Promise<{ ticker: string }> };
 
@@ -45,20 +24,37 @@ export async function GET(request: Request, { params }: Ctx) {
 
   const url = new URL(request.url);
   const rangeParam = url.searchParams.get("range");
-  const range: StockChartRange = isRange(rangeParam) ? rangeParam : "1Y";
+  const range: StockChartRange = isStockChartRange(rangeParam) ? rangeParam : "1Y";
 
-  const rawPoints = await getStockChartPoints(routeTicker, range);
-  const startSec = rangeStartUnixSeconds(range, new Date());
-  let points = sliceFromNearestTradingPoint(rawPoints, startSec);
-  // Intraday windows can sit entirely before `startSec` on weekends/holidays after slicing; data load already scoped the range.
-  if ((range === "1D" || range === "5D") && points.length === 0 && rawPoints.length > 0) {
-    points = rawPoints;
+  if (isSingleAssetMode() && isSupportedAsset(routeTicker) && routeTicker.trim().toUpperCase() === "NVDA") {
+    const points = getNvdaChartPoints(range);
+    return NextResponse.json(
+      { ticker: routeTicker, range, points },
+      { headers: { "Cache-Control": "private, s-maxage=120, stale-while-revalidate=300" } },
+    );
   }
 
-  return NextResponse.json({
-    ticker: routeTicker,
-    range,
-    points,
-  });
+  if (isSingleAssetMode() && !isSupportedAsset(routeTicker)) {
+    return NextResponse.json(
+      { ticker: routeTicker, range, points: [] },
+      { headers: { "Cache-Control": "private, s-maxage=120, stale-while-revalidate=300" } },
+    );
+  }
+
+  const rawPoints = await getStockChartPoints(routeTicker, range);
+  const points = sliceStockChartPointsForRange(rawPoints, range);
+
+  return NextResponse.json(
+    {
+      ticker: routeTicker,
+      range,
+      points,
+    },
+    {
+      headers: {
+        "Cache-Control": "private, s-maxage=45, stale-while-revalidate=120",
+      },
+    },
+  );
 }
 

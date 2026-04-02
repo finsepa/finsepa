@@ -15,8 +15,14 @@ function num(v: unknown): number | null {
 
 export type KeyStatsRiskRow = { label: string; value: string };
 
-export async function fetchEodhdKeyStatsRisk(ticker: string): Promise<{ rows: KeyStatsRiskRow[] } | null> {
-  const [root, ddFrac] = await Promise.all([fetchEodhdFundamentalsJson(ticker), fetchFiveYearMaxDrawdownFraction(ticker)]);
+export async function fetchEodhdKeyStatsRisk(
+  ticker: string,
+  fundamentalsRoot?: Record<string, unknown> | null,
+): Promise<{ rows: KeyStatsRiskRow[] } | null> {
+  const [root, ddFrac] = await Promise.all([
+    fundamentalsRoot != null ? Promise.resolve(fundamentalsRoot) : fetchEodhdFundamentalsJson(ticker),
+    fetchFiveYearMaxDrawdownFraction(ticker),
+  ]);
 
   if (!root) return null;
 

@@ -20,8 +20,11 @@ function num(v: unknown): number | null {
 
 export type KeyStatsBasicRow = { label: string; value: string };
 
-export async function fetchEodhdKeyStatsBasic(ticker: string): Promise<{ rows: KeyStatsBasicRow[] } | null> {
-  const root = await fetchEodhdFundamentalsJson(ticker);
+export async function fetchEodhdKeyStatsBasic(
+  ticker: string,
+  fundamentalsRoot?: Record<string, unknown> | null,
+): Promise<{ rows: KeyStatsBasicRow[] } | null> {
+  const root = fundamentalsRoot ?? (await fetchEodhdFundamentalsJson(ticker));
   if (!root) return null;
 
   const hl = root.Highlights && typeof root.Highlights === "object" ? (root.Highlights as Record<string, unknown>) : null;

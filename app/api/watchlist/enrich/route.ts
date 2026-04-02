@@ -7,6 +7,18 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 const DEBUG = process.env.NODE_ENV === "development" || process.env.DEBUG_WATCHLIST === "1";
 
+const SUPPORTED_WATCHLIST_KEYS = new Set([
+  // Stocks
+  "NVDA",
+  "AAPL",
+  // Crypto
+  "CRYPTO:BTC",
+  "CRYPTO:ETH",
+  // Indices
+  "INDEX:GSPC.INDX",
+  "INDEX:NDX.INDX",
+]);
+
 /**
  * POST body: { tickers: string[] } — built from client `useWatchlist` (localStorage ∪ Supabase).
  * Single read path for /watchlist table metrics; does not depend on Supabase containing rows.
@@ -28,9 +40,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Expected { tickers: string[] }" }, { status: 400 });
     }
 
-    const tickers = raw.filter((t): t is string => typeof t === "string");
+    const tickersRaw = raw.filter((t): t is string => typeof t === "string");
+    const tickers = tickersRaw
+      .map((t) => t.trim().toUpperCase())
+      .filter((t) => SUPPORTED_WATCHLIST_KEYS.has(t));
     if (DEBUG) {
-      console.info("[watchlist enrich] load", { source: "POST body", count: tickers.length, tickers: tickers.slice(0, 20) });
+      console.info("[watchlist enrich] load", {
+        source: "POST body",
+        rawCount: tickersRaw.length,
+        filteredCount: tickers.length,
+        tickers: tickers.slice(0, 20),
+      });
     }
 
     const rows = syntheticWatchlistRows(tickers);

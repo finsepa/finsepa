@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { getTop10ScreenerRows } from "@/lib/screener/top10-quotes";
 import { toNormalizedQuote } from "@/lib/screener/screener-top10-api-shape";
+import { getMockScreenerCompaniesNvdaBtcRows } from "@/lib/fixtures/screener-companies-test";
 
 export async function GET() {
   const supabase = await getSupabaseServerClient();
@@ -14,7 +14,7 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const rows = await getTop10ScreenerRows();
+  const rows = getMockScreenerCompaniesNvdaBtcRows();
   const quotes = rows.map(toNormalizedQuote);
   return NextResponse.json({ rows: quotes });
 }

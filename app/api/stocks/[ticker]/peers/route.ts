@@ -4,6 +4,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { fetchEodhdFundamentalsJson } from "@/lib/market/eodhd-fundamentals";
 import { fetchEodhdScreenerCandidates } from "@/lib/market/eodhd-screener";
 import { normalizeWatchlistTicker, WatchlistValidationError } from "@/lib/watchlist/operations";
+import { isSingleAssetMode } from "@/lib/features/single-asset";
 
 type Ctx = { params: Promise<{ ticker: string }> };
 
@@ -28,6 +29,17 @@ export async function GET(_request: Request, { params }: Ctx) {
   } catch (e) {
     if (e instanceof WatchlistValidationError) return NextResponse.json({ error: e.message }, { status: 400 });
     return NextResponse.json({ error: "Invalid ticker." }, { status: 400 });
+  }
+
+  if (isSingleAssetMode()) {
+    // Single-asset mode: peers are disabled to avoid broad industry candidate fan-out.
+    // Keep response shape so UI can render an empty peers state.
+    return NextResponse.json(
+      { ticker, sector: null, industry: null, peers: [] },
+      {
+        headers: { "Cache-Control": "private, s-maxage=300, stale-while-revalidate=600" },
+      },
+    );
   }
 
   const root = await fetchEodhdFundamentalsJson(ticker);
@@ -64,11 +76,18 @@ export async function GET(_request: Request, { params }: Ctx) {
 
   const peerTickers = peers.slice(0, 5).map((p) => p.ticker);
 
-  return NextResponse.json({
-    ticker,
-    sector,
-    industry,
-    peers: peerTickers,
-  });
+  return NextResponse.json(
+    {
+      ticker,
+      sector,
+      industry,
+      peers: peerTickers,
+    },
+    {
+      headers: {
+        "Cache-Control": "private, s-maxage=300, stale-while-revalidate=600",
+      },
+    },
+  );
 }
 

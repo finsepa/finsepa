@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useSpringTriplet } from "@/components/chart/use-spring-numbers";
+import { mergeLogoMemory, readLogoMemory } from "@/lib/logos/logo-memory";
 import { getStockDetailMetaFromTicker } from "@/lib/market/stock-detail-meta";
 import {
   formatHeaderMetaSegment,
@@ -50,10 +52,29 @@ export function StockHeader({
   const symbol = meta.ticker;
   const titleName = headerMeta?.fullName?.trim() ? headerMeta.fullName : meta.name;
 
+  const serverLogo = headerMeta?.logoUrl?.trim() || meta.logoUrl?.trim() || "";
+  const memLogo = readLogoMemory(symbol)?.trim() || "";
+
+  // Track failed logo per "current serverLogo" without needing reset effects.
+  const logoFailureKey = `${ticker}|${serverLogo}`;
+  const [imgFailedForKey, setImgFailedForKey] = useState<string | null>(null);
+  const imgFailed = imgFailedForKey === logoFailureKey;
+  const logoSrc = imgFailed ? "" : serverLogo || memLogo;
+
+  useEffect(() => {
+    if (serverLogo) mergeLogoMemory(symbol, serverLogo);
+  }, [symbol, serverLogo]);
+
   const anim = useSpringTriplet(
     { price, abs: changeAbs, pct: changePct },
     { stiffness: 520, damping: 38, epsilon: 1e-4 },
   );
+
+  /** Watchlist count can differ between SSR and first client paint (DB vs serialized props); defer suffix to avoid hydration mismatch. */
+  const [watchlistMetaReady, setWatchlistMetaReady] = useState(false);
+  useEffect(() => {
+    setWatchlistMetaReady(true);
+  }, []);
 
   const hasChange = changePct != null && changeAbs != null && Number.isFinite(changePct) && Number.isFinite(changeAbs);
   const isPositive = hasChange ? changeAbs >= 0 : true;
@@ -72,24 +93,24 @@ export function StockHeader({
 
       <div className="flex items-center justify-between gap-4">
         <div className="flex min-w-0 items-center gap-4">
-          {meta.logoUrl ? (
+          {logoSrc ? (
             // eslint-disable-next-line @next/next/no-img-element -- remote favicon with onError fallback in-browser
             <img
-              src={meta.logoUrl}
+              src={logoSrc}
               alt=""
               width={48}
               height={48}
               className="h-12 w-12 shrink-0 rounded-xl border border-neutral-200 bg-white object-contain shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]"
-              onError={(e) => {
-                (e.currentTarget as HTMLImageElement).style.display = "none";
+              onError={() => {
+                setImgFailedForKey(logoFailureKey);
+                mergeLogoMemory(symbol, null);
               }}
             />
-          ) : null}
-          {!meta.logoUrl ? (
+          ) : (
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-[#E4E4E7] bg-[#F4F4F5] text-[18px] font-bold text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
               {meta.ticker.slice(0, 1)}
             </div>
-          ) : null}
+          )}
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-[20px] font-semibold leading-7 text-[#09090B] [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical] overflow-hidden break-words">
@@ -107,8 +128,12 @@ export function StockHeader({
                   {formatHeaderMetaSegment(headerMeta?.industry)}
                   <span className="text-[#D4D4D8]"> / </span>
                   {formatHeaderMetaSegment(headerMeta?.earningsDateDisplay)}
-                  <span className="text-[#D4D4D8]"> / </span>
-                  {formatWatchlistsCountLabel(headerMeta?.watchlistCount ?? null)}
+                  {watchlistMetaReady && headerMeta?.watchlistCount != null ? (
+                    <>
+                      <span className="text-[#D4D4D8]"> / </span>
+                      {formatWatchlistsCountLabel(headerMeta.watchlistCount)}
+                    </>
+                  ) : null}
                 </span>
               </p>
             )}

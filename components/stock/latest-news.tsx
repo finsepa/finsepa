@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 
 import { SkeletonBox } from "@/components/markets/skeleton";
 import type { StockNewsArticle } from "@/lib/market/stock-news-types";
@@ -41,17 +41,25 @@ function NewsRowSkeleton() {
   );
 }
 
-export function LatestNews({ ticker }: { ticker: string }) {
+function LatestNewsInner({ ticker, initialItems }: { ticker: string; initialItems?: StockNewsArticle[] }) {
   const sym = ticker.trim().toUpperCase();
-  const [loading, setLoading] = useState(true);
-  const [items, setItems] = useState<StockNewsArticle[]>([]);
+  const seed = useMemo(() => (Array.isArray(initialItems) ? initialItems : null), [initialItems]);
+  const [loading, setLoading] = useState(seed == null);
+  const [items, setItems] = useState<StockNewsArticle[]>(seed ?? []);
 
   useEffect(() => {
+    let cancelled = false;
     let mounted = true;
     async function load() {
+      // SSR preloaded news: render instantly, no client fetch / skeleton flash.
+      if (seed) {
+        setItems(seed);
+        setLoading(false);
+        return;
+      }
       setLoading(true);
       try {
-        const res = await fetch(`/api/stocks/${encodeURIComponent(sym)}/news`, { cache: "no-store" });
+        const res = await fetch(`/api/stocks/${encodeURIComponent(sym)}/news`);
         if (!res.ok) {
           if (!mounted) return;
           setItems([]);
@@ -71,8 +79,9 @@ export function LatestNews({ ticker }: { ticker: string }) {
     void load();
     return () => {
       mounted = false;
+      cancelled = true;
     };
-  }, [sym]);
+  }, [sym, seed]);
 
   return (
     <div>
@@ -84,9 +93,9 @@ export function LatestNews({ ticker }: { ticker: string }) {
             <NewsRowSkeleton key={i} />
           ))}
         </div>
-      ) : items.length === 0 ? (
+      ) : !loading && items.length === 0 ? (
         <p className="text-[13px] leading-5 text-[#71717A] py-2">No recent news found for {sym}.</p>
-      ) : (
+      ) : !loading ? (
         <div className="space-y-0">
           {items.map((item) => (
             <a
@@ -118,7 +127,9 @@ export function LatestNews({ ticker }: { ticker: string }) {
             </a>
           ))}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
+
+export const LatestNews = memo(LatestNewsInner);

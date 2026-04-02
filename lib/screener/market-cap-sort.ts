@@ -35,5 +35,8 @@ export function sortRowsByMarketCapDesc(rows: ScreenerRowWithMarketCapSort[]): S
     if (diff !== 0) return diff;
     return a.ticker.localeCompare(b.ticker);
   });
-  return sorted.map(({ marketCapUsd: _sort, ...row }) => row);
+  return sorted.map(({ marketCapUsd, ...row }) => {
+    void marketCapUsd;
+    return row;
+  });
 }

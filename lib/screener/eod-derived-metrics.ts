@@ -23,6 +23,13 @@ export function formatMarketCapDisplay(usd: number | null | undefined): string {
   return `$${Math.round(v).toLocaleString("en-US")}`;
 }
 
+/** e.g. 2.20T, 450.30B, 18.40M — returns "—" when missing. */
+export function formatMarketCapCompactNoCurrency(usd: number | null | undefined): string {
+  const s = formatMarketCapDisplay(usd);
+  if (s === "-" || !s) return "—";
+  return s.startsWith("$") ? s.slice(1) : s;
+}
+
 /** Trailing PE preferred, then forward. "-" when unavailable. */
 export function formatPeDisplay(trailing: number | null | undefined, forward: number | null | undefined): string {
   const v = trailing ?? forward;
@@ -30,7 +37,15 @@ export function formatPeDisplay(trailing: number | null | undefined, forward: nu
   return trimNumberString(v.toFixed(2));
 }
 
+/** e.g. 65, 30, 27.46 — returns "—" when missing. */
+export function formatPeCompact(pe: number | null | undefined): string {
+  if (pe == null || !Number.isFinite(pe)) return "—";
+  return pe.toFixed(2);
+}
+
 export type DerivedFromEodBars = {
+  /** vs close ~7 trading sessions before the latest bar */
+  changePercent7D: number | null;
   changePercent1M: number | null;
   changePercentYTD: number | null;
   sparkline5d: number[];
@@ -43,7 +58,7 @@ export type DerivedFromEodBars = {
  */
 export function deriveMetricsFromDailyBars(bars: EodhdDailyBar[], currentPrice: number): DerivedFromEodBars {
   if (!bars.length || !Number.isFinite(currentPrice) || currentPrice <= 0) {
-    return { changePercent1M: null, changePercentYTD: null, sparkline5d: [] };
+    return { changePercent7D: null, changePercent1M: null, changePercentYTD: null, sparkline5d: [] };
   }
 
   const sorted = [...bars].sort((a, b) => a.date.localeCompare(b.date));
@@ -51,6 +66,13 @@ export function deriveMetricsFromDailyBars(bars: EodhdDailyBar[], currentPrice: 
   const lastTime = parseYmdUtc(lastBar.date);
 
   const sparkline5d = sorted.slice(-5).map((b) => b.close);
+
+  const idx7 = sorted.length - 1 - 7;
+  const close7dAgo = idx7 >= 0 ? sorted[idx7]?.close : null;
+  let changePercent7D: number | null = null;
+  if (close7dAgo != null && close7dAgo > 0 && Number.isFinite(currentPrice)) {
+    changePercent7D = ((currentPrice - close7dAgo) / close7dAgo) * 100;
+  }
 
   const ytdYear = Number(lastBar.date.slice(0, 4));
   const ytdStartStr = `${ytdYear}-01-01`;
@@ -77,7 +99,7 @@ export function deriveMetricsFromDailyBars(bars: EodhdDailyBar[], currentPrice: 
     changePercent1M = ((currentPrice - nearest.close) / nearest.close) * 100;
   }
 
-  return { changePercent1M, changePercentYTD, sparkline5d };
+  return { changePercent7D, changePercent1M, changePercentYTD, sparkline5d };
 }
 
 export function eodFetchWindowUtc(): { from: string; to: string } {

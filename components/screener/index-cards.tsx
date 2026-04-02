@@ -1,33 +1,38 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import type { IndexCardData } from "@/lib/screener/indices-today";
 import { FadeIn } from "@/components/markets/skeleton";
-import { IndexCardSkeleton } from "@/components/markets/markets-skeletons";
 
 type IndexEntry = {
   name: string;
   value: string;
   change: string;
-  trend: number[];
+  trend: number[] | null;
 };
 
 const labels = ["S&P 500", "Nasdaq 100", "Dow Jones", "Russell 2000", "VIX"] as const;
 
-function formatIndexValue(price: number): string {
+function formatIndexValue(price: number | null): string {
+  if (price == null || !Number.isFinite(price)) return "—";
   return price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-function formatChangePercent(changePercent1D: number): string {
+function formatChangePercent(changePercent1D: number | null): string {
+  if (changePercent1D == null || !Number.isFinite(changePercent1D)) return "—";
   const sign = changePercent1D >= 0 ? "+" : "";
   return `${sign}${changePercent1D.toFixed(2)}%`;
 }
 
 function MiniSparkline({ points, positive }: { points: number[]; positive: boolean }) {
   const w = 100;
-  const h = 40;
-  const safe =
-    points.length >= 2 ? points : points.length === 1 ? [points[0]!, points[0]!] : [0, 0];
+  const h = 32;
+  if (points.length < 2) {
+    return (
+      <div className="flex h-8 items-center text-[12px] font-medium tabular-nums text-neutral-400">—</div>
+    );
+  }
+  const safe = points;
 
   const min = Math.min(...safe);
   const max = Math.max(...safe);
@@ -45,7 +50,7 @@ function MiniSparkline({ points, positive }: { points: number[]; positive: boole
   const fillColor = positive ? "rgba(22,163,74,0.1)" : "rgba(220,38,38,0.1)";
 
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" className="h-10 w-full">
+    <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" className="h-8 w-full">
       <path d={fill} fill={fillColor} />
       <polyline
         points={polyline}
@@ -59,93 +64,65 @@ function MiniSparkline({ points, positive }: { points: number[]; positive: boole
   );
 }
 
-export function IndexCards() {
-  const [cards, setCards] = useState<IndexCardData[]>([]);
-  const [loaded, setLoaded] = useState(false);
-  const [fadeIn, setFadeIn] = useState(false);
-
-  useEffect(() => {
-    let mounted = true;
-    const url = `/api/screener/indices?debug=${Date.now()}`;
-
-    async function load() {
-      try {
-        const res = await fetch(url, { cache: "no-store" });
-        const json = (await res.json()) as { cards?: IndexCardData[]; fetchedAt?: string };
-        if (!mounted) return;
-        setCards(Array.isArray(json.cards) ? json.cards : []);
-        setLoaded(true);
-        requestAnimationFrame(() => setFadeIn(true));
-      } catch (err) {
-        if (!mounted) return;
-        setLoaded(false);
-      }
-    }
-
-    void load();
-    return () => {
-      mounted = false;
-    };
-  }, []);
+export function IndexCards({ initialCards }: { initialCards?: IndexCardData[] }) {
+  const cards = Array.isArray(initialCards) ? initialCards : [];
+  const fadeIn = true;
 
   const entries: IndexEntry[] = useMemo(() => {
     const byName = new Map(cards.map((c) => [c.name, c] as const));
     const mapped = labels.map((name) => {
       const c = byName.get(name);
-      if (!c) {
-        return null;
-      }
+      if (!c) return { name, value: "—", change: "—", trend: null };
       return {
         name,
         value: formatIndexValue(c.price),
         change: formatChangePercent(c.changePercent1D),
-        trend: c.sparklineToday,
+        trend: c.sparklineToday && c.sparklineToday.length >= 2 ? c.sparklineToday : null,
       };
     });
-    return mapped.filter(Boolean) as IndexEntry[];
+    return mapped;
   }, [cards]);
 
-  if (!loaded || entries.length !== labels.length) {
-    return (
-      <div className="mb-6 grid grid-cols-5 gap-6">
-        {labels.map((name) => (
-          <IndexCardSkeleton key={name} name={name} />
-        ))}
-      </div>
-    );
-  }
+  if (entries.length !== labels.length) return null;
 
   return (
     <div className="mb-6 grid grid-cols-5 gap-6">
       {entries.map(({ name, value, change, trend }) => {
-        const positive = !change.startsWith("-");
+        const neutral = change === "—" || value === "—" || change === "-" || value === "-";
+        const positive = !neutral && !change.startsWith("-");
+        const sparkPositive =
+          trend && trend.length >= 2 ? trend[trend.length - 1]! >= trend[0]! : positive;
         return (
           <div
             key={name}
-            className="flex flex-col justify-between overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition hover:shadow-md"
+            className="flex h-fit flex-col gap-2 overflow-hidden rounded-xl border border-[#E4E4E7] bg-white px-4 py-4 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition hover:shadow-[0px_2px_4px_0px_rgba(10,10,10,0.08)]"
           >
-            <div className="px-4 pt-4">
-              <div className="mb-2 flex items-start justify-between gap-2">
-                <span className="text-[12px] font-medium text-neutral-500">{name}</span>
-                <FadeIn show={fadeIn}>
-                  <span
-                    className={`rounded-md px-1.5 py-0.5 text-[11px] font-semibold tabular-nums ${
-                      positive ? "bg-[#F0FDF4] text-[#16A34A]" : "bg-[#FEF2F2] text-[#DC2626]"
-                    }`}
-                  >
-                    {change}
-                  </span>
-                </FadeIn>
-              </div>
+            <p className="text-[14px] font-normal leading-5 text-[#09090B]">{name}</p>
+            <div className="flex min-w-0 items-center gap-2">
               <FadeIn show={fadeIn}>
-                <div className="text-[22px] font-bold tracking-tight text-neutral-900">{value}</div>
+                <p className="min-w-0 flex-1 text-[16px] font-bold leading-6 tabular-nums text-[#09090B]">{value}</p>
+              </FadeIn>
+              <FadeIn show={fadeIn}>
+                <span
+                  className={`shrink-0 rounded-lg px-1 py-0.5 text-[12px] font-normal leading-4 tabular-nums ${
+                    neutral
+                      ? "bg-neutral-100 text-neutral-500"
+                      : positive
+                        ? "bg-[#F0FDF4] text-[#16A34A]"
+                        : "bg-[#FEF2F2] text-[#DC2626]"
+                  }`}
+                >
+                  {change}
+                </span>
               </FadeIn>
             </div>
-            <div className="px-4 pb-4">
-              <FadeIn show={fadeIn}>
-                <MiniSparkline points={trend} positive={positive} />
-              </FadeIn>
-            </div>
+            <FadeIn show={fadeIn}>
+              {trend && trend.length >= 2 ? (
+                <MiniSparkline points={trend} positive={sparkPositive} />
+              ) : (
+                <div className="flex h-8 items-center text-[12px] font-medium tabular-nums text-neutral-400">—</div>
+              )}
+            </FadeIn>
           </div>
         );
       })}

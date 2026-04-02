@@ -2,6 +2,8 @@ import "server-only";
 
 import { unstable_cache } from "next/cache";
 
+import { REVALIDATE_STATIC_DAY } from "@/lib/data/cache-policy";
+
 import { getEodhdApiKey } from "@/lib/env/server";
 
 export type MacroPoint = { time: string; value: number };
@@ -97,8 +99,8 @@ async function fetchMacroIndicatorUncached(args: {
   }
 }
 
-const fetchMacroIndicatorCached = unstable_cache(fetchMacroIndicatorUncached, ["eodhd-macro-indicator-v1"], {
-  revalidate: 60 * 60 * 24,
+const fetchMacroIndicatorCached = unstable_cache(fetchMacroIndicatorUncached, ["eodhd-macro-indicator-v2"], {
+  revalidate: REVALIDATE_STATIC_DAY,
 });
 
 export async function fetchMacroSeries5y(country: string, def: MacroSeriesDef): Promise<MacroPoint[]> {

@@ -3,6 +3,8 @@ import "server-only";
 import { cache } from "react";
 import { unstable_cache } from "next/cache";
 
+import { REVALIDATE_HOT } from "@/lib/data/cache-policy";
+
 import { getEodhdApiKey } from "@/lib/env/server";
 import { toEodhdUsSymbol } from "@/lib/market/eodhd-symbol";
 import { CRYPTO_TOP10 } from "@/lib/market/eodhd-crypto";
@@ -137,7 +139,7 @@ async function buildNewsFeedUncached(tab: NewsTab): Promise<NewsItem[]> {
   return items;
 }
 
-const getNewsFeedData = unstable_cache(buildNewsFeedUncached, ["news-feed-v1"], { revalidate: 60 });
+const getNewsFeedData = unstable_cache(buildNewsFeedUncached, ["news-feed-v2"], { revalidate: REVALIDATE_HOT });
 
 export const getNewsFeed = cache(async (tab: NewsTab) => getNewsFeedData(tab));
 

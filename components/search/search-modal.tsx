@@ -5,17 +5,12 @@ import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 
 import type { SearchAssetItem } from "@/lib/search/search-types";
-import type { SearchScope } from "@/lib/search/search-types";
 import { readRecentSearches, recordSearchNavigation, removeRecentSearchById } from "@/lib/search/recent-searches-storage";
 import { SearchResultRow } from "@/components/search/search-result-row";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
+import { watchlistStorageKeyForSearchItem } from "@/lib/search/watchlist-storage-key";
 
-const TABS: { id: SearchScope; label: string }[] = [
-  { id: "all", label: "All" },
-  { id: "stocks", label: "Stocks" },
-  { id: "crypto", label: "Crypto" },
-  { id: "indices", label: "Indices" },
-];
+const SEARCH_DEBOUNCE_MS = 250;
 
 function useDebouncedValue<T>(value: T, ms: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -26,18 +21,25 @@ function useDebouncedValue<T>(value: T, ms: number): T {
   return debounced;
 }
 
+function isWatchedItem(item: SearchAssetItem, watched: Set<string>): boolean {
+  const k = watchlistStorageKeyForSearchItem(item).trim().toUpperCase();
+  return watched.has(k);
+}
+
 export function SearchModal({ onClose }: { onClose: () => void }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const { watched, loaded, toggleTicker } = useWatchlist();
 
   const [query, setQuery] = useState("");
-  const debounced = useDebouncedValue(query, 220);
-  const [scope, setScope] = useState<SearchScope>("all");
+  const debounced = useDebouncedValue(query, SEARCH_DEBOUNCE_MS);
   const [items, setItems] = useState<SearchAssetItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [recent, setRecent] = useState<SearchAssetItem[]>([]);
   const [highlight, setHighlight] = useState(0);
+
+  const debouncedTrim = debounced.trim();
+  const queryTrim = query.trim();
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -46,35 +48,42 @@ export function SearchModal({ onClose }: { onClose: () => void }) {
 
   useEffect(() => {
     setHighlight(0);
-  }, [query, scope, items, recent]);
+  }, [debouncedTrim]);
 
   useEffect(() => {
-    const q = debounced.trim();
-    if (q.length < 1) {
+    if (debouncedTrim.length < 1) {
       setItems([]);
       setLoading(false);
       return;
     }
+
     let cancelled = false;
+    const ac = new AbortController();
     setLoading(true);
+
     void (async () => {
       try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&scope=${encodeURIComponent(scope)}`, {
-          cache: "no-store",
+        const res = await fetch(`/api/search?q=${encodeURIComponent(debouncedTrim)}`, {
+          signal: ac.signal,
+          cache: "default",
         });
         const json = (await res.json()) as { items?: SearchAssetItem[] };
         if (cancelled) return;
         setItems(Array.isArray(json.items) ? json.items : []);
-      } catch {
-        if (!cancelled) setItems([]);
+      } catch (e) {
+        if (cancelled) return;
+        if (e instanceof DOMException && e.name === "AbortError") return;
+        setItems([]);
       } finally {
         if (!cancelled) setLoading(false);
       }
     })();
+
     return () => {
       cancelled = true;
+      ac.abort();
     };
-  }, [debounced, scope]);
+  }, [debouncedTrim]);
 
   const navigateTo = useCallback(
     (item: SearchAssetItem) => {
@@ -99,7 +108,7 @@ export function SearchModal({ onClose }: { onClose: () => void }) {
         onClose();
         return;
       }
-      const list = query.trim().length > 0 ? items : recent;
+      const list = queryTrim.length > 0 ? items : recent;
       if (list.length === 0) return;
       if (e.key === "ArrowDown") {
         e.preventDefault();
@@ -117,11 +126,12 @@ export function SearchModal({ onClose }: { onClose: () => void }) {
     }
     window.addEventListener("keydown", onK);
     return () => window.removeEventListener("keydown", onK);
-  }, [query, items, recent, highlight, navigateTo, onClose]);
+  }, [queryTrim, items, recent, highlight, navigateTo, onClose]);
 
-  const showResults = query.trim().length > 0;
+  const showResults = queryTrim.length > 0;
   const emptyQuery = !showResults;
   const noRecent = emptyQuery && recent.length === 0;
+  const showStaleList = showResults && items.length > 0;
   const noResults = showResults && !loading && items.length === 0;
 
   return (
@@ -144,7 +154,7 @@ export function SearchModal({ onClose }: { onClose: () => void }) {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search stocks, crypto, indices…"
+            placeholder="Search Apple, NVIDIA, Bitcoin, Ethereum, S&P 500…"
             className="flex-1 bg-transparent text-[15px] leading-6 text-[#09090B] outline-none placeholder:text-[#A1A1AA]"
             autoComplete="off"
             autoCorrect="off"
@@ -155,26 +165,6 @@ export function SearchModal({ onClose }: { onClose: () => void }) {
           >
             ESC
           </kbd>
-        </div>
-
-        <div className="flex items-center gap-2 overflow-x-auto border-b border-[#E4E4E7] px-5 py-3 scrollbar-none">
-          {TABS.map((t) => {
-            const active = scope === t.id;
-            return (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => setScope(t.id)}
-                className={`shrink-0 rounded-full border px-3.5 py-1 text-[13px] font-medium transition-colors ${
-                  active
-                    ? "border-[#2563EB] bg-white text-[#2563EB]"
-                    : "border-[#E4E4E7] bg-white text-[#09090B] hover:bg-[#F4F4F5]"
-                }`}
-              >
-                {t.label}
-              </button>
-            );
-          })}
         </div>
 
         <div className="max-h-[420px] overflow-y-auto py-2">
@@ -196,32 +186,39 @@ export function SearchModal({ onClose }: { onClose: () => void }) {
                     onNavigate={navigateTo}
                     onRemoveRecent={() => handleRemoveRecent(item.id)}
                     active={highlight === i}
-                    watched={watched}
+                    starred={isWatchedItem(item, watched)}
                     loaded={loaded}
                     toggleTicker={toggleTicker}
                   />
                 ))
               )}
             </>
-          ) : loading ? (
+          ) : loading && !showStaleList ? (
             <div className="px-5 py-10 text-center text-[14px] text-[#71717A]">Searching…</div>
           ) : noResults ? (
             <div className="px-5 py-10 text-center text-[14px] text-[#71717A]">
-              No results for &ldquo;{query.trim()}&rdquo;
+              No results for &ldquo;{queryTrim}&rdquo;
             </div>
           ) : (
-            items.map((item, i) => (
-              <SearchResultRow
-                key={item.id}
-                variant="live"
-                item={item}
-                onNavigate={navigateTo}
-                active={highlight === i}
-                watched={watched}
-                loaded={loaded}
-                toggleTicker={toggleTicker}
-              />
-            ))
+            <>
+              {loading && showStaleList ? (
+                <div className="px-5 pb-1 text-center text-[11px] text-[#A1A1AA]" aria-hidden>
+                  Updating…
+                </div>
+              ) : null}
+              {items.map((item, i) => (
+                <SearchResultRow
+                  key={item.id}
+                  variant="live"
+                  item={item}
+                  onNavigate={navigateTo}
+                  active={highlight === i}
+                  starred={isWatchedItem(item, watched)}
+                  loaded={loaded}
+                  toggleTicker={toggleTicker}
+                />
+              ))}
+            </>
           )}
         </div>
       </div>
