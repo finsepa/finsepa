@@ -2,11 +2,14 @@ import "server-only";
 
 import { unstable_cache } from "next/cache";
 
+import { CRYPTO_TOP10, fetchEodhdCryptoDailyBars } from "@/lib/market/eodhd-crypto";
 import { traceEodhdHttp } from "@/lib/market/provider-trace";
 import { getEodhdApiKey } from "@/lib/env/server";
-import { fetchEodhdEodDailyScreener } from "@/lib/market/eodhd-eod";
+import { fetchEodhdEodDailyScreener, type EodhdDailyBar } from "@/lib/market/eodhd-eod";
 import { deriveMetricsFromDailyBars, eodFetchWindowUtc } from "@/lib/screener/eod-derived-metrics";
-import { fetchEodhdCryptoDailyBars } from "@/lib/market/eodhd-crypto";
+import { TOP10_TICKERS, type Top10Ticker } from "@/lib/screener/top10-config";
+import { SCREENER_INDEX_SYMBOLS } from "@/lib/screener/screener-indices-universe";
+import { toEodhdUsSymbol } from "@/lib/market/eodhd-symbol";
 
 type EodhdRealtimePayload = {
   code?: string;
@@ -16,81 +19,51 @@ type EodhdRealtimePayload = {
 };
 
 export type SimpleMarketDatum = {
-  /** Latest price (close) */
   price: number | null;
-  /** Previous close (yesterday close) */
   previousClose: number | null;
-  /** 1D change percent */
   changePercent1D: number | null;
 };
 
+export type ScreenerCryptoSymbol = (typeof CRYPTO_TOP10)[number]["symbol"];
+
 export type SimpleMarketData = {
-  NVDA: SimpleMarketDatum;
-  AAPL: SimpleMarketDatum;
-  BTC: SimpleMarketDatum;
-  ETH: SimpleMarketDatum;
-  SPX: SimpleMarketDatum;
-  NDX: SimpleMarketDatum;
-  DJI: SimpleMarketDatum;
-  RUT: SimpleMarketDatum;
-  VIX: SimpleMarketDatum;
+  stocks: Record<Top10Ticker, SimpleMarketDatum>;
+  crypto: Record<ScreenerCryptoSymbol, SimpleMarketDatum>;
+  /** Screener + index cards: keyed by full EODHD symbol (e.g. GSPC.INDX). */
+  indices: Record<string, SimpleMarketDatum>;
 };
 
 export type SimpleScreenerStockDerived = {
   changePercent7D: number | null;
   changePercent1M: number | null;
   changePercentYTD: number | null;
-  /** Exactly 5 daily closes (or empty if unavailable) */
   last5DailyCloses: number[];
 };
 
-export type SimpleScreenerDerived = {
-  NVDA: SimpleScreenerStockDerived;
-  AAPL: SimpleScreenerStockDerived;
+export type SimpleScreenerDerived = Record<Top10Ticker, SimpleScreenerStockDerived>;
+
+export type CryptoDerivedSlice = {
+  changePercent7D: number | null;
+  changePercent1M: number | null;
+  changePercentYTD: number | null;
+  last5DailyCloses: number[];
 };
 
-export type SimpleCryptoDerived = {
-  BTC: {
-    changePercent7D: number | null;
-    changePercent1M: number | null;
-    changePercentYTD: number | null;
-    last5DailyCloses: number[];
-  };
-  ETH: {
-    changePercent7D: number | null;
-    changePercent1M: number | null;
-    changePercentYTD: number | null;
-    last5DailyCloses: number[];
-  };
-};
+export type SimpleCryptoDerived = Record<ScreenerCryptoSymbol, CryptoDerivedSlice>;
 
-export type SimpleIndicesDerived = {
-  SPX: {
-    changePercent7D: number | null;
-    changePercent1M: number | null;
-    changePercentYTD: number | null;
-    last5DailyCloses: number[];
-  };
-  NDX: {
-    changePercent7D: number | null;
-    changePercent1M: number | null;
-    changePercentYTD: number | null;
-    last5DailyCloses: number[];
-  };
-};
+export type SimpleIndicesDerived = Record<string, CryptoDerivedSlice>;
 
-const SYMBOLS_BY_KEY = {
-  NVDA: "NVDA.US",
-  AAPL: "AAPL.US",
-  BTC: "BTC-USD.CC",
-  ETH: "ETH-USD.CC",
-  SPX: "GSPC.INDX",
-  NDX: "NDX.INDX",
-  DJI: "DJI.INDX",
-  // Russell 2000 proxy (see indices-config.ts)
-  RUT: "IWM.US",
-  VIX: "VIX.INDX",
-} as const satisfies Record<keyof SimpleMarketData, string>;
+function emptyDatum(): SimpleMarketDatum {
+  return { price: null, previousClose: null, changePercent1D: null };
+}
+
+function emptyStockDerived(): SimpleScreenerStockDerived {
+  return { changePercent7D: null, changePercent1M: null, changePercentYTD: null, last5DailyCloses: [] };
+}
+
+function emptyCryptoDerived(): CryptoDerivedSlice {
+  return { changePercent7D: null, changePercent1M: null, changePercentYTD: null, last5DailyCloses: [] };
+}
 
 function parseRealtimeMultiJson(raw: unknown): Map<string, EodhdRealtimePayload> {
   const map = new Map<string, EodhdRealtimePayload>();
@@ -122,14 +95,29 @@ function toDatum(p: EodhdRealtimePayload | undefined): SimpleMarketDatum {
   return { price, previousClose, changePercent1D };
 }
 
+function buildEmptyMarketData(): SimpleMarketData {
+  const stocks = {} as Record<Top10Ticker, SimpleMarketDatum>;
+  for (const t of TOP10_TICKERS) stocks[t] = emptyDatum();
+  const crypto = {} as Record<ScreenerCryptoSymbol, SimpleMarketDatum>;
+  for (const c of CRYPTO_TOP10) crypto[c.symbol as ScreenerCryptoSymbol] = emptyDatum();
+  const indices: Record<string, SimpleMarketDatum> = {};
+  for (const sym of SCREENER_INDEX_SYMBOLS) indices[sym] = emptyDatum();
+  return {
+    stocks,
+    crypto,
+    indices,
+  };
+}
+
 async function loadSimpleMarketDataUncached(): Promise<SimpleMarketData> {
   const key = getEodhdApiKey();
-  const empty: SimpleMarketDatum = { price: null, previousClose: null, changePercent1D: null };
-  if (!key) {
-    return { NVDA: empty, AAPL: empty, BTC: empty, ETH: empty, SPX: empty, NDX: empty, DJI: empty, RUT: empty, VIX: empty };
-  }
+  const empty = buildEmptyMarketData();
+  if (!key) return empty;
 
-  const symbols = Object.values(SYMBOLS_BY_KEY);
+  const stockSymbols = TOP10_TICKERS.map((t) => toEodhdUsSymbol(t));
+  const cryptoSymbols = CRYPTO_TOP10.map((c) => c.eodhdSymbol);
+  const symbols = [...stockSymbols, ...cryptoSymbols, ...SCREENER_INDEX_SYMBOLS];
+
   const [first, ...rest] = symbols;
   const sParam = rest.length ? `&s=${rest.map((s) => encodeURIComponent(s)).join(",")}` : "";
   const url = `https://eodhd.com/api/real-time/${encodeURIComponent(first)}?api_token=${encodeURIComponent(
@@ -139,178 +127,117 @@ async function loadSimpleMarketDataUncached(): Promise<SimpleMarketData> {
   try {
     traceEodhdHttp("getSimpleMarketData", { symbolsInRequest: symbols.length });
     const res = await fetch(url, { cache: "no-store" });
-    if (!res.ok) {
-      return { NVDA: empty, AAPL: empty, BTC: empty, ETH: empty, SPX: empty, NDX: empty, DJI: empty, RUT: empty, VIX: empty };
-    }
+    if (!res.ok) return empty;
     const json = (await res.json()) as unknown;
     const map = parseRealtimeMultiJson(json);
 
+    const stocks = {} as Record<Top10Ticker, SimpleMarketDatum>;
+    for (const t of TOP10_TICKERS) {
+      stocks[t] = toDatum(map.get(toEodhdUsSymbol(t).toUpperCase()));
+    }
+    const crypto = {} as Record<ScreenerCryptoSymbol, SimpleMarketDatum>;
+    for (const c of CRYPTO_TOP10) {
+      crypto[c.symbol as ScreenerCryptoSymbol] = toDatum(map.get(c.eodhdSymbol.toUpperCase()));
+    }
+
+    const indices: Record<string, SimpleMarketDatum> = {};
+    for (const sym of SCREENER_INDEX_SYMBOLS) {
+      indices[sym] = toDatum(map.get(sym.toUpperCase()));
+    }
+
     return {
-      NVDA: toDatum(map.get(SYMBOLS_BY_KEY.NVDA.toUpperCase())),
-      AAPL: toDatum(map.get(SYMBOLS_BY_KEY.AAPL.toUpperCase())),
-      BTC: toDatum(map.get(SYMBOLS_BY_KEY.BTC.toUpperCase())),
-      ETH: toDatum(map.get(SYMBOLS_BY_KEY.ETH.toUpperCase())),
-      SPX: toDatum(map.get(SYMBOLS_BY_KEY.SPX.toUpperCase())),
-      NDX: toDatum(map.get(SYMBOLS_BY_KEY.NDX.toUpperCase())),
-      DJI: toDatum(map.get(SYMBOLS_BY_KEY.DJI.toUpperCase())),
-      RUT: toDatum(map.get(SYMBOLS_BY_KEY.RUT.toUpperCase())),
-      VIX: toDatum(map.get(SYMBOLS_BY_KEY.VIX.toUpperCase())),
+      stocks,
+      crypto,
+      indices,
     };
   } catch {
-    return { NVDA: empty, AAPL: empty, BTC: empty, ETH: empty, SPX: empty, NDX: empty, DJI: empty, RUT: empty, VIX: empty };
+    return empty;
   }
 }
 
-export const getSimpleMarketData = unstable_cache(loadSimpleMarketDataUncached, ["simple-market-data-v1"], {
+export const getSimpleMarketData = unstable_cache(loadSimpleMarketDataUncached, ["simple-market-data-v3"], {
   revalidate: 60,
 });
 
-async function loadSimpleScreenerDerivedUncached(): Promise<SimpleScreenerDerived> {
-  const empty: SimpleScreenerStockDerived = {
-    changePercent7D: null,
-    changePercent1M: null,
-    changePercentYTD: null,
-    last5DailyCloses: [],
-  };
-  const window = eodFetchWindowUtc();
-
-  const [nvdaBarsSettled, aaplBarsSettled] = await Promise.allSettled([
-    fetchEodhdEodDailyScreener("NVDA", window.from, window.to),
-    fetchEodhdEodDailyScreener("AAPL", window.from, window.to),
-  ]);
-
-  const nvdaBars = nvdaBarsSettled.status === "fulfilled" ? nvdaBarsSettled.value ?? [] : [];
-  const aaplBars = aaplBarsSettled.status === "fulfilled" ? aaplBarsSettled.value ?? [] : [];
-
-  const lastClose = (bars: { close: number }[]): number | null => {
-    if (!bars.length) return null;
+function barsToStockDerived(bars: EodhdDailyBar[]): SimpleScreenerStockDerived {
+  const empty = emptyStockDerived();
+  if (!bars.length) return empty;
+  const lastClose = (() => {
     const c = bars[bars.length - 1]?.close;
     return typeof c === "number" && Number.isFinite(c) ? c : null;
-  };
-
-  const nvdaPrice = lastClose(nvdaBars);
-  const aaplPrice = lastClose(aaplBars);
-
-  const nvdaDerived = nvdaBars.length && nvdaPrice != null ? deriveMetricsFromDailyBars(nvdaBars, nvdaPrice) : null;
-  const aaplDerived = aaplBars.length && aaplPrice != null ? deriveMetricsFromDailyBars(aaplBars, aaplPrice) : null;
-
+  })();
+  if (lastClose == null) return empty;
+  const d = deriveMetricsFromDailyBars(bars, lastClose);
   return {
-    NVDA: nvdaDerived
-      ? {
-          changePercent7D: nvdaDerived.changePercent7D,
-          changePercent1M: nvdaDerived.changePercent1M,
-          changePercentYTD: nvdaDerived.changePercentYTD,
-          last5DailyCloses: nvdaDerived.sparkline5d.length === 5 ? nvdaDerived.sparkline5d : nvdaDerived.sparkline5d.slice(-5),
-        }
-      : empty,
-    AAPL: aaplDerived
-      ? {
-          changePercent7D: aaplDerived.changePercent7D,
-          changePercent1M: aaplDerived.changePercent1M,
-          changePercentYTD: aaplDerived.changePercentYTD,
-          last5DailyCloses: aaplDerived.sparkline5d.length === 5 ? aaplDerived.sparkline5d : aaplDerived.sparkline5d.slice(-5),
-        }
-      : empty,
+    changePercent7D: d.changePercent7D,
+    changePercent1M: d.changePercent1M,
+    changePercentYTD: d.changePercentYTD,
+    last5DailyCloses: d.sparkline5d.length === 5 ? d.sparkline5d : d.sparkline5d.slice(-5),
   };
 }
 
-export const getSimpleScreenerDerived = unstable_cache(loadSimpleScreenerDerivedUncached, ["simple-screener-derived-v1"], {
+async function loadSimpleScreenerDerivedUncached(): Promise<SimpleScreenerDerived> {
+  const window = eodFetchWindowUtc();
+  const settled = await Promise.allSettled(
+    TOP10_TICKERS.map((t) => fetchEodhdEodDailyScreener(t, window.from, window.to)),
+  );
+  const out = {} as SimpleScreenerDerived;
+  TOP10_TICKERS.forEach((t, i) => {
+    const bars = settled[i]?.status === "fulfilled" ? settled[i].value ?? [] : [];
+    out[t] = barsToStockDerived(bars);
+  });
+  return out;
+}
+
+export const getSimpleScreenerDerived = unstable_cache(loadSimpleScreenerDerivedUncached, ["simple-screener-derived-v2"], {
   revalidate: 1800,
 });
 
-async function loadSimpleCryptoDerivedUncached(): Promise<SimpleCryptoDerived> {
-  const empty = { changePercent7D: null, changePercent1M: null, changePercentYTD: null, last5DailyCloses: [] as number[] };
-  const window = eodFetchWindowUtc();
-
-  const [btcBarsSettled, ethBarsSettled] = await Promise.allSettled([
-    fetchEodhdCryptoDailyBars("BTC-USD.CC", window.from, window.to),
-    fetchEodhdCryptoDailyBars("ETH-USD.CC", window.from, window.to),
-  ]);
-
-  const btcBars = btcBarsSettled.status === "fulfilled" ? btcBarsSettled.value ?? [] : [];
-  const ethBars = ethBarsSettled.status === "fulfilled" ? ethBarsSettled.value ?? [] : [];
-
-  const lastClose = (bars: { close: number }[]): number | null => {
-    if (!bars.length) return null;
-    const c = bars[bars.length - 1]?.close;
-    return typeof c === "number" && Number.isFinite(c) ? c : null;
-  };
-
-  const btcPrice = lastClose(btcBars);
-  const ethPrice = lastClose(ethBars);
-
-  const btcDerived = btcBars.length && btcPrice != null ? deriveMetricsFromDailyBars(btcBars, btcPrice) : null;
-  const ethDerived = ethBars.length && ethPrice != null ? deriveMetricsFromDailyBars(ethBars, ethPrice) : null;
-
+function barsToCryptoDerived(bars: EodhdDailyBar[]): CryptoDerivedSlice {
+  const empty = emptyCryptoDerived();
+  if (!bars.length) return empty;
+  const c = bars[bars.length - 1]?.close;
+  const lastClose = typeof c === "number" && Number.isFinite(c) ? c : null;
+  if (lastClose == null) return empty;
+  const d = deriveMetricsFromDailyBars(bars, lastClose);
   return {
-    BTC: btcDerived
-      ? {
-          changePercent7D: btcDerived.changePercent7D,
-          changePercent1M: btcDerived.changePercent1M,
-          changePercentYTD: btcDerived.changePercentYTD,
-          last5DailyCloses: btcDerived.sparkline5d.length === 5 ? btcDerived.sparkline5d : btcDerived.sparkline5d.slice(-5),
-        }
-      : empty,
-    ETH: ethDerived
-      ? {
-          changePercent7D: ethDerived.changePercent7D,
-          changePercent1M: ethDerived.changePercent1M,
-          changePercentYTD: ethDerived.changePercentYTD,
-          last5DailyCloses: ethDerived.sparkline5d.length === 5 ? ethDerived.sparkline5d : ethDerived.sparkline5d.slice(-5),
-        }
-      : empty,
+    changePercent7D: d.changePercent7D,
+    changePercent1M: d.changePercent1M,
+    changePercentYTD: d.changePercentYTD,
+    last5DailyCloses: d.sparkline5d.length === 5 ? d.sparkline5d : d.sparkline5d.slice(-5),
   };
 }
 
-export const getSimpleCryptoDerived = unstable_cache(loadSimpleCryptoDerivedUncached, ["simple-crypto-derived-v1"], {
+async function loadSimpleCryptoDerivedUncached(): Promise<SimpleCryptoDerived> {
+  const window = eodFetchWindowUtc();
+  const settled = await Promise.allSettled(
+    CRYPTO_TOP10.map((c) => fetchEodhdCryptoDailyBars(c.eodhdSymbol, window.from, window.to)),
+  );
+  const out = {} as SimpleCryptoDerived;
+  CRYPTO_TOP10.forEach((c, i) => {
+    const bars = settled[i]?.status === "fulfilled" ? settled[i].value ?? [] : [];
+    out[c.symbol as ScreenerCryptoSymbol] = barsToCryptoDerived(bars);
+  });
+  return out;
+}
+
+export const getSimpleCryptoDerived = unstable_cache(loadSimpleCryptoDerivedUncached, ["simple-crypto-derived-v2"], {
   revalidate: 1800,
 });
 
 async function loadSimpleIndicesDerivedUncached(): Promise<SimpleIndicesDerived> {
-  const empty = { changePercent7D: null, changePercent1M: null, changePercentYTD: null, last5DailyCloses: [] as number[] };
   const window = eodFetchWindowUtc();
-
-  const [spxBarsSettled, ndxBarsSettled] = await Promise.allSettled([
-    fetchEodhdEodDailyScreener("GSPC.INDX", window.from, window.to),
-    fetchEodhdEodDailyScreener("NDX.INDX", window.from, window.to),
-  ]);
-
-  const spxBars = spxBarsSettled.status === "fulfilled" ? spxBarsSettled.value ?? [] : [];
-  const ndxBars = ndxBarsSettled.status === "fulfilled" ? ndxBarsSettled.value ?? [] : [];
-
-  const lastClose = (bars: { close: number }[]): number | null => {
-    if (!bars.length) return null;
-    const c = bars[bars.length - 1]?.close;
-    return typeof c === "number" && Number.isFinite(c) ? c : null;
-  };
-
-  const spxPrice = lastClose(spxBars);
-  const ndxPrice = lastClose(ndxBars);
-
-  const spxDerived = spxBars.length && spxPrice != null ? deriveMetricsFromDailyBars(spxBars, spxPrice) : null;
-  const ndxDerived = ndxBars.length && ndxPrice != null ? deriveMetricsFromDailyBars(ndxBars, ndxPrice) : null;
-
-  return {
-    SPX: spxDerived
-      ? {
-          changePercent7D: spxDerived.changePercent7D,
-          changePercent1M: spxDerived.changePercent1M,
-          changePercentYTD: spxDerived.changePercentYTD,
-          last5DailyCloses: spxDerived.sparkline5d.length === 5 ? spxDerived.sparkline5d : spxDerived.sparkline5d.slice(-5),
-        }
-      : empty,
-    NDX: ndxDerived
-      ? {
-          changePercent7D: ndxDerived.changePercent7D,
-          changePercent1M: ndxDerived.changePercent1M,
-          changePercentYTD: ndxDerived.changePercentYTD,
-          last5DailyCloses: ndxDerived.sparkline5d.length === 5 ? ndxDerived.sparkline5d : ndxDerived.sparkline5d.slice(-5),
-        }
-      : empty,
-  };
+  const settled = await Promise.allSettled(
+    SCREENER_INDEX_SYMBOLS.map((sym) => fetchEodhdEodDailyScreener(sym, window.from, window.to)),
+  );
+  const out: SimpleIndicesDerived = {};
+  SCREENER_INDEX_SYMBOLS.forEach((sym, i) => {
+    const bars = settled[i]?.status === "fulfilled" ? settled[i].value ?? [] : [];
+    out[sym] = barsToCryptoDerived(bars);
+  });
+  return out;
 }
 
-export const getSimpleIndicesDerived = unstable_cache(loadSimpleIndicesDerivedUncached, ["simple-indices-derived-v1"], {
+export const getSimpleIndicesDerived = unstable_cache(loadSimpleIndicesDerivedUncached, ["simple-indices-derived-v2"], {
   revalidate: 1800,
 });
-

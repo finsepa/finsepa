@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SCREENER_INDICES_HREF } from "@/lib/screener/screener-market-url";
 import { formatIndexValue, getIndexDisplayMeta, getIndicesTop10 } from "@/lib/market/indices-top10";
 import { isSingleAssetMode } from "@/lib/features/single-asset";
 
@@ -26,7 +27,7 @@ export default async function IndexSymbolPage({ params }: PageProps) {
   return (
     <div className="px-9 py-8">
       <div className="mb-6 flex items-center gap-1 text-[14px] text-[#71717A]">
-        <Link href="/screener" className="transition-colors hover:text-[#09090B]">
+        <Link href={SCREENER_INDICES_HREF} className="transition-colors hover:text-[#09090B]">
           Markets
         </Link>
         <span>/</span>
@@ -42,7 +43,10 @@ export default async function IndexSymbolPage({ params }: PageProps) {
 
       <p className="mt-8 max-w-md text-[14px] leading-6 text-[#71717A]">
         Index detail view uses the same benchmark list as the markets screener. For full context, open the{" "}
-        <Link href="/screener" className="font-medium text-[#09090B] underline decoration-[#E4E4E7] underline-offset-4">
+        <Link
+          href={SCREENER_INDICES_HREF}
+          className="font-medium text-[#09090B] underline decoration-[#E4E4E7] underline-offset-4"
+        >
           screener
         </Link>
         .

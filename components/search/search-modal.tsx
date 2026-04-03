@@ -26,7 +26,19 @@ function isWatchedItem(item: SearchAssetItem, watched: Set<string>): boolean {
   return watched.has(k);
 }
 
-export function SearchModal({ onClose }: { onClose: () => void }) {
+export type SearchModalVariant = "default" | "fullscreen";
+
+export function SearchModal({
+  onClose,
+  variant = "default",
+  onSelectItem,
+}: {
+  onClose: () => void;
+  /** `fullscreen` = full-viewport panel (e.g. peer picker). `default` = centered card + dimmed backdrop. */
+  variant?: SearchModalVariant;
+  /** When set, invoked on result selection instead of client navigation (e.g. add stock to peers; caller may navigate for other types). */
+  onSelectItem?: (item: SearchAssetItem) => void;
+}) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const { watched, loaded, toggleTicker } = useWatchlist();
@@ -40,6 +52,8 @@ export function SearchModal({ onClose }: { onClose: () => void }) {
 
   const debouncedTrim = debounced.trim();
   const queryTrim = query.trim();
+
+  const fullscreen = variant === "fullscreen";
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -89,10 +103,15 @@ export function SearchModal({ onClose }: { onClose: () => void }) {
     (item: SearchAssetItem) => {
       recordSearchNavigation(item);
       setRecent(readRecentSearches());
+      if (onSelectItem) {
+        onSelectItem(item);
+        onClose();
+        return;
+      }
       router.push(item.route);
       onClose();
     },
-    [onClose, router],
+    [onClose, onSelectItem, router],
   );
 
   const handleRemoveRecent = useCallback((id: string) => {
@@ -136,18 +155,32 @@ export function SearchModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 pt-[10vh]"
-      onClick={onClose}
+      className={
+        fullscreen
+          ? "fixed inset-0 z-[100] flex flex-col bg-white"
+          : "fixed inset-0 z-50 flex items-start justify-center bg-black/40 pt-[10vh]"
+      }
+      onClick={fullscreen ? undefined : onClose}
       role="presentation"
     >
       <div
-        className="mx-4 w-full max-w-[640px] overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className={
+          fullscreen
+            ? "flex min-h-0 w-full flex-1 flex-col"
+            : "mx-4 w-full max-w-[640px] overflow-hidden rounded-2xl bg-white shadow-2xl"
+        }
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
-        aria-label="Search"
+        aria-label={fullscreen ? "Add company" : "Search"}
       >
-        <div className="flex items-center gap-3 border-b border-[#E4E4E7] px-5 py-3.5">
+        <div
+          className={
+            fullscreen
+              ? "flex shrink-0 items-center gap-3 border-b border-[#E4E4E7] px-6 py-4 sm:px-9"
+              : "flex items-center gap-3 border-b border-[#E4E4E7] px-5 py-3.5"
+          }
+        >
           <Search className="h-5 w-5 shrink-0 text-[#71717A]" />
           <input
             ref={inputRef}
@@ -167,7 +200,7 @@ export function SearchModal({ onClose }: { onClose: () => void }) {
           </kbd>
         </div>
 
-        <div className="max-h-[420px] overflow-y-auto py-2">
+        <div className={fullscreen ? "min-h-0 flex-1 overflow-y-auto py-2" : "max-h-[420px] overflow-y-auto py-2"}>
           {emptyQuery ? (
             <>
               <div className="px-5 pb-2 pt-1 text-[11px] font-semibold uppercase tracking-wide text-[#A1A1AA]">
@@ -224,4 +257,12 @@ export function SearchModal({ onClose }: { onClose: () => void }) {
       </div>
     </div>
   );
+}
+
+/** Dispatched globally so any UI (e.g. stock bottom bar) can open the same modal as the top bar. */
+export const OPEN_SEARCH_EVENT = "finsepa-open-search";
+
+export function requestOpenSearch(): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(OPEN_SEARCH_EVENT));
 }

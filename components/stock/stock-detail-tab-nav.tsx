@@ -1,6 +1,8 @@
 "use client";
 
-export type StockDetailTabId = "overview" | "charting" | "peers" | "profile";
+import type { StockDetailTabId } from "@/lib/stock/stock-detail-tab";
+
+export type { StockDetailTabId };
 
 const TABS: { id: StockDetailTabId; label: string }[] = [
   { id: "overview", label: "Overview" },
@@ -9,6 +11,7 @@ const TABS: { id: StockDetailTabId; label: string }[] = [
   { id: "profile", label: "Profile" },
 ];
 
+/** Underline tabs (same pattern as Markets on screener) — below header / price on stock asset page. */
 export function StockDetailTabNav({
   activeTab,
   onTabChange,
@@ -18,7 +21,7 @@ export function StockDetailTabNav({
 }) {
   return (
     <div className="border-b border-solid border-[#E4E4E7]">
-      <nav className="flex items-start gap-5" aria-label="Stock sections">
+      <nav className="flex flex-wrap items-start gap-5" aria-label="Stock sections">
         {TABS.map(({ id, label }) => {
           const isActive = id === activeTab;
           return (
@@ -26,8 +29,10 @@ export function StockDetailTabNav({
               key={id}
               type="button"
               onClick={() => onTabChange(id)}
-              className={`-mb-px cursor-pointer border-b-2 border-solid py-2 text-left text-[14px] font-medium leading-6 text-[#09090B] transition-colors ${
-                isActive ? "border-[#09090B]" : "border-transparent hover:opacity-80"
+              className={`-mb-px cursor-pointer border-b-2 border-solid py-2 text-left text-[14px] leading-6 transition-colors duration-100 ${
+                isActive
+                  ? "border-[#09090B] font-semibold text-[#09090B]"
+                  : "border-transparent font-medium text-[#71717A] hover:text-[#09090B]"
               }`}
             >
               {label}

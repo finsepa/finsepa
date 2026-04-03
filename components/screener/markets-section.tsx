@@ -1,7 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+
 import type { ScreenerTableRow } from "@/lib/screener/screener-static";
+import { SCREENER_MARKET_QUERY } from "@/lib/screener/screener-market-url";
 import { IndexCards } from "@/components/screener/index-cards";
 import { MarketTabs, type MarketTab } from "@/components/screener/market-tabs";
 import { ScreenerTabs, type StocksSubTab } from "@/components/screener/screener-tabs";
@@ -12,6 +15,13 @@ import { StocksTableSkeleton } from "@/components/markets/markets-skeletons";
 import type { CryptoTop10Row } from "@/lib/market/crypto-top10";
 import type { IndexTableRow } from "@/lib/market/indices-top10";
 import type { IndexCardData } from "@/lib/screener/indices-today";
+
+function marketTabFromUrl(searchParams: URLSearchParams): MarketTab {
+  const raw = searchParams.get(SCREENER_MARKET_QUERY)?.trim().toLowerCase() ?? "";
+  if (raw === "crypto") return "Crypto";
+  if (raw === "indices") return "Indices";
+  return "Stocks";
+}
 
 export function MarketsSection({
   stockRows,
@@ -24,7 +34,25 @@ export function MarketsSection({
   indicesRows: IndexTableRow[];
   indexCards: IndexCardData[];
 }) {
-  const [tab, setTab] = useState<MarketTab>("Stocks");
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const tab = useMemo(() => marketTabFromUrl(searchParams), [searchParams]);
+
+  const setMarketTab = useCallback(
+    (next: MarketTab) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (next === "Stocks") {
+        params.delete(SCREENER_MARKET_QUERY);
+      } else {
+        params.set(SCREENER_MARKET_QUERY, next === "Crypto" ? "crypto" : "indices");
+      }
+      const q = params.toString();
+      router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false });
+    },
+    [pathname, router, searchParams],
+  );
+
   const [stocksSubTab, setStocksSubTab] = useState<StocksSubTab>("Companies");
   const [companiesPage, setCompaniesPage] = useState(1);
   const [companiesPageSize] = useState(20);
@@ -33,72 +61,14 @@ export function MarketsSection({
   const [companiesLoading] = useState(false);
   const [companiesError] = useState<string | null>(null);
 
-  // On-demand upgrades (no skeletons): when user opens Crypto/Indices,
-  // fetch the fuller derived payload once and swap in-place.
-  const [cryptoRowsState, setCryptoRowsState] = useState<CryptoTop10Row[]>(cryptoRows);
-  const [indicesRowsState, setIndicesRowsState] = useState<IndexTableRow[]>(indicesRows);
-  const [cryptoUpgraded, setCryptoUpgraded] = useState(false);
-  const [indicesUpgraded, setIndicesUpgraded] = useState(false);
-
-  useEffect(() => {
-    if (tab !== "Crypto" || cryptoUpgraded) return;
-    // If already fully populated, skip.
-    const needs =
-      cryptoRowsState.some((r) => r.changePercent1M == null || r.changePercentYTD == null || !r.sparkline5d?.length);
-    if (!needs) {
-      setCryptoUpgraded(true);
-      return;
-    }
-    let cancelled = false;
-    void (async () => {
-      try {
-        const res = await fetch("/api/screener/crypto-top10", { cache: "no-store" });
-        const json = (await res.json()) as { rows?: CryptoTop10Row[] };
-        const next = Array.isArray(json.rows) ? json.rows : [];
-        if (cancelled) return;
-        if (next.length) setCryptoRowsState(next);
-      } catch {
-        // keep existing rows
-      } finally {
-        if (!cancelled) setCryptoUpgraded(true);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [tab, cryptoUpgraded, cryptoRowsState]);
-
-  useEffect(() => {
-    if (tab !== "Indices" || indicesUpgraded) return;
-    const needs = indicesRowsState.some((r) => r.change1M == null || r.changeYTD == null || !r.spark5d?.length);
-    if (!needs) {
-      setIndicesUpgraded(true);
-      return;
-    }
-    let cancelled = false;
-    void (async () => {
-      try {
-        const res = await fetch("/api/screener/indices-top10", { cache: "no-store" });
-        const json = (await res.json()) as { rows?: IndexTableRow[] };
-        const next = Array.isArray(json.rows) ? json.rows : [];
-        if (cancelled) return;
-        if (next.length) setIndicesRowsState(next);
-      } catch {
-        // keep existing rows
-      } finally {
-        if (!cancelled) setIndicesUpgraded(true);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [tab, indicesUpgraded, indicesRowsState]);
-
   const gainersLosers = useMemo(() => {
-    // Static mock ordering: NVDA is the only gainer and AAPL is the only loser.
-    const nvda = stockRows.find((r) => r.ticker === "NVDA");
-    const aapl = stockRows.find((r) => r.ticker === "AAPL");
-    return { gainers: nvda ? [nvda] : [], losers: aapl ? [aapl] : [] };
+    const valid = stockRows.filter((r) => r.change1D != null && Number.isFinite(r.change1D));
+    const by1dDesc = [...valid].sort((a, b) => (b.change1D ?? 0) - (a.change1D ?? 0));
+    const by1dAsc = [...valid].sort((a, b) => (a.change1D ?? 0) - (b.change1D ?? 0));
+    return {
+      gainers: by1dDesc.slice(0, 3),
+      losers: by1dAsc.slice(0, 3),
+    };
   }, [stockRows]);
 
   const totalPages = Math.max(1, Math.ceil(companiesTotal / companiesPageSize));
@@ -108,12 +78,7 @@ export function MarketsSection({
 
   return (
     <div>
-      <MarketTabs
-        active={tab}
-        onChange={(next) => {
-          setTab(next);
-        }}
-      />
+      <MarketTabs active={tab} onChange={setMarketTab} />
 
       {tab === "Stocks" ? (
         <>
@@ -175,8 +140,8 @@ export function MarketsSection({
         </>
       ) : null}
 
-      {tab === "Crypto" ? <CryptoTable initialRows={cryptoRowsState} /> : null}
-      {tab === "Indices" ? <IndicesTable initialRows={indicesRowsState} /> : null}
+      {tab === "Crypto" ? <CryptoTable initialRows={cryptoRows} /> : null}
+      {tab === "Indices" ? <IndicesTable initialRows={indicesRows} /> : null}
     </div>
   );
 }

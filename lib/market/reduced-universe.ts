@@ -1,48 +1,38 @@
 import "server-only";
 
 import { formatMarketCapCompactNoCurrency, formatPeCompact } from "@/lib/screener/eod-derived-metrics";
+import type { Top10Ticker } from "@/lib/screener/top10-config";
 
-export const REDUCED_STOCKS = {
-  NVDA: {
-    ticker: "NVDA",
-    name: "NVIDIA",
-    pct7d: null as number | null,
-    pct1m: null as number | null,
-    ytd: null as number | null,
-    marketCapUsd: 2_200_000_000_000,
-    pe: 65,
-    earningsDisplay: "—",
-  },
-  AAPL: {
-    ticker: "AAPL",
-    name: "Apple",
-    pct7d: null as number | null,
-    pct1m: null as number | null,
-    ytd: null as number | null,
-    marketCapUsd: 3_200_000_000_000,
-    pe: 30,
-    earningsDisplay: "—",
-  },
-} as const;
+/** Static display caps for screener tables (live prices come from EODHD). Amounts chosen so M Cap shows varied T/B with two decimals. */
+export const REDUCED_STOCKS: Record<
+  Top10Ticker,
+  { ticker: Top10Ticker; name: string; marketCapUsd: number; pe: number }
+> = {
+  AAPL: { ticker: "AAPL", name: "Apple", marketCapUsd: 3.2 * 1e12, pe: 30 },
+  MSFT: { ticker: "MSFT", name: "Microsoft", marketCapUsd: 3.05 * 1e12, pe: 32 },
+  NVDA: { ticker: "NVDA", name: "NVIDIA", marketCapUsd: 2.12 * 1e12, pe: 65 },
+  GOOGL: { ticker: "GOOGL", name: "Alphabet", marketCapUsd: 1.88 * 1e12, pe: 23 },
+  AMZN: { ticker: "AMZN", name: "Amazon", marketCapUsd: 1.94 * 1e12, pe: 42 },
+  META: { ticker: "META", name: "Meta Platforms", marketCapUsd: 1.17 * 1e12, pe: 26 },
+  "BRK-B": { ticker: "BRK-B", name: "Berkshire Hathaway", marketCapUsd: 1.02 * 1e12, pe: 14 },
+  TSM: { ticker: "TSM", name: "TSMC", marketCapUsd: 900.25 * 1e9, pe: 31 },
+  LLY: { ticker: "LLY", name: "Eli Lilly", marketCapUsd: 958.4 * 1e9, pe: 114 },
+  TSLA: { ticker: "TSLA", name: "Tesla", marketCapUsd: 783.65 * 1e9, pe: 66 },
+};
 
-export const REDUCED_CRYPTO = {
-  BTC: {
-    symbol: "BTC",
-    name: "Bitcoin",
-    pct7d: null as number | null,
-    pct1m: null as number | null,
-    ytd: null as number | null,
-    marketCapUsd: 1_300_000_000_000,
-  },
-  ETH: {
-    symbol: "ETH",
-    name: "Ethereum",
-    pct7d: null as number | null,
-    pct1m: null as number | null,
-    ytd: null as number | null,
-    marketCapUsd: 400_000_000_000,
-  },
-} as const;
+/** Matches `CRYPTO_TOP10` order in eodhd-crypto (display-only market caps). */
+export const REDUCED_CRYPTO: Record<string, { symbol: string; name: string; marketCapUsd: number }> = {
+  BTC: { symbol: "BTC", name: "Bitcoin", marketCapUsd: 1.65 * 1e12 },
+  ETH: { symbol: "ETH", name: "Ethereum", marketCapUsd: 385.5 * 1e9 },
+  XRP: { symbol: "XRP", name: "XRP", marketCapUsd: 118.35 * 1e9 },
+  BNB: { symbol: "BNB", name: "BNB", marketCapUsd: 92.08 * 1e9 },
+  SOL: { symbol: "SOL", name: "Solana", marketCapUsd: 81.42 * 1e9 },
+  DOGE: { symbol: "DOGE", name: "Dogecoin", marketCapUsd: 24.6 * 1e9 },
+  ADA: { symbol: "ADA", name: "Cardano", marketCapUsd: 19.85 * 1e9 },
+  TRX: { symbol: "TRX", name: "TRON", marketCapUsd: 17.22 * 1e9 },
+  LINK: { symbol: "LINK", name: "Chainlink", marketCapUsd: 11.95 * 1e9 },
+  AVAX: { symbol: "AVAX", name: "Avalanche", marketCapUsd: 9.88 * 1e9 },
+};
 
 export const REDUCED_INDICES = {
   SPX: {
@@ -61,15 +51,16 @@ export const REDUCED_INDICES = {
   },
 } as const;
 
-export function reducedStockMarketCapDisplay(ticker: keyof typeof REDUCED_STOCKS): string {
+export function reducedStockMarketCapDisplay(ticker: Top10Ticker): string {
   return formatMarketCapCompactNoCurrency(REDUCED_STOCKS[ticker].marketCapUsd);
 }
 
-export function reducedStockPeDisplay(ticker: keyof typeof REDUCED_STOCKS): string {
+export function reducedStockPeDisplay(ticker: Top10Ticker): string {
   return formatPeCompact(REDUCED_STOCKS[ticker].pe);
 }
 
-export function reducedCryptoMarketCapDisplay(symbol: keyof typeof REDUCED_CRYPTO): string {
-  return formatMarketCapCompactNoCurrency(REDUCED_CRYPTO[symbol].marketCapUsd);
+export function reducedCryptoMarketCapDisplay(symbol: string): string {
+  const row = REDUCED_CRYPTO[symbol.toUpperCase()];
+  if (!row) return "—";
+  return formatMarketCapCompactNoCurrency(row.marketCapUsd);
 }
-

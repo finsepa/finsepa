@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Plus, X } from "lucide-react";
 import {
   ColorType,
   HistogramSeries,
@@ -31,14 +32,56 @@ import {
   formatUsdCompact,
   formatUsdPrice,
 } from "@/lib/market/key-stats-basic-format";
+import { TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
 
 const DEFAULT_METRICS: ChartingMetricId[] = ["revenue", "net_income"];
 
+/** Figma Charting reference — primary series colors (grouped bars / lines). */
+const METRIC_CHART_COLOR: Partial<Record<ChartingMetricId, string>> = {
+  revenue: "#2563EB",
+  net_income: "#EA580C",
+};
+
 /** Stable hue per metric id (deterministic, not random per render). */
 function metricColor(id: ChartingMetricId): string {
+  const branded = METRIC_CHART_COLOR[id];
+  if (branded) return branded;
   const i = CHARTING_METRIC_IDS.indexOf(id);
   const h = ((i < 0 ? 0 : i) * 47) % 360;
   return `hsl(${h} 52% 42%)`;
+}
+
+/** Histogram columns share one x-slot in LW; transparency lets both series read when values differ. */
+function metricBarDisplayColor(id: ChartingMetricId): string {
+  const solid = metricColor(id);
+  const m = solid.match(/^#([0-9a-f]{6})$/i);
+  if (!m) return withAlpha(solid, 0.58);
+  const n = parseInt(m[1], 16);
+  const r = (n >> 16) & 255;
+  const g = (n >> 8) & 255;
+  const b = n & 255;
+  return `rgba(${r},${g},${b},0.58)`;
+}
+
+/** Y-axis tick labels — match reference (e.g. "30 B", "15 B", "0"). */
+function formatChartAxisPrice(p: number): string {
+  if (!Number.isFinite(p)) return "";
+  const abs = Math.abs(p);
+  if (abs >= 1e9) return `${Math.round(p / 1e9)} B`;
+  if (abs >= 1e6) return `${Math.round(p / 1e6)} M`;
+  if (abs >= 1e3) return `${Math.round(p / 1e3)} K`;
+  if (abs < 1e-9) return "0";
+  return p.toLocaleString("en-US", { maximumFractionDigits: 2 });
+}
+
+/** Draw shorter metric first, taller last so stacked-from-zero columns remain legible with alpha. */
+function barMetricOrder(ids: ChartingMetricId[]): ChartingMetricId[] {
+  const rank = (id: ChartingMetricId) => {
+    if (id === "net_income") return 0;
+    if (id === "revenue") return 1;
+    return 2 + CHARTING_METRIC_IDS.indexOf(id);
+  };
+  return [...ids].sort((a, b) => rank(a) - rank(b));
 }
 
 function withAlpha(cssColor: string, alpha: number): string {
@@ -164,6 +207,21 @@ type Props = {
 
 const TIME_RANGE_ORDER: ChartTimeRange[] = ["1Y", "2Y", "3Y", "5Y", "10Y", "all"];
 
+const PERIOD_TAB_OPTIONS = [
+  { value: "annual" as const, label: "Annual" },
+  { value: "quarterly" as const, label: "Quarterly" },
+];
+
+const CHART_TYPE_TAB_OPTIONS = [
+  { value: "line" as const, label: "Line" },
+  { value: "bars" as const, label: "Bars" },
+] as const satisfies readonly TabSwitcherOption<ChartType>[];
+
+const TIME_RANGE_TAB_OPTIONS: TabSwitcherOption<ChartTimeRange>[] = TIME_RANGE_ORDER.map((r) => ({
+  value: r,
+  label: TIME_RANGE_LABELS[r],
+}));
+
 const CHARTING_HEIGHT_STORAGE_KEY = "finsepa:chartingHeightPx";
 const CHARTING_HEIGHT_MIN = 320;
 const CHARTING_HEIGHT_MAX = 600;
@@ -196,8 +254,7 @@ export function StockChartingTab({ ticker, metricParam, initialAnnualPoints, ini
   const pickerInputRef = useRef<HTMLInputElement>(null);
 
   const [periodMode, setPeriodMode] = useState<"annual" | "quarterly">("annual");
-  // Default to 5Y (not "all") — fewer points → faster chart + table work (~2× less than full history).
-  const [timeRange, setTimeRange] = useState<ChartTimeRange>("5Y");
+  const [timeRange, setTimeRange] = useState<ChartTimeRange>("all");
   const [chartType, setChartType] = useState<ChartType>("bars");
   const [chartHeight, setChartHeight] = useState<number>(CHARTING_HEIGHT_MIN);
   const seedPoints = useMemo(() => {
@@ -409,20 +466,32 @@ export function StockChartingTab({ ticker, metricParam, initialAnnualPoints, ini
         requestAnimationFrame(() => {
           if (cancelled) return;
 
+          const nPoints = ordered.length;
+          const barSpacing =
+            chartType === "bars"
+              ? timeRange === "all"
+                ? Math.max(5, Math.min(11, Math.floor(680 / Math.max(1, nPoints))))
+                : 11
+              : 9;
+
           const chart = createChart(el, {
             width: el.clientWidth,
             height: chartHeight,
             autoSize: false,
             layout: {
-              background: { type: ColorType.Solid, color: "#00000000" },
-              textColor: "#A1A1AA",
-              fontSize: 11,
+              background: { type: ColorType.Solid, color: "#FFFFFF" },
+              textColor: "#71717A",
+              fontSize: 12,
               fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
               attributionLogo: false,
             },
+            localization: {
+              locale: "en-US",
+              priceFormatter: formatChartAxisPrice,
+            },
             grid: {
               vertLines: { visible: false },
-              horzLines: { color: "rgba(228, 228, 231, 0.85)" },
+              horzLines: { color: "#E4E4E7" },
             },
             rightPriceScale: {
               visible: false,
@@ -432,7 +501,7 @@ export function StockChartingTab({ ticker, metricParam, initialAnnualPoints, ini
               visible: false,
               borderVisible: false,
             },
-            timeScale: { borderVisible: false, rightOffset: 0, barSpacing: chartType === "bars" ? 11 : 9 },
+            timeScale: { borderVisible: false, rightOffset: 0, barSpacing },
             crosshair: { vertLine: { labelVisible: false }, horzLine: { labelVisible: true } },
           });
 
@@ -441,14 +510,15 @@ export function StockChartingTab({ ticker, metricParam, initialAnnualPoints, ini
 
           const usedScales = new Set<string>();
 
-          for (const id of selected) {
+          const seriesOrder = chartType === "bars" ? barMetricOrder(selected) : selected;
+          for (const id of seriesOrder) {
             const data = seriesData(ordered, id);
             if (!data.length) continue;
             const kind = CHARTING_METRIC_KIND[id];
             const scaleId = scaleIdForKind(kind);
             usedScales.add(scaleId);
             if (chartType === "bars") {
-              const barColor = withAlpha(metricColor(id), 0.55);
+              const barColor = metricBarDisplayColor(id);
               const s = chart.addSeries(HistogramSeries, {
                 color: barColor,
                 priceScaleId: scaleId,
@@ -556,113 +626,81 @@ export function StockChartingTab({ ticker, metricParam, initialAnnualPoints, ini
       if (hoverRafRef.current) cancelAnimationFrame(hoverRafRef.current);
       setHover(null);
     };
-  }, [ordered, selected, canPlot, chartType, chartHeight, timeToRow, periodMode]);
+  }, [ordered, selected, canPlot, chartType, chartHeight, timeToRow, periodMode, timeRange]);
 
   const empty = !loading && (!points || points.length === 0);
   const noMetricData = !loading && !empty && !canPlot;
 
   return (
     <div className="space-y-4 pt-1">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-[15px] font-semibold tracking-tight text-[#09090B]">Charting</h2>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex rounded-lg border border-[#E4E4E7] bg-white p-0.5 text-[12px]">
-            <button
-              type="button"
-              onClick={() => setPeriodMode("annual")}
-              className={`rounded-md px-2.5 py-1.5 font-medium transition-colors ${
-                periodMode === "annual" ? "bg-[#09090B] text-white" : "text-[#71717A] hover:text-[#09090B]"
-              }`}
-            >
-              Annual
-            </button>
-            <button
-              type="button"
-              onClick={() => setPeriodMode("quarterly")}
-              className={`rounded-md px-2.5 py-1.5 font-medium transition-colors ${
-                periodMode === "quarterly" ? "bg-[#09090B] text-white" : "text-[#71717A] hover:text-[#09090B]"
-              }`}
-            >
-              Quarterly
-            </button>
-          </div>
-          <div className="flex rounded-lg border border-[#E4E4E7] bg-white p-0.5 text-[12px]">
-            <button
-              type="button"
-              onClick={() => setChartType("line")}
-              className={`rounded-md px-2.5 py-1.5 font-medium transition-colors ${
-                chartType === "line" ? "bg-[#F4F4F5] text-[#09090B]" : "text-[#71717A] hover:text-[#09090B]"
-              }`}
-            >
-              Line
-            </button>
-            <button
-              type="button"
-              onClick={() => setChartType("bars")}
-              className={`rounded-md px-2.5 py-1.5 font-medium transition-colors ${
-                chartType === "bars" ? "bg-[#F4F4F5] text-[#09090B]" : "text-[#71717A] hover:text-[#09090B]"
-              }`}
-            >
-              Bars
-            </button>
-          </div>
-          <div className="flex flex-wrap items-center gap-1 rounded-lg border border-[#E4E4E7] bg-white p-0.5 text-[12px]">
-            {TIME_RANGE_ORDER.map((r) => (
-              <button
-                key={r}
-                type="button"
-                onClick={() => setTimeRange(r)}
-                className={`rounded-md px-2 py-1.5 font-medium transition-colors ${
-                  timeRange === r ? "bg-[#F4F4F5] text-[#09090B]" : "text-[#71717A] hover:text-[#09090B]"
-                }`}
-              >
-                {TIME_RANGE_LABELS[r]}
-              </button>
-            ))}
+      {/* Toolbar: Figma 8479:44846 — 24px title, 12px gaps, segmented controls */}
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-3">
+          <h2 className="min-w-0 shrink-0 text-2xl font-semibold leading-9 tracking-tight text-[#09090B] sm:flex-1">
+            Charting
+          </h2>
+          <div className="flex min-w-0 flex-wrap items-center gap-3 sm:justify-end">
+            <TabSwitcher
+              options={PERIOD_TAB_OPTIONS}
+              value={periodMode}
+              onChange={setPeriodMode}
+              aria-label="Reporting period"
+            />
+            <TabSwitcher
+              options={CHART_TYPE_TAB_OPTIONS}
+              value={chartType}
+              onChange={setChartType}
+              aria-label="Chart type"
+            />
+            <div className="max-w-full overflow-x-auto pb-0.5 [-webkit-overflow-scrolling:touch]">
+              <TabSwitcher
+                className="inline-flex w-max min-w-0 flex-nowrap"
+                options={TIME_RANGE_TAB_OPTIONS}
+                value={timeRange}
+                onChange={setTimeRange}
+                aria-label="Time range"
+              />
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        {selected.map((id) => (
-          <div
-            key={id}
-            className="inline-flex max-w-full items-center gap-1 rounded-full border border-[#E4E4E7] bg-[#FAFAFA] pl-2.5 pr-1 text-[12px] font-medium text-[#09090B] transition-colors hover:bg-[#F4F4F5]"
-          >
-            <span className="truncate">{CHARTING_METRIC_LABEL[id]}</span>
+        {/* Metric chips — Figma row below toolbar (split label + close, + Metric pill) */}
+        <div className="border-b border-[#E4E4E7] pb-4">
+          <div className="flex flex-wrap items-center gap-4">
+          {selected.map((id) => (
+            <div
+              key={id}
+              className="inline-flex max-w-full min-w-0 items-stretch overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white"
+            >
+              <span className="flex min-h-[36px] min-w-0 items-center border-r border-[#E4E4E7] px-4 py-2 text-[14px] font-medium leading-5 text-[#09090B]">
+                <span className="truncate">{CHARTING_METRIC_LABEL[id]}</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => removeMetric(id)}
+                disabled={selected.length <= 1}
+                className="flex w-9 shrink-0 items-center justify-center text-[#09090B] transition-colors hover:bg-[#FAFAFA] disabled:pointer-events-none disabled:opacity-30"
+                aria-label={`Remove ${CHARTING_METRIC_LABEL[id]}`}
+              >
+                <X className="h-5 w-5" strokeWidth={1.5} aria-hidden />
+              </button>
+            </div>
+          ))}
+
+          <div className="relative" ref={pickerWrapRef}>
             <button
               type="button"
-              onClick={() => removeMetric(id)}
-              disabled={selected.length <= 1}
-              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[#A1A1AA] transition-colors hover:bg-[#E4E4E7]/80 hover:text-[#52525B] disabled:pointer-events-none disabled:opacity-30"
-              aria-label={`Remove ${CHARTING_METRIC_LABEL[id]}`}
+              onClick={() => {
+                setPickerOpen((o) => {
+                  if (o) setPickerQuery("");
+                  return !o;
+                });
+              }}
+              className="inline-flex items-center gap-2 rounded-[10px] bg-[#F4F4F5] px-4 py-2 text-[14px] font-medium leading-5 text-[#09090B] transition-colors hover:bg-[#EBEBEB]"
             >
-              <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden className="opacity-80">
-                <path
-                  d="M1.5 1.5l7 7M8.5 1.5l-7 7"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.2"
-                  strokeLinecap="round"
-                />
-              </svg>
+              <Plus className="h-5 w-5 shrink-0" strokeWidth={1.75} aria-hidden />
+              Metric
             </button>
-          </div>
-        ))}
-
-        <div className="relative" ref={pickerWrapRef}>
-          <button
-            type="button"
-            onClick={() => {
-              setPickerOpen((o) => {
-                if (o) setPickerQuery("");
-                return !o;
-              });
-            }}
-            className="inline-flex items-center rounded-full border border-dashed border-[#D4D4D8] bg-white px-2.5 py-1 text-[12px] font-medium text-[#71717A] transition-colors hover:border-[#C4C4C8] hover:bg-[#FAFAFA] hover:text-[#09090B]"
-          >
-            + Metric
-          </button>
           {pickerOpen && (
             <div
               className="absolute left-0 top-full z-50 mt-1 w-[min(calc(100vw-2rem),300px)] rounded-lg border border-[#E4E4E7] bg-white py-1 shadow-md"
@@ -708,6 +746,8 @@ export function StockChartingTab({ ticker, metricParam, initialAnnualPoints, ini
               ) : null}
             </div>
           )}
+          </div>
+          </div>
         </div>
       </div>
 
@@ -724,17 +764,17 @@ export function StockChartingTab({ ticker, metricParam, initialAnnualPoints, ini
               No series data for the selected metrics on this symbol.
             </p>
           ) : (
-            <div className="relative w-full overflow-hidden rounded-xl bg-transparent">
+            <div className="relative w-full overflow-hidden rounded-xl border border-[#E4E4E7] bg-white">
               <div ref={wrapRef} className="w-full" style={{ height: chartHeight }} />
               {hover ? (
                 <>
-                  {/* Hover band */}
+                  {/* Hover band — light blue column (Figma Charting reference) */}
                   <div
                     className="pointer-events-none absolute inset-y-0"
                     style={{
                       left: `${Math.max(0, hover.x - 24)}px`,
                       width: "48px",
-                      background: "rgba(9, 9, 11, 0.04)",
+                      background: "rgba(37, 99, 235, 0.12)",
                     }}
                   />
                   {/* Tooltip */}
@@ -796,16 +836,17 @@ export function StockChartingTab({ ticker, metricParam, initialAnnualPoints, ini
             </div>
           )}
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[560px] border-collapse">
+            {/* Table — Figma 8479:44939: header #71717A semibold; body #09090B regular; strokes #E4E4E7. Row hover/height aligned with screener tables. */}
+            <table className="w-full min-w-[560px] border-collapse bg-white">
               <thead>
                 <tr className="border-t border-b border-[#E4E4E7] bg-white">
-                  <th className="px-4 py-3 text-left text-[14px] font-semibold leading-5 text-[#71717A]">
+                  <th className="min-w-[160px] px-3 py-2.5 text-left text-[14px] font-semibold leading-5 text-[#71717A]">
                     Period
                   </th>
                   {selected.map((id) => (
                     <th
                       key={id}
-                      className="px-4 py-3 text-right text-[14px] font-semibold leading-5 text-[#71717A]"
+                      className="px-3 py-2.5 text-right text-[14px] font-semibold leading-5 text-[#71717A]"
                     >
                       {CHARTING_METRIC_LABEL[id]}
                     </th>
@@ -816,15 +857,15 @@ export function StockChartingTab({ ticker, metricParam, initialAnnualPoints, ini
                 {[...ordered].reverse().map((row) => (
                   <tr
                     key={row.periodEnd}
-                    className="border-b border-[#E4E4E7] transition-colors duration-75 hover:bg-neutral-50"
+                    className="h-[60px] max-h-[60px] border-b border-[#E4E4E7] transition-colors duration-75 hover:bg-neutral-50"
                   >
-                    <td className="px-4 py-3 text-[14px] leading-5 tabular-nums text-[#09090B]">
+                    <td className="whitespace-nowrap px-3 align-middle text-left text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
                       {row.periodEnd}
                     </td>
                     {selected.map((id) => (
                       <td
                         key={id}
-                        className="px-4 py-3 text-right text-[14px] leading-5 tabular-nums text-[#09090B]"
+                        className="px-3 align-middle text-right text-[14px] font-normal leading-5 tabular-nums text-[#09090B]"
                       >
                         {formatTableCell(CHARTING_METRIC_KIND[id], rowValue(row, id))}
                       </td>

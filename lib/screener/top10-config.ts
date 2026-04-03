@@ -14,6 +14,10 @@ export const TOP10_TICKERS = [
 
 export type Top10Ticker = (typeof TOP10_TICKERS)[number];
 
+export function isTop10Ticker(t: string): t is Top10Ticker {
+  return (TOP10_TICKERS as readonly string[]).includes(t);
+}
+
 export type Top10CompanyMeta = {
   name: string;
   domain: string;

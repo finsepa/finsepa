@@ -3,8 +3,8 @@ import { NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getSimpleMarketData, getSimpleScreenerDerived } from "@/lib/market/simple-market-layer";
 import { companyLogoUrlFromDomain } from "@/lib/screener/company-logo-url";
-import { REDUCED_STOCKS, reducedStockMarketCapDisplay, reducedStockPeDisplay } from "@/lib/market/reduced-universe";
-import { TOP10_META } from "@/lib/screener/top10-config";
+import { reducedStockMarketCapDisplay, reducedStockPeDisplay } from "@/lib/market/reduced-universe";
+import { TOP10_META, TOP10_TICKERS, type Top10Ticker } from "@/lib/screener/top10-config";
 import type { ScreenerTableRow } from "@/lib/screener/screener-static";
 
 export async function GET(request: Request) {
@@ -21,34 +21,24 @@ export async function GET(request: Request) {
 
   const [data, derived] = await Promise.all([getSimpleMarketData(), getSimpleScreenerDerived()]);
 
-  const allRows: ScreenerTableRow[] = [
-    {
-      id: 1,
-      ticker: "NVDA",
-      name: "NVIDIA",
-      logoUrl: companyLogoUrlFromDomain(TOP10_META.NVDA.domain),
-      price: data.NVDA.price,
-      change1D: data.NVDA.changePercent1D,
-      change1M: derived.NVDA.changePercent1M,
-      changeYTD: derived.NVDA.changePercentYTD,
-      marketCap: reducedStockMarketCapDisplay("NVDA"),
-      pe: reducedStockPeDisplay("NVDA"),
-      trend: derived.NVDA.last5DailyCloses,
-    },
-    {
-      id: 2,
-      ticker: "AAPL",
-      name: "Apple",
-      logoUrl: companyLogoUrlFromDomain(TOP10_META.AAPL.domain),
-      price: data.AAPL.price,
-      change1D: data.AAPL.changePercent1D,
-      change1M: derived.AAPL.changePercent1M,
-      changeYTD: derived.AAPL.changePercentYTD,
-      marketCap: reducedStockMarketCapDisplay("AAPL"),
-      pe: reducedStockPeDisplay("AAPL"),
-      trend: derived.AAPL.last5DailyCloses,
-    },
-  ];
+  const allRows: ScreenerTableRow[] = TOP10_TICKERS.map((ticker: Top10Ticker, i: number) => {
+    const q = data.stocks[ticker];
+    const s = derived[ticker];
+    const meta = TOP10_META[ticker];
+    return {
+      id: i + 1,
+      ticker,
+      name: meta.name,
+      logoUrl: companyLogoUrlFromDomain(meta.domain),
+      price: q?.price ?? null,
+      change1D: q?.changePercent1D ?? null,
+      change1M: s?.changePercent1M ?? null,
+      changeYTD: s?.changePercentYTD ?? null,
+      marketCap: reducedStockMarketCapDisplay(ticker),
+      pe: reducedStockPeDisplay(ticker),
+      trend: s?.last5DailyCloses ?? [],
+    };
+  });
 
   const total = allRows.length;
   const start = (page - 1) * pageSize;

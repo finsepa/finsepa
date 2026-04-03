@@ -283,7 +283,12 @@ export function WatchlistTable() {
 
       {!storageHydrated ? <WatchlistTableSkeleton /> : null}
 
-      {storageHydrated && serverListWarning && initialFetchDone && !error && !hasUsableRows ? (
+      {storageHydrated &&
+      serverListWarning &&
+      watched.size > 0 &&
+      initialFetchDone &&
+      !error &&
+      !hasUsableRows ? (
         <p className="text-[13px] leading-5 text-[#A16207]" role="status">
           {serverListWarning}
         </p>

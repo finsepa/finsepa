@@ -2,22 +2,11 @@ import { NextResponse } from "next/server";
 
 import { buildWatchlistEnrichedGroups } from "@/lib/market/watchlist-enrichment";
 import { requireAuthUser, AuthRequiredError } from "@/lib/watchlist/api-auth";
+import { SCREENER_WATCHLIST_KEY_SET } from "@/lib/watchlist/screener-watchlist-keys";
 import { syntheticWatchlistRows } from "@/lib/watchlist/synthetic";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 const DEBUG = process.env.NODE_ENV === "development" || process.env.DEBUG_WATCHLIST === "1";
-
-const SUPPORTED_WATCHLIST_KEYS = new Set([
-  // Stocks
-  "NVDA",
-  "AAPL",
-  // Crypto
-  "CRYPTO:BTC",
-  "CRYPTO:ETH",
-  // Indices
-  "INDEX:GSPC.INDX",
-  "INDEX:NDX.INDX",
-]);
 
 /**
  * POST body: { tickers: string[] } — built from client `useWatchlist` (localStorage ∪ Supabase).
@@ -43,7 +32,7 @@ export async function POST(request: Request) {
     const tickersRaw = raw.filter((t): t is string => typeof t === "string");
     const tickers = tickersRaw
       .map((t) => t.trim().toUpperCase())
-      .filter((t) => SUPPORTED_WATCHLIST_KEYS.has(t));
+      .filter((t) => SCREENER_WATCHLIST_KEY_SET.has(t));
     if (DEBUG) {
       console.info("[watchlist enrich] load", {
         source: "POST body",

@@ -4,8 +4,11 @@ import { unstable_cache } from "next/cache";
 
 import { REVALIDATE_SEARCH } from "@/lib/data/cache-policy";
 import { getCryptoLogoUrl } from "@/lib/crypto/crypto-logo-url";
+import { CRYPTO_TOP10 } from "@/lib/market/eodhd-crypto";
 import { getStockDetailMetaFromTicker } from "@/lib/market/stock-detail-meta";
 import { getCachedStockLogoUrl } from "@/lib/market/stock-logo-url";
+import { SCREENER_INDICES_10 } from "@/lib/screener/screener-indices-universe";
+import { TOP10_TICKERS } from "@/lib/screener/top10-config";
 import type { SearchAssetItem } from "@/lib/search/search-types";
 import { runWithConcurrencyLimit } from "@/lib/utils/run-with-concurrency-limit";
 
@@ -13,76 +16,87 @@ function norm(s: string): string {
   return s.trim().toLowerCase();
 }
 
-/** Matches query against name, symbol, and common aliases (e.g. SPX → S&P 500). */
+/** Extra substring hints beyond name/symbol (screener universe only). */
+function extraMatches(item: SearchAssetItem, n: string): boolean {
+  if (item.type === "stock") {
+    if (item.symbol === "GOOGL" && (n.includes("google") || n.includes("alphabet"))) return true;
+    if (item.symbol === "META" && (n.includes("facebook") || n.includes("fb"))) return true;
+    if (item.symbol === "BRK-B" && (n.includes("berkshire") || n.includes("brk"))) return true;
+    if (item.symbol === "TSM" && (n.includes("tsmc") || n.includes("taiwan semi"))) return true;
+    return false;
+  }
+  if (item.type === "crypto") {
+    if (item.symbol === "BTC" && (n.includes("bitcoin") || n === "btc")) return true;
+    if (item.symbol === "ETH" && (n.includes("ethereum") || n === "eth")) return true;
+    if (item.symbol === "DOGE" && (n.includes("doge") || n.includes("dogecoin"))) return true;
+    return false;
+  }
+  if (item.type === "index") {
+    const bySym: Record<string, readonly string[]> = {
+      "GSPC.INDX": ["sp500", "spx", "s&p", "s and p", "sp 500"],
+      "NDX.INDX": ["ndx", "nasdaq 100", "qqq"],
+      "DJI.INDX": ["dow", "dji", "dow jones"],
+      "IWM.US": ["russell", "iwm", "rut", "small cap"],
+      "VIX.INDX": ["vix", "volatility", "fear index"],
+      "BUK100P.INDX": ["ftse", "ftse 100", "uk100"],
+      "GDAXI.INDX": ["dax", "germany"],
+      "N225.INDX": ["nikkei", "japan", "n225"],
+      "FCHI.INDX": ["cac", "france", "cac 40"],
+      "HSI.INDX": ["hang seng", "hong kong", "hsi"],
+    };
+    const hints = bySym[item.symbol];
+    if (hints?.some((h) => n.includes(h))) return true;
+  }
+  return false;
+}
+
+/** Matches query against name, symbol, and common aliases. */
 function matchesAsset(item: SearchAssetItem, q: string): boolean {
   const n = norm(q);
   if (!n) return true;
   if (norm(item.name).includes(n) || norm(item.symbol).includes(n)) return true;
-  if (item.type === "index" && item.symbol === "GSPC.INDX") {
-    if (n.includes("sp500") || n === "spx" || n.includes("s&p") || n.includes("s and p")) return true;
-  }
-  if (item.type === "crypto" && item.symbol === "BTC" && (n.includes("bitcoin") || n === "btc")) return true;
-  if (item.type === "crypto" && item.symbol === "ETH" && (n.includes("ethereum") || n === "eth")) return true;
-  if (item.type === "stock" && item.symbol === "NVDA" && n.includes("nvidia")) return true;
-  if (item.type === "stock" && item.symbol === "AAPL" && n.includes("apple")) return true;
+  if (extraMatches(item, n)) return true;
   return false;
 }
 
 function buildBaseItems(): SearchAssetItem[] {
-  const aapl = getStockDetailMetaFromTicker("AAPL");
-  const nvda = getStockDetailMetaFromTicker("NVDA");
-  return [
-    {
-      id: "stock:AAPL",
+  const stocks: SearchAssetItem[] = TOP10_TICKERS.map((t) => {
+    const m = getStockDetailMetaFromTicker(t);
+    return {
+      id: `stock:${m.ticker}`,
       type: "stock",
-      symbol: aapl.ticker,
-      name: aapl.name,
+      symbol: m.ticker,
+      name: m.name,
       subtitle: "US",
-      logoUrl: aapl.logoUrl,
-      route: `/stock/${encodeURIComponent(aapl.ticker)}`,
+      logoUrl: m.logoUrl,
+      route: `/stock/${encodeURIComponent(m.ticker)}`,
       marketLabel: "US equity",
-    },
-    {
-      id: "stock:NVDA",
-      type: "stock",
-      symbol: nvda.ticker,
-      name: nvda.name,
-      subtitle: "US",
-      logoUrl: nvda.logoUrl,
-      route: `/stock/${encodeURIComponent(nvda.ticker)}`,
-      marketLabel: "US equity",
-    },
-    {
-      id: "crypto:BTC",
-      type: "crypto",
-      symbol: "BTC",
-      name: "Bitcoin",
-      subtitle: "BTC-USD",
-      logoUrl: getCryptoLogoUrl("BTC"),
-      route: `/crypto/${encodeURIComponent("BTC")}`,
-      marketLabel: "Crypto",
-    },
-    {
-      id: "crypto:ETH",
-      type: "crypto",
-      symbol: "ETH",
-      name: "Ethereum",
-      subtitle: "ETH-USD",
-      logoUrl: getCryptoLogoUrl("ETH"),
-      route: `/crypto/${encodeURIComponent("ETH")}`,
-      marketLabel: "Crypto",
-    },
-    {
-      id: "index:GSPC.INDX",
-      type: "index",
-      symbol: "GSPC.INDX",
-      name: "S&P 500",
-      subtitle: "GSPC.INDX",
-      logoUrl: null,
-      route: `/index/${encodeURIComponent("GSPC.INDX")}`,
-      marketLabel: "Index",
-    },
-  ];
+    };
+  });
+
+  const cryptos: SearchAssetItem[] = CRYPTO_TOP10.map((c) => ({
+    id: `crypto:${c.symbol}`,
+    type: "crypto",
+    symbol: c.symbol,
+    name: c.name,
+    subtitle: c.eodhdSymbol,
+    logoUrl: getCryptoLogoUrl(c.symbol),
+    route: `/crypto/${encodeURIComponent(c.symbol)}`,
+    marketLabel: "Crypto",
+  }));
+
+  const indices: SearchAssetItem[] = SCREENER_INDICES_10.map(({ name, symbol }) => ({
+    id: `index:${symbol}`,
+    type: "index",
+    symbol,
+    name,
+    subtitle: symbol,
+    logoUrl: null,
+    route: `/index/${encodeURIComponent(symbol)}`,
+    marketLabel: "Index",
+  }));
+
+  return [...stocks, ...cryptos, ...indices];
 }
 
 async function attachStockLogos(items: SearchAssetItem[]): Promise<SearchAssetItem[]> {
@@ -108,13 +122,12 @@ async function runScreenerSearchAllowlistUncached(qNorm: string): Promise<Search
 
 const getCachedScreenerSearch = unstable_cache(
   async (qNorm: string) => runScreenerSearchAllowlistUncached(qNorm),
-  ["screener-search-allowlist-v1"],
+  ["screener-search-allowlist-v2"],
   { revalidate: REVALIDATE_SEARCH },
 );
 
 /**
- * Search limited to the current screener universe: AAPL, NVDA, BTC, ETH, S&P 500 (GSPC.INDX).
- * Extend {@link buildBaseItems} when adding assets.
+ * Search limited to the screener universe: 10 US equities, 10 cryptos, 10 indices (30 total).
  */
 export async function searchScreenerAllowlist(query: string): Promise<SearchAssetItem[]> {
   const raw = query.trim();

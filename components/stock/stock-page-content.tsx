@@ -7,7 +7,18 @@ import type { ChartDisplayState } from "@/components/chart/PriceChart";
 import { PriceChart } from "@/components/chart/PriceChart";
 import type { StockDetailHeaderMeta } from "@/lib/market/stock-header-meta";
 import { chartingMetricToParam, type ChartingMetricId } from "@/lib/market/stock-charting-metrics";
-import { StockDetailTabNav, type StockDetailTabId } from "./stock-detail-tab-nav";
+import type { StockDetailTabId } from "@/lib/stock/stock-detail-tab";
+import { parseStockDetailTabQuery } from "@/lib/stock/stock-detail-tab";
+import { StockDetailTabNav } from "./stock-detail-tab-nav";
+
+function initialTabsMounted(tab: StockDetailTabId): Record<StockDetailTabId, boolean> {
+  return {
+    overview: tab === "overview",
+    charting: tab === "charting",
+    peers: tab === "peers",
+    profile: tab === "profile",
+  };
+}
 import { StockChartingTab } from "./stock-charting-tab";
 import { StockPeersTab } from "./stock-peers-tab";
 import { StockProfileTab } from "./stock-profile-tab";
@@ -38,17 +49,15 @@ function parseStockHeaderMetaPayload(json: {
   };
 }
 
-function tabFromSearchParam(raw: string | null): StockDetailTabId | null {
-  if (raw === "overview" || raw === "charting" || raw === "peers" || raw === "profile") return raw;
-  return null;
-}
-
 export function StockPageContent({
   routeTicker,
   initialPageData,
+  initialActiveTab = "overview",
 }: {
   routeTicker?: string;
   initialPageData?: StockPageInitialData | null;
+  /** From server `searchParams.tab` — `useSearchParams()` is often empty during SSR; this keeps the first paint aligned. */
+  initialActiveTab?: StockDetailTabId;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -58,8 +67,15 @@ export function StockPageContent({
   const [range, setRange] = useState<StockChartRange>("1Y");
   const ticker = (routeTicker?.trim() ? routeTicker.trim() : "AAPL").toUpperCase();
 
-  const activeTab: StockDetailTabId = tabFromSearchParam(searchParams.get("tab")) ?? "overview";
+  const activeTab: StockDetailTabId =
+    parseStockDetailTabQuery(searchParams.get("tab")) ?? initialActiveTab;
   const chartingMetricParam = searchParams.get("metric");
+
+  const [tabsMounted, setTabsMounted] = useState<Record<StockDetailTabId, boolean>>(() => initialTabsMounted(activeTab));
+
+  useEffect(() => {
+    setTabsMounted((m) => ({ ...m, [activeTab]: true }));
+  }, [activeTab]);
 
   const serverHeader =
     initialPageData?.ticker === ticker ? initialPageData.headerMeta : null;
@@ -184,8 +200,13 @@ export function StockPageContent({
 
       <StockDetailTabNav activeTab={activeTab} onTabChange={setTabInUrl} />
 
-      {activeTab === "overview" ? (
-        <>
+      {tabsMounted.overview ? (
+        <div
+          role="tabpanel"
+          id="stock-tab-overview"
+          aria-hidden={activeTab !== "overview"}
+          className={activeTab === "overview" ? "space-y-5" : "hidden"}
+        >
           <ChartControls activeRange={range} onRangeChange={setRange} />
           <PriceChart
             kind="stock"
@@ -213,24 +234,54 @@ export function StockPageContent({
               initialItems={initialPageData?.ticker === ticker ? initialPageData.news : undefined}
             />
           </div>
-        </>
-      ) : activeTab === "charting" ? (
-        <StockChartingTab
-          ticker={ticker}
-          metricParam={chartingMetricParam}
-          initialAnnualPoints={initialPageData?.ticker === ticker ? initialPageData.fundamentalsSeriesAnnual : undefined}
-          initialQuarterlyPoints={
-            initialPageData?.ticker === ticker ? initialPageData.fundamentalsSeriesQuarterly : undefined
-          }
-        />
-      ) : activeTab === "peers" ? (
-        <StockPeersTab ticker={ticker} />
-      ) : (
-        <StockProfileTab
-          ticker={ticker}
-          initialProfile={initialPageData?.ticker === ticker ? initialPageData.profile : undefined}
-        />
-      )}
+        </div>
+      ) : null}
+
+      {tabsMounted.charting ? (
+        <div
+          role="tabpanel"
+          id="stock-tab-charting"
+          aria-hidden={activeTab !== "charting"}
+          className={activeTab === "charting" ? "block" : "hidden"}
+        >
+          <StockChartingTab
+            ticker={ticker}
+            metricParam={chartingMetricParam}
+            initialAnnualPoints={initialPageData?.ticker === ticker ? initialPageData.fundamentalsSeriesAnnual : undefined}
+            initialQuarterlyPoints={
+              initialPageData?.ticker === ticker ? initialPageData.fundamentalsSeriesQuarterly : undefined
+            }
+          />
+        </div>
+      ) : null}
+
+      {tabsMounted.peers ? (
+        <div
+          role="tabpanel"
+          id="stock-tab-peers"
+          aria-hidden={activeTab !== "peers"}
+          className={activeTab === "peers" ? "block" : "hidden"}
+        >
+          <StockPeersTab
+            ticker={ticker}
+            initialCompareRows={initialPageData?.ticker === ticker ? initialPageData.peersCompareRows : undefined}
+          />
+        </div>
+      ) : null}
+
+      {tabsMounted.profile ? (
+        <div
+          role="tabpanel"
+          id="stock-tab-profile"
+          aria-hidden={activeTab !== "profile"}
+          className={activeTab === "profile" ? "block" : "hidden"}
+        >
+          <StockProfileTab
+            ticker={ticker}
+            initialProfile={initialPageData?.ticker === ticker ? initialPageData.profile : undefined}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }

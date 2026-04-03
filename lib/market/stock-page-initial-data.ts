@@ -18,6 +18,8 @@ import { getStockNews } from "@/lib/market/stock-news";
 import { fetchChartingSeries } from "@/lib/market/eodhd-charting-series";
 import type { StockProfilePayload } from "@/lib/market/stock-profile-types";
 import { fetchEodhdStockProfile } from "@/lib/market/eodhd-stock-profile";
+import type { PeersCompareRow } from "@/lib/market/peers-compare-payload";
+import { getPeersCompareRowsCached } from "@/lib/market/peers-compare-payload";
 import { getNvdaChartPoints, getNvdaHeaderMeta, getNvdaKeyStatsBundle, getNvdaPerformance } from "@/lib/fixtures/nvda";
 import { getNvdaChartingSeriesPoints, getNvdaProfile, getNvdaStockNews } from "@/lib/fixtures/nvda";
 
@@ -36,6 +38,8 @@ export type StockPageInitialData = {
   profile: StockProfilePayload | null;
   fundamentalsSeriesAnnual: ChartingSeriesPoint[];
   fundamentalsSeriesQuarterly: ChartingSeriesPoint[];
+  /** Single-ticker peers compare row (same payload as POST /api/stocks/peers/compare with one symbol). */
+  peersCompareRows: PeersCompareRow[];
 };
 
 const DEFAULT_OVERVIEW_RANGE: StockChartRange = "1Y";
@@ -73,10 +77,12 @@ export async function loadStockPageInitialData(routeTicker: string): Promise<Sto
       profile: getNvdaProfile(),
       fundamentalsSeriesAnnual: getNvdaChartingSeriesPoints("annual"),
       fundamentalsSeriesQuarterly: getNvdaChartingSeriesPoints("quarterly"),
+      peersCompareRows: [],
     };
   }
 
-  const [headerMeta, barsRaw, keyStatsBundle, news, profile, annualSeries, quarterlySeries] = await Promise.all([
+  const [headerMeta, barsRaw, keyStatsBundle, news, profile, annualSeries, quarterlySeries, peersCompareRows] =
+    await Promise.all([
     getStockDetailHeaderMetaForPage(ticker),
     fetchEodhdEodDaily(ticker, from, to),
     buildStockKeyStatsBundle(ticker),
@@ -84,6 +90,7 @@ export async function loadStockPageInitialData(routeTicker: string): Promise<Sto
     fetchEodhdStockProfile(ticker),
     fetchChartingSeries(ticker, "annual"),
     fetchChartingSeries(ticker, "quarterly"),
+    getPeersCompareRowsCached(ticker),
   ]);
 
   const sorted = barsRaw?.length ? [...barsRaw].sort((a, b) => a.date.localeCompare(b.date)) : [];
@@ -101,5 +108,6 @@ export async function loadStockPageInitialData(routeTicker: string): Promise<Sto
     profile: profile ?? null,
     fundamentalsSeriesAnnual: annualSeries?.points ?? [],
     fundamentalsSeriesQuarterly: quarterlySeries?.points ?? [],
+    peersCompareRows: Array.isArray(peersCompareRows) ? peersCompareRows : [],
   };
 }

@@ -16,7 +16,7 @@ type ToggleProps = {
   className?: string;
   /** Extra classes on the button. */
   buttonClassName?: string;
-  /** `detail` = premium header control (asset pages). `default` = screener / tables. */
+  /** `detail` = asset page header — matches top bar icon buttons. `default` = screener / tables. */
   variant?: "default" | "detail";
 };
 
@@ -50,17 +50,17 @@ export function WatchlistStarToggle({
         }}
         className={
           isDetail
-            ? `flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-neutral-200/90 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.05)] outline-none transition-colors hover:border-neutral-300 hover:bg-neutral-50/90 focus-visible:ring-2 focus-visible:ring-neutral-900/10 ${buttonClassName}`
+            ? `flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] outline-none transition-all duration-100 hover:bg-[#F4F4F5] focus-visible:ring-2 focus-visible:ring-neutral-900/10 ${buttonClassName}`
             : `flex items-center justify-center rounded-md p-0.5 text-[#09090B] outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/20 ${buttonClassName}`
         }
       >
         <Star
           className={
             isDetail
-              ? `h-[18px] w-[18px] transition-colors ${
+              ? `h-5 w-5 shrink-0 transition-colors ${
                   isWatched
                     ? "fill-amber-500 text-amber-500"
-                    : "fill-none text-neutral-400 stroke-[1.5] stroke-current"
+                    : "fill-none text-[#09090B]"
                 }`
               : `h-4 w-4 transition-colors ${
                   isWatched

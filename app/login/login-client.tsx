@@ -1,11 +1,14 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AuthDivider, AuthInput, AuthLabel, AuthPrimaryButton, AuthSecondaryButton } from "@/components/auth/auth-form-ui";
 import { PATH_APP_ENTRY, PATH_AUTH_CALLBACK } from "@/lib/auth/routes";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
+
+const STORAGE_REMEMBER = "finsepa_remember_me";
+const STORAGE_SAVED_EMAIL = "finsepa_login_email";
 
 const CALLBACK_ERROR_MESSAGES: Record<string, string> = {
   session: "That sign-in link is invalid or expired. Try resetting your password again.",
@@ -34,14 +37,34 @@ export function LoginClient({ resetSuccess, callbackError }: Props) {
   const router = useRouter();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
+  const [email, setEmail] = useState("");
 
   const callbackHint = callbackError ? CALLBACK_ERROR_MESSAGES[callbackError] ?? "Something went wrong. Please try again." : null;
+
+  useEffect(() => {
+    try {
+      const r = localStorage.getItem(STORAGE_REMEMBER);
+      if (r === "0") setRememberMe(false);
+      if (r !== "0") {
+        const savedEmail = localStorage.getItem(STORAGE_SAVED_EMAIL);
+        if (savedEmail) setEmail(savedEmail);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   async function handleGoogle() {
     setErrorMessage(null);
     if (loading) return;
     setLoading(true);
     try {
+      try {
+        localStorage.setItem(STORAGE_REMEMBER, rememberMe ? "1" : "0");
+      } catch {
+        /* ignore */
+      }
       const supabase = getSupabaseBrowserClient();
       const origin = window.location.origin;
       const redirectTo = `${origin}${PATH_AUTH_CALLBACK}?next=${encodeURIComponent(PATH_APP_ENTRY)}`;
@@ -78,6 +101,17 @@ export function LoginClient({ resetSuccess, callbackError }: Props) {
       if (error) {
         setErrorMessage(error.message);
         return;
+      }
+
+      try {
+        localStorage.setItem(STORAGE_REMEMBER, rememberMe ? "1" : "0");
+        if (rememberMe) {
+          localStorage.setItem(STORAGE_SAVED_EMAIL, email);
+        } else {
+          localStorage.removeItem(STORAGE_SAVED_EMAIL);
+        }
+      } catch {
+        /* ignore */
       }
 
       router.refresh();
@@ -128,7 +162,16 @@ export function LoginClient({ resetSuccess, callbackError }: Props) {
 
       <div>
         <AuthLabel>Email</AuthLabel>
-        <AuthInput type="email" name="email" autoComplete="email" placeholder="you@company.com" required disabled={loading} />
+        <AuthInput
+          type="email"
+          name="email"
+          autoComplete="email"
+          placeholder="you@company.com"
+          required
+          disabled={loading}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
       </div>
 
       <div>
@@ -141,10 +184,22 @@ export function LoginClient({ resetSuccess, callbackError }: Props) {
           required
           disabled={loading}
         />
-        <div className="mt-3 flex justify-end">
+        <div className="mt-3 flex items-center justify-between gap-4">
+          <label className="flex cursor-pointer items-center gap-2 select-none">
+            <input
+              type="checkbox"
+              name="remember"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              disabled={loading}
+              className="h-4 w-4 shrink-0 cursor-pointer rounded-[4px] border border-[#D4D4D8] accent-[#09090B] disabled:cursor-not-allowed disabled:opacity-60"
+              aria-label="Remember me on this device"
+            />
+            <span className="text-sm font-semibold text-[#09090B]">Remember me</span>
+          </label>
           <Link
             href="/forgot-password"
-            className="text-sm font-semibold text-[#09090B] underline decoration-[#E4E4E7] underline-offset-4 transition-colors hover:decoration-[#A1A1AA]"
+            className="shrink-0 text-sm font-semibold text-[#09090B] underline decoration-[#E4E4E7] underline-offset-4 transition-colors hover:decoration-[#A1A1AA]"
           >
             Forgot password?
           </Link>

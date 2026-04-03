@@ -4,13 +4,19 @@ import { WATCHLIST_CRYPTO_PREFIX, WATCHLIST_INDEX_PREFIX } from "@/lib/watchlist
 import type { WatchlistEnrichedItem } from "@/lib/watchlist/enriched-types";
 import type { WatchlistRow } from "@/lib/watchlist/types";
 import { getCryptoAsset } from "@/lib/market/crypto-asset";
-import { ALL_CRYPTO_METAS, fetchEodhdCryptoDailyBars, toSupportedCryptoTicker } from "@/lib/market/eodhd-crypto";
+import {
+  ALL_CRYPTO_METAS,
+  CRYPTO_TOP10,
+  fetchEodhdCryptoDailyBars,
+  toSupportedCryptoTicker,
+} from "@/lib/market/eodhd-crypto";
 import { fetchEodhdFundamentalsHighlights } from "@/lib/market/eodhd-fundamentals";
 import {
   getSimpleCryptoDerived,
   getSimpleIndicesDerived,
   getSimpleMarketData,
   getSimpleScreenerDerived,
+  type ScreenerCryptoSymbol,
 } from "@/lib/market/simple-market-layer";
 import type { EodhdDailyBar } from "@/lib/market/eodhd-eod";
 import { getStockPerformance } from "@/lib/market/stock-performance";
@@ -18,6 +24,8 @@ import { getStockDetailMetaFromTicker } from "@/lib/market/stock-detail-meta";
 import { getCachedStockLogoUrl } from "@/lib/market/stock-logo-url";
 import { eodFetchWindowUtc, formatMarketCapDisplay, formatPeDisplay } from "@/lib/screener/eod-derived-metrics";
 import { getCryptoLogoUrl } from "@/lib/crypto/crypto-logo-url";
+import { isTop10Ticker } from "@/lib/screener/top10-config";
+import { SCREENER_INDEX_SYMBOL_SET } from "@/lib/screener/screener-indices-universe";
 import { getIndexDisplayMeta } from "@/lib/market/indices-top10";
 import { runWithConcurrencyLimit } from "@/lib/utils/run-with-concurrency-limit";
 import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
@@ -56,15 +64,15 @@ async function enrichStock(entry: WatchlistRow): Promise<WatchlistEnrichedItem> 
   const meta = getStockDetailMetaFromTicker(ticker);
 
   // Reduced universe: realtime + daily-derived %s + fundamentals for valuation rows.
-  if (ticker === "NVDA" || ticker === "AAPL") {
+  if (isTop10Ticker(ticker)) {
     const [d, screener, f, logoResolved] = await Promise.all([
       getSimpleMarketData(),
       getSimpleScreenerDerived(),
       fetchEodhdFundamentalsHighlights(meta.ticker),
       getCachedStockLogoUrl(meta.ticker),
     ]);
-    const datum = ticker === "NVDA" ? d.NVDA : d.AAPL;
-    const s = ticker === "NVDA" ? screener.NVDA : screener.AAPL;
+    const datum = d.stocks[ticker];
+    const s = screener[ticker];
     const mcap = formatMarketCapDisplay(f?.marketCapUsd ?? null);
     const pe = formatPeDisplay(f?.peTrailing ?? null, f?.peForward ?? null);
     const earn = f?.nextEarningsDateDisplay?.trim();
@@ -169,14 +177,15 @@ async function enrichCrypto(entry: WatchlistRow): Promise<WatchlistEnrichedItem>
   const sup = toSupportedCryptoTicker(symbol);
 
   // Reduced universe: realtime + daily-derived %s; market cap from crypto asset fundamentals path.
-  if (sup === "BTC" || sup === "ETH") {
+  if (sup && CRYPTO_TOP10.some((c) => c.symbol === sup)) {
     const [d, cryptoDer, row] = await Promise.all([
       getSimpleMarketData(),
       getSimpleCryptoDerived(),
       getCryptoAsset(sup),
     ]);
-    const datum = sup === "BTC" ? d.BTC : d.ETH;
-    const c = sup === "BTC" ? cryptoDer.BTC : cryptoDer.ETH;
+    const sym = sup as ScreenerCryptoSymbol;
+    const datum = d.crypto[sym];
+    const c = cryptoDer[sym];
     const meta = ALL_CRYPTO_METAS.find((m) => m.symbol.toUpperCase() === sup.toUpperCase());
     const name = meta?.name ?? sup;
     const logoUrl = getCryptoLogoUrl(sup);
@@ -190,11 +199,11 @@ async function enrichCrypto(entry: WatchlistRow): Promise<WatchlistEnrichedItem>
       kind: "crypto",
       href: `/crypto/${encodeURIComponent(sup)}`,
       logoUrl,
-      price: datum.price,
-      pct1d: datum.changePercent1D,
-      pct7d: c.changePercent7D,
-      pct1m: c.changePercent1M,
-      ytd: c.changePercentYTD,
+      price: datum?.price ?? null,
+      pct1d: datum?.changePercent1D ?? null,
+      pct7d: c?.changePercent7D ?? null,
+      pct1m: c?.changePercent1M ?? null,
+      ytd: c?.changePercentYTD ?? null,
       mcapDisplay,
       peDisplay: "—",
       earningsDisplay: "—",
@@ -286,11 +295,16 @@ async function enrichIndex(entry: WatchlistRow): Promise<WatchlistEnrichedItem> 
   const name = meta?.name ?? symbol;
   const displaySymbol = meta?.symbol ?? symbol;
 
-  // Reduced universe: index realtime + daily-derived %s.
-  if (displaySymbol === "GSPC.INDX" || displaySymbol === "NDX.INDX") {
+  // Reduced universe: index realtime + daily-derived %s (screener top-10 benchmarks).
+  if (SCREENER_INDEX_SYMBOL_SET.has(displaySymbol)) {
     const [d, idxDer] = await Promise.all([getSimpleMarketData(), getSimpleIndicesDerived()]);
-    const datum = displaySymbol === "GSPC.INDX" ? d.SPX : d.NDX;
-    const i = displaySymbol === "GSPC.INDX" ? idxDer.SPX : idxDer.NDX;
+    const datum = d.indices[displaySymbol] ?? { price: null, previousClose: null, changePercent1D: null };
+    const i = idxDer[displaySymbol] ?? {
+      changePercent7D: null,
+      changePercent1M: null,
+      changePercentYTD: null,
+      last5DailyCloses: [],
+    };
     return {
       entryId: entry.id,
       storageKey: entry.ticker,

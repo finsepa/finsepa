@@ -5,20 +5,37 @@ import { memo, useEffect, useMemo, useState } from "react";
 import { SkeletonBox } from "@/components/markets/skeleton";
 import type { StockNewsArticle } from "@/lib/market/stock-news-types";
 
+const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
+
+/**
+ * Calendar date identical on server and client (no `toLocale*` / host locale).
+ * US-style: "Mar 18, 2024" — matches finance sites like Stock Analysis.
+ */
+function formatAbsoluteDateUs(iso: string): string {
+  const d = new Date(iso);
+  const t = d.getTime();
+  if (!Number.isFinite(t)) return "";
+  const m = MONTHS_SHORT[d.getUTCMonth()];
+  const day = d.getUTCDate();
+  const y = d.getUTCFullYear();
+  return `${m} ${day}, ${y}`;
+}
+
+/** Compact relative labels (`3h ago`, `2d ago`) — same logic server/client; no `toLocale*` drift. */
 function formatPublishedLabel(iso: string): string {
   const d = Date.parse(iso);
   if (!Number.isFinite(d)) return "";
-  const diffMs = Date.now() - d;
+  const diffMs = Math.max(0, Date.now() - d);
   const sec = Math.floor(diffMs / 1000);
   const min = Math.floor(sec / 60);
   const hr = Math.floor(min / 60);
   const day = Math.floor(hr / 24);
   if (day > 14) {
-    return new Date(d).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+    return formatAbsoluteDateUs(iso);
   }
   if (day >= 1) return `${day}d ago`;
-  if (hr >= 1) return `${hr} hour${hr === 1 ? "" : "s"} ago`;
-  if (min >= 1) return `${min} min ago`;
+  if (hr >= 1) return `${hr}h ago`;
+  if (min >= 1) return `${min}m ago`;
   return "Just now";
 }
 
@@ -41,7 +58,15 @@ function NewsRowSkeleton() {
   );
 }
 
-function LatestNewsInner({ ticker, initialItems }: { ticker: string; initialItems?: StockNewsArticle[] }) {
+function LatestNewsInner({
+  ticker,
+  initialItems,
+  variant = "stock",
+}: {
+  ticker: string;
+  initialItems?: StockNewsArticle[];
+  variant?: "stock" | "crypto";
+}) {
   const sym = ticker.trim().toUpperCase();
   const seed = useMemo(() => (Array.isArray(initialItems) ? initialItems : null), [initialItems]);
   const [loading, setLoading] = useState(seed == null);
@@ -59,7 +84,11 @@ function LatestNewsInner({ ticker, initialItems }: { ticker: string; initialItem
       }
       setLoading(true);
       try {
-        const res = await fetch(`/api/stocks/${encodeURIComponent(sym)}/news`);
+        const path =
+          variant === "crypto"
+            ? `/api/crypto/${encodeURIComponent(sym)}/news`
+            : `/api/stocks/${encodeURIComponent(sym)}/news`;
+        const res = await fetch(path, { credentials: "include" });
         if (!res.ok) {
           if (!mounted) return;
           setItems([]);
@@ -81,7 +110,7 @@ function LatestNewsInner({ ticker, initialItems }: { ticker: string; initialItem
       mounted = false;
       cancelled = true;
     };
-  }, [sym, seed]);
+  }, [sym, seed, variant]);
 
   return (
     <div>

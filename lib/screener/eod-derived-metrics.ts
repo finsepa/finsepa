@@ -13,13 +13,13 @@ export function formatDecimalTrim(n: number): string {
   return trimNumberString(n.toFixed(2));
 }
 
-/** e.g. $3.22T, $890.44B, $12.3M — returns "-" when missing. */
+/** e.g. $3.20T, $900.25B, $12.40M — two decimals for T/B/M (matches finance table style). */
 export function formatMarketCapDisplay(usd: number | null | undefined): string {
   if (usd == null || !Number.isFinite(usd) || usd <= 0) return "-";
   const v = usd;
-  if (v >= 1e12) return `$${trimNumberString((v / 1e12).toFixed(2))}T`;
-  if (v >= 1e9) return `$${trimNumberString((v / 1e9).toFixed(2))}B`;
-  if (v >= 1e6) return `$${trimNumberString((v / 1e6).toFixed(2))}M`;
+  if (v >= 1e12) return `$${(v / 1e12).toFixed(2)}T`;
+  if (v >= 1e9) return `$${(v / 1e9).toFixed(2)}B`;
+  if (v >= 1e6) return `$${(v / 1e6).toFixed(2)}M`;
   return `$${Math.round(v).toLocaleString("en-US")}`;
 }
 
