@@ -1,0 +1,260 @@
+"use client";
+
+import type { ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+import { CompanyLogo } from "@/components/screener/company-logo";
+import { PeerSearchDropdownRow } from "@/components/stock/stock-peers-tab";
+import { isSingleAssetMode, SINGLE_ASSET_SYMBOL } from "@/lib/features/single-asset";
+import type { SearchAssetItem } from "@/lib/search/search-types";
+import { recordSearchNavigation } from "@/lib/search/recent-searches-storage";
+import { companyLogoUrlFromDomain } from "@/lib/screener/company-logo-url";
+import { isTop10Ticker, TOP10_META, TOP10_TICKERS } from "@/lib/screener/top10-config";
+
+const SEARCH_DEBOUNCE_MS = 250;
+
+export type CompanyPick = {
+  symbol: string;
+  name: string;
+};
+
+type ScreenerRow = { ticker: string; name: string; domain: string };
+
+function screenerCompanies(exclude: Set<string>): ScreenerRow[] {
+  if (isSingleAssetMode()) {
+    const sym = SINGLE_ASSET_SYMBOL.toUpperCase();
+    if (exclude.has(sym)) return [];
+    if (isTop10Ticker(sym)) {
+      const m = TOP10_META[sym];
+      return [{ ticker: sym, name: m.name, domain: m.domain }];
+    }
+    return [{ ticker: sym, name: sym, domain: "nvidia.com" }];
+  }
+  return TOP10_TICKERS.filter((t) => !exclude.has(t)).map((ticker) => {
+    const m = TOP10_META[ticker];
+    return { ticker, name: m.name, domain: m.domain };
+  });
+}
+
+function useDebouncedValue<T>(value: T, ms: number): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const t = window.setTimeout(() => setDebounced(value), ms);
+    return () => window.clearTimeout(t);
+  }, [value, ms]);
+  return debounced;
+}
+
+export type CompanyPickerRenderProps = {
+  open: boolean;
+  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  atCapacity: boolean;
+};
+
+/**
+ * Screener TOP10 + `/api/search` — same panel as Charting “+ Company”.
+ * Renders a custom trigger via `children` and the shared dropdown below it.
+ */
+export function CompanyPicker({
+  onPick,
+  disabled,
+  maxExtraCompanies,
+  excludeSymbols = [],
+  children,
+}: {
+  onPick: (pick: CompanyPick) => void;
+  disabled?: boolean;
+  maxExtraCompanies: number;
+  excludeSymbols?: string[];
+  children: (ctx: CompanyPickerRenderProps) => ReactNode;
+}) {
+  const pickerWrapRef = useRef<HTMLDivElement>(null);
+  const pickerInputRef = useRef<HTMLInputElement>(null);
+
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerQuery, setPickerQuery] = useState("");
+  const [searchItems, setSearchItems] = useState<SearchAssetItem[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+
+  const debouncedQuery = useDebouncedValue(pickerQuery, SEARCH_DEBOUNCE_MS);
+  const debouncedTrim = debouncedQuery.trim();
+
+  const excludeSet = useMemo(
+    () => new Set(excludeSymbols.map((s) => s.trim().toUpperCase()).filter(Boolean)),
+    [excludeSymbols],
+  );
+
+  const screenerList = useMemo(() => screenerCompanies(excludeSet), [excludeSet]);
+
+  const onChooseAsset = useCallback(
+    (item: SearchAssetItem) => {
+      recordSearchNavigation(item);
+      if (item.type === "stock") {
+        onPick({
+          symbol: item.symbol.trim().toUpperCase(),
+          name: item.name.trim() || item.symbol,
+        });
+      }
+      setPickerOpen(false);
+      setPickerQuery("");
+      setSearchItems([]);
+    },
+    [onPick],
+  );
+
+  useEffect(() => {
+    if (!pickerOpen) return;
+    pickerInputRef.current?.focus();
+  }, [pickerOpen]);
+
+  useEffect(() => {
+    if (!pickerOpen) return;
+    function onDocMouseDown(e: MouseEvent) {
+      const el = pickerWrapRef.current;
+      if (!el || !(e.target instanceof Node) || el.contains(e.target)) return;
+      setPickerOpen(false);
+      setPickerQuery("");
+      setSearchItems([]);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key !== "Escape") return;
+      setPickerOpen(false);
+      setPickerQuery("");
+      setSearchItems([]);
+      e.stopImmediatePropagation();
+    }
+    document.addEventListener("mousedown", onDocMouseDown);
+    document.addEventListener("keydown", onKey, true);
+    return () => {
+      document.removeEventListener("mousedown", onDocMouseDown);
+      document.removeEventListener("keydown", onKey, true);
+    };
+  }, [pickerOpen]);
+
+  useEffect(() => {
+    if (!pickerOpen || debouncedTrim.length < 1) {
+      if (!debouncedTrim.length) setSearchItems([]);
+      setSearchLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    const ac = new AbortController();
+    setSearchLoading(true);
+
+    void (async () => {
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(debouncedTrim)}`, {
+          signal: ac.signal,
+          cache: "default",
+        });
+        const json = (await res.json()) as { items?: SearchAssetItem[] };
+        if (cancelled) return;
+        setSearchItems(Array.isArray(json.items) ? json.items : []);
+      } catch (e) {
+        if (cancelled) return;
+        if (e instanceof DOMException && e.name === "AbortError") return;
+        setSearchItems([]);
+      } finally {
+        if (!cancelled) setSearchLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      ac.abort();
+    };
+  }, [debouncedTrim, pickerOpen]);
+
+  const queryTrim = pickerQuery.trim();
+  const showSearchPanel = queryTrim.length > 0;
+  const atCapacity = disabled || maxExtraCompanies <= 0;
+
+  return (
+    <div className="relative" ref={pickerWrapRef}>
+      {children({ open: pickerOpen, setOpen: setPickerOpen, atCapacity })}
+
+      {pickerOpen ? (
+        <div
+          className="absolute left-0 top-full z-[200] mt-1 w-[min(calc(100vw-2rem),360px)] rounded-lg border border-[#E4E4E7] bg-white py-1 shadow-md"
+          role="listbox"
+          aria-label="Screener companies and search"
+        >
+          <div className="border-b border-[#F4F4F5] px-2 pb-1 pt-1">
+            <input
+              ref={pickerInputRef}
+              value={pickerQuery}
+              onChange={(e) => setPickerQuery(e.target.value)}
+              placeholder="Search stocks, crypto, indices…"
+              className="w-full rounded-md border-0 bg-[#FAFAFA] px-2 py-1.5 text-[13px] text-[#09090B] placeholder:text-[#A1A1AA] outline-none ring-1 ring-transparent focus:ring-[#E4E4E7]"
+              aria-label="Search to add company"
+              autoComplete="off"
+              autoCorrect="off"
+            />
+          </div>
+          <div className="max-h-[min(400px,calc(100vh-12rem))] overflow-y-auto py-1">
+            {!showSearchPanel ? (
+              <>
+                <div className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wide text-[#A1A1AA]">
+                  Screener
+                </div>
+                {screenerList.length === 0 ? (
+                  <p className="px-3 py-2 text-[12px] text-[#71717A]">No companies to add.</p>
+                ) : (
+                  <ul className="pb-2">
+                    {screenerList.map((row) => (
+                      <li key={row.ticker}>
+                        <button
+                          type="button"
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] text-[#09090B] transition-colors hover:bg-[#F4F4F5]"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => {
+                            onPick({ symbol: row.ticker, name: row.name });
+                            setPickerOpen(false);
+                            setPickerQuery("");
+                            setSearchItems([]);
+                          }}
+                        >
+                          <CompanyLogo
+                            name={row.name}
+                            logoUrl={companyLogoUrlFromDomain(row.domain)}
+                            symbol={row.ticker}
+                          />
+                          <div className="min-w-0 flex-1">
+                            <div className="truncate font-medium">{row.name}</div>
+                            <div className="truncate text-[12px] text-[#71717A]">{row.ticker}</div>
+                          </div>
+                          <span className="shrink-0 rounded-full bg-[#F4F4F5] px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-[#71717A]">
+                            Stock
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <div className="border-t border-[#F4F4F5] px-3 py-2 text-[12px] text-[#71717A]">
+                  Or type above to search — same index as the top bar (Peers).
+                </div>
+              </>
+            ) : searchLoading && searchItems.length === 0 ? (
+              <p className="px-3 py-2 text-[12px] text-[#71717A]">Searching…</p>
+            ) : !searchLoading && searchItems.length === 0 ? (
+              <p className="px-3 py-2 text-[12px] text-[#71717A]">No results for &ldquo;{queryTrim}&rdquo;</p>
+            ) : (
+              <>
+                {searchLoading && searchItems.length > 0 ? (
+                  <p className="px-3 pb-1 text-center text-[11px] text-[#A1A1AA]" aria-hidden>
+                    Updating…
+                  </p>
+                ) : null}
+                {searchItems.map((item) => (
+                  <PeerSearchDropdownRow key={item.id} item={item} onPick={onChooseAsset} />
+                ))}
+              </>
+            )}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}

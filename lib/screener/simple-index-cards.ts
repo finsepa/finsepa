@@ -3,7 +3,12 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 
 import type { IndexCardData } from "@/lib/screener/indices-today";
-import { getSimpleMarketData } from "@/lib/market/simple-market-layer";
+import {
+  getSimpleIndicesDerived,
+  getSimpleMarketData,
+  type SimpleIndicesDerived,
+  type SimpleMarketData,
+} from "@/lib/market/simple-market-layer";
 import { fetchEodhdEodDaily } from "@/lib/market/eodhd-eod";
 import { fetchEodhdIntraday } from "@/lib/market/eodhd-intraday";
 
@@ -31,6 +36,14 @@ function alignIntraday(series: number[], prevClose: number | null, lastPrice: nu
   return out;
 }
 
+/** Reject flat series so we fall back to daily / derived closes (intraday can repeat the same close). */
+function hasMinVariance(points: number[]): boolean {
+  if (points.length < 2) return false;
+  const min = Math.min(...points);
+  const max = Math.max(...points);
+  return max > min;
+}
+
 /** Last ~3 weeks of daily closes, downsampled — used when 5m intraday is empty or too sparse (IWM, VIX). */
 async function loadDailySparklineFallback(symbol: string): Promise<number[] | null> {
   const now = new Date();
@@ -51,9 +64,39 @@ function sparklineIntradayOrDaily(
   lastPrice: number | null,
 ): number[] | null {
   const fromIntraday = alignIntraday(intradaySeries, prevClose, lastPrice);
-  if (fromIntraday) return fromIntraday;
+  if (fromIntraday && hasMinVariance(fromIntraday)) return fromIntraday;
   const fb = dailyFallback && dailyFallback.length >= 2 ? dailyFallback : [];
-  return alignIntraday(fb, prevClose, lastPrice);
+  const fromDaily = alignIntraday(fb, prevClose, lastPrice);
+  if (fromDaily && hasMinVariance(fromDaily)) return fromDaily;
+  if (fromIntraday) return fromIntraday;
+  return fromDaily;
+}
+
+/**
+ * Per-ticker sparkline: prefer last 5 daily closes from the same EOD pipeline as the Indices table,
+ * then intraday + ~3w daily fallback (each symbol’s own history).
+ */
+function sparklineForIndexCard(
+  eodhdSymbol: string,
+  intradaySeries: number[],
+  dailyFb: number[] | null,
+  indicesDerived: SimpleIndicesDerived,
+  indicesQuote: SimpleMarketData["indices"],
+  lastFromIntraday: number | null,
+): number[] | null {
+  const prevClose = indicesQuote[eodhdSymbol]?.previousClose ?? null;
+  const lastPrice =
+    lastFromIntraday != null && Number.isFinite(lastFromIntraday)
+      ? lastFromIntraday
+      : indicesQuote[eodhdSymbol]?.price ?? null;
+
+  const closes5 = indicesDerived[eodhdSymbol]?.last5DailyCloses;
+  if (closes5 && closes5.length >= 2) {
+    const aligned = alignIntraday(closes5, prevClose, lastPrice);
+    if (aligned && hasMinVariance(aligned)) return aligned;
+  }
+
+  return sparklineIntradayOrDaily(intradaySeries, dailyFb, prevClose, lastPrice);
 }
 
 function compute1d(lastPrice: number | null, prevClose: number | null): number | null {
@@ -63,7 +106,7 @@ function compute1d(lastPrice: number | null, prevClose: number | null): number |
 }
 
 async function loadSimpleIndexCardsUncached(): Promise<IndexCardData[]> {
-  const data = await getSimpleMarketData();
+  const [data, indicesDerived] = await Promise.all([getSimpleMarketData(), getSimpleIndicesDerived()]);
 
   const now = new Date();
   const toUnix = Math.floor(now.getTime() / 1000);
@@ -101,9 +144,17 @@ async function loadSimpleIndexCardsUncached(): Promise<IndexCardData[]> {
       ? sample(vixIntradaySettled.value.map((b) => b.close).filter((v) => Number.isFinite(v)))
       : [];
 
-  const needRutDaily = rutSeries.length < 2;
-  const needVixDaily = vixSeries.length < 2;
-  const [rutDailyFb, vixDailyFb] = await Promise.all([
+  const hasDerived = (sym: string) => (indicesDerived[sym]?.last5DailyCloses?.length ?? 0) >= 2;
+  /** Longer EOD window when the screener-derived 5d strip is missing (still per-ticker). */
+  const needSpxDaily = !hasDerived("GSPC.INDX");
+  const needNdxDaily = !hasDerived("NDX.INDX");
+  const needDjiDaily = !hasDerived("DJI.INDX");
+  const needRutDaily = !hasDerived("IWM.US");
+  const needVixDaily = !hasDerived("VIX.INDX");
+  const [spxDailyFb, ndxDailyFb, djiDailyFb, rutDailyFb, vixDailyFb] = await Promise.all([
+    needSpxDaily ? loadDailySparklineFallback("GSPC.INDX") : Promise.resolve(null),
+    needNdxDaily ? loadDailySparklineFallback("NDX.INDX") : Promise.resolve(null),
+    needDjiDaily ? loadDailySparklineFallback("DJI.INDX") : Promise.resolve(null),
     needRutDaily ? loadDailySparklineFallback("IWM.US") : Promise.resolve(null),
     needVixDaily ? loadDailySparklineFallback("VIX.INDX") : Promise.resolve(null),
   ]);
@@ -126,46 +177,71 @@ async function loadSimpleIndexCardsUncached(): Promise<IndexCardData[]> {
       name: "S&P 500",
       price: spxPrice,
       changePercent1D: compute1d(spxPrice, ix["GSPC.INDX"]?.previousClose ?? null),
-      sparklineToday: alignIntraday(spxSeries, ix["GSPC.INDX"]?.previousClose ?? null, spxPrice),
+      sparklineToday: sparklineForIndexCard(
+        "GSPC.INDX",
+        spxSeries,
+        spxDailyFb,
+        indicesDerived,
+        ix,
+        spxLast,
+      ),
     },
     {
       name: "Nasdaq 100",
       price: ndxPrice,
       changePercent1D: compute1d(ndxPrice, ix["NDX.INDX"]?.previousClose ?? null),
-      sparklineToday: alignIntraday(ndxSeries, ix["NDX.INDX"]?.previousClose ?? null, ndxPrice),
+      sparklineToday: sparklineForIndexCard(
+        "NDX.INDX",
+        ndxSeries,
+        ndxDailyFb,
+        indicesDerived,
+        ix,
+        ndxLast,
+      ),
     },
     {
       name: "Dow Jones",
       price: djiPrice,
       changePercent1D: compute1d(djiPrice, ix["DJI.INDX"]?.previousClose ?? null),
-      sparklineToday: alignIntraday(djiSeries, ix["DJI.INDX"]?.previousClose ?? null, djiPrice),
+      sparklineToday: sparklineForIndexCard(
+        "DJI.INDX",
+        djiSeries,
+        djiDailyFb,
+        indicesDerived,
+        ix,
+        djiLast,
+      ),
     },
     {
       name: "Russell 2000",
       price: rutPrice,
       changePercent1D: compute1d(rutPrice, ix["IWM.US"]?.previousClose ?? null),
-      sparklineToday: sparklineIntradayOrDaily(
+      sparklineToday: sparklineForIndexCard(
+        "IWM.US",
         rutSeries,
         rutDailyFb,
-        ix["IWM.US"]?.previousClose ?? null,
-        rutPrice,
+        indicesDerived,
+        ix,
+        rutLast,
       ),
     },
     {
       name: "VIX",
       price: vixPrice,
       changePercent1D: compute1d(vixPrice, ix["VIX.INDX"]?.previousClose ?? null),
-      sparklineToday: sparklineIntradayOrDaily(
+      sparklineToday: sparklineForIndexCard(
+        "VIX.INDX",
         vixSeries,
         vixDailyFb,
-        ix["VIX.INDX"]?.previousClose ?? null,
-        vixPrice,
+        indicesDerived,
+        ix,
+        vixLast,
       ),
     },
   ];
 }
 
-export const getSimpleIndexCards = unstable_cache(loadSimpleIndexCardsUncached, ["simple-index-cards-v2"], {
+export const getSimpleIndexCards = unstable_cache(loadSimpleIndexCardsUncached, ["simple-index-cards-v4"], {
   revalidate: 60,
 });
 

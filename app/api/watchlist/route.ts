@@ -30,9 +30,11 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  let authenticatedUserId: string | undefined;
   try {
     const supabase = await getSupabaseServerClient();
     const user = await requireAuthUser(supabase);
+    authenticatedUserId = user.id;
 
     let body: unknown;
     try {
@@ -52,6 +54,12 @@ export async function POST(request: Request) {
 
     const ticker = normalizeWatchlistTicker(raw);
     const { row, created } = await addWatchlistTicker(supabase, user.id, ticker);
+    console.info("[watchlist POST] insert ok", {
+      userId: user.id,
+      ticker,
+      created,
+      rowId: row.id,
+    });
     return NextResponse.json({ entry: row, created }, { status: 200 });
   } catch (e) {
     if (e instanceof AuthRequiredError) {
@@ -61,6 +69,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: e.message }, { status: 400 });
     }
     const message = e instanceof Error ? e.message : "Server error";
+    console.error("[watchlist POST] failed", { authenticatedUserId, message, err: e });
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
@@ -76,8 +85,18 @@ export async function DELETE(request: Request) {
     }
 
     const ticker = normalizeWatchlistTicker(tickerParam);
+    console.info("DELETE ticker", ticker);
+    console.info("[watchlist DELETE] request", { userId: user.id, tickerParamRaw: tickerParam, tickerNormalized: ticker });
+
     const { removed } = await removeWatchlistTicker(supabase, user.id, ticker);
-    return NextResponse.json({ removed }, { status: 200 });
+    if (!removed) {
+      console.warn("[watchlist DELETE] no row deleted", { userId: user.id, ticker });
+      return NextResponse.json(
+        { error: "Watchlist entry not found for this ticker.", ticker, removed: false },
+        { status: 404 },
+      );
+    }
+    return NextResponse.json({ removed: true }, { status: 200 });
   } catch (e) {
     if (e instanceof AuthRequiredError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

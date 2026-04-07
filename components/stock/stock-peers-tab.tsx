@@ -91,7 +91,7 @@ const categoryLabel: Record<SearchAssetItem["type"], string> = {
   index: "Index",
 };
 
-function PeerSearchDropdownRow({ item, onPick }: { item: SearchAssetItem; onPick: (item: SearchAssetItem) => void }) {
+export function PeerSearchDropdownRow({ item, onPick }: { item: SearchAssetItem; onPick: (item: SearchAssetItem) => void }) {
   const sub = item.marketLabel ?? item.subtitle;
   return (
     <button

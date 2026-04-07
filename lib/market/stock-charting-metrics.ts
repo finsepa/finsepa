@@ -252,6 +252,77 @@ export function chartingMetricToParam(id: ChartingMetricId): string {
 
 export function parseChartingMetricParam(s: string | null): ChartingMetricId | null {
   if (!s) return null;
-  const v = s.trim().toLowerCase().replace(/-/g, "_");
+  const v = s
+    .trim()
+    .toLowerCase()
+    .replace(/-/g, "_")
+    .replace(/\s+/g, "_");
   return isChartingMetricId(v) ? v : null;
+}
+
+/** Default metrics when opening Charting (standalone or stock tab). */
+export const CHARTING_DEFAULT_METRICS: ChartingMetricId[] = ["revenue", "net_income"];
+
+/**
+ * Parse `metric=revenue,net_income` or a single id from the charting URL.
+ */
+export function parseChartingMetricsParam(s: string | null | undefined): ChartingMetricId[] {
+  if (!s?.trim()) return [];
+  const parts = s
+    .split(/[,]+/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  const out: ChartingMetricId[] = [];
+  const seen = new Set<ChartingMetricId>();
+  for (const p of parts) {
+    const m = parseChartingMetricParam(p);
+    if (m && !seen.has(m)) {
+      seen.add(m);
+      out.push(m);
+    }
+  }
+  return out;
+}
+
+export function chartingMetricsToParam(ids: ChartingMetricId[]): string {
+  return ids.map(chartingMetricToParam).join(",");
+}
+
+/** Max symbols compared on `/charting` (comma-separated `ticker=`). */
+export const CHARTING_MAX_COMPARE_TICKERS = 8;
+
+/**
+ * Parse `ticker=AAPL,MSFT` — dedupe, preserve order, uppercase.
+ */
+export function parseChartingTickerList(raw: string | null | undefined): string[] {
+  if (!raw?.trim()) return [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const part of raw.split(",")) {
+    const t = part.trim().toUpperCase();
+    if (!t || seen.has(t)) continue;
+    seen.add(t);
+    out.push(t);
+  }
+  return out.slice(0, CHARTING_MAX_COMPARE_TICKERS);
+}
+
+export function chartingTickersToParam(tickers: string[]): string {
+  return tickers.join(",");
+}
+
+/** `/charting` URL with optional `ticker` and `metric` query (omits empty parts). */
+export function buildChartingPath(tickers: string[], metricIds: ChartingMetricId[]): string {
+  const tq = chartingTickersToParam(tickers);
+  const mq = chartingMetricsToParam(metricIds);
+  if (!tq && !mq) return "/charting";
+  const p = new URLSearchParams();
+  if (tq) p.set("ticker", tq);
+  if (mq) p.set("metric", mq);
+  return `/charting?${p.toString()}`;
+}
+
+/** True when standalone Charting should load data and show the chart (not the blank hero). */
+export function isChartingSessionReady(tickers: string[], metricParam: string | null | undefined): boolean {
+  return tickers.length > 0 && parseChartingMetricsParam(metricParam).length > 0;
 }

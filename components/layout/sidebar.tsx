@@ -34,7 +34,7 @@ const calendarItems = [
 
 const dataItems = [
   { label: "Macro", icon: Compass, href: "/macro", available: NAV_MACRO_ENABLED },
-  { label: "Charting", icon: ChartColumn, href: "/charting", available: false },
+  { label: "Charting", icon: ChartColumn, href: "/charting", available: true },
   { label: "Comparison", icon: PanelsTopLeft, href: "/comparison", available: false },
 ];
 

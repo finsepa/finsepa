@@ -56,6 +56,17 @@ export async function addWatchlistTicker(
     return { row: data as WatchlistRow, created: true };
   }
 
+  if (error && error.code !== "23505") {
+    console.error("[watchlist] Supabase insert/select failed", {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      userId,
+      ticker,
+    });
+  }
+
   if (error?.code === "23505") {
     const { data: existing, error: fetchError } = await supabase
       .from(TABLE)
@@ -81,15 +92,46 @@ export async function removeWatchlistTicker(
   userId: string,
   ticker: string,
 ): Promise<{ removed: boolean }> {
-  const { data, error } = await supabase
+  const { data: existing, error: selectError } = await supabase
     .from(TABLE)
-    .delete()
+    .select("id,ticker")
     .eq("user_id", userId)
     .eq("ticker", ticker)
+    .maybeSingle();
+
+  console.info("[watchlist] delete lookup", {
+    userId,
+    ticker,
+    foundRowId: existing?.id ?? null,
+    storedTicker: existing?.ticker ?? null,
+    selectError: selectError
+      ? { code: selectError.code, message: selectError.message, details: selectError.details }
+      : null,
+  });
+
+  if (selectError) {
+    throw new Error(selectError.message);
+  }
+  if (!existing) {
+    return { removed: false };
+  }
+
+  const { data: deletedRows, error: deleteError } = await supabase
+    .from(TABLE)
+    .delete()
+    .eq("id", existing.id)
     .select("id");
 
-  if (error) {
-    throw new Error(error.message);
+  console.info("[watchlist] delete by id result", {
+    rowId: existing.id,
+    deletedRows,
+    deleteError: deleteError
+      ? { code: deleteError.code, message: deleteError.message, details: deleteError.details }
+      : null,
+  });
+
+  if (deleteError) {
+    throw new Error(deleteError.message);
   }
-  return { removed: (data?.length ?? 0) > 0 };
+  return { removed: (deletedRows?.length ?? 0) > 0 };
 }

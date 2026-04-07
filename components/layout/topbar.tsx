@@ -1,15 +1,49 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Bell, ChevronDown, Folder, Search, SquarePlus, Star } from "lucide-react";
-import {
-  TOPBAR_SHOW_NOTIFICATIONS,
-  TOPBAR_SHOW_PORTFOLIO_BLOCK,
-  TOPBAR_SHOW_QUICK_ADD,
-} from "@/lib/features/topbar-flags";
+import { Bell, Folder, Search, Star } from "lucide-react";
+import { TOPBAR_SHOW_NOTIFICATIONS } from "@/lib/features/topbar-flags";
+import { TransactionPortfolioField } from "@/components/portfolio/transaction-portfolio-field";
+import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
+import { portfolioCostBasisPlusCash } from "@/lib/portfolio/portfolio-total-value";
 import { OPEN_SEARCH_EVENT, SearchModal } from "./search-modal";
+import { TopbarQuickAddMenu } from "./topbar-quick-add-menu";
 import { TopbarUserMenu } from "./topbar-user-menu";
+
+const usdTopbar = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+function TopbarPortfolioBlock() {
+  const { selectedPortfolioId, holdingsByPortfolioId, transactionsByPortfolioId } =
+    usePortfolioWorkspace();
+
+  const total = useMemo(() => {
+    if (selectedPortfolioId == null) return 0;
+    const holdings = holdingsByPortfolioId[selectedPortfolioId] ?? [];
+    const transactions = transactionsByPortfolioId[selectedPortfolioId] ?? [];
+    return portfolioCostBasisPlusCash(holdings, transactions);
+  }, [selectedPortfolioId, holdingsByPortfolioId, transactionsByPortfolioId]);
+
+  const amountClass = total < 0 ? "text-red-600" : "text-[#09090B]";
+
+  return (
+    <div className="flex h-9 max-w-full min-w-0 shrink-0 items-stretch overflow-visible rounded-[10px] border border-[#E4E4E7] bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
+      <Link
+        href="/portfolio"
+        className="flex min-w-0 max-w-[200px] items-center gap-2 border-r border-[#E4E4E7] px-3 text-sm font-medium tabular-nums transition-colors hover:bg-[#F4F4F5] sm:max-w-none"
+      >
+        <Folder className="h-5 w-5 shrink-0 text-[#09090B]" aria-hidden />
+        <span className={`min-w-0 truncate ${amountClass}`}>{usdTopbar.format(total)}</span>
+      </Link>
+      <TransactionPortfolioField variant="compact" compactMenuAlign="trailing" />
+    </div>
+  );
+}
 
 function IconButton({ children }: { children: React.ReactNode }) {
   return (
@@ -50,26 +84,26 @@ export function Topbar({
 
   return (
     <>
-      <header className="flex h-[60px] items-center justify-between px-4 py-3">
-        {/* Search */}
-        <button
-          type="button"
-          onClick={() => setSearchOpen(true)}
-          aria-label="Search (shortcut S)"
-          className="flex h-9 w-[300px] cursor-pointer items-center gap-2 rounded-lg bg-[#F4F4F5] px-4 text-left transition-all duration-100 hover:bg-[#EBEBEB]"
-        >
-          <Search className="h-5 w-5 shrink-0 text-[#09090B]" aria-hidden />
-          <span className="flex-1 text-sm leading-5 text-[#A1A1AA]">Search...</span>
-          <kbd
-            className="pointer-events-none rounded border border-neutral-200 bg-white px-1.5 py-0.5 font-sans text-[10px] font-medium text-[#A1A1AA]"
-            aria-hidden
+      <header className="flex h-[60px] min-w-0 items-center justify-between gap-3 px-4 py-3">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setSearchOpen(true)}
+            aria-label="Search (shortcut S)"
+            className="flex h-9 w-full min-w-0 max-w-[300px] cursor-pointer items-center gap-2 rounded-lg bg-[#F4F4F5] px-4 text-left transition-all duration-100 hover:bg-[#EBEBEB]"
           >
-            S
-          </kbd>
-        </button>
+            <Search className="h-5 w-5 shrink-0 text-[#09090B]" aria-hidden />
+            <span className="min-w-0 flex-1 truncate text-sm leading-5 text-[#A1A1AA]">Search...</span>
+            <kbd
+              className="pointer-events-none shrink-0 rounded border border-neutral-200 bg-white px-1.5 py-0.5 font-sans text-[10px] font-medium text-[#A1A1AA]"
+              aria-hidden
+            >
+              S
+            </kbd>
+          </button>
+        </div>
 
-        {/* Right side */}
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-3">
           {TOPBAR_SHOW_NOTIFICATIONS ? (
             <IconButton>
               <Bell className="h-5 w-5" />
@@ -82,30 +116,9 @@ export function Topbar({
             </IconButton>
           </Link>
 
-          {TOPBAR_SHOW_QUICK_ADD ? (
-            <IconButton>
-              <SquarePlus className="h-5 w-5" />
-            </IconButton>
-          ) : null}
+          <TopbarQuickAddMenu />
 
-          {TOPBAR_SHOW_PORTFOLIO_BLOCK ? (
-            <>
-              <div className="h-5 w-px bg-[#E4E4E7]" />
-              {/* Balance pill */}
-              <div className="flex h-9 items-center overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5]">
-                <div className="flex items-center gap-2 border-r border-[#E4E4E7] px-3 text-sm font-medium text-[#09090B]">
-                  <Folder className="h-5 w-5 shrink-0 text-[#09090B]" />
-                  <span>—</span>
-                </div>
-                <button
-                  type="button"
-                  className="flex h-full items-center justify-center px-2 text-[#09090B] transition-all duration-100 hover:bg-[#F4F4F5]"
-                >
-                  <ChevronDown className="h-5 w-5" />
-                </button>
-              </div>
-            </>
-          ) : null}
+          <TopbarPortfolioBlock />
 
           <TopbarUserMenu userInitials={userInitials} avatarUrl={avatarUrl} />
         </div>

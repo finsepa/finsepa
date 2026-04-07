@@ -26,7 +26,10 @@ export function AssetPageTopLoader() {
   const doneTimerRef = useRef<number | null>(null);
 
   const isAssetPath =
-    pathname.startsWith("/stock/") || pathname.startsWith("/crypto/") || pathname.startsWith("/index/");
+    pathname.startsWith("/stock/") ||
+    pathname.startsWith("/crypto/") ||
+    pathname.startsWith("/index/") ||
+    pathname.startsWith("/charting");
 
   useEffect(() => {
     if (!isAssetPath) {
