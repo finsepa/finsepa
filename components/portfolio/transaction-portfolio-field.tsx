@@ -66,7 +66,7 @@ export function TransactionPortfolioField({
         aria-label={variant === "compact" ? "Portfolio menu" : undefined}
         className={
           variant === "compact"
-            ? "flex h-9 shrink-0 cursor-pointer items-center justify-center px-2 text-[#09090B] transition-colors hover:bg-[#F4F4F5] disabled:cursor-not-allowed disabled:opacity-50"
+            ? "flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-[10px] text-[#09090B] transition-colors hover:bg-[#F4F4F5] disabled:cursor-not-allowed disabled:opacity-50"
             : "flex h-9 w-full items-center justify-between gap-2 rounded-[10px] bg-[#F4F4F5] px-4 text-left text-sm transition-colors hover:bg-[#EBEBEB]"
         }
       >

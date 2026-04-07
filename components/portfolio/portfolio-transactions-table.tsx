@@ -1,10 +1,11 @@
 "use client";
 
 import { Fragment, memo, useMemo, useState } from "react";
-import { ArrowDownUp, MoreHorizontal } from "lucide-react";
+import { ArrowDownUp, Pencil } from "lucide-react";
 import { format, parseISO } from "date-fns";
 
 import { CompanyLogo } from "@/components/screener/company-logo";
+import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import { cn } from "@/lib/utils";
 import type { PortfolioTransaction, PortfolioTransactionKind } from "@/components/portfolio/portfolio-types";
 
@@ -56,6 +57,7 @@ function opColor(operation: string): string {
 }
 
 function PortfolioTransactionsTableInner({ transactions }: { transactions: PortfolioTransaction[] }) {
+  const { openEditTransaction } = usePortfolioWorkspace();
   const [filter, setFilter] = useState<TxFilter>("All");
 
   const filtered = useMemo(
@@ -194,10 +196,11 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                       <td className="py-3 pr-0 text-right">
                         <button
                           type="button"
-                          aria-label="More"
+                          aria-label="Edit transaction"
+                          onClick={() => openEditTransaction(t)}
                           className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[#09090B] transition-colors hover:bg-[#F4F4F5]"
                         >
-                          <MoreHorizontal className="h-5 w-5" aria-hidden />
+                          <Pencil className="h-4 w-4" aria-hidden strokeWidth={2} />
                         </button>
                       </td>
                     </tr>

@@ -25,6 +25,13 @@ export type PortfolioWorkspaceContextValue = {
   addCashModalOpen: boolean;
   openAddCash: () => void;
   closeAddCash: () => void;
+  /** Row being edited in `EditTransactionModal` (null when closed). */
+  editTransaction: PortfolioTransaction | null;
+  openEditTransaction: (t: PortfolioTransaction) => void;
+  closeEditTransaction: () => void;
+  /** Replace the full ledger for one portfolio (used after editing a row + rebuild). */
+  setPortfolioTransactions: (portfolioId: string, transactions: PortfolioTransaction[]) => void;
+  setPortfolioHoldings: (portfolioId: string, holdings: PortfolioHolding[]) => void;
 };
 
 export const PortfolioWorkspaceContext = createContext<PortfolioWorkspaceContextValue | null>(null);

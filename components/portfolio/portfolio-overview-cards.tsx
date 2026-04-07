@@ -1,7 +1,6 @@
 "use client";
 
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
-import { parse } from "date-fns";
 import { ChevronDown } from "lucide-react";
 
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
@@ -46,43 +45,17 @@ const PERIOD_OPTIONS: { id: OverviewProfitPeriod; label: string }[] = [
   { id: "y5", label: "5Y" },
 ];
 
-async function fetchPerformance(sym: string): Promise<StockPerformance | null> {
-  try {
-    const res = await fetch(`/api/stocks/${encodeURIComponent(sym)}/performance`);
-    if (!res.ok) return null;
-    return (await res.json()) as StockPerformance;
-  } catch {
-    return null;
-  }
-}
-
-async function fetchDividendYieldPct(sym: string): Promise<number | null> {
-  try {
-    const res = await fetch(`/api/stocks/${encodeURIComponent(sym)}/key-stats-dividends`);
-    if (!res.ok) return null;
-    const data = (await res.json()) as { rows?: { label: string; value: string }[] | null };
-    const row = data.rows?.find((r) => r.label.toLowerCase().includes("yield"));
-    if (!row?.value) return null;
-    const m = row.value.match(/([\d.]+)/);
-    if (!m) return null;
-    const n = Number.parseFloat(m[1]!);
-    return Number.isFinite(n) ? n : null;
-  } catch {
-    return null;
-  }
-}
-
-async function fetchPriceOnDate(sym: string, ymd: string): Promise<number | null> {
-  try {
-    const res = await fetch(
-      `/api/stocks/${encodeURIComponent(sym)}/price-on-date?date=${encodeURIComponent(ymd)}`,
-    );
-    if (!res.ok) return null;
-    const data = (await res.json()) as { price?: number | null };
-    return typeof data.price === "number" && Number.isFinite(data.price) ? data.price : null;
-  } catch {
-    return null;
-  }
+function OverviewMetricCardSkeleton() {
+  return (
+    <div
+      className="rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]"
+      aria-hidden
+    >
+      <div className="h-3 w-14 animate-pulse rounded bg-neutral-200" />
+      <div className="mt-3 h-8 w-[min(100%,11rem)] max-w-full animate-pulse rounded-md bg-neutral-200" />
+      <div className="mt-2 h-4 w-24 animate-pulse rounded bg-neutral-100" />
+    </div>
+  );
 }
 
 /**
@@ -125,18 +98,12 @@ function PortfolioOverviewCardsInner({
     [transactions, inceptionYmd],
   );
 
-  const inceptionDateLabel = useMemo(() => {
-    if (!inceptionYmd) return null;
-    const d = parse(inceptionYmd, "yyyy-MM-dd", new Date());
-    return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" }).format(d);
-  }, [inceptionYmd]);
-
   const [period, setPeriod] = useState<OverviewProfitPeriod>("all");
-  const [loading, setLoading] = useState(false);
+  /** False while batch market data is loading (only when there are holdings). */
+  const [overviewReady, setOverviewReady] = useState(() => holdings.length === 0);
   const [perfBySymbol, setPerfBySymbol] = useState<Record<string, StockPerformance | null>>({});
   const [spyPerf, setSpyPerf] = useState<StockPerformance | null>(null);
   const [yieldBySymbol, setYieldBySymbol] = useState<Record<string, number | null>>({});
-  /** Equity value at end of first investment day (replay × prices on that day). */
   const [inceptionEquityV0, setInceptionEquityV0] = useState<number | null>(null);
   const [inceptionSpyPrice0, setInceptionSpyPrice0] = useState<number | null>(null);
 
@@ -152,55 +119,76 @@ function PortfolioOverviewCardsInner({
       setYieldBySymbol({});
       setInceptionEquityV0(null);
       setInceptionSpyPrice0(null);
+      setOverviewReady(true);
       return;
     }
-    setLoading(true);
+
+    setOverviewReady(false);
     try {
-      const [spy, ...rest] = await Promise.all([
-        fetchPerformance(SPY_BENCHMARK),
-        ...symbols.map((s) => fetchPerformance(s)),
-      ]);
-      setSpyPerf(spy);
-      const map: Record<string, StockPerformance | null> = {};
-      symbols.forEach((s, i) => {
-        map[s] = rest[i] ?? null;
-      });
-      setPerfBySymbol(map);
-
-      const yields = await Promise.all(symbols.map((s) => fetchDividendYieldPct(s)));
-      const ym: Record<string, number | null> = {};
-      symbols.forEach((s, i) => {
-        ym[s] = yields[i] ?? null;
-      });
-      setYieldBySymbol(ym);
-
       const startYmd = earliestStockBuyYmd(transactions);
+      let inceptionPriceTickers: string[] = [];
+      if (startYmd) {
+        const sharesMap = replayStockSharesUpTo(transactions, startYmd);
+        const syms = [...sharesMap.entries()]
+          .filter(([, sh]) => sh > 0)
+          .map(([s]) => s.toUpperCase());
+        inceptionPriceTickers = [...new Set([SPY_BENCHMARK, ...syms])];
+      }
+
+      const res = await fetch("/api/portfolio/overview-market", {
+        method: "POST",
+        credentials: "include",
+        cache: "no-store",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          symbols,
+          inceptionYmd: startYmd,
+          inceptionPriceTickers: startYmd ? inceptionPriceTickers : [],
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error("overview-market failed");
+      }
+
+      const data = (await res.json()) as {
+        spy: StockPerformance | null;
+        performanceBySymbol: Record<string, StockPerformance | null>;
+        yieldBySymbol: Record<string, number | null>;
+        inceptionPriceByTicker: Record<string, number | null>;
+      };
+
+      setSpyPerf(data.spy ?? null);
+      setPerfBySymbol(data.performanceBySymbol ?? {});
+      setYieldBySymbol(data.yieldBySymbol ?? {});
+
       let v0: number | null = null;
       let spy0: number | null = null;
       if (startYmd) {
         const sharesMap = replayStockSharesUpTo(transactions, startYmd);
         const syms = [...sharesMap.entries()]
           .filter(([, sh]) => sh > 0)
-          .map(([s]) => s);
-        if (syms.length > 0) {
-          const [spyAtInception, ...stockAtInception] = await Promise.all([
-            fetchPriceOnDate(SPY_BENCHMARK, startYmd),
-            ...syms.map((s) => fetchPriceOnDate(s, startYmd)),
-          ]);
-          spy0 = spyAtInception;
-          let sum = 0;
-          for (let i = 0; i < syms.length; i++) {
-            const p = stockAtInception[i];
-            const sh = sharesMap.get(syms[i]!) ?? 0;
-            if (p != null && Number.isFinite(p) && sh > 0) sum += sh * p;
-          }
-          v0 = sum > 0 ? sum : null;
+          .map(([s]) => s.toUpperCase());
+        const prices = data.inceptionPriceByTicker ?? {};
+        spy0 = typeof prices[SPY_BENCHMARK] === "number" ? prices[SPY_BENCHMARK]! : null;
+        let sum = 0;
+        for (const s of syms) {
+          const p = prices[s];
+          const sh = sharesMap.get(s) ?? 0;
+          if (p != null && Number.isFinite(p) && sh > 0) sum += sh * p;
         }
+        v0 = sum > 0 ? sum : null;
       }
       setInceptionEquityV0(v0);
       setInceptionSpyPrice0(spy0);
+    } catch {
+      setSpyPerf(null);
+      setPerfBySymbol({});
+      setYieldBySymbol({});
+      setInceptionEquityV0(null);
+      setInceptionSpyPrice0(null);
     } finally {
-      setLoading(false);
+      setOverviewReady(true);
     }
   }, [symbols, transactions]);
 
@@ -216,26 +204,29 @@ function PortfolioOverviewCardsInner({
     });
   }, [holdings, perfBySymbol, period]);
 
-  /**
-   * Portfolio return vs S&P 500 (SPY) over the **same** window: from your first stock purchase
-   * through today. Uses Modified Dietz when you add capital after that day.
-   */
-  const benchmarkDiffPct = useMemo(() => {
+  const inceptionBenchmarkMetrics = useMemo(() => {
     if (
       inceptionEquityV0 == null ||
       inceptionEquityV0 <= 0 ||
       inceptionSpyPrice0 == null ||
       inceptionSpyPrice0 <= 0
     ) {
-      return null;
+      return { rPort: null as number | null, rSpy: null as number | null, diff: null as number | null };
     }
     const spyNow = spyPerf?.price ?? null;
-    if (spyNow == null || !Number.isFinite(spyNow) || spyNow <= 0) return null;
+    if (spyNow == null || !Number.isFinite(spyNow) || spyNow <= 0) {
+      return { rPort: null, rSpy: null, diff: null };
+    }
 
     const rPort = modifiedDietzReturnPct(inceptionEquityV0, equity, netFlowAfterInception);
-    if (rPort == null) return null;
     const rSpy = ((spyNow / inceptionSpyPrice0) - 1) * 100;
-    return rPort - rSpy;
+    if (!Number.isFinite(rSpy)) {
+      return { rPort, rSpy: null, diff: null };
+    }
+    if (rPort == null || !Number.isFinite(rPort)) {
+      return { rPort: null, rSpy, diff: null };
+    }
+    return { rPort, rSpy, diff: rPort - rSpy };
   }, [
     inceptionEquityV0,
     inceptionSpyPrice0,
@@ -284,15 +275,13 @@ function PortfolioOverviewCardsInner({
     return any ? sum : null;
   }, [holdings, yieldBySymbol, equity]);
 
+  const isEmptyOverview = holdings.length === 0;
+  const showMetricSkeleton = !isEmptyOverview && !overviewReady;
+
   return (
     <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-      {/* Value */}
-      <div
-        className={cn(
-          "rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]",
-          loading && "opacity-80",
-        )}
-      >
+      {/* Value — sync from holdings; never skeleton */}
+      <div className="rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
         <p className="text-xs font-medium text-[#71717A]">Value</p>
         <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight text-[#09090B]">
           {usd.format(netWorth)}
@@ -300,104 +289,153 @@ function PortfolioOverviewCardsInner({
         <p className="mt-2 text-sm text-[#71717A]">{usd.format(invested)} invested</p>
       </div>
 
-      {/* Total profit */}
-      <div
-        className={cn(
-          "rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]",
-          loading && "opacity-80",
-        )}
-      >
-        <p className="text-xs font-medium text-[#71717A]">Total profit</p>
-        <p
-          className={cn(
-            "mt-2 text-2xl font-semibold tabular-nums tracking-tight",
-            (profitDisplayUsd ?? 0) >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
-          )}
-        >
-          {profitDisplayUsd != null
-            ? `${profitDisplayUsd >= 0 ? "+" : ""}${usd.format(profitDisplayUsd)}`
-            : "—"}
-        </p>
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          <span
-            className={cn(
-              "text-sm font-medium tabular-nums",
-              (profitDisplayPct ?? 0) >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
+      {showMetricSkeleton ? (
+        <>
+          <OverviewMetricCardSkeleton />
+          <OverviewMetricCardSkeleton />
+          <OverviewMetricCardSkeleton />
+        </>
+      ) : (
+        <>
+          {/* Total profit */}
+          <div className="rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
+            <p className="text-xs font-medium text-[#71717A]">Total profit</p>
+            {isEmptyOverview ? (
+              <>
+                <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight text-[#16A34A]">
+                  +{usd.format(0)}
+                </p>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-medium tabular-nums text-[#16A34A]">+{pctFmt.format(0)}%</span>
+                  <span className="text-xs font-medium text-[#09090B]">ATH</span>
+                </div>
+              </>
+            ) : (
+              <>
+                <p
+                  className={cn(
+                    "mt-2 text-2xl font-semibold tabular-nums tracking-tight",
+                    (profitDisplayUsd ?? 0) >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
+                  )}
+                >
+                  {profitDisplayUsd != null
+                    ? `${profitDisplayUsd >= 0 ? "+" : ""}${usd.format(profitDisplayUsd)}`
+                    : "—"}
+                </p>
+                {period === "all" ? (
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <span
+                      className={cn(
+                        "text-sm font-medium tabular-nums",
+                        (inceptionBenchmarkMetrics.rPort ?? 0) >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
+                      )}
+                    >
+                      {inceptionBenchmarkMetrics.rPort != null
+                        ? `${inceptionBenchmarkMetrics.rPort >= 0 ? "+" : ""}${pctFmt.format(inceptionBenchmarkMetrics.rPort)}%`
+                        : "—"}
+                    </span>
+                    <span className="text-xs font-medium text-[#09090B]">ATH</span>
+                  </div>
+                ) : (
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <span
+                      className={cn(
+                        "text-sm font-medium tabular-nums",
+                        (profitDisplayPct ?? 0) >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
+                      )}
+                    >
+                      {profitDisplayPct != null
+                        ? `${profitDisplayPct >= 0 ? "+" : ""}${pctFmt.format(profitDisplayPct)}%`
+                        : "—"}
+                    </span>
+                    <div className="relative inline-flex items-center gap-0.5 rounded-md border border-[#E4E4E7] bg-[#FAFAFA] px-1.5 py-0.5">
+                      <select
+                        aria-label="Profit period"
+                        value={period}
+                        onChange={(e) => setPeriod(e.target.value as OverviewProfitPeriod)}
+                        className="cursor-pointer bg-transparent pr-5 text-xs font-medium text-[#09090B] outline-none"
+                      >
+                        {PERIOD_OPTIONS.map((o) => (
+                          <option key={o.id} value={o.id}>
+                            {o.label}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="pointer-events-none absolute right-1 h-3.5 w-3.5 text-[#71717A]" aria-hidden />
+                    </div>
+                  </div>
+                )}
+              </>
             )}
-          >
-            {profitDisplayPct != null
-              ? `${profitDisplayPct >= 0 ? "+" : ""}${pctFmt.format(profitDisplayPct)}%`
-              : "—"}
-          </span>
-          <div className="relative inline-flex items-center gap-0.5 rounded-md border border-[#E4E4E7] bg-[#FAFAFA] px-1.5 py-0.5">
-            <select
-              aria-label="Profit period"
-              value={period}
-              onChange={(e) => setPeriod(e.target.value as OverviewProfitPeriod)}
-              className="cursor-pointer bg-transparent pr-5 text-xs font-medium text-[#09090B] outline-none"
-            >
-              {PERIOD_OPTIONS.map((o) => (
-                <option key={o.id} value={o.id}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-1 h-3.5 w-3.5 text-[#71717A]" aria-hidden />
           </div>
-        </div>
-      </div>
 
-      {/* Benchmark */}
-      <div
-        className={cn(
-          "rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]",
-          loading && "opacity-80",
-        )}
-      >
-        <p className="text-xs font-medium text-[#71717A]">Benchmark</p>
-        <p
-          className={cn(
-            "mt-2 text-2xl font-semibold tabular-nums tracking-tight",
-            benchmarkDiffPct == null
-              ? "text-[#09090B]"
-              : benchmarkDiffPct >= 0
-                ? "text-[#16A34A]"
-                : "text-[#DC2626]",
-          )}
-        >
-          {benchmarkDiffPct != null
-            ? `${benchmarkDiffPct >= 0 ? "+" : ""}${pctFmt.format(benchmarkDiffPct)}%`
-            : "—"}
-        </p>
-        <p className="mt-2 text-sm leading-snug text-[#71717A]">
-          {benchmarkDiffPct == null
-            ? "Add a buy transaction to compare vs S&P 500 (SPY) from your start date"
-            : (
-                <>
-                  {benchmarkDiffPct >= 0
-                    ? "Portfolio is ahead of S&P 500"
-                    : "Portfolio trails S&P 500"}
-                  {inceptionDateLabel ? ` · since ${inceptionDateLabel}` : ""}
-                </>
-              )}
-        </p>
-      </div>
+          {/* S&P 500 */}
+          <div className="rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
+            <p className="text-xs font-medium text-[#71717A]">S&amp;P 500</p>
+            {isEmptyOverview ? (
+              <>
+                <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight text-[#16A34A]">
+                  +{pctFmt.format(0)}%
+                </p>
+                <p className="mt-2 text-sm leading-snug text-[#71717A]">Compare to S&amp;P 500</p>
+              </>
+            ) : (
+              <>
+                <p
+                  className={cn(
+                    "mt-2 text-2xl font-semibold tabular-nums tracking-tight",
+                    inceptionBenchmarkMetrics.rSpy == null
+                      ? "text-[#09090B]"
+                      : inceptionBenchmarkMetrics.rSpy >= 0
+                        ? "text-[#16A34A]"
+                        : "text-[#DC2626]",
+                  )}
+                >
+                  {inceptionBenchmarkMetrics.rSpy != null
+                    ? `${inceptionBenchmarkMetrics.rSpy >= 0 ? "+" : ""}${pctFmt.format(inceptionBenchmarkMetrics.rSpy)}%`
+                    : "—"}
+                </p>
+                <p className="mt-2 text-sm leading-snug text-[#71717A]">
+                  {inceptionBenchmarkMetrics.diff != null ? (
+                    inceptionBenchmarkMetrics.diff >= 0 ? (
+                      <>
+                        Portfolio is ahead on +
+                        {pctFmt.format(inceptionBenchmarkMetrics.diff)}%
+                      </>
+                    ) : (
+                      <>Portfolio trails on {pctFmt.format(inceptionBenchmarkMetrics.diff)}%</>
+                    )
+                  ) : (
+                    "Add a buy transaction to compare vs S&amp;P 500 (SPY) from your start date"
+                  )}
+                </p>
+              </>
+            )}
+          </div>
 
-      {/* Dividends */}
-      <div
-        className={cn(
-          "rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]",
-          loading && "opacity-80",
-        )}
-      >
-        <p className="text-xs font-medium text-[#71717A]">Dividends</p>
-        <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight text-[#09090B]">
-          {dividendWeightedYield != null ? `${pctFmt.format(dividendWeightedYield)}%` : "—"}
-        </p>
-        <p className="mt-2 text-sm text-[#71717A]">
-          {dividendAnnualUsd != null ? `${usd.format(dividendAnnualUsd)} annually` : "No dividend data"}
-        </p>
-      </div>
+          {/* Dividends */}
+          <div className="rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
+            <p className="text-xs font-medium text-[#71717A]">Dividends</p>
+            {isEmptyOverview ? (
+              <>
+                <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight text-[#09090B]">
+                  {pctFmt.format(0)}%
+                </p>
+                <p className="mt-2 text-sm text-[#71717A]">{usd.format(0)} annually</p>
+              </>
+            ) : (
+              <>
+                <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight text-[#09090B]">
+                  {dividendWeightedYield != null ? `${pctFmt.format(dividendWeightedYield)}%` : "—"}
+                </p>
+                <p className="mt-2 text-sm text-[#71717A]">
+                  {dividendAnnualUsd != null ? `${usd.format(dividendAnnualUsd)} annually` : "No dividend data"}
+                </p>
+              </>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

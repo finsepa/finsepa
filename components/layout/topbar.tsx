@@ -6,7 +6,7 @@ import { Bell, Folder, Search, Star } from "lucide-react";
 import { TOPBAR_SHOW_NOTIFICATIONS } from "@/lib/features/topbar-flags";
 import { TransactionPortfolioField } from "@/components/portfolio/transaction-portfolio-field";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
-import { portfolioCostBasisPlusCash } from "@/lib/portfolio/portfolio-total-value";
+import { netCashUsd, totalNetWorth } from "@/lib/portfolio/overview-metrics";
 import { OPEN_SEARCH_EVENT, SearchModal } from "./search-modal";
 import { TopbarQuickAddMenu } from "./topbar-quick-add-menu";
 import { TopbarUserMenu } from "./topbar-user-menu";
@@ -22,11 +22,13 @@ function TopbarPortfolioBlock() {
   const { selectedPortfolioId, holdingsByPortfolioId, transactionsByPortfolioId } =
     usePortfolioWorkspace();
 
+  /** Same as Portfolio → Overview “Value”: equity market value + net cash. */
   const total = useMemo(() => {
     if (selectedPortfolioId == null) return 0;
     const holdings = holdingsByPortfolioId[selectedPortfolioId] ?? [];
     const transactions = transactionsByPortfolioId[selectedPortfolioId] ?? [];
-    return portfolioCostBasisPlusCash(holdings, transactions);
+    const cash = netCashUsd(transactions);
+    return totalNetWorth(holdings, cash);
   }, [selectedPortfolioId, holdingsByPortfolioId, transactionsByPortfolioId]);
 
   const amountClass = total < 0 ? "text-red-600" : "text-[#09090B]";

@@ -5,6 +5,7 @@ import { startTransition, useCallback, useEffect, useId, useMemo, useState } fro
 import { X } from "lucide-react";
 
 import { AddCashModal } from "@/components/layout/add-cash-modal";
+import { EditTransactionModal } from "@/components/layout/edit-transaction-modal";
 import { NewTransactionModal } from "@/components/layout/new-transaction-modal";
 import { ClearableInput } from "@/components/layout/clearable-input";
 import { PortfolioWorkspaceContext } from "@/components/portfolio/portfolio-workspace-context";
@@ -21,6 +22,14 @@ import {
   savePersistedPortfolioStateForUser,
   type PersistedPortfolioState,
 } from "@/lib/portfolio/portfolio-storage";
+
+/** Always keep at least one portfolio; created when the user deletes the last one. */
+const DEFAULT_PORTFOLIO_NAME = "My Portfolio";
+
+function ensureAtLeastOnePortfolio(portfolios: PortfolioEntry[]): PortfolioEntry[] {
+  if (portfolios.length > 0) return portfolios;
+  return [{ id: newPortfolioId(), name: DEFAULT_PORTFOLIO_NAME }];
+}
 
 function ModalField({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -216,7 +225,7 @@ export function PortfolioWorkspaceProvider({
   const portfolioSeed = useMemo(() => {
     const id = newPortfolioId();
     return {
-      list: [{ id, name: "My portfolio" }] as PortfolioEntry[],
+      list: [{ id, name: DEFAULT_PORTFOLIO_NAME }] as PortfolioEntry[],
       selectedId: id,
     };
   }, []);
@@ -229,6 +238,7 @@ export function PortfolioWorkspaceProvider({
   const [createPortfolioOpen, setCreatePortfolioOpen] = useState(false);
   const [newTransactionOpen, setNewTransactionOpen] = useState(false);
   const [addCashModalOpen, setAddCashModalOpen] = useState(false);
+  const [editTransaction, setEditTransaction] = useState<PortfolioTransaction | null>(null);
   const [holdingsByPortfolioId, setHoldingsByPortfolioId] = useState<Record<string, PortfolioHolding[]>>(
     {},
   );
@@ -335,6 +345,23 @@ export function PortfolioWorkspaceProvider({
     }));
   }, []);
 
+  const setPortfolioTransactions = useCallback((portfolioId: string, transactions: PortfolioTransaction[]) => {
+    setTransactionsByPortfolioId((prev) => ({ ...prev, [portfolioId]: transactions }));
+  }, []);
+
+  const setPortfolioHoldings = useCallback((portfolioId: string, holdings: PortfolioHolding[]) => {
+    setHoldingsByPortfolioId((prev) => ({ ...prev, [portfolioId]: holdings }));
+  }, []);
+
+  const openEditTransaction = useCallback((t: PortfolioTransaction) => {
+    setSelectedPortfolioId(t.portfolioId);
+    setEditTransaction(t);
+  }, []);
+
+  const closeEditTransaction = useCallback(() => {
+    setEditTransaction(null);
+  }, []);
+
   const openEditPortfolio = useCallback((id: string) => {
     setCreatePortfolioOpen(false);
     setEditPortfolioId(id);
@@ -364,11 +391,13 @@ export function PortfolioWorkspaceProvider({
         setAddCashModalOpen(false);
       } else if (newTransactionOpen) {
         setNewTransactionOpen(false);
+      } else if (editTransaction) {
+        setEditTransaction(null);
       }
     }
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [addCashModalOpen, createPortfolioOpen, editPortfolioOpen, newTransactionOpen]);
+  }, [addCashModalOpen, createPortfolioOpen, editPortfolioOpen, editTransaction, newTransactionOpen]);
 
   useEffect(() => {
     if (!newTransactionOpen) {
@@ -395,6 +424,11 @@ export function PortfolioWorkspaceProvider({
       addCashModalOpen,
       openAddCash,
       closeAddCash,
+      editTransaction,
+      openEditTransaction,
+      closeEditTransaction,
+      setPortfolioTransactions,
+      setPortfolioHoldings,
     }),
     [
       portfolios,
@@ -403,6 +437,8 @@ export function PortfolioWorkspaceProvider({
       addHolding,
       transactionsByPortfolioId,
       addTransaction,
+      setPortfolioTransactions,
+      setPortfolioHoldings,
       openEditPortfolio,
       openCreatePortfolio,
       newTransactionOpen,
@@ -411,6 +447,9 @@ export function PortfolioWorkspaceProvider({
       addCashModalOpen,
       openAddCash,
       closeAddCash,
+      editTransaction,
+      openEditTransaction,
+      closeEditTransaction,
     ],
   );
 
@@ -419,6 +458,11 @@ export function PortfolioWorkspaceProvider({
       {children}
       <NewTransactionModal open={newTransactionOpen} onClose={closeNewTransaction} />
       <AddCashModal open={addCashModalOpen} onClose={closeAddCash} />
+      <EditTransactionModal
+        open={editTransaction != null}
+        transaction={editTransaction}
+        onClose={closeEditTransaction}
+      />
       {editPortfolioOpen && editPortfolioId ? (
         <EditPortfolioModal
           initialName={portfolios.find((p) => p.id === editPortfolioId)?.name ?? ""}
@@ -432,10 +476,8 @@ export function PortfolioWorkspaceProvider({
             setPortfolios((prev) => {
               if (!id) return prev;
               if (t.length === 0) {
-                const next = prev.filter((p) => p.id !== id);
-                setSelectedPortfolioId((sel) =>
-                  sel !== id ? sel : next[0]?.id ?? null,
-                );
+                const next = ensureAtLeastOnePortfolio(prev.filter((p) => p.id !== id));
+                setSelectedPortfolioId((sel) => (sel !== id ? sel : next[0]!.id));
                 setHoldingsByPortfolioId((h) => {
                   const copy = { ...h };
                   delete copy[id];
@@ -457,10 +499,8 @@ export function PortfolioWorkspaceProvider({
             const id = editPortfolioId;
             if (!id) return;
             setPortfolios((prev) => {
-              const next = prev.filter((p) => p.id !== id);
-              setSelectedPortfolioId((sel) =>
-                sel !== id ? sel : next[0]?.id ?? null,
-              );
+              const next = ensureAtLeastOnePortfolio(prev.filter((p) => p.id !== id));
+              setSelectedPortfolioId((sel) => (sel !== id ? sel : next[0]!.id));
               setHoldingsByPortfolioId((h) => {
                 const copy = { ...h };
                 delete copy[id];

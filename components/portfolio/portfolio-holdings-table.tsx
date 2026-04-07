@@ -1,7 +1,7 @@
 "use client";
 
 import { memo } from "react";
-import { ArrowUp, MoreHorizontal, Settings } from "lucide-react";
+import { MoreHorizontal } from "lucide-react";
 
 import { CompanyLogo } from "@/components/screener/company-logo";
 import { cn } from "@/lib/utils";
@@ -48,70 +48,72 @@ function PortfolioHoldingsTableInner({
   const sorted = [...rows].sort((a, b) => b.weightPct - a.weightPct);
 
   return (
-    <div className={cn("w-full overflow-x-auto pb-8", className)}>
-      <table className="w-full min-w-[960px] border-collapse text-sm">
+    <div
+      className={cn(
+        "w-full overflow-x-auto border-t border-[#E4E4E7] pb-8",
+        className,
+      )}
+    >
+      <table className="w-full min-w-[960px] border-collapse">
         <thead>
-          <tr className="border-b border-[#E4E4E7] text-left text-[#71717A]">
-            <th className="pb-3 pr-4 font-medium">
-              <span className="inline-flex items-center gap-1">
-                Asset
-                <Settings className="h-3.5 w-3.5 opacity-60" aria-hidden />
-              </span>
-            </th>
-            <th className="whitespace-nowrap pb-3 pr-4 font-medium">Average price</th>
-            <th className="whitespace-nowrap pb-3 pr-4 font-medium">Cost basis</th>
-            <th className="whitespace-nowrap pb-3 pr-4 font-medium">Current value</th>
-            <th className="whitespace-nowrap pb-3 pr-4 font-medium">Return % (tot.)</th>
-            <th className="whitespace-nowrap pb-3 pr-4 font-medium">Return (tot.)</th>
-            <th className="whitespace-nowrap pb-3 pr-4 font-medium">
-              <span className="inline-flex items-center gap-1">
-                Weight
-                <ArrowUp className="h-3.5 w-3.5" aria-hidden />
-              </span>
-            </th>
-            <th className="w-12 pb-3 pr-0 font-medium" aria-label="Actions" />
+          <tr className="min-h-[44px] border-b border-[#E4E4E7] bg-white text-[14px] font-medium leading-5 text-[#71717A]">
+            <th className="whitespace-nowrap px-4 py-3 text-left">Asset</th>
+            <th className="whitespace-nowrap px-4 py-3 text-center">Average price</th>
+            <th className="whitespace-nowrap px-4 py-3 text-center">Cost basis</th>
+            <th className="whitespace-nowrap px-4 py-3 text-center">Current value</th>
+            <th className="whitespace-nowrap px-4 py-3 text-center">Return % (tot.)</th>
+            <th className="whitespace-nowrap px-4 py-3 text-center">Return (tot.)</th>
+            <th className="whitespace-nowrap px-4 py-3 text-center">Weight</th>
+            <th className="w-12 px-4 py-3 text-right" aria-label="Actions" />
           </tr>
         </thead>
         <tbody>
           {sorted.map(({ holding: h, retUsd, retPct, weightPct }) => (
-            <tr key={h.id} className="border-b border-[#E4E4E7]">
-              <td className="py-3 pr-4">
+            <tr
+              key={h.id}
+              className="h-[60px] max-h-[60px] border-b border-[#E4E4E7] transition-colors duration-75 last:border-b-0 hover:bg-neutral-50"
+            >
+              <td className="align-middle px-4 py-0">
                 <div className="flex items-center gap-3">
                   <CompanyLogo name={h.name} logoUrl={h.logoUrl ?? ""} symbol={h.symbol} />
                   <div className="min-w-0">
-                    <div className="font-semibold text-[#09090B]">{h.name}</div>
-                    <div className="text-xs text-[#71717A]">{h.symbol}</div>
+                    <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">{h.name}</div>
+                    <div className="text-[12px] font-normal leading-4 text-[#71717A]">{h.symbol}</div>
                   </div>
                 </div>
               </td>
-              <td className="whitespace-nowrap py-3 pr-4 tabular-nums text-[#09090B]">
+              <td className="align-middle whitespace-nowrap px-4 py-3 text-center font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
                 {usd.format(h.avgPrice)}
               </td>
-              <td className="whitespace-nowrap py-3 pr-4 tabular-nums text-[#09090B]">
+              <td className="align-middle whitespace-nowrap px-4 py-3 text-center font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
                 {usd0.format(h.costBasis)}
               </td>
-              <td className="whitespace-nowrap py-3 pr-4">
-                <div className="font-semibold tabular-nums text-[#09090B]">{usd0.format(h.currentValue)}</div>
-                <div className="text-xs tabular-nums text-[#71717A]">{usd.format(h.marketPrice)}</div>
+              <td className="align-middle whitespace-nowrap px-4 py-3 text-center">
+                <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#09090B]">
+                  {usd0.format(h.currentValue)}
+                </div>
+                <div className="text-[12px] font-normal leading-4 tabular-nums text-[#71717A]">
+                  {usd.format(h.marketPrice)}
+                </div>
               </td>
               <td
-                className={`whitespace-nowrap py-3 pr-4 font-medium tabular-nums ${
-                  retPct >= 0 ? "text-emerald-600" : "text-red-600"
+                className={`align-middle whitespace-nowrap px-4 py-3 text-center text-[14px] font-medium leading-5 tabular-nums ${
+                  retPct >= 0 ? "text-[#16A34A]" : "text-[#DC2626]"
                 }`}
               >
                 {formatSignedPct(retPct)}
               </td>
               <td
-                className={`whitespace-nowrap py-3 pr-4 font-medium tabular-nums ${
-                  retUsd >= 0 ? "text-emerald-600" : "text-red-600"
+                className={`align-middle whitespace-nowrap px-4 py-3 text-center text-[14px] font-medium leading-5 tabular-nums ${
+                  retUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]"
                 }`}
               >
                 {formatSignedUsd(retUsd)}
               </td>
-              <td className="whitespace-nowrap py-3 pr-4 tabular-nums text-[#09090B]">
+              <td className="align-middle whitespace-nowrap px-4 py-3 text-center font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
                 {pct.format(weightPct)}%
               </td>
-              <td className="py-3 pr-0 text-right">
+              <td className="align-middle px-4 py-3 text-right">
                 <button
                   type="button"
                   aria-label="More"

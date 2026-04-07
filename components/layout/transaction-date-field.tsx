@@ -24,16 +24,21 @@ export function TransactionDateField({
         <button
           type="button"
           className={cn(
-            "flex h-9 w-full items-center justify-between gap-2 rounded-[10px] bg-[#F4F4F5] px-4 text-left text-sm text-[#09090B] transition-colors hover:bg-[#EBEBEB]",
+            "flex h-9 w-full items-center justify-between gap-2 rounded-[10px] bg-[#F4F4F5] px-4 text-left text-sm font-normal text-[#09090B] transition-colors hover:bg-[#EBEBEB]",
           )}
         >
           <span className="tabular-nums">{format(date, "MM/dd/yyyy")}</span>
           <CalendarIcon className="h-5 w-5 shrink-0 text-[#09090B]" aria-hidden />
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start" sideOffset={6}>
+      <PopoverContent
+        className="w-auto max-w-[min(100vw-2rem,320px)] shrink-0 overflow-hidden rounded-xl border border-[#E4E4E7] bg-white p-0 shadow-[0px_10px_16px_0px_rgba(10,10,10,0.1),0px_4px_6px_0px_rgba(10,10,10,0.04)]"
+        align="start"
+        sideOffset={8}
+      >
         <Calendar
           mode="single"
+          showOutsideDays
           selected={date}
           onSelect={(d) => {
             if (d) {

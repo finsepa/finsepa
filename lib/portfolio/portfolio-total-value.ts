@@ -1,8 +1,8 @@
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 
 /**
- * Total shown in the top bar: sum of positions’ **cost basis** (Overview) plus **net cash**
- * (ledger sum of `sum`, same as Cash tab).
+ * Cost basis of positions plus net cash (ledger `sum`). Overview **Value** uses market value
+ * (`totalNetWorth`); the top bar uses that same figure for parity with the portfolio page.
  */
 export function portfolioCostBasisPlusCash(
   holdings: PortfolioHolding[],

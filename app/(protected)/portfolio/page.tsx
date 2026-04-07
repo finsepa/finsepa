@@ -48,8 +48,9 @@ function PortfolioPageInner() {
     selectedPortfolioId != null ? transactionsByPortfolioId[selectedPortfolioId] ?? [] : [];
 
   return (
-    <div className="flex min-h-full flex-col bg-white">
-      <div className="flex shrink-0 items-center justify-between gap-4 border-b border-[#E4E4E7] px-9 py-4">
+    <div className="flex min-h-full flex-col bg-white px-9 py-6">
+      {/* Match Screener page shell: single px-9 py-6; mb-6 mirrors UnderlineTabs mb-6 between major sections */}
+      <div className="mb-6 flex shrink-0 items-center justify-between gap-4">
         <div className="flex min-w-0 items-center gap-2">
           <h1 className="truncate text-2xl font-semibold tracking-tight text-[#09090B]">{title}</h1>
           <TransactionPortfolioField variant="compact" />
@@ -57,9 +58,9 @@ function PortfolioPageInner() {
         <PortfolioQuickAddMenu aria-label="Portfolio quick add" />
       </div>
 
-      <div className="flex-1 px-9 py-6">
-        <PortfolioPageTabs active={viewTab} onChange={onTabChange} />
+      <PortfolioPageTabs active={viewTab} onChange={onTabChange} />
 
+      <div className="flex min-h-0 flex-1 flex-col">
         {viewTab === "Overview" ? (
           <>
             <PortfolioOverviewCards holdings={holdings} transactions={transactions} />
@@ -83,12 +84,7 @@ function PortfolioPageInner() {
 }
 
 function PortfolioPageFallback() {
-  return (
-    <div className="flex min-h-full flex-col bg-white">
-      <div className="h-[73px] shrink-0 border-b border-[#E4E4E7] px-9 py-4" />
-      <div className="flex-1 px-9 py-6" />
-    </div>
-  );
+  return <div className="min-h-[40vh] bg-white px-9 py-6" aria-hidden />;
 }
 
 export default function PortfolioPage() {
