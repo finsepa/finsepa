@@ -18,8 +18,6 @@ export default async function AccountPage() {
   const firstName = typeof m.first_name === "string" ? m.first_name : "";
   const lastName = typeof m.last_name === "string" ? m.last_name : "";
   const avatarUrl = avatarUrlFromUser(user);
-  const position = typeof m.position === "string" ? m.position : "Individual Investor";
-  const emailNotifications = m.email_notifications === false ? false : true;
 
   return (
     <AccountPageContent
@@ -28,8 +26,6 @@ export default async function AccountPage() {
         firstName,
         lastName,
         avatarUrl,
-        position,
-        emailNotifications,
         userInitials: initialsFromUser(user),
       }}
     />

@@ -28,7 +28,7 @@ import { MiniTable } from "./mini-table";
 import { KeyStats } from "./key-stats";
 import { LatestNews } from "./latest-news";
 import type { StockPageInitialData } from "@/lib/market/stock-page-initial-data";
-import type { StockChartRange } from "@/lib/market/stock-chart-types";
+import type { StockChartRange, StockChartSeries } from "@/lib/market/stock-chart-types";
 import { WATCHLIST_MUTATED_EVENT } from "@/lib/watchlist/constants";
 
 function parseStockHeaderMetaPayload(json: {
@@ -65,6 +65,7 @@ export function StockPageContent({
   const prevTickerRef = useRef<string | null>(null);
 
   const [range, setRange] = useState<StockChartRange>("1Y");
+  const [chartSeries, setChartSeries] = useState<StockChartSeries>("price");
   const ticker = (routeTicker?.trim() ? routeTicker.trim() : "AAPL").toUpperCase();
 
   const activeTab: StockDetailTabId =
@@ -196,6 +197,7 @@ export function StockPageContent({
         chartHovering={chartUi.isHovering && !chartUi.selectionActive}
         headerMeta={headerMeta}
         headerMetaLoading={headerMetaLoading}
+        headerChartMetric={chartSeries}
       />
 
       <StockDetailTabNav activeTab={activeTab} onTabChange={setTabInUrl} />
@@ -207,11 +209,17 @@ export function StockPageContent({
           aria-hidden={activeTab !== "overview"}
           className={activeTab === "overview" ? "space-y-5" : "hidden"}
         >
-          <ChartControls activeRange={range} onRangeChange={setRange} />
+          <ChartControls
+            activeRange={range}
+            onRangeChange={setRange}
+            chartSeries={chartSeries}
+            onChartSeriesChange={setChartSeries}
+          />
           <PriceChart
             kind="stock"
             symbol={ticker}
             range={range}
+            series={chartSeries}
             onDisplayChange={onChartDisplay}
             initialChart={initialChartMemo}
           />

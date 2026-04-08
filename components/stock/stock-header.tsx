@@ -11,6 +11,8 @@ import {
   formatWatchlistsCountLabel,
   type StockDetailHeaderMeta,
 } from "@/lib/market/stock-header-meta";
+import type { StockChartSeries } from "@/lib/market/stock-chart-types";
+import { formatUsdCompact } from "@/lib/market/key-stats-basic-format";
 import { WatchlistStarButton } from "@/components/watchlist/watchlist-star-button";
 
 type Props = {
@@ -32,6 +34,8 @@ type Props = {
   chartHovering?: boolean;
   headerMeta: StockDetailHeaderMeta | null;
   headerMetaLoading: boolean;
+  /** Overview chart metric — formats the large header number as price vs market cap. */
+  headerChartMetric?: StockChartSeries;
 };
 
 export function StockHeader({
@@ -47,6 +51,7 @@ export function StockHeader({
   chartHovering = false,
   headerMeta,
   headerMetaLoading,
+  headerChartMetric = "price",
 }: Props) {
   const meta = getStockDetailMetaFromTicker(ticker);
   const symbol = meta.ticker;
@@ -156,7 +161,11 @@ export function StockHeader({
               chartHovering ? "scale-[1.01]" : "scale-100"
             }`}
           >
-            {chartLoading || anim.price == null ? "—" : `$${anim.price.toFixed(2)}`}
+            {chartLoading || anim.price == null
+              ? "—"
+              : headerChartMetric === "marketCap"
+                ? formatUsdCompact(anim.price)
+                : `$${anim.price.toFixed(2)}`}
           </span>
           <span
             className={`text-[15px] font-medium tabular-nums transition-colors duration-200 ease-out ${
@@ -165,7 +174,9 @@ export function StockHeader({
           >
             {chartLoading || !hasChange || anim.abs == null || anim.pct == null
               ? "—"
-              : `${isPositive ? "+" : ""}${anim.abs.toFixed(2)} (${isPositive ? "+" : ""}${anim.pct.toFixed(2)}%)`}
+              : headerChartMetric === "marketCap"
+                ? `${isPositive ? "+" : ""}${formatUsdCompact(anim.abs)} (${isPositive ? "+" : ""}${anim.pct.toFixed(2)}%)`
+                : `${isPositive ? "+" : ""}${anim.abs.toFixed(2)} (${isPositive ? "+" : ""}${anim.pct.toFixed(2)}%)`}
           </span>
           <span className="text-[13px] text-[#71717A]">{periodLabelOverride ?? periodLabel}</span>
         </div>

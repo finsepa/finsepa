@@ -1,8 +1,10 @@
 import "server-only";
 
+import { format, parse, subDays } from "date-fns";
+
 import { getEodhdApiKey } from "@/lib/env/server";
 import { fetchEodhdCryptoFundamentalsMeta } from "@/lib/market/eodhd-crypto-fundamentals-meta";
-import type { EodhdDailyBar } from "@/lib/market/eodhd-eod";
+import type { EodhdDailyBar, EodhdOpenOnDateResult } from "@/lib/market/eodhd-eod";
 
 /** Normalized upper-case ticker (BTC, ETH, …) — universe includes search-only assets. */
 export type SupportedCryptoTicker = string;
@@ -97,6 +99,53 @@ export function toSupportedCryptoTicker(symbolOrTicker: string): SupportedCrypto
 export function toEodhdCryptoSymbol(symbolOrTicker: string): string | null {
   const s = toSupportedCryptoTicker(symbolOrTicker);
   return s ? CRYPTO_BY_SYMBOL[s]!.eodhdSymbol : null;
+}
+
+/**
+ * Last session on or before calendar {@link ymd} using crypto daily bars (close).
+ * Same window as stock `fetchEodhdOpenPriceOnOrBefore` (28d lookback).
+ */
+export async function fetchEodhdCryptoOpenPriceOnOrBefore(
+  symbolOrTicker: string,
+  ymd: string,
+): Promise<EodhdOpenOnDateResult | null> {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return null;
+
+  const supported = toSupportedCryptoTicker(symbolOrTicker);
+  if (!supported) return null;
+
+  const meta = ALL_CRYPTO_METAS.find((m) => m.symbol.toUpperCase() === supported.toUpperCase());
+  if (!meta) return null;
+
+  const day = parse(ymd, "yyyy-MM-dd", new Date());
+  const from = format(subDays(day, 28), "yyyy-MM-dd");
+  const to = ymd;
+
+  const candidates =
+    meta.symbol === "TON" && meta.eodhdAltSymbols?.length
+      ? [meta.eodhdSymbol, ...meta.eodhdAltSymbols]
+      : [meta.eodhdSymbol];
+
+  for (const eodSym of candidates) {
+    const bars = await fetchEodhdCryptoDailyBars(eodSym, from, to);
+    if (!bars?.length) continue;
+
+    const sorted = [...bars].sort((a, b) => a.date.localeCompare(b.date));
+    const onOrBefore = sorted.filter((r) => r.date <= ymd);
+    const pick = onOrBefore.length ? onOrBefore[onOrBefore.length - 1]! : null;
+    if (!pick) continue;
+
+    const price = pick.close;
+    if (!Number.isFinite(price)) continue;
+
+    return {
+      price,
+      barDate: pick.date,
+      source: "close",
+    };
+  }
+
+  return null;
 }
 
 export async function fetchEodhdCryptoDailyBars(eodhdCryptoSymbol: string, from: string, to: string): Promise<EodhdDailyBar[] | null> {

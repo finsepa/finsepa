@@ -29,7 +29,8 @@ export function AssetPageTopLoader() {
     pathname.startsWith("/stock/") ||
     pathname.startsWith("/crypto/") ||
     pathname.startsWith("/index/") ||
-    pathname.startsWith("/charting");
+    pathname.startsWith("/charting") ||
+    pathname.startsWith("/portfolio");
 
   useEffect(() => {
     if (!isAssetPath) {

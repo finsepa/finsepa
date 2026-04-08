@@ -266,12 +266,38 @@ export function PortfolioWorkspaceProvider({
           const res = await fetch("/api/portfolio/workspace", { credentials: "include" });
           if (cancelled) return;
           if (res.ok) {
-            const data = (await res.json()) as { state?: unknown; warning?: string };
+            const data = (await res.json()) as {
+              state?: unknown;
+              updatedAt?: string | null;
+              warning?: string;
+            };
             const remote =
               data.state != null ? parsePersistedPortfolioUnknown(data.state) : null;
+            const remoteTime =
+              data.updatedAt && !Number.isNaN(Date.parse(data.updatedAt)) ?
+                Date.parse(data.updatedAt)
+              : 0;
+            const localTime = local?.savedAt ?? 0;
+
             if (remote && remote.portfolios.length > 0) {
-              applyWorkspaceState(remote);
-              savePersistedPortfolioStateForUser(userId, remote);
+              const localIsNewer =
+                local && local.portfolios.length > 0 && localTime > remoteTime;
+              if (localIsNewer) {
+                applyWorkspaceState(local);
+                savePersistedPortfolioStateForUser(userId, local);
+                await fetch("/api/portfolio/workspace", {
+                  method: "PUT",
+                  credentials: "include",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ state: local }),
+                });
+              } else {
+                applyWorkspaceState(remote);
+                savePersistedPortfolioStateForUser(userId, {
+                  ...remote,
+                  savedAt: remoteTime > 0 ? remoteTime : Date.now(),
+                });
+              }
             } else if (local) {
               applyWorkspaceState(local);
               await fetch("/api/portfolio/workspace", {
@@ -297,18 +323,39 @@ export function PortfolioWorkspaceProvider({
     };
   }, [userId, applyWorkspaceState]);
 
-  /** Debounced persist: device + best-effort cloud sync. */
+  /** Immediate localStorage write so data survives fast sign-out / navigation (debounce cancel). */
+  useEffect(() => {
+    if (!workspaceHydrated) return;
+    const snapshot: PersistedPortfolioState = {
+      v: 1,
+      savedAt: Date.now(),
+      portfolios,
+      selectedPortfolioId,
+      holdingsByPortfolioId,
+      transactionsByPortfolioId,
+    };
+    savePersistedPortfolioStateForUser(userId, snapshot);
+  }, [
+    workspaceHydrated,
+    userId,
+    portfolios,
+    selectedPortfolioId,
+    holdingsByPortfolioId,
+    transactionsByPortfolioId,
+  ]);
+
+  /** Debounced cloud sync (local is already up to date via effect above). */
   useEffect(() => {
     if (!workspaceHydrated) return;
     const id = window.setTimeout(() => {
       const snapshot: PersistedPortfolioState = {
         v: 1,
+        savedAt: Date.now(),
         portfolios,
         selectedPortfolioId,
         holdingsByPortfolioId,
         transactionsByPortfolioId,
       };
-      savePersistedPortfolioStateForUser(userId, snapshot);
       void fetch("/api/portfolio/workspace", {
         method: "PUT",
         credentials: "include",

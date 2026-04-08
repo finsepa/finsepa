@@ -17,6 +17,8 @@ import {
 import { TransactionPortfolioField } from "@/components/portfolio/transaction-portfolio-field";
 import { newHoldingId, newTransactionRowId } from "@/components/portfolio/portfolio-types";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
+import { getCryptoLogoUrl } from "@/lib/crypto/crypto-logo-url";
+import { fetchLiveMarketPriceClient, fetchPriceOnDateClient } from "@/lib/portfolio/client-symbol-quotes";
 import { lotUnrealizedPnL, mergeBuyIntoPosition } from "@/lib/portfolio/holding-position";
 
 const TABS = ["Trades", "Incomes", "Expenses", "Cash"] as const;
@@ -67,7 +69,6 @@ export function NewTransactionModal({ open, onClose }: Props) {
   const [shares, setShares] = useState("");
   const [price, setPrice] = useState("");
   const [fees, setFees] = useState("");
-  const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const transactionTotal = useMemo(() => {
@@ -94,36 +95,16 @@ export function NewTransactionModal({ open, onClose }: Props) {
 
     const ymd = format(transactionDate, "yyyy-MM-dd");
     const gen = ++priceFetchGen.current;
-    const ac = new AbortController();
 
-    (async () => {
-      try {
-        const res = await fetch(
-          `/api/stocks/${encodeURIComponent(sym)}/price-on-date?date=${encodeURIComponent(ymd)}`,
-          { signal: ac.signal },
-        );
-        if (gen !== priceFetchGen.current) return;
-        if (!res.ok) {
-          setPrice("");
-          return;
-        }
-        const data = (await res.json()) as { price?: number | null };
-        if (gen !== priceFetchGen.current) return;
-        if (typeof data.price === "number" && Number.isFinite(data.price)) {
-          setPrice(formatPriceInputFromApi(data.price));
-        } else {
-          setPrice("");
-        }
-      } catch (e) {
-        if ((e as Error).name === "AbortError") return;
-        if (gen !== priceFetchGen.current) return;
+    void (async () => {
+      const p = await fetchPriceOnDateClient(sym, ymd);
+      if (gen !== priceFetchGen.current) return;
+      if (p != null) {
+        setPrice(formatPriceInputFromApi(p));
+      } else {
         setPrice("");
       }
     })();
-
-    return () => {
-      ac.abort();
-    };
   }, [open, selectedCompany?.symbol, transactionDate]);
 
   useEffect(() => {
@@ -144,7 +125,6 @@ export function NewTransactionModal({ open, onClose }: Props) {
     setShares("");
     setPrice("");
     setFees("");
-    setNote("");
     setSubmitting(false);
   }, [open]);
 
@@ -179,18 +159,8 @@ export function NewTransactionModal({ open, onClose }: Props) {
 
     setSubmitting(true);
     try {
-      let marketPrice = pr;
-      try {
-        const res = await fetch(`/api/stocks/${encodeURIComponent(sym)}/performance`);
-        if (res.ok) {
-          const data = (await res.json()) as { price?: number | null };
-          if (typeof data.price === "number" && Number.isFinite(data.price) && data.price > 0) {
-            marketPrice = data.price;
-          }
-        }
-      } catch {
-        /* use trade price */
-      }
+      const live = await fetchLiveMarketPriceClient(sym);
+      const marketPrice = live ?? pr;
 
       let logoUrl: string | null = null;
       try {
@@ -203,6 +173,9 @@ export function NewTransactionModal({ open, onClose }: Props) {
         }
       } catch {
         logoUrl = null;
+      }
+      if (!logoUrl?.trim()) {
+        logoUrl = getCryptoLogoUrl(sym);
       }
 
       const lotCost = sh * pr + fee;
@@ -357,16 +330,6 @@ export function NewTransactionModal({ open, onClose }: Props) {
                 onChange={setFees}
                 placeholder="Fee"
                 clearLabel="Clear fees"
-              />
-            </Field>
-
-            <Field label="Note">
-              <ClearableInput
-                type="text"
-                value={note}
-                onChange={setNote}
-                placeholder="Type something"
-                clearLabel="Clear note"
               />
             </Field>
 

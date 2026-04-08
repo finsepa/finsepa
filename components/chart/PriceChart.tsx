@@ -27,9 +27,23 @@ import {
 } from "@/components/chart/chart-display-metrics";
 import { horzTimeToUnixSeconds, pointAtChartX } from "@/components/chart/chart-selection-utils";
 import { formatAssetChartTimestamp } from "@/lib/market/chart-timestamp-format";
-import type { StockChartRange, StockChartPoint } from "@/lib/market/stock-chart-types";
+import type { StockChartRange, StockChartPoint, StockChartSeries } from "@/lib/market/stock-chart-types";
 
 const MIN_DRAG_PX = 8;
+
+function formatStockPriceAxis(p: number): string {
+  return p.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function formatMarketCapAxis(n: number): string {
+  const abs = Math.abs(n);
+  const sign = n < 0 ? "-" : "";
+  if (abs >= 1e12) return `${sign}$${(abs / 1e12).toFixed(2)}T`;
+  if (abs >= 1e9) return `${sign}$${(abs / 1e9).toFixed(2)}B`;
+  if (abs >= 1e6) return `${sign}$${(abs / 1e6).toFixed(2)}M`;
+  if (abs >= 1e3) return `${sign}$${(abs / 1e3).toFixed(2)}K`;
+  return `${sign}$${abs.toFixed(0)}`;
+}
 
 export type ChartDisplayState = {
   loading: boolean;
@@ -48,6 +62,8 @@ type Props = {
   kind: "stock" | "crypto";
   symbol: string;
   range: StockChartRange;
+  /** Stock overview: price vs market cap (market cap uses price × latest shares outstanding per point). */
+  series?: StockChartSeries;
   height?: number;
   onDisplayChange?: (state: ChartDisplayState) => void;
   /** Server-provided series for the default overview range — avoids a duplicate chart fetch on first paint. */
@@ -92,7 +108,15 @@ function SelectionLayers({ containerWidth, band }: { containerWidth: number; ban
   );
 }
 
-export function PriceChart({ kind, symbol, range, height = 320, onDisplayChange, initialChart }: Props) {
+export function PriceChart({
+  kind,
+  symbol,
+  range,
+  series = "price",
+  height = 320,
+  onDisplayChange,
+  initialChart,
+}: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const initialConsumedRef = useRef(false);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -176,11 +200,8 @@ export function PriceChart({ kind, symbol, range, height = 320, onDisplayChange,
       setDragPreview(null);
       setHoverTimeUnix(null);
     });
-  }, [kind, symbol, range]);
-
-  useEffect(() => {
     initialConsumedRef.current = false;
-  }, [kind, symbol]);
+  }, [kind, symbol, range, series]);
 
   useEffect(() => {
     const onDoc = (e: MouseEvent) => {
@@ -320,6 +341,16 @@ export function PriceChart({ kind, symbol, range, height = 320, onDisplayChange,
     };
   }, [height]);
 
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart) return;
+    const fmt =
+      kind === "stock" && series === "marketCap" ? formatMarketCapAxis : formatStockPriceAxis;
+    chart.applyOptions({
+      localization: { priceFormatter: fmt },
+    });
+  }, [kind, series]);
+
   const handlePointerDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
       if (e.button !== 0 || loading || !pointsRef.current.length || !chartRef.current || !wrapRef.current) return;
@@ -402,6 +433,7 @@ export function PriceChart({ kind, symbol, range, height = 320, onDisplayChange,
     let mounted = true;
     async function load() {
       if (
+        series === "price" &&
         initialChart &&
         initialChart.range === range &&
         initialChart.points.length > 0 &&
@@ -428,7 +460,7 @@ export function PriceChart({ kind, symbol, range, height = 320, onDisplayChange,
       setReady(false);
       const path =
         kind === "stock"
-          ? `/api/stocks/${encodeURIComponent(symbol)}/chart?range=${encodeURIComponent(range)}`
+          ? `/api/stocks/${encodeURIComponent(symbol)}/chart?range=${encodeURIComponent(range)}&series=${encodeURIComponent(series)}`
           : `/api/crypto/${encodeURIComponent(symbol)}/chart?range=${encodeURIComponent(range)}`;
       try {
         const res = await fetch(path, { credentials: "include" });
@@ -455,7 +487,7 @@ export function PriceChart({ kind, symbol, range, height = 320, onDisplayChange,
     return () => {
       mounted = false;
     };
-  }, [kind, symbol, range, initialChart]);
+  }, [kind, symbol, range, series, initialChart]);
 
   // Series data, baseline reference, dashed baseline line, last-point marker
   useEffect(() => {
@@ -548,7 +580,9 @@ export function PriceChart({ kind, symbol, range, height = 320, onDisplayChange,
       ) : null}
       {empty ? (
         <div className="absolute inset-0 z-20 flex items-center justify-center px-6 text-center text-[14px] text-[#71717A]">
-          No price data for this range.
+          {kind === "stock" && series === "marketCap"
+            ? "No market cap data for this range (shares outstanding unavailable)."
+            : "No price data for this range."}
         </div>
       ) : null}
     </div>

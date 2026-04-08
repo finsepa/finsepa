@@ -14,6 +14,8 @@ export function portfolioStorageKeyForUser(userId: string): string {
 
 export type PersistedPortfolioState = {
   v: number;
+  /** Client-side last save time (ms); used with server `updated_at` to avoid overwriting newer local data on login. */
+  savedAt?: number;
   portfolios: PortfolioEntry[];
   selectedPortfolioId: string | null;
   holdingsByPortfolioId: Record<string, PortfolioHolding[]>;
@@ -91,6 +93,7 @@ function normalizeState(state: PersistedPortfolioState): PersistedPortfolioState
 
   return {
     v: CURRENT_VERSION,
+    savedAt: typeof state.savedAt === "number" && Number.isFinite(state.savedAt) ? state.savedAt : undefined,
     portfolios: state.portfolios.filter(isPortfolioEntry),
     selectedPortfolioId: selected,
     holdingsByPortfolioId: holdings,
@@ -105,6 +108,12 @@ function parsePersistedPortfolioRaw(raw: string): PersistedPortfolioState | null
     if (parsed.v !== CURRENT_VERSION) return null;
     if (!Array.isArray(parsed.portfolios) || !parsed.portfolios.every(isPortfolioEntry)) return null;
     if (parsed.selectedPortfolioId !== null && typeof parsed.selectedPortfolioId !== "string") {
+      return null;
+    }
+    if (
+      parsed.savedAt !== undefined &&
+      (typeof parsed.savedAt !== "number" || !Number.isFinite(parsed.savedAt))
+    ) {
       return null;
     }
     if (!isRecord(parsed.holdingsByPortfolioId) || !isRecord(parsed.transactionsByPortfolioId)) {
@@ -126,6 +135,7 @@ function parsePersistedPortfolioRaw(raw: string): PersistedPortfolioState | null
 
     return normalizeState({
       v: CURRENT_VERSION,
+      savedAt: typeof parsed.savedAt === "number" ? parsed.savedAt : undefined,
       portfolios: parsed.portfolios,
       selectedPortfolioId: parsed.selectedPortfolioId,
       holdingsByPortfolioId,

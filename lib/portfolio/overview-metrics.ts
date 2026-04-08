@@ -4,6 +4,15 @@ export function netCashUsd(transactions: PortfolioTransaction[]): number {
   return transactions.reduce((s, t) => s + t.sum, 0);
 }
 
+/** Cash ledger balance after all rows on or before {@link ymd} (inclusive). */
+export function netCashUsdUpTo(transactions: PortfolioTransaction[], ymd: string): number {
+  let s = 0;
+  for (const t of transactions) {
+    if (t.date <= ymd) s += t.sum;
+  }
+  return s;
+}
+
 /** Sum of market value of positions plus net cash (total net worth). */
 export function totalNetWorth(holdings: PortfolioHolding[], cashUsd: number): number {
   const equity = holdings.reduce((s, h) => s + h.currentValue, 0);

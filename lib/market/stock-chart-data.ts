@@ -6,7 +6,8 @@ import { REVALIDATE_HOT } from "@/lib/data/cache-policy";
 
 import { fetchEodhdIntraday, type EodhdIntradayBar } from "@/lib/market/eodhd-intraday";
 import { fetchEodhdEodDaily, type EodhdDailyBar } from "@/lib/market/eodhd-eod";
-import type { StockChartPoint, StockChartRange } from "@/lib/market/stock-chart-types";
+import { getCachedSharesOutstanding } from "@/lib/market/stock-shares-outstanding";
+import type { StockChartPoint, StockChartRange, StockChartSeries } from "@/lib/market/stock-chart-types";
 
 function clampFinite(n: number): number | null {
   return Number.isFinite(n) ? n : null;
@@ -165,7 +166,7 @@ async function load5DChartPoints(ticker: string, now: Date, nowSec: number): Pro
   return loadDailyLastNCloses(ticker, now, 5, 21);
 }
 
-async function loadStockChartPointsUncached(ticker: string, range: StockChartRange): Promise<StockChartPoint[]> {
+async function loadStockPriceChartPointsUncached(ticker: string, range: StockChartRange): Promise<StockChartPoint[]> {
   const now = new Date();
   const nowSec = Math.floor(now.getTime() / 1000);
 
@@ -204,9 +205,22 @@ async function loadStockChartPointsUncached(ticker: string, range: StockChartRan
   return dedupeAndSort(points);
 }
 
+async function loadStockChartPointsUncached(
+  ticker: string,
+  range: StockChartRange,
+  series: StockChartSeries,
+): Promise<StockChartPoint[]> {
+  const pricePoints = await loadStockPriceChartPointsUncached(ticker, range);
+  if (series !== "marketCap") return pricePoints;
+  const shares = await getCachedSharesOutstanding(ticker);
+  if (shares == null || shares <= 0) return [];
+  return pricePoints.map((p) => ({ ...p, value: p.value * shares }));
+}
+
 export const getStockChartPoints = unstable_cache(
-  async (ticker: string, range: StockChartRange) => loadStockChartPointsUncached(ticker, range),
-  ["stock-chart-points-v3"],
+  async (ticker: string, range: StockChartRange, series: StockChartSeries) =>
+    loadStockChartPointsUncached(ticker, range, series),
+  ["stock-chart-points-v4-series"],
   { revalidate: REVALIDATE_HOT },
 );
 

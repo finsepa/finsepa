@@ -45,7 +45,7 @@ async function buildHeaderMetaFromFundamentalsOnly(ticker: string): Promise<Omit
 
 const getCachedFundamentalsHeaderSlice = unstable_cache(
   async (ticker: string) => buildHeaderMetaFromFundamentalsOnly(ticker),
-  ["stock-header-meta-fundamentals-v2"],
+  ["stock-header-meta-fundamentals-v3-earnings-history-first"],
   { revalidate: REVALIDATE_WARM },
 );
 

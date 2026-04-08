@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Bell, Folder, Search, Star } from "lucide-react";
+import { Bell, CircleQuestionMark, Folder, Search, Star } from "lucide-react";
 import { TOPBAR_SHOW_NOTIFICATIONS } from "@/lib/features/topbar-flags";
 import { TransactionPortfolioField } from "@/components/portfolio/transaction-portfolio-field";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
@@ -47,12 +47,11 @@ function TopbarPortfolioBlock() {
   );
 }
 
+const topbarSquircleIconClass =
+  "flex h-9 w-9 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5]";
+
 function IconButton({ children }: { children: React.ReactNode }) {
-  return (
-    <button className="flex h-9 w-9 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5]">
-      {children}
-    </button>
-  );
+  return <button type="button" className={topbarSquircleIconClass}>{children}</button>;
 }
 
 export function Topbar({
@@ -123,6 +122,14 @@ export function Topbar({
           <TopbarPortfolioBlock />
 
           <TopbarUserMenu userInitials={userInitials} avatarUrl={avatarUrl} />
+
+          <a
+            href="mailto:hi@finsepa.com"
+            className={topbarSquircleIconClass}
+            aria-label="Email hi@finsepa.com"
+          >
+            <CircleQuestionMark className="h-5 w-5 shrink-0" aria-hidden />
+          </a>
         </div>
       </header>
 

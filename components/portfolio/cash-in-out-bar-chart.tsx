@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useMemo, useState } from "react";
+import { type MouseEvent, memo, useCallback, useMemo, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import {
   eachMonthOfInterval,
@@ -20,8 +20,9 @@ import {
 import { cn } from "@/lib/utils";
 import type { PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 
+/** Figma Color/Blue/600 + Color/Orange/600 */
 const DEPOSIT = "#2563EB";
-const WITHDRAWAL = "#F97316";
+const WITHDRAWAL = "#EA580C";
 
 type CashChartRange = "all" | "ytd" | "1y" | "3y";
 type Granularity = "month" | "year";
@@ -41,6 +42,13 @@ function formatAxisUsd(n: number): string {
   if (n >= 1000) return `$${Math.round(n / 1000)}K`;
   return `$${Math.round(n)}`;
 }
+
+const TOOLTIP_USD = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
 
 function splitCashAmounts(t: PortfolioTransaction): { inAmt: number; outAmt: number } {
   if (t.sum > 0) return { inAmt: t.sum, outAmt: 0 };
@@ -136,15 +144,30 @@ const RANGE_OPTIONS: { value: CashChartRange; label: string }[] = [
   { value: "3y", label: "Last 3 years" },
 ];
 
-const VB_W = 640;
-const VB_H = 240;
+/** Match Figma cash chart frame (~1079×280 plot + left axis). */
+const VB_W = 1080;
+const VB_H = 280;
 const PAD_L = 48;
-const PAD_R = 8;
-const PAD_T = 12;
-const PAD_B = 44;
+const PAD_R = 20;
+const PAD_T = 20;
+const PAD_B = 36;
+/** Deposit + withdrawal pair: 32px bars, 12px gap (scaled into each slot). */
+const FIGMA_BAR_W = 32;
+const FIGMA_PAIR_GAP = 12;
+
+type CashBarTooltip = {
+  x: number;
+  y: number;
+  periodLabel: string;
+  depositsLabel: string;
+  withdrawalsLabel: string;
+};
 
 function CashInOutBarChartSvg({ buckets }: { buckets: Bucket[] }) {
-  const { yMax, ticks, bars } = useMemo(() => {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [tooltip, setTooltip] = useState<CashBarTooltip | null>(null);
+
+  const { yMax, ticks, bars, plotW, plotH, slotW, n } = useMemo(() => {
     const maxVal = buckets.reduce((m, b) => Math.max(m, b.inAmount, b.outAmount), 0);
     const yMax = niceCeiling(maxVal * 1.05) || 1;
     const tickCount = 5;
@@ -155,9 +178,10 @@ function CashInOutBarChartSvg({ buckets }: { buckets: Bucket[] }) {
     const plotH = VB_H - PAD_T - PAD_B;
     const n = Math.max(buckets.length, 1);
     const slotW = plotW / n;
-    const pairW = slotW * 0.55;
-    const barW = (pairW - 4) / 2;
-    const gapBetweenPair = 4;
+    const scale = Math.min(1, (slotW * 0.72) / (FIGMA_BAR_W * 2 + FIGMA_PAIR_GAP));
+    const barW = FIGMA_BAR_W * scale;
+    const gapBetweenPair = FIGMA_PAIR_GAP * scale;
+    const pairW = barW * 2 + gapBetweenPair;
 
     const bars = buckets.map((b, i) => {
       const cx = PAD_L + i * slotW + slotW / 2;
@@ -181,17 +205,66 @@ function CashInOutBarChartSvg({ buckets }: { buckets: Bucket[] }) {
       };
     });
 
-    return { yMax, ticks, bars };
+    return { yMax, ticks, bars, plotW, plotH, slotW, n };
   }, [buckets]);
 
-  const plotW = VB_W - PAD_L - PAD_R;
-  const plotH = VB_H - PAD_T - PAD_B;
   const baseY = PAD_T + plotH;
+
+  const handleMouseMove = useCallback(
+    (e: MouseEvent<HTMLDivElement>) => {
+      const wrap = wrapRef.current;
+      if (!wrap || n === 0) return;
+
+      const r = wrap.getBoundingClientRect();
+      if (r.width <= 0 || r.height <= 0) return;
+
+      const vx = ((e.clientX - r.left) / r.width) * VB_W;
+      const vy = ((e.clientY - r.top) / r.height) * VB_H;
+
+      if (vx < PAD_L || vx > PAD_L + plotW || vy < PAD_T || vy > VB_H) {
+        setTooltip(null);
+        return;
+      }
+
+      const idx = Math.min(n - 1, Math.max(0, Math.floor((vx - PAD_L) / slotW)));
+      const b = buckets[idx];
+      if (!b) {
+        setTooltip(null);
+        return;
+      }
+
+      const px = e.clientX - r.left;
+      const py = e.clientY - r.top;
+      const tw = 220;
+      const th = 92;
+      const pad = 8;
+      let x = px + pad;
+      let y = py - th - pad;
+      if (x + tw > r.width - pad) x = r.width - tw - pad;
+      if (x < pad) x = pad;
+      if (y < pad) y = pad;
+      if (y + th > r.height - pad) y = Math.min(r.height - th - pad, py + pad);
+
+      setTooltip({
+        x,
+        y,
+        periodLabel: b.label,
+        depositsLabel: TOOLTIP_USD.format(b.inAmount),
+        withdrawalsLabel: TOOLTIP_USD.format(b.outAmount),
+      });
+    },
+    [buckets, n, plotW, slotW],
+  );
+
+  const handleMouseLeave = useCallback(() => setTooltip(null), []);
 
   return (
     <div
+      ref={wrapRef}
       className="relative w-full min-w-0"
       style={{ aspectRatio: `${VB_W} / ${VB_H}` }}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
     >
       <svg
         className="absolute inset-0 h-full w-full"
@@ -214,11 +287,16 @@ function CashInOutBarChartSvg({ buckets }: { buckets: Bucket[] }) {
               strokeWidth={1}
             />
             <text
-              x={PAD_L - 8}
+              x={PAD_L - 10}
               y={y + 4}
               textAnchor="end"
-              className="fill-[#71717A] text-[11px] font-normal"
-              style={{ fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif" }}
+              className="fill-[#71717A]"
+              style={{
+                fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+                fontSize: 12,
+                fontWeight: 400,
+                lineHeight: "16px",
+              }}
             >
               {formatAxisUsd(tv)}
             </text>
@@ -229,7 +307,14 @@ function CashInOutBarChartSvg({ buckets }: { buckets: Bucket[] }) {
       {bars.map((b, i) => (
         <g key={buckets[i]?.key ?? i}>
           {b.inRect.height > 0 ? (
-            <rect x={b.inRect.x} y={b.inRect.y} width={b.inRect.width} height={b.inRect.height} fill={DEPOSIT} />
+            <rect
+              x={b.inRect.x}
+              y={b.inRect.y}
+              width={b.inRect.width}
+              height={b.inRect.height}
+              rx={Math.min(3, b.inRect.width / 2)}
+              fill={DEPOSIT}
+            />
           ) : null}
           {b.outRect.height > 0 ? (
             <rect
@@ -237,21 +322,46 @@ function CashInOutBarChartSvg({ buckets }: { buckets: Bucket[] }) {
               y={b.outRect.y}
               width={b.outRect.width}
               height={b.outRect.height}
+              rx={Math.min(3, b.outRect.width / 2)}
               fill={WITHDRAWAL}
             />
           ) : null}
           <text
             x={PAD_L + (i + 0.5) * (plotW / Math.max(buckets.length, 1))}
-            y={VB_H - 12}
+            y={VB_H - 10}
             textAnchor="middle"
-            className="fill-[#71717A] text-[11px] font-medium"
-            style={{ fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif" }}
+            className="fill-[#71717A]"
+            style={{
+              fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+              fontSize: 12,
+              fontWeight: 400,
+              lineHeight: "16px",
+            }}
           >
             {buckets[i]?.label ?? ""}
           </text>
         </g>
       ))}
       </svg>
+      {tooltip ? (
+        <div
+          className="pointer-events-none absolute z-10 min-w-[200px] rounded-lg border border-[#E4E4E7] bg-white px-3 py-2 shadow-[0px_1px_4px_0px_rgba(10,10,10,0.08),0px_1px_2px_0px_rgba(10,10,10,0.06)]"
+          style={{ left: tooltip.x, top: tooltip.y }}
+          role="tooltip"
+        >
+          <p className="text-[11px] leading-4 text-[#71717A]">{tooltip.periodLabel}</p>
+          <div className="mt-1.5 space-y-1">
+            <p className="text-xs font-semibold tabular-nums text-[#09090B]">
+              <span className="font-medium text-[#71717A]">Total deposits</span>{" "}
+              <span style={{ color: DEPOSIT }}>{tooltip.depositsLabel}</span>
+            </p>
+            <p className="text-xs font-semibold tabular-nums text-[#09090B]">
+              <span className="font-medium text-[#71717A]">Total withdrawals</span>{" "}
+              <span style={{ color: WITHDRAWAL }}>{tooltip.withdrawalsLabel}</span>
+            </p>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -268,15 +378,15 @@ function CashInOutBarChartSectionInner({ rows }: { rows: PortfolioTransaction[] 
   );
 
   return (
-    <div className="mb-8">
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-lg font-semibold leading-7 text-[#09090B]">Cash</h2>
-        <div className="flex flex-wrap items-center gap-2">
+    <div className="mb-6">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h2 className="text-2xl font-semibold leading-9 tracking-tight text-[#09090B]">Cash</h2>
+        <div className="flex flex-wrap items-center gap-3">
           <div className="relative">
             <select
               value={range}
               onChange={(e) => setRange(e.target.value as CashChartRange)}
-              className="h-9 cursor-pointer appearance-none rounded-[10px] border-0 bg-[#F4F4F5] py-2 pl-3 pr-9 text-[14px] font-medium leading-5 text-[#09090B] outline-none focus:ring-2 focus:ring-[#09090B]/10"
+              className="h-10 min-h-10 cursor-pointer appearance-none rounded-[10px] border border-[#E4E4E7] bg-white py-2 pl-4 pr-10 text-sm font-medium leading-5 text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/10"
               aria-label="Cash chart time range"
             >
               {RANGE_OPTIONS.map((o) => (
@@ -286,7 +396,7 @@ function CashInOutBarChartSectionInner({ rows }: { rows: PortfolioTransaction[] 
               ))}
             </select>
             <ChevronDown
-              className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#71717A]"
+              className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[#71717A]"
               aria-hidden
             />
           </div>
@@ -300,9 +410,9 @@ function CashInOutBarChartSectionInner({ rows }: { rows: PortfolioTransaction[] 
               type="button"
               onClick={() => setGranularity("month")}
               className={cn(
-                "rounded-[8px] px-3 py-1.5 text-[13px] font-medium leading-5 transition-all",
+                "rounded-[10px] px-4 py-1.5 text-sm font-medium leading-5 transition-all",
                 granularity === "month"
-                  ? "bg-white text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]"
+                  ? "bg-white text-[#09090B] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]"
                   : "text-[#71717A] hover:text-[#09090B]",
               )}
             >
@@ -312,9 +422,9 @@ function CashInOutBarChartSectionInner({ rows }: { rows: PortfolioTransaction[] 
               type="button"
               onClick={() => setGranularity("year")}
               className={cn(
-                "rounded-[8px] px-3 py-1.5 text-[13px] font-medium leading-5 transition-all",
+                "rounded-[10px] px-4 py-1.5 text-sm font-medium leading-5 transition-all",
                 granularity === "year"
-                  ? "bg-white text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]"
+                  ? "bg-white text-[#09090B] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]"
                   : "text-[#71717A] hover:text-[#09090B]",
               )}
             >
@@ -333,21 +443,21 @@ function CashInOutBarChartSectionInner({ rows }: { rows: PortfolioTransaction[] 
           No periods in this range yet.
         </div>
       ) : (
-        <div className="w-full min-w-0 pt-2 sm:pt-4">
+        <div className="flex w-full min-w-0 flex-col gap-3 px-5">
           <div className={cn("w-full min-w-0", !hasAnyActivity && "opacity-60")}>
             <CashInOutBarChartSvg buckets={buckets} />
           </div>
           {!hasAnyActivity ? (
-            <p className="pb-3 text-center text-xs text-[#71717A]">No cash movements in this range.</p>
+            <p className="text-center text-xs leading-4 text-[#71717A]">No cash movements in this range.</p>
           ) : null}
-          <div className="flex flex-wrap items-center justify-center gap-6 border-t border-[#F4F4F5] py-3">
-            <span className="inline-flex items-center gap-2 text-[13px] font-medium text-[#09090B]">
-              <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: DEPOSIT }} />
-              Cash in
+          <div className="flex flex-wrap items-center justify-center gap-4 py-1">
+            <span className="inline-flex items-center gap-2 text-sm font-normal leading-5 text-[#09090B]">
+              <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: DEPOSIT }} aria-hidden />
+              Deposits
             </span>
-            <span className="inline-flex items-center gap-2 text-[13px] font-medium text-[#09090B]">
-              <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: WITHDRAWAL }} />
-              Cash out
+            <span className="inline-flex items-center gap-2 text-sm font-normal leading-5 text-[#09090B]">
+              <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: WITHDRAWAL }} aria-hidden />
+              Withdrawals
             </span>
           </div>
         </div>

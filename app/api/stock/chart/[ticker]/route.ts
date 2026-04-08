@@ -27,7 +27,7 @@ export async function GET(request: Request, { params }: Ctx) {
   const rangeParam = url.searchParams.get("range");
   const range: StockChartRange = isRange(rangeParam) ? rangeParam : "1Y";
 
-  const points = await getStockChartPoints(routeTicker, range);
+  const points = await getStockChartPoints(routeTicker, range, "price");
 
   return NextResponse.json({
     ticker: routeTicker,

@@ -1,11 +1,12 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useCallback, useEffect, useId, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { format, parseISO, startOfDay } from "date-fns";
 import { X } from "lucide-react";
 
 import type { CompanyPick } from "@/components/charting/company-picker";
+import { getCryptoLogoUrl } from "@/lib/crypto/crypto-logo-url";
 import { cn } from "@/lib/utils";
 import { ClearableInput } from "@/components/layout/clearable-input";
 import { TransactionCompanyField } from "@/components/layout/transaction-company-field";
@@ -17,6 +18,7 @@ import {
 import { TransactionPortfolioField } from "@/components/portfolio/transaction-portfolio-field";
 import type { PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
+import { fetchLiveMarketPriceClient, fetchPriceOnDateClient } from "@/lib/portfolio/client-symbol-quotes";
 import { lotUnrealizedPnL } from "@/lib/portfolio/holding-position";
 import {
   refreshHoldingMarketPrices,
@@ -59,6 +61,8 @@ export function EditTransactionModal({ open, onClose, transaction }: Props) {
   const [cashDirection, setCashDirection] = useState<"in" | "out">("in");
   const [submitting, setSubmitting] = useState(false);
 
+  const priceFetchGen = useRef(0);
+
   useEffect(() => {
     if (!open || !transaction) return;
     if (transaction.kind === "trade") {
@@ -80,6 +84,24 @@ export function EditTransactionModal({ open, onClose, transaction }: Props) {
     }
     setSubmitting(false);
   }, [open, transaction]);
+
+  useEffect(() => {
+    if (!open || !transaction || transaction.kind !== "trade") return;
+    const sym = selectedCompany?.symbol?.trim();
+    if (!sym) {
+      setPrice("");
+      return;
+    }
+    const ymd = format(transactionDate, "yyyy-MM-dd");
+    const gen = ++priceFetchGen.current;
+    void (async () => {
+      const p = await fetchPriceOnDateClient(sym, ymd);
+      if (gen !== priceFetchGen.current) return;
+      if (p != null) {
+        setPrice(formatPriceInputFromApi(p));
+      }
+    })();
+  }, [open, transaction, selectedCompany?.symbol, transactionDate]);
 
   useEffect(() => {
     if (!open) return;
@@ -120,18 +142,8 @@ export function EditTransactionModal({ open, onClose, transaction }: Props) {
 
     setSubmitting(true);
     try {
-      let marketPrice = pr;
-      try {
-        const res = await fetch(`/api/stocks/${encodeURIComponent(sym)}/performance`);
-        if (res.ok) {
-          const data = (await res.json()) as { price?: number | null };
-          if (typeof data.price === "number" && Number.isFinite(data.price) && data.price > 0) {
-            marketPrice = data.price;
-          }
-        }
-      } catch {
-        /* keep pr */
-      }
+      const live = await fetchLiveMarketPriceClient(sym);
+      const marketPrice = live ?? pr;
 
       let logoUrl: string | null = transaction.logoUrl;
       try {
@@ -144,6 +156,9 @@ export function EditTransactionModal({ open, onClose, transaction }: Props) {
         }
       } catch {
         /* keep */
+      }
+      if (!logoUrl?.trim()) {
+        logoUrl = getCryptoLogoUrl(sym);
       }
 
       const opLabel = operation === "Buy" ? "Buy" : "Sell";

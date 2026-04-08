@@ -1,6 +1,8 @@
 "use client";
 
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
+
+import { usePortfolioOverviewAthPublisher } from "@/components/portfolio/portfolio-overview-ath-context";
 import { ChevronDown } from "lucide-react";
 
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
@@ -277,6 +279,23 @@ function PortfolioOverviewCardsInner({
 
   const isEmptyOverview = holdings.length === 0;
   const showMetricSkeleton = !isEmptyOverview && !overviewReady;
+
+  const setAthSnapshot = usePortfolioOverviewAthPublisher();
+  useEffect(() => {
+    if (isEmptyOverview) {
+      setAthSnapshot({ marketReady: true, athReturnPct: null });
+      return;
+    }
+    setAthSnapshot({
+      marketReady: overviewReady,
+      athReturnPct: overviewReady ? inceptionBenchmarkMetrics.rPort : null,
+    });
+  }, [
+    isEmptyOverview,
+    overviewReady,
+    inceptionBenchmarkMetrics.rPort,
+    setAthSnapshot,
+  ]);
 
   return (
     <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">

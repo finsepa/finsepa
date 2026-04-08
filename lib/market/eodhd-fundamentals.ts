@@ -59,13 +59,124 @@ export function parseUnknownDateToUtcMs(v: unknown): number | null {
   return Number.isFinite(t) ? t : null;
 }
 
+function earningsRowHasReportDate(r: Record<string, unknown>): boolean {
+  const v = r.reportDate ?? r.ReportDate ?? r.report_date;
+  return typeof v === "string" && v.trim().length > 0;
+}
+
+/** True when EODHD has filled actual EPS for the period (already reported). */
+function earningsRowIsReported(r: Record<string, unknown>): boolean {
+  const a = r.epsActual ?? r.EPSActual ?? r.eps_actual;
+  if (a == null || a === "") return false;
+  if (typeof a === "string" && !a.trim()) return false;
+  return true;
+}
+
+function startOfTodayUtcMs(): number {
+  const today = new Date();
+  return Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), 0, 0, 0, 0);
+}
+
 /**
- * EODHD fundamentals usually do NOT put the next earnings call in Highlights.
- * The reliable source is `Earnings.History`: each period has `reportDate` (announcement) and `date` (fiscal period end).
- * Demo AAPL: `History["2026-03-31"].reportDate` → "2026-04-29" (upcoming), with `epsActual: null`.
+ * Prefer `Earnings.History` (per-ticker report dates) before Highlights — Highlights/General
+ * sometimes carry generic or stale `NextEarningsDate` values that make many symbols look identical.
+ *
+ * `reportDate` is the announcement date; `date` is fiscal period end — we prefer reportDate when available.
+ */
+function resolveFromEarningsObject(e: Record<string, unknown>): string | null {
+  const history = e.History;
+  if (history && typeof history === "object") {
+    const h = history as Record<string, unknown>;
+    const startToday = startOfTodayUtcMs();
+
+    const rows: Record<string, unknown>[] = [];
+    for (const row of Object.values(h)) {
+      if (row && typeof row === "object") rows.push(row as Record<string, unknown>);
+    }
+
+    let anyFutureWithReport = false;
+    for (const r of rows) {
+      const rawReport = r.reportDate ?? r.ReportDate ?? r.report_date;
+      const rawDate = r.date ?? r.Date;
+      const primary = (typeof rawReport === "string" && rawReport.trim() ? rawReport : null) ?? rawDate;
+      const ms = parseUnknownDateToUtcMs(primary);
+      if (ms == null) continue;
+      const d = new Date(ms);
+      const dayStart = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0, 0);
+      if (dayStart >= startToday && earningsRowHasReportDate(r) && !earningsRowIsReported(r)) {
+        anyFutureWithReport = true;
+        break;
+      }
+    }
+
+    let bestUpcomingMs: number | null = null;
+    let bestPastMs: number | null = null;
+
+    for (const r of rows) {
+      const rawReport = r.reportDate ?? r.ReportDate ?? r.report_date;
+      const rawDate = r.date ?? r.Date;
+      const primary = (typeof rawReport === "string" && rawReport.trim() ? rawReport : null) ?? rawDate;
+      const ms = parseUnknownDateToUtcMs(primary);
+      if (ms == null) continue;
+      const d = new Date(ms);
+      const dayStart = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0, 0);
+
+      if (dayStart >= startToday) {
+        if (earningsRowIsReported(r)) continue;
+        if (anyFutureWithReport && !earningsRowHasReportDate(r)) continue;
+        if (bestUpcomingMs == null || dayStart < bestUpcomingMs) bestUpcomingMs = dayStart;
+      } else {
+        if (bestPastMs == null || dayStart > bestPastMs) bestPastMs = dayStart;
+      }
+    }
+
+    if (bestUpcomingMs != null) return formatEarningsDateEnUS(bestUpcomingMs);
+    if (bestPastMs != null) return formatEarningsDateEnUS(bestPastMs);
+  }
+
+  const dates = e.Dates ?? e.Upcoming;
+  if (dates && typeof dates === "object") {
+    const d = dates as Record<string, unknown>;
+    const nested =
+      formatEarningsDateEnUS(d.NextDate ?? d.nextEarningsDate ?? d.Date ?? d.date ?? d.ReportDate ?? d.reportDate) ??
+      formatEarningsDateEnUS(d.next);
+    if (nested) return nested;
+  }
+
+  const trend = e.Trend;
+  if (Array.isArray(trend)) {
+    const candidates: number[] = [];
+    for (const row of trend) {
+      if (!row || typeof row !== "object") continue;
+      const t = row as Record<string, unknown>;
+      const ms = parseUnknownDateToUtcMs(
+        t.date ?? t.Date ?? t.reportDate ?? t.ReportDate ?? t.endDate ?? t.EndDate,
+      );
+      if (ms != null) candidates.push(ms);
+    }
+    if (candidates.length) {
+      const todayMs = Date.now();
+      const future = candidates.filter((ms) => ms >= todayMs).sort((a, b) => a - b);
+      const pick = future.length ? future[0]! : candidates.sort((a, b) => b - a)[0]!;
+      return formatEarningsDateEnUS(pick);
+    }
+  }
+
+  return null;
+}
+
+/**
+ * EODHD fundamentals: next/last earnings for UI (watchlist, stock header).
+ * History is evaluated before Highlights so values are ticker-specific.
  */
 export function resolveEarningsDateDisplay(highlights: Record<string, unknown> | null, root: Record<string, unknown>): string | null {
   const general = root.General && typeof root.General === "object" ? (root.General as Record<string, unknown>) : null;
+
+  const earn = root.Earnings;
+  if (earn && typeof earn === "object") {
+    const fromEarn = resolveFromEarningsObject(earn as Record<string, unknown>);
+    if (fromEarn) return fromEarn;
+  }
 
   const explicitKeys = [
     "NextEarningsDate",
@@ -85,76 +196,8 @@ export function resolveEarningsDateDisplay(highlights: Record<string, unknown> |
     }
   }
 
-  const earn = root.Earnings;
-  if (earn && typeof earn === "object") {
-    const e = earn as Record<string, unknown>;
-
-    const history = e.History;
-    if (history && typeof history === "object") {
-      const h = history as Record<string, unknown>;
-      const today = new Date();
-      const startOfTodayUtc = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), 0, 0, 0, 0);
-
-      let bestUpcomingMs: number | null = null;
-      let bestPastMs: number | null = null;
-
-      for (const row of Object.values(h)) {
-        if (!row || typeof row !== "object") continue;
-        const r = row as Record<string, unknown>;
-        const rawReport = r.reportDate ?? r.ReportDate ?? r.report_date;
-        const rawDate = r.date ?? r.Date;
-        const primary = rawReport ?? rawDate;
-        const ms = parseUnknownDateToUtcMs(primary);
-        if (ms == null) continue;
-        const day = new Date(ms);
-        const dayStart = Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate(), 0, 0, 0, 0);
-        if (dayStart >= startOfTodayUtc) {
-          if (bestUpcomingMs == null || dayStart < bestUpcomingMs) bestUpcomingMs = dayStart;
-        } else {
-          if (bestPastMs == null || dayStart > bestPastMs) bestPastMs = dayStart;
-        }
-      }
-
-      if (bestUpcomingMs != null) {
-        return formatEarningsDateEnUS(bestUpcomingMs);
-      }
-      if (bestPastMs != null) {
-        return formatEarningsDateEnUS(bestPastMs);
-      }
-    }
-
-    const dates = e.Dates ?? e.Upcoming;
-    if (dates && typeof dates === "object") {
-      const d = dates as Record<string, unknown>;
-      const nested =
-        formatEarningsDateEnUS(d.NextDate ?? d.nextEarningsDate ?? d.Date ?? d.date ?? d.ReportDate ?? d.reportDate) ??
-        formatEarningsDateEnUS(d.next);
-      if (nested) return nested;
-    }
-
-    const trend = e.Trend;
-    if (Array.isArray(trend)) {
-      const candidates: number[] = [];
-      for (const row of trend) {
-        if (!row || typeof row !== "object") continue;
-        const t = row as Record<string, unknown>;
-        const ms = parseUnknownDateToUtcMs(
-          t.date ?? t.Date ?? t.reportDate ?? t.ReportDate ?? t.endDate ?? t.EndDate,
-        );
-        if (ms != null) candidates.push(ms);
-      }
-      if (candidates.length) {
-        const todayMs = Date.now();
-        const future = candidates.filter((ms) => ms >= todayMs).sort((a, b) => a - b);
-        const pick = future.length ? future[0]! : candidates.sort((a, b) => b - a)[0]!;
-        return formatEarningsDateEnUS(pick);
-      }
-    }
-  }
-
-  const hl = highlights;
-  if (hl) {
-    const mrq = hl.MostRecentQuarter;
+  if (highlights) {
+    const mrq = highlights.MostRecentQuarter;
     if (typeof mrq === "string" && mrq.trim()) {
       const f = formatEarningsDateEnUS(mrq);
       if (f) return f;

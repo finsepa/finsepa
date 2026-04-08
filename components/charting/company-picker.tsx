@@ -8,6 +8,8 @@ import { PeerSearchDropdownRow } from "@/components/stock/stock-peers-tab";
 import { isSingleAssetMode, SINGLE_ASSET_SYMBOL } from "@/lib/features/single-asset";
 import type { SearchAssetItem } from "@/lib/search/search-types";
 import { recordSearchNavigation } from "@/lib/search/recent-searches-storage";
+import { getCryptoLogoUrl } from "@/lib/crypto/crypto-logo-url";
+import { CRYPTO_PICKER_TOP } from "@/lib/crypto/crypto-picker-universe";
 import { companyLogoUrlFromDomain } from "@/lib/screener/company-logo-url";
 import { isTop10Ticker, TOP10_META, TOP10_TICKERS } from "@/lib/screener/top10-config";
 
@@ -86,10 +88,15 @@ export function CompanyPicker({
 
   const screenerList = useMemo(() => screenerCompanies(excludeSet), [excludeSet]);
 
+  const cryptoPickerList = useMemo(
+    () => CRYPTO_PICKER_TOP.filter((c) => !excludeSet.has(c.symbol.toUpperCase())),
+    [excludeSet],
+  );
+
   const onChooseAsset = useCallback(
     (item: SearchAssetItem) => {
       recordSearchNavigation(item);
-      if (item.type === "stock") {
+      if (item.type === "stock" || item.type === "crypto") {
         onPick({
           symbol: item.symbol.trim().toUpperCase(),
           name: item.name.trim() || item.symbol,
@@ -178,7 +185,7 @@ export function CompanyPicker({
         <div
           className="absolute left-0 top-full z-[200] mt-1 w-[min(calc(100vw-2rem),360px)] rounded-lg border border-[#E4E4E7] bg-white py-1 shadow-md"
           role="listbox"
-          aria-label="Screener companies and search"
+          aria-label="Stocks, crypto, and search"
         >
           <div className="border-b border-[#F4F4F5] px-2 pb-1 pt-1">
             <input
@@ -196,7 +203,7 @@ export function CompanyPicker({
             {!showSearchPanel ? (
               <>
                 <div className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wide text-[#A1A1AA]">
-                  Screener
+                  Stocks
                 </div>
                 {screenerList.length === 0 ? (
                   <p className="px-3 py-2 text-[12px] text-[#71717A]">No companies to add.</p>
@@ -232,9 +239,43 @@ export function CompanyPicker({
                     ))}
                   </ul>
                 )}
-                <div className="border-t border-[#F4F4F5] px-3 py-2 text-[12px] text-[#71717A]">
-                  Or type above to search — same index as the top bar (Peers).
+                <div className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wide text-[#A1A1AA]">
+                  Crypto
                 </div>
+                {cryptoPickerList.length === 0 ? (
+                  <p className="px-3 py-2 text-[12px] text-[#71717A]">No crypto to add.</p>
+                ) : (
+                  <ul className="pb-2">
+                    {cryptoPickerList.map((row) => (
+                      <li key={row.symbol}>
+                        <button
+                          type="button"
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] text-[#09090B] transition-colors hover:bg-[#F4F4F5]"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => {
+                            onPick({ symbol: row.symbol, name: row.name });
+                            setPickerOpen(false);
+                            setPickerQuery("");
+                            setSearchItems([]);
+                          }}
+                        >
+                          <CompanyLogo
+                            name={row.name}
+                            logoUrl={getCryptoLogoUrl(row.symbol)}
+                            symbol={row.symbol}
+                          />
+                          <div className="min-w-0 flex-1">
+                            <div className="truncate font-medium">{row.name}</div>
+                            <div className="truncate text-[12px] text-[#71717A]">{row.symbol}</div>
+                          </div>
+                          <span className="shrink-0 rounded-full bg-[#F4F4F5] px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-[#71717A]">
+                            Crypto
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </>
             ) : searchLoading && searchItems.length === 0 ? (
               <p className="px-3 py-2 text-[12px] text-[#71717A]">Searching…</p>
