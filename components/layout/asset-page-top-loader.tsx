@@ -50,19 +50,22 @@ export function AssetPageTopLoader() {
       doneTimerRef.current = null;
     }
 
-    setVisible(true);
-    setProgress(0.55);
-    requestAnimationFrame(() => {
-      setProgress(0.92);
+    const outerRaf = requestAnimationFrame(() => {
+      setVisible(true);
+      setProgress(0.55);
       requestAnimationFrame(() => {
-        setProgress(1);
-        doneTimerRef.current = window.setTimeout(() => {
-          setVisible(false);
-          setProgress(0);
-          doneTimerRef.current = null;
-        }, 220);
+        setProgress(0.92);
+        requestAnimationFrame(() => {
+          setProgress(1);
+          doneTimerRef.current = window.setTimeout(() => {
+            setVisible(false);
+            setProgress(0);
+            doneTimerRef.current = null;
+          }, 220);
+        });
       });
     });
+    return () => cancelAnimationFrame(outerRaf);
   }, [key, isAssetPath]);
 
   if (!isAssetPath || (!visible && progress === 0)) return null;

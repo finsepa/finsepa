@@ -110,7 +110,7 @@ async function fetchEodhdScreenerUncached(args: {
   const url = `https://eodhd.com/api/screener?${params.toString()}`;
 
   try {
-    traceEodhdHttp("fetchEodhdScreenerUncached", { offset: args.offset, limit: args.limit });
+    if (!traceEodhdHttp("fetchEodhdScreenerUncached", { offset: args.offset, limit: args.limit })) return [];
     const res = await fetch(url, { next: { revalidate: 60 * 60 * 12 } }); // 12h
     if (!res.ok) return [];
     const json = (await res.json()) as unknown;
@@ -193,7 +193,7 @@ export async function fetchEodhdScreenerCandidates(args: {
   const url = `https://eodhd.com/api/screener?${params.toString()}`;
 
   try {
-    traceEodhdHttp("fetchEodhdScreenerCandidates", { limit: args.limit });
+    if (!traceEodhdHttp("fetchEodhdScreenerCandidates", { limit: args.limit })) return [];
     const res = await fetch(url, { next: { revalidate: 60 * 60 } }); // 1h
     if (!res.ok) return [];
     const json = (await res.json()) as unknown;

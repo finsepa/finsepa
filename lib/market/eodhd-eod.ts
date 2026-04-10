@@ -60,7 +60,7 @@ export async function fetchEodhdOpenPriceOnOrBefore(
   const url = `https://eodhd.com/api/eod/${encodeURIComponent(sym)}?${params.toString()}`;
 
   try {
-    traceEodhdHttp("fetchEodhdOpenPriceOnOrBefore", { symbol: sym, from, to });
+    if (!traceEodhdHttp("fetchEodhdOpenPriceOnOrBefore", { symbol: sym, from, to })) return null;
     const res = await fetch(url, { cache: "no-store" });
     if (!res.ok) return null;
     const data = (await res.json()) as unknown;
@@ -121,7 +121,7 @@ export async function fetchEodhdEodDaily(
   const url = `https://eodhd.com/api/eod/${encodeURIComponent(sym)}?${params.toString()}`;
 
   try {
-    traceEodhdHttp("fetchEodhdEodDaily", { symbol: sym });
+    if (!traceEodhdHttp("fetchEodhdEodDaily", { symbol: sym })) return null;
     const res = await fetch(url, { cache: "no-store" });
     if (!res.ok) return null;
     const data = (await res.json()) as unknown;
@@ -168,8 +168,8 @@ export async function fetchEodhdEodDailyScreener(
   const url = `https://eodhd.com/api/eod/${encodeURIComponent(sym)}?${params.toString()}`;
 
   try {
-    traceEodhdHttp("fetchEodhdEodDailyScreener", { symbol: sym });
-    const res = await fetch(url, { next: { revalidate: 90 } });
+    if (!traceEodhdHttp("fetchEodhdEodDailyScreener", { symbol: sym })) return null;
+    const res = await fetch(url, { cache: "no-store" });
     if (!res.ok) return null;
     const data = (await res.json()) as unknown;
     if (!Array.isArray(data)) return null;

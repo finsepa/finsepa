@@ -75,7 +75,7 @@ export async function fetchEodhdIntraday(
   const url = `https://eodhd.com/api/intraday/${encodeURIComponent(sym)}?${params.toString()}`;
 
   try {
-    traceEodhdHttp("fetchEodhdIntraday", { symbol: sym });
+    if (!traceEodhdHttp("fetchEodhdIntraday", { symbol: sym })) return null;
     const res = await fetch(url, { cache: "no-store" });
     if (!res.ok) return null;
     const data = (await res.json()) as unknown;

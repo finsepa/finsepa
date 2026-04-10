@@ -1,5 +1,5 @@
 import { TOP10_META, type Top10Ticker } from "@/lib/screener/top10-config";
-import { companyLogoUrlFromDomain } from "@/lib/screener/company-logo-url";
+import { companyLogoUrlForTicker } from "@/lib/screener/company-logo-url";
 
 export type StockDetailMeta = {
   ticker: string;
@@ -18,7 +18,7 @@ export function getStockDetailMetaFromTicker(ticker: string): StockDetailMeta {
     return {
       ticker: sym,
       name: meta.name,
-      logoUrl: companyLogoUrlFromDomain(meta.domain),
+      logoUrl: companyLogoUrlForTicker(sym, meta.domain),
     };
   }
   return {

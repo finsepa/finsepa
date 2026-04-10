@@ -1,15 +1,11 @@
 import "server-only";
 
-import { unstable_cache } from "next/cache";
-
-import { REVALIDATE_LOGO_METADATA } from "@/lib/data/cache-policy";
-import { fetchEodhdFundamentalsJson } from "@/lib/market/eodhd-fundamentals";
-import { companyLogoUrlFromDomain } from "@/lib/screener/company-logo-url";
-import { TOP10_META, TOP10_TICKERS, type Top10Ticker } from "@/lib/screener/top10-config";
-
-function isTop10Ticker(t: string): t is Top10Ticker {
-  return (TOP10_TICKERS as readonly string[]).includes(t);
-}
+import {
+  companyLogoUrlForTicker,
+  companyLogoUrlFromDomain,
+  logoDevStockLogoUrl,
+} from "@/lib/screener/company-logo-url";
+import { isTop10Ticker, TOP10_META } from "@/lib/screener/top10-config";
 
 function domainFromWebsiteRaw(raw: unknown): string | null {
   if (typeof raw !== "string") return null;
@@ -25,33 +21,23 @@ function domainFromWebsiteRaw(raw: unknown): string | null {
 }
 
 /**
- * Canonical stock favicon URL from fundamentals JSON (General + root-level website fields).
- * Same derivation everywhere: screener, header, peers, earnings, search (server).
+ * Logo URL when fundamentals JSON is already loaded for other fields (earnings, etc.).
+ * Does **not** fetch EODHD — uses Logo.dev first, then website from `root` only for favicon fallback if no key.
  */
-export function logoUrlFromFundamentalsRoot(root: Record<string, unknown> | null): string {
+export function logoUrlFromFundamentalsRoot(root: Record<string, unknown> | null, tickerForLogo?: string): string {
+  const sym = tickerForLogo?.trim();
+  if (sym) {
+    const dev = logoDevStockLogoUrl(sym);
+    if (dev) return dev;
+    const u = sym.toUpperCase();
+    if (isTop10Ticker(u)) return companyLogoUrlForTicker(u, TOP10_META[u].domain);
+  }
   if (!root || typeof root !== "object") return "";
   const general =
     root.General && typeof root.General === "object" ? (root.General as Record<string, unknown>) : null;
   const host =
     domainFromWebsiteRaw(general?.WebURL ?? general?.Website ?? general?.URL) ??
     domainFromWebsiteRaw(root.WebURL ?? root.Website ?? root.URL);
-  return host ? companyLogoUrlFromDomain(host) : "";
+  if (!host) return "";
+  return sym ? companyLogoUrlForTicker(sym, host) : companyLogoUrlFromDomain(host);
 }
-
-async function resolveStockLogoUrlUncached(ticker: string): Promise<string> {
-  const t = ticker.trim().toUpperCase();
-  if (!t) return "";
-  if (isTop10Ticker(t)) return companyLogoUrlFromDomain(TOP10_META[t].domain);
-  const root = await fetchEodhdFundamentalsJson(t);
-  return logoUrlFromFundamentalsRoot(root);
-}
-
-/**
- * Per-ticker derived logo URL, cached much longer than quote/fundamentals hot paths.
- * Underlying `fetchEodhdFundamentalsJson` is still deduped when this misses.
- */
-export const getCachedStockLogoUrl = unstable_cache(
-  async (ticker: string) => resolveStockLogoUrlUncached(ticker),
-  ["stock-logo-url-v1"],
-  { revalidate: REVALIDATE_LOGO_METADATA },
-);

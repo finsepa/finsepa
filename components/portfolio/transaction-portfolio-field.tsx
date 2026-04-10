@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, Pencil, Plus } from "lucide-react";
+import { ChevronDown, GitMerge, Pencil, Plus } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
@@ -28,6 +28,7 @@ export function TransactionPortfolioField({
     setSelectedPortfolioId,
     openEditPortfolio,
     openCreatePortfolio,
+    openCreateCombinedPortfolio,
   } = usePortfolioWorkspace();
 
   const [open, setOpen] = useState(false);
@@ -146,6 +147,18 @@ export function TransactionPortfolioField({
             >
               <Plus className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
               <span>Create New Portfolio</span>
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setOpen(false);
+                openCreateCombinedPortfolio();
+              }}
+              className="flex w-full cursor-pointer items-center gap-2 px-4 py-3 text-left text-sm text-[#09090B] transition-colors hover:bg-[#F4F4F5]"
+            >
+              <GitMerge className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
+              <span>Create combined portfolio</span>
             </button>
           </div>
         </div>

@@ -1,11 +1,12 @@
 import { Suspense } from "react";
 
 import { ChartingPage } from "@/components/charting/charting-page";
+import { buildChartingAllowedTickerList } from "@/lib/charting/charting-allowed-tickers";
 import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
 import { loadStockPageInitialData } from "@/lib/market/stock-page-initial-data";
 import type { StockPageInitialData } from "@/lib/market/stock-page-initial-data";
 import { isChartingSessionReady, parseChartingTickerList } from "@/lib/market/stock-charting-metrics";
-import { isTop10Ticker } from "@/lib/screener/top10-config";
+import { getScreenerCompaniesStaticLayer } from "@/lib/screener/screener-companies-layers";
 
 type PageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -22,9 +23,14 @@ export default async function ChartingRoutePage({ searchParams }: PageProps) {
   const tickersParsed = parseChartingTickerList(rawTickerParam || null);
   const metricParam = firstParam(sp.metric) ?? null;
 
-  const allowedTickers = tickersParsed.filter((t) =>
-    isSingleAssetMode() ? isSupportedAsset(t) : isTop10Ticker(t),
-  );
+  const { universe } = await getScreenerCompaniesStaticLayer();
+  const chartingEquityAllowlist = buildChartingAllowedTickerList(universe);
+  const chartingAllowSet = new Set(chartingEquityAllowlist);
+
+  const allowedTickers = tickersParsed.filter((t) => {
+    if (isSingleAssetMode()) return isSupportedAsset(t);
+    return chartingAllowSet.has(t.trim().toUpperCase());
+  });
 
   const urlSaysChart = isChartingSessionReady(allowedTickers, metricParam);
 
@@ -48,6 +54,7 @@ export default async function ChartingRoutePage({ searchParams }: PageProps) {
         metricParam={metricParam}
         initialByTicker={initialByTicker}
         chartReady={chartSessionReady}
+        allowedChartingTickers={chartingEquityAllowlist}
       />
     </Suspense>
   );

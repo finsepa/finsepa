@@ -6,8 +6,9 @@ import { format, parseISO, startOfDay } from "date-fns";
 import { X } from "lucide-react";
 
 import type { CompanyPick } from "@/components/charting/company-picker";
-import { getCryptoLogoUrl } from "@/lib/crypto/crypto-logo-url";
+import { displayLogoUrlForPortfolioSymbol } from "@/lib/portfolio/portfolio-asset-display-logo";
 import { cn } from "@/lib/utils";
+import { CashDirectionSelect } from "@/components/layout/cash-direction-select";
 import { ClearableInput } from "@/components/layout/clearable-input";
 import { TransactionCompanyField } from "@/components/layout/transaction-company-field";
 import { TransactionDateField } from "@/components/layout/transaction-date-field";
@@ -145,21 +146,8 @@ export function EditTransactionModal({ open, onClose, transaction }: Props) {
       const live = await fetchLiveMarketPriceClient(sym);
       const marketPrice = live ?? pr;
 
-      let logoUrl: string | null = transaction.logoUrl;
-      try {
-        const res = await fetch(`/api/stocks/${encodeURIComponent(sym)}/header-meta`);
-        if (res.ok) {
-          const data = (await res.json()) as { logoUrl?: string | null };
-          if (typeof data.logoUrl === "string" && data.logoUrl.trim()) {
-            logoUrl = data.logoUrl.trim();
-          }
-        }
-      } catch {
-        /* keep */
-      }
-      if (!logoUrl?.trim()) {
-        logoUrl = getCryptoLogoUrl(sym);
-      }
+      const resolvedLogo = displayLogoUrlForPortfolioSymbol(sym).trim();
+      const logoUrl = resolvedLogo ? resolvedLogo : null;
 
       const opLabel = operation === "Buy" ? "Buy" : "Sell";
       const lotCost = sh * pr + fee;
@@ -289,32 +277,11 @@ export function EditTransactionModal({ open, onClose, transaction }: Props) {
                 <TransactionPortfolioField />
               </Field>
               <Field label="Direction">
-                <div className="inline-flex rounded-[10px] bg-[#F4F4F5] p-0.5">
-                  <button
-                    type="button"
-                    onClick={() => setCashDirection("in")}
-                    className={cn(
-                      "rounded-[8px] px-3 py-1.5 text-[13px] font-medium leading-5 transition-all",
-                      cashDirection === "in"
-                        ? "bg-white text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]"
-                        : "text-[#71717A] hover:text-[#09090B]",
-                    )}
-                  >
-                    Cash In
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCashDirection("out")}
-                    className={cn(
-                      "rounded-[8px] px-3 py-1.5 text-[13px] font-medium leading-5 transition-all",
-                      cashDirection === "out"
-                        ? "bg-white text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]"
-                        : "text-[#71717A] hover:text-[#09090B]",
-                    )}
-                  >
-                    Cash Out
-                  </button>
-                </div>
+                <CashDirectionSelect
+                  value={cashDirection}
+                  onChange={setCashDirection}
+                  aria-label="Cash direction"
+                />
               </Field>
               <Field label="Date">
                 <TransactionDateField date={transactionDate} onDateChange={setTransactionDate} />

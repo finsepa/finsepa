@@ -1,11 +1,24 @@
 "use client";
 
-import { Fragment, memo, useMemo, useState } from "react";
-import { ArrowDownUp, Pencil } from "lucide-react";
+import { Fragment, memo, useCallback, useEffect, useMemo, useState } from "react";
+import { ArrowDownUp, ListX } from "lucide-react";
 import { format, parseISO } from "date-fns";
 
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import { DeleteTransactionConfirmModal } from "@/components/portfolio/delete-transaction-confirm-modal";
+import { TransactionRowActionsMenu } from "@/components/portfolio/transaction-row-actions-menu";
 import { CompanyLogo } from "@/components/screener/company-logo";
+import { displayLogoUrlForPortfolioSymbol } from "@/lib/portfolio/portfolio-asset-display-logo";
+import { portfolioAssetSymbolCaption } from "@/lib/portfolio/custom-asset-symbol";
+import { formatPortfolioUsdPerUnit } from "@/lib/portfolio/format-portfolio-usd-unit";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
+import { TABLE_PAGE_SIZE, TablePaginationBar, tablePageCount } from "@/components/ui/table-pagination";
 import { cn } from "@/lib/utils";
 import type { PortfolioTransaction, PortfolioTransactionKind } from "@/components/portfolio/portfolio-types";
 
@@ -56,69 +69,113 @@ function opColor(operation: string): string {
   return "text-[#09090B]";
 }
 
+function groupTransactionsByMonth(sortedDesc: PortfolioTransaction[]) {
+  const map = new Map<string, PortfolioTransaction[]>();
+  for (const t of sortedDesc) {
+    const key = format(parseISO(t.date), "yyyy-MM");
+    const list = map.get(key) ?? [];
+    list.push(t);
+    map.set(key, list);
+  }
+  const keys = [...map.keys()].sort((a, b) => b.localeCompare(a));
+  return keys.map((k) => ({
+    key: k,
+    label: format(parseISO(`${k}-01`), "MMMM, yyyy"),
+    rows: map.get(k) ?? [],
+  }));
+}
+
 function PortfolioTransactionsTableInner({ transactions }: { transactions: PortfolioTransaction[] }) {
-  const { openEditTransaction } = usePortfolioWorkspace();
+  const { openEditTransaction, removePortfolioTransaction, selectedPortfolioReadOnly } =
+    usePortfolioWorkspace();
   const [filter, setFilter] = useState<TxFilter>("All");
+  const [page, setPage] = useState(1);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [deleteCandidate, setDeleteCandidate] = useState<PortfolioTransaction | null>(null);
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (!deleteCandidate) return;
+    await removePortfolioTransaction(deleteCandidate);
+  }, [deleteCandidate, removePortfolioTransaction]);
 
   const filtered = useMemo(
     () => transactions.filter((t) => filterMatches(t.kind, filter)),
     [transactions, filter],
   );
 
-  const grouped = useMemo(() => {
-    const sorted = [...filtered].sort(
-      (a, b) => parseISO(b.date).getTime() - parseISO(a.date).getTime(),
-    );
-    const map = new Map<string, PortfolioTransaction[]>();
-    for (const t of sorted) {
-      const key = format(parseISO(t.date), "yyyy-MM");
-      const list = map.get(key) ?? [];
-      list.push(t);
-      map.set(key, list);
-    }
-    const keys = [...map.keys()].sort((a, b) => b.localeCompare(a));
-    return keys.map((k) => ({
-      key: k,
-      label: format(parseISO(`${k}-01`), "MMMM, yyyy"),
-      rows: map.get(k) ?? [],
-    }));
-  }, [filtered]);
+  useEffect(() => {
+    setPage(1);
+  }, [filter]);
 
-  if (transactions.length === 0) {
-    return (
-      <div className="flex min-h-[min(40vh,360px)] flex-col items-center justify-center rounded-[12px] border border-[#E4E4E7] bg-white px-6 py-16 text-center">
-        <p className="text-lg font-semibold text-[#09090B]">No transactions</p>
-        <p className="mt-1 text-sm text-[#71717A]">Add a trade or cash movement to see it here.</p>
-      </div>
-    );
-  }
+  const flatSorted = useMemo(
+    () => [...filtered].sort((a, b) => parseISO(b.date).getTime() - parseISO(a.date).getTime()),
+    [filtered],
+  );
+
+  const txPageCount = useMemo(() => tablePageCount(flatSorted.length), [flatSorted.length]);
+
+  useEffect(() => {
+    setPage((p) => Math.min(p, txPageCount));
+  }, [txPageCount]);
+
+  const safeTxPage = Math.min(Math.max(1, page), txPageCount);
+  const pageSlice = useMemo(
+    () => flatSorted.slice((safeTxPage - 1) * TABLE_PAGE_SIZE, safeTxPage * TABLE_PAGE_SIZE),
+    [flatSorted, safeTxPage],
+  );
+
+  const grouped = useMemo(() => groupTransactionsByMonth(pageSlice), [pageSlice]);
 
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
         <h2 className="text-lg font-semibold leading-7 text-[#09090B]">Transactions</h2>
         <div className="flex flex-wrap items-center gap-2">
-          {FILTERS.map((f) => (
-            <button
-              key={f}
-              type="button"
-              onClick={() => setFilter(f)}
-              className={cn(
-                "rounded-[10px] px-5 py-2 text-[14px] font-medium leading-5 text-[#09090B] transition-colors duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2",
-                f === filter ? "bg-[#F4F4F5]" : "hover:bg-[#F4F4F5]/80",
-              )}
-            >
-              {f}
-            </button>
-          ))}
+          <div
+            className="inline-flex shrink-0 rounded-full bg-[#F4F4F5] p-0.5"
+            role="group"
+            aria-label="Transaction type"
+          >
+            {FILTERS.map((f) => {
+              const active = f === filter;
+              return (
+                <button
+                  key={f}
+                  type="button"
+                  onClick={() => setFilter(f)}
+                  className={cn(
+                    "rounded-[10px] px-3 py-1.5 text-sm font-medium leading-5 transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2 sm:px-4",
+                    active
+                      ? "bg-white text-[#09090B] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]"
+                      : "text-[#71717A] hover:text-[#09090B]",
+                  )}
+                >
+                  {f}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      {filtered.length === 0 ? (
+      {transactions.length === 0 ? (
+        <Empty variant="card">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <ListX className="h-6 w-6" strokeWidth={1.75} aria-hidden />
+            </EmptyMedia>
+            <EmptyTitle>No transactions</EmptyTitle>
+            <EmptyDescription>
+              Add a trade, cash movement, or use Import Transactions above to see it here.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+      ) : filtered.length === 0 ? (
         <p className="py-8 text-center text-sm text-[#71717A]">No transactions in this category.</p>
       ) : (
-        <div className="w-full overflow-x-auto pb-8">
-          <table className="w-full min-w-[1000px] border-collapse text-sm">
+        <div className="w-full">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[1000px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-[#E4E4E7] text-left text-[#71717A]">
                 <th className="pb-3 pr-4 font-medium">Asset</th>
@@ -134,7 +191,10 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                 <th className="whitespace-nowrap pb-3 pr-4 font-medium">Fee</th>
                 <th className="whitespace-nowrap pb-3 pr-4 font-medium">Summ</th>
                 <th className="whitespace-nowrap pb-3 pr-4 font-medium">Total profit</th>
-                <th className="w-12 pb-3 pr-0 font-medium" aria-label="Actions" />
+                <th
+                  className="w-12 pb-3 pr-0 font-medium"
+                  aria-label={selectedPortfolioReadOnly ? undefined : "Actions"}
+                />
               </tr>
             </thead>
             <tbody>
@@ -152,10 +212,10 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                     <tr key={t.id} className="border-b border-[#E4E4E7]">
                       <td className="py-3 pr-4">
                         <div className="flex items-center gap-3">
-                          <CompanyLogo name={t.name} logoUrl={t.logoUrl ?? ""} symbol={t.symbol} />
+                          <CompanyLogo name={t.name} logoUrl={displayLogoUrlForPortfolioSymbol(t.symbol)} symbol={t.symbol} />
                           <div className="min-w-0">
                             <div className="font-semibold text-[#09090B]">{t.name}</div>
-                            <div className="text-xs text-[#71717A]">{t.symbol}</div>
+                            <div className="text-xs text-[#71717A]">{portfolioAssetSymbolCaption(t.symbol)}</div>
                           </div>
                         </div>
                       </td>
@@ -169,7 +229,7 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                         {new Intl.NumberFormat("en-US", { maximumFractionDigits: 6 }).format(t.shares)}
                       </td>
                       <td className="whitespace-nowrap py-3 pr-4 tabular-nums text-[#09090B]">
-                        {usd.format(t.price)}
+                        {formatPortfolioUsdPerUnit(t.price)}
                       </td>
                       <td className="whitespace-nowrap py-3 pr-4 tabular-nums text-[#09090B]">
                         {t.fee > 0 ? usd.format(t.fee) : "—"}
@@ -194,14 +254,17 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                         )}
                       </td>
                       <td className="py-3 pr-0 text-right">
-                        <button
-                          type="button"
-                          aria-label="Edit transaction"
-                          onClick={() => openEditTransaction(t)}
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[#09090B] transition-colors hover:bg-[#F4F4F5]"
-                        >
-                          <Pencil className="h-4 w-4" aria-hidden strokeWidth={2} />
-                        </button>
+                        {!selectedPortfolioReadOnly ? (
+                          <div className="inline-flex justify-end">
+                            <TransactionRowActionsMenu
+                              transaction={t}
+                              isOpen={openMenuId === t.id}
+                              onOpenChange={(open) => setOpenMenuId(open ? t.id : null)}
+                              onEdit={openEditTransaction}
+                              onRequestDelete={setDeleteCandidate}
+                            />
+                          </div>
+                        ) : null}
                       </td>
                     </tr>
                   ))}
@@ -209,8 +272,16 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
               ))}
             </tbody>
           </table>
+          </div>
+          <TablePaginationBar page={safeTxPage} totalItems={flatSorted.length} onPageChange={setPage} />
         </div>
       )}
+
+      <DeleteTransactionConfirmModal
+        transaction={deleteCandidate}
+        onClose={() => setDeleteCandidate(null)}
+        onConfirmDelete={handleConfirmDelete}
+      />
     </div>
   );
 }

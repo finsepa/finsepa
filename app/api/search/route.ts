@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 
-import { searchScreenerAllowlist } from "@/lib/search/screener-search-allowlist";
+import { globalAssetSearch } from "@/lib/search/global-asset-search";
 import { isSingleAssetMode, SINGLE_ASSET_SYMBOL } from "@/lib/features/single-asset";
 import { TOP10_META } from "@/lib/screener/top10-config";
-import { companyLogoUrlFromDomain } from "@/lib/screener/company-logo-url";
+import { companyLogoUrlForTicker } from "@/lib/screener/company-logo-url";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -30,7 +30,7 @@ export async function GET(request: Request) {
           symbol: sym,
           name: meta.name,
           subtitle: "US",
-          logoUrl: companyLogoUrlFromDomain(meta.domain),
+          logoUrl: companyLogoUrlForTicker(sym, meta.domain),
           route: `/stock/${encodeURIComponent(sym)}`,
           marketLabel: "US equity",
         },
@@ -39,7 +39,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const items = await searchScreenerAllowlist(q);
+    const items = await globalAssetSearch(q, "all");
     return NextResponse.json(
       { items },
       {

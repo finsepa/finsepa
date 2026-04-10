@@ -13,4 +13,6 @@ export type StockNewsArticle = {
 export type StockNewsResponse = {
   ticker: string;
   items: StockNewsArticle[];
+  /** When `items.length === requested limit`, client may request the next `offset`. */
+  hasMore?: boolean;
 };

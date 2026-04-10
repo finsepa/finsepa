@@ -4,7 +4,8 @@ import { unstable_cache } from "next/cache";
 
 import { REVALIDATE_HOT } from "@/lib/data/cache-policy";
 import { getEodhdApiKey } from "@/lib/env/server";
-import { ALL_CRYPTO_METAS, toSupportedCryptoTicker } from "@/lib/market/eodhd-crypto";
+import { traceEodhdHttp } from "@/lib/market/provider-trace";
+import { resolveCryptoMetaForProvider } from "@/lib/market/crypto-meta-resolver";
 import type { StockNewsArticle } from "@/lib/market/stock-news-types";
 import { extractImageUrlFromPlainText, pickBestImageUrl } from "@/lib/market/stock-news-images";
 import { fetchOgImageFromArticleUrl } from "@/lib/market/stock-news-og";
@@ -56,16 +57,14 @@ async function loadCryptoNewsUncached(routeSymbol: string): Promise<StockNewsArt
   const key = getEodhdApiKey();
   if (!key) return [];
 
-  const supported = toSupportedCryptoTicker(routeSymbol);
-  if (!supported) return [];
-
-  const meta = ALL_CRYPTO_METAS.find((m) => m.symbol.toUpperCase() === supported.toUpperCase());
+  const meta = await resolveCryptoMetaForProvider(routeSymbol);
   if (!meta) return [];
 
   const url = `https://eodhd.com/api/news?s=${encodeURIComponent(meta.eodhdSymbol)}&offset=0&limit=10&api_token=${encodeURIComponent(key)}&fmt=json`;
 
   let data: unknown;
   try {
+    if (!traceEodhdHttp("loadCryptoNewsUncached", { symbol: meta.eodhdSymbol })) return [];
     const res = await fetch(url, { cache: "no-store" });
     if (!res.ok) return [];
     data = await res.json();

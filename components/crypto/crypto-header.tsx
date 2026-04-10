@@ -8,6 +8,7 @@ import { useSpringTriplet } from "@/components/chart/use-spring-numbers";
 import { mergeLogoMemory, readLogoMemory } from "@/lib/logos/logo-memory";
 import { WatchlistStarButton } from "@/components/watchlist/watchlist-star-button";
 import { SCREENER_CRYPTO_HREF } from "@/lib/screener/screener-market-url";
+import { eodhdCryptoSpotTickerDisplay } from "@/lib/crypto/eodhd-crypto-ticker-display";
 import { cryptoWatchlistKey } from "@/lib/watchlist/constants";
 
 function formatCryptoUsd(value: number | null) {
@@ -56,6 +57,7 @@ export function CryptoHeader({
   headerLoading,
 }: Props) {
   const sym = symbol.trim().toUpperCase();
+  const pairLabel = eodhdCryptoSpotTickerDisplay(sym);
   const serverLogo = logoUrl?.trim() ?? "";
   const memLogo = readLogoMemory(sym)?.trim() ?? "";
   const logoFailureKey = `${sym}|${serverLogo}`;
@@ -84,7 +86,7 @@ export function CryptoHeader({
             Crypto
           </Link>
           <ChevronRight className="h-3.5 w-3.5" />
-          <span className="font-medium text-[#09090B]">{sym}</span>
+          <span className="font-medium text-[#09090B]">{pairLabel}</span>
         </div>
       </div>
 
@@ -115,7 +117,7 @@ export function CryptoHeader({
               <h1 className="text-[20px] font-semibold leading-7 text-[#09090B] [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical] overflow-hidden break-words">
                 {displayName}
               </h1>
-              <span className="text-[14px] font-medium text-[#71717A]">{sym}</span>
+              <span className="text-[14px] font-medium text-[#71717A]">{pairLabel}</span>
             </div>
             {headerLoading ? (
               <div className="mt-1 h-4 max-w-[min(100%,28rem)] rounded bg-neutral-200/80 animate-pulse" aria-hidden />

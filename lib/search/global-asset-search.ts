@@ -6,13 +6,15 @@ import { REVALIDATE_SEARCH } from "@/lib/data/cache-policy";
 
 import { getStockDetailMetaFromTicker } from "@/lib/market/stock-detail-meta";
 import { fetchEodhdSearch, type EodhdSearchRow } from "@/lib/market/eodhd-search";
-import { ALL_CRYPTO_METAS, toSupportedCryptoTicker } from "@/lib/market/eodhd-crypto";
+import { getEodhdCryptoCcSearchUniverse } from "@/lib/market/eodhd-crypto-cc-universe";
+import { ALL_CRYPTO_METAS } from "@/lib/market/crypto-meta";
 import { INDEX_TOP10 } from "@/lib/market/indices-top10";
 import { getCryptoLogoUrl } from "@/lib/crypto/crypto-logo-url";
-import { getCachedStockLogoUrl } from "@/lib/market/stock-logo-url";
+import { resolveEquityLogoUrlFromTicker } from "@/lib/screener/resolve-equity-logo-url";
 import { getTop500Universe } from "@/lib/screener/top500-companies";
 import type { SearchAssetItem, SearchScope } from "@/lib/search/search-types";
-import { runWithConcurrencyLimit } from "@/lib/utils/run-with-concurrency-limit";
+
+type RankedSearch = { item: SearchAssetItem; score: number; marketCapUsd: number | null };
 
 function norm(s: string): string {
   return s.trim().toLowerCase();
@@ -22,6 +24,20 @@ function matchesQuery(name: string, symbol: string, q: string): boolean {
   const n = norm(q);
   if (!n) return true;
   return norm(name).includes(n) || norm(symbol).includes(n);
+}
+
+/** Match name/base ticker; also treat `floki-usd` / `floki-usdt` style queries as the base symbol. */
+function matchesCryptoAssetQuery(name: string, base: string, q: string): boolean {
+  const n = norm(q);
+  if (!n) return true;
+  const nm = norm(name);
+  const bs = norm(base);
+  if (nm.includes(n) || bs.includes(n)) return true;
+  const pairStripped = n.replace(/-(usd|usdt)(\.cc)?$/i, "").trim();
+  if (pairStripped.length > 0 && pairStripped !== n) {
+    if (bs === pairStripped || bs.includes(pairStripped) || nm.includes(pairStripped)) return true;
+  }
+  return false;
 }
 
 function stockItemFromTicker(ticker: string, nameFallback?: string): SearchAssetItem {
@@ -59,7 +75,7 @@ function cryptoItem(symbol: string, name: string): SearchAssetItem {
     type: "crypto",
     symbol: sym,
     name,
-    subtitle: `${sym}-USD`,
+    subtitle: null,
     logoUrl: getCryptoLogoUrl(sym),
     route: `/crypto/${encodeURIComponent(sym)}`,
     marketLabel: "Crypto",
@@ -81,9 +97,12 @@ function parseEodhdRow(row: EodhdSearchRow): SearchAssetItem | null {
   if (!code || !name) return null;
 
   if (code.endsWith(".CC")) {
-    const base = code.split("-")[0]?.trim().toUpperCase() ?? "";
-    if (!base || !toSupportedCryptoTicker(base)) return null;
-    return cryptoItem(base, name);
+    const u = code.trim().toUpperCase();
+    const m = /^([A-Z0-9]+)-(USD|USDT)\.CC$/i.exec(u);
+    if (!m) return null;
+    const base = m[1]!.trim();
+    if (!base) return null;
+    return cryptoItem(base, name || base);
   }
 
   if (code.includes(".INDX") || typ.toUpperCase().includes("INDEX")) {
@@ -110,12 +129,36 @@ function parseEodhdRow(row: EodhdSearchRow): SearchAssetItem | null {
   return null;
 }
 
-function localCryptoMatches(q: string): SearchAssetItem[] {
-  const out: SearchAssetItem[] = [];
+async function cryptoUniverseMatches(
+  q: string,
+  scoreItem: (name: string, symbol: string, type: SearchAssetItem["type"]) => number,
+): Promise<RankedSearch[]> {
+  const n = norm(q);
+  const uni = await getEodhdCryptoCcSearchUniverse();
+  const byBase = new Map<string, { base: string; name: string; marketCapUsd: number | null }>();
+
+  for (const r of uni) {
+    byBase.set(r.base, { base: r.base, name: r.name, marketCapUsd: r.marketCapUsd });
+  }
   for (const m of ALL_CRYPTO_METAS) {
-    if (matchesQuery(m.name, m.symbol, q)) {
-      out.push(cryptoItem(m.symbol, m.name));
-    }
+    const b = m.symbol.toUpperCase();
+    const prev = byBase.get(b);
+    byBase.set(b, {
+      base: b,
+      name: m.name,
+      marketCapUsd: prev?.marketCapUsd ?? null,
+    });
+  }
+
+  const out: RankedSearch[] = [];
+  for (const row of byBase.values()) {
+    if (!matchesCryptoAssetQuery(row.name, row.base, n)) continue;
+    const item = cryptoItem(row.base, row.name);
+    out.push({
+      item,
+      score: scoreItem(row.name, row.base, item.type),
+      marketCapUsd: row.marketCapUsd,
+    });
   }
   return out;
 }
@@ -130,11 +173,10 @@ function localIndexMatches(q: string): SearchAssetItem[] {
   return out;
 }
 
-async function attachStockLogos(items: SearchAssetItem[]): Promise<SearchAssetItem[]> {
+function attachStockLogos(items: SearchAssetItem[]): SearchAssetItem[] {
   const stockSyms = [...new Set(items.filter((i) => i.type === "stock").map((i) => i.symbol.trim().toUpperCase()))];
   if (stockSyms.length === 0) return items;
-  const urls = await runWithConcurrencyLimit(stockSyms, 8, (sym) => getCachedStockLogoUrl(sym));
-  const bySym = new Map(stockSyms.map((s, i) => [s, urls[i] ?? ""] as const));
+  const bySym = new Map(stockSyms.map((s) => [s, resolveEquityLogoUrlFromTicker(s)] as const));
   return items.map((item) => {
     if (item.type !== "stock") return item;
     const sym = item.symbol.trim().toUpperCase();
@@ -149,8 +191,7 @@ async function runGlobalAssetSearch(qNorm: string, scope: SearchScope): Promise<
   const n = qNorm;
   if (n.length < 1) return [];
 
-  type Scored = { item: SearchAssetItem; score: number; marketCapUsd: number | null };
-  const candidates: Scored[] = [];
+  const candidates: RankedSearch[] = [];
 
   function scoreItem(name: string, symbol: string, type: SearchAssetItem["type"]): number {
     const nn = n;
@@ -183,8 +224,8 @@ async function runGlobalAssetSearch(qNorm: string, scope: SearchScope): Promise<
     }
   }
   if (scope === "all" || scope === "crypto") {
-    for (const c of localCryptoMatches(n)) {
-      candidates.push({ item: c, score: scoreItem(c.name, c.symbol, c.type), marketCapUsd: null });
+    for (const c of await cryptoUniverseMatches(n, scoreItem)) {
+      candidates.push(c);
     }
   }
 
@@ -196,7 +237,8 @@ async function runGlobalAssetSearch(qNorm: string, scope: SearchScope): Promise<
       return nL.includes(n) || tL.includes(n);
     });
     hits.sort((a, b) => b.marketCapUsd - a.marketCapUsd || a.ticker.localeCompare(b.ticker));
-    const max = scope === "stocks" ? 80 : 40;
+    /** Include the full US top-cap snapshot for local match (covers essentially all S&P 500–sized names). */
+    const max = 500;
     for (const u of hits.slice(0, max)) {
       const t = u.ticker.trim().toUpperCase();
       const item: SearchAssetItem = {
@@ -213,7 +255,7 @@ async function runGlobalAssetSearch(qNorm: string, scope: SearchScope): Promise<
     }
   }
 
-  const remote = await fetchEodhdSearch(n, scope === "all" ? 60 : 50);
+  const remote = await fetchEodhdSearch(n, scope === "all" ? 120 : 50);
   for (const row of remote) {
     const item = parseEodhdRow(row);
     if (!item) continue;
@@ -221,7 +263,7 @@ async function runGlobalAssetSearch(qNorm: string, scope: SearchScope): Promise<
     candidates.push({ item, score: scoreItem(item.name, item.symbol, item.type), marketCapUsd: null });
   }
 
-  const best = new Map<string, Scored>();
+  const best = new Map<string, RankedSearch>();
   for (const c of candidates) {
     const prev = best.get(c.item.id);
     if (!prev) best.set(c.item.id, c);
@@ -244,13 +286,13 @@ async function runGlobalAssetSearch(qNorm: string, scope: SearchScope): Promise<
     })
     .map((c) => c.item);
 
-  const sliced = out.slice(0, scope === "stocks" ? 60 : 50);
+  const sliced = out.slice(0, scope === "stocks" ? 200 : 120);
   return attachStockLogos(sliced);
 }
 
 const getCachedGlobalAssetSearch = unstable_cache(
   async (qNorm: string, scope: SearchScope) => runGlobalAssetSearch(qNorm, scope),
-  ["global-asset-search-v4"],
+  ["global-asset-search-v11-full-eodhd-cc-universe"],
   { revalidate: REVALIDATE_SEARCH },
 );
 

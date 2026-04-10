@@ -29,37 +29,9 @@ function ChangeCell({ value }: { value: number | null }) {
   );
 }
 
-function TrendSparkline({ points, positive }: { points: number[]; positive: boolean }) {
-  const w = 80;
-  const h = 32;
-  const series =
-    points.length >= 2 ? points : points.length === 1 ? [points[0]!, points[0]!] : [0, 0];
-  const min = Math.min(...series);
-  const max = Math.max(...series);
-  const range = max - min || 1;
-
-  const pts = series.map((p, i) => {
-    const x = (i / (series.length - 1)) * w;
-    const y = h - ((p - min) / range) * (h - 6) - 3;
-    return `${x.toFixed(1)},${y.toFixed(1)}`;
-  });
-
-  const polyline = pts.join(" ");
-  const fillPath = `M${pts[0]} L${pts.slice(1).join(" L")} L${w},${h} L0,${h} Z`;
-  const stroke = positive ? "#16A34A" : "#DC2626";
-  const fill = positive ? "rgba(22,163,74,0.08)" : "rgba(220,38,38,0.08)";
-  const lastPt = pts[pts.length - 1].split(",");
-
-  return (
-    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} fill="none">
-      <path d={fillPath} fill={fill} />
-      <polyline points={polyline} fill="none" stroke={stroke} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
-      <circle cx={lastPt[0]} cy={lastPt[1]} r="2" fill={stroke} />
-    </svg>
-  );
-}
-
-const colLayout = "grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr_1fr_80px_96px] gap-x-2";
+const colLayout = "grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr_1fr_96px] gap-x-2";
+/** Columns 2–9 of `colLayout`; used inside a real `<a>` (avoid `display: contents` on Next.js `Link`). */
+const rowLinkGrid = "grid-cols-[48px_2fr_1fr_1fr_1fr_1fr_1fr_96px] gap-x-2";
 
 type RowProps = {
   item: ScreenerTableRow;
@@ -70,11 +42,6 @@ type RowProps = {
 };
 
 const ScreenerDataRow = memo(function ScreenerDataRow({ item, rank, starred, loaded, toggleTicker }: RowProps) {
-  const trend = Array.isArray(item.trend) ? item.trend : [];
-  const first = trend[0];
-  const last = trend[trend.length - 1];
-  const trendPositive =
-    first != null && last != null ? last >= first : item.change1D != null && item.change1D >= 0;
   const watchedSet = useMemo(() => {
     const k = item.ticker.trim().toUpperCase();
     return starred ? new Set([k]) : new Set<string>();
@@ -95,7 +62,8 @@ const ScreenerDataRow = memo(function ScreenerDataRow({ item, rank, starred, loa
 
       <Link
         href={`/stock/${encodeURIComponent(item.ticker)}`}
-        className="contents"
+        prefetch={false}
+        className={`${rowLinkGrid} col-span-8 col-start-2 grid min-h-[60px] min-w-0 items-center`}
         aria-label={`Open ${item.name} (${item.ticker})`}
       >
         <div className="text-center text-[14px] font-semibold leading-5 tabular-nums text-[#71717A]">{rank}</div>
@@ -119,16 +87,6 @@ const ScreenerDataRow = memo(function ScreenerDataRow({ item, rank, starred, loa
         <div className="text-center font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B]">{item.marketCap}</div>
 
         <div className="text-center font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B]">{item.pe}</div>
-
-        <div className="flex items-center">
-          {trend.length ? (
-            <TrendSparkline points={trend} positive={trendPositive} />
-          ) : (
-            <span className="inline-flex h-8 w-20 items-center justify-center">
-              <span className="h-8 w-20 rounded-md bg-[#E4E4E7]" />
-            </span>
-          )}
-        </div>
       </Link>
     </div>
   );
@@ -150,7 +108,6 @@ export function ScreenerTable({ rows, rankOffset = 0 }: { rows: ScreenerTableRow
         <div>YTD %</div>
         <div>M Cap</div>
         <div>PE</div>
-        <div>Last 5 Days</div>
       </div>
 
       {rows.map((item, index) => (

@@ -1,7 +1,7 @@
 const tabs = ["Stocks", "Crypto", "Indices"] as const;
 export type MarketTab = (typeof tabs)[number];
 
-/** Primary underline tabs — shared by Screener (Stocks/Crypto/Indices) and Portfolio (Overview/Cash/…). */
+/** Primary underline tabs — shared by Screener (Stocks/Crypto/Indices) and Portfolio (Overview/Performance/Cash/…). */
 export function UnderlineTabs<T extends string>({
   tabs: tabList,
   active,

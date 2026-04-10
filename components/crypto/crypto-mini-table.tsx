@@ -3,6 +3,7 @@
 import { ArrowUpDown } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
+import { eodhdCryptoSpotTickerDisplay } from "@/lib/crypto/eodhd-crypto-ticker-display";
 import { CompanyLogo } from "@/components/screener/company-logo";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
 
@@ -106,7 +107,7 @@ export function CryptoMiniTable({
                 <CompanyLogo name={displayName} logoUrl={logoUrl} symbol={sym} />
                 <div>
                   <div className="text-[14px] font-semibold leading-5 text-[#09090B]">{displayName}</div>
-                  <div className="text-[12px] leading-4 text-[#71717A]">{sym}</div>
+                  <div className="text-[12px] leading-4 text-[#71717A]">{eodhdCryptoSpotTickerDisplay(sym)}</div>
                 </div>
               </div>
             </td>

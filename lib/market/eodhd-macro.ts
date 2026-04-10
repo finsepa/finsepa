@@ -5,6 +5,7 @@ import { unstable_cache } from "next/cache";
 import { REVALIDATE_STATIC_DAY } from "@/lib/data/cache-policy";
 
 import { getEodhdApiKey } from "@/lib/env/server";
+import { traceEodhdHttp } from "@/lib/market/provider-trace";
 
 export type MacroPoint = { time: string; value: number };
 
@@ -75,6 +76,8 @@ async function fetchMacroIndicatorUncached(args: {
 
   const url = `https://eodhd.com/api/macro-indicator/${encodeURIComponent(args.country)}?${params.toString()}`;
   try {
+    if (!traceEodhdHttp("fetchMacroIndicatorUncached", { country: args.country, indicator: args.indicator }))
+      return [];
     const res = await fetch(url, { next: { revalidate: 60 * 60 * 24 } }); // 24h
     if (!res.ok) return [];
     const json = (await res.json()) as unknown;

@@ -3,12 +3,8 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 
 import { REVALIDATE_HOT } from "@/lib/data/cache-policy";
-import {
-  toSupportedCryptoTicker,
-  type SupportedCryptoTicker,
-  ALL_CRYPTO_METAS,
-  fetchEodhdCryptoDailyBars,
-} from "@/lib/market/eodhd-crypto";
+import { type SupportedCryptoTicker, fetchEodhdCryptoDailyBars } from "@/lib/market/eodhd-crypto";
+import { resolveCryptoMetaForProvider } from "@/lib/market/crypto-meta-resolver";
 import type { CryptoFundamentalsMeta } from "@/lib/market/eodhd-crypto-fundamentals-meta";
 import { fetchEodhdCryptoFundamentalsMeta } from "@/lib/market/eodhd-crypto-fundamentals-meta";
 import type { EodhdDailyBar } from "@/lib/market/eodhd-eod";
@@ -120,18 +116,12 @@ function mapFundamentals(fund: CryptoFundamentalsMeta | null): Pick<
   };
 }
 
-function findMeta(symbol: SupportedCryptoTicker) {
-  return ALL_CRYPTO_METAS.find((m) => m.symbol.toUpperCase() === symbol.toUpperCase()) ?? null;
-}
-
 async function loadCryptoAssetUncached(symbolOrTicker: string): Promise<CryptoAssetRow | null> {
-  const supported = toSupportedCryptoTicker(symbolOrTicker);
-  if (!supported) return null;
-  const meta = findMeta(supported);
+  const meta = await resolveCryptoMetaForProvider(symbolOrTicker);
   if (!meta) return null;
 
   const window = eodFetchWindowUtc();
-  const logoUrl = getCryptoLogoUrl(supported);
+  const logoUrl = getCryptoLogoUrl(meta.symbol);
   const tonCandidates =
     meta.symbol === "TON" && meta.eodhdAltSymbols?.length ? [meta.eodhdSymbol, ...meta.eodhdAltSymbols] : [meta.eodhdSymbol];
 
@@ -181,6 +171,6 @@ async function loadCryptoAssetUncached(symbolOrTicker: string): Promise<CryptoAs
   return null;
 }
 
-export const getCryptoAsset = unstable_cache(loadCryptoAssetUncached, ["crypto-asset-v5"], {
+export const getCryptoAsset = unstable_cache(loadCryptoAssetUncached, ["crypto-asset-v6-cc-universe"], {
   revalidate: REVALIDATE_HOT,
 });

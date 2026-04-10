@@ -4,6 +4,7 @@ import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useStat
 import { useRouter } from "next/navigation";
 import { Plus, RefreshCw, X } from "lucide-react";
 
+import { eodhdCryptoSpotTickerDisplay } from "@/lib/crypto/eodhd-crypto-ticker-display";
 import { CompanyLogo } from "@/components/screener/company-logo";
 import { getStockDetailMetaFromTicker } from "@/lib/market/stock-detail-meta";
 import { isSingleAssetMode } from "@/lib/features/single-asset";
@@ -102,7 +103,9 @@ export function PeerSearchDropdownRow({ item, onPick }: { item: SearchAssetItem;
     >
       <div className="min-w-0 flex-1">
         <div className="truncate font-medium">{item.name}</div>
-        <div className="truncate text-[12px] text-[#71717A]">{item.symbol}</div>
+        <div className="truncate text-[12px] text-[#71717A]">
+          {item.type === "crypto" ? eodhdCryptoSpotTickerDisplay(item.symbol) : item.symbol}
+        </div>
       </div>
       <div className="flex shrink-0 flex-col items-end gap-0.5">
         <span className="rounded-full bg-[#F4F4F5] px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-[#71717A]">
@@ -330,16 +333,11 @@ function StockPeersTabInner({
 
       <div className="flex flex-wrap items-center gap-2">
         {compareTickers.map((sym) => {
-          const row = rowsByTicker.get(sym.toUpperCase());
-          const meta = getStockDetailMetaFromTicker(sym);
-          const displayName = row?.fullName?.trim() ? row.fullName : meta.name ?? sym;
-          const displayLogo = row?.logoUrl ?? meta.logoUrl ?? null;
           const isPrimary = sym.toUpperCase() === main;
 
           return (
             <div key={sym} className={SPLIT_PILL_CHIP}>
-              <div className="flex items-center gap-2 py-1 pl-1.5 pr-2">
-                <CompanyLogo name={displayName} logoUrl={(displayLogo ?? "").trim()} symbol={sym} />
+              <div className="flex items-center py-1 pl-2.5 pr-2">
                 <span className="tabular-nums">{sym}</span>
               </div>
               {isPrimary ? null : (
@@ -399,9 +397,7 @@ function StockPeersTabInner({
                 />
               </div>
               <div className="max-h-[min(400px,calc(100vh-12rem))] overflow-y-auto py-1">
-                {!showSearchPanel ? (
-                  <p className="px-3 py-2 text-[12px] text-[#71717A]">Type to search — same index as the top bar.</p>
-                ) : searchLoading && searchItems.length === 0 ? (
+                {!showSearchPanel ? null : searchLoading && searchItems.length === 0 ? (
                   <p className="px-3 py-2 text-[12px] text-[#71717A]">Searching…</p>
                 ) : !searchLoading && searchItems.length === 0 ? (
                   <p className="px-3 py-2 text-[12px] text-[#71717A]">No results for &ldquo;{queryTrim}&rdquo;</p>

@@ -1,7 +1,7 @@
 "use client";
 
 import { type MouseEvent, memo, useCallback, useMemo, useRef, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { BarChart3, ChevronDown } from "lucide-react";
 import {
   eachMonthOfInterval,
   eachYearOfInterval,
@@ -17,6 +17,13 @@ import {
   subYears,
 } from "date-fns";
 
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { cn } from "@/lib/utils";
 import type { PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 
@@ -435,9 +442,20 @@ function CashInOutBarChartSectionInner({ rows }: { rows: PortfolioTransaction[] 
       </div>
 
       {rows.length === 0 ? (
-        <div className="flex min-h-[200px] items-center justify-center rounded-[12px] border border-dashed border-[#E4E4E7] bg-[#FAFAFA] px-4 py-12 text-center text-sm text-[#71717A]">
-          Add cash in or cash out to see deposits and withdrawals over time.
-        </div>
+        <Empty
+          variant="plain"
+          className="min-h-[200px] justify-center rounded-[12px] border border-dashed border-[#E4E4E7] bg-[#FAFAFA] py-12"
+        >
+          <EmptyHeader className="gap-2">
+            <EmptyMedia variant="icon">
+              <BarChart3 className="h-6 w-6" strokeWidth={1.75} aria-hidden />
+            </EmptyMedia>
+            <EmptyTitle className="text-sm font-medium leading-5">No cash activity yet</EmptyTitle>
+            <EmptyDescription className="max-w-sm">
+              Add cash in or cash out to see deposits and withdrawals over time.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       ) : buckets.length === 0 ? (
         <div className="flex min-h-[200px] items-center justify-center rounded-[12px] border border-[#E4E4E7] bg-white px-4 py-12 text-center text-sm text-[#71717A]">
           No periods in this range yet.

@@ -20,7 +20,7 @@ import {
   type UTCTimestamp,
 } from "lightweight-charts";
 
-import { SkeletonBox } from "@/components/markets/skeleton";
+import { ChartSkeleton } from "@/components/ui/chart-skeleton";
 import {
   computeChartHeaderMetrics,
   type ChartRangeSelection,
@@ -574,8 +574,8 @@ export function PriceChart({
         onPointerDown={handlePointerDown}
       />
       {loading ? (
-        <div className="absolute inset-0 z-20 px-1 py-1">
-          <SkeletonBox className="h-full w-full rounded-md" />
+        <div className="absolute inset-0 z-20 flex flex-col px-1 py-1">
+          <ChartSkeleton fill variant="minimal" />
         </div>
       ) : null}
       {empty ? (

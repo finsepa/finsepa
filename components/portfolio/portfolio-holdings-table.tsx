@@ -5,16 +5,19 @@ import Link from "next/link";
 import { Trash2 } from "lucide-react";
 
 import { CompanyLogo } from "@/components/screener/company-logo";
+import { displayLogoUrlForPortfolioSymbol } from "@/lib/portfolio/portfolio-asset-display-logo";
 import { usePortfolioOverviewAthReader } from "@/components/portfolio/portfolio-overview-ath-context";
 import { RemoveAssetModal } from "@/components/portfolio/remove-asset-modal";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import { portfolioHoldingAssetHref } from "@/lib/crypto/crypto-picker-universe";
+import { portfolioAssetSymbolCaption } from "@/lib/portfolio/custom-asset-symbol";
 import {
   netCashUsd,
   totalCostBasisInvested,
   unrealizedProfitPct,
   unrealizedProfitUsd,
 } from "@/lib/portfolio/overview-metrics";
+import { formatPortfolioUsdPerUnit } from "@/lib/portfolio/format-portfolio-usd-unit";
 import { cn } from "@/lib/utils";
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 
@@ -58,6 +61,7 @@ function PortfolioHoldingsTableInner({
     setPortfolioTransactions,
     editTransaction,
     closeEditTransaction,
+    selectedPortfolioReadOnly,
   } = usePortfolioWorkspace();
 
   const [removeTarget, setRemoveTarget] = useState<PortfolioHolding | null>(null);
@@ -144,31 +148,52 @@ function PortfolioHoldingsTableInner({
             <th className="whitespace-nowrap px-4 py-3 text-center">Return % (tot.)</th>
             <th className="whitespace-nowrap px-4 py-3 text-center">Return (tot.)</th>
             <th className="whitespace-nowrap px-4 py-3 text-center">Weight</th>
-            <th className="w-12 px-4 py-3 text-right" aria-label="Actions" />
+            <th
+              className="w-12 px-4 py-3 text-right"
+              aria-label={selectedPortfolioReadOnly ? undefined : "Actions"}
+            />
           </tr>
         </thead>
         <tbody>
-          {sorted.map(({ holding: h, retUsd, retPct, weightPct }) => (
+          {sorted.map(({ holding: h, retUsd, retPct, weightPct }) => {
+            const assetHref = portfolioHoldingAssetHref(h.symbol);
+            const logo = displayLogoUrlForPortfolioSymbol(h.symbol);
+            const caption = portfolioAssetSymbolCaption(h.symbol);
+            const assetInner = (
+              <>
+                <CompanyLogo name={h.name} logoUrl={logo} symbol={h.symbol} />
+                <div className="min-w-0 text-left">
+                  <div
+                    className={cn(
+                      "truncate text-[14px] font-semibold leading-5 text-[#09090B]",
+                      assetHref && "group-hover:underline",
+                    )}
+                  >
+                    {h.name}
+                  </div>
+                  <div className="text-[12px] font-normal leading-4 text-[#71717A]">{caption}</div>
+                </div>
+              </>
+            );
+            return (
             <tr
               key={h.id}
               className="h-[60px] max-h-[60px] border-b border-[#E4E4E7] transition-colors duration-75 hover:bg-neutral-50"
             >
               <td className="align-middle px-4 py-0">
-                <Link
-                  href={portfolioHoldingAssetHref(h.symbol)}
-                  className="group flex min-w-0 max-w-full items-center gap-3 rounded-lg py-2 pr-2 outline-none transition-colors hover:bg-neutral-50 focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2"
-                >
-                  <CompanyLogo name={h.name} logoUrl={h.logoUrl ?? ""} symbol={h.symbol} />
-                  <div className="min-w-0 text-left">
-                    <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B] group-hover:underline">
-                      {h.name}
-                    </div>
-                    <div className="text-[12px] font-normal leading-4 text-[#71717A]">{h.symbol}</div>
-                  </div>
-                </Link>
+                {assetHref ? (
+                  <Link
+                    href={assetHref}
+                    className="group flex min-w-0 max-w-full items-center gap-3 rounded-lg py-2 pr-2 outline-none transition-colors hover:bg-neutral-50 focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2"
+                  >
+                    {assetInner}
+                  </Link>
+                ) : (
+                  <div className="flex min-w-0 max-w-full items-center gap-3 rounded-lg py-2 pr-2">{assetInner}</div>
+                )}
               </td>
               <td className="align-middle whitespace-nowrap px-4 py-3 text-center font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
-                {usd.format(h.avgPrice)}
+                {formatPortfolioUsdPerUnit(h.avgPrice)}
               </td>
               <td className="align-middle whitespace-nowrap px-4 py-3 text-center font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
                 {usd0.format(h.costBasis)}
@@ -178,7 +203,7 @@ function PortfolioHoldingsTableInner({
                   {usd0.format(h.currentValue)}
                 </div>
                 <div className="text-[12px] font-normal leading-4 tabular-nums text-[#71717A]">
-                  {usd.format(h.marketPrice)}
+                  {formatPortfolioUsdPerUnit(h.marketPrice)}
                 </div>
               </td>
               <td
@@ -199,18 +224,21 @@ function PortfolioHoldingsTableInner({
                 {pct.format(weightPct)}%
               </td>
               <td className="align-middle px-4 py-3 text-right">
-                <button
-                  type="button"
-                  disabled={selectedPortfolioId == null}
-                  aria-label={`Remove ${h.name} from portfolio`}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[#71717A] transition-colors hover:bg-[#FEF2F2] hover:text-[#DC2626] disabled:pointer-events-none disabled:opacity-40"
-                  onClick={() => setRemoveTarget(h)}
-                >
-                  <Trash2 className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
-                </button>
+                {!selectedPortfolioReadOnly ? (
+                  <button
+                    type="button"
+                    disabled={selectedPortfolioId == null}
+                    aria-label={`Remove ${h.name} from portfolio`}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[#71717A] transition-colors hover:bg-[#FEF2F2] hover:text-[#DC2626] disabled:pointer-events-none disabled:opacity-40"
+                    onClick={() => setRemoveTarget(h)}
+                  >
+                    <Trash2 className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
+                  </button>
+                ) : null}
               </td>
             </tr>
-          ))}
+            );
+          })}
 
           <tr className="h-[60px] max-h-[60px] border-b border-[#E4E4E7] bg-white transition-colors duration-75 hover:bg-neutral-50">
             <td className="align-middle px-4 py-0">

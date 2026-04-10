@@ -12,6 +12,8 @@ import "server-only";
 
 import { AsyncLocalStorage } from "async_hooks";
 
+import { tryConsumeEodhdRequestSlot } from "@/lib/market/eodhd-hourly-budget";
+
 export const PROVIDER_TRACE_ENABLED = process.env.FINSEPA_PROVIDER_TRACE === "1";
 
 type TraceBucket = {
@@ -35,8 +37,14 @@ export function runWithProviderTrace<T>(label: string, fn: () => Promise<T>): Pr
   });
 }
 
-/** One outbound HTTP request to eodhd.com (count once per fetch()). */
-export function traceEodhdHttp(fnName: string, meta?: Record<string, unknown>) {
+/**
+ * Reserve hourly EODHD budget + optional per-scope trace. Call immediately before `fetch` to eodhd.com.
+ * @returns false when the rolling-hour request cap is full — skip the fetch and return empty data upstream.
+ */
+export function traceEodhdHttp(fnName: string, meta?: Record<string, unknown>): boolean {
+  if (!tryConsumeEodhdRequestSlot()) {
+    return false;
+  }
   const b = als.getStore();
   if (b) {
     b.eodhdHttp += 1;
@@ -46,4 +54,5 @@ export function traceEodhdHttp(fnName: string, meta?: Record<string, unknown>) {
     const extra = meta && Object.keys(meta).length ? ` ${JSON.stringify(meta)}` : "";
     console.info(`[FINSEPA_PROVIDER_TRACE] EODHD ${fnName}${extra}`);
   }
+  return true;
 }

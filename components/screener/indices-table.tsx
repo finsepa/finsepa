@@ -13,7 +13,6 @@ type IndexRow = {
   change1D: number;
   change1M: number | null;
   changeYTD: number | null;
-  spark5d: number[];
 };
 
 function formatValue(v: number): string {
@@ -37,40 +36,7 @@ function ChangeCell({ value }: { value: number | null }) {
   );
 }
 
-function Spark({ points, positive }: { points: number[]; positive: boolean }) {
-  const w = 80;
-  const h = 32;
-  if (points.length < 1) {
-    return (
-      <span className="inline-flex h-8 w-20 items-center justify-center">
-        <span className="h-8 w-20 rounded-md bg-[#E4E4E7]" />
-      </span>
-    );
-  }
-  const series = points.length >= 2 ? points : points.length === 1 ? [points[0]!, points[0]!] : [0, 0];
-  const min = Math.min(...series);
-  const max = Math.max(...series);
-  const range = max - min || 1;
-  const pts = series.map((p, i) => {
-    const x = (i / (series.length - 1)) * w;
-    const y = h - ((p - min) / range) * (h - 6) - 3;
-    return `${x.toFixed(1)},${y.toFixed(1)}`;
-  });
-  const polyline = pts.join(" ");
-  const fillPath = `M${pts[0]} L${pts.slice(1).join(" L")} L${w},${h} L0,${h} Z`;
-  const stroke = positive ? "#16A34A" : "#DC2626";
-  const fill = positive ? "rgba(22,163,74,0.08)" : "rgba(220,38,38,0.08)";
-  const lastPt = pts[pts.length - 1].split(",");
-  return (
-    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} fill="none">
-      <path d={fillPath} fill={fill} />
-      <polyline points={polyline} fill="none" stroke={stroke} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
-      <circle cx={lastPt[0]} cy={lastPt[1]} r="2" fill={stroke} />
-    </svg>
-  );
-}
-
-const colLayout = "grid-cols-[40px_2fr_1fr_1fr_1fr_1fr_96px] gap-x-2";
+const colLayout = "grid-cols-[40px_2fr_1fr_1fr_1fr_1fr] gap-x-2";
 
 export function IndicesTable({ initialRows }: { initialRows?: IndexRow[] }) {
   const rows = Array.isArray(initialRows) ? initialRows : [];
@@ -93,11 +59,9 @@ export function IndicesTable({ initialRows }: { initialRows?: IndexRow[] }) {
         <div>1D %</div>
         <div>1M %</div>
         <div>YTD %</div>
-        <div>Last 5 Days</div>
       </div>
 
       {safeRows.map((r) => {
-        const positive = r.spark5d.length >= 2 ? r.spark5d[r.spark5d.length - 1]! >= r.spark5d[0]! : r.change1D >= 0;
         const wlKey = indexWatchlistKey(r.symbol);
         return (
           <div
@@ -117,9 +81,6 @@ export function IndicesTable({ initialRows }: { initialRows?: IndexRow[] }) {
             <ChangeCell value={r.change1D} />
             <ChangeCell value={r.change1M} />
             <ChangeCell value={r.changeYTD} />
-            <div className="flex items-center">
-              <Spark points={r.spark5d} positive={positive} />
-            </div>
           </div>
         );
       })}

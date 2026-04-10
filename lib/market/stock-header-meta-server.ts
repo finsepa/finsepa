@@ -2,15 +2,16 @@ import "server-only";
 
 import { unstable_cache } from "next/cache";
 
-import { REVALIDATE_WARM } from "@/lib/data/cache-policy";
+import { REVALIDATE_WARM_LONG } from "@/lib/data/cache-policy";
 import { fetchEodhdFundamentalsJson, resolveEarningsDateDisplay } from "@/lib/market/eodhd-fundamentals";
 import type { StockDetailHeaderMeta } from "@/lib/market/stock-header-meta";
-import { getCachedStockLogoUrl } from "@/lib/market/stock-logo-url";
+import { resolveEquityLogoUrlFromTicker } from "@/lib/screener/resolve-equity-logo-url";
 import { countWatchlistEntriesForStockTicker } from "@/lib/watchlist/stock-watchlist-count";
 
 async function buildHeaderMetaFromFundamentalsOnly(ticker: string): Promise<Omit<StockDetailHeaderMeta, "watchlistCount">> {
-  const logoStr = await getCachedStockLogoUrl(ticker);
-  const root = await fetchEodhdFundamentalsJson(ticker);
+  const fundamentalsPromise = fetchEodhdFundamentalsJson(ticker);
+  const logoStr = resolveEquityLogoUrlFromTicker(ticker);
+  const root = await fundamentalsPromise;
 
   const general =
     root && typeof root === "object" && root.General && typeof root.General === "object"
@@ -45,8 +46,8 @@ async function buildHeaderMetaFromFundamentalsOnly(ticker: string): Promise<Omit
 
 const getCachedFundamentalsHeaderSlice = unstable_cache(
   async (ticker: string) => buildHeaderMetaFromFundamentalsOnly(ticker),
-  ["stock-header-meta-fundamentals-v3-earnings-history-first"],
-  { revalidate: REVALIDATE_WARM },
+  ["stock-header-meta-fundamentals-v4-align-900s"],
+  { revalidate: REVALIDATE_WARM_LONG },
 );
 
 /**

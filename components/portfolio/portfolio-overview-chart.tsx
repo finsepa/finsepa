@@ -16,9 +16,18 @@ import {
   type MouseEventParams,
   type Time,
 } from "lightweight-charts";
+import { LineChart } from "lucide-react";
 
 import { horzTimeToUnixSeconds } from "@/components/chart/chart-selection-utils";
 import type { PortfolioTransaction } from "@/components/portfolio/portfolio-types";
+import { ChartSkeleton } from "@/components/ui/chart-skeleton";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { cn } from "@/lib/utils";
 import type {
   PortfolioChartRange,
@@ -29,9 +38,11 @@ const VALUE_BLUE = "#2563EB";
 const GREEN = "#16A34A";
 const RED = "#DC2626";
 
-type MetricMode = "value" | "profit";
+export type PortfolioChartMetricMode = "value" | "profit";
 
-const RANGE_LABELS: { id: PortfolioChartRange; label: string }[] = [
+type MetricMode = PortfolioChartMetricMode;
+
+export const PORTFOLIO_CHART_RANGE_LABELS: { id: PortfolioChartRange; label: string }[] = [
   { id: "1d", label: "1D" },
   { id: "7d", label: "7D" },
   { id: "1m", label: "1M" },
@@ -51,9 +62,11 @@ function truncOneDecimalUnit(abs: number, unit: number): string {
 }
 
 function formatAxisUsd(n: number): string {
-  if (!Number.isFinite(n) || Math.abs(n) < 1e-9) return "$0";
-  const sign = n < 0 ? "-" : "";
-  const abs = Math.abs(n);
+  if (!Number.isFinite(n)) return "$0";
+  const v = Math.abs(n) < 0.005 ? 0 : n;
+  if (Math.abs(v) < 1e-9) return "$0";
+  const sign = v < 0 ? "-" : "";
+  const abs = Math.abs(v);
   if (abs >= 1_000_000) {
     const body = truncOneDecimalUnit(abs, 1_000_000);
     return `${sign}$${body}M`;
@@ -104,7 +117,8 @@ function snapOverviewTimeScale(
   });
 }
 
-function ChartPane({
+/** Shared chart body for portfolio value history (Overview + Performance). */
+export function PortfolioValueHistoryChartPane({
   metric,
   points,
 }: {
@@ -338,7 +352,7 @@ function ChartPane({
 
 function PortfolioOverviewChartInner({ transactions }: { transactions: PortfolioTransaction[] }) {
   const [metric, setMetric] = useState<MetricMode>("value");
-  const [range, setRange] = useState<PortfolioChartRange>("7d");
+  const [range, setRange] = useState<PortfolioChartRange>("all");
   const [points, setPoints] = useState<PortfolioValueHistoryPoint[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -412,7 +426,7 @@ function PortfolioOverviewChartInner({ transactions }: { transactions: Portfolio
             role="group"
             aria-label="Chart range"
           >
-            {RANGE_LABELS.map((r) => (
+            {PORTFOLIO_CHART_RANGE_LABELS.map((r) => (
               <button
                 key={r.id}
                 type="button"
@@ -433,26 +447,37 @@ function PortfolioOverviewChartInner({ transactions }: { transactions: Portfolio
 
       <div className="w-full min-w-0">
         {!canLoad ? (
-          <div className="flex h-[320px] flex-col items-center justify-center px-6 text-center">
-            <p className="text-sm font-medium text-[#09090B]">No activity yet</p>
-            <p className="mt-1 max-w-sm text-sm text-[#71717A]">
-              Add trades or cash movements to see portfolio value over time.
-            </p>
-          </div>
+          <Empty variant="plain" className="h-[320px] justify-center py-0">
+            <EmptyHeader className="gap-2">
+              <EmptyMedia variant="icon">
+                <LineChart className="h-6 w-6" strokeWidth={1.75} aria-hidden />
+              </EmptyMedia>
+              <EmptyTitle className="text-sm font-medium leading-5">No activity yet</EmptyTitle>
+              <EmptyDescription className="max-w-sm">
+                Add trades or cash movements to see portfolio value over time.
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
         ) : loading ? (
-          <div className="flex h-[320px] items-center justify-center">
-            <div className="h-48 w-full max-w-md animate-pulse rounded-lg bg-[#F4F4F5]" aria-hidden />
-          </div>
+          <ChartSkeleton />
         ) : error ? (
           <div className="flex h-[320px] flex-col items-center justify-center px-6">
             <p className="text-sm text-[#71717A]">{error}</p>
           </div>
         ) : points.length === 0 ? (
-          <div className="flex h-[320px] flex-col items-center justify-center px-6">
-            <p className="text-sm text-[#71717A]">Not enough data for this range.</p>
-          </div>
+          <Empty variant="plain" className="h-[320px] justify-center py-0">
+            <EmptyHeader className="gap-2">
+              <EmptyMedia variant="icon">
+                <LineChart className="h-6 w-6" strokeWidth={1.75} aria-hidden />
+              </EmptyMedia>
+              <EmptyTitle className="text-sm font-medium leading-5">Not enough data</EmptyTitle>
+              <EmptyDescription className="max-w-sm">
+                Try a different range or add more activity to this portfolio.
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
         ) : (
-          <ChartPane metric={metric} points={points} />
+          <PortfolioValueHistoryChartPane metric={metric} points={points} />
         )}
       </div>
     </section>

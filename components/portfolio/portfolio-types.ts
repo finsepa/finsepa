@@ -1,4 +1,42 @@
-export type PortfolioEntry = { id: string; name: string };
+export type PortfolioPrivacy = "private" | "public";
+
+export type PortfolioKind = "standard" | "combined";
+
+export type PortfolioEntry = {
+  id: string;
+  name: string;
+  privacy: PortfolioPrivacy;
+  kind?: PortfolioKind;
+  /** When `kind` is `combined`, IDs of standard portfolios merged into this view (read-only aggregate). */
+  combinedFrom?: string[];
+};
+
+export function portfolioIsCombined(p: PortfolioEntry | null | undefined): boolean {
+  return p?.kind === "combined" && Array.isArray(p.combinedFrom) && p.combinedFrom.length >= 2;
+}
+
+/** Coerce persisted / partial rows to a full entry (missing privacy → private). */
+export function normalizePortfolioEntry(p: {
+  id: string;
+  name: string;
+  privacy?: unknown;
+  kind?: unknown;
+  combinedFrom?: unknown;
+}): PortfolioEntry {
+  const privacy: PortfolioPrivacy = p.privacy === "public" ? "public" : "private";
+  const base: PortfolioEntry = { id: p.id, name: p.name, privacy };
+
+  const kind = p.kind === "combined" ? "combined" : "standard";
+  const combinedFrom =
+    kind === "combined" && Array.isArray(p.combinedFrom) ?
+      p.combinedFrom.filter((x): x is string => typeof x === "string")
+    : undefined;
+
+  if (kind === "combined" && combinedFrom && combinedFrom.length >= 2) {
+    return { ...base, kind: "combined", combinedFrom };
+  }
+  return base;
+}
 
 /** One lot / line in the portfolio holdings table (local UI until backend exists). */
 export type PortfolioHolding = {

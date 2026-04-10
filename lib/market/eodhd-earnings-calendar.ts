@@ -1,6 +1,7 @@
 import "server-only";
 
 import { getEodhdApiKey } from "@/lib/env/server";
+import { traceEodhdHttp } from "@/lib/market/provider-trace";
 
 export type EodhdRawEarningRow = {
   code?: string;
@@ -57,6 +58,7 @@ export async function fetchEodhdEarningsCalendar(fromYmd: string, toYmd: string)
   const url = `https://eodhd.com/api/calendar/earnings?${params.toString()}`;
 
   try {
+    if (!traceEodhdHttp("fetchEodhdEarningsCalendar", { from: fromYmd, to: toYmd })) return [];
     const res = await fetch(url, { next: { revalidate: 900 } });
     if (!res.ok) return [];
     const json = (await res.json()) as { earnings?: unknown };

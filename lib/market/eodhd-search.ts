@@ -1,6 +1,7 @@
 import "server-only";
 
 import { getEodhdApiKey } from "@/lib/env/server";
+import { traceEodhdHttp } from "@/lib/market/provider-trace";
 
 export type EodhdSearchRow = {
   Code?: string;
@@ -22,6 +23,7 @@ export async function fetchEodhdSearch(query: string, limit = 40): Promise<Eodhd
   const url = `https://eodhd.com/api/search/${encodeURIComponent(q)}?api_token=${encodeURIComponent(key)}&fmt=json&limit=${limit}`;
 
   try {
+    if (!traceEodhdHttp("fetchEodhdSearch", { q: q.slice(0, 32), limit })) return [];
     const res = await fetch(url, { next: { revalidate: 120 } });
     if (!res.ok) return [];
     const data = (await res.json()) as unknown;

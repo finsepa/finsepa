@@ -19,6 +19,14 @@ export function totalNetWorth(holdings: PortfolioHolding[], cashUsd: number): nu
   return equity + cashUsd;
 }
 
+/**
+ * Values within half a cent of zero format as $0.00 (avoids -$0.00 from float noise / rounding).
+ */
+export function normalizeUsdForDisplay(n: number): number {
+  if (!Number.isFinite(n)) return 0;
+  return Math.abs(n) < 0.005 ? 0 : n;
+}
+
 /** Capital invested in open positions at cost (excludes cash). */
 export function totalCostBasisInvested(holdings: PortfolioHolding[]): number {
   return holdings.reduce((s, h) => s + h.costBasis, 0);

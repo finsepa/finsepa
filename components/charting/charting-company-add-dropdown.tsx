@@ -4,7 +4,7 @@ import { Plus } from "lucide-react";
 
 import { CompanyPicker } from "@/components/charting/company-picker";
 
-/** Peers-style + Company: screener TOP10 list when opened, then search (same `/api/search` as Peers). */
+/** + Company: screener page 1+2 list when opened (then `/api/search` when typing). */
 export function ChartingCompanyAddDropdown({
   onPickStock,
   disabled,
@@ -24,6 +24,7 @@ export function ChartingCompanyAddDropdown({
       disabled={disabled}
       maxExtraCompanies={maxExtraCompanies}
       excludeSymbols={excludeSymbols}
+      includeCrypto={false}
     >
       {({ open, setOpen, atCapacity }) => (
         <button

@@ -21,3 +21,9 @@ export function getSupabaseServiceRoleKey(): string | undefined {
   const b = process.env.SUPABASE_SERVICE_KEY?.trim();
   return b || undefined;
 }
+
+/** OpenAI API key (server-only). Used for portfolio import column mapping. */
+export function getOpenAiApiKey(): string | undefined {
+  const v = process.env.OPENAI_API_KEY?.trim();
+  return v || undefined;
+}

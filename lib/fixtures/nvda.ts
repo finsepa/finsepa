@@ -11,7 +11,7 @@ import type { StockProfilePayload } from "@/lib/market/stock-profile-types";
 import type { ChartingSeriesPoint } from "@/lib/market/charting-series-types";
 import type { StockNewsArticle } from "@/lib/market/stock-news-types";
 
-import { companyLogoUrlFromDomain } from "@/lib/screener/company-logo-url";
+import { companyLogoUrlForTicker } from "@/lib/screener/company-logo-url";
 import { TOP10_META } from "@/lib/screener/top10-config";
 import { screenerStaticByTicker } from "@/lib/screener/screener-static";
 import type { ScreenerTableRow } from "@/lib/screener/screener-static";
@@ -40,7 +40,7 @@ export function getNvdaHeaderMeta(): StockDetailHeaderMeta {
   const meta = TOP10_META[NVDA as keyof typeof TOP10_META];
   return {
     fullName: "NVIDIA Corporation",
-    logoUrl: companyLogoUrlFromDomain(meta.domain),
+    logoUrl: companyLogoUrlForTicker(NVDA, meta.domain),
     sector: "Technology",
     industry: "Semiconductors",
     earningsDateDisplay: "—",
@@ -256,7 +256,7 @@ export async function getNvdaScreenerRow(): Promise<ScreenerTableRow> {
       id: staticRow.id,
       name: staticRow.name,
       ticker: staticRow.ticker,
-      logoUrl: companyLogoUrlFromDomain(meta.domain),
+      logoUrl: companyLogoUrlForTicker(NVDA, meta.domain),
       price: null,
       change1D: null,
       change1M: null,
@@ -289,7 +289,7 @@ export async function getNvdaScreenerRow(): Promise<ScreenerTableRow> {
     name: staticRow.name,
     ticker: staticRow.ticker,
     // Logo is derived from known domain (no EODHD logo callback).
-    logoUrl: companyLogoUrlFromDomain(meta.domain),
+    logoUrl: companyLogoUrlForTicker(NVDA, meta.domain),
     price: currentPrice,
     change1D,
     change1M,

@@ -7,9 +7,14 @@ import { X } from "lucide-react";
 
 import type { CompanyPick } from "@/components/charting/company-picker";
 import { cn } from "@/lib/utils";
+import { CashDirectionSelect, type CashDirection } from "@/components/layout/cash-direction-select";
 import { ClearableInput } from "@/components/layout/clearable-input";
 import { TransactionCompanyField } from "@/components/layout/transaction-company-field";
 import { TransactionDateField } from "@/components/layout/transaction-date-field";
+import {
+  TransactionIncomeOperationSelect,
+  type IncomeOperation,
+} from "@/components/layout/transaction-income-operation-select";
 import {
   TransactionOperationField,
   type Operation,
@@ -17,11 +22,18 @@ import {
 import { TransactionPortfolioField } from "@/components/portfolio/transaction-portfolio-field";
 import { newHoldingId, newTransactionRowId } from "@/components/portfolio/portfolio-types";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
-import { getCryptoLogoUrl } from "@/lib/crypto/crypto-logo-url";
+import { customPortfolioSymbolFromName } from "@/lib/portfolio/custom-asset-symbol";
+import { displayLogoUrlForPortfolioSymbol } from "@/lib/portfolio/portfolio-asset-display-logo";
 import { fetchLiveMarketPriceClient, fetchPriceOnDateClient } from "@/lib/portfolio/client-symbol-quotes";
 import { lotUnrealizedPnL, mergeBuyIntoPosition } from "@/lib/portfolio/holding-position";
 
 const TABS = ["Trades", "Incomes", "Expenses", "Cash"] as const;
+
+const TRADE_ASSET_TABS = [
+  { id: "listed" as const, label: "Company / Ticker" },
+  { id: "custom" as const, label: "Custom Asset" },
+] as const;
+type TradeAssetSource = (typeof TRADE_ASSET_TABS)[number]["id"];
 
 function formatPriceInputFromApi(n: number): string {
   if (!Number.isFinite(n)) return "";
@@ -42,6 +54,14 @@ const usdBalance = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
+
+/** Ledger sums can be ±ε; round to cents so ~0 shows as $0.00 (not red / minus). */
+function roundUsdForDisplay(n: number): number {
+  if (!Number.isFinite(n)) return 0;
+  const cents = Math.round(n * 100);
+  if (cents === 0) return 0;
+  return cents / 100;
+}
 
 type Props = {
   open: boolean;
@@ -69,7 +89,15 @@ export function NewTransactionModal({ open, onClose }: Props) {
   const [shares, setShares] = useState("");
   const [price, setPrice] = useState("");
   const [fees, setFees] = useState("");
+  const [cashDirection, setCashDirection] = useState<CashDirection>("in");
+  const [cashAmount, setCashAmount] = useState("");
+  const [incomeOperation, setIncomeOperation] = useState<IncomeOperation>("Dividend");
+  const [incomeTotalReceived, setIncomeTotalReceived] = useState("");
+  const [incomePerShare, setIncomePerShare] = useState("");
+  const [incomeFees, setIncomeFees] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [tradeAssetSource, setTradeAssetSource] = useState<TradeAssetSource>("listed");
+  const [customAssetName, setCustomAssetName] = useState("");
 
   const transactionTotal = useMemo(() => {
     const line = parseAmountField(shares) * parseAmountField(price);
@@ -86,7 +114,7 @@ export function NewTransactionModal({ open, onClose }: Props) {
   const priceFetchGen = useRef(0);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || transactionTab !== "Trades" || tradeAssetSource !== "listed") return;
     const sym = selectedCompany?.symbol?.trim();
     if (!sym) {
       setPrice("");
@@ -105,7 +133,7 @@ export function NewTransactionModal({ open, onClose }: Props) {
         setPrice("");
       }
     })();
-  }, [open, selectedCompany?.symbol, transactionDate]);
+  }, [open, transactionTab, tradeAssetSource, selectedCompany?.symbol, transactionDate]);
 
   useEffect(() => {
     if (!open) return;
@@ -125,72 +153,232 @@ export function NewTransactionModal({ open, onClose }: Props) {
     setShares("");
     setPrice("");
     setFees("");
+    setCashDirection("in");
+    setCashAmount("");
+    setIncomeOperation("Dividend");
+    setIncomeTotalReceived("");
+    setIncomePerShare("");
+    setIncomeFees("");
     setSubmitting(false);
+    setTradeAssetSource("listed");
+    setCustomAssetName("");
   }, [open]);
 
   const hasSelectedPortfolio =
     selectedPortfolioId != null &&
     portfolios.some((p) => p.id === selectedPortfolioId);
 
+  const cashAmountNum = useMemo(() => parseAmountField(cashAmount), [cashAmount]);
+  const incomeTotalNum = useMemo(() => parseAmountField(incomeTotalReceived), [incomeTotalReceived]);
+  const incomeFeeNum = useMemo(() => parseAmountField(incomeFees), [incomeFees]);
+  const incomeNetUsd = useMemo(
+    () => Math.max(0, incomeTotalNum - incomeFeeNum),
+    [incomeTotalNum, incomeFeeNum],
+  );
+
   const canAdd = useMemo(() => {
-    if (transactionTab !== "Trades") return false;
     if (!hasSelectedPortfolio) return false;
-    if (!selectedCompany?.symbol?.trim()) return false;
-    if (operation !== "Buy") return false;
-    const sh = parseAmountField(shares);
-    const pr = parseAmountField(price);
-    return sh > 0 && pr > 0;
+    if (transactionTab === "Trades") {
+      if (operation !== "Buy") return false;
+      const sh = parseAmountField(shares);
+      const pr = parseAmountField(price);
+      if (sh <= 0 || pr <= 0) return false;
+      if (tradeAssetSource === "listed") return Boolean(selectedCompany?.symbol?.trim());
+      return customAssetName.trim().length > 0;
+    }
+    if (transactionTab === "Cash") {
+      return cashAmountNum > 0;
+    }
+    if (transactionTab === "Incomes") {
+      if (!selectedCompany?.symbol?.trim()) return false;
+      return incomeTotalNum > 0 && incomeFeeNum >= 0 && incomeNetUsd > 0;
+    }
+    return false;
   }, [
     transactionTab,
     hasSelectedPortfolio,
     selectedCompany?.symbol,
+    tradeAssetSource,
+    customAssetName,
     operation,
     shares,
     price,
+    cashAmountNum,
+    incomeTotalNum,
+    incomeFeeNum,
+    incomeNetUsd,
+  ]);
+
+  const cashFlowSigned = useMemo(
+    () => (cashDirection === "in" ? cashAmountNum : -cashAmountNum),
+    [cashDirection, cashAmountNum],
+  );
+
+  const currentCashBalanceDisplayUsd = useMemo(
+    () => roundUsdForDisplay(currentCashBalanceUsd),
+    [currentCashBalanceUsd],
+  );
+
+  const balanceAfterIncomeUsd = useMemo(
+    () => roundUsdForDisplay(currentCashBalanceUsd + incomeNetUsd),
+    [currentCashBalanceUsd, incomeNetUsd],
+  );
+
+  const balanceAfterCashUsd = useMemo(
+    () => roundUsdForDisplay(currentCashBalanceUsd + cashFlowSigned),
+    [currentCashBalanceUsd, cashFlowSigned],
+  );
+
+  const handleAddIncome = useCallback(() => {
+    if (transactionTab !== "Incomes" || !canAdd || !selectedPortfolioId || !selectedCompany) return;
+    const total = incomeTotalNum;
+    const fee = incomeFeeNum;
+    const net = total - fee;
+    if (total <= 0 || net <= 0) return;
+
+    const perShare = parseAmountField(incomePerShare);
+    let sharesLedger = 0;
+    let priceLedger = 0;
+    if (perShare > 0) {
+      priceLedger = perShare;
+      sharesLedger = total / perShare;
+    }
+
+    setSubmitting(true);
+    try {
+      const sym = selectedCompany.symbol.trim().toUpperCase();
+      const resolvedLogo = displayLogoUrlForPortfolioSymbol(sym).trim();
+      const logoUrl = resolvedLogo ? resolvedLogo : null;
+      const dateStr = format(transactionDate, "yyyy-MM-dd");
+      const opLabel = incomeOperation === "Dividend" ? "Dividend" : "Other income";
+
+      addTransaction(selectedPortfolioId, {
+        id: newTransactionRowId(),
+        portfolioId: selectedPortfolioId,
+        kind: "income",
+        operation: opLabel,
+        symbol: sym,
+        name: selectedCompany.name,
+        logoUrl,
+        date: dateStr,
+        shares: sharesLedger,
+        price: priceLedger,
+        fee,
+        sum: net,
+        profitPct: null,
+        profitUsd: null,
+      });
+      onClose();
+    } finally {
+      setSubmitting(false);
+    }
+  }, [
+    addTransaction,
+    canAdd,
+    incomeFeeNum,
+    incomeOperation,
+    incomePerShare,
+    incomeTotalNum,
+    onClose,
+    selectedCompany,
+    selectedPortfolioId,
+    transactionDate,
+    transactionTab,
+  ]);
+
+  const handleAddCash = useCallback(() => {
+    if (transactionTab !== "Cash" || !canAdd || !selectedPortfolioId) return;
+    const n = cashAmountNum;
+    if (n <= 0) return;
+
+    setSubmitting(true);
+    try {
+      const dateStr = format(transactionDate, "yyyy-MM-dd");
+      addTransaction(selectedPortfolioId, {
+        id: newTransactionRowId(),
+        portfolioId: selectedPortfolioId,
+        kind: "cash",
+        operation: cashDirection === "in" ? "Cash In" : "Cash Out",
+        symbol: "USD",
+        name: "US Dollar",
+        logoUrl: null,
+        date: dateStr,
+        shares: n,
+        price: 1,
+        fee: 0,
+        sum: cashDirection === "in" ? n : -n,
+        profitPct: null,
+        profitUsd: null,
+      });
+      onClose();
+    } finally {
+      setSubmitting(false);
+    }
+  }, [
+    addTransaction,
+    canAdd,
+    cashAmountNum,
+    cashDirection,
+    onClose,
+    selectedPortfolioId,
+    transactionDate,
+    transactionTab,
   ]);
 
   const handleAdd = useCallback(async () => {
-    if (!canAdd || !selectedPortfolioId || !selectedCompany) return;
-    const sym = selectedCompany.symbol.trim();
+    if (transactionTab === "Cash") {
+      handleAddCash();
+      return;
+    }
+    if (transactionTab === "Incomes") {
+      handleAddIncome();
+      return;
+    }
+    if (transactionTab !== "Trades") return;
+    if (!canAdd || !selectedPortfolioId) return;
     const sh = parseAmountField(shares);
     const pr = parseAmountField(price);
     const fee = parseAmountField(fees);
     if (sh <= 0 || pr <= 0) return;
 
+    let symUpper: string;
+    let assetName: string;
+    let logoUrl: string | null;
+    let marketPrice: number;
+
+    if (tradeAssetSource === "custom") {
+      const nameRaw = customAssetName.trim();
+      if (!nameRaw) return;
+      symUpper = customPortfolioSymbolFromName(nameRaw).toUpperCase();
+      assetName = nameRaw;
+      logoUrl = null;
+      marketPrice = pr;
+    } else {
+      if (!selectedCompany?.symbol?.trim()) return;
+      const sym = selectedCompany.symbol.trim();
+      symUpper = sym.toUpperCase();
+      assetName = selectedCompany.name;
+      const live = await fetchLiveMarketPriceClient(sym);
+      marketPrice = live ?? pr;
+      const resolvedLogo = displayLogoUrlForPortfolioSymbol(sym).trim();
+      logoUrl = resolvedLogo ? resolvedLogo : null;
+    }
+
     setSubmitting(true);
     try {
-      const live = await fetchLiveMarketPriceClient(sym);
-      const marketPrice = live ?? pr;
-
-      let logoUrl: string | null = null;
-      try {
-        const res = await fetch(`/api/stocks/${encodeURIComponent(sym)}/header-meta`);
-        if (res.ok) {
-          const data = (await res.json()) as { logoUrl?: string | null };
-          if (typeof data.logoUrl === "string" && data.logoUrl.trim()) {
-            logoUrl = data.logoUrl.trim();
-          }
-        }
-      } catch {
-        logoUrl = null;
-      }
-      if (!logoUrl?.trim()) {
-        logoUrl = getCryptoLogoUrl(sym);
-      }
-
       const lotCost = sh * pr + fee;
       const dateStr = format(transactionDate, "yyyy-MM-dd");
 
       const existing =
         holdingsByPortfolioId[selectedPortfolioId]?.find(
-          (h) => h.symbol.toUpperCase() === sym.toUpperCase(),
+          (h) => h.symbol.toUpperCase() === symUpper,
         ) ?? null;
       const positionId = existing?.id ?? newHoldingId();
 
       const merged = mergeBuyIntoPosition(existing, {
         id: positionId,
-        symbol: sym.toUpperCase(),
-        name: selectedCompany.name,
+        symbol: symUpper,
+        name: assetName,
         logoUrl,
         shares: sh,
         price: pr,
@@ -212,8 +400,8 @@ export function NewTransactionModal({ open, onClose }: Props) {
         portfolioId: selectedPortfolioId,
         kind: "trade",
         operation,
-        symbol: sym.toUpperCase(),
-        name: selectedCompany.name,
+        symbol: symUpper,
+        name: assetName,
         logoUrl,
         date: dateStr,
         shares: sh,
@@ -233,6 +421,7 @@ export function NewTransactionModal({ open, onClose }: Props) {
     addHolding,
     addTransaction,
     canAdd,
+    customAssetName,
     fees,
     holdingsByPortfolioId,
     onClose,
@@ -241,7 +430,11 @@ export function NewTransactionModal({ open, onClose }: Props) {
     selectedCompany,
     selectedPortfolioId,
     shares,
+    tradeAssetSource,
     transactionDate,
+    transactionTab,
+    handleAddCash,
+    handleAddIncome,
   ]);
 
   if (!open) return null;
@@ -283,55 +476,173 @@ export function NewTransactionModal({ open, onClose }: Props) {
 
             <TransactionTypeTabs active={transactionTab} onChange={setTransactionTab} />
 
-            <Field label="Ticker/Company">
-              <TransactionCompanyField value={selectedCompany} onChange={setSelectedCompany} />
-            </Field>
-
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="Operation">
-                <TransactionOperationField value={operation} onChange={setOperation} />
-              </Field>
-              <Field label="Date">
-                <TransactionDateField date={transactionDate} onDateChange={setTransactionDate} />
-              </Field>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="Shares">
-                <ClearableInput
-                  type="number"
-                  inputMode="decimal"
-                  min="0"
-                  value={shares}
-                  onChange={setShares}
-                  placeholder="Shares"
-                  clearLabel="Clear shares"
+            {transactionTab === "Trades" ? (
+              <>
+                <TradeAssetSourceTabs
+                  active={tradeAssetSource}
+                  onChange={(v) => {
+                    setTradeAssetSource(v);
+                    if (v === "custom") {
+                      setSelectedCompany(null);
+                      setPrice("");
+                    } else {
+                      setCustomAssetName("");
+                    }
+                  }}
                 />
-              </Field>
-              <Field label="Price">
-                <ClearableInput
-                  type="number"
-                  inputMode="decimal"
-                  min="0"
-                  value={price}
-                  onChange={setPrice}
-                  placeholder="Price"
-                  clearLabel="Clear price"
-                />
-              </Field>
-            </div>
 
-            <Field label="Fees">
-              <ClearableInput
-                type="number"
-                inputMode="decimal"
-                min="0"
-                value={fees}
-                onChange={setFees}
-                placeholder="Fee"
-                clearLabel="Clear fees"
-              />
-            </Field>
+                {tradeAssetSource === "listed" ? (
+                  <Field label="Ticker/Company">
+                    <TransactionCompanyField value={selectedCompany} onChange={setSelectedCompany} />
+                  </Field>
+                ) : (
+                  <Field label="Asset name">
+                    <ClearableInput
+                      type="text"
+                      value={customAssetName}
+                      onChange={setCustomAssetName}
+                      placeholder="e.g. Private loan, Collectible"
+                      clearLabel="Clear name"
+                    />
+                  </Field>
+                )}
+
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="Operation">
+                    <TransactionOperationField value={operation} onChange={setOperation} />
+                  </Field>
+                  <Field label="Date">
+                    <TransactionDateField date={transactionDate} onDateChange={setTransactionDate} />
+                  </Field>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="Shares">
+                    <ClearableInput
+                      type="number"
+                      inputMode="decimal"
+                      min="0"
+                      value={shares}
+                      onChange={setShares}
+                      placeholder="Shares"
+                      clearLabel="Clear shares"
+                    />
+                  </Field>
+                  <Field label="Price">
+                    <ClearableInput
+                      type="number"
+                      inputMode="decimal"
+                      min="0"
+                      value={price}
+                      onChange={setPrice}
+                      placeholder="Price"
+                      clearLabel="Clear price"
+                    />
+                  </Field>
+                </div>
+
+                <Field label="Fees">
+                  <ClearableInput
+                    type="number"
+                    inputMode="decimal"
+                    min="0"
+                    value={fees}
+                    onChange={setFees}
+                    placeholder="Fee"
+                    clearLabel="Clear fees"
+                  />
+                </Field>
+              </>
+            ) : null}
+
+            {transactionTab === "Cash" ? (
+              <>
+                <Field label="Operation type">
+                  <CashDirectionSelect value={cashDirection} onChange={setCashDirection} />
+                </Field>
+
+                <Field label="Date">
+                  <TransactionDateField date={transactionDate} onDateChange={setTransactionDate} />
+                </Field>
+
+                <Field label="Amount">
+                  <ClearableInput
+                    type="number"
+                    inputMode="decimal"
+                    min="0"
+                    step="any"
+                    value={cashAmount}
+                    onChange={setCashAmount}
+                    placeholder="0.00"
+                    clearLabel="Clear amount"
+                  />
+                </Field>
+              </>
+            ) : null}
+
+            {transactionTab === "Incomes" ? (
+              <>
+                <Field label="Ticker/Company">
+                  <TransactionCompanyField value={selectedCompany} onChange={setSelectedCompany} />
+                </Field>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="Operation">
+                    <TransactionIncomeOperationSelect value={incomeOperation} onChange={setIncomeOperation} />
+                  </Field>
+                  <Field label="Date">
+                    <TransactionDateField date={transactionDate} onDateChange={setTransactionDate} />
+                  </Field>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="Total received">
+                    <ClearableInput
+                      type="number"
+                      inputMode="decimal"
+                      min="0"
+                      step="any"
+                      value={incomeTotalReceived}
+                      onChange={setIncomeTotalReceived}
+                      placeholder="0.00"
+                      clearLabel="Clear amount"
+                    />
+                  </Field>
+                  <Field label="Per share">
+                    <ClearableInput
+                      type="number"
+                      inputMode="decimal"
+                      min="0"
+                      step="any"
+                      value={incomePerShare}
+                      onChange={setIncomePerShare}
+                      placeholder="0.00"
+                      clearLabel="Clear per share"
+                    />
+                  </Field>
+                </div>
+
+                <Field label="Fees">
+                  <ClearableInput
+                    type="number"
+                    inputMode="decimal"
+                    min="0"
+                    step="any"
+                    value={incomeFees}
+                    onChange={setIncomeFees}
+                    placeholder="Fee"
+                    clearLabel="Clear fees"
+                  />
+                </Field>
+              </>
+            ) : null}
+
+            {transactionTab === "Expenses" ? (
+              <p className="text-sm leading-5 text-[#71717A]">
+                Expense entry is not available here yet. Use <span className="font-medium text-[#09090B]">Cash</span> for withdrawals
+                or <span className="font-medium text-[#09090B]">Trades</span> for sells.
+              </p>
+            ) : null}
 
             <div className="pt-1">
               <div className="flex items-center gap-1 border-b border-dashed border-[#E4E4E7] py-2.5 text-sm">
@@ -339,22 +650,79 @@ export function NewTransactionModal({ open, onClose }: Props) {
                 <span
                   className={cn(
                     "shrink-0 font-semibold tabular-nums",
-                    currentCashBalanceUsd < 0
+                    currentCashBalanceDisplayUsd < 0
                       ? "text-[#DC2626]"
-                      : currentCashBalanceUsd > 0
+                      : currentCashBalanceDisplayUsd > 0
                         ? "text-[#16A34A]"
                         : "text-[#09090B]",
                   )}
                 >
-                  {usdBalance.format(currentCashBalanceUsd)}
+                  {usdBalance.format(currentCashBalanceDisplayUsd)}
                 </span>
               </div>
-              <div className="flex items-center gap-1 py-2.5 text-sm">
-                <span className="flex-1 font-medium text-[#71717A]">Total</span>
-                <span className="shrink-0 font-semibold tabular-nums text-[#09090B]">
-                  {usdFormatter.format(transactionTotal)}
-                </span>
-              </div>
+              {transactionTab === "Trades" ? (
+                <div className="flex items-center gap-1 py-2.5 text-sm">
+                  <span className="flex-1 font-medium text-[#71717A]">Total</span>
+                  <span className="shrink-0 font-semibold tabular-nums text-[#09090B]">
+                    {usdFormatter.format(transactionTotal)}
+                  </span>
+                </div>
+              ) : null}
+              {transactionTab === "Incomes" && incomeTotalNum > 0 && incomeNetUsd > 0 ? (
+                <>
+                  <div className="flex items-center gap-1 border-b border-dashed border-[#E4E4E7] py-2.5 text-sm">
+                    <span className="flex-1 font-medium text-[#71717A]">Net to cash</span>
+                    <span className="shrink-0 font-semibold tabular-nums text-[#16A34A]">
+                      {usdFormatter.format(incomeNetUsd)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 py-2.5 text-sm">
+                    <span className="flex-1 font-medium text-[#71717A]">Balance after</span>
+                    <span
+                      className={cn(
+                        "shrink-0 font-semibold tabular-nums",
+                        balanceAfterIncomeUsd < 0
+                          ? "text-[#DC2626]"
+                          : balanceAfterIncomeUsd > 0
+                            ? "text-[#16A34A]"
+                            : "text-[#09090B]",
+                      )}
+                    >
+                      {usdBalance.format(balanceAfterIncomeUsd)}
+                    </span>
+                  </div>
+                </>
+              ) : null}
+              {transactionTab === "Cash" && cashAmountNum > 0 ? (
+                <>
+                  <div className="flex items-center gap-1 border-b border-dashed border-[#E4E4E7] py-2.5 text-sm">
+                    <span className="flex-1 font-medium text-[#71717A]">Cash flow</span>
+                    <span
+                      className={cn(
+                        "shrink-0 font-semibold tabular-nums",
+                        cashFlowSigned >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
+                      )}
+                    >
+                      {usdFormatter.format(cashFlowSigned)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 py-2.5 text-sm">
+                    <span className="flex-1 font-medium text-[#71717A]">Balance after</span>
+                    <span
+                      className={cn(
+                        "shrink-0 font-semibold tabular-nums",
+                        balanceAfterCashUsd < 0
+                          ? "text-[#DC2626]"
+                          : balanceAfterCashUsd > 0
+                            ? "text-[#16A34A]"
+                            : "text-[#09090B]",
+                      )}
+                    >
+                      {usdBalance.format(balanceAfterCashUsd)}
+                    </span>
+                  </div>
+                </>
+              ) : null}
             </div>
           </div>
         </div>
@@ -403,7 +771,7 @@ function TransactionTypeTabs({
   onChange: (tab: (typeof TABS)[number]) => void;
 }) {
   return (
-    <div className="flex gap-5 border-b border-[#E4E4E7]">
+    <div className="flex w-full gap-5 border-b border-[#E4E4E7]">
       {TABS.map((tab) => {
         const isOn = tab === active;
         return (
@@ -418,6 +786,42 @@ function TransactionTypeTabs({
             }
           >
             {tab}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function TradeAssetSourceTabs({
+  active,
+  onChange,
+}: {
+  active: TradeAssetSource;
+  onChange: (next: TradeAssetSource) => void;
+}) {
+  return (
+    <div
+      className="flex w-full border-b border-[#E4E4E7]"
+      role="tablist"
+      aria-label="Asset source"
+    >
+      {TRADE_ASSET_TABS.map((item) => {
+        const isOn = item.id === active;
+        return (
+          <button
+            key={item.id}
+            type="button"
+            role="tab"
+            aria-selected={isOn}
+            onClick={() => onChange(item.id)}
+            className={
+              isOn
+                ? "flex-1 -mb-px border-b-2 border-[#09090B] pb-2 text-center text-sm font-medium leading-6 text-[#09090B]"
+                : "flex-1 pb-2.5 text-center text-sm font-medium leading-6 text-[#09090B] opacity-80 hover:opacity-100"
+            }
+          >
+            {item.label}
           </button>
         );
       })}

@@ -20,6 +20,7 @@ import { toEodhdSymbol } from "@/lib/market/eodhd-symbol";
 import { netCashUsdUpTo } from "@/lib/portfolio/overview-metrics";
 import type { PortfolioChartRange, PortfolioValueHistoryPoint } from "@/lib/portfolio/portfolio-chart-types";
 import { replayTradeTransactionsToHoldingsUpTo } from "@/lib/portfolio/rebuild-holdings-from-trades";
+import { cumulativeRealizedGainUsdUpTo } from "@/lib/portfolio/realized-pnl-from-trades";
 
 const MAX_TX = 4000;
 
@@ -170,7 +171,7 @@ function tradeSymbols(transactions: PortfolioTransaction[]): string[] {
   return [...s];
 }
 
-function parseBodyTransactions(raw: unknown): PortfolioTransaction[] | null {
+export function parseBodyTransactions(raw: unknown): PortfolioTransaction[] | null {
   if (!Array.isArray(raw)) return null;
   if (raw.length > MAX_TX) return null;
   const out: PortfolioTransaction[] = [];
@@ -265,7 +266,9 @@ export async function computePortfolioValueHistory(
     }
     const cash = netCashUsdUpTo(transactions, d);
     const value = equity + cash;
-    const profit = equity - cost;
+    const unrealized = equity - cost;
+    const realized = cumulativeRealizedGainUsdUpTo(transactions, d);
+    const profit = unrealized + realized;
     points.push({ t: d, value, profit });
   }
 

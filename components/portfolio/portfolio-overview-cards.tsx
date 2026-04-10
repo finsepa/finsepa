@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useId, useMemo, useState } from "react";
 
 import { usePortfolioOverviewAthPublisher } from "@/components/portfolio/portfolio-overview-ath-context";
 import { ChevronDown } from "lucide-react";
@@ -15,11 +15,17 @@ import {
 import {
   equityMarketValue,
   netCashUsd,
+  normalizeUsdForDisplay,
   totalCostBasisInvested,
   totalNetWorth,
   unrealizedProfitPct,
   unrealizedProfitUsd,
 } from "@/lib/portfolio/overview-metrics";
+import {
+  cumulativeRealizedGainUsd,
+  lifetimeEquityProfitUsd,
+  tradeSymbolsFromHistory,
+} from "@/lib/portfolio/realized-pnl-from-trades";
 import type { OverviewProfitPeriod } from "@/lib/portfolio/overview-market-types";
 import { pickPerformancePct } from "@/lib/portfolio/overview-market-types";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
@@ -89,10 +95,22 @@ function PortfolioOverviewCardsInner({
   const cash = useMemo(() => netCashUsd(transactions), [transactions]);
   const netWorth = useMemo(() => totalNetWorth(holdings, cash), [holdings, cash]);
   const invested = useMemo(() => totalCostBasisInvested(holdings), [holdings]);
-  const profitAllUsd = useMemo(() => unrealizedProfitUsd(holdings), [holdings]);
+  const profitAllUsd = useMemo(
+    () => lifetimeEquityProfitUsd(holdings, transactions),
+    [holdings, transactions],
+  );
   const profitAllPct = useMemo(() => unrealizedProfitPct(holdings), [holdings]);
+  const realizedLifetimeUsd = useMemo(
+    () => cumulativeRealizedGainUsd(transactions),
+    [transactions],
+  );
+  const unrealizedLifetimeUsd = useMemo(() => unrealizedProfitUsd(holdings), [holdings]);
 
   const equity = useMemo(() => equityMarketValue(holdings), [holdings]);
+  const hasTradeHistory = useMemo(
+    () => tradeSymbolsFromHistory(transactions).length > 0,
+    [transactions],
+  );
 
   const inceptionYmd = useMemo(() => earliestStockBuyYmd(transactions), [transactions]);
   const netFlowAfterInception = useMemo(
@@ -101,18 +119,19 @@ function PortfolioOverviewCardsInner({
   );
 
   const [period, setPeriod] = useState<OverviewProfitPeriod>("all");
-  /** False while batch market data is loading (only when there are holdings). */
-  const [overviewReady, setOverviewReady] = useState(() => holdings.length === 0);
+  /** False until overview-market finishes when any symbols need a quote. */
+  const [overviewReady, setOverviewReady] = useState(false);
   const [perfBySymbol, setPerfBySymbol] = useState<Record<string, StockPerformance | null>>({});
   const [spyPerf, setSpyPerf] = useState<StockPerformance | null>(null);
   const [yieldBySymbol, setYieldBySymbol] = useState<Record<string, number | null>>({});
   const [inceptionEquityV0, setInceptionEquityV0] = useState<number | null>(null);
   const [inceptionSpyPrice0, setInceptionSpyPrice0] = useState<number | null>(null);
 
-  const symbols = useMemo(
-    () => [...new Set(holdings.map((h) => h.symbol.toUpperCase()))],
-    [holdings],
-  );
+  const symbols = useMemo(() => {
+    const fromHoldings = [...new Set(holdings.map((h) => h.symbol.toUpperCase()))];
+    if (fromHoldings.length > 0) return fromHoldings;
+    return tradeSymbolsFromHistory(transactions);
+  }, [holdings, transactions]);
 
   const loadMarket = useCallback(async () => {
     if (symbols.length === 0) {
@@ -220,7 +239,7 @@ function PortfolioOverviewCardsInner({
       return { rPort: null, rSpy: null, diff: null };
     }
 
-    const rPort = modifiedDietzReturnPct(inceptionEquityV0, equity, netFlowAfterInception);
+    const rPort = modifiedDietzReturnPct(inceptionEquityV0, netWorth, netFlowAfterInception);
     const rSpy = ((spyNow / inceptionSpyPrice0) - 1) * 100;
     if (!Number.isFinite(rSpy)) {
       return { rPort, rSpy: null, diff: null };
@@ -232,7 +251,7 @@ function PortfolioOverviewCardsInner({
   }, [
     inceptionEquityV0,
     inceptionSpyPrice0,
-    equity,
+    netWorth,
     netFlowAfterInception,
     spyPerf?.price,
   ]);
@@ -278,11 +297,14 @@ function PortfolioOverviewCardsInner({
   }, [holdings, yieldBySymbol, equity]);
 
   const isEmptyOverview = holdings.length === 0;
-  const showMetricSkeleton = !isEmptyOverview && !overviewReady;
+  const showEmptyPortfolioMetrics = isEmptyOverview && !hasTradeHistory;
+  const showMetricSkeleton = symbols.length > 0 && !overviewReady;
+
+  const totalProfitBreakdownId = useId();
 
   const setAthSnapshot = usePortfolioOverviewAthPublisher();
   useEffect(() => {
-    if (isEmptyOverview) {
+    if (symbols.length === 0) {
       setAthSnapshot({ marketReady: true, athReturnPct: null });
       return;
     }
@@ -290,12 +312,7 @@ function PortfolioOverviewCardsInner({
       marketReady: overviewReady,
       athReturnPct: overviewReady ? inceptionBenchmarkMetrics.rPort : null,
     });
-  }, [
-    isEmptyOverview,
-    overviewReady,
-    inceptionBenchmarkMetrics.rPort,
-    setAthSnapshot,
-  ]);
+  }, [symbols.length, overviewReady, inceptionBenchmarkMetrics.rPort, setAthSnapshot]);
 
   return (
     <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -303,7 +320,7 @@ function PortfolioOverviewCardsInner({
       <div className="rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
         <p className="text-xs font-medium text-[#71717A]">Value</p>
         <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight text-[#09090B]">
-          {usd.format(netWorth)}
+          {usd.format(normalizeUsdForDisplay(netWorth))}
         </p>
         <p className="mt-2 text-sm text-[#71717A]">{usd.format(invested)} invested</p>
       </div>
@@ -319,7 +336,7 @@ function PortfolioOverviewCardsInner({
           {/* Total profit */}
           <div className="rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
             <p className="text-xs font-medium text-[#71717A]">Total profit</p>
-            {isEmptyOverview ? (
+            {showEmptyPortfolioMetrics ? (
               <>
                 <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight text-[#16A34A]">
                   +{usd.format(0)}
@@ -330,10 +347,14 @@ function PortfolioOverviewCardsInner({
                 </div>
               </>
             ) : (
-              <>
+              <div
+                className="group/profit relative mt-2 outline-none"
+                tabIndex={0}
+                aria-describedby={totalProfitBreakdownId}
+              >
                 <p
                   className={cn(
-                    "mt-2 text-2xl font-semibold tabular-nums tracking-tight",
+                    "cursor-help text-2xl font-semibold tabular-nums tracking-tight",
                     (profitDisplayUsd ?? 0) >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
                   )}
                 >
@@ -342,7 +363,7 @@ function PortfolioOverviewCardsInner({
                     : "—"}
                 </p>
                 {period === "all" ? (
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <div className="mt-2 flex cursor-help flex-wrap items-center gap-2">
                     <span
                       className={cn(
                         "text-sm font-medium tabular-nums",
@@ -359,7 +380,7 @@ function PortfolioOverviewCardsInner({
                   <div className="mt-2 flex flex-wrap items-center gap-2">
                     <span
                       className={cn(
-                        "text-sm font-medium tabular-nums",
+                        "cursor-help text-sm font-medium tabular-nums",
                         (profitDisplayPct ?? 0) >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
                       )}
                     >
@@ -384,14 +405,47 @@ function PortfolioOverviewCardsInner({
                     </div>
                   </div>
                 )}
-              </>
+                <div
+                  id={totalProfitBreakdownId}
+                  role="tooltip"
+                  className="pointer-events-none absolute left-0 top-full z-20 mt-2 w-max min-w-[220px] max-w-[min(calc(100vw-2rem),280px)] rounded-lg border border-[#E4E4E7] bg-white px-3 py-2.5 text-left text-xs shadow-[0px_4px_14px_0px_rgba(10,10,10,0.08)] opacity-0 transition-opacity duration-150 group-hover/profit:opacity-100 group-focus-within/profit:opacity-100"
+                >
+                  {period !== "all" ? (
+                    <p className="mb-2 border-b border-[#F4F4F5] pb-2 text-[11px] font-medium leading-4 text-[#71717A]">
+                      Lifetime equity P&amp;L (open vs sold). Headline uses the period you selected.
+                    </p>
+                  ) : null}
+                  <div className="flex items-baseline justify-between gap-4">
+                    <span className="shrink-0 text-[#71717A]">Realized (sold)</span>
+                    <span
+                      className={cn(
+                        "tabular-nums font-semibold",
+                        normalizeUsdForDisplay(realizedLifetimeUsd) >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
+                      )}
+                    >
+                      {`${normalizeUsdForDisplay(realizedLifetimeUsd) >= 0 ? "+" : ""}${usd.format(normalizeUsdForDisplay(realizedLifetimeUsd))}`}
+                    </span>
+                  </div>
+                  <div className="mt-2 flex items-baseline justify-between gap-4">
+                    <span className="shrink-0 text-[#71717A]">Unrealized (not sold yet)</span>
+                    <span
+                      className={cn(
+                        "tabular-nums font-semibold",
+                        normalizeUsdForDisplay(unrealizedLifetimeUsd) >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
+                      )}
+                    >
+                      {`${normalizeUsdForDisplay(unrealizedLifetimeUsd) >= 0 ? "+" : ""}${usd.format(normalizeUsdForDisplay(unrealizedLifetimeUsd))}`}
+                    </span>
+                  </div>
+                </div>
+              </div>
             )}
           </div>
 
           {/* S&P 500 */}
           <div className="rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
             <p className="text-xs font-medium text-[#71717A]">S&amp;P 500</p>
-            {isEmptyOverview ? (
+            {showEmptyPortfolioMetrics ? (
               <>
                 <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight text-[#16A34A]">
                   +{pctFmt.format(0)}%
@@ -425,7 +479,7 @@ function PortfolioOverviewCardsInner({
                       <>Portfolio trails on {pctFmt.format(inceptionBenchmarkMetrics.diff)}%</>
                     )
                   ) : (
-                    "Add a buy transaction to compare vs S&amp;P 500 (SPY) from your start date"
+                    "Portfolio is ahead on -"
                   )}
                 </p>
               </>
@@ -435,7 +489,7 @@ function PortfolioOverviewCardsInner({
           {/* Dividends */}
           <div className="rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
             <p className="text-xs font-medium text-[#71717A]">Dividends</p>
-            {isEmptyOverview ? (
+            {showEmptyPortfolioMetrics ? (
               <>
                 <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight text-[#09090B]">
                   {pctFmt.format(0)}%

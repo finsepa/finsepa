@@ -1,5 +1,7 @@
 "use client";
 
+import { ChartSkeleton } from "@/components/ui/chart-skeleton";
+
 /**
  * Shared shell for `app/(protected)/portfolio/loading.tsx` and Suspense fallback —
  * matches page chrome (header row, tabs strip, overview cards + chart placeholders).
@@ -16,7 +18,7 @@ export function PortfolioPageLoadingShell() {
       </div>
 
       <div className="mb-6 flex gap-6 border-b border-[#E4E4E7]">
-        {["Overview", "Cash", "Transactions"].map((label) => (
+        {["Overview", "Performance", "Cash", "Transactions"].map((label) => (
           <div
             key={label}
             className="mb-[-1px] h-9 w-20 shrink-0 animate-pulse rounded-t-md bg-neutral-100 pb-2"
@@ -38,7 +40,9 @@ export function PortfolioPageLoadingShell() {
         ))}
       </div>
 
-      <div className="mb-6 h-[320px] w-full animate-pulse rounded-lg bg-[#F4F4F5]" aria-hidden />
+      <div className="mb-6 w-full">
+        <ChartSkeleton />
+      </div>
 
       <div className="min-h-[200px] rounded-xl border border-[#E4E4E7] bg-white p-4 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
         <div className="h-4 w-full animate-pulse rounded bg-neutral-100" />

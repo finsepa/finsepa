@@ -5,7 +5,7 @@ import { unstable_cache } from "next/cache";
 import { REVALIDATE_WARM } from "@/lib/data/cache-policy";
 import { fetchEodhdFundamentalsJson } from "@/lib/market/eodhd-fundamentals";
 import { buildChartingPointsFromFundamentalsRoot } from "@/lib/market/eodhd-charting-series";
-import { getCachedStockLogoUrl } from "@/lib/market/stock-logo-url";
+import { resolveEquityLogoUrlFromTicker } from "@/lib/screener/resolve-equity-logo-url";
 import type { ChartingSeriesPoint } from "@/lib/market/charting-series-types";
 import type { ChartingMetricId, ChartingMetricKind } from "@/lib/market/stock-charting-metrics";
 import { CHARTING_METRIC_FIELD, CHARTING_METRIC_KIND } from "@/lib/market/stock-charting-metrics";
@@ -49,12 +49,13 @@ function formatByKind(kind: ChartingMetricKind, v: number | null): string {
 }
 
 async function loadOnePeerRow(ticker: string): Promise<PeersCompareRow> {
-  const [root, logoStr] = await Promise.all([fetchEodhdFundamentalsJson(ticker), getCachedStockLogoUrl(ticker)]);
+  const logoStr = resolveEquityLogoUrlFromTicker(ticker);
+  const root = await fetchEodhdFundamentalsJson(ticker);
   if (!root || typeof root !== "object") {
     return {
       ticker,
       fullName: null,
-      logoUrl: null,
+      logoUrl: logoStr.trim() ? logoStr : null,
       revGrowth: "—",
       grossProfit: "—",
       operIncome: "—",

@@ -4,13 +4,17 @@ import { unstable_cache } from "next/cache";
 
 import { REVALIDATE_SEARCH } from "@/lib/data/cache-policy";
 import { getCryptoLogoUrl } from "@/lib/crypto/crypto-logo-url";
-import { CRYPTO_TOP10 } from "@/lib/market/eodhd-crypto";
+import { ALL_CRYPTO_METAS } from "@/lib/market/crypto-meta";
 import { getStockDetailMetaFromTicker } from "@/lib/market/stock-detail-meta";
-import { getCachedStockLogoUrl } from "@/lib/market/stock-logo-url";
+import { resolveEquityLogoUrlFromTicker } from "@/lib/screener/resolve-equity-logo-url";
+import { getScreenerCompaniesStaticLayer } from "@/lib/screener/screener-companies-layers";
+import { pickScreenerPage2Tickers } from "@/lib/screener/pick-screener-page2-tickers";
 import { SCREENER_INDICES_10 } from "@/lib/screener/screener-indices-universe";
 import { TOP10_TICKERS } from "@/lib/screener/top10-config";
 import type { SearchAssetItem } from "@/lib/search/search-types";
-import { runWithConcurrencyLimit } from "@/lib/utils/run-with-concurrency-limit";
+
+/** Beyond TOP10 + screener page 2: next N names by market-cap order in the top-500 universe (search-only). */
+const SEARCH_ALLOWLIST_EXTRA_US_EQUITIES = 100;
 
 function norm(s: string): string {
   return s.trim().toLowerCase();
@@ -19,7 +23,12 @@ function norm(s: string): string {
 /** Extra substring hints beyond name/symbol (screener universe only). */
 function extraMatches(item: SearchAssetItem, n: string): boolean {
   if (item.type === "stock") {
-    if (item.symbol === "GOOGL" && (n.includes("google") || n.includes("alphabet"))) return true;
+    if (
+      (item.symbol === "GOOGL" || item.symbol === "GOOG") &&
+      (n.includes("google") || n.includes("alphabet"))
+    ) {
+      return true;
+    }
     if (item.symbol === "META" && (n.includes("facebook") || n.includes("fb"))) return true;
     if (item.symbol === "BRK-B" && (n.includes("berkshire") || n.includes("brk"))) return true;
     if (item.symbol === "TSM" && (n.includes("tsmc") || n.includes("taiwan semi"))) return true;
@@ -59,8 +68,8 @@ function matchesAsset(item: SearchAssetItem, q: string): boolean {
   return false;
 }
 
-function buildBaseItems(): SearchAssetItem[] {
-  const stocks: SearchAssetItem[] = TOP10_TICKERS.map((t) => {
+async function buildBaseItems(): Promise<SearchAssetItem[]> {
+  const stocksTop10: SearchAssetItem[] = TOP10_TICKERS.map((t) => {
     const m = getStockDetailMetaFromTicker(t);
     return {
       id: `stock:${m.ticker}`,
@@ -74,7 +83,53 @@ function buildBaseItems(): SearchAssetItem[] {
     };
   });
 
-  const cryptos: SearchAssetItem[] = CRYPTO_TOP10.map((c) => ({
+  const { universe } = await getScreenerCompaniesStaticLayer();
+  const page2Tickers = pickScreenerPage2Tickers(universe);
+  const byTicker = new Map(universe.map((u) => [u.ticker.toUpperCase(), u] as const));
+  const stocksPage2: SearchAssetItem[] = page2Tickers.map((t) => {
+    const m = getStockDetailMetaFromTicker(t);
+    const u = byTicker.get(t.toUpperCase());
+    return {
+      id: `stock:${m.ticker}`,
+      type: "stock",
+      symbol: m.ticker,
+      name: u?.name?.trim() || m.name,
+      subtitle: "US",
+      logoUrl: m.logoUrl,
+      route: `/stock/${encodeURIComponent(m.ticker)}`,
+      marketLabel: "US equity",
+    };
+  });
+
+  const coveredForSearch = new Set<string>();
+  for (const t of TOP10_TICKERS) coveredForSearch.add(t.toUpperCase());
+  for (const t of page2Tickers) coveredForSearch.add(t.toUpperCase());
+
+  const extraSearchTickers: string[] = [];
+  for (const row of universe) {
+    const tk = row.ticker.trim().toUpperCase();
+    if (coveredForSearch.has(tk)) continue;
+    coveredForSearch.add(tk);
+    extraSearchTickers.push(row.ticker);
+    if (extraSearchTickers.length >= SEARCH_ALLOWLIST_EXTRA_US_EQUITIES) break;
+  }
+
+  const stocksSearchExtra: SearchAssetItem[] = extraSearchTickers.map((t) => {
+    const m = getStockDetailMetaFromTicker(t);
+    const u = byTicker.get(t.toUpperCase());
+    return {
+      id: `stock:${m.ticker}`,
+      type: "stock",
+      symbol: m.ticker,
+      name: u?.name?.trim() || m.name,
+      subtitle: "US",
+      logoUrl: m.logoUrl,
+      route: `/stock/${encodeURIComponent(m.ticker)}`,
+      marketLabel: "US equity",
+    };
+  });
+
+  const cryptos: SearchAssetItem[] = ALL_CRYPTO_METAS.map((c) => ({
     id: `crypto:${c.symbol}`,
     type: "crypto",
     symbol: c.symbol,
@@ -96,14 +151,13 @@ function buildBaseItems(): SearchAssetItem[] {
     marketLabel: "Index",
   }));
 
-  return [...stocks, ...cryptos, ...indices];
+  return [...stocksTop10, ...stocksPage2, ...stocksSearchExtra, ...cryptos, ...indices];
 }
 
-async function attachStockLogos(items: SearchAssetItem[]): Promise<SearchAssetItem[]> {
+function attachStockLogos(items: SearchAssetItem[]): SearchAssetItem[] {
   const stockSyms = [...new Set(items.filter((i) => i.type === "stock").map((i) => i.symbol.trim().toUpperCase()))];
   if (stockSyms.length === 0) return items;
-  const urls = await runWithConcurrencyLimit(stockSyms, 4, (sym) => getCachedStockLogoUrl(sym));
-  const bySym = new Map(stockSyms.map((s, i) => [s, urls[i] ?? ""] as const));
+  const bySym = new Map(stockSyms.map((s) => [s, resolveEquityLogoUrlFromTicker(s)] as const));
   return items.map((item) => {
     if (item.type !== "stock") return item;
     const sym = item.symbol.trim().toUpperCase();
@@ -114,7 +168,7 @@ async function attachStockLogos(items: SearchAssetItem[]): Promise<SearchAssetIt
 }
 
 async function runScreenerSearchAllowlistUncached(qNorm: string): Promise<SearchAssetItem[]> {
-  const base = buildBaseItems();
+  const base = await buildBaseItems();
   const hits = base.filter((item) => matchesAsset(item, qNorm));
   hits.sort((a, b) => a.name.localeCompare(b.name));
   return attachStockLogos(hits);
@@ -122,12 +176,13 @@ async function runScreenerSearchAllowlistUncached(qNorm: string): Promise<Search
 
 const getCachedScreenerSearch = unstable_cache(
   async (qNorm: string) => runScreenerSearchAllowlistUncached(qNorm),
-  ["screener-search-allowlist-v2"],
+  ["screener-search-allowlist-v7-crypto-100"],
   { revalidate: REVALIDATE_SEARCH },
 );
 
 /**
- * Search limited to the screener universe: 10 US equities, 10 cryptos, 10 indices (30 total).
+ * Search limited to curated screener assets + discovery: 30 US table names, **+100** next-largest US
+ * equities from the same top-cap snapshot, **100** cryptos, 10 indices (~250 indexable symbols).
  */
 export async function searchScreenerAllowlist(query: string): Promise<SearchAssetItem[]> {
   const raw = query.trim();

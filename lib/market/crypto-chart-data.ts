@@ -3,11 +3,8 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 
 import { REVALIDATE_HOT } from "@/lib/data/cache-policy";
-import {
-  toSupportedCryptoTicker,
-  toEodhdCryptoSymbol,
-  fetchEodhdCryptoDailyBars,
-} from "@/lib/market/eodhd-crypto";
+import { fetchEodhdCryptoDailyBars } from "@/lib/market/eodhd-crypto";
+import { resolveCryptoMetaForProvider } from "@/lib/market/crypto-meta-resolver";
 import { fetchEodhdIntraday } from "@/lib/market/eodhd-intraday";
 import type { StockChartPoint, StockChartRange } from "@/lib/market/stock-chart-types";
 
@@ -37,10 +34,9 @@ function dedupeAndSort(points: StockChartPoint[]): StockChartPoint[] {
 }
 
 async function loadCryptoChartPointsUncached(symbol: string, range: StockChartRange): Promise<StockChartPoint[]> {
-  const sup = toSupportedCryptoTicker(symbol);
-  if (!sup) return [];
-  const pair = toEodhdCryptoSymbol(sup);
-  if (!pair) return [];
+  const meta = await resolveCryptoMetaForProvider(symbol);
+  if (!meta) return [];
+  const pair = meta.eodhdSymbol;
 
   const now = new Date();
   const nowSec = Math.floor(now.getTime() / 1000);
@@ -91,6 +87,6 @@ async function loadCryptoChartPointsUncached(symbol: string, range: StockChartRa
 
 export const getCryptoChartPoints = unstable_cache(
   async (symbol: string, range: StockChartRange) => loadCryptoChartPointsUncached(symbol, range),
-  ["crypto-chart-points-v2"],
+  ["crypto-chart-points-v3-cc-universe"],
   { revalidate: REVALIDATE_HOT },
 );

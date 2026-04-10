@@ -1,4 +1,4 @@
-import { companyLogoUrlFromDomain } from "@/lib/screener/company-logo-url";
+import { companyLogoUrlForTicker } from "@/lib/screener/company-logo-url";
 import { TOP10_META } from "@/lib/screener/top10-config";
 import type { ScreenerTableRow } from "@/lib/screener/screener-static";
 
@@ -26,7 +26,7 @@ const MOCK_ROWS: MockRow[] = [
     marketCap: 2_200_000_000_000,
     peRatio: 65,
     trend: [855, 860, 868, 872, 878, 880, 886],
-    logoUrl: companyLogoUrlFromDomain(TOP10_META.NVDA.domain),
+    logoUrl: companyLogoUrlForTicker("NVDA", TOP10_META.NVDA.domain),
   },
   {
     ticker: "AAPL",
@@ -38,7 +38,7 @@ const MOCK_ROWS: MockRow[] = [
     marketCap: 3_200_000_000_000,
     peRatio: 30,
     trend: [205, 206, 207, 208, 209, 210, 211],
-    logoUrl: "",
+    logoUrl: companyLogoUrlForTicker("AAPL", TOP10_META.AAPL.domain),
   },
 ];
 

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { isTickerOnScreenerEarningsUniverse } from "@/lib/market/earnings-week-data";
 import { getEarningsPreviewPayload } from "@/lib/market/earnings-preview";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { isSingleAssetMode, SINGLE_ASSET_SYMBOL } from "@/lib/features/single-asset";
@@ -24,6 +25,10 @@ export async function GET(request: Request) {
   }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(reportDate)) {
     return NextResponse.json({ error: "Invalid reportDate" }, { status: 400 });
+  }
+
+  if (!(await isTickerOnScreenerEarningsUniverse(tickerRaw))) {
+    return NextResponse.json({ error: "Symbol not on screener" }, { status: 404 });
   }
 
   if (isSingleAssetMode()) {

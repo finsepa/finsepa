@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
 import type { PortfolioHolding } from "@/components/portfolio/portfolio-types";
@@ -38,9 +39,9 @@ export function RemoveAssetModal({ holding, onClose, onConfirmRemove }: Props) {
 
   if (!holding) return null;
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40 p-4"
+      className="fixed inset-0 z-[300] flex items-center justify-center bg-black/40 p-4"
       role="presentation"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
@@ -97,6 +98,7 @@ export function RemoveAssetModal({ holding, onClose, onConfirmRemove }: Props) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

@@ -1,34 +1,54 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { startTransition, useCallback, useEffect, useId, useMemo, useState } from "react";
+import {
+  startTransition,
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { X } from "lucide-react";
 
 import { AddCashModal } from "@/components/layout/add-cash-modal";
+import { DeletePortfolioConfirmModal } from "@/components/portfolio/delete-portfolio-confirm-modal";
 import { EditTransactionModal } from "@/components/layout/edit-transaction-modal";
 import { NewTransactionModal } from "@/components/layout/new-transaction-modal";
 import { ClearableInput } from "@/components/layout/clearable-input";
+import { CreateCombinedPortfolioModal } from "@/components/portfolio/create-combined-portfolio-modal";
 import { PortfolioWorkspaceContext } from "@/components/portfolio/portfolio-workspace-context";
 import { cn } from "@/lib/utils";
+import { PortfolioPrivacySelect } from "@/components/portfolio/portfolio-privacy-select";
 import {
   newPortfolioId,
+  portfolioIsCombined,
   type PortfolioEntry,
   type PortfolioHolding,
+  type PortfolioPrivacy,
   type PortfolioTransaction,
 } from "@/components/portfolio/portfolio-types";
+import { mergeHoldingsBySymbol, mergeTransactionsSorted } from "@/lib/portfolio/merge-combined-portfolio";
 import {
   loadPersistedPortfolioStateForUser,
   parsePersistedPortfolioUnknown,
   savePersistedPortfolioStateForUser,
   type PersistedPortfolioState,
 } from "@/lib/portfolio/portfolio-storage";
+import { computePublicPortfolioListingMetrics } from "@/lib/portfolio/public-listing-metrics";
+import {
+  refreshHoldingMarketPrices,
+  replayTradeTransactionsToHoldings,
+} from "@/lib/portfolio/rebuild-holdings-from-trades";
 
 /** Always keep at least one portfolio; created when the user deletes the last one. */
 const DEFAULT_PORTFOLIO_NAME = "My Portfolio";
 
 function ensureAtLeastOnePortfolio(portfolios: PortfolioEntry[]): PortfolioEntry[] {
   if (portfolios.length > 0) return portfolios;
-  return [{ id: newPortfolioId(), name: DEFAULT_PORTFOLIO_NAME }];
+  return [{ id: newPortfolioId(), name: DEFAULT_PORTFOLIO_NAME, privacy: "private" }];
 }
 
 function ModalField({ label, children }: { label: string; children: ReactNode }) {
@@ -40,23 +60,48 @@ function ModalField({ label, children }: { label: string; children: ReactNode })
   );
 }
 
+function PublicPrivacyNotice() {
+  return (
+    <p
+      role="status"
+      className="w-full rounded-[10px] border border-[#BFDBFE] bg-[#EFF6FF] px-4 py-3 text-sm leading-5 text-[#1E3A8A]"
+    >
+      You selected your portfolio to be shared publicly. Everyone in the community will see your portfolio on
+      the Portfolios tab once you click Save or Add.
+    </p>
+  );
+}
+
 function EditPortfolioModal({
   initialName,
+  initialPrivacy,
+  isCombined = false,
+  combinedFromSummary = "",
   onClose,
   onSave,
-  onDelete,
+  onRequestDelete,
 }: {
   initialName: string;
+  initialPrivacy: PortfolioPrivacy;
+  /** Read-only aggregate portfolio — name only; privacy/sources are fixed. */
+  isCombined?: boolean;
+  combinedFromSummary?: string;
   onClose: () => void;
-  onSave: (name: string) => void;
-  onDelete: () => void;
+  onSave: (name: string, privacy: PortfolioPrivacy) => void;
+  /** Opens delete confirmation; does not delete immediately. */
+  onRequestDelete: () => void;
 }) {
   const titleId = useId();
   const [name, setName] = useState(initialName);
+  const [privacy, setPrivacy] = useState<PortfolioPrivacy>(initialPrivacy);
 
   useEffect(() => {
     setName(initialName);
   }, [initialName]);
+
+  useEffect(() => {
+    setPrivacy(initialPrivacy);
+  }, [initialPrivacy]);
 
   useEffect(() => {
     const prev = document.body.style.overflow;
@@ -83,7 +128,7 @@ function EditPortfolioModal({
       >
         <div className="flex shrink-0 items-center justify-between border-b border-[#E4E4E7] px-5 py-3">
           <h2 id={titleId} className="text-lg font-semibold leading-7 tracking-tight text-[#09090B]">
-            Edit portfolio
+            {isCombined ? "Edit combined portfolio" : "Edit portfolio"}
           </h2>
           <button
             type="button"
@@ -95,7 +140,7 @@ function EditPortfolioModal({
           </button>
         </div>
 
-        <div className="px-5 pb-5 pt-5">
+        <div className="flex flex-col gap-4 px-5 pb-5 pt-5">
           <ModalField label="Name">
             <ClearableInput
               type="text"
@@ -105,19 +150,37 @@ function EditPortfolioModal({
               clearLabel="Clear name"
             />
           </ModalField>
+          {isCombined ? (
+            <ModalField label="Source portfolios">
+              <p className="rounded-[10px] border border-[#E4E4E7] bg-[#F4F4F5] px-4 py-3 text-sm leading-5 text-[#71717A]">
+                {combinedFromSummary || "—"}
+              </p>
+              <p className="text-xs leading-4 text-[#71717A]">
+                To change which portfolios are included, create a new combined portfolio. Transactions and cash
+                stay in each source portfolio.
+              </p>
+            </ModalField>
+          ) : (
+            <ModalField label="Privacy">
+              <div className="flex w-full flex-col gap-2">
+                <PortfolioPrivacySelect value={privacy} onChange={setPrivacy} />
+                {privacy === "public" ? <PublicPrivacyNotice /> : null}
+              </div>
+            </ModalField>
+          )}
         </div>
 
         <div className="flex shrink-0 gap-3 border-t border-[#E4E4E7] px-6 py-4">
           <button
             type="button"
-            onClick={onDelete}
+            onClick={onRequestDelete}
             className="flex min-h-9 flex-1 items-center justify-center rounded-[10px] bg-[#F4F4F5] px-4 py-2 text-sm font-medium text-[#09090B] transition-colors hover:bg-[#EBEBEB]"
           >
             Delete
           </button>
           <button
             type="button"
-            onClick={() => onSave(name)}
+            onClick={() => onSave(name, isCombined ? initialPrivacy : privacy)}
             className="flex min-h-9 flex-1 items-center justify-center rounded-[10px] bg-[#09090B] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#27272A]"
           >
             Save
@@ -133,10 +196,11 @@ function CreatePortfolioModal({
   onAdd,
 }: {
   onClose: () => void;
-  onAdd: (name: string) => void;
+  onAdd: (name: string, privacy: PortfolioPrivacy) => void;
 }) {
   const titleId = useId();
   const [name, setName] = useState("");
+  const [privacy, setPrivacy] = useState<PortfolioPrivacy>("private");
   const canAdd = name.trim().length > 0;
 
   useEffect(() => {
@@ -176,7 +240,7 @@ function CreatePortfolioModal({
           </button>
         </div>
 
-        <div className="px-5 pb-5 pt-5">
+        <div className="flex flex-col gap-4 px-5 pb-5 pt-5">
           <ModalField label="Name">
             <ClearableInput
               type="text"
@@ -185,6 +249,12 @@ function CreatePortfolioModal({
               placeholder="Enter name"
               clearLabel="Clear name"
             />
+          </ModalField>
+          <ModalField label="Privacy">
+            <div className="flex w-full flex-col gap-2">
+              <PortfolioPrivacySelect value={privacy} onChange={setPrivacy} />
+              {privacy === "public" ? <PublicPrivacyNotice /> : null}
+            </div>
           </ModalField>
         </div>
 
@@ -199,7 +269,7 @@ function CreatePortfolioModal({
           <button
             type="button"
             disabled={!canAdd}
-            onClick={() => onAdd(name)}
+            onClick={() => onAdd(name, privacy)}
             className={cn(
               "flex min-h-9 flex-1 items-center justify-center rounded-[10px] px-4 py-2 text-sm font-medium text-white transition-colors",
               canAdd
@@ -225,7 +295,7 @@ export function PortfolioWorkspaceProvider({
   const portfolioSeed = useMemo(() => {
     const id = newPortfolioId();
     return {
-      list: [{ id, name: DEFAULT_PORTFOLIO_NAME }] as PortfolioEntry[],
+      list: [{ id, name: DEFAULT_PORTFOLIO_NAME, privacy: "private" as const }],
       selectedId: id,
     };
   }, []);
@@ -235,7 +305,9 @@ export function PortfolioWorkspaceProvider({
 
   const [editPortfolioOpen, setEditPortfolioOpen] = useState(false);
   const [editPortfolioId, setEditPortfolioId] = useState<string | null>(null);
+  const [deletePortfolioConfirmId, setDeletePortfolioConfirmId] = useState<string | null>(null);
   const [createPortfolioOpen, setCreatePortfolioOpen] = useState(false);
+  const [createCombinedOpen, setCreateCombinedOpen] = useState(false);
   const [newTransactionOpen, setNewTransactionOpen] = useState(false);
   const [addCashModalOpen, setAddCashModalOpen] = useState(false);
   const [editTransaction, setEditTransaction] = useState<PortfolioTransaction | null>(null);
@@ -247,6 +319,39 @@ export function PortfolioWorkspaceProvider({
   >({});
   /** False until local + server merge has finished (avoids overwriting cloud with the default seed). */
   const [workspaceHydrated, setWorkspaceHydrated] = useState(false);
+  /** True after we synchronously applied a local snapshot (fast path for repeat visits / post-login). */
+  const [portfolioBootstrapFromLocal, setPortfolioBootstrapFromLocal] = useState(false);
+
+  const displayHoldingsByPortfolioId = useMemo(() => {
+    const out: Record<string, PortfolioHolding[]> = { ...holdingsByPortfolioId };
+    for (const p of portfolios) {
+      if (!portfolioIsCombined(p)) continue;
+      const from = p.combinedFrom ?? [];
+      const lists = from
+        .filter((sid) => portfolios.some((x) => x.id === sid && x.kind !== "combined"))
+        .map((sid) => holdingsByPortfolioId[sid] ?? []);
+      out[p.id] = mergeHoldingsBySymbol(lists);
+    }
+    return out;
+  }, [portfolios, holdingsByPortfolioId]);
+
+  const displayTransactionsByPortfolioId = useMemo(() => {
+    const out: Record<string, PortfolioTransaction[]> = { ...transactionsByPortfolioId };
+    for (const p of portfolios) {
+      if (!portfolioIsCombined(p)) continue;
+      const from = p.combinedFrom ?? [];
+      const lists = from
+        .filter((sid) => portfolios.some((x) => x.id === sid && x.kind !== "combined"))
+        .map((sid) => transactionsByPortfolioId[sid] ?? []);
+      out[p.id] = mergeTransactionsSorted(lists);
+    }
+    return out;
+  }, [portfolios, transactionsByPortfolioId]);
+
+  const selectedPortfolioReadOnly = useMemo(() => {
+    const p = portfolios.find((x) => x.id === selectedPortfolioId);
+    return portfolioIsCombined(p ?? null);
+  }, [portfolios, selectedPortfolioId]);
 
   const applyWorkspaceState = useCallback((saved: PersistedPortfolioState) => {
     setPortfolios(saved.portfolios);
@@ -254,6 +359,16 @@ export function PortfolioWorkspaceProvider({
     setHoldingsByPortfolioId(saved.holdingsByPortfolioId);
     setTransactionsByPortfolioId(saved.transactionsByPortfolioId);
   }, []);
+
+  /** Instant balance from device cache; server merge still runs in the effect below. */
+  useLayoutEffect(() => {
+    setPortfolioBootstrapFromLocal(false);
+    const local = loadPersistedPortfolioStateForUser(userId);
+    if (local && local.portfolios.length > 0) {
+      applyWorkspaceState(local);
+      setPortfolioBootstrapFromLocal(true);
+    }
+  }, [userId, applyWorkspaceState]);
 
   /** Load per-user local snapshot, merge with Supabase row, then allow debounced saves. */
   useEffect(() => {
@@ -373,9 +488,70 @@ export function PortfolioWorkspaceProvider({
     transactionsByPortfolioId,
   ]);
 
+  const prevPublishedPortfolioIdsRef = useRef<Set<string>>(new Set());
+
+  /** Sync Supabase community listings when public standard portfolios change (debounced). */
+  useEffect(() => {
+    if (!workspaceHydrated) return;
+    const tid = window.setTimeout(() => {
+      void (async () => {
+        const publicStandard = portfolios.filter((p) => p.privacy === "public" && !portfolioIsCombined(p));
+        const current = new Set(publicStandard.map((p) => p.id));
+        const prev = prevPublishedPortfolioIdsRef.current;
+
+        for (const id of prev) {
+          if (!current.has(id)) {
+            try {
+              await fetch("/api/portfolios/listings", {
+                method: "PUT",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ portfolioId: id, publish: false }),
+              });
+            } catch {
+              /* ignore */
+            }
+          }
+        }
+
+        for (const p of publicStandard) {
+          const holdings = displayHoldingsByPortfolioId[p.id] ?? [];
+          const txs = displayTransactionsByPortfolioId[p.id] ?? [];
+          const metrics = computePublicPortfolioListingMetrics(holdings, txs);
+          try {
+            await fetch("/api/portfolios/listings", {
+              method: "PUT",
+              credentials: "include",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                portfolioId: p.id,
+                displayName: p.name,
+                publish: true,
+                metrics,
+              }),
+            });
+          } catch {
+            /* ignore */
+          }
+        }
+
+        prevPublishedPortfolioIdsRef.current = new Set(current);
+      })();
+    }, 1200);
+    return () => window.clearTimeout(tid);
+  }, [
+    workspaceHydrated,
+    portfolios,
+    displayHoldingsByPortfolioId,
+    displayTransactionsByPortfolioId,
+  ]);
+
   /** Replaces the row for the same ticker, or appends — supports merged positions after multiple buys. */
-  const addHolding = useCallback((portfolioId: string, holding: PortfolioHolding) => {
-    setHoldingsByPortfolioId((prev) => {
+  const addHolding = useCallback(
+    (portfolioId: string, holding: PortfolioHolding) => {
+      const port = portfolios.find((x) => x.id === portfolioId);
+      if (port?.kind === "combined") return;
+      setHoldingsByPortfolioId((prev) => {
       const list = [...(prev[portfolioId] ?? [])];
       const sym = holding.symbol.toUpperCase();
       const idx = list.findIndex((h) => h.symbol.toUpperCase() === sym);
@@ -383,34 +559,73 @@ export function PortfolioWorkspaceProvider({
       else list[idx] = holding;
       return { ...prev, [portfolioId]: list };
     });
-  }, []);
+    },
+    [portfolios],
+  );
 
-  const addTransaction = useCallback((portfolioId: string, transaction: PortfolioTransaction) => {
-    setTransactionsByPortfolioId((prev) => ({
-      ...prev,
-      [portfolioId]: [...(prev[portfolioId] ?? []), transaction],
-    }));
-  }, []);
+  const addTransaction = useCallback(
+    (portfolioId: string, transaction: PortfolioTransaction) => {
+      const port = portfolios.find((x) => x.id === portfolioId);
+      if (port?.kind === "combined") return;
+      setTransactionsByPortfolioId((prev) => ({
+        ...prev,
+        [portfolioId]: [...(prev[portfolioId] ?? []), transaction],
+      }));
+    },
+    [portfolios],
+  );
 
-  const setPortfolioTransactions = useCallback((portfolioId: string, transactions: PortfolioTransaction[]) => {
-    setTransactionsByPortfolioId((prev) => ({ ...prev, [portfolioId]: transactions }));
-  }, []);
+  const setPortfolioTransactions = useCallback(
+    (portfolioId: string, transactions: PortfolioTransaction[]) => {
+      const port = portfolios.find((x) => x.id === portfolioId);
+      if (port?.kind === "combined") return;
+      setTransactionsByPortfolioId((prev) => ({ ...prev, [portfolioId]: transactions }));
+    },
+    [portfolios],
+  );
 
-  const setPortfolioHoldings = useCallback((portfolioId: string, holdings: PortfolioHolding[]) => {
-    setHoldingsByPortfolioId((prev) => ({ ...prev, [portfolioId]: holdings }));
-  }, []);
+  const setPortfolioHoldings = useCallback(
+    (portfolioId: string, holdings: PortfolioHolding[]) => {
+      const port = portfolios.find((x) => x.id === portfolioId);
+      if (port?.kind === "combined") return;
+      setHoldingsByPortfolioId((prev) => ({ ...prev, [portfolioId]: holdings }));
+    },
+    [portfolios],
+  );
 
-  const openEditTransaction = useCallback((t: PortfolioTransaction) => {
-    setSelectedPortfolioId(t.portfolioId);
-    setEditTransaction(t);
-  }, []);
+  const openEditTransaction = useCallback(
+    (t: PortfolioTransaction) => {
+      const p = portfolios.find((x) => x.id === selectedPortfolioId);
+      if (p?.kind === "combined") return;
+      setSelectedPortfolioId(t.portfolioId);
+      setEditTransaction(t);
+    },
+    [portfolios, selectedPortfolioId],
+  );
 
   const closeEditTransaction = useCallback(() => {
     setEditTransaction(null);
   }, []);
 
+  const removePortfolioTransaction = useCallback(
+    async (t: PortfolioTransaction) => {
+      const view = portfolios.find((x) => x.id === selectedPortfolioId);
+      if (view?.kind === "combined") return;
+      const pid = t.portfolioId;
+      const list = transactionsByPortfolioId[pid] ?? [];
+      const next = list.filter((x) => x.id !== t.id);
+      setPortfolioTransactions(pid, next);
+      setEditTransaction((cur) => (cur?.id === t.id ? null : cur));
+      const rebuilt = replayTradeTransactionsToHoldings(next);
+      const quoted = await refreshHoldingMarketPrices(rebuilt);
+      setPortfolioHoldings(pid, quoted);
+    },
+    [portfolios, selectedPortfolioId, setPortfolioHoldings, setPortfolioTransactions, transactionsByPortfolioId],
+  );
+
   const openEditPortfolio = useCallback((id: string) => {
     setCreatePortfolioOpen(false);
+    setCreateCombinedOpen(false);
     setEditPortfolioId(id);
     setEditPortfolioOpen(true);
   }, []);
@@ -418,12 +633,28 @@ export function PortfolioWorkspaceProvider({
   const openCreatePortfolio = useCallback(() => {
     setEditPortfolioOpen(false);
     setEditPortfolioId(null);
+    setCreateCombinedOpen(false);
     setCreatePortfolioOpen(true);
   }, []);
 
-  const openNewTransaction = useCallback(() => setNewTransactionOpen(true), []);
+  const openCreateCombinedPortfolio = useCallback(() => {
+    setEditPortfolioOpen(false);
+    setEditPortfolioId(null);
+    setCreatePortfolioOpen(false);
+    setCreateCombinedOpen(true);
+  }, []);
+
+  const openNewTransaction = useCallback(() => {
+    const p = portfolios.find((x) => x.id === selectedPortfolioId);
+    if (p?.kind === "combined") return;
+    setNewTransactionOpen(true);
+  }, [portfolios, selectedPortfolioId]);
   const closeNewTransaction = useCallback(() => setNewTransactionOpen(false), []);
-  const openAddCash = useCallback(() => setAddCashModalOpen(true), []);
+  const openAddCash = useCallback(() => {
+    const p = portfolios.find((x) => x.id === selectedPortfolioId);
+    if (p?.kind === "combined") return;
+    setAddCashModalOpen(true);
+  }, [portfolios, selectedPortfolioId]);
   const closeAddCash = useCallback(() => setAddCashModalOpen(false), []);
 
   useEffect(() => {
@@ -431,6 +662,8 @@ export function PortfolioWorkspaceProvider({
       if (e.key !== "Escape") return;
       if (createPortfolioOpen) {
         setCreatePortfolioOpen(false);
+      } else if (createCombinedOpen) {
+        setCreateCombinedOpen(false);
       } else if (editPortfolioOpen) {
         setEditPortfolioOpen(false);
         setEditPortfolioId(null);
@@ -444,27 +677,32 @@ export function PortfolioWorkspaceProvider({
     }
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [addCashModalOpen, createPortfolioOpen, editPortfolioOpen, editTransaction, newTransactionOpen]);
+  }, [addCashModalOpen, createCombinedOpen, createPortfolioOpen, editPortfolioOpen, editTransaction, newTransactionOpen]);
 
   useEffect(() => {
     if (!newTransactionOpen) {
       setEditPortfolioOpen(false);
       setCreatePortfolioOpen(false);
+      setCreateCombinedOpen(false);
       setEditPortfolioId(null);
     }
   }, [newTransactionOpen]);
+
+  const portfolioDisplayReady = workspaceHydrated || portfolioBootstrapFromLocal;
 
   const value = useMemo(
     () => ({
       portfolios,
       selectedPortfolioId,
       setSelectedPortfolioId,
-      holdingsByPortfolioId,
+      holdingsByPortfolioId: displayHoldingsByPortfolioId,
       addHolding,
-      transactionsByPortfolioId,
+      transactionsByPortfolioId: displayTransactionsByPortfolioId,
       addTransaction,
       openEditPortfolio,
       openCreatePortfolio,
+      openCreateCombinedPortfolio,
+      selectedPortfolioReadOnly,
       newTransactionOpen,
       openNewTransaction,
       closeNewTransaction,
@@ -476,18 +714,23 @@ export function PortfolioWorkspaceProvider({
       closeEditTransaction,
       setPortfolioTransactions,
       setPortfolioHoldings,
+      removePortfolioTransaction,
+      portfolioDisplayReady,
     }),
     [
       portfolios,
       selectedPortfolioId,
-      holdingsByPortfolioId,
+      displayHoldingsByPortfolioId,
       addHolding,
-      transactionsByPortfolioId,
+      displayTransactionsByPortfolioId,
       addTransaction,
       setPortfolioTransactions,
       setPortfolioHoldings,
+      removePortfolioTransaction,
       openEditPortfolio,
       openCreatePortfolio,
+      openCreateCombinedPortfolio,
+      selectedPortfolioReadOnly,
       newTransactionOpen,
       openNewTransaction,
       closeNewTransaction,
@@ -497,6 +740,7 @@ export function PortfolioWorkspaceProvider({
       editTransaction,
       openEditTransaction,
       closeEditTransaction,
+      portfolioDisplayReady,
     ],
   );
 
@@ -512,14 +756,31 @@ export function PortfolioWorkspaceProvider({
       />
       {editPortfolioOpen && editPortfolioId ? (
         <EditPortfolioModal
+          key={editPortfolioId}
           initialName={portfolios.find((p) => p.id === editPortfolioId)?.name ?? ""}
+          initialPrivacy={portfolios.find((p) => p.id === editPortfolioId)?.privacy ?? "private"}
+          isCombined={portfolios.find((p) => p.id === editPortfolioId)?.kind === "combined"}
+          combinedFromSummary={
+            portfolios
+              .find((p) => p.id === editPortfolioId)
+              ?.combinedFrom?.map((cid) => portfolios.find((x) => x.id === cid)?.name ?? cid)
+              .join(", ") ?? ""
+          }
           onClose={() => {
             setEditPortfolioOpen(false);
             setEditPortfolioId(null);
           }}
-          onSave={(name) => {
+          onSave={(name, nextPrivacy) => {
             const t = name.trim();
             const id = editPortfolioId;
+            const editing = portfolios.find((p) => p.id === id);
+            if (editing?.kind === "combined") {
+              if (t.length === 0) return;
+              setPortfolios((prev) => prev.map((p) => (p.id === id ? { ...p, name: t } : p)));
+              setEditPortfolioOpen(false);
+              setEditPortfolioId(null);
+              return;
+            }
             setPortfolios((prev) => {
               if (!id) return prev;
               if (t.length === 0) {
@@ -537,44 +798,91 @@ export function PortfolioWorkspaceProvider({
                 });
                 return next;
               }
-              return prev.map((p) => (p.id === id ? { ...p, name: t } : p));
+              return prev.map((p) => (p.id === id ? { ...p, name: t, privacy: nextPrivacy } : p));
             });
             setEditPortfolioOpen(false);
             setEditPortfolioId(null);
           }}
-          onDelete={() => {
+          onRequestDelete={() => {
             const id = editPortfolioId;
             if (!id) return;
-            setPortfolios((prev) => {
-              const next = ensureAtLeastOnePortfolio(prev.filter((p) => p.id !== id));
-              setSelectedPortfolioId((sel) => (sel !== id ? sel : next[0]!.id));
-              setHoldingsByPortfolioId((h) => {
-                const copy = { ...h };
-                delete copy[id];
-                return copy;
-              });
-              setTransactionsByPortfolioId((h) => {
-                const copy = { ...h };
-                delete copy[id];
-                return copy;
-              });
-              return next;
-            });
+            setDeletePortfolioConfirmId(id);
             setEditPortfolioOpen(false);
             setEditPortfolioId(null);
           }}
         />
       ) : null}
+      <DeletePortfolioConfirmModal
+        portfolioId={deletePortfolioConfirmId}
+        portfolioName={
+          deletePortfolioConfirmId ?
+            portfolios.find((p) => p.id === deletePortfolioConfirmId)?.name ?? "this portfolio"
+          : ""
+        }
+        onClose={() => setDeletePortfolioConfirmId(null)}
+        onConfirmDelete={() => {
+          const id = deletePortfolioConfirmId;
+          if (!id) return;
+          setPortfolios((prev) => {
+            const without = prev.filter((p) => p.id !== id);
+            const pruned = without
+              .map((p) => {
+                if (p.kind !== "combined" || !p.combinedFrom) return p;
+                const nextFrom = p.combinedFrom.filter((x) => x !== id);
+                if (nextFrom.length < 2) return null;
+                return { ...p, combinedFrom: nextFrom };
+              })
+              .filter((p): p is PortfolioEntry => p != null);
+            const next = ensureAtLeastOnePortfolio(pruned);
+            setSelectedPortfolioId((sel) => (sel !== id ? sel : next[0]!.id));
+            setHoldingsByPortfolioId((h) => {
+              const copy = { ...h };
+              delete copy[id];
+              return copy;
+            });
+            setTransactionsByPortfolioId((h) => {
+              const copy = { ...h };
+              delete copy[id];
+              return copy;
+            });
+            return next;
+          });
+          setDeletePortfolioConfirmId(null);
+        }}
+      />
       {createPortfolioOpen ? (
         <CreatePortfolioModal
           onClose={() => setCreatePortfolioOpen(false)}
-          onAdd={(name) => {
+          onAdd={(name, nextPrivacy) => {
             const t = name.trim();
             if (t.length === 0) return;
             const id = newPortfolioId();
-            setPortfolios((prev) => [...prev, { id, name: t }]);
+            setPortfolios((prev) => [...prev, { id, name: t, privacy: nextPrivacy }]);
             setSelectedPortfolioId(id);
             setCreatePortfolioOpen(false);
+          }}
+        />
+      ) : null}
+      {createCombinedOpen ? (
+        <CreateCombinedPortfolioModal
+          portfolios={portfolios}
+          onClose={() => setCreateCombinedOpen(false)}
+          onAdd={(name, sourceIds) => {
+            const t = name.trim();
+            if (t.length === 0 || sourceIds.length < 2) return;
+            const id = newPortfolioId();
+            setPortfolios((prev) => [
+              ...prev,
+              {
+                id,
+                name: t,
+                privacy: "private",
+                kind: "combined",
+                combinedFrom: [...sourceIds],
+              },
+            ]);
+            setSelectedPortfolioId(id);
+            setCreateCombinedOpen(false);
           }}
         />
       ) : null}

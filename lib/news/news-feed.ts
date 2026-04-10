@@ -9,6 +9,7 @@ import { getEodhdApiKey } from "@/lib/env/server";
 import { toEodhdUsSymbol } from "@/lib/market/eodhd-symbol";
 import { CRYPTO_TOP10 } from "@/lib/market/eodhd-crypto";
 import { INDEX_TOP10 } from "@/lib/market/indices-top10";
+import { traceEodhdHttp } from "@/lib/market/provider-trace";
 import { getTop500Universe } from "@/lib/screener/top500-companies";
 import type { NewsItem, NewsTab } from "@/lib/news/news-types";
 
@@ -64,6 +65,7 @@ async function fetchEodhdNewsForSymbol(eodhdSymbol: string): Promise<Record<stri
   )}&fmt=json`;
 
   try {
+    if (!traceEodhdHttp("fetchEodhdNewsForSymbol", { symbol: eodhdSymbol })) return [];
     const res = await fetch(url, { cache: "no-store" });
     if (!res.ok) return [];
     const data = (await res.json()) as unknown;

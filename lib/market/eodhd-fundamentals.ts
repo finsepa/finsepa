@@ -2,7 +2,7 @@ import "server-only";
 
 import { unstable_cache } from "next/cache";
 
-import { REVALIDATE_WARM } from "@/lib/data/cache-policy";
+import { REVALIDATE_WARM_LONG } from "@/lib/data/cache-policy";
 
 import { traceEodhdHttp } from "@/lib/market/provider-trace";
 import { getEodhdApiKey } from "@/lib/env/server";
@@ -220,8 +220,8 @@ async function fetchEodhdFundamentalsJsonUncached(ticker: string): Promise<Recor
   const url = `https://eodhd.com/api/fundamentals/${encodeURIComponent(sym)}?api_token=${encodeURIComponent(key)}&fmt=json`;
 
   try {
-    traceEodhdHttp("fetchEodhdFundamentalsJsonUncached", { symbol: sym });
-    const res = await fetch(url, { next: { revalidate: 300 } });
+    if (!traceEodhdHttp("fetchEodhdFundamentalsJsonUncached", { symbol: sym })) return null;
+    const res = await fetch(url, { next: { revalidate: 900 } });
     if (!res.ok) return null;
     const root = (await res.json()) as Record<string, unknown> | null;
     if (!root || typeof root !== "object" || "error" in root) return null;
@@ -241,30 +241,13 @@ export async function fetchEodhdFundamentalsJsonFresh(ticker: string): Promise<R
 
 export const fetchEodhdFundamentalsJson = unstable_cache(
   fetchEodhdFundamentalsJsonUncached,
-  ["eodhd-fundamentals-json-v5"],
-  { revalidate: REVALIDATE_WARM },
+  ["eodhd-fundamentals-json-v6-reval-900"],
+  { revalidate: REVALIDATE_WARM_LONG },
 );
 
-/**
- * Fundamentals for list views (e.g. Screener PE / logo domain). Short data cache to cut repeated work across pagination.
- */
-export async function fetchEodhdFundamentalsJsonScreener(ticker: string): Promise<Record<string, unknown> | null> {
-  const key = getEodhdApiKey();
-  if (!key) return null;
-
-  const sym = toEodhdUsSymbol(ticker);
-  const url = `https://eodhd.com/api/fundamentals/${encodeURIComponent(sym)}?api_token=${encodeURIComponent(key)}&fmt=json`;
-
-  try {
-    traceEodhdHttp("fetchEodhdFundamentalsJsonScreener", { symbol: sym });
-    const res = await fetch(url, { next: { revalidate: 300 } });
-    if (!res.ok) return null;
-    const root = (await res.json()) as Record<string, unknown> | null;
-    if (!root || typeof root !== "object" || "error" in root) return null;
-    return root;
-  } catch {
-    return null;
-  }
+/** Same as {@link fetchEodhdFundamentalsJson} — one shared cache; avoids duplicate fundamentals HTTP. */
+export function fetchEodhdFundamentalsJsonScreener(ticker: string): Promise<Record<string, unknown> | null> {
+  return fetchEodhdFundamentalsJson(ticker);
 }
 
 /**

@@ -5,7 +5,7 @@ import { unstable_cache } from "next/cache";
 import type { IndexCardData } from "@/lib/screener/indices-today";
 import {
   getSimpleIndicesDerived,
-  getSimpleMarketData,
+  getSimpleMarketDataScreenerStocks,
   type SimpleIndicesDerived,
   type SimpleMarketData,
 } from "@/lib/market/simple-market-layer";
@@ -106,7 +106,7 @@ function compute1d(lastPrice: number | null, prevClose: number | null): number |
 }
 
 async function loadSimpleIndexCardsUncached(): Promise<IndexCardData[]> {
-  const [data, indicesDerived] = await Promise.all([getSimpleMarketData(), getSimpleIndicesDerived()]);
+  const [data, indicesDerived] = await Promise.all([getSimpleMarketDataScreenerStocks(), getSimpleIndicesDerived()]);
 
   const now = new Date();
   const toUnix = Math.floor(now.getTime() / 1000);
@@ -241,7 +241,7 @@ async function loadSimpleIndexCardsUncached(): Promise<IndexCardData[]> {
   ];
 }
 
-export const getSimpleIndexCards = unstable_cache(loadSimpleIndexCardsUncached, ["simple-index-cards-v4"], {
+export const getSimpleIndexCards = unstable_cache(loadSimpleIndexCardsUncached, ["simple-index-cards-v6-stocks-tab-market"], {
   revalidate: 60,
 });
 

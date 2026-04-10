@@ -9,6 +9,7 @@ import type { StockNewsArticle } from "@/lib/market/stock-news-types";
 import { extractImageUrlFromPlainText, pickBestImageUrl } from "@/lib/market/stock-news-images";
 import { fetchOgImageFromArticleUrl } from "@/lib/market/stock-news-og";
 import { toEodhdUsSymbol } from "@/lib/market/eodhd-symbol";
+import { traceEodhdHttp } from "@/lib/market/provider-trace";
 
 const SUMMARY_MAX = 280;
 const MAX_TAGS = 5;
@@ -53,18 +54,23 @@ function normalizeNewsArray(data: unknown): Record<string, unknown>[] {
   return [];
 }
 
-export async function loadStockNewsUncached(ticker: string): Promise<StockNewsArticle[]> {
+/** Fetch one page of news (EODHD `offset` / `limit`). IDs are stable across pages via `offset + rowIndex`. */
+export async function loadStockNewsPage(ticker: string, offset: number, limit: number): Promise<StockNewsArticle[]> {
   const key = getEodhdApiKey();
   if (!key) return [];
 
   const sym = ticker.trim().toUpperCase();
   if (!sym) return [];
 
+  const safeOffset = Math.max(0, offset);
+  const safeLimit = Math.min(50, Math.max(1, limit));
+
   const s = toEodhdUsSymbol(sym);
-  const url = `https://eodhd.com/api/news?s=${encodeURIComponent(s)}&offset=0&limit=10&api_token=${encodeURIComponent(key)}&fmt=json`;
+  const url = `https://eodhd.com/api/news?s=${encodeURIComponent(s)}&offset=${safeOffset}&limit=${safeLimit}&api_token=${encodeURIComponent(key)}&fmt=json`;
 
   let data: unknown;
   try {
+    if (!traceEodhdHttp("loadStockNewsPage", { symbol: s, offset: safeOffset, limit: safeLimit })) return [];
     const res = await fetch(url, { cache: "no-store" });
     if (!res.ok) return [];
     data = await res.json();
@@ -92,6 +98,7 @@ export async function loadStockNewsUncached(ticker: string): Promise<StockNewsAr
   const out: StockNewsArticle[] = [];
 
   for (let i = 0; i < rows.length; i++) {
+    if (out.length >= safeLimit) break;
     const raw = rows[i]!;
     const title = typeof raw.title === "string" ? raw.title.trim() : "";
     const link = typeof raw.link === "string" ? raw.link.trim() : "";
@@ -113,7 +120,7 @@ export async function loadStockNewsUncached(ticker: string): Promise<StockNewsAr
     if (!imageUrl) imageUrl = extractImageUrlFromPlainText(content);
 
     out.push({
-      id: stableId(link, publishedAt, i),
+      id: stableId(link, publishedAt, safeOffset + i),
       title,
       source: sourceFromUrl(link),
       publishedAt,
@@ -122,8 +129,6 @@ export async function loadStockNewsUncached(ticker: string): Promise<StockNewsAr
       url: link,
       tags,
     });
-
-    if (out.length >= 10) break;
   }
 
   await Promise.all(
@@ -137,8 +142,9 @@ export async function loadStockNewsUncached(ticker: string): Promise<StockNewsAr
   return out;
 }
 
+/** First page only (5 items) — matches asset overview initial paint + `/api/stocks/.../news?offset=0&limit=5`. */
 export const getStockNews = unstable_cache(
-  async (ticker: string) => loadStockNewsUncached(ticker),
-  ["stock-news-v5"],
+  async (ticker: string) => loadStockNewsPage(ticker, 0, 5),
+  ["stock-news-v6-page5"],
   { revalidate: REVALIDATE_HOT },
 );

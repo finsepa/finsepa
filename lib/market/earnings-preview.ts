@@ -151,7 +151,7 @@ export async function getEarningsPreviewPayload(args: {
     ]);
   }
 
-  const logo = logoUrlFromFundamentalsRoot(root);
+  const logo = logoUrlFromFundamentalsRoot(root, args.ticker);
   const name = companyNameFromRoot(root, args.fallbackCompanyName);
 
   return {

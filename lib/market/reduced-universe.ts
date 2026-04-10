@@ -32,6 +32,17 @@ export const REDUCED_CRYPTO: Record<string, { symbol: string; name: string; mark
   TRX: { symbol: "TRX", name: "TRON", marketCapUsd: 17.22 * 1e9 },
   LINK: { symbol: "LINK", name: "Chainlink", marketCapUsd: 11.95 * 1e9 },
   AVAX: { symbol: "AVAX", name: "Avalanche", marketCapUsd: 9.88 * 1e9 },
+  /** Screener page 2 — display-only caps aligned with {@link CRYPTO_SCREENER_PAGE2}. */
+  TON: { symbol: "TON", name: "Toncoin", marketCapUsd: 8.2 * 1e9 },
+  POL: { symbol: "POL", name: "Polygon", marketCapUsd: 2.1 * 1e9 },
+  DOT: { symbol: "DOT", name: "Polkadot", marketCapUsd: 6.5 * 1e9 },
+  ATOM: { symbol: "ATOM", name: "Cosmos", marketCapUsd: 2.8 * 1e9 },
+  LTC: { symbol: "LTC", name: "Litecoin", marketCapUsd: 7.1 * 1e9 },
+  BCH: { symbol: "BCH", name: "Bitcoin Cash", marketCapUsd: 6.9 * 1e9 },
+  NEAR: { symbol: "NEAR", name: "NEAR Protocol", marketCapUsd: 3.4 * 1e9 },
+  UNI: { symbol: "UNI", name: "Uniswap", marketCapUsd: 4.2 * 1e9 },
+  XLM: { symbol: "XLM", name: "Stellar", marketCapUsd: 2.9 * 1e9 },
+  FIL: { symbol: "FIL", name: "Filecoin", marketCapUsd: 1.9 * 1e9 },
 };
 
 export const REDUCED_INDICES = {

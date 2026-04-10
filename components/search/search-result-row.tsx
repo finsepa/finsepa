@@ -6,6 +6,7 @@ import { X } from "lucide-react";
 
 import { WatchlistStarToggle } from "@/components/watchlist/watchlist-star-button";
 import { mergeLogoMemory, readLogoMemory } from "@/lib/logos/logo-memory";
+import { eodhdCryptoSpotTickerDisplay } from "@/lib/crypto/eodhd-crypto-ticker-display";
 import type { SearchAssetItem } from "@/lib/search/search-types";
 import { watchlistStorageKeyForSearchItem } from "@/lib/search/watchlist-storage-key";
 
@@ -108,7 +109,9 @@ function SearchResultRowInner({
       <LogoBlock item={item} />
       <div className="min-w-0 flex-1">
         <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">{item.name}</div>
-        <div className="truncate text-[12px] leading-4 text-[#71717A]">{item.symbol}</div>
+        <div className="truncate text-[12px] leading-4 text-[#71717A]">
+          {item.type === "crypto" ? eodhdCryptoSpotTickerDisplay(item.symbol) : item.symbol}
+        </div>
       </div>
     </Link>
   );

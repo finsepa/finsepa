@@ -34,8 +34,6 @@ export function DataFetchTopLoader({ active }: { active: boolean }) {
       }
       clearCreep();
       hadActivityRef.current = true;
-      setVisible(true);
-      setProgress(0.1);
       const creep = () => {
         creepTimerRef.current = window.setTimeout(() => {
           if (!activeRef.current) return;
@@ -43,20 +41,28 @@ export function DataFetchTopLoader({ active }: { active: boolean }) {
           creep();
         }, 380);
       };
-      creep();
-      return clearCreep;
+      const startRaf = requestAnimationFrame(() => {
+        setVisible(true);
+        setProgress(0.1);
+        creep();
+      });
+      return () => {
+        cancelAnimationFrame(startRaf);
+        clearCreep();
+      };
     }
 
     clearCreep();
     if (!hadActivityRef.current) return;
     hadActivityRef.current = false;
-    setProgress(1);
+    const finishRaf = requestAnimationFrame(() => setProgress(1));
     doneTimerRef.current = window.setTimeout(() => {
       setVisible(false);
       setProgress(0);
       doneTimerRef.current = null;
     }, 220);
     return () => {
+      cancelAnimationFrame(finishRaf);
       clearCreep();
       if (doneTimerRef.current) {
         clearTimeout(doneTimerRef.current);

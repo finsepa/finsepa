@@ -1,6 +1,11 @@
+import { CRYPTO_CC_EXTRA_PLAIN_BASES } from "@/lib/crypto/crypto-cc-extra-bases";
+import { cryptoRouteBase, cryptoUsdPairBase } from "@/lib/crypto/crypto-symbol-base";
+import { ALL_CRYPTO_METAS } from "@/lib/market/crypto-meta";
+import { isCustomPortfolioSymbol } from "@/lib/portfolio/custom-asset-symbol";
+
 /**
  * Featured crypto for picker UIs (New Transaction, Charting, …).
- * Keep in sync with `CRYPTO_TOP10` in `lib/market/eodhd-crypto.ts`.
+ * Keep in sync with `CRYPTO_TOP10` in `lib/market/crypto-meta.ts`.
  */
 export const CRYPTO_PICKER_TOP: readonly { symbol: string; name: string }[] = [
   { symbol: "BTC", name: "Bitcoin" },
@@ -15,45 +20,16 @@ export const CRYPTO_PICKER_TOP: readonly { symbol: string; name: string }[] = [
   { symbol: "AVAX", name: "Avalanche" },
 ];
 
-/** Same coverage as `CRYPTO_SEARCH_EXTRA` in `eodhd-crypto` — used for `/crypto/[symbol]` links from portfolio. */
-const CRYPTO_ROUTE_EXTRA: readonly string[] = [
-  "TON",
-  "POL",
-  "DOT",
-  "ATOM",
-  "LTC",
-  "BCH",
-  "NEAR",
-  "UNI",
-  "XLM",
-  "FIL",
-  "APT",
-  "ARB",
-  "OP",
-  "INJ",
-  "SUI",
-  "TIA",
-  "AAVE",
-  "MKR",
-  "LDO",
-  "STX",
-  "IMX",
-  "GRT",
-  "FET",
-  "RNDR",
-  "SNX",
-  "CRV",
-];
+const CRYPTO_ASSET_PAGE_SYMBOLS = new Set(ALL_CRYPTO_METAS.map((m) => m.symbol.toUpperCase()));
 
-const CRYPTO_ASSET_PAGE_SYMBOLS = new Set<string>([
-  ...CRYPTO_PICKER_TOP.map((c) => c.symbol.toUpperCase()),
-  ...CRYPTO_ROUTE_EXTRA.map((s) => s.toUpperCase()),
-]);
-
-/** Portfolio / picker: `/crypto/BTC` vs `/stock/AAPL`. */
-export function portfolioHoldingAssetHref(symbol: string): string {
+/** Portfolio / picker: `/crypto/BTC` vs `/stock/AAPL`. Custom assets have no detail page → `null`. */
+export function portfolioHoldingAssetHref(symbol: string): string | null {
   const s = symbol.trim().toUpperCase();
   if (!s) return "/portfolio";
-  if (CRYPTO_ASSET_PAGE_SYMBOLS.has(s)) return `/crypto/${encodeURIComponent(s)}`;
+  if (isCustomPortfolioSymbol(s)) return null;
+  const base = cryptoRouteBase(s);
+  if (CRYPTO_ASSET_PAGE_SYMBOLS.has(base)) return `/crypto/${encodeURIComponent(base)}`;
+  if (CRYPTO_CC_EXTRA_PLAIN_BASES.has(base)) return `/crypto/${encodeURIComponent(base)}`;
+  if (cryptoUsdPairBase(s)) return `/crypto/${encodeURIComponent(base)}`;
   return `/stock/${encodeURIComponent(s)}`;
 }

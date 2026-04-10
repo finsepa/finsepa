@@ -5,20 +5,19 @@ import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { format, startOfDay } from "date-fns";
 import { X } from "lucide-react";
 
+import { CashDirectionSelect } from "@/components/layout/cash-direction-select";
+import type { CashDirection } from "@/components/layout/cash-direction-select";
 import { ClearableInput } from "@/components/layout/clearable-input";
 import { TransactionDateField } from "@/components/layout/transaction-date-field";
 import { newTransactionRowId } from "@/components/portfolio/portfolio-types";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import { cn } from "@/lib/utils";
-
 function parseAmountField(raw: string): number {
   const t = raw.trim().replace(/\s/g, "").replace(",", ".");
   if (!t) return 0;
   const n = Number.parseFloat(t);
   return Number.isFinite(n) ? n : 0;
 }
-
-type CashDirection = "in" | "out";
 
 type Props = {
   open: boolean;
@@ -125,32 +124,7 @@ export function AddCashModal({ open, onClose }: Props) {
         <div className="px-5 pb-5 pt-5">
           <div className="flex flex-col gap-5">
             <Field label="Operation type">
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setDirection("in")}
-                  className={cn(
-                    "min-h-9 flex-1 rounded-[10px] px-4 py-2 text-sm font-medium transition-colors",
-                    direction === "in"
-                      ? "bg-[#09090B] text-white"
-                      : "bg-[#F4F4F5] text-[#09090B] hover:bg-[#EBEBEB]",
-                  )}
-                >
-                  Cash In
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDirection("out")}
-                  className={cn(
-                    "min-h-9 flex-1 rounded-[10px] px-4 py-2 text-sm font-medium transition-colors",
-                    direction === "out"
-                      ? "bg-[#09090B] text-white"
-                      : "bg-[#F4F4F5] text-[#09090B] hover:bg-[#EBEBEB]",
-                  )}
-                >
-                  Cash Out
-                </button>
-              </div>
+              <CashDirectionSelect value={direction} onChange={setDirection} />
             </Field>
 
             <Field label="Date">

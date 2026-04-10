@@ -1,13 +1,25 @@
 "use client";
 
-import { memo, useMemo, useState } from "react";
-import { ArrowDown, ArrowUp, Filter, Pencil, Search } from "lucide-react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { ArrowDown, ArrowUp, Filter, Search, Wallet } from "lucide-react";
 import { format, parseISO } from "date-fns";
 
 import { CashInOutBarChartSection } from "@/components/portfolio/cash-in-out-bar-chart";
+import { DeleteTransactionConfirmModal } from "@/components/portfolio/delete-transaction-confirm-modal";
+import { TransactionRowActionsMenu } from "@/components/portfolio/transaction-row-actions-menu";
 import { CompanyLogo } from "@/components/screener/company-logo";
+import { displayLogoUrlForPortfolioSymbol } from "@/lib/portfolio/portfolio-asset-display-logo";
+import { portfolioAssetSymbolCaption } from "@/lib/portfolio/custom-asset-symbol";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { TABLE_PAGE_SIZE, TablePaginationBar, tablePageCount } from "@/components/ui/table-pagination";
 import { cn } from "@/lib/utils";
 import type { PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 
@@ -61,11 +73,25 @@ function rowMatchesCashFilter(t: PortfolioTransaction, f: CashDirectionFilter): 
  * Cash balance from ledger activity (can be negative). Styled like portfolio / screener tables.
  */
 function PortfolioCashPanelInner() {
-  const { selectedPortfolioId, transactionsByPortfolioId, openEditTransaction } = usePortfolioWorkspace();
+  const {
+    selectedPortfolioId,
+    transactionsByPortfolioId,
+    openEditTransaction,
+    removePortfolioTransaction,
+    selectedPortfolioReadOnly,
+  } = usePortfolioWorkspace();
 
   const [cashSearch, setCashSearch] = useState("");
+  const [cashPage, setCashPage] = useState(1);
   const [cashDateAsc, setCashDateAsc] = useState(false);
   const [cashDirectionFilter, setCashDirectionFilter] = useState<CashDirectionFilter>("all");
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [deleteCandidate, setDeleteCandidate] = useState<PortfolioTransaction | null>(null);
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (!deleteCandidate) return;
+    await removePortfolioTransaction(deleteCandidate);
+  }, [deleteCandidate, removePortfolioTransaction]);
 
   const transactions = useMemo(
     () => (selectedPortfolioId != null ? transactionsByPortfolioId[selectedPortfolioId] ?? [] : []),
@@ -100,6 +126,23 @@ function PortfolioCashPanelInner() {
       return cashDateAsc ? ta - tb : tb - ta;
     });
   }, [cashLedgerRows, cashDirectionFilter, cashSearch, cashDateAsc]);
+
+  useEffect(() => {
+    setCashPage(1);
+  }, [cashDirectionFilter, cashSearch]);
+
+  const cashPageCount = useMemo(() => tablePageCount(filteredCashRows.length), [filteredCashRows.length]);
+
+  useEffect(() => {
+    setCashPage((p) => Math.min(p, cashPageCount));
+  }, [cashPageCount]);
+
+  const safeCashPage = Math.min(Math.max(1, cashPage), cashPageCount);
+  const pagedCashRows = useMemo(
+    () =>
+      filteredCashRows.slice((safeCashPage - 1) * TABLE_PAGE_SIZE, safeCashPage * TABLE_PAGE_SIZE),
+    [filteredCashRows, safeCashPage],
+  );
 
   const filterSummary =
     cashDirectionFilter === "in"
@@ -209,12 +252,23 @@ function PortfolioCashPanelInner() {
         </div>
 
         {cashLedgerRows.length === 0 ? (
-          <p className="py-8 text-center text-sm text-[#71717A]">No cash movements yet.</p>
+          <Empty variant="card" className="min-h-[min(32vh,280px)]">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <Wallet className="h-6 w-6" strokeWidth={1.75} aria-hidden />
+              </EmptyMedia>
+              <EmptyTitle>No cash movements yet</EmptyTitle>
+              <EmptyDescription>
+                Add a deposit or withdrawal with New Transaction → Cash, or use Import Transactions above.
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
         ) : filteredCashRows.length === 0 ? (
           <p className="py-8 text-center text-sm text-[#71717A]">No transactions match your search.</p>
         ) : (
-          <div className="w-full min-w-0 overflow-x-auto pb-4">
-            <div className="min-w-[720px] divide-y divide-[#E4E4E7] border-t border-[#E4E4E7]">
+          <div className="w-full min-w-0">
+            <div className="overflow-x-auto pb-4">
+              <div className="min-w-[720px] divide-y divide-[#E4E4E7] border-t border-[#E4E4E7]">
               <div
                 className={cn(
                   cashTxGrid,
@@ -245,7 +299,7 @@ function PortfolioCashPanelInner() {
                 </div>
               </div>
 
-              {filteredCashRows.map((t) => (
+              {pagedCashRows.map((t) => (
                 <div
                   key={t.id}
                   className={cn(
@@ -263,10 +317,12 @@ function PortfolioCashPanelInner() {
                   </div>
                   <div className="min-w-0 !text-left">
                     <div className="flex min-w-0 items-center gap-3 pr-4">
-                      <CompanyLogo name={t.name} logoUrl={t.logoUrl ?? ""} symbol={t.symbol} />
+                      <CompanyLogo name={t.name} logoUrl={displayLogoUrlForPortfolioSymbol(t.symbol)} symbol={t.symbol} />
                       <div className="min-w-0">
                         <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">{t.name}</div>
-                        <div className="text-[12px] font-normal leading-4 text-[#71717A]">{t.symbol}</div>
+                        <div className="text-[12px] font-normal leading-4 text-[#71717A]">
+                          {portfolioAssetSymbolCaption(t.symbol)}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -286,21 +342,34 @@ function PortfolioCashPanelInner() {
                   </div>
                   <div className="!text-left truncate px-2 text-[14px] leading-5 text-[#71717A]" />
                   <div className="!flex !justify-end pr-1">
-                    <button
-                      type="button"
-                      aria-label="Edit transaction"
-                      onClick={() => openEditTransaction(t)}
-                      className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#09090B] transition-colors hover:bg-[#F4F4F5]"
-                    >
-                      <Pencil className="h-4 w-4" aria-hidden strokeWidth={2} />
-                    </button>
+                    {!selectedPortfolioReadOnly ? (
+                      <TransactionRowActionsMenu
+                        transaction={t}
+                        isOpen={openMenuId === t.id}
+                        onOpenChange={(open) => setOpenMenuId(open ? t.id : null)}
+                        onEdit={openEditTransaction}
+                        onRequestDelete={setDeleteCandidate}
+                      />
+                    ) : null}
                   </div>
                 </div>
               ))}
+              </div>
             </div>
+            <TablePaginationBar
+              page={safeCashPage}
+              totalItems={filteredCashRows.length}
+              onPageChange={setCashPage}
+            />
           </div>
         )}
       </section>
+
+      <DeleteTransactionConfirmModal
+        transaction={deleteCandidate}
+        onClose={() => setDeleteCandidate(null)}
+        onConfirmDelete={handleConfirmDelete}
+      />
     </div>
   );
 }

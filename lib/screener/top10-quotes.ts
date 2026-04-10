@@ -6,7 +6,7 @@ import { unstable_cache } from "next/cache";
 import { REVALIDATE_HOT } from "@/lib/data/cache-policy";
 import { fetchEodhdUsRealtimeBatch } from "@/lib/market/eodhd-realtime";
 import { toEodhdUsSymbol } from "@/lib/market/eodhd-symbol";
-import { companyLogoUrlFromDomain } from "@/lib/screener/company-logo-url";
+import { companyLogoUrlForTicker } from "@/lib/screener/company-logo-url";
 import { buildScreenerCompanyRowFromUniverse } from "@/lib/screener/companies-rows";
 import {
   getScreenerCompaniesStaticLayer,
@@ -25,7 +25,7 @@ function fallbackRow(ticker: Top10Ticker): ScreenerRowWithMarketCapSort {
     id: fb.id,
     name: meta.name,
     ticker,
-    logoUrl: companyLogoUrlFromDomain(meta.domain),
+    logoUrl: companyLogoUrlForTicker(ticker, meta.domain),
     price: fb.price,
     change1D: fb.change1D,
     change1M: fb.change1M,
@@ -54,7 +54,7 @@ async function loadTop10RowsUncached(): Promise<ScreenerRowWithMarketCapSort[]> 
     const fb = screenerStaticByTicker[ticker];
     const meta = TOP10_META[ticker];
     const base = buildScreenerCompanyRowFromUniverse(u, fb.id, quote);
-    const logoUrl = companyLogoUrlFromDomain(meta.domain);
+    const logoUrl = companyLogoUrlForTicker(ticker, meta.domain);
     out.push({
       ...base,
       name: meta.name,
@@ -66,7 +66,7 @@ async function loadTop10RowsUncached(): Promise<ScreenerRowWithMarketCapSort[]> 
   return out;
 }
 
-const getTop10ScreenerRowsData = unstable_cache(loadTop10RowsUncached, ["screener-top10-quotes-v7-v2-layers"], {
+const getTop10ScreenerRowsData = unstable_cache(loadTop10RowsUncached, ["screener-top10-quotes-v11-logo-dev-only"], {
   revalidate: REVALIDATE_HOT,
 });
 

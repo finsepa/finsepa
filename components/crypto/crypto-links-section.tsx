@@ -1,5 +1,6 @@
 "use client";
 
+import { createElement } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   FileCode,
@@ -38,7 +39,10 @@ function LinkPill({ href, label }: { href: string; label: string }) {
       rel="noopener noreferrer"
       className="inline-flex max-w-full items-center gap-2 rounded-full bg-[#F4F4F5] px-3 py-2 text-[13px] font-medium text-[#09090B] transition-colors hover:bg-[#ECECEE]"
     >
-      <Icon className="h-3.5 w-3.5 shrink-0 text-[#52525B]" aria-hidden />
+      {createElement(Icon, {
+        className: "h-3.5 w-3.5 shrink-0 text-[#52525B]",
+        "aria-hidden": true,
+      })}
       <span className="min-w-0 truncate">{label}</span>
     </a>
   );

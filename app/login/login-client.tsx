@@ -19,6 +19,8 @@ const CALLBACK_ERROR_MESSAGES: Record<string, string> = {
 type Props = {
   resetSuccess?: boolean;
   callbackError?: string | null;
+  /** Fired after email/password sign-in succeeds, before redirect (shows banner above card). */
+  onEmailPasswordSuccess?: () => void;
 };
 
 function GoogleMark() {
@@ -33,7 +35,9 @@ function GoogleMark() {
   );
 }
 
-export function LoginClient({ resetSuccess, callbackError }: Props) {
+const REDIRECT_AFTER_LOGIN_MS = 900;
+
+export function LoginClient({ resetSuccess, callbackError, onEmailPasswordSuccess }: Props) {
   const router = useRouter();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -114,7 +118,9 @@ export function LoginClient({ resetSuccess, callbackError }: Props) {
         /* ignore */
       }
 
+      onEmailPasswordSuccess?.();
       router.refresh();
+      await new Promise((r) => setTimeout(r, REDIRECT_AFTER_LOGIN_MS));
       router.push(PATH_APP_ENTRY);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Something went wrong. Please try again.";

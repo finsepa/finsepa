@@ -3,6 +3,7 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 
 import { getEodhdApiKey } from "@/lib/env/server";
+import { traceEodhdHttp } from "@/lib/market/provider-trace";
 
 export type EodhdExchangeSymbolRow = {
   Code?: string;
@@ -38,6 +39,7 @@ async function fetchEodhdExchangeSymbolListUncached(exchange = "US"): Promise<Eo
   )}&fmt=json`;
 
   try {
+    if (!traceEodhdHttp("fetchEodhdExchangeSymbolListUncached", { exchange: ex })) return [];
     const res = await fetch(url, { next: { revalidate: 60 * 60 * 12 } }); // 12h
     if (!res.ok) return [];
     const data = (await res.json()) as unknown;

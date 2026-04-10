@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { buildWatchlistEnrichedGroups } from "@/lib/market/watchlist-enrichment";
 import { requireAuthUser, AuthRequiredError } from "@/lib/watchlist/api-auth";
-import { SCREENER_WATCHLIST_KEY_SET } from "@/lib/watchlist/screener-watchlist-keys";
+import { getScreenerWatchlistKeySet } from "@/lib/watchlist/screener-watchlist-keys";
 import { syntheticWatchlistRows } from "@/lib/watchlist/synthetic";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -29,10 +29,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Expected { tickers: string[] }" }, { status: 400 });
     }
 
+    const keySet = await getScreenerWatchlistKeySet();
     const tickersRaw = raw.filter((t): t is string => typeof t === "string");
     const tickers = tickersRaw
       .map((t) => t.trim().toUpperCase())
-      .filter((t) => SCREENER_WATCHLIST_KEY_SET.has(t));
+      .filter((t) => keySet.has(t));
     if (DEBUG) {
       console.info("[watchlist enrich] load", {
         source: "POST body",

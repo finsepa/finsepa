@@ -3,20 +3,22 @@ import { Suspense } from "react";
 import { ScreenerBrowserTrace } from "@/components/screener/screener-browser-trace";
 import { MarketsSection } from "@/components/screener/markets-section";
 import { buildScreenerPagePayload } from "@/lib/screener/screener-page-payload";
+import { parseScreenerMarketTab, SCREENER_MARKET_QUERY } from "@/lib/screener/screener-market-url";
 
-export default async function ScreenerPage() {
-  const payload = await buildScreenerPagePayload();
+type PageProps = { searchParams: Promise<Record<string, string | string[] | undefined>> };
+
+export default async function ScreenerPage({ searchParams }: PageProps) {
+  const sp = await searchParams;
+  const raw = sp[SCREENER_MARKET_QUERY];
+  const marketParam = Array.isArray(raw) ? raw[0] : raw;
+  const market = parseScreenerMarketTab(marketParam);
+  const payload = await buildScreenerPagePayload(market);
 
   return (
     <div className="px-9 py-6">
       <ScreenerBrowserTrace />
       <Suspense fallback={null}>
-        <MarketsSection
-          stockRows={payload.stockRows}
-          cryptoRows={payload.cryptoRows}
-          indicesRows={payload.indicesRows}
-          indexCards={payload.indexCards}
-        />
+        <MarketsSection payload={payload} />
       </Suspense>
     </div>
   );

@@ -25,7 +25,7 @@ export default async function EarningsPage({ searchParams }: PageProps) {
   const nextMonday = addDaysUtc(monday, 7);
 
   return (
-    <div className="px-9 py-6">
+    <div className="px-9 py-8">
       <EarningsWeekGrid
         data={data}
         prevWeekYmd={toYmdUtc(prevMonday)}

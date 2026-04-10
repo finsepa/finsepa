@@ -9,7 +9,6 @@ export type WatchlistEnrichedItem = {
   logoUrl: string | null;
   price: number | null;
   pct1d: number | null;
-  pct7d: number | null;
   pct1m: number | null;
   ytd: number | null;
   mcapDisplay: string;

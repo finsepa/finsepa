@@ -2,10 +2,10 @@
 
 import { LogoSkeleton, PillSkeleton, SkeletonBox, SparklineSkeleton, TextSkeleton } from "@/components/markets/skeleton";
 
-const stocksColLayout = "grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr_1fr_80px_96px] gap-x-2";
-// star + rank + coin + price + 1D + 1M + YTD + market cap + sparkline (matches crypto-table)
-const cryptoColLayout = "grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr_1fr_96px] gap-x-2";
-const indicesColLayout = "grid-cols-[40px_2fr_1fr_1fr_1fr_1fr_96px] gap-x-2";
+const stocksColLayout = "grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr_1fr_96px] gap-x-2";
+// star + rank + company + price + 1D + 1M + YTD + M cap + PE (matches screener-table Companies)
+const cryptoColLayout = "grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr_1fr] gap-x-2";
+const indicesColLayout = "grid-cols-[40px_2fr_1fr_1fr_1fr_1fr] gap-x-2";
 
 export function IndexCardSkeleton({ name }: { name: string }) {
   return (
@@ -40,9 +40,9 @@ function StocksRowSkeleton() {
           <TextSkeleton wClass="w-10" hClass="h-3" />
         </div>
       </div>
-      {Array.from({ length: 7 }).map((_, i) => (
+      {Array.from({ length: 6 }).map((_, i) => (
         <div key={i} className="flex justify-center">
-          <TextSkeleton wClass={i === 5 ? "w-10" : "w-12"} />
+          <TextSkeleton wClass={i === 4 ? "w-10" : "w-12"} />
         </div>
       ))}
     </div>
@@ -53,7 +53,7 @@ export function StocksTableSkeleton({ rows = 10 }: { rows?: number }) {
   return (
     <div className="overflow-hidden">
       <div className={`grid ${stocksColLayout} items-center border-t border-b border-[#E4E4E7] bg-white px-4 py-3 [&>div]:text-center`}>
-        {Array.from({ length: 10 }).map((_, i) => (
+        {Array.from({ length: 9 }).map((_, i) => (
           <div key={i} className="flex justify-center">
             <SkeletonBox className="h-3 w-10 rounded" />
           </div>
@@ -97,9 +97,6 @@ function CryptoRowSkeleton() {
       <div className="flex justify-center">
         <TextSkeleton wClass="w-14" />
       </div>
-      <div className="flex items-center">
-        <SkeletonBox className="h-8 w-20 rounded-md" />
-      </div>
     </div>
   );
 }
@@ -132,9 +129,6 @@ export function CryptoTableSkeleton({ rows = 10 }: { rows?: number }) {
         <div className="flex justify-center">
           <SkeletonBox className="h-3 w-10 rounded" />
         </div>
-        <div className="flex justify-center">
-          <SkeletonBox className="h-3 w-16 rounded" />
-        </div>
       </div>
       {Array.from({ length: rows }).map((_, i) => (
         <CryptoRowSkeleton key={i} />
@@ -164,9 +158,6 @@ function IndicesRowSkeleton() {
       <div className="flex justify-center">
         <TextSkeleton wClass="w-12" />
       </div>
-      <div className="flex items-center">
-        <SkeletonBox className="h-8 w-20 rounded-md" />
-      </div>
     </div>
   );
 }
@@ -192,9 +183,6 @@ export function IndicesTableSkeleton({ rows = 10 }: { rows?: number }) {
         </div>
         <div className="flex justify-center">
           <SkeletonBox className="h-3 w-10 rounded" />
-        </div>
-        <div className="flex justify-center">
-          <SkeletonBox className="h-3 w-16 rounded" />
         </div>
       </div>
       {Array.from({ length: rows }).map((_, i) => (

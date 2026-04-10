@@ -153,10 +153,10 @@ export function StockProfileTab({ ticker, initialProfile }: { ticker: string; in
         </>
       ) : (
         <>
-          <div className="flex justify-start">
-            <div className="flex h-[61px] max-w-[250px] items-center justify-start">
-              {meta.logoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element -- remote favicon
+          {meta.logoUrl ? (
+            <div className="flex justify-start">
+              <div className="flex h-[61px] max-w-[250px] items-center justify-start">
+                {/* eslint-disable-next-line @next/next/no-img-element -- remote brand logo */}
                 <img
                   src={meta.logoUrl}
                   alt=""
@@ -165,11 +165,9 @@ export function StockProfileTab({ ticker, initialProfile }: { ticker: string; in
                     (e.currentTarget as HTMLImageElement).style.display = "none";
                   }}
                 />
-              ) : (
-                <span className="text-[28px] font-bold tracking-tight text-[#09090B]">{ticker}</span>
-              )}
+              </div>
             </div>
-          </div>
+          ) : null}
 
           <div className="w-full min-w-0">
             <ProfileDescription text={p?.description ?? null} />

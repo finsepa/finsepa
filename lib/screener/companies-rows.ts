@@ -5,6 +5,7 @@ import { getMockScreenerCompaniesNvdaBtcRows } from "@/lib/fixtures/screener-com
 import type { TopCompanyUniverseRow } from "@/lib/screener/top500-companies";
 import type { ScreenerTableRow } from "@/lib/screener/screener-static";
 import type { EodhdRealtimePayload } from "@/lib/market/eodhd-realtime";
+import type { SimpleScreenerStockDerived } from "@/lib/market/simple-market-layer";
 
 function peFromScreenerSnapshot(u: TopCompanyUniverseRow): string {
   const price = u.adjustedClose;
@@ -21,6 +22,8 @@ export function buildScreenerCompanyRowFromUniverse(
   rankId: number,
   quote: EodhdRealtimePayload | null | undefined,
   logoUrl = "",
+  /** When screener snapshot omits 1M/YTD, use derived %s from daily EOD bars (same cache as screener derived). */
+  barDerived?: SimpleScreenerStockDerived | null,
 ): ScreenerTableRow {
   const rtClose = quote && typeof quote.close === "number" && Number.isFinite(quote.close) ? quote.close : null;
   const prevClose =
@@ -39,10 +42,10 @@ export function buildScreenerCompanyRowFromUniverse(
     change1D = u.refund1dP;
   }
 
-  const change1M = u.refund1mP != null && Number.isFinite(u.refund1mP) ? u.refund1mP : null;
-  const changeYTD = u.refundYtdP != null && Number.isFinite(u.refundYtdP) ? u.refundYtdP : null;
-  const trend =
-    Array.isArray(u.closes5d) && u.closes5d.length >= 2 ? [...u.closes5d] : [];
+  const change1M =
+    u.refund1mP != null && Number.isFinite(u.refund1mP) ? u.refund1mP : (barDerived?.changePercent1M ?? null);
+  const changeYTD =
+    u.refundYtdP != null && Number.isFinite(u.refundYtdP) ? u.refundYtdP : (barDerived?.changePercentYTD ?? null);
 
   return {
     id: rankId,
@@ -55,7 +58,7 @@ export function buildScreenerCompanyRowFromUniverse(
     changeYTD,
     marketCap: formatMarketCapDisplay(u.marketCapUsd),
     pe: peFromScreenerSnapshot(u),
-    trend,
+    trend: [],
   };
 }
 

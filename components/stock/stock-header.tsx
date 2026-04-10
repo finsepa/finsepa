@@ -78,7 +78,8 @@ export function StockHeader({
   /** Watchlist count can differ between SSR and first client paint (DB vs serialized props); defer suffix to avoid hydration mismatch. */
   const [watchlistMetaReady, setWatchlistMetaReady] = useState(false);
   useEffect(() => {
-    setWatchlistMetaReady(true);
+    const id = requestAnimationFrame(() => setWatchlistMetaReady(true));
+    return () => cancelAnimationFrame(id);
   }, []);
 
   const hasChange = changePct != null && changeAbs != null && Number.isFinite(changePct) && Number.isFinite(changeAbs);

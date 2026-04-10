@@ -17,7 +17,6 @@ import {
   parseChartingMetricsParam,
   parseChartingTickerList,
 } from "@/lib/market/stock-charting-metrics";
-import { isTop10Ticker } from "@/lib/screener/top10-config";
 
 /** Match standalone Charting chrome — Figma Charting empty / workspace header. */
 type ChartType = "line" | "bars";
@@ -53,23 +52,36 @@ type Props = {
   metricParam: string | null;
   /** Allowed tickers from URL (chips when company chosen without a full chart session). */
   tickers: string[];
+  /** Same list as server Charting route — top 10 + screener page 2. */
+  allowedChartingTickers: string[];
 };
 
 /**
  * Empty-state toolbar: title, switchers (visual), + Metric first; + Company only after ≥1 metric.
  */
-export function ChartingEmptyToolbar({ metricParam, tickers }: Props) {
+export function ChartingEmptyToolbar({ metricParam, tickers, allowedChartingTickers }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pickerWrapRef = useRef<HTMLDivElement>(null);
   const pickerInputRef = useRef<HTMLInputElement>(null);
 
+  const chartingAllowSet = useMemo(
+    () =>
+      new Set(
+        allowedChartingTickers.map((t) => t.trim().toUpperCase()).filter(Boolean),
+      ),
+    [allowedChartingTickers],
+  );
+
   /** Next.js client query (updates with `router.push` / `replace`) — more reliable than `window.location` for same-tick sync. */
   const tickersFromRouter = useMemo(() => {
     const raw = searchParams.get("ticker")?.trim() ?? "";
     const parsed = parseChartingTickerList(raw || null);
-    return parsed.filter((t) => (isSingleAssetMode() ? isSupportedAsset(t) : isTop10Ticker(t)));
-  }, [searchParams]);
+    return parsed.filter((t) => {
+      if (isSingleAssetMode()) return isSupportedAsset(t);
+      return chartingAllowSet.has(t.trim().toUpperCase());
+    });
+  }, [searchParams, chartingAllowSet]);
 
   const displayTickers = useMemo(
     () => (tickersFromRouter.length > 0 ? tickersFromRouter : tickers),
@@ -92,9 +104,9 @@ export function ChartingEmptyToolbar({ metricParam, tickers }: Props) {
 
   /** Only apply metrics from the URL when the URL actually lists them — avoids clearing local picks before `router.replace` lands (company → metric). */
   useEffect(() => {
-    if (parsedFromUrl.length > 0) {
-      setPendingMetrics(parsedFromUrl);
-    }
+    if (parsedFromUrl.length === 0) return;
+    const id = requestAnimationFrame(() => setPendingMetrics(parsedFromUrl));
+    return () => cancelAnimationFrame(id);
   }, [parsedFromUrl]);
 
   const [pickerOpen, setPickerOpen] = useState(false);

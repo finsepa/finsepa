@@ -3,11 +3,8 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 
 import { REVALIDATE_HOT } from "@/lib/data/cache-policy";
-import {
-  ALL_CRYPTO_METAS,
-  fetchEodhdCryptoDailyBars,
-  toSupportedCryptoTicker,
-} from "@/lib/market/eodhd-crypto";
+import { fetchEodhdCryptoDailyBars } from "@/lib/market/eodhd-crypto";
+import { resolveCryptoMetaForProvider } from "@/lib/market/crypto-meta-resolver";
 import { computeStockPerformanceFromSortedDailyBars } from "@/lib/market/stock-performance";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
 
@@ -33,10 +30,7 @@ function emptyPerf(routeSymbol: string): StockPerformance {
 }
 
 async function loadCryptoPerformanceUncached(routeSymbol: string): Promise<StockPerformance> {
-  const supported = toSupportedCryptoTicker(routeSymbol);
-  if (!supported) return emptyPerf(routeSymbol);
-
-  const meta = ALL_CRYPTO_METAS.find((m) => m.symbol.toUpperCase() === supported.toUpperCase());
+  const meta = await resolveCryptoMetaForProvider(routeSymbol);
   if (!meta) return emptyPerf(routeSymbol);
 
   const now = new Date();
@@ -57,11 +51,11 @@ async function loadCryptoPerformanceUncached(routeSymbol: string): Promise<Stock
     }
   }
 
-  return computeStockPerformanceFromSortedDailyBars(sorted, supported, now);
+  return computeStockPerformanceFromSortedDailyBars(sorted, meta.symbol, now);
 }
 
 export const getCryptoPerformance = unstable_cache(
   async (routeSymbol: string) => loadCryptoPerformanceUncached(routeSymbol),
-  ["crypto-performance-v1"],
+  ["crypto-performance-v2-cc-universe"],
   { revalidate: REVALIDATE_HOT },
 );

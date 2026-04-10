@@ -3,5 +3,5 @@
  * Routes and APIs remain deployed; only active nav + Link prefetch are gated.
  */
 export const NAV_NEWS_ENABLED = false;
-export const NAV_EARNINGS_ENABLED = false;
+export const NAV_EARNINGS_ENABLED = true;
 export const NAV_MACRO_ENABLED = false;

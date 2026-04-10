@@ -4,25 +4,19 @@ import { WATCHLIST_CRYPTO_PREFIX, WATCHLIST_INDEX_PREFIX } from "@/lib/watchlist
 import type { WatchlistEnrichedItem } from "@/lib/watchlist/enriched-types";
 import type { WatchlistRow } from "@/lib/watchlist/types";
 import { getCryptoAsset } from "@/lib/market/crypto-asset";
-import {
-  ALL_CRYPTO_METAS,
-  CRYPTO_TOP10,
-  fetchEodhdCryptoDailyBars,
-  toSupportedCryptoTicker,
-} from "@/lib/market/eodhd-crypto";
+import { ALL_CRYPTO_METAS, CRYPTO_SCREENER_ALL, toSupportedCryptoTicker } from "@/lib/market/eodhd-crypto";
 import { fetchEodhdFundamentalsHighlights } from "@/lib/market/eodhd-fundamentals";
 import {
   getSimpleCryptoDerived,
   getSimpleIndicesDerived,
   getSimpleMarketData,
   getSimpleScreenerDerived,
-  type ScreenerCryptoSymbol,
 } from "@/lib/market/simple-market-layer";
-import type { EodhdDailyBar } from "@/lib/market/eodhd-eod";
 import { getStockPerformance } from "@/lib/market/stock-performance";
 import { getStockDetailMetaFromTicker } from "@/lib/market/stock-detail-meta";
-import { getCachedStockLogoUrl } from "@/lib/market/stock-logo-url";
-import { eodFetchWindowUtc, formatMarketCapDisplay, formatPeDisplay } from "@/lib/screener/eod-derived-metrics";
+import { formatMarketCapDisplay, formatPeDisplay } from "@/lib/screener/eod-derived-metrics";
+import { getScreenerCompaniesStaticLayer } from "@/lib/screener/screener-companies-layers";
+import { resolveEquityLogoUrlFromTicker } from "@/lib/screener/resolve-equity-logo-url";
 import { getCryptoLogoUrl } from "@/lib/crypto/crypto-logo-url";
 import { isTop10Ticker } from "@/lib/screener/top10-config";
 import { SCREENER_INDEX_SYMBOL_SET } from "@/lib/screener/screener-indices-universe";
@@ -45,38 +39,32 @@ export function parseWatchlistStorageKey(key: string): { kind: "stock" | "crypto
   return { kind: "stock", symbol: t };
 }
 
-function closeAtTradingOffset(bars: EodhdDailyBar[], tradingDaysBack: number): number | null {
-  const sorted = [...bars].sort((a, b) => a.date.localeCompare(b.date));
-  const idx = sorted.length - 1 - tradingDaysBack;
-  if (idx < 0 || idx >= sorted.length) return null;
-  const c = sorted[idx]?.close;
-  return typeof c === "number" && Number.isFinite(c) ? c : null;
-}
-
-function pctChange(current: number | null, base: number | null): number | null {
-  if (current == null || base == null) return null;
-  if (!Number.isFinite(current) || !Number.isFinite(base) || base === 0) return null;
-  return ((current - base) / base) * 100;
-}
-
 async function enrichStock(entry: WatchlistRow): Promise<WatchlistEnrichedItem> {
   const ticker = entry.ticker.trim().toUpperCase();
   const meta = getStockDetailMetaFromTicker(ticker);
 
   // Reduced universe: realtime + daily-derived %s + fundamentals for valuation rows.
   if (isTop10Ticker(ticker)) {
-    const [d, screener, f, logoResolved] = await Promise.all([
+    const [d, screener, f, staticLayer] = await Promise.all([
       getSimpleMarketData(),
       getSimpleScreenerDerived(),
       fetchEodhdFundamentalsHighlights(meta.ticker),
-      getCachedStockLogoUrl(meta.ticker),
+      getScreenerCompaniesStaticLayer(),
     ]);
     const datum = d.stocks[ticker];
-    const s = screener[ticker];
+    const s = screener.top10[ticker];
+    const u = staticLayer.universe.find((r) => r.ticker.toUpperCase() === ticker);
+    let pct1m = s?.changePercent1M ?? u?.refund1mP ?? null;
+    let ytd = s?.changePercentYTD ?? u?.refundYtdP ?? null;
+    if ((pct1m == null || ytd == null) && !isSingleAssetMode()) {
+      const perf = await getStockPerformance(meta.ticker);
+      if (pct1m == null) pct1m = perf.m1;
+      if (ytd == null) ytd = perf.ytd;
+    }
     const mcap = formatMarketCapDisplay(f?.marketCapUsd ?? null);
     const pe = formatPeDisplay(f?.peTrailing ?? null, f?.peForward ?? null);
     const earn = f?.nextEarningsDateDisplay?.trim();
-    const logoUrl = logoResolved.trim() || meta.logoUrl?.trim() || null;
+    const logoUrl = meta.logoUrl?.trim() || null;
     return {
       entryId: entry.id,
       storageKey: entry.ticker,
@@ -87,9 +75,8 @@ async function enrichStock(entry: WatchlistRow): Promise<WatchlistEnrichedItem> 
       logoUrl,
       price: datum.price,
       pct1d: datum.changePercent1D,
-      pct7d: s.changePercent7D,
-      pct1m: s.changePercent1M,
-      ytd: s.changePercentYTD,
+      pct1m,
+      ytd,
       mcapDisplay: mcap,
       peDisplay: pe,
       earningsDisplay: earn && earn.length > 0 ? earn : "-",
@@ -111,7 +98,6 @@ async function enrichStock(entry: WatchlistRow): Promise<WatchlistEnrichedItem> 
         logoUrl: (header.logoUrl ?? meta.logoUrl ?? null) ?? null,
         price: perf.price,
         pct1d: perf.d1,
-        pct7d: perf.d7,
         pct1m: perf.m1,
         ytd: perf.ytd,
         mcapDisplay: "-",
@@ -131,7 +117,6 @@ async function enrichStock(entry: WatchlistRow): Promise<WatchlistEnrichedItem> 
       logoUrl: meta.logoUrl,
       price: null,
       pct1d: null,
-      pct7d: null,
       pct1m: null,
       ytd: null,
       mcapDisplay: "-",
@@ -140,14 +125,14 @@ async function enrichStock(entry: WatchlistRow): Promise<WatchlistEnrichedItem> 
     };
   }
 
-  const [[perfSettled, fundSettled], logoResolved] = await Promise.all([
-    Promise.allSettled([getStockPerformance(meta.ticker), fetchEodhdFundamentalsHighlights(meta.ticker)]),
-    getCachedStockLogoUrl(meta.ticker),
+  const [perfSettled, fundSettled] = await Promise.allSettled([
+    getStockPerformance(meta.ticker),
+    fetchEodhdFundamentalsHighlights(meta.ticker),
   ]);
 
   const p = perfSettled.status === "fulfilled" ? perfSettled.value : null;
   const f = fundSettled.status === "fulfilled" ? fundSettled.value : null;
-  const logoUrl = logoResolved.trim() || meta.logoUrl?.trim() || null;
+  const logoUrl = resolveEquityLogoUrlFromTicker(meta.ticker).trim() || meta.logoUrl?.trim() || null;
 
   const mcap = formatMarketCapDisplay(f?.marketCapUsd ?? null);
   const pe = formatPeDisplay(f?.peTrailing ?? null, f?.peForward ?? null);
@@ -163,7 +148,6 @@ async function enrichStock(entry: WatchlistRow): Promise<WatchlistEnrichedItem> 
     logoUrl,
     price: p?.price ?? null,
     pct1d: p?.d1 ?? null,
-    pct7d: p?.d7 ?? null,
     pct1m: p?.m1 ?? null,
     ytd: p?.ytd ?? null,
     mcapDisplay: mcap,
@@ -177,15 +161,14 @@ async function enrichCrypto(entry: WatchlistRow): Promise<WatchlistEnrichedItem>
   const sup = toSupportedCryptoTicker(symbol);
 
   // Reduced universe: realtime + daily-derived %s; market cap from crypto asset fundamentals path.
-  if (sup && CRYPTO_TOP10.some((c) => c.symbol === sup)) {
+  if (sup && CRYPTO_SCREENER_ALL.some((c) => c.symbol === sup)) {
     const [d, cryptoDer, row] = await Promise.all([
       getSimpleMarketData(),
       getSimpleCryptoDerived(),
       getCryptoAsset(sup),
     ]);
-    const sym = sup as ScreenerCryptoSymbol;
-    const datum = d.crypto[sym];
-    const c = cryptoDer[sym];
+    const datum = d.crypto[sup];
+    const c = cryptoDer[sup];
     const meta = ALL_CRYPTO_METAS.find((m) => m.symbol.toUpperCase() === sup.toUpperCase());
     const name = meta?.name ?? sup;
     const logoUrl = getCryptoLogoUrl(sup);
@@ -201,9 +184,8 @@ async function enrichCrypto(entry: WatchlistRow): Promise<WatchlistEnrichedItem>
       logoUrl,
       price: datum?.price ?? null,
       pct1d: datum?.changePercent1D ?? null,
-      pct7d: c?.changePercent7D ?? null,
-      pct1m: c?.changePercent1M ?? null,
-      ytd: c?.changePercentYTD ?? null,
+      pct1m: c?.changePercent1M ?? row?.changePercent1M ?? null,
+      ytd: c?.changePercentYTD ?? row?.changePercentYTD ?? null,
       mcapDisplay,
       peDisplay: "—",
       earningsDisplay: "—",
@@ -226,7 +208,6 @@ async function enrichCrypto(entry: WatchlistRow): Promise<WatchlistEnrichedItem>
       logoUrl,
       price: null,
       pct1d: null,
-      pct7d: null,
       pct1m: null,
       ytd: null,
       mcapDisplay: "-",
@@ -246,7 +227,6 @@ async function enrichCrypto(entry: WatchlistRow): Promise<WatchlistEnrichedItem>
       logoUrl: null,
       price: null,
       pct1d: null,
-      pct7d: null,
       pct1m: null,
       ytd: null,
       mcapDisplay: "-",
@@ -258,13 +238,7 @@ async function enrichCrypto(entry: WatchlistRow): Promise<WatchlistEnrichedItem>
   const meta = ALL_CRYPTO_METAS.find((m) => m.symbol.toUpperCase() === sup.toUpperCase());
   const row = await getCryptoAsset(sup);
 
-  const window = eodFetchWindowUtc();
-  const bars =
-    meta != null ? (await fetchEodhdCryptoDailyBars(meta.eodhdSymbol, window.from, window.to)) ?? [] : [];
-  const sorted = [...bars].sort((a, b) => a.date.localeCompare(b.date));
   const price = row?.price ?? null;
-  const prev7 = closeAtTradingOffset(sorted, 7);
-  const pct7d = pctChange(price, prev7);
 
   const logoUrl = getCryptoLogoUrl(sup);
   const mcapRaw = row?.marketCap?.trim() ?? "";
@@ -280,7 +254,6 @@ async function enrichCrypto(entry: WatchlistRow): Promise<WatchlistEnrichedItem>
     logoUrl,
     price,
     pct1d: row?.changePercent1D ?? null,
-    pct7d,
     pct1m: row?.changePercent1M ?? null,
     ytd: row?.changePercentYTD ?? null,
     mcapDisplay,
@@ -305,6 +278,13 @@ async function enrichIndex(entry: WatchlistRow): Promise<WatchlistEnrichedItem> 
       changePercentYTD: null,
       last5DailyCloses: [],
     };
+    let pct1m = i.changePercent1M ?? null;
+    let ytd = i.changePercentYTD ?? null;
+    if ((pct1m == null || ytd == null) && !isSingleAssetMode()) {
+      const perf = await getStockPerformance(displaySymbol);
+      if (pct1m == null) pct1m = perf.m1;
+      if (ytd == null) ytd = perf.ytd;
+    }
     return {
       entryId: entry.id,
       storageKey: entry.ticker,
@@ -315,9 +295,8 @@ async function enrichIndex(entry: WatchlistRow): Promise<WatchlistEnrichedItem> 
       logoUrl: null,
       price: datum.price,
       pct1d: datum.changePercent1D,
-      pct7d: i.changePercent7D,
-      pct1m: i.changePercent1M,
-      ytd: i.changePercentYTD,
+      pct1m,
+      ytd,
       mcapDisplay: "—",
       peDisplay: "—",
       earningsDisplay: "—",
@@ -336,7 +315,6 @@ async function enrichIndex(entry: WatchlistRow): Promise<WatchlistEnrichedItem> 
       logoUrl: null,
       price: null,
       pct1d: null,
-      pct7d: null,
       pct1m: null,
       ytd: null,
       mcapDisplay: "-",
@@ -358,7 +336,6 @@ async function enrichIndex(entry: WatchlistRow): Promise<WatchlistEnrichedItem> 
     logoUrl: null,
     price: p?.price ?? null,
     pct1d: p?.d1 ?? null,
-    pct7d: p?.d7 ?? null,
     pct1m: p?.m1 ?? null,
     ytd: p?.ytd ?? null,
     mcapDisplay: "-",

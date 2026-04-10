@@ -1,4 +1,7 @@
-import { companyLogoUrlFromDomain } from "@/lib/screener/company-logo-url";
+import { CRYPTO_CC_EXTRA_PLAIN_BASES } from "@/lib/crypto/crypto-cc-extra-bases";
+import { cryptoRouteBase, cryptoUsdPairBase } from "@/lib/crypto/crypto-symbol-base";
+import { ALL_CRYPTO_METAS } from "@/lib/market/crypto-meta";
+import { companyLogoUrlFromDomain, logoDevCryptoLogoUrl } from "@/lib/screener/company-logo-url";
 
 const DOMAIN_BY_SYMBOL: Record<string, string> = {
   BTC: "bitcoin.org",
@@ -39,11 +42,30 @@ const DOMAIN_BY_SYMBOL: Record<string, string> = {
   CRV: "curve.fi",
 };
 
+/** Symbols that use crypto Logo.dev / curated domains in portfolio and search (uppercase keys). */
+export const CRYPTO_ASSET_SYMBOLS = new Set(Object.keys(DOMAIN_BY_SYMBOL));
+
+const GLOBAL_CRYPTO_SYMBOLS = new Set([
+  ...ALL_CRYPTO_METAS.map((m) => m.symbol.toUpperCase()),
+  ...Object.keys(DOMAIN_BY_SYMBOL).map((k) => k.toUpperCase()),
+]);
+
+export function isSupportedCryptoAssetSymbol(symbol: string): boolean {
+  const u = symbol.trim().toUpperCase();
+  if (!u) return false;
+  if (GLOBAL_CRYPTO_SYMBOLS.has(u)) return true;
+  if (cryptoUsdPairBase(u)) return true;
+  if (CRYPTO_CC_EXTRA_PLAIN_BASES.has(u)) return true;
+  return false;
+}
+
 /**
- * Deterministic favicon URLs from known domains; falls back to a generic icon service.
+ * Logo.dev crypto CDN when configured; otherwise deterministic favicon domains / generic fallback.
  */
 export function getCryptoLogoUrl(symbol: string): string {
-  const u = symbol.trim().toUpperCase();
+  const u = cryptoRouteBase(symbol.trim().toUpperCase());
+  const dev = logoDevCryptoLogoUrl(u);
+  if (dev) return dev;
   const domain = DOMAIN_BY_SYMBOL[u];
   if (domain) return companyLogoUrlFromDomain(domain);
   return `https://www.google.com/s2/favicons?sz=64&domain=${encodeURIComponent(`${u.toLowerCase()}.org`)}`;

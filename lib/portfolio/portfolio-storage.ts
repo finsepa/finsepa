@@ -3,6 +3,7 @@ import type {
   PortfolioHolding,
   PortfolioTransaction,
 } from "@/components/portfolio/portfolio-types";
+import { normalizePortfolioEntry } from "@/components/portfolio/portfolio-types";
 
 /** Legacy key (pre–per-user storage). Migrated once into {@link portfolioStorageKeyForUser}. */
 export const PORTFOLIO_STORAGE_KEY = "finsepa.portfolio.v1" as const;
@@ -26,9 +27,18 @@ function isRecord(x: unknown): x is Record<string, unknown> {
   return x !== null && typeof x === "object" && !Array.isArray(x);
 }
 
-function isPortfolioEntry(x: unknown): x is PortfolioEntry {
+function isRawPortfolioEntry(x: unknown): x is { id: string; name: string; privacy?: unknown; kind?: unknown; combinedFrom?: unknown } {
   if (!isRecord(x)) return false;
-  return typeof x.id === "string" && typeof x.name === "string";
+  if (typeof x.id !== "string" || typeof x.name !== "string") return false;
+  const pr = x.privacy;
+  if (pr !== undefined && pr !== "private" && pr !== "public") return false;
+  const k = x.kind;
+  if (k !== undefined && k !== "standard" && k !== "combined") return false;
+  const cf = x.combinedFrom;
+  if (cf !== undefined && (!Array.isArray(cf) || !cf.every((t): t is string => typeof t === "string"))) {
+    return false;
+  }
+  return true;
 }
 
 function isPortfolioHolding(x: unknown): x is PortfolioHolding {
@@ -69,7 +79,11 @@ function isPortfolioTransaction(x: unknown): x is PortfolioTransaction {
   );
 }
 
-function normalizeState(state: PersistedPortfolioState): PersistedPortfolioState {
+type RawPersistedState = Omit<PersistedPortfolioState, "portfolios"> & {
+  portfolios: Array<{ id: string; name: string; privacy?: unknown }>;
+};
+
+function normalizeState(state: RawPersistedState): PersistedPortfolioState {
   const ids = new Set(state.portfolios.map((p) => p.id));
   let selected = state.selectedPortfolioId;
   if (selected && !ids.has(selected)) {
@@ -78,6 +92,8 @@ function normalizeState(state: PersistedPortfolioState): PersistedPortfolioState
   if (!selected && state.portfolios.length > 0) {
     selected = state.portfolios[0]!.id;
   }
+
+  const normPortfolios = state.portfolios.filter(isRawPortfolioEntry).map(normalizePortfolioEntry);
 
   const holdings: Record<string, PortfolioHolding[]> = {};
   for (const id of ids) {
@@ -91,10 +107,17 @@ function normalizeState(state: PersistedPortfolioState): PersistedPortfolioState
     transactions[id] = Array.isArray(rows) ? rows.filter(isPortfolioTransaction) : [];
   }
 
+  for (const p of normPortfolios) {
+    if (p.kind === "combined") {
+      holdings[p.id] = [];
+      transactions[p.id] = [];
+    }
+  }
+
   return {
     v: CURRENT_VERSION,
     savedAt: typeof state.savedAt === "number" && Number.isFinite(state.savedAt) ? state.savedAt : undefined,
-    portfolios: state.portfolios.filter(isPortfolioEntry),
+    portfolios: normPortfolios,
     selectedPortfolioId: selected,
     holdingsByPortfolioId: holdings,
     transactionsByPortfolioId: transactions,
@@ -106,7 +129,7 @@ function parsePersistedPortfolioRaw(raw: string): PersistedPortfolioState | null
     const parsed: unknown = JSON.parse(raw);
     if (!isRecord(parsed)) return null;
     if (parsed.v !== CURRENT_VERSION) return null;
-    if (!Array.isArray(parsed.portfolios) || !parsed.portfolios.every(isPortfolioEntry)) return null;
+    if (!Array.isArray(parsed.portfolios) || !parsed.portfolios.every(isRawPortfolioEntry)) return null;
     if (parsed.selectedPortfolioId !== null && typeof parsed.selectedPortfolioId !== "string") {
       return null;
     }

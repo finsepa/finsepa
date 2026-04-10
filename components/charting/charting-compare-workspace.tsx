@@ -18,6 +18,7 @@ import {
 import { ChartingCompanyAddDropdown } from "@/components/charting/charting-company-add-dropdown";
 import type { ChartTimeRange, ChartType, ChartingUnitScale } from "@/components/charting/charting-workspace";
 import { DataFetchTopLoader } from "@/components/layout/data-fetch-top-loader";
+import { ChartSkeleton } from "@/components/ui/chart-skeleton";
 import { TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
 import type { ChartingSeriesPoint } from "@/lib/market/charting-series-types";
 import type { StockPageInitialData } from "@/lib/market/stock-page-initial-data";
@@ -869,7 +870,7 @@ export function ChartingCompareWorkspace({ tickers, metricParam, initialByTicker
       </div>
 
       {loading ? (
-        <div className="h-[320px] rounded-xl border border-[#E4E4E7] bg-neutral-50 animate-pulse" aria-hidden />
+        <ChartSkeleton heightPx={chartHeight} />
       ) : empty ? (
         <p className="max-w-md text-[14px] leading-6 text-[#71717A]">
           Financial statement data isn&apos;t available for these symbols.

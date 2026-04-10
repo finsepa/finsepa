@@ -1,6 +1,7 @@
 import "server-only";
 
 import { getEodhdApiKey } from "@/lib/env/server";
+import { traceEodhdHttp } from "@/lib/market/provider-trace";
 
 export type CryptoFundamentalsMeta = {
   marketCapUsd: number | null;
@@ -197,6 +198,7 @@ export async function fetchEodhdCryptoFundamentalsMeta(eodhdCryptoSymbol: string
   )}&fmt=json`;
 
   try {
+    if (!traceEodhdHttp("fetchEodhdCryptoFundamentalsMeta", { symbol: eodhdCryptoSymbol })) return null;
     const res = await fetch(url, { cache: "no-store" });
     if (!res.ok) return null;
     const root = (await res.json()) as Record<string, unknown> | null;

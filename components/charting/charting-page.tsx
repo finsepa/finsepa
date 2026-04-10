@@ -14,7 +14,6 @@ import {
   parseChartingMetricsParam,
   parseChartingTickerList,
 } from "@/lib/market/stock-charting-metrics";
-import { isTop10Ticker } from "@/lib/screener/top10-config";
 
 type Props = {
   tickers: string[];
@@ -22,14 +21,30 @@ type Props = {
   initialByTicker: Record<string, StockPageInitialData>;
   /** Both company(ies) and metrics in URL (`isChartingSessionReady`). SSR preload optional; chart loads via client fetch if missing. */
   chartReady: boolean;
+  /** Uppercase tickers allowed on Charting (top 10 + screener page 2); must match server URL filtering. */
+  allowedChartingTickers: string[];
 };
 
 /**
  * Standalone Charting — blank hero until at least one ticker AND one metric are selected
  * (`isChartingSessionReady` on the server). No `loadStockPageInitialData` until then.
  */
-export function ChartingPage({ tickers, metricParam, initialByTicker, chartReady }: Props) {
+export function ChartingPage({
+  tickers,
+  metricParam,
+  initialByTicker,
+  chartReady,
+  allowedChartingTickers,
+}: Props) {
   const searchParams = useSearchParams();
+
+  const chartingAllowSet = useMemo(
+    () =>
+      new Set(
+        allowedChartingTickers.map((t) => t.trim().toUpperCase()).filter(Boolean),
+      ),
+    [allowedChartingTickers],
+  );
 
   /** Live URL wins over RSC props so `router.replace` to a full session always shows the chart. */
   const searchKey = searchParams.toString();
@@ -37,12 +52,13 @@ export function ChartingPage({ tickers, metricParam, initialByTicker, chartReady
     const raw = searchParams.get("ticker")?.trim() ?? "";
     const m = searchParams.get("metric");
     const parsed = parseChartingTickerList(raw || null);
-    const allowed = parsed.filter((t) =>
-      isSingleAssetMode() ? isSupportedAsset(t) : isTop10Ticker(t),
-    );
+    const allowed = parsed.filter((t) => {
+      if (isSingleAssetMode()) return isSupportedAsset(t);
+      return chartingAllowSet.has(t.trim().toUpperCase());
+    });
     const ready = isChartingSessionReady(allowed, m);
     return { sessionReady: ready, allowedTickers: allowed, metricForRoute: m };
-  }, [searchParams, searchKey]);
+  }, [searchParams, searchKey, chartingAllowSet]);
 
   const showWorkspace =
     sessionReady ||
@@ -67,7 +83,11 @@ export function ChartingPage({ tickers, metricParam, initialByTicker, chartReady
 
   return (
     <div className="space-y-6 px-9 py-6">
-      <ChartingEmptyToolbar metricParam={metricForUi} tickers={tickersForUi} />
+      <ChartingEmptyToolbar
+        metricParam={metricForUi}
+        tickers={tickersForUi}
+        allowedChartingTickers={allowedChartingTickers}
+      />
 
       <div className="flex w-full flex-col items-center pb-2 pt-0" aria-label="Chart area">
         <div className="relative w-full max-w-[min(100%,640px)]">

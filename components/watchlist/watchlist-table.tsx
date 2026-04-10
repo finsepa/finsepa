@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowUpDown, ChevronDown, ChevronRight } from "lucide-react";
 
+import { eodhdCryptoSpotTickerDisplay } from "@/lib/crypto/eodhd-crypto-ticker-display";
 import { CompanyLogo } from "@/components/screener/company-logo";
 import { WatchlistRowRemoveButton } from "@/components/watchlist/watchlist-star-button";
 import type { WatchlistEnrichedItem } from "@/lib/watchlist/enriched-types";
@@ -52,7 +53,7 @@ function WatchlistTableSkeleton() {
               Asset <ArrowUpDown className="h-3.5 w-3.5 opacity-40" />
             </div>
           </th>
-          {["Price", "1D %", "7D %", "1M %", "YTD %", "M.Cap", "PE", "Earnings"].map((h) => (
+          {["Price", "1D %", "1M %", "YTD %", "M.Cap", "PE", "Earnings"].map((h) => (
             <th key={h} className="px-4 py-3 text-center text-[14px] font-semibold leading-5 text-[#71717A]">
               {h}
             </th>
@@ -72,7 +73,7 @@ function WatchlistTableSkeleton() {
                 </div>
               </div>
             </td>
-            {Array.from({ length: 8 }).map((_, j) => (
+            {Array.from({ length: 7 }).map((_, j) => (
               <td key={j} className="px-4">
                 <div className="mx-auto h-4 w-12 animate-pulse rounded bg-neutral-100" />
               </td>
@@ -103,7 +104,7 @@ function GroupSection({
   return (
     <>
       <tr className="border-b border-[#E4E4E7]">
-        <td colSpan={10} className="bg-white px-4 py-2">
+        <td colSpan={9} className="bg-white px-4 py-2">
           <button
             type="button"
             onClick={() => setCollapsed(!collapsed)}
@@ -130,7 +131,9 @@ function GroupSection({
                 )}
                 <div className="min-w-0">
                   <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">{row.name}</div>
-                  <div className="text-[12px] font-normal leading-4 text-[#71717A]">{row.symbol}</div>
+                  <div className="text-[12px] font-normal leading-4 text-[#71717A]">
+                    {row.kind === "crypto" ? eodhdCryptoSpotTickerDisplay(row.symbol) : row.symbol}
+                  </div>
                 </div>
               </Link>
             </td>
@@ -140,7 +143,6 @@ function GroupSection({
             </td>
 
             <ChangeCell value={row.pct1d} />
-            <ChangeCell value={row.pct7d} />
             <ChangeCell value={row.pct1m} />
             <ChangeCell value={row.ytd} />
 
@@ -323,7 +325,7 @@ export function WatchlistTable() {
                   Asset <ArrowUpDown className="h-3.5 w-3.5" />
                 </div>
               </th>
-              {["Price", "1D %", "7D %", "1M %", "YTD %", "M.Cap", "PE", "Earnings"].map((h) => (
+              {["Price", "1D %", "1M %", "YTD %", "M.Cap", "PE", "Earnings"].map((h) => (
                 <th key={h} className="px-4 py-3 text-center text-[14px] font-semibold leading-5 text-[#71717A]">
                   {h}
                 </th>

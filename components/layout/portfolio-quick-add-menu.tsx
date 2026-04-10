@@ -6,13 +6,6 @@ import { Briefcase, Plus, Wallet } from "lucide-react";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import { cn } from "@/lib/utils";
 
-const ITEMS = [
-  { id: "trade" as const, label: "New Trade / Holding", Icon: Plus, disabled: false },
-  { id: "dividend" as const, label: "New Dividend Income", Icon: Plus, disabled: true },
-  { id: "cash" as const, label: "Add Cash", Icon: Wallet, disabled: false },
-  { id: "portfolio" as const, label: "New Portfolio", Icon: Briefcase, disabled: false },
-];
-
 /**
  * (+) quick menu — used on the global top bar and the Portfolio page header.
  */
@@ -24,8 +17,26 @@ export function PortfolioQuickAddMenu({
   "aria-label"?: string;
 }) {
   const [open, setOpen] = useState(false);
-  const { openNewTransaction, openCreatePortfolio, openAddCash } = usePortfolioWorkspace();
+  const { openNewTransaction, openCreatePortfolio, openAddCash, selectedPortfolioReadOnly } =
+    usePortfolioWorkspace();
   const rootRef = useRef<HTMLDivElement>(null);
+
+  const items = [
+    {
+      id: "trade" as const,
+      label: "New Trade / Holding",
+      Icon: Plus,
+      disabled: selectedPortfolioReadOnly,
+    },
+    { id: "dividend" as const, label: "New Dividend Income", Icon: Plus, disabled: true },
+    {
+      id: "cash" as const,
+      label: "Add Cash",
+      Icon: Wallet,
+      disabled: selectedPortfolioReadOnly,
+    },
+    { id: "portfolio" as const, label: "New Portfolio", Icon: Briefcase, disabled: false },
+  ];
 
   useEffect(() => {
     if (!open) return;
@@ -66,7 +77,7 @@ export function PortfolioQuickAddMenu({
           role="menu"
           className="absolute right-0 z-[60] mt-1 w-max min-w-[260px] max-w-[min(calc(100vw-2rem),320px)] rounded-[10px] border border-[#E4E4E7] bg-white py-1 shadow-[0px_4px_12px_0px_rgba(10,10,10,0.08)]"
         >
-          {ITEMS.map(({ id, label, Icon, disabled }) => (
+          {items.map(({ id, label, Icon, disabled }) => (
             <button
               key={id}
               type="button"

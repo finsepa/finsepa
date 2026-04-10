@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
 import { CompanyLogo } from "@/components/screener/company-logo";
@@ -25,9 +26,9 @@ type PreviewApi = {
 
 function Tile({ label, value, loading }: { label: string; value: string | null; loading: boolean }) {
   return (
-    <div className="rounded-xl border border-[#E4E4E7] bg-white px-3 py-3 shadow-[0_1px_2px_0_rgba(10,10,10,0.04)]">
-      <p className="text-[11px] font-medium uppercase tracking-wide text-[#A1A1AA]">{label}</p>
-      <p className="mt-1.5 text-[15px] font-semibold tabular-nums text-[#09090B]">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-0.5 rounded-xl border border-[#E4E4E7] bg-white px-4 py-3 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
+      <p className="text-[14px] font-semibold leading-5 text-[#71717A]">{label}</p>
+      <p className="text-[18px] font-semibold leading-6 tabular-nums text-[#09090B]">
         {loading ? <span className="text-[#D4D4D8]">…</span> : value ?? "—"}
       </p>
     </div>
@@ -109,9 +110,9 @@ export function EarningsPreviewModal({
   const logoUrl = preview?.logoUrl ?? item.logoUrl;
   const dateTile = preview?.earningsDateDisplay ?? formatYmdEnUS(item.reportDate);
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+      className="fixed inset-0 z-[300] flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="earnings-preview-title"
@@ -122,34 +123,45 @@ export function EarningsPreviewModal({
         aria-label="Close preview"
         onClick={onClose}
       />
-      <div className="relative z-10 w-full max-w-[440px] rounded-2xl border border-[#E4E4E7] bg-white p-5 shadow-lg">
-        <div className="flex items-start gap-3">
-          <CompanyLogo name={companyName || item.ticker} logoUrl={logoUrl} symbol={item.ticker} />
-          <div className="min-w-0 flex-1">
-            <p id="earnings-preview-title" className="text-[18px] font-semibold leading-6 text-[#09090B]">
-              {item.ticker}
-            </p>
-            <p className="mt-0.5 text-[13px] leading-5 text-[#71717A]">{companyName}</p>
-            {fetchError ? (
-              <p className="mt-2 text-[12px] text-[#A1A1AA]">Estimates unavailable. Dates may still apply.</p>
-            ) : null}
-          </div>
+      <div
+        className="relative z-10 flex w-full max-w-[580px] flex-col overflow-hidden rounded-xl border border-[#E4E4E7] bg-white shadow-[0px_10px_16px_-3px_rgba(10,10,10,0.1),0px_4px_6px_0px_rgba(10,10,10,0.04)]"
+      >
+        <div className="flex items-center gap-3 border-b border-[#E4E4E7] px-5 py-4">
+          <CompanyLogo
+            name={companyName || item.ticker}
+            logoUrl={logoUrl}
+            symbol={item.ticker}
+            size="lg"
+          />
+          <p
+            id="earnings-preview-title"
+            className="flex min-w-0 flex-1 items-center gap-1.5 leading-none"
+          >
+            <span className="shrink-0 text-[18px] font-semibold leading-7 text-[#09090B]">{item.ticker}</span>
+            <span className="min-w-0 truncate text-[14px] leading-5 text-[#71717A]">{companyName}</span>
+          </p>
           <button
             type="button"
             onClick={onClose}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[#71717A] transition-colors hover:bg-[#F4F4F5] hover:text-[#09090B]"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-[#71717A] transition-colors hover:bg-[#F4F4F5] hover:text-[#09090B]"
             aria-label="Close"
           >
-            <X className="h-5 w-5" />
+            <X className="h-5 w-5" strokeWidth={2} />
           </button>
         </div>
 
-        <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-3">
-          <Tile label="Earnings date" value={dateTile} loading={false} />
-          <Tile label="Est. revenue" value={preview?.estRevenueDisplay ?? null} loading={loading} />
-          <Tile label="Est. EPS" value={preview?.estEpsDisplay ?? null} loading={loading} />
+        <div className="flex flex-col gap-4 p-5">
+          {fetchError ? (
+            <p className="text-[12px] leading-4 text-[#A1A1AA]">Estimates unavailable. Dates may still apply.</p>
+          ) : null}
+          <div className="flex flex-col gap-4 sm:flex-row">
+            <Tile label="Earnings date" value={dateTile} loading={false} />
+            <Tile label="Est. Revenue" value={preview?.estRevenueDisplay ?? null} loading={loading} />
+            <Tile label="Est. EPS" value={preview?.estEpsDisplay ?? null} loading={loading} />
+          </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
