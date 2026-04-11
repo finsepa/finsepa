@@ -1,4 +1,10 @@
-export type ImportOperationLabel = "Cash In" | "Cash Out" | "Buy" | "Sell";
+export type ImportOperationLabel =
+  | "Cash In"
+  | "Cash Out"
+  | "Other income"
+  | "Other expense"
+  | "Buy"
+  | "Sell";
 
 export type ImportFieldKey = "asset" | "operation" | "date" | "price" | "shares" | "fee" | "total";
 

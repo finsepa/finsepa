@@ -9,6 +9,7 @@ export type RawSheetMatrix = {
 function cellToString(v: unknown): string {
   if (v == null) return "";
   if (typeof v === "number" && Number.isFinite(v)) return String(v);
+  /** XLSX often turns CSV date/time cells into `Date`; format as yyyy-MM-dd for import date parsing. */
   if (v instanceof Date) {
     const y = v.getFullYear();
     const m = String(v.getMonth() + 1).padStart(2, "0");

@@ -471,15 +471,12 @@ function PortfolioOverviewCardsInner({
                 <p className="mt-2 text-sm leading-snug text-[#71717A]">
                   {inceptionBenchmarkMetrics.diff != null ? (
                     inceptionBenchmarkMetrics.diff >= 0 ? (
-                      <>
-                        Portfolio is ahead on +
-                        {pctFmt.format(inceptionBenchmarkMetrics.diff)}%
-                      </>
+                      <>Ahead on {pctFmt.format(inceptionBenchmarkMetrics.diff)}%</>
                     ) : (
-                      <>Portfolio trails on {pctFmt.format(inceptionBenchmarkMetrics.diff)}%</>
+                      <>Behind on {pctFmt.format(Math.abs(inceptionBenchmarkMetrics.diff))}%</>
                     )
                   ) : (
-                    "Portfolio is ahead on -"
+                    "—"
                   )}
                 </p>
               </>

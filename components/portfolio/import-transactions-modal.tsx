@@ -31,7 +31,14 @@ import { cn } from "@/lib/utils";
 
 const ACCEPT = ".csv,.xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv";
 
-const OPS: ImportOperationLabel[] = ["Cash In", "Cash Out", "Buy", "Sell"];
+const OPS: ImportOperationLabel[] = [
+  "Cash In",
+  "Cash Out",
+  "Other income",
+  "Other expense",
+  "Buy",
+  "Sell",
+];
 
 const usd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
 
@@ -138,6 +145,8 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
       else if (merged.operation === "Sell") sum = Math.max(0, gross - fee);
       else if (merged.operation === "Cash In") sum = shares - fee;
       else if (merged.operation === "Cash Out") sum = -(shares + fee);
+      else if (merged.operation === "Other income") sum = shares - fee;
+      else if (merged.operation === "Other expense") sum = -(shares + fee);
     }
     const next: ImportRow = {
       ...merged,
@@ -195,7 +204,12 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
             const curOp = patch.operation !== undefined ? patch.operation : r.operation;
             if (cash) {
               if (curOp === "Buy" || curOp === "Sell") p = { ...p, operation: null };
-            } else if (curOp === "Cash In" || curOp === "Cash Out") {
+            } else if (
+              curOp === "Cash In" ||
+              curOp === "Cash Out" ||
+              curOp === "Other income" ||
+              curOp === "Other expense"
+            ) {
               p = { ...p, operation: "Buy" };
             }
           }
@@ -216,6 +230,25 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
   const canImport = allRowsValid && editingId === null;
   const missingCellCount = useMemo(() => rows.reduce((acc, r) => acc + r.missing.length, 0), [rows]);
 
+  /** Mirrors `buildTransactions`: non-cash → trades; cash → split into Cash / Income / Expenses. */
+  const importBreakdown = useMemo(() => {
+    let trades = 0;
+    let income = 0;
+    let expenses = 0;
+    let cash = 0;
+    for (const r of rows) {
+      if (!isCashAssetSymbol(r.asset)) {
+        trades += 1;
+        continue;
+      }
+      const op = r.operation;
+      if (op === "Other income") income += 1;
+      else if (op === "Other expense") expenses += 1;
+      else cash += 1;
+    }
+    return { trades, income, expenses, cash, total: rows.length };
+  }, [rows]);
+
   const buildTransactions = useCallback(
     async (pid: string): Promise<PortfolioTransaction[]> => {
       const out: PortfolioTransaction[] = [];
@@ -223,11 +256,15 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
         if (isCashAssetSymbol(row.asset)) {
           const amount = row.shares!;
           const fee = row.fee ?? 0;
-          const op = row.operation as "Cash In" | "Cash Out";
+          const op = row.operation as
+            | "Cash In"
+            | "Cash Out"
+            | "Other income"
+            | "Other expense";
           const cashSum =
             row.sum != null && Number.isFinite(row.sum)
               ? row.sum
-              : op === "Cash In"
+              : op === "Cash In" || op === "Other income"
                 ? amount - fee
                 : -(amount + fee);
           out.push({
@@ -447,7 +484,7 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
                     USD is treated as cash. Red cells need a value—click <strong className="text-[#09090B]">Edit</strong>,
                     fix the row, then <strong className="text-[#09090B]">Confirm</strong> (check).{" "}
                     <strong className="text-[#09090B]">Add</strong> imports when every row is valid and you are not
-                    editing a row. Total updates from price, shares, fee, and operation when possible.
+                    editing a row.
                   </p>
               <div className="max-h-[min(52vh,420px)] overflow-auto rounded-lg border border-[#E4E4E7]">
                 <table className="w-full min-w-[720px] border-collapse text-left text-xs">
@@ -495,7 +532,7 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
                                     operation: v === "" ? null : (v as ImportOperationLabel),
                                   });
                                 }}
-                                className="w-full max-w-[120px] rounded border border-[#E4E4E7] bg-white px-1 py-1 text-xs"
+                                className="w-full max-w-[min(100%,9.5rem)] rounded border border-[#E4E4E7] bg-white px-1 py-1 text-xs"
                               >
                                 <option value="">—</option>
                                 {OPS.map((op) => (
@@ -511,6 +548,8 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
                                     "font-medium",
                                     r.operation?.includes("Cash") && r.operation?.includes("In") && "text-emerald-700",
                                     r.operation?.includes("Cash") && r.operation?.includes("Out") && "text-red-700",
+                                    r.operation === "Other income" && "text-emerald-700",
+                                    r.operation === "Other expense" && "text-red-700",
                                     r.operation === "Buy" && "text-emerald-700",
                                     r.operation === "Sell" && "text-red-700",
                                   )}
@@ -661,21 +700,32 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
                   </tbody>
                 </table>
               </div>
-              <label className="mt-3 inline-flex cursor-pointer">
-                <span className="flex min-h-9 items-center justify-center rounded-[10px] bg-[#F4F4F5] px-4 py-2 text-sm font-medium text-[#09090B] transition-colors hover:bg-[#EBEBEB]">
-                  Replace file
-                </span>
-                <input
-                  type="file"
-                  accept={ACCEPT}
-                  className="sr-only"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f) void ingestFile(f);
-                    e.target.value = "";
-                  }}
-                />
-              </label>
+
+              <div className="mt-4 rounded-[10px] border border-[#E4E4E7] bg-[#FAFAFA] px-4 py-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-[#71717A]">Ready to import</p>
+                <ul className="mt-2 space-y-1.5 text-sm text-[#09090B]">
+                  <li className="flex items-center justify-between gap-4">
+                    <span>Trades</span>
+                    <span className="tabular-nums font-medium">{importBreakdown.trades}</span>
+                  </li>
+                  <li className="flex items-center justify-between gap-4">
+                    <span>Income</span>
+                    <span className="tabular-nums font-medium">{importBreakdown.income}</span>
+                  </li>
+                  <li className="flex items-center justify-between gap-4">
+                    <span>Expenses</span>
+                    <span className="tabular-nums font-medium">{importBreakdown.expenses}</span>
+                  </li>
+                  <li className="flex items-center justify-between gap-4">
+                    <span>Cash</span>
+                    <span className="tabular-nums font-medium">{importBreakdown.cash}</span>
+                  </li>
+                  <li className="flex items-center justify-between gap-4 border-t border-[#E4E4E7] pt-2.5 font-semibold">
+                    <span>Total transactions</span>
+                    <span className="tabular-nums">{importBreakdown.total}</span>
+                  </li>
+                </ul>
+              </div>
                 </>
               ) : null}
 

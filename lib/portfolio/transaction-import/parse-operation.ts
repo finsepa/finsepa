@@ -15,6 +15,14 @@ export function parseOperationCell(raw: string, assetUpper: string): ImportOpera
   const compact = compactEventKey(raw);
   if (!compact) return null;
 
+  const isUsd = assetUpper === "USD" || assetUpper === "CASH" || assetUpper === "US DOLLAR";
+
+  /** USD-only: e.g. `CASH_Income`, `CASH_GAIN`, `CASH_Expense` (compact strips separators). */
+  if (isUsd) {
+    if (compact === "cashincome" || compact === "cashgain") return "Other income";
+    if (compact === "cashexpense") return "Other expense";
+  }
+
   // Broker export style (Event column)
   if (compact === "cashin") return "Cash In";
   if (compact === "cashout") return "Cash Out";
@@ -22,7 +30,6 @@ export function parseOperationCell(raw: string, assetUpper: string): ImportOpera
   if (compact === "sell") return "Sell";
 
   const u = raw.trim().toLowerCase();
-  const isUsd = assetUpper === "USD" || assetUpper === "CASH" || assetUpper === "US DOLLAR";
 
   if (isUsd) {
     if (/\bcash\s*in\b/.test(u) || /\bdeposit\b/.test(u) || u === "in" || u === "credit" || u === "+") {

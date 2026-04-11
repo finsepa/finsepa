@@ -2,11 +2,18 @@ type UserAvatarProps = {
   /** Resolved image URL (remote or blob) or null to show initials. */
   imageSrc: string | null;
   initials: string;
-  size: "sm" | "lg" | "xl";
+  /** `sm` = 28px, `md` = 32px, `portfolios` = 56px (/portfolios public cards), `lg` = 80px, `xl` = 72px donut. */
+  size: "sm" | "md" | "portfolios" | "lg" | "xl";
 };
 
 const smShell =
   "flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#09090B] text-[11px] font-semibold text-white";
+/** Public portfolio cards — matches Figma avatar component (32×32). */
+const mdShell =
+  "flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#F4F4F5] text-[11px] font-semibold text-[#52525B]";
+/** `/portfolios` directory — 56×56 per design. */
+const portfoliosShell =
+  "flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#F4F4F5] text-lg font-semibold text-[#52525B] ring-1 ring-[#E4E4E7]";
 const lgShell =
   "flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#F4F4F5] text-lg font-semibold text-[#52525B] ring-1 ring-[#E4E4E7]";
 /** Center of portfolio allocation donut — white ring reads on colored slices. */
@@ -15,7 +22,11 @@ const xlShell =
 
 export function UserAvatar({ imageSrc, initials, size }: UserAvatarProps) {
   const shell =
-    size === "sm" ? smShell : size === "xl" ? xlShell : lgShell;
+    size === "sm" ? smShell
+    : size === "md" ? mdShell
+    : size === "portfolios" ? portfoliosShell
+    : size === "xl" ? xlShell
+    : lgShell;
   return (
     <div className={shell}>
       {imageSrc ? (

@@ -22,6 +22,8 @@ function computeLedgerSum(
   if (op === "Sell") return Math.max(0, gross - fee);
   if (op === "Cash In") return shares - fee;
   if (op === "Cash Out") return -(shares + fee);
+  if (op === "Other income") return shares - fee;
+  if (op === "Other expense") return -(shares + fee);
   return null;
 }
 

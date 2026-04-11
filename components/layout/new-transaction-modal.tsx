@@ -7,7 +7,12 @@ import { X } from "lucide-react";
 
 import type { CompanyPick } from "@/components/charting/company-picker";
 import { cn } from "@/lib/utils";
-import { CashDirectionSelect, type CashDirection } from "@/components/layout/cash-direction-select";
+import {
+  CashDirectionSelect,
+  type CashDirection,
+  cashOperationLabel,
+  cashSignedAmount,
+} from "@/components/layout/cash-direction-select";
 import { ClearableInput } from "@/components/layout/clearable-input";
 import { TransactionCompanyField } from "@/components/layout/transaction-company-field";
 import { TransactionDateField } from "@/components/layout/transaction-date-field";
@@ -16,16 +21,22 @@ import {
   type IncomeOperation,
 } from "@/components/layout/transaction-income-operation-select";
 import {
+  TransactionExpenseOperationSelect,
+  type ExpenseOperation,
+} from "@/components/layout/transaction-expense-operation-select";
+import {
   TransactionOperationField,
   type Operation,
 } from "@/components/layout/transaction-operation-field";
 import { TransactionPortfolioField } from "@/components/portfolio/transaction-portfolio-field";
 import { newHoldingId, newTransactionRowId } from "@/components/portfolio/portfolio-types";
+import { SecondaryTabs } from "@/components/ui/secondary-tabs";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import { customPortfolioSymbolFromName } from "@/lib/portfolio/custom-asset-symbol";
 import { displayLogoUrlForPortfolioSymbol } from "@/lib/portfolio/portfolio-asset-display-logo";
 import { fetchLiveMarketPriceClient, fetchPriceOnDateClient } from "@/lib/portfolio/client-symbol-quotes";
 import { lotUnrealizedPnL, mergeBuyIntoPosition } from "@/lib/portfolio/holding-position";
+import { toastTransactionAdded } from "@/lib/portfolio/transaction-added-toast";
 
 const TABS = ["Trades", "Incomes", "Expenses", "Cash"] as const;
 
@@ -95,6 +106,8 @@ export function NewTransactionModal({ open, onClose }: Props) {
   const [incomeTotalReceived, setIncomeTotalReceived] = useState("");
   const [incomePerShare, setIncomePerShare] = useState("");
   const [incomeFees, setIncomeFees] = useState("");
+  const [expenseOperation, setExpenseOperation] = useState<ExpenseOperation>("Other expense");
+  const [expenseAmount, setExpenseAmount] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [tradeAssetSource, setTradeAssetSource] = useState<TradeAssetSource>("listed");
   const [customAssetName, setCustomAssetName] = useState("");
@@ -159,6 +172,8 @@ export function NewTransactionModal({ open, onClose }: Props) {
     setIncomeTotalReceived("");
     setIncomePerShare("");
     setIncomeFees("");
+    setExpenseOperation("Other expense");
+    setExpenseAmount("");
     setSubmitting(false);
     setTradeAssetSource("listed");
     setCustomAssetName("");
@@ -170,11 +185,19 @@ export function NewTransactionModal({ open, onClose }: Props) {
 
   const cashAmountNum = useMemo(() => parseAmountField(cashAmount), [cashAmount]);
   const incomeTotalNum = useMemo(() => parseAmountField(incomeTotalReceived), [incomeTotalReceived]);
+  /** Second field: share count; gross = per-share amount × shares (e.g. 50 × 2 = 100). */
+  const incomeShareCountNum = useMemo(() => parseAmountField(incomePerShare), [incomePerShare]);
   const incomeFeeNum = useMemo(() => parseAmountField(incomeFees), [incomeFees]);
+  const incomeGrossUsd = useMemo(() => {
+    if (incomeTotalNum <= 0 || incomeShareCountNum <= 0) return 0;
+    return incomeTotalNum * incomeShareCountNum;
+  }, [incomeTotalNum, incomeShareCountNum]);
   const incomeNetUsd = useMemo(
-    () => Math.max(0, incomeTotalNum - incomeFeeNum),
-    [incomeTotalNum, incomeFeeNum],
+    () => Math.max(0, incomeGrossUsd - incomeFeeNum),
+    [incomeGrossUsd, incomeFeeNum],
   );
+
+  const expenseAmountNum = useMemo(() => parseAmountField(expenseAmount), [expenseAmount]);
 
   const canAdd = useMemo(() => {
     if (!hasSelectedPortfolio) return false;
@@ -191,7 +214,16 @@ export function NewTransactionModal({ open, onClose }: Props) {
     }
     if (transactionTab === "Incomes") {
       if (!selectedCompany?.symbol?.trim()) return false;
-      return incomeTotalNum > 0 && incomeFeeNum >= 0 && incomeNetUsd > 0;
+      return (
+        incomeTotalNum > 0 &&
+        incomeShareCountNum > 0 &&
+        incomeFeeNum >= 0 &&
+        incomeNetUsd > 0
+      );
+    }
+    if (transactionTab === "Expenses") {
+      if (!selectedCompany?.symbol?.trim()) return false;
+      return expenseAmountNum > 0;
     }
     return false;
   }, [
@@ -205,12 +237,14 @@ export function NewTransactionModal({ open, onClose }: Props) {
     price,
     cashAmountNum,
     incomeTotalNum,
+    incomeShareCountNum,
     incomeFeeNum,
     incomeNetUsd,
+    expenseAmountNum,
   ]);
 
   const cashFlowSigned = useMemo(
-    () => (cashDirection === "in" ? cashAmountNum : -cashAmountNum),
+    () => cashSignedAmount(cashDirection, cashAmountNum),
     [cashDirection, cashAmountNum],
   );
 
@@ -229,20 +263,22 @@ export function NewTransactionModal({ open, onClose }: Props) {
     [currentCashBalanceUsd, cashFlowSigned],
   );
 
+  const balanceAfterExpenseUsd = useMemo(
+    () => roundUsdForDisplay(currentCashBalanceUsd - expenseAmountNum),
+    [currentCashBalanceUsd, expenseAmountNum],
+  );
+
   const handleAddIncome = useCallback(() => {
     if (transactionTab !== "Incomes" || !canAdd || !selectedPortfolioId || !selectedCompany) return;
-    const total = incomeTotalNum;
+    const perShareAmt = incomeTotalNum;
+    const shareCt = incomeShareCountNum;
+    const gross = perShareAmt * shareCt;
     const fee = incomeFeeNum;
-    const net = total - fee;
-    if (total <= 0 || net <= 0) return;
+    const net = gross - fee;
+    if (gross <= 0 || net <= 0) return;
 
-    const perShare = parseAmountField(incomePerShare);
-    let sharesLedger = 0;
-    let priceLedger = 0;
-    if (perShare > 0) {
-      priceLedger = perShare;
-      sharesLedger = total / perShare;
-    }
+    const sharesLedger = shareCt;
+    const priceLedger = perShareAmt;
 
     setSubmitting(true);
     try {
@@ -268,6 +304,7 @@ export function NewTransactionModal({ open, onClose }: Props) {
         profitPct: null,
         profitUsd: null,
       });
+      toastTransactionAdded(`Income added for ${selectedCompany.name} (${sym}).`, transactionDate);
       onClose();
     } finally {
       setSubmitting(false);
@@ -277,7 +314,7 @@ export function NewTransactionModal({ open, onClose }: Props) {
     canAdd,
     incomeFeeNum,
     incomeOperation,
-    incomePerShare,
+    incomeShareCountNum,
     incomeTotalNum,
     onClose,
     selectedCompany,
@@ -294,11 +331,12 @@ export function NewTransactionModal({ open, onClose }: Props) {
     setSubmitting(true);
     try {
       const dateStr = format(transactionDate, "yyyy-MM-dd");
+      const opLabel = cashOperationLabel(cashDirection);
       addTransaction(selectedPortfolioId, {
         id: newTransactionRowId(),
         portfolioId: selectedPortfolioId,
         kind: "cash",
-        operation: cashDirection === "in" ? "Cash In" : "Cash Out",
+        operation: opLabel,
         symbol: "USD",
         name: "US Dollar",
         logoUrl: null,
@@ -306,10 +344,15 @@ export function NewTransactionModal({ open, onClose }: Props) {
         shares: n,
         price: 1,
         fee: 0,
-        sum: cashDirection === "in" ? n : -n,
+        sum: cashSignedAmount(cashDirection, n),
         profitPct: null,
         profitUsd: null,
       });
+      const toastHeadline =
+        cashDirection === "in" || cashDirection === "out"
+          ? `${cashDirection === "in" ? "Cash in" : "Cash out"} of ${usdFormatter.format(n)} added.`
+          : `${opLabel} of ${usdFormatter.format(n)} recorded.`;
+      toastTransactionAdded(toastHeadline, transactionDate);
       onClose();
     } finally {
       setSubmitting(false);
@@ -325,6 +368,51 @@ export function NewTransactionModal({ open, onClose }: Props) {
     transactionTab,
   ]);
 
+  const handleAddExpense = useCallback(() => {
+    if (transactionTab !== "Expenses" || !canAdd || !selectedPortfolioId || !selectedCompany) return;
+    const amt = expenseAmountNum;
+    if (amt <= 0) return;
+
+    setSubmitting(true);
+    try {
+      const sym = selectedCompany.symbol.trim().toUpperCase();
+      const resolvedLogo = displayLogoUrlForPortfolioSymbol(sym).trim();
+      const logoUrl = resolvedLogo ? resolvedLogo : null;
+      const dateStr = format(transactionDate, "yyyy-MM-dd");
+
+      addTransaction(selectedPortfolioId, {
+        id: newTransactionRowId(),
+        portfolioId: selectedPortfolioId,
+        kind: "expense",
+        operation: expenseOperation,
+        symbol: sym,
+        name: selectedCompany.name,
+        logoUrl,
+        date: dateStr,
+        shares: amt,
+        price: 1,
+        fee: 0,
+        sum: -amt,
+        profitPct: null,
+        profitUsd: null,
+      });
+      toastTransactionAdded(`Expense recorded for ${selectedCompany.name} (${sym}).`, transactionDate);
+      onClose();
+    } finally {
+      setSubmitting(false);
+    }
+  }, [
+    addTransaction,
+    canAdd,
+    expenseAmountNum,
+    expenseOperation,
+    onClose,
+    selectedCompany,
+    selectedPortfolioId,
+    transactionDate,
+    transactionTab,
+  ]);
+
   const handleAdd = useCallback(async () => {
     if (transactionTab === "Cash") {
       handleAddCash();
@@ -332,6 +420,10 @@ export function NewTransactionModal({ open, onClose }: Props) {
     }
     if (transactionTab === "Incomes") {
       handleAddIncome();
+      return;
+    }
+    if (transactionTab === "Expenses") {
+      handleAddExpense();
       return;
     }
     if (transactionTab !== "Trades") return;
@@ -413,6 +505,7 @@ export function NewTransactionModal({ open, onClose }: Props) {
         holdingId: merged.id,
       });
 
+      toastTransactionAdded(`Transaction added for ${assetName} (${symUpper}).`, transactionDate);
       onClose();
     } finally {
       setSubmitting(false);
@@ -435,6 +528,7 @@ export function NewTransactionModal({ open, onClose }: Props) {
     transactionTab,
     handleAddCash,
     handleAddIncome,
+    handleAddExpense,
   ]);
 
   if (!open) return null;
@@ -478,9 +572,11 @@ export function NewTransactionModal({ open, onClose }: Props) {
 
             {transactionTab === "Trades" ? (
               <>
-                <TradeAssetSourceTabs
-                  active={tradeAssetSource}
-                  onChange={(v) => {
+                <SecondaryTabs
+                  aria-label="Asset source"
+                  items={TRADE_ASSET_TABS}
+                  value={tradeAssetSource}
+                  onValueChange={(v) => {
                     setTradeAssetSource(v);
                     if (v === "custom") {
                       setSelectedCompany(null);
@@ -638,10 +734,32 @@ export function NewTransactionModal({ open, onClose }: Props) {
             ) : null}
 
             {transactionTab === "Expenses" ? (
-              <p className="text-sm leading-5 text-[#71717A]">
-                Expense entry is not available here yet. Use <span className="font-medium text-[#09090B]">Cash</span> for withdrawals
-                or <span className="font-medium text-[#09090B]">Trades</span> for sells.
-              </p>
+              <>
+                <Field label="Operation">
+                  <TransactionExpenseOperationSelect value={expenseOperation} onChange={setExpenseOperation} />
+                </Field>
+
+                <Field label="Ticker/Company">
+                  <TransactionCompanyField value={selectedCompany} onChange={setSelectedCompany} />
+                </Field>
+
+                <Field label="Date">
+                  <TransactionDateField date={transactionDate} onDateChange={setTransactionDate} />
+                </Field>
+
+                <Field label="Amount">
+                  <ClearableInput
+                    type="number"
+                    inputMode="decimal"
+                    min="0"
+                    step="any"
+                    value={expenseAmount}
+                    onChange={setExpenseAmount}
+                    placeholder="Amount"
+                    clearLabel="Clear amount"
+                  />
+                </Field>
+              </>
             ) : null}
 
             <div className="pt-1">
@@ -668,7 +786,7 @@ export function NewTransactionModal({ open, onClose }: Props) {
                   </span>
                 </div>
               ) : null}
-              {transactionTab === "Incomes" && incomeTotalNum > 0 && incomeNetUsd > 0 ? (
+              {transactionTab === "Incomes" && incomeGrossUsd > 0 && incomeNetUsd > 0 ? (
                 <>
                   <div className="flex items-center gap-1 border-b border-dashed border-[#E4E4E7] py-2.5 text-sm">
                     <span className="flex-1 font-medium text-[#71717A]">Net to cash</span>
@@ -719,6 +837,31 @@ export function NewTransactionModal({ open, onClose }: Props) {
                       )}
                     >
                       {usdBalance.format(balanceAfterCashUsd)}
+                    </span>
+                  </div>
+                </>
+              ) : null}
+              {transactionTab === "Expenses" && expenseAmountNum > 0 ? (
+                <>
+                  <div className="flex items-center gap-1 border-b border-dashed border-[#E4E4E7] py-2.5 text-sm">
+                    <span className="flex-1 font-medium text-[#71717A]">Cash out</span>
+                    <span className="shrink-0 font-semibold tabular-nums text-[#DC2626]">
+                      {usdFormatter.format(-expenseAmountNum)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 py-2.5 text-sm">
+                    <span className="flex-1 font-medium text-[#71717A]">Balance after</span>
+                    <span
+                      className={cn(
+                        "shrink-0 font-semibold tabular-nums",
+                        balanceAfterExpenseUsd < 0
+                          ? "text-[#DC2626]"
+                          : balanceAfterExpenseUsd > 0
+                            ? "text-[#16A34A]"
+                            : "text-[#09090B]",
+                      )}
+                    >
+                      {usdBalance.format(balanceAfterExpenseUsd)}
                     </span>
                   </div>
                 </>
@@ -793,38 +936,3 @@ function TransactionTypeTabs({
   );
 }
 
-function TradeAssetSourceTabs({
-  active,
-  onChange,
-}: {
-  active: TradeAssetSource;
-  onChange: (next: TradeAssetSource) => void;
-}) {
-  return (
-    <div
-      className="flex w-full border-b border-[#E4E4E7]"
-      role="tablist"
-      aria-label="Asset source"
-    >
-      {TRADE_ASSET_TABS.map((item) => {
-        const isOn = item.id === active;
-        return (
-          <button
-            key={item.id}
-            type="button"
-            role="tab"
-            aria-selected={isOn}
-            onClick={() => onChange(item.id)}
-            className={
-              isOn
-                ? "flex-1 -mb-px border-b-2 border-[#09090B] pb-2 text-center text-sm font-medium leading-6 text-[#09090B]"
-                : "flex-1 pb-2.5 text-center text-sm font-medium leading-6 text-[#09090B] opacity-80 hover:opacity-100"
-            }
-          >
-            {item.label}
-          </button>
-        );
-      })}
-    </div>
-  );
-}

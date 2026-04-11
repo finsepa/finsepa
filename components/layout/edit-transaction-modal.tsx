@@ -8,7 +8,13 @@ import { X } from "lucide-react";
 import type { CompanyPick } from "@/components/charting/company-picker";
 import { displayLogoUrlForPortfolioSymbol } from "@/lib/portfolio/portfolio-asset-display-logo";
 import { cn } from "@/lib/utils";
-import { CashDirectionSelect } from "@/components/layout/cash-direction-select";
+import {
+  CashDirectionSelect,
+  type CashDirection,
+  cashDirectionFromOperation,
+  cashOperationLabel,
+  cashSignedAmount,
+} from "@/components/layout/cash-direction-select";
 import { ClearableInput } from "@/components/layout/clearable-input";
 import { TransactionCompanyField } from "@/components/layout/transaction-company-field";
 import { TransactionDateField } from "@/components/layout/transaction-date-field";
@@ -59,7 +65,7 @@ export function EditTransactionModal({ open, onClose, transaction }: Props) {
   const [shares, setShares] = useState("");
   const [price, setPrice] = useState("");
   const [fees, setFees] = useState("");
-  const [cashDirection, setCashDirection] = useState<"in" | "out">("in");
+  const [cashDirection, setCashDirection] = useState<CashDirection>("in");
   const [submitting, setSubmitting] = useState(false);
 
   const priceFetchGen = useRef(0);
@@ -78,8 +84,7 @@ export function EditTransactionModal({ open, onClose, transaction }: Props) {
       setPrice(formatPriceInputFromApi(transaction.price));
       setFees(transaction.fee > 0 ? String(transaction.fee) : "");
     } else if (transaction.kind === "cash") {
-      const u = transaction.operation.toLowerCase();
-      setCashDirection(u.includes("out") ? "out" : "in");
+      setCashDirection(cashDirectionFromOperation(transaction.operation));
       setTransactionDate(startOfDay(parseISO(transaction.date)));
       setShares(String(transaction.shares));
     }
@@ -116,6 +121,7 @@ export function EditTransactionModal({ open, onClose, transaction }: Props) {
   const isTrade = transaction?.kind === "trade";
   const isCash = transaction?.kind === "cash";
   const isIncome = transaction?.kind === "income";
+  const isExpense = transaction?.kind === "expense";
 
   const portfolioId = transaction?.portfolioId ?? null;
 
@@ -214,12 +220,12 @@ export function EditTransactionModal({ open, onClose, transaction }: Props) {
     const dateStr = format(transactionDate, "yyyy-MM-dd");
     const updated: PortfolioTransaction = {
       ...transaction,
-      operation: cashDirection === "in" ? "Cash In" : "Cash Out",
+      operation: cashOperationLabel(cashDirection),
       date: dateStr,
       shares: n,
       price: 1,
       fee: 0,
-      sum: cashDirection === "in" ? n : -n,
+      sum: cashSignedAmount(cashDirection, n),
     };
     const list = transactionsByPortfolioId[portfolioId] ?? [];
     const next = list.map((t) => (t.id === transaction.id ? updated : t));
@@ -269,7 +275,7 @@ export function EditTransactionModal({ open, onClose, transaction }: Props) {
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5 pt-5">
-          {isIncome ? (
+          {isIncome || isExpense ? (
             <p className="text-sm text-[#71717A]">This transaction type cannot be edited here yet.</p>
           ) : isCash ? (
             <div className="flex flex-col gap-5">
@@ -361,7 +367,7 @@ export function EditTransactionModal({ open, onClose, transaction }: Props) {
           >
             Cancel
           </button>
-          {isIncome ? null : (
+          {isIncome || isExpense ? null : (
             <button
               type="button"
               disabled={(!canSaveTrade && !canSaveCash) || submitting || portfolioId == null}

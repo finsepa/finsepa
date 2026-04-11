@@ -180,7 +180,8 @@ export function parseBodyTransactions(raw: unknown): PortfolioTransaction[] | nu
     const o = row as Record<string, unknown>;
     const id = typeof o.id === "string" ? o.id : "";
     const portfolioId = typeof o.portfolioId === "string" ? o.portfolioId : "";
-    const kind = o.kind === "trade" || o.kind === "cash" || o.kind === "income" ? o.kind : null;
+    const kind =
+      o.kind === "trade" || o.kind === "cash" || o.kind === "income" || o.kind === "expense" ? o.kind : null;
     const operation = typeof o.operation === "string" ? o.operation : "";
     const symbol = typeof o.symbol === "string" ? o.symbol : "";
     const name = typeof o.name === "string" ? o.name : "";
@@ -190,6 +191,12 @@ export function parseBodyTransactions(raw: unknown): PortfolioTransaction[] | nu
     const fee = typeof o.fee === "number" && Number.isFinite(o.fee) ? o.fee : 0;
     const sum = typeof o.sum === "number" && Number.isFinite(o.sum) ? o.sum : 0;
     if (!id || !kind || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
+    let note: string | null | undefined;
+    if (o.note === undefined) note = undefined;
+    else if (o.note === null) note = null;
+    else if (typeof o.note === "string") note = o.note;
+    else note = undefined;
+
     out.push({
       id,
       portfolioId,
@@ -206,6 +213,7 @@ export function parseBodyTransactions(raw: unknown): PortfolioTransaction[] | nu
       profitPct: null,
       profitUsd: null,
       holdingId: typeof o.holdingId === "string" ? o.holdingId : undefined,
+      ...(note !== undefined ? { note } : {}),
     });
   }
   return out;

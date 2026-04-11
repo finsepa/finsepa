@@ -3,7 +3,9 @@
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Wallet } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { ChevronRight, Wallet } from "lucide-react";
+import { format, parseISO } from "date-fns";
 
 import {
   Empty,
@@ -12,7 +14,11 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { normalizeUsdForDisplay } from "@/lib/portfolio/overview-metrics";
+import { CompanyLogo } from "@/components/screener/company-logo";
+import { UserAvatar } from "@/components/user/user-avatar";
+import { displayLogoUrlForPortfolioSymbol } from "@/lib/portfolio/portfolio-asset-display-logo";
+import { PortfoliosDirectorySkeleton } from "@/components/portfolios/portfolios-directory-skeleton";
+import { PUBLIC_LISTINGS_CHANGED_EVENT } from "@/lib/portfolio/sync-public-listing-client";
 import { cn } from "@/lib/utils";
 
 const usd = new Intl.NumberFormat("en-US", {
@@ -39,6 +45,17 @@ function metricNum(m: Record<string, unknown>, key: string): number | null {
   return typeof v === "number" && Number.isFinite(v) ? v : null;
 }
 
+function metricStr(m: Record<string, unknown>, key: string): string | null {
+  const v = m[key];
+  return typeof v === "string" && v.trim() ? v.trim() : null;
+}
+
+function metricStringArray(m: Record<string, unknown>, key: string): string[] {
+  const v = m[key];
+  if (!Array.isArray(v)) return [];
+  return v.filter((x): x is string => typeof x === "string").map((s) => s.trim()).filter(Boolean);
+}
+
 function fmtUsd(n: number | null): string {
   if (n == null) return "—";
   return usd.format(n);
@@ -53,101 +70,141 @@ function fmtPct(n: number | null, signed: boolean): string {
   return `${body}%`;
 }
 
-function profitUsdClassNormalized(n: number | null): string {
-  if (n == null || !Number.isFinite(n)) return "text-[#09090B]";
-  if (Math.abs(n) < 0.005) return "text-[#09090B]";
-  return n > 0 ? "text-[#16A34A]" : "text-[#DC2626]";
-}
-
-function profitPctClass(n: number | null): string {
-  if (n == null || !Number.isFinite(n)) return "text-[#09090B]";
-  if (Math.abs(n) < 0.0005) return "text-[#09090B]";
-  return n > 0 ? "text-[#16A34A]" : "text-[#DC2626]";
-}
-
-function spyClass(n: number | null): string {
+function athReturnClass(n: number | null): string {
   if (n == null || !Number.isFinite(n)) return "text-[#09090B]";
   if (Math.abs(n) < 0.0005) return "text-[#09090B]";
   return n >= 0 ? "text-[#16A34A]" : "text-[#DC2626]";
 }
 
-function ListingMetricShell({
-  label,
-  children,
-  footer,
-}: {
-  label: string;
-  children: ReactNode;
-  footer?: ReactNode;
-}) {
+function initialsFromOwnerName(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return (parts[0]![0]! + parts[parts.length - 1]![0]!).toUpperCase();
+  if (parts.length === 1 && parts[0]!.length >= 2) return parts[0]!.slice(0, 2).toUpperCase();
+  return name.slice(0, 2).toUpperCase() || "?";
+}
+
+function StatCell({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
-      <p className="text-xs font-medium text-[#71717A]">{label}</p>
-      {children}
-      {footer ? <div className="mt-2 text-sm text-[#71717A]">{footer}</div> : null}
+    <div className="flex min-w-0 flex-col gap-[4px]">
+      <p className="text-xs font-medium leading-5 tracking-normal text-[#71717A]">{label}</p>
+      <div className="text-sm font-medium leading-5 tracking-normal text-[#09090B]">{children}</div>
     </div>
   );
 }
 
+/** Community directory card — layout aligned with Figma (avatar, owner, portfolio name, ATH return, stats row). */
 function PublicPortfolioBlock({ listing }: { listing: PublicListingRow }) {
   const m = listing.metrics;
   const value = metricNum(m, "valueUsd");
-  const profitUsd = metricNum(m, "totalProfitUsd");
-  const profitPct = metricNum(m, "totalProfitPct");
-  const spy = metricNum(m, "spyReturnPct");
-  const divY = metricNum(m, "dividendsYieldPct");
-  const profitNorm = profitUsd != null ? normalizeUsdForDisplay(profitUsd) : null;
+  const ath = metricNum(m, "returnsAthPct") ?? metricNum(m, "totalProfitPct");
+  const holdingCount = metricNum(m, "holdingCount");
+  const ownerName = metricStr(m, "ownerDisplayName") ?? "Member";
+  const ownerAvatar = metricStr(m, "ownerAvatarUrl");
+  const topSyms = metricStringArray(m, "topSymbols").slice(0, 5);
+
+  const updatedLabel =
+    listing.updatedAt && !Number.isNaN(Date.parse(listing.updatedAt)) ?
+      format(parseISO(listing.updatedAt), "MMM d, yyyy")
+    : "—";
 
   return (
     <div
-      className="mb-8 rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]"
+      className="mb-6 rounded-[12px] border border-[#E4E4E7] bg-white p-[20px] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.08)]"
       role="group"
-      aria-label={`Public portfolio ${listing.name}`}
+      aria-label={`Public portfolio ${listing.name} by ${ownerName}`}
     >
-      <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-[#F4F4F5] pb-4">
-        <h2 className="text-lg font-semibold leading-7 text-[#09090B]">{listing.name}</h2>
-        {listing.updatedAt ? (
-          <span className="text-xs text-[#71717A] tabular-nums">
-            Updated {new Date(listing.updatedAt).toLocaleString()}
-          </span>
-        ) : null}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <UserAvatar
+            imageSrc={
+              ownerAvatar && (ownerAvatar.startsWith("http") || ownerAvatar.startsWith("/")) ?
+                ownerAvatar
+              : null
+            }
+            initials={initialsFromOwnerName(ownerName)}
+            size="portfolios"
+          />
+          <div className="flex min-w-0 flex-col gap-[4px]">
+            <h2 className="truncate text-xl font-semibold leading-7 tracking-normal text-[#09090B]">{ownerName}</h2>
+            <p
+              className="truncate text-sm font-normal leading-6 tracking-normal text-[#71717A]"
+              title={listing.name}
+            >
+              {listing.name}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex shrink-0 flex-col items-end gap-[4px] text-right">
+          <p
+            className={cn(
+              "text-base font-semibold leading-6 tabular-nums tracking-normal",
+              athReturnClass(ath),
+            )}
+          >
+            {fmtPct(ath, true)}
+          </p>
+          <p className="text-sm font-normal leading-6 tracking-normal text-[#71717A]">Returns (ATH)</p>
+        </div>
       </div>
 
-      <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <ListingMetricShell label="Value" footer="—">
-          <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight text-[#09090B]">
-            {fmtUsd(value)}
-          </p>
-        </ListingMetricShell>
-
-        <ListingMetricShell label="Total profit" footer={<span className="text-xs font-medium text-[#09090B]">Open P/L %</span>}>
-          <p className={cn("mt-2 text-2xl font-semibold tabular-nums tracking-tight", profitUsdClassNormalized(profitNorm))}>
-            {profitNorm != null ? `${profitNorm >= 0 ? "+" : ""}${usd.format(profitNorm)}` : "—"}
-          </p>
-          <div className="mt-2">
-            <span className={cn("text-sm font-medium tabular-nums", profitPctClass(profitPct))}>
-              {profitPct != null ? fmtPct(profitPct, true) : "—"}
+      <div className="mt-5 flex flex-col gap-4 md:flex-row md:items-center md:gap-4">
+        <div className="min-w-0 flex-1 grid grid-cols-2 gap-x-6 gap-y-4 md:grid-cols-4">
+          <StatCell label="Value">
+            <span className="tabular-nums">{fmtUsd(value)}</span>
+          </StatCell>
+          <StatCell label="No. of Holdings">
+            <span className="tabular-nums">
+              {holdingCount != null ? `${Math.round(holdingCount)} assets` : "—"}
             </span>
+          </StatCell>
+          <StatCell label="Last updates">
+            <span className="tabular-nums">{updatedLabel}</span>
+          </StatCell>
+          <div className="flex min-w-0 flex-col gap-[4px] md:col-span-1">
+            <p className="text-xs font-medium leading-5 tracking-normal text-[#71717A]">Top 5 Holdings</p>
+            <div className="flex items-center">
+              {topSyms.length === 0 ? (
+                <span className="text-sm font-medium leading-5 tracking-normal text-[#A1A1AA]">—</span>
+              ) : (
+                <div className="flex flex-row items-center">
+                  {topSyms.map((sym, i) => (
+                    <div
+                      key={`${sym}-${i}`}
+                      className="-ml-1 first:ml-0"
+                      style={{ zIndex: topSyms.length - i }}
+                    >
+                      <div className="overflow-hidden rounded-full ring-2 ring-white">
+                        <CompanyLogo
+                          name={sym}
+                          logoUrl={displayLogoUrlForPortfolioSymbol(sym)}
+                          symbol={sym}
+                          size="xs"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-        </ListingMetricShell>
+        </div>
 
-        <ListingMetricShell label="S&P 500" footer="Compare to S&P 500">
-          <p className={cn("mt-2 text-2xl font-semibold tabular-nums tracking-tight", spyClass(spy))}>
-            {spy != null ? fmtPct(spy, true) : "—"}
-          </p>
-        </ListingMetricShell>
-
-        <ListingMetricShell label="Dividends" footer={divY != null ? "Weighted yield" : "—"}>
-          <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight text-[#09090B]">
-            {divY != null ? `${pctFmt.format(divY)}%` : "—"}
-          </p>
-        </ListingMetricShell>
+        <div className="flex shrink-0 justify-end md:justify-center">
+          <div
+            className="flex h-8 w-8 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-[#FAFAFA] text-[#71717A]"
+            aria-hidden
+          >
+            <ChevronRight className="h-4 w-4" strokeWidth={2} />
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
 export function PortfoliosDirectoryClient() {
+  const pathname = usePathname();
   const [listings, setListings] = useState<PublicListingRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -172,14 +229,23 @@ export function PortfoliosDirectoryClient() {
 
   useEffect(() => {
     void load();
+  }, [load, pathname]);
+
+  useEffect(() => {
+    const onListingsChanged = () => void load();
+    window.addEventListener(PUBLIC_LISTINGS_CHANGED_EVENT, onListingsChanged);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void load();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.removeEventListener(PUBLIC_LISTINGS_CHANGED_EVENT, onListingsChanged);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, [load]);
 
   if (listings === null) {
-    return (
-      <div className="flex min-h-[min(50vh,420px)] items-center justify-center text-sm text-[#71717A]">
-        Loading…
-      </div>
-    );
+    return <PortfoliosDirectorySkeleton cards={2} />;
   }
 
   if (error) {

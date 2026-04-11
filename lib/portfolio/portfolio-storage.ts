@@ -59,9 +59,11 @@ function isPortfolioHolding(x: unknown): x is PortfolioHolding {
 function isPortfolioTransaction(x: unknown): x is PortfolioTransaction {
   if (!isRecord(x)) return false;
   const kind = x.kind;
-  if (kind !== "trade" && kind !== "cash" && kind !== "income") return false;
+  if (kind !== "trade" && kind !== "cash" && kind !== "income" && kind !== "expense") return false;
   const holdingOk = x.holdingId === undefined || typeof x.holdingId === "string";
+  const noteOk = x.note === undefined || x.note === null || typeof x.note === "string";
   return (
+    noteOk &&
     holdingOk &&
     typeof x.id === "string" &&
     typeof x.portfolioId === "string" &&

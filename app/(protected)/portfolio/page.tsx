@@ -10,7 +10,7 @@ import {
   type ComponentType,
 } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FileSpreadsheet, Layers2, Pencil } from "lucide-react";
+import { FileSpreadsheet, Layers2, Settings } from "lucide-react";
 
 import { AssetPageTopLoader } from "@/components/layout/asset-page-top-loader";
 import { PortfolioQuickAddMenu } from "@/components/layout/portfolio-quick-add-menu";
@@ -212,7 +212,7 @@ function PortfolioPageInner() {
           </button>
           <button
             type="button"
-            aria-label="Edit portfolio"
+            aria-label="Portfolio settings"
             disabled={selectedPortfolioId == null}
             onClick={() => {
               if (selectedPortfolioId != null) openEditPortfolio(selectedPortfolioId);
@@ -223,7 +223,7 @@ function PortfolioPageInner() {
               "disabled:pointer-events-none disabled:opacity-40",
             )}
           >
-            <Pencil className="h-5 w-5" strokeWidth={2} aria-hidden />
+            <Settings className="h-5 w-5" strokeWidth={2} aria-hidden />
           </button>
           <PortfolioQuickAddMenu aria-label="Portfolio quick add" />
         </div>

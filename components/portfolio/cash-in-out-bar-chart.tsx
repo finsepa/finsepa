@@ -1,7 +1,9 @@
 "use client";
 
-import { type MouseEvent, memo, useCallback, useMemo, useRef, useState } from "react";
-import { BarChart3, ChevronDown } from "lucide-react";
+import { type MouseEvent, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { BarChart3, Check, ChevronDown } from "lucide-react";
+
+import { TabSwitcher } from "@/components/design-system";
 import {
   eachMonthOfInterval,
   eachYearOfInterval,
@@ -375,7 +377,26 @@ function CashInOutBarChartSvg({ buckets }: { buckets: Bucket[] }) {
 
 function CashInOutBarChartSectionInner({ rows }: { rows: PortfolioTransaction[] }) {
   const [range, setRange] = useState<CashChartRange>("all");
+  const [rangeOpen, setRangeOpen] = useState(false);
+  const rangeWrapRef = useRef<HTMLDivElement>(null);
   const [granularity, setGranularity] = useState<Granularity>("year");
+
+  useEffect(() => {
+    if (!rangeOpen) return;
+    function onDocMouseDown(e: Event) {
+      const el = rangeWrapRef.current;
+      const t = e.target;
+      if (!el || !(t instanceof Node) || el.contains(t)) return;
+      setRangeOpen(false);
+    }
+    document.addEventListener("mousedown", onDocMouseDown);
+    return () => document.removeEventListener("mousedown", onDocMouseDown);
+  }, [rangeOpen]);
+
+  const rangeLabel = useMemo(
+    () => RANGE_OPTIONS.find((o) => o.value === range)?.label ?? "All Time",
+    [range],
+  );
 
   const buckets = useMemo(() => buildBuckets(rows, range, granularity), [rows, range, granularity]);
 
@@ -388,56 +409,56 @@ function CashInOutBarChartSectionInner({ rows }: { rows: PortfolioTransaction[] 
     <div className="mb-6">
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-2xl font-semibold leading-9 tracking-tight text-[#09090B]">Cash</h2>
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="relative">
-            <select
-              value={range}
-              onChange={(e) => setRange(e.target.value as CashChartRange)}
-              className="h-10 min-h-10 cursor-pointer appearance-none rounded-[10px] border border-[#E4E4E7] bg-white py-2 pl-4 pr-10 text-sm font-medium leading-5 text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/10"
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <div className="relative min-w-[min(100%,180px)] sm:min-w-[180px]" ref={rangeWrapRef}>
+            <button
+              type="button"
+              aria-expanded={rangeOpen}
+              aria-haspopup="listbox"
               aria-label="Cash chart time range"
+              onClick={() => setRangeOpen((o) => !o)}
+              className="flex h-9 w-full cursor-pointer items-center justify-between gap-2 rounded-[10px] bg-[#F4F4F5] px-4 text-left text-sm font-normal leading-5 text-[#09090B] transition-colors hover:bg-[#EBEBEB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/10"
             >
-              {RANGE_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-            <ChevronDown
-              className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[#71717A]"
-              aria-hidden
-            />
+              <span className="min-w-0 truncate">{rangeLabel}</span>
+              <ChevronDown className="h-5 w-5 shrink-0 text-[#09090B]" aria-hidden />
+            </button>
+            {rangeOpen ? (
+              <div
+                role="listbox"
+                className="absolute left-0 right-0 top-full z-[110] mt-1 overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white py-1 shadow-[0px_4px_12px_0px_rgba(10,10,10,0.08)]"
+              >
+                {RANGE_OPTIONS.map((o) => {
+                  const selected = o.value === range;
+                  return (
+                    <button
+                      key={o.value}
+                      type="button"
+                      role="option"
+                      aria-selected={selected}
+                      onClick={() => {
+                        setRange(o.value);
+                        setRangeOpen(false);
+                      }}
+                      className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left text-sm font-medium text-[#09090B] transition-colors hover:bg-[#F4F4F5]"
+                    >
+                      <span>{o.label}</span>
+                      {selected ? <Check className="h-4 w-4 shrink-0 text-[#09090B]" strokeWidth={2} aria-hidden /> : null}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : null}
           </div>
 
-          <div
-            className="inline-flex rounded-[10px] bg-[#F4F4F5] p-0.5"
-            role="group"
+          <TabSwitcher
             aria-label="Cash chart grouping"
-          >
-            <button
-              type="button"
-              onClick={() => setGranularity("month")}
-              className={cn(
-                "rounded-[10px] px-4 py-1.5 text-sm font-medium leading-5 transition-all",
-                granularity === "month"
-                  ? "bg-white text-[#09090B] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]"
-                  : "text-[#71717A] hover:text-[#09090B]",
-              )}
-            >
-              Monthly
-            </button>
-            <button
-              type="button"
-              onClick={() => setGranularity("year")}
-              className={cn(
-                "rounded-[10px] px-4 py-1.5 text-sm font-medium leading-5 transition-all",
-                granularity === "year"
-                  ? "bg-white text-[#09090B] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]"
-                  : "text-[#71717A] hover:text-[#09090B]",
-              )}
-            >
-              Annually
-            </button>
-          </div>
+            options={[
+              { value: "month" as const, label: "Monthly" },
+              { value: "year" as const, label: "Annually" },
+            ]}
+            value={granularity}
+            onChange={setGranularity}
+          />
         </div>
       </div>
 

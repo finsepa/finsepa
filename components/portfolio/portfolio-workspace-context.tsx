@@ -37,6 +37,8 @@ export type PortfolioWorkspaceContextValue = {
   setPortfolioHoldings: (portfolioId: string, holdings: PortfolioHolding[]) => void;
   /** Remove one ledger row and rebuild holdings from remaining trades (closes edit modal if it matched). */
   removePortfolioTransaction: (transaction: PortfolioTransaction) => Promise<void>;
+  /** Re-insert a removed row and rebuild holdings (e.g. Sonner undo). */
+  restorePortfolioTransaction: (transaction: PortfolioTransaction) => Promise<void>;
   /**
    * True once we can show portfolio totals without flashing the default empty seed:
    * either a local snapshot was applied, or the server merge finished.

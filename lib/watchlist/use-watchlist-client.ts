@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { WATCHLIST_MUTATED_EVENT } from "@/lib/watchlist/constants";
@@ -51,6 +52,9 @@ export function useWatchlist() {
 
   const pendingRemovalRef = useRef<string[]>([]);
   pendingRemovalRef.current = pendingRemoval;
+
+  const userIdRef = useRef<string | null>(null);
+  userIdRef.current = userId;
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
@@ -181,6 +185,11 @@ export function useWatchlist() {
       return next;
     });
 
+    /** Signed-out users only get an add toast here; POST does not revert on failure. Remove sync toast is skipped because DELETE returns 401 and we revert state. */
+    if (userIdRef.current == null && !removing) {
+      toast.success(`${ticker} added to your watchlist.`);
+    }
+
     void (async () => {
       try {
         if (removing) {
@@ -209,6 +218,9 @@ export function useWatchlist() {
           if (res.ok) {
             console.info("[watchlist] DELETE /api/watchlist ok", { status: res.status, body: parsed });
             setPendingRemoval((prev) => prev.filter((x) => x !== ticker));
+            if (userIdRef.current != null) {
+              toast.success(`${ticker} removed from your watchlist.`);
+            }
           } else {
             console.error("[watchlist] DELETE /api/watchlist error", { status: res.status, body: parsed });
             setPendingRemoval((prev) => prev.filter((x) => x !== ticker));
@@ -244,6 +256,9 @@ export function useWatchlist() {
           }
           if (res.ok) {
             console.info("[watchlist] POST /api/watchlist ok", { status: res.status, body: parsed });
+            if (userIdRef.current != null) {
+              toast.success(`${ticker} added to your watchlist.`);
+            }
           } else {
             console.error("[watchlist] POST /api/watchlist error", { status: res.status, body: parsed });
           }

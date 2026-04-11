@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 
+import { cryptoRouteBase } from "@/lib/crypto/crypto-symbol-base";
+import { isSupportedCryptoAssetSymbol } from "@/lib/crypto/crypto-logo-url";
 import { fetchEodhdOpenPriceOnOrBefore } from "@/lib/market/eodhd-eod";
 import { fetchEodhdKeyStatsDividends } from "@/lib/market/eodhd-key-stats-dividends";
+import { getCryptoPerformance } from "@/lib/market/crypto-performance";
 import { getStockPerformance } from "@/lib/market/stock-performance";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
 import { requireAuthUser, AuthRequiredError } from "@/lib/watchlist/api-auth";
@@ -67,7 +70,11 @@ export async function POST(request: Request) {
       Promise.all(
         tickersPerf.map(async (t) => {
           try {
-            const p = await getStockPerformance(t);
+            const routeKey = cryptoRouteBase(t);
+            const p =
+              isSupportedCryptoAssetSymbol(routeKey) ?
+                await getCryptoPerformance(routeKey)
+              : await getStockPerformance(t);
             return [t, p] as const;
           } catch {
             return [t, null] as const;

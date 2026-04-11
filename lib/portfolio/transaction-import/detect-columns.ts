@@ -36,7 +36,8 @@ const SYNONYMS: Record<ImportFieldKey, readonly string[]> = {
   ],
   shares: ["shares", "quantity", "qty", "units", "amount", "size", "volume"],
   fee: ["fee", "fees", "feetax", "fee tax", "commission", "commissions"],
-  total: ["total", "sum", "amount", "value", "net", "proceeds", "cash flow", "total amount"],
+  /** Omit generic "amount" — many sheets use Amount for share/quantity; that must map to `shares`, not proceeds. */
+  total: ["total", "sum", "value", "net", "proceeds", "cash flow", "total amount"],
 };
 
 function scoreHeaderForField(normalizedHeader: string, field: ImportFieldKey): number {

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { PATH_LOGIN } from "@/lib/auth/routes";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { UserAvatar } from "@/components/user/user-avatar";
@@ -38,7 +39,6 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
   const [avatarRemoved, setAvatarRemoved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
-  const [message, setMessage] = useState<{ type: "ok" | "err"; text: string } | null>(null);
 
   useEffect(() => {
     setFirstName(initial.firstName);
@@ -81,7 +81,6 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
   }
 
   async function handleSave() {
-    setMessage(null);
     setSaving(true);
     try {
       const supabase = getSupabaseBrowserClient();
@@ -118,14 +117,15 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
 
       setAvatarFile(null);
       if (fileRef.current) fileRef.current.value = "";
-      setMessage({
-        type: "ok",
-        text: photoNote ?? "Changes saved.",
-      });
+      if (photoNote) {
+        toast.warning("Profile saved", { description: photoNote });
+      } else {
+        toast.success("Changes saved.");
+      }
       router.refresh();
     } catch (e: unknown) {
       const text = e instanceof Error ? e.message : "Something went wrong.";
-      setMessage({ type: "err", text });
+      toast.error(text);
     } finally {
       setSaving(false);
     }
@@ -155,15 +155,6 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
         </div>
 
         <div className="mt-8 space-y-10">
-          {message ? (
-            <p
-              className={`text-sm font-medium ${message.type === "ok" ? "text-emerald-600" : "text-red-600"}`}
-              role="status"
-            >
-              {message.text}
-            </p>
-          ) : null}
-
           <section>
             <FieldLabel>Profile picture</FieldLabel>
             <div className="mt-2 flex flex-wrap items-center gap-4">

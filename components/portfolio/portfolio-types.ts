@@ -65,14 +65,14 @@ export function newHoldingId(): string {
   return newPortfolioId();
 }
 
-export type PortfolioTransactionKind = "trade" | "cash" | "income";
+export type PortfolioTransactionKind = "trade" | "cash" | "income" | "expense";
 
 /** Ledger row for the Transactions tab (local UI until backend exists). */
 export type PortfolioTransaction = {
   id: string;
   portfolioId: string;
   kind: PortfolioTransactionKind;
-  /** Buy, Sell, Cash In, Cash Out, Dividend, … */
+  /** Buy, Sell, Cash In, Cash Out, Dividend, Other expense, … */
   operation: string;
   symbol: string;
   name: string;
@@ -88,6 +88,8 @@ export type PortfolioTransaction = {
   profitUsd: number | null;
   /** Set for trade rows tied to a holding lot. */
   holdingId?: string;
+  /** Optional memo (e.g. expense note). */
+  note?: string | null;
 };
 
 export function newTransactionRowId(): string {

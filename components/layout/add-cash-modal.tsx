@@ -5,13 +5,20 @@ import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { format, startOfDay } from "date-fns";
 import { X } from "lucide-react";
 
-import { CashDirectionSelect } from "@/components/layout/cash-direction-select";
-import type { CashDirection } from "@/components/layout/cash-direction-select";
+import {
+  CashDirectionSelect,
+  type CashDirection,
+  cashOperationLabel,
+  cashSignedAmount,
+} from "@/components/layout/cash-direction-select";
 import { ClearableInput } from "@/components/layout/clearable-input";
 import { TransactionDateField } from "@/components/layout/transaction-date-field";
 import { newTransactionRowId } from "@/components/portfolio/portfolio-types";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
+import { toastTransactionAdded } from "@/lib/portfolio/transaction-added-toast";
 import { cn } from "@/lib/utils";
+
+const usdFormatter = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
 function parseAmountField(raw: string): number {
   const t = raw.trim().replace(/\s/g, "").replace(",", ".");
   if (!t) return 0;
@@ -68,11 +75,12 @@ export function AddCashModal({ open, onClose }: Props) {
     setSubmitting(true);
     try {
       const dateStr = format(date, "yyyy-MM-dd");
+      const opLabel = cashOperationLabel(direction);
       addTransaction(selectedPortfolioId, {
         id: newTransactionRowId(),
         portfolioId: selectedPortfolioId,
         kind: "cash",
-        operation: direction === "in" ? "Cash In" : "Cash Out",
+        operation: opLabel,
         symbol: "USD",
         name: "US Dollar",
         logoUrl: null,
@@ -80,10 +88,15 @@ export function AddCashModal({ open, onClose }: Props) {
         shares: n,
         price: 1,
         fee: 0,
-        sum: direction === "in" ? n : -n,
+        sum: cashSignedAmount(direction, n),
         profitPct: null,
         profitUsd: null,
       });
+      const toastHeadline =
+        direction === "in" || direction === "out"
+          ? `${direction === "in" ? "Cash in" : "Cash out"} of ${usdFormatter.format(n)} added.`
+          : `${opLabel} of ${usdFormatter.format(n)} recorded.`;
+      toastTransactionAdded(toastHeadline, date);
       onClose();
     } finally {
       setSubmitting(false);

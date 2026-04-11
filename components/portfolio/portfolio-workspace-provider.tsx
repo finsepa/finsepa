@@ -12,6 +12,7 @@ import {
   useState,
 } from "react";
 import { X } from "lucide-react";
+import { toast } from "sonner";
 
 import { AddCashModal } from "@/components/layout/add-cash-modal";
 import { DeletePortfolioConfirmModal } from "@/components/portfolio/delete-portfolio-confirm-modal";
@@ -37,7 +38,8 @@ import {
   savePersistedPortfolioStateForUser,
   type PersistedPortfolioState,
 } from "@/lib/portfolio/portfolio-storage";
-import { computePublicPortfolioListingMetrics } from "@/lib/portfolio/public-listing-metrics";
+import { computePublicPortfolioListingMetrics, withListingOwner } from "@/lib/portfolio/public-listing-metrics";
+import { dispatchPublicListingsChanged, putPublicPortfolioListingRequest } from "@/lib/portfolio/sync-public-listing-client";
 import {
   refreshHoldingMarketPrices,
   replayTradeTransactionsToHoldings,
@@ -288,10 +290,25 @@ function CreatePortfolioModal({
 export function PortfolioWorkspaceProvider({
   children,
   userId,
+  listingOwnerDisplayName,
+  listingOwnerAvatarUrl,
 }: {
   children: ReactNode;
   userId: string;
+  /** Shown on `/portfolios` community cards (from account profile). */
+  listingOwnerDisplayName: string;
+  listingOwnerAvatarUrl: string | null;
 }) {
+  const ownerForListing = useMemo(
+    () => ({ displayName: listingOwnerDisplayName, avatarUrl: listingOwnerAvatarUrl }),
+    [listingOwnerDisplayName, listingOwnerAvatarUrl],
+  );
+
+  const metricsForPublicListing = useCallback(
+    (holdings: PortfolioHolding[], txs: PortfolioTransaction[]) =>
+      withListingOwner(computePublicPortfolioListingMetrics(holdings, txs), ownerForListing),
+    [ownerForListing],
+  );
   const portfolioSeed = useMemo(() => {
     const id = newPortfolioId();
     return {
@@ -489,6 +506,42 @@ export function PortfolioWorkspaceProvider({
   ]);
 
   const prevPublishedPortfolioIdsRef = useRef<Set<string>>(new Set());
+  /** One attempt per user session: publish public portfolios to Supabase right after hydrate (table row for /portfolios). */
+  const attemptedHydratePublicListingSyncRef = useRef(false);
+
+  useEffect(() => {
+    attemptedHydratePublicListingSyncRef.current = false;
+  }, [userId]);
+
+  useEffect(() => {
+    if (!workspaceHydrated || attemptedHydratePublicListingSyncRef.current) return;
+    const publicStandard = portfolios.filter((p) => p.privacy === "public" && !portfolioIsCombined(p));
+    if (publicStandard.length === 0) return;
+
+    attemptedHydratePublicListingSyncRef.current = true;
+
+    void (async () => {
+      let anyOk = false;
+      for (const p of publicStandard) {
+        const holdings = displayHoldingsByPortfolioId[p.id] ?? [];
+        const txs = displayTransactionsByPortfolioId[p.id] ?? [];
+        const r = await putPublicPortfolioListingRequest({
+          portfolioId: p.id,
+          publish: true,
+          displayName: p.name,
+          metrics: metricsForPublicListing(holdings, txs),
+        });
+        if (r.ok) anyOk = true;
+      }
+      if (anyOk) dispatchPublicListingsChanged();
+    })();
+  }, [
+    workspaceHydrated,
+    portfolios,
+    displayHoldingsByPortfolioId,
+    displayTransactionsByPortfolioId,
+    metricsForPublicListing,
+  ]);
 
   /** Sync Supabase community listings when public standard portfolios change (debounced). */
   useEffect(() => {
@@ -499,27 +552,29 @@ export function PortfolioWorkspaceProvider({
         const current = new Set(publicStandard.map((p) => p.id));
         const prev = prevPublishedPortfolioIdsRef.current;
 
+        let listingsUpdated = false;
         for (const id of prev) {
           if (!current.has(id)) {
             try {
-              await fetch("/api/portfolios/listings", {
+              const res = await fetch("/api/portfolios/listings", {
                 method: "PUT",
                 credentials: "include",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ portfolioId: id, publish: false }),
               });
+              const data = (await res.json()) as { ok?: boolean; warning?: string };
+              if (res.ok && data.ok !== false && data.warning !== "db_unavailable") listingsUpdated = true;
             } catch {
               /* ignore */
             }
           }
         }
-
         for (const p of publicStandard) {
           const holdings = displayHoldingsByPortfolioId[p.id] ?? [];
           const txs = displayTransactionsByPortfolioId[p.id] ?? [];
-          const metrics = computePublicPortfolioListingMetrics(holdings, txs);
+          const metrics = metricsForPublicListing(holdings, txs);
           try {
-            await fetch("/api/portfolios/listings", {
+            const res = await fetch("/api/portfolios/listings", {
               method: "PUT",
               credentials: "include",
               headers: { "Content-Type": "application/json" },
@@ -530,20 +585,24 @@ export function PortfolioWorkspaceProvider({
                 metrics,
               }),
             });
+            const data = (await res.json()) as { ok?: boolean; warning?: string };
+            if (res.ok && data.ok !== false && data.warning !== "db_unavailable") listingsUpdated = true;
           } catch {
             /* ignore */
           }
         }
 
         prevPublishedPortfolioIdsRef.current = new Set(current);
+        if (listingsUpdated) dispatchPublicListingsChanged();
       })();
-    }, 1200);
+    }, 600);
     return () => window.clearTimeout(tid);
   }, [
     workspaceHydrated,
     portfolios,
     displayHoldingsByPortfolioId,
     displayTransactionsByPortfolioId,
+    metricsForPublicListing,
   ]);
 
   /** Replaces the row for the same ticker, or appends — supports merged positions after multiple buys. */
@@ -616,6 +675,25 @@ export function PortfolioWorkspaceProvider({
       const next = list.filter((x) => x.id !== t.id);
       setPortfolioTransactions(pid, next);
       setEditTransaction((cur) => (cur?.id === t.id ? null : cur));
+      const rebuilt = replayTradeTransactionsToHoldings(next);
+      const quoted = await refreshHoldingMarketPrices(rebuilt);
+      setPortfolioHoldings(pid, quoted);
+    },
+    [portfolios, selectedPortfolioId, setPortfolioHoldings, setPortfolioTransactions, transactionsByPortfolioId],
+  );
+
+  const restorePortfolioTransaction = useCallback(
+    async (t: PortfolioTransaction) => {
+      const view = portfolios.find((x) => x.id === selectedPortfolioId);
+      if (view?.kind === "combined") return;
+      const pid = t.portfolioId;
+      const list = transactionsByPortfolioId[pid] ?? [];
+      if (list.some((x) => x.id === t.id)) return;
+      const next = [...list, t].sort((a, b) => {
+        if (a.date !== b.date) return a.date.localeCompare(b.date);
+        return a.id.localeCompare(b.id);
+      });
+      setPortfolioTransactions(pid, next);
       const rebuilt = replayTradeTransactionsToHoldings(next);
       const quoted = await refreshHoldingMarketPrices(rebuilt);
       setPortfolioHoldings(pid, quoted);
@@ -715,6 +793,7 @@ export function PortfolioWorkspaceProvider({
       setPortfolioTransactions,
       setPortfolioHoldings,
       removePortfolioTransaction,
+      restorePortfolioTransaction,
       portfolioDisplayReady,
     }),
     [
@@ -727,6 +806,7 @@ export function PortfolioWorkspaceProvider({
       setPortfolioTransactions,
       setPortfolioHoldings,
       removePortfolioTransaction,
+      restorePortfolioTransaction,
       openEditPortfolio,
       openCreatePortfolio,
       openCreateCombinedPortfolio,
@@ -777,10 +857,15 @@ export function PortfolioWorkspaceProvider({
             if (editing?.kind === "combined") {
               if (t.length === 0) return;
               setPortfolios((prev) => prev.map((p) => (p.id === id ? { ...p, name: t } : p)));
+              toast.success(`Combined portfolio "${t}" updated.`);
               setEditPortfolioOpen(false);
               setEditPortfolioId(null);
               return;
             }
+
+            const holdings = id ? holdingsByPortfolioId[id] ?? [] : [];
+            const txs = id ? transactionsByPortfolioId[id] ?? [] : [];
+
             setPortfolios((prev) => {
               if (!id) return prev;
               if (t.length === 0) {
@@ -800,6 +885,32 @@ export function PortfolioWorkspaceProvider({
               }
               return prev.map((p) => (p.id === id ? { ...p, name: t, privacy: nextPrivacy } : p));
             });
+
+            if (id && t.length > 0) {
+              if (nextPrivacy === "public") {
+                void putPublicPortfolioListingRequest({
+                  portfolioId: id,
+                  publish: true,
+                  displayName: t,
+                  metrics: metricsForPublicListing(holdings, txs),
+                }).then((r) => {
+                  if (r.ok) dispatchPublicListingsChanged();
+                });
+              } else {
+                void putPublicPortfolioListingRequest({ portfolioId: id, publish: false }).then((r) => {
+                  if (r.ok) dispatchPublicListingsChanged();
+                });
+              }
+            } else if (id && t.length === 0) {
+              void putPublicPortfolioListingRequest({ portfolioId: id, publish: false }).then((r) => {
+                if (r.ok) dispatchPublicListingsChanged();
+              });
+            }
+
+            if (t.length > 0) {
+              toast.success(`Portfolio "${t}" updated.`);
+            }
+
             setEditPortfolioOpen(false);
             setEditPortfolioId(null);
           }}
@@ -823,6 +934,12 @@ export function PortfolioWorkspaceProvider({
         onConfirmDelete={() => {
           const id = deletePortfolioConfirmId;
           if (!id) return;
+          const deleted = portfolios.find((p) => p.id === id);
+          if (deleted && deleted.privacy === "public" && !portfolioIsCombined(deleted)) {
+            void putPublicPortfolioListingRequest({ portfolioId: id, publish: false }).then((r) => {
+              if (r.ok) dispatchPublicListingsChanged();
+            });
+          }
           setPortfolios((prev) => {
             const without = prev.filter((p) => p.id !== id);
             const pruned = without
@@ -847,6 +964,11 @@ export function PortfolioWorkspaceProvider({
             });
             return next;
           });
+          if (deleted) {
+            toast.success(`Portfolio "${deleted.name}" deleted.`);
+          } else {
+            toast.success("Portfolio deleted.");
+          }
           setDeletePortfolioConfirmId(null);
         }}
       />
@@ -860,6 +982,17 @@ export function PortfolioWorkspaceProvider({
             setPortfolios((prev) => [...prev, { id, name: t, privacy: nextPrivacy }]);
             setSelectedPortfolioId(id);
             setCreatePortfolioOpen(false);
+            toast.success(`Portfolio "${t}" created.`);
+            if (nextPrivacy === "public") {
+              void putPublicPortfolioListingRequest({
+                portfolioId: id,
+                publish: true,
+                displayName: t,
+                metrics: metricsForPublicListing([], []),
+              }).then((r) => {
+                if (r.ok) dispatchPublicListingsChanged();
+              });
+            }
           }}
         />
       ) : null}
@@ -883,6 +1016,9 @@ export function PortfolioWorkspaceProvider({
             ]);
             setSelectedPortfolioId(id);
             setCreateCombinedOpen(false);
+            toast.success(`Combined portfolio "${t}" created.`, {
+              description: `Merges ${sourceIds.length} portfolios`,
+            });
           }}
         />
       ) : null}

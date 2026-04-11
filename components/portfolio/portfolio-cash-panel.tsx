@@ -9,6 +9,7 @@ import { DeleteTransactionConfirmModal } from "@/components/portfolio/delete-tra
 import { TransactionRowActionsMenu } from "@/components/portfolio/transaction-row-actions-menu";
 import { CompanyLogo } from "@/components/screener/company-logo";
 import { displayLogoUrlForPortfolioSymbol } from "@/lib/portfolio/portfolio-asset-display-logo";
+import { toastTransactionDeleted } from "@/lib/portfolio/transaction-deleted-toast";
 import { portfolioAssetSymbolCaption } from "@/lib/portfolio/custom-asset-symbol";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import {
@@ -48,8 +49,8 @@ function formatSignedUsd(n: number): string {
 
 function operationClassName(operation: string): string {
   const u = operation.toLowerCase();
-  if (u.includes("cash in")) return "text-[#16A34A]";
-  if (u.includes("cash out")) return "text-[#DC2626]";
+  if (u.includes("cash in") || u.includes("other income")) return "text-[#16A34A]";
+  if (u.includes("cash out") || u.includes("other expense")) return "text-[#DC2626]";
   return "text-[#09090B]";
 }
 
@@ -65,8 +66,8 @@ const cashTxGrid =
 function rowMatchesCashFilter(t: PortfolioTransaction, f: CashDirectionFilter): boolean {
   if (f === "all") return true;
   const u = t.operation.toLowerCase();
-  if (f === "in") return u.includes("cash in");
-  return u.includes("cash out");
+  if (f === "in") return u.includes("cash in") || u.includes("other income");
+  return u.includes("cash out") || u.includes("other expense");
 }
 
 /**
@@ -90,7 +91,9 @@ function PortfolioCashPanelInner() {
 
   const handleConfirmDelete = useCallback(async () => {
     if (!deleteCandidate) return;
-    await removePortfolioTransaction(deleteCandidate);
+    const snapshot = deleteCandidate;
+    await removePortfolioTransaction(snapshot);
+    toastTransactionDeleted(snapshot);
   }, [deleteCandidate, removePortfolioTransaction]);
 
   const transactions = useMemo(
