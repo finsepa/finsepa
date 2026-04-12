@@ -6,14 +6,10 @@ import { usePortfolioOverviewAthPublisher } from "@/components/portfolio/portfol
 import { ChevronDown } from "lucide-react";
 
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
-import {
-  earliestStockBuyYmd,
-  modifiedDietzReturnPct,
-  netCashIntoEquityAfter,
-  replayStockSharesUpTo,
-} from "@/lib/portfolio/benchmark-inception";
+import { earliestStockBuyYmd, replayStockSharesUpTo } from "@/lib/portfolio/benchmark-inception";
 import {
   equityMarketValue,
+  lifetimeEquityProfitPct,
   netCashUsd,
   normalizeUsdForDisplay,
   totalCostBasisInvested,
@@ -113,10 +109,6 @@ function PortfolioOverviewCardsInner({
   );
 
   const inceptionYmd = useMemo(() => earliestStockBuyYmd(transactions), [transactions]);
-  const netFlowAfterInception = useMemo(
-    () => (inceptionYmd != null ? netCashIntoEquityAfter(transactions, inceptionYmd) : 0),
-    [transactions, inceptionYmd],
-  );
 
   const [period, setPeriod] = useState<OverviewProfitPeriod>("all");
   /** False until overview-market finishes when any symbols need a quote. */
@@ -124,7 +116,6 @@ function PortfolioOverviewCardsInner({
   const [perfBySymbol, setPerfBySymbol] = useState<Record<string, StockPerformance | null>>({});
   const [spyPerf, setSpyPerf] = useState<StockPerformance | null>(null);
   const [yieldBySymbol, setYieldBySymbol] = useState<Record<string, number | null>>({});
-  const [inceptionEquityV0, setInceptionEquityV0] = useState<number | null>(null);
   const [inceptionSpyPrice0, setInceptionSpyPrice0] = useState<number | null>(null);
 
   const symbols = useMemo(() => {
@@ -138,7 +129,6 @@ function PortfolioOverviewCardsInner({
       setPerfBySymbol({});
       setSpyPerf(null);
       setYieldBySymbol({});
-      setInceptionEquityV0(null);
       setInceptionSpyPrice0(null);
       setOverviewReady(true);
       return;
@@ -183,30 +173,16 @@ function PortfolioOverviewCardsInner({
       setPerfBySymbol(data.performanceBySymbol ?? {});
       setYieldBySymbol(data.yieldBySymbol ?? {});
 
-      let v0: number | null = null;
       let spy0: number | null = null;
       if (startYmd) {
-        const sharesMap = replayStockSharesUpTo(transactions, startYmd);
-        const syms = [...sharesMap.entries()]
-          .filter(([, sh]) => sh > 0)
-          .map(([s]) => s.toUpperCase());
         const prices = data.inceptionPriceByTicker ?? {};
         spy0 = typeof prices[SPY_BENCHMARK] === "number" ? prices[SPY_BENCHMARK]! : null;
-        let sum = 0;
-        for (const s of syms) {
-          const p = prices[s];
-          const sh = sharesMap.get(s) ?? 0;
-          if (p != null && Number.isFinite(p) && sh > 0) sum += sh * p;
-        }
-        v0 = sum > 0 ? sum : null;
       }
-      setInceptionEquityV0(v0);
       setInceptionSpyPrice0(spy0);
     } catch {
       setSpyPerf(null);
       setPerfBySymbol({});
       setYieldBySymbol({});
-      setInceptionEquityV0(null);
       setInceptionSpyPrice0(null);
     } finally {
       setOverviewReady(true);
@@ -225,36 +201,30 @@ function PortfolioOverviewCardsInner({
     });
   }, [holdings, perfBySymbol, period]);
 
+  /** Lifetime simple return on total equity cost basis — aligns with headline profit $ vs other apps. */
+  const lifetimeReturnPct = useMemo(
+    () => lifetimeEquityProfitPct(holdings, transactions),
+    [holdings, transactions],
+  );
+
   const inceptionBenchmarkMetrics = useMemo(() => {
-    if (
-      inceptionEquityV0 == null ||
-      inceptionEquityV0 <= 0 ||
-      inceptionSpyPrice0 == null ||
-      inceptionSpyPrice0 <= 0
-    ) {
-      return { rPort: null as number | null, rSpy: null as number | null, diff: null as number | null };
+    const rPort = lifetimeReturnPct;
+    if (inceptionSpyPrice0 == null || inceptionSpyPrice0 <= 0) {
+      return { rPort, rSpy: null as number | null, diff: null as number | null };
     }
     const spyNow = spyPerf?.price ?? null;
     if (spyNow == null || !Number.isFinite(spyNow) || spyNow <= 0) {
-      return { rPort: null, rSpy: null, diff: null };
+      return { rPort, rSpy: null, diff: null };
     }
-
-    const rPort = modifiedDietzReturnPct(inceptionEquityV0, netWorth, netFlowAfterInception);
     const rSpy = ((spyNow / inceptionSpyPrice0) - 1) * 100;
     if (!Number.isFinite(rSpy)) {
       return { rPort, rSpy: null, diff: null };
     }
     if (rPort == null || !Number.isFinite(rPort)) {
-      return { rPort: null, rSpy, diff: null };
+      return { rPort, rSpy, diff: null };
     }
     return { rPort, rSpy, diff: rPort - rSpy };
-  }, [
-    inceptionEquityV0,
-    inceptionSpyPrice0,
-    netWorth,
-    netFlowAfterInception,
-    spyPerf?.price,
-  ]);
+  }, [lifetimeReturnPct, inceptionSpyPrice0, spyPerf?.price]);
 
   const profitDisplayUsd = useMemo(() => {
     if (period === "all") return profitAllUsd;
@@ -309,10 +279,10 @@ function PortfolioOverviewCardsInner({
       return;
     }
     setAthSnapshot({
-      marketReady: overviewReady,
-      athReturnPct: overviewReady ? inceptionBenchmarkMetrics.rPort : null,
+      marketReady: true,
+      athReturnPct: lifetimeReturnPct,
     });
-  }, [symbols.length, overviewReady, inceptionBenchmarkMetrics.rPort, setAthSnapshot]);
+  }, [symbols.length, lifetimeReturnPct, setAthSnapshot]);
 
   return (
     <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">

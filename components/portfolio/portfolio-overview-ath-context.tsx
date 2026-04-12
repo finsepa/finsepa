@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from "react";
 
-/** Mirrors Total profit card (period All) — ATH % from Modified Dietz + SPY gate; null when unavailable. */
+/** Mirrors Total profit card (period All) — lifetime return % on total equity cost basis; null when unavailable. */
 export type PortfolioOverviewAthSnapshot = {
   /** False while overview-market fetch is in flight (holdings non-empty). */
   marketReady: boolean;

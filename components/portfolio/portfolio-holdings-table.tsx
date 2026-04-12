@@ -12,12 +12,7 @@ import { RemoveAssetModal } from "@/components/portfolio/remove-asset-modal";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import { portfolioHoldingAssetHref } from "@/lib/crypto/crypto-picker-universe";
 import { portfolioAssetSymbolCaption } from "@/lib/portfolio/custom-asset-symbol";
-import {
-  netCashUsd,
-  totalCostBasisInvested,
-  unrealizedProfitPct,
-  unrealizedProfitUsd,
-} from "@/lib/portfolio/overview-metrics";
+import { netCashUsd, unrealizedProfitPct, unrealizedProfitUsd } from "@/lib/portfolio/overview-metrics";
 import { formatPortfolioUsdPerUnit } from "@/lib/portfolio/format-portfolio-usd-unit";
 import { cn } from "@/lib/utils";
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
@@ -35,11 +30,15 @@ const pct = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
-/** Position size (coins/shares); trim trailing zeros while keeping precision for small holdings. */
-const sharesFmt = new Intl.NumberFormat("en-US", {
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 8,
-});
+/** Position size — truncate to 2 decimal places (not round); always show two fractional digits. */
+function formatSharesDisplay(n: number): string {
+  if (!Number.isFinite(n)) return "";
+  const truncated = Math.trunc(n * 100) / 100;
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(truncated);
+}
 
 function formatSignedUsd(n: number): string {
   const s = usd0.format(Math.abs(n));
@@ -109,10 +108,9 @@ function PortfolioHoldingsTableInner({
   const cashUsd = netCashUsd(transactions);
   const equityValue = holdings.reduce((s, h) => s + h.currentValue, 0);
   const netWorth = equityValue + cashUsd;
-  const totalEquityCost = totalCostBasisInvested(holdings);
   /** Same dollar as Total profit card (period All). */
   const portfolioReturnUsd = unrealizedProfitUsd(holdings);
-  /** Same % as Total profit card ATH line (Modified Dietz), when overview has published it. */
+  /** Same % as Total profit card ATH line (lifetime return on total cost basis), when overview has published it. */
   const athSnap = usePortfolioOverviewAthReader();
   const portfolioReturnPct =
     athSnap == null
@@ -146,17 +144,15 @@ function PortfolioHoldingsTableInner({
           className,
         )}
       >
-      <table className="w-full min-w-[1040px] border-collapse">
+      <table className="w-full min-w-[920px] border-collapse">
         <thead>
           <tr className="min-h-[44px] border-b border-[#E4E4E7] bg-white text-[14px] font-medium leading-5 text-[#71717A]">
             <th className="whitespace-nowrap px-4 py-3 text-left">Asset</th>
-            <th className="whitespace-nowrap px-4 py-3 text-center">Average price</th>
-            <th className="whitespace-nowrap px-4 py-3 text-center">No. of Shares</th>
-            <th className="whitespace-nowrap px-4 py-3 text-center">Cost basis</th>
-            <th className="whitespace-nowrap px-4 py-3 text-center">Current value</th>
-            <th className="whitespace-nowrap px-4 py-3 text-center">Return % (tot.)</th>
-            <th className="whitespace-nowrap px-4 py-3 text-center">Return (tot.)</th>
-            <th className="whitespace-nowrap px-4 py-3 text-center">Weight</th>
+            <th className="whitespace-nowrap px-4 py-3 text-right">No. of Shares</th>
+            <th className="whitespace-nowrap px-4 py-3 text-right">Current value</th>
+            <th className="whitespace-nowrap px-4 py-3 text-right">Average price</th>
+            <th className="whitespace-nowrap px-4 py-3 text-right">Profit/Loss</th>
+            <th className="whitespace-nowrap px-4 py-3 text-right">Weight</th>
             <th
               className="w-12 px-4 py-3 text-right"
               aria-label={selectedPortfolioReadOnly ? undefined : "Actions"}
@@ -201,16 +197,10 @@ function PortfolioHoldingsTableInner({
                   <div className="flex min-w-0 max-w-full items-center gap-3 rounded-lg py-2 pr-2">{assetInner}</div>
                 )}
               </td>
-              <td className="align-middle whitespace-nowrap px-4 py-3 text-center font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
-                {formatPortfolioUsdPerUnit(h.avgPrice)}
+              <td className="align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
+                {formatSharesDisplay(h.shares)}
               </td>
-              <td className="align-middle whitespace-nowrap px-4 py-3 text-center font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
-                {sharesFmt.format(h.shares)}
-              </td>
-              <td className="align-middle whitespace-nowrap px-4 py-3 text-center font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
-                {usd0.format(h.costBasis)}
-              </td>
-              <td className="align-middle whitespace-nowrap px-4 py-3 text-center">
+              <td className="align-middle whitespace-nowrap px-4 py-3 text-right">
                 <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#09090B]">
                   {usd0.format(h.currentValue)}
                 </div>
@@ -218,21 +208,28 @@ function PortfolioHoldingsTableInner({
                   {formatPortfolioUsdPerUnit(h.marketPrice)}
                 </div>
               </td>
-              <td
-                className={`align-middle whitespace-nowrap px-4 py-3 text-center text-[14px] font-medium leading-5 tabular-nums ${
-                  retPct >= 0 ? "text-[#16A34A]" : "text-[#DC2626]"
-                }`}
-              >
-                {formatSignedPct(retPct)}
+              <td className="align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
+                {formatPortfolioUsdPerUnit(h.avgPrice)}
               </td>
-              <td
-                className={`align-middle whitespace-nowrap px-4 py-3 text-center text-[14px] font-medium leading-5 tabular-nums ${
-                  retUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]"
-                }`}
-              >
-                {formatSignedUsd(retUsd)}
+              <td className="align-middle whitespace-nowrap px-4 py-3 text-right">
+                <div
+                  className={cn(
+                    "font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums",
+                    retUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
+                  )}
+                >
+                  {formatSignedUsd(retUsd)}
+                </div>
+                <div
+                  className={cn(
+                    "text-[12px] font-medium leading-4 tabular-nums",
+                    retPct >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
+                  )}
+                >
+                  {formatSignedPct(retPct)}
+                </div>
               </td>
-              <td className="align-middle whitespace-nowrap px-4 py-3 text-center font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
+              <td className="align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
                 {pct.format(weightPct)}%
               </td>
               <td className="align-middle px-4 py-3 text-right">
@@ -241,7 +238,7 @@ function PortfolioHoldingsTableInner({
                     type="button"
                     disabled={selectedPortfolioId == null}
                     aria-label={`Remove ${h.name} from portfolio`}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[#71717A] transition-colors hover:bg-[#FEF2F2] hover:text-[#DC2626] disabled:pointer-events-none disabled:opacity-40"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] text-[#71717A] transition-colors hover:bg-[#FEF2F2] hover:text-[#DC2626] disabled:pointer-events-none disabled:opacity-40"
                     onClick={() => setRemoveTarget(h)}
                   >
                     <Trash2 className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
@@ -267,28 +264,23 @@ function PortfolioHoldingsTableInner({
                 </div>
               </Link>
             </td>
-            <td className="align-middle whitespace-nowrap px-4 py-3 text-center font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
-              {usd.format(1)}
+            <td className="align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
+              {formatSharesDisplay(cashUsd)}
             </td>
-            <td className="align-middle whitespace-nowrap px-4 py-3 text-center font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
-              {sharesFmt.format(cashUsd)}
-            </td>
-            <td className="align-middle whitespace-nowrap px-4 py-3 text-center font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
-              {usd0.format(cashUsd)}
-            </td>
-            <td className="align-middle whitespace-nowrap px-4 py-3 text-center">
+            <td className="align-middle whitespace-nowrap px-4 py-3 text-right">
               <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#09090B]">
                 {usd0.format(cashUsd)}
               </div>
               <div className="text-[12px] font-normal leading-4 tabular-nums text-[#71717A]">{usd.format(1)}</div>
             </td>
-            <td className="align-middle whitespace-nowrap px-4 py-3 text-center text-[14px] font-medium tabular-nums text-[#71717A]">
-              {EM_DASH}
+            <td className="align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
+              {usd.format(1)}
             </td>
-            <td className="align-middle whitespace-nowrap px-4 py-3 text-center text-[14px] font-medium tabular-nums text-[#71717A]">
-              {EM_DASH}
+            <td className="align-middle whitespace-nowrap px-4 py-3 text-right">
+              <div className="text-[14px] font-medium tabular-nums text-[#71717A]">{EM_DASH}</div>
+              <div className="text-[12px] font-medium tabular-nums text-[#71717A]">{EM_DASH}</div>
             </td>
-            <td className="align-middle whitespace-nowrap px-4 py-3 text-center font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
+            <td className="align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
               {pct.format(cashWeightPct)}%
             </td>
             <td className="align-middle px-4 py-3 text-right" aria-hidden />
@@ -298,37 +290,36 @@ function PortfolioHoldingsTableInner({
             <td className="align-middle px-4 py-3 text-left">
               <span className="text-[14px] font-semibold leading-5 text-[#09090B]">Total</span>
             </td>
-            <td className="align-middle whitespace-nowrap px-4 py-3 text-center text-[14px] font-medium tabular-nums text-[#71717A]">
+            <td className="align-middle whitespace-nowrap px-4 py-3 text-right text-[14px] font-medium tabular-nums text-[#71717A]">
               {EM_DASH}
             </td>
-            <td className="align-middle whitespace-nowrap px-4 py-3 text-center text-[14px] font-medium tabular-nums text-[#71717A]">
-              {EM_DASH}
-            </td>
-            <td className="align-middle whitespace-nowrap px-4 py-3 text-center font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#09090B]">
-              {usd0.format(totalEquityCost)}
-            </td>
-            <td className="align-middle whitespace-nowrap px-4 py-3 text-center font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#09090B]">
+            <td className="align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#09090B]">
               {usd0.format(netWorth)}
             </td>
-            <td
-              className={cn(
-                "align-middle whitespace-nowrap px-4 py-3 text-center text-[14px] font-semibold leading-5 tabular-nums",
-                portfolioReturnPct == null ? "text-[#71717A]"
-                : portfolioReturnPct >= 0 ? "text-[#16A34A]"
-                : "text-[#DC2626]",
-              )}
-            >
-              {portfolioReturnPct != null ? formatSignedPct(portfolioReturnPct) : EM_DASH}
+            <td className="align-middle whitespace-nowrap px-4 py-3 text-right text-[14px] font-medium tabular-nums text-[#71717A]">
+              {EM_DASH}
             </td>
-            <td
-              className={cn(
-                "align-middle whitespace-nowrap px-4 py-3 text-center text-[14px] font-semibold leading-5 tabular-nums",
-                portfolioReturnUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
-              )}
-            >
-              {formatSignedUsd(portfolioReturnUsd)}
+            <td className="align-middle whitespace-nowrap px-4 py-3 text-right">
+              <div
+                className={cn(
+                  "font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums",
+                  portfolioReturnUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
+                )}
+              >
+                {formatSignedUsd(portfolioReturnUsd)}
+              </div>
+              <div
+                className={cn(
+                  "text-[12px] font-semibold leading-4 tabular-nums",
+                  portfolioReturnPct == null ? "text-[#71717A]"
+                  : portfolioReturnPct >= 0 ? "text-[#16A34A]"
+                  : "text-[#DC2626]",
+                )}
+              >
+                {portfolioReturnPct != null ? formatSignedPct(portfolioReturnPct) : EM_DASH}
+              </div>
             </td>
-            <td className="align-middle whitespace-nowrap px-4 py-3 text-center font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#09090B]">
+            <td className="align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#09090B]">
               100%
             </td>
             <td className="align-middle px-4 py-3 text-right" aria-hidden />

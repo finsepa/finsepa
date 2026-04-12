@@ -116,9 +116,9 @@ function SidebarSection({
   collapsed: boolean;
 }) {
   return (
-    <div>
+    <div className={cn(!collapsed && "px-2")}>
       {!collapsed ? (
-        <p className="mb-1.5 px-3 text-sm font-semibold leading-5 text-[#52525B]">{title}</p>
+        <p className="mb-1.5 text-sm font-semibold leading-5 text-[#52525B]">{title}</p>
       ) : null}
       <div className="space-y-0.5">
         {items.map((item) => (

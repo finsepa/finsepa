@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { cryptoRouteBase } from "@/lib/crypto/crypto-symbol-base";
 import { isSupportedCryptoAssetSymbol } from "@/lib/crypto/crypto-logo-url";
+import { fetchEodhdCryptoOpenPriceOnOrBefore } from "@/lib/market/eodhd-crypto";
 import { fetchEodhdOpenPriceOnOrBefore } from "@/lib/market/eodhd-eod";
 import { fetchEodhdKeyStatsDividends } from "@/lib/market/eodhd-key-stats-dividends";
 import { getCryptoPerformance } from "@/lib/market/crypto-performance";
@@ -95,7 +96,13 @@ export async function POST(request: Request) {
         Promise.all(
           inceptionPriceTickers.map(async (t) => {
             try {
-              const r = await fetchEodhdOpenPriceOnOrBefore(t, inceptionYmd);
+              const ymd = inceptionYmd;
+              const routeKey = cryptoRouteBase(t);
+              if (isSupportedCryptoAssetSymbol(routeKey)) {
+                const r = await fetchEodhdCryptoOpenPriceOnOrBefore(routeKey, ymd);
+                return [t, r?.price ?? null] as const;
+              }
+              const r = await fetchEodhdOpenPriceOnOrBefore(t, ymd);
               return [t, r?.price ?? null] as const;
             } catch {
               return [t, null] as const;
