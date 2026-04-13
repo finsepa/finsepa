@@ -44,8 +44,9 @@ export function companyLogoUrlFromDomain(domain: string): string {
 }
 
 /**
- * Domain proxy first, then ticker proxy, then Google favicon (no Logo.dev).
+ * Ticker proxy first (Logo.dev’s listed-equity artwork — matches page-2 screener rows), then domain proxy,
+ * then Google favicon. Domain-first caused stale/generic marks for the fixed Top 10 vs the rest of the table.
  */
 export function companyLogoUrlForTicker(ticker: string, domain: string): string {
-  return logoDevDomainLogoUrl(domain) ?? logoDevStockLogoUrl(ticker) ?? companyLogoUrlFromDomain(domain);
+  return logoDevStockLogoUrl(ticker) ?? logoDevDomainLogoUrl(domain) ?? companyLogoUrlFromDomain(domain);
 }

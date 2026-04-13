@@ -56,6 +56,6 @@ async function fetchLogoUpstreamUncached(
  */
 export const getCachedLogoFromUpstream = unstable_cache(
   async (kind: LogoProxyKind, normId: string) => fetchLogoUpstreamUncached(kind, normId),
-  ["finsepa-logo-proxy-upstream-v1"],
+  ["finsepa-logo-proxy-upstream-v2"],
   { revalidate: 604800 },
 );

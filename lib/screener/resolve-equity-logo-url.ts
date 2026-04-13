@@ -2,7 +2,7 @@ import { companyLogoUrlForTicker, logoDevStockLogoUrl } from "@/lib/screener/com
 import { isTop10Ticker, TOP10_META } from "@/lib/screener/top10-config";
 
 /**
- * Deterministic equity logo URL (Logo.dev domain for top 10, else ticker CDN / fallbacks).
+ * Deterministic equity logo URL via {@link companyLogoUrlForTicker} (ticker-first Logo.dev) or ticker-only proxy.
  * No network I/O — safe on client or server.
  */
 export function resolveEquityLogoUrlFromTicker(ticker: string): string {
