@@ -60,6 +60,17 @@ export function isSupportedCryptoAssetSymbol(symbol: string): boolean {
 }
 
 /**
+ * Host for Google favicon fallback when `/api/media/logo` cannot use Logo.dev (missing key, budget, etc.).
+ * Must match {@link getCryptoLogoUrl} domain logic — never use `{symbol}.com` (e.g. btc.com is wrong for Bitcoin).
+ */
+export function googleFaviconHostForCryptoSymbol(symbol: string): string {
+  const u = cryptoRouteBase(symbol.trim().toUpperCase());
+  const domain = DOMAIN_BY_SYMBOL[u];
+  if (domain) return domain;
+  return `${u.toLowerCase()}.org`;
+}
+
+/**
  * Logo.dev crypto CDN when configured; otherwise deterministic favicon domains / generic fallback.
  */
 export function getCryptoLogoUrl(symbol: string): string {

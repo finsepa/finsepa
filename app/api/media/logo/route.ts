@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { googleFaviconHostForCryptoSymbol } from "@/lib/crypto/crypto-logo-url";
 import { getCachedLogoFromUpstream, type LogoProxyKind } from "@/lib/media/logo-proxy-upstream";
 
 export const runtime = "nodejs";
@@ -18,7 +19,11 @@ function googleFaviconFallback(kind: LogoProxyKind, raw: string): string {
     const host = t.toLowerCase().replace(/^www\./, "");
     return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=128`;
   }
-  if ((kind === "stock" || kind === "crypto") && t) {
+  if (kind === "crypto" && t) {
+    const host = googleFaviconHostForCryptoSymbol(t);
+    return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=128`;
+  }
+  if (kind === "stock" && t) {
     return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(`${t.toLowerCase()}.com`)}&sz=128`;
   }
   return "https://www.google.com/s2/favicons?domain=example.com&sz=128";
