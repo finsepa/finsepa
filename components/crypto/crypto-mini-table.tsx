@@ -9,12 +9,12 @@ import type { StockPerformance } from "@/lib/market/stock-performance-types";
 
 function PerfCellMaybe({ value }: { value: number | null }) {
   if (value == null || !Number.isFinite(value)) {
-    return <td className="px-3 py-3 text-center text-[14px] leading-5 tabular-nums text-[#71717A]">—</td>;
+    return <td className="min-w-[60px] px-3 py-3 text-right text-[14px] leading-5 tabular-nums text-[#71717A]">—</td>;
   }
   const isPositive = value >= 0;
   return (
     <td
-      className={`px-3 py-3 text-center text-[14px] leading-5 tabular-nums ${
+      className={`min-w-[60px] px-3 py-3 text-right text-[14px] leading-5 tabular-nums ${
         isPositive ? "text-[#16A34A]" : "text-[#DC2626]"
       }`}
     >
@@ -94,7 +94,10 @@ export function CryptoMiniTable({
               </div>
             </th>
             {["Price", "1D", "5D", "1M", "6M", "YTD", "1Y", "5Y", "ALL"].map((h) => (
-              <th key={h} className="min-w-[60px] px-3 py-2.5 text-center text-[14px] font-semibold text-[#71717A]">
+              <th
+                key={h}
+                className="min-w-[60px] px-3 py-2.5 text-right text-[14px] font-semibold text-[#71717A]"
+              >
                 {h}
               </th>
             ))}
@@ -102,8 +105,8 @@ export function CryptoMiniTable({
         </thead>
         <tbody>
           <tr className="border-b border-[#E4E4E7]">
-            <td className="px-3 py-3">
-              <div className="flex items-center gap-3">
+            <td className="px-3 py-3 text-left align-middle">
+              <div className="flex items-center justify-start gap-3 text-left">
                 <CompanyLogo name={displayName} logoUrl={logoUrl} symbol={sym} />
                 <div>
                   <div className="text-[14px] font-semibold leading-5 text-[#09090B]">{displayName}</div>
@@ -111,7 +114,7 @@ export function CryptoMiniTable({
                 </div>
               </div>
             </td>
-            <td className="px-3 py-3 text-center text-[14px] leading-5 tabular-nums text-[#09090B]">
+            <td className="min-w-[60px] px-3 py-3 text-right text-[14px] leading-5 tabular-nums text-[#09090B]">
               {loading || row?.price == null || !Number.isFinite(row.price) ? "—" : formatCryptoPrice(row.price)}
             </td>
             <PerfCellMaybe value={row?.d1 ?? null} />

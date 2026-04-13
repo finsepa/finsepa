@@ -32,6 +32,8 @@ export function TransactionRowActionsMenu({
 
   useLayoutEffect(() => {
     if (!isOpen || !btnRef.current) {
+      // Menu portal must clear coords in the layout phase (before paint); deferring breaks under Strict Mode.
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional layout-phase sync for portal position
       setCoords(null);
       return;
     }
@@ -39,6 +41,7 @@ export function TransactionRowActionsMenu({
     const menuWidth = 152;
     const left =
       align === "end" ? Math.max(8, r.right - menuWidth) : Math.min(r.left, window.innerWidth - menuWidth - 8);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional layout-phase sync for portal position
     setCoords({ top: r.bottom + 6, left });
   }, [isOpen, align]);
 

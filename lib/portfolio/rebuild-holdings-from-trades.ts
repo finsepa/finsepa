@@ -1,5 +1,6 @@
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 import { newHoldingId } from "@/components/portfolio/portfolio-types";
+import { applyStockSplitToHolding } from "@/lib/portfolio/apply-stock-split-to-holding";
 import { fetchLiveMarketPriceClient } from "@/lib/portfolio/client-symbol-quotes";
 import { mergeBuyIntoPosition, type BuyLot } from "@/lib/portfolio/holding-position";
 
@@ -35,7 +36,7 @@ export function replayTradeTransactionsToHoldingsUpTo(
     .filter((t) => t.kind === "trade" && t.date <= asOfYmd)
     .sort((a, b) => {
       if (a.date !== b.date) return a.date.localeCompare(b.date);
-      return a.id.localeCompare(b.id);
+      return 0;
     });
 
   const bySymbol = new Map<string, PortfolioHolding>();
@@ -59,6 +60,10 @@ export function replayTradeTransactionsToHoldingsUpTo(
       };
       const merged = mergeBuyIntoPosition(existing, lot);
       bySymbol.set(sym, merged);
+    } else if (op === "split") {
+      if (!existing) continue;
+      const next = applyStockSplitToHolding(existing, t.price);
+      if (next) bySymbol.set(sym, next);
     } else if (op === "sell") {
       if (!existing) continue;
       const next = applySellToHolding(existing, t.shares);
@@ -75,7 +80,7 @@ export function replayTradeTransactionsToHoldings(transactions: PortfolioTransac
     .filter((t) => t.kind === "trade")
     .sort((a, b) => {
       if (a.date !== b.date) return a.date.localeCompare(b.date);
-      return a.id.localeCompare(b.id);
+      return 0;
     });
 
   const bySymbol = new Map<string, PortfolioHolding>();
@@ -99,6 +104,10 @@ export function replayTradeTransactionsToHoldings(transactions: PortfolioTransac
       };
       const merged = mergeBuyIntoPosition(existing, lot);
       bySymbol.set(sym, merged);
+    } else if (op === "split") {
+      if (!existing) continue;
+      const next = applyStockSplitToHolding(existing, t.price);
+      if (next) bySymbol.set(sym, next);
     } else if (op === "sell") {
       if (!existing) continue;
       const next = applySellToHolding(existing, t.shares);

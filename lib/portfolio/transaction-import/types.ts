@@ -4,7 +4,11 @@ export type ImportOperationLabel =
   | "Other income"
   | "Other expense"
   | "Buy"
-  | "Sell";
+  | "Sell"
+  /** Snowball / broker: cash from dividend; `shares` on draft = total USD received. */
+  | "Dividend"
+  /** Stock split / consolidation; `price` = ratio (new shares per 1 old share). */
+  | "Split";
 
 export type ImportFieldKey = "asset" | "operation" | "date" | "price" | "shares" | "fee" | "total";
 

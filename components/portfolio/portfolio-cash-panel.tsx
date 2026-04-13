@@ -61,7 +61,7 @@ const cashBalanceGrid =
   "grid grid-cols-[minmax(0,1fr)_minmax(0,auto)] items-center gap-x-2";
 
 const cashTxGrid =
-  "grid grid-cols-[minmax(0,100px)_minmax(0,2fr)_88px_72px_96px_minmax(0,1fr)_40px] items-center gap-x-2";
+  "grid grid-cols-[minmax(0,100px)_minmax(0,2fr)_88px_72px_96px_40px] items-center gap-x-2";
 
 function rowMatchesCashFilter(t: PortfolioTransaction, f: CashDirectionFilter): boolean {
   if (f === "all") return true;
@@ -131,13 +131,19 @@ function PortfolioCashPanelInner() {
   }, [cashLedgerRows, cashDirectionFilter, cashSearch, cashDateAsc]);
 
   useEffect(() => {
-    setCashPage(1);
+    const id = requestAnimationFrame(() => {
+      setCashPage(1);
+    });
+    return () => cancelAnimationFrame(id);
   }, [cashDirectionFilter, cashSearch]);
 
   const cashPageCount = useMemo(() => tablePageCount(filteredCashRows.length), [filteredCashRows.length]);
 
   useEffect(() => {
-    setCashPage((p) => Math.min(p, cashPageCount));
+    const id = requestAnimationFrame(() => {
+      setCashPage((p) => Math.min(p, cashPageCount));
+    });
+    return () => cancelAnimationFrame(id);
   }, [cashPageCount]);
 
   const safeCashPage = Math.min(Math.max(1, cashPage), cashPageCount);
@@ -271,20 +277,20 @@ function PortfolioCashPanelInner() {
         ) : (
           <div className="w-full min-w-0">
             <div className="overflow-x-auto pb-4">
-              <div className="min-w-[720px] divide-y divide-[#E4E4E7] border-t border-[#E4E4E7]">
+              <div className="min-w-[640px] divide-y divide-[#E4E4E7] border-t border-[#E4E4E7]">
               <div
                 className={cn(
                   cashTxGrid,
-                  "min-h-[44px] bg-white px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A] [&>div]:text-center",
+                  "min-h-[44px] bg-white px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A]",
                 )}
               >
-                <div className="!text-left">Operation</div>
-                <div className="!text-left">Holding</div>
-                <div>
+                <div className="text-left">Operation</div>
+                <div className="text-left">Holding</div>
+                <div className="text-right">
                   <button
                     type="button"
                     onClick={() => setCashDateAsc((v) => !v)}
-                    className="inline-flex items-center justify-center gap-1 rounded-md transition-colors hover:text-[#09090B] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15"
+                    className="inline-flex items-center gap-1 rounded-md transition-colors hover:text-[#09090B] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15"
                   >
                     Date
                     {cashDateAsc ? (
@@ -294,10 +300,9 @@ function PortfolioCashPanelInner() {
                     )}
                   </button>
                 </div>
-                <div>Fee</div>
-                <div>Summ</div>
-                <div className="!text-left">Note</div>
-                <div className="!text-right">
+                <div className="text-right">Fee</div>
+                <div className="text-right">Summ</div>
+                <div className="text-right">
                   <span className="sr-only">Actions</span>
                 </div>
               </div>
@@ -307,18 +312,18 @@ function PortfolioCashPanelInner() {
                   key={t.id}
                   className={cn(
                     cashTxGrid,
-                    "h-[60px] max-h-[60px] bg-white px-1 transition-colors duration-75 hover:bg-neutral-50 [&>div]:text-center",
+                    "h-[60px] max-h-[60px] bg-white px-1 transition-colors duration-75 hover:bg-neutral-50",
                   )}
                 >
                   <div
                     className={cn(
-                      "min-w-0 !text-left truncate px-3 text-[14px] font-medium leading-5",
+                      "min-w-0 truncate px-3 text-left text-[14px] font-medium leading-5",
                       operationClassName(t.operation),
                     )}
                   >
                     {t.operation}
                   </div>
-                  <div className="min-w-0 !text-left">
+                  <div className="min-w-0 text-left">
                     <div className="flex min-w-0 items-center gap-3 pr-4">
                       <CompanyLogo name={t.name} logoUrl={displayLogoUrlForPortfolioSymbol(t.symbol)} symbol={t.symbol} />
                       <div className="min-w-0">
@@ -329,22 +334,21 @@ function PortfolioCashPanelInner() {
                       </div>
                     </div>
                   </div>
-                  <div className="font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B]">
+                  <div className="text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B]">
                     {format(parseISO(t.date), "MM/dd/yyyy")}
                   </div>
-                  <div className="font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B]">
+                  <div className="text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B]">
                     {t.fee > 0 ? usd0.format(t.fee) : usd0.format(0)}
                   </div>
                   <div
                     className={cn(
-                      "text-[14px] font-medium leading-5 tabular-nums",
+                      "text-right text-[14px] font-medium leading-5 tabular-nums",
                       balanceClassName(t.sum),
                     )}
                   >
                     {formatSignedUsd(t.sum)}
                   </div>
-                  <div className="!text-left truncate px-2 text-[14px] leading-5 text-[#71717A]" />
-                  <div className="!flex !justify-end pr-1">
+                  <div className="flex justify-end pr-1">
                     {!selectedPortfolioReadOnly ? (
                       <TransactionRowActionsMenu
                         transaction={t}

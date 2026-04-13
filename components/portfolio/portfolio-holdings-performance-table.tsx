@@ -62,14 +62,14 @@ function PortfolioHoldingsPerformanceTableInner({ holdings }: { holdings: Portfo
     <div className="w-full overflow-x-auto">
       <table className="w-full min-w-[920px] border-collapse text-sm">
         <thead>
-          <tr className="border-b border-[#E4E4E7] text-left text-[#71717A]">
-            <th className="pb-3 pr-4 font-medium">Company</th>
-            <th className="whitespace-nowrap pb-3 pr-4 font-medium">Total profit</th>
-            <th className="whitespace-nowrap pb-3 pr-4 font-medium">Capital gain</th>
-            <th className="whitespace-nowrap pb-3 pr-4 font-medium">Realized P&amp;L</th>
-            <th className="whitespace-nowrap pb-3 pr-4 font-medium">Dividends</th>
-            <th className="whitespace-nowrap pb-3 pr-4 font-medium">Contribution</th>
-            <th className="whitespace-nowrap pb-3 pr-0 font-medium">Fees paid</th>
+          <tr className="border-b border-[#E4E4E7] text-[#71717A]">
+            <th className="pb-3 pr-4 text-left font-medium">Company</th>
+            <th className="whitespace-nowrap pb-3 pr-4 text-right font-medium">Total profit</th>
+            <th className="whitespace-nowrap pb-3 pr-4 text-right font-medium">Capital gain</th>
+            <th className="whitespace-nowrap pb-3 pr-4 text-right font-medium">Realized P&amp;L</th>
+            <th className="whitespace-nowrap pb-3 pr-4 text-right font-medium">Dividends</th>
+            <th className="whitespace-nowrap pb-3 pr-4 text-right font-medium">Contribution</th>
+            <th className="whitespace-nowrap pb-3 pr-0 text-right font-medium">Fees paid</th>
           </tr>
         </thead>
         <tbody>
@@ -78,8 +78,8 @@ function PortfolioHoldingsPerformanceTableInner({ holdings }: { holdings: Portfo
             const retPct = h.costBasis > 0 ? ((h.currentValue - h.costBasis) / h.costBasis) * 100 : null;
             return (
               <tr key={h.id} className="border-b border-[#E4E4E7]">
-                <td className="py-3 pr-4">
-                  <div className="flex min-w-0 items-center gap-3">
+                <td className="py-3 pr-4 text-left align-middle">
+                  <div className="flex min-w-0 items-center gap-3 text-left">
                     <CompanyLogo
                       name={h.name}
                       logoUrl={displayLogoUrlForPortfolioSymbol(h.symbol)}
@@ -91,7 +91,7 @@ function PortfolioHoldingsPerformanceTableInner({ holdings }: { holdings: Portfo
                     </div>
                   </div>
                 </td>
-                <td className="whitespace-nowrap py-3 pr-4">
+                <td className="whitespace-nowrap py-3 pr-4 text-right align-middle">
                   <div
                     className={cn(
                       "font-medium tabular-nums",
@@ -113,13 +113,18 @@ function PortfolioHoldingsPerformanceTableInner({ holdings }: { holdings: Portfo
                     <div className="text-xs text-[#A1A1AA]">{EM_DASH}</div>
                   )}
                 </td>
-                <td className={cn("whitespace-nowrap py-3 pr-4 font-medium tabular-nums", retUsd >= 0 ? "text-emerald-600" : "text-red-600")}>
+                <td
+                  className={cn(
+                    "whitespace-nowrap py-3 pr-4 text-right font-medium tabular-nums align-middle",
+                    retUsd >= 0 ? "text-emerald-600" : "text-red-600",
+                  )}
+                >
                   {formatSignedUsd(retUsd)}
                 </td>
-                <td className="py-3 pr-4 text-[#71717A]">{EM_DASH}</td>
-                <td className="py-3 pr-4 text-[#71717A]">{EM_DASH}</td>
-                <td className="py-3 pr-4 text-[#71717A]">{EM_DASH}</td>
-                <td className="py-3 pr-0 text-[#71717A]">{EM_DASH}</td>
+                <td className="py-3 pr-4 text-right tabular-nums text-[#71717A] align-middle">{EM_DASH}</td>
+                <td className="py-3 pr-4 text-right tabular-nums text-[#71717A] align-middle">{EM_DASH}</td>
+                <td className="py-3 pr-4 text-right tabular-nums text-[#71717A] align-middle">{EM_DASH}</td>
+                <td className="py-3 pr-0 text-right tabular-nums text-[#71717A] align-middle">{EM_DASH}</td>
               </tr>
             );
           })}

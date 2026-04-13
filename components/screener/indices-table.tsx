@@ -27,12 +27,18 @@ function formatPercent(v: number | null): string {
 }
 
 function ChangeCell({ value }: { value: number | null }) {
-  if (value == null || !Number.isFinite(value)) return <span className="block text-center text-[14px] leading-5 font-medium text-[#71717A]">-</span>;
+  if (value == null || !Number.isFinite(value)) {
+    return <div className="min-w-0 w-full text-right text-[14px] leading-5 font-medium text-[#71717A]">-</div>;
+  }
   const positive = value >= 0;
   return (
-    <span className={`block text-center tabular-nums text-[14px] leading-5 font-medium ${positive ? "text-[#16A34A]" : "text-[#DC2626]"}`}>
+    <div
+      className={`min-w-0 w-full text-right tabular-nums text-[14px] leading-5 font-medium ${
+        positive ? "text-[#16A34A]" : "text-[#DC2626]"
+      }`}
+    >
       {formatPercent(value)}
-    </span>
+    </div>
   );
 }
 
@@ -51,14 +57,14 @@ export function IndicesTable({ initialRows }: { initialRows?: IndexRow[] }) {
   return (
     <div className="divide-y divide-[#E4E4E7] border-t border-b border-[#E4E4E7]">
       <div
-        className={`grid ${colLayout} min-h-[44px] items-center bg-white px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A] [&>div]:text-center`}
+        className={`grid ${colLayout} min-h-[44px] items-center bg-white px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A]`}
       >
         <div />
-        <div className="!text-left">Index</div>
-        <div>Value</div>
-        <div>1D %</div>
-        <div>1M %</div>
-        <div>YTD %</div>
+        <div className="min-w-0 w-full text-left">Index</div>
+        <div className="min-w-0 w-full text-right">Value</div>
+        <div className="min-w-0 w-full text-right">1D %</div>
+        <div className="min-w-0 w-full text-right">1M %</div>
+        <div className="min-w-0 w-full text-right">YTD %</div>
       </div>
 
       {safeRows.map((r) => {
@@ -66,7 +72,7 @@ export function IndicesTable({ initialRows }: { initialRows?: IndexRow[] }) {
         return (
           <div
             key={r.symbol}
-            className={`group grid h-[60px] max-h-[60px] ${colLayout} items-center bg-white px-1 transition-colors duration-75 hover:bg-neutral-50`}
+            className={`group grid h-[60px] max-h-[60px] ${colLayout} items-center bg-white px-4 transition-colors duration-75 hover:bg-neutral-50`}
           >
             <WatchlistStarToggle
               className="flex w-10 shrink-0 items-center justify-center px-3"
@@ -76,8 +82,10 @@ export function IndicesTable({ initialRows }: { initialRows?: IndexRow[] }) {
               loaded={loaded}
               toggleTicker={toggleTicker}
             />
-            <div className="px-4 text-left text-[14px] font-semibold leading-5 text-[#09090B]">{r.name}</div>
-            <div className="text-center font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B]">{formatValue(r.value)}</div>
+            <div className="min-w-0 w-full px-4 text-left text-[14px] font-semibold leading-5 text-[#09090B]">{r.name}</div>
+            <div className="min-w-0 w-full text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B]">
+              {formatValue(r.value)}
+            </div>
             <ChangeCell value={r.change1D} />
             <ChangeCell value={r.change1M} />
             <ChangeCell value={r.changeYTD} />

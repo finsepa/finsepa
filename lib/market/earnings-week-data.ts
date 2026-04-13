@@ -17,6 +17,7 @@ import type {
 import { logoUrlFromFundamentalsRoot } from "@/lib/market/stock-logo-url";
 import { pickScreenerPage2Tickers, SCREENER_PAGE2_TICKER_COUNT } from "@/lib/screener/pick-screener-page2-tickers";
 import { getScreenerCompaniesStaticLayer } from "@/lib/screener/screener-companies-layers";
+import { resolveEquityLogoUrlFromListingTicker } from "@/lib/screener/resolve-equity-logo-url";
 import { TOP10_META, TOP10_TICKERS, type Top10Ticker } from "@/lib/screener/top10-config";
 import { runWithConcurrencyLimit } from "@/lib/utils/run-with-concurrency-limit";
 
@@ -254,7 +255,7 @@ type PreparedEarning = {
   fallbackName: string | null;
 };
 
-/** Fast path: calendar name + cached universe row — logos empty (UI shows placeholder when missing). */
+/** Fast path: calendar name + cached universe row — logos match screener (Logo.dev / top-10 domains). */
 function fundamentalsBundleFastPath(
   p: PreparedEarning,
   universeByKey: Map<string, { name: string; marketCapUsd: number }>,
@@ -264,7 +265,7 @@ function fundamentalsBundleFastPath(
   return {
     marketCapUsd: row?.marketCapUsd ?? null,
     name: p.fallbackName ?? row?.name ?? p.ticker,
-    logoUrl: "",
+    logoUrl: resolveEquityLogoUrlFromListingTicker(p.ticker),
   };
 }
 
@@ -501,7 +502,9 @@ async function buildEarningsWeekPayloadUncached(
     if (bundleByTicker.has(p.ticker)) continue;
     if (strictMc) {
       const root = fundamentalsRootByTicker!.get(p.ticker) ?? null;
-      bundleByTicker.set(p.ticker, fundamentalsBundleFromRoot(p.ticker, root));
+      const b = fundamentalsBundleFromRoot(p.ticker, root);
+      if (!b.logoUrl.trim()) b.logoUrl = resolveEquityLogoUrlFromListingTicker(p.ticker);
+      bundleByTicker.set(p.ticker, b);
     } else {
       bundleByTicker.set(p.ticker, fundamentalsBundleFastPath(p, universeByKey));
     }
@@ -564,7 +567,7 @@ const getEarningsWeekPayloadCached = unstable_cache(
     const monday = Number.isFinite(t) ? mondayOfWeekUtc(new Date(t)) : mondayOfWeekUtc(new Date());
     return buildEarningsWeekPayloadUncached(monday, mode === "fund");
   },
-  ["earnings-week-v14-screener-all-per-day"],
+  ["earnings-week-v15-screener-logos-listing-ticker"],
   { revalidate: REVALIDATE_WARM_LONG },
 );
 

@@ -11,7 +11,10 @@ import { usePortfolioOverviewAthReader } from "@/components/portfolio/portfolio-
 import { RemoveAssetModal } from "@/components/portfolio/remove-asset-modal";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import { portfolioHoldingAssetHref } from "@/lib/crypto/crypto-picker-universe";
-import { portfolioAssetSymbolCaption } from "@/lib/portfolio/custom-asset-symbol";
+import {
+  portfolioAssetSymbolCaption,
+  portfolioSharesUnitTicker,
+} from "@/lib/portfolio/custom-asset-symbol";
 import { netCashUsd, unrealizedProfitPct, unrealizedProfitUsd } from "@/lib/portfolio/overview-metrics";
 import { formatPortfolioUsdPerUnit } from "@/lib/portfolio/format-portfolio-usd-unit";
 import { cn } from "@/lib/utils";
@@ -19,7 +22,6 @@ import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfo
 
 const EM_DASH = "\u2014";
 
-const usd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
 const usd0 = new Intl.NumberFormat("en-US", {
   style: "currency",
   currency: "USD",
@@ -38,6 +40,12 @@ function formatSharesDisplay(n: number): string {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(truncated);
+}
+
+function formatSharesWithUnit(shares: number, symbol: string): string {
+  const qty = formatSharesDisplay(shares);
+  const unit = portfolioSharesUnitTicker(symbol);
+  return unit ? `${qty} ${unit}` : qty;
 }
 
 function formatSignedUsd(n: number): string {
@@ -148,9 +156,9 @@ function PortfolioHoldingsTableInner({
         <thead>
           <tr className="min-h-[44px] border-b border-[#E4E4E7] bg-white text-[14px] font-medium leading-5 text-[#71717A]">
             <th className="whitespace-nowrap px-4 py-3 text-left">Asset</th>
-            <th className="whitespace-nowrap px-4 py-3 text-right">No. of Shares</th>
-            <th className="whitespace-nowrap px-4 py-3 text-right">Current value</th>
-            <th className="whitespace-nowrap px-4 py-3 text-right">Average price</th>
+            <th className="whitespace-nowrap px-4 py-3 text-right">Price</th>
+            <th className="whitespace-nowrap px-4 py-3 text-right">Holdings</th>
+            <th className="whitespace-nowrap px-4 py-3 text-right">Avg. Buy Price</th>
             <th className="whitespace-nowrap px-4 py-3 text-right">Profit/Loss</th>
             <th className="whitespace-nowrap px-4 py-3 text-right">Weight</th>
             <th
@@ -198,14 +206,14 @@ function PortfolioHoldingsTableInner({
                 )}
               </td>
               <td className="align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
-                {formatSharesDisplay(h.shares)}
+                {formatPortfolioUsdPerUnit(h.marketPrice)}
               </td>
               <td className="align-middle whitespace-nowrap px-4 py-3 text-right">
                 <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#09090B]">
                   {usd0.format(h.currentValue)}
                 </div>
                 <div className="text-[12px] font-normal leading-4 tabular-nums text-[#71717A]">
-                  {formatPortfolioUsdPerUnit(h.marketPrice)}
+                  {formatSharesWithUnit(h.shares, h.symbol)}
                 </div>
               </td>
               <td className="align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
@@ -265,16 +273,18 @@ function PortfolioHoldingsTableInner({
               </Link>
             </td>
             <td className="align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
-              {formatSharesDisplay(cashUsd)}
+              {formatPortfolioUsdPerUnit(1)}
             </td>
             <td className="align-middle whitespace-nowrap px-4 py-3 text-right">
               <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#09090B]">
                 {usd0.format(cashUsd)}
               </div>
-              <div className="text-[12px] font-normal leading-4 tabular-nums text-[#71717A]">{usd.format(1)}</div>
+              <div className="text-[12px] font-normal leading-4 tabular-nums text-[#71717A]">
+                {formatSharesDisplay(cashUsd)} USD
+              </div>
             </td>
             <td className="align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
-              {usd.format(1)}
+              {formatPortfolioUsdPerUnit(1)}
             </td>
             <td className="align-middle whitespace-nowrap px-4 py-3 text-right">
               <div className="text-[14px] font-medium tabular-nums text-[#71717A]">{EM_DASH}</div>
@@ -286,17 +296,25 @@ function PortfolioHoldingsTableInner({
             <td className="align-middle px-4 py-3 text-right" aria-hidden />
           </tr>
 
-          <tr className="h-[60px] max-h-[60px] border-b border-[#E4E4E7] bg-[#F4F4F5]">
-            <td className="align-middle px-4 py-3 text-left">
-              <span className="text-[14px] font-semibold leading-5 text-[#09090B]">Total</span>
+          <tr className="h-[60px] max-h-[60px] border-b border-[#E4E4E7] bg-white transition-colors duration-75 hover:bg-neutral-50">
+            <td className="align-middle px-4 py-0">
+              <div className="flex min-w-0 max-w-full items-center gap-3 rounded-lg py-2 pr-2">
+                <div className="min-w-0 text-left">
+                  <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">Total</div>
+                  <div className="h-4 text-[12px] font-normal leading-4" aria-hidden />
+                </div>
+              </div>
             </td>
-            <td className="align-middle whitespace-nowrap px-4 py-3 text-right text-[14px] font-medium tabular-nums text-[#71717A]">
+            <td className="align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#71717A]">
               {EM_DASH}
             </td>
-            <td className="align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#09090B]">
-              {usd0.format(netWorth)}
+            <td className="align-middle whitespace-nowrap px-4 py-3 text-right">
+              <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#09090B]">
+                {usd0.format(netWorth)}
+              </div>
+              <div className="text-[12px] font-normal leading-4 tabular-nums text-[#71717A]">{EM_DASH}</div>
             </td>
-            <td className="align-middle whitespace-nowrap px-4 py-3 text-right text-[14px] font-medium tabular-nums text-[#71717A]">
+            <td className="align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#71717A]">
               {EM_DASH}
             </td>
             <td className="align-middle whitespace-nowrap px-4 py-3 text-right">
@@ -310,7 +328,7 @@ function PortfolioHoldingsTableInner({
               </div>
               <div
                 className={cn(
-                  "text-[12px] font-semibold leading-4 tabular-nums",
+                  "text-[12px] font-medium leading-4 tabular-nums",
                   portfolioReturnPct == null ? "text-[#71717A]"
                   : portfolioReturnPct >= 0 ? "text-[#16A34A]"
                   : "text-[#DC2626]",
@@ -319,7 +337,7 @@ function PortfolioHoldingsTableInner({
                 {portfolioReturnPct != null ? formatSignedPct(portfolioReturnPct) : EM_DASH}
               </div>
             </td>
-            <td className="align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#09090B]">
+            <td className="align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
               100%
             </td>
             <td className="align-middle px-4 py-3 text-right" aria-hidden />

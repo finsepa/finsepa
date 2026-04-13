@@ -163,11 +163,17 @@ function AllocationDonut({
   const [dimIndex, setDimIndex] = useState<number | null>(null);
 
   const slices = useMemo(() => {
+    const prefix: number[] = [];
     let cum = 0;
-    return rows.map((row, i) => {
-      const a0 = -Math.PI / 2 + (cum / 100) * 2 * Math.PI;
+    for (const row of rows) {
+      prefix.push(cum);
       cum += row.weightPct;
-      const a1 = -Math.PI / 2 + (cum / 100) * 2 * Math.PI;
+    }
+    return rows.map((row, i) => {
+      const start = prefix[i] ?? 0;
+      const end = start + row.weightPct;
+      const a0 = -Math.PI / 2 + (start / 100) * 2 * Math.PI;
+      const a1 = -Math.PI / 2 + (end / 100) * 2 * Math.PI;
       return { row, i, a0, a1 };
     });
   }, [rows]);

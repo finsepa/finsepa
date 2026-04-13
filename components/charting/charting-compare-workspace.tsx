@@ -883,7 +883,7 @@ export function ChartingCompareWorkspace({ tickers, metricParam, initialByTicker
             </p>
           ) : (
             <>
-              <div className="relative w-full overflow-hidden rounded-xl border border-[#E4E4E7] bg-white">
+              <div className="relative w-full overflow-hidden rounded-xl bg-white">
                 <div ref={wrapRef} className="w-full" style={{ height: chartHeight }} />
                 {hover ? (
                   <>

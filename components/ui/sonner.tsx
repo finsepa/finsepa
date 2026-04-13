@@ -1,11 +1,17 @@
 "use client";
 
 import type { ComponentProps } from "react";
+import { CircleCheck } from "lucide-react";
 import { Toaster as Sonner } from "sonner";
 
 import "sonner/dist/styles.css";
 
 type ToasterProps = ComponentProps<typeof Sonner>;
+
+/** Matches positive P/L green (`text-[#16A34A]`) used across portfolio and markets tables. */
+const successToastIcon = (
+  <CircleCheck className="size-4 shrink-0 text-[#16A34A]" strokeWidth={2} aria-hidden />
+);
 
 /** Sonner — see https://ui.shadcn.com/docs/components/radix/sonner */
 export function Toaster({ ...props }: ToasterProps) {
@@ -13,6 +19,7 @@ export function Toaster({ ...props }: ToasterProps) {
     <Sonner
       theme="light"
       className="toaster group"
+      icons={{ success: successToastIcon }}
       toastOptions={{
         classNames: {
           toast:

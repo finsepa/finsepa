@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { User } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
 import { PATH_LOGIN } from "@/lib/auth/routes";
 import { avatarUrlFromUser, displayNameFromUser, initialsFromUser } from "@/lib/auth/user-display";
@@ -7,10 +8,16 @@ import { PortfolioWorkspaceProvider } from "@/components/portfolio/portfolio-wor
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function ProtectedAppShell({ children }: { children: ReactNode }) {
-  const supabase = await getSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let user: User | null = null;
+  try {
+    const supabase = await getSupabaseServerClient();
+    const {
+      data: { user: u },
+    } = await supabase.auth.getUser();
+    user = u;
+  } catch {
+    redirect(PATH_LOGIN);
+  }
 
   if (!user) {
     redirect(PATH_LOGIN);

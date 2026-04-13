@@ -211,11 +211,14 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
   const cryptoTotalCount = payload.market === "crypto" ? payload.cryptoTotalCount : 0;
 
   useEffect(() => {
-    setCompaniesPage(1);
-    setFetchedCompanyPages({});
-    setGainersLosersRows(null);
-    setCryptoPage(1);
-    setFetchedCryptoPages({});
+    const id = requestAnimationFrame(() => {
+      setCompaniesPage(1);
+      setFetchedCompanyPages({});
+      setGainersLosersRows(null);
+      setCryptoPage(1);
+      setFetchedCryptoPages({});
+    });
+    return () => cancelAnimationFrame(id);
   }, [payload.market]);
 
   const companiesRowsForTable = useMemo(() => {
@@ -237,7 +240,9 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
     if (fetchedCompanyPages[companiesPage] !== undefined) return;
 
     let cancelled = false;
-    setCompaniesRemoteLoading(true);
+    const loadId = requestAnimationFrame(() => {
+      if (!cancelled) setCompaniesRemoteLoading(true);
+    });
     fetch(`/api/screener/companies?page=${companiesPage}&pageSize=10`)
       .then((r) => r.json())
       .then((data: { rows?: ScreenerTableRow[] }) => {
@@ -249,6 +254,7 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
       });
     return () => {
       cancelled = true;
+      cancelAnimationFrame(loadId);
     };
   }, [payload.market, stocksSubTab, companiesPage, fetchedCompanyPages]);
 
@@ -286,7 +292,9 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
     if (fetchedCryptoPages[cryptoPage] !== undefined) return;
 
     let cancelled = false;
-    setCryptoRemoteLoading(true);
+    const loadId = requestAnimationFrame(() => {
+      if (!cancelled) setCryptoRemoteLoading(true);
+    });
     fetch(`/api/screener/crypto-rows?page=${cryptoPage}&pageSize=10`)
       .then((r) => r.json())
       .then((data: { rows?: CryptoTop10Row[] }) => {
@@ -298,6 +306,7 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
       });
     return () => {
       cancelled = true;
+      cancelAnimationFrame(loadId);
     };
   }, [payload.market, cryptoPage, fetchedCryptoPages]);
 

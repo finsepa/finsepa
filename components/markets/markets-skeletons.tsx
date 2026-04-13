@@ -26,14 +26,14 @@ export function IndexCardSkeleton({ name }: { name: string }) {
 
 function StocksRowSkeleton() {
   return (
-    <div className={`grid ${stocksColLayout} h-[60px] max-h-[60px] items-center border-b border-[#E4E4E7] px-1`}>
+    <div className={`grid ${stocksColLayout} h-[60px] max-h-[60px] items-center border-b border-[#E4E4E7] px-4`}>
       <div className="flex w-10 shrink-0 items-center justify-center px-3">
         <SkeletonBox className="h-4 w-4 rounded" />
       </div>
       <div className="flex justify-center">
         <TextSkeleton wClass="w-4" hClass="h-3.5" />
       </div>
-      <div className="flex min-w-0 items-center gap-3 pr-4">
+      <div className="flex min-w-0 items-center justify-start gap-3 pr-4">
         <LogoSkeleton />
         <div className="min-w-0 flex-1 space-y-1.5">
           <TextSkeleton wClass="w-[45%] max-w-[140px]" />
@@ -41,7 +41,7 @@ function StocksRowSkeleton() {
         </div>
       </div>
       {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="flex justify-center">
+        <div key={i} className="flex justify-end">
           <TextSkeleton wClass={i === 4 ? "w-10" : "w-12"} />
         </div>
       ))}
@@ -52,9 +52,14 @@ function StocksRowSkeleton() {
 export function StocksTableSkeleton({ rows = 10 }: { rows?: number }) {
   return (
     <div className="overflow-hidden">
-      <div className={`grid ${stocksColLayout} items-center border-t border-b border-[#E4E4E7] bg-white px-4 py-3 [&>div]:text-center`}>
+      <div className={`grid ${stocksColLayout} items-center border-t border-b border-[#E4E4E7] bg-white px-4 py-3`}>
         {Array.from({ length: 9 }).map((_, i) => (
-          <div key={i} className="flex justify-center">
+          <div
+            key={i}
+            className={`flex ${
+              i === 0 || i === 1 ? "justify-center" : i === 2 ? "justify-start" : "justify-end"
+            }`}
+          >
             <SkeletonBox className="h-3 w-10 rounded" />
           </div>
         ))}
@@ -68,33 +73,33 @@ export function StocksTableSkeleton({ rows = 10 }: { rows?: number }) {
 
 function CryptoRowSkeleton() {
   return (
-    <div className={`group grid h-[60px] max-h-[60px] ${cryptoColLayout} items-center bg-white px-1`}>
+    <div className={`group grid h-[60px] max-h-[60px] ${cryptoColLayout} items-center bg-white px-4`}>
       <div className="flex w-10 shrink-0 items-center justify-center px-3">
         <SkeletonBox className="h-4 w-4 rounded" />
       </div>
       <div className="flex justify-center">
         <TextSkeleton wClass="w-4" hClass="h-3.5" />
       </div>
-      <div className="flex min-w-0 items-center gap-3 pr-4">
+      <div className="flex min-w-0 items-center justify-start gap-3 pr-4">
         <LogoSkeleton />
         <div className="min-w-0 flex-1 space-y-1.5">
           <TextSkeleton wClass="w-[40%] max-w-[160px]" />
           <TextSkeleton wClass="w-10" hClass="h-3" />
         </div>
       </div>
-      <div className="flex justify-center">
+      <div className="flex justify-end">
         <TextSkeleton wClass="w-16" />
       </div>
-      <div className="flex justify-center">
+      <div className="flex justify-end">
         <TextSkeleton wClass="w-12" />
       </div>
-      <div className="flex justify-center">
+      <div className="flex justify-end">
         <TextSkeleton wClass="w-12" />
       </div>
-      <div className="flex justify-center">
+      <div className="flex justify-end">
         <TextSkeleton wClass="w-12" />
       </div>
-      <div className="flex justify-center">
+      <div className="flex justify-end">
         <TextSkeleton wClass="w-14" />
       </div>
     </div>
@@ -105,7 +110,7 @@ export function CryptoTableSkeleton({ rows = 10 }: { rows?: number }) {
   return (
     <div className="divide-y divide-[#E4E4E7] border-t border-b border-[#E4E4E7]">
       <div
-        className={`grid ${cryptoColLayout} min-h-[44px] items-center bg-white px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A] [&>div]:text-center`}
+        className={`grid ${cryptoColLayout} min-h-[44px] items-center bg-white px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A]`}
       >
         <div />
         <div className="flex justify-center">
@@ -114,19 +119,19 @@ export function CryptoTableSkeleton({ rows = 10 }: { rows?: number }) {
         <div className="flex justify-start">
           <SkeletonBox className="h-3 w-16 rounded" />
         </div>
-        <div className="flex justify-center">
+        <div className="flex justify-end">
           <SkeletonBox className="h-3 w-10 rounded" />
         </div>
-        <div className="flex justify-center">
+        <div className="flex justify-end">
           <SkeletonBox className="h-3 w-10 rounded" />
         </div>
-        <div className="flex justify-center">
+        <div className="flex justify-end">
           <SkeletonBox className="h-3 w-10 rounded" />
         </div>
-        <div className="flex justify-center">
+        <div className="flex justify-end">
           <SkeletonBox className="h-3 w-10 rounded" />
         </div>
-        <div className="flex justify-center">
+        <div className="flex justify-end">
           <SkeletonBox className="h-3 w-10 rounded" />
         </div>
       </div>
@@ -139,23 +144,23 @@ export function CryptoTableSkeleton({ rows = 10 }: { rows?: number }) {
 
 function IndicesRowSkeleton() {
   return (
-    <div className={`group grid h-[60px] max-h-[60px] ${indicesColLayout} items-center bg-white px-1`}>
+    <div className={`group grid h-[60px] max-h-[60px] ${indicesColLayout} items-center bg-white px-4`}>
       <div className="flex w-10 shrink-0 items-center justify-center px-3">
         <SkeletonBox className="h-4 w-4 rounded" />
       </div>
-      <div className="px-4">
+      <div className="flex min-w-0 justify-start px-4">
         <TextSkeleton wClass="w-[45%] max-w-[180px]" />
       </div>
-      <div className="flex justify-center">
+      <div className="flex justify-end">
         <TextSkeleton wClass="w-20" />
       </div>
-      <div className="flex justify-center">
+      <div className="flex justify-end">
         <TextSkeleton wClass="w-12" />
       </div>
-      <div className="flex justify-center">
+      <div className="flex justify-end">
         <TextSkeleton wClass="w-12" />
       </div>
-      <div className="flex justify-center">
+      <div className="flex justify-end">
         <TextSkeleton wClass="w-12" />
       </div>
     </div>
@@ -166,22 +171,22 @@ export function IndicesTableSkeleton({ rows = 10 }: { rows?: number }) {
   return (
     <div className="divide-y divide-[#E4E4E7] border-t border-b border-[#E4E4E7]">
       <div
-        className={`grid ${indicesColLayout} min-h-[44px] items-center bg-white px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A] [&>div]:text-center`}
+        className={`grid ${indicesColLayout} min-h-[44px] items-center bg-white px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A]`}
       >
         <div />
         <div className="flex justify-start">
           <SkeletonBox className="h-3 w-12 rounded" />
         </div>
-        <div className="flex justify-center">
+        <div className="flex justify-end">
           <SkeletonBox className="h-3 w-10 rounded" />
         </div>
-        <div className="flex justify-center">
+        <div className="flex justify-end">
           <SkeletonBox className="h-3 w-10 rounded" />
         </div>
-        <div className="flex justify-center">
+        <div className="flex justify-end">
           <SkeletonBox className="h-3 w-10 rounded" />
         </div>
-        <div className="flex justify-center">
+        <div className="flex justify-end">
           <SkeletonBox className="h-3 w-10 rounded" />
         </div>
       </div>

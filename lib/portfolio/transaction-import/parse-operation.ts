@@ -28,6 +28,8 @@ export function parseOperationCell(raw: string, assetUpper: string): ImportOpera
   if (compact === "cashout") return "Cash Out";
   if (compact === "buy") return "Buy";
   if (compact === "sell") return "Sell";
+  if (compact === "dividend") return "Dividend";
+  if (compact === "split") return "Split";
 
   const u = raw.trim().toLowerCase();
 

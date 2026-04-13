@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowUpDown, ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 
 import { eodhdCryptoSpotTickerDisplay } from "@/lib/crypto/eodhd-crypto-ticker-display";
 import { CompanyLogo } from "@/components/screener/company-logo";
@@ -20,12 +20,12 @@ function formatPrice(n: number | null, kind: "stock" | "crypto" | "index"): stri
 
 function ChangeCell({ value }: { value: number | null }) {
   if (value == null || !Number.isFinite(value)) {
-    return <td className="px-4 text-center text-[14px] leading-5 tabular-nums text-[#71717A]">-</td>;
+    return <td className="px-4 text-right text-[14px] leading-5 tabular-nums text-[#71717A]">-</td>;
   }
   const positive = value >= 0;
   return (
     <td
-      className={`px-4 text-center text-[14px] leading-5 tabular-nums font-medium ${
+      className={`px-4 text-right text-[14px] leading-5 tabular-nums font-medium ${
         positive ? "text-[#16A34A]" : "text-[#DC2626]"
       }`}
     >
@@ -48,17 +48,13 @@ function WatchlistTableSkeleton() {
     <table className="w-full border-collapse">
       <thead>
         <tr className="border-t border-b border-[#E4E4E7] bg-white">
-          <th className="py-3 pr-4 text-left">
-            <div className="flex items-center gap-1.5 text-[14px] font-semibold leading-5 text-[#71717A]">
-              Asset <ArrowUpDown className="h-3.5 w-3.5 opacity-40" />
-            </div>
-          </th>
+          <th className="py-3 pr-4 text-left text-[14px] font-semibold leading-5 text-[#71717A]">Asset</th>
           {["Price", "1D %", "1M %", "YTD %", "M.Cap", "PE", "Earnings"].map((h) => (
-            <th key={h} className="px-4 py-3 text-center text-[14px] font-semibold leading-5 text-[#71717A]">
+            <th key={h} className="px-4 py-3 text-right text-[14px] font-semibold leading-5 text-[#71717A]">
               {h}
             </th>
           ))}
-          <th className="w-10 px-4 py-3" />
+          <th className="w-10 px-4 py-3 text-center" aria-label="Remove from watchlist" />
         </tr>
       </thead>
       <tbody>
@@ -74,12 +70,12 @@ function WatchlistTableSkeleton() {
               </div>
             </td>
             {Array.from({ length: 7 }).map((_, j) => (
-              <td key={j} className="px-4">
-                <div className="mx-auto h-4 w-12 animate-pulse rounded bg-neutral-100" />
+              <td key={j} className="px-4 text-right">
+                <div className="ml-auto h-4 w-12 animate-pulse rounded bg-neutral-100" />
               </td>
             ))}
-            <td className="w-10 px-4">
-              <div className="mx-auto h-5 w-5 animate-pulse rounded bg-neutral-100" />
+            <td className="w-10 px-4 text-center">
+              <div className="mx-auto h-5 w-5 max-w-[1.25rem] animate-pulse rounded bg-neutral-100" />
             </td>
           </tr>
         ))}
@@ -122,8 +118,8 @@ function GroupSection({
             key={row.entryId}
             className="group h-[60px] max-h-[60px] cursor-pointer border-b border-[#E4E4E7] transition-colors duration-75 last:border-b-0 hover:bg-neutral-50"
           >
-            <td className="py-0 pr-4">
-              <Link href={row.href} className="flex items-center gap-3">
+            <td className="py-0 pr-4 text-left align-middle">
+              <Link href={row.href} className="flex items-center gap-3 text-left">
                 {row.logoUrl ? (
                   <CompanyLogo name={row.name} logoUrl={row.logoUrl} symbol={row.symbol} />
                 ) : (
@@ -138,7 +134,7 @@ function GroupSection({
               </Link>
             </td>
 
-            <td className="px-4 text-center text-[14px] font-normal tabular-nums leading-5 text-[#09090B]">
+            <td className="px-4 text-right text-[14px] font-normal tabular-nums leading-5 text-[#09090B]">
               {formatPrice(row.price, row.kind)}
             </td>
 
@@ -146,21 +142,23 @@ function GroupSection({
             <ChangeCell value={row.pct1m} />
             <ChangeCell value={row.ytd} />
 
-            <td className="px-4 text-center text-[14px] font-normal tabular-nums leading-5 text-[#09090B]">
+            <td className="px-4 text-right text-[14px] font-normal tabular-nums leading-5 text-[#09090B]">
               {row.mcapDisplay}
             </td>
-            <td className="px-4 text-center text-[14px] font-normal tabular-nums leading-5 text-[#09090B]">
+            <td className="px-4 text-right text-[14px] font-normal tabular-nums leading-5 text-[#09090B]">
               {row.peDisplay}
             </td>
-            <td className="px-4 text-center text-[14px] font-normal leading-5 text-[#09090B]">{row.earningsDisplay}</td>
+            <td className="px-4 text-right text-[14px] font-normal leading-5 text-[#09090B]">{row.earningsDisplay}</td>
 
-            <td className="w-10 px-4">
-              <WatchlistRowRemoveButton
-                className="flex items-center justify-center"
-                storageKey={row.storageKey}
-                label={row.symbol}
-                toggleTicker={toggleTicker}
-              />
+            <td className="w-10 px-4 align-middle">
+              <div className="flex justify-center">
+                <WatchlistRowRemoveButton
+                  className="flex items-center justify-center"
+                  storageKey={row.storageKey}
+                  label={row.symbol}
+                  toggleTicker={toggleTicker}
+                />
+              </div>
             </td>
           </tr>
         ))}
@@ -320,17 +318,13 @@ export function WatchlistTable() {
         <table className="w-full border-collapse">
           <thead>
             <tr className="border-t border-b border-[#E4E4E7] bg-white">
-              <th className="py-3 pr-4 text-left">
-                <div className="flex items-center gap-1.5 text-[14px] font-semibold leading-5 text-[#71717A]">
-                  Asset <ArrowUpDown className="h-3.5 w-3.5" />
-                </div>
-              </th>
+              <th className="py-3 pr-4 text-left text-[14px] font-semibold leading-5 text-[#71717A]">Asset</th>
               {["Price", "1D %", "1M %", "YTD %", "M.Cap", "PE", "Earnings"].map((h) => (
-                <th key={h} className="px-4 py-3 text-center text-[14px] font-semibold leading-5 text-[#71717A]">
+                <th key={h} className="px-4 py-3 text-right text-[14px] font-semibold leading-5 text-[#71717A]">
                   {h}
                 </th>
               ))}
-              <th className="w-10 px-4 py-3" />
+              <th className="w-10 px-4 py-3 text-center" aria-label="Remove from watchlist" />
             </tr>
           </thead>
           <tbody>

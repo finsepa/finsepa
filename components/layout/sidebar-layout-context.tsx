@@ -27,13 +27,16 @@ export function SidebarLayoutProvider({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsedState] = useState(false);
 
   useEffect(() => {
-    try {
-      if (localStorage.getItem(STORAGE_KEY) === "1") {
-        setCollapsedState(true);
+    const id = requestAnimationFrame(() => {
+      try {
+        if (localStorage.getItem(STORAGE_KEY) === "1") {
+          setCollapsedState(true);
+        }
+      } catch {
+        /* ignore */
       }
-    } catch {
-      /* ignore */
-    }
+    });
+    return () => cancelAnimationFrame(id);
   }, []);
 
   const persist = useCallback((value: boolean) => {

@@ -38,6 +38,8 @@ const OPS: ImportOperationLabel[] = [
   "Other expense",
   "Buy",
   "Sell",
+  "Dividend",
+  "Split",
 ];
 
 const usd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
@@ -59,9 +61,16 @@ function validateRow(r: ImportRow): ImportFieldKey[] {
   if (!r.asset.trim()) missing.push("asset");
   if (!r.operation) missing.push("operation");
   if (!r.dateYmd) missing.push("date");
-  if (r.shares == null || r.shares <= 0) missing.push("shares");
   const cash = isCashAssetSymbol(r.asset);
-  if (!cash && (r.price == null || r.price <= 0)) missing.push("price");
+  if (r.operation === "Split") {
+    if (r.shares != null && r.shares < 0) missing.push("shares");
+    if (r.price == null || !(r.price > 0) || r.price === 1) missing.push("price");
+  } else if (r.operation === "Dividend") {
+    if (r.shares == null || r.shares <= 0) missing.push("shares");
+  } else {
+    if (r.shares == null || r.shares <= 0) missing.push("shares");
+    if (!cash && (r.price == null || r.price <= 0)) missing.push("price");
+  }
   if (r.sum == null || !Number.isFinite(r.sum)) missing.push("total");
   return missing;
 }
@@ -133,20 +142,20 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
     let sum = merged.sum;
     const userEditedSum = Object.hasOwn(patch, "sum");
     const p = cash ? 1 : price ?? 0;
-    if (
-      !userEditedSum &&
-      merged.operation &&
-      shares != null &&
-      shares > 0 &&
-      p > 0
-    ) {
-      const gross = shares * p;
-      if (merged.operation === "Buy") sum = -(gross + fee);
-      else if (merged.operation === "Sell") sum = Math.max(0, gross - fee);
-      else if (merged.operation === "Cash In") sum = shares - fee;
-      else if (merged.operation === "Cash Out") sum = -(shares + fee);
-      else if (merged.operation === "Other income") sum = shares - fee;
-      else if (merged.operation === "Other expense") sum = -(shares + fee);
+    if (!userEditedSum && merged.operation) {
+      if (merged.operation === "Dividend" && shares != null && shares > 0) {
+        sum = shares - fee;
+      } else if (merged.operation === "Split") {
+        sum = 0;
+      } else if (shares != null && shares > 0 && p > 0) {
+        const gross = shares * p;
+        if (merged.operation === "Buy") sum = -(gross + fee);
+        else if (merged.operation === "Sell") sum = Math.max(0, gross - fee);
+        else if (merged.operation === "Cash In") sum = shares - fee;
+        else if (merged.operation === "Cash Out") sum = -(shares + fee);
+        else if (merged.operation === "Other income") sum = shares - fee;
+        else if (merged.operation === "Other expense") sum = -(shares + fee);
+      }
     }
     const next: ImportRow = {
       ...merged,
@@ -238,7 +247,8 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
     let cash = 0;
     for (const r of rows) {
       if (!isCashAssetSymbol(r.asset)) {
-        trades += 1;
+        if (r.operation === "Dividend") income += 1;
+        else trades += 1;
         continue;
       }
       const op = r.operation;
@@ -288,10 +298,65 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
 
         const sym = (row.quoteSymbol ?? row.asset).trim().toUpperCase();
         const name = row.asset.trim();
-        const sh = row.shares!;
-        const pr = row.price!;
         const fee = row.fee ?? 0;
         const dateStr = row.dateYmd!;
+
+        if (row.operation === "Dividend") {
+          const total = row.shares!;
+          const per = row.price ?? 0;
+          const implied = per > 0 && Number.isFinite(total / per) ? total / per : null;
+          const shareDisplay =
+            implied != null &&
+            implied > 0 &&
+            Math.abs(implied - Math.round(implied)) < 1e-3
+              ? Math.round(implied)
+              : implied ?? 0;
+          const sum =
+            row.sum != null && Number.isFinite(row.sum) ? row.sum : total - fee;
+          const logoUrl = displayLogoUrlForPortfolioSymbol(sym).trim() || null;
+          out.push({
+            id: newTransactionRowId(),
+            portfolioId: pid,
+            kind: "income",
+            operation: "Dividend",
+            symbol: sym,
+            name,
+            logoUrl,
+            date: dateStr,
+            shares: shareDisplay,
+            price: per > 0 ? per : 1,
+            fee,
+            sum,
+            profitPct: null,
+            profitUsd: null,
+          });
+          continue;
+        }
+
+        if (row.operation === "Split") {
+          const ratio = row.price!;
+          const logoUrl = displayLogoUrlForPortfolioSymbol(sym).trim() || null;
+          out.push({
+            id: newTransactionRowId(),
+            portfolioId: pid,
+            kind: "trade",
+            operation: "Split",
+            symbol: sym,
+            name,
+            logoUrl,
+            date: dateStr,
+            shares: 0,
+            price: ratio,
+            fee: 0,
+            sum: 0,
+            profitPct: null,
+            profitUsd: null,
+          });
+          continue;
+        }
+
+        const sh = row.shares!;
+        const pr = row.price!;
         const op = row.operation === "Sell" ? "Sell" : "Buy";
 
         const live = await fetchLiveMarketPriceClient(sym);
@@ -337,10 +402,8 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
       const pid = selectedPortfolioId;
       const existing = transactionsByPortfolioId[pid] ?? [];
       const imported = await buildTransactions(pid);
-      const merged = [...existing, ...imported].sort((a, b) => {
-        if (a.date !== b.date) return a.date.localeCompare(b.date);
-        return a.id.localeCompare(b.id);
-      });
+      /** Stable by date so same-calendar-day rows keep file order (Snowball / broker CSVs). */
+      const merged = [...existing, ...imported].sort((a, b) => a.date.localeCompare(b.date));
       setPortfolioTransactions(pid, merged);
       const rebuilt = replayTradeTransactionsToHoldings(merged);
       const quoted = await refreshHoldingMarketPrices(rebuilt);

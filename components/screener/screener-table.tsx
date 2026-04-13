@@ -14,18 +14,18 @@ function formatPercentValue(value: number) {
 function ChangeCell({ value }: { value: number | null }) {
   if (value == null || !Number.isFinite(value)) {
     return (
-      <span className="block text-center text-[14px] leading-5 font-medium text-[#71717A]">-</span>
+      <div className="min-w-0 w-full text-right text-[14px] leading-5 font-medium text-[#71717A]">-</div>
     );
   }
   const positive = value >= 0;
   return (
-    <span
-      className={`block text-center tabular-nums text-[14px] leading-5 font-medium ${
+    <div
+      className={`min-w-0 w-full text-right tabular-nums text-[14px] leading-5 font-medium ${
         positive ? "text-[#16A34A]" : "text-[#DC2626]"
       }`}
     >
       {formatPercentValue(value)}
-    </span>
+    </div>
   );
 }
 
@@ -49,7 +49,7 @@ const ScreenerDataRow = memo(function ScreenerDataRow({ item, rank, starred, loa
 
   return (
     <div
-      className={`group grid ${colLayout} h-[60px] max-h-[60px] items-center bg-white px-1 transition-colors duration-75 hover:bg-neutral-50`}
+      className={`group grid ${colLayout} h-[60px] max-h-[60px] items-center bg-white px-4 transition-colors duration-75 hover:bg-neutral-50`}
     >
       <WatchlistStarToggle
         className="flex w-10 shrink-0 items-center justify-center px-3"
@@ -63,12 +63,12 @@ const ScreenerDataRow = memo(function ScreenerDataRow({ item, rank, starred, loa
       <Link
         href={`/stock/${encodeURIComponent(item.ticker)}`}
         prefetch={false}
-        className={`${rowLinkGrid} col-span-8 col-start-2 grid min-h-[60px] min-w-0 items-center`}
+        className={`${rowLinkGrid} col-span-8 col-start-2 grid min-h-[60px] min-w-0 w-full items-center justify-items-stretch`}
         aria-label={`Open ${item.name} (${item.ticker})`}
       >
         <div className="text-center text-[14px] font-semibold leading-5 tabular-nums text-[#71717A]">{rank}</div>
 
-        <div className="flex min-w-0 items-center gap-3 pr-4">
+        <div className="flex min-w-0 items-center justify-start gap-3 pr-4 text-left">
           <CompanyLogo name={item.name} logoUrl={item.logoUrl} symbol={item.ticker} />
           <div className="min-w-0">
             <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">{item.name}</div>
@@ -76,7 +76,7 @@ const ScreenerDataRow = memo(function ScreenerDataRow({ item, rank, starred, loa
           </div>
         </div>
 
-        <div className="text-center font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B]">
+        <div className="min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
           {item.price != null && Number.isFinite(item.price) ? `$${item.price.toFixed(2)}` : "-"}
         </div>
 
@@ -84,9 +84,13 @@ const ScreenerDataRow = memo(function ScreenerDataRow({ item, rank, starred, loa
         <ChangeCell value={item.change1M} />
         <ChangeCell value={item.changeYTD} />
 
-        <div className="text-center font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B]">{item.marketCap}</div>
+        <div className="min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
+          {item.marketCap}
+        </div>
 
-        <div className="text-center font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B]">{item.pe}</div>
+        <div className="min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
+          {item.pe}
+        </div>
       </Link>
     </div>
   );
@@ -98,16 +102,18 @@ export function ScreenerTable({ rows, rankOffset = 0 }: { rows: ScreenerTableRow
   return (
     <div className="divide-y divide-[#E4E4E7] border-t border-b border-[#E4E4E7]">
       {/* Column headers */}
-      <div className={`grid ${colLayout} min-h-[44px] items-center bg-white px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A] [&>div]:text-center`}>
+      <div
+        className={`grid ${colLayout} min-h-[44px] items-center bg-white px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A]`}
+      >
         <div />
-        <div>#</div>
-        <div className="!text-left">Company</div>
-        <div>Price</div>
-        <div>1D %</div>
-        <div>1M %</div>
-        <div>YTD %</div>
-        <div>M Cap</div>
-        <div>PE</div>
+        <div className="text-center">#</div>
+        <div className="text-left">Company</div>
+        <div className="min-w-0 w-full text-right">Price</div>
+        <div className="min-w-0 w-full text-right">1D %</div>
+        <div className="min-w-0 w-full text-right">1M %</div>
+        <div className="min-w-0 w-full text-right">YTD %</div>
+        <div className="min-w-0 w-full text-right">M Cap</div>
+        <div className="min-w-0 w-full text-right">PE</div>
       </div>
 
       {rows.map((item, index) => (

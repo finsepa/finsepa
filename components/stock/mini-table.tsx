@@ -7,21 +7,22 @@ import type { StockPerformance } from "@/lib/market/stock-performance-types";
 import type { StockDetailHeaderMeta } from "@/lib/market/stock-header-meta";
 import { CompanyLogo } from "@/components/screener/company-logo";
 
- function PerfCellMaybe({ value }: { value: number | null }) {
-   if (value == null || !Number.isFinite(value)) {
-     return <td className="text-center text-[14px] leading-5 tabular-nums px-3 py-3 text-[#71717A]">—</td>;
-   }
-   const isPositive = value >= 0;
-   return (
-     <td
-       className={`text-center text-[14px] leading-5 tabular-nums px-3 py-3 ${
-         isPositive ? "text-[#16A34A]" : "text-[#DC2626]"
-       }`}
-     >
-       {isPositive ? "+" : ""}{value.toFixed(2)}%
-     </td>
-   );
- }
+function PerfCellMaybe({ value }: { value: number | null }) {
+  if (value == null || !Number.isFinite(value)) {
+    return <td className="min-w-[60px] px-3 py-3 text-right text-[14px] leading-5 tabular-nums text-[#71717A]">—</td>;
+  }
+  const isPositive = value >= 0;
+  return (
+    <td
+      className={`min-w-[60px] px-3 py-3 text-right text-[14px] leading-5 tabular-nums ${
+        isPositive ? "text-[#16A34A]" : "text-[#DC2626]"
+      }`}
+    >
+      {isPositive ? "+" : ""}
+      {value.toFixed(2)}%
+    </td>
+  );
+}
 
 export function MiniTable({
   ticker,
@@ -82,14 +83,17 @@ export function MiniTable({
       <table className="w-full border-collapse">
         <thead>
           <tr className="border-t border-b border-[#E4E4E7] bg-white">
-            <th className="text-left px-3 py-2.5 min-w-[200px]">
+            <th className="min-w-[200px] px-3 py-2.5 text-left">
               <div className="flex items-center gap-1.5 text-[14px] font-semibold text-[#71717A]">
                 Company
                 <ArrowUpDown className="h-3.5 w-3.5" />
               </div>
             </th>
-            {["Price","1D","5D","1M","6M","YTD","1Y","5Y","ALL"].map((h) => (
-              <th key={h} className="text-center text-[14px] font-semibold text-[#71717A] px-3 py-2.5 min-w-[60px]">
+            {["Price", "1D", "5D", "1M", "6M", "YTD", "1Y", "5Y", "ALL"].map((h) => (
+              <th
+                key={h}
+                className="min-w-[60px] px-3 py-2.5 text-right text-[14px] font-semibold text-[#71717A]"
+              >
                 {h}
               </th>
             ))}
@@ -97,8 +101,8 @@ export function MiniTable({
         </thead>
         <tbody>
           <tr className="border-b border-[#E4E4E7]">
-            <td className="px-3 py-3">
-              <div className="flex items-center gap-3">
+            <td className="px-3 py-3 text-left align-middle">
+              <div className="flex items-center justify-start gap-3 text-left">
                 {headerMetaLoading ? (
                   <div className="h-8 w-8 shrink-0 rounded-lg border border-[#E4E4E7] bg-[#F4F4F5] animate-pulse" aria-hidden />
                 ) : (
@@ -110,7 +114,7 @@ export function MiniTable({
                 </div>
               </div>
             </td>
-            <td className="text-center text-[14px] leading-5 tabular-nums text-[#09090B] px-3 py-3">
+            <td className="min-w-[60px] px-3 py-3 text-right text-[14px] leading-5 tabular-nums text-[#09090B]">
               {loading || row?.price == null || !Number.isFinite(row.price) ? "—" : `$${row.price.toFixed(2)}`}
             </td>
             <PerfCellMaybe value={row?.d1 ?? null} />

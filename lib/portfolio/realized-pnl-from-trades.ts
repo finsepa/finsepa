@@ -1,5 +1,6 @@
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 import { newHoldingId } from "@/components/portfolio/portfolio-types";
+import { applyStockSplitToHolding } from "@/lib/portfolio/apply-stock-split-to-holding";
 import { mergeBuyIntoPosition, type BuyLot } from "@/lib/portfolio/holding-position";
 
 /**
@@ -33,7 +34,7 @@ function sortTradeRows(transactions: PortfolioTransaction[]): PortfolioTransacti
     .filter((t) => t.kind === "trade")
     .sort((a, b) => {
       if (a.date !== b.date) return a.date.localeCompare(b.date);
-      return a.id.localeCompare(b.id);
+      return 0;
     });
 }
 
@@ -64,6 +65,10 @@ function cumulativeRealizedGainFromSortedTrades(trades: PortfolioTransaction[]):
       };
       const merged = mergeBuyIntoPosition(existing, lot);
       bySymbol.set(sym, merged);
+    } else if (op === "split") {
+      if (!existing) continue;
+      const next = applyStockSplitToHolding(existing, t.price);
+      if (next) bySymbol.set(sym, next);
     } else if (op === "sell") {
       if (!existing) continue;
       const proceeds = t.sum;

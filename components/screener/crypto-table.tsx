@@ -20,13 +20,13 @@ function ChangeCell({ value }: { value: number | null }) {
   const isMissing = value == null || !Number.isFinite(value);
   const positive = !isMissing && value! >= 0;
   return (
-    <span
-      className={`block text-center tabular-nums text-[14px] leading-5 font-medium ${
+    <div
+      className={`min-w-0 w-full text-right tabular-nums text-[14px] leading-5 font-medium ${
         isMissing ? "text-[#71717A]" : positive ? "text-[#16A34A]" : "text-[#DC2626]"
       }`}
     >
       {formatPercent(value)}
-    </span>
+    </div>
   );
 }
 
@@ -53,16 +53,16 @@ export function CryptoTable({
   return (
     <div className="divide-y divide-[#E4E4E7] border-t border-b border-[#E4E4E7]">
       <div
-        className={`grid ${colLayout} min-h-[44px] items-center bg-white px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A] [&>div]:text-center`}
+        className={`grid ${colLayout} min-h-[44px] items-center bg-white px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A]`}
       >
         <div />
-        <div>#</div>
-        <div className="!text-left">Coin</div>
-        <div>Price</div>
-        <div>1D %</div>
-        <div>1M %</div>
-        <div>YTD %</div>
-        <div>M Cap</div>
+        <div className="text-center">#</div>
+        <div className="text-left">Coin</div>
+        <div className="min-w-0 w-full text-right">Price</div>
+        <div className="min-w-0 w-full text-right">1D %</div>
+        <div className="min-w-0 w-full text-right">1M %</div>
+        <div className="min-w-0 w-full text-right">YTD %</div>
+        <div className="min-w-0 w-full text-right">M Cap</div>
       </div>
 
       {safeRows.map((r, i) => {
@@ -70,7 +70,7 @@ export function CryptoTable({
         return (
           <div
             key={r.symbol}
-            className={`group grid h-[60px] max-h-[60px] ${colLayout} items-center bg-white px-1 transition-colors duration-75 hover:bg-neutral-50`}
+            className={`group grid h-[60px] max-h-[60px] ${colLayout} items-center bg-white px-4 transition-colors duration-75 hover:bg-neutral-50`}
           >
             <WatchlistStarToggle
               className="flex w-10 shrink-0 items-center justify-center px-3"
@@ -83,14 +83,14 @@ export function CryptoTable({
             <Link
               href={`/crypto/${encodeURIComponent(r.symbol)}`}
               prefetch={false}
-              className={`${rowLinkGrid} col-span-7 col-start-2 grid min-h-[60px] min-w-0 items-center`}
+              className={`${rowLinkGrid} col-span-7 col-start-2 grid min-h-[60px] min-w-0 w-full items-center justify-items-stretch`}
               aria-label={`Open ${r.name} (${eodhdCryptoSpotTickerDisplay(r.symbol)})`}
             >
               <div className="text-center text-[14px] font-semibold leading-5 tabular-nums text-[#71717A]">
                 {rankOffset + i + 1}
               </div>
 
-              <div className="flex min-w-0 items-center gap-3 pr-4">
+              <div className="flex min-w-0 items-center justify-start gap-3 pr-4 text-left">
                 <CompanyLogo name={r.symbol} logoUrl={r.logoUrl} symbol={r.symbol} />
                 <div className="min-w-0">
                   <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">{r.name}</div>
@@ -101,7 +101,7 @@ export function CryptoTable({
               </div>
 
               <div
-                className={`text-center font-['Inter'] text-[14px] leading-5 font-normal tabular-nums ${
+                className={`min-w-0 w-full text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums ${
                   r.price == null || !Number.isFinite(r.price) ? "text-[#71717A]" : "text-[#09090B]"
                 }`}
               >
@@ -116,7 +116,7 @@ export function CryptoTable({
 
               <ChangeCell value={r.changePercentYTD} />
 
-              <div className="text-center font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B]">
+              <div className="min-w-0 w-full text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B]">
                 {r.marketCap === "-" ? "-" : r.marketCap}
               </div>
             </Link>

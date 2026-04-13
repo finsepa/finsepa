@@ -29,7 +29,10 @@ export async function middleware(request: NextRequest) {
     path === "/watchlist" ||
     path.startsWith("/watchlist/") ||
     path === "/portfolio" ||
-    path.startsWith("/portfolio/");
+    path.startsWith("/portfolio/") ||
+    path === "/portfolios" ||
+    path.startsWith("/portfolios/") ||
+    path.startsWith("/index/");
 
   const isAuthGatePagePath = path === PATH_LOGIN || path === PATH_SIGNUP || path === PATH_FORGOT_PASSWORD;
 
@@ -88,6 +91,9 @@ export const config = {
     "/watchlist/:path*",
     "/portfolio",
     "/portfolio/:path*",
+    "/portfolios",
+    "/portfolios/:path*",
+    "/index/:path*",
     "/login",
     "/signup",
     "/forgot-password",

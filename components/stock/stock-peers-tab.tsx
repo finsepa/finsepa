@@ -68,7 +68,7 @@ function PeersComparisonTableSkeleton({ rowCount }: { rowCount: number }) {
           key={ri}
           className={`${PEERS_SKEL_GRID} h-[60px] max-h-[60px] items-center border-b border-[#E4E4E7] px-3`}
         >
-          <div className="flex min-w-0 items-center gap-3 pr-2">
+          <div className="flex min-w-0 items-center justify-start gap-3 pr-2 text-left">
             <LogoSkeleton />
             <div className="min-w-0 flex-1 space-y-1.5">
               <TextSkeleton wClass="w-[45%] max-w-[140px]" />
@@ -429,14 +429,21 @@ function StockPeersTabInner({
         <div className="rounded-xl border border-[#E4E4E7] bg-white px-4 py-4 text-sm text-[#71717A]">{error}</div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[860px] border-collapse">
+          <table className="w-full min-w-[860px] border-collapse [&_tbody_td:first-child]:text-left [&_tbody_td:not(:first-child)]:text-right [&_thead_th:first-child]:text-left [&_thead_th:not(:first-child)]:text-right">
             <thead>
               <tr className="border-t border-b border-[#E4E4E7] bg-white">
-                <th className="w-[210px] min-w-[210px] px-3 py-3 text-left text-[14px] font-semibold leading-5 text-[#71717A]">
+                <th
+                  scope="col"
+                  className="w-[210px] min-w-[210px] px-3 py-3 text-left align-middle text-[14px] font-semibold leading-5 text-[#71717A]"
+                >
                   Company
                 </th>
                 {METRIC_HEADERS.map((h) => (
-                  <th key={h} className="px-3 py-3 text-right text-[14px] font-semibold leading-5 text-[#71717A]">
+                  <th
+                    key={h}
+                    scope="col"
+                    className="min-w-[96px] px-3 py-3 text-right align-middle text-[14px] font-semibold leading-5 tabular-nums text-[#71717A]"
+                  >
                     {h}
                   </th>
                 ))}
@@ -453,8 +460,8 @@ function StockPeersTabInner({
                     key={sym}
                     className="h-[60px] border-b border-[#E4E4E7] transition-colors duration-75 hover:bg-neutral-50"
                   >
-                    <td className="px-3 py-3 align-middle">
-                      <div className="flex items-center gap-2">
+                    <td className="px-3 py-3 text-left align-middle">
+                      <div className="flex items-center justify-start gap-2 text-left">
                         <CompanyLogo name={displayName} logoUrl={(displayLogo ?? "").trim()} symbol={sym} />
                         <div className="min-w-0">
                           <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">{sym}</div>
@@ -462,25 +469,25 @@ function StockPeersTabInner({
                         </div>
                       </div>
                     </td>
-                    <td className="px-3 py-3 text-right text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
+                    <td className="min-w-[96px] px-3 py-3 text-right align-middle text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
                       {row?.revGrowth ?? "—"}
                     </td>
-                    <td className="px-3 py-3 text-right text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
+                    <td className="min-w-[96px] px-3 py-3 text-right align-middle text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
                       {row?.grossProfit ?? "—"}
                     </td>
-                    <td className="px-3 py-3 text-right text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
+                    <td className="min-w-[96px] px-3 py-3 text-right align-middle text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
                       {row?.operIncome ?? "—"}
                     </td>
-                    <td className="px-3 py-3 text-right text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
+                    <td className="min-w-[96px] px-3 py-3 text-right align-middle text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
                       {row?.netIncome ?? "—"}
                     </td>
-                    <td className="px-3 py-3 text-right text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
+                    <td className="min-w-[96px] px-3 py-3 text-right align-middle text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
                       {row?.eps ?? "—"}
                     </td>
-                    <td className="px-3 py-3 text-right text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
+                    <td className="min-w-[96px] px-3 py-3 text-right align-middle text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
                       {row?.epsGrowth ?? "—"}
                     </td>
-                    <td className="px-3 py-3 text-right text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
+                    <td className="min-w-[96px] px-3 py-3 text-right align-middle text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
                       {row?.revenue ?? "—"}
                     </td>
                   </tr>

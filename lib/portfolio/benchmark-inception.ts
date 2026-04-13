@@ -23,7 +23,7 @@ export function replayStockSharesUpTo(
     .filter((t) => t.kind === "trade")
     .sort((a, b) => {
       if (a.date !== b.date) return a.date.localeCompare(b.date);
-      return a.id.localeCompare(b.id);
+      return 0;
     });
 
   const m = new Map<string, number>();
@@ -34,6 +34,8 @@ export function replayStockSharesUpTo(
     const op = t.operation.toLowerCase();
     if (op === "buy") {
       m.set(sym, prev + t.shares);
+    } else if (op === "split") {
+      if (prev > 0 && t.price > 0 && t.price !== 1) m.set(sym, prev * t.price);
     } else if (op === "sell") {
       m.set(sym, Math.max(0, prev - t.shares));
     }

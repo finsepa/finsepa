@@ -24,6 +24,8 @@ function computeLedgerSum(
   if (op === "Cash Out") return -(shares + fee);
   if (op === "Other income") return shares - fee;
   if (op === "Other expense") return -(shares + fee);
+  if (op === "Dividend") return shares - fee;
+  if (op === "Split") return 0;
   return null;
 }
 
@@ -71,12 +73,24 @@ export function buildImportedDrafts(matrix: string[][]): ImportedTransactionDraf
     if (!asset.trim()) missing.push("asset");
     if (!dateYmd) missing.push("date");
     if (isCash && !operation) missing.push("operation");
-    if (shares == null || shares <= 0) missing.push("shares");
-    if (!isCash && (price == null || price <= 0)) missing.push("price");
 
     const opFinal: ImportOperationLabel | null = operation;
+    if (opFinal === "Split") {
+      if (shares != null && shares < 0) missing.push("shares");
+      if (price == null || !(price > 0) || price === 1) missing.push("price");
+    } else if (opFinal === "Dividend") {
+      if (shares == null || shares <= 0) missing.push("shares");
+    } else {
+      if (shares == null || shares <= 0) missing.push("shares");
+      if (!isCash && (price == null || price <= 0)) missing.push("price");
+    }
+
     let sum: number | null = null;
-    if (opFinal && shares != null && shares > 0) {
+    if (opFinal === "Split") {
+      sum = 0;
+    } else if (opFinal === "Dividend" && shares != null && shares > 0) {
+      sum = computeLedgerSum("Dividend", shares, 1, fee, explicitTotal);
+    } else if (opFinal && shares != null && shares > 0) {
       const p = isCash ? 1 : price ?? 0;
       if (!isCash && p <= 0) {
         sum = explicitTotal;

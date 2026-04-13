@@ -394,8 +394,18 @@ export function PortfolioWorkspaceProvider({
     startTransition(() => {
       void (async () => {
         const local = loadPersistedPortfolioStateForUser(userId);
+        const controller = new AbortController();
+        let fetchTimeoutId: number | undefined;
         try {
-          const res = await fetch("/api/portfolio/workspace", { credentials: "include" });
+          fetchTimeoutId = window.setTimeout(() => controller.abort(), 15_000);
+          const res = await fetch("/api/portfolio/workspace", {
+            credentials: "include",
+            signal: controller.signal,
+          });
+          if (fetchTimeoutId !== undefined) {
+            window.clearTimeout(fetchTimeoutId);
+            fetchTimeoutId = undefined;
+          }
           if (cancelled) return;
           if (res.ok) {
             const data = (await res.json()) as {
@@ -445,6 +455,7 @@ export function PortfolioWorkspaceProvider({
         } catch {
           if (local) applyWorkspaceState(local);
         } finally {
+          if (fetchTimeoutId !== undefined) window.clearTimeout(fetchTimeoutId);
           if (!cancelled) setWorkspaceHydrated(true);
         }
       })();
@@ -666,20 +677,29 @@ export function PortfolioWorkspaceProvider({
     setEditTransaction(null);
   }, []);
 
+  const removePortfolioTransactions = useCallback(
+    async (portfolioId: string, ids: ReadonlySet<string>) => {
+      if (ids.size === 0) return;
+      const port = portfolios.find((x) => x.id === portfolioId);
+      if (port?.kind === "combined") return;
+      const list = transactionsByPortfolioId[portfolioId] ?? [];
+      const next = list.filter((x) => !ids.has(x.id));
+      setPortfolioTransactions(portfolioId, next);
+      setEditTransaction((cur) => (cur && ids.has(cur.id) ? null : cur));
+      const rebuilt = replayTradeTransactionsToHoldings(next);
+      const quoted = await refreshHoldingMarketPrices(rebuilt);
+      setPortfolioHoldings(portfolioId, quoted);
+    },
+    [portfolios, setPortfolioHoldings, setPortfolioTransactions, transactionsByPortfolioId],
+  );
+
   const removePortfolioTransaction = useCallback(
     async (t: PortfolioTransaction) => {
       const view = portfolios.find((x) => x.id === selectedPortfolioId);
       if (view?.kind === "combined") return;
-      const pid = t.portfolioId;
-      const list = transactionsByPortfolioId[pid] ?? [];
-      const next = list.filter((x) => x.id !== t.id);
-      setPortfolioTransactions(pid, next);
-      setEditTransaction((cur) => (cur?.id === t.id ? null : cur));
-      const rebuilt = replayTradeTransactionsToHoldings(next);
-      const quoted = await refreshHoldingMarketPrices(rebuilt);
-      setPortfolioHoldings(pid, quoted);
+      await removePortfolioTransactions(t.portfolioId, new Set([t.id]));
     },
-    [portfolios, selectedPortfolioId, setPortfolioHoldings, setPortfolioTransactions, transactionsByPortfolioId],
+    [portfolios, selectedPortfolioId, removePortfolioTransactions],
   );
 
   const restorePortfolioTransaction = useCallback(
@@ -691,7 +711,7 @@ export function PortfolioWorkspaceProvider({
       if (list.some((x) => x.id === t.id)) return;
       const next = [...list, t].sort((a, b) => {
         if (a.date !== b.date) return a.date.localeCompare(b.date);
-        return a.id.localeCompare(b.id);
+        return 0;
       });
       setPortfolioTransactions(pid, next);
       const rebuilt = replayTradeTransactionsToHoldings(next);
@@ -793,6 +813,7 @@ export function PortfolioWorkspaceProvider({
       setPortfolioTransactions,
       setPortfolioHoldings,
       removePortfolioTransaction,
+      removePortfolioTransactions,
       restorePortfolioTransaction,
       portfolioDisplayReady,
     }),
@@ -806,6 +827,7 @@ export function PortfolioWorkspaceProvider({
       setPortfolioTransactions,
       setPortfolioHoldings,
       removePortfolioTransaction,
+      removePortfolioTransactions,
       restorePortfolioTransaction,
       openEditPortfolio,
       openCreatePortfolio,

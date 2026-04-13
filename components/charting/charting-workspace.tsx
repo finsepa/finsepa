@@ -868,7 +868,7 @@ export function ChartingWorkspace({
               No series data for the selected metrics on this symbol.
             </p>
           ) : (
-            <div className="relative w-full overflow-hidden rounded-xl border border-[#E4E4E7] bg-white">
+            <div className="relative w-full overflow-hidden rounded-xl bg-white">
               <div ref={wrapRef} className="w-full" style={{ height: chartHeight }} />
               {hover ? (
                 <>
@@ -941,16 +941,20 @@ export function ChartingWorkspace({
           )}
           <div className="overflow-x-auto">
             {/* Table — Figma 8479:44939: header #71717A semibold; body #09090B regular; strokes #E4E4E7. Row hover/height aligned with screener tables. */}
-            <table className="w-full min-w-[560px] border-collapse bg-white">
+            <table className="w-full min-w-[560px] border-collapse bg-white [&_tbody_td:first-child]:text-left [&_tbody_td:not(:first-child)]:text-right [&_thead_th:first-child]:text-left [&_thead_th:not(:first-child)]:text-right">
               <thead>
                 <tr className="border-t border-b border-[#E4E4E7] bg-white">
-                  <th className="min-w-[160px] px-3 py-2.5 text-left text-[14px] font-semibold leading-5 text-[#71717A]">
+                  <th
+                    scope="col"
+                    className="min-w-[160px] px-3 py-2.5 text-left align-middle text-[14px] font-semibold leading-5 text-[#71717A]"
+                  >
                     Period
                   </th>
                   {selected.map((id) => (
                     <th
                       key={id}
-                      className="px-3 py-2.5 text-right text-[14px] font-semibold leading-5 text-[#71717A]"
+                      scope="col"
+                      className="min-w-[96px] px-3 py-2.5 text-right align-middle text-[14px] font-semibold leading-5 tabular-nums text-[#71717A]"
                     >
                       {CHARTING_METRIC_LABEL[id]}
                     </th>
@@ -963,13 +967,13 @@ export function ChartingWorkspace({
                     key={row.periodEnd}
                     className="h-[60px] max-h-[60px] border-b border-[#E4E4E7] transition-colors duration-75 hover:bg-neutral-50"
                   >
-                    <td className="whitespace-nowrap px-3 align-middle text-left text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
+                    <td className="whitespace-nowrap px-3 align-middle text-left text-[14px] font-normal leading-5 text-[#09090B]">
                       {row.periodEnd}
                     </td>
                     {selected.map((id) => (
                       <td
                         key={id}
-                        className="px-3 align-middle text-right text-[14px] font-normal leading-5 tabular-nums text-[#09090B]"
+                        className="min-w-[96px] px-3 align-middle text-right text-[14px] font-normal leading-5 tabular-nums text-[#09090B]"
                       >
                         {formatTableCell(CHARTING_METRIC_KIND[id], rowValue(row, id))}
                       </td>
