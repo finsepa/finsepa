@@ -3,6 +3,7 @@ import "server-only";
 import {
   companyLogoUrlForTicker,
   companyLogoUrlFromDomain,
+  logoDevDomainLogoUrl,
   logoDevStockLogoUrl,
 } from "@/lib/screener/company-logo-url";
 import { isTop10Ticker, TOP10_META } from "@/lib/screener/top10-config";
@@ -39,5 +40,5 @@ export function logoUrlFromFundamentalsRoot(root: Record<string, unknown> | null
     domainFromWebsiteRaw(general?.WebURL ?? general?.Website ?? general?.URL) ??
     domainFromWebsiteRaw(root.WebURL ?? root.Website ?? root.URL);
   if (!host) return "";
-  return sym ? companyLogoUrlForTicker(sym, host) : companyLogoUrlFromDomain(host);
+  return sym ? companyLogoUrlForTicker(sym, host) : logoDevDomainLogoUrl(host) ?? companyLogoUrlFromDomain(host);
 }

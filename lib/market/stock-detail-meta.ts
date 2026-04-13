@@ -1,5 +1,6 @@
-import { TOP10_META, type Top10Ticker } from "@/lib/screener/top10-config";
 import { companyLogoUrlForTicker } from "@/lib/screener/company-logo-url";
+import { resolveEquityLogoUrlFromTicker } from "@/lib/screener/resolve-equity-logo-url";
+import { TOP10_META, type Top10Ticker } from "@/lib/screener/top10-config";
 
 export type StockDetailMeta = {
   ticker: string;
@@ -21,10 +22,11 @@ export function getStockDetailMetaFromTicker(ticker: string): StockDetailMeta {
       logoUrl: companyLogoUrlForTicker(sym, meta.domain),
     };
   }
+  const resolved = sym ? resolveEquityLogoUrlFromTicker(sym).trim() : "";
   return {
     ticker: sym || "?",
     name: sym || "Unknown",
-    logoUrl: null,
+    logoUrl: resolved || null,
   };
 }
 

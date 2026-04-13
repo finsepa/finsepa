@@ -1,7 +1,11 @@
 import { CRYPTO_CC_EXTRA_PLAIN_BASES } from "@/lib/crypto/crypto-cc-extra-bases";
 import { cryptoRouteBase, cryptoUsdPairBase } from "@/lib/crypto/crypto-symbol-base";
 import { ALL_CRYPTO_METAS } from "@/lib/market/crypto-meta";
-import { companyLogoUrlFromDomain, logoDevCryptoLogoUrl } from "@/lib/screener/company-logo-url";
+import {
+  companyLogoUrlFromDomain,
+  logoDevCryptoLogoUrl,
+  logoDevDomainLogoUrl,
+} from "@/lib/screener/company-logo-url";
 
 const DOMAIN_BY_SYMBOL: Record<string, string> = {
   BTC: "bitcoin.org",
@@ -78,6 +82,6 @@ export function getCryptoLogoUrl(symbol: string): string {
   const dev = logoDevCryptoLogoUrl(u);
   if (dev) return dev;
   const domain = DOMAIN_BY_SYMBOL[u];
-  if (domain) return companyLogoUrlFromDomain(domain);
+  if (domain) return logoDevDomainLogoUrl(domain) ?? companyLogoUrlFromDomain(domain);
   return `https://www.google.com/s2/favicons?sz=64&domain=${encodeURIComponent(`${u.toLowerCase()}.org`)}`;
 }

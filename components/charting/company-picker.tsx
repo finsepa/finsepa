@@ -11,7 +11,10 @@ import { recordSearchNavigation } from "@/lib/search/recent-searches-storage";
 import { eodhdCryptoSpotTickerDisplay } from "@/lib/crypto/eodhd-crypto-ticker-display";
 import { getCryptoLogoUrl } from "@/lib/crypto/crypto-logo-url";
 import { CRYPTO_PICKER_TOP } from "@/lib/crypto/crypto-picker-universe";
-import { companyLogoUrlForTicker, companyLogoUrlFromDomain } from "@/lib/screener/company-logo-url";
+import {
+  companyLogoUrlForTicker,
+  logoDevStockLogoUrl,
+} from "@/lib/screener/company-logo-url";
 import { isTop10Ticker, TOP10_META } from "@/lib/screener/top10-config";
 
 const SEARCH_DEBOUNCE_MS = 250;
@@ -31,7 +34,7 @@ function singleAssetPickerStocks(exclude: Set<string>): PickerStockRow[] {
       const m = TOP10_META[sym];
       return [{ ticker: sym, name: m.name, logoUrl: companyLogoUrlForTicker(sym, m.domain) }];
     }
-    return [{ ticker: sym, name: sym, logoUrl: companyLogoUrlFromDomain("nvidia.com") }];
+    return [{ ticker: sym, name: sym, logoUrl: logoDevStockLogoUrl(sym) ?? "" }];
   }
   return [];
 }
