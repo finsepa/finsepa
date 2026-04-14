@@ -21,7 +21,7 @@ type Props = {
   periodLabel: string;
   /** When set (e.g. drag selection), replaces `periodLabel` in the price row. */
   periodLabelOverride?: string | null;
-  /** Latest close from chart series, or hover price when crosshair active. */
+  /** Latest close from chart series for the active range (not crosshair hover). */
   price: number | null;
   changePct: number | null;
   changeAbs: number | null;
@@ -30,7 +30,7 @@ type Props = {
   chartEmpty?: boolean;
   /** Preformatted timestamp under price (includes ", USD"); from chart data. */
   priceTimestampLabel?: string | null;
-  /** Chart crosshair active — subtle emphasis on price row */
+  /** Reserved for future chart emphasis (crosshair no longer drives header price). */
   chartHovering?: boolean;
   headerMeta: StockDetailHeaderMeta | null;
   headerMetaLoading: boolean;

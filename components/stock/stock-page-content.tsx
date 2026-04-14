@@ -10,10 +10,12 @@ import { chartingMetricToParam, type ChartingMetricId } from "@/lib/market/stock
 import type { StockDetailTabId } from "@/lib/stock/stock-detail-tab";
 import { parseStockDetailTabQuery } from "@/lib/stock/stock-detail-tab";
 import { StockDetailTabNav } from "./stock-detail-tab-nav";
+import { AssetPortfolioHoldingsTab } from "@/components/portfolio/asset-portfolio-holdings-tab";
 
 function initialTabsMounted(tab: StockDetailTabId): Record<StockDetailTabId, boolean> {
   return {
     overview: tab === "overview",
+    holdings: tab === "holdings",
     charting: tab === "charting",
     peers: tab === "peers",
     profile: tab === "profile",
@@ -245,6 +247,22 @@ export function StockPageContent({
         </div>
       ) : null}
 
+      {tabsMounted.holdings ? (
+        <div
+          role="tabpanel"
+          id="stock-tab-holdings"
+          aria-hidden={activeTab !== "holdings"}
+          className={activeTab === "holdings" ? "block" : "hidden"}
+        >
+          <AssetPortfolioHoldingsTab
+            assetKind="stock"
+            routeKey={ticker}
+            assetDisplayName={headerMeta?.fullName ?? ticker}
+            onChartDisplayChange={onChartDisplay}
+          />
+        </div>
+      ) : null}
+
       {tabsMounted.charting ? (
         <div
           role="tabpanel"
@@ -259,6 +277,7 @@ export function StockPageContent({
             initialQuarterlyPoints={
               initialPageData?.ticker === ticker ? initialPageData.fundamentalsSeriesQuarterly : undefined
             }
+            initialKeyStatsBundle={initialPageData?.ticker === ticker ? initialPageData.keyStatsBundle : null}
           />
         </div>
       ) : null}

@@ -29,14 +29,18 @@ import {
   type Operation,
 } from "@/components/layout/transaction-operation-field";
 import { TransactionPortfolioField } from "@/components/portfolio/transaction-portfolio-field";
-import { newHoldingId, newTransactionRowId } from "@/components/portfolio/portfolio-types";
+import { newHoldingId, newTransactionRowId, type PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 import { SecondaryTabs } from "@/components/ui/secondary-tabs";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import { customPortfolioSymbolFromName } from "@/lib/portfolio/custom-asset-symbol";
 import { displayLogoUrlForPortfolioSymbol } from "@/lib/portfolio/portfolio-asset-display-logo";
 import { fetchLiveMarketPriceClient, fetchPriceOnDateClient } from "@/lib/portfolio/client-symbol-quotes";
+import { cryptoRouteBase } from "@/lib/crypto/crypto-symbol-base";
+import { portfolioSymbolMatchesAssetRoute } from "@/lib/portfolio/portfolio-asset-route-match";
+import { splitRatioFromTransaction } from "@/lib/portfolio/split-ratio-from-transaction";
 import { lotUnrealizedPnL, mergeBuyIntoPosition } from "@/lib/portfolio/holding-position";
 import { toastTransactionAdded } from "@/lib/portfolio/transaction-added-toast";
+import { refreshHoldingMarketPrices, replayTradeTransactionsToHoldings } from "@/lib/portfolio/rebuild-holdings-from-trades";
 
 const TABS = ["Trades", "Incomes", "Expenses", "Cash"] as const;
 
@@ -66,6 +70,15 @@ const usdBalance = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 2,
 });
 
+function formatSharesHint(n: number, symbol: string): string {
+  const qty = new Intl.NumberFormat("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 8 }).format(n);
+  // Crypto uses unit tickers (BTC, ETH, ...); equities read better as "shares".
+  const base = cryptoRouteBase(symbol);
+  if (base !== symbol.trim().toUpperCase()) return `${qty} ${base}`;
+  if (symbol.trim().toUpperCase() === "USD") return `${qty} USD`;
+  return `${qty} shares`;
+}
+
 /** Ledger sums can be ±ε; round to cents so ~0 shows as $0.00 (not red / minus). */
 function roundUsdForDisplay(n: number): number {
   if (!Number.isFinite(n)) return 0;
@@ -76,13 +89,15 @@ function roundUsdForDisplay(n: number): number {
 
 type Props = {
   open: boolean;
+  /** When provided, pre-selects the ticker/company in the Trades tab on open. */
+  presetCompany?: CompanyPick | null;
   onClose: () => void;
 };
 
 /**
  * New Transaction — matches Figma Web-App-Design node 8615:33802 (New Transaction modal).
  */
-export function NewTransactionModal({ open, onClose }: Props) {
+export function NewTransactionModal({ open, presetCompany = null, onClose }: Props) {
   const titleId = useId();
   const {
     portfolios,
@@ -90,7 +105,9 @@ export function NewTransactionModal({ open, onClose }: Props) {
     holdingsByPortfolioId,
     transactionsByPortfolioId,
     addHolding,
+    setPortfolioHoldings,
     addTransaction,
+    setPortfolioTransactions,
   } = usePortfolioWorkspace();
 
   const [transactionTab, setTransactionTab] = useState<(typeof TABS)[number]>("Trades");
@@ -112,10 +129,26 @@ export function NewTransactionModal({ open, onClose }: Props) {
   const [tradeAssetSource, setTradeAssetSource] = useState<TradeAssetSource>("listed");
   const [customAssetName, setCustomAssetName] = useState("");
 
+  const selectedHoldingShares = useMemo(() => {
+    if (selectedPortfolioId == null) return null;
+    if (tradeAssetSource !== "listed") return null;
+    const sym = selectedCompany?.symbol?.trim();
+    if (!sym) return null;
+    const key = cryptoRouteBase(sym).toUpperCase();
+    const list = holdingsByPortfolioId[selectedPortfolioId] ?? [];
+    for (const h of list) {
+      const hKey = cryptoRouteBase(h.symbol).toUpperCase();
+      if (hKey === key) return h.shares;
+    }
+    return 0;
+  }, [holdingsByPortfolioId, selectedCompany?.symbol, selectedPortfolioId, tradeAssetSource]);
+
   const transactionTotal = useMemo(() => {
     const line = parseAmountField(shares) * parseAmountField(price);
-    return line + parseAmountField(fees);
-  }, [shares, price, fees]);
+    const fee = parseAmountField(fees);
+    if (operation === "Sell") return Math.max(0, line - fee);
+    return line + fee;
+  }, [shares, price, fees, operation]);
 
   /** Same net cash as Portfolio → Cash tab (sum of ledger `sum`). */
   const currentCashBalanceUsd = useMemo(() => {
@@ -125,6 +158,13 @@ export function NewTransactionModal({ open, onClose }: Props) {
   }, [selectedPortfolioId, transactionsByPortfolioId]);
 
   const priceFetchGen = useRef(0);
+  const selectedPortfolioIdRef = useRef<string | null>(null);
+  const transactionsByPortfolioIdRef = useRef(transactionsByPortfolioId);
+
+  useEffect(() => {
+    selectedPortfolioIdRef.current = selectedPortfolioId;
+    transactionsByPortfolioIdRef.current = transactionsByPortfolioId;
+  }, [selectedPortfolioId, transactionsByPortfolioId]);
 
   useEffect(() => {
     if (!open || transactionTab !== "Trades" || tradeAssetSource !== "listed") return;
@@ -141,7 +181,18 @@ export function NewTransactionModal({ open, onClose }: Props) {
       const p = await fetchPriceOnDateClient(sym, ymd);
       if (gen !== priceFetchGen.current) return;
       if (p != null) {
-        setPrice(formatPriceInputFromApi(p));
+        const pid = selectedPortfolioIdRef.current;
+        const txs = pid ? transactionsByPortfolioIdRef.current[pid] ?? [] : [];
+        let splitFactor = 1;
+        for (const t of txs) {
+          const ratio = splitRatioFromTransaction(t);
+          if (ratio == null) continue;
+          if (!portfolioSymbolMatchesAssetRoute({ holdingSymbol: t.symbol, routeKey: sym, kind: "stock" })) continue;
+          if (t.date <= ymd) continue;
+          splitFactor *= ratio;
+        }
+        const adj = splitFactor > 1 && Number.isFinite(splitFactor) ? p / splitFactor : p;
+        setPrice(formatPriceInputFromApi(adj));
       } else {
         setPrice("");
       }
@@ -161,7 +212,7 @@ export function NewTransactionModal({ open, onClose }: Props) {
     if (!open) return;
     setTransactionTab("Trades");
     setOperation("Buy");
-    setSelectedCompany(null);
+    setSelectedCompany(presetCompany);
     setTransactionDate(startOfDay(new Date()));
     setShares("");
     setPrice("");
@@ -177,7 +228,7 @@ export function NewTransactionModal({ open, onClose }: Props) {
     setSubmitting(false);
     setTradeAssetSource("listed");
     setCustomAssetName("");
-  }, [open]);
+  }, [open, presetCompany]);
 
   const hasSelectedPortfolio =
     selectedPortfolioId != null &&
@@ -202,10 +253,15 @@ export function NewTransactionModal({ open, onClose }: Props) {
   const canAdd = useMemo(() => {
     if (!hasSelectedPortfolio) return false;
     if (transactionTab === "Trades") {
-      if (operation !== "Buy") return false;
       const sh = parseAmountField(shares);
       const pr = parseAmountField(price);
       if (sh <= 0 || pr <= 0) return false;
+      if (operation === "Sell") {
+        if (tradeAssetSource !== "listed") return false;
+        if (!selectedCompany?.symbol?.trim()) return false;
+        if (selectedHoldingShares == null) return false;
+        return sh <= selectedHoldingShares + 1e-9;
+      }
       if (tradeAssetSource === "listed") return Boolean(selectedCompany?.symbol?.trim());
       return customAssetName.trim().length > 0;
     }
@@ -241,6 +297,7 @@ export function NewTransactionModal({ open, onClose }: Props) {
     incomeFeeNum,
     incomeNetUsd,
     expenseAmountNum,
+    selectedHoldingShares,
   ]);
 
   const cashFlowSigned = useMemo(
@@ -438,15 +495,23 @@ export function NewTransactionModal({ open, onClose }: Props) {
     let logoUrl: string | null;
     let marketPrice: number;
 
+    // Flip the button label to "Adding" immediately (before any quote fetch).
+    setSubmitting(true);
     if (tradeAssetSource === "custom") {
       const nameRaw = customAssetName.trim();
-      if (!nameRaw) return;
+      if (!nameRaw) {
+        setSubmitting(false);
+        return;
+      }
       symUpper = customPortfolioSymbolFromName(nameRaw).toUpperCase();
       assetName = nameRaw;
       logoUrl = null;
       marketPrice = pr;
     } else {
-      if (!selectedCompany?.symbol?.trim()) return;
+      if (!selectedCompany?.symbol?.trim()) {
+        setSubmitting(false);
+        return;
+      }
       const sym = selectedCompany.symbol.trim();
       symUpper = sym.toUpperCase();
       assetName = selectedCompany.name;
@@ -456,9 +521,8 @@ export function NewTransactionModal({ open, onClose }: Props) {
       logoUrl = resolvedLogo ? resolvedLogo : null;
     }
 
-    setSubmitting(true);
     try {
-      const lotCost = sh * pr + fee;
+      const gross = sh * pr;
       const dateStr = format(transactionDate, "yyyy-MM-dd");
 
       const existing =
@@ -467,27 +531,49 @@ export function NewTransactionModal({ open, onClose }: Props) {
         ) ?? null;
       const positionId = existing?.id ?? newHoldingId();
 
-      const merged = mergeBuyIntoPosition(existing, {
-        id: positionId,
-        symbol: symUpper,
-        name: assetName,
-        logoUrl,
-        shares: sh,
-        price: pr,
-        fee,
-        marketPrice,
-      });
+      let holdingIdForTx = positionId;
+      let profitUsd: number | null = null;
+      let profitPct: number | null = null;
 
-      const { profitUsd, profitPct } = lotUnrealizedPnL({
-        shares: sh,
-        price: pr,
-        fee,
-        marketPrice,
-      });
+      if (operation === "Sell") {
+        if (!existing) return;
+        const available = existing.shares;
+        if (!Number.isFinite(available) || available <= 0) return;
+        if (sh - available > 1e-9) return;
 
-      addHolding(selectedPortfolioId, merged);
+        const costRemoved = (sh / available) * existing.costBasis;
+        const realized = gross - fee - costRemoved;
+        profitUsd = Number.isFinite(realized) ? realized : null;
+        profitPct =
+          costRemoved > 0 && Number.isFinite(realized) ? (realized / costRemoved) * 100 : null;
 
-      addTransaction(selectedPortfolioId, {
+        // Holdings are rebuilt from the ledger right after we append the transaction (single source of truth).
+      } else {
+        const merged = mergeBuyIntoPosition(existing, {
+          id: positionId,
+          symbol: symUpper,
+          name: assetName,
+          logoUrl,
+          shares: sh,
+          price: pr,
+          fee,
+          marketPrice,
+        });
+
+        const pnl = lotUnrealizedPnL({
+          shares: sh,
+          price: pr,
+          fee,
+          marketPrice,
+        });
+        profitUsd = pnl.profitUsd;
+        profitPct = pnl.profitPct;
+        holdingIdForTx = merged.id;
+
+        // Holdings are rebuilt from the ledger right after we append the transaction (single source of truth).
+      }
+
+      const nextTx: PortfolioTransaction = {
         id: newTransactionRowId(),
         portfolioId: selectedPortfolioId,
         kind: "trade",
@@ -499,11 +585,21 @@ export function NewTransactionModal({ open, onClose }: Props) {
         shares: sh,
         price: pr,
         fee,
-        sum: -lotCost,
+        sum: operation === "Sell" ? gross - fee : -(gross + fee),
         profitPct,
         profitUsd,
-        holdingId: merged.id,
-      });
+        holdingId: holdingIdForTx,
+      };
+
+      const prevTx = transactionsByPortfolioId[selectedPortfolioId] ?? [];
+      const nextTxList = [...prevTx, nextTx];
+      setPortfolioTransactions(selectedPortfolioId, nextTxList);
+
+      // Rebuild holdings so sell transactions correctly reduce remaining quantity/cost basis,
+      // ensuring unrealized P&L always uses remaining shares only.
+      const rebuilt = replayTradeTransactionsToHoldings(nextTxList);
+      const quoted = await refreshHoldingMarketPrices(rebuilt);
+      setPortfolioHoldings(selectedPortfolioId, quoted);
 
       toastTransactionAdded(`Transaction added for ${assetName} (${symUpper}).`, transactionDate);
       onClose();
@@ -522,6 +618,8 @@ export function NewTransactionModal({ open, onClose }: Props) {
     price,
     selectedCompany,
     selectedPortfolioId,
+    setPortfolioHoldings,
+    setPortfolioTransactions,
     shares,
     tradeAssetSource,
     transactionDate,
@@ -529,6 +627,7 @@ export function NewTransactionModal({ open, onClose }: Props) {
     handleAddCash,
     handleAddIncome,
     handleAddExpense,
+    transactionsByPortfolioId,
   ]);
 
   if (!open) return null;
@@ -623,6 +722,14 @@ export function NewTransactionModal({ open, onClose }: Props) {
                       placeholder="Shares"
                       clearLabel="Clear shares"
                     />
+                    {operation === "Sell" && selectedHoldingShares != null ? (
+                      <div className="mt-1 text-[12px] leading-4 text-[#71717A]">
+                        You have{" "}
+                        <span className="font-medium text-[#09090B]">
+                          {formatSharesHint(selectedHoldingShares, selectedCompany?.symbol ?? "")}
+                        </span>
+                      </div>
+                    ) : null}
                   </Field>
                   <Field label="Price">
                     <ClearableInput
@@ -889,7 +996,11 @@ export function NewTransactionModal({ open, onClose }: Props) {
                 : "cursor-not-allowed bg-[#A1A1AA] opacity-50",
             )}
           >
-            {submitting ? "Adding…" : "Add"}
+            {transactionTab === "Trades" ? (
+              submitting ? (operation === "Sell" ? "Selling..." : "Adding") : (operation === "Sell" ? "Sell" : "Add")
+            ) : (
+              submitting ? "Adding" : "Add"
+            )}
           </button>
         </div>
       </div>

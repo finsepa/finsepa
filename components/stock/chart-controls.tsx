@@ -18,37 +18,39 @@ export function ChartControls({
   return (
     <div className="mb-4 flex items-center justify-between gap-3">
       {showSeriesToggle ? (
-        <div
-          className="inline-flex shrink-0 rounded-[10px] bg-[#F4F4F5] p-0.5"
-          role="group"
-          aria-label="Chart metric"
-        >
+        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Chart metric">
           {(
             [
               { id: "price" as const, label: "Price" },
               { id: "marketCap" as const, label: "Market cap" },
             ] as const
-          ).map((opt) => (
-            <button
-              key={opt.id}
-              type="button"
-              onClick={() => onChartSeriesChange(opt.id)}
-              className={cn(
-                "rounded-[10px] px-3 py-1.5 text-sm font-medium leading-5 transition-shadow sm:px-4",
-                chartSeries === opt.id
-                  ? "bg-white text-[#09090B] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]"
-                  : "text-[#71717A] hover:text-[#09090B]",
-              )}
-            >
-              {opt.label}
-            </button>
-          ))}
+          ).map((opt) => {
+            const active = chartSeries === opt.id;
+            return (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => onChartSeriesChange(opt.id)}
+                className={cn(
+                  "rounded-[10px] px-4 py-2 text-sm font-medium leading-5 text-[#09090B] transition-colors duration-100",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2",
+                  active ? "bg-[#F4F4F5]" : "hover:bg-[#F4F4F5]/80",
+                )}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
         </div>
       ) : (
         <h2 className="text-[18px] font-semibold leading-7 text-[#09090B]">Price</h2>
       )}
 
-      <div className="flex shrink-0 items-center gap-0.5">
+      <div
+        className="flex max-w-full min-w-0 flex-1 flex-wrap items-center justify-end gap-2 sm:flex-initial"
+        role="group"
+        aria-label="Chart time range"
+      >
         {STOCK_CHART_RANGES.map((range) => {
           const isActive = range === activeRange;
           return (
@@ -56,11 +58,11 @@ export function ChartControls({
               key={range}
               type="button"
               onClick={() => onRangeChange(range)}
-              className={`px-2.5 py-1 text-[13px] rounded-lg cursor-pointer transition-colors ${
-                isActive
-                  ? "bg-[#F4F4F5] text-[#09090B] font-semibold"
-                  : "text-[#71717A] hover:bg-[#F4F4F5] hover:text-[#09090B]"
-              }`}
+              className={cn(
+                "shrink-0 cursor-pointer rounded-[10px] px-3 py-2 text-[13px] font-medium leading-5 text-[#09090B] transition-colors duration-100 sm:text-[14px]",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2",
+                isActive ? "bg-[#F4F4F5]" : "hover:bg-[#F4F4F5]/80",
+              )}
             >
               {range}
             </button>

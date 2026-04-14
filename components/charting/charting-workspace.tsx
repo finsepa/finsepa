@@ -216,6 +216,7 @@ function rowValue(row: ChartingSeriesPoint, id: ChartingMetricId): number | null
 function seriesData(
   points: ChartingSeriesPoint[],
   id: ChartingMetricId,
+  shiftSeconds = 0,
 ): { time: UTCTimestamp; value: number }[] {
   const out: { time: UTCTimestamp; value: number }[] = [];
   for (const row of points) {
@@ -223,7 +224,7 @@ function seriesData(
     if (v == null || !Number.isFinite(v)) continue;
     const t = Date.parse(row.periodEnd.includes("T") ? row.periodEnd : `${row.periodEnd}T12:00:00.000Z`);
     if (!Number.isFinite(t)) continue;
-    out.push({ time: Math.floor(t / 1000) as UTCTimestamp, value: v });
+    out.push({ time: (Math.floor(t / 1000) + shiftSeconds) as UTCTimestamp, value: v });
   }
   return out;
 }
@@ -233,6 +234,8 @@ type Props = {
   metricParam: string | null;
   initialAnnualPoints?: ChartingSeriesPoint[];
   initialQuarterlyPoints?: ChartingSeriesPoint[];
+  /** Optional allowlist (e.g. derived from Key Stats availability). */
+  allowedMetricIds?: readonly ChartingMetricId[];
   /** Figma 8479:70857 — unit dropdown, export/refresh; chart is always single `ticker`. */
   toolbarLayout?: "default" | "figma70857";
   /** Full-page Charting only: company chip row (rendered after metric chips + + Metric). */
@@ -285,11 +288,23 @@ type HoverState = {
   rows: Array<{ id: ChartingMetricId; label: string; value: string }>;
 } | null;
 
+const GROUPED_BAR_SHIFT_SEC = 24 * 60 * 60;
+
+function groupedBarShiftSeconds(id: ChartingMetricId, ids: ChartingMetricId[]): number {
+  if (ids.length <= 1) return 0;
+  const idx = ids.indexOf(id);
+  if (idx < 0) return 0;
+  // Center the group around the original period end timestamp.
+  const center = (ids.length - 1) / 2;
+  return Math.round((idx - center) * GROUPED_BAR_SHIFT_SEC);
+}
+
 export function ChartingWorkspace({
   ticker,
   metricParam,
   initialAnnualPoints,
   initialQuarterlyPoints,
+  allowedMetricIds,
   toolbarLayout = "default",
   fullPageCompanyChipSlot,
   fullPageCompanyAddSlot,
@@ -434,36 +449,74 @@ export function ChartingWorkspace({
     return m;
   }, [ordered]);
 
+  // Grouped-bar mode: map each shifted bar time back to its original period row so tooltips work.
+  const groupedTimeToRow = useMemo(() => {
+    if (chartType !== "bars" || selected.length <= 1) return timeToRow;
+    const ids = barMetricOrder(selected);
+    const m = new Map<number, ChartingSeriesPoint>();
+    for (const row of ordered) {
+      const t = Date.parse(row.periodEnd.includes("T") ? row.periodEnd : `${row.periodEnd}T12:00:00.000Z`);
+      if (!Number.isFinite(t)) continue;
+      const base = Math.floor(t / 1000);
+      for (const id of ids) {
+        m.set(base + groupedBarShiftSeconds(id, ids), row);
+      }
+    }
+    return m;
+  }, [chartType, selected, ordered, timeToRow]);
+
+  const groupedTickLabelByTime = useMemo(() => {
+    if (chartType !== "bars" || selected.length <= 1) return null;
+    const ids = barMetricOrder(selected);
+    const centerId = ids[Math.floor((ids.length - 1) / 2)] ?? ids[0];
+    const m = new Map<number, string>();
+    for (const row of ordered) {
+      const t = Date.parse(row.periodEnd.includes("T") ? row.periodEnd : `${row.periodEnd}T12:00:00.000Z`);
+      if (!Number.isFinite(t)) continue;
+      const base = Math.floor(t / 1000);
+      m.set(base + groupedBarShiftSeconds(centerId, ids), formatPeriodLabel(row.periodEnd, periodMode));
+    }
+    return m;
+  }, [chartType, selected, ordered, periodMode]);
+
+  const allowedMetricSet = useMemo(() => {
+    if (!allowedMetricIds || allowedMetricIds.length === 0) return null;
+    return new Set(allowedMetricIds);
+  }, [allowedMetricIds]);
+
   /** Metrics that have ≥1 value in-range — single pass over rows (avoids O(metrics × points) seriesData calls). */
   const availableInRange = useMemo(() => {
     const seen = new Set<ChartingMetricId>();
     for (const row of ordered) {
       for (const id of CHARTING_METRIC_IDS) {
+        if (allowedMetricSet && !allowedMetricSet.has(id)) continue;
         if (seen.has(id)) continue;
         const v = rowValue(row, id);
         if (v != null && Number.isFinite(v)) seen.add(id);
       }
     }
     return CHARTING_METRIC_IDS.filter((id) => seen.has(id));
-  }, [ordered]);
+  }, [ordered, allowedMetricSet]);
 
   useEffect(() => {
     if (fullPageCompanyChipSlot) return;
     if (loading || !ordered.length) return;
     setSelected((prev) => {
-      const next = prev.filter((id) => seriesData(ordered, id).length > 0);
+      const next = prev.filter((id) => (!allowedMetricSet || allowedMetricSet.has(id)) && seriesData(ordered, id).length > 0);
       if (next.length === prev.length && next.length > 0) return prev;
       if (next.length >= 1) return next;
       for (const m of parseChartingMetricsParam(metricParam)) {
+        if (allowedMetricSet && !allowedMetricSet.has(m)) continue;
         if (seriesData(ordered, m).length > 0) return [m];
       }
       for (const id of CHARTING_DEFAULT_METRICS) {
+        if (allowedMetricSet && !allowedMetricSet.has(id)) continue;
         if (seriesData(ordered, id).length > 0) return [id];
       }
       const first = CHARTING_METRIC_IDS.find((id) => seriesData(ordered, id).length > 0);
       return first ? [first] : [];
     });
-  }, [loading, ordered, metricParam, fullPageCompanyChipSlot]);
+  }, [loading, ordered, metricParam, fullPageCompanyChipSlot, allowedMetricSet]);
 
   const removeMetric = useCallback(
     (id: ChartingMetricId) => {
@@ -588,7 +641,17 @@ export function ChartingWorkspace({
               visible: false,
               borderVisible: false,
             },
-            timeScale: { borderVisible: false, rightOffset: 0, barSpacing },
+            timeScale: {
+              borderVisible: false,
+              rightOffset: 0,
+              barSpacing,
+              tickMarkFormatter: (time: UTCTimestamp) => {
+                if (!groupedTickLabelByTime) return "";
+                const t = typeof time === "number" && Number.isFinite(time) ? time : null;
+                if (t == null) return "";
+                return groupedTickLabelByTime.get(t) ?? "";
+              },
+            },
             crosshair: { vertLine: { labelVisible: false }, horzLine: { labelVisible: true } },
           });
 
@@ -599,7 +662,9 @@ export function ChartingWorkspace({
 
           const seriesOrder = chartType === "bars" ? barMetricOrder(selected) : selected;
           for (const id of seriesOrder) {
-            const data = seriesData(ordered, id);
+            const shiftSec =
+              chartType === "bars" && selected.length > 1 ? groupedBarShiftSeconds(id, seriesOrder) : 0;
+            const data = seriesData(ordered, id, shiftSec);
             if (!data.length) continue;
             const kind = CHARTING_METRIC_KIND[id];
             const scaleId = scaleIdForKind(kind);
@@ -662,7 +727,7 @@ export function ChartingWorkspace({
               return;
             }
 
-            const row = timeToRow.get(timeKey);
+            const row = groupedTimeToRow.get(timeKey);
             const periodLabel = row ? formatPeriodLabel(row.periodEnd, periodMode) : String(timeKey);
 
             const rows: Array<{ id: ChartingMetricId; label: string; value: string }> = [];

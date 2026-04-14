@@ -33,6 +33,7 @@ import { portfolioAssetSymbolCaption } from "@/lib/portfolio/custom-asset-symbol
 import { formatPortfolioUsdPerUnit } from "@/lib/portfolio/format-portfolio-usd-unit";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import { TABLE_PAGE_SIZE, TablePaginationBar, tablePageCount } from "@/components/ui/table-pagination";
+import { buildSplitAdjustedTradeIndex } from "@/lib/portfolio/split-adjusted-trades";
 import { cn } from "@/lib/utils";
 import type { PortfolioTransaction, PortfolioTransactionKind } from "@/components/portfolio/portfolio-types";
 
@@ -164,6 +165,8 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
     removePortfolioTransaction,
     removePortfolioTransactions,
     selectedPortfolioReadOnly,
+    selectedPortfolioId,
+    holdingsByPortfolioId,
   } = usePortfolioWorkspace();
   const [filter, setFilter] = useState<TxFilter>("All");
   const [txSearch, setTxSearch] = useState("");
@@ -211,10 +214,22 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
     });
   }, [transactions]);
 
+  const heldSymbolSet = useMemo(() => {
+    if (!selectedPortfolioId) return new Set<string>();
+    const list = holdingsByPortfolioId[selectedPortfolioId] ?? [];
+    return new Set(list.map((h) => h.symbol.trim().toUpperCase()));
+  }, [holdingsByPortfolioId, selectedPortfolioId]);
+
   const filtered = useMemo(() => {
     const byKind = transactions.filter((t) => filterMatches(t.kind, filter));
-    return byKind.filter((t) => transactionMatchesAssetSearch(t, txSearch));
-  }, [transactions, filter, txSearch]);
+    const bySearch = byKind.filter((t) => transactionMatchesAssetSearch(t, txSearch));
+    // Corporate actions: only show Split rows if the user currently holds the asset.
+    return bySearch.filter((t) => {
+      if (t.kind !== "trade") return true;
+      if (t.operation.trim().toLowerCase() !== "split") return true;
+      return heldSymbolSet.has(t.symbol.trim().toUpperCase());
+    });
+  }, [transactions, filter, txSearch, heldSymbolSet]);
 
   const flatSorted = useMemo(() => {
     const arr = [...filtered];
@@ -286,6 +301,8 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
 
   const selectedCount = selectedIds.size;
   const showBulkBar = !selectedPortfolioReadOnly && selectedCount > 0;
+
+  const splitAdjusted = useMemo(() => buildSplitAdjustedTradeIndex(transactions), [transactions]);
 
   return (
     <div>
@@ -466,10 +483,12 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                         {format(parseISO(t.date), "MMM d, yyyy")}
                       </div>
                       <div className="text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B] align-middle">
-                        {new Intl.NumberFormat("en-US", { maximumFractionDigits: 6 }).format(t.shares)}
+                        {new Intl.NumberFormat("en-US", { maximumFractionDigits: 6 }).format(
+                          splitAdjusted.get(t.id)?.shares ?? t.shares,
+                        )}
                       </div>
                       <div className="text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B] align-middle">
-                        {formatPortfolioUsdPerUnit(t.price)}
+                        {formatPortfolioUsdPerUnit(splitAdjusted.get(t.id)?.price ?? t.price)}
                       </div>
                       <div className="text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B] align-middle">
                         {t.fee > 0 ? usd.format(t.fee) : "—"}
@@ -484,14 +503,17 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                       </div>
                       <div className="min-w-0 text-right text-[14px] font-medium leading-5 align-middle">
                         {t.profitPct != null && t.profitUsd != null ? (
-                          <span
+                          <div
                             className={cn(
-                              "tabular-nums",
+                              "flex flex-col items-end tabular-nums",
                               t.profitUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
                             )}
                           >
-                            {formatSignedPct(t.profitPct)} ({formatSignedUsd(t.profitUsd)})
-                          </span>
+                            <div className="text-[14px] font-medium leading-5">{formatSignedUsd(t.profitUsd)}</div>
+                            <div className="text-[12px] font-normal leading-4 opacity-90">
+                              {formatSignedPct(t.profitPct)}
+                            </div>
+                          </div>
                         ) : (
                           <span className="text-[14px] font-medium text-[#71717A]">-</span>
                         )}

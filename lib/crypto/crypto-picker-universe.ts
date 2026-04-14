@@ -28,8 +28,9 @@ export function portfolioHoldingAssetHref(symbol: string): string | null {
   if (!s) return "/portfolio";
   if (isCustomPortfolioSymbol(s)) return null;
   const base = cryptoRouteBase(s);
-  if (CRYPTO_ASSET_PAGE_SYMBOLS.has(base)) return `/crypto/${encodeURIComponent(base)}`;
-  if (CRYPTO_CC_EXTRA_PLAIN_BASES.has(base)) return `/crypto/${encodeURIComponent(base)}`;
-  if (cryptoUsdPairBase(s)) return `/crypto/${encodeURIComponent(base)}`;
-  return `/stock/${encodeURIComponent(s)}`;
+  const holdingsTab = "?tab=holdings";
+  if (CRYPTO_ASSET_PAGE_SYMBOLS.has(base)) return `/crypto/${encodeURIComponent(base)}${holdingsTab}`;
+  if (CRYPTO_CC_EXTRA_PLAIN_BASES.has(base)) return `/crypto/${encodeURIComponent(base)}${holdingsTab}`;
+  if (cryptoUsdPairBase(s)) return `/crypto/${encodeURIComponent(base)}${holdingsTab}`;
+  return `/stock/${encodeURIComponent(s)}${holdingsTab}`;
 }

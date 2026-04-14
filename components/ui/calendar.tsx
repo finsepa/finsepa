@@ -15,7 +15,12 @@ const calendarPresets: Partial<Record<string, string>> = {
   root: "w-fit min-w-[280px] max-w-full shrink-0 bg-white p-3",
   months: "relative flex w-full flex-col gap-4 md:flex-row",
   month: "flex w-full flex-col gap-4",
-  month_caption: "flex h-9 w-full items-center justify-center px-9",
+  /** Reset global `.rdp-month_caption` bold/large defaults; center nav + dropdown caption. */
+  month_caption:
+    "relative z-[1] flex h-9 w-full items-center justify-center gap-2 px-9 text-sm font-medium text-[#09090B]",
+  dropdowns: "relative z-[2] flex items-center justify-center gap-2",
+  dropdown_root:
+    "relative inline-flex h-9 min-h-9 shrink-0 items-center justify-center rounded-md border border-[#E4E4E7] bg-white px-2 text-sm font-medium text-[#09090B] shadow-sm",
   nav: "absolute inset-x-0 top-0 flex w-full items-center justify-between gap-1 px-0.5",
   button_previous:
     "inline-flex size-9 items-center justify-center rounded-md border border-transparent bg-transparent text-[#09090B] transition-colors hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 disabled:pointer-events-none disabled:opacity-40 aria-disabled:pointer-events-none aria-disabled:opacity-40",

@@ -1,14 +1,18 @@
 "use client";
 
 import { format } from "date-fns";
-import { useState } from "react";
 import { Calendar as CalendarIcon } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
-/** Date field with popover calendar (shadcn-style: Popover + DayPicker). */
+function startOfCalendarMonth(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth(), 1);
+}
+
+/** Date field with popover — uses shadcn-style `Calendar` + `captionLayout="dropdown"` (react-day-picker). */
 export function TransactionDateField({
   date,
   onDateChange,
@@ -17,6 +21,20 @@ export function TransactionDateField({
   onDateChange: (next: Date) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [month, setMonth] = useState(() => startOfCalendarMonth(date));
+
+  const { startMonth, endMonth } = useMemo(() => {
+    const y = new Date().getFullYear();
+    return {
+      startMonth: new Date(y - 100, 0, 1),
+      endMonth: new Date(y + 15, 11, 31),
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    setMonth(startOfCalendarMonth(date));
+  }, [open, date]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -38,7 +56,13 @@ export function TransactionDateField({
       >
         <Calendar
           mode="single"
+          captionLayout="dropdown"
           showOutsideDays
+          startMonth={startMonth}
+          endMonth={endMonth}
+          className="rounded-lg border-0 bg-transparent p-3"
+          month={month}
+          onMonthChange={(m) => setMonth(startOfCalendarMonth(m))}
           selected={date}
           onSelect={(d) => {
             if (d) {

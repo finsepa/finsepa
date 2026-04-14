@@ -6,6 +6,7 @@ export type { StockDetailTabId };
 
 const TABS: { id: StockDetailTabId; label: string }[] = [
   { id: "overview", label: "Overview" },
+  { id: "holdings", label: "Holdings" },
   { id: "charting", label: "Charting" },
   { id: "peers", label: "Peers" },
   { id: "profile", label: "Profile" },

@@ -1,4 +1,5 @@
 import type { PortfolioTransaction } from "@/components/portfolio/portfolio-types";
+import { splitRatioFromTransaction } from "@/lib/portfolio/split-ratio-from-transaction";
 
 /** Earliest calendar day of a stock buy (YYYY-MM-DD). */
 export function earliestStockBuyYmd(transactions: PortfolioTransaction[]): string | null {
@@ -35,7 +36,8 @@ export function replayStockSharesUpTo(
     if (op === "buy") {
       m.set(sym, prev + t.shares);
     } else if (op === "split") {
-      if (prev > 0 && t.price > 0 && t.price !== 1) m.set(sym, prev * t.price);
+      const ratio = splitRatioFromTransaction(t);
+      if (prev > 0 && ratio != null) m.set(sym, prev * ratio);
     } else if (op === "sell") {
       m.set(sym, Math.max(0, prev - t.shares));
     }

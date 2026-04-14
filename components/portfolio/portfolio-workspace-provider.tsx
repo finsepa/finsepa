@@ -23,6 +23,7 @@ import { CreateCombinedPortfolioModal } from "@/components/portfolio/create-comb
 import { PortfolioWorkspaceContext } from "@/components/portfolio/portfolio-workspace-context";
 import { cn } from "@/lib/utils";
 import { PortfolioPrivacySelect } from "@/components/portfolio/portfolio-privacy-select";
+import type { CompanyPick } from "@/components/charting/company-picker";
 import {
   newPortfolioId,
   portfolioIsCombined,
@@ -326,6 +327,7 @@ export function PortfolioWorkspaceProvider({
   const [createPortfolioOpen, setCreatePortfolioOpen] = useState(false);
   const [createCombinedOpen, setCreateCombinedOpen] = useState(false);
   const [newTransactionOpen, setNewTransactionOpen] = useState(false);
+  const [newTransactionPreset, setNewTransactionPreset] = useState<CompanyPick | null>(null);
   const [addCashModalOpen, setAddCashModalOpen] = useState(false);
   const [editTransaction, setEditTransaction] = useState<PortfolioTransaction | null>(null);
   const [holdingsByPortfolioId, setHoldingsByPortfolioId] = useState<Record<string, PortfolioHolding[]>>(
@@ -373,8 +375,16 @@ export function PortfolioWorkspaceProvider({
   const applyWorkspaceState = useCallback((saved: PersistedPortfolioState) => {
     setPortfolios(saved.portfolios);
     setSelectedPortfolioId(saved.selectedPortfolioId);
-    setHoldingsByPortfolioId(saved.holdingsByPortfolioId);
     setTransactionsByPortfolioId(saved.transactionsByPortfolioId);
+
+    // Rebuild holdings from the ledger so splits always apply correctly (and avoids persisting stale math).
+    const rebuilt: Record<string, PortfolioHolding[]> = {};
+    for (const p of saved.portfolios) {
+      if (portfolioIsCombined(p)) continue;
+      const txs = saved.transactionsByPortfolioId[p.id] ?? [];
+      rebuilt[p.id] = replayTradeTransactionsToHoldings(txs);
+    }
+    setHoldingsByPortfolioId(rebuilt);
   }, []);
 
   /** Instant balance from device cache; server merge still runs in the effect below. */
@@ -745,9 +755,22 @@ export function PortfolioWorkspaceProvider({
   const openNewTransaction = useCallback(() => {
     const p = portfolios.find((x) => x.id === selectedPortfolioId);
     if (p?.kind === "combined") return;
+    setNewTransactionPreset(null);
     setNewTransactionOpen(true);
   }, [portfolios, selectedPortfolioId]);
-  const closeNewTransaction = useCallback(() => setNewTransactionOpen(false), []);
+  const openNewTransactionWithPreset = useCallback(
+    (pick: CompanyPick) => {
+      const p = portfolios.find((x) => x.id === selectedPortfolioId);
+      if (p?.kind === "combined") return;
+      setNewTransactionPreset(pick);
+      setNewTransactionOpen(true);
+    },
+    [portfolios, selectedPortfolioId],
+  );
+  const closeNewTransaction = useCallback(() => {
+    setNewTransactionOpen(false);
+    setNewTransactionPreset(null);
+  }, []);
   const openAddCash = useCallback(() => {
     const p = portfolios.find((x) => x.id === selectedPortfolioId);
     if (p?.kind === "combined") return;
@@ -803,6 +826,7 @@ export function PortfolioWorkspaceProvider({
       selectedPortfolioReadOnly,
       newTransactionOpen,
       openNewTransaction,
+      openNewTransactionWithPreset,
       closeNewTransaction,
       addCashModalOpen,
       openAddCash,
@@ -835,6 +859,7 @@ export function PortfolioWorkspaceProvider({
       selectedPortfolioReadOnly,
       newTransactionOpen,
       openNewTransaction,
+      openNewTransactionWithPreset,
       closeNewTransaction,
       addCashModalOpen,
       openAddCash,
@@ -849,7 +874,11 @@ export function PortfolioWorkspaceProvider({
   return (
     <PortfolioWorkspaceContext.Provider value={value}>
       {children}
-      <NewTransactionModal open={newTransactionOpen} onClose={closeNewTransaction} />
+      <NewTransactionModal
+        open={newTransactionOpen}
+        presetCompany={newTransactionPreset}
+        onClose={closeNewTransaction}
+      />
       <AddCashModal open={addCashModalOpen} onClose={closeAddCash} />
       <EditTransactionModal
         open={editTransaction != null}

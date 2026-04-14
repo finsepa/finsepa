@@ -16,6 +16,9 @@ import {
   portfolioSharesUnitTicker,
 } from "@/lib/portfolio/custom-asset-symbol";
 import { netCashUsd, unrealizedProfitPct, unrealizedProfitUsd } from "@/lib/portfolio/overview-metrics";
+import { cumulativeRealizedGainUsdForAsset } from "@/lib/portfolio/realized-pnl-from-trades";
+import { cryptoRouteBase } from "@/lib/crypto/crypto-symbol-base";
+import { isSupportedCryptoAssetSymbol } from "@/lib/crypto/crypto-logo-url";
 import { formatPortfolioUsdPerUnit } from "@/lib/portfolio/format-portfolio-usd-unit";
 import { cn } from "@/lib/utils";
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
@@ -116,6 +119,8 @@ function PortfolioHoldingsTableInner({
   const cashUsd = netCashUsd(transactions);
   const equityValue = holdings.reduce((s, h) => s + h.currentValue, 0);
   const netWorth = equityValue + cashUsd;
+  // Allocation display: if cash is negative, exclude it from the denominator so weights stay within 0–100%.
+  const allocationDenomUsd = equityValue + Math.max(0, cashUsd);
   /** Same dollar as Total profit card (period All). */
   const portfolioReturnUsd = unrealizedProfitUsd(holdings);
   /** Same % as Total profit card ATH line (lifetime return on total cost basis), when overview has published it. */
@@ -128,12 +133,13 @@ function PortfolioHoldingsTableInner({
         : !athSnap.marketReady
           ? null
           : athSnap.athReturnPct;
-  const cashWeightPct = netWorth > 0 ? (cashUsd / netWorth) * 100 : 0;
+  const cashWeightPct = allocationDenomUsd > 0 && cashUsd > 0 ? (cashUsd / allocationDenomUsd) * 100 : 0;
 
   const rows = holdings.map((h) => {
     const retUsd = h.currentValue - h.costBasis;
     const retPct = h.costBasis > 0 ? ((h.currentValue - h.costBasis) / h.costBasis) * 100 : 0;
-    const weightPct = netWorth > 0 ? (h.currentValue / netWorth) * 100 : 0;
+    const weightRaw = allocationDenomUsd > 0 ? (h.currentValue / allocationDenomUsd) * 100 : 0;
+    const weightPct = Math.min(100, Math.max(0, weightRaw));
     return { holding: h, retUsd, retPct, weightPct };
   });
 
@@ -169,6 +175,12 @@ function PortfolioHoldingsTableInner({
         </thead>
         <tbody>
           {sorted.map(({ holding: h, retUsd, retPct, weightPct }) => {
+            const cryptoKey = cryptoRouteBase(h.symbol);
+            const assetKind: "stock" | "crypto" =
+              isSupportedCryptoAssetSymbol(cryptoKey) ? "crypto" : "stock";
+            const realizedUsd = cumulativeRealizedGainUsdForAsset(transactions, cryptoKey, assetKind);
+            const unrealizedUsd = retUsd;
+            const totalUsd = unrealizedUsd + realizedUsd;
             const assetHref = portfolioHoldingAssetHref(h.symbol);
             const logo = displayLogoUrlForPortfolioSymbol(h.symbol);
             const caption = portfolioAssetSymbolCaption(h.symbol);
@@ -220,21 +232,41 @@ function PortfolioHoldingsTableInner({
                 {formatPortfolioUsdPerUnit(h.avgPrice)}
               </td>
               <td className="align-middle whitespace-nowrap px-4 py-3 text-right">
-                <div
-                  className={cn(
-                    "font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums",
-                    retUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
-                  )}
-                >
-                  {formatSignedUsd(retUsd)}
-                </div>
-                <div
-                  className={cn(
-                    "text-[12px] font-medium leading-4 tabular-nums",
-                    retPct >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
-                  )}
-                >
-                  {formatSignedPct(retPct)}
+                <div className="group/px relative inline-flex w-full flex-col items-end">
+                  <div
+                    className={cn(
+                      "font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums",
+                      retUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
+                    )}
+                  >
+                    {formatSignedUsd(retUsd)}
+                  </div>
+                  <div
+                    className={cn(
+                      "text-[12px] font-medium leading-4 tabular-nums",
+                      retPct >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
+                    )}
+                  >
+                    {formatSignedPct(retPct)}
+                  </div>
+
+                  <div className="pointer-events-none absolute right-0 top-1/2 z-50 hidden w-[240px] -translate-y-1/2 translate-x-[calc(100%+12px)] rounded-[10px] border border-[#E4E4E7] bg-white px-3 py-2 text-left text-[12px] leading-4 text-[#09090B] shadow-[0px_8px_20px_0px_rgba(10,10,10,0.10)] group-hover/px:block">
+                    <div className="font-semibold text-[#09090B]">Profit/Loss</div>
+                    <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1">
+                      <div className="text-[#71717A]">Unrealized</div>
+                      <div className={cn("text-right tabular-nums", unrealizedUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]")}>
+                        {formatSignedUsd(unrealizedUsd)}
+                      </div>
+                      <div className="text-[#71717A]">Realized</div>
+                      <div className={cn("text-right tabular-nums", realizedUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]")}>
+                        {formatSignedUsd(realizedUsd)}
+                      </div>
+                      <div className="text-[#71717A]">Total</div>
+                      <div className={cn("text-right tabular-nums font-semibold", totalUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]")}>
+                        {formatSignedUsd(totalUsd)}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </td>
               <td className="align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">

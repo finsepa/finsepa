@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { AssetPageTopLoader } from "@/components/layout/asset-page-top-loader";
 import type { ChartDisplayState } from "@/components/chart/PriceChart";
@@ -12,19 +13,34 @@ import { CryptoMiniTable } from "@/components/crypto/crypto-mini-table";
 import { LogoSkeleton, SkeletonBox } from "@/components/markets/skeleton";
 import { ChartControls } from "@/components/stock/chart-controls";
 import { LatestNews } from "@/components/stock/latest-news";
+import { CryptoDetailTabNav } from "@/components/crypto/crypto-detail-tab-nav";
+import { AssetPortfolioHoldingsTab } from "@/components/portfolio/asset-portfolio-holdings-tab";
+import { parseCryptoDetailTabQuery, type CryptoDetailTabId } from "@/lib/crypto/crypto-detail-tab";
 import { mergeLogoMemory, readLogoMemory } from "@/lib/logos/logo-memory";
 import type { CryptoAssetRow } from "@/lib/market/crypto-asset";
 import type { CryptoPageInitialData } from "@/lib/market/crypto-page-initial-data";
 import type { StockChartRange } from "@/lib/market/stock-chart-types";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
 
+function initialCryptoTabsMounted(tab: CryptoDetailTabId): Record<CryptoDetailTabId, boolean> {
+  return {
+    overview: tab === "overview",
+    holdings: tab === "holdings",
+  };
+}
+
 export function CryptoPageContent({
   routeSymbol,
   initialData,
+  initialActiveTab = "overview",
 }: {
   routeSymbol: string;
   initialData?: CryptoPageInitialData | null;
+  initialActiveTab?: CryptoDetailTabId;
 }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const symKey = routeSymbol.trim().toUpperCase();
   const serverMatch =
     initialData != null && initialData.routeSymbol.trim().toUpperCase() === symKey ? initialData : null;
@@ -44,6 +60,31 @@ export function CryptoPageContent({
     priceTimestampLabel: null,
   });
   const symUpper = routeSymbol.trim().toUpperCase();
+
+  const activeTab: CryptoDetailTabId =
+    parseCryptoDetailTabQuery(searchParams.get("tab")) ?? initialActiveTab;
+
+  const [tabsMounted, setTabsMounted] = useState<Record<CryptoDetailTabId, boolean>>(() =>
+    initialCryptoTabsMounted(activeTab),
+  );
+
+  useEffect(() => {
+    setTabsMounted((m) => ({ ...m, [activeTab]: true }));
+  }, [activeTab]);
+
+  const setTabInUrl = useCallback(
+    (tab: CryptoDetailTabId) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (tab === "overview") {
+        params.delete("tab");
+      } else {
+        params.set("tab", tab);
+      }
+      const q = params.toString();
+      router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false });
+    },
+    [pathname, router, searchParams],
+  );
 
   const onChartDisplay = useCallback((s: ChartDisplayState) => {
     setChartUi(s);
@@ -158,27 +199,54 @@ export function CryptoPageContent({
 
       {safeRow ? (
         <>
-          <ChartControls activeRange={range} onRangeChange={setRange} />
-          <PriceChart
-            kind="crypto"
-            symbol={symUpper}
-            range={range}
-            onDisplayChange={onChartDisplay}
-            initialChart={initialChartMemo}
-          />
-          <CryptoMiniTable
-            symbol={symUpper}
-            displayName={safeRow.name}
-            logoUrl={cryptoLogoSrc || serverCryptoLogo}
-            initialPerformance={initialPerformance ?? null}
-          />
-          <div className="pt-2">
-            <CryptoKeyStats row={safeRow} />
-          </div>
-          <CryptoLinksSection links={safeRow.links} />
-          <div className="pt-2">
-            <LatestNews ticker={symUpper} initialItems={initialNews} variant="crypto" />
-          </div>
+          <CryptoDetailTabNav activeTab={activeTab} onTabChange={setTabInUrl} />
+
+          {tabsMounted.overview ? (
+            <div
+              role="tabpanel"
+              id="crypto-tab-overview"
+              aria-hidden={activeTab !== "overview"}
+              className={activeTab === "overview" ? "space-y-5" : "hidden"}
+            >
+              <ChartControls activeRange={range} onRangeChange={setRange} />
+              <PriceChart
+                kind="crypto"
+                symbol={symUpper}
+                range={range}
+                onDisplayChange={onChartDisplay}
+                initialChart={initialChartMemo}
+              />
+              <CryptoMiniTable
+                symbol={symUpper}
+                displayName={safeRow.name}
+                logoUrl={cryptoLogoSrc || serverCryptoLogo}
+                initialPerformance={initialPerformance ?? null}
+              />
+              <div className="pt-2">
+                <CryptoKeyStats row={safeRow} />
+              </div>
+              <CryptoLinksSection links={safeRow.links} />
+              <div className="pt-2">
+                <LatestNews ticker={symUpper} initialItems={initialNews} variant="crypto" />
+              </div>
+            </div>
+          ) : null}
+
+          {tabsMounted.holdings ? (
+            <div
+              role="tabpanel"
+              id="crypto-tab-holdings"
+              aria-hidden={activeTab !== "holdings"}
+              className={activeTab === "holdings" ? "block pt-1" : "hidden"}
+            >
+              <AssetPortfolioHoldingsTab
+                assetKind="crypto"
+                routeKey={symUpper}
+                assetDisplayName={safeRow.name}
+                onChartDisplayChange={onChartDisplay}
+              />
+            </div>
+          ) : null}
         </>
       ) : null}
     </div>

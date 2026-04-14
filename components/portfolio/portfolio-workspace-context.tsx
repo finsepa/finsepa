@@ -3,6 +3,7 @@
 import { createContext, useContext } from "react";
 import type { Dispatch, SetStateAction } from "react";
 
+import type { CompanyPick } from "@/components/charting/company-picker";
 import type {
   PortfolioEntry,
   PortfolioHolding,
@@ -24,6 +25,8 @@ export type PortfolioWorkspaceContextValue = {
   selectedPortfolioReadOnly: boolean;
   newTransactionOpen: boolean;
   openNewTransaction: () => void;
+  /** Open New Transaction with a pre-selected ticker/crypto symbol. */
+  openNewTransactionWithPreset: (pick: CompanyPick) => void;
   closeNewTransaction: () => void;
   addCashModalOpen: boolean;
   openAddCash: () => void;

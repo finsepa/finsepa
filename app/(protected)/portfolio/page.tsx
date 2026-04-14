@@ -6,6 +6,7 @@ import {
   startTransition,
   useCallback,
   useEffect,
+  useRef,
   useState,
   type ComponentType,
 } from "react";
@@ -44,6 +45,7 @@ import type { PortfolioTransaction } from "@/components/portfolio/portfolio-type
 import { netCashUsd, totalNetWorth } from "@/lib/portfolio/overview-metrics";
 import { ChartSkeleton } from "@/components/ui/chart-skeleton";
 import { cn } from "@/lib/utils";
+import { refreshHoldingMarketPrices } from "@/lib/portfolio/rebuild-holdings-from-trades";
 
 const EMPTY_PORTFOLIO_TRANSACTIONS: PortfolioTransaction[] = [];
 
@@ -166,6 +168,7 @@ function PortfolioPageInner() {
     transactionsByPortfolioId,
     openEditPortfolio,
     selectedPortfolioReadOnly,
+    setPortfolioHoldings,
   } = usePortfolioWorkspace();
   const selected =
     portfolios.find((p) => p.id === selectedPortfolioId) ?? portfolios[0] ?? null;
@@ -179,6 +182,81 @@ function PortfolioPageInner() {
 
   const overviewNetWorth = totalNetWorth(holdings, netCashUsd(transactions));
   const showOverviewHoldingsBlock = overviewNetWorth > 0;
+
+  const lastPriceRefreshByPortfolioIdRef = useRef<Record<string, number>>({});
+  const priceRefreshInFlightRef = useRef(false);
+  useEffect(() => {
+    if (!selectedPortfolioId) return;
+    if (selectedPortfolioReadOnly) return;
+    if (holdings.length === 0) return;
+    // Only refresh prices when the user is looking at performance/overview surfaces.
+    if (viewTab !== "Overview" && viewTab !== "Performance") return;
+
+    const intervalMs = holdings.length > 25 ? 60_000 : 30_000;
+
+    let cancelled = false;
+    let timeoutId: number | undefined;
+
+    const tick = () => {
+      if (cancelled) return;
+      // Don't refresh in the background (saves API + avoids jank).
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") {
+        timeoutId = window.setTimeout(tick, intervalMs);
+        return;
+      }
+      if (priceRefreshInFlightRef.current) {
+        timeoutId = window.setTimeout(tick, intervalMs);
+        return;
+      }
+
+      const now = Date.now();
+      const last = lastPriceRefreshByPortfolioIdRef.current[selectedPortfolioId] ?? 0;
+      // Guard against rapid tab switching / re-renders.
+      if (now - last < Math.min(15_000, intervalMs)) {
+        timeoutId = window.setTimeout(tick, intervalMs);
+        return;
+      }
+
+      lastPriceRefreshByPortfolioIdRef.current[selectedPortfolioId] = now;
+      priceRefreshInFlightRef.current = true;
+
+      void (async () => {
+        try {
+          const quoted = await refreshHoldingMarketPrices(holdings);
+          if (cancelled) return;
+
+          // Only update context if any market price changed meaningfully.
+          let changed = false;
+          for (let i = 0; i < Math.min(holdings.length, quoted.length); i++) {
+            const a = holdings[i]!;
+            const b = quoted[i]!;
+            if (a.symbol !== b.symbol) {
+              changed = true;
+              break;
+            }
+            if (Math.abs((a.marketPrice ?? 0) - (b.marketPrice ?? 0)) > 1e-9) {
+              changed = true;
+              break;
+            }
+          }
+          if (!changed) return;
+          setPortfolioHoldings(selectedPortfolioId, quoted);
+        } finally {
+          priceRefreshInFlightRef.current = false;
+          if (!cancelled) timeoutId = window.setTimeout(tick, intervalMs);
+        }
+      })();
+    };
+
+    // Run once immediately, then schedule.
+    tick();
+
+    return () => {
+      cancelled = true;
+      priceRefreshInFlightRef.current = false;
+      if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+    };
+  }, [holdings, selectedPortfolioId, selectedPortfolioReadOnly, setPortfolioHoldings, viewTab]);
 
   const panelClass = (tab: PortfolioViewTab) =>
     cn(viewTab === tab ? "flex min-h-0 flex-1 flex-col" : "hidden");

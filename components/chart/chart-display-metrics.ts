@@ -25,13 +25,14 @@ export type ChartHeaderMetrics = {
 };
 
 /**
- * Priority: range selection > crosshair hover > period (last vs first).
+ * Priority: range selection > optional crosshair (Holdings tab only) > period (last vs first).
+ * Overview / crypto asset pages pass `crosshairForHeader: null` so the header stays on
+ * current price + period P/L; crosshair only drives the chart tooltip there.
  */
 export function computeChartHeaderMetrics(
   points: StockChartPoint[],
-  hoverPrice: number | null,
-  hoverTimeUnix: number | null,
   selection: ChartRangeSelection,
+  crosshairForHeader: { price: number; timeUnix: number } | null = null,
 ): ChartHeaderMetrics {
   if (!points.length) {
     return {
@@ -65,9 +66,7 @@ export function computeChartHeaderMetrics(
   }
 
   const first = points[0]!.value;
-  const last = points[points.length - 1]!.value;
-  const lastTime = points[points.length - 1]!.time;
-  if (!isFiniteNumber(first) || !isFiniteNumber(last)) {
+  if (!isFiniteNumber(first)) {
     return {
       displayPrice: null,
       displayChangePct: null,
@@ -79,18 +78,36 @@ export function computeChartHeaderMetrics(
     };
   }
 
-  if (hoverPrice != null && isFiniteNumber(hoverPrice)) {
-    const abs = hoverPrice - first;
+  if (
+    crosshairForHeader != null &&
+    isFiniteNumber(crosshairForHeader.price) &&
+    isFiniteNumber(crosshairForHeader.timeUnix)
+  ) {
+    const hp = crosshairForHeader.price;
+    const abs = hp - first;
     const pct = first !== 0 ? (abs / first) * 100 : null;
-    const t = hoverTimeUnix != null && isFiniteNumber(hoverTimeUnix) ? hoverTimeUnix : null;
     return {
-      displayPrice: hoverPrice,
+      displayPrice: hp,
       displayChangePct: pct,
       displayChangeAbs: abs,
       isHovering: true,
       selectionActive: false,
       periodLabelOverride: null,
-      displayTimeUnix: t,
+      displayTimeUnix: crosshairForHeader.timeUnix,
+    };
+  }
+
+  const last = points[points.length - 1]!.value;
+  const lastTime = points[points.length - 1]!.time;
+  if (!isFiniteNumber(last)) {
+    return {
+      displayPrice: null,
+      displayChangePct: null,
+      displayChangeAbs: null,
+      isHovering: false,
+      selectionActive: false,
+      periodLabelOverride: null,
+      displayTimeUnix: null,
     };
   }
 

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { fetchEodhdOpenPriceOnOrBefore } from "@/lib/market/eodhd-eod";
+import { fetchEodhdEodDaily } from "@/lib/market/eodhd-eod";
 import { normalizeWatchlistTicker, WatchlistValidationError } from "@/lib/watchlist/operations";
 
 type Ctx = { params: Promise<{ ticker: string }> };
@@ -23,14 +23,22 @@ export async function GET(request: Request, { params }: Ctx) {
     return NextResponse.json({ error: "Missing or invalid date (use YYYY-MM-DD)." }, { status: 400 });
   }
 
-  const result = await fetchEodhdOpenPriceOnOrBefore(routeTicker, date);
-  if (!result) {
+  // Use EOD adjusted close (split-adjusted) so portfolio transactions match the chart scale.
+  // EODHD provides `adjusted_close` for US equities; our fetcher prefers it when present.
+  const from = (() => {
+    const d = new Date(`${date}T00:00:00.000Z`);
+    d.setUTCDate(d.getUTCDate() - 28);
+    return d.toISOString().slice(0, 10);
+  })();
+  const bars = await fetchEodhdEodDaily(routeTicker, from, date);
+  const pick = bars && bars.length ? bars[bars.length - 1]! : null;
+  if (!pick || !Number.isFinite(pick.close) || pick.close <= 0) {
     return NextResponse.json({ price: null, barDate: null, source: null }, { status: 404 });
   }
 
   return NextResponse.json({
-    price: result.price,
-    barDate: result.barDate,
-    source: result.source,
+    price: pick.close,
+    barDate: pick.date,
+    source: "adjusted_close",
   });
 }

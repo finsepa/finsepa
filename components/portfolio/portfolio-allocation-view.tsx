@@ -40,20 +40,25 @@ type AllocRow = { id: string; name: string; weightPct: number; color: string };
 
 function buildRows(holdings: PortfolioHolding[], transactions: PortfolioTransaction[]): AllocRow[] {
   const cashUsd = netCashUsd(transactions);
-  const netWorth = totalNetWorth(holdings, cashUsd);
-  if (netWorth <= 0) return [];
+  // Keep net worth calculations unchanged elsewhere; for allocation display, avoid >100% weights when cash is negative.
+  // If cash is negative, exclude it from the denominator (assets-only allocation).
+  const equity = holdings.reduce((s, h) => s + h.currentValue, 0);
+  const allocationDenomUsd = equity + Math.max(0, cashUsd);
+  if (allocationDenomUsd <= 0) return [];
 
   const raw: { id: string; name: string; weightPct: number }[] = holdings.map((h) => ({
     id: h.id,
     name: h.name.trim() || h.symbol,
-    weightPct: (h.currentValue / netWorth) * 100,
+    weightPct: Math.min(100, Math.max(0, (h.currentValue / allocationDenomUsd) * 100)),
   }));
 
-  raw.push({
-    id: "cash-usd",
-    name: "US Dollar",
-    weightPct: (cashUsd / netWorth) * 100,
-  });
+  if (cashUsd > 0) {
+    raw.push({
+      id: "cash-usd",
+      name: "US Dollar",
+      weightPct: (cashUsd / allocationDenomUsd) * 100,
+    });
+  }
 
   raw.sort((a, b) => b.weightPct - a.weightPct);
 

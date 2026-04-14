@@ -3,6 +3,7 @@ import { newHoldingId } from "@/components/portfolio/portfolio-types";
 import { applyStockSplitToHolding } from "@/lib/portfolio/apply-stock-split-to-holding";
 import { fetchLiveMarketPriceClient } from "@/lib/portfolio/client-symbol-quotes";
 import { mergeBuyIntoPosition, type BuyLot } from "@/lib/portfolio/holding-position";
+import { splitRatioFromTransaction } from "@/lib/portfolio/split-ratio-from-transaction";
 
 function applySellToHolding(h: PortfolioHolding, sharesSold: number): PortfolioHolding | null {
   if (sharesSold <= 0) return h;
@@ -62,7 +63,8 @@ export function replayTradeTransactionsToHoldingsUpTo(
       bySymbol.set(sym, merged);
     } else if (op === "split") {
       if (!existing) continue;
-      const next = applyStockSplitToHolding(existing, t.price);
+      const ratio = splitRatioFromTransaction(t) ?? 1;
+      const next = applyStockSplitToHolding(existing, ratio);
       if (next) bySymbol.set(sym, next);
     } else if (op === "sell") {
       if (!existing) continue;
@@ -106,7 +108,8 @@ export function replayTradeTransactionsToHoldings(transactions: PortfolioTransac
       bySymbol.set(sym, merged);
     } else if (op === "split") {
       if (!existing) continue;
-      const next = applyStockSplitToHolding(existing, t.price);
+      const ratio = splitRatioFromTransaction(t) ?? 1;
+      const next = applyStockSplitToHolding(existing, ratio);
       if (next) bySymbol.set(sym, next);
     } else if (op === "sell") {
       if (!existing) continue;

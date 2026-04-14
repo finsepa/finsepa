@@ -2,6 +2,8 @@ import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfo
 import { newHoldingId } from "@/components/portfolio/portfolio-types";
 import { applyStockSplitToHolding } from "@/lib/portfolio/apply-stock-split-to-holding";
 import { mergeBuyIntoPosition, type BuyLot } from "@/lib/portfolio/holding-position";
+import { portfolioSymbolMatchesAssetRoute } from "@/lib/portfolio/portfolio-asset-route-match";
+import { splitRatioFromTransaction } from "@/lib/portfolio/split-ratio-from-transaction";
 
 /**
  * Cost basis removed when selling `sharesSold` from a holding (average-cost method).
@@ -67,7 +69,8 @@ function cumulativeRealizedGainFromSortedTrades(trades: PortfolioTransaction[]):
       bySymbol.set(sym, merged);
     } else if (op === "split") {
       if (!existing) continue;
-      const next = applyStockSplitToHolding(existing, t.price);
+      const ratio = splitRatioFromTransaction(t) ?? 1;
+      const next = applyStockSplitToHolding(existing, ratio);
       if (next) bySymbol.set(sym, next);
     } else if (op === "sell") {
       if (!existing) continue;
@@ -101,6 +104,37 @@ export function cumulativeRealizedGainUsdUpTo(
  */
 export function cumulativeRealizedGainUsd(transactions: PortfolioTransaction[]): number {
   return cumulativeRealizedGainFromSortedTrades(sortTradeRows(transactions));
+}
+
+/**
+ * Realized P/L from sells for one asset only (same average-cost replay as the full ledger, isolated to matching trades).
+ */
+export function cumulativeRealizedGainUsdForAsset(
+  transactions: PortfolioTransaction[],
+  routeKey: string,
+  assetKind: "stock" | "crypto",
+): number {
+  const key = routeKey.trim().toUpperCase();
+  const trades = sortTradeRows(transactions).filter((t) =>
+    portfolioSymbolMatchesAssetRoute({ holdingSymbol: t.symbol, routeKey: key, kind: assetKind }),
+  );
+  return cumulativeRealizedGainFromSortedTrades(trades);
+}
+
+/** Sum of trade row fees (buys, sells, splits) for one asset. */
+export function totalTradeFeesUsdForAsset(
+  transactions: PortfolioTransaction[],
+  routeKey: string,
+  assetKind: "stock" | "crypto",
+): number {
+  const key = routeKey.trim().toUpperCase();
+  let s = 0;
+  for (const t of transactions) {
+    if (t.kind !== "trade") continue;
+    if (!portfolioSymbolMatchesAssetRoute({ holdingSymbol: t.symbol, routeKey: key, kind: assetKind })) continue;
+    if (Number.isFinite(t.fee)) s += t.fee;
+  }
+  return s;
 }
 
 /** Unrealized on open lots + realized from all past sells (lifetime trading P/L on equities). */
