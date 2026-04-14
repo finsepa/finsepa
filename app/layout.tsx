@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 
+import { SupabaseBrowserEnvProvider } from "@/components/supabase/supabase-browser-env-provider";
 import { Toaster } from "@/components/ui/sonner";
 
 import "./globals.css";
@@ -24,10 +25,15 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
   return (
     <html lang="en" className={`${inter.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
-        {children}
+        <SupabaseBrowserEnvProvider url={supabaseUrl} anonKey={supabaseAnonKey}>
+          {children}
+        </SupabaseBrowserEnvProvider>
         <Toaster position="top-center" closeButton />
       </body>
     </html>
