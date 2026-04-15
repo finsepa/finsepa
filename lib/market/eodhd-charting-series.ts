@@ -97,7 +97,21 @@ function mergeIncomeRow(p: ChartingSeriesPoint, row: Record<string, unknown>): v
     "NetIncomeApplicableToCommonShares",
   ]);
   p.ebitda = numFromRow(row, ["ebitda", "EBITDA"]);
-  p.eps = numFromRow(row, ["dilutedEPS", "DilutedEPS", "epsDiluted", "eps", "EPS", "basicEPS", "BasicEPS"]);
+  p.eps = numFromRow(row, [
+    "dilutedEPS",
+    "DilutedEPS",
+    "epsDiluted",
+    "dilutedEps",
+    "DilutedEps",
+    "normalizedDilutedEPS",
+    "NormalizedDilutedEPS",
+    "eps",
+    "EPS",
+    "basicEPS",
+    "BasicEPS",
+    "basicEps",
+    "BasicEps",
+  ]);
   p.incomeBeforeTax = numFromRow(row, [
     "incomeBeforeTax",
     "IncomeBeforeTax",

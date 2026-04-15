@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { getStockChartPoints } from "@/lib/market/stock-chart-data";
+import { getStockChartPoints, pricePointsToReturnIndexPoints } from "@/lib/market/stock-chart-data";
 import { isStockChartRange, sliceStockChartPointsForRange } from "@/lib/market/stock-chart-api";
 import { isStockChartSeries, type StockChartRange, type StockChartSeries } from "@/lib/market/stock-chart-types";
 import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
@@ -34,6 +34,8 @@ export async function GET(request: Request, { params }: Ctx) {
     let points = getNvdaChartPoints(range);
     if (series === "marketCap") {
       points = points.map((p) => ({ ...p, value: p.value * NVDA_FIXTURE_SHARES }));
+    } else if (series === "return") {
+      points = pricePointsToReturnIndexPoints(points);
     }
     return NextResponse.json(
       { ticker: routeTicker, range, series, points },

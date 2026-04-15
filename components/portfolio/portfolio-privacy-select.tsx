@@ -1,9 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, Globe, Lock } from "lucide-react";
+import { Check, ChevronDown, Globe, Lock } from "lucide-react";
 
 import type { PortfolioPrivacy } from "@/components/portfolio/portfolio-types";
+import {
+  dropdownMenuPanelClassName,
+  dropdownMenuPlainItemRowClassName,
+} from "@/components/design-system/dropdown-menu-styles";
 import { cn } from "@/lib/utils";
 
 const OPTIONS: { value: PortfolioPrivacy; label: string; Icon: typeof Lock }[] = [
@@ -103,35 +107,38 @@ export function PortfolioPrivacySelect({
       />
       {open ? (
         <div
-          className="absolute left-0 right-0 top-[calc(100%+4px)] z-[120] overflow-hidden rounded-xl border border-[#E4E4E7] bg-white shadow-[0px_10px_16px_-3px_rgba(10,10,10,0.1),0px_4px_6px_0px_rgba(10,10,10,0.04)]"
+          className={cn(
+            dropdownMenuPanelClassName(),
+            "absolute left-0 right-0 top-[calc(100%+4px)] z-[120]",
+          )}
           role="listbox"
           aria-label={ariaLabel}
         >
-          <div className="divide-y divide-[#E4E4E7]">
-            {OPTIONS.map((opt) => {
-              const OptIcon = opt.Icon;
-              const selected = value === opt.value;
-              return (
-                <button
-                  key={opt.value}
-                  type="button"
-                  role="option"
-                  aria-selected={selected}
-                  onClick={() => {
-                    onChange(opt.value);
-                    setOpen(false);
-                  }}
-                  className={cn(
-                    "flex w-full cursor-pointer items-center gap-2 px-4 py-3 text-left text-sm text-[#09090B] transition-colors hover:bg-[#F4F4F5]",
-                    selected && "bg-[#FAFAFA]",
-                  )}
-                >
+          {OPTIONS.map((opt) => {
+            const OptIcon = opt.Icon;
+            const selected = value === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                role="option"
+                aria-selected={selected}
+                onClick={() => {
+                  onChange(opt.value);
+                  setOpen(false);
+                }}
+                className={dropdownMenuPlainItemRowClassName({ selected })}
+              >
+                <span className="flex min-w-0 flex-1 items-center gap-2">
                   <OptIcon className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
                   {opt.label}
-                </button>
-              );
-            })}
-          </div>
+                </span>
+                <span className="flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden>
+                  {selected ? <Check className="h-4 w-4 text-[#09090B]" strokeWidth={2} /> : null}
+                </span>
+              </button>
+            );
+          })}
         </div>
       ) : null}
     </div>

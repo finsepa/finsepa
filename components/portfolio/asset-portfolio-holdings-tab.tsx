@@ -11,6 +11,7 @@ import { PriceChart } from "@/components/chart/PriceChart";
 import { ChartControls } from "@/components/stock/chart-controls";
 import {
   Empty,
+  EmptyContent,
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
@@ -223,6 +224,22 @@ export function AssetPortfolioHoldingsTab({
             page to track this asset.
           </EmptyDescription>
         </EmptyHeader>
+        <EmptyContent className="mt-6">
+          <button
+            type="button"
+            disabled={selectedPortfolioReadOnly}
+            title={selectedPortfolioReadOnly ? "Trades are not available for combined portfolios." : undefined}
+            onClick={() => openNewTransactionWithPreset({ symbol: route, name: assetDisplayName })}
+            className={cn(
+              "inline-flex h-10 items-center justify-center rounded-[10px] bg-[#09090B] px-4 text-sm font-semibold text-white",
+              "shadow-[0px_1px_2px_0px_rgba(10,10,10,0.12)] transition-colors hover:bg-[#18181B]",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/20 focus-visible:ring-offset-2",
+              "disabled:pointer-events-none disabled:opacity-40",
+            )}
+          >
+            + Add Transaction
+          </button>
+        </EmptyContent>
       </Empty>
     );
   }

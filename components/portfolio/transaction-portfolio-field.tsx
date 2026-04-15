@@ -1,8 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, GitMerge, Pencil, Plus } from "lucide-react";
+import { Check, ChevronDown, GitMerge, Pencil, Plus } from "lucide-react";
 
+import {
+  dropdownMenuCompositeRowClassName,
+  dropdownMenuPanelClassName,
+  dropdownMenuPlainItemClassName,
+} from "@/components/design-system/dropdown-menu-styles";
 import { cn } from "@/lib/utils";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 
@@ -96,71 +101,75 @@ export function TransactionPortfolioField({
       {open ? (
         <div
           className={cn(
-            "absolute top-[calc(100%+4px)] overflow-hidden rounded-xl border border-[#E4E4E7] bg-white shadow-[0px_10px_16px_-3px_rgba(10,10,10,0.1),0px_4px_6px_0px_rgba(10,10,10,0.04)]",
+            dropdownMenuPanelClassName(),
+            "absolute top-[calc(100%+4px)]",
             dropdownAlign,
             zDropdown,
           )}
           role="presentation"
         >
-          <div className="divide-y divide-[#E4E4E7]">
-            {portfolios.map((p) => (
-              <div
-                key={p.id}
-                className={cn(
-                  "flex items-center gap-1 text-sm text-[#09090B]",
-                  p.id === selectedPortfolioId ? "bg-[#FAFAFA]" : "",
-                )}
+          {portfolios.map((p) => (
+            <div
+              key={p.id}
+              className={cn(
+                dropdownMenuCompositeRowClassName,
+                p.id === selectedPortfolioId && "bg-[#F4F4F5]",
+              )}
+            >
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedPortfolioId(p.id);
+                  setOpen(false);
+                }}
+                className="min-h-10 min-w-0 flex-1 truncate px-4 py-2 text-left text-sm transition-colors hover:bg-transparent"
               >
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedPortfolioId(p.id);
-                    setOpen(false);
-                  }}
-                  className="min-w-0 flex-1 truncate px-4 py-3 text-left transition-colors hover:bg-[#F4F4F5]"
-                >
-                  {p.name}
-                </button>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setOpen(false);
-                    openEditPortfolio(p.id);
-                  }}
-                  className="mr-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] text-[#09090B] transition-colors hover:bg-[#F4F4F5]"
-                  aria-label={`Edit ${p.name}`}
-                >
-                  <Pencil className="h-4 w-4" strokeWidth={2} aria-hidden />
-                </button>
-              </div>
-            ))}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setOpen(false);
-                openCreatePortfolio();
-              }}
-              className="flex w-full cursor-pointer items-center gap-2 px-4 py-3 text-left text-sm text-[#09090B] transition-colors hover:bg-[#F4F4F5]"
-            >
-              <Plus className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
-              <span>Create New Portfolio</span>
-            </button>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setOpen(false);
-                openCreateCombinedPortfolio();
-              }}
-              className="flex w-full cursor-pointer items-center gap-2 px-4 py-3 text-left text-sm text-[#09090B] transition-colors hover:bg-[#F4F4F5]"
-            >
-              <GitMerge className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
-              <span>Create combined portfolio</span>
-            </button>
-          </div>
+                {p.name}
+              </button>
+              <span className="flex h-4 w-4 shrink-0 items-center justify-center self-center" aria-hidden>
+                {p.id === selectedPortfolioId ? (
+                  <Check className="h-4 w-4 text-[#09090B]" strokeWidth={2} />
+                ) : null}
+              </span>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setOpen(false);
+                  openEditPortfolio(p.id);
+                }}
+                className="mr-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[#09090B] transition-colors hover:bg-[#F4F4F5]"
+                aria-label={`Edit ${p.name}`}
+              >
+                <Pencil className="h-4 w-4" strokeWidth={2} aria-hidden />
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setOpen(false);
+              openCreatePortfolio();
+            }}
+            className={dropdownMenuPlainItemClassName()}
+          >
+            <Plus className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
+            <span>Create New Portfolio</span>
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setOpen(false);
+              openCreateCombinedPortfolio();
+            }}
+            className={dropdownMenuPlainItemClassName()}
+          >
+            <GitMerge className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
+            <span>Create combined portfolio</span>
+          </button>
         </div>
       ) : null}
     </div>

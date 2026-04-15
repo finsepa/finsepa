@@ -19,6 +19,7 @@ import { pickScreenerPage2Tickers, SCREENER_PAGE2_TICKER_COUNT } from "@/lib/scr
 import { getScreenerCompaniesStaticLayer } from "@/lib/screener/screener-companies-layers";
 import { resolveEquityLogoUrlFromListingTicker } from "@/lib/screener/resolve-equity-logo-url";
 import { TOP10_META, TOP10_TICKERS, type Top10Ticker } from "@/lib/screener/top10-config";
+import { issuerKeyForOtcListingCollapse } from "@/lib/market/otc-duplicate-tickers";
 import { runWithConcurrencyLimit } from "@/lib/utils/run-with-concurrency-limit";
 
 /**
@@ -366,10 +367,11 @@ function parseFilterDedupeWeek(
 const PREFERRED_STYLE_SUFFIX_RE = /\.P[A-Z0-9]+$/i;
 
 function issuerGroupKey(ticker: string): string {
-  const t = ticker.trim().toUpperCase();
-  const stripped = t.replace(PREFERRED_STYLE_SUFFIX_RE, "");
-  if (stripped !== t) return stripped;
-  return t;
+  const t = ticker.trim().toUpperCase().replace(/-/g, ".");
+  const afterOtc = issuerKeyForOtcListingCollapse(t);
+  const stripped = afterOtc.replace(PREFERRED_STYLE_SUFFIX_RE, "");
+  if (stripped !== afterOtc) return stripped;
+  return afterOtc;
 }
 
 function listingRank(ticker: string): number {
@@ -567,7 +569,7 @@ const getEarningsWeekPayloadCached = unstable_cache(
     const monday = Number.isFinite(t) ? mondayOfWeekUtc(new Date(t)) : mondayOfWeekUtc(new Date());
     return buildEarningsWeekPayloadUncached(monday, mode === "fund");
   },
-  ["earnings-week-v15-screener-logos-listing-ticker"],
+  ["earnings-week-v16-otc-issuer-collapse"],
   { revalidate: REVALIDATE_WARM_LONG },
 );
 

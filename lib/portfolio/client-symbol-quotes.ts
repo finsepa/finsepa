@@ -37,6 +37,13 @@ async function readPriceOnDate(res: Response): Promise<number | null> {
 async function fetchCryptoLivePrice(symbol: string): Promise<number | null> {
   const enc = encodeURIComponent(routeKey(symbol));
   try {
+    const liveRes = await fetch(`/api/crypto/${enc}/live-price`, { cache: "no-store" });
+    const spot = await readPerformancePrice(liveRes);
+    if (spot != null) return spot;
+  } catch {
+    /* fall through */
+  }
+  try {
     const cryptoRes = await fetch(`/api/crypto/${enc}/performance`);
     return await readPerformancePrice(cryptoRes);
   } catch {
@@ -46,6 +53,13 @@ async function fetchCryptoLivePrice(symbol: string): Promise<number | null> {
 
 async function fetchStockLivePrice(symbol: string): Promise<number | null> {
   const enc = encodeURIComponent(symbol.trim());
+  try {
+    const liveRes = await fetch(`/api/stocks/${enc}/live-price`, { cache: "no-store" });
+    const spot = await readPerformancePrice(liveRes);
+    if (spot != null) return spot;
+  } catch {
+    /* fall through */
+  }
   try {
     const stockRes = await fetch(`/api/stocks/${enc}/performance`);
     return await readPerformancePrice(stockRes);

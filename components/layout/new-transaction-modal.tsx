@@ -30,7 +30,7 @@ import {
 } from "@/components/layout/transaction-operation-field";
 import { TransactionPortfolioField } from "@/components/portfolio/transaction-portfolio-field";
 import { newHoldingId, newTransactionRowId, type PortfolioTransaction } from "@/components/portfolio/portfolio-types";
-import { SecondaryTabs } from "@/components/ui/secondary-tabs";
+import { SegmentedControl } from "@/components/design-system";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import { customPortfolioSymbolFromName } from "@/lib/portfolio/custom-asset-symbol";
 import { displayLogoUrlForPortfolioSymbol } from "@/lib/portfolio/portfolio-asset-display-logo";
@@ -45,10 +45,10 @@ import { refreshHoldingMarketPrices, replayTradeTransactionsToHoldings } from "@
 const TABS = ["Trades", "Incomes", "Expenses", "Cash"] as const;
 
 const TRADE_ASSET_TABS = [
-  { id: "listed" as const, label: "Company / Ticker" },
-  { id: "custom" as const, label: "Custom Asset" },
+  { value: "listed" as const, label: "Company / Ticker" },
+  { value: "custom" as const, label: "Custom Asset" },
 ] as const;
-type TradeAssetSource = (typeof TRADE_ASSET_TABS)[number]["id"];
+type TradeAssetSource = (typeof TRADE_ASSET_TABS)[number]["value"];
 
 function formatPriceInputFromApi(n: number): string {
   if (!Number.isFinite(n)) return "";
@@ -671,11 +671,12 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
 
             {transactionTab === "Trades" ? (
               <>
-                <SecondaryTabs
+                <SegmentedControl
+                  fullWidth
                   aria-label="Asset source"
-                  items={TRADE_ASSET_TABS}
+                  options={TRADE_ASSET_TABS}
                   value={tradeAssetSource}
-                  onValueChange={(v) => {
+                  onChange={(v) => {
                     setTradeAssetSource(v);
                     if (v === "custom") {
                       setSelectedCompany(null);

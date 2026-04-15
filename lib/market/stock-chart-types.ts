@@ -1,11 +1,11 @@
-export const STOCK_CHART_RANGES = ["1D", "5D", "1M", "6M", "YTD", "1Y", "ALL"] as const;
+export const STOCK_CHART_RANGES = ["1D", "5D", "1M", "6M", "YTD", "1Y", "5Y", "ALL"] as const;
 export type StockChartRange = (typeof STOCK_CHART_RANGES)[number];
 
-export const STOCK_CHART_SERIES = ["price", "marketCap"] as const;
+export const STOCK_CHART_SERIES = ["price", "marketCap", "return"] as const;
 export type StockChartSeries = (typeof STOCK_CHART_SERIES)[number];
 
 export function isStockChartSeries(v: string | null | undefined): v is StockChartSeries {
-  return v === "price" || v === "marketCap";
+  return v === "price" || v === "marketCap" || v === "return";
 }
 
 export type StockChartPoint = {

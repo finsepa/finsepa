@@ -25,7 +25,8 @@ export async function ProtectedAppShell({ children }: { children: ReactNode }) {
 
   const userInitials = initialsFromUser(user);
   const avatarUrl = avatarUrlFromUser(user);
-  const listingOwnerDisplayName = displayNameFromUser(user) ?? user.email?.split("@")[0] ?? "Member";
+  const userDisplayName = displayNameFromUser(user) ?? user.email?.split("@")[0] ?? "Member";
+  const listingOwnerDisplayName = userDisplayName;
 
   /* Sidebar width: 248px expanded / 72px lite (see sidebar-layout-context). Topbar strip → main at 76px. */
   return (
@@ -34,7 +35,11 @@ export async function ProtectedAppShell({ children }: { children: ReactNode }) {
       listingOwnerDisplayName={listingOwnerDisplayName}
       listingOwnerAvatarUrl={avatarUrl}
     >
-      <ProtectedAppShellInner userInitials={userInitials} avatarUrl={avatarUrl}>
+      <ProtectedAppShellInner
+        userInitials={userInitials}
+        avatarUrl={avatarUrl}
+        userDisplayName={userDisplayName}
+      >
         {children}
       </ProtectedAppShellInner>
     </PortfolioWorkspaceProvider>

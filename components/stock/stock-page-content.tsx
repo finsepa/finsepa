@@ -9,19 +9,11 @@ import type { StockDetailHeaderMeta } from "@/lib/market/stock-header-meta";
 import { chartingMetricToParam, type ChartingMetricId } from "@/lib/market/stock-charting-metrics";
 import type { StockDetailTabId } from "@/lib/stock/stock-detail-tab";
 import { parseStockDetailTabQuery } from "@/lib/stock/stock-detail-tab";
-import { StockDetailTabNav } from "./stock-detail-tab-nav";
 import { AssetPortfolioHoldingsTab } from "@/components/portfolio/asset-portfolio-holdings-tab";
-
-function initialTabsMounted(tab: StockDetailTabId): Record<StockDetailTabId, boolean> {
-  return {
-    overview: tab === "overview",
-    holdings: tab === "holdings",
-    charting: tab === "charting",
-    peers: tab === "peers",
-    profile: tab === "profile",
-  };
-}
+import { StockDetailTabNav } from "./stock-detail-tab-nav";
 import { StockChartingTab } from "./stock-charting-tab";
+import { StockEarningsTab } from "./stock-earnings-tab";
+import { StockInsidersTab } from "./stock-insiders-tab";
 import { StockPeersTab } from "./stock-peers-tab";
 import { StockProfileTab } from "./stock-profile-tab";
 import { StockHeader } from "./stock-header";
@@ -32,6 +24,34 @@ import { LatestNews } from "./latest-news";
 import type { StockPageInitialData } from "@/lib/market/stock-page-initial-data";
 import type { StockChartRange, StockChartSeries } from "@/lib/market/stock-chart-types";
 import { WATCHLIST_MUTATED_EVENT } from "@/lib/watchlist/constants";
+
+const EMPTY_CHART_DISPLAY: ChartDisplayState = {
+  loading: true,
+  empty: true,
+  displayPrice: null,
+  displayChangePct: null,
+  displayChangeAbs: null,
+  isHovering: false,
+  selectionActive: false,
+  periodLabelOverride: null,
+  priceTimestampLabel: null,
+};
+
+/** Offscreen mount so lightweight-charts + `onDisplayChange` stay active without affecting layout. */
+const OFFSCREEN_PRICE_CHART =
+  "pointer-events-none fixed left-0 top-0 -z-10 h-[320px] w-[min(1200px,calc(100vw-4.5rem))] -translate-x-[120vw] opacity-0";
+
+function initialTabsMounted(tab: StockDetailTabId): Record<StockDetailTabId, boolean> {
+  return {
+    overview: tab === "overview",
+    holdings: tab === "holdings",
+    charting: tab === "charting",
+    peers: tab === "peers",
+    earnings: tab === "earnings",
+    insiders: tab === "insiders",
+    profile: tab === "profile",
+  };
+}
 
 function parseStockHeaderMetaPayload(json: {
   fullName?: unknown;
@@ -70,15 +90,22 @@ export function StockPageContent({
   const [chartSeries, setChartSeries] = useState<StockChartSeries>("price");
   const ticker = (routeTicker?.trim() ? routeTicker.trim() : "AAPL").toUpperCase();
 
-  const activeTab: StockDetailTabId =
-    parseStockDetailTabQuery(searchParams.get("tab")) ?? initialActiveTab;
-  const chartingMetricParam = searchParams.get("metric");
-
-  const [tabsMounted, setTabsMounted] = useState<Record<StockDetailTabId, boolean>>(() => initialTabsMounted(activeTab));
+  /** URL tab from the client router — applied after mount so the first paint matches SSR (`initialActiveTab`). */
+  const [searchSyncedTab, setSearchSyncedTab] = useState<StockDetailTabId | null>(null);
+  const [tabsMounted, setTabsMounted] = useState<Record<StockDetailTabId, boolean>>(() =>
+    initialTabsMounted(initialActiveTab),
+  );
 
   useEffect(() => {
-    setTabsMounted((m) => ({ ...m, [activeTab]: true }));
-  }, [activeTab]);
+    const next = parseStockDetailTabQuery(searchParams.get("tab")) ?? initialActiveTab;
+    queueMicrotask(() => {
+      setSearchSyncedTab(next);
+      setTabsMounted((m) => ({ ...m, [next]: true }));
+    });
+  }, [searchParams, initialActiveTab]);
+
+  const activeTab: StockDetailTabId = searchSyncedTab ?? initialActiveTab;
+  const chartingMetricParam = searchParams.get("metric");
 
   const serverHeader =
     initialPageData?.ticker === ticker ? initialPageData.headerMeta : null;
@@ -160,26 +187,43 @@ export function StockPageContent({
     [pathname, router, searchParams],
   );
 
-  const [chartUi, setChartUi] = useState<ChartDisplayState>({
-    loading: true,
-    empty: true,
-    displayPrice: null,
-    displayChangePct: null,
-    displayChangeAbs: null,
-    isHovering: false,
-    selectionActive: false,
-    periodLabelOverride: null,
-    priceTimestampLabel: null,
-  });
+  /** 1D session series — drives header price / change (today / live window). */
+  const [sessionHeaderUi, setSessionHeaderUi] = useState<ChartDisplayState>(EMPTY_CHART_DISPLAY);
+  /** Visible overview chart: only range-drag selection overrides the session header. */
+  const [rangeSelectionHeaderUi, setRangeSelectionHeaderUi] = useState<ChartDisplayState | null>(null);
+  /** Holdings tab chart owns the header while that tab is active. */
+  const [holdingsHeaderUi, setHoldingsHeaderUi] = useState<ChartDisplayState | null>(null);
 
-  const onChartDisplay = useCallback((s: ChartDisplayState) => {
-    setChartUi(s);
+  const onSessionHeaderDisplay = useCallback((s: ChartDisplayState) => {
+    setSessionHeaderUi(s);
   }, []);
+
+  const onRangeChartDisplay = useCallback((s: ChartDisplayState) => {
+    if (s.selectionActive) setRangeSelectionHeaderUi(s);
+    else setRangeSelectionHeaderUi(null);
+  }, []);
+
+  const onHoldingsChartDisplay = useCallback((s: ChartDisplayState) => {
+    setHoldingsHeaderUi(s);
+  }, []);
+
+  const chartUi = useMemo((): ChartDisplayState => {
+    if (activeTab === "holdings") {
+      return holdingsHeaderUi ?? EMPTY_CHART_DISPLAY;
+    }
+    if (rangeSelectionHeaderUi?.selectionActive) {
+      return rangeSelectionHeaderUi;
+    }
+    return sessionHeaderUi;
+  }, [activeTab, holdingsHeaderUi, rangeSelectionHeaderUi, sessionHeaderUi]);
 
   const initialChartMemo = useMemo(
     () => (initialPageData?.ticker === ticker ? initialPageData.chart : null),
     [initialPageData, ticker],
   );
+
+  /** Holdings tab uses its own area chart for the header; all other tabs use the overview price series. */
+  const stockChartDrivesHeader = activeTab !== "holdings";
 
   return (
     <div className="relative space-y-5 px-9 py-6">
@@ -188,7 +232,7 @@ export function StockPageContent({
       </Suspense>
       <StockHeader
         ticker={ticker}
-        periodLabel={range}
+        periodLabel={activeTab === "holdings" ? range : "Today"}
         periodLabelOverride={chartUi.periodLabelOverride}
         price={chartUi.displayPrice}
         changePct={chartUi.displayChangePct}
@@ -204,6 +248,51 @@ export function StockPageContent({
 
       <StockDetailTabNav activeTab={activeTab} onTabChange={setTabInUrl} />
 
+      {/*
+        Overview price chart must stay mounted when other tabs are open — `hidden` on the tabpanel
+        skips mount on deep links (e.g. ?tab=insiders), which left the header stuck on "Loading…".
+        Offscreen + opacity-0 keeps layout engines and `onDisplayChange` alive without showing the chart.
+      */}
+      <div
+        className={
+          activeTab === "overview"
+            ? "space-y-5"
+            : "pointer-events-none fixed left-0 top-0 -z-10 h-[420px] w-[min(1200px,calc(100vw-4.5rem))] -translate-x-[120vw] opacity-0"
+        }
+        aria-hidden={activeTab !== "overview"}
+      >
+        {activeTab === "overview" ? (
+          <ChartControls
+            activeRange={range}
+            onRangeChange={setRange}
+            chartSeries={chartSeries}
+            onChartSeriesChange={setChartSeries}
+          />
+        ) : null}
+        <PriceChart
+          key={`stock-overview-${ticker}-${chartSeries}`}
+          kind="stock"
+          symbol={ticker}
+          range={range}
+          series={chartSeries}
+          onDisplayChange={stockChartDrivesHeader ? onRangeChartDisplay : undefined}
+          initialChart={initialChartMemo}
+        />
+        {stockChartDrivesHeader ? (
+          <div className={OFFSCREEN_PRICE_CHART} aria-hidden>
+            <PriceChart
+              key={`${ticker}-${chartSeries}-header-1d`}
+              kind="stock"
+              symbol={ticker}
+              range="1D"
+              series={chartSeries}
+              height={320}
+              onDisplayChange={onSessionHeaderDisplay}
+            />
+          </div>
+        ) : null}
+      </div>
+
       {tabsMounted.overview ? (
         <div
           role="tabpanel"
@@ -211,20 +300,6 @@ export function StockPageContent({
           aria-hidden={activeTab !== "overview"}
           className={activeTab === "overview" ? "space-y-5" : "hidden"}
         >
-          <ChartControls
-            activeRange={range}
-            onRangeChange={setRange}
-            chartSeries={chartSeries}
-            onChartSeriesChange={setChartSeries}
-          />
-          <PriceChart
-            kind="stock"
-            symbol={ticker}
-            range={range}
-            series={chartSeries}
-            onDisplayChange={onChartDisplay}
-            initialChart={initialChartMemo}
-          />
           <MiniTable
             ticker={ticker}
             headerMeta={headerMeta}
@@ -258,7 +333,7 @@ export function StockPageContent({
             assetKind="stock"
             routeKey={ticker}
             assetDisplayName={headerMeta?.fullName ?? ticker}
-            onChartDisplayChange={onChartDisplay}
+            onChartDisplayChange={onHoldingsChartDisplay}
           />
         </div>
       ) : null}
@@ -293,6 +368,28 @@ export function StockPageContent({
             ticker={ticker}
             initialCompareRows={initialPageData?.ticker === ticker ? initialPageData.peersCompareRows : undefined}
           />
+        </div>
+      ) : null}
+
+      {tabsMounted.earnings ? (
+        <div
+          role="tabpanel"
+          id="stock-tab-earnings"
+          aria-hidden={activeTab !== "earnings"}
+          className={activeTab === "earnings" ? "block" : "hidden"}
+        >
+          <StockEarningsTab ticker={ticker} />
+        </div>
+      ) : null}
+
+      {tabsMounted.insiders ? (
+        <div
+          role="tabpanel"
+          id="stock-tab-insiders"
+          aria-hidden={activeTab !== "insiders"}
+          className={activeTab === "insiders" ? "block" : "hidden"}
+        >
+          <StockInsidersTab ticker={ticker} />
         </div>
       ) : null}
 

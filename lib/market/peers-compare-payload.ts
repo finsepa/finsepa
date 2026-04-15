@@ -5,6 +5,7 @@ import { unstable_cache } from "next/cache";
 import { REVALIDATE_WARM } from "@/lib/data/cache-policy";
 import { fetchEodhdFundamentalsJson } from "@/lib/market/eodhd-fundamentals";
 import { buildChartingPointsFromFundamentalsRoot } from "@/lib/market/eodhd-charting-series";
+import { pickLatestIncomeStatementRow } from "@/lib/market/eodhd-income-statement";
 import { resolveEquityLogoUrlFromTicker } from "@/lib/screener/resolve-equity-logo-url";
 import type { ChartingSeriesPoint } from "@/lib/market/charting-series-types";
 import type { ChartingMetricId, ChartingMetricKind } from "@/lib/market/stock-charting-metrics";
@@ -48,6 +49,73 @@ function formatByKind(kind: ChartingMetricKind, v: number | null): string {
   return formatUsdCompact(v);
 }
 
+function num(v: unknown): number | null {
+  if (typeof v === "number" && Number.isFinite(v)) return v;
+  if (typeof v === "string" && v.trim()) {
+    const n = Number(v.replace(/,/g, ""));
+    return Number.isFinite(n) ? n : null;
+  }
+  return null;
+}
+
+function epsFromIncomeRow(row: Record<string, unknown> | null): number | null {
+  if (!row) return null;
+  const keys = [
+    "dilutedEPS",
+    "DilutedEPS",
+    "epsDiluted",
+    "dilutedEps",
+    "DilutedEps",
+    "normalizedDilutedEPS",
+    "NormalizedDilutedEPS",
+    "basicEPS",
+    "BasicEPS",
+    "basicEps",
+    "BasicEps",
+    "eps",
+    "EPS",
+  ];
+  for (const k of keys) {
+    const n = num(row[k]);
+    if (n != null) return n;
+  }
+  return null;
+}
+
+function epsFromHighlights(rootRec: Record<string, unknown>): number | null {
+  const hl = rootRec.Highlights && typeof rootRec.Highlights === "object" ? (rootRec.Highlights as Record<string, unknown>) : null;
+  if (!hl) return null;
+  return num(hl.EarningsShare ?? hl.EPS ?? hl.DilutedEps ?? hl.DilutedEPS ?? hl.EpsDiluted);
+}
+
+function epsFromEarningsRoot(rootRec: Record<string, unknown>): number | null {
+  const earn = rootRec.Earnings && typeof rootRec.Earnings === "object" ? (rootRec.Earnings as Record<string, unknown>) : null;
+  if (!earn) return null;
+  return num(earn.EPS ?? earn.DilutedEPS ?? earn.EpsDiluted);
+}
+
+function latestNonNullEps(points: ChartingSeriesPoint[]): number | null {
+  for (let i = points.length - 1; i >= 0; i--) {
+    const e = points[i]!.eps;
+    if (e != null && Number.isFinite(e)) return e;
+  }
+  return null;
+}
+
+/** Prefer last point with a precomputed YoY; else derive from EPS series. */
+function resolveEpsYoyPercent(points: ChartingSeriesPoint[], lag: 1 | 4): number | null {
+  for (let i = points.length - 1; i >= 0; i--) {
+    const y = points[i]!.epsYoy;
+    if (y != null && Number.isFinite(y)) return y;
+  }
+  if (points.length <= lag) return null;
+  const cur = points[points.length - 1]!.eps;
+  const prev = points[points.length - 1 - lag]!.eps;
+  if (cur == null || prev == null) return null;
+  if (Math.abs(prev) < 1e-12) return null;
+  return (cur - prev) / Math.abs(prev);
+}
+
 async function loadOnePeerRow(ticker: string): Promise<PeersCompareRow> {
   const logoStr = resolveEquityLogoUrlFromTicker(ticker);
   const root = await fetchEodhdFundamentalsJson(ticker);
@@ -83,6 +151,20 @@ async function loadOnePeerRow(ticker: string): Promise<PeersCompareRow> {
   const lastAnnual = latestPoint(annualPoints);
   const lastQuarter = latestPoint(quarterlyPoints);
 
+  const epsFromSeries =
+    val(lastAnnual, "eps") ??
+    val(lastQuarter, "eps") ??
+    latestNonNullEps(quarterlyPoints) ??
+    latestNonNullEps(annualPoints);
+  const epsIncome = epsFromIncomeRow(pickLatestIncomeStatementRow(rootRec));
+  const epsHl = epsFromHighlights(rootRec);
+  const epsEarn = epsFromEarningsRoot(rootRec);
+  const epsResolved = epsFromSeries ?? epsIncome ?? epsHl ?? epsEarn;
+
+  const epsYoyQuarterly = resolveEpsYoyPercent(quarterlyPoints, 4);
+  const epsYoyAnnual = resolveEpsYoyPercent(annualPoints, 1);
+  const epsGrowthResolved = epsYoyQuarterly ?? epsYoyAnnual;
+
   return {
     ticker,
     fullName,
@@ -91,8 +173,8 @@ async function loadOnePeerRow(ticker: string): Promise<PeersCompareRow> {
     grossProfit: formatByKind(CHARTING_METRIC_KIND.gross_profit, val(lastAnnual, "gross_profit")),
     operIncome: formatByKind(CHARTING_METRIC_KIND.operating_income, val(lastAnnual, "operating_income")),
     netIncome: formatByKind(CHARTING_METRIC_KIND.net_income, val(lastAnnual, "net_income")),
-    eps: formatByKind(CHARTING_METRIC_KIND.eps, val(lastAnnual, "eps")),
-    epsGrowth: formatByKind("percent", val(lastQuarter ?? lastAnnual, "eps_yoy")),
+    eps: formatByKind(CHARTING_METRIC_KIND.eps, epsResolved),
+    epsGrowth: formatByKind("percent", epsGrowthResolved),
     revenue: formatByKind(CHARTING_METRIC_KIND.revenue, val(lastAnnual, "revenue")),
   };
 }
@@ -113,6 +195,6 @@ async function loadPeersCompareRowsUncached(tickersKey: string): Promise<PeersCo
 
 export const getPeersCompareRowsCached = unstable_cache(
   async (tickersKey: string) => loadPeersCompareRowsUncached(tickersKey),
-  ["peers-compare-payload-v2-single-fundamentals"],
+  ["peers-compare-payload-v3-eps-yoy-fallbacks"],
   { revalidate: REVALIDATE_WARM },
 );

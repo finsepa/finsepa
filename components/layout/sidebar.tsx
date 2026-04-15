@@ -1,7 +1,9 @@
 "use client";
 
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   BookOpen,
   Briefcase,
@@ -43,7 +45,13 @@ const dataItems = [
 ];
 
 const communityItems = [
-  { label: "Superinvestors", icon: Flame, href: "/superinvestors", available: false },
+  {
+    label: "Superinvestors",
+    icon: Flame,
+    href: "/superinvestors",
+    available: true,
+    activePathPrefix: true,
+  },
   { label: "Portfolios", icon: Wallet, href: "/portfolios", available: true },
   { label: "Posts", icon: Briefcase, href: "/posts", available: false },
 ];
@@ -53,11 +61,103 @@ type NavItem = {
   icon: React.ComponentType<{ className?: string }>;
   href: string;
   available: boolean;
+  /** When true, item is active for any path that starts with `href` (e.g. nested routes). */
+  activePathPrefix?: boolean;
 };
+
+const TOOLTIP_HIDE_MS = 100;
+
+function CollapsedRailTooltip({ label, children }: { label: string; children: React.ReactNode }) {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [pos, setPos] = useState({ left: 0, top: 0 });
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const clearHideTimer = useCallback(() => {
+    if (hideTimerRef.current != null) {
+      clearTimeout(hideTimerRef.current);
+      hideTimerRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => () => clearHideTimer(), [clearHideTimer]);
+
+  const updatePosition = useCallback(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    setPos({ left: r.right + 6, top: r.top + r.height / 2 });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    updatePosition();
+  }, [open, updatePosition]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onScrollOrResize = () => updatePosition();
+    window.addEventListener("scroll", onScrollOrResize, true);
+    window.addEventListener("resize", onScrollOrResize);
+    return () => {
+      window.removeEventListener("scroll", onScrollOrResize, true);
+      window.removeEventListener("resize", onScrollOrResize);
+    };
+  }, [open, updatePosition]);
+
+  const show = useCallback(() => {
+    clearHideTimer();
+    updatePosition();
+    setOpen(true);
+  }, [clearHideTimer, updatePosition]);
+
+  const hide = useCallback(() => {
+    clearHideTimer();
+    hideTimerRef.current = setTimeout(() => setOpen(false), TOOLTIP_HIDE_MS);
+  }, [clearHideTimer]);
+
+  const tooltip =
+    open && mounted ? (
+      <div
+        className="pointer-events-none fixed z-[200] flex -translate-y-1/2 items-center shadow-[0px_8px_20px_0px_rgba(10,10,10,0.12)]"
+        style={{ left: pos.left, top: pos.top }}
+        role="tooltip"
+      >
+        <span
+          className="h-0 w-0 shrink-0 self-center border-y-[5px] border-r-[6px] border-y-transparent border-r-[#09090B]"
+          aria-hidden
+        />
+        <span className="whitespace-nowrap rounded-md bg-[#09090B] px-2.5 py-1.5 text-xs font-medium leading-4 text-white">
+          {label}
+        </span>
+      </div>
+    ) : null;
+
+  return (
+    <div
+      ref={rootRef}
+      className="relative flex justify-center"
+      onPointerEnter={show}
+      onPointerLeave={hide}
+      onFocusCapture={show}
+      onBlurCapture={hide}
+    >
+      {children}
+      {mounted && tooltip ? createPortal(tooltip, document.body) : null}
+    </div>
+  );
+}
 
 function SidebarRow({ item, pathname, collapsed }: { item: NavItem; pathname: string; collapsed: boolean }) {
   const Icon = item.icon;
-  const isActive = item.available && pathname === item.href;
+  const isActive =
+    item.available &&
+    (item.activePathPrefix ? pathname === item.href || pathname.startsWith(`${item.href}/`) : pathname === item.href);
   const tooltipLabel = item.available ? item.label : `${item.label} (Soon)`;
 
   const rowClass = cn(
@@ -91,17 +191,7 @@ function SidebarRow({ item, pathname, collapsed }: { item: NavItem; pathname: st
     return content;
   }
 
-  return (
-    <div className="group relative flex justify-center">
-      {content}
-      <span
-        className="pointer-events-none absolute left-full top-1/2 z-[100] ml-2 -translate-y-1/2 whitespace-nowrap rounded-md bg-[#09090B] px-2.5 py-1.5 text-xs font-medium text-white opacity-0 shadow-md transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100"
-        role="tooltip"
-      >
-        {tooltipLabel}
-      </span>
-    </div>
-  );
+  return <CollapsedRailTooltip label={tooltipLabel}>{content}</CollapsedRailTooltip>;
 }
 
 function SidebarSection({
@@ -118,7 +208,7 @@ function SidebarSection({
   return (
     <div className={cn(!collapsed && "px-2")}>
       {!collapsed ? (
-        <p className="mb-1.5 text-sm font-semibold leading-5 text-[#52525B]">{title}</p>
+        <p className="mb-1.5 pl-4 text-sm font-semibold leading-5 text-[#52525B]">{title}</p>
       ) : null}
       <div className="space-y-0.5">
         {items.map((item) => (
@@ -140,27 +230,22 @@ export function Sidebar() {
     <aside
       className={cn(
         "flex h-full min-h-0 shrink-0 flex-col rounded-[4px] bg-white py-5 transition-[width] duration-200 ease-out",
-        collapsed ? "w-full overflow-x-visible overflow-y-hidden" : "w-[240px] overflow-y-auto",
+        collapsed ? "w-full overflow-visible" : "w-[240px] overflow-y-auto",
       )}
     >
       {collapsed ? (
-        <div className="group relative mb-6 flex justify-center px-1">
-          <button
-            type="button"
-            className={toggleButtonClass}
-            onClick={toggleCollapsed}
-            aria-expanded={false}
-            aria-label="Expand sidebar"
-            title="Expand sidebar"
-          >
-            <PanelLeftOpen className="h-5 w-5" strokeWidth={1.75} />
-          </button>
-          <span
-            className="pointer-events-none absolute left-full top-1/2 z-[100] ml-2 -translate-y-1/2 whitespace-nowrap rounded-md bg-[#09090B] px-2.5 py-1.5 text-xs font-medium text-white opacity-0 shadow-md transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100"
-            role="tooltip"
-          >
-            Expand sidebar
-          </span>
+        <div className="mb-6 flex justify-center px-1">
+          <CollapsedRailTooltip label="Expand sidebar">
+            <button
+              type="button"
+              className={toggleButtonClass}
+              onClick={toggleCollapsed}
+              aria-expanded={false}
+              aria-label="Expand sidebar"
+            >
+              <PanelLeftOpen className="h-5 w-5" strokeWidth={1.75} />
+            </button>
+          </CollapsedRailTooltip>
         </div>
       ) : (
         <div className="mb-7 flex items-center justify-between gap-2 px-3">
@@ -180,9 +265,8 @@ export function Sidebar() {
 
       <div
         className={cn(
-          "flex min-h-0 flex-1 flex-col",
+          "flex min-h-0 flex-1 flex-col space-y-4",
           collapsed ? "overflow-y-auto overflow-x-visible" : "",
-          collapsed ? "space-y-4" : "space-y-6",
         )}
       >
         <SidebarSection title="Markets" items={marketItems} pathname={pathname} collapsed={collapsed} />

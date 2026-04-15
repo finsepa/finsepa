@@ -1,9 +1,13 @@
 "use client";
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { ChevronDown, LineChart } from "lucide-react";
+import { Check, ChevronDown, LineChart } from "lucide-react";
 
 import { TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
+import {
+  dropdownMenuPanelClassName,
+  dropdownMenuPlainItemRowClassName,
+} from "@/components/design-system/dropdown-menu-styles";
 import {
   Empty,
   EmptyDescription,
@@ -225,33 +229,34 @@ function BenchmarkSelect({
       />
       {open ? (
         <div
-          className="absolute left-0 right-0 top-[calc(100%+4px)] z-[120] overflow-hidden rounded-xl border border-[#E4E4E7] bg-white shadow-[0px_10px_16px_-3px_rgba(10,10,10,0.1),0px_4px_6px_0px_rgba(10,10,10,0.04)]"
+          className={cn(
+            dropdownMenuPanelClassName(),
+            "absolute left-0 right-0 top-[calc(100%+4px)] z-[120]",
+          )}
           role="listbox"
           aria-label="Benchmark"
         >
-          <div className="divide-y divide-[#E4E4E7]">
-            {BENCHMARK_OPTIONS.map((opt) => {
-              const selected = value === opt.ticker;
-              return (
-                <button
-                  key={opt.ticker}
-                  type="button"
-                  role="option"
-                  aria-selected={selected}
-                  onClick={() => {
-                    onChange(opt.ticker);
-                    setOpen(false);
-                  }}
-                  className={cn(
-                    "flex w-full cursor-pointer px-4 py-3 text-left text-sm text-[#09090B] transition-colors hover:bg-[#F4F4F5]",
-                    selected && "bg-[#FAFAFA]",
-                  )}
-                >
-                  {opt.label}
-                </button>
-              );
-            })}
-          </div>
+          {BENCHMARK_OPTIONS.map((opt) => {
+            const selected = value === opt.ticker;
+            return (
+              <button
+                key={opt.ticker}
+                type="button"
+                role="option"
+                aria-selected={selected}
+                onClick={() => {
+                  onChange(opt.ticker);
+                  setOpen(false);
+                }}
+                className={dropdownMenuPlainItemRowClassName({ selected })}
+              >
+                <span className="min-w-0 flex-1 truncate text-left">{opt.label}</span>
+                <span className="flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden>
+                  {selected ? <Check className="h-4 w-4 text-[#09090B]" strokeWidth={2} /> : null}
+                </span>
+              </button>
+            );
+          })}
         </div>
       ) : null}
     </div>

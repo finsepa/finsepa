@@ -3,6 +3,7 @@
 import * as React from "react";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
 
+import { dropdownMenuElevationClass } from "@/components/design-system/dropdown-menu-styles";
 import { cn } from "@/lib/utils";
 
 const Popover = PopoverPrimitive.Root;
@@ -21,7 +22,8 @@ const PopoverContent = React.forwardRef<
       align={align}
       sideOffset={sideOffset}
       className={cn(
-        "z-[120] rounded-xl border border-[#E4E4E7] bg-white p-0 text-[#09090B] shadow-[0px_4px_12px_0px_rgba(10,10,10,0.08)] outline-none",
+        "z-[120] rounded-[12px] border border-[#E4E4E7] bg-white p-0 text-[#09090B] outline-none",
+        dropdownMenuElevationClass,
         className,
       )}
       {...props}

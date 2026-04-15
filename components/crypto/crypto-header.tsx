@@ -28,6 +28,7 @@ type Props = {
   displayName: string;
   logoUrl: string | null;
   logoLetter: string;
+  /** Period badge next to change (`Today` on overview = 1D session; holdings tab uses chart range). */
   periodLabel: string;
   periodLabelOverride?: string | null;
   price: number | null;

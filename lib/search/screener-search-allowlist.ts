@@ -176,7 +176,7 @@ async function runScreenerSearchAllowlistUncached(qNorm: string): Promise<Search
 
 const getCachedScreenerSearch = unstable_cache(
   async (qNorm: string) => runScreenerSearchAllowlistUncached(qNorm),
-  ["screener-search-allowlist-v7-crypto-100"],
+  ["screener-search-allowlist-v8-otc-dedupe"],
   { revalidate: REVALIDATE_SEARCH },
 );
 

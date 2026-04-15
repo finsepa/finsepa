@@ -1,7 +1,11 @@
+import { notFound } from "next/navigation";
+
 import { StockPageContent } from "@/components/stock/stock-page-content";
 import { loadStockPageInitialData } from "@/lib/market/stock-page-initial-data";
 import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
 import { parseStockDetailTabQuery, type StockDetailTabId } from "@/lib/stock/stock-detail-tab";
+
+export const dynamic = "force-dynamic";
 
 type PageProps = {
   params: Promise<{ ticker: string }>;
@@ -15,8 +19,19 @@ function tabFromSearchParams(sp: Record<string, string | string[] | undefined> |
 }
 
 export default async function StockTickerPage({ params, searchParams }: PageProps) {
-  const { ticker } = await params;
-  const routeTicker = decodeURIComponent(ticker).trim();
+  const { ticker: tickerParam } = await params;
+  if (typeof tickerParam !== "string" || !tickerParam.trim()) {
+    notFound();
+  }
+  let routeTicker: string;
+  try {
+    routeTicker = decodeURIComponent(tickerParam).trim();
+  } catch {
+    notFound();
+  }
+  if (!routeTicker) {
+    notFound();
+  }
   const sp = searchParams ? await searchParams : {};
   const initialActiveTab = tabFromSearchParams(sp);
 
@@ -27,6 +42,9 @@ export default async function StockTickerPage({ params, searchParams }: PageProp
   }
 
   const initialPageData = await loadStockPageInitialData(routeTicker);
+  if (!initialPageData) {
+    notFound();
+  }
 
   return (
     <StockPageContent

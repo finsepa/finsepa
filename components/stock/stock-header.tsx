@@ -17,7 +17,7 @@ import { WatchlistStarButton } from "@/components/watchlist/watchlist-star-butto
 
 type Props = {
   ticker: string;
-  /** Active chart range label (e.g. 1D, 1Y). */
+  /** Period badge next to change (e.g. `Today` for session / 1D header, or holdings range on that tab). */
   periodLabel: string;
   /** When set (e.g. drag selection), replaces `periodLabel` in the price row. */
   periodLabelOverride?: string | null;
@@ -84,6 +84,12 @@ export function StockHeader({
 
   const hasChange = changePct != null && changeAbs != null && Number.isFinite(changePct) && Number.isFinite(changeAbs);
   const isPositive = hasChange ? changeAbs >= 0 : true;
+  const mainPriceClass =
+    headerChartMetric === "return" && !chartLoading && anim.price != null && hasChange
+      ? isPositive
+        ? "text-[#16A34A]"
+        : "text-[#DC2626]"
+      : "text-[#09090B]";
 
   return (
     <div className="space-y-3">
@@ -158,7 +164,7 @@ export function StockHeader({
           }`}
         >
           <span
-            className={`text-[28px] font-semibold leading-9 tabular-nums text-[#09090B] transition-[transform] duration-200 ease-out ${
+            className={`text-[28px] font-semibold leading-9 tabular-nums transition-[transform] duration-200 ease-out ${mainPriceClass} ${
               chartHovering ? "scale-[1.01]" : "scale-100"
             }`}
           >
@@ -166,19 +172,27 @@ export function StockHeader({
               ? "—"
               : headerChartMetric === "marketCap"
                 ? formatUsdCompact(anim.price)
-                : `$${anim.price.toFixed(2)}`}
+                : headerChartMetric === "return"
+                  ? (() => {
+                      const r = (anim.price ?? 100) - 100;
+                      const sign = r > 0 ? "+" : r < 0 ? "−" : "";
+                      return `${sign}${Math.abs(r).toFixed(2)}%`;
+                    })()
+                  : `$${anim.price.toFixed(2)}`}
           </span>
-          <span
-            className={`text-[15px] font-medium tabular-nums transition-colors duration-200 ease-out ${
-              hasChange ? (isPositive ? "text-[#16A34A]" : "text-[#DC2626]") : "text-[#71717A]"
-            }`}
-          >
-            {chartLoading || !hasChange || anim.abs == null || anim.pct == null
-              ? "—"
-              : headerChartMetric === "marketCap"
-                ? `${isPositive ? "+" : ""}${formatUsdCompact(anim.abs)} (${isPositive ? "+" : ""}${anim.pct.toFixed(2)}%)`
-                : `${isPositive ? "+" : ""}${anim.abs.toFixed(2)} (${isPositive ? "+" : ""}${anim.pct.toFixed(2)}%)`}
-          </span>
+          {headerChartMetric === "return" ? null : (
+            <span
+              className={`text-[15px] font-medium tabular-nums transition-colors duration-200 ease-out ${
+                hasChange ? (isPositive ? "text-[#16A34A]" : "text-[#DC2626]") : "text-[#71717A]"
+              }`}
+            >
+              {chartLoading || !hasChange || anim.abs == null || anim.pct == null
+                ? "—"
+                : headerChartMetric === "marketCap"
+                  ? `${isPositive ? "+" : ""}${formatUsdCompact(anim.abs)} (${isPositive ? "+" : ""}${anim.pct.toFixed(2)}%)`
+                  : `${isPositive ? "+" : ""}${anim.abs.toFixed(2)} (${isPositive ? "+" : ""}${anim.pct.toFixed(2)}%)`}
+            </span>
+          )}
           <span className="text-[13px] text-[#71717A]">{periodLabelOverride ?? periodLabel}</span>
         </div>
         {chartLoading ? (

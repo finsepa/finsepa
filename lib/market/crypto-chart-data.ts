@@ -64,6 +64,7 @@ async function loadCryptoChartPointsUncached(symbol: string, range: StockChartRa
   if (range === "1M") fromDate.setUTCDate(fromDate.getUTCDate() - 45);
   else if (range === "6M") fromDate.setUTCDate(fromDate.getUTCDate() - 210);
   else if (range === "1Y") fromDate.setUTCFullYear(fromDate.getUTCFullYear() - 1);
+  else if (range === "5Y") fromDate.setUTCFullYear(fromDate.getUTCFullYear() - 5);
   else if (range === "ALL") fromDate.setUTCFullYear(fromDate.getUTCFullYear() - 12);
   else if (range === "YTD") {
     fromDate = new Date(Date.UTC(now.getUTCFullYear(), 0, 1));

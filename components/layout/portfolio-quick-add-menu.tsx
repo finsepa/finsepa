@@ -3,6 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Briefcase, Plus, Wallet } from "lucide-react";
 
+import {
+  dropdownMenuPanelClassName,
+  dropdownMenuPlainItemClassName,
+} from "@/components/design-system/dropdown-menu-styles";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import { cn } from "@/lib/utils";
 
@@ -75,7 +79,10 @@ export function PortfolioQuickAddMenu({
       {open ? (
         <div
           role="menu"
-          className="absolute right-0 z-[60] mt-1 w-max min-w-[260px] max-w-[min(calc(100vw-2rem),320px)] rounded-[10px] border border-[#E4E4E7] bg-white py-1 shadow-[0px_4px_12px_0px_rgba(10,10,10,0.08)]"
+          className={cn(
+            dropdownMenuPanelClassName(),
+            "absolute right-0 top-full z-[120] mt-1 w-max min-w-[260px] max-w-[min(calc(100vw-2rem),320px)]",
+          )}
         >
           {items.map(({ id, label, Icon, disabled }) => (
             <button
@@ -91,14 +98,15 @@ export function PortfolioQuickAddMenu({
                 if (id === "portfolio") openCreatePortfolio();
               }}
               className={cn(
-                "flex w-full min-w-0 items-center gap-2.5 px-3 py-2.5 text-left text-sm font-medium leading-5 whitespace-nowrap transition-colors",
+                dropdownMenuPlainItemClassName(),
+                "font-medium whitespace-nowrap",
                 disabled
-                  ? "cursor-not-allowed text-[#A1A1AA]"
-                  : "text-[#09090B] hover:bg-[#F4F4F5]",
+                  ? "cursor-not-allowed text-[#A1A1AA] hover:bg-white"
+                  : "text-[#09090B]",
               )}
             >
               <Icon className="h-4 w-4 shrink-0" strokeWidth={1.75} aria-hidden />
-              <span className="min-w-0">{label}</span>
+              <span className="min-w-0 flex-1 truncate text-left">{label}</span>
             </button>
           ))}
         </div>

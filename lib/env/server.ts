@@ -27,3 +27,13 @@ export function getOpenAiApiKey(): string | undefined {
   const v = process.env.OPENAI_API_KEY?.trim();
   return v || undefined;
 }
+
+/**
+ * SEC EDGAR requires a descriptive User-Agent (app name + contact URL or email).
+ * @see https://www.sec.gov/os/accessing-edgar-data
+ */
+export function getSecEdgarUserAgent(): string {
+  const v = process.env.SEC_EDGAR_USER_AGENT?.trim();
+  if (v) return v;
+  return "Finsepa/1.0 (set SEC_EDGAR_USER_AGENT with your contact email or URL per sec.gov policy)";
+}

@@ -5,6 +5,7 @@ import { unstable_cache } from "next/cache";
 
 import { REVALIDATE_STATIC } from "@/lib/data/cache-policy";
 import { type EodhdTopUniverseRow, fetchEodhdTopByMarketCap } from "@/lib/market/eodhd-screener";
+import { filterUniverseRowsRemovingOtcDuplicates } from "@/lib/market/otc-duplicate-tickers";
 
 export type TopCompanyUniverseRow = EodhdTopUniverseRow;
 
@@ -29,10 +30,11 @@ async function buildTop500UniverseUncached(): Promise<TopCompanyUniverseRow[]> {
 
   const out = Array.from(byTicker.values());
   out.sort((a, b) => b.marketCapUsd - a.marketCapUsd || a.ticker.localeCompare(b.ticker));
-  return out.slice(0, 500);
+  const withoutOtcDupes = filterUniverseRowsRemovingOtcDuplicates(out);
+  return withoutOtcDupes.slice(0, 500);
 }
 
-const getTop500UniverseData = unstable_cache(buildTop500UniverseUncached, ["screener-top500-universe-v5-snapshot-perf"], {
+const getTop500UniverseData = unstable_cache(buildTop500UniverseUncached, ["screener-top500-universe-v6-otc-dedupe"], {
   revalidate: REVALIDATE_STATIC,
 });
 

@@ -16,6 +16,11 @@ import {
   logoDevStockLogoUrl,
 } from "@/lib/screener/company-logo-url";
 import { isTop10Ticker, TOP10_META } from "@/lib/screener/top10-config";
+import {
+  dropdownMenuRichItemClassName,
+  dropdownMenuSurfaceClassName,
+} from "@/components/design-system/dropdown-menu-styles";
+import { cn } from "@/lib/utils";
 
 const SEARCH_DEBOUNCE_MS = 250;
 
@@ -227,7 +232,10 @@ export function CompanyPicker({
 
       {pickerOpen ? (
         <div
-          className="absolute left-0 top-full z-[200] mt-1 w-[min(calc(100vw-2rem),360px)] rounded-lg border border-[#E4E4E7] bg-white py-1 shadow-md"
+          className={cn(
+            dropdownMenuSurfaceClassName(),
+            "absolute left-0 top-full z-[200] mt-1 w-[min(calc(100vw-2rem),360px)] overflow-hidden",
+          )}
           role="listbox"
           aria-label={listboxAriaLabel}
         >
@@ -243,7 +251,7 @@ export function CompanyPicker({
               autoCorrect="off"
             />
           </div>
-          <div className="max-h-[min(400px,calc(100vh-12rem))] overflow-y-auto py-1">
+          <div className="flex max-h-[min(400px,calc(100vh-12rem))] flex-col gap-1 overflow-y-auto px-1 py-2">
             {!showSearchPanel ? (
               <>
                 <div className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wide text-[#A1A1AA]">
@@ -254,12 +262,12 @@ export function CompanyPicker({
                 ) : screenerList.length === 0 ? (
                   <p className="px-3 py-2 text-[12px] text-[#71717A]">No companies to add.</p>
                 ) : (
-                  <ul className="pb-2">
+                  <ul className="flex flex-col gap-1 pb-2">
                     {screenerList.map((row) => (
                       <li key={row.ticker}>
                         <button
                           type="button"
-                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] text-[#09090B] transition-colors hover:bg-[#F4F4F5]"
+                          className={cn(dropdownMenuRichItemClassName(), "items-center")}
                           onMouseDown={(e) => e.preventDefault()}
                           onClick={() => {
                             onPick({ symbol: row.ticker, name: row.name });
@@ -289,12 +297,12 @@ export function CompanyPicker({
                     {cryptoPickerList.length === 0 ? (
                       <p className="px-3 py-2 text-[12px] text-[#71717A]">No crypto to add.</p>
                     ) : (
-                      <ul className="pb-2">
+                      <ul className="flex flex-col gap-1 pb-2">
                         {cryptoPickerList.map((row) => (
                           <li key={row.symbol}>
                             <button
                               type="button"
-                              className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] text-[#09090B] transition-colors hover:bg-[#F4F4F5]"
+                              className={cn(dropdownMenuRichItemClassName(), "items-center")}
                               onMouseDown={(e) => e.preventDefault()}
                               onClick={() => {
                                 onPick({ symbol: row.symbol, name: row.name });

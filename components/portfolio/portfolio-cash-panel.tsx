@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowDown, ArrowUp, Filter, Search, Wallet } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, Filter, Search, Wallet } from "lucide-react";
 import { format, parseISO } from "date-fns";
 
 import { CashInOutBarChartSection } from "@/components/portfolio/cash-in-out-bar-chart";
@@ -19,6 +19,10 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import {
+  dropdownMenuPanelBodyClassName,
+  dropdownMenuPlainItemRowClassName,
+} from "@/components/design-system/dropdown-menu-styles";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { TABLE_PAGE_SIZE, TablePaginationBar, tablePageCount } from "@/components/ui/table-pagination";
 import { cn } from "@/lib/utils";
@@ -231,8 +235,8 @@ function PortfolioCashPanelInner() {
                   ) : null}
                 </button>
               </PopoverTrigger>
-              <PopoverContent align="end" className="w-44 p-1">
-                <div className="flex flex-col gap-0.5">
+              <PopoverContent align="end" className="w-44">
+                <div className={dropdownMenuPanelBodyClassName}>
                   {(
                     [
                       ["all", "All"] as const,
@@ -245,13 +249,19 @@ function PortfolioCashPanelInner() {
                       type="button"
                       onClick={() => setCashDirectionFilter(value)}
                       className={cn(
-                        "rounded-lg px-3 py-2 text-left text-sm transition-colors",
-                        cashDirectionFilter === value
-                          ? "bg-[#F4F4F5] font-medium text-[#09090B]"
-                          : "text-[#71717A] hover:bg-[#FAFAFA] hover:text-[#09090B]",
+                        dropdownMenuPlainItemRowClassName({
+                          selected: cashDirectionFilter === value,
+                        }),
+                        cashDirectionFilter !== value && "font-normal text-[#71717A] hover:text-[#09090B]",
+                        cashDirectionFilter === value && "font-medium text-[#09090B]",
                       )}
                     >
-                      {label}
+                      <span className="min-w-0 flex-1 truncate text-left">{label}</span>
+                      <span className="flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden>
+                        {cashDirectionFilter === value ? (
+                          <Check className="h-4 w-4 text-[#09090B]" strokeWidth={2} />
+                        ) : null}
+                      </span>
                     </button>
                   ))}
                 </div>

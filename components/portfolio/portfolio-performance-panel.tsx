@@ -57,10 +57,10 @@ function PerformanceChartSection({
               type="button"
               onClick={() => onRangeChange(r.id)}
               className={cn(
-                "rounded-[10px] px-3 py-1.5 text-sm font-medium sm:px-4",
+                "rounded-[10px] px-3 py-1.5 font-sans text-[14px] leading-5 tracking-normal sm:px-4",
                 range === r.id ?
-                  "bg-white text-[#09090B] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]"
-                : "text-[#71717A]",
+                  "bg-white font-medium text-[#09090B] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]"
+                : "font-normal text-[#71717A]",
               )}
             >
               {r.label}
@@ -183,7 +183,7 @@ function PortfolioPerformancePanelInner({
         <h2 className="mb-4 text-2xl font-semibold leading-9 tracking-tight text-[#09090B]">
           Holdings performance
         </h2>
-        <PortfolioHoldingsPerformanceTable holdings={holdings} />
+        <PortfolioHoldingsPerformanceTable holdings={holdings} transactions={transactions} />
       </section>
     </PortfolioOverviewAthProvider>
   );

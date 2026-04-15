@@ -13,6 +13,26 @@ function clampFinite(n: number): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+/**
+ * Rebase price points to a **100 = start-of-range** total-return index (same timestamps).
+ * Chart / header interpret as percent gain via `(value - 100)`.
+ */
+export function pricePointsToReturnIndexPoints(points: readonly StockChartPoint[]): StockChartPoint[] {
+  const sorted = [...points]
+    .filter((p) => Number.isFinite(p.time) && Number.isFinite(p.value))
+    .sort((a, b) => a.time - b.time);
+  if (sorted.length === 0) return [];
+  const p0 = sorted[0]!.value;
+  if (!Number.isFinite(p0) || Math.abs(p0) < 1e-12) {
+    return sorted.map((p) => ({ time: p.time, value: 100, timeZone: p.timeZone }));
+  }
+  return sorted.map((p) => ({
+    time: p.time,
+    value: 100 * (p.value / p0),
+    ...(p.timeZone ? { timeZone: p.timeZone } : {}),
+  }));
+}
+
 function ymdUtc(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
@@ -184,6 +204,7 @@ async function loadStockPriceChartPointsUncached(ticker: string, range: StockCha
   if (range === "1M") fromDate.setUTCDate(fromDate.getUTCDate() - 45);
   else if (range === "6M") fromDate.setUTCDate(fromDate.getUTCDate() - 210);
   else if (range === "1Y") fromDate.setUTCFullYear(fromDate.getUTCFullYear() - 1);
+  else if (range === "5Y") fromDate.setUTCFullYear(fromDate.getUTCFullYear() - 5);
   else if (range === "ALL") fromDate.setUTCFullYear(fromDate.getUTCFullYear() - 12);
   else if (range === "YTD") {
     fromDate = new Date(Date.UTC(now.getUTCFullYear(), 0, 1));
@@ -211,6 +232,7 @@ async function loadStockChartPointsUncached(
   series: StockChartSeries,
 ): Promise<StockChartPoint[]> {
   const pricePoints = await loadStockPriceChartPointsUncached(ticker, range);
+  if (series === "return") return pricePointsToReturnIndexPoints(pricePoints);
   if (series !== "marketCap") return pricePoints;
   const shares = await getCachedSharesOutstanding(ticker);
   if (shares == null || shares <= 0) return [];
@@ -223,4 +245,18 @@ export const getStockChartPoints = unstable_cache(
   ["stock-chart-points-v4-series"],
   { revalidate: REVALIDATE_HOT },
 );
+
+/**
+ * Spot price aligned with the stock asset page 1D chart (intraday last bar when available).
+ * Uncached — for portfolio live refresh.
+ */
+export async function getStockSpotPriceUsd(ticker: string): Promise<number | null> {
+  const sym = ticker.trim();
+  const now = new Date();
+  const nowSec = Math.floor(now.getTime() / 1000);
+  const pts = await load1DChartPoints(sym, now, nowSec);
+  if (!pts.length) return null;
+  const last = pts[pts.length - 1]!.value;
+  return typeof last === "number" && Number.isFinite(last) && last > 0 ? last : null;
+}
 

@@ -22,6 +22,21 @@ import type { CryptoPageInitialData } from "@/lib/market/crypto-page-initial-dat
 import type { StockChartRange } from "@/lib/market/stock-chart-types";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
 
+const EMPTY_CHART_DISPLAY: ChartDisplayState = {
+  loading: true,
+  empty: true,
+  displayPrice: null,
+  displayChangePct: null,
+  displayChangeAbs: null,
+  isHovering: false,
+  selectionActive: false,
+  periodLabelOverride: null,
+  priceTimestampLabel: null,
+};
+
+const OFFSCREEN_PRICE_CHART =
+  "pointer-events-none fixed left-0 top-0 -z-10 h-[320px] w-[min(1200px,calc(100vw-4.5rem))] -translate-x-[120vw] opacity-0";
+
 function initialCryptoTabsMounted(tab: CryptoDetailTabId): Record<CryptoDetailTabId, boolean> {
   return {
     overview: tab === "overview",
@@ -48,29 +63,26 @@ export function CryptoPageContent({
   const [loading, setLoading] = useState(!serverMatch);
   const [row, setRow] = useState<CryptoAssetRow | null>(serverMatch?.asset ?? null);
   const [range, setRange] = useState<StockChartRange>("1Y");
-  const [chartUi, setChartUi] = useState<ChartDisplayState>({
-    loading: true,
-    empty: true,
-    displayPrice: null,
-    displayChangePct: null,
-    displayChangeAbs: null,
-    isHovering: false,
-    selectionActive: false,
-    periodLabelOverride: null,
-    priceTimestampLabel: null,
-  });
+  const [sessionHeaderUi, setSessionHeaderUi] = useState<ChartDisplayState>(EMPTY_CHART_DISPLAY);
+  const [rangeSelectionHeaderUi, setRangeSelectionHeaderUi] = useState<ChartDisplayState | null>(null);
+  const [holdingsHeaderUi, setHoldingsHeaderUi] = useState<ChartDisplayState | null>(null);
   const symUpper = routeSymbol.trim().toUpperCase();
 
-  const activeTab: CryptoDetailTabId =
-    parseCryptoDetailTabQuery(searchParams.get("tab")) ?? initialActiveTab;
-
+  /** URL tab from the client router — applied after mount so the first paint matches SSR (`initialActiveTab`). */
+  const [searchSyncedTab, setSearchSyncedTab] = useState<CryptoDetailTabId | null>(null);
   const [tabsMounted, setTabsMounted] = useState<Record<CryptoDetailTabId, boolean>>(() =>
-    initialCryptoTabsMounted(activeTab),
+    initialCryptoTabsMounted(initialActiveTab),
   );
 
   useEffect(() => {
-    setTabsMounted((m) => ({ ...m, [activeTab]: true }));
-  }, [activeTab]);
+    const next = parseCryptoDetailTabQuery(searchParams.get("tab")) ?? initialActiveTab;
+    queueMicrotask(() => {
+      setSearchSyncedTab(next);
+      setTabsMounted((m) => ({ ...m, [next]: true }));
+    });
+  }, [searchParams, initialActiveTab]);
+
+  const activeTab: CryptoDetailTabId = searchSyncedTab ?? initialActiveTab;
 
   const setTabInUrl = useCallback(
     (tab: CryptoDetailTabId) => {
@@ -86,9 +98,30 @@ export function CryptoPageContent({
     [pathname, router, searchParams],
   );
 
-  const onChartDisplay = useCallback((s: ChartDisplayState) => {
-    setChartUi(s);
+  const onSessionHeaderDisplay = useCallback((s: ChartDisplayState) => {
+    setSessionHeaderUi(s);
   }, []);
+
+  const onRangeChartDisplay = useCallback((s: ChartDisplayState) => {
+    if (s.selectionActive) setRangeSelectionHeaderUi(s);
+    else setRangeSelectionHeaderUi(null);
+  }, []);
+
+  const onHoldingsChartDisplay = useCallback((s: ChartDisplayState) => {
+    setHoldingsHeaderUi(s);
+  }, []);
+
+  const cryptoChartDrivesHeader = activeTab !== "holdings";
+
+  const chartUi = useMemo((): ChartDisplayState => {
+    if (activeTab === "holdings") {
+      return holdingsHeaderUi ?? EMPTY_CHART_DISPLAY;
+    }
+    if (rangeSelectionHeaderUi?.selectionActive) {
+      return rangeSelectionHeaderUi;
+    }
+    return sessionHeaderUi;
+  }, [activeTab, holdingsHeaderUi, rangeSelectionHeaderUi, sessionHeaderUi]);
 
   const initialChartMemo = useMemo(() => (serverMatch ? serverMatch.chart : null), [serverMatch]);
 
@@ -184,7 +217,7 @@ export function CryptoPageContent({
           displayName={displayName}
           logoUrl={headerLogoUrl}
           logoLetter={safeRow.symbol}
-          periodLabel={range}
+          periodLabel={activeTab === "holdings" ? range : "Today"}
           periodLabelOverride={chartUi.periodLabelOverride}
           price={chartUi.displayPrice}
           changePct={chartUi.displayChangePct}
@@ -213,9 +246,21 @@ export function CryptoPageContent({
                 kind="crypto"
                 symbol={symUpper}
                 range={range}
-                onDisplayChange={onChartDisplay}
+                onDisplayChange={cryptoChartDrivesHeader ? onRangeChartDisplay : undefined}
                 initialChart={initialChartMemo}
               />
+              {cryptoChartDrivesHeader ? (
+                <div className={OFFSCREEN_PRICE_CHART} aria-hidden>
+                  <PriceChart
+                    key={`${symUpper}-header-1d`}
+                    kind="crypto"
+                    symbol={symUpper}
+                    range="1D"
+                    height={320}
+                    onDisplayChange={onSessionHeaderDisplay}
+                  />
+                </div>
+              ) : null}
               <CryptoMiniTable
                 symbol={symUpper}
                 displayName={safeRow.name}
@@ -243,7 +288,7 @@ export function CryptoPageContent({
                 assetKind="crypto"
                 routeKey={symUpper}
                 assetDisplayName={safeRow.name}
-                onChartDisplayChange={onChartDisplay}
+                onChartDisplayChange={onHoldingsChartDisplay}
               />
             </div>
           ) : null}

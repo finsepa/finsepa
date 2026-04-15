@@ -14,6 +14,7 @@ export function rangeStartUnixSeconds(range: StockChartRange, now: Date): number
   if (range === "1M") return nowSec - 30 * 24 * 60 * 60;
   if (range === "6M") return nowSec - 183 * 24 * 60 * 60;
   if (range === "1Y") return nowSec - 365 * 24 * 60 * 60;
+  if (range === "5Y") return nowSec - 5 * 365 * 24 * 60 * 60;
   if (range === "YTD") {
     const ytd = Date.UTC(now.getUTCFullYear(), 0, 1);
     return Math.floor(ytd / 1000);

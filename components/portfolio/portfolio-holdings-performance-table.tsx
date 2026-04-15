@@ -13,8 +13,12 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { cryptoRouteBase } from "@/lib/crypto/crypto-symbol-base";
+import { isSupportedCryptoAssetSymbol } from "@/lib/crypto/crypto-logo-url";
+import { normalizeUsdForDisplay } from "@/lib/portfolio/overview-metrics";
+import { cumulativeRealizedGainUsdForAsset } from "@/lib/portfolio/realized-pnl-from-trades";
 import { cn } from "@/lib/utils";
-import type { PortfolioHolding } from "@/components/portfolio/portfolio-types";
+import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 
 const EM_DASH = "\u2014";
 
@@ -40,7 +44,13 @@ function formatSignedPct(n: number): string {
   return n >= 0 ? `+${s}%` : `-${s}%`;
 }
 
-function PortfolioHoldingsPerformanceTableInner({ holdings }: { holdings: PortfolioHolding[] }) {
+function PortfolioHoldingsPerformanceTableInner({
+  holdings,
+  transactions,
+}: {
+  holdings: PortfolioHolding[];
+  transactions: PortfolioTransaction[];
+}) {
   if (holdings.length === 0) {
     return (
       <Empty variant="card" className="min-h-[min(40vh,360px)]">
@@ -76,6 +86,14 @@ function PortfolioHoldingsPerformanceTableInner({ holdings }: { holdings: Portfo
           {holdings.map((h) => {
             const retUsd = h.currentValue - h.costBasis;
             const retPct = h.costBasis > 0 ? ((h.currentValue - h.costBasis) / h.costBasis) * 100 : null;
+            const routeKey = cryptoRouteBase(h.symbol);
+            const assetKind: "stock" | "crypto" = isSupportedCryptoAssetSymbol(routeKey) ? "crypto" : "stock";
+            const realizedUsd = cumulativeRealizedGainUsdForAsset(transactions, routeKey, assetKind);
+            const totalProfitUsd = retUsd + realizedUsd;
+            const totalProfitPct =
+              h.costBasis > 0 ? (totalProfitUsd / h.costBasis) * 100 : null;
+            const realizedDisplay =
+              Math.abs(normalizeUsdForDisplay(realizedUsd)) < 0.005 ? null : realizedUsd;
             return (
               <tr key={h.id} className="border-b border-[#E4E4E7]">
                 <td className="py-3 pr-4 text-left align-middle">
@@ -95,19 +113,19 @@ function PortfolioHoldingsPerformanceTableInner({ holdings }: { holdings: Portfo
                   <div
                     className={cn(
                       "font-medium tabular-nums",
-                      retUsd >= 0 ? "text-emerald-600" : "text-red-600",
+                      totalProfitUsd >= 0 ? "text-emerald-600" : "text-red-600",
                     )}
                   >
-                    {formatSignedUsd(retUsd)}
+                    {formatSignedUsd(totalProfitUsd)}
                   </div>
-                  {retPct != null ? (
+                  {totalProfitPct != null ? (
                     <div
                       className={cn(
                         "text-xs tabular-nums",
-                        retPct >= 0 ? "text-emerald-600" : "text-red-600",
+                        totalProfitPct >= 0 ? "text-emerald-600" : "text-red-600",
                       )}
                     >
-                      {formatSignedPct(retPct)}
+                      {formatSignedPct(totalProfitPct)}
                     </div>
                   ) : (
                     <div className="text-xs text-[#A1A1AA]">{EM_DASH}</div>
@@ -121,7 +139,14 @@ function PortfolioHoldingsPerformanceTableInner({ holdings }: { holdings: Portfo
                 >
                   {formatSignedUsd(retUsd)}
                 </td>
-                <td className="py-3 pr-4 text-right tabular-nums text-[#71717A] align-middle">{EM_DASH}</td>
+                <td
+                  className={cn(
+                    "py-3 pr-4 text-right align-middle font-medium tabular-nums",
+                    realizedDisplay == null ? "text-[#71717A]" : realizedDisplay >= 0 ? "text-emerald-600" : "text-red-600",
+                  )}
+                >
+                  {realizedDisplay == null ? EM_DASH : formatSignedUsd(realizedDisplay)}
+                </td>
                 <td className="py-3 pr-4 text-right tabular-nums text-[#71717A] align-middle">{EM_DASH}</td>
                 <td className="py-3 pr-4 text-right tabular-nums text-[#71717A] align-middle">{EM_DASH}</td>
                 <td className="py-3 pr-0 text-right tabular-nums text-[#71717A] align-middle">{EM_DASH}</td>

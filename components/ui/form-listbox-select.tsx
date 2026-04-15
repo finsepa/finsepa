@@ -1,15 +1,19 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { Check, ChevronDown } from "lucide-react";
 
+import {
+  dropdownMenuPanelClassName,
+  dropdownMenuPlainItemRowClassName,
+} from "@/components/design-system/dropdown-menu-styles";
 import { cn } from "@/lib/utils";
 
 export type ListboxOption<V extends string = string> = { value: V; label: string };
 
 /**
  * App-standard single-select listbox (use instead of native `<select>` for form fields).
- * Matches portfolio/benchmark dropdowns: gray trigger, white `rounded-xl` menu, `divide-y`.
+ * Matches portfolio/benchmark dropdowns: gray trigger; menu uses shared `dropdownMenuPanelClassName`.
  */
 export function FormListboxSelect<V extends string>({
   id,
@@ -78,33 +82,34 @@ export function FormListboxSelect<V extends string>({
       />
       {open ? (
         <div
-          className="absolute left-0 right-0 top-[calc(100%+4px)] z-[120] overflow-hidden rounded-xl border border-[#E4E4E7] bg-white shadow-[0px_10px_16px_-3px_rgba(10,10,10,0.1),0px_4px_6px_0px_rgba(10,10,10,0.04)]"
+          className={cn(
+            dropdownMenuPanelClassName(),
+            "absolute left-0 right-0 top-[calc(100%+4px)] z-[120]",
+          )}
           role="listbox"
           aria-label={ariaLabel}
         >
-          <div className="divide-y divide-[#E4E4E7]">
-            {options.map((opt) => {
-              const selected = value === opt.value;
-              return (
-                <button
-                  key={opt.value}
-                  type="button"
-                  role="option"
-                  aria-selected={selected}
-                  onClick={() => {
-                    onChange(opt.value);
-                    setOpen(false);
-                  }}
-                  className={cn(
-                    "flex w-full cursor-pointer px-4 py-3 text-left text-sm text-[#09090B] transition-colors hover:bg-[#F4F4F5]",
-                    selected && "bg-[#FAFAFA]",
-                  )}
-                >
-                  {opt.label}
-                </button>
-              );
-            })}
-          </div>
+          {options.map((opt) => {
+            const selected = value === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                role="option"
+                aria-selected={selected}
+                onClick={() => {
+                  onChange(opt.value);
+                  setOpen(false);
+                }}
+                className={dropdownMenuPlainItemRowClassName({ selected })}
+              >
+                <span className="min-w-0 flex-1 truncate text-left">{opt.label}</span>
+                <span className="flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden>
+                  {selected ? <Check className="h-4 w-4 text-[#09090B]" strokeWidth={2} /> : null}
+                </span>
+              </button>
+            );
+          })}
         </div>
       ) : null}
     </div>

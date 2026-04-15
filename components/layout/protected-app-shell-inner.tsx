@@ -17,10 +17,12 @@ function ProtectedAppChrome({
   children,
   userInitials,
   avatarUrl,
+  userDisplayName,
 }: {
   children: ReactNode;
   userInitials: string;
   avatarUrl: string | null;
+  userDisplayName: string;
 }) {
   const { collapsed } = useSidebarLayout();
   const outerPx = collapsed ? SIDEBAR_OUTER_COLLAPSED_PX : SIDEBAR_OUTER_EXPANDED_PX;
@@ -41,7 +43,7 @@ function ProtectedAppChrome({
         className="fixed right-1 top-1 z-30 rounded-[4px] bg-white py-1 shadow-[0_1px_0_0_rgba(0,0,0,0.03)] transition-[left] duration-200 ease-out"
         style={{ left: leftOffset }}
       >
-        <Topbar userInitials={userInitials} avatarUrl={avatarUrl} />
+        <Topbar userInitials={userInitials} avatarUrl={avatarUrl} userDisplayName={userDisplayName} />
       </div>
       <main
         className="fixed bottom-1 right-1 top-[76px] z-0 overflow-y-auto rounded-[4px] bg-white transition-[left] duration-200 ease-out"
@@ -57,14 +59,20 @@ export function ProtectedAppShellInner({
   children,
   userInitials,
   avatarUrl,
+  userDisplayName,
 }: {
   children: ReactNode;
   userInitials: string;
   avatarUrl: string | null;
+  userDisplayName: string;
 }) {
   return (
     <SidebarLayoutProvider>
-      <ProtectedAppChrome userInitials={userInitials} avatarUrl={avatarUrl}>
+      <ProtectedAppChrome
+        userInitials={userInitials}
+        avatarUrl={avatarUrl}
+        userDisplayName={userDisplayName}
+      >
         {children}
       </ProtectedAppChrome>
     </SidebarLayoutProvider>

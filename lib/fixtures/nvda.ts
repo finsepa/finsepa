@@ -10,6 +10,7 @@ import type { StockKeyStatsBundle } from "@/lib/market/stock-key-stats-bundle-ty
 import type { StockProfilePayload } from "@/lib/market/stock-profile-types";
 import type { ChartingSeriesPoint } from "@/lib/market/charting-series-types";
 import type { StockNewsArticle } from "@/lib/market/stock-news-types";
+import type { StockEarningsEstimatesChart, StockEarningsTabPayload } from "@/lib/market/stock-earnings-types";
 
 import { companyLogoUrlForTicker } from "@/lib/screener/company-logo-url";
 import { TOP10_META } from "@/lib/screener/top10-config";
@@ -56,6 +57,7 @@ export function getNvdaChartPoints(range: StockChartRange): StockChartPoint[] {
   if (range === "6M") return makeTrendPointSeries(80, now - 180 * 24 * 3600_000, (180 * 24 * 3600_000) / 80, 820, 85);
   if (range === "YTD") return makeTrendPointSeries(120, now - 220 * 24 * 3600_000, (220 * 24 * 3600_000) / 120, 780, 110);
   if (range === "1Y") return makeTrendPointSeries(160, now - 365 * 24 * 3600_000, (365 * 24 * 3600_000) / 160, 760, 120);
+  if (range === "5Y") return makeTrendPointSeries(190, now - 5 * 365 * 24 * 3600_000, (5 * 365 * 24 * 3600_000) / 190, 735, 130);
   // ALL
   return makeTrendPointSeries(200, now - 3 * 365 * 24 * 3600_000, (3 * 365 * 24 * 3600_000) / 200, 720, 140);
 }
@@ -162,6 +164,115 @@ export function getNvdaKeyStatsBundle(): StockKeyStatsBundle {
       { label: "Beta (5Y)", value: "—" },
       { label: "Max Drawdown (5Y)", value: "—" },
     ],
+  };
+}
+
+function nvdaEstimatesChartFixture(): StockEarningsEstimatesChart {
+  return {
+    quarterly: [
+      {
+        sortKey: "2025-04-30",
+        label: "Q1 2025",
+        revenueEstimateUsd: 26e9,
+        revenueActualUsd: 26.4e9,
+        epsEstimate: 0.72,
+        epsActual: 0.76,
+        reported: true,
+      },
+      {
+        sortKey: "2025-07-31",
+        label: "Q2 2025",
+        revenueEstimateUsd: 31e9,
+        revenueActualUsd: 30.4e9,
+        epsEstimate: 0.85,
+        epsActual: 0.82,
+        reported: true,
+      },
+      {
+        sortKey: "2025-10-31",
+        label: "Q3 2025",
+        revenueEstimateUsd: 37e9,
+        revenueActualUsd: 37.5e9,
+        epsEstimate: 1.02,
+        epsActual: 1.05,
+        reported: true,
+      },
+    ],
+    annual: [
+      { sortKey: "2022-01-31", label: "2022", revenueEstimateUsd: 27e9, revenueActualUsd: 26.9e9, epsEstimate: 0.45, epsActual: 0.44, reported: true },
+      { sortKey: "2023-01-31", label: "2023", revenueEstimateUsd: 45e9, revenueActualUsd: 44.9e9, epsEstimate: 0.75, epsActual: 0.74, reported: true },
+      { sortKey: "2024-01-31", label: "2024", revenueEstimateUsd: 96e9, revenueActualUsd: 96.3e9, epsEstimate: 1.2, epsActual: 1.19, reported: true },
+      { sortKey: "2025-01-31", label: "2025", revenueEstimateUsd: 130e9, revenueActualUsd: null, epsEstimate: 2.1, epsActual: null, reported: false },
+      { sortKey: "2026-01-31", label: "2026", revenueEstimateUsd: 165e9, revenueActualUsd: null, epsEstimate: 2.65, epsActual: null, reported: false },
+      { sortKey: "2027-01-31", label: "2027", revenueEstimateUsd: 195e9, revenueActualUsd: null, epsEstimate: 3.05, epsActual: null, reported: false },
+    ],
+  };
+}
+
+export function getNvdaStockEarningsTabPayload(): StockEarningsTabPayload {
+  return {
+    ticker: NVDA,
+    upcoming: {
+      reportDateDisplay: "Feb 26, 2026",
+      reportDateYmd: "2026-02-26",
+      timing: "amc",
+      timingShortLabel: "AMC",
+      timingPhrase: "After market",
+      fiscalPeriodLabel: "Q4 2026",
+      epsEstimateDisplay: "1.05",
+      revenueEstimateDisplay: "$38.2B",
+    },
+    history: [
+      {
+        fiscalPeriodEndYmd: "2025-10-31",
+        fiscalPeriodLabel: "Q3 2025",
+        reportDateDisplay: "Nov 19, 2025",
+        epsEstimateDisplay: "1.02",
+        epsActualDisplay: "1.05",
+        surprisePct: 2.9,
+        surpriseDisplay: "+2.9%",
+        revenueEstimateDisplay: "$37.0B",
+        revenueActualDisplay: "$37.5B",
+        reported: true,
+        revenueEstimateUsd: 37e9,
+        revenueActualUsd: 37.5e9,
+        epsEstimateRaw: 1.02,
+        epsActualRaw: 1.05,
+      },
+      {
+        fiscalPeriodEndYmd: "2025-07-31",
+        fiscalPeriodLabel: "Q2 2025",
+        reportDateDisplay: "Aug 28, 2025",
+        epsEstimateDisplay: "0.85",
+        epsActualDisplay: "0.82",
+        surprisePct: -3.5,
+        surpriseDisplay: "-3.5%",
+        revenueEstimateDisplay: "$31.0B",
+        revenueActualDisplay: "$30.4B",
+        reported: true,
+        revenueEstimateUsd: 31e9,
+        revenueActualUsd: 30.4e9,
+        epsEstimateRaw: 0.85,
+        epsActualRaw: 0.82,
+      },
+      {
+        fiscalPeriodEndYmd: "2025-04-30",
+        fiscalPeriodLabel: "Q1 2025",
+        reportDateDisplay: "May 29, 2025",
+        epsEstimateDisplay: "0.72",
+        epsActualDisplay: "0.76",
+        surprisePct: 5.6,
+        surpriseDisplay: "+5.6%",
+        revenueEstimateDisplay: "$26.0B",
+        revenueActualDisplay: "$26.4B",
+        reported: true,
+        revenueEstimateUsd: 26e9,
+        revenueActualUsd: 26.4e9,
+        epsEstimateRaw: 0.72,
+        epsActualRaw: 0.76,
+      },
+    ],
+    estimatesChart: nvdaEstimatesChartFixture(),
   };
 }
 

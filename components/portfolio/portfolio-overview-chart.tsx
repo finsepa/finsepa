@@ -411,10 +411,10 @@ function PortfolioOverviewChartInner({ transactions }: { transactions: Portfolio
                 type="button"
                 onClick={() => setMetric(opt.id)}
                 className={cn(
-                  "rounded-[10px] px-4 py-1.5 text-sm font-medium transition-shadow",
+                  "rounded-[10px] px-4 py-1.5 font-sans text-[14px] leading-5 tracking-normal transition-shadow",
                   metric === opt.id ?
-                    "bg-white text-[#09090B] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]"
-                  : "text-[#71717A]",
+                    "bg-white font-medium text-[#09090B] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]"
+                  : "font-normal text-[#71717A]",
                 )}
               >
                 {opt.label}
@@ -432,10 +432,10 @@ function PortfolioOverviewChartInner({ transactions }: { transactions: Portfolio
                 type="button"
                 onClick={() => setRange(r.id)}
                 className={cn(
-                  "rounded-[10px] px-3 py-1.5 text-sm font-medium sm:px-4",
+                  "rounded-[10px] px-3 py-1.5 font-sans text-[14px] leading-5 tracking-normal sm:px-4",
                   range === r.id ?
-                    "bg-white text-[#09090B] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]"
-                  : "text-[#71717A]",
+                    "bg-white font-medium text-[#09090B] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]"
+                  : "font-normal text-[#71717A]",
                 )}
               >
                 {r.label}

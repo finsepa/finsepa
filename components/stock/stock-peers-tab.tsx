@@ -10,6 +10,11 @@ import { getStockDetailMetaFromTicker } from "@/lib/market/stock-detail-meta";
 import { isSingleAssetMode } from "@/lib/features/single-asset";
 import type { SearchAssetItem } from "@/lib/search/search-types";
 import { recordSearchNavigation } from "@/lib/search/recent-searches-storage";
+import {
+  dropdownMenuRichItemClassName,
+  dropdownMenuSurfaceClassName,
+} from "@/components/design-system/dropdown-menu-styles";
+import { cn } from "@/lib/utils";
 import { LogoSkeleton, SkeletonBox, TextSkeleton } from "@/components/markets/skeleton";
 
 type CompareRow = {
@@ -97,7 +102,7 @@ export function PeerSearchDropdownRow({ item, onPick }: { item: SearchAssetItem;
   return (
     <button
       type="button"
-      className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] text-[#09090B] transition-colors hover:bg-[#F4F4F5]"
+      className={dropdownMenuRichItemClassName()}
       onMouseDown={(e) => e.preventDefault()}
       onClick={() => onPick(item)}
     >
@@ -107,7 +112,7 @@ export function PeerSearchDropdownRow({ item, onPick }: { item: SearchAssetItem;
           {item.type === "crypto" ? eodhdCryptoSpotTickerDisplay(item.symbol) : item.symbol}
         </div>
       </div>
-      <div className="flex shrink-0 flex-col items-end gap-0.5">
+      <div className="flex shrink-0 flex-col items-end gap-0.5 self-center">
         <span className="rounded-full bg-[#F4F4F5] px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-[#71717A]">
           {categoryLabel[item.type]}
         </span>
@@ -380,7 +385,10 @@ function StockPeersTabInner({
 
           {pickerOpen ? (
             <div
-              className="absolute left-0 top-full z-[200] mt-1 w-[min(calc(100vw-2rem),360px)] rounded-lg border border-[#E4E4E7] bg-white py-1 shadow-md"
+              className={cn(
+                dropdownMenuSurfaceClassName(),
+                "absolute left-0 top-full z-[200] mt-1 w-[min(calc(100vw-2rem),360px)] overflow-hidden",
+              )}
               role="listbox"
               aria-label="Search assets"
             >
@@ -396,7 +404,7 @@ function StockPeersTabInner({
                   autoCorrect="off"
                 />
               </div>
-              <div className="max-h-[min(400px,calc(100vh-12rem))] overflow-y-auto py-1">
+              <div className="flex max-h-[min(400px,calc(100vh-12rem))] flex-col gap-1 overflow-y-auto px-1 py-2">
                 {!showSearchPanel ? null : searchLoading && searchItems.length === 0 ? (
                   <p className="px-3 py-2 text-[12px] text-[#71717A]">Searching…</p>
                 ) : !searchLoading && searchItems.length === 0 ? (

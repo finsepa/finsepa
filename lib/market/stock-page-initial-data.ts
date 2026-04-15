@@ -22,6 +22,7 @@ import type { PeersCompareRow } from "@/lib/market/peers-compare-payload";
 import { getPeersCompareRowsCached } from "@/lib/market/peers-compare-payload";
 import { getNvdaChartPoints, getNvdaHeaderMeta, getNvdaKeyStatsBundle, getNvdaPerformance } from "@/lib/fixtures/nvda";
 import { getNvdaChartingSeriesPoints, getNvdaProfile, getNvdaStockNews } from "@/lib/fixtures/nvda";
+import { getStockDetailMetaFromTicker } from "@/lib/market/stock-detail-meta";
 
 export type StockPageInitialChart = {
   range: StockChartRange;
@@ -43,6 +44,41 @@ export type StockPageInitialData = {
 };
 
 const DEFAULT_OVERVIEW_RANGE: StockChartRange = "1Y";
+
+const EMPTY_KEY_STATS: StockKeyStatsBundle = {
+  basic: null,
+  valuation: null,
+  revenueProfit: null,
+  margins: null,
+  growth: null,
+  assetsLiabilities: null,
+  returns: null,
+  dividends: null,
+  risk: null,
+};
+
+function fallbackStockPageInitialData(ticker: string, now: Date): StockPageInitialData {
+  const display = getStockDetailMetaFromTicker(ticker);
+  return {
+    ticker,
+    headerMeta: {
+      fullName: display.name,
+      logoUrl: display.logoUrl,
+      sector: null,
+      industry: null,
+      earningsDateDisplay: null,
+      watchlistCount: null,
+    },
+    chart: { range: DEFAULT_OVERVIEW_RANGE, points: [] },
+    performance: computeStockPerformanceFromSortedDailyBars([], ticker, now),
+    keyStatsBundle: { ...EMPTY_KEY_STATS },
+    news: [],
+    profile: null,
+    fundamentalsSeriesAnnual: [],
+    fundamentalsSeriesQuarterly: [],
+    peersCompareRows: [],
+  };
+}
 
 function ymdUtc(d: Date): string {
   return d.toISOString().slice(0, 10);
@@ -81,33 +117,38 @@ export async function loadStockPageInitialData(routeTicker: string): Promise<Sto
     };
   }
 
-  const [headerMeta, barsRaw, keyStatsBundle, news, profile, annualSeries, quarterlySeries, peersCompareRows] =
-    await Promise.all([
-    getStockDetailHeaderMetaForPage(ticker),
-    fetchEodhdEodDaily(ticker, from, to),
-    buildStockKeyStatsBundle(ticker),
-    getStockNews(ticker),
-    fetchEodhdStockProfile(ticker),
-    fetchChartingSeries(ticker, "annual"),
-    fetchChartingSeries(ticker, "quarterly"),
-    getPeersCompareRowsCached(ticker),
-  ]);
+  try {
+    const [headerMeta, barsRaw, keyStatsBundle, news, profile, annualSeries, quarterlySeries, peersCompareRows] =
+      await Promise.all([
+        getStockDetailHeaderMetaForPage(ticker),
+        fetchEodhdEodDaily(ticker, from, to),
+        buildStockKeyStatsBundle(ticker),
+        getStockNews(ticker),
+        fetchEodhdStockProfile(ticker),
+        fetchChartingSeries(ticker, "annual"),
+        fetchChartingSeries(ticker, "quarterly"),
+        getPeersCompareRowsCached(ticker),
+      ]);
 
-  const sorted = barsRaw?.length ? [...barsRaw].sort((a, b) => a.date.localeCompare(b.date)) : [];
-  const performance = computeStockPerformanceFromSortedDailyBars(sorted, ticker, now);
-  const rawPoints = stockChartPointsFromDailyBars(sorted);
-  const points = sliceStockChartPointsForRange(rawPoints, range, now);
+    const sorted = barsRaw?.length ? [...barsRaw].sort((a, b) => a.date.localeCompare(b.date)) : [];
+    const performance = computeStockPerformanceFromSortedDailyBars(sorted, ticker, now);
+    const rawPoints = stockChartPointsFromDailyBars(sorted);
+    const points = sliceStockChartPointsForRange(rawPoints, range, now);
 
-  return {
-    ticker,
-    headerMeta,
-    chart: { range, points },
-    performance,
-    keyStatsBundle,
-    news: Array.isArray(news) ? news : [],
-    profile: profile ?? null,
-    fundamentalsSeriesAnnual: annualSeries?.points ?? [],
-    fundamentalsSeriesQuarterly: quarterlySeries?.points ?? [],
-    peersCompareRows: Array.isArray(peersCompareRows) ? peersCompareRows : [],
-  };
+    return {
+      ticker,
+      headerMeta,
+      chart: { range, points },
+      performance,
+      keyStatsBundle,
+      news: Array.isArray(news) ? news : [],
+      profile: profile ?? null,
+      fundamentalsSeriesAnnual: annualSeries?.points ?? [],
+      fundamentalsSeriesQuarterly: quarterlySeries?.points ?? [],
+      peersCompareRows: Array.isArray(peersCompareRows) ? peersCompareRows : [],
+    };
+  } catch (err) {
+    console.error("[loadStockPageInitialData] failed; serving fallback shell", { ticker, err });
+    return fallbackStockPageInitialData(ticker, now);
+  }
 }

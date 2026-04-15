@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   AreaSeries,
   BaselineSeries,
@@ -26,7 +26,7 @@ import {
   computeChartHeaderMetrics,
   type ChartRangeSelection,
 } from "@/components/chart/chart-display-metrics";
-import { horzTimeToUnixSeconds, pointAtChartX } from "@/components/chart/chart-selection-utils";
+import { horzTimeToUnixSeconds, nearestPointByTime, pointAtChartX } from "@/components/chart/chart-selection-utils";
 import { formatAssetChartTimestamp } from "@/lib/market/chart-timestamp-format";
 import type { StockChartRange, StockChartPoint, StockChartSeries } from "@/lib/market/stock-chart-types";
 
@@ -44,6 +44,14 @@ function formatMarketCapAxis(n: number): string {
   if (abs >= 1e6) return `${sign}$${(abs / 1e6).toFixed(2)}M`;
   if (abs >= 1e3) return `${sign}$${(abs / 1e3).toFixed(2)}K`;
   return `${sign}$${abs.toFixed(0)}`;
+}
+
+/** Total-return index (100 = range start); show as % from start. */
+function formatReturnAxis(n: number): string {
+  if (!Number.isFinite(n)) return "0%";
+  const rel = n - 100;
+  const sign = rel > 0 ? "+" : rel < 0 ? "−" : "";
+  return `${sign}${Math.abs(rel).toFixed(2)}%`;
 }
 
 export type ChartDisplayState = {
@@ -136,6 +144,18 @@ function ymdFromUnixSeconds(sec: number): string | null {
   } catch {
     return null;
   }
+}
+
+/** `ymd` is yyyy-MM-dd (UTC calendar day of the bar). */
+function formatTradeTooltipDateHeader(ymd: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return ymd;
+  const [y, mo, d] = ymd.split("-").map((x) => Number.parseInt(x, 10));
+  return new Date(Date.UTC(y, mo - 1, d)).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  });
 }
 
 type BandGeom = { left: number; width: number; positive: boolean };
@@ -280,13 +300,12 @@ export function PriceChart({
     return () => ro.disconnect();
   }, []);
 
-  useEffect(() => {
-    queueMicrotask(() => {
-      setSelection(null);
-      setSelectionBand(null);
-      setDragPreview(null);
-      setHoverTimeUnix(null);
-    });
+  /** Clear range-drag selection immediately when series/range/etc. change so header metrics don’t keep stale selection prices (e.g. $258) while the series switches to market cap / return). */
+  useLayoutEffect(() => {
+    setSelection(null);
+    setSelectionBand(null);
+    setDragPreview(null);
+    setHoverTimeUnix(null);
     initialConsumedRef.current = false;
   }, [kind, symbol, range, series, holdingsStyle]);
 
@@ -428,12 +447,23 @@ export function PriceChart({
         }
       }
       const data = param.seriesData.get(s);
+      let hoverValue: number | null = null;
+      let tunix: number | null = null;
       if (data && typeof data === "object" && "value" in data && isFiniteNumber((data as { value: number }).value)) {
-        setHoverPrice((data as { value: number }).value);
+        hoverValue = (data as { value: number }).value;
         const row = data as { value: number; time?: UTCTimestamp };
-        let tunix: number | null =
-          typeof row.time === "number" && Number.isFinite(row.time) ? row.time : null;
-        if (tunix == null) tunix = horzTimeToUnixSeconds(param.time as Time);
+        tunix =
+          typeof row.time === "number" && Number.isFinite(row.time) ? row.time : horzTimeToUnixSeconds(param.time as Time);
+      } else if (holdingsStyle) {
+        const sec = horzTimeToUnixSeconds(param.time as Time);
+        const near = sec != null ? nearestPointByTime(pointsRef.current, sec) : null;
+        if (near && isFiniteNumber(near.time) && isFiniteNumber(near.value)) {
+          hoverValue = near.value;
+          tunix = near.time;
+        }
+      }
+      if (hoverValue != null && tunix != null) {
+        setHoverPrice(hoverValue);
         setHoverTimeUnix(tunix);
       } else {
         setHoverPrice(null);
@@ -471,7 +501,11 @@ export function PriceChart({
     const chart = chartRef.current;
     if (!chart) return;
     const fmt =
-      kind === "stock" && series === "marketCap" ? formatMarketCapAxis : formatStockPriceAxis;
+      kind === "stock" && series === "marketCap"
+        ? formatMarketCapAxis
+        : kind === "stock" && series === "return"
+          ? formatReturnAxis
+          : formatStockPriceAxis;
     chart.applyOptions({
       localization: { priceFormatter: fmt },
     });
@@ -745,12 +779,16 @@ export function PriceChart({
       timeZone: dataTimeZoneHint,
     });
     const valueLabel =
-      kind === "stock" && series === "marketCap" ? formatMarketCapAxis(hoverPrice) : `$${formatStockPriceAxis(hoverPrice)}`;
+      kind === "stock" && series === "marketCap"
+        ? formatMarketCapAxis(hoverPrice)
+        : kind === "stock" && series === "return"
+          ? formatReturnAxis(hoverPrice)
+          : `$${formatStockPriceAxis(hoverPrice)}`;
     return { dateLabel, valueLabel };
   }, [holdingsStyle, hoverPoint, hoverPrice, hoverTimeUnix, kind, series, dataTimeZoneHint]);
 
   return (
-    <div ref={containerRef} className="relative bg-transparent select-none" style={{ height }}>
+    <div ref={containerRef} className="relative z-0 bg-transparent select-none" style={{ height }}>
       <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
         {containerWidth > 0 && !holdingsStyle && dragPreview && dragPreview.width > 1 ? (
           <SelectionLayers containerWidth={containerWidth} band={dragPreview} />
@@ -766,7 +804,7 @@ export function PriceChart({
         }`}
         onPointerDown={holdingsStyle ? undefined : handlePointerDown}
       />
-      {holdingsStyle && hoverPoint && hoverTradeLines && hoverTradeLines.length > 0 ? (
+      {holdingsStyle && hoverPoint && hoverYmd && hoverTradeLines && hoverTradeLines.length > 0 ? (
         <div
           className="pointer-events-none absolute z-30 min-w-[220px] max-w-[280px] rounded-[10px] border border-[#E4E4E7] bg-white px-3 py-2 text-[12px] leading-4 text-[#09090B] shadow-[0px_8px_20px_0px_rgba(10,10,10,0.10)]"
           style={{
@@ -776,10 +814,10 @@ export function PriceChart({
           }}
           role="status"
         >
-          <div className="font-semibold text-[#09090B]">{hoverYmd}</div>
+          <div className="font-semibold text-[#09090B]">{formatTradeTooltipDateHeader(hoverYmd)}</div>
           <div className="mt-1 space-y-1 text-[#71717A]">
             {hoverTradeLines.slice(0, 6).map((line, i) => (
-              <div key={`${hoverYmd}-${i}`} className="truncate">
+              <div key={`${hoverYmd}-${i}`} className="whitespace-normal break-words">
                 {line}
               </div>
             ))}
@@ -810,7 +848,9 @@ export function PriceChart({
         <div className="absolute inset-0 z-20 flex items-center justify-center px-6 text-center text-[14px] text-[#71717A]">
           {kind === "stock" && series === "marketCap"
             ? "No market cap data for this range (shares outstanding unavailable)."
-            : "No price data for this range."}
+            : kind === "stock" && series === "return"
+              ? "No return data for this range."
+              : "No price data for this range."}
         </div>
       ) : null}
     </div>

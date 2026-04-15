@@ -11,7 +11,9 @@ import { ALL_CRYPTO_METAS } from "@/lib/market/crypto-meta";
 import { INDEX_TOP10 } from "@/lib/market/indices-top10";
 import { getCryptoLogoUrl } from "@/lib/crypto/crypto-logo-url";
 import { resolveEquityLogoUrlFromTicker } from "@/lib/screener/resolve-equity-logo-url";
+import { shouldHideOtcForeignLineDuplicate } from "@/lib/market/otc-duplicate-tickers";
 import { getTop500Universe } from "@/lib/screener/top500-companies";
+import { TOP10_TICKERS } from "@/lib/screener/top10-config";
 import type { SearchAssetItem, SearchScope } from "@/lib/search/search-types";
 
 type RankedSearch = { item: SearchAssetItem; score: number; marketCapUsd: number | null };
@@ -229,8 +231,13 @@ async function runGlobalAssetSearch(qNorm: string, scope: SearchScope): Promise<
     }
   }
 
+  const universe = scope === "all" || scope === "stocks" ? await getTop500Universe() : [];
+  const primaryTickerSet = new Set<string>([
+    ...TOP10_TICKERS.map((t) => t.trim().toUpperCase()),
+    ...universe.map((u) => u.ticker.trim().toUpperCase()),
+  ]);
+
   if (scope === "all" || scope === "stocks") {
-    const universe = await getTop500Universe();
     const hits = universe.filter((u) => {
       const tL = u.ticker.trim().toLowerCase();
       const nL = u.name.trim().toLowerCase();
@@ -260,6 +267,9 @@ async function runGlobalAssetSearch(qNorm: string, scope: SearchScope): Promise<
     const item = parseEodhdRow(row);
     if (!item) continue;
     if (scope !== "all" && item.type !== scope) continue;
+    if (item.type === "stock" && shouldHideOtcForeignLineDuplicate(item.symbol, primaryTickerSet)) {
+      continue;
+    }
     candidates.push({ item, score: scoreItem(item.name, item.symbol, item.type), marketCapUsd: null });
   }
 
@@ -292,7 +302,7 @@ async function runGlobalAssetSearch(qNorm: string, scope: SearchScope): Promise<
 
 const getCachedGlobalAssetSearch = unstable_cache(
   async (qNorm: string, scope: SearchScope) => runGlobalAssetSearch(qNorm, scope),
-  ["global-asset-search-v11-full-eodhd-cc-universe"],
+  ["global-asset-search-v12-otc-dedupe-remote"],
   { revalidate: REVALIDATE_SEARCH },
 );
 

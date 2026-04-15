@@ -71,9 +71,11 @@ function IconButton({ children }: { children: React.ReactNode }) {
 export function Topbar({
   userInitials,
   avatarUrl,
+  userDisplayName,
 }: {
   userInitials: string;
   avatarUrl: string | null;
+  userDisplayName: string;
 }) {
   const [searchOpen, setSearchOpen] = useState(false);
 
@@ -135,7 +137,11 @@ export function Topbar({
 
           <TopbarPortfolioBlock />
 
-          <TopbarUserMenu userInitials={userInitials} avatarUrl={avatarUrl} />
+          <TopbarUserMenu
+            userInitials={userInitials}
+            avatarUrl={avatarUrl}
+            userDisplayName={userDisplayName}
+          />
 
           <a
             href="mailto:hi@finsepa.com"

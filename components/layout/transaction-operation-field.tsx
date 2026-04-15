@@ -3,6 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, ChevronDown } from "lucide-react";
 
+import {
+  dropdownMenuPanelClassName,
+  dropdownMenuPlainItemRowClassName,
+} from "@/components/design-system/dropdown-menu-styles";
+import { cn } from "@/lib/utils";
+
 const OPERATIONS = ["Buy", "Sell"] as const;
 export type Operation = (typeof OPERATIONS)[number];
 
@@ -45,7 +51,10 @@ export function TransactionOperationField({
       {open ? (
         <div
           role="listbox"
-          className="absolute left-0 right-0 top-full z-[110] mt-1 overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white py-1 shadow-[0px_4px_12px_0px_rgba(10,10,10,0.08)]"
+          className={cn(
+            dropdownMenuPanelClassName(),
+            "absolute left-0 right-0 top-full z-[110] mt-1",
+          )}
         >
           {OPERATIONS.map((op) => {
             const selected = op === operation;
@@ -59,7 +68,7 @@ export function TransactionOperationField({
                   setOperation(op);
                   setOpen(false);
                 }}
-                className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left text-sm font-medium text-[#09090B] transition-colors hover:bg-[#F4F4F5]"
+                className={cn(dropdownMenuPlainItemRowClassName({ selected }), "font-medium")}
               >
                 <span>{op}</span>
                 {selected ? <Check className="h-4 w-4 shrink-0 text-[#09090B]" strokeWidth={2} aria-hidden /> : null}

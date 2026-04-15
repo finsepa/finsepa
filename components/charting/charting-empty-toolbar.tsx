@@ -7,6 +7,11 @@ import { Plus, RefreshCw, X } from "lucide-react";
 import { ChartingCompanyAddDropdown } from "@/components/charting/charting-company-add-dropdown";
 import type { ChartTimeRange } from "@/components/charting/charting-workspace";
 import { TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
+import {
+  dropdownMenuRichItemClassName,
+  dropdownMenuSurfaceClassName,
+} from "@/components/design-system/dropdown-menu-styles";
+import { cn } from "@/lib/utils";
 import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
 import {
   CHARTING_DROPDOWN_GROUPS,
@@ -260,7 +265,10 @@ export function ChartingEmptyToolbar({ metricParam, tickers, allowedChartingTick
             </button>
             {pickerOpen && (
               <div
-                className="absolute left-0 top-full z-[210] mt-1 w-[min(calc(100vw-2rem),300px)] rounded-lg border border-[#E4E4E7] bg-white py-1 shadow-md"
+                className={cn(
+                  dropdownMenuSurfaceClassName(),
+                  "absolute left-0 top-full z-[210] mt-1 w-[min(calc(100vw-2rem),300px)] overflow-hidden",
+                )}
                 role="listbox"
               >
                 <div className="border-b border-[#F4F4F5] px-2 pb-1 pt-1">
@@ -273,19 +281,19 @@ export function ChartingEmptyToolbar({ metricParam, tickers, allowedChartingTick
                     aria-label="Search metrics"
                   />
                 </div>
-                <div className="max-h-[min(400px,calc(100vh-12rem))] overflow-y-auto py-1">
+                <div className="flex max-h-[min(400px,calc(100vh-12rem))] flex-col gap-1 overflow-y-auto px-1 py-2">
                   {groupedAddable.map((group) => (
                     <div key={group.id} className="pb-2 last:pb-0">
                       <div className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wide text-[#A1A1AA]">
                         {group.label}
                       </div>
-                      <ul>
+                      <ul className="flex flex-col gap-1">
                         {group.ids.map((mid) => (
                           <li key={mid}>
                             <button
                               type="button"
                               role="option"
-                              className="w-full px-3 py-1.5 text-left text-[13px] text-[#09090B] transition-colors hover:bg-[#F4F4F5]"
+                              className={dropdownMenuRichItemClassName()}
                               onClick={() => addMetric(mid)}
                             >
                               {CHARTING_METRIC_LABEL[mid]}
