@@ -3,10 +3,60 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { friendlySupabaseAuthErrorMessage } from "@/lib/auth/supabase-error-message";
+import {
+  friendlyNetworkErrorMessage,
+  friendlySupabaseAuthErrorMessage,
+  shouldAttemptLoopsSignupFallback,
+} from "@/lib/auth/supabase-error-message";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { AuthDivider, AuthInput, AuthLabel, AuthPrimaryButton, AuthSecondaryButton } from "@/components/auth/auth-form-ui";
 import { PATH_APP_ENTRY, PATH_AUTH_CALLBACK } from "@/lib/auth/routes";
+
+type LoopsFirstResult =
+  | { kind: "success" }
+  | { kind: "duplicate" }
+  | { kind: "use_client_signup" }
+  | { kind: "error"; message: string };
+
+async function trySignupViaLoopsApi(body: {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  appOrigin: string;
+}): Promise<LoopsFirstResult> {
+  let loopsRes: Response;
+  try {
+    const url = `${window.location.origin}/api/auth/signup-with-loops`;
+    loopsRes = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    // Fetch never got a response (embedded preview blocking localhost, dev server down, etc.).
+    // Fall back to client signUp so a normal misconfiguration still shows a JSON error from the API.
+    return { kind: "use_client_signup" };
+  }
+  const loopsJson = (await loopsRes.json().catch(() => ({}))) as {
+    ok?: boolean;
+    error?: string;
+    message?: string;
+  };
+
+  if (loopsRes.ok && loopsJson.ok === true) return { kind: "success" };
+  if (loopsRes.status === 409 || loopsJson.error === "duplicate_email") return { kind: "duplicate" };
+  if (loopsJson.error === "loops_not_configured" || loopsJson.error === "admin_unavailable") {
+    return { kind: "use_client_signup" };
+  }
+
+  return {
+    kind: "error",
+    message:
+      loopsJson.message?.trim() ||
+      "We could not send your confirmation email via Loops. Set LOOPS_API_KEY and SUPABASE_SERVICE_ROLE_KEY (see .env.example). Your Loops template needs data variables: firstName, confirmationLink.",
+  };
+}
 
 function GoogleMark() {
   return (
@@ -70,6 +120,32 @@ export function SignupClient() {
       const origin = window.location.origin;
       const emailRedirectTo = `${origin}${PATH_AUTH_CALLBACK}?next=${encodeURIComponent(PATH_APP_ENTRY)}`;
 
+      const loopsFirst = await trySignupViaLoopsApi({
+        email,
+        password,
+        firstName,
+        lastName,
+        appOrigin: origin,
+      });
+      if (loopsFirst.kind === "success") {
+        router.refresh();
+        const { data: sess } = await supabase.auth.getSession();
+        if (sess.session) await supabase.auth.signOut();
+        router.push(`/check-email?email=${encodeURIComponent(email)}`);
+        return;
+      }
+      if (loopsFirst.kind === "duplicate") {
+        setIsDuplicateEmail(true);
+        setErrorMessage("An account with this email already exists.");
+        const passwordInput = form.querySelector<HTMLInputElement>('input[name="password"]');
+        if (passwordInput) passwordInput.value = "";
+        return;
+      }
+      if (loopsFirst.kind === "error") {
+        setErrorMessage(loopsFirst.message);
+        return;
+      }
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -82,12 +158,12 @@ export function SignupClient() {
         },
       });
 
+      const errMsg = error?.message ?? "";
       const looksLikeDuplicate =
         !!error &&
-        (error.status === 400 ||
-          error.status === 409 ||
+        (error.status === 409 ||
           error.status === 422 ||
-          /already registered|already exists|user exists|email.*registered/i.test(error.message));
+          /already registered|already exists|user exists|email.*registered/i.test(errMsg));
 
       const duplicateByIdentity = !!data?.user && Array.isArray(data.user.identities) && data.user.identities.length === 0;
 
@@ -100,22 +176,24 @@ export function SignupClient() {
       }
 
       if (error) {
-        const emailSendFailed = /confirmation email|error sending confirmation email|smtp|mailer/i.test(
-          error.message ?? "",
-        );
-
-        if (emailSendFailed) {
-          const loopsRes = await fetch("/api/auth/signup-with-loops", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              email,
-              password,
-              firstName,
-              lastName,
-              appOrigin: origin,
-            }),
-          });
+        if (shouldAttemptLoopsSignupFallback(error.message, error.code, error.status)) {
+          let loopsRes: Response;
+          try {
+            loopsRes = await fetch(`${origin}/api/auth/signup-with-loops`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                email,
+                password,
+                firstName,
+                lastName,
+                appOrigin: origin,
+              }),
+            });
+          } catch (err) {
+            setErrorMessage(friendlyNetworkErrorMessage(err));
+            return;
+          }
           const loopsJson = (await loopsRes.json().catch(() => ({}))) as {
             ok?: boolean;
             error?: string;
@@ -138,8 +216,15 @@ export function SignupClient() {
             return;
           }
 
-          if (loopsJson.error === "loops_not_configured" || loopsRes.status === 503) {
+          if (loopsJson.error === "loops_not_configured") {
             setErrorMessage(friendlySupabaseAuthErrorMessage(error.message));
+            return;
+          }
+
+          if (loopsJson.error === "admin_unavailable") {
+            setErrorMessage(
+              "Confirmation via Loops needs a Supabase service role on the server. Add SUPABASE_SERVICE_ROLE_KEY (or SUPABASE_SERVICE_KEY) in `.env.local` (local) or Vercel (production), restart dev / redeploy, and try again.",
+            );
             return;
           }
 
@@ -163,8 +248,7 @@ export function SignupClient() {
       const emailParam = encodeURIComponent(email);
       router.push(`/check-email?email=${emailParam}`);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Something went wrong. Please try again.";
-      setErrorMessage(message);
+      setErrorMessage(friendlyNetworkErrorMessage(err));
     } finally {
       setLoading(false);
     }
