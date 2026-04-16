@@ -158,6 +158,32 @@ function formatTradeTooltipDateHeader(ymd: string): string {
   });
 }
 
+const TOOLTIP_MAX_W = 280;
+const TOOLTIP_GAP_PX = 6;
+const TOOLTIP_EDGE_PAD = 8;
+
+/** Keeps tooltips inside the chart box, flips below the crosshair when there is not enough room above (avoids clipping + large offset). */
+function layoutPointTooltip(
+  hover: { x: number; y: number },
+  containerWidth: number,
+  chartHeight: number,
+  estimatedHeight: number,
+): { left: number; top: number; transform: string } {
+  const left = Math.min(
+    Math.max(TOOLTIP_EDGE_PAD, hover.x + TOOLTIP_GAP_PX),
+    Math.max(TOOLTIP_EDGE_PAD, containerWidth - TOOLTIP_MAX_W - TOOLTIP_EDGE_PAD),
+  );
+  const minTop = TOOLTIP_EDGE_PAD;
+  const bottomLimit = chartHeight - TOOLTIP_EDGE_PAD;
+  const placeAbove = hover.y >= estimatedHeight + TOOLTIP_GAP_PX + minTop;
+
+  if (placeAbove) {
+    return { left, top: hover.y - TOOLTIP_GAP_PX, transform: "translateY(-100%)" };
+  }
+  const top = Math.max(minTop, Math.min(hover.y + TOOLTIP_GAP_PX, bottomLimit - estimatedHeight));
+  return { left, top, transform: "none" };
+}
+
 type BandGeom = { left: number; width: number; positive: boolean };
 
 function SelectionLayers({ containerWidth, band }: { containerWidth: number; band: BandGeom }) {
@@ -787,6 +813,25 @@ export function PriceChart({
     return { dateLabel, valueLabel };
   }, [holdingsStyle, hoverPoint, hoverPrice, hoverTimeUnix, kind, series, dataTimeZoneHint]);
 
+  const holdingsTooltipEstHeight = useMemo(() => {
+    const n = hoverTradeLines?.length ?? 0;
+    if (n === 0) return 72;
+    const shown = Math.min(6, n);
+    const moreLine = n > 6 ? 18 : 0;
+    return Math.min(240, 34 + shown * 22 + moreLine);
+  }, [hoverTradeLines]);
+
+  const holdingsTooltipPos = useMemo(() => {
+    if (!holdingsStyle || hoverPoint == null || containerWidth <= 0) return null;
+    if (!hoverTradeLines?.length) return null;
+    return layoutPointTooltip(hoverPoint, containerWidth, height, holdingsTooltipEstHeight);
+  }, [holdingsStyle, hoverPoint, containerWidth, height, hoverTradeLines, holdingsTooltipEstHeight]);
+
+  const overviewTooltipPos = useMemo(() => {
+    if (holdingsStyle || hoverPoint == null || containerWidth <= 0 || !overviewHoverTooltip) return null;
+    return layoutPointTooltip(hoverPoint, containerWidth, height, 72);
+  }, [holdingsStyle, hoverPoint, containerWidth, height, overviewHoverTooltip]);
+
   return (
     <div ref={containerRef} className="relative z-0 bg-transparent select-none" style={{ height }}>
       <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
@@ -804,13 +849,13 @@ export function PriceChart({
         }`}
         onPointerDown={holdingsStyle ? undefined : handlePointerDown}
       />
-      {holdingsStyle && hoverPoint && hoverYmd && hoverTradeLines && hoverTradeLines.length > 0 ? (
+      {holdingsStyle && hoverPoint && hoverYmd && hoverTradeLines && hoverTradeLines.length > 0 && holdingsTooltipPos ? (
         <div
           className="pointer-events-none absolute z-30 min-w-[220px] max-w-[280px] rounded-[10px] border border-[#E4E4E7] bg-white px-3 py-2 text-[12px] leading-4 text-[#09090B] shadow-[0px_8px_20px_0px_rgba(10,10,10,0.10)]"
           style={{
-            left: Math.min(Math.max(8, hoverPoint.x + 12), Math.max(8, containerWidth - 292)),
-            top: Math.max(8, hoverPoint.y - 12),
-            transform: "translateY(-100%)",
+            left: holdingsTooltipPos.left,
+            top: holdingsTooltipPos.top,
+            transform: holdingsTooltipPos.transform,
           }}
           role="status"
         >
@@ -825,13 +870,13 @@ export function PriceChart({
           </div>
         </div>
       ) : null}
-      {!holdingsStyle && overviewHoverTooltip && hoverPoint ? (
+      {!holdingsStyle && overviewHoverTooltip && hoverPoint && overviewTooltipPos ? (
         <div
           className="pointer-events-none absolute z-30 min-w-[200px] max-w-[min(100%,280px)] rounded-[10px] border border-[#E4E4E7] bg-white px-3 py-2 text-[12px] leading-4 text-[#09090B] shadow-[0px_8px_20px_0px_rgba(10,10,10,0.10)]"
           style={{
-            left: Math.min(Math.max(8, hoverPoint.x + 12), Math.max(8, containerWidth - 292)),
-            top: Math.max(8, hoverPoint.y - 12),
-            transform: "translateY(-100%)",
+            left: overviewTooltipPos.left,
+            top: overviewTooltipPos.top,
+            transform: overviewTooltipPos.transform,
           }}
           role="tooltip"
         >

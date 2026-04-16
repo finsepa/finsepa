@@ -311,18 +311,40 @@ export function chartingTickersToParam(tickers: string[]): string {
   return tickers.join(",");
 }
 
-/** `/charting` URL with optional `ticker` and `metric` query (omits empty parts). */
-export function buildChartingPath(tickers: string[], metricIds: ChartingMetricId[]): string {
+/** Standalone chart UIs: `/charting` or `/comparison`. */
+export type StandaloneChartRoute = "/charting" | "/comparison";
+
+/** `/charting` or `/comparison` with optional `ticker` and `metric` query (omits empty parts). */
+export function buildStandaloneChartPath(
+  route: StandaloneChartRoute,
+  tickers: string[],
+  metricIds: ChartingMetricId[],
+): string {
   const tq = chartingTickersToParam(tickers);
   const mq = chartingMetricsToParam(metricIds);
-  if (!tq && !mq) return "/charting";
+  if (!tq && !mq) return route;
   const p = new URLSearchParams();
   if (tq) p.set("ticker", tq);
   if (mq) p.set("metric", mq);
-  return `/charting?${p.toString()}`;
+  return `${route}?${p.toString()}`;
+}
+
+/** `/charting` URL with optional `ticker` and `metric` query (omits empty parts). */
+export function buildChartingPath(tickers: string[], metricIds: ChartingMetricId[]): string {
+  return buildStandaloneChartPath("/charting", tickers, metricIds);
+}
+
+/** `/comparison` URL with optional `ticker` and `metric` query (omits empty parts). */
+export function buildComparisonPath(tickers: string[], metricIds: ChartingMetricId[]): string {
+  return buildStandaloneChartPath("/comparison", tickers, metricIds);
 }
 
 /** True when standalone Charting should load data and show the chart (not the blank hero). */
 export function isChartingSessionReady(tickers: string[], metricParam: string | null | undefined): boolean {
   return tickers.length > 0 && parseChartingMetricsParam(metricParam).length > 0;
+}
+
+/** True when `/comparison` should load chart data (company-first; metric defaults in app code). */
+export function isComparisonSessionReady(tickers: string[]): boolean {
+  return tickers.length > 0;
 }

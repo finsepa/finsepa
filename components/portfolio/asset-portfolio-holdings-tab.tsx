@@ -272,7 +272,7 @@ export function AssetPortfolioHoldingsTab({
     <div className="space-y-8">
       <section className="space-y-4">
         <ChartControls activeRange={holdingsChartRange} onRangeChange={setHoldingsChartRange} />
-        <div className="overflow-hidden rounded-[12px] bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
+        <div className="overflow-visible rounded-[12px] bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
           <PriceChart
             kind={assetKind}
             symbol={route}

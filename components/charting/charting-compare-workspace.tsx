@@ -16,6 +16,7 @@ import {
 } from "lightweight-charts";
 
 import { ChartingCompanyAddDropdown } from "@/components/charting/charting-company-add-dropdown";
+import { TransactionPortfolioField } from "@/components/portfolio/transaction-portfolio-field";
 import type { ChartTimeRange, ChartType, ChartingUnitScale } from "@/components/charting/charting-workspace";
 import { DataFetchTopLoader } from "@/components/layout/data-fetch-top-loader";
 import { ChartSkeleton } from "@/components/ui/chart-skeleton";
@@ -36,8 +37,9 @@ import {
   CHARTING_METRIC_LABEL,
   type ChartingMetricId,
   type ChartingMetricKind,
-  buildChartingPath,
+  buildStandaloneChartPath,
   parseChartingMetricsParam,
+  type StandaloneChartRoute,
 } from "@/lib/market/stock-charting-metrics";
 import {
   formatPercentMetric,
@@ -57,17 +59,6 @@ const COMPARE_COLORS_SOLID = [
   "#CA8A04",
   "#7C3AED",
 ];
-
-function compareBarColor(idx: number): string {
-  const solid = COMPARE_COLORS_SOLID[idx % COMPARE_COLORS_SOLID.length];
-  const m = solid.match(/^#([0-9a-f]{6})$/i);
-  if (!m) return solid;
-  const n = parseInt(m[1], 16);
-  const r = (n >> 16) & 255;
-  const g = (n >> 8) & 255;
-  const b = n & 255;
-  return `rgba(${r},${g},${b},0.58)`;
-}
 
 function formatChartAxisPrice(p: number): string {
   if (!Number.isFinite(p)) return "";
@@ -252,9 +243,17 @@ type Props = {
   tickers: string[];
   metricParam: string;
   initialByTicker: Record<string, StockPageInitialData>;
+  pathRoute?: StandaloneChartRoute;
+  workspaceTitle?: string;
 };
 
-export function ChartingCompareWorkspace({ tickers, metricParam, initialByTicker }: Props) {
+export function ChartingCompareWorkspace({
+  tickers,
+  metricParam,
+  initialByTicker,
+  pathRoute = "/charting",
+  workspaceTitle = "Charting",
+}: Props) {
   const router = useRouter();
   const wrapRef = useRef<HTMLDivElement>(null);
   const pickerWrapRef = useRef<HTMLDivElement>(null);
@@ -430,9 +429,9 @@ export function ChartingCompareWorkspace({ tickers, metricParam, initialByTicker
 
   const pushChartingUrl = useCallback(
     (nextTickers: string[], metrics: ChartingMetricId[]) => {
-      router.replace(buildChartingPath(nextTickers, metrics), { scroll: false });
+      router.replace(buildStandaloneChartPath(pathRoute, nextTickers, metrics), { scroll: false });
     },
-    [router],
+    [router, pathRoute],
   );
 
   const removeTicker = useCallback(
@@ -592,14 +591,13 @@ export function ChartingCompareWorkspace({ tickers, metricParam, initialByTicker
             usedScales.add(scaleId);
             const solid = COMPARE_COLORS_SOLID[s.colorIdx % COMPARE_COLORS_SOLID.length];
             if (chartType === "bars") {
-              const barColor = compareBarColor(s.colorIdx);
               const series = chart.addSeries(HistogramSeries, {
-                color: barColor,
+                color: solid,
                 priceScaleId: scaleId,
                 priceFormat: priceFormatForKind(kind),
                 title: `${s.ticker} ${CHARTING_METRIC_LABEL[s.metricId]}`,
               });
-              series.setData(data.map((d) => ({ time: d.time, value: d.value, color: barColor })));
+              series.setData(data.map((d) => ({ time: d.time, value: d.value, color: solid })));
               seriesByKeyRef.current.set(s.key, series);
             } else {
               const series = chart.addSeries(LineSeries, {
@@ -721,10 +719,13 @@ export function ChartingCompareWorkspace({ tickers, metricParam, initialByTicker
     <>
       <DataFetchTopLoader active={loading} />
       <div className="space-y-4 pt-1">
+      <div className="w-full max-w-[min(100%,320px)]">
+        <TransactionPortfolioField variant="field" />
+      </div>
       <div className="flex flex-col gap-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-3">
           <h2 className="min-w-0 shrink-0 text-2xl font-semibold leading-9 tracking-tight text-[#09090B] sm:flex-1">
-            Charting
+            {workspaceTitle}
           </h2>
           <div className="flex min-w-0 flex-wrap items-center gap-3 sm:justify-end">
             <TabSwitcher
@@ -750,7 +751,7 @@ export function ChartingCompareWorkspace({ tickers, metricParam, initialByTicker
             </div>
             <button
               type="button"
-              onClick={() => router.replace(buildChartingPath([], []), { scroll: false })}
+              onClick={() => router.replace(buildStandaloneChartPath(pathRoute, [], []), { scroll: false })}
               className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#09090B] transition-colors hover:bg-[#FAFAFA]"
               aria-label="Clear companies and metrics"
             >
@@ -957,7 +958,7 @@ export function ChartingCompareWorkspace({ tickers, metricParam, initialByTicker
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-2 px-0.5 pt-2">
+              <div className="flex flex-wrap justify-center gap-2 px-0.5 pt-2">
                 {seriesDefs.map((s) => (
                   <div
                     key={s.key}
@@ -1001,7 +1002,7 @@ export function ChartingCompareWorkspace({ tickers, metricParam, initialByTicker
                         <td className="px-3 align-middle">
                           <div className="flex items-center gap-2">
                             <span
-                              className="h-8 w-1 shrink-0 rounded-sm"
+                              className="h-4 w-1 shrink-0 self-center rounded-full"
                               style={{
                                 background: COMPARE_COLORS_SOLID[s.colorIdx % COMPARE_COLORS_SOLID.length],
                               }}

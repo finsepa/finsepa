@@ -3,15 +3,16 @@
 import { memo } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronRight, UserRound } from "lucide-react";
+import { UserRound } from "lucide-react";
 import { format, isValid, parseISO } from "date-fns";
 
 import { CompanyLogo } from "@/components/screener/company-logo";
+import { resolveEquityLogoUrlFromListingTicker } from "@/lib/screener/resolve-equity-logo-url";
 import { formatUsdCompact } from "@/lib/market/key-stats-basic-format";
 
-/** Screener-style column grid: avatar, fund, size, count, last update, top holdings, chevron. */
+/** Screener-style column grid: avatar, fund, size, count, last update, top holdings. */
 const colLayout =
-  "grid-cols-[48px_minmax(0,2fr)_minmax(0,1fr)_minmax(0,0.75fr)_minmax(0,1fr)_minmax(0,1.5fr)_40px] gap-x-3";
+  "grid-cols-[48px_minmax(0,2fr)_minmax(0,1fr)_minmax(0,0.75fr)_minmax(0,1fr)_minmax(0,1.5fr)] gap-x-3";
 
 export type SuperinvestorsFundRowModel = {
   href: string;
@@ -21,7 +22,8 @@ export type SuperinvestorsFundRowModel = {
   totalValueUsd: number;
   positionCount: number;
   filingDate: string | null;
-  topIssuers: string[];
+  /** Top five positions by value (same order as portfolio). */
+  topHoldings: { issuer: string; ticker: string | null }[];
 };
 
 function formatFilingDate(ymd: string | null): string {
@@ -37,13 +39,12 @@ function SuperinvestorsFundTableInner({ rows }: { rows: SuperinvestorsFundRowMod
       <div
         className={`grid ${colLayout} min-h-[44px] items-center bg-white px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A]`}
       >
-        <div />
-        <div className="text-left">Fund</div>
+        {/* Span avatar + name columns so "Fund" lines up with the left edge of centered 40px avatars (48px track → 4px inset). */}
+        <div className="col-span-2 self-center pl-1 text-left">Fund</div>
         <div className="min-w-0 text-right">Size</div>
         <div className="min-w-0 text-right">No. of stocks</div>
         <div className="min-w-0 text-right">Last updated</div>
-        <div className="min-w-0 text-left">Top holdings</div>
-        <div className="w-10 shrink-0" aria-hidden />
+        <div className="min-w-0 text-right">Top holdings</div>
       </div>
 
       {rows.map((r) => (
@@ -91,14 +92,20 @@ function SuperinvestorsFundTableInner({ rows }: { rows: SuperinvestorsFundRowMod
             {formatFilingDate(r.filingDate)}
           </div>
 
-          <div className="flex min-w-0 items-center gap-1.5">
-            {r.topIssuers.slice(0, 5).map((issuer) => (
-              <CompanyLogo key={issuer} name={issuer} logoUrl="" size="xs" />
-            ))}
-          </div>
-
-          <div className="flex w-10 shrink-0 items-center justify-center text-[#A1A1AA]">
-            <ChevronRight className="h-5 w-5" aria-hidden />
+          <div className="flex min-w-0 items-center justify-end gap-1.5">
+            {r.topHoldings.slice(0, 5).map((h, i) => {
+              const sym = h.ticker?.trim() ? h.ticker.trim().toUpperCase() : null;
+              const logoUrl = sym ? resolveEquityLogoUrlFromListingTicker(sym) : "";
+              return (
+                <CompanyLogo
+                  key={`${sym ?? h.issuer}-${i}`}
+                  name={h.issuer}
+                  logoUrl={logoUrl}
+                  symbol={sym ?? undefined}
+                  size="xs"
+                />
+              );
+            })}
           </div>
         </Link>
       ))}

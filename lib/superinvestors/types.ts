@@ -1,6 +1,8 @@
 export type InstitutionalHoldingRow = {
   issuer: string;
   titleOfClass: string | null;
+  /** Resolved listing symbol when CUSIP / issuer mapping succeeds (13F has no tickers). */
+  ticker: string | null;
   /** Position value in USD (not thousands). */
   valueUsd: number;
   /** Percent of total reported 13F value. */
@@ -18,7 +20,8 @@ export type InstitutionalHoldingsPayload = {
   totalValueUsd: number;
   positionCount: number;
   holdings: InstitutionalHoldingRow[];
-  source: "edgar" | "fixture";
+  /** `unavailable` when SEC data could not be loaded (no fixture for this filer). */
+  source: "edgar" | "fixture" | "unavailable";
 };
 
 /** 13F position vs prior filing (current row only; sold-out names use `Berkshire13fSoldOutRow`). */
@@ -65,5 +68,5 @@ export type Berkshire13fComparisonPayload = {
   positionCount: number;
   rows: Berkshire13fComparisonRow[];
   soldOut: Berkshire13fSoldOutRow[];
-  source: "edgar" | "fixture";
+  source: "edgar" | "fixture" | "unavailable";
 };

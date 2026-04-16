@@ -13,8 +13,9 @@ import {
 } from "@/components/layout/cash-direction-select";
 import { ClearableInput } from "@/components/layout/clearable-input";
 import { TransactionDateField } from "@/components/layout/transaction-date-field";
-import { newTransactionRowId } from "@/components/portfolio/portfolio-types";
+import { newTransactionRowId, portfolioIsCombined } from "@/components/portfolio/portfolio-types";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
+import { FormListboxSelect, type ListboxOption } from "@/components/ui/form-listbox-select";
 import { toastTransactionAdded } from "@/lib/portfolio/transaction-added-toast";
 import { cn } from "@/lib/utils";
 
@@ -42,6 +43,16 @@ export function AddCashModal({ open, onClose }: Props) {
   const [date, setDate] = useState(() => startOfDay(new Date()));
   const [amount, setAmount] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [cashPortfolioId, setCashPortfolioId] = useState("");
+
+  const standardPortfolios = useMemo(
+    () => portfolios.filter((p) => !portfolioIsCombined(p)),
+    [portfolios],
+  );
+
+  const portfolioOptions = useMemo((): ListboxOption<string>[] => {
+    return standardPortfolios.map((p) => ({ value: p.id, label: p.name }));
+  }, [standardPortfolios]);
 
   useEffect(() => {
     if (!open) return;
@@ -49,7 +60,12 @@ export function AddCashModal({ open, onClose }: Props) {
     setDate(startOfDay(new Date()));
     setAmount("");
     setSubmitting(false);
-  }, [open]);
+    const preferred =
+      selectedPortfolioId && standardPortfolios.some((p) => p.id === selectedPortfolioId)
+        ? selectedPortfolioId
+        : (standardPortfolios[0]?.id ?? "");
+    setCashPortfolioId(preferred);
+  }, [open, selectedPortfolioId, standardPortfolios]);
 
   useEffect(() => {
     if (!open) return;
@@ -60,15 +76,17 @@ export function AddCashModal({ open, onClose }: Props) {
     };
   }, [open]);
 
-  const hasPortfolio =
-    selectedPortfolioId != null && portfolios.some((p) => p.id === selectedPortfolioId);
-
   const amountNum = useMemo(() => parseAmountField(amount), [amount]);
 
-  const canAdd = hasPortfolio && amountNum > 0;
+  const resolvedCashPortfolioId = useMemo(() => {
+    if (cashPortfolioId && standardPortfolios.some((p) => p.id === cashPortfolioId)) return cashPortfolioId;
+    return standardPortfolios[0]?.id ?? "";
+  }, [cashPortfolioId, standardPortfolios]);
+
+  const canAdd = resolvedCashPortfolioId.length > 0 && amountNum > 0;
 
   const handleAdd = useCallback(() => {
-    if (!canAdd || !selectedPortfolioId) return;
+    if (!canAdd || !resolvedCashPortfolioId) return;
     const n = amountNum;
     if (n <= 0) return;
 
@@ -76,9 +94,9 @@ export function AddCashModal({ open, onClose }: Props) {
     try {
       const dateStr = format(date, "yyyy-MM-dd");
       const opLabel = cashOperationLabel(direction);
-      addTransaction(selectedPortfolioId, {
+      addTransaction(resolvedCashPortfolioId, {
         id: newTransactionRowId(),
-        portfolioId: selectedPortfolioId,
+        portfolioId: resolvedCashPortfolioId,
         kind: "cash",
         operation: opLabel,
         symbol: "USD",
@@ -101,7 +119,7 @@ export function AddCashModal({ open, onClose }: Props) {
     } finally {
       setSubmitting(false);
     }
-  }, [addTransaction, amountNum, canAdd, date, direction, onClose, selectedPortfolioId]);
+  }, [addTransaction, amountNum, canAdd, date, direction, onClose, resolvedCashPortfolioId]);
 
   if (!open) return null;
 
@@ -136,6 +154,22 @@ export function AddCashModal({ open, onClose }: Props) {
 
         <div className="px-5 pb-5 pt-5">
           <div className="flex flex-col gap-5">
+            {portfolioOptions.length > 0 ? (
+              <Field label="Portfolio">
+                <FormListboxSelect
+                  listboxClassName="z-[120]"
+                  value={resolvedCashPortfolioId}
+                  onChange={setCashPortfolioId}
+                  options={portfolioOptions}
+                  aria-label="Portfolio to add cash to"
+                />
+              </Field>
+            ) : (
+              <p className="text-sm leading-5 text-[#71717A]">
+                Create a standard portfolio to record cash movements.
+              </p>
+            )}
+
             <Field label="Operation type">
               <CashDirectionSelect value={direction} onChange={setDirection} />
             </Field>
@@ -156,10 +190,6 @@ export function AddCashModal({ open, onClose }: Props) {
                 clearLabel="Clear amount"
               />
             </Field>
-
-            {!hasPortfolio ? (
-              <p className="text-sm text-[#A1A1AA]">Select a portfolio in the header first.</p>
-            ) : null}
           </div>
         </div>
 

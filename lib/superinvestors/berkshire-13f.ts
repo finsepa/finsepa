@@ -18,10 +18,22 @@ import berkshireFallback from "@/lib/superinvestors/fixtures/berkshire-holdings-
 /** Berkshire Hathaway Inc. — SEC central index key (zero-padded). */
 const BERKSHIRE_CIK = "0001067983";
 
+/** Pershing Square Capital Management, L.P. */
+export const PERSHING_SQUARE_CIK = "0001336528";
+
+/** Fundsmith LLP (UK manager; SEC 13F filer). */
+export const FUNDSMITH_LLP_CIK = "0001569205";
+
+const PERSHING_DISPLAY_FALLBACK = "Pershing Square Capital Management, L.P.";
+const FUNDSMITH_DISPLAY_FALLBACK = "Fundsmith LLP";
+
 /** Optional display tickers for common 13F CUSIPs (SEC filings do not include symbols). */
 const KNOWN_CUSIP_TICKER: Record<string, string> = {
   "037833100": "AAPL",
-  "025537101": "AXP",
+  /** American Express common (13F); not to be confused with 025537101 (AEP). */
+  "025816109": "AXP",
+  /** American Electric Power — was incorrectly labeled AXP in an older map. */
+  "025537101": "AEP",
   "060505104": "BAC",
   "191216100": "KO",
   "166764100": "CVX",
@@ -30,6 +42,8 @@ const KNOWN_CUSIP_TICKER: Record<string, string> = {
   "H1467J104": "CB",
   "500754106": "KHC",
   "02079K305": "GOOGL",
+  /** Alphabet Inc. Class C (13F). */
+  "02079K107": "GOOG",
   "023436108": "DVA",
   "251794105": "KR",
   "92826C839": "V",
@@ -61,6 +75,96 @@ const KNOWN_CUSIP_TICKER: Record<string, string> = {
   "G01125106": "LILAK",
   "03214Q108": "BATRK",
   "G01125130": "LILAK",
+  /** Nu Holdings Ltd. Class A ordinary shares (NYSE: NU). */
+  "G6683N103": "NU",
+  /** Liberty Live Holdings, Inc. Series A common (NASDAQ: LLYVA). */
+  "530909100": "LLYVA",
+  /** Liberty Live Holdings, Inc. Series C common (NASDAQ: LLYVK). */
+  "531229722": "LLYVK",
+
+  /** Pershing Square — Brookfield Corp (NYSE: BN). */
+  "11271J107": "BN",
+  /** Hertz Global Holdings, Inc. */
+  "42806J700": "HTZ",
+  /** Hilton Worldwide Holdings Inc. */
+  "43300A203": "HLT",
+  /** Howard Hughes Holdings Inc. */
+  "44267T102": "HHH",
+  /** Meta Platforms, Inc. */
+  "30303M102": "META",
+  /** Restaurant Brands International Inc. */
+  "76131D103": "QSR",
+  /** Seaport Entertainment Group Inc. */
+  "812215200": "SEG",
+  /** Uber Technologies Inc. */
+  "90353T100": "UBER",
+
+  /** Fundsmith LLP — ADMA Biologics, Inc. */
+  "000899104": "ADMA",
+  /** Automatic Data Processing, Inc. */
+  "053015103": "ADP",
+  /** Catalyst Pharmaceuticals, Inc. */
+  "14888U101": "CPRX",
+  /** Church & Dwight Co., Inc. */
+  "171340102": "CHD",
+  /** Clorox Co. */
+  "189054109": "CLX",
+  /** Doximity, Inc. */
+  "26622P107": "DOCS",
+  /** Fortinet, Inc. */
+  "34959E109": "FTNT",
+  /** Graco Inc. */
+  "384109104": "GGG",
+  /** Home Depot, Inc. */
+  "437076102": "HD",
+  /** IDEXX Laboratories, Inc. */
+  "45168D104": "IDXX",
+  /** Intuit Inc. */
+  "461202103": "INTU",
+  /** Manhattan Associates, Inc. */
+  "562750109": "MANH",
+  /** Marriott International, Inc. */
+  "571903202": "MAR",
+  /** Medpace Holdings, Inc. */
+  "58506Q109": "MEDP",
+  /** Mettler-Toledo International Inc. */
+  "592688105": "MTD",
+  /** Microsoft Corp. */
+  "594918104": "MSFT",
+  /** MSCI Inc. */
+  "55354G100": "MSCI",
+  /** Napco Security Technologies, Inc. */
+  "630402105": "NSSC",
+  /** Nike, Inc. */
+  "654106103": "NKE",
+  /** Nutanix Inc. */
+  "67059N108": "NTNX",
+  /** Oddity Tech Ltd. */
+  "M7518J104": "ODD",
+  /** Otis Worldwide Corp. */
+  "68902V107": "OTIS",
+  /** Paycom Software, Inc. */
+  "70432V102": "PAYC",
+  /** Philip Morris International Inc. */
+  "718172109": "PM",
+  /** Procter & Gamble Co. */
+  "742718109": "PG",
+  /** Qualys, Inc. */
+  "74758T303": "QLYS",
+  /** Rollins, Inc. */
+  "775711104": "ROL",
+  /** Sabre Corp. */
+  "78573M104": "SABR",
+  /** Stryker Corp. */
+  "863667101": "SYK",
+  /** Texas Instruments Inc. */
+  "882508104": "TXN",
+  /** Vertiv Holdings Co. */
+  "92537N108": "VRT",
+  /** Waters Corp. */
+  "941848103": "WAT",
+  /** Zoetis Inc. */
+  "98978V103": "ZTS",
 };
 
 type SubmissionsRecent = {
@@ -125,8 +229,64 @@ type ParsedInfoRow = {
   shares: number | null;
 };
 
-function parseInfoTableRows(xml: string): ParsedInfoRow[] {
-  const rows: ParsedInfoRow[] = [];
+/**
+ * SEC 13F `<value>` is **thousands of USD**. Some infotables carry **full USD** in the same
+ * field (~1000× too large). A single-line position above this many "thousands" is not credible
+ * for any US 13F; treat oversized raw values as dollars and convert back to thousands so
+ * `valueThousands * 1000` stays correct everywhere downstream.
+ */
+const SEC_13F_VALUE_MAX_CREDIBLE_THOUSANDS = 500_000_000;
+
+function normalizeSec13fValueThousands(raw: number): number {
+  if (!Number.isFinite(raw) || raw < 0) return raw;
+  if (raw > SEC_13F_VALUE_MAX_CREDIBLE_THOUSANDS) {
+    return Math.round(raw / 1000);
+  }
+  return raw;
+}
+
+type RawInfoTableRow = {
+  issuer: string;
+  title: string | null;
+  rawValue: number;
+  cusip: string | null;
+  shares: number | null;
+};
+
+/**
+ * SEC Form 13F says `<value>` is thousands of USD, but some filers (notably Berkshire-style
+ * multi-manager infotables) put **full USD** in `<value>`. Per-row `>500M → ÷1000` then mixes
+ * units (small lines stay 1000× inflated). Infer one scale per file from share-implied prices.
+ */
+function inferSec13fValueFieldUnit(rows: readonly { rawValue: number; shares: number | null }[]): "thousands" | "dollars" {
+  let thousandsVotes = 0;
+  let dollarsVotes = 0;
+  let maxPxIfThousands = 0;
+  for (const r of rows) {
+    const { rawValue, shares } = r;
+    if (shares == null || shares < 100 || !Number.isFinite(rawValue) || rawValue <= 0) continue;
+    const pxIfThousands = (rawValue * 1000) / shares;
+    const pxIfDollars = rawValue / shares;
+    if (pxIfThousands > maxPxIfThousands) maxPxIfThousands = pxIfThousands;
+    const dollarsPlausible = pxIfDollars >= 0.05 && pxIfDollars <= 800_000;
+    const thousandsPlausible = pxIfThousands >= 0.05 && pxIfThousands <= 800_000;
+    if (dollarsPlausible && pxIfThousands > pxIfDollars * 200) {
+      dollarsVotes++;
+    } else if (thousandsPlausible && pxIfDollars < 0.5) {
+      thousandsVotes++;
+    } else if (thousandsPlausible) {
+      thousandsVotes++;
+    } else if (dollarsPlausible) {
+      dollarsVotes++;
+    }
+  }
+  /** No US listing trades above ~$1M/sh; mis-read dollars-as-thousands blows this up. */
+  if (maxPxIfThousands > 2_000_000) return "dollars";
+  return dollarsVotes > thousandsVotes ? "dollars" : "thousands";
+}
+
+function rawInfoRowsFromXml(xml: string): RawInfoTableRow[] {
+  const out: RawInfoTableRow[] = [];
   const re = /<(?:[\w.-]+:)?infoTable[^>]*>([\s\S]*?)<\/(?:[\w.-]+:)?infoTable>/gi;
   let m: RegExpExecArray | null;
   while ((m = re.exec(xml)) !== null) {
@@ -136,13 +296,29 @@ function parseInfoTableRows(xml: string): ParsedInfoRow[] {
     const valueStr = extractTagContent(block, "value");
     const cusipRaw = extractTagContent(block, "cusip");
     if (!issuer || !valueStr) continue;
-    const valueThousands = Number.parseInt(valueStr.replace(/,/g, ""), 10);
-    if (!Number.isFinite(valueThousands) || valueThousands < 0) continue;
+    const rawValue = Number.parseInt(valueStr.replace(/,/g, ""), 10);
+    if (!Number.isFinite(rawValue) || rawValue < 0) continue;
     const cusip = cusipRaw?.trim() || null;
     const shares = extractSharesFromInfoTableBlock(block);
-    rows.push({ issuer, title: title || null, valueThousands, cusip, shares });
+    out.push({ issuer, title: title || null, rawValue, cusip, shares });
   }
-  return rows;
+  return out;
+}
+
+function parseInfoTableRows(xml: string): ParsedInfoRow[] {
+  const rawRows = rawInfoRowsFromXml(xml);
+  const unit = inferSec13fValueFieldUnit(rawRows);
+  return rawRows.map((r) => {
+    const valueThousands =
+      unit === "dollars" ? Math.round(r.rawValue / 1000) : normalizeSec13fValueThousands(r.rawValue);
+    return {
+      issuer: r.issuer,
+      title: r.title,
+      valueThousands,
+      cusip: r.cusip,
+      shares: r.shares,
+    };
+  });
 }
 
 type AggregatedHolding = {
@@ -189,7 +365,283 @@ function tickerForCusip(cusip: string | null): string | null {
   return KNOWN_CUSIP_TICKER[k] ?? null;
 }
 
-async function findInfotableXmlUrl(cikNumeric: string, accessionDashed: string, ua: string): Promise<string | null> {
+/** Normalized issuer string for fallback lookup (fixtures omit CUSIPs; SEC wording varies). */
+function normalizeIssuerTickerLookupKey(issuer: string): string {
+  return issuer
+    .trim()
+    .replace(/\u00a0/g, " ")
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/'/g, "")
+    .replace(/\./g, "")
+    .replace(/,/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Known issuer → ticker when CUSIP is missing or not in {@link KNOWN_CUSIP_TICKER}.
+ * Keys must match {@link normalizeIssuerTickerLookupKey}.
+ */
+const KNOWN_ISSUER_TICKER: Record<string, string> = {
+  "apple inc": "AAPL",
+  "american express co": "AXP",
+  "american express company": "AXP",
+  "the american express co": "AXP",
+  "the american express company": "AXP",
+  "bank of america corp": "BAC",
+  "bank america corp": "BAC",
+  "bank america co": "BAC",
+  "coca cola co": "KO",
+  "chevron corp": "CVX",
+  "chevron corp new": "CVX",
+  "moodys corp": "MCO",
+  "occidental pete corp": "OXY",
+  "occidental petroleum corp": "OXY",
+  "chubb limited": "CB",
+  "chubb ltd": "CB",
+  "kraft heinz co": "KHC",
+  "alphabet inc": "GOOGL",
+  "davita inc": "DVA",
+  "davita healthcare inc": "DVA",
+  "davita healthcare partners inc": "DVA",
+  "kroger co": "KR",
+  "the kroger co": "KR",
+  "the kroger company": "KR",
+  "kroger company": "KR",
+  "visa inc": "V",
+  "siriusxm holdings inc": "SIRI",
+  "mastercard inc": "MA",
+  "verisign inc": "VRSN",
+  "constellation brands inc": "STZ",
+  "capital one financial corp": "COF",
+  "unitedhealth group inc": "UNH",
+  "dominos pizza inc": "DPZ",
+  "ally financial inc": "ALLY",
+  "aon plc": "AON",
+  "nucor corp": "NUE",
+  "liberty media corp series c live": "FWONA",
+  "lennar corp": "LEN",
+  "pool corp": "POOL",
+  "amazoncom inc": "AMZN",
+  "amazon com inc": "AMZN",
+  "louisiana-pacific corp": "LPX",
+  "liberty media corp series a live": "FWONK",
+  "new york times co cl a": "NYT",
+  "heico corp cl a": "HEI/A",
+  "liberty media corp formula one series c": "FWONA",
+  "charter communications inc": "CHTR",
+  "lamar advertising co": "LAMR",
+  "allegion plc": "ALLE",
+  "nvr inc": "NVR",
+  "diageo plc adr": "DEO",
+  "jefferies financial group inc": "JEF",
+  "lennar corp cl b": "LEN.B",
+  "liberty lilac group a": "LILAK",
+  "liberty lilac group c": "LILAK",
+  "atlanta braves holdings inc series c": "BATRK",
+  "nu holdings ltd": "NU",
+  "nu holdings ltd cl a": "NU",
+  "capital one finl corp": "COF",
+  "capital one finl corp com": "COF",
+  /** Pershing Square — SEC `nameOfIssuer` variants (CUSIP map is primary). */
+  "meta platforms inc": "META",
+  "hilton worldwide hldgs inc": "HLT",
+  "uber technologies inc": "UBER",
+  "restaurant brands intl inc": "QSR",
+  "howard hughes holdings inc": "HHH",
+  "brookfield corp": "BN",
+  "hertz global hldgs inc": "HTZ",
+  "seaport entmt group inc": "SEG",
+  /** Fundsmith LLP — SEC `nameOfIssuer` abbreviations (CUSIP map is primary). */
+  "adma biologics inc": "ADMA",
+  "automatic data processing in": "ADP",
+  "catalyst pharmaceuticals inc": "CPRX",
+  "church and dwight co inc": "CHD",
+  "clorox co del": "CLX",
+  "doximity inc": "DOCS",
+  "fortinet inc": "FTNT",
+  "graco inc": "GGG",
+  "home depot inc": "HD",
+  "idexx labs inc": "IDXX",
+  intuit: "INTU",
+  "manhattan associates inc": "MANH",
+  "marriott intl inc new": "MAR",
+  "medpace hldgs inc": "MEDP",
+  "mettler toledo international": "MTD",
+  "microsoft corp": "MSFT",
+  "msci inc": "MSCI",
+  "napco sec technologies inc": "NSSC",
+  "nike inc": "NKE",
+  "nutanix inc": "NTNX",
+  "oddity tech ltd": "ODD",
+  "otis worldwide corp": "OTIS",
+  "paycom software inc": "PAYC",
+  "philip morris intl inc": "PM",
+  "procter and gamble co": "PG",
+  "qualys inc": "QLYS",
+  "rollins inc": "ROL",
+  "sabre corp": "SABR",
+  "stryker corporation": "SYK",
+  "texas instrs inc": "TXN",
+  "vertiv holdings co": "VRT",
+  "waters corp": "WAT",
+  "zoetis inc": "ZTS",
+};
+
+function issuerBaseForTickerLookup(issuer: string): string {
+  return issuer.trim().replace(/\s+new\s*$/i, "").trim();
+}
+
+function normalizeTitleTickerHints(title: string | null): string {
+  if (!title?.trim()) return "";
+  return title
+    .trim()
+    .toUpperCase()
+    .replace(/\u00a0/g, " ")
+    .replace(/\s+/g, " ");
+}
+
+/** Liberty Live Group tickers from `titleOfClass` when CUSIP is absent or shared. */
+function tickerFromLibertyLiveTitle(issuer: string, titleOfClass: string | null): string | null {
+  const i = normalizeIssuerTickerLookupKey(issuer);
+  if (!/\bliberty live\b/.test(i)) return null;
+  const t = normalizeTitleTickerHints(titleOfClass);
+  if (/\bSERIES\s*C\b|\bSER\s*C\b|\bLLYVK\b/.test(t)) return "LLYVK";
+  if (/\bSERIES\s*B\b|\bLLYVB\b/.test(t)) return "LLYVB";
+  if (/\bSERIES\s*A\b|\bSER\s*A\b|\bLLYVA\b/.test(t)) return "LLYVA";
+  return "LLYVA";
+}
+
+function tickerFromLennarTitle(issuer: string, titleOfClass: string | null): string | null {
+  const i = normalizeIssuerTickerLookupKey(issuer);
+  if (!/\blennar\b/.test(i)) return null;
+  const t = normalizeTitleTickerHints(titleOfClass);
+  if (/\bCL\s*B\b|\bCLASS\s*B\b/.test(t)) return "LEN.B";
+  return "LEN";
+}
+
+/**
+ * Last-resort match when CUSIP is unknown and the exact normalized issuer string is not in the map.
+ * Keeps patterns narrow to avoid false positives outside Berkshire-style names.
+ */
+function tickerFromIssuerHeuristic(issuer: string, titleOfClass: string | null): string | null {
+  const n = normalizeIssuerTickerLookupKey(issuer);
+  if (!n) return null;
+  const lib = tickerFromLibertyLiveTitle(issuer, titleOfClass);
+  if (lib) return lib;
+  const len = tickerFromLennarTitle(issuer, titleOfClass);
+  if (len) return len;
+  if (/\bamerican\s+express\b/.test(n)) return "AXP";
+  if (/\bbank\s+of\s+america\b/.test(n) || /\bbank\s+america\b/.test(n)) return "BAC";
+  if (/\bcoca[\s-]*cola\b/.test(n)) return "KO";
+  if (/\bchevron\b/.test(n)) return "CVX";
+  if (/\bmoody/.test(n)) return "MCO";
+  if (/\boccidental\b/.test(n)) return "OXY";
+  if (/\bkraft\s+heinz\b/.test(n)) return "KHC";
+  if (/\balphabet\b/.test(n)) return "GOOGL";
+  if (/\bvisa\b/.test(n)) return "V";
+  if (/\bmastercard\b/.test(n)) return "MA";
+  if (/\bverisign\b/.test(n)) return "VRSN";
+  if (/\bconstellation\s+brands\b/.test(n)) return "STZ";
+  if (/\bcapital\s+one\b/.test(n)) return "COF";
+  if (/\bunitedhealth\b/.test(n)) return "UNH";
+  if (/\bdomino/.test(n)) return "DPZ";
+  if (/\bnucor\b/.test(n)) return "NUE";
+  if (/\bpool\s+(corp|corporation)\b/.test(n)) return "POOL";
+  if (/\blouisiana[\s-]*pacific\b/.test(n)) return "LPX";
+  if (/\bnew\s+york\s+times\b/.test(n)) return "NYT";
+  if (/\bheico\b/.test(n)) return "HEI/A";
+  if (/\bcharter\s+communications\b/.test(n)) return "CHTR";
+  if (/\blamar\b/.test(n)) return "LAMR";
+  if (/\ballegion\b/.test(n)) return "ALLE";
+  if (/\bnvr\b/.test(n)) return "NVR";
+  if (/\bdiageo\b/.test(n)) return "DEO";
+  if (/\bjefferies\b/.test(n)) return "JEF";
+  if (/\bliberty\s+lilac\b/.test(n)) return "LILAK";
+  if (/\bnu\s+holdings\b/.test(n)) return "NU";
+  if (/\batlanta\s+braves\s+holdings\b/.test(n)) return "BATRK";
+  if (/\bkroger\b/.test(n)) return "KR";
+  if (/\bdavita\b/.test(n)) return "DVA";
+  if (/\bmeta\s+platforms\b/.test(n)) return "META";
+  if (/\bhilton\s+worldwide\b/.test(n)) return "HLT";
+  if (/\bhertz\b/.test(n)) return "HTZ";
+  if (/\bhoward\s+hughes\s+holdings\b/.test(n)) return "HHH";
+  if (/\brestaurant\s+brands\b/.test(n)) return "QSR";
+  if (/\buber\s+technologies\b/.test(n)) return "UBER";
+  if (/\bseaport\b/.test(n)) return "SEG";
+  if (/\bbrookfield\s+corp\b/.test(n)) return "BN";
+  if (/\badma\b/.test(n)) return "ADMA";
+  if (/\bautomatic\s+data\s+processing\b/.test(n)) return "ADP";
+  if (/\bdoximity\b/.test(n)) return "DOCS";
+  if (/\bfortinet\b/.test(n)) return "FTNT";
+  if (/\bgraco\b/.test(n) && /\binc\b/.test(n)) return "GGG";
+  if (/\bhome\s+depot\b/.test(n)) return "HD";
+  if (/\bidexx\b/.test(n)) return "IDXX";
+  if (/\bmanhattan\s+associates\b/.test(n)) return "MANH";
+  if (/\bmedpace\b/.test(n)) return "MEDP";
+  if (/\bmettler[\s-]*toledo\b/.test(n)) return "MTD";
+  if (/\bmicrosoft\b/.test(n)) return "MSFT";
+  if (/\bmsci\s+inc\b/.test(n)) return "MSCI";
+  if (/\bnapco\b/.test(n)) return "NSSC";
+  if (/\bnutanix\b/.test(n)) return "NTNX";
+  if (/\boddity\b/.test(n)) return "ODD";
+  if (/\botis\s+worldwide\b/.test(n)) return "OTIS";
+  if (/\bpaycom\b/.test(n)) return "PAYC";
+  if (/\bphilip\s+morris\b/.test(n)) return "PM";
+  if (/\bprocter\b/.test(n) && /\bgamble\b/.test(n)) return "PG";
+  if (/\bqualys\b/.test(n)) return "QLYS";
+  if (/\brollins\b/.test(n)) return "ROL";
+  if (/\bsabre\b/.test(n)) return "SABR";
+  if (/\bstryker\b/.test(n)) return "SYK";
+  if (/\btexas\s+instr/.test(n)) return "TXN";
+  if (/\bvertiv\b/.test(n)) return "VRT";
+  if (/\bwaters\b/.test(n) && /\bcorp\b/.test(n)) return "WAT";
+  if (/\bzoetis\b/.test(n)) return "ZTS";
+  if (/\bcatalyst\s+pharmaceuticals\b/.test(n)) return "CPRX";
+  if (/\bchurch\s+and\s+dwight\b/.test(n)) return "CHD";
+  if (/\bclorox\b/.test(n)) return "CLX";
+  if (/\bliberty\s+media\b/.test(n) && /\bformula\s+one\b/.test(n)) return "FWONA";
+  if (/\bliberty\s+media\b/.test(n) && /\bseries\s+c\s+live\b/.test(n)) return "FWONA";
+  if (/\bliberty\s+media\b/.test(n) && /\bseries\s+a\s+live\b/.test(n)) return "FWONK";
+  return null;
+}
+
+function tickerFor13fRow(cusip: string | null, issuer: string, titleOfClass: string | null = null): string | null {
+  const fromCusip = tickerForCusip(cusip);
+  if (fromCusip) return fromCusip;
+  const lib = tickerFromLibertyLiveTitle(issuer, titleOfClass);
+  if (lib) return lib;
+  const len = tickerFromLennarTitle(issuer, titleOfClass);
+  if (len) return len;
+  const k = normalizeIssuerTickerLookupKey(issuer);
+  const fromMap = KNOWN_ISSUER_TICKER[k];
+  if (fromMap) return fromMap;
+  const k2 = normalizeIssuerTickerLookupKey(issuerBaseForTickerLookup(issuer));
+  const fromMap2 = k2 !== k ? KNOWN_ISSUER_TICKER[k2] : null;
+  if (fromMap2) return fromMap2;
+  return tickerFromIssuerHeuristic(issuer, titleOfClass) ?? tickerFromIssuerHeuristic(issuerBaseForTickerLookup(issuer), titleOfClass);
+}
+
+/**
+ * SEC filing objects live under `edgar/data/{cik}/{accessionNoDash}/`. Usually `cik` is the filer's
+ * submissions CIK, but some filers (e.g. Fundsmith LLP) occasionally publish under the CIK encoded
+ * in the first 10 digits of the accession number — try filer first, then that prefix when they differ.
+ */
+function edgarArchiveCikCandidates(filerCikPadded: string, accessionDashed: string): string[] {
+  const filer = String(Number.parseInt(filerCikPadded, 10));
+  const accNoDash = accessionDashed.replace(/-/g, "");
+  const head =
+    accNoDash.length >= 10 ? String(Number.parseInt(accNoDash.slice(0, 10), 10)) : filer;
+  if (head === filer) return [filer];
+  return [filer, head];
+}
+
+async function tryFindInfotableXmlUrlForArchiveCik(
+  cikNumeric: string,
+  accessionDashed: string,
+  ua: string,
+): Promise<string | null> {
   const acc = accessionDashed.replace(/-/g, "");
   const base = `https://www.sec.gov/Archives/edgar/data/${cikNumeric}/${acc}`;
   const headers: HeadersInit = { "User-Agent": ua, "Accept-Encoding": "gzip, deflate" };
@@ -258,6 +710,18 @@ async function findInfotableXmlUrl(cikNumeric: string, accessionDashed: string, 
   return null;
 }
 
+async function findInfotableXmlUrl(
+  accessionDashed: string,
+  ua: string,
+  filerCikPadded: string,
+): Promise<string | null> {
+  for (const cikNumeric of edgarArchiveCikCandidates(filerCikPadded, accessionDashed)) {
+    const url = await tryFindInfotableXmlUrlForArchiveCik(cikNumeric, accessionDashed, ua);
+    if (url) return url;
+  }
+  return null;
+}
+
 function findAll13fHrIndices(forms: string[]): number[] {
   const out: number[] = [];
   for (let i = 0; i < forms.length; i++) {
@@ -287,7 +751,7 @@ async function fetchNth13fInfotableXml(
 
   const root = (await subRes.json()) as SubmissionsRoot;
   const filerName =
-    typeof root.name === "string" && root.name.trim() ? root.name.trim() : "Berkshire Hathaway Inc.";
+    typeof root.name === "string" && root.name.trim() ? root.name.trim() : "Institutional investment manager";
   const recent = root.filings?.recent;
   const forms = recent?.form ?? [];
   const accessionNumbers = recent?.accessionNumber ?? [];
@@ -302,8 +766,7 @@ async function fetchNth13fInfotableXml(
   const filingDate = filingDates[idx] ?? null;
   const reportDate = reportDates[idx] ?? null;
 
-  const cikNumeric = String(Number.parseInt(cikPadded, 10));
-  const infotableUrl = await findInfotableXmlUrl(cikNumeric, accession, ua);
+  const infotableUrl = await findInfotableXmlUrl(accession, ua, cikPadded);
   if (!infotableUrl) return null;
 
   const xmlRes = await fetch(infotableUrl, {
@@ -397,7 +860,7 @@ function buildComparisonRows(
     rows.push({
       companyName: c.issuer,
       cusip: c.cusip,
-      ticker: tickerForCusip(c.cusip),
+      ticker: tickerFor13fRow(c.cusip, c.issuer, c.title),
       shares: curShares,
       valueUsd: curValueUsd,
       weight: curTotal > 0 ? (curValueUsd / curTotal) * 100 : 0,
@@ -419,7 +882,7 @@ function buildComparisonRows(
       soldOut.push({
         companyName: p.issuer,
         cusip: p.cusip,
-        ticker: tickerForCusip(p.cusip),
+        ticker: tickerFor13fRow(p.cusip, p.issuer, p.title),
         previousShares: p.shares ?? null,
         previousValueUsd: p.valueThousands * 1000,
       });
@@ -438,7 +901,7 @@ function rowsToPayload(
     accession: string | null;
     filingDate: string | null;
     reportDate: string | null;
-    source: "edgar" | "fixture";
+    source: "edgar" | "fixture" | "unavailable";
   },
 ): InstitutionalHoldingsPayload {
   const valueUsdList = rows.map((r) => r.valueThousands * 1000);
@@ -446,6 +909,7 @@ function rowsToPayload(
   const holdings: InstitutionalHoldingRow[] = rows.map((r, i) => ({
     issuer: r.issuer,
     titleOfClass: r.title,
+    ticker: tickerFor13fRow(r.cusip, r.issuer, r.title),
     valueUsd: valueUsdList[i]!,
     pct: totalValueUsd > 0 ? (valueUsdList[i]! / totalValueUsd) * 100 : 0,
   }));
@@ -522,6 +986,105 @@ function buildSyntheticPreviousForFixture(base: AggregatedHolding[]): Aggregated
   }));
 }
 
+function emptyHoldingsPayload(cik: string, filerDisplayName: string): InstitutionalHoldingsPayload {
+  return {
+    filerDisplayName,
+    cik,
+    reportDate: null,
+    filingDate: null,
+    accessionNumber: null,
+    totalValueUsd: 0,
+    positionCount: 0,
+    holdings: [],
+    source: "unavailable",
+  };
+}
+
+function emptyComparisonPayload(cik: string, filerDisplayName: string): Berkshire13fComparisonPayload {
+  return {
+    filerDisplayName,
+    cik,
+    current: { accessionNumber: null, filingDate: null, reportDate: null },
+    previous: null,
+    hasPriorFiling: false,
+    totalValueUsd: 0,
+    previousTotalValueUsd: null,
+    positionCount: 0,
+    rows: [],
+    soldOut: [],
+    source: "unavailable",
+  };
+}
+
+async function fetchInstitutionalHoldingsUncached(cik: string): Promise<InstitutionalHoldingsPayload | null> {
+  const ua = getSecEdgarUserAgent();
+  try {
+    const got = await fetchNth13fInfotableXml(cik, ua, 0);
+    if (!got) return null;
+    const parsed = parseInfoTableRows(got.xml);
+    const merged = aggregateInfoRowsByCusip(parsed);
+    if (merged.length === 0) return null;
+
+    return rowsToPayload(merged, {
+      filerDisplayName: got.filerName,
+      cik,
+      accession: got.accession,
+      filingDate: got.filingDate,
+      reportDate: got.reportDate,
+      source: "edgar",
+    });
+  } catch {
+    return null;
+  }
+}
+
+async function fetchInstitutionalComparisonUncached(cik: string): Promise<Berkshire13fComparisonPayload | null> {
+  const ua = getSecEdgarUserAgent();
+  try {
+    const cur = await fetchNth13fInfotableXml(cik, ua, 0);
+    if (!cur) return null;
+
+    const prev = await fetchNth13fInfotableXml(cik, ua, 1);
+    const curParsed = parseInfoTableRows(cur.xml);
+    const curAgg = aggregateInfoRowsByCusip(curParsed);
+    if (curAgg.length === 0) return null;
+
+    const prevAgg = prev ? aggregateInfoRowsByCusip(parseInfoTableRows(prev.xml)) : null;
+    const hasPriorFiling = (prevAgg?.length ?? 0) > 0;
+    const { rows, soldOut, previousTotalUsd } = buildComparisonRows(curAgg, prevAgg);
+
+    const prevMeta: Berkshire13fFilingMeta | null = hasPriorFiling
+      ? {
+          accessionNumber: prev!.accession,
+          filingDate: prev!.filingDate,
+          reportDate: prev!.reportDate,
+        }
+      : null;
+
+    const curMeta: Berkshire13fFilingMeta = {
+      accessionNumber: cur.accession,
+      filingDate: cur.filingDate,
+      reportDate: cur.reportDate,
+    };
+
+    return {
+      filerDisplayName: cur.filerName,
+      cik,
+      current: curMeta,
+      previous: hasPriorFiling ? prevMeta : null,
+      hasPriorFiling,
+      totalValueUsd: curAgg.reduce((s, r) => s + r.valueThousands * 1000, 0),
+      previousTotalValueUsd: previousTotalUsd,
+      positionCount: rows.length,
+      rows,
+      soldOut,
+      source: "edgar",
+    };
+  } catch {
+    return null;
+  }
+}
+
 function loadFixtureComparisonPayload(): Berkshire13fComparisonPayload {
   const j = berkshireFallback as { filerDisplayName: string; cik: string };
   const baseAgg = fixtureCurrentAggregated();
@@ -553,83 +1116,64 @@ function loadFixtureComparisonPayload(): Berkshire13fComparisonPayload {
 }
 
 async function fetchBerkshireHoldingsUncached(): Promise<InstitutionalHoldingsPayload> {
-  const ua = getSecEdgarUserAgent();
-  try {
-    const got = await fetchNth13fInfotableXml(BERKSHIRE_CIK, ua, 0);
-    if (!got) return loadFixturePayload();
-    const parsed = parseInfoTableRows(got.xml);
-    const merged = aggregateInfoRowsByCusip(parsed);
-    if (merged.length === 0) return loadFixturePayload();
-
-    return rowsToPayload(merged, {
-      filerDisplayName: got.filerName,
-      cik: BERKSHIRE_CIK,
-      accession: got.accession,
-      filingDate: got.filingDate,
-      reportDate: got.reportDate,
-      source: "edgar",
-    });
-  } catch {
-    return loadFixturePayload();
-  }
+  const got = await fetchInstitutionalHoldingsUncached(BERKSHIRE_CIK);
+  return got ?? loadFixturePayload();
 }
 
 async function fetchBerkshireComparisonUncached(): Promise<Berkshire13fComparisonPayload> {
-  const ua = getSecEdgarUserAgent();
-  try {
-    const cur = await fetchNth13fInfotableXml(BERKSHIRE_CIK, ua, 0);
-    if (!cur) return loadFixtureComparisonPayload();
+  const got = await fetchInstitutionalComparisonUncached(BERKSHIRE_CIK);
+  return got ?? loadFixtureComparisonPayload();
+}
 
-    const prev = await fetchNth13fInfotableXml(BERKSHIRE_CIK, ua, 1);
-    const curParsed = parseInfoTableRows(cur.xml);
-    const curAgg = aggregateInfoRowsByCusip(curParsed);
-    if (curAgg.length === 0) return loadFixtureComparisonPayload();
+async function fetchPershingHoldingsUncached(): Promise<InstitutionalHoldingsPayload> {
+  return (await fetchInstitutionalHoldingsUncached(PERSHING_SQUARE_CIK)) ?? emptyHoldingsPayload(PERSHING_SQUARE_CIK, PERSHING_DISPLAY_FALLBACK);
+}
 
-    const prevAgg = prev ? aggregateInfoRowsByCusip(parseInfoTableRows(prev.xml)) : null;
-    const hasPriorFiling = (prevAgg?.length ?? 0) > 0;
-    const { rows, soldOut, previousTotalUsd } = buildComparisonRows(curAgg, prevAgg);
+async function fetchPershingComparisonUncached(): Promise<Berkshire13fComparisonPayload> {
+  return (await fetchInstitutionalComparisonUncached(PERSHING_SQUARE_CIK)) ?? emptyComparisonPayload(PERSHING_SQUARE_CIK, PERSHING_DISPLAY_FALLBACK);
+}
 
-    const prevMeta: Berkshire13fFilingMeta | null = hasPriorFiling
-      ? {
-          accessionNumber: prev!.accession,
-          filingDate: prev!.filingDate,
-          reportDate: prev!.reportDate,
-        }
-      : null;
+async function fetchFundsmithHoldingsUncached(): Promise<InstitutionalHoldingsPayload> {
+  return (await fetchInstitutionalHoldingsUncached(FUNDSMITH_LLP_CIK)) ?? emptyHoldingsPayload(FUNDSMITH_LLP_CIK, FUNDSMITH_DISPLAY_FALLBACK);
+}
 
-    const curMeta: Berkshire13fFilingMeta = {
-      accessionNumber: cur.accession,
-      filingDate: cur.filingDate,
-      reportDate: cur.reportDate,
-    };
-
-    return {
-      filerDisplayName: cur.filerName,
-      cik: BERKSHIRE_CIK,
-      current: curMeta,
-      previous: hasPriorFiling ? prevMeta : null,
-      hasPriorFiling,
-      totalValueUsd: curAgg.reduce((s, r) => s + r.valueThousands * 1000, 0),
-      previousTotalValueUsd: previousTotalUsd,
-      positionCount: rows.length,
-      rows,
-      soldOut,
-      source: "edgar",
-    };
-  } catch {
-    return loadFixtureComparisonPayload();
-  }
+async function fetchFundsmithComparisonUncached(): Promise<Berkshire13fComparisonPayload> {
+  return (await fetchInstitutionalComparisonUncached(FUNDSMITH_LLP_CIK)) ?? emptyComparisonPayload(FUNDSMITH_LLP_CIK, FUNDSMITH_DISPLAY_FALLBACK);
 }
 
 const getBerkshireHoldingsCached = unstable_cache(
   async () => fetchBerkshireHoldingsUncached(),
-  ["berkshire-hathaway-13f-v5-index-xml-cusip"],
+  ["berkshire-hathaway-13f-v9-ticker-cusip-map"],
   { revalidate: 21_600 },
 );
 
 const getBerkshireHoldingsComparisonCached = unstable_cache(
   async () => fetchBerkshireComparisonUncached(),
-  ["berkshire-hathaway-13f-comparison-v3-shares-pct-col"],
+  ["berkshire-hathaway-13f-comparison-v7-ticker-cusip-map"],
+  { revalidate: 21_600 },
+);
+
+const getPershingHoldingsCached = unstable_cache(
+  async () => fetchPershingHoldingsUncached(),
+  ["pershing-square-13f-v2-holdings-cusip-map"],
+  { revalidate: 21_600 },
+);
+
+const getPershingHoldingsComparisonCached = unstable_cache(
+  async () => fetchPershingComparisonUncached(),
+  ["pershing-square-13f-v2-comparison-cusip-map"],
+  { revalidate: 21_600 },
+);
+
+const getFundsmithHoldingsCached = unstable_cache(
+  async () => fetchFundsmithHoldingsUncached(),
+  ["fundsmith-llp-13f-v2-holdings-cusip-archive"],
+  { revalidate: 21_600 },
+);
+
+const getFundsmithHoldingsComparisonCached = unstable_cache(
+  async () => fetchFundsmithComparisonUncached(),
+  ["fundsmith-llp-13f-v2-comparison-cusip-archive"],
   { revalidate: 21_600 },
 );
 
@@ -646,4 +1190,32 @@ export async function getBerkshireHoldingsComparison() {
     return fetchBerkshireComparisonUncached();
   }
   return getBerkshireHoldingsComparisonCached();
+}
+
+export async function getPershingSquareHoldings() {
+  if (process.env.NODE_ENV !== "production") {
+    return fetchPershingHoldingsUncached();
+  }
+  return getPershingHoldingsCached();
+}
+
+export async function getPershingSquareHoldingsComparison() {
+  if (process.env.NODE_ENV !== "production") {
+    return fetchPershingComparisonUncached();
+  }
+  return getPershingHoldingsComparisonCached();
+}
+
+export async function getFundsmithHoldings() {
+  if (process.env.NODE_ENV !== "production") {
+    return fetchFundsmithHoldingsUncached();
+  }
+  return getFundsmithHoldingsCached();
+}
+
+export async function getFundsmithHoldingsComparison() {
+  if (process.env.NODE_ENV !== "production") {
+    return fetchFundsmithComparisonUncached();
+  }
+  return getFundsmithHoldingsComparisonCached();
 }

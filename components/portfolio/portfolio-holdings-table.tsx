@@ -1,13 +1,13 @@
 "use client";
 
-import { memo, startTransition, useCallback, useState } from "react";
+import { createPortal } from "react-dom";
+import { memo, startTransition, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { CompanyLogo } from "@/components/screener/company-logo";
 import { displayLogoUrlForPortfolioSymbol } from "@/lib/portfolio/portfolio-asset-display-logo";
-import { usePortfolioOverviewAthReader } from "@/components/portfolio/portfolio-overview-ath-context";
 import { RemoveAssetModal } from "@/components/portfolio/remove-asset-modal";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import { portfolioHoldingAssetHref } from "@/lib/crypto/crypto-picker-universe";
@@ -15,8 +15,14 @@ import {
   portfolioAssetSymbolCaption,
   portfolioSharesUnitTicker,
 } from "@/lib/portfolio/custom-asset-symbol";
-import { netCashUsd, unrealizedProfitPct, unrealizedProfitUsd } from "@/lib/portfolio/overview-metrics";
-import { cumulativeRealizedGainUsdForAsset } from "@/lib/portfolio/realized-pnl-from-trades";
+import {
+  lifetimeEquityProfitPct,
+  netCashUsd,
+} from "@/lib/portfolio/overview-metrics";
+import {
+  cumulativeRealizedGainUsdForAsset,
+  lifetimeEquityProfitUsd,
+} from "@/lib/portfolio/realized-pnl-from-trades";
 import { cryptoRouteBase } from "@/lib/crypto/crypto-symbol-base";
 import { isSupportedCryptoAssetSymbol } from "@/lib/crypto/crypto-logo-url";
 import { formatPortfolioUsdPerUnit } from "@/lib/portfolio/format-portfolio-usd-unit";
@@ -24,6 +30,137 @@ import { cn } from "@/lib/utils";
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 
 const EM_DASH = "\u2014";
+
+const PNL_BREAKDOWN_TOOLTIP_W = 240;
+/** Offset from pointer so the tooltip sits just beside the cursor. */
+const PNL_CURSOR_OFFSET = 10;
+const PNL_BREAKDOWN_VIEW_PAD = 12;
+/** Approximate tooltip height for viewport clamping (no layout read). */
+const PNL_TOOLTIP_APPROX_H = 132;
+
+function pnlBreakdownTooltipNearPointer(clientX: number, clientY: number): { left: number; top: number } {
+  const vw = typeof window !== "undefined" ? window.innerWidth : 1200;
+  const vh = typeof window !== "undefined" ? window.innerHeight : 800;
+  const pad = PNL_BREAKDOWN_VIEW_PAD;
+  const w = PNL_BREAKDOWN_TOOLTIP_W;
+  const h = PNL_TOOLTIP_APPROX_H;
+
+  let left = clientX + PNL_CURSOR_OFFSET;
+  let top = clientY + PNL_CURSOR_OFFSET;
+  if (left + w > vw - pad) left = clientX - w - PNL_CURSOR_OFFSET;
+  if (top + h > vh - pad) top = clientY - h - PNL_CURSOR_OFFSET;
+  left = Math.max(pad, Math.min(left, vw - pad - w));
+  top = Math.max(pad, Math.min(top, vh - pad - h));
+  return { left, top };
+}
+
+function PortfolioPnlBreakdownTooltip({
+  totalUsd,
+  totalPct,
+  unrealizedUsd,
+  realizedUsd,
+}: {
+  /** Unrealized + realized (matches tooltip Total line). */
+  totalUsd: number;
+  /** Total return % vs current position cost basis (same as asset detail “Total profit”). */
+  totalPct: number;
+  unrealizedUsd: number;
+  realizedUsd: number;
+}) {
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const lastPointerRef = useRef({ x: 0, y: 0 });
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState({ left: 0, top: 0 });
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const repositionFromStoredPointer = useCallback(() => {
+    const { x, y } = lastPointerRef.current;
+    setPos(pnlBreakdownTooltipNearPointer(x, y));
+  }, []);
+
+  const show = useCallback((e: React.MouseEvent) => {
+    lastPointerRef.current = { x: e.clientX, y: e.clientY };
+    setPos(pnlBreakdownTooltipNearPointer(e.clientX, e.clientY));
+    setOpen(true);
+  }, []);
+
+  const onPointerMove = useCallback((e: React.MouseEvent) => {
+    lastPointerRef.current = { x: e.clientX, y: e.clientY };
+    setPos(pnlBreakdownTooltipNearPointer(e.clientX, e.clientY));
+  }, []);
+
+  const hide = useCallback(() => setOpen(false), []);
+
+  useEffect(() => {
+    if (!open) return;
+    repositionFromStoredPointer();
+    window.addEventListener("scroll", repositionFromStoredPointer, true);
+    window.addEventListener("resize", repositionFromStoredPointer);
+    return () => {
+      window.removeEventListener("scroll", repositionFromStoredPointer, true);
+      window.removeEventListener("resize", repositionFromStoredPointer);
+    };
+  }, [open, repositionFromStoredPointer]);
+
+  const tooltip =
+    open && mounted ? (
+      <div
+        className="pointer-events-none fixed z-[200] w-[240px] rounded-[10px] border border-[#E4E4E7] bg-white px-3 py-2 text-left text-[12px] leading-4 text-[#09090B] shadow-[0px_8px_20px_0px_rgba(10,10,10,0.10)]"
+        style={{ left: pos.left, top: pos.top }}
+        role="tooltip"
+      >
+        <div className="font-semibold text-[#09090B]">Profit/Loss</div>
+        <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1">
+          <div className="text-[#71717A]">Unrealized</div>
+          <div className={cn("text-right tabular-nums", unrealizedUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]")}>
+            {formatSignedUsd(unrealizedUsd)}
+          </div>
+          <div className="text-[#71717A]">Realized</div>
+          <div className={cn("text-right tabular-nums", realizedUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]")}>
+            {formatSignedUsd(realizedUsd)}
+          </div>
+          <div className="text-[#71717A]">Total</div>
+          <div className={cn("text-right tabular-nums font-semibold", totalUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]")}>
+            {formatSignedUsd(totalUsd)}
+          </div>
+        </div>
+      </div>
+    ) : null;
+
+  return (
+    <>
+      <div
+        ref={triggerRef}
+        className="inline-flex w-full cursor-default flex-col items-end"
+        onMouseEnter={show}
+        onMouseMove={onPointerMove}
+        onMouseLeave={hide}
+      >
+        <div
+          className={cn(
+            "font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums",
+            totalUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
+          )}
+        >
+          {formatSignedUsd(totalUsd)}
+        </div>
+        <div
+          className={cn(
+            "text-[12px] font-medium leading-4 tabular-nums",
+            totalPct >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
+          )}
+        >
+          {formatSignedPct(totalPct)}
+        </div>
+      </div>
+      {mounted && tooltip ? createPortal(tooltip, document.body) : null}
+    </>
+  );
+}
 
 const usd0 = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -121,26 +258,17 @@ function PortfolioHoldingsTableInner({
   const netWorth = equityValue + cashUsd;
   // Allocation display: if cash is negative, exclude it from the denominator so weights stay within 0–100%.
   const allocationDenomUsd = equityValue + Math.max(0, cashUsd);
-  /** Same dollar as Total profit card (period All). */
-  const portfolioReturnUsd = unrealizedProfitUsd(holdings);
-  /** Same % as Total profit card ATH line (lifetime return on total cost basis), when overview has published it. */
-  const athSnap = usePortfolioOverviewAthReader();
-  const portfolioReturnPct =
-    athSnap == null
-      ? unrealizedProfitPct(holdings)
-      : holdings.length === 0
-        ? null
-        : !athSnap.marketReady
-          ? null
-          : athSnap.athReturnPct;
+  /** Same dollar as overview “Total profit” (unrealized + realized on equity). */
+  const portfolioTotalProfitUsd = lifetimeEquityProfitUsd(holdings, transactions);
+  /** Lifetime simple return on total equity cost basis (matches overview lifetime %). */
+  const portfolioTotalProfitPct = lifetimeEquityProfitPct(holdings, transactions);
   const cashWeightPct = allocationDenomUsd > 0 && cashUsd > 0 ? (cashUsd / allocationDenomUsd) * 100 : 0;
 
   const rows = holdings.map((h) => {
     const retUsd = h.currentValue - h.costBasis;
-    const retPct = h.costBasis > 0 ? ((h.currentValue - h.costBasis) / h.costBasis) * 100 : 0;
     const weightRaw = allocationDenomUsd > 0 ? (h.currentValue / allocationDenomUsd) * 100 : 0;
     const weightPct = Math.min(100, Math.max(0, weightRaw));
-    return { holding: h, retUsd, retPct, weightPct };
+    return { holding: h, retUsd, weightPct };
   });
 
   const sorted = [...rows].sort((a, b) => b.weightPct - a.weightPct);
@@ -174,13 +302,14 @@ function PortfolioHoldingsTableInner({
           </tr>
         </thead>
         <tbody>
-          {sorted.map(({ holding: h, retUsd, retPct, weightPct }) => {
+          {sorted.map(({ holding: h, retUsd, weightPct }) => {
             const cryptoKey = cryptoRouteBase(h.symbol);
             const assetKind: "stock" | "crypto" =
               isSupportedCryptoAssetSymbol(cryptoKey) ? "crypto" : "stock";
             const realizedUsd = cumulativeRealizedGainUsdForAsset(transactions, cryptoKey, assetKind);
             const unrealizedUsd = retUsd;
             const totalUsd = unrealizedUsd + realizedUsd;
+            const totalPct = h.costBasis > 0 ? (totalUsd / h.costBasis) * 100 : 0;
             const assetHref = portfolioHoldingAssetHref(h.symbol);
             const logo = displayLogoUrlForPortfolioSymbol(h.symbol);
             const caption = portfolioAssetSymbolCaption(h.symbol);
@@ -232,42 +361,12 @@ function PortfolioHoldingsTableInner({
                 {formatPortfolioUsdPerUnit(h.avgPrice)}
               </td>
               <td className="align-middle whitespace-nowrap px-4 py-3 text-right">
-                <div className="group/px relative inline-flex w-full flex-col items-end">
-                  <div
-                    className={cn(
-                      "font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums",
-                      retUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
-                    )}
-                  >
-                    {formatSignedUsd(retUsd)}
-                  </div>
-                  <div
-                    className={cn(
-                      "text-[12px] font-medium leading-4 tabular-nums",
-                      retPct >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
-                    )}
-                  >
-                    {formatSignedPct(retPct)}
-                  </div>
-
-                  <div className="pointer-events-none absolute right-0 top-1/2 z-50 hidden w-[240px] -translate-y-1/2 translate-x-[calc(100%+12px)] rounded-[10px] border border-[#E4E4E7] bg-white px-3 py-2 text-left text-[12px] leading-4 text-[#09090B] shadow-[0px_8px_20px_0px_rgba(10,10,10,0.10)] group-hover/px:block">
-                    <div className="font-semibold text-[#09090B]">Profit/Loss</div>
-                    <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1">
-                      <div className="text-[#71717A]">Unrealized</div>
-                      <div className={cn("text-right tabular-nums", unrealizedUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]")}>
-                        {formatSignedUsd(unrealizedUsd)}
-                      </div>
-                      <div className="text-[#71717A]">Realized</div>
-                      <div className={cn("text-right tabular-nums", realizedUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]")}>
-                        {formatSignedUsd(realizedUsd)}
-                      </div>
-                      <div className="text-[#71717A]">Total</div>
-                      <div className={cn("text-right tabular-nums font-semibold", totalUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]")}>
-                        {formatSignedUsd(totalUsd)}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <PortfolioPnlBreakdownTooltip
+                  totalUsd={totalUsd}
+                  totalPct={totalPct}
+                  unrealizedUsd={unrealizedUsd}
+                  realizedUsd={realizedUsd}
+                />
               </td>
               <td className="align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
                 {pct.format(weightPct)}%
@@ -353,20 +452,20 @@ function PortfolioHoldingsTableInner({
               <div
                 className={cn(
                   "font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums",
-                  portfolioReturnUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
+                  portfolioTotalProfitUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
                 )}
               >
-                {formatSignedUsd(portfolioReturnUsd)}
+                {formatSignedUsd(portfolioTotalProfitUsd)}
               </div>
               <div
                 className={cn(
                   "text-[12px] font-medium leading-4 tabular-nums",
-                  portfolioReturnPct == null ? "text-[#71717A]"
-                  : portfolioReturnPct >= 0 ? "text-[#16A34A]"
+                  portfolioTotalProfitPct == null ? "text-[#71717A]"
+                  : portfolioTotalProfitPct >= 0 ? "text-[#16A34A]"
                   : "text-[#DC2626]",
                 )}
               >
-                {portfolioReturnPct != null ? formatSignedPct(portfolioReturnPct) : EM_DASH}
+                {portfolioTotalProfitPct != null ? formatSignedPct(portfolioTotalProfitPct) : EM_DASH}
               </div>
             </td>
             <td className="align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">

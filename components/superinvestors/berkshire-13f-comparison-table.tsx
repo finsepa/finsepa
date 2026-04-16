@@ -1,16 +1,13 @@
 "use client";
 
-import type { Berkshire13fComparisonRow, Berkshire13fSoldOutRow } from "@/lib/superinvestors/types";
+import type { ReactNode } from "react";
+import Link from "next/link";
+import type { Berkshire13fComparisonRow } from "@/lib/superinvestors/types";
 import { CompanyLogo } from "@/components/screener/company-logo";
 import { resolveEquityLogoUrlFromListingTicker } from "@/lib/screener/resolve-equity-logo-url";
+import { formatUsdCompactSigDigits } from "@/lib/market/key-stats-basic-format";
+import { SCREENER_MARKET_QUERY } from "@/lib/screener/screener-market-url";
 import { cn } from "@/lib/utils";
-
-const usd = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  maximumFractionDigits: 0,
-  minimumFractionDigits: 0,
-});
 
 const pct = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 2,
@@ -30,12 +27,21 @@ const sharePctFmt = new Intl.NumberFormat("en-US", {
 const cellUp = "text-[#16A34A]";
 const cellDown = "text-[#DC2626]";
 
-const thBase =
-  "whitespace-nowrap px-4 py-0 text-left align-middle text-[14px] font-medium leading-5 text-[#71717A] first:pl-4 last:pr-4";
-const thRight = `${thBase} text-right`;
-const tdBase =
-  "whitespace-nowrap px-4 align-middle text-[14px] leading-5 first:pl-4 last:pr-4";
-const tdNum = `${tdBase} text-right font-['Inter'] font-normal tabular-nums text-[#09090B]`;
+/** Header: no extra horizontal padding — row lives inside `px-4` shell so label lines up with logos. */
+const thCompany =
+  "whitespace-nowrap py-0 text-left align-middle text-[14px] font-medium leading-5 text-[#71717A]";
+const thRight =
+  "whitespace-nowrap py-0 text-right align-middle text-[14px] font-medium leading-5 text-[#71717A]";
+const tdCompany = "min-w-0 py-1 text-left text-[14px] leading-5 whitespace-normal";
+const tdNum =
+  "whitespace-nowrap py-0 text-right align-middle font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]";
+
+/** Company | % of portfolio | Recent activity | Value — horizontal padding on table shell only. */
+const rowGridFour =
+  "grid w-full min-w-[640px] grid-cols-[minmax(180px,2.2fr)_minmax(72px,0.55fr)_minmax(120px,1.05fr)_minmax(96px,0.95fr)] gap-x-4";
+
+const rowShellBase =
+  "min-h-[60px] items-center border-b border-[#E4E4E7] transition-colors duration-75 last:border-b-0";
 
 /** SEC names are often SHOUTCASE; present as readable title case for the UI. */
 function issuerDisplayTitle(name: string): string {
@@ -66,13 +72,6 @@ function CompanyTickerCell({ companyName, ticker }: { companyName: string; ticke
       </div>
     </div>
   );
-}
-
-function formatDelta(n: number | null): string {
-  if (n == null) return "—";
-  if (n === 0) return "0";
-  const s = sharesFmt.format(Math.abs(n));
-  return n > 0 ? `+${s}` : `-${s}`;
 }
 
 function formatSharePctChange(n: number | null): string {
@@ -118,103 +117,91 @@ function SharesColumnCell({
   );
 }
 
+/** Stock detail when we have a symbol; otherwise screener with a name hint (13F has no tickers). */
+function rowHref(displayName: string, ticker: string | null): string {
+  const t = ticker?.trim();
+  if (t) return `/stock/${encodeURIComponent(t.toUpperCase())}`;
+  const q = displayName.trim();
+  const hint = q ? `&q=${encodeURIComponent(q)}` : "";
+  return `/screener?${SCREENER_MARKET_QUERY}=stocks${hint}`;
+}
+
+function ComparisonRowShell({
+  ticker,
+  displayName,
+  gridClass,
+  children,
+}: {
+  ticker: string | null;
+  displayName: string;
+  gridClass: string;
+  children: ReactNode;
+}) {
+  const href = rowHref(displayName, ticker);
+  const hasTicker = Boolean(ticker?.trim());
+  const merged = cn(gridClass, rowShellBase, "cursor-pointer hover:bg-neutral-50");
+  return (
+    <Link
+      href={href}
+      prefetch={false}
+      className={merged}
+      aria-label={
+        hasTicker
+          ? `Open ${displayName} (${ticker!.trim().toUpperCase()})`
+          : `Open screener to find ${displayName}`
+      }
+    >
+      {children}
+    </Link>
+  );
+}
+
 export function Berkshire13fComparisonTable({
   rows,
-  soldOut,
   hasPriorFiling,
 }: {
   rows: Berkshire13fComparisonRow[];
-  soldOut: Berkshire13fSoldOutRow[];
   hasPriorFiling: boolean;
 }) {
-  return (
-    <div className="space-y-8">
-      <div className="w-full overflow-x-auto">
-        <table className="w-full min-w-[720px] border-collapse">
-            <thead>
-              <tr className="h-11 min-h-[44px] border-b border-[#E4E4E7]">
-                <th className={thBase}>Company</th>
-                <th className={thRight}>Shares</th>
-                {hasPriorFiling ? <th className={thRight}>Δ shares</th> : null}
-                <th className={thRight}>Value</th>
-                <th className={thRight}>Weight</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r, i) => (
-                <tr
-                  key={`${r.cusip ?? r.companyName}-${i}`}
-                  className="min-h-[60px] border-b border-[#E4E4E7] transition-colors duration-75 hover:bg-neutral-50"
-                >
-                  <td
-                    className={cn(
-                      "px-4 py-1 align-middle text-[14px] leading-5 first:pl-4 last:pr-4",
-                      "whitespace-normal",
-                    )}
-                  >
-                    <CompanyTickerCell companyName={r.companyName} ticker={r.ticker} />
-                  </td>
-                  <td className={cn(tdNum, "whitespace-normal py-0 font-medium")}>
-                    <SharesColumnCell
-                      hasPriorFiling={hasPriorFiling}
-                      shares={r.shares}
-                      sharesChangePct={r.sharesChangePct}
-                    />
-                  </td>
-                  {hasPriorFiling ? (
-                    <td
-                      className={cn(
-                        tdNum,
-                        "py-0 text-[14px] font-medium",
-                        r.sharesDelta != null && r.sharesDelta > 0 && cellUp,
-                        r.sharesDelta != null && r.sharesDelta < 0 && cellDown,
-                        (r.sharesDelta == null || r.sharesDelta === 0) && "text-[#71717A]",
-                      )}
-                    >
-                      {formatDelta(r.sharesDelta)}
-                    </td>
-                  ) : null}
-                  <td className={cn(tdNum, "py-0")}>{usd.format(r.valueUsd)}</td>
-                  <td className={cn(tdNum, "py-0")}>{pct.format(r.weight)}%</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-      </div>
+  const headerGrid = cn("h-11 min-h-[44px] items-center border-b border-[#E4E4E7]", rowGridFour);
 
-      {hasPriorFiling && soldOut.length > 0 ? (
-        <div>
-          <h3 className="mb-3 text-[14px] font-medium leading-5 text-[#71717A]">Sold out (prior filing only)</h3>
-          <div className="w-full overflow-x-auto">
-            <table className="w-full min-w-[400px] border-collapse">
-              <thead>
-                <tr className="h-11 min-h-[44px] border-b border-[#E4E4E7]">
-                  <th className={thBase}>Company</th>
-                  <th className={thRight}>Prior value</th>
-                </tr>
-              </thead>
-              <tbody>
-                {soldOut.map((s, i) => (
-                  <tr
-                    key={`sold-${s.cusip ?? s.companyName}-${i}`}
-                    className="min-h-[60px] border-b border-[#E4E4E7] transition-colors duration-75 hover:bg-neutral-50"
-                  >
-                    <td
-                      className={cn(
-                        "px-4 py-1 align-middle text-[14px] leading-5 first:pl-4 last:pr-4",
-                        "whitespace-normal",
-                      )}
-                    >
-                      <CompanyTickerCell companyName={s.companyName} ticker={s.ticker} />
-                    </td>
-                    <td className={cn(tdNum, "py-0")}>{usd.format(s.previousValueUsd)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+  return (
+    <div className="w-full overflow-x-auto">
+      <div className="min-w-0 px-4">
+        <div className="w-full border-collapse">
+          <div className={headerGrid}>
+            <div className={thCompany}>Company</div>
+            <div className={thRight}>% of Portfolio</div>
+            <div className={thRight}>Recent Activity</div>
+            <div className={thRight}>Value</div>
           </div>
+
+          {rows.map((r, i) => {
+            const displayName = issuerDisplayTitle(r.companyName);
+            return (
+              <ComparisonRowShell
+                key={`${r.cusip ?? r.companyName}-${i}`}
+                ticker={r.ticker}
+                displayName={displayName}
+                gridClass={rowGridFour}
+              >
+                <div className={tdCompany}>
+                  <CompanyTickerCell companyName={r.companyName} ticker={r.ticker} />
+                </div>
+                <div className={cn(tdNum, "font-medium")}>{pct.format(r.weight)}%</div>
+                <div className={cn(tdNum, "font-medium")}>
+                  <SharesColumnCell
+                    hasPriorFiling={hasPriorFiling}
+                    shares={r.shares}
+                    sharesChangePct={r.sharesChangePct}
+                  />
+                </div>
+                <div className={tdNum}>{formatUsdCompactSigDigits(r.valueUsd, 4)}</div>
+              </ComparisonRowShell>
+            );
+          })}
         </div>
-      ) : null}
+      </div>
     </div>
   );
 }

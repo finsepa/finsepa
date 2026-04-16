@@ -25,6 +25,7 @@ function emptyPerf(routeSymbol: string): StockPerformance {
     ytd: null,
     y1: null,
     y5: null,
+    y10: null,
     all: null,
   };
 }

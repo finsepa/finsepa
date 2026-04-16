@@ -385,6 +385,19 @@ export function PortfolioWorkspaceProvider({
       rebuilt[p.id] = replayTradeTransactionsToHoldings(txs);
     }
     setHoldingsByPortfolioId(rebuilt);
+
+    /** Replay uses last fill as provisional `marketPrice`; refresh from live quotes after hydrate/merge. */
+    void (async () => {
+      const entries = await Promise.all(
+        Object.entries(rebuilt).map(async ([pid, holds]) => {
+          if (holds.length === 0) return [pid, holds] as const;
+          const quoted = await refreshHoldingMarketPrices(holds);
+          return [pid, quoted] as const;
+        }),
+      );
+      const quoted = Object.fromEntries(entries) as Record<string, PortfolioHolding[]>;
+      setHoldingsByPortfolioId((prev) => ({ ...prev, ...quoted }));
+    })();
   }, []);
 
   /** Instant balance from device cache; server merge still runs in the effect below. */

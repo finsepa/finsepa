@@ -67,7 +67,20 @@ function computePerformanceFromPoints(points: StockChartPoint[], ticker: string)
   const last = sorted[sorted.length - 1];
   const price = last ? last.value : null;
   if (price == null) {
-    return { ticker, price: null, d1: null, d5: null, d7: null, m1: null, m6: null, ytd: null, y1: null, y5: null, all: null };
+    return {
+      ticker,
+      price: null,
+      d1: null,
+      d5: null,
+      d7: null,
+      m1: null,
+      m6: null,
+      ytd: null,
+      y1: null,
+      y5: null,
+      y10: null,
+      all: null,
+    };
   }
   function pct(current: number | null, base: number | null): number | null {
     if (current == null || base == null || base === 0) return null;
@@ -88,9 +101,10 @@ function computePerformanceFromPoints(points: StockChartPoint[], ticker: string)
   const ytd = pct(price, getAgo(90));
   const y1 = pct(price, getAgo(120));
   const y5 = pct(price, getAgo(160));
+  const y10 = pct(price, getAgo(175));
   const all = pct(price, sorted[0]?.value ?? null);
 
-  return { ticker, price, d1, d5, d7, m1, m6, ytd, y1, y5, all };
+  return { ticker, price, d1, d5, d7, m1, m6, ytd, y1, y5, y10, all };
 }
 
 export function getNvdaPerformance(): StockPerformance {

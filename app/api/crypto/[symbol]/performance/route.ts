@@ -31,6 +31,7 @@ export async function GET(_request: Request, { params }: Ctx) {
       ytd: null,
       y1: null,
       y5: null,
+      y10: null,
       all: null,
     };
     return NextResponse.json(empty, {

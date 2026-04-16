@@ -25,8 +25,9 @@ import {
   CHARTING_METRIC_LABEL,
   type ChartingMetricId,
   type ChartingMetricKind,
-  buildChartingPath,
+  buildStandaloneChartPath,
   parseChartingMetricsParam,
+  type StandaloneChartRoute,
 } from "@/lib/market/stock-charting-metrics";
 import {
   formatPercentMetric,
@@ -36,6 +37,7 @@ import {
   formatUsdPrice,
 } from "@/lib/market/key-stats-basic-format";
 import { DataFetchTopLoader } from "@/components/layout/data-fetch-top-loader";
+import { TransactionPortfolioField } from "@/components/portfolio/transaction-portfolio-field";
 import { ChartSkeleton } from "@/components/ui/chart-skeleton";
 import { TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
 import {
@@ -247,6 +249,8 @@ type Props = {
   fullPageCompanyChipSlot?: ReactNode;
   /** Full-page Charting only: + Company (shown when ≥1 metric selected). */
   fullPageCompanyAddSlot?: ReactNode;
+  pathRoute?: StandaloneChartRoute;
+  workspaceTitle?: string;
 };
 
 const TIME_RANGE_ORDER: ChartTimeRange[] = ["1Y", "2Y", "3Y", "5Y", "10Y", "all"];
@@ -313,6 +317,8 @@ export function ChartingWorkspace({
   toolbarLayout = "default",
   fullPageCompanyChipSlot,
   fullPageCompanyAddSlot,
+  pathRoute = "/charting",
+  workspaceTitle = "Charting",
 }: Props) {
   const router = useRouter();
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -542,12 +548,15 @@ export function ChartingWorkspace({
       });
       if (fullPageCompanyChipSlot && deferred) {
         queueMicrotask(() => {
-          if (deferred!.kind === "tickerOnly") router.replace(buildChartingPath([ticker], []));
-          else router.replace(buildChartingPath([ticker], deferred!.metrics));
+          if (deferred!.kind === "tickerOnly") {
+            router.replace(buildStandaloneChartPath(pathRoute, [ticker], []));
+          } else {
+            router.replace(buildStandaloneChartPath(pathRoute, [ticker], deferred!.metrics));
+          }
         });
       }
     },
-    [fullPageCompanyChipSlot, router, ticker],
+    [fullPageCompanyChipSlot, pathRoute, router, ticker],
   );
 
   const addMetric = useCallback(
@@ -560,12 +569,12 @@ export function ChartingWorkspace({
         return next;
       });
       if (fullPageCompanyChipSlot && nextMetrics) {
-        queueMicrotask(() => router.replace(buildChartingPath([ticker], nextMetrics!)));
+        queueMicrotask(() => router.replace(buildStandaloneChartPath(pathRoute, [ticker], nextMetrics!)));
       }
       setPickerOpen(false);
       setPickerQuery("");
     },
-    [fullPageCompanyChipSlot, router, ticker],
+    [fullPageCompanyChipSlot, pathRoute, router, ticker],
   );
 
   const qLower = pickerQuery.trim().toLowerCase();
@@ -792,12 +801,17 @@ export function ChartingWorkspace({
     <>
       <DataFetchTopLoader active={loading} />
       <div className="space-y-4 pt-1">
+      {isFigmaToolbar ? (
+        <div className="w-full max-w-[min(100%,320px)]">
+          <TransactionPortfolioField variant="field" />
+        </div>
+      ) : null}
       {/* Toolbar: Figma 8479:44846 — 24px title, 12px gaps, segmented controls */}
       <div className="flex flex-col gap-6">
         {/* Figma 8479:70857 — title row: period, line/bars, range, refresh */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-3">
           <h2 className="min-w-0 shrink-0 text-2xl font-semibold leading-9 tracking-tight text-[#09090B] sm:flex-1">
-            Charting
+            {workspaceTitle}
           </h2>
           <div className="flex min-w-0 flex-wrap items-center gap-3 sm:justify-end">
             <TabSwitcher
@@ -826,7 +840,7 @@ export function ChartingWorkspace({
             {isFigmaToolbar ? (
               <button
                 type="button"
-                onClick={() => router.replace(buildChartingPath([], []), { scroll: false })}
+                onClick={() => router.replace(buildStandaloneChartPath(pathRoute, [], []), { scroll: false })}
                 className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#09090B] transition-colors hover:bg-[#FAFAFA]"
                 aria-label="Clear companies and metrics"
               >

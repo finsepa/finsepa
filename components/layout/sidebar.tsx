@@ -10,7 +10,7 @@ import {
   CalendarDays,
   ChartColumn,
   Compass,
-  Flame,
+  FileText,
   LayoutGrid,
   Newspaper,
   PanelLeft,
@@ -41,19 +41,25 @@ const calendarItems = [
 const dataItems = [
   { label: "Macro", icon: Compass, href: "/macro", available: NAV_MACRO_ENABLED },
   { label: "Charting", icon: ChartColumn, href: "/charting", available: true },
-  { label: "Comparison", icon: PanelsTopLeft, href: "/comparison", available: false },
+  {
+    label: "Comparison",
+    icon: PanelsTopLeft,
+    href: "/comparison",
+    available: true,
+    activePathPrefix: true,
+  },
 ];
 
 const communityItems = [
   {
     label: "Superinvestors",
-    icon: Flame,
+    icon: Briefcase,
     href: "/superinvestors",
     available: true,
     activePathPrefix: true,
   },
   { label: "Portfolios", icon: Wallet, href: "/portfolios", available: true },
-  { label: "Posts", icon: Briefcase, href: "/posts", available: false },
+  { label: "Posts", icon: FileText, href: "/posts", available: false },
 ];
 
 type NavItem = {

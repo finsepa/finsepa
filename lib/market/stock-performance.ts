@@ -83,11 +83,13 @@ export function computeStockPerformanceFromSortedDailyBars(
   const m6Bar = pickNearestBar(sorted, addMonthsUtc(now, -6).getTime());
   const y1Bar = pickNearestBar(sorted, addMonthsUtc(now, -12).getTime());
   const y5Bar = pickNearestBar(sorted, addMonthsUtc(now, -60).getTime());
+  const y10Bar = pickNearestBar(sorted, addMonthsUtc(now, -120).getTime());
 
   const m1 = pctChange(price, m1Bar?.close ?? null);
   const m6 = pctChange(price, m6Bar?.close ?? null);
   const y1 = pctChange(price, y1Bar?.close ?? null);
   const y5 = pctChange(price, y5Bar?.close ?? null);
+  const y10 = pctChange(price, y10Bar?.close ?? null);
 
   const ytdStart = `${now.getUTCFullYear()}-01-01`;
   const ytdBar = pickBarOnOrAfter(sorted, ytdStart);
@@ -96,7 +98,7 @@ export function computeStockPerformanceFromSortedDailyBars(
   const first = sorted.length ? sorted[0]! : null;
   const all = pctChange(price, first?.close ?? null);
 
-  return { ticker: sym, price, d1, d5, d7, m1, m6, ytd, y1, y5, all };
+  return { ticker: sym, price, d1, d5, d7, m1, m6, ytd, y1, y5, y10, all };
 }
 
 async function loadStockPerformanceUncached(ticker: string): Promise<StockPerformance> {
@@ -105,7 +107,7 @@ async function loadStockPerformanceUncached(ticker: string): Promise<StockPerfor
   const to = ymdUtc(now);
 
   const fromDate = new Date(now);
-  fromDate.setUTCFullYear(fromDate.getUTCFullYear() - 12);
+  fromDate.setUTCFullYear(fromDate.getUTCFullYear() - 14);
   const from = ymdUtc(fromDate);
 
   const bars = await fetchEodhdEodDaily(sym, from, to);
@@ -116,7 +118,7 @@ async function loadStockPerformanceUncached(ticker: string): Promise<StockPerfor
 
 export const getStockPerformance = unstable_cache(
   async (ticker: string) => loadStockPerformanceUncached(ticker),
-  ["stock-performance-v3"],
+  ["stock-performance-v4"],
   { revalidate: REVALIDATE_HOT },
 );
 

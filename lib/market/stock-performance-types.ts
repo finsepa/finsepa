@@ -10,5 +10,6 @@ export type StockPerformance = {
   ytd: number | null;
   y1: number | null;
   y5: number | null;
+  y10: number | null;
   all: number | null;
 };

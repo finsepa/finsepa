@@ -359,7 +359,7 @@ export function StockInsidersTab({ ticker }: { ticker: string }) {
               aria-label="Insiders chart range"
             />
           </div>
-          <div className="overflow-hidden rounded-[12px] bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
+          <div className="overflow-visible rounded-[12px] bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
             <PriceChart
               kind="stock"
               symbol={sym}

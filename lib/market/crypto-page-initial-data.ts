@@ -46,6 +46,7 @@ export async function loadCryptoPageInitialData(routeSymbol: string): Promise<Cr
         ytd: null,
         y1: null,
         y5: null,
+        y10: null,
         all: null,
       },
       news: [],

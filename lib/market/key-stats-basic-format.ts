@@ -9,6 +9,37 @@ export function formatUsdCompact(n: number): string {
   return `$${n.toFixed(2)}`;
 }
 
+/**
+ * Compact USD with at most `sigDigits` significant figures in the mantissa
+ * (e.g. `$91.91B`, `$275B`, `$1.024K`). Uses the same K/M/B/T tiers as {@link formatUsdCompact}.
+ */
+export function formatUsdCompactSigDigits(n: number, sigDigits: number = 4): string {
+  if (!Number.isFinite(n)) return "—";
+  if (n === 0) return "$0";
+  const neg = n < 0;
+  const abs = Math.abs(n);
+
+  const mantissa = (quotient: number, suffix: string): string => {
+    const rounded = Number.parseFloat(quotient.toPrecision(sigDigits));
+    let t = String(rounded);
+    if (t.includes("e") || t.includes("E")) {
+      t = rounded.toFixed(8).replace(/\.?0+$/, "");
+    }
+    return `${neg ? "-" : ""}$${t}${suffix}`;
+  };
+
+  if (abs >= 1e12) return mantissa(abs / 1e12, "T");
+  if (abs >= 1e9) return mantissa(abs / 1e9, "B");
+  if (abs >= 1e6) return mantissa(abs / 1e6, "M");
+  if (abs >= 1e3) return mantissa(abs / 1e3, "K");
+  const rounded = Number.parseFloat(abs.toPrecision(sigDigits));
+  let t = String(rounded);
+  if (t.includes("e") || t.includes("E")) {
+    t = rounded.toFixed(8).replace(/\.?0+$/, "");
+  }
+  return `${neg ? "-" : ""}$${t}`;
+}
+
 /** Shares count → e.g. 1,022.33M */
 export function formatSharesOutstanding(n: number): string {
   if (!Number.isFinite(n)) return "—";

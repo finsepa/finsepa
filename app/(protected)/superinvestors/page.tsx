@@ -1,4 +1,8 @@
-import { getBerkshireHoldings } from "@/lib/superinvestors/berkshire-13f";
+import {
+  getBerkshireHoldings,
+  getFundsmithHoldings,
+  getPershingSquareHoldings,
+} from "@/lib/superinvestors/berkshire-13f";
 import {
   SuperinvestorsFundTable,
   type SuperinvestorsFundRowModel,
@@ -7,8 +11,11 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function SuperinvestorsPage() {
-  const berkshire = await getBerkshireHoldings();
-  const topIssuers = berkshire.holdings.slice(0, 5).map((h) => h.issuer);
+  const [berkshire, pershing, fundsmith] = await Promise.all([
+    getBerkshireHoldings(),
+    getPershingSquareHoldings(),
+    getFundsmithHoldings(),
+  ]);
 
   const rows: SuperinvestorsFundRowModel[] = [
     {
@@ -18,7 +25,34 @@ export default async function SuperinvestorsPage() {
       totalValueUsd: berkshire.totalValueUsd,
       positionCount: berkshire.positionCount,
       filingDate: berkshire.filingDate,
-      topIssuers: topIssuers.length ? topIssuers : berkshire.holdings.map((h) => h.issuer).slice(0, 5),
+      topHoldings: berkshire.holdings.slice(0, 5).map((h) => ({
+        issuer: h.issuer,
+        ticker: h.ticker,
+      })),
+    },
+    {
+      href: "/superinvestors/bill-ackman",
+      displayName: "Bill Ackman",
+      avatarSrc: "/superinvestors/bill-ackman.png",
+      totalValueUsd: pershing.totalValueUsd,
+      positionCount: pershing.positionCount,
+      filingDate: pershing.filingDate,
+      topHoldings: pershing.holdings.slice(0, 5).map((h) => ({
+        issuer: h.issuer,
+        ticker: h.ticker,
+      })),
+    },
+    {
+      href: "/superinvestors/terry-smith",
+      displayName: "Terry Smith",
+      avatarSrc: "/superinvestors/terry-smith.png",
+      totalValueUsd: fundsmith.totalValueUsd,
+      positionCount: fundsmith.positionCount,
+      filingDate: fundsmith.filingDate,
+      topHoldings: fundsmith.holdings.slice(0, 5).map((h) => ({
+        issuer: h.issuer,
+        ticker: h.ticker,
+      })),
     },
   ];
 

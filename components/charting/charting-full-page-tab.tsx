@@ -9,8 +9,9 @@ import { ChartingWorkspace } from "@/components/charting/charting-workspace";
 import type { StockPageInitialData } from "@/lib/market/stock-page-initial-data";
 import {
   CHARTING_MAX_COMPARE_TICKERS,
-  buildChartingPath,
+  buildStandaloneChartPath,
   parseChartingMetricsParam,
+  type StandaloneChartRoute,
 } from "@/lib/market/stock-charting-metrics";
 
 type Props = {
@@ -18,15 +19,31 @@ type Props = {
   /** Non-empty when `chartReady` — metrics query string. */
   metricParam: string;
   initialByTicker: Record<string, StockPageInitialData>;
+  /** Which standalone route URL updates target (default `/charting`). */
+  pathRoute?: StandaloneChartRoute;
+  /** Toolbar heading (default `Charting`). */
+  workspaceTitle?: string;
 };
 
-/** Standalone `/charting` — multi-company compare or single-ticker (metrics first, then company row). */
-export function ChartingFullPageTab({ tickers, metricParam, initialByTicker }: Props) {
+/** Standalone `/charting` or `/comparison` — multi-company compare or single-ticker workspace. */
+export function ChartingFullPageTab({
+  tickers,
+  metricParam,
+  initialByTicker,
+  pathRoute = "/charting",
+  workspaceTitle = "Charting",
+}: Props) {
   const router = useRouter();
 
   if (tickers.length >= 2) {
     return (
-      <ChartingCompareWorkspace tickers={tickers} metricParam={metricParam} initialByTicker={initialByTicker} />
+      <ChartingCompareWorkspace
+        tickers={tickers}
+        metricParam={metricParam}
+        initialByTicker={initialByTicker}
+        pathRoute={pathRoute}
+        workspaceTitle={workspaceTitle}
+      />
     );
   }
 
@@ -41,6 +58,8 @@ export function ChartingFullPageTab({ tickers, metricParam, initialByTicker }: P
       initialAnnualPoints={init?.fundamentalsSeriesAnnual}
       initialQuarterlyPoints={init?.fundamentalsSeriesQuarterly}
       toolbarLayout="figma70857"
+      pathRoute={pathRoute}
+      workspaceTitle={workspaceTitle}
       fullPageCompanyChipSlot={
         <div className="inline-flex max-w-full min-w-0 items-stretch overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white">
           <span className="flex min-h-[36px] min-w-0 items-center border-r border-[#E4E4E7] px-4 py-2 text-[14px] font-medium leading-5 text-[#09090B]">
@@ -49,7 +68,7 @@ export function ChartingFullPageTab({ tickers, metricParam, initialByTicker }: P
           <button
             type="button"
             onClick={() => {
-              router.push(buildChartingPath([], metricsInUrl));
+              router.push(buildStandaloneChartPath(pathRoute, [], metricsInUrl));
             }}
             className="flex w-9 shrink-0 items-center justify-center text-[#09090B] transition-colors hover:bg-[#FAFAFA]"
             aria-label={`Remove ${t}`}
@@ -61,7 +80,7 @@ export function ChartingFullPageTab({ tickers, metricParam, initialByTicker }: P
       fullPageCompanyAddSlot={
         <ChartingCompanyAddDropdown
           onPickStock={(sym) => {
-            router.push(buildChartingPath([t, sym], metricsInUrl));
+            router.push(buildStandaloneChartPath(pathRoute, [t, sym], metricsInUrl));
           }}
           maxExtraCompanies={Math.max(0, CHARTING_MAX_COMPARE_TICKERS - 1)}
           excludeSymbols={[t]}
