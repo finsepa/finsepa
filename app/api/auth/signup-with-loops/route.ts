@@ -37,7 +37,7 @@ export async function POST(request: Request) {
 
   const loopsKey = getLoopsApiKey();
   const loopsTxId = getLoopsTransactionalSignupId();
-  if (!loopsKey || !loopsTxId) {
+  if (!loopsKey) {
     return NextResponse.json({ error: "loops_not_configured" }, { status: 503 });
   }
 
