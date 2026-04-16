@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { friendlyAuthSignUpApiError, friendlySupabaseAuthErrorMessage } from "@/lib/auth/supabase-error-message";
+import { friendlySupabaseAuthErrorMessage } from "@/lib/auth/supabase-error-message";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { AuthDivider, AuthInput, AuthLabel, AuthPrimaryButton, AuthSecondaryButton } from "@/components/auth/auth-form-ui";
 import { PATH_APP_ENTRY, PATH_AUTH_CALLBACK } from "@/lib/auth/routes";
@@ -67,50 +67,14 @@ export function SignupClient() {
     setLoading(true);
     try {
       const supabase = getSupabaseBrowserClient();
-
-      const apiRes = await fetch("/api/auth/sign-up", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, firstName, lastName }),
-      });
-
-      const apiJson = (await apiRes.json().catch(() => ({}))) as {
-        ok?: boolean;
-        error?: string;
-        message?: string;
-      };
-
-      if (apiRes.status === 409 || apiJson.error === "duplicate_email") {
-        setIsDuplicateEmail(true);
-        setErrorMessage("An account with this email already exists.");
-        const passwordInput = form.querySelector<HTMLInputElement>('input[name="password"]');
-        if (passwordInput) passwordInput.value = "";
-        return;
-      }
-
-      if (apiRes.ok && apiJson.ok === true) {
-        const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
-        if (signInErr) {
-          setErrorMessage(
-            `Your account was created. ${friendlySupabaseAuthErrorMessage(signInErr.message)} You can try logging in.`,
-          );
-          return;
-        }
-        router.refresh();
-        router.push(PATH_APP_ENTRY);
-        return;
-      }
-
-      const useLegacyClientSignUp = apiRes.status === 503 && apiJson.error === "admin_unavailable";
-      if (!useLegacyClientSignUp && !apiRes.ok) {
-        setErrorMessage(friendlyAuthSignUpApiError(apiJson.error, apiJson.message));
-        return;
-      }
+      const origin = window.location.origin;
+      const emailRedirectTo = `${origin}${PATH_AUTH_CALLBACK}?next=${encodeURIComponent(PATH_APP_ENTRY)}`;
 
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
+          emailRedirectTo,
           data: {
             first_name: firstName,
             last_name: lastName,
