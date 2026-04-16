@@ -53,7 +53,7 @@ export function friendlySupabaseAuthErrorMessage(raw: string | null | undefined)
 
 /** Shown when `/api/auth/signup-with-loops` returns `loops_not_configured` — server has no readable LOOPS_API_KEY at runtime. */
 export function messageWhenLoopsApiNotConfiguredOnServer(): string {
-  return "The server cannot read LOOPS_API_KEY (Finsepa’s Loops signup route). In Vercel: Project → Settings → Environment Variables — use the exact name LOOPS_API_KEY, scope must include this deployment (e.g. Production), then Redeploy. Verify GET /api/auth/signup-with-loops shows loopsConfigured: true.";
+  return "The server cannot read LOOPS_API_KEY. In Vercel → Settings → Environment Variables, set LOOPS_API_KEY (exact name) for every environment you use (Production and Preview if you test preview URLs), save, then Redeploy. Open GET /api/auth/signup-with-loops on the same host — loopsConfigured should be true.";
 }
 
 /**

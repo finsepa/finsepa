@@ -38,13 +38,7 @@ export function getSecEdgarUserAgent(): string {
   return "Finsepa/1.0 (set SEC_EDGAR_USER_AGENT with your contact email or URL per sec.gov policy)";
 }
 
-/** Loops API key (https://app.loops.so → API). Used to send sign-up confirmation when Supabase SMTP fails. */
-export function getLoopsApiKey(): string | undefined {
-  // Use bracket access so Next.js does not inline a stale value at build time when the var was added later on Vercel.
-  const raw = process.env["LOOPS_API_KEY"] ?? process.env["LOOP_API_KEY"];
-  const v = typeof raw === "string" ? raw.trim() : "";
-  return v || undefined;
-}
+export { getLoopsApiKey } from "./loops";
 
 /** Default Finsepa sign-up confirmation transactional in Loops (override with `LOOPS_TRANSACTIONAL_ID_SIGNUP`). */
 const LOOPS_TRANSACTIONAL_ID_SIGNUP_DEFAULT = "cm54x9u6103qnqa68w7cg1ls7";

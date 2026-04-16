@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 
 import { getAuthAppOriginFromEnv, resolveAuthAppOriginForServer } from "@/lib/auth/app-origin";
-import { getLoopsApiKey, getLoopsTransactionalSignupId } from "@/lib/env/server";
+import { getLoopsApiKey } from "@/lib/env/loops";
+import { getLoopsTransactionalSignupId } from "@/lib/env/server";
 import { PATH_APP_ENTRY, PATH_AUTH_CALLBACK } from "@/lib/auth/routes";
 import { sendLoopsSignupConfirmationEmail } from "@/lib/loops/send-signup-confirmation";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
