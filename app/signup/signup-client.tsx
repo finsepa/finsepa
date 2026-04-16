@@ -1,6 +1,17 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+
+const MIN_PASSWORD_LEN = 8;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function RequiredAsterisk() {
+  return (
+    <span className="text-[#DC2626]" aria-hidden="true">
+      *
+    </span>
+  );
+}
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -11,6 +22,7 @@ import {
 } from "@/lib/auth/supabase-error-message";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { AuthDivider, AuthInput, AuthLabel, AuthPrimaryButton, AuthSecondaryButton } from "@/components/auth/auth-form-ui";
+import { getAuthAppOriginForClient } from "@/lib/auth/app-origin";
 import { PATH_APP_ENTRY, PATH_AUTH_CALLBACK } from "@/lib/auth/routes";
 
 type LoopsFirstResult =
@@ -28,7 +40,7 @@ async function trySignupViaLoopsApi(body: {
 }): Promise<LoopsFirstResult> {
   let loopsRes: Response;
   try {
-    const url = `${window.location.origin}/api/auth/signup-with-loops`;
+    const url = `${typeof window !== "undefined" ? window.location.origin : ""}/api/auth/signup-with-loops`;
     loopsRes = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -76,6 +88,22 @@ export function SignupClient() {
   const [isDuplicateEmail, setIsDuplicateEmail] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [touched, setTouched] = useState({ firstName: false, email: false, password: false });
+
+  const emailLooksValid = EMAIL_RE.test(email.trim());
+  const firstOk = firstName.trim().length > 0;
+  const passOk = password.length >= MIN_PASSWORD_LEN;
+  const formCanSubmit = firstOk && email.trim().length > 0 && emailLooksValid && passOk;
+
+  const showFirstError = touched.firstName && !firstOk;
+  const showEmailError = touched.email && (!email.trim() || !emailLooksValid);
+  const showPasswordError =
+    touched.password && (password.length === 0 || password.length < MIN_PASSWORD_LEN);
+
   async function handleGoogle() {
     setErrorMessage(null);
     setIsDuplicateEmail(false);
@@ -83,8 +111,8 @@ export function SignupClient() {
     setLoading(true);
     try {
       const supabase = getSupabaseBrowserClient();
-      const origin = window.location.origin;
-      const redirectTo = `${origin}${PATH_AUTH_CALLBACK}?next=${encodeURIComponent(PATH_APP_ENTRY)}`;
+      const authOrigin = getAuthAppOriginForClient();
+      const redirectTo = `${authOrigin}${PATH_AUTH_CALLBACK}?next=${encodeURIComponent(PATH_APP_ENTRY)}`;
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: { redirectTo },
@@ -105,41 +133,40 @@ export function SignupClient() {
     setErrorMessage(null);
     setIsDuplicateEmail(false);
     if (loading) return;
+    if (!formCanSubmit) {
+      setTouched({ firstName: true, email: true, password: true });
+      return;
+    }
 
-    const form = e.currentTarget;
-    const fd = new FormData(form);
-    const firstName = String(fd.get("firstName") ?? "").trim();
-    const lastName = String(fd.get("lastName") ?? "").trim();
-    const email = String(fd.get("email") ?? "")
-      .trim()
-      .toLowerCase();
-    const password = String(fd.get("password") ?? "");
+    const emailNorm = email.trim().toLowerCase();
+    const firstNorm = firstName.trim();
+    const lastNorm = lastName.trim();
 
     setLoading(true);
     try {
       const supabase = getSupabaseBrowserClient();
-      const origin = window.location.origin;
-      const emailRedirectTo = `${origin}${PATH_AUTH_CALLBACK}?next=${encodeURIComponent(PATH_APP_ENTRY)}`;
+      const authOrigin = getAuthAppOriginForClient();
+      const apiOrigin = typeof window !== "undefined" ? window.location.origin : "";
+      const emailRedirectTo = `${authOrigin}${PATH_AUTH_CALLBACK}?next=${encodeURIComponent(PATH_APP_ENTRY)}`;
 
       const loopsFirst = await trySignupViaLoopsApi({
-        email,
+        email: emailNorm,
         password,
-        firstName,
-        lastName,
-        appOrigin: origin,
+        firstName: firstNorm,
+        lastName: lastNorm,
+        appOrigin: authOrigin,
       });
       if (loopsFirst.kind === "success") {
         router.refresh();
         const { data: sess } = await supabase.auth.getSession();
         if (sess.session) await supabase.auth.signOut();
-        router.push(`/check-email?email=${encodeURIComponent(email)}`);
+        router.push(`/check-email?email=${encodeURIComponent(emailNorm)}`);
         return;
       }
       if (loopsFirst.kind === "duplicate") {
         setIsDuplicateEmail(true);
         setErrorMessage("An account with this email already exists.");
-        const passwordInput = form.querySelector<HTMLInputElement>('input[name="password"]');
-        if (passwordInput) passwordInput.value = "";
+        setPassword("");
         return;
       }
       if (loopsFirst.kind === "error") {
@@ -148,13 +175,13 @@ export function SignupClient() {
       }
 
       const { data, error } = await supabase.auth.signUp({
-        email,
+        email: emailNorm,
         password,
         options: {
           emailRedirectTo,
           data: {
-            first_name: firstName,
-            last_name: lastName,
+            first_name: firstNorm,
+            last_name: lastNorm || "-",
           },
         },
       });
@@ -171,8 +198,7 @@ export function SignupClient() {
       if (looksLikeDuplicate || duplicateByIdentity) {
         setIsDuplicateEmail(true);
         setErrorMessage("An account with this email already exists.");
-        const passwordInput = form.querySelector<HTMLInputElement>('input[name="password"]');
-        if (passwordInput) passwordInput.value = "";
+        setPassword("");
         return;
       }
 
@@ -180,15 +206,15 @@ export function SignupClient() {
         if (shouldAttemptLoopsSignupFallback(error.message, error.code, error.status)) {
           let loopsRes: Response;
           try {
-            loopsRes = await fetch(`${origin}/api/auth/signup-with-loops`, {
+            loopsRes = await fetch(`${apiOrigin}/api/auth/signup-with-loops`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
-                email,
+                email: emailNorm,
                 password,
-                firstName,
-                lastName,
-                appOrigin: origin,
+                firstName: firstNorm,
+                lastName: lastNorm,
+                appOrigin: authOrigin,
               }),
             });
           } catch (err) {
@@ -204,8 +230,7 @@ export function SignupClient() {
           if (loopsRes.status === 409 || loopsJson.error === "duplicate_email") {
             setIsDuplicateEmail(true);
             setErrorMessage("An account with this email already exists.");
-            const passwordInput = form.querySelector<HTMLInputElement>('input[name="password"]');
-            if (passwordInput) passwordInput.value = "";
+            setPassword("");
             return;
           }
 
@@ -213,7 +238,7 @@ export function SignupClient() {
             router.refresh();
             const { data: sess } = await supabase.auth.getSession();
             if (sess.session) await supabase.auth.signOut();
-            router.push(`/check-email?email=${encodeURIComponent(email)}`);
+            router.push(`/check-email?email=${encodeURIComponent(emailNorm)}`);
             return;
           }
 
@@ -246,7 +271,7 @@ export function SignupClient() {
         await supabase.auth.signOut();
       }
 
-      const emailParam = encodeURIComponent(email);
+      const emailParam = encodeURIComponent(emailNorm);
       router.push(`/check-email?email=${emailParam}`);
     } catch (err) {
       setErrorMessage(friendlyNetworkErrorMessage(err));
@@ -256,7 +281,7 @@ export function SignupClient() {
   }
 
   return (
-    <form className="space-y-4" onSubmit={handleSubmit} noValidate>
+    <form className="space-y-4" onSubmit={handleSubmit} noValidate aria-label="Sign up">
       <AuthSecondaryButton onClick={handleGoogle} disabled={loading}>
         <GoogleMark />
         {loading ? "Redirecting…" : "Continue with Google"}
@@ -294,33 +319,91 @@ export function SignupClient() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
-          <AuthLabel>First name</AuthLabel>
-          <AuthInput name="firstName" autoComplete="given-name" placeholder="Ava" required disabled={loading} />
+          <AuthLabel>
+            First name
+            <RequiredAsterisk />
+          </AuthLabel>
+          <AuthInput
+            name="firstName"
+            autoComplete="given-name"
+            placeholder="Ava"
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            onBlur={() => setTouched((t) => ({ ...t, firstName: true }))}
+            aria-invalid={showFirstError}
+            aria-required="true"
+            disabled={loading}
+          />
+          {showFirstError ? (
+            <p className="mt-1 text-xs leading-4 text-[#DC2626]">First name is required.</p>
+          ) : null}
         </div>
         <div>
           <AuthLabel>Last name</AuthLabel>
-          <AuthInput name="lastName" autoComplete="family-name" placeholder="Johnson" required disabled={loading} />
+          <AuthInput
+            name="lastName"
+            autoComplete="family-name"
+            placeholder="Johnson"
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+            disabled={loading}
+          />
         </div>
       </div>
 
       <div>
-        <AuthLabel>Email</AuthLabel>
-        <AuthInput type="email" name="email" autoComplete="email" placeholder="you@company.com" required disabled={loading} />
+        <AuthLabel>
+          Email
+          <RequiredAsterisk />
+        </AuthLabel>
+        <AuthInput
+          type="email"
+          name="email"
+          autoComplete="email"
+          placeholder="you@company.com"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          onBlur={() => setTouched((t) => ({ ...t, email: true }))}
+          aria-invalid={showEmailError}
+          aria-required="true"
+          disabled={loading}
+        />
+        {showEmailError ? (
+          <p className="mt-1 text-xs leading-4 text-[#DC2626]">
+            {!email.trim() ? "Email is required." : "Enter a valid email address."}
+          </p>
+        ) : null}
       </div>
 
       <div>
-        <AuthLabel>Password</AuthLabel>
+        <AuthLabel>
+          Password
+          <RequiredAsterisk />
+        </AuthLabel>
         <AuthInput
           type="password"
           name="password"
           autoComplete="new-password"
           placeholder="Create a password"
-          required
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          onBlur={() => setTouched((t) => ({ ...t, password: true }))}
+          aria-invalid={showPasswordError}
+          aria-required="true"
           disabled={loading}
         />
+        {showPasswordError ? (
+          <p className="mt-1 text-xs leading-4 text-[#DC2626]">
+            {password.length === 0
+              ? "Password is required."
+              : `Password must be at least ${MIN_PASSWORD_LEN} characters.`}
+          </p>
+        ) : !passOk ? (
+          <p className="mt-1 text-xs leading-4 text-[#71717A]">At least {MIN_PASSWORD_LEN} characters.</p>
+        ) : null}
       </div>
 
-      <AuthPrimaryButton type="submit" disabled={loading}>
+      <AuthPrimaryButton type="submit" disabled={loading || !formCanSubmit}>
         {loading ? "Creating account…" : "Sign up"}
       </AuthPrimaryButton>
     </form>

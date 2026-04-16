@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { getAuthAppOriginFromEnv, resolveAuthAppOriginForServer } from "@/lib/auth/app-origin";
 import { getLoopsApiKey, getLoopsTransactionalSignupId } from "@/lib/env/server";
 import { PATH_APP_ENTRY, PATH_AUTH_CALLBACK } from "@/lib/auth/routes";
 import { sendLoopsSignupConfirmationEmail } from "@/lib/loops/send-signup-confirmation";
@@ -8,7 +9,7 @@ import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const MIN_PASSWORD_LEN = 6;
+const MIN_PASSWORD_LEN = 8;
 
 function hintForGenerateLinkError(message: string, redirectTo: string): string {
   const m = message.toLowerCase();
@@ -30,6 +31,8 @@ export async function GET() {
   return NextResponse.json({
     loopsConfigured: Boolean(loopsKey),
     adminConfigured: Boolean(admin),
+    /** When set, signup confirmation uses this origin for `redirect_to` (not the browser origin). */
+    authAppOriginFromEnv: getAuthAppOriginFromEnv() ?? null,
   });
 }
 
@@ -71,10 +74,11 @@ export async function POST(request: Request) {
     .toLowerCase();
   const password = String(body.password ?? "");
   const firstName = String(body.firstName ?? "").trim();
-  const lastName = String(body.lastName ?? "").trim();
-  const appOrigin = String(body.appOrigin ?? "").trim().replace(/\/$/, "");
+  const lastNameRaw = String(body.lastName ?? "").trim();
+  const lastName = lastNameRaw || "-";
+  const appOrigin = resolveAuthAppOriginForServer(String(body.appOrigin ?? ""));
 
-  if (!firstName || !lastName || firstName.length > MAX_NAME_LEN || lastName.length > MAX_NAME_LEN) {
+  if (!firstName || firstName.length > MAX_NAME_LEN || lastName.length > MAX_NAME_LEN) {
     return NextResponse.json({ error: "invalid_name" }, { status: 400 });
   }
   if (!isValidEmail(email)) {
