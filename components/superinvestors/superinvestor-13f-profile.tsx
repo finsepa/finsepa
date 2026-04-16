@@ -106,7 +106,7 @@ export function Superinvestor13fProfile({
           <div className="flex flex-1 flex-col gap-1 border-t border-[#E4E4E7] py-4 sm:border-t-0 sm:pl-8 sm:py-1">
             <dt className="text-[13px] font-normal leading-5 text-[#71717A]">Last update</dt>
             <dd className="text-[20px] font-semibold leading-7 text-[#09090B]">
-              {formatLastUpdateLabel(data.current.filingDate)}
+              {formatLastUpdateLabel(data.current.filingDate ?? data.current.reportDate)}
             </dd>
           </div>
         </dl>
