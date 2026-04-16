@@ -20,6 +20,12 @@ import pershingSquareFallback from "@/lib/superinvestors/fixtures/pershing-squar
 /** Berkshire Hathaway Inc. — SEC central index key (zero-padded). */
 const BERKSHIRE_CIK = "0001067983";
 
+/** EDGAR dates for the offline Berkshire snapshot (`berkshire-holdings-fallback.json`). */
+const BERKSHIRE_FIXTURE_CURRENT_FILING_DATE = "2026-02-17";
+const BERKSHIRE_FIXTURE_CURRENT_REPORT_DATE = "2025-12-31";
+const BERKSHIRE_FIXTURE_PREVIOUS_FILING_DATE = "2025-11-14";
+const BERKSHIRE_FIXTURE_PREVIOUS_REPORT_DATE = "2025-09-30";
+
 /** Pershing Square Capital Management, L.P. */
 export const PERSHING_SQUARE_CIK = "0001336528";
 
@@ -944,8 +950,8 @@ function loadFixturePayload(): InstitutionalHoldingsPayload {
     filerDisplayName: j.filerDisplayName,
     cik: j.cik,
     accession: null,
-    filingDate: null,
-    reportDate: null,
+    filingDate: BERKSHIRE_FIXTURE_CURRENT_FILING_DATE,
+    reportDate: BERKSHIRE_FIXTURE_CURRENT_REPORT_DATE,
     source: "fixture",
   });
 }
@@ -988,15 +994,6 @@ function fundsmithFixtureCurrentAggregated(): AggregatedHolding[] {
     shares: inferSharesPlaceholder(h.valueUsd),
   }));
   return aggregateInfoRowsByCusip(parsed);
-}
-
-/** Prior-period snapshot: slightly different weights; still includes names later sold out of the “current” fixture. */
-function buildSyntheticPreviousForFixture(base: AggregatedHolding[]): AggregatedHolding[] {
-  return base.map((r, i) => ({
-    ...r,
-    valueThousands: Math.round(r.valueThousands * (i === 0 ? 0.86 : i === 1 ? 1.04 : 0.992)),
-    shares: r.shares != null ? Math.round(r.shares * (i === 0 ? 0.86 : i === 1 ? 1.04 : 0.992)) : null,
-  }));
 }
 
 /**
@@ -1093,25 +1090,23 @@ async function fetchInstitutionalComparisonUncached(cik: string): Promise<Berksh
 function loadFixtureComparisonPayload(): Berkshire13fComparisonPayload {
   const j = berkshireFallback as { filerDisplayName: string; cik: string };
   const baseAgg = fixtureCurrentAggregated();
-  const previousAgg = buildSyntheticPreviousForFixture(baseAgg);
-  const soldNames = new Set(["Diageo Plc ADR", "Atlanta Braves Holdings Inc. Series C"]);
-  const currentCore = baseAgg.filter((r) => !soldNames.has(r.issuer));
-  const extraNew: AggregatedHolding = {
-    issuer: "Nu Holdings Ltd.",
-    title: "COM CL A",
-    valueThousands: Math.round(35_000_000 / 1000),
-    cusip: syntheticFixtureCusip("Nu Holdings Ltd.", 999),
-    shares: 2_000_000,
-  };
-  const currentWithNew = [...currentCore, extraNew];
-  const { rows, soldOut, previousTotalUsd } = buildComparisonRows(currentWithNew, previousAgg);
+  const previousAgg = buildSyntheticPreviousForOffline13fFixture(baseAgg);
+  const { rows, soldOut, previousTotalUsd } = buildComparisonRows(baseAgg, previousAgg);
   return {
     filerDisplayName: j.filerDisplayName,
     cik: j.cik,
-    current: { accessionNumber: null, filingDate: null, reportDate: "2024-09-30" },
-    previous: { accessionNumber: null, filingDate: null, reportDate: "2024-06-30" },
+    current: {
+      accessionNumber: null,
+      filingDate: BERKSHIRE_FIXTURE_CURRENT_FILING_DATE,
+      reportDate: BERKSHIRE_FIXTURE_CURRENT_REPORT_DATE,
+    },
+    previous: {
+      accessionNumber: null,
+      filingDate: BERKSHIRE_FIXTURE_PREVIOUS_FILING_DATE,
+      reportDate: BERKSHIRE_FIXTURE_PREVIOUS_REPORT_DATE,
+    },
     hasPriorFiling: true,
-    totalValueUsd: currentWithNew.reduce((s, r) => s + r.valueThousands * 1000, 0),
+    totalValueUsd: baseAgg.reduce((s, r) => s + r.valueThousands * 1000, 0),
     previousTotalValueUsd: previousTotalUsd,
     positionCount: rows.length,
     rows,
@@ -1279,13 +1274,13 @@ async function fetchFundsmithComparisonUncached(): Promise<Berkshire13fCompariso
 
 const getBerkshireHoldingsCached = unstable_cache(
   async () => fetchBerkshireHoldingsUncached(),
-  ["berkshire-hathaway-13f-v9-ticker-cusip-map"],
+  ["berkshire-hathaway-13f-v10-ticker-cusip-map"],
   { revalidate: 21_600 },
 );
 
 const getBerkshireHoldingsComparisonCached = unstable_cache(
   async () => fetchBerkshireComparisonUncached(),
-  ["berkshire-hathaway-13f-comparison-v7-ticker-cusip-map"],
+  ["berkshire-hathaway-13f-comparison-v8-ticker-cusip-map"],
   { revalidate: 21_600 },
 );
 

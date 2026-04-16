@@ -2,47 +2,215 @@
   "filerDisplayName": "Berkshire Hathaway Inc.",
   "cik": "0001067983",
   "holdings": [
-    { "issuer": "Apple Inc.", "titleOfClass": "COM", "valueUsd": 61961735000 },
-    { "issuer": "American Express Co.", "titleOfClass": "COM", "valueUsd": 56088379000 },
-    { "issuer": "Bank of America Corp.", "titleOfClass": "COM", "valueUsd": 28451277000 },
-    { "issuer": "Coca Cola Co.", "titleOfClass": "COM", "valueUsd": 27964001000 },
-    { "issuer": "Chevron Corp.", "titleOfClass": "COM", "valueUsd": 19837132000 },
-    { "issuer": "Moody's Corp.", "titleOfClass": "COM", "valueUsd": 12602556000 },
-    { "issuer": "Occidental Petroleum Corp.", "titleOfClass": "COM", "valueUsd": 10894392000 },
-    { "issuer": "Chubb Limited", "titleOfClass": "COM", "valueUsd": 10689855000 },
-    { "issuer": "Kraft Heinz Co.", "titleOfClass": "COM", "valueUsd": 7896644000 },
-    { "issuer": "Alphabet Inc.", "titleOfClass": "COM", "valueUsd": 5585842000 },
-    { "issuer": "DaVita Inc.", "titleOfClass": "COM", "valueUsd": 3608148000 },
-    { "issuer": "Kroger Co.", "titleOfClass": "COM", "valueUsd": 3124001000 },
-    { "issuer": "Visa Inc.", "titleOfClass": "COM", "valueUsd": 2910002000 },
-    { "issuer": "SiriusXM Holdings Inc.", "titleOfClass": "COM", "valueUsd": 2495518000 },
-    { "issuer": "Mastercard Inc.", "titleOfClass": "COM", "valueUsd": 2275898000 },
-    { "issuer": "Verisign Inc.", "titleOfClass": "COM", "valueUsd": 2184091000 },
-    { "issuer": "Constellation Brands Inc.", "titleOfClass": "COM", "valueUsd": 1793480000 },
-    { "issuer": "Capital One Financial Corp.", "titleOfClass": "COM", "valueUsd": 1732874000 },
-    { "issuer": "UnitedHealth Group Inc.", "titleOfClass": "COM", "valueUsd": 1663610000 },
-    { "issuer": "Domino's Pizza Inc.", "titleOfClass": "COM", "valueUsd": 1396347000 },
-    { "issuer": "Ally Financial Inc.", "titleOfClass": "COM", "valueUsd": 1313410000 },
-    { "issuer": "Aon Plc", "titleOfClass": "COM", "valueUsd": 1271424000 },
-    { "issuer": "Nucor Corp.", "titleOfClass": "COM", "valueUsd": 1045168000 },
-    { "issuer": "Liberty Media Corp. Series C Live", "titleOfClass": "COM", "valueUsd": 907912000 },
-    { "issuer": "Lennar Corp.", "titleOfClass": "COM", "valueUsd": 724838000 },
-    { "issuer": "Pool Corp.", "titleOfClass": "COM", "valueUsd": 702007000 },
-    { "issuer": "Amazon.com Inc.", "titleOfClass": "COM", "valueUsd": 525346000 },
-    { "issuer": "Louisiana-Pacific Corp.", "titleOfClass": "COM", "valueUsd": 457489000 },
-    { "issuer": "Liberty Media Corp. Series A Live", "titleOfClass": "COM", "valueUsd": 406407000 },
-    { "issuer": "New York Times Co. CL A", "titleOfClass": "COM", "valueUsd": 351664000 },
-    { "issuer": "HEICO Corp. CL A", "titleOfClass": "COM", "valueUsd": 326799000 },
-    { "issuer": "Liberty Media Corp. Formula One Series C", "titleOfClass": "COM", "valueUsd": 297358000 },
-    { "issuer": "Charter Communications Inc.", "titleOfClass": "COM", "valueUsd": 221459000 },
-    { "issuer": "Lamar Advertising Co.", "titleOfClass": "COM", "valueUsd": 152201000 },
-    { "issuer": "Allegion Plc", "titleOfClass": "COM", "valueUsd": 124213000 },
-    { "issuer": "NVR Inc.", "titleOfClass": "COM", "valueUsd": 81037000 },
-    { "issuer": "Diageo Plc ADR", "titleOfClass": "ADR", "valueUsd": 19648000 },
-    { "issuer": "Jefferies Financial Group Inc.", "titleOfClass": "COM", "valueUsd": 26868000 },
-    { "issuer": "Lennar Corp. CL B", "titleOfClass": "COM", "valueUsd": 17215000 },
-    { "issuer": "Liberty LiLAC Group A", "titleOfClass": "COM", "valueUsd": 17711000 },
-    { "issuer": "Atlanta Braves Holdings Inc. Series C", "titleOfClass": "COM", "valueUsd": 4553000 },
-    { "issuer": "Liberty LiLAC Group C", "titleOfClass": "COM", "valueUsd": 9579000 }
+    {
+      "issuer": "APPLE INC",
+      "titleOfClass": "COM",
+      "valueUsd": 61961735000
+    },
+    {
+      "issuer": "AMERICAN EXPRESS CO",
+      "titleOfClass": "COM",
+      "valueUsd": 56088379000
+    },
+    {
+      "issuer": "BANK AMERICA CORP",
+      "titleOfClass": "COM",
+      "valueUsd": 28451277000
+    },
+    {
+      "issuer": "COCA COLA CO",
+      "titleOfClass": "COM",
+      "valueUsd": 27964001000
+    },
+    {
+      "issuer": "CHEVRON CORP NEW",
+      "titleOfClass": "COM",
+      "valueUsd": 19837132000
+    },
+    {
+      "issuer": "MOODYS CORP",
+      "titleOfClass": "COM",
+      "valueUsd": 12602556000
+    },
+    {
+      "issuer": "OCCIDENTAL PETE CORP",
+      "titleOfClass": "COM",
+      "valueUsd": 10894392000
+    },
+    {
+      "issuer": "CHUBB LIMITED",
+      "titleOfClass": "COM",
+      "valueUsd": 10689855000
+    },
+    {
+      "issuer": "KRAFT HEINZ CO",
+      "titleOfClass": "COM",
+      "valueUsd": 7896644000
+    },
+    {
+      "issuer": "ALPHABET INC",
+      "titleOfClass": "CAP STK CL A",
+      "valueUsd": 5585842000
+    },
+    {
+      "issuer": "DAVITA INC",
+      "titleOfClass": "COM",
+      "valueUsd": 3608148000
+    },
+    {
+      "issuer": "KROGER CO",
+      "titleOfClass": "COM",
+      "valueUsd": 3124001000
+    },
+    {
+      "issuer": "VISA INC",
+      "titleOfClass": "COM CL A",
+      "valueUsd": 2910002000
+    },
+    {
+      "issuer": "SIRIUS XM HOLDINGS INC",
+      "titleOfClass": "COMMON STOCK",
+      "valueUsd": 2495518000
+    },
+    {
+      "issuer": "MASTERCARD INCORPORATED",
+      "titleOfClass": "CL A",
+      "valueUsd": 2275898000
+    },
+    {
+      "issuer": "VERISIGN INC",
+      "titleOfClass": "COM",
+      "valueUsd": 2184091000
+    },
+    {
+      "issuer": "CONSTELLATION BRANDS INC",
+      "titleOfClass": "CL A",
+      "valueUsd": 1793480000
+    },
+    {
+      "issuer": "CAPITAL ONE FINL CORP",
+      "titleOfClass": "COM",
+      "valueUsd": 1732874000
+    },
+    {
+      "issuer": "UNITEDHEALTH GROUP INC",
+      "titleOfClass": "COM",
+      "valueUsd": 1663610000
+    },
+    {
+      "issuer": "DOMINOS PIZZA INC",
+      "titleOfClass": "COM",
+      "valueUsd": 1396347000
+    },
+    {
+      "issuer": "ALLY FINL INC",
+      "titleOfClass": "COM",
+      "valueUsd": 1313410000
+    },
+    {
+      "issuer": "AON PLC",
+      "titleOfClass": "SHS CL A",
+      "valueUsd": 1271424000
+    },
+    {
+      "issuer": "NUCOR CORP",
+      "titleOfClass": "COM",
+      "valueUsd": 1045168000
+    },
+    {
+      "issuer": "LIBERTY LIVE HOLDINGS INC",
+      "titleOfClass": "COM SHS SER C",
+      "valueUsd": 907912000
+    },
+    {
+      "issuer": "LENNAR CORP",
+      "titleOfClass": "CL A",
+      "valueUsd": 724838000
+    },
+    {
+      "issuer": "POOL CORP",
+      "titleOfClass": "COM",
+      "valueUsd": 702007000
+    },
+    {
+      "issuer": "AMAZON COM INC",
+      "titleOfClass": "COM",
+      "valueUsd": 525346000
+    },
+    {
+      "issuer": "LOUISIANA PAC CORP",
+      "titleOfClass": "COM",
+      "valueUsd": 457489000
+    },
+    {
+      "issuer": "LIBERTY LIVE HOLDINGS INC",
+      "titleOfClass": "COM SER A",
+      "valueUsd": 406407000
+    },
+    {
+      "issuer": "NEW YORK TIMES CO",
+      "titleOfClass": "CL A",
+      "valueUsd": 351664000
+    },
+    {
+      "issuer": "HEICO CORP NEW",
+      "titleOfClass": "CL A",
+      "valueUsd": 326799000
+    },
+    {
+      "issuer": "LIBERTY MEDIA CORP DEL",
+      "titleOfClass": "COM LBTY ONE S C",
+      "valueUsd": 297358000
+    },
+    {
+      "issuer": "CHARTER COMMUNICATIONS INC N",
+      "titleOfClass": "CL A",
+      "valueUsd": 221459000
+    },
+    {
+      "issuer": "LAMAR ADVERTISING CO NEW",
+      "titleOfClass": "CL A",
+      "valueUsd": 152201000
+    },
+    {
+      "issuer": "ALLEGION PLC",
+      "titleOfClass": "ORD SHS",
+      "valueUsd": 124213000
+    },
+    {
+      "issuer": "NVR INC",
+      "titleOfClass": "COM",
+      "valueUsd": 81037000
+    },
+    {
+      "issuer": "JEFFERIES FINL GROUP INC",
+      "titleOfClass": "COM",
+      "valueUsd": 26868000
+    },
+    {
+      "issuer": "DIAGEO PLC",
+      "titleOfClass": "SPON ADR NEW",
+      "valueUsd": 19648000
+    },
+    {
+      "issuer": "LIBERTY LATIN AMERICA LTD",
+      "titleOfClass": "COM CL A",
+      "valueUsd": 17711000
+    },
+    {
+      "issuer": "LENNAR CORP",
+      "titleOfClass": "CL B",
+      "valueUsd": 17215000
+    },
+    {
+      "issuer": "LIBERTY LATIN AMERICA LTD",
+      "titleOfClass": "COM CL C",
+      "valueUsd": 9579000
+    },
+    {
+      "issuer": "ATLANTA BRAVES HLDGS INC",
+      "titleOfClass": "COM SER C",
+      "valueUsd": 4553000
+    }
   ]
 }
