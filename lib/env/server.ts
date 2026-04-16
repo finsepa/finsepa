@@ -1,5 +1,7 @@
 import "server-only";
 
+import { pickProcessEnv } from "@/lib/env/pick-process-env";
+
 /**
  * Server-only provider keys. Import from Route Handlers / Server Actions only.
  * Client code must never read EODHD_API_KEY or FINNHUB_API_KEY.
@@ -16,10 +18,9 @@ export function getFinnhubApiKey(): string | undefined {
 
 /** Supabase service role key (server-only). Used for privileged reads (e.g. global watchlist counts). */
 export function getSupabaseServiceRoleKey(): string | undefined {
-  const a = process.env["SUPABASE_SERVICE_ROLE_KEY"]?.trim();
+  const a = pickProcessEnv("SUPABASE" + "_" + "SERVICE" + "_" + "ROLE" + "_" + "KEY");
   if (a) return a;
-  const b = process.env["SUPABASE_SERVICE_KEY"]?.trim();
-  return b || undefined;
+  return pickProcessEnv("SUPABASE" + "_" + "SERVICE" + "_" + "KEY");
 }
 
 /** OpenAI API key (server-only). Used for portfolio import column mapping. */
@@ -48,6 +49,6 @@ const LOOPS_TRANSACTIONAL_ID_SIGNUP_DEFAULT = "cm54x9u6103qnqa68w7cg1ls7";
  * Template must include data variables: `firstName`, `confirmationLink` (see .env.example).
  */
 export function getLoopsTransactionalSignupId(): string {
-  const v = process.env["LOOPS_TRANSACTIONAL_ID_SIGNUP"]?.trim();
+  const v = pickProcessEnv("LOOPS" + "_" + "TRANSACTIONAL" + "_" + "ID" + "_" + "SIGNUP");
   return v || LOOPS_TRANSACTIONAL_ID_SIGNUP_DEFAULT;
 }

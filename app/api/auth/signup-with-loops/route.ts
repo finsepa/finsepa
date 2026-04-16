@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { getAuthAppOriginFromEnv, resolveAuthAppOriginForServer } from "@/lib/auth/app-origin";
 import { getLoopsApiKey } from "@/lib/env/loops";
+import { pickProcessEnv } from "@/lib/env/pick-process-env";
 import { getLoopsTransactionalSignupId } from "@/lib/env/server";
 import { PATH_APP_ENTRY, PATH_AUTH_CALLBACK } from "@/lib/auth/routes";
 import { sendLoopsSignupConfirmationEmail } from "@/lib/loops/send-signup-confirmation";
@@ -29,13 +30,16 @@ function hintForGenerateLinkError(message: string, redirectTo: string): string {
 export async function GET() {
   const loopsKey = getLoopsApiKey();
   const admin = getSupabaseAdminClient();
+  const supabaseUrl = pickProcessEnv("NEXT" + "_" + "PUBLIC" + "_" + "SUPABASE" + "_" + "URL");
   return NextResponse.json({
     loopsConfigured: Boolean(loopsKey),
     adminConfigured: Boolean(admin),
+    /** Server-side: `NEXT_PUBLIC_SUPABASE_URL` readable at runtime (same lookup as admin client). */
+    supabaseUrlConfigured: Boolean(supabaseUrl),
     /** When set, signup confirmation uses this origin for `redirect_to` (not the browser origin). */
     authAppOriginFromEnv: getAuthAppOriginFromEnv() ?? null,
     /** Helps confirm which Vercel env this deployment uses (set `LOOPS_API_KEY` for that environment). */
-    vercelEnv: process.env["VERCEL_ENV"] ?? null,
+    vercelEnv: pickProcessEnv("VERCEL" + "_" + "ENV") ?? null,
   });
 }
 

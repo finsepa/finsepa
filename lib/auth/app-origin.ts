@@ -4,8 +4,6 @@
  * browser origin (http, apex domain, or missing `/auth/callback` path — path is appended by callers).
  * Local dev: omit it and use `window.location.origin` on the client; server falls back to the request body origin.
  */
-const ENV = "NEXT_PUBLIC_APP_ORIGIN";
-
 function normalizeOrigin(raw: string | undefined | null): string {
   return String(raw ?? "")
     .trim()
@@ -13,7 +11,9 @@ function normalizeOrigin(raw: string | undefined | null): string {
 }
 
 export function getAuthAppOriginFromEnv(): string | undefined {
-  const v = normalizeOrigin(process.env[ENV]);
+  const k = "NEXT" + "_" + "PUBLIC" + "_" + "APP" + "_" + "ORIGIN";
+  const raw = typeof process !== "undefined" && process.env ? process.env[k] : undefined;
+  const v = normalizeOrigin(raw);
   return v || undefined;
 }
 
