@@ -14,3 +14,21 @@ export function friendlySupabaseAuthErrorMessage(raw: string | null | undefined)
   }
   return m;
 }
+
+/** Maps `POST /api/auth/sign-up` error codes to user-visible strings. */
+export function friendlyAuthSignUpApiError(code: string | undefined, detail?: string | null): string {
+  switch (code) {
+    case "invalid_name":
+      return "Please enter your first and last name.";
+    case "invalid_email":
+      return "Enter a valid email address.";
+    case "invalid_password":
+      return "Password must be at least 6 characters.";
+    case "invalid_json":
+      return "Something went wrong. Please try again.";
+    case "create_failed":
+      return friendlySupabaseAuthErrorMessage(detail);
+    default:
+      return "Something went wrong. Please try again.";
+  }
+}
