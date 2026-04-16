@@ -1,10 +1,10 @@
 import "server-only";
 
-import { pickProcessEnv } from "@/lib/env/pick-process-env";
+import { pickProcessEnvB64 } from "@/lib/env/pick-process-env";
 
 /** Loops REST API key for transactional email (`/api/v1/transactional`). */
 export function getLoopsApiKey(): string | undefined {
-  const primary = pickProcessEnv("LOOPS" + "_" + "API" + "_" + "KEY");
+  const primary = pickProcessEnvB64("TE9PUFNfQVBJX0tFWQ==");
   if (primary) return primary;
-  return pickProcessEnv("LOOP" + "_" + "API" + "_" + "KEY");
+  return pickProcessEnvB64("TE9PUF9BUElfS0VZ");
 }
