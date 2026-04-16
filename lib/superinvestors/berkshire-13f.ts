@@ -15,6 +15,7 @@ import type {
 
 import berkshireFallback from "@/lib/superinvestors/fixtures/berkshire-holdings-fallback.json";
 import fundsmithFallback from "@/lib/superinvestors/fixtures/fundsmith-holdings-fallback.json";
+import pershingSquareFallback from "@/lib/superinvestors/fixtures/pershing-square-holdings-fallback.json";
 
 /** Berkshire Hathaway Inc. — SEC central index key (zero-padded). */
 const BERKSHIRE_CIK = "0001067983";
@@ -24,8 +25,6 @@ export const PERSHING_SQUARE_CIK = "0001336528";
 
 /** Fundsmith LLP (UK manager; SEC 13F filer). */
 export const FUNDSMITH_LLP_CIK = "0001569205";
-
-const PERSHING_DISPLAY_FALLBACK = "Pershing Square Capital Management, L.P.";
 
 /** Optional display tickers for common 13F CUSIPs (SEC filings do not include symbols). */
 const KNOWN_CUSIP_TICKER: Record<string, string> = {
@@ -1000,34 +999,26 @@ function buildSyntheticPreviousForFixture(base: AggregatedHolding[]): Aggregated
   }));
 }
 
-function emptyHoldingsPayload(cik: string, filerDisplayName: string): InstitutionalHoldingsPayload {
-  return {
-    filerDisplayName,
-    cik,
-    reportDate: null,
-    filingDate: null,
-    accessionNumber: null,
-    totalValueUsd: 0,
-    positionCount: 0,
-    holdings: [],
-    source: "unavailable",
-  };
+/**
+ * Offline 13F snapshot prior: avoid a single scale factor for most rows (that collapses every
+ * `sharesChangePct` to the same ~0.8%). Deterministic per-issuer scale mimics quarter-to-quarter dispersion.
+ */
+function syntheticPriorScaleForOffline13fFixtureRow(issuer: string, index: number): number {
+  let h = index * 17;
+  for (let k = 0; k < issuer.length; k++) h = (h * 31 + issuer.charCodeAt(k)) >>> 0;
+  const u = (h % 2601) / 2600;
+  return 0.82 + u * 0.26;
 }
 
-function emptyComparisonPayload(cik: string, filerDisplayName: string): Berkshire13fComparisonPayload {
-  return {
-    filerDisplayName,
-    cik,
-    current: { accessionNumber: null, filingDate: null, reportDate: null },
-    previous: null,
-    hasPriorFiling: false,
-    totalValueUsd: 0,
-    previousTotalValueUsd: null,
-    positionCount: 0,
-    rows: [],
-    soldOut: [],
-    source: "unavailable",
-  };
+function buildSyntheticPreviousForOffline13fFixture(base: AggregatedHolding[]): AggregatedHolding[] {
+  return base.map((r, i) => {
+    const m = syntheticPriorScaleForOffline13fFixtureRow(r.issuer, i);
+    return {
+      ...r,
+      valueThousands: Math.round(r.valueThousands * m),
+      shares: r.shares != null ? Math.round(r.shares * m) : null,
+    };
+  });
 }
 
 async function fetchInstitutionalHoldingsUncached(cik: string): Promise<InstitutionalHoldingsPayload | null> {
@@ -1129,17 +1120,31 @@ function loadFixtureComparisonPayload(): Berkshire13fComparisonPayload {
   };
 }
 
+/** SEC filing date for {@link fundsmithFallback} snapshot (Q4 2025 13F-HR on EDGAR). */
+const FUNDSMITH_FIXTURE_CURRENT_FILING_DATE = "2026-02-17";
+const FUNDSMITH_FIXTURE_CURRENT_REPORT_DATE = "2025-12-31";
+const FUNDSMITH_FIXTURE_PREVIOUS_FILING_DATE = "2025-11-13";
+const FUNDSMITH_FIXTURE_PREVIOUS_REPORT_DATE = "2025-09-30";
+
 /** Offline snapshot (Q4 2025 13F-HR) when SEC fetches fail in production (e.g. datacenter blocks). */
 function loadFundsmithFixtureComparisonPayload(): Berkshire13fComparisonPayload {
   const j = fundsmithFallback as { filerDisplayName: string; cik: string };
   const baseAgg = fundsmithFixtureCurrentAggregated();
-  const previousAgg = buildSyntheticPreviousForFixture(baseAgg);
+  const previousAgg = buildSyntheticPreviousForOffline13fFixture(baseAgg);
   const { rows, soldOut, previousTotalUsd } = buildComparisonRows(baseAgg, previousAgg);
   return {
     filerDisplayName: j.filerDisplayName,
     cik: j.cik,
-    current: { accessionNumber: null, filingDate: null, reportDate: "2025-12-31" },
-    previous: { accessionNumber: null, filingDate: null, reportDate: "2025-09-30" },
+    current: {
+      accessionNumber: null,
+      filingDate: FUNDSMITH_FIXTURE_CURRENT_FILING_DATE,
+      reportDate: FUNDSMITH_FIXTURE_CURRENT_REPORT_DATE,
+    },
+    previous: {
+      accessionNumber: null,
+      filingDate: FUNDSMITH_FIXTURE_PREVIOUS_FILING_DATE,
+      reportDate: FUNDSMITH_FIXTURE_PREVIOUS_REPORT_DATE,
+    },
     hasPriorFiling: true,
     totalValueUsd: baseAgg.reduce((s, r) => s + r.valueThousands * 1000, 0),
     previousTotalValueUsd: previousTotalUsd,
@@ -1168,8 +1173,80 @@ function loadFundsmithFixtureHoldingsPayload(): InstitutionalHoldingsPayload {
     filerDisplayName: j.filerDisplayName,
     cik: j.cik,
     accession: null,
-    filingDate: null,
-    reportDate: null,
+    filingDate: FUNDSMITH_FIXTURE_CURRENT_FILING_DATE,
+    reportDate: FUNDSMITH_FIXTURE_CURRENT_REPORT_DATE,
+    source: "fixture",
+  });
+}
+
+/** SEC filing dates for {@link pershingSquareFallback} snapshot (Q4 2025 13F-HR on EDGAR). */
+const PERSHING_FIXTURE_CURRENT_FILING_DATE = "2026-02-17";
+const PERSHING_FIXTURE_CURRENT_REPORT_DATE = "2025-12-31";
+const PERSHING_FIXTURE_PREVIOUS_FILING_DATE = "2025-11-13";
+const PERSHING_FIXTURE_PREVIOUS_REPORT_DATE = "2025-09-30";
+
+function pershingFixtureCurrentAggregated(): AggregatedHolding[] {
+  const j = pershingSquareFallback as {
+    holdings: { issuer: string; titleOfClass: string | null; valueUsd: number }[];
+  };
+  const parsed: ParsedInfoRow[] = j.holdings.map((h, idx) => ({
+    issuer: h.issuer,
+    title: h.titleOfClass ?? null,
+    valueThousands: Math.round(h.valueUsd / 1000),
+    cusip: syntheticFixtureCusip(h.issuer, idx),
+    shares: inferSharesPlaceholder(h.valueUsd),
+  }));
+  return aggregateInfoRowsByCusip(parsed);
+}
+
+function loadPershingFixtureComparisonPayload(): Berkshire13fComparisonPayload {
+  const j = pershingSquareFallback as { filerDisplayName: string; cik: string };
+  const baseAgg = pershingFixtureCurrentAggregated();
+  const previousAgg = buildSyntheticPreviousForOffline13fFixture(baseAgg);
+  const { rows, soldOut, previousTotalUsd } = buildComparisonRows(baseAgg, previousAgg);
+  return {
+    filerDisplayName: j.filerDisplayName,
+    cik: j.cik,
+    current: {
+      accessionNumber: null,
+      filingDate: PERSHING_FIXTURE_CURRENT_FILING_DATE,
+      reportDate: PERSHING_FIXTURE_CURRENT_REPORT_DATE,
+    },
+    previous: {
+      accessionNumber: null,
+      filingDate: PERSHING_FIXTURE_PREVIOUS_FILING_DATE,
+      reportDate: PERSHING_FIXTURE_PREVIOUS_REPORT_DATE,
+    },
+    hasPriorFiling: true,
+    totalValueUsd: baseAgg.reduce((s, r) => s + r.valueThousands * 1000, 0),
+    previousTotalValueUsd: previousTotalUsd,
+    positionCount: rows.length,
+    rows,
+    soldOut,
+    source: "fixture",
+  };
+}
+
+function loadPershingFixtureHoldingsPayload(): InstitutionalHoldingsPayload {
+  const j = pershingSquareFallback as {
+    filerDisplayName: string;
+    cik: string;
+    holdings: { issuer: string; titleOfClass: string | null; valueUsd: number }[];
+  };
+  const rows: ParsedInfoRow[] = j.holdings.map((h) => ({
+    issuer: h.issuer,
+    title: h.titleOfClass ?? null,
+    valueThousands: Math.round(h.valueUsd / 1000),
+    cusip: null,
+    shares: inferSharesPlaceholder(h.valueUsd),
+  }));
+  const merged = aggregateInfoRowsByCusip(rows);
+  return rowsToPayload(merged, {
+    filerDisplayName: j.filerDisplayName,
+    cik: j.cik,
+    accession: null,
+    filingDate: PERSHING_FIXTURE_CURRENT_FILING_DATE,
+    reportDate: PERSHING_FIXTURE_CURRENT_REPORT_DATE,
     source: "fixture",
   });
 }
@@ -1185,11 +1262,11 @@ async function fetchBerkshireComparisonUncached(): Promise<Berkshire13fCompariso
 }
 
 async function fetchPershingHoldingsUncached(): Promise<InstitutionalHoldingsPayload> {
-  return (await fetchInstitutionalHoldingsUncached(PERSHING_SQUARE_CIK)) ?? emptyHoldingsPayload(PERSHING_SQUARE_CIK, PERSHING_DISPLAY_FALLBACK);
+  return (await fetchInstitutionalHoldingsUncached(PERSHING_SQUARE_CIK)) ?? loadPershingFixtureHoldingsPayload();
 }
 
 async function fetchPershingComparisonUncached(): Promise<Berkshire13fComparisonPayload> {
-  return (await fetchInstitutionalComparisonUncached(PERSHING_SQUARE_CIK)) ?? emptyComparisonPayload(PERSHING_SQUARE_CIK, PERSHING_DISPLAY_FALLBACK);
+  return (await fetchInstitutionalComparisonUncached(PERSHING_SQUARE_CIK)) ?? loadPershingFixtureComparisonPayload();
 }
 
 async function fetchFundsmithHoldingsUncached(): Promise<InstitutionalHoldingsPayload> {
@@ -1212,39 +1289,27 @@ const getBerkshireHoldingsComparisonCached = unstable_cache(
   { revalidate: 21_600 },
 );
 
-/**
- * Cache only successful SEC reads. `fetchPershing*Uncached` falls back to empty payloads on failure;
- * caching those would freeze the “unavailable” UI for hours on Vercel while dev (no cache) looked fine.
- */
 const getPershingHoldingsCached = unstable_cache(
-  async () => {
-    const got = await fetchInstitutionalHoldingsUncached(PERSHING_SQUARE_CIK);
-    if (!got) throw new Error("pershing-13f-holdings-edgar-miss");
-    return got;
-  },
-  ["pershing-square-13f-v3-holdings-cusip-map"],
+  async () => fetchPershingHoldingsUncached(),
+  ["pershing-square-13f-v4-holdings-fixture-fallback"],
   { revalidate: 21_600 },
 );
 
 const getPershingHoldingsComparisonCached = unstable_cache(
-  async () => {
-    const got = await fetchInstitutionalComparisonUncached(PERSHING_SQUARE_CIK);
-    if (!got) throw new Error("pershing-13f-comparison-edgar-miss");
-    return got;
-  },
-  ["pershing-square-13f-v3-comparison-cusip-map"],
+  async () => fetchPershingComparisonUncached(),
+  ["pershing-square-13f-v4-comparison-fixture-fallback"],
   { revalidate: 21_600 },
 );
 
 const getFundsmithHoldingsCached = unstable_cache(
   async () => fetchFundsmithHoldingsUncached(),
-  ["fundsmith-llp-13f-v4-holdings-fixture-fallback"],
+  ["fundsmith-llp-13f-v5-holdings-fixture-fallback"],
   { revalidate: 21_600 },
 );
 
 const getFundsmithHoldingsComparisonCached = unstable_cache(
   async () => fetchFundsmithComparisonUncached(),
-  ["fundsmith-llp-13f-v4-comparison-fixture-fallback"],
+  ["fundsmith-llp-13f-v5-comparison-fixture-fallback"],
   { revalidate: 21_600 },
 );
 
@@ -1267,22 +1332,14 @@ export async function getPershingSquareHoldings() {
   if (process.env.NODE_ENV !== "production") {
     return fetchPershingHoldingsUncached();
   }
-  try {
-    return await getPershingHoldingsCached();
-  } catch {
-    return emptyHoldingsPayload(PERSHING_SQUARE_CIK, PERSHING_DISPLAY_FALLBACK);
-  }
+  return getPershingHoldingsCached();
 }
 
 export async function getPershingSquareHoldingsComparison() {
   if (process.env.NODE_ENV !== "production") {
     return fetchPershingComparisonUncached();
   }
-  try {
-    return await getPershingHoldingsComparisonCached();
-  } catch {
-    return emptyComparisonPayload(PERSHING_SQUARE_CIK, PERSHING_DISPLAY_FALLBACK);
-  }
+  return getPershingHoldingsComparisonCached();
 }
 
 export async function getFundsmithHoldings() {

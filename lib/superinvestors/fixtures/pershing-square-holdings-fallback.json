@@ -1,0 +1,61 @@
+{
+  "filerDisplayName": "Pershing Square Capital Management, L.P.",
+  "cik": "0001336528",
+  "holdings": [
+    {
+      "issuer": "BROOKFIELD CORP",
+      "titleOfClass": "CL A LTD VT SH",
+      "valueUsd": 2817787754
+    },
+    {
+      "issuer": "UBER TECHNOLOGIES INC",
+      "titleOfClass": "COM",
+      "valueUsd": 2468273945
+    },
+    {
+      "issuer": "AMAZON COM INC",
+      "titleOfClass": "COM",
+      "valueUsd": 2217677936
+    },
+    {
+      "issuer": "ALPHABET INC",
+      "titleOfClass": "CAP STK CL C",
+      "valueUsd": 1934222720
+    },
+    {
+      "issuer": "META PLATFORMS INC",
+      "titleOfClass": "CL A",
+      "valueUsd": 1764796161
+    },
+    {
+      "issuer": "RESTAURANT BRANDS INTL INC",
+      "titleOfClass": "COM",
+      "valueUsd": 1560199922
+    },
+    {
+      "issuer": "HOWARD HUGHES HOLDINGS INC",
+      "titleOfClass": "COM",
+      "valueUsd": 1503829145
+    },
+    {
+      "issuer": "HILTON WORLDWIDE HLDGS INC",
+      "titleOfClass": "COM",
+      "valueUsd": 869983734
+    },
+    {
+      "issuer": "ALPHABET INC",
+      "titleOfClass": "CAP STK CL A",
+      "valueUsd": 212306961
+    },
+    {
+      "issuer": "SEAPORT ENTMT GROUP INC",
+      "titleOfClass": "COMMON STOCK",
+      "valueUsd": 99320131
+    },
+    {
+      "issuer": "HERTZ GLOBAL HLDGS INC",
+      "titleOfClass": "COM NEW",
+      "valueUsd": 78339393
+    }
+  ]
+}
