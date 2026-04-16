@@ -52,3 +52,16 @@ export function getLoopsTransactionalSignupId(): string {
   const v = pickProcessEnv("LOOPS" + "_" + "TRANSACTIONAL" + "_" + "ID" + "_" + "SIGNUP");
   return v || LOOPS_TRANSACTIONAL_ID_SIGNUP_DEFAULT;
 }
+
+/** Default Loops transactional for “Reset your password” (override with `LOOPS_TRANSACTIONAL_ID_PASSWORD_RESET`). */
+const LOOPS_TRANSACTIONAL_ID_PASSWORD_RESET_DEFAULT = "cmo1t3r8003870izrgv2vae6a";
+
+/**
+ * Loops transactional ID for password-reset email (`firstName`, `confirmationLink` in template).
+ */
+export function getLoopsTransactionalPasswordResetId(): string {
+  const v = pickProcessEnv(
+    "LOOPS" + "_" + "TRANSACTIONAL" + "_" + "ID" + "_" + "PASSWORD" + "_" + "RESET",
+  );
+  return v || LOOPS_TRANSACTIONAL_ID_PASSWORD_RESET_DEFAULT;
+}

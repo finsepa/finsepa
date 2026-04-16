@@ -12,7 +12,6 @@ function RequiredAsterisk() {
     </span>
   );
 }
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   friendlyNetworkErrorMessage,
@@ -83,7 +82,6 @@ function GoogleMark() {
 }
 
 export function SignupClient() {
-  const router = useRouter();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isDuplicateEmail, setIsDuplicateEmail] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -153,7 +151,7 @@ export function SignupClient() {
       async function goToEmailConfirmation() {
         const { data: sess } = await supabase.auth.getSession();
         if (sess.session) await supabase.auth.signOut();
-        router.replace(`/check-email?email=${encodeURIComponent(emailNorm)}`);
+        window.location.replace(`/check-email?email=${encodeURIComponent(emailNorm)}`);
       }
 
       const loopsFirst = await trySignupViaLoopsApi({

@@ -1,7 +1,7 @@
 "use client";
 
 import { createClient } from "@supabase/supabase-js";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 
 import { PATH_APP_ENTRY } from "@/lib/auth/routes";
@@ -14,10 +14,14 @@ function safeNextPath(raw: string | null | undefined): string {
   return raw;
 }
 
+/** Full navigation avoids Next.js soft-navigation RSC fetch failures after auth (common in dev / Turbopack). */
+function goTo(path: string) {
+  window.location.replace(path);
+}
+
 function AuthCallbackInner() {
-  const router = useRouter();
   const searchParams = useSearchParams();
-  const [message, setMessage] = useState("Confirming your sign-in…");
+  const [message, setMessage] = useState("Signing you in…");
 
   useEffect(() => {
     let cancelled = false;
@@ -32,7 +36,7 @@ function AuthCallbackInner() {
       const safeNext = safeNextPath(nextRaw);
 
       if (params.error || params.error_description) {
-        router.replace(`/login?error=session`);
+        goTo(`/login?error=session`);
         return;
       }
 
@@ -47,11 +51,11 @@ function AuthCallbackInner() {
           type: typeRaw as "signup" | "invite" | "magiclink" | "recovery" | "email_change" | "email",
         });
         if (!cancelled && !error) {
-          router.replace(safeNext);
+          goTo(safeNext);
           return;
         }
         if (!cancelled && error) {
-          router.replace(`/login?error=session`);
+          goTo(`/login?error=session`);
           return;
         }
       }
@@ -63,7 +67,7 @@ function AuthCallbackInner() {
           refresh_token: params.refresh_token,
         });
         if (!cancelled && !error) {
-          router.replace(safeNext);
+          goTo(safeNext);
           return;
         }
       }
@@ -73,7 +77,7 @@ function AuthCallbackInner() {
         setMessage("Signing you in…");
         const { error } = await supabase.auth.exchangeCodeForSession(code);
         if (!cancelled && !error) {
-          router.replace(safeNext);
+          goTo(safeNext);
           return;
         }
       }
@@ -100,14 +104,14 @@ function AuthCallbackInner() {
             refresh_token: implicitSession.refresh_token,
           });
           if (!error) {
-            router.replace(safeNext);
+            goTo(safeNext);
             return;
           }
         }
       }
 
       if (!cancelled) {
-        router.replace(`/login?error=missing_code`);
+        goTo(`/login?error=missing_code`);
       }
     }
 
@@ -115,23 +119,19 @@ function AuthCallbackInner() {
     return () => {
       cancelled = true;
     };
-  }, [router, searchParams]);
+  }, [searchParams]);
 
   return (
-    <div className="flex min-h-[40vh] flex-col items-center justify-center px-4 text-center">
-      <p className="text-sm text-[#71717A]" role="status" aria-live="polite">
-        {message}
-      </p>
-    </div>
+    <p className="text-center text-xs leading-4 text-[#71717A]" role="status" aria-live="polite">
+      {message}
+    </p>
   );
 }
 
 export function AuthCallbackClient() {
   return (
     <Suspense
-      fallback={
-        <div className="flex min-h-[40vh] items-center justify-center text-sm text-[#71717A]">Loading…</div>
-      }
+      fallback={<p className="text-center text-xs text-[#71717A]">Loading…</p>}
     >
       <AuthCallbackInner />
     </Suspense>

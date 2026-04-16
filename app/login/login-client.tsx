@@ -2,7 +2,6 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { AuthDivider, AuthInput, AuthLabel, AuthPrimaryButton, AuthSecondaryButton } from "@/components/auth/auth-form-ui";
 import { PATH_APP_ENTRY, PATH_AUTH_CALLBACK } from "@/lib/auth/routes";
 import { friendlySupabaseAuthErrorMessage } from "@/lib/auth/supabase-error-message";
@@ -39,7 +38,6 @@ function GoogleMark() {
 const REDIRECT_AFTER_LOGIN_MS = 900;
 
 export function LoginClient({ resetSuccess, callbackError, onEmailPasswordSuccess }: Props) {
-  const router = useRouter();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
@@ -120,9 +118,9 @@ export function LoginClient({ resetSuccess, callbackError, onEmailPasswordSucces
       }
 
       onEmailPasswordSuccess?.();
-      router.refresh();
       await new Promise((r) => setTimeout(r, REDIRECT_AFTER_LOGIN_MS));
-      router.push(PATH_APP_ENTRY);
+      // Full navigation avoids Turbopack / dev RSC failures from router.refresh + router.push.
+      window.location.replace(PATH_APP_ENTRY);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Something went wrong. Please try again.";
       setErrorMessage(message);

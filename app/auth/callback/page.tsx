@@ -3,7 +3,7 @@ import { AuthCallbackClient } from "./auth-callback-client";
 
 export default function AuthCallbackPage() {
   return (
-    <AuthCenteredLayout title="Finishing sign-in" subtitle="Please wait while we confirm your link.">
+    <AuthCenteredLayout compact title="You're in" subtitle="Taking you to Finsepa…">
       <AuthCallbackClient />
     </AuthCenteredLayout>
   );
