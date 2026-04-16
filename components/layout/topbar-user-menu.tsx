@@ -86,7 +86,7 @@ export function TopbarUserMenu({ userInitials, avatarUrl, userDisplayName }: Top
             <UserAvatar imageSrc={avatarUrl} initials={userInitials} size="menu" />
             <div className="min-w-0 flex-1 pt-0.5">
               <div className="truncate text-sm font-semibold leading-5 text-[#09090B]">{userDisplayName}</div>
-              <div className="mt-0.5 text-xs font-normal leading-4 text-[#71717A]">Free plan</div>
+              <div className="mt-0.5 text-xs font-normal leading-4 text-[#52525B]">Free plan</div>
             </div>
           </div>
 

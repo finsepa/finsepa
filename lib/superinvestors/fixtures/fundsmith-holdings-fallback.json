@@ -1,0 +1,191 @@
+{
+  "filerDisplayName": "Fundsmith LLP",
+  "cik": "0001569205",
+  "holdings": [
+    {
+      "issuer": "WATERS CORP",
+      "titleOfClass": "COM",
+      "valueUsd": 1351426784
+    },
+    {
+      "issuer": "STRYKER CORPORATION",
+      "titleOfClass": "COM",
+      "valueUsd": 1296049491
+    },
+    {
+      "issuer": "IDEXX LABS INC",
+      "titleOfClass": "COM",
+      "valueUsd": 1269193959
+    },
+    {
+      "issuer": "VISA INC",
+      "titleOfClass": "COM CL A",
+      "valueUsd": 1239649026
+    },
+    {
+      "issuer": "MARRIOTT INTL INC NEW",
+      "titleOfClass": "CL A",
+      "valueUsd": 1234732552
+    },
+    {
+      "issuer": "ALPHABET INC",
+      "titleOfClass": "CAP STK CL A",
+      "valueUsd": 1095036447
+    },
+    {
+      "issuer": "AUTOMATIC DATA PROCESSING IN",
+      "titleOfClass": "COM",
+      "valueUsd": 1074698966
+    },
+    {
+      "issuer": "MICROSOFT CORP",
+      "titleOfClass": "COM",
+      "valueUsd": 1005915575
+    },
+    {
+      "issuer": "PHILIP MORRIS INTL INC",
+      "titleOfClass": "COM",
+      "valueUsd": 982385359
+    },
+    {
+      "issuer": "META PLATFORMS INC",
+      "titleOfClass": "CL A",
+      "valueUsd": 900058459
+    },
+    {
+      "issuer": "METTLER TOLEDO INTERNATIONAL",
+      "titleOfClass": "COM",
+      "valueUsd": 809337054
+    },
+    {
+      "issuer": "PROCTER AND GAMBLE CO",
+      "titleOfClass": "COM",
+      "valueUsd": 608787759
+    },
+    {
+      "issuer": "CHURCH AND DWIGHT CO INC",
+      "titleOfClass": "COM",
+      "valueUsd": 564176675
+    },
+    {
+      "issuer": "FORTINET INC",
+      "titleOfClass": "COM",
+      "valueUsd": 517436434
+    },
+    {
+      "issuer": "ZOETIS INC",
+      "titleOfClass": "CL A",
+      "valueUsd": 490799033
+    },
+    {
+      "issuer": "TEXAS INSTRS INC",
+      "titleOfClass": "COM",
+      "valueUsd": 455160036
+    },
+    {
+      "issuer": "INTUIT",
+      "titleOfClass": "COM",
+      "valueUsd": 414422538
+    },
+    {
+      "issuer": "NIKE INC",
+      "titleOfClass": "CL B",
+      "valueUsd": 367618232
+    },
+    {
+      "issuer": "OTIS WORLDWIDE CORP",
+      "titleOfClass": "COM",
+      "valueUsd": 271866393
+    },
+    {
+      "issuer": "MSCI INC",
+      "titleOfClass": "COM",
+      "valueUsd": 95594319
+    },
+    {
+      "issuer": "ROLLINS INC",
+      "titleOfClass": "COM",
+      "valueUsd": 88747313
+    },
+    {
+      "issuer": "QUALYS INC",
+      "titleOfClass": "COM",
+      "valueUsd": 86093417
+    },
+    {
+      "issuer": "PAYCOM SOFTWARE INC",
+      "titleOfClass": "COM",
+      "valueUsd": 83414283
+    },
+    {
+      "issuer": "ODDITY TECH LTD",
+      "titleOfClass": "SHS CL A",
+      "valueUsd": 83340030
+    },
+    {
+      "issuer": "CATALYST PHARMACEUTICALS INC",
+      "titleOfClass": "COM",
+      "valueUsd": 78511255
+    },
+    {
+      "issuer": "NAPCO SEC TECHNOLOGIES INC",
+      "titleOfClass": "COM",
+      "valueUsd": 74220037
+    },
+    {
+      "issuer": "DOXIMITY INC",
+      "titleOfClass": "CL A",
+      "valueUsd": 73062089
+    },
+    {
+      "issuer": "NUTANIX INC",
+      "titleOfClass": "CL A",
+      "valueUsd": 71185297
+    },
+    {
+      "issuer": "VERTIV HOLDINGS CO",
+      "titleOfClass": "COM CL A",
+      "valueUsd": 66577037
+    },
+    {
+      "issuer": "VERISIGN INC",
+      "titleOfClass": "COM",
+      "valueUsd": 65750530
+    },
+    {
+      "issuer": "CLOROX CO DEL",
+      "titleOfClass": "COM",
+      "valueUsd": 61858903
+    },
+    {
+      "issuer": "MANHATTAN ASSOCIATES INC",
+      "titleOfClass": "COM",
+      "valueUsd": 49970819
+    },
+    {
+      "issuer": "GRACO INC",
+      "titleOfClass": "COM",
+      "valueUsd": 47461942
+    },
+    {
+      "issuer": "MEDPACE HLDGS INC",
+      "titleOfClass": "COM",
+      "valueUsd": 46373756
+    },
+    {
+      "issuer": "ADMA BIOLOGICS INC",
+      "titleOfClass": "COM",
+      "valueUsd": 38341465
+    },
+    {
+      "issuer": "SABRE CORP",
+      "titleOfClass": "COM",
+      "valueUsd": 29238769
+    },
+    {
+      "issuer": "HOME DEPOT INC",
+      "titleOfClass": "COM",
+      "valueUsd": 27598885
+    }
+  ]
+}
