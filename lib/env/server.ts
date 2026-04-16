@@ -37,3 +37,18 @@ export function getSecEdgarUserAgent(): string {
   if (v) return v;
   return "Finsepa/1.0 (set SEC_EDGAR_USER_AGENT with your contact email or URL per sec.gov policy)";
 }
+
+/** Loops API key (https://app.loops.so → API). Used to send sign-up confirmation when Supabase SMTP fails. */
+export function getLoopsApiKey(): string | undefined {
+  const v = process.env.LOOPS_API_KEY?.trim();
+  return v || undefined;
+}
+
+/**
+ * Loops transactional email ID for sign-up confirmation.
+ * Template must include data variables: `confirmationLink`, `firstName`, `lastName` (see .env.example).
+ */
+export function getLoopsTransactionalSignupId(): string | undefined {
+  const v = process.env.LOOPS_TRANSACTIONAL_ID_SIGNUP?.trim();
+  return v || undefined;
+}

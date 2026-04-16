@@ -100,6 +100,56 @@ export function SignupClient() {
       }
 
       if (error) {
+        const emailSendFailed = /confirmation email|error sending confirmation email|smtp|mailer/i.test(
+          error.message ?? "",
+        );
+
+        if (emailSendFailed) {
+          const loopsRes = await fetch("/api/auth/signup-with-loops", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email,
+              password,
+              firstName,
+              lastName,
+              appOrigin: origin,
+            }),
+          });
+          const loopsJson = (await loopsRes.json().catch(() => ({}))) as {
+            ok?: boolean;
+            error?: string;
+            message?: string;
+          };
+
+          if (loopsRes.status === 409 || loopsJson.error === "duplicate_email") {
+            setIsDuplicateEmail(true);
+            setErrorMessage("An account with this email already exists.");
+            const passwordInput = form.querySelector<HTMLInputElement>('input[name="password"]');
+            if (passwordInput) passwordInput.value = "";
+            return;
+          }
+
+          if (loopsRes.ok && loopsJson.ok === true) {
+            router.refresh();
+            const { data: sess } = await supabase.auth.getSession();
+            if (sess.session) await supabase.auth.signOut();
+            router.push(`/check-email?email=${encodeURIComponent(email)}`);
+            return;
+          }
+
+          if (loopsJson.error === "loops_not_configured" || loopsRes.status === 503) {
+            setErrorMessage(friendlySupabaseAuthErrorMessage(error.message));
+            return;
+          }
+
+          setErrorMessage(
+            loopsJson.message?.trim() ||
+              "We could not send your confirmation email via Loops. In Vercel, set LOOPS_API_KEY and LOOPS_TRANSACTIONAL_ID_SIGNUP. Your Loops template must include data variables: confirmationLink, firstName, lastName.",
+          );
+          return;
+        }
+
         setErrorMessage(friendlySupabaseAuthErrorMessage(error.message));
         return;
       }
