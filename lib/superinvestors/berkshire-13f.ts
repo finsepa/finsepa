@@ -1153,27 +1153,47 @@ const getBerkshireHoldingsComparisonCached = unstable_cache(
   { revalidate: 21_600 },
 );
 
+/**
+ * Cache only successful SEC reads. `fetchPershing*Uncached` falls back to empty payloads on failure;
+ * caching those would freeze the “unavailable” UI for hours on Vercel while dev (no cache) looked fine.
+ */
 const getPershingHoldingsCached = unstable_cache(
-  async () => fetchPershingHoldingsUncached(),
-  ["pershing-square-13f-v2-holdings-cusip-map"],
+  async () => {
+    const got = await fetchInstitutionalHoldingsUncached(PERSHING_SQUARE_CIK);
+    if (!got) throw new Error("pershing-13f-holdings-edgar-miss");
+    return got;
+  },
+  ["pershing-square-13f-v3-holdings-cusip-map"],
   { revalidate: 21_600 },
 );
 
 const getPershingHoldingsComparisonCached = unstable_cache(
-  async () => fetchPershingComparisonUncached(),
-  ["pershing-square-13f-v2-comparison-cusip-map"],
+  async () => {
+    const got = await fetchInstitutionalComparisonUncached(PERSHING_SQUARE_CIK);
+    if (!got) throw new Error("pershing-13f-comparison-edgar-miss");
+    return got;
+  },
+  ["pershing-square-13f-v3-comparison-cusip-map"],
   { revalidate: 21_600 },
 );
 
 const getFundsmithHoldingsCached = unstable_cache(
-  async () => fetchFundsmithHoldingsUncached(),
-  ["fundsmith-llp-13f-v2-holdings-cusip-archive"],
+  async () => {
+    const got = await fetchInstitutionalHoldingsUncached(FUNDSMITH_LLP_CIK);
+    if (!got) throw new Error("fundsmith-13f-holdings-edgar-miss");
+    return got;
+  },
+  ["fundsmith-llp-13f-v3-holdings-cusip-archive"],
   { revalidate: 21_600 },
 );
 
 const getFundsmithHoldingsComparisonCached = unstable_cache(
-  async () => fetchFundsmithComparisonUncached(),
-  ["fundsmith-llp-13f-v2-comparison-cusip-archive"],
+  async () => {
+    const got = await fetchInstitutionalComparisonUncached(FUNDSMITH_LLP_CIK);
+    if (!got) throw new Error("fundsmith-13f-comparison-edgar-miss");
+    return got;
+  },
+  ["fundsmith-llp-13f-v3-comparison-cusip-archive"],
   { revalidate: 21_600 },
 );
 
@@ -1196,26 +1216,42 @@ export async function getPershingSquareHoldings() {
   if (process.env.NODE_ENV !== "production") {
     return fetchPershingHoldingsUncached();
   }
-  return getPershingHoldingsCached();
+  try {
+    return await getPershingHoldingsCached();
+  } catch {
+    return emptyHoldingsPayload(PERSHING_SQUARE_CIK, PERSHING_DISPLAY_FALLBACK);
+  }
 }
 
 export async function getPershingSquareHoldingsComparison() {
   if (process.env.NODE_ENV !== "production") {
     return fetchPershingComparisonUncached();
   }
-  return getPershingHoldingsComparisonCached();
+  try {
+    return await getPershingHoldingsComparisonCached();
+  } catch {
+    return emptyComparisonPayload(PERSHING_SQUARE_CIK, PERSHING_DISPLAY_FALLBACK);
+  }
 }
 
 export async function getFundsmithHoldings() {
   if (process.env.NODE_ENV !== "production") {
     return fetchFundsmithHoldingsUncached();
   }
-  return getFundsmithHoldingsCached();
+  try {
+    return await getFundsmithHoldingsCached();
+  } catch {
+    return emptyHoldingsPayload(FUNDSMITH_LLP_CIK, FUNDSMITH_DISPLAY_FALLBACK);
+  }
 }
 
 export async function getFundsmithHoldingsComparison() {
   if (process.env.NODE_ENV !== "production") {
     return fetchFundsmithComparisonUncached();
   }
-  return getFundsmithHoldingsComparisonCached();
+  try {
+    return await getFundsmithHoldingsComparisonCached();
+  } catch {
+    return emptyComparisonPayload(FUNDSMITH_LLP_CIK, FUNDSMITH_DISPLAY_FALLBACK);
+  }
 }
