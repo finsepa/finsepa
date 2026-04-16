@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { friendlySupabaseAuthErrorMessage } from "@/lib/auth/supabase-error-message";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { AuthDivider, AuthInput, AuthLabel, AuthPrimaryButton, AuthSecondaryButton } from "@/components/auth/auth-form-ui";
 import { PATH_APP_ENTRY, PATH_AUTH_CALLBACK } from "@/lib/auth/routes";
@@ -38,7 +39,7 @@ export function SignupClient() {
         options: { redirectTo },
       });
       if (error) {
-        setErrorMessage(error.message);
+        setErrorMessage(friendlySupabaseAuthErrorMessage(error.message));
         setLoading(false);
       }
     } catch (err) {
@@ -97,7 +98,7 @@ export function SignupClient() {
       }
 
       if (error) {
-        setErrorMessage(error.message);
+        setErrorMessage(friendlySupabaseAuthErrorMessage(error.message));
         return;
       }
 

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AuthDivider, AuthInput, AuthLabel, AuthPrimaryButton, AuthSecondaryButton } from "@/components/auth/auth-form-ui";
 import { PATH_APP_ENTRY, PATH_AUTH_CALLBACK } from "@/lib/auth/routes";
+import { friendlySupabaseAuthErrorMessage } from "@/lib/auth/supabase-error-message";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 const STORAGE_REMEMBER = "finsepa_remember_me";
@@ -77,7 +78,7 @@ export function LoginClient({ resetSuccess, callbackError, onEmailPasswordSucces
         options: { redirectTo },
       });
       if (error) {
-        setErrorMessage(error.message);
+        setErrorMessage(friendlySupabaseAuthErrorMessage(error.message));
         setLoading(false);
       }
       // On success, Supabase redirects away; no further action needed here.
@@ -103,7 +104,7 @@ export function LoginClient({ resetSuccess, callbackError, onEmailPasswordSucces
       const { error } = await supabase.auth.signInWithPassword({ email, password });
 
       if (error) {
-        setErrorMessage(error.message);
+        setErrorMessage(friendlySupabaseAuthErrorMessage(error.message));
         return;
       }
 

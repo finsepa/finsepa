@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { AuthInput, AuthLabel, AuthPrimaryButton } from "@/components/auth/auth-form-ui";
 import { PATH_AUTH_CALLBACK, PATH_AUTH_RESET_PASSWORD } from "@/lib/auth/routes";
+import { friendlySupabaseAuthErrorMessage } from "@/lib/auth/supabase-error-message";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 export function ForgotPasswordClient() {
@@ -28,7 +29,7 @@ export function ForgotPasswordClient() {
       const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
 
       if (error) {
-        setErrorMessage(error.message);
+        setErrorMessage(friendlySupabaseAuthErrorMessage(error.message));
         return;
       }
 

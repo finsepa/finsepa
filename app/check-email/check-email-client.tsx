@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
+import { friendlySupabaseAuthErrorMessage } from "@/lib/auth/supabase-error-message";
 import { AuthPrimaryButton } from "@/components/auth/auth-form-ui";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
@@ -41,7 +42,7 @@ export function CheckEmailClient({ email }: { email: string | null }) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase.auth as any).resend({ type: "signup", email });
       if (error) {
-        setStatus(error.message);
+        setStatus(friendlySupabaseAuthErrorMessage(error.message));
       } else {
         setStatus("Confirmation email sent again.");
       }
