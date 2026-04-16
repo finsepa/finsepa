@@ -149,6 +149,13 @@ export function SignupClient() {
       const apiOrigin = typeof window !== "undefined" ? window.location.origin : "";
       const emailRedirectTo = `${authOrigin}${PATH_AUTH_CALLBACK}?next=${encodeURIComponent(PATH_APP_ENTRY)}`;
 
+      /** Sign out before leaving `/signup` so middleware does not treat the user as logged-in and redirect to `/screener`. */
+      async function goToEmailConfirmation() {
+        const { data: sess } = await supabase.auth.getSession();
+        if (sess.session) await supabase.auth.signOut();
+        router.replace(`/check-email?email=${encodeURIComponent(emailNorm)}`);
+      }
+
       const loopsFirst = await trySignupViaLoopsApi({
         email: emailNorm,
         password,
@@ -157,10 +164,7 @@ export function SignupClient() {
         appOrigin: authOrigin,
       });
       if (loopsFirst.kind === "success") {
-        router.refresh();
-        const { data: sess } = await supabase.auth.getSession();
-        if (sess.session) await supabase.auth.signOut();
-        router.push(`/check-email?email=${encodeURIComponent(emailNorm)}`);
+        await goToEmailConfirmation();
         return;
       }
       if (loopsFirst.kind === "duplicate") {
@@ -235,10 +239,7 @@ export function SignupClient() {
           }
 
           if (loopsRes.ok && loopsJson.ok === true) {
-            router.refresh();
-            const { data: sess } = await supabase.auth.getSession();
-            if (sess.session) await supabase.auth.signOut();
-            router.push(`/check-email?email=${encodeURIComponent(emailNorm)}`);
+            await goToEmailConfirmation();
             return;
           }
 
@@ -265,14 +266,7 @@ export function SignupClient() {
         return;
       }
 
-      router.refresh();
-
-      if (data.session) {
-        await supabase.auth.signOut();
-      }
-
-      const emailParam = encodeURIComponent(emailNorm);
-      router.push(`/check-email?email=${emailParam}`);
+      await goToEmailConfirmation();
     } catch (err) {
       setErrorMessage(friendlyNetworkErrorMessage(err));
     } finally {
