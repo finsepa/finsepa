@@ -36,7 +36,7 @@ export function friendlySupabaseAuthErrorMessage(raw: string | null | undefined)
   if (!m) return "Something went wrong. Please try again.";
   const lower = m.toLowerCase();
   if (lower.includes("error sending confirmation email") || lower.includes("sending confirmation email")) {
-    return "We could not send the confirmation email from Supabase. If this keeps happening, add LOOPS_API_KEY and LOOPS_TRANSACTIONAL_ID_SIGNUP in production (see .env.example) or fix Supabase → Authentication → SMTP.";
+    return "We could not send the confirmation email from Supabase (custom SMTP). Check Supabase → Authentication → SMTP, or rely on the app’s Loops API path by setting LOOPS_API_KEY on the server and redeploying.";
   }
   if (
     lower.includes("email rate limit") ||
@@ -49,6 +49,11 @@ export function friendlySupabaseAuthErrorMessage(raw: string | null | undefined)
     return "Too many requests right now. Please wait a few minutes and try again.";
   }
   return m;
+}
+
+/** Shown when `/api/auth/signup-with-loops` returns `loops_not_configured` — server has no readable LOOPS_API_KEY at runtime. */
+export function messageWhenLoopsApiNotConfiguredOnServer(): string {
+  return "The server cannot read LOOPS_API_KEY (Finsepa’s Loops signup route). In Vercel: Project → Settings → Environment Variables — use the exact name LOOPS_API_KEY, scope must include this deployment (e.g. Production), then Redeploy. Verify GET /api/auth/signup-with-loops shows loopsConfigured: true.";
 }
 
 /**

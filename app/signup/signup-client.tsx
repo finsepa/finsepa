@@ -6,6 +6,7 @@ import Link from "next/link";
 import {
   friendlyNetworkErrorMessage,
   friendlySupabaseAuthErrorMessage,
+  messageWhenLoopsApiNotConfiguredOnServer,
   shouldAttemptLoopsSignupFallback,
 } from "@/lib/auth/supabase-error-message";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
@@ -217,7 +218,7 @@ export function SignupClient() {
           }
 
           if (loopsJson.error === "loops_not_configured") {
-            setErrorMessage(friendlySupabaseAuthErrorMessage(error.message));
+            setErrorMessage(messageWhenLoopsApiNotConfiguredOnServer());
             return;
           }
 

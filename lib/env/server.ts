@@ -16,9 +16,9 @@ export function getFinnhubApiKey(): string | undefined {
 
 /** Supabase service role key (server-only). Used for privileged reads (e.g. global watchlist counts). */
 export function getSupabaseServiceRoleKey(): string | undefined {
-  const a = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  const a = process.env["SUPABASE_SERVICE_ROLE_KEY"]?.trim();
   if (a) return a;
-  const b = process.env.SUPABASE_SERVICE_KEY?.trim();
+  const b = process.env["SUPABASE_SERVICE_KEY"]?.trim();
   return b || undefined;
 }
 
@@ -40,7 +40,9 @@ export function getSecEdgarUserAgent(): string {
 
 /** Loops API key (https://app.loops.so → API). Used to send sign-up confirmation when Supabase SMTP fails. */
 export function getLoopsApiKey(): string | undefined {
-  const v = process.env.LOOPS_API_KEY?.trim();
+  // Use bracket access so Next.js does not inline a stale value at build time when the var was added later on Vercel.
+  const raw = process.env["LOOPS_API_KEY"] ?? process.env["LOOP_API_KEY"];
+  const v = typeof raw === "string" ? raw.trim() : "";
   return v || undefined;
 }
 
@@ -52,6 +54,6 @@ const LOOPS_TRANSACTIONAL_ID_SIGNUP_DEFAULT = "cm54x9u6103qnqa68w7cg1ls7";
  * Template must include data variables: `firstName`, `confirmationLink` (see .env.example).
  */
 export function getLoopsTransactionalSignupId(): string {
-  const v = process.env.LOOPS_TRANSACTIONAL_ID_SIGNUP?.trim();
+  const v = process.env["LOOPS_TRANSACTIONAL_ID_SIGNUP"]?.trim();
   return v || LOOPS_TRANSACTIONAL_ID_SIGNUP_DEFAULT;
 }

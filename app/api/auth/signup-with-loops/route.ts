@@ -6,8 +6,33 @@ import { sendLoopsSignupConfirmationEmail } from "@/lib/loops/send-signup-confir
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 const MIN_PASSWORD_LEN = 6;
+
+function hintForGenerateLinkError(message: string, redirectTo: string): string {
+  const m = message.toLowerCase();
+  if (
+    m.includes("redirect") ||
+    m.includes("url") ||
+    m.includes("not allowed") ||
+    m.includes("invalid request")
+  ) {
+    return `${message} — In Supabase Dashboard → Authentication → URL Configuration, add this exact redirect to “Redirect URLs”: ${redirectTo}`;
+  }
+  return message;
+}
+
+/** GET: whether Loops + service role are configured (no secrets). Useful for debugging prod/local env. */
+export async function GET() {
+  const loopsKey = getLoopsApiKey();
+  const admin = getSupabaseAdminClient();
+  return NextResponse.json({
+    loopsConfigured: Boolean(loopsKey),
+    adminConfigured: Boolean(admin),
+  });
+}
+
 const MAX_NAME_LEN = 80;
 
 function isValidEmail(email: string): boolean {
@@ -92,7 +117,10 @@ export async function POST(request: Request) {
     ) {
       return NextResponse.json({ error: "duplicate_email" }, { status: 409 });
     }
-    return NextResponse.json({ error: "generate_link_failed", message: error.message }, { status: 400 });
+    return NextResponse.json(
+      { error: "generate_link_failed", message: hintForGenerateLinkError(error.message, redirectTo) },
+      { status: 400 },
+    );
   }
 
   const actionLink =
