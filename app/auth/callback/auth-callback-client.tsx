@@ -2,7 +2,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect } from "react";
 
 import { PATH_APP_ENTRY } from "@/lib/auth/routes";
 import { parseAuthCallbackParams } from "@/lib/auth/parse-auth-callback-url";
@@ -21,7 +21,6 @@ function goTo(path: string) {
 
 function AuthCallbackInner() {
   const searchParams = useSearchParams();
-  const [message, setMessage] = useState("Signing you in…");
 
   useEffect(() => {
     let cancelled = false;
@@ -45,7 +44,6 @@ function AuthCallbackInner() {
       const token_hash = params.token_hash;
       const typeRaw = params.type;
       if (token_hash && typeRaw) {
-        setMessage("Confirming your email…");
         const { error } = await supabase.auth.verifyOtp({
           token_hash,
           type: typeRaw as "signup" | "invite" | "magiclink" | "recovery" | "email_change" | "email",
@@ -61,7 +59,6 @@ function AuthCallbackInner() {
       }
 
       if (params.access_token && params.refresh_token) {
-        setMessage("Signing you in…");
         const { error } = await supabase.auth.setSession({
           access_token: params.access_token,
           refresh_token: params.refresh_token,
@@ -74,7 +71,6 @@ function AuthCallbackInner() {
 
       const code = params.code;
       if (code) {
-        setMessage("Signing you in…");
         const { error } = await supabase.auth.exchangeCodeForSession(code);
         if (!cancelled && !error) {
           goTo(safeNext);
@@ -85,7 +81,6 @@ function AuthCallbackInner() {
       const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
       const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
       if (url && key) {
-        setMessage("Signing you in…");
         const implicit = createClient(url, key, {
           auth: {
             flowType: "implicit",
@@ -121,18 +116,12 @@ function AuthCallbackInner() {
     };
   }, [searchParams]);
 
-  return (
-    <p className="text-center text-xs leading-4 text-[#71717A]" role="status" aria-live="polite">
-      {message}
-    </p>
-  );
+  return null;
 }
 
 export function AuthCallbackClient() {
   return (
-    <Suspense
-      fallback={<p className="text-center text-xs text-[#71717A]">Loading…</p>}
-    >
+    <Suspense fallback={null}>
       <AuthCallbackInner />
     </Suspense>
   );

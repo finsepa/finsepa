@@ -2,18 +2,26 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { AuthCenteredLayout } from "@/components/auth/auth-centered-layout";
 import { AuthInput, AuthLabel, AuthPrimaryButton } from "@/components/auth/auth-form-ui";
+import { PATH_APP_ENTRY } from "@/lib/auth/routes";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
+const REDIRECT_TO_SCREENER_MS = 900;
+
+const MIN_PASSWORD_LEN = 8;
+
 export function ResetPasswordClient() {
-  const router = useRouter();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [updated, setUpdated] = useState(false);
   const [sessionReady, setSessionReady] = useState(false);
   const [checked, setChecked] = useState(false);
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  const formCanSubmit =
+    password.length >= MIN_PASSWORD_LEN && confirmPassword.length >= MIN_PASSWORD_LEN && !loading;
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
@@ -39,16 +47,19 @@ export function ResetPasswordClient() {
     return () => subscription.unsubscribe();
   }, []);
 
+  useEffect(() => {
+    if (!updated) return;
+    const id = window.setTimeout(() => {
+      window.location.replace(PATH_APP_ENTRY);
+    }, REDIRECT_TO_SCREENER_MS);
+    return () => window.clearTimeout(id);
+  }, [updated]);
+
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setErrorMessage(null);
 
-    const form = e.currentTarget;
-    const fd = new FormData(form);
-    const password = String(fd.get("password") ?? "");
-    const confirmPassword = String(fd.get("confirmPassword") ?? "");
-
-    if (password.length < 8) {
+    if (password.length < MIN_PASSWORD_LEN) {
       setErrorMessage("Password must be at least 8 characters.");
       return;
     }
@@ -67,8 +78,7 @@ export function ResetPasswordClient() {
         return;
       }
 
-      await supabase.auth.signOut();
-      router.refresh();
+      // Keep the session so the user can land on /screener after redirect (same as post-recovery UX).
       setUpdated(true);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Something went wrong. Please try again.";
@@ -112,13 +122,8 @@ export function ResetPasswordClient() {
 
   if (updated) {
     return (
-      <AuthCenteredLayout
-        title="Password updated"
-        subtitle="Your password has been updated successfully. You can log in with your new password."
-      >
-        <Link href="/login">
-          <AuthPrimaryButton type="button">Log In</AuthPrimaryButton>
-        </Link>
+      <AuthCenteredLayout compact title="You're in" subtitle="Taking you to Finsepa…">
+        {null}
       </AuthCenteredLayout>
     );
   }
@@ -142,8 +147,12 @@ export function ResetPasswordClient() {
             name="password"
             autoComplete="new-password"
             placeholder="••••••••"
-            required
-            minLength={8}
+            value={password}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              if (errorMessage) setErrorMessage(null);
+            }}
+            minLength={MIN_PASSWORD_LEN}
             disabled={loading}
           />
         </div>
@@ -155,13 +164,17 @@ export function ResetPasswordClient() {
             name="confirmPassword"
             autoComplete="new-password"
             placeholder="••••••••"
-            required
-            minLength={8}
+            value={confirmPassword}
+            onChange={(e) => {
+              setConfirmPassword(e.target.value);
+              if (errorMessage) setErrorMessage(null);
+            }}
+            minLength={MIN_PASSWORD_LEN}
             disabled={loading}
           />
         </div>
 
-        <AuthPrimaryButton type="submit" disabled={loading}>
+        <AuthPrimaryButton type="submit" disabled={!formCanSubmit}>
           {loading ? "Updating…" : "Update password"}
         </AuthPrimaryButton>
       </form>
