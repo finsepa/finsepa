@@ -34,6 +34,8 @@ export async function GET() {
     adminConfigured: Boolean(admin),
     /** When set, signup confirmation uses this origin for `redirect_to` (not the browser origin). */
     authAppOriginFromEnv: getAuthAppOriginFromEnv() ?? null,
+    /** Helps confirm which Vercel env this deployment uses (set `LOOPS_API_KEY` for that environment). */
+    vercelEnv: process.env["VERCEL_ENV"] ?? null,
   });
 }
 

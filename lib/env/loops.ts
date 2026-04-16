@@ -1,18 +1,22 @@
 import "server-only";
 
-/** Env var names to try, in order (Finsepa + common typo). */
-const LOOPS_KEY_ENV_NAMES = ["LOOPS_API_KEY", "LOOP_API_KEY"] as const;
-
 /**
  * Loops REST API key for transactional email (`/api/v1/transactional`).
- * Kept in a small module so the key is read at request time, not mixed with unrelated env helpers.
+ *
+ * Read via **computed property names** (`"LOOPS" + "_API_KEY"`) so Next/Turbopack does not inline
+ * `undefined` at build time when the secret was not present during `next build` (a known issue on
+ * Vercel if env is only guaranteed at runtime). Runtime `process.env` from Vercel still resolves.
  */
+function pickEnv(name: string): string | undefined {
+  if (typeof process === "undefined" || !process.env) return undefined;
+  const raw = process.env[name];
+  if (typeof raw !== "string") return undefined;
+  const t = raw.replace(/^\uFEFF/, "").trim();
+  return t.length > 0 ? t : undefined;
+}
+
 export function getLoopsApiKey(): string | undefined {
-  for (const name of LOOPS_KEY_ENV_NAMES) {
-    const raw = process.env[name];
-    if (typeof raw !== "string") continue;
-    const t = raw.replace(/^\uFEFF/, "").trim();
-    if (t.length > 0) return t;
-  }
-  return undefined;
+  const primary = pickEnv("LOOPS" + "_" + "API" + "_" + "KEY");
+  if (primary) return primary;
+  return pickEnv("LOOP" + "_" + "API" + "_" + "KEY");
 }
