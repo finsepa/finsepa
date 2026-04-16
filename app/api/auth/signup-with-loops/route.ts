@@ -109,7 +109,6 @@ export async function POST(request: Request) {
     to: email,
     confirmationLink: actionLink,
     firstName,
-    lastName,
   });
 
   if (!sent.ok) {

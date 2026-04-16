@@ -49,7 +49,7 @@ const LOOPS_TRANSACTIONAL_ID_SIGNUP_DEFAULT = "cm54x9u6103qnqa68w7cg1ls7";
 
 /**
  * Loops transactional email ID for sign-up confirmation.
- * Template must include data variables: `confirmationLink`, `firstName`, `lastName` (see .env.example).
+ * Template must include data variables: `firstName`, `confirmationLink` (see .env.example).
  */
 export function getLoopsTransactionalSignupId(): string {
   const v = process.env.LOOPS_TRANSACTIONAL_ID_SIGNUP?.trim();

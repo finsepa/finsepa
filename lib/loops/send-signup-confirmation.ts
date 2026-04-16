@@ -8,7 +8,6 @@ export async function sendLoopsSignupConfirmationEmail(params: {
   to: string;
   confirmationLink: string;
   firstName: string;
-  lastName: string;
 }): Promise<{ ok: true } | { ok: false; message: string }> {
   const res = await fetch(LOOPS_TRANSACTIONAL_URL, {
     method: "POST",
@@ -21,9 +20,8 @@ export async function sendLoopsSignupConfirmationEmail(params: {
       email: params.to,
       addContact: true,
       dataVariables: {
-        confirmationLink: params.confirmationLink,
         firstName: params.firstName,
-        lastName: params.lastName,
+        confirmationLink: params.confirmationLink,
       },
     }),
   });

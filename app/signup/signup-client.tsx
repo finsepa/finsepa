@@ -145,7 +145,7 @@ export function SignupClient() {
 
           setErrorMessage(
             loopsJson.message?.trim() ||
-              "We could not send your confirmation email via Loops. In Vercel, set LOOPS_API_KEY and LOOPS_TRANSACTIONAL_ID_SIGNUP. Your Loops template must include data variables: confirmationLink, firstName, lastName.",
+              "We could not send your confirmation email via Loops. In Vercel, set LOOPS_API_KEY. Your Loops transactional template must define data variables: firstName, confirmationLink.",
           );
           return;
         }
