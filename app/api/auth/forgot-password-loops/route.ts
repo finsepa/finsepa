@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { resolveAuthAppOriginForServer } from "@/lib/auth/app-origin";
-import { PATH_AUTH_CALLBACK, PATH_AUTH_RESET_PASSWORD } from "@/lib/auth/routes";
+import { PATH_AUTH_RESET_PASSWORD } from "@/lib/auth/routes";
 import { getLoopsApiKey } from "@/lib/env/loops";
 import { getLoopsTransactionalPasswordResetId } from "@/lib/env/server";
 import { sendLoopsTransactionalAuthEmail } from "@/lib/loops/transactional";
@@ -91,7 +91,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "admin_unavailable" }, { status: 503 });
   }
 
-  const redirectTo = `${appOrigin}${PATH_AUTH_CALLBACK}?next=${encodeURIComponent(PATH_AUTH_RESET_PASSWORD)}`;
+  const redirectTo = `${appOrigin}${PATH_AUTH_RESET_PASSWORD}`;
 
   const { data, error } = await admin.auth.admin.generateLink({
     type: "recovery",

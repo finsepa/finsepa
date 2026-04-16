@@ -6,7 +6,7 @@ export const PATH_LOGIN = "/login";
 export const PATH_SIGNUP = "/signup";
 export const PATH_FORGOT_PASSWORD = "/forgot-password";
 
-/** Password recovery: email link should target `/auth/callback` (PKCE) or `/auth/reset-password` (implicit), per Supabase settings */
+/** Password recovery: Supabase `redirectTo` should list this URL; links land here and the client exchanges PKCE/hash tokens into the session. */
 export const PATH_AUTH_CALLBACK = "/auth/callback";
 export const PATH_AUTH_RESET_PASSWORD = "/auth/reset-password";
 

@@ -4,7 +4,11 @@ import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { AuthCenteredLayout } from "@/components/auth/auth-centered-layout";
 import { AuthInput, AuthLabel, AuthPrimaryButton } from "@/components/auth/auth-form-ui";
-import { PATH_APP_ENTRY } from "@/lib/auth/routes";
+import {
+  establishAuthSessionFromCurrentUrl,
+  replaceUrlPathOnly,
+} from "@/lib/auth/establish-session-from-url";
+import { PATH_APP_ENTRY, PATH_AUTH_RESET_PASSWORD } from "@/lib/auth/routes";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 const REDIRECT_TO_SCREENER_MS = 900;
@@ -24,27 +28,45 @@ export function ResetPasswordClient() {
     password.length >= MIN_PASSWORD_LEN && confirmPassword.length >= MIN_PASSWORD_LEN && !loading;
 
   useEffect(() => {
+    let cancelled = false;
     const supabase = getSupabaseBrowserClient();
-
-    function syncSession() {
-      void supabase.auth.getSession().then(({ data: { session } }) => {
-        if (session) setSessionReady(true);
-        setChecked(true);
-      });
-    }
-
-    syncSession();
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
+      if (cancelled) return;
       if (event === "PASSWORD_RECOVERY" || session) {
         setSessionReady(!!session);
       }
       setChecked(true);
     });
 
-    return () => subscription.unsubscribe();
+    void (async () => {
+      const result = await establishAuthSessionFromCurrentUrl();
+      if (cancelled) return;
+
+      if (result.status === "established") {
+        replaceUrlPathOnly(PATH_AUTH_RESET_PASSWORD);
+        setSessionReady(true);
+        setChecked(true);
+        return;
+      }
+      if (result.status === "failed") {
+        setSessionReady(false);
+        setChecked(true);
+        return;
+      }
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (cancelled) return;
+      if (session) setSessionReady(true);
+      setChecked(true);
+    })();
+
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
