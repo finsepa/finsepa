@@ -13,6 +13,9 @@ export type EodhdScreenerRow = {
   exchange?: string;
   sector?: string;
   industry?: string;
+  /** When present, often `"ETF"` / `"Common Stock"` (not in all docs). */
+  type?: string;
+  Type?: string;
   market_capitalization?: number | string;
   adjusted_close?: number | string;
   refund_1d_p?: number | string;
@@ -30,6 +33,8 @@ export type EodhdScreenerRow = {
 export type EodhdTopUniverseRow = {
   ticker: string;
   name: string;
+  /** GICS-style sector from EODHD screener row, when provided. */
+  sector: string | null;
   marketCapUsd: number;
   /** Last EOD adjusted close from screener (stale vs live quote). */
   adjustedClose: number | null;
@@ -55,13 +60,48 @@ function num(v: unknown): number | null {
   return null;
 }
 
-/** Prefer explicit signal fields; some accounts use alternate casing. */
+/** Prefer explicit signal fields; some accounts use alternate casing or window labels. */
 function refund1mFromRaw(r: Record<string, unknown>): number | null {
-  return num(r.refund_1m_p) ?? num(r.refund_1M_p) ?? null;
+  return (
+    num(r.refund_1m_p) ??
+    num(r.refund_1M_p) ??
+    num(r.refund1m_p) ??
+    num(r.refund_22d_p) ??
+    num(r.refund_30d_p) ??
+    null
+  );
 }
 
 function refundYtdFromRaw(r: Record<string, unknown>): number | null {
   return num(r.refund_ytd_p) ?? num(r.refund_YTD_p) ?? null;
+}
+
+/** Exclude ETFs/ETNs from the “Companies” equity universe (EODHD screener mixes funds with stocks). */
+export function isLikelyEtfScreenerInstrument(
+  name: string,
+  sector: string | null,
+  industry: string | null,
+  raw: Record<string, unknown>,
+): boolean {
+  const typeBits = [raw.type, raw.Type, raw.asset_type, raw.AssetType, raw.category, raw.Category]
+    .filter((v): v is string => typeof v === "string" && v.trim().length > 0)
+    .join(" ")
+    .toLowerCase();
+  if (/\betf\b|\betn\b|\bclosed-end fund\b/.test(typeBits)) return true;
+
+  const n = name.trim().toLowerCase();
+  if (/\betf\b|\betn\b/.test(n)) return true;
+  if (/\bspdr\b/.test(n) && /\btrust\b/.test(n)) return true;
+  if (/\bishares\b/.test(n)) return true;
+  if (/\bvanguard\b/.test(n) && /\b(index )?fund\b/.test(n)) return true;
+
+  const ind = (industry ?? "").trim().toLowerCase();
+  if (ind.includes("exchange traded") || /\betf\b/.test(ind)) return true;
+
+  const sec = (sector ?? "").trim().toLowerCase();
+  if (sec === "etfs" || sec === "etf") return true;
+
+  return false;
 }
 
 /**
@@ -128,9 +168,13 @@ async function fetchEodhdScreenerUncached(args: {
       const name = typeof r.name === "string" ? r.name.trim() : "";
       const mc = num(r.market_capitalization);
       if (mc == null || mc <= 0) continue;
+      const sector = typeof r.sector === "string" && r.sector.trim() ? r.sector.trim() : null;
+      const industry = typeof r.industry === "string" && r.industry.trim() ? r.industry.trim() : null;
+      if (isLikelyEtfScreenerInstrument(name || ticker, sector, industry, rr)) continue;
       out.push({
         ticker,
         name: name || ticker,
+        sector,
         marketCapUsd: mc,
         adjustedClose: num(r.adjusted_close),
         refund1dP: num(r.refund_1d_p),
@@ -147,7 +191,7 @@ async function fetchEodhdScreenerUncached(args: {
   }
 }
 
-const fetchEodhdScreenerCached = unstable_cache(fetchEodhdScreenerUncached, ["eodhd-screener-v5-snapshot-perf"], {
+const fetchEodhdScreenerCached = unstable_cache(fetchEodhdScreenerUncached, ["eodhd-screener-v8-skip-etfs"], {
   revalidate: REVALIDATE_STATIC,
 });
 
@@ -204,6 +248,7 @@ export async function fetchEodhdScreenerCandidates(args: {
     const out: Array<{ ticker: string; name: string; marketCapUsd: number; sector: string | null; industry: string | null }> = [];
     for (const raw of data) {
       if (!raw || typeof raw !== "object") continue;
+      const rr = raw as Record<string, unknown>;
       const r = raw as EodhdScreenerRow;
       const ticker = typeof r.code === "string" ? r.code.trim().toUpperCase() : "";
       if (!ticker) continue;
@@ -212,6 +257,7 @@ export async function fetchEodhdScreenerCandidates(args: {
       if (mc == null || mc <= 0) continue;
       const sec = typeof r.sector === "string" && r.sector.trim() ? r.sector.trim() : null;
       const ind = typeof r.industry === "string" && r.industry.trim() ? r.industry.trim() : null;
+      if (isLikelyEtfScreenerInstrument(name || ticker, sec, ind, rr)) continue;
       out.push({ ticker, name: name || ticker, marketCapUsd: mc, sector: sec, industry: ind });
     }
     return out;

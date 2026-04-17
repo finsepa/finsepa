@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { X } from "lucide-react";
 
+import { ScreenerRankBadge } from "@/components/earnings/screener-rank-badge";
 import { CompanyLogo } from "@/components/screener/company-logo";
 import { StockEarningsTabContent } from "@/components/stock/stock-earnings-tab";
 import type { EarningsCalendarItem } from "@/lib/market/earnings-calendar-types";
@@ -64,13 +65,16 @@ export function EarningsPreviewModal({
           <Link
             href={stockEarningsHref}
             onClick={() => onClose()}
-            className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-[10px] outline-none ring-offset-2 transition-colors hover:bg-[#F4F4F5] focus-visible:ring-2 focus-visible:ring-[#09090B]/15"
+            className="flex min-w-0 flex-1 cursor-pointer items-start gap-3 rounded-[10px] outline-none ring-offset-2 transition-colors hover:bg-[#F4F4F5] focus-visible:ring-2 focus-visible:ring-[#09090B]/15"
             id="earnings-preview-title"
             title={`Open ${item.ticker.trim()} — Earnings`}
           >
             <CompanyLogo name={item.companyName || item.ticker} logoUrl={item.logoUrl} symbol={item.ticker} size="lg" />
-            <span className="flex min-w-0 flex-1 items-center gap-1.5 leading-none">
-              <span className="shrink-0 text-[18px] font-semibold leading-7 text-[#09090B]">{item.ticker}</span>
+            <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+              <span className="flex min-w-0 flex-wrap items-center gap-2">
+                <span className="shrink-0 text-[18px] font-semibold leading-7 text-[#09090B]">{item.ticker}</span>
+                {item.screenerRank != null ? <ScreenerRankBadge rank={item.screenerRank} /> : null}
+              </span>
               <span className="min-w-0 truncate text-[14px] leading-5 text-[#71717A]">{item.companyName}</span>
             </span>
           </Link>

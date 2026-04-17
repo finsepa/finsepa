@@ -147,3 +147,42 @@ export async function fetchEodhdCryptoFundamentalsHighlights(eodhdCryptoSymbol: 
   if (!m) return null;
   return { marketCapUsd: m.marketCapUsd };
 }
+
+/** Last daily close from bars, when it is a usable positive USD price. */
+export function lastPositiveCloseFromCryptoBars(bars: EodhdDailyBar[] | null | undefined): number | null {
+  const arr = Array.isArray(bars) ? bars : [];
+  if (!arr.length) return null;
+  const c = arr[arr.length - 1]?.close;
+  return typeof c === "number" && Number.isFinite(c) && c > 0 ? c : null;
+}
+
+/**
+ * Tries primary + alternate EODHD symbols until a market cap is resolved:
+ * reported cap → fully diluted cap → implied (circulating or total supply × last EOD close).
+ */
+export async function fetchCryptoMarketCapUsdForMeta(
+  meta: CryptoMeta,
+  lastCloseUsd: number | null = null,
+): Promise<number | null> {
+  const candidates = [meta.eodhdSymbol, ...(meta.eodhdAltSymbols ?? [])];
+  for (const sym of candidates) {
+    const m = await fetchEodhdCryptoFundamentalsMeta(sym);
+    if (!m) continue;
+    if (m.marketCapUsd != null && Number.isFinite(m.marketCapUsd) && m.marketCapUsd > 0) return m.marketCapUsd;
+    if (m.fullyDilutedMarketCapUsd != null && Number.isFinite(m.fullyDilutedMarketCapUsd) && m.fullyDilutedMarketCapUsd > 0) {
+      return m.fullyDilutedMarketCapUsd;
+    }
+    const sup = m.circulatingSupply ?? m.totalSupply;
+    if (
+      lastCloseUsd != null &&
+      lastCloseUsd > 0 &&
+      sup != null &&
+      Number.isFinite(sup) &&
+      sup > 0
+    ) {
+      const implied = lastCloseUsd * sup;
+      if (Number.isFinite(implied) && implied > 0) return implied;
+    }
+  }
+  return null;
+}

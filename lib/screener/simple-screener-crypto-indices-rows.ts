@@ -12,18 +12,25 @@ import type {
   SimpleMarketData,
 } from "@/lib/market/simple-market-layer";
 import { reducedCryptoMarketCapDisplay } from "@/lib/market/reduced-universe";
+import { formatMarketCapCompactNoCurrency } from "@/lib/screener/eod-derived-metrics";
 import { SCREENER_INDICES_10 } from "@/lib/screener/screener-indices-universe";
 
-/** When realtime is missing, approximate price + 1D from the last two spark closes (daily EOD strip). */
+/** When realtime is missing, use last EOD close from the spark strip; 1D % needs two closes. */
 function sparkFallbackPriceAnd1d(d: CryptoDerivedSlice | undefined): { price: number | null; change1d: number | null } {
   const s = d?.last5DailyCloses;
-  if (!s || s.length < 2) return { price: null, change1d: null };
+  if (!s || !s.length) return { price: null, change1d: null };
   const last = s[s.length - 1]!;
+  if (!Number.isFinite(last) || last <= 0) return { price: null, change1d: null };
+  if (s.length < 2) return { price: last, change1d: null };
   const prev = s[s.length - 2]!;
-  if (!Number.isFinite(last)) return { price: null, change1d: null };
   const change1d =
-    Number.isFinite(prev) && prev !== 0 ? ((last - prev) / prev) * 100 : null;
+    Number.isFinite(prev) && prev > 0 ? ((last - prev) / prev) * 100 : null;
   return { price: last, change1d };
+}
+
+function positiveSpotOrNull(n: number | null | undefined): number | null {
+  if (n == null || !Number.isFinite(n) || n <= 0) return null;
+  return n;
 }
 
 /** Screener crypto rows for a meta list — same mapping as `/api/screener/crypto-top10` (page 1). */
@@ -37,15 +44,25 @@ export function cryptoScreenerRowsFromMetas(
     const q = data.crypto[sym];
     const d = derived[sym];
     const fb = sparkFallbackPriceAnd1d(d);
+    const livePx = positiveSpotOrNull(q?.price);
+    const price = livePx ?? positiveSpotOrNull(fb.price);
+    const changePercent1D =
+      livePx != null && q?.changePercent1D != null && Number.isFinite(q.changePercent1D)
+        ? q.changePercent1D
+        : fb.change1d;
     return {
       symbol: sym,
       name: c.name,
       logoUrl: getCryptoLogoUrl(sym),
-      price: q?.price ?? fb.price,
-      changePercent1D: q?.changePercent1D ?? fb.change1d,
+      price,
+      changePercent1D,
       changePercent1M: d?.changePercent1M ?? null,
       changePercentYTD: d?.changePercentYTD ?? null,
-      marketCap: reducedCryptoMarketCapDisplay(sym),
+      marketCap: (() => {
+        const mc = d?.marketCapUsd;
+        if (mc != null && Number.isFinite(mc) && mc > 0) return formatMarketCapCompactNoCurrency(mc);
+        return reducedCryptoMarketCapDisplay(sym);
+      })(),
       sparkline5d: d?.last5DailyCloses ?? [],
     };
   });

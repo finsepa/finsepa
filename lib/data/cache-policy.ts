@@ -26,6 +26,12 @@ export const REVALIDATE_SEARCH = 90;
 /** ~5m — fundamentals JSON, header meta, charting series, macro dashboard */
 export const REVALIDATE_WARM = 300;
 
+/**
+ * ~5m — screener Markets tab quote batches (stocks/crypto/indices slices).
+ * Keeps prices fresh enough for a screener while cutting EODHD realtime churn vs 60s-style windows.
+ */
+export const REVALIDATE_SCREENER_MARKET = 300;
+
 /** ~15m — earnings week grid, heavy weekly aggregates */
 export const REVALIDATE_WARM_LONG = 900;
 

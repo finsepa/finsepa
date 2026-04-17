@@ -1,5 +1,8 @@
 import "server-only";
 
+import { unstable_cache } from "next/cache";
+
+import { REVALIDATE_WARM_LONG } from "@/lib/data/cache-policy";
 import { getEodhdApiKey } from "@/lib/env/server";
 import { traceEodhdHttp } from "@/lib/market/provider-trace";
 
@@ -64,6 +67,16 @@ function pickNumber(pairs: Pair[], predicate: (nk: string) => boolean): number |
   return null;
 }
 
+/** Like {@link pickNumber} but ignores zero (treat as missing for caps/supply). */
+function pickPositiveNumber(pairs: Pair[], predicate: (nk: string) => boolean): number | null {
+  for (const { nk, v } of pairs) {
+    if (!predicate(nk)) continue;
+    const n = num(v);
+    if (n != null && Number.isFinite(n) && n > 0) return n;
+  }
+  return null;
+}
+
 function isHttpUrl(s: string): boolean {
   return /^https?:\/\//i.test(s.trim());
 }
@@ -97,19 +110,30 @@ export function extractCryptoFundamentalsMeta(root: Record<string, unknown>): Cr
   const pairs: Pair[] = [];
   collectPairs(root, 0, pairs);
 
+  /** Prefer EODHD `Statistics.MarketCapitalization`; never use `MarketCapDominance` (also contains "marketcap"). */
   const marketCapUsd =
-    pickNumber(pairs, (nk) => {
+    pickPositiveNumber(pairs, (nk) => nk === "marketcapitalization") ??
+    pickPositiveNumber(pairs, (nk) => {
       if (!nk.includes("marketcap")) return false;
+      if (nk.includes("dominance")) return false;
       if (nk.includes("fully") || nk.includes("diluted")) return false;
       if (nk.includes("ath") || nk.includes("alltime")) return false;
       return true;
-    }) ?? pickNumber(pairs, (nk) => nk === "marketcapusd" || nk === "marketcapitalization");
+    }) ??
+    pickPositiveNumber(pairs, (nk) => nk === "marketcapusd");
 
   const fullyDilutedMarketCapUsd =
-    pickNumber(pairs, (nk) => (nk.includes("fully") && nk.includes("diluted")) || nk.includes("fullydilutedvaluation") || nk === "fdv") ??
-    pickNumber(pairs, (nk) => nk.includes("fdv"));
+    pickPositiveNumber(pairs, (nk) => nk === "marketcapitalizationdiluted") ??
+    pickPositiveNumber(
+      pairs,
+      (nk) =>
+        (nk.includes("fully") && nk.includes("diluted")) ||
+        nk.includes("fullydilutedvaluation") ||
+        nk === "fdv",
+    ) ??
+    pickPositiveNumber(pairs, (nk) => nk.includes("fdv"));
 
-  const athMarketCapUsd = pickNumber(
+  const athMarketCapUsd = pickPositiveNumber(
     pairs,
     (nk) =>
       (nk.includes("ath") && nk.includes("marketcap")) ||
@@ -117,9 +141,12 @@ export function extractCryptoFundamentalsMeta(root: Record<string, unknown>): Cr
       nk.includes("athmarketcap"),
   );
 
-  const circulatingSupply = pickNumber(pairs, (nk) => nk.includes("circulating") && nk.includes("supply"));
-  const totalSupply = pickNumber(pairs, (nk) => nk.includes("totalsupply") || (nk.includes("total") && nk.includes("supply") && !nk.includes("circulating")));
-  const maxSupply = pickNumber(pairs, (nk) => nk.includes("maxsupply") || nk === "maxsupplycrypto");
+  const circulatingSupply = pickPositiveNumber(pairs, (nk) => nk.includes("circulating") && nk.includes("supply"));
+  const totalSupply = pickPositiveNumber(
+    pairs,
+    (nk) => nk.includes("totalsupply") || (nk.includes("total") && nk.includes("supply") && !nk.includes("circulating")),
+  );
+  const maxSupply = pickPositiveNumber(pairs, (nk) => nk.includes("maxsupply") || nk === "maxsupplycrypto");
 
   const volume24hUsd = pickNumber(
     pairs,
@@ -186,10 +213,7 @@ export function extractCryptoFundamentalsMeta(root: Record<string, unknown>): Cr
   };
 }
 
-/**
- * Full crypto fundamentals JSON → structured meta (one HTTP call).
- */
-export async function fetchEodhdCryptoFundamentalsMeta(eodhdCryptoSymbol: string): Promise<CryptoFundamentalsMeta | null> {
+async function fetchEodhdCryptoFundamentalsMetaHttp(eodhdCryptoSymbol: string): Promise<CryptoFundamentalsMeta | null> {
   const key = getEodhdApiKey();
   if (!key) return null;
 
@@ -208,3 +232,12 @@ export async function fetchEodhdCryptoFundamentalsMeta(eodhdCryptoSymbol: string
     return null;
   }
 }
+
+/**
+ * Full crypto fundamentals JSON → structured meta (one HTTP call per symbol, shared across screener pages / asset views).
+ */
+export const fetchEodhdCryptoFundamentalsMeta = unstable_cache(
+  fetchEodhdCryptoFundamentalsMetaHttp,
+  ["eodhd-crypto-fundamentals-cc-by-symbol-v1"],
+  { revalidate: REVALIDATE_WARM_LONG },
+);

@@ -3,7 +3,7 @@
  * Used by screener universe, earnings calendar grouping, and search dedupe.
  */
 
-function normTicker(ticker: string): string {
+export function normTicker(ticker: string): string {
   return ticker.trim().toUpperCase().replace(/-/g, ".");
 }
 

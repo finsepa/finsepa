@@ -47,14 +47,11 @@ function EarningsCard({
       onClick={onOpen}
       className="w-full rounded-xl border border-[#E4E4E7] bg-white px-3 py-2.5 text-left shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors hover:bg-[#FAFAFA]"
     >
-      <div className="flex min-w-0 items-center gap-2.5">
+      <div className="flex min-w-0 items-start gap-2.5">
         <CompanyLogo name={companyName || ticker} logoUrl={logoUrl} symbol={ticker} size="sm" />
-        <div className="flex min-w-0 flex-1 items-center gap-1.5">
-          <span className="shrink-0 text-[13px] font-semibold leading-5 tabular-nums text-[#09090B]">
-            {ticker}
-          </span>
-          <span className="min-w-0 truncate text-[12px] leading-4 text-[#52525B]">{companyName}</span>
-        </div>
+        <span className="min-w-0 flex-1 text-[13px] font-semibold leading-5 tabular-nums text-[#09090B]">
+          {ticker}
+        </span>
       </div>
     </button>
   );

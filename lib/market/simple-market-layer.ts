@@ -2,12 +2,15 @@ import "server-only";
 
 import { unstable_cache } from "next/cache";
 
+import { REVALIDATE_SCREENER_MARKET } from "@/lib/data/cache-policy";
 import {
   CRYPTO_SCREENER_ALL,
   CRYPTO_SCREENER_PAGE2,
   CRYPTO_TOP10,
   type CryptoMeta,
   cryptoRealtimeRequestSymbols,
+  fetchCryptoMarketCapUsdForMeta,
+  lastPositiveCloseFromCryptoBars,
   fetchEodhdCryptoDailyBarsForMeta,
   pickCryptoRealtimePayload,
 } from "@/lib/market/eodhd-crypto";
@@ -72,6 +75,8 @@ export type CryptoDerivedSlice = {
   changePercent1M: number | null;
   changePercentYTD: number | null;
   last5DailyCloses: number[];
+  /** From EODHD crypto fundamentals when available (screener M Cap column). */
+  marketCapUsd: number | null;
 };
 
 export type SimpleCryptoDerived = Record<string, CryptoDerivedSlice>;
@@ -87,14 +92,22 @@ function emptyStockDerived(): SimpleScreenerStockDerived {
 }
 
 function emptyCryptoDerived(): CryptoDerivedSlice {
-  return { changePercent7D: null, changePercent1M: null, changePercentYTD: null, last5DailyCloses: [] };
+  return {
+    changePercent7D: null,
+    changePercent1M: null,
+    changePercentYTD: null,
+    last5DailyCloses: [],
+    marketCapUsd: null,
+  };
 }
 
 function toDatum(p: EodhdRealtimePayload | undefined): SimpleMarketDatum {
   if (!p) return emptyDatum();
-  const price = typeof p.close === "number" && Number.isFinite(p.close) ? p.close : null;
-  const previousClose =
+  const priceRaw = typeof p.close === "number" && Number.isFinite(p.close) ? p.close : null;
+  const price = priceRaw != null && priceRaw > 0 ? priceRaw : null;
+  const previousCloseRaw =
     typeof p.previousClose === "number" && Number.isFinite(p.previousClose) ? p.previousClose : null;
+  const previousClose = previousCloseRaw != null && previousCloseRaw > 0 ? previousCloseRaw : null;
   const changeFromApi = typeof p.change_p === "number" && Number.isFinite(p.change_p) ? p.change_p : null;
   const changePercent1D =
     changeFromApi ??
@@ -211,9 +224,22 @@ async function loadSimpleMarketDataUncached(): Promise<SimpleMarketData> {
   return loadSimpleMarketDataForPage2Tickers(page2Tickers);
 }
 
+/** Stocks screener only: TOP10 + page-2 quotes — no crypto or index symbols (Gainers/Losers, etc.). */
+async function loadSimpleMarketDataScreenerStocksAllPagesUncached(): Promise<SimpleMarketData> {
+  const { universe } = await getScreenerCompaniesStaticLayer();
+  const page2Tickers = pickScreenerPage2Tickers(universe);
+  return loadSimpleMarketDataBatch({
+    includeTop10Stocks: true,
+    page2Tickers,
+    includeCrypto: false,
+    cryptoBatch: "all",
+    includeIndices: false,
+  });
+}
+
 /**
  * First-paint screener path: same realtime batch as full data but **without** page-2 stock symbols.
- * Avoids tying the critical path to 20 extra tickers in the quote request.
+ * Avoids tying the critical path to the full page-2 stock quote batch.
  */
 async function loadSimpleMarketDataSlimUncached(): Promise<SimpleMarketData> {
   return loadSimpleMarketDataBatch({
@@ -283,31 +309,37 @@ export async function getSimpleMarketDataCryptoScreenerPage2(): Promise<SimpleMa
   });
 }
 
-export const getSimpleMarketData = unstable_cache(loadSimpleMarketDataUncached, ["simple-market-data-v11-chunked-realtime"], {
+export const getSimpleMarketData = unstable_cache(loadSimpleMarketDataUncached, ["simple-market-data-v14-crypto50"], {
   /** ~3m batch quote snapshot — scales to many concurrent users under a 4k EODHD/hour budget. */
   revalidate: 180,
 });
 
-export const getSimpleMarketDataSlim = unstable_cache(loadSimpleMarketDataSlimUncached, ["simple-market-data-v11-slim-chunked-realtime"], {
-  revalidate: 180,
+export const getSimpleMarketDataSlim = unstable_cache(loadSimpleMarketDataSlimUncached, ["simple-market-data-v13-slim-screener-ttl"], {
+  revalidate: REVALIDATE_SCREENER_MARKET,
 });
 
 export const getSimpleMarketDataScreenerStocks = unstable_cache(
   loadSimpleMarketDataScreenerStocksUncached,
-  ["simple-market-data-v11-screener-stocks-tab"],
-  { revalidate: 180 },
+  ["simple-market-data-v16-screener-stocks-tab-ttl"],
+  { revalidate: REVALIDATE_SCREENER_MARKET },
 );
 
 export const getSimpleMarketDataCryptoTab = unstable_cache(
   loadSimpleMarketDataCryptoTabUncached,
-  ["simple-market-data-v11-crypto-tab"],
-  { revalidate: 180 },
+  ["simple-market-data-v16-crypto-tab-ttl"],
+  { revalidate: REVALIDATE_SCREENER_MARKET },
 );
 
 export const getSimpleMarketDataIndicesTab = unstable_cache(
   loadSimpleMarketDataIndicesTabUncached,
-  ["simple-market-data-v11-indices-tab"],
-  { revalidate: 180 },
+  ["simple-market-data-v16-indices-tab-ttl"],
+  { revalidate: REVALIDATE_SCREENER_MARKET },
+);
+
+export const getSimpleMarketDataScreenerStocksAllPages = unstable_cache(
+  loadSimpleMarketDataScreenerStocksAllPagesUncached,
+  ["simple-market-data-v1-screener-stocks-all-pages"],
+  { revalidate: REVALIDATE_SCREENER_MARKET },
 );
 
 /** Use live quote as "current" price when valid so 1M/YTD match the same snapshot as the Price column. */
@@ -389,7 +421,7 @@ async function loadSimpleScreenerDerivedTop10Uncached(): Promise<SimpleScreenerD
 
 export const getSimpleScreenerDerived = unstable_cache(
   loadSimpleScreenerDerivedUncached,
-  ["simple-screener-derived-v8-live-quote-nostore-eod"],
+  ["simple-screener-derived-v10-page2-90"],
   {
     revalidate: 1800,
   },
@@ -429,13 +461,14 @@ function barsToCryptoDerived(bars: EodhdDailyBar[]): CryptoDerivedSlice {
   if (!bars.length) return empty;
   const c = bars[bars.length - 1]?.close;
   const lastClose = typeof c === "number" && Number.isFinite(c) ? c : null;
-  if (lastClose == null) return empty;
+  if (lastClose == null || lastClose <= 0) return empty;
   const d = deriveMetricsFromDailyBars(bars, lastClose);
   return {
     changePercent7D: d.changePercent7D,
     changePercent1M: d.changePercent1M,
     changePercentYTD: d.changePercentYTD,
     last5DailyCloses: d.sparkline5d.length === 5 ? d.sparkline5d : d.sparkline5d.slice(-5),
+    marketCapUsd: null,
   };
 }
 
@@ -446,16 +479,26 @@ async function loadSimpleCryptoDerivedUncached(): Promise<SimpleCryptoDerived> {
     SCREENER_EOD_DERIVED_CRYPTO_CONCURRENCY,
     (c) => fetchEodhdCryptoDailyBarsForMeta(c, window.from, window.to),
   );
+  const mcList = await runWithConcurrencyLimit(
+    CRYPTO_SCREENER_ALL,
+    SCREENER_EOD_DERIVED_CRYPTO_CONCURRENCY,
+    (c, i) => {
+      const raw = barsList[i];
+      const bars = Array.isArray(raw) ? raw : [];
+      return fetchCryptoMarketCapUsdForMeta(c, lastPositiveCloseFromCryptoBars(bars));
+    },
+  );
   const out: SimpleCryptoDerived = {};
   CRYPTO_SCREENER_ALL.forEach((c, i) => {
     const raw = barsList[i];
     const bars = Array.isArray(raw) ? raw : [];
-    out[c.symbol] = barsToCryptoDerived(bars);
+    const mc = typeof mcList[i] === "number" && Number.isFinite(mcList[i]!) ? mcList[i]! : null;
+    out[c.symbol] = { ...barsToCryptoDerived(bars), marketCapUsd: mc };
   });
   return out;
 }
 
-export const getSimpleCryptoDerived = unstable_cache(loadSimpleCryptoDerivedUncached, ["simple-crypto-derived-v4-meta-candidates"], {
+export const getSimpleCryptoDerived = unstable_cache(loadSimpleCryptoDerivedUncached, ["simple-crypto-derived-v8-fund-meta-cap"], {
   revalidate: 1800,
 });
 
@@ -467,18 +510,28 @@ async function loadSimpleCryptoDerivedTop10Uncached(): Promise<SimpleCryptoDeriv
     SCREENER_EOD_DERIVED_CRYPTO_CONCURRENCY,
     (c) => fetchEodhdCryptoDailyBarsForMeta(c, window.from, window.to),
   );
+  const mcList = await runWithConcurrencyLimit(
+    CRYPTO_TOP10,
+    SCREENER_EOD_DERIVED_CRYPTO_CONCURRENCY,
+    (c, i) => {
+      const raw = barsList[i];
+      const bars = Array.isArray(raw) ? raw : [];
+      return fetchCryptoMarketCapUsdForMeta(c, lastPositiveCloseFromCryptoBars(bars));
+    },
+  );
   const out: SimpleCryptoDerived = {};
   CRYPTO_TOP10.forEach((c, i) => {
     const raw = barsList[i];
     const bars = Array.isArray(raw) ? raw : [];
-    out[c.symbol] = barsToCryptoDerived(bars);
+    const mc = typeof mcList[i] === "number" && Number.isFinite(mcList[i]!) ? mcList[i]! : null;
+    out[c.symbol] = { ...barsToCryptoDerived(bars), marketCapUsd: mc };
   });
   return out;
 }
 
 export const getSimpleCryptoDerivedTop10 = unstable_cache(
   loadSimpleCryptoDerivedTop10Uncached,
-  ["simple-crypto-derived-top10-v2-meta-candidates"],
+  ["simple-crypto-derived-top10-v5-fund-meta-cap"],
   { revalidate: 1800 },
 );
 
@@ -486,16 +539,21 @@ export const getSimpleCryptoDerivedTop10 = unstable_cache(
 export async function getSimpleCryptoDerivedForMetas(metas: readonly CryptoMeta[]): Promise<SimpleCryptoDerived> {
   if (!metas.length) return {};
   const window = eodFetchWindowUtc();
-  const barsList = await runWithConcurrencyLimit(
-    [...metas],
-    SCREENER_EOD_DERIVED_CRYPTO_CONCURRENCY,
-    (c) => fetchEodhdCryptoDailyBarsForMeta(c, window.from, window.to),
+  const list = [...metas];
+  const barsList = await runWithConcurrencyLimit(list, SCREENER_EOD_DERIVED_CRYPTO_CONCURRENCY, (c) =>
+    fetchEodhdCryptoDailyBarsForMeta(c, window.from, window.to),
   );
+  const mcList = await runWithConcurrencyLimit(list, SCREENER_EOD_DERIVED_CRYPTO_CONCURRENCY, (c, i) => {
+    const raw = barsList[i];
+    const bars = Array.isArray(raw) ? raw : [];
+    return fetchCryptoMarketCapUsdForMeta(c, lastPositiveCloseFromCryptoBars(bars));
+  });
   const out: SimpleCryptoDerived = {};
   metas.forEach((c, i) => {
     const raw = barsList[i];
     const bars = Array.isArray(raw) ? raw : [];
-    out[c.symbol] = barsToCryptoDerived(bars);
+    const mc = typeof mcList[i] === "number" && Number.isFinite(mcList[i]!) ? mcList[i]! : null;
+    out[c.symbol] = { ...barsToCryptoDerived(bars), marketCapUsd: mc };
   });
   return out;
 }

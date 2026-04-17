@@ -16,8 +16,8 @@ export { EODHD_REALTIME_SYMBOLS_PER_REQUEST };
  * reduces wall time when the screener crypto list grows (still N upstream calls per refresh).
  */
 
-/** Non–page-1 US tickers merged into the shared realtime + page-2 row builder (bounded hot path). */
-export const SCREENER_PAGE2_STOCK_QUOTE_COUNT = 40;
+/** Non–page-1 US tickers merged into the shared realtime + page-2 row builder (bounded hot path). 90 → 100 names with TOP10. */
+export const SCREENER_PAGE2_STOCK_QUOTE_COUNT = 90;
 
 export const SCREENER_EOD_DERIVED_STOCK_CONCURRENCY = 10;
 /** Raise as screener crypto list grows (bars are still one HTTP per asset). */

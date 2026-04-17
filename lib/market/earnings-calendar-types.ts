@@ -6,6 +6,8 @@ export type EarningsCalendarItem = {
   /** Display name; falls back to ticker if unavailable. */
   companyName: string;
   logoUrl: string;
+  /** 1-based rank on Screener (curated top 10, then next names by market cap). */
+  screenerRank: number | null;
   reportDate: string;
   timing: EarningsReportTiming;
   timingLabel: string;

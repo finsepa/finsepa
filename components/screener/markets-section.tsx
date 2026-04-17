@@ -9,12 +9,14 @@ import type { ScreenerPagePayload } from "@/lib/screener/screener-page-payload";
 import { SCREENER_MARKET_QUERY } from "@/lib/screener/screener-market-url";
 import { IndexCards } from "@/components/screener/index-cards";
 import { MarketTabs, type MarketTab } from "@/components/screener/market-tabs";
+import { ScreenerSectorsTable } from "@/components/screener/screener-sectors-table";
 import { ScreenerTabs, type StocksSubTab } from "@/components/screener/screener-tabs";
 import { ScreenerTable } from "@/components/screener/screener-table";
 import { CryptoTable } from "@/components/screener/crypto-table";
 import { IndicesTable } from "@/components/screener/indices-table";
 import { StocksTableSkeleton } from "@/components/markets/markets-skeletons";
 import { SCREENER_TABLE_PAGINATION_BTN } from "@/components/ui/table-pagination";
+import type { ScreenerSectorRow } from "@/lib/screener/screener-sectors-types";
 
 function marketTabFromUrl(searchParams: URLSearchParams): MarketTab {
   const raw = searchParams.get(SCREENER_MARKET_QUERY)?.trim().toLowerCase() ?? "";
@@ -31,6 +33,7 @@ function StocksTabBody({
   stocksSubTab,
   companiesPage,
   setCompaniesPage,
+  sectorsRows,
 }: {
   stockRows: ScreenerTableRow[];
   stocksTotalCount: number;
@@ -39,6 +42,7 @@ function StocksTabBody({
   stocksSubTab: StocksSubTab;
   companiesPage: number;
   setCompaniesPage: (u: number | ((p: number) => number)) => void;
+  sectorsRows: ScreenerSectorRow[];
 }) {
   const companiesPageSize = 10;
   const companiesTotal = stocksTotalCount;
@@ -61,7 +65,9 @@ function StocksTabBody({
 
   return (
     <>
-      {stocksSubTab === "Companies" ? (
+      {stocksSubTab === "Sectors" ? (
+        <ScreenerSectorsTable rows={sectorsRows} />
+      ) : stocksSubTab === "Companies" ? (
         <div>
           {companiesLoading && !companiesRows.length ? <StocksTableSkeleton rows={10} /> : null}
 
@@ -207,6 +213,7 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
 
   const stockRows = payload.market === "stocks" ? payload.stockRows : [];
   const stocksTotalCount = payload.market === "stocks" ? payload.stocksTotalCount : 0;
+  const sectorsRows = payload.market === "stocks" ? payload.sectors : [];
   const cryptoRows = payload.market === "crypto" ? payload.cryptoRows : [];
   const cryptoTotalCount = payload.market === "crypto" ? payload.cryptoTotalCount : 0;
 
@@ -339,6 +346,7 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
             stocksSubTab={stocksSubTab}
             companiesPage={companiesPage}
             setCompaniesPage={setCompaniesPage}
+            sectorsRows={sectorsRows}
           />
         </>
       ) : null}

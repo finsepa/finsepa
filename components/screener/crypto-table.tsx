@@ -16,6 +16,18 @@ function formatPercent(value: number | null) {
   return `${value > 0 ? "+" : ""}${value.toFixed(2)}%`;
 }
 
+/** Sub-cent meme coins need more precision than 2–4 fixed decimals (avoids `$0`). */
+function formatCryptoScreenerUsdPrice(value: number): string {
+  if (!Number.isFinite(value) || value <= 0) return "-";
+  if (value >= 1) {
+    return `$${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+  if (value >= 0.01) {
+    return `$${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 6 })}`;
+  }
+  return `$${value.toLocaleString("en-US", { maximumSignificantDigits: 8, notation: "standard" })}`;
+}
+
 function ChangeCell({ value }: { value: number | null }) {
   const isMissing = value == null || !Number.isFinite(value);
   const positive = !isMissing && value! >= 0;
@@ -105,9 +117,7 @@ export function CryptoTable({
                   r.price == null || !Number.isFinite(r.price) ? "text-[#71717A]" : "text-[#09090B]"
                 }`}
               >
-                {r.price == null || !Number.isFinite(r.price)
-                  ? "-"
-                  : `$${r.price.toLocaleString("en-US", { maximumFractionDigits: r.price < 1 ? 4 : 2 })}`}
+                {r.price == null || !Number.isFinite(r.price) ? "-" : formatCryptoScreenerUsdPrice(r.price)}
               </div>
 
               <ChangeCell value={r.changePercent1D} />

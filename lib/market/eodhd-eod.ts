@@ -2,6 +2,7 @@ import "server-only";
 
 import { format, parse, subDays } from "date-fns";
 
+import { REVALIDATE_WARM } from "@/lib/data/cache-policy";
 import { traceEodhdHttp } from "@/lib/market/provider-trace";
 import { getEodhdApiKey } from "@/lib/env/server";
 import { toEodhdSymbol } from "@/lib/market/eodhd-symbol";
@@ -169,7 +170,7 @@ export async function fetchEodhdEodDailyScreener(
 
   try {
     if (!traceEodhdHttp("fetchEodhdEodDailyScreener", { symbol: sym })) return null;
-    const res = await fetch(url, { cache: "no-store" });
+    const res = await fetch(url, { next: { revalidate: REVALIDATE_WARM } });
     if (!res.ok) return null;
     const data = (await res.json()) as unknown;
     if (!Array.isArray(data)) return null;

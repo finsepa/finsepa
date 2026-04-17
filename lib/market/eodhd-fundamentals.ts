@@ -77,6 +77,110 @@ function startOfTodayUtcMs(): number {
   return Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), 0, 0, 0, 0);
 }
 
+function pad2Calendar(n: number): string {
+  return String(n).padStart(2, "0");
+}
+
+/** UTC calendar YYYY-MM-DD from epoch ms (announcement day). */
+export function ymdUtcFromMs(ms: number): string {
+  const d = new Date(ms);
+  return `${d.getUTCFullYear()}-${pad2Calendar(d.getUTCMonth() + 1)}-${pad2Calendar(d.getUTCDate())}`;
+}
+
+function pushYmdIfInWeek(
+  candidates: { ymd: string; t: number }[],
+  allowedYmds: ReadonlySet<string>,
+  ms: number | null,
+): void {
+  if (ms == null) return;
+  const d = new Date(ms);
+  const dayStart = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0, 0);
+  const ymd = ymdUtcFromMs(dayStart);
+  if (allowedYmds.has(ymd)) candidates.push({ ymd, t: dayStart });
+}
+
+/**
+ * When the bulk `/calendar/earnings` feed omits a symbol, use fundamentals to find an announcement
+ * on one of the Mon–Fri YYYY-MM-DD keys in {@link allowedYmds}.
+ */
+export function findFundamentalsAnnouncementYmdInWeek(
+  root: Record<string, unknown> | null,
+  allowedYmds: ReadonlySet<string>,
+): string | null {
+  if (!root) return null;
+  const candidates: { ymd: string; t: number }[] = [];
+
+  const earn = root.Earnings;
+  if (earn && typeof earn === "object") {
+    const e = earn as Record<string, unknown>;
+    const history = e.History;
+    if (history && typeof history === "object") {
+      const h = history as Record<string, unknown>;
+      for (const row of Object.values(h)) {
+        if (!row || typeof row !== "object") continue;
+        const r = row as Record<string, unknown>;
+        const rawReport = r.reportDate ?? r.ReportDate ?? r.report_date;
+        const rawDate = r.date ?? r.Date;
+        const primary = (typeof rawReport === "string" && rawReport.trim() ? rawReport : null) ?? rawDate;
+        pushYmdIfInWeek(candidates, allowedYmds, parseUnknownDateToUtcMs(primary));
+      }
+    }
+
+    const dates = e.Dates ?? e.Upcoming;
+    if (dates && typeof dates === "object") {
+      const d = dates as Record<string, unknown>;
+      for (const v of [
+        d.NextDate,
+        d.nextEarningsDate,
+        d.Date,
+        d.date,
+        d.ReportDate,
+        d.reportDate,
+        d.next,
+      ]) {
+        pushYmdIfInWeek(candidates, allowedYmds, parseUnknownDateToUtcMs(v));
+      }
+    }
+
+    const trend = e.Trend;
+    if (Array.isArray(trend)) {
+      for (const row of trend) {
+        if (!row || typeof row !== "object") continue;
+        const t = row as Record<string, unknown>;
+        pushYmdIfInWeek(
+          candidates,
+          allowedYmds,
+          parseUnknownDateToUtcMs(
+            t.date ?? t.Date ?? t.reportDate ?? t.ReportDate ?? t.endDate ?? t.EndDate,
+          ),
+        );
+      }
+    }
+  }
+
+  const hl = root.Highlights && typeof root.Highlights === "object" ? (root.Highlights as Record<string, unknown>) : null;
+  const general = root.General && typeof root.General === "object" ? (root.General as Record<string, unknown>) : null;
+  const explicitKeys = [
+    "NextEarningsDate",
+    "EarningsDate",
+    "UpcomingEarningsDate",
+    "NextEarningDate",
+    "EarningsAnnouncement",
+    "NextReportDate",
+    "NextEarningsReportDate",
+  ] as const;
+  for (const src of [hl, general] as const) {
+    if (!src) continue;
+    for (const k of explicitKeys) {
+      pushYmdIfInWeek(candidates, allowedYmds, parseUnknownDateToUtcMs(src[k]));
+    }
+  }
+
+  if (candidates.length === 0) return null;
+  candidates.sort((a, b) => a.t - b.t || a.ymd.localeCompare(b.ymd));
+  return candidates[0]!.ymd;
+}
+
 /**
  * Prefer `Earnings.History` (per-ticker report dates) before Highlights — Highlights/General
  * sometimes carry generic or stale `NextEarningsDate` values that make many symbols look identical.

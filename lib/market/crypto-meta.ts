@@ -29,26 +29,6 @@ export const CRYPTO_TOP10: CryptoMeta[] = [
   { symbol: "AVAX", name: "Avalanche", eodhdSymbol: "AVAX-USD.CC" },
 ];
 
-/**
- * Screener Crypto tab page 2 — next liquid names after {@link CRYPTO_TOP10} (same EODHD loaders).
- * Kept in sync with the first entries of {@link CRYPTO_SEARCH_EXTRA}.
- */
-export const CRYPTO_SCREENER_PAGE2: CryptoMeta[] = [
-  { symbol: "TON", name: "Toncoin", eodhdSymbol: "TONCOIN-USD.CC", eodhdAltSymbols: ["TON-USD.CC"] },
-  { symbol: "POL", name: "Polygon", eodhdSymbol: "POL-USD.CC", eodhdAltSymbols: ["MATIC-USD.CC"] },
-  { symbol: "DOT", name: "Polkadot", eodhdSymbol: "DOT-USD.CC" },
-  { symbol: "ATOM", name: "Cosmos", eodhdSymbol: "ATOM-USD.CC" },
-  { symbol: "LTC", name: "Litecoin", eodhdSymbol: "LTC-USD.CC" },
-  { symbol: "BCH", name: "Bitcoin Cash", eodhdSymbol: "BCH-USD.CC" },
-  { symbol: "NEAR", name: "NEAR Protocol", eodhdSymbol: "NEAR-USD.CC" },
-  { symbol: "UNI", name: "Uniswap", eodhdSymbol: "UNI-USD.CC" },
-  { symbol: "XLM", name: "Stellar", eodhdSymbol: "XLM-USD.CC" },
-  { symbol: "FIL", name: "Filecoin", eodhdSymbol: "FIL-USD.CC" },
-];
-
-/** Full screener crypto grid (page 1 + page 2). */
-export const CRYPTO_SCREENER_ALL: CryptoMeta[] = [...CRYPTO_TOP10, ...CRYPTO_SCREENER_PAGE2];
-
 /** Additional liquid names for global search + asset pages (same loaders as TOP10). */
 export const CRYPTO_SEARCH_EXTRA: CryptoMeta[] = [
   { symbol: "TON", name: "Toncoin", eodhdSymbol: "TONCOIN-USD.CC", eodhdAltSymbols: ["TON-USD.CC"] },
@@ -71,8 +51,8 @@ export const CRYPTO_SEARCH_EXTRA: CryptoMeta[] = [
   { symbol: "MKR", name: "Maker", eodhdSymbol: "MKR-USD.CC" },
   { symbol: "LDO", name: "Lido DAO", eodhdSymbol: "LDO-USD.CC" },
   { symbol: "STX", name: "Stacks", eodhdSymbol: "STX-USD.CC" },
-  { symbol: "IMX", name: "Immutable", eodhdSymbol: "IMX-USD.CC" },
-  { symbol: "GRT", name: "The Graph", eodhdSymbol: "GRT-USD.CC" },
+  { symbol: "IMX", name: "Immutable", eodhdSymbol: "IMX-USD.CC", eodhdAltSymbols: ["IMX-USDT.CC"] },
+  { symbol: "GRT", name: "The Graph", eodhdSymbol: "GRT-USD.CC", eodhdAltSymbols: ["GRT-USDT.CC"] },
   { symbol: "FET", name: "Fetch.ai", eodhdSymbol: "FET-USD.CC" },
   { symbol: "RNDR", name: "Render", eodhdSymbol: "RNDR-USD.CC" },
   { symbol: "SNX", name: "Synthetix", eodhdSymbol: "SNX-USD.CC" },
@@ -84,14 +64,15 @@ export const CRYPTO_SEARCH_EXTRA: CryptoMeta[] = [
  * Symbols use EODHD `BASE-USD.CC` unless a known alternate pair exists.
  */
 export const CRYPTO_SEARCH_TOP100_REST: CryptoMeta[] = [
-  { symbol: "SHIB", name: "Shiba Inu", eodhdSymbol: "SHIB-USD.CC" },
+  { symbol: "SHIB", name: "Shiba Inu", eodhdSymbol: "SHIB-USD.CC", eodhdAltSymbols: ["SHIB-USDT.CC"] },
   { symbol: "HBAR", name: "Hedera", eodhdSymbol: "HBAR-USD.CC" },
   { symbol: "ETC", name: "Ethereum Classic", eodhdSymbol: "ETC-USD.CC" },
   { symbol: "VET", name: "VeChain", eodhdSymbol: "VET-USD.CC" },
   { symbol: "ICP", name: "Internet Computer", eodhdSymbol: "ICP-USD.CC" },
   { symbol: "ALGO", name: "Algorand", eodhdSymbol: "ALGO-USD.CC" },
   { symbol: "QNT", name: "Quant", eodhdSymbol: "QNT-USD.CC" },
-  { symbol: "MNT", name: "Mantle", eodhdSymbol: "MNT-USD.CC" },
+  /** EODHD lists Mantle Network under MANTLE-USD; MNT-USD may be a different asset or empty. */
+  { symbol: "MNT", name: "Mantle", eodhdSymbol: "MANTLE-USD.CC", eodhdAltSymbols: ["MNT-USD.CC", "MNT-USDT.CC"] },
   { symbol: "SEI", name: "Sei", eodhdSymbol: "SEI-USD.CC" },
   { symbol: "PYTH", name: "Pyth Network", eodhdSymbol: "PYTH-USD.CC" },
   { symbol: "JUP", name: "Jupiter", eodhdSymbol: "JUP-USD.CC" },
@@ -150,6 +131,18 @@ export const CRYPTO_SEARCH_TOP100_REST: CryptoMeta[] = [
   { symbol: "W", name: "Wormhole", eodhdSymbol: "W-USD.CC" },
 ];
 
+/**
+ * Screener Crypto tab page 2 — 40 names after {@link CRYPTO_TOP10} (50 screener assets = 5 pages × 10).
+ * Prefix matches {@link CRYPTO_SEARCH_EXTRA}; tail from {@link CRYPTO_SEARCH_TOP100_REST} (no duplicate symbols).
+ */
+export const CRYPTO_SCREENER_PAGE2: CryptoMeta[] = [
+  ...CRYPTO_SEARCH_EXTRA.slice(0, 26),
+  ...CRYPTO_SEARCH_TOP100_REST.slice(0, 14),
+];
+
+/** Full screener crypto grid (page 1 + page 2). */
+export const CRYPTO_SCREENER_ALL: CryptoMeta[] = [...CRYPTO_TOP10, ...CRYPTO_SCREENER_PAGE2];
+
 /** Global search + `/crypto/[symbol]` — 100 largest liquid names (approx. top market cap). */
 export const ALL_CRYPTO_METAS: CryptoMeta[] = [
   ...CRYPTO_TOP10,
@@ -193,9 +186,9 @@ export function toEodhdCryptoSymbol(symbolOrTicker: string): string | null {
 
 function realtimePayloadHasUsableQuote(p: EodhdRealtimePayload): boolean {
   return (
-    (typeof p.close === "number" && Number.isFinite(p.close)) ||
+    (typeof p.close === "number" && Number.isFinite(p.close) && p.close > 0) ||
     (typeof p.change_p === "number" && Number.isFinite(p.change_p)) ||
-    (typeof p.previousClose === "number" && Number.isFinite(p.previousClose))
+    (typeof p.previousClose === "number" && Number.isFinite(p.previousClose) && p.previousClose > 0)
   );
 }
 

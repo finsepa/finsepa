@@ -20,12 +20,12 @@ import {
   getSimpleCryptoDerivedForMetas,
   getSimpleCryptoDerivedTop10,
   getSimpleIndicesDerived,
-  getSimpleMarketData,
   getSimpleMarketDataCryptoScreenerPage2,
   getSimpleMarketDataCryptoTab,
   getSimpleMarketDataForScreenerPage2Slice,
   getSimpleMarketDataIndicesTab,
   getSimpleMarketDataScreenerStocks,
+  getSimpleMarketDataScreenerStocksAllPages,
   getSimpleScreenerDerived,
   getSimpleScreenerDerivedTop10,
   getSimpleScreenerStockDerivedForTickers,
@@ -35,11 +35,19 @@ import {
   cryptoScreenerRowsFromMetas,
   indicesTableRowsFromSimpleLayers,
 } from "@/lib/screener/simple-screener-crypto-indices-rows";
+import { buildScreenerSectorsRows } from "@/lib/screener/screener-sectors";
+import type { ScreenerSectorRow } from "@/lib/screener/screener-sectors-types";
 
 export type ScreenerMarketTab = "stocks" | "crypto" | "indices";
 
 export type ScreenerPagePayload =
-  | { market: "stocks"; stockRows: ScreenerTableRow[]; stocksTotalCount: number; indexCards: IndexCardData[] }
+  | {
+      market: "stocks";
+      stockRows: ScreenerTableRow[];
+      stocksTotalCount: number;
+      indexCards: IndexCardData[];
+      sectors: ScreenerSectorRow[];
+    }
   | { market: "crypto"; cryptoRows: CryptoTop10Row[]; cryptoTotalCount: number }
   | { market: "indices"; indicesRows: IndexTableRow[] };
 
@@ -148,7 +156,7 @@ export async function buildScreenerPage2RowsForTickers(
 }
 
 /**
- * Paginated screener company rows — avoids loading full 30-ticker quote + EOD batches unless the range spans them.
+ * Paginated screener company rows — loads market slices per page so we do not fan out quotes/EOD for the full page-2 set unless needed.
  */
 export async function buildScreenerCompaniesApiResponse(
   page: number,
@@ -231,10 +239,10 @@ export async function buildCryptoScreenerApiResponse(
   return { page, pageSize, total, rows };
 }
 
-/** Full 30-row list for Gainers & Losers — uses shared cached full market + derived layers. */
+/** Full stock list (top 10 + page 2) for Gainers & Losers — uses shared cached full market + derived layers. */
 export async function buildScreenerAllStockRowsForGainers(): Promise<ScreenerTableRow[]> {
   const [data, staticLayer, stockDerived] = await Promise.all([
-    getSimpleMarketData(),
+    getSimpleMarketDataScreenerStocksAllPages(),
     getScreenerCompaniesStaticLayer(),
     getSimpleScreenerDerived(),
   ]);
@@ -269,6 +277,7 @@ export async function buildScreenerPagePayload(market: ScreenerMarketTab): Promi
   const { page1 } = await buildStockScreenerTablePages(data, staticLayer.universe, stockDerived);
   const page2Tickers = pickScreenerPage2Tickers(staticLayer.universe);
   const stocksTotalCount = TOP10_TICKERS.length + page2Tickers.length;
+  const sectors = buildScreenerSectorsRows(staticLayer.universe);
 
-  return { market: "stocks", stockRows: page1, stocksTotalCount, indexCards };
+  return { market: "stocks", stockRows: page1, stocksTotalCount, indexCards, sectors };
 }
