@@ -280,7 +280,7 @@ export function PortfoliosDirectoryClient() {
   }
 
   return (
-    <div className="flex flex-col">
+    <div className="flex min-w-0 flex-col">
       {listings.map((row) => (
         <PublicPortfolioBlock key={row.id} listing={row} />
       ))}

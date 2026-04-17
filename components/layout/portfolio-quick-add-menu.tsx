@@ -68,12 +68,12 @@ export function PortfolioQuickAddMenu({
         onClick={() => setOpen((v) => !v)}
         className={cn(
           open
-            ? "flex h-9 w-9 items-center justify-center rounded-[10px] border-2 border-[#09090B] bg-white text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5]"
-            : "flex h-9 w-9 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5]",
+            ? "flex h-8 w-8 items-center justify-center rounded-[10px] border-2 border-[#09090B] bg-white text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5] sm:h-9 sm:w-9"
+            : "flex h-8 w-8 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5] sm:h-9 sm:w-9",
           triggerClassName,
         )}
       >
-        <Plus className="h-5 w-5" strokeWidth={open ? 2.25 : 2} aria-hidden />
+        <Plus className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={open ? 2.25 : 2} aria-hidden />
       </button>
 
       {open ? (

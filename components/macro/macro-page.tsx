@@ -73,7 +73,7 @@ export function MacroPage() {
   }, [items]);
 
   return (
-    <div className="space-y-5 px-9 py-6">
+    <div className="min-w-0 space-y-5 px-4 py-4 sm:px-9 sm:py-6">
       <div className="space-y-1">
         <h1 className="text-[20px] font-semibold tracking-tight text-[#09090B]">Macro</h1>
       </div>

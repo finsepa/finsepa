@@ -86,7 +86,7 @@ export function IndexCards({ initialCards }: { initialCards?: IndexCardData[] })
   if (entries.length !== labels.length) return null;
 
   return (
-    <div className="mb-6 grid grid-cols-5 gap-6">
+    <div className="mb-5 flex gap-3 overflow-x-auto overflow-y-visible pb-1 pt-0.5 [-webkit-overflow-scrolling:touch] snap-x snap-mandatory sm:mb-6 lg:grid lg:grid-cols-5 lg:gap-6 lg:overflow-visible lg:pb-0 lg:pt-0">
       {entries.map(({ name, value, change, trend }) => {
         const neutral = change === "—" || value === "—" || change === "-" || value === "-";
         const positive = !neutral && !change.startsWith("-");
@@ -95,9 +95,9 @@ export function IndexCards({ initialCards }: { initialCards?: IndexCardData[] })
         return (
           <div
             key={name}
-            className="flex h-fit flex-col gap-2 overflow-hidden rounded-xl border border-[#E4E4E7] bg-white px-4 py-4 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition hover:shadow-[0px_2px_4px_0px_rgba(10,10,10,0.08)]"
+            className="flex h-fit min-w-[148px] shrink-0 snap-start flex-col gap-2 overflow-hidden rounded-xl border border-[#E4E4E7] bg-white px-3 py-3 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition hover:shadow-[0px_2px_4px_0px_rgba(10,10,10,0.08)] sm:min-w-[160px] sm:px-4 sm:py-4 lg:min-w-0"
           >
-            <p className="text-[14px] font-normal leading-5 text-[#09090B]">{name}</p>
+            <p className="text-[13px] font-normal leading-5 text-[#09090B] sm:text-[14px]">{name}</p>
             <div className="flex min-w-0 items-center gap-2">
               <FadeIn show={fadeIn}>
                 <p className="min-w-0 flex-1 text-[16px] font-bold leading-6 tabular-nums text-[#09090B]">{value}</p>

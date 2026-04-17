@@ -29,7 +29,10 @@ export function SecondaryTabs<T extends string>({
   return (
     <div className={cn(className)}>
       <div
-        className={cn("flex flex-wrap items-center gap-2", listClassName)}
+        className={cn(
+          "flex flex-nowrap items-center gap-2 overflow-x-auto overflow-y-hidden pb-0.5 [-webkit-overflow-scrolling:touch] sm:flex-wrap sm:overflow-visible sm:pb-0",
+          listClassName,
+        )}
         role="tablist"
         aria-label={ariaLabel}
       >
@@ -43,7 +46,7 @@ export function SecondaryTabs<T extends string>({
               aria-selected={active}
               onClick={() => onValueChange(item.id)}
               className={cn(
-                "rounded-[10px] px-5 py-2 text-[14px] font-medium leading-5 text-[#09090B] transition-colors duration-100",
+                "shrink-0 whitespace-nowrap rounded-[10px] px-3 py-2 text-[13px] font-medium leading-5 text-[#09090B] transition-colors duration-100 sm:px-5 sm:text-[14px]",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2",
                 active ? "bg-[#F4F4F5]" : "hover:bg-[#F4F4F5]/80",
               )}

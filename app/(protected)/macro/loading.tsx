@@ -23,7 +23,7 @@ function MacroGridSkeleton() {
 
 export default function Loading() {
   return (
-    <div className="space-y-5 px-9 py-6">
+    <div className="min-w-0 space-y-5 px-4 py-4 sm:px-9 sm:py-6">
       <div className="space-y-1">
         <div className="text-[20px] font-semibold tracking-tight text-[#09090B]">Macro</div>
         <div className="text-[13px] leading-5 text-[#71717A]">Last 5 years</div>

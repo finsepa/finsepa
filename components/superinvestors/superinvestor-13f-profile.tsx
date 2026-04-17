@@ -47,7 +47,7 @@ export function Superinvestor13fProfile({
   data,
 }: Superinvestor13fProfileProps) {
   return (
-    <div className="px-9 py-6">
+    <div className="min-w-0 px-4 py-4 sm:px-9 sm:py-6">
       <nav aria-label="Breadcrumb" className="flex items-center">
         <div className="flex items-center gap-1 text-[14px] text-[#71717A]">
           <Link href="/superinvestors" className="transition-colors hover:text-[#09090B]">

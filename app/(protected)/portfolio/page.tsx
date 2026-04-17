@@ -177,10 +177,10 @@ function PortfolioPageInner() {
     cn(viewTab === tab ? "flex min-h-0 flex-1 flex-col" : "hidden");
 
   return (
-    <div className="relative flex min-h-full flex-col bg-white px-9 py-6">
+    <div className="relative flex min-h-full min-w-0 flex-col bg-white px-4 py-4 sm:px-9 sm:py-6">
       <ImportTransactionsModal open={importTransactionsOpen} onClose={() => setImportTransactionsOpen(false)} />
       <AssetPageTopLoader />
-      <div className="mb-6 flex shrink-0 items-center justify-between gap-4">
+      <div className="mb-6 flex shrink-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 flex-col gap-1">
           <div className="flex min-w-0 items-center gap-2">
             <h1 className="truncate text-2xl font-semibold tracking-tight text-[#09090B]">{title}</h1>
@@ -188,7 +188,7 @@ function PortfolioPageInner() {
           </div>
           {selected ? <PortfolioPrivacyStatus privacy={selected.privacy} /> : null}
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex min-w-0 shrink-0 flex-wrap items-center justify-start gap-2 sm:justify-end">
           <button
             type="button"
             aria-label="Import transactions"
@@ -201,7 +201,7 @@ function PortfolioPageInner() {
             )}
           >
             <FileSpreadsheet className="h-4 w-4" aria-hidden />
-            Import Transactions
+            <span className="hidden sm:inline">Import Transactions</span>
           </button>
           <button
             type="button"

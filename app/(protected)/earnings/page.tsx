@@ -14,7 +14,7 @@ type PageProps = {
 
 export default async function EarningsPage({ searchParams }: PageProps) {
   if (isSingleAssetMode()) {
-    return <div className="px-9 py-6 text-[#71717A]">Temporarily unavailable in NVDA-only mode.</div>;
+    return <div className="px-4 py-4 text-[#71717A] sm:px-9 sm:py-6">Temporarily unavailable in NVDA-only mode.</div>;
   }
 
   const sp = await searchParams;
@@ -25,7 +25,7 @@ export default async function EarningsPage({ searchParams }: PageProps) {
   const nextMonday = addDaysUtc(monday, 7);
 
   return (
-    <div className="px-9 py-8">
+    <div className="min-w-0 px-4 py-5 sm:px-9 sm:py-8">
       <EarningsWeekGrid
         data={data}
         prevWeekYmd={toYmdUtc(prevMonday)}

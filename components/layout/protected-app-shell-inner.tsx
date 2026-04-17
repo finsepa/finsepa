@@ -40,13 +40,13 @@ function ProtectedAppChrome({
         <Sidebar />
       </div>
       <div
-        className="fixed right-1 top-1 z-30 rounded-[4px] bg-white py-1 shadow-[0_1px_0_0_rgba(0,0,0,0.03)] transition-[left] duration-200 ease-out"
+        className="fixed right-1 top-1 z-30 min-w-0 rounded-[4px] bg-white py-0.5 shadow-[0_1px_0_0_rgba(0,0,0,0.03)] transition-[left] duration-200 ease-out sm:py-1"
         style={{ left: leftOffset }}
       >
         <Topbar userInitials={userInitials} avatarUrl={avatarUrl} userDisplayName={userDisplayName} />
       </div>
       <main
-        className="fixed bottom-1 right-1 top-[76px] z-0 overflow-y-auto rounded-[4px] bg-white transition-[left] duration-200 ease-out"
+        className="fixed bottom-1 right-1 top-[76px] z-0 min-w-0 overflow-y-auto rounded-[4px] bg-white transition-[left] duration-200 ease-out"
         style={{ left: leftOffset }}
       >
         {children}

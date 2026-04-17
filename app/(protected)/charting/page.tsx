@@ -48,7 +48,7 @@ export default async function ChartingRoutePage({ searchParams }: PageProps) {
   const chartSessionReady = urlSaysChart;
 
   return (
-    <Suspense fallback={<div className="min-h-[40vh] px-9 py-6" aria-hidden />}>
+    <Suspense fallback={<div className="min-h-[40vh] px-4 py-4 sm:px-9 sm:py-6" aria-hidden />}>
       <ChartingPage
         tickers={allowedTickers}
         metricParam={metricParam}

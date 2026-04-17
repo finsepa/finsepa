@@ -35,7 +35,9 @@ function formatFilingDate(ymd: string | null): string {
 
 function SuperinvestorsFundTableInner({ rows }: { rows: SuperinvestorsFundRowModel[] }) {
   return (
-    <div className="divide-y divide-[#E4E4E7] border-t border-b border-[#E4E4E7]">
+    <div className="min-w-0 -mx-4 overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch] sm:mx-0 sm:overflow-visible sm:pb-0">
+      <div className="min-w-[720px] sm:min-w-0">
+        <div className="divide-y divide-[#E4E4E7] border-t border-b border-[#E4E4E7]">
       <div
         className={`grid ${colLayout} min-h-[44px] items-center bg-white px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A]`}
       >
@@ -109,6 +111,8 @@ function SuperinvestorsFundTableInner({ rows }: { rows: SuperinvestorsFundRowMod
           </div>
         </Link>
       ))}
+        </div>
+      </div>
     </div>
   );
 }

@@ -188,7 +188,7 @@ export function CryptoPageContent({
   const headerLogoUrl = loading ? null : cryptoLogoSrc || null;
 
   return (
-    <div className="relative space-y-5 px-9 py-6">
+    <div className="relative min-w-0 space-y-5 px-4 py-4 sm:px-9 sm:py-6">
       <Suspense fallback={null}>
         <AssetPageTopLoader />
       </Suspense>

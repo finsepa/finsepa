@@ -45,7 +45,8 @@ function LogoMark({ name }: { name: string }) {
 
 function WatchlistTableSkeleton() {
   return (
-    <table className="w-full border-collapse">
+    <div className="min-w-0 -mx-4 overflow-x-auto pb-1 sm:mx-0">
+      <table className="w-full min-w-[720px] border-collapse">
       <thead>
         <tr className="border-t border-b border-[#E4E4E7] bg-white">
           <th className="py-3 pr-4 text-left text-[14px] font-semibold leading-5 text-[#71717A]">Asset</th>
@@ -81,6 +82,7 @@ function WatchlistTableSkeleton() {
         ))}
       </tbody>
     </table>
+    </div>
   );
 }
 
@@ -271,8 +273,8 @@ export function WatchlistTable() {
     storageHydrated && watched.size > 0 && !hasUsableRows && !error && !initialFetchDone;
 
   return (
-    <div className="flex flex-col gap-5">
-      <div className="flex items-center justify-between">
+    <div className="flex min-w-0 flex-col gap-5">
+      <div className="flex min-w-0 items-center justify-between gap-3">
         <h1 className="text-[20px] font-semibold leading-7 text-[#09090B]">Watchlist</h1>
         {refreshing && hasUsableRows ? (
           <span className="text-[12px] font-medium text-[#A1A1AA]" aria-live="polite">
@@ -315,7 +317,8 @@ export function WatchlistTable() {
       ) : null}
 
       {storageHydrated && hasUsableRows ? (
-        <table className="w-full border-collapse">
+        <div className="min-w-0 -mx-4 overflow-x-auto pb-1 sm:mx-0">
+          <table className="w-full min-w-[720px] border-collapse">
           <thead>
             <tr className="border-t border-b border-[#E4E4E7] bg-white">
               <th className="py-3 pr-4 text-left text-[14px] font-semibold leading-5 text-[#71717A]">Asset</th>
@@ -333,6 +336,7 @@ export function WatchlistTable() {
             <GroupSection label="Indices" rows={indices} toggleTicker={toggleTicker} />
           </tbody>
         </table>
+        </div>
       ) : null}
     </div>
   );

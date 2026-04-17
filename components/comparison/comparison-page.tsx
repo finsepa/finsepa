@@ -50,7 +50,7 @@ export function ComparisonPage({
 
   if (showWorkspace) {
     return (
-      <div className="relative space-y-5 px-9 py-6">
+      <div className="relative min-w-0 space-y-5 px-4 py-4 sm:px-9 sm:py-6">
         <Suspense fallback={null}>
           <AssetPageTopLoader />
         </Suspense>
@@ -64,7 +64,7 @@ export function ComparisonPage({
   }
 
   return (
-    <div className="space-y-6 px-9 py-6">
+    <div className="min-w-0 space-y-6 px-4 py-4 sm:px-9 sm:py-6">
       <ComparisonEmptyToolbar tickers={tickersForUi} allowedChartingTickers={allowedChartingTickers} />
 
       <div className="flex w-full flex-col items-center pb-2 pt-0" aria-label="Chart area">

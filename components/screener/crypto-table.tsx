@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import Link from "next/link";
 
 import { CompanyLogo } from "./company-logo";
+import { ScreenerTableScroll } from "@/components/screener/screener-table-scroll";
 import { CryptoTableSkeleton } from "@/components/markets/markets-skeletons";
 import { WatchlistStarToggle } from "@/components/watchlist/watchlist-star-button";
 import type { CryptoTop10Row } from "@/lib/market/crypto-top10";
@@ -63,9 +64,10 @@ export function CryptoTable({
   if (safeRows.length === 0) return <CryptoTableSkeleton rows={10} />;
 
   return (
-    <div className="divide-y divide-[#E4E4E7] border-t border-b border-[#E4E4E7]">
+    <ScreenerTableScroll>
+      <div className="divide-y divide-[#E4E4E7] bg-white">
       <div
-        className={`grid ${colLayout} min-h-[44px] items-center bg-white px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A]`}
+        className={`grid ${colLayout} min-h-[44px] items-center bg-white px-2 py-0 text-[12px] font-medium leading-5 text-[#71717A] sm:px-4 sm:text-[14px]`}
       >
         <div />
         <div className="text-center">#</div>
@@ -82,7 +84,7 @@ export function CryptoTable({
         return (
           <div
             key={r.symbol}
-            className={`group grid h-[60px] max-h-[60px] ${colLayout} items-center bg-white px-4 transition-colors duration-75 hover:bg-neutral-50`}
+            className={`group grid min-h-[60px] ${colLayout} items-center bg-white px-2 transition-colors duration-75 hover:bg-neutral-50 sm:px-4`}
           >
             <WatchlistStarToggle
               className="flex w-10 shrink-0 items-center justify-center px-3"
@@ -95,7 +97,7 @@ export function CryptoTable({
             <Link
               href={`/crypto/${encodeURIComponent(r.symbol)}`}
               prefetch={false}
-              className={`${rowLinkGrid} col-span-7 col-start-2 grid min-h-[60px] min-w-0 w-full items-center justify-items-stretch`}
+              className={`${rowLinkGrid} col-span-7 col-start-2 grid min-h-[56px] min-w-0 w-full items-center justify-items-stretch sm:min-h-[60px]`}
               aria-label={`Open ${r.name} (${eodhdCryptoSpotTickerDisplay(r.symbol)})`}
             >
               <div className="text-center text-[14px] font-semibold leading-5 tabular-nums text-[#71717A]">
@@ -133,7 +135,8 @@ export function CryptoTable({
           </div>
         );
       })}
-    </div>
+      </div>
+    </ScreenerTableScroll>
   );
 }
 

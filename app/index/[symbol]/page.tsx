@@ -13,7 +13,7 @@ export default async function IndexSymbolPage({ params }: PageProps) {
 
   if (isSingleAssetMode()) {
     return (
-      <div className="px-9 py-6 text-[#71717A]">Temporarily unavailable in NVDA-only mode.</div>
+      <div className="px-4 py-4 text-[#71717A] sm:px-9 sm:py-6">Temporarily unavailable in NVDA-only mode.</div>
     );
   }
 
@@ -25,7 +25,7 @@ export default async function IndexSymbolPage({ params }: PageProps) {
   const displayValue = live != null ? formatIndexValue(live.value) : "—";
 
   return (
-    <div className="px-9 py-8">
+    <div className="min-w-0 px-4 py-5 sm:px-9 sm:py-8">
       <div className="mb-6 flex items-center gap-1 text-[14px] text-[#71717A]">
         <Link href={SCREENER_INDICES_HREF} className="transition-colors hover:text-[#09090B]">
           Markets

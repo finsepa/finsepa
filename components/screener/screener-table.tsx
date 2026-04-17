@@ -5,6 +5,7 @@ import { memo, useMemo } from "react";
 import type { ScreenerTableRow } from "@/lib/screener/screener-static";
 import { WatchlistStarToggle } from "@/components/watchlist/watchlist-star-button";
 import { CompanyLogo } from "./company-logo";
+import { ScreenerTableScroll } from "@/components/screener/screener-table-scroll";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
 
 function formatPercentValue(value: number) {
@@ -49,7 +50,7 @@ const ScreenerDataRow = memo(function ScreenerDataRow({ item, rank, starred, loa
 
   return (
     <div
-      className={`group grid ${colLayout} h-[60px] max-h-[60px] items-center bg-white px-4 transition-colors duration-75 hover:bg-neutral-50`}
+      className={`group grid ${colLayout} min-h-[60px] items-center bg-white px-2 transition-colors duration-75 hover:bg-neutral-50 sm:px-4`}
     >
       <WatchlistStarToggle
         className="flex w-10 shrink-0 items-center justify-center px-3"
@@ -63,7 +64,7 @@ const ScreenerDataRow = memo(function ScreenerDataRow({ item, rank, starred, loa
       <Link
         href={`/stock/${encodeURIComponent(item.ticker)}`}
         prefetch={false}
-        className={`${rowLinkGrid} col-span-8 col-start-2 grid min-h-[60px] min-w-0 w-full items-center justify-items-stretch`}
+        className={`${rowLinkGrid} col-span-8 col-start-2 grid min-h-[56px] min-w-0 w-full items-center justify-items-stretch sm:min-h-[60px]`}
         aria-label={`Open ${item.name} (${item.ticker})`}
       >
         <div className="text-center text-[14px] font-semibold leading-5 tabular-nums text-[#71717A]">{rank}</div>
@@ -100,10 +101,11 @@ export function ScreenerTable({ rows, rankOffset = 0 }: { rows: ScreenerTableRow
   const { watched, loaded, toggleTicker } = useWatchlist();
 
   return (
-    <div className="divide-y divide-[#E4E4E7] border-t border-b border-[#E4E4E7]">
+    <ScreenerTableScroll>
+      <div className="divide-y divide-[#E4E4E7] bg-white">
       {/* Column headers */}
       <div
-        className={`grid ${colLayout} min-h-[44px] items-center bg-white px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A]`}
+        className={`grid ${colLayout} min-h-[44px] items-center bg-white px-2 py-0 text-[12px] font-medium leading-5 text-[#71717A] sm:px-4 sm:text-[14px]`}
       >
         <div />
         <div className="text-center">#</div>
@@ -126,6 +128,7 @@ export function ScreenerTable({ rows, rankOffset = 0 }: { rows: ScreenerTableRow
           toggleTicker={toggleTicker}
         />
       ))}
-    </div>
+      </div>
+    </ScreenerTableScroll>
   );
 }

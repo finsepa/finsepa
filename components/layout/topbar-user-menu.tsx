@@ -68,9 +68,9 @@ export function TopbarUserMenu({ userInitials, avatarUrl, userDisplayName }: Top
         aria-expanded={open}
         aria-haspopup="menu"
         onClick={() => setOpen((v) => !v)}
-        className="flex h-9 items-center gap-2 rounded-[10px] border border-[#E4E4E7] bg-white px-2 text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5]"
+        className="flex h-8 items-center gap-1.5 rounded-[10px] border border-[#E4E4E7] bg-white px-1.5 text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5] sm:h-9 sm:gap-2 sm:px-2"
       >
-        <Menu className="h-5 w-5 shrink-0" />
+        <Menu className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" />
         <UserAvatar imageSrc={avatarUrl} initials={userInitials} size="sm" />
       </button>
 

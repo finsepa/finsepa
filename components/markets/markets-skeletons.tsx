@@ -1,6 +1,7 @@
 "use client";
 
 import { LogoSkeleton, PillSkeleton, SkeletonBox, SparklineSkeleton, TextSkeleton } from "@/components/markets/skeleton";
+import { ScreenerTableScroll } from "@/components/screener/screener-table-scroll";
 
 const stocksColLayout = "grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr_1fr_96px] gap-x-2";
 // star + rank + company + price + 1D + 1M + YTD + M cap + PE (matches screener-table Companies)
@@ -26,7 +27,7 @@ export function IndexCardSkeleton({ name }: { name: string }) {
 
 function StocksRowSkeleton() {
   return (
-    <div className={`grid ${stocksColLayout} h-[60px] max-h-[60px] items-center border-b border-[#E4E4E7] px-4`}>
+    <div className={`grid ${stocksColLayout} min-h-[56px] items-center px-2 sm:min-h-[60px] sm:px-4`}>
       <div className="flex w-10 shrink-0 items-center justify-center px-3">
         <SkeletonBox className="h-4 w-4 rounded" />
       </div>
@@ -51,8 +52,9 @@ function StocksRowSkeleton() {
 
 export function StocksTableSkeleton({ rows = 10 }: { rows?: number }) {
   return (
-    <div className="overflow-hidden">
-      <div className={`grid ${stocksColLayout} items-center border-t border-b border-[#E4E4E7] bg-white px-4 py-3`}>
+    <ScreenerTableScroll>
+      <div className="divide-y divide-[#E4E4E7] bg-white">
+      <div className={`grid ${stocksColLayout} items-center bg-white px-2 py-3 sm:px-4`}>
         {Array.from({ length: 9 }).map((_, i) => (
           <div
             key={i}
@@ -67,13 +69,14 @@ export function StocksTableSkeleton({ rows = 10 }: { rows?: number }) {
       {Array.from({ length: rows }).map((_, i) => (
         <StocksRowSkeleton key={i} />
       ))}
-    </div>
+      </div>
+    </ScreenerTableScroll>
   );
 }
 
 function CryptoRowSkeleton() {
   return (
-    <div className={`group grid h-[60px] max-h-[60px] ${cryptoColLayout} items-center bg-white px-4`}>
+    <div className={`group grid min-h-[56px] ${cryptoColLayout} items-center bg-white px-2 sm:min-h-[60px] sm:px-4`}>
       <div className="flex w-10 shrink-0 items-center justify-center px-3">
         <SkeletonBox className="h-4 w-4 rounded" />
       </div>
@@ -108,9 +111,10 @@ function CryptoRowSkeleton() {
 
 export function CryptoTableSkeleton({ rows = 10 }: { rows?: number }) {
   return (
-    <div className="divide-y divide-[#E4E4E7] border-t border-b border-[#E4E4E7]">
+    <ScreenerTableScroll>
+      <div className="divide-y divide-[#E4E4E7] bg-white">
       <div
-        className={`grid ${cryptoColLayout} min-h-[44px] items-center bg-white px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A]`}
+        className={`grid ${cryptoColLayout} min-h-[44px] items-center bg-white px-2 py-0 text-[14px] font-medium leading-5 text-[#71717A] sm:px-4`}
       >
         <div />
         <div className="flex justify-center">
@@ -138,7 +142,8 @@ export function CryptoTableSkeleton({ rows = 10 }: { rows?: number }) {
       {Array.from({ length: rows }).map((_, i) => (
         <CryptoRowSkeleton key={i} />
       ))}
-    </div>
+      </div>
+    </ScreenerTableScroll>
   );
 }
 

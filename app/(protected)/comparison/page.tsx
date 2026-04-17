@@ -44,7 +44,7 @@ export default async function ComparisonRoutePage({ searchParams }: PageProps) {
   }
 
   return (
-    <Suspense fallback={<div className="min-h-[40vh] px-9 py-6" aria-hidden />}>
+    <Suspense fallback={<div className="min-h-[40vh] px-4 py-4 sm:px-9 sm:py-6" aria-hidden />}>
       <ComparisonPage
         tickers={allowedTickers}
         initialByTicker={initialByTicker}

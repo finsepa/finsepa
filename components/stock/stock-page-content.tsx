@@ -39,7 +39,7 @@ const EMPTY_CHART_DISPLAY: ChartDisplayState = {
 
 /** Offscreen mount so lightweight-charts + `onDisplayChange` stay active without affecting layout. */
 const OFFSCREEN_PRICE_CHART =
-  "pointer-events-none fixed left-0 top-0 -z-10 h-[320px] w-[min(1200px,calc(100vw-4.5rem))] -translate-x-[120vw] opacity-0";
+  "pointer-events-none fixed left-0 top-0 -z-10 h-[320px] w-[min(1200px,calc(100vw-2rem))] -translate-x-[120vw] opacity-0 sm:w-[min(1200px,calc(100vw-4.5rem))]";
 
 function initialTabsMounted(tab: StockDetailTabId): Record<StockDetailTabId, boolean> {
   return {
@@ -226,7 +226,7 @@ export function StockPageContent({
   const stockChartDrivesHeader = activeTab !== "holdings";
 
   return (
-    <div className="relative space-y-5 px-9 py-6">
+    <div className="relative min-w-0 space-y-5 px-4 py-4 sm:px-9 sm:py-6">
       <Suspense fallback={null}>
         <AssetPageTopLoader />
       </Suspense>

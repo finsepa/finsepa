@@ -57,7 +57,7 @@ export default async function SuperinvestorsPage() {
   ];
 
   return (
-    <div className="px-9 py-6">
+    <div className="min-w-0 px-4 py-4 sm:px-9 sm:py-6">
       <h1 className="mb-6 text-2xl font-semibold tracking-tight text-[#09090B]">Superinvestors</h1>
       <SuperinvestorsFundTable rows={rows} />
     </div>

@@ -146,7 +146,7 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
   const displayEmail = initial.email ?? "";
 
   return (
-    <div className="px-9 py-6">
+    <div className="min-w-0 px-4 py-4 sm:px-9 sm:py-6">
       <div className="mx-auto w-full max-w-3xl">
         <div className="border-b border-[#E4E4E7]">
           <span className="inline-block border-b-2 border-[#09090B] pb-3 text-sm font-semibold text-[#09090B]">

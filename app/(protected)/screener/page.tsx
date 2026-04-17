@@ -15,7 +15,7 @@ export default async function ScreenerPage({ searchParams }: PageProps) {
   const payload = await buildScreenerPagePayload(market);
 
   return (
-    <div className="px-9 py-6">
+    <div className="min-w-0 px-4 py-4 sm:px-9 sm:py-6">
       <ScreenerBrowserTrace />
       <Suspense fallback={null}>
         <MarketsSection payload={payload} />

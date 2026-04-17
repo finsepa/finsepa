@@ -18,6 +18,9 @@ import { StocksTableSkeleton } from "@/components/markets/markets-skeletons";
 import { SCREENER_TABLE_PAGINATION_BTN } from "@/components/ui/table-pagination";
 import type { ScreenerSectorRow } from "@/lib/screener/screener-sectors-types";
 
+/** Rows per list on the Stocks → Gainers & Losers sub-tab. */
+const GAINERS_LOSERS_TOP_N = 5;
+
 function marketTabFromUrl(searchParams: URLSearchParams): MarketTab {
   const raw = searchParams.get(SCREENER_MARKET_QUERY)?.trim().toLowerCase() ?? "";
   if (raw === "crypto") return "Crypto";
@@ -55,8 +58,8 @@ function StocksTabBody({
     const by1dDesc = [...valid].sort((a, b) => (b.change1D ?? 0) - (a.change1D ?? 0));
     const by1dAsc = [...valid].sort((a, b) => (a.change1D ?? 0) - (b.change1D ?? 0));
     return {
-      gainers: by1dDesc.slice(0, 3),
-      losers: by1dAsc.slice(0, 3),
+      gainers: by1dDesc.slice(0, GAINERS_LOSERS_TOP_N),
+      losers: by1dAsc.slice(0, GAINERS_LOSERS_TOP_N),
     };
   }, [companiesRows]);
 
@@ -85,7 +88,7 @@ function StocksTabBody({
             <p className="mt-3 text-sm font-medium text-[#71717A]">Loading companies…</p>
           ) : null}
 
-          <div className="mt-4 flex items-center justify-between">
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <button
               type="button"
               onClick={() => setCompaniesPage((p) => Math.max(1, p - 1))}
@@ -95,7 +98,7 @@ function StocksTabBody({
               Previous
             </button>
 
-            <div className="text-sm font-medium text-[#71717A]">
+            <div className="text-center text-sm font-medium text-[#71717A]">
               Page <span className="font-semibold text-[#09090B]">{safeCompaniesPage}</span> of{" "}
               <span className="font-semibold text-[#09090B]">{totalPages}</span>
             </div>
@@ -154,7 +157,7 @@ function CryptoTabBody({
         <p className="mt-3 text-sm font-medium text-[#71717A]">Loading…</p>
       ) : null}
 
-      <div className="mt-4 flex items-center justify-between">
+      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <button
           type="button"
           onClick={() => setCryptoPage((p) => Math.max(1, p - 1))}
@@ -164,7 +167,7 @@ function CryptoTabBody({
           Previous
         </button>
 
-        <div className="text-sm font-medium text-[#71717A]">
+        <div className="text-center text-sm font-medium text-[#71717A]">
           Page <span className="font-semibold text-[#09090B]">{safeCryptoPage}</span> of{" "}
           <span className="font-semibold text-[#09090B]">{totalPages}</span>
         </div>
@@ -329,7 +332,7 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
   const cryptoLoadingActive = awaitingRemoteCrypto || cryptoRemoteLoading;
 
   return (
-    <div>
+    <div className="min-w-0">
       <MarketTabs active={tab} onChange={setMarketTab} />
 
       {tab === "Stocks" && payload.market === "stocks" ? (

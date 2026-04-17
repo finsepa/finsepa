@@ -8,8 +8,8 @@ import { ChartSkeleton } from "@/components/ui/chart-skeleton";
  */
 export function PortfolioPageLoadingShell() {
   return (
-    <div className="flex min-h-full flex-col bg-white px-9 py-6">
-      <div className="mb-6 flex shrink-0 items-center justify-between gap-4">
+    <div className="flex min-h-full min-w-0 flex-col bg-white px-4 py-4 sm:px-9 sm:py-6">
+      <div className="mb-6 flex shrink-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-center gap-2">
           <div className="h-8 w-[min(100%,14rem)] max-w-full animate-pulse rounded-lg bg-neutral-200" />
           <div className="h-8 w-24 shrink-0 animate-pulse rounded-lg bg-neutral-100" />
@@ -17,7 +17,7 @@ export function PortfolioPageLoadingShell() {
         <div className="h-9 w-28 shrink-0 animate-pulse rounded-lg bg-neutral-100" />
       </div>
 
-      <div className="mb-6 flex gap-6 border-b border-[#E4E4E7]">
+      <div className="-mx-1 mb-6 flex gap-4 overflow-x-auto overflow-y-hidden border-b border-[#E4E4E7] pb-px [-webkit-overflow-scrolling:touch] sm:mx-0 sm:gap-6 sm:overflow-visible sm:pb-0">
         {["Overview", "Performance", "Cash", "Transactions"].map((label) => (
           <div
             key={label}

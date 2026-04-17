@@ -24,7 +24,10 @@ export function StockDetailTabNav({
 }) {
   return (
     <div className="border-b border-solid border-[#E4E4E7]">
-      <nav className="flex flex-wrap items-start gap-5" aria-label="Stock sections">
+      <nav
+        className="-mx-1 flex flex-nowrap items-start gap-4 overflow-x-auto overflow-y-hidden pb-px [-webkit-overflow-scrolling:touch] sm:mx-0 sm:flex-wrap sm:gap-5 sm:overflow-visible"
+        aria-label="Stock sections"
+      >
         {TABS.map(({ id, label }) => {
           const isActive = id === activeTab;
           return (
@@ -32,7 +35,7 @@ export function StockDetailTabNav({
               key={id}
               type="button"
               onClick={() => onTabChange(id)}
-              className={`-mb-px cursor-pointer border-b-2 border-solid py-2 text-left text-[14px] leading-6 transition-colors duration-100 ${
+              className={`-mb-px shrink-0 cursor-pointer border-b-2 border-solid py-2 text-left text-[14px] leading-6 transition-colors duration-100 ${
                 isActive
                   ? "border-[#09090B] font-semibold text-[#09090B]"
                   : "border-transparent font-medium text-[#71717A] hover:text-[#09090B]"

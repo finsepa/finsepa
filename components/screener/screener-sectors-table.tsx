@@ -1,4 +1,5 @@
 import type { ScreenerSectorRow } from "@/lib/screener/screener-sectors-types";
+import { ScreenerTableScroll } from "@/components/screener/screener-table-scroll";
 
 const colLayout = "grid-cols-[48px_minmax(0,1.6fr)_1fr_1fr] gap-x-2";
 
@@ -36,9 +37,10 @@ export function ScreenerSectorsTable({ rows }: { rows: ScreenerSectorRow[] }) {
   }
 
   return (
-    <div className="divide-y divide-[#E4E4E7] border-t border-b border-[#E4E4E7]">
+    <ScreenerTableScroll minWidthClassName="min-w-[520px] lg:min-w-0">
+      <div className="divide-y divide-[#E4E4E7] bg-white">
       <div
-        className={`grid ${colLayout} min-h-[44px] items-center bg-white px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A]`}
+        className={`grid ${colLayout} min-h-[44px] items-center bg-white px-2 py-0 text-[12px] font-medium leading-5 text-[#71717A] sm:px-4 sm:text-[14px]`}
       >
         <div className="text-center">#</div>
         <div className="text-left">Sector Name</div>
@@ -49,7 +51,7 @@ export function ScreenerSectorsTable({ rows }: { rows: ScreenerSectorRow[] }) {
       {rows.map((row) => (
         <div
           key={row.sector}
-          className={`grid ${colLayout} h-[60px] max-h-[60px] items-center bg-white px-4 transition-colors duration-75 hover:bg-neutral-50`}
+          className={`grid ${colLayout} min-h-[56px] items-center bg-white px-2 transition-colors duration-75 hover:bg-neutral-50 sm:min-h-[60px] sm:px-4`}
         >
           <div className="text-center text-[14px] font-semibold leading-5 tabular-nums text-[#71717A]">{row.rank}</div>
           <div className="min-w-0 truncate text-[14px] font-semibold leading-5 text-[#09090B]">{row.sector}</div>
@@ -59,6 +61,7 @@ export function ScreenerSectorsTable({ rows }: { rows: ScreenerSectorRow[] }) {
           </div>
         </div>
       ))}
-    </div>
+      </div>
+    </ScreenerTableScroll>
   );
 }

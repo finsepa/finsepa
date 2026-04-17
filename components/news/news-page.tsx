@@ -66,7 +66,7 @@ export function NewsPage() {
   const showEmpty = useMemo(() => !loading && !error && items != null && items.length === 0, [loading, error, items]);
 
   return (
-    <div className="px-9 py-6">
+    <div className="min-w-0 px-4 py-4 sm:px-9 sm:py-6">
       <div className="mb-6 flex items-end justify-between border-b border-[#E4E4E7]">
         <div className="flex items-end gap-5">
           {tabs.map((t) => {

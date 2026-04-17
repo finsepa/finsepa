@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { IndicesTableSkeleton } from "@/components/markets/markets-skeletons";
+import { ScreenerTableScroll } from "@/components/screener/screener-table-scroll";
 import { WatchlistStarToggle } from "@/components/watchlist/watchlist-star-button";
 import { indexWatchlistKey } from "@/lib/watchlist/constants";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
@@ -55,9 +56,10 @@ export function IndicesTable({ initialRows }: { initialRows?: IndexRow[] }) {
   }
 
   return (
-    <div className="divide-y divide-[#E4E4E7] border-t border-b border-[#E4E4E7]">
+    <ScreenerTableScroll minWidthClassName="min-w-[560px] lg:min-w-0">
+      <div className="divide-y divide-[#E4E4E7] bg-white">
       <div
-        className={`grid ${colLayout} min-h-[44px] items-center bg-white px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A]`}
+        className={`grid ${colLayout} min-h-[44px] items-center bg-white px-2 py-0 text-[12px] font-medium leading-5 text-[#71717A] sm:px-4 sm:text-[14px]`}
       >
         <div />
         <div className="min-w-0 w-full text-left">Index</div>
@@ -72,7 +74,7 @@ export function IndicesTable({ initialRows }: { initialRows?: IndexRow[] }) {
         return (
           <div
             key={r.symbol}
-            className={`group grid h-[60px] max-h-[60px] ${colLayout} items-center bg-white px-4 transition-colors duration-75 hover:bg-neutral-50`}
+            className={`group grid min-h-[56px] ${colLayout} items-center bg-white px-2 transition-colors duration-75 hover:bg-neutral-50 sm:min-h-[60px] sm:px-4`}
           >
             <WatchlistStarToggle
               className="flex w-10 shrink-0 items-center justify-center px-3"
@@ -92,6 +94,7 @@ export function IndicesTable({ initialRows }: { initialRows?: IndexRow[] }) {
           </div>
         );
       })}
-    </div>
+      </div>
+    </ScreenerTableScroll>
   );
 }
