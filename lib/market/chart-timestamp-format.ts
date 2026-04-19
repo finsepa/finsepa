@@ -17,6 +17,29 @@ function formatDateOnly(unixSeconds: number, timeZone: string): string {
   }).format(d);
 }
 
+/** Compact range like Google Finance: "27 Oct 2023–5 Jul 2024". */
+export function formatChartSelectionDateRange(
+  startUnix: number,
+  endUnix: number,
+  options: { kind: "stock" | "crypto"; timeZone?: string },
+): string {
+  const timeZone = options.timeZone ?? defaultTimeZoneForKind(options.kind);
+  const fmt = (u: number) => {
+    const d = new Date(u * 1000);
+    if (!Number.isFinite(d.getTime())) return "";
+    return new Intl.DateTimeFormat("en-GB", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      timeZone,
+    }).format(d);
+  };
+  const a = fmt(startUnix);
+  const b = fmt(endUnix);
+  if (!a || !b) return "";
+  return `${a}–${b}`;
+}
+
 /**
  * Robinhood-style line: "Aug 30, 2024 at 4:00 PM EDT, USD"
  * (no seconds; timezone abbreviation from Intl).

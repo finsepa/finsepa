@@ -10,6 +10,7 @@ import { PortfolioQuickAddMenu } from "@/components/layout/portfolio-quick-add-m
 import { ImportTransactionsModal } from "@/components/portfolio/import-transactions-modal";
 import { PortfolioAllocationView } from "@/components/portfolio/portfolio-allocation-view";
 import { PortfolioHoldingsTable } from "@/components/portfolio/portfolio-holdings-table";
+import { PortfolioSlicesView } from "@/components/portfolio/portfolio-slices-view";
 import {
   Empty,
   EmptyDescription,
@@ -110,6 +111,7 @@ function initialTabsVisited(active: PortfolioViewTab): Record<PortfolioViewTab, 
     Overview: active === "Overview",
     Performance: active === "Performance",
     Cash: active === "Cash",
+    Slices: active === "Slices",
     Transactions: active === "Transactions",
   };
 }
@@ -291,6 +293,17 @@ function PortfolioPageInner() {
             aria-hidden={viewTab !== "Cash"}
           >
             <PortfolioCashPanel />
+          </div>
+        ) : null}
+
+        {tabsVisited.Slices ? (
+          <div
+            className={panelClass("Slices")}
+            role="tabpanel"
+            id="portfolio-tab-slices"
+            aria-hidden={viewTab !== "Slices"}
+          >
+            <PortfolioSlicesView holdings={holdings} transactions={transactions} />
           </div>
         ) : null}
 

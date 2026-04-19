@@ -105,6 +105,11 @@ function mergeIncomeRow(p: ChartingSeriesPoint, row: Record<string, unknown>): v
     "DilutedEps",
     "normalizedDilutedEPS",
     "NormalizedDilutedEPS",
+    "trailingEPS",
+    "TrailingEPS",
+    "EpsDiluted",
+    "EarningsShare",
+    "earningsShare",
     "eps",
     "EPS",
     "basicEPS",
@@ -124,8 +129,10 @@ function mergeIncomeRow(p: ChartingSeriesPoint, row: Record<string, unknown>): v
   ]);
   const sh = numFromRow(row, [
     "weightedAverageShsOutDil",
+    "weightedAverageShsOut",
     "weightedAverageSharesDiluted",
     "WeightedAverageSharesDiluted",
+    "weightedAverageShsOutDilution",
     "sharesOutstandingDiluted",
   ]);
   if (sh != null) p.sharesOutstanding = sh;
@@ -185,6 +192,19 @@ function mergeCashFlowRow(p: ChartingSeriesPoint, row: Record<string, unknown>):
 }
 
 function mergeRatiosRow(p: ChartingSeriesPoint, row: Record<string, unknown>): void {
+  /** EPS is sometimes only present on Ratios (yearly) while income statement omits it. */
+  const epsFromRatios = numFromRow(row, [
+    "EPS",
+    "eps",
+    "EarningsShare",
+    "EarningsPerShare",
+    "DilutedEPS",
+    "dilutedEPS",
+    "TrailingEPS",
+    "trailingEPS",
+  ]);
+  if (epsFromRatios != null && p.eps == null) p.eps = epsFromRatios;
+
   p.peRatio = numFromRow(row, ["PERatio", "PE", "peRatio", "PeRatio"]);
   p.trailingPe = numFromRow(row, ["TrailingPE", "TrailingPe", "trailingPE"]);
   p.forwardPe = numFromRow(row, ["ForwardPE", "ForwardPe", "forwardPE"]);
@@ -230,6 +250,18 @@ function computeDerivedMarginsAndReturns(p: ChartingSeriesPoint): void {
   const cash = p.cashOnHand;
   const td = p.totalDebt;
   if (cash != null && td != null && td > 1e-9) p.cashDebt = cash / td;
+}
+
+/**
+ * When the provider omits reported EPS, approximate diluted EPS as net income ÷ diluted weighted-average
+ * shares (preferred) or ÷ period shares outstanding. Good enough for charts when `eps` is absent.
+ */
+function fillDerivedEpsIfMissing(p: ChartingSeriesPoint): void {
+  if (p.eps != null && Number.isFinite(p.eps)) return;
+  const ni = p.netIncome;
+  const sh = p.sharesOutstanding;
+  if (ni == null || sh == null || !Number.isFinite(ni) || !Number.isFinite(sh) || Math.abs(sh) < 1e-9) return;
+  p.eps = ni / sh;
 }
 
 function computeGrowthSeries(points: ChartingSeriesPoint[], mode: FundamentalsSeriesMode): void {
@@ -362,6 +394,7 @@ function buildMergedPoints(root: Record<string, unknown>, mode: FundamentalsSeri
     }
 
     computeDerivedMarginsAndReturns(p);
+    fillDerivedEpsIfMissing(p);
     out.push(p);
   }
 
@@ -398,6 +431,6 @@ async function fetchChartingSeriesUncached(
 
 export const fetchChartingSeries = unstable_cache(
   fetchChartingSeriesUncached,
-  ["eodhd-charting-series-v2"],
+  ["eodhd-charting-series-v3"],
   { revalidate: REVALIDATE_WARM },
 );

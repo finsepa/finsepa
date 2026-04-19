@@ -63,9 +63,21 @@ const TOOLTIP_USD = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 2,
 });
 
+/**
+ * Chart “Deposits” = cash inflows; “Withdrawals” = **Cash Out** only.
+ * Other expense / fees are ledger cash moves but must not inflate withdrawal bars.
+ */
 function splitCashAmounts(t: PortfolioTransaction): { inAmt: number; outAmt: number } {
-  if (t.sum > 0) return { inAmt: t.sum, outAmt: 0 };
-  if (t.sum < 0) return { inAmt: 0, outAmt: Math.abs(t.sum) };
+  const op = t.operation.toLowerCase();
+  if (op.includes("other expense")) {
+    return { inAmt: 0, outAmt: 0 };
+  }
+  if (t.sum > 0) {
+    return { inAmt: t.sum, outAmt: 0 };
+  }
+  if (t.sum < 0 && op.includes("cash out")) {
+    return { inAmt: 0, outAmt: Math.abs(t.sum) };
+  }
   return { inAmt: 0, outAmt: 0 };
 }
 
@@ -176,9 +188,57 @@ type CashBarTooltip = {
   withdrawalsLabel: string;
 };
 
-function CashInOutBarChartSvg({ buckets }: { buckets: Bucket[] }) {
+/** Minimum horizontal space (CSS px) for one x-axis label before we skip ticks. */
+const X_LABEL_MIN_PX_MONTH = 42;
+const X_LABEL_MIN_PX_YEAR = 34;
+
+/**
+ * How many buckets between visible x labels (1 = every bucket). Prefers 2, 3, 6, 12 months
+ * so tick marks stay intuitive on narrow screens.
+ */
+function computeXLabelStep(
+  granularity: Granularity,
+  n: number,
+  containerWidthPx: number,
+  plotWvb: number,
+): number {
+  if (n <= 1) return 1;
+  const wPx = containerWidthPx > 8 ? containerWidthPx : 800;
+  const plotWidthPx = wPx * (plotWvb / VB_W);
+  const slotPx = plotWidthPx / n;
+  const minLabel = granularity === "month" ? X_LABEL_MIN_PX_MONTH : X_LABEL_MIN_PX_YEAR;
+  if (slotPx >= minLabel) return 1;
+  const raw = Math.ceil(minLabel / slotPx);
+  const nice = [2, 3, 4, 6, 12] as const;
+  for (const s of nice) {
+    if (s >= raw) return Math.min(s, n);
+  }
+  return Math.min(12, n);
+}
+
+function shouldDrawXLabel(i: number, n: number, step: number): boolean {
+  if (step <= 1) return true;
+  if (i % step === 0) return true;
+  if (i === n - 1 && (n - 1) % step !== 0) return true;
+  return false;
+}
+
+function CashInOutBarChartSvg({ buckets, granularity }: { buckets: Bucket[]; granularity: Granularity }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [tooltip, setTooltip] = useState<CashBarTooltip | null>(null);
+  const [containerWidthPx, setContainerWidthPx] = useState(0);
+
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect.width;
+      if (w != null && Number.isFinite(w)) setContainerWidthPx(w);
+    });
+    ro.observe(el);
+    setContainerWidthPx(el.getBoundingClientRect().width);
+    return () => ro.disconnect();
+  }, []);
 
   const { yMax, ticks, bars, plotW, plotH, slotW, n } = useMemo(() => {
     const maxVal = buckets.reduce((m, b) => Math.max(m, b.inAmount, b.outAmount), 0);
@@ -220,6 +280,11 @@ function CashInOutBarChartSvg({ buckets }: { buckets: Bucket[] }) {
 
     return { yMax, ticks, bars, plotW, plotH, slotW, n };
   }, [buckets]);
+
+  const xLabelStep = useMemo(
+    () => computeXLabelStep(granularity, n, containerWidthPx, plotW),
+    [granularity, n, containerWidthPx, plotW],
+  );
 
   const baseY = PAD_T + plotH;
 
@@ -351,7 +416,7 @@ function CashInOutBarChartSvg({ buckets }: { buckets: Bucket[] }) {
               lineHeight: "16px",
             }}
           >
-            {buckets[i]?.label ?? ""}
+            {shouldDrawXLabel(i, n, xLabelStep) ? (buckets[i]?.label ?? "") : ""}
           </text>
         </g>
       ))}
@@ -491,7 +556,7 @@ function CashInOutBarChartSectionInner({ rows }: { rows: PortfolioTransaction[] 
       ) : (
         <div className="flex w-full min-w-0 flex-col gap-3 px-5">
           <div className={cn("w-full min-w-0", !hasAnyActivity && "opacity-60")}>
-            <CashInOutBarChartSvg buckets={buckets} />
+            <CashInOutBarChartSvg buckets={buckets} granularity={granularity} />
           </div>
           {!hasAnyActivity ? (
             <p className="text-center text-xs leading-4 text-[#71717A]">No cash movements in this range.</p>

@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AssetPageTopLoader } from "@/components/layout/asset-page-top-loader";
 import type { ChartDisplayState } from "@/components/chart/PriceChart";
@@ -11,6 +12,7 @@ import type { StockDetailTabId } from "@/lib/stock/stock-detail-tab";
 import { parseStockDetailTabQuery } from "@/lib/stock/stock-detail-tab";
 import { AssetPortfolioHoldingsTab } from "@/components/portfolio/asset-portfolio-holdings-tab";
 import { StockDetailTabNav } from "./stock-detail-tab-nav";
+import { MultichartsTabSkeleton } from "@/components/stock/stock-multicharts-tab-skeleton";
 import { StockChartingTab } from "./stock-charting-tab";
 import { StockEarningsTab } from "./stock-earnings-tab";
 import { StockInsidersTab } from "./stock-insiders-tab";
@@ -25,12 +27,20 @@ import type { StockPageInitialData } from "@/lib/market/stock-page-initial-data"
 import type { StockChartRange, StockChartSeries } from "@/lib/market/stock-chart-types";
 import { WATCHLIST_MUTATED_EVENT } from "@/lib/watchlist/constants";
 
+/** Client-only: avoids SSR/client HTML drift for this tab (charts + evolving layout). */
+const StockMultichartsTab = dynamic(
+  () => import("./stock-multicharts-tab").then((m) => m.StockMultichartsTab),
+  { ssr: false, loading: () => <MultichartsTabSkeleton /> },
+);
+
 const EMPTY_CHART_DISPLAY: ChartDisplayState = {
   loading: true,
   empty: true,
   displayPrice: null,
   displayChangePct: null,
   displayChangeAbs: null,
+  selectionChangeAbs: null,
+  selectionChangePct: null,
   isHovering: false,
   selectionActive: false,
   periodLabelOverride: null,
@@ -46,6 +56,7 @@ function initialTabsMounted(tab: StockDetailTabId): Record<StockDetailTabId, boo
     overview: tab === "overview",
     holdings: tab === "holdings",
     charting: tab === "charting",
+    multicharts: tab === "multicharts",
     peers: tab === "peers",
     earnings: tab === "earnings",
     insiders: tab === "insiders",
@@ -234,9 +245,12 @@ export function StockPageContent({
         ticker={ticker}
         periodLabel={activeTab === "holdings" ? range : "Today"}
         periodLabelOverride={chartUi.periodLabelOverride}
+        chartRangeLabel={range}
         price={chartUi.displayPrice}
         changePct={chartUi.displayChangePct}
         changeAbs={chartUi.displayChangeAbs}
+        selectionChangeAbs={chartUi.selectionChangeAbs}
+        selectionChangePct={chartUi.selectionChangePct}
         chartLoading={chartUi.loading}
         chartEmpty={chartUi.empty}
         priceTimestampLabel={chartUi.priceTimestampLabel}
@@ -353,6 +367,20 @@ export function StockPageContent({
               initialPageData?.ticker === ticker ? initialPageData.fundamentalsSeriesQuarterly : undefined
             }
             initialKeyStatsBundle={initialPageData?.ticker === ticker ? initialPageData.keyStatsBundle : null}
+          />
+        </div>
+      ) : null}
+
+      {tabsMounted.multicharts ? (
+        <div
+          role="tabpanel"
+          id="stock-tab-multicharts"
+          aria-hidden={activeTab !== "multicharts"}
+          className={activeTab === "multicharts" ? "block" : "hidden"}
+        >
+          <StockMultichartsTab
+            ticker={ticker}
+            initialAnnualPoints={initialPageData?.ticker === ticker ? initialPageData.fundamentalsSeriesAnnual : undefined}
           />
         </div>
       ) : null}

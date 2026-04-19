@@ -31,9 +31,13 @@ type Props = {
   /** Period badge next to change (`Today` on overview = 1D session; holdings tab uses chart range). */
   periodLabel: string;
   periodLabelOverride?: string | null;
+  /** Badge for period move when a range selection is active (e.g. `1Y`). */
+  chartRangeLabel?: string;
   price: number | null;
   changePct: number | null;
   changeAbs: number | null;
+  selectionChangeAbs?: number | null;
+  selectionChangePct?: number | null;
   chartLoading: boolean;
   chartEmpty?: boolean;
   priceTimestampLabel?: string | null;
@@ -48,9 +52,12 @@ export function CryptoHeader({
   logoLetter,
   periodLabel,
   periodLabelOverride = null,
+  chartRangeLabel,
   price,
   changePct,
   changeAbs,
+  selectionChangeAbs = null,
+  selectionChangePct = null,
   chartLoading,
   chartEmpty = false,
   priceTimestampLabel = null,
@@ -77,6 +84,12 @@ export function CryptoHeader({
 
   const hasChange = changePct != null && changeAbs != null && Number.isFinite(changePct) && Number.isFinite(changeAbs);
   const isPositive = hasChange ? changeAbs! >= 0 : true;
+  const hasSelectionSecondary =
+    selectionChangeAbs != null &&
+    selectionChangePct != null &&
+    Number.isFinite(selectionChangeAbs) &&
+    Number.isFinite(selectionChangePct);
+  const isSelPositive = hasSelectionSecondary ? selectionChangeAbs! >= 0 : true;
   const wlKey = cryptoWatchlistKey(sym);
 
   return (
@@ -148,16 +161,46 @@ export function CryptoHeader({
           >
             {chartLoading || anim.price == null ? "—" : formatCryptoUsd(anim.price)}
           </span>
-          <span
-            className={`text-[15px] font-medium tabular-nums transition-colors duration-200 ease-out ${
-              hasChange ? (isPositive ? "text-[#16A34A]" : "text-[#DC2626]") : "text-[#71717A]"
-            }`}
-          >
-            {chartLoading || !hasChange || anim.abs == null || anim.pct == null
-              ? "—"
-              : `${isPositive ? "+" : ""}${formatCryptoChangeAbs(anim.abs, anim.price)} (${isPositive ? "+" : ""}${anim.pct.toFixed(2)}%)`}
-          </span>
-          <span className="text-[13px] text-[#71717A]">{periodLabelOverride ?? periodLabel}</span>
+          {hasSelectionSecondary ? (
+            <>
+              <span
+                className={`text-[15px] font-medium tabular-nums transition-colors duration-200 ease-out ${
+                  hasChange ? (isPositive ? "text-[#16A34A]" : "text-[#DC2626]") : "text-[#71717A]"
+                }`}
+              >
+                {chartLoading || !hasChange || anim.abs == null || anim.pct == null
+                  ? "—"
+                  : `${isPositive ? "+" : ""}${formatCryptoChangeAbs(anim.abs, anim.price)} (${isPositive ? "+" : ""}${anim.pct.toFixed(2)}%)`}
+              </span>
+              {chartRangeLabel ? (
+                <span className="text-[13px] text-[#71717A]">{chartRangeLabel}</span>
+              ) : null}
+              <span className="text-[13px] text-[#D4D4D8]" aria-hidden>
+                ·
+              </span>
+              <span
+                className={`text-[15px] font-medium tabular-nums transition-colors duration-200 ease-out ${
+                  isSelPositive ? "text-[#16A34A]" : "text-[#DC2626]"
+                }`}
+              >
+                {`${isSelPositive ? "+" : ""}${formatCryptoChangeAbs(selectionChangeAbs!, anim.price)} (${isSelPositive ? "+" : ""}${selectionChangePct!.toFixed(2)}%)`}
+              </span>
+              <span className="text-[13px] text-[#71717A]">Selected range</span>
+            </>
+          ) : (
+            <>
+              <span
+                className={`text-[15px] font-medium tabular-nums transition-colors duration-200 ease-out ${
+                  hasChange ? (isPositive ? "text-[#16A34A]" : "text-[#DC2626]") : "text-[#71717A]"
+                }`}
+              >
+                {chartLoading || !hasChange || anim.abs == null || anim.pct == null
+                  ? "—"
+                  : `${isPositive ? "+" : ""}${formatCryptoChangeAbs(anim.abs, anim.price)} (${isPositive ? "+" : ""}${anim.pct.toFixed(2)}%)`}
+              </span>
+              <span className="text-[13px] text-[#71717A]">{periodLabelOverride ?? periodLabel}</span>
+            </>
+          )}
         </div>
         {chartLoading ? (
           <div className="mt-0.5 text-[12px] text-[#71717A]">Loading…</div>

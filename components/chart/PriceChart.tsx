@@ -27,7 +27,11 @@ import {
   type ChartRangeSelection,
 } from "@/components/chart/chart-display-metrics";
 import { horzTimeToUnixSeconds, nearestPointByTime, pointAtChartX } from "@/components/chart/chart-selection-utils";
-import { formatAssetChartTimestamp } from "@/lib/market/chart-timestamp-format";
+import {
+  formatAssetChartTimestamp,
+  formatChartSelectionDateRange,
+} from "@/lib/market/chart-timestamp-format";
+import { formatUsdCompact } from "@/lib/market/key-stats-basic-format";
 import type { StockChartRange, StockChartPoint, StockChartSeries } from "@/lib/market/stock-chart-types";
 
 const MIN_DRAG_PX = 8;
@@ -60,6 +64,9 @@ export type ChartDisplayState = {
   displayPrice: number | null;
   displayChangePct: number | null;
   displayChangeAbs: number | null;
+  /** Set when `selectionActive`: P/L over the dragged window only. */
+  selectionChangeAbs: number | null;
+  selectionChangePct: number | null;
   isHovering: boolean;
   selectionActive: boolean;
   periodLabelOverride: string | null;
@@ -101,6 +108,55 @@ const GREEN = "#16A34A";
 const RED = "#DC2626";
 const VALUE_BLUE = "#2563EB";
 const BASELINE_LINE = "rgba(113, 113, 122, 0.55)";
+
+function overviewBaselineOptions(open: number, variant: "bright" | "dim") {
+  const base = {
+    baseValue: { type: "price" as const, price: open },
+    relativeGradient: true,
+    lineWidth: 2 as const,
+    lineType: LineType.Curved,
+    priceLineVisible: false,
+  };
+  if (variant === "bright") {
+    return {
+      ...base,
+      topFillColor1: "rgba(22, 163, 74, 0.20)",
+      topFillColor2: "rgba(22, 163, 74, 0.03)",
+      topLineColor: GREEN,
+      bottomFillColor1: "rgba(220, 38, 38, 0.03)",
+      bottomFillColor2: "rgba(220, 38, 38, 0.18)",
+      bottomLineColor: RED,
+      lastPriceAnimation: LastPriceAnimationMode.OnDataUpdate,
+      crosshairMarkerVisible: true,
+      crosshairMarkerRadius: 5,
+      crosshairMarkerBorderColor: "rgba(255,255,255,0.95)",
+      crosshairMarkerBackgroundColor: "",
+      crosshairMarkerBorderWidth: 2,
+    };
+  }
+  return {
+    ...base,
+    topFillColor1: "rgba(22, 163, 74, 0.08)",
+    topFillColor2: "rgba(22, 163, 74, 0.02)",
+    topLineColor: "rgba(22, 163, 74, 0.38)",
+    bottomFillColor1: "rgba(220, 38, 38, 0.02)",
+    bottomFillColor2: "rgba(220, 38, 38, 0.08)",
+    bottomLineColor: "rgba(220, 38, 38, 0.38)",
+    lastPriceAnimation: LastPriceAnimationMode.Disabled,
+    crosshairMarkerVisible: false,
+  };
+}
+
+function selectionBarIndices(
+  data: readonly { time: UTCTimestamp }[],
+  startT: number,
+  endT: number,
+): { iLo: number; iHi: number } | null {
+  const iA = data.findIndex((d) => d.time === startT);
+  const iB = data.findIndex((d) => d.time === endT);
+  if (iA < 0 || iB < 0) return null;
+  return { iLo: Math.min(iA, iB), iHi: Math.max(iA, iB) };
+}
 
 function ymdToBarTime(ymd: string, data: readonly { time: UTCTimestamp }[]): UTCTimestamp | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return null;
@@ -186,7 +242,39 @@ function layoutPointTooltip(
 
 type BandGeom = { left: number; width: number; positive: boolean };
 
-function SelectionLayers({ containerWidth, band }: { containerWidth: number; band: BandGeom }) {
+function layoutSelectionTooltip(
+  band: BandGeom,
+  containerWidth: number,
+  chartHeight: number,
+  estimatedHeight: number,
+): { left: number; top: number; transform: string } {
+  const centerX = band.left + band.width / 2;
+  const halfW = TOOLTIP_MAX_W / 2;
+  const left = Math.min(
+    Math.max(halfW + TOOLTIP_EDGE_PAD, centerX),
+    Math.max(halfW + TOOLTIP_EDGE_PAD, containerWidth - halfW - TOOLTIP_EDGE_PAD),
+  );
+  const hoverY = chartHeight * 0.2;
+  const minTop = TOOLTIP_EDGE_PAD;
+  const bottomLimit = chartHeight - TOOLTIP_EDGE_PAD;
+  const placeAbove = hoverY >= estimatedHeight + TOOLTIP_GAP_PX + minTop;
+  if (placeAbove) {
+    return { left, top: hoverY - TOOLTIP_GAP_PX, transform: "translate(-50%, -100%)" };
+  }
+  const top = Math.max(minTop, Math.min(hoverY + TOOLTIP_GAP_PX, bottomLimit - estimatedHeight));
+  return { left, top, transform: "translateX(-50%)" };
+}
+
+function SelectionLayers({
+  containerWidth,
+  band,
+  hideOutsideDim,
+}: {
+  containerWidth: number;
+  band: BandGeom;
+  /** When true, only the selection band is tinted; sides rely on faded series (Google Finance–style). */
+  hideOutsideDim?: boolean;
+}) {
   if (containerWidth <= 0 || band.width <= 0) return null;
   const l = (band.left / containerWidth) * 100;
   const w = (band.width / containerWidth) * 100;
@@ -194,14 +282,14 @@ function SelectionLayers({ containerWidth, band }: { containerWidth: number; ban
   const hi = band.positive ? "rgba(22, 163, 74, 0.10)" : "rgba(220, 38, 38, 0.10)";
   return (
     <>
-      {band.left > 0 ? (
+      {!hideOutsideDim && band.left > 0 ? (
         <div className="absolute inset-y-0 left-0" style={{ width: `${l}%`, background: dim }} />
       ) : null}
       <div
-        className="absolute inset-y-0 border-x border-[rgba(9,9,11,0.04)]"
+        className="absolute inset-y-0 border-x border-[rgba(9,9,11,0.08)]"
         style={{ left: `${l}%`, width: `${w}%`, background: hi }}
       />
-      {band.left + band.width < containerWidth ? (
+      {!hideOutsideDim && band.left + band.width < containerWidth ? (
         <div
           className="absolute inset-y-0 right-0"
           style={{
@@ -235,6 +323,11 @@ export function PriceChart({
   const baselinePriceLineRef = useRef<IPriceLine | null>(null);
   const costBasisLineRef = useRef<IPriceLine | null>(null);
   const markersRef = useRef<ISeriesMarkersPluginApi<UTCTimestamp> | null>(null);
+  const splitSeriesBundleRef = useRef<{
+    left: ISeriesApi<"Baseline">;
+    mid: ISeriesApi<"Baseline">;
+    right: ISeriesApi<"Baseline">;
+  } | null>(null);
   const pointsRef = useRef<StockChartPoint[]>([]);
   const dragActiveRef = useRef(false);
   const rafRef = useRef(0);
@@ -306,6 +399,8 @@ export function PriceChart({
       displayPrice: metrics.displayPrice,
       displayChangePct: metrics.displayChangePct,
       displayChangeAbs: metrics.displayChangeAbs,
+      selectionChangeAbs: metrics.selectionChangeAbs,
+      selectionChangePct: metrics.selectionChangePct,
       isHovering: metrics.isHovering,
       selectionActive: metrics.selectionActive,
       periodLabelOverride: metrics.periodLabelOverride,
@@ -472,15 +567,24 @@ export function PriceChart({
           });
         }
       }
-      const data = param.seriesData.get(s);
       let hoverValue: number | null = null;
       let tunix: number | null = null;
-      if (data && typeof data === "object" && "value" in data && isFiniteNumber((data as { value: number }).value)) {
-        hoverValue = (data as { value: number }).value;
-        const row = data as { value: number; time?: UTCTimestamp };
-        tunix =
-          typeof row.time === "number" && Number.isFinite(row.time) ? row.time : horzTimeToUnixSeconds(param.time as Time);
-      } else if (holdingsStyle) {
+      if (holdingsStyle) {
+        const data = param.seriesData.get(s);
+        if (data && typeof data === "object" && "value" in data && isFiniteNumber((data as { value: number }).value)) {
+          hoverValue = (data as { value: number }).value;
+          const row = data as { value: number; time?: UTCTimestamp };
+          tunix =
+            typeof row.time === "number" && Number.isFinite(row.time) ? row.time : horzTimeToUnixSeconds(param.time as Time);
+        } else {
+          const sec = horzTimeToUnixSeconds(param.time as Time);
+          const near = sec != null ? nearestPointByTime(pointsRef.current, sec) : null;
+          if (near && isFiniteNumber(near.time) && isFiniteNumber(near.value)) {
+            hoverValue = near.value;
+            tunix = near.time;
+          }
+        }
+      } else {
         const sec = horzTimeToUnixSeconds(param.time as Time);
         const near = sec != null ? nearestPointByTime(pointsRef.current, sec) : null;
         if (near && isFiniteNumber(near.time) && isFiniteNumber(near.value)) {
@@ -517,6 +621,7 @@ export function PriceChart({
       markersRef.current = null;
       baselinePriceLineRef.current = null;
       costBasisLineRef.current = null;
+      splitSeriesBundleRef.current = null;
       chart.remove();
       chartRef.current = null;
       seriesRef.current = null;
@@ -566,7 +671,8 @@ export function PriceChart({
         const width = Math.abs(cx - startX);
         const pA = pointAtChartX(chart, pts, startX);
         const pB = pointAtChartX(chart, pts, cx);
-        const positive = pA && pB ? pB.value >= pA.value : true;
+        const positive =
+          pA && pB ? (pA.time <= pB.time ? pB.value >= pA.value : pA.value >= pB.value) : true;
         if (rafRef.current) cancelAnimationFrame(rafRef.current);
         rafRef.current = requestAnimationFrame(() => {
           rafRef.current = 0;
@@ -598,11 +704,14 @@ export function PriceChart({
         const p1 = pointAtChartX(chart, pts, endX);
         if (!p0 || !p1) return;
         const left = Math.min(startX, endX);
-        const positive = p1.value >= p0.value;
+        const pStart = p0.time <= p1.time ? p0 : p1;
+        const pEnd = p0.time <= p1.time ? p1 : p0;
+        const positive = pEnd.value >= pStart.value;
         setSelection({
-          startPrice: p0.value,
-          endPrice: p1.value,
-          endTimeUnix: p1.time,
+          startPrice: pStart.value,
+          endPrice: pEnd.value,
+          startTimeUnix: pStart.time,
+          endTimeUnix: pEnd.time,
         });
         setSelectionBand({ left, width: w, positive });
       };
@@ -677,15 +786,36 @@ export function PriceChart({
 
   // Series data, price lines, markers
   useEffect(() => {
-    const series = seriesRef.current;
     const chart = chartRef.current;
-    const markers = markersRef.current;
-    if (!series || !chart) return;
+    if (!chart) return;
 
-    const removeBaselineLine = () => {
+    const removeSplitBundle = () => {
+      const bundle = splitSeriesBundleRef.current;
+      if (!bundle) return;
       if (baselinePriceLineRef.current) {
         try {
-          series.removePriceLine(baselinePriceLineRef.current);
+          bundle.mid.removePriceLine(baselinePriceLineRef.current);
+        } catch {
+          /* ignore */
+        }
+        baselinePriceLineRef.current = null;
+      }
+      markersRef.current = null;
+      try {
+        chart.removeSeries(bundle.left);
+        chart.removeSeries(bundle.right);
+        chart.removeSeries(bundle.mid);
+      } catch {
+        /* ignore */
+      }
+      splitSeriesBundleRef.current = null;
+      seriesRef.current = null;
+    };
+
+    const removeOverviewSingleBaselineLine = (s: ISeriesApi<"Baseline"> | ISeriesApi<"Area">) => {
+      if (baselinePriceLineRef.current) {
+        try {
+          s.removePriceLine(baselinePriceLineRef.current);
         } catch {
           /* ignore */
         }
@@ -694,20 +824,60 @@ export function PriceChart({
     };
 
     const removeCostLine = () => {
-      if (costBasisLineRef.current) {
+      const s = seriesRef.current;
+      if (!s || !costBasisLineRef.current) return;
+      try {
+        s.removePriceLine(costBasisLineRef.current);
+      } catch {
+        /* ignore */
+      }
+      costBasisLineRef.current = null;
+    };
+
+    const ensureOverviewSingleSeries = (open: number): ISeriesApi<"Baseline"> => {
+      if (splitSeriesBundleRef.current) {
+        removeSplitBundle();
+      }
+      const existing = seriesRef.current;
+      if (existing && !splitSeriesBundleRef.current) {
+        return existing as ISeriesApi<"Baseline">;
+      }
+      const s = chart.addSeries(BaselineSeries, overviewBaselineOptions(open, "bright"));
+      seriesRef.current = s;
+      markersRef.current = createSeriesMarkers(s, [], { autoScale: true }) as ISeriesMarkersPluginApi<UTCTimestamp>;
+      return s;
+    };
+
+    const createSplitTriple = (open: number) => {
+      const cur = seriesRef.current;
+      if (cur && !splitSeriesBundleRef.current) {
+        removeOverviewSingleBaselineLine(cur);
+        markersRef.current = null;
         try {
-          series.removePriceLine(costBasisLineRef.current);
+          chart.removeSeries(cur);
         } catch {
           /* ignore */
         }
-        costBasisLineRef.current = null;
+        seriesRef.current = null;
       }
+      removeSplitBundle();
+
+      const left = chart.addSeries(BaselineSeries, overviewBaselineOptions(open, "dim"));
+      const mid = chart.addSeries(BaselineSeries, overviewBaselineOptions(open, "bright"));
+      const right = chart.addSeries(BaselineSeries, overviewBaselineOptions(open, "dim"));
+      splitSeriesBundleRef.current = { left, mid, right };
+      seriesRef.current = mid;
+      markersRef.current = createSeriesMarkers(mid, [], { autoScale: true }) as ISeriesMarkersPluginApi<UTCTimestamp>;
     };
 
+    let series = seriesRef.current;
+    let markers = markersRef.current;
+
     if (!points.length) {
-      series.setData([]);
+      removeSplitBundle();
+      series?.setData([]);
       markers?.setMarkers([]);
-      removeBaselineLine();
+      if (series) removeOverviewSingleBaselineLine(series);
       removeCostLine();
       return;
     }
@@ -718,15 +888,17 @@ export function PriceChart({
 
     const open = data[0]?.value;
     if (!isFiniteNumber(open)) {
-      series.setData([]);
-      markers?.setMarkers([]);
-      removeBaselineLine();
-      removeCostLine();
+      removeSplitBundle();
+      seriesRef.current?.setData([]);
+      markersRef.current?.setMarkers([]);
       return;
     }
 
     if (holdingsStyle) {
-      removeBaselineLine();
+      removeSplitBundle();
+      series = seriesRef.current;
+      if (!series) return;
+      removeOverviewSingleBaselineLine(series);
       series.setData(data);
       chart.timeScale().fitContent();
 
@@ -750,16 +922,90 @@ export function PriceChart({
         removeCostLine();
       }
 
-      markers?.setMarkers(tradeMarkersForChart(tradeMarkers, data));
+      markersRef.current?.setMarkers(tradeMarkersForChart(tradeMarkers, data));
       return;
     }
 
     removeCostLine();
-    (series as ISeriesApi<"Baseline">).applyOptions({ baseValue: { type: "price", price: open } });
+
+    const sel =
+      selection &&
+      isFiniteNumber(selection.startTimeUnix) &&
+      isFiniteNumber(selection.endTimeUnix)
+        ? selection
+        : null;
+    const barIdx = sel ? selectionBarIndices(data, sel.startTimeUnix, sel.endTimeUnix) : null;
+    const useSplit = Boolean(sel && barIdx && barIdx.iHi > barIdx.iLo);
+
+    if (useSplit && sel && barIdx) {
+      if (!splitSeriesBundleRef.current) {
+        createSplitTriple(open);
+      }
+      const bundle = splitSeriesBundleRef.current;
+      markers = markersRef.current;
+      if (!bundle || !markers) return;
+
+      const { iLo, iHi } = barIdx;
+      const leftData = data.slice(0, iLo + 1);
+      const midData = data.slice(iLo, iHi + 1);
+      const rightData = data.slice(iHi, data.length);
+
+      bundle.left.applyOptions(overviewBaselineOptions(open, "dim"));
+      bundle.mid.applyOptions(overviewBaselineOptions(open, "bright"));
+      bundle.right.applyOptions(overviewBaselineOptions(open, "dim"));
+
+      bundle.left.setData(leftData);
+      bundle.mid.setData(midData);
+      bundle.right.setData(rightData);
+
+      let bl = baselinePriceLineRef.current;
+      if (!bl) {
+        bl = bundle.mid.createPriceLine({
+          price: open,
+          color: BASELINE_LINE,
+          lineWidth: 1,
+          lineStyle: LineStyle.Dashed,
+          axisLabelVisible: false,
+          lineVisible: true,
+        });
+        baselinePriceLineRef.current = bl;
+      } else {
+        bl.applyOptions({ price: open });
+      }
+
+      chart.timeScale().fitContent();
+
+      const a = data[iLo]!;
+      const b = data[iHi]!;
+      markers.setMarkers([
+        {
+          time: a.time,
+          position: "inBar",
+          shape: "circle",
+          color: a.value >= open ? GREEN : RED,
+          size: 2,
+        },
+        {
+          time: b.time,
+          position: "inBar",
+          shape: "circle",
+          color: b.value >= open ? GREEN : RED,
+          size: 2,
+        },
+      ]);
+      return;
+    }
+
+    removeSplitBundle();
+    const single = ensureOverviewSingleSeries(open);
+    markers = markersRef.current;
+    if (!markers) return;
+
+    single.applyOptions(overviewBaselineOptions(open, "bright"));
 
     let bl = baselinePriceLineRef.current;
     if (!bl) {
-      bl = series.createPriceLine({
+      bl = single.createPriceLine({
         price: open,
         color: BASELINE_LINE,
         lineWidth: 1,
@@ -772,11 +1018,11 @@ export function PriceChart({
       bl.applyOptions({ price: open });
     }
 
-    series.setData(data);
+    single.setData(data);
     chart.timeScale().fitContent();
 
     const last = data[data.length - 1];
-    if (markers && last) {
+    if (last) {
       markers.setMarkers([
         {
           time: last.time,
@@ -787,7 +1033,7 @@ export function PriceChart({
         },
       ]);
     }
-  }, [points, lastPointStroke, holdingsStyle, tradeMarkers, costBasisPrice]);
+  }, [points, lastPointStroke, holdingsStyle, tradeMarkers, costBasisPrice, selection]);
 
   const empty = !loading && points.length === 0;
   const hoverYmd = useMemo(
@@ -798,6 +1044,7 @@ export function PriceChart({
 
   const overviewHoverTooltip = useMemo(() => {
     if (holdingsStyle) return null;
+    if (selection) return null;
     if (hoverPoint == null || hoverPrice == null || hoverTimeUnix == null) return null;
     if (!Number.isFinite(hoverPrice) || !Number.isFinite(hoverTimeUnix)) return null;
     const dateLabel = formatAssetChartTimestamp(hoverTimeUnix, {
@@ -811,7 +1058,29 @@ export function PriceChart({
           ? formatReturnAxis(hoverPrice)
           : `$${formatStockPriceAxis(hoverPrice)}`;
     return { dateLabel, valueLabel };
-  }, [holdingsStyle, hoverPoint, hoverPrice, hoverTimeUnix, kind, series, dataTimeZoneHint]);
+  }, [holdingsStyle, selection, hoverPoint, hoverPrice, hoverTimeUnix, kind, series, dataTimeZoneHint]);
+
+  const selectionRangeTooltip = useMemo(() => {
+    if (holdingsStyle || !selection) return null;
+    const abs = metrics.selectionChangeAbs;
+    const pct = metrics.selectionChangePct;
+    if (abs == null || pct == null || !Number.isFinite(abs) || !Number.isFinite(pct)) return null;
+    const isPos = abs >= 0;
+    const rangeLabel = formatChartSelectionDateRange(selection.startTimeUnix, selection.endTimeUnix, {
+      kind,
+      timeZone: dataTimeZoneHint,
+    });
+    const changeLine =
+      kind === "stock" && series === "marketCap"
+        ? `${isPos ? "+" : ""}${formatUsdCompact(abs)} (${isPos ? "+" : ""}${pct.toFixed(2)}%)`
+        : `${isPos ? "+" : ""}${abs.toFixed(2)} (${isPos ? "+" : ""}${pct.toFixed(2)}%)`;
+    return { isPos, changeLine, rangeLabel };
+  }, [holdingsStyle, selection, metrics.selectionChangeAbs, metrics.selectionChangePct, kind, series, dataTimeZoneHint]);
+
+  const selectionTooltipPos = useMemo(() => {
+    if (!selectionRangeTooltip || !selectionBand || containerWidth <= 0) return null;
+    return layoutSelectionTooltip(selectionBand, containerWidth, height, 88);
+  }, [selectionRangeTooltip, selectionBand, containerWidth, height]);
 
   const holdingsTooltipEstHeight = useMemo(() => {
     const n = hoverTradeLines?.length ?? 0;
@@ -839,7 +1108,7 @@ export function PriceChart({
           <SelectionLayers containerWidth={containerWidth} band={dragPreview} />
         ) : null}
         {containerWidth > 0 && !holdingsStyle && selection && selectionBand && !dragPreview ? (
-          <SelectionLayers containerWidth={containerWidth} band={selectionBand} />
+          <SelectionLayers containerWidth={containerWidth} band={selectionBand} hideOutsideDim />
         ) : null}
       </div>
       <div
@@ -882,6 +1151,28 @@ export function PriceChart({
         >
           <div className="font-normal text-[#71717A]">{overviewHoverTooltip.dateLabel}</div>
           <div className="mt-1 tabular-nums font-semibold text-[#09090B]">{overviewHoverTooltip.valueLabel}</div>
+        </div>
+      ) : null}
+      {!holdingsStyle && selectionRangeTooltip && selectionTooltipPos ? (
+        <div
+          className="pointer-events-none absolute z-30 min-w-[200px] max-w-[min(100%,280px)] rounded-[10px] border border-[#E4E4E7] bg-white px-3 py-2 text-[12px] leading-4 shadow-[0px_8px_20px_0px_rgba(10,10,10,0.10)]"
+          style={{
+            left: selectionTooltipPos.left,
+            top: selectionTooltipPos.top,
+            transform: selectionTooltipPos.transform,
+          }}
+          role="status"
+        >
+          <div
+            className={`tabular-nums font-semibold ${
+              selectionRangeTooltip.isPos ? "text-[#16A34A]" : "text-[#DC2626]"
+            }`}
+          >
+            {selectionRangeTooltip.changeLine}
+          </div>
+          {selectionRangeTooltip.rangeLabel ? (
+            <div className="mt-1 font-normal text-[#71717A]">{selectionRangeTooltip.rangeLabel}</div>
+          ) : null}
         </div>
       ) : null}
       {loading ? (

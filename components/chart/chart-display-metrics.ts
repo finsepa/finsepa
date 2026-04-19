@@ -4,30 +4,36 @@ function isFiniteNumber(v: unknown): v is number {
   return typeof v === "number" && Number.isFinite(v);
 }
 
-/** User drag selection: P/L from mousedown price → mouseup price (interaction order). */
+/** User drag selection: P/L from earlier bar → later bar (chronological). */
 export type ChartRangeSelection = {
   startPrice: number;
   endPrice: number;
-  /** Unix seconds for the bar at the selection end (matches endPrice). */
+  /** Unix seconds for the selection start bar. */
+  startTimeUnix: number;
+  /** Unix seconds for the selection end bar. */
   endTimeUnix: number;
 } | null;
 
 export type ChartHeaderMetrics = {
   displayPrice: number | null;
+  /** Period move: first bar → latest bar in the loaded range (matches headline price). */
   displayChangePct: number | null;
   displayChangeAbs: number | null;
+  /** When a drag selection exists: move over the selected window only. */
+  selectionChangeAbs: number | null;
+  selectionChangePct: number | null;
   isHovering: boolean;
   selectionActive: boolean;
   /** When set, replaces timeframe label (e.g. "Selected range") */
   periodLabelOverride: string | null;
-  /** Unix seconds for the point matching displayPrice (hover / selection end / last bar). */
+  /** Unix seconds for the point matching displayPrice (crosshair / last bar; headline stays on last bar when a range is selected). */
   displayTimeUnix: number | null;
 };
 
 /**
- * Priority: range selection > optional crosshair (Holdings tab only) > period (last vs first).
- * Overview / crypto asset pages pass `crosshairForHeader: null` so the header stays on
- * current price + period P/L; crosshair only drives the chart tooltip there.
+ * Headline `displayPrice` is always the latest bar when points exist.
+ * `displayChange*` = period (first → last). When a range is selected, `selectionChange*` holds
+ * the selected window; optional crosshair (Holdings) overrides headline to the hovered bar.
  */
 export function computeChartHeaderMetrics(
   points: StockChartPoint[],
@@ -39,6 +45,8 @@ export function computeChartHeaderMetrics(
       displayPrice: null,
       displayChangePct: null,
       displayChangeAbs: null,
+      selectionChangeAbs: null,
+      selectionChangePct: null,
       isHovering: false,
       selectionActive: false,
       periodLabelOverride: null,
@@ -50,18 +58,52 @@ export function computeChartHeaderMetrics(
     selection &&
     isFiniteNumber(selection.startPrice) &&
     isFiniteNumber(selection.endPrice) &&
+    isFiniteNumber(selection.startTimeUnix) &&
     isFiniteNumber(selection.endTimeUnix)
   ) {
-    const abs = selection.endPrice - selection.startPrice;
-    const pct = selection.startPrice !== 0 ? (abs / selection.startPrice) * 100 : null;
+    const last = points[points.length - 1]!.value;
+    const lastTime = points[points.length - 1]!.time;
+    if (!isFiniteNumber(last)) {
+      return {
+        displayPrice: null,
+        displayChangePct: null,
+        displayChangeAbs: null,
+        selectionChangeAbs: null,
+        selectionChangePct: null,
+        isHovering: false,
+        selectionActive: false,
+        periodLabelOverride: null,
+        displayTimeUnix: null,
+      };
+    }
+    const first = points[0]!.value;
+    if (!isFiniteNumber(first)) {
+      return {
+        displayPrice: null,
+        displayChangePct: null,
+        displayChangeAbs: null,
+        selectionChangeAbs: null,
+        selectionChangePct: null,
+        isHovering: false,
+        selectionActive: false,
+        periodLabelOverride: null,
+        displayTimeUnix: null,
+      };
+    }
+    const periodAbs = last - first;
+    const periodPct = first !== 0 ? (periodAbs / first) * 100 : null;
+    const selAbs = selection.endPrice - selection.startPrice;
+    const selPct = selection.startPrice !== 0 ? (selAbs / selection.startPrice) * 100 : null;
     return {
-      displayPrice: selection.endPrice,
-      displayChangePct: pct,
-      displayChangeAbs: abs,
+      displayPrice: last,
+      displayChangePct: periodPct,
+      displayChangeAbs: periodAbs,
+      selectionChangeAbs: selAbs,
+      selectionChangePct: selPct,
       isHovering: false,
       selectionActive: true,
-      periodLabelOverride: "Selected range",
-      displayTimeUnix: selection.endTimeUnix,
+      periodLabelOverride: null,
+      displayTimeUnix: isFiniteNumber(lastTime) ? lastTime : null,
     };
   }
 
@@ -71,6 +113,8 @@ export function computeChartHeaderMetrics(
       displayPrice: null,
       displayChangePct: null,
       displayChangeAbs: null,
+      selectionChangeAbs: null,
+      selectionChangePct: null,
       isHovering: false,
       selectionActive: false,
       periodLabelOverride: null,
@@ -90,6 +134,8 @@ export function computeChartHeaderMetrics(
       displayPrice: hp,
       displayChangePct: pct,
       displayChangeAbs: abs,
+      selectionChangeAbs: null,
+      selectionChangePct: null,
       isHovering: true,
       selectionActive: false,
       periodLabelOverride: null,
@@ -104,6 +150,8 @@ export function computeChartHeaderMetrics(
       displayPrice: null,
       displayChangePct: null,
       displayChangeAbs: null,
+      selectionChangeAbs: null,
+      selectionChangePct: null,
       isHovering: false,
       selectionActive: false,
       periodLabelOverride: null,
@@ -117,6 +165,8 @@ export function computeChartHeaderMetrics(
     displayPrice: last,
     displayChangePct: pct,
     displayChangeAbs: abs,
+    selectionChangeAbs: null,
+    selectionChangePct: null,
     isHovering: false,
     selectionActive: false,
     periodLabelOverride: null,

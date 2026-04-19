@@ -42,7 +42,16 @@ function netCashUsd(transactions: { sum: number }[]): number {
 
 function balanceClassName(n: number): string {
   if (n < 0) return "text-[#DC2626]";
-  if (n > 0) return "text-[#16A34A]";
+  return "text-[#09090B]";
+}
+
+/** Summ column: green for cash / income inflows; red for outflows; black otherwise. */
+function cashSummClassName(operation: string, sum: number): string {
+  if (sum < 0) return "text-[#DC2626]";
+  if (sum > 0) {
+    const u = operation.toLowerCase();
+    if (u.includes("cash in") || u.includes("other income")) return "text-[#16A34A]";
+  }
   return "text-[#09090B]";
 }
 
@@ -353,7 +362,7 @@ function PortfolioCashPanelInner() {
                   <div
                     className={cn(
                       "text-right text-[14px] font-medium leading-5 tabular-nums",
-                      balanceClassName(t.sum),
+                      cashSummClassName(t.operation, t.sum),
                     )}
                   >
                     {formatSignedUsd(t.sum)}

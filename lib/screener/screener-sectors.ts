@@ -20,9 +20,10 @@ function emptyAgg(): SectorAgg {
 }
 
 /**
- * Fixed GICS-style sector rows: aggregate **market cap** and **market-cap-weighted** 1D % moves
- * from the full EODHD [Stock Market Screener](https://eodhd.com/financial-apis/stock-market-screener-api) universe
- * (`getTop500Universe` — same `refund1dP` snapshot as Companies), not only the paginated table slice.
+ * GICS-style sector rows: aggregate **market cap** and **market-cap-weighted** 1D % moves from the
+ * full EODHD [Stock Market Screener](https://eodhd.com/financial-apis/stock-market-screener-api) universe
+ * (`getTop500Universe` — same `refund1dP` snapshot as Companies), then **sort by market cap descending**
+ * (ties broken by sector name). `rank` reflects this order.
  */
 export function buildScreenerSectorsRows(universe: readonly TopCompanyUniverseRow[]): ScreenerSectorRow[] {
   const agg = new Map<string, SectorAgg>();
@@ -42,16 +43,24 @@ export function buildScreenerSectorsRows(universe: readonly TopCompanyUniverseRo
     }
   }
 
-  return SCREENER_SECTOR_TABLE_ORDER.map((sector, i) => {
+  const rows: ScreenerSectorRow[] = SCREENER_SECTOR_TABLE_ORDER.map((sector) => {
     const a = agg.get(sector)!;
     const mc = a.marketCapUsd;
     const change1D = a.weighted1dDenom > 0 ? a.weighted1dNum / a.weighted1dDenom : null;
     return {
-      rank: i + 1,
+      rank: 0,
       sector,
       marketCapUsd: mc,
       marketCapDisplay: formatMarketCapCompactNoCurrency(mc > 0 ? mc : null),
       change1D,
     };
   });
+
+  rows.sort((a, b) => {
+    const d = b.marketCapUsd - a.marketCapUsd;
+    if (d !== 0) return d;
+    return a.sector.localeCompare(b.sector);
+  });
+
+  return rows.map((row, i) => ({ ...row, rank: i + 1 }));
 }

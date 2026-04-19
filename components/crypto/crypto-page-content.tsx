@@ -28,6 +28,8 @@ const EMPTY_CHART_DISPLAY: ChartDisplayState = {
   displayPrice: null,
   displayChangePct: null,
   displayChangeAbs: null,
+  selectionChangeAbs: null,
+  selectionChangePct: null,
   isHovering: false,
   selectionActive: false,
   periodLabelOverride: null,
@@ -219,9 +221,12 @@ export function CryptoPageContent({
           logoLetter={safeRow.symbol}
           periodLabel={activeTab === "holdings" ? range : "Today"}
           periodLabelOverride={chartUi.periodLabelOverride}
+          chartRangeLabel={range}
           price={chartUi.displayPrice}
           changePct={chartUi.displayChangePct}
           changeAbs={chartUi.displayChangeAbs}
+          selectionChangeAbs={chartUi.selectionChangeAbs}
+          selectionChangePct={chartUi.selectionChangePct}
           chartLoading={chartUi.loading}
           chartEmpty={chartUi.empty}
           priceTimestampLabel={chartUi.priceTimestampLabel}
