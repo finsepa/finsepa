@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useSpringTriplet } from "@/components/chart/use-spring-numbers";
 import { mergeLogoMemory, readLogoMemory } from "@/lib/logos/logo-memory";
@@ -13,6 +13,7 @@ import {
 } from "@/lib/market/stock-header-meta";
 import type { StockChartSeries } from "@/lib/market/stock-chart-types";
 import { formatUsdCompact } from "@/lib/market/key-stats-basic-format";
+import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import { WatchlistStarButton } from "@/components/watchlist/watchlist-star-button";
 
 type Props = {
@@ -61,6 +62,7 @@ export function StockHeader({
   headerMetaLoading,
   headerChartMetric = "price",
 }: Props) {
+  const { openNewTransactionWithPreset } = usePortfolioWorkspace();
   const meta = getStockDetailMetaFromTicker(ticker);
   const symbol = meta.ticker;
   const titleName = headerMeta?.fullName?.trim() ? headerMeta.fullName : meta.name;
@@ -166,8 +168,23 @@ export function StockHeader({
           </div>
         </div>
 
-        <div className="group shrink-0">
-          <WatchlistStarButton variant="detail" storageKey={symbol} label={symbol} />
+        <div className="flex shrink-0 items-center gap-2">
+          <div className="group shrink-0">
+            <WatchlistStarButton variant="detail" storageKey={symbol} label={symbol} />
+          </div>
+          <button
+            type="button"
+            onClick={() =>
+              openNewTransactionWithPreset({
+                symbol: symbol.trim().toUpperCase(),
+                name: titleName.trim() || symbol,
+              })
+            }
+            className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-[10px] bg-[#09090B] px-3.5 text-[13px] font-semibold text-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.12)] transition-colors hover:bg-[#27272A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/25"
+          >
+            <Plus className="h-4 w-4 shrink-0" strokeWidth={2.25} aria-hidden />
+            Add Trade
+          </button>
         </div>
       </div>
 

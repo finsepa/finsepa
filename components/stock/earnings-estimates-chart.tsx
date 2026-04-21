@@ -37,6 +37,15 @@ const GROUP_CENTER_SPACING_DAYS = 72;
 const MAX_ANNUAL_BARS = 10;
 const MAX_QUARTERLY_BARS = 40;
 
+/** Plot height (px). Built-in time scale labels are hidden — fiscal periods render in the DOM row below. */
+const ESTIMATES_CHART_PLOT_HEIGHT_PX = 272;
+/** Space for fiscal period grid + horizontal estimate/reported legend (total chart block stays 320px). */
+const ESTIMATES_CHART_AXIS_ROW_PX = 48;
+const ESTIMATES_CHART_TOTAL_HEIGHT_PX = ESTIMATES_CHART_PLOT_HEIGHT_PX + ESTIMATES_CHART_AXIS_ROW_PX;
+
+/** Must match `leftPriceScale.minimumWidth` so period labels line up with the histogram plot. */
+const ESTIMATES_CHART_LEFT_PRICE_SCALE_PX = 56;
+
 /** LWC time-scale `barSpacing` ≈ histogram column width (px); `maxBarSpacing` caps zoom/fit. */
 const ESTIMATES_CHART_MAX_BAR_WIDTH_PX = 32;
 
@@ -161,16 +170,13 @@ function barTimeShift(which: "estimate" | "actual"): number {
 /** Max horizontal distance from bar center to pointer to count as a hover hit. */
 const BAR_PICK_THRESHOLD_PX = 120;
 
-/** Extra logical range on the **left** so the first year label / bar aren’t clipped by the pane edge. */
-const ESTIMATES_TIME_SCALE_LEFT_LABEL_PAD_LOGICAL = 0.75;
-
 /** Horizontal padding (px) inside the plot when auto-fitting bar spacing. */
-const ESTIMATES_TIME_SCALE_GUTTER_PX = 24;
+const ESTIMATES_TIME_SCALE_GUTTER_PX = 14;
 
 /**
  * Left price scale + tick labels (“35 B”, etc.) — `timeScale().width()` is only the plot; container is full.
  */
-const ESTIMATES_CHART_LEFT_SCALE_RESERVE_PX = 72;
+const ESTIMATES_CHART_LEFT_SCALE_RESERVE_PX = 64;
 
 /**
  * Fit histogram to the **container** width: auto `barSpacing` (capped at 32px) so the series fills the plot
@@ -209,10 +215,11 @@ function layoutEstimatesTimeScale(chart: IChartApi, containerWidthPx: number, la
 
     const contentPx = logicalSpan * targetSpacing;
     const extraPx = Math.max(0, plotW - contentPx - ESTIMATES_TIME_SCALE_GUTTER_PX);
-    const padLogical = extraPx / (2 * targetSpacing);
+    /** Split slack evenly left/right so the series is centered and the plot width is used symmetrically. */
+    const padLogicalEachSide = extraPx / (2 * targetSpacing);
     ts.setVisibleLogicalRange({
-      from: lr.from - padLogical - ESTIMATES_TIME_SCALE_LEFT_LABEL_PAD_LOGICAL,
-      to: lr.to + padLogical,
+      from: lr.from - padLogicalEachSide,
+      to: lr.to + padLogicalEachSide,
     });
 
     requestAnimationFrame(() => {
@@ -229,10 +236,10 @@ function layoutEstimatesTimeScale(chart: IChartApi, containerWidthPx: number, la
       }
       const contentPx2 = span2 * refined;
       const extraPx2 = Math.max(0, plotW2 - contentPx2 - ESTIMATES_TIME_SCALE_GUTTER_PX);
-      const padLogical2 = extraPx2 / (2 * refined);
+      const padLogicalEachSide2 = extraPx2 / (2 * refined);
       ts.setVisibleLogicalRange({
-        from: lr2.from - padLogical2 - ESTIMATES_TIME_SCALE_LEFT_LABEL_PAD_LOGICAL,
-        to: lr2.to + padLogical2,
+        from: lr2.from - padLogicalEachSide2,
+        to: lr2.to + padLogicalEachSide2,
       });
     });
   });
@@ -347,9 +354,6 @@ export function EarningsEstimatesChart({ data }: Props) {
     let cancelled = false;
     let ro: ResizeObserver | null = null;
     let crosshairRaf = 0;
-    const chartHeight = 320;
-    const estimateLegend = metric === "revenue" ? "Estimated Revenue" : "Estimated EPS";
-    const reportedLegend = metric === "revenue" ? "Reported Revenue" : "Reported EPS";
 
     const mount = () => {
       if (cancelled) return;
@@ -362,7 +366,6 @@ export function EarningsEstimatesChart({ data }: Props) {
         chartRef.current = null;
       }
 
-      const tickLabels = new Map<number, string>();
       const estData: HistogramDatum[] = [];
       const actData: HistogramDatum[] = [];
       const gapSlots = interGroupWhitespaceSlotCount();
@@ -372,8 +375,6 @@ export function EarningsEstimatesChart({ data }: Props) {
         const base = indexToBaseTime(i) as number;
         const tEst = base + barTimeShift("estimate");
         const tAct = base + barTimeShift("actual");
-        tickLabels.set(tEst, row.label);
-        tickLabels.set(tAct, row.label);
         if (row.estimate != null) {
           estData.push({
             time: tEst as UTCTimestamp,
@@ -437,22 +438,19 @@ export function EarningsEstimatesChart({ data }: Props) {
         leftPriceScale: {
           visible: true,
           borderVisible: false,
-          minimumWidth: 56,
+          minimumWidth: ESTIMATES_CHART_LEFT_PRICE_SCALE_PX,
           scaleMargins: { top: 0.08, bottom: 0.12 },
         },
         timeScale: {
           borderVisible: false,
+          /** Native ticks omit many fiscal groups when dense; we render one label per group below. */
+          visible: false,
           rightOffset: 0,
           shiftVisibleRangeOnNewBar: false,
           /** Overridden by {@link layoutEstimatesTimeScale} after data load / resize. */
           barSpacing: 12,
           minBarSpacing: 2,
           maxBarSpacing: ESTIMATES_CHART_MAX_BAR_WIDTH_PX,
-          tickMarkFormatter: (t: UTCTimestamp) => {
-            const n = typeof t === "number" ? t : Number(t);
-            if (!Number.isFinite(n)) return "";
-            return tickLabels.get(n) ?? "";
-          },
         },
         crosshair: {
           mode: CrosshairMode.Normal,
@@ -513,7 +511,7 @@ export function EarningsEstimatesChart({ data }: Props) {
 
       estSeries.setData(estData);
       actSeries.setData(actData);
-      chart.resize(wPx, chartHeight);
+      chart.resize(wPx, ESTIMATES_CHART_PLOT_HEIGHT_PX);
       layoutEstimatesTimeScale(chart, wPx);
 
       const onCrosshairMove = (param: MouseEventParams) => {
@@ -556,8 +554,8 @@ export function EarningsEstimatesChart({ data }: Props) {
             anchorX,
             side,
             periodLabel: row.label,
-            estimateLine: `${estimateLegend}: ${estVal}`,
-            actualLine: `${reportedLegend}: ${actVal}`,
+            estimateLine: `${legendEstimate}: ${estVal}`,
+            actualLine: `${legendReported}: ${actVal}`,
           });
         });
       };
@@ -566,7 +564,7 @@ export function EarningsEstimatesChart({ data }: Props) {
       ro = new ResizeObserver(() => {
         const w = chartWidthPx(el);
         if (w > 0 && chartRef.current) {
-          chartRef.current.resize(w, chartHeight);
+          chartRef.current.resize(w, ESTIMATES_CHART_PLOT_HEIGHT_PX);
           layoutEstimatesTimeScale(chartRef.current, w);
         }
       });
@@ -586,7 +584,7 @@ export function EarningsEstimatesChart({ data }: Props) {
       bandPrimitiveRef.current = null;
       setTooltip(null);
     };
-  }, [rows, metric]);
+  }, [rows, metric, legendEstimate, legendReported]);
 
   const showChart = rows.length > 0;
 
@@ -619,7 +617,8 @@ export function EarningsEstimatesChart({ data }: Props) {
       <div>
         {showChart ? (
           <div
-            className="relative h-[320px] w-full min-h-[320px] min-w-0 max-w-full overflow-x-hidden"
+            className="relative w-full min-w-0 max-w-full overflow-x-hidden"
+            style={{ height: ESTIMATES_CHART_TOTAL_HEIGHT_PX }}
             onPointerLeave={() => {
               bandPrimitiveRef.current?.setBand(null, null);
               setTooltip(null);
@@ -628,62 +627,92 @@ export function EarningsEstimatesChart({ data }: Props) {
             {/*
               Horizontal inset via padding only — avoid `margin` + `width: calc(100% - …)` which can
               exceed 100% parent width and produce a horizontal scrollbar.
-              Inner `relative` matches chart width so crosshair x === tooltip `left` coordinates.
+              Plot + fiscal period / series legend row = 320px total; crosshair y is relative to the plot pane only.
             */}
-            <div className="box-border min-h-[320px] w-full min-w-0 max-w-full overflow-x-hidden px-2 sm:px-3">
-              <div className="relative min-h-[320px] w-full min-w-0 max-w-full overflow-x-hidden">
-                <div ref={wrapRef} className="h-full min-h-[320px] w-full min-w-0 max-w-full overflow-hidden" />
+            <div
+              className="box-border flex w-full min-w-0 max-w-full flex-col overflow-x-hidden px-2 sm:px-3"
+              style={{ height: ESTIMATES_CHART_TOTAL_HEIGHT_PX }}
+            >
+              <div
+                className="relative w-full min-w-0 shrink-0 overflow-hidden"
+                style={{ height: ESTIMATES_CHART_PLOT_HEIGHT_PX }}
+              >
+                <div ref={wrapRef} className="h-full w-full min-w-0 overflow-hidden" />
                 {tooltip ? (
-                <div
-                  className="pointer-events-none absolute z-20 max-w-[min(280px,calc(100%-16px))] rounded-lg bg-[#09090B] px-3 py-2.5 pr-3.5 text-left text-white shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
-                  style={{
-                    left: `clamp(8px, ${tooltip.anchorX}px, calc(100% - 8px))`,
-                    top: tooltip.y,
-                    transform:
-                      tooltip.side === "left"
-                        ? "translate(calc(-100% - 10px), -50%)"
-                        : "translate(10px, -50%)",
-                  }}
-                >
-                  {tooltip.side === "left" ? (
-                    <span
-                      className="absolute top-1/2 left-full -translate-y-1/2 border-y-[6px] border-y-transparent border-l-[7px] border-l-[#09090B]"
-                      aria-hidden
-                    />
-                  ) : (
-                    <span
-                      className="absolute top-1/2 right-full -translate-y-1/2 border-y-[6px] border-y-transparent border-r-[7px] border-r-[#09090B]"
-                      aria-hidden
-                    />
-                  )}
-                  <p className="text-[12px] font-semibold leading-4 text-white">{tooltip.periodLabel}</p>
-                  <p className="mt-1.5 whitespace-nowrap text-[12px] font-normal leading-4 text-zinc-300">
-                    {tooltip.estimateLine}
-                  </p>
-                  <p className="mt-0.5 whitespace-nowrap text-[12px] font-normal leading-4 text-zinc-300">
-                    {tooltip.actualLine}
-                  </p>
-                </div>
+                  <div
+                    className="pointer-events-none absolute z-20 max-w-[min(280px,calc(100%-16px))] rounded-lg bg-[#09090B] px-3 py-2.5 pr-3.5 text-left text-white shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
+                    style={{
+                      left: `clamp(8px, ${tooltip.anchorX}px, calc(100% - 8px))`,
+                      top: tooltip.y,
+                      transform:
+                        tooltip.side === "left"
+                          ? "translate(calc(-100% - 10px), -50%)"
+                          : "translate(10px, -50%)",
+                    }}
+                  >
+                    {tooltip.side === "left" ? (
+                      <span
+                        className="absolute top-1/2 left-full -translate-y-1/2 border-y-[6px] border-y-transparent border-l-[7px] border-l-[#09090B]"
+                        aria-hidden
+                      />
+                    ) : (
+                      <span
+                        className="absolute top-1/2 right-full -translate-y-1/2 border-y-[6px] border-y-transparent border-r-[7px] border-r-[#09090B]"
+                        aria-hidden
+                      />
+                    )}
+                    <p className="text-[12px] font-semibold leading-4 text-white">{tooltip.periodLabel}</p>
+                    <p className="mt-1.5 whitespace-nowrap text-[12px] font-normal leading-4 text-zinc-300">
+                      {tooltip.estimateLine}
+                    </p>
+                    <p className="mt-0.5 whitespace-nowrap text-[12px] font-normal leading-4 text-zinc-300">
+                      {tooltip.actualLine}
+                    </p>
+                  </div>
                 ) : null}
+              </div>
+              <div
+                className="flex w-full shrink-0 flex-col gap-2 border-t border-[#E4E4E7] pt-1.5"
+                style={{ height: ESTIMATES_CHART_AXIS_ROW_PX }}
+              >
+                <div className="flex min-h-0 w-full min-w-0 flex-1">
+                  <div className="shrink-0" style={{ width: ESTIMATES_CHART_LEFT_PRICE_SCALE_PX }} aria-hidden />
+                  <div
+                    className="grid min-w-0 flex-1"
+                    style={{
+                      gridTemplateColumns: rows.length ? `repeat(${rows.length}, minmax(0, 1fr))` : undefined,
+                    }}
+                  >
+                    {rows.map((row, i) => (
+                      <div key={`${row.label}-${i}`} className="min-w-0 px-0.5 text-center">
+                        <span className="text-balance font-['Inter'] text-[11px] font-normal leading-snug text-[#71717A] sm:text-[12px]">
+                          {row.label}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: ESTIMATE_BAR }} />
+                    <span className="text-[13px] leading-5 text-[#71717A]">{legendEstimate}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: REPORTED_BAR }} />
+                    <span className="text-[13px] leading-5 text-[#71717A]">{legendReported}</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         ) : (
-          <div className="flex h-[320px] items-center justify-center text-[14px] text-[#71717A]">
+          <div
+            className="flex items-center justify-center text-[14px] text-[#71717A]"
+            style={{ height: ESTIMATES_CHART_TOTAL_HEIGHT_PX }}
+          >
             No estimate data for this view.
           </div>
         )}
-
-        <div className="flex flex-wrap items-center justify-center gap-6 pt-2">
-          <div className="flex items-center gap-2">
-            <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: ESTIMATE_BAR }} />
-            <span className="text-[13px] leading-5 text-[#71717A]">{legendEstimate}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: REPORTED_BAR }} />
-            <span className="text-[13px] leading-5 text-[#71717A]">{legendReported}</span>
-          </div>
-        </div>
       </div>
     </section>
   );

@@ -10,9 +10,9 @@ function SkeletonGrid() {
     <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
       {PLACEHOLDER_KEYS.map((id) => (
         <div key={id} className={cn(CARD, "animate-pulse")}>
-          <div className="mb-3 h-5 w-28 rounded bg-neutral-200/90" />
-          <div className="mb-2 h-6 w-40 rounded bg-neutral-200/80" />
-          <div className="h-[196px] rounded-lg bg-neutral-100" />
+          <div className="mb-4 h-5 w-28 rounded bg-neutral-200/90" />
+          <div className="mb-2 h-9 w-44 rounded bg-neutral-200/80" />
+          <div className="h-[300px] rounded-xl bg-neutral-100" />
         </div>
       ))}
     </div>

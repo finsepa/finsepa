@@ -10,6 +10,7 @@ const TABS: { id: StockDetailTabId; label: string }[] = [
   { id: "charting", label: "Charting" },
   { id: "multicharts", label: "Multicharts" },
   { id: "peers", label: "Peers" },
+  { id: "target-price", label: "Target Price" },
   { id: "earnings", label: "Earnings" },
   { id: "insiders", label: "Insiders" },
   { id: "profile", label: "Profile" },

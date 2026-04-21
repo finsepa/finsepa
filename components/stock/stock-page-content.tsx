@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { CompanyPick } from "@/components/charting/company-picker";
 import dynamic from "next/dynamic";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AssetPageTopLoader } from "@/components/layout/asset-page-top-loader";
@@ -18,9 +19,12 @@ import { StockEarningsTab } from "./stock-earnings-tab";
 import { StockInsidersTab } from "./stock-insiders-tab";
 import { StockPeersTab } from "./stock-peers-tab";
 import { StockProfileTab } from "./stock-profile-tab";
+import { StockTargetPriceTab } from "./stock-target-price-tab";
 import { StockHeader } from "./stock-header";
 import { ChartControls } from "./chart-controls";
 import { MiniTable } from "./mini-table";
+import { StockComparePicker } from "./stock-compare-picker";
+import { StockCompareReturnChart } from "./stock-compare-return-chart";
 import { KeyStats } from "./key-stats";
 import { LatestNews } from "./latest-news";
 import type { StockPageInitialData } from "@/lib/market/stock-page-initial-data";
@@ -58,6 +62,7 @@ function initialTabsMounted(tab: StockDetailTabId): Record<StockDetailTabId, boo
     charting: tab === "charting",
     multicharts: tab === "multicharts",
     peers: tab === "peers",
+    "target-price": tab === "target-price",
     earnings: tab === "earnings",
     insiders: tab === "insiders",
     profile: tab === "profile",
@@ -99,6 +104,10 @@ export function StockPageContent({
 
   const [range, setRange] = useState<StockChartRange>("1Y");
   const [chartSeries, setChartSeries] = useState<StockChartSeries>("price");
+  const [comparePicks, setComparePicks] = useState<CompanyPick[]>([]);
+  const chartSeriesBeforeCompareRef = useRef<StockChartSeries>("price");
+  const comparePicksRef = useRef<CompanyPick[]>([]);
+  comparePicksRef.current = comparePicks;
   const ticker = (routeTicker?.trim() ? routeTicker.trim() : "AAPL").toUpperCase();
 
   /** URL tab from the client router — applied after mount so the first paint matches SSR (`initialActiveTab`). */
@@ -171,6 +180,38 @@ export function StockPageContent({
       router.replace(pathname, { scroll: false });
     }
   }, [ticker, pathname, router]);
+
+  useEffect(() => {
+    if (comparePicksRef.current.length > 0) {
+      setChartSeries(chartSeriesBeforeCompareRef.current);
+    }
+    setComparePicks([]);
+  }, [ticker]);
+
+  const onAddComparePick = useCallback(
+    (pick: CompanyPick) => {
+      const sym = pick.symbol.trim().toUpperCase();
+      if (sym === ticker) return;
+      setComparePicks((cur) => {
+        if (cur.some((c) => c.symbol.trim().toUpperCase() === sym)) return cur;
+        if (cur.length === 0) chartSeriesBeforeCompareRef.current = chartSeries;
+        return [...cur, { symbol: sym, name: pick.name?.trim() || sym }];
+      });
+      setChartSeries("return");
+    },
+    [chartSeries, ticker],
+  );
+
+  const onRemoveComparePick = useCallback((symbol: string) => {
+    const sym = symbol.trim().toUpperCase();
+    setComparePicks((cur) => {
+      const next = cur.filter((c) => c.symbol.trim().toUpperCase() !== sym);
+      if (next.length === 0) {
+        queueMicrotask(() => setChartSeries(chartSeriesBeforeCompareRef.current));
+      }
+      return next;
+    });
+  }, []);
 
   const setTabInUrl = useCallback(
     (tab: StockDetailTabId) => {
@@ -257,7 +298,7 @@ export function StockPageContent({
         chartHovering={chartUi.isHovering && !chartUi.selectionActive}
         headerMeta={headerMeta}
         headerMetaLoading={headerMetaLoading}
-        headerChartMetric={chartSeries}
+        headerChartMetric={comparePicks.length > 0 ? "price" : chartSeries}
       />
 
       <StockDetailTabNav activeTab={activeTab} onTabChange={setTabInUrl} />
@@ -281,25 +322,38 @@ export function StockPageContent({
             onRangeChange={setRange}
             chartSeries={chartSeries}
             onChartSeriesChange={setChartSeries}
+            seriesSelectDisabled={comparePicks.length > 0}
+            compareSlot={
+              <StockComparePicker baseTicker={ticker} values={comparePicks} onAdd={onAddComparePick} onRemove={onRemoveComparePick} />
+            }
           />
         ) : null}
-        <PriceChart
-          key={`stock-overview-${ticker}-${chartSeries}`}
-          kind="stock"
-          symbol={ticker}
-          range={range}
-          series={chartSeries}
-          onDisplayChange={stockChartDrivesHeader ? onRangeChartDisplay : undefined}
-          initialChart={initialChartMemo}
-        />
+        {comparePicks.length > 0 ? (
+          <StockCompareReturnChart
+            key={`compare-${ticker}-${comparePicks.map((p) => p.symbol.trim().toUpperCase()).join("-")}-${range}`}
+            primaryTicker={ticker}
+            comparePicks={comparePicks}
+            range={range}
+          />
+        ) : (
+          <PriceChart
+            key={`stock-overview-${ticker}-${chartSeries}`}
+            kind="stock"
+            symbol={ticker}
+            range={range}
+            series={chartSeries}
+            onDisplayChange={stockChartDrivesHeader ? onRangeChartDisplay : undefined}
+            initialChart={initialChartMemo}
+          />
+        )}
         {stockChartDrivesHeader ? (
           <div className={OFFSCREEN_PRICE_CHART} aria-hidden>
             <PriceChart
-              key={`${ticker}-${chartSeries}-header-1d`}
+              key={`${ticker}-${comparePicks.length > 0 ? "price" : chartSeries}-header-1d`}
               kind="stock"
               symbol={ticker}
               range="1D"
-              series={chartSeries}
+              series={comparePicks.length > 0 ? "price" : chartSeries}
               height={320}
               onDisplayChange={onSessionHeaderDisplay}
             />
@@ -319,6 +373,8 @@ export function StockPageContent({
             headerMeta={headerMeta}
             headerMetaLoading={headerMetaLoading}
             initialPerformance={initialPageData?.ticker === ticker ? initialPageData.performance : null}
+            comparePicks={comparePicks}
+            onRemoveCompare={comparePicks.length > 0 ? onRemoveComparePick : undefined}
           />
           <div className="pt-2">
             <KeyStats
@@ -381,6 +437,9 @@ export function StockPageContent({
           <StockMultichartsTab
             ticker={ticker}
             initialAnnualPoints={initialPageData?.ticker === ticker ? initialPageData.fundamentalsSeriesAnnual : undefined}
+            initialQuarterlyPoints={
+              initialPageData?.ticker === ticker ? initialPageData.fundamentalsSeriesQuarterly : undefined
+            }
           />
         </div>
       ) : null}
@@ -396,6 +455,19 @@ export function StockPageContent({
             ticker={ticker}
             initialCompareRows={initialPageData?.ticker === ticker ? initialPageData.peersCompareRows : undefined}
           />
+        </div>
+      ) : null}
+
+      {tabsMounted["target-price"] ? (
+        <div
+          role="tabpanel"
+          id="stock-tab-target-price"
+          aria-hidden={activeTab !== "target-price"}
+          className={activeTab === "target-price" ? "block" : "hidden"}
+        >
+          <div className="w-full min-w-0">
+            <StockTargetPriceTab ticker={ticker} />
+          </div>
         </div>
       ) : null}
 

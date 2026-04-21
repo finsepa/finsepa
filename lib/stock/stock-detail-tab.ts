@@ -6,6 +6,7 @@ export type StockDetailTabId =
   | "charting"
   | "multicharts"
   | "peers"
+  | "target-price"
   | "earnings"
   | "insiders"
   | "profile";
@@ -17,6 +18,7 @@ export function parseStockDetailTabQuery(raw: string | null | undefined): StockD
     raw === "charting" ||
     raw === "multicharts" ||
     raw === "peers" ||
+    raw === "target-price" ||
     raw === "earnings" ||
     raw === "insiders" ||
     raw === "profile"

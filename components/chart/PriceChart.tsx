@@ -120,6 +120,7 @@ function overviewBaselineOptions(open: number, variant: "bright" | "dim") {
   if (variant === "bright") {
     return {
       ...base,
+      lastValueVisible: true,
       topFillColor1: "rgba(22, 163, 74, 0.20)",
       topFillColor2: "rgba(22, 163, 74, 0.03)",
       topLineColor: GREEN,
@@ -136,6 +137,7 @@ function overviewBaselineOptions(open: number, variant: "bright" | "dim") {
   }
   return {
     ...base,
+    lastValueVisible: false,
     topFillColor1: "rgba(22, 163, 74, 0.08)",
     topFillColor2: "rgba(22, 163, 74, 0.02)",
     topLineColor: "rgba(22, 163, 74, 0.38)",
@@ -527,6 +529,7 @@ export function PriceChart({
           lineWidth: 2,
           lineType: LineType.Curved,
           priceLineVisible: false,
+          lastValueVisible: true,
           lastPriceAnimation: LastPriceAnimationMode.OnDataUpdate,
           crosshairMarkerVisible: true,
           crosshairMarkerRadius: 5,

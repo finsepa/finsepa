@@ -8,6 +8,7 @@ import { PostMarketEarningsIcon } from "@/components/stock/post-market-earnings-
 import { PreMarketEarningsIcon } from "@/components/stock/pre-market-earnings-icon";
 import type { StockEarningsReportTiming, StockEarningsTabPayload } from "@/lib/market/stock-earnings-types";
 import { cn } from "@/lib/utils";
+import { EARNINGS_CARD_LABEL_CLASS, EARNINGS_CARD_VALUE_CLASS } from "@/components/stock/earnings-card-styles";
 
 function dash(v: string | null | undefined): string {
   return v != null && String(v).trim() !== "" ? String(v).trim() : "—";
@@ -30,14 +31,6 @@ function quarterPrefixForEarningsDateLabel(fiscalPeriodLabel: string | null | un
 /** Matches `components/screener/index-cards.tsx` card chrome. */
 const SCREENER_INDEX_CARD_CLASS =
   "overflow-hidden rounded-xl border border-[#E4E4E7] bg-white px-4 py-4 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition hover:shadow-[0px_2px_4px_0px_rgba(10,10,10,0.08)]";
-
-/** Figma: card value titles — Inter Semi Bold 24 / 36, #09090B. */
-const EARNINGS_CARD_VALUE_CLASS =
-  "font-['Inter'] text-[24px] font-semibold leading-[36px] tracking-normal text-[#09090B]";
-
-/** Figma: card labels — Inter Semi Bold 14 / 20, #71717A. */
-const EARNINGS_CARD_LABEL_CLASS =
-  "font-['Inter'] text-[14px] font-semibold leading-5 tracking-normal text-[#71717A]";
 
 function TimingBadge({ timing }: { timing: StockEarningsReportTiming }) {
   if (timing === "amc") {

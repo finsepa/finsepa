@@ -16,6 +16,9 @@ import {
   formatUsdPrice,
 } from "@/lib/market/key-stats-basic-format";
 import { MultichartsTabSkeletonGrid } from "@/components/stock/stock-multicharts-tab-skeleton";
+import { EARNINGS_CARD_LABEL_CLASS, EARNINGS_CARD_VALUE_CLASS } from "@/components/stock/earnings-card-styles";
+import { TabSwitcher } from "@/components/design-system";
+import type { FundamentalsSeriesMode } from "@/lib/market/charting-series-types";
 
 /** Matches earnings / screener index cards (`stock-earnings-tab.tsx`). */
 const MULTICHART_CARD_CLASS =
@@ -28,6 +31,11 @@ const MULTICHART_METRICS = [
   "free_cash_flow",
   "ebitda",
 ] as const satisfies readonly ChartingMetricId[];
+
+const PERIOD_TAB_OPTIONS = [
+  { value: "annual" as const, label: "Annual" },
+  { value: "quarterly" as const, label: "Quarterly" },
+];
 
 function yoyFromLastTwo(rows: ChartingSeriesPoint[], metricId: ChartingMetricId): number | null {
   if (rows.length < 2) return null;
@@ -57,25 +65,42 @@ function formatHeadlineValue(metricId: ChartingMetricId, v: number): string {
 type Props = {
   ticker: string;
   initialAnnualPoints?: ChartingSeriesPoint[];
+  initialQuarterlyPoints?: ChartingSeriesPoint[];
 };
 
-export function StockMultichartsTab({ ticker, initialAnnualPoints }: Props) {
-  const [points, setPoints] = useState<ChartingSeriesPoint[]>(() => initialAnnualPoints ?? []);
-  const [loading, setLoading] = useState(!initialAnnualPoints?.length);
+export function StockMultichartsTab({ ticker, initialAnnualPoints, initialQuarterlyPoints }: Props) {
+  const [periodMode, setPeriodMode] = useState<FundamentalsSeriesMode>("annual");
+
+  const seedPoints = useMemo(() => {
+    if (periodMode === "quarterly") {
+      return Array.isArray(initialQuarterlyPoints) && initialQuarterlyPoints.length > 0
+        ? initialQuarterlyPoints
+        : null;
+    }
+    return Array.isArray(initialAnnualPoints) && initialAnnualPoints.length > 0 ? initialAnnualPoints : null;
+  }, [periodMode, initialAnnualPoints, initialQuarterlyPoints]);
+
+  const [points, setPoints] = useState<ChartingSeriesPoint[]>(() =>
+    Array.isArray(initialAnnualPoints) && initialAnnualPoints.length > 0 ? initialAnnualPoints : [],
+  );
+  const [loading, setLoading] = useState(
+    !(Array.isArray(initialAnnualPoints) && initialAnnualPoints.length > 0),
+  );
 
   useEffect(() => {
-    setPoints(initialAnnualPoints ?? []);
-    setLoading(!initialAnnualPoints?.length);
-  }, [initialAnnualPoints, ticker]);
-
-  useEffect(() => {
-    if (initialAnnualPoints && initialAnnualPoints.length > 0) return;
     let cancelled = false;
     async function load() {
+      if (seedPoints) {
+        setPoints(seedPoints);
+        setLoading(false);
+        return;
+      }
       setLoading(true);
       try {
         const res = await fetch(
-          `/api/stocks/${encodeURIComponent(ticker)}/fundamentals-series?period=annual`,
+          `/api/stocks/${encodeURIComponent(ticker)}/fundamentals-series?period=${
+            periodMode === "quarterly" ? "quarterly" : "annual"
+          }`,
           { credentials: "include" },
         );
         if (!res.ok) {
@@ -94,13 +119,25 @@ export function StockMultichartsTab({ ticker, initialAnnualPoints }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [ticker, initialAnnualPoints]);
+  }, [ticker, periodMode, seedPoints]);
 
-  const hasAny = useMemo(() => MULTICHART_METRICS.some((id) => sliceLastAnnualWithMetric(points, id, 7).length > 0), [points]);
+  const maxBars = periodMode === "quarterly" ? 8 : 7;
+  const hasAny = useMemo(
+    () => MULTICHART_METRICS.some((id) => sliceLastAnnualWithMetric(points, id, maxBars).length > 0),
+    [points, maxBars],
+  );
 
   return (
     <div className="space-y-6 pt-1">
-      <h2 className="text-[20px] font-semibold leading-8 tracking-tight text-[#09090B]">Multicharts</h2>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <h2 className="text-[20px] font-semibold leading-8 tracking-tight text-[#09090B]">Multicharts</h2>
+        <TabSwitcher
+          options={PERIOD_TAB_OPTIONS}
+          value={periodMode}
+          onChange={setPeriodMode}
+          aria-label="Reporting period"
+        />
+      </div>
 
       {loading ? (
         <MultichartsTabSkeletonGrid />
@@ -109,7 +146,7 @@ export function StockMultichartsTab({ ticker, initialAnnualPoints }: Props) {
       ) : (
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
           {MULTICHART_METRICS.map((metricId) => (
-            <MultichartCard key={metricId} metricId={metricId} points={points} />
+            <MultichartCard key={metricId} metricId={metricId} points={points} periodMode={periodMode} />
           ))}
         </div>
       )}
@@ -117,34 +154,42 @@ export function StockMultichartsTab({ ticker, initialAnnualPoints }: Props) {
   );
 }
 
-function MultichartCard({ metricId, points }: { metricId: ChartingMetricId; points: ChartingSeriesPoint[] }) {
-  const rows = useMemo(() => sliceLastAnnualWithMetric(points, metricId, 7), [points, metricId]);
+function MultichartCard({
+  metricId,
+  points,
+  periodMode,
+}: {
+  metricId: ChartingMetricId;
+  points: ChartingSeriesPoint[];
+  periodMode: FundamentalsSeriesMode;
+}) {
+  const maxBars = periodMode === "quarterly" ? 8 : 7;
+  const rows = useMemo(() => sliceLastAnnualWithMetric(points, metricId, maxBars), [points, metricId, maxBars]);
   const last = rows.length ? readChartingMetricValue(rows[rows.length - 1]!, metricId) : null;
   const yoy = yoyFromLastTwo(rows, metricId);
+  const deltaLabel = periodMode === "quarterly" ? "QoQ" : "YoY";
 
   return (
     <div className={MULTICHART_CARD_CLASS}>
-      <div className="mb-3 min-w-0">
-        <h3 className="text-[16px] font-semibold leading-6 text-[#09090B]">{CHARTING_METRIC_LABEL[metricId]}</h3>
+      <div className="mb-4 min-w-0">
+        <p className={EARNINGS_CARD_LABEL_CLASS}>{CHARTING_METRIC_LABEL[metricId]}</p>
         {last != null && Number.isFinite(last) ? (
           <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-0">
-            <span className="text-[18px] font-semibold tabular-nums leading-7 text-[#09090B]">
-              {formatHeadlineValue(metricId, last)}
-            </span>
+            <span className={`${EARNINGS_CARD_VALUE_CLASS} tabular-nums`}>{formatHeadlineValue(metricId, last)}</span>
             {yoy != null && Number.isFinite(yoy) ? (
               <span
-                className={`text-[14px] font-medium tabular-nums leading-5 ${
+                className={`font-['Inter'] text-[14px] font-medium tabular-nums leading-5 ${
                   yoy >= 0 ? "text-[#16A34A]" : "text-[#DC2626]"
                 }`}
               >
                 ({yoy >= 0 ? "+" : ""}
-                {yoy.toFixed(1)}% YoY)
+                {yoy.toFixed(1)}% {deltaLabel})
               </span>
             ) : null}
           </div>
         ) : null}
       </div>
-      <MultichartFundamentalsBar metricId={metricId} points={points} height={196} />
+      <MultichartFundamentalsBar metricId={metricId} points={points} height={300} periodMode={periodMode} />
     </div>
   );
 }

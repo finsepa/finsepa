@@ -1,21 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
-import {
-  ColorType,
-  CrosshairMode,
-  HistogramSeries,
-  LineStyle,
-  createChart,
-  type IChartApi,
-  type Time,
-  type UTCTimestamp,
-} from "lightweight-charts";
+import { useMemo, useRef, useState } from "react";
 
-import type { ChartingSeriesPoint } from "@/lib/market/charting-series-types";
+import type { ChartingSeriesPoint, FundamentalsSeriesMode } from "@/lib/market/charting-series-types";
 import {
   CHARTING_METRIC_FIELD,
   CHARTING_METRIC_KIND,
+  CHARTING_METRIC_LABEL,
   type ChartingMetricId,
   type ChartingMetricKind,
 } from "@/lib/market/stock-charting-metrics";
@@ -26,23 +17,17 @@ import {
   formatUsdPrice,
 } from "@/lib/market/key-stats-basic-format";
 
-/** Multicharts bar fill — aligned to reference (vibrant blue, e.g. Material blue). */
-const MULTICHART_BAR = "#2962FF";
+/** Bar fill — matches {@link earnings-estimates-chart} `REPORTED_BAR` / estimates chart primary. */
+const MULTICHART_BAR = "#2563EB";
 
-/** Evenly spaced logical timestamps so bars fill the plot (avoids multi-year calendar gaps). */
-const MULTICHART_BAR_SLOT_SECONDS = 86400;
+/** Fixed bar width (px); extra horizontal space becomes even gaps (`justify-between`). */
+const MULTICHART_BAR_WIDTH_PX = 14;
 
-/** User-requested gap between histogram columns (`HorzScaleOptions.barSpacing`). */
-const MULTICHART_BAR_SPACING_PX = 20;
+/** Left column for Y-axis tick labels (aligned to earnings chart left scale reserve). */
+const MULTICHART_Y_AXIS_W_PX = 56;
 
-/** Fallback subtract when `timeScale().width()` is not ready yet (y-axis on the left). */
-const MULTICHART_PRICE_SCALE_RESERVE_PX = 56;
-
-/**
- * Extra logical range on each side of the data so the first/last histogram columns are not clipped
- * (half-width past the bar center).
- */
-const MULTICHART_TIME_SCALE_EDGE_PAD_LOGICAL = 0.65;
+/** Bottom row for period labels (px) — room for full year / short quarter text without clipping. */
+const MULTICHART_AXIS_ROW_PX = 28;
 
 export function readChartingMetricValue(row: ChartingSeriesPoint, id: ChartingMetricId): number | null {
   const k = CHARTING_METRIC_FIELD[id];
@@ -61,12 +46,6 @@ export function sliceLastAnnualWithMetric(
   return withVal.slice(-n);
 }
 
-/** Sequential bar slot times — dense enough that the time axis can place a tick per bar. */
-function indexToBarSlotTime(i: number): UTCTimestamp {
-  const anchor = Date.UTC(2020, 0, 1) / 1000;
-  return (anchor + i * MULTICHART_BAR_SLOT_SECONDS) as UTCTimestamp;
-}
-
 /** Report year for the fiscal period (from `periodEnd`), e.g. `2024`. */
 function formatAnnualYearLabel(periodEnd: string): string {
   const raw = periodEnd.trim();
@@ -75,72 +54,28 @@ function formatAnnualYearLabel(periodEnd: string): string {
   return String(d.getUTCFullYear());
 }
 
-function timeToUnixSeconds(time: Time): number | null {
-  if (typeof time === "number" && Number.isFinite(time)) return time;
-  if (typeof time === "string") {
-    const t = Date.parse(time);
-    return Number.isFinite(t) ? Math.floor(t / 1000) : null;
-  }
-  if (time && typeof time === "object" && "year" in time) {
-    const bd = time as { year: number; month: number; day: number };
-    return Math.floor(Date.UTC(bd.year, bd.month - 1, bd.day) / 1000);
-  }
-  return null;
+/** Full period string for tooltips — matches Charting copy. */
+function formatMultichartPeriodLabel(periodEnd: string, mode: FundamentalsSeriesMode): string {
+  const s = periodEnd.trim();
+  if (mode === "annual") return formatAnnualYearLabel(s);
+  const year = s.slice(0, 4);
+  const m = s.slice(5, 7);
+  const mm = /^\d{2}$/.test(m) ? Number(m) : NaN;
+  const q = Number.isFinite(mm) ? Math.min(4, Math.max(1, Math.floor((mm - 1) / 3) + 1)) : null;
+  return year && q ? `Q${q} ${year}` : s;
 }
 
-/**
- * Locks horizontal distance between bar centers to {@link MULTICHART_BAR_SPACING_PX} so gaps stay
- * visible (scaling spacing up was making histogram columns wide enough to look flush).
- */
-function layoutMultichartTimeScale(chart: IChartApi, containerWidthPx: number, layoutAttempt = 0): void {
-  const ts = chart.timeScale();
-  const plotFallback = Math.max(120, containerWidthPx - MULTICHART_PRICE_SCALE_RESERVE_PX);
-  ts.fitContent();
-  requestAnimationFrame(() => {
-    const lr = ts.getVisibleLogicalRange();
-    if (lr === null) return;
-    const pad = MULTICHART_TIME_SCALE_EDGE_PAD_LOGICAL;
-    ts.setVisibleLogicalRange({
-      from: lr.from - pad,
-      to: lr.to + pad,
-    });
-
-    requestAnimationFrame(() => {
-      const lr2 = ts.getVisibleLogicalRange();
-      if (lr2 === null) return;
-      const measuredPlot = ts.width();
-      const plotW = measuredPlot > 8 ? measuredPlot : plotFallback;
-      if (plotW < 16 && layoutAttempt < 4) {
-        layoutMultichartTimeScale(chart, containerWidthPx, layoutAttempt + 1);
-        return;
-      }
-      if (plotW < 16) return;
-
-      const gap = MULTICHART_BAR_SPACING_PX;
-      ts.applyOptions({
-        barSpacing: gap,
-        minBarSpacing: gap,
-        /** Hard-cap so spacing never scales up — keeps clear gaps between columns. */
-        maxBarSpacing: gap,
-        fixLeftEdge: false,
-        fixRightEdge: false,
-      });
-    });
-  });
-}
-
-function priceFormatForKind(kind: ChartingMetricKind) {
-  switch (kind) {
-    case "eps":
-      return { type: "price" as const, precision: 2, minMove: 0.01 };
-    case "percent":
-      return { type: "percent" as const, precision: 2, minMove: 0.01 };
-    case "multiple":
-    case "ratio":
-      return { type: "price" as const, precision: 2, minMove: 0.01 };
-    default:
-      return { type: "price" as const, precision: 2, minMove: 0.01 };
-  }
+/** Short x-axis text (fits narrow columns); full label stays in tooltip via `title`. */
+function formatMultichartPeriodAxisLabel(periodEnd: string, mode: FundamentalsSeriesMode): string {
+  if (mode === "annual") return formatAnnualYearLabel(periodEnd);
+  const s = periodEnd.trim();
+  const year = s.slice(0, 4);
+  const m = s.slice(5, 7);
+  const mm = /^\d{2}$/.test(m) ? Number(m) : NaN;
+  const q = Number.isFinite(mm) ? Math.min(4, Math.max(1, Math.floor((mm - 1) / 3) + 1)) : null;
+  if (!year || !q) return s;
+  const yy = year.length >= 2 ? year.slice(2) : year;
+  return `Q${q} '${yy}`;
 }
 
 function formatAxisValue(kind: ChartingMetricKind, p: number): string {
@@ -167,185 +102,61 @@ function formatAxisValue(kind: ChartingMetricKind, p: number): string {
   }
 }
 
-function chartWidthPx(el: HTMLElement): number {
-  return Math.max(0, Math.floor(el.getBoundingClientRect().width));
+function niceCeilPositive(n: number): number {
+  if (!Number.isFinite(n) || n <= 0) return 1;
+  const exp = Math.floor(Math.log10(n));
+  const f = n / 10 ** exp;
+  const nf = f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10;
+  return nf * 10 ** exp;
 }
 
 type Props = {
   metricId: ChartingMetricId;
-  /** Annual fundamentals rows (full history — component keeps last 7 with values). */
   points: ChartingSeriesPoint[];
   height?: number;
+  periodMode?: FundamentalsSeriesMode;
 };
 
-export function MultichartFundamentalsBar({ metricId, points, height = 196 }: Props) {
+type TipState = { clientX: number; clientY: number; text: string } | null;
+
+export function MultichartFundamentalsBar({ metricId, points, height = 196, periodMode = "annual" }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
-  const chartRef = useRef<IChartApi | null>(null);
+  const [tip, setTip] = useState<TipState>(null);
 
   const kind = CHARTING_METRIC_KIND[metricId];
-  const rows = useMemo(() => sliceLastAnnualWithMetric(points, metricId, 7), [points, metricId]);
+  const maxBars = periodMode === "quarterly" ? 8 : 7;
+  const rows = useMemo(
+    () => sliceLastAnnualWithMetric(points, metricId, maxBars),
+    [points, metricId, maxBars],
+  );
 
-  const tickLabels = useMemo(() => {
-    const m = new Map<number, string>();
-    rows.forEach((r, i) => {
-      m.set(indexToBarSlotTime(i) as number, formatAnnualYearLabel(r.periodEnd));
-    });
-    return m;
-  }, [rows]);
+  const plotHeight = height - MULTICHART_AXIS_ROW_PX;
 
-  useEffect(() => {
-    const el = wrapRef.current;
-    if (!el) return;
-
-    if (chartRef.current) {
-      chartRef.current.remove();
-      chartRef.current = null;
+  const { values, labels, axisLabels, maxV, yTicks } = useMemo(() => {
+    const vals: number[] = [];
+    const labs: string[] = [];
+    const axisLabs: string[] = [];
+    for (const r of rows) {
+      const v = readChartingMetricValue(r, metricId);
+      if (v == null) continue;
+      vals.push(v);
+      labs.push(formatMultichartPeriodLabel(r.periodEnd, periodMode));
+      axisLabs.push(formatMultichartPeriodAxisLabel(r.periodEnd, periodMode));
     }
+    const rawMax = vals.length ? Math.max(...vals.map((x) => Math.abs(x))) : 0;
+    const top = niceCeilPositive(rawMax || 1);
+    const tickCount = 5;
+    const ticks = Array.from({ length: tickCount }, (_, i) => (top * (tickCount - 1 - i)) / (tickCount - 1));
+    return { values: vals, labels: labs, axisLabels: axisLabs, maxV: top, yTicks: ticks };
+  }, [rows, metricId, periodMode]);
 
-    if (rows.length === 0) return;
+  const metricLabel = CHARTING_METRIC_LABEL[metricId];
 
-    let cancelled = false;
-    let ro: ResizeObserver | null = null;
-
-    const mount = () => {
-      if (cancelled) return;
-      if (chartWidthPx(el) < 2) {
-        requestAnimationFrame(mount);
-        return;
-      }
-
-      const histData = rows
-        .map((r, i) => {
-          const v = readChartingMetricValue(r, metricId);
-          if (v == null) return null;
-          return {
-            time: indexToBarSlotTime(i),
-            value: v,
-            color: MULTICHART_BAR,
-          };
-        })
-        .filter(Boolean) as { time: UTCTimestamp; value: number; color: string }[];
-
-      if (histData.length === 0) return;
-
-      const wPx = chartWidthPx(el);
-      const chart = createChart(el, {
-        width: wPx,
-        height,
-        autoSize: false,
-        layout: {
-          background: { type: ColorType.Solid, color: "#FFFFFF" },
-          textColor: "#71717A",
-          fontSize: 11,
-          fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
-          attributionLogo: false,
-        },
-        localization: {
-          locale: "en-US",
-          priceFormatter: (p: number) => formatAxisValue(kind, p),
-        },
-        grid: {
-          vertLines: { visible: false },
-          horzLines: { color: "#ECECEF", style: LineStyle.Solid },
-        },
-        leftPriceScale: {
-          visible: true,
-          borderVisible: false,
-          minimumWidth: 52,
-          textColor: "#71717A",
-          scaleMargins: { top: 0.06, bottom: 0.14 },
-        },
-        rightPriceScale: { visible: false, borderVisible: false },
-        timeScale: {
-          borderVisible: false,
-          rightOffset: 0,
-          shiftVisibleRangeOnNewBar: false,
-          /** Ticks at data points — avoids year labels shifting under the wrong bar. */
-          uniformDistribution: false,
-          tickMarkMaxCharacterLength: 5,
-          barSpacing: MULTICHART_BAR_SPACING_PX,
-          minBarSpacing: MULTICHART_BAR_SPACING_PX,
-          maxBarSpacing: MULTICHART_BAR_SPACING_PX,
-          enableConflation: false,
-          fixLeftEdge: false,
-          fixRightEdge: false,
-          minimumHeight: 24,
-          tickMarkFormatter: (time: Time) => {
-            const n = timeToUnixSeconds(time);
-            if (n == null) return "";
-            return tickLabels.get(n) ?? "";
-          },
-        },
-        crosshair: {
-          mode: CrosshairMode.Normal,
-          vertLine: {
-            visible: false,
-            width: 1,
-            color: "rgba(9, 9, 11, 0.08)",
-            style: LineStyle.Solid,
-            labelVisible: false,
-          },
-          horzLine: {
-            visible: true,
-            width: 1,
-            color: "rgba(9, 9, 11, 0.06)",
-            style: LineStyle.Solid,
-            labelVisible: false,
-          },
-        },
-        handleScroll: {
-          mouseWheel: false,
-          pressedMouseMove: false,
-          horzTouchDrag: false,
-          vertTouchDrag: false,
-        },
-        handleScale: {
-          mouseWheel: false,
-          pinch: false,
-          axisPressedMouseMove: { time: false, price: true },
-          axisDoubleClickReset: { time: true, price: true },
-        },
-      });
-
-      chartRef.current = chart;
-
-      const series = chart.addSeries(HistogramSeries, {
-        priceScaleId: "left",
-        color: MULTICHART_BAR,
-        priceFormat: priceFormatForKind(kind),
-        lastValueVisible: false,
-        priceLineVisible: false,
-      });
-      series.setData(histData);
-      layoutMultichartTimeScale(chart, wPx);
-
-      ro = new ResizeObserver(() => {
-        const rw = el.clientWidth;
-        if (rw > 0 && chartRef.current) {
-          chartRef.current.resize(rw, height);
-          layoutMultichartTimeScale(chartRef.current, rw);
-        }
-      });
-      ro.observe(el);
-    };
-
-    mount();
-
-    return () => {
-      cancelled = true;
-      ro?.disconnect();
-      if (chartRef.current) {
-        chartRef.current.remove();
-        chartRef.current = null;
-      }
-    };
-  }, [rows, metricId, height, kind, tickLabels]);
-
-  if (rows.length === 0) {
+  if (rows.length === 0 || values.length === 0) {
     return (
-      <div className="px-[20px]">
+      <div className="w-full">
         <div
-          className="flex h-[196px] items-center justify-center rounded-lg border border-dashed border-[#E4E4E7] bg-[#FAFAFA] text-[13px] text-[#71717A]"
+          className="flex h-[196px] items-center justify-center rounded-xl border border-dashed border-[#E4E4E7] bg-[#FAFAFA] text-[13px] text-[#71717A]"
           aria-hidden
         >
           No data
@@ -354,9 +165,108 @@ export function MultichartFundamentalsBar({ metricId, points, height = 196 }: Pr
     );
   }
 
+  const n = values.length;
+  const plotGridTemplate = n > 0 ? `repeat(${n}, minmax(0, 1fr))` : undefined;
+
   return (
-    <div className="w-full min-w-0 px-[20px]">
-      <div ref={wrapRef} className="h-full w-full min-w-0" style={{ height }} />
+    <div ref={wrapRef} className="w-full min-w-0 max-w-full">
+      <div className="relative flex w-full min-w-0 max-w-full flex-col" style={{ height }}>
+        <div className="flex min-h-0 w-full min-w-0 flex-1" style={{ height: plotHeight }}>
+          <div
+            className="flex h-full shrink-0 flex-col justify-between border-r-0 pt-[8%] pb-[12%] pr-2 text-right font-['Inter'] text-[12px] tabular-nums leading-none text-[#71717A]"
+            style={{ width: MULTICHART_Y_AXIS_W_PX }}
+            aria-hidden
+          >
+            {yTicks.map((t, i) => (
+              <span key={i} className="block">
+                {formatAxisValue(kind, t)}
+              </span>
+            ))}
+          </div>
+
+          <div className="relative min-h-0 min-w-0 flex-1">
+            <div className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[12%]" aria-hidden>
+              {yTicks.map((_, i) => {
+                const nt = yTicks.length;
+                const pct = nt <= 1 ? 0 : (i / (nt - 1)) * 100;
+                return (
+                  <div
+                    key={i}
+                    className="absolute left-0 right-0 border-t border-[#E4E4E7]"
+                    style={{ top: `${pct}%` }}
+                  />
+                );
+              })}
+            </div>
+            <div
+              className="relative grid h-full min-h-0 w-full min-w-0 items-end px-0 pt-[8%] pb-[12%]"
+              style={{ gridTemplateColumns: plotGridTemplate }}
+              role="img"
+              aria-label={`${metricLabel} bar chart`}
+            >
+              {values.map((v, i) => {
+                const hPct = maxV > 0 ? (Math.max(0, v) / maxV) * 100 : 0;
+                const tipText = `${metricLabel}\n${labels[i]}: ${formatAxisValue(kind, v)}`;
+                return (
+                  <div
+                    key={`${labels[i]}-${i}`}
+                    className="flex h-full min-h-0 min-w-0 flex-col items-center justify-end px-0.5"
+                    onMouseEnter={(e) => {
+                      setTip({ clientX: e.clientX, clientY: e.clientY, text: tipText });
+                    }}
+                    onMouseMove={(e) => {
+                      setTip((prev) =>
+                        prev ? { clientX: e.clientX, clientY: e.clientY, text: tipText } : null,
+                      );
+                    }}
+                    onMouseLeave={() => setTip(null)}
+                  >
+                    <div
+                      className="rounded-[2px] transition-[height] duration-75"
+                      style={{
+                        width: MULTICHART_BAR_WIDTH_PX,
+                        maxWidth: "100%",
+                        height: `${hPct}%`,
+                        minHeight: hPct > 0 ? 2 : 0,
+                        backgroundColor: MULTICHART_BAR,
+                      }}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex w-full min-w-0" style={{ height: MULTICHART_AXIS_ROW_PX }}>
+          <div style={{ width: MULTICHART_Y_AXIS_W_PX }} className="shrink-0" aria-hidden />
+          <div
+            className="grid min-w-0 flex-1 items-start px-0"
+            style={{ gridTemplateColumns: plotGridTemplate }}
+          >
+            {axisLabels.map((axisLab, i) => (
+              <div
+                key={`${labels[i]}-${i}`}
+                className="flex min-w-0 flex-col items-center justify-start px-0.5"
+                title={labels[i]}
+              >
+                <span className="w-full text-balance text-center font-['Inter'] text-[11px] font-normal tabular-nums leading-snug text-[#71717A] sm:text-[12px]">
+                  {axisLab}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {tip ? (
+          <div
+            className="pointer-events-none fixed z-[100] max-w-[min(280px,calc(100vw-16px))] whitespace-pre-line rounded-md border border-[#E4E4E7] bg-white px-2.5 py-1.5 text-left text-[12px] leading-snug text-[#18181B] shadow-sm"
+            style={{ left: tip.clientX + 12, top: tip.clientY + 12 }}
+          >
+            {tip.text}
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }

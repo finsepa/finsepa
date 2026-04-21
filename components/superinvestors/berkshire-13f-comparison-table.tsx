@@ -40,8 +40,7 @@ const tdNum =
 const rowGridFour =
   "grid w-full min-w-[640px] grid-cols-[minmax(180px,2.2fr)_minmax(72px,0.55fr)_minmax(120px,1.05fr)_minmax(96px,0.95fr)] gap-x-4";
 
-const rowShellBase =
-  "min-h-[60px] items-center border-b border-[#E4E4E7] transition-colors duration-75 last:border-b-0";
+const rowShellBase = "min-h-[60px] items-center transition-colors duration-75";
 
 /** SEC names are often SHOUTCASE; present as readable title case for the UI. */
 function issuerDisplayTitle(name: string): string {
@@ -163,13 +162,13 @@ export function Berkshire13fComparisonTable({
   rows: Berkshire13fComparisonRow[];
   hasPriorFiling: boolean;
 }) {
-  const headerGrid = cn("h-11 min-h-[44px] items-center border-b border-[#E4E4E7]", rowGridFour);
+  const headerGrid = cn("h-11 min-h-[44px] items-center bg-white", rowGridFour);
 
   return (
-    <div className="w-full overflow-x-auto">
-      <div className="min-w-0 px-4">
-        <div className="w-full border-collapse">
-          <div className={headerGrid}>
+    <div className="min-w-0 -mx-4 w-[calc(100%+2rem)] max-w-none overflow-x-auto [-webkit-overflow-scrolling:touch] sm:-mx-9 sm:w-[calc(100%+4.5rem)]">
+      <div className="w-full min-w-0">
+        <div className="divide-y divide-[#E4E4E7] border-t border-b border-[#E4E4E7] bg-white">
+          <div className={cn(headerGrid, "px-4 sm:px-9")}>
             <div className={thCompany}>Company</div>
             <div className={thRight}>% of Portfolio</div>
             <div className={thRight}>Recent Activity</div>
@@ -183,7 +182,7 @@ export function Berkshire13fComparisonTable({
                 key={`${r.cusip ?? r.companyName}-${i}`}
                 ticker={r.ticker}
                 displayName={displayName}
-                gridClass={rowGridFour}
+                gridClass={cn(rowGridFour, "px-4 sm:px-9")}
               >
                 <div className={tdCompany}>
                   <CompanyTickerCell companyName={r.companyName} ticker={r.ticker} />
