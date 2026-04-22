@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import type { ChartingSeriesPoint, FundamentalsSeriesMode } from "@/lib/market/charting-series-types";
 import {
@@ -23,11 +23,14 @@ const MULTICHART_BAR = "#2563EB";
 /** Fixed bar width (px); extra horizontal space becomes even gaps (`justify-between`). */
 const MULTICHART_BAR_WIDTH_PX = 14;
 
-/** Left column for Y-axis tick labels (aligned to earnings chart left scale reserve). */
-const MULTICHART_Y_AXIS_W_PX = 56;
+/** Right column for Y-axis tick labels; `pl-*` gaps tick text from the plot / grid strokes. */
+const MULTICHART_Y_AXIS_W_PX = 50;
 
-/** Bottom row for period labels (px) — room for full year / short quarter text without clipping. */
-const MULTICHART_AXIS_ROW_PX = 28;
+/** Bottom row for period labels (px) — room for {@link AXIS_LABEL_ROTATE_DEG}-rotated text. */
+const MULTICHART_AXIS_ROW_PX = 40;
+
+/** Slanted x-axis ticks (deg) — saves horizontal space in narrow Multichart cards. */
+const AXIS_LABEL_ROTATE_DEG = -42;
 
 export function readChartingMetricValue(row: ChartingSeriesPoint, id: ChartingMetricId): number | null {
   const k = CHARTING_METRIC_FIELD[id];
@@ -110,21 +113,59 @@ function niceCeilPositive(n: number): number {
   return nf * 10 ** exp;
 }
 
+/** Smallest `c * 10^exp` with `c` from a compact ladder and `c * 10^exp >= step`. */
+const NICE_STEP_FACTORS = [1, 1.25, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10] as const;
+
+function niceCeilStep(step: number): number {
+  if (!Number.isFinite(step) || step <= 0) return 1;
+  const exp = Math.floor(Math.log10(step));
+  const base = 10 ** exp;
+  const f = step / base;
+  for (const c of NICE_STEP_FACTORS) {
+    if (c >= f) return c * base;
+  }
+  return 10 * base;
+}
+
+/**
+ * Y-axis max for exactly 5 ticks (4 equal bands from 0).
+ * USD / shares: tighter headroom than {@link niceCeilPositive} alone (e.g. ~$240B vs $500B for ~$215B).
+ */
+function axisMaxForFiveTicks(rawMax: number, kind: ChartingMetricKind): number {
+  if (!Number.isFinite(rawMax) || rawMax <= 0) return 1;
+  if (kind === "usd" || kind === "shares") {
+    const padded = rawMax * 1.04;
+    const step = niceCeilStep(padded / 4);
+    return step * 4;
+  }
+  return niceCeilPositive(rawMax);
+}
+
+export type MultichartVisual = "bar" | "line";
+
 type Props = {
   metricId: ChartingMetricId;
   points: ChartingSeriesPoint[];
   height?: number;
   periodMode?: FundamentalsSeriesMode;
+  /** Bar columns (default) or connected line over the same series. */
+  visual?: MultichartVisual;
 };
 
 type TipState = { clientX: number; clientY: number; text: string } | null;
 
-export function MultichartFundamentalsBar({ metricId, points, height = 196, periodMode = "annual" }: Props) {
+export function MultichartFundamentalsBar({
+  metricId,
+  points,
+  height = 196,
+  periodMode = "annual",
+  visual = "bar",
+}: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [tip, setTip] = useState<TipState>(null);
 
   const kind = CHARTING_METRIC_KIND[metricId];
-  const maxBars = periodMode === "quarterly" ? 8 : 7;
+  const maxBars = periodMode === "quarterly" ? 8 : 10;
   const rows = useMemo(
     () => sliceLastAnnualWithMetric(points, metricId, maxBars),
     [points, metricId, maxBars],
@@ -144,13 +185,47 @@ export function MultichartFundamentalsBar({ metricId, points, height = 196, peri
       axisLabs.push(formatMultichartPeriodAxisLabel(r.periodEnd, periodMode));
     }
     const rawMax = vals.length ? Math.max(...vals.map((x) => Math.abs(x))) : 0;
-    const top = niceCeilPositive(rawMax || 1);
+    const top = axisMaxForFiveTicks(rawMax || 1, kind);
     const tickCount = 5;
     const ticks = Array.from({ length: tickCount }, (_, i) => (top * (tickCount - 1 - i)) / (tickCount - 1));
     return { values: vals, labels: labs, axisLabels: axisLabs, maxV: top, yTicks: ticks };
-  }, [rows, metricId, periodMode]);
+  }, [rows, metricId, periodMode, kind]);
 
   const metricLabel = CHARTING_METRIC_LABEL[metricId];
+  const linePlotRef = useRef<HTMLDivElement>(null);
+  const [linePlotPx, setLinePlotPx] = useState({ w: 0, h: 0 });
+
+  useLayoutEffect(() => {
+    if (visual !== "line") return;
+    const el = linePlotRef.current;
+    if (!el) return;
+    const measure = () => {
+      const r = el.getBoundingClientRect();
+      setLinePlotPx({ w: Math.max(0, r.width), h: Math.max(0, r.height) });
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [visual, values.length, height, plotHeight]);
+
+  const lineSvg = useMemo(() => {
+    const w = linePlotPx.w;
+    const h = linePlotPx.h;
+    const n = values.length;
+    if (n === 0 || w <= 0 || h <= 0) return { d: "", pts: [] as { x: number; y: number; v: number; i: number }[] };
+    const padT = h * 0.08;
+    const padB = h * 0.08;
+    const innerH = Math.max(1, h - padT - padB);
+    const pts = values.map((v, i) => {
+      const x = n === 1 ? w / 2 : (i / (n - 1)) * w;
+      const frac = maxV > 0 ? Math.max(0, v) / maxV : 0;
+      const y = padT + innerH * (1 - frac);
+      return { x, y, v, i };
+    });
+    const d = pts.map((p, idx) => `${idx === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ");
+    return { d, pts };
+  }, [linePlotPx.h, linePlotPx.w, values, maxV]);
 
   if (rows.length === 0 || values.length === 0) {
     return (
@@ -169,23 +244,11 @@ export function MultichartFundamentalsBar({ metricId, points, height = 196, peri
   const plotGridTemplate = n > 0 ? `repeat(${n}, minmax(0, 1fr))` : undefined;
 
   return (
-    <div ref={wrapRef} className="w-full min-w-0 max-w-full">
-      <div className="relative flex w-full min-w-0 max-w-full flex-col" style={{ height }}>
+    <div ref={wrapRef} className="w-full min-w-0 max-w-full overflow-visible">
+      <div className="relative flex w-full min-w-0 max-w-full flex-col overflow-visible" style={{ height }}>
         <div className="flex min-h-0 w-full min-w-0 flex-1" style={{ height: plotHeight }}>
-          <div
-            className="flex h-full shrink-0 flex-col justify-between border-r-0 pt-[8%] pb-[12%] pr-2 text-right font-['Inter'] text-[12px] tabular-nums leading-none text-[#71717A]"
-            style={{ width: MULTICHART_Y_AXIS_W_PX }}
-            aria-hidden
-          >
-            {yTicks.map((t, i) => (
-              <span key={i} className="block">
-                {formatAxisValue(kind, t)}
-              </span>
-            ))}
-          </div>
-
           <div className="relative min-h-0 min-w-0 flex-1">
-            <div className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[12%]" aria-hidden>
+            <div className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[8%]" aria-hidden>
               {yTicks.map((_, i) => {
                 const nt = yTicks.length;
                 const pct = nt <= 1 ? 0 : (i / (nt - 1)) * 100;
@@ -198,64 +261,153 @@ export function MultichartFundamentalsBar({ metricId, points, height = 196, peri
                 );
               })}
             </div>
-            <div
-              className="relative grid h-full min-h-0 w-full min-w-0 items-end px-0 pt-[8%] pb-[12%]"
-              style={{ gridTemplateColumns: plotGridTemplate }}
-              role="img"
-              aria-label={`${metricLabel} bar chart`}
-            >
-              {values.map((v, i) => {
-                const hPct = maxV > 0 ? (Math.max(0, v) / maxV) * 100 : 0;
-                const tipText = `${metricLabel}\n${labels[i]}: ${formatAxisValue(kind, v)}`;
-                return (
-                  <div
-                    key={`${labels[i]}-${i}`}
-                    className="flex h-full min-h-0 min-w-0 flex-col items-center justify-end px-0.5"
-                    onMouseEnter={(e) => {
-                      setTip({ clientX: e.clientX, clientY: e.clientY, text: tipText });
-                    }}
-                    onMouseMove={(e) => {
-                      setTip((prev) =>
-                        prev ? { clientX: e.clientX, clientY: e.clientY, text: tipText } : null,
-                      );
-                    }}
-                    onMouseLeave={() => setTip(null)}
+            {visual === "line" ? (
+              <div
+                ref={linePlotRef}
+                className="absolute inset-x-0 top-[8%] bottom-[8%] min-h-0 w-full min-w-0"
+                role="img"
+                aria-label={`${metricLabel} line chart`}
+              >
+                {lineSvg.d ? (
+                  <svg
+                    width={linePlotPx.w}
+                    height={linePlotPx.h}
+                    className="block overflow-visible"
+                    aria-hidden
                   >
-                    <div
-                      className="rounded-[2px] transition-[height] duration-75"
-                      style={{
-                        width: MULTICHART_BAR_WIDTH_PX,
-                        maxWidth: "100%",
-                        height: `${hPct}%`,
-                        minHeight: hPct > 0 ? 2 : 0,
-                        backgroundColor: MULTICHART_BAR,
-                      }}
+                    <path
+                      d={lineSvg.d}
+                      fill="none"
+                      stroke={MULTICHART_BAR}
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
                     />
-                  </div>
+                    {lineSvg.pts.map(({ x, y, v, i }) => {
+                      const tipText = `${metricLabel}\n${labels[i]}: ${formatAxisValue(kind, v)}`;
+                      return (
+                        <g key={`pt-${labels[i]}-${i}`}>
+                          <circle
+                            cx={x}
+                            cy={y}
+                            r={14}
+                            fill="transparent"
+                            className="cursor-default"
+                            onMouseEnter={(e) => {
+                              setTip({ clientX: e.clientX, clientY: e.clientY, text: tipText });
+                            }}
+                            onMouseMove={(e) => {
+                              setTip((prev) =>
+                                prev ? { clientX: e.clientX, clientY: e.clientY, text: tipText } : null,
+                              );
+                            }}
+                            onMouseLeave={() => setTip(null)}
+                          />
+                          <circle
+                            cx={x}
+                            cy={y}
+                            r={4.5}
+                            fill="white"
+                            stroke={MULTICHART_BAR}
+                            strokeWidth={2}
+                            className="pointer-events-none"
+                          />
+                        </g>
+                      );
+                    })}
+                  </svg>
+                ) : null}
+              </div>
+            ) : (
+              <div
+                className="relative grid h-full min-h-0 w-full min-w-0 items-stretch px-0 pt-[8%] pb-[8%]"
+                style={{ gridTemplateColumns: plotGridTemplate }}
+                role="img"
+                aria-label={`${metricLabel} bar chart`}
+              >
+                {values.map((v, i) => {
+                  const hPct = maxV > 0 ? (Math.max(0, v) / maxV) * 100 : 0;
+                  const tipText = `${metricLabel}\n${labels[i]}: ${formatAxisValue(kind, v)}`;
+                  return (
+                    <div
+                      key={`${labels[i]}-${i}`}
+                      className="flex h-full min-h-0 min-w-0 flex-col items-center justify-end px-0.5 mt-[10px] mb-3"
+                      onMouseEnter={(e) => {
+                        setTip({ clientX: e.clientX, clientY: e.clientY, text: tipText });
+                      }}
+                      onMouseMove={(e) => {
+                        setTip((prev) =>
+                          prev ? { clientX: e.clientX, clientY: e.clientY, text: tipText } : null,
+                        );
+                      }}
+                      onMouseLeave={() => setTip(null)}
+                    >
+                      {/* `mt-auto` pins the bar to the column bottom so % height resolves to the full cell (avoids a gap above $0). */}
+                      <div
+                        className="mt-auto shrink-0 rounded-t-[2px] rounded-b-none transition-[height] duration-75"
+                        style={{
+                          width: MULTICHART_BAR_WIDTH_PX,
+                          maxWidth: "100%",
+                          height: `${hPct}%`,
+                          minHeight: hPct > 0 ? 2 : 0,
+                          backgroundColor: MULTICHART_BAR,
+                        }}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div
+            className="relative h-full shrink-0 pl-3 text-left font-['Inter'] text-[12px] tabular-nums leading-none text-[#71717A]"
+            style={{ width: MULTICHART_Y_AXIS_W_PX }}
+            aria-hidden
+          >
+            {/* Same `top-[8%] bottom-[8%]` + linear % as horizontal strokes so labels sit on each line. */}
+            <div className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[8%]">
+              {yTicks.map((t, i) => {
+                const nt = yTicks.length;
+                const pct = nt <= 1 ? 0 : (i / (nt - 1)) * 100;
+                return (
+                  <span
+                    key={i}
+                    className="absolute left-0 block -translate-y-1/2"
+                    style={{ top: `${pct}%` }}
+                  >
+                    {formatAxisValue(kind, t)}
+                  </span>
                 );
               })}
             </div>
           </div>
         </div>
 
-        <div className="flex w-full min-w-0" style={{ height: MULTICHART_AXIS_ROW_PX }}>
-          <div style={{ width: MULTICHART_Y_AXIS_W_PX }} className="shrink-0" aria-hidden />
+        <div className="flex w-full min-w-0 overflow-visible" style={{ height: MULTICHART_AXIS_ROW_PX }}>
           <div
-            className="grid min-w-0 flex-1 items-start px-0"
+            className="grid min-w-0 flex-1 items-end justify-items-stretch px-0 mb-2"
             style={{ gridTemplateColumns: plotGridTemplate }}
           >
             {axisLabels.map((axisLab, i) => (
               <div
                 key={`${labels[i]}-${i}`}
-                className="flex min-w-0 flex-col items-center justify-start px-0.5"
+                className="flex min-h-0 min-w-0 items-end justify-center overflow-visible px-0.5 pb-0.5"
                 title={labels[i]}
               >
-                <span className="w-full text-balance text-center font-['Inter'] text-[11px] font-normal tabular-nums leading-snug text-[#71717A] sm:text-[12px]">
+                <span
+                  className="inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]"
+                  style={{
+                    transform: `rotate(${AXIS_LABEL_ROTATE_DEG}deg)`,
+                    transformOrigin: "center bottom",
+                  }}
+                >
                   {axisLab}
                 </span>
               </div>
             ))}
           </div>
+          <div style={{ width: MULTICHART_Y_AXIS_W_PX }} className="shrink-0 pl-3" aria-hidden />
         </div>
 
         {tip ? (

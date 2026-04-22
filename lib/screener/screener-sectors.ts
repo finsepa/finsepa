@@ -9,6 +9,8 @@ type SectorAgg = {
   marketCapUsd: number;
   weighted1dNum: number;
   weighted1dDenom: number;
+  weightedYtdNum: number;
+  weightedYtdDenom: number;
 };
 
 function emptyAgg(): SectorAgg {
@@ -16,13 +18,15 @@ function emptyAgg(): SectorAgg {
     marketCapUsd: 0,
     weighted1dNum: 0,
     weighted1dDenom: 0,
+    weightedYtdNum: 0,
+    weightedYtdDenom: 0,
   };
 }
 
 /**
- * GICS-style sector rows: aggregate **market cap** and **market-cap-weighted** 1D % moves from the
+ * GICS-style sector rows: aggregate **market cap** and **market-cap-weighted** 1D / YTD % moves from the
  * full EODHD [Stock Market Screener](https://eodhd.com/financial-apis/stock-market-screener-api) universe
- * (`getTop500Universe` — same `refund1dP` snapshot as Companies), then **sort by market cap descending**
+ * (`getTop500Universe` — same `refund1dP` / `refundYtdP` snapshot as Companies), then **sort by market cap descending**
  * (ties broken by sector name). `rank` reflects this order.
  */
 export function buildScreenerSectorsRows(universe: readonly TopCompanyUniverseRow[]): ScreenerSectorRow[] {
@@ -41,18 +45,25 @@ export function buildScreenerSectorsRows(universe: readonly TopCompanyUniverseRo
       a.weighted1dNum += mc * r1d;
       a.weighted1dDenom += mc;
     }
+    const rytd = u.refundYtdP;
+    if (rytd != null && Number.isFinite(rytd)) {
+      a.weightedYtdNum += mc * rytd;
+      a.weightedYtdDenom += mc;
+    }
   }
 
   const rows: ScreenerSectorRow[] = SCREENER_SECTOR_TABLE_ORDER.map((sector) => {
     const a = agg.get(sector)!;
     const mc = a.marketCapUsd;
     const change1D = a.weighted1dDenom > 0 ? a.weighted1dNum / a.weighted1dDenom : null;
+    const changeYTD = a.weightedYtdDenom > 0 ? a.weightedYtdNum / a.weightedYtdDenom : null;
     return {
       rank: 0,
       sector,
       marketCapUsd: mc,
       marketCapDisplay: formatMarketCapCompactNoCurrency(mc > 0 ? mc : null),
       change1D,
+      changeYTD,
     };
   });
 

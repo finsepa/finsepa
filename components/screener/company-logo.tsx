@@ -25,24 +25,28 @@ function InitialsMark({ name, size }: { name: string; size: "xs" | "sm" | "md" |
   );
 }
 
-/** Cash / USD row icon: blue tile with black dollar (product default). */
+/** Cash / USD row icon: US flag asset (`/usd.svg`). */
 function UsdCashMark({ size }: { size: "xs" | "sm" | "md" | "lg" }) {
-  const box =
+  const px = size === "xs" ? 20 : size === "sm" ? 24 : size === "lg" ? 48 : 32;
+  const imgBox =
     size === "xs"
-      ? "flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-[#1D4ED8] text-[10px] font-bold leading-none"
+      ? "h-5 w-5 rounded-md"
       : size === "sm"
-        ? "flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-[#1D4ED8] text-[11px] font-bold leading-none"
+        ? "h-6 w-6 rounded-md"
         : size === "lg"
-          ? "flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-[#1D4ED8] text-[20px] font-semibold leading-none"
-          : "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#1D4ED8] text-[15px] font-semibold leading-none";
+          ? "h-12 w-12 rounded-lg"
+          : "h-8 w-8 rounded-lg";
   return (
-    <div
-      className={`${box} bg-[#2563EB] text-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]`}
-      role="img"
-      aria-label="US Dollar"
-    >
-      $
-    </div>
+    // eslint-disable-next-line @next/next/no-img-element -- static public SVG
+    <img
+      src="/usd.svg"
+      alt="US Dollar"
+      width={px}
+      height={px}
+      loading="lazy"
+      decoding="async"
+      className={`${imgBox} shrink-0 border-0 object-cover shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]`}
+    />
   );
 }
 

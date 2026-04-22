@@ -35,7 +35,7 @@ import { PortfolioPrivacyStatus } from "@/components/portfolio/portfolio-privacy
 import { TransactionPortfolioField } from "@/components/portfolio/transaction-portfolio-field";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import type { PortfolioTransaction } from "@/components/portfolio/portfolio-types";
-import { netCashUsd, totalNetWorth } from "@/lib/portfolio/overview-metrics";
+import { netCashUsd, totalCostBasisInvested, totalNetWorth } from "@/lib/portfolio/overview-metrics";
 import { ChartSkeleton } from "@/components/ui/chart-skeleton";
 import { cn } from "@/lib/utils";
 
@@ -45,7 +45,10 @@ const EMPTY_PORTFOLIO_TRANSACTIONS: PortfolioTransaction[] = [];
 const PortfolioOverviewChart = dynamic(
   () =>
     import("@/components/portfolio/portfolio-overview-chart").then((m) => ({
-      default: m.PortfolioOverviewChart as ComponentType<{ transactions: PortfolioTransaction[] }>,
+      default: m.PortfolioOverviewChart as ComponentType<{
+        transactions: PortfolioTransaction[];
+        benchmarkInvestedUsd?: number | null;
+      }>,
     })),
   {
     ssr: false,
@@ -82,18 +85,6 @@ const PortfolioPerformancePanel = dynamic(
     ssr: false,
     loading: () => (
       <>
-        <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {["a", "b", "c", "d"].map((k) => (
-            <div
-              key={k}
-              className="rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]"
-            >
-              <div className="h-3 w-14 animate-pulse rounded bg-neutral-200" />
-              <div className="mt-3 h-8 w-[min(100%,11rem)] max-w-full animate-pulse rounded-md bg-neutral-200" />
-              <div className="mt-2 h-4 w-24 animate-pulse rounded bg-neutral-100" />
-            </div>
-          ))}
-        </div>
         <div className="mb-10 w-full">
           <ChartSkeleton />
         </div>
@@ -174,6 +165,7 @@ function PortfolioPageInner() {
 
   const overviewNetWorth = totalNetWorth(holdings, netCashUsd(transactions));
   const showOverviewHoldingsBlock = overviewNetWorth > 0;
+  const benchmarkInvestedUsd = totalCostBasisInvested(holdings);
 
   const panelClass = (tab: PortfolioViewTab) =>
     cn(viewTab === tab ? "flex min-h-0 flex-1 flex-col" : "hidden");
@@ -226,17 +218,21 @@ function PortfolioPageInner() {
 
       <PortfolioPageTabs active={viewTab} onChange={onTabChange} />
 
-      <div className="flex min-h-0 flex-1 flex-col">
-        {tabsVisited.Overview ? (
-          <div
-            className={panelClass("Overview")}
-            role="tabpanel"
-            id="portfolio-tab-overview"
-            aria-hidden={viewTab !== "Overview"}
-          >
-            <PortfolioOverviewAthProvider>
-              <PortfolioOverviewCards holdings={holdings} transactions={transactions} />
-              <PortfolioOverviewChart transactions={transactions} />
+      <PortfolioOverviewAthProvider>
+        <PortfolioOverviewCards holdings={holdings} transactions={transactions} />
+
+        <div className="flex min-h-0 flex-1 flex-col">
+          {tabsVisited.Overview ? (
+            <div
+              className={panelClass("Overview")}
+              role="tabpanel"
+              id="portfolio-tab-overview"
+              aria-hidden={viewTab !== "Overview"}
+            >
+              <PortfolioOverviewChart
+                transactions={transactions}
+                benchmarkInvestedUsd={benchmarkInvestedUsd}
+              />
               <div className="pt-6">
                 <SecondaryTabs
                   className="mb-4"
@@ -270,9 +266,8 @@ function PortfolioPageInner() {
                   </Empty>
                 )}
               </div>
-            </PortfolioOverviewAthProvider>
-          </div>
-        ) : null}
+            </div>
+          ) : null}
 
         {tabsVisited.Performance ? (
           <div
@@ -317,7 +312,8 @@ function PortfolioPageInner() {
             <PortfolioTransactionsTable transactions={transactions} />
           </div>
         ) : null}
-      </div>
+        </div>
+      </PortfolioOverviewAthProvider>
     </div>
   );
 }

@@ -78,7 +78,7 @@ async function fetchMacroIndicatorUncached(args: {
   try {
     if (!traceEodhdHttp("fetchMacroIndicatorUncached", { country: args.country, indicator: args.indicator }))
       return [];
-    const res = await fetch(url, { next: { revalidate: 60 * 60 * 24 } }); // 24h
+    const res = await fetch(url, { next: { revalidate: REVALIDATE_STATIC_DAY } });
     if (!res.ok) return [];
     const json = (await res.json()) as unknown;
     if (!Array.isArray(json)) return [];

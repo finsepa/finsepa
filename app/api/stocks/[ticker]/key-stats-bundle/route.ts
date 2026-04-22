@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
 
+import {
+  CACHE_CONTROL_PRIVATE_MAX_0_MUST_REVALIDATE,
+  CACHE_CONTROL_PRIVATE_NO_STORE_MUST_REVALIDATE,
+  CACHE_CONTROL_PRIVATE_WARM_CHART,
+} from "@/lib/data/cache-policy";
 import { buildStockKeyStatsBundle } from "@/lib/market/stock-key-stats-bundle";
 import { normalizeWatchlistTicker, WatchlistValidationError } from "@/lib/watchlist/operations";
 import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
@@ -30,7 +35,7 @@ export async function GET(request: Request, { params }: Ctx) {
     return NextResponse.json(
       { ticker: routeTicker, bundle: getNvdaKeyStatsBundle() },
       {
-        headers: { "Cache-Control": "private, s-maxage=120, stale-while-revalidate=300" },
+        headers: { "Cache-Control": CACHE_CONTROL_PRIVATE_WARM_CHART },
       },
     );
   }
@@ -42,7 +47,7 @@ export async function GET(request: Request, { params }: Ctx) {
         bundle: null,
       },
       {
-        headers: { "Cache-Control": "private, s-maxage=120, stale-while-revalidate=300" },
+        headers: { "Cache-Control": CACHE_CONTROL_PRIVATE_WARM_CHART },
       },
     );
   }
@@ -50,8 +55,8 @@ export async function GET(request: Request, { params }: Ctx) {
   const bundle = await buildStockKeyStatsBundle(routeTicker, { refreshFundamentals });
 
   const cacheHeaders = refreshFundamentals
-    ? { "Cache-Control": "private, no-store, must-revalidate" as const }
-    : { "Cache-Control": "private, max-age=0, must-revalidate" as const };
+    ? { "Cache-Control": CACHE_CONTROL_PRIVATE_NO_STORE_MUST_REVALIDATE }
+    : { "Cache-Control": CACHE_CONTROL_PRIVATE_MAX_0_MUST_REVALIDATE };
 
   return NextResponse.json({ ticker: routeTicker, bundle }, { headers: cacheHeaders });
 }

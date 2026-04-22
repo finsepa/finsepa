@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 
 const CARD =
-  "overflow-hidden rounded-xl border border-[#E4E4E7] bg-white px-4 py-4 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition hover:shadow-[0px_2px_4px_0px_rgba(10,10,10,0.08)]";
+  "flex flex-col gap-2 overflow-x-hidden overflow-y-visible rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition hover:shadow-[0px_2px_4px_0px_rgba(10,10,10,0.08)]";
 
 const PLACEHOLDER_KEYS = ["revenue", "net_income", "eps", "free_cash_flow", "ebitda"] as const;
 
@@ -10,9 +10,9 @@ function SkeletonGrid() {
     <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
       {PLACEHOLDER_KEYS.map((id) => (
         <div key={id} className={cn(CARD, "animate-pulse")}>
-          <div className="mb-4 h-5 w-28 rounded bg-neutral-200/90" />
-          <div className="mb-2 h-9 w-44 rounded bg-neutral-200/80" />
-          <div className="h-[300px] rounded-xl bg-neutral-100" />
+          <div className="h-5 w-28 rounded bg-neutral-200/90" />
+          <div className="h-9 w-44 rounded bg-neutral-200/80" />
+          <div className="h-[278px] rounded-xl bg-neutral-100" />
         </div>
       ))}
     </div>

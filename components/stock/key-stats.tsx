@@ -54,6 +54,25 @@ const DIVIDENDS_LABELS = ["Yield", "Payout"];
 
 const RISK_LABELS = ["Beta (5Y)", "Max Drawdown (5Y)"];
 
+const REVENUE_PROFIT_LABEL_TO_METRIC: Partial<Record<string, ChartingMetricId>> = {
+  Revenue: "revenue",
+  "Gross Profit": "gross_profit",
+  "Operating Income": "operating_income",
+  "Net Income": "net_income",
+  EBITDA: "ebitda",
+  EPS: "eps",
+};
+
+/** Key Stats "Margins" row labels → fundamentals chart metric (FCF row is margin %, not cash dollars). */
+const MARGINS_LABEL_TO_METRIC: Partial<Record<string, ChartingMetricId>> = {
+  "Gross Margin": "gross_margin",
+  "Operating Margin": "operating_margin",
+  "EBITDA Margin": "ebitda_margin",
+  "Pre-Tax Margin": "pre_tax_margin",
+  "Net Margin": "net_margin",
+  "Free Cash Flow": "fcf_margin",
+};
+
 const BASIC_FALLBACK: Row[] = [
   { label: "Market Cap", value: "—" },
   { label: "Enterprise Value", value: "—" },
@@ -65,50 +84,40 @@ const BASIC_FALLBACK: Row[] = [
   { label: "Employees", value: "—" },
 ];
 
-const LABEL_TO_METRIC: Partial<Record<string, ChartingMetricId>> = {
-  Revenue: "revenue",
-  "Gross Profit": "gross_profit",
-  "Operating Income": "operating_income",
-  "Net Income": "net_income",
-  EBITDA: "ebitda",
-  EPS: "eps",
-};
-
-function StatRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between gap-3 border-b border-[#E4E4E7] py-1.5 last:border-0">
-      <span className="min-w-0 shrink cursor-pointer text-[14px] leading-5 text-[#09090B] underline decoration-[#E4E4E7] underline-offset-2">
-        {label}
-      </span>
-      <span className="shrink-0 text-right text-[14px] leading-5 text-[#09090B] tabular-nums">{value}</span>
-    </div>
-  );
-}
-
-function RevenueStatRow({
+function KeyStatMetricRow({
   label,
   value,
+  labelToMetric,
   onMetricClick,
 }: {
   label: string;
   value: string;
-  onMetricClick?: (id: ChartingMetricId) => void;
+  labelToMetric: Partial<Record<string, ChartingMetricId>>;
+  onMetricClick?: (metricId: ChartingMetricId) => void;
 }) {
-  const metricId = LABEL_TO_METRIC[label];
+  const metricId = labelToMetric[label];
   const interactive = typeof onMetricClick === "function" && metricId != null;
+  if (!interactive) {
+    return <StatRow label={label} value={value} />;
+  }
+  return (
+    <button
+      type="button"
+      onClick={() => metricId && onMetricClick?.(metricId)}
+      className="flex w-full min-w-0 cursor-pointer items-center justify-between gap-3 border-b border-[#E4E4E7] py-1.5 text-left last:border-0 hover:bg-[#FAFAFA]"
+    >
+      <span className="min-w-0 shrink text-[14px] leading-5 text-[#09090B] decoration-transparent underline-offset-2 hover:underline hover:decoration-[#D4D4D8]">
+        {label}
+      </span>
+      <span className="shrink-0 text-right text-[14px] leading-5 text-[#09090B] tabular-nums">{value}</span>
+    </button>
+  );
+}
+
+function StatRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-3 border-b border-[#E4E4E7] py-1.5 last:border-0">
-      {interactive ? (
-        <button
-          type="button"
-          onClick={() => metricId && onMetricClick?.(metricId)}
-          className="min-w-0 shrink cursor-pointer text-left text-[14px] leading-5 text-[#09090B] decoration-transparent underline-offset-2 hover:underline hover:decoration-[#D4D4D8]"
-        >
-          {label}
-        </button>
-      ) : (
-        <span className="min-w-0 shrink text-[14px] leading-5 text-[#09090B]">{label}</span>
-      )}
+      <span className="min-w-0 shrink text-[14px] leading-5 text-[#09090B]">{label}</span>
       <span className="shrink-0 text-right text-[14px] leading-5 text-[#09090B] tabular-nums">{value}</span>
     </div>
   );
@@ -132,20 +141,37 @@ const DynamicCard = memo(function DynamicCard({
   rowLabels,
   rows,
   loading,
+  labelToMetric,
+  onMetricClick,
 }: {
   title: string;
   rowLabels: string[];
   rows: Row[] | null;
   loading: boolean;
+  /** When set with `onMetricClick`, matching rows open the fundamentals chart modal (label + value clickable). */
+  labelToMetric?: Partial<Record<string, ChartingMetricId>>;
+  onMetricClick?: (metricId: ChartingMetricId) => void;
 }) {
   const fallback = useMemo(() => rowLabels.map((label) => ({ label, value: "—" as const })), [rowLabels]);
   const displayRows = rows ?? fallback;
+  const map = labelToMetric ?? null;
+  const clickable = map != null && typeof onMetricClick === "function";
 
   return (
     <div className="mb-5 rounded-xl border border-[#E4E4E7] bg-white p-4">
       <h3 className="mb-2 text-[14px] font-semibold leading-5 text-[#09090B]">{title}</h3>
       {loading ? (
         <CardSkeleton rowLabels={rowLabels} />
+      ) : clickable ? (
+        displayRows.map((row) => (
+          <KeyStatMetricRow
+            key={row.label}
+            label={row.label}
+            value={row.value}
+            labelToMetric={map}
+            onMetricClick={onMetricClick}
+          />
+        ))
       ) : (
         displayRows.map((row) => <StatRow key={row.label} label={row.label} value={row.value} />)
       )}
@@ -174,7 +200,7 @@ const RevenueProfitCard = memo(function RevenueProfitCard({
 }: {
   rows: Row[] | null;
   loading: boolean;
-  onMetricClick?: (id: ChartingMetricId) => void;
+  onMetricClick?: (metricId: ChartingMetricId) => void;
 }) {
   const placeholder = useMemo(
     () =>
@@ -197,10 +223,11 @@ const RevenueProfitCard = memo(function RevenueProfitCard({
         <CardSkeleton rowLabels={displayRows.map((r) => r.label)} />
       ) : (
         displayRows.map((row) => (
-          <RevenueStatRow
+          <KeyStatMetricRow
             key={row.label}
             label={row.label}
             value={row.value}
+            labelToMetric={REVENUE_PROFIT_LABEL_TO_METRIC}
             onMetricClick={onMetricClick}
           />
         ))
@@ -212,11 +239,12 @@ const RevenueProfitCard = memo(function RevenueProfitCard({
 function KeyStatsInner({
   ticker,
   initialBundle,
-  onRevenueProfitMetricClick,
+  onOpenMetricChart,
 }: {
   ticker: string;
   initialBundle?: StockKeyStatsBundle | null;
-  onRevenueProfitMetricClick?: (id: ChartingMetricId) => void;
+  /** Revenue & Profit + Margins rows open the fundamentals bar chart modal. */
+  onOpenMetricChart?: (metricId: ChartingMetricId) => void;
 }) {
   const [loading, setLoading] = useState(() => !initialBundle);
   const [bundle, setBundle] = useState<StockKeyStatsBundle | null>(() => initialBundle ?? null);
@@ -264,9 +292,16 @@ function KeyStatsInner({
           <RevenueProfitCard
             rows={bundle?.revenueProfit ?? null}
             loading={loading}
-            onMetricClick={onRevenueProfitMetricClick}
+            onMetricClick={onOpenMetricChart}
           />
-          <DynamicCard title="Margins" rowLabels={MARGINS_LABELS} rows={bundle?.margins ?? null} loading={loading} />
+          <DynamicCard
+            title="Margins"
+            rowLabels={MARGINS_LABELS}
+            rows={bundle?.margins ?? null}
+            loading={loading}
+            labelToMetric={MARGINS_LABEL_TO_METRIC}
+            onMetricClick={onOpenMetricChart}
+          />
           <DynamicCard title="Growth" rowLabels={GROWTH_LABELS} rows={bundle?.growth ?? null} loading={loading} />
         </div>
 

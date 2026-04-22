@@ -4,6 +4,17 @@ import { unstable_cache } from "next/cache";
 
 import { tryConsumeLogoDevUpstreamSlot } from "@/lib/market/logo-dev-upstream-budget";
 
+/**
+ * Logos change rarely — long TTLs mean one Logo.dev fetch per symbol benefits all users (Next Data Cache +
+ * CDN/browser `Cache-Control`). Keep in sync with `app/api/media/logo/route.ts` (same constants).
+ */
+export const LOGO_PROXY_CACHE_MAX_AGE_SEC = 30 * 24 * 60 * 60; // 30d
+/** After `max-age`, CDNs may serve stale bytes while revalidating in the background (reduces stampedes). */
+export const LOGO_PROXY_STALE_WHILE_REVALIDATE_SEC = 7 * 24 * 60 * 60; // 7d
+
+/** Bump when changing cache policy so old Data Cache entries are not reused. */
+const LOGO_PROXY_UNSTABLE_CACHE_KEY = "finsepa-logo-proxy-upstream-v3" as const;
+
 function serverLogoDevToken(): string {
   return (
     process.env.LOGO_DEV_PUBLISHABLE_KEY?.trim() || process.env.NEXT_PUBLIC_LOGO_DEV_PUBLISHABLE_KEY?.trim() || ""
@@ -56,6 +67,6 @@ async function fetchLogoUpstreamUncached(
  */
 export const getCachedLogoFromUpstream = unstable_cache(
   async (kind: LogoProxyKind, normId: string) => fetchLogoUpstreamUncached(kind, normId),
-  ["finsepa-logo-proxy-upstream-v2"],
-  { revalidate: 604800 },
+  [LOGO_PROXY_UNSTABLE_CACHE_KEY],
+  { revalidate: LOGO_PROXY_CACHE_MAX_AGE_SEC },
 );

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { CACHE_CONTROL_PUBLIC_NEWS_HUB, CACHE_CONTROL_PUBLIC_NEWS_HUB_EMPTY } from "@/lib/data/cache-policy";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getNewsPage } from "@/lib/news/news-feed";
 import type { NewsResponse, NewsTab } from "@/lib/news/news-types";
@@ -24,7 +25,7 @@ export async function GET(request: Request) {
   if (isSingleAssetMode()) {
     const body: NewsResponse = { tab, page, pageSize, total: 0, items: [] };
     return NextResponse.json(body, {
-      headers: { "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60" },
+      headers: { "Cache-Control": CACHE_CONTROL_PUBLIC_NEWS_HUB_EMPTY },
     });
   }
 
@@ -33,7 +34,7 @@ export async function GET(request: Request) {
   const body: NewsResponse = { tab, page, pageSize, total, items };
   return NextResponse.json(body, {
     headers: {
-      "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+      "Cache-Control": CACHE_CONTROL_PUBLIC_NEWS_HUB,
     },
   });
 }

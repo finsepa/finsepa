@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { CACHE_CONTROL_PUBLIC_SEARCH } from "@/lib/data/cache-policy";
 import { globalAssetSearch } from "@/lib/search/global-asset-search";
 import { isSingleAssetMode, SINGLE_ASSET_SYMBOL } from "@/lib/features/single-asset";
 import { TOP10_META } from "@/lib/screener/top10-config";
@@ -44,7 +45,7 @@ export async function GET(request: Request) {
       { items },
       {
         headers: {
-          "Cache-Control": "public, s-maxage=30, stale-while-revalidate=120",
+          "Cache-Control": CACHE_CONTROL_PUBLIC_SEARCH,
         },
       },
     );

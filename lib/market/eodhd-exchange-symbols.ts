@@ -2,6 +2,7 @@ import "server-only";
 
 import { unstable_cache } from "next/cache";
 
+import { REVALIDATE_STATIC } from "@/lib/data/cache-policy";
 import { getEodhdApiKey } from "@/lib/env/server";
 import { traceEodhdHttp } from "@/lib/market/provider-trace";
 
@@ -40,7 +41,7 @@ async function fetchEodhdExchangeSymbolListUncached(exchange = "US"): Promise<Eo
 
   try {
     if (!traceEodhdHttp("fetchEodhdExchangeSymbolListUncached", { exchange: ex })) return [];
-    const res = await fetch(url, { next: { revalidate: 60 * 60 * 12 } }); // 12h
+    const res = await fetch(url, { next: { revalidate: REVALIDATE_STATIC } });
     if (!res.ok) return [];
     const data = (await res.json()) as unknown;
     if (!Array.isArray(data)) return [];
@@ -53,7 +54,7 @@ async function fetchEodhdExchangeSymbolListUncached(exchange = "US"): Promise<Eo
 const fetchEodhdExchangeSymbolListCached = unstable_cache(
   fetchEodhdExchangeSymbolListUncached,
   ["eodhd-exchange-symbol-list-v1"],
-  { revalidate: 60 * 60 * 12 },
+  { revalidate: REVALIDATE_STATIC },
 );
 
 /**

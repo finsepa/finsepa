@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { CACHE_CONTROL_PRIVATE_OVERVIEW_MARKET } from "@/lib/data/cache-policy";
 import { cryptoRouteBase } from "@/lib/crypto/crypto-symbol-base";
 import { isSupportedCryptoAssetSymbol } from "@/lib/crypto/crypto-logo-url";
 import { fetchEodhdCryptoOpenPriceOnOrBefore } from "@/lib/market/eodhd-crypto";
@@ -136,7 +137,7 @@ export async function POST(request: Request) {
       },
       {
         headers: {
-          "Cache-Control": "private, s-maxage=30, stale-while-revalidate=60",
+          "Cache-Control": CACHE_CONTROL_PRIVATE_OVERVIEW_MARKET,
         },
       },
     );

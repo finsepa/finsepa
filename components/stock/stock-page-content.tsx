@@ -8,7 +8,7 @@ import { AssetPageTopLoader } from "@/components/layout/asset-page-top-loader";
 import type { ChartDisplayState } from "@/components/chart/PriceChart";
 import { PriceChart } from "@/components/chart/PriceChart";
 import type { StockDetailHeaderMeta } from "@/lib/market/stock-header-meta";
-import { chartingMetricToParam, type ChartingMetricId } from "@/lib/market/stock-charting-metrics";
+import type { ChartingMetricId } from "@/lib/market/stock-charting-metrics";
 import type { StockDetailTabId } from "@/lib/stock/stock-detail-tab";
 import { parseStockDetailTabQuery } from "@/lib/stock/stock-detail-tab";
 import { AssetPortfolioHoldingsTab } from "@/components/portfolio/asset-portfolio-holdings-tab";
@@ -26,9 +26,12 @@ import { MiniTable } from "./mini-table";
 import { StockComparePicker } from "./stock-compare-picker";
 import { StockCompareReturnChart } from "./stock-compare-return-chart";
 import { KeyStats } from "./key-stats";
+import { KeyStatsMetricChartModal } from "./key-stats-metric-chart-modal";
 import { LatestNews } from "./latest-news";
 import type { StockPageInitialData } from "@/lib/market/stock-page-initial-data";
+import type { StockPerformance } from "@/lib/market/stock-performance-types";
 import type { StockChartRange, StockChartSeries } from "@/lib/market/stock-chart-types";
+import { mergeSessionHeaderWithPerformanceSpot } from "@/lib/chart/merge-session-header-with-performance-spot";
 import { WATCHLIST_MUTATED_EVENT } from "@/lib/watchlist/constants";
 
 /** Client-only: avoids SSR/client HTML drift for this tab (charts + evolving layout). */
@@ -229,14 +232,18 @@ export function StockPageContent({
     [pathname, router, searchParams],
   );
 
-  const openChartingWithMetric = useCallback(
-    (id: ChartingMetricId) => {
-      const params = new URLSearchParams(searchParams.toString());
-      params.set("tab", "charting");
-      params.set("metric", chartingMetricToParam(id));
-      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-    },
-    [pathname, router, searchParams],
+  const [revenueProfitModalMetric, setRevenueProfitModalMetric] = useState<ChartingMetricId | null>(null);
+  const openRevenueProfitMetricModal = useCallback((metricId: ChartingMetricId) => {
+    setRevenueProfitModalMetric(metricId);
+  }, []);
+
+  const fundamentalsModalAnnual = useMemo(
+    () => (initialPageData?.ticker === ticker ? initialPageData.fundamentalsSeriesAnnual : undefined),
+    [initialPageData, ticker],
+  );
+  const fundamentalsModalQuarterly = useMemo(
+    () => (initialPageData?.ticker === ticker ? initialPageData.fundamentalsSeriesQuarterly : undefined),
+    [initialPageData, ticker],
   );
 
   /** 1D session series — drives header price / change (today / live window). */
@@ -259,6 +266,75 @@ export function StockPageContent({
     setHoldingsHeaderUi(s);
   }, []);
 
+  const performanceFromServer = useMemo(
+    (): StockPerformance | null =>
+      initialPageData?.ticker === ticker ? (initialPageData.performance ?? null) : null,
+    [initialPageData, ticker],
+  );
+
+  const [performanceClient, setPerformanceClient] = useState<StockPerformance | null>(null);
+
+  /** Phase 7: intraday-aligned spot; client poll refines SSR `headerLiveSpotUsd` for signed-in users. */
+  const [headerLiveSpotClient, setHeaderLiveSpotClient] = useState<number | null>(null);
+
+  useEffect(() => {
+    setHeaderLiveSpotClient(null);
+  }, [ticker]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        const res = await fetch(`/api/stocks/${encodeURIComponent(ticker)}/live-price`, {
+          credentials: "include",
+          cache: "no-store",
+        });
+        if (!res.ok || cancelled) return;
+        const json = (await res.json()) as { price?: unknown };
+        const p = json.price;
+        if (typeof p === "number" && Number.isFinite(p) && p > 0 && !cancelled) setHeaderLiveSpotClient(p);
+      } catch {
+        /* ignore */
+      }
+    };
+    void tick();
+    const id = window.setInterval(tick, 90_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [ticker]);
+
+  useEffect(() => {
+    setPerformanceClient(null);
+    if (performanceFromServer?.price != null && Number.isFinite(performanceFromServer.price)) {
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch(`/api/stocks/${encodeURIComponent(ticker)}/performance`, {
+          credentials: "include",
+          cache: "no-store",
+        });
+        if (!res.ok || cancelled) return;
+        const json = (await res.json()) as StockPerformance;
+        if (!cancelled) setPerformanceClient(json);
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [ticker, performanceFromServer?.price]);
+
+  const performanceForHeaderFallback = performanceFromServer ?? performanceClient;
+
+  const headerLiveSpotForMerge =
+    headerLiveSpotClient ??
+    (initialPageData?.ticker === ticker ? (initialPageData.headerLiveSpotUsd ?? null) : null);
+
   const chartUi = useMemo((): ChartDisplayState => {
     if (activeTab === "holdings") {
       return holdingsHeaderUi ?? EMPTY_CHART_DISPLAY;
@@ -266,8 +342,21 @@ export function StockPageContent({
     if (rangeSelectionHeaderUi?.selectionActive) {
       return rangeSelectionHeaderUi;
     }
-    return sessionHeaderUi;
-  }, [activeTab, holdingsHeaderUi, rangeSelectionHeaderUi, sessionHeaderUi]);
+    return mergeSessionHeaderWithPerformanceSpot(
+      sessionHeaderUi,
+      performanceForHeaderFallback,
+      chartSeries,
+      headerLiveSpotForMerge,
+    );
+  }, [
+    activeTab,
+    chartSeries,
+    headerLiveSpotForMerge,
+    holdingsHeaderUi,
+    performanceForHeaderFallback,
+    rangeSelectionHeaderUi,
+    sessionHeaderUi,
+  ]);
 
   const initialChartMemo = useMemo(
     () => (initialPageData?.ticker === ticker ? initialPageData.chart : null),
@@ -279,6 +368,13 @@ export function StockPageContent({
 
   return (
     <div className="relative min-w-0 space-y-5 px-4 py-4 sm:px-9 sm:py-6">
+      <KeyStatsMetricChartModal
+        ticker={ticker}
+        metricId={revenueProfitModalMetric}
+        onClose={() => setRevenueProfitModalMetric(null)}
+        initialAnnualPoints={fundamentalsModalAnnual}
+        initialQuarterlyPoints={fundamentalsModalQuarterly}
+      />
       <Suspense fallback={null}>
         <AssetPageTopLoader />
       </Suspense>
@@ -380,7 +476,7 @@ export function StockPageContent({
             <KeyStats
               ticker={ticker}
               initialBundle={initialPageData?.ticker === ticker ? initialPageData.keyStatsBundle : null}
-              onRevenueProfitMetricClick={openChartingWithMetric}
+              onOpenMetricChart={openRevenueProfitMetricModal}
             />
           </div>
           <div className="pt-2">

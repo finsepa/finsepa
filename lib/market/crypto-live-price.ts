@@ -1,5 +1,6 @@
 import "server-only";
 
+import { getCryptoPerformance } from "@/lib/market/crypto-performance";
 import { cryptoRealtimeRequestSymbols, pickCryptoRealtimePayload } from "@/lib/market/crypto-meta";
 import { resolveCryptoMetaForProvider } from "@/lib/market/crypto-meta-resolver";
 import { fetchEodhdIntraday } from "@/lib/market/eodhd-intraday";
@@ -7,11 +8,17 @@ import { fetchEodhdRealtimeSymbolsRaw } from "@/lib/market/eodhd-realtime";
 
 /**
  * Best-effort spot USD for portfolio / live-price routes.
- * Prefers EODHD **real-time** (same as screener), then last 24h intraday 5m bar, so values track the market
- * instead of freezing at the last trade fill when the workspace hydrates.
+ * Uses the same **daily last close** as crypto asset pages and `/api/crypto/.../performance` first, so portfolio
+ * prices match what users see when they open an asset. Falls back to EODHD real-time, then 24h intraday 5m.
  */
 export async function getCryptoLiveSpotPriceUsd(routeSymbol: string): Promise<number | null> {
-  const meta = await resolveCryptoMetaForProvider(routeSymbol.trim());
+  const trimmed = routeSymbol.trim();
+  const perf = await getCryptoPerformance(trimmed);
+  if (typeof perf.price === "number" && Number.isFinite(perf.price) && perf.price > 0) {
+    return perf.price;
+  }
+
+  const meta = await resolveCryptoMetaForProvider(trimmed);
   if (!meta) return null;
 
   const rtSymbols = cryptoRealtimeRequestSymbols([meta]);

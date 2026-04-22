@@ -213,6 +213,32 @@ function mergeRatiosRow(p: ChartingSeriesPoint, row: Record<string, unknown>): v
   p.evEbitda = numFromRow(row, ["EnterpriseValueEbitda", "EnterpriseValueEBITDA", "EVToEBITDA", "evEbitda"]);
   p.evSales = numFromRow(row, ["EnterpriseValueRevenue", "EnterpriseValueSales", "EVToSales", "evSales"]);
   p.dividendYield = numFromRow(row, ["DividendYield", "ForwardAnnualDividendYield", "Yield"]);
+
+  const mc = numFromRow(row, [
+    "MarketCapitalization",
+    "MarketCapitalisation",
+    "MarketCap",
+    "marketCap",
+    "MarketCapUSD",
+    "MarketCapitalizationUSD",
+  ]);
+  if (mc != null && Number.isFinite(mc) && mc > 0) p.marketCap = mc;
+}
+
+/** When the provider omits market cap on the ratios row, derive from P/S or P/B identities. */
+function fillDerivedMarketCap(p: ChartingSeriesPoint): void {
+  if (p.marketCap != null && Number.isFinite(p.marketCap) && p.marketCap > 0) return;
+  const rev = p.revenue;
+  const ps = p.psRatio;
+  if (rev != null && ps != null && Number.isFinite(rev) && Number.isFinite(ps) && rev > 0 && ps > 0) {
+    p.marketCap = rev * ps;
+    return;
+  }
+  const pb = p.priceBook;
+  const eq = p.shareholderEquity;
+  if (pb != null && eq != null && Number.isFinite(pb) && Number.isFinite(eq) && Math.abs(eq) > 1e-9 && pb > 0) {
+    p.marketCap = pb * Math.abs(eq);
+  }
 }
 
 function computeDerivedMarginsAndReturns(p: ChartingSeriesPoint): void {
@@ -314,6 +340,7 @@ function emptyPoint(periodEnd: string): ChartingSeriesPoint {
     totalDebt: z,
     debtToEquity: z,
     sharesOutstanding: z,
+    marketCap: z,
     grossMargin: z,
     operatingMargin: z,
     ebitdaMargin: z,
@@ -393,6 +420,7 @@ function buildMergedPoints(root: Record<string, unknown>, mode: FundamentalsSeri
       }
     }
 
+    fillDerivedMarketCap(p);
     computeDerivedMarginsAndReturns(p);
     fillDerivedEpsIfMissing(p);
     out.push(p);
@@ -431,6 +459,6 @@ async function fetchChartingSeriesUncached(
 
 export const fetchChartingSeries = unstable_cache(
   fetchChartingSeriesUncached,
-  ["eodhd-charting-series-v3"],
+  ["eodhd-charting-series-v4"],
   { revalidate: REVALIDATE_WARM },
 );

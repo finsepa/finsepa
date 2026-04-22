@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { CACHE_CONTROL_PRIVATE_WARM_LONG } from "@/lib/data/cache-policy";
 import {
   fetchEodhdInsiderTransactions,
   resolveInsiderQueryWindow,
@@ -56,5 +57,8 @@ export async function GET(request: Request, { params }: Ctx) {
     limit,
   });
 
-  return NextResponse.json({ ticker: routeTicker, rows, windowFrom: from, windowTo: to });
+  return NextResponse.json(
+    { ticker: routeTicker, rows, windowFrom: from, windowTo: to },
+    { headers: { "Cache-Control": CACHE_CONTROL_PRIVATE_WARM_LONG } },
+  );
 }

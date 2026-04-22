@@ -286,23 +286,23 @@ function PortfolioOverviewCardsInner({
 
   return (
     <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-      {/* Value — sync from holdings; never skeleton */}
-      <div className="rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
-        <p className="text-xs font-medium text-[#71717A]">Value</p>
-        <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight text-[#09090B]">
-          {usd.format(normalizeUsdForDisplay(netWorth))}
-        </p>
-        <p className="mt-2 text-sm text-[#71717A]">{usd.format(invested)} invested</p>
-      </div>
-
       {showMetricSkeleton ? (
         <>
+          <OverviewMetricCardSkeleton />
           <OverviewMetricCardSkeleton />
           <OverviewMetricCardSkeleton />
           <OverviewMetricCardSkeleton />
         </>
       ) : (
         <>
+          <div className="rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
+            <p className="text-xs font-medium text-[#71717A]">Value</p>
+            <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight text-[#09090B]">
+              {usd.format(normalizeUsdForDisplay(netWorth))}
+            </p>
+            <p className="mt-2 text-sm text-[#71717A]">{usd.format(invested)} invested</p>
+          </div>
+
           {/* Total profit */}
           <div className="rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
             <p className="text-xs font-medium text-[#71717A]">Total profit</p>

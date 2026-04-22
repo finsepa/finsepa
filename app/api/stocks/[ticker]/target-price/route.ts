@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { CACHE_CONTROL_PRIVATE_NO_STORE, CACHE_CONTROL_PRIVATE_WARM } from "@/lib/data/cache-policy";
 import { fetchEodhdFundamentalsJson } from "@/lib/market/eodhd-fundamentals";
 import { buildStockTargetPricePayload } from "@/lib/market/stock-target-price-payload";
 import { normalizeWatchlistTicker, WatchlistValidationError } from "@/lib/watchlist/operations";
@@ -22,7 +23,7 @@ export async function GET(_request: Request, { params }: Ctx) {
 
   if (isSingleAssetMode() && !isSupportedAsset(routeTicker)) {
     return NextResponse.json(buildStockTargetPricePayload(null), {
-      headers: { "Cache-Control": "private, no-store" },
+      headers: { "Cache-Control": CACHE_CONTROL_PRIVATE_NO_STORE },
     });
   }
 
@@ -31,7 +32,7 @@ export async function GET(_request: Request, { params }: Ctx) {
 
   return NextResponse.json(payload, {
     headers: {
-      "Cache-Control": "private, s-maxage=300, stale-while-revalidate=600",
+      "Cache-Control": CACHE_CONTROL_PRIVATE_WARM,
     },
   });
 }

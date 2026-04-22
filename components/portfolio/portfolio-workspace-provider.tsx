@@ -310,13 +310,15 @@ export function PortfolioWorkspaceProvider({
       withListingOwner(computePublicPortfolioListingMetrics(holdings, txs), ownerForListing),
     [ownerForListing],
   );
+  /** Must match server vs client first paint — never use {@link newPortfolioId} in initial seed (random UUID). */
+  const portfolioSeedId = useId().replace(/:/g, "");
   const portfolioSeed = useMemo(() => {
-    const id = newPortfolioId();
+    const id = `pf_${portfolioSeedId}`;
     return {
       list: [{ id, name: DEFAULT_PORTFOLIO_NAME, privacy: "private" as const }],
       selectedId: id,
     };
-  }, []);
+  }, [portfolioSeedId]);
 
   const [portfolios, setPortfolios] = useState<PortfolioEntry[]>(portfolioSeed.list);
   const [selectedPortfolioId, setSelectedPortfolioId] = useState<string | null>(portfolioSeed.selectedId);
@@ -340,6 +342,12 @@ export function PortfolioWorkspaceProvider({
   const [workspaceHydrated, setWorkspaceHydrated] = useState(false);
   /** True after we synchronously applied a local snapshot (fast path for repeat visits / post-login). */
   const [portfolioBootstrapFromLocal, setPortfolioBootstrapFromLocal] = useState(false);
+  /**
+   * False while {@link applyWorkspaceState} is waiting on {@link refreshHoldingMarketPrices}.
+   * Starts true so empty / seed workspaces (no apply) still render immediately after hydrate.
+   */
+  const [holdingsMarkToMarketReady, setHoldingsMarkToMarketReady] = useState(true);
+  const holdingsQuoteRefreshGenRef = useRef(0);
 
   const displayHoldingsByPortfolioId = useMemo(() => {
     const out: Record<string, PortfolioHolding[]> = { ...holdingsByPortfolioId };
@@ -373,6 +381,9 @@ export function PortfolioWorkspaceProvider({
   }, [portfolios, selectedPortfolioId]);
 
   const applyWorkspaceState = useCallback((saved: PersistedPortfolioState) => {
+    const refreshGen = ++holdingsQuoteRefreshGenRef.current;
+    setHoldingsMarkToMarketReady(false);
+
     setPortfolios(saved.portfolios);
     setSelectedPortfolioId(saved.selectedPortfolioId);
     setTransactionsByPortfolioId(saved.transactionsByPortfolioId);
@@ -388,15 +399,21 @@ export function PortfolioWorkspaceProvider({
 
     /** Replay uses last fill as provisional `marketPrice`; refresh from live quotes after hydrate/merge. */
     void (async () => {
-      const entries = await Promise.all(
-        Object.entries(rebuilt).map(async ([pid, holds]) => {
-          if (holds.length === 0) return [pid, holds] as const;
-          const quoted = await refreshHoldingMarketPrices(holds);
-          return [pid, quoted] as const;
-        }),
-      );
-      const quoted = Object.fromEntries(entries) as Record<string, PortfolioHolding[]>;
-      setHoldingsByPortfolioId((prev) => ({ ...prev, ...quoted }));
+      try {
+        const entries = await Promise.all(
+          Object.entries(rebuilt).map(async ([pid, holds]) => {
+            if (holds.length === 0) return [pid, holds] as const;
+            const quoted = await refreshHoldingMarketPrices(holds);
+            return [pid, quoted] as const;
+          }),
+        );
+        const quoted = Object.fromEntries(entries) as Record<string, PortfolioHolding[]>;
+        setHoldingsByPortfolioId((prev) => ({ ...prev, ...quoted }));
+      } finally {
+        if (holdingsQuoteRefreshGenRef.current === refreshGen) {
+          setHoldingsMarkToMarketReady(true);
+        }
+      }
     })();
   }, []);
 
@@ -822,7 +839,8 @@ export function PortfolioWorkspaceProvider({
     }
   }, [newTransactionOpen]);
 
-  const portfolioDisplayReady = workspaceHydrated || portfolioBootstrapFromLocal;
+  const portfolioDisplayReady =
+    (workspaceHydrated || portfolioBootstrapFromLocal) && holdingsMarkToMarketReady;
 
   const value = useMemo(
     () => ({

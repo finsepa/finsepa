@@ -1,6 +1,6 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import { ChartSpline } from "lucide-react";
 
 import { CompanyLogo } from "@/components/screener/company-logo";
@@ -15,7 +15,10 @@ import {
 } from "@/components/ui/empty";
 import { cryptoRouteBase } from "@/lib/crypto/crypto-symbol-base";
 import { isSupportedCryptoAssetSymbol } from "@/lib/crypto/crypto-logo-url";
-import { normalizeUsdForDisplay } from "@/lib/portfolio/overview-metrics";
+import {
+  normalizeUsdForDisplay,
+  totalHistoricalEquityCostBasis,
+} from "@/lib/portfolio/overview-metrics";
 import { cumulativeRealizedGainUsdForAsset } from "@/lib/portfolio/realized-pnl-from-trades";
 import { cn } from "@/lib/utils";
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
@@ -51,6 +54,12 @@ function PortfolioHoldingsPerformanceTableInner({
   holdings: PortfolioHolding[];
   transactions: PortfolioTransaction[];
 }) {
+  /** Same denominator as overview “Total profit” ATH % — each row’s share of return in percentage points. */
+  const portfolioReturnDenominator = useMemo(
+    () => totalHistoricalEquityCostBasis(holdings, transactions),
+    [holdings, transactions],
+  );
+
   if (holdings.length === 0) {
     return (
       <Empty variant="card" className="min-h-[min(40vh,360px)]">
@@ -92,6 +101,11 @@ function PortfolioHoldingsPerformanceTableInner({
             const totalProfitUsd = retUsd + realizedUsd;
             const totalProfitPct =
               h.costBasis > 0 ? (totalProfitUsd / h.costBasis) * 100 : null;
+            const contributionPct =
+              portfolioReturnDenominator > 0 && Number.isFinite(portfolioReturnDenominator) &&
+              Number.isFinite(totalProfitUsd) ?
+                (totalProfitUsd / portfolioReturnDenominator) * 100
+              : null;
             const realizedDisplay =
               Math.abs(normalizeUsdForDisplay(realizedUsd)) < 0.005 ? null : realizedUsd;
             return (
@@ -148,7 +162,18 @@ function PortfolioHoldingsPerformanceTableInner({
                   {realizedDisplay == null ? EM_DASH : formatSignedUsd(realizedDisplay)}
                 </td>
                 <td className="py-3 pr-4 text-right tabular-nums text-[#71717A] align-middle">{EM_DASH}</td>
-                <td className="py-3 pr-4 text-right tabular-nums text-[#71717A] align-middle">{EM_DASH}</td>
+                <td
+                  className={cn(
+                    "whitespace-nowrap py-3 pr-4 text-right align-middle font-medium tabular-nums",
+                    contributionPct == null ?
+                      "text-[#71717A]"
+                    : contributionPct >= 0 ?
+                      "text-emerald-600"
+                    : "text-red-600",
+                  )}
+                >
+                  {contributionPct != null ? formatSignedPct(contributionPct) : EM_DASH}
+                </td>
                 <td className="py-3 pr-0 text-right tabular-nums text-[#71717A] align-middle">{EM_DASH}</td>
               </tr>
             );

@@ -5,4 +5,6 @@ export type ScreenerSectorRow = {
   marketCapDisplay: string;
   /** Market-cap-weighted 1D % from EODHD screener snapshot (`refund1dP`) for names in this sector. */
   change1D: number | null;
+  /** Market-cap-weighted YTD % from EODHD screener snapshot (`refundYtdP`) when present on rows. */
+  changeYTD: number | null;
 };

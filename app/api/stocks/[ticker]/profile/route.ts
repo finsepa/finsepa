@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { CACHE_CONTROL_PRIVATE_WARM } from "@/lib/data/cache-policy";
 import { fetchEodhdStockProfile } from "@/lib/market/eodhd-stock-profile";
 import { normalizeWatchlistTicker, WatchlistValidationError } from "@/lib/watchlist/operations";
 import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
@@ -24,7 +25,7 @@ export async function GET(_request: Request, { params }: Ctx) {
     return NextResponse.json(
       { ticker: routeTicker, profile: getNvdaProfile() },
       {
-        headers: { "Cache-Control": "private, s-maxage=300, stale-while-revalidate=600" },
+        headers: { "Cache-Control": CACHE_CONTROL_PRIVATE_WARM },
       },
     );
   }
@@ -34,7 +35,7 @@ export async function GET(_request: Request, { params }: Ctx) {
       { ticker: routeTicker, profile: null },
       {
         status: 200,
-        headers: { "Cache-Control": "private, s-maxage=300, stale-while-revalidate=600" },
+        headers: { "Cache-Control": CACHE_CONTROL_PRIVATE_WARM },
       },
     );
   }
@@ -46,7 +47,7 @@ export async function GET(_request: Request, { params }: Ctx) {
       {
         status: 200,
         headers: {
-          "Cache-Control": "private, s-maxage=300, stale-while-revalidate=600",
+          "Cache-Control": CACHE_CONTROL_PRIVATE_WARM,
         },
       },
     );
@@ -56,7 +57,7 @@ export async function GET(_request: Request, { params }: Ctx) {
     { ticker: routeTicker, profile },
     {
       headers: {
-        "Cache-Control": "private, s-maxage=300, stale-while-revalidate=600",
+        "Cache-Control": CACHE_CONTROL_PRIVATE_WARM,
       },
     },
   );

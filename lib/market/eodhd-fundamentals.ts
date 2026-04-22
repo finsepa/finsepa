@@ -325,7 +325,7 @@ async function fetchEodhdFundamentalsJsonUncached(ticker: string): Promise<Recor
 
   try {
     if (!traceEodhdHttp("fetchEodhdFundamentalsJsonUncached", { symbol: sym })) return null;
-    const res = await fetch(url, { next: { revalidate: 900 } });
+    const res = await fetch(url, { next: { revalidate: REVALIDATE_WARM_LONG } });
     if (!res.ok) return null;
     const root = (await res.json()) as Record<string, unknown> | null;
     if (!root || typeof root !== "object" || "error" in root) return null;

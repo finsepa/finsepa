@@ -4,7 +4,7 @@ import { Plus } from "lucide-react";
 
 import { CompanyPicker } from "@/components/charting/company-picker";
 
-/** + Company: screener page 1+2 list when opened (then `/api/search` when typing). */
+/** + Add Company: screener page 1+2 list when opened (then `/api/search` when typing). */
 export function ChartingCompanyAddDropdown({
   onPickStock,
   disabled,
@@ -42,7 +42,7 @@ export function ChartingCompanyAddDropdown({
           aria-haspopup="listbox"
         >
           <Plus className="h-5 w-5 shrink-0" strokeWidth={1.75} aria-hidden />
-          Company
+          Add Company
         </button>
       )}
     </CompanyPicker>

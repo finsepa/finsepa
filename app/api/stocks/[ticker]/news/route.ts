@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { CACHE_CONTROL_PRIVATE_NEWS } from "@/lib/data/cache-policy";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getStockNews, loadStockNewsPage } from "@/lib/market/stock-news";
 import type { StockNewsResponse } from "@/lib/market/stock-news-types";
@@ -40,7 +41,7 @@ export async function GET(request: Request, { params }: Ctx) {
     };
     return NextResponse.json(body, {
       headers: {
-        "Cache-Control": "private, s-maxage=90, stale-while-revalidate=180",
+        "Cache-Control": CACHE_CONTROL_PRIVATE_NEWS,
       },
     });
   }
@@ -49,7 +50,7 @@ export async function GET(request: Request, { params }: Ctx) {
     const body: StockNewsResponse = { ticker: routeTicker, items: [], hasMore: false };
     return NextResponse.json(body, {
       headers: {
-        "Cache-Control": "private, s-maxage=90, stale-while-revalidate=180",
+        "Cache-Control": CACHE_CONTROL_PRIVATE_NEWS,
       },
     });
   }
@@ -67,7 +68,7 @@ export async function GET(request: Request, { params }: Ctx) {
 
   return NextResponse.json(body, {
     headers: {
-      "Cache-Control": "private, s-maxage=90, stale-while-revalidate=180",
+      "Cache-Control": CACHE_CONTROL_PRIVATE_NEWS,
     },
   });
 }

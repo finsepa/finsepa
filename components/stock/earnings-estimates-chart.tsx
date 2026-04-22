@@ -43,8 +43,8 @@ const ESTIMATES_CHART_PLOT_HEIGHT_PX = 272;
 const ESTIMATES_CHART_AXIS_ROW_PX = 48;
 const ESTIMATES_CHART_TOTAL_HEIGHT_PX = ESTIMATES_CHART_PLOT_HEIGHT_PX + ESTIMATES_CHART_AXIS_ROW_PX;
 
-/** Must match `leftPriceScale.minimumWidth` so period labels line up with the histogram plot. */
-const ESTIMATES_CHART_LEFT_PRICE_SCALE_PX = 56;
+/** Must match `rightPriceScale.minimumWidth` so period labels line up with the histogram plot. */
+const ESTIMATES_CHART_Y_AXIS_WIDTH_PX = 56;
 
 /** LWC time-scale `barSpacing` ≈ histogram column width (px); `maxBarSpacing` caps zoom/fit. */
 const ESTIMATES_CHART_MAX_BAR_WIDTH_PX = 32;
@@ -174,9 +174,9 @@ const BAR_PICK_THRESHOLD_PX = 120;
 const ESTIMATES_TIME_SCALE_GUTTER_PX = 14;
 
 /**
- * Left price scale + tick labels (“35 B”, etc.) — `timeScale().width()` is only the plot; container is full.
+ * Right price scale + tick labels — reserve width when fitting the time scale so bars stay aligned with labels below.
  */
-const ESTIMATES_CHART_LEFT_SCALE_RESERVE_PX = 64;
+const ESTIMATES_CHART_Y_AXIS_RESERVE_PX = 64;
 
 /**
  * Fit histogram to the **container** width: auto `barSpacing` (capped at 32px) so the series fills the plot
@@ -188,7 +188,7 @@ function chartWidthPx(el: HTMLElement): number {
 
 function layoutEstimatesTimeScale(chart: IChartApi, containerWidthPx: number, layoutAttempt = 0): void {
   const ts = chart.timeScale();
-  const plotBudget = Math.max(120, containerWidthPx - ESTIMATES_CHART_LEFT_SCALE_RESERVE_PX);
+  const plotBudget = Math.max(120, containerWidthPx - ESTIMATES_CHART_Y_AXIS_RESERVE_PX);
   ts.fitContent();
   requestAnimationFrame(() => {
     const lr = ts.getVisibleLogicalRange();
@@ -434,11 +434,11 @@ export function EarningsEstimatesChart({ data }: Props) {
           vertLines: { visible: false },
           horzLines: { color: "#E4E4E7" },
         },
-        rightPriceScale: { visible: false, borderVisible: false },
-        leftPriceScale: {
+        leftPriceScale: { visible: false, borderVisible: false },
+        rightPriceScale: {
           visible: true,
           borderVisible: false,
-          minimumWidth: ESTIMATES_CHART_LEFT_PRICE_SCALE_PX,
+          minimumWidth: ESTIMATES_CHART_Y_AXIS_WIDTH_PX,
           scaleMargins: { top: 0.08, bottom: 0.12 },
         },
         timeScale: {
@@ -676,7 +676,6 @@ export function EarningsEstimatesChart({ data }: Props) {
                 style={{ height: ESTIMATES_CHART_AXIS_ROW_PX }}
               >
                 <div className="flex min-h-0 w-full min-w-0 flex-1">
-                  <div className="shrink-0" style={{ width: ESTIMATES_CHART_LEFT_PRICE_SCALE_PX }} aria-hidden />
                   <div
                     className="grid min-w-0 flex-1"
                     style={{
@@ -691,6 +690,7 @@ export function EarningsEstimatesChart({ data }: Props) {
                       </div>
                     ))}
                   </div>
+                  <div className="shrink-0" style={{ width: ESTIMATES_CHART_Y_AXIS_WIDTH_PX }} aria-hidden />
                 </div>
                 <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-1">
                   <div className="flex items-center gap-2">

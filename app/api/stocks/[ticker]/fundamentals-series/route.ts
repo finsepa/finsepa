@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { CACHE_CONTROL_PUBLIC_WARM_CHART } from "@/lib/data/cache-policy";
 import type { FundamentalsSeriesMode } from "@/lib/market/charting-series-types";
 import { fetchChartingSeries } from "@/lib/market/eodhd-charting-series";
 import { normalizeWatchlistTicker, WatchlistValidationError } from "@/lib/watchlist/operations";
@@ -34,14 +35,14 @@ export async function GET(request: Request, { params }: Ctx) {
         points,
         availableMetrics: [],
       },
-      { headers: { "Cache-Control": "private, s-maxage=120, stale-while-revalidate=300" } },
+      { headers: { "Cache-Control": CACHE_CONTROL_PUBLIC_WARM_CHART } },
     );
   }
 
   if (isSingleAssetMode() && !isSupportedAsset(routeTicker)) {
     return NextResponse.json(
       { ticker: routeTicker, period, points: [], availableMetrics: [] },
-      { headers: { "Cache-Control": "private, s-maxage=120, stale-while-revalidate=300" } },
+      { headers: { "Cache-Control": CACHE_CONTROL_PUBLIC_WARM_CHART } },
     );
   }
 
@@ -56,7 +57,7 @@ export async function GET(request: Request, { params }: Ctx) {
     },
     {
       headers: {
-        "Cache-Control": "private, s-maxage=120, stale-while-revalidate=300",
+        "Cache-Control": CACHE_CONTROL_PUBLIC_WARM_CHART,
       },
     },
   );

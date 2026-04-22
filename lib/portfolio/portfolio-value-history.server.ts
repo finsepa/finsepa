@@ -17,7 +17,7 @@ import { fetchEodhdCryptoDailyBars, toEodhdCryptoSymbol } from "@/lib/market/eod
 import type { EodhdDailyBar } from "@/lib/market/eodhd-eod";
 import { fetchEodhdEodDaily } from "@/lib/market/eodhd-eod";
 import { toEodhdSymbol } from "@/lib/market/eodhd-symbol";
-import { netCashUsdUpTo } from "@/lib/portfolio/overview-metrics";
+import { netCashUsdUpTo, totalHistoricalEquityCostBasisAsOf } from "@/lib/portfolio/overview-metrics";
 import type { PortfolioChartRange, PortfolioValueHistoryPoint } from "@/lib/portfolio/portfolio-chart-types";
 import { replayTradeTransactionsToHoldingsUpTo } from "@/lib/portfolio/rebuild-holdings-from-trades";
 import { cumulativeRealizedGainUsdUpTo } from "@/lib/portfolio/realized-pnl-from-trades";
@@ -277,7 +277,10 @@ export async function computePortfolioValueHistory(
     const unrealized = equity - cost;
     const realized = cumulativeRealizedGainUsdUpTo(transactions, d);
     const profit = unrealized + realized;
-    points.push({ t: d, value, profit });
+    const denom = totalHistoricalEquityCostBasisAsOf(cost, transactions, d);
+    const returnPct =
+      Number.isFinite(denom) && denom > 0 && Number.isFinite(profit) ? (profit / denom) * 100 : null;
+    points.push({ t: d, value, profit, returnPct });
   }
 
   return points;

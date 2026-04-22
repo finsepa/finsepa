@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server";
 
 import { googleFaviconHostForCryptoSymbol } from "@/lib/crypto/crypto-logo-url";
-import { getCachedLogoFromUpstream, type LogoProxyKind } from "@/lib/media/logo-proxy-upstream";
+import {
+  getCachedLogoFromUpstream,
+  LOGO_PROXY_CACHE_MAX_AGE_SEC,
+  LOGO_PROXY_STALE_WHILE_REVALIDATE_SEC,
+  type LogoProxyKind,
+} from "@/lib/media/logo-proxy-upstream";
+
+const LOGO_PROXY_CACHE_CONTROL = `public, max-age=${LOGO_PROXY_CACHE_MAX_AGE_SEC}, s-maxage=${LOGO_PROXY_CACHE_MAX_AGE_SEC}, stale-while-revalidate=${LOGO_PROXY_STALE_WHILE_REVALIDATE_SEC}`;
 
 export const runtime = "nodejs";
 
@@ -51,7 +58,8 @@ function parseRequest(url: URL): { kind: LogoProxyKind; id: string } | null {
 }
 
 /**
- * Proxies Logo.dev images with long CDN/browser caching so 100+ users share one upstream fetch per symbol.
+ * Proxies Logo.dev images with long CDN/browser caching so many users share one upstream fetch per symbol
+ * (see `LOGO_PROXY_CACHE_MAX_AGE_SEC` in `lib/media/logo-proxy-upstream.ts`).
  * Query: `kind=stock&t=AAPL` | `kind=crypto&c=BTC` | `kind=domain&h=apple.com`
  */
 export async function GET(req: Request) {
@@ -71,7 +79,7 @@ export async function GET(req: Request) {
     status: 200,
     headers: {
       "Content-Type": row.contentType,
-      "Cache-Control": "public, max-age=604800, s-maxage=604800, stale-while-revalidate=86400",
+      "Cache-Control": LOGO_PROXY_CACHE_CONTROL,
     },
   });
 }

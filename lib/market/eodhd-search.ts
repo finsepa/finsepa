@@ -1,5 +1,6 @@
 import "server-only";
 
+import { REVALIDATE_SEARCH } from "@/lib/data/cache-policy";
 import { getEodhdApiKey } from "@/lib/env/server";
 import { traceEodhdHttp } from "@/lib/market/provider-trace";
 
@@ -24,7 +25,7 @@ export async function fetchEodhdSearch(query: string, limit = 40): Promise<Eodhd
 
   try {
     if (!traceEodhdHttp("fetchEodhdSearch", { q: q.slice(0, 32), limit })) return [];
-    const res = await fetch(url, { next: { revalidate: 120 } });
+    const res = await fetch(url, { next: { revalidate: REVALIDATE_SEARCH } });
     if (!res.ok) return [];
     const data = (await res.json()) as unknown;
     if (!Array.isArray(data)) return [];

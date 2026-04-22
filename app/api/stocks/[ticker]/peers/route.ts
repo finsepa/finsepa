@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { CACHE_CONTROL_PRIVATE_WARM } from "@/lib/data/cache-policy";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { fetchEodhdFundamentalsJson } from "@/lib/market/eodhd-fundamentals";
 import { fetchEodhdScreenerCandidates } from "@/lib/market/eodhd-screener";
@@ -37,7 +38,7 @@ export async function GET(_request: Request, { params }: Ctx) {
     return NextResponse.json(
       { ticker, sector: null, industry: null, peers: [] },
       {
-        headers: { "Cache-Control": "private, s-maxage=300, stale-while-revalidate=600" },
+        headers: { "Cache-Control": CACHE_CONTROL_PRIVATE_WARM },
       },
     );
   }
@@ -85,7 +86,7 @@ export async function GET(_request: Request, { params }: Ctx) {
     },
     {
       headers: {
-        "Cache-Control": "private, s-maxage=300, stale-while-revalidate=600",
+        "Cache-Control": CACHE_CONTROL_PRIVATE_WARM,
       },
     },
   );

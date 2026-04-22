@@ -20,6 +20,7 @@ import {
   Wallet,
 } from "lucide-react";
 
+import { DWELL_TOOLTIP_DELAY_MS, TopbarDelayedTooltip } from "@/components/layout/topbar-delayed-tooltip";
 import { useSidebarLayout } from "@/components/layout/sidebar-layout-context";
 import { NAV_EARNINGS_ENABLED, NAV_MACRO_ENABLED, NAV_NEWS_ENABLED } from "@/lib/features/nav-flags";
 import { cn } from "@/lib/utils";
@@ -76,12 +77,20 @@ const TOOLTIP_HIDE_MS = 100;
 function CollapsedRailTooltip({ label, children }: { label: string; children: React.ReactNode }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [pos, setPos] = useState({ left: 0, top: 0 });
 
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  const clearShowTimer = useCallback(() => {
+    if (showTimerRef.current != null) {
+      clearTimeout(showTimerRef.current);
+      showTimerRef.current = null;
+    }
   }, []);
 
   const clearHideTimer = useCallback(() => {
@@ -91,7 +100,12 @@ function CollapsedRailTooltip({ label, children }: { label: string; children: Re
     }
   }, []);
 
-  useEffect(() => () => clearHideTimer(), [clearHideTimer]);
+  useEffect(() => {
+    return () => {
+      clearHideTimer();
+      clearShowTimer();
+    };
+  }, [clearHideTimer, clearShowTimer]);
 
   const updatePosition = useCallback(() => {
     const el = rootRef.current;
@@ -116,16 +130,27 @@ function CollapsedRailTooltip({ label, children }: { label: string; children: Re
     };
   }, [open, updatePosition]);
 
-  const show = useCallback(() => {
+  const scheduleShow = useCallback(() => {
     clearHideTimer();
-    updatePosition();
-    setOpen(true);
-  }, [clearHideTimer, updatePosition]);
+    clearShowTimer();
+    showTimerRef.current = setTimeout(() => {
+      showTimerRef.current = null;
+      updatePosition();
+      setOpen(true);
+    }, DWELL_TOOLTIP_DELAY_MS);
+  }, [clearHideTimer, clearShowTimer, updatePosition]);
 
   const hide = useCallback(() => {
+    clearShowTimer();
     clearHideTimer();
     hideTimerRef.current = setTimeout(() => setOpen(false), TOOLTIP_HIDE_MS);
-  }, [clearHideTimer]);
+  }, [clearHideTimer, clearShowTimer]);
+
+  const cancelPendingAndHide = useCallback(() => {
+    clearShowTimer();
+    clearHideTimer();
+    setOpen(false);
+  }, [clearHideTimer, clearShowTimer]);
 
   const tooltip =
     open && mounted ? (
@@ -148,9 +173,10 @@ function CollapsedRailTooltip({ label, children }: { label: string; children: Re
     <div
       ref={rootRef}
       className="relative flex justify-center"
-      onPointerEnter={show}
+      onPointerEnter={scheduleShow}
       onPointerLeave={hide}
-      onFocusCapture={show}
+      onPointerDown={cancelPendingAndHide}
+      onFocusCapture={scheduleShow}
       onBlurCapture={hide}
     >
       {children}
@@ -241,31 +267,32 @@ export function Sidebar() {
     >
       {collapsed ? (
         <div className="mb-6 flex justify-center px-1">
-          <CollapsedRailTooltip label="Expand sidebar">
+          <TopbarDelayedTooltip label="Expand Menu">
             <button
               type="button"
               className={toggleButtonClass}
               onClick={toggleCollapsed}
               aria-expanded={false}
-              aria-label="Expand sidebar"
+              aria-label="Expand Menu"
             >
               <PanelLeftOpen className="h-5 w-5" strokeWidth={1.75} />
             </button>
-          </CollapsedRailTooltip>
+          </TopbarDelayedTooltip>
         </div>
       ) : (
         <div className="mb-7 flex items-center justify-between gap-2 px-3">
           <img src="/logo.svg" alt="Finsepa" width={32} height={32} />
-          <button
-            type="button"
-            className={toggleButtonClass}
-            onClick={toggleCollapsed}
-            aria-expanded
-            aria-label="Collapse sidebar"
-            title="Collapse sidebar"
-          >
-            <PanelLeft className="h-5 w-5" strokeWidth={1.75} />
-          </button>
+          <TopbarDelayedTooltip label="Collapse Menu">
+            <button
+              type="button"
+              className={toggleButtonClass}
+              onClick={toggleCollapsed}
+              aria-expanded
+              aria-label="Collapse Menu"
+            >
+              <PanelLeft className="h-5 w-5" strokeWidth={1.75} />
+            </button>
+          </TopbarDelayedTooltip>
         </div>
       )}
 

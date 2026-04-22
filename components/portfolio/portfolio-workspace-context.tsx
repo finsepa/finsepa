@@ -45,8 +45,9 @@ export type PortfolioWorkspaceContextValue = {
   /** Re-insert a removed row and rebuild holdings (e.g. Sonner undo). */
   restorePortfolioTransaction: (transaction: PortfolioTransaction) => Promise<void>;
   /**
-   * True once we can show portfolio totals without flashing the default empty seed:
-   * either a local snapshot was applied, or the server merge finished.
+   * True once workspace data is loaded (local snapshot and/or server merge) **and** a live
+   * mark-to-market quote pass has finished for holdings rebuilt from the ledger (avoids briefly
+   * showing totals from last trade prices before refreshed `currentValue`, especially crypto).
    */
   portfolioDisplayReady: boolean;
 };

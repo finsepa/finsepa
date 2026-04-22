@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { CACHE_CONTROL_PRIVATE_SCREENER_ROW } from "@/lib/data/cache-policy";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { buildScreenerAllStockRowsForGainers, buildScreenerCompaniesApiResponse } from "@/lib/screener/screener-page-payload";
 
@@ -17,7 +18,7 @@ export async function GET(request: Request) {
       { page: 1, pageSize: rows.length, total: rows.length, rows },
       {
         headers: {
-          "Cache-Control": "private, max-age=0, s-maxage=45, stale-while-revalidate=120",
+          "Cache-Control": CACHE_CONTROL_PRIVATE_SCREENER_ROW,
         },
       },
     );
@@ -31,7 +32,7 @@ export async function GET(request: Request) {
 
   return NextResponse.json(body, {
     headers: {
-      "Cache-Control": "private, max-age=0, s-maxage=45, stale-while-revalidate=120",
+      "Cache-Control": CACHE_CONTROL_PRIVATE_SCREENER_ROW,
     },
   });
 }

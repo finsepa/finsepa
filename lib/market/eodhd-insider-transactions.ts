@@ -1,6 +1,7 @@
 import "server-only";
 
 import { format, parse, subYears } from "date-fns";
+import { unstable_cache } from "next/cache";
 
 import { REVALIDATE_WARM_LONG } from "@/lib/data/cache-policy";
 import { getEodhdApiKey } from "@/lib/env/server";
@@ -207,7 +208,7 @@ function clampLimit(n: number | undefined): number {
 /**
  * Insider transactions for a single symbol (defaults to `.US`).
  */
-export async function fetchEodhdInsiderTransactions(
+async function fetchEodhdInsiderTransactionsUncached(
   symbolOrTicker: string,
   opts?: FetchInsiderTransactionsOpts,
 ): Promise<InsiderTransactionRow[]> {
@@ -241,4 +242,17 @@ export async function fetchEodhdInsiderTransactions(
   } catch {
     return [];
   }
+}
+
+const fetchEodhdInsiderTransactionsCached = unstable_cache(
+  fetchEodhdInsiderTransactionsUncached,
+  ["eodhd-insider-transactions-v1"],
+  { revalidate: REVALIDATE_WARM_LONG },
+);
+
+export async function fetchEodhdInsiderTransactions(
+  symbolOrTicker: string,
+  opts?: FetchInsiderTransactionsOpts,
+): Promise<InsiderTransactionRow[]> {
+  return fetchEodhdInsiderTransactionsCached(symbolOrTicker, opts);
 }

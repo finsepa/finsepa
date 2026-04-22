@@ -16,6 +16,7 @@ import { LatestNews } from "@/components/stock/latest-news";
 import { CryptoDetailTabNav } from "@/components/crypto/crypto-detail-tab-nav";
 import { AssetPortfolioHoldingsTab } from "@/components/portfolio/asset-portfolio-holdings-tab";
 import { parseCryptoDetailTabQuery, type CryptoDetailTabId } from "@/lib/crypto/crypto-detail-tab";
+import { mergeSessionHeaderWithPerformanceSpot } from "@/lib/chart/merge-session-header-with-performance-spot";
 import { mergeLogoMemory, readLogoMemory } from "@/lib/logos/logo-memory";
 import type { CryptoAssetRow } from "@/lib/market/crypto-asset";
 import type { CryptoPageInitialData } from "@/lib/market/crypto-page-initial-data";
@@ -115,6 +116,73 @@ export function CryptoPageContent({
 
   const cryptoChartDrivesHeader = activeTab !== "holdings";
 
+  const performanceFromServer = useMemo(
+    (): StockPerformance | null =>
+      serverMatch?.performance != null ? serverMatch.performance : null,
+    [serverMatch],
+  );
+
+  const [performanceClient, setPerformanceClient] = useState<StockPerformance | null>(null);
+
+  const [headerLiveSpotClient, setHeaderLiveSpotClient] = useState<number | null>(null);
+
+  useEffect(() => {
+    setHeaderLiveSpotClient(null);
+  }, [symUpper]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        const res = await fetch(`/api/crypto/${encodeURIComponent(symUpper)}/live-price`, {
+          credentials: "include",
+          cache: "no-store",
+        });
+        if (!res.ok || cancelled) return;
+        const json = (await res.json()) as { price?: unknown };
+        const p = json.price;
+        if (typeof p === "number" && Number.isFinite(p) && p > 0 && !cancelled) setHeaderLiveSpotClient(p);
+      } catch {
+        /* ignore */
+      }
+    };
+    void tick();
+    const id = window.setInterval(tick, 90_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [symUpper]);
+
+  useEffect(() => {
+    setPerformanceClient(null);
+    if (performanceFromServer?.price != null && Number.isFinite(performanceFromServer.price)) {
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch(`/api/crypto/${encodeURIComponent(symUpper)}/performance`, {
+          credentials: "include",
+          cache: "no-store",
+        });
+        if (!res.ok || cancelled) return;
+        const json = (await res.json()) as StockPerformance;
+        if (!cancelled) setPerformanceClient(json);
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [symUpper, performanceFromServer?.price]);
+
+  const performanceForHeaderFallback = performanceFromServer ?? performanceClient;
+
+  const headerLiveSpotForMerge =
+    headerLiveSpotClient ?? (serverMatch?.headerLiveSpotUsd != null ? serverMatch.headerLiveSpotUsd : null);
+
   const chartUi = useMemo((): ChartDisplayState => {
     if (activeTab === "holdings") {
       return holdingsHeaderUi ?? EMPTY_CHART_DISPLAY;
@@ -122,8 +190,20 @@ export function CryptoPageContent({
     if (rangeSelectionHeaderUi?.selectionActive) {
       return rangeSelectionHeaderUi;
     }
-    return sessionHeaderUi;
-  }, [activeTab, holdingsHeaderUi, rangeSelectionHeaderUi, sessionHeaderUi]);
+    return mergeSessionHeaderWithPerformanceSpot(
+      sessionHeaderUi,
+      performanceForHeaderFallback,
+      "price",
+      headerLiveSpotForMerge,
+    );
+  }, [
+    activeTab,
+    headerLiveSpotForMerge,
+    holdingsHeaderUi,
+    performanceForHeaderFallback,
+    rangeSelectionHeaderUi,
+    sessionHeaderUi,
+  ]);
 
   const initialChartMemo = useMemo(() => (serverMatch ? serverMatch.chart : null), [serverMatch]);
 

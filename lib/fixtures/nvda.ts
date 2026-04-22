@@ -335,6 +335,7 @@ export function getNvdaChartingSeriesPoints(mode: "annual" | "quarterly"): Chart
       totalDebt: null,
       debtToEquity: null,
       sharesOutstanding: null,
+      marketCap: revenue * 25,
       grossMargin: 0.6,
       operatingMargin: 0.4,
       ebitdaMargin: 0.5,

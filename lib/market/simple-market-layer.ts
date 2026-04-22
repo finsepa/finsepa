@@ -2,7 +2,11 @@ import "server-only";
 
 import { unstable_cache } from "next/cache";
 
-import { REVALIDATE_SCREENER_MARKET } from "@/lib/data/cache-policy";
+import {
+  REVALIDATE_SCREENER_MARKET,
+  REVALIDATE_TIER_SCREENER_COMBINED,
+  REVALIDATE_TIER_SCREENER_DERIVED,
+} from "@/lib/data/cache-policy";
 import {
   CRYPTO_SCREENER_ALL,
   CRYPTO_SCREENER_PAGE2,
@@ -311,7 +315,7 @@ export async function getSimpleMarketDataCryptoScreenerPage2(): Promise<SimpleMa
 
 export const getSimpleMarketData = unstable_cache(loadSimpleMarketDataUncached, ["simple-market-data-v14-crypto50"], {
   /** ~3m batch quote snapshot — scales to many concurrent users under a 4k EODHD/hour budget. */
-  revalidate: 180,
+  revalidate: REVALIDATE_TIER_SCREENER_COMBINED,
 });
 
 export const getSimpleMarketDataSlim = unstable_cache(loadSimpleMarketDataSlimUncached, ["simple-market-data-v13-slim-screener-ttl"], {
@@ -423,14 +427,14 @@ export const getSimpleScreenerDerived = unstable_cache(
   loadSimpleScreenerDerivedUncached,
   ["simple-screener-derived-v10-page2-90"],
   {
-    revalidate: 1800,
+    revalidate: REVALIDATE_TIER_SCREENER_DERIVED,
   },
 );
 
 export const getSimpleScreenerDerivedTop10 = unstable_cache(
   loadSimpleScreenerDerivedTop10Uncached,
   ["simple-screener-derived-top10-v1-live-quote"],
-  { revalidate: 1800 },
+  { revalidate: REVALIDATE_TIER_SCREENER_DERIVED },
 );
 
 /** EOD-derived rows for an arbitrary US ticker slice (e.g. screener page-2 pagination). */
@@ -499,7 +503,7 @@ async function loadSimpleCryptoDerivedUncached(): Promise<SimpleCryptoDerived> {
 }
 
 export const getSimpleCryptoDerived = unstable_cache(loadSimpleCryptoDerivedUncached, ["simple-crypto-derived-v8-fund-meta-cap"], {
-  revalidate: 1800,
+  revalidate: REVALIDATE_TIER_SCREENER_DERIVED,
 });
 
 /** Screener Crypto tab page 1 — daily bars for {@link CRYPTO_TOP10} only. */
@@ -532,7 +536,7 @@ async function loadSimpleCryptoDerivedTop10Uncached(): Promise<SimpleCryptoDeriv
 export const getSimpleCryptoDerivedTop10 = unstable_cache(
   loadSimpleCryptoDerivedTop10Uncached,
   ["simple-crypto-derived-top10-v5-fund-meta-cap"],
-  { revalidate: 1800 },
+  { revalidate: REVALIDATE_TIER_SCREENER_DERIVED },
 );
 
 /** Daily-bar metrics for an arbitrary crypto meta list (e.g. screener page 2). */
@@ -575,5 +579,5 @@ async function loadSimpleIndicesDerivedUncached(): Promise<SimpleIndicesDerived>
 }
 
 export const getSimpleIndicesDerived = unstable_cache(loadSimpleIndicesDerivedUncached, ["simple-indices-derived-v2"], {
-  revalidate: 1800,
+  revalidate: REVALIDATE_TIER_SCREENER_DERIVED,
 });

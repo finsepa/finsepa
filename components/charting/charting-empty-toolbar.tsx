@@ -62,7 +62,7 @@ type Props = {
 };
 
 /**
- * Empty-state toolbar: title, switchers (visual), + Metric first; + Company only after ≥1 metric.
+ * Empty-state toolbar: title, switchers (visual), + Add Metric first; + Add Company only after ≥1 metric.
  */
 export function ChartingEmptyToolbar({ metricParam, tickers, allowedChartingTickers }: Props) {
   const router = useRouter();
@@ -261,7 +261,7 @@ export function ChartingEmptyToolbar({ metricParam, tickers, allowedChartingTick
               className="inline-flex items-center gap-2 rounded-[10px] bg-[#F4F4F5] px-4 py-2 text-[14px] font-medium leading-5 text-[#09090B] transition-colors hover:bg-[#EBEBEB]"
             >
               <Plus className="h-5 w-5 shrink-0" strokeWidth={1.75} aria-hidden />
-              Metric
+              Add Metric
             </button>
             {pickerOpen && (
               <div

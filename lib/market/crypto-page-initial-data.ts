@@ -4,6 +4,7 @@ import type { CryptoAssetRow } from "@/lib/market/crypto-asset";
 import { getCryptoAsset } from "@/lib/market/crypto-asset";
 import { getCryptoChartPoints } from "@/lib/market/crypto-chart-data";
 import { getCryptoNews } from "@/lib/market/crypto-news";
+import { getCryptoLiveSpotPriceUsd } from "@/lib/market/crypto-live-price";
 import { getCryptoPerformance } from "@/lib/market/crypto-performance";
 import type { StockNewsArticle } from "@/lib/market/stock-news-types";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
@@ -19,6 +20,8 @@ export type CryptoPageInitialData = {
   chart: { range: StockChartRange; points: StockChartPoint[] };
   performance: StockPerformance;
   news: StockNewsArticle[];
+  /** Phase 7: best-effort live USD spot for header fallback (see `getCryptoLiveSpotPriceUsd`). */
+  headerLiveSpotUsd: number | null;
 };
 
 /**
@@ -50,14 +53,16 @@ export async function loadCryptoPageInitialData(routeSymbol: string): Promise<Cr
         all: null,
       },
       news: [],
+      headerLiveSpotUsd: null,
     };
   }
 
-  const [asset, points, performance, news] = await Promise.all([
+  const [asset, points, performance, news, headerLiveSpotUsd] = await Promise.all([
     getCryptoAsset(raw),
     getCryptoChartPoints(raw, range),
     getCryptoPerformance(raw),
     getCryptoNews(raw),
+    getCryptoLiveSpotPriceUsd(raw),
   ]);
 
   return {
@@ -66,5 +71,6 @@ export async function loadCryptoPageInitialData(routeSymbol: string): Promise<Cr
     chart: { range, points },
     performance,
     news: Array.isArray(news) ? news : [],
+    headerLiveSpotUsd: typeof headerLiveSpotUsd === "number" && Number.isFinite(headerLiveSpotUsd) && headerLiveSpotUsd > 0 ? headerLiveSpotUsd : null,
   };
 }

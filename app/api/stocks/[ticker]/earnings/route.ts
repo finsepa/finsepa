@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { CACHE_CONTROL_PUBLIC_WARM } from "@/lib/data/cache-policy";
 import { getNvdaStockEarningsTabPayload } from "@/lib/fixtures/nvda";
 import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
 import { fetchStockEarningsTabPayload } from "@/lib/market/stock-earnings-tab-data";
@@ -22,14 +23,14 @@ export async function GET(_request: Request, { params }: Ctx) {
 
   if (isSingleAssetMode() && isSupportedAsset(routeTicker) && routeTicker.toUpperCase() === "NVDA") {
     return NextResponse.json(getNvdaStockEarningsTabPayload(), {
-      headers: { "Cache-Control": "private, s-maxage=300, stale-while-revalidate=600" },
+      headers: { "Cache-Control": CACHE_CONTROL_PUBLIC_WARM },
     });
   }
 
   if (isSingleAssetMode() && !isSupportedAsset(routeTicker)) {
     return NextResponse.json(
       { ticker: routeTicker, upcoming: null, history: [], estimatesChart: null },
-      { headers: { "Cache-Control": "private, s-maxage=300, stale-while-revalidate=600" } },
+      { headers: { "Cache-Control": CACHE_CONTROL_PUBLIC_WARM } },
     );
   }
 
@@ -37,11 +38,11 @@ export async function GET(_request: Request, { params }: Ctx) {
   if (!payload) {
     return NextResponse.json(
       { ticker: routeTicker, upcoming: null, history: [], estimatesChart: null },
-      { status: 200, headers: { "Cache-Control": "private, s-maxage=300, stale-while-revalidate=600" } },
+      { status: 200, headers: { "Cache-Control": CACHE_CONTROL_PUBLIC_WARM } },
     );
   }
 
   return NextResponse.json(payload, {
-    headers: { "Cache-Control": "private, s-maxage=300, stale-while-revalidate=600" },
+    headers: { "Cache-Control": CACHE_CONTROL_PUBLIC_WARM },
   });
 }

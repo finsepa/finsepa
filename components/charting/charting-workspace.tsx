@@ -245,9 +245,9 @@ type Props = {
   allowedMetricIds?: readonly ChartingMetricId[];
   /** Figma 8479:70857 — unit dropdown, export/refresh; chart is always single `ticker`. */
   toolbarLayout?: "default" | "figma70857";
-  /** Full-page Charting only: company chip row (rendered after metric chips + + Metric). */
+  /** Full-page Charting only: company chip row (rendered after metric chips + + Add Metric). */
   fullPageCompanyChipSlot?: ReactNode;
-  /** Full-page Charting only: + Company (shown when ≥1 metric selected). */
+  /** Full-page Charting only: + Add Company (shown when ≥1 metric selected). */
   fullPageCompanyAddSlot?: ReactNode;
   pathRoute?: StandaloneChartRoute;
   workspaceTitle?: string;
@@ -850,7 +850,7 @@ export function ChartingWorkspace({
           </div>
         </div>
 
-        {/* Metric chips first, then full-page company row (+ Company after ≥1 metric). */}
+        {/* Metric chips first, then full-page company row (+ Add Company after ≥1 metric). */}
         <div className="pb-4">
           <div className="flex flex-wrap items-center gap-4">
           {selected.map((id) => (
@@ -885,7 +885,7 @@ export function ChartingWorkspace({
               className="inline-flex items-center gap-2 rounded-[10px] bg-[#F4F4F5] px-4 py-2 text-[14px] font-medium leading-5 text-[#09090B] transition-colors hover:bg-[#EBEBEB]"
             >
               <Plus className="h-5 w-5 shrink-0" strokeWidth={1.75} aria-hidden />
-              Metric
+              Add Metric
             </button>
           {pickerOpen && (
             <div

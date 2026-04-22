@@ -6,6 +6,15 @@ export type PortfolioValueHistoryPoint = {
   t: string;
   /** Equity at mark + cash (net worth). */
   value: number;
-  /** Unrealized P/L on open positions at this date (equity − cost basis). */
+  /**
+   * Realized + unrealized equity P/L through this date (`profit` in value-history server),
+   * i.e. same components as {@link lifetimeEquityProfitUsd} at “now”, evaluated as-of `t`.
+   */
   profit: number;
+  /**
+   * Lifetime-style equity return % through this date: `profit` divided by total historical
+   * equity cost basis as of `t` (open basis + cost of sold shares). Matches overview
+   * “Total profit” ATH % at the last point when marks match current holdings.
+   */
+  returnPct: number | null;
 };

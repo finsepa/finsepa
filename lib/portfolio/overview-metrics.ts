@@ -1,5 +1,9 @@
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
-import { cumulativeRealizedGainUsd, lifetimeEquityProfitUsd } from "@/lib/portfolio/realized-pnl-from-trades";
+import {
+  cumulativeRealizedGainUsd,
+  cumulativeRealizedGainUsdUpTo,
+  lifetimeEquityProfitUsd,
+} from "@/lib/portfolio/realized-pnl-from-trades";
 
 export function netCashUsd(transactions: PortfolioTransaction[]): number {
   return transactions.reduce((s, t) => s + t.sum, 0);
@@ -57,6 +61,37 @@ export function totalEquitySellProceedsUsd(transactions: PortfolioTransaction[])
     s += t.sum;
   }
   return s;
+}
+
+/** Sell proceeds from equity trades on or before {@link asOfYmd} (inclusive). */
+export function totalEquitySellProceedsUsdUpTo(
+  transactions: PortfolioTransaction[],
+  asOfYmd: string,
+): number {
+  let s = 0;
+  for (const t of transactions) {
+    if (t.kind !== "trade") continue;
+    if (t.operation.toLowerCase() !== "sell") continue;
+    if (t.date <= asOfYmd) s += t.sum;
+  }
+  return s;
+}
+
+/**
+ * Total equity capital deployed through {@link asOfYmd}: cost basis of open positions at that
+ * date plus cost of shares sold through that date. Matches the denominator of
+ * {@link lifetimeEquityProfitPct} when evaluated at “now”, extended to any as-of date.
+ */
+export function totalHistoricalEquityCostBasisAsOf(
+  openCostBasisHeld: number,
+  transactions: PortfolioTransaction[],
+  asOfYmd: string,
+): number {
+  const proceeds = totalEquitySellProceedsUsdUpTo(transactions, asOfYmd);
+  const realized = cumulativeRealizedGainUsdUpTo(transactions, asOfYmd);
+  const costOfSold = proceeds - realized;
+  if (!Number.isFinite(costOfSold) || costOfSold < 0) return openCostBasisHeld;
+  return openCostBasisHeld + costOfSold;
 }
 
 /**

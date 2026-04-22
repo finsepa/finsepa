@@ -1,5 +1,7 @@
 import "server-only";
 
+import { unstable_cache } from "next/cache";
+
 import { REVALIDATE_WARM } from "@/lib/data/cache-policy";
 import { getEodhdApiKey } from "@/lib/env/server";
 import { toEodhdSymbol } from "@/lib/market/eodhd-symbol";
@@ -99,7 +101,7 @@ function appendRange(params: URLSearchParams, range: EodhdCorporateActionsRange 
 /**
  * Dividend history for a symbol (defaults to `.US` when no exchange suffix).
  */
-export async function fetchEodhdDividendsHistory(
+async function fetchEodhdDividendsHistoryUncached(
   symbolOrTicker: string,
   range?: EodhdCorporateActionsRange,
 ): Promise<EodhdDividendRow[]> {
@@ -126,10 +128,21 @@ export async function fetchEodhdDividendsHistory(
   }
 }
 
+const fetchEodhdDividendsHistoryCached = unstable_cache(fetchEodhdDividendsHistoryUncached, ["eodhd-dividends-history-v1"], {
+  revalidate: REVALIDATE_WARM,
+});
+
+export async function fetchEodhdDividendsHistory(
+  symbolOrTicker: string,
+  range?: EodhdCorporateActionsRange,
+): Promise<EodhdDividendRow[]> {
+  return fetchEodhdDividendsHistoryCached(symbolOrTicker, range);
+}
+
 /**
  * Historical stock splits for a symbol (defaults to `.US` when no exchange suffix).
  */
-export async function fetchEodhdSplitsHistory(
+async function fetchEodhdSplitsHistoryUncached(
   symbolOrTicker: string,
   range?: EodhdCorporateActionsRange,
 ): Promise<EodhdSplitRow[]> {
@@ -154,4 +167,15 @@ export async function fetchEodhdSplitsHistory(
   } catch {
     return [];
   }
+}
+
+const fetchEodhdSplitsHistoryCached = unstable_cache(fetchEodhdSplitsHistoryUncached, ["eodhd-splits-history-v1"], {
+  revalidate: REVALIDATE_WARM,
+});
+
+export async function fetchEodhdSplitsHistory(
+  symbolOrTicker: string,
+  range?: EodhdCorporateActionsRange,
+): Promise<EodhdSplitRow[]> {
+  return fetchEodhdSplitsHistoryCached(symbolOrTicker, range);
 }

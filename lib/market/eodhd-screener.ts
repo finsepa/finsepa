@@ -2,7 +2,7 @@ import "server-only";
 
 import { unstable_cache } from "next/cache";
 
-import { REVALIDATE_STATIC } from "@/lib/data/cache-policy";
+import { REVALIDATE_SCREENER_FILTERED, REVALIDATE_STATIC } from "@/lib/data/cache-policy";
 
 import { traceEodhdHttp } from "@/lib/market/provider-trace";
 import { getEodhdApiKey } from "@/lib/env/server";
@@ -151,7 +151,7 @@ async function fetchEodhdScreenerUncached(args: {
 
   try {
     if (!traceEodhdHttp("fetchEodhdScreenerUncached", { offset: args.offset, limit: args.limit })) return [];
-    const res = await fetch(url, { next: { revalidate: 60 * 60 * 12 } }); // 12h
+    const res = await fetch(url, { next: { revalidate: REVALIDATE_STATIC } });
     if (!res.ok) return [];
     const json = (await res.json()) as unknown;
     if (!json || typeof json !== "object") return [];
@@ -207,7 +207,7 @@ export async function fetchEodhdTopByMarketCap(args: {
   });
 }
 
-export async function fetchEodhdScreenerCandidates(args: {
+async function fetchEodhdScreenerCandidatesUncached(args: {
   q: { sector?: string | null; industry?: string | null; code?: string | null };
   limit?: number;
 }): Promise<Array<{ ticker: string; name: string; marketCapUsd: number; sector: string | null; industry: string | null }>> {
@@ -238,7 +238,7 @@ export async function fetchEodhdScreenerCandidates(args: {
 
   try {
     if (!traceEodhdHttp("fetchEodhdScreenerCandidates", { limit: args.limit })) return [];
-    const res = await fetch(url, { next: { revalidate: 60 * 60 } }); // 1h
+    const res = await fetch(url, { next: { revalidate: REVALIDATE_SCREENER_FILTERED } });
     if (!res.ok) return [];
     const json = (await res.json()) as unknown;
     if (!json || typeof json !== "object") return [];
@@ -264,5 +264,16 @@ export async function fetchEodhdScreenerCandidates(args: {
   } catch {
     return [];
   }
+}
+
+const fetchEodhdScreenerCandidatesCached = unstable_cache(fetchEodhdScreenerCandidatesUncached, ["eodhd-screener-candidates-v1"], {
+  revalidate: REVALIDATE_SCREENER_FILTERED,
+});
+
+export async function fetchEodhdScreenerCandidates(args: {
+  q: { sector?: string | null; industry?: string | null; code?: string | null };
+  limit?: number;
+}): Promise<Array<{ ticker: string; name: string; marketCapUsd: number; sector: string | null; industry: string | null }>> {
+  return fetchEodhdScreenerCandidatesCached(args);
 }
 

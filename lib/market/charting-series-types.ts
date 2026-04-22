@@ -41,6 +41,9 @@ export type ChartingSeriesPoint = {
   epsYoy: number | null;
   eps3yCagr: number | null;
 
+  /** Market capitalization (USD) when reported or derived from P/S or P/B. */
+  marketCap: number | null;
+
   peRatio: number | null;
   trailingPe: number | null;
   forwardPe: number | null;

@@ -1,9 +1,10 @@
 /**
- * Brand images are served via **`/api/media/logo`** (same-origin proxy). That route fetches Logo.dev once per
- * symbol per cache window and sets strong `Cache-Control`, so 100+ active users mostly hit edge/browser cache
- * instead of billing Logo.dev per page view (see [Stock Analysis](https://stockanalysis.com/stocks/) style lists).
+ * Brand images are served via **`/api/media/logo`** (same-origin proxy). The route uses Next `unstable_cache`
+ * plus long `Cache-Control` (see `LOGO_PROXY_CACHE_MAX_AGE_SEC` in `lib/media/logo-proxy-upstream.ts`) so
+ * many users share one Logo.dev upstream fetch per symbol and repeat visits hit the browser/CDN cache first.
  *
- * Server holds `LOGO_DEV_PUBLISHABLE_KEY`; the browser never sees the token.
+ * Server holds `LOGO_DEV_PUBLISHABLE_KEY`; the browser never sees the token. Do not point `<img>` at
+ * `img.logo.dev` directly — always use these URL builders.
  */
 
 const TICKER_RE = /^[A-Z0-9][A-Z0-9.-]{0,11}$/i;

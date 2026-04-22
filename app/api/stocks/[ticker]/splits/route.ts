@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { CACHE_CONTROL_PRIVATE_WARM } from "@/lib/data/cache-policy";
 import { fetchEodhdSplitsHistory } from "@/lib/market/eodhd-splits-dividends";
 import { normalizeWatchlistTicker, WatchlistValidationError } from "@/lib/watchlist/operations";
 
@@ -39,5 +40,8 @@ export async function GET(request: Request, { params }: Ctx) {
   }
 
   const rows = await fetchEodhdSplitsHistory(routeTicker, parsed.range);
-  return NextResponse.json({ ticker: routeTicker, rows });
+  return NextResponse.json(
+    { ticker: routeTicker, rows },
+    { headers: { "Cache-Control": CACHE_CONTROL_PRIVATE_WARM } },
+  );
 }

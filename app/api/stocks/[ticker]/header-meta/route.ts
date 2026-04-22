@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { CACHE_CONTROL_PRIVATE_WARM_CHART } from "@/lib/data/cache-policy";
 import { getStockDetailHeaderMetaForPage } from "@/lib/market/stock-header-meta-server";
 import { normalizeWatchlistTicker, WatchlistValidationError } from "@/lib/watchlist/operations";
 import { isSingleAssetMode, isSupportedAsset, SINGLE_ASSET_SYMBOL } from "@/lib/features/single-asset";
@@ -31,7 +32,7 @@ export async function GET(_request: Request, { params }: Ctx) {
         earningsDateDisplay: null,
         watchlistCount: null,
       },
-      { headers: { "Cache-Control": "private, s-maxage=120, stale-while-revalidate=300" } },
+      { headers: { "Cache-Control": CACHE_CONTROL_PRIVATE_WARM_CHART } },
     );
   }
 
@@ -49,7 +50,7 @@ export async function GET(_request: Request, { params }: Ctx) {
     },
     {
       headers: {
-        "Cache-Control": "private, s-maxage=120, stale-while-revalidate=300",
+        "Cache-Control": CACHE_CONTROL_PRIVATE_WARM_CHART,
       },
     },
   );

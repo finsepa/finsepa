@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { CACHE_CONTROL_PRIVATE_S_MAXAGE_0_SWR_FAST } from "@/lib/data/cache-policy";
 import { requireAuthUser, AuthRequiredError } from "@/lib/watchlist/api-auth";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
@@ -30,7 +31,7 @@ export async function POST(request: Request) {
       { points },
       {
         headers: {
-          "Cache-Control": "private, s-maxage=0, stale-while-revalidate=30",
+          "Cache-Control": CACHE_CONTROL_PRIVATE_S_MAXAGE_0_SWR_FAST,
         },
       },
     );

@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 
+import { CACHE_CONTROL_PRIVATE_S_MAXAGE_HOT_FAST, CACHE_CONTROL_PRIVATE_S_MAXAGE_WARM } from "@/lib/data/cache-policy";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { normalizeWatchlistTicker, WatchlistValidationError } from "@/lib/watchlist/operations";
-import { REVALIDATE_WARM } from "@/lib/data/cache-policy";
 import { getPeersCompareRowsCached } from "@/lib/market/peers-compare-payload";
 import { isSingleAssetMode } from "@/lib/features/single-asset";
 
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
   const tickersKey = unique.join("|");
 
   if (isSingleAssetMode()) {
-    return NextResponse.json({ rows: [] }, { headers: { "Cache-Control": `private, s-maxage=30` } });
+    return NextResponse.json({ rows: [] }, { headers: { "Cache-Control": CACHE_CONTROL_PRIVATE_S_MAXAGE_HOT_FAST } });
   }
 
   const rows = await getPeersCompareRowsCached(tickersKey);
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     { rows },
     {
       headers: {
-        "Cache-Control": `private, s-maxage=${REVALIDATE_WARM}`,
+        "Cache-Control": CACHE_CONTROL_PRIVATE_S_MAXAGE_WARM,
       },
     },
   );

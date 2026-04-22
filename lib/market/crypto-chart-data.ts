@@ -88,6 +88,6 @@ async function loadCryptoChartPointsUncached(symbol: string, range: StockChartRa
 
 export const getCryptoChartPoints = unstable_cache(
   async (symbol: string, range: StockChartRange) => loadCryptoChartPointsUncached(symbol, range),
-  ["crypto-chart-points-v3-cc-universe"],
+  ["crypto-chart-points-v4-no-route-reslice"],
   { revalidate: REVALIDATE_HOT },
 );

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { CACHE_CONTROL_PRIVATE_HOT } from "@/lib/data/cache-policy";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getCryptoPerformance } from "@/lib/market/crypto-performance";
 import { isSingleAssetMode } from "@/lib/features/single-asset";
@@ -35,14 +36,14 @@ export async function GET(_request: Request, { params }: Ctx) {
       all: null,
     };
     return NextResponse.json(empty, {
-      headers: { "Cache-Control": "private, s-maxage=60, stale-while-revalidate=120" },
+      headers: { "Cache-Control": CACHE_CONTROL_PRIVATE_HOT },
     });
   }
 
   const perf = await getCryptoPerformance(routeSymbol);
   return NextResponse.json(perf, {
     headers: {
-      "Cache-Control": "private, s-maxage=60, stale-while-revalidate=120",
+      "Cache-Control": CACHE_CONTROL_PRIVATE_HOT,
     },
   });
 }

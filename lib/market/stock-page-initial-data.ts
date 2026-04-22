@@ -2,7 +2,7 @@ import "server-only";
 
 import { fetchEodhdEodDaily } from "@/lib/market/eodhd-eod";
 import { sliceStockChartPointsForRange } from "@/lib/market/stock-chart-api";
-import { stockChartPointsFromDailyBars } from "@/lib/market/stock-chart-data";
+import { getStockSpotPriceUsd, stockChartPointsFromDailyBars } from "@/lib/market/stock-chart-data";
 import type { ChartingSeriesPoint } from "@/lib/market/charting-series-types";
 import type { StockDetailHeaderMeta } from "@/lib/market/stock-header-meta";
 import { getStockDetailHeaderMetaForPage } from "@/lib/market/stock-header-meta-server";
@@ -41,6 +41,11 @@ export type StockPageInitialData = {
   fundamentalsSeriesQuarterly: ChartingSeriesPoint[];
   /** Single-ticker peers compare row (same payload as POST /api/stocks/peers/compare with one symbol). */
   peersCompareRows: PeersCompareRow[];
+  /**
+   * Intraday-aligned USD spot for header fallback (same source as `getStockSpotPriceUsd` / live-price API).
+   * Phase 7: fresher than mini-table EOD spot (`StockPerformance.price`) before the 1D chart publishes.
+   */
+  headerLiveSpotUsd: number | null;
 };
 
 const DEFAULT_OVERVIEW_RANGE: StockChartRange = "1Y";
@@ -77,6 +82,7 @@ function fallbackStockPageInitialData(ticker: string, now: Date): StockPageIniti
     fundamentalsSeriesAnnual: [],
     fundamentalsSeriesQuarterly: [],
     peersCompareRows: [],
+    headerLiveSpotUsd: null,
   };
 }
 
@@ -103,6 +109,10 @@ export async function loadStockPageInitialData(routeTicker: string): Promise<Sto
   if (isSingleAssetMode()) {
     if (!isSupportedAsset(ticker)) return null;
     // Single-asset NVDA mode: avoid broad EODHD calls (serve one deterministic fixture).
+    const nvda1d = getNvdaChartPoints("1D");
+    const nvdaLast = nvda1d.length ? nvda1d[nvda1d.length - 1]!.value : null;
+    const headerLiveSpotUsd =
+      typeof nvdaLast === "number" && Number.isFinite(nvdaLast) && nvdaLast > 0 ? nvdaLast : null;
     return {
       ticker,
       headerMeta: getNvdaHeaderMeta(),
@@ -114,21 +124,32 @@ export async function loadStockPageInitialData(routeTicker: string): Promise<Sto
       fundamentalsSeriesAnnual: getNvdaChartingSeriesPoints("annual"),
       fundamentalsSeriesQuarterly: getNvdaChartingSeriesPoints("quarterly"),
       peersCompareRows: [],
+      headerLiveSpotUsd,
     };
   }
 
   try {
-    const [headerMeta, barsRaw, keyStatsBundle, news, profile, annualSeries, quarterlySeries, peersCompareRows] =
-      await Promise.all([
-        getStockDetailHeaderMetaForPage(ticker),
-        fetchEodhdEodDaily(ticker, from, to),
-        buildStockKeyStatsBundle(ticker),
-        getStockNews(ticker),
-        fetchEodhdStockProfile(ticker),
-        fetchChartingSeries(ticker, "annual"),
-        fetchChartingSeries(ticker, "quarterly"),
-        getPeersCompareRowsCached(ticker),
-      ]);
+    const [
+      headerMeta,
+      barsRaw,
+      keyStatsBundle,
+      news,
+      profile,
+      annualSeries,
+      quarterlySeries,
+      peersCompareRows,
+      headerLiveSpotUsd,
+    ] = await Promise.all([
+      getStockDetailHeaderMetaForPage(ticker),
+      fetchEodhdEodDaily(ticker, from, to),
+      buildStockKeyStatsBundle(ticker),
+      getStockNews(ticker),
+      fetchEodhdStockProfile(ticker),
+      fetchChartingSeries(ticker, "annual"),
+      fetchChartingSeries(ticker, "quarterly"),
+      getPeersCompareRowsCached(ticker),
+      getStockSpotPriceUsd(ticker),
+    ]);
 
     const sorted = barsRaw?.length ? [...barsRaw].sort((a, b) => a.date.localeCompare(b.date)) : [];
     const performance = computeStockPerformanceFromSortedDailyBars(sorted, ticker, now);
@@ -146,6 +167,7 @@ export async function loadStockPageInitialData(routeTicker: string): Promise<Sto
       fundamentalsSeriesAnnual: annualSeries?.points ?? [],
       fundamentalsSeriesQuarterly: quarterlySeries?.points ?? [],
       peersCompareRows: Array.isArray(peersCompareRows) ? peersCompareRows : [],
+      headerLiveSpotUsd: typeof headerLiveSpotUsd === "number" && Number.isFinite(headerLiveSpotUsd) && headerLiveSpotUsd > 0 ? headerLiveSpotUsd : null,
     };
   } catch (err) {
     console.error("[loadStockPageInitialData] failed; serving fallback shell", { ticker, err });

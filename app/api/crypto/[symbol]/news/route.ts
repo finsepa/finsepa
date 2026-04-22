@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { CACHE_CONTROL_PRIVATE_NEWS } from "@/lib/data/cache-policy";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getCryptoNews } from "@/lib/market/crypto-news";
 import type { StockNewsResponse } from "@/lib/market/stock-news-types";
@@ -24,7 +25,7 @@ export async function GET(_request: Request, { params }: Ctx) {
     const body: StockNewsResponse = { ticker: routeSymbol, items: [] };
     return NextResponse.json(body, {
       headers: {
-        "Cache-Control": "private, s-maxage=90, stale-while-revalidate=180",
+        "Cache-Control": CACHE_CONTROL_PRIVATE_NEWS,
       },
     });
   }
@@ -33,7 +34,7 @@ export async function GET(_request: Request, { params }: Ctx) {
   const body: StockNewsResponse = { ticker: routeSymbol, items };
   return NextResponse.json(body, {
     headers: {
-      "Cache-Control": "private, s-maxage=90, stale-while-revalidate=180",
+      "Cache-Control": CACHE_CONTROL_PRIVATE_NEWS,
     },
   });
 }

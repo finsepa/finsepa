@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { CACHE_CONTROL_PUBLIC_HOT_FAST, CACHE_CONTROL_PUBLIC_MACRO_DASHBOARD } from "@/lib/data/cache-policy";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getMacroDashboardPayloadCached } from "@/lib/market/macro-dashboard-payload";
 import { isSingleAssetMode } from "@/lib/features/single-asset";
@@ -12,7 +13,7 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   if (isSingleAssetMode()) {
-    return NextResponse.json({ country: null, items: [] }, { headers: { "Cache-Control": "public, s-maxage=30" } });
+    return NextResponse.json({ country: null, items: [] }, { headers: { "Cache-Control": CACHE_CONTROL_PUBLIC_HOT_FAST } });
   }
 
   const { country, items } = await getMacroDashboardPayloadCached();
@@ -21,7 +22,7 @@ export async function GET() {
     { country, items },
     {
       headers: {
-        "Cache-Control": "public, s-maxage=300, stale-while-revalidate=1800",
+        "Cache-Control": CACHE_CONTROL_PUBLIC_MACRO_DASHBOARD,
       },
     },
   );

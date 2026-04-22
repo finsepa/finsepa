@@ -12,13 +12,15 @@ function dashPrice(n: number | null): string {
   return n != null && Number.isFinite(n) ? formatUsdPrice(n) : "—";
 }
 
-function pctVsCurrent(current: number | null, target: number | null): string {
+type UpsideVsLast = { kind: "ok"; pct: number; pctLabel: string } | { kind: "dash" };
+
+function upsideVsLastPrice(current: number | null, target: number | null): UpsideVsLast {
   if (current == null || target == null || !Number.isFinite(current) || !Number.isFinite(target) || current === 0) {
-    return "—";
+    return { kind: "dash" };
   }
   const pct = ((target - current) / current) * 100;
   const sign = pct > 0 ? "+" : "";
-  return `${sign}${pct.toFixed(2)}% vs last price`;
+  return { kind: "ok", pct, pctLabel: `${sign}${pct.toFixed(2)}%` };
 }
 
 function AnalystDistributionCard({ buckets }: { buckets: StockAnalystDistributionBucket[] }) {
@@ -122,7 +124,7 @@ export function StockTargetPriceTab({ ticker }: { ticker: string }) {
     ].some((v) => v != null && Number.isFinite(v));
 
   const hasAnyData = hasAnyTarget || hasDistribution;
-  const upsideLine = useMemo(() => pctVsCurrent(lastPrice, consensus), [lastPrice, consensus]);
+  const upsideVsLast = useMemo(() => upsideVsLastPrice(lastPrice, consensus), [lastPrice, consensus]);
 
   if (loading) {
     return (
@@ -151,7 +153,26 @@ export function StockTargetPriceTab({ ticker }: { ticker: string }) {
           <p className="mt-1 text-[28px] font-semibold tabular-nums leading-8 tracking-tight text-[#09090B]">
             {dashPrice(consensus)}
           </p>
-          <p className="mt-1 text-[13px] leading-5 text-[#71717A]">{upsideLine}</p>
+          <p className="mt-1 text-[13px] leading-5">
+            {upsideVsLast.kind === "dash" ? (
+              <span className="text-[#71717A]">—</span>
+            ) : (
+              <>
+                <span
+                  className={
+                    upsideVsLast.pct > 0
+                      ? "font-medium text-[#16A34A]"
+                      : upsideVsLast.pct < 0
+                        ? "font-medium text-[#DC2626]"
+                        : "text-[#71717A]"
+                  }
+                >
+                  {upsideVsLast.pctLabel}
+                </span>
+                <span className="text-[#71717A]"> vs last price</span>
+              </>
+            )}
+          </p>
         </div>
       ) : null}
 

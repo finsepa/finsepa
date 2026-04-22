@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { CACHE_CONTROL_PRIVATE_EARNINGS_PREVIEW, CACHE_CONTROL_PRIVATE_EARNINGS_PREVIEW_SINGLE } from "@/lib/data/cache-policy";
 import { isTickerOnScreenerEarningsUniverse } from "@/lib/market/earnings-week-data";
 import { getEarningsPreviewPayload } from "@/lib/market/earnings-preview";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
@@ -43,7 +44,7 @@ export async function GET(request: Request) {
           estRevenueDisplay: null,
           estEpsDisplay: null,
         },
-        { headers: { "Cache-Control": "private, max-age=0, s-maxage=60, stale-while-revalidate=60" } },
+        { headers: { "Cache-Control": CACHE_CONTROL_PRIVATE_EARNINGS_PREVIEW_SINGLE } },
       );
     }
 
@@ -57,7 +58,7 @@ export async function GET(request: Request) {
         estRevenueDisplay: null,
         estEpsDisplay: null,
       },
-      { headers: { "Cache-Control": "private, max-age=0, s-maxage=60, stale-while-revalidate=60" } },
+      { headers: { "Cache-Control": CACHE_CONTROL_PRIVATE_EARNINGS_PREVIEW_SINGLE } },
     );
   }
 
@@ -70,7 +71,7 @@ export async function GET(request: Request) {
 
   return NextResponse.json(payload, {
     headers: {
-      "Cache-Control": "private, max-age=0, s-maxage=120, stale-while-revalidate=300",
+      "Cache-Control": CACHE_CONTROL_PRIVATE_EARNINGS_PREVIEW,
     },
   });
 }

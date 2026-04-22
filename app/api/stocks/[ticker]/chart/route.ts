@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { CACHE_CONTROL_PRIVATE_CHART_STREAM, CACHE_CONTROL_PRIVATE_WARM_CHART } from "@/lib/data/cache-policy";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getStockChartPoints, pricePointsToReturnIndexPoints } from "@/lib/market/stock-chart-data";
 import { isStockChartRange, sliceStockChartPointsForRange } from "@/lib/market/stock-chart-api";
@@ -39,14 +40,14 @@ export async function GET(request: Request, { params }: Ctx) {
     }
     return NextResponse.json(
       { ticker: routeTicker, range, series, points },
-      { headers: { "Cache-Control": "private, s-maxage=120, stale-while-revalidate=300" } },
+      { headers: { "Cache-Control": CACHE_CONTROL_PRIVATE_WARM_CHART } },
     );
   }
 
   if (isSingleAssetMode() && !isSupportedAsset(routeTicker)) {
     return NextResponse.json(
       { ticker: routeTicker, range, series, points: [] },
-      { headers: { "Cache-Control": "private, s-maxage=120, stale-while-revalidate=300" } },
+      { headers: { "Cache-Control": CACHE_CONTROL_PRIVATE_WARM_CHART } },
     );
   }
 
@@ -62,7 +63,7 @@ export async function GET(request: Request, { params }: Ctx) {
     },
     {
       headers: {
-        "Cache-Control": "private, s-maxage=45, stale-while-revalidate=120",
+        "Cache-Control": CACHE_CONTROL_PRIVATE_CHART_STREAM,
       },
     },
   );

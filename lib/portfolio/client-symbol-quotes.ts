@@ -36,16 +36,17 @@ async function readPriceOnDate(res: Response): Promise<number | null> {
 
 async function fetchCryptoLivePrice(symbol: string): Promise<number | null> {
   const enc = encodeURIComponent(routeKey(symbol));
+  // Same order as server `getCryptoLiveSpotPriceUsd`: daily-based performance first (matches crypto asset headline).
   try {
-    const liveRes = await fetch(`/api/crypto/${enc}/live-price`, { cache: "no-store" });
-    const spot = await readPerformancePrice(liveRes);
-    if (spot != null) return spot;
+    const perfRes = await fetch(`/api/crypto/${enc}/performance`, { cache: "no-store" });
+    const perf = await readPerformancePrice(perfRes);
+    if (perf != null) return perf;
   } catch {
     /* fall through */
   }
   try {
-    const cryptoRes = await fetch(`/api/crypto/${enc}/performance`);
-    return await readPerformancePrice(cryptoRes);
+    const liveRes = await fetch(`/api/crypto/${enc}/live-price`, { cache: "no-store" });
+    return await readPerformancePrice(liveRes);
   } catch {
     return null;
   }

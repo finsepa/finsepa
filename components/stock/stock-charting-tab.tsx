@@ -28,6 +28,7 @@ const LABEL_TO_METRIC: Partial<Record<string, ChartingMetricId>> = {
   "Share Holder Equity": "shareholder_equity",
   "Debt/Equity": "debt_to_equity",
   "Shares Outstanding": "shares_outstanding",
+  "Market Cap": "market_cap",
 
   "Gross Margin": "gross_margin",
   "Operating Margin": "operating_margin",

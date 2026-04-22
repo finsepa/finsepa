@@ -5,12 +5,10 @@ import { LineChart } from "lucide-react";
 
 import { PortfolioHoldingsPerformanceTable } from "@/components/portfolio/portfolio-holdings-performance-table";
 import { PortfolioReturnsDynamicsChart } from "@/components/portfolio/portfolio-returns-dynamics-chart";
-import { PortfolioOverviewCards } from "@/components/portfolio/portfolio-overview-cards";
 import {
   PORTFOLIO_CHART_RANGE_LABELS,
   PortfolioValueHistoryChartPane,
 } from "@/components/portfolio/portfolio-overview-chart";
-import { PortfolioOverviewAthProvider } from "@/components/portfolio/portfolio-overview-ath-context";
 import { ChartSkeleton } from "@/components/ui/chart-skeleton";
 import {
   Empty,
@@ -32,6 +30,7 @@ function PerformanceChartSection({
   loading,
   error,
   points,
+  transactions,
 }: {
   title: string;
   metric: "value" | "profit";
@@ -41,6 +40,7 @@ function PerformanceChartSection({
   loading: boolean;
   error: string | null;
   points: PortfolioValueHistoryPoint[];
+  transactions: PortfolioTransaction[];
 }) {
   return (
     <section className="mb-10 w-full min-w-0">
@@ -101,7 +101,11 @@ function PerformanceChartSection({
             </EmptyHeader>
           </Empty>
         ) : (
-          <PortfolioValueHistoryChartPane metric={metric} points={points} />
+          <PortfolioValueHistoryChartPane
+            metric={metric}
+            points={points}
+            transactions={transactions}
+          />
         )}
       </div>
     </section>
@@ -152,9 +156,7 @@ function PortfolioPerformancePanelInner({
   }, [load]);
 
   return (
-    <PortfolioOverviewAthProvider>
-      <PortfolioOverviewCards holdings={holdings} transactions={transactions} />
-
+    <>
       <PerformanceChartSection
         title="Portfolio value"
         metric="value"
@@ -164,6 +166,7 @@ function PortfolioPerformancePanelInner({
         loading={loading}
         error={error}
         points={points}
+        transactions={transactions}
       />
 
       <PerformanceChartSection
@@ -175,6 +178,7 @@ function PortfolioPerformancePanelInner({
         loading={loading}
         error={error}
         points={points}
+        transactions={transactions}
       />
 
       <PortfolioReturnsDynamicsChart transactions={transactions} canLoad={canLoad} />
@@ -185,7 +189,7 @@ function PortfolioPerformancePanelInner({
         </h2>
         <PortfolioHoldingsPerformanceTable holdings={holdings} transactions={transactions} />
       </section>
-    </PortfolioOverviewAthProvider>
+    </>
   );
 }
 

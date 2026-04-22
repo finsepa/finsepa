@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { CACHE_CONTROL_PRIVATE_WARM } from "@/lib/data/cache-policy";
 import { companyLogoUrlForTicker } from "@/lib/screener/company-logo-url";
 import { getScreenerCompaniesStaticLayer } from "@/lib/screener/screener-companies-layers";
 import { pickScreenerPage2Tickers } from "@/lib/screener/pick-screener-page2-tickers";
@@ -44,7 +45,7 @@ export async function GET() {
     { stocks },
     {
       headers: {
-        "Cache-Control": "private, s-maxage=300, stale-while-revalidate=600",
+        "Cache-Control": CACHE_CONTROL_PRIVATE_WARM,
       },
     },
   );

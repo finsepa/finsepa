@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { CACHE_CONTROL_PRIVATE_HOT } from "@/lib/data/cache-policy";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getStockPerformance } from "@/lib/market/stock-performance";
 import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
@@ -22,7 +23,7 @@ export async function GET(_request: Request, { params }: Ctx) {
 
   if (isSingleAssetMode() && isSupportedAsset(routeTicker) && routeTicker.toUpperCase() === "NVDA") {
     return NextResponse.json(getNvdaPerformance(), {
-      headers: { "Cache-Control": "private, s-maxage=60, stale-while-revalidate=120" },
+      headers: { "Cache-Control": CACHE_CONTROL_PRIVATE_HOT },
     });
   }
 
@@ -43,7 +44,7 @@ export async function GET(_request: Request, { params }: Ctx) {
         all: null,
       },
       {
-        headers: { "Cache-Control": "private, s-maxage=60, stale-while-revalidate=120" },
+        headers: { "Cache-Control": CACHE_CONTROL_PRIVATE_HOT },
       },
     );
   }
@@ -51,7 +52,7 @@ export async function GET(_request: Request, { params }: Ctx) {
   const perf = await getStockPerformance(routeTicker);
   return NextResponse.json(perf, {
     headers: {
-      "Cache-Control": "private, s-maxage=60, stale-while-revalidate=120",
+      "Cache-Control": CACHE_CONTROL_PRIVATE_HOT,
     },
   });
 }

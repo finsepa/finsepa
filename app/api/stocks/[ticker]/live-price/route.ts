@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { CACHE_CONTROL_PRIVATE_NO_STORE } from "@/lib/data/cache-policy";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getStockSpotPriceUsd } from "@/lib/market/stock-chart-data";
 import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
@@ -28,20 +29,20 @@ export async function GET(_request: Request, { params }: Ctx) {
       typeof last === "number" && Number.isFinite(last) && last > 0 ? last : null;
     return NextResponse.json(
       { ticker: upper, price },
-      { headers: { "Cache-Control": "private, no-store" } },
+      { headers: { "Cache-Control": CACHE_CONTROL_PRIVATE_NO_STORE } },
     );
   }
 
   if (isSingleAssetMode() && !isSupportedAsset(routeTicker)) {
     return NextResponse.json(
       { ticker: upper, price: null },
-      { headers: { "Cache-Control": "private, no-store" } },
+      { headers: { "Cache-Control": CACHE_CONTROL_PRIVATE_NO_STORE } },
     );
   }
 
   const price = await getStockSpotPriceUsd(routeTicker);
   return NextResponse.json(
     { ticker: upper, price },
-    { headers: { "Cache-Control": "private, no-store" } },
+    { headers: { "Cache-Control": CACHE_CONTROL_PRIVATE_NO_STORE } },
   );
 }

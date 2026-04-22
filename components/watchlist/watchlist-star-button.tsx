@@ -2,6 +2,7 @@
 
 import { Star, Trash2 } from "lucide-react";
 
+import { TopbarDelayedTooltip } from "@/components/layout/topbar-delayed-tooltip";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
 
 type ToggleProps = {
@@ -37,8 +38,10 @@ export function WatchlistStarToggle({
   const isWatched = loaded && watched.has(key);
   const isDetail = variant === "detail";
 
+  const tooltipLabel = isWatched ? "Remove from Watchlist" : "Add to Watchlist";
+
   return (
-    <div className={className}>
+    <TopbarDelayedTooltip label={tooltipLabel} className={className}>
       <button
         type="button"
         aria-label={isWatched ? `Remove ${label} from watchlist` : `Add ${label} to watchlist`}
@@ -70,7 +73,7 @@ export function WatchlistStarToggle({
           }
         />
       </button>
-    </div>
+    </TopbarDelayedTooltip>
   );
 }
 

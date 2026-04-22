@@ -1,7 +1,7 @@
 import type { ScreenerSectorRow } from "@/lib/screener/screener-sectors-types";
 import { ScreenerTableScroll } from "@/components/screener/screener-table-scroll";
 
-const colLayout = "grid-cols-[48px_minmax(0,1.6fr)_1fr_1fr] gap-x-2";
+const colLayout = "grid-cols-[48px_minmax(0,1.6fr)_1fr_1fr_1fr] gap-x-2";
 
 function formatPctValue(value: number) {
   return `${value > 0 ? "+" : ""}${value.toFixed(2)}%`;
@@ -37,7 +37,7 @@ export function ScreenerSectorsTable({ rows }: { rows: ScreenerSectorRow[] }) {
   }
 
   return (
-    <ScreenerTableScroll minWidthClassName="min-w-[520px] lg:min-w-0">
+    <ScreenerTableScroll minWidthClassName="min-w-[600px] lg:min-w-0">
       <div className="divide-y divide-[#E4E4E7] bg-white">
       <div
         className={`grid ${colLayout} min-h-[44px] items-center bg-white px-2 py-0 text-[12px] font-medium leading-5 text-[#71717A] sm:px-4 sm:text-[14px]`}
@@ -45,6 +45,7 @@ export function ScreenerSectorsTable({ rows }: { rows: ScreenerSectorRow[] }) {
         <div className="text-center">#</div>
         <div className="text-left">Sector Name</div>
         <div className="min-w-0 w-full text-right">1D %</div>
+        <div className="min-w-0 w-full text-right">YTD %</div>
         <div className="min-w-0 w-full text-right">Market Cap</div>
       </div>
 
@@ -56,6 +57,7 @@ export function ScreenerSectorsTable({ rows }: { rows: ScreenerSectorRow[] }) {
           <div className="text-center text-[14px] font-semibold leading-5 tabular-nums text-[#71717A]">{row.rank}</div>
           <div className="min-w-0 truncate text-[14px] font-semibold leading-5 text-[#09090B]">{row.sector}</div>
           <PctCell value={row.change1D} />
+          <PctCell value={row.changeYTD} />
           <div className="min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
             {row.marketCapDisplay}
           </div>
