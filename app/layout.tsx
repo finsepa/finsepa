@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 
 import { SupabaseBrowserEnvProvider } from "@/components/supabase/supabase-browser-env-provider";
 import { Toaster } from "@/components/ui/sonner";
@@ -35,6 +36,7 @@ export default function RootLayout({
           {children}
         </SupabaseBrowserEnvProvider>
         <Toaster position="top-center" closeButton />
+        <Analytics />
       </body>
     </html>
   );
