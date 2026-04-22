@@ -1,0 +1,38 @@
+# Manual production deploy to Vercel when local CLI/auth is unavailable.
+#
+# One-time setup (GitHub repo → Settings → Secrets and variables → Actions):
+#   VERCEL_TOKEN       — https://vercel.com/account/tokens
+#   VERCEL_ORG_ID      — Team ID from Vercel dashboard (e.g. team_…)
+#   VERCEL_PROJECT_ID  — Project → Settings → General → Project ID (prj_…)
+#
+# Run: Actions → "Deploy production (Vercel)" → Run workflow.
+
+name: Deploy production (Vercel)
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: vercel-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Deploy to Vercel (production)
+        run: npx vercel@latest deploy --prod --yes --token="$VERCEL_TOKEN"
