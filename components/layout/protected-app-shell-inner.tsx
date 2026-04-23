@@ -1,8 +1,9 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { Suspense } from "react";
 
+import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav";
 import { NavigationTopLoader } from "@/components/layout/navigation-top-loader";
 import { Sidebar } from "@/components/layout/sidebar";
 import {
@@ -12,6 +13,7 @@ import {
   useSidebarLayout,
 } from "@/components/layout/sidebar-layout-context";
 import { Topbar } from "@/components/layout/topbar";
+import { cn } from "@/lib/utils";
 
 function ProtectedAppChrome({
   children,
@@ -29,28 +31,37 @@ function ProtectedAppChrome({
   const leftOffset = `${outerPx}px`;
 
   return (
-    <div className="relative h-dvh max-h-dvh w-full overflow-hidden bg-[rgba(228,228,231,1)]">
+    <div
+      className="relative h-dvh max-h-dvh w-full overflow-hidden bg-[rgba(228,228,231,1)]"
+      style={{ ["--shell-left" as string]: leftOffset } as CSSProperties}
+    >
       <Suspense fallback={null}>
         <NavigationTopLoader />
       </Suspense>
       <div
-        className="fixed inset-y-0 left-0 z-20 p-1 transition-[width] duration-200 ease-out"
+        className="fixed inset-y-0 left-0 z-20 hidden p-1 transition-[width] duration-200 ease-out md:block"
         style={{ width: leftOffset }}
       >
         <Sidebar />
       </div>
       <div
-        className="fixed right-1 top-1 z-30 min-w-0 rounded-[4px] bg-white py-0.5 shadow-[0_1px_0_0_rgba(0,0,0,0.03)] transition-[left] duration-200 ease-out sm:py-1"
-        style={{ left: leftOffset }}
+        className={cn(
+          "fixed right-1 top-1 z-30 min-w-0 rounded-[4px] bg-white py-1 shadow-[0_1px_0_0_rgba(0,0,0,0.03)] transition-[left] duration-200 ease-out",
+          "left-1 md:left-[length:var(--shell-left)]",
+        )}
       >
         <Topbar userInitials={userInitials} avatarUrl={avatarUrl} userDisplayName={userDisplayName} />
       </div>
       <main
-        className="fixed bottom-1 right-1 top-[76px] z-0 min-w-0 overflow-y-auto rounded-[4px] bg-white transition-[left] duration-200 ease-out"
-        style={{ left: leftOffset }}
+        className={cn(
+          "fixed right-1 top-[76px] z-0 min-w-0 overflow-y-auto rounded-[4px] bg-white transition-[left] duration-200 ease-out",
+          "left-1 md:left-[length:var(--shell-left)]",
+          "bottom-[calc(4.25rem+env(safe-area-inset-bottom,0px))] md:bottom-1",
+        )}
       >
         {children}
       </main>
+      <MobileBottomNav />
     </div>
   );
 }

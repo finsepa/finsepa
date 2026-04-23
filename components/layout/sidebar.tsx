@@ -4,73 +4,24 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import {
-  BookOpen,
-  Briefcase,
-  CalendarDays,
-  ChartColumn,
-  Compass,
-  FileText,
-  LayoutGrid,
-  Newspaper,
-  PanelLeft,
-  PanelLeftOpen,
-  PanelsTopLeft,
-  Globe,
-  Wallet,
-} from "lucide-react";
+import { PanelLeft, PanelLeftOpen } from "lucide-react";
 
 import { DWELL_TOOLTIP_DELAY_MS, TopbarDelayedTooltip } from "@/components/layout/topbar-delayed-tooltip";
+import {
+  protectedCalendarItems,
+  protectedCommunityItems,
+  protectedDataItems,
+  protectedMarketItems,
+  protectedNavItemIsActive,
+  type ProtectedNavItem,
+} from "@/components/layout/protected-nav-config";
 import { useSidebarLayout } from "@/components/layout/sidebar-layout-context";
-import { NAV_EARNINGS_ENABLED, NAV_MACRO_ENABLED, NAV_NEWS_ENABLED } from "@/lib/features/nav-flags";
 import { cn } from "@/lib/utils";
 
 const soonBadgeClass =
   "shrink-0 rounded-md border border-[#E4E4E7] bg-[#F4F4F5] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#71717A]";
 
-const marketItems = [
-  { label: "Screener", icon: Globe, href: "/screener", available: true },
-  { label: "Heatmaps", icon: LayoutGrid, href: "/heatmaps", available: false },
-  { label: "News", icon: Newspaper, href: "/news", available: NAV_NEWS_ENABLED },
-];
-
-const calendarItems = [
-  { label: "Earnings", icon: CalendarDays, href: "/earnings", available: NAV_EARNINGS_ENABLED },
-  { label: "Economy", icon: BookOpen, href: "/economy", available: false },
-];
-
-const dataItems = [
-  { label: "Macro", icon: Compass, href: "/macro", available: NAV_MACRO_ENABLED },
-  { label: "Charting", icon: ChartColumn, href: "/charting", available: true },
-  {
-    label: "Comparison",
-    icon: PanelsTopLeft,
-    href: "/comparison",
-    available: true,
-    activePathPrefix: true,
-  },
-];
-
-const communityItems = [
-  {
-    label: "Superinvestors",
-    icon: Briefcase,
-    href: "/superinvestors",
-    available: true,
-    activePathPrefix: true,
-  },
-  { label: "Portfolios", icon: Wallet, href: "/portfolios", available: true },
-  { label: "Posts", icon: FileText, href: "/posts", available: false },
-];
-
-type NavItem = {
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-  href: string;
-  available: boolean;
-  /** When true, item is active for any path that starts with `href` (e.g. nested routes). */
-  activePathPrefix?: boolean;
-};
+type NavItem = ProtectedNavItem;
 
 const TOOLTIP_HIDE_MS = 100;
 
@@ -187,9 +138,7 @@ function CollapsedRailTooltip({ label, children }: { label: string; children: Re
 
 function SidebarRow({ item, pathname, collapsed }: { item: NavItem; pathname: string; collapsed: boolean }) {
   const Icon = item.icon;
-  const isActive =
-    item.available &&
-    (item.activePathPrefix ? pathname === item.href || pathname.startsWith(`${item.href}/`) : pathname === item.href);
+  const isActive = protectedNavItemIsActive(item, pathname);
   const tooltipLabel = item.available ? item.label : `${item.label} (Soon)`;
 
   const rowClass = cn(
@@ -302,10 +251,10 @@ export function Sidebar() {
           collapsed ? "overflow-y-auto overflow-x-visible" : "",
         )}
       >
-        <SidebarSection title="Markets" items={marketItems} pathname={pathname} collapsed={collapsed} />
-        <SidebarSection title="Calendar" items={calendarItems} pathname={pathname} collapsed={collapsed} />
-        <SidebarSection title="Data" items={dataItems} pathname={pathname} collapsed={collapsed} />
-        <SidebarSection title="Community" items={communityItems} pathname={pathname} collapsed={collapsed} />
+        <SidebarSection title="Markets" items={protectedMarketItems} pathname={pathname} collapsed={collapsed} />
+        <SidebarSection title="Calendar" items={protectedCalendarItems} pathname={pathname} collapsed={collapsed} />
+        <SidebarSection title="Data" items={protectedDataItems} pathname={pathname} collapsed={collapsed} />
+        <SidebarSection title="Community" items={protectedCommunityItems} pathname={pathname} collapsed={collapsed} />
       </div>
     </aside>
   );

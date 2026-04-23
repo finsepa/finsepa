@@ -100,9 +100,9 @@ function nearestVerticalScrollParent(start: HTMLElement | null): HTMLElement | n
   return null;
 }
 
-/** Same rhythm as screener table: `screener-table.tsx` header + row heights. */
+/** Same rhythm as screener table: `screener-table.tsx` header + row heights. Fixed min width so narrow viewports scroll horizontally instead of compressing columns. */
 const EARNINGS_TABLE_GRID =
-  "grid min-w-[min(960px,100%)] w-full grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)_minmax(0,0.85fr)_minmax(0,0.85fr)_minmax(0,0.8fr)_minmax(0,1fr)_minmax(0,1fr)] gap-x-2";
+  "grid min-w-[960px] w-full grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)_minmax(0,0.85fr)_minmax(0,0.85fr)_minmax(0,0.8fr)_minmax(0,1fr)_minmax(0,1fr)] gap-x-2";
 
 const screenerNumCell =
   "min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]";
@@ -172,7 +172,7 @@ function EstimatesChartSkeleton() {
 
 function TableSkeleton() {
   return (
-    <div className="overflow-x-auto">
+    <div className="min-w-0 overflow-x-auto [-webkit-overflow-scrolling:touch]">
       <div className="divide-y divide-[#E4E4E7] border-t border-b border-[#E4E4E7] bg-white">
         <div className={`${EARNINGS_TABLE_GRID} min-h-[44px] items-center px-4 py-0`}>
           {Array.from({ length: 7 }).map((_, i) => (
@@ -197,7 +197,7 @@ function TableSkeleton() {
 /** SSR-safe shell for `next/dynamic` while the client bundle loads (matches tab title + skeletons). */
 export function StockEarningsTabLoading({ showHeading = true }: { showHeading?: boolean } = {}) {
   return (
-    <div className="space-y-6 pt-1">
+    <div className="min-w-0 space-y-6 pt-1">
       {showHeading ? (
         <h2 className="text-[18px] font-semibold leading-7 tracking-tight text-[#09090B]">Earnings</h2>
       ) : null}
@@ -337,7 +337,7 @@ export function StockEarningsTabContent({
   }
 
   return (
-    <div className="space-y-6 pt-1">
+    <div className="min-w-0 space-y-6 pt-1">
       {showHeading ? (
         <h2 className="text-[18px] font-semibold leading-7 tracking-tight text-[#09090B]">Earnings</h2>
       ) : null}
@@ -367,7 +367,7 @@ export function StockEarningsTabContent({
       {!loading && data?.estimatesChart ? <EarningsEstimatesChart data={data.estimatesChart} /> : null}
 
       {!loading && data && historyRows.length > 0 ? (
-        <div className="overflow-x-auto">
+        <div className="min-w-0 overflow-x-auto [-webkit-overflow-scrolling:touch]">
           <div className="divide-y divide-[#E4E4E7] border-t border-b border-[#E4E4E7] bg-white">
             <div
               className={`${EARNINGS_TABLE_GRID} min-h-[44px] items-center px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A]`}

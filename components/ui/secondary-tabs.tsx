@@ -30,7 +30,7 @@ export function SecondaryTabs<T extends string>({
     <div className={cn(className)}>
       <div
         className={cn(
-          "flex flex-nowrap items-center gap-2 overflow-x-auto overflow-y-hidden pb-0.5 [-webkit-overflow-scrolling:touch] sm:flex-wrap sm:overflow-visible sm:pb-0",
+          "flex flex-nowrap items-center gap-2 overflow-x-auto overflow-y-hidden pb-0.5 [-webkit-overflow-scrolling:touch] md:flex-wrap md:overflow-visible md:pb-0",
           listClassName,
         )}
         role="tablist"

@@ -17,6 +17,7 @@ import { IndicesTable } from "@/components/screener/indices-table";
 import { StocksTableSkeleton } from "@/components/markets/markets-skeletons";
 import { SCREENER_TABLE_PAGINATION_BTN } from "@/components/ui/table-pagination";
 import type { ScreenerSectorRow } from "@/lib/screener/screener-sectors-types";
+import { cn } from "@/lib/utils";
 
 /** Rows per list on the Stocks → Gainers & Losers sub-tab. */
 const GAINERS_LOSERS_TOP_N = 5;
@@ -88,17 +89,17 @@ function StocksTabBody({
             <p className="mt-3 text-sm font-medium text-[#71717A]">Loading companies…</p>
           ) : null}
 
-          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="mt-4 flex min-w-0 flex-row flex-nowrap items-center justify-between gap-2 sm:gap-3">
             <button
               type="button"
               onClick={() => setCompaniesPage((p) => Math.max(1, p - 1))}
               disabled={safeCompaniesPage <= 1 || companiesLoading}
-              className={SCREENER_TABLE_PAGINATION_BTN}
+              className={cn(SCREENER_TABLE_PAGINATION_BTN, "shrink-0")}
             >
               Previous
             </button>
 
-            <div className="text-center text-sm font-medium text-[#71717A]">
+            <div className="min-w-0 flex-1 px-1 text-center text-sm font-medium text-[#71717A]">
               Page <span className="font-semibold text-[#09090B]">{safeCompaniesPage}</span> of{" "}
               <span className="font-semibold text-[#09090B]">{totalPages}</span>
             </div>
@@ -107,7 +108,7 @@ function StocksTabBody({
               type="button"
               onClick={() => setCompaniesPage((p) => Math.min(totalPages, p + 1))}
               disabled={safeCompaniesPage >= totalPages || companiesLoading}
-              className={SCREENER_TABLE_PAGINATION_BTN}
+              className={cn(SCREENER_TABLE_PAGINATION_BTN, "shrink-0")}
             >
               Next
             </button>
@@ -157,17 +158,17 @@ function CryptoTabBody({
         <p className="mt-3 text-sm font-medium text-[#71717A]">Loading…</p>
       ) : null}
 
-      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mt-4 flex min-w-0 flex-row flex-nowrap items-center justify-between gap-2 sm:gap-3">
         <button
           type="button"
           onClick={() => setCryptoPage((p) => Math.max(1, p - 1))}
           disabled={safeCryptoPage <= 1 || cryptoRemoteLoading}
-          className={SCREENER_TABLE_PAGINATION_BTN}
+          className={cn(SCREENER_TABLE_PAGINATION_BTN, "shrink-0")}
         >
           Previous
         </button>
 
-        <div className="text-center text-sm font-medium text-[#71717A]">
+        <div className="min-w-0 flex-1 px-1 text-center text-sm font-medium text-[#71717A]">
           Page <span className="font-semibold text-[#09090B]">{safeCryptoPage}</span> of{" "}
           <span className="font-semibold text-[#09090B]">{totalPages}</span>
         </div>
@@ -176,7 +177,7 @@ function CryptoTabBody({
           type="button"
           onClick={() => setCryptoPage((p) => Math.min(totalPages, p + 1))}
           disabled={safeCryptoPage >= totalPages || cryptoRemoteLoading}
-          className={SCREENER_TABLE_PAGINATION_BTN}
+          className={cn(SCREENER_TABLE_PAGINATION_BTN, "shrink-0")}
         >
           Next
         </button>

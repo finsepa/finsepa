@@ -8,6 +8,7 @@ import {
   dropdownMenuPlainItemClassName,
 } from "@/components/design-system/dropdown-menu-styles";
 import { TopbarDelayedTooltip } from "@/components/layout/topbar-delayed-tooltip";
+import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import { cn } from "@/lib/utils";
 
@@ -28,6 +29,7 @@ export function PortfolioQuickAddMenu({
   const { openNewTransaction, openCreatePortfolio, openAddCash, selectedPortfolioReadOnly } =
     usePortfolioWorkspace();
   const rootRef = useRef<HTMLDivElement>(null);
+  const menuPortalRef = useRef<HTMLDivElement>(null);
 
   const items = [
     {
@@ -49,7 +51,9 @@ export function PortfolioQuickAddMenu({
   useEffect(() => {
     if (!open) return;
     function onDocMouseDown(e: MouseEvent) {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node;
+      if (rootRef.current?.contains(t) || menuPortalRef.current?.contains(t)) return;
+      setOpen(false);
     }
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") setOpen(false);
@@ -71,12 +75,12 @@ export function PortfolioQuickAddMenu({
       onClick={() => setOpen((v) => !v)}
       className={cn(
         open
-          ? "flex h-8 w-8 items-center justify-center rounded-[10px] border-2 border-[#09090B] bg-white text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5] sm:h-9 sm:w-9"
-          : "flex h-8 w-8 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5] sm:h-9 sm:w-9",
+          ? "flex h-9 w-9 items-center justify-center rounded-[10px] border-2 border-[#09090B] bg-white text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5]"
+          : "flex h-9 w-9 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5]",
         triggerClassName,
       )}
     >
-      <Plus className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={open ? 2.25 : 2} aria-hidden />
+      <Plus className="h-5 w-5" strokeWidth={open ? 2.25 : 2} aria-hidden />
     </button>
   );
 
@@ -84,14 +88,13 @@ export function PortfolioQuickAddMenu({
     <div className="relative" ref={rootRef}>
       {dwellTooltipLabel ? <TopbarDelayedTooltip label={dwellTooltipLabel}>{trigger}</TopbarDelayedTooltip> : trigger}
 
-      {open ? (
-        <div
-          role="menu"
-          className={cn(
-            dropdownMenuPanelClassName(),
-            "absolute right-0 top-full z-[120] mt-1 w-max min-w-[260px] max-w-[min(calc(100vw-2rem),320px)]",
-          )}
-        >
+      <TopbarDropdownPortal
+        open={open}
+        anchorRef={rootRef}
+        ref={menuPortalRef}
+        className="w-max min-w-[260px] max-w-[min(calc(100vw-2rem),320px)]"
+      >
+        <div role="menu" className={dropdownMenuPanelClassName()}>
           {items.map(({ id, label, Icon, disabled }) => (
             <button
               key={id}
@@ -118,7 +121,7 @@ export function PortfolioQuickAddMenu({
             </button>
           ))}
         </div>
-      ) : null}
+      </TopbarDropdownPortal>
     </div>
   );
 }

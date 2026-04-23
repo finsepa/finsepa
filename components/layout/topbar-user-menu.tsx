@@ -11,6 +11,7 @@ import {
   dropdownMenuSurfaceClassName,
 } from "@/components/design-system/dropdown-menu-styles";
 import { TopbarDelayedTooltip } from "@/components/layout/topbar-delayed-tooltip";
+import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
 import { UserAvatar } from "@/components/user/user-avatar";
 import { PATH_LOGIN } from "@/lib/auth/routes";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
@@ -28,13 +29,14 @@ export function TopbarUserMenu({ userInitials, avatarUrl, userDisplayName }: Top
   const [open, setOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const menuPortalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
     function onDocMouseDown(e: MouseEvent) {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+      const t = e.target as Node;
+      if (rootRef.current?.contains(t) || menuPortalRef.current?.contains(t)) return;
+      setOpen(false);
     }
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") setOpen(false);
@@ -70,21 +72,20 @@ export function TopbarUserMenu({ userInitials, avatarUrl, userDisplayName }: Top
           aria-expanded={open}
           aria-haspopup="menu"
           onClick={() => setOpen((v) => !v)}
-          className="flex h-8 items-center gap-1.5 rounded-[10px] border border-[#E4E4E7] bg-white px-1.5 text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5] sm:h-9 sm:gap-2 sm:px-2"
+          className="flex h-9 items-center gap-2 rounded-[10px] border border-[#E4E4E7] bg-white px-2 text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5]"
         >
-          <Menu className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" />
+          <Menu className="h-5 w-5 shrink-0" />
           <UserAvatar imageSrc={avatarUrl} initials={userInitials} size="sm" />
         </button>
       </TopbarDelayedTooltip>
 
-      {open ? (
-        <div
-          role="menu"
-          className={cn(
-            dropdownMenuSurfaceClassName(),
-            "absolute right-0 top-full z-[120] mt-1 min-w-[240px] overflow-hidden",
-          )}
-        >
+      <TopbarDropdownPortal
+        open={open}
+        anchorRef={rootRef}
+        ref={menuPortalRef}
+        className="min-w-[240px] overflow-hidden"
+      >
+        <div role="menu" className={dropdownMenuSurfaceClassName()}>
           <div className="flex gap-3 border-b border-[#E4E4E7] px-3 py-3">
             <UserAvatar imageSrc={avatarUrl} initials={userInitials} size="menu" />
             <div className="min-w-0 flex-1 pt-0.5">
@@ -126,7 +127,7 @@ export function TopbarUserMenu({ userInitials, avatarUrl, userDisplayName }: Top
             </button>
           </div>
         </div>
-      ) : null}
+      </TopbarDropdownPortal>
     </div>
   );
 }

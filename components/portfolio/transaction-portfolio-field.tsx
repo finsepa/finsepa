@@ -72,7 +72,7 @@ export function TransactionPortfolioField({
         aria-label={variant === "compact" ? "Portfolio menu" : undefined}
         className={
           variant === "compact"
-            ? "flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-[10px] text-[#09090B] transition-colors hover:bg-[#F4F4F5] disabled:cursor-not-allowed disabled:opacity-50 sm:h-9 sm:w-9"
+            ? "flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-[10px] text-[#09090B] transition-colors hover:bg-[#F4F4F5] disabled:cursor-not-allowed disabled:opacity-50"
             : "flex h-9 w-full items-center justify-between gap-2 rounded-[10px] bg-[#F4F4F5] px-4 text-left text-sm transition-colors hover:bg-[#EBEBEB]"
         }
       >
@@ -93,7 +93,7 @@ export function TransactionPortfolioField({
           </>
         ) : (
           <ChevronDown
-            className={cn("h-4 w-4 shrink-0 transition-transform sm:h-5 sm:w-5", open && "rotate-180")}
+            className={cn("h-5 w-5 shrink-0 transition-transform", open && "rotate-180")}
             aria-hidden
           />
         )}

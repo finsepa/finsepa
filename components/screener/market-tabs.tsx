@@ -14,9 +14,9 @@ export function UnderlineTabs<T extends string>({
   ariaLabel: string;
 }) {
   return (
-    <div className="mb-4 border-b border-solid border-[#E4E4E7] sm:mb-6">
+    <div className="mb-4 border-b border-solid border-[#E4E4E7] md:mb-6">
       <nav
-        className="-mx-1 flex items-start gap-4 overflow-x-auto overflow-y-hidden pb-px [-webkit-overflow-scrolling:touch] sm:mx-0 sm:gap-5 sm:overflow-visible"
+        className="-mx-1 flex flex-nowrap items-start gap-4 overflow-x-auto overflow-y-hidden pb-px [-webkit-overflow-scrolling:touch] md:mx-0 md:gap-5 md:overflow-visible"
         aria-label={ariaLabel}
       >
         {tabList.map((tab) => {
