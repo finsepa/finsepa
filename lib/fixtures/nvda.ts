@@ -141,6 +141,7 @@ export function getNvdaKeyStatsBundle(): StockKeyStatsBundle {
       { label: "Net Income", value: "—" },
       { label: "EBITDA", value: "—" },
       { label: "EPS", value: "—" },
+      { label: "FCF", value: "—" },
     ],
     margins: [
       { label: "Gross Margin", value: "—" },

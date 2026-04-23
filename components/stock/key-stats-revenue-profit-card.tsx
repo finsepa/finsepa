@@ -13,6 +13,7 @@ const LABEL_TO_METRIC: Partial<Record<string, ChartingMetricId>> = {
   "Net Income": "net_income",
   EBITDA: "ebitda",
   EPS: "eps",
+  FCF: "free_cash_flow",
 };
 
 function StatRow({
@@ -50,6 +51,7 @@ const PLACEHOLDER_ROWS: Row[] = [
   { label: "Net Income", value: "—" },
   { label: "EBITDA", value: "—" },
   { label: "EPS", value: "—" },
+  { label: "FCF", value: "—" },
 ];
 
 export function KeyStatsRevenueProfitCard({

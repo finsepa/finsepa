@@ -15,12 +15,28 @@ const ASSETS_LABELS = [
   "Debt/Equity",
 ];
 
+const ASSETS_LABEL_TO_METRIC: Partial<Record<string, ChartingMetricId>> = {
+  "Total Assets": "total_assets",
+  "Cash on Hand": "cash_on_hand",
+  "Long Term Debt": "long_term_debt",
+  "Total Liabilities": "total_liabilities",
+  "Share Holder Equity": "shareholder_equity",
+  "Debt/Equity": "debt_to_equity",
+};
+
 const RETURNS_LABELS = [
   "Return on Equity (ROE)",
   "Return on Assets (ROA)",
   "Return on Capital Employed (ROCE)",
   "Return on Investments (ROI)",
 ];
+
+const RETURNS_LABEL_TO_METRIC: Partial<Record<string, ChartingMetricId>> = {
+  "Return on Equity (ROE)": "return_on_equity",
+  "Return on Assets (ROA)": "return_on_assets",
+  "Return on Capital Employed (ROCE)": "return_on_capital_employed",
+  "Return on Investments (ROI)": "return_on_investment",
+};
 
 const MARGINS_LABELS = [
   "Gross Margin",
@@ -37,6 +53,13 @@ const GROWTH_LABELS = [
   "Quarterly EPS (YoY)",
   "EPS (3Y)",
 ];
+
+const GROWTH_LABEL_TO_METRIC: Partial<Record<string, ChartingMetricId>> = {
+  "Quarterly Revenue (YoY)": "revenue_yoy",
+  "Revenue (3Y)": "revenue_3y_cagr",
+  "Quarterly EPS (YoY)": "eps_yoy",
+  "EPS (3Y)": "eps_3y_cagr",
+};
 
 const VALUATION_LABELS = [
   "P/E Ratio",
@@ -64,6 +87,11 @@ const VALUATION_LABEL_TO_METRIC: Partial<Record<string, ChartingMetricId>> = {
 
 const DIVIDENDS_LABELS = ["Yield", "Payout"];
 
+const DIVIDENDS_LABEL_TO_METRIC: Partial<Record<string, ChartingMetricId>> = {
+  Yield: "dividend_yield",
+  Payout: "payout_ratio",
+};
+
 const RISK_LABELS = ["Beta (5Y)", "Max Drawdown (5Y)"];
 
 const REVENUE_PROFIT_LABEL_TO_METRIC: Partial<Record<string, ChartingMetricId>> = {
@@ -73,6 +101,8 @@ const REVENUE_PROFIT_LABEL_TO_METRIC: Partial<Record<string, ChartingMetricId>> 
   "Net Income": "net_income",
   EBITDA: "ebitda",
   EPS: "eps",
+  /** Dollar FCF — see `eodhd-key-stats-revenue-profit` (Margins card uses “Free Cash Flow” for margin %). */
+  FCF: "free_cash_flow",
 };
 
 /** Key Stats "Margins" row labels → fundamentals chart metric (FCF row is margin %, not cash dollars). */
@@ -250,6 +280,7 @@ const RevenueProfitCard = memo(function RevenueProfitCard({
         { label: "Net Income", value: "—" },
         { label: "EBITDA", value: "—" },
         { label: "EPS", value: "—" },
+        { label: "FCF", value: "—" },
       ] satisfies Row[],
     [],
   );
@@ -282,7 +313,7 @@ function KeyStatsInner({
 }: {
   ticker: string;
   initialBundle?: StockKeyStatsBundle | null;
-  /** Basic (cap / EV / shares), Revenue & Profit, Margins, and Valuation rows open the fundamentals bar chart modal. */
+  /** Dividends (Yield / Payout) and all other listed Key Stats rows with a charting metric open the fundamentals modal. Risk rows have no fiscal series. */
   onOpenMetricChart?: (metricId: ChartingMetricId) => void;
 }) {
   const [loading, setLoading] = useState(() => !initialBundle);
@@ -343,7 +374,14 @@ function KeyStatsInner({
             labelToMetric={MARGINS_LABEL_TO_METRIC}
             onMetricClick={onOpenMetricChart}
           />
-          <DynamicCard title="Growth" rowLabels={GROWTH_LABELS} rows={bundle?.growth ?? null} loading={loading} />
+          <DynamicCard
+            title="Growth"
+            rowLabels={GROWTH_LABELS}
+            rows={bundle?.growth ?? null}
+            loading={loading}
+            labelToMetric={GROWTH_LABEL_TO_METRIC}
+            onMetricClick={onOpenMetricChart}
+          />
         </div>
 
         <div>
@@ -352,13 +390,24 @@ function KeyStatsInner({
             rowLabels={ASSETS_LABELS}
             rows={bundle?.assetsLiabilities ?? null}
             loading={loading}
+            labelToMetric={ASSETS_LABEL_TO_METRIC}
+            onMetricClick={onOpenMetricChart}
           />
-          <DynamicCard title="Returns" rowLabels={RETURNS_LABELS} rows={bundle?.returns ?? null} loading={loading} />
+          <DynamicCard
+            title="Returns"
+            rowLabels={RETURNS_LABELS}
+            rows={bundle?.returns ?? null}
+            loading={loading}
+            labelToMetric={RETURNS_LABEL_TO_METRIC}
+            onMetricClick={onOpenMetricChart}
+          />
           <DynamicCard
             title="Dividends"
             rowLabels={DIVIDENDS_LABELS}
             rows={bundle?.dividends ?? null}
             loading={loading}
+            labelToMetric={DIVIDENDS_LABEL_TO_METRIC}
+            onMetricClick={onOpenMetricChart}
           />
           <DynamicCard title="Risk" rowLabels={RISK_LABELS} rows={bundle?.risk ?? null} loading={loading} />
         </div>

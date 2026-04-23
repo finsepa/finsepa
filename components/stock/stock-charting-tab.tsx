@@ -20,6 +20,7 @@ const LABEL_TO_METRIC: Partial<Record<string, ChartingMetricId>> = {
   EBITDA: "ebitda",
   EPS: "eps",
   "Free Cash Flow": "free_cash_flow",
+  FCF: "free_cash_flow",
 
   "Total Assets": "total_assets",
   "Cash on Hand": "cash_on_hand",
@@ -52,6 +53,7 @@ const LABEL_TO_METRIC: Partial<Record<string, ChartingMetricId>> = {
   "Forward P/E": "forward_pe",
   "P/S Ratio": "ps_ratio",
   "Price/Book Ratio": "price_book",
+  "Price/FCF Ratio": "price_fcf",
   "EV/EBITDA": "ev_ebitda",
   "EV/Sales": "ev_sales",
   "Cash/Debt": "cash_debt",

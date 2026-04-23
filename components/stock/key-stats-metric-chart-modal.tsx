@@ -84,7 +84,7 @@ export function KeyStatsMetricChartModal({
           `/api/stocks/${encodeURIComponent(ticker)}/fundamentals-series?period=${
             periodMode === "quarterly" ? "quarterly" : "annual"
           }`,
-          { credentials: "include" },
+          { credentials: "include", cache: "no-store" },
         );
         if (!res.ok) {
           if (!cancelled) setPoints([]);
@@ -189,6 +189,52 @@ export function KeyStatsMetricChartModal({
           ) : (
             <div className="rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
               <MultichartFundamentalsBar metricId={metricId} points={points} height={320} periodMode={periodMode} />
+              {metricId === "forward_pe" ? (
+                <p className="mt-3 text-[12px] leading-5 text-[#71717A]">
+                  Live forward P/E in Key Stats uses current price and consensus EPS. Historical fiscal rows
+                  rarely include that forward multiple; when it is missing, the bar uses trailing P/E for the
+                  same period so year-to-year comparisons stay available.
+                </p>
+              ) : null}
+              {metricId === "market_cap" ? (
+                <p className="mt-3 text-[12px] leading-5 text-[#71717A]">
+                  Market cap here is modelled as the last EOD adjusted close on or before each fiscal period end,
+                  multiplied by diluted shares outstanding from the financials for that period (not exchange-reported
+                  float or intraday cap).
+                </p>
+              ) : null}
+              {metricId === "pe_ratio" || metricId === "trailing_pe" ? (
+                <p className="mt-3 text-[12px] leading-5 text-[#71717A]">
+                  P/E here is trailing on fiscal net income: modelled market cap (price × shares at period end) divided
+                  by reported net income for the same period. It is not the live quote multiple from Highlights.
+                </p>
+              ) : null}
+              {metricId === "ps_ratio" ||
+              metricId === "price_book" ||
+              metricId === "price_fcf" ||
+              metricId === "cash_debt" ||
+              metricId === "enterprise_value" ||
+              metricId === "ev_ebitda" ||
+              metricId === "ev_sales" ? (
+                <p className="mt-3 text-[12px] leading-5 text-[#71717A]">
+                  Multiples use the same modelled market cap (EOD adjusted close × diluted shares at fiscal period
+                  end) and statement lines for that period. Enterprise value is market cap plus total debt minus cash;
+                  EV/EBITDA and EV/Sales use that EV with reported EBITDA and revenue. Cash/Debt uses balance-sheet cash
+                  and debt on the same fiscal periods. They are not live quote ratios from Highlights.
+                </p>
+              ) : null}
+              {metricId === "free_cash_flow" ? (
+                <p className="mt-3 text-[12px] leading-5 text-[#71717A]">
+                  Dollar free cash flow is from the merged cash-flow statement by fiscal period (not the Margins card
+                  FCF % of revenue).
+                </p>
+              ) : null}
+              {metricId === "dividend_yield" || metricId === "payout_ratio" ? (
+                <p className="mt-3 text-[12px] leading-5 text-[#71717A]">
+                  Dividend yield and payout are computed from fiscal cash flow and net income on merged statements
+                  (same periods as other fundamentals charts), not a live forward yield from Highlights.
+                </p>
+              ) : null}
             </div>
           )}
         </div>

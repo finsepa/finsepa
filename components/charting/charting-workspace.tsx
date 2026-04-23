@@ -45,33 +45,10 @@ import {
   dropdownMenuSurfaceClassName,
 } from "@/components/design-system/dropdown-menu-styles";
 import { cn } from "@/lib/utils";
-
-/** Figma Charting reference — primary series colors (grouped bars / lines). */
-const METRIC_CHART_COLOR: Partial<Record<ChartingMetricId, string>> = {
-  revenue: "#2563EB",
-  net_income: "#EA580C",
-};
-
-/** Stable hue per metric id (deterministic, not random per render). */
-function metricColor(id: ChartingMetricId): string {
-  const branded = METRIC_CHART_COLOR[id];
-  if (branded) return branded;
-  const i = CHARTING_METRIC_IDS.indexOf(id);
-  const h = ((i < 0 ? 0 : i) * 47) % 360;
-  return `hsl(${h} 52% 42%)`;
-}
-
-/** Histogram columns share one x-slot in LW; transparency lets both series read when values differ. */
-function metricBarDisplayColor(id: ChartingMetricId): string {
-  const solid = metricColor(id);
-  const m = solid.match(/^#([0-9a-f]{6})$/i);
-  if (!m) return withAlpha(solid, 0.58);
-  const n = parseInt(m[1], 16);
-  const r = (n >> 16) & 255;
-  const g = (n >> 8) & 255;
-  const b = n & 255;
-  return `rgba(${r},${g},${b},0.58)`;
-}
+import {
+  fundamentalsBarHistogramDisplayAtIndex,
+  fundamentalsBarSolidAtIndex,
+} from "@/lib/colors/fundamentals-multi-bar-colors";
 
 /** Y-axis tick labels — match reference (e.g. "30 B", "15 B", "0"). */
 function formatChartAxisPrice(p: number): string {
@@ -119,16 +96,6 @@ function barMetricOrder(ids: ChartingMetricId[]): ChartingMetricId[] {
     return 2 + CHARTING_METRIC_IDS.indexOf(id);
   };
   return [...ids].sort((a, b) => rank(a) - rank(b));
-}
-
-function withAlpha(cssColor: string, alpha: number): string {
-  const a = Math.max(0, Math.min(1, alpha));
-  const m = cssColor.match(/^hsl\((\d+)\s+(\d+)%\s+(\d+)%\)$/i);
-  if (!m) return cssColor;
-  const h = Number(m[1]);
-  const s = Number(m[2]);
-  const l = Number(m[3]);
-  return `hsla(${h} ${s}% ${l}% / ${a})`;
 }
 
 function scaleIdForKind(k: ChartingMetricKind): string {
@@ -675,6 +642,7 @@ export function ChartingWorkspace({
           const usedScales = new Set<string>();
 
           const seriesOrder = chartType === "bars" ? barMetricOrder(selected) : selected;
+          let seriesColorIdx = 0;
           for (const id of seriesOrder) {
             const shiftSec =
               chartType === "bars" && selected.length > 1 ? groupedBarShiftSeconds(id, seriesOrder) : 0;
@@ -684,7 +652,7 @@ export function ChartingWorkspace({
             const scaleId = scaleIdForKind(kind);
             usedScales.add(scaleId);
             if (chartType === "bars") {
-              const barColor = metricBarDisplayColor(id);
+              const barColor = fundamentalsBarHistogramDisplayAtIndex(seriesColorIdx);
               const s = chart.addSeries(HistogramSeries, {
                 color: barColor,
                 priceScaleId: scaleId,
@@ -700,8 +668,9 @@ export function ChartingWorkspace({
               );
               seriesByMetricRef.current.set(id, s);
             } else {
+              const lineColor = fundamentalsBarSolidAtIndex(seriesColorIdx);
               const s = chart.addSeries(LineSeries, {
-                color: metricColor(id),
+                color: lineColor,
                 lineWidth: 2,
                 lineType: LineType.Curved,
                 priceScaleId: scaleId,
@@ -711,6 +680,7 @@ export function ChartingWorkspace({
               s.setData(data);
               seriesByMetricRef.current.set(id, s);
             }
+            seriesColorIdx += 1;
           }
 
           const scaleOpts = {

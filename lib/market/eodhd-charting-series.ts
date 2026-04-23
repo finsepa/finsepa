@@ -5,6 +5,11 @@ import { unstable_cache } from "next/cache";
 import { REVALIDATE_WARM } from "@/lib/data/cache-policy";
 
 import type { ChartingSeriesPoint, FundamentalsSeriesMode } from "@/lib/market/charting-series-types";
+import {
+  enrichChartingPointsWithImpliedValuationMultiplesFromMarketCap,
+  enrichChartingPointsWithPriceImpliedMarketCap,
+  enrichChartingPointsWithTrailingPeFromImpliedMarketCap,
+} from "@/lib/market/charting-price-implied-market-cap";
 import { fetchEodhdFundamentalsJson } from "@/lib/market/eodhd-fundamentals";
 import {
   CHARTING_METRIC_FIELD,
@@ -23,14 +28,88 @@ const MS_PER_DAY = 86400000;
 /** Max |date(income key) − date(other block key)| when EODHD uses different period-end strings across statements. */
 const MAX_PERIOD_SLIP_MS: Record<FundamentalsSeriesMode, number> = {
   annual: 200 * MS_PER_DAY,
-  quarterly: 75 * MS_PER_DAY,
+  /** EODHD often offsets statement vs ratio period-end strings by more than one quarter. */
+  quarterly: 120 * MS_PER_DAY,
 };
+
+function countObjectRowKeys(block: Record<string, unknown>): number {
+  return Object.keys(block).filter((k) => {
+    const v = block[k];
+    return v != null && typeof v === "object" && !Array.isArray(v);
+  }).length;
+}
+
+/**
+ * When `yearly` is empty but `quarterly` has rows (common for Ratios), still merge by fuzzy period key.
+ * Income statement stays strict yearly vs quarterly so period labels match the requested mode.
+ */
+function pickYearlyOrQuarterlyBlock(
+  wrapper: Record<string, unknown>,
+  mode: FundamentalsSeriesMode,
+): Record<string, unknown> | null {
+  const yRaw = wrapper.yearly;
+  const qRaw = wrapper.quarterly;
+  const yearly =
+    yRaw && typeof yRaw === "object" && !Array.isArray(yRaw) ? (yRaw as Record<string, unknown>) : null;
+  const quarterly =
+    qRaw && typeof qRaw === "object" && !Array.isArray(qRaw) ? (qRaw as Record<string, unknown>) : null;
+  const yN = yearly ? countObjectRowKeys(yearly) : 0;
+  const qN = quarterly ? countObjectRowKeys(quarterly) : 0;
+  if (mode === "annual") {
+    if (yN > 0) return yearly;
+    if (qN > 0) return quarterly;
+    return null;
+  }
+  if (qN > 0) return quarterly;
+  if (yN > 0) return yearly;
+  return null;
+}
+
+function strictYearlyOrQuarterlyBlock(
+  wrapper: Record<string, unknown>,
+  mode: FundamentalsSeriesMode,
+): Record<string, unknown> | null {
+  const block = mode === "annual" ? wrapper.yearly : wrapper.quarterly;
+  if (!block || typeof block !== "object" || Array.isArray(block)) return null;
+  return block as Record<string, unknown>;
+}
+
+/** Keys that wrap period tables — not fiscal period rows (matches `pickLatestFinancialSubTable` fallbacks). */
+const FINANCIAL_SUBTABLE_WRAPPER_KEYS = new Set(
+  [
+    "yearly",
+    "quarterly",
+    "ttm",
+    "TTM",
+    "trailing_twelve_months",
+    "General",
+    "FiscalYearEnd",
+    "CurrencySymbol",
+    "currency_symbol",
+  ].map((k) => k.toLowerCase()),
+);
 
 function periodKeyToUtcMs(key: string): number | null {
   const raw = key.trim();
   if (!raw) return null;
   const ts = Date.parse(raw.includes("T") ? raw : `${raw}T12:00:00.000Z`);
   return Number.isFinite(ts) ? ts : null;
+}
+
+/**
+ * EODHD often stores `Financials.Ratios` as a flat `periodEnd → row` map with no `yearly` / `quarterly`
+ * children. Charting previously only read nested blocks, so valuation ratios never merged (Cash/Debt
+ * still worked via balance sheet).
+ */
+function pickFlatDateKeyedStatementBlock(wrapper: Record<string, unknown>): Record<string, unknown> | null {
+  const out: Record<string, unknown> = {};
+  for (const [key, val] of Object.entries(wrapper)) {
+    if (FINANCIAL_SUBTABLE_WRAPPER_KEYS.has(key.toLowerCase())) continue;
+    if (!val || typeof val !== "object" || Array.isArray(val)) continue;
+    if (periodKeyToUtcMs(key) == null) continue;
+    out[key] = val;
+  }
+  return countObjectRowKeys(out) > 0 ? out : null;
 }
 
 /**
@@ -106,9 +185,18 @@ function getFinancialBlock(
   }
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
   const st = raw as Record<string, unknown>;
-  const block = mode === "annual" ? st.yearly : st.quarterly;
-  if (!block || typeof block !== "object" || Array.isArray(block)) return null;
-  return block as Record<string, unknown>;
+  if (statement === "Income_Statement") {
+    const strict = strictYearlyOrQuarterlyBlock(st, mode);
+    if (strict && countObjectRowKeys(strict) > 0) return strict;
+    const flatIs = pickFlatDateKeyedStatementBlock(st);
+    if (flatIs && countObjectRowKeys(flatIs) > 0) return flatIs;
+    return null;
+  }
+  const nested = pickYearlyOrQuarterlyBlock(st, mode);
+  if (nested && countObjectRowKeys(nested) > 0) return nested;
+  const flatSt = pickFlatDateKeyedStatementBlock(st);
+  if (flatSt && countObjectRowKeys(flatSt) > 0) return flatSt;
+  return null;
 }
 
 function getRatiosBlock(root: Record<string, unknown>, mode: FundamentalsSeriesMode): Record<string, unknown> | null {
@@ -118,9 +206,11 @@ function getRatiosBlock(root: Record<string, unknown>, mode: FundamentalsSeriesM
   const raw = (f.Ratios ?? f.Financial_Ratios) as unknown;
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
   const r = raw as Record<string, unknown>;
-  const block = mode === "annual" ? r.yearly : r.quarterly;
-  if (!block || typeof block !== "object" || Array.isArray(block)) return null;
-  return block as Record<string, unknown>;
+  const nested = pickYearlyOrQuarterlyBlock(r, mode);
+  if (nested && countObjectRowKeys(nested) > 0) return nested;
+  const flat = pickFlatDateKeyedStatementBlock(r);
+  if (flat && countObjectRowKeys(flat) > 0) return flat;
+  return null;
 }
 
 function mergeIncomeRow(p: ChartingSeriesPoint, row: Record<string, unknown>): void {
@@ -186,6 +276,26 @@ function mergeIncomeRow(p: ChartingSeriesPoint, row: Record<string, unknown>): v
     "sharesOutstandingDiluted",
   ]);
   if (sh != null) p.sharesOutstanding = sh;
+
+  const mcFromInc = numFromRow(row, [
+    "marketCapitalization",
+    "MarketCapitalization",
+    "marketCap",
+    "MarketCap",
+    "MarketCapMRQ",
+    "marketCapitalisation",
+    "MarketCapitalisation",
+    "MarketCapUSD",
+  ]);
+  if (mcFromInc != null && Number.isFinite(mcFromInc) && mcFromInc > 0) p.marketCap = mcFromInc;
+
+  const evFromInc = numFromRow(row, [
+    "enterpriseValue",
+    "EnterpriseValue",
+    "EnterpriseValueUSD",
+    "EnterpriseValueMRQ",
+  ]);
+  if (evFromInc != null && Number.isFinite(evFromInc) && evFromInc > 0) p.enterpriseValue = evFromInc;
 }
 
 function mergeBalanceRow(p: ChartingSeriesPoint, row: Record<string, unknown>): void {
@@ -266,7 +376,33 @@ function mergeRatiosRow(p: ChartingSeriesPoint, row: Record<string, unknown>): v
     "PEDiluted",
   ]);
   p.trailingPe = numFromRow(row, ["TrailingPE", "TrailingPe", "trailingPE", "TrailingPeRatio", "PETrailing"]);
-  p.forwardPe = numFromRow(row, ["ForwardPE", "ForwardPe", "forwardPE", "ForwardPeRatio"]);
+  const forwardPeFromRow = numFromRow(row, [
+    "ForwardPE",
+    "ForwardPe",
+    "forwardPE",
+    "ForwardPeRatio",
+    /** EODHD sometimes labels the forward multiple this way (same numeric field family as Highlights). */
+    "ForwardPEPS",
+    "ForwardPE_TTM",
+    "ForwardPEttm",
+  ]);
+  if (forwardPeFromRow != null && Number.isFinite(forwardPeFromRow) && forwardPeFromRow > 0) {
+    p.forwardPe = forwardPeFromRow;
+  }
+
+  const forwardEpsFromRow = numFromRow(row, [
+    "ForwardEPS",
+    "ForwardEps",
+    "forwardEPS",
+    "EPSEstimateNextYear",
+    "EarningsShareForward",
+    "EPSNextYear",
+    "EstimatedEPS",
+    "EPSEstimate",
+    "epsForward",
+    "ForwardEarningsPerShare",
+  ]);
+
   p.psRatio = numFromRow(row, [
     "PriceSalesTTM",
     "PriceToSalesTTM",
@@ -299,7 +435,7 @@ function mergeRatiosRow(p: ChartingSeriesPoint, row: Record<string, unknown>): v
   p.evSales = numFromRow(row, ["EnterpriseValueRevenue", "EnterpriseValueSales", "EVToSales", "evSales"]);
   p.dividendYield = numFromRow(row, ["DividendYield", "ForwardAnnualDividendYield", "Yield"]);
 
-  p.enterpriseValue = numFromRow(row, [
+  const evFromRatios = numFromRow(row, [
     "EnterpriseValue",
     "EnterpriseValueUSD",
     "EnterpriseValueMRQ",
@@ -308,6 +444,14 @@ function mergeRatiosRow(p: ChartingSeriesPoint, row: Record<string, unknown>): v
     "TotalEnterpriseValue",
     "EV",
   ]);
+  if (
+    evFromRatios != null &&
+    Number.isFinite(evFromRatios) &&
+    evFromRatios > 0 &&
+    (p.enterpriseValue == null || !Number.isFinite(p.enterpriseValue) || p.enterpriseValue <= 0)
+  ) {
+    p.enterpriseValue = evFromRatios;
+  }
 
   const mc = numFromRow(row, [
     "MarketCapitalization",
@@ -317,7 +461,30 @@ function mergeRatiosRow(p: ChartingSeriesPoint, row: Record<string, unknown>): v
     "MarketCapUSD",
     "MarketCapitalizationUSD",
   ]);
-  if (mc != null && Number.isFinite(mc) && mc > 0) p.marketCap = mc;
+  if (
+    mc != null &&
+    Number.isFinite(mc) &&
+    mc > 0 &&
+    (p.marketCap == null || !Number.isFinite(p.marketCap) || p.marketCap <= 0)
+  ) {
+    p.marketCap = mc;
+  }
+
+  if (
+    (p.forwardPe == null || !Number.isFinite(p.forwardPe) || p.forwardPe <= 0) &&
+    forwardEpsFromRow != null &&
+    Number.isFinite(forwardEpsFromRow) &&
+    forwardEpsFromRow > 0 &&
+    p.marketCap != null &&
+    Number.isFinite(p.marketCap) &&
+    p.marketCap > 0 &&
+    p.sharesOutstanding != null &&
+    Number.isFinite(p.sharesOutstanding) &&
+    p.sharesOutstanding > 1e-6
+  ) {
+    const v = p.marketCap / (p.sharesOutstanding * forwardEpsFromRow);
+    if (Number.isFinite(v) && v > 0 && v < MAX_DERIVED_VALUATION_MULTIPLE) p.forwardPe = v;
+  }
 }
 
 /** When the provider omits market cap on the ratios row, derive from P/S, P/B, or trailing P/E × NI. */
@@ -462,6 +629,19 @@ function fillDerivedEnterpriseValue(p: ChartingSeriesPoint): void {
   if (Number.isFinite(ev) && ev > 0) p.enterpriseValue = ev;
 }
 
+/**
+ * Highlights / Valuation expose a single live forward multiple, but `Financials.Ratios` usually omit
+ * `ForwardPE` per fiscal row. After MC + trailing multiples exist, approximate missing fiscal forward
+ * P/E with trailing P/E so Key Stats modals can show the same bar pattern as other valuation metrics.
+ */
+function fillDerivedForwardPe(p: ChartingSeriesPoint): void {
+  if (p.forwardPe != null && Number.isFinite(p.forwardPe) && p.forwardPe > 0) return;
+  const trail = p.trailingPe ?? p.peRatio;
+  if (trail != null && Number.isFinite(trail) && trail > 0 && trail < MAX_DERIVED_VALUATION_MULTIPLE) {
+    p.forwardPe = trail;
+  }
+}
+
 function computeGrowthSeries(points: ChartingSeriesPoint[], mode: FundamentalsSeriesMode): void {
   const yoyLag = mode === "annual" ? 1 : 4;
   const cagrLag = mode === "annual" ? 3 : 12;
@@ -593,6 +773,7 @@ function buildMergedPoints(root: Record<string, unknown>, mode: FundamentalsSeri
     fillDerivedEpsIfMissing(p);
     fillDerivedValuationMultiples(p);
     fillDerivedEnterpriseValue(p);
+    fillDerivedForwardPe(p);
     out.push(p);
   }
 
@@ -623,12 +804,16 @@ async function fetchChartingSeriesUncached(
   const points = buildMergedPoints(root as Record<string, unknown>, mode);
   if (!points?.length) return null;
 
+  await enrichChartingPointsWithPriceImpliedMarketCap(ticker, points);
+  enrichChartingPointsWithTrailingPeFromImpliedMarketCap(points);
+  enrichChartingPointsWithImpliedValuationMultiplesFromMarketCap(points);
+
   const availableMetrics = computeAvailableMetrics(points);
   return { points, availableMetrics };
 }
 
 export const fetchChartingSeries = unstable_cache(
   fetchChartingSeriesUncached,
-  ["eodhd-charting-series-v9"],
+  ["eodhd-charting-series-v15-implied-valuation-multiples"],
   { revalidate: REVALIDATE_WARM },
 );

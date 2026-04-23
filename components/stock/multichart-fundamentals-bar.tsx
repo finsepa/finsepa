@@ -16,9 +16,7 @@ import {
   formatUsdCompact,
   formatUsdPrice,
 } from "@/lib/market/key-stats-basic-format";
-
-/** Bar fill — matches {@link earnings-estimates-chart} `REPORTED_BAR` / estimates chart primary. */
-const MULTICHART_BAR = "#2563EB";
+import { fundamentalsBarSolidAtIndex } from "@/lib/colors/fundamentals-multi-bar-colors";
 
 /** Fixed bar width (px); extra horizontal space becomes even gaps (`justify-between`). */
 const MULTICHART_BAR_WIDTH_PX = 14;
@@ -192,6 +190,8 @@ export function MultichartFundamentalsBar({
   }, [rows, metricId, periodMode, kind]);
 
   const metricLabel = CHARTING_METRIC_LABEL[metricId];
+  /** One metric × many periods — bars share the primary palette color (not per-period cycling). */
+  const seriesBarColor = fundamentalsBarSolidAtIndex(0);
   const linePlotRef = useRef<HTMLDivElement>(null);
   const [linePlotPx, setLinePlotPx] = useState({ w: 0, h: 0 });
 
@@ -278,12 +278,13 @@ export function MultichartFundamentalsBar({
                     <path
                       d={lineSvg.d}
                       fill="none"
-                      stroke={MULTICHART_BAR}
+                      stroke={seriesBarColor}
                       strokeWidth={2}
                       strokeLinecap="round"
                       strokeLinejoin="round"
                     />
                     {lineSvg.pts.map(({ x, y, v, i }) => {
+                      const ptColor = seriesBarColor;
                       const tipText = `${metricLabel}\n${labels[i]}: ${formatAxisValue(kind, v)}`;
                       return (
                         <g key={`pt-${labels[i]}-${i}`}>
@@ -308,7 +309,7 @@ export function MultichartFundamentalsBar({
                             cy={y}
                             r={4.5}
                             fill="white"
-                            stroke={MULTICHART_BAR}
+                            stroke={ptColor}
                             strokeWidth={2}
                             className="pointer-events-none"
                           />
@@ -327,6 +328,7 @@ export function MultichartFundamentalsBar({
               >
                 {values.map((v, i) => {
                   const hPct = maxV > 0 ? (Math.max(0, v) / maxV) * 100 : 0;
+                  const barColor = seriesBarColor;
                   const tipText = `${metricLabel}\n${labels[i]}: ${formatAxisValue(kind, v)}`;
                   return (
                     <div
@@ -350,7 +352,7 @@ export function MultichartFundamentalsBar({
                           maxWidth: "100%",
                           height: `${hPct}%`,
                           minHeight: hPct > 0 ? 2 : 0,
-                          backgroundColor: MULTICHART_BAR,
+                          backgroundColor: barColor,
                         }}
                       />
                     </div>

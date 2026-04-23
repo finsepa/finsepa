@@ -48,17 +48,7 @@ import {
   formatUsdCompact,
   formatUsdPrice,
 } from "@/lib/market/key-stats-basic-format";
-
-const COMPARE_COLORS_SOLID = [
-  "#2563EB",
-  "#EA580C",
-  "#16A34A",
-  "#9333EA",
-  "#0891B2",
-  "#DC2626",
-  "#CA8A04",
-  "#7C3AED",
-];
+import { fundamentalsBarSolidAtIndex } from "@/lib/colors/fundamentals-multi-bar-colors";
 
 function formatChartAxisPrice(p: number): string {
   if (!Number.isFinite(p)) return "";
@@ -589,7 +579,7 @@ export function ChartingCompareWorkspace({
             const kind = CHARTING_METRIC_KIND[s.metricId];
             const scaleId = scaleIdForKind(kind);
             usedScales.add(scaleId);
-            const solid = COMPARE_COLORS_SOLID[s.colorIdx % COMPARE_COLORS_SOLID.length];
+            const solid = fundamentalsBarSolidAtIndex(s.colorIdx);
             if (chartType === "bars") {
               const series = chart.addSeries(HistogramSeries, {
                 color: solid,
@@ -966,7 +956,7 @@ export function ChartingCompareWorkspace({
                   >
                     <span
                       className="h-2 w-2 shrink-0 rounded-full"
-                      style={{ background: COMPARE_COLORS_SOLID[s.colorIdx % COMPARE_COLORS_SOLID.length] }}
+                      style={{ background: fundamentalsBarSolidAtIndex(s.colorIdx) }}
                       aria-hidden
                     />
                     <span>
@@ -1004,7 +994,7 @@ export function ChartingCompareWorkspace({
                             <span
                               className="h-4 w-1 shrink-0 self-center rounded-full"
                               style={{
-                                background: COMPARE_COLORS_SOLID[s.colorIdx % COMPARE_COLORS_SOLID.length],
+                                background: fundamentalsBarSolidAtIndex(s.colorIdx),
                               }}
                               aria-hidden
                             />

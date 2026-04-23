@@ -2,6 +2,7 @@ import "server-only";
 
 import { fetchEodhdFundamentalsJson } from "@/lib/market/eodhd-fundamentals";
 import { pickLatestIncomeStatementRow } from "@/lib/market/eodhd-income-statement";
+import { pickLatestFinancialSubTable } from "@/lib/market/eodhd-pick-financial-block";
 import { formatUsdCompact, formatUsdPrice } from "@/lib/market/key-stats-basic-format";
 
 function num(v: unknown): number | null {
@@ -70,6 +71,12 @@ export async function fetchEodhdKeyStatsRevenueProfit(
   if (eps == null && hl) eps = num(hl.EarningsShare ?? hl.EPS ?? hl.DilutedEps ?? hl.DilutedEPS);
   if (eps == null && earn) eps = num(earn.EPS ?? earn.DilutedEPS ?? earn.EpsDiluted);
 
+  const cfRow = pickLatestFinancialSubTable(root, [["Cash_Flow", "CashFlow"]]);
+  let fcf = cfRow
+    ? numFromRow(cfRow, ["freeCashFlow", "FreeCashFlow", "FreeCashFlows", "freeCashFlowFromContinuingOperations"])
+    : null;
+  if (fcf == null && hl) fcf = num(hl.FreeCashFlowTTM ?? hl.FreeCashFlow);
+
   const rows: KeyStatsRevenueProfitRow[] = [
     { label: "Revenue", value: revenue != null ? formatUsdCompact(revenue) : "—" },
     { label: "Gross Profit", value: grossProfit != null ? formatUsdCompact(grossProfit) : "—" },
@@ -77,6 +84,8 @@ export async function fetchEodhdKeyStatsRevenueProfit(
     { label: "Net Income", value: netIncome != null ? formatUsdCompact(netIncome) : "—" },
     { label: "EBITDA", value: ebitda != null ? formatUsdCompact(ebitda) : "—" },
     { label: "EPS", value: eps != null ? formatUsdPrice(eps) : "—" },
+    /** Label `FCF` avoids clashing with Margins card row “Free Cash Flow” (FCF margin %). */
+    { label: "FCF", value: fcf != null ? formatUsdCompact(fcf) : "—" },
   ];
 
   return { rows };

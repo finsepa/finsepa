@@ -21,16 +21,23 @@ type TopbarDropdownPortalProps = {
   anchorRef: RefObject<HTMLElement | null>;
   children: ReactNode;
   className?: string;
+  /**
+   * `trailing`: fixed box’s right edge matches anchor’s right (top bar menus).
+   * `leading`: fixed box’s left edge matches anchor’s left (e.g. portfolio title row).
+   */
+  align?: "trailing" | "leading";
 };
 
+type PortalPos = { top: number } & ({ right: number; left?: undefined } | { left: number; right?: undefined });
+
 /**
- * Renders a fixed-position layer in `document.body` aligned to the anchor’s bottom-right,
- * so parent `overflow` on the top bar does not clip dropdowns.
+ * Renders a fixed-position layer in `document.body` aligned under the anchor,
+ * so parent `overflow` on the top bar (or other shells) does not clip dropdowns.
  */
 export const TopbarDropdownPortal = forwardRef<HTMLDivElement, TopbarDropdownPortalProps>(
-  function TopbarDropdownPortal({ open, anchorRef, children, className }, ref) {
+  function TopbarDropdownPortal({ open, anchorRef, children, className, align = "trailing" }, ref) {
     const [mounted, setMounted] = useState(false);
-    const [pos, setPos] = useState({ top: 0, right: 0 });
+    const [pos, setPos] = useState<PortalPos>({ top: 0, right: 0 });
 
     useEffect(() => {
       setMounted(true);
@@ -41,8 +48,12 @@ export const TopbarDropdownPortal = forwardRef<HTMLDivElement, TopbarDropdownPor
       if (!el) return;
       const r = el.getBoundingClientRect();
       const vw = window.visualViewport?.width ?? window.innerWidth;
-      setPos({ top: r.bottom + 4, right: vw - r.right });
-    }, [anchorRef]);
+      if (align === "leading") {
+        setPos({ top: r.bottom + 4, left: r.left });
+      } else {
+        setPos({ top: r.bottom + 4, right: vw - r.right });
+      }
+    }, [anchorRef, align]);
 
     useLayoutEffect(() => {
       if (!open) return;
@@ -67,10 +78,13 @@ export const TopbarDropdownPortal = forwardRef<HTMLDivElement, TopbarDropdownPor
 
     if (!open || !mounted) return null;
 
+    const horizontal =
+      "left" in pos && pos.left != null ? { left: pos.left } : { right: pos.right as number };
+
     return createPortal(
       <div
         ref={ref}
-        style={{ position: "fixed", top: pos.top, right: pos.right, zIndex: TOPBAR_DROPDOWN_PORTAL_Z }}
+        style={{ position: "fixed", top: pos.top, zIndex: TOPBAR_DROPDOWN_PORTAL_Z, ...horizontal }}
         className={cn(className)}
       >
         {children}
