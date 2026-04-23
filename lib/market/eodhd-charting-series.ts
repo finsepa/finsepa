@@ -19,6 +19,56 @@ function comparePeriodKeys(a: string, b: string): number {
   return a.localeCompare(b);
 }
 
+const MS_PER_DAY = 86400000;
+/** Max |date(income key) − date(other block key)| when EODHD uses different period-end strings across statements. */
+const MAX_PERIOD_SLIP_MS: Record<FundamentalsSeriesMode, number> = {
+  annual: 200 * MS_PER_DAY,
+  quarterly: 75 * MS_PER_DAY,
+};
+
+function periodKeyToUtcMs(key: string): number | null {
+  const raw = key.trim();
+  if (!raw) return null;
+  const ts = Date.parse(raw.includes("T") ? raw : `${raw}T12:00:00.000Z`);
+  return Number.isFinite(ts) ? ts : null;
+}
+
+/**
+ * Merge BS / CF / Ratios onto income periods: exact key first, else closest date within slip window.
+ */
+function findRowForPeriodKey(
+  periodKey: string,
+  block: Record<string, unknown> | null,
+  mode: FundamentalsSeriesMode,
+): Record<string, unknown> | null {
+  if (!block) return null;
+  const direct = block[periodKey];
+  if (direct && typeof direct === "object" && !Array.isArray(direct)) {
+    return direct as Record<string, unknown>;
+  }
+
+  const t0 = periodKeyToUtcMs(periodKey);
+  if (t0 == null) return null;
+
+  const maxSlip = MAX_PERIOD_SLIP_MS[mode];
+  let best: { slip: number; row: Record<string, unknown> } | null = null;
+
+  for (const bk of Object.keys(block)) {
+    const candidate = block[bk];
+    if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) continue;
+    const t1 = periodKeyToUtcMs(bk);
+    if (t1 == null) continue;
+    const slip = Math.abs(t0 - t1);
+    if (slip > maxSlip) continue;
+    if (!best || slip < best.slip) best = { slip, row: candidate as Record<string, unknown> };
+  }
+
+  return best?.row ?? null;
+}
+
+/** Reject absurd multiples from bad merges (keeps charts usable). */
+const MAX_DERIVED_VALUATION_MULTIPLE = 5000;
+
 function num(v: unknown): number | null {
   if (typeof v === "number" && Number.isFinite(v)) return v;
   if (typeof v === "string" && v.trim()) {
@@ -205,14 +255,59 @@ function mergeRatiosRow(p: ChartingSeriesPoint, row: Record<string, unknown>): v
   ]);
   if (epsFromRatios != null && p.eps == null) p.eps = epsFromRatios;
 
-  p.peRatio = numFromRow(row, ["PERatio", "PE", "peRatio", "PeRatio"]);
-  p.trailingPe = numFromRow(row, ["TrailingPE", "TrailingPe", "trailingPE"]);
-  p.forwardPe = numFromRow(row, ["ForwardPE", "ForwardPe", "forwardPE"]);
-  p.psRatio = numFromRow(row, ["PriceSalesTTM", "PriceToSalesTTM", "PSRatio", "PriceSales"]);
-  p.priceBook = numFromRow(row, ["PriceBookMRQ", "PriceToBookMRQ", "PriceBook", "PBRatio"]);
+  p.peRatio = numFromRow(row, [
+    "PERatio",
+    "PE",
+    "peRatio",
+    "PeRatio",
+    "PriceToEarnings",
+    "PriceEarnings",
+    "PEBasic",
+    "PEDiluted",
+  ]);
+  p.trailingPe = numFromRow(row, ["TrailingPE", "TrailingPe", "trailingPE", "TrailingPeRatio", "PETrailing"]);
+  p.forwardPe = numFromRow(row, ["ForwardPE", "ForwardPe", "forwardPE", "ForwardPeRatio"]);
+  p.psRatio = numFromRow(row, [
+    "PriceSalesTTM",
+    "PriceToSalesTTM",
+    "PSRatio",
+    "PriceSales",
+    "PriceToSales",
+    "priceToSales",
+    "PSRatioTTM",
+  ]);
+  p.priceBook = numFromRow(row, [
+    "PriceBookMRQ",
+    "PriceToBookMRQ",
+    "PriceBook",
+    "PBRatio",
+    "PriceToBook",
+    "priceToBook",
+  ]);
+  p.priceFcf = numFromRow(row, [
+    "PriceFreeCashFlow",
+    "PriceFCF",
+    "PriceToFreeCashFlow",
+    "PriceToFCF",
+    "PriceToFreeCashFlowsTTM",
+    "PriceToFreeCashFlowTTM",
+    "PriceCashFlow",
+    "PFCFRatio",
+    "PriceToCashFlow",
+  ]);
   p.evEbitda = numFromRow(row, ["EnterpriseValueEbitda", "EnterpriseValueEBITDA", "EVToEBITDA", "evEbitda"]);
   p.evSales = numFromRow(row, ["EnterpriseValueRevenue", "EnterpriseValueSales", "EVToSales", "evSales"]);
   p.dividendYield = numFromRow(row, ["DividendYield", "ForwardAnnualDividendYield", "Yield"]);
+
+  p.enterpriseValue = numFromRow(row, [
+    "EnterpriseValue",
+    "EnterpriseValueUSD",
+    "EnterpriseValueMRQ",
+    "EnterpriseValueTTM",
+    "enterpriseValue",
+    "TotalEnterpriseValue",
+    "EV",
+  ]);
 
   const mc = numFromRow(row, [
     "MarketCapitalization",
@@ -225,7 +320,7 @@ function mergeRatiosRow(p: ChartingSeriesPoint, row: Record<string, unknown>): v
   if (mc != null && Number.isFinite(mc) && mc > 0) p.marketCap = mc;
 }
 
-/** When the provider omits market cap on the ratios row, derive from P/S or P/B identities. */
+/** When the provider omits market cap on the ratios row, derive from P/S, P/B, or trailing P/E × NI. */
 function fillDerivedMarketCap(p: ChartingSeriesPoint): void {
   if (p.marketCap != null && Number.isFinite(p.marketCap) && p.marketCap > 0) return;
   const rev = p.revenue;
@@ -238,6 +333,20 @@ function fillDerivedMarketCap(p: ChartingSeriesPoint): void {
   const eq = p.shareholderEquity;
   if (pb != null && eq != null && Number.isFinite(pb) && Number.isFinite(eq) && Math.abs(eq) > 1e-9 && pb > 0) {
     p.marketCap = pb * Math.abs(eq);
+    return;
+  }
+  const trailPe = p.trailingPe ?? p.peRatio;
+  const ni = p.netIncome;
+  if (
+    trailPe != null &&
+    ni != null &&
+    ni > 1e-6 &&
+    trailPe > 0 &&
+    trailPe < MAX_DERIVED_VALUATION_MULTIPLE &&
+    Number.isFinite(trailPe) &&
+    Number.isFinite(ni)
+  ) {
+    p.marketCap = trailPe * ni;
   }
 }
 
@@ -276,6 +385,12 @@ function computeDerivedMarginsAndReturns(p: ChartingSeriesPoint): void {
   const cash = p.cashOnHand;
   const td = p.totalDebt;
   if (cash != null && td != null && td > 1e-9) p.cashDebt = cash / td;
+
+  const mcCap = p.marketCap;
+  const fcf = p.freeCashFlow;
+  if (p.priceFcf == null && mcCap != null && fcf != null && Number.isFinite(mcCap) && Number.isFinite(fcf) && fcf > 1e-9) {
+    p.priceFcf = mcCap / fcf;
+  }
 }
 
 /**
@@ -288,6 +403,63 @@ function fillDerivedEpsIfMissing(p: ChartingSeriesPoint): void {
   const sh = p.sharesOutstanding;
   if (ni == null || sh == null || !Number.isFinite(ni) || !Number.isFinite(sh) || Math.abs(sh) < 1e-9) return;
   p.eps = ni / sh;
+}
+
+/**
+ * EODHD often omits per-fiscal-period valuation ratios in `Ratios` while statements have revenue, NI, etc.
+ * Derive standard multiples from market cap + statements so Key Stats modals can chart history.
+ */
+function fillDerivedValuationMultiples(p: ChartingSeriesPoint): void {
+  const mc = p.marketCap;
+  if (mc == null || !Number.isFinite(mc) || mc <= 0) return;
+
+  const ni = p.netIncome;
+  if (ni != null && ni > 1e-6) {
+    const pe = mc / ni;
+    if (Number.isFinite(pe) && pe > 0 && pe < MAX_DERIVED_VALUATION_MULTIPLE) {
+      if (p.peRatio == null) p.peRatio = pe;
+      if (p.trailingPe == null) p.trailingPe = pe;
+    }
+  }
+
+  if (p.peRatio != null && p.trailingPe == null) p.trailingPe = p.peRatio;
+  if (p.trailingPe != null && p.peRatio == null) p.peRatio = p.trailingPe;
+
+  const rev = p.revenue;
+  if (p.psRatio == null && rev != null && Math.abs(rev) > 1e-9) {
+    const ps = mc / Math.abs(rev);
+    if (Number.isFinite(ps) && ps > 0 && ps < MAX_DERIVED_VALUATION_MULTIPLE) p.psRatio = ps;
+  }
+
+  const eq = p.shareholderEquity;
+  if (p.priceBook == null && eq != null && Math.abs(eq) > 1e-9) {
+    const pb = mc / Math.abs(eq);
+    if (Number.isFinite(pb) && pb > 0 && pb < MAX_DERIVED_VALUATION_MULTIPLE) p.priceBook = pb;
+  }
+
+  const debt = p.totalDebt ?? 0;
+  const cash = p.cashOnHand ?? 0;
+  const ev = mc + debt - cash;
+  if (Number.isFinite(ev) && ev > 0) {
+    const ebitda = p.ebitda;
+    if (p.evEbitda == null && ebitda != null && Math.abs(ebitda) > 1e-9) {
+      const v = ev / Math.abs(ebitda);
+      if (Number.isFinite(v) && v > 0 && v < MAX_DERIVED_VALUATION_MULTIPLE) p.evEbitda = v;
+    }
+    if (p.evSales == null && rev != null && Math.abs(rev) > 1e-9) {
+      const v = ev / Math.abs(rev);
+      if (Number.isFinite(v) && v > 0 && v < MAX_DERIVED_VALUATION_MULTIPLE) p.evSales = v;
+    }
+  }
+}
+
+/** EV from ratios when present; else MC + debt − cash (same construction as EV ratio helpers). */
+function fillDerivedEnterpriseValue(p: ChartingSeriesPoint): void {
+  if (p.enterpriseValue != null && Number.isFinite(p.enterpriseValue) && p.enterpriseValue > 0) return;
+  const mc = p.marketCap;
+  if (mc == null || !Number.isFinite(mc) || mc <= 0) return;
+  const ev = mc + (p.totalDebt ?? 0) - (p.cashOnHand ?? 0);
+  if (Number.isFinite(ev) && ev > 0) p.enterpriseValue = ev;
 }
 
 function computeGrowthSeries(points: ChartingSeriesPoint[], mode: FundamentalsSeriesMode): void {
@@ -341,6 +513,7 @@ function emptyPoint(periodEnd: string): ChartingSeriesPoint {
     debtToEquity: z,
     sharesOutstanding: z,
     marketCap: z,
+    enterpriseValue: z,
     grossMargin: z,
     operatingMargin: z,
     ebitdaMargin: z,
@@ -356,6 +529,7 @@ function emptyPoint(periodEnd: string): ChartingSeriesPoint {
     forwardPe: z,
     psRatio: z,
     priceBook: z,
+    priceFcf: z,
     evEbitda: z,
     evSales: z,
     cashDebt: z,
@@ -402,27 +576,23 @@ function buildMergedPoints(root: Record<string, unknown>, mode: FundamentalsSeri
     mergeIncomeRow(p, isRow as Record<string, unknown>);
 
     if (bsBlock) {
-      const bsRow = bsBlock[k];
-      if (bsRow && typeof bsRow === "object" && !Array.isArray(bsRow)) {
-        mergeBalanceRow(p, bsRow as Record<string, unknown>);
-      }
+      const bsRow = findRowForPeriodKey(k, bsBlock, mode);
+      if (bsRow) mergeBalanceRow(p, bsRow);
     }
     if (cfBlock) {
-      const cfRow = cfBlock[k];
-      if (cfRow && typeof cfRow === "object" && !Array.isArray(cfRow)) {
-        mergeCashFlowRow(p, cfRow as Record<string, unknown>);
-      }
+      const cfRow = findRowForPeriodKey(k, cfBlock, mode);
+      if (cfRow) mergeCashFlowRow(p, cfRow);
     }
     if (ratiosBlock) {
-      const rr = ratiosBlock[k];
-      if (rr && typeof rr === "object" && !Array.isArray(rr)) {
-        mergeRatiosRow(p, rr as Record<string, unknown>);
-      }
+      const rr = findRowForPeriodKey(k, ratiosBlock, mode);
+      if (rr) mergeRatiosRow(p, rr);
     }
 
     fillDerivedMarketCap(p);
     computeDerivedMarginsAndReturns(p);
     fillDerivedEpsIfMissing(p);
+    fillDerivedValuationMultiples(p);
+    fillDerivedEnterpriseValue(p);
     out.push(p);
   }
 
@@ -459,6 +629,6 @@ async function fetchChartingSeriesUncached(
 
 export const fetchChartingSeries = unstable_cache(
   fetchChartingSeriesUncached,
-  ["eodhd-charting-series-v4"],
+  ["eodhd-charting-series-v9"],
   { revalidate: REVALIDATE_WARM },
 );

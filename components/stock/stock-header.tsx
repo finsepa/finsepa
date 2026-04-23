@@ -14,6 +14,7 @@ import {
 import type { StockChartSeries } from "@/lib/market/stock-chart-types";
 import { formatUsdCompact } from "@/lib/market/key-stats-basic-format";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
+import { UsEquityMarketSessionBadge } from "@/components/stock/us-equity-market-session-badge";
 import { WatchlistStarButton } from "@/components/watchlist/watchlist-star-button";
 
 type Props = {
@@ -188,7 +189,8 @@ export function StockHeader({
         </div>
       </div>
 
-      <div>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
         <div
           className={`flex flex-wrap items-baseline gap-2 transition-[transform,opacity] duration-200 ease-out ${
             chartHovering ? "translate-y-px" : ""
@@ -265,6 +267,8 @@ export function StockHeader({
         ) : chartEmpty ? null : priceTimestampLabel ? (
           <div className="mt-0.5 text-[12px] leading-4 text-[#71717A]">{priceTimestampLabel}</div>
         ) : null}
+        </div>
+        <UsEquityMarketSessionBadge className="inline-flex shrink-0 self-end" />
       </div>
     </div>
   );

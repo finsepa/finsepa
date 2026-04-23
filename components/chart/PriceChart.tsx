@@ -109,6 +109,28 @@ const RED = "#DC2626";
 const VALUE_BLUE = "#2563EB";
 const BASELINE_LINE = "rgba(113, 113, 122, 0.55)";
 
+/**
+ * In-bar series markers scale with `barSpacing` (LWCharts uses clamp(barSpacing, 12, 30) for shape height).
+ * Sparse ranges (e.g. 1M) get oversized dots vs dense ranges (6M). Damp toward ~16px equivalent without exceeding default.
+ */
+function inBarMarkerSizeMultiplier(barSpacing: number): number {
+  const clamped = Math.min(Math.max(barSpacing, 12), 30);
+  return Math.min(1, 16 / clamped);
+}
+
+function scheduleScaledInBarMarkers(
+  chart: IChartApi,
+  markers: ISeriesMarkersPluginApi<UTCTimestamp>,
+  templates: SeriesMarker<UTCTimestamp>[],
+) {
+  const apply = () => {
+    const bs = chart.timeScale().options().barSpacing;
+    const sm = inBarMarkerSizeMultiplier(bs);
+    markers.setMarkers(templates.map((m) => ({ ...m, size: (m.size ?? 1) * sm })));
+  };
+  requestAnimationFrame(() => requestAnimationFrame(apply));
+}
+
 function overviewBaselineOptions(open: number, variant: "bright" | "dim") {
   const base = {
     baseValue: { type: "price" as const, price: open },
@@ -325,6 +347,9 @@ export function PriceChart({
   const baselinePriceLineRef = useRef<IPriceLine | null>(null);
   const costBasisLineRef = useRef<IPriceLine | null>(null);
   const markersRef = useRef<ISeriesMarkersPluginApi<UTCTimestamp> | null>(null);
+  /** Base in-bar marker templates (before bar-spacing scale) for overview + range selection. */
+  const overviewInBarMarkersRef = useRef<SeriesMarker<UTCTimestamp>[] | null>(null);
+  const rescaleOverviewInBarMarkersRef = useRef<(() => void) | null>(null);
   const splitSeriesBundleRef = useRef<{
     left: ISeriesApi<"Baseline">;
     mid: ISeriesApi<"Baseline">;
@@ -611,15 +636,32 @@ export function PriceChart({
     };
     chart.subscribeCrosshairMove(onCrosshairMove);
 
+    rescaleOverviewInBarMarkersRef.current = () => {
+      const c = chartRef.current;
+      const m = markersRef.current;
+      const templates = overviewInBarMarkersRef.current;
+      if (!c || !m || !templates?.length) return;
+      scheduleScaledInBarMarkers(c, m, templates);
+    };
+    const onVisRangeForMarkers = () => rescaleOverviewInBarMarkersRef.current?.();
+    const ts = chart.timeScale();
+    ts.subscribeVisibleLogicalRangeChange(onVisRangeForMarkers);
+    ts.subscribeVisibleTimeRangeChange(onVisRangeForMarkers);
+
     const ro = new ResizeObserver(() => {
       const w = el.clientWidth;
       if (w > 0) chart.resize(w, height);
+      onVisRangeForMarkers();
     });
     ro.observe(el);
     chart.resize(el.clientWidth, height);
 
     return () => {
       ro.disconnect();
+      ts.unsubscribeVisibleLogicalRangeChange(onVisRangeForMarkers);
+      ts.unsubscribeVisibleTimeRangeChange(onVisRangeForMarkers);
+      rescaleOverviewInBarMarkersRef.current = null;
+      overviewInBarMarkersRef.current = null;
       chart.unsubscribeCrosshairMove(onCrosshairMove);
       markersRef.current = null;
       baselinePriceLineRef.current = null;
@@ -804,6 +846,7 @@ export function PriceChart({
         baselinePriceLineRef.current = null;
       }
       markersRef.current = null;
+      overviewInBarMarkersRef.current = null;
       try {
         chart.removeSeries(bundle.left);
         chart.removeSeries(bundle.right);
@@ -878,6 +921,7 @@ export function PriceChart({
 
     if (!points.length) {
       removeSplitBundle();
+      overviewInBarMarkersRef.current = null;
       series?.setData([]);
       markers?.setMarkers([]);
       if (series) removeOverviewSingleBaselineLine(series);
@@ -892,12 +936,14 @@ export function PriceChart({
     const open = data[0]?.value;
     if (!isFiniteNumber(open)) {
       removeSplitBundle();
+      overviewInBarMarkersRef.current = null;
       seriesRef.current?.setData([]);
       markersRef.current?.setMarkers([]);
       return;
     }
 
     if (holdingsStyle) {
+      overviewInBarMarkersRef.current = null;
       removeSplitBundle();
       series = seriesRef.current;
       if (!series) return;
@@ -980,7 +1026,7 @@ export function PriceChart({
 
       const a = data[iLo]!;
       const b = data[iHi]!;
-      markers.setMarkers([
+      const splitTemplates: SeriesMarker<UTCTimestamp>[] = [
         {
           time: a.time,
           position: "inBar",
@@ -995,7 +1041,9 @@ export function PriceChart({
           color: b.value >= open ? GREEN : RED,
           size: 2,
         },
-      ]);
+      ];
+      overviewInBarMarkersRef.current = splitTemplates;
+      scheduleScaledInBarMarkers(chart, markers, splitTemplates);
       return;
     }
 
@@ -1026,7 +1074,7 @@ export function PriceChart({
 
     const last = data[data.length - 1];
     if (last) {
-      markers.setMarkers([
+      const lastTemplates: SeriesMarker<UTCTimestamp>[] = [
         {
           time: last.time,
           position: "inBar",
@@ -1034,7 +1082,12 @@ export function PriceChart({
           color: lastPointStroke,
           size: 1,
         },
-      ]);
+      ];
+      overviewInBarMarkersRef.current = lastTemplates;
+      scheduleScaledInBarMarkers(chart, markers, lastTemplates);
+    } else {
+      overviewInBarMarkersRef.current = null;
+      markers.setMarkers([]);
     }
   }, [points, lastPointStroke, holdingsStyle, tradeMarkers, costBasisPrice, selection]);
 

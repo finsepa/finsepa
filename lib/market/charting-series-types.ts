@@ -43,12 +43,15 @@ export type ChartingSeriesPoint = {
 
   /** Market capitalization (USD) when reported or derived from P/S or P/B. */
   marketCap: number | null;
+  /** Enterprise value (USD) from ratios or derived as MC + debt − cash when missing. */
+  enterpriseValue: number | null;
 
   peRatio: number | null;
   trailingPe: number | null;
   forwardPe: number | null;
   psRatio: number | null;
   priceBook: number | null;
+  priceFcf: number | null;
   evEbitda: number | null;
   evSales: number | null;
   cashDebt: number | null;

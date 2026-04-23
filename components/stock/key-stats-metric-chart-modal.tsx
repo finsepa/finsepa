@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { X } from "lucide-react";
@@ -19,6 +19,21 @@ const PERIOD_TAB_OPTIONS = [
   { value: "quarterly" as const, label: "Quarterly" },
 ];
 
+function maxBarsForMode(mode: FundamentalsSeriesMode): number {
+  return mode === "quarterly" ? 8 : 10;
+}
+
+function pickSeedForMode(
+  mode: FundamentalsSeriesMode,
+  initialAnnualPoints?: ChartingSeriesPoint[],
+  initialQuarterlyPoints?: ChartingSeriesPoint[],
+): ChartingSeriesPoint[] | null {
+  if (mode === "quarterly") {
+    return Array.isArray(initialQuarterlyPoints) && initialQuarterlyPoints.length > 0 ? initialQuarterlyPoints : null;
+  }
+  return Array.isArray(initialAnnualPoints) && initialAnnualPoints.length > 0 ? initialAnnualPoints : null;
+}
+
 type Props = {
   ticker: string;
   metricId: ChartingMetricId | null;
@@ -36,28 +51,31 @@ export function KeyStatsMetricChartModal({
 }: Props) {
   const [periodMode, setPeriodMode] = useState<FundamentalsSeriesMode>("annual");
 
-  const seedPoints = useMemo(() => {
-    if (periodMode === "quarterly") {
-      return Array.isArray(initialQuarterlyPoints) && initialQuarterlyPoints.length > 0
-        ? initialQuarterlyPoints
-        : null;
-    }
-    return Array.isArray(initialAnnualPoints) && initialAnnualPoints.length > 0 ? initialAnnualPoints : null;
-  }, [periodMode, initialAnnualPoints, initialQuarterlyPoints]);
-
-  const [points, setPoints] = useState<ChartingSeriesPoint[]>(() =>
-    Array.isArray(initialAnnualPoints) && initialAnnualPoints.length > 0 ? initialAnnualPoints : [],
-  );
-  const [loading, setLoading] = useState(
-    !(Array.isArray(initialAnnualPoints) && initialAnnualPoints.length > 0),
-  );
+  const [points, setPoints] = useState<ChartingSeriesPoint[]>(() => {
+    if (metricId == null) return [];
+    const seed = pickSeedForMode("annual", initialAnnualPoints, initialQuarterlyPoints);
+    if (!seed) return [];
+    return sliceLastAnnualWithMetric(seed, metricId, maxBarsForMode("annual")).length > 0 ? seed : [];
+  });
+  const [loading, setLoading] = useState(() => {
+    if (metricId == null) return false;
+    const seed = pickSeedForMode("annual", initialAnnualPoints, initialQuarterlyPoints);
+    if (!seed) return true;
+    return sliceLastAnnualWithMetric(seed, metricId, maxBarsForMode("annual")).length === 0;
+  });
 
   useEffect(() => {
+    if (metricId == null) return;
+    const activeMetric: ChartingMetricId = metricId;
     let cancelled = false;
     async function load() {
-      if (seedPoints) {
-        setPoints(seedPoints);
-        setLoading(false);
+      const max = maxBarsForMode(periodMode);
+      const seed = pickSeedForMode(periodMode, initialAnnualPoints, initialQuarterlyPoints);
+      if (seed && sliceLastAnnualWithMetric(seed, activeMetric, max).length > 0) {
+        if (!cancelled) {
+          setPoints(seed);
+          setLoading(false);
+        }
         return;
       }
       setLoading(true);
@@ -84,7 +102,7 @@ export function KeyStatsMetricChartModal({
     return () => {
       cancelled = true;
     };
-  }, [ticker, periodMode, seedPoints]);
+  }, [ticker, periodMode, metricId, initialAnnualPoints, initialQuarterlyPoints]);
 
   const onKeyDown = useCallback(
     (e: KeyboardEvent) => {

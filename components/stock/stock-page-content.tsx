@@ -369,6 +369,7 @@ export function StockPageContent({
   return (
     <div className="relative min-w-0 space-y-5 px-4 py-4 sm:px-9 sm:py-6">
       <KeyStatsMetricChartModal
+        key={revenueProfitModalMetric ?? "closed"}
         ticker={ticker}
         metricId={revenueProfitModalMetric}
         onClose={() => setRevenueProfitModalMetric(null)}

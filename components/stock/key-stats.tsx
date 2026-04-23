@@ -50,6 +50,18 @@ const VALUATION_LABELS = [
   "Cash/Debt",
 ];
 
+const VALUATION_LABEL_TO_METRIC: Partial<Record<string, ChartingMetricId>> = {
+  "P/E Ratio": "pe_ratio",
+  "Trailing P/E": "trailing_pe",
+  "Forward P/E": "forward_pe",
+  "P/S Ratio": "ps_ratio",
+  "Price/Book Ratio": "price_book",
+  "Price/FCF Ratio": "price_fcf",
+  "EV/EBITDA": "ev_ebitda",
+  "EV/Sales": "ev_sales",
+  "Cash/Debt": "cash_debt",
+};
+
 const DIVIDENDS_LABELS = ["Yield", "Payout"];
 
 const RISK_LABELS = ["Beta (5Y)", "Max Drawdown (5Y)"];
@@ -83,6 +95,13 @@ const BASIC_FALLBACK: Row[] = [
   { label: "Beta (5Y Monthly)", value: "—" },
   { label: "Employees", value: "—" },
 ];
+
+/** Basic rows that open the same fundamentals chart modal as Revenue & Profit. */
+const BASIC_LABEL_TO_METRIC: Partial<Record<string, ChartingMetricId>> = {
+  "Market Cap": "market_cap",
+  "Enterprise Value": "enterprise_value",
+  "Shares Outstanding": "shares_outstanding",
+};
 
 function KeyStatMetricRow({
   label,
@@ -179,13 +198,33 @@ const DynamicCard = memo(function DynamicCard({
   );
 });
 
-const BasicCard = memo(function BasicCard({ rows, loading }: { rows: Row[] | null; loading: boolean }) {
+const BasicCard = memo(function BasicCard({
+  rows,
+  loading,
+  onMetricClick,
+}: {
+  rows: Row[] | null;
+  loading: boolean;
+  onMetricClick?: (metricId: ChartingMetricId) => void;
+}) {
   const displayRows = rows ?? BASIC_FALLBACK;
+  const clickable = typeof onMetricClick === "function";
+
   return (
     <div className="mb-5 rounded-xl border border-[#E4E4E7] bg-white p-4">
       <h3 className="mb-2 text-[14px] font-semibold leading-5 text-[#09090B]">Basic</h3>
       {loading ? (
         <CardSkeleton rowLabels={displayRows.map((r) => r.label)} />
+      ) : clickable ? (
+        displayRows.map((row) => (
+          <KeyStatMetricRow
+            key={row.label}
+            label={row.label}
+            value={row.value}
+            labelToMetric={BASIC_LABEL_TO_METRIC}
+            onMetricClick={onMetricClick}
+          />
+        ))
       ) : (
         displayRows.map((row) => <StatRow key={row.label} label={row.label} value={row.value} />)
       )}
@@ -243,7 +282,7 @@ function KeyStatsInner({
 }: {
   ticker: string;
   initialBundle?: StockKeyStatsBundle | null;
-  /** Revenue & Profit + Margins rows open the fundamentals bar chart modal. */
+  /** Basic (cap / EV / shares), Revenue & Profit, Margins, and Valuation rows open the fundamentals bar chart modal. */
   onOpenMetricChart?: (metricId: ChartingMetricId) => void;
 }) {
   const [loading, setLoading] = useState(() => !initialBundle);
@@ -279,12 +318,14 @@ function KeyStatsInner({
       <h2 className="text-[18px] font-semibold leading-7 text-[#09090B] mb-4">Key Stats</h2>
       <div className="grid grid-cols-3 gap-5">
         <div>
-          <BasicCard rows={bundle?.basic ?? null} loading={loading} />
+          <BasicCard rows={bundle?.basic ?? null} loading={loading} onMetricClick={onOpenMetricChart} />
           <DynamicCard
             title="Valuation"
             rowLabels={VALUATION_LABELS}
             rows={bundle?.valuation ?? null}
             loading={loading}
+            labelToMetric={VALUATION_LABEL_TO_METRIC}
+            onMetricClick={onOpenMetricChart}
           />
         </div>
 

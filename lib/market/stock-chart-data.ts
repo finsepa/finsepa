@@ -89,6 +89,19 @@ function barsToChartPoints(bars: EodhdIntradayBar[]): StockChartPoint[] {
   );
 }
 
+/** Keep points whose US `sessionDate` falls in the last `n` distinct session days (ascending order). */
+function trimPointsToLastNUsSessionDays(points: StockChartPoint[], n: number): StockChartPoint[] {
+  if (points.length === 0 || n < 1) return points;
+  const dated = points.map((p) => ({
+    p,
+    d: (p.sessionDate?.trim() ? p.sessionDate : usSessionYmdFromUnixSeconds(p.time)) as string,
+  }));
+  const uniq = [...new Set(dated.map((x) => x.d))].sort();
+  if (uniq.length <= n) return points;
+  const keep = new Set(uniq.slice(-n));
+  return dated.filter((x) => keep.has(x.d)).map((x) => x.p);
+}
+
 /** Last `n` daily EOD closes (ascending). */
 async function loadDailyLastNCloses(ticker: string, now: Date, n: number, calendarLookbackDays: number): Promise<StockChartPoint[]> {
   const fromDate = new Date(now);
@@ -188,7 +201,7 @@ async function load5DChartPoints(ticker: string, now: Date, nowSec: number): Pro
       });
     }
     if (!bars?.length) continue;
-    const pts = barsToChartPoints(bars);
+    const pts = trimPointsToLastNUsSessionDays(barsToChartPoints(bars), 5);
     if (pts.length) return pts;
   }
 

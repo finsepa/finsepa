@@ -10,7 +10,12 @@ export function isStockChartRange(v: string | null): v is StockChartRange {
 export function rangeStartUnixSeconds(range: StockChartRange, now: Date): number | null {
   const nowSec = Math.floor(now.getTime() / 1000);
   if (range === "1D") return nowSec - 1 * 24 * 60 * 60;
-  if (range === "5D") return nowSec - 5 * 24 * 60 * 60;
+  /**
+   * Five **trading** sessions need up to ~7 calendar days; daily points use `YYYY-MM-DD` → midnight UTC,
+   * so a naive `now - 5×24h` cut-off can sit *after* Mon/Tue mid-week and drop those bars (only Wed–Fri left).
+   * Use a wider calendar window so the slice still includes the oldest of the last five sessions.
+   */
+  if (range === "5D") return nowSec - 10 * 24 * 60 * 60;
   if (range === "1M") return nowSec - 30 * 24 * 60 * 60;
   if (range === "6M") return nowSec - 183 * 24 * 60 * 60;
   if (range === "1Y") return nowSec - 365 * 24 * 60 * 60;
