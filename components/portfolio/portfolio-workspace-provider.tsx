@@ -12,6 +12,7 @@ import {
   useState,
 } from "react";
 import { X } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { toast } from "sonner";
 
 import { AddCashModal } from "@/components/layout/add-cash-modal";
@@ -41,6 +42,7 @@ import {
 } from "@/lib/portfolio/portfolio-storage";
 import { computePublicPortfolioListingMetrics, withListingOwner } from "@/lib/portfolio/public-listing-metrics";
 import { dispatchPublicListingsChanged, putPublicPortfolioListingRequest } from "@/lib/portfolio/sync-public-listing-client";
+import { portfolioPathnameUsesEagerLiveQuotes } from "@/lib/portfolio/portfolio-live-quotes-paths";
 import {
   refreshHoldingMarketPrices,
   replayTradeTransactionsToHoldings,
@@ -348,6 +350,11 @@ export function PortfolioWorkspaceProvider({
    */
   const [holdingsMarkToMarketReady, setHoldingsMarkToMarketReady] = useState(true);
   const holdingsQuoteRefreshGenRef = useRef(0);
+  /** True after {@link applyWorkspaceState} skipped live quotes on a read-mostly route; cleared when catch-up runs. */
+  const [deferredQuotesPending, setDeferredQuotesPending] = useState(false);
+  const pathname = usePathname() ?? "";
+  const pathnameRef = useRef(pathname);
+  pathnameRef.current = pathname;
 
   const displayHoldingsByPortfolioId = useMemo(() => {
     const out: Record<string, PortfolioHolding[]> = { ...holdingsByPortfolioId };
@@ -382,7 +389,12 @@ export function PortfolioWorkspaceProvider({
 
   const applyWorkspaceState = useCallback((saved: PersistedPortfolioState) => {
     const refreshGen = ++holdingsQuoteRefreshGenRef.current;
-    setHoldingsMarkToMarketReady(false);
+    const eagerQuotes = portfolioPathnameUsesEagerLiveQuotes(pathnameRef.current);
+
+    if (eagerQuotes) {
+      setDeferredQuotesPending(false);
+      setHoldingsMarkToMarketReady(false);
+    }
 
     setPortfolios(saved.portfolios);
     setSelectedPortfolioId(saved.selectedPortfolioId);
@@ -396,6 +408,14 @@ export function PortfolioWorkspaceProvider({
       rebuilt[p.id] = replayTradeTransactionsToHoldings(txs);
     }
     setHoldingsByPortfolioId(rebuilt);
+
+    if (!eagerQuotes) {
+      setDeferredQuotesPending(true);
+      if (holdingsQuoteRefreshGenRef.current === refreshGen) {
+        setHoldingsMarkToMarketReady(true);
+      }
+      return;
+    }
 
     /** Replay uses last fill as provisional `marketPrice`; refresh from live quotes after hydrate/merge. */
     void (async () => {
@@ -416,6 +436,51 @@ export function PortfolioWorkspaceProvider({
       }
     })();
   }, []);
+
+  /** Run deferred mark-to-market once when user lands on a portfolio-heavy route after a skipped hydrate. */
+  useEffect(() => {
+    if (!deferredQuotesPending) return;
+    if (!portfolioPathnameUsesEagerLiveQuotes(pathname)) return;
+    if (!workspaceHydrated && !portfolioBootstrapFromLocal) return;
+
+    const rebuilt: Record<string, PortfolioHolding[]> = {};
+    for (const p of portfolios) {
+      if (portfolioIsCombined(p)) continue;
+      rebuilt[p.id] = holdingsByPortfolioId[p.id] ?? [];
+    }
+    if (!Object.values(rebuilt).some((h) => h.length > 0)) {
+      setDeferredQuotesPending(false);
+      return;
+    }
+
+    setDeferredQuotesPending(false);
+    const refreshGen = ++holdingsQuoteRefreshGenRef.current;
+    setHoldingsMarkToMarketReady(false);
+    void (async () => {
+      try {
+        const entries = await Promise.all(
+          Object.entries(rebuilt).map(async ([pid, holds]) => {
+            if (holds.length === 0) return [pid, holds] as const;
+            const quoted = await refreshHoldingMarketPrices(holds);
+            return [pid, quoted] as const;
+          }),
+        );
+        const quoted = Object.fromEntries(entries) as Record<string, PortfolioHolding[]>;
+        setHoldingsByPortfolioId((prev) => ({ ...prev, ...quoted }));
+      } finally {
+        if (holdingsQuoteRefreshGenRef.current === refreshGen) {
+          setHoldingsMarkToMarketReady(true);
+        }
+      }
+    })();
+  }, [
+    deferredQuotesPending,
+    pathname,
+    workspaceHydrated,
+    portfolioBootstrapFromLocal,
+    portfolios,
+    holdingsByPortfolioId,
+  ]);
 
   /** Instant balance from device cache; server merge still runs in the effect below. */
   useLayoutEffect(() => {
