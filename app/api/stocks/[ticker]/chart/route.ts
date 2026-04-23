@@ -8,6 +8,9 @@ import { isStockChartSeries, type StockChartRange, type StockChartSeries } from 
 import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
 import { getNvdaChartPoints } from "@/lib/fixtures/nvda";
 
+/** Portfolio overview benchmark fetch must still work in single-asset demo mode. */
+const BENCHMARK_CHART_TICKERS = new Set(["SPY", "QQQ", "DIA", "IWM", "VTI"]);
+
 type Ctx = { params: Promise<{ ticker: string }> };
 
 export async function GET(request: Request, { params }: Ctx) {
@@ -44,7 +47,8 @@ export async function GET(request: Request, { params }: Ctx) {
     );
   }
 
-  if (isSingleAssetMode() && !isSupportedAsset(routeTicker)) {
+  const routeUpper = routeTicker.trim().toUpperCase();
+  if (isSingleAssetMode() && !isSupportedAsset(routeTicker) && !BENCHMARK_CHART_TICKERS.has(routeUpper)) {
     return NextResponse.json(
       { ticker: routeTicker, range, series, points: [] },
       { headers: { "Cache-Control": CACHE_CONTROL_PRIVATE_WARM_CHART } },

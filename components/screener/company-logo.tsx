@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { mergeLogoMemory, readLogoMemory } from "@/lib/logos/logo-memory";
 import { logoColors } from "./data";
 
-function InitialsMark({ name, size }: { name: string; size: "xs" | "sm" | "md" | "lg" }) {
+function InitialsMark({ name, size }: { name: string; size: "xs" | "sm" | "28" | "md" | "lg" }) {
   const colors = logoColors[name] ?? {
     bg: "bg-neutral-100",
     text: "text-neutral-600",
@@ -15,6 +15,8 @@ function InitialsMark({ name, size }: { name: string; size: "xs" | "sm" | "md" |
       ? "flex h-5 w-5 shrink-0 items-center justify-center rounded-md border text-[9px] font-bold"
       : size === "sm"
         ? "flex h-6 w-6 shrink-0 items-center justify-center rounded-md border text-[10px] font-bold"
+        : size === "28"
+          ? "flex h-7 w-7 shrink-0 items-center justify-center rounded-md border text-[10px] font-bold"
         : size === "lg"
           ? "flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border text-[12px] font-bold"
           : "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border text-[11px] font-bold";
@@ -26,13 +28,15 @@ function InitialsMark({ name, size }: { name: string; size: "xs" | "sm" | "md" |
 }
 
 /** Cash / USD row icon: US flag asset (`/usd.svg`). */
-function UsdCashMark({ size }: { size: "xs" | "sm" | "md" | "lg" }) {
-  const px = size === "xs" ? 20 : size === "sm" ? 24 : size === "lg" ? 48 : 32;
+function UsdCashMark({ size }: { size: "xs" | "sm" | "28" | "md" | "lg" }) {
+  const px = size === "xs" ? 20 : size === "sm" ? 24 : size === "28" ? 28 : size === "lg" ? 48 : 32;
   const imgBox =
     size === "xs"
       ? "h-5 w-5 rounded-md"
       : size === "sm"
         ? "h-6 w-6 rounded-md"
+        : size === "28"
+          ? "h-7 w-7 rounded-md"
         : size === "lg"
           ? "h-12 w-12 rounded-lg"
           : "h-8 w-8 rounded-lg";
@@ -60,8 +64,8 @@ export function CompanyLogo({
   logoUrl: string;
   /** When set (e.g. ticker), enables session logo reuse across views. */
   symbol?: string;
-  /** `xs` = 20×20, `sm` = 24×24, `md` = 32×32 (default), `lg` = 48×48. */
-  size?: "xs" | "sm" | "md" | "lg";
+  /** `xs` = 20×20, `sm` = 24×24, `28` = 28×28, `md` = 32×32 (default), `lg` = 48×48. */
+  size?: "xs" | "sm" | "28" | "md" | "lg";
 }) {
   const [failed, setFailed] = useState(false);
   const fromServer = typeof logoUrl === "string" ? logoUrl.trim() : "";
@@ -83,12 +87,14 @@ export function CompanyLogo({
   if (failed || !hasLogoUrl) {
     return <InitialsMark name={name} size={size} />;
   }
-  const px = size === "xs" ? 20 : size === "sm" ? 24 : size === "lg" ? 48 : 32;
+  const px = size === "xs" ? 20 : size === "sm" ? 24 : size === "28" ? 28 : size === "lg" ? 48 : 32;
   const imgBox =
     size === "xs"
       ? "h-5 w-5 rounded-md"
       : size === "sm"
         ? "h-6 w-6 rounded-md"
+        : size === "28"
+          ? "h-7 w-7 rounded-md"
         : size === "lg"
           ? "h-12 w-12 rounded-lg"
           : "h-8 w-8 rounded-lg";

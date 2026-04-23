@@ -1,16 +1,26 @@
 /** Report timing from provider (normalized for UI). */
 export type EarningsReportTiming = "bmo" | "amc" | "unknown";
 
+/** Query param / overflow route — same buckets as {@link EarningsReportTiming}. */
+export type EarningsTimingBucketId = EarningsReportTiming;
+
 export type EarningsCalendarItem = {
   ticker: string;
   /** Display name; falls back to ticker if unavailable. */
   companyName: string;
   logoUrl: string;
-  /** 1-based rank on Screener (curated top 10, then next names by market cap). */
+  /** 1-based rank in the Top-500 static universe (market-cap order). */
   screenerRank: number | null;
   reportDate: string;
   timing: EarningsReportTiming;
   timingLabel: string;
+};
+
+/** One timing bucket for a weekday column (SSR includes a short preview; overflow loads on expand). */
+export type EarningsTimingBucket = {
+  items: EarningsCalendarItem[];
+  /** Additional names in this bucket for this day — fetch via `/api/earnings/week-bucket` when expanded. */
+  overflowCount: number;
 };
 
 export type EarningsDayColumn = {
@@ -18,7 +28,9 @@ export type EarningsDayColumn = {
   date: string;
   weekdayLabel: string;
   dayNumber: string;
-  items: EarningsCalendarItem[];
+  beforeMarket: EarningsTimingBucket;
+  afterMarket: EarningsTimingBucket;
+  timeTbd: EarningsTimingBucket;
 };
 
 export type EarningsDatasetFilter = "universe_mc" | "fundamentals_mc";

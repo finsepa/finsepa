@@ -4,19 +4,27 @@ import { useId } from "react";
 
 import { cn } from "@/lib/utils";
 
-/** Pre-market (BMO) earnings — asset from design (`Frame 19.svg`), 20×20 with #FFEDD5 fill. */
-export function PreMarketEarningsIcon({ className }: { className?: string }) {
+type PreMarketEarningsIconProps = {
+  className?: string;
+  /** Rendered width/height in px; viewBox stays 20×20 (vector scales). Default matches Figma stock card. */
+  size?: number;
+};
+
+/** Pre-market (BMO) earnings — asset from design (`Frame 19.svg`), native 20×20 with #FFEDD5 fill. */
+export function PreMarketEarningsIcon({ className, size = 20 }: PreMarketEarningsIconProps) {
   const uid = useId().replace(/:/g, "");
   const clipId = `earnings-pre-market-clip-${uid}`;
+  const box = { width: size, height: size, maxWidth: size, maxHeight: size, minWidth: size, minHeight: size, flex: "0 0 auto" as const };
 
   return (
     <svg
-      width={20}
-      height={20}
+      width={size}
+      height={size}
       viewBox="0 0 20 20"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className={cn("shrink-0", className)}
+      className={cn("block shrink-0 flex-none", className)}
+      style={box}
       aria-hidden
     >
       <rect width="20" height="20" rx="10" fill="#FFEDD5" />

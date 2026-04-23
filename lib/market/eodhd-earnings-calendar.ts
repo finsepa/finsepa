@@ -2,7 +2,7 @@ import "server-only";
 
 import { unstable_cache } from "next/cache";
 
-import { REVALIDATE_WARM_LONG } from "@/lib/data/cache-policy";
+import { REVALIDATE_EARNINGS_CALENDAR } from "@/lib/data/cache-policy";
 import { getEodhdApiKey } from "@/lib/env/server";
 import { traceEodhdHttp } from "@/lib/market/provider-trace";
 
@@ -62,7 +62,7 @@ async function fetchEodhdEarningsCalendarUncached(fromYmd: string, toYmd: string
 
   try {
     if (!traceEodhdHttp("fetchEodhdEarningsCalendar", { from: fromYmd, to: toYmd })) return [];
-    const res = await fetch(url, { next: { revalidate: REVALIDATE_WARM_LONG } });
+    const res = await fetch(url, { next: { revalidate: REVALIDATE_EARNINGS_CALENDAR } });
     if (!res.ok) return [];
     const json = (await res.json()) as { earnings?: unknown };
     const rows = json?.earnings;
@@ -75,8 +75,8 @@ async function fetchEodhdEarningsCalendarUncached(fromYmd: string, toYmd: string
 
 const fetchEodhdEarningsCalendarCached = unstable_cache(
   fetchEodhdEarningsCalendarUncached,
-  ["eodhd-earnings-calendar-v1"],
-  { revalidate: REVALIDATE_WARM_LONG },
+  ["eodhd-earnings-calendar-v2-daily"],
+  { revalidate: REVALIDATE_EARNINGS_CALENDAR },
 );
 
 export async function fetchEodhdEarningsCalendar(fromYmd: string, toYmd: string): Promise<EodhdRawEarningRow[]> {

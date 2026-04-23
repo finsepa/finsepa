@@ -98,8 +98,30 @@ function niceYRange(
   }
 
   const pad = Math.max((hi - lo) * 0.12, 1);
-  const loP = Math.min(lo - pad, 0);
   const hiP = Math.max(hi + pad, 0);
+
+  /**
+   * Shallow drawdowns (worst period roughly −10% … −18%): a symmetric `loP` plus
+   * `Math.floor(loP / step) * step` snaps the axis to −50% when positives are large
+   * (step 50). Pin the floor at −20% and derive step from span to `hiP` instead.
+   */
+  const MILD_WORST_RETURN_PCT = -18;
+  if (lo >= MILD_WORST_RETURN_PCT) {
+    const yMin = -20;
+    let step = niceStep((hiP - yMin) / G);
+    if (!Number.isFinite(step) || step <= 0) step = 5;
+    let yMax = yMin + G * step;
+    let guard = 0;
+    while (yMax < hiP - 1e-9 && guard++ < 80) {
+      const bumped = niceStep(step * 1.15);
+      step = bumped <= step ? step * 2 : bumped;
+      yMax = yMin + G * step;
+    }
+    const ticks = Array.from({ length: Y_AXIS_TICK_COUNT }, (_, k) => yMin + k * step);
+    return { yMin, yMax, ticks };
+  }
+
+  const loP = Math.min(lo - pad, 0);
   const spanNeed = Math.max(hiP - loP, 1e-6);
 
   let step = niceStep(spanNeed / G);

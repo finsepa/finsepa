@@ -29,6 +29,7 @@ export function pricePointsToReturnIndexPoints(points: readonly StockChartPoint[
   return sorted.map((p) => ({
     time: p.time,
     value: 100 * (p.value / p0),
+    ...(p.sessionDate ? { sessionDate: p.sessionDate } : {}),
     ...(p.timeZone ? { timeZone: p.timeZone } : {}),
   }));
 }
@@ -44,16 +45,13 @@ function parseYmdToUnixSeconds(ymd: string): number | null {
 }
 
 function dedupeAndSort(points: StockChartPoint[]): StockChartPoint[] {
-  const byTime = new Map<number, number>();
+  const byTime = new Map<number, StockChartPoint>();
   for (const p of points) {
     if (!Number.isFinite(p.time) || !Number.isFinite(p.value)) continue;
-    // last write wins
-    byTime.set(p.time, p.value);
+    // last write wins; keep optional fields (sessionDate) for benchmark alignment
+    byTime.set(p.time, p);
   }
-  const out = Array.from(byTime.entries())
-    .map(([time, value]) => ({ time, value }))
-    .sort((a, b) => a.time - b.time);
-  return out;
+  return Array.from(byTime.values()).sort((a, b) => a.time - b.time);
 }
 
 /** Keep only bars on the UTC calendar day of the latest bar (nearest trading session when window spans multiple days). */
@@ -65,13 +63,27 @@ function trimIntradayToLatestUtcDay<T extends { timestamp: number }>(bars: T[]):
   return bars.filter((b) => b.timestamp >= startSec);
 }
 
+/** US session calendar day for an equity bar (aligns with EODHD daily `date` semantics). */
+function usSessionYmdFromUnixSeconds(sec: number): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(sec * 1000));
+}
+
 function barsToChartPoints(bars: EodhdIntradayBar[]): StockChartPoint[] {
   return dedupeAndSort(
     bars
       .map((b) => {
         const value = clampFinite(b.close);
         if (value == null) return null;
-        return { time: b.timestamp, value };
+        return {
+          time: b.timestamp,
+          value,
+          sessionDate: usSessionYmdFromUnixSeconds(b.timestamp),
+        };
       })
       .filter(Boolean) as StockChartPoint[],
   );
@@ -92,7 +104,7 @@ async function loadDailyLastNCloses(ticker: string, now: Date, n: number, calend
       const t = parseYmdToUnixSeconds(b.date);
       const v = clampFinite(b.close);
       if (t == null || v == null) return null;
-      return { time: t, value: v };
+      return { time: t, value: v, sessionDate: b.date };
     })
     .filter(Boolean) as StockChartPoint[];
   return dedupeAndSort(points);
@@ -105,7 +117,7 @@ export function stockChartPointsFromDailyBars(bars: EodhdDailyBar[]): StockChart
       const t = parseYmdToUnixSeconds(b.date);
       const v = clampFinite(b.close);
       if (t == null || v == null) return null;
-      return { time: t, value: v };
+      return { time: t, value: v, sessionDate: b.date };
     })
     .filter(Boolean) as StockChartPoint[];
   return dedupeAndSort(points);
@@ -219,7 +231,7 @@ async function loadStockPriceChartPointsUncached(ticker: string, range: StockCha
       const t = parseYmdToUnixSeconds(b.date);
       const v = clampFinite(b.close);
       if (t == null || v == null) return null;
-      return { time: t, value: v };
+      return { time: t, value: v, sessionDate: b.date };
     })
     .filter(Boolean) as StockChartPoint[];
 
@@ -242,7 +254,7 @@ async function loadStockChartPointsUncached(
 export const getStockChartPoints = unstable_cache(
   async (ticker: string, range: StockChartRange, series: StockChartSeries) =>
     loadStockChartPointsUncached(ticker, range, series),
-  ["stock-chart-points-v4-series"],
+  ["stock-chart-points-v5-session-date"],
   { revalidate: REVALIDATE_HOT },
 );
 

@@ -4,19 +4,27 @@ import { useId } from "react";
 
 import { cn } from "@/lib/utils";
 
-/** Post-market (AMC) earnings — asset from design (`Moon.svg`), 24×24 with #DBEAFE fill. */
-export function PostMarketEarningsIcon({ className }: { className?: string }) {
+type PostMarketEarningsIconProps = {
+  className?: string;
+  /** Rendered width/height in px; viewBox stays 24×24. Default matches Figma stock card. */
+  size?: number;
+};
+
+/** Post-market (AMC) earnings — asset from design (`Moon.svg`), native 24×24 with #DBEAFE fill. */
+export function PostMarketEarningsIcon({ className, size = 24 }: PostMarketEarningsIconProps) {
   const uid = useId().replace(/:/g, "");
   const clipId = `earnings-moon-clip-${uid}`;
+  const box = { width: size, height: size, maxWidth: size, maxHeight: size, minWidth: size, minHeight: size, flex: "0 0 auto" as const };
 
   return (
     <svg
-      width={24}
-      height={24}
+      width={size}
+      height={size}
       viewBox="0 0 24 24"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className={cn("shrink-0", className)}
+      className={cn("block shrink-0 flex-none", className)}
+      style={box}
       aria-hidden
     >
       <rect width="24" height="24" rx="12" fill="#DBEAFE" />

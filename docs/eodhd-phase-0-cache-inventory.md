@@ -17,6 +17,7 @@
 | `REVALIDATE_IDENTITY` | 43_200 (~12h), same as `REVALIDATE_STATIC` |
 | `REVALIDATE_SCREENER_FILTERED` | 3_600 (~1h) |
 | `REVALIDATE_STATIC_DAY` | 86_400 (~24h) |
+| `REVALIDATE_EARNINGS_CALENDAR` | 86_400 (~24h), same as `REVALIDATE_STATIC_DAY` — bulk calendar + `/earnings` week |
 
 **HTTP `Cache-Control` presets (Phases 3–4, 6):** all in `lib/data/cache-policy.ts` — Phase 3 list (`CACHE_CONTROL_PRIVATE_NEWS`, … `CACHE_CONTROL_PRIVATE_OVERVIEW_MARKET`) plus Phase 4: `CACHE_CONTROL_PRIVATE_WARM_LONG`, `CACHE_CONTROL_PRIVATE_NO_STORE`, `CACHE_CONTROL_PRIVATE_NO_STORE_MUST_REVALIDATE`, `CACHE_CONTROL_PRIVATE_MAX_0_MUST_REVALIDATE`; Phase 6: `CACHE_CONTROL_PUBLIC_WARM_CHART`, `CACHE_CONTROL_PUBLIC_WARM` (public CDN hints where JSON is not user-specific). **Excluded by design:** logo proxy (`LOGO_PROXY_CACHE_CONTROL`).
 
@@ -44,7 +45,7 @@
 | Screener (market cap sort) | `fetchEodhdScreenerUncached` | `/api/screener` | `next.revalidate: REVALIDATE_STATIC` | Yes — `eodhd-screener-v8-skip-etfs`, **`revalidate: REVALIDATE_STATIC`** | `fetchEodhdTopByMarketCap` → `getTop500Universe` etc. |
 | Screener (filtered) | `fetchEodhdScreenerCandidates` | `/api/screener` | `next.revalidate: REVALIDATE_SCREENER_FILTERED` (3600s) | Yes — `eodhd-screener-candidates-v1`, **same** | Phase 2: cross-request dedupe per `(q, limit)`; fetch hint matches outer. |
 | Exchange symbol list | `fetchEodhdExchangeSymbolListUncached` | `/api/exchange-symbol-list/{ex}` | `next.revalidate: REVALIDATE_STATIC` | Yes — `eodhd-exchange-symbol-list-v1`, **`REVALIDATE_STATIC`** | Inner fetch hint matches outer `unstable_cache`. |
-| Earnings calendar range | `fetchEodhdEarningsCalendar` | `/api/calendar/earnings` | `next.revalidate: REVALIDATE_WARM_LONG` | Yes — `eodhd-earnings-calendar-v1`, **same** | Phase 3: cross-request dedupe per `(from, to)`; used by earnings week + stock earnings tab. |
+| Earnings calendar range | `fetchEodhdEarningsCalendar` | `/api/calendar/earnings` | `next.revalidate: REVALIDATE_EARNINGS_CALENDAR` | Yes — `eodhd-earnings-calendar-v2-daily`, **same** | Cross-request dedupe per `(from, to)`; ~24h; used by earnings week + stock earnings tab. |
 | Dividends | `fetchEodhdDividendsHistory` | `/api/div/{sym}` | `next.revalidate: REVALIDATE_WARM` | Yes — `eodhd-dividends-history-v1`, **same** | Phase 4: cross-request dedupe per `(symbol, range)`; API route `Cache-Control`: `CACHE_CONTROL_PRIVATE_WARM`. |
 | Splits | `fetchEodhdSplitsHistory` | `/api/splits/{sym}` | `next.revalidate: REVALIDATE_WARM` | Yes — `eodhd-splits-history-v1`, **same** | Phase 4; API route `CACHE_CONTROL_PRIVATE_WARM`. |
 | Insider transactions | `fetchEodhdInsiderTransactions` | `/api/insider-transactions` | `next.revalidate: REVALIDATE_WARM_LONG` | Yes — `eodhd-insider-transactions-v1`, **same** | Phase 4: **10 credits** / HTTP — shared cache cuts duplicate windows; API `CACHE_CONTROL_PRIVATE_WARM_LONG`. |
@@ -61,7 +62,7 @@
 | Charting series | `fetchChartingSeries` | `fetchEodhdFundamentalsJson` + merge | `eodhd-charting-series-v4` | `REVALIDATE_WARM` (300s) |
 | Header meta (split Phase 5) | `getCachedStockHeaderIdentity` / `getCachedStockHeaderEarningsLine` | `fetchEodhdFundamentalsJson` | `stock-header-identity-v1-phase5` (**12h**), `stock-header-earnings-line-v1-phase5` (**900s**) | Identity: `REVALIDATE_IDENTITY`; earnings line: `REVALIDATE_WARM_LONG` |
 | Peers compare rows | `getPeersCompareRowsCached` | fundamentals + charting per peer | `peers-compare-payload-v3-eps-yoy-fallbacks` | `REVALIDATE_WARM` (300s) |
-| Earnings week payload | `getEarningsWeekPayloadCached` | calendar + universe + fundamentals filters | `earnings-week-v20-screener-100-stocks` | `REVALIDATE_WARM_LONG` (900s) |
+| Earnings week payload | `getEarningsWeekDataPackageCached` | calendar + universe + fundamentals filters | `earnings-week-v23-calendar-daily` | `REVALIDATE_EARNINGS_CALENDAR` (~24h) |
 | Global asset search | `getCachedGlobalAssetSearch` | local universe + `fetchEodhdSearch` | `global-asset-search-v12-otc-dedupe-remote` | `REVALIDATE_SEARCH` (90s) |
 | Top 500 universe | `getTop500UniverseData` | `fetchEodhdTopByMarketCap` pages | `screener-top500-universe-v11-preferred-suffix` | `REVALIDATE_STATIC` (~12h) |
 
@@ -128,7 +129,7 @@ These functions compose **realtime batches** + **EOD** + **fundamentals** paths 
 
 1. **Already shared well:** Fundamentals JSON, charting series, top500/screener universe, macro indicators, many “page payload” builders use `unstable_cache` with named or literal TTLs.
 2. **Hot / live by design:** Realtime (`no-store`), much EOD/intraday `no-store` with **short** outer caches on chart/performance.
-3. **Phase 2 (done):** `fetchEodhdScreenerCandidates` wrapped in `unstable_cache`; `REVALIDATE_SCREENER_FILTERED`; aligned literals (search inner 90s, fundamentals + earnings calendar `REVALIDATE_WARM_LONG`, exchange list + cap screener `REVALIDATE_STATIC`, macro indicator `REVALIDATE_STATIC_DAY`).
+3. **Phase 2 (done):** `fetchEodhdScreenerCandidates` wrapped in `unstable_cache`; `REVALIDATE_SCREENER_FILTERED`; aligned literals (search inner 90s, fundamentals `REVALIDATE_WARM_LONG`, bulk earnings calendar `REVALIDATE_EARNINGS_CALENDAR`, exchange list + cap screener `REVALIDATE_STATIC`, macro indicator `REVALIDATE_STATIC_DAY`).
 4. **Phase 3 (done):** `fetchEodhdEarningsCalendar` wrapped in `unstable_cache`; HTTP `Cache-Control` for tier-aligned `app/api/**` handlers centralized as `CACHE_CONTROL_*` (Phase 4 extends to `no-store` / must-revalidate strings and corporate-action routes — see preset list).
 5. **Phase 4 (done):** `unstable_cache` on dividends, splits, insider transactions; named `CACHE_CONTROL_*` for live-price `no-store`, key-stats refresh branches, insider/dividends/splits route headers.
 6. **Phase 5 (done):** Stock detail header: separate `unstable_cache` for **identity** (name / sector / industry / logo, `REVALIDATE_IDENTITY` ~12h) vs **earnings date line** (`REVALIDATE_WARM_LONG`); same fundamentals HTTP, fewer identity recomputes on the hot cadence.

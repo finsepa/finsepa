@@ -76,6 +76,9 @@ function portfolioRangeToStockRange(r: PortfolioChartRange): StockChartRange {
 }
 
 function barYmdFromStockPoint(p: StockChartPoint): string | null {
+  if (typeof p.sessionDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(p.sessionDate)) {
+    return p.sessionDate;
+  }
   if (!Number.isFinite(p.time)) return null;
   try {
     return new Date(p.time * 1000).toISOString().slice(0, 10);

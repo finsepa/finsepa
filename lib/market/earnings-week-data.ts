@@ -2,21 +2,19 @@ import "server-only";
 
 import { unstable_cache } from "next/cache";
 
-import { REVALIDATE_WARM_LONG } from "@/lib/data/cache-policy";
-import {
-  extractMarketCapUsdFromFundamentalsRoot,
-  fetchEodhdFundamentalsJson,
-  findFundamentalsAnnouncementYmdInWeek,
-} from "@/lib/market/eodhd-fundamentals";
+import { REVALIDATE_EARNINGS_CALENDAR } from "@/lib/data/cache-policy";
+import { extractMarketCapUsdFromFundamentalsRoot, fetchEodhdFundamentalsJson } from "@/lib/market/eodhd-fundamentals";
 import { fetchEodhdEarningsCalendar, type EodhdRawEarningRow } from "@/lib/market/eodhd-earnings-calendar";
 import type {
   EarningsCalendarItem,
   EarningsDayColumn,
   EarningsReportTiming,
+  EarningsTimingBucket,
+  EarningsTimingBucketId,
   EarningsWeekPayload,
 } from "@/lib/market/earnings-calendar-types";
 import { logoUrlFromFundamentalsRoot } from "@/lib/market/stock-logo-url";
-import { listScreenerEquityTickersOrdered } from "@/lib/screener/screener-earnings-universe";
+import { listTop500EquityTickersOrdered } from "@/lib/screener/screener-earnings-universe";
 import { getScreenerCompaniesStaticLayer } from "@/lib/screener/screener-companies-layers";
 import { resolveEquityLogoUrlFromListingTicker } from "@/lib/screener/resolve-equity-logo-url";
 import { TOP10_META, TOP10_TICKERS, type Top10Ticker } from "@/lib/screener/top10-config";
@@ -24,10 +22,10 @@ import { issuerKeyForOtcListingCollapse } from "@/lib/market/otc-duplicate-ticke
 import { runWithConcurrencyLimit } from "@/lib/utils/run-with-concurrency-limit";
 
 /**
- * Symbols: same ordered list as Screener (top 10 + page 2). The bulk EODHD calendar is merged with
- * per-ticker fundamentals when a screener name is missing from the feed but has an announcement in the week.
+ * Symbols: Top-500 US equities from the Screener static universe (market-cap order). Calendar rows outside
+ * that list are ignored (no per-user fan-out to fundamentals for hundreds of off-universe names).
  *
- * Set `EARNINGS_USE_FUNDAMENTALS_MC=1` to additionally fetch fundamentals JSON for MC gating (calendar + supplement).
+ * Set `EARNINGS_USE_FUNDAMENTALS_MC=1` to fetch fundamentals JSON for MC gating on calendar-matched tickers only.
  */
 function isEarningsFundamentalsMcFilterEnabled(): boolean {
   return process.env.EARNINGS_USE_FUNDAMENTALS_MC === "1";
@@ -42,12 +40,16 @@ function earningsUniverseKey(ticker: string): string {
     .replace(/-/g, ".");
 }
 
-/** Same equities as `/screener` (page 1 + page 2 stocks), as normalized earnings keys. */
+/** Top-500 US equities (market-cap order) plus curated Top-10, as normalized earnings keys. */
 function buildScreenerStockAllowKeys(universe: readonly { ticker: string }[]): Set<string> {
-  return new Set(listScreenerEquityTickersOrdered(universe).map((t) => earningsUniverseKey(t)));
+  const keys = new Set(listTop500EquityTickersOrdered(universe).map((t) => earningsUniverseKey(t)));
+  for (const t of TOP10_TICKERS) {
+    keys.add(earningsUniverseKey(t));
+  }
+  return keys;
 }
 
-/** True if `ticker` is on `/screener` (top 10 + page 2) — use to gate earnings preview API. */
+/** True if `ticker` is in the Top-500 earnings universe — use to gate earnings preview API. */
 export async function isTickerOnScreenerEarningsUniverse(ticker: string): Promise<boolean> {
   const { universe } = await getScreenerCompaniesStaticLayer();
   return buildScreenerStockAllowKeys(universe).has(earningsUniverseKey(ticker));
@@ -172,6 +174,22 @@ function isUsStockCode(code: string): boolean {
   return /\.US$/i.test(code) && !/\.CC$/i.test(code);
 }
 
+/**
+ * EODHD bulk `calendar/earnings` often emits `TSLA` / `BRK-B` without a `.US` suffix; we previously skipped
+ * those rows in {@link parseFilterDedupeWeek} because {@link isUsStockCode} required `.US`.
+ * If `code` already contains `.` and is not `…US`, we do not guess (e.g. `SAP.DE`); the feed must use `…US`
+ * for US listings with a dot in the symbol.
+ */
+function normalizeEarningsCalendarCodeToUs(code: string): string | null {
+  const c = code.trim();
+  if (!c) return null;
+  if (/\.CC$/i.test(c)) return null;
+  if (/\.US$/i.test(c)) return c;
+  if (c.includes(".")) return null;
+  if (!/^[A-Za-z0-9\-]+$/i.test(c)) return null;
+  return `${c}.US`;
+}
+
 function tickerFromCode(code: string): string {
   return code.replace(/\.US$/i, "").replace(/-/g, ".");
 }
@@ -183,8 +201,14 @@ function nameFromRawRow(row: EodhdRawEarningRow): string | null {
 }
 
 /**
-/** USD — exclude smaller names before enrichment (data quality + fewer downstream calls). */
+ * USD — exclude smaller names before enrichment (data quality + fewer downstream calls).
+ */
 const MIN_MARKET_CAP_USD = 1_000_000_000;
+
+/** Max earnings rows per weekday column before timing split (calendar density cap). */
+const EARNINGS_TOP500_PER_DAY_CAP = 48;
+/** SSR + initial paint: first N names per timing bucket; overflow loads via `/api/earnings/week-bucket`. */
+const EARNINGS_BUCKET_PREVIEW_COUNT = 7;
 
 /**
  * Parallel fundamentals fetches for market-cap filtering. Previously a fixed chunk size of 10 ran
@@ -201,8 +225,9 @@ function logEarningsPipelineStats(payload: {
   afterScreenerAllowlist: number;
   uniqueTickersFundamentalsFetched: number;
   afterMarketCapFilter: number;
-  afterScreenerFundamentalsSupplement: number;
-  finalRendered: number;
+  finalPreparedRows: number;
+  previewCardsRendered: number;
+  overflowRowsPrepared: number;
   filterMode: "universe_mc" | "fundamentals_mc";
   timingMs?: {
     calendar: number;
@@ -227,12 +252,13 @@ function logEarningsPipelineStats(payload: {
     droppedPreferredOrSiblingListing: droppedPreferredDup,
     afterScreenerAllowlist: payload.afterScreenerAllowlist,
     droppedNotOnScreener: droppedScreener,
-    afterScreenerFundamentalsSupplement: payload.afterScreenerFundamentalsSupplement,
+    finalPreparedRows: payload.finalPreparedRows,
+    previewCardsRendered: payload.previewCardsRendered,
+    overflowRowsPrepared: payload.overflowRowsPrepared,
     uniqueTickersFundamentalsFetched: payload.uniqueTickersFundamentalsFetched,
     filterMode: payload.filterMode,
     afterMarketCapGte1B: payload.afterMarketCapFilter,
     droppedByMarketCapOrMissing: droppedMc,
-    finalRenderedCards: payload.finalRendered,
     ...(payload.timingMs ? { timingMs: payload.timingMs } : {}),
   });
 }
@@ -300,16 +326,79 @@ async function fetchFundamentalsRootsForMarketCap(
   return map;
 }
 
-function timingSortOrder(t: EarningsReportTiming): number {
-  if (t === "bmo") return 0;
-  if (t === "amc") return 1;
-  return 2;
+/**
+ * Before {@link EARNINGS_TOP500_PER_DAY_CAP}: sort by static-universe market cap (largest first), then
+ * screener rank. Sorting only by timing (all BMO before AMC) would drop every after-market name when a
+ * weekday has 48+ before-market rows — e.g. large AMC reporters like INTC never reached the bucket split.
+ */
+function sortPreparedForDayCap(
+  rows: readonly PreparedEarning[],
+  universeByKey: ReadonlyMap<string, { marketCapUsd: number }>,
+  rankByKey: ReadonlyMap<string, number>,
+): PreparedEarning[] {
+  return [...rows].sort((a, b) => {
+    const ka = earningsUniverseKey(a.ticker);
+    const kb = earningsUniverseKey(b.ticker);
+    const mcA = universeByKey.get(ka)?.marketCapUsd ?? 0;
+    const mcB = universeByKey.get(kb)?.marketCapUsd ?? 0;
+    if (mcB !== mcA) return mcB - mcA;
+    const ra = rankByKey.get(ka) ?? 99_999;
+    const rb = rankByKey.get(kb) ?? 99_999;
+    if (ra !== rb) return ra - rb;
+    return a.ticker.localeCompare(b.ticker);
+  });
 }
 
-function comparePreparedForDay(a: PreparedEarning, b: PreparedEarning): number {
-  const ot = timingSortOrder(a.timing) - timingSortOrder(b.timing);
-  if (ot !== 0) return ot;
-  return a.ticker.localeCompare(b.ticker);
+/**
+ * One row per (report date, universe ticker): listing collapse can still surface duplicate issuers for the
+ * same calendar cell; keep the first occurrence in {@link preparedMarketCap} iteration order.
+ */
+function dedupePreparedByReportDateAndTicker(rows: readonly PreparedEarning[]): PreparedEarning[] {
+  const out: PreparedEarning[] = [];
+  const seen = new Set<string>();
+  for (const p of rows) {
+    const k = `${p.reportDate}|${earningsUniverseKey(p.ticker)}`;
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push(p);
+  }
+  return out;
+}
+
+/** Within one timing bucket: largest market cap first (grid reads L→R, T→B), unknown caps last. */
+function sortPreparedByMarketCapUsdDesc(
+  rows: readonly PreparedEarning[],
+  bundleByTicker: ReadonlyMap<string, TickerFundamentalsBundle>,
+): PreparedEarning[] {
+  const mcFor = (ticker: string): number | null => {
+    const mc = bundleByTicker.get(ticker)?.marketCapUsd;
+    return mc != null && Number.isFinite(mc) && mc > 0 ? mc : null;
+  };
+  return [...rows].sort((a, b) => {
+    const ma = mcFor(a.ticker);
+    const mb = mcFor(b.ticker);
+    if (ma == null && mb == null) return a.ticker.localeCompare(b.ticker);
+    if (ma == null) return 1;
+    if (mb == null) return -1;
+    if (mb !== ma) return mb - ma;
+    return a.ticker.localeCompare(b.ticker);
+  });
+}
+
+function splitPreparedByTiming(rows: readonly PreparedEarning[]): {
+  bmo: PreparedEarning[];
+  amc: PreparedEarning[];
+  unknown: PreparedEarning[];
+} {
+  const bmo: PreparedEarning[] = [];
+  const amc: PreparedEarning[] = [];
+  const unknown: PreparedEarning[] = [];
+  for (const p of rows) {
+    if (p.timing === "bmo") bmo.push(p);
+    else if (p.timing === "amc") amc.push(p);
+    else unknown.push(p);
+  }
+  return { bmo, amc, unknown };
 }
 
 /**
@@ -323,15 +412,16 @@ function parseFilterDedupeWeek(
   const seen = new Set<string>();
   const out: PreparedEarning[] = [];
   for (const row of rows) {
-    const code = row.code?.trim();
+    const rawCode = row.code?.trim();
+    const canon = rawCode ? normalizeEarningsCalendarCodeToUs(rawCode) : null;
     const rawReport = row.report_date?.trim();
-    if (!code || !rawReport || !isUsStockCode(code)) continue;
+    if (!canon || !rawReport || !isUsStockCode(canon)) continue;
 
     const reportDate = normalizeReportDateYmdUtc(rawReport);
     if (!reportDate) continue;
     if (!allowedReportDates.has(reportDate)) continue;
 
-    const ticker = tickerFromCode(code);
+    const ticker = tickerFromCode(canon);
     const key = `${reportDate}|${ticker}`;
     if (seen.has(key)) continue;
     seen.add(key);
@@ -402,9 +492,9 @@ function dedupePrimaryListings(rows: PreparedEarning[]): PreparedEarning[] {
   return out;
 }
 
-function buildScreenerRankByEarningsKey(universe: readonly { ticker: string }[]): Map<string, number> {
+function buildScreenerRankByOrderedTickers(tickersOrdered: readonly string[]): Map<string, number> {
   const map = new Map<string, number>();
-  listScreenerEquityTickersOrdered(universe).forEach((t, i) => {
+  tickersOrdered.forEach((t, i) => {
     map.set(earningsUniverseKey(t), i + 1);
   });
   return map;
@@ -427,10 +517,15 @@ function preparedToCalendarItem(
   };
 }
 
-async function buildEarningsWeekPayloadUncached(
+type EarningsWeekDataPackage = {
+  payload: EarningsWeekPayload;
+  overflowByKey: Record<string, EarningsCalendarItem[]>;
+};
+
+async function buildEarningsWeekDataPackageUncached(
   weekMondayUtc: Date,
   strictMc: boolean,
-): Promise<EarningsWeekPayload> {
+): Promise<EarningsWeekDataPackage> {
   const t0 = performance.now();
   const monday = new Date(weekMondayUtc);
   const friday = addDaysUtc(monday, 4);
@@ -456,16 +551,14 @@ async function buildEarningsWeekPayloadUncached(
   const msParseDedupe = performance.now() - tParse0;
 
   const { universe: staticUniverse } = await getScreenerCompaniesStaticLayer();
-  const screenerTickerList = listScreenerEquityTickersOrdered(staticUniverse);
-  const maxEarningsPerDay = screenerTickerList.length;
+  const top500TickerList = listTop500EquityTickersOrdered(staticUniverse);
   const allowKeys = buildScreenerStockAllowKeys(staticUniverse);
-  const screenerRankByKey = buildScreenerRankByEarningsKey(staticUniverse);
+  const screenerRankByKey = buildScreenerRankByOrderedTickers(top500TickerList);
   const preparedScreener = prepared.filter((p) => allowKeys.has(earningsUniverseKey(p.ticker)));
 
   const uniqueTickers = [...new Set(preparedScreener.map((p) => p.ticker))];
 
   let fundamentalsRootByTicker: Map<string, Record<string, unknown> | null> | null = null;
-  /** Screener page 1+2 names for display (fast path — no extra fundamentals for unrelated tickers). */
   const universeByKey = buildScreenerUniverseMapForEarnings(staticUniverse, allowKeys);
 
   const tFund0 = performance.now();
@@ -490,38 +583,7 @@ async function buildEarningsWeekPayloadUncached(
     preparedMarketCap = preparedScreener;
   }
 
-  let preparedForWeek = preparedMarketCap;
-  const coveredKeys = new Set(preparedForWeek.map((p) => earningsUniverseKey(p.ticker)));
-  const missingTickers = screenerTickerList.filter((t) => !coveredKeys.has(earningsUniverseKey(t)));
-  if (missingTickers.length > 0) {
-    const supplementRoots = await fetchFundamentalsRootsForMarketCap(missingTickers);
-    const supplemental: PreparedEarning[] = [];
-    for (const t of missingTickers) {
-      const root = supplementRoots.get(t) ?? null;
-      const ymd = findFundamentalsAnnouncementYmdInWeek(root, allowedReportDates);
-      if (!ymd) continue;
-      if (strictMc) {
-        if (!root) continue;
-        const mc = extractMarketCapUsdFromFundamentalsRoot(root);
-        if (mc == null || mc < MIN_MARKET_CAP_USD) continue;
-      }
-      supplemental.push({
-        ticker: t,
-        reportDate: ymd,
-        timing: "unknown",
-        timingLabel: "",
-        fallbackName: null,
-      });
-    }
-    if (supplemental.length > 0) {
-      preparedForWeek = dedupePrimaryListings([...preparedForWeek, ...supplemental]);
-      if (strictMc && fundamentalsRootByTicker) {
-        for (const [sym, root] of supplementRoots) {
-          fundamentalsRootByTicker.set(sym, root);
-        }
-      }
-    }
-  }
+  const preparedForWeek = dedupePreparedByReportDateAndTicker(preparedMarketCap);
 
   const byDate = new Map<string, PreparedEarning[]>();
   for (const p of preparedForWeek) {
@@ -532,17 +594,16 @@ async function buildEarningsWeekPayloadUncached(
 
   const slicedByDate = new Map<string, PreparedEarning[]>();
   for (const ymd of weekdayYmds) {
-    const list = [...(byDate.get(ymd) ?? [])];
-    list.sort(comparePreparedForDay);
-    slicedByDate.set(ymd, list.slice(0, maxEarningsPerDay));
+    const list = sortPreparedForDayCap(byDate.get(ymd) ?? [], universeByKey, screenerRankByKey);
+    slicedByDate.set(ymd, list.slice(0, EARNINGS_TOP500_PER_DAY_CAP));
   }
 
-  const visible = weekdayYmds.flatMap((ymd) => slicedByDate.get(ymd) ?? []);
+  const cappedFlat = weekdayYmds.flatMap((ymd) => slicedByDate.get(ymd) ?? []);
   const msMcFilterSlice = performance.now() - tMc0;
 
   const tDisp0 = performance.now();
   const bundleByTicker = new Map<string, TickerFundamentalsBundle>();
-  for (const p of visible) {
+  for (const p of cappedFlat) {
     if (bundleByTicker.has(p.ticker)) continue;
     if (strictMc) {
       const root = fundamentalsRootByTicker!.get(p.ticker) ?? null;
@@ -555,6 +616,44 @@ async function buildEarningsWeekPayloadUncached(
   }
   const msDisplayBundles = performance.now() - tDisp0;
 
+  const overflowByKey: Record<string, EarningsCalendarItem[]> = {};
+
+  function bucketForTiming(ymd: string, timing: EarningsReportTiming, timingRows: PreparedEarning[]): EarningsTimingBucket {
+    const ordered = sortPreparedByMarketCapUsdDesc(timingRows, bundleByTicker);
+    const preview = ordered.slice(0, EARNINGS_BUCKET_PREVIEW_COUNT);
+    const rest = ordered.slice(EARNINGS_BUCKET_PREVIEW_COUNT);
+    const key = `${ymd}:${timing}`;
+    overflowByKey[key] = rest.map((p) =>
+      preparedToCalendarItem(p, bundleByTicker.get(p.ticker), screenerRankByKey),
+    );
+    return {
+      items: preview.map((p) => preparedToCalendarItem(p, bundleByTicker.get(p.ticker), screenerRankByKey)),
+      overflowCount: rest.length,
+    };
+  }
+
+  const days: EarningsDayColumn[] = [];
+  let previewCardsRendered = 0;
+  for (let i = 0; i < 5; i++) {
+    const d = addDaysUtc(monday, i);
+    const ymd = weekdayYmds[i]!;
+    const colPrepared = slicedByDate.get(ymd) ?? [];
+    const { bmo, amc, unknown } = splitPreparedByTiming(colPrepared);
+    const beforeMarket = bucketForTiming(ymd, "bmo", bmo);
+    const afterMarket = bucketForTiming(ymd, "amc", amc);
+    const timeTbd = bucketForTiming(ymd, "unknown", unknown);
+    previewCardsRendered += beforeMarket.items.length + afterMarket.items.length + timeTbd.items.length;
+    days.push({
+      date: ymd,
+      weekdayLabel: weekdayShortUtc(ymd),
+      dayNumber: String(d.getUTCDate()),
+      beforeMarket,
+      afterMarket,
+      timeTbd,
+    });
+  }
+
+  const overflowRowsPrepared = Object.values(overflowByKey).reduce((n, xs) => n + xs.length, 0);
   const msTotal = performance.now() - t0;
 
   logEarningsPipelineStats({
@@ -565,8 +664,9 @@ async function buildEarningsWeekPayloadUncached(
     afterScreenerAllowlist: preparedScreener.length,
     uniqueTickersFundamentalsFetched: strictMc ? uniqueTickers.length : 0,
     afterMarketCapFilter: preparedMarketCap.length,
-    afterScreenerFundamentalsSupplement: preparedForWeek.length,
-    finalRendered: visible.length,
+    finalPreparedRows: preparedForWeek.length,
+    previewCardsRendered,
+    overflowRowsPrepared,
     filterMode: strictMc ? "fundamentals_mc" : "universe_mc",
     timingMs: {
       calendar: Math.round(msCalendar),
@@ -578,46 +678,63 @@ async function buildEarningsWeekPayloadUncached(
     },
   });
 
-  const days: EarningsDayColumn[] = [];
-  for (let i = 0; i < 5; i++) {
-    const d = addDaysUtc(monday, i);
-    const ymd = weekdayYmds[i]!;
-    const colPrepared = slicedByDate.get(ymd) ?? [];
-    const colItems: EarningsCalendarItem[] = colPrepared.map((p) =>
-      preparedToCalendarItem(p, bundleByTicker.get(p.ticker), screenerRankByKey),
+  const hasAnyEvents =
+    previewCardsRendered > 0 ||
+    days.some(
+      (day) =>
+        day.beforeMarket.overflowCount + day.afterMarket.overflowCount + day.timeTbd.overflowCount > 0,
     );
-    days.push({
-      date: ymd,
-      weekdayLabel: weekdayShortUtc(ymd),
-      dayNumber: String(d.getUTCDate()),
-      items: colItems,
-    });
-  }
-
-  const hasAnyEvents = visible.length > 0;
-  return {
+  const payload: EarningsWeekPayload = {
     weekMondayYmd: fromYmd,
     weekLabel: formatWeekRangeLabel(monday, friday),
     days,
     hasAnyEvents,
     datasetFilter: strictMc ? "fundamentals_mc" : "universe_mc",
   };
+
+  return { payload, overflowByKey };
 }
 
 type EarningsCacheMode = "universe" | "fund";
 
-const getEarningsWeekPayloadCached = unstable_cache(
-  async (weekMondayYmd: string, mode: EarningsCacheMode) => {
+const getEarningsWeekDataPackageCached = unstable_cache(
+  async (weekMondayYmd: string, mode: EarningsCacheMode): Promise<EarningsWeekDataPackage> => {
     const t = Date.parse(`${weekMondayYmd}T12:00:00.000Z`);
     const monday = Number.isFinite(t) ? mondayOfWeekUtc(new Date(t)) : mondayOfWeekUtc(new Date());
-    return buildEarningsWeekPayloadUncached(monday, mode === "fund");
+    return buildEarningsWeekDataPackageUncached(monday, mode === "fund");
   },
-  ["earnings-week-v20-screener-100-stocks"],
-  { revalidate: REVALIDATE_WARM_LONG },
+  ["earnings-week-v26-calendar-bare-us"],
+  { revalidate: REVALIDATE_EARNINGS_CALENDAR },
 );
 
-export async function getEarningsWeekPayload(weekMondayUtc: Date): Promise<EarningsWeekPayload> {
+async function getEarningsWeekDataPackage(weekMondayUtc: Date): Promise<EarningsWeekDataPackage> {
   const ymd = toYmdUtc(mondayOfWeekUtc(weekMondayUtc));
   const mode: EarningsCacheMode = isEarningsFundamentalsMcFilterEnabled() ? "fund" : "universe";
-  return getEarningsWeekPayloadCached(ymd, mode);
+  return getEarningsWeekDataPackageCached(ymd, mode);
+}
+
+export async function getEarningsWeekPayload(weekMondayUtc: Date): Promise<EarningsWeekPayload> {
+  const pack = await getEarningsWeekDataPackage(weekMondayUtc);
+  return pack.payload;
+}
+
+/** Overflow cards for one weekday timing bucket — backed by the same `unstable_cache` entry as the week grid. */
+export async function getEarningsTimingBucketOverflow(
+  weekMondayUtc: Date,
+  dayYmd: string,
+  timing: EarningsTimingBucketId,
+): Promise<EarningsCalendarItem[]> {
+  const monday = mondayOfWeekUtc(weekMondayUtc);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dayYmd)) return [];
+  let inWeek = false;
+  for (let i = 0; i < 5; i++) {
+    if (toYmdUtc(addDaysUtc(monday, i)) === dayYmd) {
+      inWeek = true;
+      break;
+    }
+  }
+  if (!inWeek) return [];
+
+  const pack = await getEarningsWeekDataPackage(weekMondayUtc);
+  return pack.overflowByKey[`${dayYmd}:${timing}`] ?? [];
 }

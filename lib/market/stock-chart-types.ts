@@ -12,6 +12,12 @@ export type StockChartPoint = {
   /** UNIX seconds (UTC). Compatible with lightweight-charts UTCTimestamp. */
   time: number;
   value: number;
+  /**
+   * Exchange/session calendar date `YYYY-MM-DD` when known (EODHD `date` for dailies;
+   * US/Eastern session date for intraday). Used to align portfolio benchmark paths with
+   * ledger dates without UTC midnight rounding drift.
+   */
+  sessionDate?: string;
   /** When API provides an IANA zone, used for price timestamp display. */
   timeZone?: string;
 };

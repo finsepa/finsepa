@@ -392,9 +392,15 @@ function rowHasEpsActualField(r: Record<string, unknown>): boolean {
   return true;
 }
 
+function rowHasRevenueActualField(r: Record<string, unknown>): boolean {
+  return numFromRow(r, EARNINGS_REVENUE_ACTUAL_KEYS) != null;
+}
+
 function rowIsReported(r: Record<string, unknown>): boolean {
   if (isEarningsReportDateStrictlyFuture(r)) return false;
-  return rowHasEpsActualField(r);
+  if (rowHasEpsActualField(r)) return true;
+  /** EODHD sometimes lags `epsActual` while revenue / GAAP lines are already present. */
+  return rowHasRevenueActualField(r);
 }
 
 function formatEps(n: number): string {
@@ -678,6 +684,23 @@ function sortHistoryRows(rows: StockEarningsHistoryRow[]): StockEarningsHistoryR
   });
 }
 
+/**
+ * For each fiscal period-end, earliest `reportDate` (or `date`) seen in `Earnings.History`.
+ * When EODHD keeps a stale “rescheduled” row (e.g. Apr 28) alongside an earlier real line (e.g. Apr 22),
+ * the minimum is already in the past — that quarter should not surface as “upcoming” from the later row.
+ */
+function buildMinReportYmdByFiscalPeriodEnd(rawRows: Record<string, unknown>[]): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const r of rawRows) {
+    const fiscal = toYmdUtcFromUnknown(r.date ?? r.Date ?? r.periodEnd ?? r.PeriodEnd);
+    const report = earningsHistoryReportYmd(r);
+    if (!fiscal || !report) continue;
+    const prev = out.get(fiscal);
+    if (!prev || report < prev) out.set(fiscal, report);
+  }
+  return out;
+}
+
 function pickUpcomingFromHistory(
   rawRows: Record<string, unknown>[],
   calendarTimingRaw: string | null,
@@ -685,6 +708,8 @@ function pickUpcomingFromHistory(
   revenueEstimateByFiscalPeriodFromTrend: Map<string, number>,
 ): StockEarningsUpcoming | null {
   const startToday = startOfTodayUtcMs();
+  const todayYmd = toYmdUtc(new Date());
+  const minReportByFiscal = buildMinReportYmdByFiscalPeriodEnd(rawRows);
   let best: { r: Record<string, unknown>; dayStart: number; reportYmd: string | null } | null = null;
 
   for (const r of rawRows) {
@@ -697,6 +722,11 @@ function pickUpcomingFromHistory(
     const dayStart = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0, 0);
     if (dayStart < startToday) continue;
     if (rowIsReported(r)) continue;
+    const periodYmdForDedupe = toYmdUtcFromUnknown(r.date ?? r.Date ?? r.periodEnd ?? r.PeriodEnd);
+    if (periodYmdForDedupe) {
+      const minR = minReportByFiscal.get(periodYmdForDedupe);
+      if (minR && minR < todayYmd) continue;
+    }
     if (best == null || dayStart < best.dayStart) {
       best = { r, dayStart, reportYmd: toYmdUtcFromUnknown(rawReport) ?? toYmdUtcFromUnknown(rawDate) };
     }

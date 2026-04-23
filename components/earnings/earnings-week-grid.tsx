@@ -2,15 +2,42 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
 
 import { EarningsPreviewModal } from "@/components/earnings/earnings-preview-modal";
+import { PostMarketEarningsIcon } from "@/components/stock/post-market-earnings-icon";
+import { PreMarketEarningsIcon } from "@/components/stock/pre-market-earnings-icon";
 import { CompanyLogo } from "@/components/screener/company-logo";
 import type {
   EarningsCalendarItem,
   EarningsDayColumn,
+  EarningsReportTiming,
+  EarningsTimingBucket,
   EarningsWeekPayload,
 } from "@/lib/market/earnings-calendar-types";
+import { cn } from "@/lib/utils";
+
+/** Match server `earningsUniverseKey` so preview + overflow merges dedupe the same symbol. */
+function earningsGridDedupeKey(it: EarningsCalendarItem): string {
+  const t = it.ticker
+    .trim()
+    .toUpperCase()
+    .replace(/\.US$/i, "")
+    .replace(/-/g, ".");
+  return `${it.reportDate}|${t}|${it.timing}`;
+}
+
+function dedupeEarningsCalendarItems(items: readonly EarningsCalendarItem[]): EarningsCalendarItem[] {
+  const seen = new Set<string>();
+  const out: EarningsCalendarItem[] = [];
+  for (const it of items) {
+    const k = earningsGridDedupeKey(it);
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push(it);
+  }
+  return out;
+}
 
 function todayYmdUtc(): string {
   const d = new Date();
@@ -30,6 +57,233 @@ function currentWeekMondayYmdUtc(): string {
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
 }
 
+/** Same 20×20 Figma asset as the stock earnings card. */
+const EARNINGS_CALENDAR_BMO_ICON_PX = 20;
+
+function EarningsTimingSectionHeading({ timing, title }: { timing: EarningsReportTiming; title: string }) {
+  if (timing === "bmo") {
+    return (
+      <div className="mb-2 flex items-center gap-2">
+        <span
+          className="inline-flex h-5 w-5 shrink-0 flex-none items-center justify-center overflow-hidden"
+          title="Before market"
+          role="img"
+          aria-label="Before market"
+        >
+          <PreMarketEarningsIcon size={EARNINGS_CALENDAR_BMO_ICON_PX} />
+        </span>
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-[#71717A]">{title}</p>
+      </div>
+    );
+  }
+
+  if (timing === "amc") {
+    return (
+      <div className="mb-2 flex items-center gap-2">
+        <span
+          className="inline-flex h-5 w-5 shrink-0 flex-none items-center justify-center overflow-hidden"
+          title="After market"
+          role="img"
+          aria-label="After market"
+        >
+          <PostMarketEarningsIcon size={20} />
+        </span>
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-[#71717A]">{title}</p>
+      </div>
+    );
+  }
+
+  /* Time TBD — 20×20 px badge (same footprint as pre/post Figma icons), Lucide clock centered inside. */
+  return (
+    <div className="mb-2 flex items-center gap-2">
+      <span
+        className="inline-flex h-5 w-5 shrink-0 flex-none items-center justify-center overflow-hidden rounded-full bg-[#F4F4F5]"
+        title="Time TBD"
+        role="img"
+        aria-label="Time TBD"
+      >
+        <Clock className="text-[#71717A]" size={12} strokeWidth={2} />
+      </span>
+      <p className="text-[10px] font-semibold uppercase tracking-wide text-[#71717A]">{title}</p>
+    </div>
+  );
+}
+
+function EarningsTimingBlock({
+  title,
+  bucket,
+  timing,
+  weekMondayYmd,
+  dayYmd,
+  onOpenCard,
+  showTopRule,
+}: {
+  title: string;
+  bucket: EarningsTimingBucket;
+  timing: EarningsReportTiming;
+  weekMondayYmd: string;
+  dayYmd: string;
+  onOpenCard: (item: EarningsCalendarItem) => void;
+  /** Extra top spacing when this block follows another timing group in the same day. */
+  showTopRule?: boolean;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const [extraItems, setExtraItems] = useState<EarningsCalendarItem[]>([]);
+  const [loadingOverflow, setLoadingOverflow] = useState(false);
+  const [overflowError, setOverflowError] = useState(false);
+
+  const hasPreview = bucket.items.length > 0;
+  const hasOverflowOnly = !hasPreview && bucket.overflowCount > 0;
+
+  const gridItems = useMemo(() => {
+    const merged = expanded ? [...bucket.items, ...extraItems] : [...bucket.items];
+    return dedupeEarningsCalendarItems(merged);
+  }, [expanded, bucket.items, extraItems]);
+
+  const showExpandTile = bucket.overflowCount > 0 && !expanded;
+  const showCollapse = expanded && bucket.overflowCount > 0;
+
+  if (!hasPreview && !hasOverflowOnly) return null;
+
+  const loadOverflowAndExpand = async () => {
+    if (bucket.overflowCount === 0) {
+      setExpanded(true);
+      return;
+    }
+    if (extraItems.length > 0) {
+      setExpanded(true);
+      return;
+    }
+    setLoadingOverflow(true);
+    setOverflowError(false);
+    try {
+      const qs = new URLSearchParams({
+        week: weekMondayYmd,
+        day: dayYmd,
+        timing,
+      });
+      const res = await fetch(`/api/earnings/week-bucket?${qs.toString()}`);
+      if (!res.ok) throw new Error("overflow");
+      const body: unknown = await res.json();
+      const raw = body && typeof body === "object" && "items" in body ? (body as { items: unknown }).items : null;
+      const items = Array.isArray(raw) ? (raw as EarningsCalendarItem[]) : [];
+      setExtraItems(items);
+      setExpanded(true);
+    } catch {
+      setOverflowError(true);
+    } finally {
+      setLoadingOverflow(false);
+    }
+  };
+
+  return (
+    <div className={cn(showTopRule ? "mt-3" : "")}>
+      <EarningsTimingSectionHeading timing={timing} title={title} />
+      <div className="grid grid-cols-2 gap-2">
+        {gridItems.map((item, index) => (
+          <EarningsCard
+            key={`${earningsGridDedupeKey(item)}-${index}`}
+            ticker={item.ticker}
+            companyName={item.companyName}
+            logoUrl={item.logoUrl}
+            onOpen={() => onOpenCard(item)}
+          />
+        ))}
+        {showExpandTile ? (
+          <button
+            type="button"
+            disabled={loadingOverflow}
+            onClick={() => void loadOverflowAndExpand()}
+            className="flex min-h-[72px] w-full flex-col items-center justify-center rounded-xl border border-dashed border-[#CBD5E1] bg-[#FAFAFA] px-2 py-2.5 text-center shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)] transition-colors hover:border-[#2563EB]/35 hover:bg-[#EFF6FF] disabled:opacity-60"
+            aria-expanded="false"
+            aria-busy={loadingOverflow}
+            aria-label={`Show ${bucket.overflowCount} more in ${title}`}
+          >
+            {loadingOverflow ? (
+              <span className="text-[12px] font-medium text-[#71717A]">Loading…</span>
+            ) : overflowError ? (
+              <span className="text-[12px] font-medium text-[#DC2626]">Tap to retry</span>
+            ) : (
+              <span className="text-[15px] font-semibold tabular-nums leading-5 text-[#2563EB]">+{bucket.overflowCount}</span>
+            )}
+          </button>
+        ) : null}
+      </div>
+      {showCollapse ? (
+        <button
+          type="button"
+          onClick={() => setExpanded(false)}
+          className="mt-2 w-full rounded-[10px] border border-[#E4E4E7] bg-white py-2 text-[13px] font-medium leading-5 text-[#2563EB] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors hover:bg-[#FAFAFA] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15"
+        >
+          Show less
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+function EarningsDayColumnBody({
+  day,
+  weekMondayYmd,
+  onOpenCard,
+}: {
+  day: EarningsDayColumn;
+  weekMondayYmd: string;
+  onOpenCard: (item: EarningsCalendarItem) => void;
+}) {
+  const { date, beforeMarket, afterMarket, timeTbd } = day;
+  const totalSignals =
+    beforeMarket.items.length +
+    beforeMarket.overflowCount +
+    afterMarket.items.length +
+    afterMarket.overflowCount +
+    timeTbd.items.length +
+    timeTbd.overflowCount;
+
+  if (totalSignals === 0) {
+    return <p className="text-[12px] leading-4 text-[#A1A1AA]">No reports</p>;
+  }
+
+  const beforeHasBody = beforeMarket.items.length > 0 || beforeMarket.overflowCount > 0;
+
+  return (
+    <div className="min-w-0">
+      <EarningsTimingBlock
+        title="Before market"
+        bucket={beforeMarket}
+        timing="bmo"
+        weekMondayYmd={weekMondayYmd}
+        dayYmd={date}
+        onOpenCard={onOpenCard}
+      />
+      <EarningsTimingBlock
+        title="After market"
+        bucket={afterMarket}
+        timing="amc"
+        weekMondayYmd={weekMondayYmd}
+        dayYmd={date}
+        onOpenCard={onOpenCard}
+        showTopRule={beforeHasBody}
+      />
+      <EarningsTimingBlock
+        title="Time TBD"
+        bucket={timeTbd}
+        timing="unknown"
+        weekMondayYmd={weekMondayYmd}
+        dayYmd={date}
+        onOpenCard={onOpenCard}
+        showTopRule={
+          beforeMarket.items.length +
+            beforeMarket.overflowCount +
+            afterMarket.items.length +
+            afterMarket.overflowCount >
+          0
+        }
+      />
+    </div>
+  );
+}
+
 function EarningsCard({
   ticker,
   companyName,
@@ -45,14 +299,12 @@ function EarningsCard({
     <button
       type="button"
       onClick={onOpen}
-      className="w-full rounded-xl border border-[#E4E4E7] bg-white px-3 py-2.5 text-left shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors hover:bg-[#FAFAFA]"
+      className="flex w-full flex-col items-center justify-center gap-1.5 rounded-xl border border-[#E4E4E7] bg-white px-2 py-2.5 text-center shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors hover:bg-[#FAFAFA]"
     >
-      <div className="flex min-w-0 items-start gap-2.5">
-        <CompanyLogo name={companyName || ticker} logoUrl={logoUrl} symbol={ticker} size="sm" />
-        <span className="min-w-0 flex-1 text-[13px] font-semibold leading-5 tabular-nums text-[#09090B]">
-          {ticker}
-        </span>
-      </div>
+      <CompanyLogo name={companyName || ticker} logoUrl={logoUrl} symbol={ticker} size="28" />
+      <span className="w-full min-w-0 truncate text-[13px] font-semibold leading-5 tabular-nums text-[#09090B]">
+        {ticker}
+      </span>
     </button>
   );
 }
@@ -171,21 +423,12 @@ export function EarningsWeekGrid({
                     {day.dayNumber}
                   </div>
                 </div>
-                <div className="flex flex-col gap-2">
-                  {day.items.length === 0 ? (
-                    <p className="text-[12px] leading-4 text-[#A1A1AA]">No reports</p>
-                  ) : (
-                    day.items.map((item) => (
-                      <EarningsCard
-                        key={`${item.ticker}-${item.reportDate}`}
-                        ticker={item.ticker}
-                        companyName={item.companyName}
-                        logoUrl={item.logoUrl}
-                        onOpen={() => setPreviewItem(item)}
-                      />
-                    ))
-                  )}
-                </div>
+                <EarningsDayColumnBody
+                  key={`${data.weekMondayYmd}-${day.date}`}
+                  day={day}
+                  weekMondayYmd={data.weekMondayYmd}
+                  onOpenCard={setPreviewItem}
+                />
               </div>
             ))}
           </div>

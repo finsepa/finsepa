@@ -19,7 +19,8 @@
  * | `TIER_SEARCH` | 90 | Global asset search dedupe. |
  * | `TIER_WARM` | 300 | Charting series, peers table, shares-outstanding helper, macro dashboard bundle, inner `fetch` hints for EOD list bars. |
  * | `TIER_SCREENER_MARKET` | 300 | Screener Markets tab realtime+EOD batches (`simple-market-layer` tab exports). |
- * | `TIER_WARM_LONG` | 900 | **Full** stock fundamentals JSON (`eodhd-fundamentals`), header **earnings date** slice, earnings week, crypto fundamentals meta. |
+ * | `TIER_WARM_LONG` | 900 | **Full** stock fundamentals JSON (`eodhd-fundamentals`), header **earnings date** slice, crypto fundamentals meta. |
+ * | `TIER_EARNINGS_CALENDAR` | 86400 | Bulk EODHD earnings calendar + `/earnings` week payload ({@link REVALIDATE_EARNINGS_CALENDAR}). |
  * | `TIER_IDENTITY` | 43200 (~12h) | Stock header **name / sector / industry / logo** (Phase 5 — decoupled from earnings-line warm-long). |
  * | `TIER_STATIC` | 43200 (~12h) | Screener universe by market cap, exchange symbol lists, `fetch` hint on screener HTTP. |
  * | `TIER_STATIC_DAY` | 86400 (~24h) | Macro indicator JSON rows (`eodhd-macro` inner fetch). |
@@ -64,7 +65,7 @@ export const REVALIDATE_WARM = 300;
  */
 export const REVALIDATE_SCREENER_MARKET = 300;
 
-/** ~15m — earnings week grid, heavy weekly aggregates */
+/** ~15m — full fundamentals JSON, stock header earnings line, heavy aggregates (not bulk earnings calendar). */
 export const REVALIDATE_WARM_LONG = 900;
 
 /** ~12h — screener provider screeners, top-500 universe snapshot */
@@ -85,6 +86,12 @@ export const REVALIDATE_SCREENER_FILTERED = 3600;
 /** ~24h — macro raw indicator slices (slow-changing) */
 export const REVALIDATE_STATIC_DAY = 86400;
 
+/**
+ * ~24h — EODHD `calendar/earnings` date ranges and the derived `/earnings` week payload.
+ * Announcement dates change slowly; use {@link REVALIDATE_WARM_LONG} for per-ticker fundamentals.
+ */
+export const REVALIDATE_EARNINGS_CALENDAR = REVALIDATE_STATIC_DAY;
+
 // ---------------------------------------------------------------------------
 // Semantic tier aliases (same seconds as above — use in new modules for clarity)
 // ---------------------------------------------------------------------------
@@ -104,7 +111,7 @@ export const REVALIDATE_TIER_WARM = REVALIDATE_WARM;
 /** Screener Markets tab batches (explicit alias of same numeric value as {@link REVALIDATE_WARM}). */
 export const REVALIDATE_TIER_SCREENER_MARKET = REVALIDATE_SCREENER_MARKET;
 
-/** Warm-long: one HTTP fundamentals blob per ticker, heavy calendars, crypto meta JSON. */
+/** Warm-long: one HTTP fundamentals blob per ticker, crypto meta JSON (not bulk earnings calendar). */
 export const REVALIDATE_TIER_WARM_LONG = REVALIDATE_WARM_LONG;
 
 /** Stock header display identity — same seconds as {@link REVALIDATE_IDENTITY}. */
@@ -118,6 +125,9 @@ export const REVALIDATE_TIER_SCREENER_FILTERED = REVALIDATE_SCREENER_FILTERED;
 
 /** Daily-scale provider slices (macro indicators). */
 export const REVALIDATE_TIER_STATIC_DAY = REVALIDATE_STATIC_DAY;
+
+/** Bulk earnings calendar + `/earnings` week grid — same ~24h as {@link REVALIDATE_EARNINGS_CALENDAR}. */
+export const REVALIDATE_TIER_EARNINGS_CALENDAR = REVALIDATE_EARNINGS_CALENDAR;
 
 /**
  * Screener first-paint **combined** bundle (`getSimpleMarketData` in `simple-market-layer.ts`).
