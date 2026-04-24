@@ -120,18 +120,8 @@ export function Topbar({
   return (
     <>
       <header className="flex min-h-[60px] min-w-0 flex-nowrap items-center justify-between gap-3 overflow-x-auto overflow-y-hidden px-4 py-3 [-webkit-overflow-scrolling:touch]">
-        <div className="flex min-w-0 flex-1 items-center gap-3">
-          <TopbarDelayedTooltip label="Search" className="shrink-0 md:hidden">
-            <button
-              type="button"
-              onClick={() => setSearchOpen(true)}
-              aria-label="Search (shortcut S)"
-              className={topbarSquircleIconClass}
-            >
-              <Search className="h-5 w-5 shrink-0" strokeWidth={1.75} aria-hidden />
-            </button>
-          </TopbarDelayedTooltip>
-          <div className="hidden min-w-0 max-w-[300px] flex-1 md:block">
+        <div className="flex min-w-0 flex-1 items-center">
+          <div className="min-w-0 w-full max-w-full flex-1 md:max-w-[300px]">
             <TopbarDelayedTooltip label="Search" className="relative block w-full max-w-full">
               <button
                 type="button"

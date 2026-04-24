@@ -285,7 +285,7 @@ function PortfolioOverviewCardsInner({
   }, [symbols.length, lifetimeReturnPct, setAthSnapshot]);
 
   return (
-    <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+    <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-2 xl:grid-cols-4 [&>*]:min-w-0">
       {showMetricSkeleton ? (
         <>
           <OverviewMetricCardSkeleton />

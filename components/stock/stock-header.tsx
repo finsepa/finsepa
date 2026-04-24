@@ -155,11 +155,11 @@ export function StockHeader({
               <p className="mt-1 text-[13px] leading-5 text-[#71717A]">
                 <span className="whitespace-normal break-words">
                   {formatHeaderMetaSegment(headerMeta?.sector)}
-                  <span className="text-[#D4D4D8]"> / </span>
+                  <span className="text-[#71717A]"> / </span>
                   {formatHeaderMetaSegment(headerMeta?.industry)}
                   {watchlistMetaReady && headerMeta?.watchlistCount != null ? (
                     <>
-                      <span className="text-[#D4D4D8]"> / </span>
+                      <span className="text-[#71717A]"> / </span>
                       {formatWatchlistsCountLabel(headerMeta.watchlistCount)}
                     </>
                   ) : null}
@@ -231,7 +231,7 @@ export function StockHeader({
               {chartRangeLabel ? (
                 <span className="text-[13px] text-[#71717A]">{chartRangeLabel}</span>
               ) : null}
-              <span className="text-[13px] text-[#D4D4D8]" aria-hidden>
+              <span className="text-[13px] text-[#71717A]" aria-hidden>
                 ·
               </span>
               <span

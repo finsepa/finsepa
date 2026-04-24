@@ -155,7 +155,7 @@ function KeyStatMetricRow({
       onClick={() => metricId && onMetricClick?.(metricId)}
       className="flex w-full min-w-0 cursor-pointer items-center justify-between gap-3 border-b border-[#E4E4E7] py-1.5 text-left last:border-0 hover:bg-[#FAFAFA]"
     >
-      <span className="min-w-0 shrink text-[14px] leading-5 text-[#09090B] decoration-transparent underline-offset-2 hover:underline hover:decoration-[#D4D4D8]">
+      <span className="min-w-0 shrink text-[14px] leading-5 text-[#09090B] decoration-transparent underline-offset-2 hover:underline hover:decoration-[#71717A]">
         {label}
       </span>
       <span className="shrink-0 text-right text-[14px] leading-5 text-[#09090B] tabular-nums">{value}</span>

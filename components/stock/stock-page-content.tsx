@@ -264,18 +264,11 @@ export function StockPageContent({
 
   /** 1D session series — drives header price / change (today / live window). */
   const [sessionHeaderUi, setSessionHeaderUi] = useState<ChartDisplayState>(EMPTY_CHART_DISPLAY);
-  /** Visible overview chart: only range-drag selection overrides the session header. */
-  const [rangeSelectionHeaderUi, setRangeSelectionHeaderUi] = useState<ChartDisplayState | null>(null);
   /** Holdings tab chart owns the header while that tab is active. */
   const [holdingsHeaderUi, setHoldingsHeaderUi] = useState<ChartDisplayState | null>(null);
 
   const onSessionHeaderDisplay = useCallback((s: ChartDisplayState) => {
     setSessionHeaderUi(s);
-  }, []);
-
-  const onRangeChartDisplay = useCallback((s: ChartDisplayState) => {
-    if (s.selectionActive) setRangeSelectionHeaderUi(s);
-    else setRangeSelectionHeaderUi(null);
   }, []);
 
   const onHoldingsChartDisplay = useCallback((s: ChartDisplayState) => {
@@ -355,9 +348,6 @@ export function StockPageContent({
     if (activeTab === "holdings") {
       return holdingsHeaderUi ?? EMPTY_CHART_DISPLAY;
     }
-    if (rangeSelectionHeaderUi?.selectionActive) {
-      return rangeSelectionHeaderUi;
-    }
     return mergeSessionHeaderWithPerformanceSpot(
       sessionHeaderUi,
       performanceForHeaderFallback,
@@ -370,7 +360,6 @@ export function StockPageContent({
     headerLiveSpotForMerge,
     holdingsHeaderUi,
     performanceForHeaderFallback,
-    rangeSelectionHeaderUi,
     sessionHeaderUi,
   ]);
 
@@ -456,7 +445,6 @@ export function StockPageContent({
             symbol={ticker}
             range={range}
             series={chartSeries}
-            onDisplayChange={stockChartDrivesHeader ? onRangeChartDisplay : undefined}
             initialChart={initialChartMemo}
           />
         )}
@@ -544,6 +532,7 @@ export function StockPageContent({
             initialQuarterlyPoints={
               initialPageData?.ticker === ticker ? initialPageData.fundamentalsSeriesQuarterly : undefined
             }
+            onOpenMetricChart={openRevenueProfitMetricModal}
           />
         </div>
       ) : null}

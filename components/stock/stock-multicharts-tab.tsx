@@ -1,6 +1,6 @@
 "use client";
 
-import { TrendingDown, TrendingUp } from "lucide-react";
+import { Maximize2, TrendingDown, TrendingUp } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import {
@@ -97,6 +97,8 @@ type Props = {
   title?: string;
   /** Which fundamentals metrics to render as cards (defaults to the standard Multicharts set). */
   metricIds?: readonly ChartingMetricId[];
+  /** Opens the same fundamentals chart modal as Overview Key Stats (expand on each card). */
+  onOpenMetricChart?: (metricId: ChartingMetricId) => void;
 };
 
 export function StockMultichartsTab({
@@ -105,6 +107,7 @@ export function StockMultichartsTab({
   initialQuarterlyPoints,
   title = "Multicharts",
   metricIds,
+  onOpenMetricChart,
 }: Props) {
   const metrics = useMemo(() => {
     if (Array.isArray(metricIds) && metricIds.length > 0) return [...metricIds];
@@ -197,6 +200,7 @@ export function StockMultichartsTab({
               points={points}
               periodMode={periodMode}
               chartVisual={chartVisual}
+              onOpenMetricChart={onOpenMetricChart}
             />
           ))}
         </div>
@@ -210,11 +214,13 @@ function MultichartCard({
   points,
   periodMode,
   chartVisual,
+  onOpenMetricChart,
 }: {
   metricId: ChartingMetricId;
   points: ChartingSeriesPoint[];
   periodMode: FundamentalsSeriesMode;
   chartVisual: MultichartVisual;
+  onOpenMetricChart?: (metricId: ChartingMetricId) => void;
 }) {
   const maxBars = periodMode === "quarterly" ? MULTICHART_MAX_QUARTERLY_BARS : MULTICHART_MAX_ANNUAL_BARS;
   const rows = useMemo(() => sliceLastAnnualWithMetric(points, metricId, maxBars), [points, metricId, maxBars]);
@@ -222,30 +228,44 @@ function MultichartCard({
   const yoy = yoyFromLastTwo(rows, metricId);
   const priorRow = rows.length >= 2 ? rows[rows.length - 2]! : null;
 
+  const metricLabel = CHARTING_METRIC_LABEL[metricId];
+
   return (
     <div className={MULTICHART_CARD_CLASS}>
-      <div className="min-w-0">
-        <p className={EARNINGS_CARD_LABEL_CLASS}>{CHARTING_METRIC_LABEL[metricId]}</p>
-        {last != null && Number.isFinite(last) ? (
-          <div className="mt-1 flex min-w-0 flex-col items-start gap-0.5">
-            <span className={`${EARNINGS_CARD_VALUE_CLASS} tabular-nums`}>{formatHeadlineValue(metricId, last)}</span>
-            {yoy != null && Number.isFinite(yoy) && priorRow != null ? (
-              <span className="inline-flex items-center gap-1 font-['Inter'] text-[14px] font-medium tabular-nums leading-5">
-                {yoy > 0 ? (
-                  <TrendingUp className="h-3.5 w-3.5 shrink-0 text-[#16A34A]" strokeWidth={2.25} aria-hidden />
-                ) : yoy < 0 ? (
-                  <TrendingDown className="h-3.5 w-3.5 shrink-0 text-[#DC2626]" strokeWidth={2.25} aria-hidden />
-                ) : null}
-                <span className={yoy >= 0 ? "text-[#16A34A]" : "text-[#DC2626]"}>
-                  {yoy >= 0 ? "+" : ""}
-                  {yoy.toFixed(1)}
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <p className={EARNINGS_CARD_LABEL_CLASS}>{metricLabel}</p>
+          {last != null && Number.isFinite(last) ? (
+            <div className="mt-1 flex min-w-0 flex-col items-start gap-0.5">
+              <span className={`${EARNINGS_CARD_VALUE_CLASS} tabular-nums`}>{formatHeadlineValue(metricId, last)}</span>
+              {yoy != null && Number.isFinite(yoy) && priorRow != null ? (
+                <span className="inline-flex items-center gap-1 font-['Inter'] text-[14px] font-medium tabular-nums leading-5">
+                  {yoy > 0 ? (
+                    <TrendingUp className="h-3.5 w-3.5 shrink-0 text-[#16A34A]" strokeWidth={2.25} aria-hidden />
+                  ) : yoy < 0 ? (
+                    <TrendingDown className="h-3.5 w-3.5 shrink-0 text-[#DC2626]" strokeWidth={2.25} aria-hidden />
+                  ) : null}
+                  <span className={yoy >= 0 ? "text-[#16A34A]" : "text-[#DC2626]"}>
+                    {yoy >= 0 ? "+" : ""}
+                    {yoy.toFixed(1)}
+                  </span>
+                  <span className="text-[#71717A]">
+                    vs {priorComparisonPeriodLabel(priorRow.periodEnd, periodMode)}
+                  </span>
                 </span>
-                <span className="text-[#71717A]">
-                  vs {priorComparisonPeriodLabel(priorRow.periodEnd, periodMode)}
-                </span>
-              </span>
-            ) : null}
-          </div>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+        {onOpenMetricChart ? (
+          <button
+            type="button"
+            onClick={() => onOpenMetricChart(metricId)}
+            className="shrink-0 rounded-lg p-1.5 text-[#71717A] outline-none transition-colors hover:bg-black/5 hover:text-[#09090B] focus-visible:ring-2 focus-visible:ring-[#09090B]/10"
+            aria-label={`Open ${metricLabel} in full view`}
+          >
+            <Maximize2 className="h-4 w-4" strokeWidth={2} aria-hidden />
+          </button>
         ) : null}
       </div>
       <MultichartFundamentalsBar

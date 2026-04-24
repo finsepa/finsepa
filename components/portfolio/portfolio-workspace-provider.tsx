@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { Dispatch, ReactNode, SetStateAction } from "react";
 import {
   startTransition,
   useCallback,
@@ -35,8 +35,11 @@ import {
 } from "@/components/portfolio/portfolio-types";
 import { mergeHoldingsBySymbol, mergeTransactionsSorted } from "@/lib/portfolio/merge-combined-portfolio";
 import {
+  coalesceSelectedPortfolioId,
+  loadLastSelectedPortfolioId,
   loadPersistedPortfolioStateForUser,
   parsePersistedPortfolioUnknown,
+  saveLastSelectedPortfolioId,
   savePersistedPortfolioStateForUser,
   type PersistedPortfolioState,
 } from "@/lib/portfolio/portfolio-storage";
@@ -323,7 +326,18 @@ export function PortfolioWorkspaceProvider({
   }, [portfolioSeedId]);
 
   const [portfolios, setPortfolios] = useState<PortfolioEntry[]>(portfolioSeed.list);
-  const [selectedPortfolioId, setSelectedPortfolioId] = useState<string | null>(portfolioSeed.selectedId);
+  const [selectedPortfolioId, setSelectedPortfolioState] = useState<string | null>(portfolioSeed.selectedId);
+
+  const setSelectedPortfolioId = useCallback<Dispatch<SetStateAction<string | null>>>(
+    (action) => {
+      setSelectedPortfolioState((prev) => {
+        const next = typeof action === "function" ? (action as (p: string | null) => string | null)(prev) : action;
+        if (next !== prev) saveLastSelectedPortfolioId(userId, next);
+        return next;
+      });
+    },
+    [userId],
+  );
 
   const [editPortfolioOpen, setEditPortfolioOpen] = useState(false);
   const [editPortfolioId, setEditPortfolioId] = useState<string | null>(null);
@@ -397,7 +411,14 @@ export function PortfolioWorkspaceProvider({
     }
 
     setPortfolios(saved.portfolios);
-    setSelectedPortfolioId(saved.selectedPortfolioId);
+    const lastTouched = loadLastSelectedPortfolioId(userId);
+    const resolved = coalesceSelectedPortfolioId(
+      saved.portfolios,
+      saved.selectedPortfolioId,
+      lastTouched,
+    );
+    setSelectedPortfolioState(resolved);
+    saveLastSelectedPortfolioId(userId, resolved);
     setTransactionsByPortfolioId(saved.transactionsByPortfolioId);
 
     // Rebuild holdings from the ledger so splits always apply correctly (and avoids persisting stale math).
@@ -438,7 +459,7 @@ export function PortfolioWorkspaceProvider({
         }
       }
     })();
-  }, []);
+  }, [userId]);
 
   /** Run deferred mark-to-market once when user lands on a portfolio-heavy route after a skipped hydrate. */
   useEffect(() => {
@@ -969,6 +990,7 @@ export function PortfolioWorkspaceProvider({
       openEditTransaction,
       closeEditTransaction,
       portfolioDisplayReady,
+      setSelectedPortfolioId,
     ],
   );
 

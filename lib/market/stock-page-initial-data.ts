@@ -92,7 +92,7 @@ function ymdUtc(d: Date): string {
 }
 
 /**
- * One EOD daily fetch (20y) powers overview chart + mini-table performance together.
+ * One EOD daily fetch (same lookback as chart `ALL` / performance) powers overview chart + mini-table together.
  * Header + key-stats share one fundamentals fetch inside their respective loaders (bundle pulls once and passes root to sections).
  */
 export async function loadStockPageInitialData(routeTicker: string): Promise<StockPageInitialData | null> {

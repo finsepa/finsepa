@@ -38,6 +38,7 @@ import {
 } from "@/lib/screener/simple-screener-crypto-indices-rows";
 import { buildScreenerSectorsRows } from "@/lib/screener/screener-sectors";
 import type { ScreenerSectorRow } from "@/lib/screener/screener-sectors-types";
+import { SCREENER_MARKETS_PAGE_SIZE } from "@/lib/screener/screener-markets-page-size";
 
 export type ScreenerMarketTab = "stocks" | "crypto" | "indices";
 
@@ -288,14 +289,11 @@ export async function buildScreenerAllStockRowsForGainers(): Promise<ScreenerTab
 
 export async function buildScreenerPagePayload(market: ScreenerMarketTab): Promise<ScreenerPagePayload> {
   if (market === "crypto") {
-    const [data, cryptoDerived] = await Promise.all([
-      getSimpleMarketDataCryptoTab(),
-      getSimpleCryptoDerivedTop10(),
-    ]);
+    const cryptoFirst = await buildCryptoScreenerApiResponse(1, SCREENER_MARKETS_PAGE_SIZE);
     return {
       market: "crypto",
-      cryptoRows: cryptoScreenerRowsFromMetas(CRYPTO_TOP10, data, cryptoDerived),
-      cryptoTotalCount: CRYPTO_TOP10.length + CRYPTO_SCREENER_PAGE2.length,
+      cryptoRows: cryptoFirst.rows,
+      cryptoTotalCount: cryptoFirst.total,
     };
   }
   if (market === "indices") {
@@ -303,17 +301,19 @@ export async function buildScreenerPagePayload(market: ScreenerMarketTab): Promi
     return { market: "indices", indicesRows: indicesTableRowsFromSimpleLayers(data, indicesDerived) };
   }
 
-  const [data, indexCards, staticLayer, stockDerived] = await Promise.all([
-    getSimpleMarketDataScreenerStocks(),
+  const [indexCards, staticLayer, companiesFirst] = await Promise.all([
     getSimpleIndexCards(),
     getScreenerCompaniesStaticLayer(),
-    getSimpleScreenerDerivedTop10(),
+    buildScreenerCompaniesApiResponse(1, SCREENER_MARKETS_PAGE_SIZE),
   ]);
 
-  const { page1 } = await buildStockScreenerTablePages(data, staticLayer.universe, stockDerived);
-  const page2Tickers = pickScreenerPage2Tickers(staticLayer.universe);
-  const stocksTotalCount = TOP10_TICKERS.length + page2Tickers.length;
   const sectors = buildScreenerSectorsRows(staticLayer.universe);
 
-  return { market: "stocks", stockRows: page1, stocksTotalCount, indexCards, sectors };
+  return {
+    market: "stocks",
+    stockRows: companiesFirst.rows,
+    stocksTotalCount: companiesFirst.total,
+    indexCards,
+    sectors,
+  };
 }

@@ -175,7 +175,7 @@ export function CryptoHeader({
               {chartRangeLabel ? (
                 <span className="text-[13px] text-[#71717A]">{chartRangeLabel}</span>
               ) : null}
-              <span className="text-[13px] text-[#D4D4D8]" aria-hidden>
+              <span className="text-[13px] text-[#71717A]" aria-hidden>
                 ·
               </span>
               <span

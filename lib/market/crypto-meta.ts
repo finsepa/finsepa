@@ -132,7 +132,7 @@ export const CRYPTO_SEARCH_TOP100_REST: CryptoMeta[] = [
 ];
 
 /**
- * Screener Crypto tab page 2 — 40 names after {@link CRYPTO_TOP10} (50 screener assets = 5 pages × 10).
+ * Screener Crypto tab page 2 — 40 names after {@link CRYPTO_TOP10} (50 screener assets; paginated 15 per page on Markets).
  * Prefix matches {@link CRYPTO_SEARCH_EXTRA}; tail from {@link CRYPTO_SEARCH_TOP100_REST} (no duplicate symbols).
  */
 export const CRYPTO_SCREENER_PAGE2: CryptoMeta[] = [

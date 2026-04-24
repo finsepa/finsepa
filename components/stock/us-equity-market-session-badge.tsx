@@ -23,7 +23,7 @@ function SessionRow({ session }: { session: UsEquityMarketSession }) {
       return (
         <>
           <span className="h-2 w-2 shrink-0 rounded-full bg-[#16A34A]" aria-hidden />
-          <span className="text-[#09090B]">Open market</span>
+          <span>Open market</span>
         </>
       );
     case "post":
@@ -36,7 +36,7 @@ function SessionRow({ session }: { session: UsEquityMarketSession }) {
     default:
       return (
         <>
-          <span className="h-2 w-2 shrink-0 rounded-full bg-[#A1A1AA]" aria-hidden />
+          <span className="h-2 w-2 shrink-0 rounded-full bg-[#71717A]" aria-hidden />
           <span>Market closed</span>
         </>
       );
@@ -62,7 +62,7 @@ export function UsEquityMarketSessionBadge({ className }: Props) {
   return (
     <div
       className={cn(
-        "inline-flex items-center gap-1.5 text-[13px] font-medium text-[#52525B]",
+        "inline-flex items-center gap-1.5 text-[13px] font-medium text-[#71717A]",
         className,
       )}
       role="status"

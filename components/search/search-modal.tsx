@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 
@@ -153,12 +154,13 @@ export function SearchModal({
   const showStaleList = showResults && items.length > 0;
   const noResults = showResults && !loading && items.length === 0;
 
-  return (
+  /** Portal to `document.body` so backdrop stacks above `MobileBottomNav` (`z-[43]`); topbar is only `z-30`. */
+  const layer = (
     <div
       className={
         fullscreen
           ? "fixed inset-0 z-[100] flex flex-col bg-white"
-          : "fixed inset-0 z-50 flex items-start justify-center bg-black/40 pt-[10vh]"
+          : "fixed inset-0 z-[100] flex items-start justify-center bg-black/40 pt-[10vh]"
       }
       onClick={fullscreen ? undefined : onClose}
       role="presentation"
@@ -257,6 +259,9 @@ export function SearchModal({
       </div>
     </div>
   );
+
+  if (typeof document === "undefined") return null;
+  return createPortal(layer, document.body);
 }
 
 /** Dispatched globally so any UI (e.g. stock bottom bar) can open the same modal as the top bar. */

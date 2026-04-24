@@ -67,7 +67,6 @@ export function CryptoPageContent({
   const [row, setRow] = useState<CryptoAssetRow | null>(serverMatch?.asset ?? null);
   const [range, setRange] = useState<StockChartRange>("1Y");
   const [sessionHeaderUi, setSessionHeaderUi] = useState<ChartDisplayState>(EMPTY_CHART_DISPLAY);
-  const [rangeSelectionHeaderUi, setRangeSelectionHeaderUi] = useState<ChartDisplayState | null>(null);
   const [holdingsHeaderUi, setHoldingsHeaderUi] = useState<ChartDisplayState | null>(null);
   const symUpper = routeSymbol.trim().toUpperCase();
 
@@ -103,11 +102,6 @@ export function CryptoPageContent({
 
   const onSessionHeaderDisplay = useCallback((s: ChartDisplayState) => {
     setSessionHeaderUi(s);
-  }, []);
-
-  const onRangeChartDisplay = useCallback((s: ChartDisplayState) => {
-    if (s.selectionActive) setRangeSelectionHeaderUi(s);
-    else setRangeSelectionHeaderUi(null);
   }, []);
 
   const onHoldingsChartDisplay = useCallback((s: ChartDisplayState) => {
@@ -187,9 +181,6 @@ export function CryptoPageContent({
     if (activeTab === "holdings") {
       return holdingsHeaderUi ?? EMPTY_CHART_DISPLAY;
     }
-    if (rangeSelectionHeaderUi?.selectionActive) {
-      return rangeSelectionHeaderUi;
-    }
     return mergeSessionHeaderWithPerformanceSpot(
       sessionHeaderUi,
       performanceForHeaderFallback,
@@ -201,7 +192,6 @@ export function CryptoPageContent({
     headerLiveSpotForMerge,
     holdingsHeaderUi,
     performanceForHeaderFallback,
-    rangeSelectionHeaderUi,
     sessionHeaderUi,
   ]);
 
@@ -331,7 +321,6 @@ export function CryptoPageContent({
                 kind="crypto"
                 symbol={symUpper}
                 range={range}
-                onDisplayChange={cryptoChartDrivesHeader ? onRangeChartDisplay : undefined}
                 initialChart={initialChartMemo}
               />
               {cryptoChartDrivesHeader ? (

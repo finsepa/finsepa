@@ -119,7 +119,7 @@ async function loadStockPerformanceUncached(ticker: string): Promise<StockPerfor
 
 export const getStockPerformance = unstable_cache(
   async (ticker: string) => loadStockPerformanceUncached(ticker),
-  ["stock-performance-v5-20y-window"],
+  ["stock-performance-v6-maxhist-daily"],
   { revalidate: REVALIDATE_HOT },
 );
 

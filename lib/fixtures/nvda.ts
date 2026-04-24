@@ -54,7 +54,8 @@ export function getNvdaChartPoints(range: StockChartRange): StockChartPoint[] {
   const now = Date.now();
   if (range === "1D") return makeTrendPointSeries(60, now - 24 * 3600_000, 24 * 3600_000 / 60, 920, 45);
   if (range === "5D") return makeTrendPointSeries(30, now - 5 * 24 * 3600_000, 5 * 24 * 3600_000 / 30, 900, 55);
-  if (range === "1M") return makeTrendPointSeries(40, now - 30 * 24 * 3600_000, (30 * 24 * 3600_000) / 40, 860, 70);
+  // ~4 synthetic samples per calendar day over ~30d (mirrors intraday-dense 1M in live mode).
+  if (range === "1M") return makeTrendPointSeries(120, now - 30 * 24 * 3600_000, (30 * 24 * 3600_000) / 120, 860, 70);
   if (range === "6M") return makeTrendPointSeries(80, now - 180 * 24 * 3600_000, (180 * 24 * 3600_000) / 80, 820, 85);
   if (range === "YTD") return makeTrendPointSeries(120, now - 220 * 24 * 3600_000, (220 * 24 * 3600_000) / 120, 780, 110);
   if (range === "1Y") return makeTrendPointSeries(160, now - 365 * 24 * 3600_000, (365 * 24 * 3600_000) / 160, 760, 120);

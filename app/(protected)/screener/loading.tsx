@@ -1,4 +1,5 @@
 import { IndexCardSkeleton, StocksTableSkeleton } from "@/components/markets/markets-skeletons";
+import { SCREENER_MARKETS_PAGE_SIZE } from "@/lib/screener/screener-markets-page-size";
 
 export default function ScreenerLoading() {
   return (
@@ -10,7 +11,7 @@ export default function ScreenerLoading() {
         ))}
       </div>
       <div className="mb-5 h-10 w-48 skeleton" />
-      <StocksTableSkeleton rows={10} />
+      <StocksTableSkeleton rows={SCREENER_MARKETS_PAGE_SIZE} />
     </div>
   );
 }

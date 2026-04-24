@@ -32,7 +32,7 @@ function ProtectedAppChrome({
 
   return (
     <div
-      className="relative h-dvh max-h-dvh w-full overflow-hidden bg-[rgba(228,228,231,1)]"
+      className="relative h-dvh max-h-dvh w-full overflow-hidden bg-[#E4E4E7]"
       style={{ ["--shell-left" as string]: leftOffset } as CSSProperties}
     >
       <Suspense fallback={null}>

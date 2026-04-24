@@ -9,6 +9,49 @@ import { normalizePortfolioEntry } from "@/components/portfolio/portfolio-types"
 export const PORTFOLIO_STORAGE_KEY = "finsepa.portfolio.v1" as const;
 const CURRENT_VERSION = 1;
 
+/** Last portfolio picked in the UI (top bar / forms); survives server merge and pre-hydrate timing. */
+const LAST_SELECTED_PORTFOLIO_KEY_PREFIX = "finsepa.portfolio.lastSelected.v1" as const;
+
+export function portfolioLastSelectedStorageKey(userId: string): string {
+  return `${LAST_SELECTED_PORTFOLIO_KEY_PREFIX}.u.${userId}`;
+}
+
+export function saveLastSelectedPortfolioId(userId: string, portfolioId: string | null): void {
+  if (typeof window === "undefined") return;
+  try {
+    const key = portfolioLastSelectedStorageKey(userId);
+    if (portfolioId == null || portfolioId.length === 0) {
+      window.localStorage.removeItem(key);
+    } else {
+      window.localStorage.setItem(key, portfolioId);
+    }
+  } catch {
+    /* quota / private mode */
+  }
+}
+
+export function loadLastSelectedPortfolioId(userId: string): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const v = window.localStorage.getItem(portfolioLastSelectedStorageKey(userId));
+    return v != null && v.length > 0 ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Prefer last UI selection when still valid; else blob; else first portfolio. */
+export function coalesceSelectedPortfolioId(
+  portfolios: readonly { id: string }[],
+  blobSelected: string | null,
+  lastTouched: string | null,
+): string | null {
+  const ids = new Set(portfolios.map((p) => p.id));
+  if (lastTouched != null && lastTouched.length > 0 && ids.has(lastTouched)) return lastTouched;
+  if (blobSelected != null && blobSelected.length > 0 && ids.has(blobSelected)) return blobSelected;
+  return portfolios[0]?.id ?? null;
+}
+
 export function portfolioStorageKeyForUser(userId: string): string {
   return `${PORTFOLIO_STORAGE_KEY}.u.${userId}`;
 }

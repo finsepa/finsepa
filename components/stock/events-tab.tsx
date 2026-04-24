@@ -30,7 +30,7 @@ const events2023: EventRow[] = [
 ];
 
 function IconCell({ available, icon }: { available?: boolean; icon: React.ReactNode }) {
-  if (!available) return <td className="px-6 text-center text-[14px] text-[#A1A1AA]">-</td>;
+  if (!available) return <td className="px-6 text-center text-[14px] text-[#71717A]">-</td>;
   return (
     <td className="px-6 text-center">
       <button className="inline-flex items-center justify-center text-[#71717A] hover:text-[#09090B] transition-colors">

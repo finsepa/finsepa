@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
 import {
   AreaSeries,
   BaselineSeries,
@@ -108,6 +108,149 @@ const GREEN = "#16A34A";
 const RED = "#DC2626";
 const VALUE_BLUE = "#2563EB";
 const BASELINE_LINE = "rgba(113, 113, 122, 0.55)";
+/** Horizontal rules at the top and bottom of the plot pane (replaces default price grid). */
+const SCALE_EDGE_LINE = "rgba(228, 228, 231, 0.85)";
+
+type MainPriceSeries = ISeriesApi<"Baseline"> | ISeriesApi<"Area">;
+
+function removeScaleBoundsPriceLines(
+  series: MainPriceSeries | null,
+  topRef: RefObject<IPriceLine | null>,
+  bottomRef: RefObject<IPriceLine | null>,
+) {
+  if (!series) {
+    topRef.current = null;
+    bottomRef.current = null;
+    return;
+  }
+  if (topRef.current) {
+    try {
+      series.removePriceLine(topRef.current);
+    } catch {
+      /* ignore */
+    }
+    topRef.current = null;
+  }
+  if (bottomRef.current) {
+    try {
+      series.removePriceLine(bottomRef.current);
+    } catch {
+      /* ignore */
+    }
+    bottomRef.current = null;
+  }
+}
+
+function removeSessionHighLowPriceLines(
+  series: MainPriceSeries | null,
+  highRef: RefObject<IPriceLine | null>,
+  lowRef: RefObject<IPriceLine | null>,
+) {
+  if (!series) {
+    highRef.current = null;
+    lowRef.current = null;
+    return;
+  }
+  for (const ref of [highRef, lowRef]) {
+    if (ref.current) {
+      try {
+        series.removePriceLine(ref.current);
+      } catch {
+        /* ignore */
+      }
+      ref.current = null;
+    }
+  }
+}
+
+/** Session high / low — solid horizontals; overview only (replaces tick-aligned `grid.horzLines`). */
+function syncSessionHighLowPriceLines(
+  series: MainPriceSeries,
+  values: readonly { value: number }[],
+  highRef: RefObject<IPriceLine | null>,
+  lowRef: RefObject<IPriceLine | null>,
+) {
+  let hi = -Infinity;
+  let lo = Infinity;
+  for (const d of values) {
+    if (!Number.isFinite(d.value)) continue;
+    hi = Math.max(hi, d.value);
+    lo = Math.min(lo, d.value);
+  }
+  if (!Number.isFinite(hi) || !Number.isFinite(lo)) {
+    removeSessionHighLowPriceLines(series, highRef, lowRef);
+    return;
+  }
+
+  const common = {
+    color: SCALE_EDGE_LINE,
+    lineWidth: 1,
+    lineStyle: LineStyle.Solid,
+    /** Only hi/lo labels on the axis; default scale ticks are blanked via `tickmarksPriceFormatter`. */
+    axisLabelVisible: true,
+    axisLabelColor: "#ffffff",
+    axisLabelTextColor: "#71717A",
+    title: "",
+    lineVisible: true,
+  } as const;
+
+  if (hi === lo) {
+    removeSessionHighLowPriceLines(series, highRef, lowRef);
+    if (!highRef.current) {
+      highRef.current = series.createPriceLine({ price: hi, ...common });
+    } else {
+      highRef.current.applyOptions({ price: hi, ...common });
+    }
+    return;
+  }
+
+  if (!highRef.current) {
+    highRef.current = series.createPriceLine({ price: hi, ...common });
+  } else {
+    highRef.current.applyOptions({ price: hi, ...common });
+  }
+  if (!lowRef.current) {
+    lowRef.current = series.createPriceLine({ price: lo, ...common });
+  } else {
+    lowRef.current.applyOptions({ price: lo, ...common });
+  }
+}
+
+function syncScaleBoundsPriceLines(
+  chart: IChartApi,
+  series: MainPriceSeries,
+  topRef: RefObject<IPriceLine | null>,
+  bottomRef: RefObject<IPriceLine | null>,
+) {
+  const h = chart.paneSize(0).height;
+  if (!Number.isFinite(h) || h <= 0) return;
+
+  const topPrice = series.coordinateToPrice(0);
+  const bottomPrice = series.coordinateToPrice(h);
+  if (topPrice == null || bottomPrice == null) return;
+  const top = topPrice as number;
+  const bottom = bottomPrice as number;
+  if (!Number.isFinite(top) || !Number.isFinite(bottom)) return;
+
+  const common = {
+    color: SCALE_EDGE_LINE,
+    lineWidth: 1,
+    lineStyle: LineStyle.Solid,
+    axisLabelVisible: false,
+    lineVisible: true,
+  } as const;
+
+  if (!topRef.current) {
+    topRef.current = series.createPriceLine({ price: top, ...common });
+  } else {
+    topRef.current.applyOptions({ price: top, ...common });
+  }
+  if (!bottomRef.current) {
+    bottomRef.current = series.createPriceLine({ price: bottom, ...common });
+  } else {
+    bottomRef.current.applyOptions({ price: bottom, ...common });
+  }
+}
 
 /**
  * In-bar series markers scale with `barSpacing` (LWCharts uses clamp(barSpacing, 12, 30) for shape height).
@@ -339,12 +482,19 @@ export function PriceChart({
   tradeTooltipItems = [],
   costBasisPrice = null,
 }: Props) {
+  const holdingsStyleRef = useRef(holdingsStyle);
+  holdingsStyleRef.current = holdingsStyle;
+
   const containerRef = useRef<HTMLDivElement>(null);
   const initialConsumedRef = useRef(false);
   const wrapRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Baseline"> | ISeriesApi<"Area"> | null>(null);
   const baselinePriceLineRef = useRef<IPriceLine | null>(null);
+  const sessionHighPriceLineRef = useRef<IPriceLine | null>(null);
+  const sessionLowPriceLineRef = useRef<IPriceLine | null>(null);
+  const scaleTopPriceLineRef = useRef<IPriceLine | null>(null);
+  const scaleBottomPriceLineRef = useRef<IPriceLine | null>(null);
   const costBasisLineRef = useRef<IPriceLine | null>(null);
   const markersRef = useRef<ISeriesMarkersPluginApi<UTCTimestamp> | null>(null);
   /** Base in-bar marker templates (before bar-spacing scale) for overview + range selection. */
@@ -489,17 +639,22 @@ export function PriceChart({
       autoSize: false,
       layout: {
         background: { type: ColorType.Solid, color: "#00000000" },
-        textColor: "#A1A1AA",
+        textColor: "#71717A",
         fontSize: 11,
         fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
         attributionLogo: false,
       },
+      ...(holdingsStyle
+        ? {}
+        : {
+            localization: {
+              tickmarksPriceFormatter: (priceValue: readonly number[]) => priceValue.map(() => ""),
+            },
+          }),
       grid: {
         vertLines: { visible: false },
-        horzLines: {
-          color: "rgba(228, 228, 231, 0.85)",
-          style: LineStyle.Dotted,
-        },
+        // Overview: no tick grid — session high/low + dashed open use `createPriceLine` instead. Holdings: off.
+        horzLines: { visible: false, color: SCALE_EDGE_LINE, style: LineStyle.Solid },
       },
       rightPriceScale: {
         borderVisible: false,
@@ -643,7 +798,25 @@ export function PriceChart({
       if (!c || !m || !templates?.length) return;
       scheduleScaledInBarMarkers(c, m, templates);
     };
-    const onVisRangeForMarkers = () => rescaleOverviewInBarMarkersRef.current?.();
+    const syncBoundsLines = () => {
+      const c = chartRef.current;
+      const s = seriesRef.current;
+      if (!c || !s) return;
+      requestAnimationFrame(() => {
+        const c2 = chartRef.current;
+        const s2 = seriesRef.current;
+        if (!c2 || !s2) return;
+        if (holdingsStyle) {
+          syncScaleBoundsPriceLines(c2, s2, scaleTopPriceLineRef, scaleBottomPriceLineRef);
+        } else {
+          removeScaleBoundsPriceLines(s2, scaleTopPriceLineRef, scaleBottomPriceLineRef);
+        }
+      });
+    };
+    const onVisRangeForMarkers = () => {
+      rescaleOverviewInBarMarkersRef.current?.();
+      syncBoundsLines();
+    };
     const ts = chart.timeScale();
     ts.subscribeVisibleLogicalRangeChange(onVisRangeForMarkers);
     ts.subscribeVisibleTimeRangeChange(onVisRangeForMarkers);
@@ -664,6 +837,11 @@ export function PriceChart({
       overviewInBarMarkersRef.current = null;
       chart.unsubscribeCrosshairMove(onCrosshairMove);
       markersRef.current = null;
+      const sUnmount = seriesRef.current;
+      if (sUnmount) {
+        removeScaleBoundsPriceLines(sUnmount, scaleTopPriceLineRef, scaleBottomPriceLineRef);
+        removeSessionHighLowPriceLines(sUnmount, sessionHighPriceLineRef, sessionLowPriceLineRef);
+      }
       baselinePriceLineRef.current = null;
       costBasisLineRef.current = null;
       splitSeriesBundleRef.current = null;
@@ -682,10 +860,30 @@ export function PriceChart({
         : kind === "stock" && series === "return"
           ? formatReturnAxis
           : formatStockPriceAxis;
+    const hideScaleTicks = !holdingsStyleRef.current;
     chart.applyOptions({
-      localization: { priceFormatter: fmt },
+      localization: {
+        priceFormatter: fmt,
+        ...(hideScaleTicks
+          ? { tickmarksPriceFormatter: (priceValue: readonly number[]) => priceValue.map(() => "") }
+          : { tickmarksPriceFormatter: undefined }),
+      },
     });
   }, [kind, series]);
+
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart) return;
+    if (holdingsStyle) {
+      chart.applyOptions({ localization: { tickmarksPriceFormatter: undefined } });
+    } else {
+      chart.applyOptions({
+        localization: {
+          tickmarksPriceFormatter: (priceValue: readonly number[]) => priceValue.map(() => ""),
+        },
+      });
+    }
+  }, [holdingsStyle]);
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
@@ -845,6 +1043,8 @@ export function PriceChart({
         }
         baselinePriceLineRef.current = null;
       }
+      removeScaleBoundsPriceLines(bundle.mid, scaleTopPriceLineRef, scaleBottomPriceLineRef);
+      removeSessionHighLowPriceLines(bundle.mid, sessionHighPriceLineRef, sessionLowPriceLineRef);
       markersRef.current = null;
       overviewInBarMarkersRef.current = null;
       try {
@@ -897,6 +1097,8 @@ export function PriceChart({
     const createSplitTriple = (open: number) => {
       const cur = seriesRef.current;
       if (cur && !splitSeriesBundleRef.current) {
+        removeScaleBoundsPriceLines(cur, scaleTopPriceLineRef, scaleBottomPriceLineRef);
+        removeSessionHighLowPriceLines(cur, sessionHighPriceLineRef, sessionLowPriceLineRef);
         removeOverviewSingleBaselineLine(cur);
         markersRef.current = null;
         try {
@@ -924,7 +1126,11 @@ export function PriceChart({
       overviewInBarMarkersRef.current = null;
       series?.setData([]);
       markers?.setMarkers([]);
-      if (series) removeOverviewSingleBaselineLine(series);
+      if (series) {
+        removeScaleBoundsPriceLines(series, scaleTopPriceLineRef, scaleBottomPriceLineRef);
+        removeSessionHighLowPriceLines(series, sessionHighPriceLineRef, sessionLowPriceLineRef);
+        removeOverviewSingleBaselineLine(series);
+      }
       removeCostLine();
       return;
     }
@@ -937,6 +1143,11 @@ export function PriceChart({
     if (!isFiniteNumber(open)) {
       removeSplitBundle();
       overviewInBarMarkersRef.current = null;
+      const sInv = seriesRef.current;
+      if (sInv) {
+        removeScaleBoundsPriceLines(sInv, scaleTopPriceLineRef, scaleBottomPriceLineRef);
+        removeSessionHighLowPriceLines(sInv, sessionHighPriceLineRef, sessionLowPriceLineRef);
+      }
       seriesRef.current?.setData([]);
       markersRef.current?.setMarkers([]);
       return;
@@ -947,6 +1158,7 @@ export function PriceChart({
       removeSplitBundle();
       series = seriesRef.current;
       if (!series) return;
+      removeSessionHighLowPriceLines(series, sessionHighPriceLineRef, sessionLowPriceLineRef);
       removeOverviewSingleBaselineLine(series);
       series.setData(data);
       chart.timeScale().fitContent();
@@ -972,6 +1184,7 @@ export function PriceChart({
       }
 
       markersRef.current?.setMarkers(tradeMarkersForChart(tradeMarkers, data));
+      syncScaleBoundsPriceLines(chart, series, scaleTopPriceLineRef, scaleBottomPriceLineRef);
       return;
     }
 
@@ -1044,6 +1257,8 @@ export function PriceChart({
       ];
       overviewInBarMarkersRef.current = splitTemplates;
       scheduleScaledInBarMarkers(chart, markers, splitTemplates);
+      removeScaleBoundsPriceLines(bundle.mid, scaleTopPriceLineRef, scaleBottomPriceLineRef);
+      syncSessionHighLowPriceLines(bundle.mid, data, sessionHighPriceLineRef, sessionLowPriceLineRef);
       return;
     }
 
@@ -1089,6 +1304,8 @@ export function PriceChart({
       overviewInBarMarkersRef.current = null;
       markers.setMarkers([]);
     }
+    removeScaleBoundsPriceLines(single, scaleTopPriceLineRef, scaleBottomPriceLineRef);
+    syncSessionHighLowPriceLines(single, data, sessionHighPriceLineRef, sessionLowPriceLineRef);
   }, [points, lastPointStroke, holdingsStyle, tradeMarkers, costBasisPrice, selection]);
 
   const empty = !loading && points.length === 0;
@@ -1191,7 +1408,7 @@ export function PriceChart({
                 {line}
               </div>
             ))}
-            {hoverTradeLines.length > 6 ? <div className="text-[#A1A1AA]">+{hoverTradeLines.length - 6} more</div> : null}
+            {hoverTradeLines.length > 6 ? <div className="text-[#71717A]">+{hoverTradeLines.length - 6} more</div> : null}
           </div>
         </div>
       ) : null}

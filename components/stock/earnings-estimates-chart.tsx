@@ -662,10 +662,10 @@ export function EarningsEstimatesChart({ data }: Props) {
                       />
                     )}
                     <p className="text-[12px] font-semibold leading-4 text-white">{tooltip.periodLabel}</p>
-                    <p className="mt-1.5 whitespace-nowrap text-[12px] font-normal leading-4 text-zinc-300">
+                    <p className="mt-1.5 whitespace-nowrap text-[12px] font-normal leading-4 text-[#71717A]">
                       {tooltip.estimateLine}
                     </p>
-                    <p className="mt-0.5 whitespace-nowrap text-[12px] font-normal leading-4 text-zinc-300">
+                    <p className="mt-0.5 whitespace-nowrap text-[12px] font-normal leading-4 text-[#71717A]">
                       {tooltip.actualLine}
                     </p>
                   </div>

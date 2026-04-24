@@ -8,6 +8,7 @@ import { ScreenerTableScroll } from "@/components/screener/screener-table-scroll
 import { CryptoTableSkeleton } from "@/components/markets/markets-skeletons";
 import { WatchlistStarToggle } from "@/components/watchlist/watchlist-star-button";
 import type { CryptoTop10Row } from "@/lib/market/crypto-top10";
+import { SCREENER_MARKETS_PAGE_SIZE } from "@/lib/screener/screener-markets-page-size";
 import { eodhdCryptoSpotTickerDisplay } from "@/lib/crypto/eodhd-crypto-ticker-display";
 import { cryptoWatchlistKey } from "@/lib/watchlist/constants";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
@@ -43,9 +44,12 @@ function ChangeCell({ value }: { value: number | null }) {
   );
 }
 
-const colLayout = "grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr_1fr] gap-x-2";
-/** Columns 2–8 of `colLayout`; used inside a real `<a>` (avoid `display: contents` on Next.js `Link`). */
-const rowLinkGrid = "grid-cols-[48px_2fr_1fr_1fr_1fr_1fr_1fr] gap-x-2";
+/** Mobile: star + # + coin + price + 1D %. `sm+`: 1M, YTD, M Cap (matches {@link ScreenerTable}). */
+const colLayout =
+  "grid-cols-[40px_48px_minmax(0,2fr)_1fr_1fr] gap-x-2 sm:grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr_1fr]";
+/** Columns inside `Link` — same counts as `colLayout` after the star column. */
+const rowLinkGrid =
+  "grid-cols-[48px_minmax(0,2fr)_1fr_1fr] gap-x-2 sm:grid-cols-[48px_2fr_1fr_1fr_1fr_1fr_1fr]";
 
 export function CryptoTable({
   initialRows,
@@ -61,10 +65,10 @@ export function CryptoTable({
     () => (Array.isArray(initialRows) ? initialRows : []),
     [initialRows],
   );
-  if (safeRows.length === 0) return <CryptoTableSkeleton rows={10} />;
+  if (safeRows.length === 0) return <CryptoTableSkeleton rows={SCREENER_MARKETS_PAGE_SIZE} />;
 
   return (
-    <ScreenerTableScroll>
+    <ScreenerTableScroll minWidthClassName="min-w-0 sm:min-w-[720px] lg:min-w-0">
       <div className="divide-y divide-[#E4E4E7] bg-white">
       <div
         className={`grid ${colLayout} min-h-[44px] items-center bg-white px-2 py-0 text-[12px] font-medium leading-5 text-[#71717A] sm:px-4 sm:text-[14px]`}
@@ -74,9 +78,9 @@ export function CryptoTable({
         <div className="text-left">Coin</div>
         <div className="min-w-0 w-full text-right">Price</div>
         <div className="min-w-0 w-full text-right">1D %</div>
-        <div className="min-w-0 w-full text-right">1M %</div>
-        <div className="min-w-0 w-full text-right">YTD %</div>
-        <div className="min-w-0 w-full text-right">M Cap</div>
+        <div className="hidden min-w-0 w-full text-right sm:block">1M %</div>
+        <div className="hidden min-w-0 w-full text-right sm:block">YTD %</div>
+        <div className="hidden min-w-0 w-full text-right sm:block">M Cap</div>
       </div>
 
       {safeRows.map((r, i) => {
@@ -97,7 +101,7 @@ export function CryptoTable({
             <Link
               href={`/crypto/${encodeURIComponent(r.symbol)}`}
               prefetch={false}
-              className={`${rowLinkGrid} col-span-7 col-start-2 grid min-h-[56px] min-w-0 w-full items-center justify-items-stretch sm:min-h-[60px]`}
+              className={`${rowLinkGrid} col-span-4 col-start-2 grid min-h-[56px] min-w-0 w-full items-center justify-items-stretch no-underline text-[#09090B] visited:text-[#09090B] sm:col-span-7 sm:min-h-[60px]`}
               aria-label={`Open ${r.name} (${eodhdCryptoSpotTickerDisplay(r.symbol)})`}
             >
               <div className="text-center text-[14px] font-semibold leading-5 tabular-nums text-[#71717A]">
@@ -108,7 +112,7 @@ export function CryptoTable({
                 <CompanyLogo name={r.symbol} logoUrl={r.logoUrl} symbol={r.symbol} />
                 <div className="min-w-0">
                   <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">{r.name}</div>
-                  <div className="text-[12px] font-normal leading-4 text-[#71717A]">
+                  <div className="text-[12px] font-normal leading-4 !text-[#71717A]">
                     {eodhdCryptoSpotTickerDisplay(r.symbol)}
                   </div>
                 </div>
@@ -124,11 +128,15 @@ export function CryptoTable({
 
               <ChangeCell value={r.changePercent1D} />
 
-              <ChangeCell value={r.changePercent1M} />
+              <div className="hidden min-w-0 w-full sm:block">
+                <ChangeCell value={r.changePercent1M} />
+              </div>
 
-              <ChangeCell value={r.changePercentYTD} />
+              <div className="hidden min-w-0 w-full sm:block">
+                <ChangeCell value={r.changePercentYTD} />
+              </div>
 
-              <div className="min-w-0 w-full text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B]">
+              <div className="hidden min-w-0 w-full text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B] sm:block">
                 {r.marketCap === "-" ? "-" : r.marketCap}
               </div>
             </Link>

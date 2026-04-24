@@ -502,7 +502,7 @@ export function MultichartFundamentalsBar({
                   />
                 )}
                 <p className="text-[12px] font-semibold leading-4 text-white">{tip.periodLabel}</p>
-                <p className="mt-1.5 whitespace-nowrap text-[12px] font-normal leading-4 text-zinc-300">
+                <p className="mt-1.5 whitespace-nowrap text-[12px] font-normal leading-4 text-[#71717A]">
                   {tip.valueLine}
                 </p>
               </div>
@@ -522,7 +522,7 @@ export function MultichartFundamentalsBar({
                 return (
                   <span
                     key={i}
-                    className="absolute left-0 block -translate-y-1/2"
+                    className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-white px-1 py-px"
                     style={{ top: `${pct}%` }}
                   >
                     {formatAxisValue(kind, t)}

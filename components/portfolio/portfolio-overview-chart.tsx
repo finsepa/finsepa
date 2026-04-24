@@ -577,7 +577,7 @@ export function PortfolioValueHistoryChartPane({
       autoSize: false,
       layout: {
         background: { type: ColorType.Solid, color: "#00000000" },
-        textColor: "#A1A1AA",
+        textColor: "#71717A",
         fontSize: 11,
         fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
         attributionLogo: false,

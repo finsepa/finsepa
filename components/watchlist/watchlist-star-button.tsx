@@ -109,7 +109,7 @@ export function WatchlistRowRemoveButton({
           e.stopPropagation();
           toggleTicker(storageKey);
         }}
-        className="flex items-center justify-center rounded-md p-1.5 text-[#A1A1AA] outline-none transition-colors hover:text-red-600 focus-visible:ring-2 focus-visible:ring-[#09090B]/20"
+        className="flex items-center justify-center rounded-md p-1.5 text-[#71717A] outline-none transition-colors hover:text-red-600 focus-visible:ring-2 focus-visible:ring-[#09090B]/20"
       >
         <Trash2 className="h-4 w-4" strokeWidth={1.75} />
       </button>

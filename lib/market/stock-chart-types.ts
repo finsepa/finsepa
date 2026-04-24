@@ -1,8 +1,12 @@
 export const STOCK_CHART_RANGES = ["1D", "5D", "1M", "6M", "YTD", "1Y", "5Y", "ALL"] as const;
 export type StockChartRange = (typeof STOCK_CHART_RANGES)[number];
 
-/** Calendar years of daily history for `ALL` and aligned bulk EOD loads (stock + crypto daily charts). */
-export const STOCK_CHART_ALL_LOOKBACK_YEARS = 20;
+/**
+ * Calendar years of daily history requested for `ALL` and aligned bulk EOD loads (stock overview bundle,
+ * performance mini-table, crypto daily charts). EODHD returns bars from the first date it has for the symbol
+ * (often back to the 1970s–1990s for major US listings); the `from` date is only a lower bound.
+ */
+export const STOCK_CHART_ALL_LOOKBACK_YEARS = 100;
 
 export const STOCK_CHART_SERIES = ["price", "marketCap", "return"] as const;
 export type StockChartSeries = (typeof STOCK_CHART_SERIES)[number];

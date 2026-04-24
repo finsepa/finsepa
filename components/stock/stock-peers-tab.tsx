@@ -116,7 +116,7 @@ export function PeerSearchDropdownRow({ item, onPick }: { item: SearchAssetItem;
         <span className="rounded-full bg-[#F4F4F5] px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-[#71717A]">
           {categoryLabel[item.type]}
         </span>
-        {sub ? <span className="max-w-[100px] truncate text-[11px] text-[#A1A1AA]">{sub}</span> : null}
+        {sub ? <span className="max-w-[100px] truncate text-[11px] text-[#71717A]">{sub}</span> : null}
       </div>
     </button>
   );
@@ -398,7 +398,7 @@ function StockPeersTabInner({
                   value={pickerQuery}
                   onChange={(e) => setPickerQuery(e.target.value)}
                   placeholder="Search stocks, crypto, indices…"
-                  className="w-full rounded-md border-0 bg-[#FAFAFA] px-2 py-1.5 text-[13px] text-[#09090B] placeholder:text-[#A1A1AA] outline-none ring-1 ring-transparent focus:ring-[#E4E4E7]"
+                  className="w-full rounded-md border-0 bg-[#FAFAFA] px-2 py-1.5 text-[13px] text-[#09090B] placeholder:text-[#71717A] outline-none ring-1 ring-transparent focus:ring-[#E4E4E7]"
                   aria-label="Search to add company"
                   autoComplete="off"
                   autoCorrect="off"
@@ -412,7 +412,7 @@ function StockPeersTabInner({
                 ) : (
                   <>
                     {searchLoading && searchItems.length > 0 ? (
-                      <p className="px-3 pb-1 text-center text-[11px] text-[#A1A1AA]" aria-hidden>
+                      <p className="px-3 pb-1 text-center text-[11px] text-[#71717A]" aria-hidden>
                         Updating…
                       </p>
                     ) : null}

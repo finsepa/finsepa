@@ -5,10 +5,13 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import type { CryptoTop10Row } from "@/lib/market/crypto-top10";
 import type { ScreenerTableRow } from "@/lib/screener/screener-static";
+import type { IndexTableRow } from "@/lib/market/indices-top10";
 import type { ScreenerPagePayload } from "@/lib/screener/screener-page-payload";
 import { SCREENER_MARKET_QUERY } from "@/lib/screener/screener-market-url";
+import { SCREENER_MARKETS_PAGE_SIZE } from "@/lib/screener/screener-markets-page-size";
 import { IndexCards } from "@/components/screener/index-cards";
 import { MarketTabs, type MarketTab } from "@/components/screener/market-tabs";
+import { UsMarketsSessionLabel } from "@/components/screener/us-markets-session-label";
 import { ScreenerSectorsTable } from "@/components/screener/screener-sectors-table";
 import { ScreenerTabs, type StocksSubTab } from "@/components/screener/screener-tabs";
 import { ScreenerTable } from "@/components/screener/screener-table";
@@ -47,7 +50,7 @@ function StocksTabBody({
   setCompaniesPage: (u: number | ((p: number) => number)) => void;
   sectorsRows: ScreenerSectorRow[];
 }) {
-  const companiesPageSize = 10;
+  const companiesPageSize = SCREENER_MARKETS_PAGE_SIZE;
   const companiesTotal = stocksTotalCount;
   const companiesLoading = companiesRemoteLoading;
   const companiesError = null as string | null;
@@ -72,7 +75,9 @@ function StocksTabBody({
         <ScreenerSectorsTable rows={sectorsRows} />
       ) : stocksSubTab === "Companies" ? (
         <div>
-          {companiesLoading && !companiesRows.length ? <StocksTableSkeleton rows={10} /> : null}
+          {companiesLoading && !companiesRows.length ? (
+            <StocksTableSkeleton rows={SCREENER_MARKETS_PAGE_SIZE} />
+          ) : null}
 
           {!companiesLoading && companiesError ? (
             <div className="rounded-[12px] border border-[#E4E4E7] bg-white px-4 py-4 text-sm text-[#71717A]">
@@ -125,7 +130,7 @@ function CryptoTabBody({
   cryptoRowsResolved: CryptoTop10Row[];
   cryptoRemoteLoading: boolean;
 }) {
-  const pageSize = 10;
+  const pageSize = SCREENER_MARKETS_PAGE_SIZE;
   const totalPages = Math.max(1, Math.ceil(cryptoTotalCount / pageSize));
   const safeCryptoPage = Math.min(totalPages, Math.max(1, cryptoPage));
 
@@ -146,6 +151,29 @@ function CryptoTabBody({
         onPageChange={(p) => setCryptoPage(p)}
         disabled={cryptoRemoteLoading}
         aria-label="Crypto list pages"
+      />
+    </div>
+  );
+}
+
+function IndicesTabBody({ indicesRows }: { indicesRows: IndexTableRow[] }) {
+  const [indicesPage, setIndicesPage] = useState(1);
+  const pageSize = SCREENER_MARKETS_PAGE_SIZE;
+  const totalPages = Math.max(1, Math.ceil(indicesRows.length / pageSize));
+  const safePage = Math.min(totalPages, Math.max(1, indicesPage));
+  const slice = useMemo(
+    () => indicesRows.slice((safePage - 1) * pageSize, safePage * pageSize),
+    [indicesRows, safePage, pageSize],
+  );
+
+  return (
+    <div>
+      <IndicesTable initialRows={slice} rankOffset={(safePage - 1) * pageSize} />
+      <ScreenerPagination
+        page={safePage}
+        totalPages={totalPages}
+        onPageChange={(p) => setIndicesPage(p)}
+        aria-label="Indices list pages"
       />
     </div>
   );
@@ -219,7 +247,7 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
     const loadId = requestAnimationFrame(() => {
       if (!cancelled) setCompaniesRemoteLoading(true);
     });
-    fetch(`/api/screener/companies?page=${companiesPage}&pageSize=10`)
+    fetch(`/api/screener/companies?page=${companiesPage}&pageSize=${SCREENER_MARKETS_PAGE_SIZE}`)
       .then((r) => r.json())
       .then((data: { rows?: ScreenerTableRow[] }) => {
         if (cancelled) return;
@@ -271,7 +299,7 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
     const loadId = requestAnimationFrame(() => {
       if (!cancelled) setCryptoRemoteLoading(true);
     });
-    fetch(`/api/screener/crypto-rows?page=${cryptoPage}&pageSize=10`)
+    fetch(`/api/screener/crypto-rows?page=${cryptoPage}&pageSize=${SCREENER_MARKETS_PAGE_SIZE}`)
       .then((r) => r.json())
       .then((data: { rows?: CryptoTop10Row[] }) => {
         if (cancelled) return;
@@ -299,7 +327,7 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
 
   return (
     <div className="min-w-0">
-      <MarketTabs active={tab} onChange={setMarketTab} />
+      <MarketTabs active={tab} onChange={setMarketTab} trailing={<UsMarketsSessionLabel />} />
 
       {tab === "Stocks" && payload.market === "stocks" ? (
         <>
@@ -329,7 +357,9 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
           cryptoRemoteLoading={cryptoLoadingActive}
         />
       ) : null}
-      {tab === "Indices" && payload.market === "indices" ? <IndicesTable initialRows={payload.indicesRows} /> : null}
+      {tab === "Indices" && payload.market === "indices" ? (
+        <IndicesTabBody indicesRows={payload.indicesRows} />
+      ) : null}
     </div>
   );
 }

@@ -32,7 +32,7 @@ function StatRow({
         <button
           type="button"
           onClick={onLabelClick}
-          className="min-w-0 shrink cursor-pointer text-left text-[14px] leading-5 text-[#09090B] decoration-transparent underline-offset-2 hover:underline hover:decoration-[#D4D4D8]"
+          className="min-w-0 shrink cursor-pointer text-left text-[14px] leading-5 text-[#09090B] decoration-transparent underline-offset-2 hover:underline hover:decoration-[#71717A]"
         >
           {label}
         </button>

@@ -30,9 +30,12 @@ function ChangeCell({ value }: { value: number | null }) {
   );
 }
 
-const colLayout = "grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr_1fr_96px] gap-x-2";
-/** Columns 2–9 of `colLayout`; used inside a real `<a>` (avoid `display: contents` on Next.js `Link`). */
-const rowLinkGrid = "grid-cols-[48px_2fr_1fr_1fr_1fr_1fr_1fr_96px] gap-x-2";
+/** Mobile: star + # + company + price + 1D %. `sm+`: add 1M, YTD, M Cap, PE. */
+const colLayout =
+  "grid-cols-[40px_48px_minmax(0,2fr)_1fr_1fr] gap-x-2 sm:grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr_1fr_96px]";
+/** Columns inside `Link` — matches `colLayout` after the star column. */
+const rowLinkGrid =
+  "grid-cols-[48px_minmax(0,2fr)_1fr_1fr] gap-x-2 sm:grid-cols-[48px_2fr_1fr_1fr_1fr_1fr_1fr_96px]";
 
 type RowProps = {
   item: ScreenerTableRow;
@@ -64,7 +67,7 @@ const ScreenerDataRow = memo(function ScreenerDataRow({ item, rank, starred, loa
       <Link
         href={`/stock/${encodeURIComponent(item.ticker)}`}
         prefetch={false}
-        className={`${rowLinkGrid} col-span-8 col-start-2 grid min-h-[56px] min-w-0 w-full items-center justify-items-stretch sm:min-h-[60px]`}
+        className={`${rowLinkGrid} col-span-4 col-start-2 grid min-h-[56px] min-w-0 w-full items-center justify-items-stretch no-underline text-[#09090B] visited:text-[#09090B] sm:col-span-8 sm:min-h-[60px]`}
         aria-label={`Open ${item.name} (${item.ticker})`}
       >
         <div className="text-center text-[14px] font-semibold leading-5 tabular-nums text-[#71717A]">{rank}</div>
@@ -73,7 +76,7 @@ const ScreenerDataRow = memo(function ScreenerDataRow({ item, rank, starred, loa
           <CompanyLogo name={item.name} logoUrl={item.logoUrl} symbol={item.ticker} />
           <div className="min-w-0">
             <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">{item.name}</div>
-            <div className="text-[12px] font-normal leading-4 text-[#71717A]">{item.ticker}</div>
+            <div className="text-[12px] font-normal leading-4 !text-[#71717A]">{item.ticker}</div>
           </div>
         </div>
 
@@ -82,14 +85,18 @@ const ScreenerDataRow = memo(function ScreenerDataRow({ item, rank, starred, loa
         </div>
 
         <ChangeCell value={item.change1D} />
-        <ChangeCell value={item.change1M} />
-        <ChangeCell value={item.changeYTD} />
+        <div className="hidden min-w-0 w-full sm:block">
+          <ChangeCell value={item.change1M} />
+        </div>
+        <div className="hidden min-w-0 w-full sm:block">
+          <ChangeCell value={item.changeYTD} />
+        </div>
 
-        <div className="min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
+        <div className="hidden min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B] sm:block">
           {item.marketCap}
         </div>
 
-        <div className="min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
+        <div className="hidden min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B] sm:block">
           {item.pe}
         </div>
       </Link>
@@ -101,7 +108,7 @@ export function ScreenerTable({ rows, rankOffset = 0 }: { rows: ScreenerTableRow
   const { watched, loaded, toggleTicker } = useWatchlist();
 
   return (
-    <ScreenerTableScroll>
+    <ScreenerTableScroll minWidthClassName="min-w-0 sm:min-w-[720px] lg:min-w-0">
       <div className="divide-y divide-[#E4E4E7] bg-white">
       {/* Column headers */}
       <div
@@ -112,10 +119,10 @@ export function ScreenerTable({ rows, rankOffset = 0 }: { rows: ScreenerTableRow
         <div className="text-left">Company</div>
         <div className="min-w-0 w-full text-right">Price</div>
         <div className="min-w-0 w-full text-right">1D %</div>
-        <div className="min-w-0 w-full text-right">1M %</div>
-        <div className="min-w-0 w-full text-right">YTD %</div>
-        <div className="min-w-0 w-full text-right">M Cap</div>
-        <div className="min-w-0 w-full text-right">PE</div>
+        <div className="hidden min-w-0 w-full text-right sm:block">1M %</div>
+        <div className="hidden min-w-0 w-full text-right sm:block">YTD %</div>
+        <div className="hidden min-w-0 w-full text-right sm:block">M Cap</div>
+        <div className="hidden min-w-0 w-full text-right sm:block">PE</div>
       </div>
 
       {rows.map((item, index) => (

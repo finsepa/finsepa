@@ -561,7 +561,7 @@ export function ComparisonReturnChart({
                       {tooltip.lines.map((line) => (
                         <p
                           key={line.ticker}
-                          className="flex items-center gap-2 whitespace-nowrap text-[12px] font-normal leading-4 text-zinc-300"
+                          className="flex items-center gap-2 whitespace-nowrap text-[12px] font-normal leading-4 text-[#71717A]"
                         >
                           <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: line.color }} />
                           <span>
