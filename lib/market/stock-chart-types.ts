@@ -1,6 +1,9 @@
 export const STOCK_CHART_RANGES = ["1D", "5D", "1M", "6M", "YTD", "1Y", "5Y", "ALL"] as const;
 export type StockChartRange = (typeof STOCK_CHART_RANGES)[number];
 
+/** Calendar years of daily history for `ALL` and aligned bulk EOD loads (stock + crypto daily charts). */
+export const STOCK_CHART_ALL_LOOKBACK_YEARS = 20;
+
 export const STOCK_CHART_SERIES = ["price", "marketCap", "return"] as const;
 export type StockChartSeries = (typeof STOCK_CHART_SERIES)[number];
 

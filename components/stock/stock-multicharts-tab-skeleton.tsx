@@ -7,7 +7,7 @@ const PLACEHOLDER_KEYS = ["revenue", "net_income", "eps", "free_cash_flow", "ebi
 
 function SkeletonGrid() {
   return (
-    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
       {PLACEHOLDER_KEYS.map((id) => (
         <div key={id} className={cn(CARD, "animate-pulse")}>
           <div className="h-5 w-28 rounded bg-neutral-200/90" />

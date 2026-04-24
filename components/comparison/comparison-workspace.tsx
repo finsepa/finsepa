@@ -30,14 +30,24 @@ const ComparisonReturnChart = dynamic(
 );
 
 function ComparisonReturnChartSkeleton() {
+  /** Keep in sync with `RETURN_CHART_*` in `comparison-return-chart.tsx` (Earnings Estimates layout). */
+  const totalH = 336;
+  const plotH = 272;
   return (
-    <section className="w-full min-w-0 max-w-full overflow-x-hidden bg-white p-5" aria-hidden>
-      <h3 className="text-[18px] font-semibold leading-7 tracking-tight text-[#09090B]">Return</h3>
-      <div className="mt-4">
-        <div className="h-[320px] w-full min-h-[320px] rounded-md bg-[#F4F4F5]" />
-        <div className="flex flex-wrap items-center justify-center gap-6 pt-2">
-          <div className="h-4 w-16 rounded bg-[#F4F4F5]" />
-          <div className="h-4 w-16 rounded bg-[#F4F4F5]" />
+    <section className="w-full min-w-0 max-w-full overflow-x-hidden bg-white" aria-hidden>
+      <h3 className="mb-4 text-[18px] font-semibold leading-7 tracking-tight text-[#09090B]">Return</h3>
+      <div className="px-2 sm:px-3" style={{ height: totalH }}>
+        <div className="rounded-md bg-[#F4F4F5]" style={{ height: plotH }} />
+        <div className="mt-0 flex flex-col gap-3 border-t border-[#E4E4E7] pt-2">
+          <div className="flex justify-between gap-2">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="h-3 flex-1 rounded bg-[#F4F4F5]" />
+            ))}
+          </div>
+          <div className="flex flex-wrap justify-center gap-6">
+            <div className="h-4 w-20 rounded bg-[#F4F4F5]" />
+            <div className="h-4 w-20 rounded bg-[#F4F4F5]" />
+          </div>
         </div>
       </div>
     </section>

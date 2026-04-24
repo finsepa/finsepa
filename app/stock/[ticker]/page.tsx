@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 
-import { StockPageContent } from "@/components/stock/stock-page-content";
 import { loadStockPageInitialData } from "@/lib/market/stock-page-initial-data";
+import { StockPageClient } from "./stock-page-client";
 import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
 import { parseStockDetailTabQuery, type StockDetailTabId } from "@/lib/stock/stock-detail-tab";
 
@@ -47,8 +47,7 @@ export default async function StockTickerPage({ params, searchParams }: PageProp
   }
 
   return (
-    <StockPageContent
-      key={routeTicker}
+    <StockPageClient
       routeTicker={routeTicker}
       initialPageData={initialPageData}
       initialActiveTab={initialActiveTab}

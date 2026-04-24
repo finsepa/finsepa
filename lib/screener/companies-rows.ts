@@ -1,6 +1,9 @@
 import "server-only";
 
-import { formatMarketCapDisplay, formatPeDisplay } from "@/lib/screener/eod-derived-metrics";
+import { fetchEodhdFundamentalsJson } from "@/lib/market/eodhd-fundamentals";
+import { peRatioKeyStatsDisplayFromFundamentalsRoot } from "@/lib/market/eodhd-key-stats-valuation";
+import { formatUsdCompact } from "@/lib/market/key-stats-basic-format";
+import { formatPeDisplay } from "@/lib/screener/eod-derived-metrics";
 import { getMockScreenerCompaniesNvdaBtcRows } from "@/lib/fixtures/screener-companies-test";
 import type { TopCompanyUniverseRow } from "@/lib/screener/top500-companies";
 import type { ScreenerTableRow } from "@/lib/screener/screener-static";
@@ -13,7 +16,24 @@ function peFromScreenerSnapshot(u: TopCompanyUniverseRow): string {
   if (price != null && eps != null && eps > 0 && Number.isFinite(price) && Number.isFinite(eps)) {
     return formatPeDisplay(price / eps, null);
   }
-  return "-";
+  return "—";
+}
+
+/**
+ * P/E in Key Stats (Highlights) format — matches stock Valuation "P/E Ratio" when fundamentals load.
+ * Falls back to screener implied (price/earnings_share) if fundamentals are missing.
+ */
+export async function resolveScreenerPeToMatchKeyStats(
+  ticker: string,
+  u: TopCompanyUniverseRow | undefined,
+): Promise<string> {
+  const root = await fetchEodhdFundamentalsJson(ticker);
+  if (root) {
+    const s = peRatioKeyStatsDisplayFromFundamentalsRoot(root);
+    if (s !== "—") return s;
+  }
+  if (u) return peFromScreenerSnapshot(u);
+  return "—";
 }
 
 /** Shared by Companies table and Top-10 strip — merges universe + quote + logo URL string. */
@@ -24,6 +44,8 @@ export function buildScreenerCompanyRowFromUniverse(
   logoUrl = "",
   /** When screener snapshot omits 1M/YTD, use derived %s from daily EOD bars (same cache as screener derived). */
   barDerived?: SimpleScreenerStockDerived | null,
+  /** When set, Key Stats "P/E Ratio" string (from fundamentals); else implied from the universe row. */
+  peKeyStatsDisplay?: string,
 ): ScreenerTableRow {
   const rtClose = quote && typeof quote.close === "number" && Number.isFinite(quote.close) ? quote.close : null;
   const prevClose =
@@ -56,8 +78,8 @@ export function buildScreenerCompanyRowFromUniverse(
     change1D,
     change1M,
     changeYTD,
-    marketCap: formatMarketCapDisplay(u.marketCapUsd),
-    pe: peFromScreenerSnapshot(u),
+    marketCap: formatUsdCompact(u.marketCapUsd),
+    pe: peKeyStatsDisplay === undefined ? peFromScreenerSnapshot(u) : peKeyStatsDisplay,
     trend: [],
   };
 }

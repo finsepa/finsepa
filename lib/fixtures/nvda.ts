@@ -3,7 +3,7 @@ import "server-only";
 import { fetchEodhdEodDaily } from "@/lib/market/eodhd-eod";
 import { fetchEodhdFundamentalsHighlights } from "@/lib/market/eodhd-fundamentals";
 import { deriveMetricsFromDailyBars, eodFetchWindowUtc, formatMarketCapDisplay, formatPeDisplay } from "@/lib/screener/eod-derived-metrics";
-import type { StockChartPoint, StockChartRange } from "@/lib/market/stock-chart-types";
+import { STOCK_CHART_ALL_LOOKBACK_YEARS, type StockChartPoint, type StockChartRange } from "@/lib/market/stock-chart-types";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
 import type { StockDetailHeaderMeta } from "@/lib/market/stock-header-meta";
 import type { StockKeyStatsBundle } from "@/lib/market/stock-key-stats-bundle-types";
@@ -42,6 +42,7 @@ export function getNvdaHeaderMeta(): StockDetailHeaderMeta {
   return {
     fullName: "NVIDIA Corporation",
     logoUrl: companyLogoUrlForTicker(NVDA, meta.domain),
+    exchange: "NASDAQ",
     sector: "Technology",
     industry: "Semiconductors",
     earningsDateDisplay: "—",
@@ -58,8 +59,11 @@ export function getNvdaChartPoints(range: StockChartRange): StockChartPoint[] {
   if (range === "YTD") return makeTrendPointSeries(120, now - 220 * 24 * 3600_000, (220 * 24 * 3600_000) / 120, 780, 110);
   if (range === "1Y") return makeTrendPointSeries(160, now - 365 * 24 * 3600_000, (365 * 24 * 3600_000) / 160, 760, 120);
   if (range === "5Y") return makeTrendPointSeries(190, now - 5 * 365 * 24 * 3600_000, (5 * 365 * 24 * 3600_000) / 190, 735, 130);
-  // ALL
-  return makeTrendPointSeries(200, now - 3 * 365 * 24 * 3600_000, (3 * 365 * 24 * 3600_000) / 200, 720, 140);
+  {
+    const allSpanMs = STOCK_CHART_ALL_LOOKBACK_YEARS * 365 * 24 * 3600_000;
+    const n = 240;
+    return makeTrendPointSeries(n, now - allSpanMs, allSpanMs / n, 720, 140);
+  }
 }
 
 function computePerformanceFromPoints(points: StockChartPoint[], ticker: string): StockPerformance {

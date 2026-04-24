@@ -66,6 +66,8 @@ export function StockHeader({
   const { openNewTransactionWithPreset } = usePortfolioWorkspace();
   const meta = getStockDetailMetaFromTicker(ticker);
   const symbol = meta.ticker;
+  const exchange = headerMeta?.exchange?.trim() ?? "";
+  const breadcrumbSymbol = exchange ? `${symbol} · ${exchange}` : symbol;
   const titleName = headerMeta?.fullName?.trim() ? headerMeta.fullName : meta.name;
 
   const serverLogo = headerMeta?.logoUrl?.trim() || meta.logoUrl?.trim() || "";
@@ -116,7 +118,7 @@ export function StockHeader({
             Stocks
           </Link>
           <ChevronRight className="h-3.5 w-3.5" />
-          <span className="font-medium text-[#09090B]">{symbol}</span>
+          <span className="font-medium text-[#09090B]">{breadcrumbSymbol}</span>
         </div>
       </div>
 
@@ -155,8 +157,6 @@ export function StockHeader({
                   {formatHeaderMetaSegment(headerMeta?.sector)}
                   <span className="text-[#D4D4D8]"> / </span>
                   {formatHeaderMetaSegment(headerMeta?.industry)}
-                  <span className="text-[#D4D4D8]"> / </span>
-                  {formatHeaderMetaSegment(headerMeta?.earningsDateDisplay)}
                   {watchlistMetaReady && headerMeta?.watchlistCount != null ? (
                     <>
                       <span className="text-[#D4D4D8]"> / </span>

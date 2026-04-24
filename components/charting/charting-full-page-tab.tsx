@@ -5,7 +5,7 @@ import { X } from "lucide-react";
 
 import { ChartingCompareWorkspace } from "@/components/charting/charting-compare-workspace";
 import { ChartingCompanyAddDropdown } from "@/components/charting/charting-company-add-dropdown";
-import { ChartingWorkspace } from "@/components/charting/charting-workspace";
+import { ChartingWorkspace, STANDALONE_CHARTING_TIME_RANGE_ORDER } from "@/components/charting/charting-workspace";
 import type { StockPageInitialData } from "@/lib/market/stock-page-initial-data";
 import {
   CHARTING_MAX_COMPARE_TICKERS,
@@ -43,6 +43,7 @@ export function ChartingFullPageTab({
         initialByTicker={initialByTicker}
         pathRoute={pathRoute}
         workspaceTitle={workspaceTitle}
+        timeRangeOrder={STANDALONE_CHARTING_TIME_RANGE_ORDER}
       />
     );
   }
@@ -60,6 +61,7 @@ export function ChartingFullPageTab({
       toolbarLayout="figma70857"
       pathRoute={pathRoute}
       workspaceTitle={workspaceTitle}
+      timeRangeOrder={STANDALONE_CHARTING_TIME_RANGE_ORDER}
       fullPageCompanyChipSlot={
         <div className="inline-flex max-w-full min-w-0 items-stretch overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white">
           <span className="flex min-h-[36px] min-w-0 items-center border-r border-[#E4E4E7] px-4 py-2 text-[14px] font-medium leading-5 text-[#09090B]">

@@ -7,7 +7,7 @@ import { REVALIDATE_HOT } from "@/lib/data/cache-policy";
 import { fetchEodhdUsRealtimeBatch } from "@/lib/market/eodhd-realtime";
 import { toEodhdUsSymbol } from "@/lib/market/eodhd-symbol";
 import { companyLogoUrlForTicker } from "@/lib/screener/company-logo-url";
-import { buildScreenerCompanyRowFromUniverse } from "@/lib/screener/companies-rows";
+import { buildScreenerCompanyRowFromUniverse, resolveScreenerPeToMatchKeyStats } from "@/lib/screener/companies-rows";
 import {
   getScreenerCompaniesStaticLayer,
 } from "@/lib/screener/screener-companies-layers";
@@ -53,7 +53,8 @@ async function loadTop10RowsUncached(): Promise<ScreenerRowWithMarketCapSort[]> 
     const quote = realtimeMap.get(sym);
     const fb = screenerStaticByTicker[ticker];
     const meta = TOP10_META[ticker];
-    const base = buildScreenerCompanyRowFromUniverse(u, fb.id, quote);
+    const pe = await resolveScreenerPeToMatchKeyStats(ticker, u);
+    const base = buildScreenerCompanyRowFromUniverse(u, fb.id, quote, "", undefined, pe);
     const logoUrl = companyLogoUrlForTicker(ticker, meta.domain);
     out.push({
       ...base,

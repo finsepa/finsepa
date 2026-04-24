@@ -304,7 +304,7 @@ export function chartingMetricsToParam(ids: ChartingMetricId[]): string {
 }
 
 /** Max symbols compared on `/charting` (comma-separated `ticker=`). */
-export const CHARTING_MAX_COMPARE_TICKERS = 8;
+export const CHARTING_MAX_COMPARE_TICKERS = 10;
 
 /**
  * Parse `ticker=AAPL,MSFT` — dedupe, preserve order, uppercase.

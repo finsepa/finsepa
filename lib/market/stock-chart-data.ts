@@ -7,7 +7,12 @@ import { REVALIDATE_HOT } from "@/lib/data/cache-policy";
 import { fetchEodhdIntraday, type EodhdIntradayBar } from "@/lib/market/eodhd-intraday";
 import { fetchEodhdEodDaily, type EodhdDailyBar } from "@/lib/market/eodhd-eod";
 import { getCachedSharesOutstanding } from "@/lib/market/stock-shares-outstanding";
-import type { StockChartPoint, StockChartRange, StockChartSeries } from "@/lib/market/stock-chart-types";
+import {
+  STOCK_CHART_ALL_LOOKBACK_YEARS,
+  type StockChartPoint,
+  type StockChartRange,
+  type StockChartSeries,
+} from "@/lib/market/stock-chart-types";
 
 function clampFinite(n: number): number | null {
   return Number.isFinite(n) ? n : null;
@@ -230,7 +235,7 @@ async function loadStockPriceChartPointsUncached(ticker: string, range: StockCha
   else if (range === "6M") fromDate.setUTCDate(fromDate.getUTCDate() - 210);
   else if (range === "1Y") fromDate.setUTCFullYear(fromDate.getUTCFullYear() - 1);
   else if (range === "5Y") fromDate.setUTCFullYear(fromDate.getUTCFullYear() - 5);
-  else if (range === "ALL") fromDate.setUTCFullYear(fromDate.getUTCFullYear() - 12);
+  else if (range === "ALL") fromDate.setUTCFullYear(fromDate.getUTCFullYear() - STOCK_CHART_ALL_LOOKBACK_YEARS);
   else if (range === "YTD") {
     fromDate = new Date(Date.UTC(now.getUTCFullYear(), 0, 1));
   }
@@ -267,7 +272,7 @@ async function loadStockChartPointsUncached(
 export const getStockChartPoints = unstable_cache(
   async (ticker: string, range: StockChartRange, series: StockChartSeries) =>
     loadStockChartPointsUncached(ticker, range, series),
-  ["stock-chart-points-v5-session-date"],
+  ["stock-chart-points-v6-all-20y"],
   { revalidate: REVALIDATE_HOT },
 );
 

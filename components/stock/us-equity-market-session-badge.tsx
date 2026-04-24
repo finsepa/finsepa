@@ -37,7 +37,7 @@ function SessionRow({ session }: { session: UsEquityMarketSession }) {
       return (
         <>
           <span className="h-2 w-2 shrink-0 rounded-full bg-[#A1A1AA]" aria-hidden />
-          <span>Closed</span>
+          <span>Market closed</span>
         </>
       );
   }

@@ -2,25 +2,27 @@
 
 export type StockDetailTabId =
   | "overview"
-  | "holdings"
-  | "charting"
-  | "multicharts"
-  | "peers"
-  | "target-price"
+  | "financials"
   | "earnings"
+  | "multicharts"
+  | "target-price"
   | "insiders"
+  | "charting"
+  | "peers"
+  | "holdings"
   | "profile";
 
 export function parseStockDetailTabQuery(raw: string | null | undefined): StockDetailTabId | null {
   if (
     raw === "overview" ||
-    raw === "holdings" ||
-    raw === "charting" ||
-    raw === "multicharts" ||
-    raw === "peers" ||
-    raw === "target-price" ||
+    raw === "financials" ||
     raw === "earnings" ||
+    raw === "multicharts" ||
+    raw === "target-price" ||
     raw === "insiders" ||
+    raw === "charting" ||
+    raw === "peers" ||
+    raw === "holdings" ||
     raw === "profile"
   ) {
     return raw;

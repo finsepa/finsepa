@@ -374,6 +374,8 @@ function mergeRatiosRow(p: ChartingSeriesPoint, row: Record<string, unknown>): v
     "PriceEarnings",
     "PEBasic",
     "PEDiluted",
+    "PERatioTTM",
+    "PriceToEarningsRatioTTM",
   ]);
   p.trailingPe = numFromRow(row, ["TrailingPE", "TrailingPe", "trailingPE", "TrailingPeRatio", "PETrailing"]);
   const forwardPeFromRow = numFromRow(row, [
@@ -581,12 +583,24 @@ function fillDerivedValuationMultiples(p: ChartingSeriesPoint): void {
   if (mc == null || !Number.isFinite(mc) || mc <= 0) return;
 
   const ni = p.netIncome;
-  if (ni != null && ni > 1e-6) {
+  let peFromEarnings: number | null = null;
+  if (ni != null && Number.isFinite(ni) && ni > 1e-6) {
     const pe = mc / ni;
-    if (Number.isFinite(pe) && pe > 0 && pe < MAX_DERIVED_VALUATION_MULTIPLE) {
-      if (p.peRatio == null) p.peRatio = pe;
-      if (p.trailingPe == null) p.trailingPe = pe;
+    if (Number.isFinite(pe) && pe > 0 && pe < MAX_DERIVED_VALUATION_MULTIPLE) peFromEarnings = pe;
+  } else {
+    const eps = p.eps;
+    const sh = p.sharesOutstanding;
+    if (eps != null && sh != null && Number.isFinite(eps) && Number.isFinite(sh)) {
+      const denom = eps * sh;
+      if (denom > 1e-6) {
+        const pe = mc / denom;
+        if (Number.isFinite(pe) && pe > 0 && pe < MAX_DERIVED_VALUATION_MULTIPLE) peFromEarnings = pe;
+      }
     }
+  }
+  if (peFromEarnings != null) {
+    if (p.peRatio == null) p.peRatio = peFromEarnings;
+    if (p.trailingPe == null) p.trailingPe = peFromEarnings;
   }
 
   if (p.peRatio != null && p.trailingPe == null) p.trailingPe = p.peRatio;
@@ -814,6 +828,6 @@ async function fetchChartingSeriesUncached(
 
 export const fetchChartingSeries = unstable_cache(
   fetchChartingSeriesUncached,
-  ["eodhd-charting-series-v15-implied-valuation-multiples"],
+  ["eodhd-charting-series-v16-pe-eps-shares-fallback"],
   { revalidate: REVALIDATE_WARM },
 );

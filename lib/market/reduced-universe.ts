@@ -3,7 +3,10 @@ import "server-only";
 import { formatMarketCapCompactNoCurrency, formatPeCompact } from "@/lib/screener/eod-derived-metrics";
 import type { Top10Ticker } from "@/lib/screener/top10-config";
 
-/** Static display caps for screener tables (live prices come from EODHD). Amounts chosen so M Cap shows varied T/B with two decimals. */
+/**
+ * Display-only market caps for screener page 1. Must be strictly descending in the fixed top-10 row
+ * order (`top10-config` tickers) so the M Cap column matches a largest-first ranking.
+ */
 export const REDUCED_STOCKS: Record<
   Top10Ticker,
   { ticker: Top10Ticker; name: string; marketCapUsd: number; pe: number }
@@ -11,12 +14,12 @@ export const REDUCED_STOCKS: Record<
   AAPL: { ticker: "AAPL", name: "Apple", marketCapUsd: 3.2 * 1e12, pe: 30 },
   MSFT: { ticker: "MSFT", name: "Microsoft", marketCapUsd: 3.05 * 1e12, pe: 32 },
   NVDA: { ticker: "NVDA", name: "NVIDIA", marketCapUsd: 2.12 * 1e12, pe: 65 },
-  GOOGL: { ticker: "GOOGL", name: "Alphabet", marketCapUsd: 1.88 * 1e12, pe: 23 },
-  AMZN: { ticker: "AMZN", name: "Amazon", marketCapUsd: 1.94 * 1e12, pe: 42 },
+  GOOGL: { ticker: "GOOGL", name: "Alphabet", marketCapUsd: 1.94 * 1e12, pe: 23 },
+  AMZN: { ticker: "AMZN", name: "Amazon", marketCapUsd: 1.88 * 1e12, pe: 42 },
   META: { ticker: "META", name: "Meta Platforms", marketCapUsd: 1.17 * 1e12, pe: 26 },
   "BRK-B": { ticker: "BRK-B", name: "Berkshire Hathaway", marketCapUsd: 1.02 * 1e12, pe: 14 },
-  TSM: { ticker: "TSM", name: "TSMC", marketCapUsd: 900.25 * 1e9, pe: 31 },
-  LLY: { ticker: "LLY", name: "Eli Lilly", marketCapUsd: 958.4 * 1e9, pe: 114 },
+  TSM: { ticker: "TSM", name: "TSMC", marketCapUsd: 958.4 * 1e9, pe: 31 },
+  LLY: { ticker: "LLY", name: "Eli Lilly", marketCapUsd: 900.25 * 1e9, pe: 114 },
   TSLA: { ticker: "TSLA", name: "Tesla", marketCapUsd: 783.65 * 1e9, pe: 66 },
 };
 

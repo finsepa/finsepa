@@ -1,10 +1,12 @@
 "use client";
 
-import { BarChart3, LineChart, TrendingDown, TrendingUp } from "lucide-react";
+import { TrendingDown, TrendingUp } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import {
   MultichartFundamentalsBar,
+  MULTICHART_MAX_ANNUAL_BARS,
+  MULTICHART_MAX_QUARTERLY_BARS,
   readChartingMetricValue,
   sliceLastAnnualWithMetric,
   type MultichartVisual,
@@ -24,14 +26,14 @@ import {
 import { MultichartsTabSkeletonGrid } from "@/components/stock/stock-multicharts-tab-skeleton";
 import { EARNINGS_CARD_LABEL_CLASS, EARNINGS_CARD_VALUE_CLASS } from "@/components/stock/earnings-card-styles";
 import { TabSwitcher } from "@/components/design-system";
-import { cn } from "@/lib/utils";
+import { MultichartVisualSwitcher } from "@/components/stock/multichart-visual-switcher";
 import type { FundamentalsSeriesMode } from "@/lib/market/charting-series-types";
 
 /** Multicharts card — Figma: 20px padding, 12px radius, 1px #E4E4E7 stroke, 8px vertical gap between blocks. */
 const MULTICHART_CARD_CLASS =
   "flex flex-col gap-2 overflow-x-hidden overflow-y-visible rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition hover:shadow-[0px_2px_4px_0px_rgba(10,10,10,0.08)]";
 
-const MULTICHART_METRICS = [
+const DEFAULT_MULTICHART_METRICS = [
   "revenue",
   "net_income",
   "eps",
@@ -43,50 +45,6 @@ const PERIOD_TAB_OPTIONS = [
   { value: "annual" as const, label: "Annual" },
   { value: "quarterly" as const, label: "Quarterly" },
 ];
-
-const CHART_VISUAL_OPTIONS = [
-  { value: "line" as const, label: "Line chart", Icon: LineChart },
-  { value: "bar" as const, label: "Bar chart", Icon: BarChart3 },
-] as const;
-
-function MultichartVisualSwitcher({
-  value,
-  onChange,
-}: {
-  value: MultichartVisual;
-  onChange: (next: MultichartVisual) => void;
-}) {
-  return (
-    <div
-      className="inline-flex shrink-0 items-center gap-0 rounded-[10px] bg-[#F4F4F5] p-0.5"
-      role="group"
-      aria-label="Chart style"
-    >
-      {CHART_VISUAL_OPTIONS.map(({ value: v, label, Icon }) => {
-        const active = value === v;
-        return (
-          <button
-            key={v}
-            type="button"
-            aria-pressed={active}
-            aria-label={label}
-            title={label}
-            onClick={() => onChange(v)}
-            className={cn(
-              "flex h-9 w-9 items-center justify-center rounded-[10px] transition-colors duration-100",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2",
-              active
-                ? "bg-white text-[#09090B] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]"
-                : "text-[#71717A] hover:text-[#09090B]",
-            )}
-          >
-            <Icon className="h-4 w-4" strokeWidth={2} aria-hidden />
-          </button>
-        );
-      })}
-    </div>
-  );
-}
 
 function yoyFromLastTwo(rows: ChartingSeriesPoint[], metricId: ChartingMetricId): number | null {
   if (rows.length < 2) return null;
@@ -135,9 +93,23 @@ type Props = {
   ticker: string;
   initialAnnualPoints?: ChartingSeriesPoint[];
   initialQuarterlyPoints?: ChartingSeriesPoint[];
+  /** Page heading (default “Multicharts”). */
+  title?: string;
+  /** Which fundamentals metrics to render as cards (defaults to the standard Multicharts set). */
+  metricIds?: readonly ChartingMetricId[];
 };
 
-export function StockMultichartsTab({ ticker, initialAnnualPoints, initialQuarterlyPoints }: Props) {
+export function StockMultichartsTab({
+  ticker,
+  initialAnnualPoints,
+  initialQuarterlyPoints,
+  title = "Multicharts",
+  metricIds,
+}: Props) {
+  const metrics = useMemo(() => {
+    if (Array.isArray(metricIds) && metricIds.length > 0) return [...metricIds];
+    return [...DEFAULT_MULTICHART_METRICS];
+  }, [metricIds]);
   const [periodMode, setPeriodMode] = useState<FundamentalsSeriesMode>("annual");
   const [chartVisual, setChartVisual] = useState<MultichartVisual>("bar");
 
@@ -191,16 +163,16 @@ export function StockMultichartsTab({ ticker, initialAnnualPoints, initialQuarte
     };
   }, [ticker, periodMode, seedPoints]);
 
-  const maxBars = periodMode === "quarterly" ? 8 : 10;
+  const maxBars = periodMode === "quarterly" ? MULTICHART_MAX_QUARTERLY_BARS : MULTICHART_MAX_ANNUAL_BARS;
   const hasAny = useMemo(
-    () => MULTICHART_METRICS.some((id) => sliceLastAnnualWithMetric(points, id, maxBars).length > 0),
-    [points, maxBars],
+    () => metrics.some((id) => sliceLastAnnualWithMetric(points, id, maxBars).length > 0),
+    [points, maxBars, metrics],
   );
 
   return (
     <div className="space-y-6 pt-1">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-        <h2 className="text-[20px] font-semibold leading-8 tracking-tight text-[#09090B]">Multicharts</h2>
+        <h2 className="text-[20px] font-semibold leading-8 tracking-tight text-[#09090B]">{title}</h2>
         <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
           <TabSwitcher
             options={PERIOD_TAB_OPTIONS}
@@ -217,8 +189,8 @@ export function StockMultichartsTab({ ticker, initialAnnualPoints, initialQuarte
       ) : !hasAny ? (
         <p className="text-[14px] leading-6 text-[#71717A]">No fundamentals data available for this symbol.</p>
       ) : (
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {MULTICHART_METRICS.map((metricId) => (
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          {metrics.map((metricId) => (
             <MultichartCard
               key={metricId}
               metricId={metricId}
@@ -244,7 +216,7 @@ function MultichartCard({
   periodMode: FundamentalsSeriesMode;
   chartVisual: MultichartVisual;
 }) {
-  const maxBars = periodMode === "quarterly" ? 8 : 10;
+  const maxBars = periodMode === "quarterly" ? MULTICHART_MAX_QUARTERLY_BARS : MULTICHART_MAX_ANNUAL_BARS;
   const rows = useMemo(() => sliceLastAnnualWithMetric(points, metricId, maxBars), [points, metricId, maxBars]);
   const last = rows.length ? readChartingMetricValue(rows[rows.length - 1]!, metricId) : null;
   const yoy = yoyFromLastTwo(rows, metricId);

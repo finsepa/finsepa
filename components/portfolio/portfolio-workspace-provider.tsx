@@ -428,7 +428,10 @@ export function PortfolioWorkspaceProvider({
           }),
         );
         const quoted = Object.fromEntries(entries) as Record<string, PortfolioHolding[]>;
-        setHoldingsByPortfolioId((prev) => ({ ...prev, ...quoted }));
+        // Ignore stale completions (e.g. local hydrate finished after server merge already ran).
+        if (holdingsQuoteRefreshGenRef.current === refreshGen) {
+          setHoldingsByPortfolioId((prev) => ({ ...prev, ...quoted }));
+        }
       } finally {
         if (holdingsQuoteRefreshGenRef.current === refreshGen) {
           setHoldingsMarkToMarketReady(true);
@@ -466,7 +469,9 @@ export function PortfolioWorkspaceProvider({
           }),
         );
         const quoted = Object.fromEntries(entries) as Record<string, PortfolioHolding[]>;
-        setHoldingsByPortfolioId((prev) => ({ ...prev, ...quoted }));
+        if (holdingsQuoteRefreshGenRef.current === refreshGen) {
+          setHoldingsByPortfolioId((prev) => ({ ...prev, ...quoted }));
+        }
       } finally {
         if (holdingsQuoteRefreshGenRef.current === refreshGen) {
           setHoldingsMarkToMarketReady(true);

@@ -37,7 +37,6 @@ import {
   formatUsdPrice,
 } from "@/lib/market/key-stats-basic-format";
 import { DataFetchTopLoader } from "@/components/layout/data-fetch-top-loader";
-import { TransactionPortfolioField } from "@/components/portfolio/transaction-portfolio-field";
 import { ChartSkeleton } from "@/components/ui/chart-skeleton";
 import { TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
 import {
@@ -152,6 +151,12 @@ function formatTableCell(kind: ChartingMetricKind, v: number | null): string {
 export type ChartTimeRange = "1Y" | "2Y" | "3Y" | "5Y" | "10Y" | "all";
 export type ChartType = "line" | "bars";
 
+/** Stock page Charting tab — full range including 2Y. */
+export const DEFAULT_CHART_TIME_RANGE_ORDER: ChartTimeRange[] = ["1Y", "2Y", "3Y", "5Y", "10Y", "all"];
+
+/** Standalone `/charting` page only (not symbol tab). */
+export const STANDALONE_CHARTING_TIME_RANGE_ORDER: ChartTimeRange[] = ["1Y", "3Y", "5Y", "10Y", "all"];
+
 const TIME_RANGE_LABELS: Record<ChartTimeRange, string> = {
   "1Y": "1Y",
   "2Y": "2Y",
@@ -218,9 +223,9 @@ type Props = {
   fullPageCompanyAddSlot?: ReactNode;
   pathRoute?: StandaloneChartRoute;
   workspaceTitle?: string;
+  /** Defaults to {@link DEFAULT_CHART_TIME_RANGE_ORDER}; standalone `/charting` passes {@link STANDALONE_CHARTING_TIME_RANGE_ORDER}. */
+  timeRangeOrder?: ChartTimeRange[];
 };
-
-const TIME_RANGE_ORDER: ChartTimeRange[] = ["1Y", "2Y", "3Y", "5Y", "10Y", "all"];
 
 const PERIOD_TAB_OPTIONS = [
   { value: "annual" as const, label: "Annual" },
@@ -235,8 +240,6 @@ const CHART_TYPE_TAB_OPTIONS = [
 function timeRangeTabOptionsFor(order: ChartTimeRange[]): TabSwitcherOption<ChartTimeRange>[] {
   return order.map((r) => ({ value: r, label: TIME_RANGE_LABELS[r] }));
 }
-
-const TIME_RANGE_TAB_OPTIONS: TabSwitcherOption<ChartTimeRange>[] = timeRangeTabOptionsFor(TIME_RANGE_ORDER);
 
 const CHARTING_HEIGHT_STORAGE_KEY = "finsepa:chartingHeightPx";
 const CHARTING_HEIGHT_MIN = 320;
@@ -286,6 +289,7 @@ export function ChartingWorkspace({
   fullPageCompanyAddSlot,
   pathRoute = "/charting",
   workspaceTitle = "Charting",
+  timeRangeOrder = DEFAULT_CHART_TIME_RANGE_ORDER,
 }: Props) {
   const router = useRouter();
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -293,6 +297,11 @@ export function ChartingWorkspace({
   const pickerInputRef = useRef<HTMLInputElement>(null);
 
   const isFigmaToolbar = toolbarLayout === "figma70857";
+
+  const timeRangeTabOptions = useMemo(
+    () => timeRangeTabOptionsFor(timeRangeOrder),
+    [timeRangeOrder],
+  );
 
   const [periodMode, setPeriodMode] = useState<"annual" | "quarterly">("annual");
   const [timeRange, setTimeRange] = useState<ChartTimeRange>("all");
@@ -340,6 +349,11 @@ export function ChartingWorkspace({
       // ignore
     }
   }, [chartHeight]);
+
+  useEffect(() => {
+    if (timeRangeOrder.includes(timeRange)) return;
+    setTimeRange("all");
+  }, [timeRange, timeRangeOrder]);
 
   useEffect(() => {
     const parsed = parseChartingMetricsParam(metricParam);
@@ -771,11 +785,6 @@ export function ChartingWorkspace({
     <>
       <DataFetchTopLoader active={loading} />
       <div className="space-y-4 pt-1">
-      {isFigmaToolbar ? (
-        <div className="w-full max-w-[min(100%,320px)]">
-          <TransactionPortfolioField variant="field" />
-        </div>
-      ) : null}
       {/* Toolbar: Figma 8479:44846 — 24px title, 12px gaps, segmented controls */}
       <div className="flex flex-col gap-6">
         {/* Figma 8479:70857 — title row: period, line/bars, range, refresh */}
@@ -799,7 +808,7 @@ export function ChartingWorkspace({
             <div className="max-w-full overflow-x-auto pb-0.5 [-webkit-overflow-scrolling:touch]">
               <TabSwitcher
                 className="inline-flex w-max min-w-0 flex-nowrap"
-                options={TIME_RANGE_TAB_OPTIONS}
+                options={timeRangeTabOptions}
                 value={timeRange}
                 onChange={(next) => {
                   setTimeRange(next);

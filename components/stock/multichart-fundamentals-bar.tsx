@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 
 import type { ChartingSeriesPoint, FundamentalsSeriesMode } from "@/lib/market/charting-series-types";
 import {
@@ -29,6 +29,34 @@ const MULTICHART_AXIS_ROW_PX = 40;
 
 /** Slanted x-axis ticks (deg) — saves horizontal space in narrow Multichart cards. */
 const AXIS_LABEL_ROTATE_DEG = -42;
+
+/** Latest fiscal periods to show — both modes span **20 years** (annual = 20 points, quarterly = 80). */
+export const MULTICHART_MAX_ANNUAL_BARS = 20;
+export const MULTICHART_MAX_QUARTERLY_BARS = 80;
+
+/** Same fill as Earnings (Estimates) `EstimatesHoverBandPrimitive` hover column. */
+const HOVER_COLUMN_BG = "rgba(59, 130, 246, 0.14)";
+
+/** Reuse Earnings (Estimates) crosshair-to-tooltip layout — `anchorX` in px, relative to plot (left) edge. */
+function computeTooltipHorizontalPlacement(
+  focusX: number,
+  containerWidthPx: number,
+): { anchorX: number; side: "left" | "right" } {
+  const pad = 8;
+  const gap = 10;
+  const estW = Math.min(280, Math.max(140, containerWidthPx - 2 * pad));
+
+  if (focusX - gap - estW >= pad) {
+    return { anchorX: focusX, side: "left" };
+  }
+
+  let anchorX = focusX;
+  if (anchorX + gap + estW > containerWidthPx - pad) {
+    anchorX = containerWidthPx - pad - gap - estW;
+  }
+  anchorX = Math.max(pad, anchorX);
+  return { anchorX, side: "right" };
+}
 
 export function readChartingMetricValue(row: ChartingSeriesPoint, id: ChartingMetricId): number | null {
   const k = CHARTING_METRIC_FIELD[id];
@@ -150,7 +178,29 @@ type Props = {
   visual?: MultichartVisual;
 };
 
-type TipState = { clientX: number; clientY: number; text: string } | null;
+type BarTooltipState = {
+  anchorX: number;
+  y: number;
+  side: "left" | "right";
+  periodLabel: string;
+  valueLine: string;
+};
+
+function barTooltipStateFromEvent(
+  e: MouseEvent<HTMLElement>,
+  plotEl: HTMLElement,
+  periodLabel: string,
+  valueLine: string,
+): BarTooltipState {
+  const plot = plotEl.getBoundingClientRect();
+  const col = (e.currentTarget as HTMLElement).getBoundingClientRect();
+  const focusX = col.left + col.width / 2 - plot.left;
+  const { anchorX, side } = computeTooltipHorizontalPlacement(
+    focusX,
+    Math.max(1, Math.floor(plot.width)),
+  );
+  return { anchorX, y: e.clientY - plot.top, side, periodLabel, valueLine };
+}
 
 export function MultichartFundamentalsBar({
   metricId,
@@ -160,10 +210,12 @@ export function MultichartFundamentalsBar({
   visual = "bar",
 }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
-  const [tip, setTip] = useState<TipState>(null);
+  const plotAreaRef = useRef<HTMLDivElement>(null);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [tip, setTip] = useState<BarTooltipState | null>(null);
 
   const kind = CHARTING_METRIC_KIND[metricId];
-  const maxBars = periodMode === "quarterly" ? 8 : 10;
+  const maxBars = periodMode === "quarterly" ? MULTICHART_MAX_QUARTERLY_BARS : MULTICHART_MAX_ANNUAL_BARS;
   const rows = useMemo(
     () => sliceLastAnnualWithMetric(points, metricId, maxBars),
     [points, metricId, maxBars],
@@ -243,11 +295,21 @@ export function MultichartFundamentalsBar({
   const n = values.length;
   const plotGridTemplate = n > 0 ? `repeat(${n}, minmax(0, 1fr))` : undefined;
 
+  const clearChartHover = () => {
+    setHoveredIndex(null);
+    setTip(null);
+  };
+
   return (
     <div ref={wrapRef} className="w-full min-w-0 max-w-full overflow-visible">
       <div className="relative flex w-full min-w-0 max-w-full flex-col overflow-visible" style={{ height }}>
         <div className="flex min-h-0 w-full min-w-0 flex-1" style={{ height: plotHeight }}>
-          <div className="relative min-h-0 min-w-0 flex-1">
+          <div
+            ref={plotAreaRef}
+            className="relative min-h-0 min-w-0 flex-1"
+            onPointerLeave={clearChartHover}
+          >
+            {/* Insets are % of plot *height* — bar layer below uses the same `top`/`bottom` (not `pt`/`pb`, which resolve vs width) so the $0 line and bar bases line up. */}
             <div className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[8%]" aria-hidden>
               {yTicks.map((_, i) => {
                 const nt = yTicks.length;
@@ -255,7 +317,7 @@ export function MultichartFundamentalsBar({
                 return (
                   <div
                     key={i}
-                    className="absolute left-0 right-0 border-t border-[#E4E4E7]"
+                    className="absolute left-0 right-0 border-t border-[#F4F4F5]"
                     style={{ top: `${pct}%` }}
                   />
                 );
@@ -264,15 +326,25 @@ export function MultichartFundamentalsBar({
             {visual === "line" ? (
               <div
                 ref={linePlotRef}
-                className="absolute inset-x-0 top-[8%] bottom-[8%] min-h-0 w-full min-w-0"
+                className="absolute inset-x-0 top-[8%] bottom-[8%] z-0 min-h-0 w-full min-w-0"
                 role="img"
                 aria-label={`${metricLabel} line chart`}
               >
+                {hoveredIndex != null && lineSvg.pts[hoveredIndex] ? (
+                  <div
+                    className="pointer-events-none absolute top-0 bottom-0 z-[1] w-10 -translate-x-1/2"
+                    style={{
+                      left: lineSvg.pts[hoveredIndex]!.x,
+                      backgroundColor: HOVER_COLUMN_BG,
+                    }}
+                    aria-hidden
+                  />
+                ) : null}
                 {lineSvg.d ? (
                   <svg
                     width={linePlotPx.w}
                     height={linePlotPx.h}
-                    className="block overflow-visible"
+                    className="relative z-[2] block overflow-visible"
                     aria-hidden
                   >
                     <path
@@ -285,7 +357,6 @@ export function MultichartFundamentalsBar({
                     />
                     {lineSvg.pts.map(({ x, y, v, i }) => {
                       const ptColor = seriesBarColor;
-                      const tipText = `${metricLabel}\n${labels[i]}: ${formatAxisValue(kind, v)}`;
                       return (
                         <g key={`pt-${labels[i]}-${i}`}>
                           <circle
@@ -295,14 +366,45 @@ export function MultichartFundamentalsBar({
                             fill="transparent"
                             className="cursor-default"
                             onMouseEnter={(e) => {
-                              setTip({ clientX: e.clientX, clientY: e.clientY, text: tipText });
+                              const plot = plotAreaRef.current;
+                              const lineEl = linePlotRef.current;
+                              if (!plot || !lineEl) return;
+                              const plotR = plot.getBoundingClientRect();
+                              const lineR = lineEl.getBoundingClientRect();
+                              const focusX = x + (lineR.left - plotR.left);
+                              const { anchorX, side } = computeTooltipHorizontalPlacement(
+                                focusX,
+                                Math.max(1, Math.floor(plotR.width)),
+                              );
+                              setHoveredIndex(i);
+                              setTip({
+                                anchorX,
+                                y: e.clientY - plotR.top,
+                                side,
+                                periodLabel: labels[i]!,
+                                valueLine: `${metricLabel}: ${formatAxisValue(kind, v)}`,
+                              });
                             }}
                             onMouseMove={(e) => {
-                              setTip((prev) =>
-                                prev ? { clientX: e.clientX, clientY: e.clientY, text: tipText } : null,
+                              const plot = plotAreaRef.current;
+                              const lineEl = linePlotRef.current;
+                              if (!plot || !lineEl) return;
+                              const plotR = plot.getBoundingClientRect();
+                              const lineR = lineEl.getBoundingClientRect();
+                              const focusX = x + (lineR.left - plotR.left);
+                              const { anchorX, side } = computeTooltipHorizontalPlacement(
+                                focusX,
+                                Math.max(1, Math.floor(plotR.width)),
                               );
+                              setHoveredIndex(i);
+                              setTip({
+                                anchorX,
+                                y: e.clientY - plotR.top,
+                                side,
+                                periodLabel: labels[i]!,
+                                valueLine: `${metricLabel}: ${formatAxisValue(kind, v)}`,
+                              });
                             }}
-                            onMouseLeave={() => setTip(null)}
                           />
                           <circle
                             cx={x}
@@ -321,7 +423,7 @@ export function MultichartFundamentalsBar({
               </div>
             ) : (
               <div
-                className="relative grid h-full min-h-0 w-full min-w-0 items-stretch px-0 pt-[8%] pb-[8%]"
+                className="absolute inset-x-0 top-[8%] bottom-[8%] grid min-h-0 w-full min-w-0 items-stretch px-0"
                 style={{ gridTemplateColumns: plotGridTemplate }}
                 role="img"
                 aria-label={`${metricLabel} bar chart`}
@@ -329,37 +431,82 @@ export function MultichartFundamentalsBar({
                 {values.map((v, i) => {
                   const hPct = maxV > 0 ? (Math.max(0, v) / maxV) * 100 : 0;
                   const barColor = seriesBarColor;
-                  const tipText = `${metricLabel}\n${labels[i]}: ${formatAxisValue(kind, v)}`;
+                  const valueLine = `${metricLabel}: ${formatAxisValue(kind, v)}`;
                   return (
                     <div
                       key={`${labels[i]}-${i}`}
-                      className="flex h-full min-h-0 min-w-0 flex-col items-center justify-end px-0.5 mt-[10px] mb-3"
+                      className="relative z-0 flex h-full min-h-0 min-w-0 flex-col items-center justify-end px-0.5"
                       onMouseEnter={(e) => {
-                        setTip({ clientX: e.clientX, clientY: e.clientY, text: tipText });
-                      }}
-                      onMouseMove={(e) => {
-                        setTip((prev) =>
-                          prev ? { clientX: e.clientX, clientY: e.clientY, text: tipText } : null,
+                        const plot = plotAreaRef.current;
+                        if (!plot) return;
+                        setHoveredIndex(i);
+                        setTip(
+                          barTooltipStateFromEvent(e, plot, labels[i]!, valueLine),
                         );
                       }}
-                      onMouseLeave={() => setTip(null)}
+                      onMouseMove={(e) => {
+                        const plot = plotAreaRef.current;
+                        if (!plot) return;
+                        setHoveredIndex(i);
+                        setTip(barTooltipStateFromEvent(e, plot, labels[i]!, valueLine));
+                      }}
                     >
-                      {/* `mt-auto` pins the bar to the column bottom so % height resolves to the full cell (avoids a gap above $0). */}
+                      {hoveredIndex === i ? (
+                        <div
+                          className="pointer-events-none absolute inset-0 z-0"
+                          style={{ backgroundColor: HOVER_COLUMN_BG }}
+                          aria-hidden
+                        />
+                      ) : null}
                       <div
-                        className="mt-auto shrink-0 rounded-t-[2px] rounded-b-none transition-[height] duration-75"
-                        style={{
-                          width: MULTICHART_BAR_WIDTH_PX,
-                          maxWidth: "100%",
-                          height: `${hPct}%`,
-                          minHeight: hPct > 0 ? 2 : 0,
-                          backgroundColor: barColor,
-                        }}
-                      />
+                        className="relative z-10 flex h-full min-h-0 w-full flex-col items-center justify-end"
+                      >
+                        <div
+                          className="mt-auto shrink-0 rounded-t-[2px] rounded-b-none transition-[height] duration-75"
+                          style={{
+                            width: MULTICHART_BAR_WIDTH_PX,
+                            maxWidth: "100%",
+                            height: `${hPct}%`,
+                            minHeight: hPct > 0 ? 2 : 0,
+                            backgroundColor: barColor,
+                          }}
+                        />
+                      </div>
                     </div>
                   );
                 })}
               </div>
             )}
+
+            {tip ? (
+              <div
+                className="pointer-events-none absolute z-30 max-w-[min(280px,calc(100%-16px))] rounded-lg bg-[#09090B] px-3 py-2.5 pr-3.5 text-left text-white shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
+                style={{
+                  left: `clamp(8px, ${tip.anchorX}px, calc(100% - 8px))`,
+                  top: tip.y,
+                  transform:
+                    tip.side === "left"
+                      ? "translate(calc(-100% - 10px), -50%)"
+                      : "translate(10px, -50%)",
+                }}
+              >
+                {tip.side === "left" ? (
+                  <span
+                    className="absolute top-1/2 left-full -translate-y-1/2 border-y-[6px] border-y-transparent border-l-[7px] border-l-[#09090B]"
+                    aria-hidden
+                  />
+                ) : (
+                  <span
+                    className="absolute top-1/2 right-full -translate-y-1/2 border-y-[6px] border-y-transparent border-r-[7px] border-r-[#09090B]"
+                    aria-hidden
+                  />
+                )}
+                <p className="text-[12px] font-semibold leading-4 text-white">{tip.periodLabel}</p>
+                <p className="mt-1.5 whitespace-nowrap text-[12px] font-normal leading-4 text-zinc-300">
+                  {tip.valueLine}
+                </p>
+              </div>
+            ) : null}
           </div>
 
           <div
@@ -391,35 +538,35 @@ export function MultichartFundamentalsBar({
             className="grid min-w-0 flex-1 items-end justify-items-stretch px-0 mb-2"
             style={{ gridTemplateColumns: plotGridTemplate }}
           >
-            {axisLabels.map((axisLab, i) => (
-              <div
-                key={`${labels[i]}-${i}`}
-                className="flex min-h-0 min-w-0 items-end justify-center overflow-visible px-0.5 pb-0.5"
-                title={labels[i]}
-              >
-                <span
-                  className="inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]"
-                  style={{
-                    transform: `rotate(${AXIS_LABEL_ROTATE_DEG}deg)`,
-                    transformOrigin: "center bottom",
-                  }}
+            {axisLabels.map((axisLab, i) => {
+              /** Quarterly: many columns — show every other tick (1st, 3rd, 5th…) so slanted labels don’t overlap. */
+              const last = axisLabels.length - 1;
+              const showAxisText =
+                periodMode === "annual" || i % 2 === 0 || (periodMode === "quarterly" && i === last && last > 0);
+              return (
+                <div
+                  key={`${labels[i]}-${i}`}
+                  className="flex min-h-0 min-w-0 items-end justify-center overflow-visible px-0.5 pb-0.5"
+                  title={labels[i]}
                 >
-                  {axisLab}
-                </span>
-              </div>
-            ))}
+                  {showAxisText ? (
+                    <span
+                      className="inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]"
+                      style={{
+                        transform: `rotate(${AXIS_LABEL_ROTATE_DEG}deg)`,
+                        transformOrigin: "center bottom",
+                      }}
+                    >
+                      {axisLab}
+                    </span>
+                  ) : null}
+                </div>
+              );
+            })}
           </div>
           <div style={{ width: MULTICHART_Y_AXIS_W_PX }} className="shrink-0 pl-3" aria-hidden />
         </div>
 
-        {tip ? (
-          <div
-            className="pointer-events-none fixed z-[100] max-w-[min(280px,calc(100vw-16px))] whitespace-pre-line rounded-md border border-[#E4E4E7] bg-white px-2.5 py-1.5 text-left text-[12px] leading-snug text-[#18181B] shadow-sm"
-            style={{ left: tip.clientX + 12, top: tip.clientY + 12 }}
-          >
-            {tip.text}
-          </div>
-        ) : null}
       </div>
     </div>
   );

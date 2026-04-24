@@ -29,14 +29,20 @@ const RETURN_WINDOWS = [
 
 const GROUP_CENTER_SPACING_DAYS = 72;
 const HALF_DAY_SEC = 12 * 60 * 60;
-/** Wider cap so sparse return bars can stretch across the plot. */
-const RETURN_CHART_MAX_BAR_WIDTH_PX = 64;
+/** Match `EarningsEstimatesChart` bar cap and gutters for consistent density. */
+const RETURN_CHART_MAX_BAR_WIDTH_PX = 32;
 const RETURN_INTER_GROUP_GAP_PX = 24;
 const RETURN_INTER_GROUP_REF_BAR_SPACING_PX = 12;
 const BAR_PICK_THRESHOLD_PX = 120;
-/** Tiny inset so the first/last columns are not clipped at the pane edge. */
-const RETURN_TIME_SCALE_GUTTER_PX = 8;
-const CHART_HEIGHT = 320;
+/** Match `ESTIMATES_TIME_SCALE_GUTTER_PX` in earnings estimates chart. */
+const RETURN_TIME_SCALE_GUTTER_PX = 14;
+/** Plot height — same as `ESTIMATES_CHART_PLOT_HEIGHT_PX` (Earnings → Estimates). */
+const RETURN_CHART_PLOT_HEIGHT_PX = 272;
+/** Space for period labels + series legend row — same as `ESTIMATES_CHART_AXIS_ROW_PX`. */
+const RETURN_CHART_AXIS_ROW_PX = 64;
+const RETURN_CHART_TOTAL_HEIGHT_PX = RETURN_CHART_PLOT_HEIGHT_PX + RETURN_CHART_AXIS_ROW_PX;
+/** Same as `ESTIMATES_CHART_Y_AXIS_WIDTH_PX` so the label grid lines up with the histogram. */
+const RETURN_CHART_Y_AXIS_WIDTH_PX = 56;
 
 type HistogramDatum =
   | { time: UTCTimestamp; value: number; color: string }
@@ -74,7 +80,7 @@ function layoutReturnTimeScale(
   const ts = chart.timeScale();
   const lastIdx = logicalPointCount - 1;
 
-  chart.resize(Math.max(1, containerWidthPx), CHART_HEIGHT);
+  chart.resize(Math.max(1, containerWidthPx), RETURN_CHART_PLOT_HEIGHT_PX);
   ts.fitContent();
 
   requestAnimationFrame(() => {
@@ -109,21 +115,6 @@ function layoutReturnTimeScale(
       ts.setVisibleLogicalRange({ from: 0, to: lastIdx });
     });
   });
-}
-
-function formatPeriodTick(t: number): string {
-  const slot = GROUP_CENTER_SPACING_DAYS * 86400;
-  let bestW = -1;
-  let bestDist = Infinity;
-  for (let w = 0; w < RETURN_WINDOWS.length; w++) {
-    const d = Math.abs(t - (periodBaseTime(w) as number));
-    if (d < bestDist) {
-      bestDist = d;
-      bestW = w;
-    }
-  }
-  if (bestW < 0 || bestDist > slot * 0.45) return "";
-  return RETURN_WINDOWS[bestW]!.label;
 }
 
 function formatReturnPct(v: number): string {
@@ -373,25 +364,22 @@ export function ComparisonReturnChart({
           vertLines: { visible: false },
           horzLines: { color: "#E4E4E7" },
         },
-        rightPriceScale: { visible: false, borderVisible: false },
-        leftPriceScale: {
+        leftPriceScale: { visible: false, borderVisible: false },
+        rightPriceScale: {
           visible: true,
           borderVisible: false,
-          minimumWidth: 56,
+          minimumWidth: RETURN_CHART_Y_AXIS_WIDTH_PX,
           scaleMargins: { top: 0.08, bottom: 0.12 },
         },
         timeScale: {
           borderVisible: false,
+          /** Native ticks omitted — period labels render in the DOM row below (same pattern as Earnings → Estimates). */
+          visible: false,
           rightOffset: 0,
           shiftVisibleRangeOnNewBar: false,
           barSpacing: 12,
           minBarSpacing: 2,
           maxBarSpacing: RETURN_CHART_MAX_BAR_WIDTH_PX,
-          tickMarkFormatter: (t: UTCTimestamp) => {
-            const num = typeof t === "number" ? t : Number(t);
-            if (!Number.isFinite(num)) return "";
-            return formatPeriodTick(num);
-          },
         },
         crosshair: {
           mode: CrosshairMode.Normal,
@@ -436,7 +424,7 @@ export function ComparisonReturnChart({
       chart.panes()[0]?.attachPrimitive(bandPrimitive);
 
       series.setData(data);
-      chart.resize(wPx, CHART_HEIGHT);
+      chart.resize(wPx, RETURN_CHART_PLOT_HEIGHT_PX);
       layoutReturnTimeScale(chart, wPx, data.length);
 
       const onCrosshairMove = (param: MouseEventParams) => {
@@ -513,17 +501,21 @@ export function ComparisonReturnChart({
   const showChart = tickers.length > 0 && hasAnyBar;
 
   return (
-    <section className="w-full min-w-0 max-w-full overflow-x-hidden bg-white p-5">
-      <h3 className="text-[18px] font-semibold leading-7 tracking-tight text-[#09090B]">Return</h3>
+    <section className="w-full min-w-0 max-w-full overflow-x-hidden bg-white">
+      <h3 className="mb-4 text-[18px] font-semibold leading-7 tracking-tight text-[#09090B]">Return</h3>
 
-      <div className="mt-4">
+      <div>
         {tickers.length === 0 ? (
-          <div className="flex h-[320px] items-center justify-center text-[14px] text-[#71717A]">
+          <div
+            className="flex items-center justify-center text-[14px] text-[#71717A]"
+            style={{ height: RETURN_CHART_TOTAL_HEIGHT_PX }}
+          >
             Add companies to compare returns.
           </div>
         ) : showChart ? (
           <div
-            className="relative h-[320px] w-full min-h-[320px] min-w-0 max-w-full overflow-x-hidden"
+            className="relative w-full min-w-0 max-w-full overflow-x-hidden"
+            style={{ height: RETURN_CHART_TOTAL_HEIGHT_PX }}
             role="img"
             aria-label={`Return chart for ${tickers.join(", ")}`}
             title={ariaSummary}
@@ -532,9 +524,15 @@ export function ComparisonReturnChart({
               setTooltip(null);
             }}
           >
-            <div className="box-border min-h-[320px] w-full min-w-0 max-w-full overflow-x-hidden">
-              <div className="relative min-h-[320px] w-full min-w-0 max-w-full overflow-x-hidden">
-                <div ref={wrapRef} className="h-full min-h-[320px] w-full min-w-0 max-w-full overflow-hidden" />
+            <div
+              className="box-border flex w-full min-w-0 max-w-full flex-col overflow-x-hidden px-2 sm:px-3"
+              style={{ height: RETURN_CHART_TOTAL_HEIGHT_PX }}
+            >
+              <div
+                className="relative w-full min-w-0 shrink-0 overflow-hidden"
+                style={{ height: RETURN_CHART_PLOT_HEIGHT_PX }}
+              >
+                <div ref={wrapRef} className="h-full w-full min-w-0 overflow-hidden" />
                 {tooltip ? (
                   <div
                     className="pointer-events-none absolute z-20 max-w-[min(280px,calc(100%-16px))] rounded-lg bg-[#09090B] px-3 py-2.5 pr-3.5 text-left text-white shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
@@ -575,27 +573,49 @@ export function ComparisonReturnChart({
                   </div>
                 ) : null}
               </div>
+              <div
+                className="flex w-full shrink-0 flex-col gap-4 border-t border-[#E4E4E7] pt-1.5"
+                style={{ height: RETURN_CHART_AXIS_ROW_PX }}
+              >
+                <div className="flex min-h-0 w-full min-w-0 flex-1">
+                  <div
+                    className="grid min-w-0 flex-1"
+                    style={{
+                      gridTemplateColumns: `repeat(${RETURN_WINDOWS.length}, minmax(0, 1fr))`,
+                    }}
+                  >
+                    {RETURN_WINDOWS.map((w) => (
+                      <div key={w.key} className="min-w-0 px-0.5 text-center">
+                        <span className="text-balance font-['Inter'] text-[11px] font-normal leading-snug text-[#71717A] sm:text-[12px]">
+                          {w.label}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="shrink-0" style={{ width: RETURN_CHART_Y_AXIS_WIDTH_PX }} aria-hidden />
+                </div>
+                <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-1">
+                  {tickers.map((t, ti) => (
+                    <div key={t} className="flex items-center gap-2">
+                      <span
+                        className="h-2.5 w-2.5 shrink-0 rounded-full"
+                        style={{ backgroundColor: colors[ti] ?? "#2563EB" }}
+                      />
+                      <span className="text-[13px] leading-5 text-[#71717A]">{t}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         ) : (
-          <div className="flex h-[320px] items-center justify-center text-[14px] text-[#71717A]">
+          <div
+            className="flex items-center justify-center text-[14px] text-[#71717A]"
+            style={{ height: RETURN_CHART_TOTAL_HEIGHT_PX }}
+          >
             No return data for these companies.
           </div>
         )}
-
-        {tickers.length > 0 ? (
-          <div className="flex flex-wrap items-center justify-center gap-6 pt-2">
-            {tickers.map((t, ti) => (
-              <div key={t} className="flex items-center gap-2">
-                <span
-                  className="h-2.5 w-2.5 shrink-0 rounded-full"
-                  style={{ backgroundColor: colors[ti] ?? "#2563EB" }}
-                />
-                <span className="text-[13px] leading-5 text-[#71717A]">{t}</span>
-              </div>
-            ))}
-          </div>
-        ) : null}
       </div>
     </section>
   );

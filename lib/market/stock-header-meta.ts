@@ -4,6 +4,8 @@ export type StockDetailHeaderMeta = {
   fullName: string | null;
   /** Domain favicon URL derived from fundamentals website (may be null). */
   logoUrl: string | null;
+  /** Listing exchange short name (e.g. `NASDAQ`, `NYSE`) from fundamentals `General.Exchange`. */
+  exchange: string | null;
   sector: string | null;
   industry: string | null;
   earningsDateDisplay: string | null;

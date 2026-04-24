@@ -6,8 +6,18 @@ import Link from "next/link";
 import { X } from "lucide-react";
 
 import { TabSwitcher } from "@/components/design-system";
-import { MultichartFundamentalsBar, sliceLastAnnualWithMetric } from "@/components/stock/multichart-fundamentals-bar";
+import { ScreenerRankBadge } from "@/components/earnings/screener-rank-badge";
+import { CompanyLogo } from "@/components/screener/company-logo";
+import {
+  MultichartFundamentalsBar,
+  MULTICHART_MAX_ANNUAL_BARS,
+  MULTICHART_MAX_QUARTERLY_BARS,
+  sliceLastAnnualWithMetric,
+  type MultichartVisual,
+} from "@/components/stock/multichart-fundamentals-bar";
+import { MultichartVisualSwitcher } from "@/components/stock/multichart-visual-switcher";
 import type { ChartingSeriesPoint, FundamentalsSeriesMode } from "@/lib/market/charting-series-types";
+import type { StockDetailHeaderMeta } from "@/lib/market/stock-header-meta";
 import {
   CHARTING_METRIC_LABEL,
   chartingMetricToParam,
@@ -20,7 +30,7 @@ const PERIOD_TAB_OPTIONS = [
 ];
 
 function maxBarsForMode(mode: FundamentalsSeriesMode): number {
-  return mode === "quarterly" ? 8 : 10;
+  return mode === "quarterly" ? MULTICHART_MAX_QUARTERLY_BARS : MULTICHART_MAX_ANNUAL_BARS;
 }
 
 function pickSeedForMode(
@@ -40,6 +50,9 @@ type Props = {
   onClose: () => void;
   initialAnnualPoints?: ChartingSeriesPoint[];
   initialQuarterlyPoints?: ChartingSeriesPoint[];
+  headerMeta: StockDetailHeaderMeta | null;
+  /** When set (e.g. from calendar), matches Earnings preview badge. */
+  screenerRank?: number | null;
 };
 
 export function KeyStatsMetricChartModal({
@@ -48,8 +61,11 @@ export function KeyStatsMetricChartModal({
   onClose,
   initialAnnualPoints,
   initialQuarterlyPoints,
+  headerMeta,
+  screenerRank = null,
 }: Props) {
   const [periodMode, setPeriodMode] = useState<FundamentalsSeriesMode>("annual");
+  const [chartVisual, setChartVisual] = useState<MultichartVisual>("bar");
 
   const [points, setPoints] = useState<ChartingSeriesPoint[]>(() => {
     if (metricId == null) return [];
@@ -123,17 +139,21 @@ export function KeyStatsMetricChartModal({
   }, [metricId, onKeyDown]);
 
   useEffect(() => {
-    if (!metricId) setPeriodMode("annual");
+    if (!metricId) return;
+    setPeriodMode("annual");
+    setChartVisual("bar");
   }, [metricId]);
 
   if (!metricId) return null;
 
-  const maxBars = periodMode === "quarterly" ? 8 : 10;
+  const maxBars = maxBarsForMode(periodMode);
   const hasSeries = sliceLastAnnualWithMetric(points, metricId, maxBars).length > 0;
   const chartingHref = `/stock/${encodeURIComponent(ticker.trim())}?tab=charting&metric=${encodeURIComponent(
     chartingMetricToParam(metricId),
   )}`;
-  const title = CHARTING_METRIC_LABEL[metricId];
+  const metricTitle = CHARTING_METRIC_LABEL[metricId];
+  const companyLine = headerMeta?.fullName?.trim() || null;
+  const logoName = companyLine ?? ticker;
 
   return createPortal(
     <div
@@ -144,63 +164,70 @@ export function KeyStatsMetricChartModal({
     >
       <button type="button" className="absolute inset-0 bg-black/40" aria-label="Close" onClick={onClose} />
       <div
-        className="relative z-10 flex max-h-[min(90vh,720px)] w-full max-w-[min(560px,calc(100vw-2rem))] flex-col overflow-hidden rounded-xl border border-[#E4E4E7] bg-white shadow-[0px_10px_16px_-3px_rgba(10,10,10,0.1),0px_4px_6px_0px_rgba(10,10,10,0.04)]"
+        className="relative z-10 flex max-h-[min(92vh,900px)] w-full max-w-[min(960px,calc(100vw-2rem))] flex-col overflow-hidden rounded-xl border border-[#E4E4E7] bg-white shadow-[0px_10px_16px_-3px_rgba(10,10,10,0.1),0px_4px_6px_0px_rgba(10,10,10,0.04)]"
       >
-        <div className="flex shrink-0 items-start justify-between gap-3 border-b border-[#E4E4E7] px-5 py-4">
-          <div className="min-w-0 flex-1">
-            <h2 id="key-stats-metric-chart-title" className="text-[18px] font-semibold leading-7 text-[#09090B]">
-              {title}
-            </h2>
-            <p className="mt-0.5 text-[14px] leading-5 text-[#71717A]">{ticker}</p>
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <Link
-              href={chartingHref}
-              onClick={() => onClose()}
-              className="rounded-[10px] px-3 py-2 text-[13px] font-medium text-[#2563EB] transition-colors hover:bg-[#F4F4F5]"
-            >
-              Charting
-            </Link>
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-[#71717A] transition-colors hover:bg-[#F4F4F5] hover:text-[#09090B]"
-              aria-label="Close"
-            >
-              <X className="h-5 w-5" strokeWidth={2} />
-            </button>
-          </div>
+        <div className="flex shrink-0 items-center gap-3 border-b border-[#E4E4E7] px-5 py-4">
+          <Link
+            href={chartingHref}
+            onClick={() => onClose()}
+            className="flex min-w-0 flex-1 cursor-pointer items-start gap-3 rounded-[10px] outline-none ring-offset-2 transition-colors hover:bg-[#F4F4F5] focus-visible:ring-2 focus-visible:ring-[#09090B]/15"
+            title={`Open Charting — ${metricTitle}`}
+          >
+            <CompanyLogo name={logoName} logoUrl={headerMeta?.logoUrl ?? ""} symbol={ticker} size="lg" />
+            <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+              <span className="flex min-w-0 flex-wrap items-center gap-2">
+                <span className="shrink-0 text-[18px] font-semibold leading-7 text-[#09090B]">{ticker}</span>
+                {screenerRank != null ? <ScreenerRankBadge rank={screenerRank} /> : null}
+              </span>
+              {companyLine ? (
+                <span className="min-w-0 truncate text-[14px] leading-5 text-[#71717A]">{companyLine}</span>
+              ) : null}
+            </span>
+          </Link>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-[#71717A] transition-colors hover:bg-[#F4F4F5] hover:text-[#09090B]"
+            aria-label="Close"
+          >
+            <X className="h-5 w-5" strokeWidth={2} />
+          </button>
         </div>
 
-        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[#E4E4E7] px-5 py-3">
-          <TabSwitcher
-            options={PERIOD_TAB_OPTIONS}
-            value={periodMode}
-            onChange={setPeriodMode}
-            aria-label="Reporting period"
-          />
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-[#E4E4E7] px-5 py-3">
+          <h2 id="key-stats-metric-chart-title" className="min-w-0 text-[17px] font-semibold leading-7 text-[#09090B]">
+            {metricTitle}
+          </h2>
+          <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 sm:gap-3">
+            <TabSwitcher
+              options={PERIOD_TAB_OPTIONS}
+              value={periodMode}
+              onChange={setPeriodMode}
+              aria-label="Reporting period"
+            />
+            <MultichartVisualSwitcher value={chartVisual} onChange={setChartVisual} />
+          </div>
         </div>
 
         <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-5 py-4">
           {loading ? (
-            <div className="flex h-[320px] items-center justify-center text-[14px] text-[#71717A]">Loading…</div>
+            <div className="flex h-[400px] items-center justify-center text-[14px] text-[#71717A]">Loading…</div>
           ) : !hasSeries ? (
             <p className="text-[14px] leading-6 text-[#71717A]">No data for this metric.</p>
           ) : (
-            <div className="rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
-              <MultichartFundamentalsBar metricId={metricId} points={points} height={320} periodMode={periodMode} />
+            <div className="min-w-0">
+              <MultichartFundamentalsBar
+                metricId={metricId}
+                points={points}
+                height={400}
+                periodMode={periodMode}
+                visual={chartVisual}
+              />
               {metricId === "forward_pe" ? (
                 <p className="mt-3 text-[12px] leading-5 text-[#71717A]">
                   Live forward P/E in Key Stats uses current price and consensus EPS. Historical fiscal rows
                   rarely include that forward multiple; when it is missing, the bar uses trailing P/E for the
                   same period so year-to-year comparisons stay available.
-                </p>
-              ) : null}
-              {metricId === "market_cap" ? (
-                <p className="mt-3 text-[12px] leading-5 text-[#71717A]">
-                  Market cap here is modelled as the last EOD adjusted close on or before each fiscal period end,
-                  multiplied by diluted shares outstanding from the financials for that period (not exchange-reported
-                  float or intraday cap).
                 </p>
               ) : null}
               {metricId === "pe_ratio" || metricId === "trailing_pe" ? (

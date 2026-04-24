@@ -6,7 +6,7 @@ import { REVALIDATE_HOT } from "@/lib/data/cache-policy";
 import { fetchEodhdCryptoDailyBars } from "@/lib/market/eodhd-crypto";
 import { resolveCryptoMetaForProvider } from "@/lib/market/crypto-meta-resolver";
 import { fetchEodhdIntraday } from "@/lib/market/eodhd-intraday";
-import type { StockChartPoint, StockChartRange } from "@/lib/market/stock-chart-types";
+import { STOCK_CHART_ALL_LOOKBACK_YEARS, type StockChartPoint, type StockChartRange } from "@/lib/market/stock-chart-types";
 
 function clampFinite(n: number): number | null {
   return Number.isFinite(n) ? n : null;
@@ -65,7 +65,7 @@ async function loadCryptoChartPointsUncached(symbol: string, range: StockChartRa
   else if (range === "6M") fromDate.setUTCDate(fromDate.getUTCDate() - 210);
   else if (range === "1Y") fromDate.setUTCFullYear(fromDate.getUTCFullYear() - 1);
   else if (range === "5Y") fromDate.setUTCFullYear(fromDate.getUTCFullYear() - 5);
-  else if (range === "ALL") fromDate.setUTCFullYear(fromDate.getUTCFullYear() - 12);
+  else if (range === "ALL") fromDate.setUTCFullYear(fromDate.getUTCFullYear() - STOCK_CHART_ALL_LOOKBACK_YEARS);
   else if (range === "YTD") {
     fromDate = new Date(Date.UTC(now.getUTCFullYear(), 0, 1));
   }
@@ -88,6 +88,6 @@ async function loadCryptoChartPointsUncached(symbol: string, range: StockChartRa
 
 export const getCryptoChartPoints = unstable_cache(
   async (symbol: string, range: StockChartRange) => loadCryptoChartPointsUncached(symbol, range),
-  ["crypto-chart-points-v4-no-route-reslice"],
+  ["crypto-chart-points-v5-all-20y"],
   { revalidate: REVALIDATE_HOT },
 );

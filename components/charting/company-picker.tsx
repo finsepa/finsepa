@@ -23,6 +23,8 @@ import {
 import { cn } from "@/lib/utils";
 
 const SEARCH_DEBOUNCE_MS = 250;
+/** Hard cap on “Most popular” rows (screener default list; charting allows up to 10 companies). */
+const PICKER_MOST_POPULAR_MAX = 10;
 
 export type CompanyPick = {
   symbol: string;
@@ -60,7 +62,7 @@ export type CompanyPickerRenderProps = {
 };
 
 /**
- * Screener page-1 + page-2 stocks (from `/api/charting/picker-stocks`) + `/api/search` when typing.
+ * Screener top-10 stocks (from `/api/charting/picker-stocks`) + `/api/search` when typing.
  * @param includeCrypto When false (e.g. Charting), hides the crypto list and limits search to equities only.
  */
 export function CompanyPicker({
@@ -99,10 +101,12 @@ export function CompanyPicker({
 
   const screenerList = useMemo(() => {
     if (isSingleAssetMode()) {
-      return singleAssetPickerStocks(excludeSet);
+      return singleAssetPickerStocks(excludeSet).slice(0, PICKER_MOST_POPULAR_MAX);
     }
     const base = pickerStocks ?? [];
-    return base.filter((r) => !excludeSet.has(r.ticker.toUpperCase()));
+    return base
+      .filter((r) => !excludeSet.has(r.ticker.toUpperCase()))
+      .slice(0, PICKER_MOST_POPULAR_MAX);
   }, [excludeSet, pickerStocks]);
 
   useEffect(() => {
@@ -254,8 +258,8 @@ export function CompanyPicker({
           <div className="flex max-h-[min(400px,calc(100vh-12rem))] flex-col gap-1 overflow-y-auto px-1 py-2">
             {!showSearchPanel ? (
               <>
-                <div className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wide text-[#A1A1AA]">
-                  Stocks
+                <div className="px-3 pb-1 pt-1 text-[11px] font-semibold tracking-wide text-[#A1A1AA]">
+                  Most popular
                 </div>
                 {pickerStocksLoading && screenerList.length === 0 && !isSingleAssetMode() ? (
                   <p className="px-3 py-2 text-[12px] text-[#71717A]">Loading companies…</p>

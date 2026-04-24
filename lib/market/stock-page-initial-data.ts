@@ -11,7 +11,7 @@ import type { StockKeyStatsBundle } from "@/lib/market/stock-key-stats-bundle-ty
 import { computeStockPerformanceFromSortedDailyBars } from "@/lib/market/stock-performance";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
 import type { StockChartPoint } from "@/lib/market/stock-chart-types";
-import type { StockChartRange } from "@/lib/market/stock-chart-types";
+import { STOCK_CHART_ALL_LOOKBACK_YEARS, type StockChartRange } from "@/lib/market/stock-chart-types";
 import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
 import type { StockNewsArticle } from "@/lib/market/stock-news-types";
 import { getStockNews } from "@/lib/market/stock-news";
@@ -69,6 +69,7 @@ function fallbackStockPageInitialData(ticker: string, now: Date): StockPageIniti
     headerMeta: {
       fullName: display.name,
       logoUrl: display.logoUrl,
+      exchange: null,
       sector: null,
       industry: null,
       earningsDateDisplay: null,
@@ -91,7 +92,7 @@ function ymdUtc(d: Date): string {
 }
 
 /**
- * One EOD daily fetch (12y) powers overview chart + mini-table performance together.
+ * One EOD daily fetch (20y) powers overview chart + mini-table performance together.
  * Header + key-stats share one fundamentals fetch inside their respective loaders (bundle pulls once and passes root to sections).
  */
 export async function loadStockPageInitialData(routeTicker: string): Promise<StockPageInitialData | null> {
@@ -101,7 +102,7 @@ export async function loadStockPageInitialData(routeTicker: string): Promise<Sto
   const now = new Date();
   const to = ymdUtc(now);
   const fromDate = new Date(now);
-  fromDate.setUTCFullYear(fromDate.getUTCFullYear() - 12);
+  fromDate.setUTCFullYear(fromDate.getUTCFullYear() - STOCK_CHART_ALL_LOOKBACK_YEARS);
   const from = ymdUtc(fromDate);
 
   const range: StockChartRange = DEFAULT_OVERVIEW_RANGE;

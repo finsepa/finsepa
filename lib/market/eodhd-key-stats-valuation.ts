@@ -36,6 +36,27 @@ function firstNumFromSections(sections: (Record<string, unknown> | null | undefi
   return null;
 }
 
+/**
+ * Key Stats "P/E Ratio" value: `PERatio` (Highlights/Valuation), else `TrailingPE` — same {@link formatRatio} as the stock page.
+ */
+export function peRatioKeyStatsDisplayFromPeParts(peRatio: number | null, trailingPe: number | null): string {
+  return peRatio != null ? formatRatio(peRatio) : trailingPe != null ? formatRatio(trailingPe) : "—";
+}
+
+/**
+ * Key Stats "P/E Ratio" from a fundamentals JSON root (shared cache with Key Stats & header).
+ */
+export function peRatioKeyStatsDisplayFromFundamentalsRoot(
+  root: Record<string, unknown> | null | undefined,
+): string {
+  if (!root || typeof root !== "object") return "—";
+  const hl = root.Highlights && typeof root.Highlights === "object" ? (root.Highlights as Record<string, unknown>) : null;
+  const val = root.Valuation && typeof root.Valuation === "object" ? (root.Valuation as Record<string, unknown>) : null;
+  const peRatio = firstNumFromSections([hl, val], ["PERatio", "PE", "PeRatio"]);
+  const trailingPe = firstNumFromSections([hl, val], ["TrailingPE", "TrailingPe"]);
+  return peRatioKeyStatsDisplayFromPeParts(peRatio, trailingPe);
+}
+
 export type KeyStatsValuationRow = { label: string; value: string };
 
 export async function fetchEodhdKeyStatsValuation(
@@ -179,8 +200,7 @@ export async function fetchEodhdKeyStatsValuation(
     cashDebt = cash / totalDebt;
   }
 
-  const peDisplay =
-    peRatio != null ? formatRatio(peRatio) : trailingPe != null ? formatRatio(trailingPe) : "—";
+  const peDisplay = peRatioKeyStatsDisplayFromPeParts(peRatio, trailingPe);
   const trailDisplay =
     trailingPe != null ? formatRatio(trailingPe) : peRatio != null ? formatRatio(peRatio) : "—";
   const forwardDisplay = forwardPe != null ? formatRatio(forwardPe) : "—";

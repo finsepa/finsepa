@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, RefreshCw, X } from "lucide-react";
+import { Loader2, Plus, RefreshCw, X } from "lucide-react";
 import {
   ColorType,
   HistogramSeries,
@@ -16,8 +16,12 @@ import {
 } from "lightweight-charts";
 
 import { ChartingCompanyAddDropdown } from "@/components/charting/charting-company-add-dropdown";
-import { TransactionPortfolioField } from "@/components/portfolio/transaction-portfolio-field";
-import type { ChartTimeRange, ChartType, ChartingUnitScale } from "@/components/charting/charting-workspace";
+import {
+  DEFAULT_CHART_TIME_RANGE_ORDER,
+  type ChartTimeRange,
+  type ChartType,
+  type ChartingUnitScale,
+} from "@/components/charting/charting-workspace";
 import { DataFetchTopLoader } from "@/components/layout/data-fetch-top-loader";
 import { ChartSkeleton } from "@/components/ui/chart-skeleton";
 import { TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
@@ -195,8 +199,6 @@ function formatPeriodLabel(periodEnd: string, periodMode: "annual" | "quarterly"
   return year && q ? `Q${q} ${year}` : s;
 }
 
-const TIME_RANGE_ORDER: ChartTimeRange[] = ["1Y", "2Y", "3Y", "5Y", "10Y", "all"];
-
 const PERIOD_TAB_OPTIONS = [
   { value: "annual" as const, label: "Annual" },
   { value: "quarterly" as const, label: "Quarterly" },
@@ -210,8 +212,6 @@ const CHART_TYPE_TAB_OPTIONS = [
 function timeRangeTabOptionsFor(order: ChartTimeRange[]): TabSwitcherOption<ChartTimeRange>[] {
   return order.map((r) => ({ value: r, label: TIME_RANGE_LABELS[r] }));
 }
-
-const TIME_RANGE_TAB_OPTIONS: TabSwitcherOption<ChartTimeRange>[] = timeRangeTabOptionsFor(TIME_RANGE_ORDER);
 
 const CHARTING_HEIGHT_MIN = 320;
 const CHARTING_HEIGHT_MAX = 600;
@@ -235,6 +235,8 @@ type Props = {
   initialByTicker: Record<string, StockPageInitialData>;
   pathRoute?: StandaloneChartRoute;
   workspaceTitle?: string;
+  /** Defaults to {@link DEFAULT_CHART_TIME_RANGE_ORDER}; standalone `/charting` passes a shorter list (no 2Y). */
+  timeRangeOrder?: ChartTimeRange[];
 };
 
 export function ChartingCompareWorkspace({
@@ -243,11 +245,17 @@ export function ChartingCompareWorkspace({
   initialByTicker,
   pathRoute = "/charting",
   workspaceTitle = "Charting",
+  timeRangeOrder = DEFAULT_CHART_TIME_RANGE_ORDER,
 }: Props) {
   const router = useRouter();
   const wrapRef = useRef<HTMLDivElement>(null);
   const pickerWrapRef = useRef<HTMLDivElement>(null);
   const pickerInputRef = useRef<HTMLInputElement>(null);
+
+  const timeRangeTabOptions = useMemo(
+    () => timeRangeTabOptionsFor(timeRangeOrder),
+    [timeRangeOrder],
+  );
 
   const [periodMode, setPeriodMode] = useState<"annual" | "quarterly">("annual");
   const [timeRange, setTimeRange] = useState<ChartTimeRange>("all");
@@ -271,6 +279,8 @@ export function ChartingCompareWorkspace({
 
   const [pointsByTicker, setPointsByTicker] = useState<Record<string, ChartingSeriesPoint[] | null>>({});
   const [loading, setLoading] = useState(true);
+  /** Newly added tickers still fetching fundamentals — chip shows spinner until row loads (not used on first mount). */
+  const [pendingTickerChips, setPendingTickerChips] = useState<string[]>([]);
   const [selected, setSelected] = useState<ChartingMetricId[]>(() => parseChartingMetricsParam(metricParam));
   const [hover, setHover] = useState<HoverState>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -280,6 +290,7 @@ export function ChartingCompareWorkspace({
   const chartRef = useRef<IChartApi | null>(null);
   const seriesByKeyRef = useRef<Map<string, ISeriesApi<"Line"> | ISeriesApi<"Histogram">>>(new Map());
   const hoverRafRef = useRef<number>(0);
+  const tickersSeenRef = useRef<string[]>([]);
 
   useEffect(() => {
     const parsed = parseChartingMetricsParam(metricParam);
@@ -287,7 +298,17 @@ export function ChartingCompareWorkspace({
   }, [metricParam]);
 
   useEffect(() => {
+    if (timeRangeOrder.includes(timeRange)) return;
+    setTimeRange("all");
+  }, [timeRange, timeRangeOrder]);
+
+  useEffect(() => {
     let cancelled = false;
+    const prevSeen = tickersSeenRef.current;
+    const newlyAdded =
+      prevSeen.length === 0 ? [] : tickers.filter((t) => !prevSeen.includes(t));
+    tickersSeenRef.current = [...tickers];
+
     async function load() {
       const allSeeded =
         tickers.length > 0 && tickers.every((t) => Array.isArray(seedByTicker[t]));
@@ -301,33 +322,78 @@ export function ChartingCompareWorkspace({
         if (!cancelled) {
           setPointsByTicker(next);
           setLoading(false);
+          setPendingTickerChips((p) => p.filter((x) => tickers.includes(x)));
         }
         return;
       }
 
-      setLoading(true);
-      const next: Record<string, ChartingSeriesPoint[]> = {};
+      const needFetch = tickers.filter((t) => !Array.isArray(seedByTicker[t]));
+      const fullRefetch = needFetch.length > 0 && needFetch.length === tickers.length;
+
+      setPointsByTicker((prev) => {
+        const next: Record<string, ChartingSeriesPoint[]> = {};
+        for (const t of tickers) {
+          if (Array.isArray(seedByTicker[t])) {
+            next[t] = seedByTicker[t]!;
+          } else if (needFetch.includes(t)) {
+            next[t] = [];
+          } else if (Array.isArray(prev[t])) {
+            next[t] = prev[t]!;
+          } else {
+            next[t] = [];
+          }
+        }
+        return next;
+      });
+
+      setPendingTickerChips((p) => {
+        if (fullRefetch) return [];
+        const keep = p.filter((x) => tickers.includes(x));
+        const spin = newlyAdded.filter((t) => needFetch.includes(t));
+        return [...new Set([...keep, ...spin])];
+      });
+
+      if (needFetch.length === 0) {
+        if (!cancelled) setLoading(false);
+        return;
+      }
+
+      if (fullRefetch) {
+        if (!cancelled) setLoading(true);
+      }
+
       try {
         await Promise.all(
-          tickers.map(async (t) => {
-            const res = await fetch(
-              `/api/stocks/${encodeURIComponent(t)}/fundamentals-series?period=${periodMode === "quarterly" ? "quarterly" : "annual"}`,
-              { credentials: "include" },
-            );
-            if (!res.ok) {
-              next[t] = [];
-              return;
+          needFetch.map(async (t) => {
+            try {
+              const res = await fetch(
+                `/api/stocks/${encodeURIComponent(t)}/fundamentals-series?period=${periodMode === "quarterly" ? "quarterly" : "annual"}`,
+                { credentials: "include" },
+              );
+              let pts: ChartingSeriesPoint[] = [];
+              if (res.ok) {
+                const json = (await res.json()) as { points?: ChartingSeriesPoint[] };
+                pts = Array.isArray(json.points) ? json.points : [];
+              }
+              if (!cancelled) {
+                setPointsByTicker((p) => ({ ...p, [t]: pts }));
+              }
+            } finally {
+              if (!cancelled) {
+                setPendingTickerChips((p) => p.filter((x) => x !== t));
+              }
             }
-            const json = (await res.json()) as { points?: ChartingSeriesPoint[] };
-            next[t] = Array.isArray(json.points) ? json.points : [];
           }),
         );
-        if (!cancelled) setPointsByTicker(next);
       } catch {
         if (!cancelled) {
-          const empty: Record<string, ChartingSeriesPoint[]> = {};
-          for (const t of tickers) empty[t] = [];
-          setPointsByTicker(empty);
+          setPointsByTicker((prev) => {
+            const out: Record<string, ChartingSeriesPoint[]> = {};
+            for (const x of tickers) {
+              out[x] = Array.isArray(prev[x]) ? prev[x]! : [];
+            }
+            return out;
+          });
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -709,9 +775,6 @@ export function ChartingCompareWorkspace({
     <>
       <DataFetchTopLoader active={loading} />
       <div className="space-y-4 pt-1">
-      <div className="w-full max-w-[min(100%,320px)]">
-        <TransactionPortfolioField variant="field" />
-      </div>
       <div className="flex flex-col gap-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-3">
           <h2 className="min-w-0 shrink-0 text-2xl font-semibold leading-9 tracking-tight text-[#09090B] sm:flex-1">
@@ -733,7 +796,7 @@ export function ChartingCompareWorkspace({
             <div className="max-w-full overflow-x-auto pb-0.5 [-webkit-overflow-scrolling:touch]">
               <TabSwitcher
                 className="inline-flex w-max min-w-0 flex-nowrap"
-                options={TIME_RANGE_TAB_OPTIONS}
+                options={timeRangeTabOptions}
                 value={timeRange}
                 onChange={setTimeRange}
                 aria-label="Time range"
@@ -836,25 +899,39 @@ export function ChartingCompareWorkspace({
               )}
             </div>
 
-            {tickers.map((t) => (
-              <div
-                key={t}
-                className="inline-flex max-w-full min-w-0 items-stretch overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white"
-              >
-                <span className="flex min-h-[36px] min-w-0 items-center border-r border-[#E4E4E7] px-4 py-2 text-[14px] font-medium leading-5 text-[#09090B]">
-                  <span className="truncate">{t}</span>
-                </span>
-                <button
-                  type="button"
-                  onClick={() => removeTicker(t)}
-                  disabled={tickers.length <= 1}
-                  className="flex w-9 shrink-0 items-center justify-center text-[#09090B] transition-colors hover:bg-[#FAFAFA] disabled:pointer-events-none disabled:opacity-30"
-                  aria-label={`Remove ${t}`}
+            {tickers.map((t) => {
+              const chipLoading = pendingTickerChips.includes(t);
+              return (
+                <div
+                  key={t}
+                  className="inline-flex max-w-full min-w-0 items-stretch overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white"
                 >
-                  <X className="h-5 w-5" strokeWidth={1.5} aria-hidden />
-                </button>
-              </div>
-            ))}
+                  <span className="flex min-h-[36px] min-w-0 items-center border-r border-[#E4E4E7] px-4 py-2 text-[14px] font-medium leading-5 text-[#09090B]">
+                    <span className="truncate">{t}</span>
+                  </span>
+                  {chipLoading ? (
+                    <span
+                      className="flex w-9 shrink-0 items-center justify-center text-[#71717A]"
+                      role="status"
+                      aria-live="polite"
+                      aria-label={`Loading ${t}`}
+                    >
+                      <Loader2 className="h-5 w-5 animate-spin" strokeWidth={2} aria-hidden />
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => removeTicker(t)}
+                      disabled={tickers.length <= 1}
+                      className="flex w-9 shrink-0 items-center justify-center text-[#09090B] transition-colors hover:bg-[#FAFAFA] disabled:pointer-events-none disabled:opacity-30"
+                      aria-label={`Remove ${t}`}
+                    >
+                      <X className="h-5 w-5" strokeWidth={1.5} aria-hidden />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
 
             {selected.length > 0 ? (
               <ChartingCompanyAddDropdown
@@ -952,14 +1029,14 @@ export function ChartingCompareWorkspace({
                 {seriesDefs.map((s) => (
                   <div
                     key={s.key}
-                    className="inline-flex items-center gap-2 rounded-full border border-[#E4E4E7] bg-white px-3 py-1.5 text-[13px] font-medium text-[#09090B]"
+                    className="inline-flex items-center gap-2 rounded-full border border-[#E4E4E7] bg-white px-2.5 py-1.5 text-[12px] font-medium leading-4 text-[#09090B]"
                   >
                     <span
                       className="h-2 w-2 shrink-0 rounded-full"
                       style={{ background: fundamentalsBarSolidAtIndex(s.colorIdx) }}
                       aria-hidden
                     />
-                    <span>
+                    <span className="leading-4">
                       {s.ticker} {CHARTING_METRIC_LABEL[s.metricId]}
                     </span>
                   </div>

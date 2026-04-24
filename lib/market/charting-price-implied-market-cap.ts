@@ -67,11 +67,23 @@ function impliedMultipleOk(m: number): boolean {
 export function enrichChartingPointsWithTrailingPeFromImpliedMarketCap(points: ChartingSeriesPoint[]): void {
   for (const p of points) {
     const mc = p.marketCap;
-    const ni = p.netIncome;
     if (mc == null || !Number.isFinite(mc) || mc <= 0) continue;
-    if (ni == null || !Number.isFinite(ni) || ni <= 1e-6) continue;
-    const pe = mc / ni;
-    if (!impliedMultipleOk(pe)) continue;
+
+    const ni = p.netIncome;
+    let pe: number | null = null;
+    if (ni != null && Number.isFinite(ni) && ni > 1e-6) {
+      pe = mc / ni;
+    } else {
+      /** EODHD sometimes omits `netIncome` on the merged row while EPS + diluted shares exist — same MC/(EPS×SH) as MC/NI. */
+      const eps = p.eps;
+      const sh = p.sharesOutstanding;
+      if (eps != null && sh != null && Number.isFinite(eps) && Number.isFinite(sh)) {
+        const denom = eps * sh;
+        if (denom > 1e-6) pe = mc / denom;
+      }
+    }
+
+    if (pe == null || !impliedMultipleOk(pe)) continue;
     p.peRatio = pe;
     p.trailingPe = pe;
   }

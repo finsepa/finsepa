@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useMemo } from "react";
-import Image from "next/image";
+import { LineChart } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 
 import { AssetPageTopLoader } from "@/components/layout/asset-page-top-loader";
@@ -10,6 +10,7 @@ import { ComparisonWorkspace } from "@/components/comparison/comparison-workspac
 import type { StockPageInitialData } from "@/lib/market/stock-page-initial-data";
 import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
 import { isComparisonSessionReady, parseChartingTickerList } from "@/lib/market/stock-charting-metrics";
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 
 type Props = {
   tickers: string[];
@@ -67,22 +68,19 @@ export function ComparisonPage({
     <div className="min-w-0 space-y-6 px-4 py-4 sm:px-9 sm:py-6">
       <ComparisonEmptyToolbar tickers={tickersForUi} allowedChartingTickers={allowedChartingTickers} />
 
-      <div className="flex w-full flex-col items-center pb-2 pt-0" aria-label="Chart area">
-        <div className="relative w-full max-w-[min(100%,640px)]">
-          <Image
-            src="/charting-empty-hero.png"
-            alt=""
-            width={1024}
-            height={517}
-            className="h-auto w-full object-contain"
-            priority
-          />
-        </div>
-
-        <h2 className="mt-8 max-w-xl text-center text-xl font-semibold leading-8 tracking-tight text-[#09090B] sm:text-2xl sm:leading-9">
-          Add at least one company to begin comparing
-        </h2>
-      </div>
+      <section aria-label="Comparison chart area" className="w-full">
+        <Empty variant="card" className="min-h-[min(50vh,420px)] w-full">
+          <EmptyHeader className="gap-3">
+            <EmptyMedia variant="icon">
+              <LineChart className="h-6 w-6" strokeWidth={1.75} aria-hidden />
+            </EmptyMedia>
+            <EmptyTitle>Add at least one company to begin comparing</EmptyTitle>
+            <EmptyDescription className="max-w-md">
+              Add companies using the controls above.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+      </section>
     </div>
   );
 }

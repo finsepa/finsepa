@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Plus, RefreshCw, X } from "lucide-react";
 
 import { ChartingCompanyAddDropdown } from "@/components/charting/charting-company-add-dropdown";
-import type { ChartTimeRange } from "@/components/charting/charting-workspace";
+import { STANDALONE_CHARTING_TIME_RANGE_ORDER, type ChartTimeRange } from "@/components/charting/charting-workspace";
 import { TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
 import {
   dropdownMenuRichItemClassName,
@@ -45,12 +45,12 @@ const TIME_RANGE_LABELS: Record<ChartTimeRange, string> = {
   all: "All",
 };
 
-const TIME_RANGE_ORDER: ChartTimeRange[] = ["1Y", "2Y", "3Y", "5Y", "10Y", "all"];
-
-const TIME_RANGE_TAB_OPTIONS: TabSwitcherOption<ChartTimeRange>[] = TIME_RANGE_ORDER.map((r) => ({
-  value: r,
-  label: TIME_RANGE_LABELS[r],
-}));
+const TIME_RANGE_TAB_OPTIONS: TabSwitcherOption<ChartTimeRange>[] = STANDALONE_CHARTING_TIME_RANGE_ORDER.map(
+  (r) => ({
+    value: r,
+    label: TIME_RANGE_LABELS[r],
+  }),
+);
 
 type Props = {
   /** Syncs with `/charting?metric=` (comma-separated ids). */

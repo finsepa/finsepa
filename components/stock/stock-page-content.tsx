@@ -13,7 +13,7 @@ import type { StockDetailTabId } from "@/lib/stock/stock-detail-tab";
 import { parseStockDetailTabQuery } from "@/lib/stock/stock-detail-tab";
 import { AssetPortfolioHoldingsTab } from "@/components/portfolio/asset-portfolio-holdings-tab";
 import { StockDetailTabNav } from "./stock-detail-tab-nav";
-import { MultichartsTabSkeleton } from "@/components/stock/stock-multicharts-tab-skeleton";
+import { MultichartsTabSkeleton, MultichartsTabSkeletonGrid } from "@/components/stock/stock-multicharts-tab-skeleton";
 import { StockChartingTab } from "./stock-charting-tab";
 import { StockEarningsTab } from "./stock-earnings-tab";
 import { StockInsidersTab } from "./stock-insiders-tab";
@@ -40,6 +40,19 @@ const StockMultichartsTab = dynamic(
   { ssr: false, loading: () => <MultichartsTabSkeleton /> },
 );
 
+const StockFinancialsTab = dynamic(
+  () => import("./stock-financials-tab").then((m) => m.StockFinancialsTab),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="space-y-6 pt-1">
+        <h2 className="text-[20px] font-semibold leading-8 tracking-tight text-[#09090B]">Financials</h2>
+        <MultichartsTabSkeletonGrid />
+      </div>
+    ),
+  },
+);
+
 const EMPTY_CHART_DISPLAY: ChartDisplayState = {
   loading: true,
   empty: true,
@@ -61,13 +74,14 @@ const OFFSCREEN_PRICE_CHART =
 function initialTabsMounted(tab: StockDetailTabId): Record<StockDetailTabId, boolean> {
   return {
     overview: tab === "overview",
-    holdings: tab === "holdings",
-    charting: tab === "charting",
-    multicharts: tab === "multicharts",
-    peers: tab === "peers",
-    "target-price": tab === "target-price",
+    financials: tab === "financials",
     earnings: tab === "earnings",
+    multicharts: tab === "multicharts",
+    "target-price": tab === "target-price",
     insiders: tab === "insiders",
+    charting: tab === "charting",
+    peers: tab === "peers",
+    holdings: tab === "holdings",
     profile: tab === "profile",
   };
 }
@@ -75,6 +89,7 @@ function initialTabsMounted(tab: StockDetailTabId): Record<StockDetailTabId, boo
 function parseStockHeaderMetaPayload(json: {
   fullName?: unknown;
   logoUrl?: unknown;
+  exchange?: unknown;
   sector?: unknown;
   industry?: unknown;
   earningsDateDisplay?: unknown;
@@ -83,6 +98,7 @@ function parseStockHeaderMetaPayload(json: {
   return {
     fullName: typeof json.fullName === "string" ? json.fullName : null,
     logoUrl: typeof json.logoUrl === "string" ? json.logoUrl : null,
+    exchange: typeof json.exchange === "string" ? json.exchange : null,
     sector: typeof json.sector === "string" ? json.sector : null,
     industry: typeof json.industry === "string" ? json.industry : null,
     earningsDateDisplay: typeof json.earningsDateDisplay === "string" ? json.earningsDateDisplay : null,
@@ -375,6 +391,7 @@ export function StockPageContent({
         onClose={() => setRevenueProfitModalMetric(null)}
         initialAnnualPoints={fundamentalsModalAnnual}
         initialQuarterlyPoints={fundamentalsModalQuarterly}
+        headerMeta={headerMeta}
       />
       <Suspense fallback={null}>
         <AssetPageTopLoader />
@@ -489,19 +506,69 @@ export function StockPageContent({
         </div>
       ) : null}
 
-      {tabsMounted.holdings ? (
+      {tabsMounted.financials ? (
         <div
           role="tabpanel"
-          id="stock-tab-holdings"
-          aria-hidden={activeTab !== "holdings"}
-          className={activeTab === "holdings" ? "block" : "hidden"}
+          id="stock-tab-financials"
+          aria-hidden={activeTab !== "financials"}
+          className={activeTab === "financials" ? "block" : "hidden"}
         >
-          <AssetPortfolioHoldingsTab
-            assetKind="stock"
-            routeKey={ticker}
-            assetDisplayName={headerMeta?.fullName ?? ticker}
-            onChartDisplayChange={onHoldingsChartDisplay}
+          <StockFinancialsTab
+            ticker={ticker}
+            initialAnnualPoints={initialPageData?.ticker === ticker ? initialPageData.fundamentalsSeriesAnnual : undefined}
           />
+        </div>
+      ) : null}
+
+      {tabsMounted.earnings ? (
+        <div
+          role="tabpanel"
+          id="stock-tab-earnings"
+          aria-hidden={activeTab !== "earnings"}
+          className={activeTab === "earnings" ? "block" : "hidden"}
+        >
+          <StockEarningsTab ticker={ticker} />
+        </div>
+      ) : null}
+
+      {tabsMounted.multicharts ? (
+        <div
+          role="tabpanel"
+          id="stock-tab-multicharts"
+          aria-hidden={activeTab !== "multicharts"}
+          className={activeTab === "multicharts" ? "block" : "hidden"}
+        >
+          <StockMultichartsTab
+            ticker={ticker}
+            initialAnnualPoints={initialPageData?.ticker === ticker ? initialPageData.fundamentalsSeriesAnnual : undefined}
+            initialQuarterlyPoints={
+              initialPageData?.ticker === ticker ? initialPageData.fundamentalsSeriesQuarterly : undefined
+            }
+          />
+        </div>
+      ) : null}
+
+      {tabsMounted["target-price"] ? (
+        <div
+          role="tabpanel"
+          id="stock-tab-target-price"
+          aria-hidden={activeTab !== "target-price"}
+          className={activeTab === "target-price" ? "block" : "hidden"}
+        >
+          <div className="w-full min-w-0">
+            <StockTargetPriceTab ticker={ticker} />
+          </div>
+        </div>
+      ) : null}
+
+      {tabsMounted.insiders ? (
+        <div
+          role="tabpanel"
+          id="stock-tab-insiders"
+          aria-hidden={activeTab !== "insiders"}
+          className={activeTab === "insiders" ? "block" : "hidden"}
+        >
+          <StockInsidersTab ticker={ticker} />
         </div>
       ) : null}
 
@@ -524,23 +591,6 @@ export function StockPageContent({
         </div>
       ) : null}
 
-      {tabsMounted.multicharts ? (
-        <div
-          role="tabpanel"
-          id="stock-tab-multicharts"
-          aria-hidden={activeTab !== "multicharts"}
-          className={activeTab === "multicharts" ? "block" : "hidden"}
-        >
-          <StockMultichartsTab
-            ticker={ticker}
-            initialAnnualPoints={initialPageData?.ticker === ticker ? initialPageData.fundamentalsSeriesAnnual : undefined}
-            initialQuarterlyPoints={
-              initialPageData?.ticker === ticker ? initialPageData.fundamentalsSeriesQuarterly : undefined
-            }
-          />
-        </div>
-      ) : null}
-
       {tabsMounted.peers ? (
         <div
           role="tabpanel"
@@ -555,38 +605,19 @@ export function StockPageContent({
         </div>
       ) : null}
 
-      {tabsMounted["target-price"] ? (
+      {tabsMounted.holdings ? (
         <div
           role="tabpanel"
-          id="stock-tab-target-price"
-          aria-hidden={activeTab !== "target-price"}
-          className={activeTab === "target-price" ? "block" : "hidden"}
+          id="stock-tab-holdings"
+          aria-hidden={activeTab !== "holdings"}
+          className={activeTab === "holdings" ? "block" : "hidden"}
         >
-          <div className="w-full min-w-0">
-            <StockTargetPriceTab ticker={ticker} />
-          </div>
-        </div>
-      ) : null}
-
-      {tabsMounted.earnings ? (
-        <div
-          role="tabpanel"
-          id="stock-tab-earnings"
-          aria-hidden={activeTab !== "earnings"}
-          className={activeTab === "earnings" ? "block" : "hidden"}
-        >
-          <StockEarningsTab ticker={ticker} />
-        </div>
-      ) : null}
-
-      {tabsMounted.insiders ? (
-        <div
-          role="tabpanel"
-          id="stock-tab-insiders"
-          aria-hidden={activeTab !== "insiders"}
-          className={activeTab === "insiders" ? "block" : "hidden"}
-        >
-          <StockInsidersTab ticker={ticker} />
+          <AssetPortfolioHoldingsTab
+            assetKind="stock"
+            routeKey={ticker}
+            assetDisplayName={headerMeta?.fullName ?? ticker}
+            onChartDisplayChange={onHoldingsChartDisplay}
+          />
         </div>
       ) : null}
 

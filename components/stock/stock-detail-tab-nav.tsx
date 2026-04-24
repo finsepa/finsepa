@@ -4,15 +4,17 @@ import type { StockDetailTabId } from "@/lib/stock/stock-detail-tab";
 
 export type { StockDetailTabId };
 
+/** Order matches stock Web App Design (Events / Dividends / Superinvestors omitted until built). */
 const TABS: { id: StockDetailTabId; label: string }[] = [
   { id: "overview", label: "Overview" },
-  { id: "holdings", label: "Holdings" },
-  { id: "charting", label: "Charting" },
-  { id: "multicharts", label: "Multicharts" },
-  { id: "peers", label: "Peers" },
-  { id: "target-price", label: "Target Price" },
+  { id: "financials", label: "Financials" },
   { id: "earnings", label: "Earnings" },
+  { id: "multicharts", label: "Multicharts" },
+  { id: "target-price", label: "Target Price" },
   { id: "insiders", label: "Insiders" },
+  { id: "charting", label: "Charting" },
+  { id: "peers", label: "Peers" },
+  { id: "holdings", label: "Holdings" },
   { id: "profile", label: "Profile" },
 ];
 

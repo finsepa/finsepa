@@ -19,7 +19,7 @@ import { useSidebarLayout } from "@/components/layout/sidebar-layout-context";
 import { cn } from "@/lib/utils";
 
 const soonBadgeClass =
-  "shrink-0 rounded-md border border-[#E4E4E7] bg-[#F4F4F5] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#71717A]";
+  "shrink-0 rounded-md border border-[#E4E4E7] bg-[#F4F4F5] px-1 py-px text-[10px] font-semibold uppercase tracking-wide text-[#71717A]";
 
 type NavItem = ProtectedNavItem;
 

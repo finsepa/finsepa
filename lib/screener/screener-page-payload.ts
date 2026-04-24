@@ -8,14 +8,15 @@ import type { EodhdRealtimePayload } from "@/lib/market/eodhd-realtime";
 import type { SimpleMarketData, SimpleMarketDatum, SimpleScreenerDerived } from "@/lib/market/simple-market-layer";
 import type { TopCompanyUniverseRow } from "@/lib/screener/top500-companies";
 
-import { buildScreenerCompanyRowFromUniverse } from "@/lib/screener/companies-rows";
+import { buildScreenerCompanyRowFromUniverse, resolveScreenerPeToMatchKeyStats } from "@/lib/screener/companies-rows";
 import { companyLogoUrlForTicker } from "@/lib/screener/company-logo-url";
 import { getScreenerCompaniesStaticLayer } from "@/lib/screener/screener-companies-layers";
 import { resolveEquityLogoUrlFromTicker } from "@/lib/screener/resolve-equity-logo-url";
 import { CRYPTO_SCREENER_PAGE2, CRYPTO_TOP10 } from "@/lib/market/eodhd-crypto";
 import { pickScreenerPage2Tickers } from "@/lib/screener/pick-screener-page2-tickers";
 import { TOP10_META, TOP10_TICKERS, type Top10Ticker } from "@/lib/screener/top10-config";
-import { reducedStockMarketCapDisplay, reducedStockPeDisplay } from "@/lib/market/reduced-universe";
+import { formatUsdCompact } from "@/lib/market/key-stats-basic-format";
+import { REDUCED_STOCKS } from "@/lib/market/reduced-universe";
 import {
   getSimpleCryptoDerivedForMetas,
   getSimpleCryptoDerivedTop10,
@@ -77,33 +78,64 @@ export async function buildStockScreenerTablePages(
 ): Promise<{ page1: ScreenerTableRow[]; page2: ScreenerTableRow[] }> {
   const byTicker = new Map(universe.map((u) => [u.ticker.toUpperCase(), u] as const));
 
-  const page1: ScreenerTableRow[] = TOP10_TICKERS.map((ticker: Top10Ticker, i: number) => {
+  const peTop10 = await Promise.all(
+    TOP10_TICKERS.map((t) => resolveScreenerPeToMatchKeyStats(t, byTicker.get(t))),
+  );
+  const peByTop10Ticker = new Map(TOP10_TICKERS.map((t, i) => [t, peTop10[i]!] as const));
+
+  const page1Candidates = TOP10_TICKERS.map((ticker: Top10Ticker) => {
     const q = data.stocks[ticker];
     const meta = TOP10_META[ticker];
     const u = byTicker.get(ticker);
     const bar = derived.top10[ticker];
+    const mcapFromUniverse = u?.marketCapUsd;
+    const mcapUsd =
+      mcapFromUniverse != null && Number.isFinite(mcapFromUniverse) && mcapFromUniverse > 0
+        ? mcapFromUniverse
+        : REDUCED_STOCKS[ticker].marketCapUsd;
     return {
-      id: i + 1,
-      ticker,
-      name: meta.name,
-      logoUrl: companyLogoUrlForTicker(ticker, meta.domain),
-      price: q?.price ?? null,
-      change1D: q?.changePercent1D ?? null,
-      change1M: pickScreenerPct(u?.refund1mP, bar?.changePercent1M),
-      changeYTD: pickScreenerPct(u?.refundYtdP, bar?.changePercentYTD),
-      marketCap: reducedStockMarketCapDisplay(ticker),
-      pe: reducedStockPeDisplay(ticker),
-      trend: [],
+      mcapUsd,
+      row: {
+        ticker,
+        name: meta.name,
+        logoUrl: companyLogoUrlForTicker(ticker, meta.domain),
+        price: q?.price ?? null,
+        change1D: q?.changePercent1D ?? null,
+        change1M: pickScreenerPct(u?.refund1mP, bar?.changePercent1M),
+        changeYTD: pickScreenerPct(u?.refundYtdP, bar?.changePercentYTD),
+        marketCap: formatUsdCompact(mcapUsd),
+        pe: peByTop10Ticker.get(ticker) ?? "—",
+        trend: [] as ScreenerTableRow["trend"],
+      } satisfies Omit<ScreenerTableRow, "id">,
     };
   });
+
+  page1Candidates.sort((a, b) => {
+    const d = b.mcapUsd - a.mcapUsd;
+    if (d !== 0) return d;
+    return a.row.ticker.localeCompare(b.row.ticker);
+  });
+
+  const page1: ScreenerTableRow[] = page1Candidates.map((c, i) => ({
+    id: i + 1,
+    ...c.row,
+  }));
 
   const page2Logos = Object.fromEntries(
     data.screenerStocksPage2Tickers.map((t) => [t.toUpperCase(), resolveEquityLogoUrlFromTicker(t).trim()] as const),
   ) as Record<string, string>;
 
+  const page2Pe = await Promise.all(
+    data.screenerStocksPage2Tickers.map((t) => {
+      const tk = t.toUpperCase();
+      return resolveScreenerPeToMatchKeyStats(t, byTicker.get(tk));
+    }),
+  );
+
   const page2: ScreenerTableRow[] = [];
   let rankId = 11;
-  for (const t of data.screenerStocksPage2Tickers) {
+  for (let i = 0; i < data.screenerStocksPage2Tickers.length; i++) {
+    const t = data.screenerStocksPage2Tickers[i]!;
     const tk = t.toUpperCase();
     const u = byTicker.get(tk);
     if (!u) continue;
@@ -115,6 +147,7 @@ export async function buildStockScreenerTablePages(
         simpleDatumToRealtimePayload(ex),
         page2Logos[tk] ?? "",
         derived.page2[tk] ?? null,
+        page2Pe[i]!,
       ),
     );
   }
@@ -135,9 +168,11 @@ export async function buildScreenerPage2RowsForTickers(
     tickers.map((t) => [t.toUpperCase(), resolveEquityLogoUrlFromTicker(t).trim()] as const),
   ) as Record<string, string>;
   const byTicker = new Map(universe.map((u) => [u.ticker.toUpperCase(), u] as const));
+  const p2Pe = await Promise.all(tickers.map((t) => resolveScreenerPeToMatchKeyStats(t, byTicker.get(t.toUpperCase()))));
   let rankId = rankStart;
   const rows: ScreenerTableRow[] = [];
-  for (const t of tickers) {
+  for (let i = 0; i < tickers.length; i++) {
+    const t = tickers[i]!;
     const tk = t.toUpperCase();
     const u = byTicker.get(tk);
     if (!u) continue;
@@ -149,6 +184,7 @@ export async function buildScreenerPage2RowsForTickers(
         simpleDatumToRealtimePayload(ex),
         page2Logos[tk] ?? "",
         derivedByUpper[tk] ?? null,
+        p2Pe[i]!,
       ),
     );
   }

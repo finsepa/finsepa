@@ -39,8 +39,8 @@ const MAX_QUARTERLY_BARS = 40;
 
 /** Plot height (px). Built-in time scale labels are hidden — fiscal periods render in the DOM row below. */
 const ESTIMATES_CHART_PLOT_HEIGHT_PX = 272;
-/** Space for fiscal period grid + horizontal estimate/reported legend (total chart block stays 320px). */
-const ESTIMATES_CHART_AXIS_ROW_PX = 48;
+/** Space for fiscal period grid + horizontal estimate/reported legend. */
+const ESTIMATES_CHART_AXIS_ROW_PX = 64;
 const ESTIMATES_CHART_TOTAL_HEIGHT_PX = ESTIMATES_CHART_PLOT_HEIGHT_PX + ESTIMATES_CHART_AXIS_ROW_PX;
 
 /** Must match `rightPriceScale.minimumWidth` so period labels line up with the histogram plot. */
@@ -627,7 +627,7 @@ export function EarningsEstimatesChart({ data }: Props) {
             {/*
               Horizontal inset via padding only — avoid `margin` + `width: calc(100% - …)` which can
               exceed 100% parent width and produce a horizontal scrollbar.
-              Plot + fiscal period / series legend row = 320px total; crosshair y is relative to the plot pane only.
+              Plot + fiscal period / series legend row; crosshair y is relative to the plot pane only.
             */}
             <div
               className="box-border flex w-full min-w-0 max-w-full flex-col overflow-x-hidden px-2 sm:px-3"
@@ -672,7 +672,7 @@ export function EarningsEstimatesChart({ data }: Props) {
                 ) : null}
               </div>
               <div
-                className="flex w-full shrink-0 flex-col gap-2 border-t border-[#E4E4E7] pt-1.5"
+                className="flex w-full shrink-0 flex-col gap-4 border-t border-[#E4E4E7] pt-1.5"
                 style={{ height: ESTIMATES_CHART_AXIS_ROW_PX }}
               >
                 <div className="flex min-h-0 w-full min-w-0 flex-1">
