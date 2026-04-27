@@ -15,6 +15,10 @@ import type {
   StockEarningsUpcoming,
 } from "@/lib/market/stock-earnings-types";
 import { formatUsdCompact } from "@/lib/market/key-stats-basic-format";
+import { parseEarningsDocumentHubFromFundamentalsRoot } from "@/lib/market/earnings-report-external-links";
+import { applyCuratedIrEarningsDocumentUrls } from "@/lib/market/earnings-ir-curated-lookup";
+import { applyIrSeedDocumentUrls } from "@/lib/market/ir-seed-apply";
+import { enrichEarningsHistoryWithSecDocuments } from "@/lib/market/sec-edgar-earnings-documents";
 
 function pad2(n: number): string {
   return String(n).padStart(2, "0");
@@ -557,6 +561,7 @@ function historyRowFromRaw(
     fiscalPeriodEndYmd,
     fiscalPeriodLabel: quarterLabelFromPeriodEndYmd(fiscalPeriodEndYmd),
     reportDateDisplay,
+    reportDateYmd: earningsHistoryReportYmd(r),
     epsEstimateDisplay: epsEst != null ? formatEps(epsEst) : null,
     epsActualDisplay: reported && epsAct != null ? formatEps(epsAct) : null,
     surprisePct,
@@ -568,6 +573,8 @@ function historyRowFromRaw(
     revenueActualUsd: revAct,
     epsEstimateRaw: epsEst,
     epsActualRaw: epsAct,
+    secSlidesUrl: null,
+    secFilingsUrl: null,
   };
 }
 
@@ -784,15 +791,18 @@ export async function fetchStockEarningsTabPayload(listingTicker: string): Promi
   const root = await fetchEodhdFundamentalsJson(ticker);
   if (!root) return null;
 
+  const rootRec = root as Record<string, unknown>;
+  const documentHub = parseEarningsDocumentHubFromFundamentalsRoot(rootRec);
+
   const earn = root.Earnings;
   if (!earn || typeof earn !== "object") {
-    return { ticker, upcoming: null, history: [], estimatesChart: null };
+    return { ticker, upcoming: null, history: [], estimatesChart: null, documentHub };
   }
 
   const e = earn as Record<string, unknown>;
   const history = e.History;
   if (!history || typeof history !== "object") {
-    return { ticker, upcoming: null, history: [], estimatesChart: null };
+    return { ticker, upcoming: null, history: [], estimatesChart: null, documentHub };
   }
 
   const rawRows: Record<string, unknown>[] = [];
@@ -803,11 +813,26 @@ export async function fetchStockEarningsTabPayload(listingTicker: string): Promi
   const revenueByFiscalPeriodEnd = buildRevenueByFiscalPeriodEndYmd(root);
   const revenueEstimateByFiscalPeriodFromTrend = buildRevenueEstimateByFiscalPeriodFromTrend(root);
   const epsEstimateByFiscalPeriodFromTrend = buildEpsEstimateByFiscalPeriodFromTrend(root);
-  const historyParsed = sortHistoryRows(
+  let historyParsed = sortHistoryRows(
     rawRows.map((row) =>
       historyRowFromRaw(row, revenueByFiscalPeriodEnd, revenueEstimateByFiscalPeriodFromTrend, epsEstimateByFiscalPeriodFromTrend),
     ),
   ).slice(0, 24);
+
+  try {
+    /* Direct PDFs from 8-K filing indexes (when present). Skips browse-edgar / HTML-only filings. */
+    historyParsed = await enrichEarningsHistoryWithSecDocuments(historyParsed, documentHub.cik);
+  } catch {
+    /* Best-effort; table still loads */
+  }
+  try {
+    /* NVDA: q4cdn decks + filings. GOOGL/GOOG: investor discovery from profile site + q4cdn slides / 10-Q / 10-K PDFs. */
+    historyParsed = await applyIrSeedDocumentUrls(ticker, historyParsed, documentHub);
+  } catch {
+    /* Best-effort */
+  }
+  /* Curated IR / Q4 PDFs win over SEC + seed when the row is whitelisted. */
+  historyParsed = applyCuratedIrEarningsDocumentUrls(ticker, historyParsed);
 
   const estimatesChart = buildEstimatesChart(
     root,
@@ -831,5 +856,5 @@ export async function fetchStockEarningsTabPayload(listingTicker: string): Promi
     };
   }
 
-  return { ticker, upcoming, history: historyParsed, estimatesChart };
+  return { ticker, upcoming, history: historyParsed, estimatesChart, documentHub };
 }

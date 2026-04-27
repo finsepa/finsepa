@@ -504,6 +504,7 @@ export function StockPageContent({
           <StockFinancialsTab
             ticker={ticker}
             initialAnnualPoints={initialPageData?.ticker === ticker ? initialPageData.fundamentalsSeriesAnnual : undefined}
+            onOpenMetricChart={openRevenueProfitMetricModal}
           />
         </div>
       ) : null}

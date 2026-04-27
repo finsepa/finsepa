@@ -5,6 +5,7 @@ import type {
   IncomeStatementTableModel,
   IncomeStatementValueFormat,
 } from "@/lib/market/stock-financials-income-table";
+import type { ChartingMetricId } from "@/lib/market/stock-charting-metrics";
 import { ScreenerTableScroll } from "@/components/screener/screener-table-scroll";
 import { cn } from "@/lib/utils";
 
@@ -94,18 +95,31 @@ const numCellClass =
 const headerYearClass =
   "min-w-0 w-full truncate text-right font-['Inter'] text-[12px] font-medium leading-5 tabular-nums text-[#71717A] sm:text-[14px]";
 
-/** Tighter band than screener tables — Financials Income only. */
-const incomeTableRowClass = "h-[52px] max-h-[52px] min-h-0 overflow-hidden";
+/** Matches {@link ScreenerTable} / {@link CryptoTable} header band. */
+const incomeHeaderRowClass = "min-h-[44px]";
 
-export function StockIncomeStatementTable({ model }: { model: IncomeStatementTableModel }) {
+/** Matches screener data row height and hover ({@link ScreenerDataRow}). */
+const incomeDataRowClass = "group min-h-[60px]";
+
+/** Full-width row separator (`divide-y` is overridden by `border-0` on button rows). */
+const incomeRowDividerClass = "border-b border-[#E4E4E7]";
+
+export function StockIncomeStatementTable({
+  model,
+  onMetricClick,
+}: {
+  model: IncomeStatementTableModel;
+  /** Opens the same fundamentals chart modal as Overview Key Stats when the row maps to a charting metric. */
+  onMetricClick?: (metricId: ChartingMetricId) => void;
+}) {
   const { columns, rows } = model;
   const gridTemplateColumns = `minmax(11rem, 2fr) repeat(${columns.length}, minmax(5.25rem, 1fr))`;
 
   return (
-    <ScreenerTableScroll minWidthClassName="min-w-[min(100%,720px)] lg:min-w-0">
-      <div className="divide-y divide-[#E4E4E7] bg-white">
+    <ScreenerTableScroll minWidthClassName="min-w-0 sm:min-w-[720px] lg:min-w-0">
+      <div className="bg-white">
         <div
-          className={`grid items-center gap-x-2 bg-white px-2 py-0 text-[12px] font-medium leading-5 text-[#71717A] sm:px-4 sm:text-[14px] ${incomeTableRowClass}`}
+          className={`grid items-center gap-x-2 bg-white px-2 py-0 text-[12px] font-medium leading-5 text-[#71717A] sm:px-4 sm:text-[14px] ${incomeHeaderRowClass} ${incomeRowDividerClass}`}
           style={{ gridTemplateColumns }}
         >
           <div className="min-w-0 text-left">
@@ -119,42 +133,84 @@ export function StockIncomeStatementTable({ model }: { model: IncomeStatementTab
         </div>
 
         {rows.map((row) => (
-          <IncomeRow key={row.id} row={row} gridTemplateColumns={gridTemplateColumns} />
+          <IncomeRow
+            key={row.id}
+            row={row}
+            gridTemplateColumns={gridTemplateColumns}
+            onMetricClick={onMetricClick}
+          />
         ))}
       </div>
     </ScreenerTableScroll>
   );
 }
 
-function IncomeRow({ row, gridTemplateColumns }: { row: IncomeStatementRowModel; gridTemplateColumns: string }) {
+function IncomeRow({
+  row,
+  gridTemplateColumns,
+  onMetricClick,
+}: {
+  row: IncomeStatementRowModel;
+  gridTemplateColumns: string;
+  onMetricClick?: (metricId: ChartingMetricId) => void;
+}) {
   const labelClass = row.emphasize
     ? "text-[14px] font-semibold leading-5 text-[#09090B]"
     : "text-[14px] font-normal leading-5 text-[#09090B]";
 
   const nestedLabelPad = row.emphasize ? "" : "pl-3 sm:pl-6";
 
+  const metricId = row.chartingMetricId;
+  const rowInteractive = typeof onMetricClick === "function" && metricId != null;
+
+  const labelCell = (
+    <div className={cn("min-w-0 truncate pr-3 text-left", nestedLabelPad, labelClass)}>{row.label}</div>
+  );
+
+  const valueCells = row.values.map((v, i) => {
+    const { text, tone } = formatCell(row.format, v, row.id);
+    const isGrowth = row.format === "pctGrowth";
+    const growthMissing = isGrowth && (v == null || !Number.isFinite(v));
+    return (
+      <div
+        key={i}
+        className={cn(
+          numCellClass,
+          "truncate",
+          isGrowth && "font-medium",
+          isGrowth && (growthMissing ? "text-[#71717A]" : toneClass(tone)),
+        )}
+      >
+        {text}
+      </div>
+    );
+  });
+
+  if (rowInteractive) {
+    return (
+      <button
+        type="button"
+        className={cn(
+          "grid w-full cursor-pointer items-center gap-x-2 border-x-0 border-t-0 bg-white px-2 text-left font-inherit transition-colors duration-75 hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-zinc-300 sm:px-4",
+          incomeRowDividerClass,
+          incomeDataRowClass,
+        )}
+        style={{ gridTemplateColumns }}
+        onClick={() => onMetricClick?.(metricId)}
+      >
+        {labelCell}
+        {valueCells}
+      </button>
+    );
+  }
+
   return (
     <div
-      className={`grid items-center gap-x-2 bg-white px-2 transition-colors duration-75 hover:bg-neutral-50 sm:px-4 ${incomeTableRowClass}`}
+      className={`grid items-center gap-x-2 bg-white px-2 transition-colors duration-75 hover:bg-neutral-50 sm:px-4 ${incomeRowDividerClass} ${incomeDataRowClass}`}
       style={{ gridTemplateColumns }}
     >
-      <div className={cn("min-w-0 truncate pr-3 text-left", nestedLabelPad, labelClass)}>{row.label}</div>
-      {row.values.map((v, i) => {
-        const { text, tone } = formatCell(row.format, v, row.id);
-        const isGrowth = row.format === "pctGrowth";
-        return (
-          <div
-            key={i}
-            className={cn(
-              numCellClass,
-              "truncate",
-              isGrowth ? `font-medium ${toneClass(tone)}` : undefined,
-            )}
-          >
-            {text}
-          </div>
-        );
-      })}
+      {labelCell}
+      {valueCells}
     </div>
   );
 }

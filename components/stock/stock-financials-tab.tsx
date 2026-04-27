@@ -8,6 +8,7 @@ import {
   type FinancialsStatementView,
 } from "@/components/stock/stock-financials-segmented-toggle";
 import type { ChartingSeriesPoint } from "@/lib/market/charting-series-types";
+import type { ChartingMetricId } from "@/lib/market/stock-charting-metrics";
 import {
   buildIncomeStatementTableModel,
   type IncomeStatementTableModel,
@@ -48,9 +49,11 @@ function buildModelForView(
 export function StockFinancialsTab({
   ticker,
   initialAnnualPoints,
+  onOpenMetricChart,
 }: {
   ticker: string;
   initialAnnualPoints?: ChartingSeriesPoint[];
+  onOpenMetricChart?: (metricId: ChartingMetricId) => void;
 }) {
   const [view, setView] = useState<FinancialsStatementView>("income");
   const [points, setPoints] = useState<ChartingSeriesPoint[]>(() =>
@@ -107,7 +110,7 @@ export function StockFinancialsTab({
       ) : !tableModel ? (
         <p className="text-[14px] leading-6 text-[#71717A]">{EMPTY_COPY[view]}</p>
       ) : (
-        <StockIncomeStatementTable model={tableModel} />
+        <StockIncomeStatementTable model={tableModel} onMetricClick={onOpenMetricChart} />
       )}
     </div>
   );

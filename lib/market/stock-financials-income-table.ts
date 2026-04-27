@@ -1,4 +1,5 @@
 import type { ChartingSeriesPoint } from "@/lib/market/charting-series-types";
+import type { ChartingMetricId } from "@/lib/market/stock-charting-metrics";
 import { annualFundamentalsSlice, pctChange } from "@/lib/market/stock-financials-annual-slice";
 
 /** How each numeric cell should render in Financials statement tables. */
@@ -17,6 +18,8 @@ export type IncomeStatementRowModel = {
   emphasize: boolean;
   format: IncomeStatementValueFormat;
   values: (number | null)[];
+  /** When set, Financials label opens the same fundamentals chart modal as Overview Key Stats. */
+  chartingMetricId?: ChartingMetricId;
 };
 
 export type IncomeStatementTableModel = {
@@ -87,13 +90,34 @@ export function buildIncomeStatementTableModel(points: ChartingSeriesPoint[]): I
   const ebitdaMarginPct = pick((p) => (p.ebitdaMargin != null ? p.ebitdaMargin * 100 : null));
 
   const rows: IncomeStatementRowModel[] = [
-    { id: "revenue", label: "Revenue", emphasize: true, format: "usd", values: revenue },
-    { id: "revenue_growth", label: "Revenue Growth (YoY)", emphasize: false, format: "pctGrowth", values: revenueGrowth },
+    { id: "revenue", label: "Revenue", emphasize: true, format: "usd", values: revenue, chartingMetricId: "revenue" },
+    {
+      id: "revenue_growth",
+      label: "Revenue Growth (YoY)",
+      emphasize: false,
+      format: "pctGrowth",
+      values: revenueGrowth,
+      chartingMetricId: "revenue_yoy",
+    },
     { id: "cost_of_revenue", label: "Cost of revenue", emphasize: false, format: "usd", values: costOfRevenue },
-    { id: "gross_profit", label: "Gross Profit", emphasize: true, format: "usd", values: grossProfit },
-    { id: "operating_income", label: "Operating Income", emphasize: true, format: "usd", values: operatingIncome },
+    {
+      id: "gross_profit",
+      label: "Gross Profit",
+      emphasize: true,
+      format: "usd",
+      values: grossProfit,
+      chartingMetricId: "gross_profit",
+    },
+    {
+      id: "operating_income",
+      label: "Operating Income",
+      emphasize: true,
+      format: "usd",
+      values: operatingIncome,
+      chartingMetricId: "operating_income",
+    },
     { id: "pretax_income", label: "Pretax Income", emphasize: true, format: "usd", values: pretax },
-    { id: "net_income", label: "Net Income", emphasize: true, format: "usd", values: netIncome },
+    { id: "net_income", label: "Net Income", emphasize: true, format: "usd", values: netIncome, chartingMetricId: "net_income" },
     {
       id: "net_income_growth",
       label: "Net Income Growth",
@@ -101,20 +125,83 @@ export function buildIncomeStatementTableModel(points: ChartingSeriesPoint[]): I
       format: "pctGrowth",
       values: netIncomeGrowthResolved,
     },
-    { id: "shares_out", label: "Shares Outstanding (Diluted)", emphasize: true, format: "shares", values: shares },
+    {
+      id: "shares_out",
+      label: "Shares Outstanding (Diluted)",
+      emphasize: true,
+      format: "shares",
+      values: shares,
+      chartingMetricId: "shares_outstanding",
+    },
     { id: "shares_change", label: "Shares Change", emphasize: false, format: "pctGrowth", values: sharesChange },
-    { id: "eps", label: "EPS (Diluted)", emphasize: true, format: "perShare", values: eps },
-    { id: "eps_growth", label: "EPS Growth", emphasize: false, format: "pctGrowth", values: epsGrowth },
-    { id: "fcf", label: "Free Cash Flow", emphasize: true, format: "usd", values: fcf },
+    { id: "eps", label: "EPS (Diluted)", emphasize: true, format: "perShare", values: eps, chartingMetricId: "eps" },
+    {
+      id: "eps_growth",
+      label: "EPS Growth",
+      emphasize: false,
+      format: "pctGrowth",
+      values: epsGrowth,
+      chartingMetricId: "eps_yoy",
+    },
+    { id: "fcf", label: "Free Cash Flow", emphasize: true, format: "usd", values: fcf, chartingMetricId: "free_cash_flow" },
     { id: "fcf_ps", label: "Free Cash Flow Per Share", emphasize: false, format: "perShare", values: fcfPerShare },
-    { id: "gross_margin", label: "Gross Margin", emphasize: false, format: "pctMargin", values: grossMarginPct },
-    { id: "operating_margin", label: "Operating Margin", emphasize: false, format: "pctMargin", values: operatingMarginPct },
-    { id: "profit_margin", label: "Profit Margin", emphasize: false, format: "pctMargin", values: netMarginPct },
-    { id: "fcf_margin", label: "Free Cash Flow Margin", emphasize: false, format: "pctMargin", values: fcfMarginPct },
-    { id: "ebitda", label: "EBITDA", emphasize: true, format: "usd", values: ebitda },
-    { id: "ebitda_margin", label: "EBITDA Margin", emphasize: false, format: "pctMargin", values: ebitdaMarginPct },
-    { id: "ebit", label: "EBIT", emphasize: true, format: "usd", values: operatingIncome },
-    { id: "ebit_margin", label: "EBIT Margin", emphasize: false, format: "pctMargin", values: operatingMarginPct },
+    {
+      id: "gross_margin",
+      label: "Gross Margin",
+      emphasize: false,
+      format: "pctMargin",
+      values: grossMarginPct,
+      chartingMetricId: "gross_margin",
+    },
+    {
+      id: "operating_margin",
+      label: "Operating Margin",
+      emphasize: false,
+      format: "pctMargin",
+      values: operatingMarginPct,
+      chartingMetricId: "operating_margin",
+    },
+    {
+      id: "profit_margin",
+      label: "Profit Margin",
+      emphasize: false,
+      format: "pctMargin",
+      values: netMarginPct,
+      chartingMetricId: "net_margin",
+    },
+    {
+      id: "fcf_margin",
+      label: "Free Cash Flow Margin",
+      emphasize: false,
+      format: "pctMargin",
+      values: fcfMarginPct,
+      chartingMetricId: "fcf_margin",
+    },
+    { id: "ebitda", label: "EBITDA", emphasize: true, format: "usd", values: ebitda, chartingMetricId: "ebitda" },
+    {
+      id: "ebitda_margin",
+      label: "EBITDA Margin",
+      emphasize: false,
+      format: "pctMargin",
+      values: ebitdaMarginPct,
+      chartingMetricId: "ebitda_margin",
+    },
+    {
+      id: "ebit",
+      label: "EBIT",
+      emphasize: true,
+      format: "usd",
+      values: operatingIncome,
+      chartingMetricId: "operating_income",
+    },
+    {
+      id: "ebit_margin",
+      label: "EBIT Margin",
+      emphasize: false,
+      format: "pctMargin",
+      values: operatingMarginPct,
+      chartingMetricId: "operating_margin",
+    },
   ];
 
   const anyNumber = rows.some((r) => r.values.some((v) => v != null && Number.isFinite(v)));

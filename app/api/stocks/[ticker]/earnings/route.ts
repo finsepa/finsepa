@@ -29,7 +29,13 @@ export async function GET(_request: Request, { params }: Ctx) {
 
   if (isSingleAssetMode() && !isSupportedAsset(routeTicker)) {
     return NextResponse.json(
-      { ticker: routeTicker, upcoming: null, history: [], estimatesChart: null },
+      {
+        ticker: routeTicker,
+        upcoming: null,
+        history: [],
+        estimatesChart: null,
+        documentHub: { irWebsite: null, cik: null, companyWebsite: null },
+      },
       { headers: { "Cache-Control": CACHE_CONTROL_PUBLIC_WARM } },
     );
   }
@@ -37,7 +43,13 @@ export async function GET(_request: Request, { params }: Ctx) {
   const payload = await fetchStockEarningsTabPayload(routeTicker);
   if (!payload) {
     return NextResponse.json(
-      { ticker: routeTicker, upcoming: null, history: [], estimatesChart: null },
+      {
+        ticker: routeTicker,
+        upcoming: null,
+        history: [],
+        estimatesChart: null,
+        documentHub: { irWebsite: null, cik: null, companyWebsite: null },
+      },
       { status: 200, headers: { "Cache-Control": CACHE_CONTROL_PUBLIC_WARM } },
     );
   }

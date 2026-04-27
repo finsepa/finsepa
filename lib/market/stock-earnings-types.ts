@@ -15,10 +15,20 @@ export type StockEarningsUpcoming = {
   revenueEstimateDisplay: string | null;
 };
 
+export type StockEarningsDocumentHub = {
+  irWebsite: string | null;
+  /** SEC CIK (10-digit) when available from fundamentals */
+  cik: string | null;
+  /** `General.WebURL` / `Website` — used for GOOGL/GOOG investor-link discovery */
+  companyWebsite: string | null;
+};
+
 export type StockEarningsHistoryRow = {
   fiscalPeriodEndYmd: string | null;
   fiscalPeriodLabel: string | null;
   reportDateDisplay: string | null;
+  /** Announcement / report calendar date for SEC window links */
+  reportDateYmd: string | null;
   epsEstimateDisplay: string | null;
   epsActualDisplay: string | null;
   surprisePct: number | null;
@@ -31,6 +41,10 @@ export type StockEarningsHistoryRow = {
   revenueActualUsd: number | null;
   epsEstimateRaw: number | null;
   epsActualRaw: number | null;
+  /** Resolved SEC document URL (often `.pdf` → native browser preview) when enrichment succeeds */
+  secSlidesUrl: string | null;
+  /** SEC filing index page for the matched Form 8-K (all exhibits) */
+  secFilingsUrl: string | null;
 };
 
 /** One category on the Estimates bar chart (annual year or fiscal quarter). */
@@ -55,4 +69,6 @@ export type StockEarningsTabPayload = {
   upcoming: StockEarningsUpcoming | null;
   history: StockEarningsHistoryRow[];
   estimatesChart: StockEarningsEstimatesChart | null;
+  /** From same fundamentals JSON as earnings — IR + CIK for external resource buttons */
+  documentHub: StockEarningsDocumentHub;
 };

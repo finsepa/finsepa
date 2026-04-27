@@ -44,14 +44,14 @@ export function buildBalanceSheetTableModel(points: ChartingSeriesPoint[]): Inco
   const dte = pick(slice, (p) => p.debtToEquity);
 
   const rows: IncomeStatementRowModel[] = [
-    { id: "bs_assets", label: "Total assets", emphasize: true, format: "usd", values: totalAssets },
-    { id: "bs_cash", label: "Cash & equivalents", emphasize: false, format: "usd", values: cash },
-    { id: "bs_liab", label: "Total liabilities", emphasize: true, format: "usd", values: totalLiab },
+    { id: "bs_assets", label: "Total assets", emphasize: true, format: "usd", values: totalAssets, chartingMetricId: "total_assets" },
+    { id: "bs_cash", label: "Cash & equivalents", emphasize: false, format: "usd", values: cash, chartingMetricId: "cash_on_hand" },
+    { id: "bs_liab", label: "Total liabilities", emphasize: true, format: "usd", values: totalLiab, chartingMetricId: "total_liabilities" },
     { id: "bs_current_liab", label: "Current liabilities", emphasize: false, format: "usd", values: currentLiab },
     { id: "bs_debt", label: "Total debt", emphasize: true, format: "usd", values: totalDebt },
-    { id: "bs_ltd", label: "Long-term debt", emphasize: false, format: "usd", values: ltd },
-    { id: "bs_equity", label: "Shareholders' equity", emphasize: true, format: "usd", values: equity },
-    { id: "bs_dte", label: "Debt / equity", emphasize: false, format: "ratio", values: dte },
+    { id: "bs_ltd", label: "Long-term debt", emphasize: false, format: "usd", values: ltd, chartingMetricId: "long_term_debt" },
+    { id: "bs_equity", label: "Shareholders' equity", emphasize: true, format: "usd", values: equity, chartingMetricId: "shareholder_equity" },
+    { id: "bs_dte", label: "Debt / equity", emphasize: false, format: "ratio", values: dte, chartingMetricId: "debt_to_equity" },
   ];
 
   return tableOrNull(columns, rows);
@@ -67,7 +67,7 @@ export function buildCashFlowTableModel(points: ChartingSeriesPoint[]): IncomeSt
   const div = pick(slice, (p) => (p.dividendsPaid == null ? null : Math.abs(p.dividendsPaid)));
 
   const rows: IncomeStatementRowModel[] = [
-    { id: "cf_fcf", label: "Free cash flow", emphasize: true, format: "usd", values: fcf },
+    { id: "cf_fcf", label: "Free cash flow", emphasize: true, format: "usd", values: fcf, chartingMetricId: "free_cash_flow" },
     {
       id: "cf_fcf_growth",
       label: "Free cash flow growth (YoY)",
@@ -104,20 +104,27 @@ export function buildRatiosTableModel(points: ChartingSeriesPoint[]): IncomeStat
   const payout = decimalToDisplayPercent(pick(slice, (p) => p.payoutRatio));
 
   const rows: IncomeStatementRowModel[] = [
-    { id: "r_pe", label: "P/E", emphasize: true, format: "ratio", values: pe },
-    { id: "r_fwd_pe", label: "Forward P/E", emphasize: false, format: "ratio", values: fwd },
-    { id: "r_ps", label: "P/S", emphasize: false, format: "ratio", values: ps },
-    { id: "r_pb", label: "P/B", emphasize: false, format: "ratio", values: pb },
-    { id: "r_pfcf", label: "P/FCF", emphasize: false, format: "ratio", values: pfcf },
-    { id: "r_ev_e", label: "EV / EBITDA", emphasize: true, format: "ratio", values: evE },
-    { id: "r_ev_s", label: "EV / Sales", emphasize: false, format: "ratio", values: evS },
-    { id: "r_cash_debt", label: "Cash / total debt", emphasize: false, format: "ratio", values: cashDebt },
-    { id: "r_roe", label: "Return on equity", emphasize: true, format: "pctMargin", values: roe },
-    { id: "r_roa", label: "Return on assets", emphasize: false, format: "pctMargin", values: roa },
-    { id: "r_roce", label: "Return on capital employed", emphasize: false, format: "pctMargin", values: roce },
-    { id: "r_roi", label: "Return on investment", emphasize: false, format: "pctMargin", values: roi },
-    { id: "r_div_y", label: "Dividend yield", emphasize: false, format: "pctMargin", values: divY },
-    { id: "r_payout", label: "Payout ratio", emphasize: false, format: "pctMargin", values: payout },
+    { id: "r_pe", label: "P/E", emphasize: true, format: "ratio", values: pe, chartingMetricId: "pe_ratio" },
+    { id: "r_fwd_pe", label: "Forward P/E", emphasize: false, format: "ratio", values: fwd, chartingMetricId: "forward_pe" },
+    { id: "r_ps", label: "P/S", emphasize: false, format: "ratio", values: ps, chartingMetricId: "ps_ratio" },
+    { id: "r_pb", label: "P/B", emphasize: false, format: "ratio", values: pb, chartingMetricId: "price_book" },
+    { id: "r_pfcf", label: "P/FCF", emphasize: false, format: "ratio", values: pfcf, chartingMetricId: "price_fcf" },
+    { id: "r_ev_e", label: "EV / EBITDA", emphasize: true, format: "ratio", values: evE, chartingMetricId: "ev_ebitda" },
+    { id: "r_ev_s", label: "EV / Sales", emphasize: false, format: "ratio", values: evS, chartingMetricId: "ev_sales" },
+    { id: "r_cash_debt", label: "Cash / total debt", emphasize: false, format: "ratio", values: cashDebt, chartingMetricId: "cash_debt" },
+    { id: "r_roe", label: "Return on equity", emphasize: true, format: "pctMargin", values: roe, chartingMetricId: "return_on_equity" },
+    { id: "r_roa", label: "Return on assets", emphasize: false, format: "pctMargin", values: roa, chartingMetricId: "return_on_assets" },
+    {
+      id: "r_roce",
+      label: "Return on capital employed",
+      emphasize: false,
+      format: "pctMargin",
+      values: roce,
+      chartingMetricId: "return_on_capital_employed",
+    },
+    { id: "r_roi", label: "Return on investment", emphasize: false, format: "pctMargin", values: roi, chartingMetricId: "return_on_investment" },
+    { id: "r_div_y", label: "Dividend yield", emphasize: false, format: "pctMargin", values: divY, chartingMetricId: "dividend_yield" },
+    { id: "r_payout", label: "Payout ratio", emphasize: false, format: "pctMargin", values: payout, chartingMetricId: "payout_ratio" },
   ];
 
   return tableOrNull(columns, rows);

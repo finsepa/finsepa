@@ -11,6 +11,7 @@ import type { StockProfilePayload } from "@/lib/market/stock-profile-types";
 import type { ChartingSeriesPoint } from "@/lib/market/charting-series-types";
 import type { StockNewsArticle } from "@/lib/market/stock-news-types";
 import type { StockEarningsEstimatesChart, StockEarningsTabPayload } from "@/lib/market/stock-earnings-types";
+import { applyCuratedIrEarningsDocumentUrls } from "@/lib/market/earnings-ir-curated-lookup";
 
 import { companyLogoUrlForTicker } from "@/lib/screener/company-logo-url";
 import { TOP10_META } from "@/lib/screener/top10-config";
@@ -222,9 +223,33 @@ function nvdaEstimatesChartFixture(): StockEarningsEstimatesChart {
       { sortKey: "2022-01-31", label: "2022", revenueEstimateUsd: 27e9, revenueActualUsd: 26.9e9, epsEstimate: 0.45, epsActual: 0.44, reported: true },
       { sortKey: "2023-01-31", label: "2023", revenueEstimateUsd: 45e9, revenueActualUsd: 44.9e9, epsEstimate: 0.75, epsActual: 0.74, reported: true },
       { sortKey: "2024-01-31", label: "2024", revenueEstimateUsd: 96e9, revenueActualUsd: 96.3e9, epsEstimate: 1.2, epsActual: 1.19, reported: true },
-      { sortKey: "2025-01-31", label: "2025", revenueEstimateUsd: 130e9, revenueActualUsd: null, epsEstimate: 2.1, epsActual: null, reported: false },
-      { sortKey: "2026-01-31", label: "2026", revenueEstimateUsd: 165e9, revenueActualUsd: null, epsEstimate: 2.65, epsActual: null, reported: false },
-      { sortKey: "2027-01-31", label: "2027", revenueEstimateUsd: 195e9, revenueActualUsd: null, epsEstimate: 3.05, epsActual: null, reported: false },
+      {
+        sortKey: "2025-01-31",
+        label: "2025",
+        revenueEstimateUsd: 130e9,
+        revenueActualUsd: null,
+        epsEstimate: 2.1,
+        epsActual: null,
+        reported: false,
+      },
+      {
+        sortKey: "2026-01-31",
+        label: "2026",
+        revenueEstimateUsd: 165e9,
+        revenueActualUsd: null,
+        epsEstimate: 2.65,
+        epsActual: null,
+        reported: false,
+      },
+      {
+        sortKey: "2027-01-31",
+        label: "2027",
+        revenueEstimateUsd: 195e9,
+        revenueActualUsd: null,
+        epsEstimate: 3.05,
+        epsActual: null,
+        reported: false,
+      },
     ],
   };
 }
@@ -232,6 +257,11 @@ function nvdaEstimatesChartFixture(): StockEarningsEstimatesChart {
 export function getNvdaStockEarningsTabPayload(): StockEarningsTabPayload {
   return {
     ticker: NVDA,
+    documentHub: {
+      irWebsite: "https://investor.nvidia.com",
+      cik: "0001045810",
+      companyWebsite: null,
+    },
     upcoming: {
       reportDateDisplay: "Feb 26, 2026",
       reportDateYmd: "2026-02-26",
@@ -242,11 +272,12 @@ export function getNvdaStockEarningsTabPayload(): StockEarningsTabPayload {
       epsEstimateDisplay: "1.05",
       revenueEstimateDisplay: "$38.2B",
     },
-    history: [
+    history: applyCuratedIrEarningsDocumentUrls(NVDA, [
       {
         fiscalPeriodEndYmd: "2025-10-31",
         fiscalPeriodLabel: "Q3 2025",
         reportDateDisplay: "Nov 19, 2025",
+        reportDateYmd: "2025-11-19",
         epsEstimateDisplay: "1.02",
         epsActualDisplay: "1.05",
         surprisePct: 2.9,
@@ -258,11 +289,14 @@ export function getNvdaStockEarningsTabPayload(): StockEarningsTabPayload {
         revenueActualUsd: 37.5e9,
         epsEstimateRaw: 1.02,
         epsActualRaw: 1.05,
+        secSlidesUrl: null,
+        secFilingsUrl: null,
       },
       {
         fiscalPeriodEndYmd: "2025-07-31",
         fiscalPeriodLabel: "Q2 2025",
         reportDateDisplay: "Aug 28, 2025",
+        reportDateYmd: "2025-08-28",
         epsEstimateDisplay: "0.85",
         epsActualDisplay: "0.82",
         surprisePct: -3.5,
@@ -274,11 +308,14 @@ export function getNvdaStockEarningsTabPayload(): StockEarningsTabPayload {
         revenueActualUsd: 30.4e9,
         epsEstimateRaw: 0.85,
         epsActualRaw: 0.82,
+        secSlidesUrl: null,
+        secFilingsUrl: null,
       },
       {
         fiscalPeriodEndYmd: "2025-04-30",
         fiscalPeriodLabel: "Q1 2025",
         reportDateDisplay: "May 29, 2025",
+        reportDateYmd: "2025-05-29",
         epsEstimateDisplay: "0.72",
         epsActualDisplay: "0.76",
         surprisePct: 5.6,
@@ -290,8 +327,10 @@ export function getNvdaStockEarningsTabPayload(): StockEarningsTabPayload {
         revenueActualUsd: 26.4e9,
         epsEstimateRaw: 0.72,
         epsActualRaw: 0.76,
+        secSlidesUrl: null,
+        secFilingsUrl: null,
       },
-    ],
+    ]),
     estimatesChart: nvdaEstimatesChartFixture(),
   };
 }

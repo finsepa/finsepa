@@ -3,10 +3,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { SkeletonBox } from "@/components/markets/skeleton";
+import { EarningsAnnualSummaryTable } from "@/components/stock/earnings-annual-summary-table";
 import { EarningsEstimatesChart } from "@/components/stock/earnings-estimates-chart";
+import { EarningsReportRowActions } from "@/components/stock/earnings-report-row-actions";
 import { PostMarketEarningsIcon } from "@/components/stock/post-market-earnings-icon";
 import { PreMarketEarningsIcon } from "@/components/stock/pre-market-earnings-icon";
-import type { StockEarningsReportTiming, StockEarningsTabPayload } from "@/lib/market/stock-earnings-types";
+import type {
+  StockEarningsHistoryRow,
+  StockEarningsReportTiming,
+  StockEarningsTabPayload,
+} from "@/lib/market/stock-earnings-types";
 import { cn } from "@/lib/utils";
 import { EARNINGS_CARD_LABEL_CLASS, EARNINGS_CARD_VALUE_CLASS } from "@/components/stock/earnings-card-styles";
 
@@ -18,6 +24,14 @@ function dash(v: string | null | undefined): string {
 function tableCell(v: string | null | undefined): string {
   const s = v != null && String(v).trim() !== "" ? String(v).trim() : "";
   return s || "-";
+}
+
+/** Month + day for stacked "Report date" cell (year omitted; fiscal line carries year). */
+function reportDayLineFromDisplay(reportDateDisplay: string | null | undefined): string {
+  const raw = reportDateDisplay != null && String(reportDateDisplay).trim() !== "" ? String(reportDateDisplay).trim() : "";
+  if (!raw || raw === "-") return "-";
+  const noYear = raw.replace(/,\s*\d{4}\s*$/, "").replace(/\s+\d{4}\s*$/, "").trim();
+  return noYear || raw;
 }
 
 function quarterPrefixForEarningsDateLabel(fiscalPeriodLabel: string | null | undefined): string {
@@ -100,23 +114,47 @@ function nearestVerticalScrollParent(start: HTMLElement | null): HTMLElement | n
   return null;
 }
 
-/** Same rhythm as screener table: `screener-table.tsx` header + row heights. Fixed min width so narrow viewports scroll horizontally instead of compressing columns. */
-const EARNINGS_TABLE_GRID =
-  "grid min-w-[960px] w-full grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)_minmax(0,0.85fr)_minmax(0,0.85fr)_minmax(0,0.8fr)_minmax(0,1fr)_minmax(0,1fr)] gap-x-2";
+/** Number cells in the Reports `<table>` — one table = aligned columns (separate per-row CSS grids do not). */
+const earningsReportsTdNum =
+  "px-2 py-1.5 text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]";
 
-const screenerNumCell =
-  "min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]";
+function calendarYearFromEarningsHistoryRow(r: StockEarningsHistoryRow): string | null {
+  const ymd = r.fiscalPeriodEndYmd;
+  if (ymd && /^\d{4}-\d{2}-\d{2}$/.test(ymd)) return ymd.slice(0, 4);
+  const label = r.fiscalPeriodLabel?.trim();
+  if (label) {
+    const m = label.match(/\b(19|20)\d{2}\b/);
+    if (m) return m[0]!;
+  }
+  return null;
+}
 
-const screenerHeaderNumCell =
-  "min-w-0 w-full text-right text-[14px] font-medium leading-5 text-[#71717A]";
+type EarningsHistoryRenderedEntry =
+  | { kind: "year"; year: string }
+  | { kind: "row"; row: StockEarningsHistoryRow };
+
+/** Inserts a full-width year band before the first row of each calendar year (list is newest → oldest). */
+function withEarningsYearBandRows(rows: StockEarningsHistoryRow[]): EarningsHistoryRenderedEntry[] {
+  const out: EarningsHistoryRenderedEntry[] = [];
+  let previousYear: string | null = null;
+  for (const row of rows) {
+    const cy = calendarYearFromEarningsHistoryRow(row);
+    if (cy != null && cy !== previousYear) {
+      out.push({ kind: "year", year: cy });
+      previousYear = cy;
+    }
+    out.push({ kind: "row", row });
+  }
+  return out;
+}
 
 function SurpriseCell({ value, pct }: { value: string | null; pct: number | null }) {
   if (!value || value === "—" || value === "-") {
-    return <div className={`${screenerNumCell} font-medium text-[#71717A]`}>-</div>;
+    return <div className={`${earningsReportsTdNum} font-medium text-[#71717A]`}>-</div>;
   }
   const n = pct;
   if (n == null || !Number.isFinite(n)) {
-    return <div className={screenerNumCell}>{value}</div>;
+    return <div className={earningsReportsTdNum}>{value}</div>;
   }
   const pos = n >= 0;
   return (
@@ -151,45 +189,92 @@ function SummaryCardsSkeleton() {
 
 function EstimatesChartSkeleton() {
   return (
-    <div className="w-full">
-      <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <SkeletonBox className="h-7 w-28 rounded" />
-        <div className="flex flex-wrap gap-3">
-          <SkeletonBox className="h-10 w-[200px] rounded-[10px]" />
-          <SkeletonBox className="h-10 w-[200px] rounded-[10px]" />
+    <div className="w-full space-y-6">
+      <div>
+        <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <SkeletonBox className="h-7 w-28 rounded" />
+          <div className="flex flex-wrap gap-3">
+            <SkeletonBox className="h-10 w-[200px] rounded-[10px]" />
+            <SkeletonBox className="h-10 w-[200px] rounded-[10px]" />
+          </div>
+        </div>
+        <div>
+          <SkeletonBox className="h-[320px] w-full rounded" />
+          <div className="mt-4 flex justify-center gap-6">
+            <SkeletonBox className="h-4 w-36 rounded" />
+            <SkeletonBox className="h-4 w-36 rounded" />
+          </div>
         </div>
       </div>
-      <div>
-        <SkeletonBox className="h-[320px] w-full rounded" />
-        <div className="mt-4 flex justify-center gap-6">
-          <SkeletonBox className="h-4 w-36 rounded" />
-          <SkeletonBox className="h-4 w-36 rounded" />
+      <div className="-mx-1 overflow-x-auto sm:-mx-0">
+        <div className="min-w-[640px] rounded-lg border border-[#E4E4E7] bg-white px-4 py-4 sm:rounded-none sm:border-x-0 sm:border-t sm:border-b">
+          <SkeletonBox className="h-[200px] w-full rounded" />
         </div>
       </div>
     </div>
   );
 }
 
+const reportsTableShell =
+  "w-full min-w-0 table-auto border-collapse border-y border-[#E4E4E7] bg-white text-[14px]";
+
 function TableSkeleton() {
   return (
-    <div className="min-w-0 overflow-x-auto [-webkit-overflow-scrolling:touch]">
-      <div className="divide-y divide-[#E4E4E7] border-t border-b border-[#E4E4E7] bg-white">
-        <div className={`${EARNINGS_TABLE_GRID} min-h-[44px] items-center px-4 py-0`}>
-          {Array.from({ length: 7 }).map((_, i) => (
-            <SkeletonBox key={i} className="h-4 w-[72%] rounded" />
-          ))}
-        </div>
-        {Array.from({ length: 4 }).map((_, r) => (
-          <div key={r} className={`${EARNINGS_TABLE_GRID} h-[60px] max-h-[60px] items-center px-4`}>
-            {Array.from({ length: 7 }).map((_, c) => (
-              <SkeletonBox
-                key={c}
-                className={cn("h-4 rounded", c >= 2 ? "ml-auto w-[65%]" : "w-[72%]")}
-              />
+    <div className="min-w-0 w-full max-w-full overflow-x-auto touch-pan-x md:overflow-x-visible [-webkit-overflow-scrolling:touch]">
+      <table className={reportsTableShell}>
+        <thead>
+          <tr className="border-b border-[#E4E4E7]">
+            {[
+              { pad: "pl-4 pr-2 text-left max-sm:pl-3" },
+              { pad: "px-2 text-right" },
+              { pad: "px-2 text-right" },
+              { pad: "px-2 text-right" },
+              { pad: "px-2 text-right" },
+              { pad: "px-2 text-right" },
+              { pad: "pl-2 pr-4 text-right max-sm:pr-3" },
+            ].map((c, i) => (
+              <th key={i} scope="col" className={cn("py-2 font-medium text-[#71717A]", c.pad)}>
+                <SkeletonBox
+                  className={cn("h-4 rounded", i === 0 && "w-[72%]", i > 0 && i < 6 && "ml-auto w-[70%] max-w-20", i === 6 && "ml-auto w-20")}
+                />
+              </th>
             ))}
-          </div>
-        ))}
-      </div>
+          </tr>
+        </thead>
+        <tbody>
+          {Array.from({ length: 4 }).map((_, r) => (
+            <tr key={r} className="border-b border-[#E4E4E7] last:border-b-0">
+              <td className="min-w-0 py-1.5 pl-4 pr-2 align-top max-sm:pl-3">
+                <div className="flex min-w-0 flex-col gap-1.5">
+                  <SkeletonBox className="h-4 w-[55%] rounded" />
+                  <SkeletonBox className="h-3.5 w-[40%] rounded" />
+                </div>
+              </td>
+              <td className="px-2 py-1.5 text-right">
+                <SkeletonBox className="ml-auto h-4 w-[65%] max-w-16 rounded" />
+              </td>
+              <td className="px-2 py-1.5 text-right">
+                <SkeletonBox className="ml-auto h-4 w-[65%] max-w-16 rounded" />
+              </td>
+              <td className="px-2 py-1.5 text-right">
+                <SkeletonBox className="ml-auto h-4 w-[50%] max-w-20 rounded" />
+              </td>
+              <td className="px-2 py-1.5 text-right">
+                <SkeletonBox className="ml-auto h-4 w-[65%] max-w-24 rounded" />
+              </td>
+              <td className="px-2 py-1.5 text-right">
+                <SkeletonBox className="ml-auto h-4 w-[65%] max-w-24 rounded" />
+              </td>
+              <td className="py-1.5 pl-2 pr-4 text-right align-top max-sm:pr-3">
+                <div className="inline-flex w-max max-w-full shrink-0 flex-nowrap justify-end gap-2">
+                  <SkeletonBox className="h-9 w-[5.5rem] shrink-0 rounded-[10px]" />
+                  <SkeletonBox className="h-9 w-[5.5rem] shrink-0 rounded-[10px]" />
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -203,6 +288,7 @@ export function StockEarningsTabLoading({ showHeading = true }: { showHeading?: 
       ) : null}
       <SummaryCardsSkeleton />
       <EstimatesChartSkeleton />
+      <h3 className="text-[18px] font-semibold leading-7 tracking-tight text-[#09090B]">Reports</h3>
       <TableSkeleton />
     </div>
   );
@@ -228,7 +314,7 @@ export function StockEarningsTabContent({
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<StockEarningsTabPayload | null>(null);
   const [earningsHistoryVisible, setEarningsHistoryVisible] = useState(EARNINGS_HISTORY_PAGE_SIZE);
-  const earningsHistorySentinelRef = useRef<HTMLDivElement | null>(null);
+  const earningsHistorySentinelRef = useRef<HTMLTableRowElement | null>(null);
 
   useEffect(() => {
     setClientReady(true);
@@ -264,6 +350,11 @@ export function StockEarningsTabContent({
   const earningsHistorySlice = useMemo(
     () => historyRows.slice(0, earningsHistoryVisible),
     [historyRows, earningsHistoryVisible],
+  );
+
+  const earningsHistoryRendered = useMemo(
+    () => withEarningsYearBandRows(earningsHistorySlice),
+    [earningsHistorySlice],
   );
 
   const historyRowCountRef = useRef(0);
@@ -346,6 +437,7 @@ export function StockEarningsTabContent({
         <>
           <SummaryCardsSkeleton />
           <EstimatesChartSkeleton />
+          <h3 className="text-[18px] font-semibold leading-7 tracking-tight text-[#09090B]">Reports</h3>
           <TableSkeleton />
         </>
       ) : null}
@@ -366,45 +458,84 @@ export function StockEarningsTabContent({
 
       {!loading && data?.estimatesChart ? <EarningsEstimatesChart data={data.estimatesChart} /> : null}
 
+      {!loading && data?.estimatesChart?.annual && data.estimatesChart.annual.length > 0 ? (
+        <EarningsAnnualSummaryTable annual={data.estimatesChart.annual} />
+      ) : null}
+
       {!loading && data && historyRows.length > 0 ? (
-        <div className="min-w-0 overflow-x-auto [-webkit-overflow-scrolling:touch]">
-          <div className="divide-y divide-[#E4E4E7] border-t border-b border-[#E4E4E7] bg-white">
-            <div
-              className={`${EARNINGS_TABLE_GRID} min-h-[44px] items-center px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A]`}
-            >
-              <div className="text-left">Fiscal period</div>
-              <div className="text-left">Report date</div>
-              <div className={screenerHeaderNumCell}>EPS est.</div>
-              <div className={screenerHeaderNumCell}>EPS actual</div>
-              <div className={screenerHeaderNumCell}>Surprise</div>
-              <div className={screenerHeaderNumCell}>Rev. est.</div>
-              <div className={screenerHeaderNumCell}>Rev. actual</div>
-            </div>
-            {earningsHistorySlice.map((row, idx) => (
-              <div
-                key={`${row.fiscalPeriodEndYmd ?? idx}-${row.reportDateDisplay ?? idx}`}
-                className={`${EARNINGS_TABLE_GRID} h-[60px] max-h-[60px] items-center bg-white px-4 transition-colors duration-75 hover:bg-neutral-50`}
-              >
-                <div className="min-w-0 truncate text-left text-[14px] font-normal leading-5 text-[#09090B]">
-                  {tableCell(row.fiscalPeriodLabel)}
-                </div>
-                <div className="min-w-0 truncate text-left text-[14px] font-normal leading-5 text-[#09090B]">
-                  {tableCell(row.reportDateDisplay)}
-                </div>
-                <div className={screenerNumCell}>{tableCell(row.epsEstimateDisplay)}</div>
-                <div className={screenerNumCell}>{tableCell(row.epsActualDisplay)}</div>
-                <SurpriseCell value={row.surpriseDisplay} pct={row.surprisePct} />
-                <div className={screenerNumCell}>{tableCell(row.revenueEstimateDisplay)}</div>
-                <div className={screenerNumCell}>{tableCell(row.revenueActualDisplay)}</div>
-              </div>
-            ))}
-            {earningsHistoryHasMore ? (
-              <div
-                ref={earningsHistorySentinelRef}
-                className="pointer-events-none h-1 w-full shrink-0"
-                aria-hidden
-              />
-            ) : null}
+        <div className="min-w-0 space-y-6">
+          <h3 className="text-[18px] font-semibold leading-7 tracking-tight text-[#09090B]">Reports</h3>
+          <div className="min-w-0 w-full max-w-full overflow-x-auto touch-pan-x md:overflow-x-visible [-webkit-overflow-scrolling:touch]">
+            <table className={reportsTableShell}>
+              <thead>
+                <tr className="min-h-11 border-b border-[#E4E4E7] text-[14px] font-medium leading-5 text-[#71717A]">
+                  <th scope="col" className="min-w-0 py-2 pl-4 pr-2 text-left max-sm:pl-3">
+                    Report date
+                  </th>
+                  <th scope="col" className="px-2 py-2 text-right">
+                    EPS est.
+                  </th>
+                  <th scope="col" className="px-2 py-2 text-right">
+                    EPS actual
+                  </th>
+                  <th scope="col" className="px-2 py-2 text-right">
+                    Surprise
+                  </th>
+                  <th scope="col" className="px-2 py-2 text-right">
+                    Rev. est.
+                  </th>
+                  <th scope="col" className="px-2 py-2 text-right">
+                    Rev. actual
+                  </th>
+                  <th scope="col" className="min-w-0 max-w-[min(100%,20rem)] py-2 pl-2 pr-4 text-right whitespace-nowrap max-sm:pr-3">
+                    <span className="sr-only">Document actions</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {earningsHistoryRendered.map((entry, idx) =>
+                  entry.kind === "year" ? (
+                    <tr
+                      key={`reports-year-${entry.year}-${idx}`}
+                      className="border-b border-[#E4E4E7] bg-neutral-100 text-[15px] font-semibold leading-6 text-[#09090B]"
+                    >
+                      <td colSpan={7} className="px-4 py-2.5 max-sm:px-3">
+                        {entry.year}
+                      </td>
+                    </tr>
+                  ) : (
+                    <tr
+                      key={`${entry.row.fiscalPeriodEndYmd ?? idx}-${entry.row.reportDateDisplay ?? idx}`}
+                      className="min-h-[60px] border-b border-[#E4E4E7] transition-colors duration-75 last:border-b-0 hover:bg-neutral-50"
+                    >
+                      <td className="min-w-0 py-1.5 pl-4 pr-2 align-top text-left text-[14px] max-sm:pl-3">
+                        <div className="truncate font-semibold leading-5 text-[#09090B]">{tableCell(entry.row.fiscalPeriodLabel)}</div>
+                        <div className="truncate text-[13px] font-normal leading-[18px] text-[#71717A]">
+                          {reportDayLineFromDisplay(entry.row.reportDateDisplay)}
+                        </div>
+                      </td>
+                      <td className={cn(earningsReportsTdNum, "align-middle")}>{tableCell(entry.row.epsEstimateDisplay)}</td>
+                      <td className={cn(earningsReportsTdNum, "align-middle")}>{tableCell(entry.row.epsActualDisplay)}</td>
+                      <td className="min-w-0 px-2 py-1.5 text-right align-middle">
+                        <SurpriseCell value={entry.row.surpriseDisplay} pct={entry.row.surprisePct} />
+                      </td>
+                      <td className={cn(earningsReportsTdNum, "align-middle")}>{tableCell(entry.row.revenueEstimateDisplay)}</td>
+                      <td className={cn(earningsReportsTdNum, "align-middle")}>{tableCell(entry.row.revenueActualDisplay)}</td>
+                      <td className="relative z-[1] min-w-0 max-w-[min(100%,20rem)] py-1.5 pl-2 pr-4 text-right align-top max-sm:pr-3">
+                        <div className="inline-flex w-max max-w-full justify-end">
+                          <EarningsReportRowActions listingTicker={sym} row={entry.row} />
+                        </div>
+                      </td>
+                    </tr>
+                  ),
+                )}
+                {earningsHistoryHasMore ? (
+                  <tr ref={earningsHistorySentinelRef} className="pointer-events-none h-1" aria-hidden>
+                    <td colSpan={7} className="h-1 p-0" />
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
           </div>
         </div>
       ) : null}

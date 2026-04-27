@@ -136,8 +136,7 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
     try {
       const supabase = getSupabaseBrowserClient();
       await supabase.auth.signOut();
-      router.refresh();
-      router.push(PATH_LOGIN);
+      window.location.replace(PATH_LOGIN);
     } finally {
       setSigningOut(false);
     }
