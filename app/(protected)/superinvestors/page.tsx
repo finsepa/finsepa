@@ -1,7 +1,11 @@
 import {
+  getArkHoldings,
   getBerkshireHoldings,
+  getBridgewaterHoldings,
   getFundsmithHoldings,
   getPershingSquareHoldings,
+  getHimalayaHoldings,
+  getScionHoldings,
 } from "@/lib/superinvestors/berkshire-13f";
 import {
   SuperinvestorsFundTable,
@@ -11,10 +15,14 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function SuperinvestorsPage() {
-  const [berkshire, pershing, fundsmith] = await Promise.all([
+  const [berkshire, pershing, fundsmith, scion, ark, himalaya, bridgewater] = await Promise.all([
     getBerkshireHoldings(),
     getPershingSquareHoldings(),
     getFundsmithHoldings(),
+    getScionHoldings(),
+    getArkHoldings(),
+    getHimalayaHoldings(),
+    getBridgewaterHoldings(),
   ]);
 
   const rows: SuperinvestorsFundRowModel[] = [
@@ -26,6 +34,18 @@ export default async function SuperinvestorsPage() {
       positionCount: berkshire.positionCount,
       filingDate: berkshire.filingDate,
       topHoldings: berkshire.holdings.slice(0, 5).map((h) => ({
+        issuer: h.issuer,
+        ticker: h.ticker,
+      })),
+    },
+    {
+      href: "/superinvestors/michael-burry",
+      displayName: "Michael Burry",
+      avatarSrc: "/superinvestors/michael-burry.png",
+      totalValueUsd: scion.totalValueUsd,
+      positionCount: scion.positionCount,
+      filingDate: scion.filingDate,
+      topHoldings: scion.holdings.slice(0, 5).map((h) => ({
         issuer: h.issuer,
         ticker: h.ticker,
       })),
@@ -43,6 +63,18 @@ export default async function SuperinvestorsPage() {
       })),
     },
     {
+      href: "/superinvestors/cathie-wood",
+      displayName: "Cathie Wood",
+      avatarSrc: "/superinvestors/cathie-wood.png",
+      totalValueUsd: ark.totalValueUsd,
+      positionCount: ark.positionCount,
+      filingDate: ark.filingDate,
+      topHoldings: ark.holdings.slice(0, 5).map((h) => ({
+        issuer: h.issuer,
+        ticker: h.ticker,
+      })),
+    },
+    {
       href: "/superinvestors/terry-smith",
       displayName: "Terry Smith",
       avatarSrc: "/superinvestors/terry-smith.png",
@@ -54,7 +86,33 @@ export default async function SuperinvestorsPage() {
         ticker: h.ticker,
       })),
     },
+    {
+      href: "/superinvestors/li-lu",
+      displayName: "Li Lu",
+      avatarSrc: "/superinvestors/li-lu.png",
+      totalValueUsd: himalaya.totalValueUsd,
+      positionCount: himalaya.positionCount,
+      filingDate: himalaya.filingDate,
+      topHoldings: himalaya.holdings.slice(0, 5).map((h) => ({
+        issuer: h.issuer,
+        ticker: h.ticker,
+      })),
+    },
+    {
+      href: "/superinvestors/ray-dalio",
+      displayName: "Ray Dalio",
+      avatarSrc: "/superinvestors/ray-dalio.png",
+      totalValueUsd: bridgewater.totalValueUsd,
+      positionCount: bridgewater.positionCount,
+      filingDate: bridgewater.filingDate,
+      topHoldings: bridgewater.holdings.slice(0, 5).map((h) => ({
+        issuer: h.issuer,
+        ticker: h.ticker,
+      })),
+    },
   ];
+
+  rows.sort((a, b) => b.totalValueUsd - a.totalValueUsd);
 
   return (
     <div className="min-w-0 px-4 py-4 sm:px-9 sm:py-6">

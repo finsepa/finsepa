@@ -5,6 +5,7 @@ import { FileSearch, Presentation } from "lucide-react";
 
 import { EarningsPdfPreviewModal } from "@/components/stock/earnings-pdf-preview-modal";
 import { getCuratedIrEarningsRowUrls } from "@/lib/market/earnings-ir-curated-lookup";
+import { buildEarningsReportRowLinkTargets } from "@/lib/market/earnings-report-external-links";
 import type { StockEarningsHistoryRow } from "@/lib/market/stock-earnings-types";
 import { cn } from "@/lib/utils";
 
@@ -29,6 +30,12 @@ function firstPartyEarningsDocumentUrls(
     slidesUrl: s && s.startsWith("https://") && !isEdgarBrowseHtmlUrl(s) ? s : null,
     filingsUrl: f && f.startsWith("https://") && !isEdgarBrowseHtmlUrl(f) ? f : null,
   };
+}
+
+function secFallbackDocumentUrls(listingTicker: string, row: StockEarningsHistoryRow): { slidesUrl: string | null; filingsUrl: string | null } {
+  if (!row.reportDateYmd) return { slidesUrl: null, filingsUrl: null };
+  const t = buildEarningsReportRowLinkTargets(null, row.reportDateYmd, listingTicker);
+  return { slidesUrl: t.slidesSec8k, filingsUrl: t.secFilings };
 }
 
 type PreviewState = { url: string; title: string } | null;
@@ -61,6 +68,29 @@ function ActionDisabled({ label, children }: { label: string; children: React.Re
   );
 }
 
+function ActionLink({
+  label,
+  href,
+  children,
+}: {
+  label: string;
+  href: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={outlineButtonClass}
+      aria-label={label}
+      title={label}
+    >
+      {children}
+    </a>
+  );
+}
+
 type Props = {
   row: StockEarningsHistoryRow;
   listingTicker: string;
@@ -71,7 +101,11 @@ type Props = {
  */
 export function EarningsReportRowActions({ row, listingTicker }: Props) {
   const { slidesUrl, filingsUrl } = firstPartyEarningsDocumentUrls(listingTicker, row);
+  const secFallback = secFallbackDocumentUrls(listingTicker, row);
   const [preview, setPreview] = useState<PreviewState>(null);
+
+  const slidesHref = slidesUrl ?? secFallback.slidesUrl;
+  const filingsHref = filingsUrl ?? secFallback.filingsUrl;
 
   return (
     <>
@@ -82,28 +116,42 @@ export function EarningsReportRowActions({ row, listingTicker }: Props) {
         onClose={() => setPreview(null)}
       />
       <div className="flex w-max max-w-full shrink-0 flex-nowrap items-center justify-end gap-2">
-        {slidesUrl ? (
-          <ActionButton
-            label="Open earnings presentation preview"
-            onClick={() => setPreview({ url: slidesUrl, title: "Earnings presentation" })}
-          >
-            <Presentation className="h-4 w-4 shrink-0 text-[#52525B]" aria-hidden />
-            <span>Slides</span>
-          </ActionButton>
+        {slidesHref ? (
+          slidesUrl ? (
+            <ActionButton
+              label="Open earnings presentation preview"
+              onClick={() => setPreview({ url: slidesUrl, title: "Earnings presentation" })}
+            >
+              <Presentation className="h-4 w-4 shrink-0 text-[#52525B]" aria-hidden />
+              <span>Slides</span>
+            </ActionButton>
+          ) : (
+            <ActionLink label="Open SEC 8-K window" href={slidesHref}>
+              <Presentation className="h-4 w-4 shrink-0 text-[#52525B]" aria-hidden />
+              <span>Slides</span>
+            </ActionLink>
+          )
         ) : (
           <ActionDisabled label="No presentation link for this report">
             <Presentation className="h-4 w-4 shrink-0" aria-hidden />
             <span>Slides</span>
           </ActionDisabled>
         )}
-        {filingsUrl ? (
-          <ActionButton
-            label="Open quarterly report PDF preview"
-            onClick={() => setPreview({ url: filingsUrl, title: "Quarterly report" })}
-          >
-            <FileSearch className="h-4 w-4 shrink-0 text-[#52525B]" aria-hidden />
-            <span>Filings</span>
-          </ActionButton>
+        {filingsHref ? (
+          filingsUrl ? (
+            <ActionButton
+              label="Open quarterly report preview"
+              onClick={() => setPreview({ url: filingsUrl, title: "Quarterly report" })}
+            >
+              <FileSearch className="h-4 w-4 shrink-0 text-[#52525B]" aria-hidden />
+              <span>Filings</span>
+            </ActionButton>
+          ) : (
+            <ActionLink label="Open SEC filings" href={filingsHref}>
+              <FileSearch className="h-4 w-4 shrink-0 text-[#52525B]" aria-hidden />
+              <span>Filings</span>
+            </ActionLink>
+          )
         ) : (
           <ActionDisabled label="No quarterly report link for this report">
             <FileSearch className="h-4 w-4 shrink-0" aria-hidden />

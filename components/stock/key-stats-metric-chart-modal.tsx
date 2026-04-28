@@ -250,12 +250,6 @@ export function KeyStatsMetricChartModal({
                   and debt on the same fiscal periods. They are not live quote ratios from Highlights.
                 </p>
               ) : null}
-              {metricId === "free_cash_flow" ? (
-                <p className="mt-3 text-[12px] leading-5 text-[#71717A]">
-                  Dollar free cash flow is from the merged cash-flow statement by fiscal period (not the Margins card
-                  FCF % of revenue).
-                </p>
-              ) : null}
               {metricId === "dividend_yield" || metricId === "payout_ratio" ? (
                 <p className="mt-3 text-[12px] leading-5 text-[#71717A]">
                   Dividend yield and payout are computed from fiscal cash flow and net income on merged statements

@@ -345,7 +345,39 @@ export function StockEarningsTabContent({
     };
   }, [sym]);
 
-  const historyRows = useMemo(() => data?.history ?? [], [data?.history]);
+  const historyRows = useMemo(() => {
+    const rows = data?.history ?? [];
+    const u = data?.upcoming;
+    if (!u?.reportDateYmd) return rows;
+
+    // Prepend a synthetic “upcoming” row so the Reports table always shows the next report.
+    // Actuals stay blank ("-"); document buttons stay disabled until sources publish URLs.
+    const already =
+      rows.some((r) => (r.reportDateYmd && r.reportDateYmd === u.reportDateYmd) || (r.reportDateDisplay && r.reportDateDisplay === u.reportDateDisplay)) ||
+      rows.some((r) => (r.fiscalPeriodLabel && u.fiscalPeriodLabel && r.fiscalPeriodLabel === u.fiscalPeriodLabel));
+    if (already) return rows;
+
+    const synthetic: StockEarningsHistoryRow = {
+      fiscalPeriodEndYmd: null,
+      fiscalPeriodLabel: u.fiscalPeriodLabel,
+      reportDateDisplay: u.reportDateDisplay,
+      reportDateYmd: u.reportDateYmd,
+      epsEstimateDisplay: u.epsEstimateDisplay,
+      epsActualDisplay: null,
+      surprisePct: null,
+      surpriseDisplay: null,
+      revenueEstimateDisplay: u.revenueEstimateDisplay,
+      revenueActualDisplay: null,
+      reported: false,
+      revenueEstimateUsd: null,
+      revenueActualUsd: null,
+      epsEstimateRaw: null,
+      epsActualRaw: null,
+      secSlidesUrl: null,
+      secFilingsUrl: null,
+    };
+    return [synthetic, ...rows];
+  }, [data?.history, data?.upcoming]);
   const earningsHistoryHasMore = earningsHistoryVisible < historyRows.length;
   const earningsHistorySlice = useMemo(
     () => historyRows.slice(0, earningsHistoryVisible),

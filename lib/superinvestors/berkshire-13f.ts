@@ -17,6 +17,38 @@ import berkshireFallback from "@/lib/superinvestors/fixtures/berkshire-holdings-
 import fundsmithFallback from "@/lib/superinvestors/fixtures/fundsmith-holdings-fallback.json";
 import pershingSquareFallback from "@/lib/superinvestors/fixtures/pershing-square-holdings-fallback.json";
 
+const DEV_SEC_CACHE_TTL_MS = 5 * 60 * 1000;
+
+function devMemoAsync<T>(key: string, fn: () => Promise<T>, ttlMs = DEV_SEC_CACHE_TTL_MS): Promise<T> {
+  if (process.env.NODE_ENV === "production") return fn();
+  const g = globalThis as unknown as {
+    __finsepaDevMemo?: Map<string, { exp: number; v: Promise<unknown> }>;
+  };
+  if (!g.__finsepaDevMemo) g.__finsepaDevMemo = new Map();
+  const now = Date.now();
+  const hit = g.__finsepaDevMemo.get(key);
+  if (hit && hit.exp > now) return hit.v as Promise<T>;
+  const v = fn();
+  g.__finsepaDevMemo.set(key, { exp: now + ttlMs, v });
+  return v;
+}
+
+async function secFetch(url: string, init: RequestInit & { headers: HeadersInit }): Promise<Response> {
+  let attempt = 0;
+  let backoffMs = 400;
+  // Retry a few times on SEC throttling (429).
+  for (;;) {
+    const res = await fetch(url, init);
+    if (res.status !== 429 || attempt >= 4) return res;
+    const ra = res.headers.get("retry-after");
+    const retryAfterMs = ra && /^\d+$/.test(ra) ? Number(ra) * 1000 : null;
+    const wait = retryAfterMs != null ? retryAfterMs : backoffMs;
+    await new Promise((r) => setTimeout(r, wait));
+    attempt++;
+    backoffMs = Math.min(4000, backoffMs * 2);
+  }
+}
+
 /** Berkshire Hathaway Inc. — SEC central index key (zero-padded). */
 const BERKSHIRE_CIK = "0001067983";
 
@@ -31,6 +63,18 @@ export const PERSHING_SQUARE_CIK = "0001336528";
 
 /** Fundsmith LLP (UK manager; SEC 13F filer). */
 export const FUNDSMITH_LLP_CIK = "0001569205";
+
+/** Scion Asset Management, LLC (Michael Burry). */
+export const SCION_ASSET_MANAGEMENT_CIK = "0001649339";
+
+/** ARK Investment Management LLC (Cathie Wood). */
+export const ARK_INVEST_CIK = "0001697748";
+
+/** Himalaya Capital Management LLC (Li Lu). */
+export const HIMALAYA_CAPITAL_CIK = "0001709323";
+
+/** Bridgewater Associates, LP (Ray Dalio). */
+export const BRIDGEWATER_ASSOCIATES_CIK = "0001350694";
 
 /** Optional display tickers for common 13F CUSIPs (SEC filings do not include symbols). */
 const KNOWN_CUSIP_TICKER: Record<string, string> = {
@@ -103,6 +147,33 @@ const KNOWN_CUSIP_TICKER: Record<string, string> = {
   "812215200": "SEG",
   /** Uber Technologies Inc. */
   "90353T100": "UBER",
+
+  // Common names that show up in newer 13F filers (Scion/ARK/Himalaya/Bridgewater).
+  /** Palantir Technologies Inc. Class A. */
+  "69608A108": "PLTR",
+  /** Pfizer Inc. */
+  "717081103": "PFE",
+  /** Halliburton Co. */
+  "406216101": "HAL",
+  /** Molina Healthcare, Inc. */
+  "60855R100": "MOH",
+  /** Lululemon Athletica Inc. */
+  "550021109": "LULU",
+  /** SLM Corp. */
+  "78442P106": "SLM",
+  /** Bruker Corp. (preferred CUSIP appears in some filings; map to main listing). */
+  "116794207": "BRKR",
+
+  /** PDD Holdings Inc. (ADS). */
+  "722304102": "PDD",
+  /** Berkshire Hathaway Inc. Class B. */
+  "084670702": "BRK.B",
+  /** Berkshire Hathaway Inc. Class A. */
+  "084670108": "BRK.A",
+  /** East West Bancorp Inc. */
+  "27579R104": "EWBC",
+  /** Crocs Inc. */
+  "227046109": "CROX",
 
   /** Fundsmith LLP — ADMA Biologics, Inc. */
   "000899104": "ADMA",
@@ -418,6 +489,9 @@ const KNOWN_ISSUER_TICKER: Record<string, string> = {
   "siriusxm holdings inc": "SIRI",
   "mastercard inc": "MA",
   "verisign inc": "VRSN",
+  "berkshire hathaway inc": "BRK.B",
+  "berkshire hathaway inc del": "BRK.B",
+  "berkshire hathaway inc delaware": "BRK.B",
   "constellation brands inc": "STZ",
   "capital one financial corp": "COF",
   "unitedhealth group inc": "UNH",
@@ -653,11 +727,11 @@ async function tryFindInfotableXmlUrlForArchiveCik(
 
   for (const name of ["infotable.xml", "Infotable.xml"]) {
     const url = `${base}/${name}`;
-    const r = await fetch(url, { headers, cache: "no-store" });
+    const r = await secFetch(url, { headers, cache: "no-store" });
     if (r.ok) return url;
   }
 
-  const jRes = await fetch(`${base}/index.json`, { headers, cache: "no-store" });
+  const jRes = await secFetch(`${base}/index.json`, { headers, cache: "no-store" });
   if (jRes.ok) {
     try {
       const data = (await jRes.json()) as {
@@ -670,7 +744,7 @@ async function tryFindInfotableXmlUrlForArchiveCik(
         const n = (it.name ?? "").toLowerCase();
         if (n.endsWith(".xml") && n.includes("infotable")) {
           const url = `${base}/${it.name}`;
-          const r = await fetch(url, { headers, cache: "no-store" });
+          const r = await secFetch(url, { headers, cache: "no-store" });
           if (r.ok) return url;
         }
       }
@@ -688,7 +762,7 @@ async function tryFindInfotableXmlUrlForArchiveCik(
 
       for (const it of xmlCandidates) {
         const url = `${base}/${it.name}`;
-        const r = await fetch(url, { headers, cache: "no-store" });
+        const r = await secFetch(url, { headers, cache: "no-store" });
         if (!r.ok) continue;
         const text = await r.text();
         if (/<(?:[\w.-]+:)?infoTable\b/i.test(text)) {
@@ -700,14 +774,14 @@ async function tryFindInfotableXmlUrlForArchiveCik(
     }
   }
 
-  const hRes = await fetch(`${base}/index.htm`, { headers, cache: "no-store" });
+  const hRes = await secFetch(`${base}/index.htm`, { headers, cache: "no-store" });
   if (hRes.ok) {
     const html = await hRes.text();
     const hrefMatch = html.match(/href="([^"]*infotable\.xml[^"]*)"/i);
     if (hrefMatch?.[1]) {
       const tail = hrefMatch[1]!.replace(/^.*\//, "");
       const url = `${base}/${tail}`;
-      const r = await fetch(url, { headers, cache: "no-store" });
+      const r = await secFetch(url, { headers, cache: "no-store" });
       if (r.ok) return url;
     }
   }
@@ -748,7 +822,7 @@ async function fetchNth13fInfotableXml(
   filerName: string;
 } | null> {
   const subUrl = `https://data.sec.gov/submissions/CIK${cikPadded}.json`;
-  const subRes = await fetch(subUrl, {
+  const subRes = await secFetch(subUrl, {
     headers: { "User-Agent": ua, Accept: "application/json" },
     cache: "no-store",
   });
@@ -774,7 +848,7 @@ async function fetchNth13fInfotableXml(
   const infotableUrl = await findInfotableXmlUrl(accession, ua, cikPadded);
   if (!infotableUrl) return null;
 
-  const xmlRes = await fetch(infotableUrl, {
+  const xmlRes = await secFetch(infotableUrl, {
     headers: { "User-Agent": ua, Accept: "application/xml,text/xml,*/*" },
     cache: "no-store",
   });
@@ -929,6 +1003,37 @@ function rowsToPayload(
     positionCount: holdings.length,
     holdings,
     source: meta.source,
+  };
+}
+
+function unavailableInstitutionalPayload(cik: string, filerDisplayName: string): InstitutionalHoldingsPayload {
+  return rowsToPayload([], {
+    filerDisplayName,
+    cik,
+    accession: null,
+    filingDate: null,
+    reportDate: null,
+    source: "unavailable",
+  });
+}
+
+function unavailableComparisonPayload(cik: string, filerDisplayName: string): Berkshire13fComparisonPayload {
+  return {
+    filerDisplayName,
+    cik,
+    current: {
+      accessionNumber: null,
+      filingDate: null,
+      reportDate: null,
+    },
+    previous: null,
+    hasPriorFiling: false,
+    totalValueUsd: 0,
+    previousTotalValueUsd: null,
+    positionCount: 0,
+    rows: [],
+    soldOut: [],
+    source: "unavailable",
   };
 }
 
@@ -1272,6 +1377,62 @@ async function fetchFundsmithComparisonUncached(): Promise<Berkshire13fCompariso
   return (await fetchInstitutionalComparisonUncached(FUNDSMITH_LLP_CIK)) ?? loadFundsmithFixtureComparisonPayload();
 }
 
+async function fetchScionHoldingsUncached(): Promise<InstitutionalHoldingsPayload> {
+  return (
+    (await fetchInstitutionalHoldingsUncached(SCION_ASSET_MANAGEMENT_CIK)) ??
+    unavailableInstitutionalPayload(SCION_ASSET_MANAGEMENT_CIK, "Scion Asset Management, LLC")
+  );
+}
+
+async function fetchScionComparisonUncached(): Promise<Berkshire13fComparisonPayload> {
+  return (
+    (await fetchInstitutionalComparisonUncached(SCION_ASSET_MANAGEMENT_CIK)) ??
+    unavailableComparisonPayload(SCION_ASSET_MANAGEMENT_CIK, "Scion Asset Management, LLC")
+  );
+}
+
+async function fetchArkHoldingsUncached(): Promise<InstitutionalHoldingsPayload> {
+  return (
+    (await fetchInstitutionalHoldingsUncached(ARK_INVEST_CIK)) ??
+    unavailableInstitutionalPayload(ARK_INVEST_CIK, "ARK Investment Management LLC")
+  );
+}
+
+async function fetchArkComparisonUncached(): Promise<Berkshire13fComparisonPayload> {
+  return (
+    (await fetchInstitutionalComparisonUncached(ARK_INVEST_CIK)) ??
+    unavailableComparisonPayload(ARK_INVEST_CIK, "ARK Investment Management LLC")
+  );
+}
+
+async function fetchHimalayaHoldingsUncached(): Promise<InstitutionalHoldingsPayload> {
+  return (
+    (await fetchInstitutionalHoldingsUncached(HIMALAYA_CAPITAL_CIK)) ??
+    unavailableInstitutionalPayload(HIMALAYA_CAPITAL_CIK, "Himalaya Capital Management LLC")
+  );
+}
+
+async function fetchHimalayaComparisonUncached(): Promise<Berkshire13fComparisonPayload> {
+  return (
+    (await fetchInstitutionalComparisonUncached(HIMALAYA_CAPITAL_CIK)) ??
+    unavailableComparisonPayload(HIMALAYA_CAPITAL_CIK, "Himalaya Capital Management LLC")
+  );
+}
+
+async function fetchBridgewaterHoldingsUncached(): Promise<InstitutionalHoldingsPayload> {
+  return (
+    (await fetchInstitutionalHoldingsUncached(BRIDGEWATER_ASSOCIATES_CIK)) ??
+    unavailableInstitutionalPayload(BRIDGEWATER_ASSOCIATES_CIK, "Bridgewater Associates, LP")
+  );
+}
+
+async function fetchBridgewaterComparisonUncached(): Promise<Berkshire13fComparisonPayload> {
+  return (
+    (await fetchInstitutionalComparisonUncached(BRIDGEWATER_ASSOCIATES_CIK)) ??
+    unavailableComparisonPayload(BRIDGEWATER_ASSOCIATES_CIK, "Bridgewater Associates, LP")
+  );
+}
+
 const getBerkshireHoldingsCached = unstable_cache(
   async () => fetchBerkshireHoldingsUncached(),
   ["berkshire-hathaway-13f-v10-ticker-cusip-map"],
@@ -1308,45 +1469,133 @@ const getFundsmithHoldingsComparisonCached = unstable_cache(
   { revalidate: 21_600 },
 );
 
+const getScionHoldingsCached = unstable_cache(
+  async () => fetchScionHoldingsUncached(),
+  ["scion-asset-management-13f-v1"],
+  { revalidate: 21_600 },
+);
+
+const getScionHoldingsComparisonCached = unstable_cache(
+  async () => fetchScionComparisonUncached(),
+  ["scion-asset-management-13f-comparison-v1"],
+  { revalidate: 21_600 },
+);
+
+const getArkHoldingsCached = unstable_cache(async () => fetchArkHoldingsUncached(), ["ark-invest-13f-v1"], { revalidate: 21_600 });
+
+const getArkHoldingsComparisonCached = unstable_cache(
+  async () => fetchArkComparisonUncached(),
+  ["ark-invest-13f-comparison-v1"],
+  { revalidate: 21_600 },
+);
+
+const getHimalayaHoldingsCached = unstable_cache(
+  async () => fetchHimalayaHoldingsUncached(),
+  ["himalaya-capital-13f-v1"],
+  { revalidate: 21_600 },
+);
+
+const getHimalayaHoldingsComparisonCached = unstable_cache(
+  async () => fetchHimalayaComparisonUncached(),
+  ["himalaya-capital-13f-comparison-v1"],
+  { revalidate: 21_600 },
+);
+
+const getBridgewaterHoldingsCached = unstable_cache(
+  async () => fetchBridgewaterHoldingsUncached(),
+  ["bridgewater-associates-13f-v1"],
+  { revalidate: 21_600 },
+);
+
+const getBridgewaterHoldingsComparisonCached = unstable_cache(
+  async () => fetchBridgewaterComparisonUncached(),
+  ["bridgewater-associates-13f-comparison-v1"],
+  { revalidate: 21_600 },
+);
+
 /** In development, skip `unstable_cache` so layout/component edits and SEC responses are not masked by a warm cache. */
 export async function getBerkshireHoldings() {
-  if (process.env.NODE_ENV !== "production") {
-    return fetchBerkshireHoldingsUncached();
-  }
-  return getBerkshireHoldingsCached();
+  return devMemoAsync("13f:berkshire:holdings", () =>
+    process.env.NODE_ENV !== "production" ? fetchBerkshireHoldingsUncached() : getBerkshireHoldingsCached(),
+  );
 }
 
 export async function getBerkshireHoldingsComparison() {
-  if (process.env.NODE_ENV !== "production") {
-    return fetchBerkshireComparisonUncached();
-  }
-  return getBerkshireHoldingsComparisonCached();
+  return devMemoAsync("13f:berkshire:comparison", () =>
+    process.env.NODE_ENV !== "production" ? fetchBerkshireComparisonUncached() : getBerkshireHoldingsComparisonCached(),
+  );
 }
 
 export async function getPershingSquareHoldings() {
-  if (process.env.NODE_ENV !== "production") {
-    return fetchPershingHoldingsUncached();
-  }
-  return getPershingHoldingsCached();
+  return devMemoAsync("13f:pershing:holdings", () =>
+    process.env.NODE_ENV !== "production" ? fetchPershingHoldingsUncached() : getPershingHoldingsCached(),
+  );
 }
 
 export async function getPershingSquareHoldingsComparison() {
-  if (process.env.NODE_ENV !== "production") {
-    return fetchPershingComparisonUncached();
-  }
-  return getPershingHoldingsComparisonCached();
+  return devMemoAsync("13f:pershing:comparison", () =>
+    process.env.NODE_ENV !== "production" ? fetchPershingComparisonUncached() : getPershingHoldingsComparisonCached(),
+  );
 }
 
 export async function getFundsmithHoldings() {
-  if (process.env.NODE_ENV !== "production") {
-    return fetchFundsmithHoldingsUncached();
-  }
-  return getFundsmithHoldingsCached();
+  return devMemoAsync("13f:fundsmith:holdings", () =>
+    process.env.NODE_ENV !== "production" ? fetchFundsmithHoldingsUncached() : getFundsmithHoldingsCached(),
+  );
 }
 
 export async function getFundsmithHoldingsComparison() {
-  if (process.env.NODE_ENV !== "production") {
-    return fetchFundsmithComparisonUncached();
-  }
-  return getFundsmithHoldingsComparisonCached();
+  return devMemoAsync("13f:fundsmith:comparison", () =>
+    process.env.NODE_ENV !== "production" ? fetchFundsmithComparisonUncached() : getFundsmithHoldingsComparisonCached(),
+  );
+}
+
+export async function getScionHoldings() {
+  return devMemoAsync("13f:scion:holdings", () =>
+    process.env.NODE_ENV !== "production" ? fetchScionHoldingsUncached() : getScionHoldingsCached(),
+  );
+}
+
+export async function getScionHoldingsComparison() {
+  return devMemoAsync("13f:scion:comparison", () =>
+    process.env.NODE_ENV !== "production" ? fetchScionComparisonUncached() : getScionHoldingsComparisonCached(),
+  );
+}
+
+export async function getArkHoldings() {
+  return devMemoAsync("13f:ark:holdings", () =>
+    process.env.NODE_ENV !== "production" ? fetchArkHoldingsUncached() : getArkHoldingsCached(),
+  );
+}
+
+export async function getArkHoldingsComparison() {
+  return devMemoAsync("13f:ark:comparison", () =>
+    process.env.NODE_ENV !== "production" ? fetchArkComparisonUncached() : getArkHoldingsComparisonCached(),
+  );
+}
+
+export async function getHimalayaHoldings() {
+  return devMemoAsync("13f:himalaya:holdings", () =>
+    process.env.NODE_ENV !== "production" ? fetchHimalayaHoldingsUncached() : getHimalayaHoldingsCached(),
+  );
+}
+
+export async function getHimalayaHoldingsComparison() {
+  return devMemoAsync("13f:himalaya:comparison", () =>
+    process.env.NODE_ENV !== "production" ? fetchHimalayaComparisonUncached() : getHimalayaHoldingsComparisonCached(),
+  );
+}
+
+export async function getBridgewaterHoldings() {
+  return devMemoAsync("13f:bridgewater:holdings", () =>
+    process.env.NODE_ENV !== "production" ? fetchBridgewaterHoldingsUncached() : getBridgewaterHoldingsCached(),
+  );
+}
+
+export async function getBridgewaterHoldingsComparison() {
+  return devMemoAsync("13f:bridgewater:comparison", () =>
+    process.env.NODE_ENV !== "production"
+      ? fetchBridgewaterComparisonUncached()
+      : getBridgewaterHoldingsComparisonCached(),
+  );
 }

@@ -1,7 +1,7 @@
 "use client";
 
-import { Maximize2, TrendingDown, TrendingUp } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { GripVertical, Maximize2, Plus, Search, Trash2, TrendingDown, TrendingUp } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   MultichartFundamentalsBar,
@@ -14,6 +14,8 @@ import {
 import type { ChartingSeriesPoint } from "@/lib/market/charting-series-types";
 import {
   CHARTING_METRIC_KIND,
+  CHARTING_DROPDOWN_GROUPS,
+  CHARTING_METRIC_IDS,
   CHARTING_METRIC_LABEL,
   type ChartingMetricId,
 } from "@/lib/market/stock-charting-metrics";
@@ -109,12 +111,66 @@ export function StockMultichartsTab({
   metricIds,
   onOpenMetricChart,
 }: Props) {
-  const metrics = useMemo(() => {
+  const storageKey = useMemo(() => `multicharts:${ticker.toUpperCase()}:metrics:v1`, [ticker]);
+  const baseMetrics = useMemo(() => {
     if (Array.isArray(metricIds) && metricIds.length > 0) return [...metricIds];
     return [...DEFAULT_MULTICHART_METRICS];
   }, [metricIds]);
+  const [metrics, setMetrics] = useState<ChartingMetricId[]>(baseMetrics);
   const [periodMode, setPeriodMode] = useState<FundamentalsSeriesMode>("annual");
   const [chartVisual, setChartVisual] = useState<MultichartVisual>("bar");
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerQuery, setPickerQuery] = useState("");
+  const pickerWrapRef = useRef<HTMLDivElement | null>(null);
+  const draggingIndexRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    // Prefer explicit prop metrics over local storage.
+    if (Array.isArray(metricIds) && metricIds.length > 0) {
+      setMetrics([...metricIds]);
+      return;
+    }
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (!raw) {
+        setMetrics(baseMetrics);
+        return;
+      }
+      const parsed = JSON.parse(raw) as unknown;
+      if (!Array.isArray(parsed)) {
+        setMetrics(baseMetrics);
+        return;
+      }
+      const ids = parsed.map(String) as string[];
+      const allowed = new Set<string>(CHARTING_METRIC_IDS as readonly string[]);
+      const next = ids.filter((id) => allowed.has(id)) as ChartingMetricId[];
+      setMetrics(next.length > 0 ? next : baseMetrics);
+    } catch {
+      setMetrics(baseMetrics);
+    }
+  }, [storageKey, baseMetrics, metricIds]);
+
+  useEffect(() => {
+    // Persist only when metrics are user-controlled (no explicit prop override).
+    if (Array.isArray(metricIds) && metricIds.length > 0) return;
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(metrics));
+    } catch {
+      /* ignore */
+    }
+  }, [metrics, storageKey, metricIds]);
+
+  useEffect(() => {
+    if (!pickerOpen) return;
+    const onDoc = (e: MouseEvent) => {
+      const t = e.target as Node | null;
+      if (!t) return;
+      if (pickerWrapRef.current && pickerWrapRef.current.contains(t)) return;
+      setPickerOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [pickerOpen]);
 
   const seedPoints = useMemo(() => {
     if (periodMode === "quarterly") {
@@ -172,6 +228,57 @@ export function StockMultichartsTab({
     [points, maxBars, metrics],
   );
 
+  const addMetric = useCallback((id: ChartingMetricId) => {
+    setMetrics((prev) => (prev.includes(id) ? prev : [...prev, id]));
+    setPickerQuery("");
+    setPickerOpen(false);
+  }, []);
+
+  const removeMetric = useCallback((id: ChartingMetricId) => {
+    setMetrics((prev) => prev.filter((x) => x !== id));
+  }, []);
+
+  const startDragMetric = useCallback((idx: number) => {
+    draggingIndexRef.current = idx;
+  }, []);
+
+  const endDragMetric = useCallback(() => {
+    draggingIndexRef.current = null;
+  }, []);
+
+  const moveMetric = useCallback((fromIdx: number, toIdx: number) => {
+    setMetrics((prev) => {
+      if (fromIdx < 0 || toIdx < 0 || fromIdx >= prev.length || toIdx >= prev.length) return prev;
+      if (fromIdx === toIdx) return prev;
+      const next = [...prev];
+      const [m] = next.splice(fromIdx, 1);
+      next.splice(toIdx, 0, m!);
+      return next;
+    });
+  }, []);
+
+  const dropMetric = useCallback(
+    (toIdx: number) => {
+      const fromIdx = draggingIndexRef.current;
+      draggingIndexRef.current = null;
+      if (fromIdx == null) return;
+      moveMetric(fromIdx, toIdx);
+    },
+    [moveMetric],
+  );
+
+  const qLower = pickerQuery.trim().toLowerCase();
+  const addableGroups = useMemo(() => {
+    return CHARTING_DROPDOWN_GROUPS.map((g) => {
+      const ids = g.metricIds.filter(
+        (id) => !metrics.includes(id) && (!qLower || CHARTING_METRIC_LABEL[id].toLowerCase().includes(qLower)),
+      );
+      return { ...g, ids };
+    }).filter((g) => g.ids.length > 0);
+  }, [metrics, qLower]);
+
+  const totalAddable = useMemo(() => addableGroups.reduce((n, g) => n + g.ids.length, 0), [addableGroups]);
+
   return (
     <div className="space-y-6 pt-1">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
@@ -184,6 +291,60 @@ export function StockMultichartsTab({
             aria-label="Reporting period"
           />
           <MultichartVisualSwitcher value={chartVisual} onChange={setChartVisual} />
+          <div className="relative" ref={pickerWrapRef}>
+            <button
+              type="button"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] border border-[#E4E4E7] bg-white px-4 text-sm font-semibold text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15"
+              onClick={() => setPickerOpen((v) => !v)}
+              aria-label="Add metric"
+              title="Add metric"
+            >
+              <Plus className="h-4 w-4 text-[#52525B]" aria-hidden />
+              <span>Add Metric</span>
+            </button>
+            {pickerOpen ? (
+              <div className="absolute right-0 z-[60] mt-2 w-[min(360px,calc(100vw-2rem))] overflow-hidden rounded-xl border border-[#E4E4E7] bg-white shadow-[0px_10px_16px_-3px_rgba(10,10,10,0.1),0px_4px_6px_0px_rgba(10,10,10,0.04)]">
+                <div className="flex h-11 items-center gap-2 border-b border-[#E4E4E7] px-3">
+                  <Search className="h-4 w-4 text-[#71717A]" aria-hidden />
+                  <input
+                    value={pickerQuery}
+                    onChange={(e) => setPickerQuery(e.target.value)}
+                    placeholder="Search metrics…"
+                    className="w-full bg-transparent text-[13px] text-[#09090B] placeholder:text-[#A1A1AA] focus:outline-none"
+                    autoFocus
+                  />
+                  <span className="text-[12px] font-medium text-[#71717A]">{totalAddable}</span>
+                </div>
+                <div className="max-h-[320px] overflow-y-auto p-1.5">
+                  {addableGroups.map((g) => (
+                    <div key={g.id} className="py-1">
+                      <div className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#71717A]">
+                        {g.label}
+                      </div>
+                      <div className="space-y-0.5">
+                        {g.ids.map((id) => (
+                          <button
+                            key={id}
+                            type="button"
+                            onClick={() => addMetric(id)}
+                            className="flex w-full items-center justify-between gap-2 rounded-lg px-2 py-2 text-left text-[13px] text-[#09090B] hover:bg-[#F4F4F5]"
+                          >
+                            <span className="truncate">{CHARTING_METRIC_LABEL[id]}</span>
+                            <Plus className="h-4 w-4 shrink-0 text-[#71717A]" aria-hidden />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                  {addableGroups.length === 0 ? (
+                    <div className="px-3 py-6 text-center text-[13px] text-[#71717A]">
+                      {qLower ? "No matching metrics." : "All metrics already added."}
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
+          </div>
         </div>
       </div>
 
@@ -193,7 +354,7 @@ export function StockMultichartsTab({
         <p className="text-[14px] leading-6 text-[#71717A]">No fundamentals data available for this symbol.</p>
       ) : (
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          {metrics.map((metricId) => (
+          {metrics.map((metricId, idx) => (
             <MultichartCard
               key={metricId}
               metricId={metricId}
@@ -201,6 +362,11 @@ export function StockMultichartsTab({
               periodMode={periodMode}
               chartVisual={chartVisual}
               onOpenMetricChart={onOpenMetricChart}
+              onRemove={() => removeMetric(metricId)}
+              dragIndex={idx}
+              onDragStartIndex={startDragMetric}
+              onDragEnd={endDragMetric}
+              onDropOnIndex={dropMetric}
             />
           ))}
         </div>
@@ -215,12 +381,22 @@ function MultichartCard({
   periodMode,
   chartVisual,
   onOpenMetricChart,
+  onRemove,
+  dragIndex,
+  onDragStartIndex,
+  onDragEnd,
+  onDropOnIndex,
 }: {
   metricId: ChartingMetricId;
   points: ChartingSeriesPoint[];
   periodMode: FundamentalsSeriesMode;
   chartVisual: MultichartVisual;
   onOpenMetricChart?: (metricId: ChartingMetricId) => void;
+  onRemove: () => void;
+  dragIndex: number;
+  onDragStartIndex: (idx: number) => void;
+  onDragEnd: () => void;
+  onDropOnIndex: (idx: number) => void;
 }) {
   const maxBars = periodMode === "quarterly" ? MULTICHART_MAX_QUARTERLY_BARS : MULTICHART_MAX_ANNUAL_BARS;
   const rows = useMemo(() => sliceLastAnnualWithMetric(points, metricId, maxBars), [points, metricId, maxBars]);
@@ -230,8 +406,40 @@ function MultichartCard({
 
   const metricLabel = CHARTING_METRIC_LABEL[metricId];
 
+  const onDragStart = useCallback(
+    (e: React.DragEvent) => {
+      onDragStartIndex(dragIndex);
+      // Helps Safari/Firefox actually initiate a drag.
+      try {
+        e.dataTransfer.setData("text/plain", String(dragIndex));
+      } catch {
+        /* ignore */
+      }
+      e.dataTransfer.effectAllowed = "move";
+    },
+    [dragIndex, onDragStartIndex],
+  );
+  const onDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  }, []);
+  const onDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      onDropOnIndex(dragIndex);
+    },
+    [dragIndex, onDropOnIndex],
+  );
+
   return (
-    <div className={MULTICHART_CARD_CLASS}>
+    <div
+      className={MULTICHART_CARD_CLASS}
+      draggable
+      onDragStart={onDragStart}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+      onDragEnd={onDragEnd}
+    >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <p className={EARNINGS_CARD_LABEL_CLASS}>{metricLabel}</p>
@@ -267,6 +475,22 @@ function MultichartCard({
             <Maximize2 className="h-4 w-4" strokeWidth={2} aria-hidden />
           </button>
         ) : null}
+        <button
+          type="button"
+          onClick={onRemove}
+          className="shrink-0 rounded-lg p-1.5 text-[#71717A] outline-none transition-colors hover:bg-black/5 hover:text-[#09090B] focus-visible:ring-2 focus-visible:ring-[#09090B]/10"
+          aria-label={`Remove ${metricLabel}`}
+          title="Remove"
+        >
+          <Trash2 className="h-4 w-4" strokeWidth={2} aria-hidden />
+        </button>
+        <span
+          className="shrink-0 cursor-grab rounded-lg p-1.5 text-[#71717A]"
+          title="Drag to reorder"
+          aria-label="Drag to reorder"
+        >
+          <GripVertical className="h-4 w-4" strokeWidth={2} aria-hidden />
+        </span>
       </div>
       <MultichartFundamentalsBar
         metricId={metricId}

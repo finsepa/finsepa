@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import type { Berkshire13fComparisonRow } from "@/lib/superinvestors/types";
 import { CompanyLogo } from "@/components/screener/company-logo";
 import { resolveEquityLogoUrlFromListingTicker } from "@/lib/screener/resolve-equity-logo-url";
@@ -116,6 +117,114 @@ function SharesColumnCell({
   );
 }
 
+type SearchItem = {
+  type?: string;
+  symbol?: string;
+  name?: string;
+  route?: string;
+};
+
+function scoreSearchCandidate(issuerLower: string, item: SearchItem): number {
+  const name = (item.name ?? "").toLowerCase().trim();
+  const sym = (item.symbol ?? "").toLowerCase().trim();
+  if (!sym) return -1;
+  let s = 0;
+  if (item.type === "stock") s += 5;
+  if (issuerLower === name) s += 10;
+  if (issuerLower.includes(name) || name.includes(issuerLower)) s += 6;
+  if (issuerLower.includes(sym)) s += 3;
+  return s;
+}
+
+function useResolvedTickers(rows: Berkshire13fComparisonRow[]) {
+  const [map, setMap] = useState<Record<string, string>>({});
+
+  const keysToResolve = useMemo(() => {
+    const out: { key: string; issuer: string }[] = [];
+    const seen = new Set<string>();
+    for (const r of rows) {
+      if (r.ticker?.trim()) continue;
+      const issuer = issuerDisplayTitle(r.companyName).trim();
+      if (!issuer) continue;
+      const key = r.cusip?.trim() ? `CUSIP:${r.cusip.trim().toUpperCase()}` : `ISSUER:${issuer.toLowerCase()}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({ key, issuer });
+    }
+    // Only resolve the most-visible / most-important names first (table is sorted by value).
+    return out.slice(0, 200);
+  }, [rows]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const controller = new AbortController();
+
+    async function run() {
+      const storedRaw =
+        typeof window !== "undefined" ? window.localStorage.getItem("superinvestors:issuer-search-ticker:v1") : null;
+      let stored: Record<string, string> = {};
+      try {
+        stored = storedRaw ? (JSON.parse(storedRaw) as Record<string, string>) : {};
+      } catch {
+        stored = {};
+      }
+
+      const next: Record<string, string> = { ...stored };
+
+      // Warm state immediately from localStorage.
+      if (!cancelled) setMap((prev) => ({ ...next, ...prev }));
+
+      // Limit concurrency to avoid hammering our own search endpoint.
+      const queue = keysToResolve.filter((k) => !next[k.key]);
+      const concurrency = 4;
+      let idx = 0;
+
+      async function worker() {
+        while (idx < queue.length) {
+          const cur = queue[idx++];
+          const issuer = cur.issuer;
+          const issuerLower = issuer.toLowerCase();
+          try {
+            const res = await fetch(`/api/search?q=${encodeURIComponent(issuer)}`, {
+              signal: controller.signal,
+              credentials: "include",
+            });
+            if (!res.ok) continue;
+            const json = (await res.json()) as { items?: SearchItem[] };
+            const items = Array.isArray(json.items) ? json.items : [];
+            const stocks = items.filter((it) => it?.type === "stock" && typeof it.symbol === "string" && it.symbol.trim());
+            if (!stocks.length) continue;
+            stocks.sort((a, b) => scoreSearchCandidate(issuerLower, b) - scoreSearchCandidate(issuerLower, a));
+            const best = stocks[0];
+            if (!best?.symbol) continue;
+            next[cur.key] = best.symbol.toUpperCase();
+            if (!cancelled) setMap((prev) => ({ ...prev, [cur.key]: next[cur.key]! }));
+          } catch {
+            // ignore
+          }
+        }
+      }
+
+      await Promise.all(Array.from({ length: concurrency }, () => worker()));
+
+      if (cancelled) return;
+      try {
+        window.localStorage.setItem("superinvestors:issuer-search-ticker:v1", JSON.stringify(next));
+      } catch {
+        /* ignore */
+      }
+    }
+
+    void run();
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [keysToResolve]);
+
+  return map;
+}
+
 /** Stock detail when we have a symbol; otherwise screener with a name hint (13F has no tickers). */
 function rowHref(displayName: string, ticker: string | null): string {
   const t = ticker?.trim();
@@ -163,6 +272,7 @@ export function Berkshire13fComparisonTable({
   hasPriorFiling: boolean;
 }) {
   const headerGrid = cn("h-11 min-h-[44px] items-center bg-white", rowGridFour);
+  const resolved = useResolvedTickers(rows);
 
   return (
     <div className="min-w-0 -mx-4 w-[calc(100%+2rem)] max-w-none overflow-x-auto [-webkit-overflow-scrolling:touch] sm:-mx-9 sm:w-[calc(100%+4.5rem)]">
@@ -177,15 +287,17 @@ export function Berkshire13fComparisonTable({
 
           {rows.map((r, i) => {
             const displayName = issuerDisplayTitle(r.companyName);
+            const key = r.cusip?.trim() ? `CUSIP:${r.cusip.trim().toUpperCase()}` : `ISSUER:${displayName.toLowerCase()}`;
+            const mergedTicker = r.ticker?.trim() ? r.ticker : resolved[key] ?? null;
             return (
               <ComparisonRowShell
                 key={`${r.cusip ?? r.companyName}-${i}`}
-                ticker={r.ticker}
+                ticker={mergedTicker}
                 displayName={displayName}
                 gridClass={cn(rowGridFour, "px-4 sm:px-9")}
               >
                 <div className={tdCompany}>
-                  <CompanyTickerCell companyName={r.companyName} ticker={r.ticker} />
+                  <CompanyTickerCell companyName={r.companyName} ticker={mergedTicker} />
                 </div>
                 <div className={cn(tdNum, "font-medium")}>{pct.format(r.weight)}%</div>
                 <div className={cn(tdNum, "font-medium")}>

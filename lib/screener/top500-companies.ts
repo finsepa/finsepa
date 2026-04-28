@@ -19,7 +19,9 @@ function mergeUniversePages(pages: readonly EodhdTopUniverseRow[][]): TopCompany
   }
   const out = Array.from(byTicker.values());
   out.sort((a, b) => b.marketCapUsd - a.marketCapUsd || a.ticker.localeCompare(b.ticker));
-  return filterIssuerLineDuplicatesInUniverse(filterUniverseRowsRemovingOtcDuplicates(out));
+  const cleaned = filterIssuerLineDuplicatesInUniverse(filterUniverseRowsRemovingOtcDuplicates(out));
+  // Hide Alphabet Class C (GOOG) from Screener list.
+  return cleaned.filter((r) => r.ticker.trim().toUpperCase() !== "GOOG");
 }
 
 async function fetchScreenerPageGroup(offsets: readonly number[]): Promise<EodhdTopUniverseRow[][]> {
