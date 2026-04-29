@@ -24,7 +24,11 @@ function getDefaultPortalReturnUrl(): string {
     pickProcessEnv("NEXT_PUBLIC_APP_URL") ??
     pickProcessEnv("APP_URL") ??
     pickProcessEnv("NEXT_PUBLIC_SITE_URL");
-  if (envUrl) return `${envUrl.replace(/\/+$/, "")}/account?tab=billing`;
+  if (envUrl) {
+    const raw = envUrl.trim().replace(/\/+$/, "");
+    const withScheme = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+    return `${withScheme}/account?tab=billing`;
+  }
   const vercelUrl = pickProcessEnv("VERCEL_URL");
   if (vercelUrl) return `https://${vercelUrl.replace(/\/+$/, "")}/account?tab=billing`;
   return "http://localhost:3000/account?tab=billing";

@@ -50,6 +50,7 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   const [billingSummary, setBillingSummary] = useState<BillingSummary>(EMPTY_BILLING_SUMMARY);
   const [billingLoading, setBillingLoading] = useState(false);
+  const [billingHydrated, setBillingHydrated] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
 
   useEffect(() => {
@@ -179,6 +180,7 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
       }
     } finally {
       if (!silent) setBillingLoading(false);
+      setBillingHydrated(true);
     }
   }
 
@@ -208,6 +210,7 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
     return () => window.clearInterval(timer);
   }, [activeTab]);
 
+  const showBillingSkeleton = activeTab === "billing" && !billingHydrated;
   const displayEmail = initial.email ?? "";
   const billingPlan = billingSummary.plan;
   const paymentHistory = billingSummary.paymentHistory;
@@ -342,38 +345,63 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
         ) : (
           <div className="mt-8 space-y-8">
             <section className="grid gap-4 sm:grid-cols-2">
-              <article className="rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
-                <p className="text-[13px] font-medium text-[#71717A]">Your subscription</p>
-                <p className="mt-2 text-[22px] font-semibold leading-7 text-[#09090B]">{subscriptionTitle}</p>
-                <p className="mt-1 text-[14px] leading-5 text-[#71717A]">{subscriptionMeta}</p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (billingPlan === "pro") {
-                      void openManageSubscriptionPortal();
-                      return;
-                    }
-                    setUpgradeModalOpen(true);
-                  }}
-                  disabled={portalLoading}
-                  className="mt-4 h-10 rounded-[10px] bg-[#2563EB] px-4 text-sm font-semibold text-white shadow-[0px_1px_2px_0px_rgba(37,99,235,0.25)] transition-colors hover:bg-[#1D4ED8]"
-                >
-                  {portalLoading ? "Opening…" : actionLabel}
-                </button>
-              </article>
+              {showBillingSkeleton ? (
+                <>
+                  <article className="rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
+                    <div className="animate-pulse">
+                      <div className="h-4 w-32 rounded bg-[#E4E4E7]" />
+                      <div className="mt-3 h-7 w-24 rounded bg-[#E4E4E7]" />
+                      <div className="mt-2 h-5 w-40 rounded bg-[#E4E4E7]" />
+                      <div className="mt-4 h-10 w-44 rounded-[10px] bg-[#E4E4E7]" />
+                    </div>
+                  </article>
+                  <article className="rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
+                    <div className="animate-pulse">
+                      <div className="h-4 w-20 rounded bg-[#E4E4E7]" />
+                      <div className="mt-3 h-7 w-24 rounded bg-[#E4E4E7]" />
+                      <div className="mt-2 h-5 w-56 rounded bg-[#E4E4E7]" />
+                    </div>
+                  </article>
+                </>
+              ) : (
+                <>
+                  <article className="rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
+                    <p className="text-[13px] font-medium text-[#71717A]">Your subscription</p>
+                    <p className="mt-2 text-[22px] font-semibold leading-7 text-[#09090B]">{subscriptionTitle}</p>
+                    <p className="mt-1 text-[14px] leading-5 text-[#71717A]">{subscriptionMeta}</p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (billingPlan === "pro") {
+                          void openManageSubscriptionPortal();
+                          return;
+                        }
+                        setUpgradeModalOpen(true);
+                      }}
+                      disabled={portalLoading}
+                      className="mt-4 h-10 rounded-[10px] bg-[#2563EB] px-4 text-sm font-semibold text-white shadow-[0px_1px_2px_0px_rgba(37,99,235,0.25)] transition-colors hover:bg-[#1D4ED8] disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {portalLoading ? "Opening…" : actionLabel}
+                    </button>
+                  </article>
 
-              <article className="rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
-                <p className="text-[13px] font-medium text-[#71717A]">Payments</p>
-                <p className="mt-2 text-[22px] font-semibold leading-7 text-[#09090B]">{recurringAmount}</p>
-                <p className="mt-1 text-[14px] leading-5 text-[#71717A]">{recurringMeta}</p>
-              </article>
+                  <article className="rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
+                    <p className="text-[13px] font-medium text-[#71717A]">Payments</p>
+                    <p className="mt-2 text-[22px] font-semibold leading-7 text-[#09090B]">{recurringAmount}</p>
+                    <p className="mt-1 text-[14px] leading-5 text-[#71717A]">{recurringMeta}</p>
+                  </article>
+                </>
+              )}
             </section>
 
             <section className="rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
               <h3 className="text-[16px] font-semibold leading-6 text-[#09090B]">Payment history</h3>
-              {billingLoading ? (
+              {showBillingSkeleton || billingLoading ? (
                 <div className="mt-4 rounded-[10px] border border-dashed border-[#D4D4D8] bg-[#FAFAFA] px-4 py-8 text-center">
-                  <p className="text-[14px] font-medium text-[#09090B]">Loading billing data…</p>
+                  <div className="mx-auto max-w-[420px] animate-pulse space-y-3">
+                    <div className="h-4 w-40 rounded bg-[#E4E4E7]" />
+                    <div className="h-4 w-64 rounded bg-[#E4E4E7]" />
+                  </div>
                 </div>
               ) : paymentHistory.length === 0 ? (
                 <div className="mt-4 rounded-[10px] border border-dashed border-[#D4D4D8] bg-[#FAFAFA] px-4 py-8 text-center">
