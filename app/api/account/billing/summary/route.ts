@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { getStripeClient } from "@/lib/stripe/server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 type BillingSubscriptionRow = {
@@ -8,6 +9,9 @@ type BillingSubscriptionRow = {
   cancel_at_period_end: boolean;
   current_period_end: string | null;
   recurring_amount_usd: number;
+  stripe_account_key: string | null;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
 };
 
 type BillingInvoiceRow = {
@@ -24,6 +28,32 @@ function subscriptionMeta(status: string, cancelAtPeriodEnd: boolean): string {
   if (status === "active") return "Active subscription";
   if (status === "unpaid") return "Payment required";
   return "Trial is active";
+}
+
+function addRecurringInterval(args: {
+  anchorSeconds: number;
+  interval: "day" | "week" | "month" | "year";
+  intervalCount: number;
+}): string {
+  const d = new Date(args.anchorSeconds * 1000);
+  const c = Math.max(1, Math.floor(args.intervalCount || 1));
+  switch (args.interval) {
+    case "day":
+      d.setUTCDate(d.getUTCDate() + c);
+      break;
+    case "week":
+      d.setUTCDate(d.getUTCDate() + 7 * c);
+      break;
+    case "month":
+      d.setUTCMonth(d.getUTCMonth() + c);
+      break;
+    case "year":
+      d.setUTCFullYear(d.getUTCFullYear() + c);
+      break;
+    default:
+      break;
+  }
+  return d.toISOString();
 }
 
 export async function GET() {
@@ -47,14 +77,83 @@ export async function GET() {
         .returns<BillingInvoiceRow[]>(),
     ]);
 
-    const isPro = !!subscription?.plan_code?.startsWith("pro_");
+    const isStripeProPlan = !!subscription?.plan_code?.startsWith("pro_");
+    const isActivePaidState = subscription?.status === "active" || subscription?.status === "trialing";
+    const isPro = isStripeProPlan && isActivePaidState;
+
+    // Ensure we can always show a deterministic next due date for active subscriptions.
+    let recurringDueDate = isPro ? subscription?.current_period_end ?? null : null;
+    if (
+      isPro &&
+      !recurringDueDate &&
+      subscription?.stripe_customer_id &&
+      subscription?.stripe_subscription_id
+    ) {
+      const stripe = getStripeClient(subscription.stripe_account_key);
+      if (stripe) {
+        try {
+          // First choice: upcoming invoice has explicit line period end.
+          const upcoming = await (stripe.invoices as unknown as { retrieveUpcoming: (args: any) => Promise<any> })
+            .retrieveUpcoming({
+              customer: subscription.stripe_customer_id,
+              subscription: subscription.stripe_subscription_id,
+            });
+          const endSeconds =
+            typeof upcoming?.lines?.data?.[0]?.period?.end === "number" ? upcoming.lines.data[0].period.end : null;
+          if (typeof endSeconds === "number") {
+            recurringDueDate = new Date(endSeconds * 1000).toISOString();
+          }
+        } catch {
+          // ignore and fall back to subscription anchor
+        }
+
+        if (!recurringDueDate) {
+          try {
+            const s = await stripe.subscriptions.retrieve(subscription.stripe_subscription_id, {
+              expand: ["items.data.price"],
+            });
+            const anchorSeconds =
+              typeof s.billing_cycle_anchor === "number"
+                ? s.billing_cycle_anchor
+                : typeof s.created === "number"
+                  ? s.created
+                  : null;
+            const price = s.items?.data?.[0]?.price;
+            const interval = price?.recurring?.interval;
+            const intervalCount = price?.recurring?.interval_count ?? 1;
+            if (
+              typeof anchorSeconds === "number" &&
+              (interval === "day" || interval === "week" || interval === "month" || interval === "year")
+            ) {
+              recurringDueDate = addRecurringInterval({ anchorSeconds, interval, intervalCount });
+            }
+          } catch {
+            // ignore
+          }
+        }
+
+        // Cache it for future loads (ignore failures).
+        if (recurringDueDate) {
+          try {
+            await supabase
+              .from("billing_subscriptions")
+              .update({ current_period_end: recurringDueDate })
+              .eq("user_id", user.id)
+              .throwOnError();
+          } catch {
+            // ignore
+          }
+        }
+      }
+    }
+
     return NextResponse.json({
       plan: isPro ? "pro" : "trial",
       subscriptionMeta: subscription
         ? subscriptionMeta(subscription.status, subscription.cancel_at_period_end)
         : "Trial is active",
       recurringAmountUsd: isPro ? subscription?.recurring_amount_usd ?? 0 : 0,
-      recurringDueDate: subscription?.current_period_end ?? null,
+      recurringDueDate,
       paymentHistory: (invoices ?? []).map((row) => ({
         id: row.id,
         date: row.paid_at,
