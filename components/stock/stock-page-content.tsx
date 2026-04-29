@@ -19,6 +19,7 @@ import { StockEarningsTab } from "./stock-earnings-tab";
 import { StockInsidersTab } from "./stock-insiders-tab";
 import { StockPeersTab } from "./stock-peers-tab";
 import { StockProfileTab } from "./stock-profile-tab";
+import { StockSuperinvestorsTab } from "./stock-superinvestors-tab";
 import { StockTargetPriceTab } from "./stock-target-price-tab";
 import { StockHeader } from "./stock-header";
 import { ChartControls } from "./chart-controls";
@@ -79,6 +80,7 @@ function initialTabsMounted(tab: StockDetailTabId): Record<StockDetailTabId, boo
     multicharts: tab === "multicharts",
     "target-price": tab === "target-price",
     insiders: tab === "insiders",
+    superinvestors: tab === "superinvestors",
     charting: tab === "charting",
     peers: tab === "peers",
     holdings: tab === "holdings",
@@ -559,6 +561,17 @@ export function StockPageContent({
           className={activeTab === "insiders" ? "block" : "hidden"}
         >
           <StockInsidersTab ticker={ticker} />
+        </div>
+      ) : null}
+
+      {tabsMounted.superinvestors ? (
+        <div
+          role="tabpanel"
+          id="stock-tab-superinvestors"
+          aria-hidden={activeTab !== "superinvestors"}
+          className={activeTab === "superinvestors" ? "block" : "hidden"}
+        >
+          <StockSuperinvestorsTab ticker={ticker} />
         </div>
       ) : null}
 

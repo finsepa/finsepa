@@ -1,0 +1,168 @@
+"use client";
+
+import Image from "next/image";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+
+import { StockDetailTabPlaceholder } from "@/components/stock/stock-detail-tab-nav";
+import { cn } from "@/lib/utils";
+import { formatUsdCompactSigDigits } from "@/lib/market/key-stats-basic-format";
+
+type SuperinvestorPosition = {
+  superinvestorSlug: string;
+  managerName: string;
+  fundName: string;
+  avatarSrc: string | null;
+  weightPct: number;
+  statusLabel: string | null;
+  shares: number | null;
+  valueUsd: number;
+  holdSinceYmd: string | null;
+};
+
+type Payload = {
+  ticker: string;
+  positions: SuperinvestorPosition[];
+};
+
+const pct = new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const sharesFmt = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
+
+function quarterLabelFromYmd(ymd: string | null): string {
+  if (!ymd?.trim()) return "—";
+  const s = ymd.trim();
+  const year = Number.parseInt(s.slice(0, 4), 10);
+  const month = Number.parseInt(s.slice(5, 7), 10);
+  if (!Number.isFinite(year) || !Number.isFinite(month) || month < 1 || month > 12) return "—";
+  const q = Math.min(4, Math.max(1, Math.floor((month - 1) / 3) + 1));
+  return `Q${q} ${year}`;
+}
+
+function ActivityCell({ label }: { label: string | null }) {
+  if (!label) return <span className="text-[#71717A]">—</span>;
+  const lower = label.toLowerCase();
+  const down = lower.startsWith("reduce") || lower.startsWith("sold");
+  const up = lower.startsWith("increase") || lower.startsWith("buy") || lower.startsWith("new");
+  return (
+    <span className={cn("font-medium", up ? "text-[#16A34A]" : down ? "text-[#DC2626]" : "text-[#71717A]")}>
+      {label}
+    </span>
+  );
+}
+
+export function StockSuperinvestorsTab({ ticker }: { ticker: string }) {
+  const [loading, setLoading] = useState(true);
+  const [payload, setPayload] = useState<Payload | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/stocks/${encodeURIComponent(ticker)}/superinvestors`, { cache: "no-store" });
+        if (!res.ok) {
+          if (!cancelled) setPayload({ ticker, positions: [] });
+          return;
+        }
+        const json = (await res.json()) as Payload;
+        if (!cancelled) setPayload(json);
+      } catch {
+        if (!cancelled) setPayload({ ticker, positions: [] });
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [ticker]);
+
+  const positions = payload?.positions ?? [];
+  const sorted = useMemo(() => [...positions].sort((a, b) => b.weightPct - a.weightPct), [positions]);
+
+  if (loading) {
+    return (
+      <div className="space-y-6 pt-1">
+        <h2 className="text-[20px] font-semibold leading-8 tracking-tight text-[#09090B]">Superinvestors</h2>
+        <div className="h-[120px] w-full rounded-xl border border-[#E4E4E7] bg-white" />
+      </div>
+    );
+  }
+
+  if (sorted.length === 0) {
+    return (
+      <StockDetailTabPlaceholder
+        title="Superinvestors"
+        message="None of the tracked superinvestors currently hold this company in their latest 13F filings."
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-6 pt-1">
+      <h2 className="text-[20px] font-semibold leading-8 tracking-tight text-[#09090B]">Superinvestors</h2>
+
+      <div className="min-w-0 -mx-4 w-[calc(100%+2rem)] max-w-none overflow-x-auto [-webkit-overflow-scrolling:touch] sm:-mx-9 sm:w-[calc(100%+4.5rem)]">
+        <div className="w-full min-w-0">
+          <div className="divide-y divide-[#E4E4E7] border-t border-b border-[#E4E4E7] bg-white">
+            <div className="grid h-11 min-h-[44px] w-full min-w-[760px] grid-cols-[minmax(220px,2.4fr)_minmax(88px,0.9fr)_minmax(140px,1.2fr)_minmax(110px,1fr)_minmax(110px,1fr)_minmax(110px,1fr)] items-center gap-x-4 bg-white px-4 text-[14px] font-medium leading-5 text-[#71717A] sm:px-9">
+              <div className="text-left">Manager / Fund</div>
+              <div className="text-right">% of portfolio</div>
+              <div className="text-left">Recent activity</div>
+              <div className="text-right">Shares</div>
+              <div className="text-right">Value</div>
+              <div className="text-right">Hold since</div>
+            </div>
+
+            {sorted.map((p) => (
+              <Link
+                key={`${p.superinvestorSlug}-${p.managerName}`}
+                href={`/superinvestors/${encodeURIComponent(p.superinvestorSlug)}`}
+                prefetch={false}
+                className="grid min-h-[60px] w-full min-w-[760px] grid-cols-[minmax(220px,2.4fr)_minmax(88px,0.9fr)_minmax(140px,1.2fr)_minmax(110px,1fr)_minmax(110px,1fr)_minmax(110px,1fr)] items-center gap-x-4 bg-white px-4 transition-colors duration-75 hover:bg-neutral-50 sm:px-9"
+              >
+                <div className="flex min-w-0 items-center gap-3 pr-2">
+                  {p.avatarSrc ? (
+                    <span className="relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full border border-[#E4E4E7] bg-[#F4F4F5] ring-1 ring-white">
+                      <Image src={p.avatarSrc} alt={p.managerName} width={40} height={40} className="object-cover" sizes="40px" />
+                    </span>
+                  ) : (
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#E4E4E7] bg-[#F4F4F5] text-[#71717A]">
+                      {p.managerName.trim().slice(0, 2).toUpperCase()}
+                    </span>
+                  )}
+                  <div className="min-w-0">
+                    <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">{p.managerName}</div>
+                    <div className="truncate text-[12px] font-normal leading-4 text-[#71717A]">{p.fundName}</div>
+                  </div>
+                </div>
+
+                <div className="text-right font-['Inter'] text-[14px] font-medium tabular-nums text-[#09090B]">
+                  {pct.format(p.weightPct)}%
+                </div>
+
+                <div className="text-left text-[14px] leading-5">
+                  <ActivityCell label={p.statusLabel} />
+                </div>
+
+                <div className="text-right font-['Inter'] text-[14px] font-normal tabular-nums text-[#09090B]">
+                  {p.shares != null ? sharesFmt.format(p.shares) : "—"}
+                </div>
+
+                <div className="text-right font-['Inter'] text-[14px] font-normal tabular-nums text-[#09090B]">
+                  {formatUsdCompactSigDigits(p.valueUsd, 4)}
+                </div>
+
+                <div className="text-right font-['Inter'] text-[14px] font-normal tabular-nums text-[#09090B]">
+                  {quarterLabelFromYmd(p.holdSinceYmd)}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+

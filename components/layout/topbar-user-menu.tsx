@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CircleQuestionMark, LogOut, Menu, User } from "lucide-react";
+import { CircleQuestionMark, CreditCard, LogOut, Menu, User } from "lucide-react";
 
 import {
   dropdownMenuPanelBodyClassName,
@@ -102,7 +102,16 @@ export function TopbarUserMenu({ userInitials, avatarUrl, userDisplayName }: Top
               onClick={() => setOpen(false)}
             >
               <User className="h-4 w-4 shrink-0 text-[#09090B]" strokeWidth={1.75} aria-hidden />
-              <span className="min-w-0 flex-1 truncate text-left">Account</span>
+              <span className="min-w-0 flex-1 truncate text-left">Profile</span>
+            </Link>
+            <Link
+              href="/account?tab=billing"
+              role="menuitem"
+              className={itemClass}
+              onClick={() => setOpen(false)}
+            >
+              <CreditCard className="h-4 w-4 shrink-0 text-[#09090B]" strokeWidth={1.75} aria-hidden />
+              <span className="min-w-0 flex-1 truncate text-left">Billing</span>
             </Link>
             <a
               href="mailto:hi@finsepa.com"

@@ -4,7 +4,7 @@ import type { StockDetailTabId } from "@/lib/stock/stock-detail-tab";
 
 export type { StockDetailTabId };
 
-/** Order matches stock Web App Design (Events / Dividends / Superinvestors omitted until built). */
+/** Order matches stock Web App Design. */
 const TABS: { id: StockDetailTabId; label: string }[] = [
   { id: "overview", label: "Overview" },
   { id: "financials", label: "Financials" },
@@ -12,6 +12,7 @@ const TABS: { id: StockDetailTabId; label: string }[] = [
   { id: "multicharts", label: "Multicharts" },
   { id: "target-price", label: "Target Price" },
   { id: "insiders", label: "Insiders" },
+  { id: "superinvestors", label: "Superinvestors" },
   { id: "charting", label: "Charting" },
   { id: "peers", label: "Peers" },
   { id: "holdings", label: "Holdings" },
