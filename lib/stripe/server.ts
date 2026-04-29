@@ -11,6 +11,9 @@ export type StripeAccountConfig = {
   webhookSecret?: string;
   monthlyPaymentLink?: string;
   annualPaymentLink?: string;
+  /** When set with `annualPriceId`, checkout uses Stripe Checkout (reuses `customer` from DB). */
+  monthlyPriceId?: string;
+  annualPriceId?: string;
   portalReturnUrl?: string;
 };
 
@@ -54,6 +57,8 @@ function parseStripeAccountsFromJson(): StripeAccountConfig[] {
         monthlyPaymentLink:
           typeof row.monthlyPaymentLink === "string" ? row.monthlyPaymentLink.trim() : undefined,
         annualPaymentLink: typeof row.annualPaymentLink === "string" ? row.annualPaymentLink.trim() : undefined,
+        monthlyPriceId: typeof row.monthlyPriceId === "string" ? row.monthlyPriceId.trim() : undefined,
+        annualPriceId: typeof row.annualPriceId === "string" ? row.annualPriceId.trim() : undefined,
         portalReturnUrl: typeof row.portalReturnUrl === "string" ? row.portalReturnUrl.trim() : undefined,
       });
     }
@@ -74,6 +79,8 @@ function getDefaultStripeAccount(): StripeAccountConfig | null {
       pickProcessEnv("STRIPE_PAYMENT_LINK_MONTHLY") ?? "https://buy.stripe.com/eVqaEX3nf0kQ7iyduP5AQ0i",
     annualPaymentLink:
       pickProcessEnv("STRIPE_PAYMENT_LINK_ANNUAL") ?? "https://buy.stripe.com/fZu6oH9LDaZubyO4Yj5AQ0j",
+    monthlyPriceId: pickProcessEnv("STRIPE_PRICE_ID_MONTHLY")?.trim(),
+    annualPriceId: pickProcessEnv("STRIPE_PRICE_ID_ANNUAL")?.trim(),
     portalReturnUrl: getDefaultPortalReturnUrl(),
   };
 }
@@ -110,4 +117,25 @@ export function getStripePaymentLink(
   const account = getStripeAccountConfig(accountKey);
   if (!account) return undefined;
   return cycle === "monthly" ? account.monthlyPaymentLink : account.annualPaymentLink;
+}
+
+export function getStripeSubscriptionPriceId(
+  cycle: StripeBillingCycle,
+  accountKey?: string | null,
+): string | undefined {
+  const account = getStripeAccountConfig(accountKey);
+  if (!account) return undefined;
+  const id = cycle === "monthly" ? account.monthlyPriceId : account.annualPriceId;
+  return id?.trim() || undefined;
+}
+
+/** Success and cancel URLs for subscription Checkout Sessions (Stripe replaces `{CHECKOUT_SESSION_ID}`). */
+export function getStripeBillingCheckoutUrls(account: StripeAccountConfig): {
+  successUrl: string;
+  cancelUrl: string;
+} {
+  const cancelUrl = (account.portalReturnUrl?.trim() || getDefaultPortalReturnUrl()).replace(/\/+$/, "");
+  const join = cancelUrl.includes("?") ? "&" : "?";
+  const successUrl = `${cancelUrl}${join}checkout=success&session_id={CHECKOUT_SESSION_ID}`;
+  return { successUrl, cancelUrl };
 }

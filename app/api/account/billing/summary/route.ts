@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { getStripeClient } from "@/lib/stripe/server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
-type BillingAccessState = "trial" | "pro" | "canceled" | "expired";
+type BillingAccessState = "trial" | "pro" | "canceled" | "expired" | "paused";
 
 type BillingSubscriptionRow = {
   plan_code: string;
@@ -23,8 +23,11 @@ type BillingInvoiceRow = {
   description: string;
 };
 
-function subscriptionMeta(status: string, cancelAtPeriodEnd: boolean): string {
-  if (cancelAtPeriodEnd) return "Cancels at period end";
+function subscriptionMeta(status: string, cancelAtPeriodEnd: boolean, collectionPaused: boolean): string {
+  if (collectionPaused) return "Billing paused — no upcoming charges";
+  // Still billed access until current period end; Stripe keeps status active/trialing.
+  if (cancelAtPeriodEnd && (status === "active" || status === "trialing")) return "Active subscription";
+  if (cancelAtPeriodEnd) return "Subscription ending";
   if (status === "trialing") return "Trialing";
   if (status === "past_due") return "Payment past due";
   if (status === "active") return "Active subscription";
@@ -80,13 +83,71 @@ export async function GET() {
     ]);
 
     const isStripeProPlan = !!subscription?.plan_code?.startsWith("pro_");
-    const isActivePaidState = subscription?.status === "active" || subscription?.status === "trialing";
+
+    // Reconcile Stripe truth (portal cancellations can lag in our DB until webhooks land).
+    let stripeStatus = subscription?.status ?? "";
+    let stripeCancelAtPeriodEnd = !!subscription?.cancel_at_period_end;
+    let stripeCurrentPeriodEndIso = subscription?.current_period_end ?? null;
+    let stripeCollectionPaused = false;
+    let billingResumeAt: string | null = null;
+
+    if (subscription?.stripe_subscription_id) {
+      const stripe = getStripeClient(subscription.stripe_account_key);
+      if (stripe) {
+        try {
+          const s = await stripe.subscriptions.retrieve(subscription.stripe_subscription_id, {
+            expand: ["items.data.price"],
+          });
+          stripeStatus = String(s.status ?? stripeStatus);
+          stripeCollectionPaused = s.pause_collection != null;
+
+          const resumeAt = s.pause_collection?.resumes_at;
+          if (typeof resumeAt === "number") {
+            billingResumeAt = new Date(resumeAt * 1000).toISOString();
+          }
+
+          const cpe = (s as unknown as { current_period_end?: unknown }).current_period_end;
+          if (typeof cpe === "number") {
+            stripeCurrentPeriodEndIso = new Date(cpe * 1000).toISOString();
+          }
+
+          const cancelAtTs = (s as unknown as { cancel_at?: unknown }).cancel_at;
+          const cancelAtNum = typeof cancelAtTs === "number" ? cancelAtTs : null;
+          const cpeNum = typeof cpe === "number" ? cpe : null;
+          stripeCancelAtPeriodEnd =
+            !!s.cancel_at_period_end ||
+            (cancelAtNum != null && cpeNum != null && cancelAtNum === cpeNum);
+
+          // Best-effort: keep DB aligned for other server paths that still read the row directly.
+          try {
+            await supabase
+              .from("billing_subscriptions")
+              .update({
+                status: stripeStatus,
+                cancel_at_period_end: stripeCancelAtPeriodEnd,
+                ...(stripeCurrentPeriodEndIso ? { current_period_end: stripeCurrentPeriodEndIso } : {}),
+              })
+              .eq("user_id", user.id)
+              .throwOnError();
+          } catch {
+            // ignore
+          }
+        } catch {
+          // ignore — fall back to DB fields
+        }
+      }
+    }
+
+    const isActivePaidState = stripeStatus === "active" || stripeStatus === "trialing";
     const isPro = isStripeProPlan && isActivePaidState;
 
-    // Ensure we can always show a deterministic next due date for active subscriptions.
-    let recurringDueDate = isPro ? subscription?.current_period_end ?? null : null;
+    // Next billing/access end date. Paused subs have no scheduled invoice.
+    // cancel_at_period_end: do not use retrieveUpcoming / anchor math — it can imply a renewal "next payment".
+    let recurringDueDate = isPro && !stripeCollectionPaused ? stripeCurrentPeriodEndIso ?? null : null;
     if (
       isPro &&
+      !stripeCollectionPaused &&
+      !stripeCancelAtPeriodEnd &&
       !recurringDueDate &&
       subscription?.stripe_customer_id &&
       subscription?.stripe_subscription_id
@@ -149,19 +210,29 @@ export async function GET() {
       }
     }
 
+    if (isPro && stripeCancelAtPeriodEnd && !stripeCollectionPaused) {
+      recurringDueDate = stripeCurrentPeriodEndIso ?? recurringDueDate;
+    }
+
     const nowMs = Date.now();
-    const dueMs = recurringDueDate ? new Date(recurringDueDate).getTime() : null;
 
     let accessState: BillingAccessState = "trial";
     let accessEndsAt: string | null = null;
 
     if (isPro) {
-      if (subscription?.cancel_at_period_end) {
-        accessEndsAt = recurringDueDate;
-        if (typeof dueMs === "number" && Number.isFinite(dueMs) && dueMs > nowMs) {
-          accessState = "canceled"; // still Pro until accessEndsAt
+      if (stripeCollectionPaused) {
+        accessState = "paused";
+        accessEndsAt = null;
+      } else if (stripeCancelAtPeriodEnd) {
+        const endIso = stripeCurrentPeriodEndIso ?? recurringDueDate ?? null;
+        accessEndsAt = endIso;
+        const endMs = endIso ? new Date(endIso).getTime() : NaN;
+        if (!Number.isFinite(endMs)) {
+          accessState = "canceled";
+        } else if (endMs > nowMs) {
+          accessState = "canceled";
         } else {
-          accessState = "expired"; // period end passed (or unknown), treat as expired
+          accessState = "expired";
         }
       } else {
         accessState = "pro";
@@ -169,20 +240,31 @@ export async function GET() {
     } else if (isStripeProPlan) {
       // Previously Pro, but Stripe says it's not active/trialing anymore.
       accessState = "expired";
-      accessEndsAt = recurringDueDate;
+      accessEndsAt = stripeCurrentPeriodEndIso ?? recurringDueDate;
     }
 
-    const plan: "pro" | "trial" = accessState === "pro" || accessState === "canceled" ? "pro" : "trial";
+    const plan: "pro" | "trial" =
+      accessState === "pro" || accessState === "canceled" || accessState === "paused" ? "pro" : "trial";
+
+    const cancelAtPeriodEndActive = isPro && stripeCancelAtPeriodEnd && !stripeCollectionPaused;
+
+    const subscriptionMetaOut =
+      accessState === "expired"
+        ? "No active subscription"
+        : subscription
+          ? subscriptionMeta(stripeStatus, stripeCancelAtPeriodEnd, stripeCollectionPaused)
+          : "Trial is active";
 
     return NextResponse.json({
       plan,
       accessState,
       accessEndsAt,
-      subscriptionMeta: subscription
-        ? subscriptionMeta(subscription.status, subscription.cancel_at_period_end)
-        : "Trial is active",
+      cancelAtPeriodEnd: cancelAtPeriodEndActive,
+      billingResumeAt: accessState === "paused" ? billingResumeAt : null,
+      subscriptionMeta: subscriptionMetaOut,
       recurringAmountUsd: plan === "pro" ? subscription?.recurring_amount_usd ?? 0 : 0,
-      recurringDueDate: plan === "pro" ? recurringDueDate : null,
+      // Cancel at period end: no renewal invoice — never send a "next payment" date for that case.
+      recurringDueDate: plan === "pro" && !cancelAtPeriodEndActive ? recurringDueDate : null,
       paymentHistory: (invoices ?? []).map((row) => ({
         id: row.id,
         date: row.paid_at,

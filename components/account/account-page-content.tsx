@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Calendar } from "lucide-react";
 import { toast } from "sonner";
 import { PATH_LOGIN } from "@/lib/auth/routes";
 import { EMPTY_BILLING_SUMMARY, type BillingSummary } from "@/lib/account/billing";
@@ -216,17 +215,16 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
   const billingPlan = billingSummary.plan;
   const billingAccessState = billingSummary.accessState;
   const paymentHistory = billingSummary.paymentHistory;
-  const subscriptionTitle = billingPlan === "pro" ? "Pro" : "Free Trial";
+  const subscriptionTitle =
+    billingPlan === "pro" ? "Pro" : billingAccessState === "expired" ? "Free plan" : "Free Trial";
   const subscriptionMeta = billingSummary.subscriptionMeta;
   const actionLabel = billingPlan === "pro" ? "Manage Subscription" : "Upgrade to Pro";
   const recurringAmount =
-    billingPlan === "pro" ? `$${billingSummary.recurringAmountUsd.toFixed(2)}` : "$0.00";
-  const recurringMeta =
     billingPlan === "pro"
-      ? billingSummary.recurringDueDate
-        ? `Next payment on ${new Date(billingSummary.recurringDueDate).toLocaleDateString()}`
-        : "Next payment date will appear soon."
-      : "No upcoming payment while on free trial.";
+      ? billingAccessState === "paused"
+        ? "$0.00"
+        : `$${billingSummary.recurringAmountUsd.toFixed(2)}`
+      : "$0.00";
 
   const accessEndsAtLabel = billingSummary.accessEndsAt
     ? new Date(billingSummary.accessEndsAt).toLocaleDateString()
@@ -239,6 +237,37 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
           year: "numeric",
         })
       : null;
+
+  const billingResumeLabel =
+    billingSummary.billingResumeAt && Number.isFinite(new Date(billingSummary.billingResumeAt).getTime())
+      ? new Date(billingSummary.billingResumeAt).toLocaleDateString("en-GB", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        })
+      : null;
+
+  const isEndingAfterPeriod =
+    billingPlan === "pro" &&
+    billingAccessState !== "paused" &&
+    (billingAccessState === "canceled" || billingSummary.cancelAtPeriodEnd);
+
+  const recurringMeta =
+    billingPlan === "pro"
+      ? billingAccessState === "paused"
+        ? billingResumeLabel
+          ? `Billing is paused — no payment is due. Invoicing is scheduled to resume on ${billingResumeLabel}.`
+          : "Billing is paused — no upcoming payment is scheduled."
+        : isEndingAfterPeriod && serviceEndLabel
+          ? `Your service will end on ${serviceEndLabel}. That is the last day your Pro subscription stays active.`
+          : isEndingAfterPeriod && accessEndsAtLabel
+            ? `Your service will end on ${accessEndsAtLabel}. That is the last day your Pro subscription stays active.`
+            : isEndingAfterPeriod
+              ? "Your subscription is set to end after the current period — no further payment is scheduled."
+              : billingSummary.recurringDueDate
+                ? `Next payment on ${new Date(billingSummary.recurringDueDate).toLocaleDateString()}`
+                : "Next payment date will appear soon."
+      : "No upcoming payment while on free trial.";
 
   return (
     <div className="min-w-0 px-4 py-4 sm:px-9 sm:py-6">
@@ -358,12 +387,29 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
           </div>
         ) : (
           <div className="mt-8 space-y-8">
-            {billingAccessState === "canceled" && accessEndsAtLabel ? (
+            {(billingAccessState === "canceled" || billingSummary.cancelAtPeriodEnd) && accessEndsAtLabel ? (
               <div className="rounded-xl border border-[#FDBA74] bg-[#FFF7ED] px-4 py-3 text-[#9A3412] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
                 <div className="text-[14px] font-semibold leading-5">Pro subscription canceled</div>
                 <div className="mt-1 text-[13px] leading-5">
                   You&apos;ve canceled your Pro subscription. Your access to Finsepa will be lost after{" "}
                   <span className="font-semibold">{accessEndsAtLabel}</span>.
+                </div>
+              </div>
+            ) : null}
+
+            {billingAccessState === "paused" ? (
+              <div className="rounded-xl border border-[#BFDBFE] bg-[#EFF6FF] px-4 py-3 text-[#1E40AF] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
+                <div className="text-[14px] font-semibold leading-5">Billing paused in Stripe</div>
+                <div className="mt-1 text-[13px] leading-5">
+                  Invoice collection is paused on your subscription, so no payment will be taken until billing resumes.
+                  {billingResumeLabel ? (
+                    <>
+                      {" "}
+                      Stripe is set to resume invoicing on{" "}
+                      <span className="font-semibold">{billingResumeLabel}</span>.
+                    </>
+                  ) : null}{" "}
+                  You can resume or change this anytime from Manage subscription.
                 </div>
               </div>
             ) : null}
@@ -413,14 +459,6 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
                     <p className="text-[13px] font-medium text-[#71717A]">Your subscription</p>
                     <p className="mt-2 text-[22px] font-semibold leading-7 text-[#09090B]">{subscriptionTitle}</p>
                     <p className="mt-1 text-[14px] leading-5 text-[#71717A]">{subscriptionMeta}</p>
-                    {billingAccessState === "canceled" && serviceEndLabel ? (
-                      <div className="mt-3 flex items-start gap-2 text-[13px] leading-5 text-[#3F3F46]">
-                        <Calendar className="mt-0.5 h-4 w-4 shrink-0 text-[#71717A]" strokeWidth={1.75} aria-hidden />
-                        <p>
-                          Your service will end on <span className="font-medium text-[#09090B]">{serviceEndLabel}</span>.
-                        </p>
-                      </div>
-                    ) : null}
                     <button
                       type="button"
                       onClick={() => {

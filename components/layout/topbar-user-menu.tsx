@@ -48,10 +48,16 @@ export function TopbarUserMenu({ userInitials, avatarUrl, userDisplayName }: Top
           setPlanLabel("Pro");
           return;
         }
+        if (data.accessState === "paused") {
+          setPlanLabel("Pro (paused)");
+          return;
+        }
+        if (data.cancelAtPeriodEnd && data.plan === "pro") {
+          setPlanLabel("Pro");
+          return;
+        }
         if (data.accessState === "canceled" && data.accessEndsAt) {
-          const d = new Date(data.accessEndsAt);
-          const dateLabel = Number.isFinite(d.getTime()) ? d.toLocaleDateString() : "";
-          setPlanLabel(dateLabel ? `Canceled (ends ${dateLabel})` : "Canceled");
+          setPlanLabel("Pro");
           return;
         }
         setPlanLabel("Free plan");

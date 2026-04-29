@@ -3,6 +3,7 @@ import type Stripe from "stripe";
 
 import {
   findUserIdByStripeCustomer,
+  getBillingSubscriptionStripeIdsForUser,
   recordWebhookEvent,
   setSubscriptionTrial,
   upsertBillingCustomer,
@@ -112,7 +113,27 @@ export async function POST(req: Request) {
         });
 
         if (session.mode === "subscription" && typeof session.subscription === "string") {
-          const subscription = await stripe.subscriptions.retrieve(session.subscription, {
+          const newSubscriptionId = session.subscription;
+
+          const prior = await getBillingSubscriptionStripeIdsForUser(userId);
+          if (
+            prior?.stripe_subscription_id &&
+            prior.stripe_subscription_id !== newSubscriptionId
+          ) {
+            try {
+              const oldSub = await stripe.subscriptions.retrieve(prior.stripe_subscription_id, {
+                expand: ["items.data.price"],
+              });
+              if (oldSub.status === "active" || oldSub.status === "trialing") {
+                await stripe.subscriptions.cancel(newSubscriptionId);
+                break;
+              }
+            } catch {
+              // prior subscription no longer exists in Stripe — allow the new one
+            }
+          }
+
+          const subscription = await stripe.subscriptions.retrieve(newSubscriptionId, {
             expand: ["items.data.price"],
           });
           await upsertBillingSubscription({

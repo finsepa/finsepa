@@ -28,7 +28,8 @@ function planFromCode(planCode: string): "trial" | "pro" {
   return planCode.startsWith("pro_") ? "pro" : "trial";
 }
 
-function subscriptionMeta(status: string, cancelAtPeriodEnd: boolean): string {
+function subscriptionMeta(status: string, cancelAtPeriodEnd: boolean, collectionPaused = false): string {
+  if (collectionPaused) return "Billing paused";
   if (cancelAtPeriodEnd) return "Cancels at period end";
   if (status === "trialing") return "Trialing";
   if (status === "past_due") return "Payment past due";
@@ -84,7 +85,9 @@ export async function getBillingSummaryForUser(userId: string): Promise<BillingS
     plan: isPro ? "pro" : "trial",
     accessState,
     accessEndsAt: subscription.cancel_at_period_end ? subscription.current_period_end : null,
-    subscriptionMeta: subscriptionMeta(subscription.status, subscription.cancel_at_period_end),
+    cancelAtPeriodEnd: !!subscription.cancel_at_period_end,
+    billingResumeAt: null,
+    subscriptionMeta: subscriptionMeta(subscription.status, subscription.cancel_at_period_end, false),
     recurringAmountUsd: isPro ? recurringAmountUsd : 0,
     recurringDueDate: subscription.current_period_end,
     paymentHistory: (invoices ?? []).map((row) => ({
@@ -242,6 +245,19 @@ export async function upsertPaidInvoice(args: {
     },
     { onConflict: "stripe_account_key,stripe_invoice_id" },
   );
+}
+
+export async function getBillingSubscriptionStripeIdsForUser(userId: string): Promise<{
+  stripe_subscription_id: string | null;
+} | null> {
+  const admin = getSupabaseAdminClient();
+  if (!admin) return null;
+  const { data } = await admin
+    .from("billing_subscriptions")
+    .select("stripe_subscription_id")
+    .eq("user_id", userId)
+    .maybeSingle<{ stripe_subscription_id: string | null }>();
+  return data ?? null;
 }
 
 export async function getBillingSubscriptionIdentity(userId: string): Promise<{
