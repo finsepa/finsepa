@@ -151,12 +151,23 @@ export async function upsertBillingSubscription(args: {
   stripeAccountKey: string;
   stripeCustomerId: string;
   subscription: Stripe.Subscription;
+  /**
+   * Stripe's Subscription payload can omit period fields depending on API version / expansions.
+   * If provided, this overrides any derived current_period_end.
+   */
+  currentPeriodEndSeconds?: number | null;
 }) {
   const admin = getSupabaseAdminClient();
   if (!admin) return;
   const priceId = args.subscription.items.data[0]?.price?.id ?? null;
   const currentPeriodEnd = (args.subscription as unknown as { current_period_end?: unknown })
     .current_period_end;
+  const effectivePeriodEndSeconds =
+    typeof args.currentPeriodEndSeconds === "number"
+      ? args.currentPeriodEndSeconds
+      : typeof currentPeriodEnd === "number"
+        ? currentPeriodEnd
+        : null;
   await admin.from("billing_subscriptions").upsert(
     {
       user_id: args.userId,
@@ -170,8 +181,8 @@ export async function upsertBillingSubscription(args: {
       plan_code: resolvePlanCode(args.subscription),
       status: args.subscription.status,
       current_period_end:
-        typeof currentPeriodEnd === "number"
-          ? new Date(currentPeriodEnd * 1000).toISOString()
+        typeof effectivePeriodEndSeconds === "number"
+          ? new Date(effectivePeriodEndSeconds * 1000).toISOString()
           : null,
       cancel_at_period_end: args.subscription.cancel_at_period_end ?? false,
       updated_at: new Date().toISOString(),

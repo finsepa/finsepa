@@ -20,10 +20,13 @@ function getDefaultStripeSecretKey(): string | undefined {
 
 function getDefaultPortalReturnUrl(): string {
   const envUrl =
+    pickProcessEnv("NEXT_PUBLIC_APP_ORIGIN") ??
     pickProcessEnv("NEXT_PUBLIC_APP_URL") ??
     pickProcessEnv("APP_URL") ??
     pickProcessEnv("NEXT_PUBLIC_SITE_URL");
   if (envUrl) return `${envUrl.replace(/\/+$/, "")}/account?tab=billing`;
+  const vercelUrl = pickProcessEnv("VERCEL_URL");
+  if (vercelUrl) return `https://${vercelUrl.replace(/\/+$/, "")}/account?tab=billing`;
   return "http://localhost:3000/account?tab=billing";
 }
 

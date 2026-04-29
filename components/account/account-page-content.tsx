@@ -25,6 +25,8 @@ const readOnlyFieldClass =
 
 type AccountTabId = "profile" | "billing";
 
+const billingHistoryColLayout = "grid-cols-[120px_96px_minmax(0,2fr)] gap-x-2";
+
 function FieldLabel({ children, htmlFor }: { children: React.ReactNode; htmlFor?: string }) {
   return (
     <label htmlFor={htmlFor} className="mb-1.5 block text-sm font-medium text-[#09090B]">
@@ -215,8 +217,10 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
   const recurringAmount =
     billingPlan === "pro" ? `$${billingSummary.recurringAmountUsd.toFixed(2)}` : "$0.00";
   const recurringMeta =
-    billingPlan === "pro" && billingSummary.recurringDueDate
-      ? `Next payment on ${new Date(billingSummary.recurringDueDate).toLocaleDateString()}`
+    billingPlan === "pro"
+      ? billingSummary.recurringDueDate
+        ? `Next payment on ${new Date(billingSummary.recurringDueDate).toLocaleDateString()}`
+        : "Next payment date will appear soon."
       : "No upcoming payment while on free trial.";
 
   return (
@@ -379,27 +383,35 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
                   </p>
                 </div>
               ) : (
-                <div className="mt-4 overflow-x-auto rounded-[10px] border border-[#E4E4E7]">
-                  <table className="min-w-full divide-y divide-[#E4E4E7] bg-white">
-                    <thead className="bg-white">
-                      <tr className="text-left text-[14px] font-medium leading-5 text-[#71717A]">
-                        <th className="px-4 py-3">Date</th>
-                        <th className="px-4 py-3 text-right">Amount</th>
-                        <th className="px-4 py-3">Description</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[#E4E4E7]">
+                <div className="mt-4">
+                  <div className="-mx-5 overflow-x-auto px-5 [-webkit-overflow-scrolling:touch]">
+                    <div className="min-w-[560px] divide-y divide-[#E4E4E7] bg-white lg:min-w-0">
+                      <div
+                        className={`grid ${billingHistoryColLayout} min-h-[44px] items-center bg-white px-2 py-0 text-[12px] font-medium leading-5 text-[#71717A] sm:px-4 sm:text-[14px]`}
+                      >
+                        <div className="text-left">Date</div>
+                        <div className="min-w-0 w-full text-right">Amount</div>
+                        <div className="text-left">Description</div>
+                      </div>
+
                       {paymentHistory.map((row) => (
-                        <tr key={row.id} className="text-[14px] leading-5 text-[#09090B]">
-                          <td className="whitespace-nowrap px-4 py-3">{new Date(row.date).toLocaleDateString()}</td>
-                          <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums">
+                        <div
+                          key={row.id}
+                          className={`group grid ${billingHistoryColLayout} min-h-[56px] items-center bg-white px-2 transition-colors duration-75 hover:bg-neutral-50 sm:min-h-[60px] sm:px-4`}
+                        >
+                          <div className="whitespace-nowrap text-[14px] font-normal leading-5 text-[#09090B]">
+                            {new Date(row.date).toLocaleDateString()}
+                          </div>
+                          <div className="min-w-0 w-full whitespace-nowrap text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
                             ${row.amountUsd.toFixed(2)}
-                          </td>
-                          <td className="px-4 py-3">{row.description}</td>
-                        </tr>
+                          </div>
+                          <div className="min-w-0 truncate text-[14px] font-normal leading-5 text-[#09090B]">
+                            {row.description}
+                          </div>
+                        </div>
                       ))}
-                    </tbody>
-                  </table>
+                    </div>
+                  </div>
                 </div>
               )}
             </section>

@@ -168,6 +168,10 @@ export async function POST(req: Request) {
 
         const invoiceSubscriptionId = (invoice as unknown as { subscription?: unknown }).subscription;
         if (typeof invoiceSubscriptionId === "string") {
+          const invoiceLinePeriodEndSeconds =
+            typeof invoice.lines?.data?.[0]?.period?.end === "number"
+              ? invoice.lines.data[0].period.end
+              : null;
           const subscription = await stripe.subscriptions.retrieve(invoiceSubscriptionId, {
             expand: ["items.data.price"],
           });
@@ -176,6 +180,7 @@ export async function POST(req: Request) {
             stripeAccountKey: account.key,
             stripeCustomerId: customerId,
             subscription,
+            currentPeriodEndSeconds: invoiceLinePeriodEndSeconds,
           });
         }
         break;
