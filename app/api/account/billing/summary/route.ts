@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { getStripeClient } from "@/lib/stripe/server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
+type BillingAccessState = "trial" | "pro" | "canceled" | "expired";
+
 type BillingSubscriptionRow = {
   plan_code: string;
   status: string;
@@ -147,13 +149,40 @@ export async function GET() {
       }
     }
 
+    const nowMs = Date.now();
+    const dueMs = recurringDueDate ? new Date(recurringDueDate).getTime() : null;
+
+    let accessState: BillingAccessState = "trial";
+    let accessEndsAt: string | null = null;
+
+    if (isPro) {
+      if (subscription?.cancel_at_period_end) {
+        accessEndsAt = recurringDueDate;
+        if (typeof dueMs === "number" && Number.isFinite(dueMs) && dueMs > nowMs) {
+          accessState = "canceled"; // still Pro until accessEndsAt
+        } else {
+          accessState = "expired"; // period end passed (or unknown), treat as expired
+        }
+      } else {
+        accessState = "pro";
+      }
+    } else if (isStripeProPlan) {
+      // Previously Pro, but Stripe says it's not active/trialing anymore.
+      accessState = "expired";
+      accessEndsAt = recurringDueDate;
+    }
+
+    const plan: "pro" | "trial" = accessState === "pro" || accessState === "canceled" ? "pro" : "trial";
+
     return NextResponse.json({
-      plan: isPro ? "pro" : "trial",
+      plan,
+      accessState,
+      accessEndsAt,
       subscriptionMeta: subscription
         ? subscriptionMeta(subscription.status, subscription.cancel_at_period_end)
         : "Trial is active",
-      recurringAmountUsd: isPro ? subscription?.recurring_amount_usd ?? 0 : 0,
-      recurringDueDate,
+      recurringAmountUsd: plan === "pro" ? subscription?.recurring_amount_usd ?? 0 : 0,
+      recurringDueDate: plan === "pro" ? recurringDueDate : null,
       paymentHistory: (invoices ?? []).map((row) => ({
         id: row.id,
         date: row.paid_at,

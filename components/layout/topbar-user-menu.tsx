@@ -14,6 +14,7 @@ import { TopbarDelayedTooltip } from "@/components/layout/topbar-delayed-tooltip
 import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
 import { UserAvatar } from "@/components/user/user-avatar";
 import { PATH_LOGIN } from "@/lib/auth/routes";
+import type { BillingSummary } from "@/lib/account/billing";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { cn } from "@/lib/utils";
 
@@ -28,8 +29,42 @@ export function TopbarUserMenu({ userInitials, avatarUrl, userDisplayName }: Top
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [planLabel, setPlanLabel] = useState<string>("Free plan");
+  const [planLoading, setPlanLoading] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const menuPortalRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    (async () => {
+      setPlanLoading(true);
+      try {
+        const res = await fetch("/api/account/billing/summary", { method: "GET" });
+        if (!res.ok) return;
+        const data = (await res.json()) as BillingSummary;
+        if (cancelled) return;
+        if (data.accessState === "pro") {
+          setPlanLabel("Pro");
+          return;
+        }
+        if (data.accessState === "canceled" && data.accessEndsAt) {
+          const d = new Date(data.accessEndsAt);
+          const dateLabel = Number.isFinite(d.getTime()) ? d.toLocaleDateString() : "";
+          setPlanLabel(dateLabel ? `Canceled (ends ${dateLabel})` : "Canceled");
+          return;
+        }
+        setPlanLabel("Free plan");
+      } catch {
+        // ignore
+      } finally {
+        if (!cancelled) setPlanLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -90,7 +125,13 @@ export function TopbarUserMenu({ userInitials, avatarUrl, userDisplayName }: Top
             <UserAvatar imageSrc={avatarUrl} initials={userInitials} size="menu" />
             <div className="min-w-0 flex-1 pt-0.5">
               <div className="truncate text-sm font-semibold leading-5 text-[#09090B]">{userDisplayName}</div>
-              <div className="mt-0.5 text-xs font-normal leading-4 text-[#52525B]">Free plan</div>
+              <div className="mt-0.5 text-xs font-normal leading-4 text-[#52525B]">
+                {planLoading ? (
+                  <div className="h-3 w-20 animate-pulse rounded bg-[#E4E4E7]" />
+                ) : (
+                  planLabel
+                )}
+              </div>
             </div>
           </div>
 

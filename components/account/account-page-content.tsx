@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Calendar } from "lucide-react";
 import { toast } from "sonner";
 import { PATH_LOGIN } from "@/lib/auth/routes";
 import { EMPTY_BILLING_SUMMARY, type BillingSummary } from "@/lib/account/billing";
@@ -213,6 +214,7 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
   const showBillingSkeleton = activeTab === "billing" && !billingHydrated;
   const displayEmail = initial.email ?? "";
   const billingPlan = billingSummary.plan;
+  const billingAccessState = billingSummary.accessState;
   const paymentHistory = billingSummary.paymentHistory;
   const subscriptionTitle = billingPlan === "pro" ? "Pro" : "Free Trial";
   const subscriptionMeta = billingSummary.subscriptionMeta;
@@ -225,6 +227,18 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
         ? `Next payment on ${new Date(billingSummary.recurringDueDate).toLocaleDateString()}`
         : "Next payment date will appear soon."
       : "No upcoming payment while on free trial.";
+
+  const accessEndsAtLabel = billingSummary.accessEndsAt
+    ? new Date(billingSummary.accessEndsAt).toLocaleDateString()
+    : null;
+  const serviceEndLabel =
+    billingSummary.accessEndsAt && Number.isFinite(new Date(billingSummary.accessEndsAt).getTime())
+      ? new Date(billingSummary.accessEndsAt).toLocaleDateString("en-GB", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        })
+      : null;
 
   return (
     <div className="min-w-0 px-4 py-4 sm:px-9 sm:py-6">
@@ -344,6 +358,36 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
           </div>
         ) : (
           <div className="mt-8 space-y-8">
+            {billingAccessState === "canceled" && accessEndsAtLabel ? (
+              <div className="rounded-xl border border-[#FDBA74] bg-[#FFF7ED] px-4 py-3 text-[#9A3412] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
+                <div className="text-[14px] font-semibold leading-5">Pro subscription canceled</div>
+                <div className="mt-1 text-[13px] leading-5">
+                  You&apos;ve canceled your Pro subscription. Your access to Finsepa will be lost after{" "}
+                  <span className="font-semibold">{accessEndsAtLabel}</span>.
+                </div>
+              </div>
+            ) : null}
+
+            {billingAccessState === "expired" ? (
+              <section className="rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
+                <div className="rounded-xl bg-[#F4F4F5] px-6 py-10 text-center">
+                  <p className="text-[12px] font-medium leading-5 text-[#71717A]">Join early access</p>
+                  <div className="mx-auto mt-6 w-full max-w-[360px] rounded-2xl border border-[#E4E4E7] bg-white p-6 shadow-[0px_10px_16px_-3px_rgba(10,10,10,0.08),0px_4px_6px_0px_rgba(10,10,10,0.03)]">
+                    <div className="text-[18px] font-semibold leading-6 text-[#09090B]">Finsepa Pro</div>
+                    <div className="mt-1 text-[13px] leading-5 text-[#71717A]">
+                      Your Pro access has ended. Upgrade to continue using Finsepa.
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setUpgradeModalOpen(true)}
+                      className="mt-6 h-10 w-full rounded-[10px] bg-[#09090B] px-6 text-sm font-semibold text-white transition-colors hover:bg-[#18181B]"
+                    >
+                      Buy Pro
+                    </button>
+                  </div>
+                </div>
+              </section>
+            ) : (
             <section className="grid gap-4 sm:grid-cols-2">
               {showBillingSkeleton ? (
                 <>
@@ -369,6 +413,14 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
                     <p className="text-[13px] font-medium text-[#71717A]">Your subscription</p>
                     <p className="mt-2 text-[22px] font-semibold leading-7 text-[#09090B]">{subscriptionTitle}</p>
                     <p className="mt-1 text-[14px] leading-5 text-[#71717A]">{subscriptionMeta}</p>
+                    {billingAccessState === "canceled" && serviceEndLabel ? (
+                      <div className="mt-3 flex items-start gap-2 text-[13px] leading-5 text-[#3F3F46]">
+                        <Calendar className="mt-0.5 h-4 w-4 shrink-0 text-[#71717A]" strokeWidth={1.75} aria-hidden />
+                        <p>
+                          Your service will end on <span className="font-medium text-[#09090B]">{serviceEndLabel}</span>.
+                        </p>
+                      </div>
+                    ) : null}
                     <button
                       type="button"
                       onClick={() => {
@@ -393,14 +445,40 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
                 </>
               )}
             </section>
+            )}
 
+            {billingAccessState === "expired" ? null : (
             <section className="rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
               <h3 className="text-[16px] font-semibold leading-6 text-[#09090B]">Payment history</h3>
               {showBillingSkeleton || billingLoading ? (
-                <div className="mt-4 rounded-[10px] border border-dashed border-[#D4D4D8] bg-[#FAFAFA] px-4 py-8 text-center">
-                  <div className="mx-auto max-w-[420px] animate-pulse space-y-3">
-                    <div className="h-4 w-40 rounded bg-[#E4E4E7]" />
-                    <div className="h-4 w-64 rounded bg-[#E4E4E7]" />
+                <div className="mt-4">
+                  <div className="-mx-5 overflow-x-auto px-5 [-webkit-overflow-scrolling:touch]">
+                    <div className="min-w-[560px] divide-y divide-[#E4E4E7] bg-white lg:min-w-0">
+                      <div
+                        className={`grid ${billingHistoryColLayout} min-h-[44px] items-center bg-white px-2 py-0 text-[12px] font-medium leading-5 text-[#71717A] sm:px-4 sm:text-[14px]`}
+                      >
+                        <div className="text-left">Date</div>
+                        <div className="min-w-0 w-full text-right">Amount</div>
+                        <div className="text-left">Description</div>
+                      </div>
+
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <div
+                          key={i}
+                          className={`grid ${billingHistoryColLayout} min-h-[56px] items-center bg-white px-2 sm:min-h-[60px] sm:px-4`}
+                        >
+                          <div className="animate-pulse">
+                            <div className="h-4 w-24 rounded bg-[#E4E4E7]" />
+                          </div>
+                          <div className="flex justify-end animate-pulse">
+                            <div className="h-4 w-16 rounded bg-[#E4E4E7]" />
+                          </div>
+                          <div className="animate-pulse">
+                            <div className="h-4 w-40 rounded bg-[#E4E4E7]" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               ) : paymentHistory.length === 0 ? (
@@ -443,6 +521,7 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
                 </div>
               )}
             </section>
+            )}
           </div>
         )}
       </div>

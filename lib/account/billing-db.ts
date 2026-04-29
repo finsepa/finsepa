@@ -70,9 +70,20 @@ export async function getBillingSummaryForUser(userId: string): Promise<BillingS
 
   const isPro = planFromCode(subscription.plan_code) === "pro";
   const recurringAmountUsd = subscription.recurring_amount_usd ?? 0;
+  const dueMs = subscription.current_period_end ? new Date(subscription.current_period_end).getTime() : null;
+  const accessState: BillingSummary["accessState"] =
+    isPro && subscription.cancel_at_period_end
+      ? typeof dueMs === "number" && Number.isFinite(dueMs) && dueMs > Date.now()
+        ? "canceled"
+        : "expired"
+      : isPro
+        ? "pro"
+        : "trial";
 
   return {
     plan: isPro ? "pro" : "trial",
+    accessState,
+    accessEndsAt: subscription.cancel_at_period_end ? subscription.current_period_end : null,
     subscriptionMeta: subscriptionMeta(subscription.status, subscription.cancel_at_period_end),
     recurringAmountUsd: isPro ? recurringAmountUsd : 0,
     recurringDueDate: subscription.current_period_end,
