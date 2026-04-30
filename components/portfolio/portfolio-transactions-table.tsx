@@ -34,6 +34,7 @@ import { formatPortfolioUsdPerUnit } from "@/lib/portfolio/format-portfolio-usd-
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import { TABLE_PAGE_SIZE, TablePaginationBar, tablePageCount } from "@/components/ui/table-pagination";
 import { buildSplitAdjustedTradeIndex } from "@/lib/portfolio/split-adjusted-trades";
+import { SegmentedControl } from "@/components/design-system";
 import { cn } from "@/lib/utils";
 import type { PortfolioTransaction, PortfolioTransactionKind } from "@/components/portfolio/portfolio-types";
 
@@ -340,30 +341,14 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                 aria-label="Search transactions by asset name or ticker"
               />
             </div>
-            <div
-              className="inline-flex shrink-0 rounded-full bg-[#F4F4F5] p-0.5"
-              role="group"
+            <SegmentedControl
+              options={FILTERS.map((f) => ({ value: f, label: f }))}
+              value={filter}
+              onChange={setFilter}
+              size="sm"
               aria-label="Transaction type"
-            >
-              {FILTERS.map((f) => {
-                const active = f === filter;
-                return (
-                  <button
-                    key={f}
-                    type="button"
-                    onClick={() => setFilter(f)}
-                    className={cn(
-                      "rounded-[10px] px-3 py-1.5 text-sm font-medium leading-5 transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2 sm:px-4",
-                      active
-                        ? "bg-white text-[#09090B] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]"
-                        : "text-[#71717A] hover:text-[#09090B]",
-                    )}
-                  >
-                    {f}
-                  </button>
-                );
-              })}
-            </div>
+              className="min-w-0 shrink-0 flex-nowrap"
+            />
           </div>
         )}
       </div>

@@ -44,7 +44,7 @@ async function buildTop500UniverseUncached(): Promise<TopCompanyUniverseRow[]> {
   return merged.slice(0, 500);
 }
 
-const getTop500UniverseData = unstable_cache(buildTop500UniverseUncached, ["screener-top500-universe-v11-preferred-suffix"], {
+const getTop500UniverseData = unstable_cache(buildTop500UniverseUncached, ["screener-top500-universe-v12-industry"], {
   revalidate: REVALIDATE_STATIC,
 });
 

@@ -12,6 +12,7 @@ import { SCREENER_MARKETS_PAGE_SIZE } from "@/lib/screener/screener-markets-page
 import { IndexCards } from "@/components/screener/index-cards";
 import { MarketTabs, type MarketTab } from "@/components/screener/market-tabs";
 import { UsMarketsSessionLabel } from "@/components/screener/us-markets-session-label";
+import { ScreenerIndustriesTable } from "@/components/screener/screener-industries-table";
 import { ScreenerSectorsTable } from "@/components/screener/screener-sectors-table";
 import { ScreenerTabs, type StocksSubTab } from "@/components/screener/screener-tabs";
 import { ScreenerTable } from "@/components/screener/screener-table";
@@ -19,6 +20,7 @@ import { CryptoTable } from "@/components/screener/crypto-table";
 import { IndicesTable } from "@/components/screener/indices-table";
 import { StocksTableSkeleton } from "@/components/markets/markets-skeletons";
 import { ScreenerPagination } from "@/components/ui/table-pagination";
+import type { ScreenerIndustryRow } from "@/lib/screener/screener-industries-types";
 import type { ScreenerSectorRow } from "@/lib/screener/screener-sectors-types";
 
 /** Rows per list on the Stocks → Gainers & Losers sub-tab. */
@@ -40,6 +42,7 @@ function StocksTabBody({
   companiesPage,
   setCompaniesPage,
   sectorsRows,
+  industriesRows,
 }: {
   stockRows: ScreenerTableRow[];
   stocksTotalCount: number;
@@ -49,6 +52,7 @@ function StocksTabBody({
   companiesPage: number;
   setCompaniesPage: (u: number | ((p: number) => number)) => void;
   sectorsRows: ScreenerSectorRow[];
+  industriesRows: ScreenerIndustryRow[];
 }) {
   const companiesPageSize = SCREENER_MARKETS_PAGE_SIZE;
   const companiesTotal = stocksTotalCount;
@@ -73,6 +77,8 @@ function StocksTabBody({
     <>
       {stocksSubTab === "Sectors" ? (
         <ScreenerSectorsTable rows={sectorsRows} />
+      ) : stocksSubTab === "Industries" ? (
+        <ScreenerIndustriesTable rows={industriesRows} />
       ) : stocksSubTab === "Companies" ? (
         <div>
           {companiesLoading && !companiesRows.length ? (
@@ -211,6 +217,7 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
   const stockRows = payload.market === "stocks" ? payload.stockRows : [];
   const stocksTotalCount = payload.market === "stocks" ? payload.stocksTotalCount : 0;
   const sectorsRows = payload.market === "stocks" ? payload.sectors : [];
+  const industriesRows = payload.market === "stocks" ? payload.industries : [];
   const cryptoRows = payload.market === "crypto" ? payload.cryptoRows : [];
   const cryptoTotalCount = payload.market === "crypto" ? payload.cryptoTotalCount : 0;
 
@@ -344,6 +351,7 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
             companiesPage={companiesPage}
             setCompaniesPage={setCompaniesPage}
             sectorsRows={sectorsRows}
+            industriesRows={industriesRows}
           />
         </>
       ) : null}

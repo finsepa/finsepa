@@ -23,6 +23,7 @@ export function FormListboxSelect<V extends string>({
   "aria-label": ariaLabel = "Choose option",
   className,
   listboxClassName,
+  triggerClassName,
   disabled = false,
 }: {
   id?: string;
@@ -33,6 +34,8 @@ export function FormListboxSelect<V extends string>({
   className?: string;
   /** Extra classes on the outer relative wrapper (e.g. z-index in stacked modals). */
   listboxClassName?: string;
+  /** Merged with default trigger button classes (e.g. white surface + border). */
+  triggerClassName?: string;
   disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -75,6 +78,7 @@ export function FormListboxSelect<V extends string>({
         className={cn(
           "relative flex h-9 w-full cursor-pointer items-center rounded-[10px] bg-[#F4F4F5] py-2 pl-4 pr-10 text-left text-sm font-normal text-[#09090B] outline-none transition-colors hover:bg-[#EBEBEB] focus-visible:ring-2 focus-visible:ring-[#09090B]/10",
           disabled && "cursor-not-allowed opacity-60 hover:bg-[#F4F4F5]",
+          triggerClassName,
         )}
       >
         <span className="min-w-0 flex-1 truncate">{active.label}</span>

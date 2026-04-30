@@ -26,7 +26,7 @@ export type ProtectedNavItem = {
 
 export const protectedMarketItems: ProtectedNavItem[] = [
   { label: "Screener", icon: Globe, href: "/screener", available: true },
-  { label: "Heatmaps", icon: LayoutGrid, href: "/heatmaps", available: false },
+  { label: "Heatmaps", icon: LayoutGrid, href: "/heatmaps", available: true },
   { label: "News", icon: Newspaper, href: "/news", available: NAV_NEWS_ENABLED },
 ];
 

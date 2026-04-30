@@ -24,7 +24,7 @@ async function buildScreenerStaticLayerUncached(): Promise<ScreenerCompaniesStat
 
 export const getScreenerCompaniesStaticLayer = unstable_cache(
   buildScreenerStaticLayerUncached,
-  ["screener-v2-companies-static-layer-v2-otc-dedupe"],
+  ["screener-v2-companies-static-layer-v3-industry"],
   { revalidate: REVALIDATE_STATIC },
 );
 

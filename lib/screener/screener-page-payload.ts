@@ -36,7 +36,8 @@ import {
   cryptoScreenerRowsFromMetas,
   indicesTableRowsFromSimpleLayers,
 } from "@/lib/screener/simple-screener-crypto-indices-rows";
-import { buildScreenerSectorsRows } from "@/lib/screener/screener-sectors";
+import { buildScreenerSectorsAndIndustriesRows } from "@/lib/screener/screener-stocks-universe-aggregates";
+import type { ScreenerIndustryRow } from "@/lib/screener/screener-industries-types";
 import type { ScreenerSectorRow } from "@/lib/screener/screener-sectors-types";
 import { SCREENER_MARKETS_PAGE_SIZE } from "@/lib/screener/screener-markets-page-size";
 
@@ -49,6 +50,7 @@ export type ScreenerPagePayload =
       stocksTotalCount: number;
       indexCards: IndexCardData[];
       sectors: ScreenerSectorRow[];
+      industries: ScreenerIndustryRow[];
     }
   | { market: "crypto"; cryptoRows: CryptoTop10Row[]; cryptoTotalCount: number }
   | { market: "indices"; indicesRows: IndexTableRow[] };
@@ -307,7 +309,7 @@ export async function buildScreenerPagePayload(market: ScreenerMarketTab): Promi
     buildScreenerCompaniesApiResponse(1, SCREENER_MARKETS_PAGE_SIZE),
   ]);
 
-  const sectors = buildScreenerSectorsRows(staticLayer.universe);
+  const { sectors, industries } = buildScreenerSectorsAndIndustriesRows(staticLayer.universe);
 
   return {
     market: "stocks",
@@ -315,5 +317,6 @@ export async function buildScreenerPagePayload(market: ScreenerMarketTab): Promi
     stocksTotalCount: companiesFirst.total,
     indexCards,
     sectors,
+    industries,
   };
 }

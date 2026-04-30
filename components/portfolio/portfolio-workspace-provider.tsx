@@ -20,6 +20,10 @@ import { DeletePortfolioConfirmModal } from "@/components/portfolio/delete-portf
 import { EditTransactionModal } from "@/components/layout/edit-transaction-modal";
 import { NewTransactionModal } from "@/components/layout/new-transaction-modal";
 import { ClearableInput } from "@/components/layout/clearable-input";
+import {
+  CombinedPortfolioSourceHint,
+  CombinedPortfolioSourcesPicker,
+} from "@/components/portfolio/combined-portfolio-sources-picker";
 import { CreateCombinedPortfolioModal } from "@/components/portfolio/create-combined-portfolio-modal";
 import { PortfolioWorkspaceContext } from "@/components/portfolio/portfolio-workspace-context";
 import { cn } from "@/lib/utils";
@@ -84,24 +88,49 @@ function EditPortfolioModal({
   initialName,
   initialPrivacy,
   isCombined = false,
-  combinedFromSummary = "",
+  allPortfolios,
+  initialCombinedFromIds,
   onClose,
   onSave,
   onRequestDelete,
 }: {
   initialName: string;
   initialPrivacy: PortfolioPrivacy;
-  /** Read-only aggregate portfolio — name only; privacy/sources are fixed. */
   isCombined?: boolean;
-  combinedFromSummary?: string;
+  allPortfolios: PortfolioEntry[];
+  initialCombinedFromIds?: string[];
   onClose: () => void;
-  onSave: (name: string, privacy: PortfolioPrivacy) => void;
+  onSave: (name: string, privacy: PortfolioPrivacy, combinedSourceIds?: string[]) => void;
   /** Opens delete confirmation; does not delete immediately. */
   onRequestDelete: () => void;
 }) {
   const titleId = useId();
   const [name, setName] = useState(initialName);
   const [privacy, setPrivacy] = useState<PortfolioPrivacy>(initialPrivacy);
+
+  const standardPortfolios = useMemo(
+    () => allPortfolios.filter((p) => p.kind !== "combined"),
+    [allPortfolios],
+  );
+
+  const [picked, setPicked] = useState<Record<string, boolean>>(() => {
+    if (!isCombined || !initialCombinedFromIds) return {};
+    const allowed = new Set(standardPortfolios.map((p) => p.id));
+    const o: Record<string, boolean> = {};
+    for (const id of initialCombinedFromIds) {
+      if (allowed.has(id)) o[id] = true;
+    }
+    return o;
+  });
+
+  const selectedSourceIds = useMemo(
+    () => standardPortfolios.filter((p) => picked[p.id]).map((p) => p.id),
+    [standardPortfolios, picked],
+  );
+
+  const toggleSource = useCallback((id: string) => {
+    setPicked((prev) => ({ ...prev, [id]: !prev[id] }));
+  }, []);
 
   useEffect(() => {
     setName(initialName);
@@ -159,23 +188,21 @@ function EditPortfolioModal({
             />
           </ModalField>
           {isCombined ? (
-            <ModalField label="Source portfolios">
-              <p className="rounded-[10px] border border-[#E4E4E7] bg-[#F4F4F5] px-4 py-3 text-sm leading-5 text-[#71717A]">
-                {combinedFromSummary || "—"}
-              </p>
-              <p className="text-xs leading-4 text-[#71717A]">
-                To change which portfolios are included, create a new combined portfolio. Transactions and cash
-                stay in each source portfolio.
-              </p>
+            <ModalField label="Portfolios to include">
+              <CombinedPortfolioSourceHint />
+              <CombinedPortfolioSourcesPicker
+                standardPortfolios={standardPortfolios}
+                picked={picked}
+                onToggle={toggleSource}
+              />
             </ModalField>
-          ) : (
-            <ModalField label="Privacy">
-              <div className="flex w-full flex-col gap-2">
-                <PortfolioPrivacySelect value={privacy} onChange={setPrivacy} />
-                {privacy === "public" ? <PublicPrivacyNotice /> : null}
-              </div>
-            </ModalField>
-          )}
+          ) : null}
+          <ModalField label="Privacy">
+            <div className="flex w-full flex-col gap-2">
+              <PortfolioPrivacySelect value={privacy} onChange={setPrivacy} />
+              {privacy === "public" ? <PublicPrivacyNotice /> : null}
+            </div>
+          </ModalField>
         </div>
 
         <div className="flex shrink-0 gap-3 border-t border-[#E4E4E7] px-6 py-4">
@@ -188,8 +215,18 @@ function EditPortfolioModal({
           </button>
           <button
             type="button"
-            onClick={() => onSave(name, isCombined ? initialPrivacy : privacy)}
-            className="flex min-h-9 flex-1 items-center justify-center rounded-[10px] bg-[#09090B] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#27272A]"
+            disabled={isCombined && (name.trim().length === 0 || selectedSourceIds.length < 2)}
+            onClick={() =>
+              isCombined ?
+                onSave(name.trim(), privacy, selectedSourceIds)
+              : onSave(name, privacy)
+            }
+            className={cn(
+              "flex min-h-9 flex-1 items-center justify-center rounded-[10px] px-4 py-2 text-sm font-medium text-white transition-colors",
+              isCombined && (name.trim().length === 0 || selectedSourceIds.length < 2) ?
+                "cursor-not-allowed bg-[#A1A1AA] opacity-50"
+              : "bg-[#09090B] hover:bg-[#27272A]",
+            )}
           >
             Save
           </button>
@@ -657,14 +694,16 @@ export function PortfolioWorkspaceProvider({
 
   useEffect(() => {
     if (!workspaceHydrated || attemptedHydratePublicListingSyncRef.current) return;
-    const publicStandard = portfolios.filter((p) => p.privacy === "public" && !portfolioIsCombined(p));
-    if (publicStandard.length === 0) return;
+    const publicListed = portfolios.filter(
+      (p) => p.privacy === "public" && (p.kind !== "combined" || portfolioIsCombined(p)),
+    );
+    if (publicListed.length === 0) return;
 
     attemptedHydratePublicListingSyncRef.current = true;
 
     void (async () => {
       let anyOk = false;
-      for (const p of publicStandard) {
+      for (const p of publicListed) {
         const holdings = displayHoldingsByPortfolioId[p.id] ?? [];
         const txs = displayTransactionsByPortfolioId[p.id] ?? [];
         const r = await putPublicPortfolioListingRequest({
@@ -690,8 +729,10 @@ export function PortfolioWorkspaceProvider({
     if (!workspaceHydrated) return;
     const tid = window.setTimeout(() => {
       void (async () => {
-        const publicStandard = portfolios.filter((p) => p.privacy === "public" && !portfolioIsCombined(p));
-        const current = new Set(publicStandard.map((p) => p.id));
+        const publicListed = portfolios.filter(
+          (p) => p.privacy === "public" && (p.kind !== "combined" || portfolioIsCombined(p)),
+        );
+        const current = new Set(publicListed.map((p) => p.id));
         const prev = prevPublishedPortfolioIdsRef.current;
 
         let listingsUpdated = false;
@@ -711,7 +752,7 @@ export function PortfolioWorkspaceProvider({
             }
           }
         }
-        for (const p of publicStandard) {
+        for (const p of publicListed) {
           const holdings = displayHoldingsByPortfolioId[p.id] ?? [];
           const txs = displayTransactionsByPortfolioId[p.id] ?? [];
           const metrics = metricsForPublicListing(holdings, txs);
@@ -1014,23 +1055,52 @@ export function PortfolioWorkspaceProvider({
           initialName={portfolios.find((p) => p.id === editPortfolioId)?.name ?? ""}
           initialPrivacy={portfolios.find((p) => p.id === editPortfolioId)?.privacy ?? "private"}
           isCombined={portfolios.find((p) => p.id === editPortfolioId)?.kind === "combined"}
-          combinedFromSummary={
-            portfolios
-              .find((p) => p.id === editPortfolioId)
-              ?.combinedFrom?.map((cid) => portfolios.find((x) => x.id === cid)?.name ?? cid)
-              .join(", ") ?? ""
-          }
+          allPortfolios={portfolios}
+          initialCombinedFromIds={portfolios.find((p) => p.id === editPortfolioId)?.combinedFrom}
           onClose={() => {
             setEditPortfolioOpen(false);
             setEditPortfolioId(null);
           }}
-          onSave={(name, nextPrivacy) => {
+          onSave={(name, nextPrivacy, combinedSourceIds) => {
             const t = name.trim();
             const id = editPortfolioId;
             const editing = portfolios.find((p) => p.id === id);
             if (editing?.kind === "combined") {
               if (t.length === 0) return;
-              setPortfolios((prev) => prev.map((p) => (p.id === id ? { ...p, name: t } : p)));
+              const rawIds = combinedSourceIds ?? [];
+              const filteredSourceIds = rawIds.filter((sid) =>
+                portfolios.some((x) => x.id === sid && x.kind !== "combined"),
+              );
+              if (filteredSourceIds.length < 2) return;
+
+              setPortfolios((prev) =>
+                prev.map((p) =>
+                  p.id === id ?
+                    { ...p, name: t, privacy: nextPrivacy, combinedFrom: filteredSourceIds }
+                  : p,
+                ),
+              );
+
+              const listsH = filteredSourceIds.map((sid) => holdingsByPortfolioId[sid] ?? []);
+              const mergedH = mergeHoldingsBySymbol(listsH);
+              const listsT = filteredSourceIds.map((sid) => transactionsByPortfolioId[sid] ?? []);
+              const mergedT = mergeTransactionsSorted(listsT);
+
+              if (nextPrivacy === "public") {
+                void putPublicPortfolioListingRequest({
+                  portfolioId: id,
+                  publish: true,
+                  displayName: t,
+                  metrics: metricsForPublicListing(mergedH, mergedT),
+                }).then((r) => {
+                  if (r.ok) dispatchPublicListingsChanged();
+                });
+              } else {
+                void putPublicPortfolioListingRequest({ portfolioId: id, publish: false }).then((r) => {
+                  if (r.ok) dispatchPublicListingsChanged();
+                });
+              }
+
               toast.success(`Combined portfolio "${t}" updated.`);
               setEditPortfolioOpen(false);
               setEditPortfolioId(null);
@@ -1109,7 +1179,7 @@ export function PortfolioWorkspaceProvider({
           const id = deletePortfolioConfirmId;
           if (!id) return;
           const deleted = portfolios.find((p) => p.id === id);
-          if (deleted && deleted.privacy === "public" && !portfolioIsCombined(deleted)) {
+          if (deleted && deleted.privacy === "public") {
             void putPublicPortfolioListingRequest({ portfolioId: id, publish: false }).then((r) => {
               if (r.ok) dispatchPublicListingsChanged();
             });

@@ -35,6 +35,8 @@ export type EodhdTopUniverseRow = {
   name: string;
   /** GICS-style sector from EODHD screener row, when provided. */
   sector: string | null;
+  /** EODHD screener industry (sub-sector), when provided. */
+  industry: string | null;
   marketCapUsd: number;
   /** Last EOD adjusted close from screener (stale vs live quote). */
   adjustedClose: number | null;
@@ -175,6 +177,7 @@ async function fetchEodhdScreenerUncached(args: {
         ticker,
         name: name || ticker,
         sector,
+        industry,
         marketCapUsd: mc,
         adjustedClose: num(r.adjusted_close),
         refund1dP: num(r.refund_1d_p),
@@ -191,7 +194,7 @@ async function fetchEodhdScreenerUncached(args: {
   }
 }
 
-const fetchEodhdScreenerCached = unstable_cache(fetchEodhdScreenerUncached, ["eodhd-screener-v8-skip-etfs"], {
+const fetchEodhdScreenerCached = unstable_cache(fetchEodhdScreenerUncached, ["eodhd-screener-v9-industry-field"], {
   revalidate: REVALIDATE_STATIC,
 });
 
