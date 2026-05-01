@@ -1,10 +1,13 @@
 import { MacroPage } from "@/components/macro/macro-page";
 import { isSingleAssetMode } from "@/lib/features/single-asset";
+import { getMacroDashboardPayloadCached } from "@/lib/market/macro-dashboard-payload";
 
-export default function Page() {
+export default async function Page() {
   if (isSingleAssetMode()) {
     return <div className="px-4 py-4 text-[#71717A] sm:px-9 sm:py-6">Temporarily unavailable in NVDA-only mode.</div>;
   }
-  return <MacroPage />;
-}
 
+  const { items } = await getMacroDashboardPayloadCached();
+
+  return <MacroPage initialItems={items} />;
+}

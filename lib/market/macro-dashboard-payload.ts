@@ -2,8 +2,8 @@ import "server-only";
 
 import { unstable_cache } from "next/cache";
 
-import { REVALIDATE_WARM } from "@/lib/data/cache-policy";
-import { fetchMacroSeries5y, MACRO_SERIES, type MacroSeriesDef } from "@/lib/market/eodhd-macro";
+import { REVALIDATE_STATIC_DAY } from "@/lib/data/cache-policy";
+import { fetchMacroSeriesAll, MACRO_SERIES, type MacroSeriesDef } from "@/lib/market/eodhd-macro";
 
 export type MacroDashboardCard = {
   id: string;
@@ -24,7 +24,7 @@ async function buildMacroDashboardPayloadUncached(): Promise<{ country: string; 
 
   const settled = await Promise.allSettled(
     MACRO_SERIES.map(async (def: MacroSeriesDef): Promise<MacroDashboardCard | null> => {
-      const points = await fetchMacroSeries5y(country, def);
+      const points = await fetchMacroSeriesAll(country, def);
       if (!points.length) return null;
       const l = latest(points);
       if (!l) return null;
@@ -51,10 +51,11 @@ async function buildMacroDashboardPayloadUncached(): Promise<{ country: string; 
 }
 
 /**
- * Single cached blob for `/api/macro` — avoids recomputing N series on every navigation after cold fill.
+ * Single cached blob for `/macro` (RSC) and `/api/macro` — one `unstable_cache` entry shared across all users
+ * until revalidation (~24h, same tier as macro indicator rows); matches Economy calendar-style cadence.
  */
 export const getMacroDashboardPayloadCached = unstable_cache(
   buildMacroDashboardPayloadUncached,
-  ["macro-dashboard-payload-v2"],
-  { revalidate: REVALIDATE_WARM },
+  ["macro-dashboard-payload-v15"],
+  { revalidate: REVALIDATE_STATIC_DAY },
 );

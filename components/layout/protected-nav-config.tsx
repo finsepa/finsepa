@@ -13,7 +13,7 @@ import {
   Wallet,
 } from "lucide-react";
 
-import { NAV_EARNINGS_ENABLED, NAV_MACRO_ENABLED, NAV_NEWS_ENABLED } from "@/lib/features/nav-flags";
+import { NAV_EARNINGS_ENABLED, NAV_ECONOMY_ENABLED, NAV_MACRO_ENABLED, NAV_NEWS_ENABLED } from "@/lib/features/nav-flags";
 
 export type ProtectedNavItem = {
   label: string;
@@ -32,7 +32,7 @@ export const protectedMarketItems: ProtectedNavItem[] = [
 
 export const protectedCalendarItems: ProtectedNavItem[] = [
   { label: "Earnings", icon: CalendarDays, href: "/earnings", available: NAV_EARNINGS_ENABLED },
-  { label: "Economy", icon: BookOpen, href: "/economy", available: false },
+  { label: "Economy", icon: BookOpen, href: "/economy", available: NAV_ECONOMY_ENABLED },
 ];
 
 export const protectedDataItems: ProtectedNavItem[] = [

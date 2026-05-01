@@ -340,7 +340,7 @@ export function EarningsWeekGrid({
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
           <div className="flex min-w-0 flex-wrap items-center gap-2">
             <h1 className="text-[24px] font-semibold leading-9 tracking-tight text-[#09090B]">{data.weekLabel}</h1>
-            <div className="flex shrink-0 items-center gap-1">
+            <div className="flex shrink-0 items-center gap-3">
               <Link
                 href={`/earnings?week=${encodeURIComponent(prevWeekYmd)}`}
                 prefetch={false}
@@ -348,6 +348,15 @@ export function EarningsWeekGrid({
                 aria-label="Previous week"
               >
                 <ChevronLeft className="h-5 w-5" strokeWidth={1.75} />
+              </Link>
+              <Link
+                href={`/earnings?week=${encodeURIComponent(thisWeekMondayYmd)}`}
+                prefetch={false}
+                className={todayBtnClass}
+                aria-label="Go to this week"
+                aria-current={data.weekMondayYmd === thisWeekMondayYmd ? "page" : undefined}
+              >
+                Today
               </Link>
               <Link
                 href={`/earnings?week=${encodeURIComponent(nextWeekYmd)}`}
@@ -359,15 +368,6 @@ export function EarningsWeekGrid({
               </Link>
             </div>
           </div>
-          <Link
-            href={`/earnings?week=${encodeURIComponent(thisWeekMondayYmd)}`}
-            prefetch={false}
-            className={todayBtnClass}
-            aria-label="Go to this week"
-            aria-current={data.weekMondayYmd === thisWeekMondayYmd ? "page" : undefined}
-          >
-            Today
-          </Link>
         </div>
       </div>
 

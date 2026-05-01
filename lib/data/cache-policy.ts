@@ -159,10 +159,10 @@ function cacheControlPublicSMaxageSwr(sMaxAgeSec: number, swrSec: number): strin
 export const CACHE_CONTROL_PRIVATE_NEWS = cacheControlPrivateSMaxageSwr(REVALIDATE_SEARCH, REVALIDATE_SEARCH * 2);
 
 /**
- * Macro dashboard bundle — `s-maxage` = {@link REVALIDATE_WARM}, SWR = {@link REVALIDATE_TIER_SCREENER_DERIVED} (300 / 1800).
+ * Macro dashboard JSON — `s-maxage` = {@link REVALIDATE_STATIC_DAY} (aligned with `getMacroDashboardPayloadCached`), SWR = {@link REVALIDATE_TIER_SCREENER_DERIVED}.
  */
 export const CACHE_CONTROL_PUBLIC_MACRO_DASHBOARD = cacheControlPublicSMaxageSwr(
-  REVALIDATE_WARM,
+  REVALIDATE_STATIC_DAY,
   REVALIDATE_TIER_SCREENER_DERIVED,
 );
 

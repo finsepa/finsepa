@@ -4,6 +4,17 @@ import { formatPercentMetric, formatUsdCompact } from "@/lib/market/key-stats-ba
 
 export type MacroValueKind = "percent" | "usd" | "index" | "number";
 
+/** Caption under the headline (e.g. `Jul 2024`) from an observation date. */
+export function formatMacroPeriodCaption(ymd: string): string {
+  const t = ymd.trim().slice(0, 10);
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(t);
+  if (!m) return ymd;
+  const y = Number(m[1]);
+  const mo = Number(m[2]);
+  if (!Number.isFinite(y) || !Number.isFinite(mo)) return ymd;
+  return new Date(Date.UTC(y, mo - 1, 1)).toLocaleDateString("en-US", { month: "short", year: "numeric" });
+}
+
 export function formatMacroValue(kind: MacroValueKind, v: number): string {
   if (!Number.isFinite(v)) return "—";
   if (kind === "percent") return formatPercentMetric(v);

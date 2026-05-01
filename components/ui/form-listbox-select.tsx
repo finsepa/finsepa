@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 import { Check, ChevronDown } from "lucide-react";
 
@@ -24,18 +25,30 @@ export function FormListboxSelect<V extends string>({
   className,
   listboxClassName,
   triggerClassName,
+  menuClassName,
+  truncateLabel = true,
+  truncateOptions = true,
   disabled = false,
+  leadingIcon,
 }: {
   id?: string;
   value: V;
   onChange: (next: V) => void;
   options: readonly ListboxOption<V>[];
+  /** Optional icon inside the trigger (e.g. search) — does not replace the chevron. */
+  leadingIcon?: ReactNode;
   "aria-label"?: string;
   className?: string;
   /** Extra classes on the outer relative wrapper (e.g. z-index in stacked modals). */
   listboxClassName?: string;
   /** Merged with default trigger button classes (e.g. white surface + border). */
   triggerClassName?: string;
+  /** Extra classes on the floating listbox panel (position is included by default). */
+  menuClassName?: string;
+  /** When false, label stays on one line without ellipsis (widen the outer `className` as needed). */
+  truncateLabel?: boolean;
+  /** When false, menu option rows do not ellipsis (use with a wide {@link menuClassName} if needed). */
+  truncateOptions?: boolean;
   disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -76,16 +89,33 @@ export function FormListboxSelect<V extends string>({
           setOpen((v) => !v);
         }}
         className={cn(
-          "relative flex h-9 w-full cursor-pointer items-center rounded-[10px] bg-[#F4F4F5] py-2 pl-4 pr-10 text-left text-sm font-normal text-[#09090B] outline-none transition-colors hover:bg-[#EBEBEB] focus-visible:ring-2 focus-visible:ring-[#09090B]/10",
+          "relative flex h-9 w-full cursor-pointer items-center rounded-[10px] bg-[#F4F4F5] py-2 text-left text-sm font-normal text-[#09090B] outline-none transition-colors hover:bg-[#EBEBEB] focus-visible:ring-2 focus-visible:ring-[#09090B]/10",
           disabled && "cursor-not-allowed opacity-60 hover:bg-[#F4F4F5]",
           triggerClassName,
         )}
       >
-        <span className="min-w-0 flex-1 truncate">{active.label}</span>
+        {leadingIcon ? (
+          <span
+            className="pointer-events-none absolute left-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center text-[#71717A]"
+            aria-hidden
+          >
+            {leadingIcon}
+          </span>
+        ) : null}
+        {/* Horizontal padding lives here so `triggerClassName` can use `px-*` without hiding the chevron reserve. */}
+        <span
+          className={cn(
+            "min-w-0 flex-1 pr-11 text-left",
+            leadingIcon ? "pl-10" : "pl-4",
+            truncateLabel ? "truncate" : "whitespace-nowrap",
+          )}
+        >
+          {active.label}
+        </span>
       </button>
       <ChevronDown
         className={cn(
-          "pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[#09090B] transition-transform",
+          "pointer-events-none absolute right-3 top-1/2 h-5 w-5 shrink-0 -translate-y-1/2 text-[#09090B] transition-transform",
           open && "rotate-180",
         )}
         strokeWidth={2}
@@ -95,7 +125,9 @@ export function FormListboxSelect<V extends string>({
         <div
           className={cn(
             dropdownMenuPanelClassName(),
-            "absolute left-0 right-0 top-[calc(100%+4px)] z-[120]",
+            /** At least trigger width; grow with option labels (narrow triggers used to clip flags + text). */
+            "absolute left-0 top-[calc(100%+4px)] z-[120] min-w-full w-max max-w-[min(24rem,calc(100vw-2rem))]",
+            menuClassName,
           )}
           role="listbox"
           aria-label={ariaLabel}
@@ -114,7 +146,14 @@ export function FormListboxSelect<V extends string>({
                 }}
                 className={dropdownMenuPlainItemRowClassName({ selected })}
               >
-                <span className="min-w-0 flex-1 truncate text-left">{opt.label}</span>
+                <span
+                  className={cn(
+                    "min-w-0 flex-1 text-left",
+                    truncateOptions ? "truncate" : "whitespace-nowrap",
+                  )}
+                >
+                  {opt.label}
+                </span>
                 <span className="flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden>
                   {selected ? <Check className="h-4 w-4 text-[#09090B]" strokeWidth={2} /> : null}
                 </span>
