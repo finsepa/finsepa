@@ -175,11 +175,49 @@ export async function upsertBillingCustomer(args: {
   );
 }
 
-function resolvePlanCode(subscription: Stripe.Subscription): string {
+export function resolvePlanCode(subscription: Stripe.Subscription): string {
   const interval = subscription.items.data[0]?.price?.recurring?.interval;
   if (interval === "year") return "pro_annually";
   if (interval === "month") return "pro_monthly";
   return "pro";
+}
+
+/** Best-effort recipient for billing notifications when `invoice.customer_email` is empty. */
+export async function resolveStripeInvoiceRecipientEmail(args: {
+  stripe: Stripe;
+  invoice: Stripe.Invoice;
+  userId: string;
+}): Promise<string | null> {
+  const fromInvoice = args.invoice.customer_email?.trim();
+  if (fromInvoice) return fromInvoice;
+
+  const raw = args.invoice.customer;
+  const customerId =
+    typeof raw === "string"
+      ? raw
+      : raw && typeof raw === "object" && "deleted" in raw && raw.deleted
+        ? null
+        : raw && typeof raw === "object" && "id" in raw
+          ? (raw as { id: string }).id
+          : null;
+  if (customerId) {
+    try {
+      const c = await args.stripe.customers.retrieve(customerId);
+      if (!c.deleted && typeof c.email === "string") {
+        const e = c.email.trim();
+        if (e) return e;
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  const admin = getSupabaseAdminClient();
+  if (!admin) return null;
+  const { data, error } = await admin.auth.admin.getUserById(args.userId);
+  if (error || !data.user?.email) return null;
+  const e = data.user.email.trim();
+  return e || null;
 }
 
 export async function upsertBillingSubscription(args: {

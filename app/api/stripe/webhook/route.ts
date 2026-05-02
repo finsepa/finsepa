@@ -5,11 +5,16 @@ import {
   findUserIdByStripeCustomer,
   getBillingSubscriptionStripeIdsForUser,
   recordWebhookEvent,
+  resolvePlanCode,
+  resolveStripeInvoiceRecipientEmail,
   setSubscriptionTrial,
   upsertBillingCustomer,
   upsertBillingSubscription,
   upsertPaidInvoice,
 } from "@/lib/account/billing-db";
+import { getLoopsApiKey } from "@/lib/env/loops";
+import { sendLoopsProActivatedEmail } from "@/lib/loops/send-pro-activated";
+import { sendLoopsProRenewedEmail } from "@/lib/loops/send-pro-renewed";
 import { getStripeAccountConfig, getStripeClient } from "@/lib/stripe/server";
 
 function invoiceDescription(invoice: Stripe.Invoice): string {
@@ -203,6 +208,34 @@ export async function POST(req: Request) {
             subscription,
             currentPeriodEndSeconds: invoiceLinePeriodEndSeconds,
           });
+
+          const loopsKey = getLoopsApiKey();
+          const planCode = resolvePlanCode(subscription);
+          const billingReason = invoice.billing_reason;
+          if (
+            loopsKey &&
+            planCode.startsWith("pro") &&
+            (billingReason === "subscription_create" || billingReason === "subscription_cycle")
+          ) {
+            const to = await resolveStripeInvoiceRecipientEmail({
+              stripe,
+              invoice,
+              userId,
+            });
+            if (to) {
+              if (billingReason === "subscription_create") {
+                const sent = await sendLoopsProActivatedEmail({ apiKey: loopsKey, to });
+                if (!sent.ok) {
+                  console.error("[stripe webhook] Loops Pro activated email failed:", sent.message);
+                }
+              } else {
+                const sent = await sendLoopsProRenewedEmail({ apiKey: loopsKey, to });
+                if (!sent.ok) {
+                  console.error("[stripe webhook] Loops Pro renewed email failed:", sent.message);
+                }
+              }
+            }
+          }
         }
         break;
       }

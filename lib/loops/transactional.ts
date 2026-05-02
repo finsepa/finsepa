@@ -16,32 +16,34 @@ function messageFromLoopsBody(json: unknown): string | undefined {
 }
 
 /**
- * Loops transactional email with `firstName` + `confirmationLink` data variables (sign-up, password reset, etc.).
+ * Generic Loops transactional send (`transactionalId` + `email`; optional `dataVariables`).
+ * @see https://loops.so/docs/api-reference/send-transactional-email
  */
-export async function sendLoopsTransactionalAuthEmail(params: {
+export async function sendLoopsTransactionalEmail(params: {
   apiKey: string;
   transactionalId: string;
   to: string;
-  confirmationLink: string;
-  firstName: string;
+  addContact?: boolean;
+  dataVariables?: Record<string, string | number | boolean>;
   /** Appended to error messages for debugging (which template / env id). */
   errorHint?: string;
 }): Promise<{ ok: true } | { ok: false; message: string }> {
+  const body: Record<string, unknown> = {
+    transactionalId: params.transactionalId,
+    email: params.to,
+    addContact: params.addContact !== false,
+  };
+  if (params.dataVariables && Object.keys(params.dataVariables).length > 0) {
+    body.dataVariables = params.dataVariables;
+  }
+
   const res = await fetch(LOOPS_TRANSACTIONAL_URL, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${params.apiKey}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      transactionalId: params.transactionalId,
-      email: params.to,
-      addContact: true,
-      dataVariables: {
-        firstName: params.firstName,
-        confirmationLink: params.confirmationLink,
-      },
-    }),
+    body: JSON.stringify(body),
   });
 
   const text = await res.text();
@@ -60,8 +62,33 @@ export async function sendLoopsTransactionalAuthEmail(params: {
       ok: false,
       message:
         detail ||
-        `Loops request failed (${res.status}).${hint ? ` ${hint}` : " Check LOOPS_API_KEY and template variables firstName + confirmationLink."}`,
+        `Loops request failed (${res.status}).${hint ? ` ${hint}` : " Check LOOPS_API_KEY and transactional template."}`,
     };
   }
   return { ok: true };
+}
+
+/**
+ * Loops transactional email with `firstName` + `confirmationLink` data variables (sign-up, password reset, etc.).
+ */
+export async function sendLoopsTransactionalAuthEmail(params: {
+  apiKey: string;
+  transactionalId: string;
+  to: string;
+  confirmationLink: string;
+  firstName: string;
+  /** Appended to error messages for debugging (which template / env id). */
+  errorHint?: string;
+}): Promise<{ ok: true } | { ok: false; message: string }> {
+  return sendLoopsTransactionalEmail({
+    apiKey: params.apiKey,
+    transactionalId: params.transactionalId,
+    to: params.to,
+    dataVariables: {
+      firstName: params.firstName,
+      confirmationLink: params.confirmationLink,
+    },
+    errorHint:
+      params.errorHint ?? "Check LOOPS_API_KEY and template variables firstName + confirmationLink.",
+  });
 }
