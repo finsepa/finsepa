@@ -3,7 +3,11 @@ import "server-only";
 import type Stripe from "stripe";
 import { EMPTY_BILLING_SUMMARY, type BillingSummary } from "@/lib/account/billing";
 import { hasActivePaidProSubscription } from "@/lib/account/billing-guard";
-import { isPlatformTrialPast, platformTrialDaysRemaining as computePlatformTrialDaysRemaining } from "@/lib/account/platform-trial";
+import {
+  effectivePlatformTrialEndsAtIso,
+  isPlatformTrialPast,
+  platformTrialDaysRemaining as computePlatformTrialDaysRemaining,
+} from "@/lib/account/platform-trial";
 import { getLoopsApiKey } from "@/lib/env/loops";
 import { sendLoopsProRenewedEmail } from "@/lib/loops/send-pro-renewed";
 import { getStripeClient } from "@/lib/stripe/server";
@@ -21,6 +25,8 @@ type BillingSubscriptionRow = {
   current_period_end: string | null;
   cancel_at_period_end: boolean;
   platform_trial_ends_at: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
 };
 
 type BillingInvoiceRow = {
@@ -85,8 +91,7 @@ export async function getBillingSummaryForUser(userId: string): Promise<BillingS
         ? "pro"
         : "trial";
 
-  const platformTrialEndsAtIso =
-    typeof subscription.platform_trial_ends_at === "string" ? subscription.platform_trial_ends_at : null;
+  const platformTrialEndsAtIso = effectivePlatformTrialEndsAtIso(subscription);
   if (!isPro && accessState === "trial" && isPlatformTrialPast(platformTrialEndsAtIso)) {
     accessState = "trial_expired";
   }

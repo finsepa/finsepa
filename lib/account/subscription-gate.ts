@@ -1,12 +1,18 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { hasActivePaidProSubscription } from "@/lib/account/billing-guard";
-import { isPlatformTrialPast, platformTrialDaysRemaining } from "@/lib/account/platform-trial";
+import {
+  effectivePlatformTrialEndsAtIso,
+  isPlatformTrialPast,
+  platformTrialDaysRemaining,
+} from "@/lib/account/platform-trial";
 
 type BillingGateRow = {
   plan_code: string | null;
   status: string | null;
   platform_trial_ends_at: string | null;
+  created_at: string | null;
+  updated_at: string | null;
 };
 
 /**
@@ -19,7 +25,7 @@ export async function getSubscriptionGateContext(
 ): Promise<{ needsPaywall: boolean; topbarTrialDaysLeft: number | null }> {
   const { data: row } = await supabase
     .from("billing_subscriptions")
-    .select("plan_code,status,platform_trial_ends_at")
+    .select("plan_code,status,platform_trial_ends_at,created_at,updated_at")
     .eq("user_id", userId)
     .maybeSingle<BillingGateRow>();
 
@@ -33,7 +39,7 @@ export async function getSubscriptionGateContext(
     return { needsPaywall: true, topbarTrialDaysLeft: null };
   }
 
-  const platformEnd = row?.platform_trial_ends_at ?? null;
+  const platformEnd = effectivePlatformTrialEndsAtIso(row);
   if (!platformEnd) {
     return { needsPaywall: false, topbarTrialDaysLeft: null };
   }

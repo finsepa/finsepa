@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 
 import { syncPaidInvoicesFromStripeForUser } from "@/lib/account/billing-db";
-import { isPlatformTrialPast, platformTrialDaysRemaining as computePlatformTrialDaysRemaining } from "@/lib/account/platform-trial";
+import {
+  effectivePlatformTrialEndsAtIso,
+  isPlatformTrialPast,
+  platformTrialDaysRemaining as computePlatformTrialDaysRemaining,
+} from "@/lib/account/platform-trial";
 import { getStripeClient } from "@/lib/stripe/server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -17,6 +21,8 @@ type BillingSubscriptionRow = {
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
   platform_trial_ends_at: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
 };
 
 type BillingInvoiceRow = {
@@ -284,8 +290,7 @@ export async function GET() {
       accessEndsAt = stripeCurrentPeriodEndIso ?? recurringDueDate;
     }
 
-    const platformTrialEndsAtIso =
-      typeof subscription?.platform_trial_ends_at === "string" ? subscription.platform_trial_ends_at : null;
+    const platformTrialEndsAtIso = effectivePlatformTrialEndsAtIso(subscription ?? null);
 
     if (!isPro && accessState === "trial" && isPlatformTrialPast(platformTrialEndsAtIso)) {
       accessState = "trial_expired";
