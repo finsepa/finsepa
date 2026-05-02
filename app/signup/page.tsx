@@ -1,24 +1,24 @@
 import Link from "next/link";
-import { SignupClient } from "./signup-client";
 import { AuthCenteredLayout } from "@/components/auth/auth-centered-layout";
+import { SignupClientDynamic } from "./signup-client-dynamic";
 
 export default function SignupPage() {
   return (
     <AuthCenteredLayout
-      title="Sign up to your account"
+      title="Start Your Free Trial"
       subtitle={
         <>
           Already have an account?{" "}
           <Link
             href="/login"
-            className="font-semibold underline decoration-[#E4E4E7] underline-offset-4 transition-colors hover:decoration-[#A1A1AA]"
+            className="font-semibold text-[#2563EB] underline decoration-[#BFDBFE] underline-offset-4 transition-colors hover:text-[#1D4ED8] hover:decoration-[#93C5FD]"
           >
             Log in
           </Link>
         </>
       }
     >
-      <SignupClient />
+      <SignupClientDynamic />
     </AuthCenteredLayout>
   );
 }

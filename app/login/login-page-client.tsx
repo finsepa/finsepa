@@ -28,12 +28,12 @@ export function LoginPageClient({ resetSuccess, callbackError }: Props) {
       title="Log in to your account"
       subtitle={
         <>
-          Don&apos;t have an account?{" "}
+          <span className="text-[#71717A]">Not a member yet? </span>
           <Link
             href="/signup"
-            className="font-semibold underline decoration-[#E4E4E7] underline-offset-4 transition-colors hover:decoration-[#A1A1AA]"
+            className="font-bold text-[#2563EB] transition-colors hover:text-[#1D4ED8]"
           >
-            Sign up
+            Get a free trial
           </Link>
         </>
       }

@@ -3,8 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CircleQuestionMark, CreditCard, LogOut, Menu, User } from "lucide-react";
+import { CircleQuestionMark, CreditCard, LogOut, Menu, Sparkles, User } from "lucide-react";
 
+import { BillingUpgradeModal } from "@/components/account/billing-upgrade-modal";
 import {
   dropdownMenuPanelBodyClassName,
   dropdownMenuPlainItemClassName,
@@ -14,7 +15,11 @@ import { TopbarDelayedTooltip } from "@/components/layout/topbar-delayed-tooltip
 import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
 import { UserAvatar } from "@/components/user/user-avatar";
 import { PATH_LOGIN } from "@/lib/auth/routes";
-import type { BillingSummary } from "@/lib/account/billing";
+import {
+  EMPTY_BILLING_SUMMARY,
+  subscriptionTitleFromBillingSummary,
+  type BillingSummary,
+} from "@/lib/account/billing";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { cn } from "@/lib/utils";
 
@@ -23,13 +28,23 @@ type TopbarUserMenuProps = {
   avatarUrl: string | null;
   /** Full name for menu header (same source as workspace listing owner). */
   userDisplayName: string;
+  /** Days left in platform trial; shown after avatar on the menu trigger when &gt; 0. */
+  platformTrialDaysLeft?: number | null;
 };
 
-export function TopbarUserMenu({ userInitials, avatarUrl, userDisplayName }: TopbarUserMenuProps) {
+export function TopbarUserMenu({
+  userInitials,
+  avatarUrl,
+  userDisplayName,
+  platformTrialDaysLeft = null,
+}: TopbarUserMenuProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
-  const [planLabel, setPlanLabel] = useState<string>("Free plan");
+  const [planLabel, setPlanLabel] = useState<string>(() =>
+    subscriptionTitleFromBillingSummary(EMPTY_BILLING_SUMMARY),
+  );
   const [planLoading, setPlanLoading] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const menuPortalRef = useRef<HTMLDivElement>(null);
@@ -44,23 +59,7 @@ export function TopbarUserMenu({ userInitials, avatarUrl, userDisplayName }: Top
         if (!res.ok) return;
         const data = (await res.json()) as BillingSummary;
         if (cancelled) return;
-        if (data.accessState === "pro") {
-          setPlanLabel("Pro");
-          return;
-        }
-        if (data.accessState === "paused") {
-          setPlanLabel("Pro (paused)");
-          return;
-        }
-        if (data.cancelAtPeriodEnd && data.plan === "pro") {
-          setPlanLabel("Pro");
-          return;
-        }
-        if (data.accessState === "canceled" && data.accessEndsAt) {
-          setPlanLabel("Pro");
-          return;
-        }
-        setPlanLabel("Free plan");
+        setPlanLabel(subscriptionTitleFromBillingSummary(data));
       } catch {
         // ignore
       } finally {
@@ -90,6 +89,17 @@ export function TopbarUserMenu({ userInitials, avatarUrl, userDisplayName }: Top
     };
   }, [open]);
 
+  const showTrialCountdown =
+    typeof platformTrialDaysLeft === "number" && platformTrialDaysLeft > 0;
+
+  const showUpgradeMenuItem =
+    showTrialCountdown ||
+    (open && !planLoading && planLabel !== "Pro");
+
+  const menuTriggerLabel = showTrialCountdown
+    ? `Profile menu, ${platformTrialDaysLeft} ${platformTrialDaysLeft === 1 ? "day" : "days"} left in trial`
+    : "Profile";
+
   async function handleSignOut() {
     setSigningOut(true);
     try {
@@ -107,16 +117,31 @@ export function TopbarUserMenu({ userInitials, avatarUrl, userDisplayName }: Top
 
   return (
     <div className="relative" ref={rootRef}>
-      <TopbarDelayedTooltip label="Profile">
+      <TopbarDelayedTooltip label={menuTriggerLabel}>
         <button
           type="button"
           aria-expanded={open}
           aria-haspopup="menu"
-          onClick={() => setOpen((v) => !v)}
-          className="flex h-9 items-center gap-2 rounded-[10px] border border-[#E4E4E7] bg-white px-2 text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5]"
+          aria-label={menuTriggerLabel}
+          onClick={() =>
+            setOpen((v) => {
+              const next = !v;
+              if (next) setPlanLoading(true);
+              return next;
+            })
+          }
+          className="flex h-9 max-w-[min(100vw-10rem,280px)] min-w-0 items-center gap-2 rounded-[10px] border border-[#E4E4E7] bg-white px-2 text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5]"
         >
-          <Menu className="h-5 w-5 shrink-0" />
+          <Menu className="h-5 w-5 shrink-0" aria-hidden />
           <UserAvatar imageSrc={avatarUrl} initials={userInitials} size="sm" />
+          {showTrialCountdown ? (
+            <span className="min-w-0 shrink truncate text-xs font-semibold tabular-nums sm:text-sm">
+              <span className="sm:hidden">{platformTrialDaysLeft}d left</span>
+              <span className="hidden sm:inline">
+                {platformTrialDaysLeft} {platformTrialDaysLeft === 1 ? "day" : "days"} left
+              </span>
+            </span>
+          ) : null}
         </button>
       </TopbarDelayedTooltip>
 
@@ -169,6 +194,20 @@ export function TopbarUserMenu({ userInitials, avatarUrl, userDisplayName }: Top
               <CircleQuestionMark className="h-4 w-4 shrink-0 text-[#09090B]" strokeWidth={1.75} aria-hidden />
               <span className="min-w-0 flex-1 truncate text-left">Help</span>
             </a>
+            {showUpgradeMenuItem ? (
+              <button
+                type="button"
+                role="menuitem"
+                className={itemClass}
+                onClick={() => {
+                  setOpen(false);
+                  setUpgradeModalOpen(true);
+                }}
+              >
+                <Sparkles className="h-4 w-4 shrink-0 text-[#09090B]" strokeWidth={1.75} aria-hidden />
+                <span className="min-w-0 flex-1 truncate text-left">Upgrade to Pro</span>
+              </button>
+            ) : null}
             <button
               type="button"
               role="menuitem"
@@ -184,6 +223,14 @@ export function TopbarUserMenu({ userInitials, avatarUrl, userDisplayName }: Top
           </div>
         </div>
       </TopbarDropdownPortal>
+
+      <BillingUpgradeModal
+        open={upgradeModalOpen}
+        onClose={() => {
+          setUpgradeModalOpen(false);
+          router.refresh();
+        }}
+      />
     </div>
   );
 }

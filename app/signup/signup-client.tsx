@@ -396,7 +396,7 @@ export function SignupClient() {
       </div>
 
       <AuthPrimaryButton type="submit" disabled={loading || !formCanSubmit}>
-        {loading ? "Creating account…" : "Sign up"}
+        {loading ? "Creating account…" : "Get Started"}
       </AuthPrimaryButton>
     </form>
   );

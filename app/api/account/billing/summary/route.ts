@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 
+import { isPlatformTrialPast, platformTrialDaysRemaining as computePlatformTrialDaysRemaining } from "@/lib/account/platform-trial";
 import { getStripeClient } from "@/lib/stripe/server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
-type BillingAccessState = "trial" | "pro" | "canceled" | "expired" | "paused";
+type BillingAccessState = "trial" | "trial_expired" | "pro" | "canceled" | "expired" | "paused";
 
 type BillingSubscriptionRow = {
   plan_code: string;
@@ -14,6 +15,7 @@ type BillingSubscriptionRow = {
   stripe_account_key: string | null;
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
+  platform_trial_ends_at: string | null;
 };
 
 type BillingInvoiceRow = {
@@ -243,17 +245,36 @@ export async function GET() {
       accessEndsAt = stripeCurrentPeriodEndIso ?? recurringDueDate;
     }
 
+    const platformTrialEndsAtIso =
+      typeof subscription?.platform_trial_ends_at === "string" ? subscription.platform_trial_ends_at : null;
+
+    if (!isPro && accessState === "trial" && isPlatformTrialPast(platformTrialEndsAtIso)) {
+      accessState = "trial_expired";
+    }
+
     const plan: "pro" | "trial" =
       accessState === "pro" || accessState === "canceled" || accessState === "paused" ? "pro" : "trial";
 
     const cancelAtPeriodEndActive = isPro && stripeCancelAtPeriodEnd && !stripeCollectionPaused;
 
+    let platformTrialDaysRemaining: number | null = null;
+    if (
+      !isPro &&
+      accessState === "trial" &&
+      platformTrialEndsAtIso &&
+      !isPlatformTrialPast(platformTrialEndsAtIso)
+    ) {
+      platformTrialDaysRemaining = computePlatformTrialDaysRemaining(platformTrialEndsAtIso);
+    }
+
     const subscriptionMetaOut =
-      accessState === "expired"
-        ? "No active subscription"
-        : subscription
-          ? subscriptionMeta(stripeStatus, stripeCancelAtPeriodEnd, stripeCollectionPaused)
-          : "Trial is active";
+      accessState === "trial_expired"
+        ? "Free trial ended — subscribe to continue"
+        : accessState === "expired"
+          ? "No active subscription"
+          : subscription
+            ? subscriptionMeta(stripeStatus, stripeCancelAtPeriodEnd, stripeCollectionPaused)
+            : "Trial is active";
 
     return NextResponse.json({
       plan,
@@ -265,6 +286,8 @@ export async function GET() {
       recurringAmountUsd: plan === "pro" ? subscription?.recurring_amount_usd ?? 0 : 0,
       // Cancel at period end: no renewal invoice — never send a "next payment" date for that case.
       recurringDueDate: plan === "pro" && !cancelAtPeriodEndActive ? recurringDueDate : null,
+      platformTrialEndsAt: isPro ? null : platformTrialEndsAtIso,
+      platformTrialDaysRemaining,
       paymentHistory: (invoices ?? []).map((row) => ({
         id: row.id,
         date: row.paid_at,

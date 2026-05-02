@@ -20,11 +20,13 @@ function ProtectedAppChrome({
   userInitials,
   avatarUrl,
   userDisplayName,
+  platformTrialDaysLeft,
 }: {
   children: ReactNode;
   userInitials: string;
   avatarUrl: string | null;
   userDisplayName: string;
+  platformTrialDaysLeft: number | null;
 }) {
   const { collapsed } = useSidebarLayout();
   const outerPx = collapsed ? SIDEBAR_OUTER_COLLAPSED_PX : SIDEBAR_OUTER_EXPANDED_PX;
@@ -50,7 +52,12 @@ function ProtectedAppChrome({
           "left-1 md:left-[length:var(--shell-left)]",
         )}
       >
-        <Topbar userInitials={userInitials} avatarUrl={avatarUrl} userDisplayName={userDisplayName} />
+        <Topbar
+          userInitials={userInitials}
+          avatarUrl={avatarUrl}
+          userDisplayName={userDisplayName}
+          platformTrialDaysLeft={platformTrialDaysLeft}
+        />
       </div>
       <main
         className={cn(
@@ -71,11 +78,14 @@ export function ProtectedAppShellInner({
   userInitials,
   avatarUrl,
   userDisplayName,
+  platformTrialDaysLeft = null,
 }: {
   children: ReactNode;
   userInitials: string;
   avatarUrl: string | null;
   userDisplayName: string;
+  /** Days remaining in the platform free trial; shown in the top bar until the user subscribes. */
+  platformTrialDaysLeft?: number | null;
 }) {
   return (
     <SidebarLayoutProvider>
@@ -83,6 +93,7 @@ export function ProtectedAppShellInner({
         userInitials={userInitials}
         avatarUrl={avatarUrl}
         userDisplayName={userDisplayName}
+        platformTrialDaysLeft={platformTrialDaysLeft ?? null}
       >
         {children}
       </ProtectedAppChrome>

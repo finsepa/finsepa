@@ -2,6 +2,8 @@ import "server-only";
 
 import type Stripe from "stripe";
 import { EMPTY_BILLING_SUMMARY, type BillingSummary } from "@/lib/account/billing";
+import { hasActivePaidProSubscription } from "@/lib/account/billing-guard";
+import { isPlatformTrialPast, platformTrialDaysRemaining as computePlatformTrialDaysRemaining } from "@/lib/account/platform-trial";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 
 type BillingSubscriptionRow = {
@@ -15,6 +17,7 @@ type BillingSubscriptionRow = {
   status: string;
   current_period_end: string | null;
   cancel_at_period_end: boolean;
+  platform_trial_ends_at: string | null;
 };
 
 type BillingInvoiceRow = {
@@ -23,10 +26,6 @@ type BillingInvoiceRow = {
   amount_usd: number;
   description: string;
 };
-
-function planFromCode(planCode: string): "trial" | "pro" {
-  return planCode.startsWith("pro_") ? "pro" : "trial";
-}
 
 function subscriptionMeta(status: string, cancelAtPeriodEnd: boolean, collectionPaused = false): string {
   if (collectionPaused) return "Billing paused";
@@ -60,6 +59,8 @@ export async function getBillingSummaryForUser(userId: string): Promise<BillingS
   if (!subscription) {
     return {
       ...EMPTY_BILLING_SUMMARY,
+      platformTrialEndsAt: null,
+      platformTrialDaysRemaining: null,
       paymentHistory: (invoices ?? []).map((row) => ({
         id: row.id,
         date: row.paid_at,
@@ -69,10 +70,10 @@ export async function getBillingSummaryForUser(userId: string): Promise<BillingS
     };
   }
 
-  const isPro = planFromCode(subscription.plan_code) === "pro";
+  const isPro = hasActivePaidProSubscription(subscription);
   const recurringAmountUsd = subscription.recurring_amount_usd ?? 0;
   const dueMs = subscription.current_period_end ? new Date(subscription.current_period_end).getTime() : null;
-  const accessState: BillingSummary["accessState"] =
+  let accessState: BillingSummary["accessState"] =
     isPro && subscription.cancel_at_period_end
       ? typeof dueMs === "number" && Number.isFinite(dueMs) && dueMs > Date.now()
         ? "canceled"
@@ -81,15 +82,36 @@ export async function getBillingSummaryForUser(userId: string): Promise<BillingS
         ? "pro"
         : "trial";
 
+  const platformTrialEndsAtIso =
+    typeof subscription.platform_trial_ends_at === "string" ? subscription.platform_trial_ends_at : null;
+  if (!isPro && accessState === "trial" && isPlatformTrialPast(platformTrialEndsAtIso)) {
+    accessState = "trial_expired";
+  }
+
+  let platformTrialDaysRemaining: number | null = null;
+  if (
+    !isPro &&
+    accessState === "trial" &&
+    platformTrialEndsAtIso &&
+    !isPlatformTrialPast(platformTrialEndsAtIso)
+  ) {
+    platformTrialDaysRemaining = computePlatformTrialDaysRemaining(platformTrialEndsAtIso);
+  }
+
   return {
     plan: isPro ? "pro" : "trial",
     accessState,
     accessEndsAt: subscription.cancel_at_period_end ? subscription.current_period_end : null,
     cancelAtPeriodEnd: !!subscription.cancel_at_period_end,
     billingResumeAt: null,
-    subscriptionMeta: subscriptionMeta(subscription.status, subscription.cancel_at_period_end, false),
+    subscriptionMeta:
+      accessState === "trial_expired"
+        ? "Free trial ended — subscribe to continue"
+        : subscriptionMeta(subscription.status, subscription.cancel_at_period_end, false),
     recurringAmountUsd: isPro ? recurringAmountUsd : 0,
     recurringDueDate: subscription.current_period_end,
+    platformTrialEndsAt: isPro ? null : platformTrialEndsAtIso,
+    platformTrialDaysRemaining,
     paymentHistory: (invoices ?? []).map((row) => ({
       id: row.id,
       date: row.paid_at,
@@ -182,6 +204,11 @@ export async function upsertBillingSubscription(args: {
       : typeof currentPeriodEnd === "number"
         ? currentPeriodEnd
         : null;
+  const planCode = resolvePlanCode(args.subscription);
+  const isPaidProWindow =
+    planCode.startsWith("pro_") &&
+    (args.subscription.status === "active" || args.subscription.status === "trialing");
+
   await admin.from("billing_subscriptions").upsert(
     {
       user_id: args.userId,
@@ -192,7 +219,7 @@ export async function upsertBillingSubscription(args: {
       recurring_amount_usd: Number(
         ((args.subscription.items.data[0]?.price?.unit_amount ?? 0) / 100).toFixed(2),
       ),
-      plan_code: resolvePlanCode(args.subscription),
+      plan_code: planCode,
       status: args.subscription.status,
       current_period_end:
         typeof effectivePeriodEndSeconds === "number"
@@ -203,11 +230,16 @@ export async function upsertBillingSubscription(args: {
     },
     { onConflict: "user_id" },
   );
+
+  if (isPaidProWindow) {
+    await admin.from("billing_subscriptions").update({ platform_trial_ends_at: null }).eq("user_id", args.userId);
+  }
 }
 
 export async function setSubscriptionTrial(args: { userId: string }) {
   const admin = getSupabaseAdminClient();
   if (!admin) return;
+  const platformEnds = new Date(Date.now() + 7 * 86_400_000).toISOString();
   await admin.from("billing_subscriptions").upsert(
     {
       user_id: args.userId,
@@ -216,6 +248,7 @@ export async function setSubscriptionTrial(args: { userId: string }) {
       recurring_amount_usd: 0,
       current_period_end: null,
       cancel_at_period_end: false,
+      platform_trial_ends_at: platformEnds,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "user_id" },

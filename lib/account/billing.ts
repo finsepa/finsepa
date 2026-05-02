@@ -1,6 +1,6 @@
 export type BillingPlan = "trial" | "pro";
 
-export type BillingAccessState = "trial" | "pro" | "canceled" | "expired" | "paused";
+export type BillingAccessState = "trial" | "trial_expired" | "pro" | "canceled" | "expired" | "paused";
 
 export type BillingHistoryRow = {
   id: string;
@@ -23,6 +23,10 @@ export type BillingSummary = {
   recurringAmountUsd: number;
   recurringDueDate: string | null;
   paymentHistory: BillingHistoryRow[];
+  /** App-level trial end (ISO). Null when not applicable (e.g. active Pro). */
+  platformTrialEndsAt: string | null;
+  /** Days left in the app trial for the top bar; null when not in an active countdown. */
+  platformTrialDaysRemaining: number | null;
 };
 
 export const EMPTY_BILLING_SUMMARY: BillingSummary = {
@@ -35,4 +39,19 @@ export const EMPTY_BILLING_SUMMARY: BillingSummary = {
   recurringAmountUsd: 0,
   recurringDueDate: null,
   paymentHistory: [],
+  platformTrialEndsAt: null,
+  platformTrialDaysRemaining: null,
 };
+
+/** Same plan line as Account → Billing (e.g. “Free Trial”, “Pro”). */
+export function subscriptionTitleFromBillingSummary(summary: BillingSummary): string {
+  const billingPlan = summary.plan;
+  const billingAccessState = summary.accessState;
+  return billingPlan === "pro"
+    ? "Pro"
+    : billingAccessState === "trial_expired"
+      ? "Free trial ended"
+      : billingAccessState === "expired"
+        ? "Free plan"
+        : "Free Trial";
+}

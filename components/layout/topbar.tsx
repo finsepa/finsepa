@@ -90,10 +90,13 @@ export function Topbar({
   userInitials,
   avatarUrl,
   userDisplayName,
+  platformTrialDaysLeft = null,
 }: {
   userInitials: string;
   avatarUrl: string | null;
   userDisplayName: string;
+  /** Passed into the user menu: trial countdown after avatar + Upgrade to Pro in the dropdown. */
+  platformTrialDaysLeft?: number | null;
 }) {
   const [searchOpen, setSearchOpen] = useState(false);
 
@@ -170,6 +173,7 @@ export function Topbar({
             userInitials={userInitials}
             avatarUrl={avatarUrl}
             userDisplayName={userDisplayName}
+            platformTrialDaysLeft={platformTrialDaysLeft}
           />
 
           <TopbarDelayedTooltip label="Help" className="hidden md:inline-flex">

@@ -7,12 +7,15 @@ import { AuthBrandMark } from "./auth-brand-mark";
 export function AuthCenteredLayout({
   title,
   subtitle,
+  titleClassName,
   children,
   preCard,
   compact = false,
 }: {
   title: string;
   subtitle: ReactNode;
+  /** Merged onto the title heading (e.g. alternate color on signup). */
+  titleClassName?: string;
   children: ReactNode;
   /** Rendered above the white card (e.g. login success). */
   preCard?: ReactNode;
@@ -34,7 +37,14 @@ export function AuthCenteredLayout({
           </div>
 
           <div className={cn("text-center", compact ? "mt-4" : "mt-6")}>
-            <h1 className="text-[26px] font-semibold tracking-tight text-[#09090B]">{title}</h1>
+            <h1
+              className={cn(
+                "text-[26px] font-semibold tracking-tight text-[#09090B]",
+                titleClassName,
+              )}
+            >
+              {title}
+            </h1>
             <div className="mt-2 text-sm leading-6 text-[#71717A]">{subtitle}</div>
           </div>
 

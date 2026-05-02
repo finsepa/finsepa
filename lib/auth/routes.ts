@@ -13,6 +13,9 @@ export const PATH_AUTH_RESET_PASSWORD = "/auth/reset-password";
 /** Default destination after sign-in (protected product entry) */
 export const PATH_APP_ENTRY = "/screener";
 
+/** Full-screen subscribe prompt when the platform trial (or paid grace) has ended */
+export const PATH_ACTIVATE_SUBSCRIPTION = "/activate-subscription";
+
 export function isProtectedPath(pathname: string): boolean {
   if (pathname === "/screener" || pathname.startsWith("/screener/")) return true;
   if (pathname === "/crypto" || pathname.startsWith("/crypto/")) return true;

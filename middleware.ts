@@ -7,8 +7,11 @@ export async function middleware(request: NextRequest) {
   const PATH_SIGNUP = "/signup";
   const PATH_FORGOT_PASSWORD = "/forgot-password";
   const PATH_APP_ENTRY = "/screener";
+  const PATH_ACTIVATE_SUBSCRIPTION = "/activate-subscription";
 
   const path = request.nextUrl.pathname;
+
+  const isActivateSubscriptionPath = path === PATH_ACTIVATE_SUBSCRIPTION || path.startsWith(`${PATH_ACTIVATE_SUBSCRIPTION}/`);
 
   const isProtectedPath =
     path === "/screener" ||
@@ -70,7 +73,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(PATH_APP_ENTRY, request.url));
   }
 
-  if (!user && isProtectedPath) {
+  if (!user && (isProtectedPath || isActivateSubscriptionPath)) {
     // Preserve where the user was trying to go (optional).
     const loginUrl = new URL(PATH_LOGIN, request.url);
     loginUrl.searchParams.set("next", path);
@@ -101,5 +104,6 @@ export const config = {
     "/login",
     "/signup",
     "/forgot-password",
+    "/activate-subscription",
   ],
 };

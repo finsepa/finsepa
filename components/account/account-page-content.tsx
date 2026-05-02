@@ -4,7 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { PATH_LOGIN } from "@/lib/auth/routes";
-import { EMPTY_BILLING_SUMMARY, type BillingSummary } from "@/lib/account/billing";
+import {
+  EMPTY_BILLING_SUMMARY,
+  subscriptionTitleFromBillingSummary,
+  type BillingSummary,
+} from "@/lib/account/billing";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { UserAvatar } from "@/components/user/user-avatar";
 import { BillingUpgradeModal } from "@/components/account/billing-upgrade-modal";
@@ -215,8 +219,7 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
   const billingPlan = billingSummary.plan;
   const billingAccessState = billingSummary.accessState;
   const paymentHistory = billingSummary.paymentHistory;
-  const subscriptionTitle =
-    billingPlan === "pro" ? "Pro" : billingAccessState === "expired" ? "Free plan" : "Free Trial";
+  const subscriptionTitle = subscriptionTitleFromBillingSummary(billingSummary);
   const subscriptionMeta = billingSummary.subscriptionMeta;
   const actionLabel = billingPlan === "pro" ? "Manage Subscription" : "Upgrade to Pro";
   const recurringAmount =
@@ -267,7 +270,9 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
               : billingSummary.recurringDueDate
                 ? `Next payment on ${new Date(billingSummary.recurringDueDate).toLocaleDateString()}`
                 : "Next payment date will appear soon."
-      : "No upcoming payment while on free trial.";
+      : billingAccessState === "trial_expired"
+        ? "Your free trial has ended. Choose a plan to restore full access."
+        : "No upcoming payment while on free trial.";
 
   return (
     <div className="min-w-0 px-4 py-4 sm:px-9 sm:py-6">
