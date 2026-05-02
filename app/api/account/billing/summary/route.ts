@@ -63,6 +63,8 @@ function addRecurringInterval(args: {
   return d.toISOString();
 }
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   const supabase = await getSupabaseServerClient();
   const {
@@ -84,7 +86,8 @@ export async function GET() {
         .returns<BillingInvoiceRow[]>(),
     ]);
 
-    const isStripeProPlan = !!subscription?.plan_code?.startsWith("pro_");
+    const planCodeRaw = subscription?.plan_code ?? "";
+    const isStripeProPlan = planCodeRaw.startsWith("pro_") || planCodeRaw === "pro";
 
     // Reconcile Stripe truth (portal cancellations can lag in our DB until webhooks land).
     let stripeStatus = subscription?.status ?? "";
@@ -92,6 +95,8 @@ export async function GET() {
     let stripeCurrentPeriodEndIso = subscription?.current_period_end ?? null;
     let stripeCollectionPaused = false;
     let billingResumeAt: string | null = null;
+    /** Stripe subscription.cancel_at (unix seconds), when retrieve succeeds */
+    let cancelAtSecFromStripe: number | null = null;
 
     if (subscription?.stripe_subscription_id) {
       const stripe = getStripeClient(subscription.stripe_account_key);
@@ -109,16 +114,24 @@ export async function GET() {
           }
 
           const cpe = (s as unknown as { current_period_end?: unknown }).current_period_end;
+          const cpeNum = typeof cpe === "number" ? cpe : null;
           if (typeof cpe === "number") {
             stripeCurrentPeriodEndIso = new Date(cpe * 1000).toISOString();
           }
 
           const cancelAtTs = (s as unknown as { cancel_at?: unknown }).cancel_at;
           const cancelAtNum = typeof cancelAtTs === "number" ? cancelAtTs : null;
-          const cpeNum = typeof cpe === "number" ? cpe : null;
+          cancelAtSecFromStripe = cancelAtNum;
+
+          const nowSecRetrieve = Math.floor(Date.now() / 1000);
+          // Treat any future cancel_at on an entitled subscription as “scheduled cancellation”
+          // (covers portal / API variants where cancel_at_period_end lags or differs slightly).
           stripeCancelAtPeriodEnd =
             !!s.cancel_at_period_end ||
-            (cancelAtNum != null && cpeNum != null && cancelAtNum === cpeNum);
+            (cancelAtNum != null && cpeNum != null && cancelAtNum === cpeNum) ||
+            (cancelAtNum != null &&
+              cancelAtNum > nowSecRetrieve &&
+              (stripeStatus === "active" || stripeStatus === "trialing"));
 
           // Best-effort: keep DB aligned for other server paths that still read the row directly.
           try {
@@ -229,7 +242,12 @@ export async function GET() {
         accessState = "paused";
         accessEndsAt = null;
       } else if (stripeCancelAtPeriodEnd) {
-        const endIso = stripeCurrentPeriodEndIso ?? recurringDueDate ?? null;
+        const nowSecAccess = Math.floor(Date.now() / 1000);
+        const endFromStripeCancel =
+          cancelAtSecFromStripe != null && cancelAtSecFromStripe > nowSecAccess
+            ? new Date(cancelAtSecFromStripe * 1000).toISOString()
+            : null;
+        const endIso = endFromStripeCancel ?? stripeCurrentPeriodEndIso ?? recurringDueDate ?? null;
         accessEndsAt = endIso;
         const endMs = endIso ? new Date(endIso).getTime() : NaN;
         if (!Number.isFinite(endMs)) {

@@ -55,7 +55,7 @@ export function TopbarUserMenu({
     (async () => {
       setPlanLoading(true);
       try {
-        const res = await fetch("/api/account/billing/summary", { method: "GET" });
+        const res = await fetch("/api/account/billing/summary", { method: "GET", cache: "no-store" });
         if (!res.ok) return;
         const data = (await res.json()) as BillingSummary;
         if (cancelled) return;

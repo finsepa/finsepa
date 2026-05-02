@@ -203,7 +203,7 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
   async function loadBillingSummary({ silent = false }: { silent?: boolean } = {}) {
     if (!silent) setBillingLoading(true);
     try {
-      const res = await fetch("/api/account/billing/summary", { method: "GET" });
+      const res = await fetch("/api/account/billing/summary", { method: "GET", cache: "no-store" });
       if (!res.ok) throw new Error("Unable to load billing details.");
       const data = (await res.json()) as BillingSummary;
       setBillingSummary(data);
@@ -251,19 +251,29 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
   const paymentHistory = billingSummary.paymentHistory;
   const subscriptionTitle = subscriptionTitleFromBillingSummary(billingSummary);
   const subscriptionMeta = billingSummary.subscriptionMeta;
-  const activeUntilShortLabel =
-    billingSummary.accessEndsAt && Number.isFinite(new Date(billingSummary.accessEndsAt).getTime())
-      ? new Date(billingSummary.accessEndsAt).toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-        })
-      : null;
   const isProScheduledCancellation =
     billingPlan === "pro" &&
     billingAccessState !== "paused" &&
     (billingAccessState === "canceled" ||
       billingSummary.cancelAtPeriodEnd ||
-      subscriptionMeta === "Cancellation scheduled");
+      subscriptionMeta === "Cancellation scheduled" ||
+      subscriptionMeta === "Subscription ending");
+  /** End of paid access: prefer API accessEndsAt; fall back to recurringDueDate when cancel is set but end ISO was missing. */
+  const effectivePeriodEndIso =
+    billingSummary.accessEndsAt && Number.isFinite(new Date(billingSummary.accessEndsAt).getTime())
+      ? billingSummary.accessEndsAt
+      : isProScheduledCancellation &&
+          billingSummary.recurringDueDate &&
+          Number.isFinite(new Date(billingSummary.recurringDueDate).getTime())
+        ? billingSummary.recurringDueDate
+        : null;
+  const activeUntilShortLabel =
+    effectivePeriodEndIso && Number.isFinite(new Date(effectivePeriodEndIso).getTime())
+      ? new Date(effectivePeriodEndIso).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        })
+      : null;
   const subscriptionStatusBelowTitle =
     isProScheduledCancellation && activeUntilShortLabel
       ? `Active until ${activeUntilShortLabel}`
@@ -276,12 +286,13 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
         : `$${billingSummary.recurringAmountUsd.toFixed(2)}`
       : "$0.00";
 
-  const accessEndsAtLabel = billingSummary.accessEndsAt
-    ? new Date(billingSummary.accessEndsAt).toLocaleDateString()
-    : null;
+  const accessEndsAtLabel =
+    effectivePeriodEndIso && Number.isFinite(new Date(effectivePeriodEndIso).getTime())
+      ? new Date(effectivePeriodEndIso).toLocaleDateString()
+      : null;
   const serviceEndLabel =
-    billingSummary.accessEndsAt && Number.isFinite(new Date(billingSummary.accessEndsAt).getTime())
-      ? new Date(billingSummary.accessEndsAt).toLocaleDateString("en-GB", {
+    effectivePeriodEndIso && Number.isFinite(new Date(effectivePeriodEndIso).getTime())
+      ? new Date(effectivePeriodEndIso).toLocaleDateString("en-GB", {
           day: "numeric",
           month: "long",
           year: "numeric",
@@ -302,7 +313,8 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
     billingAccessState !== "paused" &&
     (billingAccessState === "canceled" ||
       billingSummary.cancelAtPeriodEnd ||
-      subscriptionMeta === "Cancellation scheduled");
+      subscriptionMeta === "Cancellation scheduled" ||
+      subscriptionMeta === "Subscription ending");
 
   const recurringMeta =
     billingPlan === "pro"
@@ -441,7 +453,11 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
           </div>
         ) : (
           <div className="mt-8 space-y-8">
-            {(billingAccessState === "canceled" || billingSummary.cancelAtPeriodEnd) && accessEndsAtLabel ? (
+            {(billingAccessState === "canceled" ||
+              billingSummary.cancelAtPeriodEnd ||
+              subscriptionMeta === "Cancellation scheduled" ||
+              subscriptionMeta === "Subscription ending") &&
+            accessEndsAtLabel ? (
               <div className="rounded-xl border border-[#FDBA74] bg-[#FFF7ED] px-4 py-3 text-[#9A3412] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
                 <div className="text-[14px] font-semibold leading-5">Pro subscription canceled</div>
                 <div className="mt-1 text-[13px] leading-5">
