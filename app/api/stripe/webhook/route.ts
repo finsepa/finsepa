@@ -4,11 +4,15 @@ import type Stripe from "stripe";
 import {
   findUserIdByStripeCustomer,
   getBillingSubscriptionStripeIdsForUser,
+  hasProWelcomeEmailBeenSent,
+  markProWelcomeEmailSent,
   recordWebhookEvent,
   resolvePlanCode,
   resolveStripeInvoiceRecipientEmail,
+  resolveUserEmailById,
   setSubscriptionTrial,
   upsertBillingCustomer,
+  stripeInvoiceUiDescription,
   upsertBillingSubscription,
   upsertPaidInvoice,
 } from "@/lib/account/billing-db";
@@ -16,20 +20,6 @@ import { getLoopsApiKey } from "@/lib/env/loops";
 import { sendLoopsProActivatedEmail } from "@/lib/loops/send-pro-activated";
 import { sendLoopsProRenewedEmail } from "@/lib/loops/send-pro-renewed";
 import { getStripeAccountConfig, getStripeClient } from "@/lib/stripe/server";
-
-function invoiceDescription(invoice: Stripe.Invoice): string {
-  const line = invoice.lines.data[0];
-  // Stripe's invoice line item typing varies across API versions / expansions.
-  // We only use this as a best-effort label for the UI/backfill.
-  const typedLine = line as Stripe.InvoiceLineItem & {
-    price?: Stripe.Price | null;
-    plan?: { interval?: string | null } | null;
-  };
-  const interval = typedLine?.price?.recurring?.interval ?? typedLine?.plan?.interval ?? null;
-  if (interval === "year") return "Pro annually";
-  if (interval === "month") return "Pro monthly";
-  return line?.description || invoice.description || "Pro plan";
-}
 
 function normalizeCustomerId(value: string | Stripe.Customer | Stripe.DeletedCustomer | null): string | null {
   if (!value) return null;
@@ -147,6 +137,36 @@ export async function POST(req: Request) {
             stripeCustomerId: customerId,
             subscription,
           });
+
+          const loopsKey = getLoopsApiKey();
+          const paidOk =
+            session.payment_status === "paid" || session.payment_status === "no_payment_required";
+          const planCode = resolvePlanCode(subscription);
+          if (
+            loopsKey &&
+            paidOk &&
+            planCode.startsWith("pro") &&
+            (subscription.status === "active" || subscription.status === "trialing") &&
+            !(await hasProWelcomeEmailBeenSent(userId))
+          ) {
+            const to =
+              (typeof session.customer_details?.email === "string"
+                ? session.customer_details.email.trim()
+                : "") || (await resolveUserEmailById(userId));
+            if (to) {
+              const sent = await sendLoopsProActivatedEmail({ apiKey: loopsKey, to });
+              if (sent.ok) {
+                await markProWelcomeEmailSent(userId);
+              } else {
+                console.error("[stripe webhook] Loops Pro activated email failed:", sent.message);
+              }
+            } else {
+              console.error(
+                "[stripe webhook] Pro activated email skipped: no recipient email for user",
+                userId,
+              );
+            }
+          }
         }
         break;
       }
@@ -189,7 +209,7 @@ export async function POST(req: Request) {
           userId,
           stripeAccountKey: account.key,
           invoice,
-          description: invoiceDescription(invoice),
+          description: stripeInvoiceUiDescription(invoice),
         });
 
         const invoiceSubscriptionId = (invoice as unknown as { subscription?: unknown }).subscription;
@@ -224,9 +244,13 @@ export async function POST(req: Request) {
             });
             if (to) {
               if (billingReason === "subscription_create") {
-                const sent = await sendLoopsProActivatedEmail({ apiKey: loopsKey, to });
-                if (!sent.ok) {
-                  console.error("[stripe webhook] Loops Pro activated email failed:", sent.message);
+                if (!(await hasProWelcomeEmailBeenSent(userId))) {
+                  const sent = await sendLoopsProActivatedEmail({ apiKey: loopsKey, to });
+                  if (sent.ok) {
+                    await markProWelcomeEmailSent(userId);
+                  } else {
+                    console.error("[stripe webhook] Loops Pro activated email failed:", sent.message);
+                  }
                 }
               } else {
                 const sent = await sendLoopsProRenewedEmail({ apiKey: loopsKey, to });

@@ -4,6 +4,7 @@ import type Stripe from "stripe";
 import { EMPTY_BILLING_SUMMARY, type BillingSummary } from "@/lib/account/billing";
 import { hasActivePaidProSubscription } from "@/lib/account/billing-guard";
 import { isPlatformTrialPast, platformTrialDaysRemaining as computePlatformTrialDaysRemaining } from "@/lib/account/platform-trial";
+import { getStripeClient } from "@/lib/stripe/server";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 
 type BillingSubscriptionRow = {
@@ -220,6 +221,39 @@ export async function resolveStripeInvoiceRecipientEmail(args: {
   return e || null;
 }
 
+export async function resolveUserEmailById(userId: string): Promise<string | null> {
+  const admin = getSupabaseAdminClient();
+  if (!admin) return null;
+  const { data, error } = await admin.auth.admin.getUserById(userId);
+  if (error || !data.user?.email) return null;
+  const e = data.user.email.trim();
+  return e || null;
+}
+
+/** True if we already recorded sending the Loops “Pro activated” welcome email. */
+export async function hasProWelcomeEmailBeenSent(userId: string): Promise<boolean> {
+  const admin = getSupabaseAdminClient();
+  if (!admin) return true;
+  const { data } = await admin
+    .from("billing_subscriptions")
+    .select("pro_welcome_email_sent_at")
+    .eq("user_id", userId)
+    .maybeSingle<{ pro_welcome_email_sent_at: string | null }>();
+  return !!data?.pro_welcome_email_sent_at;
+}
+
+export async function markProWelcomeEmailSent(userId: string): Promise<void> {
+  const admin = getSupabaseAdminClient();
+  if (!admin) return;
+  await admin
+    .from("billing_subscriptions")
+    .update({
+      pro_welcome_email_sent_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("user_id", userId);
+}
+
 export async function upsertBillingSubscription(args: {
   userId: string;
   stripeAccountKey: string;
@@ -293,6 +327,19 @@ export async function setSubscriptionTrial(args: { userId: string }) {
   );
 }
 
+/** Best-effort label for billing UI / webhooks (matches Stripe line + price interval). */
+export function stripeInvoiceUiDescription(invoice: Stripe.Invoice): string {
+  const line = invoice.lines?.data?.[0];
+  const typedLine = line as Stripe.InvoiceLineItem & {
+    price?: Stripe.Price | null;
+    plan?: { interval?: string | null } | null;
+  };
+  const interval = typedLine?.price?.recurring?.interval ?? typedLine?.plan?.interval ?? null;
+  if (interval === "year") return "Pro annually";
+  if (interval === "month") return "Pro monthly";
+  return line?.description || invoice.description || "Pro plan";
+}
+
 export async function upsertPaidInvoice(args: {
   userId: string;
   stripeAccountKey: string;
@@ -302,6 +349,9 @@ export async function upsertPaidInvoice(args: {
   const admin = getSupabaseAdminClient();
   if (!admin) return;
   const invoiceSubscriptionId = (args.invoice as unknown as { subscription?: unknown }).subscription;
+  const paidTransition = args.invoice.status_transitions?.paid_at;
+  const paidSec =
+    typeof paidTransition === "number" && paidTransition > 0 ? paidTransition : args.invoice.created;
   await admin.from("billing_invoices").upsert(
     {
       user_id: args.userId,
@@ -311,11 +361,59 @@ export async function upsertPaidInvoice(args: {
         typeof invoiceSubscriptionId === "string" ? invoiceSubscriptionId : null,
       amount_usd: Number(((args.invoice.amount_paid ?? 0) / 100).toFixed(2)),
       currency: (args.invoice.currency ?? "usd").toUpperCase(),
-      paid_at: new Date(args.invoice.created * 1000).toISOString(),
+      paid_at: new Date(paidSec * 1000).toISOString(),
       description: args.description,
     },
     { onConflict: "stripe_account_key,stripe_invoice_id" },
   );
+}
+
+/**
+ * Pull paid invoices from Stripe into `billing_invoices` (covers missed webhooks or local dev).
+ * Requires service role + Stripe secret for the account key.
+ */
+export async function syncPaidInvoicesFromStripeForUser(args: {
+  userId: string;
+  stripeAccountKey: string | null | undefined;
+  stripeCustomerId: string | null | undefined;
+}): Promise<void> {
+  const customerId = typeof args.stripeCustomerId === "string" ? args.stripeCustomerId.trim() : "";
+  if (!customerId) return;
+  const stripe = getStripeClient(args.stripeAccountKey ?? undefined);
+  if (!stripe) return;
+  if (!getSupabaseAdminClient()) return;
+
+  const stripeAccountKey =
+    typeof args.stripeAccountKey === "string" && args.stripeAccountKey.trim()
+      ? args.stripeAccountKey.trim()
+      : "primary";
+
+  try {
+    let startingAfter: string | undefined;
+    for (;;) {
+      const page = await stripe.invoices.list({
+        customer: customerId,
+        status: "paid",
+        limit: 100,
+        starting_after: startingAfter,
+        expand: ["data.lines.data.price"],
+      });
+      for (const invoice of page.data) {
+        await upsertPaidInvoice({
+          userId: args.userId,
+          stripeAccountKey,
+          invoice,
+          description: stripeInvoiceUiDescription(invoice),
+        });
+      }
+      if (!page.has_more) break;
+      const last = page.data[page.data.length - 1];
+      if (!last) break;
+      startingAfter = last.id;
+    }
+  } catch (e) {
+    console.error("[billing] syncPaidInvoicesFromStripeForUser failed", e);
+  }
 }
 
 export async function getBillingSubscriptionStripeIdsForUser(userId: string): Promise<{

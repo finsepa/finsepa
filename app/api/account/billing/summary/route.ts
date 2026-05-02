@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { syncPaidInvoicesFromStripeForUser } from "@/lib/account/billing-db";
 import { isPlatformTrialPast, platformTrialDaysRemaining as computePlatformTrialDaysRemaining } from "@/lib/account/platform-trial";
 import { getStripeClient } from "@/lib/stripe/server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
@@ -75,7 +76,7 @@ export async function GET() {
   }
 
   try {
-    const [{ data: subscription }, { data: invoices }] = await Promise.all([
+    const [{ data: subscription }, firstInvoices] = await Promise.all([
       supabase.from("billing_subscriptions").select("*").eq("user_id", user.id).maybeSingle<BillingSubscriptionRow>(),
       supabase
         .from("billing_invoices")
@@ -85,6 +86,23 @@ export async function GET() {
         .limit(100)
         .returns<BillingInvoiceRow[]>(),
     ]);
+
+    let invoices = firstInvoices.data;
+    if (subscription?.stripe_customer_id) {
+      await syncPaidInvoicesFromStripeForUser({
+        userId: user.id,
+        stripeAccountKey: subscription.stripe_account_key,
+        stripeCustomerId: subscription.stripe_customer_id,
+      });
+      const { data: refreshed } = await supabase
+        .from("billing_invoices")
+        .select("id, paid_at, amount_usd, description")
+        .eq("user_id", user.id)
+        .order("paid_at", { ascending: false })
+        .limit(100)
+        .returns<BillingInvoiceRow[]>();
+      invoices = refreshed ?? invoices;
+    }
 
     const planCodeRaw = subscription?.plan_code ?? "";
     const isStripeProPlan = planCodeRaw.startsWith("pro_") || planCodeRaw === "pro";
