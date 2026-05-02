@@ -44,7 +44,7 @@ async function sendTransactional(apiKey, transactionalId, email, label) {
   } catch {
     /* ignore */
   }
-  const success = res.ok && json.success !== false;
+  const success = res.ok && json && json.success === true;
   const detail =
     (typeof json.message === "string" && json.message) ||
     (json.error && typeof json.error === "object" && typeof json.error.message === "string"
@@ -52,7 +52,7 @@ async function sendTransactional(apiKey, transactionalId, email, label) {
       : "") ||
     text.slice(0, 400);
   if (success) {
-    console.log(`✓ ${label}: sent (${res.status})`);
+    console.log(`✓ ${label}: API accepted (${res.status}) — check Loops Metrics + inbox spam if mail missing`);
   } else {
     console.error(`✗ ${label}: failed (${res.status})`, detail || text.slice(0, 400));
   }

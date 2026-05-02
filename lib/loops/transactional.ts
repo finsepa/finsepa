@@ -65,6 +65,16 @@ export async function sendLoopsTransactionalEmail(params: {
         `Loops request failed (${res.status}).${hint ? ` ${hint}` : " Check LOOPS_API_KEY and transactional template."}`,
     };
   }
+
+  // Loops documents `{ "success": true }` on acceptance — require it so we don't treat ambiguous bodies as sent.
+  if (parsed.success !== true) {
+    const snippet = text.trim().slice(0, 280) || "(empty body)";
+    return {
+      ok: false,
+      message: `Loops HTTP ${res.status} but JSON success was not true: ${snippet}. See https://loops.so/docs/api-reference/send-transactional-email`,
+    };
+  }
+
   return { ok: true };
 }
 

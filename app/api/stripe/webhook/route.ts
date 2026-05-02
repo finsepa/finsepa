@@ -13,12 +13,12 @@ import {
   setSubscriptionTrial,
   upsertBillingCustomer,
   stripeInvoiceUiDescription,
+  trySendLoopsProRenewalEmailForPaidInvoice,
   upsertBillingSubscription,
   upsertPaidInvoice,
 } from "@/lib/account/billing-db";
 import { getLoopsApiKey } from "@/lib/env/loops";
 import { sendLoopsProActivatedEmail } from "@/lib/loops/send-pro-activated";
-import { sendLoopsProRenewedEmail } from "@/lib/loops/send-pro-renewed";
 import { getStripeAccountConfig, getStripeClient } from "@/lib/stripe/server";
 
 function normalizeCustomerId(value: string | Stripe.Customer | Stripe.DeletedCustomer | null): string | null {
@@ -253,10 +253,15 @@ export async function POST(req: Request) {
                   }
                 }
               } else {
-                const sent = await sendLoopsProRenewedEmail({ apiKey: loopsKey, to });
-                if (!sent.ok) {
-                  console.error("[stripe webhook] Loops Pro renewed email failed:", sent.message);
-                }
+                await trySendLoopsProRenewalEmailForPaidInvoice({
+                  userId,
+                  stripeAccountKey: account.key,
+                  stripe,
+                  invoice,
+                  loopsApiKey: loopsKey,
+                  to,
+                  planCode,
+                });
               }
             }
           }

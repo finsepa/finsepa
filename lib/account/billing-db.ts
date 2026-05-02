@@ -4,6 +4,8 @@ import type Stripe from "stripe";
 import { EMPTY_BILLING_SUMMARY, type BillingSummary } from "@/lib/account/billing";
 import { hasActivePaidProSubscription } from "@/lib/account/billing-guard";
 import { isPlatformTrialPast, platformTrialDaysRemaining as computePlatformTrialDaysRemaining } from "@/lib/account/platform-trial";
+import { getLoopsApiKey } from "@/lib/env/loops";
+import { sendLoopsProRenewedEmail } from "@/lib/loops/send-pro-renewed";
 import { getStripeClient } from "@/lib/stripe/server";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 
@@ -368,6 +370,81 @@ export async function upsertPaidInvoice(args: {
   );
 }
 
+async function resolvePlanCodeFromInvoiceSubscription(
+  stripe: Stripe,
+  invoice: Stripe.Invoice,
+): Promise<string | null> {
+  const subscriptionRaw = (invoice as unknown as { subscription?: unknown }).subscription;
+  const subscriptionId =
+    typeof subscriptionRaw === "string"
+      ? subscriptionRaw
+      : subscriptionRaw &&
+          typeof subscriptionRaw === "object" &&
+          "id" in subscriptionRaw &&
+          (!("deleted" in subscriptionRaw) || !(subscriptionRaw as { deleted?: boolean }).deleted)
+        ? (subscriptionRaw as { id: string }).id
+        : null;
+  if (!subscriptionId) return null;
+  try {
+    const sub = await stripe.subscriptions.retrieve(subscriptionId, {
+      expand: ["items.data.price"],
+    });
+    return resolvePlanCode(sub);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Loops “Pro renewed” once per invoice (`billing_reason` = subscription_cycle).
+ * Claims `loops_renewal_email_sent_at` before sending; clears it if Loops fails (Stripe/webhook retry).
+ */
+export async function trySendLoopsProRenewalEmailForPaidInvoice(args: {
+  userId: string;
+  stripeAccountKey: string;
+  stripe: Stripe;
+  invoice: Stripe.Invoice;
+  loopsApiKey: string;
+  to: string;
+  /** From an already-loaded Subscription (avoids an extra Stripe retrieve). */
+  planCode?: string;
+}): Promise<void> {
+  if (args.invoice.billing_reason !== "subscription_cycle") return;
+
+  let planCode = args.planCode;
+  if (!planCode) {
+    const resolved = await resolvePlanCodeFromInvoiceSubscription(args.stripe, args.invoice);
+    if (!resolved) return;
+    planCode = resolved;
+  }
+  if (!planCode.startsWith("pro")) return;
+
+  const admin = getSupabaseAdminClient();
+  if (!admin) return;
+
+  const { data: claimedRows, error: claimErr } = await admin
+    .from("billing_invoices")
+    .update({ loops_renewal_email_sent_at: new Date().toISOString() })
+    .eq("user_id", args.userId)
+    .eq("stripe_account_key", args.stripeAccountKey)
+    .eq("stripe_invoice_id", args.invoice.id)
+    .is("loops_renewal_email_sent_at", null)
+    .select("id");
+
+  if (claimErr || !claimedRows?.length) return;
+
+  const sent = await sendLoopsProRenewedEmail({ apiKey: args.loopsApiKey, to: args.to });
+  if (!sent.ok) {
+    await admin
+      .from("billing_invoices")
+      .update({ loops_renewal_email_sent_at: null })
+      .eq("user_id", args.userId)
+      .eq("stripe_account_key", args.stripeAccountKey)
+      .eq("stripe_invoice_id", args.invoice.id);
+    console.error("[billing] Loops Pro renewal email failed:", sent.message);
+  }
+}
+
 /**
  * Pull paid invoices from Stripe into `billing_invoices` (covers missed webhooks or local dev).
  * Requires service role + Stripe secret for the account key.
@@ -398,6 +475,7 @@ export async function syncPaidInvoicesFromStripeForUser(args: {
         starting_after: startingAfter,
         expand: ["data.lines.data.price"],
       });
+      const loopsKey = getLoopsApiKey();
       for (const invoice of page.data) {
         await upsertPaidInvoice({
           userId: args.userId,
@@ -405,6 +483,23 @@ export async function syncPaidInvoicesFromStripeForUser(args: {
           invoice,
           description: stripeInvoiceUiDescription(invoice),
         });
+        if (loopsKey && invoice.billing_reason === "subscription_cycle") {
+          const to = await resolveStripeInvoiceRecipientEmail({
+            stripe,
+            invoice,
+            userId: args.userId,
+          });
+          if (to) {
+            await trySendLoopsProRenewalEmailForPaidInvoice({
+              userId: args.userId,
+              stripeAccountKey,
+              stripe,
+              invoice,
+              loopsApiKey: loopsKey,
+              to,
+            });
+          }
+        }
       }
       if (!page.has_more) break;
       const last = page.data[page.data.length - 1];
