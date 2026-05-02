@@ -56,6 +56,36 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
   const [billingLoading, setBillingLoading] = useState(false);
   const [billingHydrated, setBillingHydrated] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
+  const stripeCheckoutSuccessToastRef = useRef(false);
+
+  useEffect(() => {
+    const checkout = searchParams.get("checkout");
+    if (checkout !== "success") return;
+
+    const sessionId = searchParams.get("session_id");
+
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("checkout");
+    params.delete("session_id");
+    const qs = params.toString();
+    router.replace(qs ? `/account?${qs}` : "/account", { scroll: false });
+
+    let shouldToast = false;
+    if (sessionId) {
+      const key = `finsepa_stripe_checkout_success:${sessionId}`;
+      if (typeof window !== "undefined" && !sessionStorage.getItem(key)) {
+        sessionStorage.setItem(key, "1");
+        shouldToast = true;
+      }
+    } else if (!stripeCheckoutSuccessToastRef.current) {
+      stripeCheckoutSuccessToastRef.current = true;
+      shouldToast = true;
+    }
+
+    if (shouldToast) {
+      toast.success("Congratulations! Your Pro access was activated.");
+    }
+  }, [searchParams, router]);
 
   useEffect(() => {
     const tab = (searchParams.get("tab") ?? "").trim().toLowerCase();
@@ -221,6 +251,23 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
   const paymentHistory = billingSummary.paymentHistory;
   const subscriptionTitle = subscriptionTitleFromBillingSummary(billingSummary);
   const subscriptionMeta = billingSummary.subscriptionMeta;
+  const activeUntilShortLabel =
+    billingSummary.accessEndsAt && Number.isFinite(new Date(billingSummary.accessEndsAt).getTime())
+      ? new Date(billingSummary.accessEndsAt).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        })
+      : null;
+  const isProScheduledCancellation =
+    billingPlan === "pro" &&
+    billingAccessState !== "paused" &&
+    (billingAccessState === "canceled" ||
+      billingSummary.cancelAtPeriodEnd ||
+      subscriptionMeta === "Cancellation scheduled");
+  const subscriptionStatusBelowTitle =
+    isProScheduledCancellation && activeUntilShortLabel
+      ? `Active until ${activeUntilShortLabel}`
+      : subscriptionMeta;
   const actionLabel = billingPlan === "pro" ? "Manage Subscription" : "Upgrade to Pro";
   const recurringAmount =
     billingPlan === "pro"
@@ -253,7 +300,9 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
   const isEndingAfterPeriod =
     billingPlan === "pro" &&
     billingAccessState !== "paused" &&
-    (billingAccessState === "canceled" || billingSummary.cancelAtPeriodEnd);
+    (billingAccessState === "canceled" ||
+      billingSummary.cancelAtPeriodEnd ||
+      subscriptionMeta === "Cancellation scheduled");
 
   const recurringMeta =
     billingPlan === "pro"
@@ -262,9 +311,9 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
           ? `Billing is paused — no payment is due. Invoicing is scheduled to resume on ${billingResumeLabel}.`
           : "Billing is paused — no upcoming payment is scheduled."
         : isEndingAfterPeriod && serviceEndLabel
-          ? `Your service will end on ${serviceEndLabel}. That is the last day your Pro subscription stays active.`
+          ? `Your service will end on ${serviceEndLabel}.`
           : isEndingAfterPeriod && accessEndsAtLabel
-            ? `Your service will end on ${accessEndsAtLabel}. That is the last day your Pro subscription stays active.`
+            ? `Your service will end on ${accessEndsAtLabel}.`
             : isEndingAfterPeriod
               ? "Your subscription is set to end after the current period — no further payment is scheduled."
               : billingSummary.recurringDueDate
@@ -463,7 +512,7 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
                   <article className="rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
                     <p className="text-[13px] font-medium text-[#71717A]">Your subscription</p>
                     <p className="mt-2 text-[22px] font-semibold leading-7 text-[#09090B]">{subscriptionTitle}</p>
-                    <p className="mt-1 text-[14px] leading-5 text-[#71717A]">{subscriptionMeta}</p>
+                    <p className="mt-1 text-[14px] leading-5 text-[#71717A]">{subscriptionStatusBelowTitle}</p>
                     <button
                       type="button"
                       onClick={() => {

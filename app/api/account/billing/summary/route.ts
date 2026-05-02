@@ -27,8 +27,8 @@ type BillingInvoiceRow = {
 
 function subscriptionMeta(status: string, cancelAtPeriodEnd: boolean, collectionPaused: boolean): string {
   if (collectionPaused) return "Billing paused — no upcoming charges";
-  // Still billed access until current period end; Stripe keeps status active/trialing.
-  if (cancelAtPeriodEnd && (status === "active" || status === "trialing")) return "Active subscription";
+  // Stripe keeps status active/trialing until period ends; Billing UI shows “Active until …” using accessEndsAt.
+  if (cancelAtPeriodEnd && (status === "active" || status === "trialing")) return "Cancellation scheduled";
   if (cancelAtPeriodEnd) return "Subscription ending";
   if (status === "trialing") return "Trialing";
   if (status === "past_due") return "Payment past due";
@@ -139,6 +139,9 @@ export async function GET() {
         }
       }
     }
+
+    // Webhooks can lag behind the portal; trust DB if it already reflects cancel_at_period_end.
+    stripeCancelAtPeriodEnd = stripeCancelAtPeriodEnd || !!subscription?.cancel_at_period_end;
 
     const isActivePaidState = stripeStatus === "active" || stripeStatus === "trialing";
     const isPro = isStripeProPlan && isActivePaidState;
