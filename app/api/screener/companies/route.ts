@@ -4,6 +4,12 @@ import { CACHE_CONTROL_PRIVATE_SCREENER_ROW } from "@/lib/data/cache-policy";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { buildScreenerAllStockRowsForGainers, buildScreenerCompaniesApiResponse } from "@/lib/screener/screener-page-payload";
 import { SCREENER_MARKETS_PAGE_SIZE } from "@/lib/screener/screener-markets-page-size";
+import {
+  parseScreenerIndustryDrill,
+  SCREENER_INDUSTRY_QUERY,
+  SCREENER_INDUSTRY_SECTOR_QUERY,
+} from "@/lib/screener/screener-industry-url";
+import { parseScreenerSectorParam, SCREENER_SECTOR_QUERY } from "@/lib/screener/screener-sector-url";
 
 export async function GET(request: Request) {
   const supabase = await getSupabaseServerClient();
@@ -29,8 +35,17 @@ export async function GET(request: Request) {
   const pageSizeRaw =
     Number(url.searchParams.get("pageSize") ?? String(SCREENER_MARKETS_PAGE_SIZE)) || SCREENER_MARKETS_PAGE_SIZE;
   const pageSize = Math.min(50, Math.max(1, pageSizeRaw));
+  const sector = parseScreenerSectorParam(url.searchParams.get(SCREENER_SECTOR_QUERY));
+  const industryDrill = parseScreenerIndustryDrill(
+    url.searchParams.get(SCREENER_INDUSTRY_QUERY),
+    url.searchParams.get(SCREENER_INDUSTRY_SECTOR_QUERY),
+  );
 
-  const body = await buildScreenerCompaniesApiResponse(page, pageSize);
+  const body = await buildScreenerCompaniesApiResponse(page, pageSize, {
+    sector: industryDrill ? null : sector,
+    industry: industryDrill?.industry ?? null,
+    industrySector: industryDrill?.sector ?? null,
+  });
 
   return NextResponse.json(body, {
     headers: {

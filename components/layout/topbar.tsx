@@ -11,6 +11,10 @@ import { TopbarDelayedTooltip } from "./topbar-delayed-tooltip";
 import { OPEN_SEARCH_EVENT, SearchModal } from "./search-modal";
 import { TopbarQuickAddMenu } from "./topbar-quick-add-menu";
 import { TopbarUserMenu } from "./topbar-user-menu";
+import {
+  topbarSquircleIconClass,
+  topbarSquircleSplitShellClass,
+} from "@/components/design-system/topbar-control-classes";
 import { cn } from "@/lib/utils";
 
 const usdTopbar = new Intl.NumberFormat("en-US", {
@@ -19,9 +23,6 @@ const usdTopbar = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
-
-const topbarSquircleIconClass =
-  "flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5]";
 
 function IconButton({ children }: { children: React.ReactNode }) {
   return <button type="button" className={topbarSquircleIconClass}>{children}</button>;
@@ -62,7 +63,7 @@ const TopbarPortfolioBlock = memo(function TopbarPortfolioBlock() {
         <Folder className="h-5 w-5 shrink-0" strokeWidth={1.75} aria-hidden />
       </Link>
 
-      <div className="hidden h-9 max-w-full min-w-0 items-stretch overflow-visible rounded-[10px] border border-[#E4E4E7] bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] md:flex">
+      <div className={cn("hidden md:flex", topbarSquircleSplitShellClass)}>
         <Link
           href="/portfolio"
           prefetch={false}

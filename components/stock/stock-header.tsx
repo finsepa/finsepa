@@ -12,7 +12,7 @@ import {
   type StockDetailHeaderMeta,
 } from "@/lib/market/stock-header-meta";
 import type { StockChartSeries } from "@/lib/market/stock-chart-types";
-import { formatUsdCompact } from "@/lib/market/key-stats-basic-format";
+import { formatUsdAmountGrouped2dp, formatUsdCompact, formatUsdPrice } from "@/lib/market/key-stats-basic-format";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import { UsEquityMarketSessionBadge } from "@/components/stock/us-equity-market-session-badge";
 import { WatchlistStarButton } from "@/components/watchlist/watchlist-star-button";
@@ -211,7 +211,7 @@ export function StockHeader({
                       const sign = r > 0 ? "+" : r < 0 ? "−" : "";
                       return `${sign}${Math.abs(r).toFixed(2)}%`;
                     })()
-                  : `$${anim.price.toFixed(2)}`}
+                  : formatUsdPrice(anim.price)}
           </span>
           {headerChartMetric === "return" && !hasSelectionSecondary ? null : hasSelectionSecondary ? (
             <>
@@ -226,7 +226,7 @@ export function StockHeader({
                     ? `${isPositive ? "+" : ""}${formatUsdCompact(anim.abs)} (${isPositive ? "+" : ""}${anim.pct.toFixed(2)}%)`
                     : headerChartMetric === "return"
                       ? `${isPositive ? "+" : ""}${anim.abs.toFixed(2)} (${isPositive ? "+" : ""}${anim.pct.toFixed(2)}%)`
-                      : `${isPositive ? "+" : ""}${anim.abs.toFixed(2)} (${isPositive ? "+" : ""}${anim.pct.toFixed(2)}%)`}
+                      : `${isPositive ? "+" : ""}${formatUsdAmountGrouped2dp(anim.abs)} (${isPositive ? "+" : ""}${anim.pct.toFixed(2)}%)`}
               </span>
               {chartRangeLabel ? (
                 <span className="text-[13px] text-[#71717A]">{chartRangeLabel}</span>
@@ -241,7 +241,7 @@ export function StockHeader({
               >
                 {headerChartMetric === "marketCap"
                   ? `${isSelPositive ? "+" : ""}${formatUsdCompact(selectionChangeAbs!)} (${isSelPositive ? "+" : ""}${selectionChangePct!.toFixed(2)}%)`
-                  : `${isSelPositive ? "+" : ""}${selectionChangeAbs!.toFixed(2)} (${isSelPositive ? "+" : ""}${selectionChangePct!.toFixed(2)}%)`}
+                  : `${isSelPositive ? "+" : ""}${formatUsdAmountGrouped2dp(selectionChangeAbs!)} (${isSelPositive ? "+" : ""}${selectionChangePct!.toFixed(2)}%)`}
               </span>
               <span className="text-[13px] text-[#71717A]">Selected range</span>
             </>
@@ -256,7 +256,7 @@ export function StockHeader({
                   ? "—"
                   : headerChartMetric === "marketCap"
                     ? `${isPositive ? "+" : ""}${formatUsdCompact(anim.abs)} (${isPositive ? "+" : ""}${anim.pct.toFixed(2)}%)`
-                    : `${isPositive ? "+" : ""}${anim.abs.toFixed(2)} (${isPositive ? "+" : ""}${anim.pct.toFixed(2)}%)`}
+                    : `${isPositive ? "+" : ""}${formatUsdAmountGrouped2dp(anim.abs)} (${isPositive ? "+" : ""}${anim.pct.toFixed(2)}%)`}
               </span>
               <span className="text-[13px] text-[#71717A]">{periodLabelOverride ?? periodLabel}</span>
             </>

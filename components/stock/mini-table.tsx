@@ -9,6 +9,7 @@ import { CompanyLogo } from "@/components/screener/company-logo";
 import { cn } from "@/lib/utils";
 import type { CompanyPick } from "@/components/charting/company-picker";
 import { STOCK_OVERVIEW_COMPARE_LINE_COLORS } from "@/components/stock/stock-compare-return-chart";
+import { formatUsdPrice } from "@/lib/market/key-stats-basic-format";
 
 function PerfCellMaybe({ value }: { value: number | null }) {
   if (value == null || !Number.isFinite(value)) {
@@ -118,7 +119,7 @@ function OverviewCompareRow({
       <td className="min-w-[60px] px-3 py-3 text-right text-[14px] leading-5 tabular-nums text-[#09090B]">
         {comparePerfLoading || compareRow?.price == null || !Number.isFinite(compareRow.price)
           ? "—"
-          : `$${compareRow.price.toFixed(2)}`}
+          : formatUsdPrice(compareRow.price)}
       </td>
       <PerfCellMaybe value={compareRow?.d1 ?? null} />
       <PerfCellMaybe value={compareRow?.d5 ?? null} />
@@ -230,7 +231,7 @@ export function MiniTable({
               </div>
             </td>
             <td className="min-w-[60px] px-3 py-3 text-right text-[14px] leading-5 tabular-nums text-[#09090B]">
-              {loading || row?.price == null || !Number.isFinite(row.price) ? "—" : `$${row.price.toFixed(2)}`}
+              {loading || row?.price == null || !Number.isFinite(row.price) ? "—" : formatUsdPrice(row.price)}
             </td>
             <PerfCellMaybe value={row?.d1 ?? null} />
             <PerfCellMaybe value={row?.d5 ?? null} />

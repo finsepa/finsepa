@@ -312,7 +312,7 @@ function EarningsCard({
 const navBtnClass =
   "flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-[#09090B] transition-colors hover:bg-[#F4F4F5]";
 
-/** Matches `topbarSquircleIconClass` in `topbar.tsx` — bordered squircle, same shadow/hover. */
+/** Matches `topbarSquircleIconClass` in `components/design-system/topbar-control-classes.ts`. */
 const todayBtnClass =
   "inline-flex h-9 shrink-0 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white px-3 text-[14px] font-medium leading-5 text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5]";
 

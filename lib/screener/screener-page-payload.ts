@@ -1,5 +1,8 @@
 import "server-only";
 
+import { unstable_cache } from "next/cache";
+
+import { REVALIDATE_SCREENER_MARKET } from "@/lib/data/cache-policy";
 import type { IndexCardData } from "@/lib/screener/indices-today";
 import type { ScreenerTableRow } from "@/lib/screener/screener-static";
 import type { CryptoTop10Row } from "@/lib/market/crypto-top10";
@@ -36,7 +39,14 @@ import {
   cryptoScreenerRowsFromMetas,
   indicesTableRowsFromSimpleLayers,
 } from "@/lib/screener/simple-screener-crypto-indices-rows";
+import {
+  filterAndSortUniverseByCanonicalSector,
+  filterAndSortUniverseByIndustry,
+} from "@/lib/screener/screener-companies-sector-filter";
+import { getScreenerSectorEtfProxyYtdBySector } from "@/lib/screener/screener-sector-etf-ytd";
 import { buildScreenerSectorsAndIndustriesRows } from "@/lib/screener/screener-stocks-universe-aggregates";
+import type { ScreenerCanonicalSector } from "@/lib/screener/screener-gics-sectors";
+import type { ScreenerIndustryDrill } from "@/lib/screener/screener-industry-url";
 import type { ScreenerIndustryRow } from "@/lib/screener/screener-industries-types";
 import type { ScreenerSectorRow } from "@/lib/screener/screener-sectors-types";
 import { SCREENER_MARKETS_PAGE_SIZE } from "@/lib/screener/screener-markets-page-size";
@@ -48,6 +58,10 @@ export type ScreenerPagePayload =
       market: "stocks";
       stockRows: ScreenerTableRow[];
       stocksTotalCount: number;
+      /** When set, Companies tab lists only names in this canonical sector (from the screener universe). */
+      stocksSectorFilter: ScreenerCanonicalSector | null;
+      /** When set, Industries tab drill lists names in this sector + industry (from the screener universe). */
+      stocksIndustryFilter: ScreenerIndustryDrill | null;
       indexCards: IndexCardData[];
       sectors: ScreenerSectorRow[];
       industries: ScreenerIndustryRow[];
@@ -194,20 +208,113 @@ export async function buildScreenerPage2RowsForTickers(
   return rows;
 }
 
+export type ScreenerCompaniesApiQueryOpts = {
+  sector?: ScreenerCanonicalSector | null;
+  industry?: string | null;
+  industrySector?: ScreenerCanonicalSector | null;
+};
+
+type ScreenerCompaniesListMode =
+  | { mode: "all" }
+  | { mode: "sector"; sector: ScreenerCanonicalSector }
+  | { mode: "industry"; sector: ScreenerCanonicalSector; industry: string };
+
+function resolveScreenerCompaniesListMode(opts?: ScreenerCompaniesApiQueryOpts): ScreenerCompaniesListMode {
+  const o = opts ?? {};
+  const industry = typeof o.industry === "string" ? o.industry.trim() : "";
+  const isec = o.industrySector ?? null;
+  if (industry && isec) return { mode: "industry", sector: isec, industry };
+  const sector = o.sector ?? null;
+  if (sector) return { mode: "sector", sector };
+  return { mode: "all" };
+}
+
+export type ScreenerCompaniesApiResponseBody = {
+  page: number;
+  pageSize: number;
+  total: number;
+  rows: ScreenerTableRow[];
+  sector: ScreenerCanonicalSector | null;
+  industry: string | null;
+  industrySector: ScreenerCanonicalSector | null;
+};
+
 /**
  * Paginated screener company rows — loads market slices per page so we do not fan out quotes/EOD for the full page-2 set unless needed.
+ * With `sector`, lists the universe subset for that canonical GICS sector (market cap order), any page via {@link buildScreenerPage2RowsForTickers}.
+ * With `industry` + `industrySector`, lists that industry inside the canonical sector (takes precedence over `sector`).
  */
-export async function buildScreenerCompaniesApiResponse(
+async function buildScreenerCompaniesApiResponseUncached(
   page: number,
   pageSize: number,
-): Promise<{ page: number; pageSize: number; total: number; rows: ScreenerTableRow[] }> {
+  list: ScreenerCompaniesListMode,
+): Promise<ScreenerCompaniesApiResponseBody> {
   const staticLayer = await getScreenerCompaniesStaticLayer();
+
+  if (list.mode === "industry") {
+    const filtered = filterAndSortUniverseByIndustry(staticLayer.universe, list.sector, list.industry);
+    const total = filtered.length;
+    const globalStart = (page - 1) * pageSize;
+    if (globalStart >= total) {
+      return {
+        page,
+        pageSize,
+        total,
+        rows: [],
+        sector: null,
+        industry: list.industry,
+        industrySector: list.sector,
+      };
+    }
+    const globalEnd = Math.min(globalStart + pageSize, total);
+    const tickers = filtered.slice(globalStart, globalEnd).map((u) => u.ticker);
+    const rows = await buildScreenerPage2RowsForTickers(tickers, staticLayer.universe, globalStart + 1);
+    return {
+      page,
+      pageSize,
+      total,
+      rows,
+      sector: null,
+      industry: list.industry,
+      industrySector: list.sector,
+    };
+  }
+
+  if (list.mode === "sector") {
+    const filtered = filterAndSortUniverseByCanonicalSector(staticLayer.universe, list.sector);
+    const total = filtered.length;
+    const globalStart = (page - 1) * pageSize;
+    if (globalStart >= total) {
+      return {
+        page,
+        pageSize,
+        total,
+        rows: [],
+        sector: list.sector,
+        industry: null,
+        industrySector: null,
+      };
+    }
+    const globalEnd = Math.min(globalStart + pageSize, total);
+    const tickers = filtered.slice(globalStart, globalEnd).map((u) => u.ticker);
+    const rows = await buildScreenerPage2RowsForTickers(tickers, staticLayer.universe, globalStart + 1);
+    return {
+      page,
+      pageSize,
+      total,
+      rows,
+      sector: list.sector,
+      industry: null,
+      industrySector: null,
+    };
+  }
+
   const page2Tickers = pickScreenerPage2Tickers(staticLayer.universe);
   const top10Len = TOP10_TICKERS.length;
   const total = top10Len + page2Tickers.length;
   const globalStart = (page - 1) * pageSize;
   if (globalStart >= total) {
-    return { page, pageSize, total, rows: [] };
+    return { page, pageSize, total, rows: [], sector: null, industry: null, industrySector: null };
   }
   const globalEnd = Math.min(globalStart + pageSize, total);
   const rows: ScreenerTableRow[] = [];
@@ -234,7 +341,27 @@ export async function buildScreenerCompaniesApiResponse(
     }
   }
 
-  return { page, pageSize, total, rows };
+  return { page, pageSize, total, rows, sector: null, industry: null, industrySector: null };
+}
+
+/**
+ * Cached per list slice so RSC + `/api/screener/companies` and many users reuse one EODHD/realtime build within
+ * {@link REVALIDATE_SCREENER_MARKET} (same tier as tab quote batches).
+ */
+export async function buildScreenerCompaniesApiResponse(
+  page: number,
+  pageSize: number,
+  opts?: ScreenerCompaniesApiQueryOpts,
+): Promise<ScreenerCompaniesApiResponseBody> {
+  const p = Math.max(1, Math.trunc(page)) || 1;
+  const ps = Math.min(50, Math.max(1, Math.trunc(pageSize))) || SCREENER_MARKETS_PAGE_SIZE;
+  const list = resolveScreenerCompaniesListMode(opts);
+  const listKey = list.mode === "all" ? "all" : list.mode === "sector" ? `sector:${list.sector}` : `industry:${list.sector}:${list.industry}`;
+  return unstable_cache(
+    () => buildScreenerCompaniesApiResponseUncached(p, ps, list),
+    ["screener-companies-api-response-v2", String(p), String(ps), listKey],
+    { revalidate: REVALIDATE_SCREENER_MARKET },
+  )();
 }
 
 /** Paginated screener crypto rows — page 1 uses cached tab layers; page 2 loads on demand. */
@@ -289,7 +416,16 @@ export async function buildScreenerAllStockRowsForGainers(): Promise<ScreenerTab
   return [...page1, ...page2];
 }
 
-export async function buildScreenerPagePayload(market: ScreenerMarketTab): Promise<ScreenerPagePayload> {
+export async function buildScreenerPagePayload(
+  market: ScreenerMarketTab,
+  opts?: {
+    stocksSector?: ScreenerCanonicalSector | null;
+    stocksIndustry?: ScreenerIndustryDrill | null;
+  },
+): Promise<ScreenerPagePayload> {
+  const stocksSector = opts?.stocksSector ?? null;
+  const stocksIndustry = opts?.stocksIndustry ?? null;
+
   if (market === "crypto") {
     const cryptoFirst = await buildCryptoScreenerApiResponse(1, SCREENER_MARKETS_PAGE_SIZE);
     return {
@@ -303,20 +439,55 @@ export async function buildScreenerPagePayload(market: ScreenerMarketTab): Promi
     return { market: "indices", indicesRows: indicesTableRowsFromSimpleLayers(data, indicesDerived) };
   }
 
-  const [indexCards, staticLayer, companiesFirst] = await Promise.all([
+  const companiesApiOpts: ScreenerCompaniesApiQueryOpts = stocksIndustry
+    ? {
+        sector: null,
+        industry: stocksIndustry.industry,
+        industrySector: stocksIndustry.sector,
+      }
+    : { sector: stocksSector, industry: null, industrySector: null };
+
+  const [indexCards, staticLayer, companiesFirst, sectorEtfYtd] = await Promise.all([
     getSimpleIndexCards(),
     getScreenerCompaniesStaticLayer(),
-    buildScreenerCompaniesApiResponse(1, SCREENER_MARKETS_PAGE_SIZE),
+    buildScreenerCompaniesApiResponse(1, SCREENER_MARKETS_PAGE_SIZE, companiesApiOpts),
+    getScreenerSectorEtfProxyYtdBySector(),
   ]);
 
   const { sectors, industries } = buildScreenerSectorsAndIndustriesRows(staticLayer.universe);
+  const sectorsWithYtdFallback = sectors.map((row) => {
+    const hasAggregateYtd = row.changeYTD != null && Number.isFinite(row.changeYTD);
+    if (hasAggregateYtd) return row;
+    const proxy = sectorEtfYtd[row.sector as ScreenerCanonicalSector];
+    if (proxy != null && Number.isFinite(proxy)) {
+      return { ...row, changeYTD: proxy };
+    }
+    return row;
+  });
+
+  const industriesWithYtdFallback = industries.map((row) => {
+    const hasAggregateYtd = row.changeYTD != null && Number.isFinite(row.changeYTD);
+    if (hasAggregateYtd) return row;
+    const proxy = sectorEtfYtd[row.sector as ScreenerCanonicalSector];
+    if (proxy != null && Number.isFinite(proxy)) {
+      return { ...row, changeYTD: proxy };
+    }
+    return row;
+  });
+
+  const stocksIndustryFilter: ScreenerIndustryDrill | null =
+    companiesFirst.industry != null && companiesFirst.industrySector != null
+      ? { sector: companiesFirst.industrySector, industry: companiesFirst.industry }
+      : null;
 
   return {
     market: "stocks",
     stockRows: companiesFirst.rows,
     stocksTotalCount: companiesFirst.total,
+    stocksSectorFilter: companiesFirst.sector,
+    stocksIndustryFilter,
     indexCards,
-    sectors,
-    industries,
+    sectors: sectorsWithYtdFallback,
+    industries: industriesWithYtdFallback,
   };
 }

@@ -53,6 +53,12 @@ export function formatUsdPrice(n: number): string {
   return `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
+/** Dollar amount with grouping, no currency symbol (e.g. header change `-3,700.00`). */
+export function formatUsdAmountGrouped2dp(n: number): string {
+  if (!Number.isFinite(n)) return "—";
+  return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 export function formatBeta(n: number): string {
   if (!Number.isFinite(n)) return "—";
   return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
