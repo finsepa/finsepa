@@ -37,6 +37,11 @@ export function LoginPageClient({ resetSuccess, callbackError }: Props) {
           </Link>
         </>
       }
+      footer={
+        <p className="text-[13px] leading-5 text-[#71717A]">
+          Finsepa provides tools for research and portfolio tracking. We do not provide investment advice.
+        </p>
+      }
     >
       <LoginClient
         resetSuccess={resetSuccess}
