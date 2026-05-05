@@ -86,7 +86,7 @@ export function CryptoMiniTable({
     <div className="overflow-x-auto">
       <table className="w-full border-collapse">
         <thead>
-          <tr className="border-t border-b border-[#E4E4E7] bg-white">
+          <tr suppressHydrationWarning className="border-b border-[#E4E4E7] bg-white">
             <th className="min-w-[200px] px-3 py-2.5 text-left">
               <div className="flex items-center gap-1.5 text-[14px] font-semibold text-[#71717A]">
                 Asset

@@ -155,6 +155,7 @@ export function CryptoHeader({
           }`}
         >
           <span
+            suppressHydrationWarning
             className={`text-[28px] font-semibold leading-9 tabular-nums text-[#09090B] transition-[transform] duration-200 ease-out ${
               chartHovering ? "scale-[1.01]" : "scale-100"
             }`}
@@ -164,6 +165,7 @@ export function CryptoHeader({
           {hasSelectionSecondary ? (
             <>
               <span
+                suppressHydrationWarning
                 className={`text-[15px] font-medium tabular-nums transition-colors duration-200 ease-out ${
                   hasChange ? (isPositive ? "text-[#16A34A]" : "text-[#DC2626]") : "text-[#71717A]"
                 }`}
@@ -179,6 +181,7 @@ export function CryptoHeader({
                 ·
               </span>
               <span
+                suppressHydrationWarning
                 className={`text-[15px] font-medium tabular-nums transition-colors duration-200 ease-out ${
                   isSelPositive ? "text-[#16A34A]" : "text-[#DC2626]"
                 }`}
@@ -190,6 +193,7 @@ export function CryptoHeader({
           ) : (
             <>
               <span
+                suppressHydrationWarning
                 className={`text-[15px] font-medium tabular-nums transition-colors duration-200 ease-out ${
                   hasChange ? (isPositive ? "text-[#16A34A]" : "text-[#DC2626]") : "text-[#71717A]"
                 }`}
@@ -205,7 +209,9 @@ export function CryptoHeader({
         {chartLoading ? (
           <div className="mt-0.5 text-[12px] text-[#71717A]">Loading…</div>
         ) : chartEmpty ? null : priceTimestampLabel ? (
-          <div className="mt-0.5 text-[12px] leading-4 text-[#71717A]">{priceTimestampLabel}</div>
+          <div suppressHydrationWarning className="mt-0.5 text-[12px] leading-4 text-[#71717A]">
+            {priceTimestampLabel}
+          </div>
         ) : null}
       </div>
     </div>

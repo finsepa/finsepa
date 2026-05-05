@@ -108,7 +108,8 @@ export function CryptoPageContent({
     setHoldingsHeaderUi(s);
   }, []);
 
-  const cryptoChartDrivesHeader = activeTab !== "holdings";
+  // Keep a live spot/session header feed even on Holdings so the header always shows current price.
+  const cryptoChartDrivesHeader = true;
 
   const performanceFromServer = useMemo(
     (): StockPerformance | null =>
@@ -177,23 +178,19 @@ export function CryptoPageContent({
   const headerLiveSpotForMerge =
     headerLiveSpotClient ?? (serverMatch?.headerLiveSpotUsd != null ? serverMatch.headerLiveSpotUsd : null);
 
-  const chartUi = useMemo((): ChartDisplayState => {
-    if (activeTab === "holdings") {
-      return holdingsHeaderUi ?? EMPTY_CHART_DISPLAY;
-    }
-    return mergeSessionHeaderWithPerformanceSpot(
+  const spotUi = useMemo(
+    () =>
+      mergeSessionHeaderWithPerformanceSpot(
       sessionHeaderUi,
       performanceForHeaderFallback,
       "price",
       headerLiveSpotForMerge,
-    );
-  }, [
-    activeTab,
-    headerLiveSpotForMerge,
-    holdingsHeaderUi,
-    performanceForHeaderFallback,
-    sessionHeaderUi,
-  ]);
+      ),
+    [headerLiveSpotForMerge, performanceForHeaderFallback, sessionHeaderUi],
+  );
+
+  // Header should always show the live “Today” price + change + timestamp (even on Holdings).
+  const chartUi = spotUi;
 
   const initialChartMemo = useMemo(() => (serverMatch ? serverMatch.chart : null), [serverMatch]);
 
@@ -289,7 +286,7 @@ export function CryptoPageContent({
           displayName={displayName}
           logoUrl={headerLogoUrl}
           logoLetter={safeRow.symbol}
-          periodLabel={activeTab === "holdings" ? range : "Today"}
+          periodLabel="Today"
           periodLabelOverride={chartUi.periodLabelOverride}
           chartRangeLabel={range}
           price={chartUi.displayPrice}

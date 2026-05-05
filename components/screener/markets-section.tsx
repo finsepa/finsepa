@@ -39,6 +39,10 @@ import { IndicesTable } from "@/components/screener/indices-table";
 import { StocksTableSkeleton } from "@/components/markets/markets-skeletons";
 import { ScreenerPagination } from "@/components/ui/table-pagination";
 import { topbarSquircleIconClass } from "@/components/design-system/topbar-control-classes";
+import { CryptoFearGreedCard } from "@/components/screener/crypto-fear-greed-card";
+import { CryptoLargestMoversCard } from "@/components/screener/crypto-largest-movers-card";
+import { CryptoFearGreedModal } from "@/components/screener/crypto-fear-greed-modal";
+import type { CryptoFearGreedIndex } from "@/lib/market/alternative-fear-greed";
 import type { ScreenerIndustryRow } from "@/lib/screener/screener-industries-types";
 import type { ScreenerSectorRow } from "@/lib/screener/screener-sectors-types";
 
@@ -188,19 +192,37 @@ function CryptoTabBody({
   setCryptoPage,
   cryptoRowsResolved,
   cryptoRemoteLoading,
+  fearGreed,
 }: {
   cryptoTotalCount: number;
   cryptoPage: number;
   setCryptoPage: (u: number | ((p: number) => number)) => void;
   cryptoRowsResolved: CryptoTop10Row[];
   cryptoRemoteLoading: boolean;
+  fearGreed: CryptoFearGreedIndex | null;
 }) {
   const pageSize = SCREENER_MARKETS_PAGE_SIZE;
   const totalPages = Math.max(1, Math.ceil(cryptoTotalCount / pageSize));
   const safeCryptoPage = Math.min(totalPages, Math.max(1, cryptoPage));
 
+  const [fearGreedModalOpen, setFearGreedModalOpen] = useState(false);
+
+  const movers = useMemo(() => {
+    const valid = (cryptoRowsResolved ?? []).filter(
+      (r) => r.changePercent1D != null && Number.isFinite(r.changePercent1D),
+    );
+    const gainers = [...valid].sort((a, b) => (b.changePercent1D ?? 0) - (a.changePercent1D ?? 0));
+    const losers = [...valid].sort((a, b) => (a.changePercent1D ?? 0) - (b.changePercent1D ?? 0));
+    return { gainers, losers };
+  }, [cryptoRowsResolved]);
+
   return (
     <div>
+      <div className="mb-5 grid grid-cols-1 gap-6 md:grid-cols-3">
+        <CryptoLargestMoversCard title="Largest Gainers" rows={movers.gainers} />
+        <CryptoLargestMoversCard title="Largest Losers" rows={movers.losers} />
+        <CryptoFearGreedCard data={fearGreed} onOpenFullscreen={() => setFearGreedModalOpen(true)} />
+      </div>
       <CryptoTable
         initialRows={cryptoRowsResolved}
         rankOffset={(safeCryptoPage - 1) * pageSize}
@@ -216,6 +238,13 @@ function CryptoTabBody({
         onPageChange={(p) => setCryptoPage(p)}
         disabled={cryptoRemoteLoading}
         aria-label="Crypto list pages"
+      />
+
+      <CryptoFearGreedModal
+        open={fearGreedModalOpen}
+        onClose={() => setFearGreedModalOpen(false)}
+        latestValue={fearGreed?.value ?? null}
+        latestLabel={fearGreed?.classification ?? "—"}
       />
     </div>
   );
@@ -650,6 +679,7 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
           setCryptoPage={setCryptoPage}
           cryptoRowsResolved={cryptoRowsForTable}
           cryptoRemoteLoading={cryptoLoadingActive}
+          fearGreed={payload.fearGreed}
         />
       ) : null}
       {tab === "Indices" && payload.market === "indices" ? (

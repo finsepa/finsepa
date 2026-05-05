@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { Layers2, Plus } from "lucide-react";
 import type { ReactNode } from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { format, parseISO } from "date-fns";
 
 import type { ChartDisplayState, HoldingsTradeTooltipItem } from "@/components/chart/PriceChart";
 import { PriceChart } from "@/components/chart/PriceChart";
 import { ChartControls } from "@/components/stock/chart-controls";
+import { TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
 import {
   Empty,
   EmptyContent,
@@ -104,6 +105,7 @@ export function AssetPortfolioHoldingsTab({
   const {
     portfolios,
     selectedPortfolioId,
+    setSelectedPortfolioId,
     holdingsByPortfolioId,
     transactionsByPortfolioId,
     portfolioDisplayReady,
@@ -113,6 +115,18 @@ export function AssetPortfolioHoldingsTab({
 
   const route = routeKey.trim().toUpperCase();
   const [holdingsChartRange, setHoldingsChartRange] = useState<StockChartRange>("1Y");
+
+  const portfolioTabs = useMemo((): TabSwitcherOption<string>[] => {
+    return portfolios.map((p) => ({ value: p.id, label: p.name }));
+  }, [portfolios]);
+
+  useEffect(() => {
+    if (selectedPortfolioId != null) return;
+    if (!portfolioDisplayReady) return;
+    if (!portfolios.length) return;
+    // If nothing is selected yet, default to the first portfolio (topbar usually sets this).
+    setSelectedPortfolioId(portfolios[0]!.id);
+  }, [portfolioDisplayReady, portfolios, selectedPortfolioId, setSelectedPortfolioId]);
 
   const selectedPortfolio = useMemo(
     () => portfolios.find((p) => p.id === selectedPortfolioId) ?? null,
@@ -195,52 +209,73 @@ export function AssetPortfolioHoldingsTab({
     );
   }
 
+  const portfolioTabBar =
+    portfolioTabs.length > 1 ? (
+      <div className="mb-4">
+        <div className="max-w-full overflow-x-auto pb-0.5 sm:overflow-visible sm:pb-0">
+          <TabSwitcher
+            options={portfolioTabs}
+            value={selectedPortfolioId ?? portfolioTabs[0]!.value}
+            onChange={(next) => setSelectedPortfolioId(next)}
+            aria-label="Portfolio"
+            className="min-w-min flex-nowrap"
+          />
+        </div>
+      </div>
+    ) : null;
+
   if (selectedPortfolioId == null || !selectedPortfolio) {
     return (
-      <Empty variant="card" className="min-h-[min(50vh,400px)]">
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <Layers2 className="h-6 w-6" strokeWidth={1.75} aria-hidden />
-          </EmptyMedia>
-          <EmptyTitle>Select a portfolio</EmptyTitle>
-          <EmptyDescription>
-            Choose a portfolio from the top bar to see whether you hold {assetDisplayName} and your position details.
-          </EmptyDescription>
-        </EmptyHeader>
-      </Empty>
+      <div className="min-w-0">
+        {portfolioTabBar}
+        <Empty variant="card" className="min-h-[min(50vh,400px)]">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <Layers2 className="h-6 w-6" strokeWidth={1.75} aria-hidden />
+            </EmptyMedia>
+            <EmptyTitle>Select a portfolio</EmptyTitle>
+            <EmptyDescription>
+              Choose a portfolio to see whether you hold {assetDisplayName} and your position details.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+      </div>
     );
   }
 
   if (!holding) {
     return (
-      <Empty variant="card" className="min-h-[min(50vh,400px)]">
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <Layers2 className="h-6 w-6" strokeWidth={1.75} aria-hidden />
-          </EmptyMedia>
-          <EmptyTitle>No position in this portfolio</EmptyTitle>
-          <EmptyDescription>
-            {selectedPortfolio.name} does not include {assetDisplayName}. Add a buy or import trades on the portfolio
-            page to track this asset.
-          </EmptyDescription>
-        </EmptyHeader>
-        <EmptyContent className="mt-6">
-          <button
-            type="button"
-            disabled={selectedPortfolioReadOnly}
-            title={selectedPortfolioReadOnly ? "Trades are not available for combined portfolios." : undefined}
-            onClick={() => openNewTransactionWithPreset({ symbol: route, name: assetDisplayName })}
-            className={cn(
-              "inline-flex h-10 items-center justify-center rounded-[10px] bg-[#09090B] px-4 text-sm font-semibold text-white",
-              "shadow-[0px_1px_2px_0px_rgba(10,10,10,0.12)] transition-colors hover:bg-[#18181B]",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/20 focus-visible:ring-offset-2",
-              "disabled:pointer-events-none disabled:opacity-40",
-            )}
-          >
-            + Add Transaction
-          </button>
-        </EmptyContent>
-      </Empty>
+      <div className="min-w-0">
+        {portfolioTabBar}
+        <Empty variant="card" className="min-h-[min(50vh,400px)]">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <Layers2 className="h-6 w-6" strokeWidth={1.75} aria-hidden />
+            </EmptyMedia>
+            <EmptyTitle>No position in this portfolio</EmptyTitle>
+            <EmptyDescription>
+              {selectedPortfolio.name} does not include {assetDisplayName}. Add a buy or import trades on the portfolio
+              page to track this asset.
+            </EmptyDescription>
+          </EmptyHeader>
+          <EmptyContent className="mt-6">
+            <button
+              type="button"
+              disabled={selectedPortfolioReadOnly}
+              title={selectedPortfolioReadOnly ? "Trades are not available for combined portfolios." : undefined}
+              onClick={() => openNewTransactionWithPreset({ symbol: route, name: assetDisplayName })}
+              className={cn(
+                "inline-flex h-10 items-center justify-center rounded-[10px] bg-[#09090B] px-4 text-sm font-semibold text-white",
+                "shadow-[0px_1px_2px_0px_rgba(10,10,10,0.12)] transition-colors hover:bg-[#18181B]",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/20 focus-visible:ring-offset-2",
+                "disabled:pointer-events-none disabled:opacity-40",
+              )}
+            >
+              + Add Transaction
+            </button>
+          </EmptyContent>
+        </Empty>
+      </div>
     );
   }
 

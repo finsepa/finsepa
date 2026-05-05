@@ -9,6 +9,7 @@ import type { CryptoTop10Row } from "@/lib/market/crypto-top10";
 import type { IndexTableRow } from "@/lib/market/indices-top10";
 import type { EodhdRealtimePayload } from "@/lib/market/eodhd-realtime";
 import type { SimpleMarketData, SimpleMarketDatum, SimpleScreenerDerived } from "@/lib/market/simple-market-layer";
+import type { CryptoFearGreedIndex } from "@/lib/market/alternative-fear-greed";
 import type { TopCompanyUniverseRow } from "@/lib/screener/top500-companies";
 
 import { buildScreenerCompanyRowFromUniverse, resolveScreenerPeToMatchKeyStats } from "@/lib/screener/companies-rows";
@@ -50,6 +51,7 @@ import type { ScreenerIndustryDrill } from "@/lib/screener/screener-industry-url
 import type { ScreenerIndustryRow } from "@/lib/screener/screener-industries-types";
 import type { ScreenerSectorRow } from "@/lib/screener/screener-sectors-types";
 import { SCREENER_MARKETS_PAGE_SIZE } from "@/lib/screener/screener-markets-page-size";
+import { getCryptoFearGreedIndex } from "@/lib/market/alternative-fear-greed";
 
 export type ScreenerMarketTab = "stocks" | "crypto" | "indices";
 
@@ -66,7 +68,12 @@ export type ScreenerPagePayload =
       sectors: ScreenerSectorRow[];
       industries: ScreenerIndustryRow[];
     }
-  | { market: "crypto"; cryptoRows: CryptoTop10Row[]; cryptoTotalCount: number }
+  | {
+      market: "crypto";
+      cryptoRows: CryptoTop10Row[];
+      cryptoTotalCount: number;
+      fearGreed: CryptoFearGreedIndex | null;
+    }
   | { market: "indices"; indicesRows: IndexTableRow[] };
 
 function simpleDatumToRealtimePayload(d: SimpleMarketDatum | undefined): EodhdRealtimePayload | undefined {
@@ -427,11 +434,15 @@ export async function buildScreenerPagePayload(
   const stocksIndustry = opts?.stocksIndustry ?? null;
 
   if (market === "crypto") {
-    const cryptoFirst = await buildCryptoScreenerApiResponse(1, SCREENER_MARKETS_PAGE_SIZE);
+    const [cryptoFirst, fearGreed] = await Promise.all([
+      buildCryptoScreenerApiResponse(1, SCREENER_MARKETS_PAGE_SIZE),
+      getCryptoFearGreedIndex(),
+    ]);
     return {
       market: "crypto",
       cryptoRows: cryptoFirst.rows,
       cryptoTotalCount: cryptoFirst.total,
+      fearGreed,
     };
   }
   if (market === "indices") {
