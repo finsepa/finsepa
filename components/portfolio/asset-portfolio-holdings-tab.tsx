@@ -224,6 +224,19 @@ export function AssetPortfolioHoldingsTab({
       </div>
     ) : null;
 
+  const portfolioTitleSlot =
+    portfolioTabs.length > 1 ? (
+      <div className="max-w-full overflow-x-auto pb-0.5 sm:overflow-visible sm:pb-0">
+        <TabSwitcher
+          options={portfolioTabs}
+          value={selectedPortfolioId ?? portfolioTabs[0]!.value}
+          onChange={(next) => setSelectedPortfolioId(next)}
+          aria-label="Portfolio"
+          className="min-w-min flex-nowrap"
+        />
+      </div>
+    ) : null;
+
   if (selectedPortfolioId == null || !selectedPortfolio) {
     return (
       <div className="min-w-0">
@@ -306,7 +319,11 @@ export function AssetPortfolioHoldingsTab({
   return (
     <div className="space-y-8">
       <section className="space-y-4">
-        <ChartControls activeRange={holdingsChartRange} onRangeChange={setHoldingsChartRange} />
+        <ChartControls
+          activeRange={holdingsChartRange}
+          onRangeChange={setHoldingsChartRange}
+          titleSlot={portfolioTitleSlot}
+        />
         <div className="overflow-visible rounded-[12px] bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
           <PriceChart
             kind={assetKind}

@@ -19,50 +19,76 @@ function num(v: unknown): number | null {
 }
 
 /** One HTTP round-trip for the full par yield curve; filtered per tenor in-process. */
-async function fetchUstParYieldRatesRawUncached(): Promise<
-  Array<{ date: string; tenor: string; rate: number }>
-> {
+async function fetchUstParYieldRatesRawUncached(): Promise<Array<{ date: string; tenor: string; rate: number }>> {
   const key = getEodhdApiKey();
   if (!key) return [];
+  const apiToken: string = key;
+
+  async function fetchWindow(from: string, to: string): Promise<Array<{ date: string; tenor: string; rate: number }>> {
+    const params = new URLSearchParams({
+      api_token: apiToken,
+      fmt: "json",
+      from,
+      to,
+    });
+    const url = `https://eodhd.com/api/ust/yield-rates?${params.toString()}`;
+
+    try {
+      if (!traceEodhdHttp("fetchUstParYieldRatesRawUncached", { from, to })) return [];
+      const res = await fetch(url, { next: { revalidate: REVALIDATE_STATIC_DAY } });
+      if (!res.ok) return [];
+      const json = (await res.json()) as unknown;
+      let data: unknown[] = [];
+      if (Array.isArray(json)) data = json;
+      else if (json && typeof json === "object" && Array.isArray((json as { data?: unknown }).data)) {
+        data = (json as { data: unknown[] }).data;
+      }
+      const out: Array<{ date: string; tenor: string; rate: number }> = [];
+      for (const row of data) {
+        if (!row || typeof row !== "object") continue;
+        const o = row as { date?: unknown; tenor?: unknown; rate?: unknown };
+        const rawDate = typeof o.date === "string" ? o.date : "";
+        const date = rawDate.trim().slice(0, 10);
+        const tenor = typeof o.tenor === "string" ? o.tenor : "";
+        const rate = num(o.rate);
+        if (!date || !tenor || rate == null) continue;
+        out.push({ date, tenor, rate });
+      }
+      return out;
+    } catch {
+      return [];
+    }
+  }
 
   const to = new Date().toISOString().slice(0, 10);
   const from = "1980-01-01";
-  const params = new URLSearchParams({
-    api_token: key,
-    fmt: "json",
-    from,
-    to,
-  });
-  const url = `https://eodhd.com/api/ust/yield-rates?${params.toString()}`;
 
-  try {
-    if (!traceEodhdHttp("fetchUstParYieldRatesRawUncached", { from, to })) return [];
-    const res = await fetch(url, { next: { revalidate: REVALIDATE_STATIC_DAY } });
-    if (!res.ok) return [];
-    const json = (await res.json()) as unknown;
-    let data: unknown[] = [];
-    if (Array.isArray(json)) data = json;
-    else if (json && typeof json === "object" && Array.isArray((json as { data?: unknown }).data)) {
-      data = (json as { data: unknown[] }).data;
-    }
-    const out: Array<{ date: string; tenor: string; rate: number }> = [];
-    for (const row of data) {
-      if (!row || typeof row !== "object") continue;
-      const o = row as { date?: unknown; tenor?: unknown; rate?: unknown };
-      const rawDate = typeof o.date === "string" ? o.date : "";
-      const date = rawDate.trim().slice(0, 10);
-      const tenor = typeof o.tenor === "string" ? o.tenor : "";
-      const rate = num(o.rate);
-      if (!date || !tenor || rate == null) continue;
-      out.push({ date, tenor, rate });
-    }
-    return out;
-  } catch {
-    return [];
+  // Try a single wide request first. Some providers silently cap results; if we detect that,
+  // fall back to chunked window fetching to ensure "All" has a long history.
+  const wide = await fetchWindow(from, to);
+  const wideFirst = wide.length ? wide.reduce((min, r) => (r.date < min ? r.date : min), wide[0]!.date) : null;
+  const looksCapped = wide.length > 0 && wideFirst != null && wideFirst > "2000-01-01";
+  if (!looksCapped) return wide;
+
+  const out: Array<{ date: string; tenor: string; rate: number }> = [];
+  const startYear = 1980;
+  const endYear = new Date().getUTCFullYear();
+  const stepYears = 2;
+  for (let y = startYear; y <= endYear; y += stepYears) {
+    const wFrom = `${y.toString().padStart(4, "0")}-01-01`;
+    const wToYear = Math.min(endYear, y + stepYears - 1);
+    const wTo = `${wToYear.toString().padStart(4, "0")}-12-31`;
+    const chunk = await fetchWindow(wFrom, y === endYear ? to : wTo);
+    if (chunk.length) out.push(...chunk);
   }
+
+  // De-dupe just in case windows overlap or provider repeats rows.
+  const byKey = new Map<string, { date: string; tenor: string; rate: number }>();
+  for (const r of out) byKey.set(`${r.date}|${r.tenor}`, r);
+  return Array.from(byKey.values());
 }
 
-const fetchUstParYieldRatesRawCached = unstable_cache(fetchUstParYieldRatesRawUncached, ["eodhd-ust-yield-rates-raw-v1"], {
+const fetchUstParYieldRatesRawCached = unstable_cache(fetchUstParYieldRatesRawUncached, ["eodhd-ust-yield-rates-raw-v2"], {
   revalidate: REVALIDATE_STATIC_DAY,
 });
 

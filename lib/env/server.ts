@@ -36,7 +36,9 @@ export function getOpenAiApiKey(): string | undefined {
 export function getSecEdgarUserAgent(): string {
   const v = process.env.SEC_EDGAR_USER_AGENT?.trim();
   if (v) return v;
-  return "Finsepa/1.0 (set SEC_EDGAR_USER_AGENT with your contact email or URL per sec.gov policy)";
+  // SEC EDGAR blocks automated requests without a descriptive User-Agent that includes contact info.
+  // Provide a compliant default for local/dev to avoid silent data gaps in SEC-backed pages.
+  return "Finsepa/1.0 (support@finsepa.com)";
 }
 
 export { getLoopsApiKey } from "./loops";

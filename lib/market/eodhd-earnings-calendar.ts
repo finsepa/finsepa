@@ -75,7 +75,7 @@ async function fetchEodhdEarningsCalendarUncached(fromYmd: string, toYmd: string
 
 const fetchEodhdEarningsCalendarCached = unstable_cache(
   fetchEodhdEarningsCalendarUncached,
-  ["eodhd-earnings-calendar-v2-daily"],
+  ["eodhd-earnings-calendar-v3-daily"],
   { revalidate: REVALIDATE_EARNINGS_CALENDAR },
 );
 

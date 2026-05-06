@@ -1,9 +1,12 @@
 import {
   getArkHoldings,
   getBerkshireHoldings,
+  getCitadelHoldings,
   getBridgewaterHoldings,
+  getFisherHoldings,
   getFundsmithHoldings,
   getPershingSquareHoldings,
+  getPrimecapHoldings,
   getHimalayaHoldings,
   getScionHoldings,
 } from "@/lib/superinvestors/berkshire-13f";
@@ -15,7 +18,7 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function SuperinvestorsPage() {
-  const [berkshire, pershing, fundsmith, scion, ark, himalaya, bridgewater] = await Promise.all([
+  const [berkshire, pershing, fundsmith, scion, ark, himalaya, bridgewater, fisher, primecap, citadel] = await Promise.all([
     getBerkshireHoldings(),
     getPershingSquareHoldings(),
     getFundsmithHoldings(),
@@ -23,6 +26,9 @@ export default async function SuperinvestorsPage() {
     getArkHoldings(),
     getHimalayaHoldings(),
     getBridgewaterHoldings(),
+    getFisherHoldings(),
+    getPrimecapHoldings(),
+    getCitadelHoldings(),
   ]);
 
   const rows: SuperinvestorsFundRowModel[] = [
@@ -106,6 +112,42 @@ export default async function SuperinvestorsPage() {
       positionCount: bridgewater.positionCount,
       filingDate: bridgewater.filingDate,
       topHoldings: bridgewater.holdings.slice(0, 5).map((h) => ({
+        issuer: h.issuer,
+        ticker: h.ticker,
+      })),
+    },
+    {
+      href: "/superinvestors/ken-fisher",
+      displayName: "Ken Fisher",
+      avatarSrc: null,
+      totalValueUsd: fisher.totalValueUsd,
+      positionCount: fisher.positionCount,
+      filingDate: fisher.filingDate,
+      topHoldings: fisher.holdings.slice(0, 5).map((h) => ({
+        issuer: h.issuer,
+        ticker: h.ticker,
+      })),
+    },
+    {
+      href: "/superinvestors/primecap-management",
+      displayName: "PRIMECAP Management",
+      avatarSrc: null,
+      totalValueUsd: primecap.totalValueUsd,
+      positionCount: primecap.positionCount,
+      filingDate: primecap.filingDate,
+      topHoldings: primecap.holdings.slice(0, 5).map((h) => ({
+        issuer: h.issuer,
+        ticker: h.ticker,
+      })),
+    },
+    {
+      href: "/superinvestors/ken-griffin",
+      displayName: "Ken Griffin",
+      avatarSrc: null,
+      totalValueUsd: citadel.totalValueUsd,
+      positionCount: citadel.positionCount,
+      filingDate: citadel.filingDate,
+      topHoldings: citadel.holdings.slice(0, 5).map((h) => ({
         issuer: h.issuer,
         ticker: h.ticker,
       })),

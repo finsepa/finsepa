@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { dropdownMenuSurfaceClassName } from "@/components/design-system/dropdown-menu-styles";
+import { CompanyLogo } from "@/components/screener/company-logo";
 import { HeatmapSparkline } from "@/components/heatmap/heatmap-sparkline";
 import type { HeatmapLeaf, HeatmapMarket } from "@/lib/heatmap/heatmap-types";
 import {
@@ -13,6 +14,8 @@ import {
   heatmapCellBackground,
   heatmapLegendHex,
 } from "@/lib/heatmap/heatmap-colors";
+import { logoDevStockLogoUrl } from "@/lib/screener/company-logo-url";
+import { getCryptoLogoUrl } from "@/lib/crypto/crypto-logo-url";
 import { cn } from "@/lib/utils";
 
 const usd2 = new Intl.NumberFormat("en-US", {
@@ -76,12 +79,16 @@ export function HeatmapHoverTooltip({
   hover,
   onTooltipEnter,
   onTooltipLeave,
+  onTooltipClick,
+  pinned = false,
 }: {
   market: HeatmapMarket;
   allLeaves: HeatmapLeaf[];
   hover: { sector: string; featured: HeatmapLeaf; anchorX: number; anchorY: number } | null;
   onTooltipEnter: () => void;
   onTooltipLeave: () => void;
+  onTooltipClick?: () => void;
+  pinned?: boolean;
 }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -95,12 +102,22 @@ export function HeatmapHoverTooltip({
       .sort((a, b) => b.marketCapUsd - a.marketCapUsd);
   }, [peerSector, peerIndustryNorm, allLeaves]);
 
+  const sectorTopRows = useMemo(() => {
+    if (!peerSector) return [] as HeatmapLeaf[];
+    return allLeaves
+      .filter((l) => l.sector === peerSector)
+      .sort((a, b) => b.marketCapUsd - a.marketCapUsd)
+      .slice(0, 15);
+  }, [allLeaves, peerSector]);
+
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const rafRef = useRef<number | null>(null);
   const pendingRef = useRef({ x: 0, y: 0 });
+  const followCursorRef = useRef(true);
 
   useLayoutEffect(() => {
     if (!hover) return;
+    followCursorRef.current = !pinned;
     const el = wrapRef.current;
 
     const apply = (cx: number, cy: number) => {
@@ -115,6 +132,7 @@ export function HeatmapHoverTooltip({
     pendingRef.current = { x: hover.anchorX, y: hover.anchorY };
 
     const onMove = (e: PointerEvent) => {
+      if (!followCursorRef.current) return;
       pendingRef.current = { x: e.clientX, y: e.clientY };
       if (rafRef.current != null) return;
       rafRef.current = requestAnimationFrame(() => {
@@ -132,19 +150,11 @@ export function HeatmapHoverTooltip({
         rafRef.current = null;
       }
     };
-  }, [hover]);
+  });
 
   if (!mounted || !hover) return null;
 
   const f = hover.featured;
-  const heroBg = heatmapCellBackground(f.changePct);
-  const heroOnLight = heroBg === heatmapLegendHex(0);
-  const heroPctColor =
-    f.changePct == null || !Number.isFinite(f.changePct)
-      ? "#71717A"
-      : f.changePct >= 0
-        ? HEATMAP_LABEL_POSITIVE_HEX
-        : HEATMAP_LABEL_NEGATIVE_HEX;
   const p0 = clampTooltipPos(hover.anchorX, hover.anchorY);
 
   return createPortal(
@@ -155,82 +165,63 @@ export function HeatmapHoverTooltip({
         "fixed z-[200] w-[min(100vw-24px,300px)] overflow-hidden",
       )}
       style={{ left: p0.left, top: p0.top }}
-      onMouseEnter={onTooltipEnter}
-      onMouseLeave={onTooltipLeave}
+      onMouseEnter={() => {
+        followCursorRef.current = false;
+        onTooltipEnter();
+      }}
+      onMouseLeave={() => {
+        followCursorRef.current = true;
+        onTooltipLeave();
+      }}
+      onClick={(e) => {
+        e.stopPropagation();
+        onTooltipClick?.();
+      }}
       role="dialog"
       aria-label={`${f.ticker} details`}
     >
-      <p className="border-b border-[#E4E4E7] bg-[#FAFAFA] px-3 py-2 text-[10px] font-medium uppercase leading-4 tracking-wide text-[#71717A]">
-        {heatmapBreadcrumb(hover.sector, hover.featured.industry ?? null, market)}
-      </p>
+      <div className="border-b border-[#E4E4E7] bg-white px-4 py-3">
+        <p className="text-[18px] font-semibold leading-7 tracking-tight text-[#09090B]">{peerSector}</p>
+      </div>
 
-      <Link
-        href={assetHref(market, f.ticker)}
-        className={cn(
-          "block px-3 py-3 no-underline outline-none transition-opacity hover:opacity-95 focus-visible:ring-2",
-          heroOnLight
-            ? "text-[#09090B] focus-visible:ring-[#09090B]/15"
-            : "text-white focus-visible:ring-white/40",
-        )}
-        style={{ backgroundColor: heroBg }}
-      >
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0 flex-1">
-            <p className="text-2xl font-semibold leading-8 tracking-tight">{f.ticker}</p>
-            <p
-              className={cn(
-                "mt-0.5 truncate text-sm font-normal leading-5",
-                heroOnLight ? "text-[#71717A]" : "text-white/90",
-              )}
-            >
-              {f.name}
-            </p>
-          </div>
-          <HeatmapSparkline
-            values={f.sparkline5d}
-            stroke={heroOnLight ? "#A1A1AA" : "rgba(255,255,255,0.95)"}
-            width={64}
-            height={28}
-          />
-        </div>
-        <div className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-0">
-          <span className="text-xl font-semibold tabular-nums leading-7">{formatPrice(f.price, market)}</span>
-          <span
-            className="text-base font-medium tabular-nums"
-            style={{ color: heroOnLight ? heroPctColor : "#FFFFFF" }}
-          >
-            {pctLabel(f.changePct)}
-          </span>
-        </div>
-      </Link>
-
-      <div className="max-h-[280px] overflow-y-auto border-t border-[#E4E4E7]">
-        {peersSorted.map((row) => {
+      <div className="max-h-[360px] overflow-y-auto bg-white">
+        {sectorTopRows.map((row) => {
           const pos = row.changePct != null && Number.isFinite(row.changePct) && row.changePct >= 0;
+          const logoUrl =
+            market === "crypto"
+              ? getCryptoLogoUrl(row.ticker)
+              : logoDevStockLogoUrl(row.ticker) || "";
           return (
             <Link
               key={row.id}
               href={assetHref(market, row.ticker)}
-              className="grid grid-cols-[minmax(0,4.5rem)_52px_1fr_auto] items-center gap-2 border-b border-[#F4F4F5] px-3 py-2 text-sm text-[#09090B] transition-colors last:border-b-0 hover:bg-[#F4F4F5]"
+              className="flex items-center justify-between gap-4 border-b border-[#F4F4F5] px-4 py-3 text-sm text-[#09090B] transition-colors last:border-b-0 hover:bg-[#F4F4F5]"
             >
-              <span className="truncate font-semibold text-[#09090B]">{row.ticker}</span>
-              <HeatmapSparkline values={row.sparkline5d} stroke="#A1A1AA" width={52} height={20} />
-              <span className="min-w-0 truncate text-right tabular-nums text-[#09090B]">
-                {formatPrice(row.price, market)}
-              </span>
-              <span
-                className="shrink-0 text-right text-xs font-medium tabular-nums"
-                style={{
-                  color:
-                    row.changePct == null || !Number.isFinite(row.changePct)
-                      ? "#71717A"
-                      : pos
-                        ? HEATMAP_LABEL_POSITIVE_HEX
-                        : HEATMAP_LABEL_NEGATIVE_HEX,
-                }}
-              >
-                {pctLabel(row.changePct)}
-              </span>
+              <div className="flex min-w-0 items-center gap-3">
+                <CompanyLogo name={row.name} logoUrl={logoUrl} symbol={row.ticker} />
+                <div className="min-w-0">
+                  <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">{row.name}</div>
+                  <div className="truncate text-[12px] font-normal leading-4 text-[#71717A]">{row.ticker}</div>
+                </div>
+              </div>
+              <div className="flex shrink-0 items-baseline gap-3">
+                <span className="tabular-nums text-[14px] font-medium leading-5 text-[#09090B]">
+                  {formatPrice(row.price, market)}
+                </span>
+                <span
+                  className="tabular-nums text-[14px] font-medium leading-5"
+                  style={{
+                    color:
+                      row.changePct == null || !Number.isFinite(row.changePct)
+                        ? "#71717A"
+                        : pos
+                          ? HEATMAP_LABEL_POSITIVE_HEX
+                          : HEATMAP_LABEL_NEGATIVE_HEX,
+                  }}
+                >
+                  {pctLabel(row.changePct)}
+                </span>
+              </div>
             </Link>
           );
         })}

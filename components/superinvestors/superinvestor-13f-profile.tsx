@@ -127,7 +127,10 @@ export function Superinvestor13fProfile({
       ) : null}
 
       <div className="mt-8">
-        <Berkshire13fComparisonTable rows={data.rows} hasPriorFiling={data.hasPriorFiling} />
+        <Berkshire13fComparisonTable
+          rows={data.rows}
+          hasPriorFiling={data.hasPriorFiling}
+        />
       </div>
     </div>
   );

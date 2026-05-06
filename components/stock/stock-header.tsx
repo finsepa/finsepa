@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronRight, Plus } from "lucide-react";
+import { ChevronRight, Plus, Search } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSpringTriplet } from "@/components/chart/use-spring-numbers";
 import { mergeLogoMemory, readLogoMemory } from "@/lib/logos/logo-memory";
 import { getStockDetailMetaFromTicker } from "@/lib/market/stock-detail-meta";
@@ -16,6 +17,7 @@ import { formatUsdAmountGrouped2dp, formatUsdCompact, formatUsdPrice } from "@/l
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import { UsEquityMarketSessionBadge } from "@/components/stock/us-equity-market-session-badge";
 import { WatchlistStarButton } from "@/components/watchlist/watchlist-star-button";
+import { CompanyPicker } from "@/components/charting/company-picker";
 
 type Props = {
   ticker: string;
@@ -63,6 +65,8 @@ export function StockHeader({
   headerMetaLoading,
   headerChartMetric = "price",
 }: Props) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { openNewTransactionWithPreset } = usePortfolioWorkspace();
   const meta = getStockDetailMetaFromTicker(ticker);
   const symbol = meta.ticker;
@@ -118,7 +122,36 @@ export function StockHeader({
             Stocks
           </Link>
           <ChevronRight className="h-3.5 w-3.5" />
-          <span className="font-medium text-[#09090B]">{breadcrumbSymbol}</span>
+          <CompanyPicker
+            includeCrypto={false}
+            maxExtraCompanies={1}
+            excludeSymbols={[symbol]}
+            onPick={({ symbol: nextSym }) => {
+              // Preserve the current tab (and any other query params) when switching tickers.
+              // `useSearchParams()` can be briefly empty/stale during hydration or fast refresh, so prefer `window.location`.
+              const qs =
+                typeof window !== "undefined" ? window.location.search.replace(/^\?/, "") : searchParams?.toString() ?? "";
+              const url = `/stock/${encodeURIComponent(nextSym)}${qs ? `?${qs}` : ""}`;
+              router.push(url);
+            }}
+          >
+            {({ open, setOpen, atCapacity }) => (
+              <button
+                type="button"
+                onClick={() => {
+                  if (atCapacity) return;
+                  setOpen((o) => !o);
+                }}
+                aria-expanded={open}
+                aria-haspopup="listbox"
+                className="inline-flex h-6 max-w-full items-center gap-1.5 rounded-md border border-[#E4E4E7] bg-white px-2 text-[12px] font-medium leading-4 text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors hover:bg-[#FAFAFA]"
+                title={breadcrumbSymbol}
+              >
+                <Search className="h-3.5 w-3.5 shrink-0 text-[#71717A]" strokeWidth={2} aria-hidden />
+                <span className="truncate">{breadcrumbSymbol}</span>
+              </button>
+            )}
+          </CompanyPicker>
         </div>
       </div>
 

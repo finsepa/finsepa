@@ -1,6 +1,6 @@
 "use client";
 
-import { Maximize2 } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { useMemo } from "react";
 
 import { cn } from "@/lib/utils";
@@ -62,20 +62,27 @@ export function CryptoFearGreedCard({
       )}
     >
       <div className="flex items-center justify-between gap-3">
-        <p className="min-w-0 flex-1 truncate text-[14px] font-semibold leading-5 text-[#71717A]">
-          Fear &amp; Greed Index
-        </p>
-        {onOpenFullscreen ? (
-          <button
-            type="button"
-            onClick={onOpenFullscreen}
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] border border-transparent bg-transparent text-[#09090B] transition-colors hover:bg-[#F4F4F5] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#09090B]"
-            aria-label="Open Fear & Greed history"
-            title="Full screen"
-          >
-            <Maximize2 className="h-4 w-4" aria-hidden />
-          </button>
-        ) : null}
+        <button
+          type="button"
+          onClick={onOpenFullscreen}
+          disabled={!onOpenFullscreen}
+          className={cn(
+            "group inline-flex min-w-0 items-center gap-1.5 truncate rounded-[10px] text-left text-[14px] font-semibold leading-5 text-[#71717A] outline-none transition-colors",
+            onOpenFullscreen
+              ? "hover:text-[#09090B] focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2"
+              : "cursor-default",
+          )}
+          aria-label={onOpenFullscreen ? "Open Fear & Greed history" : undefined}
+        >
+          <span className="min-w-0 truncate">Fear &amp; Greed Index</span>
+          <ChevronRight
+            className={cn(
+              "h-4 w-4 shrink-0 text-[#A1A1AA] transition-colors",
+              onOpenFullscreen ? "group-hover:text-[#71717A]" : "",
+            )}
+            aria-hidden
+          />
+        </button>
       </div>
 
       <div className="relative h-[132px] w-full">

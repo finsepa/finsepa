@@ -11,7 +11,7 @@ export default function HeatmapsLoading() {
         <SkeletonBox className="h-9 w-[200px] rounded-[10px]" />
         <SkeletonBox className="h-9 w-[280px] rounded-[10px]" />
       </div>
-      <SkeletonBox className="h-[480px] w-full max-w-[1200px] rounded-[10px]" />
+      <SkeletonBox className="h-[480px] w-full rounded-[10px]" />
     </div>
   );
 }

@@ -17,7 +17,36 @@ import berkshireFallback from "@/lib/superinvestors/fixtures/berkshire-holdings-
 import fundsmithFallback from "@/lib/superinvestors/fixtures/fundsmith-holdings-fallback.json";
 import pershingSquareFallback from "@/lib/superinvestors/fixtures/pershing-square-holdings-fallback.json";
 
+export type SuperinvestorHoldSinceMatch = {
+  cik: string;
+  /** Prefer CUSIP match when present (stable across filings). */
+  cusip: string | null;
+  /** Fallback name match when CUSIP is missing. */
+  issuer: string;
+  titleOfClass: string | null;
+};
+
 const DEV_SEC_CACHE_TTL_MS = 5 * 60 * 1000;
+
+const REVALIDATE_SEC_13F_DAY = 86_400;
+
+function normalizeIssuerName(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\b(inc|incorporated|corp|corporation|co|company|ltd|limited|plc|del|holdings)\b/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function cikPad10(cik: string): string {
+  const trimmed = cik.trim();
+  if (!trimmed) return "";
+  const digits = trimmed.replace(/^CIK/i, "").replace(/\D+/g, "");
+  if (!digits) return trimmed.padStart(10, "0").slice(-10);
+  return digits.padStart(10, "0").slice(-10);
+}
 
 function devMemoAsync<T>(key: string, fn: () => Promise<T>, ttlMs = DEV_SEC_CACHE_TTL_MS): Promise<T> {
   if (process.env.NODE_ENV === "production") return fn();
@@ -75,6 +104,15 @@ export const HIMALAYA_CAPITAL_CIK = "0001709323";
 
 /** Bridgewater Associates, LP (Ray Dalio). */
 export const BRIDGEWATER_ASSOCIATES_CIK = "0001350694";
+
+/** Fisher Asset Management, LLC (Ken Fisher). */
+export const FISHER_ASSET_MANAGEMENT_CIK = "0000850529";
+
+/** PRIMECAP Management Co/CA/. */
+export const PRIMECAP_MANAGEMENT_CIK = "0000763212";
+
+/** Citadel Advisors LLC (Ken Griffin). */
+export const CITADEL_ADVISORS_CIK = "0001423053";
 
 /** Optional display tickers for common 13F CUSIPs (SEC filings do not include symbols). */
 const KNOWN_CUSIP_TICKER: Record<string, string> = {
@@ -857,6 +895,67 @@ async function fetchNth13fInfotableXml(
   return { xml, accession, filingDate, reportDate, filerName };
 }
 
+async function fetchHoldSinceReportDateUncached(match: SuperinvestorHoldSinceMatch): Promise<string | null> {
+  const cikPadded = cikPad10(match.cik);
+  if (!cikPadded) return null;
+  const ua = getSecEdgarUserAgent();
+
+  const cusipNeedle = match.cusip?.trim() ? match.cusip.trim().toUpperCase() : null;
+  const issuerNeedle = normalizeIssuerName(match.issuer);
+  const titleNeedle = (match.titleOfClass ?? "").trim().toLowerCase();
+
+  let oldest: string | null = null;
+  let consecutiveMisses = 0;
+  const MAX_ORDINAL = 24; // ~6 years of quarterlies
+
+  for (let ordinal = 0; ordinal < MAX_ORDINAL; ordinal++) {
+    const got = await fetchNth13fInfotableXml(cikPadded, ua, ordinal);
+    if (!got) break;
+
+    const parsed = parseInfoTableRows(got.xml);
+    let found = false;
+
+    if (cusipNeedle) {
+      found = parsed.some((r) => (r.cusip ?? "").trim().toUpperCase() === cusipNeedle);
+    } else if (issuerNeedle) {
+      found = parsed.some((r) => {
+        const issuer = normalizeIssuerName(r.issuer);
+        if (!issuer) return false;
+        if (issuer !== issuerNeedle && !issuer.includes(issuerNeedle) && !issuerNeedle.includes(issuer)) return false;
+        if (!titleNeedle) return true;
+        const t = (r.title ?? "").trim().toLowerCase();
+        return t === titleNeedle || t.includes(titleNeedle) || titleNeedle.includes(t);
+      });
+    }
+
+    if (found) {
+      consecutiveMisses = 0;
+      if (got.reportDate?.trim()) oldest = got.reportDate.trim();
+    } else if (oldest) {
+      consecutiveMisses++;
+      if (consecutiveMisses >= 3) break;
+    }
+  }
+
+  return oldest;
+}
+
+/**
+ * Oldest 13F report date where a holding appears ("Hold since").
+ * Cached across users; updates quarterly so a daily cache is fine.
+ */
+export async function getSuperinvestorHoldSinceReportDate(match: SuperinvestorHoldSinceMatch): Promise<string | null> {
+  const cik = cikPad10(match.cik);
+  const key = `${cik}|${(match.cusip ?? "").trim().toUpperCase()}|${normalizeIssuerName(match.issuer)}|${(match.titleOfClass ?? "")
+    .trim()
+    .toLowerCase()}`;
+  return unstable_cache(
+    () => fetchHoldSinceReportDateUncached(match),
+    ["superinvestor-hold-since-v1", key],
+    { revalidate: REVALIDATE_SEC_13F_DAY },
+  )();
+}
+
 function aggregateKey(h: AggregatedHolding): string {
   return h.cusip && h.cusip.length >= 6 ? h.cusip.toUpperCase() : `ISS:${h.issuer.toUpperCase()}`;
 }
@@ -1433,6 +1532,48 @@ async function fetchBridgewaterComparisonUncached(): Promise<Berkshire13fCompari
   );
 }
 
+async function fetchFisherHoldingsUncached(): Promise<InstitutionalHoldingsPayload> {
+  return (
+    (await fetchInstitutionalHoldingsUncached(FISHER_ASSET_MANAGEMENT_CIK)) ??
+    unavailableInstitutionalPayload(FISHER_ASSET_MANAGEMENT_CIK, "Fisher Asset Management, LLC")
+  );
+}
+
+async function fetchFisherComparisonUncached(): Promise<Berkshire13fComparisonPayload> {
+  return (
+    (await fetchInstitutionalComparisonUncached(FISHER_ASSET_MANAGEMENT_CIK)) ??
+    unavailableComparisonPayload(FISHER_ASSET_MANAGEMENT_CIK, "Fisher Asset Management, LLC")
+  );
+}
+
+async function fetchPrimecapHoldingsUncached(): Promise<InstitutionalHoldingsPayload> {
+  return (
+    (await fetchInstitutionalHoldingsUncached(PRIMECAP_MANAGEMENT_CIK)) ??
+    unavailableInstitutionalPayload(PRIMECAP_MANAGEMENT_CIK, "PRIMECAP Management Co/CA/")
+  );
+}
+
+async function fetchPrimecapComparisonUncached(): Promise<Berkshire13fComparisonPayload> {
+  return (
+    (await fetchInstitutionalComparisonUncached(PRIMECAP_MANAGEMENT_CIK)) ??
+    unavailableComparisonPayload(PRIMECAP_MANAGEMENT_CIK, "PRIMECAP Management Co/CA/")
+  );
+}
+
+async function fetchCitadelHoldingsUncached(): Promise<InstitutionalHoldingsPayload> {
+  return (
+    (await fetchInstitutionalHoldingsUncached(CITADEL_ADVISORS_CIK)) ??
+    unavailableInstitutionalPayload(CITADEL_ADVISORS_CIK, "Citadel Advisors LLC")
+  );
+}
+
+async function fetchCitadelComparisonUncached(): Promise<Berkshire13fComparisonPayload> {
+  return (
+    (await fetchInstitutionalComparisonUncached(CITADEL_ADVISORS_CIK)) ??
+    unavailableComparisonPayload(CITADEL_ADVISORS_CIK, "Citadel Advisors LLC")
+  );
+}
+
 const getBerkshireHoldingsCached = unstable_cache(
   async () => fetchBerkshireHoldingsUncached(),
   ["berkshire-hathaway-13f-v10-ticker-cusip-map"],
@@ -1513,6 +1654,36 @@ const getBridgewaterHoldingsComparisonCached = unstable_cache(
   { revalidate: 21_600 },
 );
 
+const getFisherHoldingsCached = unstable_cache(async () => fetchFisherHoldingsUncached(), ["fisher-asset-management-13f-v1"], {
+  revalidate: 21_600,
+});
+
+const getFisherHoldingsComparisonCached = unstable_cache(
+  async () => fetchFisherComparisonUncached(),
+  ["fisher-asset-management-13f-comparison-v1"],
+  { revalidate: 21_600 },
+);
+
+const getPrimecapHoldingsCached = unstable_cache(async () => fetchPrimecapHoldingsUncached(), ["primecap-management-13f-v1"], {
+  revalidate: 21_600,
+});
+
+const getPrimecapHoldingsComparisonCached = unstable_cache(
+  async () => fetchPrimecapComparisonUncached(),
+  ["primecap-management-13f-comparison-v1"],
+  { revalidate: 21_600 },
+);
+
+const getCitadelHoldingsCached = unstable_cache(async () => fetchCitadelHoldingsUncached(), ["citadel-advisors-13f-v1"], {
+  revalidate: 21_600,
+});
+
+const getCitadelHoldingsComparisonCached = unstable_cache(
+  async () => fetchCitadelComparisonUncached(),
+  ["citadel-advisors-13f-comparison-v1"],
+  { revalidate: 21_600 },
+);
+
 /** In development, skip `unstable_cache` so layout/component edits and SEC responses are not masked by a warm cache. */
 export async function getBerkshireHoldings() {
   return devMemoAsync("13f:berkshire:holdings", () =>
@@ -1551,13 +1722,13 @@ export async function getFundsmithHoldingsComparison() {
 }
 
 export async function getScionHoldings() {
-  return devMemoAsync("13f:scion:holdings", () =>
+  return devMemoAsync("13f:scion:holdings:v2", () =>
     process.env.NODE_ENV !== "production" ? fetchScionHoldingsUncached() : getScionHoldingsCached(),
   );
 }
 
 export async function getScionHoldingsComparison() {
-  return devMemoAsync("13f:scion:comparison", () =>
+  return devMemoAsync("13f:scion:comparison:v2", () =>
     process.env.NODE_ENV !== "production" ? fetchScionComparisonUncached() : getScionHoldingsComparisonCached(),
   );
 }
@@ -1597,5 +1768,41 @@ export async function getBridgewaterHoldingsComparison() {
     process.env.NODE_ENV !== "production"
       ? fetchBridgewaterComparisonUncached()
       : getBridgewaterHoldingsComparisonCached(),
+  );
+}
+
+export async function getFisherHoldings() {
+  return devMemoAsync("13f:fisher:holdings", () =>
+    process.env.NODE_ENV !== "production" ? fetchFisherHoldingsUncached() : getFisherHoldingsCached(),
+  );
+}
+
+export async function getFisherHoldingsComparison() {
+  return devMemoAsync("13f:fisher:comparison", () =>
+    process.env.NODE_ENV !== "production" ? fetchFisherComparisonUncached() : getFisherHoldingsComparisonCached(),
+  );
+}
+
+export async function getPrimecapHoldings() {
+  return devMemoAsync("13f:primecap:holdings", () =>
+    process.env.NODE_ENV !== "production" ? fetchPrimecapHoldingsUncached() : getPrimecapHoldingsCached(),
+  );
+}
+
+export async function getPrimecapHoldingsComparison() {
+  return devMemoAsync("13f:primecap:comparison", () =>
+    process.env.NODE_ENV !== "production" ? fetchPrimecapComparisonUncached() : getPrimecapHoldingsComparisonCached(),
+  );
+}
+
+export async function getCitadelHoldings() {
+  return devMemoAsync("13f:citadel:holdings", () =>
+    process.env.NODE_ENV !== "production" ? fetchCitadelHoldingsUncached() : getCitadelHoldingsCached(),
+  );
+}
+
+export async function getCitadelHoldingsComparison() {
+  return devMemoAsync("13f:citadel:comparison", () =>
+    process.env.NODE_ENV !== "production" ? fetchCitadelComparisonUncached() : getCitadelHoldingsComparisonCached(),
   );
 }

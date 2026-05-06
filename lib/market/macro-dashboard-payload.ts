@@ -56,6 +56,6 @@ async function buildMacroDashboardPayloadUncached(): Promise<{ country: string; 
  */
 export const getMacroDashboardPayloadCached = unstable_cache(
   buildMacroDashboardPayloadUncached,
-  ["macro-dashboard-payload-v15"],
+  ["macro-dashboard-payload-v17"],
   { revalidate: REVALIDATE_STATIC_DAY },
 );

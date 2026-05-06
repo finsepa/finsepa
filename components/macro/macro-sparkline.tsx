@@ -16,6 +16,8 @@ function clamp(n: number, lo: number, hi: number) {
 const PORTFOLIO_VALUE_LINE = "#2563EB";
 const PORTFOLIO_AREA_TOP_OPACITY = 0.22;
 const PORTFOLIO_AREA_BOTTOM_OPACITY = 0.02;
+/** Same fill as Multicharts hover column band. */
+const HOVER_COLUMN_BG = "rgba(59, 130, 246, 0.14)";
 /** Grid cards: `nonScalingStroke` 2px matches small sparkline cards. */
 const MACRO_SERIES_STROKE_WIDTH_CARD = 2;
 /**
@@ -37,6 +39,41 @@ type HoverOverlayPx = {
   chartTop: number;
   chartHeight: number;
 };
+
+type TooltipState = {
+  anchorX: number;
+  y: number;
+  side: "left" | "right";
+  timeLabel: string;
+  valueLabel: string;
+};
+
+function formatMacroTooltipTime(ymd: string): string {
+  const t = ymd.trim().slice(0, 10);
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(t);
+  if (!m) return t;
+  const y = Number(m[1]);
+  const mo = Number(m[2]) - 1;
+  const day = Number(m[3]);
+  const d = new Date(Date.UTC(y, mo, day));
+  if (!Number.isFinite(d.getTime())) return t;
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+}
+
+function computeTooltipHorizontalPlacement(focusX: number, containerWidthPx: number): { anchorX: number; side: "left" | "right" } {
+  const pad = 8;
+  const gap = 10;
+  const estW = Math.min(280, Math.max(140, containerWidthPx - 2 * pad));
+
+  if (focusX - gap - estW >= pad) return { anchorX: focusX, side: "left" };
+
+  let anchorX = focusX;
+  if (anchorX + gap + estW > containerWidthPx - pad) {
+    anchorX = containerWidthPx - pad - gap - estW;
+  }
+  anchorX = Math.max(pad, anchorX);
+  return { anchorX, side: "right" };
+}
 
 /** Polyline through samples — avoids cubic overshoot on sharp macro swings (e.g. unemployment spikes). */
 function linearLinePathD(pts: readonly { x: number; y: number }[]): string {
@@ -100,6 +137,8 @@ export function MacroSparkline({
   variant = "area",
   /** Match macro card chart density; `prominent` = slightly richer fill for expanded / modal views. */
   visualWeight = "default",
+  /** Default: `height` applies to the SVG only. In modals we want a fixed total height incl. x-axis labels. */
+  heightMode = "svg",
 }: {
   title: string;
   kind: MacroValueKind;
@@ -107,10 +146,13 @@ export function MacroSparkline({
   height?: number;
   variant?: MacroChartVariant;
   visualWeight?: "default" | "prominent";
+  heightMode?: "svg" | "total";
 }) {
   const w = 280;
-  const h = height;
   const comfortable = visualWeight === "prominent";
+  const axisRowPx = comfortable ? 28 : 18;
+  const axisGapPx = comfortable ? 12 : 6;
+  const h = heightMode === "total" ? Math.max(120, height - axisRowPx - axisGapPx) : height;
   const padX = comfortable ? 12 : 4;
   const padY = comfortable ? 16 : 8;
   const gradientId = `macro-area-${useId().replace(/:/g, "")}`;
@@ -120,6 +162,7 @@ export function MacroSparkline({
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
   /** Pixel overlay — avoids stretched SVG turning the rule/marker into odd thickness or ellipses (`preserveAspectRatio="none"`). */
   const [hoverOverlayPx, setHoverOverlayPx] = useState<HoverOverlayPx | null>(null);
+  const [tip, setTip] = useState<TooltipState | null>(null);
 
   const cleaned = useMemo(() => {
     const out = points
@@ -183,9 +226,15 @@ export function MacroSparkline({
   const barEls: ReactNode[] = [];
 
   if (variant === "area" && seriesForLayout.length >= 2) {
+    const snap = (v: number) => {
+      // Avoid anti-aliased “fat/thin” segments in stretched SVGs by aligning the line to the pixel grid.
+      // For 1px strokes, crisp rendering happens on half-pixels; for thicker strokes, integers look best.
+      const px = seriesStrokeWidthPx <= 1 ? 0.5 : 1;
+      return Math.round(v / px) * px;
+    };
     const xy = seriesForLayout.map((v, i) => {
-      const x = clamp(idxToX(i, seriesForLayout.length), 0, w);
-      const y = clamp(yForValue(v), 0, h);
+      const x = clamp(snap(idxToX(i, seriesForLayout.length)), 0, w);
+      const y = clamp(snap(yForValue(v)), 0, h);
       return { x, y };
     });
     linePathD = linearLinePathD(xy);
@@ -254,8 +303,23 @@ export function MacroSparkline({
     const val = variant === "area" ? hoverSeries[idx]! : rawValues[idx]!;
     const yUser = padY + chartH - ((val - vMin) / range) * chartH;
 
+    const focusX = cr.left - r.left + (x / w) * cr.width;
+    const { anchorX, side } = computeTooltipHorizontalPlacement(focusX, Math.max(1, Math.floor(r.width)));
+    const point = cleaned.length ? cleaned[Math.min(idx, cleaned.length - 1)] : null;
+    if (point) {
+      setTip({
+        anchorX,
+        side,
+        y: e.clientY - r.top,
+        timeLabel: formatMacroTooltipTime(point.time),
+        valueLabel: `${title}: ${formatMacroValue(kind, point.value)}`,
+      });
+    } else {
+      setTip(null);
+    }
+
     setHoverOverlayPx({
-      lineX: cr.left - r.left + (x / w) * cr.width,
+      lineX: focusX,
       dotTop: cr.top - r.top + (yUser / h) * cr.height,
       chartTop: cr.top - r.top,
       chartHeight: cr.height,
@@ -265,6 +329,7 @@ export function MacroSparkline({
   const clearHover = () => {
     setHoverIdx(null);
     setHoverOverlayPx(null);
+    setTip(null);
   };
 
   if (!cleaned.length) {
@@ -274,37 +339,55 @@ export function MacroSparkline({
   return (
     <div ref={containerRef} className="relative w-full" onPointerMove={onPointerMove} onPointerLeave={clearHover}>
       <div className={cn("flex w-full", comfortable ? "gap-3" : "gap-1")}>
-        <svg
-          data-macro-chart-svg
-          width="100%"
-          height={h}
-          viewBox={`0 0 ${w} ${h}`}
-          preserveAspectRatio="none"
-          className="min-w-0 flex-1 overflow-visible"
-        >
-          <defs>
-            <linearGradient id={gradientId} x1="0" x2="0" y1={padY} y2={h - padY} gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stopColor={PORTFOLIO_VALUE_LINE} stopOpacity={PORTFOLIO_AREA_TOP_OPACITY} />
-              <stop offset="100%" stopColor={PORTFOLIO_VALUE_LINE} stopOpacity={PORTFOLIO_AREA_BOTTOM_OPACITY} />
-            </linearGradient>
-          </defs>
-          {gridLines}
-          {variant === "area" && seriesForLayout.length >= 2 ? (
-            <>
-              <path d={fillPathD} fill={`url(#${gradientId})`} />
-              <path
-                d={linePathD}
-                fill="none"
-                stroke={PORTFOLIO_VALUE_LINE}
-                strokeWidth={seriesStrokeWidthPx}
-                strokeLinejoin="round"
-                strokeLinecap="round"
-                vectorEffect="nonScalingStroke"
-              />
-            </>
+        <div className="relative min-w-0 flex-1 overflow-visible">
+          {hoverOverlayPx ? (
+            <div
+              className="pointer-events-none absolute z-[1] w-10 -translate-x-1/2"
+              style={{
+                left: hoverOverlayPx.lineX,
+                top: hoverOverlayPx.chartTop,
+                height: hoverOverlayPx.chartHeight,
+                backgroundColor: HOVER_COLUMN_BG,
+              }}
+              aria-hidden
+            />
           ) : null}
-          {variant === "bar" ? barEls : null}
-        </svg>
+          <svg
+            data-macro-chart-svg
+            width="100%"
+            height={h}
+            viewBox={`0 0 ${w} ${h}`}
+            preserveAspectRatio="none"
+            shapeRendering="geometricPrecision"
+            // Important: don't use `h-full` here — it overrides the explicit pixel `height`
+            // and can stretch/clamp inside modal containers.
+            className="relative z-[2] block w-full min-w-0 overflow-visible"
+          >
+            <defs>
+              <linearGradient id={gradientId} x1="0" x2="0" y1={padY} y2={h - padY} gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stopColor={PORTFOLIO_VALUE_LINE} stopOpacity={PORTFOLIO_AREA_TOP_OPACITY} />
+                <stop offset="100%" stopColor={PORTFOLIO_VALUE_LINE} stopOpacity={PORTFOLIO_AREA_BOTTOM_OPACITY} />
+              </linearGradient>
+            </defs>
+            {gridLines}
+            {variant === "area" && seriesForLayout.length >= 2 ? (
+              <>
+                <path d={fillPathD} fill={`url(#${gradientId})`} />
+                <path
+                  d={linePathD}
+                  fill="none"
+                  stroke={PORTFOLIO_VALUE_LINE}
+                  strokeWidth={seriesStrokeWidthPx}
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
+                  vectorEffect="nonScalingStroke"
+                  shapeRendering="geometricPrecision"
+                />
+              </>
+            ) : null}
+            {variant === "bar" ? barEls : null}
+          </svg>
+        </div>
         <div
           className={cn(
             "flex shrink-0 flex-col justify-between text-right tabular-nums text-[#A1A1AA]",
@@ -350,21 +433,28 @@ export function MacroSparkline({
         </>
       ) : null}
 
-      {hover && hoverOverlayPx ? (
+      {tip && hoverOverlayPx ? (
         <div
-          className="pointer-events-none absolute top-2 z-10"
+          className="pointer-events-none absolute z-10 max-w-[min(280px,calc(100%-16px))] rounded-lg bg-[#09090B] px-3 py-2.5 pr-3.5 text-left text-white shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
           style={{
-            left: hoverOverlayPx.lineX,
-            transform: "translateX(-50%)",
+            left: `clamp(8px, ${tip.anchorX}px, calc(100% - 8px))`,
+            top: tip.y,
+            transform: tip.side === "left" ? "translate(calc(-100% - 10px), -50%)" : "translate(10px, -50%)",
           }}
         >
-          <div className="rounded-xl bg-[#09090B] px-3 py-2 text-white shadow-[0px_10px_30px_rgba(0,0,0,0.25)]">
-            <div className="text-[12px] font-semibold leading-4 tabular-nums text-white/90">{hover.point.time.slice(0, 4)}</div>
-            <div className="mt-1 max-w-[240px] text-[12px] leading-4 text-white/80">{title}</div>
-            <div className="mt-1 text-[13px] font-semibold leading-4 tabular-nums text-white">
-              {formatMacroValue(kind, hover.point.value)}
-            </div>
-          </div>
+          {tip.side === "left" ? (
+            <span
+              className="absolute top-1/2 left-full -translate-y-1/2 border-y-[6px] border-y-transparent border-l-[7px] border-l-[#09090B]"
+              aria-hidden
+            />
+          ) : (
+            <span
+              className="absolute top-1/2 right-full -translate-y-1/2 border-y-[6px] border-y-transparent border-r-[7px] border-r-[#09090B]"
+              aria-hidden
+            />
+          )}
+          <p className="text-[12px] font-semibold leading-4 text-white">{tip.timeLabel}</p>
+          <p className="mt-1.5 whitespace-nowrap text-[12px] font-normal leading-4 text-[#71717A]">{tip.valueLabel}</p>
         </div>
       ) : null}
 
@@ -372,8 +462,13 @@ export function MacroSparkline({
         <div
           className={cn(
             "flex w-full min-w-0 justify-between text-[#A1A1AA] tabular-nums",
-            comfortable ? "mt-3 gap-2 px-0.5 text-[12px] leading-5" : "mt-1 gap-1 text-[11px] leading-4",
+            comfortable ? "gap-2 px-0.5 text-[12px] leading-5" : "gap-1 text-[11px] leading-4",
           )}
+          style={
+            heightMode === "total"
+              ? { marginTop: axisGapPx, height: axisRowPx, alignItems: "flex-end" }
+              : { marginTop: comfortable ? 12 : 4 }
+          }
         >
           {timeAxisLabels.map((label, i) => (
             <span

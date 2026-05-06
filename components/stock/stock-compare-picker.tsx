@@ -87,7 +87,9 @@ export function StockComparePicker({ baseTicker, values, onAdd, onRemove }: Prop
             }`}
           >
             <div className="flex min-h-0 min-w-0 flex-1 flex-nowrap items-center gap-2 overflow-x-auto overscroll-x-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              <span className="shrink-0 select-none text-sm font-normal leading-5 text-[#71717A]">Compare</span>
+              {values.length === 0 ? (
+                <span className="shrink-0 select-none text-sm font-normal leading-5 text-[#71717A]">Compare</span>
+              ) : null}
               {values.map((v) => (
                 <div
                   key={v.symbol.toUpperCase()}

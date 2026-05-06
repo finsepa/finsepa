@@ -5,9 +5,12 @@ import {
   getArkHoldingsComparison,
   getBerkshireHoldingsComparison,
   getBridgewaterHoldingsComparison,
+  getCitadelHoldingsComparison,
+  getFisherHoldingsComparison,
   getFundsmithHoldingsComparison,
   getHimalayaHoldingsComparison,
   getPershingSquareHoldingsComparison,
+  getPrimecapHoldingsComparison,
   getScionHoldingsComparison,
 } from "@/lib/superinvestors/berkshire-13f";
 
@@ -62,6 +65,24 @@ const SUPERINVESTORS: SuperinvestorRegistryItem[] = [
     avatarSrc: "/superinvestors/ray-dalio.png",
     load: getBridgewaterHoldingsComparison,
   },
+  {
+    slug: "ken-fisher",
+    managerName: "Ken Fisher",
+    avatarSrc: null,
+    load: getFisherHoldingsComparison,
+  },
+  {
+    slug: "primecap-management",
+    managerName: "PRIMECAP Management",
+    avatarSrc: null,
+    load: getPrimecapHoldingsComparison,
+  },
+  {
+    slug: "ken-griffin",
+    managerName: "Ken Griffin",
+    avatarSrc: null,
+    load: getCitadelHoldingsComparison,
+  },
 ];
 
 function normalizeName(s: string): string {
@@ -105,39 +126,35 @@ export async function GET(_req: Request, ctx: { params: Promise<{ ticker: string
     }),
   );
 
-  const positions = payloads
-    .map(({ s, data }) => {
-      if (!data || data.source === "unavailable") return null;
-      const direct = data.rows.find((r) => (r.ticker ?? "").trim().toUpperCase() === sym) ?? null;
-      const byName =
-        !direct && targetNameNorm
-          ? data.rows.find((r) => {
-              const n = normalizeName(r.companyName);
-              return n && (n === targetNameNorm || n.includes(targetNameNorm) || targetNameNorm.includes(n));
-            }) ?? null
-          : null;
+  const positions = (
+    await Promise.all(
+      payloads.map(async ({ s, data }) => {
+        if (!data || data.source === "unavailable") return null;
+        const direct = data.rows.find((r) => (r.ticker ?? "").trim().toUpperCase() === sym) ?? null;
+        const byName =
+          !direct && targetNameNorm
+            ? data.rows.find((r) => {
+                const n = normalizeName(r.companyName);
+                return n && (n === targetNameNorm || n.includes(targetNameNorm) || targetNameNorm.includes(n));
+              }) ?? null
+            : null;
 
-      const row = direct ?? byName;
-      if (!row) return null;
+        const row = direct ?? byName;
+        if (!row) return null;
 
-      const holdSinceYmd =
-        row.previousShares != null && data.previous?.reportDate?.trim()
-          ? data.previous.reportDate
-          : data.current.reportDate ?? null;
-
-      return {
-        superinvestorSlug: s.slug,
-        managerName: s.managerName,
-        fundName: s.fundNameOverride ?? data.filerDisplayName,
-        avatarSrc: s.avatarSrc,
-        weightPct: row.weight,
-        statusLabel: activityLabel(row.status, row.sharesChangePct),
-        shares: row.shares,
-        valueUsd: row.valueUsd,
-        holdSinceYmd,
-      };
-    })
-    .filter(Boolean);
+        return {
+          superinvestorSlug: s.slug,
+          managerName: s.managerName,
+          fundName: s.fundNameOverride ?? data.filerDisplayName,
+          avatarSrc: s.avatarSrc,
+          weightPct: row.weight,
+          statusLabel: activityLabel(row.status, row.sharesChangePct),
+          shares: row.shares,
+          valueUsd: row.valueUsd,
+        };
+      }),
+    )
+  ).filter(Boolean);
 
   return NextResponse.json({ ticker: sym, positions });
 }

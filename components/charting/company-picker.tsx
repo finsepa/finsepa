@@ -23,8 +23,8 @@ import {
 import { cn } from "@/lib/utils";
 
 const SEARCH_DEBOUNCE_MS = 250;
-/** Hard cap on “Most popular” rows (screener default list; charting allows up to 10 companies). */
-const PICKER_MOST_POPULAR_MAX = 10;
+/** Hard cap on “Most popular” rows (screener default list). */
+const PICKER_MOST_POPULAR_MAX = 15;
 
 export type CompanyPick = {
   symbol: string;
@@ -117,7 +117,7 @@ export function CompanyPicker({
     setPickerStocksLoading(true);
     void (async () => {
       try {
-        const res = await fetch("/api/charting/picker-stocks", { cache: "default" });
+        const res = await fetch("/api/charting/picker-stocks?limit=15", { cache: "default" });
         const json = (await res.json()) as { stocks?: PickerStockRow[] };
         if (cancelled) return;
         setPickerStocks(Array.isArray(json.stocks) ? json.stocks : []);

@@ -8,6 +8,79 @@ import type { StockAnalystDistributionBucket, StockTargetPricePayload } from "@/
 
 const DISTRIBUTION_FILLS = ["#16A34A", "#84CC16", "#CA8A04", "#FB923C", "#DC2626"] as const;
 
+function polarToCartesian(cx: number, cy: number, r: number, deg: number) {
+  const rad = ((deg - 90) * Math.PI) / 180;
+  return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+}
+
+function arcPath(cx: number, cy: number, r: number, startDeg: number, endDeg: number) {
+  const start = polarToCartesian(cx, cy, r, endDeg);
+  const end = polarToCartesian(cx, cy, r, startDeg);
+  const largeArc = endDeg - startDeg <= 180 ? "0" : "1";
+  return `M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArc} 0 ${end.x} ${end.y}`;
+}
+
+function normalizeAnalystLabel(raw: string): string {
+  return raw.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function analystBucketScore(label: string): number | null {
+  const l = normalizeAnalystLabel(label);
+  if (l === "strong buy") return 5;
+  if (l === "buy") return 4;
+  if (l === "neutral") return 3;
+  if (l === "sell") return 2;
+  if (l === "strong sell") return 1;
+  return null;
+}
+
+function labelFromAvgScore(avg: number): string {
+  if (avg >= 4.5) return "Strong buy";
+  if (avg >= 3.5) return "Buy";
+  if (avg >= 2.5) return "Neutral";
+  if (avg >= 1.5) return "Sell";
+  return "Strong sell";
+}
+
+function avgScoreFromBuckets(buckets: StockAnalystDistributionBucket[]): number | null {
+  let num = 0;
+  let den = 0;
+  for (const b of buckets) {
+    const s = analystBucketScore(b.label);
+    if (s == null) continue;
+    const c = b.count;
+    if (!Number.isFinite(c) || c <= 0) continue;
+    num += s * c;
+    den += c;
+  }
+  if (den <= 0) return null;
+  return num / den;
+}
+
+function majorityLabelFromBuckets(buckets: StockAnalystDistributionBucket[]): string | null {
+  let best: { label: string; count: number; score: number } | null = null;
+  for (const b of buckets) {
+    const score = analystBucketScore(b.label);
+    if (score == null) continue;
+    const c = b.count;
+    if (!Number.isFinite(c) || c <= 0) continue;
+    if (!best || c > best.count || (c === best.count && score > best.score)) {
+      best = { label: b.label, count: c, score };
+    }
+  }
+  return best ? labelFromAvgScore(best.score) : null;
+}
+
+function toneForConsensusLabel(label: string): { text: string; dot: string } {
+  const l = normalizeAnalystLabel(label);
+  if (l === "strong buy") return { text: "#16A34A", dot: "#16A34A" };
+  if (l === "buy") return { text: "#84CC16", dot: "#84CC16" };
+  if (l === "neutral") return { text: "#CA8A04", dot: "#CA8A04" };
+  if (l === "sell") return { text: "#FB923C", dot: "#FB923C" };
+  if (l === "strong sell") return { text: "#DC2626", dot: "#DC2626" };
+  return { text: "#71717A", dot: "#A1A1AA" };
+}
+
 function dashPrice(n: number | null): string {
   return n != null && Number.isFinite(n) ? formatUsdPrice(n) : "—";
 }
@@ -21,6 +94,74 @@ function upsideVsLastPrice(current: number | null, target: number | null): Upsid
   const pct = ((target - current) / current) * 100;
   const sign = pct > 0 ? "+" : "";
   return { kind: "ok", pct, pctLabel: `${sign}${pct.toFixed(2)}%` };
+}
+
+function AnalystConsensusGaugeCard({ buckets }: { buckets: StockAnalystDistributionBucket[] }) {
+  const majorityLabel = useMemo(() => majorityLabelFromBuckets(buckets), [buckets]);
+  const avgScore = useMemo(() => avgScoreFromBuckets(buckets), [buckets]);
+  const consensusLabel = majorityLabel ?? (avgScore == null ? "—" : labelFromAvgScore(avgScore));
+  const consensusScore =
+    majorityLabel != null ? analystBucketScore(majorityLabel) : avgScore == null ? null : avgScore;
+  const consensusNorm =
+    consensusScore == null ? 0.5 : Math.max(0, Math.min(1, (consensusScore - 1) / 4));
+  const tone = useMemo(() => toneForConsensusLabel(consensusLabel), [consensusLabel]);
+
+  const gauge = useMemo(() => {
+    // Top-half semicircle sweep -90..90 (left→right), map 0..1 onto that sweep.
+    const angle = -90 + consensusNorm * 180;
+    const cx = 160;
+    // Keep the circle center below the viewBox so only the top half is visible (matches design).
+    const cy = 188;
+    const r = 152;
+    const dot = polarToCartesian(cx, cy, r, angle);
+    return { cx, cy, r, dot };
+  }, [consensusNorm]);
+
+  return (
+    <div className="w-full max-w-[358px] min-w-0 justify-self-start rounded-[12px] border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
+      <div className="h-[190px] w-full">
+        <svg viewBox="0 0 320 200" className="h-full w-full" role="img" aria-label="Analyst consensus gauge">
+          <defs>
+            <linearGradient id="analyst-consensus-grad" x1="0" y1="0" x2="320" y2="0" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stopColor="#DC2626" />
+              <stop offset="0.35" stopColor="#F59E0B" />
+              <stop offset="0.6" stopColor="#EAB308" />
+              <stop offset="1" stopColor="#16A34A" />
+            </linearGradient>
+          </defs>
+
+          <path
+            d={arcPath(gauge.cx, gauge.cy, gauge.r, -90, 90)}
+            stroke="url(#analyst-consensus-grad)"
+            strokeWidth="18"
+            fill="none"
+            strokeLinecap="round"
+          />
+
+          <circle cx={gauge.dot.x} cy={gauge.dot.y} r="14" fill="#FFFFFF" />
+          <circle cx={gauge.dot.x} cy={gauge.dot.y} r="11" fill={tone.dot} opacity={consensusScore == null ? 0.35 : 1} />
+
+          <text
+            x="160"
+            y="122"
+            textAnchor="middle"
+            style={{ fill: tone.text, fontFamily: "Inter", fontSize: 24, fontWeight: 600, lineHeight: "36px", letterSpacing: "0px" }}
+          >
+            {consensusLabel}
+          </text>
+          <text
+            x="160"
+            y="154"
+            textAnchor="middle"
+            className="fill-[#71717A]"
+            style={{ fontFamily: "Inter", fontSize: 14, fontWeight: 400, lineHeight: "20px", letterSpacing: "0px" }}
+          >
+            Total Consensus
+          </text>
+        </svg>
+      </div>
+    </div>
+  );
 }
 
 function AnalystDistributionCard({ buckets }: { buckets: StockAnalystDistributionBucket[] }) {
@@ -149,7 +290,7 @@ export function StockTargetPriceTab({ ticker }: { ticker: string }) {
     <div className="w-full min-w-0 space-y-6 pt-1">
       {hasAnyTarget ? (
         <div className="w-full min-w-0 rounded-[12px] border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
-          <p className="text-[12px] font-semibold uppercase tracking-wide text-[#71717A]">Consensus target</p>
+          <p className="text-[12px] font-semibold uppercase tracking-wide text-[#71717A]">Target price</p>
           <p className="mt-1 text-[28px] font-semibold tabular-nums leading-8 tracking-tight text-[#09090B]">
             {dashPrice(consensus)}
           </p>
@@ -176,7 +317,12 @@ export function StockTargetPriceTab({ ticker }: { ticker: string }) {
         </div>
       ) : null}
 
-      {hasDistribution ? <AnalystDistributionCard buckets={buckets} /> : null}
+      {hasDistribution ? (
+        <div className="grid w-full min-w-0 grid-cols-1 gap-6 lg:grid-cols-[minmax(0,358px)_minmax(0,1fr)] lg:items-start">
+          <AnalystConsensusGaugeCard buckets={buckets} />
+          <AnalystDistributionCard buckets={buckets} />
+        </div>
+      ) : null}
     </div>
   );
 }

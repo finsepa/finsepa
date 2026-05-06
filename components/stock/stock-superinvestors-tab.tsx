@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { StockDetailTabPlaceholder } from "@/components/stock/stock-detail-tab-nav";
+import { SkeletonBox } from "@/components/markets/skeleton";
 import { cn } from "@/lib/utils";
 import { formatUsdCompactSigDigits } from "@/lib/market/key-stats-basic-format";
 
@@ -17,7 +18,6 @@ type SuperinvestorPosition = {
   statusLabel: string | null;
   shares: number | null;
   valueUsd: number;
-  holdSinceYmd: string | null;
 };
 
 type Payload = {
@@ -28,16 +28,6 @@ type Payload = {
 const pct = new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const sharesFmt = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
 
-function quarterLabelFromYmd(ymd: string | null): string {
-  if (!ymd?.trim()) return "—";
-  const s = ymd.trim();
-  const year = Number.parseInt(s.slice(0, 4), 10);
-  const month = Number.parseInt(s.slice(5, 7), 10);
-  if (!Number.isFinite(year) || !Number.isFinite(month) || month < 1 || month > 12) return "—";
-  const q = Math.min(4, Math.max(1, Math.floor((month - 1) / 3) + 1));
-  return `Q${q} ${year}`;
-}
-
 function ActivityCell({ label }: { label: string | null }) {
   if (!label) return <span className="text-[#71717A]">—</span>;
   const lower = label.toLowerCase();
@@ -47,6 +37,53 @@ function ActivityCell({ label }: { label: string | null }) {
     <span className={cn("font-medium", up ? "text-[#16A34A]" : down ? "text-[#DC2626]" : "text-[#71717A]")}>
       {label}
     </span>
+  );
+}
+
+function SuperinvestorsTableSkeleton({ rows = 3 }: { rows?: number }) {
+  const grid =
+    "grid min-h-[60px] w-full grid-cols-[minmax(220px,2.4fr)_minmax(88px,0.9fr)_minmax(140px,1.2fr)_minmax(110px,1fr)_minmax(110px,1fr)] items-center gap-x-4 bg-white px-2 sm:px-4";
+  const headerGrid =
+    "grid h-11 min-h-[44px] w-full grid-cols-[minmax(220px,2.4fr)_minmax(88px,0.9fr)_minmax(140px,1.2fr)_minmax(110px,1fr)_minmax(110px,1fr)] items-center gap-x-4 bg-white px-2 text-[14px] font-medium leading-5 text-[#71717A] sm:px-4";
+
+  return (
+    <div className="-mx-1 overflow-x-auto overscroll-x-contain rounded-lg border border-[#E4E4E7] [-webkit-overflow-scrolling:touch] sm:-mx-0 sm:rounded-none sm:border-x-0 sm:border-t sm:border-b">
+      <div className="min-w-[760px] lg:min-w-0">
+        <div className="divide-y divide-[#E4E4E7] bg-white">
+          <div className={headerGrid} aria-hidden>
+            <div className="text-left">Manager / Fund</div>
+            <div className="text-right">% of portfolio</div>
+            <div className="text-right">Recent activity</div>
+            <div className="text-right">Shares</div>
+            <div className="text-right">Value</div>
+          </div>
+
+          {Array.from({ length: rows }, (_, i) => (
+            <div key={i} className={cn(grid, "animate-pulse")} aria-hidden>
+              <div className="flex min-w-0 items-center gap-3 pr-2">
+                <SkeletonBox className="h-10 w-10 shrink-0 rounded-full" />
+                <div className="min-w-0 flex-1 space-y-2">
+                  <SkeletonBox className="h-4 w-[50%] rounded" />
+                  <SkeletonBox className="h-3.5 w-[65%] rounded" />
+                </div>
+              </div>
+              <div className="flex justify-end">
+                <SkeletonBox className="h-4 w-12 rounded" />
+              </div>
+              <div className="flex justify-end">
+                <SkeletonBox className="h-4 w-28 rounded" />
+              </div>
+              <div className="flex justify-end">
+                <SkeletonBox className="h-4 w-20 rounded" />
+              </div>
+              <div className="flex justify-end">
+                <SkeletonBox className="h-4 w-16 rounded" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -85,7 +122,7 @@ export function StockSuperinvestorsTab({ ticker }: { ticker: string }) {
     return (
       <div className="space-y-6 pt-1">
         <h2 className="text-[20px] font-semibold leading-8 tracking-tight text-[#09090B]">Superinvestors</h2>
-        <div className="h-[120px] w-full rounded-xl border border-[#E4E4E7] bg-white" />
+        <SuperinvestorsTableSkeleton rows={3} />
       </div>
     );
   }
@@ -103,16 +140,15 @@ export function StockSuperinvestorsTab({ ticker }: { ticker: string }) {
     <div className="space-y-6 pt-1">
       <h2 className="text-[20px] font-semibold leading-8 tracking-tight text-[#09090B]">Superinvestors</h2>
 
-      <div className="min-w-0 -mx-4 w-[calc(100%+2rem)] max-w-none overflow-x-auto [-webkit-overflow-scrolling:touch] sm:-mx-9 sm:w-[calc(100%+4.5rem)]">
-        <div className="w-full min-w-0">
-          <div className="divide-y divide-[#E4E4E7] border-t border-b border-[#E4E4E7] bg-white">
-            <div className="grid h-11 min-h-[44px] w-full min-w-[760px] grid-cols-[minmax(220px,2.4fr)_minmax(88px,0.9fr)_minmax(140px,1.2fr)_minmax(110px,1fr)_minmax(110px,1fr)_minmax(110px,1fr)] items-center gap-x-4 bg-white px-4 text-[14px] font-medium leading-5 text-[#71717A] sm:px-9">
+      <div className="-mx-1 overflow-x-auto overscroll-x-contain rounded-lg border border-[#E4E4E7] [-webkit-overflow-scrolling:touch] sm:-mx-0 sm:rounded-none sm:border-x-0 sm:border-t sm:border-b">
+        <div className="min-w-[760px] lg:min-w-0">
+          <div className="divide-y divide-[#E4E4E7] bg-white">
+            <div className="grid h-11 min-h-[44px] w-full grid-cols-[minmax(220px,2.4fr)_minmax(88px,0.9fr)_minmax(140px,1.2fr)_minmax(110px,1fr)_minmax(110px,1fr)] items-center gap-x-4 bg-white px-2 text-[14px] font-medium leading-5 text-[#71717A] sm:px-4">
               <div className="text-left">Manager / Fund</div>
               <div className="text-right">% of portfolio</div>
-              <div className="text-left">Recent activity</div>
+              <div className="text-right">Recent activity</div>
               <div className="text-right">Shares</div>
               <div className="text-right">Value</div>
-              <div className="text-right">Hold since</div>
             </div>
 
             {sorted.map((p) => (
@@ -120,7 +156,7 @@ export function StockSuperinvestorsTab({ ticker }: { ticker: string }) {
                 key={`${p.superinvestorSlug}-${p.managerName}`}
                 href={`/superinvestors/${encodeURIComponent(p.superinvestorSlug)}`}
                 prefetch={false}
-                className="grid min-h-[60px] w-full min-w-[760px] grid-cols-[minmax(220px,2.4fr)_minmax(88px,0.9fr)_minmax(140px,1.2fr)_minmax(110px,1fr)_minmax(110px,1fr)_minmax(110px,1fr)] items-center gap-x-4 bg-white px-4 transition-colors duration-75 hover:bg-neutral-50 sm:px-9"
+                className="grid min-h-[60px] w-full grid-cols-[minmax(220px,2.4fr)_minmax(88px,0.9fr)_minmax(140px,1.2fr)_minmax(110px,1fr)_minmax(110px,1fr)] items-center gap-x-4 bg-white px-2 transition-colors duration-75 hover:bg-neutral-50 sm:px-4"
               >
                 <div className="flex min-w-0 items-center gap-3 pr-2">
                   {p.avatarSrc ? (
@@ -142,7 +178,7 @@ export function StockSuperinvestorsTab({ ticker }: { ticker: string }) {
                   {pct.format(p.weightPct)}%
                 </div>
 
-                <div className="text-left text-[14px] leading-5">
+                <div className="text-right text-[14px] leading-5">
                   <ActivityCell label={p.statusLabel} />
                 </div>
 
@@ -152,10 +188,6 @@ export function StockSuperinvestorsTab({ ticker }: { ticker: string }) {
 
                 <div className="text-right font-['Inter'] text-[14px] font-normal tabular-nums text-[#09090B]">
                   {formatUsdCompactSigDigits(p.valueUsd, 4)}
-                </div>
-
-                <div className="text-right font-['Inter'] text-[14px] font-normal tabular-nums text-[#09090B]">
-                  {quarterLabelFromYmd(p.holdSinceYmd)}
                 </div>
               </Link>
             ))}

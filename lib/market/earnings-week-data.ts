@@ -205,8 +205,6 @@ function nameFromRawRow(row: EodhdRawEarningRow): string | null {
  */
 const MIN_MARKET_CAP_USD = 1_000_000_000;
 
-/** Max earnings rows per weekday column before timing split (calendar density cap). */
-const EARNINGS_TOP500_PER_DAY_CAP = 48;
 /** SSR + initial paint: first N names per timing bucket; overflow loads via `/api/earnings/week-bucket`. */
 const EARNINGS_BUCKET_PREVIEW_COUNT = 7;
 
@@ -417,15 +415,28 @@ function parseFilterDedupeWeek(
     const rawReport = row.report_date?.trim();
     if (!canon || !rawReport || !isUsStockCode(canon)) continue;
 
-    const reportDate = normalizeReportDateYmdUtc(rawReport);
+    let reportDate = normalizeReportDateYmdUtc(rawReport);
     if (!reportDate) continue;
-    if (!allowedReportDates.has(reportDate)) continue;
 
     const ticker = tickerFromCode(canon);
     const key = `${reportDate}|${ticker}`;
     if (seen.has(key)) continue;
     seen.add(key);
     const { timing, timingLabel } = timingFromProvider(row.before_after_market);
+
+    /**
+     * Provider quirk: some “after market” reports are emitted with the *next* UTC date even though the
+     * market session was still the prior US trading day. If the computed date isn’t in the Mon–Fri window,
+     * but the prior day is, shift AMC rows back one day so they appear where users expect.
+     */
+    if (!allowedReportDates.has(reportDate) && timing === "amc") {
+      const t = Date.parse(`${reportDate}T12:00:00.000Z`);
+      if (Number.isFinite(t)) {
+        const prev = toYmdUtc(addDaysUtc(new Date(t), -1));
+        if (allowedReportDates.has(prev)) reportDate = prev;
+      }
+    }
+    if (!allowedReportDates.has(reportDate)) continue;
     out.push({
       ticker,
       reportDate,
@@ -552,9 +563,12 @@ async function buildEarningsWeekDataPackageUncached(
 
   const { universe: staticUniverse } = await getScreenerCompaniesStaticLayer();
   const top500TickerList = listTop500EquityTickersOrdered(staticUniverse);
+  // Keep the screener-derived universe map (names + market caps) but do NOT drop calendar rows
+  // just because they’re outside the Top-500 snapshot. This prevents missing legitimate index
+  // constituents that still appear on the earnings calendar.
   const allowKeys = buildScreenerStockAllowKeys(staticUniverse);
   const screenerRankByKey = buildScreenerRankByOrderedTickers(top500TickerList);
-  const preparedScreener = prepared.filter((p) => allowKeys.has(earningsUniverseKey(p.ticker)));
+  const preparedScreener = prepared;
 
   const uniqueTickers = [...new Set(preparedScreener.map((p) => p.ticker))];
 
@@ -595,7 +609,8 @@ async function buildEarningsWeekDataPackageUncached(
   const slicedByDate = new Map<string, PreparedEarning[]>();
   for (const ymd of weekdayYmds) {
     const list = sortPreparedForDayCap(byDate.get(ymd) ?? [], universeByKey, screenerRankByKey);
-    slicedByDate.set(ymd, list.slice(0, EARNINGS_TOP500_PER_DAY_CAP));
+    // No per-day cap: keep all rows so the calendar matches “all companies this week”.
+    slicedByDate.set(ymd, list);
   }
 
   const cappedFlat = weekdayYmds.flatMap((ymd) => slicedByDate.get(ymd) ?? []);
@@ -703,7 +718,7 @@ const getEarningsWeekDataPackageCached = unstable_cache(
     const monday = Number.isFinite(t) ? mondayOfWeekUtc(new Date(t)) : mondayOfWeekUtc(new Date());
     return buildEarningsWeekDataPackageUncached(monday, mode === "fund");
   },
-  ["earnings-week-v26-calendar-bare-us"],
+  ["earnings-week-v27-calendar-bare-us"],
   { revalidate: REVALIDATE_EARNINGS_CALENDAR },
 );
 

@@ -272,7 +272,7 @@ export function CryptoFearGreedModal({
                     const y = scaleLinear(v, 0, 100, chart.padY + chart.innerH, chart.padY);
                     return (
                       <g key={v}>
-                        <line x1={chart.padX} x2={chart.w - chart.padX} y1={y} y2={y} stroke="#E4E4E7" strokeWidth="1" />
+                        <line x1={chart.padX} x2={chart.w - chart.padX} y1={y} y2={y} stroke="#F4F4F5" strokeWidth="1" />
                         <text x={chart.w - chart.padX + 8} y={y + 4} fontSize="12" fill="#71717A">
                           {v}
                         </text>
@@ -301,7 +301,7 @@ export function CryptoFearGreedModal({
                         x2={hover.x}
                         y1={chart.padY}
                         y2={chart.padY + chart.innerH}
-                        stroke="#E4E4E7"
+                        stroke="#F4F4F5"
                         strokeWidth="1"
                       />
                       <circle cx={hover.x} cy={hover.y} r="5" fill="#FFFFFF" stroke="#2563EB" strokeWidth="2.5" />

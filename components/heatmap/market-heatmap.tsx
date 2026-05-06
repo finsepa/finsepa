@@ -376,6 +376,7 @@ export function MarketHeatmap({ leaves, market }: { leaves: HeatmapLeaf[]; marke
   const leaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [size, setSize] = useState({ w: 800, h: 480 });
   const nestIndustries = market === "stocks";
+  const [tooltipPinned, setTooltipPinned] = useState(false);
   const [hover, setHover] = useState<{
     sector: string;
     featured: HeatmapLeaf;
@@ -393,12 +394,14 @@ export function MarketHeatmap({ leaves, market }: { leaves: HeatmapLeaf[]; marke
   useEffect(() => () => clearLeaveTimer(), [clearLeaveTimer]);
 
   const scheduleClearHover = useCallback(() => {
+    if (tooltipPinned) return;
     clearLeaveTimer();
     leaveTimerRef.current = setTimeout(() => setHover(null), 160);
-  }, [clearLeaveTimer]);
+  }, [clearLeaveTimer, tooltipPinned]);
 
   const onTileEnter = useCallback(
     (leaf: HeatmapLeaf, e: React.MouseEvent<HTMLAnchorElement>) => {
+      if (tooltipPinned) return;
       clearLeaveTimer();
       setHover({
         sector: leaf.sector,
@@ -407,7 +410,7 @@ export function MarketHeatmap({ leaves, market }: { leaves: HeatmapLeaf[]; marke
         anchorY: e.clientY,
       });
     },
-    [clearLeaveTimer],
+    [clearLeaveTimer, tooltipPinned],
   );
 
   const lastMeasuredRef = useRef({ w: 0, h: 0 });
@@ -453,7 +456,12 @@ export function MarketHeatmap({ leaves, market }: { leaves: HeatmapLeaf[]; marke
         allLeaves={leaves}
         hover={hover}
         onTooltipEnter={clearLeaveTimer}
-        onTooltipLeave={() => setHover(null)}
+        onTooltipLeave={() => {
+          if (tooltipPinned) return;
+          setHover(null);
+        }}
+        onTooltipClick={() => setTooltipPinned((p) => !p)}
+        pinned={tooltipPinned}
       />
       <svg
         width={size.w}

@@ -19,6 +19,7 @@ export function ChartControls({
   chartSeries,
   onChartSeriesChange,
   compareSlot,
+  titleSlot,
   seriesSelectDisabled = false,
 }: {
   activeRange: StockChartRange;
@@ -28,6 +29,8 @@ export function ChartControls({
   onChartSeriesChange?: (s: StockChartSeries) => void;
   /** Stock overview: “Compare” picker placed just left of the range control. */
   compareSlot?: ReactNode;
+  /** Holdings: replace the default "Price" title (e.g. with portfolio switcher). */
+  titleSlot?: ReactNode;
   /** When comparing symbols, metric is fixed to return — disable listbox. */
   seriesSelectDisabled?: boolean;
 }) {
@@ -45,6 +48,8 @@ export function ChartControls({
           aria-label="Chart metric"
           disabled={seriesSelectDisabled}
         />
+      ) : titleSlot ? (
+        <div className="min-w-0 max-w-full shrink-0">{titleSlot}</div>
       ) : (
         <h2 className="text-[18px] font-semibold leading-7 text-[#09090B]">Price</h2>
       )}

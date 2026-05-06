@@ -1,9 +1,8 @@
-import { pickScreenerPage2Tickers } from "@/lib/screener/pick-screener-page2-tickers";
 import { TOP10_TICKERS } from "@/lib/screener/top10-config";
 
 /**
  * Equities allowed on `/charting` — same universe as the company picker and screener stock search
- * (page-1 top 10 + page-2 caps from the static screener universe).
+ * (screener universe; top-10 preserved first).
  */
 export function buildChartingAllowedTickerList(universe: readonly { ticker: string }[]): string[] {
   const seen = new Set<string>();
@@ -15,12 +14,12 @@ export function buildChartingAllowedTickerList(universe: readonly { ticker: stri
       out.push(u);
     }
   }
-  for (const t of pickScreenerPage2Tickers(universe)) {
-    const u = t.trim().toUpperCase();
-    if (!seen.has(u)) {
-      seen.add(u);
-      out.push(u);
-    }
+  // Allow the full screener universe so `/comparison` and charting pickers work for common tickers (e.g. PYPL).
+  for (const r of universe) {
+    const u = r.ticker.trim().toUpperCase();
+    if (!u || seen.has(u)) continue;
+    seen.add(u);
+    out.push(u);
   }
   return out;
 }

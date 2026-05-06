@@ -17,6 +17,8 @@ import {
 import { cn } from "@/lib/utils";
 import { LogoSkeleton, SkeletonBox, TextSkeleton } from "@/components/markets/skeleton";
 
+type PickerStockRow = { ticker: string; name: string; logoUrl: string };
+
 type CompareRow = {
   ticker: string;
   fullName: string | null;
@@ -47,9 +49,6 @@ function useDebouncedValue<T>(value: T, ms: number): T {
 
 /** Session cache keyed by sorted ticker list. */
 const PEERS_COMPARE_CACHE = new Map<string, CompareRow[]>();
-
-const SPLIT_PILL_CHIP =
-  "inline-flex h-9 items-stretch overflow-hidden rounded-lg border border-[#E4E4E7] bg-white text-[12px] font-semibold text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]";
 
 /** Matches screener `StocksTableSkeleton` — full grid with logo + metric cell placeholders per row. */
 const PEERS_SKEL_GRID =
@@ -153,6 +152,8 @@ function StockPeersTabInner({
   const [pickerQuery, setPickerQuery] = useState("");
   const [searchItems, setSearchItems] = useState<SearchAssetItem[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [pickerStocks, setPickerStocks] = useState<PickerStockRow[] | null>(null);
+  const [pickerStocksLoading, setPickerStocksLoading] = useState(false);
 
   const debouncedQuery = useDebouncedValue(pickerQuery, SEARCH_DEBOUNCE_MS);
   const debouncedTrim = debouncedQuery.trim();
@@ -281,6 +282,28 @@ function StockPeersTabInner({
   }, [pickerOpen]);
 
   useEffect(() => {
+    if (!pickerOpen) return;
+    if (pickerStocks !== null) return;
+    let cancelled = false;
+    setPickerStocksLoading(true);
+    void (async () => {
+      try {
+        const res = await fetch("/api/charting/picker-stocks?limit=15", { cache: "default" });
+        const json = (await res.json()) as { stocks?: PickerStockRow[] };
+        if (cancelled) return;
+        setPickerStocks(Array.isArray(json.stocks) ? json.stocks : []);
+      } catch {
+        if (!cancelled) setPickerStocks([]);
+      } finally {
+        if (!cancelled) setPickerStocksLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [pickerOpen, pickerStocks]);
+
+  useEffect(() => {
     if (!pickerOpen || debouncedTrim.length < 1) {
       if (!debouncedTrim.length) setSearchItems([]);
       setSearchLoading(false);
@@ -321,42 +344,47 @@ function StockPeersTabInner({
 
   const queryTrim = pickerQuery.trim();
   const showSearchPanel = queryTrim.length > 0;
+  const screenerTop15 = pickerStocks ?? [];
 
   return (
     <div className="w-full min-w-0 space-y-4 pt-1">
       <div className="flex items-start justify-between gap-4">
-        <h2 className="text-[24px] font-bold leading-8 tracking-tight text-[#09090B]">Comparison</h2>
+        <h2 className="text-2xl font-semibold leading-9 tracking-tight text-[#09090B]">Comparison</h2>
         <button
           type="button"
           onClick={handleRefresh}
           aria-label="Reset comparison to this symbol only"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors hover:bg-[#F4F4F5]"
+          disabled={compareTickers.length <= 1}
+          className={cn(
+            "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#E4E4E7] bg-white text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15",
+            compareTickers.length <= 1 ? "cursor-not-allowed opacity-40" : "hover:bg-neutral-50",
+          )}
         >
-          <RefreshCw className="h-4 w-4" strokeWidth={2} aria-hidden />
+          <RefreshCw className="h-4 w-4" strokeWidth={1.5} aria-hidden />
         </button>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-3">
         {compareTickers.map((sym) => {
           const isPrimary = sym.toUpperCase() === main;
 
           return (
-            <div key={sym} className={SPLIT_PILL_CHIP}>
-              <div className="flex items-center py-1 pl-2.5 pr-2">
-                <span className="tabular-nums">{sym}</span>
-              </div>
+            <div
+              key={sym}
+              className="inline-flex max-w-full min-w-0 items-stretch overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]"
+            >
+              <span className="flex min-h-[36px] min-w-0 items-center border-r border-[#E4E4E7] px-4 py-2 text-[14px] font-medium leading-5 text-[#09090B]">
+                <span className="truncate tabular-nums">{sym}</span>
+              </span>
               {isPrimary ? null : (
-                <>
-                  <div className="w-px shrink-0 self-stretch bg-[#E4E4E7]" aria-hidden />
-                  <button
-                    type="button"
-                    onClick={() => handleRemovePeer(sym)}
-                    aria-label={`Remove ${sym} from comparison`}
-                    className="flex w-9 shrink-0 items-center justify-center text-[#71717A] transition-colors hover:bg-neutral-50 hover:text-[#09090B]"
-                  >
-                    <X className="h-4 w-4" strokeWidth={2} aria-hidden />
-                  </button>
-                </>
+                <button
+                  type="button"
+                  onClick={() => handleRemovePeer(sym)}
+                  aria-label={`Remove ${sym} from comparison`}
+                  className="flex w-9 shrink-0 items-center justify-center text-[#09090B] transition-colors hover:bg-[#FAFAFA]"
+                >
+                  <X className="h-5 w-5" strokeWidth={1.5} aria-hidden />
+                </button>
               )}
             </div>
           );
@@ -405,7 +433,35 @@ function StockPeersTabInner({
                 />
               </div>
               <div className="flex max-h-[min(400px,calc(100vh-12rem))] flex-col gap-1 overflow-y-auto px-1 py-2">
-                {!showSearchPanel ? null : searchLoading && searchItems.length === 0 ? (
+                {!showSearchPanel ? (
+                  pickerStocksLoading && screenerTop15.length === 0 ? (
+                    <p className="px-3 py-2 text-[12px] text-[#71717A]">Loading…</p>
+                  ) : screenerTop15.length === 0 ? (
+                    <p className="px-3 py-2 text-[12px] text-[#71717A]">No popular stocks available</p>
+                  ) : (
+                    <>
+                      <div className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wide text-[#A1A1AA]">
+                        Top stocks
+                      </div>
+                      {screenerTop15.map((s) => (
+                        <PeerSearchDropdownRow
+                          key={`top-${s.ticker}`}
+                          item={{
+                            id: `stock:${s.ticker}`,
+                            type: "stock",
+                            symbol: s.ticker,
+                            name: s.name,
+                            subtitle: null,
+                            logoUrl: s.logoUrl,
+                            route: `/stock/${s.ticker}`,
+                            marketLabel: null,
+                          }}
+                          onPick={onChooseAsset}
+                        />
+                      ))}
+                    </>
+                  )
+                ) : searchLoading && searchItems.length === 0 ? (
                   <p className="px-3 py-2 text-[12px] text-[#71717A]">Searching…</p>
                 ) : !searchLoading && searchItems.length === 0 ? (
                   <p className="px-3 py-2 text-[12px] text-[#71717A]">No results for &ldquo;{queryTrim}&rdquo;</p>

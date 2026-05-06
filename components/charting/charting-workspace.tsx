@@ -45,7 +45,6 @@ import {
 } from "@/components/design-system/dropdown-menu-styles";
 import { cn } from "@/lib/utils";
 import {
-  fundamentalsBarHistogramDisplayAtIndex,
   fundamentalsBarSolidAtIndex,
 } from "@/lib/colors/fundamentals-multi-bar-colors";
 
@@ -208,6 +207,29 @@ function seriesData(
   return out;
 }
 
+function seriesDataBarsWithGapSlots(
+  points: ChartingSeriesPoint[],
+  id: ChartingMetricId,
+  baseTimeByPeriodEnd: Map<string, number>,
+  shiftSeconds = 0,
+): { time: UTCTimestamp; value: number; color?: string }[] {
+  const out: { time: UTCTimestamp; value: number; color?: string }[] = [];
+  for (const row of points) {
+    const v = rowValue(row, id);
+    if (v == null || !Number.isFinite(v)) continue;
+    const base = baseTimeByPeriodEnd.get(row.periodEnd);
+    if (base == null) continue;
+    out.push({ time: (base + shiftSeconds) as UTCTimestamp, value: v });
+    // Insert a transparent 0-value bar as a visible gap between periods.
+    out.push({
+      time: (base + BAR_GAP_SLOT_SEC) as UTCTimestamp,
+      value: 0,
+      color: "rgba(0,0,0,0)",
+    });
+  }
+  return out;
+}
+
 type Props = {
   ticker: string;
   metricParam: string | null;
@@ -241,9 +263,7 @@ function timeRangeTabOptionsFor(order: ChartTimeRange[]): TabSwitcherOption<Char
   return order.map((r) => ({ value: r, label: TIME_RANGE_LABELS[r] }));
 }
 
-const CHARTING_HEIGHT_STORAGE_KEY = "finsepa:chartingHeightPx";
-const CHARTING_HEIGHT_MIN = 320;
-const CHARTING_HEIGHT_MAX = 600;
+const CHARTING_HEIGHT_PX = 320;
 
 function clamp(n: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, n));
@@ -265,9 +285,14 @@ type HoverState = {
   time: UTCTimestamp;
   periodLabel: string;
   rows: Array<{ id: ChartingMetricId; label: string; value: string }>;
+  bandLeft: number;
+  bandWidth: number;
 } | null;
 
 const GROUPED_BAR_SHIFT_SEC = 24 * 60 * 60;
+const BAR_PERIOD_STEP_SEC = GROUPED_BAR_SHIFT_SEC * 2; // one empty "slot" between periods
+const BAR_GAP_SLOT_SEC = GROUPED_BAR_SHIFT_SEC;
+const HISTO_BAR_SPACING_MAX_PX = 28;
 
 function groupedBarShiftSeconds(id: ChartingMetricId, ids: ChartingMetricId[]): number {
   if (ids.length <= 1) return 0;
@@ -307,7 +332,7 @@ export function ChartingWorkspace({
   const [timeRange, setTimeRange] = useState<ChartTimeRange>("all");
   const [chartType, setChartType] = useState<ChartType>("bars");
   const unitScale: ChartingUnitScale = isFigmaToolbar ? "billions" : "auto";
-  const [chartHeight, setChartHeight] = useState<number>(CHARTING_HEIGHT_MIN);
+  const chartHeight = CHARTING_HEIGHT_PX;
   const seedPoints = useMemo(() => {
     if (periodMode === "quarterly") return Array.isArray(initialQuarterlyPoints) ? initialQuarterlyPoints : null;
     return Array.isArray(initialAnnualPoints) ? initialAnnualPoints : null;
@@ -321,34 +346,12 @@ export function ChartingWorkspace({
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerQuery, setPickerQuery] = useState("");
 
-  const resizeDragRef = useRef<{
-    active: boolean;
-    startY: number;
-    startH: number;
-  } | null>(null);
-
   const chartRef = useRef<IChartApi | null>(null);
   const seriesByMetricRef = useRef<Map<ChartingMetricId, ISeriesApi<"Line"> | ISeriesApi<"Histogram">>>(new Map());
   const hoverRafRef = useRef<number>(0);
+  const hoverBandByBaseTimeRef = useRef<Map<number, { left: number; width: number }>>(new Map());
 
-  useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(CHARTING_HEIGHT_STORAGE_KEY);
-      const n = raw ? Number(raw) : NaN;
-      if (Number.isFinite(n)) setChartHeight(clamp(Math.round(n), CHARTING_HEIGHT_MIN, CHARTING_HEIGHT_MAX));
-      else setChartHeight(CHARTING_HEIGHT_MIN);
-    } catch {
-      setChartHeight(CHARTING_HEIGHT_MIN);
-    }
-  }, []);
-
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(CHARTING_HEIGHT_STORAGE_KEY, String(chartHeight));
-    } catch {
-      // ignore
-    }
-  }, [chartHeight]);
+  // Chart height is fixed (no resize handle).
 
   useEffect(() => {
     if (timeRangeOrder.includes(timeRange)) return;
@@ -431,15 +434,32 @@ export function ChartingWorkspace({
     [fullSeries, periodMode, timeRange],
   );
 
+  const barBaseTimeByPeriodEnd = useMemo(() => {
+    if (chartType !== "bars") return null;
+    const m = new Map<string, number>();
+    for (let i = 0; i < ordered.length; i += 1) {
+      const row = ordered[i];
+      if (!row) continue;
+      m.set(row.periodEnd, i * BAR_PERIOD_STEP_SEC);
+    }
+    return m;
+  }, [chartType, ordered]);
+
   const timeToRow = useMemo(() => {
     const m = new Map<number, ChartingSeriesPoint>();
     for (const row of ordered) {
-      const t = Date.parse(row.periodEnd.includes("T") ? row.periodEnd : `${row.periodEnd}T12:00:00.000Z`);
-      if (!Number.isFinite(t)) continue;
-      m.set(Math.floor(t / 1000), row);
+      if (chartType === "bars" && barBaseTimeByPeriodEnd) {
+        const base = barBaseTimeByPeriodEnd.get(row.periodEnd);
+        if (base == null) continue;
+        m.set(base, row);
+      } else {
+        const t = Date.parse(row.periodEnd.includes("T") ? row.periodEnd : `${row.periodEnd}T12:00:00.000Z`);
+        if (!Number.isFinite(t)) continue;
+        m.set(Math.floor(t / 1000), row);
+      }
     }
     return m;
-  }, [ordered]);
+  }, [ordered, chartType, barBaseTimeByPeriodEnd]);
 
   // Grouped-bar mode: map each shifted bar time back to its original period row so tooltips work.
   const groupedTimeToRow = useMemo(() => {
@@ -447,15 +467,14 @@ export function ChartingWorkspace({
     const ids = barMetricOrder(selected);
     const m = new Map<number, ChartingSeriesPoint>();
     for (const row of ordered) {
-      const t = Date.parse(row.periodEnd.includes("T") ? row.periodEnd : `${row.periodEnd}T12:00:00.000Z`);
-      if (!Number.isFinite(t)) continue;
-      const base = Math.floor(t / 1000);
+      const base = barBaseTimeByPeriodEnd?.get(row.periodEnd);
+      if (base == null) continue;
       for (const id of ids) {
         m.set(base + groupedBarShiftSeconds(id, ids), row);
       }
     }
     return m;
-  }, [chartType, selected, ordered, timeToRow]);
+  }, [chartType, selected, ordered, timeToRow, barBaseTimeByPeriodEnd]);
 
   const groupedTickLabelByTime = useMemo(() => {
     if (chartType !== "bars" || selected.length <= 1) return null;
@@ -463,13 +482,12 @@ export function ChartingWorkspace({
     const centerId = ids[Math.floor((ids.length - 1) / 2)] ?? ids[0];
     const m = new Map<number, string>();
     for (const row of ordered) {
-      const t = Date.parse(row.periodEnd.includes("T") ? row.periodEnd : `${row.periodEnd}T12:00:00.000Z`);
-      if (!Number.isFinite(t)) continue;
-      const base = Math.floor(t / 1000);
+      const base = barBaseTimeByPeriodEnd?.get(row.periodEnd);
+      if (base == null) continue;
       m.set(base + groupedBarShiftSeconds(centerId, ids), formatPeriodLabel(row.periodEnd, periodMode));
     }
     return m;
-  }, [chartType, selected, ordered, periodMode]);
+  }, [chartType, selected, ordered, periodMode, barBaseTimeByPeriodEnd]);
 
   const allowedMetricSet = useMemo(() => {
     if (!allowedMetricIds || allowedMetricIds.length === 0) return null;
@@ -602,17 +620,30 @@ export function ChartingWorkspace({
           if (cancelled) return;
 
           const nPoints = ordered.length;
-          const barSpacing =
+          const barSpacingRaw =
             chartType === "bars"
               ? timeRange === "all"
-                ? Math.max(5, Math.min(11, Math.floor(680 / Math.max(1, nPoints))))
-                : 11
+                ? Math.max(24, Math.min(44, Math.floor(1800 / Math.max(1, nPoints))))
+                : 28
               : 9;
+          const barSpacing =
+            chartType === "bars" ? Math.min(barSpacingRaw, HISTO_BAR_SPACING_MAX_PX) : barSpacingRaw;
 
           const chart = createChart(el, {
             width: el.clientWidth,
             height: chartHeight,
             autoSize: false,
+            handleScroll: {
+              mouseWheel: false,
+              pressedMouseMove: false,
+              horzTouchDrag: false,
+              vertTouchDrag: false,
+            },
+            handleScale: {
+              axisPressedMouseMove: false,
+              mouseWheel: false,
+              pinch: false,
+            },
             layout: {
               background: { type: ColorType.Solid, color: "#FFFFFF" },
               textColor: "#71717A",
@@ -626,7 +657,7 @@ export function ChartingWorkspace({
             },
             grid: {
               vertLines: { visible: false },
-              horzLines: { color: "#E4E4E7" },
+              horzLines: { color: "#F4F4F5" },
             },
             rightPriceScale: {
               visible: false,
@@ -638,13 +669,20 @@ export function ChartingWorkspace({
             },
             timeScale: {
               borderVisible: false,
+              ticksVisible: false,
+              fixLeftEdge: true,
+              fixRightEdge: true,
+              lockVisibleTimeRangeOnResize: true,
               rightOffset: 0,
               barSpacing,
               tickMarkFormatter: (time: UTCTimestamp) => {
-                if (!groupedTickLabelByTime) return "";
                 const t = typeof time === "number" && Number.isFinite(time) ? time : null;
                 if (t == null) return "";
-                return groupedTickLabelByTime.get(t) ?? "";
+                const row =
+                  chartType === "bars" && selected.length > 1
+                    ? groupedTimeToRow.get(t)
+                    : timeToRow.get(t);
+                return row ? formatPeriodLabel(row.periodEnd, periodMode) : "";
               },
             },
             crosshair: { vertLine: { labelVisible: false }, horzLine: { labelVisible: true } },
@@ -660,13 +698,16 @@ export function ChartingWorkspace({
           for (const id of seriesOrder) {
             const shiftSec =
               chartType === "bars" && selected.length > 1 ? groupedBarShiftSeconds(id, seriesOrder) : 0;
-            const data = seriesData(ordered, id, shiftSec);
+            const data =
+              chartType === "bars" && barBaseTimeByPeriodEnd
+                ? seriesDataBarsWithGapSlots(ordered, id, barBaseTimeByPeriodEnd, shiftSec)
+                : seriesData(ordered, id, shiftSec);
             if (!data.length) continue;
             const kind = CHARTING_METRIC_KIND[id];
             const scaleId = scaleIdForKind(kind);
             usedScales.add(scaleId);
             if (chartType === "bars") {
-              const barColor = fundamentalsBarHistogramDisplayAtIndex(seriesColorIdx);
+              const barColor = fundamentalsBarSolidAtIndex(seriesColorIdx);
               const s = chart.addSeries(HistogramSeries, {
                 color: barColor,
                 priceScaleId: scaleId,
@@ -677,7 +718,10 @@ export function ChartingWorkspace({
                 data.map((d) => ({
                   time: d.time,
                   value: d.value,
-                  color: barColor,
+                  color:
+                    "color" in d && typeof (d as { color?: unknown }).color === "string"
+                      ? (d as { color: string }).color
+                      : barColor,
                 })),
               );
               seriesByMetricRef.current.set(id, s);
@@ -699,7 +743,7 @@ export function ChartingWorkspace({
 
           const scaleOpts = {
             borderVisible: false,
-            scaleMargins: { top: 0.07, bottom: 0.1 },
+            scaleMargins: { top: 0.07, bottom: 0.03 },
           };
           for (const sid of ["usd", "shares", "eps", "pct", "mult"]) {
             if (usedScales.has(sid)) {
@@ -708,6 +752,8 @@ export function ChartingWorkspace({
           }
 
           chart.timeScale().fitContent();
+          // Explicitly re-apply bar spacing after fitContent for consistent gaps.
+          chart.timeScale().applyOptions({ barSpacing });
 
           const onCrosshairMove = (param: MouseEventParams) => {
             if (!param.point || param.point.x < 0 || param.time === undefined) {
@@ -726,27 +772,64 @@ export function ChartingWorkspace({
             }
 
             const row = groupedTimeToRow.get(timeKey);
+            if (!row) {
+              if (hoverRafRef.current) cancelAnimationFrame(hoverRafRef.current);
+              hoverRafRef.current = requestAnimationFrame(() => setHover(null));
+              return;
+            }
             const periodLabel = row ? formatPeriodLabel(row.periodEnd, periodMode) : String(timeKey);
 
             const rows: Array<{ id: ChartingMetricId; label: string; value: string }> = [];
             for (const id of selected) {
-              const series = seriesByMetricRef.current.get(id);
-              if (!series) continue;
-              const rawPoint = param.seriesData.get(series);
-              const v =
-                rawPoint &&
-                typeof rawPoint === "object" &&
-                rawPoint !== null &&
-                "value" in rawPoint &&
-                typeof (rawPoint as { value: unknown }).value === "number"
-                  ? (rawPoint as { value: number }).value
-                  : null;
-              rows.push({ id, label: CHARTING_METRIC_LABEL[id], value: formatTableCell(CHARTING_METRIC_KIND[id], v) });
+              let v: number | null = null;
+              if (row) {
+                v = rowValue(row, id);
+              } else {
+                const series = seriesByMetricRef.current.get(id);
+                if (series) {
+                  const rawPoint = param.seriesData.get(series);
+                  v =
+                    rawPoint &&
+                    typeof rawPoint === "object" &&
+                    rawPoint !== null &&
+                    "value" in rawPoint &&
+                    typeof (rawPoint as { value: unknown }).value === "number"
+                      ? (rawPoint as { value: number }).value
+                      : null;
+                }
+              }
+              rows.push({
+                id,
+                label: CHARTING_METRIC_LABEL[id],
+                value: formatTableCell(CHARTING_METRIC_KIND[id], v),
+              });
             }
+
+            // Hover highlight band: span the full "section" (all grouped bars for a period).
+            const ts = chart.timeScale();
+            const idsForBars = chartType === "bars" ? barMetricOrder(selected) : selected;
+            const baseMs =
+              row?.periodEnd
+                ? Date.parse(row.periodEnd.includes("T") ? row.periodEnd : `${row.periodEnd}T12:00:00.000Z`)
+                : NaN;
+            const baseSec = Number.isFinite(baseMs) ? Math.floor(baseMs / 1000) : null;
+            const centerId = idsForBars[Math.floor((idsForBars.length - 1) / 2)] ?? idsForBars[0];
+            const centerTime =
+              chartType === "bars" && selected.length > 1 && baseSec != null && centerId
+                ? ((baseSec + groupedBarShiftSeconds(centerId, idsForBars)) as UTCTimestamp)
+                : null;
+            const centerX =
+              centerTime != null ? ts.timeToCoordinate(centerTime) : null;
+            const bandCenterX = Number.isFinite(centerX ?? NaN) ? (centerX as number) : x;
+            const bandWidth =
+              chartType === "bars" && selected.length > 1
+                ? Math.max(36, barSpacing * Math.max(1, idsForBars.length))
+                : Math.max(24, barSpacing);
+            const bandLeft = Math.max(0, bandCenterX - bandWidth / 2);
 
             if (hoverRafRef.current) cancelAnimationFrame(hoverRafRef.current);
             hoverRafRef.current = requestAnimationFrame(() => {
-              setHover({ x, time: timeKey, periodLabel, rows });
+              setHover({ x, time: timeKey, periodLabel, rows, bandLeft, bandWidth });
             });
           };
 
@@ -755,9 +838,11 @@ export function ChartingWorkspace({
           resizeObserver = new ResizeObserver(() => {
             const rw = el.clientWidth;
             if (rw > 0 && chartRef.current) chartRef.current.resize(rw, chartHeight);
+            chartRef.current?.timeScale().applyOptions({ barSpacing });
           });
           resizeObserver.observe(el);
           chart.resize(el.clientWidth, chartHeight);
+          chart.timeScale().applyOptions({ barSpacing });
         });
       });
     };
@@ -776,10 +861,32 @@ export function ChartingWorkspace({
       if (hoverRafRef.current) cancelAnimationFrame(hoverRafRef.current);
       setHover(null);
     };
-  }, [ordered, selected, canPlot, chartType, chartHeight, timeToRow, periodMode, timeRange, unitScale]);
+  }, [
+    ordered,
+    selected,
+    canPlot,
+    chartType,
+    chartHeight,
+    timeToRow,
+    groupedTimeToRow,
+    periodMode,
+    timeRange,
+    unitScale,
+  ]);
 
   const empty = !loading && (!points || points.length === 0);
   const noMetricData = !loading && !empty && !canPlot;
+
+  const metricChipColorById = useMemo(() => {
+    const seriesOrder = chartType === "bars" ? barMetricOrder(selected) : selected;
+    const m = new Map<ChartingMetricId, string>();
+    let idx = 0;
+    for (const id of seriesOrder) {
+      m.set(id, fundamentalsBarSolidAtIndex(idx));
+      idx += 1;
+    }
+    return m;
+  }, [chartType, selected]);
 
   return (
     <>
@@ -942,77 +1049,59 @@ export function ChartingWorkspace({
                   <div
                     className="pointer-events-none absolute inset-y-0"
                     style={{
-                      left: `${Math.max(0, hover.x - 24)}px`,
-                      width: "48px",
-                      background: "rgba(37, 99, 235, 0.12)",
+                      left: `${hover.bandLeft}px`,
+                      width: `${hover.bandWidth}px`,
+                      background: "rgba(37, 99, 235, 0.10)",
                     }}
                   />
                   {/* Tooltip */}
                   <div
-                    className="pointer-events-none absolute top-3 z-20 w-[240px] rounded-xl bg-[#09090B] px-3 py-2.5 text-white shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
+                    className="pointer-events-none absolute top-3 z-20 w-[240px] rounded-xl border border-[#E4E4E7] bg-white px-3 py-2.5 text-[#09090B] shadow-[0px_10px_16px_-3px_rgba(10,10,10,0.10),0px_4px_6px_0px_rgba(10,10,10,0.04)]"
                     style={{
                       left: `${clamp(hover.x + 12, 12, Math.max(12, (wrapRef.current?.clientWidth ?? 0) - 252))}px`,
                     }}
                     role="tooltip"
                     aria-label="Chart tooltip"
                   >
-                    <div className="text-[12px] font-semibold tracking-wide text-white/90">{hover.periodLabel}</div>
+                    <div className="text-[12px] font-semibold tracking-wide text-[#09090B]">{hover.periodLabel}</div>
                     <div className="mt-2 space-y-1">
                       {hover.rows.map((r) => (
                         <div key={r.id} className="flex items-baseline justify-between gap-3">
-                          <span className="text-[12px] text-white/70">{r.label}</span>
-                          <span className="text-[12px] font-semibold tabular-nums text-white">{r.value}</span>
+                          <span className="text-[12px] text-[#71717A]">{r.label}</span>
+                          <span className="text-[12px] font-semibold tabular-nums text-[#09090B]">{r.value}</span>
                         </div>
                       ))}
                     </div>
                   </div>
                 </>
               ) : null}
-              <div
-                role="separator"
-                aria-label="Resize chart"
-                aria-orientation="vertical"
-                className="absolute inset-x-0 bottom-0 h-3 cursor-ns-resize bg-transparent"
-                onPointerDown={(e) => {
-                  if (e.button !== 0) return;
-                  const start = { active: true, startY: e.clientY, startH: chartHeight };
-                  resizeDragRef.current = start;
-                  try {
-                    (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
-                  } catch {
-                    // ignore
-                  }
-                  e.preventDefault();
-                }}
-                onPointerMove={(e) => {
-                  const st = resizeDragRef.current;
-                  if (!st || !st.active) return;
-                  const dy = e.clientY - st.startY;
-                  const next = clamp(Math.round(st.startH + dy), CHARTING_HEIGHT_MIN, CHARTING_HEIGHT_MAX);
-                  setChartHeight(next);
-                }}
-                onPointerUp={(e) => {
-                  const st = resizeDragRef.current;
-                  if (st) st.active = false;
-                  try {
-                    (e.currentTarget as HTMLDivElement).releasePointerCapture(e.pointerId);
-                  } catch {
-                    // ignore
-                  }
-                }}
-              >
-                <div className="pointer-events-none absolute left-1/2 top-1/2 h-0.5 w-12 -translate-x-1/2 -translate-y-1/2 rounded bg-[#E4E4E7]/80" />
-              </div>
             </div>
           )}
-          <div className="overflow-x-auto">
+          <div className="flex justify-center pt-2">
+            <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+              {selected.map((id) => (
+                <div
+                  key={`chart-legend-${id}`}
+                  className="inline-flex items-center gap-2 text-[12px] font-medium leading-4 text-[#71717A]"
+                >
+                  <span
+                    className="h-2.5 w-2.5 shrink-0 rounded-full"
+                    style={{ backgroundColor: metricChipColorById.get(id) ?? "#2563EB" }}
+                    aria-hidden
+                  />
+                  <span className="truncate">{CHARTING_METRIC_LABEL[id]}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="overflow-x-hidden">
             {/* Table — Figma 8479:44939: header #71717A semibold; body #09090B regular; strokes #E4E4E7. Row hover/height aligned with screener tables. */}
-            <table className="w-full min-w-[560px] border-collapse bg-white [&_tbody_td:first-child]:text-left [&_tbody_td:not(:first-child)]:text-right [&_thead_th:first-child]:text-left [&_thead_th:not(:first-child)]:text-right">
+            <table className="w-full table-fixed border-collapse bg-white [&_tbody_td:first-child]:text-left [&_tbody_td:not(:first-child)]:text-right [&_thead_th:first-child]:text-left [&_thead_th:not(:first-child)]:text-right">
               <thead>
                 <tr className="border-t border-b border-[#E4E4E7] bg-white">
                   <th
                     scope="col"
-                    className="min-w-[160px] px-3 py-2.5 text-left align-middle text-[14px] font-semibold leading-5 text-[#71717A]"
+                    className="w-[160px] px-3 py-2.5 text-left align-middle text-[14px] font-semibold leading-5 text-[#71717A]"
                   >
                     Period
                   </th>
@@ -1020,9 +1109,9 @@ export function ChartingWorkspace({
                     <th
                       key={id}
                       scope="col"
-                      className="min-w-[96px] px-3 py-2.5 text-right align-middle text-[14px] font-semibold leading-5 tabular-nums text-[#71717A]"
+                      className="px-3 py-2.5 text-right align-middle text-[14px] font-semibold leading-5 tabular-nums text-[#71717A]"
                     >
-                      {CHARTING_METRIC_LABEL[id]}
+                      <span className="block truncate">{CHARTING_METRIC_LABEL[id]}</span>
                     </th>
                   ))}
                 </tr>
@@ -1039,7 +1128,7 @@ export function ChartingWorkspace({
                     {selected.map((id) => (
                       <td
                         key={id}
-                        className="min-w-[96px] px-3 align-middle text-right text-[14px] font-normal leading-5 tabular-nums text-[#09090B]"
+                        className="px-3 align-middle text-right text-[14px] font-normal leading-5 tabular-nums text-[#09090B]"
                       >
                         {formatTableCell(CHARTING_METRIC_KIND[id], rowValue(row, id))}
                       </td>

@@ -164,7 +164,16 @@ function IncomeRow({
   const rowInteractive = typeof onMetricClick === "function" && metricId != null;
 
   const labelCell = (
-    <div className={cn("min-w-0 truncate pr-3 text-left", nestedLabelPad, labelClass)}>{row.label}</div>
+    <div
+      className={cn(
+        "min-w-0 truncate border-r border-[#E4E4E7] pr-4 text-left",
+        nestedLabelPad,
+        labelClass,
+        rowInteractive && "group-hover:underline",
+      )}
+    >
+      {row.label}
+    </div>
   );
 
   const valueCells = row.values.map((v, i) => {
@@ -191,7 +200,7 @@ function IncomeRow({
       <button
         type="button"
         className={cn(
-          "grid w-full cursor-pointer items-center gap-x-2 border-x-0 border-t-0 bg-white px-2 text-left font-inherit transition-colors duration-75 hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-zinc-300 sm:px-4",
+          "group grid w-full cursor-pointer items-center gap-x-2 border-x-0 border-t-0 bg-white px-2 text-left font-inherit transition-colors duration-75 hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-zinc-300 sm:px-4",
           incomeRowDividerClass,
           incomeDataRowClass,
         )}

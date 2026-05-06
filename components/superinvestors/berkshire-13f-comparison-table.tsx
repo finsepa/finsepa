@@ -37,9 +37,9 @@ const tdCompany = "min-w-0 py-1 text-left text-[14px] leading-5 whitespace-norma
 const tdNum =
   "whitespace-nowrap py-0 text-right align-middle font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]";
 
-/** Company | % of portfolio | Recent activity | Value — horizontal padding on table shell only. */
-const rowGridFour =
-  "grid w-full min-w-[640px] grid-cols-[minmax(180px,2.2fr)_minmax(72px,0.55fr)_minmax(120px,1.05fr)_minmax(96px,0.95fr)] gap-x-4";
+/** Company | % of portfolio | Recent activity | Shares | Value — horizontal padding on table shell only. */
+const rowGridFive =
+  "grid w-full min-w-[720px] grid-cols-[minmax(180px,2.05fr)_minmax(72px,0.55fr)_minmax(120px,1.05fr)_minmax(96px,0.9fr)_minmax(96px,0.9fr)] gap-x-4";
 
 const rowShellBase = "min-h-[60px] items-center transition-colors duration-75";
 
@@ -271,17 +271,18 @@ export function Berkshire13fComparisonTable({
   rows: Berkshire13fComparisonRow[];
   hasPriorFiling: boolean;
 }) {
-  const headerGrid = cn("h-11 min-h-[44px] items-center bg-white", rowGridFour);
+  const headerGrid = cn("h-11 min-h-[44px] items-center bg-white", rowGridFive);
   const resolved = useResolvedTickers(rows);
 
   return (
-    <div className="min-w-0 -mx-4 w-[calc(100%+2rem)] max-w-none overflow-x-auto [-webkit-overflow-scrolling:touch] sm:-mx-9 sm:w-[calc(100%+4.5rem)]">
-      <div className="w-full min-w-0">
+    <div className="min-w-0 -mx-4 overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch] sm:mx-0 sm:overflow-visible sm:pb-0">
+      <div className="min-w-[720px] sm:min-w-0">
         <div className="divide-y divide-[#E4E4E7] border-t border-b border-[#E4E4E7] bg-white">
-          <div className={cn(headerGrid, "px-4 sm:px-9")}>
+          <div className={cn(headerGrid, "px-4")}>
             <div className={thCompany}>Company</div>
             <div className={thRight}>% of Portfolio</div>
             <div className={thRight}>Recent Activity</div>
+            <div className={thRight}>Shares</div>
             <div className={thRight}>Value</div>
           </div>
 
@@ -294,7 +295,7 @@ export function Berkshire13fComparisonTable({
                 key={`${r.cusip ?? r.companyName}-${i}`}
                 ticker={mergedTicker}
                 displayName={displayName}
-                gridClass={cn(rowGridFour, "px-4 sm:px-9")}
+                gridClass={cn(rowGridFive, "px-4")}
               >
                 <div className={tdCompany}>
                   <CompanyTickerCell companyName={r.companyName} ticker={mergedTicker} />
@@ -307,6 +308,7 @@ export function Berkshire13fComparisonTable({
                     sharesChangePct={r.sharesChangePct}
                   />
                 </div>
+                <div className={tdNum}>{r.shares != null ? sharesFmt.format(r.shares) : "—"}</div>
                 <div className={tdNum}>{formatUsdCompactSigDigits(r.valueUsd, 4)}</div>
               </ComparisonRowShell>
             );

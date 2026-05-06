@@ -138,10 +138,27 @@ const fetchMacroIndicatorCached = unstable_cache(fetchMacroIndicatorUncached, ["
   revalidate: REVALIDATE_STATIC_DAY,
 });
 
-/** Full history for the series (sorted ascending). Client applies range windows (1Y–All). */
+function sliceLastYears(points: MacroPoint[], years: number): MacroPoint[] {
+  if (!points.length) return points;
+  const last = points[points.length - 1]!.time.trim().slice(0, 10);
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(last);
+  if (!m) return points;
+  const ey = Number(m[1]);
+  const em = Number(m[2]);
+  const ed = Number(m[3]);
+  if (!Number.isFinite(ey) || !Number.isFinite(em) || !Number.isFinite(ed)) return points;
+  const startMs = Date.UTC(ey - years, em - 1, ed);
+  const startStr = new Date(startMs).toISOString().slice(0, 10);
+  return points.filter((p) => p.time >= startStr);
+}
+
+/** Full history for the series (sorted ascending), with series-specific caps where appropriate. */
 export async function fetchMacroSeriesAll(country: string, def: MacroSeriesDef): Promise<MacroPoint[]> {
   if (def.provider.type === "ust_par_yield") {
-    return fetchUstParYieldTenorCached(def.provider.tenor);
+    const pts = await fetchUstParYieldTenorCached(def.provider.tenor);
+    // Treasury yields are daily; "All" becomes overly heavy/noisy in the macro dashboard.
+    // Cap these series to the last 10 years.
+    return sliceLastYears(pts, 10);
   }
   if (def.provider.type === "shiller_ie") {
     return fetchShillerIeMacroSeriesCached(def.provider.metric);
