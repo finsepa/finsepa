@@ -2,6 +2,10 @@ import Link from "next/link";
 import { AuthCenteredLayout } from "@/components/auth/auth-centered-layout";
 import { SignupClientDynamic } from "./signup-client-dynamic";
 
+export const viewport = {
+  themeColor: "#F7F7F7",
+};
+
 export default function SignupPage() {
   return (
     <AuthCenteredLayout
