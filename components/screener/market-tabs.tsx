@@ -22,7 +22,7 @@ export function UnderlineTabs<T extends string>({
     <div className="mb-4 border-b border-solid border-[#E4E4E7] md:mb-6">
       <div className="flex flex-wrap items-end justify-between gap-x-3 gap-y-2">
         <nav
-          className="-mx-1 flex min-w-0 flex-1 flex-nowrap items-start gap-4 overflow-x-auto overflow-y-hidden pb-px [-webkit-overflow-scrolling:touch] md:mx-0 md:gap-5 md:overflow-visible"
+          className="-mx-1 flex min-w-0 flex-1 flex-nowrap items-start gap-4 overflow-x-auto overflow-y-hidden pb-px [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mx-0 md:gap-5 md:overflow-visible"
           aria-label={ariaLabel}
         >
           {tabList.map((tab) => {

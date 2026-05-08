@@ -30,15 +30,35 @@ function ChangeCell({ value }: { value: number | null }) {
   );
 }
 
+function PriceAndChangeCell({ price, change1D }: { price: number | null; change1D: number | null }) {
+  const hasPrice = price != null && Number.isFinite(price);
+  const hasChange = change1D != null && Number.isFinite(change1D);
+  const positive = (change1D ?? 0) >= 0;
+  return (
+    <div className="min-w-0 w-full text-right">
+      <div className="min-w-0 w-full font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
+        {hasPrice ? `$${price!.toFixed(2)}` : "-"}
+      </div>
+      <div
+        className={`mt-0.5 min-w-0 w-full text-[12px] font-medium leading-4 tabular-nums ${
+          !hasChange ? "text-[#71717A]" : positive ? "text-[#16A34A]" : "text-[#DC2626]"
+        }`}
+      >
+        {hasChange ? formatPercentValue(change1D!) : "-"}
+      </div>
+    </div>
+  );
+}
+
 /**
  * `#` … metrics … trailing cell. Star is a flex sibling (see row wrapper), not column 1 of this grid.
  * `minmax(0,1fr)` / `minmax(0,2fr)` avoids min-content blowout that wrapped the inner grid to multiple rows
  * when an extra Key Stat column was added.
  */
 const rowLinkGridDefault =
-  "grid min-w-0 flex-1 grid-cols-[48px_minmax(0,2fr)_1fr_1fr] gap-x-2 sm:grid-cols-[48px_minmax(0,2fr)_repeat(5,minmax(0,1fr))_96px]";
+  "grid min-w-0 flex-1 grid-cols-[28px_minmax(0,2fr)_1fr] gap-x-2 sm:grid-cols-[48px_minmax(0,2fr)_repeat(5,minmax(0,1fr))_96px]";
 const rowLinkGridWithKeyStat =
-  "grid min-w-0 flex-1 grid-cols-[48px_minmax(0,2fr)_1fr_1fr] gap-x-2 sm:grid-cols-[48px_minmax(0,2fr)_repeat(6,minmax(0,1fr))_minmax(5rem,1fr)_96px]";
+  "grid min-w-0 flex-1 grid-cols-[28px_minmax(0,2fr)_1fr] gap-x-2 sm:grid-cols-[48px_minmax(0,2fr)_repeat(6,minmax(0,1fr))_minmax(5rem,1fr)_96px]";
 
 export type ScreenerTableKeyStatColumn = {
   header: string;
@@ -83,7 +103,7 @@ const ScreenerDataRow = memo(function ScreenerDataRow({
       className={`group flex min-h-[60px] items-center gap-x-2 bg-white px-2 transition-colors duration-75 hover:bg-neutral-50 sm:px-4`}
     >
       <WatchlistStarToggle
-        className="flex w-10 shrink-0 items-center justify-center px-3"
+        className="flex w-6 shrink-0 items-center justify-center px-1 sm:w-10 sm:px-3"
         storageKey={item.ticker}
         label={item.ticker}
         watched={watchedSet}
@@ -109,11 +129,16 @@ const ScreenerDataRow = memo(function ScreenerDataRow({
           </div>
         </div>
 
-        <div className="min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
+        <div className="block sm:hidden">
+          <PriceAndChangeCell price={item.price} change1D={item.change1D} />
+        </div>
+        <div className="hidden min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B] sm:block">
           {item.price != null && Number.isFinite(item.price) ? `$${item.price.toFixed(2)}` : "-"}
         </div>
 
-        <ChangeCell value={item.change1D} />
+        <div className="hidden min-w-0 w-full sm:block">
+          <ChangeCell value={item.change1D} />
+        </div>
         <div className="hidden min-w-0 w-full sm:block">
           <ChangeCell value={item.change1M} />
         </div>
@@ -167,14 +192,18 @@ export function ScreenerTable({
       <div
         className={`flex min-h-[44px] items-center gap-x-2 bg-white px-2 py-0 text-[12px] font-medium leading-5 text-[#71717A] sm:px-4 sm:text-[14px]`}
       >
-        <div className="w-10 shrink-0" aria-hidden />
+        <div className="w-6 shrink-0 sm:w-10" aria-hidden />
         <div
           className={`${rowLinkGrid} min-h-[44px] items-center text-[12px] font-medium leading-5 text-[#71717A] sm:text-[14px]`}
         >
           <div className="text-center">#</div>
           <div className="text-left">Company</div>
-          <div className="min-w-0 w-full text-right">Price</div>
-          <div className="min-w-0 w-full text-right">1D %</div>
+          <div className="min-w-0 w-full text-right">
+            <span className="sm:hidden">Price</span>
+            <span className="hidden sm:inline">Price</span>
+            <span className="hidden text-[12px] font-medium leading-4 text-[#A1A1AA] sm:hidden">1D %</span>
+          </div>
+          <div className="hidden min-w-0 w-full text-right sm:block">1D %</div>
           <div className="hidden min-w-0 w-full text-right sm:block">1M %</div>
           <div className="hidden min-w-0 w-full text-right sm:block">YTD %</div>
           <div className="hidden min-w-0 w-full text-right sm:block">M Cap</div>

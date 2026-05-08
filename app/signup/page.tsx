@@ -3,7 +3,10 @@ import { AuthCenteredLayout } from "@/components/auth/auth-centered-layout";
 import { SignupClientDynamic } from "./signup-client-dynamic";
 
 export const viewport = {
-  themeColor: "#F7F7F7",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#F7F7F7" },
+    { media: "(prefers-color-scheme: dark)", color: "#F7F7F7" },
+  ],
 };
 
 export default function SignupPage() {

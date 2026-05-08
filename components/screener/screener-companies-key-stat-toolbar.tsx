@@ -147,7 +147,11 @@ export function ScreenerCompaniesKeyStatToolbar({
               setMobileDrill(false);
             }
           }}
-          className={cn(topbarSquircleTextButtonClass, disabled && "pointer-events-none opacity-50")}
+          className={cn(
+            topbarSquircleTextButtonClass,
+            "hidden md:inline-flex",
+            disabled && "pointer-events-none opacity-50",
+          )}
         >
           <SlidersHorizontal className="h-5 w-5 shrink-0 text-[#09090B]" aria-hidden />
           Customize
@@ -291,6 +295,7 @@ export function ScreenerCompaniesKeyStatToolbar({
         aria-label="Reset table columns to default"
         className={cn(
           topbarSquircleIconClass,
+          "hidden md:inline-flex",
           "disabled:pointer-events-none disabled:opacity-40",
         )}
       >

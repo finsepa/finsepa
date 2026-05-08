@@ -4,12 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  CalendarDays,
-  ChartColumn,
+  CalendarBlank,
+  ChartBar,
+  ChatsCircle,
   Globe,
-  MessagesSquare,
-  PieChart,
-} from "lucide-react";
+  ChartPieSlice,
+} from "@phosphor-icons/react";
 
 import {
   protectedCalendarItems,
@@ -105,9 +105,9 @@ type TabConfig = {
 
 const TABS: TabConfig[] = [
   { id: "markets", label: "Markets", Icon: Globe, items: protectedMarketItems },
-  { id: "calendar", label: "Calendar", Icon: CalendarDays, items: protectedCalendarItems },
-  { id: "data", label: "Data", Icon: ChartColumn, items: protectedDataItems },
-  { id: "community", label: "Community", Icon: MessagesSquare, items: protectedCommunityItems },
+  { id: "calendar", label: "Calendar", Icon: CalendarBlank, items: protectedCalendarItems },
+  { id: "data", label: "Data", Icon: ChartBar, items: protectedDataItems },
+  { id: "community", label: "Community", Icon: ChatsCircle, items: protectedCommunityItems },
 ];
 
 function sheetItemsFor(id: SheetId | null): readonly ProtectedNavItem[] {
@@ -172,11 +172,8 @@ export function MobileBottomNav() {
                 onClick={() => setOpenSheet((s) => (s === tab.id ? null : tab.id))}
               >
                 <Icon
-                  className={cn(
-                    "h-6 w-6",
-                    sectionActive || sheetOpen ? "text-[#09090B]" : "text-[#A1A1AA]",
-                  )}
-                  strokeWidth={1.75}
+                  className={cn("h-6 w-6", sectionActive || sheetOpen ? "text-[#09090B]" : "text-[#A1A1AA]")}
+                  weight="regular"
                   aria-hidden
                 />
                 <span className={cn(sectionActive || sheetOpen ? "text-[#09090B]" : "text-[#A1A1AA]")}>
@@ -194,9 +191,9 @@ export function MobileBottomNav() {
             className="flex w-full flex-col items-center gap-0.5 rounded-lg py-1.5 text-[10px] font-semibold uppercase tracking-wide transition-colors"
             onClick={closeSheet}
           >
-            <PieChart
+            <ChartPieSlice
               className={cn("h-6 w-6", portfolioActive ? "text-[#09090B]" : "text-[#A1A1AA]")}
-              strokeWidth={1.75}
+              weight="regular"
               aria-hidden
             />
             <span className={cn(portfolioActive ? "text-[#09090B]" : "text-[#A1A1AA]")}>Portfolio</span>

@@ -611,7 +611,11 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
 
   return (
     <div className="min-w-0">
-      <MarketTabs active={tab} onChange={setMarketTab} trailing={<UsMarketsSessionLabel />} />
+      <MarketTabs
+        active={tab}
+        onChange={setMarketTab}
+        trailing={<UsMarketsSessionLabel className="hidden md:inline-flex" />}
+      />
 
       {tab === "Stocks" && payload.market === "stocks" ? (
         <>

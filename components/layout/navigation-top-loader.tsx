@@ -6,6 +6,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 const SHOW_DELAY_MS = 100;
 const DONE_HOLD_MS = 280;
 const Z_BAR = 100;
+const STALE_NAV_TIMEOUT_MS = 2500;
 
 function routeKey(pathname: string, search: string) {
   return `${pathname}${search ? `?${search}` : ""}`;
@@ -42,6 +43,7 @@ export function NavigationTopLoader() {
   const showTimerRef = useRef<number | null>(null);
   const creepTimerRef = useRef<number | null>(null);
   const doneTimerRef = useRef<number | null>(null);
+  const staleNavTimerRef = useRef<number | null>(null);
   const activeRef = useRef(false);
 
   const clearCreep = useCallback(() => {
@@ -58,9 +60,17 @@ export function NavigationTopLoader() {
     }
   }, []);
 
+  const clearStaleNav = useCallback(() => {
+    if (staleNavTimerRef.current) {
+      clearTimeout(staleNavTimerRef.current);
+      staleNavTimerRef.current = null;
+    }
+  }, []);
+
   const finishBar = useCallback(() => {
     clearCreep();
     clearShowDelay();
+    clearStaleNav();
     if (!activeRef.current) return;
     activeRef.current = false;
     setProgress(1);
@@ -70,11 +80,12 @@ export function NavigationTopLoader() {
       setProgress(0);
       doneTimerRef.current = null;
     }, DONE_HOLD_MS);
-  }, [clearCreep, clearShowDelay]);
+  }, [clearCreep, clearShowDelay, clearStaleNav]);
 
   const startBar = useCallback(() => {
     clearShowDelay();
     clearCreep();
+    clearStaleNav();
     if (doneTimerRef.current) {
       clearTimeout(doneTimerRef.current);
       doneTimerRef.current = null;
@@ -82,6 +93,16 @@ export function NavigationTopLoader() {
     activeRef.current = true;
     setVisible(true);
     setProgress(0.08);
+    // Safety: if we never observe a routeKey change (e.g. cancelled nav / same-page interactions),
+    // ensure the bar doesn't stick around on scroll.
+    staleNavTimerRef.current = window.setTimeout(() => {
+      if (!activeRef.current) return;
+      if (prevKeyRef.current !== key) return;
+      activeRef.current = false;
+      setVisible(false);
+      setProgress(0);
+      staleNavTimerRef.current = null;
+    }, STALE_NAV_TIMEOUT_MS);
     const creep = () => {
       creepTimerRef.current = window.setTimeout(() => {
         if (!activeRef.current) return;
@@ -94,7 +115,7 @@ export function NavigationTopLoader() {
       }, 380);
     };
     creep();
-  }, [clearCreep, clearShowDelay]);
+  }, [clearCreep, clearShowDelay, clearStaleNav, key]);
 
   const scheduleStart = useCallback(() => {
     clearShowDelay();
@@ -177,9 +198,10 @@ export function NavigationTopLoader() {
       window.removeEventListener("popstate", onPopState);
       clearShowDelay();
       clearCreep();
+      clearStaleNav();
       if (doneTimerRef.current) clearTimeout(doneTimerRef.current);
     };
-  }, [pathname, search, scheduleStart, clearShowDelay, clearCreep]);
+  }, [pathname, search, scheduleStart, clearShowDelay, clearCreep, clearStaleNav]);
 
   if (!visible && progress === 0) return null;
 

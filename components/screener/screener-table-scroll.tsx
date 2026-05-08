@@ -19,7 +19,7 @@ export function ScreenerTableScroll({
   return (
     <div
       className={cn(
-        "-mx-1 overflow-x-auto overscroll-x-contain rounded-lg border border-[#E4E4E7] [-webkit-overflow-scrolling:touch] sm:-mx-0 sm:rounded-none sm:border-x-0 sm:border-t sm:border-b",
+        "-mx-1 overflow-x-auto overscroll-x-contain rounded-none border-y border-[#E4E4E7] border-x-0 [-webkit-overflow-scrolling:touch] sm:-mx-0 sm:rounded-none sm:border-x-0 sm:border-t sm:border-b",
         className,
       )}
     >

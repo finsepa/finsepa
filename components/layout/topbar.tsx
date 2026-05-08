@@ -13,6 +13,7 @@ import { TopbarQuickAddMenu } from "./topbar-quick-add-menu";
 import { TopbarUserMenu } from "./topbar-user-menu";
 import {
   topbarSquircleIconClass,
+  topbarSquircleTextButtonClass,
   topbarSquircleSplitShellClass,
 } from "@/components/design-system/topbar-control-classes";
 import { cn } from "@/lib/utils";
@@ -35,6 +36,11 @@ const TopbarPortfolioBlock = memo(function TopbarPortfolioBlock() {
     transactionsByPortfolioId,
     portfolioDisplayReady,
   } = usePortfolioWorkspace();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   /** Same as Portfolio → Overview “Value”: equity market value + net cash. */
   const total = useMemo(() => {
@@ -48,31 +54,36 @@ const TopbarPortfolioBlock = memo(function TopbarPortfolioBlock() {
   const displayTotal = normalizeUsdForDisplay(total);
   const amountClass = displayTotal < 0 ? "text-red-600" : "text-[#09090B]";
 
-  const balanceLabel = portfolioDisplayReady ? `Portfolio, ${usdTopbar.format(displayTotal)}` : "Portfolio, loading";
+  const ready = mounted && portfolioDisplayReady;
+  const balanceLabel = ready ? `Portfolio, ${usdTopbar.format(displayTotal)}` : "Portfolio, loading";
 
   return (
     <TopbarDelayedTooltip label="My Portfolio" className="max-w-full min-w-0 shrink-0">
-      {/* Mobile: folder only → portfolio (picker stays on desktop strip). */}
+      {/* Mobile: hidden (portfolio lives in bottom nav + dedicated pages). */}
       <Link
         href="/portfolio"
         prefetch={false}
-        aria-busy={!portfolioDisplayReady}
+        aria-busy={!ready}
         aria-label={balanceLabel}
-        className={cn(topbarSquircleIconClass, "shrink-0 transition-colors hover:bg-[#F4F4F5] md:hidden")}
+        className={cn(
+          topbarSquircleTextButtonClass,
+          "hidden shrink-0 transition-colors hover:bg-[#F4F4F5] md:hidden",
+        )}
       >
         <Folder className="h-5 w-5 shrink-0" strokeWidth={1.75} aria-hidden />
+        <span className="whitespace-nowrap">My Portfolio</span>
       </Link>
 
-      <div className={cn("hidden md:flex", topbarSquircleSplitShellClass)}>
+      <div className={cn(topbarSquircleSplitShellClass, "hidden 2xl:flex")}>
         <Link
           href="/portfolio"
           prefetch={false}
-          aria-busy={!portfolioDisplayReady}
+          aria-busy={!ready}
           aria-label={balanceLabel}
           className="flex min-w-0 max-w-none items-center gap-2 border-r border-[#E4E4E7] px-3 text-sm font-medium tabular-nums transition-colors hover:bg-[#F4F4F5]"
         >
           <Folder className="h-5 w-5 shrink-0 text-[#09090B]" aria-hidden />
-          {portfolioDisplayReady ? (
+          {ready ? (
             <span className={`min-w-0 truncate ${amountClass}`}>{usdTopbar.format(displayTotal)}</span>
           ) : (
             <span
@@ -123,7 +134,7 @@ export function Topbar({
 
   return (
     <>
-      <header className="flex min-h-[60px] min-w-0 flex-nowrap items-center justify-between gap-3 overflow-x-auto overflow-y-hidden px-4 py-3 [-webkit-overflow-scrolling:touch]">
+      <header className="flex min-h-[60px] min-w-0 flex-nowrap items-center justify-between gap-3 overflow-x-hidden overflow-y-hidden px-4 py-3 [-webkit-overflow-scrolling:touch]">
         <div className="flex min-w-0 flex-1 items-center">
           <div className="min-w-0 w-full max-w-full flex-1 md:max-w-[300px]">
             <TopbarDelayedTooltip label="Search" className="relative block w-full max-w-full">

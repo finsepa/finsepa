@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowDown, ArrowUp } from "lucide-react";
 import { useMemo } from "react";
 import type { IndexCardData } from "@/lib/screener/indices-today";
 import { FadeIn } from "@/components/markets/skeleton";
@@ -47,6 +48,7 @@ export function IndexCards({ initialCards }: { initialCards?: IndexCardData[] })
       {entries.map(({ name, value, change }) => {
         const neutral = change === "—" || value === "—" || change === "-" || value === "-";
         const positive = !neutral && !change.startsWith("-");
+        const TrendIcon = neutral ? null : positive ? ArrowUp : ArrowDown;
         return (
           <div
             key={name}
@@ -59,13 +61,14 @@ export function IndexCards({ initialCards }: { initialCards?: IndexCardData[] })
               </p>
             </FadeIn>
             <FadeIn show={fadeIn}>
-              <p
-                className={`w-full text-left text-[14px] font-medium leading-5 tabular-nums ${
+              <div
+                className={`flex w-full items-center gap-1 text-left text-[14px] font-medium leading-5 tabular-nums ${
                   neutral ? "text-[#71717A]" : positive ? "text-[#16A34A]" : "text-[#DC2626]"
                 }`}
               >
-                {change}
-              </p>
+                <span>{change}</span>
+                {TrendIcon ? <TrendIcon className="h-4 w-4 shrink-0" aria-hidden /> : null}
+              </div>
             </FadeIn>
           </div>
         );
