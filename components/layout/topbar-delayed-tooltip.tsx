@@ -42,6 +42,12 @@ export function TopbarDelayedTooltip({
     setMounted(true);
   }, []);
 
+  const tooltipsDisabled = useCallback(() => {
+    // Disable tooltips on touch devices (mobile) to avoid accidental popovers on tap/scroll.
+    if (typeof window === "undefined") return true;
+    return window.matchMedia("(hover: none), (pointer: coarse)").matches;
+  }, []);
+
   const clearTimer = useCallback(() => {
     if (timerRef.current != null) {
       clearTimeout(timerRef.current);
@@ -55,9 +61,10 @@ export function TopbarDelayedTooltip({
   }, [clearTimer]);
 
   const start = useCallback(() => {
+    if (tooltipsDisabled()) return;
     clearTimer();
     timerRef.current = setTimeout(() => setVisible(true), delayMs);
-  }, [clearTimer, delayMs]);
+  }, [clearTimer, delayMs, tooltipsDisabled]);
 
   const updatePosition = useCallback(() => {
     const el = rootRef.current;

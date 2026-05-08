@@ -44,12 +44,42 @@ function ChangeCell({ value }: { value: number | null }) {
   );
 }
 
+function PriceAndChangeCell({
+  price,
+  change1D,
+}: {
+  price: number | null;
+  change1D: number | null;
+}) {
+  const hasPrice = price != null && Number.isFinite(price);
+  const hasChange = change1D != null && Number.isFinite(change1D);
+  const positive = (change1D ?? 0) >= 0;
+  return (
+    <div className="min-w-0 w-full text-right">
+      <div
+        className={`min-w-0 w-full font-['Inter'] text-[14px] font-normal leading-5 tabular-nums ${
+          hasPrice ? "text-[#09090B]" : "text-[#71717A]"
+        }`}
+      >
+        {hasPrice ? formatCryptoScreenerUsdPrice(price!) : "-"}
+      </div>
+      <div
+        className={`mt-0.5 min-w-0 w-full text-[12px] font-medium leading-4 tabular-nums ${
+          !hasChange ? "text-[#71717A]" : positive ? "text-[#16A34A]" : "text-[#DC2626]"
+        }`}
+      >
+        {formatPercent(change1D)}
+      </div>
+    </div>
+  );
+}
+
 /** Mobile: star + # + coin + price + 1D %. `sm+`: 1M, YTD, M Cap (matches {@link ScreenerTable}). */
 const colLayout =
-  "grid-cols-[40px_48px_minmax(0,2fr)_1fr_1fr] gap-x-2 sm:grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr_1fr]";
+  "grid-cols-[32px_28px_minmax(0,2fr)_1fr] gap-x-2 sm:grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr_1fr]";
 /** Columns inside `Link` — same counts as `colLayout` after the star column. */
 const rowLinkGrid =
-  "grid-cols-[48px_minmax(0,2fr)_1fr_1fr] gap-x-2 sm:grid-cols-[48px_2fr_1fr_1fr_1fr_1fr_1fr]";
+  "grid-cols-[28px_minmax(0,2fr)_1fr] gap-x-2 sm:grid-cols-[48px_2fr_1fr_1fr_1fr_1fr_1fr]";
 
 export function CryptoTable({
   initialRows,
@@ -77,7 +107,7 @@ export function CryptoTable({
         <div className="text-center">#</div>
         <div className="text-left">Coin</div>
         <div className="min-w-0 w-full text-right">Price</div>
-        <div className="min-w-0 w-full text-right">1D %</div>
+        <div className="hidden min-w-0 w-full text-right sm:block">1D %</div>
         <div className="hidden min-w-0 w-full text-right sm:block">1M %</div>
         <div className="hidden min-w-0 w-full text-right sm:block">YTD %</div>
         <div className="hidden min-w-0 w-full text-right sm:block">M Cap</div>
@@ -91,7 +121,7 @@ export function CryptoTable({
             className={`group grid min-h-[60px] ${colLayout} items-center bg-white px-2 transition-colors duration-75 hover:bg-neutral-50 sm:px-4`}
           >
             <WatchlistStarToggle
-              className="flex w-10 shrink-0 items-center justify-center px-3"
+              className="flex w-6 shrink-0 items-center justify-center px-1 sm:w-10 sm:px-3"
               storageKey={wlKey}
               label={r.symbol}
               watched={watched}
@@ -101,7 +131,7 @@ export function CryptoTable({
             <Link
               href={`/crypto/${encodeURIComponent(r.symbol)}`}
               prefetch={false}
-              className={`${rowLinkGrid} col-span-4 col-start-2 grid min-h-[56px] min-w-0 w-full items-center justify-items-stretch no-underline text-[#09090B] visited:text-[#09090B] sm:col-span-7 sm:min-h-[60px]`}
+              className={`${rowLinkGrid} col-span-3 col-start-2 grid min-h-[56px] min-w-0 w-full items-center justify-items-stretch no-underline text-[#09090B] visited:text-[#09090B] sm:col-span-7 sm:min-h-[60px]`}
               aria-label={`Open ${r.name} (${eodhdCryptoSpotTickerDisplay(r.symbol)})`}
             >
               <div className="text-center text-[14px] font-semibold leading-5 tabular-nums text-[#71717A]">
@@ -118,15 +148,20 @@ export function CryptoTable({
                 </div>
               </div>
 
+              <div className="block sm:hidden">
+                <PriceAndChangeCell price={r.price} change1D={r.changePercent1D} />
+              </div>
               <div
-                className={`min-w-0 w-full text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums ${
+                className={`hidden min-w-0 w-full text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums sm:block ${
                   r.price == null || !Number.isFinite(r.price) ? "text-[#71717A]" : "text-[#09090B]"
                 }`}
               >
                 {r.price == null || !Number.isFinite(r.price) ? "-" : formatCryptoScreenerUsdPrice(r.price)}
               </div>
 
-              <ChangeCell value={r.changePercent1D} />
+              <div className="hidden min-w-0 w-full sm:block">
+                <ChangeCell value={r.changePercent1D} />
+              </div>
 
               <div className="hidden min-w-0 w-full sm:block">
                 <ChangeCell value={r.changePercent1M} />

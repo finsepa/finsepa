@@ -155,7 +155,7 @@ export function MobileBottomNav() {
         onClose={closeSheet}
       />
       <nav
-        className="fixed inset-x-0 bottom-0 z-[43] flex w-full items-stretch border-t border-[#E4E4E7] bg-white pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1 md:hidden"
+        className="fixed inset-x-0 bottom-0 z-[43] flex w-full items-stretch border-t border-[#E4E4E7] bg-white pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-2 md:hidden"
         aria-label="Primary"
       >
         {TABS.map((tab) => {
@@ -166,14 +166,14 @@ export function MobileBottomNav() {
             <div key={tab.id} className="flex min-w-0 flex-1 flex-col items-stretch">
               <button
                 type="button"
-                className="flex w-full flex-col items-center gap-0.5 rounded-lg py-1.5 text-[10px] font-semibold uppercase tracking-wide transition-colors"
+                className="flex w-full flex-col items-center gap-1 rounded-lg py-1 text-[10px] font-semibold uppercase tracking-wide transition-colors"
                 aria-expanded={sheetOpen}
                 aria-controls={openSheet === tab.id ? `mobile-nav-sheet-${tab.id}` : undefined}
                 onClick={() => setOpenSheet((s) => (s === tab.id ? null : tab.id))}
               >
                 <Icon
                   className={cn("h-6 w-6", sectionActive || sheetOpen ? "text-[#09090B]" : "text-[#A1A1AA]")}
-                  weight="regular"
+                  weight={sectionActive || sheetOpen ? "fill" : "regular"}
                   aria-hidden
                 />
                 <span className={cn(sectionActive || sheetOpen ? "text-[#09090B]" : "text-[#A1A1AA]")}>
@@ -188,12 +188,12 @@ export function MobileBottomNav() {
           <Link
             prefetch={false}
             href="/portfolio"
-            className="flex w-full flex-col items-center gap-0.5 rounded-lg py-1.5 text-[10px] font-semibold uppercase tracking-wide transition-colors"
+            className="flex w-full flex-col items-center gap-1 rounded-lg py-1 text-[10px] font-semibold uppercase tracking-wide transition-colors"
             onClick={closeSheet}
           >
             <ChartPieSlice
               className={cn("h-6 w-6", portfolioActive ? "text-[#09090B]" : "text-[#A1A1AA]")}
-              weight="regular"
+              weight={portfolioActive ? "fill" : "regular"}
               aria-hidden
             />
             <span className={cn(portfolioActive ? "text-[#09090B]" : "text-[#A1A1AA]")}>Portfolio</span>

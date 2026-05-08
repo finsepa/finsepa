@@ -46,7 +46,27 @@ function ChangeCell({ value }: { value: number | null }) {
 
 /** Mobile: star + # + index + value + 1D %. `sm+`: 1M, YTD. */
 const colLayout =
-  "grid-cols-[40px_48px_minmax(0,2fr)_1fr_1fr] gap-x-2 sm:grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr]";
+  "grid-cols-[32px_28px_minmax(0,2fr)_1fr] gap-x-2 sm:grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr]";
+
+function ValueAndChangeCell({ value, change1D }: { value: number; change1D: number | null }) {
+  const hasValue = Number.isFinite(value);
+  const hasChange = change1D != null && Number.isFinite(change1D);
+  const positive = (change1D ?? 0) >= 0;
+  return (
+    <div className="min-w-0 w-full text-right">
+      <div className="min-w-0 w-full font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
+        {hasValue ? formatValue(value) : "-"}
+      </div>
+      <div
+        className={`mt-0.5 min-w-0 w-full text-[12px] font-medium leading-4 tabular-nums ${
+          !hasChange ? "text-[#71717A]" : positive ? "text-[#16A34A]" : "text-[#DC2626]"
+        }`}
+      >
+        {formatPercent(change1D)}
+      </div>
+    </div>
+  );
+}
 
 export function IndicesTable({
   initialRows,
@@ -66,7 +86,10 @@ export function IndicesTable({
   }
 
   return (
-    <ScreenerTableScroll minWidthClassName="min-w-0 sm:min-w-[560px] lg:min-w-0">
+    <ScreenerTableScroll
+      minWidthClassName="min-w-0"
+      className="h-fit"
+    >
       <div className="divide-y divide-[#E4E4E7] bg-white">
       <div
         className={`grid ${colLayout} min-h-[44px] items-center bg-white px-2 py-0 text-[12px] font-medium leading-5 text-[#71717A] sm:px-4 sm:text-[14px]`}
@@ -74,8 +97,8 @@ export function IndicesTable({
         <div />
         <div className="text-center">#</div>
         <div className="min-w-0 w-full text-left">Index</div>
-        <div className="min-w-0 w-full text-right">Value</div>
-        <div className="min-w-0 w-full text-right">1D %</div>
+        <div className="min-w-0 w-full text-right">Price</div>
+        <div className="hidden min-w-0 w-full text-right sm:block">1D %</div>
         <div className="hidden min-w-0 w-full text-right sm:block">1M %</div>
         <div className="hidden min-w-0 w-full text-right sm:block">YTD %</div>
       </div>
@@ -88,7 +111,7 @@ export function IndicesTable({
             className={`group grid min-h-[56px] ${colLayout} items-center bg-white px-2 transition-colors duration-75 hover:bg-neutral-50 sm:min-h-[60px] sm:px-4`}
           >
             <WatchlistStarToggle
-              className="flex w-10 shrink-0 items-center justify-center px-3"
+              className="flex w-6 shrink-0 items-center justify-center px-1 sm:w-10 sm:px-3"
               storageKey={wlKey}
               label={r.name}
               watched={watched}
@@ -101,10 +124,15 @@ export function IndicesTable({
             <div className="min-w-0 w-full px-2 text-left text-[14px] font-semibold leading-5 text-[#09090B] sm:px-4">
               {r.name}
             </div>
-            <div className="min-w-0 w-full text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B]">
+            <div className="block sm:hidden">
+              <ValueAndChangeCell value={r.value} change1D={r.change1D} />
+            </div>
+            <div className="hidden min-w-0 w-full text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B] sm:block">
               {formatValue(r.value)}
             </div>
-            <ChangeCell value={r.change1D} />
+            <div className="hidden min-w-0 w-full sm:block">
+              <ChangeCell value={r.change1D} />
+            </div>
             <div className="hidden min-w-0 w-full sm:block">
               <ChangeCell value={r.change1M} />
             </div>

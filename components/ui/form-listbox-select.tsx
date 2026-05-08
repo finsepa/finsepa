@@ -30,6 +30,7 @@ export function FormListboxSelect<V extends string>({
   truncateOptions = true,
   disabled = false,
   leadingIcon,
+  compact = false,
 }: {
   id?: string;
   value: V;
@@ -50,6 +51,8 @@ export function FormListboxSelect<V extends string>({
   /** When false, menu option rows do not ellipsis (use with a wide {@link menuClassName} if needed). */
   truncateOptions?: boolean;
   disabled?: boolean;
+  /** When true, the trigger hugs its label (no full-width stretching). */
+  compact?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -76,7 +79,10 @@ export function FormListboxSelect<V extends string>({
   if (!active) return null;
 
   return (
-    <div ref={containerRef} className={cn("relative z-10 w-full", listboxClassName, className)}>
+    <div
+      ref={containerRef}
+      className={cn("relative z-10", compact ? "inline-flex w-auto" : "w-full", listboxClassName, className)}
+    >
       <button
         type="button"
         id={id}
@@ -89,7 +95,10 @@ export function FormListboxSelect<V extends string>({
           setOpen((v) => !v);
         }}
         className={cn(
-          "relative flex h-9 w-full cursor-pointer items-center rounded-[10px] bg-[#F4F4F5] py-2 text-left text-sm font-normal text-[#09090B] outline-none transition-colors hover:bg-[#EBEBEB] focus-visible:ring-2 focus-visible:ring-[#09090B]/10",
+          cn(
+            "relative flex h-9 cursor-pointer items-center rounded-[10px] bg-[#F4F4F5] py-2 text-left text-sm font-normal text-[#09090B] outline-none transition-colors hover:bg-[#EBEBEB] focus-visible:ring-2 focus-visible:ring-[#09090B]/10",
+            compact ? "w-auto" : "w-full",
+          ),
           disabled && "cursor-not-allowed opacity-60 hover:bg-[#F4F4F5]",
           triggerClassName,
         )}
@@ -105,9 +114,9 @@ export function FormListboxSelect<V extends string>({
         {/* Horizontal padding lives here so `triggerClassName` can use `px-*` without hiding the chevron reserve. */}
         <span
           className={cn(
-            "min-w-0 flex-1 pr-11 text-left",
-            leadingIcon ? "pl-10" : "pl-4",
-            truncateLabel ? "truncate" : "whitespace-nowrap",
+            compact ? "whitespace-nowrap pr-8 text-left" : "min-w-0 flex-1 pr-11 text-left",
+            compact ? (leadingIcon ? "pl-9" : "pl-3") : leadingIcon ? "pl-10" : "pl-4",
+            compact ? "" : truncateLabel ? "truncate" : "whitespace-nowrap",
           )}
         >
           {active.label}
@@ -115,7 +124,10 @@ export function FormListboxSelect<V extends string>({
       </button>
       <ChevronDown
         className={cn(
-          "pointer-events-none absolute right-3 top-1/2 h-5 w-5 shrink-0 -translate-y-1/2 text-[#09090B] transition-transform",
+          cn(
+            "pointer-events-none absolute top-1/2 h-5 w-5 shrink-0 -translate-y-1/2 text-[#09090B] transition-transform",
+            compact ? "right-2.5" : "right-3",
+          ),
           open && "rotate-180",
         )}
         strokeWidth={2}

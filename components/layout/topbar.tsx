@@ -147,7 +147,7 @@ export function Topbar({
                 <Search className="h-5 w-5 shrink-0 text-[#09090B]" aria-hidden />
                 <span className="min-w-0 flex-1 truncate text-sm leading-5 text-[#A1A1AA]">Search...</span>
                 <kbd
-                  className="pointer-events-none shrink-0 rounded border border-neutral-200 bg-white px-1.5 py-0.5 font-sans text-[10px] font-medium text-[#A1A1AA]"
+                  className="pointer-events-none hidden shrink-0 rounded border border-neutral-200 bg-white px-1.5 py-0.5 font-sans text-[10px] font-medium text-[#A1A1AA] md:inline-flex"
                   aria-hidden
                 >
                   S

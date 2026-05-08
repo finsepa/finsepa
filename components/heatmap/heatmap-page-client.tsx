@@ -1,27 +1,30 @@
 "use client";
 
-import { Maximize2, Minimize2 } from "lucide-react";
+import { Info, Maximize2, Minimize2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { HeatmapMarket, HeatmapMetric, HeatmapPagePayload } from "@/lib/heatmap/heatmap-types";
 import { HEATMAP_LEGEND_STEPS, heatmapLegendHex } from "@/lib/heatmap/heatmap-colors";
 import { MarketHeatmap } from "@/components/heatmap/market-heatmap";
+import { TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
+import { dropdownMenuPanelBodyClassName } from "@/components/design-system/dropdown-menu-styles";
 import { FormListboxSelect } from "@/components/ui/form-listbox-select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
 const METRIC_OPTIONS_STOCKS: { value: HeatmapMetric; label: string }[] = [
-  { value: "1d", label: "1D Performance" },
-  { value: "5d", label: "5D Performance" },
-  { value: "1m", label: "1M Performance" },
-  { value: "ytd", label: "YTD Performance" },
+  { value: "1d", label: "1D" },
+  { value: "5d", label: "5D" },
+  { value: "1m", label: "1M" },
+  { value: "ytd", label: "YTD" },
 ];
 
 const METRIC_OPTIONS_CRYPTO: { value: HeatmapMetric; label: string }[] = [
-  { value: "1d", label: "1D Performance" },
-  { value: "5d", label: "1W Performance" },
-  { value: "1m", label: "1M Performance" },
-  { value: "ytd", label: "YTD Performance" },
+  { value: "1d", label: "1D" },
+  { value: "5d", label: "1W" },
+  { value: "1m", label: "1M" },
+  { value: "ytd", label: "YTD" },
 ];
 
 function heatmapHref(market: HeatmapMarket, metric: HeatmapMetric): string {
@@ -35,13 +38,37 @@ function PerformanceLegendFigma() {
       {HEATMAP_LEGEND_STEPS.map((s) => (
         <div
           key={s}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-sm font-medium leading-5 text-white"
+          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[11px] font-semibold leading-4 text-white sm:h-9 sm:w-9 sm:rounded-[10px] sm:text-sm sm:font-medium sm:leading-5"
           style={{ backgroundColor: heatmapLegendHex(s) }}
         >
           {s > 0 ? `+${s}` : s}
         </div>
       ))}
     </div>
+  );
+}
+
+function PerformanceLegendInfo() {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-solid border-[#E4E4E7] bg-white text-[#09090B] shadow-[0px_1px_1px_0px_rgba(10,10,10,0.06)] transition-colors hover:bg-[#F4F4F5]"
+          aria-label="Performance scale info"
+        >
+          <Info className="h-4.5 w-4.5" strokeWidth={1.75} aria-hidden />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-auto p-0">
+        <div className={cn(dropdownMenuPanelBodyClassName, "gap-2 px-2 py-2")}>
+          <p className="px-2 text-[11px] font-medium leading-4 text-[#71717A]">Performance scale</p>
+          <div className="px-2">
+            <PerformanceLegendFigma />
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -52,27 +79,18 @@ function MarketClassTabs({
   market: HeatmapMarket;
   onChange: (next: HeatmapMarket) => void;
 }) {
+  const options: readonly TabSwitcherOption<HeatmapMarket>[] = [
+    { value: "stocks", label: "Stocks" },
+    { value: "crypto", label: "Crypto" },
+  ];
+
   return (
-    <div className="flex h-9 shrink-0 items-center gap-1" role="tablist" aria-label="Asset class">
-      {(["stocks", "crypto"] as const).map((m) => {
-        const selected = market === m;
-        return (
-          <button
-            key={m}
-            type="button"
-            role="tab"
-            aria-selected={selected}
-            onClick={() => onChange(m)}
-            className={cn(
-              "rounded-[10px] px-5 py-2 text-sm font-medium leading-5 text-[#09090B] transition-colors",
-              selected ? "bg-[#F4F4F5]" : "hover:bg-[#F4F4F5]/70",
-            )}
-          >
-            {m === "stocks" ? "Stocks" : "Crypto"}
-          </button>
-        );
-      })}
-    </div>
+    <TabSwitcher
+      options={options}
+      value={market}
+      onChange={onChange}
+      aria-label="Asset class"
+    />
   );
 }
 
@@ -112,19 +130,20 @@ export function HeatmapPageClient({ initial }: { initial: HeatmapPagePayload }) 
       className={cn("flex min-w-0 flex-col gap-5", fs && "rounded-xl bg-[#FAFAFA] p-4")}
     >
       {/* Figma: single toolbar — tabs | legend + dropdown + fullscreen */}
-      <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:gap-1">
-        <div className="flex min-h-9 min-w-0 sm:flex-1 sm:items-center">
+      <div className="flex w-full min-w-0 items-center gap-2">
+        <div className="flex min-h-9 min-w-0 items-center">
           <MarketClassTabs market={market} onChange={(next) => router.push(heatmapHref(next, metric))} />
         </div>
-        <div className="flex min-w-0 flex-wrap items-center justify-start gap-3 sm:ml-auto sm:flex-1 sm:justify-end sm:gap-4">
-          <PerformanceLegendFigma />
+        <div className="ml-auto flex min-w-0 flex-nowrap items-center justify-end gap-2">
+          <PerformanceLegendInfo />
           <FormListboxSelect
             value={metric}
             onChange={(next) => router.push(heatmapHref(market, next))}
             options={metricOptions}
             aria-label="Performance window"
-            className="w-[min(100%,200px)] shrink-0 sm:w-[200px]"
-            triggerClassName="border border-solid border-[#E4E4E7] bg-white shadow-[0px_1px_1px_0px_rgba(10,10,10,0.06)] hover:bg-[#FAFAFA]"
+            compact
+            className="min-w-[88px] shrink-0"
+            triggerClassName="border border-solid border-[#E4E4E7] bg-white px-3 shadow-[0px_1px_1px_0px_rgba(10,10,10,0.06)] hover:bg-[#FAFAFA] sm:px-4"
           />
           <button
             type="button"

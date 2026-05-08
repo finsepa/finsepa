@@ -156,6 +156,14 @@ export function HeatmapHoverTooltip({
 
   const f = hover.featured;
   const p0 = clampTooltipPos(hover.anchorX, hover.anchorY);
+  const title =
+    market === "crypto"
+      ? (peerSector ?? "").trim().toUpperCase()
+      : normalizeIndustryLabel(f.industry).toUpperCase();
+  const rowsToShow =
+    market === "crypto"
+      ? sectorTopRows
+      : (peersSorted.length ? peersSorted.slice(0, 15) : sectorTopRows);
 
   return createPortal(
     <div
@@ -181,11 +189,13 @@ export function HeatmapHoverTooltip({
       aria-label={`${f.ticker} details`}
     >
       <div className="border-b border-[#E4E4E7] bg-white px-4 py-3">
-        <p className="text-[18px] font-semibold leading-7 tracking-tight text-[#09090B]">{peerSector}</p>
+        <p className="truncate whitespace-nowrap text-[18px] font-semibold leading-7 tracking-tight text-[#09090B]">
+          {title}
+        </p>
       </div>
 
       <div className="max-h-[360px] overflow-y-auto bg-white">
-        {sectorTopRows.map((row) => {
+        {rowsToShow.map((row) => {
           const pos = row.changePct != null && Number.isFinite(row.changePct) && row.changePct >= 0;
           const logoUrl =
             market === "crypto"
@@ -195,7 +205,7 @@ export function HeatmapHoverTooltip({
             <Link
               key={row.id}
               href={assetHref(market, row.ticker)}
-              className="flex items-center justify-between gap-4 border-b border-[#F4F4F5] px-4 py-3 text-sm text-[#09090B] transition-colors last:border-b-0 hover:bg-[#F4F4F5]"
+              className="flex items-center justify-between gap-4 px-4 py-3 text-sm text-[#09090B] transition-colors hover:bg-[#F4F4F5]"
             >
               <div className="flex min-w-0 items-center gap-3">
                 <CompanyLogo name={row.name} logoUrl={logoUrl} symbol={row.ticker} />

@@ -9,7 +9,8 @@ import { screenerIndustryDrillHref } from "@/lib/screener/screener-industry-url"
 import { ScreenerTableScroll } from "@/components/screener/screener-table-scroll";
 
 /** # | Industry | 1D | YTD | MCap — sector appears only in group headers; industry links drill in on the Industries tab. */
-const colLayout = "grid-cols-[48px_minmax(0,1.6fr)_1fr_1fr_1fr] gap-x-2";
+const colLayoutMobile = "grid-cols-[28px_minmax(0,1fr)_72px_72px] gap-x-2";
+const colLayoutDesktop = "sm:grid-cols-[48px_minmax(0,1.6fr)_1fr_1fr_1fr] sm:gap-x-2";
 
 function formatPctValue(value: number) {
   return `${value > 0 ? "+" : ""}${value.toFixed(2)}%`;
@@ -60,16 +61,16 @@ export function ScreenerIndustriesTable({ rows }: { rows: ScreenerIndustryRow[] 
   }
 
   return (
-    <ScreenerTableScroll minWidthClassName="min-w-[640px] lg:min-w-0">
+    <ScreenerTableScroll minWidthClassName="min-w-0" className="overflow-x-hidden">
       <div className="bg-white">
         <div
-          className={`grid ${colLayout} min-h-[44px] items-center border-b border-[#E4E4E7] bg-white px-2 py-0 text-[12px] font-medium leading-5 text-[#71717A] sm:px-4 sm:text-[14px]`}
+          className={`grid ${colLayoutMobile} ${colLayoutDesktop} min-h-[44px] items-center border-b border-[#E4E4E7] bg-white px-2 py-0 text-[12px] font-medium leading-5 text-[#71717A] sm:px-4 sm:text-[14px]`}
         >
           <div className="text-center">#</div>
           <div className="text-left">Industry</div>
           <div className="min-w-0 w-full text-right">1D %</div>
           <div className="min-w-0 w-full text-right">YTD %</div>
-          <div className="min-w-0 w-full text-right">Market Cap</div>
+          <div className="hidden min-w-0 w-full text-right sm:block">Market Cap</div>
         </div>
 
         {grouped.map(({ sector, items }) => (
@@ -82,7 +83,7 @@ export function ScreenerIndustriesTable({ rows }: { rows: ScreenerIndustryRow[] 
                 key={`${row.sector}-${row.industry}`}
                 href={screenerIndustryDrillHref(row.sector as ScreenerCanonicalSector, row.industry)}
                 prefetch={false}
-                className={`group grid ${colLayout} min-h-[56px] cursor-pointer items-center border-b border-[#E4E4E7] bg-white px-2 no-underline transition-colors duration-75 visited:text-inherit hover:bg-neutral-50 focus-visible:z-[1] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#09090B]/25 sm:min-h-[60px] sm:px-4`}
+                className={`group grid ${colLayoutMobile} ${colLayoutDesktop} min-h-[56px] cursor-pointer items-center border-b border-[#E4E4E7] bg-white px-2 no-underline transition-colors duration-75 visited:text-inherit hover:bg-neutral-50 focus-visible:z-[1] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#09090B]/25 sm:min-h-[60px] sm:px-4`}
               >
                 <div className="text-center text-[14px] font-semibold leading-5 tabular-nums text-[#71717A]">
                   {i + 1}
@@ -91,10 +92,13 @@ export function ScreenerIndustriesTable({ rows }: { rows: ScreenerIndustryRow[] 
                   <span className="block truncate text-left text-[14px] font-semibold leading-5 text-[#09090B] underline-offset-2 decoration-[#71717A] group-hover:underline">
                     {row.industry}
                   </span>
+                  <span className="mt-0.5 block truncate text-left text-[12px] font-normal leading-4 text-[#71717A] sm:hidden">
+                    {row.marketCapDisplay}
+                  </span>
                 </div>
                 <PctCell value={row.change1D} />
                 <PctCell value={row.changeYTD} />
-                <div className="min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
+                <div className="hidden min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B] sm:block">
                   {row.marketCapDisplay}
                 </div>
               </Link>
