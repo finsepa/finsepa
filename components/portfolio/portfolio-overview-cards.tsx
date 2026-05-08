@@ -313,7 +313,6 @@ function PortfolioOverviewCardsInner({
                 </p>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
                   <span className="text-sm font-medium tabular-nums text-[#16A34A]">+{pctFmt.format(0)}%</span>
-                  <span className="text-xs font-medium text-[#09090B]">ATH</span>
                 </div>
               </>
             ) : (
@@ -344,7 +343,6 @@ function PortfolioOverviewCardsInner({
                         ? `${inceptionBenchmarkMetrics.rPort >= 0 ? "+" : ""}${pctFmt.format(inceptionBenchmarkMetrics.rPort)}%`
                         : "—"}
                     </span>
-                    <span className="text-xs font-medium text-[#09090B]">ATH</span>
                   </div>
                 ) : (
                   <div className="mt-2 flex flex-wrap items-center gap-2">

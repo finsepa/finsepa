@@ -188,6 +188,11 @@ function formatSharesWithUnit(shares: number, symbol: string): string {
   return unit ? `${qty} ${unit}` : qty;
 }
 
+function formatSharesAsShares(shares: number): string {
+  const qty = formatSharesDisplay(shares);
+  return `${qty} shares`;
+}
+
 function formatSignedUsd(n: number): string {
   const s = usd0.format(Math.abs(n));
   return n >= 0 ? `+${s}` : `-${s}`;
@@ -282,11 +287,115 @@ function PortfolioHoldingsTableInner({
       />
       <div
         className={cn(
-          "w-full overflow-x-auto border-t border-[#E4E4E7] pb-8",
+          "w-full overflow-x-visible pb-8 sm:overflow-x-auto sm:border-t sm:border-[#E4E4E7]",
           className,
         )}
       >
-      <table className="w-full min-w-[920px] border-collapse">
+      <div className="sm:hidden">
+        <div className="bg-white">
+          {sorted.map(({ holding: h, retUsd }) => {
+            const cryptoKey = cryptoRouteBase(h.symbol);
+            const assetKind: "stock" | "crypto" =
+              isSupportedCryptoAssetSymbol(cryptoKey) ? "crypto" : "stock";
+            const realizedUsd = cumulativeRealizedGainUsdForAsset(transactions, cryptoKey, assetKind);
+            const unrealizedUsd = retUsd;
+            const totalUsd = unrealizedUsd + realizedUsd;
+            const totalPct = h.costBasis > 0 ? (totalUsd / h.costBasis) * 100 : 0;
+            const assetHref = portfolioHoldingAssetHref(h.symbol);
+            const logo = displayLogoUrlForPortfolioSymbol(h.symbol);
+            const caption = portfolioAssetSymbolCaption(h.symbol);
+
+            const left = (
+              <div className="flex min-w-0 items-center gap-3">
+                <CompanyLogo name={h.name} logoUrl={logo} symbol={h.symbol} />
+                <div className="min-w-0">
+                  <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">{h.name}</div>
+                  <div className="truncate text-[12px] font-normal leading-4 text-[#71717A]">
+                    {caption} · {formatSharesAsShares(h.shares)}
+                  </div>
+                </div>
+              </div>
+            );
+
+            const right = (
+              <div className="min-w-0 text-right">
+                <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#09090B]">
+                  {usd0.format(h.currentValue)}
+                </div>
+                <div
+                  className={cn(
+                    "mt-0.5 truncate text-[12px] font-medium leading-4 tabular-nums",
+                    totalUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
+                  )}
+                >
+                  {formatSignedUsd(totalUsd)} ({formatSignedPct(totalPct)})
+                </div>
+              </div>
+            );
+
+            return (
+              <div key={h.id} className="flex min-w-0 items-center justify-between gap-3 py-4">
+                <div className="min-w-0 flex-1">
+                  {assetHref ? (
+                    <Link
+                      href={assetHref}
+                      className="block min-w-0 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2"
+                    >
+                      {left}
+                    </Link>
+                  ) : (
+                    left
+                  )}
+                </div>
+                <div className="shrink-0">{right}</div>
+              </div>
+            );
+          })}
+
+          <div className="flex min-w-0 items-center justify-between gap-3 py-4">
+            <div className="flex min-w-0 items-center gap-3">
+              <CompanyLogo name="US Dollar" logoUrl="" symbol="USD" />
+              <div className="min-w-0">
+                <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">US Dollar</div>
+                <div className="truncate text-[12px] font-normal leading-4 text-[#71717A]">
+                  USD · {formatSharesDisplay(cashUsd)} USD
+                </div>
+              </div>
+            </div>
+            <div className="min-w-0 text-right">
+              <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#09090B]">
+                {usd0.format(cashUsd)}
+              </div>
+              <div className="mt-0.5 truncate text-[12px] font-medium leading-4 tabular-nums text-[#71717A]">
+                {EM_DASH}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex min-w-0 items-center justify-between gap-3 py-4">
+            <div className="min-w-0">
+              <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">Total</div>
+              <div className="h-4 text-[12px] font-normal leading-4" aria-hidden />
+            </div>
+            <div className="min-w-0 text-right">
+              <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#09090B]">
+                {usd0.format(netWorth)}
+              </div>
+              <div
+                className={cn(
+                  "mt-0.5 truncate text-[12px] font-medium leading-4 tabular-nums",
+                  portfolioTotalProfitUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
+                )}
+              >
+                {formatSignedUsd(portfolioTotalProfitUsd)}
+                {portfolioTotalProfitPct == null ? "" : ` (${formatSignedPct(portfolioTotalProfitPct)})`}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <table className="hidden w-full min-w-[920px] border-collapse sm:table">
         <thead>
           <tr className="min-h-[44px] border-b border-[#E4E4E7] bg-white text-[14px] font-medium leading-5 text-[#71717A]">
             <th className="whitespace-nowrap px-4 py-3 text-left">Asset</th>

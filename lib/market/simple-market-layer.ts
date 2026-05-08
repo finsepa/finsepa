@@ -107,12 +107,20 @@ function emptyCryptoDerived(): CryptoDerivedSlice {
 
 function toDatum(p: EodhdRealtimePayload | undefined): SimpleMarketDatum {
   if (!p) return emptyDatum();
-  const priceRaw = typeof p.close === "number" && Number.isFinite(p.close) ? p.close : null;
+  const asFinite = (v: unknown): number | null => {
+    if (typeof v === "number") return Number.isFinite(v) ? v : null;
+    if (typeof v === "string") {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : null;
+    }
+    return null;
+  };
+
+  const priceRaw = asFinite(p.close);
   const price = priceRaw != null && priceRaw > 0 ? priceRaw : null;
-  const previousCloseRaw =
-    typeof p.previousClose === "number" && Number.isFinite(p.previousClose) ? p.previousClose : null;
+  const previousCloseRaw = asFinite(p.previousClose);
   const previousClose = previousCloseRaw != null && previousCloseRaw > 0 ? previousCloseRaw : null;
-  const changeFromApi = typeof p.change_p === "number" && Number.isFinite(p.change_p) ? p.change_p : null;
+  const changeFromApi = asFinite(p.change_p);
   const changePercent1D =
     changeFromApi ??
     (price != null && previousClose != null && previousClose > 0
@@ -179,11 +187,23 @@ async function loadSimpleMarketDataBatch(opts: SimpleMarketBatchOpts): Promise<S
 
     const stocks = {} as Record<Top10Ticker, SimpleMarketDatum>;
     for (const t of TOP10_TICKERS) {
-      stocks[t] = includeTop10Stocks ? toDatum(map.get(toEodhdUsSymbol(t).toUpperCase())) : emptyDatum();
+      const sym = toEodhdUsSymbol(t).toUpperCase();
+      const payload =
+        map.get(sym) ??
+        // Some EODHD realtime responses return `code` without exchange suffix (e.g. `AAPL`).
+        map.get(sym.replace(/\.US$/i, "")) ??
+        // Others may normalize `.` to `-` differently depending on endpoint.
+        map.get(sym.replace(/\.US$/i, "").replace(/\./g, "-"));
+      stocks[t] = includeTop10Stocks ? toDatum(payload) : emptyDatum();
     }
     const extraScreenerStocks: Record<string, SimpleMarketDatum> = {};
     for (const t of page2Tickers) {
-      extraScreenerStocks[t] = toDatum(map.get(toEodhdUsSymbol(t).toUpperCase()));
+      const sym = toEodhdUsSymbol(t).toUpperCase();
+      const payload =
+        map.get(sym) ??
+        map.get(sym.replace(/\.US$/i, "")) ??
+        map.get(sym.replace(/\.US$/i, "").replace(/\./g, "-"));
+      extraScreenerStocks[t] = toDatum(payload);
     }
     const crypto: Record<string, SimpleMarketDatum> = {};
     for (const c of CRYPTO_SCREENER_ALL) {
@@ -197,7 +217,9 @@ async function loadSimpleMarketDataBatch(opts: SimpleMarketBatchOpts): Promise<S
 
     const indices: Record<string, SimpleMarketDatum> = {};
     for (const sym of SCREENER_INDEX_SYMBOLS) {
-      indices[sym] = includeIndices ? toDatum(map.get(sym.toUpperCase())) : emptyDatum();
+      const k = sym.toUpperCase();
+      const payload = map.get(k) ?? map.get(k.split(".")[0] ?? k);
+      indices[sym] = includeIndices ? toDatum(payload) : emptyDatum();
     }
 
     return {

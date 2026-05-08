@@ -17,7 +17,7 @@ import {
   type MouseEventParams,
   type Time,
 } from "lightweight-charts";
-import { Check, ChevronDown, LineChart } from "lucide-react";
+import { Check, ChevronDown, LineChart, Settings } from "lucide-react";
 
 import { horzTimeToUnixSeconds } from "@/components/chart/chart-selection-utils";
 import {
@@ -890,6 +890,28 @@ function PortfolioOverviewChartInner({
   const [showBenchmark, setShowBenchmark] = useState(false);
   const [benchmarkTicker, setBenchmarkTicker] = useState("SPY");
   const [benchmarkPoints, setBenchmarkPoints] = useState<StockChartPoint[] | null>(null);
+  const [mobileControlsOpen, setMobileControlsOpen] = useState(false);
+  const mobileControlsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!mobileControlsOpen) return;
+    function onDocMouseDown(e: MouseEvent) {
+      if (mobileControlsRef.current && !mobileControlsRef.current.contains(e.target as Node)) {
+        setMobileControlsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onDocMouseDown);
+    return () => document.removeEventListener("mousedown", onDocMouseDown);
+  }, [mobileControlsOpen]);
+
+  useEffect(() => {
+    if (!mobileControlsOpen) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setMobileControlsOpen(false);
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [mobileControlsOpen]);
 
   const canLoad = transactions.length > 0;
 
@@ -955,41 +977,74 @@ function PortfolioOverviewChartInner({
   return (
     <section className="mb-6 w-full min-w-0">
       <div className="mb-4 flex flex-col gap-3">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <FormListboxSelect
-            className="w-[min(100%,220px)] shrink-0"
-            value={metric}
-            onChange={setMetric}
-            options={PORTFOLIO_CHART_METRIC_OPTIONS}
-            aria-label="Chart metric"
-          />
-          <div className="flex min-w-0 flex-1 flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-center lg:justify-end">
-            <div className="flex flex-wrap items-center justify-end gap-3 sm:gap-4">
-              <div className="flex items-center gap-2 text-sm text-[#09090B]">
-                <span className="whitespace-nowrap">Show trades</span>
-                <PillSwitch
-                  pressed={showTrades}
-                  onPressedChange={setShowTrades}
-                  aria-label="Show trades on chart"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <BenchmarkSelectMini value={benchmarkTicker} onChange={setBenchmarkTicker} />
-                <PillSwitch
-                  pressed={showBenchmark}
-                  onPressedChange={setShowBenchmark}
-                  disabled={metric !== "value"}
-                  title={
-                    metric !== "value" ?
-                      "Switch to Value to compare portfolio net worth with the index."
-                    : undefined
-                  }
-                  aria-label="Show benchmark comparison on chart"
-                />
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center justify-between gap-3 sm:flex-1 sm:justify-start">
+            <FormListboxSelect
+              className="w-[min(100%,220px)] shrink-0"
+              value={metric}
+              onChange={setMetric}
+              options={PORTFOLIO_CHART_METRIC_OPTIONS}
+              aria-label="Chart metric"
+            />
+            <div className="flex items-center justify-end sm:hidden">
+              <div ref={mobileControlsRef} className="relative">
+                <button
+                  type="button"
+                  aria-label="Chart settings"
+                  aria-haspopup="menu"
+                  aria-expanded={mobileControlsOpen}
+                  onClick={() => setMobileControlsOpen((v) => !v)}
+                  className={cn(
+                    "flex h-9 w-9 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#09090B]",
+                    "shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100",
+                    "hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2",
+                  )}
+                >
+                  <Settings className="h-5 w-5" strokeWidth={2} aria-hidden />
+                </button>
+                {mobileControlsOpen ? (
+                  <div
+                    className={cn(
+                      dropdownMenuPanelClassName(),
+                      "absolute right-0 top-[calc(100%+6px)] z-[130] w-[min(100vw-2rem,360px)] p-3",
+                    )}
+                    role="menu"
+                    aria-label="Chart settings"
+                  >
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-sm font-medium text-[#09090B]">Show trades</span>
+                      <PillSwitch
+                        pressed={showTrades}
+                        onPressedChange={setShowTrades}
+                        aria-label="Show trades on chart"
+                      />
+                    </div>
+                    <div className="mt-3 flex items-center justify-between gap-4">
+                      <span className="text-sm font-medium text-[#09090B]">Benchmark</span>
+                      <div className="flex items-center gap-2">
+                        <BenchmarkSelectMini value={benchmarkTicker} onChange={setBenchmarkTicker} />
+                        <PillSwitch
+                          pressed={showBenchmark}
+                          onPressedChange={setShowBenchmark}
+                          disabled={metric !== "value"}
+                          title={
+                            metric !== "value" ?
+                              "Switch to Value to compare portfolio net worth with the index."
+                            : undefined
+                          }
+                          aria-label="Show benchmark comparison on chart"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
               </div>
             </div>
+          </div>
+
+          <div className="hidden items-center justify-end gap-2 sm:flex">
             <div
-              className="flex min-w-0 flex-wrap justify-end gap-0.5 rounded-[10px] bg-[#F4F4F5] p-0.5"
+              className="min-w-0 flex-wrap justify-end gap-0.5 rounded-[10px] bg-[#F4F4F5] p-0.5 sm:flex"
               role="group"
               aria-label="Chart range"
             >
@@ -1008,6 +1063,59 @@ function PortfolioOverviewChartInner({
                   {r.label}
                 </button>
               ))}
+            </div>
+
+            <div ref={mobileControlsRef} className="relative">
+              <button
+                type="button"
+                aria-label="Chart settings"
+                aria-haspopup="menu"
+                aria-expanded={mobileControlsOpen}
+                onClick={() => setMobileControlsOpen((v) => !v)}
+                className={cn(
+                  "flex h-9 w-9 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#09090B]",
+                  "shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100",
+                  "hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2",
+                )}
+              >
+                <Settings className="h-5 w-5" strokeWidth={2} aria-hidden />
+              </button>
+              {mobileControlsOpen ? (
+                <div
+                  className={cn(
+                    dropdownMenuPanelClassName(),
+                    "absolute right-0 top-[calc(100%+6px)] z-[130] w-[min(100vw-2rem,360px)] p-3",
+                  )}
+                  role="menu"
+                  aria-label="Chart settings"
+                >
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-sm font-medium text-[#09090B]">Show trades</span>
+                    <PillSwitch
+                      pressed={showTrades}
+                      onPressedChange={setShowTrades}
+                      aria-label="Show trades on chart"
+                    />
+                  </div>
+                  <div className="mt-3 flex items-center justify-between gap-4">
+                    <span className="text-sm font-medium text-[#09090B]">Benchmark</span>
+                    <div className="flex items-center gap-2">
+                      <BenchmarkSelectMini value={benchmarkTicker} onChange={setBenchmarkTicker} />
+                      <PillSwitch
+                        pressed={showBenchmark}
+                        onPressedChange={setShowBenchmark}
+                        disabled={metric !== "value"}
+                        title={
+                          metric !== "value" ?
+                            "Switch to Value to compare portfolio net worth with the index."
+                          : undefined
+                        }
+                        aria-label="Show benchmark comparison on chart"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : null}
             </div>
           </div>
         </div>
@@ -1055,6 +1163,28 @@ function PortfolioOverviewChartInner({
             benchmarkInvestedUsd={benchmarkInvestedUsd}
           />
         )}
+      </div>
+
+      <div
+        className="mt-3 flex min-w-0 flex-wrap justify-end gap-0.5 rounded-[10px] bg-[#F4F4F5] p-0.5 sm:hidden"
+        role="group"
+        aria-label="Chart range"
+      >
+        {PORTFOLIO_CHART_RANGE_LABELS.map((r) => (
+          <button
+            key={r.id}
+            type="button"
+            onClick={() => setRange(r.id)}
+            className={cn(
+              "rounded-[10px] px-3 py-1.5 font-sans text-[14px] leading-5 tracking-normal",
+              range === r.id ?
+                "bg-white font-medium text-[#09090B] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]"
+              : "font-normal text-[#71717A]",
+            )}
+          >
+            {r.label}
+          </button>
+        ))}
       </div>
     </section>
   );

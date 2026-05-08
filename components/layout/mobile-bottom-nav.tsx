@@ -20,9 +20,11 @@ import {
   protectedNavSectionHasActive,
   type ProtectedNavItem,
 } from "@/components/layout/protected-nav-config";
+import { dropdownMenuPanelBodyClassName, dropdownMenuSurfaceClassName } from "@/components/design-system/dropdown-menu-styles";
 import { cn } from "@/lib/utils";
 
-const MOBILE_NAV_SHEET_BOTTOM = "calc(3.5rem + env(safe-area-inset-bottom, 0px))";
+// Leave a little breathing room above the bottom nav.
+const MOBILE_NAV_SHEET_BOTTOM = "calc(3.5rem + env(safe-area-inset-bottom, 0px) + 1.6rem)";
 
 type SheetId = "markets" | "calendar" | "data" | "community";
 
@@ -33,9 +35,9 @@ function MobileNavSheetRow({ item, pathname, onNavigate }: { item: ProtectedNavI
   const Icon = item.icon;
   const active = protectedNavItemIsActive(item, pathname);
   const rowClass = cn(
-    "flex min-h-[48px] w-full items-center gap-3 px-4 text-left text-[15px] font-medium leading-5 transition-colors",
+    "flex min-h-[48px] w-full items-center gap-3 px-5 text-left text-[15px] font-medium leading-5 transition-colors",
     item.available ? "text-[#09090B]" : "cursor-not-allowed text-[#A1A1AA]",
-    item.available && (active ? "bg-[#F4F4F5]" : "active:bg-neutral-100"),
+    item.available && (active ? "rounded-[10px] bg-[#F4F4F5]" : "active:bg-neutral-100"),
   );
   const iconClass = cn("h-5 w-5 shrink-0", item.available ? "text-[#09090B]" : "text-[#A1A1AA]");
 
@@ -80,13 +82,21 @@ function MobileNavSheet({
       />
       <div
         id={`mobile-nav-sheet-${sheetId}`}
-        className="fixed inset-x-0 z-[42] border-t border-[#E4E4E7] bg-white shadow-[0_-4px_24px_rgba(10,10,10,0.08)] md:hidden"
+        className={cn(
+          "fixed inset-x-3 z-[42] overflow-hidden md:hidden",
+          dropdownMenuSurfaceClassName(),
+        )}
         style={{ bottom: MOBILE_NAV_SHEET_BOTTOM }}
         role="dialog"
         aria-modal="true"
         aria-label="Submenu"
       >
-        <nav className="max-h-[min(52vh,420px)] overflow-y-auto py-1">
+        <nav
+          className={cn(
+            dropdownMenuPanelBodyClassName,
+            "max-h-[min(52vh,420px)] overflow-y-auto pb-[calc(0.75rem+env(safe-area-inset-bottom))]",
+          )}
+        >
           {items.map((item) => (
             <MobileNavSheetRow key={item.label} item={item} pathname={pathname} onNavigate={onClose} />
           ))}
