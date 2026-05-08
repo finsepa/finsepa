@@ -3,12 +3,29 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  /**
+   * iOS Safari can report a "wrong" 100vh when the URL bar is visible.
+   * Use modern viewport units when available, with a safe fallback.
+   */
+  --app-vh: 100vh;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-inter);
+}
+
+@supports (height: 100svh) {
+  :root {
+    --app-vh: 100svh;
+  }
+}
+
+@supports (height: 100dvh) {
+  :root {
+    --app-vh: 100dvh;
+  }
 }
 
 @media (prefers-color-scheme: dark) {
@@ -18,10 +35,17 @@
   }
 }
 
+html,
+body {
+  height: 100%;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-inter), sans-serif;
+  min-height: var(--app-vh);
+  min-height: -webkit-fill-available;
 }
 
 * {

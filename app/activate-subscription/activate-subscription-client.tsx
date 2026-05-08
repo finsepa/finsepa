@@ -22,7 +22,7 @@ export function ActivateSubscriptionClient() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-[#F7F7F7] p-4">
+    <main className="flex min-h-[var(--app-vh)] flex-col items-center justify-center bg-[#F7F7F7] p-4">
       <div className="flex w-full max-w-[420px] flex-col items-center rounded-[12px] bg-white p-8 shadow-[0_2px_10px_rgba(0,0,0,0.04)]">
         <AuthBrandMark className="h-7 w-7" />
         <h1 className="mt-6 text-center text-[22px] font-semibold leading-7 tracking-tight text-[#09090B] sm:text-[26px]">

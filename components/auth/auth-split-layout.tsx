@@ -11,8 +11,8 @@ export function AuthSplitLayout({
 }) {
   if (showLeftOnMobile) {
     return (
-      <main className="min-h-screen bg-[#E4E4E7] p-4 text-neutral-900">
-        <div className="mx-auto flex min-h-[calc(100vh-32px)] w-full max-w-[1024px] flex-col overflow-hidden rounded-[16px] bg-white md:flex-row">
+      <main className="min-h-[var(--app-vh)] bg-[#E4E4E7] p-4 text-neutral-900">
+        <div className="mx-auto flex min-h-[calc(var(--app-vh)-32px)] w-full max-w-[1024px] flex-col overflow-hidden rounded-[16px] bg-white md:flex-row">
           {/* Visual panel */}
           <section className="relative block h-[320px] flex-none overflow-hidden bg-[#09090B] md:h-full md:w-1/2">
             {left}
@@ -29,8 +29,8 @@ export function AuthSplitLayout({
 
   // Keep the previous layout for other auth pages (Forgot/Reset), unless explicitly overridden.
   return (
-    <main className="min-h-screen overflow-hidden bg-[#E4E4E7] p-1 text-neutral-900">
-      <div className="mx-auto flex min-h-[calc(100vh-8px)] max-w-[1200px] gap-1">
+    <main className="min-h-[var(--app-vh)] overflow-hidden bg-[#E4E4E7] p-1 text-neutral-900">
+      <div className="mx-auto flex min-h-[calc(var(--app-vh)-8px)] max-w-[1200px] gap-1">
         {/* Visual panel */}
         <section className="relative hidden flex-1 overflow-hidden rounded-[4px] bg-[#09090B] md:block">{left}</section>
 
