@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Check, ChevronDown, LineChart } from "lucide-react";
+import { Check, ChevronDown, LineChart, Settings } from "lucide-react";
 
 import { TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
 import {
@@ -513,7 +513,8 @@ function DynamicsSvg({
         </div>
       ) : null}
 
-      <div className="mt-3 flex flex-wrap items-center justify-center gap-6 text-xs font-medium text-[#71717A]">
+      {/* Legend: keep inline for sm+; mobile legend is rendered by the parent so tabs can sit above it. */}
+      <div className="mt-3 hidden flex-wrap items-center justify-center gap-6 text-xs font-medium text-[#71717A] sm:flex">
         <span className="inline-flex items-center gap-2">
           <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: PORTFOLIO_BAR }} />
           Portfolio
@@ -542,6 +543,8 @@ function PortfolioReturnsDynamicsChartInner({
   const [bars, setBars] = useState<PortfolioPeriodReturnBar[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [mobileSettingsOpen, setMobileSettingsOpen] = useState(false);
+  const mobileSettingsRef = useRef<HTMLDivElement>(null);
 
   const benchmarkLabel = BENCHMARK_OPTIONS.find((o) => o.ticker === benchmarkTicker)?.label ?? "Benchmark";
 
@@ -578,6 +581,26 @@ function PortfolioReturnsDynamicsChartInner({
     void load();
   }, [load]);
 
+  useEffect(() => {
+    if (!mobileSettingsOpen) return;
+    function onDocMouseDown(e: MouseEvent) {
+      if (mobileSettingsRef.current && !mobileSettingsRef.current.contains(e.target as Node)) {
+        setMobileSettingsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onDocMouseDown);
+    return () => document.removeEventListener("mousedown", onDocMouseDown);
+  }, [mobileSettingsOpen]);
+
+  useEffect(() => {
+    if (!mobileSettingsOpen) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setMobileSettingsOpen(false);
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [mobileSettingsOpen]);
+
   const hasRenderable = bars.some(
     (b) =>
       (b.portfolioPct != null && Number.isFinite(b.portfolioPct)) ||
@@ -587,32 +610,96 @@ function PortfolioReturnsDynamicsChartInner({
   return (
     <section className="mb-10 w-full min-w-0">
       <div className="mb-4 flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-        <h2 className="shrink-0 text-2xl font-semibold leading-9 tracking-tight text-[#09090B]">
-          Dynamics of portfolio returns
-        </h2>
+        <div className="flex min-w-0 items-start justify-between gap-3">
+          <h2 className="min-w-0 shrink text-2xl font-semibold leading-9 tracking-tight text-[#09090B]">
+            Dynamics of portfolio returns
+          </h2>
+          {/* Mobile: settings button sits on the title line. */}
+          <div className="flex shrink-0 items-center sm:hidden">
+            <div ref={mobileSettingsRef} className="relative">
+              <button
+                type="button"
+                aria-label="Return dynamics settings"
+                aria-haspopup="menu"
+                aria-expanded={mobileSettingsOpen}
+                onClick={() => setMobileSettingsOpen((v) => !v)}
+                className={cn(
+                  "flex h-9 w-9 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#09090B]",
+                  "shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100",
+                  "hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2",
+                )}
+              >
+                <Settings className="h-5 w-5" strokeWidth={2} aria-hidden />
+              </button>
+              {mobileSettingsOpen ? (
+                <div
+                  className={cn(
+                    dropdownMenuPanelClassName(),
+                    "absolute right-0 top-[calc(100%+6px)] z-[130] w-[min(100vw-2rem,360px)] p-3",
+                  )}
+                  role="menu"
+                  aria-label="Return dynamics settings"
+                >
+                  <div className="space-y-3">
+                    <div className="flex min-w-0 flex-col gap-2">
+                      <span className="text-xs font-semibold uppercase tracking-wide text-[#71717A]">Benchmark</span>
+                      <BenchmarkSelect value={benchmarkTicker} onChange={setBenchmarkTicker} />
+                    </div>
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-sm font-medium text-[#09090B]">Show benchmark</span>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={showBenchmark}
+                        onClick={() => setShowBenchmark((v) => !v)}
+                        className={cn(
+                          "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15",
+                          showBenchmark ? "bg-[#2563EB]" : "bg-[#E4E4E7]",
+                        )}
+                      >
+                        <span className="sr-only">Show benchmark comparison</span>
+                        <span
+                          className={cn(
+                            "pointer-events-none absolute left-0.5 top-1/2 h-4 w-4 -translate-y-1/2 rounded-full bg-white shadow-sm transition-transform",
+                            showBenchmark ? "translate-x-4" : "translate-x-0",
+                          )}
+                        />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </div>
+
         <div className="flex min-w-0 flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
-          <BenchmarkSelect value={benchmarkTicker} onChange={setBenchmarkTicker} />
+          {/* Desktop/tablet: show benchmark controls inline. */}
+          <div className="hidden min-w-0 items-center gap-3 sm:flex">
+            <BenchmarkSelect value={benchmarkTicker} onChange={setBenchmarkTicker} />
 
-          <button
-            type="button"
-            role="switch"
-            aria-checked={showBenchmark}
-            onClick={() => setShowBenchmark((v) => !v)}
-            className={cn(
-              "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15",
-              showBenchmark ? "bg-[#2563EB]" : "bg-[#E4E4E7]",
-            )}
-          >
-            <span className="sr-only">Show benchmark comparison</span>
-            <span
+            <button
+              type="button"
+              role="switch"
+              aria-checked={showBenchmark}
+              onClick={() => setShowBenchmark((v) => !v)}
               className={cn(
-                "pointer-events-none absolute left-0.5 top-1/2 h-4 w-4 -translate-y-1/2 rounded-full bg-white shadow-sm transition-transform",
-                showBenchmark ? "translate-x-4" : "translate-x-0",
+                "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15",
+                showBenchmark ? "bg-[#2563EB]" : "bg-[#E4E4E7]",
               )}
-            />
-          </button>
+            >
+              <span className="sr-only">Show benchmark comparison</span>
+              <span
+                className={cn(
+                  "pointer-events-none absolute left-0.5 top-1/2 h-4 w-4 -translate-y-1/2 rounded-full bg-white shadow-sm transition-transform",
+                  showBenchmark ? "translate-x-4" : "translate-x-0",
+                )}
+              />
+            </button>
+          </div>
 
-          <div className="max-w-full min-w-0 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {/* sm+: keep period switcher in header */}
+          <div className="hidden max-w-full min-w-0 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:block">
             <TabSwitcher
               aria-label="Return period"
               className="w-max min-w-0 justify-end"
@@ -659,6 +746,33 @@ function PortfolioReturnsDynamicsChartInner({
           <DynamicsSvg bars={bars} showBenchmark={showBenchmark} benchmarkLabel={benchmarkLabel} />
         )}
       </div>
+
+      {/* Mobile: show period switcher below chart */}
+      <div className="mt-3 w-full min-w-0 sm:hidden">
+        <TabSwitcher
+          aria-label="Return period"
+          className="w-full min-w-0"
+          options={GRANULARITY_OPTIONS}
+          value={granularity}
+          onChange={setGranularity}
+        />
+      </div>
+
+      {/* Mobile: legend below tabs (tabs should be above legend). */}
+      {canLoad && !loading && !error && hasRenderable ? (
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-6 text-xs font-medium text-[#71717A] sm:hidden">
+          <span className="inline-flex items-center gap-2">
+            <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: PORTFOLIO_BAR }} />
+            Portfolio
+          </span>
+          {showBenchmark ? (
+            <span className="inline-flex items-center gap-2">
+              <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: BENCHMARK_BAR }} />
+              {benchmarkLabel}
+            </span>
+          ) : null}
+        </div>
+      ) : null}
     </section>
   );
 }

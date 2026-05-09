@@ -608,8 +608,8 @@ function PortfolioSlicesViewInner({
       ) : null}
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch lg:gap-4">
-        <div className="flex w-full shrink-0 flex-col items-center justify-center rounded-[12px] border border-[#E4E4E7] bg-white px-4 py-8 lg:max-w-[320px]">
-          <div className="flex min-h-[280px] w-full flex-col items-center justify-center">
+        <div className="flex w-full shrink-0 flex-col items-center justify-center rounded-[12px] border border-[#E4E4E7] bg-white px-4 py-5 sm:py-8 lg:max-w-[320px]">
+          <div className="flex min-h-[240px] w-full flex-col items-center justify-center sm:min-h-[280px]">
             <div className="relative mx-auto h-[220px] w-[220px] shrink-0">
               <div className="absolute inset-0" aria-hidden>
                 <SliceDonut rows={donutRows} onTooltipChange={setTooltip} />

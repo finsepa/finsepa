@@ -339,8 +339,7 @@ function CashInOutBarChartSvg({ buckets, granularity }: { buckets: Bucket[]; gra
   return (
     <div
       ref={wrapRef}
-      className="relative w-full min-w-0"
-      style={{ aspectRatio: `${VB_W} / ${VB_H}` }}
+      className="relative w-full min-w-0 aspect-[1080/420] sm:aspect-[1080/280]"
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
     >
@@ -477,9 +476,9 @@ function CashInOutBarChartSectionInner({ rows }: { rows: PortfolioTransaction[] 
   return (
     <div className="mb-6">
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-2xl font-semibold leading-9 tracking-tight text-[#09090B]">Cash</h2>
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          <div className="relative min-w-[min(100%,180px)] sm:min-w-[180px]" ref={rangeWrapRef}>
+        <h2 className="hidden text-2xl font-semibold leading-9 tracking-tight text-[#09090B] sm:block">Cash</h2>
+        <div className="flex w-full min-w-0 flex-nowrap items-center gap-2 sm:w-auto sm:flex-wrap sm:justify-end sm:gap-3 md:flex-nowrap">
+          <div className="relative min-w-0 flex-1 sm:flex-none sm:min-w-[180px]" ref={rangeWrapRef}>
             <button
               type="button"
               aria-expanded={rangeOpen}
@@ -524,6 +523,7 @@ function CashInOutBarChartSectionInner({ rows }: { rows: PortfolioTransaction[] 
 
           <TabSwitcher
             aria-label="Cash chart grouping"
+            className="flex-1 min-w-0 sm:flex-none sm:w-[220px]"
             options={[
               { value: "month" as const, label: "Monthly" },
               { value: "year" as const, label: "Annually" },

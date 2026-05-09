@@ -130,16 +130,21 @@ export function TopbarUserMenu({
               return next;
             })
           }
-          className="flex h-9 max-w-[min(100vw-10rem,280px)] min-w-0 items-center gap-2 rounded-[10px] border border-[#E4E4E7] bg-white px-2 text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5]"
+          className={cn(
+            // Mobile: match topbar icon buttons (Star / Plus) — icon only.
+            "flex h-9 w-9 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#09090B]",
+            "shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5]",
+            // md+: keep the existing combined trigger (menu + avatar + trial text).
+            "md:h-9 md:w-auto md:max-w-[min(100vw-10rem,280px)] md:min-w-0 md:justify-start md:gap-2 md:px-2",
+          )}
         >
           <Menu className="h-5 w-5 shrink-0" aria-hidden />
-          <UserAvatar imageSrc={avatarUrl} initials={userInitials} size="sm" />
+          <span className="hidden md:inline-flex">
+            <UserAvatar imageSrc={avatarUrl} initials={userInitials} size="sm" />
+          </span>
           {showTrialCountdown ? (
-            <span className="min-w-0 shrink truncate text-xs font-semibold tabular-nums sm:text-sm">
-              <span className="sm:hidden">{platformTrialDaysLeft}d left</span>
-              <span className="hidden sm:inline">
-                {platformTrialDaysLeft} {platformTrialDaysLeft === 1 ? "day" : "days"} left
-              </span>
+            <span className="hidden min-w-0 shrink truncate text-xs font-semibold tabular-nums md:inline md:text-sm">
+              {platformTrialDaysLeft} {platformTrialDaysLeft === 1 ? "day" : "days"} left
             </span>
           ) : null}
         </button>

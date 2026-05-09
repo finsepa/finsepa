@@ -295,17 +295,11 @@ function PortfolioCashPanelInner() {
           <p className="py-8 text-center text-sm text-[#71717A]">No transactions match your search.</p>
         ) : (
           <div className="w-full min-w-0">
-            <div className="overflow-x-auto pb-4">
-              <div className="min-w-[640px] divide-y divide-[#E4E4E7] border-t border-[#E4E4E7]">
-              <div
-                className={cn(
-                  cashTxGrid,
-                  "min-h-[44px] bg-white px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A]",
-                )}
-              >
-                <div className="text-left">Operation</div>
-                <div className="text-left">Holding</div>
-                <div className="text-right">
+            {/* Mobile: remove standalone Operation column; show operation in the holding cell. */}
+            <div className="sm:hidden">
+              <div className="divide-y divide-[#E4E4E7] border-t border-[#E4E4E7] bg-white">
+                <div className="flex min-h-[44px] items-center justify-between gap-3 px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A]">
+                  <div className="min-w-0 text-left">Holding</div>
                   <button
                     type="button"
                     onClick={() => setCashDateAsc((v) => !v)}
@@ -319,67 +313,134 @@ function PortfolioCashPanelInner() {
                     )}
                   </button>
                 </div>
-                <div className="text-right">Fee</div>
-                <div className="text-right">Summ</div>
-                <div className="text-right">
-                  <span className="sr-only">Actions</span>
-                </div>
-              </div>
 
-              {pagedCashRows.map((t) => (
-                <div
-                  key={t.id}
-                  className={cn(
-                    cashTxGrid,
-                    "h-[60px] max-h-[60px] bg-white px-1 transition-colors duration-75 hover:bg-neutral-50",
-                  )}
-                >
-                  <div
-                    className={cn(
-                      "min-w-0 truncate px-3 text-left text-[14px] font-medium leading-5",
-                      operationClassName(t.operation),
-                    )}
-                  >
-                    {t.operation}
-                  </div>
-                  <div className="min-w-0 text-left">
-                    <div className="flex min-w-0 items-center gap-3 pr-4">
+                {pagedCashRows.map((t) => (
+                  <div key={t.id} className="flex min-w-0 items-center justify-between gap-3 px-4 py-3">
+                    <div className="flex min-w-0 items-center gap-3">
                       <CompanyLogo name={t.name} logoUrl={displayLogoUrlForPortfolioSymbol(t.symbol)} symbol={t.symbol} />
                       <div className="min-w-0">
-                        <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">{t.name}</div>
-                        <div className="text-[12px] font-normal leading-4 text-[#71717A]">
+                        <div
+                          className={cn(
+                            "truncate text-[14px] font-semibold leading-5",
+                            operationClassName(t.operation),
+                          )}
+                        >
+                          {t.operation}
+                        </div>
+                        <div className="truncate text-[12px] font-normal leading-4 text-[#71717A]">
                           {portfolioAssetSymbolCaption(t.symbol)}
                         </div>
                       </div>
                     </div>
+
+                    <div className="min-w-0 shrink-0 text-right">
+                      <div className="font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B]">
+                        {format(parseISO(t.date), "MM/dd/yyyy")}
+                      </div>
+                      <div
+                        className={cn(
+                          "mt-0.5 text-[12px] font-medium leading-4 tabular-nums",
+                          cashSummClassName(t.operation, t.sum),
+                        )}
+                      >
+                        {formatSignedUsd(t.sum)}
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B]">
-                    {format(parseISO(t.date), "MM/dd/yyyy")}
+                ))}
+              </div>
+            </div>
+
+            {/* Desktop: keep the full grid table. */}
+            <div className="hidden overflow-x-auto pb-4 sm:block">
+              <div className="min-w-[640px] divide-y divide-[#E4E4E7] border-t border-[#E4E4E7]">
+                <div
+                  className={cn(
+                    cashTxGrid,
+                    "min-h-[44px] bg-white px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A]",
+                  )}
+                >
+                  <div className="text-left">Operation</div>
+                  <div className="text-left">Holding</div>
+                  <div className="text-right">
+                    <button
+                      type="button"
+                      onClick={() => setCashDateAsc((v) => !v)}
+                      className="inline-flex items-center gap-1 rounded-md transition-colors hover:text-[#09090B] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15"
+                    >
+                      Date
+                      {cashDateAsc ? (
+                        <ArrowUp className="h-3.5 w-3.5 opacity-70" aria-hidden />
+                      ) : (
+                        <ArrowDown className="h-3.5 w-3.5 opacity-70" aria-hidden />
+                      )}
+                    </button>
                   </div>
-                  <div className="text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B]">
-                    {t.fee > 0 ? usd0.format(t.fee) : usd0.format(0)}
-                  </div>
-                  <div
-                    className={cn(
-                      "text-right text-[14px] font-medium leading-5 tabular-nums",
-                      cashSummClassName(t.operation, t.sum),
-                    )}
-                  >
-                    {formatSignedUsd(t.sum)}
-                  </div>
-                  <div className="flex justify-end pr-1">
-                    {!selectedPortfolioReadOnly ? (
-                      <TransactionRowActionsMenu
-                        transaction={t}
-                        isOpen={openMenuId === t.id}
-                        onOpenChange={(open) => setOpenMenuId(open ? t.id : null)}
-                        onEdit={openEditTransaction}
-                        onRequestDelete={setDeleteCandidate}
-                      />
-                    ) : null}
+                  <div className="text-right">Fee</div>
+                  <div className="text-right">Summ</div>
+                  <div className="text-right">
+                    <span className="sr-only">Actions</span>
                   </div>
                 </div>
-              ))}
+
+                {pagedCashRows.map((t) => (
+                  <div
+                    key={t.id}
+                    className={cn(
+                      cashTxGrid,
+                      "h-[60px] max-h-[60px] bg-white px-1 transition-colors duration-75 hover:bg-neutral-50",
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "min-w-0 truncate px-3 text-left text-[14px] font-medium leading-5",
+                        operationClassName(t.operation),
+                      )}
+                    >
+                      {t.operation}
+                    </div>
+                    <div className="min-w-0 text-left">
+                      <div className="flex min-w-0 items-center gap-3 pr-4">
+                        <CompanyLogo
+                          name={t.name}
+                          logoUrl={displayLogoUrlForPortfolioSymbol(t.symbol)}
+                          symbol={t.symbol}
+                        />
+                        <div className="min-w-0">
+                          <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">{t.name}</div>
+                          <div className="text-[12px] font-normal leading-4 text-[#71717A]">
+                            {portfolioAssetSymbolCaption(t.symbol)}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B]">
+                      {format(parseISO(t.date), "MM/dd/yyyy")}
+                    </div>
+                    <div className="text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B]">
+                      {t.fee > 0 ? usd0.format(t.fee) : usd0.format(0)}
+                    </div>
+                    <div
+                      className={cn(
+                        "text-right text-[14px] font-medium leading-5 tabular-nums",
+                        cashSummClassName(t.operation, t.sum),
+                      )}
+                    >
+                      {formatSignedUsd(t.sum)}
+                    </div>
+                    <div className="flex justify-end pr-1">
+                      {!selectedPortfolioReadOnly ? (
+                        <TransactionRowActionsMenu
+                          transaction={t}
+                          isOpen={openMenuId === t.id}
+                          onOpenChange={(open) => setOpenMenuId(open ? t.id : null)}
+                          onEdit={openEditTransaction}
+                          onRequestDelete={setDeleteCandidate}
+                        />
+                      ) : null}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
             <TablePaginationBar

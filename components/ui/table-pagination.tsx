@@ -168,41 +168,13 @@ export function TablePaginationBar({
   const pageCount = tablePageCount(totalItems);
   if (totalItems <= TABLE_PAGE_SIZE) return null;
 
-  const safePage = Math.min(Math.max(1, page), pageCount);
-  const canPrev = safePage > 1;
-  const canNext = safePage < pageCount;
-
   return (
-    <div
-      className={cn(
-        "mt-4 flex min-w-0 flex-row flex-nowrap items-center justify-between gap-2 border-t border-[#E4E4E7] bg-white px-1 py-4 sm:gap-3 sm:px-4",
-        className,
-      )}
-    >
-      <button
-        type="button"
-        disabled={!canPrev}
-        onClick={() => onPageChange(safePage - 1)}
-        className={cn(SCREENER_TABLE_PAGINATION_BTN, "shrink-0")}
-        aria-label="Previous page"
-      >
-        Previous
-      </button>
-
-      <div className="min-w-0 flex-1 px-1 text-center text-sm font-medium text-[#71717A]">
-        Page <span className="font-semibold text-[#09090B]">{safePage}</span> of{" "}
-        <span className="font-semibold text-[#09090B]">{pageCount}</span>
-      </div>
-
-      <button
-        type="button"
-        disabled={!canNext}
-        onClick={() => onPageChange(safePage + 1)}
-        className={cn(SCREENER_TABLE_PAGINATION_BTN, "shrink-0")}
-        aria-label="Next page"
-      >
-        Next
-      </button>
-    </div>
+    <ScreenerPagination
+      page={page}
+      totalPages={pageCount}
+      onPageChange={onPageChange}
+      className={className}
+      aria-label="Table page navigation"
+    />
   );
 }

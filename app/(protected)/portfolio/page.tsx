@@ -178,12 +178,12 @@ function PortfolioPageInner() {
         <div className="flex min-w-0 items-start justify-between gap-3 sm:flex-1 sm:items-center">
           <div className="flex min-w-0 flex-col gap-1">
             <div className="flex min-w-0 items-center gap-2">
+              {selected ? <PortfolioPrivacyStatus privacy={selected.privacy} /> : null}
               <h1 className="min-w-0 truncate whitespace-nowrap text-2xl font-semibold tracking-tight text-[#09090B]">
                 {title}
               </h1>
               <TransactionPortfolioField variant="compact" />
             </div>
-            {selected ? <PortfolioPrivacyStatus privacy={selected.privacy} /> : null}
           </div>
 
           <div className="flex shrink-0 flex-nowrap items-center justify-end gap-2 sm:hidden">
@@ -253,10 +253,10 @@ function PortfolioPageInner() {
         </div>
       </div>
 
-      <PortfolioPageTabs active={viewTab} onChange={onTabChange} />
-
       <PortfolioOverviewAthProvider>
         <PortfolioOverviewCards holdings={holdings} transactions={transactions} />
+
+        <PortfolioPageTabs active={viewTab} onChange={onTabChange} />
 
         <div className="flex min-h-0 flex-1 flex-col">
           {tabsVisited.Overview ? (

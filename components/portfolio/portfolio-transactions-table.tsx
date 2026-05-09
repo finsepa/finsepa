@@ -10,7 +10,7 @@ import {
   useState,
   type RefObject,
 } from "react";
-import { ArrowDown, ArrowUp, Check, ListX, Minus, Search } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, Filter, ListX, Minus, Search } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
 
@@ -34,7 +34,11 @@ import { formatPortfolioUsdPerUnit } from "@/lib/portfolio/format-portfolio-usd-
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import { TABLE_PAGE_SIZE, TablePaginationBar, tablePageCount } from "@/components/ui/table-pagination";
 import { buildSplitAdjustedTradeIndex } from "@/lib/portfolio/split-adjusted-trades";
-import { SegmentedControl } from "@/components/design-system";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  dropdownMenuPanelClassName,
+  dropdownMenuPlainItemRowClassName,
+} from "@/components/design-system/dropdown-menu-styles";
 import { cn } from "@/lib/utils";
 import type { PortfolioTransaction, PortfolioTransactionKind } from "@/components/portfolio/portfolio-types";
 
@@ -52,7 +56,13 @@ const pct = new Intl.NumberFormat("en-US", {
 
 /** Matches Screener / Cash tab grid tables — see `screener-table.tsx`, `portfolio-cash-panel.tsx`. */
 const txGrid =
-  "grid grid-cols-[36px_minmax(200px,2.4fr)_minmax(88px,1fr)_minmax(108px,1.1fr)_minmax(80px,1fr)_minmax(96px,1.1fr)_minmax(64px,0.85fr)_minmax(96px,1.1fr)_minmax(128px,1.35fr)_40px] items-center gap-x-2";
+  [
+    // Mobile: simplified layout (left = operation+asset, right = date+amount).
+    "grid-cols-[minmax(0,1fr)_minmax(0,auto)]",
+    // sm+: include checkbox column.
+    "sm:grid-cols-[36px_minmax(200px,2.4fr)_minmax(88px,1fr)_minmax(108px,1.1fr)_minmax(80px,1fr)_minmax(96px,1.1fr)_minmax(64px,0.85fr)_minmax(96px,1.1fr)_minmax(128px,1.35fr)_40px]",
+    "grid items-center gap-x-2",
+  ].join(" ");
 
 const FILTERS = ["All", "Trades", "Income", "Expenses", "Cash"] as const;
 type TxFilter = (typeof FILTERS)[number];
@@ -178,6 +188,7 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const [bulkDeleteIds, setBulkDeleteIds] = useState<Set<string> | null>(null);
   const selectAllRef = useRef<HTMLInputElement>(null);
+  const [filterPopoverOpen, setFilterPopoverOpen] = useState(false);
 
   const portfolioId = transactions[0]?.portfolioId ?? null;
 
@@ -308,7 +319,7 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
   return (
     <div>
       <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-        <h2 className="text-lg font-semibold leading-7 text-[#09090B]">Transactions</h2>
+        <h2 className="hidden text-lg font-semibold leading-7 text-[#09090B] sm:block">Transactions</h2>
         {showBulkBar ? (
           <div className="flex w-full min-w-0 flex-wrap items-center justify-end gap-3 sm:w-auto">
             <span className="text-sm font-medium leading-5 text-[#71717A]">
@@ -341,14 +352,48 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                 aria-label="Search transactions by asset name or ticker"
               />
             </div>
-            <SegmentedControl
-              options={FILTERS.map((f) => ({ value: f, label: f }))}
-              value={filter}
-              onChange={setFilter}
-              size="sm"
-              aria-label="Transaction type"
-              className="min-w-0 shrink-0 flex-nowrap"
-            />
+            {/* Hide tabs under a filter button (all sizes). */}
+            <div className="shrink-0">
+              <Popover open={filterPopoverOpen} onOpenChange={setFilterPopoverOpen} modal>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label="Transaction filters"
+                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[#F4F4F5] text-[#09090B] transition-colors duration-100 hover:bg-[#E4E4E7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2"
+                  >
+                    <Filter className="h-4 w-4 opacity-90" aria-hidden />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent
+                  align="end"
+                  className={cn(dropdownMenuPanelClassName(), "w-[min(calc(100vw-2rem),260px)] p-1")}
+                >
+                  <div role="listbox" aria-label="Transaction type">
+                    {FILTERS.map((f) => {
+                      const selected = f === filter;
+                      return (
+                        <button
+                          key={f}
+                          type="button"
+                          role="option"
+                          aria-selected={selected}
+                          onClick={() => {
+                            setFilter(f);
+                            setFilterPopoverOpen(false);
+                          }}
+                          className={dropdownMenuPlainItemRowClassName({ selected })}
+                        >
+                          <span className="min-w-0 flex-1 truncate text-left">{f}</span>
+                          <span className="flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden>
+                            {selected ? <Check className="h-4 w-4 text-[#09090B]" strokeWidth={2} /> : null}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
         )}
       </div>
@@ -371,15 +416,15 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
         </p>
       ) : (
         <div className="w-full min-w-0">
-          <div className="overflow-x-auto pb-4">
-            <div className="min-w-[960px] divide-y divide-[#E4E4E7] border-t border-[#E4E4E7]">
+          <div className="pb-4 sm:overflow-x-auto">
+            <div className="divide-y divide-[#E4E4E7] border-t border-[#E4E4E7] sm:min-w-[960px]">
               <div
                 className={cn(
                   txGrid,
-                  "min-h-[44px] bg-white px-1 py-0 text-[14px] font-medium leading-5 text-[#71717A]",
+                  "hidden min-h-[44px] bg-white px-1 py-0 text-[14px] font-medium leading-5 text-[#71717A] sm:grid",
                 )}
               >
-                <div className="flex items-center justify-center">
+                <div className="hidden items-center justify-center sm:flex">
                   {!selectedPortfolioReadOnly ? (
                     <TxBulkCheckbox
                       inputRef={selectAllRef}
@@ -390,9 +435,9 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                     />
                   ) : null}
                 </div>
-                <div className="min-w-0 text-left align-middle pr-2">Asset</div>
-                <div className="text-right">Operation</div>
-                <div className="text-right">
+                <div className="hidden min-w-0 text-left align-middle pr-2 sm:block">Asset</div>
+                <div className="hidden text-right sm:block">Operation</div>
+                <div className="hidden text-right sm:block">
                   <button
                     type="button"
                     onClick={() => setDateDesc((v) => !v)}
@@ -407,12 +452,12 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                     )}
                   </button>
                 </div>
-                <div className="text-right">Shares</div>
-                <div className="text-right">Price</div>
-                <div className="text-right">Fee</div>
-                <div className="text-right">Summ</div>
-                <div className="text-right">Total profit</div>
-                <div className="text-right">
+                <div className="hidden text-right sm:block">Shares</div>
+                <div className="hidden text-right sm:block">Price</div>
+                <div className="hidden text-right sm:block">Fee</div>
+                <div className="hidden text-right sm:block">Summ</div>
+                <div className="hidden text-right sm:block">Total profit</div>
+                <div className="hidden text-right sm:block">
                   <span className="sr-only">Actions</span>
                 </div>
               </div>
@@ -430,7 +475,7 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                         "h-[60px] max-h-[60px] bg-white px-1 transition-colors duration-75 hover:bg-neutral-50",
                       )}
                     >
-                      <div className="flex items-center justify-center align-middle">
+                      <div className="hidden items-center justify-center align-middle sm:flex">
                         {!selectedPortfolioReadOnly ? (
                           <TxBulkCheckbox
                             checked={selectedIds.has(t.id)}
@@ -447,7 +492,18 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                             symbol={t.symbol}
                           />
                           <div className="min-w-0">
-                            <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">
+                            {/* Mobile: primary label is Operation (not asset name). */}
+                            <div
+                              className={cn(
+                                "truncate text-[14px] font-semibold leading-5",
+                                "text-[#09090B] sm:text-[#09090B]",
+                                "sm:hidden",
+                                opColorClass(t.operation),
+                              )}
+                            >
+                              {t.operation}
+                            </div>
+                            <div className="hidden truncate text-[14px] font-semibold leading-5 text-[#09090B] sm:block">
                               {t.name}
                             </div>
                             <div className="text-[12px] font-normal leading-4 text-[#71717A]">
@@ -456,37 +512,52 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                           </div>
                         </div>
                       </div>
+                      {/* Mobile: right cell = date + amount */}
+                      <div className="text-right align-middle sm:hidden">
+                        <div className="font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B]">
+                          {format(parseISO(t.date), "MMM d, yyyy")}
+                        </div>
+                        <div
+                          className={cn(
+                            "mt-0.5 text-[12px] font-medium leading-4 tabular-nums",
+                            sumColorClass(t.sum),
+                          )}
+                        >
+                          {formatSignedUsd(t.sum)}
+                        </div>
+                      </div>
+
                       <div
                         className={cn(
-                          "min-w-0 truncate px-1 text-right text-[14px] font-medium leading-5 align-middle",
+                          "hidden min-w-0 truncate px-1 text-right text-[14px] font-medium leading-5 align-middle sm:block",
                           opColorClass(t.operation),
                         )}
                       >
                         {t.operation}
                       </div>
-                      <div className="text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B] align-middle">
+                      <div className="hidden text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B] align-middle sm:block">
                         {format(parseISO(t.date), "MMM d, yyyy")}
                       </div>
-                      <div className="text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B] align-middle">
+                      <div className="hidden text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B] align-middle sm:block">
                         {new Intl.NumberFormat("en-US", { maximumFractionDigits: 6 }).format(
                           splitAdjusted.get(t.id)?.shares ?? t.shares,
                         )}
                       </div>
-                      <div className="text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B] align-middle">
+                      <div className="hidden text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B] align-middle sm:block">
                         {formatPortfolioUsdPerUnit(splitAdjusted.get(t.id)?.price ?? t.price)}
                       </div>
-                      <div className="text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B] align-middle">
+                      <div className="hidden text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B] align-middle sm:block">
                         {t.fee > 0 ? usd.format(t.fee) : "—"}
                       </div>
                       <div
                         className={cn(
-                          "text-right text-[14px] font-medium leading-5 tabular-nums align-middle",
+                          "hidden text-right text-[14px] font-medium leading-5 tabular-nums align-middle sm:block",
                           sumColorClass(t.sum),
                         )}
                       >
                         {formatSignedUsd(t.sum)}
                       </div>
-                      <div className="min-w-0 text-right text-[14px] font-medium leading-5 align-middle">
+                      <div className="hidden min-w-0 text-right text-[14px] font-medium leading-5 align-middle sm:block">
                         {t.profitPct != null && t.profitUsd != null ? (
                           <div
                             className={cn(
@@ -503,7 +574,7 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                           <span className="text-[14px] font-medium text-[#71717A]">-</span>
                         )}
                       </div>
-                      <div className="flex justify-end pr-1 align-middle">
+                      <div className="hidden justify-end pr-1 align-middle sm:flex">
                         {!selectedPortfolioReadOnly ? (
                           <TransactionRowActionsMenu
                             transaction={t}

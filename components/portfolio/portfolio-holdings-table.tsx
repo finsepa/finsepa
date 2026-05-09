@@ -334,7 +334,7 @@ function PortfolioHoldingsTableInner({
             );
 
             return (
-              <div key={h.id} className="flex min-w-0 items-center justify-between gap-3 py-4">
+              <div key={h.id} className="flex min-w-0 items-center justify-between gap-3 py-3 sm:py-4">
                 <div className="min-w-0 flex-1">
                   {assetHref ? (
                     <Link
@@ -352,7 +352,7 @@ function PortfolioHoldingsTableInner({
             );
           })}
 
-          <div className="flex min-w-0 items-center justify-between gap-3 py-4">
+          <div className="flex min-w-0 items-center justify-between gap-3 py-3 sm:py-4">
             <div className="flex min-w-0 items-center gap-3">
               <CompanyLogo name="US Dollar" logoUrl="" symbol="USD" />
               <div className="min-w-0">
@@ -372,7 +372,7 @@ function PortfolioHoldingsTableInner({
             </div>
           </div>
 
-          <div className="flex min-w-0 items-center justify-between gap-3 py-4">
+          <div className="flex min-w-0 items-center justify-between gap-3 py-3 sm:py-4">
             <div className="min-w-0">
               <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">Total</div>
               <div className="h-4 text-[12px] font-normal leading-4" aria-hidden />

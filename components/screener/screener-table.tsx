@@ -125,7 +125,14 @@ const ScreenerDataRow = memo(function ScreenerDataRow({
             <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B] underline-offset-2 decoration-[#71717A] group-hover:underline">
               {item.name}
             </div>
-            <div className="text-[12px] font-normal leading-4 !text-[#71717A]">{item.ticker}</div>
+            <div className="text-[12px] font-normal leading-4 !text-[#71717A]">
+              <span>{item.ticker}</span>
+              <span className="sm:hidden">
+                {typeof item.marketCap === "string" && item.marketCap.trim() && item.marketCap.trim() !== "-" ?
+                  ` · ${item.marketCap.trim()}`
+                : ""}
+              </span>
+            </div>
           </div>
         </div>
 

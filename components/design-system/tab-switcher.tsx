@@ -27,6 +27,7 @@ export function TabSwitcher<T extends string>({
       value={value}
       onChange={onChange}
       size="md"
+      fullWidth
       aria-label={ariaLabel}
       className={className}
     />

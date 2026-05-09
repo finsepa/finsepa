@@ -19,25 +19,14 @@ function optionByValue(v: PortfolioPrivacy) {
   return OPTIONS.find((o) => o.value === v) ?? OPTIONS[0]!;
 }
 
-/** Lock + Private / Globe + Public · Portfolios hint — under the portfolio title. */
+/** Lock / Globe privacy indicator (used near portfolio title). */
 export function PortfolioPrivacyStatus({ privacy }: { privacy: PortfolioPrivacy }) {
   const o = optionByValue(privacy);
   const Icon = o.Icon;
   return (
-    <div className="flex items-center gap-1.5 text-sm font-medium leading-5 text-[#71717A]">
-      <Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
-      <span>
-        {o.label}
-        {privacy === "public" ? (
-          <>
-            <span className="text-[#A1A1AA]" aria-hidden>
-              {" "}
-              ·{" "}
-            </span>
-            visible on Portfolios tab
-          </>
-        ) : null}
-      </span>
+    <div className="inline-flex items-center text-[#71717A]" aria-label={o.label} title={o.label}>
+      <Icon className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
+      <span className="sr-only">{o.label}</span>
     </div>
   );
 }

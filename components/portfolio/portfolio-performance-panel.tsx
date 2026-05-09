@@ -42,31 +42,35 @@ function PerformanceChartSection({
   points: PortfolioValueHistoryPoint[];
   transactions: PortfolioTransaction[];
 }) {
+  const rangeSwitcher = (
+    <div
+      className="mt-3 flex w-full min-w-0 flex-nowrap justify-stretch gap-0.5 rounded-[10px] bg-[#F4F4F5] p-0.5 sm:mt-0 sm:w-auto sm:flex-nowrap sm:justify-end"
+      role="group"
+      aria-label={`${title} range`}
+    >
+      {PORTFOLIO_CHART_RANGE_LABELS.map((r) => (
+        <button
+          key={r.id}
+          type="button"
+          onClick={() => onRangeChange(r.id)}
+          className={cn(
+            "flex-1 rounded-[10px] px-2 py-1.5 text-center font-sans text-[14px] leading-5 tracking-normal sm:flex-none sm:px-4",
+            range === r.id ?
+              "bg-white font-medium text-[#09090B] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]"
+            : "font-normal text-[#71717A]",
+          )}
+        >
+          {r.label}
+        </button>
+      ))}
+    </div>
+  );
+
   return (
     <section className="mb-10 w-full min-w-0">
-      <div className="mb-4 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="shrink-0 text-2xl font-semibold leading-9 tracking-tight text-[#09090B]">{title}</h2>
-        <div
-          className="flex min-w-0 flex-wrap justify-end gap-0.5 rounded-[10px] bg-[#F4F4F5] p-0.5"
-          role="group"
-          aria-label={`${title} range`}
-        >
-          {PORTFOLIO_CHART_RANGE_LABELS.map((r) => (
-            <button
-              key={r.id}
-              type="button"
-              onClick={() => onRangeChange(r.id)}
-              className={cn(
-                "rounded-[10px] px-3 py-1.5 font-sans text-[14px] leading-5 tracking-normal sm:px-4",
-                range === r.id ?
-                  "bg-white font-medium text-[#09090B] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]"
-                : "font-normal text-[#71717A]",
-              )}
-            >
-              {r.label}
-            </button>
-          ))}
-        </div>
+        <div className="hidden sm:flex">{rangeSwitcher}</div>
       </div>
 
       <div className="w-full min-w-0">
@@ -108,6 +112,8 @@ function PerformanceChartSection({
           />
         )}
       </div>
+
+      <div className="flex w-full justify-end sm:hidden">{rangeSwitcher}</div>
     </section>
   );
 }

@@ -284,8 +284,74 @@ function PortfolioOverviewCardsInner({
     });
   }, [symbols.length, lifetimeReturnPct, setAthSnapshot]);
 
+  const mobileProfitLine = useMemo(() => {
+    if (showEmptyPortfolioMetrics) return `+${usd.format(0)} (+${pctFmt.format(0)}%)`;
+    const pUsd = profitAllUsd;
+    const pPct = lifetimeReturnPct;
+    if (pUsd == null || !Number.isFinite(pUsd) || pPct == null || !Number.isFinite(pPct)) return "—";
+    const usdLabel = `${pUsd >= 0 ? "+" : ""}${usd.format(pUsd)}`;
+    const pctLabel = `${pPct >= 0 ? "+" : ""}${pctFmt.format(pPct)}%`;
+    return `${usdLabel} (${pctLabel})`;
+  }, [showEmptyPortfolioMetrics, profitAllUsd, lifetimeReturnPct]);
+
+  const mobileBenchmarkPct = useMemo(() => {
+    if (showEmptyPortfolioMetrics) return `+${pctFmt.format(0)}%`;
+    const r = inceptionBenchmarkMetrics.rSpy;
+    if (r == null || !Number.isFinite(r)) return "—";
+    return `${r >= 0 ? "+" : ""}${pctFmt.format(r)}%`;
+  }, [showEmptyPortfolioMetrics, inceptionBenchmarkMetrics.rSpy]);
+
+  const mobileDividendsRight = useMemo(() => {
+    if (showEmptyPortfolioMetrics) return `${usd.format(0)} · ${pctFmt.format(0)}%`;
+    const y = dividendWeightedYield;
+    const a = dividendAnnualUsd;
+    if (y == null || !Number.isFinite(y) || a == null || !Number.isFinite(a)) return "—";
+    return `${usd.format(a)} · ${pctFmt.format(y)}%`;
+  }, [showEmptyPortfolioMetrics, dividendWeightedYield, dividendAnnualUsd]);
+
   return (
-    <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-2 xl:grid-cols-4 [&>*]:min-w-0">
+    <div className="mb-4 w-full min-w-0 sm:mb-6">
+      {/* Mobile: compact summary (matches design reference). */}
+      <div className="sm:hidden">
+        {showMetricSkeleton ? (
+          <div className="space-y-3">
+            <div className="h-5 w-24 animate-pulse rounded bg-neutral-200" />
+            <div className="h-10 w-[min(100%,16rem)] animate-pulse rounded bg-neutral-200" />
+            <div className="h-5 w-40 animate-pulse rounded bg-neutral-100" />
+            <div className="mt-6 h-px w-full bg-[#E4E4E7]" />
+            <div className="h-5 w-full animate-pulse rounded bg-neutral-100" />
+            <div className="h-5 w-full animate-pulse rounded bg-neutral-100" />
+          </div>
+        ) : (
+          <div className="w-full min-w-0">
+            <p className="text-xs font-medium text-[#71717A]">Value</p>
+            <p className="mt-1 text-2xl font-semibold tabular-nums tracking-tight text-[#09090B]">
+              {usd.format(normalizeUsdForDisplay(netWorth))}
+            </p>
+            <p className="mt-1 text-sm font-normal tabular-nums text-[#16A34A]">
+              {mobileProfitLine}
+            </p>
+
+            <div className="mt-4 space-y-0">
+              <div className="flex items-center justify-between gap-4 py-3">
+                <span className="text-[14px] font-medium leading-5 text-[#71717A]">Benchmark</span>
+                <span className="text-[14px] font-medium leading-5 tabular-nums text-[#09090B]">
+                  {mobileBenchmarkPct}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-4 pb-0.5">
+                <span className="text-[14px] font-medium leading-5 text-[#71717A]">Dividends</span>
+                <span className="text-[14px] font-medium leading-5 tabular-nums text-[#09090B]">
+                  {mobileDividendsRight}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* sm+: existing tile grid */}
+      <div className="hidden grid-cols-2 gap-4 md:grid-cols-2 xl:grid-cols-4 [&>*]:min-w-0 sm:grid">
       {showMetricSkeleton ? (
         <>
           <OverviewMetricCardSkeleton />
@@ -474,6 +540,7 @@ function PortfolioOverviewCardsInner({
           </div>
         </>
       )}
+      </div>
     </div>
   );
 }

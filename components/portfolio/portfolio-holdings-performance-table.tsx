@@ -113,108 +113,185 @@ function PortfolioHoldingsPerformanceTableInner({
   }
 
   return (
-    <div className="w-full overflow-x-auto">
-      <table className="w-full min-w-[920px] border-collapse text-sm">
-        <thead>
-          <tr className="border-b border-[#E4E4E7] text-[#71717A]">
-            <th className="pb-3 pr-4 text-left font-medium">Company</th>
-            <th className="whitespace-nowrap pb-3 pr-4 text-right font-medium">
-              <button
-                type="button"
-                onClick={() => setProfitSortDesc((v) => !v)}
-                className="inline-flex items-center gap-1 rounded-md transition-colors hover:text-[#09090B] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15"
-                aria-label={
-                  profitSortDesc ? "Sort total profit: lowest dollar amount first" : "Sort total profit: highest dollar amount first"
-                }
-              >
-                Total profit
-                {profitSortDesc ? (
-                  <ArrowDown className="h-3.5 w-3.5 opacity-70" aria-hidden />
-                ) : (
-                  <ArrowUp className="h-3.5 w-3.5 opacity-70" aria-hidden />
-                )}
-              </button>
-            </th>
-            <th className="whitespace-nowrap pb-3 pr-4 text-right font-medium">Capital gain</th>
-            <th className="whitespace-nowrap pb-3 pr-4 text-right font-medium">Realized P&amp;L</th>
-            <th className="whitespace-nowrap pb-3 pr-4 text-right font-medium">Dividends</th>
-            <th className="whitespace-nowrap pb-3 pr-4 text-right font-medium">Contribution</th>
-            <th className="whitespace-nowrap pb-3 pr-0 text-right font-medium">Fees paid</th>
-          </tr>
-        </thead>
-        <tbody>
-          {sortedRows.map(({ h, retUsd, totalProfitUsd, totalProfitPct, contributionPct, realizedDisplay }) => (
-            <tr key={h.id} className="border-b border-[#E4E4E7]">
-              <td className="py-3 pr-4 text-left align-middle">
-                <div className="flex min-w-0 items-center gap-3 text-left">
+    <>
+      {/* Mobile: match Portfolio Overview “Assets” list styling (company left, total profit right). */}
+      <div className="w-full min-w-0 sm:hidden">
+        <div className="border-t border-[#E4E4E7]">
+          <div className="flex items-center justify-between gap-3 py-3 text-[#71717A]">
+            <div className="text-[13px] font-medium leading-5">Company</div>
+            <button
+              type="button"
+              onClick={() => setProfitSortDesc((v) => !v)}
+              className="inline-flex items-center gap-1 rounded-md text-[13px] font-medium leading-5 transition-colors hover:text-[#09090B] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15"
+              aria-label={
+                profitSortDesc ?
+                  "Sort total profit: lowest dollar amount first"
+                : "Sort total profit: highest dollar amount first"
+              }
+            >
+              Total profit
+              {profitSortDesc ? (
+                <ArrowDown className="h-3.5 w-3.5 opacity-70" aria-hidden />
+              ) : (
+                <ArrowUp className="h-3.5 w-3.5 opacity-70" aria-hidden />
+              )}
+            </button>
+          </div>
+          <div className="divide-y divide-[#E4E4E7]">
+            {sortedRows.map(({ h, totalProfitUsd, totalProfitPct }) => (
+              <div key={h.id} className="flex min-w-0 items-center justify-between gap-3 py-3">
+                <div className="flex min-w-0 items-center gap-3">
                   <CompanyLogo
                     name={h.name}
                     logoUrl={displayLogoUrlForPortfolioSymbol(h.symbol)}
                     symbol={h.symbol}
                   />
                   <div className="min-w-0">
-                    <div className="truncate font-semibold text-[#09090B]">{h.name}</div>
-                    <div className="text-xs text-[#71717A]">{portfolioAssetSymbolCaption(h.symbol)}</div>
+                    <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">{h.name}</div>
+                    <div className="truncate text-[12px] font-normal leading-4 text-[#71717A]">
+                      {portfolioAssetSymbolCaption(h.symbol)}
+                    </div>
                   </div>
                 </div>
-              </td>
-              <td className="whitespace-nowrap py-3 pr-4 text-right align-middle">
-                <div
-                  className={cn(
-                    "font-medium tabular-nums",
-                    totalProfitUsd >= 0 ? "text-emerald-600" : "text-red-600",
-                  )}
-                >
-                  {formatSignedUsd(totalProfitUsd)}
-                </div>
-                {totalProfitPct != null ? (
+
+                <div className="min-w-0 shrink-0 text-right">
                   <div
                     className={cn(
-                      "text-xs tabular-nums",
-                      totalProfitPct >= 0 ? "text-emerald-600" : "text-red-600",
+                      "text-[14px] font-semibold leading-5 tabular-nums",
+                      totalProfitUsd >= 0 ? "text-emerald-600" : "text-red-600",
                     )}
                   >
-                    {formatSignedPct(totalProfitPct)}
+                    {formatSignedUsd(totalProfitUsd)}
                   </div>
-                ) : (
-                  <div className="text-xs text-[#A1A1AA]">{EM_DASH}</div>
-                )}
-              </td>
-              <td
-                className={cn(
-                  "whitespace-nowrap py-3 pr-4 text-right font-medium tabular-nums align-middle",
-                  retUsd >= 0 ? "text-emerald-600" : "text-red-600",
-                )}
-              >
-                {formatSignedUsd(retUsd)}
-              </td>
-              <td
-                className={cn(
-                  "py-3 pr-4 text-right align-middle font-medium tabular-nums",
-                  realizedDisplay == null ? "text-[#71717A]" : realizedDisplay >= 0 ? "text-emerald-600" : "text-red-600",
-                )}
-              >
-                {realizedDisplay == null ? EM_DASH : formatSignedUsd(realizedDisplay)}
-              </td>
-              <td className="py-3 pr-4 text-right tabular-nums text-[#71717A] align-middle">{EM_DASH}</td>
-              <td
-                className={cn(
-                  "whitespace-nowrap py-3 pr-4 text-right align-middle font-medium tabular-nums",
-                  contributionPct == null ?
-                    "text-[#71717A]"
-                  : contributionPct >= 0 ?
-                    "text-emerald-600"
-                  : "text-red-600",
-                )}
-              >
-                {contributionPct != null ? formatSignedPct(contributionPct) : EM_DASH}
-              </td>
-              <td className="py-3 pr-0 text-right tabular-nums text-[#71717A] align-middle">{EM_DASH}</td>
+                  <div
+                    className={cn(
+                      "mt-0.5 text-[12px] font-medium leading-4 tabular-nums",
+                      totalProfitPct == null ?
+                        "text-[#A1A1AA]"
+                      : totalProfitPct >= 0 ?
+                        "text-emerald-600"
+                      : "text-red-600",
+                    )}
+                  >
+                    {totalProfitPct != null ? formatSignedPct(totalProfitPct) : EM_DASH}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop: keep the full performance table. */}
+      <div className="hidden w-full overflow-x-auto sm:block">
+        <table className="w-full min-w-[920px] border-collapse text-sm">
+          <thead>
+            <tr className="border-b border-[#E4E4E7] text-[#71717A]">
+              <th className="pb-3 pr-4 text-left font-medium">Company</th>
+              <th className="whitespace-nowrap pb-3 pr-4 text-right font-medium">
+                <button
+                  type="button"
+                  onClick={() => setProfitSortDesc((v) => !v)}
+                  className="inline-flex items-center gap-1 rounded-md transition-colors hover:text-[#09090B] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15"
+                  aria-label={
+                    profitSortDesc ?
+                      "Sort total profit: lowest dollar amount first"
+                    : "Sort total profit: highest dollar amount first"
+                  }
+                >
+                  Total profit
+                  {profitSortDesc ? (
+                    <ArrowDown className="h-3.5 w-3.5 opacity-70" aria-hidden />
+                  ) : (
+                    <ArrowUp className="h-3.5 w-3.5 opacity-70" aria-hidden />
+                  )}
+                </button>
+              </th>
+              <th className="whitespace-nowrap pb-3 pr-4 text-right font-medium">Capital gain</th>
+              <th className="whitespace-nowrap pb-3 pr-4 text-right font-medium">Realized P&amp;L</th>
+              <th className="whitespace-nowrap pb-3 pr-4 text-right font-medium">Dividends</th>
+              <th className="whitespace-nowrap pb-3 pr-4 text-right font-medium">Contribution</th>
+              <th className="whitespace-nowrap pb-3 pr-0 text-right font-medium">Fees paid</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            {sortedRows.map(({ h, retUsd, totalProfitUsd, totalProfitPct, contributionPct, realizedDisplay }) => (
+              <tr key={h.id} className="border-b border-[#E4E4E7]">
+                <td className="py-3 pr-4 text-left align-middle">
+                  <div className="flex min-w-0 items-center gap-3 text-left">
+                    <CompanyLogo
+                      name={h.name}
+                      logoUrl={displayLogoUrlForPortfolioSymbol(h.symbol)}
+                      symbol={h.symbol}
+                    />
+                    <div className="min-w-0">
+                      <div className="truncate font-semibold text-[#09090B]">{h.name}</div>
+                      <div className="text-xs text-[#71717A]">{portfolioAssetSymbolCaption(h.symbol)}</div>
+                    </div>
+                  </div>
+                </td>
+                <td className="whitespace-nowrap py-3 pr-4 text-right align-middle">
+                  <div
+                    className={cn(
+                      "font-medium tabular-nums",
+                      totalProfitUsd >= 0 ? "text-emerald-600" : "text-red-600",
+                    )}
+                  >
+                    {formatSignedUsd(totalProfitUsd)}
+                  </div>
+                  {totalProfitPct != null ? (
+                    <div
+                      className={cn(
+                        "text-xs tabular-nums",
+                        totalProfitPct >= 0 ? "text-emerald-600" : "text-red-600",
+                      )}
+                    >
+                      {formatSignedPct(totalProfitPct)}
+                    </div>
+                  ) : (
+                    <div className="text-xs text-[#A1A1AA]">{EM_DASH}</div>
+                  )}
+                </td>
+                <td
+                  className={cn(
+                    "whitespace-nowrap py-3 pr-4 text-right font-medium tabular-nums align-middle",
+                    retUsd >= 0 ? "text-emerald-600" : "text-red-600",
+                  )}
+                >
+                  {formatSignedUsd(retUsd)}
+                </td>
+                <td
+                  className={cn(
+                    "py-3 pr-4 text-right align-middle font-medium tabular-nums",
+                    realizedDisplay == null ?
+                      "text-[#71717A]"
+                    : realizedDisplay >= 0 ?
+                      "text-emerald-600"
+                    : "text-red-600",
+                  )}
+                >
+                  {realizedDisplay == null ? EM_DASH : formatSignedUsd(realizedDisplay)}
+                </td>
+                <td className="py-3 pr-4 text-right tabular-nums text-[#71717A] align-middle">{EM_DASH}</td>
+                <td
+                  className={cn(
+                    "whitespace-nowrap py-3 pr-4 text-right align-middle font-medium tabular-nums",
+                    contributionPct == null ?
+                      "text-[#71717A]"
+                    : contributionPct >= 0 ?
+                      "text-emerald-600"
+                    : "text-red-600",
+                  )}
+                >
+                  {contributionPct != null ? formatSignedPct(contributionPct) : EM_DASH}
+                </td>
+                <td className="py-3 pr-0 text-right tabular-nums text-[#71717A] align-middle">{EM_DASH}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }
 
