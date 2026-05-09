@@ -3,15 +3,23 @@ import { NextResponse } from "next/server";
 import { getStockDetailHeaderMetaForPage } from "@/lib/market/stock-header-meta-server";
 import {
   getArkHoldingsComparison,
+  getBaillieGiffordHoldingsComparison,
   getBerkshireHoldingsComparison,
+  getBlackrockHoldingsComparison,
   getBridgewaterHoldingsComparison,
   getCitadelHoldingsComparison,
+  getDailyJournalHoldingsComparison,
+  getFirstEagleHoldingsComparison,
   getFisherHoldingsComparison,
   getFundsmithHoldingsComparison,
+  getGmoHoldingsComparison,
   getHimalayaHoldingsComparison,
   getPershingSquareHoldingsComparison,
+  getPoint72HoldingsComparison,
   getPrimecapHoldingsComparison,
+  getRenaissanceTechnologiesHoldingsComparison,
   getScionHoldingsComparison,
+  getTciFundHoldingsComparison,
 } from "@/lib/superinvestors/berkshire-13f";
 
 type SuperinvestorRegistryItem = {
@@ -68,20 +76,75 @@ const SUPERINVESTORS: SuperinvestorRegistryItem[] = [
   {
     slug: "ken-fisher",
     managerName: "Ken Fisher",
-    avatarSrc: null,
+    avatarSrc: "/superinvestors/ken-fisher.png",
     load: getFisherHoldingsComparison,
   },
   {
     slug: "primecap-management",
     managerName: "PRIMECAP Management",
-    avatarSrc: null,
+    avatarSrc: "/superinvestors/primecap-management.png",
     load: getPrimecapHoldingsComparison,
   },
   {
     slug: "ken-griffin",
     managerName: "Ken Griffin",
-    avatarSrc: null,
+    avatarSrc: "/superinvestors/ken-griffin.png",
     load: getCitadelHoldingsComparison,
+  },
+  {
+    slug: "charlie-munger",
+    managerName: "Charlie Munger",
+    fundNameOverride: "Daily Journal Holdings",
+    avatarSrc: "/superinvestors/charlie-munger.png",
+    load: getDailyJournalHoldingsComparison,
+  },
+  {
+    slug: "blackrock",
+    managerName: "BlackRock",
+    avatarSrc: "/superinvestors/blackrock.png",
+    load: getBlackrockHoldingsComparison,
+  },
+  {
+    slug: "baillie-gifford",
+    managerName: "Baillie Gifford",
+    fundNameOverride: "Baillie Gifford & Co Holdings",
+    avatarSrc: null,
+    load: getBaillieGiffordHoldingsComparison,
+  },
+  {
+    slug: "renaissance-technologies",
+    managerName: "Jim Simons",
+    fundNameOverride: "Renaissance Technologies Holdings",
+    avatarSrc: "/superinvestors/jim-simons.png",
+    load: getRenaissanceTechnologiesHoldingsComparison,
+  },
+  {
+    slug: "point72",
+    managerName: "Steven Cohen",
+    fundNameOverride: "Point72 Asset Management Holdings",
+    avatarSrc: "/superinvestors/steven-cohen.png",
+    load: getPoint72HoldingsComparison,
+  },
+  {
+    slug: "first-eagle",
+    managerName: "First Eagle Investments",
+    fundNameOverride: "First Eagle Investment Management LLC",
+    avatarSrc: null,
+    load: getFirstEagleHoldingsComparison,
+  },
+  {
+    slug: "chris-hohn",
+    managerName: "Chris Hohn",
+    fundNameOverride: "TCI Fund Management",
+    avatarSrc: "/superinvestors/chris-hohn.png",
+    load: getTciFundHoldingsComparison,
+  },
+  {
+    slug: "jeremy-grantham",
+    managerName: "Jeremy Grantham",
+    fundNameOverride: "GMO Asset Management",
+    avatarSrc: "/superinvestors/jeremy-grantham.png",
+    load: getGmoHoldingsComparison,
   },
 ];
 

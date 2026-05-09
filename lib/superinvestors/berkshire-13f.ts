@@ -114,6 +114,30 @@ export const PRIMECAP_MANAGEMENT_CIK = "0000763212";
 /** Citadel Advisors LLC (Ken Griffin). */
 export const CITADEL_ADVISORS_CIK = "0001423053";
 
+/** Daily Journal Corp (Charlie Munger portfolio; 13F filer). */
+export const DAILY_JOURNAL_CORP_CIK = "0000783412";
+
+/** BlackRock, Inc. (consolidated 13F — very large position count). */
+export const BLACKROCK_INC_CIK = "0002012383";
+
+/** Baillie Gifford & Co (US 13F filer). */
+export const BAILLIE_GIFFORD_CO_CIK = "0001088875";
+
+/** Renaissance Technologies LLC (Jim Simons). */
+export const RENAISSANCE_TECHNOLOGIES_LLC_CIK = "0001037389";
+
+/** Point72 Asset Management, L.P. (Steven A. Cohen). */
+export const POINT72_ASSET_MANAGEMENT_LP_CIK = "0001603466";
+
+/** First Eagle Investment Management LLC. */
+export const FIRST_EAGLE_INVESTMENT_MANAGEMENT_LLC_CIK = "0001325447";
+
+/** TCI Fund Management Ltd (Chris Hohn). */
+export const TCI_FUND_MANAGEMENT_LTD_CIK = "0001647251";
+
+/** Grantham, Mayo, Van Otterloo & Co. LLC (GMO; Jeremy Grantham). */
+export const GRANTHAM_MAYO_VAN_OTTERLOO_LLC_CIK = "0001352662";
+
 /** Optional display tickers for common 13F CUSIPs (SEC filings do not include symbols). */
 const KNOWN_CUSIP_TICKER: Record<string, string> = {
   "037833100": "AAPL",
@@ -1574,6 +1598,118 @@ async function fetchCitadelComparisonUncached(): Promise<Berkshire13fComparisonP
   );
 }
 
+async function fetchDailyJournalHoldingsUncached(): Promise<InstitutionalHoldingsPayload> {
+  return (
+    (await fetchInstitutionalHoldingsUncached(DAILY_JOURNAL_CORP_CIK)) ??
+    unavailableInstitutionalPayload(DAILY_JOURNAL_CORP_CIK, "Daily Journal Corp")
+  );
+}
+
+async function fetchDailyJournalComparisonUncached(): Promise<Berkshire13fComparisonPayload> {
+  return (
+    (await fetchInstitutionalComparisonUncached(DAILY_JOURNAL_CORP_CIK)) ??
+    unavailableComparisonPayload(DAILY_JOURNAL_CORP_CIK, "Daily Journal Corp")
+  );
+}
+
+async function fetchBlackrockHoldingsUncached(): Promise<InstitutionalHoldingsPayload> {
+  return (
+    (await fetchInstitutionalHoldingsUncached(BLACKROCK_INC_CIK)) ??
+    unavailableInstitutionalPayload(BLACKROCK_INC_CIK, "BlackRock, Inc.")
+  );
+}
+
+async function fetchBlackrockComparisonUncached(): Promise<Berkshire13fComparisonPayload> {
+  return (
+    (await fetchInstitutionalComparisonUncached(BLACKROCK_INC_CIK)) ??
+    unavailableComparisonPayload(BLACKROCK_INC_CIK, "BlackRock, Inc.")
+  );
+}
+
+async function fetchBaillieGiffordHoldingsUncached(): Promise<InstitutionalHoldingsPayload> {
+  return (
+    (await fetchInstitutionalHoldingsUncached(BAILLIE_GIFFORD_CO_CIK)) ??
+    unavailableInstitutionalPayload(BAILLIE_GIFFORD_CO_CIK, "Baillie Gifford & Co")
+  );
+}
+
+async function fetchBaillieGiffordComparisonUncached(): Promise<Berkshire13fComparisonPayload> {
+  return (
+    (await fetchInstitutionalComparisonUncached(BAILLIE_GIFFORD_CO_CIK)) ??
+    unavailableComparisonPayload(BAILLIE_GIFFORD_CO_CIK, "Baillie Gifford & Co")
+  );
+}
+
+async function fetchRenaissanceHoldingsUncached(): Promise<InstitutionalHoldingsPayload> {
+  return (
+    (await fetchInstitutionalHoldingsUncached(RENAISSANCE_TECHNOLOGIES_LLC_CIK)) ??
+    unavailableInstitutionalPayload(RENAISSANCE_TECHNOLOGIES_LLC_CIK, "Renaissance Technologies LLC")
+  );
+}
+
+async function fetchRenaissanceComparisonUncached(): Promise<Berkshire13fComparisonPayload> {
+  return (
+    (await fetchInstitutionalComparisonUncached(RENAISSANCE_TECHNOLOGIES_LLC_CIK)) ??
+    unavailableComparisonPayload(RENAISSANCE_TECHNOLOGIES_LLC_CIK, "Renaissance Technologies LLC")
+  );
+}
+
+async function fetchPoint72HoldingsUncached(): Promise<InstitutionalHoldingsPayload> {
+  return (
+    (await fetchInstitutionalHoldingsUncached(POINT72_ASSET_MANAGEMENT_LP_CIK)) ??
+    unavailableInstitutionalPayload(POINT72_ASSET_MANAGEMENT_LP_CIK, "Point72 Asset Management, L.P.")
+  );
+}
+
+async function fetchPoint72ComparisonUncached(): Promise<Berkshire13fComparisonPayload> {
+  return (
+    (await fetchInstitutionalComparisonUncached(POINT72_ASSET_MANAGEMENT_LP_CIK)) ??
+    unavailableComparisonPayload(POINT72_ASSET_MANAGEMENT_LP_CIK, "Point72 Asset Management, L.P.")
+  );
+}
+
+async function fetchFirstEagleHoldingsUncached(): Promise<InstitutionalHoldingsPayload> {
+  return (
+    (await fetchInstitutionalHoldingsUncached(FIRST_EAGLE_INVESTMENT_MANAGEMENT_LLC_CIK)) ??
+    unavailableInstitutionalPayload(FIRST_EAGLE_INVESTMENT_MANAGEMENT_LLC_CIK, "First Eagle Investment Management LLC")
+  );
+}
+
+async function fetchFirstEagleComparisonUncached(): Promise<Berkshire13fComparisonPayload> {
+  return (
+    (await fetchInstitutionalComparisonUncached(FIRST_EAGLE_INVESTMENT_MANAGEMENT_LLC_CIK)) ??
+    unavailableComparisonPayload(FIRST_EAGLE_INVESTMENT_MANAGEMENT_LLC_CIK, "First Eagle Investment Management LLC")
+  );
+}
+
+async function fetchTciFundHoldingsUncached(): Promise<InstitutionalHoldingsPayload> {
+  return (
+    (await fetchInstitutionalHoldingsUncached(TCI_FUND_MANAGEMENT_LTD_CIK)) ??
+    unavailableInstitutionalPayload(TCI_FUND_MANAGEMENT_LTD_CIK, "TCI Fund Management Ltd")
+  );
+}
+
+async function fetchTciFundComparisonUncached(): Promise<Berkshire13fComparisonPayload> {
+  return (
+    (await fetchInstitutionalComparisonUncached(TCI_FUND_MANAGEMENT_LTD_CIK)) ??
+    unavailableComparisonPayload(TCI_FUND_MANAGEMENT_LTD_CIK, "TCI Fund Management Ltd")
+  );
+}
+
+async function fetchGmoHoldingsUncached(): Promise<InstitutionalHoldingsPayload> {
+  return (
+    (await fetchInstitutionalHoldingsUncached(GRANTHAM_MAYO_VAN_OTTERLOO_LLC_CIK)) ??
+    unavailableInstitutionalPayload(GRANTHAM_MAYO_VAN_OTTERLOO_LLC_CIK, "Grantham, Mayo, Van Otterloo & Co. LLC")
+  );
+}
+
+async function fetchGmoComparisonUncached(): Promise<Berkshire13fComparisonPayload> {
+  return (
+    (await fetchInstitutionalComparisonUncached(GRANTHAM_MAYO_VAN_OTTERLOO_LLC_CIK)) ??
+    unavailableComparisonPayload(GRANTHAM_MAYO_VAN_OTTERLOO_LLC_CIK, "Grantham, Mayo, Van Otterloo & Co. LLC")
+  );
+}
+
 const getBerkshireHoldingsCached = unstable_cache(
   async () => fetchBerkshireHoldingsUncached(),
   ["berkshire-hathaway-13f-v10-ticker-cusip-map"],
@@ -1681,6 +1817,96 @@ const getCitadelHoldingsCached = unstable_cache(async () => fetchCitadelHoldings
 const getCitadelHoldingsComparisonCached = unstable_cache(
   async () => fetchCitadelComparisonUncached(),
   ["citadel-advisors-13f-comparison-v1"],
+  { revalidate: 21_600 },
+);
+
+const getDailyJournalHoldingsCached = unstable_cache(
+  async () => fetchDailyJournalHoldingsUncached(),
+  ["daily-journal-corp-13f-v1"],
+  { revalidate: 21_600 },
+);
+
+const getDailyJournalHoldingsComparisonCached = unstable_cache(
+  async () => fetchDailyJournalComparisonUncached(),
+  ["daily-journal-corp-13f-comparison-v1"],
+  { revalidate: 21_600 },
+);
+
+const getBlackrockHoldingsCached = unstable_cache(async () => fetchBlackrockHoldingsUncached(), ["blackrock-inc-13f-v1"], {
+  revalidate: 21_600,
+});
+
+const getBlackrockHoldingsComparisonCached = unstable_cache(
+  async () => fetchBlackrockComparisonUncached(),
+  ["blackrock-inc-13f-comparison-v1"],
+  { revalidate: 21_600 },
+);
+
+const getBaillieGiffordHoldingsCached = unstable_cache(
+  async () => fetchBaillieGiffordHoldingsUncached(),
+  ["baillie-gifford-co-13f-v1"],
+  { revalidate: 21_600 },
+);
+
+const getBaillieGiffordHoldingsComparisonCached = unstable_cache(
+  async () => fetchBaillieGiffordComparisonUncached(),
+  ["baillie-gifford-co-13f-comparison-v1"],
+  { revalidate: 21_600 },
+);
+
+const getRenaissanceHoldingsCached = unstable_cache(
+  async () => fetchRenaissanceHoldingsUncached(),
+  ["renaissance-technologies-llc-13f-v1"],
+  { revalidate: 21_600 },
+);
+
+const getRenaissanceHoldingsComparisonCached = unstable_cache(
+  async () => fetchRenaissanceComparisonUncached(),
+  ["renaissance-technologies-llc-13f-comparison-v1"],
+  { revalidate: 21_600 },
+);
+
+const getPoint72HoldingsCached = unstable_cache(async () => fetchPoint72HoldingsUncached(), ["point72-asset-management-13f-v1"], {
+  revalidate: 21_600,
+});
+
+const getPoint72HoldingsComparisonCached = unstable_cache(
+  async () => fetchPoint72ComparisonUncached(),
+  ["point72-asset-management-13f-comparison-v1"],
+  { revalidate: 21_600 },
+);
+
+const getFirstEagleHoldingsCached = unstable_cache(
+  async () => fetchFirstEagleHoldingsUncached(),
+  ["first-eagle-investment-management-13f-v1"],
+  { revalidate: 21_600 },
+);
+
+const getFirstEagleHoldingsComparisonCached = unstable_cache(
+  async () => fetchFirstEagleComparisonUncached(),
+  ["first-eagle-investment-management-13f-comparison-v1"],
+  { revalidate: 21_600 },
+);
+
+const getTciFundHoldingsCached = unstable_cache(async () => fetchTciFundHoldingsUncached(), ["tci-fund-management-13f-v1"], {
+  revalidate: 21_600,
+});
+
+const getTciFundHoldingsComparisonCached = unstable_cache(
+  async () => fetchTciFundComparisonUncached(),
+  ["tci-fund-management-13f-comparison-v1"],
+  { revalidate: 21_600 },
+);
+
+const getGmoHoldingsCached = unstable_cache(
+  async () => fetchGmoHoldingsUncached(),
+  ["grantham-mayo-van-otterloo-13f-v1"],
+  { revalidate: 21_600 },
+);
+
+const getGmoHoldingsComparisonCached = unstable_cache(
+  async () => fetchGmoComparisonUncached(),
+  ["grantham-mayo-van-otterloo-13f-comparison-v1"],
   { revalidate: 21_600 },
 );
 
@@ -1804,5 +2030,107 @@ export async function getCitadelHoldings() {
 export async function getCitadelHoldingsComparison() {
   return devMemoAsync("13f:citadel:comparison", () =>
     process.env.NODE_ENV !== "production" ? fetchCitadelComparisonUncached() : getCitadelHoldingsComparisonCached(),
+  );
+}
+
+export async function getDailyJournalHoldings() {
+  return devMemoAsync("13f:daily-journal:holdings", () =>
+    process.env.NODE_ENV !== "production" ? fetchDailyJournalHoldingsUncached() : getDailyJournalHoldingsCached(),
+  );
+}
+
+export async function getDailyJournalHoldingsComparison() {
+  return devMemoAsync("13f:daily-journal:comparison", () =>
+    process.env.NODE_ENV !== "production"
+      ? fetchDailyJournalComparisonUncached()
+      : getDailyJournalHoldingsComparisonCached(),
+  );
+}
+
+export async function getBlackrockHoldings() {
+  return devMemoAsync("13f:blackrock:holdings", () =>
+    process.env.NODE_ENV !== "production" ? fetchBlackrockHoldingsUncached() : getBlackrockHoldingsCached(),
+  );
+}
+
+export async function getBlackrockHoldingsComparison() {
+  return devMemoAsync("13f:blackrock:comparison", () =>
+    process.env.NODE_ENV !== "production" ? fetchBlackrockComparisonUncached() : getBlackrockHoldingsComparisonCached(),
+  );
+}
+
+export async function getBaillieGiffordHoldings() {
+  return devMemoAsync("13f:baillie-gifford:holdings", () =>
+    process.env.NODE_ENV !== "production" ? fetchBaillieGiffordHoldingsUncached() : getBaillieGiffordHoldingsCached(),
+  );
+}
+
+export async function getBaillieGiffordHoldingsComparison() {
+  return devMemoAsync("13f:baillie-gifford:comparison", () =>
+    process.env.NODE_ENV !== "production"
+      ? fetchBaillieGiffordComparisonUncached()
+      : getBaillieGiffordHoldingsComparisonCached(),
+  );
+}
+
+export async function getRenaissanceTechnologiesHoldings() {
+  return devMemoAsync("13f:renaissance:holdings", () =>
+    process.env.NODE_ENV !== "production" ? fetchRenaissanceHoldingsUncached() : getRenaissanceHoldingsCached(),
+  );
+}
+
+export async function getRenaissanceTechnologiesHoldingsComparison() {
+  return devMemoAsync("13f:renaissance:comparison", () =>
+    process.env.NODE_ENV !== "production"
+      ? fetchRenaissanceComparisonUncached()
+      : getRenaissanceHoldingsComparisonCached(),
+  );
+}
+
+export async function getPoint72Holdings() {
+  return devMemoAsync("13f:point72:holdings", () =>
+    process.env.NODE_ENV !== "production" ? fetchPoint72HoldingsUncached() : getPoint72HoldingsCached(),
+  );
+}
+
+export async function getPoint72HoldingsComparison() {
+  return devMemoAsync("13f:point72:comparison", () =>
+    process.env.NODE_ENV !== "production" ? fetchPoint72ComparisonUncached() : getPoint72HoldingsComparisonCached(),
+  );
+}
+
+export async function getFirstEagleHoldings() {
+  return devMemoAsync("13f:first-eagle:holdings", () =>
+    process.env.NODE_ENV !== "production" ? fetchFirstEagleHoldingsUncached() : getFirstEagleHoldingsCached(),
+  );
+}
+
+export async function getFirstEagleHoldingsComparison() {
+  return devMemoAsync("13f:first-eagle:comparison", () =>
+    process.env.NODE_ENV !== "production" ? fetchFirstEagleComparisonUncached() : getFirstEagleHoldingsComparisonCached(),
+  );
+}
+
+export async function getTciFundHoldings() {
+  return devMemoAsync("13f:tci-fund:holdings", () =>
+    process.env.NODE_ENV !== "production" ? fetchTciFundHoldingsUncached() : getTciFundHoldingsCached(),
+  );
+}
+
+export async function getTciFundHoldingsComparison() {
+  return devMemoAsync("13f:tci-fund:comparison", () =>
+    process.env.NODE_ENV !== "production" ? fetchTciFundComparisonUncached() : getTciFundHoldingsComparisonCached(),
+  );
+}
+
+export async function getGmoHoldings() {
+  return devMemoAsync("13f:gmo:holdings", () =>
+    process.env.NODE_ENV !== "production" ? fetchGmoHoldingsUncached() : getGmoHoldingsCached(),
+  );
+}
+
+export async function getGmoHoldingsComparison() {
+  return devMemoAsync("13f:gmo:comparison", () =>
+    process.env.NODE_ENV !== "production" ? fetchGmoComparisonUncached() : getGmoHoldingsComparisonCached(),
   );
 }

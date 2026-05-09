@@ -899,20 +899,25 @@ export function ChartingWorkspace({
           <h2 className="min-w-0 shrink-0 text-2xl font-semibold leading-9 tracking-tight text-[#09090B] sm:flex-1">
             {workspaceTitle}
           </h2>
-          <div className="flex min-w-0 flex-wrap items-center gap-3 sm:justify-end">
+          {/* Web: keep controls on one line with range switcher (no wrap). */}
+          <div className="flex min-w-0 flex-wrap items-center gap-3 sm:flex-nowrap sm:justify-end sm:overflow-x-auto sm:pb-0.5">
             <TabSwitcher
+              fullWidth
+              className="shrink-0 sm:w-[220px]"
               options={PERIOD_TAB_OPTIONS}
               value={periodMode}
               onChange={setPeriodMode}
               aria-label="Reporting period"
             />
             <TabSwitcher
+              fullWidth={false}
+              className="shrink-0"
               options={CHART_TYPE_TAB_OPTIONS}
               value={chartType}
               onChange={setChartType}
               aria-label="Chart type"
             />
-            <div className="max-w-full overflow-x-auto pb-0.5 [-webkit-overflow-scrolling:touch]">
+            <div className="shrink-0">
               <TabSwitcher
                 className="inline-flex w-max min-w-0 flex-nowrap"
                 options={timeRangeTabOptions}

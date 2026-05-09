@@ -67,14 +67,15 @@ const TopbarPortfolioBlock = memo(function TopbarPortfolioBlock() {
         aria-label={balanceLabel}
         className={cn(
           topbarSquircleTextButtonClass,
-          "hidden shrink-0 transition-colors hover:bg-[#F4F4F5] md:hidden",
+          // Legacy compact label button; keep hidden so tablets use the full amount + dropdown control.
+          "hidden",
         )}
       >
         <Folder className="h-5 w-5 shrink-0" strokeWidth={1.75} aria-hidden />
         <span className="whitespace-nowrap">My Portfolio</span>
       </Link>
 
-      <div className={cn(topbarSquircleSplitShellClass, "hidden 2xl:flex")}>
+      <div className={cn(topbarSquircleSplitShellClass, "hidden sm:flex")}>
         <Link
           href="/portfolio"
           prefetch={false}

@@ -1,7 +1,6 @@
 "use client";
 
-import { memo } from "react";
-import Image from "next/image";
+import { memo, useState } from "react";
 import Link from "next/link";
 import { UserRound } from "lucide-react";
 import { format, isValid, parseISO } from "date-fns";
@@ -9,8 +8,50 @@ import { format, isValid, parseISO } from "date-fns";
 import { CompanyLogo } from "@/components/screener/company-logo";
 import { resolveEquityLogoUrlFromListingTicker } from "@/lib/screener/resolve-equity-logo-url";
 import { formatUsdCompact } from "@/lib/market/key-stats-basic-format";
+import { cn } from "@/lib/utils";
 
-/** Screener-style column grid: avatar, fund, size, count, last update, top holdings. */
+function avatarNeedsDarkTile(src: string): boolean {
+  return src.includes("blackrock");
+}
+
+/** Local `/public` fund avatars — native `img` + onError; see `SuperinvestorProfileAvatar`. */
+function FundRowAvatar({ src, displayName }: { src: string | null | undefined; displayName: string }) {
+  const [failed, setFailed] = useState(false);
+  const trimmed = typeof src === "string" ? src.trim() : "";
+  if (!trimmed || failed) {
+    return (
+      <span
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#E4E4E7] bg-[#F4F4F5] text-[#71717A]"
+        aria-hidden
+      >
+        <UserRound className="h-5 w-5" strokeWidth={1.75} />
+      </span>
+    );
+  }
+
+  const darkTile = avatarNeedsDarkTile(trimmed);
+
+  return (
+    <span
+      className={cn(
+        "relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full border border-[#E4E4E7] ring-1 ring-white",
+        darkTile ? "bg-[#09090B]" : "bg-[#F4F4F5]",
+      )}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element -- public /superinvestors avatars */}
+      <img
+        src={trimmed}
+        alt={displayName}
+        width={40}
+        height={40}
+        className={cn("h-full w-full", darkTile ? "object-contain p-1.5" : "object-cover")}
+        onError={() => setFailed(true)}
+      />
+    </span>
+  );
+}
+
+/** Screener-style column grid: avatar, fund, size, count, last update, top 5 holdings. */
 const colLayout =
   "grid-cols-[48px_minmax(0,2fr)_minmax(0,1fr)_minmax(0,0.75fr)_minmax(0,1fr)_minmax(0,1.5fr)] gap-x-3";
 
@@ -46,7 +87,7 @@ function SuperinvestorsFundTableInner({ rows }: { rows: SuperinvestorsFundRowMod
         <div className="min-w-0 text-right">Size</div>
         <div className="min-w-0 text-right">No. of stocks</div>
         <div className="min-w-0 text-right">Last updated</div>
-        <div className="min-w-0 text-right">Top holdings</div>
+        <div className="min-w-0 text-right">Top 5 holdings</div>
       </div>
 
       {rows.map((r) => (
@@ -57,25 +98,7 @@ function SuperinvestorsFundTableInner({ rows }: { rows: SuperinvestorsFundRowMod
           className={`grid ${colLayout} h-[60px] max-h-[60px] items-center bg-white px-4 transition-colors duration-75 hover:bg-neutral-50`}
         >
           <div className="flex justify-center">
-            {r.avatarSrc ? (
-              <span className="relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full border border-[#E4E4E7] bg-[#F4F4F5] ring-1 ring-white">
-                <Image
-                  src={r.avatarSrc}
-                  alt={r.displayName}
-                  width={40}
-                  height={40}
-                  className="object-cover"
-                  sizes="40px"
-                />
-              </span>
-            ) : (
-              <span
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#E4E4E7] bg-[#F4F4F5] text-[#71717A]"
-                aria-hidden
-              >
-                <UserRound className="h-5 w-5" strokeWidth={1.75} />
-              </span>
-            )}
+            <FundRowAvatar src={r.avatarSrc} displayName={r.displayName} />
           </div>
 
           <div className="min-w-0 text-left">
@@ -94,7 +117,7 @@ function SuperinvestorsFundTableInner({ rows }: { rows: SuperinvestorsFundRowMod
             {formatFilingDate(r.filingDate)}
           </div>
 
-          <div className="flex min-w-0 items-center justify-end gap-1.5">
+          <div className="flex min-h-0 min-w-0 max-h-[60px] shrink items-center justify-end gap-1 overflow-hidden">
             {r.topHoldings.slice(0, 5).map((h, i) => {
               const sym = h.ticker?.trim() ? h.ticker.trim().toUpperCase() : null;
               const logoUrl = sym ? resolveEquityLogoUrlFromListingTicker(sym) : "";
@@ -104,7 +127,7 @@ function SuperinvestorsFundTableInner({ rows }: { rows: SuperinvestorsFundRowMod
                   name={h.issuer}
                   logoUrl={logoUrl}
                   symbol={sym ?? undefined}
-                  size="xs"
+                  size="28"
                 />
               );
             })}

@@ -10,7 +10,7 @@ export default async function KenGriffin13fPage() {
     <Superinvestor13fProfile
       profileName="Ken Griffin"
       breadcrumbCurrentLabel="Ken Griffin"
-      avatarSrc={null}
+      avatarSrc="/superinvestors/ken-griffin.png"
       data={data}
     />
   );

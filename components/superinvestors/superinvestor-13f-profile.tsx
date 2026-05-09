@@ -1,9 +1,9 @@
-import Image from "next/image";
 import Link from "next/link";
-import { ChevronRight, UserRound } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { format, isValid, parseISO } from "date-fns";
 
 import { Berkshire13fComparisonTable } from "@/components/superinvestors/berkshire-13f-comparison-table";
+import { SuperinvestorProfileAvatar } from "@/components/superinvestors/superinvestor-profile-avatar";
 import type { Berkshire13fComparisonPayload } from "@/lib/superinvestors/types";
 import { formatUsdCompactSigDigits } from "@/lib/market/key-stats-basic-format";
 
@@ -62,26 +62,7 @@ export function Superinvestor13fProfile({
 
       <header className="mt-8">
         <div className="flex h-fit items-center gap-4">
-          {avatarSrc ? (
-            <span className="relative block h-14 w-14 shrink-0 overflow-hidden rounded-full border border-[#E4E4E7] bg-[#F4F4F5] ring-1 ring-white">
-              <Image
-                src={avatarSrc}
-                alt={profileName}
-                width={56}
-                height={56}
-                className="h-full w-full object-cover"
-                sizes="56px"
-                priority
-              />
-            </span>
-          ) : (
-            <span
-              className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-[#E4E4E7] bg-[#F4F4F5] text-[#71717A]"
-              aria-hidden
-            >
-              <UserRound className="h-8 w-8" strokeWidth={1.75} />
-            </span>
-          )}
+          <SuperinvestorProfileAvatar src={avatarSrc?.trim() ?? ""} name={profileName} />
           <div className="min-w-0">
             <h1 className="text-[24px] font-semibold leading-8 tracking-tight text-[#09090B]">{profileName}</h1>
             <p className="mt-0.5 text-[14px] font-normal leading-5 text-[#71717A]">
@@ -128,6 +109,7 @@ export function Superinvestor13fProfile({
 
       <div className="mt-8">
         <Berkshire13fComparisonTable
+          key={profileName}
           rows={data.rows}
           hasPriorFiling={data.hasPriorFiling}
         />

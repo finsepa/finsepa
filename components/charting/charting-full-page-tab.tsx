@@ -58,7 +58,6 @@ export function ChartingFullPageTab({
       metricParam={metricParam}
       initialAnnualPoints={init?.fundamentalsSeriesAnnual}
       initialQuarterlyPoints={init?.fundamentalsSeriesQuarterly}
-      toolbarLayout="figma70857"
       pathRoute={pathRoute}
       workspaceTitle={workspaceTitle}
       timeRangeOrder={STANDALONE_CHARTING_TIME_RANGE_ORDER}

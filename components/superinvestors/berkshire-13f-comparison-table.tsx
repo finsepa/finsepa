@@ -4,10 +4,12 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { Berkshire13fComparisonRow } from "@/lib/superinvestors/types";
+import { SUPERINVESTOR_HOLDINGS_PAGE_SIZE } from "@/lib/superinvestors/superinvestors-holdings-page-size";
 import { CompanyLogo } from "@/components/screener/company-logo";
 import { resolveEquityLogoUrlFromListingTicker } from "@/lib/screener/resolve-equity-logo-url";
 import { formatUsdCompactSigDigits } from "@/lib/market/key-stats-basic-format";
 import { SCREENER_MARKET_QUERY } from "@/lib/screener/screener-market-url";
+import { ScreenerPagination } from "@/components/ui/table-pagination";
 import { cn } from "@/lib/utils";
 
 const pct = new Intl.NumberFormat("en-US", {
@@ -271,6 +273,16 @@ export function Berkshire13fComparisonTable({
   rows: Berkshire13fComparisonRow[];
   hasPriorFiling: boolean;
 }) {
+  const [page, setPage] = useState(1);
+  const pageSize = SUPERINVESTOR_HOLDINGS_PAGE_SIZE;
+  const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
+  const safePage = Math.min(Math.max(1, page), totalPages);
+
+  const pagedRows = useMemo(() => {
+    const start = (safePage - 1) * pageSize;
+    return rows.slice(start, start + pageSize);
+  }, [rows, safePage, pageSize]);
+
   const headerGrid = cn("h-11 min-h-[44px] items-center bg-white", rowGridFive);
   const resolved = useResolvedTickers(rows);
 
@@ -286,13 +298,14 @@ export function Berkshire13fComparisonTable({
             <div className={thRight}>Value</div>
           </div>
 
-          {rows.map((r, i) => {
+          {pagedRows.map((r, i) => {
             const displayName = issuerDisplayTitle(r.companyName);
             const key = r.cusip?.trim() ? `CUSIP:${r.cusip.trim().toUpperCase()}` : `ISSUER:${displayName.toLowerCase()}`;
             const mergedTicker = r.ticker?.trim() ? r.ticker : resolved[key] ?? null;
+            const globalIndex = (safePage - 1) * pageSize + i;
             return (
               <ComparisonRowShell
-                key={`${r.cusip ?? r.companyName}-${i}`}
+                key={`${r.cusip ?? r.companyName}-${globalIndex}`}
                 ticker={mergedTicker}
                 displayName={displayName}
                 gridClass={cn(rowGridFive, "px-4")}
@@ -315,6 +328,13 @@ export function Berkshire13fComparisonTable({
           })}
         </div>
       </div>
+
+      <ScreenerPagination
+        page={safePage}
+        totalPages={totalPages}
+        onPageChange={setPage}
+        aria-label="Holdings pages"
+      />
     </div>
   );
 }

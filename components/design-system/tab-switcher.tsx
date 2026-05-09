@@ -14,12 +14,14 @@ export function TabSwitcher<T extends string>({
   onChange,
   "aria-label": ariaLabel,
   className,
+  fullWidth = true,
 }: {
   options: readonly TabSwitcherOption<T>[];
   value: T;
   onChange: (next: T) => void;
   "aria-label"?: string;
   className?: string;
+  fullWidth?: boolean;
 }) {
   return (
     <SegmentedControl
@@ -27,7 +29,7 @@ export function TabSwitcher<T extends string>({
       value={value}
       onChange={onChange}
       size="md"
-      fullWidth
+      fullWidth={fullWidth}
       aria-label={ariaLabel}
       className={className}
     />

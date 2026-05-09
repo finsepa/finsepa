@@ -203,7 +203,7 @@ function nameFromRawRow(row: EodhdRawEarningRow): string | null {
 /**
  * USD — exclude smaller names before enrichment (data quality + fewer downstream calls).
  */
-const MIN_MARKET_CAP_USD = 1_000_000_000;
+const MIN_MARKET_CAP_USD = 5_000_000_000;
 
 /** SSR + initial paint: first N names per timing bucket; overflow loads via `/api/earnings/week-bucket`. */
 const EARNINGS_BUCKET_PREVIEW_COUNT = 7;
@@ -255,7 +255,7 @@ function logEarningsPipelineStats(payload: {
     overflowRowsPrepared: payload.overflowRowsPrepared,
     uniqueTickersFundamentalsFetched: payload.uniqueTickersFundamentalsFetched,
     filterMode: payload.filterMode,
-    afterMarketCapGte1B: payload.afterMarketCapFilter,
+    afterMarketCapGteMin: payload.afterMarketCapFilter,
     droppedByMarketCapOrMissing: droppedMc,
     ...(payload.timingMs ? { timingMs: payload.timingMs } : {}),
   });
@@ -594,7 +594,12 @@ async function buildEarningsWeekDataPackageUncached(
   } else if (universeByKey.size === 0) {
     preparedMarketCap = [];
   } else {
-    preparedMarketCap = preparedScreener;
+    // Non-strict mode: use the screener static universe market caps to hide names below MIN_MARKET_CAP_USD.
+    preparedMarketCap = preparedScreener.filter((p) => {
+      const key = earningsUniverseKey(p.ticker);
+      const mc = universeByKey.get(key)?.marketCapUsd ?? 0;
+      return mc >= MIN_MARKET_CAP_USD;
+    });
   }
 
   const preparedForWeek = dedupePreparedByReportDateAndTicker(preparedMarketCap);

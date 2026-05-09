@@ -1,14 +1,22 @@
 import {
   getArkHoldings,
+  getBaillieGiffordHoldings,
   getBerkshireHoldings,
-  getCitadelHoldings,
+  getBlackrockHoldings,
   getBridgewaterHoldings,
+  getCitadelHoldings,
+  getDailyJournalHoldings,
+  getFirstEagleHoldings,
   getFisherHoldings,
   getFundsmithHoldings,
+  getGmoHoldings,
   getPershingSquareHoldings,
+  getPoint72Holdings,
   getPrimecapHoldings,
   getHimalayaHoldings,
+  getRenaissanceTechnologiesHoldings,
   getScionHoldings,
+  getTciFundHoldings,
 } from "@/lib/superinvestors/berkshire-13f";
 import {
   SuperinvestorsFundTable,
@@ -18,7 +26,26 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function SuperinvestorsPage() {
-  const [berkshire, pershing, fundsmith, scion, ark, himalaya, bridgewater, fisher, primecap, citadel] = await Promise.all([
+  const [
+    berkshire,
+    pershing,
+    fundsmith,
+    scion,
+    ark,
+    himalaya,
+    bridgewater,
+    fisher,
+    primecap,
+    citadel,
+    dailyJournal,
+    blackrock,
+    baillieGifford,
+    renaissance,
+    point72,
+    firstEagle,
+    tciFund,
+    gmo,
+  ] = await Promise.all([
     getBerkshireHoldings(),
     getPershingSquareHoldings(),
     getFundsmithHoldings(),
@@ -29,6 +56,14 @@ export default async function SuperinvestorsPage() {
     getFisherHoldings(),
     getPrimecapHoldings(),
     getCitadelHoldings(),
+    getDailyJournalHoldings(),
+    getBlackrockHoldings(),
+    getBaillieGiffordHoldings(),
+    getRenaissanceTechnologiesHoldings(),
+    getPoint72Holdings(),
+    getFirstEagleHoldings(),
+    getTciFundHoldings(),
+    getGmoHoldings(),
   ]);
 
   const rows: SuperinvestorsFundRowModel[] = [
@@ -119,7 +154,7 @@ export default async function SuperinvestorsPage() {
     {
       href: "/superinvestors/ken-fisher",
       displayName: "Ken Fisher",
-      avatarSrc: null,
+      avatarSrc: "/superinvestors/ken-fisher.png",
       totalValueUsd: fisher.totalValueUsd,
       positionCount: fisher.positionCount,
       filingDate: fisher.filingDate,
@@ -131,7 +166,7 @@ export default async function SuperinvestorsPage() {
     {
       href: "/superinvestors/primecap-management",
       displayName: "PRIMECAP Management",
-      avatarSrc: null,
+      avatarSrc: "/superinvestors/primecap-management.png",
       totalValueUsd: primecap.totalValueUsd,
       positionCount: primecap.positionCount,
       filingDate: primecap.filingDate,
@@ -143,11 +178,107 @@ export default async function SuperinvestorsPage() {
     {
       href: "/superinvestors/ken-griffin",
       displayName: "Ken Griffin",
-      avatarSrc: null,
+      avatarSrc: "/superinvestors/ken-griffin.png",
       totalValueUsd: citadel.totalValueUsd,
       positionCount: citadel.positionCount,
       filingDate: citadel.filingDate,
       topHoldings: citadel.holdings.slice(0, 5).map((h) => ({
+        issuer: h.issuer,
+        ticker: h.ticker,
+      })),
+    },
+    {
+      href: "/superinvestors/charlie-munger",
+      displayName: "Charlie Munger",
+      avatarSrc: "/superinvestors/charlie-munger.png",
+      totalValueUsd: dailyJournal.totalValueUsd,
+      positionCount: dailyJournal.positionCount,
+      filingDate: dailyJournal.filingDate,
+      topHoldings: dailyJournal.holdings.slice(0, 5).map((h) => ({
+        issuer: h.issuer,
+        ticker: h.ticker,
+      })),
+    },
+    {
+      href: "/superinvestors/blackrock",
+      displayName: "BlackRock",
+      avatarSrc: "/superinvestors/blackrock.png",
+      totalValueUsd: blackrock.totalValueUsd,
+      positionCount: blackrock.positionCount,
+      filingDate: blackrock.filingDate,
+      topHoldings: blackrock.holdings.slice(0, 5).map((h) => ({
+        issuer: h.issuer,
+        ticker: h.ticker,
+      })),
+    },
+    {
+      href: "/superinvestors/baillie-gifford",
+      displayName: "Baillie Gifford",
+      avatarSrc: null,
+      totalValueUsd: baillieGifford.totalValueUsd,
+      positionCount: baillieGifford.positionCount,
+      filingDate: baillieGifford.filingDate,
+      topHoldings: baillieGifford.holdings.slice(0, 5).map((h) => ({
+        issuer: h.issuer,
+        ticker: h.ticker,
+      })),
+    },
+    {
+      href: "/superinvestors/renaissance-technologies",
+      displayName: "Jim Simons",
+      avatarSrc: "/superinvestors/jim-simons.png",
+      totalValueUsd: renaissance.totalValueUsd,
+      positionCount: renaissance.positionCount,
+      filingDate: renaissance.filingDate,
+      topHoldings: renaissance.holdings.slice(0, 5).map((h) => ({
+        issuer: h.issuer,
+        ticker: h.ticker,
+      })),
+    },
+    {
+      href: "/superinvestors/point72",
+      displayName: "Steven Cohen",
+      avatarSrc: "/superinvestors/steven-cohen.png",
+      totalValueUsd: point72.totalValueUsd,
+      positionCount: point72.positionCount,
+      filingDate: point72.filingDate,
+      topHoldings: point72.holdings.slice(0, 5).map((h) => ({
+        issuer: h.issuer,
+        ticker: h.ticker,
+      })),
+    },
+    {
+      href: "/superinvestors/first-eagle",
+      displayName: "First Eagle Investments",
+      avatarSrc: null,
+      totalValueUsd: firstEagle.totalValueUsd,
+      positionCount: firstEagle.positionCount,
+      filingDate: firstEagle.filingDate,
+      topHoldings: firstEagle.holdings.slice(0, 5).map((h) => ({
+        issuer: h.issuer,
+        ticker: h.ticker,
+      })),
+    },
+    {
+      href: "/superinvestors/chris-hohn",
+      displayName: "Chris Hohn",
+      avatarSrc: "/superinvestors/chris-hohn.png",
+      totalValueUsd: tciFund.totalValueUsd,
+      positionCount: tciFund.positionCount,
+      filingDate: tciFund.filingDate,
+      topHoldings: tciFund.holdings.slice(0, 5).map((h) => ({
+        issuer: h.issuer,
+        ticker: h.ticker,
+      })),
+    },
+    {
+      href: "/superinvestors/jeremy-grantham",
+      displayName: "Jeremy Grantham",
+      avatarSrc: "/superinvestors/jeremy-grantham.png",
+      totalValueUsd: gmo.totalValueUsd,
+      positionCount: gmo.positionCount,
+      filingDate: gmo.filingDate,
+      topHoldings: gmo.holdings.slice(0, 5).map((h) => ({
         issuer: h.issuer,
         ticker: h.ticker,
       })),

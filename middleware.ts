@@ -11,6 +11,15 @@ export async function middleware(request: NextRequest) {
 
   const path = request.nextUrl.pathname;
 
+  /**
+   * Avatar files live in `public/superinvestors/*.png`. `next/image` loads the source URL from the
+   * optimization worker without session cookies; if these paths stay auth-gated, the worker gets
+   * HTML (login redirect) instead of bytes → broken avatars on the Superinvestors table and profiles.
+   */
+  if (/^\/superinvestors\/[^/]+\.(?:png|jpe?g|webp|gif|svg)$/i.test(path)) {
+    return NextResponse.next();
+  }
+
   const isActivateSubscriptionPath = path === PATH_ACTIVATE_SUBSCRIPTION || path.startsWith(`${PATH_ACTIVATE_SUBSCRIPTION}/`);
 
   const isProtectedPath =

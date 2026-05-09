@@ -43,6 +43,8 @@ export async function GET(request: Request) {
   const week = url.searchParams.get("week");
   const day = url.searchParams.get("day");
   const timingRaw = url.searchParams.get("timing");
+  const offsetRaw = url.searchParams.get("offset");
+  const limitRaw = url.searchParams.get("limit");
 
   const monday = parseWeekMonday(week);
   if (!monday || !day || !/^\d{4}-\d{2}-\d{2}$/.test(day)) {
@@ -55,6 +57,13 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Day not in week" }, { status: 400 });
   }
 
-  const items = await getEarningsTimingBucketOverflow(monday, day, timingRaw);
-  return NextResponse.json({ items });
+  const all = await getEarningsTimingBucketOverflow(monday, day, timingRaw);
+
+  const offset = offsetRaw != null ? Number(offsetRaw) : 0;
+  const limit = limitRaw != null ? Number(limitRaw) : 10;
+  const safeOffset = Number.isFinite(offset) && offset > 0 ? Math.floor(offset) : 0;
+  const safeLimit = Number.isFinite(limit) ? Math.min(50, Math.max(1, Math.floor(limit))) : 10;
+
+  const items = all.slice(safeOffset, safeOffset + safeLimit);
+  return NextResponse.json({ items, total: all.length, offset: safeOffset, limit: safeLimit });
 }

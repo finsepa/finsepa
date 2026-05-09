@@ -18,25 +18,75 @@ import type {
 import { cn } from "@/lib/utils";
 
 /** Match server `earningsUniverseKey` so preview + overflow merges dedupe the same symbol. */
-function earningsGridDedupeKey(it: EarningsCalendarItem): string {
-  const t = it.ticker
+function canonicalEarningsTicker(raw: string): string {
+  const t = raw
     .trim()
     .toUpperCase()
     .replace(/\.US$/i, "")
+    .replace(/\//g, ".")
     .replace(/-/g, ".");
-  return `${it.reportDate}|${t}|${it.timing}`;
+
+  // Collapse share classes / series into one (e.g. BRK.A / BRK.B → BRK).
+  // Heuristic: treat `<BASE>.<SUFFIX>` as a class when BASE is normal equity ticker.
+  const m = /^([A-Z]{1,10})\.([A-Z0-9]{1,3})$/.exec(t);
+  if (m) return m[1]!;
+
+  return t;
+}
+
+/** Raw upper symbol after exchange normalization (before base-only collapse). */
+function normalizedEarningsSymbol(raw: string): string {
+  return raw
+    .trim()
+    .toUpperCase()
+    .replace(/\.US$/i, "")
+    .replace(/\//g, ".")
+    .replace(/-/g, ".");
+}
+
+/**
+ * One tile per issuer per day+timing.
+ * Always key by canonical base symbol (AGM.A / AGM.PD / AGM → AGM) so provider name quirks can’t split rows.
+ * Different tickers that only share a company name but are different issuers stay separate (e.g. different bases).
+ */
+function earningsGridDedupeKey(it: EarningsCalendarItem): string {
+  const base = canonicalEarningsTicker(it.ticker);
+  return `${it.reportDate}|b:${base}|${it.timing}`;
+}
+
+/** Lower score wins — pick a “main” listing when duplicates collapse (e.g. AGM.A over AGM.PD). */
+function earningsItemPreferenceScore(it: EarningsCalendarItem): number {
+  const raw = normalizedEarningsSymbol(it.ticker);
+  let s = 0;
+  // Common “primary” common share
+  if (/\.A$/.test(raw)) s -= 200;
+  // Deprioritize preferred / depositary series
+  if (/\.(PD|PR|PRB|PRC|PRE|PF|PFD)$/i.test(raw)) s += 120;
+  if (/\.P$/.test(raw)) s += 80;
+  const rank = it.screenerRank;
+  if (rank != null) s += rank;
+  // Tie-break: shorter symbol, then lexicographic
+  s += raw.length * 0.001;
+  return s;
+}
+
+function pickPreferredEarningsItem(a: EarningsCalendarItem, b: EarningsCalendarItem): EarningsCalendarItem {
+  const sa = earningsItemPreferenceScore(a);
+  const sb = earningsItemPreferenceScore(b);
+  if (sa !== sb) return sa < sb ? a : b;
+  const ca = normalizedEarningsSymbol(a.ticker);
+  const cb = normalizedEarningsSymbol(b.ticker);
+  return ca.localeCompare(cb) <= 0 ? a : b;
 }
 
 function dedupeEarningsCalendarItems(items: readonly EarningsCalendarItem[]): EarningsCalendarItem[] {
-  const seen = new Set<string>();
-  const out: EarningsCalendarItem[] = [];
+  const byKey = new Map<string, EarningsCalendarItem>();
   for (const it of items) {
     const k = earningsGridDedupeKey(it);
-    if (seen.has(k)) continue;
-    seen.add(k);
-    out.push(it);
+    const prev = byKey.get(k);
+    byKey.set(k, prev ? pickPreferredEarningsItem(prev, it) : it);
   }
-  return out;
+  return [...byKey.values()];
 }
 
 function todayYmdUtc(): string {
@@ -131,6 +181,7 @@ function EarningsTimingBlock({
   const [extraItems, setExtraItems] = useState<EarningsCalendarItem[]>([]);
   const [loadingOverflow, setLoadingOverflow] = useState(false);
   const [overflowError, setOverflowError] = useState(false);
+  const [loadedOverflowCount, setLoadedOverflowCount] = useState(0);
 
   const hasPreview = bucket.items.length > 0;
   const hasOverflowOnly = !hasPreview && bucket.overflowCount > 0;
@@ -140,20 +191,13 @@ function EarningsTimingBlock({
     return dedupeEarningsCalendarItems(merged);
   }, [expanded, bucket.items, extraItems]);
 
-  const showExpandTile = bucket.overflowCount > 0 && !expanded;
-  const showCollapse = expanded && bucket.overflowCount > 0;
+  const remainingOverflow = Math.max(0, bucket.overflowCount - loadedOverflowCount);
+  const showExpandTile = remainingOverflow > 0;
+  const showCollapse = expanded && (bucket.overflowCount > 0 || extraItems.length > 0);
 
   if (!hasPreview && !hasOverflowOnly) return null;
 
   const loadOverflowAndExpand = async () => {
-    if (bucket.overflowCount === 0) {
-      setExpanded(true);
-      return;
-    }
-    if (extraItems.length > 0) {
-      setExpanded(true);
-      return;
-    }
     setLoadingOverflow(true);
     setOverflowError(false);
     try {
@@ -161,13 +205,18 @@ function EarningsTimingBlock({
         week: weekMondayYmd,
         day: dayYmd,
         timing,
+        offset: String(loadedOverflowCount),
+        limit: "10",
       });
       const res = await fetch(`/api/earnings/week-bucket?${qs.toString()}`);
       if (!res.ok) throw new Error("overflow");
       const body: unknown = await res.json();
       const raw = body && typeof body === "object" && "items" in body ? (body as { items: unknown }).items : null;
       const items = Array.isArray(raw) ? (raw as EarningsCalendarItem[]) : [];
-      setExtraItems(items);
+      if (items.length > 0) {
+        setExtraItems((prev) => [...prev, ...items]);
+        setLoadedOverflowCount((n) => n + items.length);
+      }
       setExpanded(true);
     } catch {
       setOverflowError(true);
@@ -194,17 +243,19 @@ function EarningsTimingBlock({
             type="button"
             disabled={loadingOverflow}
             onClick={() => void loadOverflowAndExpand()}
-            className="flex min-h-[72px] w-full flex-col items-center justify-center rounded-xl border border-dashed border-[#CBD5E1] bg-[#FAFAFA] px-2 py-2.5 text-center shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)] transition-colors hover:border-[#2563EB]/35 hover:bg-[#EFF6FF] disabled:opacity-60"
-            aria-expanded="false"
+            className="flex min-h-[88px] w-full flex-col items-center justify-center rounded-xl border border-dashed border-[#CBD5E1] bg-[#FAFAFA] px-2 py-2.5 text-center shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)] transition-colors hover:border-[#2563EB]/35 hover:bg-[#EFF6FF] disabled:opacity-60"
+            aria-expanded={expanded}
             aria-busy={loadingOverflow}
-            aria-label={`Show ${bucket.overflowCount} more in ${title}`}
+            aria-label={`Show ${Math.min(10, remainingOverflow)} more in ${title}`}
           >
             {loadingOverflow ? (
               <span className="text-[12px] font-medium text-[#71717A]">Loading…</span>
             ) : overflowError ? (
               <span className="text-[12px] font-medium text-[#DC2626]">Tap to retry</span>
             ) : (
-              <span className="text-[15px] font-semibold tabular-nums leading-5 text-[#2563EB]">+{bucket.overflowCount}</span>
+              <span className="text-[15px] font-semibold tabular-nums leading-5 text-[#2563EB]">
+                +{remainingOverflow}
+              </span>
             )}
           </button>
         ) : null}
@@ -301,7 +352,7 @@ function EarningsCard({
       onClick={onOpen}
       className="flex w-full flex-col items-center justify-center gap-1.5 rounded-xl border border-[#E4E4E7] bg-white px-2 py-2.5 text-center shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors hover:bg-[#FAFAFA]"
     >
-      <CompanyLogo name={companyName || ticker} logoUrl={logoUrl} symbol={ticker} size="28" />
+      <CompanyLogo name={companyName || ticker} logoUrl={logoUrl} symbol={ticker} size="40" />
       <span className="w-full min-w-0 truncate text-[13px] font-semibold leading-5 tabular-nums text-[#09090B]">
         {ticker}
       </span>

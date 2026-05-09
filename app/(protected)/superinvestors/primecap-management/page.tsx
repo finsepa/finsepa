@@ -10,7 +10,7 @@ export default async function PrimecapManagement13fPage() {
     <Superinvestor13fProfile
       profileName="PRIMECAP Management"
       breadcrumbCurrentLabel="PRIMECAP Management"
-      avatarSrc={null}
+      avatarSrc="/superinvestors/primecap-management.png"
       data={data}
     />
   );

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { mergeLogoMemory, readLogoMemory } from "@/lib/logos/logo-memory";
 import { logoColors } from "./data";
 
-function InitialsMark({ name, size }: { name: string; size: "xs" | "sm" | "28" | "md" | "lg" }) {
+function InitialsMark({ name, size }: { name: string; size: "xs" | "sm" | "28" | "md" | "40" | "lg" }) {
   const colors = logoColors[name] ?? {
     bg: "bg-neutral-100",
     text: "text-neutral-600",
@@ -17,9 +17,11 @@ function InitialsMark({ name, size }: { name: string; size: "xs" | "sm" | "28" |
         ? "flex h-6 w-6 shrink-0 items-center justify-center rounded-[8px] border text-[10px] font-bold"
         : size === "28"
           ? "flex h-7 w-7 shrink-0 items-center justify-center rounded-md border text-[10px] font-bold"
-        : size === "lg"
-          ? "flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border text-[12px] font-bold"
-          : "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border text-[11px] font-bold";
+          : size === "40"
+            ? "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border text-[12px] font-bold"
+            : size === "lg"
+              ? "flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border text-[12px] font-bold"
+              : "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border text-[11px] font-bold";
   return (
     <div className={`${box} ${colors.bg} ${colors.text} ${colors.border}`}>
       {name.slice(0, 2).toUpperCase()}
@@ -28,8 +30,9 @@ function InitialsMark({ name, size }: { name: string; size: "xs" | "sm" | "28" |
 }
 
 /** Cash / USD row icon: US flag asset (`/usd.svg`). */
-function UsdCashMark({ size }: { size: "xs" | "sm" | "28" | "md" | "lg" }) {
-  const px = size === "xs" ? 20 : size === "sm" ? 24 : size === "28" ? 28 : size === "lg" ? 48 : 32;
+function UsdCashMark({ size }: { size: "xs" | "sm" | "28" | "md" | "40" | "lg" }) {
+  const px =
+    size === "xs" ? 20 : size === "sm" ? 24 : size === "28" ? 28 : size === "lg" ? 48 : size === "40" ? 40 : 32;
   const imgBox =
     size === "xs"
       ? "h-5 w-5 rounded-md"
@@ -37,9 +40,11 @@ function UsdCashMark({ size }: { size: "xs" | "sm" | "28" | "md" | "lg" }) {
         ? "h-6 w-6 rounded-[8px]"
         : size === "28"
           ? "h-7 w-7 rounded-md"
-        : size === "lg"
-          ? "h-12 w-12 rounded-lg"
-          : "h-8 w-8 rounded-lg";
+          : size === "40"
+            ? "h-10 w-10 rounded-lg"
+            : size === "lg"
+              ? "h-12 w-12 rounded-lg"
+              : "h-8 w-8 rounded-lg";
   return (
     // eslint-disable-next-line @next/next/no-img-element -- static public SVG
     <img
@@ -64,8 +69,8 @@ export function CompanyLogo({
   logoUrl: string;
   /** When set (e.g. ticker), enables session logo reuse across views. */
   symbol?: string;
-  /** `xs` = 20×20, `sm` = 24×24, `28` = 28×28, `md` = 32×32 (default), `lg` = 48×48. */
-  size?: "xs" | "sm" | "28" | "md" | "lg";
+  /** `xs` = 20×20, `sm` = 24×24, `28` = 28×28, `md` = 32×32 (default), `40` = 40×40, `lg` = 48×48. */
+  size?: "xs" | "sm" | "28" | "md" | "40" | "lg";
 }) {
   const [failed, setFailed] = useState(false);
   const fromServer = typeof logoUrl === "string" ? logoUrl.trim() : "";
@@ -87,7 +92,8 @@ export function CompanyLogo({
   if (failed || !hasLogoUrl) {
     return <InitialsMark name={name} size={size} />;
   }
-  const px = size === "xs" ? 20 : size === "sm" ? 24 : size === "28" ? 28 : size === "lg" ? 48 : 32;
+  const px =
+    size === "xs" ? 20 : size === "sm" ? 24 : size === "28" ? 28 : size === "lg" ? 48 : size === "40" ? 40 : 32;
   const imgBox =
     size === "xs"
       ? "h-5 w-5 rounded-md"
@@ -95,9 +101,11 @@ export function CompanyLogo({
         ? "h-6 w-6 rounded-[8px]"
         : size === "28"
           ? "h-7 w-7 rounded-md"
-        : size === "lg"
-          ? "h-12 w-12 rounded-lg"
-          : "h-8 w-8 rounded-lg";
+          : size === "40"
+            ? "h-10 w-10 rounded-lg"
+            : size === "lg"
+              ? "h-12 w-12 rounded-lg"
+              : "h-8 w-8 rounded-lg";
   return (
     // eslint-disable-next-line @next/next/no-img-element -- dynamic remote favicon with onError fallback
     <img
