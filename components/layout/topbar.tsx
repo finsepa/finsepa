@@ -135,7 +135,7 @@ export function Topbar({
 
   return (
     <>
-      <header className="flex min-h-[60px] min-w-0 flex-nowrap items-center justify-between gap-3 overflow-x-hidden overflow-y-hidden px-4 py-3 [-webkit-overflow-scrolling:touch]">
+      <header className="flex min-h-[60px] min-w-0 flex-nowrap items-center justify-between gap-3 overflow-x-hidden overflow-y-hidden px-4 py-3 max-md:py-2 [-webkit-overflow-scrolling:touch]">
         <div className="flex min-w-0 flex-1 items-center">
           <div className="min-w-0 w-full max-w-full flex-1 md:max-w-[300px]">
             <TopbarDelayedTooltip label="Search" className="relative block w-full max-w-full">

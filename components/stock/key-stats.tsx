@@ -347,7 +347,7 @@ function KeyStatsInner({
   return (
     <div>
       <h2 className="text-[18px] font-semibold leading-7 text-[#09090B] mb-4">Key Stats</h2>
-      <div className="grid grid-cols-3 gap-5">
+      <div className="grid grid-cols-2 gap-5 md:grid-cols-3">
         <div>
           <BasicCard rows={bundle?.basic ?? null} loading={loading} onMetricClick={onOpenMetricChart} />
           <DynamicCard
@@ -384,7 +384,7 @@ function KeyStatsInner({
           />
         </div>
 
-        <div>
+        <div className="max-md:col-span-2">
           <DynamicCard
             title="Assets & Liabilities"
             rowLabels={ASSETS_LABELS}

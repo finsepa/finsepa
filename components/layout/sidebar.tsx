@@ -210,12 +210,12 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "flex h-full min-h-0 shrink-0 flex-col rounded-[4px] bg-white py-5 transition-[width] duration-200 ease-out",
+        "flex h-full min-h-0 shrink-0 flex-col rounded-[4px] bg-white py-2 transition-[width] duration-200 ease-out",
         collapsed ? "w-full overflow-visible" : "w-[240px] overflow-y-auto",
       )}
     >
       {collapsed ? (
-        <div className="mb-6 flex justify-center px-1">
+        <div className="mb-4 flex justify-center px-1">
           <TopbarDelayedTooltip label="Expand Menu">
             <button
               type="button"
@@ -229,7 +229,7 @@ export function Sidebar() {
           </TopbarDelayedTooltip>
         </div>
       ) : (
-        <div className="mb-7 flex items-center justify-between gap-2 px-3">
+        <div className="mb-5 flex items-center justify-between gap-2 px-3">
           <img src="/logo.svg" alt="Finsepa" width={32} height={32} />
           <TopbarDelayedTooltip label="Collapse Menu">
             <button
@@ -247,7 +247,7 @@ export function Sidebar() {
 
       <div
         className={cn(
-          "flex min-h-0 flex-1 flex-col space-y-4",
+          "flex min-h-0 flex-1 flex-col space-y-3",
           collapsed ? "overflow-y-auto overflow-x-visible" : "",
         )}
       >

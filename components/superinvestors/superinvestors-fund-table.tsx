@@ -51,9 +51,14 @@ function FundRowAvatar({ src, displayName }: { src: string | null | undefined; d
   );
 }
 
-/** Screener-style column grid: avatar, fund, size, count, last update, top 5 holdings. */
+/** Desktop: avatar, fund, size, count, last update, top 5 holdings. */
 const colLayout =
   "grid-cols-[48px_minmax(0,2fr)_minmax(0,1fr)_minmax(0,0.75fr)_minmax(0,1fr)_minmax(0,1.5fr)] gap-x-3";
+
+/** Mobile: fund block (left) · last updated (right). */
+const mobileColLayout = "grid-cols-[minmax(0,1fr)_minmax(4.75rem,auto)] gap-x-3";
+
+const screenerTickerSublineClass = "text-[12px] font-normal leading-4 !text-[#71717A]";
 
 export type SuperinvestorsFundRowModel = {
   href: string;
@@ -74,66 +79,106 @@ function formatFilingDate(ymd: string | null): string {
   return format(d, "d MMM yyyy");
 }
 
+function stocksLabel(count: number) {
+  return `${count.toLocaleString("en-US")} ${count === 1 ? "stock" : "stocks"}`;
+}
+
 function SuperinvestorsFundTableInner({ rows }: { rows: SuperinvestorsFundRowModel[] }) {
   return (
-    <div className="min-w-0 -mx-4 overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch] sm:mx-0 sm:overflow-visible sm:pb-0">
-      <div className="min-w-[720px] sm:min-w-0">
+    <div className="min-w-0 -mx-4 sm:mx-0">
+      <div className="min-w-0">
         <div className="divide-y divide-[#E4E4E7] border-t border-b border-[#E4E4E7]">
-      <div
-        className={`grid ${colLayout} min-h-[44px] items-center bg-white px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A]`}
-      >
-        {/* Span avatar + name columns so "Fund" lines up with the left edge of centered 40px avatars (48px track → 4px inset). */}
-        <div className="col-span-2 self-center pl-1 text-left">Fund</div>
-        <div className="min-w-0 text-right">Size</div>
-        <div className="min-w-0 text-right">No. of stocks</div>
-        <div className="min-w-0 text-right">Last updated</div>
-        <div className="min-w-0 text-right">Top 5 holdings</div>
-      </div>
-
-      {rows.map((r) => (
-        <Link
-          key={r.href}
-          href={r.href}
-          prefetch={false}
-          className={`grid ${colLayout} h-[60px] max-h-[60px] items-center bg-white px-4 transition-colors duration-75 hover:bg-neutral-50`}
-        >
-          <div className="flex justify-center">
-            <FundRowAvatar src={r.avatarSrc} displayName={r.displayName} />
+          {/* One wrapper so divide-y does not treat the hidden breakpoint header as a separate row. */}
+          <div className="bg-white">
+            <div
+              className={`grid ${mobileColLayout} min-h-[44px] items-center px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A] sm:hidden`}
+            >
+              <div className="min-w-0 pl-1 text-left">Fund</div>
+              <div className="min-w-0 text-right">Last updated</div>
+            </div>
+            <div
+              className={`hidden ${colLayout} min-h-[44px] items-center px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A] sm:grid`}
+            >
+              {/* Span avatar + name columns so "Fund" lines up with the left edge of centered 40px avatars (48px track → 4px inset). */}
+              <div className="col-span-2 self-center pl-1 text-left">Fund</div>
+              <div className="min-w-0 text-right">Size</div>
+              <div className="min-w-0 text-right">No. of stocks</div>
+              <div className="min-w-0 text-right">Last updated</div>
+              <div className="min-w-0 text-right">Top 5 holdings</div>
+            </div>
           </div>
 
-          <div className="min-w-0 text-left">
-            <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">{r.displayName}</div>
-          </div>
+          {rows.map((r) => (
+            <Link
+              key={r.href}
+              href={r.href}
+              prefetch={false}
+              className="block bg-white text-[#09090B] no-underline transition-colors duration-75 visited:text-[#09090B] hover:bg-neutral-50"
+            >
+              {/* Mobile row */}
+              <div
+                className={`grid ${mobileColLayout} items-start px-4 py-3 sm:hidden`}
+              >
+                <div className="flex min-w-0 items-start gap-3 text-left">
+                  <div className="flex shrink-0 justify-center pt-0.5">
+                    <FundRowAvatar src={r.avatarSrc} displayName={r.displayName} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">{r.displayName}</div>
+                    <div className={screenerTickerSublineClass}>
+                      <span className="tabular-nums">{formatUsdCompact(r.totalValueUsd)}</span>
+                      <span> · </span>
+                      <span className="tabular-nums">{stocksLabel(r.positionCount)}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="min-w-0 self-start pt-0.5 text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
+                  {formatFilingDate(r.filingDate)}
+                </div>
+              </div>
 
-          <div className="min-w-0 text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
-            {formatUsdCompact(r.totalValueUsd)}
-          </div>
+              {/* Desktop row */}
+              <div
+                className={`hidden ${colLayout} h-[60px] max-h-[60px] items-center px-4 sm:grid`}
+              >
+                <div className="flex justify-center">
+                  <FundRowAvatar src={r.avatarSrc} displayName={r.displayName} />
+                </div>
 
-          <div className="min-w-0 text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
-            {r.positionCount.toLocaleString("en-US")} {r.positionCount === 1 ? "Stock" : "Stocks"}
-          </div>
+                <div className="min-w-0 text-left">
+                  <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">{r.displayName}</div>
+                </div>
 
-          <div className="min-w-0 text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
-            {formatFilingDate(r.filingDate)}
-          </div>
+                <div className="min-w-0 text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
+                  {formatUsdCompact(r.totalValueUsd)}
+                </div>
 
-          <div className="flex min-h-0 min-w-0 max-h-[60px] shrink items-center justify-end gap-1 overflow-hidden">
-            {r.topHoldings.slice(0, 5).map((h, i) => {
-              const sym = h.ticker?.trim() ? h.ticker.trim().toUpperCase() : null;
-              const logoUrl = sym ? resolveEquityLogoUrlFromListingTicker(sym) : "";
-              return (
-                <CompanyLogo
-                  key={`${sym ?? h.issuer}-${i}`}
-                  name={h.issuer}
-                  logoUrl={logoUrl}
-                  symbol={sym ?? undefined}
-                  size="28"
-                />
-              );
-            })}
-          </div>
-        </Link>
-      ))}
+                <div className="min-w-0 text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
+                  {r.positionCount.toLocaleString("en-US")} {r.positionCount === 1 ? "Stock" : "Stocks"}
+                </div>
+
+                <div className="min-w-0 text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
+                  {formatFilingDate(r.filingDate)}
+                </div>
+
+                <div className="flex min-h-0 min-w-0 max-h-[60px] shrink items-center justify-end gap-1 overflow-hidden">
+                  {r.topHoldings.slice(0, 5).map((h, i) => {
+                    const sym = h.ticker?.trim() ? h.ticker.trim().toUpperCase() : null;
+                    const logoUrl = sym ? resolveEquityLogoUrlFromListingTicker(sym) : "";
+                    return (
+                      <CompanyLogo
+                        key={`${sym ?? h.issuer}-${i}`}
+                        name={h.issuer}
+                        logoUrl={logoUrl}
+                        symbol={sym ?? undefined}
+                        size="28"
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            </Link>
+          ))}
         </div>
       </div>
     </div>

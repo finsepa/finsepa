@@ -8,6 +8,13 @@
    * Use modern viewport units when available, with a safe fallback.
    */
   --app-vh: 100vh;
+  /**
+   * Mobile `<main>` translateY under top bar (matches bar height incl. `max-md:pb-0` shell + header padding).
+   * Keep in sync with `MOBILE_SHELL_TOPBAR_PUSH_PX` in `lib/layout/main-shell-scroll-threshold.ts`.
+   */
+  --mobile-topbar-push: 68px;
+  /** Same as `left-1` / `right-1` on `<main>` — strip of shell bg above the mobile bottom nav. */
+  --mobile-main-bottom-gap: 0.25rem;
 }
 
 @theme inline {
