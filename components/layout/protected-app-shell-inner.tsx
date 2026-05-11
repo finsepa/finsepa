@@ -39,7 +39,7 @@ function ProtectedAppChrome({
   const outerPx = collapsed ? SIDEBAR_OUTER_COLLAPSED_PX : SIDEBAR_OUTER_EXPANDED_PX;
   const leftOffset = `${outerPx}px`;
 
-  const mainRef = useRef<HTMLMainElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
   const pathname = usePathname();
   const [mobileTopbarHidden, setMobileTopbarHidden] = useState(false);
 

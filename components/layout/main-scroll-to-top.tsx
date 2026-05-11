@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 
 type MainScrollToTopProps = {
   /** App shell scroll container; must not be inside a transformed subtree or `fixed` breaks. */
-  scrollRootRef: RefObject<HTMLMainElement | null>;
+  scrollRootRef: RefObject<HTMLElement | null>;
 };
 
 export function MainScrollToTop({ scrollRootRef }: MainScrollToTopProps) {
