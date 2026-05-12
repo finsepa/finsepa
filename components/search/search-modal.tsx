@@ -160,7 +160,7 @@ export function SearchModal({
       className={
         fullscreen
           ? "fixed inset-0 z-[100] flex flex-col bg-white"
-          : "fixed inset-0 z-[100] flex items-start justify-center bg-black/40 pt-[10vh]"
+          : "fixed inset-0 z-[100] flex items-start justify-center bg-black/40 px-4 pt-[max(2vh,env(safe-area-inset-top,0px))] sm:pt-[10vh]"
       }
       onClick={fullscreen ? undefined : onClose}
       role="presentation"
@@ -169,7 +169,7 @@ export function SearchModal({
         className={
           fullscreen
             ? "flex min-h-0 w-full flex-1 flex-col"
-            : "mx-4 w-full max-w-[640px] overflow-hidden rounded-2xl bg-white shadow-2xl"
+            : "w-full max-w-[640px] overflow-hidden rounded-2xl bg-white shadow-2xl"
         }
         onClick={(e) => e.stopPropagation()}
         role="dialog"
@@ -202,7 +202,7 @@ export function SearchModal({
           </kbd>
         </div>
 
-        <div className={fullscreen ? "min-h-0 flex-1 overflow-y-auto py-2" : "max-h-[420px] overflow-y-auto py-2"}>
+        <div className={fullscreen ? "min-h-0 flex-1 overflow-y-auto py-2" : "max-h-[min(420px,60dvh)] overflow-y-auto py-2"}>
           {emptyQuery ? (
             <>
               <div className="px-5 pb-2 pt-1 text-[11px] font-semibold uppercase tracking-wide text-[#A1A1AA]">

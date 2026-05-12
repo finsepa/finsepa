@@ -13,6 +13,8 @@
    * Keep in sync with `MOBILE_SHELL_TOPBAR_PUSH_PX` in `lib/layout/main-shell-scroll-threshold.ts`.
    */
   --mobile-topbar-push: 68px;
+  /** Safe area inset at top — keeps content below notch/Dynamic Island when topbar is hidden. */
+  --sat: env(safe-area-inset-top, 0px);
   /** Same as `left-1` / `right-1` on `<main>` — strip of shell bg above the mobile bottom nav. */
   --mobile-main-bottom-gap: 0.25rem;
 }

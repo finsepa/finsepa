@@ -16,11 +16,6 @@ import {
 } from "@/components/layout/sidebar-layout-context";
 import { Topbar } from "@/components/layout/topbar";
 import { MAIN_SHELL_SCROLL_THRESHOLD_PX } from "@/lib/layout/main-shell-scroll-threshold";
-import { cn } from "@/lib/utils";
-
-/** Shared mobile motion: slide only (no opacity) so the bar doesn’t read as “disappearing”. */
-const mobileTopbarMotion =
-  "max-md:duration-300 max-md:ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:max-md:duration-150";
 
 function ProtectedAppChrome({
   children,
@@ -85,7 +80,6 @@ function ProtectedAppChrome({
       <Suspense fallback={null}>
         <NavigationTopLoader />
       </Suspense>
-      {/* Base `p-1` keeps SSR/client class stable; `md:p-0 md:px-1 md:py-0` is the real desktop gutter (aligns with topbar/main). */}
       <div
         className="fixed inset-y-0 left-0 z-20 hidden p-1 transition-[width] duration-200 ease-out md:block md:top-1 md:bottom-1 md:p-0 md:px-1 md:py-0"
         style={{ width: leftOffset }}
@@ -93,17 +87,14 @@ function ProtectedAppChrome({
         <Sidebar />
       </div>
       <div
-        className={cn(
-          "fixed right-1 top-1 z-30 min-w-0 rounded-[4px] bg-white py-1 max-md:pb-0 shadow-[0_1px_0_0_rgba(0,0,0,0.03)]",
-          "transition-[left] duration-200 ease-out",
-          "max-md:transform-gpu max-md:transition-[transform] max-md:backface-hidden",
-          mobileTopbarMotion,
-          "left-1 md:left-[length:var(--shell-left)]",
-          "md:translate-y-0",
-          mobileTopbarHidden
-            ? "max-md:pointer-events-none max-md:-translate-y-full"
-            : "max-md:translate-y-0",
-        )}
+        suppressHydrationWarning
+        className="fixed right-1 top-1 z-30 min-w-0 rounded-[4px] bg-white py-1 max-md:pb-0 shadow-[0_1px_0_0_rgba(0,0,0,0.03)] md:transition-[left] md:duration-200 md:ease-out max-md:transform-gpu max-md:transition-[transform] max-md:backface-hidden max-md:duration-300 max-md:ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:max-md:duration-150 left-1 md:left-[length:var(--shell-left)] max-md:translate-y-[var(--topbar-ty)] md:translate-y-0"
+        style={
+          {
+            "--topbar-ty": mobileTopbarHidden ? "-100%" : "var(--sat)",
+            pointerEvents: mobileTopbarHidden ? "none" : undefined,
+          } as CSSProperties
+        }
       >
         <Topbar
           userInitials={userInitials}
@@ -114,19 +105,15 @@ function ProtectedAppChrome({
       </div>
       <main
         ref={mainRef}
-        className={cn(
-          "fixed right-1 z-0 min-w-0 overflow-y-auto rounded-[4px] bg-white",
-          "top-1 md:top-[76px]",
-          "transition-[left] duration-200 ease-out",
-          "max-md:transform-gpu max-md:transition-[transform] max-md:backface-hidden",
-          mobileTopbarMotion,
-          "left-1 md:left-[length:var(--shell-left)]",
-          /* Mobile: bottom nav + same horizontal gutter (`left-1`) above nav; desktop: shell bottom inset. */
-          "max-md:bottom-[calc(4.25rem+var(--mobile-main-bottom-gap)+env(safe-area-inset-bottom,0px))] md:bottom-1",
-          "md:translate-y-0",
-          !mobileTopbarHidden && "max-md:translate-y-[var(--mobile-topbar-push)]",
-          mobileTopbarHidden && "max-md:translate-y-0",
-        )}
+        suppressHydrationWarning
+        className="fixed right-1 z-0 min-w-0 overflow-y-auto rounded-[4px] bg-white top-1 md:top-[74px] md:transition-[left] md:duration-200 md:ease-out max-md:transform-gpu max-md:transition-[transform] max-md:backface-hidden max-md:duration-300 max-md:ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:max-md:duration-150 left-1 md:left-[length:var(--shell-left)] max-md:bottom-[calc(4.25rem+var(--mobile-main-bottom-gap)+env(safe-area-inset-bottom,0px))] md:bottom-1 max-md:translate-y-[var(--main-ty)] md:translate-y-0"
+        style={
+          {
+            "--main-ty": mobileTopbarHidden
+              ? "var(--sat)"
+              : "calc(var(--mobile-topbar-push) + var(--sat))",
+          } as CSSProperties
+        }
       >
         {children}
       </main>

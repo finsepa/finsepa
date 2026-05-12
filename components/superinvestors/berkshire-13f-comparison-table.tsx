@@ -43,6 +43,10 @@ const tdNum =
 const rowGridFive =
   "grid w-full min-w-[720px] grid-cols-[minmax(180px,2.05fr)_minmax(72px,0.55fr)_minmax(120px,1.05fr)_minmax(96px,0.9fr)_minmax(96px,0.9fr)] gap-x-4";
 
+/** Mobile: Company | % of Portfolio (merged with activity subline). */
+const mobileRowGrid =
+  "grid grid-cols-[minmax(0,1fr)_minmax(5.5rem,auto)] gap-x-3 items-center";
+
 const rowShellBase = "min-h-[60px] items-center transition-colors duration-75";
 
 /** SEC names are often SHOUTCASE; present as readable title case for the UI. */
@@ -69,7 +73,7 @@ function CompanyTickerCell({ companyName, ticker }: { companyName: string; ticke
     <div className="flex min-w-0 items-center gap-3 pr-2 text-left">
       <CompanyLogo name={displayName} logoUrl={logoUrl} symbol={sym ?? undefined} size="md" />
       <div className="flex min-w-0 max-w-[min(280px,45vw)] flex-col gap-0.5 py-0.5">
-        <span className="line-clamp-2 text-[14px] font-semibold leading-5 text-[#09090B]">{displayName}</span>
+        <span className="line-clamp-1 text-[14px] font-semibold leading-5 text-[#09090B] sm:line-clamp-2">{displayName}</span>
         <span className="text-[12px] font-normal leading-4 text-[#71717A]">{sym ?? "—"}</span>
       </div>
     </div>
@@ -81,6 +85,33 @@ function formatSharePctChange(n: number | null): string {
   if (n === 0) return "0.00%";
   const s = `${sharePctFmt.format(Math.abs(n))}%`;
   return n > 0 ? `+${s}` : `-${s}`;
+}
+
+/** Mobile-only combined cell: "6.13%" top, "Increased +0.78%" subline. */
+function MobilePortfolioCell({
+  weight,
+  hasPriorFiling,
+  sharesChangePct,
+}: {
+  weight: number;
+  hasPriorFiling: boolean;
+  sharesChangePct: number | null;
+}) {
+  const pctVal = sharesChangePct;
+  const hasChange = hasPriorFiling && pctVal != null && Number.isFinite(pctVal) && pctVal !== 0;
+  const up = hasChange && pctVal! > 0;
+  const color = hasChange ? (up ? cellUp : cellDown) : "text-[#71717A]";
+
+  return (
+    <div className="flex flex-col items-end justify-center text-right">
+      <span className="text-[14px] font-medium leading-5 tabular-nums text-[#09090B]">
+        {pct.format(weight)}%
+      </span>
+      <span className={cn("text-[12px] font-normal leading-4 tabular-nums", color)}>
+        {hasChange ? `${up ? "Increased" : "Reduced"} ${formatSharePctChange(pctVal!)}` : "—"}
+      </span>
+    </div>
+  );
 }
 
 /** Shares column when comparing filings: label + Δ%, or "-" / "-" when flat or N/A. */
@@ -287,15 +318,13 @@ export function Berkshire13fComparisonTable({
   const resolved = useResolvedTickers(rows);
 
   return (
-    <div className="min-w-0 -mx-4 overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch] sm:mx-0 sm:overflow-visible sm:pb-0">
-      <div className="min-w-[720px] sm:min-w-0">
+    <div className="min-w-0 -mx-4 sm:mx-0">
+      {/* ── Mobile layout ── */}
+      <div className="sm:hidden">
         <div className="divide-y divide-[#E4E4E7] border-t border-b border-[#E4E4E7] bg-white">
-          <div className={cn(headerGrid, "px-4")}>
+          <div className={cn(mobileRowGrid, "h-11 min-h-[44px] bg-white px-4")}>
             <div className={thCompany}>Company</div>
             <div className={thRight}>% of Portfolio</div>
-            <div className={thRight}>Recent Activity</div>
-            <div className={thRight}>Shares</div>
-            <div className={thRight}>Value</div>
           </div>
 
           {pagedRows.map((r, i) => {
@@ -305,27 +334,66 @@ export function Berkshire13fComparisonTable({
             const globalIndex = (safePage - 1) * pageSize + i;
             return (
               <ComparisonRowShell
-                key={`${r.cusip ?? r.companyName}-${globalIndex}`}
+                key={`${r.cusip ?? r.companyName}-${globalIndex}-m`}
                 ticker={mergedTicker}
                 displayName={displayName}
-                gridClass={cn(rowGridFive, "px-4")}
+                gridClass={cn(mobileRowGrid, "px-4")}
               >
                 <div className={tdCompany}>
                   <CompanyTickerCell companyName={r.companyName} ticker={mergedTicker} />
                 </div>
-                <div className={cn(tdNum, "font-medium")}>{pct.format(r.weight)}%</div>
-                <div className={cn(tdNum, "font-medium")}>
-                  <SharesColumnCell
-                    hasPriorFiling={hasPriorFiling}
-                    shares={r.shares}
-                    sharesChangePct={r.sharesChangePct}
-                  />
-                </div>
-                <div className={tdNum}>{r.shares != null ? sharesFmt.format(r.shares) : "—"}</div>
-                <div className={tdNum}>{formatUsdCompactSigDigits(r.valueUsd, 4)}</div>
+                <MobilePortfolioCell
+                  weight={r.weight}
+                  hasPriorFiling={hasPriorFiling}
+                  sharesChangePct={r.sharesChangePct}
+                />
               </ComparisonRowShell>
             );
           })}
+        </div>
+      </div>
+
+      {/* ── Desktop layout ── */}
+      <div className="hidden overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch] sm:block sm:overflow-visible sm:pb-0">
+        <div className="min-w-[720px] sm:min-w-0">
+          <div className="divide-y divide-[#E4E4E7] border-t border-b border-[#E4E4E7] bg-white">
+            <div className={cn(headerGrid, "px-4")}>
+              <div className={thCompany}>Company</div>
+              <div className={thRight}>% of Portfolio</div>
+              <div className={thRight}>Recent Activity</div>
+              <div className={thRight}>Shares</div>
+              <div className={thRight}>Value</div>
+            </div>
+
+            {pagedRows.map((r, i) => {
+              const displayName = issuerDisplayTitle(r.companyName);
+              const key = r.cusip?.trim() ? `CUSIP:${r.cusip.trim().toUpperCase()}` : `ISSUER:${displayName.toLowerCase()}`;
+              const mergedTicker = r.ticker?.trim() ? r.ticker : resolved[key] ?? null;
+              const globalIndex = (safePage - 1) * pageSize + i;
+              return (
+                <ComparisonRowShell
+                  key={`${r.cusip ?? r.companyName}-${globalIndex}`}
+                  ticker={mergedTicker}
+                  displayName={displayName}
+                  gridClass={cn(rowGridFive, "px-4")}
+                >
+                  <div className={tdCompany}>
+                    <CompanyTickerCell companyName={r.companyName} ticker={mergedTicker} />
+                  </div>
+                  <div className={cn(tdNum, "font-medium")}>{pct.format(r.weight)}%</div>
+                  <div className={cn(tdNum, "font-medium")}>
+                    <SharesColumnCell
+                      hasPriorFiling={hasPriorFiling}
+                      shares={r.shares}
+                      sharesChangePct={r.sharesChangePct}
+                    />
+                  </div>
+                  <div className={tdNum}>{r.shares != null ? sharesFmt.format(r.shares) : "—"}</div>
+                  <div className={tdNum}>{formatUsdCompactSigDigits(r.valueUsd, 4)}</div>
+                </ComparisonRowShell>
+              );
+            })}
+          </div>
         </div>
       </div>
 

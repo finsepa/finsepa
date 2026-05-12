@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
-import { CalendarDays, ChevronLeft, ChevronRight, LayoutList } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
+import { CalendarDays, ChevronLeft, ChevronRight, LayoutList, Settings2 } from "lucide-react";
 
+import { EconomyEventHistoryModal } from "@/components/economy/economy-event-history-modal";
 import { ScreenerTableScroll } from "@/components/screener/screener-table-scroll";
 import { FormListboxSelect, type ListboxOption } from "@/components/ui/form-listbox-select";
 import type { EconomyCalendarEvent, EconomyDayColumn, EconomyWeekPayload } from "@/lib/market/economy-calendar-types";
@@ -31,12 +32,13 @@ const ECONOMY_COUNTRY_OPTIONS: ListboxOption[] = [
   { value: "ES", label: `${countryFlagEmoji("ES")} Spain` },
 ];
 
-type ImpactFilter = "all" | "notable" | "major";
+type ImpactFilter = "all" | "major" | "notable" | "low";
 
 const IMPACT_OPTIONS: ListboxOption<ImpactFilter>[] = [
-  { value: "all", label: "All impact levels" },
-  { value: "notable", label: "Medium impact +" },
-  { value: "major", label: "High impact only" },
+  { value: "all", label: "All events" },
+  { value: "major", label: "High impact" },
+  { value: "notable", label: "Medium impact" },
+  { value: "low", label: "Low impact" },
 ];
 
 function todayYmdUtc(): string {
@@ -68,12 +70,13 @@ function eventTitle(e: EconomyCalendarEvent): string {
 function passesImpact(e: EconomyCalendarEvent, filter: ImpactFilter): boolean {
   if (filter === "all") return true;
   if (filter === "major") return e.importance >= 3;
-  return e.importance >= 2;
+  if (filter === "notable") return e.importance === 2;
+  return e.importance <= 1;
 }
 
 function ImportanceBars({ importance }: { importance: EconomyCalendarEvent["importance"] }) {
-  const heights =
-    importance >= 3 ? ([7, 9, 11] as const) : importance === 2 ? ([6, 8, 10] as const) : ([5, 6, 7] as const);
+  const bars: readonly number[] =
+    importance >= 3 ? [7, 9, 11] : importance === 2 ? [7, 10] : [7];
   return (
     <div
       className="flex h-5 w-5 shrink-0 items-center justify-center rounded-[10px] bg-[#F4F4F5]"
@@ -81,7 +84,7 @@ function ImportanceBars({ importance }: { importance: EconomyCalendarEvent["impo
       aria-hidden
     >
       <div className="flex h-[11px] items-end justify-center gap-0.5">
-        {heights.map((h, i) => (
+        {bars.map((h, i) => (
           <span key={i} className="w-0.5 rounded-[10px] bg-[#2563EB]" style={{ height: `${h}px` }} />
         ))}
       </div>
@@ -91,29 +94,43 @@ function ImportanceBars({ importance }: { importance: EconomyCalendarEvent["impo
 
 /** List row importance indicator — matches Figma bar proportions. */
 function ImportanceBarsRow({ importance }: { importance: EconomyCalendarEvent["importance"] }) {
-  const heights =
-    importance >= 3 ? ([12, 16, 20] as const) : importance === 2 ? ([10, 14, 18] as const) : ([8, 10, 12] as const);
+  const bars: readonly number[] =
+    importance >= 3 ? [12, 16, 20] : importance === 2 ? [12, 17] : [12];
   return (
     <div className="flex h-8 w-7 shrink-0 items-end justify-center gap-1 pb-0.5 pt-1" title="Impact" aria-hidden>
-      {heights.map((h, i) => (
+      {bars.map((h, i) => (
         <span key={i} className="w-1 rounded-[10px] bg-[#2563EB]" style={{ height: `${h}px` }} />
       ))}
     </div>
   );
 }
 
+function eventHasData(e: EconomyCalendarEvent): boolean {
+  return e.estimate != null || e.actual != null || e.previous != null;
+}
+
 function EconomyEventCard({
   event,
   offsetMinutes,
+  onEventClick,
 }: {
   event: EconomyCalendarEvent;
   offsetMinutes: number;
+  onEventClick: (e: EconomyCalendarEvent) => void;
 }) {
   const flag = countryFlagEmoji(event.country);
+  const clickable = eventHasData(event);
   return (
     <article
-      className="w-full rounded-lg border border-[#E4E4E7] bg-white px-3 py-2 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]"
+      className={cn(
+        "group w-full rounded-lg border border-[#E4E4E7] bg-white px-3 py-2 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors",
+        clickable && "cursor-pointer hover:bg-[#FAFAFA]",
+      )}
       data-event-id={event.id}
+      onClick={clickable ? () => onEventClick(event) : undefined}
+      role={clickable ? "button" : undefined}
+      tabIndex={clickable ? 0 : undefined}
+      onKeyDown={clickable ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onEventClick(event); } } : undefined}
     >
       <div className="flex items-center gap-2">
         <ImportanceBars importance={event.importance} />
@@ -124,7 +141,10 @@ function EconomyEventCard({
           {flag || "•"}
         </span>
       </div>
-      <h3 className="mt-1 text-left text-sm font-semibold leading-5 text-[#09090B]">{eventTitle(event)}</h3>
+      <h3 className={cn(
+        "mt-1 text-left text-sm font-semibold leading-5 text-[#09090B]",
+        clickable && "underline-offset-2 decoration-[#71717A] group-hover:underline",
+      )}>{eventTitle(event)}</h3>
       <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs leading-4">
         <dt className="text-[#71717A]">Forecast</dt>
         <dd className="text-right font-medium tabular-nums text-[#09090B]">{formatEconomyMetric(event.estimate)}</dd>
@@ -181,24 +201,33 @@ function EconomyWeekdayStrip({
 function EconomyListRow({
   event,
   offsetMinutes,
+  onEventClick,
 }: {
   event: EconomyCalendarEvent;
   offsetMinutes: number;
+  onEventClick: (e: EconomyCalendarEvent) => void;
 }) {
-  const flag = countryFlagEmoji(event.country);
+  const clickable = eventHasData(event);
   return (
-    <div className={cn(listTableRowClass, "text-[14px] leading-5 text-[#09090B]")}>
+    <div
+      className={cn(
+        listTableRowClass,
+        "group text-[14px] leading-5 text-[#09090B]",
+        clickable && "cursor-pointer",
+      )}
+      onClick={clickable ? () => onEventClick(event) : undefined}
+      role={clickable ? "button" : undefined}
+      tabIndex={clickable ? 0 : undefined}
+      onKeyDown={clickable ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onEventClick(event); } } : undefined}
+    >
       <div className="flex justify-center">
         <ImportanceBarsRow importance={event.importance} />
       </div>
       <span className="min-w-0 tabular-nums">{formatEconomyClockUtc(event.instantMs, offsetMinutes)}</span>
-      <div className="flex min-w-0 items-center gap-2">
-        <span className="flex h-6 w-6 shrink-0 items-center justify-center text-base leading-none" aria-hidden>
-          {flag || "•"}
-        </span>
-        <span className="min-w-0 truncate font-normal">{event.country}</span>
-      </div>
-      <span className="min-w-0 truncate font-semibold">{eventTitle(event)}</span>
+      <span className={cn(
+        "min-w-0 truncate font-semibold",
+        clickable && "underline-offset-2 decoration-[#71717A] group-hover:underline",
+      )}>{eventTitle(event)}</span>
       <div className={listNumericCellClass}>{formatEconomyMetric(event.estimate)}</div>
       <div className={listNumericCellClass}>{formatEconomyMetric(event.actual)}</div>
       <div className={listNumericCellClass}>{formatEconomyMetric(event.previous)}</div>
@@ -215,7 +244,7 @@ const dropdownTriggerClass =
 
 /** Grid columns aligned with screener tables (`gap-x-2`, right-aligned numeric cols). */
 const economyListColLayout =
-  "grid grid-cols-[32px_76px_minmax(96px,1fr)_minmax(0,2fr)_1fr_1fr_1fr] gap-x-2";
+  "grid grid-cols-[32px_76px_minmax(0,2fr)_1fr_1fr_1fr] gap-x-2";
 
 const listTableHeaderClass = cn(
   economyListColLayout,
@@ -274,6 +303,15 @@ export function EconomyCalendarClient({
 
   const totalFilteredEvents = filteredDays.reduce((n, d) => n + d.events.length, 0);
 
+  const [mobileSettingsOpen, setMobileSettingsOpen] = useState(false);
+  const [historyEvent, setHistoryEvent] = useState<EconomyCalendarEvent | null>(null);
+  const handleEventClick = useCallback((ev: EconomyCalendarEvent) => {
+    setHistoryEvent(ev);
+  }, []);
+  const handleModalClose = useCallback(() => {
+    setHistoryEvent(null);
+  }, []);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-0.5">
@@ -301,8 +339,97 @@ export function EconomyCalendarClient({
             </div>
           </div>
 
-          <div className="flex w-full flex-wrap items-center justify-end gap-3 sm:w-auto sm:shrink-0">
-            <div className="flex shrink-0 rounded-[10px] bg-[#F4F4F5] p-0.5">
+          <div className="flex w-full items-center justify-end gap-3 sm:w-auto sm:shrink-0">
+            {/* Mobile: settings toggle button */}
+            <button
+              type="button"
+              onClick={() => setMobileSettingsOpen((v) => !v)}
+              className={cn(
+                "flex h-9 items-center gap-1.5 rounded-[10px] border border-[#E4E4E7] bg-white px-3 text-sm font-medium text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors hover:bg-[#F4F4F5] sm:hidden",
+                mobileSettingsOpen && "bg-[#F4F4F5]",
+              )}
+              aria-expanded={mobileSettingsOpen}
+              aria-label="Settings"
+            >
+              <Settings2 className="h-4 w-4" strokeWidth={1.75} />
+              <span>Settings</span>
+            </button>
+
+            {/* Desktop: always visible controls */}
+            <div className="hidden shrink-0 items-center gap-3 sm:flex">
+              <div className="flex shrink-0 rounded-[10px] bg-[#F4F4F5] p-0.5">
+                <button
+                  type="button"
+                  onClick={() => setView("grid")}
+                  className={cn(
+                    "flex h-8 w-9 items-center justify-center rounded-[10px] transition-colors",
+                    view === "grid"
+                      ? "bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.12),0px_1px_1px_0px_rgba(10,10,10,0.07)]"
+                      : "text-[#52525B] hover:text-[#09090B]",
+                  )}
+                  aria-pressed={view === "grid"}
+                  aria-label="Week grid view"
+                >
+                  <CalendarDays className="h-5 w-5" strokeWidth={1.75} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setView("list")}
+                  className={cn(
+                    "flex h-8 w-9 items-center justify-center rounded-[10px] transition-colors",
+                    view === "list"
+                      ? "bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.12),0px_1px_1px_0px_rgba(10,10,10,0.07)]"
+                      : "text-[#52525B] hover:text-[#09090B]",
+                  )}
+                  aria-pressed={view === "list"}
+                  aria-label="List view"
+                >
+                  <LayoutList className="h-5 w-5" strokeWidth={1.75} />
+                </button>
+              </div>
+
+              <FormListboxSelect
+                aria-label="Impact filter"
+                value={impactFilter}
+                onChange={setImpactFilter}
+                options={IMPACT_OPTIONS}
+                truncateLabel={false}
+                className="w-max shrink-0"
+                triggerClassName={dropdownTriggerClass}
+              />
+              <FormListboxSelect
+                aria-label="Timezone"
+                value={tzId}
+                onChange={setTzId}
+                options={tzOptions}
+                truncateLabel={false}
+                className="w-max shrink-0"
+                triggerClassName={dropdownTriggerClass}
+              />
+              <FormListboxSelect
+                aria-label="Country"
+                value={ECONOMY_COUNTRY_OPTIONS.some((o) => o.value === country) ? country : "US"}
+                onChange={(next) => {
+                  const qs = new URLSearchParams({
+                    week: data.weekMondayYmd,
+                    country: next,
+                  });
+                  router.push(`/economy?${qs.toString()}`);
+                }}
+                options={ECONOMY_COUNTRY_OPTIONS}
+                truncateLabel={false}
+                truncateOptions={false}
+                className="w-max shrink-0"
+                triggerClassName={dropdownTriggerClass}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile settings panel */}
+        {mobileSettingsOpen && (
+          <div className="relative z-20 flex flex-col gap-3 sm:hidden">
+            <div className="flex shrink-0 self-start rounded-[10px] bg-[#F4F4F5] p-0.5">
               <button
                 type="button"
                 onClick={() => setView("grid")}
@@ -332,14 +459,13 @@ export function EconomyCalendarClient({
                 <LayoutList className="h-5 w-5" strokeWidth={1.75} />
               </button>
             </div>
-
             <FormListboxSelect
               aria-label="Impact filter"
               value={impactFilter}
               onChange={setImpactFilter}
               options={IMPACT_OPTIONS}
               truncateLabel={false}
-              className="max-w-[min(100%,280px)] shrink-0 sm:w-max sm:max-w-none"
+              className="w-full"
               triggerClassName={dropdownTriggerClass}
             />
             <FormListboxSelect
@@ -348,7 +474,7 @@ export function EconomyCalendarClient({
               onChange={setTzId}
               options={tzOptions}
               truncateLabel={false}
-              className="max-w-[min(100%,200px)] shrink-0 sm:w-max sm:max-w-none"
+              className="w-full"
               triggerClassName={dropdownTriggerClass}
             />
             <FormListboxSelect
@@ -364,11 +490,11 @@ export function EconomyCalendarClient({
               options={ECONOMY_COUNTRY_OPTIONS}
               truncateLabel={false}
               truncateOptions={false}
-              className="max-w-[min(100%,220px)] shrink-0 sm:w-max sm:max-w-none"
+              className="w-full"
               triggerClassName={dropdownTriggerClass}
             />
           </div>
-        </div>
+        )}
       </div>
 
       {view === "grid" ? (
@@ -405,7 +531,7 @@ export function EconomyCalendarClient({
                       </div>
                     ) : (
                       day.events.map((ev) => (
-                        <EconomyEventCard key={ev.id} event={ev} offsetMinutes={offsetMinutes} />
+                        <EconomyEventCard key={ev.id} event={ev} offsetMinutes={offsetMinutes} onEventClick={handleEventClick} />
                       ))
                     )}
                   </div>
@@ -437,12 +563,11 @@ export function EconomyCalendarClient({
                     <div
                       className={cn(listTableHeaderClass, day.date === todayKey && "border-t-0")}
                       role="row"
-                      aria-label="Impact, time, country, event, forecast, actual, prior"
+                      aria-label="Impact, time, event, forecast, actual, prior"
                     >
                       {/* In-flow placeholders: `sr-only` is position:absolute and skips grid tracks, which broke alignment. */}
                       <div aria-hidden className="min-w-0" />
                       <div aria-hidden className="min-w-0" />
-                      <div className="min-w-0 text-left">Country</div>
                       <div className="min-w-0 text-left">Event</div>
                       <div className={cn(listNumericCellClass, "font-medium text-[#71717A]")}>Forecast</div>
                       <div className={cn(listNumericCellClass, "font-medium text-[#71717A]")}>Actual</div>
@@ -454,7 +579,7 @@ export function EconomyCalendarClient({
                         No scheduled reports
                       </div>
                     ) : (
-                      day.events.map((ev) => <EconomyListRow key={ev.id} event={ev} offsetMinutes={offsetMinutes} />)
+                      day.events.map((ev) => <EconomyListRow key={ev.id} event={ev} offsetMinutes={offsetMinutes} onEventClick={handleEventClick} />)
                     )}
                   </section>
                 ))}
@@ -462,6 +587,15 @@ export function EconomyCalendarClient({
             </ScreenerTableScroll>
           )}
         </div>
+      )}
+
+      {historyEvent && (
+        <EconomyEventHistoryModal
+          open={!!historyEvent}
+          onClose={handleModalClose}
+          event={historyEvent}
+          country={country}
+        />
       )}
     </div>
   );

@@ -177,7 +177,7 @@ export function StockHeader({
           )}
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-[20px] font-semibold leading-7 text-[#09090B] [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical] overflow-hidden break-words">
+              <h1 className="text-[20px] font-semibold leading-7 text-[#09090B] [display:-webkit-box] [-webkit-line-clamp:1] sm:[-webkit-line-clamp:2] [-webkit-box-orient:vertical] overflow-hidden break-words">
                 {titleName}
               </h1>
               <span className="text-[14px] font-medium text-[#71717A]">{symbol}</span>
@@ -214,10 +214,11 @@ export function StockHeader({
                 name: titleName.trim() || symbol,
               })
             }
-            className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-[10px] bg-[#09090B] px-3.5 text-[13px] font-semibold text-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.12)] transition-colors hover:bg-[#27272A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/25"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[#09090B] text-[13px] font-semibold text-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.12)] transition-colors hover:bg-[#27272A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/25 sm:w-auto sm:gap-1.5 sm:px-3.5"
+            aria-label="Add Trade"
           >
             <Plus className="h-4 w-4 shrink-0" strokeWidth={2.25} aria-hidden />
-            Add Trade
+            <span className="hidden sm:inline">Add Trade</span>
           </button>
         </div>
       </div>

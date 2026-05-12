@@ -71,20 +71,42 @@ export function Superinvestor13fProfile({
           </div>
         </div>
 
-        <dl className="mt-3 flex max-w-3xl flex-col gap-0 sm:flex-row sm:items-stretch">
-          <div className="flex h-fit flex-1 flex-col gap-1 py-1 sm:border-r sm:border-[#E4E4E7] sm:pr-8">
+        {/* ── Mobile: label left / value right on each row ── */}
+        <dl className="mt-4 flex flex-col gap-2.5 sm:hidden">
+          <div className="flex items-baseline justify-between">
+            <dt className="text-[14px] font-normal leading-5 text-[#71717A]">Size</dt>
+            <dd className="text-[14px] font-semibold leading-5 tabular-nums text-[#09090B]">
+              {formatSizeForHeader(data.totalValueUsd)}
+            </dd>
+          </div>
+          <div className="flex items-baseline justify-between">
+            <dt className="text-[14px] font-normal leading-5 text-[#71717A]">No. of stocks</dt>
+            <dd className="text-[14px] font-semibold leading-5 tabular-nums text-[#09090B]">
+              {data.positionCount.toLocaleString("en-US")} {data.positionCount === 1 ? "Stock" : "Stocks"}
+            </dd>
+          </div>
+          <div className="flex items-baseline justify-between">
+            <dt className="text-[14px] font-normal leading-5 text-[#71717A]">Last update</dt>
+            <dd className="text-[14px] font-semibold leading-5 text-[#09090B]">
+              {formatLastUpdateLabel(data.current.filingDate ?? data.current.reportDate)}
+            </dd>
+          </div>
+        </dl>
+        {/* ── Desktop: horizontal with dividers ── */}
+        <dl className="mt-3 hidden max-w-3xl sm:flex sm:flex-row sm:items-stretch sm:gap-0">
+          <div className="flex h-fit flex-1 flex-col gap-1 border-r border-[#E4E4E7] pr-8 py-1">
             <dt className="text-[13px] font-normal leading-5 text-[#71717A]">Size</dt>
             <dd className="text-[20px] font-semibold leading-7 tabular-nums text-[#09090B]">
               {formatSizeForHeader(data.totalValueUsd)}
             </dd>
           </div>
-          <div className="flex flex-1 flex-col gap-1 border-t border-[#E4E4E7] py-4 sm:border-t-0 sm:border-r sm:border-[#E4E4E7] sm:px-8 sm:py-1">
+          <div className="flex flex-1 flex-col gap-1 border-r border-[#E4E4E7] px-8 py-1">
             <dt className="text-[13px] font-normal leading-5 text-[#71717A]">No. of stocks</dt>
             <dd className="text-[20px] font-semibold leading-7 tabular-nums text-[#09090B]">
               {data.positionCount.toLocaleString("en-US")} {data.positionCount === 1 ? "Stock" : "Stocks"}
             </dd>
           </div>
-          <div className="flex flex-1 flex-col gap-1 border-t border-[#E4E4E7] py-4 sm:border-t-0 sm:pl-8 sm:py-1">
+          <div className="flex flex-1 flex-col gap-1 pl-8 py-1">
             <dt className="text-[13px] font-normal leading-5 text-[#71717A]">Last update</dt>
             <dd className="text-[20px] font-semibold leading-7 text-[#09090B]">
               {formatLastUpdateLabel(data.current.filingDate ?? data.current.reportDate)}
