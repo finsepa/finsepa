@@ -1226,7 +1226,18 @@ export function PortfolioWorkspaceProvider({
             setPortfolios((prev) => [...prev, { id, name: t, privacy: nextPrivacy }]);
             setSelectedPortfolioId(id);
             setCreatePortfolioOpen(false);
-            toast.success(`Portfolio "${t}" created.`);
+            toast.success(
+              <span>
+                Portfolio{" "}
+                <a
+                  href="/portfolio"
+                  className="font-semibold underline underline-offset-2"
+                >
+                  &ldquo;{t}&rdquo;
+                </a>{" "}
+                created.
+              </span>,
+            );
             if (nextPrivacy === "public") {
               void putPublicPortfolioListingRequest({
                 portfolioId: id,
