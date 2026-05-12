@@ -28,29 +28,31 @@ export function StockDetailTabNav({
   onTabChange: (tab: StockDetailTabId) => void;
 }) {
   return (
-    <div className="border-b border-solid border-[#E4E4E7]">
-      <nav
-        className="-mx-1 flex flex-nowrap items-start gap-4 overflow-x-auto overflow-y-hidden pb-px [-webkit-overflow-scrolling:touch] sm:mx-0 sm:flex-wrap sm:gap-5 sm:overflow-visible"
-        aria-label="Stock sections"
-      >
-        {TABS.map(({ id, label }) => {
-          const isActive = id === activeTab;
-          return (
-            <button
-              key={id}
-              type="button"
-              onClick={() => onTabChange(id)}
-              className={`-mb-px shrink-0 cursor-pointer border-b-2 border-solid py-2 text-left text-[14px] leading-6 transition-colors duration-100 ${
-                isActive
-                  ? "border-[#09090B] font-semibold text-[#09090B]"
-                  : "border-transparent font-medium text-[#71717A] hover:text-[#09090B]"
-              }`}
-            >
-              {label}
-            </button>
-          );
-        })}
-      </nav>
+    <div className="sticky top-0 z-20 -mx-4 -mt-5 bg-white px-4 pt-2 sm:-mx-9 sm:px-9">
+      <div className="border-b border-solid border-[#E4E4E7]">
+        <nav
+          className="-mx-1 flex flex-nowrap items-start gap-4 overflow-x-auto overflow-y-hidden pb-px [-webkit-overflow-scrolling:touch] sm:mx-0 sm:flex-wrap sm:gap-5 sm:overflow-visible"
+          aria-label="Stock sections"
+        >
+          {TABS.map(({ id, label }) => {
+            const isActive = id === activeTab;
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => onTabChange(id)}
+                className={`-mb-px shrink-0 cursor-pointer border-b-2 border-solid py-2 text-left text-[14px] leading-6 transition-colors duration-100 ${
+                  isActive
+                    ? "border-[#09090B] font-semibold text-[#09090B]"
+                    : "border-transparent font-medium text-[#71717A] hover:text-[#09090B]"
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </nav>
+      </div>
     </div>
   );
 }
