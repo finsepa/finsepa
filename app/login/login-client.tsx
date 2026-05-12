@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
+import { Check } from "lucide-react";
 import { AuthDivider, AuthInput, AuthLabel, AuthPrimaryButton, AuthSecondaryButton } from "@/components/auth/auth-form-ui";
 import { PATH_APP_ENTRY, PATH_AUTH_CALLBACK } from "@/lib/auth/routes";
 import { friendlySupabaseAuthErrorMessage } from "@/lib/auth/supabase-error-message";
@@ -191,15 +192,17 @@ export function LoginClient({ resetSuccess, callbackError, onEmailPasswordSucces
         />
         <div className="mt-3 flex items-center justify-between gap-4">
           <label className="flex cursor-pointer items-center gap-2 select-none">
-            <input
-              type="checkbox"
-              name="remember"
-              checked={rememberMe}
-              onChange={(e) => setRememberMe(e.target.checked)}
-              disabled={loading}
-              className="h-4 w-4 shrink-0 cursor-pointer rounded-[4px] border border-[#D4D4D8] accent-[#09090B] disabled:cursor-not-allowed disabled:opacity-60"
+            <button
+              type="button"
+              role="checkbox"
+              aria-checked={rememberMe}
               aria-label="Remember me on this device"
-            />
+              disabled={loading}
+              onClick={() => setRememberMe((v) => !v)}
+              className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[4px] border border-[#D4D4D8] transition-colors disabled:cursor-not-allowed disabled:opacity-60 aria-checked:border-[#09090B] aria-checked:bg-[#09090B]"
+            >
+              {rememberMe && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
+            </button>
             <span className="text-sm font-semibold text-[#09090B]">Remember me</span>
           </label>
           <Link
