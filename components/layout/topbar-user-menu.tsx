@@ -96,9 +96,7 @@ export function TopbarUserMenu({
     showTrialCountdown ||
     (open && !planLoading && planLabel !== "Pro");
 
-  const menuTriggerLabel = showTrialCountdown
-    ? `Profile menu, ${platformTrialDaysLeft} ${platformTrialDaysLeft === 1 ? "day" : "days"} left in trial`
-    : "Profile";
+  const menuTriggerLabel = "Profile";
 
   async function handleSignOut() {
     setSigningOut(true);
