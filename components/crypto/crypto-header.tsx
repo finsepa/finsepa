@@ -93,7 +93,7 @@ export function CryptoHeader({
   const wlKey = cryptoWatchlistKey(sym);
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 max-md:px-3 md:px-0">
       <div className="flex items-center">
         <div className="flex items-center gap-1 text-[14px] text-[#71717A]">
           <Link href={SCREENER_CRYPTO_HREF} className="transition-colors hover:text-[#09090B]">

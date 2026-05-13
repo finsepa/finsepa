@@ -3,13 +3,13 @@
 import { LogoSkeleton, SkeletonBox, TextSkeleton } from "@/components/markets/skeleton";
 import { ScreenerTableScroll } from "@/components/screener/screener-table-scroll";
 
-/** Matches {@link ScreenerTable}: mobile hides 1M / YTD / M Cap / PE. */
+/** Matches {@link ScreenerTable}: mobile hides star + 1M / YTD / M Cap / PE. */
 const stocksColLayout =
-  "grid-cols-[40px_48px_minmax(0,2fr)_1fr_1fr] gap-x-2 sm:grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr_1fr_96px]";
+  "grid-cols-[48px_minmax(0,2fr)_1fr_1fr] gap-x-2 sm:grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr_1fr_96px]";
 const cryptoColLayout =
-  "grid-cols-[40px_48px_minmax(0,2fr)_1fr_1fr] gap-x-2 sm:grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr_1fr]";
+  "grid-cols-[28px_minmax(0,2fr)_1fr] gap-x-2 sm:grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr_1fr]";
 const indicesColLayout =
-  "grid-cols-[40px_48px_minmax(0,2fr)_1fr_1fr] gap-x-2 sm:grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr]";
+  "grid-cols-[28px_minmax(0,2fr)_1fr] gap-x-2 sm:grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr]";
 
 /** Matches {@link IndexCards} — stacked label / value / change, no sparkline. */
 export function IndexCardSkeleton({ name }: { name: string }) {
@@ -25,7 +25,7 @@ export function IndexCardSkeleton({ name }: { name: string }) {
 function StocksRowSkeleton() {
   return (
     <div className={`grid ${stocksColLayout} min-h-[56px] items-center px-2 sm:min-h-[60px] sm:px-4`}>
-      <div className="flex w-10 shrink-0 items-center justify-center px-3">
+      <div className="hidden w-10 shrink-0 items-center justify-center px-3 sm:flex">
         <SkeletonBox className="h-4 w-4 rounded" />
       </div>
       <div className="flex justify-center">
@@ -59,7 +59,10 @@ export function StocksTableSkeleton({ rows = 10 }: { rows?: number }) {
           <div
             key={i}
             className={`flex ${
-              i === 0 || i === 1 ? "justify-center" : i === 2 ? "justify-start" : "justify-end"
+              i === 0 ? "hidden sm:flex"
+              : i === 1 ? "justify-center"
+              : i === 2 ? "justify-start"
+              : "justify-end"
             } ${i >= 5 ? "hidden sm:flex" : ""}`}
           >
             <SkeletonBox className="h-3 w-10 rounded" />
@@ -77,7 +80,7 @@ export function StocksTableSkeleton({ rows = 10 }: { rows?: number }) {
 function CryptoRowSkeleton() {
   return (
     <div className={`group grid min-h-[56px] ${cryptoColLayout} items-center bg-white px-2 sm:min-h-[60px] sm:px-4`}>
-      <div className="flex w-10 shrink-0 items-center justify-center px-3">
+      <div className="hidden w-10 shrink-0 items-center justify-center px-3 sm:flex">
         <SkeletonBox className="h-4 w-4 rounded" />
       </div>
       <div className="flex justify-center">
@@ -93,7 +96,7 @@ function CryptoRowSkeleton() {
       <div className="flex justify-end">
         <TextSkeleton wClass="w-16" />
       </div>
-      <div className="flex justify-end">
+      <div className="hidden justify-end sm:flex">
         <TextSkeleton wClass="w-12" />
       </div>
       <div className="hidden justify-end sm:flex">
@@ -116,7 +119,7 @@ export function CryptoTableSkeleton({ rows = 10 }: { rows?: number }) {
       <div
         className={`grid ${cryptoColLayout} min-h-[44px] items-center bg-white px-2 py-0 text-[14px] font-medium leading-5 text-[#71717A] sm:px-4`}
       >
-        <div />
+        <div className="hidden sm:block" aria-hidden />
         <div className="flex justify-center">
           <SkeletonBox className="h-3 w-4 rounded" />
         </div>
@@ -126,7 +129,7 @@ export function CryptoTableSkeleton({ rows = 10 }: { rows?: number }) {
         <div className="flex justify-end">
           <SkeletonBox className="h-3 w-10 rounded" />
         </div>
-        <div className="flex justify-end">
+        <div className="hidden justify-end sm:flex">
           <SkeletonBox className="h-3 w-10 rounded" />
         </div>
         <div className="hidden justify-end sm:flex">
@@ -150,7 +153,7 @@ export function CryptoTableSkeleton({ rows = 10 }: { rows?: number }) {
 function IndicesRowSkeleton() {
   return (
     <div className={`group grid h-[60px] max-h-[60px] ${indicesColLayout} items-center bg-white px-2 sm:px-4`}>
-      <div className="flex w-10 shrink-0 items-center justify-center px-3">
+      <div className="hidden w-10 shrink-0 items-center justify-center px-3 sm:flex">
         <SkeletonBox className="h-4 w-4 rounded" />
       </div>
       <div className="flex justify-center">
@@ -162,7 +165,7 @@ function IndicesRowSkeleton() {
       <div className="flex justify-end">
         <TextSkeleton wClass="w-20" />
       </div>
-      <div className="flex justify-end">
+      <div className="hidden justify-end sm:flex">
         <TextSkeleton wClass="w-12" />
       </div>
       <div className="hidden justify-end sm:flex">
@@ -181,7 +184,7 @@ export function IndicesTableSkeleton({ rows = 10 }: { rows?: number }) {
       <div
         className={`grid ${indicesColLayout} min-h-[44px] items-center bg-white px-2 py-0 text-[14px] font-medium leading-5 text-[#71717A] sm:px-4`}
       >
-        <div />
+        <div className="hidden sm:block" aria-hidden />
         <div className="flex justify-center">
           <SkeletonBox className="h-3 w-4 rounded" />
         </div>
@@ -191,7 +194,7 @@ export function IndicesTableSkeleton({ rows = 10 }: { rows?: number }) {
         <div className="flex justify-end">
           <SkeletonBox className="h-3 w-10 rounded" />
         </div>
-        <div className="flex justify-end">
+        <div className="hidden justify-end sm:flex">
           <SkeletonBox className="h-3 w-10 rounded" />
         </div>
         <div className="hidden justify-end sm:flex">

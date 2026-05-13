@@ -1,7 +1,7 @@
 "use client";
 
 import type { CSSProperties, ReactNode } from "react";
-import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 
 import { MainScrollToTop } from "@/components/layout/main-scroll-to-top";
@@ -15,16 +15,18 @@ import {
   useSidebarLayout,
 } from "@/components/layout/sidebar-layout-context";
 import { Topbar } from "@/components/layout/topbar";
-import { MAIN_SHELL_SCROLL_THRESHOLD_PX } from "@/lib/layout/main-shell-scroll-threshold";
+import { MOBILE_SHELL_TOPBAR_PUSH_PX } from "@/lib/layout/main-shell-scroll-threshold";
 
 function ProtectedAppChrome({
   children,
+  userId,
   userInitials,
   avatarUrl,
   userDisplayName,
   platformTrialDaysLeft,
 }: {
   children: ReactNode;
+  userId: string;
   userInitials: string;
   avatarUrl: string | null;
   userDisplayName: string;
@@ -35,46 +37,68 @@ function ProtectedAppChrome({
   const leftOffset = `${outerPx}px`;
 
   const mainRef = useRef<HTMLElement>(null);
+  const topbarWrapRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
-  const [mobileTopbarHidden, setMobileTopbarHidden] = useState(false);
+  const scrollCollapseRafRef = useRef(0);
 
-  const syncMobileTopbarFromMainScroll = useCallback(() => {
-    const el = mainRef.current;
-    if (!el) return;
+  /** Mobile: tie top bar + main offset to scroll over `MOBILE_SHELL_TOPBAR_PUSH_PX` px (fully collapsed at end of range). */
+  const applyMobileScrollCollapse = useCallback(() => {
+    const mainEl = mainRef.current;
+    const topbarEl = topbarWrapRef.current;
+    if (!mainEl || !topbarEl) return;
+
     if (typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches) {
-      setMobileTopbarHidden(false);
+      topbarEl.style.removeProperty("--topbar-ty");
+      mainEl.style.removeProperty("--main-ty");
+      topbarEl.style.removeProperty("pointer-events");
       return;
     }
-    const st = el.scrollTop;
-    if (st <= 0) setMobileTopbarHidden(false);
-    else if (st > MAIN_SHELL_SCROLL_THRESHOLD_PX) setMobileTopbarHidden(true);
+
+    const push = MOBILE_SHELL_TOPBAR_PUSH_PX;
+    const st = Math.max(0, mainEl.scrollTop);
+    const collapse = Math.min(1, st / push);
+    const sat = "var(--sat)";
+    topbarEl.style.setProperty("--topbar-ty", `calc(${sat} - ${collapse * push}px)`);
+    mainEl.style.setProperty("--main-ty", `calc(${sat} + ${(1 - collapse) * push}px)`);
+    topbarEl.style.pointerEvents = collapse > 0.98 ? "none" : "";
   }, []);
+
+  const scheduleApplyMobileScrollCollapse = useCallback(() => {
+    if (scrollCollapseRafRef.current) return;
+    scrollCollapseRafRef.current = requestAnimationFrame(() => {
+      scrollCollapseRafRef.current = 0;
+      applyMobileScrollCollapse();
+    });
+  }, [applyMobileScrollCollapse]);
 
   useEffect(() => {
     const el = mainRef.current;
     if (!el) return;
-    const raf = requestAnimationFrame(() => syncMobileTopbarFromMainScroll());
-    el.addEventListener("scroll", syncMobileTopbarFromMainScroll, { passive: true });
+    applyMobileScrollCollapse();
+    el.addEventListener("scroll", scheduleApplyMobileScrollCollapse, { passive: true });
     return () => {
-      cancelAnimationFrame(raf);
-      el.removeEventListener("scroll", syncMobileTopbarFromMainScroll);
+      el.removeEventListener("scroll", scheduleApplyMobileScrollCollapse);
+      if (scrollCollapseRafRef.current) {
+        cancelAnimationFrame(scrollCollapseRafRef.current);
+        scrollCollapseRafRef.current = 0;
+      }
     };
-  }, [pathname, syncMobileTopbarFromMainScroll]);
+  }, [pathname, applyMobileScrollCollapse, scheduleApplyMobileScrollCollapse]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     const mq = window.matchMedia("(min-width: 768px)");
     const onChange = () => {
-      if (mq.matches) setMobileTopbarHidden(false);
-      else syncMobileTopbarFromMainScroll();
+      applyMobileScrollCollapse();
     };
     mq.addEventListener("change", onChange);
     return () => mq.removeEventListener("change", onChange);
-  }, [syncMobileTopbarFromMainScroll]);
+  }, [applyMobileScrollCollapse]);
 
   return (
     <div
-      className="relative h-dvh max-h-dvh w-full overflow-hidden bg-[#E4E4E7]"
+      suppressHydrationWarning
+      className="relative h-dvh max-h-dvh w-full overflow-hidden bg-white md:bg-[var(--background)]"
       style={{ ["--shell-left" as string]: leftOffset } as CSSProperties}
     >
       <Suspense fallback={null}>
@@ -87,16 +111,13 @@ function ProtectedAppChrome({
         <Sidebar />
       </div>
       <div
+        ref={topbarWrapRef}
         suppressHydrationWarning
-        className="fixed right-1 top-1 z-30 min-w-0 rounded-[4px] bg-white py-1 max-md:pb-0 shadow-[0_1px_0_0_rgba(0,0,0,0.03)] md:transition-[left] md:duration-200 md:ease-out max-md:transform-gpu max-md:transition-[transform] max-md:backface-hidden max-md:duration-300 max-md:ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:max-md:duration-150 left-1 md:left-[length:var(--shell-left)] max-md:translate-y-[var(--topbar-ty)] md:translate-y-0"
-        style={
-          {
-            "--topbar-ty": mobileTopbarHidden ? "-100%" : "var(--sat)",
-            pointerEvents: mobileTopbarHidden ? "none" : undefined,
-          } as CSSProperties
-        }
+        className="fixed right-1 top-1 z-30 min-w-0 rounded-[4px] bg-white py-1 max-md:right-0 max-md:top-0 max-md:rounded-none max-md:py-0 max-md:shadow-none md:shadow-[0_1px_0_0_rgba(0,0,0,0.03)] md:transition-[left] md:duration-200 md:ease-out max-md:transform-gpu max-md:backface-hidden max-md:transition-none left-1 max-md:left-0 md:left-[length:var(--shell-left)] max-md:translate-y-[var(--topbar-ty)] md:translate-y-0"
+        style={{ ["--topbar-ty" as string]: "var(--sat)" } as CSSProperties}
       >
         <Topbar
+          userId={userId}
           userInitials={userInitials}
           avatarUrl={avatarUrl}
           userDisplayName={userDisplayName}
@@ -106,12 +127,10 @@ function ProtectedAppChrome({
       <main
         ref={mainRef}
         suppressHydrationWarning
-        className="fixed right-1 z-0 min-w-0 overflow-y-auto rounded-[4px] bg-white top-1 md:top-[74px] md:transition-[left] md:duration-200 md:ease-out max-md:transform-gpu max-md:transition-[transform] max-md:backface-hidden max-md:duration-300 max-md:ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:max-md:duration-150 left-1 md:left-[length:var(--shell-left)] max-md:bottom-[calc(4.25rem+var(--mobile-main-bottom-gap)+env(safe-area-inset-bottom,0px))] md:bottom-1 max-md:translate-y-[var(--main-ty)] md:translate-y-0"
+        className="fixed right-1 z-0 min-w-0 overflow-y-auto overscroll-y-contain rounded-[4px] bg-white top-1 max-md:right-0 max-md:top-0 max-md:rounded-none max-md:bottom-0 max-md:pb-[var(--mobile-bottom-nav-main-clearance)] md:top-[74px] md:transition-[left] md:duration-200 md:ease-out max-md:transform-gpu max-md:backface-hidden max-md:transition-none left-1 max-md:left-0 md:left-[length:var(--shell-left)] md:bottom-1 max-md:translate-y-[var(--main-ty)] md:translate-y-0"
         style={
           {
-            "--main-ty": mobileTopbarHidden
-              ? "var(--sat)"
-              : "calc(var(--mobile-topbar-push) + var(--sat))",
+            ["--main-ty" as string]: "calc(var(--mobile-topbar-push) + var(--sat))",
           } as CSSProperties
         }
       >
@@ -125,12 +144,14 @@ function ProtectedAppChrome({
 
 export function ProtectedAppShellInner({
   children,
+  userId,
   userInitials,
   avatarUrl,
   userDisplayName,
   platformTrialDaysLeft = null,
 }: {
   children: ReactNode;
+  userId: string;
   userInitials: string;
   avatarUrl: string | null;
   userDisplayName: string;
@@ -140,6 +161,7 @@ export function ProtectedAppShellInner({
   return (
     <SidebarLayoutProvider>
       <ProtectedAppChrome
+        userId={userId}
         userInitials={userInitials}
         avatarUrl={avatarUrl}
         userDisplayName={userDisplayName}

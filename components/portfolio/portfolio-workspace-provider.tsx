@@ -940,6 +940,43 @@ export function PortfolioWorkspaceProvider({
   }, [portfolios, selectedPortfolioId]);
   const closeAddCash = useCallback(() => setAddCashModalOpen(false), []);
 
+  const updatePortfolioPrivacy = useCallback(
+    (portfolioId: string, nextPrivacy: PortfolioPrivacy) => {
+      const entry = portfolios.find((x) => x.id === portfolioId);
+      if (!entry || entry.privacy === nextPrivacy) return;
+
+      setPortfolios((prev) =>
+        prev.map((p) => (p.id === portfolioId ? { ...p, privacy: nextPrivacy } : p)),
+      );
+
+      const holdings = displayHoldingsByPortfolioId[portfolioId] ?? [];
+      const txs = displayTransactionsByPortfolioId[portfolioId] ?? [];
+
+      if (nextPrivacy === "public") {
+        void putPublicPortfolioListingRequest({
+          portfolioId,
+          publish: true,
+          displayName: entry.name,
+          metrics: metricsForPublicListing(holdings, txs),
+        }).then((r) => {
+          if (r.ok) dispatchPublicListingsChanged();
+        });
+        toast.success("Portfolio is now public and appears on the Portfolios tab.");
+      } else {
+        void putPublicPortfolioListingRequest({ portfolioId, publish: false }).then((r) => {
+          if (r.ok) dispatchPublicListingsChanged();
+        });
+        toast.success("Portfolio is now private.");
+      }
+    },
+    [
+      portfolios,
+      displayHoldingsByPortfolioId,
+      displayTransactionsByPortfolioId,
+      metricsForPublicListing,
+    ],
+  );
+
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key !== "Escape") return;
@@ -986,6 +1023,7 @@ export function PortfolioWorkspaceProvider({
       openEditPortfolio,
       openCreatePortfolio,
       openCreateCombinedPortfolio,
+      updatePortfolioPrivacy,
       selectedPortfolioReadOnly,
       newTransactionOpen,
       openNewTransaction,
@@ -1019,6 +1057,7 @@ export function PortfolioWorkspaceProvider({
       openEditPortfolio,
       openCreatePortfolio,
       openCreateCombinedPortfolio,
+      updatePortfolioPrivacy,
       selectedPortfolioReadOnly,
       newTransactionOpen,
       openNewTransaction,

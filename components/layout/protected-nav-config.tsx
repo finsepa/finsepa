@@ -59,6 +59,11 @@ export const protectedCommunityItems: ProtectedNavItem[] = [
   { label: "Posts", icon: FileText, href: "/posts", available: false },
 ];
 
+/** Community entries for the mobile bottom-nav sheet only (omit unreleased teasers). */
+export const protectedCommunityMobileNavItems: ProtectedNavItem[] = protectedCommunityItems.filter(
+  (item) => item.href !== "/posts",
+);
+
 /** Same active rule as desktop `SidebarRow`. */
 export function protectedNavItemIsActive(item: ProtectedNavItem, pathname: string): boolean {
   if (!item.available) return false;

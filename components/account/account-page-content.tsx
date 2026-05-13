@@ -9,6 +9,10 @@ import {
   subscriptionTitleFromBillingSummary,
   type BillingSummary,
 } from "@/lib/account/billing";
+import {
+  invalidateBillingSummaryMenuCache,
+  writeBillingSummaryMenuCache,
+} from "@/lib/account/billing-summary-menu-cache";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { UserAvatar } from "@/components/user/user-avatar";
 import { BillingUpgradeModal } from "@/components/account/billing-upgrade-modal";
@@ -85,6 +89,11 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
     if (shouldToast) {
       toast.success("Congratulations! Your Pro access was activated.");
     }
+
+    void (async () => {
+      const { data } = await getSupabaseBrowserClient().auth.getUser();
+      if (data.user) invalidateBillingSummaryMenuCache(data.user.id);
+    })();
   }, [searchParams, router]);
 
   useEffect(() => {
@@ -207,6 +216,8 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
       if (!res.ok) throw new Error("Unable to load billing details.");
       const data = (await res.json()) as BillingSummary;
       setBillingSummary(data);
+      const { data: auth } = await getSupabaseBrowserClient().auth.getUser();
+      if (auth.user) writeBillingSummaryMenuCache(auth.user.id, data);
     } catch (error) {
       if (!silent) {
         const message = error instanceof Error ? error.message : "Unable to load billing details.";

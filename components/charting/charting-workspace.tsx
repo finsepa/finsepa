@@ -312,7 +312,7 @@ type Props = {
   allowedMetricIds?: readonly ChartingMetricId[];
   /** Figma 8479:70857 — unit dropdown, export/refresh; chart is always single `ticker`. */
   toolbarLayout?: "default" | "figma70857";
-  /** Full-page Charting only: company chip row (rendered after metric chips + + Add Metric). */
+  /** Full-page Charting only: company chip row (after metric chips and + Add Metric). */
   fullPageCompanyChipSlot?: ReactNode;
   /** Full-page Charting only: + Add Company (shown when ≥1 metric selected). */
   fullPageCompanyAddSlot?: ReactNode;
@@ -1081,7 +1081,7 @@ export function ChartingWorkspace({
           {selected.map((id) => (
             <div
               key={id}
-              className="inline-flex max-w-full min-w-0 items-stretch overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white"
+              className="order-1 inline-flex max-w-full min-w-0 items-stretch overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white"
             >
               <span className="flex min-h-[36px] min-w-0 items-center border-r border-[#E4E4E7] px-4 py-2 text-[14px] font-medium leading-5 text-[#09090B]">
                 <span className="truncate">{CHARTING_METRIC_LABEL[id]}</span>
@@ -1098,7 +1098,7 @@ export function ChartingWorkspace({
             </div>
           ))}
 
-          <div className="relative" ref={pickerWrapRef}>
+          <div className="relative order-2" ref={pickerWrapRef}>
             <button
               type="button"
               onClick={() => {
@@ -1161,8 +1161,8 @@ export function ChartingWorkspace({
             </div>
           )}
           </div>
-          {fullPageCompanyChipSlot}
-          {selected.length > 0 ? fullPageCompanyAddSlot : null}
+          {fullPageCompanyChipSlot ? <div className="order-3">{fullPageCompanyChipSlot}</div> : null}
+          {selected.length > 0 ? <div className="order-4">{fullPageCompanyAddSlot}</div> : null}
           </div>
         </div>
       </div>

@@ -57,7 +57,7 @@ function PriceAndChangeCell({
   return (
     <div className="min-w-0 w-full text-right">
       <div
-        className={`min-w-0 w-full font-['Inter'] text-[14px] font-normal leading-5 tabular-nums ${
+        className={`min-w-0 w-full font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums ${
           hasPrice ? "text-[#09090B]" : "text-[#71717A]"
         }`}
       >
@@ -74,9 +74,9 @@ function PriceAndChangeCell({
   );
 }
 
-/** Mobile: star + # + coin + price + 1D %. `sm+`: 1M, YTD, M Cap (matches {@link ScreenerTable}). */
+/** Mobile: # + coin + price + 1D % (no star). `sm+`: star + # + coin + … (matches {@link ScreenerTable}). */
 const colLayout =
-  "grid-cols-[32px_28px_minmax(0,2fr)_1fr] gap-x-2 sm:grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr_1fr]";
+  "grid-cols-[28px_minmax(0,2fr)_1fr] gap-x-2 sm:grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr_1fr]";
 /** Columns inside `Link` — same counts as `colLayout` after the star column. */
 const rowLinkGrid =
   "grid-cols-[28px_minmax(0,2fr)_1fr] gap-x-2 sm:grid-cols-[48px_2fr_1fr_1fr_1fr_1fr_1fr]";
@@ -103,7 +103,7 @@ export function CryptoTable({
       <div
         className={`grid ${colLayout} min-h-[44px] items-center bg-white px-2 py-0 text-[12px] font-medium leading-5 text-[#71717A] sm:px-4 sm:text-[14px]`}
       >
-        <div />
+        <div className="hidden sm:block" aria-hidden />
         <div className="text-center">#</div>
         <div className="text-left">Coin</div>
         <div className="min-w-0 w-full text-right">Price</div>
@@ -121,7 +121,7 @@ export function CryptoTable({
             className={`group grid min-h-[60px] ${colLayout} items-center bg-white px-2 transition-colors duration-75 hover:bg-neutral-50 sm:px-4`}
           >
             <WatchlistStarToggle
-              className="flex w-6 shrink-0 items-center justify-center px-1 sm:w-10 sm:px-3"
+              className="hidden w-6 shrink-0 items-center justify-center px-1 sm:flex sm:w-10 sm:px-3"
               storageKey={wlKey}
               label={r.symbol}
               watched={watched}
@@ -131,7 +131,7 @@ export function CryptoTable({
             <Link
               href={`/crypto/${encodeURIComponent(r.symbol)}`}
               prefetch={false}
-              className={`${rowLinkGrid} col-span-3 col-start-2 grid min-h-[56px] min-w-0 w-full items-center justify-items-stretch no-underline text-[#09090B] visited:text-[#09090B] sm:col-span-7 sm:min-h-[60px]`}
+              className={`${rowLinkGrid} col-span-3 col-start-1 grid min-h-[56px] min-w-0 w-full items-center justify-items-stretch no-underline text-[#09090B] visited:text-[#09090B] sm:col-span-7 sm:col-start-2 sm:min-h-[60px]`}
               aria-label={`Open ${r.name} (${eodhdCryptoSpotTickerDisplay(r.symbol)})`}
             >
               <div className="text-center text-[14px] font-semibold leading-5 tabular-nums text-[#71717A]">

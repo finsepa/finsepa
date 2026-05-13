@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CircleQuestionMark, CreditCard, LogOut, Menu, Sparkles, User } from "lucide-react";
@@ -20,10 +20,17 @@ import {
   subscriptionTitleFromBillingSummary,
   type BillingSummary,
 } from "@/lib/account/billing";
+import {
+  invalidateBillingSummaryMenuCache,
+  isBillingSummaryMenuCacheFresh,
+  readBillingSummaryMenuCache,
+  writeBillingSummaryMenuCache,
+} from "@/lib/account/billing-summary-menu-cache";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { cn } from "@/lib/utils";
 
 type TopbarUserMenuProps = {
+  userId: string;
   userInitials: string;
   avatarUrl: string | null;
   /** Full name for menu header (same source as workspace listing owner). */
@@ -33,6 +40,7 @@ type TopbarUserMenuProps = {
 };
 
 export function TopbarUserMenu({
+  userId,
   userInitials,
   avatarUrl,
   userDisplayName,
@@ -49,27 +57,48 @@ export function TopbarUserMenu({
   const rootRef = useRef<HTMLDivElement>(null);
   const menuPortalRef = useRef<HTMLDivElement>(null);
 
+  /** Warm label from local cache so the menu rarely flashes a skeleton on open. */
   useEffect(() => {
-    if (!open) return;
-    let cancelled = false;
-    (async () => {
-      setPlanLoading(true);
+    const hit = readBillingSummaryMenuCache(userId);
+    if (hit) setPlanLabel(subscriptionTitleFromBillingSummary(hit.summary));
+  }, [userId]);
+
+  const fetchBillingSummaryForMenu = useCallback(
+    async (opts: { showSkeleton: boolean }) => {
+      if (opts.showSkeleton) setPlanLoading(true);
       try {
         const res = await fetch("/api/account/billing/summary", { method: "GET", cache: "no-store" });
         if (!res.ok) return;
         const data = (await res.json()) as BillingSummary;
-        if (cancelled) return;
+        writeBillingSummaryMenuCache(userId, data);
         setPlanLabel(subscriptionTitleFromBillingSummary(data));
       } catch {
         // ignore
       } finally {
-        if (!cancelled) setPlanLoading(false);
+        if (opts.showSkeleton) setPlanLoading(false);
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [open]);
+    },
+    [userId],
+  );
+
+  useEffect(() => {
+    if (!open) return;
+
+    const cached = readBillingSummaryMenuCache(userId);
+
+    if (cached && isBillingSummaryMenuCacheFresh(cached.fetchedAt)) {
+      setPlanLabel(subscriptionTitleFromBillingSummary(cached.summary));
+      return;
+    }
+
+    if (cached) {
+      setPlanLabel(subscriptionTitleFromBillingSummary(cached.summary));
+      void fetchBillingSummaryForMenu({ showSkeleton: false });
+      return;
+    }
+
+    void fetchBillingSummaryForMenu({ showSkeleton: true });
+  }, [open, userId, fetchBillingSummaryForMenu]);
 
   useEffect(() => {
     if (!open) return;
@@ -121,13 +150,7 @@ export function TopbarUserMenu({
           aria-expanded={open}
           aria-haspopup="menu"
           aria-label={menuTriggerLabel}
-          onClick={() =>
-            setOpen((v) => {
-              const next = !v;
-              if (next) setPlanLoading(true);
-              return next;
-            })
-          }
+          onClick={() => setOpen((v) => !v)}
           className={cn(
             // Mobile: match topbar icon buttons (Star / Plus) — icon only.
             "flex h-9 w-9 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#09090B]",
@@ -236,6 +259,8 @@ export function TopbarUserMenu({
         open={upgradeModalOpen}
         onClose={() => {
           setUpgradeModalOpen(false);
+          invalidateBillingSummaryMenuCache(userId);
+          void fetchBillingSummaryForMenu({ showSkeleton: false });
           router.refresh();
         }}
       />

@@ -44,9 +44,9 @@ function ChangeCell({ value }: { value: number | null }) {
   );
 }
 
-/** Mobile: star + # + index + value + 1D %. `sm+`: 1M, YTD. */
+/** Mobile: # + index + value + 1D % (no star). `sm+`: star + # + index + … */
 const colLayout =
-  "grid-cols-[32px_28px_minmax(0,2fr)_1fr] gap-x-2 sm:grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr]";
+  "grid-cols-[28px_minmax(0,2fr)_1fr] gap-x-2 sm:grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr]";
 
 function ValueAndChangeCell({ value, change1D }: { value: number; change1D: number | null }) {
   const hasValue = Number.isFinite(value);
@@ -54,7 +54,7 @@ function ValueAndChangeCell({ value, change1D }: { value: number; change1D: numb
   const positive = (change1D ?? 0) >= 0;
   return (
     <div className="min-w-0 w-full text-right">
-      <div className="min-w-0 w-full font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
+      <div className="min-w-0 w-full font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#09090B]">
         {hasValue ? formatValue(value) : "-"}
       </div>
       <div
@@ -94,7 +94,7 @@ export function IndicesTable({
       <div
         className={`grid ${colLayout} min-h-[44px] items-center bg-white px-2 py-0 text-[12px] font-medium leading-5 text-[#71717A] sm:px-4 sm:text-[14px]`}
       >
-        <div />
+        <div className="hidden sm:block" aria-hidden />
         <div className="text-center">#</div>
         <div className="min-w-0 w-full text-left">Index</div>
         <div className="min-w-0 w-full text-right">Price</div>
@@ -111,7 +111,7 @@ export function IndicesTable({
             className={`group grid min-h-[56px] ${colLayout} items-center bg-white px-2 transition-colors duration-75 hover:bg-neutral-50 sm:min-h-[60px] sm:px-4`}
           >
             <WatchlistStarToggle
-              className="flex w-6 shrink-0 items-center justify-center px-1 sm:w-10 sm:px-3"
+              className="hidden w-6 shrink-0 items-center justify-center px-1 sm:flex sm:w-10 sm:px-3"
               storageKey={wlKey}
               label={r.name}
               watched={watched}

@@ -43,6 +43,7 @@ export async function ProtectedAppShell({ children }: { children: ReactNode }) {
       listingOwnerAvatarUrl={avatarUrl}
     >
       <ProtectedAppShellInner
+        userId={user.id}
         userInitials={userInitials}
         avatarUrl={avatarUrl}
         userDisplayName={userDisplayName}

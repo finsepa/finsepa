@@ -13,7 +13,7 @@ import {
 
 import {
   protectedCalendarItems,
-  protectedCommunityItems,
+  protectedCommunityMobileNavItems,
   protectedDataItems,
   protectedMarketItems,
   protectedNavItemIsActive,
@@ -23,8 +23,8 @@ import {
 import { dropdownMenuPanelBodyClassName, dropdownMenuSurfaceClassName } from "@/components/design-system/dropdown-menu-styles";
 import { cn } from "@/lib/utils";
 
-// Leave a little breathing room above the bottom nav.
-const MOBILE_NAV_SHEET_BOTTOM = "calc(3.5rem + env(safe-area-inset-bottom, 0px) + 1.6rem)";
+// Sheet sits above the floating bottom nav (see `--mobile-bottom-nav-sheet-bottom` in globals.css).
+const MOBILE_NAV_SHEET_BOTTOM = "var(--mobile-bottom-nav-sheet-bottom)";
 
 type SheetId = "markets" | "calendar" | "data" | "community";
 
@@ -76,14 +76,14 @@ function MobileNavSheet({
     <>
       <button
         type="button"
-        className="fixed inset-0 z-[41] bg-black/25 md:hidden"
+        className="fixed inset-0 z-[41] bg-transparent md:hidden"
         aria-label="Close menu"
         onClick={onClose}
       />
       <div
         id={`mobile-nav-sheet-${sheetId}`}
         className={cn(
-          "fixed inset-x-3 z-[42] overflow-hidden md:hidden",
+          "mobile-bottom-nav-sheet-enter fixed left-4 right-4 z-[42] overflow-hidden md:hidden",
           dropdownMenuSurfaceClassName(),
         )}
         style={{ bottom: MOBILE_NAV_SHEET_BOTTOM }}
@@ -117,14 +117,14 @@ const TABS: TabConfig[] = [
   { id: "markets", label: "Markets", Icon: Globe, items: protectedMarketItems },
   { id: "calendar", label: "Calendar", Icon: CalendarBlank, items: protectedCalendarItems },
   { id: "data", label: "Data", Icon: ChartBar, items: protectedDataItems },
-  { id: "community", label: "Community", Icon: ChatsCircle, items: protectedCommunityItems },
+  { id: "community", label: "Community", Icon: ChatsCircle, items: protectedCommunityMobileNavItems },
 ];
 
 function sheetItemsFor(id: SheetId | null): readonly ProtectedNavItem[] {
   if (id === "markets") return protectedMarketItems;
   if (id === "calendar") return protectedCalendarItems;
   if (id === "data") return protectedDataItems;
-  if (id === "community") return protectedCommunityItems;
+  if (id === "community") return protectedCommunityMobileNavItems;
   return [];
 }
 
@@ -165,7 +165,14 @@ export function MobileBottomNav() {
         onClose={closeSheet}
       />
       <nav
-        className="fixed inset-x-0 bottom-0 z-[43] flex w-full items-stretch border-t border-[#E4E4E7] bg-white pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-2 md:hidden"
+        className={cn(
+          "fixed left-4 right-4 z-[43] flex items-stretch md:hidden",
+          /** 16px float from screen edges + above home indicator; pill reads clearly over scrolling content. */
+          "bottom-[calc(1rem+env(safe-area-inset-bottom,0px))]",
+          "rounded-full border border-[#E4E4E7]/90 bg-white/90 py-2 px-2",
+          "shadow-[0_10px_40px_-12px_rgba(15,23,42,0.14),0_2px_12px_rgba(15,23,42,0.08)]",
+          "backdrop-blur-xl backdrop-saturate-150 supports-[backdrop-filter]:bg-white/78",
+        )}
         aria-label="Primary"
       >
         {TABS.map((tab) => {
@@ -176,7 +183,10 @@ export function MobileBottomNav() {
             <div key={tab.id} className="flex min-w-0 flex-1 flex-col items-stretch">
               <button
                 type="button"
-                className="flex w-full flex-col items-center gap-1 rounded-lg py-1 text-[10px] font-semibold uppercase tracking-wide transition-colors"
+                className={cn(
+                  "flex w-full flex-col items-center gap-1 rounded-full py-1.5 text-[10px] font-semibold uppercase tracking-wide transition-colors",
+                  sectionActive || sheetOpen ? "bg-[#09090B]/[0.05]" : "active:bg-[#09090B]/[0.04]",
+                )}
                 aria-expanded={sheetOpen}
                 aria-controls={openSheet === tab.id ? `mobile-nav-sheet-${tab.id}` : undefined}
                 onClick={() => setOpenSheet((s) => (s === tab.id ? null : tab.id))}
@@ -198,7 +208,10 @@ export function MobileBottomNav() {
           <Link
             prefetch={false}
             href="/portfolio"
-            className="flex w-full flex-col items-center gap-1 rounded-lg py-1 text-[10px] font-semibold uppercase tracking-wide transition-colors"
+            className={cn(
+              "flex w-full flex-col items-center gap-1 rounded-full py-1.5 text-[10px] font-semibold uppercase tracking-wide transition-colors",
+              portfolioActive ? "bg-[#09090B]/[0.05]" : "active:bg-[#09090B]/[0.04]",
+            )}
             onClick={closeSheet}
           >
             <ChartPieSlice

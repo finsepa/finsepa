@@ -15,8 +15,15 @@
   --mobile-topbar-push: 68px;
   /** Safe area inset at top — keeps content below notch/Dynamic Island when topbar is hidden. */
   --sat: env(safe-area-inset-top, 0px);
-  /** Same as `left-1` / `right-1` on `<main>` — strip of shell bg above the mobile bottom nav. */
-  --mobile-main-bottom-gap: 0.25rem;
+  /** Extra space below `<main>` above the floating nav; 0 when the shell is flush (white edge-to-edge). */
+  --mobile-main-bottom-gap: 0px;
+  /**
+   * Space reserved for the floating bottom nav pill over `<main>` (padding-bottom on mobile).
+   * Tuned so list + pagination can sit closer to the pill without clipping; sync with `MobileBottomNav` + FAB.
+   */
+  --mobile-bottom-nav-main-clearance: calc(5.5rem + var(--mobile-main-bottom-gap) + env(safe-area-inset-bottom, 0px));
+  --mobile-bottom-nav-sheet-bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px));
+  --mobile-bottom-nav-fab-bottom: calc(var(--mobile-bottom-nav-main-clearance) + 0.75rem);
 }
 
 @theme inline {
@@ -125,5 +132,29 @@ body {
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
+  }
+}
+
+/** Mobile bottom-nav submenu — slides up from below the sheet’s dock position. */
+@keyframes mobile-bottom-nav-sheet-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 100%, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.mobile-bottom-nav-sheet-enter {
+  animation: mobile-bottom-nav-sheet-in 320ms cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-bottom-nav-sheet-enter {
+    animation: none;
+    opacity: 1;
+    transform: none;
   }
 }

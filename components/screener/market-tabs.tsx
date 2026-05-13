@@ -20,9 +20,9 @@ export function UnderlineTabs<T extends string>({
 }) {
   return (
     <div className="mb-4 border-b border-solid border-[#E4E4E7] md:mb-6">
-      <div className="flex flex-wrap items-end justify-between gap-x-3 gap-y-2">
+      <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 md:gap-x-3">
         <nav
-          className="-mx-1 flex min-w-0 flex-1 flex-nowrap items-start gap-4 overflow-x-auto overflow-y-hidden pb-px [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mx-0 md:gap-5 md:overflow-visible"
+          className="flex min-w-0 flex-1 flex-nowrap items-start gap-4 overflow-x-auto overflow-y-hidden pb-px [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:gap-5 md:overflow-visible"
           aria-label={ariaLabel}
         >
           {tabList.map((tab) => {
@@ -42,7 +42,7 @@ export function UnderlineTabs<T extends string>({
           })}
         </nav>
         {trailing ? (
-          <div className="shrink-0 pb-2 pl-1 md:pb-[9px] md:pl-2">{trailing}</div>
+          <div className="hidden shrink-0 md:block md:pb-[9px] md:pl-2">{trailing}</div>
         ) : null}
       </div>
     </div>

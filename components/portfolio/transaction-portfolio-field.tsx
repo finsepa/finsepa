@@ -18,10 +18,13 @@ function PrivacyGlyph({ privacy }: { privacy: PortfolioPrivacy }) {
   return <Icon className="h-4 w-4 shrink-0 text-[#09090B]" strokeWidth={2} aria-hidden />;
 }
 
-type Variant = "field" | "compact" | "toolbar";
+type Variant = "field" | "compact" | "toolbar" | "titleGhost";
 
 const toolbarTriggerClass =
   "inline-flex h-9 max-w-[min(52vw,220px)] shrink-0 cursor-pointer items-center gap-2 rounded-[10px] border border-[#E4E4E7] bg-white px-3 text-left text-sm font-medium text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40";
+
+const titleGhostTriggerClass =
+  "flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-[10px] text-[#71717A] transition-colors hover:bg-[#F4F4F5] hover:text-[#09090B] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
 
 /** `leading`: menu grows right (portfolio title). `trailing`: menu aligns to trigger’s right edge (top bar). */
 export type CompactMenuAlign = "leading" | "trailing";
@@ -31,6 +34,7 @@ export type CompactMenuAlign = "leading" | "trailing";
  * - `field`: full-width gray trigger (forms).
  * - `compact`: chevron-only (top bar next to balance).
  * - `toolbar`: bordered white trigger with privacy icon + name + chevron (portfolio header actions).
+ * - `titleGhost`: chevron-only ghost button (inline after the page title).
  */
 export function TransactionPortfolioField({
   variant = "field",
@@ -74,7 +78,7 @@ export function TransactionPortfolioField({
   }, [open]);
 
   const dropdownAlign =
-    variant === "compact" || variant === "toolbar" ?
+    variant === "compact" || variant === "toolbar" || variant === "titleGhost" ?
       compactMenuAlign === "trailing" ?
         "right-0 left-auto w-max min-w-[min(calc(100vw-2rem),280px)] max-w-[min(calc(100vw-2rem),320px)]"
       : "left-0 right-auto w-max min-w-[min(calc(100vw-2rem),280px)] max-w-[min(calc(100vw-2rem),320px)]"
@@ -150,16 +154,26 @@ export function TransactionPortfolioField({
   );
 
   return (
-    <div ref={containerRef} className={cn("relative", (variant === "compact" || variant === "toolbar") && "flex shrink-0")}>
+    <div
+      ref={containerRef}
+      className={cn(
+        "relative",
+        (variant === "compact" || variant === "toolbar" || variant === "titleGhost") && "flex shrink-0",
+      )}
+    >
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-haspopup="listbox"
-        aria-label={variant === "compact" || variant === "toolbar" ? "Portfolio menu" : undefined}
+        aria-label={
+          variant === "compact" || variant === "toolbar" || variant === "titleGhost" ? "Portfolio menu" : undefined
+        }
         className={
           variant === "toolbar" ?
             toolbarTriggerClass
+          : variant === "titleGhost" ?
+            titleGhostTriggerClass
           : variant === "compact" ?
             "flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-[10px] text-[#09090B] transition-colors hover:bg-[#F4F4F5] disabled:cursor-not-allowed disabled:opacity-50"
           : "flex h-9 w-full items-center justify-between gap-2 rounded-[10px] bg-[#F4F4F5] px-4 text-left text-sm transition-colors hover:bg-[#EBEBEB]"
@@ -192,6 +206,12 @@ export function TransactionPortfolioField({
               aria-hidden
             />
           </>
+        ) : variant === "titleGhost" ? (
+          <ChevronDown
+            className={cn("h-5 w-5 shrink-0 transition-transform", open && "rotate-180")}
+            strokeWidth={2}
+            aria-hidden
+          />
         ) : (
           <ChevronDown
             className={cn("h-5 w-5 shrink-0 transition-transform", open && "rotate-180")}
@@ -199,7 +219,7 @@ export function TransactionPortfolioField({
           />
         )}
       </button>
-      {open && (variant === "compact" || variant === "toolbar") ? (
+      {open && (variant === "compact" || variant === "toolbar" || variant === "titleGhost") ? (
         <TopbarDropdownPortal
           open={open}
           anchorRef={containerRef}

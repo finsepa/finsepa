@@ -43,7 +43,7 @@ function formatPublishedLabel(iso: string): string {
 
 function NewsRowSkeleton() {
   return (
-    <div className="border-b border-[#E4E4E7] py-4 -mx-4 px-4">
+    <div className="border-b border-[#E4E4E7] py-4 px-3 sm:-mx-9 sm:px-9">
       <div className="space-y-2">
         <div className="flex items-center gap-2">
           <SkeletonBox className="h-3 w-20" />
@@ -218,7 +218,7 @@ function LatestNewsInner({
 
   return (
     <div>
-      <h2 className="text-[18px] font-semibold leading-7 text-[#09090B] mb-4">Latest news</h2>
+      <h2 className="mb-4 px-3 text-[18px] font-semibold leading-7 text-[#09090B] sm:px-0">Latest news</h2>
 
       {loading ? (
         <div className="space-y-0">
@@ -236,7 +236,7 @@ function LatestNewsInner({
               href={item.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="block border-b border-[#E4E4E7] py-4 cursor-pointer hover:bg-[#FAFAFA] transition-colors -mx-4 px-4"
+              className="block border-b border-[#E4E4E7] py-4 px-3 cursor-pointer transition-colors hover:bg-[#FAFAFA] sm:-mx-9 sm:px-9"
             >
               <div className="flex items-center gap-1.5 mb-1 flex-wrap">
                 <span className="text-[12px] text-[#71717A]">{formatPublishedLabel(item.publishedAt)}</span>

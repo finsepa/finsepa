@@ -17,7 +17,8 @@ export function CryptoDetailTabNav({
   onTabChange: (tab: CryptoDetailTabId) => void;
 }) {
   return (
-    <div className="border-b border-solid border-[#E4E4E7]">
+    <div className="px-3 sm:-mx-9 sm:px-9">
+      <div className="border-b border-solid border-[#E4E4E7]">
       <nav className="flex flex-wrap items-start gap-5" aria-label="Crypto sections">
         {TABS.map(({ id, label }) => {
           const isActive = id === activeTab;
@@ -37,6 +38,7 @@ export function CryptoDetailTabNav({
           );
         })}
       </nav>
+    </div>
     </div>
   );
 }

@@ -113,7 +113,7 @@ export function StockHeader({
   const canonicalSector = sectorLabel ? mapProviderSectorToCanonical(sectorLabel) : null;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 max-md:px-3 md:px-0">
       <div className="flex flex-wrap items-center gap-1 text-[14px] text-[#71717A]">
         <Link href="/screener" className="transition-colors hover:text-[#09090B]">
           Stocks

@@ -7,6 +7,7 @@ import type { CompanyPick } from "@/components/charting/company-picker";
 import type {
   PortfolioEntry,
   PortfolioHolding,
+  PortfolioPrivacy,
   PortfolioTransaction,
 } from "@/components/portfolio/portfolio-types";
 
@@ -21,6 +22,8 @@ export type PortfolioWorkspaceContextValue = {
   openEditPortfolio: (id: string) => void;
   openCreatePortfolio: () => void;
   openCreateCombinedPortfolio: () => void;
+  /** Updates visibility for a portfolio and syncs the public listing (same behavior as Edit → Save). */
+  updatePortfolioPrivacy: (portfolioId: string, nextPrivacy: PortfolioPrivacy) => void;
   /** True when the selected portfolio is a read-only combined view (no trades / imports). */
   selectedPortfolioReadOnly: boolean;
   newTransactionOpen: boolean;

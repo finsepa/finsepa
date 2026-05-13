@@ -71,7 +71,7 @@ type Props = {
 };
 
 /**
- * Empty-state toolbar: title, switchers (visual), + Add Metric first; + Add Company only after ≥1 metric.
+ * Empty-state toolbar: title, switchers (visual), metric chips then + Add Metric; + Add Company only after ≥1 metric.
  */
 export function ChartingEmptyToolbar({
   metricParam,
@@ -264,7 +264,26 @@ export function ChartingEmptyToolbar({
 
       <div className="pb-3">
         <div className="flex flex-wrap items-center gap-4">
-          <div className="relative" ref={pickerWrapRef}>
+          {pendingMetrics.map((id) => (
+            <div
+              key={id}
+              className="order-1 inline-flex max-w-full min-w-0 items-stretch overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white"
+            >
+              <span className="flex min-h-[36px] min-w-0 items-center border-r border-[#E4E4E7] px-4 py-2 text-[14px] font-medium leading-5 text-[#09090B]">
+                <span className="truncate">{CHARTING_METRIC_LABEL[id]}</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => removeMetric(id)}
+                className="flex w-9 shrink-0 items-center justify-center text-[#09090B] transition-colors hover:bg-[#FAFAFA]"
+                aria-label={`Remove ${CHARTING_METRIC_LABEL[id]}`}
+              >
+                <X className="h-5 w-5" strokeWidth={1.5} aria-hidden />
+              </button>
+            </div>
+          ))}
+
+          <div className="relative order-2" ref={pickerWrapRef}>
             <button
               type="button"
               onClick={() => {
@@ -286,7 +305,7 @@ export function ChartingEmptyToolbar({
                 )}
                 role="listbox"
               >
-                <div className="border-b border-[#F4F4F5] px-2 pb-1 pt-1">
+                <div className="border-b border-[#F4E4F5] px-2 pb-1 pt-1">
                   <input
                     ref={pickerInputRef}
                     value={pickerQuery}
@@ -328,29 +347,10 @@ export function ChartingEmptyToolbar({
             )}
           </div>
 
-          {pendingMetrics.map((id) => (
-            <div
-              key={id}
-              className="inline-flex max-w-full min-w-0 items-stretch overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white"
-            >
-              <span className="flex min-h-[36px] min-w-0 items-center border-r border-[#E4E4E7] px-4 py-2 text-[14px] font-medium leading-5 text-[#09090B]">
-                <span className="truncate">{CHARTING_METRIC_LABEL[id]}</span>
-              </span>
-              <button
-                type="button"
-                onClick={() => removeMetric(id)}
-                className="flex w-9 shrink-0 items-center justify-center text-[#09090B] transition-colors hover:bg-[#FAFAFA]"
-                aria-label={`Remove ${CHARTING_METRIC_LABEL[id]}`}
-              >
-                <X className="h-5 w-5" strokeWidth={1.5} aria-hidden />
-              </button>
-            </div>
-          ))}
-
           {displayTickers.map((sym) => (
             <div
               key={sym}
-              className="inline-flex max-w-full min-w-0 items-stretch overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white"
+              className="order-3 inline-flex max-w-full min-w-0 items-stretch overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white"
             >
               <span className="flex min-h-[36px] min-w-0 items-center border-r border-[#E4E4E7] px-4 py-2 text-[14px] font-medium leading-5 text-[#09090B]">
                 <span className="truncate">{sym}</span>
@@ -367,24 +367,26 @@ export function ChartingEmptyToolbar({
           ))}
 
           {pendingMetrics.length > 0 ? (
-            <ChartingCompanyAddDropdown
-              onPickStock={(sym) => {
-                const u = normalizePickerEquitySymbol(sym);
-                if (!u) return;
-                const dt = displayTickersRef.current;
-                if (dt.includes(u)) return;
-                if (dt.length >= CHARTING_MAX_COMPARE_TICKERS) return;
-                const fromState = pendingMetricsRef.current;
-                const fromUrl = parseChartingMetricsParam(metricParam);
-                const metrics = fromState.length > 0 ? fromState : fromUrl;
-                if (metrics.length === 0) return;
-                onBeginChartSessionNavigation?.();
-                router.push(buildChartingPath([...dt, u], metrics));
-              }}
-              disabled={displayTickers.length >= CHARTING_MAX_COMPARE_TICKERS}
-              maxExtraCompanies={Math.max(0, CHARTING_MAX_COMPARE_TICKERS - displayTickers.length)}
-              excludeSymbols={displayTickers}
-            />
+            <div className="order-4">
+              <ChartingCompanyAddDropdown
+                onPickStock={(sym) => {
+                  const u = normalizePickerEquitySymbol(sym);
+                  if (!u) return;
+                  const dt = displayTickersRef.current;
+                  if (dt.includes(u)) return;
+                  if (dt.length >= CHARTING_MAX_COMPARE_TICKERS) return;
+                  const fromState = pendingMetricsRef.current;
+                  const fromUrl = parseChartingMetricsParam(metricParam);
+                  const metrics = fromState.length > 0 ? fromState : fromUrl;
+                  if (metrics.length === 0) return;
+                  onBeginChartSessionNavigation?.();
+                  router.push(buildChartingPath([...dt, u], metrics));
+                }}
+                disabled={displayTickers.length >= CHARTING_MAX_COMPARE_TICKERS}
+                maxExtraCompanies={Math.max(0, CHARTING_MAX_COMPARE_TICKERS - displayTickers.length)}
+                excludeSymbols={displayTickers}
+              />
+            </div>
           ) : null}
         </div>
       </div>

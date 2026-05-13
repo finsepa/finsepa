@@ -59,7 +59,7 @@ export function MainScrollToTop({ scrollRootRef }: MainScrollToTopProps) {
       onClick={scrollToTop}
       className={cn(
         "fixed z-[35] flex h-12 w-12 items-center justify-center rounded-full border border-[#E4E4E7] bg-white text-[#09090B] shadow-sm transition-opacity duration-200",
-        "max-md:bottom-[calc(4.25rem+var(--mobile-main-bottom-gap)+env(safe-area-inset-bottom,0px)+12px)] right-3 md:bottom-6 md:right-6",
+        "max-md:bottom-[var(--mobile-bottom-nav-fab-bottom)] right-3 md:bottom-6 md:right-6",
         visible ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0",
       )}
     >

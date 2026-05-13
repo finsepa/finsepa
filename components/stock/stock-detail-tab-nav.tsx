@@ -28,7 +28,7 @@ export function StockDetailTabNav({
   onTabChange: (tab: StockDetailTabId) => void;
 }) {
   return (
-    <div className="sticky top-0 z-20 -mx-4 -mt-5 bg-white px-4 pt-2 sm:-mx-9 sm:px-9">
+    <div className="sticky top-0 z-40 bg-white max-md:mx-0 max-md:px-3 max-md:pt-1 sm:-mx-9 sm:-mt-5 sm:px-9 sm:pt-2">
       <div className="border-b border-solid border-[#E4E4E7]">
         <nav
           className="-mx-1 flex flex-nowrap items-start gap-4 overflow-x-auto overflow-y-hidden pb-px [-webkit-overflow-scrolling:touch] sm:mx-0 sm:flex-wrap sm:gap-5 sm:overflow-visible"

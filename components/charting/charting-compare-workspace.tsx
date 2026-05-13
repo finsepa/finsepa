@@ -827,7 +827,7 @@ export function ChartingCompareWorkspace({
             {selected.map((id) => (
               <div
                 key={id}
-                className="inline-flex max-w-full min-w-0 items-stretch overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white"
+                className="order-1 inline-flex max-w-full min-w-0 items-stretch overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white"
               >
                 <span className="flex min-h-[36px] min-w-0 items-center border-r border-[#E4E4E7] px-4 py-2 text-[14px] font-medium leading-5 text-[#09090B]">
                   <span className="truncate">{CHARTING_METRIC_LABEL[id]}</span>
@@ -844,7 +844,7 @@ export function ChartingCompareWorkspace({
               </div>
             ))}
 
-            <div className="relative" ref={pickerWrapRef}>
+            <div className="relative order-2" ref={pickerWrapRef}>
               <button
                 type="button"
                 onClick={() => {
@@ -913,7 +913,7 @@ export function ChartingCompareWorkspace({
               return (
                 <div
                   key={t}
-                  className="inline-flex max-w-full min-w-0 items-stretch overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white"
+                  className="order-3 inline-flex max-w-full min-w-0 items-stretch overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white"
                 >
                   <span className="flex min-h-[36px] min-w-0 items-center border-r border-[#E4E4E7] px-4 py-2 text-[14px] font-medium leading-5 text-[#09090B]">
                     <span className="truncate">{t}</span>
@@ -943,12 +943,14 @@ export function ChartingCompareWorkspace({
             })}
 
             {selected.length > 0 ? (
-              <ChartingCompanyAddDropdown
-                onPickStock={addTickerFromPicker}
-                disabled={atCompanyCap}
-                maxExtraCompanies={Math.max(0, CHARTING_MAX_COMPARE_TICKERS - tickers.length)}
-                excludeSymbols={tickers}
-              />
+              <div className="order-4">
+                <ChartingCompanyAddDropdown
+                  onPickStock={addTickerFromPicker}
+                  disabled={atCompanyCap}
+                  maxExtraCompanies={Math.max(0, CHARTING_MAX_COMPARE_TICKERS - tickers.length)}
+                  excludeSymbols={tickers}
+                />
+              </div>
             ) : null}
           </div>
         </div>

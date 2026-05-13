@@ -374,7 +374,7 @@ export function StockPageContent({
   const stockChartDrivesHeader = activeTab !== "holdings";
 
   return (
-    <div className="relative min-w-0 space-y-5 px-4 py-4 sm:px-9 sm:py-6">
+    <div className="relative min-w-0 space-y-5 px-0 py-0 sm:space-y-5 sm:px-9 sm:py-6">
       <KeyStatsMetricChartModal
         key={revenueProfitModalMetric ?? "closed"}
         ticker={ticker}

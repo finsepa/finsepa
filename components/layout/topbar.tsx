@@ -100,11 +100,13 @@ const TopbarPortfolioBlock = memo(function TopbarPortfolioBlock() {
 });
 
 export function Topbar({
+  userId,
   userInitials,
   avatarUrl,
   userDisplayName,
   platformTrialDaysLeft = null,
 }: {
+  userId: string;
   userInitials: string;
   avatarUrl: string | null;
   userDisplayName: string;
@@ -135,8 +137,8 @@ export function Topbar({
 
   return (
     <>
-      <header className="flex min-h-[60px] min-w-0 flex-nowrap items-center justify-between gap-3 overflow-x-hidden overflow-y-hidden px-4 py-3 max-md:py-2 [-webkit-overflow-scrolling:touch]">
-        <div className="flex min-w-0 flex-1 items-center">
+      <header className="flex min-w-0 flex-nowrap items-center justify-between gap-2 overflow-x-hidden overflow-y-hidden [-webkit-overflow-scrolling:touch] max-md:gap-2 max-md:p-4 md:min-h-[60px] md:gap-3 md:px-4 md:py-3">
+        <div className="flex min-w-0 flex-1 items-center md:min-w-0">
           <div className="min-w-0 w-full max-w-full flex-1 md:max-w-[300px]">
             <TopbarDelayedTooltip label="Search" className="relative block w-full max-w-full">
               <button
@@ -158,7 +160,7 @@ export function Topbar({
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-3">
+        <div className="flex shrink-0 items-center gap-2 md:gap-3">
           {TOPBAR_SHOW_NOTIFICATIONS ? (
             <TopbarDelayedTooltip label="Notifications">
               <IconButton>
@@ -180,9 +182,12 @@ export function Topbar({
 
           <TopbarQuickAddMenu dwellTooltipLabel="Add/Create" />
 
-          <TopbarPortfolioBlock />
+          <div className="hidden sm:flex sm:shrink-0">
+            <TopbarPortfolioBlock />
+          </div>
 
           <TopbarUserMenu
+            userId={userId}
             userInitials={userInitials}
             avatarUrl={avatarUrl}
             userDisplayName={userDisplayName}

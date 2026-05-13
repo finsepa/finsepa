@@ -5,6 +5,7 @@ import { Suspense, startTransition, useCallback, useEffect, useState, type Compo
 import { useRouter, useSearchParams } from "next/navigation";
 import { FileSpreadsheet, Layers2, Settings } from "lucide-react";
 
+import { SegmentedControl } from "@/components/design-system";
 import { AssetPageTopLoader } from "@/components/layout/asset-page-top-loader";
 import { PortfolioQuickAddMenu } from "@/components/layout/portfolio-quick-add-menu";
 import { ImportTransactionsModal } from "@/components/portfolio/import-transactions-modal";
@@ -33,7 +34,7 @@ import {
 } from "@/components/portfolio/portfolio-page-tabs";
 import { TransactionPortfolioField } from "@/components/portfolio/transaction-portfolio-field";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
-import type { PortfolioTransaction } from "@/components/portfolio/portfolio-types";
+import type { PortfolioPrivacy, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 import { netCashUsd, totalCostBasisInvested, totalNetWorth } from "@/lib/portfolio/overview-metrics";
 import { ChartSkeleton } from "@/components/ui/chart-skeleton";
 import { cn } from "@/lib/utils";
@@ -160,6 +161,7 @@ function PortfolioPageInner() {
     transactionsByPortfolioId,
     openEditPortfolio,
     selectedPortfolioReadOnly,
+    updatePortfolioPrivacy,
   } = usePortfolioWorkspace();
   const selected =
     portfolios.find((p) => p.id === selectedPortfolioId) ?? portfolios[0] ?? null;
@@ -174,6 +176,8 @@ function PortfolioPageInner() {
   const overviewNetWorth = totalNetWorth(holdings, netCashUsd(transactions));
   const showOverviewHoldingsBlock = overviewNetWorth > 0;
   const benchmarkInvestedUsd = totalCostBasisInvested(holdings);
+  const privacyControlDisabled = selectedPortfolioId == null;
+  const portfolioPrivacy = selected?.privacy ?? "private";
 
   const panelClass = (tab: PortfolioViewTab) =>
     cn(viewTab === tab ? "flex min-h-0 flex-1 flex-col" : "hidden");
@@ -185,13 +189,27 @@ function PortfolioPageInner() {
       <div className="mb-6 flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
         <div className="flex min-w-0 items-start justify-between gap-3 sm:flex-1 sm:items-center">
           <div className="flex min-w-0 flex-col gap-1">
-            <h1 className="min-w-0 truncate whitespace-nowrap text-2xl font-semibold tracking-tight text-[#09090B]">
-              {title}
-            </h1>
+            <div className="flex min-w-0 max-w-full items-center gap-0">
+              <h1 className="min-w-0 truncate text-2xl font-semibold tracking-tight text-[#09090B]">
+                {title}
+              </h1>
+              <TransactionPortfolioField variant="titleGhost" compactMenuAlign="leading" />
+            </div>
           </div>
 
           <div className="flex shrink-0 flex-nowrap items-center justify-end gap-2 sm:hidden">
-            <TransactionPortfolioField variant="toolbar" compactMenuAlign="trailing" />
+            <SegmentedControl<PortfolioPrivacy>
+              aria-label="Portfolio visibility"
+              size="sm"
+              options={[
+                { value: "private", label: "Private", disabled: privacyControlDisabled },
+                { value: "public", label: "Public", disabled: privacyControlDisabled },
+              ]}
+              value={portfolioPrivacy}
+              onChange={(next) => {
+                if (selectedPortfolioId != null) updatePortfolioPrivacy(selectedPortfolioId, next);
+              }}
+            />
             <button
               type="button"
               aria-label="Import transactions"
@@ -225,7 +243,18 @@ function PortfolioPageInner() {
         </div>
 
         <div className="hidden min-w-0 shrink-0 flex-nowrap items-center justify-end gap-2 sm:flex">
-          <TransactionPortfolioField variant="toolbar" compactMenuAlign="trailing" />
+          <SegmentedControl<PortfolioPrivacy>
+            aria-label="Portfolio visibility"
+            size="sm"
+            options={[
+              { value: "private", label: "Private", disabled: privacyControlDisabled },
+              { value: "public", label: "Public", disabled: privacyControlDisabled },
+            ]}
+            value={portfolioPrivacy}
+            onChange={(next) => {
+              if (selectedPortfolioId != null) updatePortfolioPrivacy(selectedPortfolioId, next);
+            }}
+          />
           <button
             type="button"
             aria-label="Import transactions"

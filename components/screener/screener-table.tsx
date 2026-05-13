@@ -36,7 +36,7 @@ function PriceAndChangeCell({ price, change1D }: { price: number | null; change1
   const positive = (change1D ?? 0) >= 0;
   return (
     <div className="min-w-0 w-full text-right">
-      <div className="min-w-0 w-full font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
+      <div className="min-w-0 w-full font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#09090B]">
         {hasPrice ? `$${price!.toFixed(2)}` : "-"}
       </div>
       <div
@@ -103,7 +103,7 @@ const ScreenerDataRow = memo(function ScreenerDataRow({
       className={`group flex min-h-[60px] items-center gap-x-2 bg-white px-2 transition-colors duration-75 hover:bg-neutral-50 sm:px-4`}
     >
       <WatchlistStarToggle
-        className="flex w-6 shrink-0 items-center justify-center px-1 sm:w-10 sm:px-3"
+        className="hidden w-6 shrink-0 items-center justify-center px-1 sm:flex sm:w-10 sm:px-3"
         storageKey={item.ticker}
         label={item.ticker}
         watched={watchedSet}
@@ -199,7 +199,7 @@ export function ScreenerTable({
       <div
         className={`flex min-h-[44px] items-center gap-x-2 bg-white px-2 py-0 text-[12px] font-medium leading-5 text-[#71717A] sm:px-4 sm:text-[14px]`}
       >
-        <div className="w-6 shrink-0 sm:w-10" aria-hidden />
+        <div className="hidden w-6 shrink-0 sm:block sm:w-10" aria-hidden />
         <div
           className={`${rowLinkGrid} min-h-[44px] items-center text-[12px] font-medium leading-5 text-[#71717A] sm:text-[14px]`}
         >
