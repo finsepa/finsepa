@@ -8,7 +8,6 @@ import { useSpringTriplet } from "@/components/chart/use-spring-numbers";
 import { mergeLogoMemory, readLogoMemory } from "@/lib/logos/logo-memory";
 import { getStockDetailMetaFromTicker } from "@/lib/market/stock-detail-meta";
 import {
-  formatWatchlistsCountLabel,
   type StockDetailHeaderMeta,
 } from "@/lib/market/stock-header-meta";
 import type { StockChartSeries } from "@/lib/market/stock-chart-types";
@@ -93,13 +92,6 @@ export function StockHeader({
     { price, abs: changeAbs, pct: changePct },
     { stiffness: 520, damping: 38, epsilon: 1e-4 },
   );
-
-  /** Watchlist count can differ between SSR and first client paint (DB vs serialized props); defer suffix to avoid hydration mismatch. */
-  const [watchlistMetaReady, setWatchlistMetaReady] = useState(false);
-  useEffect(() => {
-    const id = requestAnimationFrame(() => setWatchlistMetaReady(true));
-    return () => cancelAnimationFrame(id);
-  }, []);
 
   const hasChange = changePct != null && changeAbs != null && Number.isFinite(changePct) && Number.isFinite(changeAbs);
   const isPositive = hasChange ? changeAbs >= 0 : true;
@@ -208,15 +200,7 @@ export function StockHeader({
             {headerMetaLoading ? (
               <div className="mt-0.5 h-4 w-24 rounded bg-neutral-200/80 animate-pulse" aria-hidden />
             ) : (
-              <p className="mt-0.5 text-[13px] leading-5 text-[#71717A]">
-                {symbol}
-                {watchlistMetaReady && headerMeta?.watchlistCount != null ? (
-                  <>
-                    <span className="text-[#71717A]"> · </span>
-                    {formatWatchlistsCountLabel(headerMeta.watchlistCount)}
-                  </>
-                ) : null}
-              </p>
+              <p className="mt-0.5 text-[13px] leading-5 text-[#71717A]">{symbol}</p>
             )}
           </div>
         </div>

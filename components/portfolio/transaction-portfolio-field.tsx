@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, ChevronDown, GitMerge, Pencil, Plus } from "lucide-react";
+import { Check, ChevronDown, GitMerge, Globe, Lock, Pencil, Plus } from "lucide-react";
 
 import {
   dropdownMenuCompositeRowClassName,
@@ -11,15 +11,26 @@ import {
 import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
 import { cn } from "@/lib/utils";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
+import type { PortfolioPrivacy } from "@/components/portfolio/portfolio-types";
 
-type Variant = "field" | "compact";
+function PrivacyGlyph({ privacy }: { privacy: PortfolioPrivacy }) {
+  const Icon = privacy === "public" ? Globe : Lock;
+  return <Icon className="h-4 w-4 shrink-0 text-[#09090B]" strokeWidth={2} aria-hidden />;
+}
+
+type Variant = "field" | "compact" | "toolbar";
+
+const toolbarTriggerClass =
+  "inline-flex h-9 max-w-[min(52vw,220px)] shrink-0 cursor-pointer items-center gap-2 rounded-[10px] border border-[#E4E4E7] bg-white px-3 text-left text-sm font-medium text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40";
 
 /** `leading`: menu grows right (portfolio title). `trailing`: menu aligns to trigger’s right edge (top bar). */
 export type CompactMenuAlign = "leading" | "trailing";
 
 /**
  * Portfolio picker — shared by New Transaction and top bar / portfolio page.
- * `compact`: chevron-only trigger (e.g. next to balance in the top bar).
+ * - `field`: full-width gray trigger (forms).
+ * - `compact`: chevron-only (top bar next to balance).
+ * - `toolbar`: bordered white trigger with privacy icon + name + chevron (portfolio header actions).
  */
 export function TransactionPortfolioField({
   variant = "field",
@@ -63,11 +74,11 @@ export function TransactionPortfolioField({
   }, [open]);
 
   const dropdownAlign =
-    variant === "compact"
-      ? compactMenuAlign === "trailing"
-        ? "right-0 left-auto w-max min-w-[min(calc(100vw-2rem),280px)] max-w-[min(calc(100vw-2rem),320px)]"
-        : "left-0 right-auto w-max min-w-[min(calc(100vw-2rem),280px)] max-w-[min(calc(100vw-2rem),320px)]"
-      : "left-0 right-0";
+    variant === "compact" || variant === "toolbar" ?
+      compactMenuAlign === "trailing" ?
+        "right-0 left-auto w-max min-w-[min(calc(100vw-2rem),280px)] max-w-[min(calc(100vw-2rem),320px)]"
+      : "left-0 right-auto w-max min-w-[min(calc(100vw-2rem),280px)] max-w-[min(calc(100vw-2rem),320px)]"
+    : "left-0 right-0";
 
   const zDropdown = variant === "field" ? "z-10" : undefined;
 
@@ -139,17 +150,19 @@ export function TransactionPortfolioField({
   );
 
   return (
-    <div ref={containerRef} className={cn("relative", variant === "compact" && "flex shrink-0")}>
+    <div ref={containerRef} className={cn("relative", (variant === "compact" || variant === "toolbar") && "flex shrink-0")}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-haspopup="listbox"
-        aria-label={variant === "compact" ? "Portfolio menu" : undefined}
+        aria-label={variant === "compact" || variant === "toolbar" ? "Portfolio menu" : undefined}
         className={
-          variant === "compact"
-            ? "flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-[10px] text-[#09090B] transition-colors hover:bg-[#F4F4F5] disabled:cursor-not-allowed disabled:opacity-50"
-            : "flex h-9 w-full items-center justify-between gap-2 rounded-[10px] bg-[#F4F4F5] px-4 text-left text-sm transition-colors hover:bg-[#EBEBEB]"
+          variant === "toolbar" ?
+            toolbarTriggerClass
+          : variant === "compact" ?
+            "flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-[10px] text-[#09090B] transition-colors hover:bg-[#F4F4F5] disabled:cursor-not-allowed disabled:opacity-50"
+          : "flex h-9 w-full items-center justify-between gap-2 rounded-[10px] bg-[#F4F4F5] px-4 text-left text-sm transition-colors hover:bg-[#EBEBEB]"
         }
       >
         {variant === "field" ? (
@@ -167,6 +180,18 @@ export function TransactionPortfolioField({
               aria-hidden
             />
           </>
+        ) : variant === "toolbar" ? (
+          <>
+            {hasPortfolio && selected ? <PrivacyGlyph privacy={selected.privacy} /> : null}
+            <span className={cn("min-w-0 flex-1 truncate", hasPortfolio ? "text-[#09090B]" : "text-[#71717A]")}>
+              {hasPortfolio ? selected.name : "No portfolio"}
+            </span>
+            <ChevronDown
+              className={cn("h-4 w-4 shrink-0 text-[#09090B] transition-transform", open && "rotate-180")}
+              strokeWidth={2}
+              aria-hidden
+            />
+          </>
         ) : (
           <ChevronDown
             className={cn("h-5 w-5 shrink-0 transition-transform", open && "rotate-180")}
@@ -174,7 +199,7 @@ export function TransactionPortfolioField({
           />
         )}
       </button>
-      {open && variant === "compact" ? (
+      {open && (variant === "compact" || variant === "toolbar") ? (
         <TopbarDropdownPortal
           open={open}
           anchorRef={containerRef}

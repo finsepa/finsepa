@@ -18,7 +18,7 @@ export function PortfolioPageLoadingShell() {
       </div>
 
       <div className="-mx-1 mb-6 flex gap-4 overflow-x-auto overflow-y-hidden border-b border-[#E4E4E7] pb-px [-webkit-overflow-scrolling:touch] sm:mx-0 sm:gap-6 sm:overflow-visible sm:pb-0">
-        {["Overview", "Performance", "Cash", "Transactions"].map((label) => (
+        {["Overview", "Performance", "Metrics", "Cash", "Slices", "Transactions"].map((label) => (
           <div
             key={label}
             className="mb-[-1px] h-9 w-20 shrink-0 animate-pulse rounded-t-md bg-neutral-100 pb-2"

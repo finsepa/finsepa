@@ -113,7 +113,7 @@ function SuperinvestorsFundTableInner({ rows }: { rows: SuperinvestorsFundRowMod
               key={r.href}
               href={r.href}
               prefetch={false}
-              className="block bg-white text-[#09090B] no-underline transition-colors duration-75 visited:text-[#09090B] hover:bg-neutral-50"
+              className="group block bg-white text-[#09090B] no-underline transition-colors duration-75 visited:text-[#09090B] hover:bg-neutral-50"
             >
               {/* Mobile row */}
               <div
@@ -124,7 +124,9 @@ function SuperinvestorsFundTableInner({ rows }: { rows: SuperinvestorsFundRowMod
                     <FundRowAvatar src={r.avatarSrc} displayName={r.displayName} />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">{r.displayName}</div>
+                    <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B] underline-offset-[3px] decoration-[#09090B] group-hover:underline">
+                      {r.displayName}
+                    </div>
                     <div className={screenerTickerSublineClass}>
                       <span className="tabular-nums">{formatUsdCompact(r.totalValueUsd)}</span>
                       <span> · </span>
@@ -146,7 +148,9 @@ function SuperinvestorsFundTableInner({ rows }: { rows: SuperinvestorsFundRowMod
                 </div>
 
                 <div className="min-w-0 text-left">
-                  <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">{r.displayName}</div>
+                  <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B] underline-offset-[3px] decoration-[#09090B] group-hover:underline">
+                    {r.displayName}
+                  </div>
                 </div>
 
                 <div className="min-w-0 text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">

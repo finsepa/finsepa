@@ -12,7 +12,7 @@ import {
   dropdownMenuSurfaceClassName,
 } from "@/components/design-system/dropdown-menu-styles";
 import { cn } from "@/lib/utils";
-import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
+import { filterChartingUrlTickersForSession } from "@/lib/charting/charting-allowed-tickers";
 import {
   CHARTING_DROPDOWN_GROUPS,
   CHARTING_MAX_COMPARE_TICKERS,
@@ -22,6 +22,13 @@ import {
   parseChartingMetricsParam,
   parseChartingTickerList,
 } from "@/lib/market/stock-charting-metrics";
+
+/** Align picker output with charting URLs / allowlist (EODHD-style `BRK-B.US` → `BRK.B`). */
+function normalizePickerEquitySymbol(raw: string): string {
+  let u = raw.trim().toUpperCase();
+  if (u.endsWith(".US")) u = u.slice(0, -3);
+  return u.replace(/-/g, ".");
+}
 
 /** Match standalone Charting chrome — Figma Charting empty / workspace header. */
 type ChartType = "line" | "bars";
@@ -59,12 +66,19 @@ type Props = {
   tickers: string[];
   /** Same list as server Charting route — top 10 + screener page 2. */
   allowedChartingTickers: string[];
+  /** Called synchronously before navigating to a full chart session so the page can show a chart skeleton. */
+  onBeginChartSessionNavigation?: () => void;
 };
 
 /**
  * Empty-state toolbar: title, switchers (visual), + Add Metric first; + Add Company only after ≥1 metric.
  */
-export function ChartingEmptyToolbar({ metricParam, tickers, allowedChartingTickers }: Props) {
+export function ChartingEmptyToolbar({
+  metricParam,
+  tickers,
+  allowedChartingTickers,
+  onBeginChartSessionNavigation,
+}: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pickerWrapRef = useRef<HTMLDivElement>(null);
@@ -81,21 +95,18 @@ export function ChartingEmptyToolbar({ metricParam, tickers, allowedChartingTick
   /** Next.js client query (updates with `router.push` / `replace`) — more reliable than `window.location` for same-tick sync. */
   const tickersFromRouter = useMemo(() => {
     const raw = searchParams.get("ticker")?.trim() ?? "";
-    const parsed = parseChartingTickerList(raw || null);
-    return parsed.filter((t) => {
-      if (isSingleAssetMode()) return isSupportedAsset(t);
-      return chartingAllowSet.has(t.trim().toUpperCase());
-    });
-  }, [searchParams, chartingAllowSet]);
+    const fromClient = parseChartingTickerList(raw || null);
+    const candidates = fromClient.length > 0 ? fromClient : tickers;
+    return filterChartingUrlTickersForSession(candidates, chartingAllowSet);
+  }, [searchParams, chartingAllowSet, tickers]);
 
   const displayTickers = useMemo(
     () => (tickersFromRouter.length > 0 ? tickersFromRouter : tickers),
     [tickers, tickersFromRouter],
   );
 
-  const tickersForUrlSync = useCallback((): string[] => {
-    return displayTickers;
-  }, [displayTickers]);
+  const pendingMetricsRef = useRef<ChartingMetricId[]>([]);
+  const displayTickersRef = useRef<string[]>([]);
 
   const [periodMode, setPeriodMode] = useState<"annual" | "quarterly">("annual");
   const [chartType, setChartType] = useState<ChartType>("bars");
@@ -127,44 +138,41 @@ export function ChartingEmptyToolbar({ metricParam, tickers, allowedChartingTick
   const removeTicker = useCallback(
     (sym: string) => {
       syncUrl(
-        displayTickers.filter((t) => t !== sym),
-        pendingMetrics,
+        displayTickersRef.current.filter((t) => t !== sym),
+        pendingMetricsRef.current,
       );
     },
-    [displayTickers, pendingMetrics, syncUrl],
+    [syncUrl],
   );
 
   const removeMetric = useCallback(
     (id: ChartingMetricId) => {
-      let nextMetrics: ChartingMetricId[] | null = null;
-      setPendingMetrics((prev) => {
-        const next = prev.filter((x) => x !== id);
-        nextMetrics = next;
-        return next;
-      });
-      if (nextMetrics !== null) {
-        syncUrl(tickersForUrlSync(), nextMetrics!);
-      }
+      const prev = pendingMetricsRef.current;
+      const next = prev.filter((x) => x !== id);
+      if (next.length === prev.length) return;
+      pendingMetricsRef.current = next;
+      setPendingMetrics(next);
+      syncUrl(displayTickersRef.current, next);
     },
-    [syncUrl, tickersForUrlSync],
+    [syncUrl],
   );
 
   const addMetric = useCallback(
     (id: ChartingMetricId) => {
-      let nextMetrics: ChartingMetricId[] | null = null;
-      setPendingMetrics((prev) => {
-        if (prev.includes(id)) return prev;
-        const next = [...prev, id];
-        nextMetrics = next;
-        return next;
-      });
-      if (nextMetrics !== null) {
-        syncUrl(tickersForUrlSync(), nextMetrics);
+      const hadTicker = displayTickersRef.current.length > 0;
+      const prev = pendingMetricsRef.current;
+      if (prev.includes(id)) return;
+      const next = [...prev, id];
+      pendingMetricsRef.current = next;
+      setPendingMetrics(next);
+      if (hadTicker && prev.length === 0) {
+        onBeginChartSessionNavigation?.();
       }
+      syncUrl(displayTickersRef.current, next);
       setPickerOpen(false);
       setPickerQuery("");
     },
-    [syncUrl, tickersForUrlSync],
+    [syncUrl, onBeginChartSessionNavigation],
   );
 
   useEffect(() => {
@@ -194,6 +202,9 @@ export function ChartingEmptyToolbar({ metricParam, tickers, allowedChartingTick
     };
   }, [pickerOpen]);
 
+  pendingMetricsRef.current = pendingMetrics;
+  displayTickersRef.current = displayTickers;
+
   const qLower = pickerQuery.trim().toLowerCase();
 
   const groupedAddable = useMemo(() => {
@@ -216,8 +227,8 @@ export function ChartingEmptyToolbar({ metricParam, tickers, allowedChartingTick
         </h1>
         <div className="flex min-w-0 flex-wrap items-center gap-3 sm:flex-nowrap sm:justify-end sm:overflow-x-auto sm:pb-0.5">
           <TabSwitcher
-            fullWidth
-            className="shrink-0 sm:w-[220px]"
+            fullWidth={false}
+            className="shrink-0"
             options={PERIOD_TAB_OPTIONS}
             value={periodMode}
             onChange={setPeriodMode}
@@ -358,10 +369,17 @@ export function ChartingEmptyToolbar({ metricParam, tickers, allowedChartingTick
           {pendingMetrics.length > 0 ? (
             <ChartingCompanyAddDropdown
               onPickStock={(sym) => {
-                const u = sym.trim().toUpperCase();
-                if (displayTickers.includes(u)) return;
-                if (displayTickers.length >= CHARTING_MAX_COMPARE_TICKERS) return;
-                router.push(buildChartingPath([...displayTickers, u], pendingMetrics));
+                const u = normalizePickerEquitySymbol(sym);
+                if (!u) return;
+                const dt = displayTickersRef.current;
+                if (dt.includes(u)) return;
+                if (dt.length >= CHARTING_MAX_COMPARE_TICKERS) return;
+                const fromState = pendingMetricsRef.current;
+                const fromUrl = parseChartingMetricsParam(metricParam);
+                const metrics = fromState.length > 0 ? fromState : fromUrl;
+                if (metrics.length === 0) return;
+                onBeginChartSessionNavigation?.();
+                router.push(buildChartingPath([...dt, u], metrics));
               }}
               disabled={displayTickers.length >= CHARTING_MAX_COMPARE_TICKERS}
               maxExtraCompanies={Math.max(0, CHARTING_MAX_COMPARE_TICKERS - displayTickers.length)}

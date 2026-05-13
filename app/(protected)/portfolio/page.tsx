@@ -31,7 +31,6 @@ import {
   portfolioViewTabFromSearchParam,
   searchParamFromPortfolioViewTab,
 } from "@/components/portfolio/portfolio-page-tabs";
-import { PortfolioPrivacyStatus } from "@/components/portfolio/portfolio-privacy-select";
 import { TransactionPortfolioField } from "@/components/portfolio/transaction-portfolio-field";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import type { PortfolioTransaction } from "@/components/portfolio/portfolio-types";
@@ -97,10 +96,19 @@ const PortfolioPerformancePanel = dynamic(
   },
 );
 
+const PortfolioMetricsPanel = dynamic(
+  () =>
+    import("@/components/portfolio/portfolio-metrics-panel").then((m) => ({
+      default: m.PortfolioMetricsPanel,
+    })),
+  { loading: () => <PortfolioTabPanelSkeleton className="mb-6" /> },
+);
+
 function initialTabsVisited(active: PortfolioViewTab): Record<PortfolioViewTab, boolean> {
   return {
     Overview: active === "Overview",
     Performance: active === "Performance",
+    Metrics: active === "Metrics",
     Cash: active === "Cash",
     Slices: active === "Slices",
     Transactions: active === "Transactions",
@@ -177,16 +185,13 @@ function PortfolioPageInner() {
       <div className="mb-6 flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
         <div className="flex min-w-0 items-start justify-between gap-3 sm:flex-1 sm:items-center">
           <div className="flex min-w-0 flex-col gap-1">
-            <div className="flex min-w-0 items-center gap-2">
-              {selected ? <PortfolioPrivacyStatus privacy={selected.privacy} /> : null}
-              <h1 className="min-w-0 truncate whitespace-nowrap text-2xl font-semibold tracking-tight text-[#09090B]">
-                {title}
-              </h1>
-              <TransactionPortfolioField variant="compact" />
-            </div>
+            <h1 className="min-w-0 truncate whitespace-nowrap text-2xl font-semibold tracking-tight text-[#09090B]">
+              {title}
+            </h1>
           </div>
 
           <div className="flex shrink-0 flex-nowrap items-center justify-end gap-2 sm:hidden">
+            <TransactionPortfolioField variant="toolbar" compactMenuAlign="trailing" />
             <button
               type="button"
               aria-label="Import transactions"
@@ -220,6 +225,7 @@ function PortfolioPageInner() {
         </div>
 
         <div className="hidden min-w-0 shrink-0 flex-nowrap items-center justify-end gap-2 sm:flex">
+          <TransactionPortfolioField variant="toolbar" compactMenuAlign="trailing" />
           <button
             type="button"
             aria-label="Import transactions"
@@ -314,6 +320,17 @@ function PortfolioPageInner() {
             aria-hidden={viewTab !== "Performance"}
           >
             <PortfolioPerformancePanel holdings={holdings} transactions={transactions} />
+          </div>
+        ) : null}
+
+        {tabsVisited.Metrics ? (
+          <div
+            className={panelClass("Metrics")}
+            role="tabpanel"
+            id="portfolio-tab-metrics"
+            aria-hidden={viewTab !== "Metrics"}
+          >
+            <PortfolioMetricsPanel />
           </div>
         ) : null}
 

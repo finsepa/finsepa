@@ -11,21 +11,16 @@ import {
   cashOperationLabel,
   cashSignedAmount,
 } from "@/components/layout/cash-direction-select";
-import { ClearableInput } from "@/components/layout/clearable-input";
+import { UsdMoneyClearableInput } from "@/components/layout/usd-money-clearable-input";
 import { TransactionDateField } from "@/components/layout/transaction-date-field";
 import { newTransactionRowId, portfolioIsCombined } from "@/components/portfolio/portfolio-types";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import { FormListboxSelect, type ListboxOption } from "@/components/ui/form-listbox-select";
 import { toastTransactionAdded } from "@/lib/portfolio/transaction-added-toast";
+import { parseUsdStyleNumber } from "@/lib/portfolio/amount-input-format";
 import { cn } from "@/lib/utils";
 
 const usdFormatter = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
-function parseAmountField(raw: string): number {
-  const t = raw.trim().replace(/\s/g, "").replace(",", ".");
-  if (!t) return 0;
-  const n = Number.parseFloat(t);
-  return Number.isFinite(n) ? n : 0;
-}
 
 type Props = {
   open: boolean;
@@ -76,7 +71,7 @@ export function AddCashModal({ open, onClose }: Props) {
     };
   }, [open]);
 
-  const amountNum = useMemo(() => parseAmountField(amount), [amount]);
+  const amountNum = useMemo(() => parseUsdStyleNumber(amount), [amount]);
 
   const resolvedCashPortfolioId = useMemo(() => {
     if (cashPortfolioId && standardPortfolios.some((p) => p.id === cashPortfolioId)) return cashPortfolioId;
@@ -179,11 +174,7 @@ export function AddCashModal({ open, onClose }: Props) {
             </Field>
 
             <Field label="Amount">
-              <ClearableInput
-                type="number"
-                inputMode="decimal"
-                min="0"
-                step="any"
+              <UsdMoneyClearableInput
                 value={amount}
                 onChange={setAmount}
                 placeholder="0.00"

@@ -2,7 +2,7 @@
 
 import { UnderlineTabs } from "@/components/screener/market-tabs";
 
-const tabs = ["Overview", "Performance", "Cash", "Slices", "Transactions"] as const;
+const tabs = ["Overview", "Performance", "Metrics", "Cash", "Slices", "Transactions"] as const;
 export type PortfolioViewTab = (typeof tabs)[number];
 
 /** `?tab=` query value for Next.js router (shareable deep links). */
@@ -11,6 +11,8 @@ export function portfolioViewTabFromSearchParam(value: string | null): Portfolio
   switch (value.toLowerCase()) {
     case "performance":
       return "Performance";
+    case "metrics":
+      return "Metrics";
     case "cash":
       return "Cash";
     case "slices":
@@ -27,6 +29,8 @@ export function searchParamFromPortfolioViewTab(tab: PortfolioViewTab): string {
   switch (tab) {
     case "Performance":
       return "performance";
+    case "Metrics":
+      return "metrics";
     case "Cash":
       return "cash";
     case "Slices":

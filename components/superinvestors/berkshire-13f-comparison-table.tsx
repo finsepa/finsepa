@@ -73,7 +73,9 @@ function CompanyTickerCell({ companyName, ticker }: { companyName: string; ticke
     <div className="flex min-w-0 items-center gap-3 pr-2 text-left">
       <CompanyLogo name={displayName} logoUrl={logoUrl} symbol={sym ?? undefined} size="md" />
       <div className="flex min-w-0 max-w-[min(280px,45vw)] flex-col gap-0.5 py-0.5">
-        <span className="line-clamp-1 text-[14px] font-semibold leading-5 text-[#09090B] sm:line-clamp-2">{displayName}</span>
+        <span className="line-clamp-1 text-[14px] font-semibold leading-5 text-[#09090B] underline-offset-[3px] decoration-[#09090B] group-hover:underline sm:line-clamp-2">
+          {displayName}
+        </span>
         <span className="text-[12px] font-normal leading-4 text-[#71717A]">{sym ?? "—"}</span>
       </div>
     </div>
@@ -280,7 +282,7 @@ function ComparisonRowShell({
 }) {
   const href = rowHref(displayName, ticker);
   const hasTicker = Boolean(ticker?.trim());
-  const merged = cn(gridClass, rowShellBase, "cursor-pointer hover:bg-neutral-50");
+  const merged = cn(gridClass, rowShellBase, "group cursor-pointer no-underline hover:bg-neutral-50");
   return (
     <Link
       href={href}

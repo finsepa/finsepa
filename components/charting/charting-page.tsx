@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useMemo } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { LineChart } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 
@@ -8,12 +8,12 @@ import { AssetPageTopLoader } from "@/components/layout/asset-page-top-loader";
 import { ChartingEmptyToolbar } from "@/components/charting/charting-empty-toolbar";
 import { ChartingFullPageTab } from "@/components/charting/charting-full-page-tab";
 import type { StockPageInitialData } from "@/lib/market/stock-page-initial-data";
-import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
+import { filterChartingUrlTickersForSession } from "@/lib/charting/charting-allowed-tickers";
 import {
   isChartingSessionReady,
-  parseChartingMetricsParam,
   parseChartingTickerList,
 } from "@/lib/market/stock-charting-metrics";
+import { ChartSkeleton } from "@/components/ui/chart-skeleton";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 
 type Props = {
@@ -47,25 +47,39 @@ export function ChartingPage({
     [allowedChartingTickers],
   );
 
-  /** Live URL wins over RSC props so `router.replace` to a full session always shows the chart. */
+  /** Live URL wins over RSC props so `router.replace` / full-page loads always match the chart session. */
   const searchKey = searchParams.toString();
-  const { sessionReady, allowedTickers, metricForRoute } = useMemo(() => {
-    const raw = searchParams.get("ticker")?.trim() ?? "";
-    const m = searchParams.get("metric");
-    const parsed = parseChartingTickerList(raw || null);
-    const allowed = parsed.filter((t) => {
-      if (isSingleAssetMode()) return isSupportedAsset(t);
-      return chartingAllowSet.has(t.trim().toUpperCase());
-    });
-    const ready = isChartingSessionReady(allowed, m);
-    return { sessionReady: ready, allowedTickers: allowed, metricForRoute: m };
-  }, [searchParams, searchKey, chartingAllowSet]);
+  const { sessionReady, allowedTickers, metricForUi } = useMemo(() => {
+    const rawClient = searchParams.get("ticker")?.trim() ?? "";
+    const fromClientUrl = parseChartingTickerList(rawClient || null);
+    const tickerCandidates = fromClientUrl.length > 0 ? fromClientUrl : tickers;
+    const allowed = filterChartingUrlTickersForSession(tickerCandidates, chartingAllowSet);
 
-  const showWorkspace =
-    sessionReady ||
-    (chartReady && tickers.length > 0 && parseChartingMetricsParam(metricParam).length > 0);
+    const mClient = searchParams.get("metric")?.trim() ?? "";
+    const mProps = metricParam?.trim() ?? "";
+    const m = mClient || mProps || null;
+
+    return {
+      sessionReady: isChartingSessionReady(allowed, m),
+      allowedTickers: allowed,
+      metricForUi: mClient || mProps || null,
+    };
+  }, [searchParams, searchKey, chartingAllowSet, tickers, metricParam]);
+
+  /** RSC `chartReady` covers first paint; client `sessionReady` covers soft navigations + hydration. */
+  const showWorkspace = sessionReady || chartReady;
   const tickersForUi = allowedTickers.length > 0 ? allowedTickers : tickers;
-  const metricForUi = metricForRoute ?? metricParam;
+
+  /** After picking a company from the empty toolbar, URL/RSC can lag 1–2 frames — show chart skeleton instead of the “add company” empty state. */
+  const [pendingChartWorkspace, setPendingChartWorkspace] = useState(false);
+
+  useEffect(() => {
+    if (showWorkspace) setPendingChartWorkspace(false);
+  }, [showWorkspace]);
+
+  const onBeginChartSessionNavigation = useCallback(() => {
+    setPendingChartWorkspace(true);
+  }, []);
 
   if (showWorkspace) {
     return (
@@ -88,20 +102,32 @@ export function ChartingPage({
         metricParam={metricForUi}
         tickers={tickersForUi}
         allowedChartingTickers={allowedChartingTickers}
+        onBeginChartSessionNavigation={onBeginChartSessionNavigation}
       />
 
-      <section aria-label="Chart area" className="w-full">
-        <Empty variant="card" className="min-h-[min(50vh,420px)] w-full">
-          <EmptyHeader className="gap-3">
-            <EmptyMedia variant="icon">
-              <LineChart className="h-6 w-6" strokeWidth={1.75} aria-hidden />
-            </EmptyMedia>
-            <EmptyTitle>Select a metric and add a company to begin charting</EmptyTitle>
-            <EmptyDescription className="max-w-md">
-              Add at least one metric and one company using the controls above.
-            </EmptyDescription>
-          </EmptyHeader>
-        </Empty>
+      <section
+        aria-label={pendingChartWorkspace ? "Loading chart" : "Chart area"}
+        className="w-full"
+        aria-busy={pendingChartWorkspace}
+      >
+        {pendingChartWorkspace ? (
+          <div className="flex min-h-[min(50vh,420px)] w-full flex-col rounded-xl border border-[#E4E4E7] bg-white p-4 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
+            <span className="sr-only">Loading chart data</span>
+            <ChartSkeleton heightPx={320} className="min-h-0 flex-1" />
+          </div>
+        ) : (
+          <Empty variant="card" className="min-h-[min(50vh,420px)] w-full">
+            <EmptyHeader className="gap-3">
+              <EmptyMedia variant="icon">
+                <LineChart className="h-6 w-6" strokeWidth={1.75} aria-hidden />
+              </EmptyMedia>
+              <EmptyTitle>Select a metric and add a company to begin charting</EmptyTitle>
+              <EmptyDescription className="max-w-md">
+                Add at least one metric and one company using the controls above.
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+        )}
       </section>
     </div>
   );

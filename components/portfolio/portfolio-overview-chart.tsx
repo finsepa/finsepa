@@ -575,7 +575,7 @@ export function PortfolioValueHistoryChartPane({
     const shouldForceEnglish = typeof window !== "undefined" && window.matchMedia("(max-width: 639px)").matches;
 
     const chart = createChart(el, {
-      width: el.clientWidth,
+      width: Math.max(2, el.clientWidth),
       height: CHART_HEIGHT,
       autoSize: false,
       layout: {
@@ -756,7 +756,7 @@ export function PortfolioValueHistoryChartPane({
 
     const ro = new ResizeObserver(() => {
       if (!wrapRef.current || !chartRef.current) return;
-      chartRef.current.applyOptions({ width: wrapRef.current.clientWidth });
+      chartRef.current.applyOptions({ width: Math.max(2, wrapRef.current.clientWidth) });
       const s = seriesRef.current;
       if (s && s.data().length > 0) {
         snapOverviewTimeScale(chartRef.current, s);

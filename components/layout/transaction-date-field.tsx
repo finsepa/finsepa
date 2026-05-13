@@ -2,6 +2,7 @@
 
 import { format } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
+import * as React from "react";
 import { useEffect, useMemo, useState } from "react";
 
 import { Calendar } from "@/components/ui/calendar";
@@ -10,6 +11,39 @@ import { cn } from "@/lib/utils";
 
 function startOfCalendarMonth(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), 1);
+}
+
+/**
+ * react-day-picker orders month/year from locale (`en-US` → month first).
+ * Swap so year appears before month; keep the live caption `<span role="status">` last.
+ */
+function YearFirstCaptionDropdownNav({
+  children,
+  className,
+  style,
+  ...rest
+}: React.HTMLAttributes<HTMLDivElement>) {
+  const arr = React.Children.toArray(children);
+  const statusEls = arr.filter((c) => {
+    if (!React.isValidElement(c)) return false;
+    const p = c.props as { role?: string };
+    return p.role === "status";
+  });
+  const controls = arr.filter((c) => {
+    if (!React.isValidElement(c)) return true;
+    const p = c.props as { role?: string };
+    return p.role !== "status";
+  });
+  const month = controls.find((c) => React.isValidElement(c) && c.key === "month");
+  const year = controls.find((c) => React.isValidElement(c) && c.key === "year");
+  const ordered =
+    month != null && year != null ? ([year, month, ...statusEls] as React.ReactNode[]) : arr;
+
+  return (
+    <div className={cn(className, "w-full min-w-0")} style={style} {...rest}>
+      {ordered}
+    </div>
+  );
 }
 
 /** Date field with popover — uses shadcn-style `Calendar` + `captionLayout="dropdown"` (react-day-picker). */
@@ -27,7 +61,8 @@ export function TransactionDateField({
     const y = new Date().getFullYear();
     return {
       startMonth: new Date(y - 100, 0, 1),
-      endMonth: new Date(y + 15, 11, 31),
+      /** Cap navigation at today’s calendar year — no future years in the dropdown. */
+      endMonth: new Date(y, 11, 31),
     };
   }, []);
 
@@ -50,17 +85,33 @@ export function TransactionDateField({
         </button>
       </PopoverTrigger>
       <PopoverContent
-        className="w-auto max-w-[min(100vw-2rem,320px)] shrink-0 overflow-hidden rounded-xl border border-[#E4E4E7] bg-white p-0 shadow-[0px_10px_16px_0px_rgba(10,10,10,0.1),0px_4px_6px_0px_rgba(10,10,10,0.04)]"
+        className={cn(
+          "min-w-[280px] w-[min(100vw-2rem,320px)] shrink-0 overflow-hidden rounded-xl border border-[#E4E4E7] bg-white p-0 text-[#09090B] shadow-[0px_10px_16px_0px_rgba(10,10,10,0.1),0px_4px_6px_0px_rgba(10,10,10,0.04)]",
+        )}
         align="start"
         sideOffset={8}
       >
         <Calendar
           mode="single"
           captionLayout="dropdown"
+          hideNavigation
+          captionDropdownStretch
           showOutsideDays
           startMonth={startMonth}
           endMonth={endMonth}
-          className="rounded-lg border-0 bg-transparent p-3"
+          className="w-full min-w-0 rounded-lg border-0 bg-transparent p-3"
+          classNames={{
+            root: "!w-full !min-w-0 !max-w-none",
+            months: "!w-full min-w-0",
+            month: "!w-full min-w-0",
+            month_caption: "!flex !w-full !min-w-0 items-stretch !px-0 !gap-2",
+            dropdowns:
+              "!relative !z-[2] grid w-full min-w-0 grid-cols-2 gap-2 !items-stretch !justify-normal",
+            dropdown_root: "!relative flex w-full min-w-0 max-w-none shrink",
+            weekday: "text-[0.8rem] font-normal text-[#71717A]",
+            outside: "text-[#A1A1AA]",
+          }}
+          components={{ DropdownNav: YearFirstCaptionDropdownNav }}
           month={month}
           onMonthChange={(m) => setMonth(startOfCalendarMonth(m))}
           selected={date}

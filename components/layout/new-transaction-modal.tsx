@@ -14,6 +14,7 @@ import {
   cashSignedAmount,
 } from "@/components/layout/cash-direction-select";
 import { ClearableInput } from "@/components/layout/clearable-input";
+import { UsdMoneyClearableInput } from "@/components/layout/usd-money-clearable-input";
 import { TransactionCompanyField } from "@/components/layout/transaction-company-field";
 import { TransactionDateField } from "@/components/layout/transaction-date-field";
 import {
@@ -41,6 +42,7 @@ import { splitRatioFromTransaction } from "@/lib/portfolio/split-ratio-from-tran
 import { lotUnrealizedPnL, mergeBuyIntoPosition } from "@/lib/portfolio/holding-position";
 import { toastTransactionAdded } from "@/lib/portfolio/transaction-added-toast";
 import { refreshHoldingMarketPrices, replayTradeTransactionsToHoldings } from "@/lib/portfolio/rebuild-holdings-from-trades";
+import { parseUsdStyleNumber } from "@/lib/portfolio/amount-input-format";
 
 const TABS = ["Trades", "Incomes", "Expenses", "Cash"] as const;
 
@@ -53,13 +55,6 @@ type TradeAssetSource = (typeof TRADE_ASSET_TABS)[number]["value"];
 function formatPriceInputFromApi(n: number): string {
   if (!Number.isFinite(n)) return "";
   return n.toFixed(4).replace(/\.?0+$/, "") || "0";
-}
-
-function parseAmountField(raw: string): number {
-  const t = raw.trim().replace(/\s/g, "").replace(",", ".");
-  if (!t) return 0;
-  const n = Number.parseFloat(t);
-  return Number.isFinite(n) ? n : 0;
 }
 
 const usdFormatter = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
@@ -144,8 +139,8 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
   }, [holdingsByPortfolioId, selectedCompany?.symbol, selectedPortfolioId, tradeAssetSource]);
 
   const transactionTotal = useMemo(() => {
-    const line = parseAmountField(shares) * parseAmountField(price);
-    const fee = parseAmountField(fees);
+    const line = parseUsdStyleNumber(shares) * parseUsdStyleNumber(price);
+    const fee = parseUsdStyleNumber(fees);
     if (operation === "Sell") return Math.max(0, line - fee);
     return line + fee;
   }, [shares, price, fees, operation]);
@@ -234,11 +229,11 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
     selectedPortfolioId != null &&
     portfolios.some((p) => p.id === selectedPortfolioId);
 
-  const cashAmountNum = useMemo(() => parseAmountField(cashAmount), [cashAmount]);
-  const incomeTotalNum = useMemo(() => parseAmountField(incomeTotalReceived), [incomeTotalReceived]);
+  const cashAmountNum = useMemo(() => parseUsdStyleNumber(cashAmount), [cashAmount]);
+  const incomeTotalNum = useMemo(() => parseUsdStyleNumber(incomeTotalReceived), [incomeTotalReceived]);
   /** Second field: share count; gross = per-share amount × shares (e.g. 50 × 2 = 100). */
-  const incomeShareCountNum = useMemo(() => parseAmountField(incomePerShare), [incomePerShare]);
-  const incomeFeeNum = useMemo(() => parseAmountField(incomeFees), [incomeFees]);
+  const incomeShareCountNum = useMemo(() => parseUsdStyleNumber(incomePerShare), [incomePerShare]);
+  const incomeFeeNum = useMemo(() => parseUsdStyleNumber(incomeFees), [incomeFees]);
   const incomeGrossUsd = useMemo(() => {
     if (incomeTotalNum <= 0 || incomeShareCountNum <= 0) return 0;
     return incomeTotalNum * incomeShareCountNum;
@@ -248,13 +243,13 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
     [incomeGrossUsd, incomeFeeNum],
   );
 
-  const expenseAmountNum = useMemo(() => parseAmountField(expenseAmount), [expenseAmount]);
+  const expenseAmountNum = useMemo(() => parseUsdStyleNumber(expenseAmount), [expenseAmount]);
 
   const canAdd = useMemo(() => {
     if (!hasSelectedPortfolio) return false;
     if (transactionTab === "Trades") {
-      const sh = parseAmountField(shares);
-      const pr = parseAmountField(price);
+      const sh = parseUsdStyleNumber(shares);
+      const pr = parseUsdStyleNumber(price);
       if (sh <= 0 || pr <= 0) return false;
       if (operation === "Sell") {
         if (tradeAssetSource !== "listed") return false;
@@ -485,9 +480,9 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
     }
     if (transactionTab !== "Trades") return;
     if (!canAdd || !selectedPortfolioId) return;
-    const sh = parseAmountField(shares);
-    const pr = parseAmountField(price);
-    const fee = parseAmountField(fees);
+    const sh = parseUsdStyleNumber(shares);
+    const pr = parseUsdStyleNumber(price);
+    const fee = parseUsdStyleNumber(fees);
     if (sh <= 0 || pr <= 0) return;
 
     let symUpper: string;
@@ -746,10 +741,7 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
                 </div>
 
                 <Field label="Fees">
-                  <ClearableInput
-                    type="number"
-                    inputMode="decimal"
-                    min="0"
+                  <UsdMoneyClearableInput
                     value={fees}
                     onChange={setFees}
                     placeholder="Fee"
@@ -770,11 +762,7 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
                 </Field>
 
                 <Field label="Amount">
-                  <ClearableInput
-                    type="number"
-                    inputMode="decimal"
-                    min="0"
-                    step="any"
+                  <UsdMoneyClearableInput
                     value={cashAmount}
                     onChange={setCashAmount}
                     placeholder="0.00"
@@ -801,11 +789,7 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
 
                 <div className="grid grid-cols-2 gap-4">
                   <Field label="Total received">
-                    <ClearableInput
-                      type="number"
-                      inputMode="decimal"
-                      min="0"
-                      step="any"
+                    <UsdMoneyClearableInput
                       value={incomeTotalReceived}
                       onChange={setIncomeTotalReceived}
                       placeholder="0.00"
@@ -813,11 +797,7 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
                     />
                   </Field>
                   <Field label="Per share">
-                    <ClearableInput
-                      type="number"
-                      inputMode="decimal"
-                      min="0"
-                      step="any"
+                    <UsdMoneyClearableInput
                       value={incomePerShare}
                       onChange={setIncomePerShare}
                       placeholder="0.00"
@@ -827,11 +807,7 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
                 </div>
 
                 <Field label="Fees">
-                  <ClearableInput
-                    type="number"
-                    inputMode="decimal"
-                    min="0"
-                    step="any"
+                  <UsdMoneyClearableInput
                     value={incomeFees}
                     onChange={setIncomeFees}
                     placeholder="Fee"
@@ -856,11 +832,7 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
                 </Field>
 
                 <Field label="Amount">
-                  <ClearableInput
-                    type="number"
-                    inputMode="decimal"
-                    min="0"
-                    step="any"
+                  <UsdMoneyClearableInput
                     value={expenseAmount}
                     onChange={setExpenseAmount}
                     placeholder="Amount"

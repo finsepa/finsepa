@@ -5,18 +5,19 @@ import { useEffect, useState } from "react";
 import { PreMarketEarningsIcon } from "@/components/stock/pre-market-earnings-icon";
 import { PostMarketEarningsIcon } from "@/components/stock/post-market-earnings-icon";
 import {
-  getUsEquityMarketSession,
-  type UsEquityMarketSession,
+  formatMinutesShort,
+  getUsEquitySessionBadgeDisplay,
+  type UsEquitySessionBadgeDisplay,
 } from "@/lib/market/us-equity-market-session";
 import { cn } from "@/lib/utils";
 
-function SessionRow({ session }: { session: UsEquityMarketSession }) {
-  switch (session) {
+function BadgeRow({ display }: { display: UsEquitySessionBadgeDisplay }) {
+  switch (display.kind) {
     case "pre":
       return (
         <>
           <PreMarketEarningsIcon size={20} />
-          <span>Pre-market</span>
+          <span>Pre-market open</span>
         </>
       );
     case "regular":
@@ -30,7 +31,14 @@ function SessionRow({ session }: { session: UsEquityMarketSession }) {
       return (
         <>
           <PostMarketEarningsIcon size={20} />
-          <span>Post-market</span>
+          <span>After-hours open</span>
+        </>
+      );
+    case "pre_opens_soon":
+      return (
+        <>
+          <span className="h-2 w-2 shrink-0 rounded-full bg-[#71717A]" aria-hidden />
+          <span>Pre-market opens in {formatMinutesShort(display.minutesUntilPre)}</span>
         </>
       );
     default:
@@ -48,12 +56,12 @@ type Props = {
 };
 
 export function UsEquityMarketSessionBadge({ className }: Props) {
-  const [session, setSession] = useState<UsEquityMarketSession>(() =>
-    getUsEquityMarketSession(new Date()),
+  const [display, setDisplay] = useState<UsEquitySessionBadgeDisplay>(() =>
+    getUsEquitySessionBadgeDisplay(new Date()),
   );
 
   useEffect(() => {
-    const tick = () => setSession(getUsEquityMarketSession(new Date()));
+    const tick = () => setDisplay(getUsEquitySessionBadgeDisplay(new Date()));
     tick();
     const id = window.setInterval(tick, 60_000);
     return () => window.clearInterval(id);
@@ -68,7 +76,7 @@ export function UsEquityMarketSessionBadge({ className }: Props) {
       role="status"
       aria-live="polite"
     >
-      <SessionRow session={session} />
+      <BadgeRow display={display} />
     </div>
   );
 }

@@ -366,7 +366,7 @@ export async function buildScreenerCompaniesApiResponse(
   const listKey = list.mode === "all" ? "all" : list.mode === "sector" ? `sector:${list.sector}` : `industry:${list.sector}:${list.industry}`;
   return unstable_cache(
     () => buildScreenerCompaniesApiResponseUncached(p, ps, list),
-    ["screener-companies-api-response-v2", String(p), String(ps), listKey],
+    ["screener-companies-api-response-v3-500-universe", String(p), String(ps), listKey],
     { revalidate: REVALIDATE_SCREENER_MARKET },
   )();
 }

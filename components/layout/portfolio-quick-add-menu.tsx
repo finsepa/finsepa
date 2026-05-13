@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Briefcase, Plus, Wallet } from "lucide-react";
+import { Briefcase, Plus, Wallet, X } from "lucide-react";
 
 import {
   dropdownMenuPanelClassName,
@@ -74,13 +74,29 @@ export function PortfolioQuickAddMenu({
       aria-label={ariaLabel}
       onClick={() => setOpen((v) => !v)}
       className={cn(
+        "flex h-9 w-9 items-center justify-center rounded-[10px] bg-white text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-[border-color,border-width,box-shadow,background-color] duration-200 ease-out hover:bg-[#F4F4F5] motion-reduce:transition-none",
         open
-          ? "flex h-9 w-9 items-center justify-center rounded-[10px] border-2 border-[#09090B] bg-white text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5]"
-          : "flex h-9 w-9 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5]",
+          ? "border-2 border-[#09090B]"
+          : "border border-[#E4E4E7]",
         triggerClassName,
       )}
     >
-      <Plus className="h-5 w-5" strokeWidth={open ? 2.25 : 2} aria-hidden />
+      <span className="relative grid h-5 w-5 place-items-center" aria-hidden>
+        <Plus
+          strokeWidth={2}
+          className={cn(
+            "pointer-events-none col-start-1 row-start-1 h-5 w-5 transition-all duration-200 ease-out motion-reduce:transition-none",
+            open ? "rotate-45 scale-75 opacity-0" : "rotate-0 scale-100 opacity-100",
+          )}
+        />
+        <X
+          strokeWidth={2}
+          className={cn(
+            "pointer-events-none col-start-1 row-start-1 h-5 w-5 transition-all duration-200 ease-out motion-reduce:transition-none",
+            open ? "rotate-0 scale-100 opacity-100" : "-rotate-45 scale-75 opacity-0",
+          )}
+        />
+      </span>
     </button>
   );
 
@@ -94,7 +110,13 @@ export function PortfolioQuickAddMenu({
         ref={menuPortalRef}
         className="w-max min-w-[260px] max-w-[min(calc(100vw-2rem),320px)]"
       >
-        <div role="menu" className={dropdownMenuPanelClassName()}>
+        <div
+          role="menu"
+          className={cn(
+            dropdownMenuPanelClassName(),
+            "origin-top-right [animation:quick-add-dropdown-in_220ms_ease-out_both] motion-reduce:[animation:none]",
+          )}
+        >
           {items.map(({ id, label, Icon, disabled }) => (
             <button
               key={id}

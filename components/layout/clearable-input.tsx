@@ -1,6 +1,6 @@
 "use client";
 
-import type { InputHTMLAttributes } from "react";
+import type { FocusEventHandler, InputHTMLAttributes } from "react";
 import { X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -19,6 +19,8 @@ type ClearableInputProps = {
   min?: string;
   "aria-label"?: string;
   clearLabel?: string;
+  onBlur?: FocusEventHandler<HTMLInputElement>;
+  onFocus?: FocusEventHandler<HTMLInputElement>;
 };
 
 export function ClearableInput({
@@ -32,6 +34,8 @@ export function ClearableInput({
   min,
   "aria-label": ariaLabel,
   clearLabel = "Clear",
+  onBlur,
+  onFocus,
 }: ClearableInputProps) {
   const hasValue = value.length > 0;
 
@@ -45,6 +49,8 @@ export function ClearableInput({
         min={type === "number" ? min : undefined}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
+        onFocus={onFocus}
         placeholder={placeholder}
         aria-label={ariaLabel}
         className={cn(

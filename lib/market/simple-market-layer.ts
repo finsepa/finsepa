@@ -335,7 +335,7 @@ export async function getSimpleMarketDataCryptoScreenerPage2(): Promise<SimpleMa
   });
 }
 
-export const getSimpleMarketData = unstable_cache(loadSimpleMarketDataUncached, ["simple-market-data-v14-crypto50"], {
+export const getSimpleMarketData = unstable_cache(loadSimpleMarketDataUncached, ["simple-market-data-v15-stocks500"], {
   /** ~3m batch quote snapshot — scales to many concurrent users under a 4k EODHD/hour budget. */
   revalidate: REVALIDATE_TIER_SCREENER_COMBINED,
 });
@@ -364,7 +364,7 @@ export const getSimpleMarketDataIndicesTab = unstable_cache(
 
 export const getSimpleMarketDataScreenerStocksAllPages = unstable_cache(
   loadSimpleMarketDataScreenerStocksAllPagesUncached,
-  ["simple-market-data-v1-screener-stocks-all-pages"],
+  ["simple-market-data-v2-screener-stocks-all-pages-500"],
   { revalidate: REVALIDATE_SCREENER_MARKET },
 );
 
@@ -447,7 +447,7 @@ async function loadSimpleScreenerDerivedTop10Uncached(): Promise<SimpleScreenerD
 
 export const getSimpleScreenerDerived = unstable_cache(
   loadSimpleScreenerDerivedUncached,
-  ["simple-screener-derived-v10-page2-90"],
+  ["simple-screener-derived-v11-page2-490"],
   {
     revalidate: REVALIDATE_TIER_SCREENER_DERIVED,
   },

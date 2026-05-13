@@ -5,6 +5,10 @@ import { createPortal } from "react-dom";
 import { MoreHorizontal } from "lucide-react";
 
 import type { PortfolioTransaction } from "@/components/portfolio/portfolio-types";
+import {
+  dropdownMenuPanelClassName,
+  dropdownMenuPlainItemClassName,
+} from "@/components/design-system/dropdown-menu-styles";
 import { cn } from "@/lib/utils";
 
 const ghostSquareBtn =
@@ -38,7 +42,7 @@ export function TransactionRowActionsMenu({
       return;
     }
     const r = btnRef.current.getBoundingClientRect();
-    const menuWidth = 152;
+    const menuWidth = 168;
     const left =
       align === "end" ? Math.max(8, r.right - menuWidth) : Math.min(r.left, window.innerWidth - menuWidth - 8);
     // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional layout-phase sync for portal position
@@ -75,16 +79,13 @@ export function TransactionRowActionsMenu({
           ref={menuRef}
           role="menu"
           aria-orientation="vertical"
-          className="fixed z-[200] min-w-[9.5rem] rounded-lg border border-[#E4E4E7] bg-white py-1 shadow-[0px_4px_12px_rgba(10,10,10,0.12)]"
+          className={cn(dropdownMenuPanelClassName(), "fixed z-[200] min-w-[10.5rem]")}
           style={{ top: coords.top, left: coords.left }}
         >
           <button
             type="button"
             role="menuitem"
-            className={cn(
-              "flex w-full px-3 py-2 text-left text-sm font-medium text-[#09090B]",
-              "hover:bg-[#F4F4F5] focus-visible:bg-[#F4F4F5] focus-visible:outline-none",
-            )}
+            className={dropdownMenuPlainItemClassName()}
             onClick={() => {
               onEdit(transaction);
               onOpenChange(false);
@@ -95,10 +96,7 @@ export function TransactionRowActionsMenu({
           <button
             type="button"
             role="menuitem"
-            className={cn(
-              "flex w-full px-3 py-2 text-left text-sm font-medium text-[#DC2626]",
-              "hover:bg-red-50 focus-visible:bg-red-50 focus-visible:outline-none",
-            )}
+            className={cn(dropdownMenuPlainItemClassName(), "text-[#DC2626]")}
             onClick={() => {
               onRequestDelete(transaction);
               onOpenChange(false);

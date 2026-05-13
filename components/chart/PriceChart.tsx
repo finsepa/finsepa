@@ -634,7 +634,7 @@ export function PriceChart({
     if (!el) return;
 
     const chart = createChart(el, {
-      width: el.clientWidth,
+      width: Math.max(2, el.clientWidth),
       height,
       autoSize: false,
       layout: {
@@ -822,12 +822,12 @@ export function PriceChart({
     ts.subscribeVisibleTimeRangeChange(onVisRangeForMarkers);
 
     const ro = new ResizeObserver(() => {
-      const w = el.clientWidth;
-      if (w > 0) chart.resize(w, height);
+      const w = Math.max(2, el.clientWidth);
+      chart.resize(w, height);
       onVisRangeForMarkers();
     });
     ro.observe(el);
-    chart.resize(el.clientWidth, height);
+    chart.resize(Math.max(2, el.clientWidth), height);
 
     return () => {
       ro.disconnect();

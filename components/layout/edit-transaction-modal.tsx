@@ -16,6 +16,7 @@ import {
   cashSignedAmount,
 } from "@/components/layout/cash-direction-select";
 import { ClearableInput } from "@/components/layout/clearable-input";
+import { UsdMoneyClearableInput } from "@/components/layout/usd-money-clearable-input";
 import { TransactionCompanyField } from "@/components/layout/transaction-company-field";
 import { TransactionDateField } from "@/components/layout/transaction-date-field";
 import {
@@ -31,17 +32,11 @@ import {
   refreshHoldingMarketPrices,
   replayTradeTransactionsToHoldings,
 } from "@/lib/portfolio/rebuild-holdings-from-trades";
+import { formatUsdMoney2dp, parseUsdStyleNumber } from "@/lib/portfolio/amount-input-format";
 
 function formatPriceInputFromApi(n: number): string {
   if (!Number.isFinite(n)) return "";
   return n.toFixed(4).replace(/\.?0+$/, "") || "0";
-}
-
-function parseAmountField(raw: string): number {
-  const t = raw.trim().replace(/\s/g, "").replace(",", ".");
-  if (!t) return 0;
-  const n = Number.parseFloat(t);
-  return Number.isFinite(n) ? n : 0;
 }
 
 function operationToBuySell(operation: string): Operation {
@@ -82,11 +77,11 @@ export function EditTransactionModal({ open, onClose, transaction }: Props) {
           : String(transaction.shares),
       );
       setPrice(formatPriceInputFromApi(transaction.price));
-      setFees(transaction.fee > 0 ? String(transaction.fee) : "");
+      setFees(transaction.fee > 0 ? formatUsdMoney2dp(transaction.fee) : "");
     } else if (transaction.kind === "cash") {
       setCashDirection(cashDirectionFromOperation(transaction.operation));
       setTransactionDate(startOfDay(parseISO(transaction.date)));
-      setShares(String(transaction.shares));
+      setShares(formatUsdMoney2dp(transaction.shares));
     }
     setSubmitting(false);
   }, [open, transaction]);
@@ -128,23 +123,23 @@ export function EditTransactionModal({ open, onClose, transaction }: Props) {
   const canSaveTrade = useMemo(() => {
     if (!isTrade || !portfolioId || !transaction) return false;
     if (!selectedCompany?.symbol?.trim()) return false;
-    const sh = parseAmountField(shares);
-    const pr = parseAmountField(price);
+    const sh = parseUsdStyleNumber(shares);
+    const pr = parseUsdStyleNumber(price);
     if (sh <= 0 || pr <= 0) return false;
     return true;
   }, [isTrade, portfolioId, selectedCompany?.symbol, shares, price, transaction]);
 
   const canSaveCash = useMemo(() => {
     if (!isCash || !portfolioId || !transaction) return false;
-    return parseAmountField(shares) > 0;
+    return parseUsdStyleNumber(shares) > 0;
   }, [isCash, portfolioId, shares, transaction]);
 
   const handleSaveTrade = useCallback(async () => {
     if (!canSaveTrade || !portfolioId || !transaction || !selectedCompany) return;
     const sym = selectedCompany.symbol.trim().toUpperCase();
-    const sh = parseAmountField(shares);
-    const pr = parseAmountField(price);
-    const fee = parseAmountField(fees);
+    const sh = parseUsdStyleNumber(shares);
+    const pr = parseUsdStyleNumber(price);
+    const fee = parseUsdStyleNumber(fees);
     const dateStr = format(transactionDate, "yyyy-MM-dd");
 
     setSubmitting(true);
@@ -215,7 +210,7 @@ export function EditTransactionModal({ open, onClose, transaction }: Props) {
 
   const handleSaveCash = useCallback(() => {
     if (!canSaveCash || !portfolioId || !transaction) return;
-    const n = parseAmountField(shares);
+    const n = parseUsdStyleNumber(shares);
     if (n <= 0) return;
     const dateStr = format(transactionDate, "yyyy-MM-dd");
     const updated: PortfolioTransaction = {
@@ -293,10 +288,7 @@ export function EditTransactionModal({ open, onClose, transaction }: Props) {
                 <TransactionDateField date={transactionDate} onDateChange={setTransactionDate} />
               </Field>
               <Field label="Amount (USD)">
-                <ClearableInput
-                  type="number"
-                  inputMode="decimal"
-                  min="0"
+                <UsdMoneyClearableInput
                   value={shares}
                   onChange={setShares}
                   placeholder="Amount"
@@ -345,10 +337,7 @@ export function EditTransactionModal({ open, onClose, transaction }: Props) {
                 </Field>
               </div>
               <Field label="Fees">
-                <ClearableInput
-                  type="number"
-                  inputMode="decimal"
-                  min="0"
+                <UsdMoneyClearableInput
                   value={fees}
                   onChange={setFees}
                   placeholder="Fee"

@@ -156,7 +156,7 @@ export function StockSuperinvestorsTab({ ticker }: { ticker: string }) {
                 key={`${p.superinvestorSlug}-${p.managerName}`}
                 href={`/superinvestors/${encodeURIComponent(p.superinvestorSlug)}`}
                 prefetch={false}
-                className="grid min-h-[60px] w-full grid-cols-[minmax(220px,2.4fr)_minmax(88px,0.9fr)_minmax(140px,1.2fr)_minmax(110px,1fr)_minmax(110px,1fr)] items-center gap-x-4 bg-white px-2 transition-colors duration-75 hover:bg-neutral-50 sm:px-4"
+                className="group grid min-h-[60px] w-full grid-cols-[minmax(220px,2.4fr)_minmax(88px,0.9fr)_minmax(140px,1.2fr)_minmax(110px,1fr)_minmax(110px,1fr)] items-center gap-x-4 bg-white px-2 transition-colors duration-75 hover:bg-neutral-50 sm:px-4"
               >
                 <div className="flex min-w-0 items-center gap-3 pr-2">
                   {p.avatarSrc ? (
@@ -169,7 +169,9 @@ export function StockSuperinvestorsTab({ ticker }: { ticker: string }) {
                     </span>
                   )}
                   <div className="min-w-0">
-                    <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">{p.managerName}</div>
+                    <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B] underline-offset-[3px] decoration-[#09090B] group-hover:underline">
+                      {p.managerName}
+                    </div>
                     <div className="truncate text-[12px] font-normal leading-4 text-[#71717A]">{p.fundName}</div>
                   </div>
                 </div>

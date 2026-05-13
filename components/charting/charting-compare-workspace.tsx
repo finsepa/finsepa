@@ -18,6 +18,7 @@ import {
 import { ChartingCompanyAddDropdown } from "@/components/charting/charting-company-add-dropdown";
 import {
   DEFAULT_CHART_TIME_RANGE_ORDER,
+  applySparseHistogramVisiblePadding,
   type ChartTimeRange,
   type ChartType,
   type ChartingUnitScale,
@@ -31,6 +32,7 @@ import {
 } from "@/components/design-system/dropdown-menu-styles";
 import { cn } from "@/lib/utils";
 import type { ChartingSeriesPoint } from "@/lib/market/charting-series-types";
+import { formatChartingPeriodLabel } from "@/lib/market/charting-period-display";
 import type { StockPageInitialData } from "@/lib/market/stock-page-initial-data";
 import {
   CHARTING_DROPDOWN_GROUPS,
@@ -189,16 +191,6 @@ function seriesDataForTicker(
   return out;
 }
 
-function formatPeriodLabel(periodEnd: string, periodMode: "annual" | "quarterly"): string {
-  const s = periodEnd.trim();
-  const year = s.slice(0, 4);
-  if (periodMode === "annual") return year && /^\d{4}$/.test(year) ? year : s;
-  const m = s.slice(5, 7);
-  const mm = /^\d{2}$/.test(m) ? Number(m) : NaN;
-  const q = Number.isFinite(mm) ? Math.min(4, Math.max(1, Math.floor((mm - 1) / 3) + 1)) : null;
-  return year && q ? `Q${q} ${year}` : s;
-}
-
 const PERIOD_TAB_OPTIONS = [
   { value: "annual" as const, label: "Annual" },
   { value: "quarterly" as const, label: "Quarterly" },
@@ -226,7 +218,7 @@ type HoverState = {
   x: number;
   time: UTCTimestamp;
   periodLabel: string;
-  rows: Array<{ key: string; label: string; value: string }>;
+  rows: Array<{ key: string; label: string; value: string; color: string }>;
 } | null;
 
 type Props = {
@@ -419,7 +411,7 @@ export function ChartingCompareWorkspace({
     const labels = new Set<string>();
     for (const t of tickers) {
       for (const row of orderedByTicker[t] ?? []) {
-        if (row.periodEnd) labels.add(formatPeriodLabel(row.periodEnd, periodMode));
+        if (row.periodEnd) labels.add(formatChartingPeriodLabel(row.periodEnd, periodMode));
       }
     }
     const arr = [...labels];
@@ -430,7 +422,7 @@ export function ChartingCompareWorkspace({
       for (const t of tickers) {
         for (const row of orderedByTicker[t] ?? []) {
           if (!row.periodEnd) continue;
-          const lab = formatPeriodLabel(row.periodEnd, periodMode);
+          const lab = formatChartingPeriodLabel(row.periodEnd, periodMode);
           const cur = labelToSampleEnd.get(lab);
           if (!cur || row.periodEnd.localeCompare(cur) < 0) labelToSampleEnd.set(lab, row.periodEnd);
         }
@@ -660,6 +652,8 @@ export function ChartingCompareWorkspace({
                 color: solid,
                 lineWidth: 2,
                 lineType: LineType.Curved,
+                pointMarkersVisible: true,
+                pointMarkersRadius: 4,
                 priceScaleId: scaleId,
                 priceFormat: priceFormatForKind(kind),
                 title: `${s.ticker} ${CHARTING_METRIC_LABEL[s.metricId]}`,
@@ -675,6 +669,7 @@ export function ChartingCompareWorkspace({
           }
 
           chart.timeScale().fitContent();
+          const mergedBounds = tickers.flatMap((t) => orderedByTicker[t] ?? []);
 
           const onCrosshairMove = (param: MouseEventParams) => {
             if (!param.point || param.point.x < 0 || param.time === undefined) {
@@ -695,12 +690,12 @@ export function ChartingCompareWorkspace({
             for (const t of tickers) {
               const row = timeToRowByTicker.get(t)?.get(timeKey);
               if (row) {
-                periodLabel = formatPeriodLabel(row.periodEnd, periodMode);
+                periodLabel = formatChartingPeriodLabel(row.periodEnd, periodMode);
                 break;
               }
             }
 
-            const rows: Array<{ key: string; label: string; value: string }> = [];
+            const rows: Array<{ key: string; label: string; value: string; color: string }> = [];
             for (const s of seriesDefs) {
               const series = seriesByKeyRef.current.get(s.key);
               if (!series) continue;
@@ -710,7 +705,7 @@ export function ChartingCompareWorkspace({
                 periodLabel !== String(timeKey)
                   ? (orderedByTicker[s.ticker] ?? []).find(
                       (r) =>
-                        Boolean(r.periodEnd) && formatPeriodLabel(r.periodEnd, periodMode) === periodLabel,
+                        Boolean(r.periodEnd) && formatChartingPeriodLabel(r.periodEnd, periodMode) === periodLabel,
                     )
                   : timeToRowByTicker.get(s.ticker)?.get(timeKey);
               const v = rowForHover ? rowValue(rowForHover, s.metricId) : null;
@@ -718,6 +713,7 @@ export function ChartingCompareWorkspace({
                 key: s.key,
                 label: `${s.ticker} ${CHARTING_METRIC_LABEL[s.metricId]}`,
                 value: formatTableCell(CHARTING_METRIC_KIND[s.metricId], v),
+                color: fundamentalsBarSolidAtIndex(s.colorIdx),
               });
             }
 
@@ -732,9 +728,17 @@ export function ChartingCompareWorkspace({
           resizeObserver = new ResizeObserver(() => {
             const rw = el.clientWidth;
             if (rw > 0 && chartRef.current) chartRef.current.resize(rw, chartHeight);
+            const c = chartRef.current;
+            if (!c) return;
+            c.timeScale().applyOptions({ barSpacing });
+            const mergedBounds = tickers.flatMap((t) => orderedByTicker[t] ?? []);
+            const maxPts = Math.max(1, ...tickers.map((t) => (orderedByTicker[t] ?? []).length));
+            applySparseHistogramVisiblePadding(c, mergedBounds, chartType, timeRange, maxPts);
           });
           resizeObserver.observe(el);
           chart.resize(el.clientWidth, chartHeight);
+          chart.timeScale().applyOptions({ barSpacing });
+          applySparseHistogramVisiblePadding(chart, mergedBounds, chartType, timeRange, maxPts);
         });
       });
     };
@@ -783,8 +787,8 @@ export function ChartingCompareWorkspace({
           {/* Web: keep controls on one line with range switcher (no stretch). */}
           <div className="flex min-w-0 flex-wrap items-center gap-3 sm:flex-nowrap sm:justify-end sm:overflow-x-auto sm:pb-0.5">
             <TabSwitcher
-              fullWidth
-              className="shrink-0 sm:w-[220px]"
+              fullWidth={false}
+              className="shrink-0"
               options={PERIOD_TAB_OPTIONS}
               value={periodMode}
               onChange={setPeriodMode}
@@ -977,19 +981,28 @@ export function ChartingCompareWorkspace({
                       }}
                     />
                     <div
-                      className="pointer-events-none absolute top-3 z-20 max-w-[min(calc(100vw-2rem),280px)] rounded-xl bg-[#09090B] px-3 py-2.5 text-white shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
+                      className="pointer-events-none absolute top-3 z-20 w-[min(calc(100vw-2rem),280px)] rounded-xl border border-[#E4E4E7] bg-white px-3 py-2.5 text-[#09090B] shadow-[0px_10px_16px_-3px_rgba(10,10,10,0.10),0px_4px_6px_0px_rgba(10,10,10,0.04)]"
                       style={{
                         left: `${clamp(hover.x + 12, 12, Math.max(12, (wrapRef.current?.clientWidth ?? 0) - 292))}px`,
                       }}
                       role="tooltip"
                       aria-label="Chart tooltip"
                     >
-                      <div className="text-[12px] font-semibold tracking-wide text-white/90">{hover.periodLabel}</div>
+                      <div className="text-[12px] font-semibold tracking-wide text-[#09090B]">{hover.periodLabel}</div>
                       <div className="mt-2 max-h-[min(240px,40vh)] space-y-1 overflow-y-auto">
                         {hover.rows.map((r) => (
                           <div key={r.key} className="flex items-baseline justify-between gap-3">
-                            <span className="text-[12px] text-white/70">{r.label}</span>
-                            <span className="text-[12px] font-semibold tabular-nums text-white">{r.value}</span>
+                            <span className="flex min-w-0 items-baseline gap-2">
+                              <span
+                                className="h-2.5 w-2.5 shrink-0 rounded-full"
+                                style={{ backgroundColor: r.color }}
+                                aria-hidden
+                              />
+                              <span className="truncate text-[12px] text-[#71717A]">{r.label}</span>
+                            </span>
+                            <span className="shrink-0 text-[12px] font-semibold tabular-nums text-[#09090B]">
+                              {r.value}
+                            </span>
                           </div>
                         ))}
                       </div>
@@ -1034,14 +1047,14 @@ export function ChartingCompareWorkspace({
                 {seriesDefs.map((s) => (
                   <div
                     key={s.key}
-                    className="inline-flex items-center gap-2 rounded-full border border-[#E4E4E7] bg-white px-2.5 py-1.5 text-[12px] font-medium leading-4 text-[#09090B]"
+                    className="inline-flex h-6 min-w-0 items-center gap-2 overflow-hidden rounded-[8px] border border-[#E4E4E7] bg-white px-2.5 py-0 text-[12px] font-medium leading-none text-[#09090B]"
                   >
                     <span
                       className="h-2 w-2 shrink-0 rounded-full"
                       style={{ background: fundamentalsBarSolidAtIndex(s.colorIdx) }}
                       aria-hidden
                     />
-                    <span className="leading-4">
+                    <span className="min-w-0 truncate leading-none">
                       {s.ticker} {CHARTING_METRIC_LABEL[s.metricId]}
                     </span>
                   </div>
@@ -1088,7 +1101,7 @@ export function ChartingCompareWorkspace({
                         {[...tableColumnLabels].reverse().map((label) => {
                           const row = (orderedByTicker[s.ticker] ?? []).find(
                             (r) =>
-                              Boolean(r.periodEnd) && formatPeriodLabel(r.periodEnd, periodMode) === label,
+                              Boolean(r.periodEnd) && formatChartingPeriodLabel(r.periodEnd, periodMode) === label,
                           );
                           const v = row ? rowValue(row, s.metricId) : null;
                           return (

@@ -1,23 +1,32 @@
 export type UsEquityMarketSession = "pre" | "regular" | "post" | "closed";
 
+/** Stock header / badge: explicit pre-market and “opens soon” overnight copy. */
+export type UsEquitySessionBadgeDisplay =
+  | { kind: "pre" }
+  | { kind: "regular" }
+  | { kind: "post" }
+  | { kind: "pre_opens_soon"; minutesUntilPre: number }
+  | { kind: "closed" };
+
 export type UsMarketsHeaderStatus =
   | { variant: "pre"; countdownText: string }
   | { variant: "live" }
   | { variant: "post" }
   | { variant: "closed" };
 
-/** Minutes since midnight in `America/New_York` for {@link now}. */
-function nyClockMinutesSinceMidnight(now: Date): number {
+function nyWeekdayAndMinutes(now: Date): { weekdayShort: string; dayMinutes: number } {
   const fmt = new Intl.DateTimeFormat("en-US", {
     timeZone: "America/New_York",
     hour: "numeric",
     minute: "numeric",
     hour12: false,
+    weekday: "short",
   });
   const parts = fmt.formatToParts(now);
   const hour = Number(parts.find((p) => p.type === "hour")?.value ?? 0);
   const minute = Number(parts.find((p) => p.type === "minute")?.value ?? 0);
-  return hour * 60 + minute;
+  const weekdayShort = parts.find((p) => p.type === "weekday")?.value ?? "";
+  return { weekdayShort, dayMinutes: hour * 60 + minute };
 }
 
 /** e.g. `1 hr 42 min`, `45 min` — used for pre-market “open in …” copy (snapshot at {@link now}). */
@@ -41,7 +50,7 @@ export function getUsMarketsHeaderStatus(now: Date): UsMarketsHeaderStatus {
   if (session === "post") return { variant: "post" };
   if (session === "closed") return { variant: "closed" };
   const openM = 9 * 60 + 30;
-  const cur = nyClockMinutesSinceMidnight(now);
+  const cur = nyWeekdayAndMinutes(now).dayMinutes;
   return { variant: "pre", countdownText: formatMinutesShort(openM - cur) };
 }
 
@@ -50,21 +59,10 @@ export function getUsMarketsHeaderStatus(now: Date): UsMarketsHeaderStatus {
  * Pre 4:00–9:30, regular 9:30–16:00, post 16:00–20:00; weekends and outside those windows → closed.
  */
 export function getUsEquityMarketSession(now: Date): UsEquityMarketSession {
-  const fmt = new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/New_York",
-    hour: "numeric",
-    minute: "numeric",
-    hour12: false,
-    weekday: "short",
-  });
-  const parts = fmt.formatToParts(now);
-  const hour = Number(parts.find((p) => p.type === "hour")?.value ?? 0);
-  const minute = Number(parts.find((p) => p.type === "minute")?.value ?? 0);
-  const weekday = parts.find((p) => p.type === "weekday")?.value ?? "";
+  const { weekdayShort, dayMinutes } = nyWeekdayAndMinutes(now);
 
-  if (weekday === "Sat" || weekday === "Sun") return "closed";
+  if (weekdayShort === "Sat" || weekdayShort === "Sun") return "closed";
 
-  const dayMinutes = hour * 60 + minute;
   const preStart = 4 * 60;
   const regularOpen = 9 * 60 + 30;
   const regularClose = 16 * 60;
@@ -74,4 +72,24 @@ export function getUsEquityMarketSession(now: Date): UsEquityMarketSession {
   if (dayMinutes < regularOpen) return "pre";
   if (dayMinutes < regularClose) return "regular";
   return "post";
+}
+
+/**
+ * Stock header badge: when pre-market is active, say so explicitly; on weekday
+ * overnights before 4:00 AM ET, show time until pre opens (otherwise “closed” reads as “no pre”).
+ */
+export function getUsEquitySessionBadgeDisplay(now: Date): UsEquitySessionBadgeDisplay {
+  const session = getUsEquityMarketSession(now);
+  if (session === "pre") return { kind: "pre" };
+  if (session === "regular") return { kind: "regular" };
+  if (session === "post") return { kind: "post" };
+
+  const { weekdayShort, dayMinutes } = nyWeekdayAndMinutes(now);
+  if (weekdayShort === "Sat" || weekdayShort === "Sun") return { kind: "closed" };
+
+  const preStart = 4 * 60;
+  if (dayMinutes < preStart) {
+    return { kind: "pre_opens_soon", minutesUntilPre: preStart - dayMinutes };
+  }
+  return { kind: "closed" };
 }
