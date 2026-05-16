@@ -26,6 +26,8 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  /** Resize layout when Safari’s bottom toolbar collapses/expands (iOS 15+). */
+  interactiveWidget: "resizes-content",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#E4E4E7" },
     { media: "(prefers-color-scheme: dark)", color: "#E4E4E7" },

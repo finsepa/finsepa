@@ -1,22 +1,27 @@
 "use client";
 
 import type { RefObject } from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import { ArrowUp } from "@phosphor-icons/react";
 
 import { MAIN_SHELL_SCROLL_THRESHOLD_PX } from "@/lib/layout/main-shell-scroll-threshold";
+import {
+  shellScrollToTop,
+  shellScrollTop,
+  useShellScrollRoot,
+} from "@/lib/layout/use-shell-scroll-root";
 import { cn } from "@/lib/utils";
 
 type MainScrollToTopProps = {
-  /** App shell scroll container; must not be inside a transformed subtree or `fixed` breaks. */
+  /** App shell scroll container on desktop; mobile uses document (`window`) scroll. */
   scrollRootRef: RefObject<HTMLElement | null>;
 };
 
 export function MainScrollToTop({ scrollRootRef }: MainScrollToTopProps) {
   const pathname = usePathname();
-  const cachedRootRef = useRef<HTMLElement | null>(null);
+  const scrollRoot = useShellScrollRoot(scrollRootRef);
   const [visible, setVisible] = useState(false);
   const [portalReady, setPortalReady] = useState(false);
 
@@ -25,31 +30,24 @@ export function MainScrollToTop({ scrollRootRef }: MainScrollToTopProps) {
     return () => cancelAnimationFrame(id);
   }, []);
 
-  const resolveRoot = useCallback((): HTMLElement | null => {
-    return scrollRootRef.current;
-  }, [scrollRootRef]);
-
   useEffect(() => {
-    const root = resolveRoot();
-    cachedRootRef.current = root;
-    if (!root) return;
+    if (scrollRoot == null) return;
 
     const onScroll = () => {
-      setVisible(root.scrollTop > MAIN_SHELL_SCROLL_THRESHOLD_PX);
+      setVisible(shellScrollTop(scrollRoot) > MAIN_SHELL_SCROLL_THRESHOLD_PX);
     };
 
     const raf = requestAnimationFrame(onScroll);
-    root.addEventListener("scroll", onScroll, { passive: true });
+    scrollRoot.addEventListener("scroll", onScroll, { passive: true });
     return () => {
       cancelAnimationFrame(raf);
-      root.removeEventListener("scroll", onScroll);
+      scrollRoot.removeEventListener("scroll", onScroll);
     };
-  }, [pathname, resolveRoot]);
+  }, [pathname, scrollRoot]);
 
   const scrollToTop = useCallback(() => {
-    const root = cachedRootRef.current ?? resolveRoot();
-    root?.scrollTo({ top: 0, behavior: "smooth" });
-  }, [resolveRoot]);
+    shellScrollToTop(scrollRoot);
+  }, [scrollRoot]);
 
   const button = (
     <button
