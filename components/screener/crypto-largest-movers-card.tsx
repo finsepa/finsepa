@@ -30,7 +30,7 @@ export function CryptoLargestMoversCard({
   return (
     <div
       className={cn(
-        "flex h-[188px] flex-col gap-[12px] rounded-[12px] border border-[#E4E4E7] bg-white px-[20px] py-[12px] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]",
+        "flex min-h-[188px] min-w-0 flex-col gap-[12px] rounded-[12px] border border-[#E4E4E7] bg-white px-4 py-3 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] sm:px-5 sm:py-3",
         className,
       )}
     >

@@ -116,7 +116,7 @@ export function StockIncomeStatementTable({
   const gridTemplateColumns = `minmax(11rem, 2fr) repeat(${columns.length}, minmax(5.25rem, 1fr))`;
 
   return (
-    <ScreenerTableScroll minWidthClassName="min-w-0 sm:min-w-[720px] lg:min-w-0">
+    <ScreenerTableScroll mobileScroll>
       <div className="bg-white">
         <div
           className={`grid items-center gap-x-2 bg-white px-2 py-0 text-[12px] font-medium leading-5 text-[#71717A] sm:px-4 sm:text-[14px] ${incomeHeaderRowClass} ${incomeRowDividerClass}`}

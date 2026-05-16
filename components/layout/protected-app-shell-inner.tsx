@@ -36,40 +36,55 @@ function ProtectedAppChrome({
 
   const mainRef = useRef<HTMLElement>(null);
 
+  const chromeColumnStyle = {
+    ["--shell-left" as string]: leftOffset,
+  } as CSSProperties;
+
   return (
     <div
       suppressHydrationWarning
       className="mobile-document-scroll-shell relative flex min-h-[var(--app-vh)] w-full flex-1 flex-col bg-white max-md:overflow-visible md:block md:h-dvh md:max-h-dvh md:flex-none md:overflow-hidden md:bg-[var(--background)]"
-      style={{ ["--shell-left" as string]: leftOffset } as CSSProperties}
     >
       <Suspense fallback={null}>
         <NavigationTopLoader />
       </Suspense>
       <div
-        className="fixed inset-y-0 left-0 z-20 hidden p-1 transition-[width] duration-200 ease-out md:block md:top-1 md:bottom-1 md:p-0 md:px-1 md:py-0"
+        className="fixed inset-y-0 left-0 z-20 hidden p-1 transition-[width] duration-200 ease-out md:block md:top-[var(--shell-chrome-inset)] md:bottom-[var(--shell-chrome-inset)] md:p-0 md:px-1 md:py-0"
         style={{ width: leftOffset }}
       >
         <Sidebar />
       </div>
+
+      {/*
+       * Desktop: one inset column (4px top/right/bottom, 4px gap) so topbar + main share width.
+       * Mobile: stacked column with document scroll (unchanged).
+       */}
       <div
         suppressHydrationWarning
-        className="z-30 min-w-0 shrink-0 bg-white max-md:relative max-md:w-full max-md:shadow-none md:fixed md:right-1 md:top-1 md:rounded-[4px] md:bg-white md:py-1 md:shadow-[0_1px_0_0_rgba(0,0,0,0.03)] md:transition-[left] md:duration-200 md:ease-out left-1 max-md:left-0 md:left-[length:var(--shell-left)]"
+        className="flex min-h-0 min-w-0 flex-1 flex-col max-md:min-h-[var(--app-vh)] md:fixed md:top-[var(--shell-chrome-inset)] md:right-[var(--shell-chrome-inset)] md:bottom-[var(--shell-chrome-inset)] md:left-[length:var(--shell-left)] md:z-0 md:gap-[var(--shell-chrome-gap)] md:overflow-hidden md:transition-[left] md:duration-200 md:ease-out"
+        style={chromeColumnStyle}
       >
-        <Topbar
-          userId={userId}
-          userInitials={userInitials}
-          avatarUrl={avatarUrl}
-          userDisplayName={userDisplayName}
-          platformTrialDaysLeft={platformTrialDaysLeft}
-        />
+        <div
+          suppressHydrationWarning
+          className="z-30 min-w-0 w-full max-w-full shrink-0 bg-white max-md:relative max-md:shadow-none md:rounded-[4px] md:bg-white md:shadow-[0_1px_0_0_rgba(0,0,0,0.03)] md:transition-[width] md:duration-200 md:ease-out"
+        >
+          <Topbar
+            userId={userId}
+            userInitials={userInitials}
+            avatarUrl={avatarUrl}
+            userDisplayName={userDisplayName}
+            platformTrialDaysLeft={platformTrialDaysLeft}
+          />
+        </div>
+        <main
+          ref={mainRef}
+          suppressHydrationWarning
+          className="relative z-0 min-h-0 min-w-0 w-full max-w-full flex-1 bg-white max-md:overflow-visible max-md:pb-[var(--mobile-bottom-nav-main-clearance)] md:overflow-x-hidden md:overflow-y-auto md:overscroll-y-contain md:rounded-[4px]"
+        >
+          {children}
+        </main>
       </div>
-      <main
-        ref={mainRef}
-        suppressHydrationWarning
-        className="relative z-0 min-w-0 w-full flex-1 bg-white max-md:overflow-visible max-md:pb-[var(--mobile-bottom-nav-main-clearance)] md:fixed md:right-1 md:bottom-1 md:left-[length:var(--shell-left)] md:top-[74px] md:z-0 md:overflow-y-auto md:overscroll-y-contain md:rounded-[4px] md:transition-[left] md:duration-200 md:ease-out"
-      >
-        {children}
-      </main>
+
       <MainScrollToTop scrollRootRef={mainRef} />
       <MobileBottomNav />
     </div>

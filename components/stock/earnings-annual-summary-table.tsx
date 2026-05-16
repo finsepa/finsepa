@@ -137,6 +137,7 @@ export function EarningsAnnualSummaryTable({ annual }: { annual: StockEarningsEs
   return (
     <div className="min-w-0">
       <ScreenerTableScroll
+        mobileScroll
         minWidthClassName="min-w-0"
         /** Omit outer bottom border — last row already has `border-b`; avoids a double rule above Reports. */
         className="border-b-0 sm:border-b-0"

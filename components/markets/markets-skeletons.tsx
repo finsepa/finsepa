@@ -5,16 +5,16 @@ import { ScreenerTableScroll } from "@/components/screener/screener-table-scroll
 
 /** Matches {@link ScreenerTable}: mobile hides star + 1M / YTD / M Cap / PE. */
 const stocksColLayout =
-  "grid-cols-[48px_minmax(0,2fr)_1fr_1fr] gap-x-2 sm:grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr_1fr_96px]";
+  "grid-cols-[20px_minmax(0,1fr)_minmax(4.5rem,5.5rem)] gap-x-1.5 sm:grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr_1fr_96px] sm:gap-x-2";
 const cryptoColLayout =
-  "grid-cols-[28px_minmax(0,2fr)_1fr] gap-x-2 sm:grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr_1fr]";
+  "grid-cols-[20px_minmax(0,1fr)_minmax(4.5rem,5.5rem)] gap-x-1.5 sm:grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr_1fr] sm:gap-x-2";
 const indicesColLayout =
-  "grid-cols-[28px_minmax(0,2fr)_1fr] gap-x-2 sm:grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr]";
+  "grid-cols-[20px_minmax(0,1fr)_minmax(4.5rem,5.5rem)] gap-x-1.5 sm:grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr] sm:gap-x-2";
 
 /** Matches {@link IndexCards} — stacked label / value / change, no sparkline. */
 export function IndexCardSkeleton({ name }: { name: string }) {
   return (
-    <div className="flex min-h-[112px] flex-col items-start gap-1 overflow-hidden rounded-2xl border border-[#E4E4E7] bg-white px-4 py-4 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
+    <div className="flex min-h-[112px] w-[10.75rem] shrink-0 flex-col items-start gap-1 overflow-hidden rounded-2xl border border-[#E4E4E7] bg-white px-4 py-4 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] md:w-auto md:min-w-0 md:shrink">
       <span className="text-[14px] font-medium leading-5 text-[#A1A1AA]">{name}</span>
       <SkeletonBox className="h-8 w-[7.5rem] max-w-full rounded-md" />
       <TextSkeleton wClass="w-14" hClass="h-3.5" />
@@ -52,7 +52,7 @@ function StocksRowSkeleton() {
 
 export function StocksTableSkeleton({ rows = 10 }: { rows?: number }) {
   return (
-    <ScreenerTableScroll minWidthClassName="min-w-0 sm:min-w-[720px] lg:min-w-0">
+    <ScreenerTableScroll>
       <div className="divide-y divide-[#E4E4E7] bg-white">
       <div className={`grid ${stocksColLayout} items-center bg-white px-2 py-3 sm:px-4`}>
         {Array.from({ length: 9 }).map((_, i) => (
@@ -114,7 +114,7 @@ function CryptoRowSkeleton() {
 
 export function CryptoTableSkeleton({ rows = 10 }: { rows?: number }) {
   return (
-    <ScreenerTableScroll minWidthClassName="min-w-0 sm:min-w-[720px] lg:min-w-0">
+    <ScreenerTableScroll>
       <div className="divide-y divide-[#E4E4E7] bg-white">
       <div
         className={`grid ${cryptoColLayout} min-h-[44px] items-center bg-white px-2 py-0 text-[14px] font-medium leading-5 text-[#71717A] sm:px-4`}

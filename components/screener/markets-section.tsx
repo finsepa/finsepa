@@ -21,7 +21,11 @@ import {
   parseStocksSubTabParam,
   SCREENER_STOCKS_SUB_TAB_QUERY,
 } from "@/lib/screener/screener-stocks-sub-tab-url";
-import { SCREENER_MARKETS_PAGE_SIZE } from "@/lib/screener/screener-markets-page-size";
+import {
+  SCREENER_COMPANIES_PAGE_SIZE,
+  SCREENER_CRYPTO_PAGE_SIZE,
+  SCREENER_INDICES_PAGE_SIZE,
+} from "@/lib/screener/screener-markets-page-size";
 import { IndexCards } from "@/components/screener/index-cards";
 import { MarketTabs, type MarketTab } from "@/components/screener/market-tabs";
 import { UsMarketsSessionLabel } from "@/components/screener/us-markets-session-label";
@@ -41,6 +45,10 @@ import { ScreenerPagination } from "@/components/ui/table-pagination";
 import { topbarSquircleIconClass } from "@/components/design-system/topbar-control-classes";
 import { CryptoFearGreedCard } from "@/components/screener/crypto-fear-greed-card";
 import { CryptoLargestMoversCard } from "@/components/screener/crypto-largest-movers-card";
+import {
+  cryptoMoverFallbackRows,
+  withCryptoMoverLocalFallbacks,
+} from "@/lib/screener/screener-crypto-mover-fallbacks";
 import { CryptoFearGreedModal } from "@/components/screener/crypto-fear-greed-modal";
 import type { CryptoFearGreedIndex } from "@/lib/market/alternative-fear-greed";
 import type { ScreenerIndustryRow } from "@/lib/screener/screener-industries-types";
@@ -83,7 +91,7 @@ function StocksTabBody({
   companiesIndustryFilter: ScreenerIndustryDrill | null;
   onClearCompaniesSector: () => void;
 }) {
-  const companiesPageSize = SCREENER_MARKETS_PAGE_SIZE;
+  const companiesPageSize = SCREENER_COMPANIES_PAGE_SIZE;
   const companiesTotal = stocksTotalCount;
   const companiesLoading = companiesRemoteLoading;
   const companiesError = null as string | null;
@@ -131,7 +139,7 @@ function StocksTabBody({
           ) : null}
 
           {companiesLoading && !companiesRows.length ? (
-            <StocksTableSkeleton rows={SCREENER_MARKETS_PAGE_SIZE} />
+            <StocksTableSkeleton rows={SCREENER_COMPANIES_PAGE_SIZE} />
           ) : null}
 
           {!companiesLoading && companiesError ? (
@@ -201,24 +209,46 @@ function CryptoTabBody({
   cryptoRemoteLoading: boolean;
   fearGreed: CryptoFearGreedIndex | null;
 }) {
-  const pageSize = SCREENER_MARKETS_PAGE_SIZE;
+  const pageSize = SCREENER_CRYPTO_PAGE_SIZE;
   const totalPages = Math.max(1, Math.ceil(cryptoTotalCount / pageSize));
   const safeCryptoPage = Math.min(totalPages, Math.max(1, cryptoPage));
 
   const [fearGreedModalOpen, setFearGreedModalOpen] = useState(false);
+  const [cryptoTop10Rows, setCryptoTop10Rows] = useState<CryptoTop10Row[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetch("/api/screener/crypto-top10", { credentials: "include" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json: { rows?: CryptoTop10Row[] } | null) => {
+        if (cancelled) return;
+        const rows = Array.isArray(json?.rows) ? json.rows : [];
+        setCryptoTop10Rows(rows.length > 0 ? rows : cryptoMoverFallbackRows());
+      })
+      .catch(() => {
+        if (!cancelled) setCryptoTop10Rows(cryptoMoverFallbackRows());
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const movers = useMemo(() => {
-    const valid = (cryptoRowsResolved ?? []).filter(
-      (r) => r.changePercent1D != null && Number.isFinite(r.changePercent1D),
-    );
+    const source =
+      cryptoTop10Rows.length > 0
+        ? withCryptoMoverLocalFallbacks(cryptoTop10Rows)
+        : withCryptoMoverLocalFallbacks(
+            cryptoRowsResolved.length > 0 ? cryptoRowsResolved : cryptoMoverFallbackRows(),
+          );
+    const valid = source.filter((r) => r.changePercent1D != null && Number.isFinite(r.changePercent1D));
     const gainers = [...valid].sort((a, b) => (b.changePercent1D ?? 0) - (a.changePercent1D ?? 0));
     const losers = [...valid].sort((a, b) => (a.changePercent1D ?? 0) - (b.changePercent1D ?? 0));
     return { gainers, losers };
-  }, [cryptoRowsResolved]);
+  }, [cryptoTop10Rows, cryptoRowsResolved]);
 
   return (
     <div>
-      <div className="mb-5 grid grid-cols-1 gap-6 md:grid-cols-3">
+      <div className="mb-5 grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-4">
         <CryptoLargestMoversCard title="Largest Gainers" rows={movers.gainers} />
         <CryptoLargestMoversCard title="Largest Losers" rows={movers.losers} />
         <CryptoFearGreedCard data={fearGreed} onOpenFullscreen={() => setFearGreedModalOpen(true)} />
@@ -252,7 +282,7 @@ function CryptoTabBody({
 
 function IndicesTabBody({ indicesRows }: { indicesRows: IndexTableRow[] }) {
   const [indicesPage, setIndicesPage] = useState(1);
-  const pageSize = SCREENER_MARKETS_PAGE_SIZE;
+  const pageSize = SCREENER_INDICES_PAGE_SIZE;
   const totalPages = Math.max(1, Math.ceil(indicesRows.length / pageSize));
   const safePage = Math.min(totalPages, Math.max(1, indicesPage));
   const slice = useMemo(
@@ -445,7 +475,7 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
         ? `&${SCREENER_INDUSTRY_SECTOR_QUERY}=${encodeURIComponent(stocksIndustryFilter.sector)}&${SCREENER_INDUSTRY_QUERY}=${encodeURIComponent(stocksIndustryFilter.industry)}`
         : "";
     fetch(
-      `/api/screener/companies?page=${companiesPage}&pageSize=${SCREENER_MARKETS_PAGE_SIZE}${sectorQs}${industryQs}`,
+      `/api/screener/companies?page=${companiesPage}&pageSize=${SCREENER_COMPANIES_PAGE_SIZE}${sectorQs}${industryQs}`,
     )
       .then((r) => r.json())
       .then((data: { rows?: ScreenerTableRow[] }) => {
@@ -505,7 +535,7 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
     const loadId = requestAnimationFrame(() => {
       if (!cancelled) setCryptoRemoteLoading(true);
     });
-    fetch(`/api/screener/crypto-rows?page=${cryptoPage}&pageSize=${SCREENER_MARKETS_PAGE_SIZE}`)
+    fetch(`/api/screener/crypto-rows?page=${cryptoPage}&pageSize=${SCREENER_CRYPTO_PAGE_SIZE}`)
       .then((r) => r.json())
       .then((data: { rows?: CryptoTop10Row[] }) => {
         if (cancelled) return;
@@ -610,7 +640,7 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
     stocksSubTab === "Companies" || isSectorsDrill || isIndustriesDrill;
 
   return (
-    <div className="min-w-0">
+    <div className="min-w-0 w-full max-w-full">
       <MarketTabs
         active={tab}
         onChange={setMarketTab}
@@ -621,7 +651,7 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
         <>
           <IndexCards initialCards={payload.indexCards} />
           {!isStocksDrill ? (
-            <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <div className="mb-5 flex min-w-0 w-full max-w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
               <ScreenerTabs active={stocksSubTab} onChange={setStocksSubTabWithUrl} />
               {showCompaniesKeyStatToolbar ? (
                 <ScreenerCompaniesKeyStatToolbar

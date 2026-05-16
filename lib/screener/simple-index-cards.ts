@@ -4,6 +4,7 @@ import { unstable_cache } from "next/cache";
 
 import { REVALIDATE_SCREENER_MARKET } from "@/lib/data/cache-policy";
 import type { IndexCardData } from "@/lib/screener/indices-today";
+import { withIndexCardLocalFallbacks } from "@/lib/screener/screener-index-card-fallbacks";
 import {
   getSimpleIndicesDerived,
   getSimpleMarketDataIndicesTab,
@@ -173,7 +174,7 @@ async function loadSimpleIndexCardsUncached(): Promise<IndexCardData[]> {
   const rutPrice = rutLast != null && Number.isFinite(rutLast) ? rutLast : ix["IWM.US"]?.price ?? null;
   const vixPrice = vixLast != null && Number.isFinite(vixLast) ? vixLast : ix["VIX.INDX"]?.price ?? null;
 
-  return [
+  return withIndexCardLocalFallbacks([
     {
       name: "S&P 500",
       price: spxPrice,
@@ -239,10 +240,10 @@ async function loadSimpleIndexCardsUncached(): Promise<IndexCardData[]> {
         vixLast,
       ),
     },
-  ];
+  ]);
 }
 
-export const getSimpleIndexCards = unstable_cache(loadSimpleIndexCardsUncached, ["simple-index-cards-v7-indices-tab-only"], {
+export const getSimpleIndexCards = unstable_cache(loadSimpleIndexCardsUncached, ["simple-index-cards-v8-local-fallbacks"], {
   revalidate: REVALIDATE_SCREENER_MARKET,
 });
 

@@ -166,9 +166,7 @@ export function MobileBottomNav() {
       />
       <nav
         className={cn(
-          "fixed left-4 right-4 z-[43] flex h-[60px] items-center md:hidden",
-          /** Figma Main CTA: 16px horizontal inset, 20px above home indicator, 60px tab container height. */
-          "bottom-[calc(20px+env(safe-area-inset-bottom,0px))]",
+          "mobile-bottom-nav-pill fixed left-4 right-4 z-[43] flex h-[60px] items-center md:hidden",
           "rounded-full border border-[#E4E4E7]/90 bg-white/90 px-1",
           "shadow-[0_10px_40px_-12px_rgba(15,23,42,0.14),0_2px_12px_rgba(15,23,42,0.08)]",
           "backdrop-blur-xl backdrop-saturate-150 supports-[backdrop-filter]:bg-white/78",

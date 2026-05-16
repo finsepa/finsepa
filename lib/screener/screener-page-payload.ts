@@ -50,7 +50,10 @@ import type { ScreenerCanonicalSector } from "@/lib/screener/screener-gics-secto
 import type { ScreenerIndustryDrill } from "@/lib/screener/screener-industry-url";
 import type { ScreenerIndustryRow } from "@/lib/screener/screener-industries-types";
 import type { ScreenerSectorRow } from "@/lib/screener/screener-sectors-types";
-import { SCREENER_MARKETS_PAGE_SIZE } from "@/lib/screener/screener-markets-page-size";
+import {
+  SCREENER_COMPANIES_PAGE_SIZE,
+  SCREENER_CRYPTO_PAGE_SIZE,
+} from "@/lib/screener/screener-markets-page-size";
 import { getCryptoFearGreedIndex } from "@/lib/market/alternative-fear-greed";
 
 export type ScreenerMarketTab = "stocks" | "crypto" | "indices";
@@ -361,7 +364,7 @@ export async function buildScreenerCompaniesApiResponse(
   opts?: ScreenerCompaniesApiQueryOpts,
 ): Promise<ScreenerCompaniesApiResponseBody> {
   const p = Math.max(1, Math.trunc(page)) || 1;
-  const ps = Math.min(50, Math.max(1, Math.trunc(pageSize))) || SCREENER_MARKETS_PAGE_SIZE;
+  const ps = Math.min(50, Math.max(1, Math.trunc(pageSize))) || SCREENER_COMPANIES_PAGE_SIZE;
   const list = resolveScreenerCompaniesListMode(opts);
   const listKey = list.mode === "all" ? "all" : list.mode === "sector" ? `sector:${list.sector}` : `industry:${list.sector}:${list.industry}`;
   return unstable_cache(
@@ -435,7 +438,7 @@ export async function buildScreenerPagePayload(
 
   if (market === "crypto") {
     const [cryptoFirst, fearGreed] = await Promise.all([
-      buildCryptoScreenerApiResponse(1, SCREENER_MARKETS_PAGE_SIZE),
+      buildCryptoScreenerApiResponse(1, SCREENER_CRYPTO_PAGE_SIZE),
       getCryptoFearGreedIndex(),
     ]);
     return {
@@ -461,7 +464,7 @@ export async function buildScreenerPagePayload(
   const [indexCards, staticLayer, companiesFirst, sectorEtfYtd] = await Promise.all([
     getSimpleIndexCards(),
     getScreenerCompaniesStaticLayer(),
-    buildScreenerCompaniesApiResponse(1, SCREENER_MARKETS_PAGE_SIZE, companiesApiOpts),
+    buildScreenerCompaniesApiResponse(1, SCREENER_COMPANIES_PAGE_SIZE, companiesApiOpts),
     getScreenerSectorEtfProxyYtdBySector(),
   ]);
 

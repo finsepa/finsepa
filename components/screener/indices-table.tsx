@@ -5,7 +5,7 @@ import { IndicesTableSkeleton } from "@/components/markets/markets-skeletons";
 import { ScreenerTableScroll } from "@/components/screener/screener-table-scroll";
 import { WatchlistStarToggle } from "@/components/watchlist/watchlist-star-button";
 import { indexWatchlistKey } from "@/lib/watchlist/constants";
-import { SCREENER_MARKETS_PAGE_SIZE } from "@/lib/screener/screener-markets-page-size";
+import { SCREENER_INDICES_PAGE_SIZE } from "@/lib/screener/screener-markets-page-size";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
 
 type IndexRow = {
@@ -82,7 +82,7 @@ export function IndicesTable({
   const safeRows = useMemo(() => rows, [rows]);
 
   if (safeRows.length === 0) {
-    return <IndicesTableSkeleton rows={SCREENER_MARKETS_PAGE_SIZE} />;
+    return <IndicesTableSkeleton rows={SCREENER_INDICES_PAGE_SIZE} />;
   }
 
   return (

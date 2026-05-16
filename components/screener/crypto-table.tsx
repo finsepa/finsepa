@@ -8,7 +8,7 @@ import { ScreenerTableScroll } from "@/components/screener/screener-table-scroll
 import { CryptoTableSkeleton } from "@/components/markets/markets-skeletons";
 import { WatchlistStarToggle } from "@/components/watchlist/watchlist-star-button";
 import type { CryptoTop10Row } from "@/lib/market/crypto-top10";
-import { SCREENER_MARKETS_PAGE_SIZE } from "@/lib/screener/screener-markets-page-size";
+import { SCREENER_CRYPTO_PAGE_SIZE } from "@/lib/screener/screener-markets-page-size";
 import { eodhdCryptoSpotTickerDisplay } from "@/lib/crypto/eodhd-crypto-ticker-display";
 import { cryptoWatchlistKey } from "@/lib/watchlist/constants";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
@@ -76,10 +76,10 @@ function PriceAndChangeCell({
 
 /** Mobile: # + coin + price + 1D % (no star). `sm+`: star + # + coin + … (matches {@link ScreenerTable}). */
 const colLayout =
-  "grid-cols-[28px_minmax(0,2fr)_1fr] gap-x-2 sm:grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr_1fr]";
+  "grid-cols-[20px_minmax(0,1fr)_minmax(4.5rem,5.5rem)] gap-x-1.5 sm:grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr_1fr] sm:gap-x-2";
 /** Columns inside `Link` — same counts as `colLayout` after the star column. */
 const rowLinkGrid =
-  "grid-cols-[28px_minmax(0,2fr)_1fr] gap-x-2 sm:grid-cols-[48px_2fr_1fr_1fr_1fr_1fr_1fr]";
+  "grid-cols-[20px_minmax(0,1fr)_minmax(4.5rem,5.5rem)] gap-x-1.5 sm:grid-cols-[48px_2fr_1fr_1fr_1fr_1fr_1fr] sm:gap-x-2";
 
 export function CryptoTable({
   initialRows,
@@ -95,10 +95,10 @@ export function CryptoTable({
     () => (Array.isArray(initialRows) ? initialRows : []),
     [initialRows],
   );
-  if (safeRows.length === 0) return <CryptoTableSkeleton rows={SCREENER_MARKETS_PAGE_SIZE} />;
+  if (safeRows.length === 0) return <CryptoTableSkeleton rows={SCREENER_CRYPTO_PAGE_SIZE} />;
 
   return (
-    <ScreenerTableScroll minWidthClassName="min-w-0 sm:min-w-[720px] lg:min-w-0">
+    <ScreenerTableScroll>
       <div className="divide-y divide-[#E4E4E7] bg-white">
       <div
         className={`grid ${colLayout} min-h-[44px] items-center bg-white px-2 py-0 text-[12px] font-medium leading-5 text-[#71717A] sm:px-4 sm:text-[14px]`}

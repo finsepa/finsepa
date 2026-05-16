@@ -12,8 +12,8 @@
   --sat: env(safe-area-inset-top, 0px);
   /** Extra space below `<main>` above the floating nav; 0 when the shell is flush (white edge-to-edge). */
   --mobile-main-bottom-gap: 0px;
-  /** Sync with Figma Main CTA (node 26:9521): 20px bottom inset + 60px tab container. */
-  --mobile-bottom-nav-inset-bottom: 20px;
+  /** Sync with `MobileBottomNav`: inset above home indicator + 60px tab container. */
+  --mobile-bottom-nav-inset-bottom: 8px;
   --mobile-bottom-nav-height: 60px;
   /**
    * Space reserved for the floating bottom nav pill over `<main>` (padding-bottom on mobile).
@@ -27,6 +27,9 @@
     var(--mobile-bottom-nav-inset-bottom) + var(--mobile-bottom-nav-height) + 10px + env(safe-area-inset-bottom, 0px)
   );
   --mobile-bottom-nav-fab-bottom: calc(var(--mobile-bottom-nav-main-clearance) + 0.75rem);
+  /** Desktop protected shell: grey gutter between sidebar, topbar, and main (Figma Web App). */
+  --shell-chrome-inset: 4px;
+  --shell-chrome-gap: 4px;
 }
 
 @theme inline {
@@ -84,6 +87,11 @@ body {
     overflow-x: hidden;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+  }
+
+  /** Fixed bottom pill — `env()` in global CSS avoids Tailwind SSR/client `className` mismatch. */
+  .mobile-bottom-nav-pill {
+    bottom: calc(var(--mobile-bottom-nav-inset-bottom) + env(safe-area-inset-bottom, 0px));
   }
 }
 

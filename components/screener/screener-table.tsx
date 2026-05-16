@@ -56,9 +56,9 @@ function PriceAndChangeCell({ price, change1D }: { price: number | null; change1
  * when an extra Key Stat column was added.
  */
 const rowLinkGridDefault =
-  "grid min-w-0 flex-1 grid-cols-[28px_minmax(0,2fr)_1fr] gap-x-2 sm:grid-cols-[48px_minmax(0,2fr)_repeat(5,minmax(0,1fr))_96px]";
+  "grid min-w-0 w-full max-w-full flex-1 grid-cols-[20px_minmax(0,1fr)_minmax(4.5rem,5.5rem)] gap-x-1.5 max-md:gap-x-1.5 sm:grid-cols-[48px_minmax(0,2fr)_repeat(5,minmax(0,1fr))_96px] sm:gap-x-2";
 const rowLinkGridWithKeyStat =
-  "grid min-w-0 flex-1 grid-cols-[28px_minmax(0,2fr)_1fr] gap-x-2 sm:grid-cols-[48px_minmax(0,2fr)_repeat(6,minmax(0,1fr))_minmax(5rem,1fr)_96px]";
+  "grid min-w-0 w-full max-w-full flex-1 grid-cols-[20px_minmax(0,1fr)_minmax(4.5rem,5.5rem)] gap-x-1.5 max-md:gap-x-1.5 sm:grid-cols-[48px_minmax(0,2fr)_repeat(6,minmax(0,1fr))_minmax(5rem,1fr)_96px] sm:gap-x-2";
 
 export type ScreenerTableKeyStatColumn = {
   header: string;
@@ -100,7 +100,7 @@ const ScreenerDataRow = memo(function ScreenerDataRow({
 
   return (
     <div
-      className={`group flex min-h-[60px] items-center gap-x-2 bg-white px-2 transition-colors duration-75 hover:bg-neutral-50 sm:px-4`}
+      className="group flex min-h-[60px] min-w-0 max-w-full items-center gap-x-1.5 bg-white px-2 transition-colors duration-75 hover:bg-neutral-50 max-md:gap-x-1.5 sm:gap-x-2 sm:px-4"
     >
       <WatchlistStarToggle
         className="hidden w-6 shrink-0 items-center justify-center px-1 sm:flex sm:w-10 sm:px-3"
@@ -114,12 +114,12 @@ const ScreenerDataRow = memo(function ScreenerDataRow({
       <Link
         href={`/stock/${encodeURIComponent(item.ticker)}`}
         prefetch={false}
-        className={`${rowLinkGrid} min-h-[56px] cursor-pointer items-center justify-items-stretch no-underline text-[#09090B] visited:text-[#09090B] sm:min-h-[60px]`}
+        className={`${rowLinkGrid} min-h-[56px] min-w-0 max-w-full cursor-pointer items-center justify-items-stretch no-underline text-[#09090B] visited:text-[#09090B] sm:min-h-[60px]`}
         aria-label={`Open ${item.name} (${item.ticker})`}
       >
         <div className="text-center text-[14px] font-semibold leading-5 tabular-nums text-[#71717A]">{rank}</div>
 
-        <div className="flex min-w-0 items-center justify-start gap-3 pr-4 text-left">
+        <div className="flex min-w-0 items-center justify-start gap-2 pr-0 text-left max-md:gap-2 sm:gap-3 sm:pr-4">
           <CompanyLogo name={item.name} logoUrl={item.logoUrl} symbol={item.ticker} />
           <div className="min-w-0">
             <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B] underline-offset-2 decoration-[#71717A] group-hover:underline">
@@ -193,11 +193,11 @@ export function ScreenerTable({
   const rowLinkGrid = hasKeyStat ? rowLinkGridWithKeyStat : rowLinkGridDefault;
 
   return (
-    <ScreenerTableScroll minWidthClassName="min-w-0 sm:min-w-[720px] lg:min-w-0">
+    <ScreenerTableScroll>
       <div className="divide-y divide-[#E4E4E7] bg-white">
       {/* Column headers */}
       <div
-        className={`flex min-h-[44px] items-center gap-x-2 bg-white px-2 py-0 text-[12px] font-medium leading-5 text-[#71717A] sm:px-4 sm:text-[14px]`}
+        className="flex min-h-[44px] min-w-0 max-w-full items-center gap-x-1.5 bg-white px-2 py-0 text-[12px] font-medium leading-5 text-[#71717A] max-md:gap-x-1.5 sm:gap-x-2 sm:px-4 sm:text-[14px]"
       >
         <div className="hidden w-6 shrink-0 sm:block sm:w-10" aria-hidden />
         <div

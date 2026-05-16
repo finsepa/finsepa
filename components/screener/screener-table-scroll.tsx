@@ -3,27 +3,39 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * Wraps wide screener grids on small viewports: horizontal pan without squashing columns.
- * From `lg` up, min-width is cleared so the grid can use the full content width.
+ * Wraps screener tables. Below `md`, content fits the viewport (no 720px horizontal strip).
+ * Pass `mobileScroll` for wide grids (e.g. income statement) that need pan on small screens.
  */
 export function ScreenerTableScroll({
   children,
   className,
-  /** Tailwind min-width for scrollable strip (default matches Companies/Crypto tables). */
-  minWidthClassName = "min-w-[720px] lg:min-w-0",
+  minWidthClassName = "min-w-0",
+  mobileScroll = false,
 }: {
   children: ReactNode;
   className?: string;
   minWidthClassName?: string;
+  mobileScroll?: boolean;
 }) {
   return (
     <div
       className={cn(
-        "-mx-1 overflow-x-auto overscroll-x-contain rounded-none border-y border-[#E4E4E7] border-x-0 [-webkit-overflow-scrolling:touch] sm:-mx-0 sm:rounded-none sm:border-x-0 sm:border-t sm:border-b",
+        "w-full min-w-0 max-w-full border-y border-[#E4E4E7] border-x-0",
+        mobileScroll ?
+          "overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]"
+        : "max-md:overflow-x-hidden md:overflow-x-auto md:overscroll-x-contain md:[-webkit-overflow-scrolling:touch]",
         className,
       )}
     >
-      <div className={minWidthClassName}>{children}</div>
+      <div
+        className={cn(
+          "w-full min-w-0 max-w-full",
+          mobileScroll && "max-md:min-w-[720px]",
+          minWidthClassName,
+        )}
+      >
+        {children}
+      </div>
     </div>
   );
 }
