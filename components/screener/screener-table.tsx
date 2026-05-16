@@ -5,7 +5,10 @@ import { memo, useMemo } from "react";
 import type { ScreenerTableRow } from "@/lib/screener/screener-static";
 import { WatchlistStarToggle } from "@/components/watchlist/watchlist-star-button";
 import { CompanyLogo } from "./company-logo";
-import { ScreenerTableScroll } from "@/components/screener/screener-table-scroll";
+import {
+  SCREENER_TABLE_HEADER_STICKY_CLASS,
+  ScreenerTableScroll,
+} from "@/components/screener/screener-table-scroll";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
 
 function formatPercentValue(value: number) {
@@ -197,7 +200,7 @@ export function ScreenerTable({
       <div className="divide-y divide-[#E4E4E7] bg-white">
       {/* Column headers */}
       <div
-        className="flex min-h-[44px] min-w-0 max-w-full items-center gap-x-1.5 bg-white px-2 py-0 text-[12px] font-medium leading-5 text-[#71717A] max-md:gap-x-1.5 sm:gap-x-2 sm:px-4 sm:text-[14px]"
+        className={`flex min-h-[44px] min-w-0 max-w-full items-center gap-x-1.5 px-2 py-0 text-[12px] font-medium leading-5 text-[#71717A] max-md:gap-x-1.5 sm:gap-x-2 sm:px-4 sm:text-[14px] ${SCREENER_TABLE_HEADER_STICKY_CLASS}`}
       >
         <div className="hidden w-6 shrink-0 sm:block sm:w-10" aria-hidden />
         <div

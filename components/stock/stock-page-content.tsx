@@ -11,6 +11,7 @@ import type { StockDetailHeaderMeta } from "@/lib/market/stock-header-meta";
 import type { ChartingMetricId } from "@/lib/market/stock-charting-metrics";
 import type { StockDetailTabId } from "@/lib/stock/stock-detail-tab";
 import { parseStockDetailTabQuery } from "@/lib/stock/stock-detail-tab";
+import { coerceStockDetailTabForEtf, isStockDetailEtf, normalizeStockDetailTab } from "@/lib/stock/stock-etf";
 import { AssetPortfolioHoldingsTab } from "@/components/portfolio/asset-portfolio-holdings-tab";
 import { StockDetailTabNav } from "./stock-detail-tab-nav";
 import { MultichartsTabSkeleton, MultichartsTabSkeletonGrid } from "@/components/stock/stock-multicharts-tab-skeleton";
@@ -138,20 +139,30 @@ export function StockPageContent({
   );
 
   useEffect(() => {
-    const next = parseStockDetailTabQuery(searchParams.get("tab")) ?? initialActiveTab;
+    const raw = parseStockDetailTabQuery(searchParams.get("tab")) ?? initialActiveTab;
     queueMicrotask(() => {
-      setSearchSyncedTab(next);
-      setTabsMounted((m) => ({ ...m, [next]: true }));
+      setSearchSyncedTab(raw);
+      setTabsMounted((m) => ({ ...m, [raw]: true }));
     });
   }, [searchParams, initialActiveTab]);
-
-  const activeTab: StockDetailTabId = searchSyncedTab ?? initialActiveTab;
-  const chartingMetricParam = searchParams.get("metric");
 
   const serverHeader =
     initialPageData?.ticker === ticker ? initialPageData.headerMeta : null;
   const [headerMeta, setHeaderMeta] = useState<StockDetailHeaderMeta | null>(serverHeader);
   const [headerMetaLoading, setHeaderMetaLoading] = useState(!serverHeader);
+
+  const serverIsEtf = initialPageData?.ticker === ticker ? initialPageData.isEtf : false;
+  const isEtf = useMemo(
+    () => serverIsEtf || isStockDetailEtf(ticker, headerMeta),
+    [serverIsEtf, ticker, headerMeta],
+  );
+
+  const activeTab: StockDetailTabId = useMemo(() => {
+    const raw = searchSyncedTab ?? initialActiveTab;
+    return normalizeStockDetailTab(raw, isEtf);
+  }, [searchSyncedTab, initialActiveTab, isEtf]);
+
+  const chartingMetricParam = searchParams.get("metric");
 
   const refetchHeaderMeta = useCallback(async () => {
     setHeaderMetaLoading(true);
@@ -234,20 +245,41 @@ export function StockPageContent({
     });
   }, []);
 
+  useEffect(() => {
+    if (!isEtf) return;
+    const tabParam = searchParams.get("tab");
+    if (!tabParam) return;
+    const parsed = parseStockDetailTabQuery(tabParam);
+    if (!parsed) return;
+    const coerced = coerceStockDetailTabForEtf(parsed);
+    if (coerced === parsed) return;
+    const params = new URLSearchParams(searchParams.toString());
+    if (coerced === "overview") {
+      params.delete("tab");
+      params.delete("metric");
+    } else {
+      params.set("tab", coerced);
+      params.delete("metric");
+    }
+    const q = params.toString();
+    router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false });
+  }, [isEtf, searchParams, pathname, router]);
+
   const setTabInUrl = useCallback(
     (tab: StockDetailTabId) => {
+      const next = isEtf ? coerceStockDetailTabForEtf(tab) : tab;
       const params = new URLSearchParams(searchParams.toString());
-      if (tab === "overview") {
+      if (next === "overview") {
         params.delete("tab");
         params.delete("metric");
       } else {
-        params.set("tab", tab);
-        if (tab !== "charting") params.delete("metric");
+        params.set("tab", next);
+        if (next !== "charting") params.delete("metric");
       }
       const q = params.toString();
       router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false });
     },
-    [pathname, router, searchParams],
+    [pathname, router, searchParams, isEtf],
   );
 
   const [revenueProfitModalMetric, setRevenueProfitModalMetric] = useState<ChartingMetricId | null>(null);
@@ -406,7 +438,7 @@ export function StockPageContent({
         headerChartMetric={comparePicks.length > 0 ? "price" : chartSeries}
       />
 
-      <StockDetailTabNav activeTab={activeTab} onTabChange={setTabInUrl} />
+      <StockDetailTabNav activeTab={activeTab} onTabChange={setTabInUrl} isEtf={isEtf} />
 
       {/*
         Overview price chart must stay mounted when other tabs are open — `hidden` on the tabpanel
@@ -480,19 +512,23 @@ export function StockPageContent({
             comparePicks={comparePicks}
             onRemoveCompare={comparePicks.length > 0 ? onRemoveComparePick : undefined}
           />
-          <div className="pt-2">
-            <KeyStats
-              ticker={ticker}
-              initialBundle={initialPageData?.ticker === ticker ? initialPageData.keyStatsBundle : null}
-              onOpenMetricChart={openRevenueProfitMetricModal}
-            />
-          </div>
-          <div className="pt-2">
-            <LatestNews
-              ticker={ticker}
-              initialItems={initialPageData?.ticker === ticker ? initialPageData.news : undefined}
-            />
-          </div>
+          {!isEtf ? (
+            <div className="pt-2">
+              <KeyStats
+                ticker={ticker}
+                initialBundle={initialPageData?.ticker === ticker ? initialPageData.keyStatsBundle : null}
+                onOpenMetricChart={openRevenueProfitMetricModal}
+              />
+            </div>
+          ) : null}
+          {!isEtf ? (
+            <div className="pt-2">
+              <LatestNews
+                ticker={ticker}
+                initialItems={initialPageData?.ticker === ticker ? initialPageData.news : undefined}
+              />
+            </div>
+          ) : null}
         </div>
       ) : null}
 

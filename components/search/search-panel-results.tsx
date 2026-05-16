@@ -18,8 +18,8 @@ export function SearchPanelResults({
   isWatched,
   watchlistLoaded,
   toggleTicker,
-  listClassName = "max-h-[min(420px,60dvh)] overflow-y-auto py-2",
-  sectionClassName = "px-5",
+  listClassName = "max-h-[min(420px,60dvh)] overflow-y-auto",
+  sectionClassName = "px-3 pb-1 pt-1",
 }: {
   emptyQuery: boolean;
   noRecent: boolean;
@@ -42,33 +42,36 @@ export function SearchPanelResults({
     <div className={listClassName}>
       {emptyQuery ? (
         <>
-          <div className={`${sectionClassName} pb-2 pt-1 text-[11px] font-semibold uppercase tracking-wide text-[#A1A1AA]`}>
+          <div className={`${sectionClassName} text-[11px] font-semibold tracking-wide text-[#A1A1AA] uppercase`}>
             Recent searches
           </div>
           {noRecent ? (
-            <p className={`${sectionClassName} py-10 text-center text-[14px] text-[#71717A]`}>
+            <p className={`${sectionClassName} py-8 text-center text-[12px] leading-5 text-[#71717A]`}>
               No recent searches yet. Type to find assets — we will remember what you open here.
             </p>
           ) : (
-            recent.map((item, i) => (
-              <SearchResultRow
-                key={item.id}
-                variant="recent"
-                item={item}
-                onNavigate={onNavigate}
-                onRemoveRecent={() => onRemoveRecent(item.id)}
-                active={highlight === i}
-                starred={isWatched(item)}
-                loaded={watchlistLoaded}
-                toggleTicker={toggleTicker}
-              />
-            ))
+            <ul className="flex flex-col gap-1">
+              {recent.map((item, i) => (
+                <li key={item.id}>
+                  <SearchResultRow
+                    variant="recent"
+                    item={item}
+                    onNavigate={onNavigate}
+                    onRemoveRecent={() => onRemoveRecent(item.id)}
+                    active={highlight === i}
+                    starred={isWatched(item)}
+                    loaded={watchlistLoaded}
+                    toggleTicker={toggleTicker}
+                  />
+                </li>
+              ))}
+            </ul>
           )}
         </>
       ) : loading && !showStaleList ? (
-        <p className={`${sectionClassName} py-10 text-center text-[14px] text-[#71717A]`}>Searching…</p>
+        <p className={`${sectionClassName} py-8 text-center text-[12px] leading-5 text-[#71717A]`}>Searching…</p>
       ) : noResults ? (
-        <p className={`${sectionClassName} py-10 text-center text-[14px] text-[#71717A]`}>
+        <p className={`${sectionClassName} py-8 text-center text-[12px] leading-5 text-[#71717A]`}>
           No results for &ldquo;{queryTrim}&rdquo;
         </p>
       ) : (
@@ -78,18 +81,21 @@ export function SearchPanelResults({
               Updating…
             </p>
           ) : null}
-          {items.map((item, i) => (
-            <SearchResultRow
-              key={item.id}
-              variant="live"
-              item={item}
-              onNavigate={onNavigate}
-              active={highlight === i}
-              starred={isWatched(item)}
-              loaded={watchlistLoaded}
-              toggleTicker={toggleTicker}
-            />
-          ))}
+          <ul className="flex flex-col gap-1">
+            {items.map((item, i) => (
+              <li key={item.id}>
+                <SearchResultRow
+                  variant="live"
+                  item={item}
+                  onNavigate={onNavigate}
+                  active={highlight === i}
+                  starred={isWatched(item)}
+                  loaded={watchlistLoaded}
+                  toggleTicker={toggleTicker}
+                />
+              </li>
+            ))}
+          </ul>
         </>
       )}
     </div>

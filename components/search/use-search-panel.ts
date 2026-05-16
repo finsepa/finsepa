@@ -3,12 +3,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { fetchSearchItems } from "@/lib/search/fetch-search-items";
 import type { SearchAssetItem } from "@/lib/search/search-types";
 import { readRecentSearches, recordSearchNavigation, removeRecentSearchById } from "@/lib/search/recent-searches-storage";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
 import { watchlistStorageKeyForSearchItem } from "@/lib/search/watchlist-storage-key";
 
-const SEARCH_DEBOUNCE_MS = 250;
+const SEARCH_DEBOUNCE_MS = 200;
 
 function useDebouncedValue<T>(value: T, ms: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -35,6 +36,7 @@ export function useSearchPanel({
 }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
+  const searchGenRef = useRef(0);
   const { watched, loaded, toggleTicker } = useWatchlist();
 
   const [query, setQuery] = useState("");
@@ -72,30 +74,25 @@ export function useSearchPanel({
       return;
     }
 
-    let cancelled = false;
+    const gen = ++searchGenRef.current;
     const ac = new AbortController();
     setLoading(true);
 
     void (async () => {
       try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(debouncedTrim)}`, {
-          signal: ac.signal,
-          cache: "default",
-        });
-        const json = (await res.json()) as { items?: SearchAssetItem[] };
-        if (cancelled) return;
-        setItems(Array.isArray(json.items) ? json.items : []);
+        const next = await fetchSearchItems(debouncedTrim, ac.signal);
+        if (gen !== searchGenRef.current) return;
+        setItems(next);
       } catch (e) {
-        if (cancelled) return;
+        if (gen !== searchGenRef.current) return;
         if (e instanceof DOMException && e.name === "AbortError") return;
         setItems([]);
       } finally {
-        if (!cancelled) setLoading(false);
+        if (gen === searchGenRef.current) setLoading(false);
       }
     })();
 
     return () => {
-      cancelled = true;
       ac.abort();
     };
   }, [debouncedTrim, open]);

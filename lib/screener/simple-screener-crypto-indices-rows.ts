@@ -13,7 +13,9 @@ import type {
 } from "@/lib/market/simple-market-layer";
 import { reducedCryptoMarketCapDisplay } from "@/lib/market/reduced-universe";
 import { formatMarketCapCompactNoCurrency } from "@/lib/screener/eod-derived-metrics";
+import type { EtfTableRow, ScreenerEtfMeta } from "@/lib/screener/screener-etfs-universe";
 import { SCREENER_INDICES_10 } from "@/lib/screener/screener-indices-universe";
+import type { SimpleEtfsDerived } from "@/lib/market/simple-market-layer";
 
 /** When realtime is missing, use last EOD close from the spark strip; 1D % needs two closes. */
 function sparkFallbackPriceAnd1d(d: CryptoDerivedSlice | undefined): { price: number | null; change1d: number | null } {
@@ -91,6 +93,32 @@ export function indicesTableRowsFromSimpleLayers(
       change1D: q?.changePercent1D ?? Number.NaN,
       change1M: d?.changePercent1M ?? null,
       changeYTD: d?.changePercentYTD ?? null,
+    };
+  });
+}
+
+function etfQuoteForTicker(data: SimpleMarketData, ticker: string) {
+  const tk = ticker.trim().toUpperCase();
+  return data.extraScreenerStocks[tk] ?? data.extraScreenerStocks[ticker];
+}
+
+/** Screener ETFs rows — same mapping as indices (price + 1D / 1M / YTD). */
+export function etfsTableRowsFromSimpleLayers(
+  data: SimpleMarketData,
+  derived: SimpleEtfsDerived,
+  metas: readonly ScreenerEtfMeta[],
+): EtfTableRow[] {
+  return metas.map(({ name, ticker, refund1dP, refund1mP, refundYtdP, adjustedClose }) => {
+    const tk = ticker.trim().toUpperCase();
+    const q = etfQuoteForTicker(data, tk);
+    const d = derived[tk];
+    return {
+      name,
+      symbol: tk,
+      value: q?.price ?? adjustedClose ?? Number.NaN,
+      change1D: q?.changePercent1D ?? refund1dP ?? Number.NaN,
+      change1M: d?.changePercent1M ?? refund1mP ?? null,
+      changeYTD: d?.changePercentYTD ?? refundYtdP ?? null,
     };
   });
 }

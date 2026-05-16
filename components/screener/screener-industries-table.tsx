@@ -6,7 +6,10 @@ import { useMemo } from "react";
 import type { ScreenerIndustryRow } from "@/lib/screener/screener-industries-types";
 import type { ScreenerCanonicalSector } from "@/lib/screener/screener-gics-sectors";
 import { screenerIndustryDrillHref } from "@/lib/screener/screener-industry-url";
-import { ScreenerTableScroll } from "@/components/screener/screener-table-scroll";
+import {
+  SCREENER_TABLE_HEADER_STICKY_CLASS,
+  ScreenerTableScroll,
+} from "@/components/screener/screener-table-scroll";
 
 /** # | Industry | 1D | YTD | MCap — sector appears only in group headers; industry links drill in on the Industries tab. */
 const colLayoutMobile = "grid-cols-[28px_minmax(0,1fr)_72px_72px] gap-x-2";
@@ -64,7 +67,7 @@ export function ScreenerIndustriesTable({ rows }: { rows: ScreenerIndustryRow[] 
     <ScreenerTableScroll minWidthClassName="min-w-0" className="overflow-x-hidden">
       <div className="bg-white">
         <div
-          className={`grid ${colLayoutMobile} ${colLayoutDesktop} min-h-[44px] items-center border-b border-[#E4E4E7] bg-white px-2 py-0 text-[12px] font-medium leading-5 text-[#71717A] sm:px-4 sm:text-[14px]`}
+          className={`grid ${colLayoutMobile} ${colLayoutDesktop} min-h-[44px] items-center border-b border-[#E4E4E7] px-2 py-0 text-[12px] font-medium leading-5 text-[#71717A] sm:px-4 sm:text-[14px] ${SCREENER_TABLE_HEADER_STICKY_CLASS}`}
         >
           <div className="text-center">#</div>
           <div className="text-left">Industry</div>

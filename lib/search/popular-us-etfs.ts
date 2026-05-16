@@ -1,0 +1,20 @@
+/** Liquid US ETFs surfaced in global search (not in the top-500 equity universe). */
+export const POPULAR_US_ETFS: readonly { ticker: string; name: string }[] = [
+  { ticker: "QQQ", name: "Invesco QQQ Trust" },
+  { ticker: "SPY", name: "SPDR S&P 500 ETF Trust" },
+  { ticker: "VOO", name: "Vanguard S&P 500 ETF" },
+  { ticker: "VTI", name: "Vanguard Total Stock Market ETF" },
+  { ticker: "IVV", name: "iShares Core S&P 500 ETF" },
+  { ticker: "DIA", name: "SPDR Dow Jones Industrial Average ETF Trust" },
+  { ticker: "IWM", name: "iShares Russell 2000 ETF" },
+  { ticker: "GLD", name: "SPDR Gold Shares" },
+  { ticker: "TLT", name: "iShares 20+ Year Treasury Bond ETF" },
+  { ticker: "HYG", name: "iShares iBoxx $ High Yield Corporate Bond ETF" },
+  { ticker: "XLF", name: "Financial Select Sector SPDR Fund" },
+  { ticker: "XLE", name: "Energy Select Sector SPDR Fund" },
+  { ticker: "XLK", name: "Technology Select Sector SPDR Fund" },
+  { ticker: "ARKK", name: "ARK Innovation ETF" },
+  { ticker: "SCHD", name: "Schwab U.S. Dividend Equity ETF" },
+  { ticker: "VUG", name: "Vanguard Growth ETF" },
+  { ticker: "VTV", name: "Vanguard Value ETF" },
+];

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-const tabs = ["Stocks", "Crypto", "Indices"] as const;
+const tabs = ["Stocks", "Crypto", "Indices", "ETF's"] as const;
 export type MarketTab = (typeof tabs)[number];
 
 /** Primary underline tabs — shared by Screener (Stocks/Crypto/Indices) and Portfolio (Overview/Performance/Cash/…). */

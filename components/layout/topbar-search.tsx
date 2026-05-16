@@ -1,9 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Search, X } from "lucide-react";
 
-import { dropdownMenuSurfaceClassName } from "@/components/design-system/dropdown-menu-styles";
+import {
+  dropdownMenuPanelBodyClassName,
+  dropdownMenuSurfaceClassName,
+} from "@/components/design-system/dropdown-menu-styles";
 import { TopbarDelayedTooltip } from "@/components/layout/topbar-delayed-tooltip";
 import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
 import { OPEN_SEARCH_EVENT } from "@/components/search/search-modal";
@@ -13,8 +17,12 @@ import { cn } from "@/lib/utils";
 
 const SEARCH_PANEL_WIDTH_CLASS = "w-[360px] max-w-[calc(100vw-2rem)]";
 
+/** Above page content, below topbar (`z-30`) and search dropdown (`z-220`). */
+const SEARCH_DISMISS_BACKDROP_Z = 29;
+
 export function TopbarSearch() {
   const [open, setOpen] = useState(false);
+  const [portalMounted, setPortalMounted] = useState(false);
   const anchorRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -44,16 +52,8 @@ export function TopbarSearch() {
   }, [openSearch]);
 
   useEffect(() => {
-    if (!open) return;
-    const onPointerDown = (e: MouseEvent) => {
-      const target = e.target as Node;
-      if (anchorRef.current?.contains(target)) return;
-      if (dropdownRef.current?.contains(target)) return;
-      close();
-    };
-    document.addEventListener("mousedown", onPointerDown, true);
-    return () => document.removeEventListener("mousedown", onPointerDown, true);
-  }, [open, close]);
+    setPortalMounted(true);
+  }, []);
 
   const searchControl = (
     <div className={cn("relative w-full", SEARCH_PANEL_WIDTH_CLASS, open && "z-[45]")}>
@@ -61,33 +61,30 @@ export function TopbarSearch() {
         ref={anchorRef}
         role="search"
         className={cn(
-          "flex h-9 min-w-0 items-center gap-2 rounded-lg px-4 transition-colors duration-150 ease-out",
-          open ?
-            "bg-white ring-1 ring-[#E4E4E7] ring-inset"
-          : "cursor-text bg-[#F4F4F5] hover:bg-[#EBEBEB]",
+          "flex h-9 min-w-0 cursor-text items-center gap-2 rounded-lg bg-[#F4F4F5] px-4",
+          !open && "hover:bg-[#EBEBEB]",
         )}
         onClick={!open ? openSearch : undefined}
       >
         <Search className="h-5 w-5 shrink-0 text-[#09090B]" aria-hidden />
-        {open ? (
-          <input
-            ref={panel.inputRef}
-            type="search"
-            value={panel.query}
-            onChange={(e) => panel.setQuery(e.target.value)}
-            placeholder="Search Apple, NVIDIA, Bitcoin, Ethereum, S&P 500…"
-            className="min-w-0 flex-1 bg-transparent text-base leading-5 text-[#09090B] outline-none placeholder:text-[#A1A1AA] md:text-sm"
-            autoComplete="off"
-            autoCorrect="off"
-            enterKeyHint="search"
-            aria-label="Search"
-            aria-expanded={open}
-            aria-controls="topbar-search-results"
-            aria-autocomplete="list"
-          />
-        ) : (
-          <span className="min-w-0 flex-1 truncate text-left text-sm leading-5 text-[#A1A1AA]">Search...</span>
-        )}
+        <input
+          ref={panel.inputRef}
+          type="text"
+          inputMode="search"
+          readOnly={!open}
+          value={panel.query}
+          onChange={(e) => panel.setQuery(e.target.value)}
+          placeholder="Search..."
+          className="min-w-0 flex-1 cursor-text bg-transparent text-sm leading-5 text-[#09090B] outline-none placeholder:text-[#A1A1AA] caret-[#09090B] read-only:cursor-text"
+          autoComplete="off"
+          autoCorrect="off"
+          enterKeyHint="search"
+          role="searchbox"
+          aria-label="Search"
+          aria-expanded={open}
+          aria-controls="topbar-search-results"
+          aria-autocomplete="list"
+        />
         {open ? (
           <button
             type="button"
@@ -114,12 +111,7 @@ export function TopbarSearch() {
         <div
           ref={dropdownRef}
           id="topbar-search-results"
-          className={cn(
-            dropdownMenuSurfaceClassName(
-              "origin-top overflow-hidden shadow-[0px_10px_16px_-3px_rgba(10,10,10,0.12),0px_4px_6px_0px_rgba(10,10,10,0.06)] animate-in fade-in-0 zoom-in-95 slide-in-from-top-1 duration-200",
-            ),
-            SEARCH_PANEL_WIDTH_CLASS,
-          )}
+          className={cn(dropdownMenuSurfaceClassName("overflow-hidden"), SEARCH_PANEL_WIDTH_CLASS)}
           role="listbox"
           aria-label="Search results"
         >
@@ -138,14 +130,39 @@ export function TopbarSearch() {
             isWatched={panel.isWatched}
             watchlistLoaded={panel.watchlistLoaded}
             toggleTicker={panel.toggleTicker}
-            listClassName="max-h-[min(420px,60dvh)] overflow-y-auto overscroll-y-contain py-2 [-webkit-overflow-scrolling:touch]"
-            sectionClassName="px-4"
+            listClassName={cn(
+              dropdownMenuPanelBodyClassName,
+              "max-h-[min(420px,60dvh)] overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch]",
+            )}
+            sectionClassName="px-3 pb-1 pt-1"
           />
         </div>
       </TopbarDropdownPortal>
     </div>
   );
 
-  if (open) return searchControl;
-  return <TopbarDelayedTooltip label="Search">{searchControl}</TopbarDelayedTooltip>;
+  const dismissBackdrop =
+    open && portalMounted
+      ? createPortal(
+          <div
+            className="fixed inset-0 cursor-default bg-transparent"
+            style={{ zIndex: SEARCH_DISMISS_BACKDROP_Z }}
+            aria-hidden
+            onPointerDown={(e) => {
+              e.preventDefault();
+              close();
+            }}
+          />,
+          document.body,
+        )
+      : null;
+
+  return (
+    <>
+      {dismissBackdrop}
+      <TopbarDelayedTooltip label="Search" enabled={!open}>
+        {searchControl}
+      </TopbarDelayedTooltip>
+    </>
+  );
 }

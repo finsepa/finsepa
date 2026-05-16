@@ -1,6 +1,7 @@
 "use client";
 
 import type { StockDetailTabId } from "@/lib/stock/stock-detail-tab";
+import { ETF_STOCK_DETAIL_TAB_IDS } from "@/lib/stock/stock-etf";
 
 export type { StockDetailTabId };
 
@@ -23,10 +24,17 @@ const TABS: { id: StockDetailTabId; label: string }[] = [
 export function StockDetailTabNav({
   activeTab,
   onTabChange,
+  isEtf = false,
 }: {
   activeTab: StockDetailTabId;
   onTabChange: (tab: StockDetailTabId) => void;
+  /** When true, only Overview and Holdings tabs are shown. */
+  isEtf?: boolean;
 }) {
+  const tabs = isEtf
+    ? TABS.filter((t) => (ETF_STOCK_DETAIL_TAB_IDS as readonly string[]).includes(t.id))
+    : TABS;
+
   return (
     <div className="sticky top-0 z-40 bg-white max-md:mx-0 max-md:px-3 max-md:pt-1 sm:-mx-9 sm:-mt-5 sm:px-9 sm:pt-2">
       <div className="border-b border-solid border-[#E4E4E7]">
@@ -34,7 +42,7 @@ export function StockDetailTabNav({
           className="-mx-1 flex flex-nowrap items-start gap-4 overflow-x-auto overflow-y-hidden pb-px [-webkit-overflow-scrolling:touch] sm:mx-0 sm:flex-wrap sm:gap-5 sm:overflow-visible"
           aria-label="Stock sections"
         >
-          {TABS.map(({ id, label }) => {
+          {tabs.map(({ id, label }) => {
             const isActive = id === activeTab;
             return (
               <button

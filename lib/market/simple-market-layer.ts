@@ -30,6 +30,7 @@ import {
   SCREENER_EOD_DERIVED_STOCK_CONCURRENCY,
 } from "@/lib/screener/screener-scale-config";
 import { TOP10_TICKERS, type Top10Ticker } from "@/lib/screener/top10-config";
+import { getScreenerEtfsTop20, screenerEtfTickers } from "@/lib/screener/screener-etfs-universe";
 import { SCREENER_INDEX_SYMBOLS } from "@/lib/screener/screener-indices-universe";
 import { toEodhdUsSymbol } from "@/lib/market/eodhd-symbol";
 import { runWithConcurrencyLimit } from "@/lib/utils/run-with-concurrency-limit";
@@ -86,6 +87,8 @@ export type CryptoDerivedSlice = {
 export type SimpleCryptoDerived = Record<string, CryptoDerivedSlice>;
 
 export type SimpleIndicesDerived = Record<string, CryptoDerivedSlice>;
+
+export type SimpleEtfsDerived = Record<string, CryptoDerivedSlice>;
 
 function emptyDatum(): SimpleMarketDatum {
   return { price: null, previousClose: null, changePercent1D: null };
@@ -310,6 +313,19 @@ async function loadSimpleMarketDataIndicesTabUncached(): Promise<SimpleMarketDat
   });
 }
 
+/** ETFs tab: live quotes for top ETF tickers only. */
+async function loadSimpleMarketDataEtfsTabUncached(): Promise<SimpleMarketData> {
+  const metas = await getScreenerEtfsTop20();
+  const etfTickers = screenerEtfTickers(metas);
+  return loadSimpleMarketDataBatch({
+    includeTop10Stocks: false,
+    page2Tickers: etfTickers,
+    includeCrypto: false,
+    cryptoBatch: "all",
+    includeIndices: false,
+  });
+}
+
 /**
  * On-demand page-2 slice: quotes for `page2Tickers` only (no TOP10/crypto/indices in the batch).
  * Used by `/api/screener/companies` pagination to avoid the full 30+ symbol quote fan-out.
@@ -359,6 +375,12 @@ export const getSimpleMarketDataCryptoTab = unstable_cache(
 export const getSimpleMarketDataIndicesTab = unstable_cache(
   loadSimpleMarketDataIndicesTabUncached,
   ["simple-market-data-v16-indices-tab-ttl"],
+  { revalidate: REVALIDATE_SCREENER_MARKET },
+);
+
+export const getSimpleMarketDataEtfsTab = unstable_cache(
+  loadSimpleMarketDataEtfsTabUncached,
+  ["simple-market-data-v1-etfs-tab-ttl"],
   { revalidate: REVALIDATE_SCREENER_MARKET },
 );
 
@@ -601,5 +623,27 @@ async function loadSimpleIndicesDerivedUncached(): Promise<SimpleIndicesDerived>
 }
 
 export const getSimpleIndicesDerived = unstable_cache(loadSimpleIndicesDerivedUncached, ["simple-indices-derived-v2"], {
+  revalidate: REVALIDATE_TIER_SCREENER_DERIVED,
+});
+
+async function loadSimpleEtfsDerivedUncached(): Promise<SimpleEtfsDerived> {
+  const metas = await getScreenerEtfsTop20();
+  const tickers = screenerEtfTickers(metas);
+  if (!tickers.length) return {};
+
+  const window = eodFetchWindowUtc();
+  const barsList = await runWithConcurrencyLimit(tickers, SCREENER_EOD_DERIVED_STOCK_CONCURRENCY, (t) =>
+    fetchEodhdEodDailyScreener(toEodhdUsSymbol(t), window.from, window.to),
+  );
+  const out: SimpleEtfsDerived = {};
+  tickers.forEach((tk, i) => {
+    const raw = barsList[i];
+    const bars = Array.isArray(raw) ? raw : [];
+    out[tk] = barsToCryptoDerived(bars);
+  });
+  return out;
+}
+
+export const getSimpleEtfsDerived = unstable_cache(loadSimpleEtfsDerivedUncached, ["simple-etfs-derived-v1"], {
   revalidate: REVALIDATE_TIER_SCREENER_DERIVED,
 });

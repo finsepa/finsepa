@@ -280,3 +280,132 @@ export async function fetchEodhdScreenerCandidates(args: {
   return fetchEodhdScreenerCandidatesCached(args);
 }
 
+function parseEodhdScreenerRowToUniverseRow(raw: unknown): EodhdTopUniverseRow | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as EodhdScreenerRow;
+  const rr = raw as Record<string, unknown>;
+  const ticker = typeof r.code === "string" ? r.code.trim().toUpperCase() : "";
+  if (!ticker) return null;
+  const name = typeof r.name === "string" ? r.name.trim() : "";
+  const mc = num(r.market_capitalization);
+  if (mc == null || mc <= 0) return null;
+  const sector = typeof r.sector === "string" && r.sector.trim() ? r.sector.trim() : null;
+  const industry = typeof r.industry === "string" && r.industry.trim() ? r.industry.trim() : null;
+  return {
+    ticker,
+    name: name || ticker,
+    sector,
+    industry,
+    marketCapUsd: mc,
+    adjustedClose: num(r.adjusted_close),
+    refund1dP: num(r.refund_1d_p),
+    refund5dP: num(r.refund_5d_p),
+    refund1mP: refund1mFromRaw(rr),
+    refundYtdP: refundYtdFromRaw(rr),
+    closes5d: closes5dFromRaw(rr),
+    earningsShare: num(r.earnings_share),
+  };
+}
+
+async function fetchEodhdScreenerPageEtfSector(limit: number, offset: number): Promise<EodhdTopUniverseRow[]> {
+  const key = getEodhdApiKey();
+  if (!key) return [];
+
+  const filters = JSON.stringify([
+    ["exchange", "=", "us"],
+    ["sector", "=", "ETFs"],
+  ]);
+  const params = new URLSearchParams({
+    api_token: key,
+    fmt: "json",
+    sort: "market_capitalization.desc",
+    limit: String(Math.max(1, Math.min(100, limit))),
+    offset: String(Math.max(0, offset)),
+    filters,
+  });
+  const url = `https://eodhd.com/api/screener?${params.toString()}`;
+
+  try {
+    if (!traceEodhdHttp("fetchEodhdScreenerPageEtfSector", { offset, limit })) return [];
+    const res = await fetch(url, { next: { revalidate: REVALIDATE_STATIC } });
+    if (!res.ok) return [];
+    const json = (await res.json()) as unknown;
+    if (!json || typeof json !== "object") return [];
+    const data = (json as { data?: unknown }).data;
+    if (!Array.isArray(data)) return [];
+
+    const out: EodhdTopUniverseRow[] = [];
+    for (const raw of data) {
+      const row = parseEodhdScreenerRowToUniverseRow(raw);
+      if (!row) continue;
+      if (!isLikelyEtfScreenerInstrument(row.name, row.sector, row.industry, raw as Record<string, unknown>)) {
+        continue;
+      }
+      out.push(row);
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
+
+async function fetchEodhdTopEtfsUncached(limit: number): Promise<EodhdTopUniverseRow[]> {
+  const key = getEodhdApiKey();
+  const cap = Math.max(1, Math.min(20, Math.trunc(limit)));
+  if (!key) return [];
+
+  const sectorPage = await fetchEodhdScreenerPageEtfSector(cap, 0);
+  if (sectorPage.length >= cap) return sectorPage.slice(0, cap);
+
+  const out: EodhdTopUniverseRow[] = [...sectorPage];
+  const seen = new Set(out.map((r) => r.ticker));
+
+  for (let offset = 0; offset <= 900 && out.length < cap; offset += 100) {
+    const pageLimit = 100;
+    const filters = JSON.stringify([["exchange", "=", "us"]]);
+    const params = new URLSearchParams({
+      api_token: key,
+      fmt: "json",
+      sort: "market_capitalization.desc",
+      limit: String(pageLimit),
+      offset: String(offset),
+      filters,
+    });
+    const url = `https://eodhd.com/api/screener?${params.toString()}`;
+    try {
+      if (!traceEodhdHttp("fetchEodhdTopEtfsUncached", { offset, limit: pageLimit })) break;
+      const res = await fetch(url, { next: { revalidate: REVALIDATE_STATIC } });
+      if (!res.ok) break;
+      const json = (await res.json()) as unknown;
+      if (!json || typeof json !== "object") break;
+      const data = (json as { data?: unknown }).data;
+      if (!Array.isArray(data) || data.length === 0) break;
+
+      for (const raw of data) {
+        const row = parseEodhdScreenerRowToUniverseRow(raw);
+        if (!row) continue;
+        if (!isLikelyEtfScreenerInstrument(row.name, row.sector, row.industry, raw as Record<string, unknown>)) {
+          continue;
+        }
+        if (seen.has(row.ticker)) continue;
+        seen.add(row.ticker);
+        out.push(row);
+        if (out.length >= cap) break;
+      }
+    } catch {
+      break;
+    }
+  }
+
+  return out.slice(0, cap);
+}
+
+const fetchEodhdTopEtfsCached = unstable_cache(fetchEodhdTopEtfsUncached, ["eodhd-screener-top-etfs-v2-sector"], {
+  revalidate: REVALIDATE_STATIC,
+});
+
+/** Top US ETFs by screener market cap (for Screener → ETFs tab). */
+export async function fetchEodhdTopEtfsByMarketCap(limit = 20): Promise<EodhdTopUniverseRow[]> {
+  return fetchEodhdTopEtfsCached(limit);
+}
+

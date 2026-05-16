@@ -1,7 +1,10 @@
 "use client";
 
 import { LogoSkeleton, SkeletonBox, TextSkeleton } from "@/components/markets/skeleton";
-import { ScreenerTableScroll } from "@/components/screener/screener-table-scroll";
+import {
+  SCREENER_TABLE_HEADER_STICKY_CLASS,
+  ScreenerTableScroll,
+} from "@/components/screener/screener-table-scroll";
 
 /** Matches {@link ScreenerTable}: mobile hides star + 1M / YTD / M Cap / PE. */
 const stocksColLayout =
@@ -54,7 +57,7 @@ export function StocksTableSkeleton({ rows = 10 }: { rows?: number }) {
   return (
     <ScreenerTableScroll>
       <div className="divide-y divide-[#E4E4E7] bg-white">
-      <div className={`grid ${stocksColLayout} items-center bg-white px-2 py-3 sm:px-4`}>
+      <div className={`grid ${stocksColLayout} items-center px-2 py-3 sm:px-4 ${SCREENER_TABLE_HEADER_STICKY_CLASS}`}>
         {Array.from({ length: 9 }).map((_, i) => (
           <div
             key={i}
@@ -117,7 +120,7 @@ export function CryptoTableSkeleton({ rows = 10 }: { rows?: number }) {
     <ScreenerTableScroll>
       <div className="divide-y divide-[#E4E4E7] bg-white">
       <div
-        className={`grid ${cryptoColLayout} min-h-[44px] items-center bg-white px-2 py-0 text-[14px] font-medium leading-5 text-[#71717A] sm:px-4`}
+        className={`grid ${cryptoColLayout} min-h-[44px] items-center px-2 py-0 text-[14px] font-medium leading-5 text-[#71717A] sm:px-4 ${SCREENER_TABLE_HEADER_STICKY_CLASS}`}
       >
         <div className="hidden sm:block" aria-hidden />
         <div className="flex justify-center">
@@ -182,7 +185,7 @@ export function IndicesTableSkeleton({ rows = 10 }: { rows?: number }) {
   return (
     <div className="divide-y divide-[#E4E4E7] border-t border-b border-[#E4E4E7]">
       <div
-        className={`grid ${indicesColLayout} min-h-[44px] items-center bg-white px-2 py-0 text-[14px] font-medium leading-5 text-[#71717A] sm:px-4`}
+        className={`grid ${indicesColLayout} min-h-[44px] items-center px-2 py-0 text-[14px] font-medium leading-5 text-[#71717A] sm:px-4 ${SCREENER_TABLE_HEADER_STICKY_CLASS}`}
       >
         <div className="hidden sm:block" aria-hidden />
         <div className="flex justify-center">

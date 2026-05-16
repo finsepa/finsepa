@@ -2,6 +2,10 @@ import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
+/** Column label row — sticks to the top of the app main scroll area while rows scroll beneath. */
+export const SCREENER_TABLE_HEADER_STICKY_CLASS =
+  "sticky top-0 z-20 bg-white shadow-[0_1px_0_0_#E4E4E7]";
+
 /**
  * Wraps screener tables. Below `md`, content fits the viewport (no 720px horizontal strip).
  * Pass `mobileScroll` for wide grids (e.g. income statement) that need pan on small screens.

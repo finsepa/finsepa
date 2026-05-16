@@ -14,6 +14,7 @@ import { resolveEquityLogoUrlFromTicker } from "@/lib/screener/resolve-equity-lo
 import { shouldHideOtcForeignLineDuplicate } from "@/lib/market/otc-duplicate-tickers";
 import { getTop500Universe } from "@/lib/screener/top500-companies";
 import { TOP10_TICKERS } from "@/lib/screener/top10-config";
+import { POPULAR_US_ETFS } from "@/lib/search/popular-us-etfs";
 import type { SearchAssetItem, SearchScope } from "@/lib/search/search-types";
 
 type RankedSearch = { item: SearchAssetItem; score: number; marketCapUsd: number | null };
@@ -42,7 +43,11 @@ function matchesCryptoAssetQuery(name: string, base: string, q: string): boolean
   return false;
 }
 
-function stockItemFromTicker(ticker: string, nameFallback?: string): SearchAssetItem {
+function stockItemFromTicker(
+  ticker: string,
+  nameFallback?: string,
+  opts?: { etf?: boolean },
+): SearchAssetItem {
   const t = ticker.trim().toUpperCase();
   const meta = getStockDetailMetaFromTicker(t);
   return {
@@ -53,7 +58,7 @@ function stockItemFromTicker(ticker: string, nameFallback?: string): SearchAsset
     subtitle: "US",
     logoUrl: meta.logoUrl,
     route: `/stock/${encodeURIComponent(meta.ticker)}`,
-    marketLabel: "US equity",
+    marketLabel: opts?.etf ? "ETF" : "US equity",
   };
 }
 
@@ -84,10 +89,19 @@ function cryptoItem(symbol: string, name: string): SearchAssetItem {
   };
 }
 
-function isEtfOrFund(t: string | undefined): boolean {
-  if (!t) return false;
-  const u = t.toUpperCase();
-  return u.includes("ETF") || u.includes("FUND") || u.includes("MUTUAL");
+function isEtfOrEtnType(typ: string | undefined): boolean {
+  if (!typ) return false;
+  const u = typ.toUpperCase();
+  return u.includes("ETF") || u.includes("ETN");
+}
+
+/** Open-end mutual funds only — ETFs/ETNs are searchable. */
+function isMutualFundType(typ: string | undefined): boolean {
+  if (!typ) return false;
+  const u = typ.toUpperCase();
+  if (u.includes("MUTUAL")) return true;
+  if (u.includes("FUND") && !isEtfOrEtnType(typ)) return true;
+  return false;
 }
 
 function parseEodhdRow(row: EodhdSearchRow): SearchAssetItem | null {
@@ -112,14 +126,14 @@ function parseEodhdRow(row: EodhdSearchRow): SearchAssetItem | null {
   }
 
   if (code.endsWith(".US")) {
-    if (isEtfOrFund(typ)) return null;
+    if (isMutualFundType(typ)) return null;
     const ticker = code.replace(/\.US$/i, "").replace(/-/g, ".");
-    return stockItemFromTicker(ticker, name);
+    return stockItemFromTicker(ticker, name, { etf: isEtfOrEtnType(typ) });
   }
 
   if (!code.includes(".") && exch === "US") {
-    if (isEtfOrFund(typ)) return null;
-    return stockItemFromTicker(code.replace(/-/g, "."), name);
+    if (isMutualFundType(typ)) return null;
+    return stockItemFromTicker(code.replace(/-/g, "."), name, { etf: isEtfOrEtnType(typ) });
   }
 
   const dot = code.lastIndexOf(".");
@@ -225,19 +239,33 @@ async function runGlobalAssetSearch(qNorm: string, scope: SearchScope): Promise<
       candidates.push({ item: i, score: scoreItem(i.name, i.symbol, i.type), marketCapUsd: null });
     }
   }
-  if (scope === "all" || scope === "crypto") {
-    for (const c of await cryptoUniverseMatches(n, scoreItem)) {
-      candidates.push(c);
-    }
+
+  const needCrypto = scope === "all" || scope === "crypto";
+  const needStocks = scope === "all" || scope === "stocks";
+
+  const [cryptoMatches, universe, remote] = await Promise.all([
+    needCrypto ? cryptoUniverseMatches(n, scoreItem) : Promise.resolve([] as RankedSearch[]),
+    needStocks ? getTop500Universe() : Promise.resolve([]),
+    fetchEodhdSearch(n, scope === "all" ? 120 : 50),
+  ]);
+
+  for (const c of cryptoMatches) {
+    candidates.push(c);
   }
 
-  const universe = scope === "all" || scope === "stocks" ? await getTop500Universe() : [];
   const primaryTickerSet = new Set<string>([
     ...TOP10_TICKERS.map((t) => t.trim().toUpperCase()),
     ...universe.map((u) => u.ticker.trim().toUpperCase()),
   ]);
 
-  if (scope === "all" || scope === "stocks") {
+  if (needStocks) {
+    for (const etf of POPULAR_US_ETFS) {
+      const t = etf.ticker.trim().toUpperCase();
+      if (!matchesQuery(etf.name, t, n)) continue;
+      const item = stockItemFromTicker(t, etf.name, { etf: true });
+      candidates.push({ item, score: scoreItem(item.name, item.symbol, item.type), marketCapUsd: null });
+    }
+
     const hits = universe.filter((u) => {
       const tL = u.ticker.trim().toLowerCase();
       const nL = u.name.trim().toLowerCase();
@@ -261,8 +289,6 @@ async function runGlobalAssetSearch(qNorm: string, scope: SearchScope): Promise<
       candidates.push({ item, score: scoreItem(item.name, item.symbol, item.type), marketCapUsd: u.marketCapUsd });
     }
   }
-
-  const remote = await fetchEodhdSearch(n, scope === "all" ? 120 : 50);
   for (const row of remote) {
     const item = parseEodhdRow(row);
     if (!item) continue;
@@ -302,7 +328,7 @@ async function runGlobalAssetSearch(qNorm: string, scope: SearchScope): Promise<
 
 const getCachedGlobalAssetSearch = unstable_cache(
   async (qNorm: string, scope: SearchScope) => runGlobalAssetSearch(qNorm, scope),
-  ["global-asset-search-v12-otc-dedupe-remote"],
+  ["global-asset-search-v14-etfs"],
   { revalidate: REVALIDATE_SEARCH },
 );
 

@@ -121,15 +121,20 @@ function GroupSection({
             className="group h-[60px] max-h-[60px] cursor-pointer border-b border-[#E4E4E7] transition-colors duration-75 last:border-b-0 hover:bg-neutral-50"
           >
             <td className="py-0 pr-4 text-left align-middle">
-              <Link href={row.href} className="flex items-center gap-3 text-left">
+              <Link
+                href={row.href}
+                className="flex items-center gap-3 text-left text-[#09090B] no-underline visited:text-[#09090B]"
+              >
                 {row.logoUrl ? (
                   <CompanyLogo name={row.name} logoUrl={row.logoUrl} symbol={row.symbol} />
                 ) : (
                   <LogoMark name={row.symbol} />
                 )}
                 <div className="min-w-0">
-                  <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">{row.name}</div>
-                  <div className="text-[12px] font-normal leading-4 text-[#71717A]">
+                  <div className="truncate text-[14px] font-semibold leading-5 underline-offset-2 decoration-[#71717A] group-hover:underline">
+                    {row.name}
+                  </div>
+                  <div className="text-[12px] font-normal leading-4 text-[#71717A] underline-offset-2 decoration-[#71717A] group-hover:underline">
                     {row.kind === "crypto" ? eodhdCryptoSpotTickerDisplay(row.symbol) : row.symbol}
                   </div>
                 </div>

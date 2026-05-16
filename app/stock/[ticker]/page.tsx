@@ -4,6 +4,7 @@ import { loadStockPageInitialData } from "@/lib/market/stock-page-initial-data";
 import { StockPageClient } from "./stock-page-client";
 import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
 import { parseStockDetailTabQuery, type StockDetailTabId } from "@/lib/stock/stock-detail-tab";
+import { normalizeStockDetailTab } from "@/lib/stock/stock-etf";
 
 export const dynamic = "force-dynamic";
 
@@ -33,7 +34,6 @@ export default async function StockTickerPage({ params, searchParams }: PageProp
     notFound();
   }
   const sp = searchParams ? await searchParams : {};
-  const initialActiveTab = tabFromSearchParams(sp);
 
   if (isSingleAssetMode() && !isSupportedAsset(routeTicker)) {
     return (
@@ -45,6 +45,8 @@ export default async function StockTickerPage({ params, searchParams }: PageProp
   if (!initialPageData) {
     notFound();
   }
+
+  const initialActiveTab = normalizeStockDetailTab(tabFromSearchParams(sp), initialPageData.isEtf);
 
   return (
     <StockPageClient

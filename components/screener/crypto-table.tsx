@@ -4,7 +4,10 @@ import { useMemo } from "react";
 import Link from "next/link";
 
 import { CompanyLogo } from "./company-logo";
-import { ScreenerTableScroll } from "@/components/screener/screener-table-scroll";
+import {
+  SCREENER_TABLE_HEADER_STICKY_CLASS,
+  ScreenerTableScroll,
+} from "@/components/screener/screener-table-scroll";
 import { CryptoTableSkeleton } from "@/components/markets/markets-skeletons";
 import { WatchlistStarToggle } from "@/components/watchlist/watchlist-star-button";
 import type { CryptoTop10Row } from "@/lib/market/crypto-top10";
@@ -101,7 +104,7 @@ export function CryptoTable({
     <ScreenerTableScroll>
       <div className="divide-y divide-[#E4E4E7] bg-white">
       <div
-        className={`grid ${colLayout} min-h-[44px] items-center bg-white px-2 py-0 text-[12px] font-medium leading-5 text-[#71717A] sm:px-4 sm:text-[14px]`}
+        className={`grid ${colLayout} min-h-[44px] items-center px-2 py-0 text-[12px] font-medium leading-5 text-[#71717A] sm:px-4 sm:text-[14px] ${SCREENER_TABLE_HEADER_STICKY_CLASS}`}
       >
         <div className="hidden sm:block" aria-hidden />
         <div className="text-center">#</div>

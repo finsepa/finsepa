@@ -7,6 +7,8 @@ import type { IndexCardData } from "@/lib/screener/indices-today";
 import type { ScreenerTableRow } from "@/lib/screener/screener-static";
 import type { CryptoTop10Row } from "@/lib/market/crypto-top10";
 import type { IndexTableRow } from "@/lib/market/indices-top10";
+import type { EtfTableRow } from "@/lib/screener/screener-etfs-universe";
+import { getScreenerEtfsTop20 } from "@/lib/screener/screener-etfs-universe";
 import type { EodhdRealtimePayload } from "@/lib/market/eodhd-realtime";
 import type { SimpleMarketData, SimpleMarketDatum, SimpleScreenerDerived } from "@/lib/market/simple-market-layer";
 import type { CryptoFearGreedIndex } from "@/lib/market/alternative-fear-greed";
@@ -28,6 +30,8 @@ import {
   getSimpleMarketDataCryptoScreenerPage2,
   getSimpleMarketDataCryptoTab,
   getSimpleMarketDataForScreenerPage2Slice,
+  getSimpleEtfsDerived,
+  getSimpleMarketDataEtfsTab,
   getSimpleMarketDataIndicesTab,
   getSimpleMarketDataScreenerStocks,
   getSimpleMarketDataScreenerStocksAllPages,
@@ -38,6 +42,7 @@ import {
 import { getSimpleIndexCards } from "@/lib/screener/simple-index-cards";
 import {
   cryptoScreenerRowsFromMetas,
+  etfsTableRowsFromSimpleLayers,
   indicesTableRowsFromSimpleLayers,
 } from "@/lib/screener/simple-screener-crypto-indices-rows";
 import {
@@ -56,7 +61,7 @@ import {
 } from "@/lib/screener/screener-markets-page-size";
 import { getCryptoFearGreedIndex } from "@/lib/market/alternative-fear-greed";
 
-export type ScreenerMarketTab = "stocks" | "crypto" | "indices";
+export type ScreenerMarketTab = "stocks" | "crypto" | "indices" | "etfs";
 
 export type ScreenerPagePayload =
   | {
@@ -77,7 +82,8 @@ export type ScreenerPagePayload =
       cryptoTotalCount: number;
       fearGreed: CryptoFearGreedIndex | null;
     }
-  | { market: "indices"; indicesRows: IndexTableRow[] };
+  | { market: "indices"; indicesRows: IndexTableRow[] }
+  | { market: "etfs"; etfsRows: EtfTableRow[] };
 
 function simpleDatumToRealtimePayload(d: SimpleMarketDatum | undefined): EodhdRealtimePayload | undefined {
   if (!d || d.price == null) return undefined;
@@ -451,6 +457,17 @@ export async function buildScreenerPagePayload(
   if (market === "indices") {
     const [data, indicesDerived] = await Promise.all([getSimpleMarketDataIndicesTab(), getSimpleIndicesDerived()]);
     return { market: "indices", indicesRows: indicesTableRowsFromSimpleLayers(data, indicesDerived) };
+  }
+  if (market === "etfs") {
+    const [metas, data, etfsDerived] = await Promise.all([
+      getScreenerEtfsTop20(),
+      getSimpleMarketDataEtfsTab(),
+      getSimpleEtfsDerived(),
+    ]);
+    return {
+      market: "etfs",
+      etfsRows: etfsTableRowsFromSimpleLayers(data, etfsDerived, metas),
+    };
   }
 
   const companiesApiOpts: ScreenerCompaniesApiQueryOpts = stocksIndustry

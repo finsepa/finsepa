@@ -7,6 +7,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { CryptoTop10Row } from "@/lib/market/crypto-top10";
 import type { ScreenerTableRow } from "@/lib/screener/screener-static";
 import type { IndexTableRow } from "@/lib/market/indices-top10";
+import type { EtfTableRow } from "@/lib/screener/screener-etfs-universe";
 import type { ScreenerPagePayload } from "@/lib/screener/screener-page-payload";
 import { SCREENER_MARKET_QUERY } from "@/lib/screener/screener-market-url";
 import type { ScreenerCanonicalSector } from "@/lib/screener/screener-gics-sectors";
@@ -24,6 +25,7 @@ import {
 import {
   SCREENER_COMPANIES_PAGE_SIZE,
   SCREENER_CRYPTO_PAGE_SIZE,
+  SCREENER_ETFS_PAGE_SIZE,
   SCREENER_INDICES_PAGE_SIZE,
 } from "@/lib/screener/screener-markets-page-size";
 import { IndexCards } from "@/components/screener/index-cards";
@@ -39,6 +41,7 @@ import {
   isScreenerBuiltinTableMetricId,
 } from "@/lib/screener/screener-key-stats-metric-catalog";
 import { CryptoTable } from "@/components/screener/crypto-table";
+import { EtfsTable } from "@/components/screener/etfs-table";
 import { IndicesTable } from "@/components/screener/indices-table";
 import { StocksTableSkeleton } from "@/components/markets/markets-skeletons";
 import { ScreenerPagination } from "@/components/ui/table-pagination";
@@ -61,6 +64,7 @@ function marketTabFromUrl(searchParams: URLSearchParams): MarketTab {
   const raw = searchParams.get(SCREENER_MARKET_QUERY)?.trim().toLowerCase() ?? "";
   if (raw === "crypto") return "Crypto";
   if (raw === "indices") return "Indices";
+  if (raw === "etfs" || raw === "etf") return "ETF's";
   return "Stocks";
 }
 
@@ -280,6 +284,14 @@ function CryptoTabBody({
   );
 }
 
+function EtfsTabBody({ etfsRows }: { etfsRows: EtfTableRow[] }) {
+  return (
+    <div>
+      <EtfsTable initialRows={etfsRows} />
+    </div>
+  );
+}
+
 function IndicesTabBody({ indicesRows }: { indicesRows: IndexTableRow[] }) {
   const [indicesPage, setIndicesPage] = useState(1);
   const pageSize = SCREENER_INDICES_PAGE_SIZE;
@@ -314,8 +326,14 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
       const params = new URLSearchParams(searchParams.toString());
       if (next === "Stocks") {
         params.delete(SCREENER_MARKET_QUERY);
+      } else if (next === "Crypto") {
+        params.set(SCREENER_MARKET_QUERY, "crypto");
+      } else if (next === "Indices") {
+        params.set(SCREENER_MARKET_QUERY, "indices");
       } else {
-        params.set(SCREENER_MARKET_QUERY, next === "Crypto" ? "crypto" : "indices");
+        params.set(SCREENER_MARKET_QUERY, "etfs");
+      }
+      if (next !== "Stocks") {
         params.delete(SCREENER_SECTOR_QUERY);
         params.delete(SCREENER_INDUSTRY_QUERY);
         params.delete(SCREENER_INDUSTRY_SECTOR_QUERY);
@@ -649,6 +667,7 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
 
       {tab === "Stocks" && payload.market === "stocks" ? (
         <>
+          <UsMarketsSessionLabel className="mb-3 flex md:hidden" />
           <IndexCards initialCards={payload.indexCards} />
           {!isStocksDrill ? (
             <div className="mb-5 flex min-w-0 w-full max-w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
@@ -719,6 +738,7 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
       {tab === "Indices" && payload.market === "indices" ? (
         <IndicesTabBody indicesRows={payload.indicesRows} />
       ) : null}
+      {tab === "ETF's" && payload.market === "etfs" ? <EtfsTabBody etfsRows={payload.etfsRows} /> : null}
     </div>
   );
 }

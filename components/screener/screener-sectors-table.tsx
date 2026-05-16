@@ -5,7 +5,10 @@ import Link from "next/link";
 import type { ScreenerSectorRow } from "@/lib/screener/screener-sectors-types";
 import type { ScreenerCanonicalSector } from "@/lib/screener/screener-gics-sectors";
 import { screenerSectorDrillHref } from "@/lib/screener/screener-stocks-sub-tab-url";
-import { ScreenerTableScroll } from "@/components/screener/screener-table-scroll";
+import {
+  SCREENER_TABLE_HEADER_STICKY_CLASS,
+  ScreenerTableScroll,
+} from "@/components/screener/screener-table-scroll";
 
 const colLayoutMobile = "grid-cols-[28px_minmax(0,1fr)_72px_72px] gap-x-2";
 const colLayoutDesktop = "sm:grid-cols-[48px_minmax(0,1.6fr)_1fr_1fr_1fr] sm:gap-x-2";
@@ -51,7 +54,7 @@ export function ScreenerSectorsTable({ rows }: { rows: ScreenerSectorRow[] }) {
     >
       <div className="divide-y divide-[#E4E4E7] bg-white">
         <div
-          className={`grid ${colLayoutMobile} ${colLayoutDesktop} min-h-[44px] items-center bg-white px-2 py-0 text-[12px] font-medium leading-5 text-[#71717A] sm:px-4 sm:text-[14px]`}
+          className={`grid ${colLayoutMobile} ${colLayoutDesktop} min-h-[44px] items-center px-2 py-0 text-[12px] font-medium leading-5 text-[#71717A] sm:px-4 sm:text-[14px] ${SCREENER_TABLE_HEADER_STICKY_CLASS}`}
         >
           <div className="text-center">#</div>
           <div className="text-left">Sector Name</div>

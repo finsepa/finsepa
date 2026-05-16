@@ -1,24 +1,17 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo } from "react";
+import { CompanyLogo } from "@/components/screener/company-logo";
 import { IndicesTableSkeleton } from "@/components/markets/markets-skeletons";
 import {
   SCREENER_TABLE_HEADER_STICKY_CLASS,
   ScreenerTableScroll,
 } from "@/components/screener/screener-table-scroll";
 import { WatchlistStarToggle } from "@/components/watchlist/watchlist-star-button";
-import { indexWatchlistKey } from "@/lib/watchlist/constants";
-import { SCREENER_INDICES_PAGE_SIZE } from "@/lib/screener/screener-markets-page-size";
+import type { EtfTableRow } from "@/lib/screener/screener-etfs-universe";
+import { SCREENER_ETFS_PAGE_SIZE } from "@/lib/screener/screener-markets-page-size";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
-
-type IndexRow = {
-  name: string;
-  symbol: string;
-  value: number;
-  change1D: number;
-  change1M: number | null;
-  changeYTD: number | null;
-};
 
 function formatValue(v: number): string {
   if (!Number.isFinite(v)) return "-";
@@ -71,11 +64,11 @@ function ValueAndChangeCell({ value, change1D }: { value: number; change1D: numb
   );
 }
 
-export function IndicesTable({
+export function EtfsTable({
   initialRows,
   rankOffset = 0,
 }: {
-  initialRows?: IndexRow[];
+  initialRows?: EtfTableRow[];
   /** Global rank for first row when paginated (same as {@link CryptoTable}). */
   rankOffset?: number;
 }) {
@@ -85,7 +78,7 @@ export function IndicesTable({
   const safeRows = useMemo(() => rows, [rows]);
 
   if (safeRows.length === 0) {
-    return <IndicesTableSkeleton rows={SCREENER_INDICES_PAGE_SIZE} />;
+    return <IndicesTableSkeleton rows={SCREENER_ETFS_PAGE_SIZE} />;
   }
 
   return (
@@ -99,7 +92,7 @@ export function IndicesTable({
       >
         <div className="hidden sm:block" aria-hidden />
         <div className="text-center">#</div>
-        <div className="min-w-0 w-full text-left">Index</div>
+        <div className="min-w-0 w-full text-left">ETF</div>
         <div className="min-w-0 w-full text-right">Price</div>
         <div className="hidden min-w-0 w-full text-right sm:block">1D %</div>
         <div className="hidden min-w-0 w-full text-right sm:block">1M %</div>
@@ -107,7 +100,7 @@ export function IndicesTable({
       </div>
 
       {safeRows.map((r, i) => {
-        const wlKey = indexWatchlistKey(r.symbol);
+        const wlKey = r.symbol.trim().toUpperCase();
         return (
           <div
             key={r.symbol}
@@ -124,9 +117,22 @@ export function IndicesTable({
             <div className="text-center text-[14px] font-semibold leading-5 tabular-nums text-[#71717A]">
               {rankOffset + i + 1}
             </div>
-            <div className="min-w-0 w-full px-2 text-left text-[14px] font-semibold leading-5 text-[#09090B] sm:px-4">
-              {r.name}
-            </div>
+            <Link
+              href={`/stock/${encodeURIComponent(wlKey)}`}
+              prefetch={false}
+              className="flex min-w-0 items-center justify-start gap-2 pr-0 text-left no-underline text-[#09090B] visited:text-[#09090B] max-md:gap-2 sm:gap-3 sm:pr-4"
+              aria-label={`Open ${r.name} (${wlKey})`}
+            >
+              <CompanyLogo name={r.name} logoUrl="" symbol={wlKey} />
+              <div className="min-w-0">
+                <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B] underline-offset-2 decoration-[#71717A] group-hover:underline">
+                  {r.name}
+                </div>
+                <div className="text-[12px] font-normal leading-4 !text-[#71717A]">
+                  <span>{wlKey}</span>
+                </div>
+              </div>
+            </Link>
             <div className="block sm:hidden">
               <ValueAndChangeCell value={r.value} change1D={r.change1D} />
             </div>

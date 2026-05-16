@@ -4,7 +4,9 @@ import { memo, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { X } from "lucide-react";
 
+import { dropdownMenuRichItemClassName } from "@/components/design-system/dropdown-menu-styles";
 import { WatchlistStarToggle } from "@/components/watchlist/watchlist-star-button";
+import { cn } from "@/lib/utils";
 import { mergeLogoMemory, readLogoMemory } from "@/lib/logos/logo-memory";
 import { eodhdCryptoSpotTickerDisplay } from "@/lib/crypto/eodhd-crypto-ticker-display";
 import type { SearchAssetItem } from "@/lib/search/search-types";
@@ -27,9 +29,9 @@ function LogoBlock({ item }: { item: SearchAssetItem }) {
       <img
         src={src}
         alt=""
-        width={40}
-        height={40}
-        className="h-10 w-10 shrink-0 rounded-xl border border-neutral-200 bg-white object-contain"
+        width={32}
+        height={32}
+        className="h-8 w-8 shrink-0 rounded-lg border border-neutral-200 bg-white object-contain"
         onError={() => {
           setImgErr(true);
           mergeLogoMemory(sym, null);
@@ -39,7 +41,7 @@ function LogoBlock({ item }: { item: SearchAssetItem }) {
   }
   const initials = item.symbol.slice(0, 2).toUpperCase();
   return (
-    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#E4E4E7] bg-[#F4F4F5] text-[11px] font-bold text-[#09090B]">
+    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#E4E4E7] bg-[#F4F4F5] text-[10px] font-bold text-[#09090B]">
       {initials}
     </div>
   );
@@ -51,15 +53,16 @@ const categoryLabel: Record<SearchAssetItem["type"], string> = {
   index: "Index",
 };
 
+function resultCategoryLabel(item: SearchAssetItem): string {
+  if (item.marketLabel?.trim().toUpperCase() === "ETF") return "ETF";
+  return categoryLabel[item.type];
+}
+
 function MetaRight({ item }: { item: SearchAssetItem }) {
-  const sub = item.marketLabel ?? item.subtitle;
   return (
-    <div className="flex shrink-0 flex-col items-end gap-0.5 text-right">
-      <span className="rounded-full bg-[#F4F4F5] px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-[#71717A]">
-        {categoryLabel[item.type]}
-      </span>
-      {sub ? <span className="max-w-[140px] truncate text-[12px] text-[#A1A1AA]">{sub}</span> : null}
-    </div>
+    <span className="shrink-0 rounded-full bg-[#F4F4F5] px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-[#71717A]">
+      {resultCategoryLabel(item)}
+    </span>
   );
 }
 
@@ -93,9 +96,7 @@ function SearchResultRowInner({
     return starred ? new Set([k]) : new Set<string>();
   }, [starred, wlKey]);
 
-  const rowClass = `group flex items-center gap-2 px-5 py-3 transition-colors ${
-    active ? "bg-[#EEF2FF]" : "hover:bg-[#F4F4F5]"
-  }`;
+  const rowClass = cn(dropdownMenuRichItemClassName(), "group items-center", active && "bg-[#F4F4F5]");
 
   const mainLink = (
     <Link
@@ -104,12 +105,12 @@ function SearchResultRowInner({
         e.preventDefault();
         onNavigate(item);
       }}
-      className="flex min-w-0 flex-1 items-center gap-3"
+      className="flex min-w-0 flex-1 items-center gap-2 no-underline"
     >
       <LogoBlock item={item} />
       <div className="min-w-0 flex-1">
-        <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">{item.name}</div>
-        <div className="truncate text-[12px] leading-4 text-[#71717A]">
+        <div className="truncate font-medium">{item.name}</div>
+        <div className="truncate text-[12px] text-[#71717A]">
           {item.type === "crypto" ? eodhdCryptoSpotTickerDisplay(item.symbol) : item.symbol}
         </div>
       </div>
@@ -150,7 +151,7 @@ function SearchResultRowInner({
           <button
             type="button"
             aria-label={`Remove ${item.name} from recent searches`}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[#A1A1AA] outline-none transition-colors hover:bg-[#F4F4F5] hover:text-[#71717A] focus-visible:ring-2 focus-visible:ring-[#09090B]/15"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[#A1A1AA] outline-none transition-colors hover:bg-[#F4F4F5] hover:text-[#71717A] focus-visible:ring-2 focus-visible:ring-[#09090B]/10"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();

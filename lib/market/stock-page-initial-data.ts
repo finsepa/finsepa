@@ -23,6 +23,7 @@ import { getPeersCompareRowsCached } from "@/lib/market/peers-compare-payload";
 import { getNvdaChartPoints, getNvdaHeaderMeta, getNvdaKeyStatsBundle, getNvdaPerformance } from "@/lib/fixtures/nvda";
 import { getNvdaChartingSeriesPoints, getNvdaProfile, getNvdaStockNews } from "@/lib/fixtures/nvda";
 import { getStockDetailMetaFromTicker } from "@/lib/market/stock-detail-meta";
+import { isStockDetailEtf } from "@/lib/stock/stock-etf";
 
 export type StockPageInitialChart = {
   range: StockChartRange;
@@ -31,6 +32,8 @@ export type StockPageInitialChart = {
 
 export type StockPageInitialData = {
   ticker: string;
+  /** US ETF detail page — limits tabs and overview sections. */
+  isEtf: boolean;
   headerMeta: StockDetailHeaderMeta;
   chart: StockPageInitialChart;
   performance: StockPerformance;
@@ -64,17 +67,19 @@ const EMPTY_KEY_STATS: StockKeyStatsBundle = {
 
 function fallbackStockPageInitialData(ticker: string, now: Date): StockPageInitialData {
   const display = getStockDetailMetaFromTicker(ticker);
+  const headerMeta = {
+    fullName: display.name,
+    logoUrl: display.logoUrl,
+    exchange: null,
+    sector: null,
+    industry: null,
+    earningsDateDisplay: null,
+    watchlistCount: null,
+  };
   return {
     ticker,
-    headerMeta: {
-      fullName: display.name,
-      logoUrl: display.logoUrl,
-      exchange: null,
-      sector: null,
-      industry: null,
-      earningsDateDisplay: null,
-      watchlistCount: null,
-    },
+    isEtf: isStockDetailEtf(ticker, headerMeta),
+    headerMeta,
     chart: { range: DEFAULT_OVERVIEW_RANGE, points: [] },
     performance: computeStockPerformanceFromSortedDailyBars([], ticker, now),
     keyStatsBundle: { ...EMPTY_KEY_STATS },
@@ -116,6 +121,7 @@ export async function loadStockPageInitialData(routeTicker: string): Promise<Sto
       typeof nvdaLast === "number" && Number.isFinite(nvdaLast) && nvdaLast > 0 ? nvdaLast : null;
     return {
       ticker,
+      isEtf: false,
       headerMeta: getNvdaHeaderMeta(),
       chart: { range, points: getNvdaChartPoints(range) },
       performance: getNvdaPerformance(),
@@ -159,6 +165,7 @@ export async function loadStockPageInitialData(routeTicker: string): Promise<Sto
 
     return {
       ticker,
+      isEtf: isStockDetailEtf(ticker, headerMeta),
       headerMeta,
       chart: { range, points },
       performance,

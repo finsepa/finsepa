@@ -17,6 +17,8 @@ type TopbarDelayedTooltipProps = {
   label: string;
   /** Hover / focus dwell time before the tooltip shows (avoids flashes on quick pass-through and clicks). */
   delayMs?: number;
+  /** When false, hover/focus hints are suppressed (e.g. while search dropdown is open). */
+  enabled?: boolean;
   children: ReactNode;
   className?: string;
 };
@@ -29,6 +31,7 @@ type TopbarDelayedTooltipProps = {
 export function TopbarDelayedTooltip({
   label,
   delayMs = DEFAULT_DELAY_MS,
+  enabled = true,
   children,
   className,
 }: TopbarDelayedTooltipProps) {
@@ -61,10 +64,10 @@ export function TopbarDelayedTooltip({
   }, [clearTimer]);
 
   const start = useCallback(() => {
-    if (tooltipsDisabled()) return;
+    if (!enabled || tooltipsDisabled()) return;
     clearTimer();
     timerRef.current = setTimeout(() => setVisible(true), delayMs);
-  }, [clearTimer, delayMs, tooltipsDisabled]);
+  }, [clearTimer, delayMs, enabled, tooltipsDisabled]);
 
   const updatePosition = useCallback(() => {
     const el = rootRef.current;
@@ -90,6 +93,10 @@ export function TopbarDelayedTooltip({
   }, [visible, updatePosition]);
 
   useEffect(() => () => clearTimer(), [clearTimer]);
+
+  useEffect(() => {
+    if (!enabled) hide();
+  }, [enabled, hide]);
 
   const tooltip =
     visible && mounted ? (
