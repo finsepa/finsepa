@@ -87,6 +87,7 @@ body {
     overflow-x: hidden;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+    background: #ffffff;
   }
 
   /** Fixed bottom pill — `env()` in global CSS avoids Tailwind SSR/client `className` mismatch. */

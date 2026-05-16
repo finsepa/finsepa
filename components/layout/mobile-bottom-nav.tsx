@@ -167,8 +167,7 @@ export function MobileBottomNav() {
       <nav
         className={cn(
           "mobile-bottom-nav-pill fixed left-4 right-4 z-[43] flex h-[60px] items-center md:hidden",
-          "rounded-full border border-[#E4E4E7]/90 bg-white/90 px-1",
-          "shadow-[0_10px_40px_-12px_rgba(15,23,42,0.14),0_2px_12px_rgba(15,23,42,0.08)]",
+          "rounded-full border border-[#E4E4E7] bg-white/90 px-1 shadow-sm",
           "backdrop-blur-xl backdrop-saturate-150 supports-[backdrop-filter]:bg-white/78",
         )}
         aria-label="Primary"
