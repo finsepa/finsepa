@@ -15,7 +15,7 @@ import {
 const TOUR_PREVIEW_HEIGHT_PX = 340;
 
 /** Renders wider than the modal; left/top anchored so the right and bottom clip away. */
-const TOUR_MOCKUP_WIDTH_PX = 1120;
+const TOUR_MOCKUP_WIDTH_PX = 1456; // ~30% larger than 1120 base crop
 
 function usePreloadProductTourImages(enabled: boolean) {
   useEffect(() => {
@@ -33,15 +33,15 @@ function TourMockupFrame({ src, visible }: { src: string; visible: boolean }) {
       )}
       aria-hidden={!visible}
     >
-      <div className="h-full overflow-hidden rounded-[16px] border border-[rgba(228,228,231,0.5)] p-[2px] shadow-[0_20px_12px_rgba(10,10,10,0.1),0_8px_4px_rgba(10,10,10,0.04)]">
-        <div className="relative h-full overflow-hidden rounded-[14px] border-2 border-[#E4E4E7] bg-white">
+      <div className="h-full overflow-hidden rounded-l-2xl rounded-r-none border border-r-0 border-[#E4E4E7] bg-white shadow-[-8px_20px_12px_rgba(10,10,10,0.08),0_8px_4px_rgba(10,10,10,0.04)]">
+        <div className="relative h-full overflow-hidden bg-white">
           {/* eslint-disable-next-line @next/next/no-img-element -- stacked + preloaded static PNGs for instant step changes */}
           <img
             src={src}
             alt=""
             width={TOUR_MOCKUP_WIDTH_PX}
             height={Math.round((TOUR_MOCKUP_WIDTH_PX * 2731) / 4096)}
-            className="absolute left-0 top-0 block max-w-none select-none"
+            className="absolute left-0 top-0 block max-w-none select-none bg-white"
             decoding="async"
             draggable={false}
           />
@@ -54,7 +54,7 @@ function TourMockupFrame({ src, visible }: { src: string; visible: boolean }) {
 function TourMockupViewport({ activeIndex }: { activeIndex: number }) {
   return (
     <div
-      className="relative w-full shrink-0 overflow-hidden"
+      className="relative w-full shrink-0 overflow-hidden bg-white"
       style={{ height: TOUR_PREVIEW_HEIGHT_PX }}
     >
       {PRODUCT_TOUR_STEPS.map((step, i) => (
@@ -142,7 +142,7 @@ export function ProductTourModal({
         </button>
 
         <header className="shrink-0 px-8 pb-0 pt-8 pr-16">
-          <div className="flex max-w-[520px] flex-col gap-3">
+          <div className="flex max-w-[400px] flex-col gap-3">
             <div className="flex items-center gap-2">
               <span className="relative flex h-5 w-5 shrink-0 items-center justify-center">
                 <span className="absolute left-1.5 top-1 h-4 w-4 rounded-full bg-[#E4E4E7]" aria-hidden />
@@ -157,7 +157,7 @@ export function ProductTourModal({
         </header>
 
         {/* Left-aligned mockup; clips on the right and bottom like Figma */}
-        <div className="min-h-0 shrink-0 overflow-hidden py-6 pl-8 pr-0">
+        <div className="min-h-0 shrink-0 overflow-hidden bg-white py-6 pl-8 pr-0">
           <TourMockupViewport activeIndex={stepIndex} />
         </div>
 
