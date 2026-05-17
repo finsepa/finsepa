@@ -165,6 +165,7 @@ export function SignupClient() {
         appOrigin: authOrigin,
       });
       if (loopsFirst.kind === "success") {
+        markOnboardingPending();
         await goToEmailConfirmation();
         return;
       }
@@ -241,6 +242,7 @@ export function SignupClient() {
           }
 
           if (loopsRes.ok && loopsJson.ok === true) {
+            markOnboardingPending();
             await goToEmailConfirmation();
             return;
           }
@@ -274,6 +276,7 @@ export function SignupClient() {
         return;
       }
 
+      markOnboardingPending();
       await goToEmailConfirmation();
     } catch (err) {
       setErrorMessage(friendlyNetworkErrorMessage(err));

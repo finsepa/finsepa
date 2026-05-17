@@ -6,8 +6,11 @@ export const ONBOARDING_PENDING_KEY = "finsepa_onboarding_pending";
 /** Local backup when sessionStorage is cleared mid-OAuth. */
 export const ONBOARDING_PENDING_LOCAL_KEY = "finsepa_onboarding_pending_local";
 
-/** Persists after the user finishes or skips onboarding. */
+/** Per-user completion (suffix with user id). Legacy global key migrated away. */
 export const ONBOARDING_COMPLETE_KEY = "finsepa_onboarding_complete";
+
+/** @deprecated Global key from early builds — do not write. */
+const ONBOARDING_COMPLETE_LEGACY_KEY = "finsepa_onboarding_complete";
 
 /** Query flag on `/screener` after auth redirect (survives OAuth round-trips). */
 export const ONBOARDING_QUERY_VALUE = "1";
@@ -22,28 +25,63 @@ function userMetadata(user: User | null): Record<string, unknown> {
   return (user?.user_metadata ?? {}) as Record<string, unknown>;
 }
 
-export function hasCompletedOnboarding(): boolean {
-  if (typeof window === "undefined") return false;
+function metaTruthy(value: unknown): boolean {
+  return value === true || value === "true" || value === 1;
+}
+
+export function onboardingCompleteStorageKey(userId: string): string {
+  return `${ONBOARDING_COMPLETE_KEY}_${userId}`;
+}
+
+export function onboardingPendingStorageKey(userId: string): string {
+  return `${ONBOARDING_PENDING_KEY}_${userId}`;
+}
+
+export function onboardingPendingLocalStorageKey(userId: string): string {
+  return `${ONBOARDING_PENDING_LOCAL_KEY}_${userId}`;
+}
+
+/** Per-user local completion (avoids blocking new accounts on a shared browser). */
+export function hasCompletedOnboardingForUser(userId: string | null | undefined): boolean {
+  if (!userId || typeof window === "undefined") return false;
   try {
-    return localStorage.getItem(ONBOARDING_COMPLETE_KEY) === "1";
+    return localStorage.getItem(onboardingCompleteStorageKey(userId)) === "1";
   } catch {
     return false;
   }
 }
 
-export function markOnboardingPending(): void {
+/** @deprecated Use `hasCompletedOnboardingForUser(userId)`. */
+export function hasCompletedOnboarding(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return localStorage.getItem(ONBOARDING_COMPLETE_LEGACY_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function markOnboardingPending(userId?: string | null): void {
   if (typeof window === "undefined") return;
   try {
     sessionStorage.setItem(ONBOARDING_PENDING_KEY, "1");
     localStorage.setItem(ONBOARDING_PENDING_LOCAL_KEY, "1");
+    if (userId) {
+      sessionStorage.setItem(onboardingPendingStorageKey(userId), "1");
+      localStorage.setItem(onboardingPendingLocalStorageKey(userId), "1");
+    }
   } catch {
     /* ignore */
   }
 }
 
-export function isOnboardingPending(): boolean {
+export function isOnboardingPending(userId?: string | null): boolean {
   if (typeof window === "undefined") return false;
   try {
+    if (userId) {
+      if (sessionStorage.getItem(onboardingPendingStorageKey(userId)) === "1") return true;
+      if (localStorage.getItem(onboardingPendingLocalStorageKey(userId)) === "1") return true;
+    }
     if (sessionStorage.getItem(ONBOARDING_PENDING_KEY) === "1") return true;
     return localStorage.getItem(ONBOARDING_PENDING_LOCAL_KEY) === "1";
   } catch {
@@ -51,11 +89,15 @@ export function isOnboardingPending(): boolean {
   }
 }
 
-export function clearOnboardingPendingFlags(): void {
+export function clearOnboardingPendingFlags(userId?: string | null): void {
   if (typeof window === "undefined") return;
   try {
     sessionStorage.removeItem(ONBOARDING_PENDING_KEY);
     localStorage.removeItem(ONBOARDING_PENDING_LOCAL_KEY);
+    if (userId) {
+      sessionStorage.removeItem(onboardingPendingStorageKey(userId));
+      localStorage.removeItem(onboardingPendingLocalStorageKey(userId));
+    }
   } catch {
     /* ignore */
   }
@@ -66,9 +108,8 @@ export function userNeedsOnboarding(user: User | null): boolean {
   if (!user) return false;
 
   const meta = userMetadata(user);
-  if (meta[ONBOARDING_META_COMPLETE] === true) return false;
-
-  if (meta[ONBOARDING_META_PENDING] === true) return true;
+  if (metaTruthy(meta[ONBOARDING_META_COMPLETE])) return false;
+  if (metaTruthy(meta[ONBOARDING_META_PENDING])) return true;
 
   const createdAt = new Date(user.created_at).getTime();
   if (!Number.isNaN(createdAt) && Date.now() - createdAt < NEW_ACCOUNT_WINDOW_MS) {
@@ -81,13 +122,12 @@ export function userNeedsOnboarding(user: User | null): boolean {
 /** True when this auth exchange is a fresh signup (email confirm, OAuth, etc.). */
 export function shouldMarkOnboardingAfterAuth(user: User | null, authType: string | null | undefined): boolean {
   if (!user) return false;
-  if (hasCompletedOnboarding()) return false;
 
   const meta = userMetadata(user);
-  if (meta[ONBOARDING_META_COMPLETE] === true) return false;
+  if (metaTruthy(meta[ONBOARDING_META_COMPLETE])) return false;
 
   if (authType === "signup" || authType === "invite") return true;
-  if (meta[ONBOARDING_META_PENDING] === true) return true;
+  if (metaTruthy(meta[ONBOARDING_META_PENDING])) return true;
 
   const createdAt = new Date(user.created_at).getTime();
   if (Number.isNaN(createdAt)) return false;
@@ -95,19 +135,20 @@ export function shouldMarkOnboardingAfterAuth(user: User | null, authType: strin
 }
 
 export function shouldShowWelcomeOnboarding(user?: User | null): boolean {
-  if (hasCompletedOnboarding()) return false;
-  if (isOnboardingPending()) return true;
+  if (user && hasCompletedOnboardingForUser(user.id)) return false;
+  if (!user && hasCompletedOnboarding()) return false;
+  if (isOnboardingPending(user?.id)) return true;
   if (user) return userNeedsOnboarding(user);
   return false;
 }
 
 export async function persistOnboardingPendingOnUser(supabase: SupabaseClient): Promise<void> {
-  markOnboardingPending();
   try {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (userMetadata(user)[ONBOARDING_META_COMPLETE] === true) return;
+    markOnboardingPending(user?.id);
+    if (!user || metaTruthy(userMetadata(user)[ONBOARDING_META_COMPLETE])) return;
     await supabase.auth.updateUser({
       data: {
         [ONBOARDING_META_PENDING]: true,
@@ -119,13 +160,28 @@ export async function persistOnboardingPendingOnUser(supabase: SupabaseClient): 
 }
 
 export async function markOnboardingCompleteForUser(supabase?: SupabaseClient): Promise<void> {
-  if (typeof window !== "undefined") {
+  let userId: string | undefined;
+  if (supabase) {
     try {
-      localStorage.setItem(ONBOARDING_COMPLETE_KEY, "1");
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      userId = user?.id;
     } catch {
       /* ignore */
     }
-    clearOnboardingPendingFlags();
+  }
+
+  if (typeof window !== "undefined") {
+    try {
+      if (userId) {
+        localStorage.setItem(onboardingCompleteStorageKey(userId), "1");
+      }
+      localStorage.removeItem(ONBOARDING_COMPLETE_LEGACY_KEY);
+    } catch {
+      /* ignore */
+    }
+    clearOnboardingPendingFlags(userId);
   }
 
   if (!supabase) return;
@@ -178,7 +234,7 @@ export function stripOnboardingQueryFromUrl(): void {
   }
 }
 
-const SESSION_RETRY_MS = [0, 50, 150, 350, 700, 1200];
+const SESSION_RETRY_MS = [0, 50, 150, 350, 700, 1200, 2000];
 
 /** Wait until Supabase exposes a session user (avoids race right after redirect). */
 export async function waitForSessionUser(supabase: SupabaseClient): Promise<User | null> {
@@ -211,7 +267,7 @@ export async function waitForSessionUser(supabase: SupabaseClient): Promise<User
       void supabase.auth.getSession().then(({ data: { session } }) => {
         finish(session?.user ?? null);
       });
-    }, 4000);
+    }, 6000);
 
     void supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
@@ -222,3 +278,5 @@ export async function waitForSessionUser(supabase: SupabaseClient): Promise<User
     });
   });
 }
+
+export const ONBOARDING_AUTH_READY_EVENT = "finsepa-auth-established";

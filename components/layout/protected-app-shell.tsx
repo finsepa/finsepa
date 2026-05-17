@@ -5,6 +5,7 @@ import { getSubscriptionGateContext } from "@/lib/account/subscription-gate";
 import { PATH_ACTIVATE_SUBSCRIPTION, PATH_LOGIN } from "@/lib/auth/routes";
 import { avatarUrlFromUser, displayNameFromUser, initialsFromUser } from "@/lib/auth/user-display";
 import { ProtectedAppShellInner } from "@/components/layout/protected-app-shell-inner";
+import { OnboardingAuthBootstrap } from "@/components/onboarding/onboarding-auth-bootstrap";
 import { ScreenerOnboardingHost } from "@/components/onboarding/screener-onboarding-host";
 import { PortfolioWorkspaceProvider } from "@/components/portfolio/portfolio-workspace-provider";
 import { userNeedsOnboarding } from "@/lib/auth/onboarding";
@@ -52,8 +53,9 @@ export async function ProtectedAppShell({ children }: { children: ReactNode }) {
         userDisplayName={userDisplayName}
         platformTrialDaysLeft={gate.topbarTrialDaysLeft}
       >
+        <OnboardingAuthBootstrap />
         <Suspense fallback={null}>
-          <ScreenerOnboardingHost serverShouldShow={serverShouldShowOnboarding} />
+          <ScreenerOnboardingHost userId={user.id} serverShouldShow={serverShouldShowOnboarding} />
         </Suspense>
         {children}
       </ProtectedAppShellInner>

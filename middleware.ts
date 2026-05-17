@@ -94,6 +94,7 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    "/screener",
     "/screener/:path*",
     "/news/:path*",
     "/macro/:path*",

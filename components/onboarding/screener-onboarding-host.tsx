@@ -4,10 +4,11 @@ import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
-  hasCompletedOnboarding,
+  hasCompletedOnboardingForUser,
   hasOnboardingQueryFlag,
   markOnboardingPending,
   markOnboardingCompleteForUser,
+  ONBOARDING_AUTH_READY_EVENT,
   persistOnboardingPendingOnUser,
   shouldShowWelcomeOnboarding,
   stripOnboardingQueryFromUrl,
@@ -15,7 +16,6 @@ import {
   waitForSessionUser,
 } from "@/lib/auth/onboarding";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
-
 import { preloadProductTourImages } from "@/lib/onboarding/product-tour-steps";
 
 import { OnboardingProPromoModal } from "./onboarding-pro-promo-modal";
@@ -24,21 +24,28 @@ import { WelcomeOnboardingModal } from "./welcome-onboarding-modal";
 
 type OnboardingPhase = "idle" | "welcome" | "tour" | "pro";
 
-/** Welcome → 6-step tour → Pro upsell (Figma 8884:413751 → 14090 → 373835). */
-export function ScreenerOnboardingHost({ serverShouldShow = false }: { serverShouldShow?: boolean }) {
+/** Welcome → 6-step tour → Pro upsell. */
+export function ScreenerOnboardingHost({
+  userId,
+  serverShouldShow = false,
+}: {
+  userId: string;
+  serverShouldShow?: boolean;
+}) {
   const searchParams = useSearchParams();
   const openedRef = useRef(false);
   const [phase, setPhase] = useState<OnboardingPhase>(() => {
-    if (serverShouldShow && !hasCompletedOnboarding()) return "welcome";
+    if (serverShouldShow && !hasCompletedOnboardingForUser(userId)) return "welcome";
     return "idle";
   });
 
   const openWelcome = useCallback(() => {
-    if (openedRef.current || hasCompletedOnboarding()) return;
+    if (openedRef.current) return;
+    if (hasCompletedOnboardingForUser(userId)) return;
     openedRef.current = true;
-    markOnboardingPending();
+    markOnboardingPending(userId);
     setPhase("welcome");
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
     if (phase === "welcome" || phase === "tour") {
@@ -47,17 +54,15 @@ export function ScreenerOnboardingHost({ serverShouldShow = false }: { serverSho
   }, [phase]);
 
   useEffect(() => {
-    if (openedRef.current) return;
-
-    if (serverShouldShow && !hasCompletedOnboarding()) {
-      openWelcome();
-      return;
-    }
-
     let cancelled = false;
 
     async function resolve() {
-      if (hasCompletedOnboarding()) return;
+      if (hasCompletedOnboardingForUser(userId)) return;
+
+      if (serverShouldShow) {
+        if (!cancelled) openWelcome();
+        return;
+      }
 
       const fromQuery =
         hasOnboardingQueryFlag(searchParams.toString()) ||
@@ -81,6 +86,8 @@ export function ScreenerOnboardingHost({ serverShouldShow = false }: { serverSho
       const user = await waitForSessionUser(supabase);
       if (cancelled || !user) return;
 
+      if (user.id !== userId) return;
+
       if (shouldShowWelcomeOnboarding(user) || userNeedsOnboarding(user)) {
         await persistOnboardingPendingOnUser(supabase);
         if (!cancelled) openWelcome();
@@ -93,10 +100,10 @@ export function ScreenerOnboardingHost({ serverShouldShow = false }: { serverSho
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      if (cancelled || openedRef.current || hasCompletedOnboarding()) return;
+      if (cancelled || openedRef.current || hasCompletedOnboardingForUser(userId)) return;
       if (event !== "SIGNED_IN" && event !== "INITIAL_SESSION" && event !== "TOKEN_REFRESHED") return;
       const user = session?.user;
-      if (!user) return;
+      if (!user || user.id !== userId) return;
       if (shouldShowWelcomeOnboarding(user) || userNeedsOnboarding(user)) {
         void persistOnboardingPendingOnUser(supabase).then(() => {
           if (!cancelled) openWelcome();
@@ -104,11 +111,17 @@ export function ScreenerOnboardingHost({ serverShouldShow = false }: { serverSho
       }
     });
 
+    const onAuthReady = () => {
+      if (!cancelled) void resolve();
+    };
+    window.addEventListener(ONBOARDING_AUTH_READY_EVENT, onAuthReady);
+
     return () => {
       cancelled = true;
       subscription.unsubscribe();
+      window.removeEventListener(ONBOARDING_AUTH_READY_EVENT, onAuthReady);
     };
-  }, [openWelcome, searchParams, serverShouldShow]);
+  }, [openWelcome, searchParams, serverShouldShow, userId]);
 
   async function finishOnboarding() {
     const supabase = getSupabaseBrowserClient();
