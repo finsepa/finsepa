@@ -2,14 +2,22 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { Check } from "lucide-react";
-import { AuthDivider, AuthInput, AuthLabel, AuthPrimaryButton, AuthSecondaryButton } from "@/components/auth/auth-form-ui";
+import {
+  AuthCheckbox,
+  AuthDivider,
+  AuthInput,
+  AuthLabel,
+  AuthPrimaryButton,
+  AuthSecondaryButton,
+  authAccentLinkClassName,
+} from "@/components/auth/auth-form-ui";
+import { AuthPasswordInput } from "@/components/auth/auth-password-input";
 import { PATH_APP_ENTRY, PATH_AUTH_CALLBACK } from "@/lib/auth/routes";
 import { friendlySupabaseAuthErrorMessage } from "@/lib/auth/supabase-error-message";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { cn } from "@/lib/utils";
 
 const STORAGE_REMEMBER = "finsepa_remember_me";
-const STORAGE_SAVED_EMAIL = "finsepa_login_email";
 
 const CALLBACK_ERROR_MESSAGES: Record<string, string> = {
   session: "That sign-in link is invalid or expired. Try resetting your password again.",
@@ -20,8 +28,6 @@ const CALLBACK_ERROR_MESSAGES: Record<string, string> = {
 type Props = {
   resetSuccess?: boolean;
   callbackError?: string | null;
-  /** Fired after email/password sign-in succeeds, before redirect (shows banner above card). */
-  onEmailPasswordSuccess?: () => void;
 };
 
 function GoogleMark() {
@@ -38,11 +44,11 @@ function GoogleMark() {
 
 const REDIRECT_AFTER_LOGIN_MS = 900;
 
-export function LoginClient({ resetSuccess, callbackError, onEmailPasswordSuccess }: Props) {
+export function LoginClient({ resetSuccess, callbackError }: Props) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
-  const [email, setEmail] = useState("");
+  const [passwordLoginSuccess, setPasswordLoginSuccess] = useState(false);
 
   const callbackHint = callbackError ? CALLBACK_ERROR_MESSAGES[callbackError] ?? "Something went wrong. Please try again." : null;
 
@@ -50,10 +56,6 @@ export function LoginClient({ resetSuccess, callbackError, onEmailPasswordSucces
     try {
       const r = localStorage.getItem(STORAGE_REMEMBER);
       if (r === "0") setRememberMe(false);
-      if (r !== "0") {
-        const savedEmail = localStorage.getItem(STORAGE_SAVED_EMAIL);
-        if (savedEmail) setEmail(savedEmail);
-      }
     } catch {
       /* ignore */
     }
@@ -109,16 +111,11 @@ export function LoginClient({ resetSuccess, callbackError, onEmailPasswordSucces
 
       try {
         localStorage.setItem(STORAGE_REMEMBER, rememberMe ? "1" : "0");
-        if (rememberMe) {
-          localStorage.setItem(STORAGE_SAVED_EMAIL, email);
-        } else {
-          localStorage.removeItem(STORAGE_SAVED_EMAIL);
-        }
       } catch {
         /* ignore */
       }
 
-      onEmailPasswordSuccess?.();
+      setPasswordLoginSuccess(true);
       await new Promise((r) => setTimeout(r, REDIRECT_AFTER_LOGIN_MS));
       // Full navigation avoids Turbopack / dev RSC failures from router.refresh + router.push.
       window.location.replace(PATH_APP_ENTRY);
@@ -131,8 +128,18 @@ export function LoginClient({ resetSuccess, callbackError, onEmailPasswordSucces
   }
 
   return (
-    <form className="space-y-4" onSubmit={handleSubmit} noValidate>
-      <AuthSecondaryButton onClick={handleGoogle} disabled={loading}>
+    <div className="space-y-4">
+      {passwordLoginSuccess ? (
+        <div
+          role="status"
+          className="rounded-[10px] border border-[#BBF7D0] bg-[#F0FDF4] px-3 py-2.5 text-center text-sm font-medium leading-5 text-[#166534] shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+        >
+          Logged in successfully. Redirecting to the app…
+        </div>
+      ) : null}
+
+      <form className="space-y-4" onSubmit={handleSubmit} noValidate>
+        <AuthSecondaryButton onClick={handleGoogle} disabled={loading}>
         <GoogleMark />
         {loading ? "Redirecting…" : "Continue with Google"}
       </AuthSecondaryButton>
@@ -172,51 +179,46 @@ export function LoginClient({ resetSuccess, callbackError, onEmailPasswordSucces
           type="email"
           name="email"
           autoComplete="email"
-          placeholder="you@company.com"
+          placeholder="Enter your email"
           required
           disabled={loading}
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
         />
       </div>
 
       <div>
         <AuthLabel>Password</AuthLabel>
-        <AuthInput
-          type="password"
+        <AuthPasswordInput
           name="password"
           autoComplete="current-password"
-          placeholder="••••••••"
+          placeholder="Enter your password"
           required
           disabled={loading}
         />
-        <div className="mt-3 flex items-center justify-between gap-4">
+        <div className="mt-6 flex items-center justify-between gap-4">
           <label className="flex cursor-pointer items-center gap-2 select-none">
-            <button
-              type="button"
-              role="checkbox"
-              aria-checked={rememberMe}
-              aria-label="Remember me on this device"
+            <AuthCheckbox
+              checked={rememberMe}
+              onCheckedChange={setRememberMe}
               disabled={loading}
-              onClick={() => setRememberMe((v) => !v)}
-              className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[4px] border border-[#D4D4D8] transition-colors disabled:cursor-not-allowed disabled:opacity-60 aria-checked:border-[#09090B] aria-checked:bg-[#09090B]"
-            >
-              {rememberMe && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
-            </button>
-            <span className="text-sm font-semibold text-[#09090B]">Remember me</span>
+              aria-label="Remember me on this device"
+            />
+            <span className="text-[14px] font-normal leading-5 text-[#09090B]">Remember me</span>
           </label>
           <Link
             href="/forgot-password"
-            className="shrink-0 text-sm font-semibold text-[#09090B] underline decoration-[#E4E4E7] underline-offset-4 transition-colors hover:decoration-[#A1A1AA]"
+            className={cn("shrink-0", authAccentLinkClassName)}
           >
             Forgot password?
           </Link>
         </div>
       </div>
 
-      <AuthPrimaryButton type="submit" disabled={loading}>
-        {loading ? "Signing in…" : "Log in"}
-      </AuthPrimaryButton>
-    </form>
+      <div className="!mt-6">
+        <AuthPrimaryButton type="submit" disabled={loading}>
+          {loading ? "Signing in…" : "Log in"}
+        </AuthPrimaryButton>
+      </div>
+      </form>
+    </div>
   );
 }

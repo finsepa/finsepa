@@ -12,7 +12,7 @@ export default function ForgotPasswordPage() {
           Remember your password?{" "}
           <Link
             href={PATH_LOGIN}
-            className="font-semibold underline decoration-[#E4E4E7] underline-offset-4 transition-colors hover:decoration-[#A1A1AA]"
+            className="font-bold text-[#2563EB] transition-colors hover:text-[#1D4ED8]"
           >
             Log in
           </Link>

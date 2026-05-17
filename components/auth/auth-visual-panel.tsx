@@ -26,7 +26,7 @@ export function AuthVisualPanel({
         <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-black/35 via-black/10 to-transparent" />
 
         <div className="absolute left-6 top-6">
-          <AuthBrandMark className="h-7 w-7 filter invert" />
+          <AuthBrandMark className="h-10 w-10" />
         </div>
       </div>
     );

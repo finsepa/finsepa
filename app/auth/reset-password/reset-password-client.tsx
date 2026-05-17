@@ -3,7 +3,8 @@
 import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { AuthCenteredLayout } from "@/components/auth/auth-centered-layout";
-import { AuthInput, AuthLabel, AuthPrimaryButton } from "@/components/auth/auth-form-ui";
+import { AuthLabel, AuthPrimaryButton } from "@/components/auth/auth-form-ui";
+import { AuthPasswordInput } from "@/components/auth/auth-password-input";
 import {
   establishAuthSessionFromCurrentUrl,
   replaceUrlPathOnly,
@@ -112,7 +113,7 @@ export function ResetPasswordClient() {
 
   if (!checked) {
     return (
-      <AuthCenteredLayout title="Reset your password" subtitle="Checking your reset link…">
+      <AuthCenteredLayout split={false} title="Reset your password" subtitle="Checking your reset link…">
         <p className="text-sm text-[#71717A]">Loading…</p>
       </AuthCenteredLayout>
     );
@@ -121,6 +122,7 @@ export function ResetPasswordClient() {
   if (!sessionReady) {
     return (
       <AuthCenteredLayout
+        split={false}
         title="Link invalid or expired"
         subtitle="Request a new reset link to continue."
       >
@@ -144,14 +146,14 @@ export function ResetPasswordClient() {
 
   if (updated) {
     return (
-      <AuthCenteredLayout compact title="You're in" subtitle="Taking you to Finsepa…">
+      <AuthCenteredLayout split={false} compact title="You're in" subtitle="Taking you to Finsepa…">
         {null}
       </AuthCenteredLayout>
     );
   }
 
   return (
-    <AuthCenteredLayout title="Set a new password" subtitle="Choose a new password for your account.">
+    <AuthCenteredLayout split={false} title="Set a new password" subtitle="Choose a new password for your account.">
       <form className="space-y-4" onSubmit={handleSubmit} noValidate>
         {errorMessage ? (
           <div
@@ -164,8 +166,7 @@ export function ResetPasswordClient() {
 
         <div>
           <AuthLabel>New password</AuthLabel>
-          <AuthInput
-            type="password"
+          <AuthPasswordInput
             name="password"
             autoComplete="new-password"
             placeholder="••••••••"
@@ -181,8 +182,7 @@ export function ResetPasswordClient() {
 
         <div>
           <AuthLabel>Confirm new password</AuthLabel>
-          <AuthInput
-            type="password"
+          <AuthPasswordInput
             name="confirmPassword"
             autoComplete="new-password"
             placeholder="••••••••"

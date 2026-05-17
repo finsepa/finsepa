@@ -1,29 +1,29 @@
 import Link from "next/link";
 import { AuthCenteredLayout } from "@/components/auth/auth-centered-layout";
+import { AuthContinueLegalNotice } from "@/components/auth/auth-continue-legal-notice";
+import { authAccentLinkClassName } from "@/components/auth/auth-form-ui";
 import { SignupClientDynamic } from "./signup-client-dynamic";
 
 export const viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#F7F7F7" },
-    { media: "(prefers-color-scheme: dark)", color: "#F7F7F7" },
+    { media: "(prefers-color-scheme: light)", color: "#E4E4E7" },
+    { media: "(prefers-color-scheme: dark)", color: "#E4E4E7" },
   ],
 };
 
 export default function SignupPage() {
   return (
     <AuthCenteredLayout
-      title="Start Your Free Trial"
+      title="Start your free trial"
       subtitle={
         <>
-          Already have an account?{" "}
-          <Link
-            href="/login"
-            className="font-semibold text-[#2563EB] underline decoration-[#BFDBFE] underline-offset-4 transition-colors hover:text-[#1D4ED8] hover:decoration-[#93C5FD]"
-          >
+          <span className="text-[#71717A]">Already have an account? </span>
+          <Link href="/login" className={authAccentLinkClassName}>
             Log in
           </Link>
         </>
       }
+      footer={<AuthContinueLegalNotice />}
     >
       <SignupClientDynamic />
     </AuthCenteredLayout>

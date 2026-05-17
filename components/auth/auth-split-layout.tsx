@@ -1,45 +1,31 @@
 import type { ReactNode } from "react";
 
+import styles from "./auth-split-layout.module.css";
+
+/**
+ * Figma auth shell (node 8882:68795): #E4E4E7 frame, white form column + light aside.
+ * Aside is omitted below `md`. Styles live in a CSS module so SSR, client, and HMR stay aligned.
+ */
 export function AuthSplitLayout({
-  left,
-  right,
-  showLeftOnMobile = false,
+  form,
+  aside,
+  footer,
 }: {
-  left: ReactNode;
-  right: ReactNode;
-  showLeftOnMobile?: boolean;
+  form: ReactNode;
+  aside: ReactNode;
+  footer?: ReactNode;
 }) {
-  if (showLeftOnMobile) {
-    return (
-      <main className="min-h-[var(--app-vh)] bg-[#E4E4E7] p-4 text-neutral-900">
-        <div className="mx-auto flex min-h-[calc(var(--app-vh)-32px)] w-full max-w-[1024px] flex-col overflow-hidden rounded-[16px] bg-white md:flex-row">
-          {/* Visual panel */}
-          <section className="relative block h-[320px] flex-none overflow-hidden bg-[#09090B] md:h-full md:w-1/2">
-            {left}
-          </section>
-
-          {/* Form panel */}
-          <section className="flex w-full flex-1 flex-col items-center justify-center bg-white md:w-1/2">
-            <div className="w-full px-10 py-10 sm:px-12">{right}</div>
-          </section>
-        </div>
-      </main>
-    );
-  }
-
-  // Keep the previous layout for other auth pages (Forgot/Reset), unless explicitly overridden.
   return (
-    <main className="min-h-[var(--app-vh)] overflow-hidden bg-[#E4E4E7] p-1 text-neutral-900">
-      <div className="mx-auto flex min-h-[calc(var(--app-vh)-8px)] max-w-[1200px] gap-1">
-        {/* Visual panel */}
-        <section className="relative hidden flex-1 overflow-hidden rounded-[4px] bg-[#09090B] md:block">{left}</section>
-
-        {/* Form panel */}
-        <section className="flex w-full items-center justify-center overflow-hidden rounded-[4px] bg-white md:w-[520px]">
-          <div className="w-full px-8 py-10 sm:px-10">{right}</div>
+    <main className={styles.shell}>
+      <div className={styles.inner}>
+        <section className={styles.form}>
+          <div className="flex w-full flex-1 flex-col items-center justify-center">{form}</div>
+          {footer != null ? (
+            <footer className="mt-auto w-full max-w-[384px] shrink-0 pt-8 text-center">{footer}</footer>
+          ) : null}
         </section>
+        <section className={styles.aside}>{aside}</section>
       </div>
     </main>
   );
 }
-

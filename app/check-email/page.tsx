@@ -9,6 +9,7 @@ export default async function CheckEmailPage({ searchParams }: { searchParams: P
 
   return (
     <AuthCenteredLayout
+      split={false}
       title="Check your email"
       subtitle={
         email ? (

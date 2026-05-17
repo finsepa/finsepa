@@ -21,7 +21,9 @@ import {
 } from "@/lib/auth/supabase-error-message";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { AuthDivider, AuthInput, AuthLabel, AuthPrimaryButton, AuthSecondaryButton } from "@/components/auth/auth-form-ui";
+import { AuthPasswordInput } from "@/components/auth/auth-password-input";
 import { getAuthAppOriginForClient } from "@/lib/auth/app-origin";
+import { markOnboardingPending } from "@/lib/auth/onboarding";
 import { PATH_APP_ENTRY, PATH_AUTH_CALLBACK } from "@/lib/auth/routes";
 
 type LoopsFirstResult =
@@ -264,6 +266,12 @@ export function SignupClient() {
         return;
       }
 
+      if (data?.session) {
+        markOnboardingPending();
+        window.location.replace(PATH_APP_ENTRY);
+        return;
+      }
+
       await goToEmailConfirmation();
     } catch (err) {
       setErrorMessage(friendlyNetworkErrorMessage(err));
@@ -352,7 +360,7 @@ export function SignupClient() {
           type="email"
           name="email"
           autoComplete="email"
-          placeholder="you@company.com"
+          placeholder="Enter your email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           onBlur={() => setTouched((t) => ({ ...t, email: true }))}
@@ -372,8 +380,7 @@ export function SignupClient() {
           Password
           <RequiredAsterisk />
         </AuthLabel>
-        <AuthInput
-          type="password"
+        <AuthPasswordInput
           name="password"
           autoComplete="new-password"
           placeholder="Create a password"

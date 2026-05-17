@@ -1,0 +1,66 @@
+import type { LucideIcon } from "lucide-react";
+import {
+  Briefcase,
+  CalendarDays,
+  Compass,
+  Globe,
+  LineChart,
+  Wallet,
+} from "lucide-react";
+
+export type ProductTourStep = {
+  id: string;
+  title: string;
+  description: string;
+  icon: LucideIcon;
+  previewSrc: string;
+};
+
+/** Six-step product tour after welcome (Figma frames 2–7 / nodes 14090, 269266, …). */
+export const PRODUCT_TOUR_STEPS: ProductTourStep[] = [
+  {
+    id: "screener",
+    title: "Screener",
+    description:
+      "A powerful market screener that helps users filter and analyze stocks, crypto, ETFs, and more.",
+    icon: Globe,
+    previewSrc: "/onboarding/product-tour-screener.png",
+  },
+  {
+    id: "asset-overview",
+    title: "Asset overview",
+    description: "Real-time market data, price charts, and financial insights for smarter investing.",
+    icon: LineChart,
+    previewSrc: "/onboarding/product-tour-asset-overview.png",
+  },
+  {
+    id: "earnings",
+    title: "Earnings",
+    description: "Upcoming earnings reports to help investors stay ahead of market moves.",
+    icon: CalendarDays,
+    previewSrc: "/onboarding/product-tour-earnings.png",
+  },
+  {
+    id: "macro",
+    title: "Macro Data",
+    description: "Key economic indicators and market statistics for deeper analysis.",
+    icon: Compass,
+    previewSrc: "/onboarding/product-tour-macro.png",
+  },
+  {
+    id: "superinvestors",
+    title: "Superinvestors",
+    description: "Track top investors' holdings, trades, and market moves.",
+    icon: Briefcase,
+    previewSrc: "/onboarding/product-tour-superinvestors.png",
+  },
+  {
+    id: "portfolio",
+    title: "Portfolio",
+    description: "Get detailed breakdowns of holdings, returns, and market trends.",
+    icon: Wallet,
+    previewSrc: "/onboarding/product-tour-portfolio.png",
+  },
+];
+
+export const PRODUCT_TOUR_STEP_COUNT = PRODUCT_TOUR_STEPS.length;

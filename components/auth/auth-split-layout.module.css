@@ -1,0 +1,60 @@
+/* Auth login/signup shell — colocated with layout component for stable SSR/HMR. */
+.shell {
+  min-height: 100dvh;
+  background-color: #ffffff;
+  padding: 0;
+  color: #09090b;
+}
+
+@media (min-width: 768px) {
+  .shell {
+    background-color: #e4e4e7;
+    padding: 4px;
+  }
+}
+
+.inner {
+  display: flex;
+  min-height: 100dvh;
+  flex-direction: column;
+}
+
+@media (min-width: 768px) {
+  .inner {
+    display: grid;
+    min-height: calc(100dvh - 8px);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    gap: 4px;
+  }
+}
+
+.form {
+  display: flex;
+  min-height: 100dvh;
+  min-width: 0;
+  flex: 1 1 0%;
+  flex-direction: column;
+  align-items: center;
+  background-color: #ffffff;
+  padding: 2rem 2.25rem;
+}
+
+@media (min-width: 768px) {
+  .form {
+    min-height: calc(100dvh - 8px);
+    border-radius: 8px;
+  }
+}
+
+.aside {
+  display: none;
+  min-height: calc(100dvh - 8px);
+  min-width: 0;
+}
+
+@media (min-width: 768px) {
+  .aside {
+    display: block;
+  }
+}

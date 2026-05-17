@@ -103,7 +103,7 @@ export function ForgotPasswordClient() {
 
           <div>
             <AuthLabel>Email</AuthLabel>
-            <AuthInput type="email" name="email" autoComplete="email" placeholder="you@company.com" required disabled={loading} />
+            <AuthInput type="email" name="email" autoComplete="email" placeholder="Enter your email" required disabled={loading} />
           </div>
 
           <AuthPrimaryButton type="submit" disabled={loading}>

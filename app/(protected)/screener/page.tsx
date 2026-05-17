@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 
+import { ScreenerOnboardingHost } from "@/components/onboarding/screener-onboarding-host";
 import { ScreenerBrowserTrace } from "@/components/screener/screener-browser-trace";
 import { MarketsSection } from "@/components/screener/markets-section";
 import { buildScreenerPagePayload } from "@/lib/screener/screener-page-payload";
@@ -34,6 +35,7 @@ export default async function ScreenerPage({ searchParams }: PageProps) {
 
   return (
     <div className="min-w-0 w-full max-w-full max-md:overflow-x-hidden max-md:px-4 max-md:pb-2 max-md:pt-0 md:overflow-x-hidden md:px-9 md:py-6">
+      <ScreenerOnboardingHost />
       <ScreenerBrowserTrace />
       <Suspense fallback={null}>
         <MarketsSection payload={payload} />

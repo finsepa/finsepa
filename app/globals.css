@@ -186,3 +186,35 @@ body {
     transform: none;
   }
 }
+
+/** Auth aside — slow horizontal drift per mockup row (alternating direction). */
+@keyframes auth-aside-row-scroll {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-33.333%, 0, 0);
+  }
+}
+
+.auth-aside-collage {
+  backface-visibility: hidden;
+}
+
+.auth-aside-mockup-img {
+  backface-visibility: hidden;
+}
+
+.auth-aside-row-scroll {
+  animation: auth-aside-row-scroll linear infinite;
+  backface-visibility: hidden;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-aside-row-scroll {
+    animation: none;
+    transform: none;
+    will-change: auto;
+  }
+}
