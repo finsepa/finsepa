@@ -11,11 +11,13 @@ import {
   PRODUCT_TOUR_STEPS,
 } from "@/lib/onboarding/product-tour-steps";
 
-/** Visible crop height for the scaled mockup (Figma: partial UI peek). */
-const TOUR_PREVIEW_HEIGHT_PX = 340;
+/** Visible crop window (~30% taller than 340px base; image scale unchanged). */
+const TOUR_PREVIEW_HEIGHT_PX = 442;
 
-/** Renders wider than the modal; left/top anchored so the right and bottom clip away. */
-const TOUR_MOCKUP_WIDTH_PX = 1456; // ~30% larger than 1120 base crop
+/** Image render width (left/top anchored; right/bottom clip in the frame). */
+const TOUR_MOCKUP_WIDTH_PX = 1120;
+
+const TOUR_FRAME_RADIUS = "1rem"; // rounded-2xl on left corners only
 
 function usePreloadProductTourImages(enabled: boolean) {
   useEffect(() => {
@@ -24,42 +26,44 @@ function usePreloadProductTourImages(enabled: boolean) {
   }, [enabled]);
 }
 
-function TourMockupFrame({ src, visible }: { src: string; visible: boolean }) {
-  return (
-    <div
-      className={cn(
-        "absolute inset-0 transition-opacity duration-150 ease-out",
-        visible ? "z-10 opacity-100" : "pointer-events-none z-0 opacity-0",
-      )}
-      aria-hidden={!visible}
-    >
-      <div className="h-full overflow-hidden rounded-l-2xl rounded-r-none border border-r-0 border-[#E4E4E7] bg-white shadow-[-8px_20px_12px_rgba(10,10,10,0.08),0_8px_4px_rgba(10,10,10,0.04)]">
-        <div className="relative h-full overflow-hidden bg-white">
-          {/* eslint-disable-next-line @next/next/no-img-element -- stacked + preloaded static PNGs for instant step changes */}
-          <img
-            src={src}
-            alt=""
-            width={TOUR_MOCKUP_WIDTH_PX}
-            height={Math.round((TOUR_MOCKUP_WIDTH_PX * 2731) / 4096)}
-            className="absolute left-0 top-0 block max-w-none select-none bg-white"
-            decoding="async"
-            draggable={false}
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function TourMockupViewport({ activeIndex }: { activeIndex: number }) {
   return (
     <div
       className="relative w-full shrink-0 overflow-hidden bg-white"
       style={{ height: TOUR_PREVIEW_HEIGHT_PX }}
     >
-      {PRODUCT_TOUR_STEPS.map((step, i) => (
-        <TourMockupFrame key={step.id} src={step.previewSrc} visible={i === activeIndex} />
-      ))}
+      <div
+        className="relative h-full overflow-hidden border border-r-0 border-[#E4E4E7] bg-white"
+        style={{
+          borderTopLeftRadius: TOUR_FRAME_RADIUS,
+          borderBottomLeftRadius: TOUR_FRAME_RADIUS,
+          borderTopRightRadius: 0,
+          borderBottomRightRadius: 0,
+          boxShadow: "-6px 16px 20px rgba(10, 10, 10, 0.07)",
+        }}
+      >
+        {PRODUCT_TOUR_STEPS.map((step, i) => (
+          <div
+            key={step.id}
+            className={cn(
+              "absolute inset-0 bg-white transition-opacity duration-150 ease-out",
+              i === activeIndex ? "z-10 opacity-100" : "pointer-events-none z-0 opacity-0",
+            )}
+            aria-hidden={i !== activeIndex}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element -- stacked + preloaded static PNGs for instant step changes */}
+            <img
+              src={step.previewSrc}
+              alt=""
+              width={TOUR_MOCKUP_WIDTH_PX}
+              height={Math.round((TOUR_MOCKUP_WIDTH_PX * 2731) / 4096)}
+              className="absolute left-0 top-0 block max-w-none select-none"
+              decoding="async"
+              draggable={false}
+            />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
