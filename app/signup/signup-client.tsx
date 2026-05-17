@@ -23,7 +23,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { AuthDivider, AuthInput, AuthLabel, AuthPrimaryButton, AuthSecondaryButton } from "@/components/auth/auth-form-ui";
 import { AuthPasswordInput } from "@/components/auth/auth-password-input";
 import { getAuthAppOriginForClient } from "@/lib/auth/app-origin";
-import { markOnboardingPending } from "@/lib/auth/onboarding";
+import { appendOnboardingQuery, markOnboardingPending } from "@/lib/auth/onboarding";
 import { PATH_APP_ENTRY, PATH_AUTH_CALLBACK } from "@/lib/auth/routes";
 
 type LoopsFirstResult =
@@ -110,6 +110,7 @@ export function SignupClient() {
     if (loading) return;
     setLoading(true);
     try {
+      markOnboardingPending();
       const supabase = getSupabaseBrowserClient();
       const authOrigin = getAuthAppOriginForClient();
       const redirectTo = `${authOrigin}${PATH_AUTH_CALLBACK}?next=${encodeURIComponent(PATH_APP_ENTRY)}`;
@@ -268,7 +269,7 @@ export function SignupClient() {
 
       if (data?.session) {
         markOnboardingPending();
-        window.location.replace(PATH_APP_ENTRY);
+        window.location.replace(appendOnboardingQuery(PATH_APP_ENTRY));
         return;
       }
 

@@ -4,7 +4,11 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect } from "react";
 
 import { establishAuthSessionFromCurrentUrl } from "@/lib/auth/establish-session-from-url";
-import { markOnboardingPending, shouldMarkOnboardingAfterAuth } from "@/lib/auth/onboarding";
+import {
+  appendOnboardingQuery,
+  markOnboardingPending,
+  shouldMarkOnboardingAfterAuth,
+} from "@/lib/auth/onboarding";
 import { parseAuthCallbackParams } from "@/lib/auth/parse-auth-callback-url";
 import { PATH_APP_ENTRY } from "@/lib/auth/routes";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
@@ -39,19 +43,22 @@ function AuthCallbackInner() {
       if (cancelled) return;
 
       if (result.status === "established") {
+        let destination = safeNext;
         try {
           const supabase = getSupabaseBrowserClient();
           const {
-            data: { user },
-          } = await supabase.auth.getUser();
+            data: { session },
+          } = await supabase.auth.getSession();
+          const user = session?.user ?? null;
           const authType = params.type ?? searchParams.get("type");
           if (shouldMarkOnboardingAfterAuth(user, authType)) {
             markOnboardingPending();
+            destination = appendOnboardingQuery(safeNext);
           }
         } catch {
           /* non-blocking */
         }
-        goTo(safeNext);
+        goTo(destination);
         return;
       }
       if (result.status === "failed") {

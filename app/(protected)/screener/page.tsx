@@ -35,7 +35,9 @@ export default async function ScreenerPage({ searchParams }: PageProps) {
 
   return (
     <div className="min-w-0 w-full max-w-full max-md:overflow-x-hidden max-md:px-4 max-md:pb-2 max-md:pt-0 md:overflow-x-hidden md:px-9 md:py-6">
-      <ScreenerOnboardingHost />
+      <Suspense fallback={null}>
+        <ScreenerOnboardingHost />
+      </Suspense>
       <ScreenerBrowserTrace />
       <Suspense fallback={null}>
         <MarketsSection payload={payload} />
