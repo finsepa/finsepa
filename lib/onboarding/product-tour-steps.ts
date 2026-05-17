@@ -64,3 +64,15 @@ export const PRODUCT_TOUR_STEPS: ProductTourStep[] = [
 ];
 
 export const PRODUCT_TOUR_STEP_COUNT = PRODUCT_TOUR_STEPS.length;
+
+export const PRODUCT_TOUR_PREVIEW_SRCS = PRODUCT_TOUR_STEPS.map((s) => s.previewSrc);
+
+/** Warm the browser cache before / between tour steps (no-op on server). */
+export function preloadProductTourImages(): void {
+  if (typeof window === "undefined") return;
+  for (const src of PRODUCT_TOUR_PREVIEW_SRCS) {
+    const img = new window.Image();
+    img.decoding = "async";
+    img.src = src;
+  }
+}

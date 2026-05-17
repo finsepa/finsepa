@@ -6,7 +6,8 @@ import { createPortal } from "react-dom";
 import { toast } from "sonner";
 
 import { SegmentedControl } from "@/components/design-system/segmented-control";
-import { markOnboardingComplete } from "@/lib/auth/onboarding";
+import { markOnboardingCompleteForUser } from "@/lib/auth/onboarding";
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { cn } from "@/lib/utils";
 
 type BillingCycle = "monthly" | "annually";
@@ -57,7 +58,7 @@ export function OnboardingProPromoModal({
       if (!res.ok || !data.url) {
         throw new Error(data.error || "Failed to start checkout.");
       }
-      markOnboardingComplete();
+      await markOnboardingCompleteForUser(getSupabaseBrowserClient());
       window.location.href = data.url;
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to start checkout.";

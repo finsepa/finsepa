@@ -187,6 +187,7 @@ export function SignupClient() {
           data: {
             first_name: firstNorm,
             last_name: lastNorm || "-",
+            onboarding_pending: true,
           },
         },
       });

@@ -6,7 +6,7 @@ import { Suspense, useEffect } from "react";
 import { establishAuthSessionFromCurrentUrl } from "@/lib/auth/establish-session-from-url";
 import {
   appendOnboardingQuery,
-  markOnboardingPending,
+  persistOnboardingPendingOnUser,
   shouldMarkOnboardingAfterAuth,
 } from "@/lib/auth/onboarding";
 import { parseAuthCallbackParams } from "@/lib/auth/parse-auth-callback-url";
@@ -52,7 +52,7 @@ function AuthCallbackInner() {
           const user = session?.user ?? null;
           const authType = params.type ?? searchParams.get("type");
           if (shouldMarkOnboardingAfterAuth(user, authType)) {
-            markOnboardingPending();
+            await persistOnboardingPendingOnUser(supabase);
             destination = appendOnboardingQuery(safeNext);
           }
         } catch {

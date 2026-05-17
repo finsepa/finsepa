@@ -1,11 +1,13 @@
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import type { User } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
 import { getSubscriptionGateContext } from "@/lib/account/subscription-gate";
 import { PATH_ACTIVATE_SUBSCRIPTION, PATH_LOGIN } from "@/lib/auth/routes";
 import { avatarUrlFromUser, displayNameFromUser, initialsFromUser } from "@/lib/auth/user-display";
 import { ProtectedAppShellInner } from "@/components/layout/protected-app-shell-inner";
+import { ScreenerOnboardingHost } from "@/components/onboarding/screener-onboarding-host";
 import { PortfolioWorkspaceProvider } from "@/components/portfolio/portfolio-workspace-provider";
+import { userNeedsOnboarding } from "@/lib/auth/onboarding";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function ProtectedAppShell({ children }: { children: ReactNode }) {
@@ -34,6 +36,7 @@ export async function ProtectedAppShell({ children }: { children: ReactNode }) {
   const avatarUrl = avatarUrlFromUser(user);
   const userDisplayName = displayNameFromUser(user) ?? user.email?.split("@")[0] ?? "Member";
   const listingOwnerDisplayName = userDisplayName;
+  const serverShouldShowOnboarding = userNeedsOnboarding(user);
 
   /* Sidebar width: 248px expanded / 72px lite (see sidebar-layout-context). Topbar strip → main at 76px. */
   return (
@@ -49,6 +52,9 @@ export async function ProtectedAppShell({ children }: { children: ReactNode }) {
         userDisplayName={userDisplayName}
         platformTrialDaysLeft={gate.topbarTrialDaysLeft}
       >
+        <Suspense fallback={null}>
+          <ScreenerOnboardingHost serverShouldShow={serverShouldShowOnboarding} />
+        </Suspense>
         {children}
       </ProtectedAppShellInner>
     </PortfolioWorkspaceProvider>

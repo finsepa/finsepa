@@ -3,42 +3,63 @@
 import { useCallback, useEffect, useId, useState } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
-import Image from "next/image";
 
 import { cn } from "@/lib/utils";
 import {
+  preloadProductTourImages,
   PRODUCT_TOUR_STEP_COUNT,
   PRODUCT_TOUR_STEPS,
-  type ProductTourStep,
 } from "@/lib/onboarding/product-tour-steps";
 
-function StepPreview({ step }: { step: ProductTourStep }) {
-  const Icon = step.icon;
+/** Visible crop height for the scaled mockup (Figma: partial UI peek). */
+const TOUR_PREVIEW_HEIGHT_PX = 340;
 
-  if (step.previewSrc) {
-    return (
-      <div className="overflow-hidden rounded-[16px] border border-[rgba(228,228,231,0.5)] p-[2px] shadow-[0_20px_12px_rgba(10,10,10,0.1),0_8px_4px_rgba(10,10,10,0.04)]">
-        <div className="overflow-hidden rounded-[14px] border-2 border-[#E4E4E7] bg-white">
-          <div className="relative aspect-[982/653] w-full min-h-[280px] max-h-[min(52vh,520px)]">
-            <Image
-              src={step.previewSrc}
-              alt=""
-              fill
-              className="object-cover object-top"
-              sizes="(max-width: 800px) 100vw, 736px"
-              priority
-            />
-          </div>
+/** Renders wider than the modal; left/top anchored so the right and bottom clip away. */
+const TOUR_MOCKUP_WIDTH_PX = 1120;
+
+function usePreloadProductTourImages(enabled: boolean) {
+  useEffect(() => {
+    if (!enabled) return;
+    preloadProductTourImages();
+  }, [enabled]);
+}
+
+function TourMockupFrame({ src, visible }: { src: string; visible: boolean }) {
+  return (
+    <div
+      className={cn(
+        "absolute inset-0 transition-opacity duration-150 ease-out",
+        visible ? "z-10 opacity-100" : "pointer-events-none z-0 opacity-0",
+      )}
+      aria-hidden={!visible}
+    >
+      <div className="h-full overflow-hidden rounded-[16px] border border-[rgba(228,228,231,0.5)] p-[2px] shadow-[0_20px_12px_rgba(10,10,10,0.1),0_8px_4px_rgba(10,10,10,0.04)]">
+        <div className="relative h-full overflow-hidden rounded-[14px] border-2 border-[#E4E4E7] bg-white">
+          {/* eslint-disable-next-line @next/next/no-img-element -- stacked + preloaded static PNGs for instant step changes */}
+          <img
+            src={src}
+            alt=""
+            width={TOUR_MOCKUP_WIDTH_PX}
+            height={Math.round((TOUR_MOCKUP_WIDTH_PX * 2731) / 4096)}
+            className="absolute left-0 top-0 block max-w-none select-none"
+            decoding="async"
+            draggable={false}
+          />
         </div>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
+function TourMockupViewport({ activeIndex }: { activeIndex: number }) {
   return (
-    <div className="flex min-h-[280px] max-h-[min(52vh,520px)] flex-col items-center justify-center rounded-[16px] border border-[#E4E4E7] bg-[#FAFAFA] px-8 py-12">
-      <div className="flex h-16 w-16 items-center justify-center rounded-[20px] bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] ring-1 ring-[#E4E4E7]">
-        <Icon className="h-8 w-8 text-[#09090B]" aria-hidden />
-      </div>
+    <div
+      className="relative w-full shrink-0 overflow-hidden"
+      style={{ height: TOUR_PREVIEW_HEIGHT_PX }}
+    >
+      {PRODUCT_TOUR_STEPS.map((step, i) => (
+        <TourMockupFrame key={step.id} src={step.previewSrc} visible={i === activeIndex} />
+      ))}
     </div>
   );
 }
@@ -61,6 +82,8 @@ export function ProductTourModal({
   const Icon = step.icon;
   const isFirst = stepIndex === 0;
   const isLast = stepIndex === PRODUCT_TOUR_STEP_COUNT - 1;
+
+  usePreloadProductTourImages(open);
 
   useEffect(() => {
     if (open) setStepIndex(0);
@@ -112,7 +135,7 @@ export function ProductTourModal({
         <button
           type="button"
           onClick={onDismiss}
-          className="absolute right-5 top-5 z-10 inline-flex h-9 w-9 items-center justify-center rounded-[10px] border border-transparent text-[#09090B] transition-colors hover:bg-[#F4F4F5]"
+          className="absolute right-5 top-5 z-20 inline-flex h-9 w-9 items-center justify-center rounded-[10px] border border-transparent text-[#09090B] transition-colors hover:bg-[#F4F4F5]"
           aria-label="Close"
         >
           <X className="h-5 w-5" aria-hidden />
@@ -133,8 +156,9 @@ export function ProductTourModal({
           </div>
         </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-8 py-6">
-          <StepPreview step={step} />
+        {/* Left-aligned mockup; clips on the right and bottom like Figma */}
+        <div className="min-h-0 shrink-0 overflow-hidden py-6 pl-8 pr-0">
+          <TourMockupViewport activeIndex={stepIndex} />
         </div>
 
         <footer className="shrink-0 border-t border-transparent px-5 py-5">
@@ -151,7 +175,10 @@ export function ProductTourModal({
               ) : null}
             </div>
 
-            <div className="flex items-center justify-center gap-2" aria-label={`Step ${stepIndex + 1} of ${PRODUCT_TOUR_STEP_COUNT}`}>
+            <div
+              className="flex items-center justify-center gap-2"
+              aria-label={`Step ${stepIndex + 1} of ${PRODUCT_TOUR_STEP_COUNT}`}
+            >
               {PRODUCT_TOUR_STEPS.map((s, i) => (
                 <span
                   key={s.id}
