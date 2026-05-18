@@ -10,6 +10,8 @@ import { markOnboardingCompleteForUser } from "@/lib/auth/onboarding";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { cn } from "@/lib/utils";
 
+import { useClientMounted } from "./use-client-mounted";
+
 type BillingCycle = "monthly" | "annually";
 
 const MONTHLY_PRICE = 15;
@@ -34,6 +36,7 @@ export function OnboardingProPromoModal({
   open: boolean;
   onSkip: () => void;
 }) {
+  const mounted = useClientMounted();
   const [cycle, setCycle] = useState<BillingCycle>("monthly");
   const [startingCheckout, setStartingCheckout] = useState(false);
 
@@ -44,7 +47,7 @@ export function OnboardingProPromoModal({
 
   const suffixText = cycle === "monthly" ? "/ month" : "/ year";
 
-  if (!open || typeof document === "undefined") return null;
+  if (!mounted || !open) return null;
 
   async function startCheckout() {
     setStartingCheckout(true);

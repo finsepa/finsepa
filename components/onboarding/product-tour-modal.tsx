@@ -14,20 +14,27 @@ import {
   type ProductTourStep,
 } from "@/lib/onboarding/product-tour-steps";
 
-/** Visible crop window (~30% taller than 340px base; image scale unchanged). */
-const TOUR_PREVIEW_HEIGHT_PX = 442;
+import { useClientMounted } from "./use-client-mounted";
+
+/** Visible crop window — clips the mockup on the right/bottom. */
+const TOUR_PREVIEW_HEIGHT_DESKTOP_PX = 442;
+const TOUR_PREVIEW_HEIGHT_MOBILE_PX = 220;
 
 /** Image render width — smaller = more UI visible inside the fixed frame. */
-const TOUR_MOCKUP_WIDTH_PX = 900;
+const TOUR_MOCKUP_WIDTH_DESKTOP_PX = 900;
+const TOUR_MOCKUP_WIDTH_MOBILE_PX = 437;
 
 const TOUR_FRAME_RADIUS = "1rem"; // rounded-2xl on left corners only
 
-function tourPreviewDisplaySize(step: ProductTourStep): { width: number; height: number } {
+function tourPreviewDisplaySize(
+  step: ProductTourStep,
+  mockupWidthPx: number,
+): { width: number; height: number } {
   const nativeW = step.previewNativeWidth ?? PRODUCT_TOUR_PREVIEW_NATIVE_WIDTH;
   const nativeH = step.previewNativeHeight ?? PRODUCT_TOUR_PREVIEW_NATIVE_HEIGHT;
   return {
-    width: TOUR_MOCKUP_WIDTH_PX,
-    height: Math.round((TOUR_MOCKUP_WIDTH_PX * nativeH) / nativeW),
+    width: mockupWidthPx,
+    height: Math.round((mockupWidthPx * nativeH) / nativeW),
   };
 }
 
@@ -38,11 +45,19 @@ function usePreloadProductTourImages(enabled: boolean) {
   }, [enabled]);
 }
 
-function TourMockupViewport({ activeIndex }: { activeIndex: number }) {
+function TourMockupViewport({
+  activeIndex,
+  previewHeightPx,
+  mockupWidthPx,
+}: {
+  activeIndex: number;
+  previewHeightPx: number;
+  mockupWidthPx: number;
+}) {
   return (
     <div
       className="relative w-full shrink-0 overflow-hidden bg-white"
-      style={{ height: TOUR_PREVIEW_HEIGHT_PX }}
+      style={{ height: previewHeightPx }}
     >
       <div
         className="relative h-full overflow-hidden border border-r-0 border-[#E4E4E7] bg-white"
@@ -55,7 +70,7 @@ function TourMockupViewport({ activeIndex }: { activeIndex: number }) {
         }}
       >
         {PRODUCT_TOUR_STEPS.map((step, i) => {
-          const { width: imgW, height: imgH } = tourPreviewDisplaySize(step);
+          const { width: imgW, height: imgH } = tourPreviewDisplaySize(step, mockupWidthPx);
           return (
             <div
               key={step.id}
@@ -71,7 +86,11 @@ function TourMockupViewport({ activeIndex }: { activeIndex: number }) {
                 alt=""
                 width={imgW}
                 height={imgH}
-                className="absolute left-0 top-0 block max-w-none select-none"
+                className="absolute block max-w-none select-none"
+                style={{
+                  left: step.previewOffsetX ?? 0,
+                  top: step.previewOffsetY ?? 0,
+                }}
                 decoding="async"
                 draggable={false}
               />
@@ -94,6 +113,7 @@ export function ProductTourModal({
   /** Close (X, backdrop, Escape) on any step — show Pro promo. */
   onDismiss: () => void;
 }) {
+  const mounted = useClientMounted();
   const titleId = useId();
   const [stepIndex, setStepIndex] = useState(0);
 
@@ -138,7 +158,7 @@ export function ProductTourModal({
     if (!isFirst) setStepIndex((i) => i - 1);
   }
 
-  if (!open || typeof document === "undefined") return null;
+  if (!mounted || !open) return null;
 
   return createPortal(
     <div className="fixed inset-0 z-[281] flex items-center justify-center bg-black/40 p-4">
@@ -160,7 +180,7 @@ export function ProductTourModal({
           <X className="h-5 w-5" aria-hidden />
         </button>
 
-        <header className="shrink-0 px-8 pb-0 pt-8 pr-16">
+        <header className="shrink-0 px-5 pb-0 pt-6 pr-14 md:px-8 md:pt-8 md:pr-16">
           <div className="flex max-w-[400px] flex-col gap-3">
             <div className="flex items-center gap-2">
               <span className="relative flex h-5 w-5 shrink-0 items-center justify-center">
@@ -176,8 +196,21 @@ export function ProductTourModal({
         </header>
 
         {/* Left-aligned mockup; clips on the right and bottom like Figma */}
-        <div className="min-h-0 shrink-0 overflow-hidden bg-white py-6 pl-8 pr-0">
-          <TourMockupViewport activeIndex={stepIndex} />
+        <div className="min-h-0 shrink-0 overflow-hidden bg-white py-3 pl-4 pr-0 md:py-6 md:pl-8">
+          <div className="md:hidden">
+            <TourMockupViewport
+              activeIndex={stepIndex}
+              previewHeightPx={TOUR_PREVIEW_HEIGHT_MOBILE_PX}
+              mockupWidthPx={TOUR_MOCKUP_WIDTH_MOBILE_PX}
+            />
+          </div>
+          <div className="hidden md:block">
+            <TourMockupViewport
+              activeIndex={stepIndex}
+              previewHeightPx={TOUR_PREVIEW_HEIGHT_DESKTOP_PX}
+              mockupWidthPx={TOUR_MOCKUP_WIDTH_DESKTOP_PX}
+            />
+          </div>
         </div>
 
         <footer className="shrink-0 border-t border-transparent px-5 py-5">

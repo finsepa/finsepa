@@ -5,6 +5,8 @@ import { createPortal } from "react-dom";
 
 import { AuthBrandMark } from "@/components/auth/auth-brand-mark";
 
+import { useClientMounted } from "./use-client-mounted";
+
 export function WelcomeOnboardingModal({
   open,
   onContinue,
@@ -12,6 +14,7 @@ export function WelcomeOnboardingModal({
   open: boolean;
   onContinue: () => void;
 }) {
+  const mounted = useClientMounted();
   const titleId = useId();
 
   const onKeyDown = useCallback(
@@ -32,7 +35,7 @@ export function WelcomeOnboardingModal({
     };
   }, [open, onKeyDown]);
 
-  if (!open || typeof document === "undefined") return null;
+  if (!mounted || !open) return null;
 
   return createPortal(
     <div className="fixed inset-0 z-[280] flex items-center justify-center bg-black/40 p-4">

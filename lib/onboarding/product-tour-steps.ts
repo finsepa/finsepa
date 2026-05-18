@@ -22,6 +22,9 @@ export type ProductTourStep = {
   previewNativeWidth?: number;
   /** PNG pixel height when it differs from the default native size. */
   previewNativeHeight?: number;
+  /** Nudge preview image (px) so app chrome aligns with the tour frame border. */
+  previewOffsetX?: number;
+  previewOffsetY?: number;
 };
 
 /** Six-step product tour after welcome (Figma frames 2–7 / nodes 14090, 269266, …). */
@@ -47,8 +50,8 @@ export const PRODUCT_TOUR_STEPS: ProductTourStep[] = [
     description: "Upcoming earnings reports to help investors stay ahead of market moves.",
     icon: CalendarDays,
     previewSrc: "/onboarding/product-tour-earnings.png",
-    previewNativeWidth: PRODUCT_TOUR_PREVIEW_NATIVE_WIDTH,
-    previewNativeHeight: PRODUCT_TOUR_PREVIEW_NATIVE_HEIGHT,
+    previewOffsetX: -3,
+    previewOffsetY: -3,
   },
   {
     id: "macro",
@@ -56,6 +59,8 @@ export const PRODUCT_TOUR_STEPS: ProductTourStep[] = [
     description: "Key economic indicators and market statistics for deeper analysis.",
     icon: Compass,
     previewSrc: "/onboarding/product-tour-macro.png",
+    previewOffsetX: -3,
+    previewOffsetY: -3,
   },
   {
     id: "superinvestors",
@@ -63,6 +68,8 @@ export const PRODUCT_TOUR_STEPS: ProductTourStep[] = [
     description: "Track top investors' holdings, trades, and market moves.",
     icon: Briefcase,
     previewSrc: "/onboarding/product-tour-superinvestors.png",
+    previewOffsetX: -3,
+    previewOffsetY: -3,
   },
   {
     id: "portfolio",
