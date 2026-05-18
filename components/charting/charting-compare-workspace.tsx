@@ -1064,61 +1064,62 @@ export function ChartingCompareWorkspace({
               </div>
 
               <div className="overflow-x-auto pt-4">
-                <table className="w-full min-w-[560px] border-collapse bg-white">
-                  <thead>
-                    <tr className="border-t border-b border-[#E4E4E7] bg-white">
-                      <th className="min-w-[200px] px-3 py-2.5 text-left text-[14px] font-semibold leading-5 text-[#71717A]">
-                        Data
-                      </th>
-                      {[...tableColumnLabels].reverse().map((label) => (
-                        <th
-                          key={label}
-                          className="min-w-[100px] px-3 py-2.5 text-right text-[14px] font-semibold leading-5 text-[#71717A]"
-                        >
-                          {label}
+                  <table className="w-full min-w-[560px] border-collapse bg-white">
+                    <thead>
+                      <tr className="border-t border-b border-[#E4E4E7] bg-white">
+                        <th className="min-w-[200px] px-3 py-2.5 text-left text-[14px] font-semibold leading-5 text-[#71717A]">
+                          Data
                         </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {seriesDefs.map((s) => (
-                      <tr
-                        key={s.key}
-                        className="h-[52px] border-b border-[#E4E4E7] transition-colors duration-75 hover:bg-neutral-50"
-                      >
-                        <td className="px-3 align-middle">
-                          <div className="flex items-center gap-2">
-                            <span
-                              className="h-4 w-1 shrink-0 self-center rounded-full"
-                              style={{
-                                background: fundamentalsBarSolidAtIndex(s.colorIdx),
-                              }}
-                              aria-hidden
-                            />
-                            <span className="text-[14px] font-medium leading-5 text-[#09090B]">
-                              {s.ticker} {CHARTING_METRIC_LABEL[s.metricId]}
-                            </span>
-                          </div>
-                        </td>
-                        {[...tableColumnLabels].reverse().map((label) => {
-                          const row = (orderedByTicker[s.ticker] ?? []).find(
-                            (r) =>
-                              Boolean(r.periodEnd) && formatChartingPeriodLabel(r.periodEnd, periodMode) === label,
-                          );
-                          const v = row ? rowValue(row, s.metricId) : null;
-                          return (
-                            <td
-                              key={label}
-                              className="px-3 align-middle text-right text-[14px] font-normal leading-5 tabular-nums text-[#09090B]"
-                            >
-                              {formatTableCell(CHARTING_METRIC_KIND[s.metricId], v)}
-                            </td>
-                          );
-                        })}
+                        {[...tableColumnLabels].reverse().map((label) => (
+                          <th
+                            key={label}
+                            className="min-w-[100px] px-3 py-2.5 text-right text-[14px] font-semibold leading-5 text-[#71717A]"
+                          >
+                            {label}
+                          </th>
+                        ))}
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {seriesDefs.map((s) => (
+                        <tr
+                          key={s.key}
+                          className="h-[52px] border-b border-[#E4E4E7] transition-colors duration-75 hover:bg-neutral-50"
+                        >
+                          <td className="px-3 align-middle">
+                            <div className="flex items-center gap-2">
+                              <span
+                                className="h-4 w-1 shrink-0 self-center rounded-full"
+                                style={{
+                                  background: fundamentalsBarSolidAtIndex(s.colorIdx),
+                                }}
+                                aria-hidden
+                              />
+                              <span className="text-[14px] font-medium leading-5 text-[#09090B]">
+                                {s.ticker} {CHARTING_METRIC_LABEL[s.metricId]}
+                              </span>
+                            </div>
+                          </td>
+                          {[...tableColumnLabels].reverse().map((label) => {
+                            const row = (orderedByTicker[s.ticker] ?? []).find(
+                              (r) =>
+                                Boolean(r.periodEnd) &&
+                                formatChartingPeriodLabel(r.periodEnd, periodMode) === label,
+                            );
+                            const v = row ? rowValue(row, s.metricId) : null;
+                            return (
+                              <td
+                                key={label}
+                                className="px-3 align-middle text-right text-[14px] font-normal leading-5 tabular-nums text-[#09090B]"
+                              >
+                                {formatTableCell(CHARTING_METRIC_KIND[s.metricId], v)}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
               </div>
             </>
           )}
