@@ -5,6 +5,7 @@ import Link from "next/link";
 
 import { CompanyLogo } from "./company-logo";
 import {
+  SCREENER_TABLE_BODY_DIVIDE_CLASS,
   SCREENER_TABLE_HEADER_STICKY_CLASS,
   ScreenerTableScroll,
 } from "@/components/screener/screener-table-scroll";
@@ -102,7 +103,7 @@ export function CryptoTable({
 
   return (
     <ScreenerTableScroll>
-      <div className="divide-y divide-[#E4E4E7] bg-white">
+      <div className="bg-white">
       <div
         className={`grid ${colLayout} min-h-[44px] items-center px-2 py-0 text-[12px] font-medium leading-5 text-[#71717A] sm:px-4 sm:text-[14px] ${SCREENER_TABLE_HEADER_STICKY_CLASS}`}
       >
@@ -116,6 +117,7 @@ export function CryptoTable({
         <div className="hidden min-w-0 w-full text-right sm:block">M Cap</div>
       </div>
 
+        <div className={SCREENER_TABLE_BODY_DIVIDE_CLASS}>
       {safeRows.map((r, i) => {
         const wlKey = cryptoWatchlistKey(r.symbol);
         return (
@@ -181,6 +183,7 @@ export function CryptoTable({
           </div>
         );
       })}
+        </div>
       </div>
     </ScreenerTableScroll>
   );

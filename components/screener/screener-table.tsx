@@ -6,6 +6,7 @@ import type { ScreenerTableRow } from "@/lib/screener/screener-static";
 import { WatchlistStarToggle } from "@/components/watchlist/watchlist-star-button";
 import { CompanyLogo } from "./company-logo";
 import {
+  SCREENER_TABLE_BODY_DIVIDE_CLASS,
   SCREENER_TABLE_HEADER_STICKY_CLASS,
   ScreenerTableScroll,
 } from "@/components/screener/screener-table-scroll";
@@ -197,8 +198,8 @@ export function ScreenerTable({
 
   return (
     <ScreenerTableScroll>
-      <div className="divide-y divide-[#E4E4E7] bg-white">
-      {/* Column headers */}
+      <div className="bg-white">
+        {/* Column headers */}
       <div
         className={`flex min-h-[44px] min-w-0 max-w-full items-center gap-x-1.5 px-2 py-0 text-[12px] font-medium leading-5 text-[#71717A] max-md:gap-x-1.5 sm:gap-x-2 sm:px-4 sm:text-[14px] ${SCREENER_TABLE_HEADER_STICKY_CLASS}`}
       >
@@ -230,20 +231,22 @@ export function ScreenerTable({
             </>
           ) : null}
         </div>
-      </div>
+        </div>
 
-      {rows.map((item, index) => (
-        <ScreenerDataRow
-          key={item.ticker}
-          item={item}
-          rank={rankOffset + index + 1}
-          starred={watched.has(item.ticker)}
-          loaded={loaded}
-          toggleTicker={toggleTicker}
-          keyStatColumn={keyStatColumn}
-          rowLinkGrid={rowLinkGrid}
-        />
-      ))}
+        <div className={SCREENER_TABLE_BODY_DIVIDE_CLASS}>
+          {rows.map((item, index) => (
+            <ScreenerDataRow
+              key={item.ticker}
+              item={item}
+              rank={rankOffset + index + 1}
+              starred={watched.has(item.ticker)}
+              loaded={loaded}
+              toggleTicker={toggleTicker}
+              keyStatColumn={keyStatColumn}
+              rowLinkGrid={rowLinkGrid}
+            />
+          ))}
+        </div>
       </div>
     </ScreenerTableScroll>
   );

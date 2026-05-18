@@ -4,7 +4,10 @@ import { cn } from "@/lib/utils";
 
 /** Column label row — sticks to the top of the app main scroll area while rows scroll beneath. */
 export const SCREENER_TABLE_HEADER_STICKY_CLASS =
-  "sticky top-0 z-20 bg-white shadow-[0_1px_0_0_#E4E4E7]";
+  "sticky top-0 z-20 border-b border-solid border-[#E4E4E7] bg-white";
+
+/** Row separators (keep header outside this so the header/rule line is exactly 1px). */
+export const SCREENER_TABLE_BODY_DIVIDE_CLASS = "divide-y divide-solid divide-[#E4E4E7]";
 
 /**
  * Wraps screener tables. Below `md`, content fits the viewport (no 720px horizontal strip).
@@ -24,7 +27,7 @@ export function ScreenerTableScroll({
   return (
     <div
       className={cn(
-        "w-full min-w-0 max-w-full border-y border-[#E4E4E7] border-x-0",
+        "w-full min-w-0 max-w-full border-x-0 border-y border-solid border-[#E4E4E7]",
         mobileScroll ?
           "overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]"
         : "max-md:overflow-x-hidden md:overflow-x-auto md:overscroll-x-contain md:[-webkit-overflow-scrolling:touch]",

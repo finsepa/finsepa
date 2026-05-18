@@ -6,6 +6,7 @@ import type { ScreenerSectorRow } from "@/lib/screener/screener-sectors-types";
 import type { ScreenerCanonicalSector } from "@/lib/screener/screener-gics-sectors";
 import { screenerSectorDrillHref } from "@/lib/screener/screener-stocks-sub-tab-url";
 import {
+  SCREENER_TABLE_BODY_DIVIDE_CLASS,
   SCREENER_TABLE_HEADER_STICKY_CLASS,
   ScreenerTableScroll,
 } from "@/components/screener/screener-table-scroll";
@@ -52,7 +53,7 @@ export function ScreenerSectorsTable({ rows }: { rows: ScreenerSectorRow[] }) {
       minWidthClassName="min-w-0"
       className="overflow-x-hidden"
     >
-      <div className="divide-y divide-[#E4E4E7] bg-white">
+      <div className="bg-white">
         <div
           className={`grid ${colLayoutMobile} ${colLayoutDesktop} min-h-[44px] items-center px-2 py-0 text-[12px] font-medium leading-5 text-[#71717A] sm:px-4 sm:text-[14px] ${SCREENER_TABLE_HEADER_STICKY_CLASS}`}
         >
@@ -63,6 +64,7 @@ export function ScreenerSectorsTable({ rows }: { rows: ScreenerSectorRow[] }) {
           <div className="hidden min-w-0 w-full text-right sm:block">Market Cap</div>
         </div>
 
+        <div className={SCREENER_TABLE_BODY_DIVIDE_CLASS}>
         {rows.map((row) => (
           <Link
             key={row.sector}
@@ -86,6 +88,7 @@ export function ScreenerSectorsTable({ rows }: { rows: ScreenerSectorRow[] }) {
             </div>
           </Link>
         ))}
+        </div>
       </div>
     </ScreenerTableScroll>
   );

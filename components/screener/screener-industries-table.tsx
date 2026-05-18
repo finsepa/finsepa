@@ -67,7 +67,7 @@ export function ScreenerIndustriesTable({ rows }: { rows: ScreenerIndustryRow[] 
     <ScreenerTableScroll minWidthClassName="min-w-0" className="overflow-x-hidden">
       <div className="bg-white">
         <div
-          className={`grid ${colLayoutMobile} ${colLayoutDesktop} min-h-[44px] items-center border-b border-[#E4E4E7] px-2 py-0 text-[12px] font-medium leading-5 text-[#71717A] sm:px-4 sm:text-[14px] ${SCREENER_TABLE_HEADER_STICKY_CLASS}`}
+          className={`grid ${colLayoutMobile} ${colLayoutDesktop} min-h-[44px] items-center px-2 py-0 text-[12px] font-medium leading-5 text-[#71717A] sm:px-4 sm:text-[14px] ${SCREENER_TABLE_HEADER_STICKY_CLASS}`}
         >
           <div className="text-center">#</div>
           <div className="text-left">Industry</div>
