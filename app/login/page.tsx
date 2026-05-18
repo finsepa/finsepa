@@ -7,12 +7,7 @@ import { LoginClient } from "./login-client";
 
 type SearchParams = { reset?: string; error?: string };
 
-export const viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#E4E4E7" },
-    { media: "(prefers-color-scheme: dark)", color: "#E4E4E7" },
-  ],
-};
+export { authMetadata as metadata, authViewport as viewport } from "@/lib/auth/auth-viewport";
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const sp = await searchParams;

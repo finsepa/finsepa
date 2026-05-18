@@ -1,6 +1,8 @@
 import { AuthCenteredLayout } from "@/components/auth/auth-centered-layout";
 import { CheckEmailClient } from "./check-email-client";
 
+export { authMetadata as metadata, authViewport as viewport } from "@/lib/auth/auth-viewport";
+
 type SearchParams = { email?: string };
 
 export default async function CheckEmailPage({ searchParams }: { searchParams: Promise<SearchParams> }) {

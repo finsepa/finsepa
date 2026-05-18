@@ -3,6 +3,8 @@ import { ForgotPasswordClient } from "./forgot-password-client";
 import { AuthCenteredLayout } from "@/components/auth/auth-centered-layout";
 import { PATH_LOGIN } from "@/lib/auth/routes";
 
+export { authMetadata as metadata, authViewport as viewport } from "@/lib/auth/auth-viewport";
+
 export default function ForgotPasswordPage() {
   return (
     <AuthCenteredLayout

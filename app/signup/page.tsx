@@ -4,12 +4,7 @@ import { AuthContinueLegalNotice } from "@/components/auth/auth-continue-legal-n
 import { authAccentLinkClassName } from "@/components/auth/auth-form-ui";
 import { SignupClientDynamic } from "./signup-client-dynamic";
 
-export const viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#E4E4E7" },
-    { media: "(prefers-color-scheme: dark)", color: "#E4E4E7" },
-  ],
-};
+export { authMetadata as metadata, authViewport as viewport } from "@/lib/auth/auth-viewport";
 
 export default function SignupPage() {
   return (

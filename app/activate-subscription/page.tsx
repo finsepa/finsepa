@@ -4,6 +4,8 @@ import { PATH_APP_ENTRY, PATH_LOGIN } from "@/lib/auth/routes";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { ActivateSubscriptionClient } from "./activate-subscription-client";
 
+export { authMetadata as metadata, authViewport as viewport } from "@/lib/auth/auth-viewport";
+
 export default async function ActivateSubscriptionPage() {
   const supabase = await getSupabaseServerClient();
   const {
