@@ -14,8 +14,8 @@ import {
 /** Visible crop window (~30% taller than 340px base; image scale unchanged). */
 const TOUR_PREVIEW_HEIGHT_PX = 442;
 
-/** Image render width (left/top anchored; right/bottom clip in the frame). */
-const TOUR_MOCKUP_WIDTH_PX = 1120;
+/** Image render width — smaller = more UI visible inside the fixed frame. */
+const TOUR_MOCKUP_WIDTH_PX = 900;
 
 const TOUR_FRAME_RADIUS = "1rem"; // rounded-2xl on left corners only
 
