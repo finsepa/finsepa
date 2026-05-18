@@ -7,8 +7,11 @@ import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   preloadProductTourImages,
+  PRODUCT_TOUR_PREVIEW_NATIVE_HEIGHT,
+  PRODUCT_TOUR_PREVIEW_NATIVE_WIDTH,
   PRODUCT_TOUR_STEP_COUNT,
   PRODUCT_TOUR_STEPS,
+  type ProductTourStep,
 } from "@/lib/onboarding/product-tour-steps";
 
 /** Visible crop window (~30% taller than 340px base; image scale unchanged). */
@@ -18,6 +21,15 @@ const TOUR_PREVIEW_HEIGHT_PX = 442;
 const TOUR_MOCKUP_WIDTH_PX = 900;
 
 const TOUR_FRAME_RADIUS = "1rem"; // rounded-2xl on left corners only
+
+function tourPreviewDisplaySize(step: ProductTourStep): { width: number; height: number } {
+  const nativeW = step.previewNativeWidth ?? PRODUCT_TOUR_PREVIEW_NATIVE_WIDTH;
+  const nativeH = step.previewNativeHeight ?? PRODUCT_TOUR_PREVIEW_NATIVE_HEIGHT;
+  return {
+    width: TOUR_MOCKUP_WIDTH_PX,
+    height: Math.round((TOUR_MOCKUP_WIDTH_PX * nativeH) / nativeW),
+  };
+}
 
 function usePreloadProductTourImages(enabled: boolean) {
   useEffect(() => {
@@ -42,27 +54,30 @@ function TourMockupViewport({ activeIndex }: { activeIndex: number }) {
           boxShadow: "-6px 16px 20px rgba(10, 10, 10, 0.07)",
         }}
       >
-        {PRODUCT_TOUR_STEPS.map((step, i) => (
-          <div
-            key={step.id}
-            className={cn(
-              "absolute inset-0 bg-white transition-opacity duration-150 ease-out",
-              i === activeIndex ? "z-10 opacity-100" : "pointer-events-none z-0 opacity-0",
-            )}
-            aria-hidden={i !== activeIndex}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element -- stacked + preloaded static PNGs for instant step changes */}
-            <img
-              src={step.previewSrc}
-              alt=""
-              width={TOUR_MOCKUP_WIDTH_PX}
-              height={Math.round((TOUR_MOCKUP_WIDTH_PX * 2731) / 4096)}
-              className="absolute left-0 top-0 block max-w-none select-none"
-              decoding="async"
-              draggable={false}
-            />
-          </div>
-        ))}
+        {PRODUCT_TOUR_STEPS.map((step, i) => {
+          const { width: imgW, height: imgH } = tourPreviewDisplaySize(step);
+          return (
+            <div
+              key={step.id}
+              className={cn(
+                "absolute inset-0 bg-white transition-opacity duration-150 ease-out",
+                i === activeIndex ? "z-10 opacity-100" : "pointer-events-none z-0 opacity-0",
+              )}
+              aria-hidden={i !== activeIndex}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element -- stacked + preloaded static PNGs for instant step changes */}
+              <img
+                src={step.previewSrc}
+                alt=""
+                width={imgW}
+                height={imgH}
+                className="absolute left-0 top-0 block max-w-none select-none"
+                decoding="async"
+                draggable={false}
+              />
+            </div>
+          );
+        })}
       </div>
     </div>
   );

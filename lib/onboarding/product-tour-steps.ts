@@ -8,12 +8,20 @@ import {
   Wallet,
 } from "lucide-react";
 
+/** Native PNG size for tour mockups (Figma app frames exported at 2× scale for crisp crop). */
+export const PRODUCT_TOUR_PREVIEW_NATIVE_WIDTH = 4096;
+export const PRODUCT_TOUR_PREVIEW_NATIVE_HEIGHT = 2731;
+
 export type ProductTourStep = {
   id: string;
   title: string;
   description: string;
   icon: LucideIcon;
   previewSrc: string;
+  /** PNG pixel width when it differs from the default native size. */
+  previewNativeWidth?: number;
+  /** PNG pixel height when it differs from the default native size. */
+  previewNativeHeight?: number;
 };
 
 /** Six-step product tour after welcome (Figma frames 2–7 / nodes 14090, 269266, …). */
@@ -39,6 +47,8 @@ export const PRODUCT_TOUR_STEPS: ProductTourStep[] = [
     description: "Upcoming earnings reports to help investors stay ahead of market moves.",
     icon: CalendarDays,
     previewSrc: "/onboarding/product-tour-earnings.png",
+    previewNativeWidth: PRODUCT_TOUR_PREVIEW_NATIVE_WIDTH,
+    previewNativeHeight: PRODUCT_TOUR_PREVIEW_NATIVE_HEIGHT,
   },
   {
     id: "macro",
