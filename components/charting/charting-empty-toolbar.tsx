@@ -6,7 +6,7 @@ import { Plus, RefreshCw, X } from "lucide-react";
 
 import { ChartingCompanyAddDropdown } from "@/components/charting/charting-company-add-dropdown";
 import { STANDALONE_CHARTING_TIME_RANGE_ORDER, type ChartTimeRange } from "@/components/charting/charting-workspace";
-import { TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
+import { secondaryOutlineButtonClassName, TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
 import {
   dropdownMenuRichItemClassName,
   dropdownMenuSurfaceClassName,
@@ -226,22 +226,22 @@ export function ChartingEmptyToolbar({
           Charting
         </h1>
         <div className="flex min-w-0 flex-wrap items-center gap-3 sm:flex-nowrap sm:justify-end sm:overflow-x-auto sm:pb-0.5">
-          <TabSwitcher
-            fullWidth={false}
-            className="shrink-0"
-            options={PERIOD_TAB_OPTIONS}
-            value={periodMode}
-            onChange={setPeriodMode}
-            aria-label="Reporting period"
-          />
-          <TabSwitcher
-            fullWidth={false}
-            className="shrink-0"
-            options={CHART_TYPE_TAB_OPTIONS}
-            value={chartType}
-            onChange={setChartType}
-            aria-label="Chart type"
-          />
+          <div className="flex shrink-0 flex-nowrap items-center gap-2">
+            <TabSwitcher
+              size="sm"
+              options={PERIOD_TAB_OPTIONS}
+              value={periodMode}
+              onChange={setPeriodMode}
+              aria-label="Reporting period"
+            />
+            <TabSwitcher
+              size="sm"
+              options={CHART_TYPE_TAB_OPTIONS}
+              value={chartType}
+              onChange={setChartType}
+              aria-label="Chart type"
+            />
+          </div>
           <div className="shrink-0">
             <TabSwitcher
               className="inline-flex w-max min-w-0 flex-nowrap"
@@ -292,9 +292,9 @@ export function ChartingEmptyToolbar({
                   return !o;
                 });
               }}
-              className="inline-flex items-center gap-2 rounded-[10px] bg-[#F4F4F5] px-4 py-2 text-[14px] font-medium leading-5 text-[#09090B] transition-colors hover:bg-[#EBEBEB]"
+              className={cn(secondaryOutlineButtonClassName, "gap-2 px-4")}
             >
-              <Plus className="h-5 w-5 shrink-0" strokeWidth={1.75} aria-hidden />
+              <Plus className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
               Add Metric
             </button>
             {pickerOpen && (

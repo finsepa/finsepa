@@ -25,6 +25,12 @@ export function dropdownMenuSurfaceClassName(...extra: (string | undefined | nul
 export const dropdownMenuPanelBodyClassName = "flex flex-col gap-1 py-2 pl-1 pr-1";
 
 /**
+ * Overlay scrollbar: transparent track (no gutter background or edge border), visible thumb only.
+ */
+export const dropdownMenuFloatingScrollClassName =
+  "[scrollbar-width:thin] [scrollbar-color:rgba(161,161,170,0.65)_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:border-0 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-solid [&::-webkit-scrollbar-thumb]:border-transparent [&::-webkit-scrollbar-thumb]:bg-clip-padding [&::-webkit-scrollbar-thumb]:bg-[#A1A1AA]/60";
+
+/**
  * Simple list dropdown (surface + padded body).
  */
 export function dropdownMenuPanelClassName(...extra: (string | undefined | null | false)[]) {

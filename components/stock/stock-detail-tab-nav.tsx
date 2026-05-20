@@ -1,9 +1,14 @@
 "use client";
 
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
+
 import type { StockDetailTabId } from "@/lib/stock/stock-detail-tab";
 import { ETF_STOCK_DETAIL_TAB_IDS } from "@/lib/stock/stock-etf";
 
 export type { StockDetailTabId };
+
+const TAB_MOTION_MS = 280;
+const TAB_MOTION_EASE = "cubic-bezier(0.33, 1, 0.68, 1)";
 
 /** Order matches stock Web App Design. */
 const TABS: { id: StockDetailTabId; label: string }[] = [
@@ -20,7 +25,7 @@ const TABS: { id: StockDetailTabId; label: string }[] = [
   { id: "profile", label: "Profile" },
 ];
 
-/** Underline tabs (same pattern as Markets on screener) — below header / price on stock asset page. */
+/** Underline tabs with sliding indicator — below header / price on stock asset page. */
 export function StockDetailTabNav({
   activeTab,
   onTabChange,
@@ -35,11 +40,46 @@ export function StockDetailTabNav({
     ? TABS.filter((t) => (ETF_STOCK_DETAIL_TAB_IDS as readonly string[]).includes(t.id))
     : TABS;
 
+  const navRef = useRef<HTMLElement>(null);
+  const tabRefs = useRef(new Map<StockDetailTabId, HTMLButtonElement>());
+  const [indicator, setIndicator] = useState({ left: 0, width: 0 });
+
+  const measureIndicator = useCallback(() => {
+    const nav = navRef.current;
+    const btn = tabRefs.current.get(activeTab);
+    if (!nav || !btn) return;
+    const navRect = nav.getBoundingClientRect();
+    const btnRect = btn.getBoundingClientRect();
+    setIndicator({
+      left: btnRect.left - navRect.left + nav.scrollLeft,
+      width: btnRect.width,
+    });
+  }, [activeTab]);
+
+  useLayoutEffect(() => {
+    measureIndicator();
+  }, [measureIndicator, tabs, activeTab]);
+
+  useLayoutEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return;
+    const ro = new ResizeObserver(measureIndicator);
+    ro.observe(nav);
+    nav.addEventListener("scroll", measureIndicator, { passive: true });
+    window.addEventListener("resize", measureIndicator);
+    return () => {
+      ro.disconnect();
+      nav.removeEventListener("scroll", measureIndicator);
+      window.removeEventListener("resize", measureIndicator);
+    };
+  }, [measureIndicator]);
+
   return (
     <div className="sticky top-0 z-40 bg-white max-md:mx-0 max-md:px-3 max-md:pt-1 sm:-mx-9 sm:-mt-5 sm:px-9 sm:pt-2">
       <div className="border-b border-solid border-[#E4E4E7]">
         <nav
-          className="-mx-1 flex flex-nowrap items-start gap-4 overflow-x-auto overflow-y-hidden pb-px [-webkit-overflow-scrolling:touch] sm:mx-0 sm:flex-wrap sm:gap-5 sm:overflow-visible"
+          ref={navRef}
+          className="relative -mx-1 flex flex-nowrap items-start gap-4 overflow-x-auto overflow-y-hidden pb-px [-webkit-overflow-scrolling:touch] sm:mx-0 sm:flex-wrap sm:gap-5 sm:overflow-visible"
           aria-label="Stock sections"
         >
           {tabs.map(({ id, label }) => {
@@ -47,18 +87,31 @@ export function StockDetailTabNav({
             return (
               <button
                 key={id}
+                ref={(el) => {
+                  if (el) tabRefs.current.set(id, el);
+                  else tabRefs.current.delete(id);
+                }}
                 type="button"
                 onClick={() => onTabChange(id)}
-                className={`-mb-px shrink-0 cursor-pointer border-b-2 border-solid py-2 text-left text-[14px] leading-6 transition-colors duration-100 ${
-                  isActive
-                    ? "border-[#09090B] font-semibold text-[#09090B]"
-                    : "border-transparent font-medium text-[#71717A] hover:text-[#09090B]"
+                className={`-mb-px shrink-0 cursor-pointer border-b-2 border-solid border-transparent py-2 text-left text-[14px] font-medium leading-6 text-[#09090B] transition-[color,opacity] duration-100 focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2 hover:opacity-80 ${
+                  isActive ? "font-semibold opacity-100" : "opacity-70"
                 }`}
               >
                 {label}
               </button>
             );
           })}
+          <span
+            className="pointer-events-none absolute bottom-0 z-[1] h-0.5 rounded-full bg-[#09090B] motion-reduce:transition-none"
+            style={{
+              left: indicator.left,
+              width: indicator.width,
+              transitionProperty: "left, width",
+              transitionDuration: `${TAB_MOTION_MS}ms`,
+              transitionTimingFunction: TAB_MOTION_EASE,
+            }}
+            aria-hidden
+          />
         </nav>
       </div>
     </div>

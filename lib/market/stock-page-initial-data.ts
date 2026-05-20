@@ -1,8 +1,12 @@
 import "server-only";
 
-import { fetchEodhdEodDaily } from "@/lib/market/eodhd-eod";
+import { fetchEodhdEodDaily, type EodhdDailyBar } from "@/lib/market/eodhd-eod";
 import { sliceStockChartPointsForRange } from "@/lib/market/stock-chart-api";
-import { getStockSpotPriceUsd, stockChartPointsFromDailyBars } from "@/lib/market/stock-chart-data";
+import {
+  getStockSpotPriceUsd,
+  getStockChartPoints,
+  stockChartPointsFromDailyBars,
+} from "@/lib/market/stock-chart-data";
 import type { ChartingSeriesPoint } from "@/lib/market/charting-series-types";
 import type { StockDetailHeaderMeta } from "@/lib/market/stock-header-meta";
 import { getStockDetailHeaderMetaForPage } from "@/lib/market/stock-header-meta-server";
@@ -51,7 +55,7 @@ export type StockPageInitialData = {
   headerLiveSpotUsd: number | null;
 };
 
-const DEFAULT_OVERVIEW_RANGE: StockChartRange = "1Y";
+const DEFAULT_OVERVIEW_RANGE: StockChartRange = "1D";
 
 const EMPTY_KEY_STATS: StockKeyStatsBundle = {
   basic: null,
@@ -65,21 +69,48 @@ const EMPTY_KEY_STATS: StockKeyStatsBundle = {
   risk: null,
 };
 
-function fallbackStockPageInitialData(ticker: string, now: Date): StockPageInitialData {
+function headerMetaShell(ticker: string): StockDetailHeaderMeta {
   const display = getStockDetailMetaFromTicker(ticker);
-  const headerMeta = {
+  return {
     fullName: display.name,
     logoUrl: display.logoUrl,
     exchange: null,
+    countryIso: null,
     sector: null,
     industry: null,
     earningsDateDisplay: null,
     watchlistCount: null,
   };
+}
+
+function warnSettledFailure(label: string, reason: unknown) {
+  console.warn(`[loadStockPageInitialData] ${label} failed`, reason);
+}
+
+function fromSettled<T>(result: PromiseSettledResult<T>, label: string): T | null {
+  if (result.status === "fulfilled") return result.value;
+  warnSettledFailure(label, result.reason);
+  return null;
+}
+
+function resolveOverviewChartPoints(
+  range: StockChartRange,
+  chartPoints: StockChartPoint[] | null,
+  sortedDailyBars: EodhdDailyBar[],
+  now: Date,
+): StockChartPoint[] {
+  if (Array.isArray(chartPoints) && chartPoints.length > 0) return chartPoints;
+  if (!sortedDailyBars.length) return [];
+  const fromDaily = sliceStockChartPointsForRange(stockChartPointsFromDailyBars(sortedDailyBars), range, now);
+  if (fromDaily.length > 0) return fromDaily;
+  return [];
+}
+
+function fallbackStockPageInitialData(ticker: string, now: Date): StockPageInitialData {
   return {
     ticker,
-    isEtf: isStockDetailEtf(ticker, headerMeta),
-    headerMeta,
+    isEtf: isStockDetailEtf(ticker, headerMetaShell(ticker)),
+    headerMeta: headerMetaShell(ticker),
     chart: { range: DEFAULT_OVERVIEW_RANGE, points: [] },
     performance: computeStockPerformanceFromSortedDailyBars([], ticker, now),
     keyStatsBundle: { ...EMPTY_KEY_STATS },
@@ -137,18 +168,20 @@ export async function loadStockPageInitialData(routeTicker: string): Promise<Sto
 
   try {
     const [
-      headerMeta,
-      barsRaw,
-      keyStatsBundle,
-      news,
-      profile,
-      annualSeries,
-      quarterlySeries,
-      peersCompareRows,
-      headerLiveSpotUsd,
-    ] = await Promise.all([
+      headerMetaResult,
+      barsResult,
+      chartPointsResult,
+      keyStatsResult,
+      newsResult,
+      profileResult,
+      annualResult,
+      quarterlyResult,
+      peersResult,
+      spotResult,
+    ] = await Promise.allSettled([
       getStockDetailHeaderMetaForPage(ticker),
       fetchEodhdEodDaily(ticker, from, to),
+      getStockChartPoints(ticker, range, "price"),
       buildStockKeyStatsBundle(ticker),
       getStockNews(ticker),
       fetchEodhdStockProfile(ticker),
@@ -158,10 +191,20 @@ export async function loadStockPageInitialData(routeTicker: string): Promise<Sto
       getStockSpotPriceUsd(ticker),
     ]);
 
+    const headerMeta = fromSettled(headerMetaResult, "headerMeta") ?? headerMetaShell(ticker);
+    const barsRaw = fromSettled(barsResult, "eodDaily");
+    const chartPointsRaw = fromSettled(chartPointsResult, "chart1D");
+    const keyStatsBundle = fromSettled(keyStatsResult, "keyStats") ?? { ...EMPTY_KEY_STATS };
+    const news = fromSettled(newsResult, "news");
+    const profile = fromSettled(profileResult, "profile");
+    const annualSeries = fromSettled(annualResult, "fundamentalsAnnual");
+    const quarterlySeries = fromSettled(quarterlyResult, "fundamentalsQuarterly");
+    const peersCompareRows = fromSettled(peersResult, "peers");
+    const headerLiveSpotUsd = fromSettled(spotResult, "headerLiveSpot");
+
     const sorted = barsRaw?.length ? [...barsRaw].sort((a, b) => a.date.localeCompare(b.date)) : [];
     const performance = computeStockPerformanceFromSortedDailyBars(sorted, ticker, now);
-    const rawPoints = stockChartPointsFromDailyBars(sorted);
-    const points = sliceStockChartPointsForRange(rawPoints, range, now);
+    const points = resolveOverviewChartPoints(range, chartPointsRaw, sorted, now);
 
     return {
       ticker,
@@ -175,10 +218,13 @@ export async function loadStockPageInitialData(routeTicker: string): Promise<Sto
       fundamentalsSeriesAnnual: annualSeries?.points ?? [],
       fundamentalsSeriesQuarterly: quarterlySeries?.points ?? [],
       peersCompareRows: Array.isArray(peersCompareRows) ? peersCompareRows : [],
-      headerLiveSpotUsd: typeof headerLiveSpotUsd === "number" && Number.isFinite(headerLiveSpotUsd) && headerLiveSpotUsd > 0 ? headerLiveSpotUsd : null,
+      headerLiveSpotUsd:
+        typeof headerLiveSpotUsd === "number" && Number.isFinite(headerLiveSpotUsd) && headerLiveSpotUsd > 0
+          ? headerLiveSpotUsd
+          : null,
     };
   } catch (err) {
-    console.error("[loadStockPageInitialData] failed; serving fallback shell", { ticker, err });
+    console.error("[loadStockPageInitialData] unexpected failure; serving fallback shell", { ticker, err });
     return fallbackStockPageInitialData(ticker, now);
   }
 }

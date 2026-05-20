@@ -10,10 +10,24 @@ import {
   type ReactNode,
 } from "react";
 
-const STORAGE_KEY = "finsepa-sidebar-collapsed";
+import {
+  readSidebarCollapsedPreference,
+  SIDEBAR_COLLAPSED_PREFERENCE_KEY,
+} from "@/lib/layout/sidebar-collapsed-preference";
 
 export const SIDEBAR_OUTER_EXPANDED_PX = 248;
 export const SIDEBAR_OUTER_COLLAPSED_PX = 72;
+
+export const SIDEBAR_MOTION_MS = 280;
+export const SIDEBAR_MOTION_EASE = "cubic-bezier(0.33, 1, 0.68, 1)";
+
+/** Shared width/position transitions for sidebar shell + rail. */
+export const SIDEBAR_WIDTH_MOTION_CLASS =
+  "transition-[width,left] duration-[280ms] ease-[cubic-bezier(0.33,1,0.68,1)] motion-reduce:transition-none";
+
+/** Labels, section headers, and row layout inside the rail. */
+export const SIDEBAR_CONTENT_MOTION_CLASS =
+  "transition-[opacity,max-width,max-height,margin,padding,gap] duration-[280ms] ease-[cubic-bezier(0.33,1,0.68,1)] motion-reduce:transition-none";
 
 type SidebarLayoutContextValue = {
   collapsed: boolean;
@@ -23,28 +37,47 @@ type SidebarLayoutContextValue = {
 
 const SidebarLayoutContext = createContext<SidebarLayoutContextValue | null>(null);
 
-export function SidebarLayoutProvider({ children }: { children: ReactNode }) {
-  const [collapsed, setCollapsedState] = useState(false);
+function writeSidebarCollapsedCookie(value: boolean) {
+  if (typeof document === "undefined") return;
+  const encoded = value ? "1" : "0";
+  document.cookie = `${SIDEBAR_COLLAPSED_PREFERENCE_KEY}=${encoded};path=/;max-age=${60 * 60 * 24 * 365};SameSite=Lax`;
+}
+
+function persistSidebarCollapsedPreference(value: boolean) {
+  try {
+    localStorage.setItem(SIDEBAR_COLLAPSED_PREFERENCE_KEY, value ? "1" : "0");
+  } catch {
+    /* ignore */
+  }
+  writeSidebarCollapsedCookie(value);
+}
+
+export function SidebarLayoutProvider({
+  children,
+  initialCollapsed = false,
+}: {
+  children: ReactNode;
+  /** From server cookie so SSR and the first client render agree (avoids hydration mismatch). */
+  initialCollapsed?: boolean;
+}) {
+  const [collapsed, setCollapsedState] = useState(initialCollapsed);
 
   useEffect(() => {
-    const id = requestAnimationFrame(() => {
-      try {
-        if (localStorage.getItem(STORAGE_KEY) === "1") {
-          setCollapsedState(true);
-        }
-      } catch {
-        /* ignore */
-      }
-    });
-    return () => cancelAnimationFrame(id);
-  }, []);
-
-  const persist = useCallback((value: boolean) => {
     try {
-      localStorage.setItem(STORAGE_KEY, value ? "1" : "0");
+      const fromStorage = readSidebarCollapsedPreference(
+        localStorage.getItem(SIDEBAR_COLLAPSED_PREFERENCE_KEY),
+      );
+      if (fromStorage !== initialCollapsed) {
+        setCollapsedState(fromStorage);
+        writeSidebarCollapsedCookie(fromStorage);
+      }
     } catch {
       /* ignore */
     }
+  }, [initialCollapsed]);
+
+  const persist = useCallback((value: boolean) => {
+    persistSidebarCollapsedPreference(value);
   }, []);
 
   const setCollapsed = useCallback(

@@ -279,13 +279,10 @@ function TableSkeleton() {
   );
 }
 
-/** SSR-safe shell for `next/dynamic` while the client bundle loads (matches tab title + skeletons). */
-export function StockEarningsTabLoading({ showHeading = true }: { showHeading?: boolean } = {}) {
+/** SSR-safe shell for `next/dynamic` while the client bundle loads (matches tab skeletons). */
+export function StockEarningsTabLoading() {
   return (
     <div className="min-w-0 space-y-6 pt-1">
-      {showHeading ? (
-        <h2 className="text-[18px] font-semibold leading-7 tracking-tight text-[#09090B]">Earnings</h2>
-      ) : null}
       <SummaryCardsSkeleton />
       <EstimatesChartSkeleton />
       <h3 className="text-[18px] font-semibold leading-7 tracking-tight text-[#09090B]">Reports</h3>
@@ -298,15 +295,12 @@ export type StockEarningsTabContentProps = {
   ticker: string;
   /** When set (e.g. modal body), history infinite-scroll observes this scroll container instead of `main`. */
   scrollRoot?: HTMLElement | null;
-  /** Stock page shows “Earnings”; calendar modal omits it. */
-  showHeading?: boolean;
 };
 
 /** Full earnings experience (summary cards, estimates chart, history table) — reusable on stock page and calendar modal. */
 export function StockEarningsTabContent({
   ticker,
   scrollRoot = null,
-  showHeading = true,
 }: StockEarningsTabContentProps) {
   const sym = ticker.trim().toUpperCase();
   /** Defer interactive tree until after mount so SSR HTML always matches the first client paint (avoids hydration drift from HMR / dev caches). */
@@ -456,15 +450,11 @@ export function StockEarningsTabContent({
   }, [data]);
 
   if (!clientReady) {
-    return <StockEarningsTabLoading showHeading={showHeading} />;
+    return <StockEarningsTabLoading />;
   }
 
   return (
     <div className="min-w-0 space-y-6 pt-1">
-      {showHeading ? (
-        <h2 className="text-[18px] font-semibold leading-7 tracking-tight text-[#09090B]">Earnings</h2>
-      ) : null}
-
       {loading ? (
         <>
           <SummaryCardsSkeleton />
@@ -576,5 +566,5 @@ export function StockEarningsTabContent({
 }
 
 export function StockEarningsTab({ ticker }: { ticker: string }) {
-  return <StockEarningsTabContent ticker={ticker} showHeading />;
+  return <StockEarningsTabContent ticker={ticker} />;
 }

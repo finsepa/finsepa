@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { fetchSearchItems } from "@/lib/search/fetch-search-items";
@@ -49,11 +49,10 @@ export function useSearchPanel({
   const debouncedTrim = debounced.trim();
   const queryTrim = query.trim();
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!open) return;
-    const id = requestAnimationFrame(() => inputRef.current?.focus());
+    inputRef.current?.focus({ preventScroll: true });
     setRecent(readRecentSearches());
-    return () => cancelAnimationFrame(id);
   }, [open]);
 
   useEffect(() => {

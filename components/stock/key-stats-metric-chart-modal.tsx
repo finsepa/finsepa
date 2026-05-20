@@ -194,18 +194,19 @@ export function KeyStatsMetricChartModal({
           </button>
         </div>
 
-        <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-2 px-5 py-3">
+        <div className="flex shrink-0 flex-col gap-2 px-5 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
           <h2 id="key-stats-metric-chart-title" className="min-w-0 text-[17px] font-semibold leading-7 text-[#09090B]">
             {metricTitle}
           </h2>
-          <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 sm:gap-3">
+          <div className="flex shrink-0 flex-nowrap items-center gap-2">
             <TabSwitcher
+              size="sm"
               options={PERIOD_TAB_OPTIONS}
               value={periodMode}
               onChange={setPeriodMode}
               aria-label="Reporting period"
             />
-            <MultichartVisualSwitcher value={chartVisual} onChange={setChartVisual} />
+            <MultichartVisualSwitcher size="sm" value={chartVisual} onChange={setChartVisual} />
           </div>
         </div>
 
@@ -228,12 +229,6 @@ export function KeyStatsMetricChartModal({
                   Live forward P/E in Key Stats uses current price and consensus EPS. Historical fiscal rows
                   rarely include that forward multiple; when it is missing, the bar uses trailing P/E for the
                   same period so year-to-year comparisons stay available.
-                </p>
-              ) : null}
-              {metricId === "pe_ratio" || metricId === "trailing_pe" ? (
-                <p className="mt-3 text-[12px] leading-5 text-[#71717A]">
-                  P/E here is trailing on fiscal net income: modelled market cap (price × shares at period end) divided
-                  by reported net income for the same period. It is not the live quote multiple from Highlights.
                 </p>
               ) : null}
               {metricId === "ps_ratio" ||

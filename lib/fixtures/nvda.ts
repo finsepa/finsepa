@@ -44,6 +44,7 @@ export function getNvdaHeaderMeta(): StockDetailHeaderMeta {
     fullName: "NVIDIA Corporation",
     logoUrl: companyLogoUrlForTicker(NVDA, meta.domain),
     exchange: "NASDAQ",
+    countryIso: "US",
     sector: "Technology",
     industry: "Semiconductors",
     earningsDateDisplay: "—",

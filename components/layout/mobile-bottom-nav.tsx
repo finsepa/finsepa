@@ -1,8 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import {
   CalendarBlank,
   ChartBar,
@@ -17,7 +25,8 @@ import {
   protectedDataItems,
   protectedMarketItems,
   protectedNavItemIsActive,
-  protectedNavSectionHasActive,
+  mobilePrimaryNavTabFromPathname,
+  type MobilePrimaryNavTab,
   type ProtectedNavItem,
 } from "@/components/layout/protected-nav-config";
 import { dropdownMenuPanelBodyClassName, dropdownMenuSurfaceClassName } from "@/components/design-system/dropdown-menu-styles";
@@ -26,12 +35,25 @@ import { cn } from "@/lib/utils";
 // Sheet sits above the floating bottom nav (see `--mobile-bottom-nav-sheet-bottom` in globals.css).
 const MOBILE_NAV_SHEET_BOTTOM = "var(--mobile-bottom-nav-sheet-bottom)";
 
+const TAB_MOTION_MS = 280;
+const TAB_MOTION_EASE = "cubic-bezier(0.33, 1, 0.68, 1)";
+
 type SheetId = "markets" | "calendar" | "data" | "community";
 
 const soonBadgeClass =
   "ml-auto shrink-0 rounded-md border border-[#E4E4E7] bg-[#F4F4F5] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#71717A]";
 
-function MobileNavSheetRow({ item, pathname, onNavigate }: { item: ProtectedNavItem; pathname: string; onNavigate: () => void }) {
+function MobileNavSheetRow({
+  item,
+  pathname,
+  onNavigate,
+  onTabIntent,
+}: {
+  item: ProtectedNavItem;
+  pathname: string;
+  onNavigate: () => void;
+  onTabIntent: () => void;
+}) {
   const Icon = item.icon;
   const active = protectedNavItemIsActive(item, pathname);
   const rowClass = cn(
@@ -43,7 +65,15 @@ function MobileNavSheetRow({ item, pathname, onNavigate }: { item: ProtectedNavI
 
   if (item.available) {
     return (
-      <Link prefetch={false} href={item.href} className={rowClass} onClick={onNavigate}>
+      <Link
+        prefetch={false}
+        href={item.href}
+        className={rowClass}
+        onClick={() => {
+          onTabIntent();
+          onNavigate();
+        }}
+      >
         <Icon className={iconClass} aria-hidden />
         <span className="min-w-0 flex-1 truncate">{item.label}</span>
       </Link>
@@ -64,12 +94,14 @@ function MobileNavSheet({
   sheetId,
   pathname,
   onClose,
+  onTabIntent,
 }: {
   open: boolean;
   items: readonly ProtectedNavItem[];
   sheetId: SheetId | null;
   pathname: string;
   onClose: () => void;
+  onTabIntent: (tab: MobilePrimaryNavTab) => void;
 }) {
   if (!open || !sheetId) return null;
   return (
@@ -98,7 +130,13 @@ function MobileNavSheet({
           )}
         >
           {items.map((item) => (
-            <MobileNavSheetRow key={item.label} item={item} pathname={pathname} onNavigate={onClose} />
+            <MobileNavSheetRow
+              key={item.label}
+              item={item}
+              pathname={pathname}
+              onNavigate={onClose}
+              onTabIntent={() => onTabIntent(sheetId)}
+            />
           ))}
         </nav>
       </div>
@@ -107,10 +145,10 @@ function MobileNavSheet({
 }
 
 type TabConfig = {
-  id: SheetId;
+  id: MobilePrimaryNavTab;
   label: string;
   Icon: typeof Globe;
-  items: readonly ProtectedNavItem[];
+  items?: readonly ProtectedNavItem[];
 };
 
 const TABS: TabConfig[] = [
@@ -128,15 +166,67 @@ function sheetItemsFor(id: SheetId | null): readonly ProtectedNavItem[] {
   return [];
 }
 
+function isSheetTab(id: MobilePrimaryNavTab): id is SheetId {
+  return id !== "portfolio";
+}
+
 export function MobileBottomNav() {
   const pathname = usePathname();
+  const router = useRouter();
+  const urlTab = useMemo(() => mobilePrimaryNavTabFromPathname(pathname), [pathname]);
+  const [displayTab, setDisplayTab] = useState<MobilePrimaryNavTab>(urlTab);
   const [openSheet, setOpenSheet] = useState<SheetId | null>(null);
+  const [, startTransition] = useTransition();
 
-  const closeSheet = useCallback(() => setOpenSheet(null), []);
+  const navRef = useRef<HTMLElement>(null);
+  const tabRefs = useRef(new Map<MobilePrimaryNavTab, HTMLDivElement>());
+  const [indicator, setIndicator] = useState({ left: 0, width: 0, height: 0 });
 
   useEffect(() => {
-    closeSheet();
-  }, [pathname, closeSheet]);
+    setDisplayTab(urlTab);
+  }, [urlTab]);
+
+  const measureIndicator = useCallback(() => {
+    const nav = navRef.current;
+    const cell = tabRefs.current.get(displayTab);
+    if (!nav || !cell) return;
+    const navRect = nav.getBoundingClientRect();
+    const cellRect = cell.getBoundingClientRect();
+    setIndicator({
+      left: cellRect.left - navRect.left,
+      width: cellRect.width,
+      height: cellRect.height,
+    });
+  }, [displayTab]);
+
+  useLayoutEffect(() => {
+    measureIndicator();
+  }, [measureIndicator, displayTab, openSheet]);
+
+  useLayoutEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return;
+    const ro = new ResizeObserver(measureIndicator);
+    ro.observe(nav);
+    window.addEventListener("resize", measureIndicator);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measureIndicator);
+    };
+  }, [measureIndicator]);
+
+  const closeSheet = useCallback(() => {
+    setOpenSheet(null);
+    setDisplayTab(mobilePrimaryNavTabFromPathname(pathname));
+  }, [pathname]);
+
+  const selectTab = useCallback((tab: MobilePrimaryNavTab) => {
+    setDisplayTab(tab);
+  }, []);
+
+  useEffect(() => {
+    setOpenSheet(null);
+  }, [pathname]);
 
   useEffect(() => {
     if (!openSheet) return;
@@ -147,13 +237,16 @@ export function MobileBottomNav() {
     return () => document.removeEventListener("keydown", onKey);
   }, [openSheet, closeSheet]);
 
-  const portfolioActive =
-    pathname === "/portfolio" ||
-    pathname.startsWith("/portfolio/") ||
-    pathname === "/portfolios" ||
-    pathname.startsWith("/portfolios/");
-
   const openItems = useMemo(() => sheetItemsFor(openSheet), [openSheet]);
+
+  const goToPortfolio = useCallback(() => {
+    if (displayTab === "portfolio" && urlTab === "portfolio") return;
+    selectTab("portfolio");
+    setOpenSheet(null);
+    startTransition(() => {
+      router.push("/portfolio");
+    });
+  }, [displayTab, urlTab, router, selectTab]);
 
   return (
     <>
@@ -163,8 +256,10 @@ export function MobileBottomNav() {
         sheetId={openSheet}
         pathname={pathname}
         onClose={closeSheet}
+        onTabIntent={selectTab}
       />
       <nav
+        ref={navRef}
         className={cn(
           "mobile-bottom-nav-pill fixed left-4 right-4 z-[43] flex h-[60px] items-center md:hidden",
           "rounded-full border border-[#E4E4E7] bg-white/90 px-1 shadow-sm",
@@ -172,52 +267,77 @@ export function MobileBottomNav() {
         )}
         aria-label="Primary"
       >
+        <span
+          className="pointer-events-none absolute top-1/2 z-0 -translate-y-1/2 rounded-full bg-[#09090B]/[0.05] motion-reduce:transition-none"
+          style={{
+            left: indicator.left,
+            width: indicator.width,
+            height: indicator.height || undefined,
+            transitionProperty: "left, width, height",
+            transitionDuration: `${TAB_MOTION_MS}ms`,
+            transitionTimingFunction: TAB_MOTION_EASE,
+          }}
+          aria-hidden
+        />
         {TABS.map((tab) => {
-          const sectionActive = protectedNavSectionHasActive(tab.items, pathname);
-          const sheetOpen = openSheet === tab.id;
+          const tabActive = displayTab === tab.id;
+          const sheetOpen = isSheetTab(tab.id) && openSheet === tab.id;
           const Icon = tab.Icon;
           return (
-            <div key={tab.id} className="flex min-w-0 flex-1 flex-col items-stretch">
+            <div
+              key={tab.id}
+              ref={(el) => {
+                if (el) tabRefs.current.set(tab.id, el);
+                else tabRefs.current.delete(tab.id);
+              }}
+              className="relative z-[1] flex min-w-0 flex-1 flex-col items-stretch"
+            >
               <button
                 type="button"
                 className={cn(
-                  "flex w-full flex-col items-center gap-0.5 rounded-full px-2 py-1.5 text-[10px] leading-[14px] font-semibold uppercase tracking-wide transition-colors",
-                  sectionActive || sheetOpen ? "bg-[#09090B]/[0.05]" : "active:bg-[#09090B]/[0.04]",
+                  "flex w-full flex-col items-center gap-0.5 rounded-full px-2 py-1.5 text-[10px] leading-[14px] font-semibold uppercase tracking-wide transition-[color,opacity] duration-100",
+                  tabActive || sheetOpen ? "text-[#09090B] opacity-100" : "text-[#A1A1AA] opacity-80 active:opacity-100",
                 )}
                 aria-expanded={sheetOpen}
-                aria-controls={openSheet === tab.id ? `mobile-nav-sheet-${tab.id}` : undefined}
-                onClick={() => setOpenSheet((s) => (s === tab.id ? null : tab.id))}
+                aria-controls={sheetOpen ? `mobile-nav-sheet-${tab.id}` : undefined}
+                onClick={() => {
+                  selectTab(tab.id);
+                  setOpenSheet((s) => (s === tab.id ? null : (tab.id as SheetId)));
+                }}
               >
                 <Icon
-                  className={cn("h-6 w-6", sectionActive || sheetOpen ? "text-[#09090B]" : "text-[#A1A1AA]")}
-                  weight={sectionActive || sheetOpen ? "fill" : "regular"}
+                  className="h-6 w-6"
+                  weight={tabActive || sheetOpen ? "fill" : "regular"}
                   aria-hidden
                 />
-                <span className={cn(sectionActive || sheetOpen ? "text-[#09090B]" : "text-[#A1A1AA]")}>
-                  {tab.label}
-                </span>
+                <span>{tab.label}</span>
               </button>
             </div>
           );
         })}
 
-        <div className="flex min-w-0 flex-1 flex-col items-stretch">
-          <Link
-            prefetch={false}
-            href="/portfolio"
+        <div
+          ref={(el) => {
+            if (el) tabRefs.current.set("portfolio", el);
+            else tabRefs.current.delete("portfolio");
+          }}
+          className="relative z-[1] flex min-w-0 flex-1 flex-col items-stretch"
+        >
+          <button
+            type="button"
             className={cn(
-              "flex w-full flex-col items-center gap-0.5 rounded-full px-2 py-1.5 text-[10px] leading-[14px] font-semibold uppercase tracking-wide transition-colors",
-              portfolioActive ? "bg-[#09090B]/[0.05]" : "active:bg-[#09090B]/[0.04]",
+              "flex w-full flex-col items-center gap-0.5 rounded-full px-2 py-1.5 text-[10px] leading-[14px] font-semibold uppercase tracking-wide transition-[color,opacity] duration-100",
+              displayTab === "portfolio" ? "text-[#09090B] opacity-100" : "text-[#A1A1AA] opacity-80 active:opacity-100",
             )}
-            onClick={closeSheet}
+            onClick={goToPortfolio}
           >
             <ChartPieSlice
-              className={cn("h-6 w-6", portfolioActive ? "text-[#09090B]" : "text-[#A1A1AA]")}
-              weight={portfolioActive ? "fill" : "regular"}
+              className="h-6 w-6"
+              weight={displayTab === "portfolio" ? "fill" : "regular"}
               aria-hidden
             />
-            <span className={cn(portfolioActive ? "text-[#09090B]" : "text-[#A1A1AA]")}>Portfolio</span>
-          </Link>
+            <span>Portfolio</span>
+          </button>
         </div>
       </nav>
     </>

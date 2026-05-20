@@ -166,13 +166,13 @@ function IncomeRow({
   const labelCell = (
     <div
       className={cn(
-        "min-w-0 truncate border-r border-[#E4E4E7] pr-4 text-left",
+        "flex min-h-full min-w-0 items-center self-stretch border-r border-[#E4E4E7] pr-4 text-left",
         nestedLabelPad,
         labelClass,
         rowInteractive && "group-hover:underline",
       )}
     >
-      {row.label}
+      <span className="min-w-0 truncate">{row.label}</span>
     </div>
   );
 
@@ -185,7 +185,7 @@ function IncomeRow({
         key={i}
         className={cn(
           numCellClass,
-          "truncate",
+          "flex min-h-full items-center justify-end truncate self-stretch",
           isGrowth && "font-medium",
           isGrowth && (growthMissing ? "text-[#71717A]" : toneClass(tone)),
         )}
@@ -200,7 +200,7 @@ function IncomeRow({
       <button
         type="button"
         className={cn(
-          "group grid w-full cursor-pointer items-center gap-x-2 border-x-0 border-t-0 bg-white px-2 text-left font-inherit transition-colors duration-75 hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-zinc-300 sm:px-4",
+          "group grid w-full cursor-pointer items-stretch gap-x-2 border-x-0 border-t-0 bg-white px-2 text-left font-inherit transition-colors duration-75 hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-zinc-300 sm:px-4",
           incomeRowDividerClass,
           incomeDataRowClass,
         )}
@@ -215,7 +215,7 @@ function IncomeRow({
 
   return (
     <div
-      className={`grid items-center gap-x-2 bg-white px-2 transition-colors duration-75 hover:bg-neutral-50 sm:px-4 ${incomeRowDividerClass} ${incomeDataRowClass}`}
+      className={`grid items-stretch gap-x-2 bg-white px-2 transition-colors duration-75 hover:bg-neutral-50 sm:px-4 ${incomeRowDividerClass} ${incomeDataRowClass}`}
       style={{ gridTemplateColumns }}
     >
       {labelCell}

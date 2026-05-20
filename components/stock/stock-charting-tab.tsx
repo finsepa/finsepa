@@ -107,6 +107,7 @@ export function StockChartingTab({
       initialAnnualPoints={initialAnnualPoints}
       initialQuarterlyPoints={initialQuarterlyPoints}
       allowedMetricIds={buildAllowedMetricsFromKeyStats(initialKeyStatsBundle)}
+      metricControlsPlacement="legend"
     />
   );
 }

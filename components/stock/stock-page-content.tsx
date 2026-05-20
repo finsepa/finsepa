@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import type { CompanyPick } from "@/components/charting/company-picker";
 import dynamic from "next/dynamic";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -93,6 +93,7 @@ function parseStockHeaderMetaPayload(json: {
   fullName?: unknown;
   logoUrl?: unknown;
   exchange?: unknown;
+  countryIso?: unknown;
   sector?: unknown;
   industry?: unknown;
   earningsDateDisplay?: unknown;
@@ -102,6 +103,7 @@ function parseStockHeaderMetaPayload(json: {
     fullName: typeof json.fullName === "string" ? json.fullName : null,
     logoUrl: typeof json.logoUrl === "string" ? json.logoUrl : null,
     exchange: typeof json.exchange === "string" ? json.exchange : null,
+    countryIso: typeof json.countryIso === "string" ? json.countryIso : null,
     sector: typeof json.sector === "string" ? json.sector : null,
     industry: typeof json.industry === "string" ? json.industry : null,
     earningsDateDisplay: typeof json.earningsDateDisplay === "string" ? json.earningsDateDisplay : null,
@@ -124,7 +126,9 @@ export function StockPageContent({
   const searchParams = useSearchParams();
   const prevTickerRef = useRef<string | null>(null);
 
-  const [range, setRange] = useState<StockChartRange>("1Y");
+  const [range, setRange] = useState<StockChartRange>(
+    () => initialPageData?.chart?.range ?? "1D",
+  );
   const [chartSeries, setChartSeries] = useState<StockChartSeries>("price");
   const [comparePicks, setComparePicks] = useState<CompanyPick[]>([]);
   const chartSeriesBeforeCompareRef = useRef<StockChartSeries>("price");
@@ -157,10 +161,19 @@ export function StockPageContent({
     [serverIsEtf, ticker, headerMeta],
   );
 
-  const activeTab: StockDetailTabId = useMemo(() => {
+  const urlTab: StockDetailTabId = useMemo(() => {
     const raw = searchSyncedTab ?? initialActiveTab;
     return normalizeStockDetailTab(raw, isEtf);
   }, [searchSyncedTab, initialActiveTab, isEtf]);
+
+  const [displayTab, setDisplayTab] = useState<StockDetailTabId>(() =>
+    normalizeStockDetailTab(initialActiveTab, serverIsEtf),
+  );
+  const [, startTabTransition] = useTransition();
+
+  useEffect(() => {
+    setDisplayTab(urlTab);
+  }, [urlTab]);
 
   const chartingMetricParam = searchParams.get("metric");
 
@@ -218,6 +231,7 @@ export function StockPageContent({
       setChartSeries(chartSeriesBeforeCompareRef.current);
     }
     setComparePicks([]);
+    setRange("1D");
   }, [ticker]);
 
   const onAddComparePick = useCallback(
@@ -280,6 +294,17 @@ export function StockPageContent({
       router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false });
     },
     [pathname, router, searchParams, isEtf],
+  );
+
+  const handleTabChange = useCallback(
+    (tab: StockDetailTabId) => {
+      const next = isEtf ? coerceStockDetailTabForEtf(tab) : tab;
+      if (next === displayTab) return;
+      setDisplayTab(next);
+      setTabsMounted((m) => ({ ...m, [next]: true }));
+      startTabTransition(() => setTabInUrl(next));
+    },
+    [displayTab, isEtf, setTabInUrl],
   );
 
   const [revenueProfitModalMetric, setRevenueProfitModalMetric] = useState<ChartingMetricId | null>(null);
@@ -379,7 +404,7 @@ export function StockPageContent({
     (initialPageData?.ticker === ticker ? (initialPageData.headerLiveSpotUsd ?? null) : null);
 
   const chartUi = useMemo((): ChartDisplayState => {
-    if (activeTab === "holdings") {
+    if (displayTab === "holdings") {
       return holdingsHeaderUi ?? EMPTY_CHART_DISPLAY;
     }
     return mergeSessionHeaderWithPerformanceSpot(
@@ -389,7 +414,7 @@ export function StockPageContent({
       headerLiveSpotForMerge,
     );
   }, [
-    activeTab,
+    displayTab,
     chartSeries,
     headerLiveSpotForMerge,
     holdingsHeaderUi,
@@ -403,7 +428,7 @@ export function StockPageContent({
   );
 
   /** Holdings tab uses its own area chart for the header; all other tabs use the overview price series. */
-  const stockChartDrivesHeader = activeTab !== "holdings";
+  const stockChartDrivesHeader = displayTab !== "holdings";
 
   return (
     <div className="relative min-w-0 space-y-5 px-0 py-0 sm:space-y-5 sm:px-9 sm:py-6">
@@ -421,7 +446,7 @@ export function StockPageContent({
       </Suspense>
       <StockHeader
         ticker={ticker}
-        periodLabel={activeTab === "holdings" ? range : "Today"}
+        periodLabel={displayTab === "holdings" ? range : "Today"}
         periodLabelOverride={chartUi.periodLabelOverride}
         chartRangeLabel={range}
         price={chartUi.displayPrice}
@@ -438,7 +463,7 @@ export function StockPageContent({
         headerChartMetric={comparePicks.length > 0 ? "price" : chartSeries}
       />
 
-      <StockDetailTabNav activeTab={activeTab} onTabChange={setTabInUrl} isEtf={isEtf} />
+      <StockDetailTabNav activeTab={displayTab} onTabChange={handleTabChange} isEtf={isEtf} />
 
       {/*
         Overview price chart must stay mounted when other tabs are open — `hidden` on the tabpanel
@@ -447,13 +472,13 @@ export function StockPageContent({
       */}
       <div
         className={
-          activeTab === "overview"
+          displayTab === "overview"
             ? "space-y-5"
             : "pointer-events-none fixed left-0 top-0 -z-10 h-[420px] w-[min(1200px,calc(100vw-4.5rem))] -translate-x-[120vw] opacity-0"
         }
-        aria-hidden={activeTab !== "overview"}
+        aria-hidden={displayTab !== "overview"}
       >
-        {activeTab === "overview" ? (
+        {displayTab === "overview" ? (
           <ChartControls
             activeRange={range}
             onRangeChange={setRange}
@@ -501,8 +526,8 @@ export function StockPageContent({
         <div
           role="tabpanel"
           id="stock-tab-overview"
-          aria-hidden={activeTab !== "overview"}
-          className={activeTab === "overview" ? "space-y-5" : "hidden"}
+          aria-hidden={displayTab !== "overview"}
+          className={displayTab === "overview" ? "space-y-5" : "hidden"}
         >
           <MiniTable
             ticker={ticker}
@@ -536,8 +561,8 @@ export function StockPageContent({
         <div
           role="tabpanel"
           id="stock-tab-financials"
-          aria-hidden={activeTab !== "financials"}
-          className={activeTab === "financials" ? "block" : "hidden"}
+          aria-hidden={displayTab !== "financials"}
+          className={displayTab === "financials" ? "block" : "hidden"}
         >
           <StockFinancialsTab
             ticker={ticker}
@@ -551,8 +576,8 @@ export function StockPageContent({
         <div
           role="tabpanel"
           id="stock-tab-earnings"
-          aria-hidden={activeTab !== "earnings"}
-          className={activeTab === "earnings" ? "block" : "hidden"}
+          aria-hidden={displayTab !== "earnings"}
+          className={displayTab === "earnings" ? "block" : "hidden"}
         >
           <StockEarningsTab ticker={ticker} />
         </div>
@@ -562,8 +587,8 @@ export function StockPageContent({
         <div
           role="tabpanel"
           id="stock-tab-multicharts"
-          aria-hidden={activeTab !== "multicharts"}
-          className={activeTab === "multicharts" ? "block" : "hidden"}
+          aria-hidden={displayTab !== "multicharts"}
+          className={displayTab === "multicharts" ? "block" : "hidden"}
         >
           <StockMultichartsTab
             ticker={ticker}
@@ -580,8 +605,8 @@ export function StockPageContent({
         <div
           role="tabpanel"
           id="stock-tab-target-price"
-          aria-hidden={activeTab !== "target-price"}
-          className={activeTab === "target-price" ? "block" : "hidden"}
+          aria-hidden={displayTab !== "target-price"}
+          className={displayTab === "target-price" ? "block" : "hidden"}
         >
           <div className="w-full min-w-0">
             <StockTargetPriceTab ticker={ticker} />
@@ -593,8 +618,8 @@ export function StockPageContent({
         <div
           role="tabpanel"
           id="stock-tab-insiders"
-          aria-hidden={activeTab !== "insiders"}
-          className={activeTab === "insiders" ? "block" : "hidden"}
+          aria-hidden={displayTab !== "insiders"}
+          className={displayTab === "insiders" ? "block" : "hidden"}
         >
           <StockInsidersTab ticker={ticker} />
         </div>
@@ -604,8 +629,8 @@ export function StockPageContent({
         <div
           role="tabpanel"
           id="stock-tab-superinvestors"
-          aria-hidden={activeTab !== "superinvestors"}
-          className={activeTab === "superinvestors" ? "block" : "hidden"}
+          aria-hidden={displayTab !== "superinvestors"}
+          className={displayTab === "superinvestors" ? "block" : "hidden"}
         >
           <StockSuperinvestorsTab ticker={ticker} />
         </div>
@@ -615,8 +640,8 @@ export function StockPageContent({
         <div
           role="tabpanel"
           id="stock-tab-charting"
-          aria-hidden={activeTab !== "charting"}
-          className={activeTab === "charting" ? "block" : "hidden"}
+          aria-hidden={displayTab !== "charting"}
+          className={displayTab === "charting" ? "block" : "hidden"}
         >
           <StockChartingTab
             ticker={ticker}
@@ -634,8 +659,8 @@ export function StockPageContent({
         <div
           role="tabpanel"
           id="stock-tab-peers"
-          aria-hidden={activeTab !== "peers"}
-          className={activeTab === "peers" ? "block" : "hidden"}
+          aria-hidden={displayTab !== "peers"}
+          className={displayTab === "peers" ? "block" : "hidden"}
         >
           <StockPeersTab
             ticker={ticker}
@@ -648,8 +673,8 @@ export function StockPageContent({
         <div
           role="tabpanel"
           id="stock-tab-holdings"
-          aria-hidden={activeTab !== "holdings"}
-          className={activeTab === "holdings" ? "block" : "hidden"}
+          aria-hidden={displayTab !== "holdings"}
+          className={displayTab === "holdings" ? "block" : "hidden"}
         >
           <AssetPortfolioHoldingsTab
             assetKind="stock"
@@ -664,8 +689,8 @@ export function StockPageContent({
         <div
           role="tabpanel"
           id="stock-tab-profile"
-          aria-hidden={activeTab !== "profile"}
-          className={activeTab === "profile" ? "block" : "hidden"}
+          aria-hidden={displayTab !== "profile"}
+          className={displayTab === "profile" ? "block" : "hidden"}
         >
           <StockProfileTab
             ticker={ticker}

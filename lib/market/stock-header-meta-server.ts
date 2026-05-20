@@ -8,7 +8,10 @@ import type { StockDetailHeaderMeta } from "@/lib/market/stock-header-meta";
 import { resolveEquityLogoUrlFromTicker } from "@/lib/screener/resolve-equity-logo-url";
 import { countWatchlistEntriesForStockTicker } from "@/lib/watchlist/stock-watchlist-count";
 
-type HeaderIdentityFields = Pick<StockDetailHeaderMeta, "fullName" | "logoUrl" | "exchange" | "sector" | "industry">;
+type HeaderIdentityFields = Pick<
+  StockDetailHeaderMeta,
+  "fullName" | "logoUrl" | "exchange" | "countryIso" | "sector" | "industry"
+>;
 
 function parseGeneral(root: Record<string, unknown> | null): Record<string, unknown> | null {
   if (!root || typeof root !== "object" || !root.General || typeof root.General !== "object") return null;
@@ -41,7 +44,14 @@ async function buildHeaderIdentityUncached(ticker: string): Promise<HeaderIdenti
   const exchangeRaw = general?.Exchange ?? null;
   const exchange = typeof exchangeRaw === "string" && exchangeRaw.trim() ? exchangeRaw.trim() : null;
 
-  return { fullName, logoUrl, exchange, sector, industry };
+  const countryRaw = general?.CountryISO ?? general?.Country ?? null;
+  let countryIso: string | null = null;
+  if (typeof countryRaw === "string" && countryRaw.trim()) {
+    const c = countryRaw.trim().toUpperCase();
+    countryIso = c === "USA" ? "US" : /^[A-Z]{2}$/.test(c) ? c : null;
+  }
+
+  return { fullName, logoUrl, exchange, countryIso, sector, industry };
 }
 
 /** Next-earnings display string — follows fundamentals warm-long cadence. */
@@ -53,7 +63,7 @@ async function buildHeaderEarningsLineUncached(ticker: string): Promise<{ earnin
   return { earningsDateDisplay: resolveEarningsDateDisplay(highlights, r) };
 }
 
-const getCachedStockHeaderIdentity = unstable_cache(buildHeaderIdentityUncached, ["stock-header-identity-v2-exchange"], {
+const getCachedStockHeaderIdentity = unstable_cache(buildHeaderIdentityUncached, ["stock-header-identity-v3-country"], {
   revalidate: REVALIDATE_IDENTITY,
 });
 

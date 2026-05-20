@@ -37,6 +37,7 @@ import {
   getSimpleMarketDataScreenerStocksAllPages,
   getSimpleScreenerDerived,
   getSimpleScreenerDerivedTop10,
+  getScreenerUniverseStockDerived,
   getSimpleScreenerStockDerivedForTickers,
 } from "@/lib/market/simple-market-layer";
 import { getSimpleIndexCards } from "@/lib/screener/simple-index-cards";
@@ -478,25 +479,19 @@ export async function buildScreenerPagePayload(
       }
     : { sector: stocksSector, industry: null, industrySector: null };
 
-  const [indexCards, staticLayer, companiesFirst, sectorEtfYtd] = await Promise.all([
+  const [indexCards, staticLayer, companiesFirst, sectorEtfYtd, universeDerived] = await Promise.all([
     getSimpleIndexCards(),
     getScreenerCompaniesStaticLayer(),
     buildScreenerCompaniesApiResponse(1, SCREENER_COMPANIES_PAGE_SIZE, companiesApiOpts),
     getScreenerSectorEtfProxyYtdBySector(),
+    getScreenerUniverseStockDerived(),
   ]);
 
-  const { sectors, industries } = buildScreenerSectorsAndIndustriesRows(staticLayer.universe);
+  const { sectors, industries } = buildScreenerSectorsAndIndustriesRows(
+    staticLayer.universe,
+    universeDerived,
+  );
   const sectorsWithYtdFallback = sectors.map((row) => {
-    const hasAggregateYtd = row.changeYTD != null && Number.isFinite(row.changeYTD);
-    if (hasAggregateYtd) return row;
-    const proxy = sectorEtfYtd[row.sector as ScreenerCanonicalSector];
-    if (proxy != null && Number.isFinite(proxy)) {
-      return { ...row, changeYTD: proxy };
-    }
-    return row;
-  });
-
-  const industriesWithYtdFallback = industries.map((row) => {
     const hasAggregateYtd = row.changeYTD != null && Number.isFinite(row.changeYTD);
     if (hasAggregateYtd) return row;
     const proxy = sectorEtfYtd[row.sector as ScreenerCanonicalSector];
@@ -519,6 +514,6 @@ export async function buildScreenerPagePayload(
     stocksIndustryFilter,
     indexCards,
     sectors: sectorsWithYtdFallback,
-    industries: industriesWithYtdFallback,
+    industries,
   };
 }

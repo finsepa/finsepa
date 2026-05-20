@@ -27,10 +27,22 @@ export function rangeStartUnixSeconds(range: StockChartRange, now: Date): number
   return null;
 }
 
-function sliceFromNearestTradingPoint(points: Array<{ time: number; value: number }>, startSec: number | null) {
+function tailDailyFallback(points: StockChartPoint[], range: StockChartRange): StockChartPoint[] {
+  if (!points.length) return [];
+  if (range === "1D") return points.slice(-5);
+  if (range === "5D") return points.slice(-10);
+  return points;
+}
+
+function sliceFromNearestTradingPoint(
+  points: StockChartPoint[],
+  startSec: number | null,
+  range: StockChartRange,
+) {
   if (startSec == null) return points;
   const idx = points.findIndex((p) => p.time >= startSec);
-  return idx === -1 ? [] : points.slice(idx);
+  if (idx === -1) return tailDailyFallback(points, range);
+  return points.slice(idx);
 }
 
 /**
@@ -42,9 +54,9 @@ export function sliceStockChartPointsForRange(
   now: Date = new Date(),
 ): StockChartPoint[] {
   const startSec = rangeStartUnixSeconds(range, now);
-  let points = sliceFromNearestTradingPoint(rawPoints, startSec);
+  let points = sliceFromNearestTradingPoint(rawPoints, startSec, range);
   if ((range === "1D" || range === "5D") && points.length === 0 && rawPoints.length > 0) {
-    points = rawPoints;
+    points = tailDailyFallback(rawPoints, range);
   }
   return points;
 }

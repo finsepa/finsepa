@@ -146,7 +146,9 @@ export function CryptoTable({
               <div className="flex min-w-0 items-center justify-start gap-3 pr-4 text-left">
                 <CompanyLogo name={r.symbol} logoUrl={r.logoUrl} symbol={r.symbol} />
                 <div className="min-w-0">
-                  <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">{r.name}</div>
+                  <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B] underline-offset-2 decoration-[#71717A] group-hover:underline">
+                    {r.name}
+                  </div>
                   <div className="text-[12px] font-normal leading-4 !text-[#71717A]">
                     {eodhdCryptoSpotTickerDisplay(r.symbol)}
                   </div>

@@ -10,10 +10,12 @@ import { Sidebar } from "@/components/layout/sidebar";
 import {
   SIDEBAR_OUTER_COLLAPSED_PX,
   SIDEBAR_OUTER_EXPANDED_PX,
+  SIDEBAR_WIDTH_MOTION_CLASS,
   SidebarLayoutProvider,
   useSidebarLayout,
 } from "@/components/layout/sidebar-layout-context";
 import { Topbar } from "@/components/layout/topbar";
+import { cn } from "@/lib/utils";
 
 function ProtectedAppChrome({
   children,
@@ -49,7 +51,11 @@ function ProtectedAppChrome({
         <NavigationTopLoader />
       </Suspense>
       <div
-        className="fixed inset-y-0 left-0 z-20 hidden p-1 transition-[width] duration-200 ease-out md:block md:top-[var(--shell-chrome-inset)] md:bottom-[var(--shell-chrome-inset)] md:p-0 md:px-1 md:py-0"
+        suppressHydrationWarning
+        className={cn(
+          "fixed inset-y-0 left-0 z-20 hidden p-1 md:block md:top-[var(--shell-chrome-inset)] md:bottom-[var(--shell-chrome-inset)] md:p-0 md:px-1 md:py-0",
+          SIDEBAR_WIDTH_MOTION_CLASS,
+        )}
         style={{ width: leftOffset }}
       >
         <Sidebar />
@@ -61,12 +67,18 @@ function ProtectedAppChrome({
        */}
       <div
         suppressHydrationWarning
-        className="flex min-h-0 min-w-0 flex-1 flex-col max-md:min-h-[var(--app-vh)] md:fixed md:top-[var(--shell-chrome-inset)] md:right-[var(--shell-chrome-inset)] md:bottom-[var(--shell-chrome-inset)] md:left-[length:var(--shell-left)] md:z-0 md:gap-[var(--shell-chrome-gap)] md:overflow-hidden md:transition-[left] md:duration-200 md:ease-out"
+        className={cn(
+          "flex min-h-0 min-w-0 flex-1 flex-col max-md:min-h-[var(--app-vh)] md:fixed md:top-[var(--shell-chrome-inset)] md:right-[var(--shell-chrome-inset)] md:bottom-[var(--shell-chrome-inset)] md:left-[length:var(--shell-left)] md:z-0 md:gap-[var(--shell-chrome-gap)] md:overflow-hidden",
+          SIDEBAR_WIDTH_MOTION_CLASS,
+        )}
         style={chromeColumnStyle}
       >
         <div
           suppressHydrationWarning
-          className="z-30 min-w-0 w-full max-w-full shrink-0 bg-white max-md:relative max-md:shadow-none md:rounded-[4px] md:bg-white md:shadow-[0_1px_0_0_rgba(0,0,0,0.03)] md:transition-[width] md:duration-200 md:ease-out"
+          className={cn(
+            "z-30 min-w-0 w-full max-w-full shrink-0 bg-white max-md:relative max-md:shadow-none md:rounded-[4px] md:bg-white md:shadow-[0_1px_0_0_rgba(0,0,0,0.03)]",
+            SIDEBAR_WIDTH_MOTION_CLASS,
+          )}
         >
           <Topbar
             userId={userId}
@@ -98,6 +110,7 @@ export function ProtectedAppShellInner({
   avatarUrl,
   userDisplayName,
   platformTrialDaysLeft = null,
+  initialSidebarCollapsed = false,
 }: {
   children: ReactNode;
   userId: string;
@@ -106,9 +119,11 @@ export function ProtectedAppShellInner({
   userDisplayName: string;
   /** Days remaining in the platform free trial; shown in the top bar until the user subscribes. */
   platformTrialDaysLeft?: number | null;
+  /** Server-read cookie so sidebar width matches on SSR and hydration. */
+  initialSidebarCollapsed?: boolean;
 }) {
   return (
-    <SidebarLayoutProvider>
+    <SidebarLayoutProvider initialCollapsed={initialSidebarCollapsed}>
       <ProtectedAppChrome
         userId={userId}
         userInitials={userInitials}

@@ -20,3 +20,19 @@ export const SCREENER_INDICES_HREF = `/screener?${SCREENER_MARKET_QUERY}=indices
 
 /** Deep link: Screener with ETFs tab active. */
 export const SCREENER_ETFS_HREF = `/screener?${SCREENER_MARKET_QUERY}=etfs` as const;
+
+export type ScreenerMarketTabLabel = "Stocks" | "Crypto" | "Indices" | "ETF's";
+
+export function screenerMarketTabLabelFromParam(market: ScreenerMarketTabParam): ScreenerMarketTabLabel {
+  if (market === "crypto") return "Crypto";
+  if (market === "indices") return "Indices";
+  if (market === "etfs") return "ETF's";
+  return "Stocks";
+}
+
+export function screenerMarketTabParamFromLabel(tab: ScreenerMarketTabLabel): ScreenerMarketTabParam {
+  if (tab === "Crypto") return "crypto";
+  if (tab === "Indices") return "indices";
+  if (tab === "ETF's") return "etfs";
+  return "stocks";
+}

@@ -1,3 +1,5 @@
+import { countryFlagEmoji } from "@/lib/market/economy-format-display";
+
 /** Normalized company metadata for the stock detail header (API + UI). */
 export type StockDetailHeaderMeta = {
   /** Official full company name when available (e.g. "NVIDIA Corporation"). */
@@ -6,12 +8,76 @@ export type StockDetailHeaderMeta = {
   logoUrl: string | null;
   /** Listing exchange short name (e.g. `NASDAQ`, `NYSE`) from fundamentals `General.Exchange`. */
   exchange: string | null;
+  /** ISO 3166-1 alpha-2 (e.g. `US`) from fundamentals `General.CountryISO` when available. */
+  countryIso: string | null;
   sector: string | null;
   industry: string | null;
   earningsDateDisplay: string | null;
   /** Global count of watchlist rows for this plain ticker; null if unavailable. */
   watchlistCount: number | null;
 };
+
+const US_LISTING_EXCHANGES = new Set([
+  "NASDAQ",
+  "NYSE",
+  "AMEX",
+  "BATS",
+  "OTC",
+  "US",
+  "NYSE ARCA",
+  "NYSE MKT",
+  "ARCA",
+]);
+
+function normalizeCountryIso(raw: string | null | undefined): string | null {
+  const v = typeof raw === "string" ? raw.trim().toUpperCase() : "";
+  if (!v) return null;
+  if (v === "USA") return "US";
+  if (/^[A-Z]{2}$/.test(v)) return v;
+  return null;
+}
+
+function inferListingCountryIso(exchange: string | null | undefined): string | null {
+  const ex = typeof exchange === "string" ? exchange.trim().toUpperCase() : "";
+  if (!ex) return null;
+  if (US_LISTING_EXCHANGES.has(ex)) return "US";
+  if (ex.includes("NASDAQ") || ex.includes("NYSE") || ex.startsWith("OTC")) return "US";
+  return null;
+}
+
+export type StockListingSubtitleParts = {
+  ticker: string;
+  exchange: string | null;
+  countryFlag: string | null;
+};
+
+export function getStockListingSubtitleParts(args: {
+  ticker: string;
+  exchange: string | null | undefined;
+  countryIso?: string | null | undefined;
+}): StockListingSubtitleParts {
+  const ticker = args.ticker.trim().toUpperCase();
+  const exchange = typeof args.exchange === "string" ? args.exchange.trim() : "";
+  const country = normalizeCountryIso(args.countryIso) ?? inferListingCountryIso(exchange);
+  return {
+    ticker,
+    exchange: exchange || null,
+    countryFlag: country ? countryFlagEmoji(country) : null,
+  };
+}
+
+/** Subtitle under the company name, e.g. `NVDA · NASDAQ · 🇺🇸`. */
+export function formatStockListingSubtitle(args: {
+  ticker: string;
+  exchange: string | null | undefined;
+  countryIso?: string | null | undefined;
+}): string {
+  const { ticker, exchange, countryFlag } = getStockListingSubtitleParts(args);
+  const parts: string[] = [ticker];
+  if (exchange) parts.push(exchange);
+  if (countryFlag) parts.push(countryFlag);
+  return parts.join(" · ");
+}
 
 export function formatHeaderMetaSegment(value: string | null | undefined): string {
   const v = typeof value === "string" ? value.trim() : "";

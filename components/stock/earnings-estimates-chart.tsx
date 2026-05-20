@@ -18,12 +18,22 @@ import {
 } from "lightweight-charts";
 
 import { SegmentedControl } from "@/components/design-system";
+import {
+  fundamentalsBarHistogramDisplayAtIndex,
+  fundamentalsBarSolidAtIndex,
+} from "@/lib/colors/fundamentals-multi-bar-colors";
 import { formatRatio, formatUsdCompact } from "@/lib/market/key-stats-basic-format";
 import type { StockEarningsEstimatesChart, StockEarningsEstimatesPoint } from "@/lib/market/stock-earnings-types";
 
-/** Charting tab reference — primary blue + translucent grouped bar. */
-const REPORTED_BAR = "#2563EB";
-const ESTIMATE_BAR = "rgba(37, 99, 235, 0.52)";
+/** Match Multicharts bar palette (primary + translucent estimate). */
+const REPORTED_BAR = fundamentalsBarSolidAtIndex(0);
+const ESTIMATE_BAR = fundamentalsBarHistogramDisplayAtIndex(0);
+
+/** Multicharts hover column band + tooltip chrome. */
+const CHART_HOVER_BAND_BG = "rgba(59, 130, 246, 0.14)";
+const CHART_GRID_LINE_COLOR = "#F4F4F5";
+const CHART_TOOLTIP_CLASS =
+  "pointer-events-none absolute z-30 max-w-[min(280px,calc(100%-16px))] rounded-lg border border-[#E4E4E7] bg-white px-3 py-2.5 pr-3.5 text-left shadow-[0px_1px_4px_0px_rgba(10,10,10,0.08),0px_1px_2px_0px_rgba(10,10,10,0.06)]";
 /** Half-day offset so estimate/actual bars stay paired; keep small vs {@link GROUP_CENTER_SPACING_DAYS}. */
 const GROUP_SHIFT_SEC = 24 * 60 * 60;
 
@@ -44,7 +54,7 @@ const ESTIMATES_CHART_AXIS_ROW_PX = 64;
 const ESTIMATES_CHART_TOTAL_HEIGHT_PX = ESTIMATES_CHART_PLOT_HEIGHT_PX + ESTIMATES_CHART_AXIS_ROW_PX;
 
 /** Must match `rightPriceScale.minimumWidth` so period labels line up with the histogram plot. */
-const ESTIMATES_CHART_Y_AXIS_WIDTH_PX = 56;
+const ESTIMATES_CHART_Y_AXIS_WIDTH_PX = 50;
 
 /** LWC time-scale `barSpacing` ≈ histogram column width (px); `maxBarSpacing` caps zoom/fit. */
 const ESTIMATES_CHART_MAX_BAR_WIDTH_PX = 32;
@@ -132,7 +142,7 @@ class EstimatesHoverBandPrimitive implements IPanePrimitive {
       const w = right - left;
       if (!Number.isFinite(w) || w <= 0) return;
       target.useMediaCoordinateSpace(({ context, mediaSize }) => {
-        context.fillStyle = "rgba(59, 130, 246, 0.14)";
+        context.fillStyle = CHART_HOVER_BAND_BG;
         context.fillRect(left, 0, w, mediaSize.height);
       });
     },
@@ -176,7 +186,7 @@ const ESTIMATES_TIME_SCALE_GUTTER_PX = 14;
 /**
  * Right price scale + tick labels — reserve width when fitting the time scale so bars stay aligned with labels below.
  */
-const ESTIMATES_CHART_Y_AXIS_RESERVE_PX = 64;
+const ESTIMATES_CHART_Y_AXIS_RESERVE_PX = 58;
 
 /**
  * Fit histogram to the **container** width: auto `barSpacing` (capped at 32px) so the series fills the plot
@@ -432,14 +442,14 @@ export function EarningsEstimatesChart({ data }: Props) {
         },
         grid: {
           vertLines: { visible: false },
-          horzLines: { color: "#E4E4E7" },
+          horzLines: { color: CHART_GRID_LINE_COLOR },
         },
         leftPriceScale: { visible: false, borderVisible: false },
         rightPriceScale: {
           visible: true,
           borderVisible: false,
           minimumWidth: ESTIMATES_CHART_Y_AXIS_WIDTH_PX,
-          scaleMargins: { top: 0.08, bottom: 0.12 },
+          scaleMargins: { top: 0.08, bottom: 0.08 },
         },
         timeScale: {
           borderVisible: false,
@@ -462,7 +472,7 @@ export function EarningsEstimatesChart({ data }: Props) {
             labelVisible: false,
           },
           horzLine: {
-            visible: true,
+            visible: false,
             width: 1,
             color: "rgba(9, 9, 11, 0.06)",
             style: LineStyle.Solid,
@@ -640,7 +650,7 @@ export function EarningsEstimatesChart({ data }: Props) {
                 <div ref={wrapRef} className="h-full w-full min-w-0 overflow-hidden" />
                 {tooltip ? (
                   <div
-                    className="pointer-events-none absolute z-20 max-w-[min(280px,calc(100%-16px))] rounded-lg bg-[#09090B] px-3 py-2.5 pr-3.5 text-left text-white shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
+                    className={CHART_TOOLTIP_CLASS}
                     style={{
                       left: `clamp(8px, ${tooltip.anchorX}px, calc(100% - 8px))`,
                       top: tooltip.y,
@@ -651,17 +661,17 @@ export function EarningsEstimatesChart({ data }: Props) {
                     }}
                   >
                     {tooltip.side === "left" ? (
-                      <span
-                        className="absolute top-1/2 left-full -translate-y-1/2 border-y-[6px] border-y-transparent border-l-[7px] border-l-[#09090B]"
-                        aria-hidden
-                      />
+                      <span className="absolute top-1/2 left-full -translate-y-1/2" aria-hidden>
+                        <span className="block border-y-[7px] border-y-transparent border-l-[8px] border-l-[#E4E4E7]" />
+                        <span className="absolute top-1/2 left-px -translate-y-1/2 border-y-[6px] border-y-transparent border-l-[7px] border-l-white" />
+                      </span>
                     ) : (
-                      <span
-                        className="absolute top-1/2 right-full -translate-y-1/2 border-y-[6px] border-y-transparent border-r-[7px] border-r-[#09090B]"
-                        aria-hidden
-                      />
+                      <span className="absolute top-1/2 right-full -translate-y-1/2" aria-hidden>
+                        <span className="block border-y-[7px] border-y-transparent border-r-[8px] border-r-[#E4E4E7]" />
+                        <span className="absolute top-1/2 right-px -translate-y-1/2 border-y-[6px] border-y-transparent border-r-[7px] border-r-white" />
+                      </span>
                     )}
-                    <p className="text-[12px] font-semibold leading-4 text-white">{tooltip.periodLabel}</p>
+                    <p className="text-[12px] font-semibold leading-4 text-[#09090B]">{tooltip.periodLabel}</p>
                     <p className="mt-1.5 whitespace-nowrap text-[12px] font-normal leading-4 text-[#71717A]">
                       {tooltip.estimateLine}
                     </p>
@@ -672,7 +682,7 @@ export function EarningsEstimatesChart({ data }: Props) {
                 ) : null}
               </div>
               <div
-                className="flex w-full shrink-0 flex-col gap-4 border-t border-[#E4E4E7] pt-1.5"
+                className="flex w-full shrink-0 flex-col gap-3 pt-0"
                 style={{ height: ESTIMATES_CHART_AXIS_ROW_PX }}
               >
                 <div className="flex min-h-0 w-full min-w-0 flex-1">
@@ -690,7 +700,7 @@ export function EarningsEstimatesChart({ data }: Props) {
                       </div>
                     ))}
                   </div>
-                  <div className="shrink-0" style={{ width: ESTIMATES_CHART_Y_AXIS_WIDTH_PX }} aria-hidden />
+                  <div className="shrink-0 pl-3" style={{ width: ESTIMATES_CHART_Y_AXIS_WIDTH_PX }} aria-hidden />
                 </div>
                 <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-1">
                   <div className="flex items-center gap-2">
@@ -707,7 +717,7 @@ export function EarningsEstimatesChart({ data }: Props) {
           </div>
         ) : (
           <div
-            className="flex items-center justify-center text-[14px] text-[#71717A]"
+            className="flex items-center justify-center rounded-xl border border-dashed border-[#E4E4E7] bg-[#FAFAFA] text-[13px] text-[#71717A]"
             style={{ height: ESTIMATES_CHART_TOTAL_HEIGHT_PX }}
           >
             No estimate data for this view.

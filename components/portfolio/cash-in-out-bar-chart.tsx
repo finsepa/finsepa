@@ -523,6 +523,7 @@ function CashInOutBarChartSectionInner({ rows }: { rows: PortfolioTransaction[] 
 
           <TabSwitcher
             aria-label="Cash chart grouping"
+            fullWidth
             className="flex-1 min-w-0 sm:flex-none sm:w-[220px]"
             options={[
               { value: "month" as const, label: "Monthly" },

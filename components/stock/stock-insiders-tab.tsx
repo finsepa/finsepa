@@ -380,7 +380,7 @@ export function StockInsidersTab({ ticker }: { ticker: string }) {
             <InsiderPeriodCard title="Last 12 Months" agg={summary.m12} />
           </div>
         )}
-        <h2 className="text-[24px] font-semibold leading-9 tracking-tight text-[#09090B]">Latest transactions</h2>
+        <h2 className="text-[18px] font-semibold leading-7 tracking-tight text-[#09090B]">Latest transactions</h2>
       </div>
 
       {loading ? (

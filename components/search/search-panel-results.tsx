@@ -1,7 +1,9 @@
 "use client";
 
+import { dropdownMenuFloatingScrollClassName } from "@/components/design-system/dropdown-menu-styles";
 import type { SearchAssetItem } from "@/lib/search/search-types";
 import { SearchResultRow } from "@/components/search/search-result-row";
+import { cn } from "@/lib/utils";
 
 export function SearchPanelResults({
   emptyQuery,
@@ -18,7 +20,10 @@ export function SearchPanelResults({
   isWatched,
   watchlistLoaded,
   toggleTicker,
-  listClassName = "max-h-[min(420px,60dvh)] overflow-y-auto",
+  listClassName = cn(
+    dropdownMenuFloatingScrollClassName,
+    "max-h-[min(420px,60dvh)] overflow-y-auto overscroll-y-contain",
+  ),
   sectionClassName = "px-3 pb-1 pt-1",
 }: {
   emptyQuery: boolean;

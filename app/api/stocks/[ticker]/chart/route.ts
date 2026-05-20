@@ -28,7 +28,7 @@ export async function GET(request: Request, { params }: Ctx) {
 
   const url = new URL(request.url);
   const rangeParam = url.searchParams.get("range");
-  const range: StockChartRange = isStockChartRange(rangeParam) ? rangeParam : "1Y";
+  const range: StockChartRange = isStockChartRange(rangeParam) ? rangeParam : "1D";
   const seriesParam = url.searchParams.get("series");
   const series: StockChartSeries = isStockChartSeries(seriesParam) ? seriesParam : "price";
 

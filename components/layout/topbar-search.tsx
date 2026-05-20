@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { Search, X } from "lucide-react";
 
 import {
+  dropdownMenuFloatingScrollClassName,
   dropdownMenuPanelBodyClassName,
   dropdownMenuSurfaceClassName,
 } from "@/components/design-system/dropdown-menu-styles";
@@ -20,6 +21,16 @@ const SEARCH_PANEL_WIDTH_CLASS = "w-[360px] max-w-[calc(100vw-2rem)]";
 /** Above page content, below topbar (`z-30`) and search dropdown (`z-220`). */
 const SEARCH_DISMISS_BACKDROP_Z = 29;
 
+const SEARCH_MOTION_MS = 280;
+const SEARCH_MOTION_EASE = "cubic-bezier(0.33, 1, 0.68, 1)";
+
+const SEARCH_ICON_SIZE_PX = 20;
+const SEARCH_ICON_GAP_PX = 8;
+/** Icon inset inside the pill when collapsed (`pl-4`). */
+const SEARCH_ICON_INSET_PX = 16;
+/** Room for icon + gap before placeholder text when collapsed. */
+const SEARCH_INPUT_COLLAPSED_PL_PX = SEARCH_ICON_SIZE_PX + SEARCH_ICON_GAP_PX;
+
 export function TopbarSearch() {
   const [open, setOpen] = useState(false);
   const [portalMounted, setPortalMounted] = useState(false);
@@ -30,6 +41,20 @@ export function TopbarSearch() {
   const openSearch = useCallback(() => setOpen(true), []);
 
   const panel = useSearchPanel({ open, onClose: close });
+
+  /** Focus in the same user gesture (pointerdown) so iOS Safari opens the keyboard. */
+  const focusSearchInput = useCallback(() => {
+    const input = panel.inputRef.current;
+    if (!input) return;
+    input.readOnly = false;
+    input.focus({ preventScroll: true });
+  }, [panel.inputRef]);
+
+  const activateSearch = useCallback(() => {
+    if (open) return;
+    focusSearchInput();
+    setOpen(true);
+  }, [open, focusSearchInput]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -55,56 +80,115 @@ export function TopbarSearch() {
     setPortalMounted(true);
   }, []);
 
+  const motionStyle = {
+    transitionDuration: `${SEARCH_MOTION_MS}ms`,
+    transitionTimingFunction: SEARCH_MOTION_EASE,
+  } as const;
+
   const searchControl = (
     <div className={cn("relative w-full", SEARCH_PANEL_WIDTH_CLASS, open && "z-[45]")}>
       <div
         ref={anchorRef}
         role="search"
+        data-open={open ? "true" : "false"}
         className={cn(
-          "flex h-9 min-w-0 cursor-text items-center gap-2 rounded-lg bg-[#F4F4F5] px-4",
+          "relative flex h-9 min-w-0 w-full cursor-text items-center overflow-hidden rounded-lg bg-[#F4F4F5] pl-4 pr-3",
+          "transition-colors motion-reduce:transition-none",
           !open && "hover:bg-[#EBEBEB]",
         )}
-        onClick={!open ? openSearch : undefined}
+        style={motionStyle}
+        onPointerDown={(e) => {
+          if (open || e.button !== 0) return;
+          activateSearch();
+        }}
       >
-        <Search className="h-5 w-5 shrink-0 text-[#09090B]" aria-hidden />
-        <input
-          ref={panel.inputRef}
-          type="text"
-          inputMode="search"
-          readOnly={!open}
-          value={panel.query}
-          onChange={(e) => panel.setQuery(e.target.value)}
-          placeholder="Search..."
-          className="min-w-0 flex-1 cursor-text bg-transparent text-sm leading-5 text-[#09090B] outline-none placeholder:text-[#A1A1AA] caret-[#09090B] read-only:cursor-text"
-          autoComplete="off"
-          autoCorrect="off"
-          enterKeyHint="search"
-          role="searchbox"
-          aria-label="Search"
-          aria-expanded={open}
-          aria-controls="topbar-search-results"
-          aria-autocomplete="list"
-        />
-        {open ? (
+        <span
+          className="pointer-events-none absolute top-1/2 z-10 flex h-5 w-5 items-center justify-center text-[#09090B] motion-reduce:transition-none"
+          style={{
+            left: SEARCH_ICON_INSET_PX,
+            ...motionStyle,
+            transitionProperty: "transform",
+            transform: open
+              ? `translate(calc(-${SEARCH_ICON_INSET_PX}px - 100% - ${SEARCH_ICON_GAP_PX}px), -50%)`
+              : "translateY(-50%)",
+          }}
+          aria-hidden
+        >
+          <Search className="h-5 w-5" strokeWidth={2} />
+        </span>
+
+        <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden">
+          <div
+            className="overflow-hidden transition-[clip-path] motion-reduce:transition-none"
+            style={{
+              ...motionStyle,
+              clipPath: open
+                ? "inset(-1px 0 -1px 0)"
+                : "inset(-1px calc(100% - 4.75rem) -1px 0)",
+            }}
+          >
+            <input
+              ref={panel.inputRef}
+              type="search"
+              inputMode="search"
+              readOnly={!open}
+              value={panel.query}
+              onChange={(e) => panel.setQuery(e.target.value)}
+              onPointerDown={(e) => {
+                if (open || e.button !== 0) return;
+                e.stopPropagation();
+                activateSearch();
+              }}
+              placeholder="Search..."
+              className="w-full min-w-0 cursor-text bg-transparent text-sm leading-5 text-[#09090B] outline-none placeholder:text-[#A1A1AA] caret-[#09090B] read-only:cursor-text transition-[padding-left] motion-reduce:transition-none"
+              style={{
+                ...motionStyle,
+                paddingLeft: open ? 0 : SEARCH_INPUT_COLLAPSED_PL_PX,
+              }}
+              autoComplete="off"
+              autoCorrect="off"
+              enterKeyHint="search"
+              role="searchbox"
+              aria-label="Search"
+              aria-expanded={open}
+              aria-controls="topbar-search-results"
+              aria-autocomplete="list"
+            />
+          </div>
+        </div>
+
+        <div className="relative ml-1 flex h-7 w-7 shrink-0 items-center justify-center">
           <button
             type="button"
+            tabIndex={open ? 0 : -1}
             onClick={(e) => {
               e.stopPropagation();
               close();
             }}
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[#71717A] transition-colors hover:bg-[#F4F4F5] hover:text-[#09090B] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/10"
+            className={cn(
+              "absolute inset-0 flex items-center justify-center rounded-md text-[#71717A]",
+              "transition-opacity motion-reduce:transition-none",
+              "hover:bg-[#EBEBEB] hover:text-[#09090B] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/10",
+              open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0",
+            )}
+            style={motionStyle}
             aria-label="Close search"
+            aria-hidden={!open}
           >
             <X className="h-4 w-4" strokeWidth={2} aria-hidden />
           </button>
-        ) : (
           <kbd
-            className="pointer-events-none hidden shrink-0 rounded border border-neutral-200 bg-white px-1.5 py-0.5 font-sans text-[10px] font-medium text-[#A1A1AA] md:inline-flex"
-            aria-hidden
+            className={cn(
+              "pointer-events-none hidden rounded border border-neutral-200 bg-white px-1.5 py-0.5 font-sans text-[10px] font-medium text-[#A1A1AA] md:inline-flex",
+              "transition-opacity motion-reduce:transition-none",
+              open ? "opacity-0" : "opacity-100",
+            )}
+            style={motionStyle}
+            aria-hidden={open}
           >
             S
           </kbd>
-        )}
+        </div>
       </div>
 
       <TopbarDropdownPortal open={open} anchorRef={anchorRef} align="leading">
@@ -132,6 +216,7 @@ export function TopbarSearch() {
             toggleTicker={panel.toggleTicker}
             listClassName={cn(
               dropdownMenuPanelBodyClassName,
+              dropdownMenuFloatingScrollClassName,
               "max-h-[min(420px,60dvh)] overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch]",
             )}
             sectionClassName="px-3 pb-1 pt-1"

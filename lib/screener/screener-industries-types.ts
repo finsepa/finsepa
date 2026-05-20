@@ -7,8 +7,8 @@ export type ScreenerIndustryRow = {
   /** Market-cap-weighted 1D % from EODHD screener snapshot (`refund1dP`). */
   change1D: number | null;
   /**
-   * Market-cap-weighted YTD % from EODHD screener snapshot when present;
-   * otherwise the parent sector’s SPDR Select Sector ETF YTD proxy (same source as Sectors tab).
+   * Market-cap-weighted YTD %: EODHD screener `refundYtdP` per name when present, else YTD from
+   * cached daily EOD bars for that industry’s universe constituents.
    */
   changeYTD: number | null;
 };

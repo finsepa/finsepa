@@ -6,6 +6,16 @@ import { mapProviderSectorToCanonical, SCREENER_SECTOR_TABLE_ORDER } from "@/lib
 import type { ScreenerSectorRow } from "@/lib/screener/screener-sectors-types";
 import type { TopCompanyUniverseRow } from "@/lib/screener/top500-companies";
 
+function pickCapWeightedPct(snapshot: number | null | undefined, fromBars: number | null | undefined): number | null {
+  if (snapshot != null && Number.isFinite(snapshot)) return snapshot;
+  if (fromBars != null && Number.isFinite(fromBars)) return fromBars;
+  return null;
+}
+
+export type ScreenerUniverseDerivedPctByTicker = Readonly<
+  Record<string, { changePercent1M: number | null; changePercentYTD: number | null }>
+>;
+
 type CapWeightedAgg = {
   marketCapUsd: number;
   weighted1dNum: number;
@@ -42,7 +52,10 @@ function addUniverseRow(target: CapWeightedAgg, mc: number, refund1dP: number | 
  * One pass over the screener equity universe: sector rows (GICS table order) + industry rows.
  * No extra I/O beyond what already produced `universe` (e.g. {@link getScreenerCompaniesStaticLayer}).
  */
-export function buildScreenerSectorsAndIndustriesRows(universe: readonly TopCompanyUniverseRow[]): {
+export function buildScreenerSectorsAndIndustriesRows(
+  universe: readonly TopCompanyUniverseRow[],
+  derivedByTicker?: ScreenerUniverseDerivedPctByTicker,
+): {
   sectors: ScreenerSectorRow[];
   industries: ScreenerIndustryRow[];
 } {
@@ -55,8 +68,11 @@ export function buildScreenerSectorsAndIndustriesRows(universe: readonly TopComp
     const canon = mapProviderSectorToCanonical(u.sector);
     if (!canon) continue;
     const mc = u.marketCapUsd;
+    const tk = u.ticker.trim().toUpperCase();
+    const barDerived = derivedByTicker?.[tk];
+    const ytdPct = pickCapWeightedPct(u.refundYtdP, barDerived?.changePercentYTD);
 
-    addUniverseRow(sectorAgg.get(canon)!, mc, u.refund1dP, u.refundYtdP);
+    addUniverseRow(sectorAgg.get(canon)!, mc, u.refund1dP, ytdPct);
 
     const rawInd = u.industry?.trim() ?? "";
     const industry = rawInd.length > 0 ? rawInd : "Unclassified";
@@ -66,7 +82,7 @@ export function buildScreenerSectorsAndIndustriesRows(universe: readonly TopComp
       ir = { sector: canon, industry, ...emptyAgg() };
       industryAgg.set(ikey, ir);
     }
-    addUniverseRow(ir, mc, u.refund1dP, u.refundYtdP);
+    addUniverseRow(ir, mc, u.refund1dP, ytdPct);
   }
 
   const sectors: ScreenerSectorRow[] = SCREENER_SECTOR_TABLE_ORDER.map((sector) => {

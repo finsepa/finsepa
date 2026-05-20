@@ -8,8 +8,10 @@ import { Search } from "lucide-react";
 import { fetchSearchItems } from "@/lib/search/fetch-search-items";
 import type { SearchAssetItem } from "@/lib/search/search-types";
 import { readRecentSearches, recordSearchNavigation, removeRecentSearchById } from "@/lib/search/recent-searches-storage";
+import { dropdownMenuFloatingScrollClassName } from "@/components/design-system/dropdown-menu-styles";
 import { SearchResultRow } from "@/components/search/search-result-row";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
+import { cn } from "@/lib/utils";
 import { watchlistStorageKeyForSearchItem } from "@/lib/search/watchlist-storage-key";
 
 const SEARCH_DEBOUNCE_MS = 200;
@@ -199,7 +201,13 @@ export function SearchModal({
           </kbd>
         </div>
 
-        <div className={fullscreen ? "min-h-0 flex-1 overflow-y-auto py-2" : "max-h-[min(420px,60dvh)] overflow-y-auto py-2"}>
+        <div
+          className={cn(
+            dropdownMenuFloatingScrollClassName,
+            "overflow-y-auto overscroll-y-contain py-2 [-webkit-overflow-scrolling:touch]",
+            fullscreen ? "min-h-0 flex-1" : "max-h-[min(420px,60dvh)]",
+          )}
+        >
           {emptyQuery ? (
             <>
               <div className="px-5 pb-2 pt-1 text-[11px] font-semibold uppercase tracking-wide text-[#A1A1AA]">

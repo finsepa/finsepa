@@ -475,6 +475,26 @@ export const getSimpleScreenerDerived = unstable_cache(
   },
 );
 
+/** Full top-500 universe: 1M/YTD from daily EOD bars (for sector/industry cap-weighted aggregates). */
+async function loadScreenerUniverseStockDerivedUncached(): Promise<
+  Record<string, Pick<SimpleScreenerStockDerived, "changePercent1M" | "changePercentYTD">>
+> {
+  const { universe } = await getScreenerCompaniesStaticLayer();
+  const tickers = universe.map((u) => u.ticker).filter((t) => t.trim().length > 0);
+  const derived = await getSimpleScreenerStockDerivedForTickers(tickers, buildEmptyMarketData());
+  const out: Record<string, Pick<SimpleScreenerStockDerived, "changePercent1M" | "changePercentYTD">> = {};
+  for (const [tk, d] of Object.entries(derived)) {
+    out[tk] = { changePercent1M: d.changePercent1M, changePercentYTD: d.changePercentYTD };
+  }
+  return out;
+}
+
+export const getScreenerUniverseStockDerived = unstable_cache(
+  loadScreenerUniverseStockDerivedUncached,
+  ["screener-universe-stock-derived-v1-ytd"],
+  { revalidate: REVALIDATE_TIER_SCREENER_DERIVED },
+);
+
 export const getSimpleScreenerDerivedTop10 = unstable_cache(
   loadSimpleScreenerDerivedTop10Uncached,
   ["simple-screener-derived-top10-v1-live-quote"],

@@ -27,21 +27,38 @@ import {
 } from "@/lib/market/key-stats-basic-format";
 import { MultichartsTabSkeletonGrid } from "@/components/stock/stock-multicharts-tab-skeleton";
 import { EARNINGS_CARD_LABEL_CLASS, EARNINGS_CARD_VALUE_CLASS } from "@/components/stock/earnings-card-styles";
-import { TabSwitcher } from "@/components/design-system";
+import { secondaryOutlineButtonClassName, TabSwitcher } from "@/components/design-system";
 import { MultichartVisualSwitcher } from "@/components/stock/multichart-visual-switcher";
 import type { FundamentalsSeriesMode } from "@/lib/market/charting-series-types";
+import { cn } from "@/lib/utils";
 
 /** Multicharts card — Figma: 20px padding, 12px radius, 1px #E4E4E7 stroke, 8px vertical gap between blocks. */
 const MULTICHART_CARD_CLASS =
   "flex flex-col gap-2 overflow-x-hidden overflow-y-visible rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition hover:shadow-[0px_2px_4px_0px_rgba(10,10,10,0.08)]";
 
-const DEFAULT_MULTICHART_METRICS = [
+/** Previous shipped default — used to migrate stored layouts that were never customized. */
+const LEGACY_DEFAULT_MULTICHART_METRICS = [
   "revenue",
   "net_income",
   "eps",
   "free_cash_flow",
   "ebitda",
 ] as const satisfies readonly ChartingMetricId[];
+
+const DEFAULT_MULTICHART_METRICS = [
+  "revenue",
+  "net_income",
+  "net_margin",
+  "eps",
+  "free_cash_flow",
+  "ebitda",
+  "pe_ratio",
+  "return_on_capital_employed",
+] as const satisfies readonly ChartingMetricId[];
+
+function isSameMetricList(a: readonly string[], b: readonly string[]): boolean {
+  return a.length === b.length && a.every((id, i) => id === b[i]);
+}
 
 const PERIOD_TAB_OPTIONS = [
   { value: "annual" as const, label: "Annual" },
@@ -144,6 +161,10 @@ export function StockMultichartsTab({
       const ids = parsed.map(String) as string[];
       const allowed = new Set<string>(CHARTING_METRIC_IDS as readonly string[]);
       const next = ids.filter((id) => allowed.has(id)) as ChartingMetricId[];
+      if (next.length > 0 && isSameMetricList(next, LEGACY_DEFAULT_MULTICHART_METRICS)) {
+        setMetrics([...DEFAULT_MULTICHART_METRICS]);
+        return;
+      }
       setMetrics(next.length > 0 ? next : baseMetrics);
     } catch {
       setMetrics(baseMetrics);
@@ -284,23 +305,26 @@ export function StockMultichartsTab({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
         <h2 className="text-[20px] font-semibold leading-8 tracking-tight text-[#09090B]">{title}</h2>
         <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
-          <TabSwitcher
-            options={PERIOD_TAB_OPTIONS}
-            value={periodMode}
-            onChange={setPeriodMode}
-            aria-label="Reporting period"
-          />
-          <MultichartVisualSwitcher value={chartVisual} onChange={setChartVisual} />
-          <div className="relative" ref={pickerWrapRef}>
+          <div className="flex shrink-0 flex-nowrap items-center gap-2">
+            <TabSwitcher
+              size="sm"
+              options={PERIOD_TAB_OPTIONS}
+              value={periodMode}
+              onChange={setPeriodMode}
+              aria-label="Reporting period"
+            />
+            <MultichartVisualSwitcher size="sm" value={chartVisual} onChange={setChartVisual} />
+          </div>
+          <div className="relative shrink-0" ref={pickerWrapRef}>
             <button
               type="button"
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] border border-[#E4E4E7] bg-white px-4 text-sm font-semibold text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15"
+              className={cn(secondaryOutlineButtonClassName, "gap-2 px-4")}
               onClick={() => setPickerOpen((v) => !v)}
               aria-label="Add metric"
               title="Add metric"
             >
-              <Plus className="h-4 w-4 text-[#52525B]" aria-hidden />
-              <span>Add Metric</span>
+              <Plus className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
+              Add Metric
             </button>
             {pickerOpen ? (
               <div className="absolute right-0 z-[60] mt-2 w-[min(360px,calc(100vw-2rem))] overflow-hidden rounded-xl border border-[#E4E4E7] bg-white shadow-[0px_10px_16px_-3px_rgba(10,10,10,0.1),0px_4px_6px_0px_rgba(10,10,10,0.04)]">

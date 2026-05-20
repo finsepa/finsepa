@@ -3,15 +3,22 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, RefreshCw, X } from "lucide-react";
+import type { CanvasRenderingTarget2D } from "fancy-canvas";
 import {
   ColorType,
+  CrosshairMode,
   HistogramSeries,
   LineSeries,
   LineType,
   createChart,
   type IChartApi,
+  type IPanePrimitive,
+  type IPanePrimitivePaneView,
+  type IPriceLine,
+  type IPrimitivePaneRenderer,
   type ISeriesApi,
   type MouseEventParams,
+  type PaneAttachedParameter,
   type UTCTimestamp,
 } from "lightweight-charts";
 
@@ -36,7 +43,7 @@ import {
 } from "@/components/charting/charting-individual-company-table";
 import { DataFetchTopLoader } from "@/components/layout/data-fetch-top-loader";
 import { ChartSkeleton } from "@/components/ui/chart-skeleton";
-import { TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
+import { secondaryOutlineButtonClassName, TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
 import {
   dropdownMenuRichItemClassName,
   dropdownMenuSurfaceClassName,
@@ -45,6 +52,15 @@ import { cn } from "@/lib/utils";
 import {
   fundamentalsBarSolidAtIndex,
 } from "@/lib/colors/fundamentals-multi-bar-colors";
+import {
+  computeFundamentalsChartTooltipPlacement,
+  FUNDAMENTALS_CHART_GRID_LINE_COLOR,
+  FUNDAMENTALS_CHART_HOVER_BAND_BG,
+  FUNDAMENTALS_CHART_TOOLTIP_CLASS,
+  HIDE_NATIVE_Y_AXIS_TICK_LABELS,
+  removeFundamentalsChartYAxisTickLabels,
+  syncFundamentalsChartYAxisTickLabels,
+} from "@/lib/chart/fundamentals-chart-surface";
 
 /** Y-axis tick labels — match reference (e.g. "30 B", "15 B", "0"). */
 function formatChartAxisPrice(p: number): string {
@@ -290,6 +306,8 @@ type Props = {
   fullPageCompanyChipSlot?: ReactNode;
   /** Full-page Charting only: + Add Company (shown when ≥1 metric selected). */
   fullPageCompanyAddSlot?: ReactNode;
+  /** Asset-page tab: remove/add metrics in the chart legend instead of the toolbar. */
+  metricControlsPlacement?: "toolbar" | "legend";
   pathRoute?: StandaloneChartRoute;
   workspaceTitle?: string;
   /** Defaults to {@link DEFAULT_CHART_TIME_RANGE_ORDER}; standalone `/charting` passes {@link STANDALONE_CHARTING_TIME_RANGE_ORDER}. */
@@ -349,9 +367,76 @@ export function applySparseHistogramVisiblePadding(
   });
 }
 
+/** Room for the first period label on the left edge. */
+const CHARTING_TIME_SCALE_LEFT_GUTTER_PX = 28;
+const CHARTING_TIME_SCALE_RIGHT_GUTTER_PX = 8;
+
+/**
+ * Fit bar histogram to container width: shrink `barSpacing` when needed and pad logical range
+ * so the first and last period labels (e.g. 2012) stay on screen.
+ */
+function layoutChartingTimeScale(chart: IChartApi, containerWidthPx: number, layoutAttempt = 0): void {
+  const ts = chart.timeScale();
+  const plotBudget = Math.max(120, containerWidthPx - CHARTING_TIME_SCALE_LEFT_GUTTER_PX - CHARTING_TIME_SCALE_RIGHT_GUTTER_PX);
+  ts.applyOptions({ fixLeftEdge: false, fixRightEdge: false });
+  ts.fitContent();
+  requestAnimationFrame(() => {
+    const lr = ts.getVisibleLogicalRange();
+    if (lr === null) return;
+    const measuredPlot = ts.width();
+    const plotW = measuredPlot > 8 ? Math.min(measuredPlot, plotBudget) : plotBudget;
+    if (plotW < 16 && layoutAttempt < 4) {
+      layoutChartingTimeScale(chart, containerWidthPx, layoutAttempt + 1);
+      return;
+    }
+    if (plotW < 16) return;
+
+    const logicalSpan = Math.max(1, lr.to - lr.from);
+    const targetSpacing = Math.min(
+      HISTO_BAR_SPACING_MAX_PX,
+      Math.max(2, (plotW - CHARTING_TIME_SCALE_RIGHT_GUTTER_PX) / logicalSpan),
+    );
+    ts.applyOptions({
+      barSpacing: targetSpacing,
+      minBarSpacing: 2,
+      maxBarSpacing: HISTO_BAR_SPACING_MAX_PX,
+    });
+
+    const contentPx = logicalSpan * targetSpacing;
+    const extraPx = Math.max(0, plotW - contentPx - CHARTING_TIME_SCALE_RIGHT_GUTTER_PX);
+    const padLogicalEachSide = extraPx / (2 * targetSpacing);
+    ts.setVisibleLogicalRange({
+      from: lr.from - padLogicalEachSide,
+      to: lr.to + padLogicalEachSide,
+    });
+
+    requestAnimationFrame(() => {
+      const lr2 = ts.getVisibleLogicalRange();
+      if (lr2 === null) return;
+      const plotW2 = ts.width() > 8 ? ts.width() : plotW;
+      const span2 = Math.max(1, lr2.to - lr2.from);
+      const refined = Math.min(
+        HISTO_BAR_SPACING_MAX_PX,
+        Math.max(2, (plotW2 - CHARTING_TIME_SCALE_RIGHT_GUTTER_PX) / span2),
+      );
+      if (Math.abs(refined - targetSpacing) > 0.5) {
+        ts.applyOptions({ barSpacing: refined });
+      }
+      const contentPx2 = span2 * refined;
+      const extraPx2 = Math.max(0, plotW2 - contentPx2 - CHARTING_TIME_SCALE_RIGHT_GUTTER_PX);
+      const padLogicalEachSide2 = extraPx2 / (2 * refined);
+      ts.setVisibleLogicalRange({
+        from: lr2.from - padLogicalEachSide2,
+        to: lr2.to + padLogicalEachSide2,
+      });
+    });
+  });
+}
+
 type HoverState = {
-  x: number;
-  time: UTCTimestamp;
+  anchorX: number;
+  y: number;
+  side: "left" | "right";
   periodLabel: string;
   rows: Array<{ id: ChartingMetricId; label: string; value: string; color: string }>;
   bandLeft: number;
@@ -362,6 +447,52 @@ const GROUPED_BAR_SHIFT_SEC = 24 * 60 * 60;
 /** Gap “slot” after each bar (transparent histogram point) — one day, still well inside the next quarter. */
 const BAR_GAP_SLOT_SEC = GROUPED_BAR_SHIFT_SEC;
 const HISTO_BAR_SPACING_MAX_PX = 28;
+
+/** Column hover band behind bars — same treatment as Multicharts / Earnings estimates. */
+class ChartingHoverBandPrimitive implements IPanePrimitive {
+  private _requestUpdate: (() => void) | null = null;
+  private _x0: number | null = null;
+  private _x1: number | null = null;
+
+  setBand(x0: number | null, x1: number | null): void {
+    if (this._x0 === x0 && this._x1 === x1) return;
+    this._x0 = x0;
+    this._x1 = x1;
+    this._requestUpdate?.();
+  }
+
+  attached(param: PaneAttachedParameter): void {
+    this._requestUpdate = param.requestUpdate;
+  }
+
+  detached(): void {
+    this._requestUpdate = null;
+  }
+
+  paneViews(): readonly IPanePrimitivePaneView[] {
+    return [this._paneView];
+  }
+
+  private readonly _paneView: IPanePrimitivePaneView = {
+    zOrder: () => "bottom",
+    renderer: () => this._renderer,
+  };
+
+  private readonly _renderer: IPrimitivePaneRenderer = {
+    draw: () => {},
+    drawBackground: (target: CanvasRenderingTarget2D) => {
+      if (this._x0 == null || this._x1 == null) return;
+      const left = Math.min(this._x0, this._x1);
+      const right = Math.max(this._x0, this._x1);
+      const w = right - left;
+      if (!Number.isFinite(w) || w <= 0) return;
+      target.useMediaCoordinateSpace(({ context, mediaSize }) => {
+        context.fillStyle = FUNDAMENTALS_CHART_HOVER_BAND_BG;
+        context.fillRect(left, 0, w, mediaSize.height);
+      });
+    },
+  };
+}
 
 function groupedBarShiftSeconds(id: ChartingMetricId, ids: ChartingMetricId[]): number {
   if (ids.length <= 1) return 0;
@@ -381,6 +512,7 @@ export function ChartingWorkspace({
   toolbarLayout = "default",
   fullPageCompanyChipSlot,
   fullPageCompanyAddSlot,
+  metricControlsPlacement = "toolbar",
   pathRoute = "/charting",
   workspaceTitle = "Charting",
   timeRangeOrder = DEFAULT_CHART_TIME_RANGE_ORDER,
@@ -391,6 +523,7 @@ export function ChartingWorkspace({
   const pickerInputRef = useRef<HTMLInputElement>(null);
 
   const isFigmaToolbar = toolbarLayout === "figma70857";
+  const metricControlsInLegend = metricControlsPlacement === "legend";
 
   const timeRangeTabOptions = useMemo(
     () => timeRangeTabOptionsFor(timeRangeOrder),
@@ -418,6 +551,8 @@ export function ChartingWorkspace({
 
   const chartRef = useRef<IChartApi | null>(null);
   const seriesByMetricRef = useRef<Map<ChartingMetricId, ISeriesApi<"Line"> | ISeriesApi<"Histogram">>>(new Map());
+  const yAxisTickLinesRef = useRef<IPriceLine[]>([]);
+  const hoverBandPrimitiveRef = useRef<ChartingHoverBandPrimitive | null>(null);
   const hoverRafRef = useRef<number>(0);
   const hoverBandByBaseTimeRef = useRef<Map<number, { left: number; width: number }>>(new Map());
 
@@ -728,10 +863,11 @@ export function ChartingWorkspace({
             localization: {
               locale: "en-US",
               priceFormatter: (p: number) => formatAxisForUnit(p, unitScale),
+              tickmarksPriceFormatter: HIDE_NATIVE_Y_AXIS_TICK_LABELS,
             },
             grid: {
               vertLines: { visible: false },
-              horzLines: { color: "#F4F4F5" },
+              horzLines: { color: FUNDAMENTALS_CHART_GRID_LINE_COLOR },
             },
             rightPriceScale: {
               visible: false,
@@ -744,8 +880,8 @@ export function ChartingWorkspace({
             timeScale: {
               borderVisible: false,
               ticksVisible: false,
-              fixLeftEdge: true,
-              fixRightEdge: true,
+              fixLeftEdge: false,
+              fixRightEdge: false,
               lockVisibleTimeRangeOnResize: true,
               rightOffset: 0,
               barSpacing,
@@ -759,11 +895,19 @@ export function ChartingWorkspace({
                 return row ? formatChartingPeriodLabel(row.periodEnd, periodMode) : "";
               },
             },
-            crosshair: { vertLine: { labelVisible: false }, horzLine: { labelVisible: true } },
+            crosshair: {
+              mode: CrosshairMode.Normal,
+              vertLine: { visible: false, labelVisible: false },
+              horzLine: { visible: false, labelVisible: false },
+            },
           });
 
           chartRef.current = chart;
           seriesByMetricRef.current = new Map();
+
+          const hoverBandPrimitive = new ChartingHoverBandPrimitive();
+          hoverBandPrimitiveRef.current = hoverBandPrimitive;
+          chart.panes()[0]?.attachPrimitive(hoverBandPrimitive);
 
           const usedScales = new Set<string>();
 
@@ -819,7 +963,7 @@ export function ChartingWorkspace({
 
           const scaleOpts = {
             borderVisible: false,
-            scaleMargins: { top: 0.07, bottom: 0.03 },
+            scaleMargins: { top: 0.08, bottom: 0.08 },
           };
           for (const sid of ["usd", "shares", "eps", "pct", "mult"]) {
             if (usedScales.has(sid)) {
@@ -827,7 +971,23 @@ export function ChartingWorkspace({
             }
           }
 
-          chart.timeScale().fitContent();
+          if (chartType === "bars") {
+            layoutChartingTimeScale(chart, el.clientWidth);
+          } else {
+            chart.timeScale().fitContent();
+          }
+
+          const primaryMetricId =
+            seriesOrder.find((id) => CHARTING_METRIC_KIND[id] === "usd") ?? seriesOrder[0];
+          const primarySeries = primaryMetricId ? seriesByMetricRef.current.get(primaryMetricId) : null;
+          const syncYAxis = () => {
+            if (primarySeries) {
+              syncFundamentalsChartYAxisTickLabels(chart, primarySeries, yAxisTickLinesRef);
+            } else {
+              removeFundamentalsChartYAxisTickLabels(null, yAxisTickLinesRef);
+            }
+          };
+          syncYAxis();
 
           const syncLineEndBadges = () => {
             if (cancelled) return;
@@ -846,6 +1006,7 @@ export function ChartingWorkspace({
 
           const onCrosshairMove = (param: MouseEventParams) => {
             if (!param.point || param.point.x < 0 || param.time === undefined) {
+              hoverBandPrimitiveRef.current?.setBand(null, null);
               if (hoverRafRef.current) cancelAnimationFrame(hoverRafRef.current);
               hoverRafRef.current = requestAnimationFrame(() => setHover(null));
               return;
@@ -855,6 +1016,7 @@ export function ChartingWorkspace({
             const rawTime = param.time as UTCTimestamp;
             const timeKey = typeof rawTime === "number" && Number.isFinite(rawTime) ? rawTime : null;
             if (timeKey == null) {
+              hoverBandPrimitiveRef.current?.setBand(null, null);
               if (hoverRafRef.current) cancelAnimationFrame(hoverRafRef.current);
               hoverRafRef.current = requestAnimationFrame(() => setHover(null));
               return;
@@ -862,6 +1024,7 @@ export function ChartingWorkspace({
 
             const row = groupedTimeToRow.get(timeKey);
             if (!row) {
+              hoverBandPrimitiveRef.current?.setBand(null, null);
               if (hoverRafRef.current) cancelAnimationFrame(hoverRafRef.current);
               hoverRafRef.current = requestAnimationFrame(() => setHover(null));
               return;
@@ -918,10 +1081,23 @@ export function ChartingWorkspace({
                 ? Math.max(36, barSpacing * Math.max(1, idsForBars.length))
                 : Math.max(24, barSpacing);
             const bandLeft = Math.max(0, bandCenterX - bandWidth / 2);
+            hoverBandPrimitiveRef.current?.setBand(bandLeft, bandLeft + bandWidth);
+
+            const plotW = Math.max(1, el.clientWidth);
+            const { anchorX, side } = computeFundamentalsChartTooltipPlacement(x, plotW);
+            const hoverY = param.point?.y ?? 0;
 
             if (hoverRafRef.current) cancelAnimationFrame(hoverRafRef.current);
             hoverRafRef.current = requestAnimationFrame(() => {
-              setHover({ x, time: timeKey, periodLabel, rows, bandLeft, bandWidth });
+              setHover({
+                anchorX,
+                y: hoverY,
+                side,
+                periodLabel,
+                rows,
+                bandLeft,
+                bandWidth,
+              });
             });
           };
 
@@ -932,8 +1108,13 @@ export function ChartingWorkspace({
             if (rw > 0 && chartRef.current) chartRef.current.resize(rw, chartHeight);
             const c = chartRef.current;
             if (c) {
-              c.timeScale().applyOptions({ barSpacing });
-              applySparseHistogramVisiblePadding(c, ordered, chartType, timeRange, ordered.length);
+              if (chartType === "bars") {
+                layoutChartingTimeScale(c, rw);
+                applySparseHistogramVisiblePadding(c, ordered, chartType, timeRange, ordered.length);
+              } else {
+                c.timeScale().fitContent();
+              }
+              syncYAxis();
             }
             requestAnimationFrame(() => {
               if (cancelled) return;
@@ -948,8 +1129,13 @@ export function ChartingWorkspace({
           });
           resizeObserver.observe(el);
           chart.resize(el.clientWidth, chartHeight);
-          chart.timeScale().applyOptions({ barSpacing });
-          applySparseHistogramVisiblePadding(chart, ordered, chartType, timeRange, ordered.length);
+          if (chartType === "bars") {
+            layoutChartingTimeScale(chart, el.clientWidth);
+            applySparseHistogramVisiblePadding(chart, ordered, chartType, timeRange, ordered.length);
+          } else {
+            chart.timeScale().fitContent();
+          }
+          syncYAxis();
         });
       });
     };
@@ -960,11 +1146,15 @@ export function ChartingWorkspace({
       cancelled = true;
       resizeObserver?.disconnect();
       resizeObserver = null;
+      const unmountSeries = seriesByMetricRef.current.values().next().value ?? null;
+      removeFundamentalsChartYAxisTickLabels(unmountSeries, yAxisTickLinesRef);
       if (chartRef.current) {
         chartRef.current.remove();
         chartRef.current = null;
       }
       seriesByMetricRef.current = new Map();
+      hoverBandPrimitiveRef.current?.setBand(null, null);
+      hoverBandPrimitiveRef.current = null;
       if (hoverRafRef.current) cancelAnimationFrame(hoverRafRef.current);
       setHover(null);
       setLineEndBadges([]);
@@ -996,6 +1186,76 @@ export function ChartingWorkspace({
     return m;
   }, [chartType, selected]);
 
+  const addMetricPicker = (
+    <div className="relative" ref={pickerWrapRef}>
+      <button
+        type="button"
+        onClick={() => {
+          setPickerOpen((o) => {
+            if (o) setPickerQuery("");
+            return !o;
+          });
+        }}
+        className={cn(
+          secondaryOutlineButtonClassName,
+          metricControlsInLegend && "h-6 gap-1.5 rounded-[8px] px-3 text-[12px] font-medium",
+        )}
+      >
+        <Plus className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
+        Add Metric
+      </button>
+      {pickerOpen ? (
+        <div
+          className={cn(
+            dropdownMenuSurfaceClassName(),
+            "absolute left-0 top-full z-[210] mt-1 w-[min(calc(100vw-2rem),300px)] overflow-hidden",
+            metricControlsInLegend && "left-1/2 -translate-x-1/2 sm:left-0 sm:translate-x-0",
+          )}
+          role="listbox"
+        >
+          <div className="border-b border-[#F4F4F5] px-2 pb-1 pt-1">
+            <input
+              ref={pickerInputRef}
+              value={pickerQuery}
+              onChange={(e) => setPickerQuery(e.target.value)}
+              placeholder="Search metrics…"
+              className="w-full rounded-md border-0 bg-[#FAFAFA] px-2 py-1.5 text-[13px] text-[#09090B] placeholder:text-[#A1A1AA] outline-none ring-1 ring-transparent focus:ring-[#E4E4E7]"
+              aria-label="Search metrics"
+            />
+          </div>
+          <div className="flex max-h-[min(400px,calc(100vh-12rem))] flex-col gap-1 overflow-y-auto px-1 py-2">
+            {groupedAddable.map((group) => (
+              <div key={group.id} className="pb-2 last:pb-0">
+                <div className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wide text-[#A1A1AA]">
+                  {group.label}
+                </div>
+                <ul className="flex flex-col gap-1">
+                  {group.ids.map((id) => (
+                    <li key={id}>
+                      <button
+                        type="button"
+                        role="option"
+                        className={dropdownMenuRichItemClassName()}
+                        onClick={() => addMetric(id)}
+                      >
+                        {CHARTING_METRIC_LABEL[id]}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+          {totalAddable === 0 ? (
+            <p className="px-3 py-2 text-[12px] text-[#71717A]">
+              {qLower ? "No metrics match" : "No additional metrics for this range"}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+
   return (
     <>
       <DataFetchTopLoader active={loading} />
@@ -1009,22 +1269,22 @@ export function ChartingWorkspace({
           </h2>
           {/* Web: keep controls on one line with range switcher (no wrap). */}
           <div className="flex min-w-0 flex-wrap items-center gap-3 sm:flex-nowrap sm:justify-end sm:overflow-x-auto sm:pb-0.5">
-            <TabSwitcher
-              fullWidth={false}
-              className="shrink-0"
-              options={PERIOD_TAB_OPTIONS}
-              value={periodMode}
-              onChange={setPeriodMode}
-              aria-label="Reporting period"
-            />
-            <TabSwitcher
-              fullWidth={false}
-              className="shrink-0"
-              options={CHART_TYPE_TAB_OPTIONS}
-              value={chartType}
-              onChange={setChartType}
-              aria-label="Chart type"
-            />
+            <div className="flex shrink-0 flex-nowrap items-center gap-2">
+              <TabSwitcher
+                size="sm"
+                options={PERIOD_TAB_OPTIONS}
+                value={periodMode}
+                onChange={setPeriodMode}
+                aria-label="Reporting period"
+              />
+              <TabSwitcher
+                size="sm"
+                options={CHART_TYPE_TAB_OPTIONS}
+                value={chartType}
+                onChange={setChartType}
+                aria-label="Chart type"
+              />
+            </div>
             <div className="shrink-0">
               <TabSwitcher
                 className="inline-flex w-max min-w-0 flex-nowrap"
@@ -1049,96 +1309,37 @@ export function ChartingWorkspace({
           </div>
         </div>
 
-        {/* Metric chips first, then full-page company row (+ Add Company after ≥1 metric). */}
-        <div className="pb-4">
-          <div className="flex flex-wrap items-center gap-4">
-          {selected.map((id) => (
-            <div
-              key={id}
-              className="order-1 inline-flex max-w-full min-w-0 items-stretch overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white"
-            >
-              <span className="flex min-h-[36px] min-w-0 items-center border-r border-[#E4E4E7] px-4 py-2 text-[14px] font-medium leading-5 text-[#09090B]">
-                <span className="truncate">{CHARTING_METRIC_LABEL[id]}</span>
-              </span>
-              <button
-                type="button"
-                onClick={() => removeMetric(id)}
-                disabled={selected.length <= 1}
-                className="flex w-9 shrink-0 items-center justify-center text-[#09090B] transition-colors hover:bg-[#FAFAFA] disabled:pointer-events-none disabled:opacity-30"
-                aria-label={`Remove ${CHARTING_METRIC_LABEL[id]}`}
-              >
-                <X className="h-5 w-5" strokeWidth={1.5} aria-hidden />
-              </button>
-            </div>
-          ))}
-
-          <div className="relative order-2" ref={pickerWrapRef}>
-            <button
-              type="button"
-              onClick={() => {
-                setPickerOpen((o) => {
-                  if (o) setPickerQuery("");
-                  return !o;
-                });
-              }}
-              className="inline-flex items-center gap-2 rounded-[10px] bg-[#F4F4F5] px-4 py-2 text-[14px] font-medium leading-5 text-[#09090B] transition-colors hover:bg-[#EBEBEB]"
-            >
-              <Plus className="h-5 w-5 shrink-0" strokeWidth={1.75} aria-hidden />
-              Add Metric
-            </button>
-          {pickerOpen && (
-            <div
-              className={cn(
-                dropdownMenuSurfaceClassName(),
-                "absolute left-0 top-full z-[210] mt-1 w-[min(calc(100vw-2rem),300px)] overflow-hidden",
-              )}
-              role="listbox"
-            >
-              <div className="border-b border-[#F4F4F5] px-2 pb-1 pt-1">
-                <input
-                  ref={pickerInputRef}
-                  value={pickerQuery}
-                  onChange={(e) => setPickerQuery(e.target.value)}
-                  placeholder="Search metrics…"
-                  className="w-full rounded-md border-0 bg-[#FAFAFA] px-2 py-1.5 text-[13px] text-[#09090B] placeholder:text-[#A1A1AA] outline-none ring-1 ring-transparent focus:ring-[#E4E4E7]"
-                  aria-label="Search metrics"
-                />
-              </div>
-              <div className="flex max-h-[min(400px,calc(100vh-12rem))] flex-col gap-1 overflow-y-auto px-1 py-2">
-                {groupedAddable.map((group) => (
-                  <div key={group.id} className="pb-2 last:pb-0">
-                    <div className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wide text-[#A1A1AA]">
-                      {group.label}
+        {/* Metric chips (+ Add Metric) in toolbar; full-page company row when compare workspace. */}
+        {!metricControlsInLegend || fullPageCompanyChipSlot ? (
+          <div className={metricControlsInLegend ? "pb-0" : "pb-4"}>
+            <div className="flex flex-wrap items-center gap-4">
+              {!metricControlsInLegend
+                ? selected.map((id) => (
+                    <div
+                      key={id}
+                      className="order-1 inline-flex max-w-full min-w-0 items-stretch overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white"
+                    >
+                      <span className="flex min-h-[36px] min-w-0 items-center border-r border-[#E4E4E7] px-4 py-2 text-[14px] font-medium leading-5 text-[#09090B]">
+                        <span className="truncate">{CHARTING_METRIC_LABEL[id]}</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => removeMetric(id)}
+                        disabled={selected.length <= 1}
+                        className="flex w-9 shrink-0 items-center justify-center text-[#09090B] transition-colors hover:bg-[#FAFAFA] disabled:pointer-events-none disabled:opacity-30"
+                        aria-label={`Remove ${CHARTING_METRIC_LABEL[id]}`}
+                      >
+                        <X className="h-5 w-5" strokeWidth={1.5} aria-hidden />
+                      </button>
                     </div>
-                    <ul className="flex flex-col gap-1">
-                      {group.ids.map((id) => (
-                        <li key={id}>
-                          <button
-                            type="button"
-                            role="option"
-                            className={dropdownMenuRichItemClassName()}
-                            onClick={() => addMetric(id)}
-                          >
-                            {CHARTING_METRIC_LABEL[id]}
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
-              {totalAddable === 0 ? (
-                <p className="px-3 py-2 text-[12px] text-[#71717A]">
-                  {qLower ? "No metrics match" : "No additional metrics for this range"}
-                </p>
-              ) : null}
+                  ))
+                : null}
+              {!metricControlsInLegend ? <div className="order-2">{addMetricPicker}</div> : null}
+              {fullPageCompanyChipSlot ? <div className="order-3">{fullPageCompanyChipSlot}</div> : null}
+              {selected.length > 0 ? <div className="order-4">{fullPageCompanyAddSlot}</div> : null}
             </div>
-          )}
           </div>
-          {fullPageCompanyChipSlot ? <div className="order-3">{fullPageCompanyChipSlot}</div> : null}
-          {selected.length > 0 ? <div className="order-4">{fullPageCompanyAddSlot}</div> : null}
-          </div>
-        </div>
+        ) : null}
       </div>
 
       {loading ? (
@@ -1154,7 +1355,7 @@ export function ChartingWorkspace({
               No series data for the selected metrics on this symbol.
             </p>
           ) : (
-            <div className="relative w-full overflow-hidden rounded-xl bg-white">
+            <div className="relative w-full overflow-hidden">
               <div ref={wrapRef} className="w-full" style={{ height: chartHeight }} />
               {chartType === "line" && lineEndBadges.length > 0
                 ? lineEndBadges.map((b) => (
@@ -1174,26 +1375,32 @@ export function ChartingWorkspace({
                 : null}
               {hover ? (
                 <>
-                  {/* Hover band — light blue column (Figma Charting reference) */}
                   <div
-                    className="pointer-events-none absolute inset-y-0"
+                    className={FUNDAMENTALS_CHART_TOOLTIP_CLASS}
                     style={{
-                      left: `${hover.bandLeft}px`,
-                      width: `${hover.bandWidth}px`,
-                      background: "rgba(37, 99, 235, 0.10)",
-                    }}
-                  />
-                  {/* Tooltip */}
-                  <div
-                    className="pointer-events-none absolute top-3 z-20 w-[240px] rounded-xl border border-[#E4E4E7] bg-white px-3 py-2.5 text-[#09090B] shadow-[0px_10px_16px_-3px_rgba(10,10,10,0.10),0px_4px_6px_0px_rgba(10,10,10,0.04)]"
-                    style={{
-                      left: `${clamp(hover.x + 12, 12, Math.max(12, (wrapRef.current?.clientWidth ?? 0) - 252))}px`,
+                      left: `clamp(8px, ${hover.anchorX}px, calc(100% - 8px))`,
+                      top: hover.y,
+                      transform:
+                        hover.side === "left"
+                          ? "translate(calc(-100% - 10px), -50%)"
+                          : "translate(10px, -50%)",
                     }}
                     role="tooltip"
                     aria-label="Chart tooltip"
                   >
-                    <div className="text-[12px] font-semibold tracking-wide text-[#09090B]">{hover.periodLabel}</div>
-                    <div className="mt-2 space-y-1">
+                    {hover.side === "left" ? (
+                      <span className="absolute top-1/2 left-full -translate-y-1/2" aria-hidden>
+                        <span className="block border-y-[7px] border-y-transparent border-l-[8px] border-l-[#E4E4E7]" />
+                        <span className="absolute top-1/2 left-px -translate-y-1/2 border-y-[6px] border-y-transparent border-l-[7px] border-l-white" />
+                      </span>
+                    ) : (
+                      <span className="absolute top-1/2 right-full -translate-y-1/2" aria-hidden>
+                        <span className="block border-y-[7px] border-y-transparent border-r-[8px] border-r-[#E4E4E7]" />
+                        <span className="absolute top-1/2 right-px -translate-y-1/2 border-y-[6px] border-y-transparent border-r-[7px] border-r-white" />
+                      </span>
+                    )}
+                    <p className="text-[12px] font-semibold leading-4 text-[#09090B]">{hover.periodLabel}</p>
+                    <div className="mt-1.5 space-y-1">
                       {hover.rows.map((r) => (
                         <div key={r.id} className="flex items-baseline justify-between gap-3">
                           <span className="flex min-w-0 items-baseline gap-2">
@@ -1202,9 +1409,11 @@ export function ChartingWorkspace({
                               style={{ backgroundColor: r.color }}
                               aria-hidden
                             />
-                            <span className="truncate text-[12px] text-[#71717A]">{r.label}</span>
+                            <span className="truncate text-[12px] font-normal leading-4 text-[#71717A]">
+                              {r.label}
+                            </span>
                           </span>
-                          <span className="shrink-0 text-[12px] font-semibold tabular-nums text-[#09090B]">
+                          <span className="shrink-0 text-[12px] font-normal leading-4 tabular-nums text-[#71717A]">
                             {r.value}
                           </span>
                         </div>
@@ -1217,21 +1426,49 @@ export function ChartingWorkspace({
           )}
           <div className="flex justify-center -mt-0.5 pt-0">
             <div className="flex flex-wrap items-center justify-center gap-2">
-              {selected.map((id) => (
-                <div
-                  key={`chart-legend-${id}`}
-                  className="inline-flex h-6 max-w-full min-w-0 items-center gap-2 overflow-hidden rounded-[8px] border border-[#E4E4E7] bg-white px-3 py-0 text-[12px] font-medium leading-none text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]"
-                >
-                  <span
-                    className="h-2.5 w-2.5 shrink-0 rounded-full"
-                    style={{ backgroundColor: metricChipColorById.get(id) ?? "#2563EB" }}
-                    aria-hidden
-                  />
-                  <span className="min-w-0 truncate">
-                    {ticker.trim().toUpperCase()} {CHARTING_METRIC_LABEL[id]}
-                  </span>
-                </div>
-              ))}
+              {selected.map((id) =>
+                metricControlsInLegend ? (
+                  <div
+                    key={`chart-legend-${id}`}
+                    className="inline-flex h-6 max-w-full min-w-0 items-stretch overflow-hidden rounded-[8px] border border-[#E4E4E7] bg-white text-[12px] font-medium leading-none text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]"
+                  >
+                    <span className="flex min-w-0 items-center gap-2 px-3 py-0">
+                      <span
+                        className="h-2.5 w-2.5 shrink-0 rounded-full"
+                        style={{ backgroundColor: metricChipColorById.get(id) ?? "#2563EB" }}
+                        aria-hidden
+                      />
+                      <span className="min-w-0 truncate">
+                        {ticker.trim().toUpperCase()} {CHARTING_METRIC_LABEL[id]}
+                      </span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => removeMetric(id)}
+                      disabled={selected.length <= 1}
+                      className="flex w-6 shrink-0 items-center justify-center border-l border-[#E4E4E7] text-[#09090B] transition-colors hover:bg-[#FAFAFA] disabled:pointer-events-none disabled:opacity-30"
+                      aria-label={`Remove ${CHARTING_METRIC_LABEL[id]}`}
+                    >
+                      <X className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
+                    </button>
+                  </div>
+                ) : (
+                  <div
+                    key={`chart-legend-${id}`}
+                    className="inline-flex h-6 max-w-full min-w-0 items-center gap-2 overflow-hidden rounded-[8px] border border-[#E4E4E7] bg-white px-3 py-0 text-[12px] font-medium leading-none text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]"
+                  >
+                    <span
+                      className="h-2.5 w-2.5 shrink-0 rounded-full"
+                      style={{ backgroundColor: metricChipColorById.get(id) ?? "#2563EB" }}
+                      aria-hidden
+                    />
+                    <span className="min-w-0 truncate">
+                      {ticker.trim().toUpperCase()} {CHARTING_METRIC_LABEL[id]}
+                    </span>
+                  </div>
+                ),
+              )}
+              {metricControlsInLegend ? addMetricPicker : null}
             </div>
           </div>
           {canPlot ? (

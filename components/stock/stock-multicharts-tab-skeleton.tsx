@@ -3,7 +3,16 @@ import { cn } from "@/lib/utils";
 const CARD =
   "flex flex-col gap-2 overflow-x-hidden overflow-y-visible rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition hover:shadow-[0px_2px_4px_0px_rgba(10,10,10,0.08)]";
 
-const PLACEHOLDER_KEYS = ["revenue", "net_income", "eps", "free_cash_flow", "ebitda"] as const;
+const PLACEHOLDER_KEYS = [
+  "revenue",
+  "net_income",
+  "net_margin",
+  "eps",
+  "free_cash_flow",
+  "ebitda",
+  "pe_ratio",
+  "return_on_capital_employed",
+] as const;
 
 function SkeletonGrid() {
   return (

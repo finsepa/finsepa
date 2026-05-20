@@ -15,7 +15,11 @@ import {
   protectedNavItemIsActive,
   type ProtectedNavItem,
 } from "@/components/layout/protected-nav-config";
-import { useSidebarLayout } from "@/components/layout/sidebar-layout-context";
+import {
+  SIDEBAR_CONTENT_MOTION_CLASS,
+  SIDEBAR_WIDTH_MOTION_CLASS,
+  useSidebarLayout,
+} from "@/components/layout/sidebar-layout-context";
 import { cn } from "@/lib/utils";
 
 const soonBadgeClass =
@@ -142,10 +146,17 @@ function SidebarRow({ item, pathname, collapsed }: { item: NavItem; pathname: st
   const tooltipLabel = item.available ? item.label : `${item.label} (Soon)`;
 
   const rowClass = cn(
-    "flex shrink-0 items-center rounded-lg text-sm font-medium leading-5 transition-all duration-100",
-    collapsed ? "h-9 w-9 justify-center px-0 py-0" : "h-9 gap-2 px-4 py-2",
+    "flex shrink-0 items-center overflow-hidden rounded-lg text-sm font-medium leading-5",
+    SIDEBAR_CONTENT_MOTION_CLASS,
+    collapsed ? "h-9 w-9 justify-center gap-0 px-0 py-0" : "h-9 gap-2 px-4 py-2",
     item.available ? "text-[#09090B]" : "cursor-not-allowed text-[#A1A1AA] select-none",
     item.available && (isActive ? "bg-[#F4F4F5]" : "hover:bg-[#F4F4F5]"),
+  );
+
+  const labelWrapClass = cn(
+    "flex min-w-0 flex-1 items-center gap-2 overflow-hidden",
+    SIDEBAR_CONTENT_MOTION_CLASS,
+    collapsed ? "max-w-0 opacity-0" : "max-w-[12rem] opacity-100",
   );
 
   const iconClass = cn("h-5 w-5 shrink-0", item.available ? "text-[#09090B]" : "text-[#A1A1AA]");
@@ -154,17 +165,25 @@ function SidebarRow({ item, pathname, collapsed }: { item: NavItem; pathname: st
     item.available ? (
       <Link prefetch={false} href={item.href} className={rowClass}>
         <Icon className={iconClass} />
-        {!collapsed ? <span className="min-w-0 flex-1 truncate">{item.label}</span> : null}
+        <span className={labelWrapClass}>
+          <span className="min-w-0 flex-1 truncate">{item.label}</span>
+        </span>
       </Link>
     ) : (
       <div className={rowClass} aria-disabled="true">
         <Icon className={iconClass} />
-        {!collapsed ? (
-          <>
-            <span className="min-w-0 flex-1 truncate">{item.label}</span>
-            <span className={soonBadgeClass}>Soon</span>
-          </>
-        ) : null}
+        <span className={labelWrapClass}>
+          <span className="min-w-0 flex-1 truncate">{item.label}</span>
+          <span
+            className={cn(
+              soonBadgeClass,
+              SIDEBAR_CONTENT_MOTION_CLASS,
+              collapsed ? "max-w-0 opacity-0" : "max-w-[3rem] opacity-100",
+            )}
+          >
+            Soon
+          </span>
+        </span>
       </div>
     );
 
@@ -187,10 +206,16 @@ function SidebarSection({
   collapsed: boolean;
 }) {
   return (
-    <div className={cn(!collapsed && "px-2")}>
-      {!collapsed ? (
-        <p className="mb-1.5 pl-4 text-sm font-semibold leading-5 text-[#52525B]">{title}</p>
-      ) : null}
+    <div className={cn("px-2", SIDEBAR_CONTENT_MOTION_CLASS, collapsed && "px-1")}>
+      <p
+        className={cn(
+          "overflow-hidden pl-4 text-sm font-semibold leading-5 text-[#52525B]",
+          SIDEBAR_CONTENT_MOTION_CLASS,
+          collapsed ? "mb-0 max-h-0 opacity-0" : "mb-1.5 max-h-8 opacity-100",
+        )}
+      >
+        {title}
+      </p>
       <div className="space-y-0.5">
         {items.map((item) => (
           <SidebarRow key={item.label} item={item} pathname={pathname} collapsed={collapsed} />
@@ -210,40 +235,44 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "flex h-full min-h-0 shrink-0 flex-col rounded-[4px] bg-white py-2 transition-[width] duration-200 ease-out",
-        collapsed ? "w-full overflow-visible" : "w-[240px] overflow-y-auto",
+        "flex h-full min-h-0 shrink-0 flex-col rounded-[4px] bg-white py-2",
+        SIDEBAR_WIDTH_MOTION_CLASS,
+        collapsed ? "w-full overflow-visible" : "w-[240px] overflow-y-auto overflow-x-hidden",
       )}
     >
-      {collapsed ? (
-        <div className="mb-4 flex justify-center px-1">
-          <TopbarDelayedTooltip label="Expand Menu">
-            <button
-              type="button"
-              className={toggleButtonClass}
-              onClick={toggleCollapsed}
-              aria-expanded={false}
-              aria-label="Expand Menu"
-            >
+      <div
+        className={cn(
+          "mb-5 flex shrink-0 items-center",
+          SIDEBAR_CONTENT_MOTION_CLASS,
+          collapsed ? "justify-center px-1" : "justify-between gap-2 px-3",
+        )}
+      >
+        <div
+          className={cn(
+            "overflow-hidden",
+            SIDEBAR_CONTENT_MOTION_CLASS,
+            collapsed ? "max-w-0 opacity-0" : "max-w-8 opacity-100",
+          )}
+          aria-hidden={collapsed}
+        >
+          <img src="/logo.svg" alt="Finsepa" width={32} height={32} className="h-8 w-8 shrink-0" />
+        </div>
+        <TopbarDelayedTooltip label={collapsed ? "Expand Menu" : "Collapse Menu"}>
+          <button
+            type="button"
+            className={toggleButtonClass}
+            onClick={toggleCollapsed}
+            aria-expanded={!collapsed}
+            aria-label={collapsed ? "Expand Menu" : "Collapse Menu"}
+          >
+            {collapsed ? (
               <PanelLeftOpen className="h-5 w-5" strokeWidth={1.75} />
-            </button>
-          </TopbarDelayedTooltip>
-        </div>
-      ) : (
-        <div className="mb-5 flex items-center justify-between gap-2 px-3">
-          <img src="/logo.svg" alt="Finsepa" width={32} height={32} />
-          <TopbarDelayedTooltip label="Collapse Menu">
-            <button
-              type="button"
-              className={toggleButtonClass}
-              onClick={toggleCollapsed}
-              aria-expanded
-              aria-label="Collapse Menu"
-            >
+            ) : (
               <PanelLeft className="h-5 w-5" strokeWidth={1.75} />
-            </button>
-          </TopbarDelayedTooltip>
-        </div>
-      )}
+            )}
+          </button>
+        </TopbarDelayedTooltip>
+      </div>
 
       <div
         className={cn(

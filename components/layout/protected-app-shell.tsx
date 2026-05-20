@@ -1,5 +1,6 @@
 import { Suspense, type ReactNode } from "react";
 import type { User } from "@supabase/supabase-js";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getSubscriptionGateContext } from "@/lib/account/subscription-gate";
 import { PATH_ACTIVATE_SUBSCRIPTION, PATH_LOGIN } from "@/lib/auth/routes";
@@ -10,6 +11,10 @@ import { ScreenerOnboardingHost } from "@/components/onboarding/screener-onboard
 import { PortfolioWorkspaceProvider } from "@/components/portfolio/portfolio-workspace-provider";
 import { userNeedsOnboarding } from "@/lib/auth/onboarding";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import {
+  readSidebarCollapsedPreference,
+  SIDEBAR_COLLAPSED_PREFERENCE_KEY,
+} from "@/lib/layout/sidebar-collapsed-preference";
 
 export async function ProtectedAppShell({ children }: { children: ReactNode }) {
   let user: User | null = null;
@@ -39,6 +44,11 @@ export async function ProtectedAppShell({ children }: { children: ReactNode }) {
   const listingOwnerDisplayName = userDisplayName;
   const serverShouldShowOnboarding = userNeedsOnboarding(user);
 
+  const cookieStore = await cookies();
+  const initialSidebarCollapsed = readSidebarCollapsedPreference(
+    cookieStore.get(SIDEBAR_COLLAPSED_PREFERENCE_KEY)?.value,
+  );
+
   /* Sidebar width: 248px expanded / 72px lite (see sidebar-layout-context). Topbar strip → main at 76px. */
   return (
     <PortfolioWorkspaceProvider
@@ -52,6 +62,7 @@ export async function ProtectedAppShell({ children }: { children: ReactNode }) {
         avatarUrl={avatarUrl}
         userDisplayName={userDisplayName}
         platformTrialDaysLeft={gate.topbarTrialDaysLeft}
+        initialSidebarCollapsed={initialSidebarCollapsed}
       >
         <OnboardingAuthBootstrap />
         <Suspense fallback={null}>

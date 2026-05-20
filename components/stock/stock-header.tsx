@@ -8,6 +8,7 @@ import { useSpringTriplet } from "@/components/chart/use-spring-numbers";
 import { mergeLogoMemory, readLogoMemory } from "@/lib/logos/logo-memory";
 import { getStockDetailMetaFromTicker } from "@/lib/market/stock-detail-meta";
 import {
+  getStockListingSubtitleParts,
   type StockDetailHeaderMeta,
 } from "@/lib/market/stock-header-meta";
 import type { StockChartSeries } from "@/lib/market/stock-chart-types";
@@ -72,7 +73,12 @@ export function StockHeader({
   const meta = getStockDetailMetaFromTicker(ticker);
   const symbol = meta.ticker;
   const exchange = headerMeta?.exchange?.trim() ?? "";
-  const breadcrumbSymbol = exchange ? `${symbol} · ${exchange}` : symbol;
+  const breadcrumbSymbol = symbol;
+  const listingSubtitle = getStockListingSubtitleParts({
+    ticker: symbol,
+    exchange,
+    countryIso: headerMeta?.countryIso,
+  });
   const titleName = headerMeta?.fullName?.trim() ? headerMeta.fullName : meta.name;
 
   const serverLogo = headerMeta?.logoUrl?.trim() || meta.logoUrl?.trim() || "";
@@ -200,7 +206,21 @@ export function StockHeader({
             {headerMetaLoading ? (
               <div className="mt-0.5 h-4 w-24 rounded bg-neutral-200/80 animate-pulse" aria-hidden />
             ) : (
-              <p className="mt-0.5 text-[13px] leading-5 text-[#71717A]">{symbol}</p>
+              <p className="mt-0.5 text-[13px] leading-5 text-[#71717A]">
+                {listingSubtitle.ticker}
+                {listingSubtitle.exchange ? <> · {listingSubtitle.exchange}</> : null}
+                {listingSubtitle.countryFlag ? (
+                  <>
+                    {" · "}
+                    <span
+                      className="inline-block align-[-2px] text-[16px] leading-none"
+                      aria-hidden
+                    >
+                      {listingSubtitle.countryFlag}
+                    </span>
+                  </>
+                ) : null}
+              </p>
             )}
           </div>
         </div>

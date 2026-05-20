@@ -49,6 +49,62 @@ function formatReturnAxis(n: number): string {
   return `${sign}${Math.abs(rel).toFixed(2)}%`;
 }
 
+function formatOverviewChartAxisValue(
+  value: number,
+  kind: "stock" | "crypto",
+  chartSeries: StockChartSeries,
+): string {
+  if (kind === "stock" && chartSeries === "marketCap") return formatMarketCapAxis(value);
+  if (kind === "stock" && chartSeries === "return") return formatReturnAxis(value);
+  return `$${formatStockPriceAxis(value)}`;
+}
+
+type RangeChartPriceBadge = {
+  left: number;
+  top: number;
+  label: string;
+  anchor: "start" | "center";
+};
+
+const RANGE_PRICE_BADGE_CLASS =
+  "inline-block rounded-[6px] bg-[#E4E4E7] px-1.5 py-0.5 text-[11px] font-medium leading-4 tabular-nums text-[#09090B]";
+
+/** Plot-area backdrop — dot grid strongest in center; fades toward all edges. */
+const CHART_PLOT_DOTS_PATTERN_CLASS =
+  "absolute inset-0 [background-image:radial-gradient(circle,rgba(228,228,231,0.42)_1px,transparent_1px)] [background-size:8px_8px] [mask-image:radial-gradient(ellipse_52%_72%_at_50%_50%,#000_0%,#000_38%,transparent_100%)] [-webkit-mask-image:radial-gradient(ellipse_52%_72%_at_50%_50%,#000_0%,#000_38%,transparent_100%)]";
+
+function findRangeHighPoint(pts: readonly StockChartPoint[]): StockChartPoint | null {
+  if (!pts.length) return null;
+  let best = pts[0]!;
+  for (let i = 1; i < pts.length; i++) {
+    const p = pts[i]!;
+    if (!isFiniteNumber(p.value)) continue;
+    if (p.value > best.value || (p.value === best.value && p.time >= best.time)) {
+      best = p;
+    }
+  }
+  return isFiniteNumber(best.value) ? best : null;
+}
+
+function layoutRangePriceBadge(
+  chart: IChartApi,
+  series: MainPriceSeries,
+  point: StockChartPoint,
+  anchor: RangeChartPriceBadge["anchor"],
+  plotWidth: number,
+): Pick<RangeChartPriceBadge, "left" | "top"> | null {
+  const y = series.priceToCoordinate(point.value);
+  const x = chart.timeScale().timeToCoordinate(point.time as UTCTimestamp);
+  if (y == null || x == null || !Number.isFinite(y) || !Number.isFinite(x)) return null;
+  const paneH = chart.paneSize(0).height;
+  if (y < 4 || y > paneH) return null;
+  const left =
+    anchor === "center"
+      ? Math.max(44, Math.min(plotWidth - 44, x))
+      : Math.max(8, x);
+  return { left, top: y };
+}
+
 export type ChartDisplayState = {
   loading: boolean;
   empty: boolean;
@@ -102,6 +158,22 @@ const BASELINE_LINE = "rgba(113, 113, 122, 0.55)";
 /** Horizontal rules at the top and bottom of the plot pane (replaces default price grid). */
 const SCALE_EDGE_LINE = "rgba(228, 228, 231, 0.85)";
 
+/** Plain right-axis price labels (no horizontal rules). */
+const Y_AXIS_LABEL_COUNT = 6;
+
+const HIDE_NATIVE_Y_AXIS_TICK_LABELS = (priceValue: readonly number[]) => priceValue.map(() => "");
+
+const Y_AXIS_LABEL_ONLY = {
+  color: "transparent",
+  lineWidth: 1,
+  lineStyle: LineStyle.Solid,
+  axisLabelVisible: true,
+  axisLabelColor: "#ffffff",
+  axisLabelTextColor: "#71717A",
+  lineVisible: false,
+  title: "",
+} as const;
+
 type MainPriceSeries = ISeriesApi<"Baseline"> | ISeriesApi<"Area">;
 
 function removeScaleBoundsPriceLines(
@@ -154,56 +226,83 @@ function removeSessionHighLowPriceLines(
   }
 }
 
-/** Session high / low — solid horizontals; overview only (replaces tick-aligned `grid.horzLines`). */
-function syncSessionHighLowPriceLines(
-  series: MainPriceSeries,
-  values: readonly { value: number }[],
-  highRef: RefObject<IPriceLine | null>,
-  lowRef: RefObject<IPriceLine | null>,
-) {
-  let hi = -Infinity;
-  let lo = Infinity;
-  for (const d of values) {
-    if (!Number.isFinite(d.value)) continue;
-    hi = Math.max(hi, d.value);
-    lo = Math.min(lo, d.value);
-  }
-  if (!Number.isFinite(hi) || !Number.isFinite(lo)) {
-    removeSessionHighLowPriceLines(series, highRef, lowRef);
+function removeYAxisTickLabels(series: MainPriceSeries | null, ticksRef: RefObject<IPriceLine[]>) {
+  if (!series) {
+    ticksRef.current = [];
     return;
   }
-
-  const common = {
-    color: SCALE_EDGE_LINE,
-    lineWidth: 1,
-    lineStyle: LineStyle.Solid,
-    /** Only hi/lo labels on the axis; default scale ticks are blanked via `tickmarksPriceFormatter`. */
-    axisLabelVisible: true,
-    axisLabelColor: "#ffffff",
-    axisLabelTextColor: "#71717A",
-    title: "",
-    lineVisible: true,
-  } as const;
-
-  if (hi === lo) {
-    removeSessionHighLowPriceLines(series, highRef, lowRef);
-    if (!highRef.current) {
-      highRef.current = series.createPriceLine({ price: hi, ...common });
-    } else {
-      highRef.current.applyOptions({ price: hi, ...common });
+  for (const line of ticksRef.current) {
+    try {
+      series.removePriceLine(line);
+    } catch {
+      /* ignore */
     }
+  }
+  ticksRef.current = [];
+}
+
+/** Evenly spaced right-axis numbers without extra grid lines. */
+function syncYAxisTickLabels(
+  chart: IChartApi,
+  series: MainPriceSeries,
+  ticksRef: RefObject<IPriceLine[]>,
+  tickCount: number = Y_AXIS_LABEL_COUNT,
+) {
+  const h = chart.paneSize(0).height;
+  if (!Number.isFinite(h) || h <= 0 || tickCount < 2) {
+    removeYAxisTickLabels(series, ticksRef);
     return;
   }
 
-  if (!highRef.current) {
-    highRef.current = series.createPriceLine({ price: hi, ...common });
-  } else {
-    highRef.current.applyOptions({ price: hi, ...common });
+  const topPrice = series.coordinateToPrice(0);
+  const bottomPrice = series.coordinateToPrice(h);
+  if (topPrice == null || bottomPrice == null) {
+    removeYAxisTickLabels(series, ticksRef);
+    return;
   }
-  if (!lowRef.current) {
-    lowRef.current = series.createPriceLine({ price: lo, ...common });
-  } else {
-    lowRef.current.applyOptions({ price: lo, ...common });
+
+  let top = topPrice as number;
+  let bottom = bottomPrice as number;
+  if (!Number.isFinite(top) || !Number.isFinite(bottom)) {
+    removeYAxisTickLabels(series, ticksRef);
+    return;
+  }
+  if (top < bottom) {
+    const swap = top;
+    top = bottom;
+    bottom = swap;
+  }
+
+  const span = top - bottom;
+  if (span <= 0) {
+    removeYAxisTickLabels(series, ticksRef);
+    return;
+  }
+
+  const prices: number[] = [];
+  for (let i = 0; i < tickCount; i++) {
+    prices.push(bottom + (span * i) / (tickCount - 1));
+  }
+
+  while (ticksRef.current.length > prices.length) {
+    const line = ticksRef.current.pop();
+    if (line) {
+      try {
+        series.removePriceLine(line);
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
+  for (let i = 0; i < prices.length; i++) {
+    const price = prices[i]!;
+    const existing = ticksRef.current[i];
+    if (existing) {
+      existing.applyOptions({ price, ...Y_AXIS_LABEL_ONLY });
+    } else {
+      ticksRef.current.push(series.createPriceLine({ price, ...Y_AXIS_LABEL_ONLY }));
+    }
   }
 }
 
@@ -402,6 +501,8 @@ export function PriceChart({
 }: Props) {
   const holdingsStyleRef = useRef(holdingsStyle);
   holdingsStyleRef.current = holdingsStyle;
+  const chartMetricSeriesRef = useRef(series);
+  chartMetricSeriesRef.current = series;
 
   const containerRef = useRef<HTMLDivElement>(null);
   const initialConsumedRef = useRef(false);
@@ -413,11 +514,13 @@ export function PriceChart({
   const sessionLowPriceLineRef = useRef<IPriceLine | null>(null);
   const scaleTopPriceLineRef = useRef<IPriceLine | null>(null);
   const scaleBottomPriceLineRef = useRef<IPriceLine | null>(null);
+  const yAxisTickLinesRef = useRef<IPriceLine[]>([]);
   const costBasisLineRef = useRef<IPriceLine | null>(null);
   const markersRef = useRef<ISeriesMarkersPluginApi<UTCTimestamp> | null>(null);
   /** Base in-bar marker templates (before bar-spacing scale) for overview. */
   const overviewInBarMarkersRef = useRef<SeriesMarker<UTCTimestamp>[] | null>(null);
   const rescaleOverviewInBarMarkersRef = useRef<(() => void) | null>(null);
+  const syncRangePriceBadgesRef = useRef<(() => void) | null>(null);
   const splitSeriesBundleRef = useRef<{
     left: ISeriesApi<"Baseline">;
     mid: ISeriesApi<"Baseline">;
@@ -434,6 +537,8 @@ export function PriceChart({
   const hoverPointRafRef = useRef<number>(0);
   const [ready, setReady] = useState(false);
   const [containerWidth, setContainerWidth] = useState(0);
+  const [rangeOpenBadge, setRangeOpenBadge] = useState<RangeChartPriceBadge | null>(null);
+  const [rangeHighBadge, setRangeHighBadge] = useState<RangeChartPriceBadge | null>(null);
 
   useEffect(() => {
     pointsRef.current = points;
@@ -531,13 +636,9 @@ export function PriceChart({
         fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
         attributionLogo: false,
       },
-      ...(holdingsStyle
-        ? {}
-        : {
-            localization: {
-              tickmarksPriceFormatter: (priceValue: readonly number[]) => priceValue.map(() => ""),
-            },
-          }),
+      localization: {
+        tickmarksPriceFormatter: HIDE_NATIVE_Y_AXIS_TICK_LABELS,
+      },
       grid: {
         vertLines: { visible: false },
         // Overview: no tick grid — session high/low + dashed open use `createPriceLine` instead. Holdings: off.
@@ -577,6 +678,7 @@ export function PriceChart({
           lineWidth: 2,
           lineType: LineType.Curved,
           priceLineVisible: false,
+          lastValueVisible: false,
           lastPriceAnimation: LastPriceAnimationMode.OnDataUpdate,
           crosshairMarkerVisible: true,
           crosshairMarkerRadius: 5,
@@ -684,6 +786,53 @@ export function PriceChart({
       if (!c || !m || !templates?.length) return;
       scheduleScaledInBarMarkers(c, m, templates);
     };
+    syncRangePriceBadgesRef.current = () => {
+      const chart = chartRef.current;
+      const s = seriesRef.current;
+      if (!chart || !s || holdingsStyleRef.current) {
+        setRangeOpenBadge(null);
+        setRangeHighBadge(null);
+        return;
+      }
+      const pts = pointsRef.current.filter((p) => isFiniteNumber(p.time) && isFiniteNumber(p.value));
+      const first = pts[0];
+      if (!first) {
+        setRangeOpenBadge(null);
+        setRangeHighBadge(null);
+        return;
+      }
+      const plotWidth = containerRef.current?.clientWidth ?? chart.paneSize(0).width;
+      const metric = chartMetricSeriesRef.current;
+      const openLayout = layoutRangePriceBadge(chart, s, first, "start", plotWidth);
+      setRangeOpenBadge(
+        openLayout
+          ? {
+              ...openLayout,
+              label: formatOverviewChartAxisValue(first.value, kind, metric),
+              anchor: "start",
+            }
+          : null,
+      );
+
+      const highPt = findRangeHighPoint(pts);
+      if (
+        !highPt ||
+        (highPt.time === first.time && Math.abs(highPt.value - first.value) < 1e-9)
+      ) {
+        setRangeHighBadge(null);
+        return;
+      }
+      const highLayout = layoutRangePriceBadge(chart, s, highPt, "center", plotWidth);
+      setRangeHighBadge(
+        highLayout
+          ? {
+              ...highLayout,
+              label: formatOverviewChartAxisValue(highPt.value, kind, metric),
+              anchor: "center",
+            }
+          : null,
+      );
+    };
     const syncBoundsLines = () => {
       const c = chartRef.current;
       const s = seriesRef.current;
@@ -697,6 +846,8 @@ export function PriceChart({
         } else {
           removeScaleBoundsPriceLines(s2, scaleTopPriceLineRef, scaleBottomPriceLineRef);
         }
+        syncYAxisTickLabels(c2, s2, yAxisTickLinesRef);
+        syncRangePriceBadgesRef.current?.();
       });
     };
     const onVisRangeForMarkers = () => {
@@ -720,13 +871,17 @@ export function PriceChart({
       ts.unsubscribeVisibleLogicalRangeChange(onVisRangeForMarkers);
       ts.unsubscribeVisibleTimeRangeChange(onVisRangeForMarkers);
       rescaleOverviewInBarMarkersRef.current = null;
+      syncRangePriceBadgesRef.current = null;
       overviewInBarMarkersRef.current = null;
+      setRangeOpenBadge(null);
+      setRangeHighBadge(null);
       chart.unsubscribeCrosshairMove(onCrosshairMove);
       markersRef.current = null;
       const sUnmount = seriesRef.current;
       if (sUnmount) {
         removeScaleBoundsPriceLines(sUnmount, scaleTopPriceLineRef, scaleBottomPriceLineRef);
         removeSessionHighLowPriceLines(sUnmount, sessionHighPriceLineRef, sessionLowPriceLineRef);
+        removeYAxisTickLabels(sUnmount, yAxisTickLinesRef);
       }
       baselinePriceLineRef.current = null;
       costBasisLineRef.current = null;
@@ -746,30 +901,17 @@ export function PriceChart({
         : kind === "stock" && series === "return"
           ? formatReturnAxis
           : formatStockPriceAxis;
-    const hideScaleTicks = !holdingsStyleRef.current;
     chart.applyOptions({
       localization: {
         priceFormatter: fmt,
-        ...(hideScaleTicks
-          ? { tickmarksPriceFormatter: (priceValue: readonly number[]) => priceValue.map(() => "") }
-          : { tickmarksPriceFormatter: undefined }),
+        tickmarksPriceFormatter: HIDE_NATIVE_Y_AXIS_TICK_LABELS,
       },
     });
   }, [kind, series]);
 
   useEffect(() => {
-    const chart = chartRef.current;
-    if (!chart) return;
-    if (holdingsStyle) {
-      chart.applyOptions({ localization: { tickmarksPriceFormatter: undefined } });
-    } else {
-      chart.applyOptions({
-        localization: {
-          tickmarksPriceFormatter: (priceValue: readonly number[]) => priceValue.map(() => ""),
-        },
-      });
-    }
-  }, [holdingsStyle]);
+    initialConsumedRef.current = false;
+  }, [kind, symbol, range, series]);
 
   // Fetch
   useEffect(() => {
@@ -906,6 +1048,7 @@ export function PriceChart({
       if (series) {
         removeScaleBoundsPriceLines(series, scaleTopPriceLineRef, scaleBottomPriceLineRef);
         removeSessionHighLowPriceLines(series, sessionHighPriceLineRef, sessionLowPriceLineRef);
+        removeYAxisTickLabels(series, yAxisTickLinesRef);
         removeOverviewSingleBaselineLine(series);
       }
       removeCostLine();
@@ -924,6 +1067,7 @@ export function PriceChart({
       if (sInv) {
         removeScaleBoundsPriceLines(sInv, scaleTopPriceLineRef, scaleBottomPriceLineRef);
         removeSessionHighLowPriceLines(sInv, sessionHighPriceLineRef, sessionLowPriceLineRef);
+        removeYAxisTickLabels(sInv, yAxisTickLinesRef);
       }
       seriesRef.current?.setData([]);
       markersRef.current?.setMarkers([]);
@@ -962,6 +1106,7 @@ export function PriceChart({
 
       markersRef.current?.setMarkers(tradeMarkersForChart(tradeMarkers, data));
       syncScaleBoundsPriceLines(chart, series, scaleTopPriceLineRef, scaleBottomPriceLineRef);
+      syncYAxisTickLabels(chart, series, yAxisTickLinesRef);
       return;
     }
 
@@ -1010,8 +1155,12 @@ export function PriceChart({
       markers.setMarkers([]);
     }
     removeScaleBoundsPriceLines(single, scaleTopPriceLineRef, scaleBottomPriceLineRef);
-    syncSessionHighLowPriceLines(single, data, sessionHighPriceLineRef, sessionLowPriceLineRef);
-  }, [points, lastPointStroke, holdingsStyle, tradeMarkers, costBasisPrice]);
+    removeSessionHighLowPriceLines(single, sessionHighPriceLineRef, sessionLowPriceLineRef);
+    syncYAxisTickLabels(chart, single, yAxisTickLinesRef);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => syncRangePriceBadgesRef.current?.());
+    });
+  }, [points, lastPointStroke, holdingsStyle, tradeMarkers, costBasisPrice, kind, series]);
 
   const empty = !loading && points.length === 0;
   const hoverYmd = useMemo(
@@ -1057,7 +1206,10 @@ export function PriceChart({
   }, [holdingsStyle, hoverPoint, containerWidth, height, overviewHoverTooltip]);
 
   return (
-    <div ref={containerRef} className="relative z-0 bg-transparent select-none" style={{ height }}>
+    <div ref={containerRef} className="relative z-0 select-none" style={{ height }}>
+      <div className="pointer-events-none absolute inset-0 z-0 bg-white" aria-hidden>
+        <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
+      </div>
       <div
         ref={wrapRef}
         className={`absolute inset-0 z-10 transition-opacity duration-300 ease-out ${
@@ -1085,6 +1237,22 @@ export function PriceChart({
           </div>
         </div>
       ) : null}
+      {!holdingsStyle && !loading && ready
+        ? [rangeOpenBadge, rangeHighBadge]
+            .filter((b): b is RangeChartPriceBadge => b != null)
+            .map((badge) => (
+              <div
+                key={badge.anchor === "start" ? "open" : "high"}
+                className={`pointer-events-none absolute z-20 max-w-[min(100%,120px)] -translate-y-full pb-1 ${
+                  badge.anchor === "center" ? "-translate-x-1/2" : ""
+                }`}
+                style={{ left: badge.left, top: badge.top }}
+                aria-hidden
+              >
+                <span className={RANGE_PRICE_BADGE_CLASS}>{badge.label}</span>
+              </div>
+            ))
+        : null}
       {!holdingsStyle && overviewHoverTooltip && hoverPoint && overviewTooltipPos ? (
         <div
           className="pointer-events-none absolute z-30 min-w-[200px] max-w-[min(100%,280px)] rounded-[10px] border border-[#E4E4E7] bg-white px-3 py-2 text-[12px] leading-4 text-[#09090B] shadow-[0px_8px_20px_0px_rgba(10,10,10,0.10)]"

@@ -34,8 +34,9 @@ const AXIS_LABEL_ROTATE_DEG = -42;
 export const MULTICHART_MAX_ANNUAL_BARS = 20;
 export const MULTICHART_MAX_QUARTERLY_BARS = 80;
 
-/** Same fill as Earnings (Estimates) `EstimatesHoverBandPrimitive` hover column. */
-const HOVER_COLUMN_BG = "rgba(59, 130, 246, 0.14)";
+/** Hover halo behind the active line point (not a full-height column). */
+const HOVER_DOT_HALO_BG = "rgba(59, 130, 246, 0.14)";
+const HOVER_DOT_HALO_RADIUS_PX = 14;
 
 /** Reuse Earnings (Estimates) crosshair-to-tooltip layout — `anchorX` in px, relative to plot (left) edge. */
 function computeTooltipHorizontalPlacement(
@@ -153,6 +154,19 @@ function niceCeilStep(step: number): number {
   return 10 * base;
 }
 
+/** Caps for P/E and other multiples — avoids `niceCeilPositive` jumping ~215 → 500. */
+const MULTIPLE_RATIO_AXIS_MAX_LADDER = [50, 100, 150, 200, 250, 300, 400, 500, 750, 1000] as const;
+
+function axisMaxForMultiplesAndRatios(rawMax: number): number {
+  const padded = rawMax <= 0 ? 1 : rawMax * 1.08;
+  const naive = niceCeilPositive(rawMax);
+  if (naive > 300 && rawMax <= 250) return 300;
+  for (const cap of MULTIPLE_RATIO_AXIS_MAX_LADDER) {
+    if (cap >= padded) return cap;
+  }
+  return naive;
+}
+
 /**
  * Y-axis max for exactly 5 ticks (4 equal bands from 0).
  * USD / shares: tighter headroom than {@link niceCeilPositive} alone (e.g. ~$240B vs $500B for ~$215B).
@@ -163,6 +177,9 @@ function axisMaxForFiveTicks(rawMax: number, kind: ChartingMetricKind): number {
     const padded = rawMax * 1.04;
     const step = niceCeilStep(padded / 4);
     return step * 4;
+  }
+  if (kind === "multiple" || kind === "ratio") {
+    return axisMaxForMultiplesAndRatios(rawMax);
   }
   return niceCeilPositive(rawMax);
 }
@@ -330,16 +347,6 @@ export function MultichartFundamentalsBar({
                 role="img"
                 aria-label={`${metricLabel} line chart`}
               >
-                {hoveredIndex != null && lineSvg.pts[hoveredIndex] ? (
-                  <div
-                    className="pointer-events-none absolute top-0 bottom-0 z-[1] w-10 -translate-x-1/2"
-                    style={{
-                      left: lineSvg.pts[hoveredIndex]!.x,
-                      backgroundColor: HOVER_COLUMN_BG,
-                    }}
-                    aria-hidden
-                  />
-                ) : null}
                 {lineSvg.d ? (
                   <svg
                     width={linePlotPx.w}
@@ -355,6 +362,15 @@ export function MultichartFundamentalsBar({
                       strokeLinecap="round"
                       strokeLinejoin="round"
                     />
+                    {hoveredIndex != null && lineSvg.pts[hoveredIndex] ? (
+                      <circle
+                        cx={lineSvg.pts[hoveredIndex]!.x}
+                        cy={lineSvg.pts[hoveredIndex]!.y}
+                        r={HOVER_DOT_HALO_RADIUS_PX}
+                        fill={HOVER_DOT_HALO_BG}
+                        className="pointer-events-none"
+                      />
+                    ) : null}
                     {lineSvg.pts.map(({ x, y, v, i }) => {
                       const ptColor = seriesBarColor;
                       return (
@@ -454,7 +470,7 @@ export function MultichartFundamentalsBar({
                       {hoveredIndex === i ? (
                         <div
                           className="pointer-events-none absolute inset-0 z-0"
-                          style={{ backgroundColor: HOVER_COLUMN_BG }}
+                          style={{ backgroundColor: HOVER_DOT_HALO_BG }}
                           aria-hidden
                         />
                       ) : null}
@@ -480,7 +496,7 @@ export function MultichartFundamentalsBar({
 
             {tip ? (
               <div
-                className="pointer-events-none absolute z-30 max-w-[min(280px,calc(100%-16px))] rounded-lg bg-[#09090B] px-3 py-2.5 pr-3.5 text-left text-white shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
+                className="pointer-events-none absolute z-30 max-w-[min(280px,calc(100%-16px))] rounded-lg border border-[#E4E4E7] bg-white px-3 py-2.5 pr-3.5 text-left shadow-[0px_1px_4px_0px_rgba(10,10,10,0.08),0px_1px_2px_0px_rgba(10,10,10,0.06)]"
                 style={{
                   left: `clamp(8px, ${tip.anchorX}px, calc(100% - 8px))`,
                   top: tip.y,
@@ -491,17 +507,17 @@ export function MultichartFundamentalsBar({
                 }}
               >
                 {tip.side === "left" ? (
-                  <span
-                    className="absolute top-1/2 left-full -translate-y-1/2 border-y-[6px] border-y-transparent border-l-[7px] border-l-[#09090B]"
-                    aria-hidden
-                  />
+                  <span className="absolute top-1/2 left-full -translate-y-1/2" aria-hidden>
+                    <span className="block border-y-[7px] border-y-transparent border-l-[8px] border-l-[#E4E4E7]" />
+                    <span className="absolute top-1/2 left-px -translate-y-1/2 border-y-[6px] border-y-transparent border-l-[7px] border-l-white" />
+                  </span>
                 ) : (
-                  <span
-                    className="absolute top-1/2 right-full -translate-y-1/2 border-y-[6px] border-y-transparent border-r-[7px] border-r-[#09090B]"
-                    aria-hidden
-                  />
+                  <span className="absolute top-1/2 right-full -translate-y-1/2" aria-hidden>
+                    <span className="block border-y-[7px] border-y-transparent border-r-[8px] border-r-[#E4E4E7]" />
+                    <span className="absolute top-1/2 right-px -translate-y-1/2 border-y-[6px] border-y-transparent border-r-[7px] border-r-white" />
+                  </span>
                 )}
-                <p className="text-[12px] font-semibold leading-4 text-white">{tip.periodLabel}</p>
+                <p className="text-[12px] font-semibold leading-4 text-[#09090B]">{tip.periodLabel}</p>
                 <p className="mt-1.5 whitespace-nowrap text-[12px] font-normal leading-4 text-[#71717A]">
                   {tip.valueLine}
                 </p>

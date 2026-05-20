@@ -751,6 +751,7 @@ function PortfolioReturnsDynamicsChartInner({
       <div className="mt-3 w-full min-w-0 sm:hidden">
         <TabSwitcher
           aria-label="Return period"
+          fullWidth
           className="w-full min-w-0"
           options={GRANULARITY_OPTIONS}
           value={granularity}

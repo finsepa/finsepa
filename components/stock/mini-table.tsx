@@ -9,7 +9,15 @@ import { CompanyLogo } from "@/components/screener/company-logo";
 import { cn } from "@/lib/utils";
 import type { CompanyPick } from "@/components/charting/company-picker";
 import { STOCK_OVERVIEW_COMPARE_LINE_COLORS } from "@/components/stock/stock-compare-return-chart";
-import { formatUsdPrice } from "@/lib/market/key-stats-basic-format";
+function formatPerformancePct(value: number): string {
+  const isPositive = value >= 0;
+  const sign = isPositive ? "+" : "−";
+  const body = Math.abs(value).toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  return `${sign}${body}%`;
+}
 
 function PerfCellMaybe({ value }: { value: number | null }) {
   if (value == null || !Number.isFinite(value)) {
@@ -22,11 +30,12 @@ function PerfCellMaybe({ value }: { value: number | null }) {
         isPositive ? "text-[#16A34A]" : "text-[#DC2626]"
       }`}
     >
-      {isPositive ? "+" : ""}
-      {value.toFixed(2)}%
+      {formatPerformancePct(value)}
     </td>
   );
 }
+
+const MINI_TABLE_PERF_HEADERS = ["1D", "5D", "1M", "6M", "YTD", "1Y", "5Y", "ALL"] as const;
 
 function parseHeaderMetaPayload(json: {
   fullName?: unknown;
@@ -116,11 +125,6 @@ function OverviewCompareRow({
           </button>
         </div>
       </td>
-      <td className="min-w-[60px] px-3 py-3 text-right text-[14px] leading-5 tabular-nums text-[#09090B]">
-        {comparePerfLoading || compareRow?.price == null || !Number.isFinite(compareRow.price)
-          ? "—"
-          : formatUsdPrice(compareRow.price)}
-      </td>
       <PerfCellMaybe value={compareRow?.d1 ?? null} />
       <PerfCellMaybe value={compareRow?.d5 ?? null} />
       <PerfCellMaybe value={compareRow?.m1 ?? null} />
@@ -200,7 +204,7 @@ export function MiniTable({
         <thead>
           <tr className="border-t border-b border-[#E4E4E7] bg-white">
             <th className="min-w-[200px] px-3 py-2.5 text-left text-[14px] font-semibold text-[#71717A]">Company</th>
-            {["Price", "1D", "5D", "1M", "6M", "YTD", "1Y", "5Y", "ALL"].map((h) => (
+            {MINI_TABLE_PERF_HEADERS.map((h) => (
               <th
                 key={h}
                 className="min-w-[60px] px-3 py-2.5 text-right text-[14px] font-semibold text-[#71717A]"
@@ -229,9 +233,6 @@ export function MiniTable({
                   <div className="text-[12px] leading-4 text-[#71717A]">{sym}</div>
                 </div>
               </div>
-            </td>
-            <td className="min-w-[60px] px-3 py-3 text-right text-[14px] leading-5 tabular-nums text-[#09090B]">
-              {loading || row?.price == null || !Number.isFinite(row.price) ? "—" : formatUsdPrice(row.price)}
             </td>
             <PerfCellMaybe value={row?.d1 ?? null} />
             <PerfCellMaybe value={row?.d5 ?? null} />
