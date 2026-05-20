@@ -24,6 +24,7 @@ import {
 import { ChartSkeleton } from "@/components/ui/chart-skeleton";
 import { computeChartHeaderMetrics } from "@/components/chart/chart-display-metrics";
 import { horzTimeToUnixSeconds, nearestPointByTime } from "@/components/chart/chart-selection-utils";
+import { fitContentWithMobilePlotGutter } from "@/lib/chart/mobile-plot-horizontal-gutter";
 import { formatAssetChartTimestamp } from "@/lib/market/chart-timestamp-format";
 import type { StockChartRange, StockChartPoint, StockChartSeries } from "@/lib/market/stock-chart-types";
 
@@ -861,6 +862,10 @@ export function PriceChart({
     const ro = new ResizeObserver(() => {
       const w = Math.max(2, el.clientWidth);
       chart.resize(w, height);
+      const plotW = containerRef.current?.clientWidth ?? w;
+      if (pointsRef.current.some((p) => isFiniteNumber(p.time) && isFiniteNumber(p.value))) {
+        fitContentWithMobilePlotGutter(chart, plotW);
+      }
       onVisRangeForMarkers();
     });
     ro.observe(el);
@@ -1082,7 +1087,7 @@ export function PriceChart({
       removeSessionHighLowPriceLines(series, sessionHighPriceLineRef, sessionLowPriceLineRef);
       removeOverviewSingleBaselineLine(series);
       series.setData(data);
-      chart.timeScale().fitContent();
+      fitContentWithMobilePlotGutter(chart, containerRef.current?.clientWidth ?? el.clientWidth);
 
       if (costBasisPrice != null && Number.isFinite(costBasisPrice) && costBasisPrice > 0) {
         const title = costBasisPriceLineTitle(costBasisPrice);
@@ -1135,7 +1140,7 @@ export function PriceChart({
     }
 
     single.setData(data);
-    chart.timeScale().fitContent();
+    fitContentWithMobilePlotGutter(chart, containerRef.current?.clientWidth ?? el.clientWidth);
 
     const last = data[data.length - 1];
     if (last) {

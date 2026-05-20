@@ -10,6 +10,7 @@ import {
   type ChartingMetricId,
   type ChartingMetricKind,
 } from "@/lib/market/stock-charting-metrics";
+import { formatChartingTableCell } from "@/components/charting/charting-individual-company-table";
 import {
   formatPercentMetric,
   formatRatio,
@@ -106,6 +107,11 @@ function formatMultichartPeriodAxisLabel(periodEnd: string, mode: FundamentalsSe
   if (!year || !q) return s;
   const yy = year.length >= 2 ? year.slice(2) : year;
   return `Q${q} '${yy}`;
+}
+
+/** Tooltip values — two decimal places in K/M/B/T (e.g. `$258.24B`). */
+function formatTooltipValue(kind: ChartingMetricKind, p: number): string {
+  return formatChartingTableCell(kind, p);
 }
 
 function formatAxisValue(kind: ChartingMetricKind, p: number): string {
@@ -398,7 +404,7 @@ export function MultichartFundamentalsBar({
                                 y: e.clientY - plotR.top,
                                 side,
                                 periodLabel: labels[i]!,
-                                valueLine: `${metricLabel}: ${formatAxisValue(kind, v)}`,
+                                valueLine: `${metricLabel}: ${formatTooltipValue(kind, v)}`,
                               });
                             }}
                             onMouseMove={(e) => {
@@ -418,7 +424,7 @@ export function MultichartFundamentalsBar({
                                 y: e.clientY - plotR.top,
                                 side,
                                 periodLabel: labels[i]!,
-                                valueLine: `${metricLabel}: ${formatAxisValue(kind, v)}`,
+                                valueLine: `${metricLabel}: ${formatTooltipValue(kind, v)}`,
                               });
                             }}
                           />
@@ -447,7 +453,7 @@ export function MultichartFundamentalsBar({
                 {values.map((v, i) => {
                   const hPct = maxV > 0 ? (Math.max(0, v) / maxV) * 100 : 0;
                   const barColor = seriesBarColor;
-                  const valueLine = `${metricLabel}: ${formatAxisValue(kind, v)}`;
+                  const valueLine = `${metricLabel}: ${formatTooltipValue(kind, v)}`;
                   return (
                     <div
                       key={`${labels[i]}-${i}`}

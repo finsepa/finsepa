@@ -19,6 +19,7 @@ import {
 import { horzTimeToUnixSeconds, nearestPointByTime } from "@/components/chart/chart-selection-utils";
 import type { CompanyPick } from "@/components/charting/company-picker";
 import { ChartSkeleton } from "@/components/ui/chart-skeleton";
+import { fitContentWithMobilePlotGutter } from "@/lib/chart/mobile-plot-horizontal-gutter";
 import { formatAssetChartTimestamp } from "@/lib/market/chart-timestamp-format";
 import type { StockChartPoint, StockChartRange } from "@/lib/market/stock-chart-types";
 
@@ -312,6 +313,8 @@ export function StockCompareReturnChart({ primaryTicker, comparePicks, range, he
 
     const ro = new ResizeObserver(() => {
       chart.resize(Math.max(2, el.clientWidth), height);
+      const plotW = containerRef.current?.clientWidth ?? el.clientWidth;
+      fitContentWithMobilePlotGutter(chart, plotW);
     });
     ro.observe(el);
     chart.resize(Math.max(2, el.clientWidth), height);
@@ -343,7 +346,7 @@ export function StockCompareReturnChart({ primaryTicker, comparePicks, range, he
     for (let i = 0; i < lines.length; i++) {
       lines[i]!.setData(mapData(comparePtsList[i] ?? []));
     }
-    chart.timeScale().fitContent();
+    fitContentWithMobilePlotGutter(chart, containerRef.current?.clientWidth ?? 0);
   }, [primaryPts, comparePtsList, compareSlotsKey]);
 
   const tooltipEstHeight = useMemo(() => 34 + Math.max(1, hover?.lines.length ?? 2) * 22, [hover?.lines.length]);

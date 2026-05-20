@@ -118,37 +118,52 @@ export function StockHeader({
   const industryLabel = headerMeta?.industry?.trim() || null;
   const canonicalSector = sectorLabel ? mapProviderSectorToCanonical(sectorLabel) : null;
 
+  const breadcrumbCrumbClass = "min-w-0 truncate";
+  const breadcrumbLinkClass = `${breadcrumbCrumbClass} transition-colors hover:text-[#09090B]`;
+
   return (
-    <div className="space-y-3 max-md:px-3 md:px-0">
-      <div className="flex flex-wrap items-center gap-1 text-[14px] text-[#71717A]">
-        <Link href="/screener" className="transition-colors hover:text-[#09090B]">
+    <div className="space-y-3">
+      <div className="flex min-w-0 items-center gap-1 overflow-hidden text-[14px] text-[#71717A] max-md:flex-nowrap max-md:overflow-hidden md:flex-wrap">
+        <Link href="/screener" className="shrink-0 transition-colors hover:text-[#09090B]">
           Stocks
         </Link>
         {sectorLabel && (
           <>
-            <ChevronRight className="h-3.5 w-3.5 shrink-0" />
+            <ChevronRight className="h-3.5 w-3.5 shrink-0" aria-hidden />
             {canonicalSector ? (
-              <Link href={screenerSectorCompaniesHref(canonicalSector)} className="transition-colors hover:text-[#09090B]">
+              <Link
+                href={screenerSectorCompaniesHref(canonicalSector)}
+                className={`${breadcrumbLinkClass} max-md:max-w-[38%]`}
+                title={sectorLabel}
+              >
                 {sectorLabel}
               </Link>
             ) : (
-              <span>{sectorLabel}</span>
+              <span className={`${breadcrumbCrumbClass} max-md:max-w-[38%]`} title={sectorLabel}>
+                {sectorLabel}
+              </span>
             )}
           </>
         )}
         {industryLabel && (
           <>
-            <ChevronRight className="h-3.5 w-3.5 shrink-0" />
+            <ChevronRight className="h-3.5 w-3.5 shrink-0" aria-hidden />
             {canonicalSector ? (
-              <Link href={screenerIndustryDrillHref(canonicalSector, industryLabel)} className="transition-colors hover:text-[#09090B]">
+              <Link
+                href={screenerIndustryDrillHref(canonicalSector, industryLabel)}
+                className={`${breadcrumbLinkClass} max-md:min-w-0 max-md:flex-1`}
+                title={industryLabel}
+              >
                 {industryLabel}
               </Link>
             ) : (
-              <span>{industryLabel}</span>
+              <span className={`${breadcrumbCrumbClass} max-md:min-w-0 max-md:flex-1`} title={industryLabel}>
+                {industryLabel}
+              </span>
             )}
           </>
         )}
-        <ChevronRight className="h-3.5 w-3.5 shrink-0" />
+        <ChevronRight className="h-3.5 w-3.5 shrink-0" aria-hidden />
         <CompanyPicker
           includeCrypto={false}
           maxExtraCompanies={1}
@@ -169,7 +184,7 @@ export function StockHeader({
               }}
               aria-expanded={open}
               aria-haspopup="listbox"
-              className="inline-flex h-6 max-w-full items-center gap-1.5 rounded-md border border-[#E4E4E7] bg-white px-2 text-[12px] font-medium leading-4 text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors hover:bg-[#FAFAFA]"
+              className="inline-flex h-6 shrink-0 items-center gap-1.5 rounded-md border border-[#E4E4E7] bg-white px-2 text-[12px] font-medium leading-4 text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors hover:bg-[#FAFAFA]"
               title={breadcrumbSymbol}
             >
               <Search className="h-3.5 w-3.5 shrink-0 text-[#71717A]" strokeWidth={2} aria-hidden />

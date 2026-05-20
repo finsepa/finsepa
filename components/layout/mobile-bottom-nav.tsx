@@ -47,12 +47,10 @@ function MobileNavSheetRow({
   item,
   pathname,
   onNavigate,
-  onTabIntent,
 }: {
   item: ProtectedNavItem;
   pathname: string;
   onNavigate: () => void;
-  onTabIntent: () => void;
 }) {
   const Icon = item.icon;
   const active = protectedNavItemIsActive(item, pathname);
@@ -69,10 +67,7 @@ function MobileNavSheetRow({
         prefetch={false}
         href={item.href}
         className={rowClass}
-        onClick={() => {
-          onTabIntent();
-          onNavigate();
-        }}
+        onClick={() => onNavigate()}
       >
         <Icon className={iconClass} aria-hidden />
         <span className="min-w-0 flex-1 truncate">{item.label}</span>
@@ -94,14 +89,12 @@ function MobileNavSheet({
   sheetId,
   pathname,
   onClose,
-  onTabIntent,
 }: {
   open: boolean;
   items: readonly ProtectedNavItem[];
   sheetId: SheetId | null;
   pathname: string;
   onClose: () => void;
-  onTabIntent: (tab: MobilePrimaryNavTab) => void;
 }) {
   if (!open || !sheetId) return null;
   return (
@@ -135,7 +128,6 @@ function MobileNavSheet({
               item={item}
               pathname={pathname}
               onNavigate={onClose}
-              onTabIntent={() => onTabIntent(sheetId)}
             />
           ))}
         </nav>
@@ -186,9 +178,12 @@ export function MobileBottomNav() {
     setDisplayTab(urlTab);
   }, [urlTab]);
 
+  const indicatorTab =
+    displayTab === "portfolio" && urlTab !== "portfolio" ? "portfolio" : urlTab;
+
   const measureIndicator = useCallback(() => {
     const nav = navRef.current;
-    const cell = tabRefs.current.get(displayTab);
+    const cell = tabRefs.current.get(indicatorTab);
     if (!nav || !cell) return;
     const navRect = nav.getBoundingClientRect();
     const cellRect = cell.getBoundingClientRect();
@@ -197,11 +192,11 @@ export function MobileBottomNav() {
       width: cellRect.width,
       height: cellRect.height,
     });
-  }, [displayTab]);
+  }, [indicatorTab]);
 
   useLayoutEffect(() => {
     measureIndicator();
-  }, [measureIndicator, displayTab, openSheet]);
+  }, [measureIndicator, indicatorTab, openSheet]);
 
   useLayoutEffect(() => {
     const nav = navRef.current;
@@ -217,8 +212,7 @@ export function MobileBottomNav() {
 
   const closeSheet = useCallback(() => {
     setOpenSheet(null);
-    setDisplayTab(mobilePrimaryNavTabFromPathname(pathname));
-  }, [pathname]);
+  }, []);
 
   const selectTab = useCallback((tab: MobilePrimaryNavTab) => {
     setDisplayTab(tab);
@@ -256,7 +250,6 @@ export function MobileBottomNav() {
         sheetId={openSheet}
         pathname={pathname}
         onClose={closeSheet}
-        onTabIntent={selectTab}
       />
       <nav
         ref={navRef}
@@ -280,8 +273,9 @@ export function MobileBottomNav() {
           aria-hidden
         />
         {TABS.map((tab) => {
-          const tabActive = displayTab === tab.id;
+          const routeActive = urlTab === tab.id;
           const sheetOpen = isSheetTab(tab.id) && openSheet === tab.id;
+          const sheetPeek = sheetOpen && !routeActive;
           const Icon = tab.Icon;
           return (
             <div
@@ -295,19 +289,19 @@ export function MobileBottomNav() {
               <button
                 type="button"
                 className={cn(
-                  "flex w-full flex-col items-center gap-0.5 rounded-full px-2 py-1.5 text-[10px] leading-[14px] font-semibold uppercase tracking-wide transition-[color,opacity] duration-100",
-                  tabActive || sheetOpen ? "text-[#09090B] opacity-100" : "text-[#A1A1AA] opacity-80 active:opacity-100",
+                  "flex w-full flex-col items-center gap-0.5 rounded-full px-2 py-1.5 text-[10px] leading-[14px] font-semibold uppercase tracking-wide transition-[color,opacity,background-color] duration-100",
+                  routeActive ? "text-[#09090B] opacity-100" : sheetPeek ? "bg-[#F4F4F5] text-[#09090B] opacity-100" : "text-[#A1A1AA] opacity-80 active:opacity-100",
                 )}
                 aria-expanded={sheetOpen}
                 aria-controls={sheetOpen ? `mobile-nav-sheet-${tab.id}` : undefined}
                 onClick={() => {
-                  selectTab(tab.id);
+                  if (!isSheetTab(tab.id)) return;
                   setOpenSheet((s) => (s === tab.id ? null : (tab.id as SheetId)));
                 }}
               >
                 <Icon
                   className="h-6 w-6"
-                  weight={tabActive || sheetOpen ? "fill" : "regular"}
+                  weight={routeActive ? "fill" : "regular"}
                   aria-hidden
                 />
                 <span>{tab.label}</span>
@@ -327,13 +321,13 @@ export function MobileBottomNav() {
             type="button"
             className={cn(
               "flex w-full flex-col items-center gap-0.5 rounded-full px-2 py-1.5 text-[10px] leading-[14px] font-semibold uppercase tracking-wide transition-[color,opacity] duration-100",
-              displayTab === "portfolio" ? "text-[#09090B] opacity-100" : "text-[#A1A1AA] opacity-80 active:opacity-100",
+              urlTab === "portfolio" || displayTab === "portfolio" ? "text-[#09090B] opacity-100" : "text-[#A1A1AA] opacity-80 active:opacity-100",
             )}
             onClick={goToPortfolio}
           >
             <ChartPieSlice
               className="h-6 w-6"
-              weight={displayTab === "portfolio" ? "fill" : "regular"}
+              weight={urlTab === "portfolio" || displayTab === "portfolio" ? "fill" : "regular"}
               aria-hidden
             />
             <span>Portfolio</span>

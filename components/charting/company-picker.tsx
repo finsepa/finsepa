@@ -71,6 +71,7 @@ export function CompanyPicker({
   maxExtraCompanies,
   excludeSymbols = [],
   includeCrypto = true,
+  menuAlign = "leading",
   children,
 }: {
   onPick: (pick: CompanyPick) => void;
@@ -79,6 +80,8 @@ export function CompanyPicker({
   excludeSymbols?: string[];
   /** Default true — set false on Charting so only stocks appear (transaction modal keeps crypto). */
   includeCrypto?: boolean;
+  /** `trailing` anchors the panel to the trigger’s right edge (menu grows left). */
+  menuAlign?: "leading" | "trailing";
   children: (ctx: CompanyPickerRenderProps) => ReactNode;
 }) {
   const pickerWrapRef = useRef<HTMLDivElement>(null);
@@ -238,7 +241,8 @@ export function CompanyPicker({
         <div
           className={cn(
             dropdownMenuSurfaceClassName(),
-            "absolute left-0 top-full z-[200] mt-1 w-[min(calc(100vw-2rem),360px)] overflow-hidden",
+            "absolute top-full z-[200] mt-1 w-[min(calc(100vw-2rem),360px)] overflow-hidden",
+            menuAlign === "trailing" ? "right-0" : "left-0",
           )}
           role="listbox"
           aria-label={listboxAriaLabel}

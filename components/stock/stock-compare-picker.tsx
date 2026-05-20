@@ -64,9 +64,16 @@ export function StockComparePicker({ baseTicker, values, onAdd, onRemove }: Prop
   const maxExtra = Math.max(0, MAX_OVERVIEW_COMPARE - values.length);
 
   return (
-    <CompanyPicker onPick={onAdd} disabled={false} maxExtraCompanies={maxExtra} excludeSymbols={excludeSymbols} includeCrypto={false}>
+    <CompanyPicker
+      onPick={onAdd}
+      disabled={false}
+      maxExtraCompanies={maxExtra}
+      excludeSymbols={excludeSymbols}
+      includeCrypto={false}
+      menuAlign="trailing"
+    >
       {({ open, setOpen, atCapacity }) => (
-        <div className="relative min-w-[min(100%,220px)] max-w-full flex-1 sm:max-w-[min(100%,560px)]">
+        <div className="relative min-w-0 w-full sm:min-w-[min(100%,220px)] sm:max-w-[min(100%,560px)]">
           <div
             tabIndex={0}
             aria-label="Compare stocks, open picker to add companies"

@@ -19,23 +19,57 @@ function formatPerformancePct(value: number): string {
   return `${sign}${body}%`;
 }
 
-function PerfCellMaybe({ value }: { value: number | null }) {
+type PerfField = keyof Pick<StockPerformance, "d1" | "d5" | "m1" | "m6" | "ytd" | "y1" | "y5" | "all">;
+
+const MINI_TABLE_PERF_COLUMNS: readonly {
+  header: string;
+  field: PerfField;
+  showOnMobile: boolean;
+}[] = [
+  { header: "1D", field: "d1", showOnMobile: false },
+  { header: "5D", field: "d5", showOnMobile: true },
+  { header: "1M", field: "m1", showOnMobile: true },
+  { header: "6M", field: "m6", showOnMobile: false },
+  { header: "YTD", field: "ytd", showOnMobile: true },
+  { header: "1Y", field: "y1", showOnMobile: false },
+  { header: "5Y", field: "y5", showOnMobile: false },
+  { header: "ALL", field: "all", showOnMobile: false },
+];
+
+function perfColClass(showOnMobile: boolean) {
+  return cn(
+    "px-3 py-2.5 text-right max-md:min-w-0 max-md:px-2",
+    showOnMobile ? "table-cell max-md:w-[16%]" : "hidden md:table-cell",
+    "md:min-w-[60px]",
+  );
+}
+
+function perfCellClass(showOnMobile: boolean) {
+  return cn(
+    "px-3 py-3 text-right text-[14px] leading-5 tabular-nums max-md:min-w-0 max-md:px-2",
+    showOnMobile ? "table-cell max-md:w-[16%]" : "hidden md:table-cell",
+    "md:min-w-[60px]",
+  );
+}
+
+function PerfCellMaybe({ value, showOnMobile }: { value: number | null; showOnMobile: boolean }) {
   if (value == null || !Number.isFinite(value)) {
-    return <td className="min-w-[60px] px-3 py-3 text-right text-[14px] leading-5 tabular-nums text-[#71717A]">—</td>;
+    return (
+      <td className={cn(perfCellClass(showOnMobile), "text-[#71717A]")}>—</td>
+    );
   }
   const isPositive = value >= 0;
   return (
     <td
-      className={`min-w-[60px] px-3 py-3 text-right text-[14px] leading-5 tabular-nums ${
-        isPositive ? "text-[#16A34A]" : "text-[#DC2626]"
-      }`}
+      className={cn(
+        perfCellClass(showOnMobile),
+        isPositive ? "text-[#16A34A]" : "text-[#DC2626]",
+      )}
     >
       {formatPerformancePct(value)}
     </td>
   );
 }
-
-const MINI_TABLE_PERF_HEADERS = ["1D", "5D", "1M", "6M", "YTD", "1Y", "5Y", "ALL"] as const;
 
 function parseHeaderMetaPayload(json: {
   fullName?: unknown;
@@ -101,9 +135,9 @@ function OverviewCompareRow({
 
   return (
     <tr className="border-b border-[#E4E4E7]">
-      <td className="px-3 py-3 text-left align-middle">
+      <td className="max-w-0 px-3 py-3 text-left align-middle">
         <div
-          className="flex items-center justify-start gap-3 pl-2 text-left"
+          className="flex min-w-0 items-center justify-start gap-3 pl-2 text-left"
           style={{ borderLeftWidth: 3, borderLeftStyle: "solid", borderLeftColor: borderColor }}
         >
           {compareMetaLoading ? (
@@ -111,9 +145,16 @@ function OverviewCompareRow({
           ) : (
             <CompanyLogo name={compareDisplayName} logoUrl={compareLogoUrl} symbol={compareSym} />
           )}
-          <div className="min-w-0 flex-1">
-            <div className="text-[14px] font-semibold leading-5 text-[#09090B]">{compareDisplayName}</div>
-            <div className="text-[12px] leading-4 text-[#71717A]">{compareSym}</div>
+          <div className="min-w-0 flex-1 overflow-hidden">
+            <div
+              className="truncate text-[14px] font-semibold leading-5 text-[#09090B]"
+              title={compareDisplayName}
+            >
+              {compareDisplayName}
+            </div>
+            <div className="truncate text-[12px] leading-4 text-[#71717A]" title={compareSym}>
+              {compareSym}
+            </div>
           </div>
           <button
             type="button"
@@ -125,14 +166,13 @@ function OverviewCompareRow({
           </button>
         </div>
       </td>
-      <PerfCellMaybe value={compareRow?.d1 ?? null} />
-      <PerfCellMaybe value={compareRow?.d5 ?? null} />
-      <PerfCellMaybe value={compareRow?.m1 ?? null} />
-      <PerfCellMaybe value={compareRow?.m6 ?? null} />
-      <PerfCellMaybe value={compareRow?.ytd ?? null} />
-      <PerfCellMaybe value={compareRow?.y1 ?? null} />
-      <PerfCellMaybe value={compareRow?.y5 ?? null} />
-      <PerfCellMaybe value={compareRow?.all ?? null} />
+      {MINI_TABLE_PERF_COLUMNS.map((col) => (
+        <PerfCellMaybe
+          key={col.header}
+          showOnMobile={col.showOnMobile}
+          value={compareRow?.[col.field] ?? null}
+        />
+      ))}
     </tr>
   );
 }
@@ -199,27 +239,29 @@ export function MiniTable({
   const row = useMemo(() => perf, [perf]);
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full border-collapse">
+    <div className="max-md:overflow-x-visible overflow-x-auto">
+      <table className="w-full table-fixed border-collapse">
         <thead>
           <tr className="border-t border-b border-[#E4E4E7] bg-white">
-            <th className="min-w-[200px] px-3 py-2.5 text-left text-[14px] font-semibold text-[#71717A]">Company</th>
-            {MINI_TABLE_PERF_HEADERS.map((h) => (
+            <th className="min-w-0 px-3 py-2.5 text-left text-[14px] font-semibold text-[#71717A] max-md:w-[52%] md:min-w-[200px]">
+              Company
+            </th>
+            {MINI_TABLE_PERF_COLUMNS.map((col) => (
               <th
-                key={h}
-                className="min-w-[60px] px-3 py-2.5 text-right text-[14px] font-semibold text-[#71717A]"
+                key={col.header}
+                className={cn(perfColClass(col.showOnMobile), "text-[14px] font-semibold text-[#71717A]")}
               >
-                {h}
+                {col.header}
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
           <tr className="border-b border-[#E4E4E7]">
-            <td className="px-3 py-3 text-left align-middle">
+            <td className="max-w-0 px-3 py-3 text-left align-middle">
               <div
                 className={cn(
-                  "flex items-center justify-start gap-3 text-left",
+                  "flex min-w-0 items-center justify-start gap-3 text-left",
                   hasCompare && "border-l-[3px] border-l-[#2563EB] pl-2",
                 )}
               >
@@ -228,20 +270,26 @@ export function MiniTable({
                 ) : (
                   <CompanyLogo name={displayName} logoUrl={logoUrl} symbol={sym} />
                 )}
-                <div>
-                  <div className="text-[14px] font-semibold leading-5 text-[#09090B]">{displayName}</div>
-                  <div className="text-[12px] leading-4 text-[#71717A]">{sym}</div>
+                <div className="min-w-0 flex-1 overflow-hidden">
+                  <div
+                    className="truncate text-[14px] font-semibold leading-5 text-[#09090B]"
+                    title={displayName}
+                  >
+                    {displayName}
+                  </div>
+                  <div className="truncate text-[12px] leading-4 text-[#71717A]" title={sym}>
+                    {sym}
+                  </div>
                 </div>
               </div>
             </td>
-            <PerfCellMaybe value={row?.d1 ?? null} />
-            <PerfCellMaybe value={row?.d5 ?? null} />
-            <PerfCellMaybe value={row?.m1 ?? null} />
-            <PerfCellMaybe value={row?.m6 ?? null} />
-            <PerfCellMaybe value={row?.ytd ?? null} />
-            <PerfCellMaybe value={row?.y1 ?? null} />
-            <PerfCellMaybe value={row?.y5 ?? null} />
-            <PerfCellMaybe value={row?.all ?? null} />
+            {MINI_TABLE_PERF_COLUMNS.map((col) => (
+              <PerfCellMaybe
+                key={col.header}
+                showOnMobile={col.showOnMobile}
+                value={row?.[col.field] ?? null}
+              />
+            ))}
           </tr>
           {comparePicks.map((pick, i) => (
             <OverviewCompareRow

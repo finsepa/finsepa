@@ -334,6 +334,10 @@ export function StockPageContent({
     setHoldingsHeaderUi(s);
   }, []);
 
+  useEffect(() => {
+    setHoldingsHeaderUi(null);
+  }, [ticker]);
+
   const performanceFromServer = useMemo(
     (): StockPerformance | null =>
       initialPageData?.ticker === ticker ? (initialPageData.performance ?? null) : null,
@@ -403,35 +407,38 @@ export function StockPageContent({
     headerLiveSpotClient ??
     (initialPageData?.ticker === ticker ? (initialPageData.headerLiveSpotUsd ?? null) : null);
 
+  const spotHeaderUi = useMemo(
+    () =>
+      mergeSessionHeaderWithPerformanceSpot(
+        sessionHeaderUi,
+        performanceForHeaderFallback,
+        chartSeries,
+        headerLiveSpotForMerge,
+      ),
+    [chartSeries, headerLiveSpotForMerge, performanceForHeaderFallback, sessionHeaderUi],
+  );
+
   const chartUi = useMemo((): ChartDisplayState => {
     if (displayTab === "holdings") {
-      return holdingsHeaderUi ?? EMPTY_CHART_DISPLAY;
+      const h = holdingsHeaderUi;
+      if (h?.displayPrice != null && Number.isFinite(h.displayPrice) && !h.loading) {
+        return h;
+      }
+      return spotHeaderUi;
     }
-    return mergeSessionHeaderWithPerformanceSpot(
-      sessionHeaderUi,
-      performanceForHeaderFallback,
-      chartSeries,
-      headerLiveSpotForMerge,
-    );
-  }, [
-    displayTab,
-    chartSeries,
-    headerLiveSpotForMerge,
-    holdingsHeaderUi,
-    performanceForHeaderFallback,
-    sessionHeaderUi,
-  ]);
+    return spotHeaderUi;
+  }, [displayTab, holdingsHeaderUi, spotHeaderUi]);
 
   const initialChartMemo = useMemo(
     () => (initialPageData?.ticker === ticker ? initialPageData.chart : null),
     [initialPageData, ticker],
   );
 
-  /** Holdings tab uses its own area chart for the header; all other tabs use the overview price series. */
-  const stockChartDrivesHeader = displayTab !== "holdings";
+  /** Hidden 1D chart keeps session/live spot for the header on every tab (including Holdings). */
+  const stockChartDrivesHeader = true;
 
   return (
-    <div className="relative min-w-0 space-y-5 px-0 py-0 sm:space-y-5 sm:px-9 sm:py-6">
+    <div className="relative min-w-0 space-y-5 px-4 py-0 sm:space-y-5 sm:px-9 sm:py-6">
       <KeyStatsMetricChartModal
         key={revenueProfitModalMetric ?? "closed"}
         ticker={ticker}

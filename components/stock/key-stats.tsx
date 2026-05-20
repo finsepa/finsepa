@@ -2,7 +2,121 @@
 
 import type { ChartingMetricId } from "@/lib/market/stock-charting-metrics";
 import type { StockKeyStatsBundle } from "@/lib/market/stock-key-stats-bundle-types";
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+
+import { cn } from "@/lib/utils";
+
+const KEY_STATS_TAB_MOTION_MS = 280;
+const KEY_STATS_TAB_MOTION_EASE = "cubic-bezier(0.33, 1, 0.68, 1)";
+
+type KeyStatsTabId =
+  | "basic"
+  | "revenue_profit"
+  | "valuation"
+  | "margins"
+  | "growth"
+  | "assets_liabilities"
+  | "returns"
+  | "dividends"
+  | "risk";
+
+const KEY_STATS_TABS: { id: KeyStatsTabId; label: string }[] = [
+  { id: "basic", label: "Basic" },
+  { id: "revenue_profit", label: "Revenue & Profit" },
+  { id: "valuation", label: "Valuation" },
+  { id: "margins", label: "Margins" },
+  { id: "growth", label: "Growth" },
+  { id: "assets_liabilities", label: "Assets & Liabilities" },
+  { id: "returns", label: "Returns" },
+  { id: "dividends", label: "Dividends" },
+  { id: "risk", label: "Risk" },
+];
+
+function KeyStatsSectionTabNav({
+  activeTab,
+  onTabChange,
+}: {
+  activeTab: KeyStatsTabId;
+  onTabChange: (tab: KeyStatsTabId) => void;
+}) {
+  const navRef = useRef<HTMLElement>(null);
+  const tabRefs = useRef(new Map<KeyStatsTabId, HTMLButtonElement>());
+  const [indicator, setIndicator] = useState({ left: 0, width: 0 });
+
+  const measureIndicator = useCallback(() => {
+    const nav = navRef.current;
+    const btn = tabRefs.current.get(activeTab);
+    if (!nav || !btn) return;
+    const navRect = nav.getBoundingClientRect();
+    const btnRect = btn.getBoundingClientRect();
+    setIndicator({
+      left: btnRect.left - navRect.left + nav.scrollLeft,
+      width: btnRect.width,
+    });
+  }, [activeTab]);
+
+  useLayoutEffect(() => {
+    measureIndicator();
+  }, [measureIndicator, activeTab]);
+
+  useLayoutEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return;
+    const ro = new ResizeObserver(measureIndicator);
+    ro.observe(nav);
+    nav.addEventListener("scroll", measureIndicator, { passive: true });
+    window.addEventListener("resize", measureIndicator);
+    return () => {
+      ro.disconnect();
+      nav.removeEventListener("scroll", measureIndicator);
+      window.removeEventListener("resize", measureIndicator);
+    };
+  }, [measureIndicator]);
+
+  return (
+    <div className="-mx-1 mb-4 border-b border-solid border-[#E4E4E7]">
+      <nav
+        ref={navRef}
+        className="relative flex flex-nowrap items-start gap-4 overflow-x-auto overflow-y-hidden pb-px [-webkit-overflow-scrolling:touch]"
+        aria-label="Key stats sections"
+      >
+        {KEY_STATS_TABS.map(({ id, label }) => {
+          const isActive = id === activeTab;
+          return (
+            <button
+              key={id}
+              ref={(el) => {
+                if (el) tabRefs.current.set(id, el);
+                else tabRefs.current.delete(id);
+              }}
+              type="button"
+              onClick={() => onTabChange(id)}
+              className={cn(
+                "-mb-px shrink-0 cursor-pointer border-b-2 border-solid border-transparent py-2 text-left text-[14px] font-medium leading-6 text-[#09090B] transition-[color,opacity] duration-100",
+                "focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2",
+                "hover:opacity-80",
+                isActive ? "font-semibold opacity-100" : "opacity-70",
+              )}
+            >
+              {label}
+            </button>
+          );
+        })}
+        <span
+          className="pointer-events-none absolute bottom-0 z-[1] h-0.5 rounded-full bg-[#09090B] motion-reduce:transition-none"
+          style={{
+            left: indicator.left,
+            width: indicator.width,
+            transitionProperty: "left, width",
+            transitionDuration: `${KEY_STATS_TAB_MOTION_MS}ms`,
+            transitionTimingFunction: KEY_STATS_TAB_MOTION_EASE,
+          }}
+          aria-hidden
+        />
+      </nav>
+    </div>
+  );
+}
 
 type Row = { label: string; value: string };
 
@@ -192,6 +306,7 @@ const DynamicCard = memo(function DynamicCard({
   loading,
   labelToMetric,
   onMetricClick,
+  hideTitle = false,
 }: {
   title: string;
   rowLabels: string[];
@@ -200,6 +315,8 @@ const DynamicCard = memo(function DynamicCard({
   /** When set with `onMetricClick`, matching rows open the fundamentals chart modal (label + value clickable). */
   labelToMetric?: Partial<Record<string, ChartingMetricId>>;
   onMetricClick?: (metricId: ChartingMetricId) => void;
+  /** Mobile tab layout supplies the section title in the tab bar. */
+  hideTitle?: boolean;
 }) {
   const fallback = useMemo(() => rowLabels.map((label) => ({ label, value: "—" as const })), [rowLabels]);
   const displayRows = rows ?? fallback;
@@ -207,8 +324,10 @@ const DynamicCard = memo(function DynamicCard({
   const clickable = map != null && typeof onMetricClick === "function";
 
   return (
-    <div className="mb-5 rounded-xl border border-[#E4E4E7] bg-white p-4">
-      <h3 className="mb-2 text-[14px] font-semibold leading-5 text-[#09090B]">{title}</h3>
+    <div className="mb-5 rounded-xl border border-[#E4E4E7] bg-white p-4 max-md:mb-0">
+      {hideTitle ? null : (
+        <h3 className="mb-2 text-[14px] font-semibold leading-5 text-[#09090B]">{title}</h3>
+      )}
       {loading ? (
         <CardSkeleton rowLabels={rowLabels} />
       ) : clickable ? (
@@ -232,17 +351,21 @@ const BasicCard = memo(function BasicCard({
   rows,
   loading,
   onMetricClick,
+  hideTitle = false,
 }: {
   rows: Row[] | null;
   loading: boolean;
   onMetricClick?: (metricId: ChartingMetricId) => void;
+  hideTitle?: boolean;
 }) {
   const displayRows = rows ?? BASIC_FALLBACK;
   const clickable = typeof onMetricClick === "function";
 
   return (
-    <div className="mb-5 rounded-xl border border-[#E4E4E7] bg-white p-4">
-      <h3 className="mb-2 text-[14px] font-semibold leading-5 text-[#09090B]">Basic</h3>
+    <div className="mb-5 rounded-xl border border-[#E4E4E7] bg-white p-4 max-md:mb-0">
+      {hideTitle ? null : (
+        <h3 className="mb-2 text-[14px] font-semibold leading-5 text-[#09090B]">Basic</h3>
+      )}
       {loading ? (
         <CardSkeleton rowLabels={displayRows.map((r) => r.label)} />
       ) : clickable ? (
@@ -266,10 +389,12 @@ const RevenueProfitCard = memo(function RevenueProfitCard({
   rows,
   loading,
   onMetricClick,
+  hideTitle = false,
 }: {
   rows: Row[] | null;
   loading: boolean;
   onMetricClick?: (metricId: ChartingMetricId) => void;
+  hideTitle?: boolean;
 }) {
   const placeholder = useMemo(
     () =>
@@ -287,8 +412,10 @@ const RevenueProfitCard = memo(function RevenueProfitCard({
   const displayRows = rows ?? placeholder;
 
   return (
-    <div className="mb-5 rounded-xl border border-[#E4E4E7] bg-white p-4">
-      <h3 className="mb-2 text-[14px] font-semibold leading-5 text-[#09090B]">Revenue &amp; Profit</h3>
+    <div className="mb-5 rounded-xl border border-[#E4E4E7] bg-white p-4 max-md:mb-0">
+      {hideTitle ? null : (
+        <h3 className="mb-2 text-[14px] font-semibold leading-5 text-[#09090B]">Revenue &amp; Profit</h3>
+      )}
       {loading ? (
         <CardSkeleton rowLabels={displayRows.map((r) => r.label)} />
       ) : (
@@ -318,6 +445,102 @@ function KeyStatsInner({
 }) {
   const [loading, setLoading] = useState(() => !initialBundle);
   const [bundle, setBundle] = useState<StockKeyStatsBundle | null>(() => initialBundle ?? null);
+  const [mobileTab, setMobileTab] = useState<KeyStatsTabId>("basic");
+
+  const mobileCard = useMemo(() => {
+    const hideTitle = true;
+    switch (mobileTab) {
+      case "basic":
+        return <BasicCard rows={bundle?.basic ?? null} loading={loading} onMetricClick={onOpenMetricChart} hideTitle={hideTitle} />;
+      case "revenue_profit":
+        return (
+          <RevenueProfitCard
+            rows={bundle?.revenueProfit ?? null}
+            loading={loading}
+            onMetricClick={onOpenMetricChart}
+            hideTitle={hideTitle}
+          />
+        );
+      case "valuation":
+        return (
+          <DynamicCard
+            title="Valuation"
+            rowLabels={VALUATION_LABELS}
+            rows={bundle?.valuation ?? null}
+            loading={loading}
+            labelToMetric={VALUATION_LABEL_TO_METRIC}
+            onMetricClick={onOpenMetricChart}
+            hideTitle={hideTitle}
+          />
+        );
+      case "margins":
+        return (
+          <DynamicCard
+            title="Margins"
+            rowLabels={MARGINS_LABELS}
+            rows={bundle?.margins ?? null}
+            loading={loading}
+            labelToMetric={MARGINS_LABEL_TO_METRIC}
+            onMetricClick={onOpenMetricChart}
+            hideTitle={hideTitle}
+          />
+        );
+      case "growth":
+        return (
+          <DynamicCard
+            title="Growth"
+            rowLabels={GROWTH_LABELS}
+            rows={bundle?.growth ?? null}
+            loading={loading}
+            labelToMetric={GROWTH_LABEL_TO_METRIC}
+            onMetricClick={onOpenMetricChart}
+            hideTitle={hideTitle}
+          />
+        );
+      case "assets_liabilities":
+        return (
+          <DynamicCard
+            title="Assets & Liabilities"
+            rowLabels={ASSETS_LABELS}
+            rows={bundle?.assetsLiabilities ?? null}
+            loading={loading}
+            labelToMetric={ASSETS_LABEL_TO_METRIC}
+            onMetricClick={onOpenMetricChart}
+            hideTitle={hideTitle}
+          />
+        );
+      case "returns":
+        return (
+          <DynamicCard
+            title="Returns"
+            rowLabels={RETURNS_LABELS}
+            rows={bundle?.returns ?? null}
+            loading={loading}
+            labelToMetric={RETURNS_LABEL_TO_METRIC}
+            onMetricClick={onOpenMetricChart}
+            hideTitle={hideTitle}
+          />
+        );
+      case "dividends":
+        return (
+          <DynamicCard
+            title="Dividends"
+            rowLabels={DIVIDENDS_LABELS}
+            rows={bundle?.dividends ?? null}
+            loading={loading}
+            labelToMetric={DIVIDENDS_LABEL_TO_METRIC}
+            onMetricClick={onOpenMetricChart}
+            hideTitle={hideTitle}
+          />
+        );
+      case "risk":
+        return (
+          <DynamicCard title="Risk" rowLabels={RISK_LABELS} rows={bundle?.risk ?? null} loading={loading} hideTitle={hideTitle} />
+        );
+      default:
+        return null;
+    }
+  }, [bundle, loading, mobileTab, onOpenMetricChart]);
 
   useEffect(() => {
     let cancelled = false;
@@ -346,8 +569,13 @@ function KeyStatsInner({
 
   return (
     <div>
-      <h2 className="text-[18px] font-semibold leading-7 text-[#09090B] mb-4">Key Stats</h2>
-      <div className="grid grid-cols-2 gap-5 md:grid-cols-3">
+      <div className="md:hidden">
+        <KeyStatsSectionTabNav activeTab={mobileTab} onTabChange={setMobileTab} />
+        {mobileCard}
+      </div>
+
+      <h2 className="mb-4 hidden text-[18px] font-semibold leading-7 text-[#09090B] md:block">Key Stats</h2>
+      <div className="hidden grid-cols-2 gap-5 md:grid md:grid-cols-3">
         <div>
           <BasicCard rows={bundle?.basic ?? null} loading={loading} onMetricClick={onOpenMetricChart} />
           <DynamicCard
@@ -415,5 +643,6 @@ function KeyStatsInner({
     </div>
   );
 }
+
 
 export const KeyStats = memo(KeyStatsInner);

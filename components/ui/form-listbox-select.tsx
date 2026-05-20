@@ -31,6 +31,7 @@ export function FormListboxSelect<V extends string>({
   disabled = false,
   leadingIcon,
   compact = false,
+  menuAlign = "leading",
 }: {
   id?: string;
   value: V;
@@ -51,7 +52,7 @@ export function FormListboxSelect<V extends string>({
   /** When false, menu option rows do not ellipsis (use with a wide {@link menuClassName} if needed). */
   truncateOptions?: boolean;
   disabled?: boolean;
-  /** When true, the trigger hugs its label (no full-width stretching). */
+  /** When true, uses tighter horizontal padding; trigger still fills its container (chevron stays inside the fill). */
   compact?: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -81,7 +82,7 @@ export function FormListboxSelect<V extends string>({
   return (
     <div
       ref={containerRef}
-      className={cn("relative z-10", compact ? "inline-flex w-auto" : "w-full", listboxClassName, className)}
+      className={cn("relative z-10 min-w-0 w-full", listboxClassName, className)}
     >
       <button
         type="button"
@@ -97,7 +98,7 @@ export function FormListboxSelect<V extends string>({
         className={cn(
           cn(
             "relative flex h-9 cursor-pointer items-center rounded-[10px] bg-[#F4F4F5] py-2 text-left text-sm font-normal text-[#09090B] outline-none transition-colors hover:bg-[#EBEBEB] focus-visible:ring-2 focus-visible:ring-[#09090B]/10",
-            compact ? "w-auto" : "w-full",
+            "w-full",
           ),
           disabled && "cursor-not-allowed opacity-60 hover:bg-[#F4F4F5]",
           triggerClassName,
@@ -114,9 +115,9 @@ export function FormListboxSelect<V extends string>({
         {/* Horizontal padding lives here so `triggerClassName` can use `px-*` without hiding the chevron reserve. */}
         <span
           className={cn(
-            compact ? "whitespace-nowrap pr-8 text-left" : "min-w-0 flex-1 pr-11 text-left",
+            compact ? "min-w-0 flex-1 pr-8 text-left" : "min-w-0 flex-1 pr-11 text-left",
             compact ? (leadingIcon ? "pl-9" : "pl-3") : leadingIcon ? "pl-10" : "pl-4",
-            compact ? "" : truncateLabel ? "truncate" : "whitespace-nowrap",
+            truncateLabel ? "truncate" : "whitespace-nowrap",
           )}
         >
           {active.label}
@@ -138,7 +139,8 @@ export function FormListboxSelect<V extends string>({
           className={cn(
             dropdownMenuPanelClassName(),
             /** At least trigger width; grow with option labels (narrow triggers used to clip flags + text). */
-            "absolute left-0 top-[calc(100%+4px)] z-[120] min-w-full w-max max-w-[min(24rem,calc(100vw-2rem))]",
+            "absolute top-[calc(100%+4px)] z-[120] min-w-full w-max max-w-[min(24rem,calc(100vw-2rem))]",
+            menuAlign === "trailing" ? "right-0" : "left-0",
             menuClassName,
           )}
           role="listbox"

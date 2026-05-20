@@ -75,7 +75,7 @@ export function StockDetailTabNav({
   }, [measureIndicator]);
 
   return (
-    <div className="sticky top-0 z-40 bg-white max-md:mx-0 max-md:px-3 max-md:pt-1 sm:-mx-9 sm:-mt-5 sm:px-9 sm:pt-2">
+    <div className="sticky top-0 z-40 bg-white max-md:mx-0 max-md:pt-1 sm:-mx-9 sm:-mt-5 sm:px-9 sm:pt-2">
       <div className="border-b border-solid border-[#E4E4E7]">
         <nav
           ref={navRef}
