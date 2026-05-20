@@ -1087,7 +1087,10 @@ export function PriceChart({
       removeSessionHighLowPriceLines(series, sessionHighPriceLineRef, sessionLowPriceLineRef);
       removeOverviewSingleBaselineLine(series);
       series.setData(data);
-      fitContentWithMobilePlotGutter(chart, containerRef.current?.clientWidth ?? el.clientWidth);
+      fitContentWithMobilePlotGutter(
+        chart,
+        containerRef.current?.clientWidth ?? chart.paneSize(0).width,
+      );
 
       if (costBasisPrice != null && Number.isFinite(costBasisPrice) && costBasisPrice > 0) {
         const title = costBasisPriceLineTitle(costBasisPrice);
@@ -1140,7 +1143,10 @@ export function PriceChart({
     }
 
     single.setData(data);
-    fitContentWithMobilePlotGutter(chart, containerRef.current?.clientWidth ?? el.clientWidth);
+    fitContentWithMobilePlotGutter(
+      chart,
+      containerRef.current?.clientWidth ?? chart.paneSize(0).width,
+    );
 
     const last = data[data.length - 1];
     if (last) {

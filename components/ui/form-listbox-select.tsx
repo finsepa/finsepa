@@ -54,6 +54,8 @@ export function FormListboxSelect<V extends string>({
   disabled?: boolean;
   /** When true, uses tighter horizontal padding; trigger still fills its container (chevron stays inside the fill). */
   compact?: boolean;
+  /** `trailing` anchors the menu to the trigger’s right edge (opens toward the left). */
+  menuAlign?: "leading" | "trailing";
 }) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
