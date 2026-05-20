@@ -28,8 +28,13 @@ const SEARCH_ICON_SIZE_PX = 20;
 const SEARCH_ICON_GAP_PX = 8;
 /** Icon inset inside the pill when collapsed (`pl-4`). */
 const SEARCH_ICON_INSET_PX = 16;
-/** Room for icon + gap before placeholder text when collapsed. */
-const SEARCH_INPUT_COLLAPSED_PL_PX = SEARCH_ICON_SIZE_PX + SEARCH_ICON_GAP_PX;
+/** Room for icon + gap before placeholder text when collapsed (icon inset is on the shell). */
+const SEARCH_INPUT_COLLAPSED_PL_PX =
+  SEARCH_ICON_INSET_PX + SEARCH_ICON_SIZE_PX + SEARCH_ICON_GAP_PX;
+/** Active: icon animates out — text aligns with shell `pl-4`. */
+const SEARCH_INPUT_OPEN_PL_PX = SEARCH_ICON_INSET_PX;
+/** Collapsed: reserve the trailing shortcut chip (`right-3` + 28px control). */
+const SEARCH_SHORTCUT_RESERVE_PX = 44;
 
 export function TopbarSearch() {
   const [open, setOpen] = useState(false);
@@ -51,10 +56,22 @@ export function TopbarSearch() {
   }, [panel.inputRef]);
 
   const activateSearch = useCallback(() => {
-    if (open) return;
     focusSearchInput();
     setOpen(true);
-  }, [open, focusSearchInput]);
+  }, [focusSearchInput]);
+
+  const handleSearchShellPointerDown = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if (e.button !== 0) return;
+      if ((e.target as HTMLElement).closest("[data-topbar-search-close]")) return;
+      if (open) {
+        focusSearchInput();
+        return;
+      }
+      activateSearch();
+    },
+    [activateSearch, focusSearchInput, open],
+  );
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -97,10 +114,7 @@ export function TopbarSearch() {
           !open && "hover:bg-[#EBEBEB]",
         )}
         style={motionStyle}
-        onPointerDown={(e) => {
-          if (open || e.button !== 0) return;
-          activateSearch();
-        }}
+        onPointerDown={handleSearchShellPointerDown}
       >
         <span
           className="pointer-events-none absolute top-1/2 z-10 flex h-5 w-5 items-center justify-center text-[#09090B] motion-reduce:transition-none"
@@ -117,59 +131,63 @@ export function TopbarSearch() {
           <Search className="h-5 w-5" strokeWidth={2} />
         </span>
 
-        <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden">
-          <div
-            className="overflow-hidden transition-[clip-path] motion-reduce:transition-none"
-            style={{
-              ...motionStyle,
-              clipPath: open
-                ? "inset(-1px 0 -1px 0)"
-                : "inset(-1px calc(100% - 4.75rem) -1px 0)",
-            }}
-          >
-            <input
-              ref={panel.inputRef}
-              type="search"
-              inputMode="search"
-              readOnly={!open}
-              value={panel.query}
-              onChange={(e) => panel.setQuery(e.target.value)}
-              onPointerDown={(e) => {
-                if (open || e.button !== 0) return;
-                e.stopPropagation();
-                activateSearch();
-              }}
-              placeholder="Search..."
-              className="w-full min-w-0 cursor-text bg-transparent text-sm leading-5 text-[#09090B] outline-none placeholder:text-[#A1A1AA] caret-[#09090B] read-only:cursor-text transition-[padding-left] motion-reduce:transition-none"
-              style={{
-                ...motionStyle,
-                paddingLeft: open ? 0 : SEARCH_INPUT_COLLAPSED_PL_PX,
-              }}
-              autoComplete="off"
-              autoCorrect="off"
-              enterKeyHint="search"
-              role="searchbox"
-              aria-label="Search"
-              aria-expanded={open}
-              aria-controls="topbar-search-results"
-              aria-autocomplete="list"
-            />
-          </div>
-        </div>
+        <input
+          ref={panel.inputRef}
+          type="search"
+          inputMode="search"
+          readOnly={!open}
+          value={panel.query}
+          onChange={(e) => panel.setQuery(e.target.value)}
+          placeholder="Search..."
+          className={cn(
+            "absolute inset-0 z-[1] h-full w-full min-w-0 cursor-text bg-transparent text-sm leading-5 text-[#09090B] outline-none placeholder:text-[#A1A1AA] caret-[#09090B] read-only:cursor-text transition-[padding] motion-reduce:transition-none",
+            !open && "pointer-events-none",
+          )}
+          style={{
+            ...motionStyle,
+            paddingLeft: open ? SEARCH_INPUT_OPEN_PL_PX : SEARCH_INPUT_COLLAPSED_PL_PX,
+            paddingRight: open ? 40 : SEARCH_SHORTCUT_RESERVE_PX,
+            clipPath: open
+              ? undefined
+              : `inset(-1px ${SEARCH_SHORTCUT_RESERVE_PX}px -1px 0)`,
+          }}
+          autoComplete="off"
+          autoCorrect="off"
+          enterKeyHint="search"
+          role="searchbox"
+          aria-label="Search"
+          aria-expanded={open}
+          aria-controls="topbar-search-results"
+          aria-autocomplete="list"
+        />
 
-        <div className="relative ml-1 flex h-7 w-7 shrink-0 items-center justify-center">
+        {!open ? (
+          <div
+            className="absolute inset-0 z-[2] cursor-text"
+            aria-hidden
+            onPointerDown={(e) => {
+              if (e.button !== 0) return;
+              e.preventDefault();
+              activateSearch();
+            }}
+          />
+        ) : null}
+
+        <div className="pointer-events-none absolute right-3 top-1/2 z-[3] flex h-7 w-7 -translate-y-1/2 items-center justify-center">
           <button
             type="button"
+            data-topbar-search-close
             tabIndex={open ? 0 : -1}
+            onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
               close();
             }}
             className={cn(
-              "absolute inset-0 flex items-center justify-center rounded-md text-[#71717A]",
+              "pointer-events-auto absolute inset-0 flex items-center justify-center rounded-md text-[#71717A]",
               "transition-opacity motion-reduce:transition-none",
               "hover:bg-[#EBEBEB] hover:text-[#09090B] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/10",
-              open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0",
+              open ? "opacity-100" : "opacity-0",
             )}
             style={motionStyle}
             aria-label="Close search"
@@ -179,7 +197,7 @@ export function TopbarSearch() {
           </button>
           <kbd
             className={cn(
-              "pointer-events-none hidden rounded border border-neutral-200 bg-white px-1.5 py-0.5 font-sans text-[10px] font-medium text-[#A1A1AA] md:inline-flex",
+              "hidden rounded border border-neutral-200 bg-white px-1.5 py-0.5 font-sans text-[10px] font-medium text-[#A1A1AA] md:inline-flex",
               "transition-opacity motion-reduce:transition-none",
               open ? "opacity-0" : "opacity-100",
             )}
