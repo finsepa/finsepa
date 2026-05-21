@@ -9,7 +9,7 @@ import {
   PORTFOLIO_CHART_RANGE_LABELS,
   PortfolioValueHistoryChartPane,
 } from "@/components/portfolio/portfolio-overview-chart";
-import { ChartSkeleton } from "@/components/ui/chart-skeleton";
+import { AssetChartSkeleton } from "@/components/ui/chart-skeleton";
 import {
   Empty,
   EmptyDescription,
@@ -87,7 +87,7 @@ function PerformanceChartSection({
             </EmptyHeader>
           </Empty>
         ) : loading ? (
-          <ChartSkeleton />
+          <AssetChartSkeleton />
         ) : error ? (
           <div className="flex h-[320px] flex-col items-center justify-center px-6">
             <p className="text-sm text-[#71717A]">{error}</p>
@@ -107,6 +107,7 @@ function PerformanceChartSection({
         ) : (
           <PortfolioValueHistoryChartPane
             metric={metric}
+            range={range}
             points={points}
             transactions={transactions}
           />

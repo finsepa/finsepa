@@ -2,8 +2,10 @@ export const PORTFOLIO_CHART_RANGES = ["1d", "7d", "1m", "6m", "ytd", "1y", "5y"
 export type PortfolioChartRange = (typeof PORTFOLIO_CHART_RANGES)[number];
 
 export type PortfolioValueHistoryPoint = {
-  /** yyyy-MM-dd */
+  /** US session / valuation date (yyyy-MM-dd). */
   t: string;
+  /** UNIX seconds for intraday YTD samples (two per session day); chart x when set. */
+  time?: number;
   /** Equity at mark + cash (net worth). */
   value: number;
   /**

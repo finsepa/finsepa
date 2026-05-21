@@ -208,7 +208,7 @@ export function StockHeader({
               alt=""
               width={48}
               height={48}
-              className="h-12 w-12 shrink-0 rounded-xl border border-neutral-200 bg-white object-contain shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]"
+              className={`h-12 w-12 shrink-0 rounded-xl border border-neutral-200 bg-white object-contain shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]${symbol === "AAPL" ? " p-1.5" : ""}`}
               onError={() => {
                 setImgFailedForKey(logoFailureKey);
                 mergeLogoMemory(symbol, null);

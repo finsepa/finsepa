@@ -15,14 +15,8 @@ import {
   portfolioAssetSymbolCaption,
   portfolioSharesUnitTicker,
 } from "@/lib/portfolio/custom-asset-symbol";
-import {
-  lifetimeEquityProfitPct,
-  netCashUsd,
-} from "@/lib/portfolio/overview-metrics";
-import {
-  cumulativeRealizedGainUsdForAsset,
-  lifetimeEquityProfitUsd,
-} from "@/lib/portfolio/realized-pnl-from-trades";
+import { netCashUsd } from "@/lib/portfolio/overview-metrics";
+import { cumulativeRealizedGainUsdForAsset } from "@/lib/portfolio/realized-pnl-from-trades";
 import { cryptoRouteBase } from "@/lib/crypto/crypto-symbol-base";
 import { isSupportedCryptoAssetSymbol } from "@/lib/crypto/crypto-logo-url";
 import { formatPortfolioUsdPerUnit } from "@/lib/portfolio/format-portfolio-usd-unit";
@@ -260,13 +254,8 @@ function PortfolioHoldingsTableInner({
 
   const cashUsd = netCashUsd(transactions);
   const equityValue = holdings.reduce((s, h) => s + h.currentValue, 0);
-  const netWorth = equityValue + cashUsd;
   // Allocation display: if cash is negative, exclude it from the denominator so weights stay within 0–100%.
   const allocationDenomUsd = equityValue + Math.max(0, cashUsd);
-  /** Same dollar as overview “Total profit” (unrealized + realized on equity). */
-  const portfolioTotalProfitUsd = lifetimeEquityProfitUsd(holdings, transactions);
-  /** Lifetime simple return on total equity cost basis (matches overview lifetime %). */
-  const portfolioTotalProfitPct = lifetimeEquityProfitPct(holdings, transactions);
   const cashWeightPct = allocationDenomUsd > 0 && cashUsd > 0 ? (cashUsd / allocationDenomUsd) * 100 : 0;
 
   const rows = holdings.map((h) => {
@@ -368,27 +357,6 @@ function PortfolioHoldingsTableInner({
               </div>
               <div className="mt-0.5 truncate text-[12px] font-medium leading-4 tabular-nums text-[#71717A]">
                 {EM_DASH}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex min-w-0 items-center justify-between gap-3 py-3 sm:py-4">
-            <div className="min-w-0">
-              <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">Total</div>
-              <div className="h-4 text-[12px] font-normal leading-4" aria-hidden />
-            </div>
-            <div className="min-w-0 text-right">
-              <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#09090B]">
-                {usd0.format(netWorth)}
-              </div>
-              <div
-                className={cn(
-                  "mt-0.5 truncate text-[12px] font-medium leading-4 tabular-nums",
-                  portfolioTotalProfitUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
-                )}
-              >
-                {formatSignedUsd(portfolioTotalProfitUsd)}
-                {portfolioTotalProfitPct == null ? "" : ` (${formatSignedPct(portfolioTotalProfitPct)})`}
               </div>
             </div>
           </div>
@@ -532,53 +500,6 @@ function PortfolioHoldingsTableInner({
             </td>
             <td className="align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
               {pct.format(cashWeightPct)}%
-            </td>
-            <td className="align-middle px-4 py-3 text-right" aria-hidden />
-          </tr>
-
-          <tr className="h-[60px] max-h-[60px] border-b border-[#E4E4E7] bg-white transition-colors duration-75 hover:bg-neutral-50">
-            <td className="align-middle px-4 py-0">
-              <div className="flex min-w-0 max-w-full items-center gap-3 rounded-lg py-2 pr-2">
-                <div className="min-w-0 text-left">
-                  <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">Total</div>
-                  <div className="h-4 text-[12px] font-normal leading-4" aria-hidden />
-                </div>
-              </div>
-            </td>
-            <td className="align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#71717A]">
-              {EM_DASH}
-            </td>
-            <td className="align-middle whitespace-nowrap px-4 py-3 text-right">
-              <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#09090B]">
-                {usd0.format(netWorth)}
-              </div>
-              <div className="text-[12px] font-normal leading-4 tabular-nums text-[#71717A]">{EM_DASH}</div>
-            </td>
-            <td className="align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#71717A]">
-              {EM_DASH}
-            </td>
-            <td className="align-middle whitespace-nowrap px-4 py-3 text-right">
-              <div
-                className={cn(
-                  "font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums",
-                  portfolioTotalProfitUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
-                )}
-              >
-                {formatSignedUsd(portfolioTotalProfitUsd)}
-              </div>
-              <div
-                className={cn(
-                  "text-[12px] font-medium leading-4 tabular-nums",
-                  portfolioTotalProfitPct == null ? "text-[#71717A]"
-                  : portfolioTotalProfitPct >= 0 ? "text-[#16A34A]"
-                  : "text-[#DC2626]",
-                )}
-              >
-                {portfolioTotalProfitPct != null ? formatSignedPct(portfolioTotalProfitPct) : EM_DASH}
-              </div>
-            </td>
-            <td className="align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
-              100%
             </td>
             <td className="align-middle px-4 py-3 text-right" aria-hidden />
           </tr>

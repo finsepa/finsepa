@@ -1,6 +1,6 @@
 "use client";
 
-import { ChartSkeleton } from "@/components/ui/chart-skeleton";
+import { AssetChartSkeleton } from "@/components/ui/chart-skeleton";
 
 /**
  * Shared shell for `app/(protected)/portfolio/loading.tsx` and Suspense fallback —
@@ -41,7 +41,7 @@ export function PortfolioPageLoadingShell() {
       </div>
 
       <div className="mb-6 w-full">
-        <ChartSkeleton />
+        <AssetChartSkeleton />
       </div>
 
       <div className="min-h-[200px] rounded-xl border border-[#E4E4E7] bg-white p-4 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">

@@ -2,7 +2,27 @@
 
 import { useEffect, useState } from "react";
 import { mergeLogoMemory, readLogoMemory } from "@/lib/logos/logo-memory";
+import { cn } from "@/lib/utils";
 import { logoColors } from "./data";
+
+/** AAPL mark is visually heavy at full bleed — inset inside the fixed frame only. */
+function appleLogoInsetClass(
+  symbol: string | undefined,
+  size: "xs" | "sm" | "28" | "md" | "40" | "lg",
+): string {
+  if (symbol?.trim().toUpperCase() !== "AAPL") return "";
+  switch (size) {
+    case "lg":
+      return "p-2";
+    case "40":
+      return "p-1.5";
+    case "md":
+    case "28":
+      return "p-1";
+    default:
+      return "p-0.5";
+  }
+}
 
 function InitialsMark({ name, size }: { name: string; size: "xs" | "sm" | "28" | "md" | "40" | "lg" }) {
   const colors = logoColors[name] ?? {
@@ -115,7 +135,11 @@ export function CompanyLogo({
       height={px}
       loading="lazy"
       decoding="async"
-      className={`${imgBox} shrink-0 border border-neutral-200 bg-white object-contain`}
+      className={cn(
+        imgBox,
+        "shrink-0 border border-neutral-200 bg-white object-contain",
+        appleLogoInsetClass(symbol, size),
+      )}
       onError={() => {
         setFailed(true);
         if (symbol) mergeLogoMemory(symbol, null);

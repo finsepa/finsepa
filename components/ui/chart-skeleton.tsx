@@ -20,6 +20,28 @@ type ChartSkeletonProps = {
 };
 
 /**
+ * Asset / stock {@link PriceChart} loading chrome — soft area shape only (no axis tick pills or grid).
+ */
+export function AssetChartSkeleton({
+  className,
+  heightPx = 320,
+}: {
+  className?: string;
+  heightPx?: number;
+}) {
+  return (
+    <div
+      className={cn("relative w-full min-w-0 overflow-hidden px-1 py-1", className)}
+      style={{ height: heightPx }}
+      aria-hidden
+      role="presentation"
+    >
+      <ChartSkeleton fill variant="minimal" />
+    </div>
+  );
+}
+
+/**
  * Loading placeholder for time-series charts. Default: no border, shadow, or panel — sits flush on the page.
  */
 export function ChartSkeleton({

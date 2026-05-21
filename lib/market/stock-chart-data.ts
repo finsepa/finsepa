@@ -117,6 +117,20 @@ export function twoSamplesPerDayByKey(
   return dedupeAndSort(out);
 }
 
+export type IntradayTwoPerDaySample = { time: number; sessionDate: string };
+
+/** First + last intraday bar per US session day (same rule as YTD stock charts). */
+export function intradayBarsToTwoPerDaySamples(bars: EodhdIntradayBar[]): IntradayTwoPerDaySample[] {
+  const pts = barsToChartPoints(bars);
+  if (pts.length < 4) return [];
+  const dayKey = (p: StockChartPoint) =>
+    (p.sessionDate?.trim() ? p.sessionDate : usSessionYmdFromUnixSeconds(p.time)) as string;
+  return twoSamplesPerDayByKey(pts, dayKey).map((p) => ({
+    time: p.time,
+    sessionDate: (p.sessionDate?.trim() ? p.sessionDate : usSessionYmdFromUnixSeconds(p.time)) as string,
+  }));
+}
+
 /** Keep only bars on the UTC calendar day of the latest bar (nearest trading session when window spans multiple days). */
 function trimIntradayToLatestUtcDay<T extends { timestamp: number }>(bars: T[]): T[] {
   if (bars.length === 0) return [];
@@ -127,7 +141,7 @@ function trimIntradayToLatestUtcDay<T extends { timestamp: number }>(bars: T[]):
 }
 
 /** US session calendar day for an equity bar (aligns with EODHD daily `date` semantics). */
-function usSessionYmdFromUnixSeconds(sec: number): string {
+export function usSessionYmdFromUnixSeconds(sec: number): string {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/New_York",
     year: "numeric",
