@@ -3,7 +3,13 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 
 import { REVALIDATE_HOT } from "@/lib/data/cache-policy";
-import { type SupportedCryptoTicker, fetchEodhdCryptoDailyBars } from "@/lib/market/eodhd-crypto";
+import { eodhdSymbolsForMeta } from "@/lib/market/crypto-meta";
+import {
+  fetchCryptoMarketCapUsdForMeta,
+  fetchEodhdCryptoDailyBarsForMeta,
+  lastPositiveCloseFromCryptoBars,
+  type SupportedCryptoTicker,
+} from "@/lib/market/eodhd-crypto";
 import { resolveCryptoMetaForProvider } from "@/lib/market/crypto-meta-resolver";
 import type { CryptoFundamentalsMeta } from "@/lib/market/eodhd-crypto-fundamentals-meta";
 import { fetchEodhdCryptoFundamentalsMeta } from "@/lib/market/eodhd-crypto-fundamentals-meta";
@@ -122,55 +128,40 @@ async function loadCryptoAssetUncached(symbolOrTicker: string): Promise<CryptoAs
 
   const window = eodFetchWindowUtc();
   const logoUrl = getCryptoLogoUrl(meta.symbol);
-  const tonCandidates =
-    meta.symbol === "TON" && meta.eodhdAltSymbols?.length ? [meta.eodhdSymbol, ...meta.eodhdAltSymbols] : [meta.eodhdSymbol];
+  const dailyBars = await fetchEodhdCryptoDailyBarsForMeta(meta, window.from, window.to);
+  const lastBar = dailyBars && dailyBars.length ? dailyBars[dailyBars.length - 1]! : null;
+  const prevBar = dailyBars && dailyBars.length >= 2 ? dailyBars[dailyBars.length - 2]! : null;
 
-  for (const candidateSymbol of tonCandidates) {
-    const [bars, fundResult] = await Promise.allSettled([
-      fetchEodhdCryptoDailyBars(candidateSymbol, window.from, window.to),
-      fetchEodhdCryptoFundamentalsMeta(candidateSymbol),
-    ]);
+  const currentPrice = lastBar?.close ?? null;
+  const change1D = changePercent(currentPrice, prevBar?.close ?? null);
+  const derived = dailyBars ? deriveMetricsFromDailyBars(dailyBars, currentPrice ?? NaN) : null;
 
-    const dailyBars: EodhdDailyBar[] | null = bars.status === "fulfilled" ? bars.value : null;
-    const lastBar = dailyBars && dailyBars.length ? dailyBars[dailyBars.length - 1]! : null;
-    const prevBar = dailyBars && dailyBars.length >= 2 ? dailyBars[dailyBars.length - 2]! : null;
+  const marketCapUsd = await fetchCryptoMarketCapUsdForMeta(meta, lastPositiveCloseFromCryptoBars(dailyBars));
+  const marketCapRaw = formatMarketCapDisplay(marketCapUsd);
+  const marketCap = marketCapRaw.startsWith("$") ? marketCapRaw.slice(1) : marketCapRaw;
 
-    const currentPrice = lastBar?.close ?? null;
-    const change1D = changePercent(currentPrice, prevBar?.close ?? null);
-    const derived = dailyBars ? deriveMetricsFromDailyBars(dailyBars, currentPrice ?? NaN) : null;
+  if (currentPrice == null || !Number.isFinite(currentPrice)) return null;
 
-    const fund = fundResult.status === "fulfilled" ? fundResult.value : null;
-    const marketCapUsd = fund?.marketCapUsd ?? null;
-    const marketCapRaw = formatMarketCapDisplay(marketCapUsd);
-    const marketCap = marketCapRaw.startsWith("$") ? marketCapRaw.slice(1) : marketCapRaw;
-
-    const hasPrice = currentPrice != null && Number.isFinite(currentPrice);
-    const hasMarketCap = marketCapUsd != null && Number.isFinite(marketCapUsd) && marketCapUsd > 0;
-
-    const base = {
-      symbol: meta.symbol,
-      name: meta.name,
-      price: currentPrice,
-      changePercent1D: change1D,
-      changePercent1M: derived?.changePercent1M ?? null,
-      changePercentYTD: derived?.changePercentYTD ?? null,
-      marketCap,
-      sparkline5d: derived?.sparkline5d ?? [],
-      logoUrl,
-      ...mapFundamentals(fund),
-    };
-
-    if (hasPrice && hasMarketCap) {
-      return base;
-    }
-    if (hasPrice) {
-      return base;
-    }
+  let fund: CryptoFundamentalsMeta | null = null;
+  for (const sym of eodhdSymbolsForMeta(meta)) {
+    fund = await fetchEodhdCryptoFundamentalsMeta(sym);
+    if (fund) break;
   }
 
-  return null;
+  return {
+    symbol: meta.symbol,
+    name: meta.name,
+    price: currentPrice,
+    changePercent1D: change1D,
+    changePercent1M: derived?.changePercent1M ?? null,
+    changePercentYTD: derived?.changePercentYTD ?? null,
+    marketCap,
+    sparkline5d: derived?.sparkline5d ?? [],
+    logoUrl,
+    ...mapFundamentals(fund),
+  };
 }
 
-export const getCryptoAsset = unstable_cache(loadCryptoAssetUncached, ["crypto-asset-v6-cc-universe"], {
+export const getCryptoAsset = unstable_cache(loadCryptoAssetUncached, ["crypto-asset-v7-ton-pol-eodhd"], {
   revalidate: REVALIDATE_HOT,
 });

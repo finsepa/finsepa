@@ -54,6 +54,9 @@ export function SegmentedControl<T extends string>({
   const trackRef = useRef<HTMLDivElement>(null);
   const segmentRefs = useRef(new Map<T, HTMLButtonElement>());
   const [indicator, setIndicator] = useState({ left: 0, width: 0, top: 0, height: 0 });
+  /** Avoid animating from 0×0 on mount (e.g. New Transaction modal) — enable after first layout. */
+  const [indicatorMotionEnabled, setIndicatorMotionEnabled] = useState(false);
+  const hasPositionedOnceRef = useRef(false);
 
   const measureIndicator = useCallback(() => {
     const track = trackRef.current;
@@ -61,16 +64,35 @@ export function SegmentedControl<T extends string>({
     if (!track || !btn) return;
     const trackRect = track.getBoundingClientRect();
     const btnRect = btn.getBoundingClientRect();
+    const width = Math.round(btnRect.width);
+    const height = Math.round(btnRect.height);
+    if (width <= 0 || height <= 0) return;
     setIndicator({
-      left: btnRect.left - trackRect.left,
-      width: btnRect.width,
-      top: btnRect.top - trackRect.top,
-      height: btnRect.height,
+      left: Math.round(btnRect.left - trackRect.left),
+      width,
+      top: Math.round(btnRect.top - trackRect.top),
+      height,
     });
   }, [value]);
 
   useLayoutEffect(() => {
     measureIndicator();
+    if (hasPositionedOnceRef.current) return;
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => {
+      measureIndicator();
+      raf2 = requestAnimationFrame(() => {
+        if (hasPositionedOnceRef.current) return;
+        const btn = segmentRefs.current.get(value);
+        if (!btn || btn.getBoundingClientRect().width <= 0) return;
+        hasPositionedOnceRef.current = true;
+        setIndicatorMotionEnabled(true);
+      });
+    });
+    return () => {
+      cancelAnimationFrame(raf1);
+      if (raf2) cancelAnimationFrame(raf2);
+    };
   }, [measureIndicator, options, value]);
 
   useLayoutEffect(() => {
@@ -108,9 +130,10 @@ export function SegmentedControl<T extends string>({
           left: indicator.left,
           width: indicator.width,
           top: indicator.top,
-          height: indicator.height || undefined,
-          transitionProperty: "left, width, top, height",
-          transitionDuration: `${SEGMENT_MOTION_MS}ms`,
+          height: indicator.height,
+          opacity: indicator.width > 0 && indicator.height > 0 ? 1 : 0,
+          transitionProperty: indicatorMotionEnabled ? "left, width" : "none",
+          transitionDuration: indicatorMotionEnabled ? `${SEGMENT_MOTION_MS}ms` : "0ms",
           transitionTimingFunction: SEGMENT_MOTION_EASE,
         }}
         aria-hidden

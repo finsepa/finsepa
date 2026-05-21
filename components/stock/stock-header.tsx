@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronRight, Plus, Search } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSpringTriplet } from "@/components/chart/use-spring-numbers";
@@ -120,16 +120,21 @@ export function StockHeader({
 
   const breadcrumbCrumbClass = "min-w-0 truncate";
   const breadcrumbLinkClass = `${breadcrumbCrumbClass} transition-colors hover:text-[#09090B]`;
+  const breadcrumbSep = (
+    <span className="shrink-0 select-none" aria-hidden>
+      /
+    </span>
+  );
 
   return (
     <div className="space-y-3">
-      <div className="flex min-w-0 items-center gap-1 overflow-hidden text-[14px] text-[#71717A] max-md:flex-nowrap max-md:overflow-hidden md:flex-wrap">
+      <div className="flex min-w-0 items-center gap-2 text-[14px] text-[#71717A] max-md:flex-nowrap md:flex-wrap">
         <Link href="/screener" className="shrink-0 transition-colors hover:text-[#09090B]">
           Stocks
         </Link>
         {sectorLabel && (
           <>
-            <ChevronRight className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            {breadcrumbSep}
             {canonicalSector ? (
               <Link
                 href={screenerSectorCompaniesHref(canonicalSector)}
@@ -147,7 +152,7 @@ export function StockHeader({
         )}
         {industryLabel && (
           <>
-            <ChevronRight className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            {breadcrumbSep}
             {canonicalSector ? (
               <Link
                 href={screenerIndustryDrillHref(canonicalSector, industryLabel)}
@@ -163,9 +168,11 @@ export function StockHeader({
             )}
           </>
         )}
-        <ChevronRight className="h-3.5 w-3.5 shrink-0" aria-hidden />
+        {breadcrumbSep}
         <CompanyPicker
           includeCrypto={false}
+          alwaysAllowOpen
+          menuAlign="trailing"
           maxExtraCompanies={1}
           excludeSymbols={[symbol]}
           onPick={({ symbol: nextSym }) => {
@@ -175,16 +182,14 @@ export function StockHeader({
             router.push(url);
           }}
         >
-          {({ open, setOpen, atCapacity }) => (
+          {({ open, setOpen }) => (
             <button
               type="button"
-              onClick={() => {
-                if (atCapacity) return;
-                setOpen((o) => !o);
-              }}
+              onClick={() => setOpen((o) => !o)}
               aria-expanded={open}
               aria-haspopup="listbox"
-              className="inline-flex h-6 shrink-0 items-center gap-1.5 rounded-md border border-[#E4E4E7] bg-white px-2 text-[12px] font-medium leading-4 text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors hover:bg-[#FAFAFA]"
+              aria-label={`${breadcrumbSymbol}, search for another stock`}
+              className="inline-flex h-6 shrink-0 cursor-pointer items-center gap-1.5 rounded-md border border-[#E4E4E7] bg-white px-2 text-[12px] font-medium leading-4 text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors hover:bg-[#FAFAFA]"
               title={breadcrumbSymbol}
             >
               <Search className="h-3.5 w-3.5 shrink-0 text-[#71717A]" strokeWidth={2} aria-hidden />
@@ -252,7 +257,7 @@ export function StockHeader({
                 name: titleName.trim() || symbol,
               })
             }
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[#09090B] text-[13px] font-semibold text-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.12)] transition-colors hover:bg-[#27272A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/25 sm:w-auto sm:gap-1.5 sm:px-3.5"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[#2563EB] text-[13px] font-semibold text-white shadow-[0px_1px_2px_0px_rgba(37,99,235,0.25)] transition-colors hover:bg-[#1D4ED8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/30 focus-visible:ring-offset-2 sm:w-auto sm:gap-1.5 sm:px-3.5"
             aria-label="Add Trade"
           >
             <Plus className="h-4 w-4 shrink-0" strokeWidth={2.25} aria-hidden />

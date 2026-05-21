@@ -88,6 +88,101 @@ function buildAnalystDistribution(ar: Record<string, unknown> | null): StockAnal
   ];
 }
 
+function normalizeAnalystLabel(raw: string): string {
+  return raw.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function analystBucketScore(label: string): number | null {
+  const l = normalizeAnalystLabel(label);
+  if (l === "strong buy") return 5;
+  if (l === "buy") return 4;
+  if (l === "neutral") return 3;
+  if (l === "sell") return 2;
+  if (l === "strong sell") return 1;
+  return null;
+}
+
+function labelFromAvgScore(avg: number): string {
+  if (avg >= 4.5) return "Strong buy";
+  if (avg >= 3.5) return "Buy";
+  if (avg >= 2.5) return "Neutral";
+  if (avg >= 1.5) return "Sell";
+  return "Strong sell";
+}
+
+function avgScoreFromBuckets(buckets: StockAnalystDistributionBucket[]): number | null {
+  let num = 0;
+  let den = 0;
+  for (const b of buckets) {
+    const s = analystBucketScore(b.label);
+    if (s == null) continue;
+    const c = b.count;
+    if (!Number.isFinite(c) || c <= 0) continue;
+    num += s * c;
+    den += c;
+  }
+  if (den <= 0) return null;
+  return num / den;
+}
+
+function majorityLabelFromBuckets(buckets: StockAnalystDistributionBucket[]): string | null {
+  let best: { label: string; count: number; score: number } | null = null;
+  for (const b of buckets) {
+    const score = analystBucketScore(b.label);
+    if (score == null) continue;
+    const c = b.count;
+    if (!Number.isFinite(c) || c <= 0) continue;
+    if (!best || c > best.count || (c === best.count && score > best.score)) {
+      best = { label: b.label, count: c, score };
+    }
+  }
+  return best ? labelFromAvgScore(best.score) : null;
+}
+
+/** Title case for Key Stats / tables, e.g. `Strong buy` → `Strong Buy`. */
+function formatAnalystConsensusLabel(label: string): string {
+  return label
+    .trim()
+    .split(/\s+/)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(" ");
+}
+
+/**
+ * Same consensus string as the Target Price tab gauge (majority bucket, else avg score, else EODHD text).
+ */
+export function analystConsensusDisplayForKeyStats(root: Record<string, unknown> | null): string | null {
+  if (!root) return null;
+
+  const ar =
+    root.AnalystRatings && typeof root.AnalystRatings === "object"
+      ? (root.AnalystRatings as Record<string, unknown>)
+      : null;
+
+  const recomMean = num(ar?.RecommendationMean ?? ar?.Recommendation ?? ar?.AnalystRecom);
+  if (recomMean != null && recomMean >= 1 && recomMean <= 5) {
+    return formatAnalystConsensusLabel(labelFromAvgScore(recomMean));
+  }
+
+  const payload = buildStockTargetPricePayload(root);
+  const textLabel = payload.consensusLabel?.trim();
+  if (textLabel && !/^[\d.]+$/.test(textLabel)) {
+    return formatAnalystConsensusLabel(textLabel);
+  }
+
+  const buckets = payload.analystDistribution;
+  const total = buckets.reduce((sum, b) => sum + (Number.isFinite(b.count) && b.count > 0 ? b.count : 0), 0);
+  if (total > 0) {
+    const majority = majorityLabelFromBuckets(buckets);
+    if (majority) return formatAnalystConsensusLabel(majority);
+    const avg = avgScoreFromBuckets(buckets);
+    if (avg != null) return formatAnalystConsensusLabel(labelFromAvgScore(avg));
+    if (payload.distributionSummary) return payload.distributionSummary;
+  }
+
+  return null;
+}
+
 function buildDistributionSummary(ar: Record<string, unknown>): string | null {
   const pairs: [string, string][] = [
     ["Strong Buy", "StrongBuy"],

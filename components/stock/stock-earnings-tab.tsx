@@ -291,8 +291,19 @@ export function StockEarningsTabLoading() {
   );
 }
 
+function isEarningsTabPayload(v: unknown): v is StockEarningsTabPayload {
+  return (
+    v != null &&
+    typeof v === "object" &&
+    typeof (v as StockEarningsTabPayload).ticker === "string" &&
+    Array.isArray((v as StockEarningsTabPayload).history)
+  );
+}
+
 export type StockEarningsTabContentProps = {
   ticker: string;
+  /** SSR / stock page initial load — same JSON as GET `/api/stocks/[ticker]/earnings`. */
+  initialPayload?: StockEarningsTabPayload | null;
   /** When set (e.g. modal body), history infinite-scroll observes this scroll container instead of `main`. */
   scrollRoot?: HTMLElement | null;
 };
@@ -300,13 +311,18 @@ export type StockEarningsTabContentProps = {
 /** Full earnings experience (summary cards, estimates chart, history table) — reusable on stock page and calendar modal. */
 export function StockEarningsTabContent({
   ticker,
+  initialPayload = null,
   scrollRoot = null,
 }: StockEarningsTabContentProps) {
   const sym = ticker.trim().toUpperCase();
+  const seedPayload =
+    initialPayload?.ticker.trim().toUpperCase() === sym && isEarningsTabPayload(initialPayload)
+      ? initialPayload
+      : null;
   /** Defer interactive tree until after mount so SSR HTML always matches the first client paint (avoids hydration drift from HMR / dev caches). */
   const [clientReady, setClientReady] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<StockEarningsTabPayload | null>(null);
+  const [loading, setLoading] = useState(() => !seedPayload);
+  const [data, setData] = useState<StockEarningsTabPayload | null>(() => seedPayload);
   const [earningsHistoryVisible, setEarningsHistoryVisible] = useState(EARNINGS_HISTORY_PAGE_SIZE);
   const earningsHistorySentinelRef = useRef<HTMLTableRowElement | null>(null);
 
@@ -317,18 +333,23 @@ export function StockEarningsTabContent({
   useEffect(() => {
     let cancelled = false;
     async function load() {
-      setLoading(true);
+      if (seedPayload) {
+        setData(seedPayload);
+        setLoading(false);
+      } else {
+        setLoading(true);
+      }
       setEarningsHistoryVisible(EARNINGS_HISTORY_PAGE_SIZE);
       try {
         const res = await fetch(`/api/stocks/${encodeURIComponent(sym)}/earnings`, { cache: "no-store" });
         if (!res.ok) {
-          if (!cancelled) setData(null);
+          if (!cancelled && !seedPayload) setData(null);
           return;
         }
         const json = (await res.json()) as StockEarningsTabPayload;
         if (!cancelled) setData(json);
       } catch {
-        if (!cancelled) setData(null);
+        if (!cancelled && !seedPayload) setData(null);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -337,7 +358,7 @@ export function StockEarningsTabContent({
     return () => {
       cancelled = true;
     };
-  }, [sym]);
+  }, [sym, seedPayload]);
 
   const historyRows = useMemo(() => {
     const rows = data?.history ?? [];
@@ -412,7 +433,12 @@ export function StockEarningsTabContent({
 
   const empty = useMemo(() => {
     if (!data) return true;
-    return !data.upcoming && (!data.history || data.history.length === 0);
+    const hasHistory = (data.history?.length ?? 0) > 0;
+    const hasUpcoming = !!data.upcoming;
+    const hasEstimates =
+      (data.estimatesChart?.quarterly?.length ?? 0) > 0 ||
+      (data.estimatesChart?.annual?.length ?? 0) > 0;
+    return !hasUpcoming && !hasHistory && !hasEstimates;
   }, [data]);
 
   const summaryForCards = useMemo(() => {
@@ -565,6 +591,12 @@ export function StockEarningsTabContent({
   );
 }
 
-export function StockEarningsTab({ ticker }: { ticker: string }) {
-  return <StockEarningsTabContent ticker={ticker} />;
+export function StockEarningsTab({
+  ticker,
+  initialPayload = null,
+}: {
+  ticker: string;
+  initialPayload?: StockEarningsTabPayload | null;
+}) {
+  return <StockEarningsTabContent ticker={ticker} initialPayload={initialPayload} />;
 }

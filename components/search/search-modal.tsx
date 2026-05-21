@@ -9,6 +9,7 @@ import { fetchSearchItems } from "@/lib/search/fetch-search-items";
 import type { SearchAssetItem } from "@/lib/search/search-types";
 import { readRecentSearches, recordSearchNavigation, removeRecentSearchById } from "@/lib/search/recent-searches-storage";
 import { dropdownMenuFloatingScrollClassName } from "@/components/design-system/dropdown-menu-styles";
+import { SearchLoadingIndicator } from "@/components/search/search-loading-indicator";
 import { SearchResultRow } from "@/components/search/search-result-row";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
 import { cn } from "@/lib/utils";
@@ -234,7 +235,7 @@ export function SearchModal({
               )}
             </>
           ) : loading && !showStaleList ? (
-            <div className="px-5 py-10 text-center text-[14px] text-[#71717A]">Searching…</div>
+            <SearchLoadingIndicator className="px-5 py-10" />
           ) : noResults ? (
             <div className="px-5 py-10 text-center text-[14px] text-[#71717A]">
               No results for &ldquo;{queryTrim}&rdquo;

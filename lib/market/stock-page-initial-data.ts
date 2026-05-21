@@ -24,6 +24,7 @@ import type { StockProfilePayload } from "@/lib/market/stock-profile-types";
 import { fetchEodhdStockProfile } from "@/lib/market/eodhd-stock-profile";
 import type { PeersCompareRow } from "@/lib/market/peers-compare-payload";
 import { getPeersCompareRowsCached } from "@/lib/market/peers-compare-payload";
+import type { StockEarningsTabPayload } from "@/lib/market/stock-earnings-types";
 import { getNvdaChartPoints, getNvdaHeaderMeta, getNvdaKeyStatsBundle, getNvdaPerformance } from "@/lib/fixtures/nvda";
 import { getNvdaChartingSeriesPoints, getNvdaProfile, getNvdaStockNews } from "@/lib/fixtures/nvda";
 import { getStockDetailMetaFromTicker } from "@/lib/market/stock-detail-meta";
@@ -46,6 +47,8 @@ export type StockPageInitialData = {
   profile: StockProfilePayload | null;
   fundamentalsSeriesAnnual: ChartingSeriesPoint[];
   fundamentalsSeriesQuarterly: ChartingSeriesPoint[];
+  /** TTM snapshot for Financials tables (from annual fundamentals bundle). */
+  fundamentalsTtmPoint: ChartingSeriesPoint | null;
   /** Single-ticker peers compare row (same payload as POST /api/stocks/peers/compare with one symbol). */
   peersCompareRows: PeersCompareRow[];
   /**
@@ -53,6 +56,11 @@ export type StockPageInitialData = {
    * Phase 7: fresher than mini-table EOD spot (`StockPerformance.price`) before the 1D chart publishes.
    */
   headerLiveSpotUsd: number | null;
+  /**
+   * Earnings tab loads client-side via GET `/api/stocks/[ticker]/earnings` (kept off SSR so stock pages
+   * do not block on heavy earnings enrichment or calendar fetches).
+   */
+  earningsTabPayload: StockEarningsTabPayload | null;
 };
 
 const DEFAULT_OVERVIEW_RANGE: StockChartRange = "1D";
@@ -118,8 +126,10 @@ function fallbackStockPageInitialData(ticker: string, now: Date): StockPageIniti
     profile: null,
     fundamentalsSeriesAnnual: [],
     fundamentalsSeriesQuarterly: [],
+    fundamentalsTtmPoint: null,
     peersCompareRows: [],
     headerLiveSpotUsd: null,
+    earningsTabPayload: null,
   };
 }
 
@@ -161,8 +171,10 @@ export async function loadStockPageInitialData(routeTicker: string): Promise<Sto
       profile: getNvdaProfile(),
       fundamentalsSeriesAnnual: getNvdaChartingSeriesPoints("annual"),
       fundamentalsSeriesQuarterly: getNvdaChartingSeriesPoints("quarterly"),
+      fundamentalsTtmPoint: null,
       peersCompareRows: [],
       headerLiveSpotUsd,
+      earningsTabPayload: null,
     };
   }
 
@@ -217,11 +229,13 @@ export async function loadStockPageInitialData(routeTicker: string): Promise<Sto
       profile: profile ?? null,
       fundamentalsSeriesAnnual: annualSeries?.points ?? [],
       fundamentalsSeriesQuarterly: quarterlySeries?.points ?? [],
+      fundamentalsTtmPoint: annualSeries?.ttmPoint ?? null,
       peersCompareRows: Array.isArray(peersCompareRows) ? peersCompareRows : [],
       headerLiveSpotUsd:
         typeof headerLiveSpotUsd === "number" && Number.isFinite(headerLiveSpotUsd) && headerLiveSpotUsd > 0
           ? headerLiveSpotUsd
           : null,
+      earningsTabPayload: null,
     };
   } catch (err) {
     console.error("[loadStockPageInitialData] unexpected failure; serving fallback shell", { ticker, err });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import type { StockDetailTabId } from "@/lib/stock/stock-detail-tab";
 import { ETF_STOCK_DETAIL_TAB_IDS } from "@/lib/stock/stock-etf";
@@ -21,7 +21,7 @@ const TABS: { id: StockDetailTabId; label: string }[] = [
   { id: "superinvestors", label: "Superinvestors" },
   { id: "charting", label: "Charting" },
   { id: "peers", label: "Peers" },
-  { id: "holdings", label: "Holdings" },
+  { id: "holdings", label: "Portfolio" },
   { id: "profile", label: "Profile" },
 ];
 
@@ -30,15 +30,22 @@ export function StockDetailTabNav({
   activeTab,
   onTabChange,
   isEtf = false,
+  sticky = true,
 }: {
   activeTab: StockDetailTabId;
   onTabChange: (tab: StockDetailTabId) => void;
-  /** When true, only Overview and Holdings tabs are shown. */
+  /** When true, only Overview and Portfolio tabs are shown. */
   isEtf?: boolean;
+  /** Off on Financials so the statement year row can stick to the top of the scroll area. */
+  sticky?: boolean;
 }) {
-  const tabs = isEtf
-    ? TABS.filter((t) => (ETF_STOCK_DETAIL_TAB_IDS as readonly string[]).includes(t.id))
-    : TABS;
+  const tabs = useMemo(
+    () =>
+      isEtf
+        ? TABS.filter((t) => (ETF_STOCK_DETAIL_TAB_IDS as readonly string[]).includes(t.id))
+        : TABS,
+    [isEtf],
+  );
 
   const navRef = useRef<HTMLElement>(null);
   const tabRefs = useRef(new Map<StockDetailTabId, HTMLButtonElement>());
@@ -50,15 +57,17 @@ export function StockDetailTabNav({
     if (!nav || !btn) return;
     const navRect = nav.getBoundingClientRect();
     const btnRect = btn.getBoundingClientRect();
-    setIndicator({
-      left: btnRect.left - navRect.left + nav.scrollLeft,
-      width: btnRect.width,
+    const left = btnRect.left - navRect.left + nav.scrollLeft;
+    const width = btnRect.width;
+    setIndicator((prev) => {
+      if (Math.abs(prev.left - left) < 0.5 && Math.abs(prev.width - width) < 0.5) return prev;
+      return { left, width };
     });
   }, [activeTab]);
 
   useLayoutEffect(() => {
     measureIndicator();
-  }, [measureIndicator, tabs, activeTab]);
+  }, [measureIndicator, isEtf, activeTab]);
 
   useLayoutEffect(() => {
     const nav = navRef.current;
@@ -75,7 +84,13 @@ export function StockDetailTabNav({
   }, [measureIndicator]);
 
   return (
-    <div className="sticky top-0 z-40 bg-white max-md:mx-0 max-md:pt-1 sm:-mx-9 sm:-mt-5 sm:px-9 sm:pt-2">
+    <div
+      className={
+        sticky
+          ? "sticky top-0 z-40 bg-white max-md:mx-0 max-md:pt-1 sm:-mx-9 sm:-mt-5 sm:px-9 sm:pt-2"
+          : "bg-white max-md:mx-0 max-md:pt-1 sm:-mx-9 sm:-mt-5 sm:px-9 sm:pt-2"
+      }
+    >
       <div className="border-b border-solid border-[#E4E4E7]">
         <nav
           ref={navRef}

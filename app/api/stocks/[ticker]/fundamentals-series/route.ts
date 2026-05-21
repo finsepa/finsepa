@@ -53,6 +53,7 @@ export async function GET(request: Request, { params }: Ctx) {
       ticker: routeTicker,
       period,
       points: bundle?.points ?? [],
+      ttmPoint: bundle?.ttmPoint ?? null,
       availableMetrics: bundle?.availableMetrics ?? [],
     },
     {

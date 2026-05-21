@@ -1,4 +1,5 @@
 import type { ChartingSeriesPoint } from "@/lib/market/charting-series-types";
+import { formatFinancialsPeriodEndDisplay } from "@/lib/market/charting-period-display";
 
 export const MAX_ANNUAL_FUNDAMENTAL_COLUMNS = 8;
 
@@ -12,13 +13,16 @@ export function ymdYearLabel(periodEnd: string): string {
 
 export function annualFundamentalsSlice(points: ChartingSeriesPoint[]): {
   columns: string[];
+  /** Period-ending labels aligned with `columns` (e.g. `Dec 31, 2021`). */
+  columnPeriodEnds: string[];
   slice: ChartingSeriesPoint[];
 } | null {
   if (!points.length) return null;
   const sorted = [...points].sort((a, b) => a.periodEnd.localeCompare(b.periodEnd));
   const slice = sorted.slice(-MAX_ANNUAL_FUNDAMENTAL_COLUMNS);
   const columns = slice.map((p) => ymdYearLabel(p.periodEnd));
-  return { columns, slice };
+  const columnPeriodEnds = slice.map((p) => formatFinancialsPeriodEndDisplay(p.periodEnd));
+  return { columns, columnPeriodEnds, slice };
 }
 
 export function pctChange(cur: number | null, prev: number | null): number | null {
@@ -26,4 +30,31 @@ export function pctChange(cur: number | null, prev: number | null): number | nul
   const a = Math.abs(prev);
   if (a < 1e-9) return null;
   return ((cur - prev) / a) * 100;
+}
+
+type FinancialsTableRowLike = {
+  values: readonly (number | null)[];
+  format?: string;
+};
+
+/** True when a row has at least one value we should show (not null, and not a USD zero placeholder). */
+export function financialsRowHasNumericValues(
+  values: readonly (number | null)[],
+  format?: string,
+): boolean {
+  return values.some((v) => {
+    if (v == null || !Number.isFinite(v)) return false;
+    if ((format === "usd" || format === "perShare") && Math.abs(v) < 1e-9) return false;
+    return true;
+  });
+}
+
+/** Drop rows that are all dashes (no annual or TTM figures). */
+export function filterFinancialsTableEmptyRows<T extends { rows: ReadonlyArray<FinancialsTableRowLike> }>(
+  model: T,
+): T {
+  return {
+    ...model,
+    rows: model.rows.filter((r) => financialsRowHasNumericValues(r.values, r.format)),
+  };
 }

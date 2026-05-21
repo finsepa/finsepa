@@ -4,11 +4,15 @@ import { unstable_cache } from "next/cache";
 
 import { REVALIDATE_HOT } from "@/lib/data/cache-policy";
 
-import { CRYPTO_TOP10, type SupportedCryptoTicker, fetchEodhdCryptoDailyBars, fetchEodhdCryptoFundamentalsHighlights } from "@/lib/market/eodhd-crypto";
+import {
+  CRYPTO_TOP10,
+  type SupportedCryptoTicker,
+  fetchCryptoMarketCapUsdForMeta,
+  fetchEodhdCryptoDailyBarsForMeta,
+  lastPositiveCloseFromCryptoBars,
+} from "@/lib/market/eodhd-crypto";
 import { getCryptoLogoUrl } from "@/lib/crypto/crypto-logo-url";
 import { deriveMetricsFromDailyBars, eodFetchWindowUtc, formatMarketCapDisplay } from "@/lib/screener/eod-derived-metrics";
-import type { EodhdDailyBar } from "@/lib/market/eodhd-eod";
-
 export type CryptoTop10Row = {
   symbol: SupportedCryptoTicker;
   name: string;
@@ -31,59 +35,18 @@ async function buildCryptoRow(meta: (typeof CRYPTO_TOP10)[number]): Promise<Cryp
   const window = eodFetchWindowUtc();
   const logoUrl = getCryptoLogoUrl(meta.symbol);
 
-  // TON fallback: try Toncoin symbol first; if it fails, try the alternate.
-  // This preserves the UI while avoiding broken/incorrect values for only the TON row.
-  const tonCandidates =
-    meta.symbol === "TON" && meta.eodhdAltSymbols?.length
-      ? [meta.eodhdSymbol, ...meta.eodhdAltSymbols]
-      : [meta.eodhdSymbol];
+  const dailyBars = await fetchEodhdCryptoDailyBarsForMeta(meta, window.from, window.to);
+  const lastBar = dailyBars && dailyBars.length ? dailyBars[dailyBars.length - 1]! : null;
+  const prevBar = dailyBars && dailyBars.length >= 2 ? dailyBars[dailyBars.length - 2]! : null;
 
-  let best:
-    | {
-        dailyBars: EodhdDailyBar[] | null;
-        currentPrice: number | null;
-        change1D: number | null;
-        derived: ReturnType<typeof deriveMetricsFromDailyBars> | null;
-        marketCapUsd: number | null;
-      }
-    | null = null;
+  const currentPrice = lastBar?.close ?? null;
+  const change1D = changePercent(currentPrice, prevBar?.close ?? null);
+  const derived = dailyBars ? deriveMetricsFromDailyBars(dailyBars, currentPrice ?? NaN) : null;
+  const sparkline5d = derived?.sparkline5d ?? [];
+  const change1M = derived?.changePercent1M ?? null;
+  const changeYTD = derived?.changePercentYTD ?? null;
 
-  for (const candidateSymbol of tonCandidates) {
-    const [bars, highlights] = await Promise.allSettled([
-      fetchEodhdCryptoDailyBars(candidateSymbol, window.from, window.to),
-      fetchEodhdCryptoFundamentalsHighlights(candidateSymbol),
-    ]);
-
-    const dailyBars: EodhdDailyBar[] | null = bars.status === "fulfilled" ? bars.value : null;
-    const lastBar = dailyBars && dailyBars.length ? dailyBars[dailyBars.length - 1]! : null;
-    const prevBar = dailyBars && dailyBars.length >= 2 ? dailyBars[dailyBars.length - 2]! : null;
-
-    const currentPrice = lastBar?.close ?? null;
-    const change1D = changePercent(currentPrice, prevBar?.close ?? null);
-    const derived = dailyBars ? deriveMetricsFromDailyBars(dailyBars, currentPrice ?? NaN) : null;
-    const marketCapUsd =
-      highlights.status === "fulfilled" ? highlights.value?.marketCapUsd ?? null : null;
-
-    // Choose the first candidate that has price + market cap; if not possible, keep the best with price.
-    const hasPrice = currentPrice != null && Number.isFinite(currentPrice);
-    const hasMarketCap = marketCapUsd != null && Number.isFinite(marketCapUsd) && marketCapUsd > 0;
-
-    if (hasPrice && hasMarketCap) {
-      best = { dailyBars, currentPrice, change1D, derived, marketCapUsd };
-      break;
-    }
-    if (hasPrice && !best) {
-      best = { dailyBars, currentPrice, change1D, derived, marketCapUsd };
-    }
-  }
-
-  const currentPrice = best?.currentPrice ?? null;
-  const change1D = best?.change1D ?? null;
-  const sparkline5d = best?.derived?.sparkline5d ?? [];
-  const change1M = best?.derived?.changePercent1M ?? null;
-  const changeYTD = best?.derived?.changePercentYTD ?? null;
-
-  const marketCapUsd = best?.marketCapUsd ?? null;
+  const marketCapUsd = await fetchCryptoMarketCapUsdForMeta(meta, lastPositiveCloseFromCryptoBars(dailyBars));
   const marketCapRaw = formatMarketCapDisplay(marketCapUsd);
   const marketCap = marketCapRaw.startsWith("$") ? marketCapRaw.slice(1) : marketCapRaw;
 
@@ -112,7 +75,7 @@ async function loadCryptoTop10Uncached(): Promise<CryptoTop10Row[]> {
   return rows;
 }
 
-export const getCryptoTop10 = unstable_cache(loadCryptoTop10Uncached, ["crypto-top10-v3"], {
+export const getCryptoTop10 = unstable_cache(loadCryptoTop10Uncached, ["crypto-top10-v4-ton-pol-eodhd"], {
   revalidate: REVALIDATE_HOT,
 });
 

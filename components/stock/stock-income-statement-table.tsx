@@ -6,7 +6,10 @@ import type {
   IncomeStatementValueFormat,
 } from "@/lib/market/stock-financials-income-table";
 import type { ChartingMetricId } from "@/lib/market/stock-charting-metrics";
-import { ScreenerTableScroll } from "@/components/screener/screener-table-scroll";
+import {
+  SCREENER_TABLE_HEADER_STICKY_CLASS,
+  ScreenerTableScroll,
+} from "@/components/screener/screener-table-scroll";
 import { cn } from "@/lib/utils";
 
 const pct2 = new Intl.NumberFormat("en-US", {
@@ -95,6 +98,14 @@ const numCellClass =
 const headerYearClass =
   "min-w-0 w-full truncate text-right font-['Inter'] text-[12px] font-medium leading-5 tabular-nums text-[#71717A] sm:text-[14px]";
 
+const headerPeriodEndClass =
+  "min-w-0 w-full truncate text-right font-['Inter'] text-[12px] font-medium leading-5 tabular-nums text-[#71717A] sm:text-[14px]";
+
+const headerLabelCellClass =
+  "flex min-h-full min-w-0 items-center self-stretch border-r border-[#E4E4E7] pr-4 text-left font-['Inter'] text-[12px] font-medium leading-5 text-[#71717A] sm:text-[14px]";
+
+const headerValueCellClass = "flex min-h-full min-w-0 items-center justify-end self-stretch";
+
 /** Matches {@link ScreenerTable} / {@link CryptoTable} header band. */
 const incomeHeaderRowClass = "min-h-[44px]";
 
@@ -112,24 +123,42 @@ export function StockIncomeStatementTable({
   /** Opens the same fundamentals chart modal as Overview Key Stats when the row maps to a charting metric. */
   onMetricClick?: (metricId: ChartingMetricId) => void;
 }) {
-  const { columns, rows } = model;
-  const gridTemplateColumns = `minmax(11rem, 2fr) repeat(${columns.length}, minmax(5.25rem, 1fr))`;
+  const { columns, columnPeriodEnds, rows, ttm } = model;
+  const dataColumnCount = columns.length + (ttm ? 1 : 0);
+  const gridTemplateColumns = `minmax(11rem, 2fr) repeat(${dataColumnCount}, minmax(5.25rem, 1fr))`;
 
   return (
     <ScreenerTableScroll mobileScroll>
       <div className="bg-white">
-        <div
-          className={`grid items-center gap-x-2 bg-white px-2 py-0 text-[12px] font-medium leading-5 text-[#71717A] sm:px-4 sm:text-[14px] ${incomeHeaderRowClass} ${incomeRowDividerClass}`}
-          style={{ gridTemplateColumns }}
-        >
-          <div className="min-w-0 text-left">
-            <span className="sr-only">Metric</span>
+        <div className={SCREENER_TABLE_HEADER_STICKY_CLASS}>
+          <div
+            className={`grid items-stretch gap-x-2 border-b border-[#E4E4E7] px-2 py-0 sm:px-4 ${incomeHeaderRowClass}`}
+            style={{ gridTemplateColumns }}
+          >
+            <div className={headerLabelCellClass}>Fiscal Year</div>
+            {columns.map((y) => (
+              <div key={y} className={cn(headerYearClass, headerValueCellClass)}>
+                {y}
+              </div>
+            ))}
+            {ttm ? (
+              <div className={cn(headerYearClass, headerValueCellClass)}>{ttm.columnLabel}</div>
+            ) : null}
           </div>
-          {columns.map((y) => (
-            <div key={y} className={headerYearClass}>
-              {y}
-            </div>
-          ))}
+          <div
+            className={`grid items-stretch gap-x-2 border-b border-[#E4E4E7] px-2 py-0 sm:px-4 ${incomeHeaderRowClass}`}
+            style={{ gridTemplateColumns }}
+          >
+            <div className={headerLabelCellClass}>Period Ending</div>
+            {columnPeriodEnds.map((label, i) => (
+              <div key={`${columns[i] ?? i}-period-end`} className={cn(headerPeriodEndClass, headerValueCellClass)}>
+                {label}
+              </div>
+            ))}
+            {ttm ? (
+              <div className={cn(headerPeriodEndClass, headerValueCellClass)}>{ttm.periodEnd}</div>
+            ) : null}
+          </div>
         </div>
 
         {rows.map((row) => (
@@ -158,7 +187,8 @@ function IncomeRow({
     ? "text-[14px] font-semibold leading-5 text-[#09090B]"
     : "text-[14px] font-normal leading-5 text-[#09090B]";
 
-  const nestedLabelPad = row.emphasize ? "" : "pl-3 sm:pl-6";
+  const nestedLabelPad =
+    row.id === "fcf_ps" || row.id === "fcf_margin" ? "pl-3 sm:pl-6" : "";
 
   const metricId = row.chartingMetricId;
   const rowInteractive = typeof onMetricClick === "function" && metricId != null;

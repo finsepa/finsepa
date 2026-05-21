@@ -2,7 +2,7 @@ import "server-only";
 
 import { format, parse, subDays } from "date-fns";
 
-import type { ChartingSeriesPoint } from "@/lib/market/charting-series-types";
+import type { ChartingSeriesPoint, FundamentalsSeriesMode } from "@/lib/market/charting-series-types";
 import { fetchEodhdEodDaily, type EodhdDailyBar } from "@/lib/market/eodhd-eod";
 
 /** UTC calendar YYYY-MM-DD from fiscal `periodEnd` (matches charting period keys). */
@@ -60,32 +60,109 @@ function impliedMultipleOk(m: number): boolean {
   return Number.isFinite(m) && m > 0 && m < MAX_IMPLIED_VAL_MULTIPLE;
 }
 
+const TTM_ROLLING_QUARTERS = 4;
+
+/** Sum of `netIncome` or per-share `eps` over up to four fiscal quarters ending at `index`. */
+function rollingTtmSum(
+  sorted: ChartingSeriesPoint[],
+  index: number,
+  field: "netIncome" | "eps",
+): number | null {
+  const start = Math.max(0, index - (TTM_ROLLING_QUARTERS - 1));
+  let sum = 0;
+  let n = 0;
+  for (let i = start; i <= index; i++) {
+    const v = sorted[i]![field];
+    if (v == null || !Number.isFinite(v)) continue;
+    sum += v;
+    n += 1;
+  }
+  return n > 0 && sum > 1e-6 ? sum : null;
+}
+
+/** Period-end P/E from modelled market cap; quarterly uses trailing-four-quarter earnings (TTM). */
+function deriveTrailingPeFromImpliedMarketCap(
+  p: ChartingSeriesPoint,
+  sorted: ChartingSeriesPoint[],
+  index: number,
+  mode: FundamentalsSeriesMode,
+): number | null {
+  const mc = p.marketCap;
+  if (mc == null || !Number.isFinite(mc) || mc <= 0) return null;
+
+  const sh = p.sharesOutstanding;
+  const useTtm = mode === "quarterly";
+  const ttmEps = useTtm ? rollingTtmSum(sorted, index, "eps") : null;
+  const eps = useTtm ? ttmEps : p.eps;
+
+  if (
+    eps != null &&
+    sh != null &&
+    Number.isFinite(eps) &&
+    Number.isFinite(sh) &&
+    eps > 1e-6 &&
+    sh > 1e-6
+  ) {
+    const pe = mc / sh / eps;
+    if (impliedMultipleOk(pe)) return pe;
+  }
+
+  const ttmNi = useTtm ? rollingTtmSum(sorted, index, "netIncome") : null;
+  const ni = useTtm ? ttmNi : p.netIncome;
+  if (ni != null && Number.isFinite(ni) && ni > 1e-6) {
+    const pe = mc / ni;
+    if (impliedMultipleOk(pe)) return pe;
+  }
+
+  return null;
+}
+
 /**
- * Sets `peRatio` and `trailingPe` to `marketCap / netIncome` when both support a sensible trailing multiple.
- * Run after {@link enrichChartingPointsWithPriceImpliedMarketCap} so cap reflects price × shares where available.
+ * Fills fiscal `peRatio` / `trailingPe` from modelled market cap (run after
+ * {@link enrichChartingPointsWithPriceImpliedMarketCap}). Quarterly mode uses TTM earnings
+ * (sum of last four quarters), matching ratios tables on other platforms — not MC ÷ one quarter NI.
  */
-export function enrichChartingPointsWithTrailingPeFromImpliedMarketCap(points: ChartingSeriesPoint[]): void {
+export function enrichChartingPointsWithTrailingPeFromImpliedMarketCap(
+  points: ChartingSeriesPoint[],
+  mode: FundamentalsSeriesMode = "annual",
+): void {
+  const sorted = [...points].sort((a, b) => a.periodEnd.localeCompare(b.periodEnd));
+  const indexByPeriod = new Map(sorted.map((row, i) => [row.periodEnd, i] as const));
+
   for (const p of points) {
-    const mc = p.marketCap;
-    if (mc == null || !Number.isFinite(mc) || mc <= 0) continue;
+    const index = indexByPeriod.get(p.periodEnd);
+    if (index == null) continue;
 
-    const ni = p.netIncome;
-    let pe: number | null = null;
-    if (ni != null && Number.isFinite(ni) && ni > 1e-6) {
-      pe = mc / ni;
-    } else {
-      /** EODHD sometimes omits `netIncome` on the merged row while EPS + diluted shares exist — same MC/(EPS×SH) as MC/NI. */
-      const eps = p.eps;
-      const sh = p.sharesOutstanding;
-      if (eps != null && sh != null && Number.isFinite(eps) && Number.isFinite(sh)) {
-        const denom = eps * sh;
-        if (denom > 1e-6) pe = mc / denom;
-      }
-    }
+    const derived = deriveTrailingPeFromImpliedMarketCap(p, sorted, index, mode);
+    if (derived == null) continue;
 
-    if (pe == null || !impliedMultipleOk(pe)) continue;
-    p.peRatio = pe;
-    p.trailingPe = pe;
+    const existing = p.peRatio ?? p.trailingPe;
+    if (mode === "annual" && existing != null && impliedMultipleOk(existing)) continue;
+
+    p.peRatio = derived;
+    p.trailingPe = derived;
+  }
+}
+
+/**
+ * Aligns the latest fiscal bar with Key Stats live P/E (Highlights `PERatio` / `TrailingPE`).
+ */
+export function patchLatestChartingPointLiveTrailingPe(
+  points: ChartingSeriesPoint[],
+  live: { peRatio: number | null; trailingPe: number | null },
+): void {
+  const pe = live.peRatio ?? live.trailingPe;
+  const trail = live.trailingPe ?? live.peRatio;
+  if (pe == null || !impliedMultipleOk(pe)) return;
+  if (points.length === 0) return;
+
+  const sorted = [...points].sort((a, b) => a.periodEnd.localeCompare(b.periodEnd));
+  const last = sorted[sorted.length - 1]!;
+  last.peRatio = pe;
+  if (trail != null && impliedMultipleOk(trail)) {
+    last.trailingPe = trail;
+  } else {
+    last.trailingPe = pe;
   }
 }
 

@@ -49,9 +49,11 @@ function KeyStatsSectionTabNav({
     if (!nav || !btn) return;
     const navRect = nav.getBoundingClientRect();
     const btnRect = btn.getBoundingClientRect();
-    setIndicator({
-      left: btnRect.left - navRect.left + nav.scrollLeft,
-      width: btnRect.width,
+    const left = btnRect.left - navRect.left + nav.scrollLeft;
+    const width = btnRect.width;
+    setIndicator((prev) => {
+      if (Math.abs(prev.left - left) < 0.5 && Math.abs(prev.width - width) < 0.5) return prev;
+      return { left, width };
     });
   }, [activeTab]);
 
@@ -234,7 +236,7 @@ const BASIC_FALLBACK: Row[] = [
   { label: "Enterprise Value", value: "—" },
   { label: "Shares Outstanding", value: "—" },
   { label: "1Y Target Est", value: "—" },
-  { label: "Fair Value", value: "—" },
+  { label: "Analyst Consensus", value: "—" },
   { label: "Earnings Date", value: "—" },
   { label: "Beta (5Y Monthly)", value: "—" },
   { label: "Employees", value: "—" },

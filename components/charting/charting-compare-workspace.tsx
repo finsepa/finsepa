@@ -7,7 +7,6 @@ import {
   ColorType,
   HistogramSeries,
   LineSeries,
-  LineType,
   createChart,
   type IChartApi,
   type ISeriesApi,
@@ -17,6 +16,7 @@ import {
 
 import { ChartingCompanyAddDropdown } from "@/components/charting/charting-company-add-dropdown";
 import {
+  DEFAULT_CHART_TIME_RANGE,
   DEFAULT_CHART_TIME_RANGE_ORDER,
   applySparseHistogramVisiblePadding,
   type ChartTimeRange,
@@ -27,9 +27,14 @@ import { DataFetchTopLoader } from "@/components/layout/data-fetch-top-loader";
 import { ChartSkeleton } from "@/components/ui/chart-skeleton";
 import { secondaryOutlineButtonClassName, TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
 import {
+  dropdownMenuFloatingScrollClassName,
   dropdownMenuRichItemClassName,
   dropdownMenuSurfaceClassName,
 } from "@/components/design-system/dropdown-menu-styles";
+import {
+  chartingFundamentalsSeriesNoReferenceLines,
+  chartingFundamentalsLineSeriesOptions,
+} from "@/lib/chart/fundamentals-chart-surface";
 import { cn } from "@/lib/utils";
 import type { ChartingSeriesPoint } from "@/lib/market/charting-series-types";
 import { formatChartingPeriodLabel } from "@/lib/market/charting-period-display";
@@ -250,7 +255,7 @@ export function ChartingCompareWorkspace({
   );
 
   const [periodMode, setPeriodMode] = useState<"annual" | "quarterly">("annual");
-  const [timeRange, setTimeRange] = useState<ChartTimeRange>("all");
+  const [timeRange, setTimeRange] = useState<ChartTimeRange>(DEFAULT_CHART_TIME_RANGE);
   const [chartType, setChartType] = useState<ChartType>("bars");
   const unitScale: ChartingUnitScale = "billions";
   const [chartHeight, setChartHeight] = useState<number>(CHARTING_HEIGHT_MIN);
@@ -640,6 +645,7 @@ export function ChartingCompareWorkspace({
             const solid = fundamentalsBarSolidAtIndex(s.colorIdx);
             if (chartType === "bars") {
               const series = chart.addSeries(HistogramSeries, {
+                ...chartingFundamentalsSeriesNoReferenceLines,
                 color: solid,
                 priceScaleId: scaleId,
                 priceFormat: priceFormatForKind(kind),
@@ -649,11 +655,7 @@ export function ChartingCompareWorkspace({
               seriesByKeyRef.current.set(s.key, series);
             } else {
               const series = chart.addSeries(LineSeries, {
-                color: solid,
-                lineWidth: 2,
-                lineType: LineType.Curved,
-                pointMarkersVisible: true,
-                pointMarkersRadius: 4,
+                ...chartingFundamentalsLineSeriesOptions(solid),
                 priceScaleId: scaleId,
                 priceFormat: priceFormatForKind(kind),
                 title: `${s.ticker} ${CHARTING_METRIC_LABEL[s.metricId]}`,
@@ -876,7 +878,12 @@ export function ChartingCompareWorkspace({
                       aria-label="Search metrics"
                     />
                   </div>
-                  <div className="flex max-h-[min(400px,calc(100vh-12rem))] flex-col gap-1 overflow-y-auto px-1 py-2">
+                  <div
+                    className={cn(
+                      "flex max-h-[min(400px,calc(100vh-12rem))] flex-col gap-1 overflow-y-auto px-1 py-2",
+                      dropdownMenuFloatingScrollClassName,
+                    )}
+                  >
                     {groupedAddable.map((group) => (
                       <div key={group.id} className="pb-2 last:pb-0">
                         <div className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wide text-[#A1A1AA]">

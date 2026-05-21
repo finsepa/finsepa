@@ -5,7 +5,6 @@ import {
   CalendarDays,
   ChartColumn,
   Compass,
-  FileText,
   LayoutGrid,
   Newspaper,
   PanelsTopLeft,
@@ -64,13 +63,10 @@ export const protectedCommunityItems: ProtectedNavItem[] = [
     activePathPrefix: true,
   },
   { label: "Portfolios", icon: Wallet, href: "/portfolios", available: true },
-  { label: "Posts", icon: FileText, href: "/posts", available: false },
 ];
 
-/** Community entries for the mobile bottom-nav sheet only (omit unreleased teasers). */
-export const protectedCommunityMobileNavItems: ProtectedNavItem[] = protectedCommunityItems.filter(
-  (item) => item.href !== "/posts",
-);
+/** Community entries for the mobile bottom-nav sheet (same as desktop). */
+export const protectedCommunityMobileNavItems: ProtectedNavItem[] = protectedCommunityItems;
 
 function pathnameMatchesPrefix(pathname: string, prefix: string): boolean {
   return pathname === prefix || pathname.startsWith(`${prefix}/`);

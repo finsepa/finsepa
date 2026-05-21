@@ -2,10 +2,17 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { Landmark } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
-import { StockDetailTabPlaceholder } from "@/components/stock/stock-detail-tab-nav";
 import { SkeletonBox } from "@/components/markets/skeleton";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { cn } from "@/lib/utils";
 import { formatUsdCompactSigDigits } from "@/lib/market/key-stats-basic-format";
 
@@ -129,10 +136,20 @@ export function StockSuperinvestorsTab({ ticker }: { ticker: string }) {
 
   if (sorted.length === 0) {
     return (
-      <StockDetailTabPlaceholder
-        title="Superinvestors"
-        message="None of the tracked superinvestors currently hold this company in their latest 13F filings."
-      />
+      <div className="space-y-6 pt-1">
+        <h2 className="text-[20px] font-semibold leading-8 tracking-tight text-[#09090B]">Superinvestors</h2>
+        <Empty variant="card" className="min-h-[min(40vh,360px)]">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <Landmark className="h-6 w-6" strokeWidth={1.75} aria-hidden />
+            </EmptyMedia>
+            <EmptyTitle>No superinvestor holdings</EmptyTitle>
+            <EmptyDescription>
+              None of the tracked superinvestors currently hold this company in their latest 13F filings.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+      </div>
     );
   }
 

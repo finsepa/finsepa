@@ -2,7 +2,7 @@
 
 import { memo, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Bell, CircleQuestionMark, Folder, Star } from "lucide-react";
+import { Bell, Briefcase, CircleQuestionMark, Star } from "lucide-react";
 import { TOPBAR_SHOW_NOTIFICATIONS } from "@/lib/features/topbar-flags";
 import { TransactionPortfolioField } from "@/components/portfolio/transaction-portfolio-field";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
@@ -71,7 +71,7 @@ const TopbarPortfolioBlock = memo(function TopbarPortfolioBlock() {
           "hidden",
         )}
       >
-        <Folder className="h-5 w-5 shrink-0" strokeWidth={1.75} aria-hidden />
+        <Briefcase className="h-5 w-5 shrink-0" strokeWidth={1.75} aria-hidden />
         <span className="whitespace-nowrap">My Portfolio</span>
       </Link>
 
@@ -83,7 +83,7 @@ const TopbarPortfolioBlock = memo(function TopbarPortfolioBlock() {
           aria-label={balanceLabel}
           className="flex min-w-0 max-w-none items-center gap-2 border-r border-[#E4E4E7] px-3 text-sm font-medium tabular-nums transition-colors hover:bg-[#F4F4F5]"
         >
-          <Folder className="h-5 w-5 shrink-0 text-[#09090B]" aria-hidden />
+          <Briefcase className="h-5 w-5 shrink-0 text-[#09090B]" aria-hidden />
           {ready ? (
             <span className={`min-w-0 truncate ${amountClass}`}>{usdTopbar.format(displayTotal)}</span>
           ) : (

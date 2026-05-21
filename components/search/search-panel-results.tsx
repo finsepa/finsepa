@@ -1,8 +1,9 @@
 "use client";
 
 import { dropdownMenuFloatingScrollClassName } from "@/components/design-system/dropdown-menu-styles";
-import type { SearchAssetItem } from "@/lib/search/search-types";
+import { SearchLoadingIndicator } from "@/components/search/search-loading-indicator";
 import { SearchResultRow } from "@/components/search/search-result-row";
+import type { SearchAssetItem } from "@/lib/search/search-types";
 import { cn } from "@/lib/utils";
 
 export function SearchPanelResults({
@@ -74,7 +75,7 @@ export function SearchPanelResults({
           )}
         </>
       ) : loading && !showStaleList ? (
-        <p className={`${sectionClassName} py-8 text-center text-[12px] leading-5 text-[#71717A]`}>Searching…</p>
+        <SearchLoadingIndicator className={sectionClassName} />
       ) : noResults ? (
         <p className={`${sectionClassName} py-8 text-center text-[12px] leading-5 text-[#71717A]`}>
           No results for &ldquo;{queryTrim}&rdquo;

@@ -5,9 +5,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Plus, RefreshCw, X } from "lucide-react";
 
 import { ChartingCompanyAddDropdown } from "@/components/charting/charting-company-add-dropdown";
-import { STANDALONE_CHARTING_TIME_RANGE_ORDER, type ChartTimeRange } from "@/components/charting/charting-workspace";
+import {
+  DEFAULT_CHART_TIME_RANGE,
+  STANDALONE_CHARTING_TIME_RANGE_ORDER,
+  type ChartTimeRange,
+} from "@/components/charting/charting-workspace";
 import { secondaryOutlineButtonClassName, TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
 import {
+  dropdownMenuFloatingScrollClassName,
   dropdownMenuRichItemClassName,
   dropdownMenuSurfaceClassName,
 } from "@/components/design-system/dropdown-menu-styles";
@@ -110,7 +115,7 @@ export function ChartingEmptyToolbar({
 
   const [periodMode, setPeriodMode] = useState<"annual" | "quarterly">("annual");
   const [chartType, setChartType] = useState<ChartType>("bars");
-  const [timeRange, setTimeRange] = useState<ChartTimeRange>("all");
+  const [timeRange, setTimeRange] = useState<ChartTimeRange>(DEFAULT_CHART_TIME_RANGE);
 
   const parsedFromUrl = useMemo(() => parseChartingMetricsParam(metricParam), [metricParam]);
 
@@ -315,7 +320,12 @@ export function ChartingEmptyToolbar({
                     aria-label="Search metrics"
                   />
                 </div>
-                <div className="flex max-h-[min(400px,calc(100vh-12rem))] flex-col gap-1 overflow-y-auto px-1 py-2">
+                <div
+                  className={cn(
+                    "flex max-h-[min(400px,calc(100vh-12rem))] flex-col gap-1 overflow-y-auto px-1 py-2",
+                    dropdownMenuFloatingScrollClassName,
+                  )}
+                >
                   {groupedAddable.map((group) => (
                     <div key={group.id} className="pb-2 last:pb-0">
                       <div className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wide text-[#A1A1AA]">

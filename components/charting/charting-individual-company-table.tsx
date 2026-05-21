@@ -1,13 +1,7 @@
 "use client";
 
-import { Fragment } from "react";
-
 import type { ChartingSeriesPoint } from "@/lib/market/charting-series-types";
-import {
-  chartingPeriodSortYear,
-  formatChartingPeriodEndShortMd,
-  formatChartingPeriodLabel,
-} from "@/lib/market/charting-period-display";
+import { formatChartingPeriodLabel } from "@/lib/market/charting-period-display";
 import {
   formatPercentMetric,
   formatRatio,
@@ -22,6 +16,8 @@ import {
   type ChartingMetricId,
   type ChartingMetricKind,
 } from "@/lib/market/stock-charting-metrics";
+import { fundamentalsBarSolidAtIndex } from "@/lib/colors/fundamentals-multi-bar-colors";
+import { cn } from "@/lib/utils";
 
 function chartingRowValue(row: ChartingSeriesPoint, id: ChartingMetricId): number | null {
   const k = CHARTING_METRIC_FIELD[id];
@@ -48,82 +44,131 @@ export function formatChartingTableCell(kind: ChartingMetricKind, v: number | nu
   }
 }
 
+export function formatChartingTableCellDisplay(id: ChartingMetricId, v: number | null): string {
+  const kind = CHARTING_METRIC_KIND[id];
+  const text = formatChartingTableCell(kind, v);
+  if (text === "—" || kind !== "percent" || v == null) return text;
+  if (v > 0 && !text.startsWith("+")) return `+${text}`;
+  return text;
+}
+
+/** Bar labels — same compact formatting as the data table (e.g. $94.83B). */
+export function formatBarChartDataLabel(id: ChartingMetricId, v: number): string {
+  if (!Number.isFinite(v)) return "";
+  return formatChartingTableCellDisplay(id, v);
+}
+
+function cellTone(id: ChartingMetricId, v: number | null): string {
+  if (CHARTING_METRIC_KIND[id] !== "percent" || v == null || !Number.isFinite(v)) {
+    return "text-[#09090B]";
+  }
+  if (v > 0) return "text-[#16A34A]";
+  if (v < 0) return "text-[#DC2626]";
+  return "text-[#71717A]";
+}
+
+function metricRowLabel(ticker: string | undefined, id: ChartingMetricId): string {
+  const sym = ticker?.trim().toUpperCase();
+  const name = CHARTING_METRIC_LABEL[id];
+  return sym ? `${sym} ${name}` : name;
+}
+
+function metricColor(
+  id: ChartingMetricId,
+  metricIndex: number,
+  metricColors?: Map<ChartingMetricId, string>,
+): string {
+  return metricColors?.get(id) ?? fundamentalsBarSolidAtIndex(metricIndex);
+}
+
 type Props = {
   ordered: ChartingSeriesPoint[];
   selected: ChartingMetricId[];
   periodMode: "annual" | "quarterly";
+  /** Matches chart legend, e.g. `RACE Revenue`. */
+  ticker?: string;
+  metricColors?: Map<ChartingMetricId, string>;
   className?: string;
 };
 
 /**
- * Single-company charting table — Figma 8479:44939 / stock Charting tab.
- * Period rows (newest first), metric columns; two-line period cells (year or quarter + fiscal end date).
+ * Single-company charting table — metrics as rows, fiscal periods as columns (oldest → newest).
+ * Reference: Figma charting data grid (PYPL Revenue / Net Income across years).
  */
-export function ChartingIndividualCompanyTable({ ordered, selected, periodMode, className }: Props) {
+export function ChartingIndividualCompanyTable({
+  ordered,
+  selected,
+  periodMode,
+  ticker,
+  metricColors,
+  className,
+}: Props) {
   if (!ordered.length || !selected.length) return null;
 
   return (
-    <div className={className ?? "overflow-x-hidden pt-3"}>
-      <table className="w-full table-fixed border-collapse bg-white [&_tbody_td:first-child]:text-left [&_tbody_td:not(:first-child)]:text-right [&_thead_th:first-child]:text-left [&_thead_th:not(:first-child)]:text-right">
+    <div
+      className={cn(
+        "overflow-x-auto overscroll-x-contain pt-3 [-webkit-overflow-scrolling:touch]",
+        className,
+      )}
+    >
+      <table className="w-full min-w-max border-collapse bg-white">
         <thead>
           <tr className="border-t border-b border-[#E4E4E7] bg-white">
             <th
               scope="col"
-              className="w-[160px] px-3 py-2.5 text-left align-middle text-[14px] font-semibold leading-5 text-[#71717A]"
+              className="sticky left-0 z-[1] min-w-[11rem] bg-white px-3 py-2.5 text-left align-middle text-[14px] font-semibold leading-5 text-[#71717A] relative after:pointer-events-none after:absolute after:top-0 after:right-0 after:h-full after:w-px after:bg-[#E4E4E7]"
             >
-              Period
+              Data
             </th>
-            {selected.map((id) => (
+            {ordered.map((row) => (
               <th
-                key={id}
+                key={row.periodEnd}
                 scope="col"
-                className="px-3 py-2.5 text-right align-middle text-[14px] font-semibold leading-5 tabular-nums text-[#71717A]"
+                className="min-w-[4.5rem] whitespace-nowrap px-3 py-2.5 text-right align-middle text-[14px] font-semibold leading-5 tabular-nums text-[#71717A]"
               >
-                <span className="block truncate">{CHARTING_METRIC_LABEL[id]}</span>
+                {formatChartingPeriodLabel(row.periodEnd, periodMode)}
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {[...ordered].reverse().map((row, idx, arr) => {
-            const year = chartingPeriodSortYear(row.periodEnd);
-            const prevYear = idx > 0 ? chartingPeriodSortYear(arr[idx - 1]!.periodEnd) : "";
-            const showYearHeader = periodMode === "quarterly" && Boolean(year) && year !== prevYear;
-            const colSpan = 1 + selected.length;
-            const secondary = formatChartingPeriodEndShortMd(row.periodEnd);
+          {selected.map((id, metricIndex) => {
+            const color = metricColor(id, metricIndex, metricColors);
+            const kind = CHARTING_METRIC_KIND[id];
             return (
-              <Fragment key={row.periodEnd}>
-                {showYearHeader ? (
-                  <tr className="border-b border-[#E4E4E7] bg-[#FAFAFA]">
+              <tr
+                key={id}
+                className="h-[60px] max-h-[60px] border-b border-[#E4E4E7] transition-colors duration-75 hover:bg-neutral-50"
+              >
+                <td className="relative sticky left-0 z-[1] bg-white px-3 align-middle after:pointer-events-none after:absolute after:top-0 after:right-0 after:h-full after:w-px after:bg-[#E4E4E7]">
+                  <div className="flex min-w-0 items-center gap-2.5 py-0.5">
+                    <span
+                      className="h-4 w-1 shrink-0 rounded-full"
+                      style={{ backgroundColor: color }}
+                      aria-hidden
+                    />
+                    <span className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">
+                      {metricRowLabel(ticker, id)}
+                    </span>
+                  </div>
+                </td>
+                {ordered.map((row) => {
+                  const v = chartingRowValue(row, id);
+                  return (
                     <td
-                      colSpan={colSpan}
-                      className="px-3 py-2 text-left text-[14px] font-semibold leading-5 text-[#09090B]"
+                      key={`${id}-${row.periodEnd}`}
+                      className={cn(
+                        "px-3 align-middle text-right text-[14px] font-normal leading-5 tabular-nums",
+                        kind === "percent" ? "font-medium" : "",
+                        cellTone(id, v),
+                      )}
                     >
-                      {year}
+                      {formatChartingTableCellDisplay(id, v)}
                     </td>
-                  </tr>
-                ) : null}
-                <tr className="h-[60px] max-h-[60px] border-b border-[#E4E4E7] transition-colors duration-75 hover:bg-neutral-50">
-                  <td className="px-3 align-middle text-left">
-                    <div className="flex flex-col gap-0.5 py-0.5">
-                      <span className="text-[14px] font-semibold leading-5 text-[#09090B]">
-                        {formatChartingPeriodLabel(row.periodEnd, periodMode)}
-                      </span>
-                      {secondary ? (
-                        <span className="text-[12px] font-normal leading-4 text-[#71717A]">{secondary}</span>
-                      ) : null}
-                    </div>
-                  </td>
-                  {selected.map((id) => (
-                    <td
-                      key={id}
-                      className="px-3 align-middle text-right text-[14px] font-normal leading-5 tabular-nums text-[#09090B]"
-                    >
-                      {formatChartingTableCell(CHARTING_METRIC_KIND[id], chartingRowValue(row, id))}
-                    </td>
-                  ))}
-                </tr>
-              </Fragment>
+                  );
+                })}
+              </tr>
             );
           })}
         </tbody>

@@ -69,6 +69,24 @@ const EMPTY_CHART_DISPLAY: ChartDisplayState = {
   priceTimestampLabel: null,
 };
 
+function stockHeaderMetaIsIncomplete(meta: StockDetailHeaderMeta | null): boolean {
+  if (!meta) return true;
+  return !meta.exchange?.trim() && !meta.sector?.trim() && !meta.industry?.trim();
+}
+
+function buildInitialSessionHeaderUi(
+  data: StockPageInitialData | null | undefined,
+  routeTicker: string,
+): ChartDisplayState {
+  if (data?.ticker !== routeTicker.trim().toUpperCase()) return EMPTY_CHART_DISPLAY;
+  return mergeSessionHeaderWithPerformanceSpot(
+    EMPTY_CHART_DISPLAY,
+    data.performance,
+    "price",
+    data.headerLiveSpotUsd,
+  );
+}
+
 /** Offscreen mount so lightweight-charts + `onDisplayChange` stay active without affecting layout. */
 const OFFSCREEN_PRICE_CHART =
   "pointer-events-none fixed left-0 top-0 -z-10 h-[320px] w-[min(1200px,calc(100vw-2rem))] -translate-x-[120vw] opacity-0 sm:w-[min(1200px,calc(100vw-4.5rem))]";
@@ -173,12 +191,13 @@ export function StockPageContent({
 
   useEffect(() => {
     setDisplayTab(urlTab);
+    setTabsMounted((m) => ({ ...m, [urlTab]: true }));
   }, [urlTab]);
 
   const chartingMetricParam = searchParams.get("metric");
 
-  const refetchHeaderMeta = useCallback(async () => {
-    setHeaderMetaLoading(true);
+  const refetchHeaderMeta = useCallback(async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setHeaderMetaLoading(true);
     try {
       const res = await fetch(`/api/stocks/${encodeURIComponent(ticker)}/header-meta`, { cache: "no-store" });
       if (!res.ok) {
@@ -205,6 +224,11 @@ export function StockPageContent({
     setHeaderMeta(serverHeader);
     setHeaderMetaLoading(!serverHeader);
   }, [ticker, initialPageData?.ticker, initialPageData?.headerMeta, serverHeader]);
+
+  useEffect(() => {
+    if (!stockHeaderMetaIsIncomplete(serverHeader)) return;
+    void refetchHeaderMeta({ silent: Boolean(serverHeader) });
+  }, [ticker, serverHeader, refetchHeaderMeta]);
 
   useEffect(() => {
     const onMut = (e: Event) => {
@@ -322,7 +346,9 @@ export function StockPageContent({
   );
 
   /** 1D session series — drives header price / change (today / live window). */
-  const [sessionHeaderUi, setSessionHeaderUi] = useState<ChartDisplayState>(EMPTY_CHART_DISPLAY);
+  const [sessionHeaderUi, setSessionHeaderUi] = useState<ChartDisplayState>(() =>
+    buildInitialSessionHeaderUi(initialPageData, ticker),
+  );
   /** Holdings tab chart owns the header while that tab is active. */
   const [holdingsHeaderUi, setHoldingsHeaderUi] = useState<ChartDisplayState | null>(null);
 
@@ -336,7 +362,8 @@ export function StockPageContent({
 
   useEffect(() => {
     setHoldingsHeaderUi(null);
-  }, [ticker]);
+    setSessionHeaderUi(buildInitialSessionHeaderUi(initialPageData, ticker));
+  }, [ticker, initialPageData]);
 
   const performanceFromServer = useMemo(
     (): StockPerformance | null =>
@@ -470,7 +497,26 @@ export function StockPageContent({
         headerChartMetric={comparePicks.length > 0 ? "price" : chartSeries}
       />
 
-      <StockDetailTabNav activeTab={displayTab} onTabChange={handleTabChange} isEtf={isEtf} />
+      {stockChartDrivesHeader ? (
+        <div className={OFFSCREEN_PRICE_CHART} aria-hidden>
+          <PriceChart
+            key={`${ticker}-${comparePicks.length > 0 ? "price" : chartSeries}-header-1d`}
+            kind="stock"
+            symbol={ticker}
+            range="1D"
+            series={comparePicks.length > 0 ? "price" : chartSeries}
+            height={320}
+            onDisplayChange={onSessionHeaderDisplay}
+          />
+        </div>
+      ) : null}
+
+      <StockDetailTabNav
+        activeTab={displayTab}
+        onTabChange={handleTabChange}
+        isEtf={isEtf}
+        sticky={displayTab !== "financials"}
+      />
 
       {/*
         Overview price chart must stay mounted when other tabs are open — `hidden` on the tabpanel
@@ -514,19 +560,6 @@ export function StockPageContent({
             initialChart={initialChartMemo}
           />
         )}
-        {stockChartDrivesHeader ? (
-          <div className={OFFSCREEN_PRICE_CHART} aria-hidden>
-            <PriceChart
-              key={`${ticker}-${comparePicks.length > 0 ? "price" : chartSeries}-header-1d`}
-              kind="stock"
-              symbol={ticker}
-              range="1D"
-              series={comparePicks.length > 0 ? "price" : chartSeries}
-              height={320}
-              onDisplayChange={onSessionHeaderDisplay}
-            />
-          </div>
-        ) : null}
       </div>
 
       {tabsMounted.overview ? (
@@ -574,6 +607,7 @@ export function StockPageContent({
           <StockFinancialsTab
             ticker={ticker}
             initialAnnualPoints={initialPageData?.ticker === ticker ? initialPageData.fundamentalsSeriesAnnual : undefined}
+            initialTtmPoint={initialPageData?.ticker === ticker ? initialPageData.fundamentalsTtmPoint : undefined}
             onOpenMetricChart={openRevenueProfitMetricModal}
           />
         </div>
@@ -586,7 +620,12 @@ export function StockPageContent({
           aria-hidden={displayTab !== "earnings"}
           className={displayTab === "earnings" ? "block" : "hidden"}
         >
-          <StockEarningsTab ticker={ticker} />
+          <StockEarningsTab
+            ticker={ticker}
+            initialPayload={
+              initialPageData?.ticker === ticker ? (initialPageData.earningsTabPayload ?? null) : null
+            }
+          />
         </div>
       ) : null}
 

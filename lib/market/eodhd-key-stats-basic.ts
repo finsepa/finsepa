@@ -1,6 +1,7 @@
 import "server-only";
 
 import { fetchEodhdFundamentalsJson, resolveEarningsDateDisplay } from "@/lib/market/eodhd-fundamentals";
+import { analystConsensusDisplayForKeyStats } from "@/lib/market/stock-target-price-payload";
 import {
   formatBeta,
   formatEmployeesCount,
@@ -50,7 +51,7 @@ export async function fetchEodhdKeyStatsBasic(
       hl?.TargetPrice,
   );
 
-  const fairValue = num(val?.FairValue ?? hl?.FairValue ?? ar?.FairValue);
+  const analystConsensus = analystConsensusDisplayForKeyStats(root);
 
   const earningsDate = resolveEarningsDateDisplay(hl, root);
 
@@ -65,7 +66,7 @@ export async function fetchEodhdKeyStatsBasic(
     { label: "Enterprise Value", value: enterpriseValue != null ? formatUsdCompact(enterpriseValue) : "—" },
     { label: "Shares Outstanding", value: sharesOutstanding != null ? formatSharesOutstanding(sharesOutstanding) : "—" },
     { label: "1Y Target Est", value: target1y != null ? formatUsdPrice(target1y) : "—" },
-    { label: "Fair Value", value: fairValue != null ? formatUsdPrice(fairValue) : "—" },
+    { label: "Analyst Consensus", value: analystConsensus ?? "—" },
     { label: "Earnings Date", value: earningsDate ?? "—" },
     { label: "Beta (5Y Monthly)", value: beta != null ? formatBeta(beta) : "—" },
     { label: "Employees", value: employees != null ? formatEmployeesCount(employees) : "—" },

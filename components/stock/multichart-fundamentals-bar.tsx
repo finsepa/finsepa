@@ -12,6 +12,11 @@ import {
 } from "@/lib/market/stock-charting-metrics";
 import { formatChartingTableCell } from "@/components/charting/charting-individual-company-table";
 import {
+  formatChartingPeriodAxisLabel,
+  formatChartingPeriodLabel,
+  fundamentalsPeriodAxisShowsLabel,
+} from "@/lib/market/charting-period-display";
+import {
   formatPercentMetric,
   formatRatio,
   formatUsdCompact,
@@ -75,38 +80,6 @@ export function sliceLastAnnualWithMetric(
   const sorted = [...points].sort((a, b) => a.periodEnd.localeCompare(b.periodEnd));
   const withVal = sorted.filter((r) => readChartingMetricValue(r, metricId) != null);
   return withVal.slice(-n);
-}
-
-/** Report year for the fiscal period (from `periodEnd`), e.g. `2024`. */
-function formatAnnualYearLabel(periodEnd: string): string {
-  const raw = periodEnd.trim();
-  const d = new Date(raw.includes("T") ? raw : `${raw}T12:00:00.000Z`);
-  if (!Number.isFinite(d.getTime())) return raw.slice(0, 4);
-  return String(d.getUTCFullYear());
-}
-
-/** Full period string for tooltips — matches Charting copy. */
-function formatMultichartPeriodLabel(periodEnd: string, mode: FundamentalsSeriesMode): string {
-  const s = periodEnd.trim();
-  if (mode === "annual") return formatAnnualYearLabel(s);
-  const year = s.slice(0, 4);
-  const m = s.slice(5, 7);
-  const mm = /^\d{2}$/.test(m) ? Number(m) : NaN;
-  const q = Number.isFinite(mm) ? Math.min(4, Math.max(1, Math.floor((mm - 1) / 3) + 1)) : null;
-  return year && q ? `Q${q} ${year}` : s;
-}
-
-/** Short x-axis text (fits narrow columns); full label stays in tooltip via `title`. */
-function formatMultichartPeriodAxisLabel(periodEnd: string, mode: FundamentalsSeriesMode): string {
-  if (mode === "annual") return formatAnnualYearLabel(periodEnd);
-  const s = periodEnd.trim();
-  const year = s.slice(0, 4);
-  const m = s.slice(5, 7);
-  const mm = /^\d{2}$/.test(m) ? Number(m) : NaN;
-  const q = Number.isFinite(mm) ? Math.min(4, Math.max(1, Math.floor((mm - 1) / 3) + 1)) : null;
-  if (!year || !q) return s;
-  const yy = year.length >= 2 ? year.slice(2) : year;
-  return `Q${q} '${yy}`;
 }
 
 /** Tooltip values — two decimal places in K/M/B/T (e.g. `$258.24B`). */
@@ -254,8 +227,8 @@ export function MultichartFundamentalsBar({
       const v = readChartingMetricValue(r, metricId);
       if (v == null) continue;
       vals.push(v);
-      labs.push(formatMultichartPeriodLabel(r.periodEnd, periodMode));
-      axisLabs.push(formatMultichartPeriodAxisLabel(r.periodEnd, periodMode));
+      labs.push(formatChartingPeriodLabel(r.periodEnd, periodMode));
+      axisLabs.push(formatChartingPeriodAxisLabel(r.periodEnd, periodMode));
     }
     const rawMax = vals.length ? Math.max(...vals.map((x) => Math.abs(x))) : 0;
     const top = axisMaxForFiveTicks(rawMax || 1, kind);
@@ -561,10 +534,7 @@ export function MultichartFundamentalsBar({
             style={{ gridTemplateColumns: plotGridTemplate }}
           >
             {axisLabels.map((axisLab, i) => {
-              /** Quarterly: many columns — show every other tick (1st, 3rd, 5th…) so slanted labels don’t overlap. */
-              const last = axisLabels.length - 1;
-              const showAxisText =
-                periodMode === "annual" || i % 2 === 0 || (periodMode === "quarterly" && i === last && last > 0);
+              const showAxisText = fundamentalsPeriodAxisShowsLabel(i, axisLabels.length, periodMode);
               return (
                 <div
                   key={`${labels[i]}-${i}`}

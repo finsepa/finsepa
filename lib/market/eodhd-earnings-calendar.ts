@@ -62,6 +62,65 @@ async function fetchEodhdEarningsCalendarUncached(fromYmd: string, toYmd: string
 
   try {
     if (!traceEodhdHttp("fetchEodhdEarningsCalendar", { from: fromYmd, to: toYmd })) return [];
+    /** Wide ranges exceed Next.js 2MB data-cache — do not persist this response in the fetch cache. */
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) return [];
+    const json = (await res.json()) as { earnings?: unknown };
+    const rows = json?.earnings;
+    if (!Array.isArray(rows)) return [];
+    return rows.map(parseRawRow).filter(Boolean) as EodhdRawEarningRow[];
+  } catch {
+    return [];
+  }
+}
+
+/** Earnings week uses Mon–Fri (~5d); longer windows can exceed Next.js 2MB `unstable_cache` limit. */
+const EARNINGS_CALENDAR_MAX_CACHED_RANGE_DAYS = 8;
+
+function calendarRangeDayCount(fromYmd: string, toYmd: string): number {
+  const a = Date.parse(`${fromYmd}T12:00:00.000Z`);
+  const b = Date.parse(`${toYmd}T12:00:00.000Z`);
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return Number.POSITIVE_INFINITY;
+  return Math.floor(Math.abs(b - a) / 86_400_000) + 1;
+}
+
+const fetchEodhdEarningsCalendarRangeCached = unstable_cache(
+  fetchEodhdEarningsCalendarUncached,
+  ["eodhd-earnings-calendar-range-v1"],
+  { revalidate: REVALIDATE_EARNINGS_CALENDAR },
+);
+
+/**
+ * Bulk date-range calendar (earnings week). Narrow ranges are `unstable_cache`d for cross-user
+ * reuse; wide ranges use `cache: "no-store"` only (no 2MB data-cache write).
+ */
+export async function fetchEodhdEarningsCalendar(fromYmd: string, toYmd: string): Promise<EodhdRawEarningRow[]> {
+  if (calendarRangeDayCount(fromYmd, toYmd) > EARNINGS_CALENDAR_MAX_CACHED_RANGE_DAYS) {
+    return fetchEodhdEarningsCalendarUncached(fromYmd, toYmd);
+  }
+  return fetchEodhdEarningsCalendarRangeCached(fromYmd, toYmd);
+}
+
+/**
+ * EODHD calendar/earnings for one listing (e.g. `PYPL.US`).
+ * Uses `symbols` so the payload stays small enough for `unstable_cache` (bulk date ranges can exceed 2MB).
+ */
+async function fetchEodhdEarningsCalendarForSymbolUncached(eodhdSymbol: string): Promise<EodhdRawEarningRow[]> {
+  const symbol = eodhdSymbol.trim().toUpperCase();
+  if (!symbol) return [];
+
+  const key = getEodhdApiKey();
+  if (!key) return [];
+
+  const params = new URLSearchParams({
+    symbols: symbol,
+    api_token: key,
+    fmt: "json",
+  });
+  const url = `https://eodhd.com/api/calendar/earnings?${params.toString()}`;
+
+  try {
+    if (!traceEodhdHttp("fetchEodhdEarningsCalendarForSymbol", { symbols: symbol })) return [];
     const res = await fetch(url, { next: { revalidate: REVALIDATE_EARNINGS_CALENDAR } });
     if (!res.ok) return [];
     const json = (await res.json()) as { earnings?: unknown };
@@ -73,12 +132,12 @@ async function fetchEodhdEarningsCalendarUncached(fromYmd: string, toYmd: string
   }
 }
 
-const fetchEodhdEarningsCalendarCached = unstable_cache(
-  fetchEodhdEarningsCalendarUncached,
-  ["eodhd-earnings-calendar-v3-daily"],
+const fetchEodhdEarningsCalendarForSymbolCached = unstable_cache(
+  fetchEodhdEarningsCalendarForSymbolUncached,
+  ["eodhd-earnings-calendar-symbol-v2"],
   { revalidate: REVALIDATE_EARNINGS_CALENDAR },
 );
 
-export async function fetchEodhdEarningsCalendar(fromYmd: string, toYmd: string): Promise<EodhdRawEarningRow[]> {
-  return fetchEodhdEarningsCalendarCached(fromYmd, toYmd);
+export async function fetchEodhdEarningsCalendarForSymbol(eodhdSymbol: string): Promise<EodhdRawEarningRow[]> {
+  return fetchEodhdEarningsCalendarForSymbolCached(eodhdSymbol);
 }

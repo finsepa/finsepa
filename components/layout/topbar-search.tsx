@@ -133,7 +133,7 @@ export function TopbarSearch() {
 
         <input
           ref={panel.inputRef}
-          type="search"
+          type="text"
           inputMode="search"
           readOnly={!open}
           value={panel.query}

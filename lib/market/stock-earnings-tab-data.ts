@@ -1,11 +1,15 @@
 import "server-only";
 
+import { unstable_cache } from "next/cache";
+
+import { REVALIDATE_WARM_LONG } from "@/lib/data/cache-policy";
 import {
   fetchEodhdFundamentalsJson,
+  fetchEodhdFundamentalsJsonFresh,
   formatEarningsDateEnUS,
   parseUnknownDateToUtcMs,
 } from "@/lib/market/eodhd-fundamentals";
-import { fetchEodhdEarningsCalendar, type EodhdRawEarningRow } from "@/lib/market/eodhd-earnings-calendar";
+import { fetchEodhdEarningsCalendarForSymbol, type EodhdRawEarningRow } from "@/lib/market/eodhd-earnings-calendar";
 import type {
   StockEarningsEstimatesChart,
   StockEarningsEstimatesPoint,
@@ -26,12 +30,6 @@ function pad2(n: number): string {
 
 function toYmdUtc(d: Date): string {
   return `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())}`;
-}
-
-function addDaysUtc(d: Date, days: number): Date {
-  const out = new Date(d);
-  out.setUTCDate(out.getUTCDate() + days);
-  return out;
 }
 
 function startOfTodayUtcMs(): number {
@@ -214,6 +212,50 @@ function coerceRevenueEstimateToUsd(raw: number, actualUsd: number | null): numb
   if (absA == null && absR >= 500 && absR < 2e7) return raw * 1e6;
 
   return raw;
+}
+
+/** `Earnings.History` is usually a period-keyed object; some feeds use an array or only `Earnings.Annual`. */
+function collectEarningsHistoryRawRows(earn: Record<string, unknown>): Record<string, unknown>[] {
+  const out: Record<string, unknown>[] = [];
+  const history = earn.History;
+  if (Array.isArray(history)) {
+    for (const row of history) {
+      if (row && typeof row === "object" && !Array.isArray(row)) out.push(row as Record<string, unknown>);
+    }
+  } else if (history && typeof history === "object") {
+    for (const row of Object.values(history as Record<string, unknown>)) {
+      if (row && typeof row === "object" && !Array.isArray(row)) out.push(row as Record<string, unknown>);
+    }
+  }
+  if (out.length > 0) return out;
+
+  const annual = earn.Annual;
+  if (!annual || typeof annual !== "object" || Array.isArray(annual)) return out;
+  for (const [periodKey, row] of Object.entries(annual as Record<string, unknown>)) {
+    if (!row || typeof row !== "object" || Array.isArray(row)) continue;
+    const r = row as Record<string, unknown>;
+    out.push({
+      ...r,
+      date: r.date ?? r.Date ?? periodKey,
+      periodEnd: r.periodEnd ?? r.PeriodEnd ?? periodKey,
+    });
+  }
+  return out;
+}
+
+function fundamentalsHasEarningsRows(root: Record<string, unknown>): boolean {
+  const earn = root.Earnings;
+  if (!earn || typeof earn !== "object") return false;
+  return collectEarningsHistoryRawRows(earn as Record<string, unknown>).length > 0;
+}
+
+/** Cached fundamentals first; one fresh retry when cache miss or empty `Earnings` (hourly budget / cold cache). */
+async function fetchFundamentalsRootForEarningsTab(ticker: string): Promise<Record<string, unknown> | null> {
+  const cached = await fetchEodhdFundamentalsJson(ticker);
+  if (cached && fundamentalsHasEarningsRows(cached)) return cached;
+  const fresh = await fetchEodhdFundamentalsJsonFresh(ticker);
+  if (fresh && fundamentalsHasEarningsRows(fresh)) return fresh;
+  return fresh ?? cached;
 }
 
 function collectEarningsTrendRows(trend: unknown): Record<string, unknown>[] {
@@ -785,10 +827,11 @@ function pickUpcomingFromHistory(
 
 /**
  * Earnings tab: `Earnings.History` from fundamentals plus optional calendar timing (BMO/AMC).
+ * Cached per ticker so the first viewer pays EODHD/SEC cost and others reuse the payload.
  */
-export async function fetchStockEarningsTabPayload(listingTicker: string): Promise<StockEarningsTabPayload | null> {
+async function fetchStockEarningsTabPayloadUncached(listingTicker: string): Promise<StockEarningsTabPayload | null> {
   const ticker = listingTicker.trim().toUpperCase();
-  const root = await fetchEodhdFundamentalsJson(ticker);
+  const root = await fetchFundamentalsRootForEarningsTab(ticker);
   if (!root) return null;
 
   const rootRec = root as Record<string, unknown>;
@@ -800,14 +843,9 @@ export async function fetchStockEarningsTabPayload(listingTicker: string): Promi
   }
 
   const e = earn as Record<string, unknown>;
-  const history = e.History;
-  if (!history || typeof history !== "object") {
+  const rawRows = collectEarningsHistoryRawRows(e);
+  if (rawRows.length === 0) {
     return { ticker, upcoming: null, history: [], estimatesChart: null, documentHub };
-  }
-
-  const rawRows: Record<string, unknown>[] = [];
-  for (const row of Object.values(history as Record<string, unknown>)) {
-    if (row && typeof row === "object") rawRows.push(row as Record<string, unknown>);
   }
 
   const revenueByFiscalPeriodEnd = buildRevenueByFiscalPeriodEndYmd(root);
@@ -843,9 +881,7 @@ export async function fetchStockEarningsTabPayload(listingTicker: string): Promi
 
   let upcoming = pickUpcomingFromHistory(rawRows, null, revenueByFiscalPeriodEnd, revenueEstimateByFiscalPeriodFromTrend);
   if (upcoming?.reportDateYmd) {
-    const from = toYmdUtc(new Date());
-    const to = toYmdUtc(addDaysUtc(new Date(), 75));
-    const cal = await fetchEodhdEarningsCalendar(from, to);
+    const cal = await fetchEodhdEarningsCalendarForSymbol(eodhdListingCode(ticker));
     const calendarTiming = pickCalendarTimingForReport(cal, eodhdListingCode(ticker), upcoming.reportDateYmd);
     const t = timingFromCalendar(calendarTiming);
     upcoming = {
@@ -857,4 +893,14 @@ export async function fetchStockEarningsTabPayload(listingTicker: string): Promi
   }
 
   return { ticker, upcoming, history: historyParsed, estimatesChart, documentHub };
+}
+
+const fetchStockEarningsTabPayloadCached = unstable_cache(
+  fetchStockEarningsTabPayloadUncached,
+  ["stock-earnings-tab-payload-v1"],
+  { revalidate: REVALIDATE_WARM_LONG },
+);
+
+export async function fetchStockEarningsTabPayload(listingTicker: string): Promise<StockEarningsTabPayload | null> {
+  return fetchStockEarningsTabPayloadCached(listingTicker.trim().toUpperCase());
 }

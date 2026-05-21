@@ -566,7 +566,7 @@ async function loadSimpleCryptoDerivedUncached(): Promise<SimpleCryptoDerived> {
   return out;
 }
 
-export const getSimpleCryptoDerived = unstable_cache(loadSimpleCryptoDerivedUncached, ["simple-crypto-derived-v8-fund-meta-cap"], {
+export const getSimpleCryptoDerived = unstable_cache(loadSimpleCryptoDerivedUncached, ["simple-crypto-derived-v9-ton-pol-eodhd"], {
   revalidate: REVALIDATE_TIER_SCREENER_DERIVED,
 });
 
@@ -599,7 +599,7 @@ async function loadSimpleCryptoDerivedTop10Uncached(): Promise<SimpleCryptoDeriv
 
 export const getSimpleCryptoDerivedTop10 = unstable_cache(
   loadSimpleCryptoDerivedTop10Uncached,
-  ["simple-crypto-derived-top10-v5-fund-meta-cap"],
+  ["simple-crypto-derived-top10-v6-ton-pol-eodhd"],
   { revalidate: REVALIDATE_TIER_SCREENER_DERIVED },
 );
 

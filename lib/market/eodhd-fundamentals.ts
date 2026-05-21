@@ -345,7 +345,7 @@ export async function fetchEodhdFundamentalsJsonFresh(ticker: string): Promise<R
 
 export const fetchEodhdFundamentalsJson = unstable_cache(
   fetchEodhdFundamentalsJsonUncached,
-  ["eodhd-fundamentals-json-v6-reval-900"],
+  ["eodhd-fundamentals-json-v7-earnings-retry"],
   { revalidate: REVALIDATE_WARM_LONG },
 );
 

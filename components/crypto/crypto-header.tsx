@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { useSpringTriplet } from "@/components/chart/use-spring-numbers";
@@ -99,7 +98,9 @@ export function CryptoHeader({
           <Link href={SCREENER_CRYPTO_HREF} className="transition-colors hover:text-[#09090B]">
             Crypto
           </Link>
-          <ChevronRight className="h-3.5 w-3.5" />
+          <span className="shrink-0 select-none" aria-hidden>
+            /
+          </span>
           <span className="font-medium text-[#09090B]">{pairLabel}</span>
         </div>
       </div>

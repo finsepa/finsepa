@@ -23,6 +23,17 @@ function asIncomeStatementRow(v: unknown): Record<string, unknown> | null {
   return null;
 }
 
+/** TTM-only row from `Financials.Income_Statement` (not latest fiscal year). */
+export function pickIncomeStatementTtmRow(root: Record<string, unknown>): Record<string, unknown> | null {
+  const fin = root.Financials;
+  if (!fin || typeof fin !== "object") return null;
+  const f = fin as Record<string, unknown>;
+  const is = (f.Income_Statement ?? f.IncomeStatement) as unknown;
+  if (!is || typeof is !== "object") return null;
+  const inc = is as Record<string, unknown>;
+  return asIncomeStatementRow(inc.ttm ?? inc.TTM ?? inc.trailing_twelve_months);
+}
+
 /**
  * Latest period row from EODHD `Financials.Income_Statement`:
  * prefers TTM block, then `yearly`, then `quarterly`, then flat date-keyed object.

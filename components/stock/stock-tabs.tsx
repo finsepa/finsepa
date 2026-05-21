@@ -3,7 +3,7 @@
 const tabs = [
   "Overview", "Financials", "Events", "Earnings", "Dividends",
   "Multicharts", "Target Price", "Insiders", "Superinvestors",
-  "Charting", "Peers", "Holdings", "Profile",
+  "Charting", "Peers", "Portfolio", "Profile",
 ];
 
 export function StockTabs({

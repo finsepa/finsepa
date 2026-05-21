@@ -108,6 +108,7 @@ export function StockChartingTab({
       initialQuarterlyPoints={initialQuarterlyPoints}
       allowedMetricIds={buildAllowedMetricsFromKeyStats(initialKeyStatsBundle)}
       metricControlsPlacement="legend"
+      histogramLayout="stockFullWidthFixedBars"
     />
   );
 }

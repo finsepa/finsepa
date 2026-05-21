@@ -3,7 +3,7 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 
 import { REVALIDATE_HOT } from "@/lib/data/cache-policy";
-import { fetchEodhdCryptoDailyBars } from "@/lib/market/eodhd-crypto";
+import { fetchEodhdCryptoDailyBarsForMeta } from "@/lib/market/eodhd-crypto";
 import { resolveCryptoMetaForProvider } from "@/lib/market/crypto-meta-resolver";
 import { computeStockPerformanceFromSortedDailyBars } from "@/lib/market/stock-performance";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
@@ -40,23 +40,14 @@ async function loadCryptoPerformanceUncached(routeSymbol: string): Promise<Stock
   fromDate.setUTCFullYear(fromDate.getUTCFullYear() - 6);
   const from = ymdUtc(fromDate);
 
-  const candidates =
-    meta.symbol === "TON" && meta.eodhdAltSymbols?.length ? [meta.eodhdSymbol, ...meta.eodhdAltSymbols] : [meta.eodhdSymbol];
-
-  let sorted: { date: string; close: number }[] = [];
-  for (const eodSym of candidates) {
-    const bars = await fetchEodhdCryptoDailyBars(eodSym, from, to);
-    if (bars?.length) {
-      sorted = [...bars].sort((a, b) => a.date.localeCompare(b.date));
-      break;
-    }
-  }
+  const bars = await fetchEodhdCryptoDailyBarsForMeta(meta, from, to);
+  const sorted = bars?.length ? [...bars].sort((a, b) => a.date.localeCompare(b.date)) : [];
 
   return computeStockPerformanceFromSortedDailyBars(sorted, meta.symbol, now);
 }
 
 export const getCryptoPerformance = unstable_cache(
   async (routeSymbol: string) => loadCryptoPerformanceUncached(routeSymbol),
-  ["crypto-performance-v2-cc-universe"],
+  ["crypto-performance-v3-ton-pol-eodhd"],
   { revalidate: REVALIDATE_HOT },
 );

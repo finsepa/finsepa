@@ -16,6 +16,20 @@ export function fundamentalsBarSolidAtIndex(i: number): string {
   return FUNDAMENTALS_MULTI_BAR_COLORS[((i % n) + n) % n]!;
 }
 
+/** Solid bar color at a given opacity (hex palette only). */
+export function fundamentalsBarColorAtIndex(i: number, opacity: number): string {
+  const solid = fundamentalsBarSolidAtIndex(i);
+  if (opacity >= 1) return solid;
+  if (opacity <= 0) return "rgba(0,0,0,0)";
+  const m = solid.match(/^#([0-9a-f]{6})$/i);
+  if (!m) return solid;
+  const v = parseInt(m[1]!, 16);
+  const r = (v >> 16) & 255;
+  const g = (v >> 8) & 255;
+  const b = v & 255;
+  return `rgba(${r},${g},${b},${opacity})`;
+}
+
 /** Slightly transparent fill for overlapping histogram columns (lightweight-charts). */
 export function fundamentalsBarHistogramDisplayAtIndex(i: number): string {
   const solid = fundamentalsBarSolidAtIndex(i);

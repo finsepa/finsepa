@@ -36,6 +36,18 @@ function firstNumFromSections(sections: (Record<string, unknown> | null | undefi
   return null;
 }
 
+/** Live P/E from EODHD Highlights / Valuation (same source as Key Stats valuation card). */
+export function livePeRatioPartsFromFundamentalsRoot(
+  root: Record<string, unknown> | null | undefined,
+): { peRatio: number | null; trailingPe: number | null } {
+  if (!root || typeof root !== "object") return { peRatio: null, trailingPe: null };
+  const hl = root.Highlights && typeof root.Highlights === "object" ? (root.Highlights as Record<string, unknown>) : null;
+  const val = root.Valuation && typeof root.Valuation === "object" ? (root.Valuation as Record<string, unknown>) : null;
+  const peRatio = firstNumFromSections([hl, val], ["PERatio", "PE", "PeRatio"]);
+  const trailingPe = firstNumFromSections([hl, val], ["TrailingPE", "TrailingPe"]);
+  return { peRatio, trailingPe };
+}
+
 /**
  * Key Stats "P/E Ratio" value: `PERatio` (Highlights/Valuation), else `TrailingPE` — same {@link formatRatio} as the stock page.
  */
@@ -50,10 +62,7 @@ export function peRatioKeyStatsDisplayFromFundamentalsRoot(
   root: Record<string, unknown> | null | undefined,
 ): string {
   if (!root || typeof root !== "object") return "—";
-  const hl = root.Highlights && typeof root.Highlights === "object" ? (root.Highlights as Record<string, unknown>) : null;
-  const val = root.Valuation && typeof root.Valuation === "object" ? (root.Valuation as Record<string, unknown>) : null;
-  const peRatio = firstNumFromSections([hl, val], ["PERatio", "PE", "PeRatio"]);
-  const trailingPe = firstNumFromSections([hl, val], ["TrailingPE", "TrailingPe"]);
+  const { peRatio, trailingPe } = livePeRatioPartsFromFundamentalsRoot(root);
   return peRatioKeyStatsDisplayFromPeParts(peRatio, trailingPe);
 }
 
@@ -76,8 +85,7 @@ export async function fetchEodhdKeyStatsValuation(
   const incRow = pickLatestIncomeStatementRow(root);
   const marketCap = extractMarketCapUsdFromFundamentalsRoot(root);
 
-  const peRatio = firstNumFromSections([hl, val], ["PERatio", "PE", "PeRatio"]);
-  const trailingPe = firstNumFromSections([hl, val], ["TrailingPE", "TrailingPe"]);
+  const { peRatio, trailingPe } = livePeRatioPartsFromFundamentalsRoot(root);
   let forwardPe = firstNumFromSections([hl, val, ratiosRow], [
     "ForwardPE",
     "ForwardPe",

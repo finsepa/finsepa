@@ -72,6 +72,7 @@ export function CompanyPicker({
   excludeSymbols = [],
   includeCrypto = true,
   menuAlign = "leading",
+  alwaysAllowOpen = false,
   children,
 }: {
   onPick: (pick: CompanyPick) => void;
@@ -82,6 +83,8 @@ export function CompanyPicker({
   includeCrypto?: boolean;
   /** `trailing` anchors the panel to the trigger’s right edge (menu grows left). */
   menuAlign?: "leading" | "trailing";
+  /** Breadcrumb ticker switcher: always open menu even when {@link maxExtraCompanies} is 0. */
+  alwaysAllowOpen?: boolean;
   children: (ctx: CompanyPickerRenderProps) => ReactNode;
 }) {
   const pickerWrapRef = useRef<HTMLDivElement>(null);
@@ -228,13 +231,13 @@ export function CompanyPicker({
 
   const queryTrim = pickerQuery.trim();
   const showSearchPanel = queryTrim.length > 0;
-  const atCapacity = disabled || maxExtraCompanies <= 0;
+  const atCapacity = disabled || (!alwaysAllowOpen && maxExtraCompanies <= 0);
 
   const searchPlaceholder = includeCrypto ? "Search stocks, crypto, indices…" : "Search stocks…";
   const listboxAriaLabel = includeCrypto ? "Stocks, crypto, and search" : "Stocks and search";
 
   return (
-    <div className="relative" ref={pickerWrapRef}>
+    <div className={cn("relative", pickerOpen && "z-[100]")} ref={pickerWrapRef}>
       {children({ open: pickerOpen, setOpen: setPickerOpen, atCapacity })}
 
       {pickerOpen ? (

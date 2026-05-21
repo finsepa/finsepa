@@ -1,12 +1,19 @@
 "use client";
 
 import { format, parseISO, subMonths } from "date-fns";
-import { Loader2 } from "lucide-react";
+import { Loader2, UserRound } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { HoldingsTradeMarker, HoldingsTradeTooltipItem } from "@/components/chart/PriceChart";
 import { PriceChart } from "@/components/chart/PriceChart";
 import { SegmentedControl } from "@/components/design-system";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { SkeletonBox, TextSkeleton } from "@/components/markets/skeleton";
 import type { InsiderTransactionKind, InsiderTransactionRow } from "@/lib/market/insider-transactions-types";
 import type { StockChartRange } from "@/lib/market/stock-chart-types";
@@ -394,7 +401,17 @@ export function StockInsidersTab({ ticker }: { ticker: string }) {
       ) : error ? (
         <p className="py-8 text-center text-[14px] leading-6 text-[#DC2626]">{error}</p>
       ) : !rows?.length ? (
-        <p className="py-10 text-center text-[14px] leading-6 text-[#71717A]">No insider transactions found.</p>
+        <Empty variant="card" className="min-h-[min(40vh,360px)]">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <UserRound className="h-6 w-6" strokeWidth={1.75} aria-hidden />
+            </EmptyMedia>
+            <EmptyTitle>No insider transactions</EmptyTitle>
+            <EmptyDescription>
+              We don&apos;t have insider buy or sell filings for this symbol in our data feed yet.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       ) : (
         <div className="overflow-x-auto">
           <div className="inline-block min-w-full divide-y divide-[#E4E4E7] border-t border-b border-[#E4E4E7]">

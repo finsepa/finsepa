@@ -33,7 +33,7 @@ const BASIC_METRICS: ScreenerKeyStatMetricDef[] = [
   m("basic-enterprise-value", "Enterprise Value", "basic"),
   m("basic-shares-outstanding", "Shares Outstanding", "basic"),
   m("basic-1y-target", "1Y Target Est", "basic"),
-  m("basic-fair-value", "Fair Value", "basic"),
+  m("basic-analyst-consensus", "Analyst Consensus", "basic"),
   m("basic-earnings-date", "Earnings Date", "basic"),
   m("basic-beta-5y-monthly", "Beta (5Y Monthly)", "basic"),
   m("basic-employees", "Employees", "basic"),

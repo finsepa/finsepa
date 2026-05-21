@@ -6,7 +6,7 @@ export type { CryptoDetailTabId };
 
 const TABS: { id: CryptoDetailTabId; label: string }[] = [
   { id: "overview", label: "Overview" },
-  { id: "holdings", label: "Holdings" },
+  { id: "holdings", label: "Portfolio" },
 ];
 
 export function CryptoDetailTabNav({

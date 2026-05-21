@@ -37,7 +37,7 @@ function normalizeCountryIso(raw: string | null | undefined): string | null {
   return null;
 }
 
-function inferListingCountryIso(exchange: string | null | undefined): string | null {
+export function inferListingCountryIso(exchange: string | null | undefined): string | null {
   const ex = typeof exchange === "string" ? exchange.trim().toUpperCase() : "";
   if (!ex) return null;
   if (US_LISTING_EXCHANGES.has(ex)) return "US";
@@ -67,6 +67,16 @@ export function getStockListingSubtitleParts(args: {
 }
 
 /** Subtitle under the company name, e.g. `NVDA · NASDAQ · 🇺🇸`. */
+/** True when the listing is treated as a US equity (extended-hours header eligible). */
+export function isUsListedStockHeaderMeta(
+  meta: Pick<StockDetailHeaderMeta, "exchange" | "countryIso"> | null,
+): boolean {
+  if (!meta) return true;
+  const iso = normalizeCountryIso(meta.countryIso);
+  if (iso === "US") return true;
+  return inferListingCountryIso(meta.exchange) === "US";
+}
+
 export function formatStockListingSubtitle(args: {
   ticker: string;
   exchange: string | null | undefined;

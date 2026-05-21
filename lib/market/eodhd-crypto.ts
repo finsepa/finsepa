@@ -4,7 +4,7 @@ export * from "@/lib/market/crypto-meta";
 
 import { format, parse, subDays } from "date-fns";
 
-import type { CryptoMeta } from "@/lib/market/crypto-meta";
+import { eodhdSymbolsForMeta, type CryptoMeta } from "@/lib/market/crypto-meta";
 import { resolveCryptoMetaForProvider } from "@/lib/market/crypto-meta-resolver";
 import { getEodhdApiKey } from "@/lib/env/server";
 import { traceEodhdHttp } from "@/lib/market/provider-trace";
@@ -28,12 +28,7 @@ export async function fetchEodhdCryptoOpenPriceOnOrBefore(
   const from = format(subDays(day, 28), "yyyy-MM-dd");
   const to = ymd;
 
-  const candidates =
-    meta.symbol === "TON" && meta.eodhdAltSymbols?.length
-      ? [meta.eodhdSymbol, ...meta.eodhdAltSymbols]
-      : [meta.eodhdSymbol];
-
-  for (const eodSym of candidates) {
+  for (const eodSym of eodhdSymbolsForMeta(meta)) {
     const bars = await fetchEodhdCryptoDailyBars(eodSym, from, to);
     if (!bars?.length) continue;
 
@@ -121,21 +116,31 @@ export async function fetchEodhdCryptoDailyBars(eodhdCryptoSymbol: string, from:
   }
 }
 
-/** Try primary + alternate EODHD symbols until daily bars return (matches asset-page behavior for TON, POL, …). */
+const CRYPTO_DAILY_MAX_STALE_DAYS = 14;
+
+function cryptoDailyBarsAreFresh(bars: EodhdDailyBar[], maxStaleDays = CRYPTO_DAILY_MAX_STALE_DAYS): boolean {
+  if (!bars.length) return false;
+  const lastYmd = bars[bars.length - 1]!.date;
+  const lastMs = Date.parse(`${lastYmd}T00:00:00.000Z`);
+  if (!Number.isFinite(lastMs)) return false;
+  return Date.now() - lastMs <= maxStaleDays * 86_400_000;
+}
+
+/** Try primary + alternate EODHD symbols; prefer fresh daily bars (avoids stale MATIC history for POL). */
 export async function fetchEodhdCryptoDailyBarsForMeta(
   meta: CryptoMeta,
   from: string,
   to: string,
 ): Promise<EodhdDailyBar[] | null> {
-  const candidates = [meta.eodhdSymbol, ...(meta.eodhdAltSymbols ?? [])];
-  let best: EodhdDailyBar[] | null = null;
-  for (const sym of candidates) {
+  let fallback: EodhdDailyBar[] | null = null;
+  for (const sym of eodhdSymbolsForMeta(meta)) {
     const raw = await fetchEodhdCryptoDailyBars(sym, from, to);
     const bars = Array.isArray(raw) ? raw : [];
-    if (bars.length > (best?.length ?? 0)) best = bars;
-    if (best && best.length >= 2) break;
+    if (!bars.length) continue;
+    if (cryptoDailyBarsAreFresh(bars)) return bars;
+    if (!fallback || bars.length > fallback.length) fallback = bars;
   }
-  return best;
+  return fallback;
 }
 
 export type EodhdCryptoHighlights = {
@@ -164,8 +169,7 @@ export async function fetchCryptoMarketCapUsdForMeta(
   meta: CryptoMeta,
   lastCloseUsd: number | null = null,
 ): Promise<number | null> {
-  const candidates = [meta.eodhdSymbol, ...(meta.eodhdAltSymbols ?? [])];
-  for (const sym of candidates) {
+  for (const sym of eodhdSymbolsForMeta(meta)) {
     const m = await fetchEodhdCryptoFundamentalsMeta(sym);
     if (!m) continue;
     if (m.marketCapUsd != null && Number.isFinite(m.marketCapUsd) && m.marketCapUsd > 0) return m.marketCapUsd;

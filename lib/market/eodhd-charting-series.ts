@@ -9,7 +9,9 @@ import {
   enrichChartingPointsWithImpliedValuationMultiplesFromMarketCap,
   enrichChartingPointsWithPriceImpliedMarketCap,
   enrichChartingPointsWithTrailingPeFromImpliedMarketCap,
+  patchLatestChartingPointLiveTrailingPe,
 } from "@/lib/market/charting-price-implied-market-cap";
+import { livePeRatioPartsFromFundamentalsRoot } from "@/lib/market/eodhd-key-stats-valuation";
 import { fetchEodhdFundamentalsJson } from "@/lib/market/eodhd-fundamentals";
 import {
   CHARTING_METRIC_FIELD,
@@ -165,6 +167,24 @@ function numFromRow(row: Record<string, unknown>, keys: string[]): number | null
   return null;
 }
 
+/** Provider may send rates as 0.28 or 28.13 — normalize to decimal. */
+function normalizeRateDecimal(raw: number | null): number | null {
+  if (raw == null || !Number.isFinite(raw)) return null;
+  const a = Math.abs(raw);
+  if (a > 1.5) return raw / 100;
+  return raw;
+}
+
+function fillDerivedEffectiveTaxRate(p: ChartingSeriesPoint): void {
+  if (p.effectiveTaxRate != null && Number.isFinite(p.effectiveTaxRate)) return;
+  const tax = p.incomeTaxExpense;
+  const pretax = p.incomeBeforeTax;
+  if (tax == null || pretax == null || !Number.isFinite(tax) || !Number.isFinite(pretax)) return;
+  const denom = Math.abs(pretax);
+  if (denom < 1e-9) return;
+  p.effectiveTaxRate = Math.abs(tax) / denom;
+}
+
 function getFinancialBlock(
   root: Record<string, unknown>,
   statement: "Income_Statement" | "Balance_Sheet" | "Cash_Flow",
@@ -223,6 +243,38 @@ function mergeIncomeRow(p: ChartingSeriesPoint, row: Record<string, unknown>): v
     "Sales",
   ]);
   p.grossProfit = numFromRow(row, ["grossProfit", "GrossProfit", "grossIncome", "GrossIncome"]);
+  p.sga = numFromRow(row, [
+    "sellingGeneralAdministrative",
+    "SellingGeneralAdministrative",
+    "sellingGeneralAndAdministrative",
+    "SellingGeneralAndAdministrative",
+    "sellingGeneralAdmin",
+    "SellingGeneralAdmin",
+    "generalAndAdministrativeExpense",
+    "GeneralAndAdministrativeExpense",
+  ]);
+  p.researchAndDevelopment = numFromRow(row, [
+    "researchDevelopment",
+    "ResearchDevelopment",
+    "researchAndDevelopment",
+    "ResearchAndDevelopment",
+    "researchAndDevelopmentExpense",
+    "ResearchAndDevelopmentExpense",
+  ]);
+  p.otherOperatingExpense = numFromRow(row, [
+    "otherOperatingExpense",
+    "OtherOperatingExpense",
+    "otherOperatingExpensesDetail",
+    "OtherOperatingExpensesDetail",
+    "otherOperatingCosts",
+    "OtherOperatingCosts",
+  ]);
+  p.totalOperatingExpenses = numFromRow(row, [
+    "totalOperatingExpenses",
+    "TotalOperatingExpenses",
+    "operatingExpenses",
+    "OperatingExpenses",
+  ]);
   p.operatingIncome = numFromRow(row, [
     "operatingIncome",
     "OperatingIncome",
@@ -237,6 +289,17 @@ function mergeIncomeRow(p: ChartingSeriesPoint, row: Record<string, unknown>): v
     "NetIncomeApplicableToCommonShares",
   ]);
   p.ebitda = numFromRow(row, ["ebitda", "EBITDA"]);
+  p.epsBasic = numFromRow(row, [
+    "basicEPS",
+    "BasicEPS",
+    "basicEps",
+    "BasicEps",
+    "epsBasic",
+    "EpsBasic",
+    "EPSBasic",
+    "EarningsPerShareBasic",
+    "earningsPerShareBasic",
+  ]);
   p.eps = numFromRow(row, [
     "dilutedEPS",
     "DilutedEPS",
@@ -252,10 +315,6 @@ function mergeIncomeRow(p: ChartingSeriesPoint, row: Record<string, unknown>): v
     "earningsShare",
     "eps",
     "EPS",
-    "basicEPS",
-    "BasicEPS",
-    "basicEps",
-    "BasicEps",
   ]);
   p.incomeBeforeTax = numFromRow(row, [
     "incomeBeforeTax",
@@ -267,6 +326,20 @@ function mergeIncomeRow(p: ChartingSeriesPoint, row: Record<string, unknown>): v
     "incomeBeforeIncomeTaxes",
     "IncomeBeforeIncomeTaxes",
   ]);
+  p.incomeTaxExpense = numFromRow(row, [
+    "incomeTaxExpense",
+    "IncomeTaxExpense",
+    "taxProvision",
+    "TaxProvision",
+    "provisionForIncomeTaxes",
+    "ProvisionForIncomeTaxes",
+    "incomeTax",
+    "IncomeTax",
+  ]);
+  p.effectiveTaxRate = normalizeRateDecimal(
+    numFromRow(row, ["effectiveTaxRate", "EffectiveTaxRate", "TaxRate", "taxRate", "effectiveTax", "EffectiveTax"]),
+  );
+  p.ebit = numFromRow(row, ["ebit", "EBIT", "Ebit"]);
   const sh = numFromRow(row, [
     "weightedAverageShsOutDil",
     "weightedAverageShsOut",
@@ -296,28 +369,159 @@ function mergeIncomeRow(p: ChartingSeriesPoint, row: Record<string, unknown>): v
     "EnterpriseValueMRQ",
   ]);
   if (evFromInc != null && Number.isFinite(evFromInc) && evFromInc > 0) p.enterpriseValue = evFromInc;
+
+  mergeDividendsPerShareFromRow(p, row);
+}
+
+const DIVIDENDS_PER_SHARE_KEYS = [
+  "dividendPerShare",
+  "DividendPerShare",
+  "dividendsPerShare",
+  "DividendsPerShare",
+  "dividendShare",
+  "DividendShare",
+  "AnnualDividend",
+  "ForwardAnnualDividendRate",
+  "DividendRate",
+  "dividendRate",
+];
+
+function mergeDividendsPerShareFromRow(p: ChartingSeriesPoint, row: Record<string, unknown>): void {
+  const dps = numFromRow(row, DIVIDENDS_PER_SHARE_KEYS);
+  if (dps != null && p.dividendsPerShare == null) p.dividendsPerShare = Math.abs(dps);
 }
 
 function mergeBalanceRow(p: ChartingSeriesPoint, row: Record<string, unknown>): void {
   p.totalAssets = numFromRow(row, ["totalAssets", "TotalAssets"]);
   p.totalLiabilities = numFromRow(row, ["totalLiab", "TotalLiab", "totalLiabilities", "TotalLiabilities"]);
-  p.cashOnHand = numFromRow(row, [
-    "cashAndCashEquivalents",
-    "CashAndCashEquivalents",
+  p.cashEquivalents = numFromRow(row, [
     "cash",
     "Cash",
+    "cashAndEquivalents",
+    "CashAndEquivalents",
+    "cashAndCashEquivalents",
+    "CashAndCashEquivalents",
+    "cashAndCashEquivalentsAtCarryingValue",
+    "CashAndCashEquivalentsAtCarryingValue",
+  ]);
+  p.shortTermInvestments = numFromRow(row, ["shortTermInvestments", "ShortTermInvestments"]);
+  p.cashAndShortTermInvestments = numFromRow(row, [
     "cashAndShortTermInvestments",
     "CashAndShortTermInvestments",
   ]);
-  p.longTermDebt = numFromRow(row, ["longTermDebt", "LongTermDebt", "longTermDebtNoncurrent"]);
+  p.netReceivables = numFromRow(row, [
+    "netReceivables",
+    "NetReceivables",
+    "accountsReceivable",
+    "AccountsReceivable",
+    "accountsReceivables",
+    "AccountsReceivables",
+  ]);
+  p.otherReceivables = numFromRow(row, [
+    "otherReceivables",
+    "OtherReceivables",
+    "nonTradeReceivables",
+    "NonTradeReceivables",
+  ]);
+  p.otherCurrentAssets = numFromRow(row, ["otherCurrentAssets", "OtherCurrentAssets"]);
+  p.totalCurrentAssets = numFromRow(row, ["totalCurrentAssets", "TotalCurrentAssets"]);
+  p.propertyPlantEquipmentNet = numFromRow(row, [
+    "propertyPlantEquipment",
+    "PropertyPlantEquipment",
+    "propertyPlantAndEquipmentNet",
+    "PropertyPlantAndEquipmentNet",
+    "propertyPlantEquipmentNet",
+    "PropertyPlantEquipmentNet",
+  ]);
+  p.intangibleAssets = numFromRow(row, [
+    "intangibleAssets",
+    "IntangibleAssets",
+    "intangiblesAssets",
+    "IntangiblesAssets",
+  ]);
+  p.goodwill = numFromRow(row, ["goodWill", "GoodWill", "goodwill", "Goodwill"]);
+  p.longTermInvestments = numFromRow(row, [
+    "longTermInvestments",
+    "LongTermInvestments",
+    "longTermInvestmentsAndReceivables",
+    "LongTermInvestmentsAndReceivables",
+  ]);
+  p.otherNonCurrentAssets = numFromRow(row, [
+    "otherAssets",
+    "OtherAssets",
+    "otherNonCurrentAssets",
+    "OtherNonCurrentAssets",
+    "nonCurrentAssetsOther",
+    "NonCurrentAssetsOther",
+  ]);
+  p.accountsPayable = numFromRow(row, ["accountsPayable", "AccountsPayable"]);
+  p.accruedLiabilities = numFromRow(row, [
+    "accruedLiabilities",
+    "AccruedLiabilities",
+    "accruedExpenses",
+    "AccruedExpenses",
+    "accruedLiabilitiesCurrent",
+    "AccruedLiabilitiesCurrent",
+    "totalAccruedExpenses",
+    "TotalAccruedExpenses",
+    "accruedExpensesTotal",
+    "AccruedExpensesTotal",
+  ]);
+  p.otherCurrentLiabilities = numFromRow(row, [
+    "otherCurrentLiab",
+    "OtherCurrentLiab",
+    "otherCurrentLiabilities",
+    "OtherCurrentLiabilities",
+  ]);
+  p.longTermDebt = numFromRow(row, [
+    "longTermDebt",
+    "LongTermDebt",
+    "longTermDebtNoncurrent",
+    "LongTermDebtNoncurrent",
+    "longTermDebtTotal",
+    "LongTermDebtTotal",
+  ]);
   p.shareholderEquity = numFromRow(row, [
     "totalStockholderEquity",
     "TotalStockholderEquity",
     "totalStockholdersEquity",
+    "TotalStockholdersEquity",
     "ShareholdersEquity",
     "ShareHolderEquity",
+    "totalEquity",
+    "TotalEquity",
   ]);
-  p.currentLiabilities = numFromRow(row, ["totalCurrentLiabilities", "TotalCurrentLiabilities", "currentLiabilities"]);
+  p.currentLiabilities = numFromRow(row, [
+    "totalCurrentLiabilities",
+    "TotalCurrentLiabilities",
+    "currentLiabilities",
+    "CurrentLiabilities",
+  ]);
+  p.nonCurrentLiabilities = numFromRow(row, [
+    "nonCurrentLiabilitiesTotal",
+    "NonCurrentLiabilitiesTotal",
+    "nonCurrentLiabilities",
+    "NonCurrentLiabilities",
+    "totalNonCurrentLiabilities",
+    "TotalNonCurrentLiabilities",
+  ]);
+  p.treasuryStock = numFromRow(row, [
+    "treasuryStock",
+    "TreasuryStock",
+    "commonStockHeldByTreasury",
+    "CommonStockHeldByTreasury",
+    "treasuryShares",
+    "TreasuryShares",
+  ]);
+  p.additionalPaidInCapital = numFromRow(row, [
+    "additionalPaidInCapital",
+    "AdditionalPaidInCapital",
+    "capitalSurpluse",
+    "CapitalSurpluse",
+    "capitalSurplus",
+    "CapitalSurplus",
+  ]);
+  p.netDebt = numFromRow(row, ["netDebt", "NetDebt"]);
   const td = numFromRow(row, ["shortLongTermDebtTotal", "totalDebt", "TotalDebt", "LongTermDebtTotal"]);
   if (td != null) p.totalDebt = td;
   else {
@@ -331,9 +535,244 @@ function mergeBalanceRow(p: ChartingSeriesPoint, row: Record<string, unknown>): 
     "commonStockTotalSharesOutstanding",
   ]);
   if (sh != null && p.sharesOutstanding == null) p.sharesOutstanding = sh;
+  p.tangibleBookValue = numFromRow(row, [
+    "tangibleBookValue",
+    "TangibleBookValue",
+    "netTangibleAssets",
+    "NetTangibleAssets",
+    "tangibleAssetsNet",
+    "TangibleAssetsNet",
+  ]);
 }
 
 function mergeCashFlowRow(p: ChartingSeriesPoint, row: Record<string, unknown>): void {
+  const cfNi = numFromRow(row, [
+    "netIncome",
+    "NetIncome",
+    "netIncomeApplicableToCommonShares",
+    "NetIncomeApplicableToCommonShares",
+  ]);
+  if (cfNi != null) p.netIncome = cfNi;
+
+  p.cfDepreciationAmortization = numFromRow(row, [
+    "depreciation",
+    "Depreciation",
+    "depreciationAndAmortization",
+    "DepreciationAndAmortization",
+    "reconciledDepreciation",
+    "ReconciledDepreciation",
+  ]);
+  p.cfStockBasedCompensation = numFromRow(row, [
+    "stockBasedCompensation",
+    "StockBasedCompensation",
+    "stockBasedComp",
+    "StockBasedComp",
+  ]);
+  p.cfOtherNonCashItems = numFromRow(row, [
+    "otherNonCashItems",
+    "OtherNonCashItems",
+    "otherNonCashCharges",
+    "OtherNonCashCharges",
+    "effectOfAccountingCharges",
+    "EffectOfAccountingCharges",
+  ]);
+  p.cfChangeInReceivables = numFromRow(row, [
+    "changeToAccountReceivables",
+    "ChangeToAccountReceivables",
+    "changeReceivables",
+    "ChangeReceivables",
+    "changeInReceivables",
+    "ChangeInReceivables",
+  ]);
+  p.cfChangeInAccountsPayable = numFromRow(row, [
+    "changeToLiabilities",
+    "ChangeToLiabilities",
+    "changeInAccountsPayable",
+    "ChangeInAccountsPayable",
+    "changeInAccountsPayables",
+    "ChangeInAccountsPayables",
+  ]);
+  p.cfChangeInOtherOperating = numFromRow(row, [
+    "changeToOperatingActivities",
+    "ChangeToOperatingActivities",
+    "changeInOtherOperatingActivities",
+    "ChangeInOtherOperatingActivities",
+  ]);
+  p.cfOtherOperatingCashFlow = numFromRow(row, [
+    "cashFlowsOtherOperating",
+    "CashFlowsOtherOperating",
+    "otherOperatingCashFlow",
+    "OtherOperatingCashFlow",
+  ]);
+  p.cfChangeInWorkingCapital = numFromRow(row, ["changeInWorkingCapital", "ChangeInWorkingCapital"]);
+  p.operatingCashFlow = numFromRow(row, [
+    "totalCashFromOperatingActivities",
+    "TotalCashFromOperatingActivities",
+    "netCashProvidedByOperatingActivities",
+    "NetCashProvidedByOperatingActivities",
+    "cashFromOperations",
+    "CashFromOperations",
+  ]);
+
+  p.capitalExpenditures = numFromRow(row, [
+    "capitalExpenditures",
+    "CapitalExpenditures",
+    "capitalExpenditure",
+    "CapitalExpenditure",
+    "capex",
+    "Capex",
+  ]);
+  p.cfSaleOfPpe = numFromRow(row, [
+    "saleOfPropertyPlantAndEquipment",
+    "SaleOfPropertyPlantAndEquipment",
+    "proceedsFromSaleOfPropertyPlantAndEquipment",
+    "ProceedsFromSaleOfPropertyPlantAndEquipment",
+    "salesOfPropertyPlantAndEquipment",
+    "SalesOfPropertyPlantAndEquipment",
+  ]);
+  p.cfPurchasesOfInvestments = numFromRow(row, [
+    "purchasesOfInvestments",
+    "PurchasesOfInvestments",
+    "purchaseOfInvestments",
+    "PurchaseOfInvestments",
+    "paymentsToAcquireInvestments",
+    "PaymentsToAcquireInvestments",
+  ]);
+  p.cfProceedsFromInvestments = numFromRow(row, [
+    "proceedsFromSaleOfInvestments",
+    "ProceedsFromSaleOfInvestments",
+    "salesOfInvestments",
+    "SalesOfInvestments",
+    "proceedsFromInvestments",
+    "ProceedsFromInvestments",
+  ]);
+  p.cfPaymentsForAcquisitions = numFromRow(row, [
+    "paymentsToAcquireBusinesses",
+    "PaymentsToAcquireBusinesses",
+    "acquisitionsNet",
+    "AcquisitionsNet",
+    "paymentsForBusinessAcquisitions",
+    "PaymentsForBusinessAcquisitions",
+  ]);
+  p.cfProceedsFromDivestitures = numFromRow(row, [
+    "proceedsFromDivestitures",
+    "ProceedsFromDivestitures",
+    "proceedsFromSaleOfBusiness",
+    "ProceedsFromSaleOfBusiness",
+    "divestitures",
+    "Divestitures",
+  ]);
+  p.cfInvestments = numFromRow(row, ["investments", "Investments"]);
+  p.cfOtherInvestingCashFlow = numFromRow(row, [
+    "otherCashflowsFromInvestingActivities",
+    "OtherCashflowsFromInvestingActivities",
+    "otherInvestingCashFlow",
+    "OtherInvestingCashFlow",
+  ]);
+  p.investingCashFlow = numFromRow(row, [
+    "totalCashflowsFromInvestingActivities",
+    "TotalCashflowsFromInvestingActivities",
+    "netCashUsedForInvestingActivities",
+    "NetCashUsedForInvestingActivities",
+    "totalCashFromInvestingActivities",
+    "TotalCashFromInvestingActivities",
+  ]);
+
+  p.cfShortTermDebtIssued = numFromRow(row, [
+    "shortTermDebtIssued",
+    "ShortTermDebtIssued",
+    "issuanceOfShortTermDebt",
+    "IssuanceOfShortTermDebt",
+    "proceedsFromShortTermDebt",
+    "ProceedsFromShortTermDebt",
+  ]);
+  p.cfShortTermDebtRepaid = numFromRow(row, [
+    "shortTermDebtRepaid",
+    "ShortTermDebtRepaid",
+    "repaymentOfShortTermDebt",
+    "RepaymentOfShortTermDebt",
+    "paymentsOfShortTermDebt",
+    "PaymentsOfShortTermDebt",
+  ]);
+  p.cfLongTermDebtIssued = numFromRow(row, [
+    "longTermDebtIssued",
+    "LongTermDebtIssued",
+    "issuanceOfLongTermDebt",
+    "IssuanceOfLongTermDebt",
+    "proceedsFromLongTermDebt",
+    "ProceedsFromLongTermDebt",
+  ]);
+  p.cfLongTermDebtRepaid = numFromRow(row, [
+    "longTermDebtRepaid",
+    "LongTermDebtRepaid",
+    "repaymentOfLongTermDebt",
+    "RepaymentOfLongTermDebt",
+    "paymentsOfLongTermDebt",
+    "PaymentsOfLongTermDebt",
+  ]);
+  p.cfNetDebtIssued = numFromRow(row, ["netBorrowings", "NetBorrowings", "netDebtIssued", "NetDebtIssued"]);
+  p.cfIssuanceOfCommonStock = numFromRow(row, [
+    "issuanceOfCapitalStock",
+    "IssuanceOfCapitalStock",
+    "issuanceOfCommonStock",
+    "IssuanceOfCommonStock",
+    "proceedsFromIssuanceOfCommonStock",
+    "ProceedsFromIssuanceOfCommonStock",
+  ]);
+  p.cfRepurchaseOfCommonStock = numFromRow(row, [
+    "repurchaseOfCommonStock",
+    "RepurchaseOfCommonStock",
+    "paymentsForRepurchaseOfCommonStock",
+    "PaymentsForRepurchaseOfCommonStock",
+    "commonStockRepurchased",
+    "CommonStockRepurchased",
+  ]);
+  p.cfNetCommonStock = numFromRow(row, [
+    "salePurchaseOfStock",
+    "SalePurchaseOfStock",
+    "netIssuanceOfCommonStock",
+    "NetIssuanceOfCommonStock",
+    "netCommonStockIssuance",
+    "NetCommonStockIssuance",
+  ]);
+  p.cfOtherFinancingCashFlow = numFromRow(row, [
+    "otherCashflowsFromFinancingActivities",
+    "OtherCashflowsFromFinancingActivities",
+    "otherFinancingCashFlow",
+    "OtherFinancingCashFlow",
+  ]);
+  p.financingCashFlow = numFromRow(row, [
+    "totalCashFromFinancingActivities",
+    "TotalCashFromFinancingActivities",
+    "netCashProvidedByFinancingActivities",
+    "NetCashProvidedByFinancingActivities",
+  ]);
+
+  const div = numFromRow(row, [
+    "dividendsPaid",
+    "DividendsPaid",
+    "cashDividendsPaid",
+    "CashDividendsPaid",
+    "commonDividendsPaid",
+    "CommonDividendsPaid",
+  ]);
+  if (div != null) p.dividendsPaid = div;
+
+  p.changeInCash = numFromRow(row, [
+    "changeInCash",
+    "ChangeInCash",
+    "cashAndCashEquivalentsChanges",
+    "CashAndCashEquivalentsChanges",
+    "netChangeInCash",
+    "NetChangeInCash",
+  ]);
+  p.cfExchangeRateEffect = numFromRow(row, [
+    "exchangeRateChanges",
+    "ExchangeRateChanges",
+    "effectOfExchangeRateChanges",
+    "EffectOfExchangeRateChanges",
+  ]);
+
   const fcf = numFromRow(row, [
     "freeCashFlow",
     "FreeCashFlow",
@@ -341,14 +780,25 @@ function mergeCashFlowRow(p: ChartingSeriesPoint, row: Record<string, unknown>):
     "FreeCashFlows",
   ]);
   if (fcf != null) p.freeCashFlow = fcf;
-  const div = numFromRow(row, [
-    "dividendsPaid",
-    "DividendsPaid",
-    "cashDividendsPaid",
-    "CashDividendsPaid",
-    "commonDividendsPaid",
+
+  p.leveredFreeCashFlow = numFromRow(row, [
+    "leveredFreeCashFlow",
+    "LeveredFreeCashFlow",
+    "leveredFCF",
+    "LeveredFCF",
   ]);
-  if (div != null) p.dividendsPaid = div;
+  p.unleveredFreeCashFlow = numFromRow(row, [
+    "unleveredFreeCashFlow",
+    "UnleveredFreeCashFlow",
+    "unleveredFCF",
+    "UnleveredFCF",
+  ]);
+  p.fcfPerShare = numFromRow(row, [
+    "freeCashFlowPerShare",
+    "FreeCashFlowPerShare",
+    "fcfPerShare",
+    "FcfPerShare",
+  ]);
 }
 
 function mergeRatiosRow(p: ChartingSeriesPoint, row: Record<string, unknown>): void {
@@ -436,6 +886,7 @@ function mergeRatiosRow(p: ChartingSeriesPoint, row: Record<string, unknown>): v
   p.evEbitda = numFromRow(row, ["EnterpriseValueEbitda", "EnterpriseValueEBITDA", "EVToEBITDA", "evEbitda"]);
   p.evSales = numFromRow(row, ["EnterpriseValueRevenue", "EnterpriseValueSales", "EVToSales", "evSales"]);
   p.dividendYield = numFromRow(row, ["DividendYield", "ForwardAnnualDividendYield", "Yield"]);
+  mergeDividendsPerShareFromRow(p, row);
 
   const evFromRatios = numFromRow(row, [
     "EnterpriseValue",
@@ -487,6 +938,61 @@ function mergeRatiosRow(p: ChartingSeriesPoint, row: Record<string, unknown>): v
     const v = p.marketCap / (p.sharesOutstanding * forwardEpsFromRow);
     if (Number.isFinite(v) && v > 0 && v < MAX_DERIVED_VALUATION_MULTIPLE) p.forwardPe = v;
   }
+
+  p.pegRatio = numFromRow(row, ["PEGRatio", "PEG", "pegRatio", "PegRatio", "priceEarningsToGrowth"]);
+  p.priceToTangibleBook = numFromRow(row, [
+    "PriceToTangibleBook",
+    "PriceToTangibleBookMRQ",
+    "PriceTangibleBook",
+    "PTBVRatio",
+    "priceToTangibleBook",
+  ]);
+  p.priceOcf = numFromRow(row, [
+    "PriceToOperatingCashFlow",
+    "PriceOperatingCashFlow",
+    "PriceOCF",
+    "PriceToOCF",
+    "priceToOperatingCashFlow",
+  ]);
+  if (p.priceOcf == null) {
+    const pcf = numFromRow(row, ["PriceCashFlow", "PriceToCashFlow", "PriceToCashFlowsTTM"]);
+    if (pcf != null) p.priceOcf = pcf;
+  }
+  p.evToEbit = numFromRow(row, [
+    "EnterpriseValueEbit",
+    "EnterpriseValueEBIT",
+    "EVToEBIT",
+    "EVToEbit",
+    "evToEbit",
+  ]);
+  p.evToFcf = numFromRow(row, [
+    "EnterpriseValueFreeCashFlow",
+    "EnterpriseValueFCF",
+    "EVToFCF",
+    "EVToFreeCashFlow",
+    "evToFcf",
+  ]);
+  p.quickRatio = numFromRow(row, ["QuickRatio", "quickRatio"]);
+  p.currentRatio = numFromRow(row, ["CurrentRatio", "currentRatio"]);
+  p.returnOnInvestedCapital = numFromRow(row, [
+    "ReturnOnInvestedCapital",
+    "ROIC",
+    "roic",
+    "ReturnOnInvestmentCapital",
+  ]);
+  p.earningsYield = numFromRow(row, [
+    "EarningsYield",
+    "earningsYield",
+    "EarningYield",
+    "earningsYieldTTM",
+  ]);
+  p.assetTurnover = numFromRow(row, ["AssetTurnover", "assetTurnover", "TotalAssetTurnover"]);
+  p.debtToEbitda = numFromRow(row, ["DebtToEBITDA", "debtToEbitda", "DebtEBITDA"]);
+  p.debtToFcf = numFromRow(row, ["DebtToFCF", "debtToFcf", "DebtFCF"]);
+  p.netDebtToEquity = numFromRow(row, ["NetDebtToEquity", "netDebtToEquity"]);
+  p.netDebtToEbitda = numFromRow(row, ["NetDebtToEBITDA", "netDebtToEbitda"]);
+  p.netDebtToFcf = numFromRow(row, ["NetDebtToFCF", "netDebtToFcf"]);
+  p.fcfYield = numFromRow(row, ["FreeCashFlowYield", "FCFYield", "fcfYield", "FCFYieldTTM"]);
 }
 
 /** When the provider omits market cap on the ratios row, derive from P/S, P/B, or trailing P/E × NI. */
@@ -545,13 +1051,18 @@ function computeDerivedMarginsAndReturns(p: ChartingSeriesPoint): void {
   }
   if (debt != null && eq != null && Math.abs(eq) > 1e-9) p.debtToEquity = debt / Math.abs(eq);
 
+  fillDerivedBalanceFields(p);
+  fillDerivedCashFlowFields(p);
+
+  fillDerivedEffectiveTaxRate(p);
+
   const ni = p.netIncome;
   const dp = p.dividendsPaid;
   if (ni != null && Math.abs(ni) > 1e-9 && dp != null) {
     p.payoutRatio = Math.abs(dp) / Math.abs(ni);
   }
 
-  const cash = p.cashOnHand;
+  const cash = p.cashAndShortTermInvestments ?? p.cashOnHand;
   const td = p.totalDebt;
   if (cash != null && td != null && td > 1e-9) p.cashDebt = cash / td;
 
@@ -566,12 +1077,101 @@ function computeDerivedMarginsAndReturns(p: ChartingSeriesPoint): void {
  * When the provider omits reported EPS, approximate diluted EPS as net income ÷ diluted weighted-average
  * shares (preferred) or ÷ period shares outstanding. Good enough for charts when `eps` is absent.
  */
+function fillDerivedCashFlowFields(p: ChartingSeriesPoint): void {
+  if (p.cfNetCommonStock != null) {
+    if (p.cfIssuanceOfCommonStock == null && p.cfRepurchaseOfCommonStock == null) {
+      if (p.cfNetCommonStock > 0) p.cfIssuanceOfCommonStock = p.cfNetCommonStock;
+      else if (p.cfNetCommonStock < 0) p.cfRepurchaseOfCommonStock = p.cfNetCommonStock;
+    }
+  }
+
+  if (p.freeCashFlow == null && p.operatingCashFlow != null && p.capitalExpenditures != null) {
+    const capex = p.capitalExpenditures;
+    p.freeCashFlow = p.operatingCashFlow - Math.abs(capex);
+  }
+
+  if (p.leveredFreeCashFlow == null && p.freeCashFlow != null) {
+    p.leveredFreeCashFlow = p.freeCashFlow;
+  }
+
+  if (p.fcfPerShare == null && p.freeCashFlow != null && p.sharesOutstanding != null) {
+    const sh = p.sharesOutstanding;
+    if (Number.isFinite(sh) && Math.abs(sh) > 1e-9) p.fcfPerShare = p.freeCashFlow / sh;
+  }
+}
+
+function fillDerivedBalanceFields(p: ChartingSeriesPoint): void {
+  if (p.cashAndShortTermInvestments == null) {
+    if (p.cashEquivalents != null || p.shortTermInvestments != null) {
+      p.cashAndShortTermInvestments = (p.cashEquivalents ?? 0) + (p.shortTermInvestments ?? 0);
+    }
+  }
+  if (p.cashOnHand == null) {
+    p.cashOnHand = p.cashAndShortTermInvestments ?? p.cashEquivalents;
+  }
+
+  if (p.otherCurrentLiabilities == null && p.currentLiabilities != null) {
+    const ap = p.accountsPayable;
+    const acc = p.accruedLiabilities;
+    if (ap != null || acc != null) {
+      p.otherCurrentLiabilities = p.currentLiabilities - (ap ?? 0) - (acc ?? 0);
+    }
+  }
+
+  if (p.nonCurrentLiabilities == null && p.totalLiabilities != null && p.currentLiabilities != null) {
+    p.nonCurrentLiabilities = p.totalLiabilities - p.currentLiabilities;
+  }
+
+  if (p.bookValue == null && p.shareholderEquity != null) p.bookValue = p.shareholderEquity;
+
+  if (p.tangibleBookValue == null && p.shareholderEquity != null) {
+    const gw = p.goodwill;
+    const ia = p.intangibleAssets;
+    const hasIntangibles =
+      (gw != null && Number.isFinite(gw) && Math.abs(gw) > 1e-9) ||
+      (ia != null && Number.isFinite(ia) && Math.abs(ia) > 1e-9);
+    if (hasIntangibles) {
+      p.tangibleBookValue =
+        p.shareholderEquity - Math.abs(gw ?? 0) - Math.abs(ia ?? 0);
+    }
+  }
+}
+
+function fillDerivedEpsBasicIfMissing(p: ChartingSeriesPoint, row: Record<string, unknown>): void {
+  if (p.epsBasic != null && Number.isFinite(p.epsBasic)) return;
+  const ni = p.netIncome;
+  if (ni == null || !Number.isFinite(ni)) return;
+  const basicSh = numFromRow(row, [
+    "weightedAverageShsOut",
+    "WeightedAverageShsOut",
+    "weightedAverageShares",
+    "WeightedAverageShares",
+    "weightedAverageSharesBasic",
+    "WeightedAverageSharesBasic",
+    "sharesOutstandingBasic",
+    "SharesOutstandingBasic",
+  ]);
+  const sh = basicSh ?? p.sharesOutstanding;
+  if (sh == null || !Number.isFinite(sh) || Math.abs(sh) < 1e-9) return;
+  p.epsBasic = ni / sh;
+}
+
 function fillDerivedEpsIfMissing(p: ChartingSeriesPoint): void {
   if (p.eps != null && Number.isFinite(p.eps)) return;
   const ni = p.netIncome;
   const sh = p.sharesOutstanding;
   if (ni == null || sh == null || !Number.isFinite(ni) || !Number.isFinite(sh) || Math.abs(sh) < 1e-9) return;
   p.eps = ni / sh;
+}
+
+/** `dividendsPaid` ÷ diluted shares when per-share dividend is absent on statements/ratios. */
+function fillDerivedDividendsPerShare(p: ChartingSeriesPoint): void {
+  if (p.dividendsPerShare != null && Number.isFinite(p.dividendsPerShare)) return;
+  const dp = p.dividendsPaid;
+  const sh = p.sharesOutstanding;
+  if (dp == null || sh == null || !Number.isFinite(sh) || Math.abs(sh) < 1e-9) return;
+  const dps = Math.abs(dp) / Math.abs(sh);
+  if (Number.isFinite(dps)) p.dividendsPerShare = dps;
 }
 
 /**
@@ -656,6 +1256,88 @@ function fillDerivedForwardPe(p: ChartingSeriesPoint): void {
   }
 }
 
+/** Ratios table fields — derived when EODHD omits per-period values on `Financials.Ratios`. */
+function fillDerivedRatioTableFields(p: ChartingSeriesPoint): void {
+  const mc = p.marketCap;
+  const pe = p.trailingPe ?? p.peRatio;
+  if (p.earningsYield == null && pe != null && pe > 1e-9 && pe < MAX_DERIVED_VALUATION_MULTIPLE) {
+    p.earningsYield = 1 / pe;
+  }
+  if (p.fcfYield == null && mc != null && mc > 0 && p.freeCashFlow != null && p.freeCashFlow > 1e-9) {
+    p.fcfYield = p.freeCashFlow / mc;
+  }
+
+  const ebit = p.ebit ?? p.operatingIncome;
+  const ta = p.totalAssets;
+  const tca = p.totalCurrentAssets;
+  if (p.returnOnInvestedCapital == null && ebit != null && ta != null && tca != null) {
+    const invested = ta - tca;
+    if (Math.abs(invested) > 1e-9) p.returnOnInvestedCapital = ebit / invested;
+  }
+
+  if (p.assetTurnover == null && p.revenue != null && ta != null && Math.abs(ta) > 1e-9) {
+    p.assetTurnover = p.revenue / Math.abs(ta);
+  }
+
+  if (p.priceToTangibleBook == null && mc != null && mc > 0 && p.tangibleBookValue != null && Math.abs(p.tangibleBookValue) > 1e-9) {
+    const v = mc / Math.abs(p.tangibleBookValue);
+    if (v > 0 && v < MAX_DERIVED_VALUATION_MULTIPLE) p.priceToTangibleBook = v;
+  }
+
+  if (p.priceOcf == null && mc != null && mc > 0 && p.operatingCashFlow != null && p.operatingCashFlow > 1e-9) {
+    const v = mc / p.operatingCashFlow;
+    if (v > 0 && v < MAX_DERIVED_VALUATION_MULTIPLE) p.priceOcf = v;
+  }
+
+  const ev = p.enterpriseValue;
+  if (ev != null && ev > 0) {
+    if (p.evToEbit == null && ebit != null && Math.abs(ebit) > 1e-9) {
+      const v = ev / Math.abs(ebit);
+      if (v > 0 && v < MAX_DERIVED_VALUATION_MULTIPLE) p.evToEbit = v;
+    }
+    if (p.evToFcf == null && p.freeCashFlow != null && p.freeCashFlow > 1e-9) {
+      const v = ev / p.freeCashFlow;
+      if (v > 0 && v < MAX_DERIVED_VALUATION_MULTIPLE) p.evToFcf = v;
+    }
+  }
+
+  const debt = p.totalDebt;
+  if (debt != null) {
+    if (p.debtToEbitda == null && p.ebitda != null && Math.abs(p.ebitda) > 1e-9) {
+      p.debtToEbitda = debt / Math.abs(p.ebitda);
+    }
+    if (p.debtToFcf == null && p.freeCashFlow != null && p.freeCashFlow > 1e-9) {
+      p.debtToFcf = debt / p.freeCashFlow;
+    }
+  }
+
+  const cash = p.cashAndShortTermInvestments ?? p.cashOnHand;
+  const netDebt =
+    p.netDebt != null
+      ? p.netDebt
+      : debt != null || cash != null
+        ? (debt ?? 0) - (cash ?? 0)
+        : null;
+  const eq = p.shareholderEquity;
+  if (netDebt != null) {
+    if (p.netDebtToEquity == null && eq != null && Math.abs(eq) > 1e-9) {
+      p.netDebtToEquity = netDebt / Math.abs(eq);
+    }
+    if (p.netDebtToEbitda == null && p.ebitda != null && Math.abs(p.ebitda) > 1e-9) {
+      p.netDebtToEbitda = netDebt / Math.abs(p.ebitda);
+    }
+    if (p.netDebtToFcf == null && p.freeCashFlow != null && p.freeCashFlow > 1e-9) {
+      p.netDebtToFcf = netDebt / p.freeCashFlow;
+    }
+  }
+
+  if (p.pegRatio == null && pe != null && pe > 0 && p.epsYoy != null && Math.abs(p.epsYoy) > 1e-6) {
+    const growthPct = Math.abs(p.epsYoy) * 100;
+    const peg = pe / growthPct;
+    if (Number.isFinite(peg) && peg > 0 && peg < MAX_DERIVED_VALUATION_MULTIPLE) p.pegRatio = peg;
+  }
+}
+
 function computeGrowthSeries(points: ChartingSeriesPoint[], mode: FundamentalsSeriesMode): void {
   const yoyLag = mode === "annual" ? 1 : 4;
   const cagrLag = mode === "annual" ? 3 : 12;
@@ -669,6 +1351,14 @@ function computeGrowthSeries(points: ChartingSeriesPoint[], mode: FundamentalsSe
       }
       if (p.eps != null && prev.eps != null && Math.abs(prev.eps) > 1e-9) {
         p.epsYoy = (p.eps - prev.eps) / Math.abs(prev.eps);
+      }
+      if (
+        p.dividendsPerShare != null &&
+        prev.dividendsPerShare != null &&
+        Math.abs(prev.dividendsPerShare) > 1e-9
+      ) {
+        p.dividendsPerShareYoy =
+          (p.dividendsPerShare - prev.dividendsPerShare) / Math.abs(prev.dividendsPerShare);
       }
     }
     if (i >= cagrLag) {
@@ -690,21 +1380,84 @@ function emptyPoint(periodEnd: string): ChartingSeriesPoint {
     periodEnd,
     revenue: z,
     grossProfit: z,
+    sga: z,
+    researchAndDevelopment: z,
+    otherOperatingExpense: z,
+    totalOperatingExpenses: z,
     operatingIncome: z,
+    ebit: z,
     netIncome: z,
     ebitda: z,
     eps: z,
+    epsBasic: z,
     incomeBeforeTax: z,
+    incomeTaxExpense: z,
+    effectiveTaxRate: z,
     freeCashFlow: z,
     dividendsPaid: z,
+    dividendsPerShare: z,
+    cfDepreciationAmortization: z,
+    cfStockBasedCompensation: z,
+    cfOtherNonCashItems: z,
+    cfChangeInReceivables: z,
+    cfChangeInAccountsPayable: z,
+    cfChangeInOtherOperating: z,
+    cfOtherOperatingCashFlow: z,
+    cfChangeInWorkingCapital: z,
+    operatingCashFlow: z,
+    capitalExpenditures: z,
+    cfSaleOfPpe: z,
+    cfPurchasesOfInvestments: z,
+    cfProceedsFromInvestments: z,
+    cfPaymentsForAcquisitions: z,
+    cfProceedsFromDivestitures: z,
+    cfInvestments: z,
+    cfOtherInvestingCashFlow: z,
+    investingCashFlow: z,
+    cfShortTermDebtIssued: z,
+    cfShortTermDebtRepaid: z,
+    cfLongTermDebtIssued: z,
+    cfLongTermDebtRepaid: z,
+    cfNetDebtIssued: z,
+    cfIssuanceOfCommonStock: z,
+    cfRepurchaseOfCommonStock: z,
+    cfNetCommonStock: z,
+    cfOtherFinancingCashFlow: z,
+    financingCashFlow: z,
+    changeInCash: z,
+    cfExchangeRateEffect: z,
+    fcfPerShare: z,
+    leveredFreeCashFlow: z,
+    unleveredFreeCashFlow: z,
     totalAssets: z,
     totalLiabilities: z,
+    cashEquivalents: z,
     cashOnHand: z,
+    shortTermInvestments: z,
+    cashAndShortTermInvestments: z,
+    netReceivables: z,
+    otherReceivables: z,
+    otherCurrentAssets: z,
+    totalCurrentAssets: z,
+    propertyPlantEquipmentNet: z,
+    intangibleAssets: z,
+    goodwill: z,
+    longTermInvestments: z,
+    otherNonCurrentAssets: z,
+    accountsPayable: z,
+    accruedLiabilities: z,
+    otherCurrentLiabilities: z,
+    nonCurrentLiabilities: z,
     longTermDebt: z,
     shareholderEquity: z,
     currentLiabilities: z,
     totalDebt: z,
     debtToEquity: z,
+    treasuryStock: z,
+    additionalPaidInCapital: z,
+    netDebt: z,
+    bookValue: z,
+    tangibleBookValue: z,
     sharesOutstanding: z,
     marketCap: z,
     enterpriseValue: z,
@@ -718,6 +1471,7 @@ function emptyPoint(periodEnd: string): ChartingSeriesPoint {
     revenue3yCagr: z,
     epsYoy: z,
     eps3yCagr: z,
+    dividendsPerShareYoy: z,
     peRatio: z,
     trailingPe: z,
     forwardPe: z,
@@ -733,6 +1487,22 @@ function emptyPoint(periodEnd: string): ChartingSeriesPoint {
     returnOnAssets: z,
     returnOnCapitalEmployed: z,
     returnOnInvestment: z,
+    pegRatio: z,
+    priceToTangibleBook: z,
+    priceOcf: z,
+    evToEbit: z,
+    evToFcf: z,
+    debtToEbitda: z,
+    debtToFcf: z,
+    netDebtToEquity: z,
+    netDebtToEbitda: z,
+    netDebtToFcf: z,
+    assetTurnover: z,
+    quickRatio: z,
+    currentRatio: z,
+    returnOnInvestedCapital: z,
+    earningsYield: z,
+    fcfYield: z,
   };
 }
 
@@ -745,6 +1515,92 @@ export function buildChartingPointsFromFundamentalsRoot(
   mode: FundamentalsSeriesMode,
 ): ChartingSeriesPoint[] {
   return buildMergedPoints(root, mode) ?? [];
+}
+
+function getFinancialStatementRoot(
+  root: Record<string, unknown>,
+  statement: "Income_Statement" | "Balance_Sheet" | "Cash_Flow",
+): Record<string, unknown> | null {
+  const fin = root.Financials;
+  if (!fin || typeof fin !== "object") return null;
+  const f = fin as Record<string, unknown>;
+  const aliases: Record<string, string[]> = {
+    Income_Statement: ["Income_Statement", "IncomeStatement"],
+    Balance_Sheet: ["Balance_Sheet", "BalanceSheet"],
+    Cash_Flow: ["Cash_Flow", "CashFlow"],
+  };
+  for (const a of aliases[statement]) {
+    const raw = f[a];
+    if (raw && typeof raw === "object" && !Array.isArray(raw)) return raw as Record<string, unknown>;
+  }
+  return null;
+}
+
+function getRatiosStatementRoot(root: Record<string, unknown>): Record<string, unknown> | null {
+  const fin = root.Financials;
+  if (!fin || typeof fin !== "object") return null;
+  const raw = (fin as Record<string, unknown>).Ratios ?? (fin as Record<string, unknown>).Financial_Ratios;
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  return raw as Record<string, unknown>;
+}
+
+function pickTtmSubRow(wrapper: Record<string, unknown>): Record<string, unknown> | null {
+  const ttm = wrapper.ttm ?? wrapper.TTM ?? wrapper.trailing_twelve_months;
+  if (ttm && typeof ttm === "object" && !Array.isArray(ttm)) return ttm as Record<string, unknown>;
+  return null;
+}
+
+function periodEndKeyFromTtmRow(row: Record<string, unknown>, root: Record<string, unknown>): string {
+  for (const k of ["date", "Date", "periodEnd", "period_end", "endDate", "filing_date", "FilingDate"]) {
+    const v = row[k];
+    if (typeof v === "string" && v.trim()) return v.trim();
+  }
+  const hl =
+    root.Highlights && typeof root.Highlights === "object" ? (root.Highlights as Record<string, unknown>) : null;
+  const mq = hl?.MostRecentQuarter;
+  if (typeof mq === "string" && mq.trim()) return mq.trim();
+  return "TTM";
+}
+
+/**
+ * Single merged fundamentals point from EODHD `Financials.*.ttm` blocks (income, balance, cash flow, ratios).
+ * Used for the trailing TTM column on stock Financials tables.
+ */
+export function buildTtmChartingPointFromFundamentalsRoot(
+  root: Record<string, unknown>,
+): ChartingSeriesPoint | null {
+  const isRoot = getFinancialStatementRoot(root, "Income_Statement");
+  const isTtm = isRoot ? pickTtmSubRow(isRoot) : null;
+  if (!isTtm) return null;
+
+  const periodEnd = periodEndKeyFromTtmRow(isTtm, root);
+  const p = emptyPoint(periodEnd);
+  mergeIncomeRow(p, isTtm);
+
+  const bsRoot = getFinancialStatementRoot(root, "Balance_Sheet");
+  const bsTtm = bsRoot ? pickTtmSubRow(bsRoot) : null;
+  if (bsTtm) mergeBalanceRow(p, bsTtm);
+
+  const cfRoot = getFinancialStatementRoot(root, "Cash_Flow");
+  const cfTtm = cfRoot ? pickTtmSubRow(cfRoot) : null;
+  if (cfTtm) mergeCashFlowRow(p, cfTtm);
+
+  const ratiosRoot = getRatiosStatementRoot(root);
+  const ratiosTtm = ratiosRoot ? pickTtmSubRow(ratiosRoot) : null;
+  if (ratiosTtm) mergeRatiosRow(p, ratiosTtm);
+
+  fillDerivedMarketCap(p);
+  computeDerivedMarginsAndReturns(p);
+  fillDerivedEpsBasicIfMissing(p, isTtm);
+  fillDerivedEpsIfMissing(p);
+  fillDerivedDividendsPerShare(p);
+  fillDerivedValuationMultiples(p);
+  fillDerivedRatioTableFields(p);
+  fillDerivedEnterpriseValue(p);
+  fillDerivedForwardPe(p);
+
+  const hasData = Object.values(p).some((v) => typeof v === "number" && Number.isFinite(v));
+  return hasData ? p : null;
 }
 
 function buildMergedPoints(root: Record<string, unknown>, mode: FundamentalsSeriesMode): ChartingSeriesPoint[] | null {
@@ -784,8 +1640,11 @@ function buildMergedPoints(root: Record<string, unknown>, mode: FundamentalsSeri
 
     fillDerivedMarketCap(p);
     computeDerivedMarginsAndReturns(p);
+    fillDerivedEpsBasicIfMissing(p, isRow as Record<string, unknown>);
     fillDerivedEpsIfMissing(p);
+    fillDerivedDividendsPerShare(p);
     fillDerivedValuationMultiples(p);
+    fillDerivedRatioTableFields(p);
     fillDerivedEnterpriseValue(p);
     fillDerivedForwardPe(p);
     out.push(p);
@@ -808,26 +1667,38 @@ export function computeAvailableMetrics(points: ChartingSeriesPoint[]): Charting
   return CHARTING_METRIC_IDS.filter((id) => metricHasSeries(points, id));
 }
 
+export type ChartingSeriesBundle = {
+  points: ChartingSeriesPoint[];
+  availableMetrics: ChartingMetricId[];
+  /** Trailing twelve months snapshot for Financials tables (annual mode only). */
+  ttmPoint: ChartingSeriesPoint | null;
+};
+
 async function fetchChartingSeriesUncached(
   ticker: string,
   mode: FundamentalsSeriesMode,
-): Promise<{ points: ChartingSeriesPoint[]; availableMetrics: ChartingMetricId[] } | null> {
+): Promise<ChartingSeriesBundle | null> {
   const root = await fetchEodhdFundamentalsJson(ticker);
   if (!root) return null;
 
-  const points = buildMergedPoints(root as Record<string, unknown>, mode);
+  const rootRec = root as Record<string, unknown>;
+  const points = buildMergedPoints(rootRec, mode);
   if (!points?.length) return null;
 
   await enrichChartingPointsWithPriceImpliedMarketCap(ticker, points);
   enrichChartingPointsWithTrailingPeFromImpliedMarketCap(points);
   enrichChartingPointsWithImpliedValuationMultiplesFromMarketCap(points);
+  for (const p of points) fillDerivedRatioTableFields(p);
+  patchLatestChartingPointLiveTrailingPe(points, livePeRatioPartsFromFundamentalsRoot(root));
 
   const availableMetrics = computeAvailableMetrics(points);
-  return { points, availableMetrics };
+  const ttmPoint =
+    mode === "annual" ? buildTtmChartingPointFromFundamentalsRoot(rootRec) : null;
+  return { points, availableMetrics, ttmPoint };
 }
 
 export const fetchChartingSeries = unstable_cache(
   fetchChartingSeriesUncached,
-  ["eodhd-charting-series-v16-pe-eps-shares-fallback"],
+  ["eodhd-charting-series-v21-financials-ratios-rows"],
   { revalidate: REVALIDATE_WARM },
 );

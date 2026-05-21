@@ -31,8 +31,18 @@ export const CRYPTO_TOP10: CryptoMeta[] = [
 
 /** Additional liquid names for global search + asset pages (same loaders as TOP10). */
 export const CRYPTO_SEARCH_EXTRA: CryptoMeta[] = [
-  { symbol: "TON", name: "Toncoin", eodhdSymbol: "TONCOIN-USD.CC", eodhdAltSymbols: ["TON-USD.CC"] },
-  { symbol: "POL", name: "Polygon", eodhdSymbol: "POL-USD.CC", eodhdAltSymbols: ["MATIC-USD.CC"] },
+  {
+    symbol: "TON",
+    name: "Toncoin",
+    eodhdSymbol: "TON11419-USD.CC",
+    eodhdAltSymbols: ["TON-USD.CC", "TONCOIN-USD.CC"],
+  },
+  {
+    symbol: "POL",
+    name: "Polygon",
+    eodhdSymbol: "POL28321-USD.CC",
+    eodhdAltSymbols: ["POL-USD.CC", "MATIC-USD.CC"],
+  },
   { symbol: "DOT", name: "Polkadot", eodhdSymbol: "DOT-USD.CC" },
   { symbol: "ATOM", name: "Cosmos", eodhdSymbol: "ATOM-USD.CC" },
   { symbol: "LTC", name: "Litecoin", eodhdSymbol: "LTC-USD.CC" },
@@ -184,6 +194,11 @@ export function toEodhdCryptoSymbol(symbolOrTicker: string): string | null {
   return s ? CRYPTO_BY_SYMBOL[s]!.eodhdSymbol : null;
 }
 
+/** Primary + alternate EODHD pair symbols (daily bars, realtime batch, fundamentals). */
+export function eodhdSymbolsForMeta(meta: CryptoMeta): string[] {
+  return [meta.eodhdSymbol, ...(meta.eodhdAltSymbols ?? [])];
+}
+
 function realtimePayloadHasUsableQuote(p: EodhdRealtimePayload): boolean {
   return (
     (typeof p.close === "number" && Number.isFinite(p.close) && p.close > 0) ||
@@ -200,8 +215,7 @@ export function pickCryptoRealtimePayload(
   map: Map<string, EodhdRealtimePayload>,
   meta: CryptoMeta,
 ): EodhdRealtimePayload | undefined {
-  const keys = [meta.eodhdSymbol, ...(meta.eodhdAltSymbols ?? [])];
-  for (const k of keys) {
+  for (const k of eodhdSymbolsForMeta(meta)) {
     const p = map.get(k.toUpperCase());
     if (p && realtimePayloadHasUsableQuote(p)) return p;
   }

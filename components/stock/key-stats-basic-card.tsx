@@ -53,7 +53,7 @@ export function KeyStatsBasicCard({ ticker }: { ticker: string }) {
       { label: "Enterprise Value", value: "—" },
       { label: "Shares Outstanding", value: "—" },
       { label: "1Y Target Est", value: "—" },
-      { label: "Fair Value", value: "—" },
+      { label: "Analyst Consensus", value: "—" },
       { label: "Earnings Date", value: "—" },
       { label: "Beta (5Y Monthly)", value: "—" },
       { label: "Employees", value: "—" },
