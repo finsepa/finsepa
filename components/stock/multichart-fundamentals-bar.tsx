@@ -172,6 +172,8 @@ type Props = {
   periodMode?: FundamentalsSeriesMode;
   /** Bar columns (default) or connected line over the same series. */
   visual?: MultichartVisual;
+  /** Override default 20 annual / 80 quarterly bar cap (e.g. mobile Key Stats modal: 10 years). */
+  maxBars?: number;
 };
 
 type BarTooltipState = {
@@ -204,6 +206,7 @@ export function MultichartFundamentalsBar({
   height = 196,
   periodMode = "annual",
   visual = "bar",
+  maxBars: maxBarsProp,
 }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const plotAreaRef = useRef<HTMLDivElement>(null);
@@ -211,7 +214,9 @@ export function MultichartFundamentalsBar({
   const [tip, setTip] = useState<BarTooltipState | null>(null);
 
   const kind = CHARTING_METRIC_KIND[metricId];
-  const maxBars = periodMode === "quarterly" ? MULTICHART_MAX_QUARTERLY_BARS : MULTICHART_MAX_ANNUAL_BARS;
+  const maxBars =
+    maxBarsProp ??
+    (periodMode === "quarterly" ? MULTICHART_MAX_QUARTERLY_BARS : MULTICHART_MAX_ANNUAL_BARS);
   const rows = useMemo(
     () => sliceLastAnnualWithMetric(points, metricId, maxBars),
     [points, metricId, maxBars],

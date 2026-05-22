@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   AreaSeries,
   ColorType,
@@ -13,14 +13,33 @@ import {
   type IChartApi,
   type ISeriesApi,
   type MouseEventParams,
+  type Time,
   type UTCTimestamp,
 } from "lightweight-charts";
 
 import { horzTimeToUnixSeconds, nearestPointByTime } from "@/components/chart/chart-selection-utils";
+import {
+  overviewChartAxisRowPx,
+  CHART_PLOT_DOTS_PATTERN_CLASS,
+  buildTwoSlotDayCrosshairLabelByBarTime,
+  chartPointDisplayUnix,
+  formatOverviewCrosshairBottomLabel,
+  isTwoSlotDayOverviewRange,
+  overviewAxisLabelsEqual,
+  resolveOverviewBottomAxisMode,
+  syncOverviewPeriodAxisLabels,
+  type OverviewAxisLabel,
+  type OverviewBottomAxisMode,
+} from "@/components/chart/overview-bottom-axis";
 import type { CompanyPick } from "@/components/charting/company-picker";
 import { ChartSkeleton } from "@/components/ui/chart-skeleton";
-import { fitContentWithMobilePlotGutter } from "@/lib/chart/mobile-plot-horizontal-gutter";
-import { formatAssetChartTimestamp } from "@/lib/market/chart-timestamp-format";
+import {
+  fitContentWithMobilePlotGutter,
+  mobileOverviewChartScaleOptions,
+  mobileTimeScaleOptions,
+  shouldHideMobileYAxisLabels,
+} from "@/lib/chart/mobile-plot-horizontal-gutter";
+import { cn } from "@/lib/utils";
 import type { StockChartPoint, StockChartRange } from "@/lib/market/stock-chart-types";
 
 const PRIMARY_BLUE = "#2563EB";
@@ -83,6 +102,14 @@ function formatAxisReturn(n: number): string {
   return `${sign}${Math.abs(rel).toFixed(2)}%`;
 }
 
+const HIDE_NATIVE_Y_AXIS_TICK_LABELS = (priceValue: readonly number[]) => priceValue.map(() => "");
+
+function compareChartTickmarksFormatter(containerWidthPx: number) {
+  return shouldHideMobileYAxisLabels(containerWidthPx)
+    ? HIDE_NATIVE_Y_AXIS_TICK_LABELS
+    : (priceValue: readonly number[]) => priceValue.map((p) => formatAxisReturn(p));
+}
+
 type Props = {
   primaryTicker: string;
   comparePicks: readonly CompanyPick[];
@@ -107,19 +134,57 @@ export function StockCompareReturnChart({ primaryTicker, comparePicks, range, he
   );
   const [ready, setReady] = useState(false);
   const [containerWidth, setContainerWidth] = useState(0);
-  const [hover, setHover] = useState<{
-    x: number;
-    y: number;
-    dateLabel: string;
-    lines: { label: string; color: string }[];
-  } | null>(null);
+  const [periodAxisLabels, setPeriodAxisLabels] = useState<OverviewAxisLabel[]>([]);
+  const periodAxisLabelsRef = useRef<OverviewAxisLabel[]>([]);
+  const [hoverAxisLabel, setHoverAxisLabel] = useState<{ leftPx: number; label: string } | null>(
+    null,
+  );
+  const [hoverPoint, setHoverPoint] = useState<{ x: number; y: number } | null>(null);
+  const [hoverLines, setHoverLines] = useState<{ label: string; color: string }[] | null>(null);
+
+  const hoverTimeRef = useRef<Time | null>(null);
+  const hoverAxisLabelStateRef = useRef<{ leftPx: number; label: string } | null>(null);
+  const crosshairHoveredRef = useRef(false);
+  const dataTimeZoneRef = useRef("America/New_York");
+  const overviewBottomAxisModeRef = useRef<OverviewBottomAxisMode>("calendar");
+  const twoSlotDayCrosshairLabelByBarTimeRef = useRef<Map<number, string> | null>(null);
+  const containerWidthRef = useRef(0);
+  const rangeRef = useRef(range);
+  rangeRef.current = range;
+  const loadingRef = useRef(loading);
+  loadingRef.current = loading;
+
+  const axisRowPx = overviewChartAxisRowPx(containerWidth);
+  const plotHeight = Math.max(120, height - axisRowPx);
 
   const pSym = primaryTicker.trim().toUpperCase();
-  /** Preserve picker order (stable fetch + series index). */
   const compareSlotsKey = useMemo(
     () => comparePicks.map((p) => p.symbol.trim().toUpperCase()).join("|"),
     [comparePicks],
   );
+
+  const overviewBottomAxisMode = useMemo(
+    () => resolveOverviewBottomAxisMode(range, primaryPts),
+    [range, primaryPts],
+  );
+
+  useEffect(() => {
+    overviewBottomAxisModeRef.current = overviewBottomAxisMode;
+  }, [overviewBottomAxisMode]);
+
+  const setPeriodAxisLabelsGuarded = (next: OverviewAxisLabel[]) => {
+    if (overviewAxisLabelsEqual(periodAxisLabelsRef.current, next)) return;
+    periodAxisLabelsRef.current = next;
+    setPeriodAxisLabels(next);
+  };
+
+  const setHoverAxisLabelGuarded = (next: { leftPx: number; label: string } | null) => {
+    const prev = hoverAxisLabelStateRef.current;
+    if (prev == null && next == null) return;
+    if (prev != null && next != null && prev.leftPx === next.leftPx && prev.label === next.label) return;
+    hoverAxisLabelStateRef.current = next;
+    setHoverAxisLabel(next);
+  };
 
   useEffect(() => {
     primaryPointsRef.current = primaryPts;
@@ -132,6 +197,70 @@ export function StockCompareReturnChart({ primaryTicker, comparePicks, range, he
   }, [comparePicks]);
 
   useEffect(() => {
+    if (!isTwoSlotDayOverviewRange(range) || primaryPts.length === 0) {
+      twoSlotDayCrosshairLabelByBarTimeRef.current = null;
+      return;
+    }
+    const tz =
+      primaryPts.find((p) => typeof p.timeZone === "string" && p.timeZone.length > 0)?.timeZone ??
+      "America/New_York";
+    twoSlotDayCrosshairLabelByBarTimeRef.current = buildTwoSlotDayCrosshairLabelByBarTime(
+      primaryPts,
+      tz,
+      range,
+    );
+  }, [range, primaryPts]);
+
+  useEffect(() => {
+    containerWidthRef.current = containerWidth;
+  }, [containerWidth]);
+
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart) return;
+    const hideMobileScale = shouldHideMobileYAxisLabels(containerWidth);
+    chart.applyOptions({
+      ...mobileOverviewChartScaleOptions(containerWidth),
+      localization: {
+        priceFormatter: formatAxisReturn,
+        tickmarksPriceFormatter: compareChartTickmarksFormatter(containerWidth),
+      },
+    });
+    const wrapEl = wrapRef.current;
+    if (wrapEl) {
+      chart.resize(Math.max(2, wrapEl.clientWidth), plotHeight);
+    }
+    primarySeriesRef.current?.applyOptions({ lastValueVisible: !hideMobileScale });
+    for (const line of compareSeriesRefs.current) {
+      line.applyOptions({ lastValueVisible: !hideMobileScale });
+    }
+    if (primaryPointsRef.current.some((p) => isFiniteNumber(p.time) && isFiniteNumber(p.value))) {
+      fitContentWithMobilePlotGutter(chart, containerWidth, primaryPointsRef.current.length);
+    }
+  }, [containerWidth]);
+
+  useEffect(() => {
+    dataTimeZoneRef.current =
+      primaryPts.find((p) => typeof p.timeZone === "string" && p.timeZone.length > 0)?.timeZone ??
+      "America/New_York";
+  }, [primaryPts]);
+
+  useEffect(() => {
+    if (loading) return;
+    const c = chartRef.current;
+    if (!c || hoverTimeRef.current != null || primaryPointsRef.current.length === 0) return;
+    setPeriodAxisLabelsGuarded(
+      syncOverviewPeriodAxisLabels(
+        c,
+        primaryPointsRef.current,
+        dataTimeZoneRef.current,
+        overviewBottomAxisMode,
+        containerWidthRef.current,
+      ),
+    );
+  }, [overviewBottomAxisMode, primaryPts, containerWidth, loading]);
+
+  useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
     const ro = new ResizeObserver(() => setContainerWidth(el.clientWidth));
@@ -140,11 +269,21 @@ export function StockCompareReturnChart({ primaryTicker, comparePicks, range, he
     return () => ro.disconnect();
   }, []);
 
+  useLayoutEffect(() => {
+    setHoverAxisLabelGuarded(null);
+    setHoverPoint(null);
+    setHoverLines(null);
+    hoverTimeRef.current = null;
+    crosshairHoveredRef.current = false;
+    setPeriodAxisLabelsGuarded([]);
+  }, [pSym, compareSlotsKey, range]);
+
   useEffect(() => {
     let cancelled = false;
     async function load() {
       setLoading(true);
       setReady(false);
+      setPeriodAxisLabelsGuarded([]);
       const syms = compareSlotsKey.split("|").filter((s) => s.length > 0);
       const path = (t: string) =>
         `/api/stocks/${encodeURIComponent(t)}/chart?range=${encodeURIComponent(range)}&series=return`;
@@ -188,7 +327,7 @@ export function StockCompareReturnChart({ primaryTicker, comparePicks, range, he
 
     const chart = createChart(el, {
       width: Math.max(2, el.clientWidth),
-      height,
+      height: plotHeight,
       autoSize: false,
       layout: {
         background: { type: ColorType.Solid, color: "#00000000" },
@@ -199,33 +338,29 @@ export function StockCompareReturnChart({ primaryTicker, comparePicks, range, he
       },
       grid: {
         vertLines: { visible: false },
-        horzLines: {
-          visible: true,
-          color: "rgba(228, 228, 231, 0.85)",
-          style: LineStyle.Solid,
-        },
+        horzLines: { visible: false },
       },
-      rightPriceScale: {
-        borderVisible: false,
-        scaleMargins: { top: 0.12, bottom: 0.08 },
-      },
+      ...mobileOverviewChartScaleOptions(containerWidthRef.current),
       timeScale: {
         borderVisible: false,
-        fixLeftEdge: false,
-        fixRightEdge: false,
+        ...mobileTimeScaleOptions(containerWidthRef.current),
+        ticksVisible: false,
+        tickMarkFormatter: () => "",
+        minimumHeight: 0,
       },
       crosshair: {
         mode: CrosshairMode.Magnet,
         vertLine: {
-          color: "rgba(9, 9, 11, 0.06)",
+          color: "rgba(9, 9, 11, 0.28)",
           labelVisible: false,
           width: 1,
-          style: LineStyle.Solid,
+          style: LineStyle.Dashed,
         },
         horzLine: { visible: false, labelVisible: false },
       },
       localization: {
         priceFormatter: formatAxisReturn,
+        tickmarksPriceFormatter: compareChartTickmarksFormatter(containerWidthRef.current),
       },
       handleScroll: false,
       handleScale: false,
@@ -237,7 +372,8 @@ export function StockCompareReturnChart({ primaryTicker, comparePicks, range, he
       bottomColor: "rgba(37, 99, 235, 0.02)",
       lineWidth: 2,
       lineType: LineType.Curved,
-      priceLineVisible: true,
+      priceLineVisible: false,
+      lastValueVisible: !shouldHideMobileYAxisLabels(containerWidthRef.current),
       lastPriceAnimation: LastPriceAnimationMode.OnDataUpdate,
       crosshairMarkerVisible: true,
       crosshairMarkerRadius: 5,
@@ -254,7 +390,8 @@ export function StockCompareReturnChart({ primaryTicker, comparePicks, range, he
           color,
           lineWidth: 2,
           lineType: LineType.Curved,
-          priceLineVisible: true,
+          priceLineVisible: false,
+          lastValueVisible: !shouldHideMobileYAxisLabels(containerWidthRef.current),
           lastPriceAnimation: LastPriceAnimationMode.OnDataUpdate,
           crosshairMarkerVisible: true,
           crosshairMarkerRadius: 5,
@@ -269,26 +406,72 @@ export function StockCompareReturnChart({ primaryTicker, comparePicks, range, he
     primarySeriesRef.current = primarySeries;
     compareSeriesRefs.current = lines;
 
+    const resyncPeriodAxisLabels = () => {
+      if (loadingRef.current) return;
+      const c = chartRef.current;
+      if (!c || hoverTimeRef.current != null || primaryPointsRef.current.length === 0) return;
+      setPeriodAxisLabelsGuarded(
+        syncOverviewPeriodAxisLabels(
+          c,
+          primaryPointsRef.current,
+          dataTimeZoneRef.current,
+          overviewBottomAxisModeRef.current,
+          containerWidthRef.current,
+        ),
+      );
+    };
+
     const onCrosshairMove = (param: MouseEventParams) => {
       if (param.point === undefined || param.point.x < 0 || param.point.y < 0 || param.time === undefined) {
-        setHover(null);
+        const wasHovered = crosshairHoveredRef.current;
+        crosshairHoveredRef.current = false;
+        hoverTimeRef.current = null;
+        setHoverPoint(null);
+        setHoverLines(null);
+        setHoverAxisLabelGuarded(null);
+        if (wasHovered) resyncPeriodAxisLabels();
         return;
       }
+
+      setHoverPoint({ x: param.point.x, y: param.point.y });
+
       const sec = horzTimeToUnixSeconds(param.time);
-      if (sec == null) {
-        setHover(null);
-        return;
-      }
       const pa = primaryPointsRef.current;
-      const picks = comparePicksRef.current;
-      const lists = comparePointsListRef.current;
       const na = sec != null && pa.length ? nearestPointByTime(pa, sec) : null;
       if (!na || !isFiniteNumber(na.time) || !isFiniteNumber(na.value)) {
-        setHover(null);
+        crosshairHoveredRef.current = false;
+        hoverTimeRef.current = null;
+        setHoverLines(null);
+        setHoverAxisLabelGuarded(null);
+        resyncPeriodAxisLabels();
         return;
       }
-      const tz = pa.find((p) => typeof p.timeZone === "string" && p.timeZone.length > 0)?.timeZone;
-      const dateLabel = formatAssetChartTimestamp(na.time, { kind: "stock", timeZone: tz });
+
+      crosshairHoveredRef.current = true;
+      hoverTimeRef.current = param.time as Time;
+
+      const activeRange = rangeRef.current;
+      const axisMode = overviewBottomAxisModeRef.current;
+      const tz = dataTimeZoneRef.current;
+      const labelUnix = chartPointDisplayUnix(na, axisMode);
+      const label = formatOverviewCrosshairBottomLabel(
+        activeRange,
+        axisMode,
+        na,
+        pa,
+        tz,
+        twoSlotDayCrosshairLabelByBarTimeRef.current,
+        labelUnix,
+      );
+      const xCoord = chart.timeScale().timeToCoordinate(na.time as UTCTimestamp);
+      if (xCoord != null && Number.isFinite(xCoord) && label) {
+        setHoverAxisLabelGuarded({ leftPx: xCoord, label });
+      } else {
+        setHoverAxisLabelGuarded(null);
+      }
+
+      const picks = comparePicksRef.current;
+      const lists = comparePointsListRef.current;
       const linesOut: { label: string; color: string }[] = [
         { label: `${pSym} ${formatReturnPctFromIndex(na.value)}`, color: PRIMARY_BLUE },
       ];
@@ -301,23 +484,19 @@ export function StockCompareReturnChart({ primaryTicker, comparePicks, range, he
           linesOut.push({ label: `${sym} ${formatReturnPctFromIndex(nb.value)}`, color });
         }
       }
-      setHover({
-        x: param.point.x,
-        y: param.point.y,
-        dateLabel,
-        lines: linesOut,
-      });
+      setHoverLines(linesOut);
     };
 
     chart.subscribeCrosshairMove(onCrosshairMove);
 
     const ro = new ResizeObserver(() => {
-      chart.resize(Math.max(2, el.clientWidth), height);
+      chart.resize(Math.max(2, el.clientWidth), plotHeight);
       const plotW = containerRef.current?.clientWidth ?? el.clientWidth;
-      fitContentWithMobilePlotGutter(chart, plotW);
+      fitContentWithMobilePlotGutter(chart, plotW, primaryPointsRef.current.length);
+      resyncPeriodAxisLabels();
     });
     ro.observe(el);
-    chart.resize(Math.max(2, el.clientWidth), height);
+    chart.resize(Math.max(2, el.clientWidth), plotHeight);
 
     return () => {
       ro.disconnect();
@@ -327,7 +506,7 @@ export function StockCompareReturnChart({ primaryTicker, comparePicks, range, he
       primarySeriesRef.current = null;
       compareSeriesRefs.current = [];
     };
-  }, [height, pSym, compareSlotsKey]);
+  }, [plotHeight, pSym, compareSlotsKey]);
 
   useEffect(() => {
     const chart = chartRef.current;
@@ -341,20 +520,38 @@ export function StockCompareReturnChart({ primaryTicker, comparePicks, range, he
         .filter((p) => isFiniteNumber(p.time) && isFiniteNumber(p.value))
         .map((p) => ({ time: p.time as UTCTimestamp, value: p.value }));
 
-    const da = mapData(primaryPts);
-    a.setData(da);
+    a.setData(mapData(primaryPts));
     for (let i = 0; i < lines.length; i++) {
       lines[i]!.setData(mapData(comparePtsList[i] ?? []));
     }
-    fitContentWithMobilePlotGutter(chart, containerRef.current?.clientWidth ?? 0);
-  }, [primaryPts, comparePtsList, compareSlotsKey]);
+    fitContentWithMobilePlotGutter(
+      chart,
+      containerRef.current?.clientWidth ?? 0,
+      primaryPts.filter((p) => isFiniteNumber(p.time) && isFiniteNumber(p.value)).length,
+    );
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (!loading && chartRef.current && hoverTimeRef.current == null) {
+          setPeriodAxisLabelsGuarded(
+            syncOverviewPeriodAxisLabels(
+              chartRef.current,
+              primaryPts,
+              dataTimeZoneRef.current,
+              overviewBottomAxisModeRef.current,
+              containerWidthRef.current,
+            ),
+          );
+        }
+      });
+    });
+  }, [primaryPts, comparePtsList, compareSlotsKey, loading]);
 
-  const tooltipEstHeight = useMemo(() => 34 + Math.max(1, hover?.lines.length ?? 2) * 22, [hover?.lines.length]);
+  const tooltipEstHeight = useMemo(() => 28 + Math.max(1, hoverLines?.length ?? 2) * 22, [hoverLines?.length]);
 
   const tooltipPos = useMemo(() => {
-    if (!hover || containerWidth <= 0) return null;
-    return layoutPointTooltip({ x: hover.x, y: hover.y }, containerWidth, height, tooltipEstHeight);
-  }, [hover, containerWidth, height, tooltipEstHeight]);
+    if (!hoverPoint || !hoverLines?.length || containerWidth <= 0) return null;
+    return layoutPointTooltip(hoverPoint, containerWidth, plotHeight, tooltipEstHeight);
+  }, [hoverPoint, hoverLines, containerWidth, plotHeight, tooltipEstHeight]);
 
   const empty = !loading && primaryPts.length === 0;
 
@@ -364,43 +561,105 @@ export function StockCompareReturnChart({ primaryTicker, comparePicks, range, he
   }, [primaryPts.length, pSym]);
 
   return (
-    <div ref={containerRef} className="relative z-0 bg-transparent select-none" style={{ height }}>
-      <div
-        ref={wrapRef}
-        className={`absolute inset-0 z-10 transition-opacity duration-300 ease-out ${
-          loading || !ready ? "opacity-0" : "opacity-100"
-        }`}
-      />
-      {hover && tooltipPos ? (
+    <div
+      ref={containerRef}
+      className="relative z-0 flex min-w-0 flex-col select-none"
+      style={{ height }}
+      onMouseLeave={() => {
+        crosshairHoveredRef.current = false;
+        hoverTimeRef.current = null;
+        setHoverAxisLabelGuarded(null);
+        const c = chartRef.current;
+        if (c && primaryPointsRef.current.length > 0) {
+          setPeriodAxisLabelsGuarded(
+            syncOverviewPeriodAxisLabels(
+              c,
+              primaryPointsRef.current,
+              dataTimeZoneRef.current,
+              overviewBottomAxisModeRef.current,
+              containerWidthRef.current,
+            ),
+          );
+        }
+      }}
+    >
+      <div className="relative min-h-0 min-w-0 flex-1" style={{ height: plotHeight }}>
+        <div className="pointer-events-none absolute inset-0 z-0 bg-white" aria-hidden>
+          <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
+        </div>
         <div
-          className="pointer-events-none absolute z-30 min-w-[200px] max-w-[min(100%,280px)] rounded-[10px] border border-[#E4E4E7] bg-white px-3 py-2 text-[12px] leading-4 text-[#09090B] shadow-[0px_8px_20px_0px_rgba(10,10,10,0.10)]"
-          style={{
-            left: tooltipPos.left,
-            top: tooltipPos.top,
-            transform: tooltipPos.transform,
-          }}
-          role="tooltip"
+          ref={wrapRef}
+          className={cn(
+            "absolute inset-0 z-10 transition-opacity duration-300 ease-out",
+            loading || !ready ? "opacity-0" : "opacity-100",
+          )}
+        />
+        {hoverPoint && ready && !loading ? (
+          <div
+            className="pointer-events-none absolute inset-y-0 right-0 z-[15] bg-white/55"
+            style={{ left: Math.max(0, hoverPoint.x) }}
+            aria-hidden
+          />
+        ) : null}
+        {hoverLines && hoverPoint && tooltipPos ? (
+          <div
+            className="pointer-events-none absolute z-30 min-w-[148px] rounded-lg border border-[#E4E4E7] bg-white px-3 py-2 shadow-[0px_1px_4px_0px_rgba(10,10,10,0.08),0px_1px_2px_0px_rgba(10,10,10,0.06)]"
+            style={{
+              left: tooltipPos.left,
+              top: tooltipPos.top,
+              transform: tooltipPos.transform,
+            }}
+            role="tooltip"
+          >
+            {hoverLines.map((line, i) => (
+              <p
+                key={`${line.label}-${i}`}
+                className={cn(
+                  "text-xs font-semibold tabular-nums",
+                  i > 0 && "mt-0.5",
+                )}
+                style={{ color: line.color }}
+              >
+                {line.label}
+              </p>
+            ))}
+          </div>
+        ) : null}
+        {loading ? (
+          <div className="absolute inset-0 z-20 flex flex-col px-1 py-1">
+            <ChartSkeleton fill variant="minimal" />
+          </div>
+        ) : null}
+        {empty ? (
+          <div className="absolute inset-0 z-20 flex items-center justify-center px-6 text-center text-[14px] text-[#71717A]">
+            {emptyMessage()}
+          </div>
+        ) : null}
+      </div>
+      {!loading ? (
+        <div
+          className="relative w-full shrink-0 overflow-visible"
+          style={{ height: axisRowPx }}
+          aria-hidden={periodAxisLabels.length === 0 && !hoverAxisLabel}
         >
-          <div className="font-normal text-[#71717A]">{hover.dateLabel}</div>
-          {hover.lines.map((line, i) => (
-            <div
-              key={`${line.label}-${i}`}
-              className={i === 0 ? "mt-1 font-semibold tabular-nums" : "mt-0.5 font-semibold tabular-nums"}
-              style={{ color: line.color }}
+          {hoverAxisLabel ? (
+            <span
+              className="absolute bottom-1 inline-block max-w-[min(100%,calc(100%-16px))] -translate-x-1/2 whitespace-nowrap font-['Inter'] text-[11px] font-medium tabular-nums leading-none text-[#09090B] sm:text-[12px]"
+              style={{ left: `clamp(8px, ${hoverAxisLabel.leftPx}px, calc(100% - 8px))` }}
             >
-              {line.label}
-            </div>
-          ))}
-        </div>
-      ) : null}
-      {loading ? (
-        <div className="absolute inset-0 z-20 flex flex-col px-1 py-1">
-          <ChartSkeleton fill variant="minimal" />
-        </div>
-      ) : null}
-      {empty ? (
-        <div className="absolute inset-0 z-20 flex items-center justify-center px-6 text-center text-[14px] text-[#71717A]">
-          {emptyMessage()}
+              {hoverAxisLabel.label}
+            </span>
+          ) : (
+            periodAxisLabels.map((lab) => (
+              <span
+                key={lab.key}
+                className="absolute bottom-1 inline-block max-w-[72px] -translate-x-1/2 truncate whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]"
+                style={{ left: `clamp(8px, ${lab.leftPx}px, calc(100% - 8px))` }}
+              >
+                {lab.label}
+              </span>
+            ))
+          )}
         </div>
       ) : null}
     </div>

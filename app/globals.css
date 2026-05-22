@@ -27,6 +27,11 @@
     var(--mobile-bottom-nav-inset-bottom) + var(--mobile-bottom-nav-height) + 10px + env(safe-area-inset-bottom, 0px)
   );
   --mobile-bottom-nav-fab-bottom: calc(var(--mobile-bottom-nav-main-clearance) + 0.75rem);
+  /** Back-to-top sits in the nav row when the bottom pill is scroll-hidden (48px FAB in 60px nav). */
+  --mobile-bottom-nav-fab-bottom-docked: calc(
+    var(--mobile-bottom-nav-inset-bottom) + env(safe-area-inset-bottom, 0px) +
+      (var(--mobile-bottom-nav-height) - 3rem) / 2
+  );
   /** Desktop protected shell: grey gutter between sidebar, topbar, and main (Figma Web App). */
   --shell-chrome-inset: 4px;
   --shell-chrome-gap: 4px;
@@ -93,6 +98,37 @@ body {
   /** Fixed bottom pill — `env()` in global CSS avoids Tailwind SSR/client `className` mismatch. */
   .mobile-bottom-nav-pill {
     bottom: calc(var(--mobile-bottom-nav-inset-bottom) + env(safe-area-inset-bottom, 0px));
+    transition:
+      transform 280ms cubic-bezier(0.33, 1, 0.68, 1),
+      opacity 200ms ease;
+  }
+
+  .mobile-bottom-nav-pill.mobile-bottom-nav-pill--hidden {
+    transform: translate3d(
+      0,
+      calc(100% + var(--mobile-bottom-nav-inset-bottom) + env(safe-area-inset-bottom, 0px) + 8px),
+      0
+    );
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .main-scroll-to-top-fab {
+    bottom: var(--mobile-bottom-nav-fab-bottom);
+    transition:
+      bottom 280ms cubic-bezier(0.33, 1, 0.68, 1),
+      opacity 200ms ease;
+  }
+
+  html.mobile-bottom-nav-scroll-hidden .main-scroll-to-top-fab {
+    bottom: var(--mobile-bottom-nav-fab-bottom-docked);
+  }
+}
+
+@media (max-width: 767px) and (prefers-reduced-motion: reduce) {
+  .mobile-bottom-nav-pill,
+  .main-scroll-to-top-fab {
+    transition: none;
   }
 }
 
@@ -181,6 +217,19 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .mobile-bottom-nav-sheet-enter {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/** Key Stats metric chart — mobile bottom sheet. */
+.key-stats-metric-sheet-enter {
+  animation: mobile-bottom-nav-sheet-in 320ms cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .key-stats-metric-sheet-enter {
     animation: none;
     opacity: 1;
     transform: none;

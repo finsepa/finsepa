@@ -7,6 +7,7 @@ import { REVALIDATE_HOT } from "@/lib/data/cache-policy";
 import { fetchEodhdIntraday, type EodhdIntradayBar } from "@/lib/market/eodhd-intraday";
 import { fetchEodhdEodDaily, type EodhdDailyBar } from "@/lib/market/eodhd-eod";
 import { getCachedSharesOutstanding } from "@/lib/market/stock-shares-outstanding";
+import { usSessionWallClockUnix } from "@/lib/market/chart-timestamp-format";
 import {
   STOCK_CHART_ALL_LOOKBACK_YEARS,
   type StockChartPoint,
@@ -87,6 +88,82 @@ export function minGapDownsampleChartPoints(points: StockChartPoint[], minGapSec
  * Collapse intraday to **two points per grouping day** (first and last bar in that day).
  * Stocks: pass a key that maps to the US session calendar date; crypto: UTC `yyyy-MM-dd`.
  */
+/** Monday `YYYY-MM-DD` session week key (America/New_York). */
+export function usSessionWeekKeyFromUnixSeconds(sec: number): string {
+  const ymd = usSessionYmdFromUnixSeconds(sec);
+  const [y, m, d] = ymd.split("-").map((x) => Number(x));
+  if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) return ymd;
+  const anchorMs = Date.UTC(y, m - 1, d, 12, 0, 0);
+  const wd = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    weekday: "short",
+  }).format(new Date(anchorMs));
+  const dow =
+    wd.startsWith("Mon") ? 1
+    : wd.startsWith("Tue") ? 2
+    : wd.startsWith("Wed") ? 3
+    : wd.startsWith("Thu") ? 4
+    : wd.startsWith("Fri") ? 5
+    : wd.startsWith("Sat") ? 6
+    : 0;
+  const mondayMs = anchorMs - ((dow + 6) % 7) * 86400_000;
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(mondayMs));
+}
+
+/** `YYYY-MM` in America/New_York for monthly bucketing. */
+export function usSessionMonthKeyFromUnixSeconds(sec: number): string {
+  return usSessionYmdFromUnixSeconds(sec).slice(0, 7);
+}
+
+/** Last bar in each calendar month bucket (ascending). */
+export function oneSamplePerMonthByKey(
+  points: StockChartPoint[],
+  monthKey: (p: StockChartPoint) => string,
+): StockChartPoint[] {
+  const sorted = [...points].filter((p) => Number.isFinite(p.time) && Number.isFinite(p.value)).sort((a, b) => a.time - b.time);
+  if (!sorted.length) return [];
+  const byMonth = new Map<string, StockChartPoint[]>();
+  for (const p of sorted) {
+    const k = monthKey(p).trim();
+    if (!k) continue;
+    if (!byMonth.has(k)) byMonth.set(k, []);
+    byMonth.get(k)!.push(p);
+  }
+  const out: StockChartPoint[] = [];
+  for (const k of [...byMonth.keys()].sort()) {
+    const monthPts = byMonth.get(k)!;
+    if (monthPts.length) out.push(monthPts[monthPts.length - 1]!);
+  }
+  return dedupeAndSort(out);
+}
+
+/** Last bar in each week bucket (ascending). */
+export function oneSamplePerWeekByKey(
+  points: StockChartPoint[],
+  weekKey: (p: StockChartPoint) => string,
+): StockChartPoint[] {
+  const sorted = [...points].filter((p) => Number.isFinite(p.time) && Number.isFinite(p.value)).sort((a, b) => a.time - b.time);
+  if (!sorted.length) return [];
+  const byWeek = new Map<string, StockChartPoint[]>();
+  for (const p of sorted) {
+    const k = weekKey(p).trim();
+    if (!k) continue;
+    if (!byWeek.has(k)) byWeek.set(k, []);
+    byWeek.get(k)!.push(p);
+  }
+  const out: StockChartPoint[] = [];
+  for (const k of [...byWeek.keys()].sort()) {
+    const weekPts = byWeek.get(k)!;
+    if (weekPts.length) out.push(weekPts[weekPts.length - 1]!);
+  }
+  return dedupeAndSort(out);
+}
+
 export function twoSamplesPerDayByKey(
   points: StockChartPoint[],
   dayKey: (p: StockChartPoint) => string,
@@ -167,7 +244,7 @@ function barsToChartPoints(bars: EodhdIntradayBar[]): StockChartPoint[] {
 }
 
 /** Keep points whose US `sessionDate` falls in the last `n` distinct session days (ascending order). */
-function trimPointsToLastNUsSessionDays(points: StockChartPoint[], n: number): StockChartPoint[] {
+export function trimPointsToLastNUsSessionDays(points: StockChartPoint[], n: number): StockChartPoint[] {
   if (points.length === 0 || n < 1) return points;
   const dated = points.map((p) => ({
     p,
@@ -213,18 +290,27 @@ export function stockChartPointsFromDailyBars(bars: EodhdDailyBar[]): StockChart
   return dedupeAndSort(points);
 }
 
+/** Target bar spacing for Overview 1D / 5D intraday charts (EODHD 1m → ~4m). */
+const SESSION_INTRADAY_CHART_BAR_GAP_SEC = 4 * 60;
+
+function finalize1DIntradayPoints(points: StockChartPoint[]): StockChartPoint[] {
+  if (!points.length) return points;
+  const thinned = minGapDownsampleChartPoints(points, SESSION_INTRADAY_CHART_BAR_GAP_SEC);
+  return trimPointsToLastNUsSessionDays(thinned, 1);
+}
+
 /**
- * 1D: prefer intraday with progressively relaxed windows/intervals; trim multi-day pulls to the latest UTC session.
+ * 1D: prefer 1m intraday downsampled to ~4m bars for the latest US session; relax window/interval if needed.
  * If no intraday exists at all, last resort is daily closes so the chart is rarely empty.
  */
 async function load1DChartPoints(ticker: string, now: Date, nowSec: number): Promise<StockChartPoint[]> {
   const strategies: { lookbackSec: number; interval: "1m" | "5m" | "1h"; trimToLatestUtcDay: boolean }[] = [
+    { lookbackSec: 86400, interval: "1m", trimToLatestUtcDay: false },
+    { lookbackSec: 3 * 86400, interval: "1m", trimToLatestUtcDay: true },
     { lookbackSec: 86400, interval: "5m", trimToLatestUtcDay: false },
     { lookbackSec: 3 * 86400, interval: "5m", trimToLatestUtcDay: true },
     { lookbackSec: 2 * 86400, interval: "1h", trimToLatestUtcDay: true },
     { lookbackSec: 7 * 86400, interval: "1h", trimToLatestUtcDay: true },
-    { lookbackSec: 2 * 86400, interval: "1m", trimToLatestUtcDay: true },
-    { lookbackSec: 5 * 86400, interval: "1m", trimToLatestUtcDay: true },
   ];
 
   for (const s of strategies) {
@@ -245,27 +331,27 @@ async function load1DChartPoints(ticker: string, now: Date, nowSec: number): Pro
     const use = s.trimToLatestUtcDay ? trimIntradayToLatestUtcDay(bars) : bars;
     if (!use.length) continue;
     const pts = barsToChartPoints(use);
-    if (pts.length) return pts;
+    if (pts.length) return finalize1DIntradayPoints(pts);
   }
 
   if (process.env.NODE_ENV === "development") {
     console.info("[stock chart] 1D: no intraday; last resort daily EOD", { ticker });
   }
-  return loadDailyLastNCloses(ticker, now, 5, 21);
+  const daily = await loadDailyLastNCloses(ticker, now, 5, 21);
+  return trimPointsToLastNUsSessionDays(daily, 1);
 }
 
-const FIVE_DAY_BAR_GAP_SEC = 10 * 60;
 const ONE_MONTH_BAR_GAP_SEC = 30 * 60;
 
 /**
- * 5D: pull **5m** (or **1m**) intraday over enough calendar days, keep last 5 US sessions, then one sample **~every 10 minutes**.
- * Falls back to hourly intraday, then last 5 daily closes.
+ * 5D: same ~4m intraday spacing as 1D over the last 5 US sessions; hourly only if finer data missing.
  */
 async function load5DChartPoints(ticker: string, now: Date, nowSec: number): Promise<StockChartPoint[]> {
   const tries: { lookbackSec: number; interval: "5m" | "1m" | "1h" }[] = [
+    { lookbackSec: 14 * 86400, interval: "1m" },
+    { lookbackSec: 10 * 86400, interval: "1m" },
     { lookbackSec: 14 * 86400, interval: "5m" },
     { lookbackSec: 10 * 86400, interval: "5m" },
-    { lookbackSec: 9 * 86400, interval: "1m" },
     { lookbackSec: 10 * 86400, interval: "1h" },
     { lookbackSec: 14 * 86400, interval: "1h" },
   ];
@@ -290,7 +376,7 @@ async function load5DChartPoints(ticker: string, now: Date, nowSec: number): Pro
     if (t.interval === "1h") {
       return pts;
     }
-    pts = minGapDownsampleChartPoints(pts, FIVE_DAY_BAR_GAP_SEC);
+    pts = minGapDownsampleChartPoints(pts, SESSION_INTRADAY_CHART_BAR_GAP_SEC);
     if (pts.length) return pts;
   }
 
@@ -306,9 +392,11 @@ async function load5DChartPoints(ticker: string, now: Date, nowSec: number): Pro
  */
 async function load1MChartPoints(ticker: string, now: Date, nowSec: number): Promise<StockChartPoint[]> {
   const strategies: { lookbackSec: number; interval: "5m" | "1m" | "1h" }[] = [
+    { lookbackSec: 34 * 86400, interval: "1m" },
+    { lookbackSec: 42 * 86400, interval: "1m" },
+    { lookbackSec: 55 * 86400, interval: "1m" },
     { lookbackSec: 42 * 86400, interval: "5m" },
     { lookbackSec: 55 * 86400, interval: "5m" },
-    { lookbackSec: 34 * 86400, interval: "1m" },
     { lookbackSec: 42 * 86400, interval: "1h" },
     { lookbackSec: 55 * 86400, interval: "1h" },
   ];
@@ -352,6 +440,27 @@ async function load1MChartPoints(ticker: string, now: Date, nowSec: number): Pro
   return dedupeAndSort(points);
 }
 
+/** 6M / YTD: morning open (9:30 AM ET) and afternoon slot (1:30 PM ET) per session day. */
+function usSessionTwoSlotDayUnixForYmd(ymd: string): { open: number; afternoon: number } {
+  return {
+    open: usSessionWallClockUnix(ymd, 9, 30),
+    afternoon: usSessionWallClockUnix(ymd, 13, 30),
+  };
+}
+
+/** Two chart points per EOD day (open + close anchors) when intraday is unavailable. */
+function dailyBarsToTwoPointsPerSessionDay(bars: EodhdDailyBar[]): StockChartPoint[] {
+  const out: StockChartPoint[] = [];
+  for (const b of bars) {
+    const v = clampFinite(b.close);
+    if (v == null || !/^\d{4}-\d{2}-\d{2}$/.test(b.date)) continue;
+    const { open, afternoon } = usSessionTwoSlotDayUnixForYmd(b.date);
+    out.push({ time: open, value: v, sessionDate: b.date });
+    if (afternoon > open) out.push({ time: afternoon, value: v, sessionDate: b.date });
+  }
+  return dedupeAndSort(out);
+}
+
 async function load6MDailyFallback(ticker: string, now: Date): Promise<StockChartPoint[]> {
   const toStr = ymdUtc(now);
   const fromDate = new Date(now);
@@ -359,7 +468,7 @@ async function load6MDailyFallback(ticker: string, now: Date): Promise<StockChar
   const fromStr = ymdUtc(fromDate);
   const daily = await fetchEodhdEodDaily(ticker, fromStr, toStr);
   if (!daily?.length) return [];
-  return stockChartPointsFromDailyBars(daily);
+  return dailyBarsToTwoPointsPerSessionDay(daily);
 }
 
 /**
@@ -370,28 +479,23 @@ async function load6MChartPoints(ticker: string, now: Date, nowSec: number): Pro
   const dayKey = (p: StockChartPoint) =>
     (p.sessionDate?.trim() ? p.sessionDate : usSessionYmdFromUnixSeconds(p.time)) as string;
 
-  const strategies: { lookbackSec: number; interval: "1h" | "5m" }[] = [
-    { lookbackSec: 235 * 86400, interval: "1h" },
-    { lookbackSec: 220 * 86400, interval: "5m" },
-    { lookbackSec: 200 * 86400, interval: "5m" },
-  ];
-
-  for (const s of strategies) {
-    const bars = await fetchEodhdIntraday(ticker, nowSec - s.lookbackSec, nowSec, s.interval);
-    if (process.env.NODE_ENV === "development") {
-      console.info("[stock chart] 6M intraday attempt", {
-        ticker,
-        interval: s.interval,
-        lookbackDays: Math.round(s.lookbackSec / 86400),
-        barCount: bars?.length ?? 0,
-      });
-    }
-    if (!bars?.length) continue;
+  const sixMonthStartSec = nowSec - 183 * 86400;
+  // One 1h intraday fetch is enough for two-samples-per-day; avoid heavy 5m/1m windows.
+  const bars = await fetchEodhdIntraday(ticker, sixMonthStartSec - 14 * 86400, nowSec, "1h");
+  if (process.env.NODE_ENV === "development") {
+    console.info("[stock chart] 6M intraday attempt", {
+      ticker,
+      interval: "1h",
+      barCount: bars?.length ?? 0,
+    });
+  }
+  if (bars?.length) {
     let pts = barsToChartPoints(bars);
-    if (pts.length < 120) continue;
-    pts = twoSamplesPerDayByKey(pts, dayKey);
-    if (pts.length < 60) continue;
-    return pts;
+    if (pts.length >= 40) {
+      pts = twoSamplesPerDayByKey(pts, dayKey);
+      pts = pts.filter((p) => p.time >= sixMonthStartSec);
+      if (pts.length >= 40) return pts;
+    }
   }
 
   if (process.env.NODE_ENV === "development") {
@@ -406,39 +510,108 @@ async function loadYTDDailyFallback(ticker: string, now: Date): Promise<StockCha
   const fromStr = ymdUtc(fromDate);
   const daily = await fetchEodhdEodDaily(ticker, fromStr, toStr);
   if (!daily?.length) return [];
-  return stockChartPointsFromDailyBars(daily);
+  return dailyBarsToTwoPointsPerSessionDay(daily);
 }
 
 /**
- * YTD: intraday from UTC year start through now, then **two samples per US session day**.
- * Falls back to daily EOD (same window as before).
+ * YTD: same as 6M — 1h intraday, two samples per US session day (9:30 AM / 1:30 PM slots);
+ * falls back to daily EOD with two points per day.
  */
 async function loadYTDChartPoints(ticker: string, now: Date, nowSec: number): Promise<StockChartPoint[]> {
   const ytdStartSec = Math.floor(Date.UTC(now.getUTCFullYear(), 0, 1) / 1000);
   const dayKey = (p: StockChartPoint) =>
     (p.sessionDate?.trim() ? p.sessionDate : usSessionYmdFromUnixSeconds(p.time)) as string;
 
-  for (const interval of ["1h", "5m"] as const) {
-    const bars = await fetchEodhdIntraday(ticker, ytdStartSec, nowSec, interval);
-    if (process.env.NODE_ENV === "development") {
-      console.info("[stock chart] YTD intraday attempt", {
-        ticker,
-        interval,
-        barCount: bars?.length ?? 0,
-      });
+  const bars = await fetchEodhdIntraday(ticker, ytdStartSec - 14 * 86400, nowSec, "1h");
+  if (process.env.NODE_ENV === "development") {
+    console.info("[stock chart] YTD intraday attempt", {
+      ticker,
+      interval: "1h",
+      barCount: bars?.length ?? 0,
+    });
+  }
+  if (bars?.length) {
+    let pts = barsToChartPoints(bars);
+    if (pts.length >= 4) {
+      pts = twoSamplesPerDayByKey(pts, dayKey);
+      pts = pts.filter((p) => p.time >= ytdStartSec);
+      if (pts.length >= 4) return pts;
     }
-    if (!bars?.length) continue;
-    let pts = barsToChartPoints(bars).filter((p) => p.time >= ytdStartSec);
-    if (pts.length < 15) continue;
-    pts = twoSamplesPerDayByKey(pts, dayKey);
-    if (pts.length < 4) continue;
-    return pts;
   }
 
   if (process.env.NODE_ENV === "development") {
     console.info("[stock chart] YTD: intraday sparse; fallback daily EOD", { ticker });
   }
   return loadYTDDailyFallback(ticker, now);
+}
+
+async function load1YDailyFallback(ticker: string, now: Date): Promise<StockChartPoint[]> {
+  const toStr = ymdUtc(now);
+  const fromDate = new Date(now);
+  fromDate.setUTCFullYear(fromDate.getUTCFullYear() - 1);
+  const fromStr = ymdUtc(fromDate);
+  const daily = await fetchEodhdEodDaily(ticker, fromStr, toStr);
+  if (!daily?.length) return [];
+  return dailyBarsToTwoPointsPerSessionDay(daily);
+}
+
+/**
+ * 1Y: same two-slot day model as 6M / YTD (1h intraday → two samples per session day).
+ */
+async function load1YChartPoints(ticker: string, now: Date, nowSec: number): Promise<StockChartPoint[]> {
+  const oneYearStartSec = nowSec - 365 * 86400;
+  const dayKey = (p: StockChartPoint) =>
+    (p.sessionDate?.trim() ? p.sessionDate : usSessionYmdFromUnixSeconds(p.time)) as string;
+
+  const bars = await fetchEodhdIntraday(ticker, oneYearStartSec - 14 * 86400, nowSec, "1h");
+  if (process.env.NODE_ENV === "development") {
+    console.info("[stock chart] 1Y intraday attempt", {
+      ticker,
+      interval: "1h",
+      barCount: bars?.length ?? 0,
+    });
+  }
+  if (bars?.length) {
+    let pts = barsToChartPoints(bars);
+    if (pts.length >= 40) {
+      pts = twoSamplesPerDayByKey(pts, dayKey);
+      pts = pts.filter((p) => p.time >= oneYearStartSec);
+      if (pts.length >= 40) return pts;
+    }
+  }
+
+  if (process.env.NODE_ENV === "development") {
+    console.info("[stock chart] 1Y: intraday sparse; fallback daily EOD", { ticker });
+  }
+  return load1YDailyFallback(ticker, now);
+}
+
+/**
+ * 5Y: daily EOD downsampled to **one point per US session week** (last close of the week).
+ */
+async function load5YChartPoints(ticker: string, now: Date): Promise<StockChartPoint[]> {
+  const toStr = ymdUtc(now);
+  const fromDate = new Date(now);
+  fromDate.setUTCFullYear(fromDate.getUTCFullYear() - 5);
+  const fromStr = ymdUtc(fromDate);
+  const daily = await fetchEodhdEodDaily(ticker, fromStr, toStr);
+  if (!daily?.length) return [];
+  const pts = stockChartPointsFromDailyBars(daily);
+  return oneSamplePerWeekByKey(pts, (p) => usSessionWeekKeyFromUnixSeconds(p.time));
+}
+
+/**
+ * ALL: full EOD history downsampled to **one point per US session month** (last close of the month).
+ */
+async function loadALLChartPoints(ticker: string, now: Date): Promise<StockChartPoint[]> {
+  const toStr = ymdUtc(now);
+  const fromDate = new Date(now);
+  fromDate.setUTCFullYear(fromDate.getUTCFullYear() - STOCK_CHART_ALL_LOOKBACK_YEARS);
+  const fromStr = ymdUtc(fromDate);
+  const daily = await fetchEodhdEodDaily(ticker, fromStr, toStr);
+  if (!daily?.length) return [];
+  const pts = stockChartPointsFromDailyBars(daily);
+  return oneSamplePerMonthByKey(pts, (p) => usSessionMonthKeyFromUnixSeconds(p.time));
 }
 
 async function loadStockPriceChartPointsUncached(ticker: string, range: StockChartRange): Promise<StockChartPoint[]> {
@@ -460,29 +633,17 @@ async function loadStockPriceChartPointsUncached(ticker: string, range: StockCha
   if (range === "YTD") {
     return loadYTDChartPoints(ticker, now, nowSec);
   }
+  if (range === "1Y") {
+    return load1YChartPoints(ticker, now, nowSec);
+  }
+  if (range === "5Y") {
+    return load5YChartPoints(ticker, now);
+  }
+  if (range === "ALL") {
+    return loadALLChartPoints(ticker, now);
+  }
 
-  // Daily ranges.
-  const toStr = ymdUtc(now);
-  let fromDate = new Date(now);
-
-  if (range === "1Y") fromDate.setUTCFullYear(fromDate.getUTCFullYear() - 1);
-  else if (range === "5Y") fromDate.setUTCFullYear(fromDate.getUTCFullYear() - 5);
-  else if (range === "ALL") fromDate.setUTCFullYear(fromDate.getUTCFullYear() - STOCK_CHART_ALL_LOOKBACK_YEARS);
-
-  const fromStr = ymdUtc(fromDate);
-  const bars = await fetchEodhdEodDaily(ticker, fromStr, toStr);
-  if (!bars || !bars.length) return [];
-
-  const points = bars
-    .map((b) => {
-      const t = parseYmdToUnixSeconds(b.date);
-      const v = clampFinite(b.close);
-      if (t == null || v == null) return null;
-      return { time: t, value: v, sessionDate: b.date };
-    })
-    .filter(Boolean) as StockChartPoint[];
-
-  return dedupeAndSort(points);
+  return [];
 }
 
 async function loadStockChartPointsUncached(
@@ -501,7 +662,7 @@ async function loadStockChartPointsUncached(
 export const getStockChartPoints = unstable_cache(
   async (ticker: string, range: StockChartRange, series: StockChartSeries) =>
     loadStockChartPointsUncached(ticker, range, series),
-  ["stock-chart-points-v12-all-maxhist"],
+  ["stock-chart-points-v21-all-monthly-8y-axis"],
   { revalidate: REVALIDATE_HOT },
 );
 

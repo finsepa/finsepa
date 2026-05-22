@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { X } from "lucide-react";
@@ -23,14 +23,107 @@ import {
   chartingMetricToParam,
   type ChartingMetricId,
 } from "@/lib/market/stock-charting-metrics";
+import { cn } from "@/lib/utils";
 
-const PERIOD_TAB_OPTIONS = [
+/** Mobile Key Stats sheet: last 10 fiscal years (40 quarters). */
+const MOBILE_KEY_STATS_MAX_ANNUAL_BARS = 10;
+const MOBILE_KEY_STATS_MAX_QUARTERLY_BARS = 40;
+const MOBILE_KEY_STATS_CHART_HEIGHT_PX = 268;
+const MOBILE_SHEET_DISMISS_DRAG_PX = 72;
+
+function useMobileSheetDragDismiss(onClose: () => void, enabled: boolean) {
+  const [dragOffsetY, setDragOffsetY] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const startClientYRef = useRef(0);
+  const pointerIdRef = useRef<number | null>(null);
+
+  const resetDrag = useCallback(() => {
+    setDragging(false);
+    setDragOffsetY(0);
+    pointerIdRef.current = null;
+  }, []);
+
+  useEffect(() => {
+    if (!enabled) resetDrag();
+  }, [enabled, resetDrag]);
+
+  const onPointerDown = useCallback(
+    (e: ReactPointerEvent<HTMLDivElement>) => {
+      if (!enabled) return;
+      if (!(e.target as HTMLElement).closest("[data-sheet-drag-handle]")) return;
+      pointerIdRef.current = e.pointerId;
+      startClientYRef.current = e.clientY;
+      setDragging(true);
+      setDragOffsetY(0);
+      e.currentTarget.setPointerCapture(e.pointerId);
+    },
+    [enabled],
+  );
+
+  const onPointerMove = useCallback(
+    (e: ReactPointerEvent<HTMLDivElement>) => {
+      if (!enabled || pointerIdRef.current !== e.pointerId) return;
+      setDragOffsetY(Math.max(0, e.clientY - startClientYRef.current));
+    },
+    [enabled],
+  );
+
+  const finishDrag = useCallback(
+    (e: ReactPointerEvent<HTMLDivElement>) => {
+      if (!enabled || pointerIdRef.current !== e.pointerId) return;
+      try {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      } catch {
+        /* ignore */
+      }
+      const dy = Math.max(0, e.clientY - startClientYRef.current);
+      if (dy >= MOBILE_SHEET_DISMISS_DRAG_PX) {
+        onClose();
+        return;
+      }
+      resetDrag();
+    },
+    [enabled, onClose, resetDrag],
+  );
+
+  const sheetStyle =
+    dragOffsetY > 0
+      ? {
+          transform: `translate3d(0, ${dragOffsetY}px, 0)`,
+          transition: dragging ? "none" : "transform 220ms cubic-bezier(0.32, 0.72, 0, 1)",
+        }
+      : undefined;
+
+  const backdropStyle =
+    dragOffsetY > 0 ? { opacity: Math.max(0.2, 0.6 - dragOffsetY / 400) } : undefined;
+
+  const sheetPointerHandlers = enabled
+    ? {
+        onPointerDown,
+        onPointerMove,
+        onPointerUp: finishDrag,
+        onPointerCancel: finishDrag,
+      }
+    : {};
+
+  return { sheetStyle, backdropStyle, sheetPointerHandlers };
+}
+
+const DESKTOP_PERIOD_TAB_OPTIONS = [
   { value: "annual" as const, label: "Annual" },
   { value: "quarterly" as const, label: "Quarterly" },
-];
+] as const;
 
-function maxBarsForMode(mode: FundamentalsSeriesMode): number {
-  return mode === "quarterly" ? MULTICHART_MAX_QUARTERLY_BARS : MULTICHART_MAX_ANNUAL_BARS;
+const MOBILE_PERIOD_TAB_OPTIONS = [
+  { value: "annual" as const, label: "Annual" },
+  { value: "quarterly" as const, label: "Quarter" },
+] as const;
+
+function maxBarsForMode(mode: FundamentalsSeriesMode, mobile: boolean): number {
+  if (!mobile) {
+    return mode === "quarterly" ? MULTICHART_MAX_QUARTERLY_BARS : MULTICHART_MAX_ANNUAL_BARS;
+  }
+  return mode === "quarterly" ? MOBILE_KEY_STATS_MAX_QUARTERLY_BARS : MOBILE_KEY_STATS_MAX_ANNUAL_BARS;
 }
 
 function pickSeedForMode(
@@ -42,6 +135,22 @@ function pickSeedForMode(
     return Array.isArray(initialQuarterlyPoints) && initialQuarterlyPoints.length > 0 ? initialQuarterlyPoints : null;
   }
   return Array.isArray(initialAnnualPoints) && initialAnnualPoints.length > 0 ? initialAnnualPoints : null;
+}
+
+function isKeyStatsModalMobileViewport(): boolean {
+  return typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
+}
+
+function useKeyStatsModalMobile(): boolean {
+  const [mobile, setMobile] = useState(isKeyStatsModalMobileViewport);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const update = () => setMobile(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+  return mobile;
 }
 
 type Props = {
@@ -64,6 +173,8 @@ export function KeyStatsMetricChartModal({
   headerMeta,
   screenerRank = null,
 }: Props) {
+  const isMobile = useKeyStatsModalMobile();
+  const { sheetStyle, backdropStyle, sheetPointerHandlers } = useMobileSheetDragDismiss(onClose, isMobile);
   const [periodMode, setPeriodMode] = useState<FundamentalsSeriesMode>("annual");
   const [chartVisual, setChartVisual] = useState<MultichartVisual>("bar");
 
@@ -71,13 +182,15 @@ export function KeyStatsMetricChartModal({
     if (metricId == null) return [];
     const seed = pickSeedForMode("annual", initialAnnualPoints, initialQuarterlyPoints);
     if (!seed) return [];
-    return sliceLastAnnualWithMetric(seed, metricId, maxBarsForMode("annual")).length > 0 ? seed : [];
+    const mobile = isKeyStatsModalMobileViewport();
+    return sliceLastAnnualWithMetric(seed, metricId, maxBarsForMode("annual", mobile)).length > 0 ? seed : [];
   });
   const [loading, setLoading] = useState(() => {
     if (metricId == null) return false;
     const seed = pickSeedForMode("annual", initialAnnualPoints, initialQuarterlyPoints);
     if (!seed) return true;
-    return sliceLastAnnualWithMetric(seed, metricId, maxBarsForMode("annual")).length === 0;
+    const mobile = isKeyStatsModalMobileViewport();
+    return sliceLastAnnualWithMetric(seed, metricId, maxBarsForMode("annual", mobile)).length === 0;
   });
 
   useEffect(() => {
@@ -85,7 +198,7 @@ export function KeyStatsMetricChartModal({
     const activeMetric: ChartingMetricId = metricId;
     let cancelled = false;
     async function load() {
-      const max = maxBarsForMode(periodMode);
+      const max = maxBarsForMode(periodMode, isMobile);
       const seed = pickSeedForMode(periodMode, initialAnnualPoints, initialQuarterlyPoints);
       if (seed && sliceLastAnnualWithMetric(seed, activeMetric, max).length > 0) {
         if (!cancelled) {
@@ -118,7 +231,7 @@ export function KeyStatsMetricChartModal({
     return () => {
       cancelled = true;
     };
-  }, [ticker, periodMode, metricId, initialAnnualPoints, initialQuarterlyPoints]);
+  }, [ticker, periodMode, metricId, initialAnnualPoints, initialQuarterlyPoints, isMobile]);
 
   const onKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -146,7 +259,7 @@ export function KeyStatsMetricChartModal({
 
   if (!metricId) return null;
 
-  const maxBars = maxBarsForMode(periodMode);
+  const maxBars = maxBarsForMode(periodMode, isMobile);
   const hasSeries = sliceLastAnnualWithMetric(points, metricId, maxBars).length > 0;
   const chartingHref = `/stock/${encodeURIComponent(ticker.trim())}?tab=charting&metric=${encodeURIComponent(
     chartingMetricToParam(metricId),
@@ -154,106 +267,170 @@ export function KeyStatsMetricChartModal({
   const metricTitle = CHARTING_METRIC_LABEL[metricId];
   const companyLine = headerMeta?.fullName?.trim() || null;
   const logoName = companyLine ?? ticker;
+  const mobileSubtitle = companyLine ? `${ticker} · ${companyLine}` : ticker;
+
+  const chartHeight = isMobile ? MOBILE_KEY_STATS_CHART_HEIGHT_PX : 400;
+  const periodTabOptions = isMobile ? MOBILE_PERIOD_TAB_OPTIONS : DESKTOP_PERIOD_TAB_OPTIONS;
+
+  const chartBody = useMemo(() => {
+    if (loading) {
+      return (
+        <div
+          className={cn(
+            "flex items-center justify-center text-[14px] text-[#71717A]",
+            isMobile ? "h-[268px]" : "h-[400px]",
+          )}
+        >
+          Loading…
+        </div>
+      );
+    }
+    if (!hasSeries) {
+      return <p className="text-[14px] leading-6 text-[#71717A]">No data for this metric.</p>;
+    }
+    return (
+      <div className="min-w-0">
+        <MultichartFundamentalsBar
+          metricId={metricId}
+          points={points}
+          height={chartHeight}
+          periodMode={periodMode}
+          visual={chartVisual}
+          maxBars={isMobile ? maxBars : undefined}
+        />
+        {!isMobile && metricId === "forward_pe" ? (
+          <p className="mt-3 text-[12px] leading-5 text-[#71717A]">
+            Live forward P/E in Key Stats uses current price and consensus EPS. Historical fiscal rows
+            rarely include that forward multiple; when it is missing, the bar uses trailing P/E for the
+            same period so year-to-year comparisons stay available.
+          </p>
+        ) : null}
+        {!isMobile && (metricId === "dividend_yield" || metricId === "payout_ratio") ? (
+          <p className="mt-3 text-[12px] leading-5 text-[#71717A]">
+            Dividend yield and payout are computed from fiscal cash flow and net income on merged statements
+            (same periods as other fundamentals charts), not a live forward yield from Highlights.
+          </p>
+        ) : null}
+      </div>
+    );
+  }, [loading, hasSeries, metricId, points, chartHeight, periodMode, chartVisual, maxBars, isMobile]);
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[300] flex items-center justify-center p-4"
+      className={cn(
+        "fixed inset-0 z-[300]",
+        isMobile ? "flex items-end p-2" : "flex items-center justify-center p-4",
+      )}
       role="dialog"
       aria-modal="true"
       aria-labelledby="key-stats-metric-chart-title"
     >
-      <button type="button" className="absolute inset-0 bg-black/40" aria-label="Close" onClick={onClose} />
+      <button
+        type="button"
+        className={cn("absolute inset-0", isMobile ? "bg-black/60" : "bg-black/40")}
+        style={isMobile ? backdropStyle : undefined}
+        aria-label="Close"
+        onClick={onClose}
+      />
       <div
-        className="relative z-10 flex max-h-[min(92vh,900px)] w-full max-w-[min(960px,calc(100vw-2rem))] flex-col overflow-hidden rounded-xl border border-[#E4E4E7] bg-white shadow-[0px_10px_16px_-3px_rgba(10,10,10,0.1),0px_4px_6px_0px_rgba(10,10,10,0.04)]"
+        className={cn(
+          "relative z-10 flex w-full flex-col overflow-hidden bg-white",
+          isMobile
+            ? "key-stats-metric-sheet-enter max-h-[min(92vh,720px)] rounded-xl border border-[#E4E4E7] shadow-[0px_10px_8px_rgba(10,10,10,0.1),0px_4px_3px_rgba(10,10,10,0.04)]"
+            : "max-h-[min(92vh,900px)] max-w-[min(960px,calc(100vw-2rem))] rounded-xl border border-[#E4E4E7] shadow-[0px_10px_16px_-3px_rgba(10,10,10,0.1),0px_4px_6px_0px_rgba(10,10,10,0.04)]",
+        )}
+        style={isMobile ? sheetStyle : undefined}
+        {...(isMobile ? sheetPointerHandlers : {})}
       >
-        <div className="flex shrink-0 items-center gap-3 border-b border-[#E4E4E7] px-5 py-4">
-          <Link
-            href={chartingHref}
-            onClick={() => onClose()}
-            className="flex min-w-0 flex-1 cursor-pointer items-start gap-3 rounded-[10px] outline-none ring-offset-2 transition-colors hover:bg-[#F4F4F5] focus-visible:ring-2 focus-visible:ring-[#09090B]/15"
-            title={`Open Charting — ${metricTitle}`}
-          >
-            <CompanyLogo name={logoName} logoUrl={headerMeta?.logoUrl ?? ""} symbol={ticker} size="lg" />
-            <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-              <span className="flex min-w-0 flex-wrap items-center gap-2">
-                <span className="shrink-0 text-[18px] font-semibold leading-7 text-[#09090B]">{ticker}</span>
-                {screenerRank != null ? <ScreenerRankBadge rank={screenerRank} /> : null}
-              </span>
-              {companyLine ? (
-                <span className="min-w-0 truncate text-[14px] leading-5 text-[#71717A]">{companyLine}</span>
-              ) : null}
-            </span>
-          </Link>
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-[#71717A] transition-colors hover:bg-[#F4F4F5] hover:text-[#09090B]"
-            aria-label="Close"
-          >
-            <X className="h-5 w-5" strokeWidth={2} />
-          </button>
-        </div>
-
-        <div className="flex shrink-0 flex-col gap-2 px-5 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-          <h2 id="key-stats-metric-chart-title" className="min-w-0 text-[17px] font-semibold leading-7 text-[#09090B]">
-            {metricTitle}
-          </h2>
-          <div className="flex shrink-0 flex-nowrap items-center gap-2">
-            <TabSwitcher
-              size="sm"
-              options={PERIOD_TAB_OPTIONS}
-              value={periodMode}
-              onChange={setPeriodMode}
-              aria-label="Reporting period"
-            />
-            <MultichartVisualSwitcher size="sm" value={chartVisual} onChange={setChartVisual} />
-          </div>
-        </div>
-
-        <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-5 py-4">
-          {loading ? (
-            <div className="flex h-[400px] items-center justify-center text-[14px] text-[#71717A]">Loading…</div>
-          ) : !hasSeries ? (
-            <p className="text-[14px] leading-6 text-[#71717A]">No data for this metric.</p>
-          ) : (
-            <div className="min-w-0">
-              <MultichartFundamentalsBar
-                metricId={metricId}
-                points={points}
-                height={400}
-                periodMode={periodMode}
-                visual={chartVisual}
-              />
-              {metricId === "forward_pe" ? (
-                <p className="mt-3 text-[12px] leading-5 text-[#71717A]">
-                  Live forward P/E in Key Stats uses current price and consensus EPS. Historical fiscal rows
-                  rarely include that forward multiple; when it is missing, the bar uses trailing P/E for the
-                  same period so year-to-year comparisons stay available.
-                </p>
-              ) : null}
-              {metricId === "ps_ratio" ||
-              metricId === "price_book" ||
-              metricId === "price_fcf" ||
-              metricId === "cash_debt" ||
-              metricId === "enterprise_value" ||
-              metricId === "ev_ebitda" ||
-              metricId === "ev_sales" ? (
-                <p className="mt-3 text-[12px] leading-5 text-[#71717A]">
-                  Multiples use the same modelled market cap (EOD adjusted close × diluted shares at fiscal period
-                  end) and statement lines for that period. Enterprise value is market cap plus total debt minus cash;
-                  EV/EBITDA and EV/Sales use that EV with reported EBITDA and revenue. Cash/Debt uses balance-sheet cash
-                  and debt on the same fiscal periods. They are not live quote ratios from Highlights.
-                </p>
-              ) : null}
-              {metricId === "dividend_yield" || metricId === "payout_ratio" ? (
-                <p className="mt-3 text-[12px] leading-5 text-[#71717A]">
-                  Dividend yield and payout are computed from fiscal cash flow and net income on merged statements
-                  (same periods as other fundamentals charts), not a live forward yield from Highlights.
-                </p>
-              ) : null}
+        {isMobile ? (
+          <>
+            <div
+              data-sheet-drag-handle
+              className="flex shrink-0 cursor-grab flex-col items-center gap-3 px-4 pb-1 pt-2 active:cursor-grabbing"
+            >
+              <div className="h-1 w-10 shrink-0 rounded-full bg-[#D9D9D9]" aria-hidden />
+              <div className="flex w-full flex-col items-center gap-1 text-center">
+                <h2
+                  id="key-stats-metric-chart-title"
+                  className="text-[16px] font-semibold leading-6 text-[#09090B]"
+                >
+                  {metricTitle}
+                </h2>
+                <p className="text-[11px] leading-4 text-[#71717A]">{mobileSubtitle}</p>
+              </div>
             </div>
-          )}
-        </div>
+            <div className="min-h-0 flex-1 touch-pan-y overflow-x-hidden overflow-y-auto px-4 py-2">
+              {chartBody}
+            </div>
+            <div className="flex shrink-0 items-center gap-3 px-4 pb-3 pt-1">
+              <TabSwitcher
+                size="sm"
+                fullWidth
+                options={periodTabOptions}
+                value={periodMode}
+                onChange={setPeriodMode}
+                aria-label="Reporting period"
+                className="min-w-0 flex-1"
+              />
+              <MultichartVisualSwitcher
+                variant="icon"
+                value={chartVisual}
+                onChange={setChartVisual}
+              />
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="flex shrink-0 items-center gap-3 border-b border-[#E4E4E7] px-5 py-4">
+              <Link
+                href={chartingHref}
+                onClick={() => onClose()}
+                className="flex min-w-0 flex-1 cursor-pointer items-start gap-3 rounded-[10px] outline-none ring-offset-2 transition-colors hover:bg-[#F4F4F5] focus-visible:ring-2 focus-visible:ring-[#09090B]/15"
+                title={`Open Charting — ${metricTitle}`}
+              >
+                <CompanyLogo name={logoName} logoUrl={headerMeta?.logoUrl ?? ""} symbol={ticker} size="lg" />
+                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <span className="flex min-w-0 flex-wrap items-center gap-2">
+                    <span className="shrink-0 text-[18px] font-semibold leading-7 text-[#09090B]">{ticker}</span>
+                    {screenerRank != null ? <ScreenerRankBadge rank={screenerRank} /> : null}
+                  </span>
+                  {companyLine ? (
+                    <span className="min-w-0 truncate text-[14px] leading-5 text-[#71717A]">{companyLine}</span>
+                  ) : null}
+                </span>
+              </Link>
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-[#71717A] transition-colors hover:bg-[#F4F4F5] hover:text-[#09090B]"
+                aria-label="Close"
+              >
+                <X className="h-5 w-5" strokeWidth={2} />
+              </button>
+            </div>
+
+            <div className="flex shrink-0 flex-row items-center justify-between gap-2 px-5 py-3 sm:gap-3">
+              <h2
+                id="key-stats-metric-chart-title"
+                className="min-w-0 pr-2 text-[17px] font-semibold leading-7 text-[#09090B]"
+              >
+                {metricTitle}
+              </h2>
+              <div className="flex shrink-0 flex-nowrap items-center gap-2">
+                <TabSwitcher
+                  size="sm"
+                  options={periodTabOptions}
+                  value={periodMode}
+                  onChange={setPeriodMode}
+                  aria-label="Reporting period"
+                />
+                <MultichartVisualSwitcher size="sm" value={chartVisual} onChange={setChartVisual} />
+              </div>
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-5 py-4">{chartBody}</div>
+          </>
+        )}
       </div>
     </div>,
     document.body,

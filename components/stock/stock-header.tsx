@@ -128,7 +128,7 @@ export function StockHeader({
 
   return (
     <div className="space-y-3">
-      <div className="flex min-w-0 items-center gap-2 text-[14px] text-[#71717A] max-md:flex-nowrap md:flex-wrap">
+      <div className="flex min-w-0 flex-wrap items-center gap-2 text-[14px] text-[#71717A] sm:flex-nowrap sm:overflow-hidden">
         <Link href="/screener" className="shrink-0 transition-colors hover:text-[#09090B]">
           Stocks
         </Link>
@@ -138,13 +138,16 @@ export function StockHeader({
             {canonicalSector ? (
               <Link
                 href={screenerSectorCompaniesHref(canonicalSector)}
-                className={`${breadcrumbLinkClass} max-md:max-w-[38%]`}
+                className={`${breadcrumbLinkClass} max-w-[38%] min-w-0 sm:max-w-[min(200px,28vw)]`}
                 title={sectorLabel}
               >
                 {sectorLabel}
               </Link>
             ) : (
-              <span className={`${breadcrumbCrumbClass} max-md:max-w-[38%]`} title={sectorLabel}>
+              <span
+                className={`${breadcrumbCrumbClass} max-w-[38%] min-w-0 sm:max-w-[min(200px,28vw)]`}
+                title={sectorLabel}
+              >
                 {sectorLabel}
               </span>
             )}
@@ -156,19 +159,23 @@ export function StockHeader({
             {canonicalSector ? (
               <Link
                 href={screenerIndustryDrillHref(canonicalSector, industryLabel)}
-                className={`${breadcrumbLinkClass} max-md:min-w-0 max-md:flex-1`}
+                className={`${breadcrumbLinkClass} min-w-0 max-w-[42%] sm:max-w-[min(240px,32vw)]`}
                 title={industryLabel}
               >
                 {industryLabel}
               </Link>
             ) : (
-              <span className={`${breadcrumbCrumbClass} max-md:min-w-0 max-md:flex-1`} title={industryLabel}>
+              <span
+                className={`${breadcrumbCrumbClass} min-w-0 max-w-[42%] sm:max-w-[min(240px,32vw)]`}
+                title={industryLabel}
+              >
                 {industryLabel}
               </span>
             )}
           </>
         )}
         {breadcrumbSep}
+        <div className="shrink-0">
         <CompanyPicker
           includeCrypto={false}
           alwaysAllowOpen
@@ -197,6 +204,7 @@ export function StockHeader({
             </button>
           )}
         </CompanyPicker>
+        </div>
       </div>
 
       <div className="flex items-center justify-between gap-4">
@@ -341,11 +349,28 @@ export function StockHeader({
         </div>
         {chartLoading ? (
           <div className="mt-0.5 text-[12px] text-[#71717A]">Loading…</div>
-        ) : chartEmpty ? null : priceTimestampLabel ? (
-          <div className="mt-0.5 text-[12px] leading-4 text-[#71717A]">{priceTimestampLabel}</div>
-        ) : null}
+        ) : chartEmpty ? (
+          <div className="mt-0.5 max-md:block md:hidden">
+            <UsEquityMarketSessionBadge variant="inline" />
+          </div>
+        ) : priceTimestampLabel ? (
+          <div className="mt-0.5 flex flex-wrap items-center gap-x-1 text-[12px] leading-4 text-[#71717A]">
+            <span className="min-w-0">{priceTimestampLabel}</span>
+            <span className="hidden max-md:inline max-md:shrink-0" aria-hidden>
+              ·
+            </span>
+            <UsEquityMarketSessionBadge
+              variant="inline"
+              className="hidden max-md:inline-flex max-md:shrink-0"
+            />
+          </div>
+        ) : (
+          <div className="mt-0.5 max-md:block md:hidden">
+            <UsEquityMarketSessionBadge variant="inline" />
+          </div>
+        )}
         </div>
-        <UsEquityMarketSessionBadge className="inline-flex shrink-0 self-end" />
+        <UsEquityMarketSessionBadge className="hidden shrink-0 self-end md:inline-flex" />
       </div>
     </div>
   );

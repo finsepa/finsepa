@@ -73,7 +73,7 @@ export function StockComparePicker({ baseTicker, values, onAdd, onRemove }: Prop
       menuAlign="trailing"
     >
       {({ open, setOpen, atCapacity }) => (
-        <div className="relative min-w-0 w-full sm:min-w-[min(100%,220px)] sm:max-w-[min(100%,560px)]">
+        <div className="relative min-w-0 w-full sm:min-w-[220px] sm:w-auto sm:max-w-[min(560px,calc(100vw-12rem))]">
           <div
             tabIndex={0}
             aria-label="Compare stocks, open picker to add companies"

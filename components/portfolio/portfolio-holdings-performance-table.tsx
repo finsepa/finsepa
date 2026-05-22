@@ -1,9 +1,11 @@
 "use client";
 
 import { memo, useMemo, useState } from "react";
+import Link from "next/link";
 import { ArrowDown, ArrowUp, ChartSpline } from "lucide-react";
 
 import { CompanyLogo } from "@/components/screener/company-logo";
+import { portfolioHoldingAssetHref } from "@/lib/crypto/crypto-picker-universe";
 import { displayLogoUrlForPortfolioSymbol } from "@/lib/portfolio/portfolio-asset-display-logo";
 import { portfolioAssetSymbolCaption } from "@/lib/portfolio/custom-asset-symbol";
 import {
@@ -138,20 +140,43 @@ function PortfolioHoldingsPerformanceTableInner({
             </button>
           </div>
           <div className="divide-y divide-[#E4E4E7]">
-            {sortedRows.map(({ h, totalProfitUsd, totalProfitPct }) => (
-              <div key={h.id} className="flex min-w-0 items-center justify-between gap-3 py-3">
-                <div className="flex min-w-0 items-center gap-3">
+            {sortedRows.map(({ h, totalProfitUsd, totalProfitPct }) => {
+              const assetHref = portfolioHoldingAssetHref(h.symbol, { tab: "holdings" });
+              const companyBlock = (
+                <>
                   <CompanyLogo
                     name={h.name}
                     logoUrl={displayLogoUrlForPortfolioSymbol(h.symbol)}
                     symbol={h.symbol}
                   />
                   <div className="min-w-0">
-                    <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">{h.name}</div>
+                    <div
+                      className={cn(
+                        "truncate text-[14px] font-semibold leading-5 text-[#09090B]",
+                        assetHref && "group-hover:underline",
+                      )}
+                    >
+                      {h.name}
+                    </div>
                     <div className="truncate text-[12px] font-normal leading-4 text-[#71717A]">
                       {portfolioAssetSymbolCaption(h.symbol)}
                     </div>
                   </div>
+                </>
+              );
+              return (
+              <div key={h.id} className="group flex min-w-0 items-center justify-between gap-3 py-3">
+                <div className="min-w-0 flex-1">
+                  {assetHref ? (
+                    <Link
+                      href={assetHref}
+                      className="flex min-w-0 items-center gap-3 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2"
+                    >
+                      {companyBlock}
+                    </Link>
+                  ) : (
+                    <div className="flex min-w-0 items-center gap-3">{companyBlock}</div>
+                  )}
                 </div>
 
                 <div className="min-w-0 shrink-0 text-right">
@@ -177,7 +202,8 @@ function PortfolioHoldingsPerformanceTableInner({
                   </div>
                 </div>
               </div>
-            ))}
+            );
+            })}
           </div>
         </div>
       </div>
@@ -215,20 +241,47 @@ function PortfolioHoldingsPerformanceTableInner({
             </tr>
           </thead>
           <tbody>
-            {sortedRows.map(({ h, retUsd, totalProfitUsd, totalProfitPct, contributionPct, realizedDisplay }) => (
-              <tr key={h.id} className="border-b border-[#E4E4E7]">
-                <td className="py-3 pr-4 text-left align-middle">
-                  <div className="flex min-w-0 items-center gap-3 text-left">
-                    <CompanyLogo
-                      name={h.name}
-                      logoUrl={displayLogoUrlForPortfolioSymbol(h.symbol)}
-                      symbol={h.symbol}
-                    />
-                    <div className="min-w-0">
-                      <div className="truncate font-semibold text-[#09090B]">{h.name}</div>
-                      <div className="text-xs text-[#71717A]">{portfolioAssetSymbolCaption(h.symbol)}</div>
+            {sortedRows.map(({ h, retUsd, totalProfitUsd, totalProfitPct, contributionPct, realizedDisplay }) => {
+              const assetHref = portfolioHoldingAssetHref(h.symbol, { tab: "holdings" });
+              const companyInner = (
+                <>
+                  <CompanyLogo
+                    name={h.name}
+                    logoUrl={displayLogoUrlForPortfolioSymbol(h.symbol)}
+                    symbol={h.symbol}
+                  />
+                  <div className="min-w-0">
+                    <div
+                      className={cn(
+                        "truncate font-semibold text-[#09090B]",
+                        assetHref && "group-hover:underline",
+                      )}
+                    >
+                      {h.name}
                     </div>
+                    <div className="text-xs text-[#71717A]">{portfolioAssetSymbolCaption(h.symbol)}</div>
                   </div>
+                </>
+              );
+              return (
+              <tr
+                key={h.id}
+                className={cn(
+                  "border-b border-[#E4E4E7]",
+                  assetHref && "transition-colors duration-75 hover:bg-neutral-50",
+                )}
+              >
+                <td className="py-3 pr-4 text-left align-middle">
+                  {assetHref ? (
+                    <Link
+                      href={assetHref}
+                      className="group flex min-w-0 max-w-full items-center gap-3 rounded-lg py-0.5 pr-2 outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2"
+                    >
+                      {companyInner}
+                    </Link>
+                  ) : (
+                    <div className="flex min-w-0 items-center gap-3 text-left">{companyInner}</div>
+                  )}
                 </td>
                 <td className="whitespace-nowrap py-3 pr-4 text-right align-middle">
                   <div
@@ -287,7 +340,8 @@ function PortfolioHoldingsPerformanceTableInner({
                 </td>
                 <td className="py-3 pr-0 text-right tabular-nums text-[#71717A] align-middle">{EM_DASH}</td>
               </tr>
-            ))}
+            );
+            })}
           </tbody>
         </table>
       </div>

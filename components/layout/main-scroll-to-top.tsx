@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { ArrowUp } from "@phosphor-icons/react";
 
 import { MAIN_SHELL_SCROLL_THRESHOLD_PX } from "@/lib/layout/main-shell-scroll-threshold";
+import { useMobileBottomNavScrollHidden } from "@/lib/layout/use-mobile-bottom-nav-scroll-hide";
 import {
   shellScrollToTop,
   shellScrollTop,
@@ -19,11 +20,16 @@ type MainScrollToTopProps = {
   scrollRootRef: RefObject<HTMLElement | null>;
 };
 
+const DESKTOP_SHELL_MQ = "(min-width: 768px)";
+
 export function MainScrollToTop({ scrollRootRef }: MainScrollToTopProps) {
   const pathname = usePathname();
   const scrollRoot = useShellScrollRoot(scrollRootRef);
-  const [visible, setVisible] = useState(false);
+  const mobileScrollDown = useMobileBottomNavScrollHidden();
+  const [desktopVisible, setDesktopVisible] = useState(false);
   const [portalReady, setPortalReady] = useState(false);
+
+  const visible = mobileScrollDown || desktopVisible;
 
   useEffect(() => {
     const id = requestAnimationFrame(() => setPortalReady(true));
@@ -33,15 +39,22 @@ export function MainScrollToTop({ scrollRootRef }: MainScrollToTopProps) {
   useEffect(() => {
     if (scrollRoot == null) return;
 
+    const mq = window.matchMedia(DESKTOP_SHELL_MQ);
     const onScroll = () => {
-      setVisible(shellScrollTop(scrollRoot) > MAIN_SHELL_SCROLL_THRESHOLD_PX);
+      if (!mq.matches) {
+        setDesktopVisible(false);
+        return;
+      }
+      setDesktopVisible(shellScrollTop(scrollRoot) > MAIN_SHELL_SCROLL_THRESHOLD_PX);
     };
 
     const raf = requestAnimationFrame(onScroll);
     scrollRoot.addEventListener("scroll", onScroll, { passive: true });
+    mq.addEventListener("change", onScroll);
     return () => {
       cancelAnimationFrame(raf);
       scrollRoot.removeEventListener("scroll", onScroll);
+      mq.removeEventListener("change", onScroll);
     };
   }, [pathname, scrollRoot]);
 
@@ -56,8 +69,8 @@ export function MainScrollToTop({ scrollRootRef }: MainScrollToTopProps) {
       tabIndex={visible ? 0 : -1}
       onClick={scrollToTop}
       className={cn(
-        "fixed z-[35] flex h-12 w-12 items-center justify-center rounded-full border border-[#E4E4E7] bg-white text-[#09090B] shadow-sm transition-opacity duration-200",
-        "max-md:bottom-[var(--mobile-bottom-nav-fab-bottom)] right-3 md:bottom-6 md:right-6",
+        "main-scroll-to-top-fab fixed z-[35] flex h-12 w-12 items-center justify-center rounded-full border border-[#E4E4E7] bg-white text-[#09090B] shadow-sm",
+        "max-md:right-3 md:bottom-6 md:right-6",
         visible ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0",
       )}
     >

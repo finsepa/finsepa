@@ -94,7 +94,7 @@ export function StockDetailTabNav({
       <div className="border-b border-solid border-[#E4E4E7]">
         <nav
           ref={navRef}
-          className="relative -mx-1 flex flex-nowrap items-start gap-4 overflow-x-auto overflow-y-hidden pb-px [-webkit-overflow-scrolling:touch] sm:mx-0 sm:flex-wrap sm:gap-5 sm:overflow-visible"
+          className="relative -mx-1 flex flex-nowrap items-start gap-4 overflow-x-auto overflow-y-hidden pb-px [-webkit-overflow-scrolling:touch] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:flex-wrap sm:gap-5 sm:overflow-visible"
           aria-label="Stock sections"
         >
           {tabs.map(({ id, label }) => {

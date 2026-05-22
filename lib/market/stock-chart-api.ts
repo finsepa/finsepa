@@ -1,5 +1,6 @@
 import "server-only";
 
+import { trimPointsToLastNUsSessionDays } from "@/lib/market/stock-chart-data";
 import type { StockChartPoint } from "@/lib/market/stock-chart-types";
 import { STOCK_CHART_RANGES, type StockChartRange } from "@/lib/market/stock-chart-types";
 
@@ -29,7 +30,10 @@ export function rangeStartUnixSeconds(range: StockChartRange, now: Date): number
 
 function tailDailyFallback(points: StockChartPoint[], range: StockChartRange): StockChartPoint[] {
   if (!points.length) return [];
-  if (range === "1D") return points.slice(-5);
+  if (range === "1D") {
+    const latestSession = trimPointsToLastNUsSessionDays(points, 1);
+    return latestSession.length > 0 ? latestSession : points.slice(-1);
+  }
   if (range === "5D") return points.slice(-10);
   return points;
 }

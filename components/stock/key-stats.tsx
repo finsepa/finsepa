@@ -79,7 +79,7 @@ function KeyStatsSectionTabNav({
     <div className="-mx-1 mb-4 border-b border-solid border-[#E4E4E7]">
       <nav
         ref={navRef}
-        className="relative flex flex-nowrap items-start gap-4 overflow-x-auto overflow-y-hidden pb-px [-webkit-overflow-scrolling:touch]"
+        className="relative flex flex-nowrap items-start gap-4 overflow-x-auto overflow-y-hidden pb-px [-webkit-overflow-scrolling:touch] max-md:[-ms-overflow-style:none] max-md:[scrollbar-width:none] max-md:[&::-webkit-scrollbar]:hidden"
         aria-label="Key stats sections"
       >
         {KEY_STATS_TABS.map(({ id, label }) => {

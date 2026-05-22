@@ -97,9 +97,13 @@ export function ChartControls({
           <h2 className="text-[18px] font-semibold leading-7 text-[#09090B]">Price</h2>
         )}
 
-        <div className="flex w-full min-w-0 flex-col gap-2 sm:max-w-full sm:flex-1 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end sm:gap-2 sm:gap-3">
-          {compareSlot}
-          <div className="min-w-0 w-full max-w-full flex-1 overflow-x-auto pb-0.5 sm:w-auto sm:max-w-none sm:flex-initial sm:overflow-visible sm:pb-0">
+        <div className="flex w-full min-w-0 flex-col gap-2 sm:w-auto sm:flex-row sm:flex-nowrap sm:items-center sm:justify-end sm:gap-2">
+          {compareSlot ? (
+            <div className="min-w-0 w-full shrink-0 sm:w-auto sm:max-w-[min(560px,calc(100vw-12rem))]">
+              {compareSlot}
+            </div>
+          ) : null}
+          <div className="shrink-0 overflow-x-auto pb-0.5 sm:overflow-visible sm:pb-0">
             <SegmentedControl
               options={CHART_RANGE_OPTIONS}
               value={activeRange}

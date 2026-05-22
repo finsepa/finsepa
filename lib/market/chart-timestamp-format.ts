@@ -1,9 +1,61 @@
 /** Default display TZ when API does not provide one: US equities → US market hours context. */
-const STOCK_DISPLAY_TZ = "America/New_York";
+export const STOCK_DISPLAY_TZ = "America/New_York";
+const STOCK_DISPLAY_TZ_INTERNAL = STOCK_DISPLAY_TZ;
 const CRYPTO_DISPLAY_TZ = "UTC";
 
 function defaultTimeZoneForKind(kind: "stock" | "crypto"): string {
-  return kind === "stock" ? STOCK_DISPLAY_TZ : CRYPTO_DISPLAY_TZ;
+  return kind === "stock" ? STOCK_DISPLAY_TZ_INTERNAL : CRYPTO_DISPLAY_TZ;
+}
+
+const sessionWallClockUnixCache = new Map<string, number>();
+
+/**
+ * UNIX seconds for a wall-clock time on a US equity `YYYY-MM-DD` session date (DST-aware via Intl).
+ */
+export function usSessionWallClockUnix(
+  ymd: string,
+  hour24: number,
+  minute: number,
+  timeZone: string = STOCK_DISPLAY_TZ,
+): number {
+  const cacheKey = `${timeZone}|${ymd}|${hour24}|${minute}`;
+  const cached = sessionWallClockUnixCache.get(cacheKey);
+  if (cached != null) return cached;
+
+  const [y, m, d] = ymd.split("-").map((x) => Number(x));
+  if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) {
+    const fallback = Math.floor(Date.parse(`${ymd}T12:00:00.000Z`) / 1000);
+    sessionWallClockUnixCache.set(cacheKey, fallback);
+    return fallback;
+  }
+  const anchor = Math.floor(Date.UTC(y, m - 1, d, 17, 0, 0) / 1000);
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  let resolved = anchor;
+  for (let delta = -20 * 3600; delta <= 20 * 3600; delta += 60) {
+    const sec = anchor + delta;
+    const parts = formatter.formatToParts(new Date(sec * 1000));
+    const get = (type: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === type)?.value ?? "";
+    if (
+      Number(get("year")) === y &&
+      Number(get("month")) === m &&
+      Number(get("day")) === d &&
+      Number(get("hour")) === hour24 &&
+      Number(get("minute")) === minute
+    ) {
+      resolved = sec;
+      break;
+    }
+  }
+  sessionWallClockUnixCache.set(cacheKey, resolved);
+  return resolved;
 }
 
 function formatDateOnly(unixSeconds: number, timeZone: string): string {

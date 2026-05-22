@@ -30,6 +30,7 @@ import {
   type ProtectedNavItem,
 } from "@/components/layout/protected-nav-config";
 import { dropdownMenuPanelBodyClassName, dropdownMenuSurfaceClassName } from "@/components/design-system/dropdown-menu-styles";
+import { useMobileBottomNavScrollHide } from "@/lib/layout/use-mobile-bottom-nav-scroll-hide";
 import { cn } from "@/lib/utils";
 
 // Sheet sits above the floating bottom nav (see `--mobile-bottom-nav-sheet-bottom` in globals.css).
@@ -169,6 +170,7 @@ export function MobileBottomNav() {
   const [displayTab, setDisplayTab] = useState<MobilePrimaryNavTab>(urlTab);
   const [openSheet, setOpenSheet] = useState<SheetId | null>(null);
   const [, startTransition] = useTransition();
+  const scrollHidden = useMobileBottomNavScrollHide(openSheet == null, pathname);
 
   const navRef = useRef<HTMLElement>(null);
   const tabRefs = useRef(new Map<MobilePrimaryNavTab, HTMLDivElement>());
@@ -257,6 +259,7 @@ export function MobileBottomNav() {
           "mobile-bottom-nav-pill fixed left-4 right-4 z-[43] flex h-[60px] items-center md:hidden",
           "rounded-full border border-[#E4E4E7] bg-white/90 px-1 shadow-sm",
           "backdrop-blur-xl backdrop-saturate-150 supports-[backdrop-filter]:bg-white/78",
+          scrollHidden && "mobile-bottom-nav-pill--hidden",
         )}
         aria-label="Primary"
       >

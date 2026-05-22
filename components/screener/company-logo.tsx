@@ -5,22 +5,26 @@ import { mergeLogoMemory, readLogoMemory } from "@/lib/logos/logo-memory";
 import { cn } from "@/lib/utils";
 import { logoColors } from "./data";
 
-/** AAPL mark is visually heavy at full bleed — inset inside the fixed frame only. */
-function appleLogoInsetClass(
+const LOGO_INSET_TICKERS = new Set(["AAPL", "GOOGL", "GOOG", "MSFT"]);
+
+/** Full-bleed marks look oversized — pad inside the fixed frame only. */
+function brandLogoInsetClass(
   symbol: string | undefined,
   size: "xs" | "sm" | "28" | "md" | "40" | "lg",
 ): string {
-  if (symbol?.trim().toUpperCase() !== "AAPL") return "";
+  const sym = symbol?.trim().toUpperCase();
+  if (!sym || !LOGO_INSET_TICKERS.has(sym)) return "";
+  const mediumInset = sym === "GOOGL" || sym === "GOOG" || sym === "MSFT";
   switch (size) {
     case "lg":
-      return "p-2";
+      return mediumInset ? "p-1.5" : "p-2";
     case "40":
-      return "p-1.5";
+      return mediumInset ? "p-1" : "p-1.5";
     case "md":
     case "28":
-      return "p-1";
+      return mediumInset ? "p-1.5" : "p-1";
     default:
-      return "p-0.5";
+      return mediumInset ? "p-1" : "p-0.5";
   }
 }
 
@@ -126,6 +130,33 @@ export function CompanyLogo({
             : size === "lg"
               ? "h-12 w-12 rounded-lg"
               : "h-8 w-8 rounded-lg";
+  const sym = symbol?.trim().toUpperCase();
+  const intelBoost = sym === "INTC";
+  const onLogoError = () => {
+    setFailed(true);
+    if (symbol) mergeLogoMemory(symbol, null);
+  };
+
+  if (intelBoost) {
+    return (
+      <div
+        className={cn(imgBox, "relative shrink-0 overflow-hidden border border-neutral-200 bg-white")}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element -- dynamic remote favicon with onError fallback */}
+        <img
+          src={effective}
+          alt=""
+          width={px}
+          height={px}
+          loading="lazy"
+          decoding="async"
+          className="absolute inset-0 h-full w-full scale-[1.16] object-contain"
+          onError={onLogoError}
+        />
+      </div>
+    );
+  }
+
   return (
     // eslint-disable-next-line @next/next/no-img-element -- dynamic remote favicon with onError fallback
     <img
@@ -138,12 +169,9 @@ export function CompanyLogo({
       className={cn(
         imgBox,
         "shrink-0 border border-neutral-200 bg-white object-contain",
-        appleLogoInsetClass(symbol, size),
+        brandLogoInsetClass(symbol, size),
       )}
-      onError={() => {
-        setFailed(true);
-        if (symbol) mergeLogoMemory(symbol, null);
-      }}
+      onError={onLogoError}
     />
   );
 }

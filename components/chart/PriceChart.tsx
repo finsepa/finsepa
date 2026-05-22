@@ -2,6 +2,17 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
 import {
+  overviewChartAxisRowPx,
+  CHART_PLOT_DOTS_PATTERN_CLASS,
+  buildOverviewCrosshairLabelByBarTime,
+  chartPointDisplayUnix,
+  overviewAxisLabelsEqual,
+  resolveOverviewBottomAxisMode,
+  syncOverviewPeriodAxisLabels,
+  type OverviewAxisLabel,
+  type OverviewBottomAxisMode,
+} from "@/components/chart/overview-bottom-axis";
+import {
   AreaSeries,
   BaselineSeries,
   ColorType,
@@ -24,8 +35,14 @@ import {
 import { ChartSkeleton } from "@/components/ui/chart-skeleton";
 import { computeChartHeaderMetrics } from "@/components/chart/chart-display-metrics";
 import { horzTimeToUnixSeconds, nearestPointByTime } from "@/components/chart/chart-selection-utils";
-import { fitContentWithMobilePlotGutter } from "@/lib/chart/mobile-plot-horizontal-gutter";
-import { formatAssetChartTimestamp } from "@/lib/market/chart-timestamp-format";
+import {
+  fitContentWithMobilePlotGutter,
+  mobileOverviewChartScaleOptions,
+  mobileTimeScaleOptions,
+  shouldHideMobileYAxisLabels,
+} from "@/lib/chart/mobile-plot-horizontal-gutter";
+import { formatAssetChartTimestamp, usSessionWallClockUnix } from "@/lib/market/chart-timestamp-format";
+import { cn } from "@/lib/utils";
 import type { StockChartRange, StockChartPoint, StockChartSeries } from "@/lib/market/stock-chart-types";
 
 function formatStockPriceAxis(p: number): string {
@@ -69,10 +86,6 @@ type RangeChartPriceBadge = {
 
 const RANGE_PRICE_BADGE_CLASS =
   "inline-block rounded-[6px] bg-[#E4E4E7] px-1.5 py-0.5 text-[11px] font-medium leading-4 tabular-nums text-[#09090B]";
-
-/** Plot-area backdrop — dot grid strongest in center; fades toward all edges. */
-const CHART_PLOT_DOTS_PATTERN_CLASS =
-  "absolute inset-0 [background-image:radial-gradient(circle,rgba(228,228,231,0.42)_1px,transparent_1px)] [background-size:8px_8px] [mask-image:radial-gradient(ellipse_52%_72%_at_50%_50%,#000_0%,#000_38%,transparent_100%)] [-webkit-mask-image:radial-gradient(ellipse_52%_72%_at_50%_50%,#000_0%,#000_38%,transparent_100%)]";
 
 function findRangeHighPoint(pts: readonly StockChartPoint[]): StockChartPoint | null {
   if (!pts.length) return null;
@@ -365,26 +378,53 @@ function scheduleScaledInBarMarkers(
   requestAnimationFrame(() => requestAnimationFrame(apply));
 }
 
-function overviewBaselineOptions(open: number, variant: "bright" | "dim") {
+function isTouchLikeChartDevice(): boolean {
+  if (typeof window === "undefined") return false;
+  return (
+    window.matchMedia("(pointer: coarse)").matches || window.matchMedia("(max-width: 767px)").matches
+  );
+}
+
+type OverviewHoverUi = {
+  point: { x: number; y: number };
+  price: number;
+  axisLabel: { leftPx: number; label: string };
+};
+
+function overviewHoverUiEqual(a: OverviewHoverUi | null, b: OverviewHoverUi | null): boolean {
+  if (a === b) return true;
+  if (a == null || b == null) return false;
+  return (
+    a.point.x === b.point.x &&
+    a.point.y === b.point.y &&
+    a.price === b.price &&
+    a.axisLabel.leftPx === b.axisLabel.leftPx &&
+    a.axisLabel.label === b.axisLabel.label
+  );
+}
+
+function overviewBaselineOptions(open: number, variant: "bright" | "dim", lightweight = false) {
   const base = {
     baseValue: { type: "price" as const, price: open },
-    relativeGradient: true,
+    relativeGradient: !lightweight,
     lineWidth: 2 as const,
-    lineType: LineType.Curved,
+    lineType: lightweight ? LineType.Simple : LineType.Curved,
     priceLineVisible: false,
+    lastPriceAnimation: lightweight
+      ? LastPriceAnimationMode.Disabled
+      : LastPriceAnimationMode.OnDataUpdate,
   };
   if (variant === "bright") {
     return {
       ...base,
-      lastValueVisible: true,
+      lastValueVisible: !lightweight,
       topFillColor1: "rgba(22, 163, 74, 0.20)",
       topFillColor2: "rgba(22, 163, 74, 0.03)",
       topLineColor: GREEN,
       bottomFillColor1: "rgba(220, 38, 38, 0.03)",
       bottomFillColor2: "rgba(220, 38, 38, 0.18)",
       bottomLineColor: RED,
-      lastPriceAnimation: LastPriceAnimationMode.OnDataUpdate,
-      crosshairMarkerVisible: true,
+      crosshairMarkerVisible: !lightweight,
       crosshairMarkerRadius: 5,
       crosshairMarkerBorderColor: "rgba(255,255,255,0.95)",
       crosshairMarkerBackgroundColor: "",
@@ -528,6 +568,14 @@ export function PriceChart({
     right: ISeriesApi<"Baseline">;
   } | null>(null);
   const pointsRef = useRef<StockChartPoint[]>([]);
+  const containerWidthRef = useRef(0);
+  const hideMobileYAxisLabelsRef = useRef(false);
+  const kindRef = useRef(kind);
+  kindRef.current = kind;
+  const mobileHoverBarTimeRef = useRef<number | null>(null);
+  const mobileHoverPointRef = useRef<{ x: number; y: number } | null>(null);
+  const overviewTooltipRef = useRef<HTMLDivElement>(null);
+  const overviewTooltipTextRef = useRef<HTMLParagraphElement>(null);
 
   const [loading, setLoading] = useState(true);
   const [points, setPoints] = useState<StockChartPoint[]>([]);
@@ -540,10 +588,155 @@ export function PriceChart({
   const [containerWidth, setContainerWidth] = useState(0);
   const [rangeOpenBadge, setRangeOpenBadge] = useState<RangeChartPriceBadge | null>(null);
   const [rangeHighBadge, setRangeHighBadge] = useState<RangeChartPriceBadge | null>(null);
+  const [periodAxisLabels, setPeriodAxisLabels] = useState<OverviewAxisLabel[]>([]);
+  const periodAxisLabelsRef = useRef<OverviewAxisLabel[]>([]);
+  const [hoverAxisLabel, setHoverAxisLabel] = useState<{ leftPx: number; label: string } | null>(
+    null,
+  );
+  const hoverTimeRef = useRef<Time | null>(null);
+  const hoverPriceValueRef = useRef<number | null>(null);
+  const hoverTimeUnixValueRef = useRef<number | null>(null);
+  const hoverAxisLabelStateRef = useRef<{ leftPx: number; label: string } | null>(null);
+  const crosshairHoveredRef = useRef(false);
+  const dataTimeZoneRef = useRef("America/New_York");
+  const overviewBottomAxisModeRef = useRef<OverviewBottomAxisMode>("calendar");
+  const overviewCrosshairLabelByBarTimeRef = useRef<Map<number, string> | null>(null);
+  const [overviewHover, setOverviewHover] = useState<OverviewHoverUi | null>(null);
+  const overviewHoverDraftRef = useRef<OverviewHoverUi | null>(null);
+  const overviewHoverRafRef = useRef(0);
+  const dimOverlayRef = useRef<HTMLDivElement>(null);
+  const rangeRef = useRef(range);
+  rangeRef.current = range;
+  const loadingRef = useRef(loading);
+  loadingRef.current = loading;
+  const overviewBottomAxisMode = useMemo(
+    () => resolveOverviewBottomAxisMode(range, points),
+    [range, points],
+  );
+
+  useEffect(() => {
+    overviewBottomAxisModeRef.current = overviewBottomAxisMode;
+  }, [overviewBottomAxisMode]);
+
+  const setPeriodAxisLabelsGuarded = (next: OverviewAxisLabel[]) => {
+    if (overviewAxisLabelsEqual(periodAxisLabelsRef.current, next)) return;
+    periodAxisLabelsRef.current = next;
+    setPeriodAxisLabels(next);
+  };
+
+  const setHoverPriceGuarded = (value: number | null) => {
+    if (hoverPriceValueRef.current === value) return;
+    hoverPriceValueRef.current = value;
+    setHoverPrice(value);
+  };
+
+  const setHoverTimeUnixGuarded = (value: number | null) => {
+    if (hoverTimeUnixValueRef.current === value) return;
+    hoverTimeUnixValueRef.current = value;
+    setHoverTimeUnix(value);
+  };
+
+  const setHoverAxisLabelGuarded = (next: { leftPx: number; label: string } | null) => {
+    const prev = hoverAxisLabelStateRef.current;
+    if (prev == null && next == null) return;
+    if (prev != null && next != null && prev.leftPx === next.leftPx && prev.label === next.label) return;
+    hoverAxisLabelStateRef.current = next;
+    setHoverAxisLabel(next);
+  };
+
+  const useCustomBottomAxis = !holdingsStyle;
+  const axisRowPx = overviewChartAxisRowPx(containerWidth);
+  const plotHeight = useCustomBottomAxis ? Math.max(120, height - axisRowPx) : height;
+  const useMobileOverviewCrosshair =
+    useCustomBottomAxis && shouldHideMobileYAxisLabels(containerWidth);
 
   useEffect(() => {
     pointsRef.current = points;
   }, [points]);
+
+  useEffect(() => {
+    if (holdingsStyle || points.length === 0) {
+      overviewCrosshairLabelByBarTimeRef.current = null;
+      return;
+    }
+    const tz =
+      points.find((p) => typeof p.timeZone === "string" && p.timeZone.length > 0)?.timeZone ??
+      (kind === "stock" ? "America/New_York" : "UTC");
+    overviewCrosshairLabelByBarTimeRef.current = buildOverviewCrosshairLabelByBarTime(
+      points,
+      tz,
+      range,
+      overviewBottomAxisMode,
+    );
+  }, [range, kind, points, overviewBottomAxisMode, holdingsStyle]);
+
+  useEffect(() => {
+    containerWidthRef.current = containerWidth;
+    hideMobileYAxisLabelsRef.current = shouldHideMobileYAxisLabels(containerWidth);
+  }, [containerWidth]);
+
+  useEffect(() => {
+    const chart = chartRef.current;
+    const series = seriesRef.current;
+    if (!chart) return;
+    const hide = shouldHideMobileYAxisLabels(containerWidth);
+    hideMobileYAxisLabelsRef.current = hide;
+    chart.applyOptions({
+      ...mobileOverviewChartScaleOptions(containerWidth),
+      timeScale: mobileTimeScaleOptions(containerWidth),
+      crosshair: {
+        mode: hide ? CrosshairMode.Normal : CrosshairMode.Magnet,
+      },
+    });
+    const wrapEl = wrapRef.current;
+    if (wrapEl) {
+      chart.resize(Math.max(2, wrapEl.clientWidth), plotHeight);
+    }
+    if (series) {
+      if (holdingsStyle) {
+        series.applyOptions({ lastValueVisible: !hide });
+      } else {
+        series.applyOptions({
+          lastValueVisible: !hide,
+          relativeGradient: !hide,
+          lineType: hide ? LineType.Simple : LineType.Curved,
+          lastPriceAnimation: hide
+            ? LastPriceAnimationMode.Disabled
+            : LastPriceAnimationMode.OnDataUpdate,
+          crosshairMarkerVisible: !hide,
+        });
+      }
+      if (hide) {
+        removeYAxisTickLabels(series, yAxisTickLinesRef);
+      } else {
+        syncYAxisTickLabels(chart, series, yAxisTickLinesRef);
+      }
+      if (pointsRef.current.some((p) => isFiniteNumber(p.time) && isFiniteNumber(p.value))) {
+        fitContentWithMobilePlotGutter(chart, containerWidth, pointsRef.current.length);
+      }
+    }
+  }, [containerWidth, plotHeight]);
+
+  useEffect(() => {
+    dataTimeZoneRef.current =
+      points.find((p) => typeof p.timeZone === "string" && p.timeZone.length > 0)?.timeZone ??
+      (kind === "stock" ? "America/New_York" : "UTC");
+  }, [points, kind]);
+
+  useEffect(() => {
+    if (!useCustomBottomAxis || holdingsStyle || loading) return;
+    const c = chartRef.current;
+    if (!c || hoverTimeRef.current != null || pointsRef.current.length === 0) return;
+    setPeriodAxisLabelsGuarded(
+      syncOverviewPeriodAxisLabels(
+        c,
+        pointsRef.current,
+        dataTimeZoneRef.current,
+        overviewBottomAxisMode,
+        containerWidthRef.current,
+      ),
+    );
+  }, [overviewBottomAxisMode, useCustomBottomAxis, holdingsStyle, points, containerWidth, loading]);
 
   const crosshairForHeader = useMemo((): { price: number; timeUnix: number } | null => {
     if (!holdingsStyle) return null;
@@ -611,24 +804,74 @@ export function PriceChart({
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
-    const ro = new ResizeObserver(() => setContainerWidth(el.clientWidth));
+    let widthTimer: ReturnType<typeof setTimeout> | null = null;
+    const ro = new ResizeObserver(() => {
+      if (widthTimer) clearTimeout(widthTimer);
+      widthTimer = setTimeout(() => setContainerWidth(el.clientWidth), 100);
+    });
     ro.observe(el);
     setContainerWidth(el.clientWidth);
-    return () => ro.disconnect();
+    return () => {
+      if (widthTimer) clearTimeout(widthTimer);
+      ro.disconnect();
+    };
   }, []);
 
-  /** Reset hover when series/range/etc. change so header metrics don’t flash stale values. */
+  /** Reset hover + bottom axis when series/range/etc. change (avoid stale label smear while loading). */
+  const clearMobileOverviewCrosshairDom = useCallback(() => {
+    mobileHoverBarTimeRef.current = null;
+    mobileHoverPointRef.current = null;
+    setHoverAxisLabelGuarded(null);
+    if (dimOverlayRef.current) dimOverlayRef.current.style.display = "none";
+    if (overviewTooltipRef.current) overviewTooltipRef.current.style.display = "none";
+  }, []);
+
+  const flushOverviewHover = useCallback(() => {
+    overviewHoverRafRef.current = 0;
+    const draft = overviewHoverDraftRef.current;
+    setOverviewHover((prev) => (overviewHoverUiEqual(prev, draft) ? prev : draft));
+    if (dimOverlayRef.current) {
+      if (draft) {
+        dimOverlayRef.current.style.display = "";
+        dimOverlayRef.current.style.left = `${Math.max(0, draft.point.x)}px`;
+      } else {
+        dimOverlayRef.current.style.display = "none";
+      }
+    }
+  }, []);
+
+  const scheduleOverviewHoverFlush = useCallback(() => {
+    if (!overviewHoverRafRef.current) {
+      overviewHoverRafRef.current = requestAnimationFrame(flushOverviewHover);
+    }
+  }, [flushOverviewHover]);
+
+  const clearOverviewHover = useCallback(() => {
+    overviewHoverDraftRef.current = null;
+    if (overviewHoverRafRef.current) {
+      cancelAnimationFrame(overviewHoverRafRef.current);
+      overviewHoverRafRef.current = 0;
+    }
+    setOverviewHover(null);
+    clearMobileOverviewCrosshairDom();
+  }, [clearMobileOverviewCrosshairDom]);
+
   useLayoutEffect(() => {
-    setHoverTimeUnix(null);
+    setHoverTimeUnixGuarded(null);
+    setHoverAxisLabelGuarded(null);
+    hoverTimeRef.current = null;
+    crosshairHoveredRef.current = false;
     initialConsumedRef.current = false;
-  }, [kind, symbol, range, series, holdingsStyle]);
+    setPeriodAxisLabelsGuarded([]);
+    clearOverviewHover();
+  }, [kind, symbol, range, series, holdingsStyle, clearOverviewHover]);
   useEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
 
     const chart = createChart(el, {
       width: Math.max(2, el.clientWidth),
-      height,
+      height: plotHeight,
       autoSize: false,
       layout: {
         background: { type: ColorType.Solid, color: "#00000000" },
@@ -645,22 +888,21 @@ export function PriceChart({
         // Overview: no tick grid — session high/low + dashed open use `createPriceLine` instead. Holdings: off.
         horzLines: { visible: false, color: SCALE_EDGE_LINE, style: LineStyle.Solid },
       },
-      rightPriceScale: {
-        borderVisible: false,
-        scaleMargins: { top: 0.12, bottom: 0.08 },
-      },
+      ...mobileOverviewChartScaleOptions(containerWidthRef.current),
       timeScale: {
         borderVisible: false,
-        fixLeftEdge: false,
-        fixRightEdge: false,
+        ...mobileTimeScaleOptions(containerWidthRef.current),
+        ticksVisible: !useCustomBottomAxis,
+        tickMarkFormatter: useCustomBottomAxis ? () => "" : undefined,
+        minimumHeight: useCustomBottomAxis ? 0 : undefined,
       },
       crosshair: {
-        mode: CrosshairMode.Magnet,
+        mode: hideMobileYAxisLabelsRef.current ? CrosshairMode.Normal : CrosshairMode.Magnet,
         vertLine: {
-          color: "rgba(9, 9, 11, 0.06)",
+          color: "rgba(9, 9, 11, 0.28)",
           labelVisible: false,
           width: 1,
-          style: LineStyle.Solid,
+          style: LineStyle.Dashed,
         },
         horzLine: {
           visible: false,
@@ -700,13 +942,12 @@ export function PriceChart({
           lineType: LineType.Curved,
           priceLineVisible: false,
           lastValueVisible: true,
-          lastPriceAnimation: LastPriceAnimationMode.OnDataUpdate,
-          crosshairMarkerVisible: true,
-          crosshairMarkerRadius: 5,
-          crosshairMarkerBorderColor: "rgba(255,255,255,0.95)",
-          crosshairMarkerBackgroundColor: "",
-          crosshairMarkerBorderWidth: 2,
-        });
+      crosshairMarkerVisible: true,
+      crosshairMarkerRadius: 5,
+      crosshairMarkerBorderColor: "rgba(255,255,255,0.95)",
+      crosshairMarkerBackgroundColor: "",
+      crosshairMarkerBorderWidth: 2,
+    });
 
     const markers = createSeriesMarkers(series, [], { autoScale: true });
     markersRef.current = markers as ISeriesMarkersPluginApi<UTCTimestamp>;
@@ -714,20 +955,123 @@ export function PriceChart({
     chartRef.current = chart;
     seriesRef.current = series;
 
+    const resyncPeriodAxisLabels = () => {
+      if (!useCustomBottomAxis || loadingRef.current) return;
+      const c = chartRef.current;
+      if (!c || hoverTimeRef.current != null || pointsRef.current.length === 0) return;
+      setPeriodAxisLabelsGuarded(
+        syncOverviewPeriodAxisLabels(
+          c,
+          pointsRef.current,
+          dataTimeZoneRef.current,
+          overviewBottomAxisModeRef.current,
+          containerWidthRef.current,
+        ),
+      );
+    };
+
+    const overviewMetricTitleForTooltip =
+      chartMetricSeriesRef.current === "marketCap"
+        ? "Market cap"
+        : chartMetricSeriesRef.current === "return"
+          ? "Return"
+          : "Price";
+
+    const applyMobileOverviewCrosshair = (
+      point: { x: number; y: number },
+      nearBar: StockChartPoint,
+    ) => {
+      mobileHoverPointRef.current = point;
+      if (dimOverlayRef.current) {
+        dimOverlayRef.current.style.display = "";
+        dimOverlayRef.current.style.left = `${Math.max(0, point.x)}px`;
+      }
+      const tip = overviewTooltipRef.current;
+      const tipText = overviewTooltipTextRef.current;
+      const plotW = containerWidthRef.current;
+      if (tip && tipText && plotW > 0) {
+        const valueLabel = formatOverviewChartAxisValue(
+          nearBar.value,
+          kindRef.current,
+          chartMetricSeriesRef.current,
+        );
+        tipText.textContent = `${overviewMetricTitleForTooltip}: ${valueLabel}`;
+        const pos = layoutPointTooltip(point, plotW, plotHeight, 40);
+        tip.style.display = "block";
+        tip.style.left = `${pos.left}px`;
+        tip.style.top = `${pos.top}px`;
+        tip.style.transform = pos.transform;
+      }
+      if (mobileHoverBarTimeRef.current !== nearBar.time) {
+        mobileHoverBarTimeRef.current = nearBar.time;
+        const xCoord = chart.timeScale().timeToCoordinate(nearBar.time as UTCTimestamp);
+        const leftPx = xCoord != null && Number.isFinite(xCoord) ? xCoord : point.x;
+        const label = overviewCrosshairLabelByBarTimeRef.current?.get(nearBar.time) ?? "";
+        setHoverAxisLabelGuarded({ leftPx, label });
+      }
+    };
+
     const onCrosshairMove = (param: MouseEventParams) => {
       const s = seriesRef.current;
       if (!s) return;
       if (param.point === undefined || param.point.x < 0 || param.point.y < 0 || param.time === undefined) {
-        setHoverPrice(null);
-        setHoverTimeUnix(null);
-        hoverPointRef.current = null;
-        if (hoverPointRafRef.current) {
-          cancelAnimationFrame(hoverPointRafRef.current);
-          hoverPointRafRef.current = 0;
+        const wasHovered = crosshairHoveredRef.current;
+        crosshairHoveredRef.current = false;
+        hoverTimeRef.current = null;
+        if (holdingsStyleRef.current) {
+          setHoverPriceGuarded(null);
+          setHoverTimeUnixGuarded(null);
+          hoverPointRef.current = null;
+          setHoverAxisLabelGuarded(null);
+          if (hoverPointRafRef.current) {
+            cancelAnimationFrame(hoverPointRafRef.current);
+            hoverPointRafRef.current = 0;
+          }
+          setHoverPoint(null);
+        } else if (hideMobileYAxisLabelsRef.current) {
+          clearMobileOverviewCrosshairDom();
+        } else {
+          clearOverviewHover();
         }
-        setHoverPoint(null);
         return;
       }
+
+      if (!holdingsStyleRef.current) {
+        const sec = horzTimeToUnixSeconds(param.time as Time);
+        const nearBar = sec != null ? nearestPointByTime(pointsRef.current, sec) : null;
+        if (nearBar && isFiniteNumber(nearBar.time) && isFiniteNumber(nearBar.value)) {
+          crosshairHoveredRef.current = true;
+          hoverTimeRef.current = param.time as Time;
+          if (hideMobileYAxisLabelsRef.current) {
+            applyMobileOverviewCrosshair(
+              { x: param.point.x, y: param.point.y },
+              nearBar,
+            );
+          } else {
+            const xCoord = chart.timeScale().timeToCoordinate(nearBar.time as UTCTimestamp);
+            const leftPx = xCoord != null && Number.isFinite(xCoord) ? xCoord : param.point.x;
+            const label = overviewCrosshairLabelByBarTimeRef.current?.get(nearBar.time) ?? "";
+            overviewHoverDraftRef.current = {
+              point: { x: param.point.x, y: param.point.y },
+              price: nearBar.value,
+              axisLabel: { leftPx, label },
+            };
+            scheduleOverviewHoverFlush();
+          }
+        } else {
+          const wasHovered = crosshairHoveredRef.current;
+          crosshairHoveredRef.current = false;
+          hoverTimeRef.current = null;
+          if (hideMobileYAxisLabelsRef.current) {
+            clearMobileOverviewCrosshairDom();
+          } else {
+            clearOverviewHover();
+            if (wasHovered) resyncPeriodAxisLabels();
+          }
+        }
+        return;
+      }
+
       const nextPt = { x: param.point.x, y: param.point.y };
       const prev = hoverPointRef.current;
       if (!prev || prev.x !== nextPt.x || prev.y !== nextPt.y) {
@@ -741,41 +1085,38 @@ export function PriceChart({
       }
       let hoverValue: number | null = null;
       let tunix: number | null = null;
-      if (holdingsStyle) {
-        const data = param.seriesData.get(s);
-        if (data && typeof data === "object" && "value" in data && isFiniteNumber((data as { value: number }).value)) {
-          hoverValue = (data as { value: number }).value;
-          const row = data as { value: number; time?: UTCTimestamp };
-          tunix =
-            typeof row.time === "number" && Number.isFinite(row.time) ? row.time : horzTimeToUnixSeconds(param.time as Time);
-        } else {
-          const sec = horzTimeToUnixSeconds(param.time as Time);
-          const near = sec != null ? nearestPointByTime(pointsRef.current, sec) : null;
-          if (near && isFiniteNumber(near.time) && isFiniteNumber(near.value)) {
-            hoverValue = near.value;
-            tunix = near.time;
-          }
-        }
+      let nearBar: StockChartPoint | null = null;
+      const data = param.seriesData.get(s);
+      if (data && typeof data === "object" && "value" in data && isFiniteNumber((data as { value: number }).value)) {
+        hoverValue = (data as { value: number }).value;
+        const row = data as { value: number; time?: UTCTimestamp };
+        tunix =
+          typeof row.time === "number" && Number.isFinite(row.time) ? row.time : horzTimeToUnixSeconds(param.time as Time);
       } else {
         const sec = horzTimeToUnixSeconds(param.time as Time);
-        const near = sec != null ? nearestPointByTime(pointsRef.current, sec) : null;
-        if (near && isFiniteNumber(near.time) && isFiniteNumber(near.value)) {
-          hoverValue = near.value;
-          tunix = near.time;
+        nearBar = sec != null ? nearestPointByTime(pointsRef.current, sec) : null;
+        if (nearBar && isFiniteNumber(nearBar.time) && isFiniteNumber(nearBar.value)) {
+          hoverValue = nearBar.value;
+          tunix = chartPointDisplayUnix(nearBar, overviewBottomAxisModeRef.current);
         }
       }
       if (hoverValue != null && tunix != null) {
-        setHoverPrice(hoverValue);
-        setHoverTimeUnix(tunix);
+        crosshairHoveredRef.current = true;
+        setHoverPriceGuarded(hoverValue);
+        setHoverTimeUnixGuarded(tunix);
       } else {
-        setHoverPrice(null);
-        setHoverTimeUnix(null);
+        const wasHovered = crosshairHoveredRef.current;
+        crosshairHoveredRef.current = false;
+        setHoverPriceGuarded(null);
+        setHoverTimeUnixGuarded(null);
         hoverPointRef.current = null;
+        hoverTimeRef.current = null;
         if (hoverPointRafRef.current) {
           cancelAnimationFrame(hoverPointRafRef.current);
           hoverPointRafRef.current = 0;
         }
         setHoverPoint(null);
+        if (wasHovered) resyncPeriodAxisLabels();
       }
     };
     chart.subscribeCrosshairMove(onCrosshairMove);
@@ -788,6 +1129,7 @@ export function PriceChart({
       scheduleScaledInBarMarkers(c, m, templates);
     };
     syncRangePriceBadgesRef.current = () => {
+      if (hideMobileYAxisLabelsRef.current && crosshairHoveredRef.current) return;
       const chart = chartRef.current;
       const s = seriesRef.current;
       if (!chart || !s || holdingsStyleRef.current) {
@@ -847,31 +1189,71 @@ export function PriceChart({
         } else {
           removeScaleBoundsPriceLines(s2, scaleTopPriceLineRef, scaleBottomPriceLineRef);
         }
-        syncYAxisTickLabels(c2, s2, yAxisTickLinesRef);
+        if (!hideMobileYAxisLabelsRef.current) {
+          syncYAxisTickLabels(c2, s2, yAxisTickLinesRef);
+        } else {
+          removeYAxisTickLabels(s2, yAxisTickLinesRef);
+        }
         syncRangePriceBadgesRef.current?.();
       });
     };
-    const onVisRangeForMarkers = () => {
+    let visRangeTimer: ReturnType<typeof setTimeout> | null = null;
+    const runVisRangeSideEffects = () => {
       rescaleOverviewInBarMarkersRef.current?.();
       syncBoundsLines();
+    };
+    const onVisRangeForMarkers = () => {
+      if (hideMobileYAxisLabelsRef.current && crosshairHoveredRef.current) return;
+      if (visRangeTimer) clearTimeout(visRangeTimer);
+      visRangeTimer = setTimeout(runVisRangeSideEffects, hideMobileYAxisLabelsRef.current ? 200 : 100);
     };
     const ts = chart.timeScale();
     ts.subscribeVisibleLogicalRangeChange(onVisRangeForMarkers);
     ts.subscribeVisibleTimeRangeChange(onVisRangeForMarkers);
 
+    let resizeTimer: ReturnType<typeof setTimeout> | null = null;
     const ro = new ResizeObserver(() => {
-      const w = Math.max(2, el.clientWidth);
-      chart.resize(w, height);
-      const plotW = containerRef.current?.clientWidth ?? w;
-      if (pointsRef.current.some((p) => isFiniteNumber(p.time) && isFiniteNumber(p.value))) {
-        fitContentWithMobilePlotGutter(chart, plotW);
-      }
-      onVisRangeForMarkers();
+      if (resizeTimer) clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        const w = Math.max(2, el.clientWidth);
+        chart.resize(w, plotHeight);
+        const plotW = containerRef.current?.clientWidth ?? w;
+        if (pointsRef.current.some((p) => isFiniteNumber(p.time) && isFiniteNumber(p.value))) {
+          fitContentWithMobilePlotGutter(chart, plotW, pointsRef.current.length);
+        }
+        onVisRangeForMarkers();
+        if (!holdingsStyleRef.current && hoverTimeRef.current != null) {
+          const sec = horzTimeToUnixSeconds(hoverTimeRef.current);
+          const near = sec != null ? nearestPointByTime(pointsRef.current, sec) : null;
+          if (near && isFiniteNumber(near.time) && isFiniteNumber(near.value)) {
+            if (hideMobileYAxisLabelsRef.current) {
+              const pt = mobileHoverPointRef.current ?? { x: 0, y: 0 };
+              applyMobileOverviewCrosshair(pt, near);
+            } else {
+              const x = chart.timeScale().timeToCoordinate(near.time as UTCTimestamp);
+              if (x != null && Number.isFinite(x)) {
+                const label = overviewCrosshairLabelByBarTimeRef.current?.get(near.time) ?? "";
+                const prev = overviewHoverDraftRef.current;
+                overviewHoverDraftRef.current = {
+                  point: prev?.point ?? { x, y: 0 },
+                  price: near.value,
+                  axisLabel: { leftPx: x, label },
+                };
+                scheduleOverviewHoverFlush();
+              }
+            }
+          }
+        } else if (!hideMobileYAxisLabelsRef.current || hoverTimeRef.current == null) {
+          resyncPeriodAxisLabels();
+        }
+      }, 100);
     });
     ro.observe(el);
-    chart.resize(Math.max(2, el.clientWidth), height);
+    chart.resize(Math.max(2, el.clientWidth), plotHeight);
 
     return () => {
+      if (visRangeTimer) clearTimeout(visRangeTimer);
+      if (resizeTimer) clearTimeout(resizeTimer);
       ro.disconnect();
       ts.unsubscribeVisibleLogicalRangeChange(onVisRangeForMarkers);
       ts.unsubscribeVisibleTimeRangeChange(onVisRangeForMarkers);
@@ -895,7 +1277,14 @@ export function PriceChart({
       chartRef.current = null;
       seriesRef.current = null;
     };
-  }, [height, holdingsStyle]);
+  }, [
+    plotHeight,
+    holdingsStyle,
+    useCustomBottomAxis,
+    clearOverviewHover,
+    scheduleOverviewHoverFlush,
+    clearMobileOverviewCrosshairDom,
+  ]);
 
   useEffect(() => {
     const chart = chartRef.current;
@@ -931,8 +1320,9 @@ export function PriceChart({
       ) {
         initialConsumedRef.current = true;
         setLoading(true);
-        setHoverPrice(null);
-        setHoverTimeUnix(null);
+        setPeriodAxisLabelsGuarded([]);
+        setHoverPriceGuarded(null);
+        setHoverTimeUnixGuarded(null);
         setReady(false);
         setPoints(initialChart.points);
         setLoading(false);
@@ -941,8 +1331,9 @@ export function PriceChart({
       }
 
       setLoading(true);
-      setHoverPrice(null);
-      setHoverTimeUnix(null);
+      setPeriodAxisLabelsGuarded([]);
+      setHoverPriceGuarded(null);
+      setHoverTimeUnixGuarded(null);
       setReady(false);
       const path =
         kind === "stock"
@@ -1036,7 +1427,10 @@ export function PriceChart({
       if (existing && !splitSeriesBundleRef.current) {
         return existing as ISeriesApi<"Baseline">;
       }
-      const s = chart.addSeries(BaselineSeries, overviewBaselineOptions(open, "bright"));
+      const s = chart.addSeries(
+        BaselineSeries,
+        overviewBaselineOptions(open, "bright", isTouchLikeChartDevice()),
+      );
       seriesRef.current = s;
       markersRef.current = createSeriesMarkers(s, [], { autoScale: true }) as ISeriesMarkersPluginApi<UTCTimestamp>;
       return s;
@@ -1090,6 +1484,7 @@ export function PriceChart({
       fitContentWithMobilePlotGutter(
         chart,
         containerRef.current?.clientWidth ?? chart.paneSize(0).width,
+        data.length,
       );
 
       if (costBasisPrice != null && Number.isFinite(costBasisPrice) && costBasisPrice > 0) {
@@ -1114,7 +1509,11 @@ export function PriceChart({
 
       markersRef.current?.setMarkers(tradeMarkersForChart(tradeMarkers, data));
       syncScaleBoundsPriceLines(chart, series, scaleTopPriceLineRef, scaleBottomPriceLineRef);
-      syncYAxisTickLabels(chart, series, yAxisTickLinesRef);
+      if (!hideMobileYAxisLabelsRef.current) {
+        syncYAxisTickLabels(chart, series, yAxisTickLinesRef);
+      } else {
+        removeYAxisTickLabels(series, yAxisTickLinesRef);
+      }
       return;
     }
 
@@ -1125,7 +1524,7 @@ export function PriceChart({
     markers = markersRef.current;
     if (!markers) return;
 
-    single.applyOptions(overviewBaselineOptions(open, "bright"));
+    single.applyOptions(overviewBaselineOptions(open, "bright", isTouchLikeChartDevice()));
 
     let bl = baselinePriceLineRef.current;
     if (!bl) {
@@ -1146,6 +1545,7 @@ export function PriceChart({
     fitContentWithMobilePlotGutter(
       chart,
       containerRef.current?.clientWidth ?? chart.paneSize(0).width,
+      data.length,
     );
 
     const last = data[data.length - 1];
@@ -1167,11 +1567,28 @@ export function PriceChart({
     }
     removeScaleBoundsPriceLines(single, scaleTopPriceLineRef, scaleBottomPriceLineRef);
     removeSessionHighLowPriceLines(single, sessionHighPriceLineRef, sessionLowPriceLineRef);
-    syncYAxisTickLabels(chart, single, yAxisTickLinesRef);
+    if (!hideMobileYAxisLabelsRef.current) {
+      syncYAxisTickLabels(chart, single, yAxisTickLinesRef);
+    } else {
+      removeYAxisTickLabels(single, yAxisTickLinesRef);
+    }
     requestAnimationFrame(() => {
-      requestAnimationFrame(() => syncRangePriceBadgesRef.current?.());
+      requestAnimationFrame(() => {
+        syncRangePriceBadgesRef.current?.();
+        if (!holdingsStyle && !loading && chartRef.current && hoverTimeRef.current == null) {
+          setPeriodAxisLabelsGuarded(
+            syncOverviewPeriodAxisLabels(
+              chartRef.current,
+              points,
+              dataTimeZoneRef.current,
+              overviewBottomAxisModeRef.current,
+              containerWidthRef.current,
+            ),
+          );
+        }
+      });
     });
-  }, [points, lastPointStroke, holdingsStyle, tradeMarkers, costBasisPrice, kind, series]);
+  }, [points, lastPointStroke, holdingsStyle, tradeMarkers, costBasisPrice, kind, series, loading]);
 
   const empty = !loading && points.length === 0;
   const hoverYmd = useMemo(
@@ -1181,21 +1598,20 @@ export function PriceChart({
   const hoverTradeLines = hoverYmd ? tooltipByDate.get(hoverYmd) ?? null : null;
 
   const overviewHoverTooltip = useMemo(() => {
-    if (holdingsStyle) return null;
-    if (hoverPoint == null || hoverPrice == null || hoverTimeUnix == null) return null;
-    if (!Number.isFinite(hoverPrice) || !Number.isFinite(hoverTimeUnix)) return null;
-    const dateLabel = formatAssetChartTimestamp(hoverTimeUnix, {
-      kind,
-      timeZone: dataTimeZoneHint,
-    });
+    if (holdingsStyle || !overviewHover) return null;
+    const hoverPrice = overviewHover.price;
+    if (!Number.isFinite(hoverPrice)) return null;
     const valueLabel =
       kind === "stock" && series === "marketCap"
         ? formatMarketCapAxis(hoverPrice)
         : kind === "stock" && series === "return"
           ? formatReturnAxis(hoverPrice)
           : `$${formatStockPriceAxis(hoverPrice)}`;
-    return { dateLabel, valueLabel };
-  }, [holdingsStyle, hoverPoint, hoverPrice, hoverTimeUnix, kind, series, dataTimeZoneHint]);
+    return { valueLabel };
+  }, [holdingsStyle, overviewHover, kind, series]);
+
+  const overviewMetricTitle =
+    series === "marketCap" ? "Market cap" : series === "return" ? "Return" : "Price";
 
   const holdingsTooltipEstHeight = useMemo(() => {
     const n = hoverTradeLines?.length ?? 0;
@@ -1212,14 +1628,52 @@ export function PriceChart({
   }, [holdingsStyle, hoverPoint, containerWidth, height, hoverTradeLines, holdingsTooltipEstHeight]);
 
   const overviewTooltipPos = useMemo(() => {
-    if (holdingsStyle || hoverPoint == null || containerWidth <= 0 || !overviewHoverTooltip) return null;
-    return layoutPointTooltip(hoverPoint, containerWidth, height, 72);
-  }, [holdingsStyle, hoverPoint, containerWidth, height, overviewHoverTooltip]);
+    if (holdingsStyle || !overviewHover || containerWidth <= 0 || !overviewHoverTooltip) return null;
+    return layoutPointTooltip(overviewHover.point, containerWidth, plotHeight, 40);
+  }, [holdingsStyle, overviewHover, containerWidth, plotHeight, overviewHoverTooltip]);
+
+  const activeBottomAxisLabel = holdingsStyle
+    ? hoverAxisLabel
+    : useMobileOverviewCrosshair
+      ? hoverAxisLabel
+      : (overviewHover?.axisLabel ?? null);
 
   return (
-    <div ref={containerRef} className="relative z-0 select-none" style={{ height }}>
+    <div
+      ref={containerRef}
+      className={cn(
+        "relative z-0 min-w-0 select-none",
+        useCustomBottomAxis ? "flex flex-col" : "",
+        useMobileOverviewCrosshair && "touch-pan-y",
+      )}
+      style={{ height }}
+      onMouseLeave={
+        useCustomBottomAxis
+          ? () => {
+              crosshairHoveredRef.current = false;
+              hoverTimeRef.current = null;
+              clearOverviewHover();
+              if (!useMobileOverviewCrosshair) {
+                const c = chartRef.current;
+                if (c && points.length > 0) {
+                  setPeriodAxisLabelsGuarded(
+                    syncOverviewPeriodAxisLabels(
+                      c,
+                      points,
+                      dataTimeZoneRef.current,
+                      overviewBottomAxisModeRef.current,
+                      containerWidthRef.current,
+                    ),
+                  );
+                }
+              }
+            }
+          : undefined
+      }
+    >
+      <div className={cn("relative min-h-0", useCustomBottomAxis ? "min-w-0 flex-1" : "absolute inset-0")} style={useCustomBottomAxis ? { height: plotHeight } : undefined}>
       <div className="pointer-events-none absolute inset-0 z-0 bg-white" aria-hidden>
-        <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
+        {!useMobileOverviewCrosshair ? <div className={CHART_PLOT_DOTS_PATTERN_CLASS} /> : null}
       </div>
       <div
         ref={wrapRef}
@@ -1227,6 +1681,14 @@ export function PriceChart({
           loading || !ready ? "opacity-0" : "opacity-100"
         }`}
       />
+      {!holdingsStyle ? (
+        <div
+          ref={dimOverlayRef}
+          className="pointer-events-none absolute inset-y-0 right-0 z-[15] bg-white/55"
+          style={{ display: "none", left: 0 }}
+          aria-hidden
+        />
+      ) : null}
       {holdingsStyle && hoverPoint && hoverYmd && hoverTradeLines && hoverTradeLines.length > 0 && holdingsTooltipPos ? (
         <div
           className="pointer-events-none absolute z-30 min-w-[220px] max-w-[280px] rounded-[10px] border border-[#E4E4E7] bg-white px-3 py-2 text-[12px] leading-4 text-[#09090B] shadow-[0px_8px_20px_0px_rgba(10,10,10,0.10)]"
@@ -1264,9 +1726,23 @@ export function PriceChart({
               </div>
             ))
         : null}
-      {!holdingsStyle && overviewHoverTooltip && hoverPoint && overviewTooltipPos ? (
+      {!holdingsStyle && useMobileOverviewCrosshair ? (
         <div
-          className="pointer-events-none absolute z-30 min-w-[200px] max-w-[min(100%,280px)] rounded-[10px] border border-[#E4E4E7] bg-white px-3 py-2 text-[12px] leading-4 text-[#09090B] shadow-[0px_8px_20px_0px_rgba(10,10,10,0.10)]"
+          ref={overviewTooltipRef}
+          className="pointer-events-none absolute z-30 min-w-[148px] rounded-lg border border-[#E4E4E7] bg-white px-3 py-2 shadow-[0px_1px_4px_0px_rgba(10,10,10,0.08),0px_1px_2px_0px_rgba(10,10,10,0.06)]"
+          style={{ display: "none" }}
+          role="tooltip"
+        >
+          <p ref={overviewTooltipTextRef} className="text-xs font-semibold tabular-nums text-[#09090B]" />
+        </div>
+      ) : null}
+      {!holdingsStyle &&
+      !useMobileOverviewCrosshair &&
+      overviewHoverTooltip &&
+      overviewHover &&
+      overviewTooltipPos ? (
+        <div
+          className="pointer-events-none absolute z-30 min-w-[148px] rounded-lg border border-[#E4E4E7] bg-white px-3 py-2 shadow-[0px_1px_4px_0px_rgba(10,10,10,0.08),0px_1px_2px_0px_rgba(10,10,10,0.06)]"
           style={{
             left: overviewTooltipPos.left,
             top: overviewTooltipPos.top,
@@ -1274,8 +1750,9 @@ export function PriceChart({
           }}
           role="tooltip"
         >
-          <div className="font-normal text-[#71717A]">{overviewHoverTooltip.dateLabel}</div>
-          <div className="mt-1 tabular-nums font-semibold text-[#09090B]">{overviewHoverTooltip.valueLabel}</div>
+          <p className="text-xs font-semibold tabular-nums text-[#09090B]">
+            {overviewMetricTitle}: {overviewHoverTooltip.valueLabel}
+          </p>
         </div>
       ) : null}
       {loading ? (
@@ -1290,6 +1767,33 @@ export function PriceChart({
             : kind === "stock" && series === "return"
               ? "No return data for this range."
               : "No price data for this range."}
+        </div>
+      ) : null}
+      </div>
+      {useCustomBottomAxis && !loading ? (
+        <div
+          className="relative w-full shrink-0 overflow-visible"
+          style={{ height: axisRowPx }}
+          aria-hidden={periodAxisLabels.length === 0 && !activeBottomAxisLabel}
+        >
+          {activeBottomAxisLabel ? (
+            <span
+              className="absolute bottom-1 inline-block max-w-[min(100%,calc(100%-16px))] -translate-x-1/2 whitespace-nowrap font-['Inter'] text-[11px] font-medium tabular-nums leading-none text-[#09090B] sm:text-[12px]"
+              style={{ left: `clamp(8px, ${activeBottomAxisLabel.leftPx}px, calc(100% - 8px))` }}
+            >
+              {activeBottomAxisLabel.label}
+            </span>
+          ) : (
+            periodAxisLabels.map((lab) => (
+              <span
+                key={lab.key}
+                className="absolute bottom-1 inline-block max-w-[72px] -translate-x-1/2 truncate whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]"
+                style={{ left: `clamp(8px, ${lab.leftPx}px, calc(100% - 8px))` }}
+              >
+                {lab.label}
+              </span>
+            ))
+          )}
         </div>
       ) : null}
     </div>
