@@ -3,6 +3,7 @@ import { ChevronRight } from "lucide-react";
 import { format, isValid, parseISO } from "date-fns";
 
 import { Berkshire13fComparisonTable } from "@/components/superinvestors/berkshire-13f-comparison-table";
+import { SuperinvestorFollowButton } from "@/components/superinvestors/superinvestor-follow-button";
 import { SuperinvestorProfileAvatar } from "@/components/superinvestors/superinvestor-profile-avatar";
 import type { Berkshire13fComparisonPayload } from "@/lib/superinvestors/types";
 import { formatUsdCompactSigDigits } from "@/lib/market/key-stats-basic-format";
@@ -61,14 +62,17 @@ export function Superinvestor13fProfile({
       </nav>
 
       <header className="mt-8">
-        <div className="flex h-fit items-center gap-4">
-          <SuperinvestorProfileAvatar src={avatarSrc?.trim() ?? ""} name={profileName} />
-          <div className="min-w-0">
-            <h1 className="text-[24px] font-semibold leading-8 tracking-tight text-[#09090B]">{profileName}</h1>
-            <p className="mt-0.5 text-[14px] font-normal leading-5 text-[#71717A]">
-              {filerSubtitle(data.filerDisplayName)}
-            </p>
+        <div className="flex h-fit flex-wrap items-center gap-4 sm:justify-between">
+          <div className="flex min-w-0 items-center gap-4">
+            <SuperinvestorProfileAvatar src={avatarSrc?.trim() ?? ""} name={profileName} />
+            <div className="min-w-0">
+              <h1 className="text-[24px] font-semibold leading-8 tracking-tight text-[#09090B]">{profileName}</h1>
+              <p className="mt-0.5 text-[14px] font-normal leading-5 text-[#71717A]">
+                {filerSubtitle(data.filerDisplayName)}
+              </p>
+            </div>
           </div>
+          <SuperinvestorFollowButton className="w-full sm:w-auto" />
         </div>
 
         {/* ── Mobile: label left / value right on each row ── */}

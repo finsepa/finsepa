@@ -6,6 +6,7 @@ import { UserRound } from "lucide-react";
 import { format, isValid, parseISO } from "date-fns";
 
 import { CompanyLogo } from "@/components/screener/company-logo";
+import { SuperinvestorFollowStarToggle } from "@/components/superinvestors/superinvestor-follow-star-toggle";
 import { resolveEquityLogoUrlFromListingTicker } from "@/lib/screener/resolve-equity-logo-url";
 import { formatUsdCompact } from "@/lib/market/key-stats-basic-format";
 import { cn } from "@/lib/utils";
@@ -51,12 +52,18 @@ function FundRowAvatar({ src, displayName }: { src: string | null | undefined; d
   );
 }
 
-/** Desktop: avatar, fund, size, count, last update, top 5 holdings. */
+/** Desktop: star + avatar + fund + size + count + last update + top 5 holdings. */
 const colLayout =
+  "grid-cols-[40px_48px_minmax(0,2fr)_minmax(0,1fr)_minmax(0,0.75fr)_minmax(0,1fr)_minmax(0,1.5fr)] gap-x-3";
+
+/** Columns inside row `Link` (after star). */
+const rowLinkGrid =
   "grid-cols-[48px_minmax(0,2fr)_minmax(0,1fr)_minmax(0,0.75fr)_minmax(0,1fr)_minmax(0,1.5fr)] gap-x-3";
 
 /** Mobile: fund block (left) · last updated (right). */
 const mobileColLayout = "grid-cols-[minmax(0,1fr)_minmax(4.75rem,auto)] gap-x-3";
+
+const starToggleClassName = "flex w-6 shrink-0 items-center justify-center px-1 sm:w-10 sm:px-3";
 
 const screenerTickerSublineClass = "text-[12px] font-normal leading-4 !text-[#71717A]";
 
@@ -99,8 +106,9 @@ function SuperinvestorsFundTableInner({ rows }: { rows: SuperinvestorsFundRowMod
             <div
               className={`hidden ${colLayout} min-h-[44px] items-center px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A] sm:grid`}
             >
+              <div className="hidden sm:block" aria-hidden />
               {/* Span avatar + name columns so "Fund" lines up with the left edge of centered 40px avatars (48px track → 4px inset). */}
-              <div className="col-span-2 self-center pl-1 text-left">Fund</div>
+              <div className="col-span-2 col-start-2 self-center pl-1 text-left">Fund</div>
               <div className="min-w-0 text-right">Size</div>
               <div className="min-w-0 text-right">No. of stocks</div>
               <div className="min-w-0 text-right">Last updated</div>
@@ -109,30 +117,38 @@ function SuperinvestorsFundTableInner({ rows }: { rows: SuperinvestorsFundRowMod
           </div>
 
           {rows.map((r) => (
-            <Link
+            <div
               key={r.href}
-              href={r.href}
-              prefetch={false}
-              className="group block bg-white text-[#09090B] no-underline transition-colors duration-75 visited:text-[#09090B] hover:bg-neutral-50"
+              className="group bg-white transition-colors duration-75 hover:bg-neutral-50"
             >
               {/* Mobile row */}
-              <div
-                className={`grid ${mobileColLayout} items-start px-4 py-3 sm:hidden`}
-              >
-                <div className="flex min-w-0 items-start gap-3 text-left">
-                  <div className="flex shrink-0 justify-center pt-0.5">
-                    <FundRowAvatar src={r.avatarSrc} displayName={r.displayName} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B] underline-offset-[3px] decoration-[#09090B] group-hover:underline">
-                      {r.displayName}
+              <div className={`grid ${mobileColLayout} items-start px-4 py-3 sm:hidden`}>
+                <div className="flex min-w-0 items-start gap-1.5 text-left">
+                  <SuperinvestorFollowStarToggle
+                    className={cn(starToggleClassName, "pt-0.5")}
+                    profileHref={r.href}
+                    label={r.displayName}
+                  />
+                  <Link
+                    href={r.href}
+                    prefetch={false}
+                    className="flex min-w-0 flex-1 items-start gap-3 text-[#09090B] no-underline visited:text-[#09090B]"
+                    aria-label={`Open ${r.displayName}`}
+                  >
+                    <div className="flex shrink-0 justify-center pt-0.5">
+                      <FundRowAvatar src={r.avatarSrc} displayName={r.displayName} />
                     </div>
-                    <div className={screenerTickerSublineClass}>
-                      <span className="tabular-nums">{formatUsdCompact(r.totalValueUsd)}</span>
-                      <span> · </span>
-                      <span className="tabular-nums">{stocksLabel(r.positionCount)}</span>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B] underline-offset-[3px] decoration-[#09090B] group-hover:underline">
+                        {r.displayName}
+                      </div>
+                      <div className={screenerTickerSublineClass}>
+                        <span className="tabular-nums">{formatUsdCompact(r.totalValueUsd)}</span>
+                        <span> · </span>
+                        <span className="tabular-nums">{stocksLabel(r.positionCount)}</span>
+                      </div>
                     </div>
-                  </div>
+                  </Link>
                 </div>
                 <div className="min-w-0 self-start pt-0.5 text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
                   {formatFilingDate(r.filingDate)}
@@ -143,45 +159,57 @@ function SuperinvestorsFundTableInner({ rows }: { rows: SuperinvestorsFundRowMod
               <div
                 className={`hidden ${colLayout} h-[60px] max-h-[60px] items-center px-4 sm:grid`}
               >
-                <div className="flex justify-center">
-                  <FundRowAvatar src={r.avatarSrc} displayName={r.displayName} />
-                </div>
-
-                <div className="min-w-0 text-left">
-                  <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B] underline-offset-[3px] decoration-[#09090B] group-hover:underline">
-                    {r.displayName}
+                <SuperinvestorFollowStarToggle
+                  className={starToggleClassName}
+                  profileHref={r.href}
+                  label={r.displayName}
+                />
+                <Link
+                  href={r.href}
+                  prefetch={false}
+                  className={`${rowLinkGrid} col-span-6 col-start-2 grid h-full min-w-0 items-center text-[#09090B] no-underline visited:text-[#09090B]`}
+                  aria-label={`Open ${r.displayName}`}
+                >
+                  <div className="flex justify-center">
+                    <FundRowAvatar src={r.avatarSrc} displayName={r.displayName} />
                   </div>
-                </div>
 
-                <div className="min-w-0 text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
-                  {formatUsdCompact(r.totalValueUsd)}
-                </div>
+                  <div className="min-w-0 text-left">
+                    <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B] underline-offset-[3px] decoration-[#09090B] group-hover:underline">
+                      {r.displayName}
+                    </div>
+                  </div>
 
-                <div className="min-w-0 text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
-                  {r.positionCount.toLocaleString("en-US")} {r.positionCount === 1 ? "Stock" : "Stocks"}
-                </div>
+                  <div className="min-w-0 text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
+                    {formatUsdCompact(r.totalValueUsd)}
+                  </div>
 
-                <div className="min-w-0 text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
-                  {formatFilingDate(r.filingDate)}
-                </div>
+                  <div className="min-w-0 text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
+                    {r.positionCount.toLocaleString("en-US")} {r.positionCount === 1 ? "Stock" : "Stocks"}
+                  </div>
 
-                <div className="flex min-h-0 min-w-0 max-h-[60px] shrink items-center justify-end gap-1 overflow-hidden">
-                  {r.topHoldings.slice(0, 5).map((h, i) => {
-                    const sym = h.ticker?.trim() ? h.ticker.trim().toUpperCase() : null;
-                    const logoUrl = sym ? resolveEquityLogoUrlFromListingTicker(sym) : "";
-                    return (
-                      <CompanyLogo
-                        key={`${sym ?? h.issuer}-${i}`}
-                        name={h.issuer}
-                        logoUrl={logoUrl}
-                        symbol={sym ?? undefined}
-                        size="28"
-                      />
-                    );
-                  })}
-                </div>
+                  <div className="min-w-0 text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
+                    {formatFilingDate(r.filingDate)}
+                  </div>
+
+                  <div className="flex min-h-0 min-w-0 max-h-[60px] shrink items-center justify-end gap-1 overflow-hidden">
+                    {r.topHoldings.slice(0, 5).map((h, i) => {
+                      const sym = h.ticker?.trim() ? h.ticker.trim().toUpperCase() : null;
+                      const logoUrl = sym ? resolveEquityLogoUrlFromListingTicker(sym) : "";
+                      return (
+                        <CompanyLogo
+                          key={`${sym ?? h.issuer}-${i}`}
+                          name={h.issuer}
+                          logoUrl={logoUrl}
+                          symbol={sym ?? undefined}
+                          size="28"
+                        />
+                      );
+                    })}
+                  </div>
+                </Link>
               </div>
-            </Link>
+            </div>
           ))}
         </div>
       </div>

@@ -1,7 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import {
   BookOpen,
-  Briefcase,
   CalendarDays,
   ChartColumn,
   Compass,
@@ -9,7 +8,8 @@ import {
   Newspaper,
   PanelsTopLeft,
   Globe,
-  Wallet,
+  Landmark,
+  Users,
 } from "lucide-react";
 
 import { NAV_EARNINGS_ENABLED, NAV_ECONOMY_ENABLED, NAV_MACRO_ENABLED, NAV_NEWS_ENABLED } from "@/lib/features/nav-flags";
@@ -57,12 +57,12 @@ export const protectedDataItems: ProtectedNavItem[] = [
 export const protectedCommunityItems: ProtectedNavItem[] = [
   {
     label: "Superinvestors",
-    icon: Briefcase,
+    icon: Landmark,
     href: "/superinvestors",
     available: true,
     activePathPrefix: true,
   },
-  { label: "Portfolios", icon: Wallet, href: "/portfolios", available: true },
+  { label: "Portfolios", icon: Users, href: "/portfolios", available: true },
 ];
 
 /** Community entries for the mobile bottom-nav sheet (same as desktop). */

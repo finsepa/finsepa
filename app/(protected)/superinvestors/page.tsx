@@ -18,10 +18,8 @@ import {
   getScionHoldings,
   getTciFundHoldings,
 } from "@/lib/superinvestors/berkshire-13f";
-import {
-  SuperinvestorsFundTable,
-  type SuperinvestorsFundRowModel,
-} from "@/components/superinvestors/superinvestors-fund-table";
+import { SuperinvestorsPageClient } from "@/components/superinvestors/superinvestors-page-client";
+import type { SuperinvestorsFundRowModel } from "@/components/superinvestors/superinvestors-fund-table";
 
 export const dynamic = "force-dynamic";
 
@@ -287,10 +285,5 @@ export default async function SuperinvestorsPage() {
 
   rows.sort((a, b) => b.totalValueUsd - a.totalValueUsd);
 
-  return (
-    <div className="min-w-0 px-4 py-4 sm:px-9 sm:py-6">
-      <h1 className="mb-6 text-2xl font-semibold tracking-tight text-[#09090B]">Superinvestors</h1>
-      <SuperinvestorsFundTable rows={rows} />
-    </div>
-  );
+  return <SuperinvestorsPageClient rows={rows} />;
 }
