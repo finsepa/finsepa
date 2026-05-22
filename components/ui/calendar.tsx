@@ -5,6 +5,7 @@ import { Check, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { DayButton, DayPicker, Dropdown as DayPickerDropdown, getDefaultClassNames, UI } from "react-day-picker";
 
 import {
+  dropdownMenuFloatingScrollClassName,
   dropdownMenuPanelClassName,
   dropdownMenuPlainItemRowClassName,
 } from "@/components/design-system/dropdown-menu-styles";
@@ -166,6 +167,7 @@ function FinsepaCalendarDropdown({
         <div
           className={cn(
             dropdownMenuPanelClassName(),
+            dropdownMenuFloatingScrollClassName,
             "absolute left-0 top-[calc(100%+4px)] z-[200] min-w-full max-h-60 w-max max-w-[min(18rem,calc(100vw-2rem))] overflow-y-auto py-2",
           )}
           role="listbox"
@@ -247,16 +249,24 @@ export function Calendar({
   classNames,
   showOutsideDays = true,
   captionLayout = "label",
+  reverseYears,
   formatters,
   components,
   captionDropdownStretch = false,
   ...props
 }: CalendarProps) {
+  const usesYearDropdown =
+    captionLayout === "dropdown" ||
+    captionLayout === "dropdown-years" ||
+    captionLayout === "dropdown-months";
+  const reverseYearsEffective = reverseYears ?? usesYearDropdown;
+
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
       className={cn("group/calendar", className)}
       captionLayout={captionLayout}
+      reverseYears={reverseYearsEffective}
       formatters={{
         formatMonthDropdown: (date) => date.toLocaleString("default", { month: "short" }),
         ...formatters,

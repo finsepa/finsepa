@@ -9,7 +9,7 @@ import {
   type MutableRefObject,
   type RefObject,
 } from "react";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, subDays } from "date-fns";
 import {
   AreaSeries,
   BaselineSeries,
@@ -46,6 +46,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { netCashUsdUpTo, normalizeUsdForDisplay } from "@/lib/portfolio/overview-metrics";
 import { cn } from "@/lib/utils";
 import type {
   PortfolioChartRange,
@@ -186,10 +187,33 @@ function buildBenchmarkValueLineData(
 
 function chartYmdForTrade(tradeYmd: string, sortedChartYmd: readonly string[]): string | null {
   if (sortedChartYmd.length === 0) return null;
+  const first = sortedChartYmd[0]!;
+  const last = sortedChartYmd[sortedChartYmd.length - 1]!;
+  if (tradeYmd < first || tradeYmd > last) return null;
   if (sortedChartYmd.includes(tradeYmd)) return tradeYmd;
-  const after = sortedChartYmd.find((d) => d >= tradeYmd);
-  if (after) return after;
-  return sortedChartYmd[sortedChartYmd.length - 1] ?? null;
+  const tradeMonth = tradeYmd.slice(0, 7);
+  const inMonth = sortedChartYmd.filter((d) => d.slice(0, 7) === tradeMonth);
+  if (inMonth.length > 0) {
+    const onOrBefore = inMonth.filter((d) => d <= tradeYmd);
+    if (onOrBefore.length > 0) return onOrBefore[onOrBefore.length - 1]!;
+    return inMonth[0]!;
+  }
+  return sortedChartYmd.find((d) => d >= tradeYmd) ?? null;
+}
+
+function isPortfolioTradeDotRow(t: PortfolioTransaction): boolean {
+  if (t.kind !== "trade") return false;
+  const op = t.operation.toLowerCase();
+  return op === "buy" || op === "sell";
+}
+
+function ymdDayBefore(ymd: string): string | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return null;
+  try {
+    return format(subDays(parseISO(ymd), 1), "yyyy-MM-dd");
+  } catch {
+    return null;
+  }
 }
 
 function syncPortfolioTradeDotsOverlay(
@@ -205,20 +229,26 @@ function syncPortfolioTradeDotsOverlay(
   overlay.replaceChildren();
   if (!show || lineData.length === 0 || sessionYmds.length !== lineData.length) return;
   const sortedYmd = [...new Set(sessionYmds)].sort((a, b) => a.localeCompare(b));
+  const byChartYmd = new Map<string, PortfolioTransaction[]>();
   for (const t of txs) {
-    if (t.kind !== "trade") continue;
-    const op = t.operation.toLowerCase();
-    if (op !== "buy" && op !== "sell") continue;
+    if (!isPortfolioTradeDotRow(t)) continue;
     if (!/^\d{4}-\d{2}-\d{2}$/.test(t.date)) continue;
     const timeStr = chartYmdForTrade(t.date, sortedYmd);
     if (timeStr == null) continue;
+    const list = byChartYmd.get(timeStr) ?? [];
+    list.push(t);
+    byChartYmd.set(timeStr, list);
+  }
+
+  for (const [timeStr, bucket] of byChartYmd) {
     const idx = sessionYmds.indexOf(timeStr);
     const pt = idx >= 0 ? lineData[idx] : undefined;
     if (!pt) continue;
     const x = chart.timeScale().timeToCoordinate(pt.time);
     const y = series.priceToCoordinate(pt.value);
     if (x == null || y == null) continue;
-    const border = op === "buy" ? GREEN : RED;
+    const netCash = bucket.reduce((s, t) => s + t.sum, 0);
+    const border = netCash <= 0 ? GREEN : RED;
 
     const hit = document.createElement("div");
     hit.style.cssText = [
@@ -254,7 +284,7 @@ function syncPortfolioTradeDotsOverlay(
       hoverApiRef.current?.onEnter({
         clientX: e.clientX,
         clientY: e.clientY,
-        tx: t,
+        bucket,
         chartYmd: timeStr,
       });
     };
@@ -628,7 +658,7 @@ function formatTradeLedgerDateYmd(ymd: string): string {
   }
 }
 
-function formatTradeHoverLines(tx: PortfolioTransaction, chartYmd: string): string[] {
+function formatTradeHoverLines(tx: PortfolioTransaction): string[] {
   const lines: string[] = [];
   const op = tx.operation.trim();
   const sym = tx.symbol.trim().toUpperCase();
@@ -645,17 +675,55 @@ function formatTradeHoverLines(tx: PortfolioTransaction, chartYmd: string): stri
   if (Number.isFinite(tx.fee) && tx.fee > 0.0005) {
     lines.push(`Fee: ${TOOLTIP_USD.format(tx.fee)}`);
   }
-  if (chartYmd !== tx.date) {
-    lines.push(`Chart: ${formatTradeLedgerDateYmd(chartYmd)}`);
-  }
   return lines;
+}
+
+function formatSignedUsd(n: number): string {
+  const v = normalizeUsdForDisplay(n);
+  return `${v >= 0 ? "+" : ""}${TOOLTIP_USD.format(v)}`;
+}
+
+function buildTradeDotTooltip(
+  bucket: readonly PortfolioTransaction[],
+  chartYmd: string,
+  allTransactions: readonly PortfolioTransaction[],
+): { dateLabel: string; lines: string[] } {
+  const sorted = [...bucket].sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
+  const lines: string[] = [];
+  const firstYmd = sorted[0]?.date;
+  const beforeYmd = firstYmd ? ymdDayBefore(firstYmd) : null;
+  if (beforeYmd) {
+    const cashBefore = netCashUsdUpTo([...allTransactions], beforeYmd);
+    lines.push(`Cash before: ${TOOLTIP_USD.format(normalizeUsdForDisplay(cashBefore))}`);
+  }
+  if (sorted.length > 1) {
+    const totalCash = sorted.reduce((s, t) => s + t.sum, 0);
+    lines.push(`Total cash: ${formatSignedUsd(totalCash)}`);
+  }
+
+  for (let i = 0; i < sorted.length; i++) {
+    const tx = sorted[i]!;
+    if (sorted.length > 1) {
+      lines.push(formatTradeLedgerDateYmd(tx.date));
+    }
+    lines.push(...formatTradeHoverLines(tx));
+  }
+
+  const dateLabel =
+    sorted.length === 1 && sorted[0] ?
+      formatTradeLedgerDateYmd(sorted[0].date)
+    : /^\d{4}-\d{2}-\d{2}$/.test(chartYmd) ?
+      format(parseISO(chartYmd), "MMMM yyyy")
+    : chartYmd;
+
+  return { dateLabel, lines };
 }
 
 type TradeDotHoverApi = {
   onEnter: (p: {
     clientX: number;
     clientY: number;
-    tx: PortfolioTransaction;
+    bucket: readonly PortfolioTransaction[];
     chartYmd: string;
   }) => void;
   onLeave: () => void;
@@ -923,7 +991,7 @@ export function PortfolioValueHistoryChartPane({
   } | null>(null);
 
   tradeDotHoverApiRef.current = {
-    onEnter({ clientX, clientY, tx, chartYmd }) {
+    onEnter({ clientX, clientY, bucket, chartYmd }) {
       hoverTimeRef.current = null;
       setHoverAxisLabel(null);
       setTooltip(null);
@@ -932,8 +1000,9 @@ export function PortfolioValueHistoryChartPane({
       const r = box.getBoundingClientRect();
       const px = clientX - r.left;
       const py = clientY - r.top;
-      const tw = 220;
-      const th = 112;
+      const tw = 260;
+      const { dateLabel, lines } = buildTradeDotTooltip(bucket, chartYmd, transactions);
+      const th = Math.min(280, 56 + lines.length * 18);
       const pad = 8;
       let x = px + pad;
       let y = py - th - pad;
@@ -946,8 +1015,8 @@ export function PortfolioValueHistoryChartPane({
       setTradeTooltip({
         x,
         y,
-        dateLabel: formatTradeLedgerDateYmd(tx.date),
-        lines: formatTradeHoverLines(tx, chartYmd),
+        dateLabel,
+        lines,
       });
     },
     onLeave() {
@@ -1001,10 +1070,10 @@ export function PortfolioValueHistoryChartPane({
       crosshair: {
         mode: CrosshairMode.Magnet,
         vertLine: {
-          color: "rgba(9, 9, 11, 0.06)",
+          color: "rgba(9, 9, 11, 0.28)",
           labelVisible: false,
           width: 1,
-          style: LineStyle.Solid,
+          style: LineStyle.Dashed,
         },
         horzLine: {
           visible: false,
@@ -1345,11 +1414,26 @@ export function PortfolioValueHistoryChartPane({
           >
             <p className="text-[11px] leading-4 text-[#71717A]">{tradeTooltip.dateLabel}</p>
             <div className="mt-1.5 space-y-0.5 text-xs leading-snug text-[#09090B]">
-              {tradeTooltip.lines.map((line, i) => (
-                <p key={i} className="font-medium tabular-nums">
-                  {line}
-                </p>
-              ))}
+              {tradeTooltip.lines.map((line, i) => {
+                const isTxDate =
+                  /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{1,2}, \d{4}$/.test(line) &&
+                  i > 0;
+                return (
+                  <p
+                    key={i}
+                    className={cn(
+                      "tabular-nums",
+                      line.startsWith("Cash before:") || line.startsWith("Total cash:") ?
+                        "font-semibold text-[#09090B]"
+                      : isTxDate ?
+                        "pt-1.5 text-[11px] font-medium text-[#71717A]"
+                      : "font-medium",
+                    )}
+                  >
+                    {line}
+                  </p>
+                );
+              })}
             </div>
           </div>
         ) : null}
@@ -1361,7 +1445,7 @@ export function PortfolioValueHistoryChartPane({
       >
         {hoverAxisLabel ?
           <span
-            className="absolute bottom-1 inline-block max-w-[calc(100%-16px)] -translate-x-1/2 truncate whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]"
+            className="absolute bottom-1 inline-block max-w-[calc(100%-16px)] -translate-x-1/2 truncate whitespace-nowrap font-['Inter'] text-[11px] font-medium tabular-nums leading-none text-[#09090B] sm:text-[12px]"
             style={{ left: `clamp(8px, ${hoverAxisLabel.leftPx}px, calc(100% - 8px))` }}
           >
             {hoverAxisLabel.label}

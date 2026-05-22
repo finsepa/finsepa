@@ -2,12 +2,10 @@ import "server-only";
 
 import {
   addDays,
-  addMonths,
   format,
   max as maxDate,
   min as minDate,
   parseISO,
-  startOfMonth,
   startOfYear,
   subDays,
   subMonths,
@@ -114,7 +112,7 @@ function subsampleSortedYmd(dates: string[], maxPoints: number): string[] {
   return [...new Set(out)];
 }
 
-/** One sample every 7 days (5Y chart); uses last trading day on or before each week anchor when bars exist. */
+/** One sample every 7 days (5Y / ALL charts); uses last trading day on or before each week anchor when bars exist. */
 function oneSamplePerWeekInRange(
   fromYmd: string,
   toYmd: string,
@@ -140,38 +138,6 @@ function oneSamplePerWeekInRange(
 
   const out: string[] = [];
   for (let d = from; d.getTime() <= to.getTime(); d = addDays(d, 7)) {
-    const picked = pickForTarget(ymd(d));
-    if (picked) out.push(picked);
-  }
-  return [...new Set([fromYmd, ...out, toYmd])].sort((x, y) => x.localeCompare(y));
-}
-
-/** One sample per calendar month (ALL chart); last trading day on or before month start when bars exist. */
-function oneSamplePerMonthInRange(
-  fromYmd: string,
-  toYmd: string,
-  sortedTradingDates: readonly string[],
-): string[] {
-  const a = parseYmd(fromYmd);
-  const b = parseYmd(toYmd);
-  if (!a || !b) return [];
-  const from = minDate([a, b]);
-  const to = maxDate([a, b]);
-  const trading = sortedTradingDates.filter((d) => d >= fromYmd && d <= toYmd);
-
-  const pickForTarget = (target: string): string | null => {
-    if (trading.length === 0) return target;
-    let pick: string | null = null;
-    for (const t of trading) {
-      if (t <= target) pick = t;
-      else break;
-    }
-    if (pick != null) return pick;
-    return trading.find((t) => t >= target) ?? null;
-  };
-
-  const out: string[] = [];
-  for (let d = startOfMonth(from); d.getTime() <= to.getTime(); d = addMonths(d, 1)) {
     const picked = pickForTarget(ymd(d));
     if (picked) out.push(picked);
   }
@@ -480,7 +446,7 @@ export async function computePortfolioValueHistory(
     sampleDates = oneSamplePerWeekInRange(fromYmd, toYmd, trading);
   } else if (range === "all") {
     const trading = [...dateSet].sort((a, b) => a.localeCompare(b));
-    sampleDates = oneSamplePerMonthInRange(fromYmd, toYmd, trading);
+    sampleDates = oneSamplePerWeekInRange(fromYmd, toYmd, trading);
   } else {
     sampleDates =
       dateSet.size > 0 ?

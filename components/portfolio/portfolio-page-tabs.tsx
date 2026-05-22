@@ -5,6 +5,15 @@ import { UnderlineTabs } from "@/components/screener/market-tabs";
 const tabs = ["Overview", "Performance", "Metrics", "Cash", "Slices", "Transactions"] as const;
 export type PortfolioViewTab = (typeof tabs)[number];
 
+/** Community `/portfolios/[id]` read-only view — no Cash tab. */
+export const publicPortfolioViewTabs = [
+  "Overview",
+  "Performance",
+  "Metrics",
+  "Slices",
+  "Transactions",
+] as const satisfies readonly PortfolioViewTab[];
+
 /** `?tab=` query value for Next.js router (shareable deep links). */
 export function portfolioViewTabFromSearchParam(value: string | null): PortfolioViewTab {
   if (!value) return "Overview";
@@ -47,9 +56,13 @@ export function searchParamFromPortfolioViewTab(tab: PortfolioViewTab): string {
 export function PortfolioPageTabs({
   active,
   onChange,
+  publicView = false,
 }: {
   active: PortfolioViewTab;
   onChange: (tab: PortfolioViewTab) => void;
+  /** Hides Cash (and related deep links) on `/portfolios/[id]`. */
+  publicView?: boolean;
 }) {
-  return <UnderlineTabs tabs={tabs} active={active} onChange={onChange} ariaLabel="Portfolio" />;
+  const tabList = publicView ? publicPortfolioViewTabs : tabs;
+  return <UnderlineTabs tabs={tabList} active={active} onChange={onChange} ariaLabel="Portfolio" />;
 }

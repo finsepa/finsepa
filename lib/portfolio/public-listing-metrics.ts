@@ -1,4 +1,5 @@
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
+import type { PublicPortfolioListingSnapshot } from "@/lib/portfolio/public-listing-snapshot";
 import {
   netCashUsd,
   normalizeUsdForDisplay,
@@ -22,6 +23,8 @@ export type PublicPortfolioListingMetrics = {
   returnsAthPct?: number | null;
   ownerDisplayName?: string | null;
   ownerAvatarUrl?: string | null;
+  /** Read-only community detail view (`/portfolios/[id]`). */
+  snapshot?: PublicPortfolioListingSnapshot;
 };
 
 function topSymbolsByValue(holdings: PortfolioHolding[], limit: number): string[] {

@@ -360,13 +360,13 @@ function PortfolioCashPanelInner() {
                     "min-h-[44px] bg-white px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A]",
                   )}
                 >
-                  <div className="text-left">Operation</div>
-                  <div className="text-left">Holding</div>
-                  <div className="text-right">
+                  <div className="min-w-0 w-full text-left">Operation</div>
+                  <div className="min-w-0 w-full text-left">Holding</div>
+                  <div className="min-w-0 w-full text-right">
                     <button
                       type="button"
                       onClick={() => setCashDateAsc((v) => !v)}
-                      className="inline-flex items-center gap-1 rounded-md transition-colors hover:text-[#09090B] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15"
+                      className="ml-auto inline-flex items-center gap-1 rounded-md transition-colors hover:text-[#09090B] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15"
                     >
                       Date
                       {cashDateAsc ? (
@@ -376,9 +376,9 @@ function PortfolioCashPanelInner() {
                       )}
                     </button>
                   </div>
-                  <div className="text-right">Fee</div>
-                  <div className="text-right">Summ</div>
-                  <div className="text-right">
+                  <div className="min-w-0 w-full text-right">Fee</div>
+                  <div className="min-w-0 w-full text-right">Summ</div>
+                  <div className="min-w-0 w-full text-right">
                     <span className="sr-only">Actions</span>
                   </div>
                 </div>
@@ -393,14 +393,14 @@ function PortfolioCashPanelInner() {
                   >
                     <div
                       className={cn(
-                        "min-w-0 truncate px-3 text-left text-[14px] font-medium leading-5",
+                        "min-w-0 w-full truncate px-3 text-left text-[14px] font-medium leading-5",
                         operationClassName(t.operation),
                       )}
                     >
                       {t.operation}
                     </div>
-                    <div className="min-w-0 text-left">
-                      <div className="flex min-w-0 items-center gap-3 pr-4">
+                    <div className="min-w-0 w-full text-left">
+                      <div className="flex min-w-0 items-center justify-start gap-3 pr-4">
                         <CompanyLogo
                           name={t.name}
                           logoUrl={displayLogoUrlForPortfolioSymbol(t.symbol)}
@@ -414,21 +414,21 @@ function PortfolioCashPanelInner() {
                         </div>
                       </div>
                     </div>
-                    <div className="text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B]">
+                    <div className="min-w-0 w-full text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B]">
                       {format(parseISO(t.date), "MM/dd/yyyy")}
                     </div>
-                    <div className="text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B]">
+                    <div className="min-w-0 w-full text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B]">
                       {t.fee > 0 ? usd0.format(t.fee) : usd0.format(0)}
                     </div>
                     <div
                       className={cn(
-                        "text-right text-[14px] font-medium leading-5 tabular-nums",
+                        "min-w-0 w-full text-right text-[14px] font-medium leading-5 tabular-nums",
                         cashSummClassName(t.operation, t.sum),
                       )}
                     >
                       {formatSignedUsd(t.sum)}
                     </div>
-                    <div className="flex justify-end pr-1">
+                    <div className="flex w-full justify-end pr-1">
                       {!selectedPortfolioReadOnly ? (
                         <TransactionRowActionsMenu
                           transaction={t}

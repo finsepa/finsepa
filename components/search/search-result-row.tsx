@@ -12,7 +12,7 @@ import { eodhdCryptoSpotTickerDisplay } from "@/lib/crypto/eodhd-crypto-ticker-d
 import type { SearchAssetItem } from "@/lib/search/search-types";
 import { watchlistStorageKeyForSearchItem } from "@/lib/search/watchlist-storage-key";
 
-function LogoBlock({ item }: { item: SearchAssetItem }) {
+export function SearchResultLogo({ item }: { item: SearchAssetItem }) {
   const [imgErr, setImgErr] = useState(false);
   const sym = item.symbol.trim().toUpperCase();
   const fromServer = item.logoUrl?.trim() ?? "";
@@ -53,7 +53,7 @@ const categoryLabel: Record<SearchAssetItem["type"], string> = {
   index: "Index",
 };
 
-function resultCategoryLabel(item: SearchAssetItem): string {
+export function searchResultCategoryLabel(item: SearchAssetItem): string {
   if (item.marketLabel?.trim().toUpperCase() === "ETF") return "ETF";
   return categoryLabel[item.type];
 }
@@ -61,7 +61,7 @@ function resultCategoryLabel(item: SearchAssetItem): string {
 function MetaRight({ item }: { item: SearchAssetItem }) {
   return (
     <span className="shrink-0 rounded-full bg-[#F4F4F5] px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-[#71717A]">
-      {resultCategoryLabel(item)}
+      {searchResultCategoryLabel(item)}
     </span>
   );
 }
@@ -107,7 +107,7 @@ function SearchResultRowInner({
       }}
       className="flex min-w-0 flex-1 items-center gap-2 no-underline"
     >
-      <LogoBlock item={item} />
+      <SearchResultLogo item={item} />
       <div className="min-w-0 flex-1">
         <div className="truncate font-medium">{item.name}</div>
         <div className="truncate text-[12px] text-[#71717A]">

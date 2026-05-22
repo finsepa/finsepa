@@ -3,14 +3,18 @@
 import { createPortal } from "react-dom";
 import { memo, startTransition, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
+import type { CompanyPick } from "@/components/charting/company-picker";
 import { CompanyLogo } from "@/components/screener/company-logo";
+import { HoldingRowActionsMenu } from "@/components/portfolio/holding-row-actions-menu";
 import { displayLogoUrlForPortfolioSymbol } from "@/lib/portfolio/portfolio-asset-display-logo";
 import { RemoveAssetModal } from "@/components/portfolio/remove-asset-modal";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
-import { portfolioHoldingAssetHref } from "@/lib/crypto/crypto-picker-universe";
+import {
+  portfolioHoldingAssetHref,
+  type PortfolioHoldingAssetLinkTab,
+} from "@/lib/crypto/crypto-picker-universe";
 import {
   portfolioAssetSymbolCaption,
   portfolioSharesUnitTicker,
@@ -24,6 +28,13 @@ import { cn } from "@/lib/utils";
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 
 const EM_DASH = "\u2014";
+
+function holdingToCompanyPick(h: PortfolioHolding): CompanyPick {
+  const cryptoKey = cryptoRouteBase(h.symbol);
+  const symbol =
+    isSupportedCryptoAssetSymbol(cryptoKey) ? cryptoKey : h.symbol.trim().toUpperCase();
+  return { symbol, name: h.name };
+}
 
 const PNL_BREAKDOWN_TOOLTIP_W = 240;
 /** Offset from pointer so the tooltip sits just beside the cursor. */
@@ -201,10 +212,13 @@ function PortfolioHoldingsTableInner({
   holdings,
   transactions,
   className,
+  assetLinkTab = "holdings",
 }: {
   holdings: PortfolioHolding[];
   transactions: PortfolioTransaction[];
   className?: string;
+  /** Public portfolio views link to asset Overview; editable portfolios open Portfolio tab. */
+  assetLinkTab?: PortfolioHoldingAssetLinkTab;
 }) {
   const {
     selectedPortfolioId,
@@ -214,9 +228,11 @@ function PortfolioHoldingsTableInner({
     editTransaction,
     closeEditTransaction,
     selectedPortfolioReadOnly,
+    openNewTransactionWithPreset,
   } = usePortfolioWorkspace();
 
   const [removeTarget, setRemoveTarget] = useState<PortfolioHolding | null>(null);
+  const [openActionsHoldingId, setOpenActionsHoldingId] = useState<string | null>(null);
 
   const confirmRemoveAsset = useCallback(() => {
     if (!selectedPortfolioId || !removeTarget) return;
@@ -290,7 +306,7 @@ function PortfolioHoldingsTableInner({
             const unrealizedUsd = retUsd;
             const totalUsd = unrealizedUsd + realizedUsd;
             const totalPct = h.costBasis > 0 ? (totalUsd / h.costBasis) * 100 : 0;
-            const assetHref = portfolioHoldingAssetHref(h.symbol);
+            const assetHref = portfolioHoldingAssetHref(h.symbol, { tab: assetLinkTab });
             const logo = displayLogoUrlForPortfolioSymbol(h.symbol);
             const caption = portfolioAssetSymbolCaption(h.symbol);
 
@@ -372,10 +388,9 @@ function PortfolioHoldingsTableInner({
             <th className="whitespace-nowrap px-4 py-3 text-right">Avg. Buy Price</th>
             <th className="whitespace-nowrap px-4 py-3 text-right">Profit/Loss</th>
             <th className="whitespace-nowrap px-4 py-3 text-right">Weight</th>
-            <th
-              className="w-12 px-4 py-3 text-right"
-              aria-label={selectedPortfolioReadOnly ? undefined : "Actions"}
-            />
+            {!selectedPortfolioReadOnly ? (
+              <th className="w-12 px-4 py-3 text-right" aria-label="Actions" />
+            ) : null}
           </tr>
         </thead>
         <tbody>
@@ -387,7 +402,7 @@ function PortfolioHoldingsTableInner({
             const unrealizedUsd = retUsd;
             const totalUsd = unrealizedUsd + realizedUsd;
             const totalPct = h.costBasis > 0 ? (totalUsd / h.costBasis) * 100 : 0;
-            const assetHref = portfolioHoldingAssetHref(h.symbol);
+            const assetHref = portfolioHoldingAssetHref(h.symbol, { tab: assetLinkTab });
             const logo = displayLogoUrlForPortfolioSymbol(h.symbol);
             const caption = portfolioAssetSymbolCaption(h.symbol);
             const assetInner = (
@@ -448,19 +463,21 @@ function PortfolioHoldingsTableInner({
               <td className="align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
                 {pct.format(weightPct)}%
               </td>
-              <td className="align-middle px-4 py-3 text-right">
-                {!selectedPortfolioReadOnly ? (
-                  <button
-                    type="button"
-                    disabled={selectedPortfolioId == null}
-                    aria-label={`Remove ${h.name} from portfolio`}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] text-[#71717A] transition-colors hover:bg-[#FEF2F2] hover:text-[#DC2626] disabled:pointer-events-none disabled:opacity-40"
-                    onClick={() => setRemoveTarget(h)}
-                  >
-                    <Trash2 className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
-                  </button>
-                ) : null}
-              </td>
+              {!selectedPortfolioReadOnly ? (
+                <td className="align-middle px-4 py-3 text-right">
+                  <div className="flex justify-end">
+                    <HoldingRowActionsMenu
+                      holding={h}
+                      isOpen={openActionsHoldingId === h.id}
+                      onOpenChange={(open) => setOpenActionsHoldingId(open ? h.id : null)}
+                      onAddTransactions={(row) =>
+                        openNewTransactionWithPreset(holdingToCompanyPick(row))
+                      }
+                      onRemoveAsset={setRemoveTarget}
+                    />
+                  </div>
+                </td>
+              ) : null}
             </tr>
             );
           })}

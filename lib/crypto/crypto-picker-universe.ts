@@ -22,15 +22,20 @@ export const CRYPTO_PICKER_TOP: readonly { symbol: string; name: string }[] = [
 
 const CRYPTO_ASSET_PAGE_SYMBOLS = new Set(ALL_CRYPTO_METAS.map((m) => m.symbol.toUpperCase()));
 
+export type PortfolioHoldingAssetLinkTab = "overview" | "holdings";
+
 /** Portfolio / picker: `/crypto/BTC` vs `/stock/AAPL`. Custom assets have no detail page → `null`. */
-export function portfolioHoldingAssetHref(symbol: string): string | null {
+export function portfolioHoldingAssetHref(
+  symbol: string,
+  opts?: { tab?: PortfolioHoldingAssetLinkTab },
+): string | null {
   const s = symbol.trim().toUpperCase();
   if (!s) return "/portfolio";
   if (isCustomPortfolioSymbol(s)) return null;
   const base = cryptoRouteBase(s);
-  const holdingsTab = "?tab=holdings";
-  if (CRYPTO_ASSET_PAGE_SYMBOLS.has(base)) return `/crypto/${encodeURIComponent(base)}${holdingsTab}`;
-  if (CRYPTO_CC_EXTRA_PLAIN_BASES.has(base)) return `/crypto/${encodeURIComponent(base)}${holdingsTab}`;
-  if (cryptoUsdPairBase(s)) return `/crypto/${encodeURIComponent(base)}${holdingsTab}`;
-  return `/stock/${encodeURIComponent(s)}${holdingsTab}`;
+  const tabQuery = opts?.tab === "holdings" ? "?tab=holdings" : "";
+  if (CRYPTO_ASSET_PAGE_SYMBOLS.has(base)) return `/crypto/${encodeURIComponent(base)}${tabQuery}`;
+  if (CRYPTO_CC_EXTRA_PLAIN_BASES.has(base)) return `/crypto/${encodeURIComponent(base)}${tabQuery}`;
+  if (cryptoUsdPairBase(s)) return `/crypto/${encodeURIComponent(base)}${tabQuery}`;
+  return `/stock/${encodeURIComponent(s)}${tabQuery}`;
 }

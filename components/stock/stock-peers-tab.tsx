@@ -8,6 +8,8 @@ import { eodhdCryptoSpotTickerDisplay } from "@/lib/crypto/eodhd-crypto-ticker-d
 import { CompanyLogo } from "@/components/screener/company-logo";
 import { getStockDetailMetaFromTicker } from "@/lib/market/stock-detail-meta";
 import { isSingleAssetMode } from "@/lib/features/single-asset";
+import { SearchLoadingIndicator } from "@/components/search/search-loading-indicator";
+import { SearchResultLogo, searchResultCategoryLabel } from "@/components/search/search-result-row";
 import type { SearchAssetItem } from "@/lib/search/search-types";
 import { recordSearchNavigation } from "@/lib/search/recent-searches-storage";
 import {
@@ -90,33 +92,24 @@ function PeersComparisonTableSkeleton({ rowCount }: { rowCount: number }) {
   );
 }
 
-const categoryLabel: Record<SearchAssetItem["type"], string> = {
-  stock: "Stock",
-  crypto: "Crypto",
-  index: "Index",
-};
-
 export function PeerSearchDropdownRow({ item, onPick }: { item: SearchAssetItem; onPick: (item: SearchAssetItem) => void }) {
-  const sub = item.marketLabel ?? item.subtitle;
   return (
     <button
       type="button"
-      className={dropdownMenuRichItemClassName()}
+      className={cn(dropdownMenuRichItemClassName(), "items-center")}
       onMouseDown={(e) => e.preventDefault()}
       onClick={() => onPick(item)}
     >
+      <SearchResultLogo item={item} />
       <div className="min-w-0 flex-1">
         <div className="truncate font-medium">{item.name}</div>
         <div className="truncate text-[12px] text-[#71717A]">
           {item.type === "crypto" ? eodhdCryptoSpotTickerDisplay(item.symbol) : item.symbol}
         </div>
       </div>
-      <div className="flex shrink-0 flex-col items-end gap-0.5 self-center">
-        <span className="rounded-full bg-[#F4F4F5] px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-[#71717A]">
-          {categoryLabel[item.type]}
-        </span>
-        {sub ? <span className="max-w-[100px] truncate text-[11px] text-[#71717A]">{sub}</span> : null}
-      </div>
+      <span className="shrink-0 rounded-full bg-[#F4F4F5] px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-[#71717A]">
+        {searchResultCategoryLabel(item)}
+      </span>
     </button>
   );
 }
@@ -462,7 +455,7 @@ function StockPeersTabInner({
                     </>
                   )
                 ) : searchLoading && searchItems.length === 0 ? (
-                  <p className="px-3 py-2 text-[12px] text-[#71717A]">Searching…</p>
+                  <SearchLoadingIndicator />
                 ) : !searchLoading && searchItems.length === 0 ? (
                   <p className="px-3 py-2 text-[12px] text-[#71717A]">No results for &ldquo;{queryTrim}&rdquo;</p>
                 ) : (

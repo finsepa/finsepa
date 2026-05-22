@@ -92,7 +92,7 @@ function StatCell({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-/** Community directory card — layout aligned with Figma (avatar, owner, portfolio name, ATH return, stats row). */
+/** Community directory card — layout aligned with Figma (avatar, portfolio title, owner, ATH return, stats row). */
 function PublicPortfolioBlock({ listing }: { listing: PublicListingRow }) {
   const m = listing.metrics;
   const value = metricNum(m, "valueUsd");
@@ -108,10 +108,10 @@ function PublicPortfolioBlock({ listing }: { listing: PublicListingRow }) {
     : "—";
 
   return (
-    <div
-      className="mb-6 rounded-[12px] border border-[#E4E4E7] bg-white p-[20px] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.08)]"
-      role="group"
-      aria-label={`Public portfolio ${listing.name} by ${ownerName}`}
+    <Link
+      href={`/portfolios/${listing.id}`}
+      className="group mb-6 block rounded-[12px] border border-[#E4E4E7] bg-white p-[20px] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.08)] transition-colors hover:border-[#D4D4D8] hover:bg-[#FAFAFA] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2"
+      aria-label={`View public portfolio ${listing.name} by ${ownerName}`}
     >
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 flex-1 items-center gap-3">
@@ -125,13 +125,13 @@ function PublicPortfolioBlock({ listing }: { listing: PublicListingRow }) {
             size="portfolios"
           />
           <div className="flex min-w-0 flex-col gap-[4px]">
-            <h2 className="truncate text-xl font-semibold leading-7 tracking-normal text-[#09090B]">{ownerName}</h2>
-            <p
-              className="truncate text-sm font-normal leading-6 tracking-normal text-[#71717A]"
+            <h2
+              className="truncate text-xl font-semibold leading-7 tracking-normal text-[#09090B]"
               title={listing.name}
             >
               {listing.name}
-            </p>
+            </h2>
+            <p className="truncate text-sm font-normal leading-6 tracking-normal text-[#71717A]">{ownerName}</p>
           </div>
         </div>
 
@@ -192,14 +192,14 @@ function PublicPortfolioBlock({ listing }: { listing: PublicListingRow }) {
 
         <div className="flex shrink-0 justify-end md:justify-center">
           <div
-            className="flex h-8 w-8 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-[#FAFAFA] text-[#71717A]"
+            className="flex h-8 w-8 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors group-hover:bg-[#F4F4F5]"
             aria-hidden
           >
             <ChevronRight className="h-4 w-4" strokeWidth={2} />
           </div>
         </div>
       </div>
-    </div>
+    </Link>
   );
 }
 

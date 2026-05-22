@@ -48,6 +48,7 @@ import {
   type PersistedPortfolioState,
 } from "@/lib/portfolio/portfolio-storage";
 import { computePublicPortfolioListingMetrics, withListingOwner } from "@/lib/portfolio/public-listing-metrics";
+import { buildPublicListingSnapshot } from "@/lib/portfolio/public-listing-snapshot";
 import { dispatchPublicListingsChanged, putPublicPortfolioListingRequest } from "@/lib/portfolio/sync-public-listing-client";
 import { portfolioPathnameUsesEagerLiveQuotes } from "@/lib/portfolio/portfolio-live-quotes-paths";
 import {
@@ -69,18 +70,6 @@ function ModalField({ label, children }: { label: string; children: ReactNode })
       <span className="text-sm font-medium leading-5 text-[#09090B]">{label}</span>
       {children}
     </div>
-  );
-}
-
-function PublicPrivacyNotice() {
-  return (
-    <p
-      role="status"
-      className="w-full rounded-[10px] border border-[#BFDBFE] bg-[#EFF6FF] px-4 py-3 text-sm leading-5 text-[#1E3A8A]"
-    >
-      You selected your portfolio to be shared publicly. Everyone in the community will see your portfolio on
-      the Portfolios tab once you click Save or Add.
-    </p>
   );
 }
 
@@ -198,10 +187,7 @@ function EditPortfolioModal({
             </ModalField>
           ) : null}
           <ModalField label="Privacy">
-            <div className="flex w-full flex-col gap-2">
-              <PortfolioPrivacySelect value={privacy} onChange={setPrivacy} />
-              {privacy === "public" ? <PublicPrivacyNotice /> : null}
-            </div>
+            <PortfolioPrivacySelect value={privacy} onChange={setPrivacy} />
           </ModalField>
         </div>
 
@@ -296,10 +282,7 @@ function CreatePortfolioModal({
             />
           </ModalField>
           <ModalField label="Privacy">
-            <div className="flex w-full flex-col gap-2">
-              <PortfolioPrivacySelect value={privacy} onChange={setPrivacy} />
-              {privacy === "public" ? <PublicPrivacyNotice /> : null}
-            </div>
+            <PortfolioPrivacySelect value={privacy} onChange={setPrivacy} />
           </ModalField>
         </div>
 
@@ -348,8 +331,11 @@ export function PortfolioWorkspaceProvider({
   );
 
   const metricsForPublicListing = useCallback(
-    (holdings: PortfolioHolding[], txs: PortfolioTransaction[]) =>
-      withListingOwner(computePublicPortfolioListingMetrics(holdings, txs), ownerForListing),
+    (holdings: PortfolioHolding[], txs: PortfolioTransaction[]) => {
+      const base = withListingOwner(computePublicPortfolioListingMetrics(holdings, txs), ownerForListing);
+      const snapshot = buildPublicListingSnapshot(holdings, txs);
+      return snapshot ? { ...base, snapshot } : base;
+    },
     [ownerForListing],
   );
   /** Must match server vs client first paint — never use {@link newPortfolioId} in initial seed (random UUID). */

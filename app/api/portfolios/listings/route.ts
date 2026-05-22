@@ -2,6 +2,7 @@ import type { User } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
 import { avatarUrlFromUser, displayNameFromUser } from "@/lib/auth/user-display";
+import { sanitizePublicListingSnapshot } from "@/lib/portfolio/public-listing-snapshot";
 import { requireAuthUser, AuthRequiredError } from "@/lib/watchlist/api-auth";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -34,6 +35,16 @@ function sanitizeMetrics(input: unknown): Record<string, unknown> {
       .slice(0, 5);
     if (top.length) out.topSymbols = top;
   }
+
+  const ownerDisplayName = typeof o.ownerDisplayName === "string" ? o.ownerDisplayName.trim().slice(0, 120) : "";
+  if (ownerDisplayName) out.ownerDisplayName = ownerDisplayName;
+  const ownerAvatarUrl = typeof o.ownerAvatarUrl === "string" ? o.ownerAvatarUrl.trim() : "";
+  if (ownerAvatarUrl && /^https?:\/\//i.test(ownerAvatarUrl) && ownerAvatarUrl.length <= 2000) {
+    out.ownerAvatarUrl = ownerAvatarUrl;
+  }
+
+  const snapshot = sanitizePublicListingSnapshot(o.snapshot);
+  if (snapshot) out.snapshot = snapshot;
 
   return out;
 }
@@ -127,10 +138,10 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "displayName is required when publish is true." }, { status: 400 });
     }
 
-    const metrics = {
-      ...sanitizeMetrics(body.metrics),
+    const metrics = sanitizeMetrics({
+      ...(body.metrics && typeof body.metrics === "object" ? (body.metrics as Record<string, unknown>) : {}),
       ...ownerFieldsForListingMetrics(user),
-    };
+    });
     const now = new Date().toISOString();
 
     const { error } = await supabase.from("public_portfolio_listings").upsert(

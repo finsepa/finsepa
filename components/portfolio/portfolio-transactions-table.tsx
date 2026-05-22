@@ -54,15 +54,29 @@ const pct = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 2,
 });
 
+const txGridBase = "grid items-center gap-x-2";
+
 /** Matches Screener / Cash tab grid tables — see `screener-table.tsx`, `portfolio-cash-panel.tsx`. */
-const txGrid =
-  [
-    // Mobile: simplified layout (left = operation+asset, right = date+amount).
-    "grid-cols-[minmax(0,1fr)_minmax(0,auto)]",
-    // sm+: include checkbox column.
-    "sm:grid-cols-[36px_minmax(200px,2.4fr)_minmax(88px,1fr)_minmax(108px,1.1fr)_minmax(80px,1fr)_minmax(96px,1.1fr)_minmax(64px,0.85fr)_minmax(96px,1.1fr)_minmax(128px,1.35fr)_40px]",
-    "grid items-center gap-x-2",
-  ].join(" ");
+const txGridEditable = [
+  // Mobile: simplified layout (left = operation+asset, right = date+amount).
+  "grid-cols-[minmax(0,1fr)_minmax(0,auto)]",
+  // sm+: checkbox + data columns + row actions.
+  "sm:grid-cols-[36px_minmax(200px,2.4fr)_minmax(88px,1fr)_minmax(108px,1.1fr)_minmax(80px,1fr)_minmax(96px,1.1fr)_minmax(64px,0.85fr)_minmax(96px,1.1fr)_minmax(128px,1.35fr)_40px]",
+  txGridBase,
+].join(" ");
+
+/** Public / read-only: no checkbox or actions column — same horizontal padding as screener rows. */
+const txGridReadOnly = [
+  "grid-cols-[minmax(0,1fr)_minmax(0,auto)]",
+  "sm:grid-cols-[minmax(200px,2.4fr)_minmax(88px,1fr)_minmax(108px,1.1fr)_minmax(80px,1fr)_minmax(96px,1.1fr)_minmax(64px,0.85fr)_minmax(96px,1.1fr)_minmax(128px,1.35fr)]",
+  txGridBase,
+].join(" ");
+
+function transactionTableGrid(readOnly: boolean): string {
+  return readOnly ? txGridReadOnly : txGridEditable;
+}
+
+const txRowPadding = "px-2 sm:px-4";
 
 const FILTERS = ["All", "Trades", "Income", "Expenses", "Cash"] as const;
 type TxFilter = (typeof FILTERS)[number];
@@ -420,12 +434,13 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
             <div className="divide-y divide-[#E4E4E7] border-t border-[#E4E4E7] sm:min-w-[960px]">
               <div
                 className={cn(
-                  txGrid,
-                  "hidden min-h-[44px] bg-white px-1 py-0 text-[14px] font-medium leading-5 text-[#71717A] sm:grid",
+                  transactionTableGrid(selectedPortfolioReadOnly),
+                  "hidden min-h-[44px] bg-white py-0 text-[14px] font-medium leading-5 text-[#71717A] sm:grid",
+                  txRowPadding,
                 )}
               >
-                <div className="hidden items-center justify-center sm:flex">
-                  {!selectedPortfolioReadOnly ? (
+                {!selectedPortfolioReadOnly ? (
+                  <div className="hidden items-center justify-center sm:flex">
                     <TxBulkCheckbox
                       inputRef={selectAllRef}
                       checked={allPageSelected}
@@ -433,8 +448,8 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                       onChange={toggleSelectAllPage}
                       ariaLabel="Select all transactions on this page"
                     />
-                  ) : null}
-                </div>
+                  </div>
+                ) : null}
                 <div className="hidden min-w-0 text-left align-middle pr-2 sm:block">Asset</div>
                 <div className="hidden text-right sm:block">Operation</div>
                 <div className="hidden text-right sm:block">
@@ -457,33 +472,36 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                 <div className="hidden text-right sm:block">Fee</div>
                 <div className="hidden text-right sm:block">Summ</div>
                 <div className="hidden text-right sm:block">Total profit</div>
-                <div className="hidden text-right sm:block">
-                  <span className="sr-only">Actions</span>
-                </div>
+                {!selectedPortfolioReadOnly ? (
+                  <div className="hidden text-right sm:block">
+                    <span className="sr-only">Actions</span>
+                  </div>
+                ) : null}
               </div>
 
               {grouped.map((g) => (
                 <Fragment key={g.key}>
-                  <div className="bg-[#FAFAFA] px-4 py-2">
+                  <div className={cn("bg-[#FAFAFA] py-2", txRowPadding)}>
                     <span className="text-[14px] font-semibold leading-5 text-[#71717A]">{g.label}</span>
                   </div>
                   {g.rows.map((t) => (
                     <div
                       key={t.id}
                       className={cn(
-                        txGrid,
-                        "h-[60px] max-h-[60px] bg-white px-1 transition-colors duration-75 hover:bg-neutral-50",
+                        transactionTableGrid(selectedPortfolioReadOnly),
+                        "h-[60px] max-h-[60px] bg-white transition-colors duration-75 hover:bg-neutral-50",
+                        txRowPadding,
                       )}
                     >
-                      <div className="hidden items-center justify-center align-middle sm:flex">
-                        {!selectedPortfolioReadOnly ? (
+                      {!selectedPortfolioReadOnly ? (
+                        <div className="hidden items-center justify-center align-middle sm:flex">
                           <TxBulkCheckbox
                             checked={selectedIds.has(t.id)}
                             onChange={() => toggleRowSelected(t.id)}
                             ariaLabel={`Select transaction ${t.name}`}
                           />
-                        ) : null}
-                      </div>
+                        </div>
+                      ) : null}
                       <div className="min-w-0 text-left align-middle">
                         <div className="flex min-w-0 items-center gap-3 pr-2 text-left">
                           <CompanyLogo
@@ -574,8 +592,8 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                           <span className="text-[14px] font-medium text-[#71717A]">-</span>
                         )}
                       </div>
-                      <div className="hidden justify-end pr-1 align-middle sm:flex">
-                        {!selectedPortfolioReadOnly ? (
+                      {!selectedPortfolioReadOnly ? (
+                        <div className="hidden justify-end pr-1 align-middle sm:flex">
                           <TransactionRowActionsMenu
                             transaction={t}
                             isOpen={openMenuId === t.id}
@@ -583,8 +601,8 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                             onEdit={openEditTransaction}
                             onRequestDelete={setDeleteCandidate}
                           />
-                        ) : null}
-                      </div>
+                        </div>
+                      ) : null}
                     </div>
                   ))}
                 </Fragment>
