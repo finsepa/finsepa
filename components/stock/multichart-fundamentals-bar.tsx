@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useMemo, useRef, useState, type MouseEvent } from "react";
+import { useId, useLayoutEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 
 import type { ChartingSeriesPoint, FundamentalsSeriesMode } from "@/lib/market/charting-series-types";
 import {
@@ -22,27 +22,125 @@ import {
   formatUsdCompact,
   formatUsdPrice,
 } from "@/lib/market/key-stats-basic-format";
-import { fundamentalsBarSolidAtIndex } from "@/lib/colors/fundamentals-multi-bar-colors";
+import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
+import {
+  fundamentalsBarColorAtIndex,
+  fundamentalsBarSolidAtIndex,
+} from "@/lib/colors/fundamentals-multi-bar-colors";
+import {
+  FUNDAMENTALS_HISTORY_MAX_ANNUAL_PERIODS,
+  FUNDAMENTALS_HISTORY_MAX_QUARTERLY_PERIODS,
+} from "@/lib/market/fundamentals-history-limit";
 
-/** Fixed bar width (px); extra horizontal space becomes even gaps (`justify-between`). */
-const MULTICHART_BAR_WIDTH_PX = 14;
+/** Default bar width (px); extra horizontal space becomes even gaps between columns. */
+export const MULTICHART_BAR_WIDTH_PX = 14;
+
+/** Wider bars for sparse ranges (e.g. Key Stats 10Y). */
+export const MULTICHART_BAR_WIDTH_WIDE_PX = MULTICHART_BAR_WIDTH_PX * 2;
+
+/** Extra-wide bars for very few columns (Key Stats 1Y–5Y). */
+export const MULTICHART_BAR_WIDTH_EXTRA_WIDE_PX = MULTICHART_BAR_WIDTH_WIDE_PX * 2;
+
+/** 5Y / 10Y quarterly — many columns; keep bars narrower than {@link MULTICHART_BAR_WIDTH_WIDE_PX}. */
+export const MULTICHART_BAR_WIDTH_DENSE_QUARTERLY_PX = 16;
+
+/** All + quarterly — dense columns; thinner than default so bars do not touch. */
+export const MULTICHART_BAR_WIDTH_ALL_QUARTERLY_PX = 10;
 
 /** Right column for Y-axis tick labels; `pl-*` gaps tick text from the plot / grid strokes. */
 const MULTICHART_Y_AXIS_W_PX = 50;
+const MULTICHART_Y_AXIS_W_COMPACT_PX = 42;
+
+export type PeriodPlotEdgeMargin = { left: number; right: number };
+
+/** Center of period `i` in `n` equal columns (`inset` = half-column fraction; 0.5 = default). */
+function periodCenterX(i: number, n: number, w: number, inset: number): number {
+  if (n <= 0) return 0;
+  if (n === 1) return w / 2;
+  return ((i + inset) / n) * w;
+}
+
+function periodCenterXWithMargins(
+  i: number,
+  n: number,
+  w: number,
+  margins: PeriodPlotEdgeMargin,
+): number {
+  if (n <= 0) return 0;
+  if (n === 1) return w / 2;
+  const x0 = margins.left * w;
+  const x1 = w - margins.right * w;
+  return x0 + ((x1 - x0) * i) / (n - 1);
+}
+
+function periodCenterLeftPercent(i: number, n: number, inset: number): number {
+  if (n <= 0) return 50;
+  if (n === 1) return 50;
+  return ((i + inset) / n) * 100;
+}
+
+function periodCenterLeftPercentWithMargins(
+  i: number,
+  n: number,
+  margins: PeriodPlotEdgeMargin,
+): number {
+  if (n <= 0) return 50;
+  if (n === 1) return 50;
+  const x0 = margins.left * 100;
+  const x1 = 100 - margins.right * 100;
+  return x0 + ((x1 - x0) * i) / (n - 1);
+}
+
+function resolvePeriodCenterX(
+  i: number,
+  n: number,
+  w: number,
+  inset: number,
+  margins?: PeriodPlotEdgeMargin,
+): number {
+  return margins ? periodCenterXWithMargins(i, n, w, margins) : periodCenterX(i, n, w, inset);
+}
+
+function resolvePeriodCenterLeftPercent(
+  i: number,
+  n: number,
+  inset: number,
+  margins?: PeriodPlotEdgeMargin,
+): number {
+  return margins
+    ? periodCenterLeftPercentWithMargins(i, n, margins)
+    : periodCenterLeftPercent(i, n, inset);
+}
+
+/** Insets (% of plot height): top breathing room; bottom gap above x-axis labels. */
+const PLOT_INSET_TOP_FRAC = 0.08;
+const PLOT_INSET_BOTTOM_FRAC = 0.04;
 
 /** Bottom row for period labels (px) — room for {@link AXIS_LABEL_ROTATE_DEG}-rotated text. */
-const MULTICHART_AXIS_ROW_PX = 40;
+const MULTICHART_AXIS_ROW_PX = 32;
+
+/** Padding below slanted x-axis labels. */
+const MULTICHART_AXIS_BOTTOM_PAD_PX = 10;
 
 /** Slanted x-axis ticks (deg) — saves horizontal space in narrow Multichart cards. */
 const AXIS_LABEL_ROTATE_DEG = -42;
 
 /** Latest fiscal periods to show — both modes span **20 years** (annual = 20 points, quarterly = 80). */
-export const MULTICHART_MAX_ANNUAL_BARS = 20;
-export const MULTICHART_MAX_QUARTERLY_BARS = 80;
+export const MULTICHART_MAX_ANNUAL_BARS = FUNDAMENTALS_HISTORY_MAX_ANNUAL_PERIODS;
+export const MULTICHART_MAX_QUARTERLY_BARS = FUNDAMENTALS_HISTORY_MAX_QUARTERLY_PERIODS;
 
 /** Hover halo behind the active line point (not a full-height column). */
 const HOVER_DOT_HALO_BG = "rgba(59, 130, 246, 0.14)";
 const HOVER_DOT_HALO_RADIUS_PX = 14;
+/** Vertical guide from hovered dot down to the period label row. */
+const LINE_HOVER_CROSSHAIR_CLASS = "border-l border-dashed border-[#2563EB]";
+
+/** Area fill under line — matches portfolio overview `AreaSeries` (top 22% → bottom 2%). */
+const LINE_AREA_GRADIENT_TOP_OPACITY = 0.22;
+const LINE_AREA_GRADIENT_BOTTOM_OPACITY = 0.02;
+
+/** $0 baseline only — same as overview price chart scale edge. */
+const CHART_ZERO_BASELINE_BORDER = "rgba(228, 228, 231, 0.85)";
 
 /** Reuse Earnings (Estimates) crosshair-to-tooltip layout — `anchorX` in px, relative to plot (left) edge. */
 function computeTooltipHorizontalPlacement(
@@ -174,6 +272,17 @@ type Props = {
   visual?: MultichartVisual;
   /** Override default 20 annual / 80 quarterly bar cap (e.g. mobile Key Stats modal: 10 years). */
   maxBars?: number;
+  /** Bar column width in px (default {@link MULTICHART_BAR_WIDTH_PX}). */
+  barWidthPx?: number;
+  /** Tighter plot + y-axis horizontal gutters (Key Stats 1Y–10Y). */
+  compactHorizontalLayout?: boolean;
+  /**
+   * Horizontal center of each period as a fraction of one column (0.5 = default).
+   * Lower values pull first/last points toward the plot edges (Key Stats “All”).
+   */
+  periodCenterInset?: number;
+  /** Asymmetric plot edge gaps as a fraction of plot width (overrides inset when set). */
+  periodPlotMargins?: PeriodPlotEdgeMargin;
 };
 
 type BarTooltipState = {
@@ -207,7 +316,22 @@ export function MultichartFundamentalsBar({
   periodMode = "annual",
   visual = "bar",
   maxBars: maxBarsProp,
+  barWidthPx = MULTICHART_BAR_WIDTH_PX,
+  compactHorizontalLayout = false,
+  periodCenterInset = 0.5,
+  periodPlotMargins,
 }: Props) {
+  const tightYAxis = compactHorizontalLayout || periodPlotMargins != null;
+  const yAxisWidthPx = tightYAxis ? MULTICHART_Y_AXIS_W_COMPACT_PX : MULTICHART_Y_AXIS_W_PX;
+  const yAxisPlClass = periodPlotMargins
+    ? "pl-0 pr-3"
+    : compactHorizontalLayout
+      ? "pl-1.5"
+      : "pl-3";
+  const yAxisLabelPadClass = compactHorizontalLayout ? "px-0.5" : "px-1";
+  const barHoverPadPx =
+    barWidthPx <= MULTICHART_BAR_WIDTH_ALL_QUARTERLY_PX ? 3 : 6;
+  const barHitWidthPx = barWidthPx + barHoverPadPx * 2;
   const wrapRef = useRef<HTMLDivElement>(null);
   const plotAreaRef = useRef<HTMLDivElement>(null);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
@@ -222,7 +346,7 @@ export function MultichartFundamentalsBar({
     [points, metricId, maxBars],
   );
 
-  const plotHeight = height - MULTICHART_AXIS_ROW_PX;
+  const plotHeight = height - MULTICHART_AXIS_ROW_PX - MULTICHART_AXIS_BOTTOM_PAD_PX;
 
   const { values, labels, axisLabels, maxV, yTicks } = useMemo(() => {
     const vals: number[] = [];
@@ -247,6 +371,9 @@ export function MultichartFundamentalsBar({
   const seriesBarColor = fundamentalsBarSolidAtIndex(0);
   const linePlotRef = useRef<HTMLDivElement>(null);
   const [linePlotPx, setLinePlotPx] = useState({ w: 0, h: 0 });
+  const lineAreaGradientId = useId();
+  const lineAreaGradientTop = fundamentalsBarColorAtIndex(0, LINE_AREA_GRADIENT_TOP_OPACITY);
+  const lineAreaGradientBottom = fundamentalsBarColorAtIndex(0, LINE_AREA_GRADIENT_BOTTOM_OPACITY);
 
   useLayoutEffect(() => {
     if (visual !== "line") return;
@@ -266,19 +393,34 @@ export function MultichartFundamentalsBar({
     const w = linePlotPx.w;
     const h = linePlotPx.h;
     const n = values.length;
-    if (n === 0 || w <= 0 || h <= 0) return { d: "", pts: [] as { x: number; y: number; v: number; i: number }[] };
-    const padT = h * 0.08;
-    const padB = h * 0.08;
+    if (n === 0 || w <= 0 || h <= 0) {
+      return {
+        d: "",
+        areaD: "",
+        gradY0: 0,
+        gradY1: 0,
+        pts: [] as { x: number; y: number; v: number; i: number }[],
+      };
+    }
+    const padT = h * PLOT_INSET_TOP_FRAC;
+    const padB = h * PLOT_INSET_BOTTOM_FRAC;
     const innerH = Math.max(1, h - padT - padB);
+    /** Plot bottom — matches $0 baseline on the inset band. */
+    const areaFloorY = h;
+    // Match bar x-axis grid: each period label is centered in 1/n of the plot width.
     const pts = values.map((v, i) => {
-      const x = n === 1 ? w / 2 : (i / (n - 1)) * w;
+      const x = resolvePeriodCenterX(i, n, w, periodCenterInset, periodPlotMargins);
       const frac = maxV > 0 ? Math.max(0, v) / maxV : 0;
       const y = padT + innerH * (1 - frac);
       return { x, y, v, i };
     });
     const d = pts.map((p, idx) => `${idx === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ");
-    return { d, pts };
-  }, [linePlotPx.h, linePlotPx.w, values, maxV]);
+    const areaD =
+      pts.length > 0
+        ? `${d} L${pts[pts.length - 1]!.x},${areaFloorY} L${pts[0]!.x},${areaFloorY} Z`
+        : "";
+    return { d, areaD, gradY0: padT, gradY1: areaFloorY, pts };
+  }, [linePlotPx.h, linePlotPx.w, values, maxV, periodCenterInset, periodPlotMargins]);
 
   if (rows.length === 0 || values.length === 0) {
     return (
@@ -294,12 +436,22 @@ export function MultichartFundamentalsBar({
   }
 
   const n = values.length;
-  const plotGridTemplate = n > 0 ? `repeat(${n}, minmax(0, 1fr))` : undefined;
 
   const clearChartHover = () => {
     setHoveredIndex(null);
     setTip(null);
   };
+
+  const hoveredLinePt =
+    visual === "line" && hoveredIndex != null ? lineSvg.pts[hoveredIndex] : undefined;
+  const lineHoverCrosshair =
+    hoveredLinePt != null
+      ? {
+          left: hoveredLinePt.x,
+          top: plotHeight * PLOT_INSET_TOP_FRAC,
+          height: plotHeight * (1 - PLOT_INSET_TOP_FRAC - PLOT_INSET_BOTTOM_FRAC),
+        }
+      : null;
 
   return (
     <div ref={wrapRef} className="w-full min-w-0 max-w-full overflow-visible">
@@ -310,24 +462,32 @@ export function MultichartFundamentalsBar({
             className="relative min-h-0 min-w-0 flex-1"
             onPointerLeave={clearChartHover}
           >
-            {/* Insets are % of plot *height* — bar layer below uses the same `top`/`bottom` (not `pt`/`pb`, which resolve vs width) so the $0 line and bar bases line up. */}
-            <div className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[8%]" aria-hidden>
-              {yTicks.map((_, i) => {
-                const nt = yTicks.length;
-                const pct = nt <= 1 ? 0 : (i / (nt - 1)) * 100;
-                return (
-                  <div
-                    key={i}
-                    className="absolute left-0 right-0 border-t border-[#F4F4F5]"
-                    style={{ top: `${pct}%` }}
-                  />
-                );
-              })}
+            {/* Dot grid + single $0 baseline (no other horizontal rules). */}
+            <div
+              className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%] z-0 bg-white"
+              aria-hidden
+            >
+              <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
+              <div
+                className="absolute inset-x-0 bottom-0 border-t"
+                style={{ borderColor: CHART_ZERO_BASELINE_BORDER }}
+              />
             </div>
+            {lineHoverCrosshair ? (
+              <div
+                aria-hidden
+                className={`pointer-events-none absolute z-[1] w-0 ${LINE_HOVER_CROSSHAIR_CLASS}`}
+                style={{
+                  left: lineHoverCrosshair.left,
+                  top: lineHoverCrosshair.top,
+                  height: lineHoverCrosshair.height,
+                }}
+              />
+            ) : null}
             {visual === "line" ? (
               <div
                 ref={linePlotRef}
-                className="absolute inset-x-0 top-[8%] bottom-[8%] z-0 min-h-0 w-full min-w-0"
+                className="absolute inset-x-0 top-[8%] bottom-[4%] z-0 min-h-0 w-full min-w-0"
                 role="img"
                 aria-label={`${metricLabel} line chart`}
               >
@@ -338,6 +498,22 @@ export function MultichartFundamentalsBar({
                     className="relative z-[2] block overflow-visible"
                     aria-hidden
                   >
+                    <defs>
+                      <linearGradient
+                        id={lineAreaGradientId}
+                        x1="0"
+                        y1={lineSvg.gradY0}
+                        x2="0"
+                        y2={lineSvg.gradY1}
+                        gradientUnits="userSpaceOnUse"
+                      >
+                        <stop offset="0" stopColor={lineAreaGradientTop} />
+                        <stop offset="1" stopColor={lineAreaGradientBottom} />
+                      </linearGradient>
+                    </defs>
+                    {lineSvg.areaD ? (
+                      <path d={lineSvg.areaD} fill={`url(#${lineAreaGradientId})`} />
+                    ) : null}
                     <path
                       d={lineSvg.d}
                       fill="none"
@@ -423,8 +599,7 @@ export function MultichartFundamentalsBar({
               </div>
             ) : (
               <div
-                className="absolute inset-x-0 top-[8%] bottom-[8%] grid min-h-0 w-full min-w-0 items-stretch px-0"
-                style={{ gridTemplateColumns: plotGridTemplate }}
+                className="absolute inset-x-0 top-[8%] bottom-[4%] min-h-0 w-full min-w-0 px-0"
                 role="img"
                 aria-label={`${metricLabel} bar chart`}
               >
@@ -432,10 +607,17 @@ export function MultichartFundamentalsBar({
                   const hPct = maxV > 0 ? (Math.max(0, v) / maxV) * 100 : 0;
                   const barColor = seriesBarColor;
                   const valueLine = `${metricLabel}: ${formatTooltipValue(kind, v)}`;
+                  const leftPct = resolvePeriodCenterLeftPercent(
+                    i,
+                    n,
+                    periodCenterInset,
+                    periodPlotMargins,
+                  );
                   return (
                     <div
                       key={`${labels[i]}-${i}`}
-                      className="relative z-0 flex h-full min-h-0 min-w-0 flex-col items-center justify-end px-0.5"
+                      className="absolute bottom-0 z-0 flex h-full min-h-0 -translate-x-1/2 flex-col items-center justify-end"
+                      style={{ left: `${leftPct}%`, width: barHitWidthPx }}
                       onMouseEnter={(e) => {
                         const plot = plotAreaRef.current;
                         if (!plot) return;
@@ -453,8 +635,11 @@ export function MultichartFundamentalsBar({
                     >
                       {hoveredIndex === i ? (
                         <div
-                          className="pointer-events-none absolute inset-0 z-0"
-                          style={{ backgroundColor: HOVER_DOT_HALO_BG }}
+                          className="pointer-events-none absolute bottom-0 left-1/2 z-0 h-full -translate-x-1/2"
+                          style={{
+                            width: barHitWidthPx,
+                            backgroundColor: HOVER_DOT_HALO_BG,
+                          }}
                           aria-hidden
                         />
                       ) : null}
@@ -464,7 +649,7 @@ export function MultichartFundamentalsBar({
                         <div
                           className="mt-auto shrink-0 rounded-t-[2px] rounded-b-none transition-[height] duration-75"
                           style={{
-                            width: MULTICHART_BAR_WIDTH_PX,
+                            width: barWidthPx,
                             maxWidth: "100%",
                             height: `${hPct}%`,
                             minHeight: hPct > 0 ? 2 : 0,
@@ -502,7 +687,7 @@ export function MultichartFundamentalsBar({
                   </span>
                 )}
                 <p className="text-[12px] font-semibold leading-4 text-[#09090B]">{tip.periodLabel}</p>
-                <p className="mt-1.5 whitespace-nowrap text-[12px] font-normal leading-4 text-[#71717A]">
+                <p className="mt-1.5 whitespace-nowrap text-[12px] font-normal leading-4 text-[#09090B]">
                   {tip.valueLine}
                 </p>
               </div>
@@ -510,19 +695,18 @@ export function MultichartFundamentalsBar({
           </div>
 
           <div
-            className="relative h-full shrink-0 pl-3 text-left font-['Inter'] text-[12px] tabular-nums leading-none text-[#71717A]"
-            style={{ width: MULTICHART_Y_AXIS_W_PX }}
+            className={`relative h-full shrink-0 ${yAxisPlClass} text-left font-['Inter'] text-[12px] tabular-nums leading-none text-[#71717A]`}
+            style={{ width: yAxisWidthPx }}
             aria-hidden
           >
-            {/* Same `top-[8%] bottom-[8%]` + linear % as horizontal strokes so labels sit on each line. */}
-            <div className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[8%]">
+            <div className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%]">
               {yTicks.map((t, i) => {
                 const nt = yTicks.length;
                 const pct = nt <= 1 ? 0 : (i / (nt - 1)) * 100;
                 return (
                   <span
                     key={i}
-                    className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-white px-1 py-px"
+                    className={`absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-white py-px ${yAxisLabelPadClass}`}
                     style={{ top: `${pct}%` }}
                   >
                     {formatAxisValue(kind, t)}
@@ -534,35 +718,39 @@ export function MultichartFundamentalsBar({
         </div>
 
         <div className="flex w-full min-w-0 overflow-visible" style={{ height: MULTICHART_AXIS_ROW_PX }}>
-          <div
-            className="grid min-w-0 flex-1 items-end justify-items-stretch px-0 mb-2"
-            style={{ gridTemplateColumns: plotGridTemplate }}
-          >
+          <div className="relative mb-1 min-w-0 flex-1 px-0" style={{ height: MULTICHART_AXIS_ROW_PX }}>
             {axisLabels.map((axisLab, i) => {
               const showAxisText = fundamentalsPeriodAxisShowsLabel(i, axisLabels.length, periodMode);
+              if (!showAxisText) return null;
+              const leftPct = resolvePeriodCenterLeftPercent(
+                i,
+                n,
+                periodCenterInset,
+                periodPlotMargins,
+              );
               return (
                 <div
                   key={`${labels[i]}-${i}`}
-                  className="flex min-h-0 min-w-0 items-end justify-center overflow-visible px-0.5 pb-0.5"
+                  className="absolute bottom-0.5 flex max-w-[min(100%,4.5rem)] -translate-x-1/2 justify-center overflow-visible"
+                  style={{ left: `${leftPct}%` }}
                   title={labels[i]}
                 >
-                  {showAxisText ? (
-                    <span
-                      className="inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]"
-                      style={{
-                        transform: `rotate(${AXIS_LABEL_ROTATE_DEG}deg)`,
-                        transformOrigin: "center bottom",
-                      }}
-                    >
-                      {axisLab}
-                    </span>
-                  ) : null}
+                  <span
+                    className="inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]"
+                    style={{
+                      transform: `rotate(${AXIS_LABEL_ROTATE_DEG}deg)`,
+                      transformOrigin: "center bottom",
+                    }}
+                  >
+                    {axisLab}
+                  </span>
                 </div>
               );
             })}
           </div>
-          <div style={{ width: MULTICHART_Y_AXIS_W_PX }} className="shrink-0 pl-3" aria-hidden />
+          <div style={{ width: yAxisWidthPx }} className={`shrink-0 ${yAxisPlClass}`} aria-hidden />
         </div>
+        <div className="shrink-0" style={{ height: MULTICHART_AXIS_BOTTOM_PAD_PX }} aria-hidden />
 
       </div>
     </div>

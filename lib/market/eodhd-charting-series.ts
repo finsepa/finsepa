@@ -13,6 +13,7 @@ import {
 } from "@/lib/market/charting-price-implied-market-cap";
 import { livePeRatioPartsFromFundamentalsRoot } from "@/lib/market/eodhd-key-stats-valuation";
 import { fetchEodhdFundamentalsJson } from "@/lib/market/eodhd-fundamentals";
+import { limitFundamentalsHistoryPoints } from "@/lib/market/fundamentals-history-limit";
 import {
   CHARTING_METRIC_FIELD,
   CHARTING_METRIC_IDS,
@@ -1651,7 +1652,7 @@ function buildMergedPoints(root: Record<string, unknown>, mode: FundamentalsSeri
   }
 
   computeGrowthSeries(out, mode);
-  return out.length ? out : null;
+  return out.length ? limitFundamentalsHistoryPoints(out, mode) : null;
 }
 
 function metricHasSeries(points: ChartingSeriesPoint[], id: ChartingMetricId): boolean {
@@ -1699,6 +1700,6 @@ async function fetchChartingSeriesUncached(
 
 export const fetchChartingSeries = unstable_cache(
   fetchChartingSeriesUncached,
-  ["eodhd-charting-series-v21-financials-ratios-rows"],
+  ["eodhd-charting-series-v22-max-20y-history"],
   { revalidate: REVALIDATE_WARM },
 );

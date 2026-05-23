@@ -20,6 +20,7 @@ import {
   SIDEBAR_WIDTH_MOTION_CLASS,
   useSidebarLayout,
 } from "@/components/layout/sidebar-layout-context";
+import { shellChromeToggleButtonClass } from "@/components/layout/shell-chrome-toggle-button";
 import { cn } from "@/lib/utils";
 
 const soonBadgeClass =
@@ -225,9 +226,6 @@ function SidebarSection({
   );
 }
 
-const toggleButtonClass =
-  "flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-[#09090B] transition-colors hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/20";
-
 export function Sidebar() {
   const pathname = usePathname();
   const { collapsed, toggleCollapsed } = useSidebarLayout();
@@ -260,7 +258,7 @@ export function Sidebar() {
         <TopbarDelayedTooltip label={collapsed ? "Expand Menu" : "Collapse Menu"}>
           <button
             type="button"
-            className={toggleButtonClass}
+            className={shellChromeToggleButtonClass}
             onClick={toggleCollapsed}
             aria-expanded={!collapsed}
             aria-label={collapsed ? "Expand Menu" : "Collapse Menu"}

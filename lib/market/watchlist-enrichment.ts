@@ -134,6 +134,17 @@ async function enrichStock(entry: WatchlistRow): Promise<WatchlistEnrichedItem> 
   const f = fundSettled.status === "fulfilled" ? fundSettled.value : null;
   const logoUrl = resolveEquityLogoUrlFromTicker(meta.ticker).trim() || meta.logoUrl?.trim() || null;
 
+  let price = p?.price ?? null;
+  let pct1d = p?.d1 ?? null;
+  if (price == null || pct1d == null) {
+    const d = await getSimpleMarketData();
+    const snap = d.stocks[meta.ticker];
+    if (snap) {
+      if (price == null) price = snap.price;
+      if (pct1d == null) pct1d = snap.changePercent1D;
+    }
+  }
+
   const mcap = formatMarketCapDisplay(f?.marketCapUsd ?? null);
   const pe = formatPeDisplay(f?.peTrailing ?? null, f?.peForward ?? null);
   const earn = f?.nextEarningsDateDisplay?.trim();
@@ -146,8 +157,8 @@ async function enrichStock(entry: WatchlistRow): Promise<WatchlistEnrichedItem> 
     kind: "stock",
     href: `/stock/${encodeURIComponent(meta.ticker)}`,
     logoUrl,
-    price: p?.price ?? null,
-    pct1d: p?.d1 ?? null,
+    price,
+    pct1d,
     pct1m: p?.m1 ?? null,
     ytd: p?.ytd ?? null,
     mcapDisplay: mcap,
@@ -278,10 +289,14 @@ async function enrichIndex(entry: WatchlistRow): Promise<WatchlistEnrichedItem> 
       changePercentYTD: null,
       last5DailyCloses: [],
     };
+    let price = datum.price;
+    let pct1d = datum.changePercent1D;
     let pct1m = i.changePercent1M ?? null;
     let ytd = i.changePercentYTD ?? null;
-    if ((pct1m == null || ytd == null) && !isSingleAssetMode()) {
+    if ((price == null || pct1d == null || pct1m == null || ytd == null) && !isSingleAssetMode()) {
       const perf = await getStockPerformance(displaySymbol);
+      if (price == null) price = perf.price;
+      if (pct1d == null) pct1d = perf.d1;
       if (pct1m == null) pct1m = perf.m1;
       if (ytd == null) ytd = perf.ytd;
     }
@@ -293,8 +308,8 @@ async function enrichIndex(entry: WatchlistRow): Promise<WatchlistEnrichedItem> 
       kind: "index",
       href: `/index/${encodeURIComponent(displaySymbol)}`,
       logoUrl: null,
-      price: datum.price,
-      pct1d: datum.changePercent1D,
+      price,
+      pct1d,
       pct1m,
       ytd,
       mcapDisplay: "—",

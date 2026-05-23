@@ -7,29 +7,51 @@ import {
   dropdownMenuPanelClassName,
   dropdownMenuPlainItemClassName,
 } from "@/components/design-system/dropdown-menu-styles";
+import {
+  topbarSquircleActiveClass,
+  topbarSquircleIconClass,
+  topbarSquircleTextButtonClass,
+} from "@/components/design-system/topbar-control-classes";
 import { TopbarDelayedTooltip } from "@/components/layout/topbar-delayed-tooltip";
 import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import { cn } from "@/lib/utils";
+
+const DESKTOP_WEB_MQ = "(min-width: 768px)";
 
 /**
  * (+) quick menu — used on the global top bar and the Portfolio page header.
  */
 export function PortfolioQuickAddMenu({
   triggerClassName,
+  showDesktopLabel = false,
+  desktopLabel = "Add/Create",
   "aria-label": ariaLabel = "Quick add",
   dwellTooltipLabel,
 }: {
   triggerClassName?: string;
+  /** Icon + label on `md+` (top bar); mobile stays icon-only. */
+  showDesktopLabel?: boolean;
+  desktopLabel?: string;
   "aria-label"?: string;
-  /** When set (e.g. global top bar), show Figma-style hint after a dwell hover/focus. */
+  /** Shown on mobile when `showDesktopLabel` is true; suppressed on desktop web. */
   dwellTooltipLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const [isDesktopWeb, setIsDesktopWeb] = useState(false);
   const { openNewTransaction, openCreatePortfolio, openAddCash, selectedPortfolioReadOnly } =
     usePortfolioWorkspace();
   const rootRef = useRef<HTMLDivElement>(null);
   const menuPortalRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!showDesktopLabel) return;
+    const mq = window.matchMedia(DESKTOP_WEB_MQ);
+    const update = () => setIsDesktopWeb(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, [showDesktopLabel]);
 
   const items = [
     {
@@ -66,22 +88,24 @@ export function PortfolioQuickAddMenu({
     };
   }, [open]);
 
+  const tooltipEnabled = Boolean(dwellTooltipLabel) && !(showDesktopLabel && isDesktopWeb);
+
   const trigger = (
     <button
       type="button"
       aria-expanded={open}
       aria-haspopup="menu"
-      aria-label={ariaLabel}
+      aria-label={showDesktopLabel && isDesktopWeb ? undefined : ariaLabel}
       onClick={() => setOpen((v) => !v)}
       className={cn(
-        "flex h-9 w-9 items-center justify-center rounded-[10px] bg-white text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-[border-color,border-width,box-shadow,background-color] duration-200 ease-out hover:bg-[#F4F4F5] motion-reduce:transition-none",
-        open
-          ? "border-2 border-[#09090B]"
-          : "border border-[#E4E4E7]",
+        showDesktopLabel ? topbarSquircleTextButtonClass : topbarSquircleIconClass,
+        "justify-center",
+        showDesktopLabel ? "w-9 gap-0 px-0 md:w-auto md:gap-1.5 md:px-3.5" : undefined,
+        open && topbarSquircleActiveClass,
         triggerClassName,
       )}
     >
-      <span className="relative grid h-5 w-5 place-items-center" aria-hidden>
+      <span className="relative grid h-5 w-5 shrink-0 place-items-center" aria-hidden>
         <Plus
           strokeWidth={2}
           className={cn(
@@ -97,12 +121,24 @@ export function PortfolioQuickAddMenu({
           )}
         />
       </span>
+      {showDesktopLabel ? (
+        <span className="hidden text-[13px] font-medium leading-5 md:inline">{desktopLabel}</span>
+      ) : null}
     </button>
   );
 
+  const triggerWithTooltip =
+    dwellTooltipLabel ? (
+      <TopbarDelayedTooltip label={dwellTooltipLabel} enabled={tooltipEnabled}>
+        {trigger}
+      </TopbarDelayedTooltip>
+    ) : (
+      trigger
+    );
+
   return (
-    <div className="relative" ref={rootRef}>
-      {dwellTooltipLabel ? <TopbarDelayedTooltip label={dwellTooltipLabel}>{trigger}</TopbarDelayedTooltip> : trigger}
+    <div className="relative shrink-0" ref={rootRef}>
+      {triggerWithTooltip}
 
       <TopbarDropdownPortal
         open={open}

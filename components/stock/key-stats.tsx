@@ -3,8 +3,10 @@
 import type { ChartingMetricId } from "@/lib/market/stock-charting-metrics";
 import type { StockKeyStatsBundle } from "@/lib/market/stock-key-stats-bundle-types";
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { CalendarDays } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { consensusLabelTextClass } from "@/lib/market/analyst-consensus-tone";
 
 const KEY_STATS_TAB_MOTION_MS = 280;
 const KEY_STATS_TAB_MOTION_EASE = "cubic-bezier(0.33, 1, 0.68, 1)";
@@ -238,7 +240,6 @@ const BASIC_FALLBACK: Row[] = [
   { label: "1Y Target Est", value: "—" },
   { label: "Analyst Consensus", value: "—" },
   { label: "Earnings Date", value: "—" },
-  { label: "Beta (5Y Monthly)", value: "—" },
   { label: "Employees", value: "—" },
 ];
 
@@ -249,21 +250,54 @@ const BASIC_LABEL_TO_METRIC: Partial<Record<string, ChartingMetricId>> = {
   "Shares Outstanding": "shares_outstanding",
 };
 
+function basicRowValueClass(label: string, value: string): string | undefined {
+  if (label !== "Analyst Consensus" || value === "—") return undefined;
+  return consensusLabelTextClass(value);
+}
+
+function BasicValueDisplay({
+  label,
+  value,
+  valueClassName,
+}: {
+  label: string;
+  value: string;
+  valueClassName?: string;
+}) {
+  const textClass = cn(
+    "text-[14px] leading-5 tabular-nums",
+    valueClassName ?? "text-[#09090B]",
+  );
+
+  if (label === "Earnings Date" && value !== "—") {
+    return (
+      <span className="inline-flex shrink-0 items-center justify-end gap-1.5 text-right">
+        <CalendarDays className="h-3.5 w-3.5 shrink-0 text-[#71717A]" strokeWidth={2} aria-hidden />
+        <span className={textClass}>{value}</span>
+      </span>
+    );
+  }
+
+  return <span className={cn("shrink-0 text-right", textClass)}>{value}</span>;
+}
+
 function KeyStatMetricRow({
   label,
   value,
   labelToMetric,
   onMetricClick,
+  valueClassName,
 }: {
   label: string;
   value: string;
   labelToMetric: Partial<Record<string, ChartingMetricId>>;
   onMetricClick?: (metricId: ChartingMetricId) => void;
+  valueClassName?: string;
 }) {
   const metricId = labelToMetric[label];
   const interactive = typeof onMetricClick === "function" && metricId != null;
   if (!interactive) {
-    return <StatRow label={label} value={value} />;
+    return <StatRow label={label} value={value} valueClassName={valueClassName} />;
   }
   return (
     <button
@@ -274,16 +308,24 @@ function KeyStatMetricRow({
       <span className="min-w-0 shrink text-[14px] leading-5 text-[#09090B] decoration-transparent underline-offset-2 hover:underline hover:decoration-[#71717A]">
         {label}
       </span>
-      <span className="shrink-0 text-right text-[14px] leading-5 text-[#09090B] tabular-nums">{value}</span>
+      <BasicValueDisplay label={label} value={value} valueClassName={valueClassName} />
     </button>
   );
 }
 
-function StatRow({ label, value }: { label: string; value: string }) {
+function StatRow({
+  label,
+  value,
+  valueClassName,
+}: {
+  label: string;
+  value: string;
+  valueClassName?: string;
+}) {
   return (
     <div className="flex items-center justify-between gap-3 border-b border-[#E4E4E7] py-1.5 last:border-0">
       <span className="min-w-0 shrink text-[14px] leading-5 text-[#09090B]">{label}</span>
-      <span className="shrink-0 text-right text-[14px] leading-5 text-[#09090B] tabular-nums">{value}</span>
+      <BasicValueDisplay label={label} value={value} valueClassName={valueClassName} />
     </div>
   );
 }
@@ -378,10 +420,18 @@ const BasicCard = memo(function BasicCard({
             value={row.value}
             labelToMetric={BASIC_LABEL_TO_METRIC}
             onMetricClick={onMetricClick}
+            valueClassName={basicRowValueClass(row.label, row.value)}
           />
         ))
       ) : (
-        displayRows.map((row) => <StatRow key={row.label} label={row.label} value={row.value} />)
+        displayRows.map((row) => (
+          <StatRow
+            key={row.label}
+            label={row.label}
+            value={row.value}
+            valueClassName={basicRowValueClass(row.label, row.value)}
+          />
+        ))
       )}
     </div>
   );

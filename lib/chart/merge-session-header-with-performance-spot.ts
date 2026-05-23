@@ -6,13 +6,20 @@ function isPositiveUsd(n: unknown): n is number {
   return typeof n === "number" && Number.isFinite(n) && n > 0;
 }
 
+function priorCloseFromD1(spot: number, d1Pct: number, eodSpot: number | null | undefined): number | null {
+  if (!Number.isFinite(d1Pct) || Math.abs(100 + d1Pct) <= 1e-6) return null;
+  if (isPositiveUsd(eodSpot)) return eodSpot / (1 + d1Pct / 100);
+  const prev = spot / (1 + d1Pct / 100);
+  return Number.isFinite(prev) && Math.abs(prev) > 1e-12 ? prev : null;
+}
+
 /**
- * Headline is normally driven by a hidden 1D chart. When that session has no points yet (or is still
- * loading), fall back to a spot so the header never sits on "—" while the visible range chart already has prices.
+ * Headline is normally driven by a hidden 1D chart. We still align **Today** change with the overview
+ * performance table (`StockPerformance.d1`: prior session close → latest daily close), not the
+ * intraday move from the first 1D bar to the last.
  *
- * **Phase 7:** Prefer `sessionLiveSpotUsd` (intraday-aligned / live-price API) over `StockPerformance.price`
- * (last daily EOD close) when both exist, and recompute session change vs prior close implied by the EOD table so
- * the move line matches the fresher headline.
+ * When the hidden session chart has no points yet, fall back to spot so the header is not "—".
+ * Prefer `sessionLiveSpotUsd` (live-price API) over EOD `performance.price` for the headline number.
  */
 export function mergeSessionHeaderWithPerformanceSpot(
   base: ChartDisplayState,
@@ -21,38 +28,43 @@ export function mergeSessionHeaderWithPerformanceSpot(
   sessionLiveSpotUsd?: number | null,
 ): ChartDisplayState {
   if (chartSeries !== "price" || base.selectionActive) return base;
-  if (base.displayPrice != null && Number.isFinite(base.displayPrice)) return base;
 
   const eodSpot = perf?.price;
   const liveSpot = isPositiveUsd(sessionLiveSpotUsd) ? sessionLiveSpotUsd : null;
-  const spot = liveSpot ?? (isPositiveUsd(eodSpot) ? eodSpot : null);
-  if (spot == null) return base;
+  const spotFromBase =
+    base.displayPrice != null && Number.isFinite(base.displayPrice) ? base.displayPrice : null;
+  const spot = liveSpot ?? spotFromBase ?? (isPositiveUsd(eodSpot) ? eodSpot : null);
 
   const d1Eod = perf?.d1;
-  let pct: number | null = d1Eod != null && Number.isFinite(d1Eod) ? d1Eod : null;
-  let abs: number | null = null;
+  const hasD1 = d1Eod != null && Number.isFinite(d1Eod);
 
-  if (liveSpot != null && isPositiveUsd(eodSpot) && d1Eod != null && Number.isFinite(d1Eod) && Math.abs(100 + d1Eod) > 1e-6) {
-    const prevClose = eodSpot / (1 + d1Eod / 100);
-    if (Number.isFinite(prevClose) && Math.abs(prevClose) > 1e-12) {
-      pct = ((liveSpot - prevClose) / prevClose) * 100;
-      abs = liveSpot - prevClose;
-    }
-  } else if (liveSpot != null) {
-    pct = null;
-    abs = null;
-  } else if (pct != null && Math.abs(100 + pct) > 1e-6) {
-    const prevClose = spot / (1 + pct / 100);
-    if (Number.isFinite(prevClose)) abs = spot - prevClose;
+  if (spot != null && hasD1) {
+    const prevClose = priorCloseFromD1(spot, d1Eod, eodSpot);
+    const abs = prevClose != null ? spot - prevClose : null;
+    return {
+      ...base,
+      loading: spotFromBase == null ? false : base.loading,
+      empty: false,
+      displayPrice: spot,
+      displayChangePct: d1Eod,
+      displayChangeAbs: abs,
+      selectionChangeAbs: null,
+      selectionChangePct: null,
+      isHovering: false,
+    };
   }
+
+  if (spotFromBase != null) return base;
+
+  if (spot == null) return base;
 
   return {
     ...base,
     loading: false,
     empty: false,
     displayPrice: spot,
-    displayChangePct: pct,
-    displayChangeAbs: abs,
+    displayChangePct: null,
+    displayChangeAbs: null,
     selectionChangeAbs: null,
     selectionChangePct: null,
     isHovering: false,

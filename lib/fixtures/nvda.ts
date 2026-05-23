@@ -127,7 +127,6 @@ export function getNvdaKeyStatsBundle(): StockKeyStatsBundle {
       { label: "1Y Target Est", value: "—" },
       { label: "Analyst Consensus", value: "Buy" },
       { label: "Earnings Date", value: "—" },
-      { label: "Beta (5Y Monthly)", value: "—" },
       { label: "Employees", value: "—" },
     ],
     valuation: [

@@ -8,8 +8,15 @@ import { X } from "lucide-react";
 import { TabSwitcher } from "@/components/design-system";
 import { ScreenerRankBadge } from "@/components/earnings/screener-rank-badge";
 import { CompanyLogo } from "@/components/screener/company-logo";
+import { FormListboxSelect } from "@/components/ui/form-listbox-select";
+import type { ListboxOption } from "@/components/ui/form-listbox-select";
 import {
   MultichartFundamentalsBar,
+  MULTICHART_BAR_WIDTH_PX,
+  MULTICHART_BAR_WIDTH_ALL_QUARTERLY_PX,
+  MULTICHART_BAR_WIDTH_DENSE_QUARTERLY_PX,
+  MULTICHART_BAR_WIDTH_EXTRA_WIDE_PX,
+  MULTICHART_BAR_WIDTH_WIDE_PX,
   MULTICHART_MAX_ANNUAL_BARS,
   MULTICHART_MAX_QUARTERLY_BARS,
   sliceLastAnnualWithMetric,
@@ -23,6 +30,12 @@ import {
   chartingMetricToParam,
   type ChartingMetricId,
 } from "@/lib/market/stock-charting-metrics";
+import {
+  FUNDAMENTALS_CHART_TIME_RANGE_LABELS,
+  FUNDAMENTALS_CHART_TIME_RANGE_ORDER,
+  maxPeriodsForFundamentalsChartTimeRange,
+  type FundamentalsChartTimeRange,
+} from "@/lib/market/fundamentals-chart-time-range";
 import { cn } from "@/lib/utils";
 
 /** Mobile Key Stats sheet: last 10 fiscal years (40 quarters). */
@@ -119,11 +132,26 @@ const MOBILE_PERIOD_TAB_OPTIONS = [
   { value: "quarterly" as const, label: "Quarter" },
 ] as const;
 
-function maxBarsForMode(mode: FundamentalsSeriesMode, mobile: boolean): number {
-  if (!mobile) {
-    return mode === "quarterly" ? MULTICHART_MAX_QUARTERLY_BARS : MULTICHART_MAX_ANNUAL_BARS;
-  }
-  return mode === "quarterly" ? MOBILE_KEY_STATS_MAX_QUARTERLY_BARS : MOBILE_KEY_STATS_MAX_ANNUAL_BARS;
+const KEY_STATS_TIME_RANGE_OPTIONS: ListboxOption<FundamentalsChartTimeRange>[] =
+  FUNDAMENTALS_CHART_TIME_RANGE_ORDER.map((value) => ({
+    value,
+    label: FUNDAMENTALS_CHART_TIME_RANGE_LABELS[value],
+  }));
+
+function maxBarsForMode(
+  mode: FundamentalsSeriesMode,
+  mobile: boolean,
+  timeRange: FundamentalsChartTimeRange,
+): number {
+  const platformCap = mobile
+    ? mode === "quarterly"
+      ? MOBILE_KEY_STATS_MAX_QUARTERLY_BARS
+      : MOBILE_KEY_STATS_MAX_ANNUAL_BARS
+    : mode === "quarterly"
+      ? MULTICHART_MAX_QUARTERLY_BARS
+      : MULTICHART_MAX_ANNUAL_BARS;
+  const rangeCap = maxPeriodsForFundamentalsChartTimeRange(mode, timeRange);
+  return Math.min(platformCap, rangeCap);
 }
 
 function pickSeedForMode(
@@ -177,20 +205,23 @@ export function KeyStatsMetricChartModal({
   const { sheetStyle, backdropStyle, sheetPointerHandlers } = useMobileSheetDragDismiss(onClose, isMobile);
   const [periodMode, setPeriodMode] = useState<FundamentalsSeriesMode>("annual");
   const [chartVisual, setChartVisual] = useState<MultichartVisual>("bar");
+  const [timeRange, setTimeRange] = useState<FundamentalsChartTimeRange>("all");
 
   const [points, setPoints] = useState<ChartingSeriesPoint[]>(() => {
     if (metricId == null) return [];
     const seed = pickSeedForMode("annual", initialAnnualPoints, initialQuarterlyPoints);
     if (!seed) return [];
     const mobile = isKeyStatsModalMobileViewport();
-    return sliceLastAnnualWithMetric(seed, metricId, maxBarsForMode("annual", mobile)).length > 0 ? seed : [];
+    return sliceLastAnnualWithMetric(seed, metricId, maxBarsForMode("annual", mobile, "all")).length > 0
+      ? seed
+      : [];
   });
   const [loading, setLoading] = useState(() => {
     if (metricId == null) return false;
     const seed = pickSeedForMode("annual", initialAnnualPoints, initialQuarterlyPoints);
     if (!seed) return true;
     const mobile = isKeyStatsModalMobileViewport();
-    return sliceLastAnnualWithMetric(seed, metricId, maxBarsForMode("annual", mobile)).length === 0;
+    return sliceLastAnnualWithMetric(seed, metricId, maxBarsForMode("annual", mobile, "all")).length === 0;
   });
 
   useEffect(() => {
@@ -198,7 +229,7 @@ export function KeyStatsMetricChartModal({
     const activeMetric: ChartingMetricId = metricId;
     let cancelled = false;
     async function load() {
-      const max = maxBarsForMode(periodMode, isMobile);
+      const max = maxBarsForMode(periodMode, isMobile, timeRange);
       const seed = pickSeedForMode(periodMode, initialAnnualPoints, initialQuarterlyPoints);
       if (seed && sliceLastAnnualWithMetric(seed, activeMetric, max).length > 0) {
         if (!cancelled) {
@@ -231,7 +262,7 @@ export function KeyStatsMetricChartModal({
     return () => {
       cancelled = true;
     };
-  }, [ticker, periodMode, metricId, initialAnnualPoints, initialQuarterlyPoints, isMobile]);
+  }, [ticker, periodMode, timeRange, metricId, initialAnnualPoints, initialQuarterlyPoints, isMobile]);
 
   const onKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -255,11 +286,24 @@ export function KeyStatsMetricChartModal({
     if (!metricId) return;
     setPeriodMode("annual");
     setChartVisual("bar");
+    setTimeRange("all");
   }, [metricId]);
 
   if (!metricId) return null;
 
-  const maxBars = maxBarsForMode(periodMode, isMobile);
+  const maxBars = maxBarsForMode(periodMode, isMobile, timeRange);
+  const denseQuarterlyBars =
+    periodMode === "quarterly" && (timeRange === "5Y" || timeRange === "10Y");
+  const barWidthPx =
+    timeRange === "all"
+      ? periodMode === "quarterly"
+        ? MULTICHART_BAR_WIDTH_ALL_QUARTERLY_PX
+        : MULTICHART_BAR_WIDTH_PX
+      : denseQuarterlyBars
+        ? MULTICHART_BAR_WIDTH_DENSE_QUARTERLY_PX
+        : timeRange === "10Y"
+          ? MULTICHART_BAR_WIDTH_WIDE_PX
+          : MULTICHART_BAR_WIDTH_EXTRA_WIDE_PX;
   const hasSeries = sliceLastAnnualWithMetric(points, metricId, maxBars).length > 0;
   const chartingHref = `/stock/${encodeURIComponent(ticker.trim())}?tab=charting&metric=${encodeURIComponent(
     chartingMetricToParam(metricId),
@@ -296,7 +340,12 @@ export function KeyStatsMetricChartModal({
           height={chartHeight}
           periodMode={periodMode}
           visual={chartVisual}
-          maxBars={isMobile ? maxBars : undefined}
+          maxBars={maxBars}
+          barWidthPx={barWidthPx}
+          compactHorizontalLayout
+          periodPlotMargins={
+            timeRange === "all" ? { left: 0.012, right: 0.018 } : undefined
+          }
         />
         {!isMobile && metricId === "forward_pe" ? (
           <p className="mt-3 text-[12px] leading-5 text-[#71717A]">
@@ -313,7 +362,19 @@ export function KeyStatsMetricChartModal({
         ) : null}
       </div>
     );
-  }, [loading, hasSeries, metricId, points, chartHeight, periodMode, chartVisual, maxBars, isMobile]);
+  }, [
+    loading,
+    hasSeries,
+    metricId,
+    points,
+    chartHeight,
+    periodMode,
+    chartVisual,
+    maxBars,
+    barWidthPx,
+    isMobile,
+    timeRange,
+  ]);
 
   return createPortal(
     <div
@@ -337,7 +398,7 @@ export function KeyStatsMetricChartModal({
           "relative z-10 flex w-full flex-col overflow-hidden bg-white",
           isMobile
             ? "key-stats-metric-sheet-enter max-h-[min(92vh,720px)] rounded-xl border border-[#E4E4E7] shadow-[0px_10px_8px_rgba(10,10,10,0.1),0px_4px_3px_rgba(10,10,10,0.04)]"
-            : "max-h-[min(92vh,900px)] max-w-[min(960px,calc(100vw-2rem))] rounded-xl border border-[#E4E4E7] shadow-[0px_10px_16px_-3px_rgba(10,10,10,0.1),0px_4px_6px_0px_rgba(10,10,10,0.04)]",
+            : "max-h-[min(92vh,900px)] max-w-[min(1080px,calc(100vw-2rem))] rounded-xl border border-[#E4E4E7] shadow-[0px_10px_16px_-3px_rgba(10,10,10,0.1),0px_4px_6px_0px_rgba(10,10,10,0.04)]",
         )}
         style={isMobile ? sheetStyle : undefined}
         {...(isMobile ? sheetPointerHandlers : {})}
@@ -391,14 +452,42 @@ export function KeyStatsMetricChartModal({
                 <CompanyLogo name={logoName} logoUrl={headerMeta?.logoUrl ?? ""} symbol={ticker} size="lg" />
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <span className="flex min-w-0 flex-wrap items-center gap-2">
-                    <span className="shrink-0 text-[18px] font-semibold leading-7 text-[#09090B]">{ticker}</span>
+                    <span
+                      id="key-stats-metric-chart-title"
+                      className="shrink-0 text-[18px] font-semibold leading-7 text-[#09090B]"
+                    >
+                      {metricTitle}
+                    </span>
                     {screenerRank != null ? <ScreenerRankBadge rank={screenerRank} /> : null}
                   </span>
                   {companyLine ? (
                     <span className="min-w-0 truncate text-[14px] leading-5 text-[#71717A]">{companyLine}</span>
-                  ) : null}
+                  ) : (
+                    <span className="min-w-0 truncate text-[14px] leading-5 text-[#71717A]">{ticker}</span>
+                  )}
                 </span>
               </Link>
+              <div className="flex shrink-0 flex-nowrap items-center gap-2">
+                <FormListboxSelect
+                  compact
+                  value={timeRange}
+                  onChange={setTimeRange}
+                  options={KEY_STATS_TIME_RANGE_OPTIONS}
+                  aria-label="Date range"
+                  className="w-[4.25rem] shrink-0"
+                  listboxClassName="z-[310]"
+                  menuAlign="trailing"
+                />
+                <TabSwitcher
+                  size="sm"
+                  options={periodTabOptions}
+                  value={periodMode}
+                  onChange={setPeriodMode}
+                  aria-label="Reporting period"
+                />
+                <MultichartVisualSwitcher variant="icon" value={chartVisual} onChange={setChartVisual} />
+              </div>
+              <span className="h-6 w-px shrink-0 bg-[#E4E4E7]" aria-hidden />
               <button
                 type="button"
                 onClick={onClose}
@@ -407,25 +496,6 @@ export function KeyStatsMetricChartModal({
               >
                 <X className="h-5 w-5" strokeWidth={2} />
               </button>
-            </div>
-
-            <div className="flex shrink-0 flex-row items-center justify-between gap-2 px-5 py-3 sm:gap-3">
-              <h2
-                id="key-stats-metric-chart-title"
-                className="min-w-0 pr-2 text-[17px] font-semibold leading-7 text-[#09090B]"
-              >
-                {metricTitle}
-              </h2>
-              <div className="flex shrink-0 flex-nowrap items-center gap-2">
-                <TabSwitcher
-                  size="sm"
-                  options={periodTabOptions}
-                  value={periodMode}
-                  onChange={setPeriodMode}
-                  aria-label="Reporting period"
-                />
-                <MultichartVisualSwitcher size="sm" value={chartVisual} onChange={setChartVisual} />
-              </div>
             </div>
 
             <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-5 py-4">{chartBody}</div>

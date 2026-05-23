@@ -11,6 +11,7 @@ import {
   dropdownMenuPlainItemClassName,
   dropdownMenuSurfaceClassName,
 } from "@/components/design-system/dropdown-menu-styles";
+import { topbarSquircleActiveClass } from "@/components/design-system/topbar-control-classes";
 import { TopbarDelayedTooltip } from "@/components/layout/topbar-delayed-tooltip";
 import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
 import { UserAvatar } from "@/components/user/user-avatar";
@@ -143,7 +144,7 @@ export function TopbarUserMenu({
   const itemClass = cn(dropdownMenuPlainItemClassName(), "font-medium no-underline");
 
   return (
-    <div className="relative" ref={rootRef}>
+    <div className="relative shrink-0" ref={rootRef}>
       <TopbarDelayedTooltip label={menuTriggerLabel}>
         <button
           type="button"
@@ -155,6 +156,7 @@ export function TopbarUserMenu({
             // Mobile: match topbar icon buttons (Star / Plus) — icon only.
             "flex h-9 w-9 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#09090B]",
             "shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5]",
+            open && topbarSquircleActiveClass,
             // md+: keep the existing combined trigger (menu + avatar + trial text).
             "md:h-9 md:w-auto md:max-w-[min(100vw-10rem,280px)] md:min-w-0 md:justify-start md:gap-2 md:px-2",
           )}

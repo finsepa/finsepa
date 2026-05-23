@@ -3,7 +3,6 @@ import "server-only";
 import { fetchEodhdFundamentalsJson, resolveEarningsDateDisplay } from "@/lib/market/eodhd-fundamentals";
 import { analystConsensusDisplayForKeyStats } from "@/lib/market/stock-target-price-payload";
 import {
-  formatBeta,
   formatEmployeesCount,
   formatSharesOutstanding,
   formatUsdCompact,
@@ -32,7 +31,6 @@ export async function fetchEodhdKeyStatsBasic(
   const val = root.Valuation && typeof root.Valuation === "object" ? (root.Valuation as Record<string, unknown>) : null;
   const ss = root.SharesStats && typeof root.SharesStats === "object" ? (root.SharesStats as Record<string, unknown>) : null;
   const gen = root.General && typeof root.General === "object" ? (root.General as Record<string, unknown>) : null;
-  const tech = root.Technicals && typeof root.Technicals === "object" ? (root.Technicals as Record<string, unknown>) : null;
   const ar = root.AnalystRatings && typeof root.AnalystRatings === "object" ? (root.AnalystRatings as Record<string, unknown>) : null;
 
   let marketCap = num(hl?.MarketCapitalization ?? hl?.MarketCapitalisation ?? hl?.MarketCap);
@@ -55,10 +53,6 @@ export async function fetchEodhdKeyStatsBasic(
 
   const earningsDate = resolveEarningsDateDisplay(hl, root);
 
-  let beta = num(tech?.Beta ?? tech?.Beta5YMonthly ?? tech?.Beta5Y);
-  if (beta == null) beta = num(gen?.Beta);
-  if (beta == null && hl) beta = num(hl.Beta);
-
   const employees = num(gen?.FullTimeEmployees ?? gen?.Employees);
 
   const rows: KeyStatsBasicRow[] = [
@@ -68,7 +62,6 @@ export async function fetchEodhdKeyStatsBasic(
     { label: "1Y Target Est", value: target1y != null ? formatUsdPrice(target1y) : "—" },
     { label: "Analyst Consensus", value: analystConsensus ?? "—" },
     { label: "Earnings Date", value: earningsDate ?? "—" },
-    { label: "Beta (5Y Monthly)", value: beta != null ? formatBeta(beta) : "—" },
     { label: "Employees", value: employees != null ? formatEmployeesCount(employees) : "—" },
   ];
 

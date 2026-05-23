@@ -15,6 +15,13 @@ import {
   readSidebarCollapsedPreference,
   SIDEBAR_COLLAPSED_PREFERENCE_KEY,
 } from "@/lib/layout/sidebar-collapsed-preference";
+import {
+  readWatchlistRailCollapsedPreference,
+  WATCHLIST_RAIL_COLLAPSED_PREFERENCE_KEY,
+} from "@/lib/layout/watchlist-rail-collapsed-preference";
+
+/** Re-read sidebar/watchlist cookies on each navigation (separate route-group layouts). */
+export const dynamic = "force-dynamic";
 
 export async function ProtectedAppShell({ children }: { children: ReactNode }) {
   let user: User | null = null;
@@ -48,6 +55,9 @@ export async function ProtectedAppShell({ children }: { children: ReactNode }) {
   const initialSidebarCollapsed = readSidebarCollapsedPreference(
     cookieStore.get(SIDEBAR_COLLAPSED_PREFERENCE_KEY)?.value,
   );
+  const initialWatchlistRailCollapsed = readWatchlistRailCollapsedPreference(
+    cookieStore.get(WATCHLIST_RAIL_COLLAPSED_PREFERENCE_KEY)?.value,
+  );
 
   /* Sidebar width: 248px expanded / 72px lite (see sidebar-layout-context). Topbar strip → main at 76px. */
   return (
@@ -63,6 +73,7 @@ export async function ProtectedAppShell({ children }: { children: ReactNode }) {
         userDisplayName={userDisplayName}
         platformTrialDaysLeft={gate.topbarTrialDaysLeft}
         initialSidebarCollapsed={initialSidebarCollapsed}
+        initialWatchlistRailCollapsed={initialWatchlistRailCollapsed}
       >
         <OnboardingAuthBootstrap />
         <Suspense fallback={null}>

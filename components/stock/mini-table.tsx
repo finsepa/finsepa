@@ -36,33 +36,47 @@ const MINI_TABLE_PERF_COLUMNS: readonly {
   { header: "ALL", field: "all", showOnMobile: false },
 ];
 
-function perfColClass(showOnMobile: boolean) {
+function perfColClass(showOnMobile: boolean, hideCompanyColumn = false) {
   return cn(
-    "px-3 py-2.5 text-right max-md:min-w-0 max-md:px-2",
-    showOnMobile ? "table-cell max-md:w-[16%]" : "hidden md:table-cell",
+    "px-3 py-2.5 max-md:min-w-0 max-md:px-2",
+    hideCompanyColumn ? "text-center" : "text-right",
+    showOnMobile
+      ? cn("table-cell", hideCompanyColumn ? "max-md:w-[25%]" : "max-md:w-[16%]")
+      : "hidden md:table-cell",
     "md:min-w-[60px]",
   );
 }
 
-function perfCellClass(showOnMobile: boolean) {
+function perfCellClass(showOnMobile: boolean, hideCompanyColumn = false) {
   return cn(
-    "px-3 py-3 text-right text-[14px] leading-5 tabular-nums max-md:min-w-0 max-md:px-2",
-    showOnMobile ? "table-cell max-md:w-[16%]" : "hidden md:table-cell",
+    "px-3 py-3 text-[14px] leading-5 tabular-nums max-md:min-w-0 max-md:px-2",
+    hideCompanyColumn ? "text-center" : "text-right",
+    showOnMobile
+      ? cn("table-cell", hideCompanyColumn ? "max-md:w-[25%]" : "max-md:w-[16%]")
+      : "hidden md:table-cell",
     "md:min-w-[60px]",
   );
 }
 
-function PerfCellMaybe({ value, showOnMobile }: { value: number | null; showOnMobile: boolean }) {
+function PerfCellMaybe({
+  value,
+  showOnMobile,
+  hideCompanyColumn = false,
+}: {
+  value: number | null;
+  showOnMobile: boolean;
+  hideCompanyColumn?: boolean;
+}) {
   if (value == null || !Number.isFinite(value)) {
     return (
-      <td className={cn(perfCellClass(showOnMobile), "text-[#71717A]")}>—</td>
+      <td className={cn(perfCellClass(showOnMobile, hideCompanyColumn), "text-[#71717A]")}>—</td>
     );
   }
   const isPositive = value >= 0;
   return (
     <td
       className={cn(
-        perfCellClass(showOnMobile),
+        perfCellClass(showOnMobile, hideCompanyColumn),
         isPositive ? "text-[#16A34A]" : "text-[#DC2626]",
       )}
     >
@@ -202,6 +216,7 @@ export function MiniTable({
   const [perf, setPerf] = useState<StockPerformance | null>(() => initialPerformance ?? null);
 
   const hasCompare = comparePicks.length > 0;
+  const hideCompanyColumn = !hasCompare;
 
   useEffect(() => {
     let mounted = true;
@@ -239,17 +254,30 @@ export function MiniTable({
   const row = useMemo(() => perf, [perf]);
 
   return (
-    <div className="max-md:overflow-x-visible overflow-x-auto">
+    <div
+      className={cn(
+        "max-md:overflow-x-visible overflow-x-auto",
+        hideCompanyColumn &&
+          "overflow-hidden rounded-xl border border-[#E4E4E7] bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]",
+      )}
+    >
       <table className="w-full table-fixed border-collapse">
         <thead>
-          <tr className="border-t border-b border-[#E4E4E7] bg-white">
-            <th className="min-w-0 px-3 py-2.5 text-left text-[14px] font-semibold text-[#71717A] max-md:w-[52%] md:min-w-[200px]">
-              Company
-            </th>
+          <tr
+            className={cn(
+              "bg-white",
+              hideCompanyColumn ? "border-b border-[#E4E4E7]" : "border-t border-b border-[#E4E4E7]",
+            )}
+          >
+            {hasCompare ? (
+              <th className="min-w-0 px-3 py-2.5 text-left text-[14px] font-semibold text-[#71717A] max-md:w-[52%] md:min-w-[200px]">
+                Company
+              </th>
+            ) : null}
             {MINI_TABLE_PERF_COLUMNS.map((col) => (
               <th
                 key={col.header}
-                className={cn(perfColClass(col.showOnMobile), "text-[14px] font-semibold text-[#71717A]")}
+                className={cn(perfColClass(col.showOnMobile, hideCompanyColumn), "text-[14px] font-semibold text-[#71717A]")}
               >
                 {col.header}
               </th>
@@ -257,14 +285,10 @@ export function MiniTable({
           </tr>
         </thead>
         <tbody>
-          <tr className="border-b border-[#E4E4E7]">
-            <td className="max-w-0 px-3 py-3 text-left align-middle">
-              <div
-                className={cn(
-                  "flex min-w-0 items-center justify-start gap-3 text-left",
-                  hasCompare && "border-l-[3px] border-l-[#2563EB] pl-2",
-                )}
-              >
+          <tr className={cn(!hideCompanyColumn && "border-b border-[#E4E4E7]")}>
+            {hasCompare ? (
+              <td className="max-w-0 px-3 py-3 text-left align-middle">
+                <div className="flex min-w-0 items-center justify-start gap-3 border-l-[3px] border-l-[#2563EB] pl-2 text-left">
                 {headerMetaLoading ? (
                   <div className="h-8 w-8 shrink-0 rounded-lg border border-[#E4E4E7] bg-[#F4F4F5] animate-pulse" aria-hidden />
                 ) : (
@@ -281,12 +305,14 @@ export function MiniTable({
                     {sym}
                   </div>
                 </div>
-              </div>
-            </td>
+                </div>
+              </td>
+            ) : null}
             {MINI_TABLE_PERF_COLUMNS.map((col) => (
               <PerfCellMaybe
                 key={col.header}
                 showOnMobile={col.showOnMobile}
+                hideCompanyColumn={hideCompanyColumn}
                 value={row?.[col.field] ?? null}
               />
             ))}

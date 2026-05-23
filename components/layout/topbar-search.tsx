@@ -16,7 +16,9 @@ import { SearchPanelResults } from "@/components/search/search-panel-results";
 import { useSearchPanel } from "@/components/search/use-search-panel";
 import { cn } from "@/lib/utils";
 
-const SEARCH_PANEL_WIDTH_CLASS = "w-[360px] max-w-[calc(100vw-2rem)]";
+/** Full width in the top bar on mobile; fixed pill width on desktop. */
+const SEARCH_PANEL_WIDTH_CLASS =
+  "w-full min-w-0 max-w-full md:w-[360px] md:max-w-[calc(100vw-2rem)]";
 
 /** Above page content, below topbar (`z-30`) and search dropdown (`z-220`). */
 const SEARCH_DISMISS_BACKDROP_Z = 29;
@@ -263,7 +265,7 @@ export function TopbarSearch() {
   return (
     <>
       {dismissBackdrop}
-      <TopbarDelayedTooltip label="Search" enabled={!open}>
+      <TopbarDelayedTooltip label="Search" enabled={!open} className="flex min-w-0 w-full">
         {searchControl}
       </TopbarDelayedTooltip>
     </>

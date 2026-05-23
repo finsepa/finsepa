@@ -1,12 +1,14 @@
-/** Large USD amounts: $66.17B, $71.34K, etc. */
+/** Large USD amounts: $66.17B, -$773.05M, etc. */
 export function formatUsdCompact(n: number): string {
   if (!Number.isFinite(n)) return "—";
+  const neg = n < 0;
   const abs = Math.abs(n);
-  if (abs >= 1e12) return `$${(n / 1e12).toFixed(2)}T`;
-  if (abs >= 1e9) return `$${(n / 1e9).toFixed(2)}B`;
-  if (abs >= 1e6) return `$${(n / 1e6).toFixed(2)}M`;
-  if (abs >= 1e3) return `$${(n / 1e3).toFixed(2)}K`;
-  return `$${n.toFixed(2)}`;
+  const prefix = neg ? "-$" : "$";
+  if (abs >= 1e12) return `${prefix}${(abs / 1e12).toFixed(2)}T`;
+  if (abs >= 1e9) return `${prefix}${(abs / 1e9).toFixed(2)}B`;
+  if (abs >= 1e6) return `${prefix}${(abs / 1e6).toFixed(2)}M`;
+  if (abs >= 1e3) return `${prefix}${(abs / 1e3).toFixed(2)}K`;
+  return `${prefix}${abs.toFixed(2)}`;
 }
 
 /**
@@ -40,17 +42,23 @@ export function formatUsdCompactSigDigits(n: number, sigDigits: number = 4): str
   return `${neg ? "-" : ""}$${t}`;
 }
 
-/** Shares count → e.g. 1,022.33M */
+/** Shares count → e.g. 14.7B, 502.33M */
 export function formatSharesOutstanding(n: number): string {
   if (!Number.isFinite(n)) return "—";
-  const m = n / 1e6;
-  return `${m.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}M`;
+  const abs = Math.abs(n);
+  if (abs >= 1e9) return `${(n / 1e9).toFixed(1)}B`;
+  if (abs >= 1e6) return `${(n / 1e6).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}M`;
+  if (abs >= 1e3) return `${(n / 1e3).toFixed(2)}K`;
+  return n.toLocaleString("en-US", { maximumFractionDigits: 0 });
 }
 
 /** Stock-style USD price */
 export function formatUsdPrice(n: number): string {
   if (!Number.isFinite(n)) return "—";
-  return `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const neg = n < 0;
+  const abs = Math.abs(n);
+  const body = abs.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return neg ? `-$${body}` : `$${body}`;
 }
 
 /** Dollar amount with grouping, no currency symbol (e.g. header change `-3,700.00`). */
@@ -64,8 +72,13 @@ export function formatBeta(n: number): string {
   return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+/** Headcount → e.g. 166.00K, 1.50M */
 export function formatEmployeesCount(n: number): string {
   if (!Number.isFinite(n)) return "—";
+  const abs = Math.abs(n);
+  if (abs >= 1e9) return `${(n / 1e9).toFixed(2)}B`;
+  if (abs >= 1e6) return `${(n / 1e6).toFixed(2)}M`;
+  if (abs >= 1e3) return `${(n / 1e3).toFixed(2)}K`;
   return Math.round(n).toLocaleString("en-US");
 }
 

@@ -9,3 +9,6 @@ export const topbarSquircleTextButtonClass =
 /** Portfolio-style outer shell (split control). */
 export const topbarSquircleSplitShellClass =
   "flex h-9 max-w-full min-w-0 items-stretch overflow-visible rounded-[10px] border border-[#E4E4E7] bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]";
+
+/** Open dropdown / menu trigger — same grey fill as hover. */
+export const topbarSquircleActiveClass = "bg-[#F4F4F5]";

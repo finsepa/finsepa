@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { formatUsdPrice } from "@/lib/market/key-stats-basic-format";
+import { normalizeAnalystLabel, toneForConsensusLabel } from "@/lib/market/analyst-consensus-tone";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
 import type { StockAnalystDistributionBucket, StockTargetPricePayload } from "@/lib/market/stock-target-price-types";
 
@@ -18,10 +19,6 @@ function arcPath(cx: number, cy: number, r: number, startDeg: number, endDeg: nu
   const end = polarToCartesian(cx, cy, r, startDeg);
   const largeArc = endDeg - startDeg <= 180 ? "0" : "1";
   return `M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArc} 0 ${end.x} ${end.y}`;
-}
-
-function normalizeAnalystLabel(raw: string): string {
-  return raw.trim().toLowerCase().replace(/\s+/g, " ");
 }
 
 function analystBucketScore(label: string): number | null {
@@ -69,16 +66,6 @@ function majorityLabelFromBuckets(buckets: StockAnalystDistributionBucket[]): st
     }
   }
   return best ? labelFromAvgScore(best.score) : null;
-}
-
-function toneForConsensusLabel(label: string): { text: string; dot: string } {
-  const l = normalizeAnalystLabel(label);
-  if (l === "strong buy") return { text: "#16A34A", dot: "#16A34A" };
-  if (l === "buy") return { text: "#84CC16", dot: "#84CC16" };
-  if (l === "neutral") return { text: "#CA8A04", dot: "#CA8A04" };
-  if (l === "sell") return { text: "#FB923C", dot: "#FB923C" };
-  if (l === "strong sell") return { text: "#DC2626", dot: "#DC2626" };
-  return { text: "#71717A", dot: "#A1A1AA" };
 }
 
 function dashPrice(n: number | null): string {

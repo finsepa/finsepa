@@ -34,14 +34,19 @@ export function formatChartingPeriodAxisLabel(
   return /^\d{4}$/.test(year) ? year : s;
 }
 
+/** Up to this many quarterly columns, show every period label (e.g. Key Stats 5Y / 10Y). */
+const QUARTERLY_AXIS_LABEL_SHOW_ALL_MAX = 40;
+
 /** Whether to render a slanted period label (Multicharts thinning for dense quarterly columns). */
 export function fundamentalsPeriodAxisShowsLabel(
   index: number,
   total: number,
   periodMode: "annual" | "quarterly",
 ): boolean {
+  if (periodMode === "annual") return true;
+  if (total <= QUARTERLY_AXIS_LABEL_SHOW_ALL_MAX) return true;
   const last = total - 1;
-  return periodMode === "annual" || index % 2 === 0 || (periodMode === "quarterly" && index === last && last > 0);
+  return index % 2 === 0 || (index === last && last > 0);
 }
 
 /** Primary line for chart axis + tables (annual = year; quarterly = `Q2 2025`). */

@@ -15,6 +15,9 @@ import {
   useSidebarLayout,
 } from "@/components/layout/sidebar-layout-context";
 import { Topbar } from "@/components/layout/topbar";
+import { WatchlistRail } from "@/components/layout/watchlist-rail";
+import { WatchlistRailLayoutProvider } from "@/components/layout/watchlist-rail-layout-context";
+import { dropdownMenuFloatingScrollClassName } from "@/components/design-system/dropdown-menu-styles";
 import { cn } from "@/lib/utils";
 
 function ProtectedAppChrome({
@@ -62,7 +65,7 @@ function ProtectedAppChrome({
       </div>
 
       {/*
-       * Desktop: one inset column (4px top/right/bottom, 4px gap) so topbar + main share width.
+       * Desktop: inset column with 4px gaps — topbar full width, then main + watchlist rail below.
        * Mobile: stacked column with document scroll (unchanged).
        */}
       <div
@@ -88,13 +91,22 @@ function ProtectedAppChrome({
             platformTrialDaysLeft={platformTrialDaysLeft}
           />
         </div>
-        <main
-          ref={mainRef}
+        <div
           suppressHydrationWarning
-          className="relative z-0 min-h-0 min-w-0 w-full max-w-full flex-1 bg-white max-md:overflow-visible max-md:pb-[var(--mobile-bottom-nav-main-clearance)] md:overflow-x-hidden md:overflow-y-auto md:overscroll-y-contain md:rounded-[4px]"
+          className="flex min-h-0 min-w-0 flex-1 max-md:flex-col md:gap-[var(--shell-chrome-gap)]"
         >
-          {children}
-        </main>
+          <main
+            ref={mainRef}
+            suppressHydrationWarning
+            className={cn(
+              "relative z-0 min-h-0 min-w-0 w-full max-w-full flex-1 bg-white max-md:overflow-visible max-md:pb-[var(--mobile-bottom-nav-main-clearance)] md:overflow-x-hidden md:overflow-y-auto md:overscroll-y-contain md:rounded-[4px]",
+              dropdownMenuFloatingScrollClassName,
+            )}
+          >
+            {children}
+          </main>
+          <WatchlistRail />
+        </div>
       </div>
 
       <MainScrollToTop scrollRootRef={mainRef} />
@@ -111,6 +123,7 @@ export function ProtectedAppShellInner({
   userDisplayName,
   platformTrialDaysLeft = null,
   initialSidebarCollapsed = false,
+  initialWatchlistRailCollapsed = true,
 }: {
   children: ReactNode;
   userId: string;
@@ -121,18 +134,22 @@ export function ProtectedAppShellInner({
   platformTrialDaysLeft?: number | null;
   /** Server-read cookie so sidebar width matches on SSR and hydration. */
   initialSidebarCollapsed?: boolean;
+  /** Server-read cookie for desktop watchlist rail (collapsed = star strip only). */
+  initialWatchlistRailCollapsed?: boolean;
 }) {
   return (
     <SidebarLayoutProvider initialCollapsed={initialSidebarCollapsed}>
-      <ProtectedAppChrome
-        userId={userId}
-        userInitials={userInitials}
-        avatarUrl={avatarUrl}
-        userDisplayName={userDisplayName}
-        platformTrialDaysLeft={platformTrialDaysLeft ?? null}
-      >
-        {children}
-      </ProtectedAppChrome>
+      <WatchlistRailLayoutProvider initialCollapsed={initialWatchlistRailCollapsed}>
+        <ProtectedAppChrome
+          userId={userId}
+          userInitials={userInitials}
+          avatarUrl={avatarUrl}
+          userDisplayName={userDisplayName}
+          platformTrialDaysLeft={platformTrialDaysLeft ?? null}
+        >
+          {children}
+        </ProtectedAppChrome>
+      </WatchlistRailLayoutProvider>
     </SidebarLayoutProvider>
   );
 }

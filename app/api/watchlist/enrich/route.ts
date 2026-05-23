@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 
 import { buildWatchlistEnrichedGroups } from "@/lib/market/watchlist-enrichment";
 import { requireAuthUser, AuthRequiredError } from "@/lib/watchlist/api-auth";
-import { getScreenerWatchlistKeySet } from "@/lib/watchlist/screener-watchlist-keys";
 import { syntheticWatchlistRows } from "@/lib/watchlist/synthetic";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -29,11 +28,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Expected { tickers: string[] }" }, { status: 400 });
     }
 
-    const keySet = await getScreenerWatchlistKeySet();
     const tickersRaw = raw.filter((t): t is string => typeof t === "string");
-    const tickers = tickersRaw
-      .map((t) => t.trim().toUpperCase())
-      .filter((t) => keySet.has(t));
+    const tickers = [
+      ...new Set(
+        tickersRaw
+          .map((t) => t.trim().toUpperCase())
+          .filter((t) => t.length > 0 && t.length <= 32),
+      ),
+    ];
     if (DEBUG) {
       console.info("[watchlist enrich] load", {
         source: "POST body",

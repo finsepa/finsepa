@@ -13,12 +13,16 @@ export const DWELL_TOOLTIP_DELAY_MS = 1000;
 
 const DEFAULT_DELAY_MS = DWELL_TOOLTIP_DELAY_MS;
 
+type TopbarDelayedTooltipAlign = "center" | "trailing";
+
 type TopbarDelayedTooltipProps = {
   label: string;
   /** Hover / focus dwell time before the tooltip shows (avoids flashes on quick pass-through and clicks). */
   delayMs?: number;
   /** When false, hover/focus hints are suppressed (e.g. while search dropdown is open). */
   enabled?: boolean;
+  /** `trailing` anchors to the control's right edge so the pill extends left (right-rail controls). */
+  align?: TopbarDelayedTooltipAlign;
   children: ReactNode;
   className?: string;
 };
@@ -32,13 +36,14 @@ export function TopbarDelayedTooltip({
   label,
   delayMs = DEFAULT_DELAY_MS,
   enabled = true,
+  align = "center",
   children,
   className,
 }: TopbarDelayedTooltipProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [pos, setPos] = useState({ left: 0, top: 0 });
+  const [pos, setPos] = useState({ left: 0, top: 0, transform: "translateX(-50%)" });
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -73,8 +78,12 @@ export function TopbarDelayedTooltip({
     const el = rootRef.current;
     if (!el) return;
     const r = el.getBoundingClientRect();
-    setPos({ left: r.left + r.width / 2, top: r.bottom + 6 });
-  }, []);
+    if (align === "trailing") {
+      setPos({ left: r.right, top: r.bottom + 6, transform: "translateX(-100%)" });
+      return;
+    }
+    setPos({ left: r.left + r.width / 2, top: r.bottom + 6, transform: "translateX(-50%)" });
+  }, [align]);
 
   useLayoutEffect(() => {
     if (!visible) return;
@@ -101,8 +110,11 @@ export function TopbarDelayedTooltip({
   const tooltip =
     visible && mounted ? (
       <div
-        className="pointer-events-none fixed flex flex-col items-center"
-        style={{ left: pos.left, top: pos.top, transform: "translateX(-50%)", zIndex: TOOLTIP_PORTAL_Z }}
+        className={cn(
+          "pointer-events-none fixed flex flex-col",
+          align === "trailing" ? "items-end" : "items-center",
+        )}
+        style={{ left: pos.left, top: pos.top, transform: pos.transform, zIndex: TOOLTIP_PORTAL_Z }}
         role="tooltip"
       >
         <div

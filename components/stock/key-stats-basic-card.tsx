@@ -1,16 +1,29 @@
 "use client";
 
+import { CalendarDays } from "lucide-react";
 import { useEffect, useState } from "react";
+
+import { consensusLabelTextClass } from "@/lib/market/analyst-consensus-tone";
+import { cn } from "@/lib/utils";
 
 type Row = { label: string; value: string };
 
 function StatRow({ label, value }: { label: string; value: string }) {
+  const valueClass =
+    label === "Analyst Consensus" && value !== "—" ? consensusLabelTextClass(value) : "text-[#09090B]";
   return (
     <div className="flex items-center justify-between gap-3 border-b border-[#E4E4E7] py-1.5 last:border-0">
       <span className="min-w-0 shrink cursor-pointer text-[14px] leading-5 text-[#09090B] underline decoration-[#E4E4E7] underline-offset-2">
         {label}
       </span>
-      <span className="shrink-0 text-right text-[14px] leading-5 text-[#09090B] tabular-nums">{value}</span>
+      {label === "Earnings Date" && value !== "—" ? (
+        <span className="inline-flex shrink-0 items-center justify-end gap-1.5 text-right">
+          <CalendarDays className="h-3.5 w-3.5 shrink-0 text-[#71717A]" strokeWidth={2} aria-hidden />
+          <span className={cn("text-[14px] leading-5 tabular-nums", valueClass)}>{value}</span>
+        </span>
+      ) : (
+        <span className={cn("shrink-0 text-right text-[14px] leading-5 tabular-nums", valueClass)}>{value}</span>
+      )}
     </div>
   );
 }
@@ -55,7 +68,6 @@ export function KeyStatsBasicCard({ ticker }: { ticker: string }) {
       { label: "1Y Target Est", value: "—" },
       { label: "Analyst Consensus", value: "—" },
       { label: "Earnings Date", value: "—" },
-      { label: "Beta (5Y Monthly)", value: "—" },
       { label: "Employees", value: "—" },
     ] satisfies Row[]);
 

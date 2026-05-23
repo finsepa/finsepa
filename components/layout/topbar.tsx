@@ -115,14 +115,14 @@ export function Topbar({
 }) {
   return (
     <>
-      <header className="flex min-w-0 flex-nowrap items-center justify-between gap-2 overflow-x-hidden overflow-y-hidden [-webkit-overflow-scrolling:touch] max-md:gap-2 max-md:p-4 md:min-h-[60px] md:gap-3 md:px-4 md:py-3">
-        <div className="flex min-w-0 flex-1 items-center md:min-w-0">
-          <div className="min-w-0 w-full max-w-full flex-1 md:max-w-[360px]">
+      <header className="flex h-14 min-w-0 flex-nowrap items-center gap-2 overflow-hidden max-md:px-4 md:min-h-[60px] md:h-auto md:gap-3 md:px-4 md:py-3">
+        <div className="flex h-9 min-w-0 flex-1 items-center">
+          <div className="min-w-0 w-full md:max-w-[360px]">
             <TopbarSearch />
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-2 md:gap-3">
+        <div className="flex h-9 shrink-0 items-center gap-2 md:gap-3">
           {TOPBAR_SHOW_NOTIFICATIONS ? (
             <TopbarDelayedTooltip label="Notifications">
               <IconButton>
@@ -131,18 +131,22 @@ export function Topbar({
             </TopbarDelayedTooltip>
           ) : null}
 
-          <TopbarDelayedTooltip label="Watchlist">
+          <TopbarDelayedTooltip label="Watchlist" className="inline-flex shrink-0 md:hidden">
             <Link
               href="/watchlist"
               prefetch={false}
               aria-label="Watchlist"
-              className={topbarSquircleIconClass}
+              className={cn(topbarSquircleIconClass, "inline-flex")}
             >
               <Star className="h-5 w-5" aria-hidden />
             </Link>
           </TopbarDelayedTooltip>
 
-          <TopbarQuickAddMenu dwellTooltipLabel="Add/Create" />
+          <TopbarQuickAddMenu
+            showDesktopLabel
+            desktopLabel="Add/Create"
+            dwellTooltipLabel="Add/Create"
+          />
 
           <div className="hidden sm:flex sm:shrink-0">
             <TopbarPortfolioBlock />
