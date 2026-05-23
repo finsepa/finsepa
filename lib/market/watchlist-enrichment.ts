@@ -138,7 +138,7 @@ async function enrichStock(entry: WatchlistRow): Promise<WatchlistEnrichedItem> 
   let pct1d = p?.d1 ?? null;
   if (price == null || pct1d == null) {
     const d = await getSimpleMarketData();
-    const snap = d.stocks[meta.ticker];
+    const snap = isTop10Ticker(ticker) ? d.stocks[ticker] : d.extraScreenerStocks[ticker];
     if (snap) {
       if (price == null) price = snap.price;
       if (pct1d == null) pct1d = snap.changePercent1D;
