@@ -7,7 +7,7 @@ import {
 
 export type FinancialsStatementView = "income" | "balance" | "cashflow" | "ratios";
 
-const OPTIONS: readonly SegmentedControlOption<FinancialsStatementView>[] = [
+export const FINANCIALS_STATEMENT_OPTIONS: readonly SegmentedControlOption<FinancialsStatementView>[] = [
   { value: "income", label: "Income" },
   { value: "balance", label: "Balance Sheet" },
   { value: "cashflow", label: "Cash Flow" },
@@ -25,7 +25,7 @@ export function StockFinancialsSegmentedToggle({
   return (
     <div className="-mx-1 min-w-0 max-w-full flex-1 overflow-x-auto pb-0.5 [-webkit-overflow-scrolling:touch] sm:mx-0 sm:max-w-none sm:flex-initial sm:overflow-visible sm:pb-0">
       <SegmentedControl
-        options={OPTIONS}
+        options={FINANCIALS_STATEMENT_OPTIONS}
         value={value}
         onChange={onChange}
         size="sm"

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { memo, useMemo } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import type { ScreenerTableRow } from "@/lib/screener/screener-static";
 import { WatchlistStarToggle } from "@/components/watchlist/watchlist-star-button";
 import { CompanyLogo } from "./company-logo";
@@ -11,6 +11,7 @@ import {
   ScreenerTableScroll,
 } from "@/components/screener/screener-table-scroll";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
+import { cn } from "@/lib/utils";
 
 function formatPercentValue(value: number) {
   return `${value > 0 ? "+" : ""}${value.toFixed(2)}%`;
@@ -59,10 +60,72 @@ function PriceAndChangeCell({ price, change1D }: { price: number | null; change1
  * `minmax(0,1fr)` / `minmax(0,2fr)` avoids min-content blowout that wrapped the inner grid to multiple rows
  * when an extra Key Stat column was added.
  */
-const rowLinkGridDefault =
-  "grid min-w-0 w-full max-w-full flex-1 grid-cols-[20px_minmax(0,1fr)_minmax(4.5rem,5.5rem)] gap-x-1.5 max-md:gap-x-1.5 sm:grid-cols-[48px_minmax(0,2fr)_repeat(5,minmax(0,1fr))_96px] sm:gap-x-2";
-const rowLinkGridWithKeyStat =
-  "grid min-w-0 w-full max-w-full flex-1 grid-cols-[20px_minmax(0,1fr)_minmax(4.5rem,5.5rem)] gap-x-1.5 max-md:gap-x-1.5 sm:grid-cols-[48px_minmax(0,2fr)_repeat(6,minmax(0,1fr))_minmax(5rem,1fr)_96px] sm:gap-x-2";
+const rowLinkGridBase =
+  "grid w-full min-w-0 flex-1 grid-cols-[20px_minmax(0,1fr)_minmax(4.5rem,5.5rem)] gap-x-1.5 max-md:gap-x-1.5 sm:gap-x-2";
+
+/** Base desktop width before custom key-stat columns (rank + company + 6 core metrics). */
+const SCREENER_TABLE_DESKTOP_BASE_MIN_WIDTH_PX = 688;
+const SCREENER_TABLE_KEY_STAT_COL_MIN_WIDTH_PX = 96;
+
+export function screenerTableMinWidthPx(keyStatCount: number): number | undefined {
+  if (keyStatCount <= 0) return undefined;
+  return SCREENER_TABLE_DESKTOP_BASE_MIN_WIDTH_PX + keyStatCount * SCREENER_TABLE_KEY_STAT_COL_MIN_WIDTH_PX;
+}
+
+const MOBILE_GRID_TEMPLATE = "20px minmax(0, 1fr) minmax(4.5rem, 5.5rem)";
+
+/** Default: fluid columns that fit the viewport. With custom metrics: fixed mins + horizontal scroll. */
+function buildDesktopGridTemplate(keyStatCount: number): string {
+  if (keyStatCount === 0) {
+    return [
+      "48px",
+      "minmax(0, 2fr)",
+      "minmax(0, 1fr)",
+      "minmax(0, 1fr)",
+      "minmax(0, 1fr)",
+      "minmax(0, 1fr)",
+      "minmax(0, 1fr)",
+      "minmax(0, 1fr)",
+    ].join(" ");
+  }
+  return [
+    "48px",
+    "minmax(11rem, 1.35fr)",
+    "minmax(5.25rem, max-content)",
+    "minmax(4.75rem, max-content)",
+    "minmax(4.75rem, max-content)",
+    "minmax(4.75rem, max-content)",
+    "minmax(5.5rem, max-content)",
+    "minmax(4.5rem, max-content)",
+    ...Array.from({ length: keyStatCount }, () => "minmax(5.5rem, 8rem)"),
+  ].join(" ");
+}
+
+function useScreenerTableGridTemplate(keyStatCount: number): string {
+  const [template, setTemplate] = useState(MOBILE_GRID_TEMPLATE);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 640px)");
+    const update = () => {
+      setTemplate(mq.matches ? buildDesktopGridTemplate(keyStatCount) : MOBILE_GRID_TEMPLATE);
+    };
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, [keyStatCount]);
+
+  return template;
+}
+
+const desktopNumericCellFluidClass = "hidden min-w-0 w-full text-right sm:block";
+const desktopNumericCellFixedClass =
+  "hidden w-full min-w-[4.5rem] max-w-[8rem] shrink-0 text-right sm:block";
+const desktopKeyStatCellClass =
+  "hidden w-full min-w-[5.5rem] max-w-[8rem] shrink-0 truncate text-right sm:block";
+
+function screenerDesktopNumericCellClass(fluid: boolean): string {
+  return fluid ? desktopNumericCellFluidClass : desktopNumericCellFixedClass;
+}
 
 export type ScreenerTableKeyStatColumn = {
   header: string;
@@ -76,8 +139,9 @@ type RowProps = {
   starred: boolean;
   loaded: boolean;
   toggleTicker: (ticker: string) => void;
-  keyStatColumn?: ScreenerTableKeyStatColumn | null;
-  rowLinkGrid: string;
+  keyStatColumns: ScreenerTableKeyStatColumn[];
+  gridTemplateColumns: string;
+  desktopNumericCellClass: string;
 };
 
 const ScreenerDataRow = memo(function ScreenerDataRow({
@@ -86,8 +150,9 @@ const ScreenerDataRow = memo(function ScreenerDataRow({
   starred,
   loaded,
   toggleTicker,
-  keyStatColumn,
-  rowLinkGrid,
+  keyStatColumns,
+  gridTemplateColumns,
+  desktopNumericCellClass,
 }: RowProps) {
   const watchedSet = useMemo(() => {
     const k = item.ticker.trim().toUpperCase();
@@ -95,16 +160,13 @@ const ScreenerDataRow = memo(function ScreenerDataRow({
   }, [item.ticker, starred]);
 
   const tickerKey = item.ticker.trim().toUpperCase();
-  const keyStatDisplay =
-    keyStatColumn == null
-      ? null
-      : keyStatColumn.loading
-        ? "…"
-        : (keyStatColumn.valuesByTicker[tickerKey] ?? keyStatColumn.valuesByTicker[item.ticker] ?? "—");
+  const keyStatDisplays = keyStatColumns.map((col) =>
+    col.loading ? "…" : (col.valuesByTicker[tickerKey] ?? col.valuesByTicker[item.ticker] ?? "—"),
+  );
 
   return (
     <div
-      className="group flex min-h-[60px] min-w-0 max-w-full items-center gap-x-1.5 bg-white px-2 transition-colors duration-75 hover:bg-neutral-50 max-md:gap-x-1.5 sm:gap-x-2 sm:px-4"
+      className="group flex min-h-[60px] min-w-0 w-full items-center gap-x-1.5 bg-white px-2 transition-colors duration-75 hover:bg-neutral-50 max-md:gap-x-1.5 sm:gap-x-2 sm:px-4"
     >
       <WatchlistStarToggle
         className="hidden w-6 shrink-0 items-center justify-center px-1 sm:flex sm:w-10 sm:px-3"
@@ -118,7 +180,8 @@ const ScreenerDataRow = memo(function ScreenerDataRow({
       <Link
         href={`/stock/${encodeURIComponent(item.ticker)}`}
         prefetch={false}
-        className={`${rowLinkGrid} min-h-[56px] min-w-0 max-w-full cursor-pointer items-center justify-items-stretch no-underline text-[#09090B] visited:text-[#09090B] sm:min-h-[60px]`}
+        className={`${rowLinkGridBase} min-h-[56px] cursor-pointer items-center justify-items-stretch no-underline text-[#09090B] visited:text-[#09090B] sm:min-h-[60px]`}
+        style={{ gridTemplateColumns }}
         aria-label={`Open ${item.name} (${item.ticker})`}
       >
         <div className="text-center text-[14px] font-semibold leading-5 tabular-nums text-[#71717A]">{rank}</div>
@@ -143,41 +206,45 @@ const ScreenerDataRow = memo(function ScreenerDataRow({
         <div className="block sm:hidden">
           <PriceAndChangeCell price={item.price} change1D={item.change1D} />
         </div>
-        <div className="hidden min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B] sm:block">
+        <div
+          className={`${desktopNumericCellClass} font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]`}
+        >
           {item.price != null && Number.isFinite(item.price) ? `$${item.price.toFixed(2)}` : "-"}
         </div>
 
-        <div className="hidden min-w-0 w-full sm:block">
+        <div className={desktopNumericCellClass}>
           <ChangeCell value={item.change1D} />
         </div>
-        <div className="hidden min-w-0 w-full sm:block">
+        <div className={desktopNumericCellClass}>
           <ChangeCell value={item.change1M} />
         </div>
-        <div className="hidden min-w-0 w-full sm:block">
+        <div className={desktopNumericCellClass}>
           <ChangeCell value={item.changeYTD} />
         </div>
 
-        <div className="hidden min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B] sm:block">
+        <div
+          className={`${desktopNumericCellClass} font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]`}
+        >
           {item.marketCap}
         </div>
 
-        <div className="hidden min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B] sm:block">
+        <div
+          className={`${desktopNumericCellClass} font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]`}
+        >
           {item.pe}
         </div>
 
-        {keyStatColumn != null ? (
-          <>
-            <div
-              className={`hidden min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums sm:block ${
-                keyStatColumn.loading ? "text-[#71717A]" : "text-[#09090B]"
-              }`}
-              title={keyStatDisplay ?? undefined}
-            >
-              {keyStatDisplay}
-            </div>
-            <div className="hidden min-w-0 sm:block" aria-hidden />
-          </>
-        ) : null}
+        {keyStatColumns.map((col, i) => (
+          <div
+            key={col.header}
+            className={`${desktopKeyStatCellClass} font-['Inter'] text-[14px] font-normal leading-5 tabular-nums ${
+              col.loading ? "text-[#71717A]" : "text-[#09090B]"
+            }`}
+            title={keyStatDisplays[i]}
+          >
+            {keyStatDisplays[i]}
+          </div>
+        ))}
       </Link>
     </div>
   );
@@ -186,50 +253,52 @@ const ScreenerDataRow = memo(function ScreenerDataRow({
 export function ScreenerTable({
   rows,
   rankOffset = 0,
-  keyStatColumn = null,
+  keyStatColumns = [],
 }: {
   rows: ScreenerTableRow[];
   rankOffset?: number;
-  keyStatColumn?: ScreenerTableKeyStatColumn | null;
+  keyStatColumns?: ScreenerTableKeyStatColumn[];
 }) {
   const { watched, loaded, toggleTicker } = useWatchlist();
-  const hasKeyStat = keyStatColumn != null;
-  const rowLinkGrid = hasKeyStat ? rowLinkGridWithKeyStat : rowLinkGridDefault;
+  const keyStatCount = keyStatColumns.length;
+  const useFluidDesktopColumns = keyStatCount === 0;
+  const gridTemplateColumns = useScreenerTableGridTemplate(keyStatCount);
+  const tableMinWidthPx = screenerTableMinWidthPx(keyStatCount);
+  const desktopNumericCellClass = screenerDesktopNumericCellClass(useFluidDesktopColumns);
 
   return (
-    <ScreenerTableScroll>
+    <ScreenerTableScroll tableMinWidthPx={tableMinWidthPx}>
       <div className="bg-white">
         {/* Column headers */}
       <div
-        className={`flex min-h-[44px] min-w-0 max-w-full items-center gap-x-1.5 px-2 py-0 text-[12px] font-medium leading-5 text-[#71717A] max-md:gap-x-1.5 sm:gap-x-2 sm:px-4 sm:text-[14px] ${SCREENER_TABLE_HEADER_STICKY_CLASS}`}
+        className={`flex min-h-[44px] min-w-0 w-full items-center gap-x-1.5 px-2 py-0 text-[12px] font-medium leading-5 text-[#71717A] max-md:gap-x-1.5 sm:gap-x-2 sm:px-4 sm:text-[14px] ${SCREENER_TABLE_HEADER_STICKY_CLASS}`}
       >
         <div className="hidden w-6 shrink-0 sm:block sm:w-10" aria-hidden />
         <div
-          className={`${rowLinkGrid} min-h-[44px] items-center text-[12px] font-medium leading-5 text-[#71717A] sm:text-[14px]`}
+          className={`${rowLinkGridBase} min-h-[44px] items-center text-[12px] font-medium leading-5 text-[#71717A] sm:text-[14px]`}
+          style={{ gridTemplateColumns }}
         >
           <div className="text-center">#</div>
           <div className="text-left">Company</div>
-          <div className="min-w-0 w-full text-right">
+          <div className={cn("min-w-0 w-full text-right", !useFluidDesktopColumns && "sm:shrink-0 sm:max-w-[8rem] sm:min-w-[5.25rem]")}>
             <span className="sm:hidden">Price</span>
             <span className="hidden sm:inline">Price</span>
             <span className="hidden text-[12px] font-medium leading-4 text-[#A1A1AA] sm:hidden">1D %</span>
           </div>
-          <div className="hidden min-w-0 w-full text-right sm:block">1D %</div>
-          <div className="hidden min-w-0 w-full text-right sm:block">1M %</div>
-          <div className="hidden min-w-0 w-full text-right sm:block">YTD %</div>
-          <div className="hidden min-w-0 w-full text-right sm:block">M Cap</div>
-          <div className="hidden min-w-0 w-full text-right sm:block">PE</div>
-          {hasKeyStat ? (
-            <>
-              <div
-                className="hidden min-w-0 truncate text-right sm:block"
-                title={keyStatColumn.header}
-              >
-                {keyStatColumn.header}
-              </div>
-              <div className="hidden min-w-0 sm:block" aria-hidden />
-            </>
-          ) : null}
+          <div className={cn(desktopNumericCellClass, "truncate")}>1D %</div>
+          <div className={cn(desktopNumericCellClass, "truncate")}>1M %</div>
+          <div className={cn(desktopNumericCellClass, "truncate")}>YTD %</div>
+          <div className={cn(desktopNumericCellClass, "truncate")}>M Cap</div>
+          <div className={cn(desktopNumericCellClass, "truncate")}>PE</div>
+          {keyStatColumns.map((col) => (
+            <div
+              key={col.header}
+              className={cn(desktopKeyStatCellClass, "truncate")}
+              title={col.header}
+            >
+              {col.header}
+            </div>
+          ))}
         </div>
         </div>
 
@@ -242,8 +311,9 @@ export function ScreenerTable({
               starred={watched.has(item.ticker)}
               loaded={loaded}
               toggleTicker={toggleTicker}
-              keyStatColumn={keyStatColumn}
-              rowLinkGrid={rowLinkGrid}
+              keyStatColumns={keyStatColumns}
+              gridTemplateColumns={gridTemplateColumns}
+              desktopNumericCellClass={desktopNumericCellClass}
             />
           ))}
         </div>

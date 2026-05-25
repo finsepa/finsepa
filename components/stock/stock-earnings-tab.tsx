@@ -3,12 +3,23 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { SkeletonBox } from "@/components/markets/skeleton";
-import { EarningsAnnualSummaryTable } from "@/components/stock/earnings-annual-summary-table";
-import { EarningsEstimatesChart } from "@/components/stock/earnings-estimates-chart";
+import { EarningsEstimatesSection } from "@/components/stock/earnings-estimates-section";
+import type { EstimatesMetric } from "@/components/stock/earnings-estimates-chart";
 import { EarningsReportRowActions } from "@/components/stock/earnings-report-row-actions";
 import { PostMarketEarningsIcon } from "@/components/stock/post-market-earnings-icon";
 import { PreMarketEarningsIcon } from "@/components/stock/pre-market-earnings-icon";
+import {
+  displayEps,
+  displayRevenueUsd,
+  isAnnualForecastPoint,
+  sliceLatestAnnualEstimates,
+  sliceLatestQuarterlyEstimates,
+} from "@/lib/market/earnings-annual-display";
+import type { FundamentalsSeriesMode } from "@/lib/market/charting-series-types";
+import { formatUsdCompact } from "@/lib/market/key-stats-basic-format";
 import type {
+  StockEarningsEstimatesChart,
+  StockEarningsEstimatesPoint,
   StockEarningsHistoryRow,
   StockEarningsReportTiming,
   StockEarningsTabPayload,
@@ -18,6 +29,63 @@ import { EARNINGS_CARD_LABEL_CLASS, EARNINGS_CARD_VALUE_CLASS } from "@/componen
 
 function dash(v: string | null | undefined): string {
   return v != null && String(v).trim() !== "" ? String(v).trim() : "—";
+}
+
+function formatEpsEstimate(n: number): string {
+  return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function formatMetricSummaryValue(raw: number | null, metric: EstimatesMetric): string | null {
+  if (raw == null || !Number.isFinite(raw)) return null;
+  return metric === "revenue" ? formatUsdCompact(raw) : formatEpsEstimate(raw);
+}
+
+function metricSummaryValueFromPoint(p: StockEarningsEstimatesPoint, metric: EstimatesMetric): number | null {
+  return metric === "revenue" ? displayRevenueUsd(p) : displayEps(p);
+}
+
+type EarningsMetricSummarySlot = { label: string; value: string | null };
+
+/** Middle + right summary cards — same slice + display helpers as Estimates summary table / chart. */
+function buildEarningsMetricSummarySlots(
+  chart: StockEarningsEstimatesChart | null | undefined,
+  period: FundamentalsSeriesMode,
+  metric: EstimatesMetric,
+  upcomingRevenueFallback: string | null,
+  upcomingEpsFallback: string | null,
+): [EarningsMetricSummarySlot, EarningsMetricSummarySlot] {
+  const metricTitle = metric === "revenue" ? "Revenue" : "EPS";
+  const upcomingFallback = metric === "revenue" ? upcomingRevenueFallback : upcomingEpsFallback;
+
+  if (period === "quarterly" && chart?.quarterly?.length) {
+    const forward = sliceLatestQuarterlyEstimates(chart.quarterly)
+      .filter((p) => isAnnualForecastPoint(p))
+      .slice(0, 2);
+    const slot = (p: (typeof forward)[number] | undefined, idx: number): EarningsMetricSummarySlot => {
+      if (!p) return { label: metricTitle, value: null };
+      const periodLabel = p.label?.trim();
+      const label = periodLabel ? `${metricTitle} ${periodLabel}` : metricTitle;
+      return {
+        label,
+        value:
+          formatMetricSummaryValue(metricSummaryValueFromPoint(p, metric), metric) ??
+          (idx === 0 ? upcomingFallback : null),
+      };
+    };
+    return [slot(forward[0], 0), slot(forward[1], 1)];
+  }
+
+  const cols = sliceLatestAnnualEstimates(chart?.annual ?? []);
+  const slotForYear = (year: string, idx: number): EarningsMetricSummarySlot => {
+    const pt = cols.find((p) => p.label === year);
+    const value = pt ? formatMetricSummaryValue(metricSummaryValueFromPoint(pt, metric), metric) : null;
+    return {
+      label: `${metricTitle} ${year}`,
+      value: value ?? (idx === 0 ? upcomingFallback : null),
+    };
+  };
+
+  return [slotForYear("2026", 0), slotForYear("2027", 1)];
 }
 
 /** Screener-style empty cell (hyphen, not em dash). */
@@ -67,16 +135,33 @@ function TimingBadge({ timing }: { timing: StockEarningsReportTiming }) {
 function EarningsSummaryCards({
   reportDateDisplay,
   fiscalPeriodLabel,
-  revenueEstimateDisplay,
-  epsEstimateDisplay,
+  period,
+  metric,
+  estimatesChart,
+  upcomingRevenueFallback,
+  upcomingEpsFallback,
   timing,
 }: {
   reportDateDisplay: string | null;
   fiscalPeriodLabel: string | null;
-  revenueEstimateDisplay: string | null;
-  epsEstimateDisplay: string | null;
+  period: FundamentalsSeriesMode;
+  metric: EstimatesMetric;
+  estimatesChart: StockEarningsEstimatesChart | null | undefined;
+  upcomingRevenueFallback: string | null;
+  upcomingEpsFallback: string | null;
   timing: StockEarningsReportTiming;
 }) {
+  const [metricSlot1, metricSlot2] = useMemo(
+    () =>
+      buildEarningsMetricSummarySlots(
+        estimatesChart,
+        period,
+        metric,
+        upcomingRevenueFallback,
+        upcomingEpsFallback,
+      ),
+    [estimatesChart, period, metric, upcomingRevenueFallback, upcomingEpsFallback],
+  );
   const dateLabel = `${quarterPrefixForEarningsDateLabel(fiscalPeriodLabel)} Earnings Date`;
   const badge = <TimingBadge timing={timing} />;
 
@@ -90,12 +175,12 @@ function EarningsSummaryCards({
         {badge}
       </div>
       <div className={`flex h-fit flex-col gap-0.5 text-left ${SCREENER_INDEX_CARD_CLASS}`}>
-        <p className={EARNINGS_CARD_LABEL_CLASS}>Estimated Revenue</p>
-        <p className={`${EARNINGS_CARD_VALUE_CLASS} tabular-nums`}>{dash(revenueEstimateDisplay)}</p>
+        <p className={EARNINGS_CARD_LABEL_CLASS}>{metricSlot1.label}</p>
+        <p className={`${EARNINGS_CARD_VALUE_CLASS} tabular-nums`}>{dash(metricSlot1.value)}</p>
       </div>
       <div className={`flex h-fit flex-col gap-0.5 text-left ${SCREENER_INDEX_CARD_CLASS}`}>
-        <p className={EARNINGS_CARD_LABEL_CLASS}>Estimated EPS</p>
-        <p className={`${EARNINGS_CARD_VALUE_CLASS} tabular-nums`}>{dash(epsEstimateDisplay)}</p>
+        <p className={EARNINGS_CARD_LABEL_CLASS}>{metricSlot2.label}</p>
+        <p className={`${EARNINGS_CARD_VALUE_CLASS} tabular-nums`}>{dash(metricSlot2.value)}</p>
       </div>
     </div>
   );
@@ -187,23 +272,26 @@ function SummaryCardsSkeleton() {
   );
 }
 
+function EstimatesHeaderSkeleton() {
+  return (
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <SkeletonBox className="h-7 w-28 rounded" />
+      <div className="flex flex-wrap gap-3">
+        <SkeletonBox className="h-10 w-[200px] rounded-[10px]" />
+        <SkeletonBox className="h-10 w-[200px] rounded-[10px]" />
+      </div>
+    </div>
+  );
+}
+
 function EstimatesChartSkeleton() {
   return (
     <div className="w-full space-y-6">
       <div>
-        <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <SkeletonBox className="h-7 w-28 rounded" />
-          <div className="flex flex-wrap gap-3">
-            <SkeletonBox className="h-10 w-[200px] rounded-[10px]" />
-            <SkeletonBox className="h-10 w-[200px] rounded-[10px]" />
-          </div>
-        </div>
-        <div>
-          <SkeletonBox className="h-[320px] w-full rounded" />
-          <div className="mt-4 flex justify-center gap-6">
-            <SkeletonBox className="h-4 w-36 rounded" />
-            <SkeletonBox className="h-4 w-36 rounded" />
-          </div>
+        <SkeletonBox className="h-[320px] w-full rounded" />
+        <div className="mt-4 flex justify-center gap-6">
+          <SkeletonBox className="h-4 w-36 rounded" />
+          <SkeletonBox className="h-4 w-36 rounded" />
         </div>
       </div>
       <div className="-mx-1 overflow-x-auto sm:-mx-0">
@@ -283,6 +371,7 @@ function TableSkeleton() {
 export function StockEarningsTabLoading() {
   return (
     <div className="min-w-0 space-y-6 pt-1">
+      <EstimatesHeaderSkeleton />
       <SummaryCardsSkeleton />
       <EstimatesChartSkeleton />
       <h3 className="text-[18px] font-semibold leading-7 tracking-tight text-[#09090B]">Reports</h3>
@@ -331,25 +420,26 @@ export function StockEarningsTabContent({
   }, []);
 
   useEffect(() => {
+    if (seedPayload) {
+      setData(seedPayload);
+      setLoading(false);
+      setEarningsHistoryVisible(EARNINGS_HISTORY_PAGE_SIZE);
+      return;
+    }
     let cancelled = false;
     async function load() {
-      if (seedPayload) {
-        setData(seedPayload);
-        setLoading(false);
-      } else {
-        setLoading(true);
-      }
+      setLoading(true);
       setEarningsHistoryVisible(EARNINGS_HISTORY_PAGE_SIZE);
       try {
         const res = await fetch(`/api/stocks/${encodeURIComponent(sym)}/earnings`, { cache: "no-store" });
         if (!res.ok) {
-          if (!cancelled && !seedPayload) setData(null);
+          if (!cancelled) setData(null);
           return;
         }
         const json = (await res.json()) as StockEarningsTabPayload;
         if (!cancelled) setData(json);
       } catch {
-        if (!cancelled && !seedPayload) setData(null);
+        if (!cancelled) setData(null);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -443,13 +533,15 @@ export function StockEarningsTabContent({
 
   const summaryForCards = useMemo(() => {
     if (!data) return null;
+    const upcomingRevenueFallback = data.upcoming?.revenueEstimateDisplay ?? null;
+    const upcomingEpsFallback = data.upcoming?.epsEstimateDisplay ?? null;
     const rows = data.history ?? [];
     if (data.upcoming) {
       return {
         reportDateDisplay: data.upcoming.reportDateDisplay,
         fiscalPeriodLabel: data.upcoming.fiscalPeriodLabel,
-        revenueEstimateDisplay: data.upcoming.revenueEstimateDisplay,
-        epsEstimateDisplay: data.upcoming.epsEstimateDisplay,
+        upcomingRevenueFallback,
+        upcomingEpsFallback,
         timing: data.upcoming.timing,
       };
     }
@@ -458,8 +550,8 @@ export function StockEarningsTabContent({
       return {
         reportDateDisplay: nextUnreported.reportDateDisplay,
         fiscalPeriodLabel: nextUnreported.fiscalPeriodLabel,
-        revenueEstimateDisplay: nextUnreported.revenueEstimateDisplay,
-        epsEstimateDisplay: nextUnreported.epsEstimateDisplay,
+        upcomingRevenueFallback: nextUnreported.revenueEstimateDisplay ?? null,
+        upcomingEpsFallback: nextUnreported.epsEstimateDisplay ?? null,
         timing: "unknown" as StockEarningsReportTiming,
       };
     }
@@ -469,8 +561,8 @@ export function StockEarningsTabContent({
     return {
       reportDateDisplay: latest.reportDateDisplay,
       fiscalPeriodLabel: latest.fiscalPeriodLabel,
-      revenueEstimateDisplay: latest.revenueEstimateDisplay,
-      epsEstimateDisplay: latest.epsEstimateDisplay,
+      upcomingRevenueFallback: latest.revenueEstimateDisplay ?? null,
+      upcomingEpsFallback: latest.epsEstimateDisplay ?? null,
       timing: "unknown" as StockEarningsReportTiming,
     };
   }, [data]);
@@ -483,6 +575,7 @@ export function StockEarningsTabContent({
     <div className="min-w-0 space-y-6 pt-1">
       {loading ? (
         <>
+          <EstimatesHeaderSkeleton />
           <SummaryCardsSkeleton />
           <EstimatesChartSkeleton />
           <h3 className="text-[18px] font-semibold leading-7 tracking-tight text-[#09090B]">Reports</h3>
@@ -494,20 +587,37 @@ export function StockEarningsTabContent({
         <p className="text-[14px] leading-6 text-[#71717A]">No earnings history is available for this symbol.</p>
       ) : null}
 
-      {!loading && summaryForCards ? (
-        <EarningsSummaryCards
-          reportDateDisplay={summaryForCards.reportDateDisplay}
-          fiscalPeriodLabel={summaryForCards.fiscalPeriodLabel}
-          revenueEstimateDisplay={summaryForCards.revenueEstimateDisplay}
-          epsEstimateDisplay={summaryForCards.epsEstimateDisplay}
-          timing={summaryForCards.timing}
+      {!loading && data?.estimatesChart ? (
+        <EarningsEstimatesSection
+          data={data.estimatesChart}
+          belowHeader={(period, metric) =>
+            summaryForCards ? (
+              <EarningsSummaryCards
+                reportDateDisplay={summaryForCards.reportDateDisplay}
+                fiscalPeriodLabel={summaryForCards.fiscalPeriodLabel}
+                period={period}
+                metric={metric}
+                estimatesChart={data.estimatesChart}
+                upcomingRevenueFallback={summaryForCards.upcomingRevenueFallback}
+                upcomingEpsFallback={summaryForCards.upcomingEpsFallback}
+                timing={summaryForCards.timing}
+              />
+            ) : null
+          }
         />
       ) : null}
 
-      {!loading && data?.estimatesChart ? <EarningsEstimatesChart data={data.estimatesChart} /> : null}
-
-      {!loading && data?.estimatesChart?.annual && data.estimatesChart.annual.length > 0 ? (
-        <EarningsAnnualSummaryTable annual={data.estimatesChart.annual} />
+      {!loading && !data?.estimatesChart && summaryForCards ? (
+        <EarningsSummaryCards
+          reportDateDisplay={summaryForCards.reportDateDisplay}
+          fiscalPeriodLabel={summaryForCards.fiscalPeriodLabel}
+          period="annual"
+          metric="revenue"
+          estimatesChart={null}
+          upcomingRevenueFallback={summaryForCards.upcomingRevenueFallback}
+          upcomingEpsFallback={summaryForCards.upcomingEpsFallback}
+          timing={summaryForCards.timing}
+        />
       ) : null}
 
       {!loading && data && historyRows.length > 0 ? (
@@ -554,7 +664,10 @@ export function StockEarningsTabContent({
                   ) : (
                     <tr
                       key={`${entry.row.fiscalPeriodEndYmd ?? idx}-${entry.row.reportDateDisplay ?? idx}`}
-                      className="min-h-[60px] border-b border-[#E4E4E7] transition-colors duration-75 last:border-b-0 hover:bg-neutral-50"
+                      className={cn(
+                        "min-h-[60px] border-b border-[#E4E4E7] transition-colors duration-75 last:border-b-0",
+                        entry.row.reported && "hover:bg-neutral-50",
+                      )}
                     >
                       <td className="min-w-0 py-1.5 pl-4 pr-2 align-top text-left text-[14px] max-sm:pl-3">
                         <div className="truncate font-semibold leading-5 text-[#09090B]">{tableCell(entry.row.fiscalPeriodLabel)}</div>

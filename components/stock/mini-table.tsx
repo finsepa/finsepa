@@ -29,19 +29,25 @@ const MINI_TABLE_PERF_COLUMNS: readonly {
   { header: "1D", field: "d1", showOnMobile: false },
   { header: "5D", field: "d5", showOnMobile: true },
   { header: "1M", field: "m1", showOnMobile: true },
-  { header: "6M", field: "m6", showOnMobile: false },
+  { header: "6M", field: "m6", showOnMobile: true },
   { header: "YTD", field: "ytd", showOnMobile: true },
   { header: "1Y", field: "y1", showOnMobile: false },
-  { header: "5Y", field: "y5", showOnMobile: false },
+  { header: "5Y", field: "y5", showOnMobile: true },
   { header: "ALL", field: "all", showOnMobile: false },
 ];
+
+/** Mobile overview strip: 5D, 1M, 6M, YTD, 5Y — equal fifths when the company column is hidden. */
+const MOBILE_OVERVIEW_PERF_COL_CLASS = "max-md:w-1/5";
 
 function perfColClass(showOnMobile: boolean, hideCompanyColumn = false) {
   return cn(
     "px-3 py-2.5 max-md:min-w-0 max-md:px-2",
     hideCompanyColumn ? "text-center" : "text-right",
     showOnMobile
-      ? cn("table-cell", hideCompanyColumn ? "max-md:w-[25%]" : "max-md:w-[16%]")
+      ? cn(
+          "table-cell",
+          hideCompanyColumn ? MOBILE_OVERVIEW_PERF_COL_CLASS : "max-md:min-w-[3.25rem] max-md:w-[16%]",
+        )
       : "hidden md:table-cell",
     "md:min-w-[60px]",
   );
@@ -52,7 +58,10 @@ function perfCellClass(showOnMobile: boolean, hideCompanyColumn = false) {
     "px-3 py-3 text-[14px] leading-5 tabular-nums max-md:min-w-0 max-md:px-2",
     hideCompanyColumn ? "text-center" : "text-right",
     showOnMobile
-      ? cn("table-cell", hideCompanyColumn ? "max-md:w-[25%]" : "max-md:w-[16%]")
+      ? cn(
+          "table-cell",
+          hideCompanyColumn ? MOBILE_OVERVIEW_PERF_COL_CLASS : "max-md:min-w-[3.25rem] max-md:w-[16%]",
+        )
       : "hidden md:table-cell",
     "md:min-w-[60px]",
   );
@@ -256,7 +265,7 @@ export function MiniTable({
   return (
     <div
       className={cn(
-        "max-md:overflow-x-visible overflow-x-auto",
+        "overflow-x-auto max-md:overscroll-x-contain",
         hideCompanyColumn &&
           "overflow-hidden rounded-xl border border-[#E4E4E7] bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]",
       )}

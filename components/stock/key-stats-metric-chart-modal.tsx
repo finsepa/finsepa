@@ -22,7 +22,12 @@ import {
   sliceLastAnnualWithMetric,
   type MultichartVisual,
 } from "@/components/stock/multichart-fundamentals-bar";
+import { FundamentalsChartSettingsMenu } from "@/components/stock/fundamentals-chart-settings-menu";
 import { MultichartVisualSwitcher } from "@/components/stock/multichart-visual-switcher";
+import {
+  DEFAULT_FUNDAMENTALS_CHART_DISPLAY_OPTIONS,
+  type FundamentalsChartDisplayOptions,
+} from "@/lib/chart/fundamentals-chart-display-options";
 import type { ChartingSeriesPoint, FundamentalsSeriesMode } from "@/lib/market/charting-series-types";
 import type { StockDetailHeaderMeta } from "@/lib/market/stock-header-meta";
 import {
@@ -206,6 +211,9 @@ export function KeyStatsMetricChartModal({
   const [periodMode, setPeriodMode] = useState<FundamentalsSeriesMode>("annual");
   const [chartVisual, setChartVisual] = useState<MultichartVisual>("bar");
   const [timeRange, setTimeRange] = useState<FundamentalsChartTimeRange>("all");
+  const [displayOptions, setDisplayOptions] = useState<FundamentalsChartDisplayOptions>(
+    () => ({ ...DEFAULT_FUNDAMENTALS_CHART_DISPLAY_OPTIONS }),
+  );
 
   const [points, setPoints] = useState<ChartingSeriesPoint[]>(() => {
     if (metricId == null) return [];
@@ -287,6 +295,7 @@ export function KeyStatsMetricChartModal({
     setPeriodMode("annual");
     setChartVisual("bar");
     setTimeRange("all");
+    setDisplayOptions({ ...DEFAULT_FUNDAMENTALS_CHART_DISPLAY_OPTIONS });
   }, [metricId]);
 
   if (!metricId) return null;
@@ -343,6 +352,7 @@ export function KeyStatsMetricChartModal({
           maxBars={maxBars}
           barWidthPx={barWidthPx}
           compactHorizontalLayout
+          displayOptions={displayOptions}
           periodPlotMargins={
             timeRange === "all" ? { left: 0.012, right: 0.018 } : undefined
           }
@@ -374,6 +384,7 @@ export function KeyStatsMetricChartModal({
     barWidthPx,
     isMobile,
     timeRange,
+    displayOptions,
   ]);
 
   return createPortal(
@@ -423,7 +434,7 @@ export function KeyStatsMetricChartModal({
             <div className="min-h-0 flex-1 touch-pan-y overflow-x-hidden overflow-y-auto px-4 py-2">
               {chartBody}
             </div>
-            <div className="flex shrink-0 items-center gap-3 px-4 pb-3 pt-1">
+            <div className="flex shrink-0 items-center gap-2 px-4 pb-3 pt-1">
               <TabSwitcher
                 size="sm"
                 fullWidth
@@ -432,6 +443,10 @@ export function KeyStatsMetricChartModal({
                 onChange={setPeriodMode}
                 aria-label="Reporting period"
                 className="min-w-0 flex-1"
+              />
+              <FundamentalsChartSettingsMenu
+                options={displayOptions}
+                onChange={setDisplayOptions}
               />
               <MultichartVisualSwitcher
                 variant="icon"
@@ -484,6 +499,10 @@ export function KeyStatsMetricChartModal({
                   value={periodMode}
                   onChange={setPeriodMode}
                   aria-label="Reporting period"
+                />
+                <FundamentalsChartSettingsMenu
+                  options={displayOptions}
+                  onChange={setDisplayOptions}
                 />
                 <MultichartVisualSwitcher variant="icon" value={chartVisual} onChange={setChartVisual} />
               </div>

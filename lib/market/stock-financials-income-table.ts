@@ -1,10 +1,11 @@
-import type { ChartingSeriesPoint } from "@/lib/market/charting-series-types";
+import type { ChartingSeriesPoint, FundamentalsSeriesMode } from "@/lib/market/charting-series-types";
 import type { ChartingMetricId } from "@/lib/market/stock-charting-metrics";
 import {
   annualFundamentalsSlice,
   financialsRowHasNumericValues,
   pctChange,
 } from "@/lib/market/stock-financials-annual-slice";
+import { attachFinancialsRowCharts } from "@/lib/market/stock-financials-row-chart";
 import { attachTtmToFinancialsRows, ttmGrowthVsPriorYear } from "@/lib/market/stock-financials-ttm";
 
 /** How each numeric cell should render in Financials statement tables. */
@@ -28,10 +29,14 @@ export type IncomeStatementRowModel = {
 };
 
 export type IncomeStatementTableModel = {
+  /** First header cell (e.g. `Fiscal Year` or `Fiscal Quarter`). */
+  periodColumnHeader?: string;
   /** Calendar / fiscal year labels (e.g. `2019` … `2026`), left → right oldest → newest. */
   columns: string[];
   /** Period-ending labels aligned with `columns` (e.g. `Dec 31, 2021`). */
   columnPeriodEnds: string[];
+  /** When set, aligned with `columns` — true = consensus forecast (Earnings tab annual summary). */
+  columnIsForecast?: boolean[];
   rows: IncomeStatementRowModel[];
   /** Optional trailing TTM column (stays at the trailing edge when columns are reversed). */
   ttm?: {
@@ -51,6 +56,9 @@ export function reverseIncomeStatementTableColumns(
   return {
     columns: order.map((i) => model.columns[i]!),
     columnPeriodEnds: order.map((i) => model.columnPeriodEnds[i] ?? "—"),
+    columnIsForecast: model.columnIsForecast?.length
+      ? order.map((i) => model.columnIsForecast![i] ?? false)
+      : undefined,
     ttm: model.ttm,
     rows: model.rows.map((row) => {
       const annualValues = order.map((i) => row.values[i] ?? null);
@@ -149,8 +157,9 @@ function incomeStatementTtmValue(
 export function buildIncomeStatementTableModel(
   points: ChartingSeriesPoint[],
   ttmPoint?: ChartingSeriesPoint | null,
+  periodMode: FundamentalsSeriesMode = "annual",
 ): IncomeStatementTableModel | null {
-  const sliced = annualFundamentalsSlice(points);
+  const sliced = annualFundamentalsSlice(points, periodMode);
   if (!sliced) return null;
   const { columns, columnPeriodEnds, slice } = sliced;
 
@@ -408,5 +417,5 @@ export function buildIncomeStatementTableModel(
     priorAnnual,
     (row) => (ttmPoint ? incomeStatementTtmValue(row.id, ttmPoint, priorAnnual) : null),
   );
-  return withTtm;
+  return attachFinancialsRowCharts(withTtm);
 }

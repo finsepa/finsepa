@@ -83,7 +83,7 @@ function StocksTabBody({
   setCompaniesPage,
   sectorsRows,
   industriesRows,
-  companiesKeyStatColumn,
+  companiesKeyStatColumns,
   companiesSectorFilter,
   companiesIndustryFilter,
   onClearCompaniesSector,
@@ -97,7 +97,7 @@ function StocksTabBody({
   setCompaniesPage: (u: number | ((p: number) => number)) => void;
   sectorsRows: ScreenerSectorRow[];
   industriesRows: ScreenerIndustryRow[];
-  companiesKeyStatColumn: ScreenerTableKeyStatColumn | null;
+  companiesKeyStatColumns: ScreenerTableKeyStatColumn[];
   companiesSectorFilter: ScreenerCanonicalSector | null;
   companiesIndustryFilter: ScreenerIndustryDrill | null;
   onClearCompaniesSector: () => void;
@@ -173,7 +173,7 @@ function StocksTabBody({
             <ScreenerTable
               rows={companiesRows}
               rankOffset={(safeCompaniesPage - 1) * companiesPageSize}
-              keyStatColumn={companiesKeyStatColumn}
+              keyStatColumns={companiesKeyStatColumns}
             />
           ) : null}
 
@@ -395,8 +395,10 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
   const [cryptoPage, setCryptoPage] = useState(1);
   const [fetchedCryptoPages, setFetchedCryptoPages] = useState<Record<number, CryptoTop10Row[]>>({});
   const [cryptoRemoteLoading, setCryptoRemoteLoading] = useState(false);
-  const [companiesKeyStatMetricId, setCompaniesKeyStatMetricId] = useState<string | null>(null);
-  const [companiesKeyStatValues, setCompaniesKeyStatValues] = useState<Record<string, string>>({});
+  const [companiesKeyStatMetricIds, setCompaniesKeyStatMetricIds] = useState<string[]>([]);
+  const [companiesKeyStatValuesByMetric, setCompaniesKeyStatValuesByMetric] = useState<
+    Record<string, Record<string, string>>
+  >({});
   const [companiesKeyStatLoading, setCompaniesKeyStatLoading] = useState(false);
 
   const stockRows = payload.market === "stocks" ? payload.stockRows : [];
@@ -479,8 +481,8 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
       setGainersLosersRows(null);
       setCryptoPage(1);
       setFetchedCryptoPages({});
-      setCompaniesKeyStatMetricId(null);
-      setCompaniesKeyStatValues({});
+      setCompaniesKeyStatMetricIds([]);
+      setCompaniesKeyStatValuesByMetric({});
       setCompaniesKeyStatLoading(false);
     });
     return () => cancelAnimationFrame(id);
@@ -621,10 +623,12 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
   const companiesKeyStatTabActive =
     displayStocksSubTab === "Companies" || isSectorsDrill || isIndustriesDrill;
 
+  const companiesKeyStatMetricKey = companiesKeyStatMetricIds.join("\u001f");
+
   useEffect(() => {
-    if (payload.market !== "stocks" || !companiesKeyStatTabActive || !companiesKeyStatMetricId) {
-      if (!companiesKeyStatMetricId) {
-        setCompaniesKeyStatValues({});
+    if (payload.market !== "stocks" || !companiesKeyStatTabActive || !companiesKeyStatMetricIds.length) {
+      if (!companiesKeyStatMetricIds.length) {
+        setCompaniesKeyStatValuesByMetric({});
         setCompaniesKeyStatLoading(false);
       }
       return;
@@ -634,22 +638,29 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
 
     let cancelled = false;
     setCompaniesKeyStatLoading(true);
-    fetch("/api/screener/companies-key-stat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tickers, metricId: companiesKeyStatMetricId }),
-      credentials: "include",
-    })
-      .then(async (r) => {
-        if (!r.ok) throw new Error("Request failed");
-        return r.json() as Promise<{ values?: Record<string, string> }>;
-      })
-      .then((data) => {
+    Promise.all(
+      companiesKeyStatMetricIds.map(async (metricId) => {
+        const res = await fetch("/api/screener/companies-key-stat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tickers, metricId }),
+          credentials: "include",
+        });
+        if (!res.ok) throw new Error("Request failed");
+        const data = (await res.json()) as { values?: Record<string, string> };
+        return { metricId, values: data.values ?? {} };
+      }),
+    )
+      .then((results) => {
         if (cancelled) return;
-        setCompaniesKeyStatValues(data.values ?? {});
+        const byMetric: Record<string, Record<string, string>> = {};
+        for (const { metricId, values } of results) {
+          byMetric[metricId] = values;
+        }
+        setCompaniesKeyStatValuesByMetric(byMetric);
       })
       .catch(() => {
-        if (!cancelled) setCompaniesKeyStatValues({});
+        if (!cancelled) setCompaniesKeyStatValuesByMetric({});
       })
       .finally(() => {
         if (!cancelled) setCompaniesKeyStatLoading(false);
@@ -657,36 +668,39 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
     return () => {
       cancelled = true;
     };
-  }, [payload.market, companiesKeyStatTabActive, companiesKeyStatMetricId, companiesTickerKey]);
+  }, [payload.market, companiesKeyStatTabActive, companiesKeyStatMetricKey, companiesTickerKey, companiesKeyStatMetricIds]);
 
   const resetCompaniesKeyStat = useCallback(() => {
-    setCompaniesKeyStatMetricId(null);
-    setCompaniesKeyStatValues({});
+    setCompaniesKeyStatMetricIds([]);
+    setCompaniesKeyStatValuesByMetric({});
     setCompaniesKeyStatLoading(false);
   }, []);
 
-  const selectCompaniesKeyStat = useCallback(
-    (id: string) => {
-      if (isScreenerBuiltinTableMetricId(id)) {
-        resetCompaniesKeyStat();
-        return;
-      }
-      setCompaniesKeyStatMetricId(id);
-      setCompaniesKeyStatValues({});
-    },
-    [resetCompaniesKeyStat],
+  const toggleCompaniesKeyStat = useCallback((id: string) => {
+    if (isScreenerBuiltinTableMetricId(id)) return;
+    setCompaniesKeyStatMetricIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  }, []);
+
+  const companiesKeyStatMetricIdSet = useMemo(
+    () => new Set(companiesKeyStatMetricIds),
+    [companiesKeyStatMetricIds],
   );
 
-  const companiesKeyStatColumn = useMemo((): ScreenerTableKeyStatColumn | null => {
-    if (!companiesKeyStatMetricId) return null;
-    const def = getScreenerKeyStatMetricById(companiesKeyStatMetricId);
-    if (!def) return null;
-    return {
-      header: def.label,
-      valuesByTicker: companiesKeyStatValues,
-      loading: companiesKeyStatLoading,
-    };
-  }, [companiesKeyStatMetricId, companiesKeyStatValues, companiesKeyStatLoading]);
+  const companiesKeyStatColumns = useMemo((): ScreenerTableKeyStatColumn[] => {
+    return companiesKeyStatMetricIds
+      .map((id) => {
+        const def = getScreenerKeyStatMetricById(id);
+        if (!def) return null;
+        return {
+          header: def.label,
+          valuesByTicker: companiesKeyStatValuesByMetric[id] ?? {},
+          loading: companiesKeyStatLoading,
+        };
+      })
+      .filter((col): col is ScreenerTableKeyStatColumn => col != null);
+  }, [companiesKeyStatMetricIds, companiesKeyStatValuesByMetric, companiesKeyStatLoading]);
 
   const companiesLoadingActive = awaitingRemoteCompanies || companiesRemoteLoading;
   const cryptoLoadingActive = awaitingRemoteCrypto || cryptoRemoteLoading;
@@ -713,8 +727,8 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
               <ScreenerTabs active={displayStocksSubTab} onChange={setStocksSubTabWithUrl} />
               {showCompaniesKeyStatToolbar ? (
                 <ScreenerCompaniesKeyStatToolbar
-                  selectedMetricId={companiesKeyStatMetricId}
-                  onSelectMetricId={selectCompaniesKeyStat}
+                  selectedMetricIds={companiesKeyStatMetricIdSet}
+                  onToggleMetricId={toggleCompaniesKeyStat}
                   onReset={resetCompaniesKeyStat}
                   disabled={companiesLoadingActive && companiesRowsResolved.length === 0}
                 />
@@ -740,8 +754,8 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
                 </h2>
               </div>
               <ScreenerCompaniesKeyStatToolbar
-                selectedMetricId={companiesKeyStatMetricId}
-                onSelectMetricId={selectCompaniesKeyStat}
+                selectedMetricIds={companiesKeyStatMetricIdSet}
+                onToggleMetricId={toggleCompaniesKeyStat}
                 onReset={resetCompaniesKeyStat}
                 disabled={companiesLoadingActive && companiesRowsResolved.length === 0}
               />
@@ -757,7 +771,7 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
             setCompaniesPage={setCompaniesPage}
             sectorsRows={sectorsRows}
             industriesRows={industriesRows}
-            companiesKeyStatColumn={showCompaniesKeyStatToolbar ? companiesKeyStatColumn : null}
+            companiesKeyStatColumns={showCompaniesKeyStatToolbar ? companiesKeyStatColumns : []}
             companiesSectorFilter={stocksSectorFilter}
             companiesIndustryFilter={stocksIndustryFilter}
             onClearCompaniesSector={clearCompaniesSectorFilter}

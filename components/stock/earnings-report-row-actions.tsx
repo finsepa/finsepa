@@ -100,12 +100,21 @@ type Props = {
  * Slides / Filings: in-app PDF preview (q4cdn, SEC PDFs) via `/api/ir-pdf` when proxied; otherwise “Open in new tab”.
  */
 export function EarningsReportRowActions({ row, listingTicker }: Props) {
+  /** Upcoming / unreleased quarters may have a future report date — no SEC window links until reported. */
+  const released = row.reported;
   const { slidesUrl, filingsUrl } = firstPartyEarningsDocumentUrls(listingTicker, row);
-  const secFallback = secFallbackDocumentUrls(listingTicker, row);
+  const secFallback = released ? secFallbackDocumentUrls(listingTicker, row) : { slidesUrl: null, filingsUrl: null };
   const [preview, setPreview] = useState<PreviewState>(null);
 
-  const slidesHref = slidesUrl ?? secFallback.slidesUrl;
-  const filingsHref = filingsUrl ?? secFallback.filingsUrl;
+  const slidesHref = released ? (slidesUrl ?? secFallback.slidesUrl) : slidesUrl;
+  const filingsHref = released ? (filingsUrl ?? secFallback.filingsUrl) : filingsUrl;
+
+  const slidesDisabledLabel = released
+    ? "No presentation link for this report"
+    : "Presentation not available until this report is released";
+  const filingsDisabledLabel = released
+    ? "No quarterly report link for this report"
+    : "Filings not available until this report is released";
 
   return (
     <>
@@ -132,7 +141,7 @@ export function EarningsReportRowActions({ row, listingTicker }: Props) {
             </ActionLink>
           )
         ) : (
-          <ActionDisabled label="No presentation link for this report">
+          <ActionDisabled label={slidesDisabledLabel}>
             <Presentation className="h-4 w-4 shrink-0" aria-hidden />
             <span>Slides</span>
           </ActionDisabled>
@@ -153,7 +162,7 @@ export function EarningsReportRowActions({ row, listingTicker }: Props) {
             </ActionLink>
           )
         ) : (
-          <ActionDisabled label="No quarterly report link for this report">
+          <ActionDisabled label={filingsDisabledLabel}>
             <FileSearch className="h-4 w-4 shrink-0" aria-hidden />
             <span>Filings</span>
           </ActionDisabled>

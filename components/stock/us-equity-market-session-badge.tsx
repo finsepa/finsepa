@@ -11,6 +11,30 @@ import {
 } from "@/lib/market/us-equity-market-session";
 import { cn } from "@/lib/utils";
 
+/** Matches {@link PriceChart} last-price marker pulse (`LastPriceAnimationMode.OnDataUpdate`). */
+const MARKET_OPEN_DOT_GREEN = "bg-[#16A34A]";
+
+function MarketOpenStatusDot({ dotSizeClass }: { dotSizeClass: string }) {
+  const compact = dotSizeClass.includes("1.5");
+  return (
+    <span className={cn("relative inline-flex shrink-0", dotSizeClass)} aria-hidden>
+      <span
+        className={cn(
+          "absolute inset-0 animate-ping rounded-full opacity-60 motion-reduce:hidden",
+          MARKET_OPEN_DOT_GREEN,
+        )}
+      />
+      <span
+        className={cn(
+          "relative block size-full rounded-full ring-white",
+          MARKET_OPEN_DOT_GREEN,
+          compact ? "ring-1" : "ring-2",
+        )}
+      />
+    </span>
+  );
+}
+
 function BadgeRow({
   display,
   iconSize = 20,
@@ -31,8 +55,10 @@ function BadgeRow({
     case "regular":
       return (
         <>
-          <span className={cn(dotSizeClass, "shrink-0 rounded-full bg-[#16A34A]")} aria-hidden />
-          <span>Open market</span>
+          <MarketOpenStatusDot dotSizeClass={dotSizeClass} />
+          <span>
+            Market open · {formatMinutesShort(display.minutesUntilClose)} left
+          </span>
         </>
       );
     case "post":

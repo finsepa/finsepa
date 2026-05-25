@@ -71,7 +71,15 @@ export function formatChartingPeriodEndShortMd(periodEnd: string): string {
   }).format(d);
 }
 
-/** Financials statement header — e.g. `Dec 31, 2025` (UTC calendar date from `periodEnd`). */
+/** Financials “Period Ending” row — month and day only (year is in the Fiscal Year row). */
+export function formatFinancialsPeriodEndDisplay(periodEnd: string | null | undefined): string {
+  const raw = periodEnd?.trim();
+  if (!raw) return "—";
+  const label = formatChartingPeriodEndShortMd(raw);
+  return label || "—";
+}
+
+/** Full calendar date — e.g. `Dec 31, 2025` (UTC calendar date from `periodEnd`). */
 export function formatChartingPeriodEndMdYyyy(periodEnd: string): string {
   const d = parseChartingPeriodEndUtc(periodEnd);
   if (!d) return "";
@@ -81,14 +89,6 @@ export function formatChartingPeriodEndMdYyyy(periodEnd: string): string {
     year: "numeric",
     timeZone: "UTC",
   }).format(d);
-}
-
-/** Display for Financials tables when `periodEnd` is missing or unparsable. */
-export function formatFinancialsPeriodEndDisplay(periodEnd: string | null | undefined): string {
-  const raw = periodEnd?.trim();
-  if (!raw) return "—";
-  const label = formatChartingPeriodEndMdYyyy(raw);
-  return label || "—";
 }
 
 /** Calendar year from `periodEnd` for section headers (ISO prefix). */

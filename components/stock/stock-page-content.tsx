@@ -15,6 +15,7 @@ import { coerceStockDetailTabForEtf, isStockDetailEtf, normalizeStockDetailTab }
 import { AssetPortfolioHoldingsTab } from "@/components/portfolio/asset-portfolio-holdings-tab";
 import { StockDetailTabNav } from "./stock-detail-tab-nav";
 import { MultichartsTabSkeleton, MultichartsTabSkeletonGrid } from "@/components/stock/stock-multicharts-tab-skeleton";
+import { StockFinancialsTabSkeleton } from "@/components/stock/stock-financials-tab-skeleton";
 import { StockChartingTab } from "./stock-charting-tab";
 import { StockEarningsTab } from "./stock-earnings-tab";
 import { StockInsidersTab } from "./stock-insiders-tab";
@@ -46,12 +47,7 @@ const StockFinancialsTab = dynamic(
   () => import("./stock-financials-tab").then((m) => m.StockFinancialsTab),
   {
     ssr: false,
-    loading: () => (
-      <div className="space-y-6 pt-1">
-        <h2 className="text-[20px] font-semibold leading-8 tracking-tight text-[#09090B]">Financials</h2>
-        <MultichartsTabSkeletonGrid />
-      </div>
-    ),
+    loading: () => <StockFinancialsTabSkeleton />,
   },
 );
 
@@ -607,6 +603,9 @@ export function StockPageContent({
           <StockFinancialsTab
             ticker={ticker}
             initialAnnualPoints={initialPageData?.ticker === ticker ? initialPageData.fundamentalsSeriesAnnual : undefined}
+            initialQuarterlyPoints={
+              initialPageData?.ticker === ticker ? initialPageData.fundamentalsSeriesQuarterly : undefined
+            }
             initialTtmPoint={initialPageData?.ticker === ticker ? initialPageData.fundamentalsTtmPoint : undefined}
             onOpenMetricChart={openRevenueProfitMetricModal}
           />

@@ -1,6 +1,13 @@
 import type { ChartingSeriesPoint } from "@/lib/market/charting-series-types";
+import {
+  FINANCIALS_EXTRA_CHARTING_METRIC_FIELD,
+  FINANCIALS_EXTRA_CHARTING_METRIC_IDS,
+  FINANCIALS_EXTRA_CHARTING_METRIC_KIND,
+  FINANCIALS_EXTRA_CHARTING_METRIC_LABEL,
+  isFinancialsExtraChartingMetricId,
+} from "@/lib/market/stock-charting-metrics-financials-ext";
 
-export const CHARTING_METRIC_IDS = [
+const CORE_CHARTING_METRIC_IDS = [
   "revenue",
   "gross_profit",
   "operating_income",
@@ -44,11 +51,16 @@ export const CHARTING_METRIC_IDS = [
   "payout_ratio",
 ] as const;
 
+export const CHARTING_METRIC_IDS = [
+  ...CORE_CHARTING_METRIC_IDS,
+  ...FINANCIALS_EXTRA_CHARTING_METRIC_IDS,
+] as const;
+
 export type ChartingMetricId = (typeof CHARTING_METRIC_IDS)[number];
 
 export type ChartingMetricKind = "usd" | "eps" | "shares" | "percent" | "multiple" | "ratio";
 
-/** Maps each metric to its field on `ChartingSeriesPoint`. */
+/** Maps each metric to its field on `ChartingSeriesPoint` (computed financials metrics use {@link readChartingMetricValue}). */
 export const CHARTING_METRIC_FIELD: Record<ChartingMetricId, keyof ChartingSeriesPoint> = {
   revenue: "revenue",
   gross_profit: "grossProfit",
@@ -91,6 +103,7 @@ export const CHARTING_METRIC_FIELD: Record<ChartingMetricId, keyof ChartingSerie
   cash_debt: "cashDebt",
   dividend_yield: "dividendYield",
   payout_ratio: "payoutRatio",
+  ...FINANCIALS_EXTRA_CHARTING_METRIC_FIELD,
 };
 
 export const CHARTING_METRIC_LABEL: Record<ChartingMetricId, string> = {
@@ -135,6 +148,7 @@ export const CHARTING_METRIC_LABEL: Record<ChartingMetricId, string> = {
   cash_debt: "Cash/Debt",
   dividend_yield: "Dividend Yield",
   payout_ratio: "Payout Ratio",
+  ...FINANCIALS_EXTRA_CHARTING_METRIC_LABEL,
 };
 
 export const CHARTING_METRIC_KIND: Record<ChartingMetricId, ChartingMetricKind> = {
@@ -179,6 +193,7 @@ export const CHARTING_METRIC_KIND: Record<ChartingMetricId, ChartingMetricKind> 
   cash_debt: "multiple",
   dividend_yield: "percent",
   payout_ratio: "percent",
+  ...FINANCIALS_EXTRA_CHARTING_METRIC_KIND,
 };
 
 export type ChartingDropdownGroupId = "financials" | "margins" | "growth" | "returns" | "valuation" | "dividends";
@@ -257,7 +272,8 @@ export const CHARTING_DROPDOWN_GROUPS: { id: ChartingDropdownGroupId; label: str
   ];
 
 export function isChartingMetricId(s: string | null | undefined): s is ChartingMetricId {
-  return s != null && (CHARTING_METRIC_IDS as readonly string[]).includes(s);
+  if (s == null) return false;
+  return (CHARTING_METRIC_IDS as readonly string[]).includes(s) || isFinancialsExtraChartingMetricId(s);
 }
 
 /** URL query value (underscore) */

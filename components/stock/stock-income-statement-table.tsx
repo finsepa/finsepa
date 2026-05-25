@@ -6,10 +6,12 @@ import type {
   IncomeStatementValueFormat,
 } from "@/lib/market/stock-financials-income-table";
 import type { ChartingMetricId } from "@/lib/market/stock-charting-metrics";
+import { resolveFinancialsRowChartMetric } from "@/lib/market/stock-financials-row-chart";
 import {
   SCREENER_TABLE_HEADER_STICKY_CLASS,
   ScreenerTableScroll,
 } from "@/components/screener/screener-table-scroll";
+import { EARNINGS_FORECAST_LABEL_COLOR } from "@/lib/market/earnings-annual-display";
 import { cn } from "@/lib/utils";
 
 const pct2 = new Intl.NumberFormat("en-US", {
@@ -106,6 +108,10 @@ const headerLabelCellClass =
 
 const headerValueCellClass = "flex min-h-full min-w-0 items-center justify-end self-stretch";
 
+function incomeForecastYearHeaderStyle(isForecast: boolean): { color: string } | undefined {
+  return isForecast ? { color: EARNINGS_FORECAST_LABEL_COLOR } : undefined;
+}
+
 /** Matches {@link ScreenerTable} / {@link CryptoTable} header band. */
 const incomeHeaderRowClass = "min-h-[44px]";
 
@@ -123,7 +129,8 @@ export function StockIncomeStatementTable({
   /** Opens the same fundamentals chart modal as Overview Key Stats when the row maps to a charting metric. */
   onMetricClick?: (metricId: ChartingMetricId) => void;
 }) {
-  const { columns, columnPeriodEnds, rows, ttm } = model;
+  const { columns, columnPeriodEnds, columnIsForecast, rows, ttm, periodColumnHeader } = model;
+  const periodHeaderLabel = periodColumnHeader ?? "Fiscal Year";
   const dataColumnCount = columns.length + (ttm ? 1 : 0);
   const gridTemplateColumns = `minmax(11rem, 2fr) repeat(${dataColumnCount}, minmax(5.25rem, 1fr))`;
 
@@ -135,12 +142,19 @@ export function StockIncomeStatementTable({
             className={`grid items-stretch gap-x-2 border-b border-[#E4E4E7] px-2 py-0 sm:px-4 ${incomeHeaderRowClass}`}
             style={{ gridTemplateColumns }}
           >
-            <div className={headerLabelCellClass}>Fiscal Year</div>
-            {columns.map((y) => (
-              <div key={y} className={cn(headerYearClass, headerValueCellClass)}>
-                {y}
-              </div>
-            ))}
+            <div className={headerLabelCellClass}>{periodHeaderLabel}</div>
+            {columns.map((y, i) => {
+              const isForecast = columnIsForecast?.[i] === true;
+              return (
+                <div
+                  key={y}
+                  className={cn(headerYearClass, headerValueCellClass, isForecast && "font-medium")}
+                  style={incomeForecastYearHeaderStyle(isForecast)}
+                >
+                  {y}
+                </div>
+              );
+            })}
             {ttm ? (
               <div className={cn(headerYearClass, headerValueCellClass)}>{ttm.columnLabel}</div>
             ) : null}
@@ -151,7 +165,10 @@ export function StockIncomeStatementTable({
           >
             <div className={headerLabelCellClass}>Period Ending</div>
             {columnPeriodEnds.map((label, i) => (
-              <div key={`${columns[i] ?? i}-period-end`} className={cn(headerPeriodEndClass, headerValueCellClass)}>
+              <div
+                key={`${columns[i] ?? i}-period-end`}
+                className={cn(headerPeriodEndClass, headerValueCellClass)}
+              >
                 {label}
               </div>
             ))}
@@ -190,7 +207,7 @@ function IncomeRow({
   const nestedLabelPad =
     row.id === "fcf_ps" || row.id === "fcf_margin" ? "pl-3 sm:pl-6" : "";
 
-  const metricId = row.chartingMetricId;
+  const metricId = resolveFinancialsRowChartMetric(row);
   const rowInteractive = typeof onMetricClick === "function" && metricId != null;
 
   const labelCell = (
@@ -245,7 +262,7 @@ function IncomeRow({
 
   return (
     <div
-      className={`grid items-stretch gap-x-2 bg-white px-2 transition-colors duration-75 hover:bg-neutral-50 sm:px-4 ${incomeRowDividerClass} ${incomeDataRowClass}`}
+      className={`group grid items-stretch gap-x-2 bg-white px-2 transition-colors duration-75 hover:bg-neutral-50 sm:px-4 ${incomeRowDividerClass} ${incomeDataRowClass}`}
       style={{ gridTemplateColumns }}
     >
       {labelCell}

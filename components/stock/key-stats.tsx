@@ -303,9 +303,9 @@ function KeyStatMetricRow({
     <button
       type="button"
       onClick={() => metricId && onMetricClick?.(metricId)}
-      className="flex w-full min-w-0 cursor-pointer items-center justify-between gap-3 border-b border-[#E4E4E7] py-1.5 text-left last:border-0 hover:bg-[#FAFAFA]"
+      className="group flex w-full min-w-0 cursor-pointer items-center justify-between gap-3 border-b border-[#E4E4E7] py-1.5 text-left last:border-0 hover:bg-[#FAFAFA]"
     >
-      <span className="min-w-0 shrink text-[14px] leading-5 text-[#09090B] decoration-transparent underline-offset-2 hover:underline hover:decoration-[#71717A]">
+      <span className="min-w-0 shrink text-[14px] leading-5 text-[#09090B] underline-offset-2 decoration-[#71717A] group-hover:underline">
         {label}
       </span>
       <BasicValueDisplay label={label} value={value} valueClassName={valueClassName} />
@@ -595,20 +595,24 @@ function KeyStatsInner({
   }, [bundle, loading, mobileTab, onOpenMetricChart]);
 
   useEffect(() => {
+    if (initialBundle) {
+      setBundle(initialBundle);
+      setLoading(false);
+      return;
+    }
     let cancelled = false;
     async function load() {
-      if (initialBundle) setBundle(initialBundle);
-      if (!initialBundle) setLoading(true);
+      setLoading(true);
       try {
-        const res = await fetch(
-          `/api/stocks/${encodeURIComponent(ticker)}/key-stats-bundle?refresh=1`,
-          { credentials: "include", cache: "no-store" },
-        );
+        const res = await fetch(`/api/stocks/${encodeURIComponent(ticker)}/key-stats-bundle`, {
+          credentials: "include",
+          cache: "no-store",
+        });
         if (!res.ok) return;
         const json = (await res.json()) as { bundle?: StockKeyStatsBundle | null };
         if (!cancelled) setBundle(json.bundle ?? null);
       } catch {
-        /* keep SSR / prior bundle */
+        /* keep prior bundle */
       } finally {
         if (!cancelled) setLoading(false);
       }

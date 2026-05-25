@@ -1,4 +1,4 @@
-import type { ChartingSeriesPoint } from "@/lib/market/charting-series-types";
+import type { ChartingSeriesPoint, FundamentalsSeriesMode } from "@/lib/market/charting-series-types";
 import {
   annualFundamentalsSlice,
   financialsRowHasNumericValues,
@@ -8,6 +8,7 @@ import type {
   IncomeStatementRowModel,
   IncomeStatementTableModel,
 } from "@/lib/market/stock-financials-income-table";
+import { attachFinancialsRowCharts } from "@/lib/market/stock-financials-row-chart";
 import { attachTtmToFinancialsRows, ttmGrowthVsPriorYear, yieldOrRatioToDisplayPercent } from "@/lib/market/stock-financials-ttm";
 
 function pick(slice: ChartingSeriesPoint[], fn: (p: ChartingSeriesPoint) => number | null): (number | null)[] {
@@ -139,8 +140,9 @@ function balanceSheetTtmValue(rowId: string, ttm: ChartingSeriesPoint, prior: Ch
 export function buildBalanceSheetTableModel(
   points: ChartingSeriesPoint[],
   ttmPoint?: ChartingSeriesPoint | null,
+  periodMode: FundamentalsSeriesMode = "annual",
 ): IncomeStatementTableModel | null {
-  const s = annualFundamentalsSlice(points);
+  const s = annualFundamentalsSlice(points, periodMode);
   if (!s) return null;
   const { columns, columnPeriodEnds, slice } = s;
 
@@ -221,8 +223,10 @@ export function buildBalanceSheetTableModel(
   const base = tableOrNull(columns, columnPeriodEnds, rows);
   if (!base) return null;
   const prior = slice[slice.length - 1] ?? null;
-  return attachTtmToFinancialsRows(base, ttmPoint, prior, (row) =>
-    ttmPoint ? balanceSheetTtmValue(row.id, ttmPoint, prior) : null,
+  return attachFinancialsRowCharts(
+    attachTtmToFinancialsRows(base, ttmPoint, prior, (row) =>
+      ttmPoint ? balanceSheetTtmValue(row.id, ttmPoint, prior) : null,
+    ),
   );
 }
 
@@ -323,8 +327,9 @@ function cashFlowTtmValue(rowId: string, ttm: ChartingSeriesPoint, prior: Charti
 export function buildCashFlowTableModel(
   points: ChartingSeriesPoint[],
   ttmPoint?: ChartingSeriesPoint | null,
+  periodMode: FundamentalsSeriesMode = "annual",
 ): IncomeStatementTableModel | null {
-  const s = annualFundamentalsSlice(points);
+  const s = annualFundamentalsSlice(points, periodMode);
   if (!s) return null;
   const { columns, columnPeriodEnds, slice } = s;
 
@@ -415,8 +420,10 @@ export function buildCashFlowTableModel(
   const base = tableOrNull(columns, columnPeriodEnds, rows);
   if (!base) return null;
   const prior = slice[slice.length - 1] ?? null;
-  return attachTtmToFinancialsRows(base, ttmPoint, prior, (row) =>
-    ttmPoint ? cashFlowTtmValue(row.id, ttmPoint, prior) : null,
+  return attachFinancialsRowCharts(
+    attachTtmToFinancialsRows(base, ttmPoint, prior, (row) =>
+      ttmPoint ? cashFlowTtmValue(row.id, ttmPoint, prior) : null,
+    ),
   );
 }
 
@@ -541,8 +548,9 @@ function ratiosTtmValue(rowId: string, ttm: ChartingSeriesPoint, prior: Charting
 export function buildRatiosTableModel(
   points: ChartingSeriesPoint[],
   ttmPoint?: ChartingSeriesPoint | null,
+  periodMode: FundamentalsSeriesMode = "annual",
 ): IncomeStatementTableModel | null {
-  const s = annualFundamentalsSlice(points);
+  const s = annualFundamentalsSlice(points, periodMode);
   if (!s) return null;
   const { columns, columnPeriodEnds, slice } = s;
 
@@ -640,7 +648,9 @@ export function buildRatiosTableModel(
   const base = tableOrNull(columns, columnPeriodEnds, rows);
   if (!base) return null;
   const prior = slice[slice.length - 1] ?? null;
-  return attachTtmToFinancialsRows(base, ttmPoint, prior, (row) =>
-    ttmPoint ? ratiosTtmValue(row.id, ttmPoint, prior) : null,
+  return attachFinancialsRowCharts(
+    attachTtmToFinancialsRows(base, ttmPoint, prior, (row) =>
+      ttmPoint ? ratiosTtmValue(row.id, ttmPoint, prior) : null,
+    ),
   );
 }

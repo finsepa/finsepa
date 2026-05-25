@@ -10,7 +10,18 @@ import {
   type ChartingMetricId,
   type ChartingMetricKind,
 } from "@/lib/market/stock-charting-metrics";
-import { formatChartingTableCell } from "@/components/charting/charting-individual-company-table";
+import {
+  isFinancialsExtraChartingMetricId,
+  readFinancialsExtraChartingMetricValue,
+} from "@/lib/market/stock-charting-metrics-financials-ext";
+import { formatBarChartDataLabel, formatChartingTableCell } from "@/components/charting/charting-individual-company-table";
+import type { FundamentalsChartDisplayOptions } from "@/lib/chart/fundamentals-chart-display-options";
+import { DEFAULT_FUNDAMENTALS_CHART_DISPLAY_OPTIONS } from "@/lib/chart/fundamentals-chart-display-options";
+import {
+  FUNDAMENTALS_CHART_BAR_VALUE_LABEL_HEIGHT_PX,
+  FUNDAMENTALS_CHART_REFERENCE_BADGE_CLASS,
+  type FundamentalsChartReferenceKind,
+} from "@/lib/chart/fundamentals-chart-surface";
 import {
   formatChartingPeriodAxisLabel,
   formatChartingPeriodLabel,
@@ -164,6 +175,9 @@ function computeTooltipHorizontalPlacement(
 }
 
 export function readChartingMetricValue(row: ChartingSeriesPoint, id: ChartingMetricId): number | null {
+  if (isFinancialsExtraChartingMetricId(id)) {
+    return readFinancialsExtraChartingMetricValue(row, id);
+  }
   const k = CHARTING_METRIC_FIELD[id];
   const v = row[k];
   return typeof v === "number" && Number.isFinite(v) ? v : null;
@@ -283,7 +297,73 @@ type Props = {
   periodCenterInset?: number;
   /** Asymmetric plot edge gaps as a fraction of plot width (overrides inset when set). */
   periodPlotMargins?: PeriodPlotEdgeMargin;
+  /** Avg / max / min guides and bar value labels. */
+  displayOptions?: FundamentalsChartDisplayOptions;
 };
+
+function plotValueTopPercent(v: number, maxV: number, kind: ChartingMetricKind): number {
+  const top = PLOT_INSET_TOP_FRAC * 100;
+  const bottom = PLOT_INSET_BOTTOM_FRAC * 100;
+  const span = 100 - top - bottom;
+  const plotV = kind === "percent" ? v : Math.max(0, v);
+  const frac = maxV > 0 ? Math.min(1, Math.max(0, plotV / maxV)) : 0;
+  return top + span * (1 - frac);
+}
+
+const REFERENCE_BADGE_PREFIX: Record<FundamentalsChartReferenceKind, string> = {
+  max: "Max",
+  min: "Min",
+  avg: "Avg.",
+};
+
+function formatReferenceBadgeLabel(
+  kind: FundamentalsChartReferenceKind,
+  metricId: ChartingMetricId,
+  value: number,
+): string {
+  return `${REFERENCE_BADGE_PREFIX[kind]} ${formatBarChartDataLabel(metricId, value)}`;
+}
+
+function FundamentalsReferenceLine({
+  topPercent,
+  kind,
+  badgeLabel,
+}: {
+  topPercent: number;
+  kind: FundamentalsChartReferenceKind;
+  badgeLabel: string;
+}) {
+  return (
+    <>
+      <div
+        className="pointer-events-none absolute inset-x-0 z-[4] border-t border-dashed border-[#A1A1AA]"
+        style={{ top: `${topPercent}%` }}
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute left-2 z-[5] max-w-[min(55%,12rem)] -translate-y-1/2"
+        style={{ top: `${topPercent}%` }}
+        title={badgeLabel}
+      >
+        <span className={FUNDAMENTALS_CHART_REFERENCE_BADGE_CLASS[kind]}>{badgeLabel}</span>
+      </div>
+    </>
+  );
+}
+
+/** Matches Charting workspace bar value labels ({@link charting-workspace.tsx}). */
+const BAR_VALUE_LABEL_CLASS =
+  "pointer-events-none absolute z-[15] max-w-[5.5rem] truncate text-center text-[11px] font-semibold leading-none tabular-nums text-[#09090B]";
+
+const BAR_VALUE_LABEL_TEXT_SHADOW =
+  "0 0 3px rgba(255,255,255,0.95), 0 1px 2px rgba(255,255,255,0.8)";
+
+function barValueLabelTopStyle(hPct: number): string {
+  const innerFrac = 1 - PLOT_INSET_TOP_FRAC - PLOT_INSET_BOTTOM_FRAC;
+  const barTopFrac = PLOT_INSET_TOP_FRAC + innerFrac * (1 - Math.min(100, Math.max(0, hPct)) / 100);
+  const minTopPx = FUNDAMENTALS_CHART_BAR_VALUE_LABEL_HEIGHT_PX + 4;
+  return `max(${minTopPx}px, calc(${barTopFrac * 100}% - 4px))`;
+}
 
 type BarTooltipState = {
   anchorX: number;
@@ -320,7 +400,9 @@ export function MultichartFundamentalsBar({
   compactHorizontalLayout = false,
   periodCenterInset = 0.5,
   periodPlotMargins,
+  displayOptions: displayOptionsProp,
 }: Props) {
+  const display = displayOptionsProp ?? DEFAULT_FUNDAMENTALS_CHART_DISPLAY_OPTIONS;
   const tightYAxis = compactHorizontalLayout || periodPlotMargins != null;
   const yAxisWidthPx = tightYAxis ? MULTICHART_Y_AXIS_W_COMPACT_PX : MULTICHART_Y_AXIS_W_PX;
   const yAxisPlClass = periodPlotMargins
@@ -365,6 +447,16 @@ export function MultichartFundamentalsBar({
     const ticks = Array.from({ length: tickCount }, (_, i) => (top * (tickCount - 1 - i)) / (tickCount - 1));
     return { values: vals, labels: labs, axisLabels: axisLabs, maxV: top, yTicks: ticks };
   }, [rows, metricId, periodMode, kind]);
+
+  const referenceLevels = useMemo(() => {
+    if (values.length === 0 || maxV <= 0) return null;
+    const sum = values.reduce((a, b) => a + b, 0);
+    return {
+      avg: sum / values.length,
+      max: Math.max(...values),
+      min: Math.min(...values),
+    };
+  }, [values, maxV]);
 
   const metricLabel = CHARTING_METRIC_LABEL[metricId];
   /** One metric × many periods — bars share the primary palette color (not per-period cycling). */
@@ -482,6 +574,27 @@ export function MultichartFundamentalsBar({
                   top: lineHoverCrosshair.top,
                   height: lineHoverCrosshair.height,
                 }}
+              />
+            ) : null}
+            {display.showAvgLine && referenceLevels ? (
+              <FundamentalsReferenceLine
+                kind="avg"
+                topPercent={plotValueTopPercent(referenceLevels.avg, maxV, kind)}
+                badgeLabel={formatReferenceBadgeLabel("avg", metricId, referenceLevels.avg)}
+              />
+            ) : null}
+            {display.showMaxLine && referenceLevels ? (
+              <FundamentalsReferenceLine
+                kind="max"
+                topPercent={plotValueTopPercent(referenceLevels.max, maxV, kind)}
+                badgeLabel={formatReferenceBadgeLabel("max", metricId, referenceLevels.max)}
+              />
+            ) : null}
+            {display.showMinLine && referenceLevels ? (
+              <FundamentalsReferenceLine
+                kind="min"
+                topPercent={plotValueTopPercent(referenceLevels.min, maxV, kind)}
+                badgeLabel={formatReferenceBadgeLabel("min", metricId, referenceLevels.min)}
               />
             ) : null}
             {visual === "line" ? (
@@ -662,6 +775,36 @@ export function MultichartFundamentalsBar({
                 })}
               </div>
             )}
+
+            {display.showBarValues && visual === "bar"
+              ? values.map((v, i) => {
+                  if (v == null || !Number.isFinite(v) || v === 0) return null;
+                  const hPct = maxV > 0 ? (Math.max(0, v) / maxV) * 100 : 0;
+                  if (hPct <= 0) return null;
+                  const leftPct = resolvePeriodCenterLeftPercent(
+                    i,
+                    n,
+                    periodCenterInset,
+                    periodPlotMargins,
+                  );
+                  const text = formatBarChartDataLabel(metricId, v);
+                  return (
+                    <div
+                      key={`bar-val-${labels[i]}-${i}`}
+                      className={BAR_VALUE_LABEL_CLASS}
+                      style={{
+                        left: `${leftPct}%`,
+                        top: barValueLabelTopStyle(hPct),
+                        transform: "translate(-50%, -100%)",
+                        textShadow: BAR_VALUE_LABEL_TEXT_SHADOW,
+                      }}
+                      title={text}
+                    >
+                      {text}
+                    </div>
+                  );
+                })
+              : null}
 
             {tip ? (
               <div

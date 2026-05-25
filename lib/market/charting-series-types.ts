@@ -117,6 +117,11 @@ export type ChartingSeriesPoint = {
   epsYoy: number | null;
   eps3yCagr: number | null;
   dividendsPerShareYoy: number | null;
+  netIncomeYoy: number | null;
+  sharesOutstandingYoy: number | null;
+  marketCapYoy: number | null;
+  operatingCashFlowYoy: number | null;
+  freeCashFlowYoy: number | null;
 
   /** Market capitalization (USD) when reported or derived from P/S or P/B. */
   marketCap: number | null;

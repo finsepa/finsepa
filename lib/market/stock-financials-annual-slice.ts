@@ -1,7 +1,8 @@
-import type { ChartingSeriesPoint } from "@/lib/market/charting-series-types";
-import { formatFinancialsPeriodEndDisplay } from "@/lib/market/charting-period-display";
-
-export const MAX_ANNUAL_FUNDAMENTAL_COLUMNS = 8;
+import type { ChartingSeriesPoint, FundamentalsSeriesMode } from "@/lib/market/charting-series-types";
+import {
+  formatChartingPeriodLabel,
+  formatFinancialsPeriodEndDisplay,
+} from "@/lib/market/charting-period-display";
 
 export function ymdYearLabel(periodEnd: string): string {
   const s = periodEnd.trim();
@@ -11,7 +12,10 @@ export function ymdYearLabel(periodEnd: string): string {
   return String(new Date(d).getUTCFullYear());
 }
 
-export function annualFundamentalsSlice(points: ChartingSeriesPoint[]): {
+export function annualFundamentalsSlice(
+  points: ChartingSeriesPoint[],
+  periodMode: FundamentalsSeriesMode = "annual",
+): {
   columns: string[];
   /** Period-ending labels aligned with `columns` (e.g. `Dec 31, 2021`). */
   columnPeriodEnds: string[];
@@ -19,8 +23,12 @@ export function annualFundamentalsSlice(points: ChartingSeriesPoint[]): {
 } | null {
   if (!points.length) return null;
   const sorted = [...points].sort((a, b) => a.periodEnd.localeCompare(b.periodEnd));
-  const slice = sorted.slice(-MAX_ANNUAL_FUNDAMENTAL_COLUMNS);
-  const columns = slice.map((p) => ymdYearLabel(p.periodEnd));
+  const slice = sorted;
+  const columns = slice.map((p) =>
+    periodMode === "quarterly"
+      ? formatChartingPeriodLabel(p.periodEnd, "quarterly")
+      : ymdYearLabel(p.periodEnd),
+  );
   const columnPeriodEnds = slice.map((p) => formatFinancialsPeriodEndDisplay(p.periodEnd));
   return { columns, columnPeriodEnds, slice };
 }

@@ -54,6 +54,13 @@ export function chartingFundamentalsLineSeriesOptions(color: string): LineSeries
 
 export const FUNDAMENTALS_CHART_GRID_LINE_COLOR = "#F4F4F5";
 
+/** $0 baseline under bar plots — matches {@link MultichartFundamentalsBar}. */
+export const FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER = "rgba(228, 228, 231, 0.85)";
+
+/** Plot band insets (Multicharts / Key Stats modal bar charts). */
+export const FUNDAMENTALS_CHART_PLOT_INSET_TOP_FRAC = 0.08;
+export const FUNDAMENTALS_CHART_PLOT_INSET_BOTTOM_FRAC = 0.04;
+
 /** Bottom row for slanted period labels (Multicharts / Charting). */
 export const FUNDAMENTALS_CHART_AXIS_ROW_PX = 52;
 /** Right column for Y-axis tick labels. */
@@ -72,6 +79,18 @@ export const FUNDAMENTALS_CHART_SCALE_MARGIN_BOTTOM_LINE = 0.08;
 
 /** Space reserved above the tallest bar for `translate(-100%)` value labels. */
 export const FUNDAMENTALS_CHART_BAR_VALUE_LABEL_HEIGHT_PX = 12;
+
+export type FundamentalsChartReferenceKind = "avg" | "max" | "min";
+
+const FUNDAMENTALS_CHART_REFERENCE_BADGE_BASE_CLASS =
+  "inline-block rounded-[6px] px-1.5 py-0.5 text-[11px] font-medium leading-4 tabular-nums whitespace-nowrap";
+
+/** Colored pills for avg / max / min reference lines (aligned with {@link PriceChart} green / red / blue). */
+export const FUNDAMENTALS_CHART_REFERENCE_BADGE_CLASS: Record<FundamentalsChartReferenceKind, string> = {
+  max: `${FUNDAMENTALS_CHART_REFERENCE_BADGE_BASE_CLASS} bg-[#DCFCE7] text-[#16A34A]`,
+  min: `${FUNDAMENTALS_CHART_REFERENCE_BADGE_BASE_CLASS} bg-[#FEE2E2] text-[#DC2626]`,
+  avg: `${FUNDAMENTALS_CHART_REFERENCE_BADGE_BASE_CLASS} bg-[#DBEAFE] text-[#2563EB]`,
+};
 
 export function fundamentalsChartScaleMarginTop(mode: "bars" | "line"): number {
   return mode === "bars" ? FUNDAMENTALS_CHART_SCALE_MARGIN_TOP_BARS : FUNDAMENTALS_CHART_SCALE_MARGIN_TOP;
@@ -214,17 +233,30 @@ const GRID_PRICE_LINE_OPTIONS = {
   title: "",
 } as const;
 
-/** Horizontal guides at fixed Y ticks — aligned with custom right-axis labels (Multicharts). */
+const GRID_PRICE_LINE_DASHED_OPTIONS = {
+  color: "#A1A1AA",
+  lineWidth: 1,
+  lineStyle: LineStyle.Dashed,
+  lineVisible: true,
+  axisLabelVisible: false,
+  title: "",
+} as const;
+
+export type FundamentalsChartGridLineVariant = "solid" | "dashed";
+
+/** Horizontal guides at fixed Y ticks — aligned with custom right-axis labels (Multicharts / Key Stats). */
 export function syncFundamentalsChartGridPriceLines(
   series: YAxisSeries | null,
   linesRef: { current: IPriceLine[] },
   ticks: readonly number[],
+  variant: FundamentalsChartGridLineVariant = "solid",
 ) {
   removeFundamentalsChartYAxisTickLabels(series, linesRef);
   if (!series) return;
+  const lineOpts = variant === "dashed" ? GRID_PRICE_LINE_DASHED_OPTIONS : GRID_PRICE_LINE_OPTIONS;
   for (const price of ticks) {
     if (!Number.isFinite(price)) continue;
-    linesRef.current.push(series.createPriceLine({ price, ...GRID_PRICE_LINE_OPTIONS }));
+    linesRef.current.push(series.createPriceLine({ price, ...lineOpts }));
   }
 }
 

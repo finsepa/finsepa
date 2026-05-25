@@ -4,10 +4,6 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SCREENER_TABLE_PAGINATION_BTN } from "@/components/ui/table-pagination";
 
-// Inline copy (same as `SCREENER_TABLE_PAGINATION_BTN`) to avoid any styling drift when used on links.
-const PAGINATION_BTN_LINK_BASE =
-  "h-9 rounded-[10px] border border-[#E4E4E7] bg-white px-3 text-sm font-semibold text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5]";
-
 const PAGE_NUM_INACTIVE =
   "inline-flex h-9 min-w-9 max-w-12 shrink-0 items-center justify-center rounded-[10px] px-2 text-sm font-medium text-[#09090B] transition-colors hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2";
 
@@ -67,15 +63,13 @@ export function ScreenerPaginationLinks({
             aria-disabled={!canPrev}
             tabIndex={canPrev ? 0 : -1}
             className={cn(
-              // Prefer explicit base for <a> so the visual matches numbered tiles consistently.
-              PAGINATION_BTN_LINK_BASE,
-              "pointer-events-auto inline-flex shrink-0 items-center gap-0.5 px-2.5 no-underline sm:px-3 hover:no-underline",
+              SCREENER_TABLE_PAGINATION_BTN,
+              "pointer-events-auto no-underline hover:no-underline",
               !canPrev && "pointer-events-none opacity-60",
             )}
             aria-label="Previous page"
           >
-            <ChevronLeft className="h-4 w-4 shrink-0" strokeWidth={2.25} aria-hidden />
-            <span>Previous</span>
+            <ChevronLeft className="h-5 w-5 shrink-0" strokeWidth={2} aria-hidden />
           </Link>
         </div>
 
@@ -85,14 +79,13 @@ export function ScreenerPaginationLinks({
             aria-disabled={!canNext}
             tabIndex={canNext ? 0 : -1}
             className={cn(
-              PAGINATION_BTN_LINK_BASE,
-              "pointer-events-auto inline-flex shrink-0 items-center gap-0.5 px-2.5 no-underline sm:px-3 hover:no-underline",
+              SCREENER_TABLE_PAGINATION_BTN,
+              "pointer-events-auto no-underline hover:no-underline",
               !canNext && "pointer-events-none opacity-60",
             )}
             aria-label="Next page"
           >
-            <span>Next</span>
-            <ChevronRight className="h-4 w-4 shrink-0" strokeWidth={2.25} aria-hidden />
+            <ChevronRight className="h-5 w-5 shrink-0" strokeWidth={2} aria-hidden />
           </Link>
         </div>
       </div>

@@ -18,28 +18,35 @@ export function ScreenerTableScroll({
   className,
   minWidthClassName = "min-w-0",
   mobileScroll = false,
+  /** When set, inner table keeps this width so extra columns scroll instead of squashing. */
+  tableMinWidthPx,
 }: {
   children: ReactNode;
   className?: string;
   minWidthClassName?: string;
   mobileScroll?: boolean;
+  tableMinWidthPx?: number;
 }) {
+  const scrollWide = mobileScroll || (tableMinWidthPx != null && tableMinWidthPx > 0);
+
   return (
     <div
       className={cn(
         "w-full min-w-0 max-w-full border-x-0 border-y border-solid border-[#E4E4E7]",
-        mobileScroll ?
+        scrollWide ?
           "overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]"
-        : "max-md:overflow-x-hidden md:overflow-x-auto md:overscroll-x-contain md:[-webkit-overflow-scrolling:touch]",
+        : "overflow-x-hidden",
         className,
       )}
     >
       <div
         className={cn(
-          "w-full min-w-0 max-w-full",
-          mobileScroll && "max-md:min-w-[720px]",
+          "w-full",
+          tableMinWidthPx == null && "min-w-0 max-w-full",
+          mobileScroll && tableMinWidthPx == null && "max-md:min-w-[720px]",
           minWidthClassName,
         )}
+        style={tableMinWidthPx != null ? { minWidth: tableMinWidthPx } : undefined}
       >
         {children}
       </div>

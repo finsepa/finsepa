@@ -1361,6 +1361,31 @@ function computeGrowthSeries(points: ChartingSeriesPoint[], mode: FundamentalsSe
         p.dividendsPerShareYoy =
           (p.dividendsPerShare - prev.dividendsPerShare) / Math.abs(prev.dividendsPerShare);
       }
+      if (p.netIncome != null && prev.netIncome != null && Math.abs(prev.netIncome) > 1e-9) {
+        p.netIncomeYoy = (p.netIncome - prev.netIncome) / Math.abs(prev.netIncome);
+      }
+      if (
+        p.sharesOutstanding != null &&
+        prev.sharesOutstanding != null &&
+        Math.abs(prev.sharesOutstanding) > 1e-9
+      ) {
+        p.sharesOutstandingYoy =
+          (p.sharesOutstanding - prev.sharesOutstanding) / Math.abs(prev.sharesOutstanding);
+      }
+      if (p.marketCap != null && prev.marketCap != null && Math.abs(prev.marketCap) > 1e-9) {
+        p.marketCapYoy = (p.marketCap - prev.marketCap) / Math.abs(prev.marketCap);
+      }
+      if (
+        p.operatingCashFlow != null &&
+        prev.operatingCashFlow != null &&
+        Math.abs(prev.operatingCashFlow) > 1e-9
+      ) {
+        p.operatingCashFlowYoy =
+          (p.operatingCashFlow - prev.operatingCashFlow) / Math.abs(prev.operatingCashFlow);
+      }
+      if (p.freeCashFlow != null && prev.freeCashFlow != null && Math.abs(prev.freeCashFlow) > 1e-9) {
+        p.freeCashFlowYoy = (p.freeCashFlow - prev.freeCashFlow) / Math.abs(prev.freeCashFlow);
+      }
     }
     if (i >= cagrLag) {
       const prev = points[i - cagrLag]!;
@@ -1473,6 +1498,11 @@ function emptyPoint(periodEnd: string): ChartingSeriesPoint {
     epsYoy: z,
     eps3yCagr: z,
     dividendsPerShareYoy: z,
+    netIncomeYoy: z,
+    sharesOutstandingYoy: z,
+    marketCapYoy: z,
+    operatingCashFlowYoy: z,
+    freeCashFlowYoy: z,
     peRatio: z,
     trailingPe: z,
     forwardPe: z,
