@@ -6,6 +6,10 @@ import type {
   StockEarningsHistoryRow,
 } from "@/lib/market/stock-earnings-types";
 
+function finiteEps(n: number | null | undefined): number | null {
+  return n != null && Number.isFinite(n) ? n : null;
+}
+
 /** Earnings Estimates chart + annual summary table — last 5 reported fiscal years (+ forward). */
 export const EARNINGS_ANNUAL_HISTORY_MAX = 5;
 
@@ -268,6 +272,197 @@ export type EarningsAnnualChartRow = {
   estimate: number | null;
   actual: number | null;
 };
+
+function fiscalYearTokenFromHistoryRow(r: StockEarningsHistoryRow): string | null {
+  const ymd = r.fiscalPeriodEndYmd?.trim();
+  if (ymd && /^\d{4}-\d{2}-\d{2}$/.test(ymd)) return ymdYearLabel(ymd);
+  const m = r.fiscalPeriodLabel?.match(/\b(20\d{2})\b/);
+  return m ? m[1]! : null;
+}
+
+function fiscalYearTokenFromEstimatePoint(p: StockEarningsEstimatesPoint): string {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(p.sortKey)) return ymdYearLabel(p.sortKey);
+  const m = p.label.match(/\b(20\d{2})\b/);
+  return m ? m[1]! : p.label.trim();
+}
+
+function parseYmdUtcMs(ymd: string): number | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return null;
+  const t = Date.parse(`${ymd}T12:00:00.000Z`);
+  return Number.isFinite(t) ? t : null;
+}
+
+/** FY EPS from `Earnings.Trend` annual map — same calendar-year window as yearly income period ends. */
+function nearestAnnualEpsTrendForYmd(ymd: string, annualEpsTrend: Map<string, number>): number | null {
+  const direct = annualEpsTrend.get(ymd);
+  if (direct != null) return direct;
+  const targetMs = parseYmdUtcMs(ymd);
+  if (targetMs == null) return null;
+  const yPrefix = ymd.slice(0, 4);
+  let best: number | null = null;
+  let bestDist = Infinity;
+  const maxMs = 125 * 24 * 60 * 60 * 1000;
+  for (const [k, v] of annualEpsTrend) {
+    if (!k.startsWith(yPrefix)) continue;
+    const km = parseYmdUtcMs(k);
+    if (km == null) continue;
+    const d = Math.abs(km - targetMs);
+    if (d <= maxMs && d < bestDist) {
+      bestDist = d;
+      best = v;
+    }
+  }
+  return best;
+}
+
+/** Reject single-quarter EPS (~$1–2) mistaken for diluted FY EPS (~$4+). */
+export function isPlausibleAnnualEpsEstimate(estimate: number, actual: number | null): boolean {
+  if (!Number.isFinite(estimate) || estimate <= 0) return false;
+  if (actual == null || !Number.isFinite(actual) || actual <= 0) {
+    return estimate >= 2.5;
+  }
+  const ratio = estimate / actual;
+  return ratio >= 0.4 && ratio <= 1.6;
+}
+
+function roundAnnualEpsEstimate(v: number): number {
+  return Math.round(v * 100) / 100;
+}
+
+function historyRowsForAnnualPoint(
+  p: StockEarningsEstimatesPoint,
+  history: StockEarningsHistoryRow[],
+): StockEarningsHistoryRow[] {
+  const year = fiscalYearTokenFromEstimatePoint(p);
+  return history.filter(
+    (r) =>
+      r.fiscalPeriodEndYmd === p.sortKey ||
+      (fiscalYearTokenFromHistoryRow(r) != null && fiscalYearTokenFromHistoryRow(r) === year),
+  );
+}
+
+function epsEstimateImpliedFromHistorySurprise(
+  p: StockEarningsEstimatesPoint,
+  history: StockEarningsHistoryRow[],
+): number | null {
+  const actual = finiteEps(p.epsActual);
+  if (actual == null) return null;
+
+  for (const r of historyRowsForAnnualPoint(p, history)) {
+    const sp = r.surprisePct;
+    if (sp == null || !Number.isFinite(sp) || Math.abs(sp) >= 500 || sp === -100) continue;
+    const denom = 1 + sp / 100;
+    if (Math.abs(denom) < 1e-6) continue;
+    const implied = actual / denom;
+    if (isPlausibleAnnualEpsEstimate(implied, actual)) return roundAnnualEpsEstimate(implied);
+  }
+  return null;
+}
+
+function epsEstimateFromHistoryForAnnual(
+  p: StockEarningsEstimatesPoint,
+  history: StockEarningsHistoryRow[],
+): number | null {
+  const actual = finiteEps(p.epsActual);
+  const rows = historyRowsForAnnualPoint(p, history).filter((r) => finiteEps(r.epsEstimateRaw) != null);
+  if (rows.length === 0) return null;
+
+  const exact = rows.find((r) => r.fiscalPeriodEndYmd === p.sortKey);
+  if (exact) {
+    const est = finiteEps(exact.epsEstimateRaw);
+    if (est != null && isPlausibleAnnualEpsEstimate(est, actual)) return est;
+  }
+
+  const plausible = rows
+    .map((r) => finiteEps(r.epsEstimateRaw)!)
+    .filter((est) => isPlausibleAnnualEpsEstimate(est, actual));
+  if (plausible.length === 0) return null;
+  return plausible.sort((a, b) => b - a)[0]!;
+}
+
+/**
+ * Ensure reported fiscal years use FY diluted EPS estimates (annual `Earnings.Trend`), never
+ * single-quarter consensus. Replaces mistaken ~$1–2 quarterly values on annual chart bars.
+ */
+function epsEstimateFromRevenueRatio(
+  p: StockEarningsEstimatesPoint,
+  calibrationAnnual: StockEarningsEstimatesPoint[],
+): number | null {
+  const revEst = p.revenueEstimateUsd;
+  if (revEst == null || !Number.isFinite(revEst) || revEst <= 0) return null;
+  const ratio = medianEpsPerRevenueRatio(calibrationAnnual);
+  if (ratio == null) return null;
+  const est = roundAnnualEpsEstimate(revEst * ratio);
+  const actual = finiteEps(p.epsActual);
+  return isPlausibleAnnualEpsEstimate(est, actual) ? est : null;
+}
+
+export function resolveAnnualEpsEstimate(
+  p: StockEarningsEstimatesPoint,
+  history: StockEarningsHistoryRow[],
+  annualEpsTrend: Map<string, number>,
+  calibrationAnnual: StockEarningsEstimatesPoint[] = [],
+): number | null {
+  const actual = finiteEps(p.epsActual);
+  const current = finiteEps(p.epsEstimate);
+  if (current != null && isPlausibleAnnualEpsEstimate(current, actual)) return current;
+
+  const fromTrend =
+    annualEpsTrend.get(p.sortKey) ?? nearestAnnualEpsTrendForYmd(p.sortKey, annualEpsTrend);
+  if (fromTrend != null && isPlausibleAnnualEpsEstimate(fromTrend, actual)) return fromTrend;
+
+  const fromSurprise = epsEstimateImpliedFromHistorySurprise(p, history);
+  if (fromSurprise != null) return fromSurprise;
+
+  const fromHistory = epsEstimateFromHistoryForAnnual(p, history);
+  if (fromHistory != null) return fromHistory;
+
+  return epsEstimateFromRevenueRatio(p, calibrationAnnual);
+}
+
+export function backfillAnnualEpsEstimates(
+  annual: StockEarningsEstimatesPoint[],
+  history: StockEarningsHistoryRow[],
+  annualEpsTrend: Map<string, number> = new Map(),
+): StockEarningsEstimatesPoint[] {
+  const todayYmd = todayYmdUtc();
+  return annual.map((p) => {
+    if (isAnnualForecastPoint(p, todayYmd)) return p;
+    const resolved = resolveAnnualEpsEstimate(p, history, annualEpsTrend, annual);
+    const current = finiteEps(p.epsEstimate);
+    if (resolved != null) {
+      if (resolved === current) return p;
+      return { ...p, epsEstimate: resolved };
+    }
+    if (current != null && !isPlausibleAnnualEpsEstimate(current, finiteEps(p.epsActual))) {
+      return { ...p, epsEstimate: null };
+    }
+    return p;
+  });
+}
+
+/** Bar + Beat/Miss line values for the Estimates chart (raw estimate/actual fields). */
+export function estimatesChartBarValues(
+  p: StockEarningsEstimatesPoint,
+  metric: "revenue" | "eps",
+): { estimate: number | null; actual: number | null } {
+  if (metric === "revenue") {
+    return {
+      estimate:
+        p.revenueEstimateUsd != null && Number.isFinite(p.revenueEstimateUsd)
+          ? p.revenueEstimateUsd
+          : null,
+      actual:
+        p.revenueActualUsd != null && Number.isFinite(p.revenueActualUsd)
+          ? p.revenueActualUsd
+          : null,
+    };
+  }
+  return {
+    estimate: finiteEps(p.epsEstimate),
+    actual: finiteEps(p.epsActual),
+  };
+}
 
 /** Chart rows — same display rules as the annual summary table. */
 export function annualPointsToChartRows(

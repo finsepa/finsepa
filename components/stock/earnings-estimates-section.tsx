@@ -15,10 +15,12 @@ import type { StockEarningsEstimatesChart } from "@/lib/market/stock-earnings-ty
 export function EarningsEstimatesSection({
   data,
   belowHeader,
+  upcomingEarningsSubtitle,
 }: {
   data: StockEarningsEstimatesChart;
   /** Rendered between the Estimates title/toggles and the chart; receives active period + metric (e.g. summary cards). */
   belowHeader?: (period: FundamentalsSeriesMode, metric: EstimatesMetric) => ReactNode;
+  upcomingEarningsSubtitle?: string | null;
 }) {
   const [period, setPeriod] = useState<FundamentalsSeriesMode>("annual");
   const [metric, setMetric] = useState<EstimatesMetric>("revenue");
@@ -32,6 +34,7 @@ export function EarningsEstimatesSection({
         onPeriodChange={setPeriod}
         metric={metric}
         onMetricChange={setMetric}
+        upcomingEarningsSubtitle={upcomingEarningsSubtitle}
       />
       {belowHeader?.(period, metric)}
       <EarningsEstimatesChart data={data} period={period} metric={metric} />

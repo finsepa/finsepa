@@ -42,6 +42,7 @@ import {
   shouldHideMobileYAxisLabels,
 } from "@/lib/chart/mobile-plot-horizontal-gutter";
 import { formatAssetChartTimestamp, usSessionWallClockUnix } from "@/lib/market/chart-timestamp-format";
+import { baselineRelativeGradientEnabled } from "@/lib/chart/baseline-relative-gradient";
 import { cn } from "@/lib/utils";
 import type { StockChartRange, StockChartPoint, StockChartSeries } from "@/lib/market/stock-chart-types";
 
@@ -403,10 +404,15 @@ function overviewHoverUiEqual(a: OverviewHoverUi | null, b: OverviewHoverUi | nu
   );
 }
 
-function overviewBaselineOptions(open: number, variant: "bright" | "dim", lightweight = false) {
+function overviewBaselineOptions(
+  open: number,
+  variant: "bright" | "dim",
+  lightweight = false,
+  relativeGradient = false,
+) {
   const base = {
     baseValue: { type: "price" as const, price: open },
-    relativeGradient: !lightweight,
+    relativeGradient: relativeGradient && !lightweight,
     lineWidth: 2 as const,
     lineType: lightweight ? LineType.Simple : LineType.Curved,
     priceLineVisible: false,
@@ -696,9 +702,20 @@ export function PriceChart({
       if (holdingsStyle) {
         series.applyOptions({ lastValueVisible: !hide });
       } else {
+        const pts = pointsRef.current;
+        const openPt = pts.find((p) => isFiniteNumber(p.value));
+        const relGrad =
+          !hide &&
+          openPt != null &&
+          baselineRelativeGradientEnabled(
+            pts.filter((p) => isFiniteNumber(p.time) && isFiniteNumber(p.value)).map((p) => ({
+              value: p.value,
+            })),
+            openPt.value,
+          );
         series.applyOptions({
           lastValueVisible: !hide,
-          relativeGradient: !hide,
+          relativeGradient: relGrad,
           lineType: hide ? LineType.Simple : LineType.Curved,
           lastPriceAnimation: hide
             ? LastPriceAnimationMode.Disabled
@@ -931,7 +948,7 @@ export function PriceChart({
         })
       : chart.addSeries(BaselineSeries, {
           baseValue: { type: "price", price: 0 },
-          relativeGradient: true,
+          relativeGradient: false,
           topFillColor1: "rgba(22, 163, 74, 0.20)",
           topFillColor2: "rgba(22, 163, 74, 0.03)",
           topLineColor: GREEN,
@@ -1419,7 +1436,10 @@ export function PriceChart({
       costBasisLineRef.current = null;
     };
 
-    const ensureOverviewSingleSeries = (open: number): ISeriesApi<"Baseline"> => {
+    const ensureOverviewSingleSeries = (
+      open: number,
+      relGrad: boolean,
+    ): ISeriesApi<"Baseline"> => {
       if (splitSeriesBundleRef.current) {
         removeSplitBundle();
       }
@@ -1429,7 +1449,7 @@ export function PriceChart({
       }
       const s = chart.addSeries(
         BaselineSeries,
-        overviewBaselineOptions(open, "bright", isTouchLikeChartDevice()),
+        overviewBaselineOptions(open, "bright", isTouchLikeChartDevice(), relGrad),
       );
       seriesRef.current = s;
       markersRef.current = createSeriesMarkers(s, [], { autoScale: true }) as ISeriesMarkersPluginApi<UTCTimestamp>;
@@ -1520,11 +1540,12 @@ export function PriceChart({
     removeCostLine();
 
     removeSplitBundle();
-    const single = ensureOverviewSingleSeries(open);
+    const relGrad = baselineRelativeGradientEnabled(data, open);
+    const single = ensureOverviewSingleSeries(open, relGrad);
     markers = markersRef.current;
     if (!markers) return;
 
-    single.applyOptions(overviewBaselineOptions(open, "bright", isTouchLikeChartDevice()));
+    single.applyOptions(overviewBaselineOptions(open, "bright", isTouchLikeChartDevice(), relGrad));
 
     let bl = baselinePriceLineRef.current;
     if (!bl) {

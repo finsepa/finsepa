@@ -6,10 +6,7 @@ import { formatChartingTableCell } from "@/components/charting/charting-individu
 import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
 import { SegmentedControl } from "@/components/design-system";
 import { MULTICHART_BAR_WIDTH_WIDE_PX } from "@/components/stock/multichart-fundamentals-bar";
-import {
-  fundamentalsBarHistogramDisplayAtIndex,
-  fundamentalsBarSolidAtIndex,
-} from "@/lib/colors/fundamentals-multi-bar-colors";
+import { fundamentalsBarSolidAtIndex } from "@/lib/colors/fundamentals-multi-bar-colors";
 import {
   buildFundamentalsYAxisTicks,
   computeFundamentalsChartTooltipPlacement,
@@ -18,43 +15,109 @@ import {
   formatFundamentalsAxisTickLabel,
 } from "@/lib/chart/fundamentals-chart-surface";
 import {
-  EARNINGS_FORECAST_LABEL_COLOR,
+  estimatesChartBarValues,
   isAnnualForecastPoint,
   sliceLatestAnnualEstimates,
   sliceLatestQuarterlyEstimates,
 } from "@/lib/market/earnings-annual-display";
+import { EARNINGS_FORECAST_OPACITY_CLASS } from "@/components/stock/earnings-card-styles";
 import { cn } from "@/lib/utils";
 import {
   formatChartingPeriodAxisLabel,
   formatChartingPeriodLabel,
 } from "@/lib/market/charting-period-display";
+import type { ChartingMetricKind } from "@/lib/market/stock-charting-metrics";
 import type { FundamentalsSeriesMode } from "@/lib/market/charting-series-types";
+import { formatUsdCompact } from "@/lib/market/key-stats-basic-format";
 import type { StockEarningsEstimatesChart, StockEarningsEstimatesPoint } from "@/lib/market/stock-earnings-types";
 
-const REPORTED_BAR = fundamentalsBarSolidAtIndex(0);
-const ESTIMATE_BAR = fundamentalsBarHistogramDisplayAtIndex(0);
+const ESTIMATE_BAR = fundamentalsBarSolidAtIndex(0);
 
-const PAIR_BAR_WIDTH_QUARTERLY_PX = 11;
-const PAIR_BAR_GAP_QUARTERLY_PX = 3;
+const BEAT_COLOR = "#16A34A";
+const MISS_COLOR = "#DC2626";
+
+const BAR_WIDTH_QUARTERLY_PX = 11;
 const BAR_HOVER_PAD_QUARTERLY_PX = 6;
-
-/** Wider paired bars for sparse annual columns (~5Y + forward). */
-const PAIR_BAR_WIDTH_ANNUAL_PX = 22;
-const PAIR_BAR_GAP_ANNUAL_PX = 5;
+const BAR_WIDTH_ANNUAL_PX = 22;
 const BAR_HOVER_PAD_ANNUAL_PX = 8;
+/** Actual indicator line extends past the estimate bar on each side. */
+const ACTUAL_LINE_OVERSCAN_PX = 4;
 
 function estimatesBarLayout(periodMode: FundamentalsSeriesMode): {
-  pairBarWidthPx: number;
-  pairBarGapPx: number;
+  barWidthPx: number;
   barHoverPadPx: number;
   barHitWidthPx: number;
 } {
-  const pairBarWidthPx =
-    periodMode === "annual" ? PAIR_BAR_WIDTH_ANNUAL_PX : PAIR_BAR_WIDTH_QUARTERLY_PX;
-  const pairBarGapPx = periodMode === "annual" ? PAIR_BAR_GAP_ANNUAL_PX : PAIR_BAR_GAP_QUARTERLY_PX;
+  const barWidthPx = periodMode === "annual" ? BAR_WIDTH_ANNUAL_PX : BAR_WIDTH_QUARTERLY_PX;
   const barHoverPadPx = periodMode === "annual" ? BAR_HOVER_PAD_ANNUAL_PX : BAR_HOVER_PAD_QUARTERLY_PX;
-  const barHitWidthPx = pairBarWidthPx * 2 + pairBarGapPx + barHoverPadPx * 2;
-  return { pairBarWidthPx, pairBarGapPx, barHoverPadPx, barHitWidthPx };
+  const barHitWidthPx = barWidthPx + barHoverPadPx * 2;
+  return { barWidthPx, barHoverPadPx, barHitWidthPx };
+}
+
+function earningsBeatMiss(
+  estimate: number,
+  actual: number,
+): "beat" | "miss" | null {
+  if (actual > estimate) return "beat";
+  if (actual < estimate) return "miss";
+  return null;
+}
+
+function formatBeatMissDeltaAmount(delta: number, axisKind: ChartingMetricKind): string {
+  const sign = delta > 0 ? "+" : delta < 0 ? "-" : "+";
+  const abs = Math.abs(delta);
+  if (axisKind === "eps") {
+    return `${sign}$${abs.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+  return `${sign}${formatUsdCompact(abs)}`;
+}
+
+function formatBeatMissLabel(
+  outcome: "beat" | "miss",
+  estimate: number,
+  actual: number,
+  axisKind: ChartingMetricKind,
+): string {
+  const prefix = outcome === "beat" ? "Beat" : "Miss";
+  return `${prefix} (${formatBeatMissDeltaAmount(actual - estimate, axisKind)})`;
+}
+
+function valueHeightPct(v: number | null, maxV: number): number {
+  if (v == null || !Number.isFinite(v) || !Number.isFinite(maxV) || maxV <= 0) return 0;
+  return (Math.max(0, v) / maxV) * 100;
+}
+
+function EarningsActualBeatMissIndicator({
+  estimate,
+  actual,
+  maxV,
+  barWidthPx,
+}: {
+  estimate: number;
+  actual: number;
+  maxV: number;
+  barWidthPx: number;
+}) {
+  const outcome = earningsBeatMiss(estimate, actual);
+  if (outcome == null) return null;
+
+  const color = outcome === "beat" ? BEAT_COLOR : MISS_COLOR;
+  const bottomPct = valueHeightPct(actual, maxV);
+  const lineWidthPx = barWidthPx + ACTUAL_LINE_OVERSCAN_PX * 2;
+  return (
+    <div
+      className="pointer-events-none absolute left-1/2 z-20 -translate-x-1/2"
+      style={{ bottom: `${bottomPct}%`, width: lineWidthPx }}
+    >
+      <span
+        className="absolute bottom-full left-1/2 mb-1 -translate-x-1/2 whitespace-nowrap font-['Inter'] text-[11px] font-semibold leading-none sm:text-[12px]"
+        style={{ color }}
+      >
+        {outcome === "beat" ? "Beat" : "Miss"}
+      </span>
+      <div className="h-[2px] w-full rounded-full" style={{ backgroundColor: color }} aria-hidden />
+    </div>
+  );
 }
 
 const PLOT_INSET_TOP_FRAC = 0.08;
@@ -72,21 +135,42 @@ export type EstimatesMetric = "revenue" | "eps";
 
 const METRIC_CONFIG: Record<
   EstimatesMetric,
-  { axisKind: "usd" | "eps"; legendEstimate: string; legendReported: string; ariaLabel: string }
+  {
+    axisKind: "usd" | "eps";
+    tooltipEstimate: string;
+    tooltipReported: string;
+    ariaLabel: string;
+  }
 > = {
   revenue: {
     axisKind: "usd",
-    legendEstimate: "Estimated Revenue",
-    legendReported: "Reported Revenue",
+    tooltipEstimate: "Est. Revenue",
+    tooltipReported: "Rep. Revenue",
     ariaLabel: "Revenue estimates and reported",
   },
   eps: {
     axisKind: "eps",
-    legendEstimate: "Estimated EPS",
-    legendReported: "Reported EPS",
+    tooltipEstimate: "Est. EPS",
+    tooltipReported: "Rep. EPS",
     ariaLabel: "EPS estimates and reported",
   },
 };
+
+type BarTooltipLineTone = "neutral" | "beat" | "miss";
+
+type BarTooltipLine = {
+  text: string;
+  tone: BarTooltipLineTone;
+};
+
+function tooltipLineClass(tone: BarTooltipLineTone, isFirst: boolean): string {
+  const base = isFirst
+    ? "mt-1.5 max-w-[min(100vw-2rem,14rem)] truncate text-[12px] leading-4"
+    : "mt-0.5 max-w-[min(100vw-2rem,14rem)] truncate text-[12px] leading-4";
+  if (tone === "beat") return `${base} font-semibold text-[#16A34A]`;
+  if (tone === "miss") return `${base} font-semibold text-[#DC2626]`;
+  return `${base} font-normal text-[#09090B]`;
+}
 
 type PeriodBar = {
   key: string;
@@ -112,22 +196,7 @@ function buildPeriodBars(
     periodMode === "annual" ? sliceLatestAnnualEstimates(points) : sliceLatestQuarterlyEstimates(points);
   return sliced.map((p) => {
     const periodEnd = /^\d{4}-\d{2}-\d{2}$/.test(p.sortKey) ? p.sortKey : null;
-    const estimate =
-      metric === "revenue"
-        ? p.revenueEstimateUsd != null && Number.isFinite(p.revenueEstimateUsd)
-          ? p.revenueEstimateUsd
-          : null
-        : p.epsEstimate != null && Number.isFinite(p.epsEstimate)
-          ? p.epsEstimate
-          : null;
-    const actual =
-      metric === "revenue"
-        ? p.revenueActualUsd != null && Number.isFinite(p.revenueActualUsd)
-          ? p.revenueActualUsd
-          : null
-        : p.epsActual != null && Number.isFinite(p.epsActual)
-          ? p.epsActual
-          : null;
+    const { estimate, actual } = estimatesChartBarValues(p, metric);
     return {
       key: p.sortKey,
       axisLabel: periodEnd ? formatChartingPeriodAxisLabel(periodEnd, periodMode) : p.label,
@@ -144,14 +213,14 @@ type BarTooltipState = {
   y: number;
   side: "left" | "right";
   periodLabel: string;
-  valueLines: string[];
+  lines: BarTooltipLine[];
 };
 
 function barTooltipFromEvent(
   e: MouseEvent<HTMLElement>,
   plotEl: HTMLElement,
   periodLabel: string,
-  valueLines: string[],
+  lines: BarTooltipLine[],
 ): BarTooltipState {
   const plot = plotEl.getBoundingClientRect();
   const col = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -160,7 +229,7 @@ function barTooltipFromEvent(
     focusX,
     Math.max(1, Math.floor(plot.width)),
   );
-  return { anchorX, y: e.clientY - plot.top, side, periodLabel, valueLines };
+  return { anchorX, y: e.clientY - plot.top, side, periodLabel, lines };
 }
 
 type EstimatesHeaderProps = {
@@ -168,12 +237,32 @@ type EstimatesHeaderProps = {
   onPeriodChange: (period: FundamentalsSeriesMode) => void;
   metric: EstimatesMetric;
   onMetricChange: (metric: EstimatesMetric) => void;
+  /** e.g. "Upcoming Earnings on Q2 Jul 30, 2026" */
+  upcomingEarningsSubtitle?: string | null;
 };
 
-export function EarningsEstimatesHeader({ period, onPeriodChange, metric, onMetricChange }: EstimatesHeaderProps) {
+export function EarningsEstimatesHeader({
+  period,
+  onPeriodChange,
+  metric,
+  onMetricChange,
+  upcomingEarningsSubtitle,
+}: EstimatesHeaderProps) {
+  const subtitle =
+    upcomingEarningsSubtitle != null && String(upcomingEarningsSubtitle).trim() !== ""
+      ? String(upcomingEarningsSubtitle).trim()
+      : null;
+
   return (
     <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <h2 className="text-[20px] font-semibold leading-8 tracking-tight text-[#09090B]">Estimates</h2>
+      <div className="flex min-w-0 flex-col gap-0.5">
+        <h2 className="text-[20px] font-semibold leading-8 tracking-tight text-[#09090B]">Estimates</h2>
+        {subtitle ? (
+          <p className="font-['Inter'] text-[14px] font-normal leading-5 tracking-normal text-[#71717A]">
+            {subtitle}
+          </p>
+        ) : null}
+      </div>
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         <SegmentedControl
           aria-label="Statement period"
@@ -206,7 +295,7 @@ type Props = {
 
 /**
  * Revenue / EPS estimate bar chart — same DOM layout as Key Stats {@link MultichartFundamentalsBar},
- * with a translucent bar per period for consensus estimates alongside reported actuals.
+ * with a light estimate bar per period and a beat/miss line at the reported actual level.
  */
 export function EarningsEstimatesChart({ data, period, metric }: Props) {
   const plotAreaRef = useRef<HTMLDivElement>(null);
@@ -270,37 +359,50 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
                 >
                 {periods.map((p, i) => {
                   const leftPct = periodCenterLeftPercent(i, n);
-                  const estH =
-                    p.estimate != null && maxV > 0 ? (Math.max(0, p.estimate) / maxV) * 100 : 0;
-                  const actH = p.actual != null && maxV > 0 ? (Math.max(0, p.actual) / maxV) * 100 : 0;
-                  const valueLines: string[] = [];
+                  const estH = valueHeightPct(p.estimate, maxV);
+                  const beatMiss =
+                    !p.isForecast && p.estimate != null && p.actual != null
+                      ? earningsBeatMiss(p.estimate, p.actual)
+                      : null;
+                  const tooltipLines: BarTooltipLine[] = [];
                   if (p.estimate != null) {
-                    valueLines.push(
-                      `${metricConfig.legendEstimate}: ${formatChartingTableCell(metricConfig.axisKind, p.estimate)}`,
-                    );
+                    tooltipLines.push({
+                      tone: "neutral",
+                      text: `${metricConfig.tooltipEstimate}: ${formatChartingTableCell(metricConfig.axisKind, p.estimate)}`,
+                    });
                   }
                   if (p.actual != null) {
-                    valueLines.push(
-                      `${metricConfig.legendReported}: ${formatChartingTableCell(metricConfig.axisKind, p.actual)}`,
-                    );
+                    tooltipLines.push({
+                      tone: "neutral",
+                      text: `${metricConfig.tooltipReported}: ${formatChartingTableCell(metricConfig.axisKind, p.actual)}`,
+                    });
+                  }
+                  if (beatMiss && p.estimate != null && p.actual != null) {
+                    tooltipLines.push({
+                      tone: beatMiss,
+                      text: formatBeatMissLabel(beatMiss, p.estimate, p.actual, metricConfig.axisKind),
+                    });
                   }
 
                   return (
                     <div
                       key={p.key}
-                      className="absolute bottom-0 z-0 flex h-full min-h-0 -translate-x-1/2 flex-col items-center justify-end"
+                      className={cn(
+                        "absolute bottom-0 z-0 flex h-full min-h-0 -translate-x-1/2 flex-col items-center justify-end",
+                        p.isForecast && EARNINGS_FORECAST_OPACITY_CLASS,
+                      )}
                       style={{ left: `${leftPct}%`, width: barLayout.barHitWidthPx }}
                       onMouseEnter={(e) => {
                         const plot = plotAreaRef.current;
                         if (!plot) return;
                         setHoveredIndex(i);
-                        setTip(barTooltipFromEvent(e, plot, p.title, valueLines));
+                        setTip(barTooltipFromEvent(e, plot, p.title, tooltipLines));
                       }}
                       onMouseMove={(e) => {
                         const plot = plotAreaRef.current;
                         if (!plot) return;
                         setHoveredIndex(i);
-                        setTip(barTooltipFromEvent(e, plot, p.title, valueLines));
+                        setTip(barTooltipFromEvent(e, plot, p.title, tooltipLines));
                       }}
                     >
                       {hoveredIndex === i ? (
@@ -314,29 +416,26 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
                         />
                       ) : null}
                       <div
-                        className="relative z-10 flex h-full min-h-0 items-end justify-center pb-0"
-                        style={{ gap: barLayout.pairBarGapPx }}
+                        className="relative z-10 h-full min-h-0"
+                        style={{ width: barLayout.barWidthPx }}
                       >
                         {p.estimate != null ? (
                           <div
-                            className="mt-auto shrink-0 rounded-t-[2px] rounded-b-none"
+                            className="absolute bottom-0 left-1/2 mt-auto shrink-0 -translate-x-1/2 rounded-t-[2px] rounded-b-none"
                             style={{
-                              width: barLayout.pairBarWidthPx,
+                              width: barLayout.barWidthPx,
                               height: `${estH}%`,
                               minHeight: estH > 0 ? 2 : 0,
                               backgroundColor: ESTIMATE_BAR,
                             }}
                           />
                         ) : null}
-                        {p.actual != null ? (
-                          <div
-                            className="mt-auto shrink-0 rounded-t-[2px] rounded-b-none"
-                            style={{
-                              width: barLayout.pairBarWidthPx,
-                              height: `${actH}%`,
-                              minHeight: actH > 0 ? 2 : 0,
-                              backgroundColor: REPORTED_BAR,
-                            }}
+                        {!p.isForecast && p.estimate != null && p.actual != null ? (
+                          <EarningsActualBeatMissIndicator
+                            estimate={p.estimate}
+                            actual={p.actual}
+                            maxV={maxV}
+                            barWidthPx={barLayout.barWidthPx}
                           />
                         ) : null}
                       </div>
@@ -369,16 +468,9 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
                       </span>
                     )}
                     <p className="text-[12px] font-semibold leading-4 text-[#09090B]">{tip.periodLabel}</p>
-                    {tip.valueLines.map((line, i) => (
-                      <p
-                        key={line}
-                        className={
-                          i === 0
-                            ? "mt-1.5 whitespace-nowrap text-[12px] font-normal leading-4 text-[#09090B]"
-                            : "mt-0.5 whitespace-nowrap text-[12px] font-normal leading-4 text-[#09090B]"
-                        }
-                      >
-                        {line}
+                    {tip.lines.map((line, i) => (
+                      <p key={`${line.tone}-${line.text}`} className={tooltipLineClass(line.tone, i === 0)} title={line.text}>
+                        {line.text}
                       </p>
                     ))}
                   </div>
@@ -419,14 +511,10 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
                     title={p.title}
                   >
                     <span
-                      className={cn(
-                        "inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none sm:text-[12px]",
-                        p.isForecast ? "font-medium" : "text-[#71717A]",
-                      )}
+                      className="inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]"
                       style={{
                         transform: `rotate(${AXIS_LABEL_ROTATE_DEG}deg)`,
                         transformOrigin: "center bottom",
-                        color: p.isForecast ? EARNINGS_FORECAST_LABEL_COLOR : undefined,
                       }}
                     >
                       {p.axisLabel}
@@ -437,17 +525,6 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
               <div className="shrink-0 pl-1.5" style={{ width: Y_AXIS_W_PX }} aria-hidden />
             </div>
             <div className="shrink-0" style={{ height: MULTICHART_AXIS_BOTTOM_PAD_PX }} aria-hidden />
-          </div>
-
-          <div className="mt-3 flex flex-wrap items-center justify-center gap-x-6 gap-y-1">
-            <div className="flex items-center gap-2">
-              <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: ESTIMATE_BAR }} />
-              <span className="text-[13px] leading-5 text-[#71717A]">{metricConfig.legendEstimate}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: REPORTED_BAR }} />
-              <span className="text-[13px] leading-5 text-[#71717A]">{metricConfig.legendReported}</span>
-            </div>
           </div>
         </div>
       ) : (

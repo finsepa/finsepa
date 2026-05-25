@@ -6,8 +6,6 @@ import { SkeletonBox } from "@/components/markets/skeleton";
 import { EarningsEstimatesSection } from "@/components/stock/earnings-estimates-section";
 import type { EstimatesMetric } from "@/components/stock/earnings-estimates-chart";
 import { EarningsReportRowActions } from "@/components/stock/earnings-report-row-actions";
-import { PostMarketEarningsIcon } from "@/components/stock/post-market-earnings-icon";
-import { PreMarketEarningsIcon } from "@/components/stock/pre-market-earnings-icon";
 import {
   displayEps,
   displayRevenueUsd,
@@ -16,16 +14,20 @@ import {
   sliceLatestQuarterlyEstimates,
 } from "@/lib/market/earnings-annual-display";
 import type { FundamentalsSeriesMode } from "@/lib/market/charting-series-types";
+import { pctChange } from "@/lib/market/stock-financials-annual-slice";
 import { formatUsdCompact } from "@/lib/market/key-stats-basic-format";
 import type {
   StockEarningsEstimatesChart,
   StockEarningsEstimatesPoint,
   StockEarningsHistoryRow,
-  StockEarningsReportTiming,
   StockEarningsTabPayload,
 } from "@/lib/market/stock-earnings-types";
 import { cn } from "@/lib/utils";
-import { EARNINGS_CARD_LABEL_CLASS, EARNINGS_CARD_VALUE_CLASS } from "@/components/stock/earnings-card-styles";
+import {
+  EARNINGS_CARD_LABEL_CLASS,
+  EARNINGS_CARD_PRIOR_LINE_CLASS,
+  EARNINGS_CARD_VALUE_CLASS,
+} from "@/components/stock/earnings-card-styles";
 
 function dash(v: string | null | undefined): string {
   return v != null && String(v).trim() !== "" ? String(v).trim() : "—";
@@ -44,7 +46,35 @@ function metricSummaryValueFromPoint(p: StockEarningsEstimatesPoint, metric: Est
   return metric === "revenue" ? displayRevenueUsd(p) : displayEps(p);
 }
 
-type EarningsMetricSummarySlot = { label: string; value: string | null };
+type EarningsMetricSummarySlot = {
+  label: string;
+  value: string | null;
+  changePct: number | null;
+  priorValueDisplay: string | null;
+};
+
+function formatSummaryChangePct(pct: number): string {
+  return `${pct > 0 ? "+" : ""}${pct.toFixed(2)}%`;
+}
+
+function summaryPriorPeriod(
+  cols: StockEarningsEstimatesPoint[],
+  index: number,
+  metric: EstimatesMetric,
+): Pick<EarningsMetricSummarySlot, "changePct" | "priorValueDisplay"> {
+  if (index <= 0 || index >= cols.length) {
+    return { changePct: null, priorValueDisplay: null };
+  }
+  const cur = metricSummaryValueFromPoint(cols[index]!, metric);
+  const prev = metricSummaryValueFromPoint(cols[index - 1]!, metric);
+  if (cur == null || prev == null) {
+    return { changePct: null, priorValueDisplay: null };
+  }
+  return {
+    changePct: pctChange(cur, prev),
+    priorValueDisplay: formatMetricSummaryValue(prev, metric),
+  };
+}
 
 /** Middle + right summary cards — same slice + display helpers as Estimates summary table / chart. */
 function buildEarningsMetricSummarySlots(
@@ -61,15 +91,19 @@ function buildEarningsMetricSummarySlots(
     const forward = sliceLatestQuarterlyEstimates(chart.quarterly)
       .filter((p) => isAnnualForecastPoint(p))
       .slice(0, 2);
+    const sliced = sliceLatestQuarterlyEstimates(chart.quarterly);
     const slot = (p: (typeof forward)[number] | undefined, idx: number): EarningsMetricSummarySlot => {
-      if (!p) return { label: metricTitle, value: null };
+      if (!p) return { label: metricTitle, value: null, changePct: null, priorValueDisplay: null };
       const periodLabel = p.label?.trim();
       const label = periodLabel ? `${metricTitle} ${periodLabel}` : metricTitle;
+      const colIndex = sliced.findIndex((row) => row.sortKey === p.sortKey);
+      const prior = colIndex >= 0 ? summaryPriorPeriod(sliced, colIndex, metric) : { changePct: null, priorValueDisplay: null };
       return {
         label,
         value:
           formatMetricSummaryValue(metricSummaryValueFromPoint(p, metric), metric) ??
           (idx === 0 ? upcomingFallback : null),
+        ...prior,
       };
     };
     return [slot(forward[0], 0), slot(forward[1], 1)];
@@ -77,15 +111,51 @@ function buildEarningsMetricSummarySlots(
 
   const cols = sliceLatestAnnualEstimates(chart?.annual ?? []);
   const slotForYear = (year: string, idx: number): EarningsMetricSummarySlot => {
-    const pt = cols.find((p) => p.label === year);
+    const colIndex = cols.findIndex((p) => p.label === year);
+    const pt = colIndex >= 0 ? cols[colIndex] : undefined;
     const value = pt ? formatMetricSummaryValue(metricSummaryValueFromPoint(pt, metric), metric) : null;
+    const prior = colIndex >= 0 ? summaryPriorPeriod(cols, colIndex, metric) : { changePct: null, priorValueDisplay: null };
     return {
       label: `${metricTitle} ${year}`,
       value: value ?? (idx === 0 ? upcomingFallback : null),
+      ...prior,
     };
   };
 
   return [slotForYear("2026", 0), slotForYear("2027", 1)];
+}
+
+function EarningsMetricSummaryCard({ slot }: { slot: EarningsMetricSummarySlot }) {
+  const main = slot.value != null && String(slot.value).trim() !== "" ? String(slot.value).trim() : null;
+  const changePct =
+    slot.changePct != null && Number.isFinite(slot.changePct) ? slot.changePct : null;
+  const prior =
+    slot.priorValueDisplay != null && String(slot.priorValueDisplay).trim() !== ""
+      ? String(slot.priorValueDisplay).trim()
+      : null;
+
+  if (!main) {
+    return <p className={`${EARNINGS_CARD_VALUE_CLASS} tabular-nums`}>—</p>;
+  }
+
+  return (
+    <div className="mt-0.5 flex min-w-0 flex-col items-start gap-0.5">
+      <p className={`${EARNINGS_CARD_VALUE_CLASS} tabular-nums`}>
+        {main}
+        {changePct != null ? (
+          <span
+            className={cn(
+              "ml-1.5 text-[18px] font-semibold leading-7",
+              changePct > 0 ? "text-[#16A34A]" : changePct < 0 ? "text-[#DC2626]" : "text-[#71717A]",
+            )}
+          >
+            ({formatSummaryChangePct(changePct)})
+          </span>
+        ) : null}
+      </p>
+      {prior ? <p className={EARNINGS_CARD_PRIOR_LINE_CLASS}>from {prior}</p> : null}
+    </div>
+  );
 }
 
 /** Screener-style empty cell (hyphen, not em dash). */
@@ -110,46 +180,33 @@ function quarterPrefixForEarningsDateLabel(fiscalPeriodLabel: string | null | un
   return first || "Next";
 }
 
+function upcomingEarningsSubtitle(
+  reportDateDisplay: string | null | undefined,
+  fiscalPeriodLabel: string | null | undefined,
+): string | null {
+  const date = dash(reportDateDisplay);
+  if (date === "—") return null;
+  const quarter = quarterPrefixForEarningsDateLabel(fiscalPeriodLabel);
+  if (quarter === "Next") return `Upcoming Earnings on ${date}`;
+  return `Upcoming Earnings on ${quarter} ${date}`;
+}
+
 /** Matches `components/screener/index-cards.tsx` card chrome. */
 const SCREENER_INDEX_CARD_CLASS =
   "overflow-hidden rounded-xl border border-[#E4E4E7] bg-white px-4 py-4 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition hover:shadow-[0px_2px_4px_0px_rgba(10,10,10,0.08)]";
 
-function TimingBadge({ timing }: { timing: StockEarningsReportTiming }) {
-  if (timing === "amc") {
-    return (
-      <span className="inline-flex shrink-0" title="After market" role="img" aria-label="After market">
-        <PostMarketEarningsIcon />
-      </span>
-    );
-  }
-  if (timing === "bmo") {
-    return (
-      <span className="inline-flex shrink-0" title="Before market" role="img" aria-label="Before market">
-        <PreMarketEarningsIcon />
-      </span>
-    );
-  }
-  return null;
-}
-
 function EarningsSummaryCards({
-  reportDateDisplay,
-  fiscalPeriodLabel,
   period,
   metric,
   estimatesChart,
   upcomingRevenueFallback,
   upcomingEpsFallback,
-  timing,
 }: {
-  reportDateDisplay: string | null;
-  fiscalPeriodLabel: string | null;
   period: FundamentalsSeriesMode;
   metric: EstimatesMetric;
   estimatesChart: StockEarningsEstimatesChart | null | undefined;
   upcomingRevenueFallback: string | null;
   upcomingEpsFallback: string | null;
-  timing: StockEarningsReportTiming;
 }) {
   const [metricSlot1, metricSlot2] = useMemo(
     () =>
@@ -162,25 +219,15 @@ function EarningsSummaryCards({
       ),
     [estimatesChart, period, metric, upcomingRevenueFallback, upcomingEpsFallback],
   );
-  const dateLabel = `${quarterPrefixForEarningsDateLabel(fiscalPeriodLabel)} Earnings Date`;
-  const badge = <TimingBadge timing={timing} />;
-
   return (
-    <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-      <div className={`flex h-fit items-center justify-between gap-2 ${SCREENER_INDEX_CARD_CLASS}`}>
-        <div className="flex min-w-0 flex-1 flex-col gap-0.5 text-left">
-          <p className={EARNINGS_CARD_LABEL_CLASS}>{dateLabel}</p>
-          <p className={EARNINGS_CARD_VALUE_CLASS}>{dash(reportDateDisplay)}</p>
-        </div>
-        {badge}
-      </div>
+    <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-2">
       <div className={`flex h-fit flex-col gap-0.5 text-left ${SCREENER_INDEX_CARD_CLASS}`}>
         <p className={EARNINGS_CARD_LABEL_CLASS}>{metricSlot1.label}</p>
-        <p className={`${EARNINGS_CARD_VALUE_CLASS} tabular-nums`}>{dash(metricSlot1.value)}</p>
+        <EarningsMetricSummaryCard slot={metricSlot1} />
       </div>
       <div className={`flex h-fit flex-col gap-0.5 text-left ${SCREENER_INDEX_CARD_CLASS}`}>
         <p className={EARNINGS_CARD_LABEL_CLASS}>{metricSlot2.label}</p>
-        <p className={`${EARNINGS_CARD_VALUE_CLASS} tabular-nums`}>{dash(metricSlot2.value)}</p>
+        <EarningsMetricSummaryCard slot={metricSlot2} />
       </div>
     </div>
   );
@@ -251,21 +298,13 @@ function SurpriseCell({ value, pct }: { value: string | null; pct: number | null
 
 function SummaryCardsSkeleton() {
   return (
-    <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-      {Array.from({ length: 3 }).map((_, i) => (
-        <div
-          key={i}
-          className={cn(
-            "flex h-fit gap-2",
-            SCREENER_INDEX_CARD_CLASS,
-            i === 0 ? "flex-row items-center justify-between" : "flex-col",
-          )}
-        >
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+      {Array.from({ length: 2 }).map((_, i) => (
+        <div key={i} className={cn("flex h-fit flex-col gap-2", SCREENER_INDEX_CARD_CLASS)}>
           <div className="min-w-0 flex-1 space-y-2">
             <SkeletonBox className="h-5 w-32 rounded" />
             <SkeletonBox className="h-9 w-36 rounded" />
           </div>
-          {i === 0 ? <SkeletonBox className="h-6 w-6 shrink-0 rounded-full" /> : null}
         </div>
       ))}
     </div>
@@ -275,7 +314,10 @@ function SummaryCardsSkeleton() {
 function EstimatesHeaderSkeleton() {
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <SkeletonBox className="h-7 w-28 rounded" />
+      <div className="flex flex-col gap-1.5">
+        <SkeletonBox className="h-7 w-28 rounded" />
+        <SkeletonBox className="h-5 w-64 max-w-full rounded" />
+      </div>
       <div className="flex flex-wrap gap-3">
         <SkeletonBox className="h-10 w-[200px] rounded-[10px]" />
         <SkeletonBox className="h-10 w-[200px] rounded-[10px]" />
@@ -542,7 +584,6 @@ export function StockEarningsTabContent({
         fiscalPeriodLabel: data.upcoming.fiscalPeriodLabel,
         upcomingRevenueFallback,
         upcomingEpsFallback,
-        timing: data.upcoming.timing,
       };
     }
     const nextUnreported = rows.find((r) => !r.reported);
@@ -552,10 +593,9 @@ export function StockEarningsTabContent({
         fiscalPeriodLabel: nextUnreported.fiscalPeriodLabel,
         upcomingRevenueFallback: nextUnreported.revenueEstimateDisplay ?? null,
         upcomingEpsFallback: nextUnreported.epsEstimateDisplay ?? null,
-        timing: "unknown" as StockEarningsReportTiming,
       };
     }
-    /** All rows reported — still show the three summary cards from the latest quarter (first row). */
+    /** All rows reported — still show summary cards from the latest quarter (first row). */
     const latest = rows[0];
     if (!latest) return null;
     return {
@@ -563,7 +603,6 @@ export function StockEarningsTabContent({
       fiscalPeriodLabel: latest.fiscalPeriodLabel,
       upcomingRevenueFallback: latest.revenueEstimateDisplay ?? null,
       upcomingEpsFallback: latest.epsEstimateDisplay ?? null,
-      timing: "unknown" as StockEarningsReportTiming,
     };
   }, [data]);
 
@@ -590,17 +629,22 @@ export function StockEarningsTabContent({
       {!loading && data?.estimatesChart ? (
         <EarningsEstimatesSection
           data={data.estimatesChart}
+          upcomingEarningsSubtitle={
+            summaryForCards
+              ? upcomingEarningsSubtitle(
+                  summaryForCards.reportDateDisplay,
+                  summaryForCards.fiscalPeriodLabel,
+                )
+              : null
+          }
           belowHeader={(period, metric) =>
             summaryForCards ? (
               <EarningsSummaryCards
-                reportDateDisplay={summaryForCards.reportDateDisplay}
-                fiscalPeriodLabel={summaryForCards.fiscalPeriodLabel}
                 period={period}
                 metric={metric}
                 estimatesChart={data.estimatesChart}
                 upcomingRevenueFallback={summaryForCards.upcomingRevenueFallback}
                 upcomingEpsFallback={summaryForCards.upcomingEpsFallback}
-                timing={summaryForCards.timing}
               />
             ) : null
           }
@@ -609,14 +653,11 @@ export function StockEarningsTabContent({
 
       {!loading && !data?.estimatesChart && summaryForCards ? (
         <EarningsSummaryCards
-          reportDateDisplay={summaryForCards.reportDateDisplay}
-          fiscalPeriodLabel={summaryForCards.fiscalPeriodLabel}
           period="annual"
           metric="revenue"
           estimatesChart={null}
           upcomingRevenueFallback={summaryForCards.upcomingRevenueFallback}
           upcomingEpsFallback={summaryForCards.upcomingEpsFallback}
-          timing={summaryForCards.timing}
         />
       ) : null}
 

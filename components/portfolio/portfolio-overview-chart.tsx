@@ -28,6 +28,8 @@ import {
 } from "lightweight-charts";
 import { Check, ChevronDown, LineChart, Settings } from "lucide-react";
 
+import { baselineRelativeGradientEnabled } from "@/lib/chart/baseline-relative-gradient";
+
 import { horzTimeToUnixSeconds } from "@/components/chart/chart-selection-utils";
 import {
   dropdownMenuPanelClassName,
@@ -1094,7 +1096,7 @@ export function PortfolioValueHistoryChartPane({
     });
 
     const baselineOpts = {
-      relativeGradient: true,
+      relativeGradient: false,
       topFillColor1: "rgba(22, 163, 74, 0.22)",
       topFillColor2: "rgba(22, 163, 74, 0.04)",
       topLineColor: GREEN,
@@ -1327,6 +1329,12 @@ export function PortfolioValueHistoryChartPane({
       removeScaleBoundsPriceLines(series, scaleTopPriceLineRef, scaleBottomPriceLineRef);
       setPeriodAxisLabels([]);
       return;
+    }
+
+    if (metric !== "value") {
+      series.applyOptions({
+        relativeGradient: baselineRelativeGradientEnabled(data, 0),
+      });
     }
 
     series.setData(data);

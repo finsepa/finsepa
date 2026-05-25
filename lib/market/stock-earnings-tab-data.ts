@@ -26,6 +26,7 @@ import { enrichEarningsHistoryWithSecDocuments } from "@/lib/market/sec-edgar-ea
 import { fetchChartingSeries } from "@/lib/market/eodhd-charting-series";
 import {
   applyDerivedEpsToForwardEstimates,
+  backfillAnnualEpsEstimates,
   isAnnualForecastPoint,
   mergeFundamentalsIntoAnnualEstimates,
   sliceEarningsHistoryForReports,
@@ -853,6 +854,7 @@ function extendQuarterlyEstimatesWithForwardTrend(
   quarterly: StockEarningsEstimatesPoint[],
   quarterlyRevenueEstimateFromTrend: Map<string, number>,
   quarterlyEpsEstimateFromTrend: Map<string, number>,
+  revenueByFiscalPeriodEnd: Map<string, number>,
 ): StockEarningsEstimatesPoint[] {
   const todayYmd = toYmdUtc(new Date());
   const maxForwardYmd = maxQuarterlyForwardPeriodEndYmd();
@@ -876,28 +878,47 @@ function extendQuarterlyEstimatesWithForwardTrend(
     if (existing) {
       const nextRev = existing.revenueEstimateUsd ?? revEst;
       const nextEps = existing.epsEstimate ?? epsEst;
-      if (nextRev === existing.revenueEstimateUsd && nextEps === existing.epsEstimate) return;
+      let nextRevAct = existing.revenueActualUsd;
+      if (periodEnded && nextRevAct == null) {
+        const ra = revenueByFiscalPeriodEnd.get(ymd);
+        if (ra != null && Number.isFinite(ra)) {
+          nextRevAct = sanitizeQuarterlyRevenueEstimateUsd(ra, ra);
+        }
+      }
+      if (
+        nextRev === existing.revenueEstimateUsd &&
+        nextEps === existing.epsEstimate &&
+        nextRevAct === existing.revenueActualUsd
+      ) {
+        return;
+      }
       bySortKey.set(ymd, {
         ...existing,
         revenueEstimateUsd: nextRev,
         epsEstimate: nextEps,
-        reported: periodEnded ? existing.reported : false,
-        revenueActualUsd: periodEnded ? existing.revenueActualUsd : null,
-        epsActual: periodEnded ? existing.epsActual : null,
+        revenueActualUsd: nextRevAct,
+        reported: existing.reported || (periodEnded && nextRevAct != null),
+        epsActual: existing.epsActual,
       });
       return;
     }
 
-    if (periodEnded || (revEst == null && epsEst == null)) return;
+    if (revEst == null && epsEst == null) return;
+
+    const revActRaw = periodEnded ? revenueByFiscalPeriodEnd.get(ymd) : undefined;
+    const revAct =
+      revActRaw != null && Number.isFinite(revActRaw)
+        ? sanitizeQuarterlyRevenueEstimateUsd(revActRaw, revActRaw)
+        : null;
 
     bySortKey.set(ymd, {
       sortKey: ymd,
       label: quarterLabelFromPeriodEndYmd(ymd) ?? ymd,
       revenueEstimateUsd: revEst,
-      revenueActualUsd: null,
+      revenueActualUsd: revAct,
       epsEstimate: epsEst,
       epsActual: null,
-      reported: false,
+      reported: periodEnded && revAct != null,
     });
   };
 
@@ -1001,6 +1022,7 @@ function buildEstimatesChart(
   revenueTrendMaps: RevenueEstimateTrendMaps,
   epsTrendMaps: EpsEstimateTrendMaps,
 ): StockEarningsEstimatesChart | null {
+  const revenueByFiscalPeriodEnd = buildRevenueByFiscalPeriodEndYmd(root);
   let quarterly = buildQuarterlyEstimatesFromHistory(history);
   let annual = buildAnnualEstimatesSeries(root, revenueTrendMaps.annual, epsTrendMaps.annual);
   annual = extendAnnualEstimatesWithForwardTrend(annual, revenueTrendMaps.annual, epsTrendMaps.annual);
@@ -1009,6 +1031,7 @@ function buildEstimatesChart(
     quarterly,
     revenueTrendMaps.quarterly,
     epsTrendMaps.quarterly,
+    revenueByFiscalPeriodEnd,
   );
   quarterly = fillForwardQuartersFromAnnualEstimates(
     quarterly,
@@ -1017,6 +1040,7 @@ function buildEstimatesChart(
     epsTrendMaps.quarterly,
   );
   quarterly = applyDerivedEpsToForwardEstimates(quarterly, annual);
+  annual = backfillAnnualEpsEstimates(annual, history, epsTrendMaps.annual);
   if (quarterly.length === 0 && annual.length === 0) return null;
   return { quarterly, annual };
 }
@@ -1189,10 +1213,15 @@ async function fetchStockEarningsTabPayloadUncached(listingTicker: string): Prom
       revenueTrendMaps.annual,
       epsTrendMaps.annual,
     );
+    const quarterlyDerived = applyDerivedEpsToForwardEstimates(estimatesChart.quarterly, annualExtended);
     estimatesChart = {
       ...estimatesChart,
-      annual: applyDerivedEpsToForwardEstimates(annualExtended),
-      quarterly: applyDerivedEpsToForwardEstimates(estimatesChart.quarterly, annualExtended),
+      annual: backfillAnnualEpsEstimates(
+        applyDerivedEpsToForwardEstimates(annualExtended),
+        historyParsed,
+        epsTrendMaps.annual,
+      ),
+      quarterly: quarterlyDerived,
     };
   }
 
@@ -1214,7 +1243,7 @@ async function fetchStockEarningsTabPayloadUncached(listingTicker: string): Prom
 
 const fetchStockEarningsTabPayloadCached = unstable_cache(
   fetchStockEarningsTabPayloadUncached,
-  ["stock-earnings-tab-payload-v9-annual-eps"],
+  ["stock-earnings-tab-payload-v12-quarterly-trend-gaps"],
   { revalidate: REVALIDATE_WARM_LONG },
 );
 

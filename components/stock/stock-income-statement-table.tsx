@@ -11,7 +11,7 @@ import {
   SCREENER_TABLE_HEADER_STICKY_CLASS,
   ScreenerTableScroll,
 } from "@/components/screener/screener-table-scroll";
-import { EARNINGS_FORECAST_LABEL_COLOR } from "@/lib/market/earnings-annual-display";
+import { EARNINGS_FORECAST_OPACITY_CLASS } from "@/components/stock/earnings-card-styles";
 import { cn } from "@/lib/utils";
 
 const pct2 = new Intl.NumberFormat("en-US", {
@@ -108,10 +108,6 @@ const headerLabelCellClass =
 
 const headerValueCellClass = "flex min-h-full min-w-0 items-center justify-end self-stretch";
 
-function incomeForecastYearHeaderStyle(isForecast: boolean): { color: string } | undefined {
-  return isForecast ? { color: EARNINGS_FORECAST_LABEL_COLOR } : undefined;
-}
-
 /** Matches {@link ScreenerTable} / {@link CryptoTable} header band. */
 const incomeHeaderRowClass = "min-h-[44px]";
 
@@ -143,18 +139,18 @@ export function StockIncomeStatementTable({
             style={{ gridTemplateColumns }}
           >
             <div className={headerLabelCellClass}>{periodHeaderLabel}</div>
-            {columns.map((y, i) => {
-              const isForecast = columnIsForecast?.[i] === true;
-              return (
-                <div
-                  key={y}
-                  className={cn(headerYearClass, headerValueCellClass, isForecast && "font-medium")}
-                  style={incomeForecastYearHeaderStyle(isForecast)}
-                >
-                  {y}
-                </div>
-              );
-            })}
+            {columns.map((y, i) => (
+              <div
+                key={y}
+                className={cn(
+                  headerYearClass,
+                  headerValueCellClass,
+                  columnIsForecast?.[i] && EARNINGS_FORECAST_OPACITY_CLASS,
+                )}
+              >
+                {y}
+              </div>
+            ))}
             {ttm ? (
               <div className={cn(headerYearClass, headerValueCellClass)}>{ttm.columnLabel}</div>
             ) : null}
@@ -167,7 +163,11 @@ export function StockIncomeStatementTable({
             {columnPeriodEnds.map((label, i) => (
               <div
                 key={`${columns[i] ?? i}-period-end`}
-                className={cn(headerPeriodEndClass, headerValueCellClass)}
+                className={cn(
+                  headerPeriodEndClass,
+                  headerValueCellClass,
+                  columnIsForecast?.[i] && EARNINGS_FORECAST_OPACITY_CLASS,
+                )}
               >
                 {label}
               </div>
@@ -183,6 +183,7 @@ export function StockIncomeStatementTable({
             key={row.id}
             row={row}
             gridTemplateColumns={gridTemplateColumns}
+            columnIsForecast={columnIsForecast}
             onMetricClick={onMetricClick}
           />
         ))}
@@ -194,10 +195,12 @@ export function StockIncomeStatementTable({
 function IncomeRow({
   row,
   gridTemplateColumns,
+  columnIsForecast,
   onMetricClick,
 }: {
   row: IncomeStatementRowModel;
   gridTemplateColumns: string;
+  columnIsForecast?: boolean[];
   onMetricClick?: (metricId: ChartingMetricId) => void;
 }) {
   const labelClass = row.emphasize
@@ -235,6 +238,7 @@ function IncomeRow({
           "flex min-h-full items-center justify-end truncate self-stretch",
           isGrowth && "font-medium",
           isGrowth && (growthMissing ? "text-[#71717A]" : toneClass(tone)),
+          columnIsForecast?.[i] && EARNINGS_FORECAST_OPACITY_CLASS,
         )}
       >
         {text}

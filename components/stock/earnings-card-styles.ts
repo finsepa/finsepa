@@ -5,3 +5,10 @@ export const EARNINGS_CARD_VALUE_CLASS =
 /** Figma: card labels — Inter Semi Bold 14 / 20, #71717A. */
 export const EARNINGS_CARD_LABEL_CLASS =
   "font-['Inter'] text-[14px] font-semibold leading-5 tracking-normal text-[#71717A]";
+
+/** Prior-period line under summary metric headline (e.g. "from $416.16B"). */
+export const EARNINGS_CARD_PRIOR_LINE_CLASS =
+  "font-['Inter'] text-[14px] font-medium leading-5 tracking-normal text-[#71717A] tabular-nums";
+
+/** Forward / consensus-only periods in Estimates (chart bars, table columns, summary cards). */
+export const EARNINGS_FORECAST_OPACITY_CLASS = "opacity-60";
