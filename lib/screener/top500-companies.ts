@@ -3,7 +3,8 @@ import "server-only";
 import { cache } from "react";
 import { unstable_cache } from "next/cache";
 
-import { REVALIDATE_STATIC } from "@/lib/data/cache-policy";
+import { REVALIDATE_SCREENER_IDENTITY } from "@/lib/data/cache-policy";
+import { withScreenerUsMarketCache } from "@/lib/screener/screener-us-market-cache";
 import { type EodhdTopUniverseRow, fetchEodhdTopByMarketCap } from "@/lib/market/eodhd-screener";
 import { filterUniverseRowsRemovingOtcDuplicates } from "@/lib/market/otc-duplicate-tickers";
 import { filterIssuerLineDuplicatesInUniverse } from "@/lib/screener/universe-issuer-dedupe";
@@ -44,9 +45,20 @@ async function buildTop500UniverseUncached(): Promise<TopCompanyUniverseRow[]> {
   return merged.slice(0, 500);
 }
 
-const getTop500UniverseData = unstable_cache(buildTop500UniverseUncached, ["screener-top500-universe-v12-industry"], {
-  revalidate: REVALIDATE_STATIC,
-});
+const getTop500UniverseData = unstable_cache(
+  buildTop500UniverseUncached,
+  ["screener-top500-universe-v13-identity-7d"],
+  { revalidate: REVALIDATE_SCREENER_IDENTITY },
+);
 
 /** Cached across requests; returns up to 500 US equity rows (ETFs/ETNs excluded). */
 export const getTop500Universe = cache(async () => getTop500UniverseData());
+
+/**
+ * Screener tables that need fresh 1D/1M/YTD (Gainers/Losers, Sectors, Industries):
+ * re-fetch screener snapshot every 15m in regular session, frozen between sessions.
+ * Identity (names/logos) still comes from {@link getScreenerCompaniesStaticLayer} (7d).
+ */
+export async function getTop500UniverseMarketSnapshot(): Promise<TopCompanyUniverseRow[]> {
+  return withScreenerUsMarketCache("screener-top500-market-snapshot-v1", buildTop500UniverseUncached);
+}

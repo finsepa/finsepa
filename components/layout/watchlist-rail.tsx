@@ -170,8 +170,10 @@ export function WatchlistRail() {
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
   const { collapsed, toggleCollapsed, outerWidthPx } = useWatchlistRailLayout();
-  const { items, empty, showSkeleton, error, pricesLoading, loading } = useWatchlistEnrichedItems();
   const expanded = !collapsed;
+  const { items, empty, showSkeleton, error, pricesLoading, loading } = useWatchlistEnrichedItems({
+    enabled: expanded,
+  });
 
   if (isFullWatchlistPage(pathname)) {
     return null;

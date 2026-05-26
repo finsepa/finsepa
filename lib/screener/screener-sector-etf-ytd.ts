@@ -1,8 +1,7 @@
 import "server-only";
 
-import { unstable_cache } from "next/cache";
-
-import { REVALIDATE_TIER_SCREENER_DERIVED } from "@/lib/data/cache-policy";
+import { withScreenerUsMarketCache } from "@/lib/screener/screener-us-market-cache";
+import { getScreenerUsMarketCacheEpoch } from "@/lib/screener/screener-us-market-cache";
 import { getEodhdApiKey } from "@/lib/env/server";
 import { fetchEodhdEodDailyScreener, type EodhdDailyBar } from "@/lib/market/eodhd-eod";
 import { fetchEodhdUsRealtimeBatch } from "@/lib/market/eodhd-realtime";
@@ -60,13 +59,14 @@ async function loadSectorEtfProxyYtdUncached(): Promise<Record<ScreenerCanonical
   const out = emptySectorYtdMap();
   if (!getEodhdApiKey()) return out;
 
+  const epoch = getScreenerUsMarketCacheEpoch();
   const window = eodFetchWindowUtc();
-  const [barsPerTicker, rtMap] = await Promise.all([
-    runWithConcurrencyLimit(SECTOR_ETF_TICKERS, SCREENER_EOD_DERIVED_STOCK_CONCURRENCY, (t) =>
-      fetchEodhdEodDailyScreener(t, window.from, window.to),
-    ),
-    fetchEodhdUsRealtimeBatch(SECTOR_ETF_TICKERS),
-  ]);
+  const barsPerTicker = await runWithConcurrencyLimit(SECTOR_ETF_TICKERS, SCREENER_EOD_DERIVED_STOCK_CONCURRENCY, (t) =>
+    fetchEodhdEodDailyScreener(t, window.from, window.to),
+  );
+
+  const rtMap =
+    epoch.mode === "live" ? await fetchEodhdUsRealtimeBatch(SECTOR_ETF_TICKERS) : new Map<string, { close?: number }>();
 
   const ytdByTicker = new Map<string, number | null>();
   SECTOR_ETF_TICKERS.forEach((ticker, i) => {
@@ -75,7 +75,12 @@ async function loadSectorEtfProxyYtdUncached(): Promise<Record<ScreenerCanonical
     const sym = toEodhdUsSymbol(ticker).toUpperCase();
     const rt = rtMap.get(sym);
     const live =
-      typeof rt?.close === "number" && Number.isFinite(rt.close) && rt.close > 0 ? rt.close : null;
+      epoch.mode === "live" &&
+      typeof rt?.close === "number" &&
+      Number.isFinite(rt.close) &&
+      rt.close > 0
+        ? rt.close
+        : null;
     const tk = ticker.trim().toUpperCase();
     ytdByTicker.set(tk, ytdPercentFromBars(bars, live));
   });
@@ -87,10 +92,6 @@ async function loadSectorEtfProxyYtdUncached(): Promise<Record<ScreenerCanonical
   return out;
 }
 
-const getSectorEtfProxyYtdData = unstable_cache(loadSectorEtfProxyYtdUncached, ["screener-sector-etf-proxy-ytd-v1"], {
-  revalidate: REVALIDATE_TIER_SCREENER_DERIVED,
-});
-
 /**
  * YTD % from sector ETF daily bars + live quote (EODHD), keyed by canonical sector name.
  * Intended as a fallback when universe cap-weighted YTD is missing.
@@ -98,5 +99,5 @@ const getSectorEtfProxyYtdData = unstable_cache(loadSectorEtfProxyYtdUncached, [
 export async function getScreenerSectorEtfProxyYtdBySector(): Promise<
   Record<ScreenerCanonicalSector, number | null>
 > {
-  return getSectorEtfProxyYtdData();
+  return withScreenerUsMarketCache("screener-sector-etf-proxy-ytd-v2-session", () => loadSectorEtfProxyYtdUncached());
 }

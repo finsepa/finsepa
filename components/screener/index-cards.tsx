@@ -6,6 +6,12 @@ import { useEffect, useMemo, useState } from "react";
 import { FadeIn } from "@/components/markets/skeleton";
 import type { IndexCardData } from "@/lib/screener/indices-today";
 import {
+  fetchScreenerIndexCardsCached,
+  readScreenerIndexCardsCache,
+  resetScreenerIndexCardsCacheIfStale,
+  writeScreenerIndexCardsCache,
+} from "@/lib/screener/screener-index-cards-cache";
+import {
   SCREENER_INDEX_CARD_LABELS,
   withIndexCardLocalFallbacks,
 } from "@/lib/screener/screener-index-card-fallbacks";
@@ -42,32 +48,54 @@ function entriesFromCards(cards: IndexCardData[]): IndexEntry[] {
   });
 }
 
-export function IndexCards({ initialCards }: { initialCards?: IndexCardData[] }) {
+export function IndexCards({
+  initialCards,
+  marketCacheSegment = "",
+}: {
+  initialCards?: IndexCardData[];
+  /** From SSR stocks payload — live 15m slot or frozen last regular session. */
+  marketCacheSegment?: string;
+}) {
   const [cards, setCards] = useState<IndexCardData[]>(() =>
-    Array.isArray(initialCards) ? initialCards : [],
+    Array.isArray(initialCards) && initialCards.length > 0 ? initialCards : [],
   );
 
   useEffect(() => {
     if (Array.isArray(initialCards) && initialCards.length > 0) {
       setCards(initialCards);
+      if (marketCacheSegment) {
+        resetScreenerIndexCardsCacheIfStale(marketCacheSegment);
+        writeScreenerIndexCardsCache(marketCacheSegment, initialCards);
+      }
     }
-  }, [initialCards]);
+  }, [initialCards, marketCacheSegment]);
 
   useEffect(() => {
+    if (!marketCacheSegment) return;
+
+    if (Array.isArray(initialCards) && initialCards.length > 0) return;
+
+    const sessionCached = readScreenerIndexCardsCache(marketCacheSegment);
+    if (sessionCached?.length) {
+      setCards(sessionCached);
+      return;
+    }
+
     let cancelled = false;
-    void fetch("/api/screener/indices", { credentials: "include" })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((json: { cards?: IndexCardData[] } | null) => {
-        if (cancelled || !json?.cards?.length) return;
-        setCards(json.cards);
+    const cacheKey = `${marketCacheSegment}|index-cards`;
+    void fetchScreenerIndexCardsCached(marketCacheSegment, cacheKey)
+      .then((next) => {
+        if (cancelled || !next.length) return;
+        setCards(next);
       })
       .catch(() => {
         /* keep SSR + local fallbacks */
       });
+
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [marketCacheSegment, initialCards]);
 
   const entries = useMemo(() => entriesFromCards(cards), [cards]);
   const fadeIn = true;
@@ -80,34 +108,34 @@ export function IndexCards({ initialCards }: { initialCards?: IndexCardData[] })
       aria-label="Market indices"
     >
       <div className="flex w-max flex-nowrap gap-3 md:grid md:w-full md:max-w-full md:grid-cols-3 md:gap-4 lg:grid-cols-4 xl:grid-cols-5">
-      {entries.map(({ name, value, change, positive, neutral }) => {
-        const TrendIcon = neutral ? null : positive ? ArrowUp : ArrowDown;
-        return (
-          <div
-            key={name}
-            className="flex w-[10.75rem] shrink-0 flex-col items-start gap-1 overflow-hidden rounded-2xl border border-[#E4E4E7] bg-white px-3 py-3 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition hover:shadow-[0px_2px_6px_0px_rgba(10,10,10,0.08)] sm:px-4 sm:py-4 md:w-auto md:min-w-0 md:shrink"
-          >
-            <p className="w-full truncate text-left text-[13px] font-medium leading-5 text-[#09090B] sm:text-[14px]">
-              {name}
-            </p>
-            <FadeIn show={fadeIn}>
-              <p className="w-full truncate text-left text-[15px] font-bold leading-6 tabular-nums text-[#09090B] sm:text-base">
-                {value}
+        {entries.map(({ name, value, change, positive, neutral }) => {
+          const TrendIcon = neutral ? null : positive ? ArrowUp : ArrowDown;
+          return (
+            <div
+              key={name}
+              className="flex w-[10.75rem] shrink-0 flex-col items-start gap-1 overflow-hidden rounded-2xl border border-[#E4E4E7] bg-white px-3 py-3 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition hover:shadow-[0px_2px_6px_0px_rgba(10,10,10,0.08)] sm:px-4 sm:py-4 md:w-auto md:min-w-0 md:shrink"
+            >
+              <p className="w-full truncate text-left text-[13px] font-medium leading-5 text-[#09090B] sm:text-[14px]">
+                {name}
               </p>
-            </FadeIn>
-            <FadeIn show={fadeIn}>
-              <div
-                className={`flex w-full items-center gap-1 text-left text-[13px] font-medium leading-5 tabular-nums sm:text-[14px] ${
-                  neutral ? "text-[#71717A]" : positive ? "text-[#16A34A]" : "text-[#DC2626]"
-                }`}
-              >
-                <span className="truncate">{change}</span>
-                {TrendIcon ? <TrendIcon className="h-4 w-4 shrink-0" aria-hidden /> : null}
-              </div>
-            </FadeIn>
-          </div>
-        );
-      })}
+              <FadeIn show={fadeIn}>
+                <p className="w-full truncate text-left text-[15px] font-bold leading-6 tabular-nums text-[#09090B] sm:text-base">
+                  {value}
+                </p>
+              </FadeIn>
+              <FadeIn show={fadeIn}>
+                <div
+                  className={`flex w-full items-center gap-1 text-left text-[13px] font-medium leading-5 tabular-nums sm:text-[14px] ${
+                    neutral ? "text-[#71717A]" : positive ? "text-[#16A34A]" : "text-[#DC2626]"
+                  }`}
+                >
+                  <span className="truncate">{change}</span>
+                  {TrendIcon ? <TrendIcon className="h-4 w-4 shrink-0" aria-hidden /> : null}
+                </div>
+              </FadeIn>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

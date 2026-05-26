@@ -1,22 +1,21 @@
 import "server-only";
 
-import { unstable_cache } from "next/cache";
-
-import { REVALIDATE_SCREENER_MARKET } from "@/lib/data/cache-policy";
-import type { IndexCardData } from "@/lib/screener/indices-today";
+import { getScreenerUsMarketCacheEpoch, withScreenerUsMarketCache } from "@/lib/screener/screener-us-market-cache";
 import type { ScreenerTableRow } from "@/lib/screener/screener-static";
-import type { CryptoTop10Row } from "@/lib/market/crypto-top10";
-import type { IndexTableRow } from "@/lib/market/indices-top10";
-import type { EtfTableRow } from "@/lib/screener/screener-etfs-universe";
 import { getScreenerEtfsTop20 } from "@/lib/screener/screener-etfs-universe";
 import type { EodhdRealtimePayload } from "@/lib/market/eodhd-realtime";
 import type { SimpleMarketData, SimpleMarketDatum, SimpleScreenerDerived } from "@/lib/market/simple-market-layer";
-import type { CryptoFearGreedIndex } from "@/lib/market/alternative-fear-greed";
 import type { TopCompanyUniverseRow } from "@/lib/screener/top500-companies";
 
-import { buildScreenerCompanyRowFromUniverse, resolveScreenerPeToMatchKeyStats } from "@/lib/screener/companies-rows";
+import {
+  buildScreenerCompanyRowFromUniverse,
+  screenerPeDisplayFromUniverse,
+} from "@/lib/screener/companies-rows";
 import { companyLogoUrlForTicker } from "@/lib/screener/company-logo-url";
-import { getScreenerCompaniesStaticLayer } from "@/lib/screener/screener-companies-layers";
+import {
+  getScreenerCompaniesStaticLayer,
+  type ScreenerCompanyIdentity,
+} from "@/lib/screener/screener-companies-layers";
 import { resolveEquityLogoUrlFromTicker } from "@/lib/screener/resolve-equity-logo-url";
 import { CRYPTO_SCREENER_PAGE2, CRYPTO_TOP10 } from "@/lib/market/eodhd-crypto";
 import { pickScreenerPage2Tickers } from "@/lib/screener/pick-screener-page2-tickers";
@@ -34,10 +33,7 @@ import {
   getSimpleMarketDataEtfsTab,
   getSimpleMarketDataIndicesTab,
   getSimpleMarketDataScreenerStocks,
-  getSimpleMarketDataScreenerStocksAllPages,
-  getSimpleScreenerDerived,
   getSimpleScreenerDerivedTop10,
-  getScreenerUniverseStockDerived,
   getSimpleScreenerStockDerivedForTickers,
 } from "@/lib/market/simple-market-layer";
 import { getSimpleIndexCards } from "@/lib/screener/simple-index-cards";
@@ -50,41 +46,34 @@ import {
   filterAndSortUniverseByCanonicalSector,
   filterAndSortUniverseByIndustry,
 } from "@/lib/screener/screener-companies-sector-filter";
-import { getScreenerSectorEtfProxyYtdBySector } from "@/lib/screener/screener-sector-etf-ytd";
-import { buildScreenerSectorsAndIndustriesRows } from "@/lib/screener/screener-stocks-universe-aggregates";
 import type { ScreenerCanonicalSector } from "@/lib/screener/screener-gics-sectors";
 import type { ScreenerIndustryDrill } from "@/lib/screener/screener-industry-url";
-import type { ScreenerIndustryRow } from "@/lib/screener/screener-industries-types";
-import type { ScreenerSectorRow } from "@/lib/screener/screener-sectors-types";
 import {
   SCREENER_COMPANIES_PAGE_SIZE,
   SCREENER_CRYPTO_PAGE_SIZE,
 } from "@/lib/screener/screener-markets-page-size";
 import { getCryptoFearGreedIndex } from "@/lib/market/alternative-fear-greed";
 
-export type ScreenerMarketTab = "stocks" | "crypto" | "indices" | "etfs";
+export type {
+  CryptoFearGreedIndex,
+  CryptoTop10Row,
+  EtfTableRow,
+  IndexCardData,
+  IndexTableRow,
+  ScreenerMarketTab,
+  ScreenerPagePayload,
+} from "@/lib/screener/screener-page-payload-types";
+export { marketCacheSegmentFromPayload } from "@/lib/screener/screener-page-payload-types";
 
-export type ScreenerPagePayload =
-  | {
-      market: "stocks";
-      stockRows: ScreenerTableRow[];
-      stocksTotalCount: number;
-      /** When set, Companies tab lists only names in this canonical sector (from the screener universe). */
-      stocksSectorFilter: ScreenerCanonicalSector | null;
-      /** When set, Industries tab drill lists names in this sector + industry (from the screener universe). */
-      stocksIndustryFilter: ScreenerIndustryDrill | null;
-      indexCards: IndexCardData[];
-      sectors: ScreenerSectorRow[];
-      industries: ScreenerIndustryRow[];
-    }
-  | {
-      market: "crypto";
-      cryptoRows: CryptoTop10Row[];
-      cryptoTotalCount: number;
-      fearGreed: CryptoFearGreedIndex | null;
-    }
-  | { market: "indices"; indicesRows: IndexTableRow[] }
-  | { market: "etfs"; etfsRows: EtfTableRow[] };
+import type {
+  CryptoFearGreedIndex,
+  CryptoTop10Row,
+  EtfTableRow,
+  IndexCardData,
+  IndexTableRow,
+  ScreenerMarketTab,
+  ScreenerPagePayload,
+} from "@/lib/screener/screener-page-payload-types";
 
 function simpleDatumToRealtimePayload(d: SimpleMarketDatum | undefined): EodhdRealtimePayload | undefined {
   if (!d || d.price == null) return undefined;
@@ -112,10 +101,12 @@ export async function buildStockScreenerTablePages(
 ): Promise<{ page1: ScreenerTableRow[]; page2: ScreenerTableRow[] }> {
   const byTicker = new Map(universe.map((u) => [u.ticker.toUpperCase(), u] as const));
 
-  const peTop10 = await Promise.all(
-    TOP10_TICKERS.map((t) => resolveScreenerPeToMatchKeyStats(t, byTicker.get(t))),
+  const peByTop10Ticker = new Map(
+    TOP10_TICKERS.map((t) => {
+      const u = byTicker.get(t);
+      return [t, u ? screenerPeDisplayFromUniverse(u) : "—"] as const;
+    }),
   );
-  const peByTop10Ticker = new Map(TOP10_TICKERS.map((t, i) => [t, peTop10[i]!] as const));
 
   const page1Candidates = TOP10_TICKERS.map((ticker: Top10Ticker) => {
     const q = data.stocks[ticker];
@@ -159,13 +150,6 @@ export async function buildStockScreenerTablePages(
     data.screenerStocksPage2Tickers.map((t) => [t.toUpperCase(), resolveEquityLogoUrlFromTicker(t).trim()] as const),
   ) as Record<string, string>;
 
-  const page2Pe = await Promise.all(
-    data.screenerStocksPage2Tickers.map((t) => {
-      const tk = t.toUpperCase();
-      return resolveScreenerPeToMatchKeyStats(t, byTicker.get(tk));
-    }),
-  );
-
   const page2: ScreenerTableRow[] = [];
   let rankId = 11;
   for (let i = 0; i < data.screenerStocksPage2Tickers.length; i++) {
@@ -181,7 +165,7 @@ export async function buildStockScreenerTablePages(
         simpleDatumToRealtimePayload(ex),
         page2Logos[tk] ?? "",
         derived.page2[tk] ?? null,
-        page2Pe[i]!,
+        screenerPeDisplayFromUniverse(u),
       ),
     );
   }
@@ -194,15 +178,14 @@ export async function buildScreenerPage2RowsForTickers(
   tickers: string[],
   universe: TopCompanyUniverseRow[],
   rankStart: number,
+  identityByTicker?: Record<string, ScreenerCompanyIdentity>,
 ): Promise<ScreenerTableRow[]> {
   if (!tickers.length) return [];
   const data = await getSimpleMarketDataForScreenerPage2Slice(tickers);
-  const derivedByUpper = await getSimpleScreenerStockDerivedForTickers(tickers, data);
-  const page2Logos = Object.fromEntries(
-    tickers.map((t) => [t.toUpperCase(), resolveEquityLogoUrlFromTicker(t).trim()] as const),
-  ) as Record<string, string>;
+  const derivedByUpper = await getSimpleScreenerStockDerivedForTickers(tickers, data, universe);
+  const logoForTicker = (tk: string) =>
+    identityByTicker?.[tk]?.logoUrl?.trim() || resolveEquityLogoUrlFromTicker(tk).trim();
   const byTicker = new Map(universe.map((u) => [u.ticker.toUpperCase(), u] as const));
-  const p2Pe = await Promise.all(tickers.map((t) => resolveScreenerPeToMatchKeyStats(t, byTicker.get(t.toUpperCase()))));
   let rankId = rankStart;
   const rows: ScreenerTableRow[] = [];
   for (let i = 0; i < tickers.length; i++) {
@@ -216,9 +199,9 @@ export async function buildScreenerPage2RowsForTickers(
         u,
         rankId++,
         simpleDatumToRealtimePayload(ex),
-        page2Logos[tk] ?? "",
+        logoForTicker(tk),
         derivedByUpper[tk] ?? null,
-        p2Pe[i]!,
+        screenerPeDisplayFromUniverse(u),
       ),
     );
   }
@@ -285,7 +268,12 @@ async function buildScreenerCompaniesApiResponseUncached(
     }
     const globalEnd = Math.min(globalStart + pageSize, total);
     const tickers = filtered.slice(globalStart, globalEnd).map((u) => u.ticker);
-    const rows = await buildScreenerPage2RowsForTickers(tickers, staticLayer.universe, globalStart + 1);
+    const rows = await buildScreenerPage2RowsForTickers(
+      tickers,
+      staticLayer.universe,
+      globalStart + 1,
+      staticLayer.identityByTicker,
+    );
     return {
       page,
       pageSize,
@@ -314,7 +302,12 @@ async function buildScreenerCompaniesApiResponseUncached(
     }
     const globalEnd = Math.min(globalStart + pageSize, total);
     const tickers = filtered.slice(globalStart, globalEnd).map((u) => u.ticker);
-    const rows = await buildScreenerPage2RowsForTickers(tickers, staticLayer.universe, globalStart + 1);
+    const rows = await buildScreenerPage2RowsForTickers(
+      tickers,
+      staticLayer.universe,
+      globalStart + 1,
+      staticLayer.identityByTicker,
+    );
     return {
       page,
       pageSize,
@@ -353,7 +346,12 @@ async function buildScreenerCompaniesApiResponseUncached(
     const tickers = page2Tickers.slice(p2From, p2To);
     if (tickers.length) {
       const rankStart = top10Len + p2From + 1;
-      const p2Rows = await buildScreenerPage2RowsForTickers(tickers, staticLayer.universe, rankStart);
+      const p2Rows = await buildScreenerPage2RowsForTickers(
+        tickers,
+        staticLayer.universe,
+        rankStart,
+        staticLayer.identityByTicker,
+      );
       rows.push(...p2Rows);
     }
   }
@@ -362,8 +360,8 @@ async function buildScreenerCompaniesApiResponseUncached(
 }
 
 /**
- * Cached per list slice so RSC + `/api/screener/companies` and many users reuse one EODHD/realtime build within
- * {@link REVALIDATE_SCREENER_MARKET} (same tier as tab quote batches).
+ * Cached per list slice + US session epoch so RSC + `/api/screener/companies` share one build:
+ * live 15m during regular hours; frozen after close until next session.
  */
 export async function buildScreenerCompaniesApiResponse(
   page: number,
@@ -374,11 +372,11 @@ export async function buildScreenerCompaniesApiResponse(
   const ps = Math.min(50, Math.max(1, Math.trunc(pageSize))) || SCREENER_COMPANIES_PAGE_SIZE;
   const list = resolveScreenerCompaniesListMode(opts);
   const listKey = list.mode === "all" ? "all" : list.mode === "sector" ? `sector:${list.sector}` : `industry:${list.sector}:${list.industry}`;
-  return unstable_cache(
+  return withScreenerUsMarketCache(
+    "screener-companies-api-response-v6-session",
     () => buildScreenerCompaniesApiResponseUncached(p, ps, list),
-    ["screener-companies-api-response-v3-500-universe", String(p), String(ps), listKey],
-    { revalidate: REVALIDATE_SCREENER_MARKET },
-  )();
+    [String(p), String(ps), listKey],
+  );
 }
 
 /** Paginated screener crypto rows — page 1 uses cached tab layers; page 2 loads on demand. */
@@ -422,17 +420,6 @@ export async function buildCryptoScreenerApiResponse(
   return { page, pageSize, total, rows };
 }
 
-/** Full stock list (top 10 + page 2) for Gainers & Losers — uses shared cached full market + derived layers. */
-export async function buildScreenerAllStockRowsForGainers(): Promise<ScreenerTableRow[]> {
-  const [data, staticLayer, stockDerived] = await Promise.all([
-    getSimpleMarketDataScreenerStocksAllPages(),
-    getScreenerCompaniesStaticLayer(),
-    getSimpleScreenerDerived(),
-  ]);
-  const { page1, page2 } = await buildStockScreenerTablePages(data, staticLayer.universe, stockDerived);
-  return [...page1, ...page2];
-}
-
 export async function buildScreenerPagePayload(
   market: ScreenerMarketTab,
   opts?: {
@@ -442,6 +429,8 @@ export async function buildScreenerPagePayload(
 ): Promise<ScreenerPagePayload> {
   const stocksSector = opts?.stocksSector ?? null;
   const stocksIndustry = opts?.stocksIndustry ?? null;
+
+  const marketCacheSegment = getScreenerUsMarketCacheEpoch().segment;
 
   if (market === "crypto") {
     const [cryptoFirst, fearGreed] = await Promise.all([
@@ -453,11 +442,16 @@ export async function buildScreenerPagePayload(
       cryptoRows: cryptoFirst.rows,
       cryptoTotalCount: cryptoFirst.total,
       fearGreed,
+      marketCacheSegment,
     };
   }
   if (market === "indices") {
     const [data, indicesDerived] = await Promise.all([getSimpleMarketDataIndicesTab(), getSimpleIndicesDerived()]);
-    return { market: "indices", indicesRows: indicesTableRowsFromSimpleLayers(data, indicesDerived) };
+    return {
+      market: "indices",
+      indicesRows: indicesTableRowsFromSimpleLayers(data, indicesDerived),
+      marketCacheSegment,
+    };
   }
   if (market === "etfs") {
     const [metas, data, etfsDerived] = await Promise.all([
@@ -468,6 +462,7 @@ export async function buildScreenerPagePayload(
     return {
       market: "etfs",
       etfsRows: etfsTableRowsFromSimpleLayers(data, etfsDerived, metas),
+      marketCacheSegment,
     };
   }
 
@@ -479,27 +474,10 @@ export async function buildScreenerPagePayload(
       }
     : { sector: stocksSector, industry: null, industrySector: null };
 
-  const [indexCards, staticLayer, companiesFirst, sectorEtfYtd, universeDerived] = await Promise.all([
+  const [indexCards, companiesFirst] = await Promise.all([
     getSimpleIndexCards(),
-    getScreenerCompaniesStaticLayer(),
     buildScreenerCompaniesApiResponse(1, SCREENER_COMPANIES_PAGE_SIZE, companiesApiOpts),
-    getScreenerSectorEtfProxyYtdBySector(),
-    getScreenerUniverseStockDerived(),
   ]);
-
-  const { sectors, industries } = buildScreenerSectorsAndIndustriesRows(
-    staticLayer.universe,
-    universeDerived,
-  );
-  const sectorsWithYtdFallback = sectors.map((row) => {
-    const hasAggregateYtd = row.changeYTD != null && Number.isFinite(row.changeYTD);
-    if (hasAggregateYtd) return row;
-    const proxy = sectorEtfYtd[row.sector as ScreenerCanonicalSector];
-    if (proxy != null && Number.isFinite(proxy)) {
-      return { ...row, changeYTD: proxy };
-    }
-    return row;
-  });
 
   const stocksIndustryFilter: ScreenerIndustryDrill | null =
     companiesFirst.industry != null && companiesFirst.industrySector != null
@@ -513,7 +491,35 @@ export async function buildScreenerPagePayload(
     stocksSectorFilter: companiesFirst.sector,
     stocksIndustryFilter,
     indexCards,
-    sectors: sectorsWithYtdFallback,
-    industries,
+    companiesMarketCacheSegment: marketCacheSegment,
   };
 }
+
+export type ScreenerMarketTabFetchOpts = {
+  stocksSector?: ScreenerCanonicalSector | null;
+  stocksIndustry?: ScreenerIndustryDrill | null;
+};
+
+function stocksMarketTabCacheKey(opts?: ScreenerMarketTabFetchOpts): string {
+  const o = opts ?? {};
+  const industry = typeof o.stocksIndustry?.industry === "string" ? o.stocksIndustry.industry.trim() : "";
+  const isec = o.stocksIndustry?.sector ?? "";
+  if (industry && isec) return `stocks:industry:${isec}:${industry}`;
+  const sector = o.stocksSector ?? "";
+  if (sector) return `stocks:sector:${sector}`;
+  return "stocks:all";
+}
+
+/** Lazy market-tab payload — shared across users per US session segment (15m live / frozen close). */
+export async function buildScreenerMarketTabApiResponse(
+  market: ScreenerMarketTab,
+  opts?: ScreenerMarketTabFetchOpts,
+): Promise<ScreenerPagePayload> {
+  const listKey = market === "stocks" ? stocksMarketTabCacheKey(opts) : market;
+  return withScreenerUsMarketCache(
+    "screener-market-tab-payload-v1",
+    () => buildScreenerPagePayload(market, opts),
+    [market, listKey],
+  );
+}
+

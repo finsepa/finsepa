@@ -8,6 +8,10 @@ import {
   REVALIDATE_TIER_SCREENER_DERIVED,
 } from "@/lib/data/cache-policy";
 import {
+  getScreenerUsMarketCacheEpoch,
+  withScreenerUsMarketCache,
+} from "@/lib/screener/screener-us-market-cache";
+import {
   CRYPTO_SCREENER_ALL,
   CRYPTO_SCREENER_PAGE2,
   CRYPTO_TOP10,
@@ -108,6 +112,21 @@ function emptyCryptoDerived(): CryptoDerivedSlice {
   };
 }
 
+function datumFromEodDailyBars(bars: EodhdDailyBar[]): SimpleMarketDatum {
+  if (!bars.length) return emptyDatum();
+  const sorted = [...bars].sort((a, b) => a.date.localeCompare(b.date));
+  const last = sorted[sorted.length - 1]!;
+  const prev = sorted.length >= 2 ? sorted[sorted.length - 2]! : null;
+  const price = typeof last.close === "number" && Number.isFinite(last.close) && last.close > 0 ? last.close : null;
+  const previousClose =
+    prev && typeof prev.close === "number" && Number.isFinite(prev.close) && prev.close > 0 ? prev.close : null;
+  const changePercent1D =
+    price != null && previousClose != null && previousClose > 0
+      ? ((price - previousClose) / previousClose) * 100
+      : null;
+  return { price, previousClose, changePercent1D };
+}
+
 function toDatum(p: EodhdRealtimePayload | undefined): SimpleMarketDatum {
   if (!p) return emptyDatum();
   const asFinite = (v: unknown): number | null => {
@@ -165,12 +184,95 @@ function cryptoMetasForBatch(mode: "top10" | "page2" | "all"): CryptoMeta[] {
   return [...CRYPTO_SCREENER_ALL];
 }
 
+async function loadUsStockDatumsFromEodDaily(
+  includeTop10Stocks: boolean,
+  page2Tickers: string[],
+): Promise<{ stocks: Record<Top10Ticker, SimpleMarketDatum>; extraScreenerStocks: Record<string, SimpleMarketDatum> }> {
+  const tickers: string[] = [];
+  if (includeTop10Stocks) tickers.push(...TOP10_TICKERS);
+  tickers.push(...page2Tickers);
+  const barsPerTicker = tickers.length ? await getCachedScreenerEodBarsForTickers(tickers) : [];
+
+  const stocks = {} as Record<Top10Ticker, SimpleMarketDatum>;
+  for (const t of TOP10_TICKERS) {
+    stocks[t] = emptyDatum();
+  }
+  if (includeTop10Stocks) {
+    TOP10_TICKERS.forEach((t, i) => {
+      const raw = barsPerTicker[i];
+      stocks[t] = datumFromEodDailyBars(Array.isArray(raw) ? raw : []);
+    });
+  }
+
+  const extraScreenerStocks: Record<string, SimpleMarketDatum> = {};
+  const topLen = includeTop10Stocks ? TOP10_TICKERS.length : 0;
+  page2Tickers.forEach((t, i) => {
+    const raw = barsPerTicker[topLen + i];
+    extraScreenerStocks[t] = datumFromEodDailyBars(Array.isArray(raw) ? raw : []);
+  });
+  return { stocks, extraScreenerStocks };
+}
+
+async function loadIndexDatumsFromEodDaily(): Promise<Record<string, SimpleMarketDatum>> {
+  const window = eodFetchWindowUtc();
+  const { fetchEodhdEodDaily } = await import("@/lib/market/eodhd-eod");
+  const barsPerSymbol = await runWithConcurrencyLimit(
+    [...SCREENER_INDEX_SYMBOLS],
+    SCREENER_EOD_DERIVED_INDEX_CONCURRENCY,
+    (sym) => fetchEodhdEodDaily(sym, window.from, window.to),
+  );
+  const indices: Record<string, SimpleMarketDatum> = {};
+  SCREENER_INDEX_SYMBOLS.forEach((sym, i) => {
+    const raw = barsPerSymbol[i];
+    indices[sym] = datumFromEodDailyBars(Array.isArray(raw) ? raw : []);
+  });
+  return indices;
+}
+
 /** Realtime batch: configurable US top10, page-2 slice, crypto, indices — chunked EODHD requests. */
 async function loadSimpleMarketDataBatch(opts: SimpleMarketBatchOpts): Promise<SimpleMarketData> {
   const { page2Tickers, includeCrypto, cryptoBatch, includeIndices, includeTop10Stocks } = opts;
   const key = getEodhdApiKey();
   const empty = buildEmptyMarketData();
   if (!key) return empty;
+
+  const epoch = getScreenerUsMarketCacheEpoch();
+  const usStocksNeeded = includeTop10Stocks || page2Tickers.length > 0;
+
+  if (epoch.mode === "frozen" && (usStocksNeeded || includeIndices)) {
+    try {
+      const [stockQuotes, indexQuotes] = await Promise.all([
+        usStocksNeeded ? loadUsStockDatumsFromEodDaily(includeTop10Stocks, page2Tickers) : null,
+        includeIndices ? loadIndexDatumsFromEodDaily() : null,
+      ]);
+
+      const crypto: Record<string, SimpleMarketDatum> = {};
+      for (const c of CRYPTO_SCREENER_ALL) crypto[c.symbol] = emptyDatum();
+      if (includeCrypto) {
+        const cryptoMetas = cryptoMetasForBatch(cryptoBatch);
+        const symbolList = cryptoRealtimeRequestSymbols(cryptoMetas);
+        const map = await fetchEodhdRealtimeSymbolsRaw(symbolList);
+        for (const c of cryptoMetas) {
+          crypto[c.symbol] = toDatum(pickCryptoRealtimePayload(map, c));
+        }
+      }
+
+      const indices: Record<string, SimpleMarketDatum> = {};
+      for (const sym of SCREENER_INDEX_SYMBOLS) {
+        indices[sym] = indexQuotes?.[sym] ?? emptyDatum();
+      }
+
+      return {
+        stocks: stockQuotes?.stocks ?? empty.stocks,
+        screenerStocksPage2Tickers: page2Tickers,
+        extraScreenerStocks: stockQuotes?.extraScreenerStocks ?? {},
+        crypto,
+        indices,
+      };
+    } catch {
+      return empty;
+    }
+  }
 
   try {
     const symbolList: string[] = [];
@@ -287,7 +389,7 @@ async function loadSimpleMarketDataScreenerStocksUncached(): Promise<SimpleMarke
     page2Tickers: [],
     includeCrypto: false,
     cryptoBatch: "all",
-    includeIndices: true,
+    includeIndices: false,
   });
 }
 
@@ -331,13 +433,52 @@ async function loadSimpleMarketDataEtfsTabUncached(): Promise<SimpleMarketData> 
  * Used by `/api/screener/companies` pagination to avoid the full 30+ symbol quote fan-out.
  */
 export async function getSimpleMarketDataForScreenerPage2Slice(page2Tickers: string[]): Promise<SimpleMarketData> {
-  return loadSimpleMarketDataBatch({
-    includeTop10Stocks: false,
-    page2Tickers,
-    includeCrypto: false,
-    cryptoBatch: "all",
-    includeIndices: false,
-  });
+  const tickersKey = [...page2Tickers]
+    .map((t) => t.trim().toUpperCase())
+    .sort()
+    .join(",");
+  return withScreenerUsMarketCache(
+    "simple-market-data-page2-slice-v1",
+    () =>
+      loadSimpleMarketDataBatch({
+        includeTop10Stocks: false,
+        page2Tickers,
+        includeCrypto: false,
+        cryptoBatch: "all",
+        includeIndices: false,
+      }),
+    [tickersKey],
+  );
+}
+
+/** Watchlist rail/page: quotes for saved stock tickers only (top-10 batch + page-2 slice). */
+export async function getSimpleMarketDataForWatchlistStocks(stockTickers: string[]): Promise<SimpleMarketData> {
+  const normalized = [...new Set(stockTickers.map((t) => t.trim().toUpperCase()).filter(Boolean))].sort();
+  if (!normalized.length) {
+    return loadSimpleMarketDataBatch({
+      includeTop10Stocks: false,
+      page2Tickers: [],
+      includeCrypto: false,
+      cryptoBatch: "all",
+      includeIndices: false,
+    });
+  }
+  const top10Set = new Set<string>(TOP10_TICKERS);
+  const includeTop10Stocks = normalized.some((t) => top10Set.has(t));
+  const page2Tickers = normalized.filter((t) => !top10Set.has(t));
+  const tickersKey = normalized.join(",");
+  return withScreenerUsMarketCache(
+    "simple-market-data-watchlist-stocks-v1",
+    () =>
+      loadSimpleMarketDataBatch({
+        includeTop10Stocks,
+        page2Tickers,
+        includeCrypto: false,
+        cryptoBatch: "all",
+        includeIndices: false,
+      }),
+    [tickersKey],
+  );
 }
 
 /** Screener Crypto tab page 2 — quotes for {@link CRYPTO_SCREENER_PAGE2} only (on-demand pagination). */
@@ -356,15 +497,16 @@ export const getSimpleMarketData = unstable_cache(loadSimpleMarketDataUncached, 
   revalidate: REVALIDATE_TIER_SCREENER_COMBINED,
 });
 
-export const getSimpleMarketDataSlim = unstable_cache(loadSimpleMarketDataSlimUncached, ["simple-market-data-v13-slim-screener-ttl"], {
-  revalidate: REVALIDATE_SCREENER_MARKET,
-});
+export async function getSimpleMarketDataSlim(): Promise<SimpleMarketData> {
+  return withScreenerUsMarketCache("simple-market-data-v14-slim-session", () => loadSimpleMarketDataSlimUncached());
+}
 
-export const getSimpleMarketDataScreenerStocks = unstable_cache(
-  loadSimpleMarketDataScreenerStocksUncached,
-  ["simple-market-data-v16-screener-stocks-tab-ttl"],
-  { revalidate: REVALIDATE_SCREENER_MARKET },
-);
+export async function getSimpleMarketDataScreenerStocks(): Promise<SimpleMarketData> {
+  return withScreenerUsMarketCache(
+    "simple-market-data-v17-screener-stocks-session",
+    () => loadSimpleMarketDataScreenerStocksUncached(),
+  );
+}
 
 export const getSimpleMarketDataCryptoTab = unstable_cache(
   loadSimpleMarketDataCryptoTabUncached,
@@ -372,23 +514,23 @@ export const getSimpleMarketDataCryptoTab = unstable_cache(
   { revalidate: REVALIDATE_SCREENER_MARKET },
 );
 
-export const getSimpleMarketDataIndicesTab = unstable_cache(
-  loadSimpleMarketDataIndicesTabUncached,
-  ["simple-market-data-v16-indices-tab-ttl"],
-  { revalidate: REVALIDATE_SCREENER_MARKET },
-);
+export async function getSimpleMarketDataIndicesTab(): Promise<SimpleMarketData> {
+  return withScreenerUsMarketCache(
+    "simple-market-data-v17-indices-tab-session",
+    () => loadSimpleMarketDataIndicesTabUncached(),
+  );
+}
 
-export const getSimpleMarketDataEtfsTab = unstable_cache(
-  loadSimpleMarketDataEtfsTabUncached,
-  ["simple-market-data-v1-etfs-tab-ttl"],
-  { revalidate: REVALIDATE_SCREENER_MARKET },
-);
+export async function getSimpleMarketDataEtfsTab(): Promise<SimpleMarketData> {
+  return withScreenerUsMarketCache("simple-market-data-v2-etfs-tab-session", () => loadSimpleMarketDataEtfsTabUncached());
+}
 
-export const getSimpleMarketDataScreenerStocksAllPages = unstable_cache(
-  loadSimpleMarketDataScreenerStocksAllPagesUncached,
-  ["simple-market-data-v2-screener-stocks-all-pages-500"],
-  { revalidate: REVALIDATE_SCREENER_MARKET },
-);
+export async function getSimpleMarketDataScreenerStocksAllPages(): Promise<SimpleMarketData> {
+  return withScreenerUsMarketCache(
+    "simple-market-data-v3-screener-stocks-all-pages-session",
+    () => loadSimpleMarketDataScreenerStocksAllPagesUncached(),
+  );
+}
 
 /** Use live quote as "current" price when valid so 1M/YTD match the same snapshot as the Price column. */
 function barsToStockDerived(bars: EodhdDailyBar[], livePrice: number | null | undefined): SimpleScreenerStockDerived {
@@ -411,7 +553,6 @@ function barsToStockDerived(bars: EodhdDailyBar[], livePrice: number | null | un
 }
 
 async function loadSimpleScreenerDerivedUncached(): Promise<SimpleScreenerDerived> {
-  const window = eodFetchWindowUtc();
   const [{ universe }, marketSlim] = await Promise.all([
     getScreenerCompaniesStaticLayer(),
     getSimpleMarketDataSlim(),
@@ -419,11 +560,7 @@ async function loadSimpleScreenerDerivedUncached(): Promise<SimpleScreenerDerive
   const page2Tickers = pickScreenerPage2Tickers(universe);
   const allTickers = [...TOP10_TICKERS, ...page2Tickers];
 
-  const barsPerTicker = await runWithConcurrencyLimit(
-    allTickers,
-    SCREENER_EOD_DERIVED_STOCK_CONCURRENCY,
-    (t) => fetchEodhdEodDailyScreener(t, window.from, window.to),
-  );
+  const barsPerTicker = await getCachedScreenerEodBarsForTickers(allTickers);
 
   const top10 = {} as Record<Top10Ticker, SimpleScreenerStockDerived>;
   TOP10_TICKERS.forEach((t, i) => {
@@ -450,13 +587,10 @@ async function loadSimpleScreenerDerivedUncached(): Promise<SimpleScreenerDerive
 
 /** Screener Stocks tab first paint: TOP10 EOD metrics only (no page-2 bar fan-out). */
 async function loadSimpleScreenerDerivedTop10Uncached(): Promise<SimpleScreenerDerived> {
-  const window = eodFetchWindowUtc();
-  const marketStocks = await getSimpleMarketDataScreenerStocks();
-  const barsPerTicker = await runWithConcurrencyLimit(
-    [...TOP10_TICKERS],
-    SCREENER_EOD_DERIVED_STOCK_CONCURRENCY,
-    (t) => fetchEodhdEodDailyScreener(t, window.from, window.to),
-  );
+  const [marketStocks, barsPerTicker] = await Promise.all([
+    getSimpleMarketDataScreenerStocks(),
+    getCachedScreenerEodBarsForTickers([...TOP10_TICKERS]),
+  ]);
   const top10 = {} as Record<Top10Ticker, SimpleScreenerStockDerived>;
   TOP10_TICKERS.forEach((t, i) => {
     const raw = barsPerTicker[i];
@@ -467,61 +601,114 @@ async function loadSimpleScreenerDerivedTop10Uncached(): Promise<SimpleScreenerD
   return { top10, page2: {} };
 }
 
-export const getSimpleScreenerDerived = unstable_cache(
-  loadSimpleScreenerDerivedUncached,
-  ["simple-screener-derived-v11-page2-490"],
-  {
-    revalidate: REVALIDATE_TIER_SCREENER_DERIVED,
-  },
-);
+export async function getSimpleScreenerDerived(): Promise<SimpleScreenerDerived> {
+  return withScreenerUsMarketCache("simple-screener-derived-v12-session", () => loadSimpleScreenerDerivedUncached());
+}
 
-/** Full top-500 universe: 1M/YTD from daily EOD bars (for sector/industry cap-weighted aggregates). */
-async function loadScreenerUniverseStockDerivedUncached(): Promise<
-  Record<string, Pick<SimpleScreenerStockDerived, "changePercent1M" | "changePercentYTD">>
-> {
-  const { universe } = await getScreenerCompaniesStaticLayer();
-  const tickers = universe.map((u) => u.ticker).filter((t) => t.trim().length > 0);
-  const derived = await getSimpleScreenerStockDerivedForTickers(tickers, buildEmptyMarketData());
-  const out: Record<string, Pick<SimpleScreenerStockDerived, "changePercent1M" | "changePercentYTD">> = {};
-  for (const [tk, d] of Object.entries(derived)) {
-    out[tk] = { changePercent1M: d.changePercent1M, changePercentYTD: d.changePercentYTD };
+export async function getSimpleScreenerDerivedTop10(): Promise<SimpleScreenerDerived> {
+  return withScreenerUsMarketCache(
+    "simple-screener-derived-top10-v2-session",
+    () => loadSimpleScreenerDerivedTop10Uncached(),
+  );
+}
+
+async function fetchScreenerEodBarsOnce(tickers: string[]): Promise<(EodhdDailyBar[] | null)[]> {
+  if (!tickers.length) return [];
+  const window = eodFetchWindowUtc();
+  return runWithConcurrencyLimit(tickers, SCREENER_EOD_DERIVED_STOCK_CONCURRENCY, (t) =>
+    fetchEodhdEodDailyScreener(t, window.from, window.to),
+  );
+}
+
+async function fetchScreenerEodBarsForTickers(tickers: string[]): Promise<(EodhdDailyBar[] | null)[]> {
+  const barsPerTicker = await fetchScreenerEodBarsOnce(tickers);
+  const retryIndices: number[] = [];
+  tickers.forEach((_, i) => {
+    const raw = barsPerTicker[i];
+    if (!Array.isArray(raw) || raw.length === 0) retryIndices.push(i);
+  });
+  if (!retryIndices.length) return barsPerTicker;
+
+  const retryTickers = retryIndices.map((i) => tickers[i]!);
+  const retryBars = await fetchScreenerEodBarsOnce(retryTickers);
+  retryIndices.forEach((origIdx, j) => {
+    const retryRaw = retryBars[j];
+    if (Array.isArray(retryRaw) && retryRaw.length > 0) barsPerTicker[origIdx] = retryRaw;
+  });
+  return barsPerTicker;
+}
+
+/** Per-ticker EOD bars — shared across market quotes and derived metrics in the same US session segment. */
+function getCachedScreenerEodBarsForTickers(tickers: string[]): Promise<(EodhdDailyBar[] | null)[]> {
+  const tickersKey = [...tickers]
+    .map((t) => t.trim().toUpperCase())
+    .sort()
+    .join(",");
+  return withScreenerUsMarketCache(
+    "screener-eod-bars-v1",
+    () => fetchScreenerEodBarsForTickers(tickers),
+    [tickersKey],
+  );
+}
+
+function tickerNeedsEodDerivedPct(u: { refund1mP: number | null; refundYtdP: number | null } | undefined): boolean {
+  if (!u) return true;
+  const has1m = u.refund1mP != null && Number.isFinite(u.refund1mP);
+  const hasYtd = u.refundYtdP != null && Number.isFinite(u.refundYtdP);
+  return !has1m || !hasYtd;
+}
+
+/**
+ * EOD-derived 1M/YTD for a ticker slice (pagination / industry drill).
+ * Skips daily-bar HTTP when the screener universe row already has both snapshot fields.
+ */
+async function loadSimpleScreenerStockDerivedForTickersUncached(
+  tickers: string[],
+  marketLive: SimpleMarketData,
+  universeRows?: readonly { ticker: string; refund1mP: number | null; refundYtdP: number | null }[],
+): Promise<Record<string, SimpleScreenerStockDerived>> {
+  if (!tickers.length) return {};
+  const byTicker = universeRows
+    ? new Map(universeRows.map((u) => [u.ticker.trim().toUpperCase(), u] as const))
+    : null;
+
+  const eodTickers = tickers.filter((t) => tickerNeedsEodDerivedPct(byTicker?.get(t.trim().toUpperCase())));
+
+  const barsByUpper = new Map<string, EodhdDailyBar[]>();
+  if (eodTickers.length) {
+    const barsPerTicker = await getCachedScreenerEodBarsForTickers(eodTickers);
+    eodTickers.forEach((t, i) => {
+      const raw = barsPerTicker[i];
+      barsByUpper.set(t.trim().toUpperCase(), Array.isArray(raw) ? raw : []);
+    });
   }
+
+  const epoch = getScreenerUsMarketCacheEpoch();
+  const out: Record<string, SimpleScreenerStockDerived> = {};
+  tickers.forEach((t) => {
+    const tk = t.toUpperCase();
+    const bars = barsByUpper.get(tk) ?? [];
+    const live = marketLive.extraScreenerStocks[t] ?? marketLive.extraScreenerStocks[tk];
+    const livePx = epoch.mode === "frozen" ? null : (live?.price ?? null);
+    out[tk] = barsToStockDerived(bars, livePx);
+  });
   return out;
 }
 
-export const getScreenerUniverseStockDerived = unstable_cache(
-  loadScreenerUniverseStockDerivedUncached,
-  ["screener-universe-stock-derived-v1-ytd"],
-  { revalidate: REVALIDATE_TIER_SCREENER_DERIVED },
-);
-
-export const getSimpleScreenerDerivedTop10 = unstable_cache(
-  loadSimpleScreenerDerivedTop10Uncached,
-  ["simple-screener-derived-top10-v1-live-quote"],
-  { revalidate: REVALIDATE_TIER_SCREENER_DERIVED },
-);
-
-/** EOD-derived rows for an arbitrary US ticker slice (e.g. screener page-2 pagination). */
 export async function getSimpleScreenerStockDerivedForTickers(
   tickers: string[],
   marketLive: SimpleMarketData,
+  universeRows?: readonly { ticker: string; refund1mP: number | null; refundYtdP: number | null }[],
 ): Promise<Record<string, SimpleScreenerStockDerived>> {
-  if (!tickers.length) return {};
-  const window = eodFetchWindowUtc();
-  const barsPerTicker = await runWithConcurrencyLimit(
-    tickers,
-    SCREENER_EOD_DERIVED_STOCK_CONCURRENCY,
-    (t) => fetchEodhdEodDailyScreener(t, window.from, window.to),
+  const tickersKey = [...tickers]
+    .map((t) => t.trim().toUpperCase())
+    .sort()
+    .join(",");
+  return withScreenerUsMarketCache(
+    "screener-stock-derived-slice-v1",
+    () => loadSimpleScreenerStockDerivedForTickersUncached(tickers, marketLive, universeRows),
+    [tickersKey],
   );
-  const out: Record<string, SimpleScreenerStockDerived> = {};
-  tickers.forEach((t, i) => {
-    const raw = barsPerTicker[i];
-    const bars = Array.isArray(raw) ? raw : [];
-    const tk = t.toUpperCase();
-    const live = marketLive.extraScreenerStocks[t] ?? marketLive.extraScreenerStocks[tk];
-    out[tk] = barsToStockDerived(bars, live?.price ?? null);
-  });
-  return out;
 }
 
 function barsToCryptoDerived(bars: EodhdDailyBar[]): CryptoDerivedSlice {
@@ -642,9 +829,9 @@ async function loadSimpleIndicesDerivedUncached(): Promise<SimpleIndicesDerived>
   return out;
 }
 
-export const getSimpleIndicesDerived = unstable_cache(loadSimpleIndicesDerivedUncached, ["simple-indices-derived-v2"], {
-  revalidate: REVALIDATE_TIER_SCREENER_DERIVED,
-});
+export async function getSimpleIndicesDerived(): Promise<SimpleIndicesDerived> {
+  return withScreenerUsMarketCache("simple-indices-derived-v3-session", () => loadSimpleIndicesDerivedUncached());
+}
 
 async function loadSimpleEtfsDerivedUncached(): Promise<SimpleEtfsDerived> {
   const metas = await getScreenerEtfsTop20();
@@ -664,6 +851,6 @@ async function loadSimpleEtfsDerivedUncached(): Promise<SimpleEtfsDerived> {
   return out;
 }
 
-export const getSimpleEtfsDerived = unstable_cache(loadSimpleEtfsDerivedUncached, ["simple-etfs-derived-v1"], {
-  revalidate: REVALIDATE_TIER_SCREENER_DERIVED,
-});
+export async function getSimpleEtfsDerived(): Promise<SimpleEtfsDerived> {
+  return withScreenerUsMarketCache("simple-etfs-derived-v2-session", () => loadSimpleEtfsDerivedUncached());
+}

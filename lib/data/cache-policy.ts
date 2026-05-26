@@ -22,7 +22,8 @@
  * | `TIER_WARM_LONG` | 900 | **Full** stock fundamentals JSON (`eodhd-fundamentals`), header **earnings date** slice, crypto fundamentals meta. |
  * | `TIER_EARNINGS_CALENDAR` | 86400 | Bulk EODHD earnings calendar + `/earnings` week payload ({@link REVALIDATE_EARNINGS_CALENDAR}). |
  * | `TIER_IDENTITY` | 43200 (~12h) | Stock header **name / sector / industry / logo** (Phase 5 — decoupled from earnings-line warm-long). |
- * | `TIER_STATIC` | 43200 (~12h) | Screener universe by market cap, exchange symbol lists, `fetch` hint on screener HTTP. |
+ * | `TIER_STATIC` | 43200 (~12h) | Exchange symbol lists, `fetch` hint on generic screener HTTP. |
+ * | `TIER_SCREENER_IDENTITY` | 604800 (~7d) | Screener top-500 universe + name/ticker/logo URL map (`REVALIDATE_SCREENER_IDENTITY`). |
  * | `TIER_STATIC_DAY` | 86400 (~24h) | Macro indicator JSON rows (`eodhd-macro` inner fetch). |
  * | `TIER_SCREENER_COMBINED` | 180 | `getSimpleMarketData` combined bundle (`simple-market-layer`). |
  * | `TIER_SCREENER_DERIVED` | 1800 | Screener derived aggregates (`getSimpleScreenerDerived*`, crypto/indices derived in `simple-market-layer`). |
@@ -65,11 +66,23 @@ export const REVALIDATE_WARM = 300;
  */
 export const REVALIDATE_SCREENER_MARKET = 300;
 
+/**
+ * ~15m — US equities screener quotes **during regular session only** (see `screener-us-market-cache.ts`).
+ * Pre/post/closed use a frozen segment with `revalidate: false` until the next session.
+ */
+export const REVALIDATE_SCREENER_MARKET_LIVE = 900;
+
 /** ~15m — full fundamentals JSON, stock header earnings line, heavy aggregates (not bulk earnings calendar). */
 export const REVALIDATE_WARM_LONG = 900;
 
 /** ~12h — screener provider screeners, top-500 universe snapshot */
 export const REVALIDATE_STATIC = 43200;
+
+/**
+ * ~7d — screener company identity (name, ticker, logo URL strings). Names/tickers/logos change rarely;
+ * shared `unstable_cache` means one warm load benefits all users until this window expires.
+ */
+export const REVALIDATE_SCREENER_IDENTITY = 7 * 24 * 60 * 60;
 
 /**
  * ~12h — stock detail header **identity** (company name, sector, industry, logo path) — same seconds as {@link REVALIDATE_STATIC}.
@@ -111,11 +124,17 @@ export const REVALIDATE_TIER_WARM = REVALIDATE_WARM;
 /** Screener Markets tab batches (explicit alias of same numeric value as {@link REVALIDATE_WARM}). */
 export const REVALIDATE_TIER_SCREENER_MARKET = REVALIDATE_SCREENER_MARKET;
 
+/** US screener live session quotes — {@link REVALIDATE_SCREENER_MARKET_LIVE}. */
+export const REVALIDATE_TIER_SCREENER_MARKET_LIVE = REVALIDATE_SCREENER_MARKET_LIVE;
+
 /** Warm-long: one HTTP fundamentals blob per ticker, crypto meta JSON (not bulk earnings calendar). */
 export const REVALIDATE_TIER_WARM_LONG = REVALIDATE_WARM_LONG;
 
 /** Stock header display identity — same seconds as {@link REVALIDATE_IDENTITY}. */
 export const REVALIDATE_TIER_IDENTITY = REVALIDATE_IDENTITY;
+
+/** Screener company list identity (universe + logo paths) — {@link REVALIDATE_SCREENER_IDENTITY}. */
+export const REVALIDATE_TIER_SCREENER_IDENTITY = REVALIDATE_SCREENER_IDENTITY;
 
 /** Static-ish: universe snapshots, exchange lists, provider screeners. */
 export const REVALIDATE_TIER_STATIC = REVALIDATE_STATIC;
@@ -208,6 +227,21 @@ function cacheControlPrivateSMaxage0Swr(swrSec: number): string {
 export const CACHE_CONTROL_PRIVATE_SCREENER_ROW = cacheControlPrivateMax0SMaxageSwr(
   SCREENER_HTTP_ROW_S_MAXAGE_SEC,
   REVALIDATE_HOT * 2,
+);
+
+/**
+ * Paginated screener companies JSON — `s-maxage` matches live session (15m).
+ * Cross-user reuse is via server `unstable_cache`; HTTP cache is per signed-in client/CDN slot.
+ */
+export const CACHE_CONTROL_PRIVATE_SCREENER_COMPANIES_PAGE = cacheControlPrivateMax0SMaxageSwr(
+  REVALIDATE_SCREENER_MARKET_LIVE,
+  REVALIDATE_SCREENER_MARKET_LIVE * 2,
+);
+
+/** Frozen US session — companies page JSON is immutable until next regular session. */
+export const CACHE_CONTROL_PRIVATE_SCREENER_COMPANIES_FROZEN = cacheControlPrivateMax0SMaxageSwr(
+  REVALIDATE_STATIC_DAY,
+  REVALIDATE_STATIC_DAY,
 );
 
 /** Chart stream / incremental path — row-style `s-maxage` + hot SWR. */

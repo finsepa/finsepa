@@ -5,27 +5,35 @@ import type { WatchlistEnrichedItem } from "@/lib/watchlist/enriched-types";
 import type { WatchlistRow } from "@/lib/watchlist/types";
 import { getCryptoAsset } from "@/lib/market/crypto-asset";
 import { ALL_CRYPTO_METAS, CRYPTO_SCREENER_ALL, toSupportedCryptoTicker } from "@/lib/market/eodhd-crypto";
-import { fetchEodhdFundamentalsHighlights } from "@/lib/market/eodhd-fundamentals";
+import type { EodhdRealtimePayload } from "@/lib/market/eodhd-realtime";
 import {
   getSimpleCryptoDerived,
   getSimpleIndicesDerived,
   getSimpleMarketData,
-  getSimpleScreenerDerived,
+  getSimpleMarketDataForWatchlistStocks,
+  getSimpleScreenerStockDerivedForTickers,
+  type SimpleMarketData,
+  type SimpleMarketDatum,
+  type SimpleScreenerStockDerived,
 } from "@/lib/market/simple-market-layer";
-import { getStockPerformance } from "@/lib/market/stock-performance";
-import { getStockDetailMetaFromTicker } from "@/lib/market/stock-detail-meta";
-import { formatMarketCapDisplay, formatPeDisplay } from "@/lib/screener/eod-derived-metrics";
-import { getScreenerCompaniesStaticLayer } from "@/lib/screener/screener-companies-layers";
+import {
+  buildScreenerCompanyRowFromUniverse,
+  screenerPeDisplayFromUniverse,
+} from "@/lib/screener/companies-rows";
+import { getScreenerCompaniesStaticLayer, type ScreenerCompanyIdentity } from "@/lib/screener/screener-companies-layers";
 import { resolveEquityLogoUrlFromTicker } from "@/lib/screener/resolve-equity-logo-url";
+import type { EodhdTopUniverseRow } from "@/lib/market/eodhd-screener";
 import { getCryptoLogoUrl } from "@/lib/crypto/crypto-logo-url";
 import { isTop10Ticker } from "@/lib/screener/top10-config";
 import { SCREENER_INDEX_SYMBOL_SET } from "@/lib/screener/screener-indices-universe";
 import { getIndexDisplayMeta } from "@/lib/market/indices-top10";
+import { getStockDetailMetaFromTicker } from "@/lib/market/stock-detail-meta";
+import { withScreenerUsMarketCache } from "@/lib/screener/screener-us-market-cache";
 import { runWithConcurrencyLimit } from "@/lib/utils/run-with-concurrency-limit";
 import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
 import { getNvdaPerformance, getNvdaHeaderMeta } from "@/lib/fixtures/nvda";
 
-/** Caps parallel EODHD work when the watchlist has many symbols. */
+/** Caps parallel work when the watchlist has many symbols. */
 const WATCHLIST_ENRICH_CONCURRENCY = 8;
 
 export function parseWatchlistStorageKey(key: string): { kind: "stock" | "crypto" | "index"; symbol: string } {
@@ -39,59 +47,139 @@ export function parseWatchlistStorageKey(key: string): { kind: "stock" | "crypto
   return { kind: "stock", symbol: t };
 }
 
-async function enrichStock(entry: WatchlistRow): Promise<WatchlistEnrichedItem> {
+function simpleDatumToQuote(d: SimpleMarketDatum | undefined): EodhdRealtimePayload | undefined {
+  if (!d || d.price == null) return undefined;
+  return {
+    close: d.price,
+    previousClose: d.previousClose ?? undefined,
+    change_p: d.changePercent1D ?? undefined,
+  };
+}
+
+function pickPct(snapshot: number | null | undefined, derived: number | null | undefined): number | null {
+  if (snapshot != null && Number.isFinite(snapshot)) return snapshot;
+  if (derived != null && Number.isFinite(derived)) return derived;
+  return null;
+}
+
+type WatchlistStockBatch = {
+  identityByTicker: Record<string, ScreenerCompanyIdentity>;
+  universeByTicker: Map<string, EodhdTopUniverseRow>;
+  marketData: SimpleMarketData;
+  derivedByTicker: Record<string, SimpleScreenerStockDerived>;
+};
+
+async function buildWatchlistStockBatch(stockTickers: string[]): Promise<WatchlistStockBatch> {
+  const staticLayer = await getScreenerCompaniesStaticLayer();
+  const universeByTicker = new Map(staticLayer.universe.map((u) => [u.ticker.trim().toUpperCase(), u] as const));
+  if (!stockTickers.length) {
+    return {
+      identityByTicker: staticLayer.identityByTicker,
+      universeByTicker,
+      marketData: {
+        stocks: {} as SimpleMarketData["stocks"],
+        extraScreenerStocks: {},
+        screenerStocksPage2Tickers: [],
+        crypto: {},
+        indices: {},
+      },
+      derivedByTicker: {},
+    };
+  }
+  const marketData = await getSimpleMarketDataForWatchlistStocks(stockTickers);
+  const derivedByTicker = await getSimpleScreenerStockDerivedForTickers(
+    stockTickers,
+    marketData,
+    staticLayer.universe,
+  );
+  return {
+    identityByTicker: staticLayer.identityByTicker,
+    universeByTicker,
+    marketData,
+    derivedByTicker,
+  };
+}
+
+function stockDatum(batch: WatchlistStockBatch, ticker: string): SimpleMarketDatum | undefined {
+  const tk = ticker.trim().toUpperCase();
+  if (isTop10Ticker(tk)) return batch.marketData.stocks[tk];
+  return batch.marketData.extraScreenerStocks[tk] ?? batch.marketData.extraScreenerStocks[ticker];
+}
+
+function enrichStockWithBatch(entry: WatchlistRow, batch: WatchlistStockBatch): WatchlistEnrichedItem {
   const ticker = entry.ticker.trim().toUpperCase();
   const meta = getStockDetailMetaFromTicker(ticker);
+  const identity = batch.identityByTicker[ticker];
+  const u = batch.universeByTicker.get(ticker);
+  const datum = stockDatum(batch, ticker);
+  const derived = batch.derivedByTicker[ticker] ?? null;
+  const logoUrl =
+    identity?.logoUrl?.trim() || resolveEquityLogoUrlFromTicker(ticker).trim() || meta.logoUrl?.trim() || null;
 
-  // Reduced universe: realtime + daily-derived %s + fundamentals for valuation rows.
-  if (isTop10Ticker(ticker)) {
-    const [d, screener, f, staticLayer] = await Promise.all([
-      getSimpleMarketData(),
-      getSimpleScreenerDerived(),
-      fetchEodhdFundamentalsHighlights(meta.ticker),
-      getScreenerCompaniesStaticLayer(),
-    ]);
-    const datum = d.stocks[ticker];
-    const s = screener.top10[ticker];
-    const u = staticLayer.universe.find((r) => r.ticker.toUpperCase() === ticker);
-    let pct1m = s?.changePercent1M ?? u?.refund1mP ?? null;
-    let ytd = s?.changePercentYTD ?? u?.refundYtdP ?? null;
-    if ((pct1m == null || ytd == null) && !isSingleAssetMode()) {
-      const perf = await getStockPerformance(meta.ticker);
-      if (pct1m == null) pct1m = perf.m1;
-      if (ytd == null) ytd = perf.ytd;
-    }
-    const mcap = formatMarketCapDisplay(f?.marketCapUsd ?? null);
-    const pe = formatPeDisplay(f?.peTrailing ?? null, f?.peForward ?? null);
-    const earn = f?.nextEarningsDateDisplay?.trim();
-    const logoUrl = meta.logoUrl?.trim() || null;
+  if (u) {
+    const row = buildScreenerCompanyRowFromUniverse(
+      u,
+      0,
+      simpleDatumToQuote(datum),
+      logoUrl ?? "",
+      derived,
+      screenerPeDisplayFromUniverse(u),
+    );
     return {
       entryId: entry.id,
       storageKey: entry.ticker,
       symbol: meta.ticker,
-      name: meta.name,
+      name: identity?.name ?? row.name,
       kind: "stock",
       href: `/stock/${encodeURIComponent(meta.ticker)}`,
       logoUrl,
-      price: datum.price,
-      pct1d: datum.changePercent1D,
-      pct1m,
-      ytd,
-      mcapDisplay: mcap,
-      peDisplay: pe,
-      earningsDisplay: earn && earn.length > 0 ? earn : "-",
+      price: row.price,
+      pct1d: row.change1D,
+      pct1m: row.change1M,
+      ytd: row.changeYTD,
+      mcapDisplay: row.marketCap,
+      peDisplay: row.pe,
+      earningsDisplay: "-",
     };
   }
 
+  const price = datum?.price ?? null;
+  const pct1d = datum?.changePercent1D ?? null;
+  const pct1m = pickPct(null, derived?.changePercent1M);
+  const ytd = pickPct(null, derived?.changePercentYTD);
+
+  return {
+    entryId: entry.id,
+    storageKey: entry.ticker,
+    symbol: meta.ticker,
+    name: identity?.name ?? meta.name,
+    kind: "stock",
+    href: `/stock/${encodeURIComponent(meta.ticker)}`,
+    logoUrl,
+    price,
+    pct1d,
+    pct1m,
+    ytd,
+    mcapDisplay: "-",
+    peDisplay: "-",
+    earningsDisplay: "-",
+  };
+}
+
+async function enrichStock(entry: WatchlistRow, batch: WatchlistStockBatch | null): Promise<WatchlistEnrichedItem> {
+  if (batch) return enrichStockWithBatch(entry, batch);
+
+  const ticker = entry.ticker.trim().toUpperCase();
+  const meta = getStockDetailMetaFromTicker(ticker);
+
   if (isSingleAssetMode()) {
-    // Single-asset mode: avoid EODHD provider calls for watchlist enrichment.
     if (isSupportedAsset(ticker)) {
       const perf = getNvdaPerformance();
       const header = getNvdaHeaderMeta();
       return {
         entryId: entry.id,
         storageKey: entry.ticker,
-        symbol: header.fullName ? perf.ticker : perf.ticker,
+        symbol: perf.ticker,
         name: meta.name,
         kind: "stock",
         href: `/stock/${encodeURIComponent(meta.ticker)}`,
@@ -105,8 +193,6 @@ async function enrichStock(entry: WatchlistRow): Promise<WatchlistEnrichedItem> 
         earningsDisplay: "-",
       };
     }
-
-    // Unsupported ticker: keep row shape, but do not call providers.
     return {
       entryId: entry.id,
       storageKey: entry.ticker,
@@ -125,53 +211,14 @@ async function enrichStock(entry: WatchlistRow): Promise<WatchlistEnrichedItem> 
     };
   }
 
-  const [perfSettled, fundSettled] = await Promise.allSettled([
-    getStockPerformance(meta.ticker),
-    fetchEodhdFundamentalsHighlights(meta.ticker),
-  ]);
-
-  const p = perfSettled.status === "fulfilled" ? perfSettled.value : null;
-  const f = fundSettled.status === "fulfilled" ? fundSettled.value : null;
-  const logoUrl = resolveEquityLogoUrlFromTicker(meta.ticker).trim() || meta.logoUrl?.trim() || null;
-
-  let price = p?.price ?? null;
-  let pct1d = p?.d1 ?? null;
-  if (price == null || pct1d == null) {
-    const d = await getSimpleMarketData();
-    const snap = isTop10Ticker(ticker) ? d.stocks[ticker] : d.extraScreenerStocks[ticker];
-    if (snap) {
-      if (price == null) price = snap.price;
-      if (pct1d == null) pct1d = snap.changePercent1D;
-    }
-  }
-
-  const mcap = formatMarketCapDisplay(f?.marketCapUsd ?? null);
-  const pe = formatPeDisplay(f?.peTrailing ?? null, f?.peForward ?? null);
-  const earn = f?.nextEarningsDateDisplay?.trim();
-
-  return {
-    entryId: entry.id,
-    storageKey: entry.ticker,
-    symbol: meta.ticker,
-    name: meta.name,
-    kind: "stock",
-    href: `/stock/${encodeURIComponent(meta.ticker)}`,
-    logoUrl,
-    price,
-    pct1d,
-    pct1m: p?.m1 ?? null,
-    ytd: p?.ytd ?? null,
-    mcapDisplay: mcap,
-    peDisplay: pe,
-    earningsDisplay: earn && earn.length > 0 ? earn : "-",
-  };
+  const b = await buildWatchlistStockBatch([ticker]);
+  return enrichStockWithBatch(entry, b);
 }
 
 async function enrichCrypto(entry: WatchlistRow): Promise<WatchlistEnrichedItem> {
   const { symbol } = parseWatchlistStorageKey(entry.ticker);
   const sup = toSupportedCryptoTicker(symbol);
 
-  // Reduced universe: realtime + daily-derived %s; market cap from crypto asset fundamentals path.
   if (sup && CRYPTO_SCREENER_ALL.some((c) => c.symbol === sup)) {
     const [d, cryptoDer, row] = await Promise.all([
       getSimpleMarketData(),
@@ -204,11 +251,9 @@ async function enrichCrypto(entry: WatchlistRow): Promise<WatchlistEnrichedItem>
   }
 
   if (isSingleAssetMode()) {
-    // Single-asset mode: do not hit crypto providers; show a placeholder row.
     const meta = ALL_CRYPTO_METAS.find((m) => m.symbol.toUpperCase() === (sup ?? "").toUpperCase());
     const name = meta?.name ?? symbol;
     const logoUrl = sup ? getCryptoLogoUrl(sup) : null;
-
     return {
       entryId: entry.id,
       storageKey: entry.ticker,
@@ -248,9 +293,7 @@ async function enrichCrypto(entry: WatchlistRow): Promise<WatchlistEnrichedItem>
 
   const meta = ALL_CRYPTO_METAS.find((m) => m.symbol.toUpperCase() === sup.toUpperCase());
   const row = await getCryptoAsset(sup);
-
   const price = row?.price ?? null;
-
   const logoUrl = getCryptoLogoUrl(sup);
   const mcapRaw = row?.marketCap?.trim() ?? "";
   const mcapDisplay = mcapRaw && mcapRaw !== "-" ? (mcapRaw.startsWith("$") ? mcapRaw : `$${mcapRaw}`) : "-";
@@ -269,7 +312,7 @@ async function enrichCrypto(entry: WatchlistRow): Promise<WatchlistEnrichedItem>
     ytd: row?.changePercentYTD ?? null,
     mcapDisplay,
     peDisplay: "-",
-    earningsDisplay: "-",
+    earningsDisplay: "—",
   };
 }
 
@@ -279,7 +322,6 @@ async function enrichIndex(entry: WatchlistRow): Promise<WatchlistEnrichedItem> 
   const name = meta?.name ?? symbol;
   const displaySymbol = meta?.symbol ?? symbol;
 
-  // Reduced universe: index realtime + daily-derived %s (screener top-10 benchmarks).
   if (SCREENER_INDEX_SYMBOL_SET.has(displaySymbol)) {
     const [d, idxDer] = await Promise.all([getSimpleMarketData(), getSimpleIndicesDerived()]);
     const datum = d.indices[displaySymbol] ?? { price: null, previousClose: null, changePercent1D: null };
@@ -289,17 +331,6 @@ async function enrichIndex(entry: WatchlistRow): Promise<WatchlistEnrichedItem> 
       changePercentYTD: null,
       last5DailyCloses: [],
     };
-    let price = datum.price;
-    let pct1d = datum.changePercent1D;
-    let pct1m = i.changePercent1M ?? null;
-    let ytd = i.changePercentYTD ?? null;
-    if ((price == null || pct1d == null || pct1m == null || ytd == null) && !isSingleAssetMode()) {
-      const perf = await getStockPerformance(displaySymbol);
-      if (price == null) price = perf.price;
-      if (pct1d == null) pct1d = perf.d1;
-      if (pct1m == null) pct1m = perf.m1;
-      if (ytd == null) ytd = perf.ytd;
-    }
     return {
       entryId: entry.id,
       storageKey: entry.ticker,
@@ -308,10 +339,10 @@ async function enrichIndex(entry: WatchlistRow): Promise<WatchlistEnrichedItem> 
       kind: "index",
       href: `/index/${encodeURIComponent(displaySymbol)}`,
       logoUrl: null,
-      price,
-      pct1d,
-      pct1m,
-      ytd,
+      price: datum.price,
+      pct1d: datum.changePercent1D,
+      pct1m: i.changePercent1M ?? null,
+      ytd: i.changePercentYTD ?? null,
       mcapDisplay: "—",
       peDisplay: "—",
       earningsDisplay: "—",
@@ -319,7 +350,6 @@ async function enrichIndex(entry: WatchlistRow): Promise<WatchlistEnrichedItem> 
   }
 
   if (isSingleAssetMode()) {
-    // Single-asset mode: avoid index providers.
     return {
       entryId: entry.id,
       storageKey: entry.ticker,
@@ -338,9 +368,6 @@ async function enrichIndex(entry: WatchlistRow): Promise<WatchlistEnrichedItem> 
     };
   }
 
-  const perfSettled = await Promise.allSettled([getStockPerformance(symbol)]);
-  const p = perfSettled[0]?.status === "fulfilled" ? perfSettled[0].value : null;
-
   return {
     entryId: entry.id,
     storageKey: entry.ticker,
@@ -349,35 +376,50 @@ async function enrichIndex(entry: WatchlistRow): Promise<WatchlistEnrichedItem> 
     kind: "index",
     href: "/screener",
     logoUrl: null,
-    price: p?.price ?? null,
-    pct1d: p?.d1 ?? null,
-    pct1m: p?.m1 ?? null,
-    ytd: p?.ytd ?? null,
+    price: null,
+    pct1d: null,
+    pct1m: null,
+    ytd: null,
     mcapDisplay: "-",
     peDisplay: "-",
     earningsDisplay: "-",
   };
 }
 
-export async function buildWatchlistEnrichedGroups(items: WatchlistRow[]): Promise<{
+async function buildWatchlistEnrichedGroupsUncached(items: WatchlistRow[]): Promise<{
   stocks: WatchlistEnrichedItem[];
   crypto: WatchlistEnrichedItem[];
   indices: WatchlistEnrichedItem[];
 }> {
-  const results = await runWithConcurrencyLimit(items, WATCHLIST_ENRICH_CONCURRENCY, async (entry) => {
-    try {
-      const { kind } = parseWatchlistStorageKey(entry.ticker);
-      const row =
-        kind === "crypto"
-          ? await enrichCrypto(entry)
-          : kind === "index"
-            ? await enrichIndex(entry)
-            : await enrichStock(entry);
-      return { kind, row } as const;
-    } catch {
-      return null;
-    }
-  });
+  const stockEntries: WatchlistRow[] = [];
+  const otherEntries: WatchlistRow[] = [];
+  for (const entry of items) {
+    const { kind } = parseWatchlistStorageKey(entry.ticker);
+    if (kind === "stock") stockEntries.push(entry);
+    else otherEntries.push(entry);
+  }
+
+  const stockTickers = stockEntries.map((e) => parseWatchlistStorageKey(e.ticker).symbol);
+  const stockBatch = isSingleAssetMode() ? null : await buildWatchlistStockBatch(stockTickers);
+
+  const results = await runWithConcurrencyLimit(
+    items,
+    WATCHLIST_ENRICH_CONCURRENCY,
+    async (entry) => {
+      try {
+        const { kind } = parseWatchlistStorageKey(entry.ticker);
+        const row =
+          kind === "crypto"
+            ? await enrichCrypto(entry)
+            : kind === "index"
+              ? await enrichIndex(entry)
+              : await enrichStock(entry, stockBatch);
+        return { kind, row } as const;
+      } catch {
+        return null;
+      }
+    },
+  );
 
   const stocks: WatchlistEnrichedItem[] = [];
   const crypto: WatchlistEnrichedItem[] = [];
@@ -391,4 +433,18 @@ export async function buildWatchlistEnrichedGroups(items: WatchlistRow[]): Promi
   }
 
   return { stocks, crypto, indices };
+}
+
+export async function buildWatchlistEnrichedGroups(items: WatchlistRow[]): Promise<{
+  stocks: WatchlistEnrichedItem[];
+  crypto: WatchlistEnrichedItem[];
+  indices: WatchlistEnrichedItem[];
+}> {
+  const tickersKey = items
+    .map((i) => i.ticker.trim().toUpperCase())
+    .sort()
+    .join(",");
+  return withScreenerUsMarketCache("watchlist-enriched-groups-v3", () => buildWatchlistEnrichedGroupsUncached(items), [
+    tickersKey,
+  ]);
 }

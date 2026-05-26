@@ -10,7 +10,14 @@ import type { ScreenerTableRow } from "@/lib/screener/screener-static";
 import type { EodhdRealtimePayload } from "@/lib/market/eodhd-realtime";
 import type { SimpleScreenerStockDerived } from "@/lib/market/simple-market-layer";
 
-function peFromScreenerSnapshot(u: TopCompanyUniverseRow): string {
+function pickScreenerPct(snapshot: number | null | undefined, fromBars: number | null | undefined): number | null {
+  if (snapshot != null && Number.isFinite(snapshot)) return snapshot;
+  if (fromBars != null && Number.isFinite(fromBars)) return fromBars;
+  return null;
+}
+
+/** Implied P/E from screener universe snapshot — no per-row fundamentals HTTP. */
+export function screenerPeDisplayFromUniverse(u: TopCompanyUniverseRow): string {
   const price = u.adjustedClose;
   const eps = u.earningsShare;
   if (price != null && eps != null && eps > 0 && Number.isFinite(price) && Number.isFinite(eps)) {
@@ -32,7 +39,7 @@ export async function resolveScreenerPeToMatchKeyStats(
     const s = peRatioKeyStatsDisplayFromFundamentalsRoot(root);
     if (s !== "—") return s;
   }
-  if (u) return peFromScreenerSnapshot(u);
+  if (u) return screenerPeDisplayFromUniverse(u);
   return "—";
 }
 
@@ -64,10 +71,8 @@ export function buildScreenerCompanyRowFromUniverse(
     change1D = u.refund1dP;
   }
 
-  const change1M =
-    u.refund1mP != null && Number.isFinite(u.refund1mP) ? u.refund1mP : (barDerived?.changePercent1M ?? null);
-  const changeYTD =
-    u.refundYtdP != null && Number.isFinite(u.refundYtdP) ? u.refundYtdP : (barDerived?.changePercentYTD ?? null);
+  const change1M = pickScreenerPct(u.refund1mP, barDerived?.changePercent1M);
+  const changeYTD = pickScreenerPct(u.refundYtdP, barDerived?.changePercentYTD);
 
   return {
     id: rankId,
@@ -79,7 +84,7 @@ export function buildScreenerCompanyRowFromUniverse(
     change1M,
     changeYTD,
     marketCap: formatUsdCompact(u.marketCapUsd),
-    pe: peKeyStatsDisplay === undefined ? peFromScreenerSnapshot(u) : peKeyStatsDisplay,
+    pe: peKeyStatsDisplay === undefined ? screenerPeDisplayFromUniverse(u) : peKeyStatsDisplay,
     trend: [],
   };
 }

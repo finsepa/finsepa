@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { mergeLogoMemory, readLogoMemory } from "@/lib/logos/logo-memory";
+import { readScreenerCompanyIdentity } from "@/lib/screener/screener-company-identity-storage";
 import { cn } from "@/lib/utils";
 import { logoColors } from "./data";
 
@@ -97,9 +98,11 @@ export function CompanyLogo({
   size?: "xs" | "sm" | "28" | "md" | "40" | "lg";
 }) {
   const [failed, setFailed] = useState(false);
+  const cachedIdentity = symbol ? readScreenerCompanyIdentity(symbol) : null;
+  const displayName = cachedIdentity?.name?.trim() || name;
   const fromServer = typeof logoUrl === "string" ? logoUrl.trim() : "";
   const fromMem = symbol ? readLogoMemory(symbol) : undefined;
-  const effective = (fromServer || (fromMem ?? "")).trim();
+  const effective = (fromServer || cachedIdentity?.logoUrl || (fromMem ?? "")).trim();
 
   useEffect(() => {
     if (symbol && fromServer) mergeLogoMemory(symbol, fromServer);
@@ -114,7 +117,7 @@ export function CompanyLogo({
     (/^https?:\/\//i.test(effective) || effective.startsWith("//") || effective.startsWith("/"));
 
   if (failed || !hasLogoUrl) {
-    return <InitialsMark name={name} size={size} />;
+    return <InitialsMark name={displayName} size={size} />;
   }
   const px =
     size === "xs" ? 20 : size === "sm" ? 24 : size === "28" ? 28 : size === "lg" ? 48 : size === "40" ? 40 : 32;

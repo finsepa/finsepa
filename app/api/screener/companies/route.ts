@@ -1,8 +1,17 @@
 import { NextResponse } from "next/server";
 
-import { CACHE_CONTROL_PRIVATE_SCREENER_ROW } from "@/lib/data/cache-policy";
+import {
+  CACHE_CONTROL_PRIVATE_SCREENER_COMPANIES_FROZEN,
+  CACHE_CONTROL_PRIVATE_SCREENER_COMPANIES_PAGE,
+} from "@/lib/data/cache-policy";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { buildScreenerAllStockRowsForGainers, buildScreenerCompaniesApiResponse } from "@/lib/screener/screener-page-payload";
+import { buildScreenerCompaniesApiResponse } from "@/lib/screener/screener-page-payload";
+import {
+  buildScreenerGainersLosersApiResponse,
+  buildScreenerIndustriesApiResponse,
+  buildScreenerSectorsApiResponse,
+} from "@/lib/screener/screener-stocks-subtab-data";
+import { getScreenerUsMarketCacheEpoch } from "@/lib/screener/screener-us-market-cache";
 import { SCREENER_COMPANIES_PAGE_SIZE } from "@/lib/screener/screener-markets-page-size";
 import {
   parseScreenerIndustryDrill,
@@ -19,16 +28,25 @@ export async function GET(request: Request) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const url = new URL(request.url);
+  const epoch = getScreenerUsMarketCacheEpoch();
+  const cacheControl =
+    epoch.mode === "frozen"
+      ? CACHE_CONTROL_PRIVATE_SCREENER_COMPANIES_FROZEN
+      : CACHE_CONTROL_PRIVATE_SCREENER_COMPANIES_PAGE;
+
+  if (url.searchParams.get("view") === "sectors") {
+    const body = await buildScreenerSectorsApiResponse();
+    return NextResponse.json(body, { headers: { "Cache-Control": cacheControl } });
+  }
+
+  if (url.searchParams.get("view") === "industries") {
+    const body = await buildScreenerIndustriesApiResponse();
+    return NextResponse.json(body, { headers: { "Cache-Control": cacheControl } });
+  }
+
   if (url.searchParams.get("gainersLosers") === "1") {
-    const rows = await buildScreenerAllStockRowsForGainers();
-    return NextResponse.json(
-      { page: 1, pageSize: rows.length, total: rows.length, rows },
-      {
-        headers: {
-          "Cache-Control": CACHE_CONTROL_PRIVATE_SCREENER_ROW,
-        },
-      },
-    );
+    const { gainers, losers } = await buildScreenerGainersLosersApiResponse();
+    return NextResponse.json({ gainers, losers }, { headers: { "Cache-Control": cacheControl } });
   }
 
   const page = Math.max(1, Number(url.searchParams.get("page") ?? "1") || 1);
@@ -49,7 +67,7 @@ export async function GET(request: Request) {
 
   return NextResponse.json(body, {
     headers: {
-      "Cache-Control": CACHE_CONTROL_PRIVATE_SCREENER_ROW,
+      "Cache-Control": cacheControl,
     },
   });
 }

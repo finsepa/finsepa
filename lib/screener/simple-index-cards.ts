@@ -1,8 +1,9 @@
 import "server-only";
 
-import { unstable_cache } from "next/cache";
-
-import { REVALIDATE_SCREENER_MARKET } from "@/lib/data/cache-policy";
+import {
+  getScreenerUsMarketCacheEpoch,
+  withScreenerUsMarketCache,
+} from "@/lib/screener/screener-us-market-cache";
 import type { IndexCardData } from "@/lib/screener/indices-today";
 import { withIndexCardLocalFallbacks } from "@/lib/screener/screener-index-card-fallbacks";
 import {
@@ -110,13 +111,23 @@ function compute1d(lastPrice: number | null, prevClose: number | null): number |
 async function loadSimpleIndexCardsUncached(): Promise<IndexCardData[]> {
   const [data, indicesDerived] = await Promise.all([getSimpleMarketDataIndicesTab(), getSimpleIndicesDerived()]);
 
+  const epoch = getScreenerUsMarketCacheEpoch();
   const now = new Date();
   const toUnix = Math.floor(now.getTime() / 1000);
   const fromUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0);
   const fromUnix = Math.floor(fromUtc / 1000);
 
+  const skipIntraday = epoch.mode === "frozen";
   const [spxIntradaySettled, ndxIntradaySettled, djiIntradaySettled, rutIntradaySettled, vixIntradaySettled] =
-    await Promise.allSettled([
+    skipIntraday
+    ? [
+        { status: "fulfilled" as const, value: [] },
+        { status: "fulfilled" as const, value: [] },
+        { status: "fulfilled" as const, value: [] },
+        { status: "fulfilled" as const, value: [] },
+        { status: "fulfilled" as const, value: [] },
+      ]
+    : await Promise.allSettled([
     fetchEodhdIntraday("GSPC.INDX", fromUnix, toUnix, "5m"),
     fetchEodhdIntraday("NDX.INDX", fromUnix, toUnix, "5m"),
     fetchEodhdIntraday("DJI.INDX", fromUnix, toUnix, "5m"),
@@ -168,17 +179,41 @@ async function loadSimpleIndexCardsUncached(): Promise<IndexCardData[]> {
   const vixLast = vixSeries.length ? vixSeries[vixSeries.length - 1]! : null;
 
   const ix = data.indices;
-  const spxPrice = spxLast != null && Number.isFinite(spxLast) ? spxLast : ix["GSPC.INDX"]?.price ?? null;
-  const ndxPrice = ndxLast != null && Number.isFinite(ndxLast) ? ndxLast : ix["NDX.INDX"]?.price ?? null;
-  const djiPrice = djiLast != null && Number.isFinite(djiLast) ? djiLast : ix["DJI.INDX"]?.price ?? null;
-  const rutPrice = rutLast != null && Number.isFinite(rutLast) ? rutLast : ix["IWM.US"]?.price ?? null;
-  const vixPrice = vixLast != null && Number.isFinite(vixLast) ? vixLast : ix["VIX.INDX"]?.price ?? null;
+  const frozen = epoch.mode === "frozen";
+
+  function indexLiveOrClose(
+    eodhdSymbol: string,
+    intradayLast: number | null,
+  ): { price: number | null; changePercent1D: number | null } {
+    const quote = ix[eodhdSymbol];
+    if (frozen) {
+      const price = quote?.price ?? null;
+      return {
+        price,
+        changePercent1D:
+          quote?.changePercent1D ?? compute1d(price, quote?.previousClose ?? null),
+      };
+    }
+    const price =
+      intradayLast != null && Number.isFinite(intradayLast) ? intradayLast : (quote?.price ?? null);
+    return {
+      price,
+      changePercent1D:
+        quote?.changePercent1D ?? compute1d(price, quote?.previousClose ?? null),
+    };
+  }
+
+  const spx = indexLiveOrClose("GSPC.INDX", spxLast);
+  const ndx = indexLiveOrClose("NDX.INDX", ndxLast);
+  const dji = indexLiveOrClose("DJI.INDX", djiLast);
+  const rut = indexLiveOrClose("IWM.US", rutLast);
+  const vix = indexLiveOrClose("VIX.INDX", vixLast);
 
   return withIndexCardLocalFallbacks([
     {
       name: "S&P 500",
-      price: spxPrice,
-      changePercent1D: compute1d(spxPrice, ix["GSPC.INDX"]?.previousClose ?? null),
+      price: spx.price,
+      changePercent1D: spx.changePercent1D,
       sparklineToday: sparklineForIndexCard(
         "GSPC.INDX",
         spxSeries,
@@ -190,8 +225,8 @@ async function loadSimpleIndexCardsUncached(): Promise<IndexCardData[]> {
     },
     {
       name: "Nasdaq 100",
-      price: ndxPrice,
-      changePercent1D: compute1d(ndxPrice, ix["NDX.INDX"]?.previousClose ?? null),
+      price: ndx.price,
+      changePercent1D: ndx.changePercent1D,
       sparklineToday: sparklineForIndexCard(
         "NDX.INDX",
         ndxSeries,
@@ -203,8 +238,8 @@ async function loadSimpleIndexCardsUncached(): Promise<IndexCardData[]> {
     },
     {
       name: "Dow Jones",
-      price: djiPrice,
-      changePercent1D: compute1d(djiPrice, ix["DJI.INDX"]?.previousClose ?? null),
+      price: dji.price,
+      changePercent1D: dji.changePercent1D,
       sparklineToday: sparklineForIndexCard(
         "DJI.INDX",
         djiSeries,
@@ -216,8 +251,8 @@ async function loadSimpleIndexCardsUncached(): Promise<IndexCardData[]> {
     },
     {
       name: "Russell 2000",
-      price: rutPrice,
-      changePercent1D: compute1d(rutPrice, ix["IWM.US"]?.previousClose ?? null),
+      price: rut.price,
+      changePercent1D: rut.changePercent1D,
       sparklineToday: sparklineForIndexCard(
         "IWM.US",
         rutSeries,
@@ -229,8 +264,8 @@ async function loadSimpleIndexCardsUncached(): Promise<IndexCardData[]> {
     },
     {
       name: "VIX",
-      price: vixPrice,
-      changePercent1D: compute1d(vixPrice, ix["VIX.INDX"]?.previousClose ?? null),
+      price: vix.price,
+      changePercent1D: vix.changePercent1D,
       sparklineToday: sparklineForIndexCard(
         "VIX.INDX",
         vixSeries,
@@ -243,7 +278,7 @@ async function loadSimpleIndexCardsUncached(): Promise<IndexCardData[]> {
   ]);
 }
 
-export const getSimpleIndexCards = unstable_cache(loadSimpleIndexCardsUncached, ["simple-index-cards-v8-local-fallbacks"], {
-  revalidate: REVALIDATE_SCREENER_MARKET,
-});
+export async function getSimpleIndexCards(): Promise<IndexCardData[]> {
+  return withScreenerUsMarketCache("simple-index-cards-v10-frozen-close", () => loadSimpleIndexCardsUncached());
+}
 

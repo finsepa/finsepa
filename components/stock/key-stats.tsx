@@ -1,7 +1,10 @@
 "use client";
 
 import type { ChartingMetricId } from "@/lib/market/stock-charting-metrics";
-import type { StockKeyStatsBundle } from "@/lib/market/stock-key-stats-bundle-types";
+import {
+  stockKeyStatsBundleHasContent,
+  type StockKeyStatsBundle,
+} from "@/lib/market/stock-key-stats-bundle-types";
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { CalendarDays } from "lucide-react";
 
@@ -495,8 +498,9 @@ function KeyStatsInner({
   /** Dividends (Yield / Payout) and all other listed Key Stats rows with a charting metric open the fundamentals modal. Risk rows have no fiscal series. */
   onOpenMetricChart?: (metricId: ChartingMetricId) => void;
 }) {
-  const [loading, setLoading] = useState(() => !initialBundle);
-  const [bundle, setBundle] = useState<StockKeyStatsBundle | null>(() => initialBundle ?? null);
+  const seededBundle = stockKeyStatsBundleHasContent(initialBundle) ? initialBundle! : null;
+  const [loading, setLoading] = useState(() => !seededBundle);
+  const [bundle, setBundle] = useState<StockKeyStatsBundle | null>(() => seededBundle);
   const [mobileTab, setMobileTab] = useState<KeyStatsTabId>("basic");
 
   const mobileCard = useMemo(() => {
@@ -595,27 +599,36 @@ function KeyStatsInner({
   }, [bundle, loading, mobileTab, onOpenMetricChart]);
 
   useEffect(() => {
-    if (initialBundle) {
-      setBundle(initialBundle);
+    if (stockKeyStatsBundleHasContent(initialBundle)) {
+      setBundle(initialBundle!);
       setLoading(false);
       return;
     }
     let cancelled = false;
     async function load() {
       setLoading(true);
-      try {
-        const res = await fetch(`/api/stocks/${encodeURIComponent(ticker)}/key-stats-bundle`, {
-          credentials: "include",
-          cache: "no-store",
-        });
-        if (!res.ok) return;
-        const json = (await res.json()) as { bundle?: StockKeyStatsBundle | null };
-        if (!cancelled) setBundle(json.bundle ?? null);
-      } catch {
-        /* keep prior bundle */
-      } finally {
-        if (!cancelled) setLoading(false);
+      setBundle(null);
+      for (let attempt = 0; attempt < 2 && !cancelled; attempt++) {
+        try {
+          const res = await fetch(`/api/stocks/${encodeURIComponent(ticker)}/key-stats-bundle`, {
+            credentials: "include",
+            cache: "no-store",
+          });
+          if (!res.ok) continue;
+          const json = (await res.json()) as { bundle?: StockKeyStatsBundle | null };
+          const next = json.bundle ?? null;
+          if (!cancelled && stockKeyStatsBundleHasContent(next)) {
+            setBundle(next);
+            break;
+          }
+        } catch {
+          /* retry once */
+        }
+        if (attempt === 0 && !cancelled) {
+          await new Promise((r) => setTimeout(r, 400));
+        }
       }
+      if (!cancelled) setLoading(false);
     }
     void load();
     return () => {
