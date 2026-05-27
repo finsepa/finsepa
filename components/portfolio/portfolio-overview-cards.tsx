@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useEffect, useId, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { usePortfolioOverviewAthPublisher } from "@/components/portfolio/portfolio-overview-ath-context";
 import { ChevronDown } from "lucide-react";
@@ -113,6 +113,10 @@ function PortfolioOverviewCardsInner({
   const [period, setPeriod] = useState<OverviewProfitPeriod>("all");
   /** False until overview-market finishes when any symbols need a quote. */
   const [overviewReady, setOverviewReady] = useState(false);
+  const lastOverviewLoadKeyRef = useRef("");
+  const overviewLoadGenRef = useRef(0);
+  const overviewReadyRef = useRef(false);
+  overviewReadyRef.current = overviewReady;
   const [perfBySymbol, setPerfBySymbol] = useState<Record<string, StockPerformance | null>>({});
   const [spyPerf, setSpyPerf] = useState<StockPerformance | null>(null);
   const [yieldBySymbol, setYieldBySymbol] = useState<Record<string, number | null>>({});
@@ -134,18 +138,25 @@ function PortfolioOverviewCardsInner({
       return;
     }
 
+    const startYmd = earliestStockBuyYmd(transactions);
+    let inceptionPriceTickers: string[] = [];
+    if (startYmd) {
+      const sharesMap = replayStockSharesUpTo(transactions, startYmd);
+      const syms = [...sharesMap.entries()]
+        .filter(([, sh]) => sh > 0)
+        .map(([s]) => s.toUpperCase());
+      inceptionPriceTickers = [...new Set([SPY_BENCHMARK, ...syms])];
+    }
+
+    const loadKey = `${symbols.join(",")}|${startYmd ?? ""}|${inceptionPriceTickers.join(",")}`;
+    if (loadKey === lastOverviewLoadKeyRef.current && overviewReadyRef.current) {
+      return;
+    }
+    lastOverviewLoadKeyRef.current = loadKey;
+
+    const gen = ++overviewLoadGenRef.current;
     setOverviewReady(false);
     try {
-      const startYmd = earliestStockBuyYmd(transactions);
-      let inceptionPriceTickers: string[] = [];
-      if (startYmd) {
-        const sharesMap = replayStockSharesUpTo(transactions, startYmd);
-        const syms = [...sharesMap.entries()]
-          .filter(([, sh]) => sh > 0)
-          .map(([s]) => s.toUpperCase());
-        inceptionPriceTickers = [...new Set([SPY_BENCHMARK, ...syms])];
-      }
-
       const res = await fetch("/api/portfolio/overview-market", {
         method: "POST",
         credentials: "include",
@@ -161,6 +172,8 @@ function PortfolioOverviewCardsInner({
       if (!res.ok) {
         throw new Error("overview-market failed");
       }
+
+      if (gen !== overviewLoadGenRef.current) return;
 
       const data = (await res.json()) as {
         spy: StockPerformance | null;
@@ -180,12 +193,15 @@ function PortfolioOverviewCardsInner({
       }
       setInceptionSpyPrice0(spy0);
     } catch {
+      if (gen !== overviewLoadGenRef.current) return;
       setSpyPerf(null);
       setPerfBySymbol({});
       setYieldBySymbol({});
       setInceptionSpyPrice0(null);
     } finally {
-      setOverviewReady(true);
+      if (gen === overviewLoadGenRef.current) {
+        setOverviewReady(true);
+      }
     }
   }, [symbols, transactions]);
 

@@ -103,12 +103,36 @@ export async function fetchPriceOnDateClient(symbol: string, ymd: string): Promi
 }
 
 export async function fetchLiveMarketPriceClient(symbol: string): Promise<number | null> {
-  if (preferCryptoQuotesFirst(symbol)) {
-    const c = await fetchCryptoLivePrice(symbol);
-    if (c != null) return c;
-    return null;
+  const batch = await fetchPortfolioLivePricesClient([symbol]);
+  const p = batch[symbol.trim().toUpperCase()];
+  return p ?? null;
+}
+
+/** One POST for all holding symbols — EODHD realtime batch (1 credit/symbol), not N× intraday. */
+export async function fetchPortfolioLivePricesClient(
+  symbols: string[],
+): Promise<Record<string, number | null>> {
+  const unique = [...new Set(symbols.map((s) => s.trim().toUpperCase()).filter(Boolean))];
+  if (!unique.length) return {};
+
+  try {
+    const res = await fetch("/api/portfolio/live-quotes", {
+      method: "POST",
+      credentials: "include",
+      cache: "no-store",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ symbols: unique }),
+    });
+    if (!res.ok) return Object.fromEntries(unique.map((s) => [s, null]));
+    const data = (await res.json()) as { prices?: Record<string, number | null> };
+    const prices = data.prices ?? {};
+    const out: Record<string, number | null> = {};
+    for (const s of unique) {
+      const p = prices[s];
+      out[s] = typeof p === "number" && Number.isFinite(p) && p > 0 ? p : null;
+    }
+    return out;
+  } catch {
+    return Object.fromEntries(unique.map((s) => [s, null]));
   }
-  const s = await fetchStockLivePrice(symbol);
-  if (s != null) return s;
-  return fetchCryptoLivePrice(symbol);
 }

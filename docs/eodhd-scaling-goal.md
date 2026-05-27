@@ -45,6 +45,12 @@ Cron schedule: every 15 minutes (`vercel.json`). Market ingest skips when frozen
 - **Flag:** Uses `FINSEPA_MARKET_SNAPSHOT_READ` (`0` disables asset reads/writes).
 - **Portfolio:** `/stock/*` defers workspace `live-price` refresh for all holdings (detail page still polls the viewed ticker via `/api/stocks/[ticker]/live-price`).
 
+## Portfolio EODHD optimizations
+
+- **Live marks:** `POST /api/portfolio/live-quotes` batches holdings via EODHD realtime (~1 credit/symbol per chunk), replacing N× `/api/stocks/.../live-price` intraday attempts (~5 credits each).
+- **Hydrate:** Local snapshot applies without quotes; server merge refreshes quotes **once per ledger fingerprint** (no double local+remote fan-out).
+- **Overview:** `POST /api/portfolio/overview-market` shares one fundamentals fetch per symbol for dividend yield; `unstable_cache` 60s per symbol set; client skips duplicate loads when holdings unchanged.
+
 ## P6 — load test & budget proof
 
 **Goal:** Show **≤80,000** traced EODHD HTTP calls/day at **1,000 DAU** (headroom under the 100k plan).

@@ -51,6 +51,7 @@ import { computePublicPortfolioListingMetrics, withListingOwner } from "@/lib/po
 import { buildPublicListingSnapshot } from "@/lib/portfolio/public-listing-snapshot";
 import { dispatchPublicListingsChanged, putPublicPortfolioListingRequest } from "@/lib/portfolio/sync-public-listing-client";
 import { portfolioPathnameUsesEagerLiveQuotes } from "@/lib/portfolio/portfolio-live-quotes-paths";
+import { portfolioLedgerFingerprint } from "@/lib/portfolio/portfolio-ledger-fingerprint";
 import {
   refreshHoldingMarketPrices,
   replayTradeTransactionsToHoldings,
@@ -387,6 +388,8 @@ export function PortfolioWorkspaceProvider({
    */
   const [holdingsMarkToMarketReady, setHoldingsMarkToMarketReady] = useState(true);
   const holdingsQuoteRefreshGenRef = useRef(0);
+  const appliedLedgerFingerprintRef = useRef<string | null>(null);
+  const quotedLedgerFingerprintRef = useRef<string | null>(null);
   /** True after {@link applyWorkspaceState} skipped live quotes on a read-mostly route; cleared when catch-up runs. */
   const [deferredQuotesPending, setDeferredQuotesPending] = useState(false);
   const pathname = usePathname() ?? "";
@@ -424,65 +427,87 @@ export function PortfolioWorkspaceProvider({
     return portfolioIsCombined(p ?? null);
   }, [portfolios, selectedPortfolioId]);
 
-  const applyWorkspaceState = useCallback((saved: PersistedPortfolioState) => {
-    const refreshGen = ++holdingsQuoteRefreshGenRef.current;
-    const eagerQuotes = portfolioPathnameUsesEagerLiveQuotes(pathnameRef.current);
-
-    if (eagerQuotes) {
-      setDeferredQuotesPending(false);
-      setHoldingsMarkToMarketReady(false);
-    }
-
-    setPortfolios(saved.portfolios);
-    const lastTouched = loadLastSelectedPortfolioId(userId);
-    const resolved = coalesceSelectedPortfolioId(
-      saved.portfolios,
-      saved.selectedPortfolioId,
-      lastTouched,
-    );
-    setSelectedPortfolioState(resolved);
-    saveLastSelectedPortfolioId(userId, resolved);
-    setTransactionsByPortfolioId(saved.transactionsByPortfolioId);
-
-    // Rebuild holdings from the ledger so splits always apply correctly (and avoids persisting stale math).
+  const rebuildHoldingsFromSaved = useCallback((saved: PersistedPortfolioState) => {
     const rebuilt: Record<string, PortfolioHolding[]> = {};
     for (const p of saved.portfolios) {
       if (portfolioIsCombined(p)) continue;
       const txs = saved.transactionsByPortfolioId[p.id] ?? [];
       rebuilt[p.id] = replayTradeTransactionsToHoldings(txs);
     }
-    setHoldingsByPortfolioId(rebuilt);
+    return rebuilt;
+  }, []);
 
-    if (!eagerQuotes) {
-      setDeferredQuotesPending(true);
-      if (holdingsQuoteRefreshGenRef.current === refreshGen) {
+  const scheduleHoldingsQuoteRefresh = useCallback(
+    (rebuilt: Record<string, PortfolioHolding[]>, ledgerFingerprint: string) => {
+      const eagerQuotes = portfolioPathnameUsesEagerLiveQuotes(pathnameRef.current);
+
+      if (!eagerQuotes) {
+        setDeferredQuotesPending(true);
         setHoldingsMarkToMarketReady(true);
+        return;
       }
-      return;
-    }
 
-    /** Replay uses last fill as provisional `marketPrice`; refresh from live quotes after hydrate/merge. */
-    void (async () => {
-      try {
-        const entries = await Promise.all(
-          Object.entries(rebuilt).map(async ([pid, holds]) => {
-            if (holds.length === 0) return [pid, holds] as const;
-            const quoted = await refreshHoldingMarketPrices(holds);
-            return [pid, quoted] as const;
-          }),
-        );
-        const quoted = Object.fromEntries(entries) as Record<string, PortfolioHolding[]>;
-        // Ignore stale completions (e.g. local hydrate finished after server merge already ran).
-        if (holdingsQuoteRefreshGenRef.current === refreshGen) {
-          setHoldingsByPortfolioId((prev) => ({ ...prev, ...quoted }));
-        }
-      } finally {
-        if (holdingsQuoteRefreshGenRef.current === refreshGen) {
-          setHoldingsMarkToMarketReady(true);
-        }
+      setDeferredQuotesPending(false);
+
+      if (quotedLedgerFingerprintRef.current === ledgerFingerprint) {
+        setHoldingsMarkToMarketReady(true);
+        return;
       }
-    })();
-  }, [userId]);
+      quotedLedgerFingerprintRef.current = ledgerFingerprint;
+
+      const refreshGen = ++holdingsQuoteRefreshGenRef.current;
+      setHoldingsMarkToMarketReady(false);
+
+      void (async () => {
+        try {
+          const entries = await Promise.all(
+            Object.entries(rebuilt).map(async ([pid, holds]) => {
+              if (holds.length === 0) return [pid, holds] as const;
+              const quoted = await refreshHoldingMarketPrices(holds);
+              return [pid, quoted] as const;
+            }),
+          );
+          const quoted = Object.fromEntries(entries) as Record<string, PortfolioHolding[]>;
+          if (holdingsQuoteRefreshGenRef.current === refreshGen) {
+            setHoldingsByPortfolioId((prev) => ({ ...prev, ...quoted }));
+          }
+        } finally {
+          if (holdingsQuoteRefreshGenRef.current === refreshGen) {
+            setHoldingsMarkToMarketReady(true);
+          }
+        }
+      })();
+    },
+    [],
+  );
+
+  const applyWorkspaceState = useCallback(
+    (saved: PersistedPortfolioState, opts?: { refreshQuotes?: boolean }) => {
+      const ledgerFingerprint = portfolioLedgerFingerprint(saved);
+      const rebuilt = rebuildHoldingsFromSaved(saved);
+
+      if (appliedLedgerFingerprintRef.current !== ledgerFingerprint) {
+        appliedLedgerFingerprintRef.current = ledgerFingerprint;
+
+        setPortfolios(saved.portfolios);
+        const lastTouched = loadLastSelectedPortfolioId(userId);
+        const resolved = coalesceSelectedPortfolioId(
+          saved.portfolios,
+          saved.selectedPortfolioId,
+          lastTouched,
+        );
+        setSelectedPortfolioState(resolved);
+        saveLastSelectedPortfolioId(userId, resolved);
+        setTransactionsByPortfolioId(saved.transactionsByPortfolioId);
+        setHoldingsByPortfolioId(rebuilt);
+      }
+
+      if (opts?.refreshQuotes !== false) {
+        scheduleHoldingsQuoteRefresh(rebuilt, ledgerFingerprint);
+      }
+    },
+    [userId, rebuildHoldingsFromSaved, scheduleHoldingsQuoteRefresh],
+  );
 
   /** Run deferred mark-to-market once when user lands on a portfolio-heavy route after a skipped hydrate. */
   useEffect(() => {
@@ -536,7 +561,7 @@ export function PortfolioWorkspaceProvider({
     setPortfolioBootstrapFromLocal(false);
     const local = loadPersistedPortfolioStateForUser(userId);
     if (local && local.portfolios.length > 0) {
-      applyWorkspaceState(local);
+      applyWorkspaceState(local, { refreshQuotes: false });
       setPortfolioBootstrapFromLocal(true);
     }
   }, [userId, applyWorkspaceState]);

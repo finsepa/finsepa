@@ -115,6 +115,14 @@ function resolvePayoutRatio(
 
 export type KeyStatsDividendsRow = { label: string; value: string };
 
+/** Dividend yield as a ratio (0.02 = 2%) from an already-loaded fundamentals root. */
+export function dividendYieldRatioFromFundamentalsRoot(root: Record<string, unknown>): number | null {
+  const hl = root.Highlights && typeof root.Highlights === "object" ? (root.Highlights as Record<string, unknown>) : null;
+  const val = root.Valuation && typeof root.Valuation === "object" ? (root.Valuation as Record<string, unknown>) : null;
+  const ratiosRow = pickLatestFinancialSubTable(root, [["Ratios", "Financial_Ratios"]]);
+  return resolveDividendYieldRatio(root, [hl, val, ratiosRow]);
+}
+
 export async function fetchEodhdKeyStatsDividends(
   ticker: string,
   fundamentalsRoot?: Record<string, unknown> | null,

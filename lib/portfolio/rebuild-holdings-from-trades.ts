@@ -1,7 +1,7 @@
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 import { newHoldingId } from "@/components/portfolio/portfolio-types";
 import { applyStockSplitToHolding } from "@/lib/portfolio/apply-stock-split-to-holding";
-import { fetchLiveMarketPriceClient } from "@/lib/portfolio/client-symbol-quotes";
+import { fetchPortfolioLivePricesClient } from "@/lib/portfolio/client-symbol-quotes";
 import { mergeBuyIntoPosition, type BuyLot } from "@/lib/portfolio/holding-position";
 import { splitRatioFromTransaction } from "@/lib/portfolio/split-ratio-from-transaction";
 
@@ -124,20 +124,16 @@ export function replayTradeTransactionsToHoldings(transactions: PortfolioTransac
 
 /** Fetch last price per symbol and refresh `marketPrice` / `currentValue`. */
 export async function refreshHoldingMarketPrices(holdings: PortfolioHolding[]): Promise<PortfolioHolding[]> {
-  const results = await Promise.all(
-    holdings.map(async (h) => {
-      try {
-        const p = await fetchLiveMarketPriceClient(h.symbol);
-        if (p == null) return h;
-        return {
-          ...h,
-          marketPrice: p,
-          currentValue: h.shares * p,
-        };
-      } catch {
-        return h;
-      }
-    }),
-  );
-  return results;
+  if (!holdings.length) return holdings;
+  const symbols = [...new Set(holdings.map((h) => h.symbol.trim().toUpperCase()).filter(Boolean))];
+  const prices = await fetchPortfolioLivePricesClient(symbols);
+  return holdings.map((h) => {
+    const p = prices[h.symbol.trim().toUpperCase()];
+    if (p == null) return h;
+    return {
+      ...h,
+      marketPrice: p,
+      currentValue: h.shares * p,
+    };
+  });
 }
