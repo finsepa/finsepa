@@ -1,9 +1,20 @@
 /**
- * Routes where we **skip** live mark-to-market on workspace hydrate (saves provider calls on
+ * Routes where we **skip** live mark-to-market on workspace hydrate (saves EODHD calls on
  * read-mostly pages). Everywhere else we refresh so the top-bar portfolio total matches
  * Portfolio → Overview (otherwise `/stock/...` etc. kept last-fill prices and read low).
+ *
+ * Market list pages (`/screener`, `/heatmaps`) must defer — otherwise each visit fans out
+ * per-ticker stock live-price API calls (intraday) for every holding while browsing quotes.
  */
-const DEFER_LIVE_QUOTE_REFRESH_PREFIXES = ["/earnings", "/macro", "/news", "/superinvestors"] as const;
+const DEFER_LIVE_QUOTE_REFRESH_PREFIXES = [
+  "/screener",
+  "/heatmaps",
+  "/watchlist",
+  "/earnings",
+  "/macro",
+  "/news",
+  "/superinvestors",
+] as const;
 
 function pathnameDefersLiveQuotes(pathname: string): boolean {
   const p = pathname || "";
