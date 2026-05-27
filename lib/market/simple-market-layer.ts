@@ -38,6 +38,13 @@ import { getScreenerEtfsTop20, screenerEtfTickers } from "@/lib/screener/screene
 import { SCREENER_INDEX_SYMBOLS } from "@/lib/screener/screener-indices-universe";
 import { toEodhdUsSymbol } from "@/lib/market/eodhd-symbol";
 import { runWithConcurrencyLimit } from "@/lib/utils/run-with-concurrency-limit";
+import { MARKET_SNAPSHOT_KEY } from "@/lib/market/market-snapshot-keys";
+import { readMarketSnapshot } from "@/lib/market/market-snapshot-store";
+import {
+  pickScreenerDerivedForTickers,
+  sliceSimpleMarketDataForStockTickers,
+  sliceSimpleMarketDataScreenerStocksPage1,
+} from "@/lib/market/market-snapshot-slice";
 
 /**
  * EODHD bills per historical EOD symbol; we cannot merge multi-symbol ranges in one HTTP call.
@@ -433,6 +440,9 @@ async function loadSimpleMarketDataEtfsTabUncached(): Promise<SimpleMarketData> 
  * Used by `/api/screener/companies` pagination to avoid the full 30+ symbol quote fan-out.
  */
 export async function getSimpleMarketDataForScreenerPage2Slice(page2Tickers: string[]): Promise<SimpleMarketData> {
+  const fromSnapshot = await readMarketSnapshot<SimpleMarketData>(MARKET_SNAPSHOT_KEY.stocksAllPages);
+  if (fromSnapshot) return sliceSimpleMarketDataForStockTickers(fromSnapshot, page2Tickers);
+
   const tickersKey = [...page2Tickers]
     .map((t) => t.trim().toUpperCase())
     .sort()
@@ -454,6 +464,10 @@ export async function getSimpleMarketDataForScreenerPage2Slice(page2Tickers: str
 /** Watchlist rail/page: quotes for saved stock tickers only (top-10 batch + page-2 slice). */
 export async function getSimpleMarketDataForWatchlistStocks(stockTickers: string[]): Promise<SimpleMarketData> {
   const normalized = [...new Set(stockTickers.map((t) => t.trim().toUpperCase()).filter(Boolean))].sort();
+  const fromSnapshot = await readMarketSnapshot<SimpleMarketData>(MARKET_SNAPSHOT_KEY.stocksAllPages);
+  if (fromSnapshot && normalized.length) {
+    return sliceSimpleMarketDataForStockTickers(fromSnapshot, normalized);
+  }
   if (!normalized.length) {
     return loadSimpleMarketDataBatch({
       includeTop10Stocks: false,
@@ -483,6 +497,8 @@ export async function getSimpleMarketDataForWatchlistStocks(stockTickers: string
 
 /** Screener Crypto tab page 2 — quotes for {@link CRYPTO_SCREENER_PAGE2} only (on-demand pagination). */
 export async function getSimpleMarketDataCryptoScreenerPage2(): Promise<SimpleMarketData> {
+  const snap = await readMarketSnapshot<SimpleMarketData>(MARKET_SNAPSHOT_KEY.cryptoPage2);
+  if (snap) return snap;
   return loadSimpleMarketDataBatch({
     includeTop10Stocks: false,
     page2Tickers: [],
@@ -502,19 +518,31 @@ export async function getSimpleMarketDataSlim(): Promise<SimpleMarketData> {
 }
 
 export async function getSimpleMarketDataScreenerStocks(): Promise<SimpleMarketData> {
+  const fromSnapshot = await readMarketSnapshot<SimpleMarketData>(MARKET_SNAPSHOT_KEY.stocksAllPages);
+  if (fromSnapshot) return sliceSimpleMarketDataScreenerStocksPage1(fromSnapshot);
   return withScreenerUsMarketCache(
     "simple-market-data-v17-screener-stocks-session",
     () => loadSimpleMarketDataScreenerStocksUncached(),
   );
 }
 
-export const getSimpleMarketDataCryptoTab = unstable_cache(
-  loadSimpleMarketDataCryptoTabUncached,
-  ["simple-market-data-v16-crypto-tab-ttl"],
-  { revalidate: REVALIDATE_SCREENER_MARKET },
-);
+async function getSimpleMarketDataCryptoTabCached(): Promise<SimpleMarketData> {
+  return unstable_cache(
+    loadSimpleMarketDataCryptoTabUncached,
+    ["simple-market-data-v16-crypto-tab-ttl"],
+    { revalidate: REVALIDATE_SCREENER_MARKET },
+  )();
+}
+
+export async function getSimpleMarketDataCryptoTab(): Promise<SimpleMarketData> {
+  const snap = await readMarketSnapshot<SimpleMarketData>(MARKET_SNAPSHOT_KEY.cryptoTab);
+  if (snap) return snap;
+  return getSimpleMarketDataCryptoTabCached();
+}
 
 export async function getSimpleMarketDataIndicesTab(): Promise<SimpleMarketData> {
+  const snap = await readMarketSnapshot<SimpleMarketData>(MARKET_SNAPSHOT_KEY.indicesTab);
+  if (snap) return snap;
   return withScreenerUsMarketCache(
     "simple-market-data-v17-indices-tab-session",
     () => loadSimpleMarketDataIndicesTabUncached(),
@@ -526,6 +554,8 @@ export async function getSimpleMarketDataEtfsTab(): Promise<SimpleMarketData> {
 }
 
 export async function getSimpleMarketDataScreenerStocksAllPages(): Promise<SimpleMarketData> {
+  const fromSnapshot = await readMarketSnapshot<SimpleMarketData>(MARKET_SNAPSHOT_KEY.stocksAllPages);
+  if (fromSnapshot) return fromSnapshot;
   return withScreenerUsMarketCache(
     "simple-market-data-v3-screener-stocks-all-pages-session",
     () => loadSimpleMarketDataScreenerStocksAllPagesUncached(),
@@ -602,6 +632,8 @@ async function loadSimpleScreenerDerivedTop10Uncached(): Promise<SimpleScreenerD
 }
 
 export async function getSimpleScreenerDerived(): Promise<SimpleScreenerDerived> {
+  const snap = await readMarketSnapshot<SimpleScreenerDerived>(MARKET_SNAPSHOT_KEY.screenerDerived);
+  if (snap) return snap;
   return withScreenerUsMarketCache("simple-screener-derived-v12-session", () => loadSimpleScreenerDerivedUncached());
 }
 
@@ -700,6 +732,9 @@ export async function getSimpleScreenerStockDerivedForTickers(
   marketLive: SimpleMarketData,
   universeRows?: readonly { ticker: string; refund1mP: number | null; refundYtdP: number | null }[],
 ): Promise<Record<string, SimpleScreenerStockDerived>> {
+  const fromSnapshot = await readMarketSnapshot<SimpleScreenerDerived>(MARKET_SNAPSHOT_KEY.screenerDerived);
+  if (fromSnapshot) return pickScreenerDerivedForTickers(fromSnapshot, tickers);
+
   const tickersKey = [...tickers]
     .map((t) => t.trim().toUpperCase())
     .sort()
@@ -753,9 +788,17 @@ async function loadSimpleCryptoDerivedUncached(): Promise<SimpleCryptoDerived> {
   return out;
 }
 
-export const getSimpleCryptoDerived = unstable_cache(loadSimpleCryptoDerivedUncached, ["simple-crypto-derived-v9-ton-pol-eodhd"], {
-  revalidate: REVALIDATE_TIER_SCREENER_DERIVED,
-});
+async function getSimpleCryptoDerivedCached(): Promise<SimpleCryptoDerived> {
+  return unstable_cache(loadSimpleCryptoDerivedUncached, ["simple-crypto-derived-v9-ton-pol-eodhd"], {
+    revalidate: REVALIDATE_TIER_SCREENER_DERIVED,
+  })();
+}
+
+export async function getSimpleCryptoDerived(): Promise<SimpleCryptoDerived> {
+  const snap = await readMarketSnapshot<SimpleCryptoDerived>(MARKET_SNAPSHOT_KEY.cryptoDerived);
+  if (snap) return snap;
+  return getSimpleCryptoDerivedCached();
+}
 
 /** Screener Crypto tab page 1 — daily bars for {@link CRYPTO_TOP10} only. */
 async function loadSimpleCryptoDerivedTop10Uncached(): Promise<SimpleCryptoDerived> {
@@ -830,6 +873,8 @@ async function loadSimpleIndicesDerivedUncached(): Promise<SimpleIndicesDerived>
 }
 
 export async function getSimpleIndicesDerived(): Promise<SimpleIndicesDerived> {
+  const snap = await readMarketSnapshot<SimpleIndicesDerived>(MARKET_SNAPSHOT_KEY.indicesDerived);
+  if (snap) return snap;
   return withScreenerUsMarketCache("simple-indices-derived-v3-session", () => loadSimpleIndicesDerivedUncached());
 }
 
@@ -853,4 +898,40 @@ async function loadSimpleEtfsDerivedUncached(): Promise<SimpleEtfsDerived> {
 
 export async function getSimpleEtfsDerived(): Promise<SimpleEtfsDerived> {
   return withScreenerUsMarketCache("simple-etfs-derived-v2-session", () => loadSimpleEtfsDerivedUncached());
+}
+
+// --- Cron ingest (EODHD → Supabase; bypasses snapshot reads above) ---
+
+export async function buildMarketSnapshotStocksAllPagesForIngest(): Promise<SimpleMarketData> {
+  return loadSimpleMarketDataScreenerStocksAllPagesUncached();
+}
+
+export async function buildMarketSnapshotScreenerDerivedForIngest(): Promise<SimpleScreenerDerived> {
+  return loadSimpleScreenerDerivedUncached();
+}
+
+export async function buildMarketSnapshotCryptoTabForIngest(): Promise<SimpleMarketData> {
+  return loadSimpleMarketDataCryptoTabUncached();
+}
+
+export async function buildMarketSnapshotCryptoPage2ForIngest(): Promise<SimpleMarketData> {
+  return loadSimpleMarketDataBatch({
+    includeTop10Stocks: false,
+    page2Tickers: [],
+    includeCrypto: true,
+    cryptoBatch: "page2",
+    includeIndices: false,
+  });
+}
+
+export async function buildMarketSnapshotCryptoDerivedForIngest(): Promise<SimpleCryptoDerived> {
+  return loadSimpleCryptoDerivedUncached();
+}
+
+export async function buildMarketSnapshotIndicesTabForIngest(): Promise<SimpleMarketData> {
+  return loadSimpleMarketDataIndicesTabUncached();
+}
+
+export async function buildMarketSnapshotIndicesDerivedForIngest(): Promise<SimpleIndicesDerived> {
+  return loadSimpleIndicesDerivedUncached();
 }

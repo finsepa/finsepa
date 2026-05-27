@@ -38,8 +38,8 @@ export function runWithProviderTrace<T>(label: string, fn: () => Promise<T>): Pr
 }
 
 /**
- * Reserve hourly EODHD budget + optional per-scope trace. Call immediately before `fetch` to eodhd.com.
- * @returns false when the rolling-hour request cap is full — skip the fetch and return empty data upstream.
+ * Reserve hourly + optional daily EODHD budget and optional per-scope trace. Call immediately before `fetch` to eodhd.com.
+ * @returns false when the rolling-hour or rolling-day cap is full — skip the fetch and return empty data upstream.
  */
 export function traceEodhdHttp(fnName: string, meta?: Record<string, unknown>): boolean {
   if (!tryConsumeEodhdRequestSlot()) {
