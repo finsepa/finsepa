@@ -15,6 +15,7 @@
 | P3 | Done | Hub snapshots: macro, news (3 tabs), earnings (3 weeks), economy (US) |
 | P4 | Done | Search: 300ms debounce, EODHD only for queries ≥2 chars; charting/comparison skip SSR stock bundles |
 | P5 | Done | Per-ticker asset snapshots (`asset_{TICKER}`); defer portfolio live quotes on `/stock/*` |
+| P6 | Done | Daily load model + traced traffic probe API + CLI |
 
 ## P2 operations
 
@@ -43,3 +44,50 @@ Cron schedule: every 15 minutes (`vercel.json`). Market ingest skips when frozen
 - **Reads:** Same segment hit serves the cached bundle. **Live** session: only 1D chart + `headerLiveSpotUsd` are refetched (~2 EODHD paths). **Frozen** session: serve snapshot as-is (chart included).
 - **Flag:** Uses `FINSEPA_MARKET_SNAPSHOT_READ` (`0` disables asset reads/writes).
 - **Portfolio:** `/stock/*` defers workspace `live-price` refresh for all holdings (detail page still polls the viewed ticker via `/api/stocks/[ticker]/live-price`).
+
+## P6 — load test & budget proof
+
+**Goal:** Show **≤80,000** traced EODHD HTTP calls/day at **1,000 DAU** (headroom under the 100k plan).
+
+### 1. Analytical model (local, no API key)
+
+```bash
+npm run eodhd:estimate
+```
+
+Prints `1000_dau_moderate` and `1000_dau_heavy` scenarios. Exit code **1** only if **moderate** exceeds 80k (`heavy` is a stress case). Tune constants in `lib/market/eodhd-daily-load-model.ts` (and keep `scripts/eodhd-load-estimate.mjs` in sync).
+
+### 2. Traced probe (staging/prod)
+
+Measures real per-scope EODHD counts on one serverless isolate:
+
+```bash
+CRON_SECRET='…' BASE_URL=https://app.finsepa.com npm run eodhd:probe
+```
+
+Optional worst-case cron ingest (expensive):
+
+```bash
+CRON_SECRET='…' BASE_URL=https://app.finsepa.com npm run eodhd:probe -- --ingest
+```
+
+API: `GET /api/cron/eodhd-traffic-probe?ticker=AAPL` (same `Authorization: Bearer $CRON_SECRET` as market cron).
+
+**Calibrate the model** from probe output:
+
+| Probe scope | Use for scenario field |
+|-------------|-------------------------|
+| `screener/page1-snapshot-read` | `eodhdPerListPageView` (expect **0**) |
+| `asset/AAPL-cold` | `eodhdPerAssetColdLoad` |
+| `asset/AAPL-warm` | `eodhdPerAssetWarmLoad` |
+| `cron/market-ingest` (with `?ingest=1`) | `eodhdPerMarketIngest` |
+| `cron/hub-ingest` | `eodhdPerHubIngestRun` |
+
+### 3. Production week check
+
+1. `FINSEPA_EODHD_MAX_REQUESTS_PER_DAY=80000` on Vercel.
+2. Optional `FINSEPA_PROVIDER_BUDGET_LOG=1` when debugging cap hits.
+3. Compare EODHD provider dashboard daily usage vs `npm run eodhd:estimate` totals.
+4. Re-run `eodhd:probe` after changing ingest cadence or asset traffic.
+
+**Note:** In-process caps and probe counts are **per Node isolate**, not global across all Vercel instances. The model assumes snapshot sharing so user traffic does not multiply list-page EODHD cost.

@@ -183,7 +183,8 @@ async function loadStockPageHotFields(
  * One EOD daily fetch (same lookback as chart `ALL` / performance) powers overview chart + mini-table together.
  * Header + key-stats share one fundamentals fetch inside their respective loaders (bundle pulls once and passes root to sections).
  */
-async function loadStockPageInitialDataUncached(routeTicker: string): Promise<StockPageInitialData | null> {
+/** Full SSR fan-out (no Supabase asset snapshot). Used by traffic probes. */
+export async function loadStockPageInitialDataUncached(routeTicker: string): Promise<StockPageInitialData | null> {
   const ticker = routeTicker.trim().toUpperCase();
   if (!ticker) return null;
 

@@ -24,17 +24,41 @@ type TraceBucket = {
 
 const als = new AsyncLocalStorage<TraceBucket>();
 
+export type ProviderTraceSnapshot = {
+  label: string;
+  eodhdHttp: number;
+  byFn: Record<string, number>;
+};
+
+function logProviderTrace(bucket: TraceBucket) {
+  if (PROVIDER_TRACE_ENABLED) {
+    console.info(
+      `[FINSEPA_PROVIDER_TRACE] scope=${bucket.label} eodhd_http=${bucket.eodhdHttp} byFn=${JSON.stringify(bucket.byFn)}`,
+    );
+  }
+}
+
 export function runWithProviderTrace<T>(label: string, fn: () => Promise<T>): Promise<T> {
   const bucket: TraceBucket = { label, eodhdHttp: 0, byFn: {} };
   return als.run(bucket, async () => {
     const result = await fn();
-    if (PROVIDER_TRACE_ENABLED) {
-      console.info(
-        `[FINSEPA_PROVIDER_TRACE] scope=${label} eodhd_http=${bucket.eodhdHttp} byFn=${JSON.stringify(bucket.byFn)}`,
-      );
-    }
+    logProviderTrace(bucket);
     return result;
   });
+}
+
+/** Same as {@link runWithProviderTrace} but returns per-scope EODHD counts (P6 probes). */
+export async function runWithProviderTraceCollect<T>(
+  label: string,
+  fn: () => Promise<T>,
+): Promise<{ result: T; trace: ProviderTraceSnapshot }> {
+  const bucket: TraceBucket = { label, eodhdHttp: 0, byFn: {} };
+  const result = await als.run(bucket, fn);
+  logProviderTrace(bucket);
+  return {
+    result,
+    trace: { label, eodhdHttp: bucket.eodhdHttp, byFn: { ...bucket.byFn } },
+  };
 }
 
 /**
