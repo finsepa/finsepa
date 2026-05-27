@@ -5,6 +5,7 @@ import {
   CACHE_CONTROL_PRIVATE_SCREENER_COMPANIES_PAGE,
 } from "@/lib/data/cache-policy";
 import { buildWatchlistEnrichedGroups } from "@/lib/market/watchlist-enrichment";
+import { runWithProviderTrace } from "@/lib/market/provider-trace";
 import { requireAuthUser, AuthRequiredError } from "@/lib/watchlist/api-auth";
 import { getScreenerUsMarketCacheEpoch } from "@/lib/screener/screener-us-market-cache";
 import { syntheticWatchlistRows } from "@/lib/watchlist/synthetic";
@@ -56,7 +57,9 @@ export async function POST(request: Request) {
       epoch.mode === "frozen"
         ? CACHE_CONTROL_PRIVATE_SCREENER_COMPANIES_FROZEN
         : CACHE_CONTROL_PRIVATE_SCREENER_COMPANIES_PAGE;
-    const { stocks, crypto, indices } = await buildWatchlistEnrichedGroups(rows);
+    const { stocks, crypto, indices } = await runWithProviderTrace(`/api/watchlist/enrich count=${rows.length}`, () =>
+      buildWatchlistEnrichedGroups(rows),
+    );
 
     if (DEBUG) {
       console.info("[watchlist enrich] result", {

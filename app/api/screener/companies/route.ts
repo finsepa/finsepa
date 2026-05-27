@@ -5,6 +5,7 @@ import {
   CACHE_CONTROL_PRIVATE_SCREENER_COMPANIES_PAGE,
 } from "@/lib/data/cache-policy";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { runWithProviderTrace } from "@/lib/market/provider-trace";
 import { buildScreenerCompaniesApiResponse } from "@/lib/screener/screener-page-payload";
 import {
   buildScreenerGainersLosersApiResponse,
@@ -35,17 +36,23 @@ export async function GET(request: Request) {
       : CACHE_CONTROL_PRIVATE_SCREENER_COMPANIES_PAGE;
 
   if (url.searchParams.get("view") === "sectors") {
-    const body = await buildScreenerSectorsApiResponse();
+    const body = await runWithProviderTrace("/api/screener/companies view=sectors", () =>
+      buildScreenerSectorsApiResponse(),
+    );
     return NextResponse.json(body, { headers: { "Cache-Control": cacheControl } });
   }
 
   if (url.searchParams.get("view") === "industries") {
-    const body = await buildScreenerIndustriesApiResponse();
+    const body = await runWithProviderTrace("/api/screener/companies view=industries", () =>
+      buildScreenerIndustriesApiResponse(),
+    );
     return NextResponse.json(body, { headers: { "Cache-Control": cacheControl } });
   }
 
   if (url.searchParams.get("gainersLosers") === "1") {
-    const { gainers, losers } = await buildScreenerGainersLosersApiResponse();
+    const { gainers, losers } = await runWithProviderTrace("/api/screener/companies gainersLosers=1", () =>
+      buildScreenerGainersLosersApiResponse(),
+    );
     return NextResponse.json({ gainers, losers }, { headers: { "Cache-Control": cacheControl } });
   }
 
@@ -59,11 +66,13 @@ export async function GET(request: Request) {
     url.searchParams.get(SCREENER_INDUSTRY_SECTOR_QUERY),
   );
 
-  const body = await buildScreenerCompaniesApiResponse(page, pageSize, {
-    sector: industryDrill ? null : sector,
-    industry: industryDrill?.industry ?? null,
-    industrySector: industryDrill?.sector ?? null,
-  });
+  const body = await runWithProviderTrace(`/api/screener/companies page=${page} size=${pageSize}`, () =>
+    buildScreenerCompaniesApiResponse(page, pageSize, {
+      sector: industryDrill ? null : sector,
+      industry: industryDrill?.industry ?? null,
+      industrySector: industryDrill?.sector ?? null,
+    }),
+  );
 
   return NextResponse.json(body, {
     headers: {

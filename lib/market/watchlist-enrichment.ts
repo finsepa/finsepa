@@ -7,11 +7,14 @@ import { getCryptoAsset } from "@/lib/market/crypto-asset";
 import { ALL_CRYPTO_METAS, CRYPTO_SCREENER_ALL, toSupportedCryptoTicker } from "@/lib/market/eodhd-crypto";
 import type { EodhdRealtimePayload } from "@/lib/market/eodhd-realtime";
 import {
-  getSimpleCryptoDerived,
+  getSimpleCryptoDerivedForMetas,
   getSimpleIndicesDerived,
-  getSimpleMarketData,
+  getSimpleMarketDataCryptoScreenerPage2,
+  getSimpleMarketDataCryptoTab,
+  getSimpleMarketDataIndicesTab,
   getSimpleMarketDataForWatchlistStocks,
   getSimpleScreenerStockDerivedForTickers,
+  type SimpleCryptoDerived,
   type SimpleMarketData,
   type SimpleMarketDatum,
   type SimpleScreenerStockDerived,
@@ -220,15 +223,22 @@ async function enrichCrypto(entry: WatchlistRow): Promise<WatchlistEnrichedItem>
   const sup = toSupportedCryptoTicker(symbol);
 
   if (sup && CRYPTO_SCREENER_ALL.some((c) => c.symbol === sup)) {
+    const derivedMeta =
+      CRYPTO_SCREENER_ALL.find((m) => m.symbol.toUpperCase() === sup.toUpperCase()) ??
+      ALL_CRYPTO_METAS.find((m) => m.symbol.toUpperCase() === sup.toUpperCase()) ??
+      null;
     const [d, cryptoDer, row] = await Promise.all([
-      getSimpleMarketData(),
-      getSimpleCryptoDerived(),
+      CRYPTO_SCREENER_ALL.slice(0, 10).some((m) => m.symbol.toUpperCase() === sup.toUpperCase())
+        ? getSimpleMarketDataCryptoTab()
+        : getSimpleMarketDataCryptoScreenerPage2(),
+      derivedMeta ? getSimpleCryptoDerivedForMetas([derivedMeta]) : Promise.resolve({} as SimpleCryptoDerived),
       getCryptoAsset(sup),
     ]);
-    const datum = d.crypto[sup];
-    const c = cryptoDer[sup];
-    const meta = ALL_CRYPTO_METAS.find((m) => m.symbol.toUpperCase() === sup.toUpperCase());
-    const name = meta?.name ?? sup;
+    const datum = d.crypto[sup] ?? d.crypto[sup.toUpperCase()];
+    const c =
+      (derivedMeta ? cryptoDer[derivedMeta.symbol] : null) ?? cryptoDer[sup] ?? cryptoDer[sup.toUpperCase()];
+    const displayMeta = ALL_CRYPTO_METAS.find((m) => m.symbol.toUpperCase() === sup.toUpperCase());
+    const name = displayMeta?.name ?? sup;
     const logoUrl = getCryptoLogoUrl(sup);
     const mcapRaw = row?.marketCap?.trim() ?? "";
     const mcapDisplay = mcapRaw && mcapRaw !== "-" ? mcapRaw : "—";
@@ -323,7 +333,7 @@ async function enrichIndex(entry: WatchlistRow): Promise<WatchlistEnrichedItem> 
   const displaySymbol = meta?.symbol ?? symbol;
 
   if (SCREENER_INDEX_SYMBOL_SET.has(displaySymbol)) {
-    const [d, idxDer] = await Promise.all([getSimpleMarketData(), getSimpleIndicesDerived()]);
+    const [d, idxDer] = await Promise.all([getSimpleMarketDataIndicesTab(), getSimpleIndicesDerived()]);
     const datum = d.indices[displaySymbol] ?? { price: null, previousClose: null, changePercent1D: null };
     const i = idxDer[displaySymbol] ?? {
       changePercent7D: null,
