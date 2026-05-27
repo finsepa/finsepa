@@ -13,7 +13,8 @@
 | P1补 | Done | Defer `/charting`, `/comparison`, `/economy` |
 | P2 | Done | `market_snapshot` table + cron + read path for screener/heatmap/watchlist |
 | P3 | Done | Hub snapshots: macro, news (3 tabs), earnings (3 weeks), economy (US) |
-| P4+ | Planned | Search; charting/comparison; asset detail cache (P5) |
+| P4 | Done | Search: 300ms debounce, EODHD only for queries ≥2 chars; charting/comparison skip SSR stock bundles |
+| P5 | Planned | Asset detail cache (per-ticker) |
 
 ## P2 operations
 
@@ -29,3 +30,9 @@
 Cron schedule: every 15 minutes (`vercel.json`). Market ingest skips when frozen segment is fresh or live segment updated &lt;14m ago. Hub ingest skips per-key when segment is fresh (macro/news daily, earnings/economy weekly).
 
 **P3 hub keys:** `hub_macro_dashboard`, `hub_news_*`, `hub_earnings_week_YYYY-MM-DD`, `hub_economy_week_YYYY-MM-DD_US`. Earnings ingest uses universe market-cap only (never set `EARNINGS_USE_FUNDAMENTALS_MC=1` in prod).
+
+## P4 behavior
+
+- **Search:** 300ms debounce (`SEARCH_CLIENT_DEBOUNCE_MS`). Queries of 1 char match local universe only; EODHD `/search` runs only when trimmed query length ≥ 2 (`SEARCH_MIN_QUERY_LENGTH` in `global-asset-search` / `eodhd-search`).
+- **Charting:** no SSR `loadStockPageInitialData`; workspace loads `/api/.../fundamentals-series` per ticker on demand.
+- **Comparison:** no SSR stock bundles; `ComparisonWorkspace` fetches `header-meta`, `performance`, and `key-stats-bundle` per ticker via `fetchComparisonTickerSlice`.

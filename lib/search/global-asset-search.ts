@@ -15,6 +15,7 @@ import { shouldHideOtcForeignLineDuplicate } from "@/lib/market/otc-duplicate-ti
 import { getTop500Universe } from "@/lib/screener/top500-companies";
 import { TOP10_TICKERS } from "@/lib/screener/top10-config";
 import { POPULAR_US_ETFS } from "@/lib/search/popular-us-etfs";
+import { SEARCH_MIN_QUERY_LENGTH } from "@/lib/search/search-policy";
 import type { SearchAssetItem, SearchScope } from "@/lib/search/search-types";
 
 type RankedSearch = { item: SearchAssetItem; score: number; marketCapUsd: number | null };
@@ -243,10 +244,12 @@ async function runGlobalAssetSearch(qNorm: string, scope: SearchScope): Promise<
   const needCrypto = scope === "all" || scope === "crypto";
   const needStocks = scope === "all" || scope === "stocks";
 
+  const useRemoteSearch = n.length >= SEARCH_MIN_QUERY_LENGTH;
+
   const [cryptoMatches, universe, remote] = await Promise.all([
     needCrypto ? cryptoUniverseMatches(n, scoreItem) : Promise.resolve([] as RankedSearch[]),
     needStocks ? getTop500Universe() : Promise.resolve([]),
-    fetchEodhdSearch(n, scope === "all" ? 120 : 50),
+    useRemoteSearch ? fetchEodhdSearch(n, scope === "all" ? 120 : 50) : Promise.resolve([]),
   ]);
 
   for (const c of cryptoMatches) {

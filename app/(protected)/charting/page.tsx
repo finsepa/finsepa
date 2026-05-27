@@ -5,8 +5,6 @@ import {
   buildChartingAllowedTickerList,
   filterChartingUrlTickersForSession,
 } from "@/lib/charting/charting-allowed-tickers";
-import { loadStockPageInitialData } from "@/lib/market/stock-page-initial-data";
-import type { StockPageInitialData } from "@/lib/market/stock-page-initial-data";
 import { isChartingSessionReady, parseChartingTickerList } from "@/lib/market/stock-charting-metrics";
 import { getScreenerCompaniesStaticLayer } from "@/lib/screener/screener-companies-layers";
 
@@ -33,15 +31,8 @@ export default async function ChartingRoutePage({ searchParams }: PageProps) {
 
   const urlSaysChart = isChartingSessionReady(allowedTickers, metricParam);
 
-  const initialByTicker: Record<string, StockPageInitialData> = {};
-  if (urlSaysChart) {
-    const loaded = await Promise.all(
-      allowedTickers.map(async (t) => ({ t, d: await loadStockPageInitialData(t) })),
-    );
-    for (const { t, d } of loaded) {
-      if (d && d.ticker === t) initialByTicker[t] = d;
-    }
-  }
+  /** P4: no SSR `loadStockPageInitialData` — chart workspace fetches `/fundamentals-series` per ticker on demand. */
+  const initialByTicker = {};
 
   /** URL has ticker(s) + metric(s). Do not require SSR preload — workspaces fetch fundamentals client-side if needed. */
   const chartSessionReady = urlSaysChart;

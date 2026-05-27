@@ -3,8 +3,6 @@ import { Suspense } from "react";
 import { ComparisonPage } from "@/components/comparison/comparison-page";
 import { buildChartingAllowedTickerList } from "@/lib/charting/charting-allowed-tickers";
 import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
-import { loadStockPageInitialData } from "@/lib/market/stock-page-initial-data";
-import type { StockPageInitialData } from "@/lib/market/stock-page-initial-data";
 import { isComparisonSessionReady, parseChartingTickerList } from "@/lib/market/stock-charting-metrics";
 import { getScreenerCompaniesStaticLayer } from "@/lib/screener/screener-companies-layers";
 
@@ -33,15 +31,8 @@ export default async function ComparisonRoutePage({ searchParams }: PageProps) {
 
   const comparisonReady = isComparisonSessionReady(allowedTickers);
 
-  const initialByTicker: Record<string, StockPageInitialData> = {};
-  if (comparisonReady) {
-    const loaded = await Promise.all(
-      allowedTickers.map(async (t) => ({ t, d: await loadStockPageInitialData(t) })),
-    );
-    for (const { t, d } of loaded) {
-      if (d && d.ticker === t) initialByTicker[t] = d;
-    }
-  }
+  /** P4: no SSR stock bundles — `ComparisonWorkspace` loads slices via API per ticker. */
+  const initialByTicker = {};
 
   return (
     <Suspense fallback={<div className="min-h-[40vh] px-4 py-4 sm:px-9 sm:py-6" aria-hidden />}>

@@ -14,7 +14,7 @@ import { SearchResultRow } from "@/components/search/search-result-row";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
 import { watchlistStorageKeyForSearchItem } from "@/lib/search/watchlist-storage-key";
 
-const SEARCH_DEBOUNCE_MS = 250;
+import { SEARCH_CLIENT_DEBOUNCE_MS } from "@/lib/search/search-policy";
 
 function useDebouncedValue<T>(value: T, ms: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -47,7 +47,7 @@ export function NewsMobileSearchSheet({
   const [mounted, setMounted] = useState(false);
 
   const [query, setQuery] = useState(initialQuery);
-  const debounced = useDebouncedValue(query, SEARCH_DEBOUNCE_MS);
+  const debounced = useDebouncedValue(query, SEARCH_CLIENT_DEBOUNCE_MS);
   const [items, setItems] = useState<SearchAssetItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [recent, setRecent] = useState<SearchAssetItem[]>([]);

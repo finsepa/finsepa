@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { RefreshCw, X } from "lucide-react";
@@ -11,6 +11,10 @@ import { CompanyLogo } from "@/components/screener/company-logo";
 import { cn } from "@/lib/utils";
 import { findKeyStatValue } from "@/lib/comparison/comparison-key-stats";
 import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
+import {
+  fetchComparisonTickerSlice,
+  type ComparisonTickerSlice,
+} from "@/lib/comparison/fetch-comparison-ticker-slice";
 import type { StockPageInitialData } from "@/lib/market/stock-page-initial-data";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
 import type { StockDetailHeaderMeta } from "@/lib/market/stock-header-meta";
@@ -159,6 +163,52 @@ export function ComparisonWorkspace({ tickers, initialByTicker, allowedChartingT
 
   const displayTickers = tickersFromUrl.length > 0 ? tickersFromUrl : tickers;
 
+  const [sliceByTicker, setSliceByTicker] = useState<Record<string, ComparisonTickerSlice>>(() => {
+    const out: Record<string, ComparisonTickerSlice> = {};
+    for (const [sym, init] of Object.entries(initialByTicker)) {
+      if (!init) continue;
+      out[sym] = {
+        headerMeta: init.headerMeta,
+        performance: init.performance,
+        keyStatsBundle: init.keyStatsBundle,
+      };
+    }
+    return out;
+  });
+
+  const sliceLoadedRef = useRef(new Set(Object.keys(initialByTicker).map((k) => k.trim().toUpperCase())));
+
+  useEffect(() => {
+    if (!displayTickers.length) return;
+    const ac = new AbortController();
+    const missing = displayTickers.filter((t) => {
+      const key = t.trim().toUpperCase();
+      return key && !sliceLoadedRef.current.has(key);
+    });
+    if (!missing.length) return;
+
+    void (async () => {
+      const settled = await Promise.allSettled(
+        missing.map(async (t) => {
+          const slice = await fetchComparisonTickerSlice(t, ac.signal);
+          return { t: t.trim().toUpperCase(), slice } as const;
+        }),
+      );
+      if (ac.signal.aborted) return;
+      setSliceByTicker((prev) => {
+        const next = { ...prev };
+        for (const s of settled) {
+          if (s.status !== "fulfilled") continue;
+          sliceLoadedRef.current.add(s.value.t);
+          next[s.value.t] = s.value.slice;
+        }
+        return next;
+      });
+    })();
+
+    return () => ac.abort();
+  }, [displayTickers, initialByTicker]);
+
   const pushUrl = useCallback(
     (next: string[]) => {
       router.replace(buildStandaloneChartPath("/comparison", next, []), { scroll: false });
@@ -181,16 +231,16 @@ export function ComparisonWorkspace({ tickers, initialByTicker, allowedChartingT
 
   const rows = useMemo(() => {
     return displayTickers.map((t, idx) => {
-      const init = initialByTicker[t];
-      const meta: StockDetailHeaderMeta | null = init?.headerMeta ?? null;
-      const bundle = init?.keyStatsBundle ?? null;
-      const perf = init?.performance ?? null;
+      const slice = sliceByTicker[t];
+      const meta: StockDetailHeaderMeta | null = slice?.headerMeta ?? null;
+      const bundle = slice?.keyStatsBundle ?? null;
+      const perf = slice?.performance ?? null;
       const color = SERIES_COLORS[idx % SERIES_COLORS.length];
       const fundamentals = TOP_FUNDAMENTAL_COLUMNS.map((col) => findKeyStatValue(bundle, col.labels));
       const returns = RETURN_WINDOWS.map((w) => perf?.[w.key] ?? null);
       return { t, meta, bundle, perf, color, fundamentals, returns };
     });
-  }, [displayTickers, initialByTicker]);
+  }, [displayTickers, sliceByTicker]);
 
   const performances = useMemo(() => {
     const o: Record<string, StockPerformance | null> = {};

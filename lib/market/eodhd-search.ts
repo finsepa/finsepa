@@ -1,6 +1,7 @@
 import "server-only";
 
 import { REVALIDATE_SEARCH } from "@/lib/data/cache-policy";
+import { SEARCH_MIN_QUERY_LENGTH } from "@/lib/search/search-policy";
 import { getEodhdApiKey } from "@/lib/env/server";
 import { traceEodhdHttp } from "@/lib/market/provider-trace";
 
@@ -19,7 +20,7 @@ export type EodhdSearchRow = {
 export async function fetchEodhdSearch(query: string, limit = 40): Promise<EodhdSearchRow[]> {
   const key = getEodhdApiKey();
   const q = query.trim();
-  if (!key || q.length < 1) return [];
+  if (!key || q.length < SEARCH_MIN_QUERY_LENGTH) return [];
 
   const url = `https://eodhd.com/api/search/${encodeURIComponent(q)}?api_token=${encodeURIComponent(key)}&fmt=json&limit=${limit}`;
 
