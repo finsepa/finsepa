@@ -17,6 +17,7 @@ const DEFER_LIVE_QUOTE_REFRESH_PREFIXES = [
   "/charting",
   "/comparison",
   "/economy",
+  "/stock",
 ] as const;
 
 function pathnameDefersLiveQuotes(pathname: string): boolean {

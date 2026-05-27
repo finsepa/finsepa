@@ -29,6 +29,12 @@ import { getNvdaChartPoints, getNvdaHeaderMeta, getNvdaKeyStatsBundle, getNvdaPe
 import { getNvdaChartingSeriesPoints, getNvdaProfile, getNvdaStockNews } from "@/lib/fixtures/nvda";
 import { getStockDetailMetaFromTicker } from "@/lib/market/stock-detail-meta";
 import { isStockDetailEtf } from "@/lib/stock/stock-etf";
+import {
+  assetSnapshotPayloadToPageData,
+  stripAssetSnapshotHotFields,
+} from "@/lib/market/asset-snapshot-payload";
+import { readAssetSnapshot, upsertAssetSnapshot } from "@/lib/market/asset-snapshot-store";
+import { getScreenerUsMarketCacheEpoch } from "@/lib/screener/screener-us-market-cache";
 
 export type StockPageInitialChart = {
   range: StockChartRange;
@@ -137,11 +143,47 @@ function ymdUtc(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
+function scheduleAssetSnapshotWrite(
+  ticker: string,
+  segment: string,
+  data: StockPageInitialData,
+  mode: ReturnType<typeof getScreenerUsMarketCacheEpoch>["mode"],
+) {
+  const payload = stripAssetSnapshotHotFields(data, mode);
+  void upsertAssetSnapshot(ticker, segment, payload).then((res) => {
+    if (!res.ok && process.env.NODE_ENV === "development") {
+      console.warn("[asset-snapshot] upsert failed", { ticker, reason: res.reason });
+    }
+  });
+}
+
+async function loadStockPageHotFields(
+  ticker: string,
+  range: StockChartRange,
+  sortedDailyFallback: EodhdDailyBar[],
+  now: Date,
+): Promise<Pick<StockPageInitialData, "chart" | "headerLiveSpotUsd">> {
+  const [chartPointsResult, spotResult] = await Promise.allSettled([
+    getStockChartPoints(ticker, range, "price"),
+    getStockSpotPriceUsd(ticker),
+  ]);
+  const chartPointsRaw = fromSettled(chartPointsResult, "chart1D");
+  const headerLiveSpotUsd = fromSettled(spotResult, "headerLiveSpot");
+  const points = resolveOverviewChartPoints(range, chartPointsRaw, sortedDailyFallback, now);
+  return {
+    chart: { range, points },
+    headerLiveSpotUsd:
+      typeof headerLiveSpotUsd === "number" && Number.isFinite(headerLiveSpotUsd) && headerLiveSpotUsd > 0
+        ? headerLiveSpotUsd
+        : null,
+  };
+}
+
 /**
  * One EOD daily fetch (same lookback as chart `ALL` / performance) powers overview chart + mini-table together.
  * Header + key-stats share one fundamentals fetch inside their respective loaders (bundle pulls once and passes root to sections).
  */
-export async function loadStockPageInitialData(routeTicker: string): Promise<StockPageInitialData | null> {
+async function loadStockPageInitialDataUncached(routeTicker: string): Promise<StockPageInitialData | null> {
   const ticker = routeTicker.trim().toUpperCase();
   if (!ticker) return null;
 
@@ -241,4 +283,35 @@ export async function loadStockPageInitialData(routeTicker: string): Promise<Sto
     console.error("[loadStockPageInitialData] unexpected failure; serving fallback shell", { ticker, err });
     return fallbackStockPageInitialData(ticker, now);
   }
+}
+
+/**
+ * P5: shared per-ticker snapshot in Supabase (`market_snapshot` key `asset_{TICKER}`).
+ * Miss → full EODHD fan-out once per segment; hit → refresh 1D chart + live spot only (live session).
+ */
+export async function loadStockPageInitialData(routeTicker: string): Promise<StockPageInitialData | null> {
+  const ticker = routeTicker.trim().toUpperCase();
+  if (!ticker) return null;
+
+  if (isSingleAssetMode()) {
+    return loadStockPageInitialDataUncached(ticker);
+  }
+
+  const epoch = getScreenerUsMarketCacheEpoch();
+  const cached = await readAssetSnapshot(ticker, epoch.segment);
+
+  if (cached?.ticker === ticker) {
+    const base = assetSnapshotPayloadToPageData(cached);
+    if (epoch.mode === "frozen") {
+      return base;
+    }
+    const hot = await loadStockPageHotFields(ticker, base.chart.range, [], new Date());
+    return { ...base, ...hot };
+  }
+
+  const fresh = await loadStockPageInitialDataUncached(ticker);
+  if (fresh) {
+    scheduleAssetSnapshotWrite(ticker, epoch.segment, fresh, epoch.mode);
+  }
+  return fresh;
 }

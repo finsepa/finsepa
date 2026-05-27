@@ -14,7 +14,7 @@
 | P2 | Done | `market_snapshot` table + cron + read path for screener/heatmap/watchlist |
 | P3 | Done | Hub snapshots: macro, news (3 tabs), earnings (3 weeks), economy (US) |
 | P4 | Done | Search: 300ms debounce, EODHD only for queries ≥2 chars; charting/comparison skip SSR stock bundles |
-| P5 | Planned | Asset detail cache (per-ticker) |
+| P5 | Done | Per-ticker asset snapshots (`asset_{TICKER}`); defer portfolio live quotes on `/stock/*` |
 
 ## P2 operations
 
@@ -36,3 +36,10 @@ Cron schedule: every 15 minutes (`vercel.json`). Market ingest skips when frozen
 - **Search:** 300ms debounce (`SEARCH_CLIENT_DEBOUNCE_MS`). Queries of 1 char match local universe only; EODHD `/search` runs only when trimmed query length ≥ 2 (`SEARCH_MIN_QUERY_LENGTH` in `global-asset-search` / `eodhd-search`).
 - **Charting:** no SSR `loadStockPageInitialData`; workspace loads `/api/.../fundamentals-series` per ticker on demand.
 - **Comparison:** no SSR stock bundles; `ComparisonWorkspace` fetches `header-meta`, `performance`, and `key-stats-bundle` per ticker via `fetchComparisonTickerSlice`.
+
+## P5 behavior
+
+- **Storage:** `market_snapshot` rows keyed `asset_{TICKER}` (same table/segment as P2/P3). First visit in a US market segment runs the full `loadStockPageInitialDataUncached` fan-out and upserts the bundle (async).
+- **Reads:** Same segment hit serves the cached bundle. **Live** session: only 1D chart + `headerLiveSpotUsd` are refetched (~2 EODHD paths). **Frozen** session: serve snapshot as-is (chart included).
+- **Flag:** Uses `FINSEPA_MARKET_SNAPSHOT_READ` (`0` disables asset reads/writes).
+- **Portfolio:** `/stock/*` defers workspace `live-price` refresh for all holdings (detail page still polls the viewed ticker via `/api/stocks/[ticker]/live-price`).
