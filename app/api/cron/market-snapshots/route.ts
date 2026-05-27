@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { ingestHubSnapshots } from "@/lib/market/hub-snapshot-ingest";
 import { ingestMarketSnapshots } from "@/lib/market/market-snapshot-ingest";
 import { pickProcessEnv } from "@/lib/env/pick-process-env";
 
@@ -19,8 +20,8 @@ export async function GET(request: Request) {
   }
 
   try {
-    const result = await ingestMarketSnapshots();
-    return NextResponse.json(result);
+    const [market, hub] = await Promise.all([ingestMarketSnapshots(), ingestHubSnapshots()]);
+    return NextResponse.json({ market, hub });
   } catch (e) {
     const message = e instanceof Error ? e.message : "ingest_failed";
     console.error("[cron/market-snapshots]", message);

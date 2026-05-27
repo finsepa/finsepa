@@ -4,6 +4,8 @@ import { unstable_cache } from "next/cache";
 
 import { REVALIDATE_STATIC_DAY } from "@/lib/data/cache-policy";
 import { fetchMacroSeriesAll, MACRO_SERIES, type MacroSeriesDef } from "@/lib/market/eodhd-macro";
+import { HUB_SNAPSHOT_KEY, macroHubSegment } from "@/lib/market/hub-snapshot-keys";
+import { readHubSnapshot } from "@/lib/market/hub-snapshot-store";
 
 export type MacroDashboardCard = {
   id: string;
@@ -50,12 +52,31 @@ async function buildMacroDashboardPayloadUncached(): Promise<{ country: string; 
   return { country, items };
 }
 
+/** Cron / hub ingest — bypasses Supabase read path. */
+export async function buildMacroDashboardPayloadForIngest(): Promise<{
+  country: string;
+  items: MacroDashboardCard[];
+}> {
+  return buildMacroDashboardPayloadUncached();
+}
+
+async function getMacroDashboardPayloadCachedInner(): Promise<{ country: string; items: MacroDashboardCard[] }> {
+  return unstable_cache(
+    buildMacroDashboardPayloadUncached,
+    ["macro-dashboard-payload-v17"],
+    { revalidate: REVALIDATE_STATIC_DAY },
+  )();
+}
+
 /**
- * Single cached blob for `/macro` (RSC) and `/api/macro` — one `unstable_cache` entry shared across all users
- * until revalidation (~24h, same tier as macro indicator rows); matches Economy calendar-style cadence.
+ * Single cached blob for `/macro` (RSC) and `/api/macro` — hub snapshot first, then `unstable_cache`.
  */
-export const getMacroDashboardPayloadCached = unstable_cache(
-  buildMacroDashboardPayloadUncached,
-  ["macro-dashboard-payload-v17"],
-  { revalidate: REVALIDATE_STATIC_DAY },
-);
+export async function getMacroDashboardPayloadCached(): Promise<{ country: string; items: MacroDashboardCard[] }> {
+  const segment = macroHubSegment();
+  const snap = await readHubSnapshot<{ country: string; items: MacroDashboardCard[] }>(
+    HUB_SNAPSHOT_KEY.macroDashboard,
+    segment,
+  );
+  if (snap) return snap;
+  return getMacroDashboardPayloadCachedInner();
+}

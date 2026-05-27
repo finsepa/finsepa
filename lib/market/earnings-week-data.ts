@@ -20,6 +20,8 @@ import { resolveEquityLogoUrlFromListingTicker } from "@/lib/screener/resolve-eq
 import { TOP10_META, TOP10_TICKERS, type Top10Ticker } from "@/lib/screener/top10-config";
 import { issuerKeyForOtcListingCollapse } from "@/lib/market/otc-duplicate-tickers";
 import { runWithConcurrencyLimit } from "@/lib/utils/run-with-concurrency-limit";
+import { earningsWeekHubSegment, hubEarningsWeekKey } from "@/lib/market/hub-snapshot-keys";
+import { readHubSnapshot } from "@/lib/market/hub-snapshot-store";
 
 /**
  * Symbols: Top-500 US equities from the Screener static universe (market-cap order). Calendar rows outside
@@ -528,10 +530,16 @@ function preparedToCalendarItem(
   };
 }
 
-type EarningsWeekDataPackage = {
+export type EarningsWeekDataPackage = {
   payload: EarningsWeekPayload;
   overflowByKey: Record<string, EarningsCalendarItem[]>;
 };
+
+/** Cron / hub ingest — universe market-cap filter only (no per-ticker fundamentals fan-out). */
+export async function buildEarningsWeekHubPackage(weekMondayUtc: Date): Promise<EarningsWeekDataPackage> {
+  const monday = mondayOfWeekUtc(weekMondayUtc);
+  return buildEarningsWeekDataPackageUncached(monday, false);
+}
 
 async function buildEarningsWeekDataPackageUncached(
   weekMondayUtc: Date,
@@ -729,6 +737,10 @@ const getEarningsWeekDataPackageCached = unstable_cache(
 
 async function getEarningsWeekDataPackage(weekMondayUtc: Date): Promise<EarningsWeekDataPackage> {
   const ymd = toYmdUtc(mondayOfWeekUtc(weekMondayUtc));
+  const segment = earningsWeekHubSegment(ymd);
+  const snap = await readHubSnapshot<EarningsWeekDataPackage>(hubEarningsWeekKey(ymd), segment);
+  if (snap) return snap;
+
   const mode: EarningsCacheMode = isEarningsFundamentalsMcFilterEnabled() ? "fund" : "universe";
   return getEarningsWeekDataPackageCached(ymd, mode);
 }

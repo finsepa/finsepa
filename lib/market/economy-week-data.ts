@@ -5,7 +5,9 @@ import { unstable_cache } from "next/cache";
 import { REVALIDATE_EARNINGS_CALENDAR } from "@/lib/data/cache-policy";
 import type { EconomyCalendarEvent, EconomyDayColumn, EconomyWeekPayload } from "@/lib/market/economy-calendar-types";
 import { fetchEodhdEconomicEventsAll, type EodhdRawEconomicEventRow } from "@/lib/market/eodhd-economic-events";
-import { addDaysUtc, formatWeekRangeLabel, toYmdUtc } from "@/lib/market/earnings-week-data";
+import { addDaysUtc, formatWeekRangeLabel, mondayOfWeekUtc, toYmdUtc } from "@/lib/market/earnings-week-data";
+import { economyWeekHubSegment, hubEconomyWeekKey } from "@/lib/market/hub-snapshot-keys";
+import { readHubSnapshot } from "@/lib/market/hub-snapshot-store";
 
 function weekdayShortUtc(ymd: string): string {
   const t = Date.parse(`${ymd}T12:00:00.000Z`);
@@ -128,13 +130,23 @@ async function buildEconomyWeekPayloadUncached(weekMondayYmd: string, countryCod
   };
 }
 
-const getEconomyWeekPayloadCached = unstable_cache(buildEconomyWeekPayloadUncached, ["economy-week-payload-v1"], {
+const getEconomyWeekPayloadCached = unstable_cache(buildEconomyWeekPayloadUncached, ["economy-week-payload-v2-hub"], {
   revalidate: REVALIDATE_EARNINGS_CALENDAR,
 });
 
-/** Week grid payload — cached per Monday + country (shared across users, aligned with economic-events tier). */
-export async function getEconomyWeekPayload(weekMondayUtc: Date, countryCode: string): Promise<EconomyWeekPayload> {
-  const ymd = toYmdUtc(weekMondayUtc);
+/** Cron / hub ingest — bypasses Supabase read path. */
+export async function buildEconomyWeekHubPayload(weekMondayUtc: Date, countryCode: string): Promise<EconomyWeekPayload> {
+  const ymd = toYmdUtc(mondayOfWeekUtc(weekMondayUtc));
   const cc = countryCode.trim().toUpperCase() || "US";
+  return buildEconomyWeekPayloadUncached(ymd, cc);
+}
+
+/** Week grid payload — hub snapshot first, then `unstable_cache` per Monday + country. */
+export async function getEconomyWeekPayload(weekMondayUtc: Date, countryCode: string): Promise<EconomyWeekPayload> {
+  const ymd = toYmdUtc(mondayOfWeekUtc(weekMondayUtc));
+  const cc = countryCode.trim().toUpperCase() || "US";
+  const segment = economyWeekHubSegment(ymd, cc);
+  const snap = await readHubSnapshot<EconomyWeekPayload>(hubEconomyWeekKey(ymd, cc), segment);
+  if (snap) return snap;
   return getEconomyWeekPayloadCached(ymd, cc);
 }

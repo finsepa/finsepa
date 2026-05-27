@@ -9,6 +9,8 @@ import { getEodhdApiKey } from "@/lib/env/server";
 import { toEodhdUsSymbol } from "@/lib/market/eodhd-symbol";
 import { CRYPTO_TOP10 } from "@/lib/market/eodhd-crypto";
 import { INDEX_TOP10 } from "@/lib/market/indices-top10";
+import { hubNewsKey, newsHubSegment } from "@/lib/market/hub-snapshot-keys";
+import { readHubSnapshot } from "@/lib/market/hub-snapshot-store";
 import { traceEodhdHttp } from "@/lib/market/provider-trace";
 import { getTop500Universe } from "@/lib/screener/top500-companies";
 import type { NewsItem, NewsTab } from "@/lib/news/news-types";
@@ -141,9 +143,21 @@ async function buildNewsFeedUncached(tab: NewsTab): Promise<NewsItem[]> {
   return items;
 }
 
-const getNewsFeedData = unstable_cache(buildNewsFeedUncached, ["news-feed-v2"], { revalidate: REVALIDATE_HOT });
+/** Cron / hub ingest — bypasses Supabase read path. */
+export async function buildNewsFeedForHubIngest(tab: NewsTab): Promise<NewsItem[]> {
+  return buildNewsFeedUncached(tab);
+}
 
-export const getNewsFeed = cache(async (tab: NewsTab) => getNewsFeedData(tab));
+const getNewsFeedData = unstable_cache(buildNewsFeedUncached, ["news-feed-v3-hub-snapshot"], {
+  revalidate: REVALIDATE_HOT,
+});
+
+export const getNewsFeed = cache(async (tab: NewsTab) => {
+  const segment = newsHubSegment(tab);
+  const snap = await readHubSnapshot<NewsItem[]>(hubNewsKey(tab), segment);
+  if (snap) return snap;
+  return getNewsFeedData(tab);
+});
 
 export async function getNewsPage(tab: NewsTab, page: number): Promise<{ total: number; items: NewsItem[] }> {
   const feed = await getNewsFeed(tab);

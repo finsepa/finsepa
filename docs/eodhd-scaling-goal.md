@@ -11,8 +11,9 @@
 | P0 | Implemented | `FINSEPA_EODHD_MAX_REQUESTS_PER_DAY` (recommend `80000` in prod) |
 | P1 | Done | Defer portfolio `live-price` on list/hub routes; screener dedupe |
 | P1补 | Done | Defer `/charting`, `/comparison`, `/economy` |
-| P2 | Implemented | `market_snapshot` table + cron + read path for screener/heatmap/watchlist |
-| P3+ | Planned | Earnings/news/macro hub cron; search; asset detail cache |
+| P2 | Done | `market_snapshot` table + cron + read path for screener/heatmap/watchlist |
+| P3 | Done | Hub snapshots: macro, news (3 tabs), earnings (3 weeks), economy (US) |
+| P4+ | Planned | Search; charting/comparison; asset detail cache (P5) |
 
 ## P2 operations
 
@@ -23,6 +24,8 @@
    - `FINSEPA_EODHD_MAX_REQUESTS_PER_DAY=80000`
    - `FINSEPA_MARKET_SNAPSHOT_READ=1` (default on; set `0` to disable reads)
 3. After deploy, trigger once: `curl -H "Authorization: Bearer $CRON_SECRET" https://<host>/api/cron/market-snapshots`
-4. Verify: screener/heatmap refresh → EODHD flat; cron tick moves counter.
+4. Verify: screener/heatmap/hub pages refresh → EODHD flat; cron tick moves counter.
 
-Cron schedule: every 15 minutes (`vercel.json`). Ingest skips when frozen segment is fresh or live segment updated &lt;14m ago.
+Cron schedule: every 15 minutes (`vercel.json`). Market ingest skips when frozen segment is fresh or live segment updated &lt;14m ago. Hub ingest skips per-key when segment is fresh (macro/news daily, earnings/economy weekly).
+
+**P3 hub keys:** `hub_macro_dashboard`, `hub_news_*`, `hub_earnings_week_YYYY-MM-DD`, `hub_economy_week_YYYY-MM-DD_US`. Earnings ingest uses universe market-cap only (never set `EARNINGS_USE_FUNDAMENTALS_MC=1` in prod).
