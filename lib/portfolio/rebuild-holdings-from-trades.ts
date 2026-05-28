@@ -127,6 +127,13 @@ export async function refreshHoldingMarketPrices(holdings: PortfolioHolding[]): 
   if (!holdings.length) return holdings;
   const symbols = [...new Set(holdings.map((h) => h.symbol.trim().toUpperCase()).filter(Boolean))];
   const prices = await fetchPortfolioLivePricesClient(symbols);
+  return applyLivePricesToHoldings(holdings, prices);
+}
+
+export function applyLivePricesToHoldings(
+  holdings: PortfolioHolding[],
+  prices: Record<string, number | null>,
+): PortfolioHolding[] {
   return holdings.map((h) => {
     const p = prices[h.symbol.trim().toUpperCase()];
     if (p == null) return h;
@@ -136,4 +143,25 @@ export async function refreshHoldingMarketPrices(holdings: PortfolioHolding[]): 
       currentValue: h.shares * p,
     };
   });
+}
+
+/** Batch live quotes once across all portfolios. */
+export async function refreshHoldingsByPortfolioIdMarketPrices(
+  holdingsByPortfolioId: Record<string, PortfolioHolding[]>,
+): Promise<Record<string, PortfolioHolding[]>> {
+  const uniqueSymbols = new Set<string>();
+  for (const holds of Object.values(holdingsByPortfolioId)) {
+    for (const h of holds) {
+      const sym = h.symbol.trim().toUpperCase();
+      if (sym) uniqueSymbols.add(sym);
+    }
+  }
+  const symbols = Array.from(uniqueSymbols);
+  const prices = symbols.length ? await fetchPortfolioLivePricesClient(symbols) : {};
+
+  const out: Record<string, PortfolioHolding[]> = {};
+  for (const [pid, holds] of Object.entries(holdingsByPortfolioId)) {
+    out[pid] = applyLivePricesToHoldings(holds, prices);
+  }
+  return out;
 }

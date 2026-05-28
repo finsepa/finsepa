@@ -53,6 +53,7 @@ import { dispatchPublicListingsChanged, putPublicPortfolioListingRequest } from 
 import { portfolioPathnameUsesEagerLiveQuotes } from "@/lib/portfolio/portfolio-live-quotes-paths";
 import { portfolioLedgerFingerprint } from "@/lib/portfolio/portfolio-ledger-fingerprint";
 import {
+  refreshHoldingsByPortfolioIdMarketPrices,
   refreshHoldingMarketPrices,
   replayTradeTransactionsToHoldings,
 } from "@/lib/portfolio/rebuild-holdings-from-trades";
@@ -390,6 +391,8 @@ export function PortfolioWorkspaceProvider({
   const holdingsQuoteRefreshGenRef = useRef(0);
   const appliedLedgerFingerprintRef = useRef<string | null>(null);
   const quotedLedgerFingerprintRef = useRef<string | null>(null);
+  const QUOTE_DEDUPE_TTL_MS = 60_000;
+  const quoteSessionKey = useMemo(() => `finsepa.portfolio.quotedLedger.${userId}`, [userId]);
   /** True after {@link applyWorkspaceState} skipped live quotes on a read-mostly route; cleared when catch-up runs. */
   const [deferredQuotesPending, setDeferredQuotesPending] = useState(false);
   const pathname = usePathname() ?? "";
@@ -449,6 +452,26 @@ export function PortfolioWorkspaceProvider({
 
       setDeferredQuotesPending(false);
 
+      // Dedupe across hard refresh (F5) within a short TTL.
+      try {
+        const raw = sessionStorage.getItem(quoteSessionKey);
+        if (raw) {
+          const parsed = JSON.parse(raw) as { ledger: string; at: number } | null;
+          if (
+            parsed &&
+            parsed.ledger === ledgerFingerprint &&
+            typeof parsed.at === "number" &&
+            Date.now() - parsed.at < QUOTE_DEDUPE_TTL_MS
+          ) {
+            quotedLedgerFingerprintRef.current = ledgerFingerprint;
+            setHoldingsMarkToMarketReady(true);
+            return;
+          }
+        }
+      } catch {
+        // ignore
+      }
+
       if (quotedLedgerFingerprintRef.current === ledgerFingerprint) {
         setHoldingsMarkToMarketReady(true);
         return;
@@ -460,16 +483,17 @@ export function PortfolioWorkspaceProvider({
 
       void (async () => {
         try {
-          const entries = await Promise.all(
-            Object.entries(rebuilt).map(async ([pid, holds]) => {
-              if (holds.length === 0) return [pid, holds] as const;
-              const quoted = await refreshHoldingMarketPrices(holds);
-              return [pid, quoted] as const;
-            }),
-          );
-          const quoted = Object.fromEntries(entries) as Record<string, PortfolioHolding[]>;
+          const quoted = await refreshHoldingsByPortfolioIdMarketPrices(rebuilt);
           if (holdingsQuoteRefreshGenRef.current === refreshGen) {
             setHoldingsByPortfolioId((prev) => ({ ...prev, ...quoted }));
+          }
+          try {
+            sessionStorage.setItem(
+              quoteSessionKey,
+              JSON.stringify({ ledger: ledgerFingerprint, at: Date.now() }),
+            );
+          } catch {
+            // ignore
           }
         } finally {
           if (holdingsQuoteRefreshGenRef.current === refreshGen) {
@@ -478,7 +502,7 @@ export function PortfolioWorkspaceProvider({
         }
       })();
     },
-    [],
+    [quoteSessionKey],
   );
 
   const applyWorkspaceState = useCallback(
@@ -530,16 +554,17 @@ export function PortfolioWorkspaceProvider({
     setHoldingsMarkToMarketReady(false);
     void (async () => {
       try {
-        const entries = await Promise.all(
-          Object.entries(rebuilt).map(async ([pid, holds]) => {
-            if (holds.length === 0) return [pid, holds] as const;
-            const quoted = await refreshHoldingMarketPrices(holds);
-            return [pid, quoted] as const;
-          }),
-        );
-        const quoted = Object.fromEntries(entries) as Record<string, PortfolioHolding[]>;
+        const quoted = await refreshHoldingsByPortfolioIdMarketPrices(rebuilt);
         if (holdingsQuoteRefreshGenRef.current === refreshGen) {
           setHoldingsByPortfolioId((prev) => ({ ...prev, ...quoted }));
+        }
+        try {
+          const ledger = appliedLedgerFingerprintRef.current;
+          if (ledger) {
+            sessionStorage.setItem(quoteSessionKey, JSON.stringify({ ledger, at: Date.now() }));
+          }
+        } catch {
+          // ignore
         }
       } finally {
         if (holdingsQuoteRefreshGenRef.current === refreshGen) {

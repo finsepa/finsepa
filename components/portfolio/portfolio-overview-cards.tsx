@@ -6,7 +6,7 @@ import { usePortfolioOverviewAthPublisher } from "@/components/portfolio/portfol
 import { ChevronDown } from "lucide-react";
 
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
-import { earliestStockBuyYmd, replayStockSharesUpTo } from "@/lib/portfolio/benchmark-inception";
+import { earliestStockBuyYmd } from "@/lib/portfolio/benchmark-inception";
 import {
   equityMarketValue,
   lifetimeEquityProfitPct,
@@ -114,6 +114,7 @@ function PortfolioOverviewCardsInner({
   /** False until overview-market finishes when any symbols need a quote. */
   const [overviewReady, setOverviewReady] = useState(false);
   const lastOverviewLoadKeyRef = useRef("");
+  const lastOverviewLoadStateRef = useRef<"idle" | "inflight" | "done" | "error">("idle");
   const overviewLoadGenRef = useRef(0);
   const overviewReadyRef = useRef(false);
   overviewReadyRef.current = overviewReady;
@@ -122,11 +123,17 @@ function PortfolioOverviewCardsInner({
   const [yieldBySymbol, setYieldBySymbol] = useState<Record<string, number | null>>({});
   const [inceptionSpyPrice0, setInceptionSpyPrice0] = useState<number | null>(null);
 
-  const symbols = useMemo(() => {
+  const symbolsKey = useMemo(() => {
     const fromHoldings = [...new Set(holdings.map((h) => h.symbol.toUpperCase()))];
-    if (fromHoldings.length > 0) return fromHoldings;
-    return tradeSymbolsFromHistory(transactions);
+    const syms = fromHoldings.length > 0 ? fromHoldings : tradeSymbolsFromHistory(transactions);
+    return syms
+      .map((s) => s.trim().toUpperCase())
+      .filter(Boolean)
+      .sort()
+      .join(",");
   }, [holdings, transactions]);
+
+  const symbols = useMemo(() => (symbolsKey ? symbolsKey.split(",") : []), [symbolsKey]);
 
   const loadMarket = useCallback(async () => {
     if (symbols.length === 0) {
@@ -141,20 +148,54 @@ function PortfolioOverviewCardsInner({
     const startYmd = earliestStockBuyYmd(transactions);
     let inceptionPriceTickers: string[] = [];
     if (startYmd) {
-      const sharesMap = replayStockSharesUpTo(transactions, startYmd);
-      const syms = [...sharesMap.entries()]
-        .filter(([, sh]) => sh > 0)
-        .map(([s]) => s.toUpperCase());
-      inceptionPriceTickers = [...new Set([SPY_BENCHMARK, ...syms])];
+      // Keep inception benchmark fan-out bounded to current symbols set.
+      inceptionPriceTickers = [...new Set([SPY_BENCHMARK, ...symbols])];
     }
 
     const loadKey = `${symbols.join(",")}|${startYmd ?? ""}|${inceptionPriceTickers.join(",")}`;
-    if (loadKey === lastOverviewLoadKeyRef.current && overviewReadyRef.current) {
+    if (loadKey === lastOverviewLoadKeyRef.current && lastOverviewLoadStateRef.current !== "error") {
       return;
     }
     lastOverviewLoadKeyRef.current = loadKey;
 
+    const sessionKey = `finsepa.portfolio.overviewMarket.v1.${loadKey}`;
+    const OVERVIEW_SESSION_TTL_MS = 5 * 60_000;
+    try {
+      const raw = sessionStorage.getItem(sessionKey);
+      if (raw) {
+        const parsed = JSON.parse(raw) as
+          | {
+              at: number;
+              data: {
+                spy: StockPerformance | null;
+                performanceBySymbol: Record<string, StockPerformance | null>;
+                yieldBySymbol: Record<string, number | null>;
+                inceptionPriceByTicker: Record<string, number | null>;
+              };
+            }
+          | null;
+        if (parsed && typeof parsed.at === "number" && Date.now() - parsed.at < OVERVIEW_SESSION_TTL_MS) {
+          const data = parsed.data;
+          setSpyPerf(data.spy ?? null);
+          setPerfBySymbol(data.performanceBySymbol ?? {});
+          setYieldBySymbol(data.yieldBySymbol ?? {});
+          let spy0: number | null = null;
+          if (startYmd) {
+            const prices = data.inceptionPriceByTicker ?? {};
+            spy0 = typeof prices[SPY_BENCHMARK] === "number" ? prices[SPY_BENCHMARK]! : null;
+          }
+          setInceptionSpyPrice0(spy0);
+          lastOverviewLoadStateRef.current = "done";
+          setOverviewReady(true);
+          return;
+        }
+      }
+    } catch {
+      // ignore
+    }
+
     const gen = ++overviewLoadGenRef.current;
+    lastOverviewLoadStateRef.current = "inflight";
     setOverviewReady(false);
     try {
       const res = await fetch("/api/portfolio/overview-market", {
@@ -192,12 +233,20 @@ function PortfolioOverviewCardsInner({
         spy0 = typeof prices[SPY_BENCHMARK] === "number" ? prices[SPY_BENCHMARK]! : null;
       }
       setInceptionSpyPrice0(spy0);
+
+      lastOverviewLoadStateRef.current = "done";
+      try {
+        sessionStorage.setItem(sessionKey, JSON.stringify({ at: Date.now(), data }));
+      } catch {
+        // ignore
+      }
     } catch {
       if (gen !== overviewLoadGenRef.current) return;
       setSpyPerf(null);
       setPerfBySymbol({});
       setYieldBySymbol({});
       setInceptionSpyPrice0(null);
+      lastOverviewLoadStateRef.current = "error";
     } finally {
       if (gen === overviewLoadGenRef.current) {
         setOverviewReady(true);
