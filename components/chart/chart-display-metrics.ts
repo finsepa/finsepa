@@ -54,6 +54,29 @@ export function computeChartHeaderMetrics(
     };
   }
 
+  const firstFinite = points.find((p) => isFiniteNumber(p.value)) ?? null;
+  const lastFinite = (() => {
+    for (let i = points.length - 1; i >= 0; i--) {
+      const p = points[i]!;
+      if (isFiniteNumber(p.value)) return p;
+    }
+    return null;
+  })();
+
+  if (!firstFinite || !lastFinite) {
+    return {
+      displayPrice: null,
+      displayChangePct: null,
+      displayChangeAbs: null,
+      selectionChangeAbs: null,
+      selectionChangePct: null,
+      isHovering: false,
+      selectionActive: false,
+      periodLabelOverride: null,
+      displayTimeUnix: null,
+    };
+  }
+
   if (
     selection &&
     isFiniteNumber(selection.startPrice) &&
@@ -61,35 +84,9 @@ export function computeChartHeaderMetrics(
     isFiniteNumber(selection.startTimeUnix) &&
     isFiniteNumber(selection.endTimeUnix)
   ) {
-    const last = points[points.length - 1]!.value;
-    const lastTime = points[points.length - 1]!.time;
-    if (!isFiniteNumber(last)) {
-      return {
-        displayPrice: null,
-        displayChangePct: null,
-        displayChangeAbs: null,
-        selectionChangeAbs: null,
-        selectionChangePct: null,
-        isHovering: false,
-        selectionActive: false,
-        periodLabelOverride: null,
-        displayTimeUnix: null,
-      };
-    }
-    const first = points[0]!.value;
-    if (!isFiniteNumber(first)) {
-      return {
-        displayPrice: null,
-        displayChangePct: null,
-        displayChangeAbs: null,
-        selectionChangeAbs: null,
-        selectionChangePct: null,
-        isHovering: false,
-        selectionActive: false,
-        periodLabelOverride: null,
-        displayTimeUnix: null,
-      };
-    }
+    const last = lastFinite.value;
+    const lastTime = lastFinite.time;
+    const first = firstFinite.value;
     const periodAbs = last - first;
     const periodPct = first !== 0 ? (periodAbs / first) * 100 : null;
     const selAbs = selection.endPrice - selection.startPrice;
@@ -107,20 +104,7 @@ export function computeChartHeaderMetrics(
     };
   }
 
-  const first = points[0]!.value;
-  if (!isFiniteNumber(first)) {
-    return {
-      displayPrice: null,
-      displayChangePct: null,
-      displayChangeAbs: null,
-      selectionChangeAbs: null,
-      selectionChangePct: null,
-      isHovering: false,
-      selectionActive: false,
-      periodLabelOverride: null,
-      displayTimeUnix: null,
-    };
-  }
+  const first = firstFinite.value;
 
   if (
     crosshairForHeader != null &&
@@ -143,21 +127,8 @@ export function computeChartHeaderMetrics(
     };
   }
 
-  const last = points[points.length - 1]!.value;
-  const lastTime = points[points.length - 1]!.time;
-  if (!isFiniteNumber(last)) {
-    return {
-      displayPrice: null,
-      displayChangePct: null,
-      displayChangeAbs: null,
-      selectionChangeAbs: null,
-      selectionChangePct: null,
-      isHovering: false,
-      selectionActive: false,
-      periodLabelOverride: null,
-      displayTimeUnix: null,
-    };
-  }
+  const last = lastFinite.value;
+  const lastTime = lastFinite.time;
 
   const abs = last - first;
   const pct = first !== 0 ? (abs / first) * 100 : null;

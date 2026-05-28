@@ -14,7 +14,7 @@ import { parseStockDetailTabQuery } from "@/lib/stock/stock-detail-tab";
 import { coerceStockDetailTabForEtf, isStockDetailEtf, normalizeStockDetailTab } from "@/lib/stock/stock-etf";
 import { AssetPortfolioHoldingsTab } from "@/components/portfolio/asset-portfolio-holdings-tab";
 import { StockDetailTabNav } from "./stock-detail-tab-nav";
-import { MultichartsTabSkeleton, MultichartsTabSkeletonGrid } from "@/components/stock/stock-multicharts-tab-skeleton";
+import { MultichartsTabSkeleton } from "@/components/stock/stock-multicharts-tab-skeleton";
 import { StockFinancialsTabSkeleton } from "@/components/stock/stock-financials-tab-skeleton";
 import { StockChartingTab } from "./stock-charting-tab";
 import { StockEarningsTab } from "./stock-earnings-tab";
@@ -345,19 +345,11 @@ export function StockPageContent({
   const [sessionHeaderUi, setSessionHeaderUi] = useState<ChartDisplayState>(() =>
     buildInitialSessionHeaderUi(initialPageData, ticker),
   );
-  /** Holdings tab chart owns the header while that tab is active. */
-  const [holdingsHeaderUi, setHoldingsHeaderUi] = useState<ChartDisplayState | null>(null);
-
   const onSessionHeaderDisplay = useCallback((s: ChartDisplayState) => {
     setSessionHeaderUi(s);
   }, []);
 
-  const onHoldingsChartDisplay = useCallback((s: ChartDisplayState) => {
-    setHoldingsHeaderUi(s);
-  }, []);
-
   useEffect(() => {
-    setHoldingsHeaderUi(null);
     setSessionHeaderUi(buildInitialSessionHeaderUi(initialPageData, ticker));
   }, [ticker, initialPageData]);
 
@@ -441,16 +433,9 @@ export function StockPageContent({
     [chartSeries, headerLiveSpotForMerge, performanceForHeaderFallback, sessionHeaderUi],
   );
 
-  const chartUi = useMemo((): ChartDisplayState => {
-    if (displayTab === "holdings") {
-      const h = holdingsHeaderUi;
-      if (h?.displayPrice != null && Number.isFinite(h.displayPrice) && !h.loading) {
-        return h;
-      }
-      return spotHeaderUi;
-    }
-    return spotHeaderUi;
-  }, [displayTab, holdingsHeaderUi, spotHeaderUi]);
+  // Header should always represent "today" spot (1D session + live spot merge),
+  // independent of which tab is open or which range is selected in Overview/Portfolio.
+  const chartUi = useMemo((): ChartDisplayState => spotHeaderUi, [spotHeaderUi]);
 
   const initialChartMemo = useMemo(
     () => (initialPageData?.ticker === ticker ? initialPageData.chart : null),
@@ -476,9 +461,10 @@ export function StockPageContent({
       </Suspense>
       <StockHeader
         ticker={ticker}
-        periodLabel={displayTab === "holdings" ? range : "Today"}
+        periodLabel="Today"
         periodLabelOverride={chartUi.periodLabelOverride}
-        chartRangeLabel={range}
+        // Header is driven by the hidden 1D session chart.
+        chartRangeLabel="1D"
         price={chartUi.displayPrice}
         changePct={chartUi.displayChangePct}
         changeAbs={chartUi.displayChangeAbs}
@@ -725,7 +711,6 @@ export function StockPageContent({
             assetKind="stock"
             routeKey={ticker}
             assetDisplayName={headerMeta?.fullName ?? ticker}
-            onChartDisplayChange={onHoldingsChartDisplay}
           />
         </div>
       ) : null}

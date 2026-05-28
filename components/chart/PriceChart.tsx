@@ -547,9 +547,18 @@ export function PriceChart({
   costBasisPrice = null,
 }: Props) {
   const holdingsStyleRef = useRef(holdingsStyle);
-  holdingsStyleRef.current = holdingsStyle;
   const chartMetricSeriesRef = useRef(series);
-  chartMetricSeriesRef.current = series;
+  const kindRef = useRef(kind);
+  const rangeRef = useRef(range);
+  const loadingRef = useRef(true);
+
+  useEffect(() => {
+    holdingsStyleRef.current = holdingsStyle;
+  }, [holdingsStyle]);
+
+  useEffect(() => {
+    chartMetricSeriesRef.current = series;
+  }, [series]);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const initialConsumedRef = useRef(false);
@@ -576,8 +585,6 @@ export function PriceChart({
   const pointsRef = useRef<StockChartPoint[]>([]);
   const containerWidthRef = useRef(0);
   const hideMobileYAxisLabelsRef = useRef(false);
-  const kindRef = useRef(kind);
-  kindRef.current = kind;
   const mobileHoverBarTimeRef = useRef<number | null>(null);
   const mobileHoverPointRef = useRef<{ x: number; y: number } | null>(null);
   const overviewTooltipRef = useRef<HTMLDivElement>(null);
@@ -611,14 +618,22 @@ export function PriceChart({
   const overviewHoverDraftRef = useRef<OverviewHoverUi | null>(null);
   const overviewHoverRafRef = useRef(0);
   const dimOverlayRef = useRef<HTMLDivElement>(null);
-  const rangeRef = useRef(range);
-  rangeRef.current = range;
-  const loadingRef = useRef(loading);
-  loadingRef.current = loading;
   const overviewBottomAxisMode = useMemo(
     () => resolveOverviewBottomAxisMode(range, points),
     [range, points],
   );
+
+  useEffect(() => {
+    kindRef.current = kind;
+  }, [kind]);
+
+  useEffect(() => {
+    rangeRef.current = range;
+  }, [range]);
+
+  useEffect(() => {
+    loadingRef.current = loading;
+  }, [loading]);
 
   useEffect(() => {
     overviewBottomAxisModeRef.current = overviewBottomAxisMode;
@@ -650,7 +665,8 @@ export function PriceChart({
     setHoverAxisLabel(next);
   };
 
-  const useCustomBottomAxis = !holdingsStyle;
+  // Portfolio (holdingsStyle) should behave like Overview: custom bottom axis + hover/badges.
+  const useCustomBottomAxis = true;
   const axisRowPx = overviewChartAxisRowPx(containerWidth);
   const plotHeight = useCustomBottomAxis ? Math.max(120, height - axisRowPx) : height;
   const useMobileOverviewCrosshair =
@@ -661,7 +677,7 @@ export function PriceChart({
   }, [points]);
 
   useEffect(() => {
-    if (holdingsStyle || points.length === 0) {
+    if (points.length === 0) {
       overviewCrosshairLabelByBarTimeRef.current = null;
       return;
     }
@@ -674,7 +690,7 @@ export function PriceChart({
       range,
       overviewBottomAxisMode,
     );
-  }, [range, kind, points, overviewBottomAxisMode, holdingsStyle]);
+  }, [range, kind, points, overviewBottomAxisMode]);
 
   useEffect(() => {
     containerWidthRef.current = containerWidth;
@@ -689,7 +705,14 @@ export function PriceChart({
     hideMobileYAxisLabelsRef.current = hide;
     chart.applyOptions({
       ...mobileOverviewChartScaleOptions(containerWidth),
-      timeScale: mobileTimeScaleOptions(containerWidth),
+      // Keep native time ticks off when using the custom bottom axis; otherwise we render
+      // both native ticks and our labels (causes overlapping like "6AM 6AM").
+      timeScale: {
+        ...mobileTimeScaleOptions(containerWidth),
+        ticksVisible: !useCustomBottomAxis,
+        tickMarkFormatter: useCustomBottomAxis ? () => "" : undefined,
+        minimumHeight: useCustomBottomAxis ? 0 : undefined,
+      },
       crosshair: {
         mode: hide ? CrosshairMode.Normal : CrosshairMode.Magnet,
       },
@@ -755,12 +778,9 @@ export function PriceChart({
     );
   }, [overviewBottomAxisMode, useCustomBottomAxis, holdingsStyle, points, containerWidth, loading]);
 
-  const crosshairForHeader = useMemo((): { price: number; timeUnix: number } | null => {
-    if (!holdingsStyle) return null;
-    if (hoverPrice == null || !Number.isFinite(hoverPrice)) return null;
-    if (hoverTimeUnix == null || !Number.isFinite(hoverTimeUnix)) return null;
-    return { price: hoverPrice, timeUnix: hoverTimeUnix };
-  }, [holdingsStyle, hoverPrice, hoverTimeUnix]);
+  // Even on holdings (Portfolio) charts, hover should NOT drive the page header price.
+  // Hover is used only for in-chart UI (tooltip, bottom axis label, dim overlay).
+  const crosshairForHeader = useMemo((): { price: number; timeUnix: number } | null => null, []);
 
   const metrics = useMemo(
     () => computeChartHeaderMetrics(points, null, crosshairForHeader),
@@ -874,14 +894,25 @@ export function PriceChart({
   }, [clearMobileOverviewCrosshairDom]);
 
   useLayoutEffect(() => {
-    setHoverTimeUnixGuarded(null);
-    setHoverAxisLabelGuarded(null);
     hoverTimeRef.current = null;
     crosshairHoveredRef.current = false;
     initialConsumedRef.current = false;
-    setPeriodAxisLabelsGuarded([]);
-    clearOverviewHover();
-  }, [kind, symbol, range, series, holdingsStyle, clearOverviewHover]);
+
+    overviewHoverDraftRef.current = null;
+    if (overviewHoverRafRef.current) {
+      cancelAnimationFrame(overviewHoverRafRef.current);
+      overviewHoverRafRef.current = 0;
+    }
+
+    // Defer React state updates to avoid cascading render warnings in effects.
+    requestAnimationFrame(() => {
+      setHoverTimeUnixGuarded(null);
+      setHoverAxisLabelGuarded(null);
+      setPeriodAxisLabelsGuarded([]);
+      setOverviewHover(null);
+      clearMobileOverviewCrosshairDom();
+    });
+  }, [kind, symbol, range, series, holdingsStyle, clearMobileOverviewCrosshairDom]);
   useEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
@@ -1109,6 +1140,9 @@ export function PriceChart({
         const row = data as { value: number; time?: UTCTimestamp };
         tunix =
           typeof row.time === "number" && Number.isFinite(row.time) ? row.time : horzTimeToUnixSeconds(param.time as Time);
+        if (typeof row.time === "number" && Number.isFinite(row.time)) {
+          nearBar = { time: row.time, value: hoverValue };
+        }
       } else {
         const sec = horzTimeToUnixSeconds(param.time as Time);
         nearBar = sec != null ? nearestPointByTime(pointsRef.current, sec) : null;
@@ -1121,6 +1155,21 @@ export function PriceChart({
         crosshairHoveredRef.current = true;
         setHoverPriceGuarded(hoverValue);
         setHoverTimeUnixGuarded(tunix);
+
+        // Match overview hover UX: dim overlay, tooltip, and bottom axis label.
+        if (hoverPointRef.current) {
+          const barTime = nearBar && isFiniteNumber(nearBar.time) ? nearBar.time : tunix;
+          const xCoord = chart.timeScale().timeToCoordinate(barTime as UTCTimestamp);
+          const leftPx = xCoord != null && Number.isFinite(xCoord) ? xCoord : hoverPointRef.current.x;
+          const label = overviewCrosshairLabelByBarTimeRef.current?.get(barTime) ?? "";
+          setHoverAxisLabelGuarded({ leftPx, label });
+          overviewHoverDraftRef.current = {
+            point: hoverPointRef.current,
+            price: hoverValue,
+            axisLabel: { leftPx, label },
+          };
+          scheduleOverviewHoverFlush();
+        }
       } else {
         const wasHovered = crosshairHoveredRef.current;
         crosshairHoveredRef.current = false;
@@ -1133,6 +1182,8 @@ export function PriceChart({
           hoverPointRafRef.current = 0;
         }
         setHoverPoint(null);
+        setHoverAxisLabelGuarded(null);
+        clearOverviewHover();
         if (wasHovered) resyncPeriodAxisLabels();
       }
     };
@@ -1149,7 +1200,7 @@ export function PriceChart({
       if (hideMobileYAxisLabelsRef.current && crosshairHoveredRef.current) return;
       const chart = chartRef.current;
       const s = seriesRef.current;
-      if (!chart || !s || holdingsStyleRef.current) {
+      if (!chart || !s) {
         setRangeOpenBadge(null);
         setRangeHighBadge(null);
         return;
@@ -1499,7 +1550,22 @@ export function PriceChart({
       series = seriesRef.current;
       if (!series) return;
       removeSessionHighLowPriceLines(series, sessionHighPriceLineRef, sessionLowPriceLineRef);
-      removeOverviewSingleBaselineLine(series);
+      // Portfolio chart should also show the dashed "open" baseline line (same as Overview).
+      // Reuse `baselinePriceLineRef` so it is cleaned up when the chart re-inits.
+      let bl = baselinePriceLineRef.current;
+      if (!bl) {
+        bl = series.createPriceLine({
+          price: open,
+          color: BASELINE_LINE,
+          lineWidth: 1,
+          lineStyle: LineStyle.Dashed,
+          axisLabelVisible: false,
+          lineVisible: true,
+        });
+        baselinePriceLineRef.current = bl;
+      } else {
+        bl.applyOptions({ price: open });
+      }
       series.setData(data);
       fitContentWithMobilePlotGutter(
         chart,
@@ -1517,18 +1583,20 @@ export function PriceChart({
             lineWidth: 1,
             lineStyle: LineStyle.Dashed,
             axisLabelVisible: true,
+            lineVisible: true,
             title,
           });
           costBasisLineRef.current = cbl;
         } else {
-          cbl.applyOptions({ price: costBasisPrice, title });
+          cbl.applyOptions({ price: costBasisPrice, title, lineVisible: true });
         }
       } else {
         removeCostLine();
       }
 
       markersRef.current?.setMarkers(tradeMarkersForChart(tradeMarkers, data));
-      syncScaleBoundsPriceLines(chart, series, scaleTopPriceLineRef, scaleBottomPriceLineRef);
+      // Portfolio chart: hide top/bottom plot border lines (keep right-axis numbers).
+      removeScaleBoundsPriceLines(series, scaleTopPriceLineRef, scaleBottomPriceLineRef);
       if (!hideMobileYAxisLabelsRef.current) {
         syncYAxisTickLabels(chart, series, yAxisTickLinesRef);
       } else {
@@ -1642,6 +1710,25 @@ export function PriceChart({
     return Math.min(240, 34 + shown * 22 + moreLine);
   }, [hoverTradeLines]);
 
+  const holdingsHoverTooltip = useMemo(() => {
+    if (!holdingsStyle) return null;
+    if (hoverPrice == null || !Number.isFinite(hoverPrice)) return null;
+    const valueLabel =
+      kind === "stock" && series === "marketCap"
+        ? formatMarketCapAxis(hoverPrice)
+        : kind === "stock" && series === "return"
+          ? formatReturnAxis(hoverPrice)
+          : `$${formatStockPriceAxis(hoverPrice)}`;
+    return { title: holdingsStyle ? "Price" : overviewMetricTitle, valueLabel };
+  }, [holdingsStyle, hoverPrice, kind, series, overviewMetricTitle]);
+
+  const holdingsHoverTooltipPos = useMemo(() => {
+    if (!holdingsStyle || hoverPoint == null || containerWidth <= 0) return null;
+    if (hoverPrice == null || !Number.isFinite(hoverPrice)) return null;
+    // Match overview tooltip sizing.
+    return layoutPointTooltip(hoverPoint, containerWidth, height, 40);
+  }, [holdingsStyle, hoverPoint, containerWidth, height, hoverPrice]);
+
   const holdingsTooltipPos = useMemo(() => {
     if (!holdingsStyle || hoverPoint == null || containerWidth <= 0) return null;
     if (!hoverTradeLines?.length) return null;
@@ -1658,6 +1745,23 @@ export function PriceChart({
     : useMobileOverviewCrosshair
       ? hoverAxisLabel
       : (overviewHover?.axisLabel ?? null);
+
+  const visiblePeriodAxisLabels = useMemo(() => {
+    if (periodAxisLabels.length === 0) return [];
+    if (!Number.isFinite(containerWidth) || containerWidth <= 0) return periodAxisLabels;
+    const clampLeft = (x: number) => Math.min(Math.max(8, x), Math.max(8, containerWidth - 8));
+
+    const out: OverviewAxisLabel[] = [];
+    let last = -Infinity;
+    // Avoid overlaps near the edges where multiple labels clamp to the same left position.
+    for (const lab of periodAxisLabels) {
+      const left = clampLeft(lab.leftPx);
+      if (left - last < 24) continue;
+      out.push(lab);
+      last = left;
+    }
+    return out;
+  }, [periodAxisLabels, containerWidth]);
 
   return (
     <div
@@ -1702,13 +1806,30 @@ export function PriceChart({
           loading || !ready ? "opacity-0" : "opacity-100"
         }`}
       />
-      {!holdingsStyle ? (
+      <div
+        ref={dimOverlayRef}
+        className="pointer-events-none absolute inset-y-0 right-0 z-[15] bg-white/55"
+        style={{ display: "none", left: 0 }}
+        aria-hidden
+      />
+      {holdingsStyle &&
+      holdingsHoverTooltip &&
+      hoverPoint &&
+      (!hoverTradeLines || hoverTradeLines.length === 0) &&
+      holdingsHoverTooltipPos ? (
         <div
-          ref={dimOverlayRef}
-          className="pointer-events-none absolute inset-y-0 right-0 z-[15] bg-white/55"
-          style={{ display: "none", left: 0 }}
-          aria-hidden
-        />
+          className="pointer-events-none absolute z-30 min-w-[148px] rounded-lg border border-[#E4E4E7] bg-white px-3 py-2 shadow-[0px_1px_4px_0px_rgba(10,10,10,0.08),0px_1px_2px_0px_rgba(10,10,10,0.06)]"
+          style={{
+            left: holdingsHoverTooltipPos.left,
+            top: holdingsHoverTooltipPos.top,
+            transform: holdingsHoverTooltipPos.transform,
+          }}
+          role="tooltip"
+        >
+          <p className="text-xs font-semibold tabular-nums text-[#09090B]">
+            {holdingsHoverTooltip.title}: {holdingsHoverTooltip.valueLabel}
+          </p>
+        </div>
       ) : null}
       {holdingsStyle && hoverPoint && hoverYmd && hoverTradeLines && hoverTradeLines.length > 0 && holdingsTooltipPos ? (
         <div
@@ -1731,7 +1852,7 @@ export function PriceChart({
           </div>
         </div>
       ) : null}
-      {!holdingsStyle && !loading && ready
+      {!loading && ready
         ? [rangeOpenBadge, rangeHighBadge]
             .filter((b): b is RangeChartPriceBadge => b != null)
             .map((badge) => (
@@ -1805,7 +1926,7 @@ export function PriceChart({
               {activeBottomAxisLabel.label}
             </span>
           ) : (
-            periodAxisLabels.map((lab) => (
+            visiblePeriodAxisLabels.map((lab) => (
               <span
                 key={lab.key}
                 className="absolute bottom-1 inline-block max-w-[72px] -translate-x-1/2 truncate whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]"

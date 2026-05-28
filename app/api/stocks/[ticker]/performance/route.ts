@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+import { unstable_cache } from "next/cache";
+
 import { CACHE_CONTROL_PRIVATE_HOT } from "@/lib/data/cache-policy";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getStockPerformance } from "@/lib/market/stock-performance";
@@ -7,6 +9,13 @@ import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset
 import { getNvdaPerformance } from "@/lib/fixtures/nvda";
 
 type Ctx = { params: Promise<{ ticker: string }> };
+
+const getCachedPerformance = unstable_cache(
+  async (ticker: string) => getStockPerformance(ticker),
+  ["stock-performance-v1"],
+  // Performance should be reasonably fresh but cheap across tab switching.
+  { revalidate: 60 },
+);
 
 export async function GET(_request: Request, { params }: Ctx) {
   const supabase = await getSupabaseServerClient();
@@ -49,7 +58,7 @@ export async function GET(_request: Request, { params }: Ctx) {
     );
   }
 
-  const perf = await getStockPerformance(routeTicker);
+  const perf = await getCachedPerformance(routeTicker);
   return NextResponse.json(perf, {
     headers: {
       "Cache-Control": CACHE_CONTROL_PRIVATE_HOT,
