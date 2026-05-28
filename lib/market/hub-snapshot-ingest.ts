@@ -1,6 +1,6 @@
 import "server-only";
 
-import { REVALIDATE_HOT, REVALIDATE_STATIC_DAY } from "@/lib/data/cache-policy";
+import { REVALIDATE_STATIC_DAY, REVALIDATE_WARM_LONG } from "@/lib/data/cache-policy";
 import {
   earningsWeekHubSegment,
   economyWeekHubSegment,
@@ -17,12 +17,17 @@ import { addDaysUtc, buildEarningsWeekHubPackage, mondayOfWeekUtc, toYmdUtc } fr
 import { buildMacroDashboardPayloadForIngest } from "@/lib/market/macro-dashboard-payload";
 import { buildNewsFeedForHubIngest } from "@/lib/news/news-feed";
 import { runWithProviderTrace } from "@/lib/market/provider-trace";
+import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { NewsTab } from "@/lib/news/news-types";
 
 const ECONOMY_CRON_COUNTRIES = ["US"] as const;
 const NEWS_TABS: NewsTab[] = ["stocks", "crypto", "indices"];
+/** Hub news segment is daily; avoid re-fetching all tabs on every 15m cron tick. */
+const NEWS_HUB_CRON_MAX_AGE_MS = REVALIDATE_WARM_LONG * 1000;
 
 export type HubSnapshotIngestResult = {
+  skipped: boolean;
+  skipReason?: string;
   keys: Record<string, "ok" | "skipped" | string>;
 };
 
@@ -38,6 +43,14 @@ function utcMondayFromYmd(weekMondayYmd: string): Date {
 
 export async function ingestHubSnapshots(now: Date = new Date()): Promise<HubSnapshotIngestResult> {
   return runWithProviderTrace("cron/hub-snapshots", async () => {
+    if (!getSupabaseAdminClient()) {
+      return {
+        skipped: true,
+        skipReason: "no_supabase_admin",
+        keys: {},
+      };
+    }
+
     const keys: Record<string, "ok" | "skipped" | string> = {};
 
     const macroSeg = macroHubSegment(now);
@@ -52,7 +65,7 @@ export async function ingestHubSnapshots(now: Date = new Date()): Promise<HubSna
     for (const tab of NEWS_TABS) {
       const key = hubNewsKey(tab);
       const seg = newsHubSegment(tab, now);
-      if (await hubSnapshotRowIsFresh(key, seg, REVALIDATE_HOT * 1000)) {
+      if (await hubSnapshotRowIsFresh(key, seg, NEWS_HUB_CRON_MAX_AGE_MS)) {
         keys[key] = "skipped";
       } else {
         const feed = await buildNewsFeedForHubIngest(tab);
@@ -87,6 +100,11 @@ export async function ingestHubSnapshots(now: Date = new Date()): Promise<HubSna
       }
     }
 
-    return { keys };
+    const allSkipped = Object.values(keys).every((v) => v === "skipped");
+    return {
+      skipped: allSkipped && Object.keys(keys).length > 0,
+      skipReason: allSkipped ? "all_hub_keys_fresh" : undefined,
+      keys,
+    };
   });
 }

@@ -26,33 +26,42 @@ export type MarketSnapshotIngestPayloads = {
   indicesDerived: SimpleIndicesDerived;
 };
 
-/** Loads all snapshot blobs from EODHD (cron only — never reads Supabase). */
-export async function buildMarketSnapshotPayloadsForIngest(): Promise<MarketSnapshotIngestPayloads> {
-  const [
-    stocksAllPages,
-    screenerDerived,
-    cryptoTab,
-    cryptoPage2,
-    cryptoDerived,
-    indicesTab,
-    indicesDerived,
-  ] = await Promise.all([
+export type MarketSnapshotHotIngestPayloads = Pick<
+  MarketSnapshotIngestPayloads,
+  "stocksAllPages" | "cryptoTab" | "cryptoPage2" | "indicesTab"
+>;
+
+export type MarketSnapshotSlowIngestPayloads = Pick<
+  MarketSnapshotIngestPayloads,
+  "screenerDerived" | "cryptoDerived" | "indicesDerived"
+>;
+
+/** Hot quotes/tabs — cron only; never reads Supabase. */
+export async function buildMarketSnapshotHotPayloadsForIngest(): Promise<MarketSnapshotHotIngestPayloads> {
+  const [stocksAllPages, cryptoTab, cryptoPage2, indicesTab] = await Promise.all([
     buildMarketSnapshotStocksAllPagesForIngest(),
-    buildMarketSnapshotScreenerDerivedForIngest(),
     buildMarketSnapshotCryptoTabForIngest(),
     buildMarketSnapshotCryptoPage2ForIngest(),
-    buildMarketSnapshotCryptoDerivedForIngest(),
     buildMarketSnapshotIndicesTabForIngest(),
+  ]);
+  return { stocksAllPages, cryptoTab, cryptoPage2, indicesTab };
+}
+
+/** EOD-derived blobs — cron only; never reads Supabase. */
+export async function buildMarketSnapshotSlowPayloadsForIngest(): Promise<MarketSnapshotSlowIngestPayloads> {
+  const [screenerDerived, cryptoDerived, indicesDerived] = await Promise.all([
+    buildMarketSnapshotScreenerDerivedForIngest(),
+    buildMarketSnapshotCryptoDerivedForIngest(),
     buildMarketSnapshotIndicesDerivedForIngest(),
   ]);
+  return { screenerDerived, cryptoDerived, indicesDerived };
+}
 
-  return {
-    stocksAllPages,
-    screenerDerived,
-    cryptoTab,
-    cryptoPage2,
-    cryptoDerived,
-    indicesTab,
-    indicesDerived,
-  };
+/** Loads all snapshot blobs from EODHD (cron only — never reads Supabase). */
+export async function buildMarketSnapshotPayloadsForIngest(): Promise<MarketSnapshotIngestPayloads> {
+  const [hot, slow] = await Promise.all([
+    buildMarketSnapshotHotPayloadsForIngest(),
+    buildMarketSnapshotSlowPayloadsForIngest(),
+  ]);
+  return { ...hot, ...slow };
 }

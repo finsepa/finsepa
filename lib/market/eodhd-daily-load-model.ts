@@ -48,8 +48,9 @@ export const SCENARIO_1000_DAU_MODERATE: EodhdDailyLoadScenario = {
   name: "1000_dau_moderate",
   dau: 1000,
   cronMarketIngestsPerDay: 28,
-  eodhdPerMarketIngest: 380,
-  cronHubIngestRunsPerDay: 32,
+  /** Hot-only ingest (~4 keys); slow derived runs ~1×/session day during live hours. */
+  eodhdPerMarketIngest: 220,
+  cronHubIngestRunsPerDay: 12,
   eodhdPerHubIngestRun: 120,
   listPageViewsPerUser: 4,
   eodhdPerListPageView: 0,

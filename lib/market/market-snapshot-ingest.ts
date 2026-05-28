@@ -1,74 +1,154 @@
 import "server-only";
 
-import { MARKET_SNAPSHOT_INGEST_KEYS, MARKET_SNAPSHOT_KEY } from "@/lib/market/market-snapshot-keys";
-import { marketSnapshotSegmentIsFresh, upsertMarketSnapshot } from "@/lib/market/market-snapshot-store";
+import {
+  MARKET_SNAPSHOT_HOT_INGEST_KEYS,
+  MARKET_SNAPSHOT_INGEST_KEYS,
+  MARKET_SNAPSHOT_KEY,
+  MARKET_SNAPSHOT_SLOW_INGEST_KEYS,
+  type MarketSnapshotKey,
+} from "@/lib/market/market-snapshot-keys";
+import {
+  marketSnapshotHotSegment,
+  marketSnapshotKeyIsFresh,
+  marketSnapshotSlowSegment,
+  upsertMarketSnapshot,
+} from "@/lib/market/market-snapshot-store";
 import { runWithProviderTrace } from "@/lib/market/provider-trace";
 import {
-  buildMarketSnapshotPayloadsForIngest,
-  type MarketSnapshotIngestPayloads,
+  buildMarketSnapshotHotPayloadsForIngest,
+  buildMarketSnapshotSlowPayloadsForIngest,
 } from "@/lib/market/market-snapshot-ingest-sources";
 import { getScreenerUsMarketCacheEpoch } from "@/lib/screener/screener-us-market-cache";
+import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 
-const LIVE_INGEST_MIN_INTERVAL_MS = 14 * 60 * 1000;
+const LIVE_HOT_INGEST_MIN_INTERVAL_MS = 14 * 60 * 1000;
 const FROZEN_INGEST_MAX_AGE_MS = 48 * 60 * 60 * 1000;
+/** Live session: derived EOD bars need at most one cron fill per regular day. */
+const LIVE_SLOW_INGEST_MAX_AGE_MS = 20 * 60 * 60 * 1000;
+
+export type MarketSnapshotIngestSkipState = {
+  hotSkipReason: string | null;
+  slowSkipReason: string | null;
+};
 
 export type MarketSnapshotIngestResult = {
   segment: string;
+  slowSegment: string;
   mode: "live" | "frozen";
   skipped: boolean;
   skipReason?: string;
-  keys: Record<string, "ok" | string>;
+  hotSkipReason?: string;
+  slowSkipReason?: string;
+  keys: Record<string, "ok" | "skipped" | string>;
 };
 
-export async function shouldSkipMarketSnapshotIngest(now: Date = new Date()): Promise<string | null> {
+export async function getMarketSnapshotIngestSkipState(
+  now: Date = new Date(),
+): Promise<MarketSnapshotIngestSkipState> {
   const epoch = getScreenerUsMarketCacheEpoch(now);
+  const hotSeg = marketSnapshotHotSegment(epoch);
+  const slowSeg = marketSnapshotSlowSegment(epoch);
+
   if (epoch.mode === "frozen") {
-    const fresh = await marketSnapshotSegmentIsFresh(epoch.segment, FROZEN_INGEST_MAX_AGE_MS);
-    if (fresh) return "frozen_segment_fresh";
-  } else {
-    const fresh = await marketSnapshotSegmentIsFresh(epoch.segment, LIVE_INGEST_MIN_INTERVAL_MS);
-    if (fresh) return "live_segment_recent";
+    const fresh = await marketSnapshotKeyIsFresh(
+      MARKET_SNAPSHOT_KEY.stocksAllPages,
+      hotSeg,
+      FROZEN_INGEST_MAX_AGE_MS,
+    );
+    if (fresh) {
+      return { hotSkipReason: "frozen_segment_fresh", slowSkipReason: "frozen_segment_fresh" };
+    }
+    return { hotSkipReason: null, slowSkipReason: null };
   }
+
+  const hotFresh = await marketSnapshotKeyIsFresh(
+    MARKET_SNAPSHOT_KEY.stocksAllPages,
+    hotSeg,
+    LIVE_HOT_INGEST_MIN_INTERVAL_MS,
+  );
+  const slowFresh = await marketSnapshotKeyIsFresh(
+    MARKET_SNAPSHOT_KEY.screenerDerived,
+    slowSeg,
+    LIVE_SLOW_INGEST_MAX_AGE_MS,
+  );
+
+  return {
+    hotSkipReason: hotFresh ? "live_hot_segment_recent" : null,
+    slowSkipReason: slowFresh ? "live_slow_segment_fresh" : null,
+  };
+}
+
+/** True only when both hot and slow tiers are fresh — full cron skip. */
+export async function shouldSkipMarketSnapshotIngest(now: Date = new Date()): Promise<string | null> {
+  const { hotSkipReason, slowSkipReason } = await getMarketSnapshotIngestSkipState(now);
+  if (hotSkipReason && slowSkipReason) return `${hotSkipReason};${slowSkipReason}`;
   return null;
+}
+
+function skippedKeys(keys: readonly MarketSnapshotKey[]): Record<string, "skipped"> {
+  return Object.fromEntries(keys.map((k) => [k, "skipped"] as const));
 }
 
 export async function ingestMarketSnapshots(now: Date = new Date()): Promise<MarketSnapshotIngestResult> {
   return runWithProviderTrace("cron/market-snapshots", async () => {
     const epoch = getScreenerUsMarketCacheEpoch(now);
-    const skipReason = await shouldSkipMarketSnapshotIngest(now);
-    if (skipReason) {
+    const hotSeg = marketSnapshotHotSegment(epoch);
+    const slowSeg = marketSnapshotSlowSegment(epoch);
+    const keys: Record<string, "ok" | "skipped" | string> = {};
+
+    if (!getSupabaseAdminClient()) {
       return {
-        segment: epoch.segment,
+        segment: hotSeg,
+        slowSegment: slowSeg,
         mode: epoch.mode,
         skipped: true,
-        skipReason,
-        keys: Object.fromEntries(MARKET_SNAPSHOT_INGEST_KEYS.map((k) => [k, "skipped"])),
+        skipReason: "no_supabase_admin",
+        keys: Object.fromEntries(MARKET_SNAPSHOT_INGEST_KEYS.map((k) => [k, "no_supabase_admin"])),
       };
     }
 
-    const payloads: MarketSnapshotIngestPayloads = await buildMarketSnapshotPayloadsForIngest();
-    const keys: Record<string, "ok" | string> = {};
+    const { hotSkipReason, slowSkipReason } = await getMarketSnapshotIngestSkipState(now);
 
-    const entries: [keyof MarketSnapshotIngestPayloads, unknown][] = [
-      ["stocksAllPages", payloads.stocksAllPages],
-      ["screenerDerived", payloads.screenerDerived],
-      ["cryptoTab", payloads.cryptoTab],
-      ["cryptoPage2", payloads.cryptoPage2],
-      ["cryptoDerived", payloads.cryptoDerived],
-      ["indicesTab", payloads.indicesTab],
-      ["indicesDerived", payloads.indicesDerived],
-    ];
-
-    for (const [name, data] of entries) {
-      const snapshotKey = MARKET_SNAPSHOT_KEY[name];
-      const res = await upsertMarketSnapshot(snapshotKey, epoch.segment, data);
-      keys[snapshotKey] = res.ok ? "ok" : res.reason;
+    if (!hotSkipReason) {
+      const hot = await buildMarketSnapshotHotPayloadsForIngest();
+      const hotEntries: [keyof typeof hot, MarketSnapshotKey][] = [
+        ["stocksAllPages", MARKET_SNAPSHOT_KEY.stocksAllPages],
+        ["cryptoTab", MARKET_SNAPSHOT_KEY.cryptoTab],
+        ["cryptoPage2", MARKET_SNAPSHOT_KEY.cryptoPage2],
+        ["indicesTab", MARKET_SNAPSHOT_KEY.indicesTab],
+      ];
+      for (const [name, snapshotKey] of hotEntries) {
+        const res = await upsertMarketSnapshot(snapshotKey, hotSeg, hot[name]);
+        keys[snapshotKey] = res.ok ? "ok" : res.reason;
+      }
+    } else {
+      Object.assign(keys, skippedKeys(MARKET_SNAPSHOT_HOT_INGEST_KEYS));
     }
 
+    if (!slowSkipReason) {
+      const slow = await buildMarketSnapshotSlowPayloadsForIngest();
+      const slowEntries: [keyof typeof slow, MarketSnapshotKey][] = [
+        ["screenerDerived", MARKET_SNAPSHOT_KEY.screenerDerived],
+        ["cryptoDerived", MARKET_SNAPSHOT_KEY.cryptoDerived],
+        ["indicesDerived", MARKET_SNAPSHOT_KEY.indicesDerived],
+      ];
+      for (const [name, snapshotKey] of slowEntries) {
+        const res = await upsertMarketSnapshot(snapshotKey, slowSeg, slow[name]);
+        keys[snapshotKey] = res.ok ? "ok" : res.reason;
+      }
+    } else {
+      Object.assign(keys, skippedKeys(MARKET_SNAPSHOT_SLOW_INGEST_KEYS));
+    }
+
+    const skipped = Boolean(hotSkipReason && slowSkipReason);
     return {
-      segment: epoch.segment,
+      segment: hotSeg,
+      slowSegment: slowSeg,
       mode: epoch.mode,
-      skipped: false,
+      skipped,
+      skipReason: skipped ? `${hotSkipReason};${slowSkipReason}` : undefined,
+      hotSkipReason: hotSkipReason ?? undefined,
+      slowSkipReason: slowSkipReason ?? undefined,
       keys,
     };
   });

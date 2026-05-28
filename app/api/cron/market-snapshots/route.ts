@@ -21,7 +21,7 @@ export async function GET(request: Request) {
 
   try {
     const [market, hub] = await Promise.all([ingestMarketSnapshots(), ingestHubSnapshots()]);
-    return NextResponse.json({ market, hub });
+    return NextResponse.json({ at: new Date().toISOString(), market, hub });
   } catch (e) {
     const message = e instanceof Error ? e.message : "ingest_failed";
     console.error("[cron/market-snapshots]", message);

@@ -38,7 +38,7 @@ import { SCREENER_INDEX_SYMBOLS } from "@/lib/screener/screener-indices-universe
 import { toEodhdUsSymbol } from "@/lib/market/eodhd-symbol";
 import { runWithConcurrencyLimit } from "@/lib/utils/run-with-concurrency-limit";
 import { MARKET_SNAPSHOT_KEY } from "@/lib/market/market-snapshot-keys";
-import { readMarketSnapshot } from "@/lib/market/market-snapshot-store";
+import { readMarketSnapshot, readMarketSnapshotSlow } from "@/lib/market/market-snapshot-store";
 import { readCryptoDerivedSnapshot, upsertCryptoDerivedSnapshot } from "@/lib/market/crypto-derived-snapshot";
 import {
   pickScreenerDerivedForTickers,
@@ -632,7 +632,7 @@ async function loadSimpleScreenerDerivedTop10Uncached(): Promise<SimpleScreenerD
 }
 
 export async function getSimpleScreenerDerived(): Promise<SimpleScreenerDerived> {
-  const snap = await readMarketSnapshot<SimpleScreenerDerived>(MARKET_SNAPSHOT_KEY.screenerDerived);
+  const snap = await readMarketSnapshotSlow<SimpleScreenerDerived>(MARKET_SNAPSHOT_KEY.screenerDerived);
   if (snap) return snap;
   return withScreenerUsMarketCache("simple-screener-derived-v12-session", () => loadSimpleScreenerDerivedUncached());
 }
@@ -733,7 +733,7 @@ export async function getSimpleScreenerStockDerivedForTickers(
   marketLive: SimpleMarketData,
   universeRows?: readonly { ticker: string; refund1mP: number | null; refundYtdP: number | null }[],
 ): Promise<Record<string, SimpleScreenerStockDerived>> {
-  const fromSnapshot = await readMarketSnapshot<SimpleScreenerDerived>(MARKET_SNAPSHOT_KEY.screenerDerived);
+  const fromSnapshot = await readMarketSnapshotSlow<SimpleScreenerDerived>(MARKET_SNAPSHOT_KEY.screenerDerived);
   if (fromSnapshot) return pickScreenerDerivedForTickers(fromSnapshot, tickers);
 
   const tickersKey = [...tickers]
@@ -808,7 +808,7 @@ async function getSimpleCryptoDerivedCached(): Promise<SimpleCryptoDerived> {
 }
 
 export async function getSimpleCryptoDerived(): Promise<SimpleCryptoDerived> {
-  const snap = await readMarketSnapshot<SimpleCryptoDerived>(MARKET_SNAPSHOT_KEY.cryptoDerived);
+  const snap = await readMarketSnapshotSlow<SimpleCryptoDerived>(MARKET_SNAPSHOT_KEY.cryptoDerived);
   if (snap) return snap;
   return getSimpleCryptoDerivedCached();
 }
@@ -890,7 +890,7 @@ async function loadSimpleIndicesDerivedUncached(): Promise<SimpleIndicesDerived>
 }
 
 export async function getSimpleIndicesDerived(): Promise<SimpleIndicesDerived> {
-  const snap = await readMarketSnapshot<SimpleIndicesDerived>(MARKET_SNAPSHOT_KEY.indicesDerived);
+  const snap = await readMarketSnapshotSlow<SimpleIndicesDerived>(MARKET_SNAPSHOT_KEY.indicesDerived);
   if (snap) return snap;
   return withScreenerUsMarketCache("simple-indices-derived-v3-session", () => loadSimpleIndicesDerivedUncached());
 }

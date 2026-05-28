@@ -28,7 +28,7 @@
 3. After deploy, trigger once: `curl -H "Authorization: Bearer $CRON_SECRET" https://<host>/api/cron/market-snapshots`
 4. Verify: screener/heatmap/hub pages refresh → EODHD flat; cron tick moves counter.
 
-Cron schedule: every 15 minutes (`vercel.json`). Market ingest skips when frozen segment is fresh or live segment updated &lt;14m ago. Hub ingest skips per-key when segment is fresh (macro/news daily, earnings/economy weekly).
+Cron schedule: every 15 minutes (`vercel.json`). Market ingest: **hot** keys (quotes/tabs) refresh each live 15m segment; **slow** keys (EOD-derived screener/crypto/indices) use `slow-live-{sessionDay}` once per regular session. Skips when frozen segment is fresh, hot row &lt;14m old, or slow row &lt;20h old. No `SUPABASE_SERVICE_ROLE_KEY` → full skip (no EODHD burn). Hub ingest skips per-key when segment is fresh (macro/earnings/economy daily/weekly; news ~15m TTL).
 
 **P3 hub keys:** `hub_macro_dashboard`, `hub_news_*`, `hub_earnings_week_YYYY-MM-DD`, `hub_economy_week_YYYY-MM-DD_US`. Earnings ingest uses universe market-cap only (never set `EARNINGS_USE_FUNDAMENTALS_MC=1` in prod).
 

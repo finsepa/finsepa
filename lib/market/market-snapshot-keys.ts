@@ -20,3 +20,18 @@ export const MARKET_SNAPSHOT_INGEST_KEYS: readonly MarketSnapshotKey[] = [
   MARKET_SNAPSHOT_KEY.indicesTab,
   MARKET_SNAPSHOT_KEY.indicesDerived,
 ];
+
+/** Quotes / tab lists — refresh every live 15m segment (or frozen day). */
+export const MARKET_SNAPSHOT_HOT_INGEST_KEYS: readonly MarketSnapshotKey[] = [
+  MARKET_SNAPSHOT_KEY.stocksAllPages,
+  MARKET_SNAPSHOT_KEY.cryptoTab,
+  MARKET_SNAPSHOT_KEY.cryptoPage2,
+  MARKET_SNAPSHOT_KEY.indicesTab,
+];
+
+/** EOD-bar derived blobs — once per regular session day during live hours. */
+export const MARKET_SNAPSHOT_SLOW_INGEST_KEYS: readonly MarketSnapshotKey[] = [
+  MARKET_SNAPSHOT_KEY.screenerDerived,
+  MARKET_SNAPSHOT_KEY.cryptoDerived,
+  MARKET_SNAPSHOT_KEY.indicesDerived,
+];
