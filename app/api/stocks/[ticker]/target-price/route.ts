@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+import { unstable_cache } from "next/cache";
+
 import { CACHE_CONTROL_PRIVATE_NO_STORE, CACHE_CONTROL_PRIVATE_WARM } from "@/lib/data/cache-policy";
 import { fetchEodhdFundamentalsJson } from "@/lib/market/eodhd-fundamentals";
 import { buildStockTargetPricePayload } from "@/lib/market/stock-target-price-payload";
@@ -7,6 +9,16 @@ import { normalizeWatchlistTicker, WatchlistValidationError } from "@/lib/watchl
 import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
 
 type Ctx = { params: Promise<{ ticker: string }> };
+
+const getCachedTargetPrice = unstable_cache(
+  async (ticker: string) => {
+    const root = await fetchEodhdFundamentalsJson(ticker);
+    return buildStockTargetPricePayload(root);
+  },
+  ["stock-target-price-v1"],
+  // Fundamentals-backed payload: cache long to avoid repeat tab burns.
+  { revalidate: 12 * 60 * 60 },
+);
 
 export async function GET(_request: Request, { params }: Ctx) {
   const { ticker: raw } = await params;
@@ -27,8 +39,7 @@ export async function GET(_request: Request, { params }: Ctx) {
     });
   }
 
-  const root = await fetchEodhdFundamentalsJson(routeTicker);
-  const payload = buildStockTargetPricePayload(root);
+  const payload = await getCachedTargetPrice(routeTicker);
 
   return NextResponse.json(payload, {
     headers: {

@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+import { unstable_cache } from "next/cache";
+
 import { CACHE_CONTROL_PRIVATE_WARM_LONG } from "@/lib/data/cache-policy";
 import {
   fetchEodhdInsiderTransactions,
@@ -17,6 +19,17 @@ function parseLimit(raw: string | null): number | undefined {
   if (!Number.isFinite(n)) return undefined;
   return n;
 }
+
+const getCachedInsiderTransactions = unstable_cache(
+  async (ticker: string, from: string, to: string, limitKey: string) => {
+    const limit = limitKey ? Number.parseInt(limitKey, 10) : undefined;
+    const rows = await fetchEodhdInsiderTransactions(ticker, { from, to, limit });
+    return { ticker, rows, windowFrom: from, windowTo: to };
+  },
+  ["stock-insider-transactions-v1"],
+  // Insider feed changes slowly; cache long to avoid repeat tab burns.
+  { revalidate: 12 * 60 * 60 },
+);
 
 export async function GET(request: Request, { params }: Ctx) {
   const { ticker: raw } = await params;
@@ -51,14 +64,10 @@ export async function GET(request: Request, { params }: Ctx) {
     to: toRaw ?? undefined,
   });
 
-  const rows = await fetchEodhdInsiderTransactions(routeTicker, {
-    from,
-    to,
-    limit,
-  });
+  const payload = await getCachedInsiderTransactions(routeTicker, from, to, limit != null ? String(limit) : "");
 
   return NextResponse.json(
-    { ticker: routeTicker, rows, windowFrom: from, windowTo: to },
+    payload,
     { headers: { "Cache-Control": CACHE_CONTROL_PRIVATE_WARM_LONG } },
   );
 }

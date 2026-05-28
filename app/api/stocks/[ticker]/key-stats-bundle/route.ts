@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+import { unstable_cache } from "next/cache";
+
 import {
   CACHE_CONTROL_PRIVATE_MAX_0_MUST_REVALIDATE,
   CACHE_CONTROL_PRIVATE_NO_STORE_MUST_REVALIDATE,
@@ -11,6 +13,13 @@ import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset
 import { getNvdaKeyStatsBundle } from "@/lib/fixtures/nvda";
 
 type Ctx = { params: Promise<{ ticker: string }> };
+
+const getCachedKeyStatsBundle = unstable_cache(
+  async (ticker: string) => buildStockKeyStatsBundle(ticker, { refreshFundamentals: false }),
+  ["stock-key-stats-bundle-v1"],
+  // Key stats are fundamentals-backed; cache long to avoid repeat tab burns.
+  { revalidate: 12 * 60 * 60 },
+);
 
 export async function GET(request: Request, { params }: Ctx) {
   const url = new URL(request.url);
@@ -52,7 +61,9 @@ export async function GET(request: Request, { params }: Ctx) {
     );
   }
 
-  const bundle = await buildStockKeyStatsBundle(routeTicker, { refreshFundamentals });
+  const bundle = refreshFundamentals
+    ? await buildStockKeyStatsBundle(routeTicker, { refreshFundamentals: true })
+    : await getCachedKeyStatsBundle(routeTicker);
 
   const cacheHeaders = refreshFundamentals
     ? { "Cache-Control": CACHE_CONTROL_PRIVATE_NO_STORE_MUST_REVALIDATE }
