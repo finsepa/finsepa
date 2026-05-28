@@ -10,6 +10,7 @@ import { getEodhdApiKey } from "@/lib/env/server";
 import { traceEodhdHttp } from "@/lib/market/provider-trace";
 import { fetchEodhdCryptoFundamentalsMeta } from "@/lib/market/eodhd-crypto-fundamentals-meta";
 import type { EodhdDailyBar, EodhdOpenOnDateResult } from "@/lib/market/eodhd-eod";
+import { readCryptoMarketCapSnapshot, upsertCryptoMarketCapSnapshot } from "@/lib/market/crypto-market-cap-snapshot";
 
 /**
  * Last session on or before calendar {@link ymd} using crypto daily bars (close).
@@ -169,11 +170,22 @@ export async function fetchCryptoMarketCapUsdForMeta(
   meta: CryptoMeta,
   lastCloseUsd: number | null = null,
 ): Promise<number | null> {
+  const snap = await readCryptoMarketCapSnapshot(meta.symbol);
+  if (snap !== undefined) return snap;
+
   for (const sym of eodhdSymbolsForMeta(meta)) {
     const m = await fetchEodhdCryptoFundamentalsMeta(sym);
     if (!m) continue;
-    if (m.marketCapUsd != null && Number.isFinite(m.marketCapUsd) && m.marketCapUsd > 0) return m.marketCapUsd;
-    if (m.fullyDilutedMarketCapUsd != null && Number.isFinite(m.fullyDilutedMarketCapUsd) && m.fullyDilutedMarketCapUsd > 0) {
+    if (m.marketCapUsd != null && Number.isFinite(m.marketCapUsd) && m.marketCapUsd > 0) {
+      void upsertCryptoMarketCapSnapshot(meta.symbol, m.marketCapUsd);
+      return m.marketCapUsd;
+    }
+    if (
+      m.fullyDilutedMarketCapUsd != null &&
+      Number.isFinite(m.fullyDilutedMarketCapUsd) &&
+      m.fullyDilutedMarketCapUsd > 0
+    ) {
+      void upsertCryptoMarketCapSnapshot(meta.symbol, m.fullyDilutedMarketCapUsd);
       return m.fullyDilutedMarketCapUsd;
     }
     const sup = m.circulatingSupply ?? m.totalSupply;
@@ -185,8 +197,12 @@ export async function fetchCryptoMarketCapUsdForMeta(
       sup > 0
     ) {
       const implied = lastCloseUsd * sup;
-      if (Number.isFinite(implied) && implied > 0) return implied;
+      if (Number.isFinite(implied) && implied > 0) {
+        void upsertCryptoMarketCapSnapshot(meta.symbol, implied);
+        return implied;
+      }
     }
   }
+  void upsertCryptoMarketCapSnapshot(meta.symbol, null);
   return null;
 }

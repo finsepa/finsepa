@@ -26,6 +26,13 @@ export function screenerPeDisplayFromUniverse(u: TopCompanyUniverseRow): string 
   return "—";
 }
 
+function lastCloseFromDerived(derived: SimpleScreenerStockDerived | null | undefined): number | null {
+  const s = derived?.last5DailyCloses;
+  if (!s || !s.length) return null;
+  const last = s[s.length - 1];
+  return typeof last === "number" && Number.isFinite(last) && last > 0 ? last : null;
+}
+
 /**
  * P/E in Key Stats (Highlights) format — matches stock Valuation "P/E Ratio" when fundamentals load.
  * Falls back to screener implied (price/earnings_share) if fundamentals are missing.
@@ -59,9 +66,11 @@ export function buildScreenerCompanyRowFromUniverse(
     quote && typeof quote.previousClose === "number" && Number.isFinite(quote.previousClose) ? quote.previousClose : null;
 
   const snapClose = u.adjustedClose;
+  const derivedClose = lastCloseFromDerived(barDerived);
   const price: number | null =
     rtClose ??
-    (snapClose != null && Number.isFinite(snapClose) && snapClose > 0 ? snapClose : null);
+    (snapClose != null && Number.isFinite(snapClose) && snapClose > 0 ? snapClose : null) ??
+    derivedClose;
 
   let change1D: number | null = null;
   if (rtClose != null) {
@@ -74,6 +83,17 @@ export function buildScreenerCompanyRowFromUniverse(
   const change1M = pickScreenerPct(u.refund1mP, barDerived?.changePercent1M);
   const changeYTD = pickScreenerPct(u.refundYtdP, barDerived?.changePercentYTD);
 
+  const pe =
+    peKeyStatsDisplay !== undefined
+      ? peKeyStatsDisplay
+      : (() => {
+          const eps = u.earningsShare;
+          if (price != null && eps != null && eps > 0 && Number.isFinite(eps)) {
+            return formatPeDisplay(price / eps, null);
+          }
+          return screenerPeDisplayFromUniverse(u);
+        })();
+
   return {
     id: rankId,
     name: u.name,
@@ -84,7 +104,7 @@ export function buildScreenerCompanyRowFromUniverse(
     change1M,
     changeYTD,
     marketCap: formatUsdCompact(u.marketCapUsd),
-    pe: peKeyStatsDisplay === undefined ? screenerPeDisplayFromUniverse(u) : peKeyStatsDisplay,
+    pe,
     trend: [],
   };
 }

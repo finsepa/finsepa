@@ -18,7 +18,6 @@ import {
   type CryptoMeta,
   cryptoRealtimeRequestSymbols,
   fetchCryptoMarketCapUsdForMeta,
-  lastPositiveCloseFromCryptoBars,
   fetchEodhdCryptoDailyBarsForMeta,
   pickCryptoRealtimePayload,
 } from "@/lib/market/eodhd-crypto";
@@ -40,6 +39,7 @@ import { toEodhdUsSymbol } from "@/lib/market/eodhd-symbol";
 import { runWithConcurrencyLimit } from "@/lib/utils/run-with-concurrency-limit";
 import { MARKET_SNAPSHOT_KEY } from "@/lib/market/market-snapshot-keys";
 import { readMarketSnapshot } from "@/lib/market/market-snapshot-store";
+import { readCryptoDerivedSnapshot, upsertCryptoDerivedSnapshot } from "@/lib/market/crypto-derived-snapshot";
 import {
   pickScreenerDerivedForTickers,
   sliceSimpleMarketDataForStockTickers,
@@ -683,11 +683,12 @@ function getCachedScreenerEodBarsForTickers(tickers: string[]): Promise<(EodhdDa
   );
 }
 
-function tickerNeedsEodDerivedPct(u: { refund1mP: number | null; refundYtdP: number | null } | undefined): boolean {
+function tickerNeedsEodDerivedPct(u: { refund1mP: number | null; refundYtdP: number | null; adjustedClose?: number | null } | undefined): boolean {
   if (!u) return true;
   const has1m = u.refund1mP != null && Number.isFinite(u.refund1mP);
   const hasYtd = u.refundYtdP != null && Number.isFinite(u.refundYtdP);
-  return !has1m || !hasYtd;
+  const hasClose = u.adjustedClose != null && Number.isFinite(u.adjustedClose) && u.adjustedClose > 0;
+  return !has1m || !hasYtd || !hasClose;
 }
 
 /**
@@ -697,7 +698,7 @@ function tickerNeedsEodDerivedPct(u: { refund1mP: number | null; refundYtdP: num
 async function loadSimpleScreenerStockDerivedForTickersUncached(
   tickers: string[],
   marketLive: SimpleMarketData,
-  universeRows?: readonly { ticker: string; refund1mP: number | null; refundYtdP: number | null }[],
+  universeRows?: readonly { ticker: string; refund1mP: number | null; refundYtdP: number | null; adjustedClose?: number | null }[],
 ): Promise<Record<string, SimpleScreenerStockDerived>> {
   if (!tickers.length) return {};
   const byTicker = universeRows
@@ -762,28 +763,40 @@ function barsToCryptoDerived(bars: EodhdDailyBar[]): CryptoDerivedSlice {
   };
 }
 
+async function cryptoDerivedForMeta(meta: CryptoMeta, from: string, to: string): Promise<CryptoDerivedSlice> {
+  const cached = await readCryptoDerivedSnapshot(meta.symbol);
+  if (cached !== undefined && cached) return { ...cached, marketCapUsd: null };
+  if (cached !== undefined && cached === null) return emptyCryptoDerived();
+
+  const raw = await fetchEodhdCryptoDailyBarsForMeta(meta, from, to);
+  const bars = Array.isArray(raw) ? raw : [];
+  const derived = barsToCryptoDerived(bars);
+  const snap = {
+    changePercent7D: derived.changePercent7D,
+    changePercent1M: derived.changePercent1M,
+    changePercentYTD: derived.changePercentYTD,
+    last5DailyCloses: derived.last5DailyCloses,
+  };
+  void upsertCryptoDerivedSnapshot(meta.symbol, snap);
+  return derived;
+}
+
 async function loadSimpleCryptoDerivedUncached(): Promise<SimpleCryptoDerived> {
   const window = eodFetchWindowUtc();
-  const barsList = await runWithConcurrencyLimit(
+  const derivedList = await runWithConcurrencyLimit(
     CRYPTO_SCREENER_ALL,
     SCREENER_EOD_DERIVED_CRYPTO_CONCURRENCY,
-    (c) => fetchEodhdCryptoDailyBarsForMeta(c, window.from, window.to),
+    (c) => cryptoDerivedForMeta(c, window.from, window.to),
   );
-  const mcList = await runWithConcurrencyLimit(
-    CRYPTO_SCREENER_ALL,
-    SCREENER_EOD_DERIVED_CRYPTO_CONCURRENCY,
-    (c, i) => {
-      const raw = barsList[i];
-      const bars = Array.isArray(raw) ? raw : [];
-      return fetchCryptoMarketCapUsdForMeta(c, lastPositiveCloseFromCryptoBars(bars));
-    },
-  );
+  const mcList = await runWithConcurrencyLimit(CRYPTO_SCREENER_ALL, SCREENER_EOD_DERIVED_CRYPTO_CONCURRENCY, (c, i) => {
+    const d = derivedList[i];
+    const lastClose = d?.last5DailyCloses?.length ? d.last5DailyCloses[d.last5DailyCloses.length - 1]! : null;
+    return fetchCryptoMarketCapUsdForMeta(c, typeof lastClose === "number" ? lastClose : null);
+  });
   const out: SimpleCryptoDerived = {};
   CRYPTO_SCREENER_ALL.forEach((c, i) => {
-    const raw = barsList[i];
-    const bars = Array.isArray(raw) ? raw : [];
     const mc = typeof mcList[i] === "number" && Number.isFinite(mcList[i]!) ? mcList[i]! : null;
-    out[c.symbol] = { ...barsToCryptoDerived(bars), marketCapUsd: mc };
+    out[c.symbol] = { ...(derivedList[i] ?? emptyCryptoDerived()), marketCapUsd: mc };
   });
   return out;
 }
@@ -803,26 +816,20 @@ export async function getSimpleCryptoDerived(): Promise<SimpleCryptoDerived> {
 /** Screener Crypto tab page 1 — daily bars for {@link CRYPTO_TOP10} only. */
 async function loadSimpleCryptoDerivedTop10Uncached(): Promise<SimpleCryptoDerived> {
   const window = eodFetchWindowUtc();
-  const barsList = await runWithConcurrencyLimit(
+  const derivedList = await runWithConcurrencyLimit(
     CRYPTO_TOP10,
     SCREENER_EOD_DERIVED_CRYPTO_CONCURRENCY,
-    (c) => fetchEodhdCryptoDailyBarsForMeta(c, window.from, window.to),
+    (c) => cryptoDerivedForMeta(c, window.from, window.to),
   );
-  const mcList = await runWithConcurrencyLimit(
-    CRYPTO_TOP10,
-    SCREENER_EOD_DERIVED_CRYPTO_CONCURRENCY,
-    (c, i) => {
-      const raw = barsList[i];
-      const bars = Array.isArray(raw) ? raw : [];
-      return fetchCryptoMarketCapUsdForMeta(c, lastPositiveCloseFromCryptoBars(bars));
-    },
-  );
+  const mcList = await runWithConcurrencyLimit(CRYPTO_TOP10, SCREENER_EOD_DERIVED_CRYPTO_CONCURRENCY, (c, i) => {
+    const d = derivedList[i];
+    const lastClose = d?.last5DailyCloses?.length ? d.last5DailyCloses[d.last5DailyCloses.length - 1]! : null;
+    return fetchCryptoMarketCapUsdForMeta(c, typeof lastClose === "number" ? lastClose : null);
+  });
   const out: SimpleCryptoDerived = {};
   CRYPTO_TOP10.forEach((c, i) => {
-    const raw = barsList[i];
-    const bars = Array.isArray(raw) ? raw : [];
     const mc = typeof mcList[i] === "number" && Number.isFinite(mcList[i]!) ? mcList[i]! : null;
-    out[c.symbol] = { ...barsToCryptoDerived(bars), marketCapUsd: mc };
+    out[c.symbol] = { ...(derivedList[i] ?? emptyCryptoDerived()), marketCapUsd: mc };
   });
   return out;
 }
@@ -847,20 +854,18 @@ export async function getSimpleCryptoDerivedForMetas(metas: readonly CryptoMeta[
     async () => {
       const window = eodFetchWindowUtc();
       const list = [...metas];
-      const barsList = await runWithConcurrencyLimit(list, SCREENER_EOD_DERIVED_CRYPTO_CONCURRENCY, (c) =>
-        fetchEodhdCryptoDailyBarsForMeta(c, window.from, window.to),
+      const derivedList = await runWithConcurrencyLimit(list, SCREENER_EOD_DERIVED_CRYPTO_CONCURRENCY, (c) =>
+        cryptoDerivedForMeta(c, window.from, window.to),
       );
       const mcList = await runWithConcurrencyLimit(list, SCREENER_EOD_DERIVED_CRYPTO_CONCURRENCY, (c, i) => {
-        const raw = barsList[i];
-        const bars = Array.isArray(raw) ? raw : [];
-        return fetchCryptoMarketCapUsdForMeta(c, lastPositiveCloseFromCryptoBars(bars));
+        const d = derivedList[i];
+        const lastClose = d?.last5DailyCloses?.length ? d.last5DailyCloses[d.last5DailyCloses.length - 1]! : null;
+        return fetchCryptoMarketCapUsdForMeta(c, typeof lastClose === "number" ? lastClose : null);
       });
       const out: SimpleCryptoDerived = {};
       metas.forEach((c, i) => {
-        const raw = barsList[i];
-        const bars = Array.isArray(raw) ? raw : [];
         const mc = typeof mcList[i] === "number" && Number.isFinite(mcList[i]!) ? mcList[i]! : null;
-        out[c.symbol] = { ...barsToCryptoDerived(bars), marketCapUsd: mc };
+        out[c.symbol] = { ...(derivedList[i] ?? emptyCryptoDerived()), marketCapUsd: mc };
       });
       return out;
     },

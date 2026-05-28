@@ -46,6 +46,14 @@ export const REDUCED_CRYPTO: Record<string, { symbol: string; name: string; mark
   UNI: { symbol: "UNI", name: "Uniswap", marketCapUsd: 4.2 * 1e9 },
   XLM: { symbol: "XLM", name: "Stellar", marketCapUsd: 2.9 * 1e9 },
   FIL: { symbol: "FIL", name: "Filecoin", marketCapUsd: 1.9 * 1e9 },
+  // Additional screener page-2 names (display-only caps; used when provider cap is missing).
+  MNT: { symbol: "MNT", name: "Mantle", marketCapUsd: 2.3 * 1e9 },
+  SEI: { symbol: "SEI", name: "Sei", marketCapUsd: 1.7 * 1e9 },
+  PYTH: { symbol: "PYTH", name: "Pyth Network", marketCapUsd: 1.4 * 1e9 },
+  JUP: { symbol: "JUP", name: "Jupiter", marketCapUsd: 1.9 * 1e9 },
+  STRK: { symbol: "STRK", name: "Starknet", marketCapUsd: 1.6 * 1e9 },
+  WLD: { symbol: "WLD", name: "Worldcoin", marketCapUsd: 2.6 * 1e9 },
+  ONDO: { symbol: "ONDO", name: "Ondo", marketCapUsd: 3.2 * 1e9 },
 };
 
 export const REDUCED_INDICES = {
