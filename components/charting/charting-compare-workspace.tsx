@@ -59,6 +59,7 @@ import {
   formatUsdCompact,
   formatUsdPrice,
 } from "@/lib/market/key-stats-basic-format";
+import { fetchChartingFundamentalsSeriesCached } from "@/lib/charting/charting-fundamentals-client-cache";
 import { fundamentalsBarSolidAtIndex } from "@/lib/colors/fundamentals-multi-bar-colors";
 
 function formatChartAxisPrice(p: number): string {
@@ -363,15 +364,8 @@ export function ChartingCompareWorkspace({
         await Promise.all(
           needFetch.map(async (t) => {
             try {
-              const res = await fetch(
-                `/api/stocks/${encodeURIComponent(t)}/fundamentals-series?period=${periodMode === "quarterly" ? "quarterly" : "annual"}`,
-                { credentials: "include" },
-              );
-              let pts: ChartingSeriesPoint[] = [];
-              if (res.ok) {
-                const json = (await res.json()) as { points?: ChartingSeriesPoint[] };
-                pts = Array.isArray(json.points) ? json.points : [];
-              }
+              const period = periodMode === "quarterly" ? "quarterly" : "annual";
+              const pts = (await fetchChartingFundamentalsSeriesCached(t, period)) ?? [];
               if (!cancelled) {
                 setPointsByTicker((p) => ({ ...p, [t]: pts }));
               }

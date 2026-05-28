@@ -92,7 +92,7 @@ export function EarningsPreviewModal({
           ref={setBodyScrollEl}
           className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-5 pb-5 pt-2"
         >
-          <StockEarningsTabContent ticker={item.ticker} scrollRoot={bodyScrollEl} />
+          <StockEarningsTabContent ticker={item.ticker} scrollRoot={bodyScrollEl} previewMode />
         </div>
       </div>
     </div>,

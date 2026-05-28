@@ -22,6 +22,7 @@ import type {
   StockEarningsHistoryRow,
   StockEarningsTabPayload,
 } from "@/lib/market/stock-earnings-types";
+import { fetchStockEarningsTabPayloadClient } from "@/lib/market/stock-earnings-tab-client";
 import { cn } from "@/lib/utils";
 import {
   EARNINGS_CARD_LABEL_CLASS,
@@ -437,6 +438,8 @@ export type StockEarningsTabContentProps = {
   initialPayload?: StockEarningsTabPayload | null;
   /** When set (e.g. modal body), history infinite-scroll observes this scroll container instead of `main`. */
   scrollRoot?: HTMLElement | null;
+  /** Earnings calendar modal — fast `?preview=1` API (no SEC crawl) and no extra mount skeleton frame. */
+  previewMode?: boolean;
 };
 
 /** Full earnings experience (summary cards, estimates chart, history table) — reusable on stock page and calendar modal. */
@@ -444,53 +447,59 @@ export function StockEarningsTabContent({
   ticker,
   initialPayload = null,
   scrollRoot = null,
+  previewMode = false,
 }: StockEarningsTabContentProps) {
   const sym = ticker.trim().toUpperCase();
   const seedPayload =
     initialPayload?.ticker.trim().toUpperCase() === sym && isEarningsTabPayload(initialPayload)
       ? initialPayload
       : null;
-  /** Defer interactive tree until after mount so SSR HTML always matches the first client paint (avoids hydration drift from HMR / dev caches). */
-  const [clientReady, setClientReady] = useState(false);
+  /** Defer interactive tree until after mount so SSR HTML matches first paint on the stock page tab. */
+  const [clientReady, setClientReady] = useState(previewMode);
   const [loading, setLoading] = useState(() => !seedPayload);
+  const [loadError, setLoadError] = useState(false);
   const [data, setData] = useState<StockEarningsTabPayload | null>(() => seedPayload);
+  const [reloadNonce, setReloadNonce] = useState(0);
   const [earningsHistoryVisible, setEarningsHistoryVisible] = useState(EARNINGS_HISTORY_PAGE_SIZE);
   const earningsHistorySentinelRef = useRef<HTMLTableRowElement | null>(null);
 
   useEffect(() => {
-    setClientReady(true);
-  }, []);
+    if (!previewMode) setClientReady(true);
+  }, [previewMode]);
 
   useEffect(() => {
     if (seedPayload) {
       setData(seedPayload);
       setLoading(false);
+      setLoadError(false);
       setEarningsHistoryVisible(EARNINGS_HISTORY_PAGE_SIZE);
       return;
     }
+    const controller = new AbortController();
     let cancelled = false;
     async function load() {
       setLoading(true);
+      setLoadError(false);
       setEarningsHistoryVisible(EARNINGS_HISTORY_PAGE_SIZE);
-      try {
-        const res = await fetch(`/api/stocks/${encodeURIComponent(sym)}/earnings`, { cache: "no-store" });
-        if (!res.ok) {
-          if (!cancelled) setData(null);
-          return;
-        }
-        const json = (await res.json()) as StockEarningsTabPayload;
-        if (!cancelled) setData(json);
-      } catch {
-        if (!cancelled) setData(null);
-      } finally {
-        if (!cancelled) setLoading(false);
+      const json = await fetchStockEarningsTabPayloadClient(sym, {
+        preview: previewMode,
+        signal: controller.signal,
+      });
+      if (cancelled) return;
+      if (!json) {
+        setData(null);
+        setLoadError(true);
+      } else {
+        setData(json);
       }
+      setLoading(false);
     }
     void load();
     return () => {
       cancelled = true;
+      controller.abort();
     };
-  }, [sym, seedPayload]);
+  }, [sym, seedPayload, previewMode, reloadNonce]);
 
   const historyRows = useMemo(() => {
     const rows = data?.history ?? [];
@@ -622,7 +631,22 @@ export function StockEarningsTabContent({
         </>
       ) : null}
 
-      {!loading && empty ? (
+      {!loading && loadError ? (
+        <div className="space-y-3">
+          <p className="text-[14px] leading-6 text-[#71717A]">
+            Earnings data didn&apos;t load. This can happen when the data provider is slow — try again.
+          </p>
+          <button
+            type="button"
+            onClick={() => setReloadNonce((n) => n + 1)}
+            className="inline-flex h-9 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white px-3 text-[14px] font-medium text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] hover:bg-[#F4F4F5]"
+          >
+            Retry
+          </button>
+        </div>
+      ) : null}
+
+      {!loading && !loadError && empty ? (
         <p className="text-[14px] leading-6 text-[#71717A]">No earnings history is available for this symbol.</p>
       ) : null}
 

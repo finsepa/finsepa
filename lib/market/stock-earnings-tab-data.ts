@@ -1148,11 +1148,20 @@ function pickUpcomingFromHistory(
   };
 }
 
+export type StockEarningsTabFetchMode = "full" | "preview";
+
 /**
  * Earnings tab: `Earnings.History` from fundamentals plus optional calendar timing (BMO/AMC).
  * Cached per ticker so the first viewer pays EODHD/SEC cost and others reuse the payload.
+ *
+ * `preview` skips SEC index crawls, IR seed HTTP, charting-series merge, and earnings-calendar timing
+ * — used by the earnings calendar modal for a fast first paint.
  */
-async function fetchStockEarningsTabPayloadUncached(listingTicker: string): Promise<StockEarningsTabPayload | null> {
+async function fetchStockEarningsTabPayloadUncached(
+  listingTicker: string,
+  mode: StockEarningsTabFetchMode = "full",
+): Promise<StockEarningsTabPayload | null> {
+  const preview = mode === "preview";
   const ticker = listingTicker.trim().toUpperCase();
   const root = await fetchFundamentalsRootForEarningsTab(ticker);
   if (!root) return null;
@@ -1182,24 +1191,23 @@ async function fetchStockEarningsTabPayloadUncached(listingTicker: string): Prom
     ),
   );
 
-  try {
-    /* Direct PDFs from 8-K filing indexes (when present). Skips browse-edgar / HTML-only filings. */
-    historyParsed = await enrichEarningsHistoryWithSecDocuments(historyParsed, documentHub.cik);
-  } catch {
-    /* Best-effort; table still loads */
+  if (!preview) {
+    try {
+      historyParsed = await enrichEarningsHistoryWithSecDocuments(historyParsed, documentHub.cik);
+    } catch {
+      /* Best-effort; table still loads */
+    }
+    try {
+      historyParsed = await applyIrSeedDocumentUrls(ticker, historyParsed, documentHub);
+    } catch {
+      /* Best-effort */
+    }
   }
-  try {
-    /* NVDA: q4cdn decks + filings. GOOGL/GOOG: investor discovery from profile site + q4cdn slides / 10-Q / 10-K PDFs. */
-    historyParsed = await applyIrSeedDocumentUrls(ticker, historyParsed, documentHub);
-  } catch {
-    /* Best-effort */
-  }
-  /* Curated IR / Q4 PDFs win over SEC + seed when the row is whitelisted. */
   historyParsed = applyCuratedIrEarningsDocumentUrls(ticker, historyParsed);
 
   let estimatesChart = buildEstimatesChart(root, historyParsed, revenueTrendMaps, epsTrendMaps);
 
-  if (estimatesChart && estimatesChart.annual.length > 0) {
+  if (!preview && estimatesChart && estimatesChart.annual.length > 0) {
     const annualSeries = await fetchChartingSeries(ticker, "annual");
     const fundamentalsPoints = annualSeries?.points ?? [];
     if (fundamentalsPoints.length > 0) {
@@ -1226,7 +1234,7 @@ async function fetchStockEarningsTabPayloadUncached(listingTicker: string): Prom
   }
 
   let upcoming = pickUpcomingFromHistory(rawRows, null, revenueByFiscalPeriodEnd, revenueTrendMaps.quarterly);
-  if (upcoming?.reportDateYmd) {
+  if (!preview && upcoming?.reportDateYmd) {
     const cal = await fetchEodhdEarningsCalendarForSymbol(eodhdListingCode(ticker));
     const calendarTiming = pickCalendarTimingForReport(cal, eodhdListingCode(ticker), upcoming.reportDateYmd);
     const t = timingFromCalendar(calendarTiming);
@@ -1243,10 +1251,15 @@ async function fetchStockEarningsTabPayloadUncached(listingTicker: string): Prom
 
 const fetchStockEarningsTabPayloadCached = unstable_cache(
   fetchStockEarningsTabPayloadUncached,
-  ["stock-earnings-tab-payload-v12-quarterly-trend-gaps"],
+  ["stock-earnings-tab-payload-v13-preview-mode"],
   { revalidate: REVALIDATE_WARM_LONG },
 );
 
-export async function fetchStockEarningsTabPayload(listingTicker: string): Promise<StockEarningsTabPayload | null> {
-  return fetchStockEarningsTabPayloadCached(listingTicker.trim().toUpperCase());
+export async function fetchStockEarningsTabPayload(
+  listingTicker: string,
+  options?: { preview?: boolean },
+): Promise<StockEarningsTabPayload | null> {
+  const ticker = listingTicker.trim().toUpperCase();
+  const mode: StockEarningsTabFetchMode = options?.preview ? "preview" : "full";
+  return fetchStockEarningsTabPayloadCached(ticker, mode);
 }

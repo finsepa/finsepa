@@ -15,6 +15,7 @@ import type {
   EarningsTimingBucket,
   EarningsWeekPayload,
 } from "@/lib/market/earnings-calendar-types";
+import { prefetchStockEarningsTabPayload } from "@/lib/market/stock-earnings-tab-client";
 import { cn } from "@/lib/utils";
 
 /** Match server `earningsUniverseKey` so preview + overflow merges dedupe the same symbol. */
@@ -350,6 +351,8 @@ function EarningsCard({
     <button
       type="button"
       onClick={onOpen}
+      onPointerEnter={() => prefetchStockEarningsTabPayload(ticker, true)}
+      onFocus={() => prefetchStockEarningsTabPayload(ticker, true)}
       className="flex w-full flex-col items-center justify-center gap-1.5 rounded-xl border border-[#E4E4E7] bg-white px-2 py-2.5 text-center shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors hover:bg-[#FAFAFA]"
     >
       <CompanyLogo name={companyName || ticker} logoUrl={logoUrl} symbol={ticker} size="40" />

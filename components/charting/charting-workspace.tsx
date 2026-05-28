@@ -81,6 +81,7 @@ import {
   FUNDAMENTALS_CHART_Y_AXIS_W_PX,
   HIDE_NATIVE_Y_AXIS_TICK_LABELS,
 } from "@/lib/chart/fundamentals-chart-surface";
+import { fetchChartingFundamentalsSeriesCached } from "@/lib/charting/charting-fundamentals-client-cache";
 
 /** Y-axis tick labels — match reference (e.g. "30 B", "15 B", "0"). */
 function formatChartAxisPrice(p: number): string {
@@ -1262,16 +1263,9 @@ export function ChartingWorkspace({
       }
       setLoading(true);
       try {
-        const res = await fetch(
-          `/api/stocks/${encodeURIComponent(ticker)}/fundamentals-series?period=${periodMode === "quarterly" ? "quarterly" : "annual"}`,
-          { credentials: "include" },
-        );
-        if (!res.ok) {
-          if (!cancelled) setPoints(null);
-          return;
-        }
-        const json = (await res.json()) as { points?: ChartingSeriesPoint[] };
-        if (!cancelled) setPoints(Array.isArray(json.points) ? json.points : []);
+        const period = periodMode === "quarterly" ? "quarterly" : "annual";
+        const loaded = await fetchChartingFundamentalsSeriesCached(ticker, period);
+        if (!cancelled) setPoints(loaded ?? null);
       } catch {
         if (!cancelled) setPoints(null);
       } finally {

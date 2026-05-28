@@ -152,64 +152,53 @@ function SharesColumnCell({
   );
 }
 
-type SearchItem = {
-  type?: string;
-  symbol?: string;
-  name?: string;
-  route?: string;
-};
+const ISSUER_TICKER_LS_KEY = "superinvestors:issuer-search-ticker:v1";
 
-function scoreSearchCandidate(issuerLower: string, item: SearchItem): number {
-  const name = (item.name ?? "").toLowerCase().trim();
-  const sym = (item.symbol ?? "").toLowerCase().trim();
-  if (!sym) return -1;
-  let s = 0;
-  if (item.type === "stock") s += 5;
-  if (issuerLower === name) s += 10;
-  if (issuerLower.includes(name) || name.includes(issuerLower)) s += 6;
-  if (issuerLower.includes(sym)) s += 3;
-  return s;
+function rowResolveKey(r: Berkshire13fComparisonRow, displayName: string): string {
+  return r.cusip?.trim()
+    ? `CUSIP:${r.cusip.trim().toUpperCase()}`
+    : `ISSUER:${displayName.toLowerCase()}`;
 }
 
-function useResolvedTickers(rows: Berkshire13fComparisonRow[]) {
+/**
+ * Resolve missing tickers for the **current page only** via cached server lookup
+ * (`/api/superinvestors/resolve-issuer-ticker`). Avoids the old `/api/search` storm
+ * (up to 200 EODHD calls per profile).
+ */
+function useResolvedTickersForPage(pagedRows: Berkshire13fComparisonRow[]) {
   const [map, setMap] = useState<Record<string, string>>({});
 
   const keysToResolve = useMemo(() => {
     const out: { key: string; issuer: string }[] = [];
     const seen = new Set<string>();
-    for (const r of rows) {
+    for (const r of pagedRows) {
       if (r.ticker?.trim()) continue;
       const issuer = issuerDisplayTitle(r.companyName).trim();
       if (!issuer) continue;
-      const key = r.cusip?.trim() ? `CUSIP:${r.cusip.trim().toUpperCase()}` : `ISSUER:${issuer.toLowerCase()}`;
+      const key = rowResolveKey(r, issuer);
       if (seen.has(key)) continue;
       seen.add(key);
       out.push({ key, issuer });
     }
-    // Only resolve the most-visible / most-important names first (table is sorted by value).
-    return out.slice(0, 200);
-  }, [rows]);
+    return out;
+  }, [pagedRows]);
 
   useEffect(() => {
     let cancelled = false;
     const controller = new AbortController();
 
     async function run() {
-      const storedRaw =
-        typeof window !== "undefined" ? window.localStorage.getItem("superinvestors:issuer-search-ticker:v1") : null;
       let stored: Record<string, string> = {};
       try {
-        stored = storedRaw ? (JSON.parse(storedRaw) as Record<string, string>) : {};
+        const raw = window.localStorage.getItem(ISSUER_TICKER_LS_KEY);
+        stored = raw ? (JSON.parse(raw) as Record<string, string>) : {};
       } catch {
         stored = {};
       }
 
       const next: Record<string, string> = { ...stored };
-
-      // Warm state immediately from localStorage.
       if (!cancelled) setMap((prev) => ({ ...next, ...prev }));
 
-      // Limit concurrency to avoid hammering our own search endpoint.
       const queue = keysToResolve.filter((k) => !next[k.key]);
       const concurrency = 4;
       let idx = 0;
@@ -217,25 +206,19 @@ function useResolvedTickers(rows: Berkshire13fComparisonRow[]) {
       async function worker() {
         while (idx < queue.length) {
           const cur = queue[idx++];
-          const issuer = cur.issuer;
-          const issuerLower = issuer.toLowerCase();
           try {
-            const res = await fetch(`/api/search?q=${encodeURIComponent(issuer)}`, {
-              signal: controller.signal,
-              credentials: "include",
-            });
+            const res = await fetch(
+              `/api/superinvestors/resolve-issuer-ticker?issuer=${encodeURIComponent(cur.issuer)}`,
+              { signal: controller.signal, credentials: "include" },
+            );
             if (!res.ok) continue;
-            const json = (await res.json()) as { items?: SearchItem[] };
-            const items = Array.isArray(json.items) ? json.items : [];
-            const stocks = items.filter((it) => it?.type === "stock" && typeof it.symbol === "string" && it.symbol.trim());
-            if (!stocks.length) continue;
-            stocks.sort((a, b) => scoreSearchCandidate(issuerLower, b) - scoreSearchCandidate(issuerLower, a));
-            const best = stocks[0];
-            if (!best?.symbol) continue;
-            next[cur.key] = best.symbol.toUpperCase();
-            if (!cancelled) setMap((prev) => ({ ...prev, [cur.key]: next[cur.key]! }));
+            const json = (await res.json()) as { ticker?: string | null };
+            const sym = json.ticker?.trim().toUpperCase();
+            if (!sym) continue;
+            next[cur.key] = sym;
+            if (!cancelled) setMap((prev) => ({ ...prev, [cur.key]: sym }));
           } catch {
-            // ignore
+            /* ignore */
           }
         }
       }
@@ -244,7 +227,7 @@ function useResolvedTickers(rows: Berkshire13fComparisonRow[]) {
 
       if (cancelled) return;
       try {
-        window.localStorage.setItem("superinvestors:issuer-search-ticker:v1", JSON.stringify(next));
+        window.localStorage.setItem(ISSUER_TICKER_LS_KEY, JSON.stringify(next));
       } catch {
         /* ignore */
       }
@@ -317,7 +300,7 @@ export function Berkshire13fComparisonTable({
   }, [rows, safePage, pageSize]);
 
   const headerGrid = cn("h-11 min-h-[44px] items-center bg-white", rowGridFive);
-  const resolved = useResolvedTickers(rows);
+  const resolved = useResolvedTickersForPage(pagedRows);
 
   return (
     <div className="min-w-0 -mx-4 sm:mx-0">
@@ -331,7 +314,7 @@ export function Berkshire13fComparisonTable({
 
           {pagedRows.map((r, i) => {
             const displayName = issuerDisplayTitle(r.companyName);
-            const key = r.cusip?.trim() ? `CUSIP:${r.cusip.trim().toUpperCase()}` : `ISSUER:${displayName.toLowerCase()}`;
+            const key = rowResolveKey(r, displayName);
             const mergedTicker = r.ticker?.trim() ? r.ticker : resolved[key] ?? null;
             const globalIndex = (safePage - 1) * pageSize + i;
             return (
@@ -369,7 +352,7 @@ export function Berkshire13fComparisonTable({
 
             {pagedRows.map((r, i) => {
               const displayName = issuerDisplayTitle(r.companyName);
-              const key = r.cusip?.trim() ? `CUSIP:${r.cusip.trim().toUpperCase()}` : `ISSUER:${displayName.toLowerCase()}`;
+              const key = rowResolveKey(r, displayName);
               const mergedTicker = r.ticker?.trim() ? r.ticker : resolved[key] ?? null;
               const globalIndex = (safePage - 1) * pageSize + i;
               return (
