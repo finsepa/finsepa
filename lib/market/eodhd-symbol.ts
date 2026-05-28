@@ -13,6 +13,13 @@ export function toEodhdUsSymbol(ticker: string): string {
 export function toEodhdSymbol(symbolOrTicker: string, defaultExchange = "US"): string {
   const s = symbolOrTicker.trim();
   if (!s) return s;
-  if (s.includes(".")) return s;
+  // If the string already looks like an EODHD-qualified symbol (e.g. AAPL.US, BTC-USD.CC),
+  // keep it as-is. Otherwise treat it as a raw ticker where '.' indicates share class
+  // and must be converted to '-' before appending the default exchange.
+  if (s.includes(".")) {
+    const lastDot = s.lastIndexOf(".");
+    const suffix = lastDot >= 0 ? s.slice(lastDot + 1) : "";
+    if (/^[A-Za-z]{2,8}$/.test(suffix)) return s;
+  }
   return `${s.replace(/\./g, "-")}.${defaultExchange}`;
 }

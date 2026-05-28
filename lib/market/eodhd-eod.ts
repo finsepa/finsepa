@@ -6,6 +6,7 @@ import { REVALIDATE_WARM } from "@/lib/data/cache-policy";
 import { traceEodhdHttp } from "@/lib/market/provider-trace";
 import { getEodhdApiKey } from "@/lib/env/server";
 import { toEodhdSymbol } from "@/lib/market/eodhd-symbol";
+import { readScreenerEodBarsSnapshot, upsertScreenerEodBarsSnapshot } from "@/lib/screener/screener-eod-bars-snapshot";
 
 export type EodhdDailyBar = {
   date: string;
@@ -158,6 +159,10 @@ export async function fetchEodhdEodDailyScreener(
   if (!key) return null;
 
   const sym = toEodhdSymbol(symbolOrTicker);
+
+  const snap = await readScreenerEodBarsSnapshot(sym);
+  if (snap !== undefined) return snap;
+
   const params = new URLSearchParams({
     api_token: key,
     fmt: "json",
@@ -186,7 +191,9 @@ export async function fetchEodhdEodDailyScreener(
       out.push({ date, close });
     }
     out.sort((a, b) => a.date.localeCompare(b.date));
-    return out.length ? out : null;
+    const result = out.length ? out : null;
+    void upsertScreenerEodBarsSnapshot(sym, result);
+    return result;
   } catch {
     return null;
   }

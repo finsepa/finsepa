@@ -15,6 +15,18 @@ export type CryptoMeta = {
   eodhdAltSymbols?: string[];
 };
 
+function synthAltSymbols(meta: CryptoMeta): string[] {
+  // Many newer coins have an active USDT pair even when USD is missing/stale.
+  // Add a synthetic `${BASE}-USDT.CC` fallback when it isn't already listed.
+  const primary = meta.eodhdSymbol.trim().toUpperCase();
+  const m = /^([A-Z0-9]+)-(USD)\.CC$/.exec(primary);
+  if (!m) return [];
+  const base = m[1]!;
+  const usdt = `${base}-USDT.CC`;
+  const existing = new Set<string>([primary, ...(meta.eodhdAltSymbols ?? []).map((s) => s.trim().toUpperCase())]);
+  return existing.has(usdt) ? [] : [usdt];
+}
+
 /** Screener / featured table — keep a tight set for the markets grid. */
 export const CRYPTO_TOP10: CryptoMeta[] = [
   { symbol: "BTC", name: "Bitcoin", eodhdSymbol: "BTC-USD.CC" },
@@ -196,7 +208,7 @@ export function toEodhdCryptoSymbol(symbolOrTicker: string): string | null {
 
 /** Primary + alternate EODHD pair symbols (daily bars, realtime batch, fundamentals). */
 export function eodhdSymbolsForMeta(meta: CryptoMeta): string[] {
-  return [meta.eodhdSymbol, ...(meta.eodhdAltSymbols ?? [])];
+  return [meta.eodhdSymbol, ...(meta.eodhdAltSymbols ?? []), ...synthAltSymbols(meta)];
 }
 
 function realtimePayloadHasUsableQuote(p: EodhdRealtimePayload): boolean {
@@ -228,6 +240,7 @@ export function cryptoRealtimeRequestSymbols(metas: readonly CryptoMeta[]): stri
   for (const c of metas) {
     out.push(c.eodhdSymbol);
     for (const a of c.eodhdAltSymbols ?? []) out.push(a);
+    for (const a of synthAltSymbols(c)) out.push(a);
   }
   return out;
 }
