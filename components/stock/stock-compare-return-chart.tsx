@@ -32,6 +32,7 @@ import {
   type OverviewBottomAxisMode,
 } from "@/components/chart/overview-bottom-axis";
 import type { CompanyPick } from "@/components/charting/company-picker";
+import { isCryptoOverviewSymbol } from "@/lib/crypto/crypto-picker-universe";
 import { ChartSkeleton } from "@/components/ui/chart-skeleton";
 import {
   fitContentWithMobilePlotGutter,
@@ -86,6 +87,15 @@ function layoutPointTooltip(
 
 function isFiniteNumber(v: unknown): v is number {
   return typeof v === "number" && Number.isFinite(v);
+}
+
+function overviewCompareReturnChartUrl(symbol: string, range: StockChartRange): string {
+  const sym = symbol.trim().toUpperCase();
+  const q = `range=${encodeURIComponent(range)}&series=return`;
+  if (isCryptoOverviewSymbol(sym)) {
+    return `/api/crypto/${encodeURIComponent(sym)}/chart?${q}`;
+  }
+  return `/api/stocks/${encodeURIComponent(sym)}/chart?${q}`;
 }
 
 function formatReturnPctFromIndex(v: number): string {
@@ -285,12 +295,10 @@ export function StockCompareReturnChart({ primaryTicker, comparePicks, range, he
       setReady(false);
       setPeriodAxisLabelsGuarded([]);
       const syms = compareSlotsKey.split("|").filter((s) => s.length > 0);
-      const path = (t: string) =>
-        `/api/stocks/${encodeURIComponent(t)}/chart?range=${encodeURIComponent(range)}&series=return`;
       try {
         const [ra, ...rOthers] = await Promise.all([
-          fetch(path(pSym), { credentials: "include" }),
-          ...syms.map((s) => fetch(path(s), { credentials: "include" })),
+          fetch(overviewCompareReturnChartUrl(pSym, range), { credentials: "include" }),
+          ...syms.map((s) => fetch(overviewCompareReturnChartUrl(s, range), { credentials: "include" })),
         ]);
         const ja = ra.ok ? ((await ra.json()) as { points?: StockChartPoint[] }) : { points: [] };
         const rest: StockChartPoint[][] = [];

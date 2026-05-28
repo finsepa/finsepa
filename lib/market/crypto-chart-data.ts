@@ -3,6 +3,7 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 
 import { REVALIDATE_HOT } from "@/lib/data/cache-policy";
+import type { EodhdDailyBar } from "@/lib/market/eodhd-eod";
 import { fetchEodhdCryptoDailyBars } from "@/lib/market/eodhd-crypto";
 import { resolveCryptoMetaForProvider } from "@/lib/market/crypto-meta-resolver";
 import { fetchEodhdIntraday } from "@/lib/market/eodhd-intraday";
@@ -35,7 +36,43 @@ function dedupeAndSort(points: StockChartPoint[]): StockChartPoint[] {
     .sort((a, b) => a.time - b.time);
 }
 
-async function loadCryptoChartPointsUncached(symbol: string, range: StockChartRange): Promise<StockChartPoint[]> {
+/** Daily EOD bars → chart points for ranges that use daily history (1Y, 5Y, ALL, …). */
+export function stockChartPointsFromDailyBars(
+  bars: EodhdDailyBar[],
+  range: StockChartRange,
+  now: Date = new Date(),
+): StockChartPoint[] {
+  if (!bars.length) return [];
+
+  const toStr = ymdUtc(now);
+  let fromDate = new Date(now);
+
+  if (range === "1M") fromDate.setUTCDate(fromDate.getUTCDate() - 45);
+  else if (range === "6M") fromDate.setUTCDate(fromDate.getUTCDate() - 210);
+  else if (range === "1Y") fromDate.setUTCFullYear(fromDate.getUTCFullYear() - 1);
+  else if (range === "5Y") fromDate.setUTCFullYear(fromDate.getUTCFullYear() - 5);
+  else if (range === "ALL") fromDate.setUTCFullYear(fromDate.getUTCFullYear() - STOCK_CHART_ALL_LOOKBACK_YEARS);
+  else if (range === "YTD") {
+    fromDate = new Date(Date.UTC(now.getUTCFullYear(), 0, 1));
+  } else {
+    return [];
+  }
+
+  const fromStr = ymdUtc(fromDate);
+  const sliced = bars.filter((b) => b.date >= fromStr && b.date <= toStr);
+  const points = sliced
+    .map((b) => {
+      const t = parseYmdToUnixSeconds(b.date);
+      const v = clampFinite(b.close);
+      if (t == null || v == null) return null;
+      return { time: t, value: v };
+    })
+    .filter(Boolean) as StockChartPoint[];
+
+  return dedupeAndSort(points);
+}
+
+export async function fetchCryptoChartPointsUncached(symbol: string, range: StockChartRange): Promise<StockChartPoint[]> {
   const meta = await resolveCryptoMetaForProvider(symbol);
   if (!meta) return [];
   const pair = meta.eodhdSymbol;
@@ -191,20 +228,11 @@ async function loadCryptoChartPointsUncached(symbol: string, range: StockChartRa
   const bars = await fetchEodhdCryptoDailyBars(pair, fromStr, toStr);
   if (!bars?.length) return [];
 
-  const points = bars
-    .map((b) => {
-      const t = parseYmdToUnixSeconds(b.date);
-      const v = clampFinite(b.close);
-      if (t == null || v == null) return null;
-      return { time: t, value: v };
-    })
-    .filter(Boolean) as StockChartPoint[];
-
-  return dedupeAndSort(points);
+  return stockChartPointsFromDailyBars(bars, range, now);
 }
 
 export const getCryptoChartPoints = unstable_cache(
-  async (symbol: string, range: StockChartRange) => loadCryptoChartPointsUncached(symbol, range),
+  async (symbol: string, range: StockChartRange) => fetchCryptoChartPointsUncached(symbol, range),
   ["crypto-chart-points-v12-all-maxhist"],
   { revalidate: REVALIDATE_HOT },
 );

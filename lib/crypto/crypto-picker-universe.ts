@@ -22,6 +22,16 @@ export const CRYPTO_PICKER_TOP: readonly { symbol: string; name: string }[] = [
 
 const CRYPTO_ASSET_PAGE_SYMBOLS = new Set(ALL_CRYPTO_METAS.map((m) => m.symbol.toUpperCase()));
 
+/** True when the symbol resolves to a `/crypto/[symbol]` overview page (client-safe). */
+export function isCryptoOverviewSymbol(symbol: string): boolean {
+  const s = symbol.trim().toUpperCase();
+  if (!s) return false;
+  const base = cryptoRouteBase(s);
+  if (CRYPTO_ASSET_PAGE_SYMBOLS.has(base)) return true;
+  if (CRYPTO_CC_EXTRA_PLAIN_BASES.has(base)) return true;
+  return cryptoUsdPairBase(s) != null;
+}
+
 export type PortfolioHoldingAssetLinkTab = "overview" | "holdings";
 
 /** Portfolio / picker: `/crypto/BTC` vs `/stock/AAPL`. Custom assets have no detail page → `null`. */

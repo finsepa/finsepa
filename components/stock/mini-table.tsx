@@ -8,6 +8,10 @@ import type { StockDetailHeaderMeta } from "@/lib/market/stock-header-meta";
 import { CompanyLogo } from "@/components/screener/company-logo";
 import { cn } from "@/lib/utils";
 import type { CompanyPick } from "@/components/charting/company-picker";
+import { getCryptoLogoUrl } from "@/lib/crypto/crypto-logo-url";
+import { cryptoRouteBase } from "@/lib/crypto/crypto-symbol-base";
+import { eodhdCryptoSpotTickerDisplay } from "@/lib/crypto/eodhd-crypto-ticker-display";
+import { isCryptoOverviewSymbol } from "@/lib/crypto/crypto-picker-universe";
 import { STOCK_OVERVIEW_COMPARE_LINE_COLORS } from "@/components/stock/stock-compare-return-chart";
 function formatPerformancePct(value: number): string {
   const isPositive = value >= 0;
@@ -122,18 +126,33 @@ function OverviewCompareRow({
 
   useEffect(() => {
     let cancelled = false;
-    setCompareMetaLoading(true);
+    const isCrypto = isCryptoOverviewSymbol(compareSym);
+    setCompareMetaLoading(!isCrypto);
     setComparePerfLoading(true);
     void (async () => {
       try {
+        const perfUrl = isCrypto
+          ? `/api/crypto/${encodeURIComponent(compareSym)}/performance`
+          : `/api/stocks/${encodeURIComponent(compareSym)}/performance`;
         const [hr, pr] = await Promise.all([
-          fetch(`/api/stocks/${encodeURIComponent(compareSym)}/header-meta`, { cache: "no-store" }),
-          fetch(`/api/stocks/${encodeURIComponent(compareSym)}/performance`, { cache: "no-store" }),
+          isCrypto
+            ? Promise.resolve(null)
+            : fetch(`/api/stocks/${encodeURIComponent(compareSym)}/header-meta`),
+          fetch(perfUrl),
         ]);
-        const hj = hr.ok ? ((await hr.json()) as Parameters<typeof parseHeaderMetaPayload>[0]) : {};
+        const hj =
+          hr && hr.ok ? ((await hr.json()) as Parameters<typeof parseHeaderMetaPayload>[0]) : {};
         const pj = pr.ok ? ((await pr.json()) as StockPerformance) : null;
         if (cancelled) return;
-        setCompareMeta(parseHeaderMetaPayload(hj));
+        if (isCrypto) {
+          const base = cryptoRouteBase(compareSym);
+          setCompareMeta({
+            fullName: nameHint,
+            logoUrl: getCryptoLogoUrl(base),
+          });
+        } else {
+          setCompareMeta(parseHeaderMetaPayload(hj));
+        }
         setComparePerf(pj);
       } catch {
         if (!cancelled) {
@@ -150,7 +169,7 @@ function OverviewCompareRow({
     return () => {
       cancelled = true;
     };
-  }, [compareSym]);
+  }, [compareSym, nameHint]);
 
   const compareRow = comparePerf;
   const compareDisplayName = compareMeta?.fullName?.trim() ? compareMeta.fullName : nameHint;
@@ -176,7 +195,7 @@ function OverviewCompareRow({
               {compareDisplayName}
             </div>
             <div className="truncate text-[12px] leading-4 text-[#71717A]" title={compareSym}>
-              {compareSym}
+              {isCryptoOverviewSymbol(compareSym) ? eodhdCryptoSpotTickerDisplay(compareSym) : compareSym}
             </div>
           </div>
           <button
@@ -207,20 +226,28 @@ export function MiniTable({
   initialPerformance,
   comparePicks = [],
   onRemoveCompare,
+  cryptoPrimary,
 }: {
   ticker: string;
-  headerMeta: StockDetailHeaderMeta | null;
-  headerMetaLoading: boolean;
+  headerMeta?: StockDetailHeaderMeta | null;
+  headerMetaLoading?: boolean;
   /** From server initial payload — avoids an extra round-trip on first paint. */
   initialPerformance?: StockPerformance | null;
   /** Overview compare: extra company rows (same order as chart). */
   comparePicks?: readonly CompanyPick[];
   onRemoveCompare?: (symbol: string) => void;
+  /** Crypto overview: primary row uses crypto APIs and supplied display fields. */
+  cryptoPrimary?: { displayName: string; logoUrl: string };
 }) {
   const meta = getStockDetailMetaFromTicker(ticker);
-  const sym = meta.ticker;
-  const displayName = headerMeta?.fullName?.trim() ? headerMeta.fullName : meta.name;
-  const logoUrl = headerMeta?.logoUrl?.trim() ? headerMeta.logoUrl : "";
+  const sym = cryptoPrimary ? ticker.trim().toUpperCase() : meta.ticker;
+  const displayName = cryptoPrimary
+    ? cryptoPrimary.displayName
+    : headerMeta?.fullName?.trim()
+      ? headerMeta.fullName
+      : meta.name;
+  const logoUrl = cryptoPrimary ? cryptoPrimary.logoUrl.trim() : headerMeta?.logoUrl?.trim() ? headerMeta.logoUrl : "";
+  const primaryMetaLoading = cryptoPrimary ? false : (headerMetaLoading ?? false);
   const [loading, setLoading] = useState(() => !initialPerformance);
   const [perf, setPerf] = useState<StockPerformance | null>(() => initialPerformance ?? null);
 
@@ -237,7 +264,10 @@ export function MiniTable({
       }
       setLoading(true);
       try {
-        const res = await fetch(`/api/stocks/${encodeURIComponent(sym)}/performance`);
+        const perfPath = cryptoPrimary
+          ? `/api/crypto/${encodeURIComponent(sym)}/performance`
+          : `/api/stocks/${encodeURIComponent(sym)}/performance`;
+        const res = await fetch(perfPath);
          if (!res.ok) {
            if (!mounted) return;
            setPerf(null);
@@ -258,7 +288,7 @@ export function MiniTable({
     return () => {
       mounted = false;
     };
-  }, [sym, initialPerformance]);
+  }, [sym, initialPerformance, cryptoPrimary]);
 
   const row = useMemo(() => perf, [perf]);
 
@@ -298,7 +328,7 @@ export function MiniTable({
             {hasCompare ? (
               <td className="max-w-0 px-3 py-3 text-left align-middle">
                 <div className="flex min-w-0 items-center justify-start gap-3 border-l-[3px] border-l-[#2563EB] pl-2 text-left">
-                {headerMetaLoading ? (
+                {primaryMetaLoading ? (
                   <div className="h-8 w-8 shrink-0 rounded-lg border border-[#E4E4E7] bg-[#F4F4F5] animate-pulse" aria-hidden />
                 ) : (
                   <CompanyLogo name={displayName} logoUrl={logoUrl} symbol={sym} />
@@ -311,7 +341,7 @@ export function MiniTable({
                     {displayName}
                   </div>
                   <div className="truncate text-[12px] leading-4 text-[#71717A]" title={sym}>
-                    {sym}
+                    {cryptoPrimary ? eodhdCryptoSpotTickerDisplay(sym) : sym}
                   </div>
                 </div>
                 </div>

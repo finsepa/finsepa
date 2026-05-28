@@ -3,7 +3,7 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 
 import { REVALIDATE_HOT } from "@/lib/data/cache-policy";
-import { eodhdSymbolsForMeta } from "@/lib/market/crypto-meta";
+import { eodhdSymbolsForMeta, type CryptoMeta } from "@/lib/market/crypto-meta";
 import {
   fetchCryptoMarketCapUsdForMeta,
   fetchEodhdCryptoDailyBarsForMeta,
@@ -122,34 +122,39 @@ function mapFundamentals(fund: CryptoFundamentalsMeta | null): Pick<
   };
 }
 
-async function loadCryptoAssetUncached(symbolOrTicker: string): Promise<CryptoAssetRow | null> {
-  const meta = await resolveCryptoMetaForProvider(symbolOrTicker);
-  if (!meta) return null;
-
-  const window = eodFetchWindowUtc();
-  const logoUrl = getCryptoLogoUrl(meta.symbol);
-  const dailyBars = await fetchEodhdCryptoDailyBarsForMeta(meta, window.from, window.to);
-  const lastBar = dailyBars && dailyBars.length ? dailyBars[dailyBars.length - 1]! : null;
-  const prevBar = dailyBars && dailyBars.length >= 2 ? dailyBars[dailyBars.length - 2]! : null;
+/** Build asset row from pre-fetched daily bars (page bundle avoids duplicate EODHD daily history). */
+export async function buildCryptoAssetRowFromDailyBars(
+  meta: CryptoMeta,
+  dailyBars: EodhdDailyBar[] | null,
+): Promise<CryptoAssetRow | null> {
+  const sorted = dailyBars?.length ? [...dailyBars].sort((a, b) => a.date.localeCompare(b.date)) : [];
+  const lastBar = sorted.length ? sorted[sorted.length - 1]! : null;
+  const prevBar = sorted.length >= 2 ? sorted[sorted.length - 2]! : null;
 
   const currentPrice = lastBar?.close ?? null;
   const change1D = changePercent(currentPrice, prevBar?.close ?? null);
-  const derived = dailyBars ? deriveMetricsFromDailyBars(dailyBars, currentPrice ?? NaN) : null;
+  const derived = sorted.length ? deriveMetricsFromDailyBars(sorted, currentPrice ?? NaN) : null;
 
-  const marketCapUsd = await fetchCryptoMarketCapUsdForMeta(meta, lastPositiveCloseFromCryptoBars(dailyBars));
-  const marketCapRaw = formatMarketCapDisplay(marketCapUsd);
-  const marketCap = marketCapRaw.startsWith("$") ? marketCapRaw.slice(1) : marketCapRaw;
+  const logoUrl = getCryptoLogoUrl(meta.symbol);
 
   if (currentPrice == null || !Number.isFinite(currentPrice)) return null;
 
-  let fund: CryptoFundamentalsMeta | null = null;
-  for (const sym of eodhdSymbolsForMeta(meta)) {
-    fund = await fetchEodhdCryptoFundamentalsMeta(sym);
-    if (fund) break;
-  }
+  const [marketCapUsd, fund] = await Promise.all([
+    fetchCryptoMarketCapUsdForMeta(meta, lastPositiveCloseFromCryptoBars(sorted)),
+    (async () => {
+      for (const sym of eodhdSymbolsForMeta(meta)) {
+        const f = await fetchEodhdCryptoFundamentalsMeta(sym);
+        if (f) return f;
+      }
+      return null;
+    })(),
+  ]);
+
+  const marketCapRaw = formatMarketCapDisplay(marketCapUsd);
+  const marketCap = marketCapRaw.startsWith("$") ? marketCapRaw.slice(1) : marketCapRaw;
 
   return {
-    symbol: meta.symbol,
+    symbol: meta.symbol as SupportedCryptoTicker,
     name: meta.name,
     price: currentPrice,
     changePercent1D: change1D,
@@ -160,6 +165,15 @@ async function loadCryptoAssetUncached(symbolOrTicker: string): Promise<CryptoAs
     logoUrl,
     ...mapFundamentals(fund),
   };
+}
+
+async function loadCryptoAssetUncached(symbolOrTicker: string): Promise<CryptoAssetRow | null> {
+  const meta = await resolveCryptoMetaForProvider(symbolOrTicker);
+  if (!meta) return null;
+
+  const window = eodFetchWindowUtc();
+  const dailyBars = await fetchEodhdCryptoDailyBarsForMeta(meta, window.from, window.to);
+  return buildCryptoAssetRowFromDailyBars(meta, dailyBars);
 }
 
 export const getCryptoAsset = unstable_cache(loadCryptoAssetUncached, ["crypto-asset-v7-ton-pol-eodhd"], {

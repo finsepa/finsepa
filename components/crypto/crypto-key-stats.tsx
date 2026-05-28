@@ -7,20 +7,18 @@ import type { CryptoAssetRow } from "@/lib/market/crypto-asset";
 
 function StatRow({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <div className="flex items-start justify-between gap-4 border-b border-dotted border-[#E4E4E7] py-2.5 last:border-b-0 last:pb-0">
-      <span className="min-w-0 shrink text-[13px] font-medium leading-5 text-[#71717A]">{label}</span>
-      <span className="max-w-[min(100%,14rem)] shrink-0 text-right text-[14px] font-semibold leading-5 tabular-nums tracking-tight text-[#09090B] sm:max-w-none">
-        {value}
-      </span>
+    <div className="flex items-center justify-between gap-3 border-b border-[#E4E4E7] py-1.5 last:border-0">
+      <span className="min-w-0 shrink text-[14px] leading-5 text-[#09090B]">{label}</span>
+      <span className="shrink-0 text-right text-[14px] leading-5 tabular-nums text-[#09090B]">{value}</span>
     </div>
   );
 }
 
 function Card({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="rounded-xl border border-[#E4E4E7] bg-white px-4 py-4 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
-      <h3 className="mb-3 text-[14px] font-semibold leading-5 text-[#09090B]">{title}</h3>
-      <div className="space-y-0">{children}</div>
+    <div className="rounded-xl bg-white p-4">
+      <h3 className="mb-2 text-[14px] font-semibold leading-5 text-[#09090B]">{title}</h3>
+      {children}
     </div>
   );
 }
@@ -55,8 +53,8 @@ function CryptoKeyStatsInner({ row }: { row: CryptoAssetRow }) {
 
   return (
     <div>
-      <h2 className="mb-5 text-[18px] font-semibold leading-7 tracking-tight text-[#09090B]">Key Stats</h2>
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-3 md:gap-6">
+      <h2 className="mb-4 text-[18px] font-semibold leading-7 text-[#09090B]">Key Stats</h2>
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
         <Card title="General">
           <StatRow label="Market Cap" value={usdFigure(row.marketCap || "—")} />
           <StatRow label="Fully Diluted Market Cap" value={usdFigure(row.fullyDilutedMarketCap)} />

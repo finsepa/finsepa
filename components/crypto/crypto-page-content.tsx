@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import type { CompanyPick } from "@/components/charting/company-picker";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { AssetPageTopLoader } from "@/components/layout/asset-page-top-loader";
@@ -9,7 +10,9 @@ import { PriceChart } from "@/components/chart/PriceChart";
 import { CryptoHeader } from "@/components/crypto/crypto-header";
 import { CryptoKeyStats } from "@/components/crypto/crypto-key-stats";
 import { CryptoLinksSection } from "@/components/crypto/crypto-links-section";
-import { CryptoMiniTable } from "@/components/crypto/crypto-mini-table";
+import { CryptoComparePicker } from "@/components/crypto/crypto-compare-picker";
+import { MiniTable } from "@/components/stock/mini-table";
+import { StockCompareReturnChart } from "@/components/stock/stock-compare-return-chart";
 import { LogoSkeleton, SkeletonBox } from "@/components/markets/skeleton";
 import { ChartControls } from "@/components/stock/chart-controls";
 import { LatestNews } from "@/components/stock/latest-news";
@@ -66,6 +69,7 @@ export function CryptoPageContent({
   const [loading, setLoading] = useState(!serverMatch);
   const [row, setRow] = useState<CryptoAssetRow | null>(serverMatch?.asset ?? null);
   const [range, setRange] = useState<StockChartRange>("1Y");
+  const [comparePicks, setComparePicks] = useState<CompanyPick[]>([]);
   const [sessionHeaderUi, setSessionHeaderUi] = useState<ChartDisplayState>(EMPTY_CHART_DISPLAY);
   const [holdingsHeaderUi, setHoldingsHeaderUi] = useState<ChartDisplayState | null>(null);
   const symUpper = routeSymbol.trim().toUpperCase();
@@ -108,6 +112,20 @@ export function CryptoPageContent({
     setHoldingsHeaderUi(s);
   }, []);
 
+  const onAddComparePick = useCallback((pick: CompanyPick) => {
+    const sym = pick.symbol.trim().toUpperCase();
+    if (!sym || sym === symUpper) return;
+    setComparePicks((cur) => {
+      if (cur.some((p) => p.symbol.trim().toUpperCase() === sym)) return cur;
+      return [...cur, pick];
+    });
+  }, [symUpper]);
+
+  const onRemoveComparePick = useCallback((symbol: string) => {
+    const sym = symbol.trim().toUpperCase();
+    setComparePicks((cur) => cur.filter((p) => p.symbol.trim().toUpperCase() !== sym));
+  }, []);
+
   // Keep a live spot/session header feed even on Holdings so the header always shows current price.
   const cryptoChartDrivesHeader = true;
 
@@ -131,7 +149,6 @@ export function CryptoPageContent({
       try {
         const res = await fetch(`/api/crypto/${encodeURIComponent(symUpper)}/live-price`, {
           credentials: "include",
-          cache: "no-store",
         });
         if (!res.ok || cancelled) return;
         const json = (await res.json()) as { price?: unknown };
@@ -159,7 +176,6 @@ export function CryptoPageContent({
       try {
         const res = await fetch(`/api/crypto/${encodeURIComponent(symUpper)}/performance`, {
           credentials: "include",
-          cache: "no-store",
         });
         if (!res.ok || cancelled) return;
         const json = (await res.json()) as StockPerformance;
@@ -193,6 +209,24 @@ export function CryptoPageContent({
   const chartUi = spotUi;
 
   const initialChartMemo = useMemo(() => (serverMatch ? serverMatch.chart : null), [serverMatch]);
+
+  const initialSessionChartMemo = useMemo(
+    () => (serverMatch?.sessionChart ? serverMatch.sessionChart : null),
+    [serverMatch],
+  );
+
+  const [mountHeaderChart, setMountHeaderChart] = useState(false);
+
+  useEffect(() => {
+    if (!cryptoChartDrivesHeader) return;
+    const enable = () => setMountHeaderChart(true);
+    if (typeof requestIdleCallback === "function") {
+      const id = requestIdleCallback(enable, { timeout: 2_000 });
+      return () => cancelIdleCallback(id);
+    }
+    const t = window.setTimeout(enable, 400);
+    return () => window.clearTimeout(t);
+  }, [symUpper, cryptoChartDrivesHeader]);
 
   const initialPerformance = useMemo((): StockPerformance | null | undefined => {
     if (!serverMatch?.performance) return undefined;
@@ -313,14 +347,34 @@ export function CryptoPageContent({
               aria-hidden={activeTab !== "overview"}
               className={activeTab === "overview" ? "space-y-5" : "hidden"}
             >
-              <ChartControls activeRange={range} onRangeChange={setRange} />
-              <PriceChart
-                kind="crypto"
-                symbol={symUpper}
-                range={range}
-                initialChart={initialChartMemo}
+              <ChartControls
+                activeRange={range}
+                onRangeChange={setRange}
+                compareSlot={
+                  <CryptoComparePicker
+                    baseSymbol={symUpper}
+                    values={comparePicks}
+                    onAdd={onAddComparePick}
+                    onRemove={onRemoveComparePick}
+                  />
+                }
               />
-              {cryptoChartDrivesHeader ? (
+              {comparePicks.length > 0 ? (
+                <StockCompareReturnChart
+                  key={`compare-${symUpper}-${comparePicks.map((p) => p.symbol.trim().toUpperCase()).join("-")}-${range}`}
+                  primaryTicker={symUpper}
+                  comparePicks={comparePicks}
+                  range={range}
+                />
+              ) : (
+                <PriceChart
+                  kind="crypto"
+                  symbol={symUpper}
+                  range={range}
+                  initialChart={initialChartMemo}
+                />
+              )}
+              {cryptoChartDrivesHeader && mountHeaderChart ? (
                 <div className={OFFSCREEN_PRICE_CHART} aria-hidden>
                   <PriceChart
                     key={`${symUpper}-header-1d`}
@@ -328,15 +382,20 @@ export function CryptoPageContent({
                     symbol={symUpper}
                     range="1D"
                     height={320}
+                    initialChart={initialSessionChartMemo}
                     onDisplayChange={onSessionHeaderDisplay}
                   />
                 </div>
               ) : null}
-              <CryptoMiniTable
-                symbol={symUpper}
-                displayName={safeRow.name}
-                logoUrl={cryptoLogoSrc || serverCryptoLogo}
+              <MiniTable
+                ticker={symUpper}
+                cryptoPrimary={{
+                  displayName: safeRow.name,
+                  logoUrl: cryptoLogoSrc || serverCryptoLogo,
+                }}
                 initialPerformance={initialPerformance ?? null}
+                comparePicks={comparePicks}
+                onRemoveCompare={comparePicks.length > 0 ? onRemoveComparePick : undefined}
               />
               <div className="pt-2">
                 <CryptoKeyStats row={safeRow} />

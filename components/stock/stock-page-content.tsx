@@ -35,6 +35,7 @@ import type { StockPageInitialData } from "@/lib/market/stock-page-initial-data"
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
 import type { StockChartRange, StockChartSeries } from "@/lib/market/stock-chart-types";
 import { mergeSessionHeaderWithPerformanceSpot } from "@/lib/chart/merge-session-header-with-performance-spot";
+import { formatAssetChartTimestamp } from "@/lib/market/chart-timestamp-format";
 import { WATCHLIST_MUTATED_EVENT } from "@/lib/watchlist/constants";
 
 /** Client-only: avoids SSR/client HTML drift for this tab (charts + evolving layout). */
@@ -433,9 +434,30 @@ export function StockPageContent({
     [chartSeries, headerLiveSpotForMerge, performanceForHeaderFallback, sessionHeaderUi],
   );
 
+  const initialSessionChartMemo = useMemo(
+    () =>
+      initialPageData?.ticker === ticker && initialPageData.chart.range === "1D"
+        ? initialPageData.chart
+        : null,
+    [initialPageData, ticker],
+  );
+
   // Header should always represent "today" spot (1D session + live spot merge),
   // independent of which tab is open or which range is selected in Overview/Portfolio.
-  const chartUi = useMemo((): ChartDisplayState => spotHeaderUi, [spotHeaderUi]);
+  const chartUi = useMemo((): ChartDisplayState => {
+    if (spotHeaderUi.priceTimestampLabel != null) return spotHeaderUi;
+    const pts = initialSessionChartMemo?.points;
+    if (!pts?.length || spotHeaderUi.loading || spotHeaderUi.displayPrice == null) return spotHeaderUi;
+    const last = pts[pts.length - 1];
+    if (!last || !Number.isFinite(last.time)) return spotHeaderUi;
+    return {
+      ...spotHeaderUi,
+      priceTimestampLabel: formatAssetChartTimestamp(last.time, {
+        kind: "stock",
+        timeZone: last.timeZone,
+      }),
+    };
+  }, [spotHeaderUi, initialSessionChartMemo]);
 
   const initialChartMemo = useMemo(
     () => (initialPageData?.ticker === ticker ? initialPageData.chart : null),
@@ -488,6 +510,7 @@ export function StockPageContent({
             range="1D"
             series={comparePicks.length > 0 ? "price" : chartSeries}
             height={320}
+            initialChart={initialSessionChartMemo}
             onDisplayChange={onSessionHeaderDisplay}
           />
         </div>
