@@ -6,6 +6,7 @@ import { CACHE_CONTROL_PRIVATE_SCREENER_ROW } from "@/lib/data/cache-policy";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { fetchKeyStatCellForTicker } from "@/lib/screener/fetch-screener-key-stat-cell";
 import { getScreenerKeyStatMetricById } from "@/lib/screener/screener-key-stats-metric-catalog";
+import { readScreenerKeyStatCellSnapshot, upsertScreenerKeyStatCellSnapshot } from "@/lib/screener/screener-key-stat-snapshot";
 
 const MAX_TICKERS = 20;
 const CHUNK_SIZE = 6;
@@ -20,7 +21,10 @@ const getCachedKeyStatCells = unstable_cache(
       const chunk = tickers.slice(i, i + CHUNK_SIZE);
       const chunkResults = await Promise.all(
         chunk.map(async (ticker) => {
+          const snap = await readScreenerKeyStatCellSnapshot(metricId, ticker);
+          if (snap !== undefined) return { ticker, value: snap };
           const value = await fetchKeyStatCellForTicker(ticker, metric.section, metric.label);
+          void upsertScreenerKeyStatCellSnapshot(metricId, ticker, value);
           return { ticker, value };
         }),
       );
@@ -30,7 +34,7 @@ const getCachedKeyStatCells = unstable_cache(
     }
     return { metric, values };
   },
-  ["screener-companies-key-stat-v1"],
+  ["screener-companies-key-stat-v2-supabase"],
   // Key-stat cells are fundamentals-derived; cache long to prevent spikes.
   { revalidate: 12 * 60 * 60 },
 );
