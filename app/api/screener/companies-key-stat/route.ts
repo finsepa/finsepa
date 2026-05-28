@@ -1,12 +1,39 @@
 import { NextResponse } from "next/server";
 
+import { unstable_cache } from "next/cache";
+
 import { CACHE_CONTROL_PRIVATE_SCREENER_ROW } from "@/lib/data/cache-policy";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { fetchKeyStatCellForTicker } from "@/lib/screener/fetch-screener-key-stat-cell";
 import { getScreenerKeyStatMetricById } from "@/lib/screener/screener-key-stats-metric-catalog";
 
-const MAX_TICKERS = 50;
+const MAX_TICKERS = 20;
 const CHUNK_SIZE = 6;
+
+const getCachedKeyStatCells = unstable_cache(
+  async (metricId: string, tickersKey: string) => {
+    const metric = getScreenerKeyStatMetricById(metricId);
+    if (!metric) return { metric: null as typeof metric | null, values: {} as Record<string, string> };
+    const tickers = tickersKey ? tickersKey.split(",").filter(Boolean) : [];
+    const values: Record<string, string> = {};
+    for (let i = 0; i < tickers.length; i += CHUNK_SIZE) {
+      const chunk = tickers.slice(i, i + CHUNK_SIZE);
+      const chunkResults = await Promise.all(
+        chunk.map(async (ticker) => {
+          const value = await fetchKeyStatCellForTicker(ticker, metric.section, metric.label);
+          return { ticker, value };
+        }),
+      );
+      for (const { ticker, value } of chunkResults) {
+        values[ticker] = value;
+      }
+    }
+    return { metric, values };
+  },
+  ["screener-companies-key-stat-v1"],
+  // Key-stat cells are fundamentals-derived; cache long to prevent spikes.
+  { revalidate: 12 * 60 * 60 },
+);
 
 export async function POST(request: Request) {
   const supabase = await getSupabaseServerClient();
@@ -48,19 +75,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ values: {} satisfies Record<string, string> }, { headers: { "Cache-Control": CACHE_CONTROL_PRIVATE_SCREENER_ROW } });
   }
 
-  const values: Record<string, string> = {};
-  for (let i = 0; i < tickers.length; i += CHUNK_SIZE) {
-    const chunk = tickers.slice(i, i + CHUNK_SIZE);
-    const chunkResults = await Promise.all(
-      chunk.map(async (ticker) => {
-        const value = await fetchKeyStatCellForTicker(ticker, metric.section, metric.label);
-        return { ticker, value };
-      }),
-    );
-    for (const { ticker, value } of chunkResults) {
-      values[ticker] = value;
-    }
-  }
+  const tickersKey = [...new Set(tickers)].sort().join(",");
+  const cached = await getCachedKeyStatCells(metric.id, tickersKey);
+  const values = cached.values;
 
   return NextResponse.json(
     { values, metricId: metric.id, label: metric.label, section: metric.section },

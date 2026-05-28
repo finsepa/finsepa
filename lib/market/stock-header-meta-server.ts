@@ -4,6 +4,10 @@ import { unstable_cache } from "next/cache";
 
 import { REVALIDATE_IDENTITY, REVALIDATE_WARM_LONG } from "@/lib/data/cache-policy";
 import { fetchEodhdFundamentalsJson, resolveEarningsDateDisplay } from "@/lib/market/eodhd-fundamentals";
+import {
+  readStockHeaderIdentitySnapshot,
+  upsertStockHeaderIdentitySnapshot,
+} from "@/lib/market/stock-header-identity-snapshot";
 import type { StockDetailHeaderMeta } from "@/lib/market/stock-header-meta";
 import { resolveEquityLogoUrlFromTicker } from "@/lib/screener/resolve-equity-logo-url";
 import { countWatchlistEntriesForStockTicker } from "@/lib/watchlist/stock-watchlist-count";
@@ -25,6 +29,9 @@ function parseHighlights(root: Record<string, unknown> | null): Record<string, u
 
 /** Name / sector / industry / logo — slow-changing; longer shared TTL than earnings headline (Phase 5). */
 async function buildHeaderIdentityUncached(ticker: string): Promise<HeaderIdentityFields> {
+  const snap = await readStockHeaderIdentitySnapshot(ticker);
+  if (snap) return snap;
+
   const root = await fetchEodhdFundamentalsJson(ticker);
   const logoStr = resolveEquityLogoUrlFromTicker(ticker);
   const r = root && typeof root === "object" ? (root as Record<string, unknown>) : null;
@@ -51,7 +58,9 @@ async function buildHeaderIdentityUncached(ticker: string): Promise<HeaderIdenti
     countryIso = c === "USA" ? "US" : /^[A-Z]{2}$/.test(c) ? c : null;
   }
 
-  return { fullName, logoUrl, exchange, countryIso, sector, industry };
+  const out = { fullName, logoUrl, exchange, countryIso, sector, industry };
+  void upsertStockHeaderIdentitySnapshot(ticker, out);
+  return out;
 }
 
 /** Next-earnings display string — follows fundamentals warm-long cadence. */

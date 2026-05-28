@@ -12,6 +12,12 @@ import { dividendYieldRatioFromFundamentalsRoot } from "@/lib/market/eodhd-key-s
 import { getCryptoPerformance } from "@/lib/market/crypto-performance";
 import { getStockPerformance } from "@/lib/market/stock-performance";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
+import {
+  readPortfolioInceptionOpenSnapshot,
+  readPortfolioYieldPctSnapshot,
+  upsertPortfolioInceptionOpenSnapshot,
+  upsertPortfolioYieldPctSnapshot,
+} from "@/lib/portfolio/portfolio-overview-slow-snapshot";
 
 const SPY = "SPY";
 
@@ -29,9 +35,14 @@ function yieldPctFromRatio(ratio: number | null): number | null {
 }
 
 async function yieldPctForStockSymbolUncached(ticker: string): Promise<number | null> {
+  const snap = await readPortfolioYieldPctSnapshot(ticker);
+  if (snap !== undefined) return snap;
+
   const root = await fetchEodhdFundamentalsJson(ticker);
   if (!root) return null;
-  return yieldPctFromRatio(dividendYieldRatioFromFundamentalsRoot(root));
+  const y = yieldPctFromRatio(dividendYieldRatioFromFundamentalsRoot(root));
+  void upsertPortfolioYieldPctSnapshot(ticker, y);
+  return y;
 }
 
 const getCachedYieldPctForStockSymbol = unstable_cache(
@@ -42,13 +53,20 @@ const getCachedYieldPctForStockSymbol = unstable_cache(
 
 const getCachedInceptionOpenPrice = unstable_cache(
   async (ticker: string, inceptionYmd: string) => {
+    const snap = await readPortfolioInceptionOpenSnapshot(ticker, inceptionYmd);
+    if (snap !== undefined) return snap;
+
     const routeKey = cryptoRouteBase(ticker);
     if (isSupportedCryptoAssetSymbol(routeKey)) {
       const r = await fetchEodhdCryptoOpenPriceOnOrBefore(routeKey, inceptionYmd);
-      return r?.price ?? null;
+      const p = r?.price ?? null;
+      void upsertPortfolioInceptionOpenSnapshot(ticker, inceptionYmd, p);
+      return p;
     }
     const r = await fetchEodhdOpenPriceOnOrBefore(ticker, inceptionYmd);
-    return r?.price ?? null;
+    const p = r?.price ?? null;
+    void upsertPortfolioInceptionOpenSnapshot(ticker, inceptionYmd, p);
+    return p;
   },
   ["portfolio-overview-inception-open-v1"],
   { revalidate: REVALIDATE_IDENTITY },
