@@ -836,24 +836,36 @@ export const getSimpleCryptoDerivedTop10 = unstable_cache(
 /** Daily-bar metrics for an arbitrary crypto meta list (e.g. screener page 2). */
 export async function getSimpleCryptoDerivedForMetas(metas: readonly CryptoMeta[]): Promise<SimpleCryptoDerived> {
   if (!metas.length) return {};
-  const window = eodFetchWindowUtc();
-  const list = [...metas];
-  const barsList = await runWithConcurrencyLimit(list, SCREENER_EOD_DERIVED_CRYPTO_CONCURRENCY, (c) =>
-    fetchEodhdCryptoDailyBarsForMeta(c, window.from, window.to),
+  const metasKey = [...metas]
+    .map((m) => m.symbol.trim().toUpperCase())
+    .filter(Boolean)
+    .sort()
+    .join(",");
+
+  return withScreenerUsMarketCache(
+    "simple-crypto-derived-metas-v1",
+    async () => {
+      const window = eodFetchWindowUtc();
+      const list = [...metas];
+      const barsList = await runWithConcurrencyLimit(list, SCREENER_EOD_DERIVED_CRYPTO_CONCURRENCY, (c) =>
+        fetchEodhdCryptoDailyBarsForMeta(c, window.from, window.to),
+      );
+      const mcList = await runWithConcurrencyLimit(list, SCREENER_EOD_DERIVED_CRYPTO_CONCURRENCY, (c, i) => {
+        const raw = barsList[i];
+        const bars = Array.isArray(raw) ? raw : [];
+        return fetchCryptoMarketCapUsdForMeta(c, lastPositiveCloseFromCryptoBars(bars));
+      });
+      const out: SimpleCryptoDerived = {};
+      metas.forEach((c, i) => {
+        const raw = barsList[i];
+        const bars = Array.isArray(raw) ? raw : [];
+        const mc = typeof mcList[i] === "number" && Number.isFinite(mcList[i]!) ? mcList[i]! : null;
+        out[c.symbol] = { ...barsToCryptoDerived(bars), marketCapUsd: mc };
+      });
+      return out;
+    },
+    [metasKey],
   );
-  const mcList = await runWithConcurrencyLimit(list, SCREENER_EOD_DERIVED_CRYPTO_CONCURRENCY, (c, i) => {
-    const raw = barsList[i];
-    const bars = Array.isArray(raw) ? raw : [];
-    return fetchCryptoMarketCapUsdForMeta(c, lastPositiveCloseFromCryptoBars(bars));
-  });
-  const out: SimpleCryptoDerived = {};
-  metas.forEach((c, i) => {
-    const raw = barsList[i];
-    const bars = Array.isArray(raw) ? raw : [];
-    const mc = typeof mcList[i] === "number" && Number.isFinite(mcList[i]!) ? mcList[i]! : null;
-    out[c.symbol] = { ...barsToCryptoDerived(bars), marketCapUsd: mc };
-  });
-  return out;
 }
 
 async function loadSimpleIndicesDerivedUncached(): Promise<SimpleIndicesDerived> {
