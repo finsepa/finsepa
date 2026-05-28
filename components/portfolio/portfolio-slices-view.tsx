@@ -5,7 +5,6 @@ import {
   useCallback,
   useEffect,
   useMemo,
-  useRef,
   useState,
   type MouseEvent,
 } from "react";
@@ -212,10 +211,6 @@ function SliceDonut({
   );
 }
 
-async function fetchStockSector(_symbol: string): Promise<string | null> {
-  return null;
-}
-
 function holdingIsCrypto(symbol: string): boolean {
   return isSupportedCryptoAssetSymbol(symbol);
 }
@@ -386,10 +381,7 @@ function PortfolioSlicesViewInner({
 
   useEffect(() => {
     const syms = stockSymbolsKey ? stockSymbolsKey.split(",").filter(Boolean) : [];
-    if (syms.length === 0) {
-      setStockSectorBySymbol({});
-      return;
-    }
+    if (syms.length === 0) return;
     let cancelled = false;
     void (async () => {
       try {

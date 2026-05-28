@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { CACHE_CONTROL_PRIVATE_NO_STORE } from "@/lib/data/cache-policy";
-import { fetchPortfolioLivePricesUsd } from "@/lib/portfolio/portfolio-live-quotes-server";
+import { fetchPortfolioLivePricesUsdCached } from "@/lib/portfolio/portfolio-live-quotes-server";
 import { requireAuthUser, AuthRequiredError } from "@/lib/watchlist/api-auth";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     const raw = Array.isArray(body.symbols) ? body.symbols.filter((s): s is string => typeof s === "string") : [];
     const symbols = [...new Set(raw.map((s) => s.trim().toUpperCase()).filter(Boolean))];
 
-    const prices = await fetchPortfolioLivePricesUsd(symbols);
+    const prices = await fetchPortfolioLivePricesUsdCached(symbols);
 
     return NextResponse.json(
       { prices },

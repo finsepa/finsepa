@@ -1,5 +1,8 @@
 import "server-only";
 
+import { unstable_cache } from "next/cache";
+
+import { REVALIDATE_HOT_FAST } from "@/lib/data/cache-policy";
 import { cryptoRouteBase } from "@/lib/crypto/crypto-symbol-base";
 import { isSupportedCryptoAssetSymbol } from "@/lib/crypto/crypto-logo-url";
 import { getCryptoLiveSpotPriceUsd } from "@/lib/market/crypto-live-price";
@@ -58,4 +61,26 @@ export async function fetchPortfolioLivePricesUsd(symbols: string[]): Promise<Re
   }
 
   return out;
+}
+
+function normalizeSymbolsKey(symbols: string[]): string {
+  return [...new Set(symbols.map((s) => s.trim().toUpperCase()).filter(Boolean))].sort().join(",");
+}
+
+const getCachedPortfolioLivePricesUsd = unstable_cache(
+  async (symbolsKey: string) => {
+    const symbols = symbolsKey ? symbolsKey.split(",").filter(Boolean) : [];
+    return fetchPortfolioLivePricesUsd(symbols);
+  },
+  ["portfolio-live-quotes-v1"],
+  { revalidate: REVALIDATE_HOT_FAST },
+);
+
+/** Server-side TTL cache to dedupe refresh spam (esp. across hard reloads). */
+export async function fetchPortfolioLivePricesUsdCached(
+  symbols: string[],
+): Promise<Record<string, number | null>> {
+  const key = normalizeSymbolsKey(symbols);
+  if (!key) return {};
+  return getCachedPortfolioLivePricesUsd(key);
 }

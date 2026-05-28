@@ -2,7 +2,7 @@ import "server-only";
 
 import { unstable_cache } from "next/cache";
 
-import { REVALIDATE_HOT } from "@/lib/data/cache-policy";
+import { REVALIDATE_HOT, REVALIDATE_IDENTITY } from "@/lib/data/cache-policy";
 import { cryptoRouteBase } from "@/lib/crypto/crypto-symbol-base";
 import { isSupportedCryptoAssetSymbol } from "@/lib/crypto/crypto-logo-url";
 import { fetchEodhdCryptoOpenPriceOnOrBefore } from "@/lib/market/eodhd-crypto";
@@ -28,67 +28,81 @@ function yieldPctFromRatio(ratio: number | null): number | null {
   return ratio * 100;
 }
 
-async function stockSymbolOverview(
-  ticker: string,
-  fundamentalsByTicker: Map<string, Record<string, unknown> | null>,
-): Promise<{ perf: StockPerformance | null; yieldPct: number | null }> {
-  const perf = await getStockPerformance(ticker);
-  const root = fundamentalsByTicker.get(ticker) ?? null;
-  const yieldPct = root ? yieldPctFromRatio(dividendYieldRatioFromFundamentalsRoot(root)) : null;
-  return { perf, yieldPct };
+async function yieldPctForStockSymbolUncached(ticker: string): Promise<number | null> {
+  const root = await fetchEodhdFundamentalsJson(ticker);
+  if (!root) return null;
+  return yieldPctFromRatio(dividendYieldRatioFromFundamentalsRoot(root));
 }
 
-async function buildOverviewMarketPayloadUncached(
-  symbols: string[],
-  inceptionYmd: string | null,
-  inceptionPriceTickers: string[],
-): Promise<PortfolioOverviewMarketPayload> {
+const getCachedYieldPctForStockSymbol = unstable_cache(
+  async (ticker: string) => yieldPctForStockSymbolUncached(ticker),
+  ["portfolio-overview-yield-v1"],
+  { revalidate: REVALIDATE_IDENTITY },
+);
+
+const getCachedInceptionOpenPrice = unstable_cache(
+  async (ticker: string, inceptionYmd: string) => {
+    const routeKey = cryptoRouteBase(ticker);
+    if (isSupportedCryptoAssetSymbol(routeKey)) {
+      const r = await fetchEodhdCryptoOpenPriceOnOrBefore(routeKey, inceptionYmd);
+      return r?.price ?? null;
+    }
+    const r = await fetchEodhdOpenPriceOnOrBefore(ticker, inceptionYmd);
+    return r?.price ?? null;
+  },
+  ["portfolio-overview-inception-open-v1"],
+  { revalidate: REVALIDATE_IDENTITY },
+);
+
+async function buildOverviewFastUncached(symbols: string[]): Promise<Pick<PortfolioOverviewMarketPayload, "spy" | "performanceBySymbol">> {
   const tickersPerf = [...new Set([SPY, ...symbols])];
-  const fundamentalsByTicker = new Map<string, Record<string, unknown> | null>();
-
-  const stockSymbolsForFundamentals = symbols.filter(
-    (t) => !isSupportedCryptoAssetSymbol(cryptoRouteBase(t)),
-  );
-  await Promise.all(
-    stockSymbolsForFundamentals.map(async (t) => {
-      const root = await fetchEodhdFundamentalsJson(t);
-      fundamentalsByTicker.set(t, root);
-    }),
-  );
-
   const perfEntries = await Promise.all(
     tickersPerf.map(async (t) => {
       try {
         const routeKey = cryptoRouteBase(t);
         if (isSupportedCryptoAssetSymbol(routeKey)) {
           const p = await getCryptoPerformance(routeKey);
-          return [t, p, null] as const;
+          return [t, p] as const;
         }
-        if (t === SPY && !symbols.includes(SPY)) {
-          const p = await getStockPerformance(t);
-          return [t, p, null] as const;
-        }
-        const { perf, yieldPct } = await stockSymbolOverview(t, fundamentalsByTicker);
-        return [t, perf, yieldPct] as const;
+        const p = await getStockPerformance(t);
+        return [t, p] as const;
       } catch {
-        return [t, null, null] as const;
+        return [t, null] as const;
       }
     }),
   );
 
   const performanceBySymbol: Record<string, StockPerformance | null> = {};
-  const yieldBySymbol: Record<string, number | null> = {};
   let spyPerf: StockPerformance | null = null;
-
-  for (const [t, p, yld] of perfEntries) {
+  for (const [t, p] of perfEntries) {
     if (t === SPY) spyPerf = p;
-    if (symbols.includes(t)) {
-      performanceBySymbol[t] = p;
-      if (yld != null) yieldBySymbol[t] = yld;
-    }
+    if (symbols.includes(t)) performanceBySymbol[t] = p;
   }
   for (const s of symbols) {
     if (!(s in performanceBySymbol)) performanceBySymbol[s] = null;
+  }
+  return { spy: spyPerf, performanceBySymbol };
+}
+
+async function buildOverviewSlowUncached(
+  symbols: string[],
+  inceptionYmd: string | null,
+  inceptionPriceTickers: string[],
+): Promise<Pick<PortfolioOverviewMarketPayload, "yieldBySymbol" | "inceptionPriceByTicker" | "inceptionYmd">> {
+  const yieldBySymbol: Record<string, number | null> = {};
+  const stockSymbolsForYield = symbols.filter((t) => !isSupportedCryptoAssetSymbol(cryptoRouteBase(t)));
+  const yieldEntries = await Promise.all(
+    stockSymbolsForYield.map(async (t) => {
+      try {
+        const y = await getCachedYieldPctForStockSymbol(t);
+        return [t, y] as const;
+      } catch {
+        return [t, null] as const;
+      }
+    }),
+  );
+  for (const [t, y] of yieldEntries) yieldBySymbol[t] = y;
+  for (const s of symbols) {
     if (!(s in yieldBySymbol)) yieldBySymbol[s] = null;
   }
 
@@ -97,30 +111,17 @@ async function buildOverviewMarketPayloadUncached(
     const priceEntries = await Promise.all(
       inceptionPriceTickers.map(async (t) => {
         try {
-          const routeKey = cryptoRouteBase(t);
-          if (isSupportedCryptoAssetSymbol(routeKey)) {
-            const r = await fetchEodhdCryptoOpenPriceOnOrBefore(routeKey, inceptionYmd);
-            return [t, r?.price ?? null] as const;
-          }
-          const r = await fetchEodhdOpenPriceOnOrBefore(t, inceptionYmd);
-          return [t, r?.price ?? null] as const;
+          const p = await getCachedInceptionOpenPrice(t, inceptionYmd);
+          return [t, p] as const;
         } catch {
           return [t, null] as const;
         }
       }),
     );
-    for (const [t, price] of priceEntries) {
-      inceptionPriceByTicker[t] = price;
-    }
+    for (const [t, price] of priceEntries) inceptionPriceByTicker[t] = price;
   }
 
-  return {
-    spy: spyPerf,
-    performanceBySymbol,
-    yieldBySymbol,
-    inceptionPriceByTicker,
-    inceptionYmd,
-  };
+  return { yieldBySymbol, inceptionPriceByTicker, inceptionYmd };
 }
 
 function overviewCacheKey(
@@ -134,15 +135,24 @@ function overviewCacheKey(
   return `${syms}|${inc}|${incTk}`;
 }
 
-const getCachedOverviewMarketPayload = unstable_cache(
+const getCachedOverviewFast = unstable_cache(
+  async (symbolsJson: string) => {
+    const symbols = JSON.parse(symbolsJson) as string[];
+    return buildOverviewFastUncached(symbols);
+  },
+  ["portfolio-overview-market-fast-v1"],
+  { revalidate: REVALIDATE_HOT },
+);
+
+const getCachedOverviewSlow = unstable_cache(
   async (key: string, symbolsJson: string, inceptionYmd: string, inceptionTickersJson: string) => {
     const symbols = JSON.parse(symbolsJson) as string[];
     const inceptionPriceTickers = JSON.parse(inceptionTickersJson) as string[];
     const inc = inceptionYmd || null;
-    return buildOverviewMarketPayloadUncached(symbols, inc, inceptionPriceTickers);
+    return buildOverviewSlowUncached(symbols, inc, inceptionPriceTickers);
   },
-  ["portfolio-overview-market-v2-shared-fundamentals"],
-  { revalidate: REVALIDATE_HOT },
+  ["portfolio-overview-market-slow-v1"],
+  { revalidate: REVALIDATE_IDENTITY },
 );
 
 export async function getPortfolioOverviewMarketPayload(
@@ -151,10 +161,17 @@ export async function getPortfolioOverviewMarketPayload(
   inceptionPriceTickers: string[],
 ): Promise<PortfolioOverviewMarketPayload> {
   const key = overviewCacheKey(symbols, inceptionYmd, inceptionPriceTickers);
-  return getCachedOverviewMarketPayload(
-    key,
-    JSON.stringify(symbols),
-    inceptionYmd ?? "",
-    JSON.stringify(inceptionPriceTickers),
-  );
+  const symbolsJson = JSON.stringify(symbols);
+  const tickersJson = JSON.stringify(inceptionPriceTickers);
+  const [fast, slow] = await Promise.all([
+    getCachedOverviewFast(symbolsJson),
+    getCachedOverviewSlow(key, symbolsJson, inceptionYmd ?? "", tickersJson),
+  ]);
+  return {
+    spy: fast.spy,
+    performanceBySymbol: fast.performanceBySymbol,
+    yieldBySymbol: slow.yieldBySymbol,
+    inceptionPriceByTicker: slow.inceptionPriceByTicker,
+    inceptionYmd: slow.inceptionYmd,
+  };
 }
