@@ -212,20 +212,8 @@ function SliceDonut({
   );
 }
 
-async function fetchStockSector(symbol: string): Promise<string | null> {
-  const enc = encodeURIComponent(symbol.trim());
-  try {
-    const res = await fetch(`/api/stocks/${enc}/header-meta`, { cache: "force-cache" });
-    if (!res.ok) return null;
-    const j = (await res.json()) as { sector?: string | null };
-    if (typeof j.sector === "string") {
-      const s = j.sector.trim();
-      return s.length > 0 ? s : null;
-    }
-    return null;
-  } catch {
-    return null;
-  }
+async function fetchStockSector(_symbol: string): Promise<string | null> {
+  return null;
 }
 
 function holdingIsCrypto(symbol: string): boolean {
@@ -387,8 +375,51 @@ function PortfolioSlicesViewInner({
   holdings: PortfolioHolding[];
   transactions: PortfolioTransaction[];
 }) {
-  const [sectorBySymbol, setSectorBySymbol] = useState<Map<string, string>>(() => new Map());
-  const [resolvedStockKey, setResolvedStockKey] = useState<string | null>(null);
+  const [stockSectorBySymbol, setStockSectorBySymbol] = useState<Record<string, string | null>>({});
+
+  const stockSymbolsKey = useMemo(() => {
+    const syms = [...new Set(holdings.map((h) => h.symbol.trim().toUpperCase()).filter(Boolean))]
+      .filter((s) => !holdingIsCrypto(s))
+      .sort();
+    return syms.join(",");
+  }, [holdings]);
+
+  useEffect(() => {
+    const syms = stockSymbolsKey ? stockSymbolsKey.split(",").filter(Boolean) : [];
+    if (syms.length === 0) {
+      setStockSectorBySymbol({});
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch("/api/portfolio/header-meta", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ symbols: syms }),
+        });
+        if (!res.ok) return;
+        const j = (await res.json()) as {
+          bySymbol?: Record<string, { sector?: string | null }>;
+        };
+        if (cancelled) return;
+        const bySymbol = j.bySymbol ?? {};
+        const next: Record<string, string | null> = {};
+        for (const s of syms) {
+          const sector = bySymbol[s]?.sector ?? null;
+          next[s] = typeof sector === "string" && sector.trim() ? sector.trim() : null;
+        }
+        setStockSectorBySymbol(next);
+      } catch {
+        // ignore
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [stockSymbolsKey]);
+  const sectorBySymbol = useMemo(() => new Map(Object.entries(stockSectorBySymbol)), [stockSectorBySymbol]);
   const [tooltip, setTooltip] = useState<TooltipState>(null);
   const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>({
     key: "allocation",
@@ -400,46 +431,7 @@ function PortfolioSlicesViewInner({
     dir: "desc",
   });
 
-  const stockSymbols = useMemo(() => {
-    const u = new Set<string>();
-    for (const h of holdings) {
-      if (holdingIsCrypto(h.symbol)) continue;
-      u.add(h.symbol.trim().toUpperCase());
-    }
-    return [...u];
-  }, [holdings]);
-
-  const stockKey = useMemo(() => [...stockSymbols].sort().join(","), [stockSymbols]);
-  const stockKeyRef = useRef(stockKey);
-
-  useEffect(() => {
-    stockKeyRef.current = stockKey;
-  }, [stockKey]);
-
-  const sectorFetchPending =
-    stockSymbols.length > 0 && resolvedStockKey !== stockKey;
-
-  useEffect(() => {
-    if (stockSymbols.length === 0) return;
-    if (stockKey === resolvedStockKey) return;
-    const fetchKey = stockKey;
-    let cancelled = false;
-    void (async () => {
-      const entries = await Promise.all(
-        stockSymbols.map(async (sym) => {
-          const sec = await fetchStockSector(sym);
-          return [sym, sec ?? "Unclassified"] as const;
-        }),
-      );
-      if (cancelled) return;
-      if (stockKeyRef.current !== fetchKey) return;
-      setSectorBySymbol(new Map(entries));
-      setResolvedStockKey(fetchKey);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [stockKey, resolvedStockKey, stockSymbols]);
+  const sectorFetchPending = stockSymbolsKey.length > 0 && Object.keys(stockSectorBySymbol).length === 0;
 
   const buckets = useMemo((): SectorBucket[] => {
     const cashUsd = netCashUsd(transactions);

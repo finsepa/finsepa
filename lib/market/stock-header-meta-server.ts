@@ -73,6 +73,11 @@ const getCachedStockHeaderEarningsLine = unstable_cache(
   { revalidate: REVALIDATE_WARM_LONG },
 );
 
+/** Identity fields only — no watchlist count. Safe for batch portfolio slices. */
+export async function getStockHeaderIdentityForTicker(ticker: string): Promise<HeaderIdentityFields> {
+  return getCachedStockHeaderIdentity(ticker);
+}
+
 /**
  * Header meta for stock detail: fundamentals-backed slices (Phase 5 split) + live watchlist count.
  */
