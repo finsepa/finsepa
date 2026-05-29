@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { sendGoogleWelcomeEmailIfNeeded } from "@/lib/auth/send-google-welcome-email";
+import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -13,11 +14,20 @@ export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
   const supabase = await getSupabaseServerClient();
   const {
-    data: { user },
+    data: { user: sessionUser },
   } = await supabase.auth.getUser();
 
-  if (!user) {
+  if (!sessionUser) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+
+  let user = sessionUser;
+  const admin = getSupabaseAdminClient();
+  if (admin) {
+    const { data: adminUser, error } = await admin.auth.admin.getUserById(sessionUser.id);
+    if (!error && adminUser?.user) {
+      user = adminUser.user;
+    }
   }
 
   const origin = request.headers.get("origin") ?? "";

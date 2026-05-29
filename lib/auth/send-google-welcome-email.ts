@@ -16,30 +16,16 @@ import {
   platformTrialDaysRemaining,
 } from "@/lib/account/platform-trial";
 import { getLoopsApiKey } from "@/lib/env/loops";
+import {
+  formatTrialEndsAtForEmail,
+  LOOPS_TRIAL_PRO_INFO_LINE,
+} from "@/lib/loops/trial-email-variables";
 import { sendLoopsGoogleWelcomeEmail } from "@/lib/loops/send-google-welcome";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export type GoogleWelcomeSendResult =
   | { sent: true }
   | { sent: false; reason: "not_applicable" | "already_sent" | "loops_not_configured" | "admin_unavailable" | "send_failed"; message?: string };
-
-function formatTrialEndsAt(iso: string | null): string {
-  if (!iso) {
-    const d = new Date();
-    d.setUTCDate(d.getUTCDate() + PLATFORM_TRIAL_DAYS);
-    iso = d.toISOString();
-  }
-  try {
-    return new Intl.DateTimeFormat("en-US", {
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-      timeZone: "UTC",
-    }).format(new Date(iso));
-  } catch {
-    return iso.slice(0, 10);
-  }
-}
 
 export async function sendGoogleWelcomeEmailIfNeeded(
   user: User,
@@ -83,11 +69,9 @@ export async function sendGoogleWelcomeEmailIfNeeded(
   }
 
   const daysLeft = platformTrialDaysRemaining(trialEndsIso) ?? PLATFORM_TRIAL_DAYS;
-  const trialEndsAt = formatTrialEndsAt(trialEndsIso);
+  const trialEndsAt = formatTrialEndsAtForEmail(trialEndsIso);
   const firstName = displayFirstNameFromUser(user, email);
-
-  const proInfoLine =
-    "Your free trial includes full platform access for 7 days. Upgrade to Finsepa Pro anytime for ongoing research tools, portfolio tracking, and market data.";
+  const proInfoLine = LOOPS_TRIAL_PRO_INFO_LINE;
 
   const sendResult = await sendLoopsGoogleWelcomeEmail({
     apiKey: loopsKey,
