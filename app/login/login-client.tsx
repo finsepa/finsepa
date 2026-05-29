@@ -45,13 +45,24 @@ function GoogleMark() {
 }
 
 const REDIRECT_AFTER_LOGIN_MS = 900;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function LoginClient({ resetSuccess, callbackError }: Props) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [passwordLoginSuccess, setPasswordLoginSuccess] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+
+  const emailReady = email.trim().length > 0 && EMAIL_RE.test(email.trim());
+  const passwordReady = password.length > 0;
+  const showTurnstile = TURNSTILE_ENABLED && emailReady && passwordReady;
+
+  useEffect(() => {
+    setTurnstileToken(null);
+  }, [email, password]);
 
   const callbackHint = callbackError ? CALLBACK_ERROR_MESSAGES[callbackError] ?? "Something went wrong. Please try again." : null;
 
@@ -190,6 +201,8 @@ export function LoginClient({ resetSuccess, callbackError }: Props) {
           placeholder="Enter your email"
           required
           disabled={loading}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
         />
       </div>
 
@@ -201,6 +214,8 @@ export function LoginClient({ resetSuccess, callbackError }: Props) {
           placeholder="Enter your password"
           required
           disabled={loading}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
         />
         <div className="mt-6 flex items-center justify-between gap-4">
           <label className="flex cursor-pointer items-center gap-2 select-none">
@@ -221,7 +236,7 @@ export function LoginClient({ resetSuccess, callbackError }: Props) {
         </div>
       </div>
 
-      {TURNSTILE_ENABLED ? (
+      {showTurnstile ? (
         <TurnstileField
           siteKey={TURNSTILE_SITE_KEY}
           onToken={(token) => setTurnstileToken(token)}
@@ -232,7 +247,7 @@ export function LoginClient({ resetSuccess, callbackError }: Props) {
       <div className="!mt-6">
         <AuthPrimaryButton
           type="submit"
-          disabled={loading || (TURNSTILE_ENABLED && !turnstileToken)}
+          disabled={loading || !emailReady || !passwordReady || (showTurnstile && !turnstileToken)}
         >
           {loading ? "Signing in…" : "Log in"}
         </AuthPrimaryButton>
