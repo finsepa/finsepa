@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Plus, Search } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSpringTriplet } from "@/components/chart/use-spring-numbers";
 import { mergeLogoMemory, readLogoMemory } from "@/lib/logos/logo-memory";
@@ -94,10 +94,26 @@ export function StockHeader({
     if (serverLogo) mergeLogoMemory(symbol, serverLogo);
   }, [symbol, serverLogo]);
 
-  const anim = useSpringTriplet(
-    { price, abs: changeAbs, pct: changePct },
-    { stiffness: 520, damping: 38, epsilon: 1e-4 },
-  );
+  const settledTripletRef = useRef<{ price: number; abs: number; pct: number } | null>(null);
+  const springTarget = useMemo(() => {
+    const hasFull =
+      price != null &&
+      changeAbs != null &&
+      changePct != null &&
+      Number.isFinite(price) &&
+      Number.isFinite(changeAbs) &&
+      Number.isFinite(changePct);
+    if (hasFull && !chartLoading) {
+      settledTripletRef.current = { price, abs: changeAbs, pct: changePct };
+      return { price, abs: changeAbs, pct: changePct };
+    }
+    if (chartLoading && settledTripletRef.current) {
+      return settledTripletRef.current;
+    }
+    return { price, abs: changeAbs, pct: changePct };
+  }, [chartLoading, price, changeAbs, changePct]);
+
+  const anim = useSpringTriplet(springTarget, { stiffness: 520, damping: 38, epsilon: 1e-4 });
 
   const hasChange = changePct != null && changeAbs != null && Number.isFinite(changePct) && Number.isFinite(changeAbs);
   const isPositive = hasChange ? changeAbs >= 0 : true;
@@ -286,7 +302,7 @@ export function StockHeader({
               chartHovering ? "scale-[1.01]" : "scale-100"
             }`}
           >
-            {chartLoading || anim.price == null
+            {anim.price == null
               ? "—"
               : headerChartMetric === "marketCap"
                 ? formatUsdCompact(anim.price)
@@ -305,7 +321,7 @@ export function StockHeader({
                   hasChange ? (isPositive ? "text-[#16A34A]" : "text-[#DC2626]") : "text-[#71717A]"
                 }`}
               >
-                {chartLoading || !hasChange || anim.abs == null || anim.pct == null
+                {!hasChange || anim.abs == null || anim.pct == null
                   ? "—"
                   : headerChartMetric === "marketCap"
                     ? `${isPositive ? "+" : ""}${formatUsdCompact(anim.abs)} (${isPositive ? "+" : ""}${anim.pct.toFixed(2)}%)`
@@ -337,7 +353,7 @@ export function StockHeader({
                   hasChange ? (isPositive ? "text-[#16A34A]" : "text-[#DC2626]") : "text-[#71717A]"
                 }`}
               >
-                {chartLoading || !hasChange || anim.abs == null || anim.pct == null
+                {!hasChange || anim.abs == null || anim.pct == null
                   ? "—"
                   : headerChartMetric === "marketCap"
                     ? `${isPositive ? "+" : ""}${formatUsdCompact(anim.abs)} (${isPositive ? "+" : ""}${anim.pct.toFixed(2)}%)`
@@ -347,7 +363,7 @@ export function StockHeader({
             </>
           )}
         </div>
-        {chartLoading ? (
+        {chartLoading && anim.price == null ? (
           <div className="mt-0.5 text-[12px] text-[#71717A]">Loading…</div>
         ) : chartEmpty ? (
           <div className="mt-0.5 max-md:block md:hidden">

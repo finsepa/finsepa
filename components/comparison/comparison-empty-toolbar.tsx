@@ -5,10 +5,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { X } from "lucide-react";
 
 import { ChartingCompanyAddDropdown } from "@/components/charting/charting-company-add-dropdown";
+import { writeComparisonSessionTickers } from "@/lib/comparison/comparison-session";
 import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
 import {
   CHARTING_MAX_COMPARE_TICKERS,
-  buildStandaloneChartPath,
+  buildComparisonPath,
   parseChartingTickerList,
 } from "@/lib/market/stock-charting-metrics";
 
@@ -43,7 +44,14 @@ export function ComparisonEmptyToolbar({ tickers, allowedChartingTickers }: Prop
 
   const syncUrl = useCallback(
     (nextTickers: string[]) => {
-      router.replace(buildStandaloneChartPath("/comparison", nextTickers, []), { scroll: false });
+      const normalized = parseChartingTickerList(
+        nextTickers
+          .map((t) => t.trim().toUpperCase())
+          .filter(Boolean)
+          .join(","),
+      );
+      writeComparisonSessionTickers(normalized);
+      router.replace(buildComparisonPath(normalized, []), { scroll: false });
     },
     [router],
   );

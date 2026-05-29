@@ -23,6 +23,8 @@ export default async function EarningsPage({ searchParams }: PageProps) {
   const data = await getEarningsWeekPayload(monday);
   const prevMonday = addDaysUtc(monday, -7);
   const nextMonday = addDaysUtc(monday, 7);
+  const todayYmd = toYmdUtc(new Date());
+  const thisWeekMondayYmd = toYmdUtc(mondayOfWeekUtc(new Date()));
 
   return (
     <div className="min-w-0 px-4 py-5 sm:px-9 sm:py-8">
@@ -30,6 +32,8 @@ export default async function EarningsPage({ searchParams }: PageProps) {
         data={data}
         prevWeekYmd={toYmdUtc(prevMonday)}
         nextWeekYmd={toYmdUtc(nextMonday)}
+        todayYmd={todayYmd}
+        thisWeekMondayYmd={thisWeekMondayYmd}
       />
     </div>
   );

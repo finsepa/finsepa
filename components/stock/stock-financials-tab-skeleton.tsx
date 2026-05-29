@@ -30,7 +30,7 @@ const valueWidths = ["w-12", "w-14", "w-10", "w-12", "w-14", "w-10", "w-12", "w-
 /** Grid skeleton matching {@link StockIncomeStatementTable} (Fiscal Year / Period Ending + data rows). */
 export function FinancialsTableSkeleton() {
   return (
-    <ScreenerTableScroll mobileScroll>
+    <ScreenerTableScroll mobileScroll viewportScroll>
       <div className="bg-white" aria-hidden>
         <div className={SCREENER_TABLE_HEADER_STICKY_CLASS}>
           <div

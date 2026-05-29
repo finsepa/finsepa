@@ -2,12 +2,17 @@
 
 import { memo, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowDown, ArrowUp, ChartSpline } from "lucide-react";
 
 import { CompanyLogo } from "@/components/screener/company-logo";
 import { portfolioHoldingAssetHref } from "@/lib/crypto/crypto-picker-universe";
 import { displayLogoUrlForPortfolioSymbol } from "@/lib/portfolio/portfolio-asset-display-logo";
 import { portfolioAssetSymbolCaption } from "@/lib/portfolio/custom-asset-symbol";
+import {
+  portfolioHoldingDisplayName,
+  usePortfolioHoldingDisplayNames,
+} from "@/lib/portfolio/use-portfolio-holding-display-names";
 import {
   Empty,
   EmptyDescription,
@@ -26,6 +31,9 @@ import { cn } from "@/lib/utils";
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 
 const EM_DASH = "\u2014";
+
+const HOLDING_COMPANY_NAME_CLASS =
+  "truncate text-[14px] font-semibold leading-5 text-[#09090B] underline-offset-2 decoration-[#71717A] group-hover:underline";
 
 const usd0 = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -63,6 +71,8 @@ function PortfolioHoldingsPerformanceTableInner({
   );
 
   const [profitSortDesc, setProfitSortDesc] = useState(true);
+  const resolvedCompanyNames = usePortfolioHoldingDisplayNames(holdings);
+  const router = useRouter();
 
   const sortedRows = useMemo(() => {
     const rows = holdings.map((h) => {
@@ -142,22 +152,16 @@ function PortfolioHoldingsPerformanceTableInner({
           <div className="divide-y divide-[#E4E4E7]">
             {sortedRows.map(({ h, totalProfitUsd, totalProfitPct }) => {
               const assetHref = portfolioHoldingAssetHref(h.symbol, { tab: "holdings" });
+              const companyName = portfolioHoldingDisplayName(h, resolvedCompanyNames);
               const companyBlock = (
                 <>
                   <CompanyLogo
-                    name={h.name}
+                    name={companyName}
                     logoUrl={displayLogoUrlForPortfolioSymbol(h.symbol)}
                     symbol={h.symbol}
                   />
                   <div className="min-w-0">
-                    <div
-                      className={cn(
-                        "truncate text-[14px] font-semibold leading-5 text-[#09090B]",
-                        assetHref && "group-hover:underline",
-                      )}
-                    >
-                      {h.name}
-                    </div>
+                    <div className={HOLDING_COMPANY_NAME_CLASS}>{companyName}</div>
                     <div className="truncate text-[12px] font-normal leading-4 text-[#71717A]">
                       {portfolioAssetSymbolCaption(h.symbol)}
                     </div>
@@ -165,21 +169,20 @@ function PortfolioHoldingsPerformanceTableInner({
                 </>
               );
               return (
-              <div key={h.id} className="group flex min-w-0 items-center justify-between gap-3 py-3">
-                <div className="min-w-0 flex-1">
-                  {assetHref ? (
-                    <Link
-                      href={assetHref}
-                      className="flex min-w-0 items-center gap-3 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2"
-                    >
-                      {companyBlock}
-                    </Link>
-                  ) : (
-                    <div className="flex min-w-0 items-center gap-3">{companyBlock}</div>
-                  )}
-                </div>
+              <div
+                key={h.id}
+                className="group relative flex min-w-0 items-center justify-between gap-3 py-3 transition-colors duration-75 hover:bg-neutral-50"
+              >
+                {assetHref ? (
+                  <Link
+                    href={assetHref}
+                    className="absolute inset-0 z-0 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2"
+                    aria-label={`Open ${companyName}`}
+                  />
+                ) : null}
+                <div className="relative z-[1] flex min-w-0 flex-1 items-center gap-3">{companyBlock}</div>
 
-                <div className="min-w-0 shrink-0 text-right">
+                <div className="relative z-[1] min-w-0 shrink-0 text-right">
                   <div
                     className={cn(
                       "text-[14px] font-semibold leading-5 tabular-nums",
@@ -243,22 +246,16 @@ function PortfolioHoldingsPerformanceTableInner({
           <tbody>
             {sortedRows.map(({ h, retUsd, totalProfitUsd, totalProfitPct, contributionPct, realizedDisplay }) => {
               const assetHref = portfolioHoldingAssetHref(h.symbol, { tab: "holdings" });
+              const companyName = portfolioHoldingDisplayName(h, resolvedCompanyNames);
               const companyInner = (
                 <>
                   <CompanyLogo
-                    name={h.name}
+                    name={companyName}
                     logoUrl={displayLogoUrlForPortfolioSymbol(h.symbol)}
                     symbol={h.symbol}
                   />
                   <div className="min-w-0">
-                    <div
-                      className={cn(
-                        "truncate font-semibold text-[#09090B]",
-                        assetHref && "group-hover:underline",
-                      )}
-                    >
-                      {h.name}
-                    </div>
+                    <div className={HOLDING_COMPANY_NAME_CLASS}>{companyName}</div>
                     <div className="text-xs text-[#71717A]">{portfolioAssetSymbolCaption(h.symbol)}</div>
                   </div>
                 </>
@@ -267,23 +264,33 @@ function PortfolioHoldingsPerformanceTableInner({
               <tr
                 key={h.id}
                 className={cn(
-                  "border-b border-[#E4E4E7]",
-                  assetHref && "transition-colors duration-75 hover:bg-neutral-50",
+                  "group relative border-b border-[#E4E4E7]",
+                  assetHref && "cursor-pointer transition-colors duration-75 hover:bg-neutral-50",
                 )}
+                onClick={
+                  assetHref
+                    ? () => {
+                        router.push(assetHref);
+                      }
+                    : undefined
+                }
+                onKeyDown={
+                  assetHref
+                    ? (e) => {
+                        if (e.key !== "Enter" && e.key !== " ") return;
+                        e.preventDefault();
+                        router.push(assetHref);
+                      }
+                    : undefined
+                }
+                tabIndex={assetHref ? 0 : undefined}
+                role={assetHref ? "link" : undefined}
+                aria-label={assetHref ? `Open ${companyName}` : undefined}
               >
-                <td className="py-3 pr-4 text-left align-middle">
-                  {assetHref ? (
-                    <Link
-                      href={assetHref}
-                      className="group flex min-w-0 max-w-full items-center gap-3 rounded-lg py-0.5 pr-2 outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2"
-                    >
-                      {companyInner}
-                    </Link>
-                  ) : (
-                    <div className="flex min-w-0 items-center gap-3 text-left">{companyInner}</div>
-                  )}
+                <td className="relative z-[1] py-3 pr-4 text-left align-middle">
+                  <div className="flex min-w-0 max-w-full items-center gap-3 py-0.5 pr-2">{companyInner}</div>
                 </td>
-                <td className="whitespace-nowrap py-3 pr-4 text-right align-middle">
+                <td className="relative z-[1] whitespace-nowrap py-3 pr-4 text-right align-middle">
                   <div
                     className={cn(
                       "font-medium tabular-nums",

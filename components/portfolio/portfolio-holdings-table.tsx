@@ -3,6 +3,7 @@
 import { createPortal } from "react-dom";
 import { memo, startTransition, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import type { CompanyPick } from "@/components/charting/company-picker";
@@ -24,10 +25,18 @@ import { cumulativeRealizedGainUsdForAsset } from "@/lib/portfolio/realized-pnl-
 import { cryptoRouteBase } from "@/lib/crypto/crypto-symbol-base";
 import { isSupportedCryptoAssetSymbol } from "@/lib/crypto/crypto-logo-url";
 import { formatPortfolioUsdPerUnit } from "@/lib/portfolio/format-portfolio-usd-unit";
+import {
+  portfolioHoldingDisplayName,
+  usePortfolioHoldingDisplayNames,
+} from "@/lib/portfolio/use-portfolio-holding-display-names";
 import { cn } from "@/lib/utils";
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 
 const EM_DASH = "\u2014";
+
+/** Matches screener company column (`screener-table.tsx`). */
+const HOLDING_COMPANY_NAME_CLASS =
+  "truncate text-[14px] font-semibold leading-5 text-[#09090B] underline-offset-2 decoration-[#71717A] group-hover:underline";
 
 function holdingToCompanyPick(h: PortfolioHolding): CompanyPick {
   const cryptoKey = cryptoRouteBase(h.symbol);
@@ -233,6 +242,8 @@ function PortfolioHoldingsTableInner({
 
   const [removeTarget, setRemoveTarget] = useState<PortfolioHolding | null>(null);
   const [openActionsHoldingId, setOpenActionsHoldingId] = useState<string | null>(null);
+  const resolvedCompanyNames = usePortfolioHoldingDisplayNames(holdings);
+  const router = useRouter();
 
   const confirmRemoveAsset = useCallback(() => {
     if (!selectedPortfolioId || !removeTarget) return;
@@ -309,12 +320,13 @@ function PortfolioHoldingsTableInner({
             const assetHref = portfolioHoldingAssetHref(h.symbol, { tab: assetLinkTab });
             const logo = displayLogoUrlForPortfolioSymbol(h.symbol);
             const caption = portfolioAssetSymbolCaption(h.symbol);
+            const companyName = portfolioHoldingDisplayName(h, resolvedCompanyNames);
 
             const left = (
               <div className="flex min-w-0 items-center gap-3">
-                <CompanyLogo name={h.name} logoUrl={logo} symbol={h.symbol} />
+                <CompanyLogo name={companyName} logoUrl={logo} symbol={h.symbol} />
                 <div className="min-w-0">
-                  <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">{h.name}</div>
+                  <div className={HOLDING_COMPANY_NAME_CLASS}>{companyName}</div>
                   <div className="truncate text-[12px] font-normal leading-4 text-[#71717A]">
                     {caption} · {formatSharesAsShares(h.shares)}
                   </div>
@@ -339,20 +351,19 @@ function PortfolioHoldingsTableInner({
             );
 
             return (
-              <div key={h.id} className="flex min-w-0 items-center justify-between gap-3 py-3 sm:py-4">
-                <div className="min-w-0 flex-1">
-                  {assetHref ? (
-                    <Link
-                      href={assetHref}
-                      className="block min-w-0 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2"
-                    >
-                      {left}
-                    </Link>
-                  ) : (
-                    left
-                  )}
-                </div>
-                <div className="shrink-0">{right}</div>
+              <div
+                key={h.id}
+                className="group relative flex min-w-0 items-center justify-between gap-3 py-3 transition-colors duration-75 hover:bg-neutral-50 sm:py-4"
+              >
+                {assetHref ? (
+                  <Link
+                    href={assetHref}
+                    className="absolute inset-0 z-0 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2"
+                    aria-label={`Open ${companyName}`}
+                  />
+                ) : null}
+                <div className="relative z-[1] min-w-0 flex-1">{left}</div>
+                <div className="relative z-[1] shrink-0">{right}</div>
               </div>
             );
           })}
@@ -405,18 +416,12 @@ function PortfolioHoldingsTableInner({
             const assetHref = portfolioHoldingAssetHref(h.symbol, { tab: assetLinkTab });
             const logo = displayLogoUrlForPortfolioSymbol(h.symbol);
             const caption = portfolioAssetSymbolCaption(h.symbol);
+            const companyName = portfolioHoldingDisplayName(h, resolvedCompanyNames);
             const assetInner = (
               <>
-                <CompanyLogo name={h.name} logoUrl={logo} symbol={h.symbol} />
+                <CompanyLogo name={companyName} logoUrl={logo} symbol={h.symbol} />
                 <div className="min-w-0 text-left">
-                  <div
-                    className={cn(
-                      "truncate text-[14px] font-semibold leading-5 text-[#09090B]",
-                      assetHref && "group-hover:underline",
-                    )}
-                  >
-                    {h.name}
-                  </div>
+                  <div className={HOLDING_COMPANY_NAME_CLASS}>{companyName}</div>
                   <div className="text-[12px] font-normal leading-4 text-[#71717A]">{caption}</div>
                 </div>
               </>
@@ -424,24 +429,38 @@ function PortfolioHoldingsTableInner({
             return (
             <tr
               key={h.id}
-              className="h-[60px] max-h-[60px] border-b border-[#E4E4E7] transition-colors duration-75 hover:bg-neutral-50"
+              className={cn(
+                "group relative h-[60px] max-h-[60px] border-b border-[#E4E4E7] transition-colors duration-75 hover:bg-neutral-50",
+                assetHref && "cursor-pointer",
+              )}
+              onClick={
+                assetHref
+                  ? (e) => {
+                      if ((e.target as HTMLElement).closest("[data-holding-actions]")) return;
+                      router.push(assetHref);
+                    }
+                  : undefined
+              }
+              onKeyDown={
+                assetHref
+                  ? (e) => {
+                      if (e.key !== "Enter" && e.key !== " ") return;
+                      e.preventDefault();
+                      router.push(assetHref);
+                    }
+                  : undefined
+              }
+              tabIndex={assetHref ? 0 : undefined}
+              role={assetHref ? "link" : undefined}
+              aria-label={assetHref ? `Open ${companyName}` : undefined}
             >
-              <td className="align-middle px-4 py-0">
-                {assetHref ? (
-                  <Link
-                    href={assetHref}
-                    className="group flex min-w-0 max-w-full items-center gap-3 rounded-lg py-2 pr-2 outline-none transition-colors hover:bg-neutral-50 focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2"
-                  >
-                    {assetInner}
-                  </Link>
-                ) : (
-                  <div className="flex min-w-0 max-w-full items-center gap-3 rounded-lg py-2 pr-2">{assetInner}</div>
-                )}
+              <td className="relative z-[1] align-middle px-4 py-0">
+                <div className="flex min-w-0 max-w-full items-center gap-3 py-2 pr-2">{assetInner}</div>
               </td>
-              <td className="align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
+              <td className="relative z-[1] align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
                 {formatPortfolioUsdPerUnit(h.marketPrice)}
               </td>
-              <td className="align-middle whitespace-nowrap px-4 py-3 text-right">
+              <td className="relative z-[1] align-middle whitespace-nowrap px-4 py-3 text-right">
                 <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#09090B]">
                   {usd0.format(h.currentValue)}
                 </div>
@@ -449,10 +468,10 @@ function PortfolioHoldingsTableInner({
                   {formatSharesWithUnit(h.shares, h.symbol)}
                 </div>
               </td>
-              <td className="align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
+              <td className="relative z-[1] align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
                 {formatPortfolioUsdPerUnit(h.avgPrice)}
               </td>
-              <td className="align-middle whitespace-nowrap px-4 py-3 text-right">
+              <td className="relative z-[1] align-middle whitespace-nowrap px-4 py-3 text-right">
                 <PortfolioPnlBreakdownTooltip
                   totalUsd={totalUsd}
                   totalPct={totalPct}
@@ -460,12 +479,12 @@ function PortfolioHoldingsTableInner({
                   realizedUsd={realizedUsd}
                 />
               </td>
-              <td className="align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
+              <td className="relative z-[1] align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
                 {pct.format(weightPct)}%
               </td>
               {!selectedPortfolioReadOnly ? (
-                <td className="align-middle px-4 py-3 text-right">
-                  <div className="flex justify-end">
+                <td className="relative z-[2] align-middle px-4 py-3 text-right" data-holding-actions>
+                  <div className="relative flex justify-end">
                     <HoldingRowActionsMenu
                       holding={h}
                       isOpen={openActionsHoldingId === h.id}
@@ -482,25 +501,31 @@ function PortfolioHoldingsTableInner({
             );
           })}
 
-          <tr className="h-[60px] max-h-[60px] border-b border-[#E4E4E7] bg-white transition-colors duration-75 hover:bg-neutral-50">
-            <td className="align-middle px-4 py-0">
-              <Link
-                href="/portfolio?tab=cash"
-                className="group flex min-w-0 max-w-full items-center gap-3 rounded-lg py-2 pr-2 outline-none transition-colors hover:bg-neutral-50 focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2"
-              >
+          <tr
+            className="group relative h-[60px] max-h-[60px] cursor-pointer border-b border-[#E4E4E7] bg-white transition-colors duration-75 hover:bg-neutral-50"
+            onClick={() => router.push("/portfolio?tab=cash")}
+            onKeyDown={(e) => {
+              if (e.key !== "Enter" && e.key !== " ") return;
+              e.preventDefault();
+              router.push("/portfolio?tab=cash");
+            }}
+            tabIndex={0}
+            role="link"
+            aria-label="Open cash"
+          >
+            <td className="relative z-[1] align-middle px-4 py-0">
+              <div className="flex min-w-0 max-w-full items-center gap-3 py-2 pr-2">
                 <CompanyLogo name="US Dollar" logoUrl="" symbol="USD" />
                 <div className="min-w-0 text-left">
-                  <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B] group-hover:underline">
-                    US Dollar
-                  </div>
+                  <div className={HOLDING_COMPANY_NAME_CLASS}>US Dollar</div>
                   <div className="text-[12px] font-normal leading-4 text-[#71717A]">USD</div>
                 </div>
-              </Link>
+              </div>
             </td>
-            <td className="align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
+            <td className="relative z-[1] align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
               {formatPortfolioUsdPerUnit(1)}
             </td>
-            <td className="align-middle whitespace-nowrap px-4 py-3 text-right">
+            <td className="relative z-[1] align-middle whitespace-nowrap px-4 py-3 text-right">
               <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#09090B]">
                 {usd0.format(cashUsd)}
               </div>
@@ -508,17 +533,17 @@ function PortfolioHoldingsTableInner({
                 {formatSharesDisplay(cashUsd)} USD
               </div>
             </td>
-            <td className="align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
+            <td className="relative z-[1] align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
               {formatPortfolioUsdPerUnit(1)}
             </td>
-            <td className="align-middle whitespace-nowrap px-4 py-3 text-right">
+            <td className="relative z-[1] align-middle whitespace-nowrap px-4 py-3 text-right">
               <div className="text-[14px] font-medium tabular-nums text-[#71717A]">{EM_DASH}</div>
               <div className="text-[12px] font-medium tabular-nums text-[#71717A]">{EM_DASH}</div>
             </td>
-            <td className="align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
+            <td className="relative z-[1] align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
               {pct.format(cashWeightPct)}%
             </td>
-            <td className="align-middle px-4 py-3 text-right" aria-hidden />
+            <td className="relative z-[1] align-middle px-4 py-3 text-right" aria-hidden />
           </tr>
         </tbody>
       </table>

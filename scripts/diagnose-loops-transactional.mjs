@@ -37,7 +37,7 @@ async function postTransactional(apiKey, transactionalId, email) {
     body: JSON.stringify({
       transactionalId,
       email,
-      addContact: true,
+      addContact: false,
     }),
   });
   const text = await res.text();
@@ -89,11 +89,13 @@ warnIdTypo(renewedId, "PRO_RENEWED");
 
   console.log(`--- Delivery checklist (API already accepted?) ---`);
   console.log(`
-1. Loops dashboard → each transactional → Metrics / activity: delivered vs bounced vs deferred.
-2. Settings → Sending domain: all DNS records verified (SPF/DKIM/MX). Unverified often yields 400 from API; if verified, still check bounces.
-3. Template is Published; required data variables are provided (missing vars usually return 400).
-4. Recipient inbox: Spam, Promotions, “All Mail”. Try a personal @gmail.com send — avoids Google Workspace rules on hi@finsepa.com.
-5. Google Workspace: Email log search / moderation / Groups settings can block “external” copies of mail to your own domain.
-6. Loops test domains: sends to @example.com / @test.com return success but deliberately do NOT deliver (per Loops docs).
+1. Loops → Settings → Domains: sending subdomain verified (SPF/DKIM/MX/DMARC). Use mail.yourdomain.com; DKIM CNAMEs must NOT be Cloudflare-proxied.
+2. Every template From address uses that verified domain (e.g. Finsepa <hello@mail.finsepa.com>). Mismatch → spam.
+3. Supabase Auth SMTP uses the same Loops domain (smtp.loops.so + same API key), not a different From.
+4. NEXT_PUBLIC_APP_ORIGIN=https://app.finsepa.com in Vercel — confirmation links must not be http://localhost.
+5. mail-tester.com: send one test, fix DNS/content until score 9+/10.
+6. Loops → transactional → Metrics: delivered vs bounced. Template Published.
+7. Recipient: Spam/Promotions/All Mail. Test @gmail.com (not only Workspace). Workspace admin can quarantine external mail.
+8. Loops test domains (@example.com) return success but do not deliver.
 `);
 })();

@@ -17,7 +17,7 @@ export async function fetchComparisonTickerSlice(ticker: string, signal?: AbortS
   try {
     const [metaRes, perfRes, bundleRes] = await Promise.all([
       fetch(`/api/stocks/${enc}/header-meta`, { credentials: "include", signal }),
-      fetch(`/api/stocks/${enc}/performance`, { credentials: "include", signal }),
+      fetch(`/api/stocks/${enc}/performance`, { credentials: "include", signal, cache: "no-store" }),
       fetch(`/api/stocks/${enc}/key-stats-bundle`, { credentials: "include", signal }),
     ]);
 

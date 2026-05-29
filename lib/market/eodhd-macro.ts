@@ -65,12 +65,12 @@ export type MacroSeriesDef =
  * @see http://www.econ.yale.edu/~shiller/data.htm
  */
 export const MACRO_SERIES: MacroSeriesDef[] = [
+  { id: "shiller_pe", title: "Shiller P/E", kind: "number", provider: { type: "shiller_ie", metric: "shiller_tr_cape" } },
+  { id: "sp500_earnings", title: "S&P 500 Earnings", kind: "number", provider: { type: "shiller_ie", metric: "sp500_earnings" } },
+  { id: "sp500_trailing_pe", title: "S&P 500 P/E", kind: "number", provider: { type: "shiller_ie", metric: "sp500_pe" } },
   { id: "ust_par_yield_10y", title: "10-Year Treasury", kind: "percent", provider: { type: "ust_par_yield", tenor: "10Y" } },
   { id: "ust_par_yield_20y", title: "20-Year Treasury", kind: "percent", provider: { type: "ust_par_yield", tenor: "20Y" } },
   { id: "fed_interest_rate", title: "Fed funds rate", kind: "percent", provider: { type: "fed_funds_fomc" } },
-  { id: "sp500_trailing_pe", title: "S&P 500 P/E", kind: "number", provider: { type: "shiller_ie", metric: "sp500_pe" } },
-  { id: "shiller_pe", title: "Shiller P/E", kind: "number", provider: { type: "shiller_ie", metric: "shiller_tr_cape" } },
-  { id: "sp500_earnings", title: "S&P 500 Earnings", kind: "number", provider: { type: "shiller_ie", metric: "sp500_earnings" } },
   { id: "inflation_consumer_prices_annual", title: "Inflation", kind: "percent", provider: { type: "macro_indicator", indicator: "inflation_consumer_prices_annual" } },
   { id: "inflation_gdp_deflator_annual", title: "GDP deflator", kind: "percent", provider: { type: "macro_indicator", indicator: "inflation_gdp_deflator_annual" } },
   { id: "consumer_price_index", title: "Consumer Price Index", kind: "index", provider: { type: "macro_indicator", indicator: "consumer_price_index" } },
@@ -138,27 +138,10 @@ const fetchMacroIndicatorCached = unstable_cache(fetchMacroIndicatorUncached, ["
   revalidate: REVALIDATE_STATIC_DAY,
 });
 
-function sliceLastYears(points: MacroPoint[], years: number): MacroPoint[] {
-  if (!points.length) return points;
-  const last = points[points.length - 1]!.time.trim().slice(0, 10);
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(last);
-  if (!m) return points;
-  const ey = Number(m[1]);
-  const em = Number(m[2]);
-  const ed = Number(m[3]);
-  if (!Number.isFinite(ey) || !Number.isFinite(em) || !Number.isFinite(ed)) return points;
-  const startMs = Date.UTC(ey - years, em - 1, ed);
-  const startStr = new Date(startMs).toISOString().slice(0, 10);
-  return points.filter((p) => p.time >= startStr);
-}
-
-/** Full history for the series (sorted ascending), with series-specific caps where appropriate. */
+/** Full history for the series (sorted ascending). Range windows are applied in the UI. */
 export async function fetchMacroSeriesAll(country: string, def: MacroSeriesDef): Promise<MacroPoint[]> {
   if (def.provider.type === "ust_par_yield") {
-    const pts = await fetchUstParYieldTenorCached(def.provider.tenor);
-    // Treasury yields are daily; "All" becomes overly heavy/noisy in the macro dashboard.
-    // Cap these series to the last 10 years.
-    return sliceLastYears(pts, 10);
+    return fetchUstParYieldTenorCached(def.provider.tenor);
   }
   if (def.provider.type === "shiller_ie") {
     return fetchShillerIeMacroSeriesCached(def.provider.metric);

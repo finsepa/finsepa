@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { CACHE_CONTROL_PRIVATE_HOT } from "@/lib/data/cache-policy";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { emptyAnnualReturns } from "@/lib/market/stock-annual-returns";
 import { getCryptoPerformance } from "@/lib/market/crypto-performance";
 import { isSingleAssetMode } from "@/lib/features/single-asset";
 
@@ -34,6 +35,7 @@ export async function GET(_request: Request, { params }: Ctx) {
       y5: null,
       y10: null,
       all: null,
+      annualReturns: emptyAnnualReturns(),
     };
     return NextResponse.json(empty, {
       headers: { "Cache-Control": CACHE_CONTROL_PRIVATE_HOT },

@@ -68,6 +68,7 @@ export function CryptoComparePicker({ baseSymbol, values, onAdd, onRemove }: Pro
       excludeSymbols={excludeSymbols}
       includeCrypto
       menuAlign="trailing"
+      wrapClassName="relative min-w-0 w-full sm:w-auto"
     >
       {({ open, setOpen, atCapacity }) => (
         <div className="relative min-w-0 w-full sm:min-w-[220px] sm:w-auto sm:max-w-[min(560px,calc(100vw-12rem))]">

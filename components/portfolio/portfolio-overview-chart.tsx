@@ -32,6 +32,13 @@ import { baselineRelativeGradientEnabled } from "@/lib/chart/baseline-relative-g
 
 import { horzTimeToUnixSeconds } from "@/components/chart/chart-selection-utils";
 import {
+  CHART_PLOT_DOTS_PATTERN_CLASS,
+  formatOverviewCrosshairBottomDate,
+  resolveOverviewBottomAxisMode,
+  syncOverviewPeriodAxisLabels,
+  type OverviewAxisLabel,
+} from "@/components/chart/overview-bottom-axis";
+import {
   dropdownMenuPanelClassName,
   dropdownMenuPlainItemRowClassName,
 } from "@/components/design-system/dropdown-menu-styles";
@@ -59,8 +66,7 @@ const VALUE_BLUE = "#2563EB";
 const GREEN = "#16A34A";
 const RED = "#DC2626";
 const BENCHMARK_LINE = "#EA580C";
-/** Top/bottom pane borders (replaces dense auto grid). */
-const SCALE_EDGE_LINE = "rgba(228, 228, 231, 0.85)";
+const PORTFOLIO_CHART_TIME_ZONE = "America/New_York";
 const Y_AXIS_LABEL_COUNT = 6;
 
 const HIDE_NATIVE_Y_AXIS_TICK_LABELS = (priceValue: readonly number[]) => priceValue.map(() => "");
@@ -468,28 +474,6 @@ function removeYAxisTickLabels(series: OverviewMainSeries | null, ticksRef: RefO
   ticksRef.current = [];
 }
 
-function removeScaleBoundsPriceLines(
-  series: OverviewMainSeries | null,
-  topRef: RefObject<IPriceLine | null>,
-  bottomRef: RefObject<IPriceLine | null>,
-) {
-  if (!series) {
-    topRef.current = null;
-    bottomRef.current = null;
-    return;
-  }
-  for (const ref of [topRef, bottomRef]) {
-    if (ref.current) {
-      try {
-        series.removePriceLine(ref.current);
-      } catch {
-        /* ignore */
-      }
-      ref.current = null;
-    }
-  }
-}
-
 /** Plot pane height when LW pane metrics are not ready (276px plot × scaleMargins 12%/8%). */
 const OVERVIEW_PANE_HEIGHT_FALLBACK_PX = Math.round((320 - 44) * 0.8);
 
@@ -578,49 +562,13 @@ function syncYAxisTickLabels(
   }
 }
 
-function syncScaleBoundsPriceLines(
-  chart: IChartApi,
-  series: OverviewMainSeries,
-  topRef: RefObject<IPriceLine | null>,
-  bottomRef: RefObject<IPriceLine | null>,
-) {
-  const h = overviewChartPaneHeight(chart);
-  if (h == null) return;
-
-  const top = seriesPriceAtCoordinate(series, 0);
-  const bottom = seriesPriceAtCoordinate(series, h);
-  if (top == null || bottom == null) return;
-
-  const common = {
-    color: SCALE_EDGE_LINE,
-    lineWidth: 1,
-    lineStyle: LineStyle.Solid,
-    axisLabelVisible: false,
-    lineVisible: true,
-  } as const;
-
-  if (!topRef.current) {
-    topRef.current = series.createPriceLine({ price: top, ...common });
-  } else {
-    topRef.current.applyOptions({ price: top, ...common });
-  }
-  if (!bottomRef.current) {
-    bottomRef.current = series.createPriceLine({ price: bottom, ...common });
-  } else {
-    bottomRef.current.applyOptions({ price: bottom, ...common });
-  }
-}
-
 function syncOverviewChartYAxis(
   chart: IChartApi,
   series: OverviewMainSeries,
   yAxisTickLinesRef: RefObject<IPriceLine[]>,
-  scaleTopPriceLineRef: RefObject<IPriceLine | null>,
-  scaleBottomPriceLineRef: RefObject<IPriceLine | null>,
 ) {
   if (series.data().length === 0) return;
   try {
-    syncScaleBoundsPriceLines(chart, series, scaleTopPriceLineRef, scaleBottomPriceLineRef);
     syncYAxisTickLabels(chart, series, yAxisTickLinesRef);
   } catch {
     /* pane/scale not ready or chart torn down */
@@ -731,13 +679,10 @@ type TradeDotHoverApi = {
   onLeave: () => void;
 };
 
-function formatCrosshairDate(t: Time): string {
-  if (typeof t === "string" && /^\d{4}-\d{2}-\d{2}$/.test(t)) {
-    return format(parseISO(t), "MMM d, yyyy");
-  }
-  const sec = horzTimeToUnixSeconds(t);
-  if (sec != null) return format(new Date(sec * 1000), "MMM d, yyyy");
-  return "";
+function portfolioCrosshairBottomLabel(hoverTime: Time, range: PortfolioChartRange): string {
+  const sec = horzTimeToUnixSeconds(hoverTime);
+  if (sec == null) return "";
+  return formatOverviewCrosshairBottomDate(sec, PORTFOLIO_CHART_TIME_ZONE, portfolioRangeToStockRange(range));
 }
 
 function isFiniteNumber(v: unknown): v is number {
@@ -749,165 +694,39 @@ const CHART_HEIGHT = 320;
 const PORTFOLIO_CHART_AXIS_ROW_PX = 44;
 const PORTFOLIO_CHART_PLOT_HEIGHT_PX = CHART_HEIGHT - PORTFOLIO_CHART_AXIS_ROW_PX;
 
-type PortfolioAxisLabel = { key: string; leftPx: number; label: string };
-
-function parsePortfolioChartTime(t: Time): Date | null {
-  if (typeof t === "string" && /^\d{4}-\d{2}-\d{2}$/.test(t)) {
-    const parsed = parseISO(t);
-    return Number.isFinite(parsed.getTime()) ? parsed : null;
-  }
-  const sec = horzTimeToUnixSeconds(t);
-  return sec != null ? new Date(sec * 1000) : null;
+function portfolioChartTime(p: PortfolioValueHistoryPoint): number {
+  if (p.time != null && Number.isFinite(p.time)) return p.time;
+  const ms = Date.parse(`${p.t}T12:00:00.000Z`);
+  return Number.isFinite(ms) ? Math.floor(ms / 1000) : 0;
 }
 
-/** Compact x-axis copy when not hovering (year / month / day — like native LW thinning). */
-function formatPortfolioAxisIdleLabel(t: Time, prevT: Time | null): string {
-  const d = parsePortfolioChartTime(t);
-  if (!d) return "";
-  const prev = prevT ? parsePortfolioChartTime(prevT) : null;
-  if (!prev || d.getFullYear() !== prev.getFullYear()) {
-    return String(d.getFullYear());
-  }
-  if (d.getMonth() !== prev.getMonth() || d.getDate() === 1) {
-    return format(d, "MMM");
-  }
-  return String(d.getDate());
+function portfolioHistoryToStockChartPoints(
+  filtered: readonly PortfolioValueHistoryPoint[],
+): StockChartPoint[] {
+  return filtered.map((p) => ({
+    time: portfolioChartTime(p),
+    value: p.value,
+    sessionDate: p.t,
+  }));
 }
 
-function portfolioAxisShowsLabel(index: number, total: number): boolean {
-  if (total <= 12) return true;
-  const last = total - 1;
-  if (index === 0 || index === last) return true;
-  if (total > 80) return index % 6 === 0;
-  if (total > 40) return index % 4 === 0;
-  if (total > 20) return index % 2 === 0;
-  return true;
-}
-
-function portfolioPointChartTime(p: PortfolioValueHistoryPoint): Time {
-  if (p.time != null && Number.isFinite(p.time)) return p.time as Time;
-  return p.t as Time;
-}
-
-function isFirstPointOfMonth(sessionYmds: readonly string[], index: number): boolean {
-  if (index === 0) return true;
-  const cur = sessionYmds[index]?.slice(0, 7);
-  const prev = sessionYmds[index - 1]?.slice(0, 7);
-  return cur != null && cur !== prev;
-}
-
-/** YTD x-axis: abbreviated month at the first point of each month. */
-function formatYtdMonthAxisLabel(sessionYmd: string): string {
-  return format(parseISO(sessionYmd), "MMM");
-}
-
-/** 1Y x-axis: Jun, Sep, Nov, Feb, Apr at the first point of each such month. */
-const ONE_YEAR_AXIS_MONTHS = new Set([6, 9, 11, 2, 4]);
-
-function shouldShowOneYearAxisLabel(sessionYmds: readonly string[], index: number): boolean {
-  if (!isFirstPointOfMonth(sessionYmds, index)) return false;
-  const ymd = sessionYmds[index];
-  if (!ymd) return false;
-  const month = parseISO(ymd).getMonth() + 1;
-  return ONE_YEAR_AXIS_MONTHS.has(month);
-}
-
-function formatOneYearMonthAxisLabel(sessionYmd: string): string {
-  return format(parseISO(sessionYmd), "MMM");
-}
-
-function isFirstPointOfYear(sessionYmds: readonly string[], index: number): boolean {
-  if (index === 0) return true;
-  const cur = sessionYmds[index]?.slice(0, 4);
-  const prev = sessionYmds[index - 1]?.slice(0, 4);
-  return cur != null && cur !== prev;
-}
-
-/** 5Y x-axis: calendar year at the first point of each year. */
-function formatFiveYearAxisLabel(sessionYmd: string): string {
-  return format(parseISO(sessionYmd), "yyyy");
-}
-
-const ALL_AXIS_YEAR_STEP = 4;
-
-function allAxisAnchorYear(sessionYmds: readonly string[]): number {
-  for (let i = 0; i < sessionYmds.length; i++) {
-    if (isFirstPointOfYear(sessionYmds, i)) {
-      const y = Number.parseInt(sessionYmds[i]!.slice(0, 4), 10);
-      if (Number.isFinite(y)) return y;
-    }
-  }
-  const y = Number.parseInt(sessionYmds[0]!.slice(0, 4), 10);
-  return Number.isFinite(y) ? y : new Date().getFullYear();
-}
-
-/** ALL x-axis: year labels every four years from the first year in range (e.g. 2011, 2015, 2019, 2023). */
-function shouldShowAllAxisLabel(sessionYmds: readonly string[], index: number): boolean {
-  if (!isFirstPointOfYear(sessionYmds, index)) return false;
-  const year = Number.parseInt(sessionYmds[index]!.slice(0, 4), 10);
-  if (!Number.isFinite(year)) return false;
-  const anchor = allAxisAnchorYear(sessionYmds);
-  if ((year - anchor) % ALL_AXIS_YEAR_STEP === 0) return true;
-  const lastYear = Number.parseInt(sessionYmds[sessionYmds.length - 1]!.slice(0, 4), 10);
-  return Number.isFinite(lastYear) && year === lastYear;
-}
-
-function formatAllAxisLabel(sessionYmd: string): string {
-  return format(parseISO(sessionYmd), "yyyy");
-}
-
-function computePortfolioPeriodAxisLabels(
-  chart: IChartApi,
-  data: readonly { time: Time }[],
-  sessionYmds: readonly string[],
-  range: PortfolioChartRange,
-): PortfolioAxisLabel[] {
-  if (!data.length || sessionYmds.length !== data.length) return [];
-  const ts = chart.timeScale();
-  const labels: PortfolioAxisLabel[] = [];
-  for (let i = 0; i < data.length; i++) {
-    if (range === "ytd") {
-      if (!isFirstPointOfMonth(sessionYmds, i)) continue;
-    } else if (range === "1y") {
-      if (!shouldShowOneYearAxisLabel(sessionYmds, i)) continue;
-    } else if (range === "5y") {
-      if (!isFirstPointOfYear(sessionYmds, i)) continue;
-    } else if (range === "all") {
-      if (!shouldShowAllAxisLabel(sessionYmds, i)) continue;
-    } else if (!portfolioAxisShowsLabel(i, data.length)) {
-      continue;
-    }
-    const pt = data[i]!;
-    const x = ts.timeToCoordinate(pt.time);
-    if (x == null || !Number.isFinite(x)) continue;
-    const label =
-      range === "ytd" ?
-        formatYtdMonthAxisLabel(sessionYmds[i]!)
-      : range === "1y" ?
-        formatOneYearMonthAxisLabel(sessionYmds[i]!)
-      : range === "5y" ?
-        formatFiveYearAxisLabel(sessionYmds[i]!)
-      : range === "all" ?
-        formatAllAxisLabel(sessionYmds[i]!)
-      : formatPortfolioAxisIdleLabel(pt.time, i > 0 ? data[i - 1]!.time : null);
-    labels.push({
-      key: `${String(pt.time)}-${i}`,
-      leftPx: x,
-      label,
-    });
-  }
-  return labels;
-}
-
+/** Bottom axis — same rules as stock overview / asset portfolio (`overview-bottom-axis`). */
 function syncPortfolioPeriodAxisLabels(
   chart: IChartApi,
-  series: ISeriesApi<"Area"> | ISeriesApi<"Baseline">,
-  sessionYmds: readonly string[],
+  chartPoints: readonly StockChartPoint[],
   range: PortfolioChartRange,
-): PortfolioAxisLabel[] {
-  const data = series.data();
-  if (!data.length) return [];
-  return computePortfolioPeriodAxisLabels(chart, data, sessionYmds, range);
+  plotWidthPx: number,
+): OverviewAxisLabel[] {
+  if (!chartPoints.length) return [];
+  const stockRange = portfolioRangeToStockRange(range);
+  const axisMode = resolveOverviewBottomAxisMode(stockRange, chartPoints);
+  return syncOverviewPeriodAxisLabels(
+    chart,
+    chartPoints,
+    PORTFOLIO_CHART_TIME_ZONE,
+    axisMode,
+    plotWidthPx,
+  );
 }
 
 /** Figma: 10×10, white fill, 2px inside stroke (buy green / sell red). */
@@ -963,9 +782,8 @@ export function PortfolioValueHistoryChartPane({
   const seriesRef = useRef<ISeriesApi<"Area"> | ISeriesApi<"Baseline"> | null>(null);
   const compareSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
   const yAxisTickLinesRef = useRef<IPriceLine[]>([]);
-  const scaleTopPriceLineRef = useRef<IPriceLine | null>(null);
-  const scaleBottomPriceLineRef = useRef<IPriceLine | null>(null);
   const chartRangeRef = useRef<PortfolioChartRange>(range);
+  const chartPointsRef = useRef<StockChartPoint[]>([]);
   const sessionYmdsRef = useRef<string[]>([]);
   const tradeDotsConfigRef = useRef<{
     show: boolean;
@@ -980,7 +798,7 @@ export function PortfolioValueHistoryChartPane({
     y: number;
     valueLabel: string;
   } | null>(null);
-  const [periodAxisLabels, setPeriodAxisLabels] = useState<PortfolioAxisLabel[]>([]);
+  const [periodAxisLabels, setPeriodAxisLabels] = useState<OverviewAxisLabel[]>([]);
   const [hoverAxisLabel, setHoverAxisLabel] = useState<{ leftPx: number; label: string } | null>(
     null,
   );
@@ -1206,7 +1024,7 @@ export function PortfolioValueHistoryChartPane({
       hoverTimeRef.current = hoverTime;
       setHoverAxisLabel({
         leftPx: param.point.x,
-        label: formatCrosshairDate(hoverTime),
+        label: portfolioCrosshairBottomLabel(hoverTime, chartRangeRef.current),
       });
 
       const raw = (data as { value: number }).value;
@@ -1244,28 +1062,31 @@ export function PortfolioValueHistoryChartPane({
       const s = seriesRef.current;
       if (s && s.data().length > 0) {
         snapOverviewTimeScale(chartRef.current, s);
-        syncOverviewChartYAxis(
-          chartRef.current,
-          s,
-          yAxisTickLinesRef,
-          scaleTopPriceLineRef,
-          scaleBottomPriceLineRef,
-        );
+        syncOverviewChartYAxis(chartRef.current, s, yAxisTickLinesRef);
       }
       requestAnimationFrame(() => {
         scheduleTradeDotsSyncRef.current?.();
         const c = chartRef.current;
         const s = seriesRef.current;
         if (!c || !s || s.data().length === 0) return;
+        const plotWidthPx = Math.max(0, wrapRef.current?.clientWidth ?? 0);
         const hoverTime = hoverTimeRef.current;
         if (hoverTime != null) {
           const x = c.timeScale().timeToCoordinate(hoverTime);
           if (x != null && Number.isFinite(x)) {
-            setHoverAxisLabel({ leftPx: x, label: formatCrosshairDate(hoverTime) });
+            setHoverAxisLabel({
+              leftPx: x,
+              label: portfolioCrosshairBottomLabel(hoverTime, chartRangeRef.current),
+            });
           }
         } else {
           setPeriodAxisLabels(
-            syncPortfolioPeriodAxisLabels(c, s, sessionYmdsRef.current, chartRangeRef.current),
+            syncPortfolioPeriodAxisLabels(
+              c,
+              chartPointsRef.current,
+              chartRangeRef.current,
+              plotWidthPx,
+            ),
           );
         }
       });
@@ -1280,7 +1101,6 @@ export function PortfolioValueHistoryChartPane({
       chart.unsubscribeCrosshairMove(onCrosshairMove);
       ro.disconnect();
       removeYAxisTickLabels(seriesRef.current, yAxisTickLinesRef);
-      removeScaleBoundsPriceLines(seriesRef.current, scaleTopPriceLineRef, scaleBottomPriceLineRef);
       chart.remove();
       chartRef.current = null;
       seriesRef.current = null;
@@ -1310,23 +1130,24 @@ export function PortfolioValueHistoryChartPane({
 
     const sessionYmds = filtered.map((p) => p.t);
     sessionYmdsRef.current = sessionYmds;
+    chartPointsRef.current = portfolioHistoryToStockChartPoints(filtered);
 
     const data = filtered.map((p) => {
       let y: number;
       if (metric === "value") y = p.value;
       else if (metric === "profit") y = p.profit;
       else y = p.returnPct!;
-      return { time: portfolioPointChartTime(p), value: y };
+      return { time: portfolioChartTime(p) as Time, value: y };
     });
 
     if (data.length === 0) {
       series.setData([]);
       sessionYmdsRef.current = [];
+      chartPointsRef.current = [];
       tradeDotsConfigRef.current = { show: showTrades, txs: transactions, lineData: [], sessionYmds: [] };
       scheduleTradeDotsSyncRef.current?.();
       compareSeriesRef.current?.setData([]);
       removeYAxisTickLabels(series, yAxisTickLinesRef);
-      removeScaleBoundsPriceLines(series, scaleTopPriceLineRef, scaleBottomPriceLineRef);
       setPeriodAxisLabels([]);
       return;
     }
@@ -1361,16 +1182,20 @@ export function PortfolioValueHistoryChartPane({
         const c = chartRef.current;
         const s = seriesRef.current;
         if (!c || !s || c !== chart || s !== series || s.data().length === 0) return;
-        syncOverviewChartYAxis(c, s, yAxisTickLinesRef, scaleTopPriceLineRef, scaleBottomPriceLineRef);
+        syncOverviewChartYAxis(c, s, yAxisTickLinesRef);
         scheduleTradeDotsSyncRef.current?.();
+        const plotWidthPx = Math.max(0, wrapRef.current?.clientWidth ?? 0);
         const hoverTime = hoverTimeRef.current;
         if (hoverTime != null) {
           const x = c.timeScale().timeToCoordinate(hoverTime);
           if (x != null && Number.isFinite(x)) {
-            setHoverAxisLabel({ leftPx: x, label: formatCrosshairDate(hoverTime) });
+            setHoverAxisLabel({
+              leftPx: x,
+              label: portfolioCrosshairBottomLabel(hoverTime, range),
+            });
           }
         } else {
-          setPeriodAxisLabels(syncPortfolioPeriodAxisLabels(c, s, sessionYmds, range));
+          setPeriodAxisLabels(syncPortfolioPeriodAxisLabels(c, chartPointsRef.current, range, plotWidthPx));
         }
       });
     });
@@ -1395,14 +1220,22 @@ export function PortfolioValueHistoryChartPane({
         const s = seriesRef.current;
         if (c && s && s.data().length > 0) {
           setPeriodAxisLabels(
-            syncPortfolioPeriodAxisLabels(c, s, sessionYmdsRef.current, chartRangeRef.current),
+            syncPortfolioPeriodAxisLabels(
+              c,
+              chartPointsRef.current,
+              chartRangeRef.current,
+              Math.max(0, wrapRef.current?.clientWidth ?? 0),
+            ),
           );
         }
       }}
     >
       <div className="relative min-h-0 min-w-0 flex-1">
-        <div ref={wrapRef} className="h-full w-full min-w-0" />
-        <div ref={tradeOverlayRef} className="pointer-events-none absolute inset-0 z-[5]" />
+        <div className="pointer-events-none absolute inset-0 z-0 bg-white" aria-hidden>
+          <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
+        </div>
+        <div ref={wrapRef} className="relative z-10 h-full w-full min-w-0" />
+        <div ref={tradeOverlayRef} className="pointer-events-none absolute inset-0 z-[15]" />
         {tooltip ? (
           <div
             className="pointer-events-none absolute z-10 min-w-[148px] rounded-lg border border-[#E4E4E7] bg-white px-3 py-2 shadow-[0px_1px_4px_0px_rgba(10,10,10,0.08),0px_1px_2px_0px_rgba(10,10,10,0.06)]"

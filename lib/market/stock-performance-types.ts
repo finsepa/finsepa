@@ -1,3 +1,8 @@
+export type StockAnnualReturn = {
+  year: number;
+  returnPct: number | null;
+};
+
 export type StockPerformance = {
   ticker: string;
   price: number | null;
@@ -12,4 +17,6 @@ export type StockPerformance = {
   y5: number | null;
   y10: number | null;
   all: number | null;
+  /** Last N calendar-year returns (comparison chart). */
+  annualReturns: StockAnnualReturn[];
 };

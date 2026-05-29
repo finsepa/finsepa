@@ -203,12 +203,13 @@ function nameFromRawRow(row: EodhdRawEarningRow): string | null {
 }
 
 /**
- * USD — exclude smaller names before enrichment (data quality + fewer downstream calls).
+ * USD — exclude micro/small caps before enrichment. Earnings calendar is curated (preview + overflow),
+ * not an exhaustive list of every reporter.
  */
-const MIN_MARKET_CAP_USD = 5_000_000_000;
+const MIN_MARKET_CAP_USD = 1_500_000_000;
 
 /** SSR + initial paint: first N names per timing bucket; overflow loads via `/api/earnings/week-bucket`. */
-const EARNINGS_BUCKET_PREVIEW_COUNT = 7;
+const EARNINGS_BUCKET_PREVIEW_COUNT = 10;
 
 /**
  * Parallel fundamentals fetches for market-cap filtering. Previously a fixed chunk size of 10 ran
@@ -513,6 +514,58 @@ function buildScreenerRankByOrderedTickers(tickersOrdered: readonly string[]): M
   return map;
 }
 
+/** Market cap for earnings gating — universe snapshot first, optional fundamentals fallback for calendar-only names. */
+function marketCapUsdForEarningsGate(
+  ticker: string,
+  universeByKey: ReadonlyMap<string, { marketCapUsd: number }>,
+  fundamentalsRootByTicker: ReadonlyMap<string, Record<string, unknown> | null> | null,
+): number {
+  const key = earningsUniverseKey(ticker);
+  const universeMc = universeByKey.get(key)?.marketCapUsd ?? 0;
+  if (universeMc >= MIN_MARKET_CAP_USD) return universeMc;
+  const root = fundamentalsRootByTicker?.get(ticker) ?? null;
+  if (!root) return universeMc;
+  const fundMc = extractMarketCapUsdFromFundamentalsRoot(root);
+  return fundMc != null && fundMc > 0 ? fundMc : universeMc;
+}
+
+/**
+ * Calendar-matched tickers missing from the Top-500 snapshot (mc unknown / zero) — fetch fundamentals
+ * for MC gating only. Without this, large reporters like HPQ or ADSK are dropped even though they
+ * are well above the earnings minimum.
+ */
+function tickersNeedingFundamentalsMarketCap(
+  rows: readonly PreparedEarning[],
+  universeByKey: ReadonlyMap<string, { marketCapUsd: number }>,
+): string[] {
+  const out = new Set<string>();
+  for (const p of rows) {
+    const key = earningsUniverseKey(p.ticker);
+    const universeMc = universeByKey.get(key)?.marketCapUsd ?? 0;
+    if (universeMc < MIN_MARKET_CAP_USD) out.add(p.ticker);
+  }
+  return [...out];
+}
+
+function mergeFundamentalsMarketCapIntoUniverse(
+  universeByKey: Map<string, { name: string; marketCapUsd: number }>,
+  tickers: readonly string[],
+  roots: ReadonlyMap<string, Record<string, unknown> | null>,
+): void {
+  for (const ticker of tickers) {
+    const root = roots.get(ticker);
+    if (!root) continue;
+    const mc = extractMarketCapUsdFromFundamentalsRoot(root);
+    if (mc == null || mc < MIN_MARKET_CAP_USD) continue;
+    const key = earningsUniverseKey(ticker);
+    const bundle = fundamentalsBundleFromRoot(ticker, root);
+    const prev = universeByKey.get(key);
+    if (!prev || mc > prev.marketCapUsd) {
+      universeByKey.set(key, { name: bundle.name, marketCapUsd: mc });
+    }
+  }
+}
+
 function preparedToCalendarItem(
   p: PreparedEarning,
   bundle: TickerFundamentalsBundle | undefined,
@@ -586,6 +639,12 @@ async function buildEarningsWeekDataPackageUncached(
   const tFund0 = performance.now();
   if (strictMc) {
     fundamentalsRootByTicker = await fetchFundamentalsRootsForMarketCap(uniqueTickers);
+  } else {
+    const offUniverseTickers = tickersNeedingFundamentalsMarketCap(preparedScreener, universeByKey);
+    if (offUniverseTickers.length > 0) {
+      fundamentalsRootByTicker = await fetchFundamentalsRootsForMarketCap(offUniverseTickers);
+      mergeFundamentalsMarketCapIntoUniverse(universeByKey, offUniverseTickers, fundamentalsRootByTicker);
+    }
   }
   const msFundamentalsFetch = performance.now() - tFund0;
 
@@ -599,15 +658,12 @@ async function buildEarningsWeekDataPackageUncached(
       const mc = extractMarketCapUsdFromFundamentalsRoot(root);
       return mc != null && mc >= MIN_MARKET_CAP_USD;
     });
-  } else if (universeByKey.size === 0) {
+  } else if (universeByKey.size === 0 && !fundamentalsRootByTicker?.size) {
     preparedMarketCap = [];
   } else {
-    // Non-strict mode: use the screener static universe market caps to hide names below MIN_MARKET_CAP_USD.
-    preparedMarketCap = preparedScreener.filter((p) => {
-      const key = earningsUniverseKey(p.ticker);
-      const mc = universeByKey.get(key)?.marketCapUsd ?? 0;
-      return mc >= MIN_MARKET_CAP_USD;
-    });
+    preparedMarketCap = preparedScreener.filter(
+      (p) => marketCapUsdForEarningsGate(p.ticker, universeByKey, fundamentalsRootByTicker) >= MIN_MARKET_CAP_USD,
+    );
   }
 
   const preparedForWeek = dedupePreparedByReportDateAndTicker(preparedMarketCap);
@@ -639,7 +695,14 @@ async function buildEarningsWeekDataPackageUncached(
       if (!b.logoUrl.trim()) b.logoUrl = resolveEquityLogoUrlFromListingTicker(p.ticker);
       bundleByTicker.set(p.ticker, b);
     } else {
-      bundleByTicker.set(p.ticker, fundamentalsBundleFastPath(p, universeByKey));
+      const root = fundamentalsRootByTicker?.get(p.ticker) ?? null;
+      if (root) {
+        const b = fundamentalsBundleFromRoot(p.ticker, root);
+        if (!b.logoUrl.trim()) b.logoUrl = resolveEquityLogoUrlFromListingTicker(p.ticker);
+        bundleByTicker.set(p.ticker, b);
+      } else {
+        bundleByTicker.set(p.ticker, fundamentalsBundleFastPath(p, universeByKey));
+      }
     }
   }
   const msDisplayBundles = performance.now() - tDisp0;
@@ -690,7 +753,9 @@ async function buildEarningsWeekDataPackageUncached(
     afterDateFilter: afterDate.length,
     afterPrimaryListingDedupe: prepared.length,
     afterScreenerAllowlist: preparedScreener.length,
-    uniqueTickersFundamentalsFetched: strictMc ? uniqueTickers.length : 0,
+    uniqueTickersFundamentalsFetched: strictMc
+      ? uniqueTickers.length
+      : (fundamentalsRootByTicker?.size ?? 0),
     afterMarketCapFilter: preparedMarketCap.length,
     finalPreparedRows: preparedForWeek.length,
     previewCardsRendered,
@@ -731,7 +796,7 @@ const getEarningsWeekDataPackageCached = unstable_cache(
     const monday = Number.isFinite(t) ? mondayOfWeekUtc(new Date(t)) : mondayOfWeekUtc(new Date());
     return buildEarningsWeekDataPackageUncached(monday, mode === "fund");
   },
-  ["earnings-week-v27-calendar-bare-us"],
+  ["earnings-week-v28-off-universe-fundamentals-mc"],
   { revalidate: REVALIDATE_EARNINGS_CALENDAR },
 );
 

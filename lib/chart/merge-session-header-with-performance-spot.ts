@@ -43,7 +43,7 @@ export function mergeSessionHeaderWithPerformanceSpot(
     const abs = prevClose != null ? spot - prevClose : null;
     return {
       ...base,
-      loading: spotFromBase == null ? false : base.loading,
+      loading: false,
       empty: false,
       displayPrice: spot,
       displayChangePct: d1Eod,
@@ -54,7 +54,7 @@ export function mergeSessionHeaderWithPerformanceSpot(
     };
   }
 
-  if (spotFromBase != null) return base;
+  if (spotFromBase != null) return { ...base, loading: false };
 
   if (spot == null) return base;
 

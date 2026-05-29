@@ -12,12 +12,15 @@ export const SCREENER_TABLE_BODY_DIVIDE_CLASS = "divide-y divide-solid divide-[#
 /**
  * Wraps screener tables. Below `md`, content fits the viewport (no 720px horizontal strip).
  * Pass `mobileScroll` for wide grids (e.g. income statement) that need pan on small screens.
+ * Pass `viewportScroll` with `mobileScroll` on tall wide tables (Financials) so the horizontal
+ * scrollbar stays at the bottom of the visible viewport while rows scroll inside.
  */
 export function ScreenerTableScroll({
   children,
   className,
   minWidthClassName = "min-w-0",
   mobileScroll = false,
+  viewportScroll = false,
   /** When set, inner table keeps this width so extra columns scroll instead of squashing. */
   tableMinWidthPx,
 }: {
@@ -25,15 +28,19 @@ export function ScreenerTableScroll({
   className?: string;
   minWidthClassName?: string;
   mobileScroll?: boolean;
+  viewportScroll?: boolean;
   tableMinWidthPx?: number;
 }) {
   const scrollWide = mobileScroll || (tableMinWidthPx != null && tableMinWidthPx > 0);
+  const useViewportScroll = viewportScroll && scrollWide;
 
   return (
     <div
       className={cn(
         "w-full min-w-0 max-w-full border-x-0 border-y border-solid border-[#E4E4E7]",
-        scrollWide ?
+        useViewportScroll ?
+          "max-h-[var(--financials-table-max-h)] overflow-auto overscroll-contain [-webkit-overflow-scrolling:touch]"
+        : scrollWide ?
           "overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]"
         : "overflow-x-hidden",
         className,

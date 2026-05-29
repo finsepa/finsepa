@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useMemo } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { LineChart } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 
@@ -9,6 +9,7 @@ import { ComparisonEmptyToolbar } from "@/components/comparison/comparison-empty
 import { ComparisonWorkspace } from "@/components/comparison/comparison-workspace";
 import type { StockPageInitialData } from "@/lib/market/stock-page-initial-data";
 import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
+import { readComparisonSessionTickers } from "@/lib/comparison/comparison-session";
 import { isComparisonSessionReady, parseChartingTickerList } from "@/lib/market/stock-charting-metrics";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 
@@ -35,6 +36,11 @@ export function ComparisonPage({
     [allowedChartingTickers],
   );
 
+  const [sessionTickers, setSessionTickers] = useState<string[]>([]);
+  useEffect(() => {
+    setSessionTickers(readComparisonSessionTickers());
+  }, []);
+
   const searchKey = searchParams.toString();
   const { sessionReady, allowedTickers } = useMemo(() => {
     const raw = searchParams.get("ticker")?.trim() ?? "";
@@ -46,8 +52,19 @@ export function ComparisonPage({
     return { sessionReady: isComparisonSessionReady(allowed), allowedTickers: allowed };
   }, [searchParams, searchKey, chartingAllowSet]);
 
-  const showWorkspace = sessionReady || (comparisonReady && tickers.length > 0);
-  const tickersForUi = allowedTickers.length > 0 ? allowedTickers : tickers;
+  const sessionAllowed = useMemo(
+    () =>
+      sessionTickers.filter((t) => {
+        if (isSingleAssetMode()) return isSupportedAsset(t);
+        return chartingAllowSet.has(t.trim().toUpperCase());
+      }),
+    [sessionTickers, chartingAllowSet],
+  );
+
+  const showWorkspace =
+    sessionReady || (comparisonReady && tickers.length > 0) || sessionAllowed.length > 0;
+  const tickersForUi =
+    allowedTickers.length > 0 ? allowedTickers : sessionAllowed.length > 0 ? sessionAllowed : tickers;
 
   if (showWorkspace) {
     return (

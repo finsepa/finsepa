@@ -98,10 +98,16 @@ export function CompanyLogo({
   size?: "xs" | "sm" | "28" | "md" | "40" | "lg";
 }) {
   const [failed, setFailed] = useState(false);
-  const cachedIdentity = symbol ? readScreenerCompanyIdentity(symbol) : null;
+  const [storageHydrated, setStorageHydrated] = useState(false);
+  useEffect(() => {
+    setStorageHydrated(true);
+  }, []);
+
+  const cachedIdentity =
+    storageHydrated && symbol ? readScreenerCompanyIdentity(symbol) : null;
   const displayName = cachedIdentity?.name?.trim() || name;
   const fromServer = typeof logoUrl === "string" ? logoUrl.trim() : "";
-  const fromMem = symbol ? readLogoMemory(symbol) : undefined;
+  const fromMem = storageHydrated && symbol ? readLogoMemory(symbol) : undefined;
   const effective = (fromServer || cachedIdentity?.logoUrl || (fromMem ?? "")).trim();
 
   useEffect(() => {

@@ -34,6 +34,7 @@ import {
   formatUsdPrice,
 } from "@/lib/market/key-stats-basic-format";
 import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
+import { smoothAreaPathD, smoothLinePathD } from "@/lib/chart/smooth-line-path";
 import {
   fundamentalsBarColorAtIndex,
   fundamentalsBarSolidAtIndex,
@@ -149,6 +150,9 @@ const LINE_HOVER_CROSSHAIR_CLASS = "border-l border-dashed border-[#2563EB]";
 /** Area fill under line — matches portfolio overview `AreaSeries` (top 22% → bottom 2%). */
 const LINE_AREA_GRADIENT_TOP_OPACITY = 0.22;
 const LINE_AREA_GRADIENT_BOTTOM_OPACITY = 0.02;
+
+/** Matches portfolio overview Value `AreaSeries` (`lineWidth: 2`, `LineType.Curved`). */
+export const MULTICHART_LINE_STROKE_WIDTH_PX = 2;
 
 /** $0 baseline only — same as overview price chart scale edge. */
 const CHART_ZERO_BASELINE_BORDER = "rgba(228, 228, 231, 0.85)";
@@ -506,11 +510,9 @@ export function MultichartFundamentalsBar({
       const y = padT + innerH * (1 - frac);
       return { x, y, v, i };
     });
-    const d = pts.map((p, idx) => `${idx === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ");
-    const areaD =
-      pts.length > 0
-        ? `${d} L${pts[pts.length - 1]!.x},${areaFloorY} L${pts[0]!.x},${areaFloorY} Z`
-        : "";
+    const curvePts = pts.map((p) => ({ x: p.x, y: p.y }));
+    const d = smoothLinePathD(curvePts);
+    const areaD = smoothAreaPathD(curvePts, areaFloorY);
     return { d, areaD, gradY0: padT, gradY1: areaFloorY, pts };
   }, [linePlotPx.h, linePlotPx.w, values, maxV, periodCenterInset, periodPlotMargins]);
 
@@ -631,7 +633,7 @@ export function MultichartFundamentalsBar({
                       d={lineSvg.d}
                       fill="none"
                       stroke={seriesBarColor}
-                      strokeWidth={2}
+                      strokeWidth={MULTICHART_LINE_STROKE_WIDTH_PX}
                       strokeLinecap="round"
                       strokeLinejoin="round"
                     />

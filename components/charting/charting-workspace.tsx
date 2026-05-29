@@ -46,6 +46,7 @@ import {
 } from "@/components/charting/charting-individual-company-table";
 import { DataFetchTopLoader } from "@/components/layout/data-fetch-top-loader";
 import { ChartSkeleton } from "@/components/ui/chart-skeleton";
+import { ChartingVisualSwitcher } from "@/components/stock/multichart-visual-switcher";
 import { secondaryOutlineButtonClassName, TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
 import {
   dropdownMenuFloatingScrollClassName,
@@ -70,8 +71,8 @@ import {
   formatFundamentalsAxisTickLabel,
   FUNDAMENTALS_CHART_AXIS_LABEL_ROTATE_DEG,
   FUNDAMENTALS_CHART_AXIS_ROW_PX,
-  FUNDAMENTALS_CHART_GRID_LINE_COLOR,
   FUNDAMENTALS_CHART_HOVER_BAND_BG,
+  FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER,
   FUNDAMENTALS_CHART_SCALE_MARGIN_BOTTOM_BARS,
   FUNDAMENTALS_CHART_SCALE_MARGIN_BOTTOM_LINE,
   FUNDAMENTALS_CHART_BAR_VALUE_LABEL_HEIGHT_PX,
@@ -81,6 +82,7 @@ import {
   FUNDAMENTALS_CHART_Y_AXIS_W_PX,
   HIDE_NATIVE_Y_AXIS_TICK_LABELS,
 } from "@/lib/chart/fundamentals-chart-surface";
+import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
 import { fetchChartingFundamentalsSeriesCached } from "@/lib/charting/charting-fundamentals-client-cache";
 
 /** Y-axis tick labels — match reference (e.g. "30 B", "15 B", "0"). */
@@ -884,17 +886,15 @@ const PERIOD_TAB_OPTIONS = [
   { value: "quarterly" as const, label: "Quarterly" },
 ];
 
-const CHART_TYPE_TAB_OPTIONS = [
-  { value: "line" as const, label: "Line" },
-  { value: "bars" as const, label: "Bars" },
-] as const satisfies readonly TabSwitcherOption<ChartType>[];
-
 function timeRangeTabOptionsFor(order: ChartTimeRange[]): TabSwitcherOption<ChartTimeRange>[] {
   return order.map((r) => ({ value: r, label: TIME_RANGE_LABELS[r] }));
 }
 
 const CHARTING_HEIGHT_PX = 332;
 const CHARTING_PLOT_HEIGHT_PX = CHARTING_HEIGHT_PX - FUNDAMENTALS_CHART_AXIS_ROW_PX;
+
+/** Dot-grid band — matches Key Stats / Multicharts (`MultichartFundamentalsBar`). */
+const CHARTING_PLOT_BACKDROP_INSET_CLASS = "top-[8%] bottom-[4%]";
 
 function clamp(n: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, n));
@@ -2190,13 +2190,7 @@ export function ChartingWorkspace({
                 onChange={setPeriodMode}
                 aria-label="Reporting period"
               />
-              <TabSwitcher
-                size="sm"
-                options={CHART_TYPE_TAB_OPTIONS}
-                value={chartType}
-                onChange={setChartType}
-                aria-label="Chart type"
-              />
+              <ChartingVisualSwitcher value={chartType} onChange={setChartType} />
             </div>
             <div className="shrink-0">
               <TabSwitcher
@@ -2271,29 +2265,32 @@ export function ChartingWorkspace({
             <div className="w-full min-w-0 overflow-visible" style={{ height: chartHeight }}>
               <div className="flex min-h-0 w-full overflow-visible" style={{ height: chartPlotHeight }}>
                 <div className="relative min-h-0 min-w-0 flex-1 overflow-visible bg-white">
-                  {primaryYAxis && primaryYAxis.ticks.length > 0 ? (
-                    <div className="pointer-events-none absolute inset-0 z-0" aria-hidden>
-                      {primaryYAxis.ticks.map((_, i) => {
-                        const topPx = yGridTickTopsPx?.[i];
-                        const nt = primaryYAxis.ticks.length;
-                        const pct = nt <= 1 ? 0 : i / (nt - 1);
-                        const insetSpan = chartType === "bars" ? 0.92 : 0.84;
-                        return (
-                          <div
-                            key={`y-grid-primary-${i}`}
-                            className="absolute left-0 right-0 border-t"
-                            style={{
-                              top:
-                                topPx != null && Number.isFinite(topPx)
-                                  ? topPx
-                                  : `${(0.08 + pct * insetSpan) * 100}%`,
-                              borderColor: FUNDAMENTALS_CHART_GRID_LINE_COLOR,
-                            }}
-                          />
-                        );
-                      })}
+                  <div className="pointer-events-none absolute inset-0 z-0" aria-hidden>
+                    <div
+                      className={cn(
+                        "absolute inset-x-0 bg-white",
+                        CHARTING_PLOT_BACKDROP_INSET_CLASS,
+                      )}
+                    >
+                      <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
                     </div>
-                  ) : null}
+                    {(() => {
+                      const zeroTop =
+                        yGridTickTopsPx != null && yGridTickTopsPx.length > 0
+                          ? yGridTickTopsPx[yGridTickTopsPx.length - 1]
+                          : null;
+                      if (zeroTop == null || !Number.isFinite(zeroTop)) return null;
+                      return (
+                        <div
+                          className="absolute inset-x-0 border-t"
+                          style={{
+                            top: zeroTop,
+                            borderColor: FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER,
+                          }}
+                        />
+                      );
+                    })()}
+                  </div>
                   <div ref={wrapRef} className="relative z-[1] h-full w-full" />
                   {chartType === "bars" && barValueLabels.length > 0
                     ? barValueLabels.map((b) => (

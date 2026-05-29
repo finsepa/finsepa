@@ -103,7 +103,7 @@ export function StockSuperinvestorsTab({ ticker }: { ticker: string }) {
     async function load() {
       setLoading(true);
       try {
-        const res = await fetch(`/api/stocks/${encodeURIComponent(ticker)}/superinvestors`, { cache: "no-store" });
+        const res = await fetch(`/api/stocks/${encodeURIComponent(ticker)}/superinvestors`);
         if (!res.ok) {
           if (!cancelled) setPayload({ ticker, positions: [] });
           return;

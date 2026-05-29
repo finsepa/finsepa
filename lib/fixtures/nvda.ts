@@ -4,6 +4,7 @@ import { fetchEodhdEodDaily } from "@/lib/market/eodhd-eod";
 import { fetchEodhdFundamentalsHighlights } from "@/lib/market/eodhd-fundamentals";
 import { deriveMetricsFromDailyBars, eodFetchWindowUtc, formatMarketCapDisplay, formatPeDisplay } from "@/lib/screener/eod-derived-metrics";
 import { STOCK_CHART_ALL_LOOKBACK_YEARS, type StockChartPoint, type StockChartRange } from "@/lib/market/stock-chart-types";
+import { emptyAnnualReturns } from "@/lib/market/stock-annual-returns";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
 import type { StockDetailHeaderMeta } from "@/lib/market/stock-header-meta";
 import type { StockKeyStatsBundle } from "@/lib/market/stock-key-stats-bundle-types";
@@ -87,6 +88,7 @@ function computePerformanceFromPoints(points: StockChartPoint[], ticker: string)
       y5: null,
       y10: null,
       all: null,
+      annualReturns: emptyAnnualReturns(),
     };
   }
   function pct(current: number | null, base: number | null): number | null {
@@ -111,7 +113,7 @@ function computePerformanceFromPoints(points: StockChartPoint[], ticker: string)
   const y10 = pct(price, getAgo(175));
   const all = pct(price, sorted[0]?.value ?? null);
 
-  return { ticker, price, d1, d5, d7, m1, m6, ytd, y1, y5, y10, all };
+  return { ticker, price, d1, d5, d7, m1, m6, ytd, y1, y5, y10, all, annualReturns: emptyAnnualReturns() };
 }
 
 export function getNvdaPerformance(): StockPerformance {

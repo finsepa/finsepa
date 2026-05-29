@@ -347,7 +347,19 @@ export function StockPageContent({
     buildInitialSessionHeaderUi(initialPageData, ticker),
   );
   const onSessionHeaderDisplay = useCallback((s: ChartDisplayState) => {
-    setSessionHeaderUi(s);
+    setSessionHeaderUi((prev) => {
+      if (s.loading && prev.displayPrice != null && !s.selectionActive) {
+        return {
+          ...s,
+          loading: false,
+          displayPrice: s.displayPrice ?? prev.displayPrice,
+          displayChangeAbs: s.displayChangeAbs ?? prev.displayChangeAbs,
+          displayChangePct: s.displayChangePct ?? prev.displayChangePct,
+          priceTimestampLabel: s.priceTimestampLabel ?? prev.priceTimestampLabel,
+        };
+      }
+      return s;
+    });
   }, []);
 
   useEffect(() => {
@@ -445,13 +457,17 @@ export function StockPageContent({
   // Header should always represent "today" spot (1D session + live spot merge),
   // independent of which tab is open or which range is selected in Overview/Portfolio.
   const chartUi = useMemo((): ChartDisplayState => {
-    if (spotHeaderUi.priceTimestampLabel != null) return spotHeaderUi;
+    const settled =
+      spotHeaderUi.displayPrice != null && spotHeaderUi.loading
+        ? { ...spotHeaderUi, loading: false }
+        : spotHeaderUi;
+    if (settled.priceTimestampLabel != null) return settled;
     const pts = initialSessionChartMemo?.points;
-    if (!pts?.length || spotHeaderUi.loading || spotHeaderUi.displayPrice == null) return spotHeaderUi;
+    if (!pts?.length || settled.loading || settled.displayPrice == null) return settled;
     const last = pts[pts.length - 1];
-    if (!last || !Number.isFinite(last.time)) return spotHeaderUi;
+    if (!last || !Number.isFinite(last.time)) return settled;
     return {
-      ...spotHeaderUi,
+      ...settled,
       priceTimestampLabel: formatAssetChartTimestamp(last.time, {
         kind: "stock",
         timeZone: last.timeZone,
@@ -718,7 +734,7 @@ export function StockPageContent({
         >
           <StockPeersTab
             ticker={ticker}
-            initialCompareRows={initialPageData?.ticker === ticker ? initialPageData.peersCompareRows : undefined}
+            initialPageData={initialPageData?.ticker === ticker ? initialPageData : undefined}
           />
         </div>
       ) : null}

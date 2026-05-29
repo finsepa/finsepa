@@ -5,6 +5,7 @@ import { unstable_cache } from "next/cache";
 import { REVALIDATE_HOT } from "@/lib/data/cache-policy";
 import { fetchEodhdCryptoDailyBarsForMeta } from "@/lib/market/eodhd-crypto";
 import { resolveCryptoMetaForProvider } from "@/lib/market/crypto-meta-resolver";
+import { emptyAnnualReturns } from "@/lib/market/stock-annual-returns";
 import { computeStockPerformanceFromSortedDailyBars } from "@/lib/market/stock-performance";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
 
@@ -27,6 +28,7 @@ function emptyPerf(routeSymbol: string): StockPerformance {
     y5: null,
     y10: null,
     all: null,
+    annualReturns: emptyAnnualReturns(),
   };
 }
 
@@ -48,6 +50,6 @@ async function loadCryptoPerformanceUncached(routeSymbol: string): Promise<Stock
 
 export const getCryptoPerformance = unstable_cache(
   async (routeSymbol: string) => loadCryptoPerformanceUncached(routeSymbol),
-  ["crypto-performance-v3-ton-pol-eodhd"],
+  ["crypto-performance-v4-annual-returns"],
   { revalidate: REVALIDATE_HOT },
 );

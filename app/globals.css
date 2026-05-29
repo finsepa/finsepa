@@ -35,6 +35,11 @@
   /** Desktop protected shell: grey gutter between sidebar, topbar, and main (Figma Web App). */
   --shell-chrome-inset: 4px;
   --shell-chrome-gap: 4px;
+  /**
+   * Stock Financials wide table: cap height so horizontal scroll sits at the bottom of the viewport
+   * (not at the bottom of a tall table). Tune offset if header/toolbar chrome changes.
+   */
+  --financials-table-max-h: calc(100dvh - 19rem - var(--mobile-bottom-nav-main-clearance));
 }
 
 @theme inline {
@@ -52,6 +57,12 @@
 @supports (height: 100dvh) {
   :root {
     --app-vh: 100dvh;
+  }
+}
+
+@media (min-width: 768px) {
+  :root {
+    --financials-table-max-h: calc(100dvh - 17.5rem);
   }
 }
 

@@ -359,7 +359,9 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
                 >
                 {periods.map((p, i) => {
                   const leftPct = periodCenterLeftPercent(i, n);
-                  const estH = valueHeightPct(p.estimate, maxV);
+                  /** Estimate bar height — fall back to reported actual when consensus is missing (common on Q1). */
+                  const barPlotValue = p.estimate ?? p.actual;
+                  const estH = valueHeightPct(barPlotValue, maxV);
                   const beatMiss =
                     !p.isForecast && p.estimate != null && p.actual != null
                       ? earningsBeatMiss(p.estimate, p.actual)
@@ -419,7 +421,7 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
                         className="relative z-10 h-full min-h-0"
                         style={{ width: barLayout.barWidthPx }}
                       >
-                        {p.estimate != null ? (
+                        {barPlotValue != null ? (
                           <div
                             className="absolute bottom-0 left-1/2 mt-auto shrink-0 -translate-x-1/2 rounded-t-[2px] rounded-b-none"
                             style={{

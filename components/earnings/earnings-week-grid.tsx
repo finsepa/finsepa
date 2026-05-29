@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Clock } from "lucide-react";
 
 import { EarningsPreviewModal } from "@/components/earnings/earnings-preview-modal";
 import { PostMarketEarningsIcon } from "@/components/stock/post-market-earnings-icon";
@@ -88,24 +88,6 @@ function dedupeEarningsCalendarItems(items: readonly EarningsCalendarItem[]): Ea
     byKey.set(k, prev ? pickPreferredEarningsItem(prev, it) : it);
   }
   return [...byKey.values()];
-}
-
-function todayYmdUtc(): string {
-  const d = new Date();
-  const y = d.getUTCFullYear();
-  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(d.getUTCDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
-
-/** Monday `YYYY-MM-DD` (UTC) for the week containing today — matches `mondayOfWeekUtc` + `toYmdUtc` on the server. */
-function currentWeekMondayYmdUtc(): string {
-  const now = new Date();
-  const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-  const day = d.getUTCDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  d.setUTCDate(d.getUTCDate() + diff);
-  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
 }
 
 /** Same 20×20 Figma asset as the stock earnings card. */
@@ -293,7 +275,12 @@ function EarningsDayColumnBody({
     timeTbd.overflowCount;
 
   if (totalSignals === 0) {
-    return <p className="text-[12px] leading-4 text-[#A1A1AA]">No reports</p>;
+    return (
+      <p className="flex items-center gap-1.5 text-[12px] leading-4 text-[#A1A1AA]">
+        <CalendarDays className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
+        No earnings
+      </p>
+    );
   }
 
   const beforeHasBody = beforeMarket.items.length > 0 || beforeMarket.overflowCount > 0;
@@ -372,20 +359,24 @@ const todayBtnClass =
 
 /**
  * Weekly earnings calendar — layout aligned with Figma (Web App Design, Earnings Calendar week view).
- * Weeks with no events still show the five-column grid; empty days display “No reports”.
+ * Weeks with no events still show the five-column grid; empty days display “No earnings”.
  */
 export function EarningsWeekGrid({
   data,
   prevWeekYmd,
   nextWeekYmd,
+  todayYmd,
+  thisWeekMondayYmd,
 }: {
   data: EarningsWeekPayload;
   prevWeekYmd: string;
   nextWeekYmd: string;
+  /** UTC calendar day from the server — avoids SSR/client date drift for “today” styling. */
+  todayYmd: string;
+  /** Monday YMD of the week containing today (UTC), from the server. */
+  thisWeekMondayYmd: string;
 }) {
   const [previewItem, setPreviewItem] = useState<EarningsCalendarItem | null>(null);
-  const todayKey = useMemo(() => todayYmdUtc(), []);
-  const thisWeekMondayYmd = useMemo(() => currentWeekMondayYmdUtc(), []);
 
   return (
     <div className="space-y-6">
@@ -426,65 +417,50 @@ export function EarningsWeekGrid({
       </div>
 
       <div className="flex min-w-0 flex-col">
-        {/* Desktop: weekday strip + today indicator — matches Figma */}
-        <div className="relative hidden border-b border-t border-[#E4E4E7] pt-2 pb-0 md:block">
-          <div className="flex w-full gap-6 text-center text-[18px] leading-7">
+        <div className="-mx-1 overflow-x-auto pb-1 md:mx-0 md:overflow-visible">
+          <div className="flex min-h-[min(60vh,716px)] min-w-0 md:grid md:grid-cols-5 md:divide-x md:divide-[#E4E4E7] md:border-t md:border-[#E4E4E7]">
             {data.days.map((day: EarningsDayColumn) => {
-              const isToday = day.date === todayKey;
+              const isToday = day.date === todayYmd;
               return (
                 <div
                   key={day.date}
-                  className={`flex min-h-px min-w-0 flex-1 flex-wrap items-center justify-center gap-1 py-1 ${
-                    isToday ? "text-[#DC2626]" : "text-[#09090B]"
-                  }`}
+                  className="flex w-[min(100%,220px)] shrink-0 flex-col px-2 py-3 md:w-auto md:min-h-0 md:px-3"
                 >
-                  <span className="font-normal">{day.weekdayLabel}</span>
-                  <span className="font-semibold tabular-nums">{day.dayNumber}</span>
+                  <div className="mb-3 border-b border-[#E4E4E7] pb-2 md:hidden">
+                    <div className="text-[11px] font-semibold uppercase tracking-wide text-[#A1A1AA]">
+                      {day.weekdayLabel}
+                    </div>
+                    <div
+                      className={`text-[15px] font-semibold tabular-nums ${
+                        isToday ? "text-[#DC2626]" : "text-[#09090B]"
+                      }`}
+                    >
+                      {day.dayNumber}
+                    </div>
+                  </div>
+                  <div className="hidden border-b border-[#E4E4E7] pt-2 pb-0 md:block">
+                    <div
+                      className={`flex flex-wrap items-center justify-center gap-1 py-1 text-center text-[18px] leading-7 ${
+                        isToday ? "text-[#DC2626]" : "text-[#09090B]"
+                      }`}
+                    >
+                      <span className="font-normal">{day.weekdayLabel}</span>
+                      <span className="font-semibold tabular-nums">{day.dayNumber}</span>
+                    </div>
+                    <div className="mt-2" aria-hidden>
+                      <div className={`h-0.5 w-full ${isToday ? "bg-[#DC2626]" : "bg-transparent"}`} />
+                    </div>
+                  </div>
+                  <div className="md:flex-1 md:py-4">
+                    <EarningsDayColumnBody
+                      day={day}
+                      weekMondayYmd={data.weekMondayYmd}
+                      onOpenCard={setPreviewItem}
+                    />
+                  </div>
                 </div>
               );
             })}
-          </div>
-          <div className="mt-2 flex w-full gap-6" aria-hidden>
-            {data.days.map((day: EarningsDayColumn) => {
-              const isToday = day.date === todayKey;
-              return (
-                <div key={`u-${day.date}`} className="min-h-px min-w-0 flex-1">
-                  <div className={`h-0.5 w-full ${isToday ? "bg-[#DC2626]" : "bg-transparent"}`} />
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="-mx-1 overflow-x-auto pb-1 md:mx-0 md:overflow-visible">
-          <div className="flex min-h-[min(60vh,716px)] min-w-0 md:grid md:grid-cols-5 md:gap-0">
-            {data.days.map((day: EarningsDayColumn, i: number) => (
-              <div
-                key={day.date}
-                className={`flex w-[min(100%,220px)] shrink-0 flex-col border-[#E4E4E7] px-2 py-3 md:w-auto md:border-r md:px-3 md:py-4 ${
-                  i === data.days.length - 1 ? "md:border-r-0" : ""
-                }`}
-              >
-                <div className="mb-3 border-b border-[#E4E4E7] pb-2 md:hidden">
-                  <div className="text-[11px] font-semibold uppercase tracking-wide text-[#A1A1AA]">
-                    {day.weekdayLabel}
-                  </div>
-                  <div
-                    className={`text-[15px] font-semibold tabular-nums ${
-                      day.date === todayKey ? "text-[#DC2626]" : "text-[#09090B]"
-                    }`}
-                  >
-                    {day.dayNumber}
-                  </div>
-                </div>
-                <EarningsDayColumnBody
-                  key={`${data.weekMondayYmd}-${day.date}`}
-                  day={day}
-                  weekMondayYmd={data.weekMondayYmd}
-                  onOpenCard={setPreviewItem}
-                />
-              </div>
-            ))}
           </div>
         </div>
       </div>

@@ -131,7 +131,7 @@ export function StockIncomeStatementTable({
   const gridTemplateColumns = `minmax(11rem, 2fr) repeat(${dataColumnCount}, minmax(5.25rem, 1fr))`;
 
   return (
-    <ScreenerTableScroll mobileScroll>
+    <ScreenerTableScroll mobileScroll viewportScroll>
       <div className="bg-white">
         <div className={SCREENER_TABLE_HEADER_STICKY_CLASS}>
           <div

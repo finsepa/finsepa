@@ -7,6 +7,7 @@ import { X } from "lucide-react";
 import { SegmentedControl } from "@/components/design-system";
 import type { MacroCardModel } from "@/components/macro/macro-card";
 import { formatMacroChange, formatMacroPeriodCaption, formatMacroValue } from "@/components/macro/macro-format";
+import type { MacroRangeId } from "@/components/macro/macro-range";
 import { MacroSparkline, type MacroChartVariant } from "@/components/macro/macro-sparkline";
 
 const VARIANT_OPTIONS = [
@@ -19,11 +20,13 @@ export function MacroChartModal({
   onClose,
   model,
   chartVariant: initialChartVariant,
+  rangeId,
 }: {
   open: boolean;
   onClose: () => void;
   model: MacroCardModel;
   chartVariant: MacroChartVariant;
+  rangeId: MacroRangeId;
 }) {
   const titleId = useId();
   const [chartVariant, setChartVariant] = useState<MacroChartVariant>(initialChartVariant);
@@ -113,6 +116,7 @@ export function MacroChartModal({
               title={model.title}
               kind={model.kind}
               points={model.points}
+              rangeId={rangeId}
               // Fixed overall plot height (incl. x-axis labels) to match Multicharts modal.
               height={360}
               variant={chartVariant}

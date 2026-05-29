@@ -36,7 +36,7 @@ export function newsHubSegment(tab: NewsTab, now: Date = new Date()): string {
 }
 
 export function earningsWeekHubSegment(weekMondayYmd: string): string {
-  return `earnings-week-${weekMondayYmd}`;
+  return `earnings-week-v28-${weekMondayYmd}`;
 }
 
 export function economyWeekHubSegment(weekMondayYmd: string, countryCode: string): string {

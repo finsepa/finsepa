@@ -7,6 +7,7 @@ import { getCryptoNews } from "@/lib/market/crypto-news";
 import { getCryptoLiveSpotPriceUsd } from "@/lib/market/crypto-live-price";
 import { fetchEodhdCryptoDailyBarsForMeta } from "@/lib/market/eodhd-crypto";
 import { resolveCryptoMetaForProvider } from "@/lib/market/crypto-meta-resolver";
+import { emptyAnnualReturns } from "@/lib/market/stock-annual-returns";
 import { computeStockPerformanceFromSortedDailyBars } from "@/lib/market/stock-performance";
 import type { StockNewsArticle } from "@/lib/market/stock-news-types";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
@@ -36,6 +37,7 @@ function emptyPerformance(routeSymbol: string): StockPerformance {
     y5: null,
     y10: null,
     all: null,
+    annualReturns: emptyAnnualReturns(),
   };
 }
 

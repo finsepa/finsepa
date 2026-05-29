@@ -67,8 +67,16 @@ async function fetchUstParYieldRatesRawUncached(): Promise<Array<{ date: string;
   // fall back to chunked window fetching to ensure "All" has a long history.
   const wide = await fetchWindow(from, to);
   const wideFirst = wide.length ? wide.reduce((min, r) => (r.date < min ? r.date : min), wide[0]!.date) : null;
-  const looksCapped = wide.length > 0 && wideFirst != null && wideFirst > "2000-01-01";
-  if (!looksCapped) return wide;
+  const wideLast = wide.length ? wide.reduce((max, r) => (r.date > max ? r.date : max), wide[0]!.date) : null;
+  const spanYears =
+    wideFirst && wideLast
+      ? (Date.parse(`${wideLast}T00:00:00Z`) - Date.parse(`${wideFirst}T00:00:00Z`)) /
+        (365.25 * 86_400_000)
+      : 0;
+  /** Wide request often returns only recent rows — chunk when history is short or starts after 2000. */
+  const needsChunked =
+    wide.length === 0 || spanYears < 8 || (wideFirst != null && wideFirst > "2000-01-01");
+  if (!needsChunked) return wide;
 
   const out: Array<{ date: string; tenor: string; rate: number }> = [];
   const startYear = 1980;
@@ -88,7 +96,7 @@ async function fetchUstParYieldRatesRawUncached(): Promise<Array<{ date: string;
   return Array.from(byKey.values());
 }
 
-const fetchUstParYieldRatesRawCached = unstable_cache(fetchUstParYieldRatesRawUncached, ["eodhd-ust-yield-rates-raw-v2"], {
+const fetchUstParYieldRatesRawCached = unstable_cache(fetchUstParYieldRatesRawUncached, ["eodhd-ust-yield-rates-raw-v3"], {
   revalidate: REVALIDATE_STATIC_DAY,
 });
 

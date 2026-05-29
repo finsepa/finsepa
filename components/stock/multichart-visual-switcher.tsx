@@ -14,6 +14,28 @@ const CHART_VISUAL_OPTIONS = [
 const ICON_ACTIVE_SHADOW =
   "bg-white text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.12),0px_1px_1px_0px_rgba(10,10,10,0.07)]";
 
+/** Stock Charting tab uses `bars` | `line`; multicharts use `bar` | `line`. */
+export type ChartingChartType = "bars" | "line";
+
+export function ChartingVisualSwitcher({
+  value,
+  onChange,
+  className,
+}: {
+  value: ChartingChartType;
+  onChange: (next: ChartingChartType) => void;
+  className?: string;
+}) {
+  return (
+    <MultichartVisualSwitcher
+      variant="icon"
+      value={value === "bars" ? "bar" : "line"}
+      onChange={(next) => onChange(next === "bar" ? "bars" : "line")}
+      className={className}
+    />
+  );
+}
+
 export function MultichartVisualSwitcher({
   value,
   onChange,

@@ -23,6 +23,10 @@ export async function sendLoopsTransactionalEmail(params: {
   apiKey: string;
   transactionalId: string;
   to: string;
+  /**
+   * When true, Loops adds the recipient to your audience (marketing). Default false for auth/billing
+   * transactional mail — improves inbox placement vs mixing with campaigns.
+   */
   addContact?: boolean;
   dataVariables?: Record<string, string | number | boolean>;
   /** Appended to error messages for debugging (which template / env id). */
@@ -31,7 +35,7 @@ export async function sendLoopsTransactionalEmail(params: {
   const body: Record<string, unknown> = {
     transactionalId: params.transactionalId,
     email: params.to,
-    addContact: params.addContact !== false,
+    addContact: params.addContact === true,
   };
   if (params.dataVariables && Object.keys(params.dataVariables).length > 0) {
     body.dataVariables = params.dataVariables;

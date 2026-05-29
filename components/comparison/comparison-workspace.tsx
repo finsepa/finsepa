@@ -7,20 +7,32 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { RefreshCw, X } from "lucide-react";
 
 import { ChartingCompanyAddDropdown } from "@/components/charting/charting-company-add-dropdown";
+import {
+  ComparisonFundamentalsTableSkeleton,
+  ComparisonPerformanceTableSkeleton,
+  ComparisonReturnChartSkeleton,
+} from "@/components/comparison/comparison-skeletons";
 import { CompanyLogo } from "@/components/screener/company-logo";
 import { cn } from "@/lib/utils";
 import { findKeyStatValue } from "@/lib/comparison/comparison-key-stats";
-import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
 import {
-  fetchComparisonTickerSlice,
+  comparisonSliceIsReady,
+  fetchComparisonTickerSlices,
   type ComparisonTickerSlice,
-} from "@/lib/comparison/fetch-comparison-ticker-slice";
+} from "@/lib/comparison/fetch-comparison-slices";
+import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
 import type { StockPageInitialData } from "@/lib/market/stock-page-initial-data";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
 import type { StockDetailHeaderMeta } from "@/lib/market/stock-header-meta";
 import {
+  mergeComparisonAnchorTickers,
+  buildStockPeersComparePath,
+  readComparisonSessionTickers,
+  writeComparisonSessionTickers,
+} from "@/lib/comparison/comparison-session";
+import {
   CHARTING_MAX_COMPARE_TICKERS,
-  buildStandaloneChartPath,
+  buildComparisonPath,
   parseChartingTickerList,
 } from "@/lib/market/stock-charting-metrics";
 
@@ -32,31 +44,6 @@ const ComparisonReturnChart = dynamic(
     loading: () => <ComparisonReturnChartSkeleton />,
   },
 );
-
-function ComparisonReturnChartSkeleton() {
-  /** Keep in sync with `RETURN_CHART_*` in `comparison-return-chart.tsx` (Earnings Estimates layout). */
-  const totalH = 336;
-  const plotH = 272;
-  return (
-    <section className="w-full min-w-0 max-w-full overflow-x-hidden bg-white" aria-hidden>
-      <h3 className="mb-4 text-[18px] font-semibold leading-7 tracking-tight text-[#09090B]">Return</h3>
-      <div className="px-2 sm:px-3" style={{ height: totalH }}>
-        <div className="rounded-md bg-[#F4F4F5]" style={{ height: plotH }} />
-        <div className="mt-0 flex flex-col gap-3 border-t border-[#E4E4E7] pt-2">
-          <div className="flex justify-between gap-2">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-3 flex-1 rounded bg-[#F4F4F5]" />
-            ))}
-          </div>
-          <div className="flex flex-wrap justify-center gap-6">
-            <div className="h-4 w-20 rounded bg-[#F4F4F5]" />
-            <div className="h-4 w-20 rounded bg-[#F4F4F5]" />
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
 
 const SERIES_COLORS = [
   "#2563EB",
@@ -137,13 +124,34 @@ function ComparisonCompanyBlock({
   );
 }
 
+function isComparisonTickerAllowed(sym: string, chartingAllowSet: Set<string>): boolean {
+  const t = sym.trim().toUpperCase();
+  if (!t) return false;
+  if (isSingleAssetMode()) return isSupportedAsset(t);
+  if (chartingAllowSet.size === 0) return true;
+  return chartingAllowSet.has(t);
+}
+
+export type ComparisonWorkspaceUrlMode = "standalone" | "stock-tab";
+
 type Props = {
   tickers: string[];
   initialByTicker: Record<string, StockPageInitialData>;
   allowedChartingTickers: string[];
+  /** Stock peers tab: symbol cannot be removed; reset keeps this symbol only. */
+  anchorTicker?: string;
+  urlMode?: ComparisonWorkspaceUrlMode;
+  titleAs?: "h1" | "h2";
 };
 
-export function ComparisonWorkspace({ tickers, initialByTicker, allowedChartingTickers }: Props) {
+export function ComparisonWorkspace({
+  tickers,
+  initialByTicker,
+  allowedChartingTickers,
+  anchorTicker,
+  urlMode = "standalone",
+  titleAs = "h1",
+}: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -152,16 +160,35 @@ export function ComparisonWorkspace({ tickers, initialByTicker, allowedChartingT
     [allowedChartingTickers],
   );
 
-  const tickersFromUrl = useMemo(() => {
-    const raw = searchParams.get("ticker")?.trim() ?? "";
-    const parsed = parseChartingTickerList(raw || null);
-    return parsed.filter((t) => {
-      if (isSingleAssetMode()) return isSupportedAsset(t);
-      return chartingAllowSet.has(t.trim().toUpperCase());
-    });
-  }, [searchParams, chartingAllowSet]);
+  const isStockTab = urlMode === "stock-tab";
+  const anchor = anchorTicker?.trim().toUpperCase() || null;
 
-  const displayTickers = tickersFromUrl.length > 0 ? tickersFromUrl : tickers;
+  const tickersFromUrl = useMemo(() => {
+    const raw = isStockTab
+      ? (searchParams.get("compare")?.trim() ?? "")
+      : (searchParams.get("ticker")?.trim() ?? "");
+    const parsed = parseChartingTickerList(raw || null);
+    return parsed.filter((t) => isComparisonTickerAllowed(t, chartingAllowSet));
+  }, [searchParams, chartingAllowSet, isStockTab]);
+
+  const [sessionTickers, setSessionTickers] = useState<string[]>([]);
+
+  useEffect(() => {
+    setSessionTickers(
+      readComparisonSessionTickers().filter((t) => isComparisonTickerAllowed(t, chartingAllowSet)),
+    );
+  }, [chartingAllowSet]);
+
+  const displayTickers = useMemo(() => {
+    let list: string[];
+    if (tickersFromUrl.length > 0) list = tickersFromUrl;
+    else if (sessionTickers.length > 0) list = sessionTickers;
+    else list = tickers;
+    if (anchor) list = mergeComparisonAnchorTickers(list, anchor);
+    return list;
+  }, [tickersFromUrl, sessionTickers, tickers, anchor]);
+
+  const sessionHydratedRef = useRef(false);
 
   const [sliceByTicker, setSliceByTicker] = useState<Record<string, ComparisonTickerSlice>>(() => {
     const out: Record<string, ComparisonTickerSlice> = {};
@@ -176,71 +203,128 @@ export function ComparisonWorkspace({ tickers, initialByTicker, allowedChartingT
     return out;
   });
 
-  const sliceLoadedRef = useRef(new Set(Object.keys(initialByTicker).map((k) => k.trim().toUpperCase())));
+  const [loadingTickers, setLoadingTickers] = useState<ReadonlySet<string>>(() => new Set());
+  const fetchGenRef = useRef(0);
+  const sliceRef = useRef(sliceByTicker);
+  const fetchAttemptedRef = useRef(new Set<string>());
+  sliceRef.current = sliceByTicker;
 
   useEffect(() => {
-    if (!displayTickers.length) return;
-    const ac = new AbortController();
-    const missing = displayTickers.filter((t) => {
-      const key = t.trim().toUpperCase();
-      return key && !sliceLoadedRef.current.has(key);
+    const allowed = new Set(displayTickers.map((t) => t.trim().toUpperCase()).filter(Boolean));
+    for (const key of [...fetchAttemptedRef.current]) {
+      if (!allowed.has(key)) fetchAttemptedRef.current.delete(key);
+    }
+  }, [displayTickers]);
+
+  useEffect(() => {
+    if (!displayTickers.length) {
+      setLoadingTickers(new Set());
+      return;
+    }
+
+    const keys = displayTickers.map((t) => t.trim().toUpperCase()).filter(Boolean);
+    const toFetch = keys.filter((key) => {
+      if (comparisonSliceIsReady(sliceRef.current[key])) return false;
+      if (fetchAttemptedRef.current.has(key)) return false;
+      return true;
     });
-    if (!missing.length) return;
+    if (!toFetch.length) {
+      setLoadingTickers(new Set());
+      return;
+    }
+
+    const gen = ++fetchGenRef.current;
+    setLoadingTickers(new Set(toFetch));
+    const ac = new AbortController();
 
     void (async () => {
-      const settled = await Promise.allSettled(
-        missing.map(async (t) => {
-          const slice = await fetchComparisonTickerSlice(t, ac.signal);
-          return { t: t.trim().toUpperCase(), slice } as const;
-        }),
-      );
-      if (ac.signal.aborted) return;
-      setSliceByTicker((prev) => {
-        const next = { ...prev };
-        for (const s of settled) {
-          if (s.status !== "fulfilled") continue;
-          sliceLoadedRef.current.add(s.value.t);
-          next[s.value.t] = s.value.slice;
+      try {
+        const slices = await fetchComparisonTickerSlices(toFetch, ac.signal);
+        if (ac.signal.aborted || fetchGenRef.current !== gen) return;
+        setSliceByTicker((prev) => ({ ...prev, ...slices }));
+      } catch (e) {
+        if (e instanceof DOMException && e.name === "AbortError") return;
+      } finally {
+        if (!ac.signal.aborted && fetchGenRef.current === gen) {
+          for (const key of toFetch) fetchAttemptedRef.current.add(key);
+          setLoadingTickers(new Set());
         }
-        return next;
-      });
+      }
     })();
 
     return () => ac.abort();
-  }, [displayTickers, initialByTicker]);
+  }, [displayTickers]);
 
   const pushUrl = useCallback(
     (next: string[]) => {
-      router.replace(buildStandaloneChartPath("/comparison", next, []), { scroll: false });
+      let normalized = parseChartingTickerList(
+        next
+          .map((t) => t.trim().toUpperCase())
+          .filter(Boolean)
+          .join(","),
+      );
+      if (anchor) normalized = mergeComparisonAnchorTickers(normalized, anchor);
+      writeComparisonSessionTickers(normalized);
+      if (isStockTab && anchor) {
+        router.replace(buildStockPeersComparePath(anchor, normalized), { scroll: false });
+        return;
+      }
+      router.replace(buildComparisonPath(normalized, []), { scroll: false });
     },
-    [router],
+    [router, anchor, isStockTab],
   );
+
+  useEffect(() => {
+    if (sessionHydratedRef.current) return;
+    if (tickersFromUrl.length > 0) {
+      sessionHydratedRef.current = true;
+      return;
+    }
+    const stored = readComparisonSessionTickers().filter((t) =>
+      isComparisonTickerAllowed(t, chartingAllowSet),
+    );
+    const merged = anchor ? mergeComparisonAnchorTickers(stored, anchor) : stored;
+    const fallback = anchor ? mergeComparisonAnchorTickers(tickers, anchor) : tickers;
+    const target = merged.length > 0 ? merged : fallback;
+    if (!target.length) return;
+    sessionHydratedRef.current = true;
+    pushUrl(target);
+  }, [tickersFromUrl.length, chartingAllowSet, anchor, tickers, pushUrl]);
 
   const removeTicker = useCallback(
     (sym: string) => {
-      pushUrl(displayTickers.filter((t) => t !== sym));
+      const u = sym.trim().toUpperCase();
+      if (anchor && u === anchor) return;
+      pushUrl(displayTickers.filter((t) => t.trim().toUpperCase() !== u));
     },
-    [displayTickers, pushUrl],
+    [displayTickers, pushUrl, anchor],
   );
 
   const clearAllTickers = useCallback(() => {
+    if (anchor) {
+      pushUrl([anchor]);
+      return;
+    }
     pushUrl([]);
-  }, [pushUrl]);
+  }, [pushUrl, anchor]);
 
   const atCap = displayTickers.length >= CHARTING_MAX_COMPARE_TICKERS;
+  const TitleTag = titleAs;
 
   const rows = useMemo(() => {
     return displayTickers.map((t, idx) => {
-      const slice = sliceByTicker[t];
+      const key = t.trim().toUpperCase();
+      const slice = sliceByTicker[key];
       const meta: StockDetailHeaderMeta | null = slice?.headerMeta ?? null;
       const bundle = slice?.keyStatsBundle ?? null;
       const perf = slice?.performance ?? null;
       const color = SERIES_COLORS[idx % SERIES_COLORS.length];
       const fundamentals = TOP_FUNDAMENTAL_COLUMNS.map((col) => findKeyStatValue(bundle, col.labels));
       const returns = RETURN_WINDOWS.map((w) => perf?.[w.key] ?? null);
-      return { t, meta, bundle, perf, color, fundamentals, returns };
+      const isLoading = loadingTickers.has(key);
+      return { t: key, meta, bundle, perf, color, fundamentals, returns, isLoading };
     });
-  }, [displayTickers, sliceByTicker]);
+  }, [displayTickers, sliceByTicker, loadingTickers]);
 
   const performances = useMemo(() => {
     const o: Record<string, StockPerformance | null> = {};
@@ -250,46 +334,74 @@ export function ComparisonWorkspace({ tickers, initialByTicker, allowedChartingT
     return o;
   }, [rows]);
 
+  const chartLoading = useMemo(
+    () => displayTickers.some((t) => loadingTickers.has(t.trim().toUpperCase())),
+    [displayTickers, loadingTickers],
+  );
+
+  const fundamentalsGrid = comparisonFundamentalGridColumns();
+  const performanceGrid = comparisonPerformanceGridColumns();
+
   return (
     <div className="relative space-y-6">
       <div className="flex min-w-0 items-center justify-between gap-4">
-        <h1 className="min-w-0 text-2xl font-semibold leading-9 tracking-tight text-[#09090B]">Comparison</h1>
+        <TitleTag className="min-w-0 text-2xl font-semibold leading-9 tracking-tight text-[#09090B]">
+          Comparison
+        </TitleTag>
         <button
           type="button"
           onClick={clearAllTickers}
-          disabled={displayTickers.length === 0}
+          disabled={anchor ? displayTickers.length <= 1 : displayTickers.length === 0}
           className={cn(
             "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#E4E4E7] bg-white text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15",
-            displayTickers.length === 0
-              ? "cursor-not-allowed opacity-40"
-              : "hover:bg-neutral-50",
+            anchor
+              ? displayTickers.length <= 1
+                ? "cursor-not-allowed opacity-40"
+                : "hover:bg-neutral-50"
+              : displayTickers.length === 0
+                ? "cursor-not-allowed opacity-40"
+                : "hover:bg-neutral-50",
           )}
-          aria-label="Remove all companies and reset comparison"
-          title="Remove all companies"
+          aria-label={
+            anchor
+              ? "Reset comparison to this symbol only"
+              : "Remove all companies and reset comparison"
+          }
+          title={anchor ? "Reset comparison" : "Remove all companies"}
         >
           <RefreshCw className="h-4 w-4" strokeWidth={1.5} aria-hidden />
         </button>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        {displayTickers.map((sym) => (
-          <div
-            key={sym}
-            className="inline-flex max-w-full min-w-0 items-stretch overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]"
-          >
-            <span className="flex min-h-[36px] min-w-0 items-center border-r border-[#E4E4E7] px-4 py-2 text-[14px] font-medium leading-5 text-[#09090B]">
-              <span className="truncate">{sym}</span>
-            </span>
-            <button
-              type="button"
-              onClick={() => removeTicker(sym)}
-              className="flex w-9 shrink-0 items-center justify-center text-[#09090B] transition-colors hover:bg-[#FAFAFA]"
-              aria-label={`Remove ${sym}`}
+        {displayTickers.map((sym) => {
+          const isAnchor = anchor != null && sym.toUpperCase() === anchor;
+          return (
+            <div
+              key={sym}
+              className="inline-flex max-w-full min-w-0 items-stretch overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]"
             >
-              <X className="h-5 w-5" strokeWidth={1.5} aria-hidden />
-            </button>
-          </div>
-        ))}
+              <span
+                className={cn(
+                  "flex min-h-[36px] min-w-0 items-center px-4 py-2 text-[14px] font-medium leading-5 text-[#09090B]",
+                  !isAnchor && "border-r border-[#E4E4E7]",
+                )}
+              >
+                <span className="truncate tabular-nums">{sym}</span>
+              </span>
+              {isAnchor ? null : (
+                <button
+                  type="button"
+                  onClick={() => removeTicker(sym)}
+                  className="flex w-9 shrink-0 items-center justify-center text-[#09090B] transition-colors hover:bg-[#FAFAFA]"
+                  aria-label={`Remove ${sym}`}
+                >
+                  <X className="h-5 w-5" strokeWidth={1.5} aria-hidden />
+                </button>
+              )}
+            </div>
+          );
+        })}
         <ChartingCompanyAddDropdown
           onPickStock={(sym) => {
             const u = sym.trim().toUpperCase();
@@ -303,7 +415,7 @@ export function ComparisonWorkspace({ tickers, initialByTicker, allowedChartingT
         />
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto" aria-busy={chartLoading}>
         <div className="inline-block min-w-full">
           <div
             className="divide-y divide-[#E4E4E7] border-t border-b border-[#E4E4E7] bg-white"
@@ -311,7 +423,7 @@ export function ComparisonWorkspace({ tickers, initialByTicker, allowedChartingT
           >
             <div
               className="grid min-h-[44px] items-center gap-x-2 bg-white px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A]"
-              style={{ gridTemplateColumns: comparisonFundamentalGridColumns() }}
+              style={{ gridTemplateColumns: fundamentalsGrid }}
             >
               <div className="text-left">Company</div>
               {TOP_FUNDAMENTAL_COLUMNS.map((c) => (
@@ -320,19 +432,24 @@ export function ComparisonWorkspace({ tickers, initialByTicker, allowedChartingT
                 </div>
               ))}
             </div>
-            {rows.map((r) => {
-              const displayName = r.meta?.fullName?.trim() || r.t;
-              return (
+            {rows.map((r) =>
+              r.isLoading ? (
+                <ComparisonFundamentalsTableSkeleton
+                  key={`sk-fund-${r.t}`}
+                  rowCount={1}
+                  gridTemplateColumns={fundamentalsGrid}
+                />
+              ) : (
                 <Link
                   key={r.t}
                   href={`/stock/${encodeURIComponent(r.t)}`}
                   prefetch={false}
-                  aria-label={`Open ${displayName} (${r.t})`}
+                  aria-label={`Open ${r.meta?.fullName?.trim() || r.t} (${r.t})`}
                   className="grid h-[60px] max-h-[60px] cursor-pointer items-center gap-x-2 bg-white px-4 no-underline transition-colors duration-75 hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#09090B]/15"
-                  style={{ gridTemplateColumns: comparisonFundamentalGridColumns() }}
+                  style={{ gridTemplateColumns: fundamentalsGrid }}
                 >
                   <ComparisonCompanyBlock
-                    displayName={displayName}
+                    displayName={r.meta?.fullName?.trim() || r.t}
                     ticker={r.t}
                     logoUrl={r.meta?.logoUrl?.trim() || ""}
                     seriesColor={r.color}
@@ -346,8 +463,8 @@ export function ComparisonWorkspace({ tickers, initialByTicker, allowedChartingT
                     </div>
                   ))}
                 </Link>
-              );
-            })}
+              ),
+            )}
           </div>
         </div>
       </div>
@@ -356,9 +473,10 @@ export function ComparisonWorkspace({ tickers, initialByTicker, allowedChartingT
         tickers={displayTickers}
         performances={performances}
         colors={displayTickers.map((_, i) => SERIES_COLORS[i % SERIES_COLORS.length]!)}
+        loading={chartLoading}
       />
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto" aria-busy={chartLoading}>
         <div className="inline-block min-w-full">
           <div
             className="divide-y divide-[#E4E4E7] border-t border-b border-[#E4E4E7] bg-white"
@@ -366,7 +484,7 @@ export function ComparisonWorkspace({ tickers, initialByTicker, allowedChartingT
           >
             <div
               className="grid min-h-[44px] items-center gap-x-2 bg-white px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A]"
-              style={{ gridTemplateColumns: comparisonPerformanceGridColumns() }}
+              style={{ gridTemplateColumns: performanceGrid }}
             >
               <div className="text-left">Company</div>
               {RETURN_WINDOWS.map((w) => (
@@ -375,19 +493,24 @@ export function ComparisonWorkspace({ tickers, initialByTicker, allowedChartingT
                 </div>
               ))}
             </div>
-            {rows.map((r) => {
-              const displayName = r.meta?.fullName?.trim() || r.t;
-              return (
+            {rows.map((r) =>
+              r.isLoading ? (
+                <ComparisonPerformanceTableSkeleton
+                  key={`sk-perf-${r.t}`}
+                  rowCount={1}
+                  gridTemplateColumns={performanceGrid}
+                />
+              ) : (
                 <Link
                   key={r.t}
                   href={`/stock/${encodeURIComponent(r.t)}`}
                   prefetch={false}
-                  aria-label={`Open ${displayName} (${r.t})`}
+                  aria-label={`Open ${r.meta?.fullName?.trim() || r.t} (${r.t})`}
                   className="grid h-[60px] max-h-[60px] cursor-pointer items-center gap-x-2 bg-white px-4 no-underline transition-colors duration-75 hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#09090B]/15"
-                  style={{ gridTemplateColumns: comparisonPerformanceGridColumns() }}
+                  style={{ gridTemplateColumns: performanceGrid }}
                 >
                   <ComparisonCompanyBlock
-                    displayName={displayName}
+                    displayName={r.meta?.fullName?.trim() || r.t}
                     ticker={r.t}
                     logoUrl={r.meta?.logoUrl?.trim() || ""}
                     seriesColor={r.color}
@@ -404,8 +527,8 @@ export function ComparisonWorkspace({ tickers, initialByTicker, allowedChartingT
                     </div>
                   ))}
                 </Link>
-              );
-            })}
+              ),
+            )}
           </div>
         </div>
       </div>

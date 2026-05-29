@@ -23,7 +23,7 @@ function isFedFundsEventType(type: string | undefined): boolean {
 async function fetchFedFundsTargetUncached(): Promise<FedFundsMacroPoint[]> {
   if (!getEodhdApiKey()) return [];
 
-  const startYear = 2020;
+  const startYear = new Date().getUTCFullYear() - 15;
   const endYear = new Date().getUTCFullYear();
   const today = new Date().toISOString().slice(0, 10);
 
@@ -54,6 +54,6 @@ async function fetchFedFundsTargetUncached(): Promise<FedFundsMacroPoint[]> {
   return Array.from(byDay.values()).sort((a, b) => a.time.localeCompare(b.time));
 }
 
-export const fetchFedFundsTargetSeriesCached = unstable_cache(fetchFedFundsTargetUncached, ["eodhd-fed-funds-fomc-v1"], {
+export const fetchFedFundsTargetSeriesCached = unstable_cache(fetchFedFundsTargetUncached, ["eodhd-fed-funds-fomc-v2"], {
   revalidate: REVALIDATE_WARM,
 });

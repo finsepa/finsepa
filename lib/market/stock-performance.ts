@@ -6,6 +6,7 @@ import { REVALIDATE_HOT } from "@/lib/data/cache-policy";
 
 import { fetchEodhdEodDaily, type EodhdDailyBar } from "@/lib/market/eodhd-eod";
 import { STOCK_CHART_ALL_LOOKBACK_YEARS } from "@/lib/market/stock-chart-types";
+import { computeAnnualReturnsFromSortedDailyBars } from "@/lib/market/stock-annual-returns";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
 
 export type { StockPerformance };
@@ -99,7 +100,9 @@ export function computeStockPerformanceFromSortedDailyBars(
   const first = sorted.length ? sorted[0]! : null;
   const all = pctChange(price, first?.close ?? null);
 
-  return { ticker: sym, price, d1, d5, d7, m1, m6, ytd, y1, y5, y10, all };
+  const annualReturns = computeAnnualReturnsFromSortedDailyBars(sorted, now);
+
+  return { ticker: sym, price, d1, d5, d7, m1, m6, ytd, y1, y5, y10, all, annualReturns };
 }
 
 async function loadStockPerformanceUncached(ticker: string): Promise<StockPerformance> {
@@ -119,7 +122,7 @@ async function loadStockPerformanceUncached(ticker: string): Promise<StockPerfor
 
 export const getStockPerformance = unstable_cache(
   async (ticker: string) => loadStockPerformanceUncached(ticker),
-  ["stock-performance-v6-maxhist-daily"],
+  ["stock-performance-v8-annual-year-fallback"],
   { revalidate: REVALIDATE_HOT },
 );
 

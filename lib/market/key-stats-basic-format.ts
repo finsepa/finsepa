@@ -11,6 +11,18 @@ export function formatUsdCompact(n: number): string {
   return `${prefix}${abs.toFixed(2)}`;
 }
 
+/** Round to the same precision as {@link formatUsdCompact} before period-over-period USD deltas. */
+export function roundToUsdCompactPrecision(n: number): number {
+  if (!Number.isFinite(n)) return n;
+  const abs = Math.abs(n);
+  const sign = n < 0 ? -1 : 1;
+  if (abs >= 1e12) return sign * Math.round(abs / 1e10) * 1e10;
+  if (abs >= 1e9) return sign * Math.round(abs / 1e7) * 1e7;
+  if (abs >= 1e6) return sign * Math.round(abs / 1e4) * 1e4;
+  if (abs >= 1e3) return sign * Math.round(abs / 10) * 10;
+  return sign * Math.round(abs * 100) / 100;
+}
+
 /**
  * Compact USD with at most `sigDigits` significant figures in the mantissa
  * (e.g. `$91.91B`, `$275B`, `$1.024K`). Uses the same K/M/B/T tiers as {@link formatUsdCompact}.

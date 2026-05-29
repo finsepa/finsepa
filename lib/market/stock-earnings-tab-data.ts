@@ -18,6 +18,11 @@ import type {
   StockEarningsTabPayload,
   StockEarningsUpcoming,
 } from "@/lib/market/stock-earnings-types";
+import {
+  buildReportsTableRows,
+  quarterlyEstimateMapsByQuarterLabel,
+  resolveUpcomingFromEstimates,
+} from "@/lib/market/enrich-earnings-history-estimates";
 import { formatUsdCompact } from "@/lib/market/key-stats-basic-format";
 import { parseEarningsDocumentHubFromFundamentalsRoot } from "@/lib/market/earnings-report-external-links";
 import { applyCuratedIrEarningsDocumentUrls } from "@/lib/market/earnings-ir-curated-lookup";
@@ -599,12 +604,24 @@ function historyRowFromRaw(
   revenueByFiscalPeriodEnd: Map<string, number>,
   quarterlyRevenueEstimateFromTrend: Map<string, number>,
   quarterlyEpsEstimateFromTrend: Map<string, number>,
+  quarterlyRevenueEstimateByLabel: Map<string, number>,
+  quarterlyEpsEstimateByLabel: Map<string, number>,
 ): StockEarningsHistoryRow {
-  const fiscalPeriodEndYmd = toYmdUtcFromUnknown(r.date ?? r.Date ?? r.periodEnd ?? r.PeriodEnd);
+  const explicitPeriodEndYmd = toYmdUtcFromUnknown(
+    r.periodEnd ?? r.PeriodEnd ?? r.endDate ?? r.EndDate ?? r.fiscalDate ?? r.FiscalDate,
+  );
+  const rawRowDateYmd = toYmdUtcFromUnknown(r.date ?? r.Date);
+  const reported = rowIsReported(r);
+  /** Forward rows often use `date` as the announcement date — not the fiscal period end. */
+  const fiscalPeriodEndYmd =
+    explicitPeriodEndYmd ?? (reported ? rawRowDateYmd : null);
 
   const reportDateDisplay =
     formatEarningsDateEnUS(r.reportDate ?? r.ReportDate ?? r.report_date) ??
     formatEarningsDateEnUS(r.date ?? r.Date);
+
+  const fiscalPeriodLabel =
+    quarterLabelFromPeriodEndYmd(fiscalPeriodEndYmd) ?? quarterLabelFromPeriodEndYmd(rawRowDateYmd);
 
   let epsEst = numFromRow(r, [
     "epsEstimate",
@@ -617,6 +634,9 @@ function historyRowFromRaw(
   ]);
   if (epsEst == null && fiscalPeriodEndYmd) {
     epsEst = quarterlyEpsEstimateFromTrend.get(fiscalPeriodEndYmd) ?? null;
+  }
+  if (epsEst == null && fiscalPeriodLabel) {
+    epsEst = quarterlyEpsEstimateByLabel.get(fiscalPeriodLabel) ?? null;
   }
   const epsAct = numFromRow(r, [
     "epsActual",
@@ -642,6 +662,9 @@ function historyRowFromRaw(
   if (revEst == null && fiscalPeriodEndYmd) {
     revEst = quarterlyRevenueEstimateFromTrend.get(fiscalPeriodEndYmd) ?? null;
   }
+  if (revEst == null && fiscalPeriodLabel) {
+    revEst = quarterlyRevenueEstimateByLabel.get(fiscalPeriodLabel) ?? null;
+  }
   if (revEst == null && revAct != null) {
     const revSurprisePct = numFromRow(r, [
       "revenueSurprise",
@@ -664,12 +687,11 @@ function historyRowFromRaw(
     revEst = sanitizeQuarterlyRevenueEstimateUsd(revEst, revAct);
   }
 
-  const reported = rowIsReported(r);
   const surprisePct = reported ? surprisePctFromRow(r, epsEst, epsAct) : null;
 
   return {
     fiscalPeriodEndYmd,
-    fiscalPeriodLabel: quarterLabelFromPeriodEndYmd(fiscalPeriodEndYmd),
+    fiscalPeriodLabel,
     reportDateDisplay,
     reportDateYmd: earningsHistoryReportYmd(r),
     epsEstimateDisplay: epsEst != null ? formatEps(epsEst) : null,
@@ -1078,6 +1100,9 @@ function pickUpcomingFromHistory(
   calendarTimingRaw: string | null,
   revenueByFiscalPeriodEnd: Map<string, number>,
   quarterlyRevenueEstimateFromTrend: Map<string, number>,
+  quarterlyRevenueEstimateByLabel: Map<string, number>,
+  quarterlyEpsEstimateFromTrend: Map<string, number>,
+  quarterlyEpsEstimateByLabel: Map<string, number>,
 ): StockEarningsUpcoming | null {
   const startToday = startOfTodayUtcMs();
   const todayYmd = toYmdUtc(new Date());
@@ -1107,12 +1132,14 @@ function pickUpcomingFromHistory(
   if (!best) return null;
 
   const r = best.r;
-  const periodYmd = toYmdUtcFromUnknown(r.date ?? r.Date ?? r.periodEnd ?? r.PeriodEnd);
+  const periodYmd =
+    toYmdUtcFromUnknown(r.periodEnd ?? r.PeriodEnd ?? r.endDate ?? r.EndDate ?? r.fiscalDate ?? r.FiscalDate) ??
+    toYmdUtcFromUnknown(r.date ?? r.Date);
   const reportDisp =
     formatEarningsDateEnUS(r.reportDate ?? r.ReportDate ?? r.report_date) ??
     formatEarningsDateEnUS(r.date ?? r.Date);
 
-  const epsEst = numFromRow(r, [
+  let epsEst = numFromRow(r, [
     "epsEstimate",
     "epsEstimated",
     "estimatedEps",
@@ -1121,11 +1148,22 @@ function pickUpcomingFromHistory(
     "epsAverage",
     "epsAvg",
   ]);
+  if (epsEst == null && periodYmd) {
+    epsEst = quarterlyEpsEstimateFromTrend.get(periodYmd) ?? null;
+  }
+  const periodLabel = quarterLabelFromPeriodEndYmd(periodYmd);
+  if (epsEst == null && periodLabel) {
+    epsEst = quarterlyEpsEstimateByLabel.get(periodLabel) ?? null;
+  }
+
   let revEst = numFromRow(r, EARNINGS_REVENUE_ESTIMATE_KEYS);
   if (revEst == null) revEst = revenueEstimateFromLooseKeys(r);
   if (revEst == null) revEst = revenueEstimateFromRevenueNamedFields(r);
   if (revEst == null && periodYmd) {
     revEst = quarterlyRevenueEstimateFromTrend.get(periodYmd) ?? null;
+  }
+  if (revEst == null && periodLabel) {
+    revEst = quarterlyRevenueEstimateByLabel.get(periodLabel) ?? null;
   }
 
   let revActRef = numFromRow(r, EARNINGS_REVENUE_ACTUAL_KEYS);
@@ -1183,10 +1221,25 @@ async function fetchStockEarningsTabPayloadUncached(
   const revenueByFiscalPeriodEnd = buildRevenueByFiscalPeriodEndYmd(root);
   const revenueTrendMaps = buildRevenueEstimateTrendMaps(root);
   const epsTrendMaps = buildEpsEstimateTrendMaps(root);
+  const quarterlyRevenueByLabel = quarterlyEstimateMapsByQuarterLabel(
+    revenueTrendMaps.quarterly,
+    quarterLabelFromPeriodEndYmd,
+  );
+  const quarterlyEpsByLabel = quarterlyEstimateMapsByQuarterLabel(
+    epsTrendMaps.quarterly,
+    quarterLabelFromPeriodEndYmd,
+  );
   let historyParsed = sliceEarningsHistoryForReports(
     sortHistoryRows(
       rawRows.map((row) =>
-        historyRowFromRaw(row, revenueByFiscalPeriodEnd, revenueTrendMaps.quarterly, epsTrendMaps.quarterly),
+        historyRowFromRaw(
+          row,
+          revenueByFiscalPeriodEnd,
+          revenueTrendMaps.quarterly,
+          epsTrendMaps.quarterly,
+          quarterlyRevenueByLabel,
+          quarterlyEpsByLabel,
+        ),
       ),
     ),
   );
@@ -1233,7 +1286,21 @@ async function fetchStockEarningsTabPayloadUncached(
     };
   }
 
-  let upcoming = pickUpcomingFromHistory(rawRows, null, revenueByFiscalPeriodEnd, revenueTrendMaps.quarterly);
+  let upcoming = pickUpcomingFromHistory(
+    rawRows,
+    null,
+    revenueByFiscalPeriodEnd,
+    revenueTrendMaps.quarterly,
+    quarterlyRevenueByLabel,
+    epsTrendMaps.quarterly,
+    quarterlyEpsByLabel,
+  );
+  if (estimatesChart) {
+    upcoming = resolveUpcomingFromEstimates(upcoming, historyParsed, estimatesChart.quarterly);
+    historyParsed = buildReportsTableRows(historyParsed, estimatesChart.quarterly, upcoming);
+  } else if (upcoming) {
+    upcoming = resolveUpcomingFromEstimates(upcoming, historyParsed, []);
+  }
   if (!preview && upcoming?.reportDateYmd) {
     const cal = await fetchEodhdEarningsCalendarForSymbol(eodhdListingCode(ticker));
     const calendarTiming = pickCalendarTimingForReport(cal, eodhdListingCode(ticker), upcoming.reportDateYmd);
@@ -1251,7 +1318,7 @@ async function fetchStockEarningsTabPayloadUncached(
 
 const fetchStockEarningsTabPayloadCached = unstable_cache(
   fetchStockEarningsTabPayloadUncached,
-  ["stock-earnings-tab-payload-v13-preview-mode"],
+  ["stock-earnings-tab-payload-v15-upcoming-reports-row"],
   { revalidate: REVALIDATE_WARM_LONG },
 );
 

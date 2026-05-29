@@ -24,8 +24,7 @@ export function FinancialsColumnOrderToggle({
       aria-label={reversed ? "Show oldest years first" : "Show newest years first"}
       title={reversed ? "Oldest → newest" : "Newest → oldest"}
       className={cn(
-        "inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] outline-none transition-all duration-100 hover:bg-[#F4F4F5] focus-visible:ring-2 focus-visible:ring-neutral-900/10 focus-visible:ring-offset-2",
-        reversed && "bg-[#F4F4F5]",
+        "inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] outline-none transition-colors duration-100 hover:bg-[#F4F4F5] active:bg-white focus-visible:ring-2 focus-visible:ring-neutral-900/10 focus-visible:ring-offset-2",
         className,
       )}
     >

@@ -22,7 +22,9 @@ import type {
   StockEarningsHistoryRow,
   StockEarningsTabPayload,
 } from "@/lib/market/stock-earnings-types";
+import { buildReportsTableRows } from "@/lib/market/enrich-earnings-history-estimates";
 import { fetchStockEarningsTabPayloadClient } from "@/lib/market/stock-earnings-tab-client";
+import { SCREENER_TABLE_HEADER_STICKY_CLASS, ScreenerTableScroll } from "@/components/screener/screener-table-scroll";
 import { cn } from "@/lib/utils";
 import {
   EARNINGS_CARD_LABEL_CLASS,
@@ -247,9 +249,29 @@ function nearestVerticalScrollParent(start: HTMLElement | null): HTMLElement | n
   return null;
 }
 
-/** Number cells in the Reports `<table>` — one table = aligned columns (separate per-row CSS grids do not). */
-const earningsReportsTdNum =
-  "px-2 py-1.5 text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]";
+/** Reports table chrome — aligned with {@link StockIncomeStatementTable} / Financials. */
+const reportsTableClass = "w-full min-w-0 table-auto border-collapse bg-white text-[14px]";
+
+const reportsHeaderTh =
+  "min-h-[44px] px-2 py-2 align-middle font-['Inter'] text-[12px] font-medium leading-5 text-[#71717A] sm:px-4 sm:text-[14px]";
+
+const reportsHeaderThLabel = cn(reportsHeaderTh, "border-r border-[#E4E4E7] text-left");
+
+const reportsHeaderThNum = cn(reportsHeaderTh, "text-right");
+
+const reportsDataRowClass =
+  "min-h-[60px] border-b border-[#E4E4E7] bg-white transition-colors duration-75 hover:bg-neutral-50";
+
+const reportsYearRowClass =
+  "border-b border-[#E4E4E7] bg-white font-['Inter'] text-[14px] font-semibold leading-5 text-[#09090B]";
+
+const reportsLabelTd =
+  "min-w-0 border-r border-[#E4E4E7] px-2 py-3 align-middle text-left sm:px-4";
+
+const reportsNumTd =
+  "px-2 py-3 text-right align-middle font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B] sm:px-4";
+
+const reportsActionsTd = "min-w-0 max-w-[min(100%,20rem)] px-2 py-3 text-right align-middle sm:px-4";
 
 function calendarYearFromEarningsHistoryRow(r: StockEarningsHistoryRow): string | null {
   const ymd = r.fiscalPeriodEndYmd;
@@ -281,17 +303,27 @@ function withEarningsYearBandRows(rows: StockEarningsHistoryRow[]): EarningsHist
   return out;
 }
 
+function ReportsNumCell({ value }: { value: string | null | undefined }) {
+  const text = tableCell(value);
+  return (
+    <td className={cn(reportsNumTd, text === "-" && "font-medium text-[#71717A]")}>{text}</td>
+  );
+}
+
 function SurpriseCell({ value, pct }: { value: string | null; pct: number | null }) {
+  const innerBase = "min-w-0 w-full text-right tabular-nums text-[14px] leading-5";
   if (!value || value === "—" || value === "-") {
-    return <div className={`${earningsReportsTdNum} font-medium text-[#71717A]`}>-</div>;
+    return <div className={cn(innerBase, "font-medium text-[#71717A]")}>-</div>;
   }
   const n = pct;
   if (n == null || !Number.isFinite(n)) {
-    return <div className={earningsReportsTdNum}>{value}</div>;
+    return <div className={innerBase}>{value}</div>;
   }
   const pos = n >= 0;
   return (
-    <div className={`min-w-0 w-full text-right tabular-nums text-[14px] leading-5 font-medium ${pos ? "text-[#16A34A]" : "text-[#DC2626]"}`}>
+    <div
+      className={cn(innerBase, "font-medium", pos ? "text-[#16A34A]" : "text-[#DC2626]")}
+    >
       {value}
     </div>
   );
@@ -346,25 +378,22 @@ function EstimatesChartSkeleton() {
   );
 }
 
-const reportsTableShell =
-  "w-full min-w-0 table-auto border-collapse border-y border-[#E4E4E7] bg-white text-[14px]";
-
 function TableSkeleton() {
   return (
-    <div className="min-w-0 w-full max-w-full overflow-x-auto touch-pan-x md:overflow-x-visible [-webkit-overflow-scrolling:touch]">
-      <table className={reportsTableShell}>
-        <thead>
+    <ScreenerTableScroll mobileScroll>
+      <table className={reportsTableClass}>
+        <thead className={SCREENER_TABLE_HEADER_STICKY_CLASS}>
           <tr className="border-b border-[#E4E4E7]">
             {[
-              { pad: "pl-4 pr-2 text-left max-sm:pl-3" },
-              { pad: "px-2 text-right" },
-              { pad: "px-2 text-right" },
-              { pad: "px-2 text-right" },
-              { pad: "px-2 text-right" },
-              { pad: "px-2 text-right" },
-              { pad: "pl-2 pr-4 text-right max-sm:pr-3" },
-            ].map((c, i) => (
-              <th key={i} scope="col" className={cn("py-2 font-medium text-[#71717A]", c.pad)}>
+              reportsHeaderThLabel,
+              reportsHeaderThNum,
+              reportsHeaderThNum,
+              reportsHeaderThNum,
+              reportsHeaderThNum,
+              reportsHeaderThNum,
+              reportsHeaderThNum,
+            ].map((thClass, i) => (
+              <th key={i} scope="col" className={thClass}>
                 <SkeletonBox
                   className={cn("h-4 rounded", i === 0 && "w-[72%]", i > 0 && i < 6 && "ml-auto w-[70%] max-w-20", i === 6 && "ml-auto w-20")}
                 />
@@ -374,29 +403,29 @@ function TableSkeleton() {
         </thead>
         <tbody>
           {Array.from({ length: 4 }).map((_, r) => (
-            <tr key={r} className="border-b border-[#E4E4E7] last:border-b-0">
-              <td className="min-w-0 py-1.5 pl-4 pr-2 align-top max-sm:pl-3">
+            <tr key={r} className={cn(reportsDataRowClass, "last:border-b-0")}>
+              <td className={reportsLabelTd}>
                 <div className="flex min-w-0 flex-col gap-1.5">
                   <SkeletonBox className="h-4 w-[55%] rounded" />
                   <SkeletonBox className="h-3.5 w-[40%] rounded" />
                 </div>
               </td>
-              <td className="px-2 py-1.5 text-right">
-                <SkeletonBox className="ml-auto h-4 w-[65%] max-w-16 rounded" />
+              <td className={reportsNumTd}>
+                <SkeletonBox className="ml-auto block h-4 w-[65%] max-w-16 rounded" />
               </td>
-              <td className="px-2 py-1.5 text-right">
-                <SkeletonBox className="ml-auto h-4 w-[65%] max-w-16 rounded" />
+              <td className={reportsNumTd}>
+                <SkeletonBox className="ml-auto block h-4 w-[65%] max-w-16 rounded" />
               </td>
-              <td className="px-2 py-1.5 text-right">
-                <SkeletonBox className="ml-auto h-4 w-[50%] max-w-20 rounded" />
+              <td className={reportsNumTd}>
+                <SkeletonBox className="ml-auto block h-4 w-[50%] max-w-20 rounded" />
               </td>
-              <td className="px-2 py-1.5 text-right">
-                <SkeletonBox className="ml-auto h-4 w-[65%] max-w-24 rounded" />
+              <td className={reportsNumTd}>
+                <SkeletonBox className="ml-auto block h-4 w-[65%] max-w-24 rounded" />
               </td>
-              <td className="px-2 py-1.5 text-right">
-                <SkeletonBox className="ml-auto h-4 w-[65%] max-w-24 rounded" />
+              <td className={reportsNumTd}>
+                <SkeletonBox className="ml-auto block h-4 w-[65%] max-w-24 rounded" />
               </td>
-              <td className="py-1.5 pl-2 pr-4 text-right align-top max-sm:pr-3">
+              <td className={reportsActionsTd}>
                 <div className="inline-flex w-max max-w-full shrink-0 flex-nowrap justify-end gap-2">
                   <SkeletonBox className="h-9 w-[5.5rem] shrink-0 rounded-[10px]" />
                   <SkeletonBox className="h-9 w-[5.5rem] shrink-0 rounded-[10px]" />
@@ -406,7 +435,7 @@ function TableSkeleton() {
           ))}
         </tbody>
       </table>
-    </div>
+    </ScreenerTableScroll>
   );
 }
 
@@ -502,38 +531,13 @@ export function StockEarningsTabContent({
   }, [sym, seedPayload, previewMode, reloadNonce]);
 
   const historyRows = useMemo(() => {
-    const rows = data?.history ?? [];
-    const u = data?.upcoming;
-    if (!u?.reportDateYmd) return rows;
-
-    // Prepend a synthetic “upcoming” row so the Reports table always shows the next report.
-    // Actuals stay blank ("-"); document buttons stay disabled until sources publish URLs.
-    const already =
-      rows.some((r) => (r.reportDateYmd && r.reportDateYmd === u.reportDateYmd) || (r.reportDateDisplay && r.reportDateDisplay === u.reportDateDisplay)) ||
-      rows.some((r) => (r.fiscalPeriodLabel && u.fiscalPeriodLabel && r.fiscalPeriodLabel === u.fiscalPeriodLabel));
-    if (already) return rows;
-
-    const synthetic: StockEarningsHistoryRow = {
-      fiscalPeriodEndYmd: null,
-      fiscalPeriodLabel: u.fiscalPeriodLabel,
-      reportDateDisplay: u.reportDateDisplay,
-      reportDateYmd: u.reportDateYmd,
-      epsEstimateDisplay: u.epsEstimateDisplay,
-      epsActualDisplay: null,
-      surprisePct: null,
-      surpriseDisplay: null,
-      revenueEstimateDisplay: u.revenueEstimateDisplay,
-      revenueActualDisplay: null,
-      reported: false,
-      revenueEstimateUsd: null,
-      revenueActualUsd: null,
-      epsEstimateRaw: null,
-      epsActualRaw: null,
-      secSlidesUrl: null,
-      secFilingsUrl: null,
-    };
-    return [synthetic, ...rows];
-  }, [data?.history, data?.upcoming]);
+    if (!data) return [];
+    return buildReportsTableRows(
+      data.history ?? [],
+      data.estimatesChart?.quarterly ?? [],
+      data.upcoming ?? null,
+    );
+  }, [data]);
   const earningsHistoryHasMore = earningsHistoryVisible < historyRows.length;
   const earningsHistorySlice = useMemo(
     () => historyRows.slice(0, earningsHistoryVisible),
@@ -688,29 +692,29 @@ export function StockEarningsTabContent({
       {!loading && data && historyRows.length > 0 ? (
         <div className="min-w-0 space-y-6">
           <h3 className="text-[18px] font-semibold leading-7 tracking-tight text-[#09090B]">Reports</h3>
-          <div className="min-w-0 w-full max-w-full overflow-x-auto touch-pan-x md:overflow-x-visible [-webkit-overflow-scrolling:touch]">
-            <table className={reportsTableShell}>
-              <thead>
-                <tr className="min-h-11 border-b border-[#E4E4E7] text-[14px] font-medium leading-5 text-[#71717A]">
-                  <th scope="col" className="min-w-0 py-2 pl-4 pr-2 text-left max-sm:pl-3">
+          <ScreenerTableScroll mobileScroll>
+            <table className={reportsTableClass}>
+              <thead className={SCREENER_TABLE_HEADER_STICKY_CLASS}>
+                <tr className="border-b border-[#E4E4E7]">
+                  <th scope="col" className={reportsHeaderThLabel}>
                     Report date
                   </th>
-                  <th scope="col" className="px-2 py-2 text-right">
+                  <th scope="col" className={reportsHeaderThNum}>
                     EPS est.
                   </th>
-                  <th scope="col" className="px-2 py-2 text-right">
+                  <th scope="col" className={reportsHeaderThNum}>
                     EPS actual
                   </th>
-                  <th scope="col" className="px-2 py-2 text-right">
+                  <th scope="col" className={reportsHeaderThNum}>
                     Surprise
                   </th>
-                  <th scope="col" className="px-2 py-2 text-right">
+                  <th scope="col" className={reportsHeaderThNum}>
                     Rev. est.
                   </th>
-                  <th scope="col" className="px-2 py-2 text-right">
+                  <th scope="col" className={reportsHeaderThNum}>
                     Rev. actual
                   </th>
-                  <th scope="col" className="min-w-0 max-w-[min(100%,20rem)] py-2 pl-2 pr-4 text-right whitespace-nowrap max-sm:pr-3">
+                  <th scope="col" className={cn(reportsHeaderThNum, "whitespace-nowrap")}>
                     <span className="sr-only">Document actions</span>
                   </th>
                 </tr>
@@ -718,36 +722,32 @@ export function StockEarningsTabContent({
               <tbody>
                 {earningsHistoryRendered.map((entry, idx) =>
                   entry.kind === "year" ? (
-                    <tr
-                      key={`reports-year-${entry.year}-${idx}`}
-                      className="border-b border-[#E4E4E7] bg-neutral-100 text-[15px] font-semibold leading-6 text-[#09090B]"
-                    >
-                      <td colSpan={7} className="px-4 py-2.5 max-sm:px-3">
+                    <tr key={`reports-year-${entry.year}-${idx}`} className={reportsYearRowClass}>
+                      <td colSpan={7} className="px-2 py-3 sm:px-4">
                         {entry.year}
                       </td>
                     </tr>
                   ) : (
                     <tr
                       key={`${entry.row.fiscalPeriodEndYmd ?? idx}-${entry.row.reportDateDisplay ?? idx}`}
-                      className={cn(
-                        "min-h-[60px] border-b border-[#E4E4E7] transition-colors duration-75 last:border-b-0",
-                        entry.row.reported && "hover:bg-neutral-50",
-                      )}
+                      className={cn(reportsDataRowClass, "last:border-b-0")}
                     >
-                      <td className="min-w-0 py-1.5 pl-4 pr-2 align-top text-left text-[14px] max-sm:pl-3">
-                        <div className="truncate font-semibold leading-5 text-[#09090B]">{tableCell(entry.row.fiscalPeriodLabel)}</div>
-                        <div className="truncate text-[13px] font-normal leading-[18px] text-[#71717A]">
+                      <td className={reportsLabelTd}>
+                        <div className="truncate font-semibold leading-5 text-[#09090B]">
+                          {tableCell(entry.row.fiscalPeriodLabel)}
+                        </div>
+                        <div className="truncate font-['Inter'] text-[12px] font-medium leading-5 text-[#71717A] sm:text-[14px]">
                           {reportDayLineFromDisplay(entry.row.reportDateDisplay)}
                         </div>
                       </td>
-                      <td className={cn(earningsReportsTdNum, "align-middle")}>{tableCell(entry.row.epsEstimateDisplay)}</td>
-                      <td className={cn(earningsReportsTdNum, "align-middle")}>{tableCell(entry.row.epsActualDisplay)}</td>
-                      <td className="min-w-0 px-2 py-1.5 text-right align-middle">
+                      <ReportsNumCell value={entry.row.epsEstimateDisplay} />
+                      <ReportsNumCell value={entry.row.epsActualDisplay} />
+                      <td className={reportsNumTd}>
                         <SurpriseCell value={entry.row.surpriseDisplay} pct={entry.row.surprisePct} />
                       </td>
-                      <td className={cn(earningsReportsTdNum, "align-middle")}>{tableCell(entry.row.revenueEstimateDisplay)}</td>
-                      <td className={cn(earningsReportsTdNum, "align-middle")}>{tableCell(entry.row.revenueActualDisplay)}</td>
-                      <td className="relative z-[1] min-w-0 max-w-[min(100%,20rem)] py-1.5 pl-2 pr-4 text-right align-top max-sm:pr-3">
+                      <ReportsNumCell value={entry.row.revenueEstimateDisplay} />
+                      <ReportsNumCell value={entry.row.revenueActualDisplay} />
+                      <td className={cn(reportsActionsTd, "relative z-[1]")}>
                         <div className="inline-flex w-max max-w-full justify-end">
                           <EarningsReportRowActions listingTicker={sym} row={entry.row} />
                         </div>
@@ -762,7 +762,7 @@ export function StockEarningsTabContent({
                 ) : null}
               </tbody>
             </table>
-          </div>
+          </ScreenerTableScroll>
         </div>
       ) : null}
     </div>

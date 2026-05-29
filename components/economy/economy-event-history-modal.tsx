@@ -4,8 +4,23 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState, type MouseEve
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
+import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
+import {
+  computeFundamentalsChartTooltipPlacement,
+  FUNDAMENTALS_CHART_AXIS_LABEL_ROTATE_DEG,
+  FUNDAMENTALS_CHART_AXIS_ROW_PX,
+  FUNDAMENTALS_CHART_HOVER_BAND_BG,
+  FUNDAMENTALS_CHART_PLOT_INSET_BOTTOM_FRAC,
+  FUNDAMENTALS_CHART_PLOT_INSET_TOP_FRAC,
+  FUNDAMENTALS_CHART_TOOLTIP_CLASS,
+  FUNDAMENTALS_CHART_Y_AXIS_LABEL_COUNT,
+  FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS,
+  FUNDAMENTALS_CHART_Y_AXIS_W_PX,
+  FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER,
+} from "@/lib/chart/fundamentals-chart-surface";
 import { formatEconomyMetric } from "@/lib/market/economy-format-display";
 import type { EconomyCalendarEvent } from "@/lib/market/economy-calendar-types";
+import { cn } from "@/lib/utils";
 
 type HistoryPoint = {
   date: string;
@@ -15,15 +30,24 @@ type HistoryPoint = {
   previous: number | null;
 };
 
-const BAR_COLOR = "#2563EB";
-const HOVER_COLUMN_BG = "rgba(59, 130, 246, 0.14)";
-const CHART_HEIGHT = 400;
+const POSITIVE_BAR_COLOR = "#2563EB";
+const NEGATIVE_BAR_COLOR = "#DC2626";
+const CHART_PLOT_HEIGHT_PX = 320;
+const CHART_TOTAL_HEIGHT_PX = CHART_PLOT_HEIGHT_PX + FUNDAMENTALS_CHART_AXIS_ROW_PX;
 const BAR_WIDTH_PX = 14;
-const Y_AXIS_W_PX = 50;
-const AXIS_ROW_PX = 40;
-const AXIS_LABEL_ROTATE_DEG = -42;
+const BAR_MAX_HEIGHT_FRAC = 0.88;
 
-const historyRowGrid = "grid grid-cols-[minmax(0,2fr)_1fr_1fr_1fr] gap-x-2";
+/** Matches {@link StockIncomeStatementTable} / screener numeric cells. */
+const historyTableGrid =
+  "grid grid-cols-[minmax(11rem,2fr)_repeat(3,minmax(5.25rem,1fr))] gap-x-2";
+const historyLabelHeaderClass =
+  "flex min-h-full min-w-0 items-center self-stretch border-r border-[#E4E4E7] pr-4 text-left font-['Inter'] text-[12px] font-medium leading-5 text-[#71717A] sm:text-[14px]";
+const historyValueHeaderClass =
+  "flex min-h-full min-w-0 items-center justify-end self-stretch font-['Inter'] text-[12px] font-medium leading-5 text-[#71717A] sm:text-[14px]";
+const historyNumCellClass =
+  "min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]";
+const historyLabelCellClass =
+  "flex min-h-full min-w-0 items-center self-stretch border-r border-[#E4E4E7] pr-4 text-left font-['Inter'] text-[14px] font-normal leading-5 text-[#09090B]";
 
 function formatPeriodLabel(dateStr: string, period: string | null): string {
   const d = new Date(dateStr.includes("T") ? dateStr : `${dateStr.split(" ")[0]}T12:00:00Z`);
@@ -57,37 +81,49 @@ function formatYAxisValue(n: number): string {
   return String(n);
 }
 
-const NICE_STEP_FACTORS = [1, 1.25, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10] as const;
+type EconomyChartScale = {
+  maxPos: number;
+  maxNeg: number;
+};
 
-function niceCeilStep(step: number): number {
-  if (!Number.isFinite(step) || step <= 0) return 1;
-  const exp = Math.floor(Math.log10(step));
-  const base = 10 ** exp;
-  const f = step / base;
-  for (const c of NICE_STEP_FACTORS) {
-    if (c >= f) return c * base;
+type ChartColumn = {
+  value: number;
+  label: string;
+  axisLabel: string;
+  leftPct: number;
+};
+
+function periodCenterLeftPercent(i: number, n: number): number {
+  if (n <= 0) return 50;
+  if (n === 1) return 50;
+  return ((i + 0.5) / n) * 100;
+}
+
+function computeEconomyChartScale(values: number[]): EconomyChartScale {
+  let maxPos = 0;
+  let maxNeg = 0;
+  for (const v of values) {
+    if (v > 0) maxPos = Math.max(maxPos, v);
+    if (v < 0) maxNeg = Math.max(maxNeg, -v);
   }
-  return 10 * base;
+  return { maxPos: Math.max(maxPos, 1), maxNeg };
 }
 
-function axisMaxForFiveTicks(rawMax: number): number {
-  if (!Number.isFinite(rawMax) || rawMax <= 0) return 1;
-  const padded = rawMax * 1.04;
-  const step = niceCeilStep(padded / 4);
-  return step * 4;
+function buildEconomyYAxisTicks(maxPos: number, maxNeg: number): number[] {
+  if (maxNeg <= 0) {
+    const top = Math.max(maxPos, 1);
+    const n = FUNDAMENTALS_CHART_Y_AXIS_LABEL_COUNT;
+    return Array.from({ length: n }, (_, i) => (top * (n - 1 - i)) / (n - 1));
+  }
+  const span = maxPos + maxNeg;
+  const n = FUNDAMENTALS_CHART_Y_AXIS_LABEL_COUNT;
+  return Array.from({ length: n }, (_, i) => maxPos - (i / (n - 1)) * span);
 }
 
-function computeTooltipPlacement(
-  focusX: number,
-  containerW: number,
-): { anchorX: number; side: "left" | "right" } {
-  const pad = 8;
-  const gap = 10;
-  const estW = Math.min(280, Math.max(140, containerW - 2 * pad));
-  if (focusX - gap - estW >= pad) return { anchorX: focusX, side: "left" };
-  let anchorX = focusX;
-  if (anchorX + gap + estW > containerW - pad) anchorX = containerW - pad - gap - estW;
-  return { anchorX: Math.max(pad, anchorX), side: "right" };
+function economyTickTopPercent(tick: number, scale: EconomyChartScale): number {
+  const span = scale.maxPos + scale.maxNeg;
+  if (span <= 0) return 100;
+  return 100 - ((tick + scale.maxNeg) / span) * 100;
 }
 
 type TipState = {
@@ -96,7 +132,40 @@ type TipState = {
   side: "left" | "right";
   periodLabel: string;
   valueLine: string;
+  dotColor: string;
 };
+
+function EconomyHistoryBar({
+  value,
+  scale,
+  fill,
+  direction,
+}: {
+  value: number;
+  scale: EconomyChartScale;
+  fill: string;
+  direction: "up" | "down";
+}) {
+  const cap = BAR_MAX_HEIGHT_FRAC * 100;
+  const hPct =
+    direction === "up"
+      ? (value / scale.maxPos) * cap
+      : (-value / Math.max(scale.maxNeg, 1)) * cap;
+  if (hPct <= 0) return <div style={{ width: BAR_WIDTH_PX }} aria-hidden />;
+  const rounded = direction === "up" ? "rounded-t-[2px]" : "rounded-b-[2px]";
+  return (
+    <div
+      className={cn("shrink-0", rounded)}
+      style={{
+        width: BAR_WIDTH_PX,
+        maxWidth: "100%",
+        height: `${hPct}%`,
+        minHeight: 2,
+        backgroundColor: fill,
+      }}
+    />
+  );
+}
 
 function EconomyHistoryBarChart({
   points,
@@ -109,52 +178,57 @@ function EconomyHistoryBarChart({
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [tip, setTip] = useState<TipState | null>(null);
 
-  const { values, labels, axisLabels, maxV, yTicks } = useMemo(() => {
-    const vals: number[] = [];
-    const labs: string[] = [];
-    const axisLabs: string[] = [];
+  const columns = useMemo((): ChartColumn[] => {
+    const items: Omit<ChartColumn, "leftPct">[] = [];
     for (const pt of points) {
       const v = pt.actual ?? pt.previous;
       if (v == null || !Number.isFinite(v)) continue;
-      vals.push(v);
-      labs.push(formatPeriodLabel(pt.date, pt.period));
-      axisLabs.push(formatAxisLabel(pt.date, pt.period));
+      items.push({
+        value: v,
+        label: formatPeriodLabel(pt.date, pt.period),
+        axisLabel: formatAxisLabel(pt.date, pt.period),
+      });
     }
-    const rawMax = vals.length ? Math.max(...vals.map(Math.abs)) : 0;
-    const top = axisMaxForFiveTicks(rawMax || 1);
-    const tickCount = 5;
-    const ticks = Array.from({ length: tickCount }, (_, i) => (top * (tickCount - 1 - i)) / (tickCount - 1));
-    return { values: vals, labels: labs, axisLabels: axisLabs, maxV: top, yTicks: ticks };
+    const n = items.length;
+    return items.map((item, i) => ({
+      ...item,
+      leftPct: periodCenterLeftPercent(i, n),
+    }));
   }, [points]);
 
-  const n = values.length;
-  const plotGridTemplate = n > 0 ? `repeat(${n}, minmax(0, 1fr))` : undefined;
-  const plotHeight = CHART_HEIGHT - AXIS_ROW_PX;
+  const values = useMemo(() => columns.map((c) => c.value), [columns]);
+  const scale = useMemo(() => computeEconomyChartScale(values), [values]);
+  const yTicks = useMemo(
+    () => buildEconomyYAxisTicks(scale.maxPos, scale.maxNeg),
+    [scale.maxPos, scale.maxNeg],
+  );
+
+  const plotInsetTop = `${FUNDAMENTALS_CHART_PLOT_INSET_TOP_FRAC * 100}%`;
+  const plotInsetBottom = `${FUNDAMENTALS_CHART_PLOT_INSET_BOTTOM_FRAC * 100}%`;
+  const n = columns.length;
 
   const clearHover = () => {
     setHoveredIndex(null);
     setTip(null);
   };
 
-  const handleBarHover = (
-    e: MouseEvent<HTMLElement>,
-    i: number,
-    label: string,
-    value: number,
-  ) => {
+  const handleColumnHover = (e: MouseEvent<HTMLElement>, i: number, col: ChartColumn) => {
     const plot = plotRef.current;
     if (!plot) return;
     const plotR = plot.getBoundingClientRect();
-    const col = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const focusX = col.left + col.width / 2 - plotR.left;
-    const { anchorX, side } = computeTooltipPlacement(focusX, Math.max(1, Math.floor(plotR.width)));
+    const { anchorX, side } = computeFundamentalsChartTooltipPlacement(
+      e.clientX - plotR.left,
+      Math.max(1, Math.floor(plotR.width)),
+    );
+    const fill = col.value < 0 ? NEGATIVE_BAR_COLOR : POSITIVE_BAR_COLOR;
     setHoveredIndex(i);
     setTip({
       anchorX,
       y: e.clientY - plotR.top,
       side,
-      periodLabel: label,
-      valueLine: `${eventLabel}: ${formatEconomyMetric(value)}`,
+      periodLabel: col.label,
+      valueLine: formatEconomyMetric(col.value),
+      dotColor: fill,
     });
   };
 
@@ -162,7 +236,7 @@ function EconomyHistoryBarChart({
     return (
       <div
         className="flex items-center justify-center rounded-xl border border-dashed border-[#E4E4E7] bg-[#FAFAFA] text-[13px] text-[#71717A]"
-        style={{ height: CHART_HEIGHT }}
+        style={{ height: CHART_TOTAL_HEIGHT_PX }}
       >
         No data
       </div>
@@ -170,70 +244,87 @@ function EconomyHistoryBarChart({
   }
 
   return (
-    <div className="w-full min-w-0 max-w-full overflow-visible">
-      <div className="relative flex w-full min-w-0 max-w-full flex-col overflow-visible" style={{ height: CHART_HEIGHT }}>
-        <div className="flex min-h-0 w-full min-w-0 flex-1" style={{ height: plotHeight }}>
+    <div className="w-full min-w-0 max-w-full overflow-hidden">
+      <div
+        className="relative flex w-full min-w-0 max-w-full flex-col overflow-hidden"
+        style={{ height: CHART_TOTAL_HEIGHT_PX }}
+      >
+        <div className="flex min-h-0 w-full min-w-0 flex-1" style={{ height: CHART_PLOT_HEIGHT_PX }}>
           <div
             ref={plotRef}
-            className="relative min-h-0 min-w-0 flex-1"
+            className="relative min-h-0 min-w-0 flex-1 overflow-hidden"
             onPointerLeave={clearHover}
           >
-            <div className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[8%]" aria-hidden>
-              {yTicks.map((_, i) => {
-                const nt = yTicks.length;
-                const pct = nt <= 1 ? 0 : (i / (nt - 1)) * 100;
-                return (
-                  <div
-                    key={i}
-                    className="absolute left-0 right-0 border-t border-[#F4F4F5]"
-                    style={{ top: `${pct}%` }}
-                  />
-                );
-              })}
+            <div
+              className="pointer-events-none absolute inset-x-0 z-0 bg-white"
+              style={{ top: plotInsetTop, bottom: plotInsetBottom }}
+              aria-hidden
+            >
+              <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
             </div>
 
             <div
-              className="absolute inset-x-0 top-[8%] bottom-[8%] grid min-h-0 w-full min-w-0 items-stretch px-0"
-              style={{ gridTemplateColumns: plotGridTemplate }}
-              role="img"
-              aria-label={`${eventLabel} bar chart`}
+              className="absolute inset-x-0 z-[1] flex min-h-0 w-full min-w-0 flex-col overflow-hidden"
+              style={{ top: plotInsetTop, bottom: plotInsetBottom }}
             >
-              {values.map((v, i) => {
-                const hPct = maxV > 0 ? (Math.max(0, Math.abs(v)) / maxV) * 100 : 0;
-                return (
+              <div
+                className="pointer-events-none absolute inset-x-0 border-t"
+                style={{
+                  top: `${economyTickTopPercent(0, scale)}%`,
+                  borderColor: FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER,
+                }}
+                aria-hidden
+              />
+              {columns.map((col, i) => (
+                <div
+                  key={`${col.axisLabel}-${i}`}
+                  className="absolute top-0 bottom-0 z-[2] flex -translate-x-1/2 flex-col"
+                  style={{ left: `${col.leftPct}%`, width: BAR_WIDTH_PX + 12 }}
+                  onMouseEnter={(e) => handleColumnHover(e, i, col)}
+                  onMouseMove={(e) => handleColumnHover(e, i, col)}
+                >
+                  {hoveredIndex === i ? (
+                    <div
+                      className="pointer-events-none absolute inset-0 z-0"
+                      style={{ backgroundColor: FUNDAMENTALS_CHART_HOVER_BAND_BG }}
+                      aria-hidden
+                    />
+                  ) : null}
                   <div
-                    key={`${axisLabels[i]}-${i}`}
-                    className="relative z-0 flex h-full min-h-0 min-w-0 flex-col items-center justify-end px-0.5"
-                    onMouseEnter={(e) => handleBarHover(e, i, labels[i]!, v)}
-                    onMouseMove={(e) => handleBarHover(e, i, labels[i]!, v)}
+                    className="relative z-10 flex min-h-0 w-full flex-1 items-end justify-center"
+                    style={{ flex: scale.maxPos }}
                   >
-                    {hoveredIndex === i && (
-                      <div
-                        className="pointer-events-none absolute inset-0 z-0"
-                        style={{ backgroundColor: HOVER_COLUMN_BG }}
-                        aria-hidden
+                    {col.value >= 0 ? (
+                      <EconomyHistoryBar
+                        value={col.value}
+                        scale={scale}
+                        fill={POSITIVE_BAR_COLOR}
+                        direction="up"
                       />
-                    )}
-                    <div className="relative z-10 flex h-full min-h-0 w-full flex-col items-center justify-end">
-                      <div
-                        className="mt-auto shrink-0 rounded-t-[2px] rounded-b-none transition-[height] duration-75"
-                        style={{
-                          width: BAR_WIDTH_PX,
-                          maxWidth: "100%",
-                          height: `${hPct}%`,
-                          minHeight: hPct > 0 ? 2 : 0,
-                          backgroundColor: BAR_COLOR,
-                        }}
-                      />
-                    </div>
+                    ) : null}
                   </div>
-                );
-              })}
+                  {scale.maxNeg > 0 ? (
+                    <div
+                      className="relative z-10 flex min-h-0 w-full items-start justify-center"
+                      style={{ flex: scale.maxNeg }}
+                    >
+                      {col.value < 0 ? (
+                        <EconomyHistoryBar
+                          value={col.value}
+                          scale={scale}
+                          fill={NEGATIVE_BAR_COLOR}
+                          direction="down"
+                        />
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
+              ))}
             </div>
 
-            {tip && (
+            {tip ? (
               <div
-                className="pointer-events-none absolute z-30 max-w-[min(280px,calc(100%-16px))] rounded-lg bg-[#09090B] px-3 py-2.5 pr-3.5 text-left text-white shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
+                className={FUNDAMENTALS_CHART_TOOLTIP_CLASS}
                 style={{
                   left: `clamp(8px, ${tip.anchorX}px, calc(100% - 8px))`,
                   top: tip.y,
@@ -243,77 +334,82 @@ function EconomyHistoryBarChart({
                       : "translate(10px, -50%)",
                 }}
               >
-                {tip.side === "left" ? (
+                <p className="text-[12px] font-semibold leading-4 text-[#09090B]">{tip.periodLabel}</p>
+                <p className="mt-1.5 flex items-center gap-2 whitespace-nowrap text-[12px] font-normal leading-4 text-[#71717A]">
                   <span
-                    className="absolute top-1/2 left-full -translate-y-1/2 border-y-[6px] border-y-transparent border-l-[7px] border-l-[#09090B]"
+                    className="h-2 w-2 shrink-0 rounded-full"
+                    style={{ backgroundColor: tip.dotColor }}
                     aria-hidden
                   />
-                ) : (
-                  <span
-                    className="absolute top-1/2 right-full -translate-y-1/2 border-y-[6px] border-y-transparent border-r-[7px] border-r-[#09090B]"
-                    aria-hidden
-                  />
-                )}
-                <p className="text-[12px] font-semibold leading-4 text-white">{tip.periodLabel}</p>
-                <p className="mt-1.5 whitespace-nowrap text-[12px] font-normal leading-4 text-[#71717A]">
-                  {tip.valueLine}
+                  <span>
+                    {eventLabel}: {tip.valueLine}
+                  </span>
                 </p>
               </div>
-            )}
+            ) : null}
           </div>
 
           <div
-            className="relative h-full shrink-0 pl-3 text-left font-['Inter'] text-[12px] tabular-nums leading-none text-[#71717A]"
-            style={{ width: Y_AXIS_W_PX }}
+            className={cn(
+              "relative h-full shrink-0 text-right font-['Inter'] text-[12px] tabular-nums leading-none text-[#71717A]",
+              FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS,
+            )}
+            style={{ width: FUNDAMENTALS_CHART_Y_AXIS_W_PX }}
             aria-hidden
           >
-            <div className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[8%]">
-              {yTicks.map((t, i) => {
-                const nt = yTicks.length;
-                const pct = nt <= 1 ? 0 : (i / (nt - 1)) * 100;
-                return (
-                  <span
-                    key={i}
-                    className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-white px-1 py-px"
-                    style={{ top: `${pct}%` }}
-                  >
-                    {formatYAxisValue(t)}
-                  </span>
-                );
-              })}
+            <div
+              className="pointer-events-none absolute inset-x-0"
+              style={{ top: plotInsetTop, bottom: plotInsetBottom }}
+            >
+              {yTicks.map((t, i) => (
+                <span
+                  key={i}
+                  className="absolute right-0 z-[1] block -translate-y-1/2 rounded-sm bg-white px-1 py-px"
+                  style={{ top: `${economyTickTopPercent(t, scale)}%` }}
+                >
+                  {formatYAxisValue(t)}
+                </span>
+              ))}
             </div>
           </div>
         </div>
 
-        <div className="flex w-full min-w-0 overflow-visible" style={{ height: AXIS_ROW_PX }}>
-          <div
-            className="mb-2 grid min-w-0 flex-1 items-end justify-items-stretch px-0"
-            style={{ gridTemplateColumns: plotGridTemplate }}
-          >
-            {axisLabels.map((axisLab, i) => {
+        <div
+          className="relative flex w-full min-w-0 shrink-0 overflow-visible"
+          style={{ height: FUNDAMENTALS_CHART_AXIS_ROW_PX }}
+          role="img"
+          aria-label={`${eventLabel} bar chart`}
+        >
+          <div className="relative min-h-0 min-w-0 flex-1 overflow-visible">
+            {columns.map((col, i) => {
               const show = n <= 24 || i % Math.ceil(n / 24) === 0 || i === n - 1;
               return (
                 <div
-                  key={`${axisLab}-${i}`}
-                  className="flex min-h-0 min-w-0 items-end justify-center overflow-visible px-0.5 pb-0.5"
-                  title={labels[i]}
+                  key={`axis-${col.axisLabel}-${i}`}
+                  className="absolute bottom-0 flex min-h-0 -translate-x-1/2 items-end justify-center overflow-visible px-0.5 pb-0.5"
+                  style={{ left: `${col.leftPct}%`, width: BAR_WIDTH_PX + 12 }}
+                  title={col.label}
                 >
-                  {show && (
+                  {show ? (
                     <span
                       className="inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]"
                       style={{
-                        transform: `rotate(${AXIS_LABEL_ROTATE_DEG}deg)`,
+                        transform: `rotate(${FUNDAMENTALS_CHART_AXIS_LABEL_ROTATE_DEG}deg)`,
                         transformOrigin: "center bottom",
                       }}
                     >
-                      {axisLab}
+                      {col.axisLabel}
                     </span>
-                  )}
+                  ) : null}
                 </div>
               );
             })}
           </div>
-          <div style={{ width: Y_AXIS_W_PX }} className="shrink-0 pl-3" aria-hidden />
+          <div
+            className="shrink-0"
+            style={{ width: FUNDAMENTALS_CHART_Y_AXIS_W_PX }}
+            aria-hidden
+          />
         </div>
       </div>
     </div>
@@ -441,15 +537,24 @@ export function EconomyEventHistoryModal({
 
         <div className="min-h-0 flex-1 overflow-hidden px-5 py-4">
           {loading ? (
-            <div className="flex items-center justify-center text-[14px] text-[#71717A]" style={{ height: CHART_HEIGHT }}>
+            <div
+              className="flex items-center justify-center text-[14px] text-[#71717A]"
+              style={{ height: CHART_TOTAL_HEIGHT_PX }}
+            >
               Loading historical data…
             </div>
           ) : error ? (
-            <div className="flex items-center justify-center text-[14px] text-[#71717A]" style={{ height: CHART_HEIGHT }}>
+            <div
+              className="flex items-center justify-center text-[14px] text-[#71717A]"
+              style={{ height: CHART_TOTAL_HEIGHT_PX }}
+            >
               {error}
             </div>
           ) : points.length === 0 ? (
-            <div className="flex items-center justify-center text-[14px] text-[#71717A]" style={{ height: CHART_HEIGHT }}>
+            <div
+              className="flex items-center justify-center text-[14px] text-[#71717A]"
+              style={{ height: CHART_TOTAL_HEIGHT_PX }}
+            >
               No historical data available
             </div>
           ) : (
@@ -458,29 +563,31 @@ export function EconomyEventHistoryModal({
         </div>
 
         {!loading && points.length > 0 && (
-          <div className="max-h-[240px] shrink-0 overflow-y-auto border-t border-[#E4E4E7]">
+          <div className="max-h-[280px] shrink-0 overflow-y-auto border-t border-[#E4E4E7]">
             <div className="divide-y divide-[#E4E4E7] bg-white">
-              <div className={`${historyRowGrid} sticky top-0 z-10 min-h-[44px] items-center bg-white px-2 text-[12px] font-medium leading-5 text-[#71717A] sm:px-4 sm:text-[14px]`}>
-                <div className="min-w-0 text-left">Date</div>
-                <div className="min-w-0 w-full text-right">Actual</div>
-                <div className="min-w-0 w-full text-right">Forecast</div>
-                <div className="min-w-0 w-full text-right">Prior</div>
+              <div
+                className={`${historyTableGrid} sticky top-0 z-10 min-h-[44px] items-stretch border-b border-[#E4E4E7] bg-white px-4 py-0`}
+              >
+                <div className={historyLabelHeaderClass}>Date</div>
+                <div className={historyValueHeaderClass}>Actual</div>
+                <div className={historyValueHeaderClass}>Forecast</div>
+                <div className={historyValueHeaderClass}>Prior</div>
               </div>
               {[...points].reverse().map((pt, i) => (
                 <div
                   key={`${pt.date}-${i}`}
-                  className={`${historyRowGrid} min-h-[48px] items-center bg-white px-2 transition-colors duration-75 hover:bg-neutral-50 sm:px-4`}
+                  className={`${historyTableGrid} group min-h-[60px] max-h-[60px] items-stretch bg-white px-4 transition-colors duration-75 hover:bg-neutral-50`}
                 >
-                  <div className="min-w-0 truncate text-left text-[14px] font-normal leading-5 text-[#71717A]">
-                    {formatPeriodLabel(pt.date, pt.period)}
+                  <div className={historyLabelCellClass}>
+                    <span className="truncate">{formatPeriodLabel(pt.date, pt.period)}</span>
                   </div>
-                  <div className="min-w-0 w-full text-right font-['Inter'] text-[14px] font-medium leading-5 tabular-nums text-[#09090B]">
+                  <div className={cn(historyNumCellClass, "flex min-h-full items-center justify-end")}>
                     {formatEconomyMetric(pt.actual)}
                   </div>
-                  <div className="min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
+                  <div className={cn(historyNumCellClass, "flex min-h-full items-center justify-end")}>
                     {formatEconomyMetric(pt.estimate)}
                   </div>
-                  <div className="min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
+                  <div className={cn(historyNumCellClass, "flex min-h-full items-center justify-end")}>
                     {formatEconomyMetric(pt.previous)}
                   </div>
                 </div>

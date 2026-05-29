@@ -321,42 +321,6 @@ function syncYAxisTickLabels(
   }
 }
 
-function syncScaleBoundsPriceLines(
-  chart: IChartApi,
-  series: MainPriceSeries,
-  topRef: RefObject<IPriceLine | null>,
-  bottomRef: RefObject<IPriceLine | null>,
-) {
-  const h = chart.paneSize(0).height;
-  if (!Number.isFinite(h) || h <= 0) return;
-
-  const topPrice = series.coordinateToPrice(0);
-  const bottomPrice = series.coordinateToPrice(h);
-  if (topPrice == null || bottomPrice == null) return;
-  const top = topPrice as number;
-  const bottom = bottomPrice as number;
-  if (!Number.isFinite(top) || !Number.isFinite(bottom)) return;
-
-  const common = {
-    color: SCALE_EDGE_LINE,
-    lineWidth: 1,
-    lineStyle: LineStyle.Solid,
-    axisLabelVisible: false,
-    lineVisible: true,
-  } as const;
-
-  if (!topRef.current) {
-    topRef.current = series.createPriceLine({ price: top, ...common });
-  } else {
-    topRef.current.applyOptions({ price: top, ...common });
-  }
-  if (!bottomRef.current) {
-    bottomRef.current = series.createPriceLine({ price: bottom, ...common });
-  } else {
-    bottomRef.current.applyOptions({ price: bottom, ...common });
-  }
-}
-
 /**
  * In-bar series markers scale with `barSpacing` (LWCharts uses clamp(barSpacing, 12, 30) for shape height).
  * Sparse ranges (e.g. 1M) get oversized dots vs dense ranges (6M). Damp toward ~16px equivalent without exceeding default.
@@ -820,7 +784,8 @@ export function PriceChart({
           })
         : null;
     onDisplayChange({
-      loading,
+      // Keep header stable during background refetch — still have prior bars to display.
+      loading: loading && metrics.displayPrice == null,
       empty: !loading && points.length === 0,
       displayPrice: metrics.displayPrice,
       displayChangePct: metrics.displayChangePct,
@@ -1252,11 +1217,7 @@ export function PriceChart({
         const c2 = chartRef.current;
         const s2 = seriesRef.current;
         if (!c2 || !s2) return;
-        if (holdingsStyle) {
-          syncScaleBoundsPriceLines(c2, s2, scaleTopPriceLineRef, scaleBottomPriceLineRef);
-        } else {
-          removeScaleBoundsPriceLines(s2, scaleTopPriceLineRef, scaleBottomPriceLineRef);
-        }
+        removeScaleBoundsPriceLines(s2, scaleTopPriceLineRef, scaleBottomPriceLineRef);
         if (!hideMobileYAxisLabelsRef.current) {
           syncYAxisTickLabels(c2, s2, yAxisTickLinesRef);
         } else {

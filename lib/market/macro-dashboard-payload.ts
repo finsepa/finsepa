@@ -63,7 +63,7 @@ export async function buildMacroDashboardPayloadForIngest(): Promise<{
 async function getMacroDashboardPayloadCachedInner(): Promise<{ country: string; items: MacroDashboardCard[] }> {
   return unstable_cache(
     buildMacroDashboardPayloadUncached,
-    ["macro-dashboard-payload-v17"],
+    ["macro-dashboard-payload-v18"],
     { revalidate: REVALIDATE_STATIC_DAY },
   )();
 }

@@ -10,6 +10,7 @@ import {
   STANDALONE_CHARTING_TIME_RANGE_ORDER,
   type ChartTimeRange,
 } from "@/components/charting/charting-workspace";
+import { ChartingVisualSwitcher } from "@/components/stock/multichart-visual-switcher";
 import { secondaryOutlineButtonClassName, TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
 import {
   dropdownMenuFloatingScrollClassName,
@@ -42,11 +43,6 @@ const PERIOD_TAB_OPTIONS = [
   { value: "annual" as const, label: "Annual" },
   { value: "quarterly" as const, label: "Quarterly" },
 ];
-
-const CHART_TYPE_TAB_OPTIONS = [
-  { value: "line" as const, label: "Line" },
-  { value: "bars" as const, label: "Bars" },
-] as const satisfies readonly TabSwitcherOption<ChartType>[];
 
 const TIME_RANGE_LABELS: Record<ChartTimeRange, string> = {
   "1Y": "1Y",
@@ -239,13 +235,7 @@ export function ChartingEmptyToolbar({
               onChange={setPeriodMode}
               aria-label="Reporting period"
             />
-            <TabSwitcher
-              size="sm"
-              options={CHART_TYPE_TAB_OPTIONS}
-              value={chartType}
-              onChange={setChartType}
-              aria-label="Chart type"
-            />
+            <ChartingVisualSwitcher value={chartType} onChange={setChartType} />
           </div>
           <div className="shrink-0">
             <TabSwitcher

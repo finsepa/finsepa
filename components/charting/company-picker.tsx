@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { CompanyLogo } from "@/components/screener/company-logo";
 import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
-import { PeerSearchDropdownRow } from "@/components/stock/stock-peers-tab";
+import { PeerSearchDropdownRow } from "@/components/comparison/peer-search-dropdown-row";
 import { SearchInlineInputShell } from "@/components/search/search-inline-input-shell";
 import { SearchLoadingIndicator } from "@/components/search/search-loading-indicator";
 import { isSingleAssetMode, SINGLE_ASSET_SYMBOL } from "@/lib/features/single-asset";
@@ -85,6 +85,7 @@ export function CompanyPicker({
   onClearSelection,
   placeholder: placeholderProp,
   shellClassName,
+  wrapClassName,
   menuPortal = false,
   children,
 }: {
@@ -104,6 +105,8 @@ export function CompanyPicker({
   onClearSelection?: () => void;
   placeholder?: string;
   shellClassName?: string;
+  /** Wrapper around trigger + menu (`w-full` for search shell; `shrink-0 w-auto` for chip rows). */
+  wrapClassName?: string;
   /** Portal dropdown to `document.body` (avoids modal overflow clipping). */
   menuPortal?: boolean;
   children?: (ctx: CompanyPickerRenderProps) => ReactNode;
@@ -402,8 +405,12 @@ export function CompanyPicker({
 
   const portalAlign = menuAlign === "trailing" ? "trailing" : "leading";
 
+  const resolvedWrapClassName =
+    wrapClassName ??
+    (variant === "inline-search" ? "relative w-full" : "relative w-auto shrink-0");
+
   return (
-    <div className={cn("relative w-full", pickerOpen && "z-[100]")} ref={pickerWrapRef}>
+    <div className={cn(resolvedWrapClassName, pickerOpen && "z-[100]")} ref={pickerWrapRef}>
       {variant === "inline-search" ? (
         <SearchInlineInputShell
           open={pickerOpen}

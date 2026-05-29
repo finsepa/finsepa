@@ -1,9 +1,21 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useId, useMemo, useRef, useState } from "react";
+import { useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 
+import { MULTICHART_LINE_STROKE_WIDTH_PX } from "@/components/stock/multichart-fundamentals-bar";
+
+import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
+import {
+  computeFundamentalsChartTooltipPlacement,
+  FUNDAMENTALS_CHART_TOOLTIP_CLASS,
+  FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER,
+} from "@/lib/chart/fundamentals-chart-surface";
+import { MacroSparklineBars } from "@/components/macro/macro-sparkline-bars";
+import type { MacroRangeId } from "@/components/macro/macro-range";
 import { formatMacroValue, type MacroValueKind } from "@/components/macro/macro-format";
+import { macroChartTimeAxisLabels } from "@/lib/macro/macro-chart-points";
+import { smoothAreaPathD, smoothLinePathD } from "@/lib/chart/smooth-line-path";
 import { cn } from "@/lib/utils";
 
 export type MacroChartVariant = "area" | "bar";
@@ -18,20 +30,14 @@ const PORTFOLIO_AREA_TOP_OPACITY = 0.22;
 const PORTFOLIO_AREA_BOTTOM_OPACITY = 0.02;
 /** Same fill as Multicharts hover column band. */
 const HOVER_COLUMN_BG = "rgba(59, 130, 246, 0.14)";
-/** Grid cards: `nonScalingStroke` 2px matches small sparkline cards. */
-const MACRO_SERIES_STROKE_WIDTH_CARD = 2;
-/**
- * Full-screen modal plots stretch wide; constant 2px `nonScalingStroke` reads heavier than LWC on a large canvas.
- * Use 1px so perceived weight matches Portfolio value chart.
- */
-const MACRO_SERIES_STROKE_WIDTH_MODAL = 1;
 /** HTML overlay — align with Portfolio vert line (~1px); modal uses 1px width + softer tone next to thinner series stroke. */
 const HOVER_RULE_WIDTH_CARD_PX = 2;
 const HOVER_RULE_WIDTH_MODAL_PX = 1;
 const HOVER_RULE_COLOR_CARD = "rgba(9, 9, 11, 0.14)";
 const HOVER_RULE_COLOR_MODAL = "rgba(9, 9, 11, 0.12)";
 
-const GRID = "#F4F4F5";
+const PLOT_INSET_TOP_FRAC = 0.08;
+const PLOT_INSET_BOTTOM_FRAC = 0.04;
 
 type HoverOverlayPx = {
   lineX: number;
@@ -75,53 +81,6 @@ function computeTooltipHorizontalPlacement(focusX: number, containerWidthPx: num
   return { anchorX, side: "right" };
 }
 
-/** Polyline through samples — avoids cubic overshoot on sharp macro swings (e.g. unemployment spikes). */
-function linearLinePathD(pts: readonly { x: number; y: number }[]): string {
-  if (pts.length === 0) return "";
-  let d = `M ${pts[0].x} ${pts[0].y}`;
-  for (let i = 1; i < pts.length; i++) {
-    d += ` L ${pts[i].x} ${pts[i].y}`;
-  }
-  return d;
-}
-
-function formatAxisTimeLabel(time: string, style: "year" | "month"): string {
-  const t = time.trim().slice(0, 10);
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(t);
-  if (!m) return t.slice(0, 4);
-  const y = Number(m[1]);
-  const mo = Number(m[2]) - 1;
-  const day = Number(m[3]);
-  const d = new Date(Date.UTC(y, mo, day));
-  if (!Number.isFinite(d.getTime())) return t.slice(0, 4);
-  if (style === "month") {
-    return d.toLocaleDateString("en-US", { month: "short", year: "numeric", timeZone: "UTC" });
-  }
-  return String(y);
-}
-
-/** ~6 ticks along the series — uses months when everything sits in one calendar year (fixes “only 2026” on 1Y windows). */
-function compactTimeAxisLabels(points: readonly { time: string }[]): string[] {
-  if (!points.length) return [];
-  const n = points.length;
-  const slots = 6;
-  if (n === 1) return [formatAxisTimeLabel(points[0]!.time, "month")];
-
-  const firstY = parseInt(points[0]!.time.slice(0, 4), 10);
-  const lastY = parseInt(points[n - 1]!.time.slice(0, 4), 10);
-  const yearSpan = Number.isFinite(firstY) && Number.isFinite(lastY) ? lastY - firstY : 0;
-  const style: "year" | "month" = yearSpan <= 0 ? "month" : "year";
-
-  const indices = Array.from({ length: slots }, (_, i) => Math.round((i / Math.max(1, slots - 1)) * (n - 1)));
-  const labels = indices.map((idx) => formatAxisTimeLabel(points[idx]!.time, style));
-
-  const out: string[] = [];
-  for (const L of labels) {
-    if (out[out.length - 1] !== L) out.push(L);
-  }
-  return out.length >= 2 ? out : labels;
-}
-
 function axisTickValues(min: number, max: number, count: number): number[] {
   if (!Number.isFinite(min) || !Number.isFinite(max)) return [];
   if (count < 2) return [max];
@@ -133,6 +92,7 @@ export function MacroSparkline({
   title,
   kind,
   points,
+  rangeId,
   height = 168,
   variant = "area",
   /** Match macro card chart density; `prominent` = slightly richer fill for expanded / modal views. */
@@ -143,6 +103,7 @@ export function MacroSparkline({
   title: string;
   kind: MacroValueKind;
   points: Array<{ time: string; value: number }>;
+  rangeId: MacroRangeId;
   height?: number;
   variant?: MacroChartVariant;
   visualWeight?: "default" | "prominent";
@@ -156,9 +117,10 @@ export function MacroSparkline({
   const padX = comfortable ? 12 : 4;
   const padY = comfortable ? 16 : 8;
   const gradientId = `macro-area-${useId().replace(/:/g, "")}`;
-  const seriesStrokeWidthPx = comfortable ? MACRO_SERIES_STROKE_WIDTH_MODAL : MACRO_SERIES_STROKE_WIDTH_CARD;
 
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const plotAreaRef = useRef<HTMLDivElement | null>(null);
+  const [plotPx, setPlotPx] = useState({ w: 0, h: 0 });
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
   /** Pixel overlay — avoids stretched SVG turning the rule/marker into odd thickness or ellipses (`preserveAspectRatio="none"`). */
   const [hoverOverlayPx, setHoverOverlayPx] = useState<HoverOverlayPx | null>(null);
@@ -197,18 +159,41 @@ export function MacroSparkline({
 
   const tickVals = useMemo(() => axisTickValues(vMin, vMax, 6), [vMin, vMax]);
 
-  const gridLines = tickVals.map((tv) => (
-    <line
-      key={`g-${tv}`}
-      x1={padX}
-      x2={w - padX}
-      y1={yForValue(tv)}
-      y2={yForValue(tv)}
-      stroke={GRID}
-      strokeWidth={1}
-      vectorEffect="nonScalingStroke"
-    />
-  ));
+  useLayoutEffect(() => {
+    if (variant !== "area") return;
+    const el = plotAreaRef.current;
+    if (!el) return;
+    const measure = () => {
+      const r = el.getBoundingClientRect();
+      setPlotPx({ w: Math.max(0, r.width), h: Math.max(0, r.height) });
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [variant, h, seriesForLayout.length]);
+
+  const areaLine = useMemo(() => {
+    if (variant !== "area" || seriesForLayout.length < 2) return null;
+    const pw = plotPx.w;
+    const ph = plotPx.h;
+    if (pw <= 0 || ph <= 0) return null;
+    const n = seriesForLayout.length;
+    const padT = ph * PLOT_INSET_TOP_FRAC;
+    const padB = ph * PLOT_INSET_BOTTOM_FRAC;
+    const innerH = Math.max(1, ph - padT - padB);
+    const floorY = ph;
+    const pts = seriesForLayout.map((v, i) => {
+      const x = n <= 1 ? pw / 2 : (i / (n - 1)) * pw;
+      const frac = (v - vMin) / range;
+      const y = padT + innerH * (1 - frac);
+      return { x, y, i };
+    });
+    const curvePts = pts.map((p) => ({ x: p.x, y: p.y }));
+    const d = smoothLinePathD(curvePts);
+    const areaD = smoothAreaPathD(curvePts, floorY);
+    return { d, areaD, gradY0: padT, gradY1: floorY, pts, innerH, padT };
+  }, [variant, plotPx.h, plotPx.w, range, seriesForLayout, vMin]);
 
   const idxToX = (i: number, n: number) => {
     if (n <= 1) return padX + chartW / 2;
@@ -221,25 +206,9 @@ export function MacroSparkline({
     return n === 1 ? padX + chartW / 2 : padX + (i + 0.5) * slot;
   };
 
-  let linePathD = "";
-  let fillPathD = "";
   const barEls: ReactNode[] = [];
 
-  if (variant === "area" && seriesForLayout.length >= 2) {
-    const snap = (v: number) => {
-      // Avoid anti-aliased “fat/thin” segments in stretched SVGs by aligning the line to the pixel grid.
-      // For 1px strokes, crisp rendering happens on half-pixels; for thicker strokes, integers look best.
-      const px = seriesStrokeWidthPx <= 1 ? 0.5 : 1;
-      return Math.round(v / px) * px;
-    };
-    const xy = seriesForLayout.map((v, i) => {
-      const x = clamp(snap(idxToX(i, seriesForLayout.length)), 0, w);
-      const y = clamp(snap(yForValue(v)), 0, h);
-      return { x, y };
-    });
-    linePathD = linearLinePathD(xy);
-    fillPathD = `${linePathD} L ${w - padX} ${h - padY} L ${padX} ${h - padY} Z`;
-  } else if (variant === "bar" && rawValues.length > 0) {
+  if (variant === "bar" && rawValues.length > 0) {
     const n = rawValues.length;
     const slot = chartW / n;
     const bw = clamp(slot * 0.62, 2, 22);
@@ -263,7 +232,7 @@ export function MacroSparkline({
     });
   }
 
-  const timeAxisLabels = useMemo(() => compactTimeAxisLabels(cleaned), [cleaned]);
+  const timeAxisLabels = useMemo(() => macroChartTimeAxisLabels(cleaned, rangeId), [cleaned, rangeId]);
 
   const hoverSeries: number[] =
     variant === "area"
@@ -294,17 +263,50 @@ export function MacroSparkline({
     const cr = chartEl?.getBoundingClientRect();
     if (!chartEl || !cr) return;
 
+    if (variant === "area") {
+      const xPx = e.clientX - cr.left;
+      const idx = clamp(Math.round((xPx / Math.max(1, cr.width)) * (layoutLen - 1)), 0, layoutLen - 1);
+      const pt = areaLine?.pts[idx];
+      if (!pt) return;
+      setHoverIdx(idx);
+      const focusX = cr.left - r.left + pt.x;
+      const { anchorX, side } = comfortable
+        ? computeTooltipHorizontalPlacement(focusX, Math.max(1, Math.floor(r.width)))
+        : computeFundamentalsChartTooltipPlacement(focusX, Math.max(1, Math.floor(r.width)));
+      const point = cleaned.length ? cleaned[Math.min(idx, cleaned.length - 1)] : null;
+      if (point) {
+        setTip({
+          anchorX,
+          side,
+          y: e.clientY - r.top,
+          timeLabel: formatMacroTooltipTime(point.time),
+          valueLabel: `${title}: ${formatMacroValue(kind, point.value)}`,
+        });
+      } else {
+        setTip(null);
+      }
+      setHoverOverlayPx({
+        lineX: focusX,
+        dotTop: cr.top - r.top + pt.y,
+        chartTop: cr.top - r.top,
+        chartHeight: cr.height,
+      });
+      return;
+    }
+
     const xPx = e.clientX - cr.left;
     const xSvg = (xPx / Math.max(1, cr.width)) * w;
     const idx = clamp(Math.round(((xSvg - padX) / Math.max(1, chartW)) * (layoutLen - 1)), 0, layoutLen - 1);
     setHoverIdx(idx);
 
-    const x = variant === "bar" ? barCenterX(idx, layoutLen) : idxToX(idx, layoutLen);
-    const val = variant === "area" ? hoverSeries[idx]! : rawValues[idx]!;
+    const x = barCenterX(idx, layoutLen);
+    const val = rawValues[idx]!;
     const yUser = padY + chartH - ((val - vMin) / range) * chartH;
 
     const focusX = cr.left - r.left + (x / w) * cr.width;
-    const { anchorX, side } = computeTooltipHorizontalPlacement(focusX, Math.max(1, Math.floor(r.width)));
+    const { anchorX, side } = comfortable
+      ? computeTooltipHorizontalPlacement(focusX, Math.max(1, Math.floor(r.width)))
+      : computeFundamentalsChartTooltipPlacement(focusX, Math.max(1, Math.floor(r.width)));
     const point = cleaned.length ? cleaned[Math.min(idx, cleaned.length - 1)] : null;
     if (point) {
       setTip({
@@ -336,62 +338,108 @@ export function MacroSparkline({
     return <div className="w-full rounded-md bg-[#FAFAFA]" style={{ height: h }} aria-hidden />;
   }
 
+  if (variant === "bar" && !comfortable) {
+    const totalHeight =
+      heightMode === "total" ? height : height + axisRowPx + axisGapPx + (comfortable ? 0 : 10);
+    return (
+      <MacroSparklineBars title={title} kind={kind} points={points} height={totalHeight} rangeId={rangeId} />
+    );
+  }
+
   return (
     <div ref={containerRef} className="relative w-full" onPointerMove={onPointerMove} onPointerLeave={clearHover}>
       <div className={cn("flex w-full", comfortable ? "gap-3" : "gap-1")}>
-        <div className="relative min-w-0 flex-1 overflow-visible">
-          {hoverOverlayPx ? (
+        <div
+          ref={plotAreaRef}
+          className="relative min-h-0 min-w-0 flex-1 overflow-visible"
+          style={{ height: h }}
+        >
+          {!comfortable ? (
             <div
-              className="pointer-events-none absolute z-[1] w-10 -translate-x-1/2"
+              className="pointer-events-none absolute inset-x-0 z-0 bg-white"
               style={{
-                left: hoverOverlayPx.lineX,
-                top: hoverOverlayPx.chartTop,
-                height: hoverOverlayPx.chartHeight,
-                backgroundColor: HOVER_COLUMN_BG,
+                top: `${PLOT_INSET_TOP_FRAC * 100}%`,
+                bottom: `${PLOT_INSET_BOTTOM_FRAC * 100}%`,
               }}
               aria-hidden
-            />
+            >
+              <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
+              <div
+                className="absolute inset-x-0 bottom-0 border-t"
+                style={{ borderColor: FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER }}
+              />
+            </div>
           ) : null}
-          <svg
-            data-macro-chart-svg
-            width="100%"
-            height={h}
-            viewBox={`0 0 ${w} ${h}`}
-            preserveAspectRatio="none"
-            shapeRendering="geometricPrecision"
-            // Important: don't use `h-full` here — it overrides the explicit pixel `height`
-            // and can stretch/clamp inside modal containers.
-            className="relative z-[2] block w-full min-w-0 overflow-visible"
-          >
-            <defs>
-              <linearGradient id={gradientId} x1="0" x2="0" y1={padY} y2={h - padY} gradientUnits="userSpaceOnUse">
-                <stop offset="0%" stopColor={PORTFOLIO_VALUE_LINE} stopOpacity={PORTFOLIO_AREA_TOP_OPACITY} />
-                <stop offset="100%" stopColor={PORTFOLIO_VALUE_LINE} stopOpacity={PORTFOLIO_AREA_BOTTOM_OPACITY} />
-              </linearGradient>
-            </defs>
-            {gridLines}
-            {variant === "area" && seriesForLayout.length >= 2 ? (
-              <>
-                <path d={fillPathD} fill={`url(#${gradientId})`} />
+          {variant === "area" ? (
+            areaLine && plotPx.w > 0 && plotPx.h > 0 ? (
+              <svg
+                data-macro-chart-svg
+                width={plotPx.w}
+                height={plotPx.h}
+                className="absolute inset-0 z-[2] block overflow-visible"
+              >
+                <defs>
+                  <linearGradient
+                    id={gradientId}
+                    x1="0"
+                    x2="0"
+                    y1={areaLine.gradY0}
+                    y2={areaLine.gradY1}
+                    gradientUnits="userSpaceOnUse"
+                  >
+                    <stop offset="0%" stopColor={PORTFOLIO_VALUE_LINE} stopOpacity={PORTFOLIO_AREA_TOP_OPACITY} />
+                    <stop offset="100%" stopColor={PORTFOLIO_VALUE_LINE} stopOpacity={PORTFOLIO_AREA_BOTTOM_OPACITY} />
+                  </linearGradient>
+                </defs>
+                {comfortable
+                  ? tickVals.map((tv) => {
+                      const y = areaLine.padT + areaLine.innerH * (1 - (tv - vMin) / range);
+                      return (
+                        <line
+                          key={`g-${tv}`}
+                          x1={0}
+                          x2={plotPx.w}
+                          y1={y}
+                          y2={y}
+                          stroke="#F4F4F5"
+                          strokeWidth={1}
+                        />
+                      );
+                    })
+                  : null}
+                {areaLine.areaD ? <path d={areaLine.areaD} fill={`url(#${gradientId})`} /> : null}
                 <path
-                  d={linePathD}
+                  d={areaLine.d}
                   fill="none"
                   stroke={PORTFOLIO_VALUE_LINE}
-                  strokeWidth={seriesStrokeWidthPx}
+                  strokeWidth={MULTICHART_LINE_STROKE_WIDTH_PX}
                   strokeLinejoin="round"
                   strokeLinecap="round"
-                  vectorEffect="nonScalingStroke"
-                  shapeRendering="geometricPrecision"
                 />
-              </>
-            ) : null}
-            {variant === "bar" ? barEls : null}
-          </svg>
+              </svg>
+            ) : (
+              <div data-macro-chart-svg className="absolute inset-0 z-[2]" aria-hidden />
+            )
+          ) : (
+            <svg
+              data-macro-chart-svg
+              width="100%"
+              height={h}
+              viewBox={`0 0 ${w} ${h}`}
+              preserveAspectRatio="none"
+              shapeRendering="geometricPrecision"
+              className="relative z-[2] block w-full min-w-0 overflow-visible"
+            >
+              {barEls}
+            </svg>
+          )}
         </div>
         <div
           className={cn(
-            "flex shrink-0 flex-col justify-between text-right tabular-nums text-[#A1A1AA]",
-            comfortable ? "min-w-[4.25rem] py-2 text-[12px] leading-5" : "w-10 py-1 text-[11px] leading-4",
+            "flex shrink-0 flex-col justify-between text-right tabular-nums",
+            comfortable
+              ? "min-w-[4.25rem] py-2 text-[12px] leading-5 text-[#A1A1AA]"
+              : "min-w-[3.25rem] py-2 pl-3 text-[12px] leading-5 text-[#71717A]",
           )}
           aria-hidden
         >
@@ -404,16 +452,30 @@ export function MacroSparkline({
       {hover && hoverOverlayPx ? (
         <>
           <div
-            className="pointer-events-none absolute z-[5]"
-            style={{
-              left: hoverOverlayPx.lineX,
-              top: hoverOverlayPx.chartTop,
-              height: hoverOverlayPx.chartHeight,
-              width: comfortable ? HOVER_RULE_WIDTH_MODAL_PX : HOVER_RULE_WIDTH_CARD_PX,
-              transform: "translateX(-50%)",
-              backgroundColor: comfortable ? HOVER_RULE_COLOR_MODAL : HOVER_RULE_COLOR_CARD,
-              borderRadius: 1,
-            }}
+            className={cn(
+              "pointer-events-none absolute z-[5]",
+              !comfortable && variant === "area"
+                ? "w-0 border-l border-dashed border-[#2563EB]"
+                : "",
+            )}
+            style={
+              !comfortable && variant === "area"
+                ? {
+                    left: hoverOverlayPx.lineX,
+                    top: hoverOverlayPx.chartTop,
+                    height: hoverOverlayPx.chartHeight,
+                    transform: "translateX(-50%)",
+                  }
+                : {
+                    left: hoverOverlayPx.lineX,
+                    top: hoverOverlayPx.chartTop,
+                    height: hoverOverlayPx.chartHeight,
+                    width: comfortable ? HOVER_RULE_WIDTH_MODAL_PX : HOVER_RULE_WIDTH_CARD_PX,
+                    transform: "translateX(-50%)",
+                    backgroundColor: comfortable ? HOVER_RULE_COLOR_MODAL : HOVER_RULE_COLOR_CARD,
+                    borderRadius: 1,
+                  }
+            }
             aria-hidden
           />
           <div
@@ -421,7 +483,7 @@ export function MacroSparkline({
               "pointer-events-none absolute z-[6] rounded-full border-white bg-[#2563EB]",
               comfortable
                 ? "h-2 w-2 border shadow-[0_0_0_3px_rgba(37,99,235,0.2)]"
-                : "h-2.5 w-2.5 border-2 shadow-[0_0_0_4px_rgba(37,99,235,0.2)]",
+                : "h-[9px] w-[9px] border-2",
             )}
             style={{
               left: hoverOverlayPx.lineX,
@@ -435,34 +497,67 @@ export function MacroSparkline({
 
       {tip && hoverOverlayPx ? (
         <div
-          className="pointer-events-none absolute z-10 max-w-[min(280px,calc(100%-16px))] rounded-lg bg-[#09090B] px-3 py-2.5 pr-3.5 text-left text-white shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
+          className={
+            comfortable
+              ? "pointer-events-none absolute z-10 max-w-[min(280px,calc(100%-16px))] rounded-lg bg-[#09090B] px-3 py-2.5 pr-3.5 text-left text-white shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
+              : FUNDAMENTALS_CHART_TOOLTIP_CLASS
+          }
           style={{
             left: `clamp(8px, ${tip.anchorX}px, calc(100% - 8px))`,
             top: tip.y,
             transform: tip.side === "left" ? "translate(calc(-100% - 10px), -50%)" : "translate(10px, -50%)",
           }}
         >
-          {tip.side === "left" ? (
-            <span
-              className="absolute top-1/2 left-full -translate-y-1/2 border-y-[6px] border-y-transparent border-l-[7px] border-l-[#09090B]"
-              aria-hidden
-            />
+          {comfortable ? (
+            tip.side === "left" ? (
+              <span
+                className="absolute top-1/2 left-full -translate-y-1/2 border-y-[6px] border-y-transparent border-l-[7px] border-l-[#09090B]"
+                aria-hidden
+              />
+            ) : (
+              <span
+                className="absolute top-1/2 right-full -translate-y-1/2 border-y-[6px] border-y-transparent border-r-[7px] border-r-[#09090B]"
+                aria-hidden
+              />
+            )
+          ) : tip.side === "left" ? (
+            <span className="absolute top-1/2 left-full -translate-y-1/2" aria-hidden>
+              <span className="block border-y-[7px] border-y-transparent border-l-[8px] border-l-[#E4E4E7]" />
+              <span className="absolute top-1/2 left-px -translate-y-1/2 border-y-[6px] border-y-transparent border-l-[7px] border-l-white" />
+            </span>
           ) : (
-            <span
-              className="absolute top-1/2 right-full -translate-y-1/2 border-y-[6px] border-y-transparent border-r-[7px] border-r-[#09090B]"
-              aria-hidden
-            />
+            <span className="absolute top-1/2 right-full -translate-y-1/2" aria-hidden>
+              <span className="block border-y-[7px] border-y-transparent border-r-[8px] border-r-[#E4E4E7]" />
+              <span className="absolute top-1/2 right-px -translate-y-1/2 border-y-[6px] border-y-transparent border-r-[7px] border-r-white" />
+            </span>
           )}
-          <p className="text-[12px] font-semibold leading-4 text-white">{tip.timeLabel}</p>
-          <p className="mt-1.5 whitespace-nowrap text-[12px] font-normal leading-4 text-[#71717A]">{tip.valueLabel}</p>
+          <p
+            className={
+              comfortable
+                ? "text-[12px] font-semibold leading-4 text-white"
+                : "text-[12px] font-semibold leading-4 text-[#09090B]"
+            }
+          >
+            {tip.timeLabel}
+          </p>
+          <p
+            className={cn(
+              "mt-1.5 whitespace-nowrap text-[12px] font-normal leading-4",
+              comfortable ? "text-[#71717A]" : "text-[#09090B]",
+            )}
+          >
+            {tip.valueLabel}
+          </p>
         </div>
       ) : null}
 
       {timeAxisLabels.length ? (
         <div
           className={cn(
-            "flex w-full min-w-0 justify-between text-[#A1A1AA] tabular-nums",
-            comfortable ? "gap-2 px-0.5 text-[12px] leading-5" : "gap-1 text-[11px] leading-4",
+            "flex w-full min-w-0 justify-between tabular-nums",
+            comfortable
+              ? "gap-2 px-0.5 text-[12px] leading-5 text-[#A1A1AA]"
+              : "gap-1 text-[11px] leading-4 text-[#71717A] sm:text-[12px]",
           )}
           style={
             heightMode === "total"
