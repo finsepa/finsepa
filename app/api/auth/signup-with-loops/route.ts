@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 
 import { getAuthAppOriginFromEnv, resolveAuthAppOriginForServer } from "@/lib/auth/app-origin";
+import {
+  clientIpFromRequest,
+  detectSignupSpam,
+  getTurnstileSecretKey,
+  isSignupDisabled,
+  verifyTurnstileToken,
+} from "@/lib/auth/signup-guard";
 import { getLoopsApiKey } from "@/lib/env/loops";
 import { pickProcessEnv } from "@/lib/env/pick-process-env";
 import { getLoopsTransactionalSignupId } from "@/lib/env/server";
@@ -34,6 +41,8 @@ export async function GET() {
   return NextResponse.json({
     loopsConfigured: Boolean(loopsKey),
     adminConfigured: Boolean(admin),
+    signupDisabled: isSignupDisabled(),
+    turnstileConfigured: Boolean(getTurnstileSecretKey()),
     /** Server-side: `NEXT_PUBLIC_SUPABASE_URL` readable at runtime (same lookup as admin client). */
     supabaseUrlConfigured: Boolean(supabaseUrl),
     /** When set, signup confirmation uses this origin for `redirect_to` (not the browser origin). */
@@ -56,6 +65,8 @@ type Body = {
   lastName?: unknown;
   /** e.g. https://app.finsepa.com — used for Supabase redirect_to in the confirmation link */
   appOrigin?: unknown;
+  /** Cloudflare Turnstile token from the sign-up form */
+  turnstileToken?: unknown;
 };
 
 /**
@@ -63,6 +74,10 @@ type Body = {
  * Admin `generateLink` (no email from Supabase) and delivers the link with Loops transactional API.
  */
 export async function POST(request: Request) {
+  if (isSignupDisabled()) {
+    return NextResponse.json({ error: "signup_disabled" }, { status: 503 });
+  }
+
   let body: Body;
   try {
     body = (await request.json()) as Body;
@@ -91,6 +106,20 @@ export async function POST(request: Request) {
   if (!isValidEmail(email)) {
     return NextResponse.json({ error: "invalid_email" }, { status: 400 });
   }
+
+  const spamCode = detectSignupSpam({ firstName, lastName, email });
+  if (spamCode) {
+    return NextResponse.json({ error: spamCode }, { status: 400 });
+  }
+
+  const turnstile = await verifyTurnstileToken(
+    typeof body.turnstileToken === "string" ? body.turnstileToken : undefined,
+    clientIpFromRequest(request),
+  );
+  if (!turnstile.ok && turnstile.reason !== "not_configured") {
+    return NextResponse.json({ error: "captcha_failed" }, { status: 400 });
+  }
+
   if (password.length < MIN_PASSWORD_LEN || password.length > 256) {
     return NextResponse.json({ error: "invalid_password" }, { status: 400 });
   }

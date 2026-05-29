@@ -22,9 +22,22 @@ import {
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { AuthDivider, AuthInput, AuthLabel, AuthPrimaryButton, AuthSecondaryButton } from "@/components/auth/auth-form-ui";
 import { AuthPasswordInput } from "@/components/auth/auth-password-input";
+import { TurnstileField } from "@/components/auth/turnstile-field";
 import { getAuthAppOriginForClient } from "@/lib/auth/app-origin";
 import { appendOnboardingQuery, markOnboardingPending } from "@/lib/auth/onboarding";
 import { PATH_APP_ENTRY, PATH_AUTH_CALLBACK } from "@/lib/auth/routes";
+
+const SIGNUP_DISABLED =
+  process.env.NEXT_PUBLIC_AUTH_SIGNUP_DISABLED === "1" ||
+  process.env.NEXT_PUBLIC_AUTH_SIGNUP_DISABLED?.toLowerCase() === "true";
+
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim() ?? "";
+
+const SIGNUP_LOOPS_API_ONLY =
+  SIGNUP_DISABLED ||
+  process.env.NEXT_PUBLIC_AUTH_SIGNUP_LOOPS_API_ONLY === "1" ||
+  process.env.NEXT_PUBLIC_AUTH_SIGNUP_LOOPS_API_ONLY?.toLowerCase() === "true" ||
+  Boolean(TURNSTILE_SITE_KEY);
 
 type LoopsFirstResult =
   | { kind: "success" }
@@ -38,6 +51,7 @@ async function trySignupViaLoopsApi(body: {
   firstName: string;
   lastName: string;
   appOrigin: string;
+  turnstileToken?: string;
 }): Promise<LoopsFirstResult> {
   let loopsRes: Response;
   try {
@@ -59,9 +73,18 @@ async function trySignupViaLoopsApi(body: {
   };
 
   if (loopsRes.ok && loopsJson.ok === true) return { kind: "success" };
+  if (loopsRes.status === 503 && loopsJson.error === "signup_disabled") {
+    return { kind: "error", message: "New sign-ups are temporarily paused. Please try again later or log in with Google." };
+  }
+  if (loopsRes.status === 400 && loopsJson.error === "blocked_content") {
+    return { kind: "error", message: "This sign-up could not be completed." };
+  }
+  if (loopsRes.status === 400 && loopsJson.error === "captcha_failed") {
+    return { kind: "error", message: "Security check failed. Refresh the page and try again." };
+  }
   if (loopsRes.status === 409 || loopsJson.error === "duplicate_email") return { kind: "duplicate" };
   if (loopsJson.error === "loops_not_configured" || loopsJson.error === "admin_unavailable") {
-    return { kind: "use_client_signup" };
+    return SIGNUP_LOOPS_API_ONLY ? { kind: "error", message: messageWhenLoopsApiNotConfiguredOnServer() } : { kind: "use_client_signup" };
   }
 
   return {
@@ -87,6 +110,7 @@ export function SignupClient() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isDuplicateEmail, setIsDuplicateEmail] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -97,7 +121,12 @@ export function SignupClient() {
   const emailLooksValid = EMAIL_RE.test(email.trim());
   const firstOk = firstName.trim().length > 0;
   const passOk = password.length >= MIN_PASSWORD_LEN;
-  const formCanSubmit = firstOk && email.trim().length > 0 && emailLooksValid && passOk;
+  const formCanSubmit =
+    firstOk &&
+    email.trim().length > 0 &&
+    emailLooksValid &&
+    passOk &&
+    (!TURNSTILE_SITE_KEY || Boolean(turnstileToken));
 
   const showFirstError = touched.firstName && !firstOk;
   const showEmailError = touched.email && (!email.trim() || !emailLooksValid);
@@ -139,6 +168,11 @@ export function SignupClient() {
       return;
     }
 
+    if (SIGNUP_DISABLED) {
+      setErrorMessage("New sign-ups are temporarily paused. Please try again later or log in with Google.");
+      return;
+    }
+
     const emailNorm = email.trim().toLowerCase();
     const firstNorm = firstName.trim();
     const lastNorm = lastName.trim();
@@ -163,6 +197,7 @@ export function SignupClient() {
         firstName: firstNorm,
         lastName: lastNorm,
         appOrigin: authOrigin,
+        turnstileToken: turnstileToken ?? undefined,
       });
       if (loopsFirst.kind === "success") {
         markOnboardingPending();
@@ -177,6 +212,15 @@ export function SignupClient() {
       }
       if (loopsFirst.kind === "error") {
         setErrorMessage(loopsFirst.message);
+        setTurnstileToken(null);
+        return;
+      }
+
+      if (SIGNUP_LOOPS_API_ONLY) {
+        setErrorMessage(
+          "Email sign-up is unavailable right now. Use Continue with Google, or try again in a few minutes.",
+        );
+        setTurnstileToken(null);
         return;
       }
 
@@ -222,6 +266,7 @@ export function SignupClient() {
                 firstName: firstNorm,
                 lastName: lastNorm,
                 appOrigin: authOrigin,
+                turnstileToken: turnstileToken ?? undefined,
               }),
             });
           } catch (err) {
@@ -287,7 +332,16 @@ export function SignupClient() {
 
   return (
     <form className="space-y-4" onSubmit={handleSubmit} noValidate aria-label="Sign up">
-      <AuthSecondaryButton onClick={handleGoogle} disabled={loading}>
+      {SIGNUP_DISABLED ? (
+        <div
+          role="status"
+          className="rounded-[10px] border border-[#FDE68A] bg-[#FFFBEB] px-3 py-2 text-sm leading-5 text-[#92400E]"
+        >
+          New sign-ups are temporarily paused while we block automated abuse. Existing users can still log in.
+        </div>
+      ) : null}
+
+      <AuthSecondaryButton onClick={handleGoogle} disabled={loading || SIGNUP_DISABLED}>
         <GoogleMark />
         {loading ? "Redirecting…" : "Continue with Google"}
       </AuthSecondaryButton>
@@ -407,7 +461,15 @@ export function SignupClient() {
         ) : null}
       </div>
 
-      <AuthPrimaryButton type="submit" disabled={loading || !formCanSubmit}>
+      {TURNSTILE_SITE_KEY && !SIGNUP_DISABLED ? (
+        <TurnstileField
+          siteKey={TURNSTILE_SITE_KEY}
+          onToken={(token) => setTurnstileToken(token)}
+          onExpire={() => setTurnstileToken(null)}
+        />
+      ) : null}
+
+      <AuthPrimaryButton type="submit" disabled={loading || !formCanSubmit || SIGNUP_DISABLED}>
         {loading ? "Creating account…" : "Get Started"}
       </AuthPrimaryButton>
     </form>
