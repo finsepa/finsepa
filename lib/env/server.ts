@@ -93,3 +93,17 @@ export function getLoopsTransactionalProRenewedId(): string {
   );
   return v || LOOPS_TRANSACTIONAL_ID_PRO_RENEWED_DEFAULT;
 }
+
+/** Default “Welcome to Finsepa (Google)” transactional in Loops. */
+const LOOPS_TRANSACTIONAL_ID_GOOGLE_WELCOME_DEFAULT = "cmpqlacpq1dux0j155z7t77cv";
+
+/**
+ * Loops transactional for Google OAuth welcome (no confirmation link).
+ * Template data variables: firstName, platformLink, trialDays, trialEndsAt, proInfoLine.
+ */
+export function getLoopsTransactionalGoogleWelcomeId(): string {
+  const v = pickProcessEnv(
+    "LOOPS" + "_" + "TRANSACTIONAL" + "_" + "ID" + "_" + "GOOGLE" + "_" + "WELCOME",
+  );
+  return v?.trim() || LOOPS_TRANSACTIONAL_ID_GOOGLE_WELCOME_DEFAULT;
+}

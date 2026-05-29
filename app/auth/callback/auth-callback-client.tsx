@@ -55,6 +55,12 @@ function AuthCallbackInner() {
             await persistOnboardingPendingOnUser(supabase);
             destination = appendOnboardingQuery(safeNext);
           }
+          void fetch("/api/auth/google-welcome", {
+            method: "POST",
+            credentials: "include",
+          }).catch(() => {
+            /* non-blocking */
+          });
         } catch {
           /* non-blocking */
         }

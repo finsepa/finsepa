@@ -132,7 +132,17 @@ export function LoginClient({ resetSuccess, callbackError }: Props) {
       });
 
       if (error) {
-        setErrorMessage(friendlySupabaseAuthErrorMessage(error.message));
+        const raw = friendlySupabaseAuthErrorMessage(error.message);
+        const captchaRelated = /captcha|security check/i.test(raw) || /captcha/i.test(error.message);
+        if (captchaRelated && !TURNSTILE_ENABLED) {
+          setErrorMessage(
+            "Supabase requires Turnstile, but this app has no site key. Add NEXT_PUBLIC_TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY to .env.local (Cloudflare → Turnstile → Finsepa), use the same secret in Supabase → Bot Protection, then restart npm run dev.",
+          );
+        } else if (captchaRelated && TURNSTILE_ENABLED && !showTurnstile) {
+          setErrorMessage("Complete the security check below (it appears after your password is at least 8 characters).");
+        } else {
+          setErrorMessage(raw);
+        }
         setTurnstileToken(null);
         return;
       }
@@ -189,6 +199,16 @@ export function LoginClient({ resetSuccess, callbackError }: Props) {
           className="rounded-[10px] border border-[#FECACA] bg-[#FEF2F2] px-3 py-2 text-sm leading-5 text-[#B91C1C]"
         >
           {callbackHint}
+        </div>
+      ) : null}
+
+      {!TURNSTILE_ENABLED ? (
+        <div
+          role="status"
+          className="rounded-[10px] border border-[#FDE68A] bg-[#FFFBEB] px-3 py-2 text-sm leading-5 text-[#92400E]"
+        >
+          Local dev: add Turnstile keys to <code className="text-xs">.env.local</code> and restart{" "}
+          <code className="text-xs">npm run dev</code> so the security check can appear.
         </div>
       ) : null}
 
