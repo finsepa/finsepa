@@ -96,7 +96,10 @@ const PortfolioPerformancePanel = dynamic(
 const PortfolioMetricsPanel = dynamic(
   () =>
     import("@/components/portfolio/portfolio-metrics-panel").then((m) => ({
-      default: m.PortfolioMetricsPanel,
+      default: m.PortfolioMetricsPanel as ComponentType<{
+        holdings: PortfolioHolding[];
+        transactions: PortfolioTransaction[];
+      }>,
     })),
   { loading: () => <PortfolioTabPanelSkeleton className="mb-6" /> },
 );
@@ -366,7 +369,7 @@ export function PortfolioPageView({
               id="portfolio-tab-metrics"
               aria-hidden={viewTab !== "Metrics"}
             >
-              <PortfolioMetricsPanel />
+              <PortfolioMetricsPanel holdings={holdings} transactions={transactions} />
             </div>
           ) : null}
 
