@@ -12,7 +12,9 @@ import {
   authAccentLinkClassName,
 } from "@/components/auth/auth-form-ui";
 import { AuthPasswordInput } from "@/components/auth/auth-password-input";
+import { TurnstileField } from "@/components/auth/turnstile-field";
 import { PATH_APP_ENTRY, PATH_AUTH_CALLBACK } from "@/lib/auth/routes";
+import { TURNSTILE_ENABLED, TURNSTILE_SITE_KEY } from "@/lib/auth/turnstile-public";
 import { friendlySupabaseAuthErrorMessage } from "@/lib/auth/supabase-error-message";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { cn } from "@/lib/utils";
@@ -49,6 +51,7 @@ export function LoginClient({ resetSuccess, callbackError }: Props) {
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [passwordLoginSuccess, setPasswordLoginSuccess] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
   const callbackHint = callbackError ? CALLBACK_ERROR_MESSAGES[callbackError] ?? "Something went wrong. Please try again." : null;
 
@@ -102,10 +105,15 @@ export function LoginClient({ resetSuccess, callbackError }: Props) {
     setLoading(true);
     try {
       const supabase = getSupabaseBrowserClient();
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+        options: turnstileToken ? { captchaToken: turnstileToken } : undefined,
+      });
 
       if (error) {
         setErrorMessage(friendlySupabaseAuthErrorMessage(error.message));
+        setTurnstileToken(null);
         return;
       }
 
@@ -213,8 +221,19 @@ export function LoginClient({ resetSuccess, callbackError }: Props) {
         </div>
       </div>
 
+      {TURNSTILE_ENABLED ? (
+        <TurnstileField
+          siteKey={TURNSTILE_SITE_KEY}
+          onToken={(token) => setTurnstileToken(token)}
+          onExpire={() => setTurnstileToken(null)}
+        />
+      ) : null}
+
       <div className="!mt-6">
-        <AuthPrimaryButton type="submit" disabled={loading}>
+        <AuthPrimaryButton
+          type="submit"
+          disabled={loading || (TURNSTILE_ENABLED && !turnstileToken)}
+        >
           {loading ? "Signing in…" : "Log in"}
         </AuthPrimaryButton>
       </div>

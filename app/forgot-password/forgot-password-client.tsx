@@ -2,8 +2,10 @@
 
 import { useState, type FormEvent } from "react";
 import { AuthInput, AuthLabel, AuthPrimaryButton } from "@/components/auth/auth-form-ui";
+import { TurnstileField } from "@/components/auth/turnstile-field";
 import { getAuthAppOriginForClient } from "@/lib/auth/app-origin";
 import { PATH_AUTH_RESET_PASSWORD } from "@/lib/auth/routes";
+import { TURNSTILE_ENABLED, TURNSTILE_SITE_KEY } from "@/lib/auth/turnstile-public";
 import { friendlySupabaseAuthErrorMessage } from "@/lib/auth/supabase-error-message";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
@@ -11,6 +13,7 @@ export function ForgotPasswordClient() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -58,10 +61,14 @@ export function ForgotPasswordClient() {
         const supabase = getSupabaseBrowserClient();
         const redirectTo = `${apiOrigin}${PATH_AUTH_RESET_PASSWORD}`;
 
-        const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo,
+          captchaToken: turnstileToken ?? undefined,
+        });
 
         if (error) {
           setErrorMessage(friendlySupabaseAuthErrorMessage(error.message));
+          setTurnstileToken(null);
           return;
         }
 
@@ -106,7 +113,15 @@ export function ForgotPasswordClient() {
             <AuthInput type="email" name="email" autoComplete="email" placeholder="Enter your email" required disabled={loading} />
           </div>
 
-          <AuthPrimaryButton type="submit" disabled={loading}>
+          {TURNSTILE_ENABLED ? (
+            <TurnstileField
+              siteKey={TURNSTILE_SITE_KEY}
+              onToken={(token) => setTurnstileToken(token)}
+              onExpire={() => setTurnstileToken(null)}
+            />
+          ) : null}
+
+          <AuthPrimaryButton type="submit" disabled={loading || (TURNSTILE_ENABLED && !turnstileToken)}>
             {loading ? "Sending…" : "Send reset link"}
           </AuthPrimaryButton>
         </form>

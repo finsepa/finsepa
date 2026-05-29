@@ -45,6 +45,9 @@ export function friendlySupabaseAuthErrorMessage(raw: string | null | undefined)
   ) {
     return "Too many sign-up or verification emails were sent from this browser or network recently. Wait up to an hour and try again, or use Continue with Google. If you already started sign-up, check your spam folder for the confirmation link.";
   }
+  if (lower.includes("captcha") && (lower.includes("no captcha") || lower.includes("captcha_token"))) {
+    return "Complete the security check below and try again.";
+  }
   if (lower.includes("rate limit exceeded") || lower.includes("rate limit")) {
     return "Too many requests right now. Please wait a few minutes and try again.";
   }

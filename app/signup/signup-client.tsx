@@ -24,6 +24,7 @@ import { AuthDivider, AuthInput, AuthLabel, AuthPrimaryButton, AuthSecondaryButt
 import { AuthPasswordInput } from "@/components/auth/auth-password-input";
 import { TurnstileField } from "@/components/auth/turnstile-field";
 import { getAuthAppOriginForClient } from "@/lib/auth/app-origin";
+import { TURNSTILE_ENABLED, TURNSTILE_SITE_KEY } from "@/lib/auth/turnstile-public";
 import { appendOnboardingQuery, markOnboardingPending } from "@/lib/auth/onboarding";
 import { PATH_APP_ENTRY, PATH_AUTH_CALLBACK } from "@/lib/auth/routes";
 
@@ -31,13 +32,11 @@ const SIGNUP_DISABLED =
   process.env.NEXT_PUBLIC_AUTH_SIGNUP_DISABLED === "1" ||
   process.env.NEXT_PUBLIC_AUTH_SIGNUP_DISABLED?.toLowerCase() === "true";
 
-const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim() ?? "";
-
 const SIGNUP_LOOPS_API_ONLY =
   SIGNUP_DISABLED ||
   process.env.NEXT_PUBLIC_AUTH_SIGNUP_LOOPS_API_ONLY === "1" ||
   process.env.NEXT_PUBLIC_AUTH_SIGNUP_LOOPS_API_ONLY?.toLowerCase() === "true" ||
-  Boolean(TURNSTILE_SITE_KEY);
+  TURNSTILE_ENABLED;
 
 type LoopsFirstResult =
   | { kind: "success" }
@@ -126,7 +125,7 @@ export function SignupClient() {
     email.trim().length > 0 &&
     emailLooksValid &&
     passOk &&
-    (!TURNSTILE_SITE_KEY || Boolean(turnstileToken));
+    (!TURNSTILE_ENABLED || Boolean(turnstileToken));
 
   const showFirstError = touched.firstName && !firstOk;
   const showEmailError = touched.email && (!email.trim() || !emailLooksValid);
@@ -229,6 +228,7 @@ export function SignupClient() {
         password,
         options: {
           emailRedirectTo,
+          captchaToken: turnstileToken ?? undefined,
           data: {
             first_name: firstNorm,
             last_name: lastNorm || "-",
@@ -461,7 +461,7 @@ export function SignupClient() {
         ) : null}
       </div>
 
-      {TURNSTILE_SITE_KEY && !SIGNUP_DISABLED ? (
+      {TURNSTILE_ENABLED && !SIGNUP_DISABLED ? (
         <TurnstileField
           siteKey={TURNSTILE_SITE_KEY}
           onToken={(token) => setTurnstileToken(token)}
