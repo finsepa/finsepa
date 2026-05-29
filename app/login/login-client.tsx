@@ -46,6 +46,7 @@ function GoogleMark() {
 
 const REDIRECT_AFTER_LOGIN_MS = 900;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MIN_PASSWORD_LEN = 8;
 
 export function LoginClient({ resetSuccess, callbackError }: Props) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -56,13 +57,18 @@ export function LoginClient({ resetSuccess, callbackError }: Props) {
   const [password, setPassword] = useState("");
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
-  const emailReady = email.trim().length > 0 && EMAIL_RE.test(email.trim());
-  const passwordReady = password.length > 0;
+  const emailNorm = email.trim().toLowerCase();
+  const emailReady = emailNorm.length > 0 && EMAIL_RE.test(emailNorm);
+  const passwordReady = password.length >= MIN_PASSWORD_LEN;
   const showTurnstile = TURNSTILE_ENABLED && emailReady && passwordReady;
 
   useEffect(() => {
     setTurnstileToken(null);
-  }, [email, password]);
+  }, [emailNorm]);
+
+  useEffect(() => {
+    if (!showTurnstile) setTurnstileToken(null);
+  }, [showTurnstile]);
 
   const callbackHint = callbackError ? CALLBACK_ERROR_MESSAGES[callbackError] ?? "Something went wrong. Please try again." : null;
 
@@ -238,6 +244,7 @@ export function LoginClient({ resetSuccess, callbackError }: Props) {
 
       {showTurnstile ? (
         <TurnstileField
+          key={emailNorm}
           siteKey={TURNSTILE_SITE_KEY}
           onToken={(token) => setTurnstileToken(token)}
           onExpire={() => setTurnstileToken(null)}
