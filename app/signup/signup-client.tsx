@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 
 const MIN_PASSWORD_LEN = 8;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -118,14 +118,25 @@ export function SignupClient() {
   const [touched, setTouched] = useState({ firstName: false, email: false, password: false });
 
   const emailLooksValid = EMAIL_RE.test(email.trim());
+  const emailNorm = email.trim().toLowerCase();
   const firstOk = firstName.trim().length > 0;
   const passOk = password.length >= MIN_PASSWORD_LEN;
+  const showTurnstile =
+    TURNSTILE_ENABLED && !SIGNUP_DISABLED && firstOk && emailLooksValid && passOk;
   const formCanSubmit =
     firstOk &&
     email.trim().length > 0 &&
     emailLooksValid &&
     passOk &&
-    (!TURNSTILE_ENABLED || Boolean(turnstileToken));
+    (!showTurnstile || Boolean(turnstileToken));
+
+  useEffect(() => {
+    setTurnstileToken(null);
+  }, [emailNorm]);
+
+  useEffect(() => {
+    if (!showTurnstile) setTurnstileToken(null);
+  }, [showTurnstile]);
 
   const showFirstError = touched.firstName && !firstOk;
   const showEmailError = touched.email && (!email.trim() || !emailLooksValid);
@@ -461,8 +472,9 @@ export function SignupClient() {
         ) : null}
       </div>
 
-      {TURNSTILE_ENABLED && !SIGNUP_DISABLED ? (
+      {showTurnstile ? (
         <TurnstileField
+          key={emailNorm}
           siteKey={TURNSTILE_SITE_KEY}
           onToken={(token) => setTurnstileToken(token)}
           onExpire={() => setTurnstileToken(null)}
