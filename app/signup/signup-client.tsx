@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 const MIN_PASSWORD_LEN = 8;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -137,6 +137,9 @@ export function SignupClient() {
   useEffect(() => {
     if (!showTurnstile) setTurnstileToken(null);
   }, [showTurnstile]);
+
+  const onTurnstileToken = useCallback((token: string) => setTurnstileToken(token), []);
+  const onTurnstileExpire = useCallback(() => setTurnstileToken(null), []);
 
   const showFirstError = touched.firstName && !firstOk;
   const showEmailError = touched.email && (!email.trim() || !emailLooksValid);
@@ -476,8 +479,8 @@ export function SignupClient() {
         <TurnstileField
           key={emailNorm}
           siteKey={TURNSTILE_SITE_KEY}
-          onToken={(token) => setTurnstileToken(token)}
-          onExpire={() => setTurnstileToken(null)}
+          onToken={onTurnstileToken}
+          onExpire={onTurnstileExpire}
         />
       ) : null}
 

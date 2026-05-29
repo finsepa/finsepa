@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useCallback, useState, type FormEvent } from "react";
 import { AuthInput, AuthLabel, AuthPrimaryButton } from "@/components/auth/auth-form-ui";
 import { TurnstileField } from "@/components/auth/turnstile-field";
 import { getAuthAppOriginForClient } from "@/lib/auth/app-origin";
@@ -14,6 +14,9 @@ export function ForgotPasswordClient() {
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+
+  const onTurnstileToken = useCallback((token: string) => setTurnstileToken(token), []);
+  const onTurnstileExpire = useCallback(() => setTurnstileToken(null), []);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -116,8 +119,8 @@ export function ForgotPasswordClient() {
           {TURNSTILE_ENABLED ? (
             <TurnstileField
               siteKey={TURNSTILE_SITE_KEY}
-              onToken={(token) => setTurnstileToken(token)}
-              onExpire={() => setTurnstileToken(null)}
+              onToken={onTurnstileToken}
+              onExpire={onTurnstileExpire}
             />
           ) : null}
 

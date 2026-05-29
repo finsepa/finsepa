@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import {
   AuthCheckbox,
@@ -60,15 +60,13 @@ export function LoginClient({ resetSuccess, callbackError }: Props) {
   const emailNorm = email.trim().toLowerCase();
   const emailReady = emailNorm.length > 0 && EMAIL_RE.test(emailNorm);
   const passwordReady = password.length >= MIN_PASSWORD_LEN;
-  const showTurnstile = TURNSTILE_ENABLED && emailReady && passwordReady;
 
   useEffect(() => {
     setTurnstileToken(null);
   }, [emailNorm]);
 
-  useEffect(() => {
-    if (!showTurnstile) setTurnstileToken(null);
-  }, [showTurnstile]);
+  const onTurnstileToken = useCallback((token: string) => setTurnstileToken(token), []);
+  const onTurnstileExpire = useCallback(() => setTurnstileToken(null), []);
 
   const callbackHint = callbackError ? CALLBACK_ERROR_MESSAGES[callbackError] ?? "Something went wrong. Please try again." : null;
 
@@ -242,19 +240,24 @@ export function LoginClient({ resetSuccess, callbackError }: Props) {
         </div>
       </div>
 
-      {showTurnstile ? (
+      {TURNSTILE_ENABLED ? (
         <TurnstileField
           key={emailNorm}
           siteKey={TURNSTILE_SITE_KEY}
-          onToken={(token) => setTurnstileToken(token)}
-          onExpire={() => setTurnstileToken(null)}
+          onToken={onTurnstileToken}
+          onExpire={onTurnstileExpire}
         />
       ) : null}
 
       <div className="!mt-6">
         <AuthPrimaryButton
           type="submit"
-          disabled={loading || !emailReady || !passwordReady || (showTurnstile && !turnstileToken)}
+          disabled={
+            loading ||
+            !emailReady ||
+            !passwordReady ||
+            (TURNSTILE_ENABLED && !turnstileToken)
+          }
         >
           {loading ? "Signing in…" : "Log in"}
         </AuthPrimaryButton>
