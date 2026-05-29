@@ -1,21 +1,18 @@
 import { NextResponse } from "next/server";
 
+import { resolveAuthUserFromRequest } from "@/lib/auth/resolve-auth-user";
 import { sendGoogleWelcomeEmailIfNeeded } from "@/lib/auth/send-google-welcome-email";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
  * Sends the Google OAuth welcome email once per user (Loops transactional).
- * Called from `/auth/callback` after session is established — not for email/password sign-up.
+ * Called from `/auth/callback` (Bearer token) and optionally from protected layout fallback.
  */
 export async function POST(request: Request) {
-  const supabase = await getSupabaseServerClient();
-  const {
-    data: { user: sessionUser },
-  } = await supabase.auth.getUser();
+  const sessionUser = await resolveAuthUserFromRequest(request);
 
   if (!sessionUser) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });

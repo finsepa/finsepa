@@ -37,11 +37,37 @@ if (!emailArg && !idArg) {
 
 const admin = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
 
+async function findUserByEmailSql(email) {
+  const poolUrl = process.env.SUPABASE_POOLER_URL?.trim();
+  if (!poolUrl) return null;
+  const pg = await import("pg");
+  const client = new pg.default.Client({ connectionString: poolUrl });
+  await client.connect();
+  try {
+    const r = await client.query(
+      "select id from auth.users where lower(email) = lower($1) limit 1",
+      [email],
+    );
+    const id = r.rows[0]?.id;
+    if (!id) return null;
+    const { data, error } = await admin.auth.admin.getUserById(id);
+    if (error) return null;
+    return data.user ?? null;
+  } finally {
+    await client.end();
+  }
+}
+
 async function findUser() {
   if (idArg) {
     const { data, error } = await admin.auth.admin.getUserById(idArg);
     if (error) throw new Error(error.message);
     return data.user ?? null;
+  }
+
+  if (emailArg) {
+    const fromSql = await findUserByEmailSql(emailArg);
+    if (fromSql) return fromSql;
   }
 
   let page = 1;

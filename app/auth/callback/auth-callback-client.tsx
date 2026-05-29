@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect } from "react";
 
 import { establishAuthSessionFromCurrentUrl } from "@/lib/auth/establish-session-from-url";
+import { postGoogleWelcomeFromSession } from "@/lib/auth/send-google-welcome-from-session";
 import {
   appendOnboardingQuery,
   persistOnboardingPendingOnUser,
@@ -22,25 +23,6 @@ function safeNextPath(raw: string | null | undefined): string {
 /** Full navigation avoids Next.js soft-navigation RSC fetch failures after auth (common in dev / Turbopack). */
 function goTo(path: string) {
   window.location.replace(path);
-}
-
-const GOOGLE_WELCOME_POST_MS = 8000;
-
-/** Wait for welcome email API — immediate redirect aborts fire-and-forget fetch. */
-async function sendGoogleWelcomeAfterAuth(): Promise<void> {
-  const controller = new AbortController();
-  const timeout = window.setTimeout(() => controller.abort(), GOOGLE_WELCOME_POST_MS);
-  try {
-    await fetch("/api/auth/google-welcome", {
-      method: "POST",
-      credentials: "include",
-      signal: controller.signal,
-    });
-  } catch {
-    /* non-blocking */
-  } finally {
-    window.clearTimeout(timeout);
-  }
 }
 
 function AuthCallbackInner() {
@@ -74,7 +56,7 @@ function AuthCallbackInner() {
             await persistOnboardingPendingOnUser(supabase);
             destination = appendOnboardingQuery(safeNext);
           }
-          await sendGoogleWelcomeAfterAuth();
+          await postGoogleWelcomeFromSession();
         } catch {
           /* non-blocking */
         }
