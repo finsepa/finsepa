@@ -60,10 +60,15 @@ export function LoginClient({ resetSuccess, callbackError }: Props) {
   const emailNorm = email.trim().toLowerCase();
   const emailReady = emailNorm.length > 0 && EMAIL_RE.test(emailNorm);
   const passwordReady = password.length >= MIN_PASSWORD_LEN;
+  const showTurnstile = TURNSTILE_ENABLED && emailReady && passwordReady;
 
   useEffect(() => {
     setTurnstileToken(null);
   }, [emailNorm]);
+
+  useEffect(() => {
+    if (!showTurnstile) setTurnstileToken(null);
+  }, [showTurnstile]);
 
   const onTurnstileToken = useCallback((token: string) => setTurnstileToken(token), []);
   const onTurnstileExpire = useCallback(() => setTurnstileToken(null), []);
@@ -240,7 +245,7 @@ export function LoginClient({ resetSuccess, callbackError }: Props) {
         </div>
       </div>
 
-      {TURNSTILE_ENABLED ? (
+      {showTurnstile ? (
         <TurnstileField
           key={emailNorm}
           siteKey={TURNSTILE_SITE_KEY}
@@ -256,7 +261,7 @@ export function LoginClient({ resetSuccess, callbackError }: Props) {
             loading ||
             !emailReady ||
             !passwordReady ||
-            (TURNSTILE_ENABLED && !turnstileToken)
+            (showTurnstile && !turnstileToken)
           }
         >
           {loading ? "Signing in…" : "Log in"}
