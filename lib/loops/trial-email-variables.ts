@@ -2,7 +2,7 @@ import "server-only";
 
 import { PLATFORM_TRIAL_DAYS } from "@/lib/account/platform-trial";
 
-/** Shared copy for sign-up + Google welcome Loops templates. */
+/** Shared copy for Welcome Trial Start Loops template. */
 export const LOOPS_TRIAL_PRO_INFO_LINE =
   "Your free trial includes full platform access for 7 days. Upgrade to Finsepa Pro anytime for ongoing research tools, portfolio tracking, and market data.";
 

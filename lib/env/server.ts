@@ -94,16 +94,26 @@ export function getLoopsTransactionalProRenewedId(): string {
   return v || LOOPS_TRANSACTIONAL_ID_PRO_RENEWED_DEFAULT;
 }
 
-/** Default “Welcome to Finsepa (Google)” transactional in Loops. */
-const LOOPS_TRANSACTIONAL_ID_GOOGLE_WELCOME_DEFAULT = "cmpqlacpq1dux0j155z7t77cv";
+/** Default “Welcome Trial Start” transactional in Loops. */
+const LOOPS_TRANSACTIONAL_ID_WELCOME_TRIAL_START_DEFAULT = "cmpqlacpq1dux0j155z7t77cv";
 
 /**
- * Loops transactional for Google OAuth welcome (no confirmation link).
+ * Loops “Welcome Trial Start” (Google sign-up or after email confirm).
  * Template data variables: firstName, platformLink, trialDays, trialEndsAt, proInfoLine.
  */
-export function getLoopsTransactionalGoogleWelcomeId(): string {
-  const v = pickProcessEnv(
+export function getLoopsTransactionalWelcomeTrialStartId(): string {
+  const welcome = pickProcessEnv(
+    "LOOPS" + "_" + "TRANSACTIONAL" + "_" + "ID" + "_" + "WELCOME" + "_" + "TRIAL" + "_" + "START",
+  );
+  if (welcome?.trim()) return welcome.trim();
+
+  const legacyGoogle = pickProcessEnv(
     "LOOPS" + "_" + "TRANSACTIONAL" + "_" + "ID" + "_" + "GOOGLE" + "_" + "WELCOME",
   );
-  return v?.trim() || LOOPS_TRANSACTIONAL_ID_GOOGLE_WELCOME_DEFAULT;
+  return legacyGoogle?.trim() || LOOPS_TRANSACTIONAL_ID_WELCOME_TRIAL_START_DEFAULT;
+}
+
+/** @deprecated Use {@link getLoopsTransactionalWelcomeTrialStartId}. */
+export function getLoopsTransactionalGoogleWelcomeId(): string {
+  return getLoopsTransactionalWelcomeTrialStartId();
 }

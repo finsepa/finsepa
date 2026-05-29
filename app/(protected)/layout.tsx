@@ -1,10 +1,9 @@
 import type { ReactNode } from "react";
 import { headers } from "next/headers";
-import { after } from "next/server";
 
 import { getAuthAppOriginFromEnv } from "@/lib/auth/app-origin";
-import { sendGoogleWelcomeEmailIfNeeded } from "@/lib/auth/send-google-welcome-email";
-import { shouldSendGoogleWelcomeEmail } from "@/lib/auth/google-welcome-email";
+import { sendWelcomeTrialStartEmailIfNeeded } from "@/lib/auth/send-welcome-trial-start-email";
+import { shouldSendWelcomeTrialStartEmail } from "@/lib/auth/welcome-trial-start-email";
 import { ProtectedAppShell } from "@/components/layout/protected-app-shell";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -24,18 +23,20 @@ export default async function ProtectedLayout({ children }: { children: ReactNod
     data: { user: sessionUser },
   } = await supabase.auth.getUser();
 
-  if (sessionUser) {
-    after(async () => {
-      let user = sessionUser;
-      const admin = getSupabaseAdminClient();
-      if (admin) {
-        const { data } = await admin.auth.admin.getUserById(sessionUser.id);
-        if (data.user) user = data.user;
-      }
-      if (!shouldSendGoogleWelcomeEmail(user)) return;
+  if (sessionUser && shouldSendWelcomeTrialStartEmail(sessionUser)) {
+    let user = sessionUser;
+    const admin = getSupabaseAdminClient();
+    if (admin) {
+      const { data } = await admin.auth.admin.getUserById(sessionUser.id);
+      if (data.user) user = data.user;
+    }
+    if (shouldSendWelcomeTrialStartEmail(user)) {
       const h = await headers();
-      await sendGoogleWelcomeEmailIfNeeded(user, requestOriginFromHeaders(h));
-    });
+      const result = await sendWelcomeTrialStartEmailIfNeeded(user, requestOriginFromHeaders(h));
+      if (!result.sent && result.reason === "send_failed") {
+        console.error("[welcome-trial-start]", result.message);
+      }
+    }
   }
 
   return <ProtectedAppShell>{children}</ProtectedAppShell>;

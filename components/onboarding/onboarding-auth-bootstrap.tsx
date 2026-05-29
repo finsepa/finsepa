@@ -6,6 +6,7 @@ import {
   establishAuthSessionFromCurrentUrl,
   replaceUrlPathOnly,
 } from "@/lib/auth/establish-session-from-url";
+import { postWelcomeTrialStartFromSession } from "@/lib/auth/send-welcome-trial-start-from-session";
 import { ONBOARDING_AUTH_READY_EVENT, persistOnboardingPendingOnUser } from "@/lib/auth/onboarding";
 import { parseAuthCallbackParams } from "@/lib/auth/parse-auth-callback-url";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
@@ -39,6 +40,7 @@ export function OnboardingAuthBootstrap() {
 
       const supabase = getSupabaseBrowserClient();
       await persistOnboardingPendingOnUser(supabase);
+      await postWelcomeTrialStartFromSession();
       replaceUrlPathOnly(window.location.pathname + window.location.search);
       window.dispatchEvent(new Event(ONBOARDING_AUTH_READY_EVENT));
     }

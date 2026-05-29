@@ -13,7 +13,9 @@ const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
 const loopsKey = process.env.LOOPS_API_KEY?.trim();
 const txId =
-  process.env.LOOPS_TRANSACTIONAL_ID_GOOGLE_WELCOME?.trim() || "cmpqlacpq1dux0j155z7t77cv";
+  process.env.LOOPS_TRANSACTIONAL_ID_WELCOME_TRIAL_START?.trim() ||
+  process.env.LOOPS_TRANSACTIONAL_ID_GOOGLE_WELCOME?.trim() ||
+  "cmpqlacpq1dux0j155z7t77cv";
 const poolUrl = process.env.SUPABASE_POOLER_URL?.trim();
 const appOrigin =
   process.env.NEXT_PUBLIC_APP_ORIGIN?.trim().replace(/\/$/, "") || "https://app.finsepa.com";
@@ -85,8 +87,9 @@ if (res.ok) {
   await admin.auth.admin.updateUserById(row.id, {
     user_metadata: {
       ...existing,
+      welcome_trial_start_sent_at: new Date().toISOString(),
       google_welcome_email_sent_at: new Date().toISOString(),
     },
   });
-  console.log("Marked google_welcome_email_sent_at for", row.id);
+  console.log("Marked welcome_trial_start_sent_at for", row.id);
 }

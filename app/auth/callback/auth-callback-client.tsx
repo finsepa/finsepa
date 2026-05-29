@@ -4,7 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect } from "react";
 
 import { establishAuthSessionFromCurrentUrl } from "@/lib/auth/establish-session-from-url";
-import { postGoogleWelcomeFromSession } from "@/lib/auth/send-google-welcome-from-session";
+import { postWelcomeTrialStartFromSession } from "@/lib/auth/send-welcome-trial-start-from-session";
 import {
   appendOnboardingQuery,
   persistOnboardingPendingOnUser,
@@ -56,7 +56,7 @@ function AuthCallbackInner() {
             await persistOnboardingPendingOnUser(supabase);
             destination = appendOnboardingQuery(safeNext);
           }
-          await postGoogleWelcomeFromSession();
+          await postWelcomeTrialStartFromSession();
         } catch {
           /* non-blocking */
         }
