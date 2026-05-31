@@ -84,7 +84,7 @@ export function FormListboxSelect<V extends string>({
   return (
     <div
       ref={containerRef}
-      className={cn("relative z-10 min-w-0 w-full", listboxClassName, className)}
+      className={cn("relative z-20 min-w-0 w-full", listboxClassName, className)}
     >
       <button
         type="button"
@@ -141,7 +141,7 @@ export function FormListboxSelect<V extends string>({
           className={cn(
             dropdownMenuPanelClassName(),
             /** At least trigger width; grow with option labels (narrow triggers used to clip flags + text). */
-            "absolute top-[calc(100%+4px)] z-[120] min-w-full w-max max-w-[min(24rem,calc(100vw-2rem))]",
+            "absolute top-[calc(100%+4px)] z-[120] min-w-full w-max max-w-[min(24rem,calc(100vw-2rem))] bg-white",
             menuAlign === "trailing" ? "right-0" : "left-0",
             menuClassName,
           )}

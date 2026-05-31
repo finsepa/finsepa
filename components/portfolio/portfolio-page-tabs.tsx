@@ -2,15 +2,16 @@
 
 import { UnderlineTabs } from "@/components/screener/market-tabs";
 
-const tabs = ["Overview", "Performance", "Metrics", "Cash", "Slices", "Transactions"] as const;
+const tabs = ["Overview", "Performance", "Metrics", "Cash", "Transactions"] as const;
 export type PortfolioViewTab = (typeof tabs)[number];
+
+export type OverviewHoldingsSubTab = "assets" | "allocation" | "slices";
 
 /** Community `/portfolios/[id]` read-only view — no Cash tab. */
 export const publicPortfolioViewTabs = [
   "Overview",
   "Performance",
   "Metrics",
-  "Slices",
   "Transactions",
 ] as const satisfies readonly PortfolioViewTab[];
 
@@ -25,13 +26,32 @@ export function portfolioViewTabFromSearchParam(value: string | null): Portfolio
     case "cash":
       return "Cash";
     case "slices":
-      return "Slices";
+      return "Overview";
     case "transactions":
       return "Transactions";
     case "overview":
     default:
       return "Overview";
   }
+}
+
+export function overviewHoldingsSubTabFromSearchParam(
+  tab: string | null,
+  view: string | null,
+): OverviewHoldingsSubTab {
+  if (tab?.toLowerCase() === "slices") return "slices";
+  switch (view?.toLowerCase()) {
+    case "allocation":
+      return "allocation";
+    case "slices":
+      return "slices";
+    default:
+      return "assets";
+  }
+}
+
+export function searchParamFromOverviewHoldingsSubTab(view: OverviewHoldingsSubTab): string {
+  return view;
 }
 
 export function searchParamFromPortfolioViewTab(tab: PortfolioViewTab): string {
@@ -42,8 +62,6 @@ export function searchParamFromPortfolioViewTab(tab: PortfolioViewTab): string {
       return "metrics";
     case "Cash":
       return "cash";
-    case "Slices":
-      return "slices";
     case "Transactions":
       return "transactions";
     case "Overview":

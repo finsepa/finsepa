@@ -1,7 +1,8 @@
 "use client";
 
+import { ChevronDown, ChevronUp } from "lucide-react";
+import { Fragment, memo, startTransition, useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { memo, startTransition, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -9,6 +10,7 @@ import { toast } from "sonner";
 import type { CompanyPick } from "@/components/charting/company-picker";
 import { CompanyLogo } from "@/components/screener/company-logo";
 import { HoldingRowActionsMenu } from "@/components/portfolio/holding-row-actions-menu";
+import { PortfolioHoldingTransactionsPanel } from "@/components/portfolio/portfolio-holding-transactions-panel";
 import { displayLogoUrlForPortfolioSymbol } from "@/lib/portfolio/portfolio-asset-display-logo";
 import { RemoveAssetModal } from "@/components/portfolio/remove-asset-modal";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
@@ -37,6 +39,41 @@ const EM_DASH = "\u2014";
 /** Matches screener company column (`screener-table.tsx`). */
 const HOLDING_COMPANY_NAME_CLASS =
   "truncate text-[14px] font-semibold leading-5 text-[#09090B] underline-offset-2 decoration-[#71717A] group-hover:underline";
+
+/** Expand/collapse control for inline transaction history. */
+function PortfolioHoldingExpandButton({
+  expanded,
+  onToggle,
+}: {
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      data-holding-expand
+      aria-label={expanded ? "Collapse transactions" : "Show transactions"}
+      aria-expanded={expanded}
+      onClick={(e) => {
+        e.stopPropagation();
+        onToggle();
+      }}
+      className={cn(
+        "inline-flex h-7 w-7 items-center justify-center rounded-full border border-transparent bg-transparent text-[#09090B]",
+        "transition-colors hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15",
+        expanded && "bg-[#F4F4F5]",
+      )}
+    >
+      {expanded ?
+        <ChevronUp className="h-4 w-4" strokeWidth={2} aria-hidden />
+      : <ChevronDown className="h-4 w-4" strokeWidth={2} aria-hidden />}
+    </button>
+  );
+}
+
+function holdingRowTdBorder(expanded: boolean) {
+  return expanded ? undefined : "border-b border-[#E4E4E7]";
+}
 
 function holdingToCompanyPick(h: PortfolioHolding): CompanyPick {
   const cryptoKey = cryptoRouteBase(h.symbol);
@@ -242,8 +279,15 @@ function PortfolioHoldingsTableInner({
 
   const [removeTarget, setRemoveTarget] = useState<PortfolioHolding | null>(null);
   const [openActionsHoldingId, setOpenActionsHoldingId] = useState<string | null>(null);
+  const [expandedHoldingId, setExpandedHoldingId] = useState<string | null>(null);
   const resolvedCompanyNames = usePortfolioHoldingDisplayNames(holdings);
   const router = useRouter();
+
+  const toggleExpandedHolding = useCallback((holdingId: string) => {
+    setExpandedHoldingId((cur) => (cur === holdingId ? null : holdingId));
+  }, []);
+
+  const tableColSpan = selectedPortfolioReadOnly ? 7 : 8;
 
   const confirmRemoveAsset = useCallback(() => {
     if (!selectedPortfolioId || !removeTarget) return;
@@ -390,17 +434,18 @@ function PortfolioHoldingsTableInner({
         </div>
       </div>
 
-      <table className="hidden w-full min-w-[920px] border-collapse sm:table">
+      <table className="hidden w-full min-w-[960px] border-separate border-spacing-0 sm:table">
         <thead>
-          <tr className="min-h-[44px] border-b border-[#E4E4E7] bg-white text-[14px] font-medium leading-5 text-[#71717A]">
-            <th className="whitespace-nowrap px-4 py-3 text-left">Asset</th>
-            <th className="whitespace-nowrap px-4 py-3 text-right">Price</th>
-            <th className="whitespace-nowrap px-4 py-3 text-right">Holdings</th>
-            <th className="whitespace-nowrap px-4 py-3 text-right">Avg. Buy Price</th>
-            <th className="whitespace-nowrap px-4 py-3 text-right">Profit/Loss</th>
-            <th className="whitespace-nowrap px-4 py-3 text-right">Weight</th>
+          <tr className="min-h-[44px] bg-white text-[14px] font-medium leading-5 text-[#71717A]">
+            <th className="w-11 border-b border-[#E4E4E7] px-2 py-3" aria-hidden />
+            <th className="whitespace-nowrap border-b border-[#E4E4E7] px-4 py-3 text-left">Asset</th>
+            <th className="whitespace-nowrap border-b border-[#E4E4E7] px-4 py-3 text-right">Price</th>
+            <th className="whitespace-nowrap border-b border-[#E4E4E7] px-4 py-3 text-right">Holdings</th>
+            <th className="whitespace-nowrap border-b border-[#E4E4E7] px-4 py-3 text-right">Avg. Buy Price</th>
+            <th className="whitespace-nowrap border-b border-[#E4E4E7] px-4 py-3 text-right">Profit/Loss</th>
+            <th className="whitespace-nowrap border-b border-[#E4E4E7] px-4 py-3 text-right">Weight</th>
             {!selectedPortfolioReadOnly ? (
-              <th className="w-12 px-4 py-3 text-right" aria-label="Actions" />
+              <th className="w-12 border-b border-[#E4E4E7] px-4 py-3 text-right" aria-label="Actions" />
             ) : null}
           </tr>
         </thead>
@@ -417,6 +462,7 @@ function PortfolioHoldingsTableInner({
             const logo = displayLogoUrlForPortfolioSymbol(h.symbol);
             const caption = portfolioAssetSymbolCaption(h.symbol);
             const companyName = portfolioHoldingDisplayName(h, resolvedCompanyNames);
+            const expanded = expandedHoldingId === h.id;
             const assetInner = (
               <>
                 <CompanyLogo name={companyName} logoUrl={logo} symbol={h.symbol} />
@@ -427,16 +473,18 @@ function PortfolioHoldingsTableInner({
               </>
             );
             return (
+            <Fragment key={h.id}>
             <tr
-              key={h.id}
               className={cn(
-                "group relative h-[60px] max-h-[60px] border-b border-[#E4E4E7] transition-colors duration-75 hover:bg-neutral-50",
-                assetHref && "cursor-pointer",
+                "group relative h-[60px] max-h-[60px] transition-colors duration-75 hover:bg-neutral-50",
+                assetHref && !expanded && "cursor-pointer",
               )}
               onClick={
                 assetHref
                   ? (e) => {
                       if ((e.target as HTMLElement).closest("[data-holding-actions]")) return;
+                      if ((e.target as HTMLElement).closest("[data-holding-expand]")) return;
+                      if ((e.target as HTMLElement).closest("[data-holding-expanded-panel]")) return;
                       router.push(assetHref);
                     }
                   : undefined
@@ -450,17 +498,42 @@ function PortfolioHoldingsTableInner({
                     }
                   : undefined
               }
-              tabIndex={assetHref ? 0 : undefined}
-              role={assetHref ? "link" : undefined}
-              aria-label={assetHref ? `Open ${companyName}` : undefined}
+              tabIndex={assetHref && !expanded ? 0 : undefined}
+              role={assetHref && !expanded ? "link" : undefined}
+              aria-label={assetHref && !expanded ? `Open ${companyName}` : undefined}
             >
-              <td className="relative z-[1] align-middle px-4 py-0">
+              <td
+                className={cn(
+                  "relative z-[2] w-11 px-2 py-0 align-middle",
+                  holdingRowTdBorder(expanded),
+                )}
+                onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-center py-2">
+                  <PortfolioHoldingExpandButton
+                    expanded={expanded}
+                    onToggle={() => toggleExpandedHolding(h.id)}
+                  />
+                </div>
+              </td>
+              <td className={cn("relative z-[1] align-middle px-4 py-0", holdingRowTdBorder(expanded))}>
                 <div className="flex min-w-0 max-w-full items-center gap-3 py-2 pr-2">{assetInner}</div>
               </td>
-              <td className="relative z-[1] align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
+              <td
+                className={cn(
+                  "relative z-[1] align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]",
+                  holdingRowTdBorder(expanded),
+                )}
+              >
                 {formatPortfolioUsdPerUnit(h.marketPrice)}
               </td>
-              <td className="relative z-[1] align-middle whitespace-nowrap px-4 py-3 text-right">
+              <td
+                className={cn(
+                  "relative z-[1] align-middle whitespace-nowrap px-4 py-3 text-right",
+                  holdingRowTdBorder(expanded),
+                )}
+              >
                 <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#09090B]">
                   {usd0.format(h.currentValue)}
                 </div>
@@ -468,10 +541,20 @@ function PortfolioHoldingsTableInner({
                   {formatSharesWithUnit(h.shares, h.symbol)}
                 </div>
               </td>
-              <td className="relative z-[1] align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
+              <td
+                className={cn(
+                  "relative z-[1] align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]",
+                  holdingRowTdBorder(expanded),
+                )}
+              >
                 {formatPortfolioUsdPerUnit(h.avgPrice)}
               </td>
-              <td className="relative z-[1] align-middle whitespace-nowrap px-4 py-3 text-right">
+              <td
+                className={cn(
+                  "relative z-[1] align-middle whitespace-nowrap px-4 py-3 text-right",
+                  holdingRowTdBorder(expanded),
+                )}
+              >
                 <PortfolioPnlBreakdownTooltip
                   totalUsd={totalUsd}
                   totalPct={totalPct}
@@ -479,11 +562,22 @@ function PortfolioHoldingsTableInner({
                   realizedUsd={realizedUsd}
                 />
               </td>
-              <td className="relative z-[1] align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
+              <td
+                className={cn(
+                  "relative z-[1] align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]",
+                  holdingRowTdBorder(expanded),
+                )}
+              >
                 {pct.format(weightPct)}%
               </td>
               {!selectedPortfolioReadOnly ? (
-                <td className="relative z-[2] align-middle px-4 py-3 text-right" data-holding-actions>
+                <td
+                  className={cn(
+                    "relative z-[2] align-middle px-4 py-3 text-right",
+                    holdingRowTdBorder(expanded),
+                  )}
+                  data-holding-actions
+                >
                   <div className="relative flex justify-end">
                     <HoldingRowActionsMenu
                       holding={h}
@@ -498,11 +592,23 @@ function PortfolioHoldingsTableInner({
                 </td>
               ) : null}
             </tr>
+            {expanded ? (
+              <tr className="bg-white">
+                <td colSpan={tableColSpan} className="border-t-2 border-b-2 border-[#E4E4E7] p-0">
+                  <PortfolioHoldingTransactionsPanel
+                    holding={h}
+                    transactions={transactions}
+                    resolvedCompanyNames={resolvedCompanyNames}
+                  />
+                </td>
+              </tr>
+            ) : null}
+            </Fragment>
             );
           })}
 
           <tr
-            className="group relative h-[60px] max-h-[60px] cursor-pointer border-b border-[#E4E4E7] bg-white transition-colors duration-75 hover:bg-neutral-50"
+            className="group relative h-[60px] max-h-[60px] cursor-pointer bg-white transition-colors duration-75 hover:bg-neutral-50"
             onClick={() => router.push("/portfolio?tab=cash")}
             onKeyDown={(e) => {
               if (e.key !== "Enter" && e.key !== " ") return;
@@ -513,7 +619,8 @@ function PortfolioHoldingsTableInner({
             role="link"
             aria-label="Open cash"
           >
-            <td className="relative z-[1] align-middle px-4 py-0">
+            <td className="relative z-[2] w-11 border-b border-[#E4E4E7] px-2 py-0 align-middle" aria-hidden />
+            <td className="relative z-[1] border-b border-[#E4E4E7] align-middle px-4 py-0">
               <div className="flex min-w-0 max-w-full items-center gap-3 py-2 pr-2">
                 <CompanyLogo name="US Dollar" logoUrl="" symbol="USD" />
                 <div className="min-w-0 text-left">
@@ -522,10 +629,10 @@ function PortfolioHoldingsTableInner({
                 </div>
               </div>
             </td>
-            <td className="relative z-[1] align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
+            <td className="relative z-[1] border-b border-[#E4E4E7] align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
               {formatPortfolioUsdPerUnit(1)}
             </td>
-            <td className="relative z-[1] align-middle whitespace-nowrap px-4 py-3 text-right">
+            <td className="relative z-[1] border-b border-[#E4E4E7] align-middle whitespace-nowrap px-4 py-3 text-right">
               <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#09090B]">
                 {usd0.format(cashUsd)}
               </div>
@@ -533,17 +640,17 @@ function PortfolioHoldingsTableInner({
                 {formatSharesDisplay(cashUsd)} USD
               </div>
             </td>
-            <td className="relative z-[1] align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
+            <td className="relative z-[1] border-b border-[#E4E4E7] align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
               {formatPortfolioUsdPerUnit(1)}
             </td>
-            <td className="relative z-[1] align-middle whitespace-nowrap px-4 py-3 text-right">
+            <td className="relative z-[1] border-b border-[#E4E4E7] align-middle whitespace-nowrap px-4 py-3 text-right">
               <div className="text-[14px] font-medium tabular-nums text-[#71717A]">{EM_DASH}</div>
               <div className="text-[12px] font-medium tabular-nums text-[#71717A]">{EM_DASH}</div>
             </td>
-            <td className="relative z-[1] align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
+            <td className="relative z-[1] border-b border-[#E4E4E7] align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
               {pct.format(cashWeightPct)}%
             </td>
-            <td className="relative z-[1] align-middle px-4 py-3 text-right" aria-hidden />
+            <td className="relative z-[1] border-b border-[#E4E4E7] align-middle px-4 py-3 text-right" aria-hidden />
           </tr>
         </tbody>
       </table>

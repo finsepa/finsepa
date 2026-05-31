@@ -1,11 +1,15 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { WatchlistRow } from "./types";
+import {
+  normalizeWatchlistStorageKey,
+  watchlistRemovalCandidateKeys,
+} from "./normalize-storage-key";
 
 const TABLE = "watchlist";
 
 /** Uppercase trimmed symbol; rejects empty / too long input. */
 export function normalizeWatchlistTicker(raw: string): string {
-  const t = raw.trim().toUpperCase();
+  const t = normalizeWatchlistStorageKey(raw);
   if (!t) {
     throw new WatchlistValidationError("Ticker is required.");
   }
@@ -92,46 +96,52 @@ export async function removeWatchlistTicker(
   userId: string,
   ticker: string,
 ): Promise<{ removed: boolean }> {
-  const { data: existing, error: selectError } = await supabase
-    .from(TABLE)
-    .select("id,ticker")
-    .eq("user_id", userId)
-    .eq("ticker", ticker)
-    .maybeSingle();
+  const candidates = watchlistRemovalCandidateKeys(ticker);
 
-  console.info("[watchlist] delete lookup", {
-    userId,
-    ticker,
-    foundRowId: existing?.id ?? null,
-    storedTicker: existing?.ticker ?? null,
-    selectError: selectError
-      ? { code: selectError.code, message: selectError.message, details: selectError.details }
-      : null,
-  });
+  for (const candidate of candidates) {
+    const { data: existing, error: selectError } = await supabase
+      .from(TABLE)
+      .select("id,ticker")
+      .eq("user_id", userId)
+      .eq("ticker", candidate)
+      .maybeSingle();
 
-  if (selectError) {
-    throw new Error(selectError.message);
+    console.info("[watchlist] delete lookup", {
+      userId,
+      ticker,
+      candidate,
+      foundRowId: existing?.id ?? null,
+      storedTicker: existing?.ticker ?? null,
+      selectError: selectError
+        ? { code: selectError.code, message: selectError.message, details: selectError.details }
+        : null,
+    });
+
+    if (selectError) {
+      throw new Error(selectError.message);
+    }
+    if (!existing) continue;
+
+    const { data: deletedRows, error: deleteError } = await supabase
+      .from(TABLE)
+      .delete()
+      .eq("id", existing.id)
+      .select("id");
+
+    console.info("[watchlist] delete by id result", {
+      rowId: existing.id,
+      storedTicker: existing.ticker,
+      deletedRows,
+      deleteError: deleteError
+        ? { code: deleteError.code, message: deleteError.message, details: deleteError.details }
+        : null,
+    });
+
+    if (deleteError) {
+      throw new Error(deleteError.message);
+    }
+    return { removed: (deletedRows?.length ?? 0) > 0 };
   }
-  if (!existing) {
-    return { removed: false };
-  }
 
-  const { data: deletedRows, error: deleteError } = await supabase
-    .from(TABLE)
-    .delete()
-    .eq("id", existing.id)
-    .select("id");
-
-  console.info("[watchlist] delete by id result", {
-    rowId: existing.id,
-    deletedRows,
-    deleteError: deleteError
-      ? { code: deleteError.code, message: deleteError.message, details: deleteError.details }
-      : null,
-  });
-
-  if (deleteError) {
-    throw new Error(deleteError.message);
-  }
-  return { removed: (deletedRows?.length ?? 0) > 0 };
+  return { removed: false };
 }

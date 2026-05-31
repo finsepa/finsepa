@@ -3,6 +3,7 @@
 import { Star, Trash2 } from "lucide-react";
 
 import { TopbarDelayedTooltip } from "@/components/layout/topbar-delayed-tooltip";
+import { isWatchlistTickerWatched } from "@/lib/watchlist/normalize-storage-key";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
 
 type ToggleProps = {
@@ -34,8 +35,7 @@ export function WatchlistStarToggle({
   buttonClassName = "",
   variant = "default",
 }: ToggleProps) {
-  const key = storageKey.trim().toUpperCase();
-  const isWatched = loaded && watched.has(key);
+  const isWatched = loaded && isWatchlistTickerWatched(watched, storageKey);
   const isDetail = variant === "detail";
 
   const tooltipLabel = isWatched ? "Remove from Watchlist" : "Add to Watchlist";

@@ -454,7 +454,7 @@ export async function buildWatchlistEnrichedGroups(items: WatchlistRow[]): Promi
     .map((i) => i.ticker.trim().toUpperCase())
     .sort()
     .join(",");
-  return withScreenerUsMarketCache("watchlist-enriched-groups-v3", () => buildWatchlistEnrichedGroupsUncached(items), [
+  return withScreenerUsMarketCache("watchlist-enriched-groups-v4", () => buildWatchlistEnrichedGroupsUncached(items), [
     tickersKey,
   ]);
 }

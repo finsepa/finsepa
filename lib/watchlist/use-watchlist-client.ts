@@ -6,9 +6,16 @@ import { toast } from "sonner";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { WATCHLIST_MUTATED_EVENT } from "@/lib/watchlist/constants";
 import { readWatchlistLocalFull, writeWatchlistLocal } from "@/lib/watchlist/local-storage";
+import {
+  addWatchlistTickerToSet,
+  isWatchlistTickerWatched,
+  normalizeWatchlistStorageKey,
+  removeWatchlistTickerFromSet,
+  watchlistWatchedAliasKeys,
+} from "@/lib/watchlist/normalize-storage-key";
 
 function normalizeTicker(t: string): string {
-  return t.trim().toUpperCase();
+  return normalizeWatchlistStorageKey(t);
 }
 
 const DEBUG = process.env.NODE_ENV === "development";
@@ -128,7 +135,10 @@ export function useWatchlist() {
             const merged = new Set(prev);
             const pending = new Set(pendingRemovalRef.current.map(normalizeTicker));
             for (const t of server) {
-              if (!pending.has(t)) merged.add(t);
+              const canon = normalizeTicker(t);
+              const aliases = watchlistWatchedAliasKeys(canon);
+              const blocked = aliases.some((k) => pending.has(normalizeTicker(k)));
+              if (!blocked) merged.add(canon);
             }
             wlLog("merge server into watched", {
               prev: [...prev],
@@ -170,39 +180,40 @@ export function useWatchlist() {
   /** `storageKey` must match `public.watchlist.ticker` (e.g. AAPL, CRYPTO:BTC). Never pass entryId or href. */
   const toggleTicker = useCallback((storageKey: string) => {
     const ticker = normalizeTicker(storageKey);
-    const removing = watchedRef.current.has(ticker);
+    const removing = isWatchlistTickerWatched(watchedRef.current, storageKey);
 
     if (removing) {
-      setPendingRemoval((prev) => [...new Set([...prev, ticker])]);
+      const aliases = watchlistWatchedAliasKeys(storageKey);
+      setPendingRemoval((prev) => [...new Set([...prev, ...aliases.map(normalizeTicker)])]);
     } else {
-      setPendingRemoval((prev) => prev.filter((x) => x !== ticker));
+      setPendingRemoval((prev) => {
+        const drop = new Set(watchlistWatchedAliasKeys(storageKey).map(normalizeTicker));
+        return prev.filter((x) => !drop.has(x));
+      });
     }
 
-    setWatched((prev) => {
-      const next = new Set(prev);
-      if (removing) next.delete(ticker);
-      else next.add(ticker);
-      return next;
-    });
+    setWatched((prev) =>
+      removing ? removeWatchlistTickerFromSet(prev, storageKey) : addWatchlistTickerToSet(prev, storageKey),
+    );
 
-    /** Signed-out users only get an add toast here; POST does not revert on failure. Remove sync toast is skipped because DELETE returns 401 and we revert state. */
-    if (userIdRef.current == null && !removing) {
-      toast.success(`${ticker} added to your watchlist.`);
+    const isGuest = userIdRef.current == null;
+    if (isGuest) {
+      if (removing) {
+        toast.success(`${ticker} removed from your watchlist.`);
+      } else {
+        toast.success(`${ticker} added to your watchlist.`);
+      }
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent(WATCHLIST_MUTATED_EVENT, { detail: { ticker } }));
+      }
+      return;
     }
 
     void (async () => {
       try {
         if (removing) {
           wlLog("toggle → DELETE", { storageKey, ticker });
-          console.info("DELETE ticker", ticker);
           const deletePath = `/api/watchlist?ticker=${encodeURIComponent(ticker)}`;
-          console.info("[watchlist] DELETE /api/watchlist request", {
-            storageKey,
-            ticker,
-            deletePath,
-            fullUrl: typeof window !== "undefined" ? new URL(deletePath, window.location.origin).href : deletePath,
-            credentials: "include",
-          });
           const res = await fetch(deletePath, {
             method: "DELETE",
             credentials: "include",
@@ -215,31 +226,29 @@ export function useWatchlist() {
           } catch {
             /* keep raw */
           }
-          if (res.ok) {
-            console.info("[watchlist] DELETE /api/watchlist ok", { status: res.status, body: parsed });
-            setPendingRemoval((prev) => prev.filter((x) => x !== ticker));
-            if (userIdRef.current != null) {
-              toast.success(`${ticker} removed from your watchlist.`);
+          const deleteAccepted = res.ok || res.status === 404 || res.status === 401;
+          if (deleteAccepted) {
+            if (res.status === 404) {
+              wlLog("DELETE not found (treating as removed)", { status: res.status, body: parsed });
+            } else if (res.status === 401) {
+              wlLog("DELETE unauthorized (keeping local removal)", { status: res.status, body: parsed });
+            } else {
+              wlLog("DELETE ok", { status: res.status, body: parsed });
             }
+            const aliases = watchlistWatchedAliasKeys(storageKey).map(normalizeTicker);
+            setPendingRemoval((prev) => prev.filter((x) => !aliases.includes(x)));
+            toast.success(`${ticker} removed from your watchlist.`);
           } else {
             console.error("[watchlist] DELETE /api/watchlist error", { status: res.status, body: parsed });
-            setPendingRemoval((prev) => prev.filter((x) => x !== ticker));
-            setWatched((prev) => {
-              const next = new Set(prev);
-              next.add(ticker);
-              return next;
-            });
+            const aliases = watchlistWatchedAliasKeys(storageKey).map(normalizeTicker);
+            setPendingRemoval((prev) => prev.filter((x) => !aliases.includes(x)));
+            setWatched((prev) => addWatchlistTickerToSet(prev, storageKey));
           }
-          if (res.ok && typeof window !== "undefined") {
+          if (deleteAccepted && typeof window !== "undefined") {
             window.dispatchEvent(new CustomEvent(WATCHLIST_MUTATED_EVENT, { detail: { ticker } }));
           }
         } else {
           wlLog("toggle → POST", { storageKey, ticker });
-          console.info("[watchlist] POST /api/watchlist calling", {
-            storageKey,
-            ticker,
-            credentials: "include",
-          });
           const res = await fetch("/api/watchlist", {
             method: "POST",
             credentials: "include",
@@ -255,10 +264,8 @@ export function useWatchlist() {
             parsed = bodyText;
           }
           if (res.ok) {
-            console.info("[watchlist] POST /api/watchlist ok", { status: res.status, body: parsed });
-            if (userIdRef.current != null) {
-              toast.success(`${ticker} added to your watchlist.`);
-            }
+            wlLog("POST ok", { status: res.status, body: parsed });
+            toast.success(`${ticker} added to your watchlist.`);
           } else {
             console.error("[watchlist] POST /api/watchlist error", { status: res.status, body: parsed });
           }
@@ -270,12 +277,9 @@ export function useWatchlist() {
         console.error("[watchlist] toggle API network error (failure)", e);
         wlLog("toggle API error (reverting remove if applicable)", e);
         if (removing) {
-          setPendingRemoval((prev) => prev.filter((x) => x !== ticker));
-          setWatched((prev) => {
-            const next = new Set(prev);
-            next.add(ticker);
-            return next;
-          });
+          const aliases = watchlistWatchedAliasKeys(storageKey).map(normalizeTicker);
+          setPendingRemoval((prev) => prev.filter((x) => !aliases.includes(x)));
+          setWatched((prev) => addWatchlistTickerToSet(prev, storageKey));
         }
       }
     })();

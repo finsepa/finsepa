@@ -3,6 +3,8 @@
  * When signed in, storage is scoped per user so accounts on the same browser do not share stars.
  */
 
+import { normalizeWatchlistStorageKey } from "@/lib/watchlist/normalize-storage-key";
+
 const STORAGE_KEY_LEGACY = "finsepa.watchlist.v1";
 
 export type WatchlistLocalSnapshot = {
@@ -53,11 +55,17 @@ function readWatchlistRaw(raw: string): { tickers: string[]; pendingRemoval: str
       return { tickers: [], pendingRemoval: [] };
     }
     const list = parsed.tickers
-      .map((t) => String(t).trim().toUpperCase())
+      .map((t) => normalizeWatchlistStorageKey(String(t)))
       .filter((t) => t.length > 0);
     const tickers = [...new Set(list)];
     const pr = Array.isArray(parsed.pendingRemoval)
-      ? [...new Set(parsed.pendingRemoval.map((t) => String(t).trim().toUpperCase()).filter((t) => t.length > 0))]
+      ? [
+          ...new Set(
+            parsed.pendingRemoval
+              .map((t) => normalizeWatchlistStorageKey(String(t)))
+              .filter((t) => t.length > 0),
+          ),
+        ]
       : [];
     return { tickers, pendingRemoval: pr };
   } catch {
@@ -72,8 +80,12 @@ export function writeWatchlistLocal(
 ): void {
   if (typeof window === "undefined") return;
   try {
-    const unique = [...new Set(tickers.map((t) => t.trim().toUpperCase()).filter((t) => t.length > 0))].sort();
-    const pr = [...new Set(pendingRemoval.map((t) => t.trim().toUpperCase()).filter((t) => t.length > 0))].sort();
+    const unique = [
+      ...new Set(tickers.map((t) => normalizeWatchlistStorageKey(t)).filter((t) => t.length > 0)),
+    ].sort();
+    const pr = [
+      ...new Set(pendingRemoval.map((t) => normalizeWatchlistStorageKey(t)).filter((t) => t.length > 0)),
+    ].sort();
     const payload: WatchlistLocalSnapshot = {
       v: 1,
       tickers: unique,

@@ -25,8 +25,11 @@ import { PortfolioOverviewCards } from "@/components/portfolio/portfolio-overvie
 import { PortfolioTabPanelSkeleton } from "@/components/portfolio/portfolio-page-loading";
 import {
   PortfolioPageTabs,
+  type OverviewHoldingsSubTab,
   type PortfolioViewTab,
+  overviewHoldingsSubTabFromSearchParam,
   portfolioViewTabFromSearchParam,
+  searchParamFromOverviewHoldingsSubTab,
   searchParamFromPortfolioViewTab,
 } from "@/components/portfolio/portfolio-page-tabs";
 import { TransactionPortfolioField } from "@/components/portfolio/transaction-portfolio-field";
@@ -110,16 +113,14 @@ function initialTabsVisited(active: PortfolioViewTab): Record<PortfolioViewTab, 
     Performance: active === "Performance",
     Metrics: active === "Metrics",
     Cash: active === "Cash",
-    Slices: active === "Slices",
     Transactions: active === "Transactions",
   };
 }
 
-type OverviewHoldingsSubTab = "assets" | "allocation";
-
 const OVERVIEW_HOLDINGS_TAB_ITEMS = [
   { id: "assets" as const, label: "Assets" },
   { id: "allocation" as const, label: "Allocation" },
+  { id: "slices" as const, label: "Slices" },
 ] as const;
 
 export function PortfolioPageView({
@@ -152,7 +153,9 @@ export function PortfolioPageView({
   const [tabsVisited, setTabsVisited] = useState<Record<PortfolioViewTab, boolean>>(() =>
     initialTabsVisited(tabFromUrl(searchParams.get("tab"))),
   );
-  const [overviewHoldingsSubTab, setOverviewHoldingsSubTab] = useState<OverviewHoldingsSubTab>("assets");
+  const [overviewHoldingsSubTab, setOverviewHoldingsSubTab] = useState<OverviewHoldingsSubTab>(() =>
+    overviewHoldingsSubTabFromSearchParam(searchParams.get("tab"), searchParams.get("view")),
+  );
   const [importTransactionsOpen, setImportTransactionsOpen] = useState(false);
 
   const {
@@ -165,7 +168,17 @@ export function PortfolioPageView({
 
   useEffect(() => {
     setViewTab(tabFromUrl(searchParams.get("tab")));
+    if (tabFromUrl(searchParams.get("tab")) === "Overview") {
+      setOverviewHoldingsSubTab(
+        overviewHoldingsSubTabFromSearchParam(searchParams.get("tab"), searchParams.get("view")),
+      );
+    }
   }, [searchParams, tabFromUrl]);
+
+  useEffect(() => {
+    if (searchParams.get("tab")?.toLowerCase() !== "slices") return;
+    router.replace(`${tabBasePath}?tab=overview&view=slices`, { scroll: false });
+  }, [searchParams, router, tabBasePath]);
 
   useEffect(() => {
     setTabsVisited((v) => ({ ...v, [viewTab]: true }));
@@ -177,10 +190,28 @@ export function PortfolioPageView({
       startTransition(() => {
         setViewTab(tab);
         const q = searchParamFromPortfolioViewTab(tab);
-        router.replace(`${tabBasePath}?tab=${q}`, { scroll: false });
+        if (tab === "Overview") {
+          router.replace(
+            `${tabBasePath}?tab=${q}&view=${searchParamFromOverviewHoldingsSubTab(overviewHoldingsSubTab)}`,
+            { scroll: false },
+          );
+        } else {
+          router.replace(`${tabBasePath}?tab=${q}`, { scroll: false });
+        }
       });
     },
-    [readOnly, router, tabBasePath],
+    [readOnly, router, tabBasePath, overviewHoldingsSubTab],
+  );
+
+  const onOverviewHoldingsSubTabChange = useCallback(
+    (subTab: OverviewHoldingsSubTab) => {
+      setOverviewHoldingsSubTab(subTab);
+      router.replace(
+        `${tabBasePath}?tab=overview&view=${searchParamFromOverviewHoldingsSubTab(subTab)}`,
+        { scroll: false },
+      );
+    },
+    [router, tabBasePath],
   );
 
   const overviewNetWorth = totalNetWorth(holdings, netCashUsd(transactions));
@@ -321,9 +352,11 @@ export function PortfolioPageView({
                   aria-label="Holdings view"
                   items={OVERVIEW_HOLDINGS_TAB_ITEMS}
                   value={overviewHoldingsSubTab}
-                  onValueChange={setOverviewHoldingsSubTab}
+                  onValueChange={onOverviewHoldingsSubTabChange}
                 />
-                {showOverviewHoldingsBlock ? (
+                {overviewHoldingsSubTab === "slices" ? (
+                  <PortfolioSlicesView holdings={holdings} transactions={transactions} />
+                ) : showOverviewHoldingsBlock ? (
                   overviewHoldingsSubTab === "assets" ? (
                     <PortfolioHoldingsTable
                       holdings={holdings}
@@ -381,17 +414,6 @@ export function PortfolioPageView({
               aria-hidden={viewTab !== "Cash"}
             >
               <PortfolioCashPanel />
-            </div>
-          ) : null}
-
-          {tabsVisited.Slices ? (
-            <div
-              className={panelClass("Slices")}
-              role="tabpanel"
-              id="portfolio-tab-slices"
-              aria-hidden={viewTab !== "Slices"}
-            >
-              <PortfolioSlicesView holdings={holdings} transactions={transactions} />
             </div>
           ) : null}
 

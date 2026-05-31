@@ -1,8 +1,9 @@
 import "server-only";
 
-import { isTop10Ticker, type Top10Ticker } from "@/lib/screener/top10-config";
+import { isTop10Ticker, TOP10_TICKERS, type Top10Ticker } from "@/lib/screener/top10-config";
 import type {
   SimpleMarketData,
+  SimpleMarketDatum,
   SimpleScreenerDerived,
   SimpleScreenerStockDerived,
 } from "@/lib/market/simple-market-layer";
@@ -35,6 +36,44 @@ export function sliceSimpleMarketDataForStockTickers(
     extraScreenerStocks,
     crypto: {},
     indices: {},
+  };
+}
+
+function stockQuoteDatum(full: SimpleMarketData, tk: string): SimpleMarketDatum | undefined {
+  if (isTop10Ticker(tk)) return full.stocks[tk as Top10Ticker];
+  return full.extraScreenerStocks[tk];
+}
+
+function stockQuoteHasUsableData(d: SimpleMarketDatum | undefined): boolean {
+  return (
+    (d?.price != null && Number.isFinite(d.price)) ||
+    (d?.changePercent1D != null && Number.isFinite(d.changePercent1D))
+  );
+}
+
+/** Watchlist tickers absent from the screener snapshot or with empty quote cells. */
+export function stockTickersMissingFromMarketSlice(full: SimpleMarketData, stockTickers: string[]): string[] {
+  const normalized = [...new Set(stockTickers.map((t) => t.trim().toUpperCase()).filter(Boolean))];
+  return normalized.filter((tk) => !stockQuoteHasUsableData(stockQuoteDatum(full, tk)));
+}
+
+/** Merge on-demand watchlist quotes into a snapshot slice. */
+export function mergeWatchlistStockMarketSlice(base: SimpleMarketData, extra: SimpleMarketData): SimpleMarketData {
+  const extraScreenerStocks = { ...base.extraScreenerStocks, ...extra.extraScreenerStocks };
+  const page2 = [
+    ...new Set([...base.screenerStocksPage2Tickers, ...extra.screenerStocksPage2Tickers]),
+  ].sort();
+  const stocks = { ...base.stocks };
+  for (const tk of TOP10_TICKERS) {
+    const fetched = extra.stocks[tk];
+    if (stockQuoteHasUsableData(fetched)) stocks[tk] = fetched;
+  }
+  return {
+    stocks,
+    screenerStocksPage2Tickers: page2,
+    extraScreenerStocks,
+    crypto: base.crypto,
+    indices: base.indices,
   };
 }
 

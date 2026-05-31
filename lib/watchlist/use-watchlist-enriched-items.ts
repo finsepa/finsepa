@@ -7,10 +7,11 @@ import { WATCHLIST_MUTATED_EVENT } from "@/lib/watchlist/constants";
 import type { WatchlistEnrichedItem } from "@/lib/watchlist/enriched-types";
 import { fetchWatchlistEnriched } from "@/lib/watchlist/fetch-watchlist-enriched";
 import { clearWatchlistEnrichedCache } from "@/lib/watchlist/watchlist-enriched-cache";
+import { isWatchlistTickerWatched } from "@/lib/watchlist/normalize-storage-key";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
 
 function itemStillWatched(item: WatchlistEnrichedItem, watched: Set<string>): boolean {
-  return watched.has(item.storageKey.trim().toUpperCase());
+  return isWatchlistTickerWatched(watched, item.storageKey);
 }
 
 function mergeWatchlistQuotes(

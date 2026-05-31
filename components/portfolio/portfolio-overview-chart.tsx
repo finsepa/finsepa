@@ -4,11 +4,13 @@ import {
   memo,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type MutableRefObject,
   type RefObject,
 } from "react";
+import { createPortal } from "react-dom";
 import { format, parseISO, subDays } from "date-fns";
 import {
   AreaSeries,
@@ -26,7 +28,7 @@ import {
   type MouseEventParams,
   type Time,
 } from "lightweight-charts";
-import { Check, ChevronDown, LineChart, Settings } from "lucide-react";
+import { LineChart, Settings } from "lucide-react";
 
 import { baselineRelativeGradientEnabled } from "@/lib/chart/baseline-relative-gradient";
 
@@ -47,7 +49,6 @@ import { AssetChartSkeleton } from "@/components/ui/chart-skeleton";
 import { FormListboxSelect } from "@/components/ui/form-listbox-select";
 import type { ListboxOption } from "@/components/ui/form-listbox-select";
 import type { StockChartPoint, StockChartRange } from "@/lib/market/stock-chart-types";
-import { SegmentedControl } from "@/components/design-system";
 import {
   Empty,
   EmptyDescription,
@@ -65,7 +66,8 @@ import type {
 const VALUE_BLUE = "#2563EB";
 const GREEN = "#16A34A";
 const RED = "#DC2626";
-const BENCHMARK_LINE = "#EA580C";
+const BENCHMARK_SPY_LINE = "#EA580C";
+const BENCHMARK_NASDAQ_LINE = "#9333EA";
 const PORTFOLIO_CHART_TIME_ZONE = "America/New_York";
 const Y_AXIS_LABEL_COUNT = 6;
 
@@ -84,10 +86,22 @@ const Y_AXIS_LABEL_ONLY = {
 
 type OverviewMainSeries = ISeriesApi<"Area"> | ISeriesApi<"Baseline">;
 
-const BENCHMARK_OPTIONS: { ticker: string; label: string }[] = [
-  { ticker: "SPY", label: "S&P 500" },
-  { ticker: "QQQ", label: "Nasdaq-100" },
-];
+const BENCHMARK_COMPARE_DISABLED_HINT = "Switch to Value to compare portfolio net worth with an index.";
+
+async function fetchBenchmarkChartPoints(
+  ticker: string,
+  range: PortfolioChartRange,
+  signal: AbortSignal,
+): Promise<StockChartPoint[] | null> {
+  const stockRange = portfolioRangeToStockRange(range);
+  const res = await fetch(
+    `/api/stocks/${encodeURIComponent(ticker)}/chart?range=${stockRange}&series=price`,
+    { credentials: "include", signal },
+  );
+  if (!res.ok) return null;
+  const json = (await res.json()) as { points?: StockChartPoint[] };
+  return Array.isArray(json.points) ? json.points : null;
+}
 
 function portfolioRangeToStockRange(r: PortfolioChartRange): StockChartRange {
   switch (r) {
@@ -347,18 +361,75 @@ function PillSwitch({
   );
 }
 
-function BenchmarkSelectMini({ value, onChange }: { value: string; onChange: (ticker: string) => void }) {
+const PORTFOLIO_CHART_SETTINGS_MENU_Z = 120;
+
+const PORTFOLIO_CHART_SETTINGS_ROWS = [
+  { key: "showTrades", label: "Show trades", ariaLabel: "Show trades on chart" },
+  { key: "compareSpy", label: "Compare to S&P 500", ariaLabel: "Compare portfolio to S&P 500" },
+  { key: "compareNasdaq", label: "Compare to Nasdaq", ariaLabel: "Compare portfolio to Nasdaq" },
+] as const;
+
+type PortfolioChartSettingsRowKey = (typeof PORTFOLIO_CHART_SETTINGS_ROWS)[number]["key"];
+
+function PortfolioChartSettingsButton({
+  showTrades,
+  onShowTradesChange,
+  compareSpy,
+  onCompareSpyChange,
+  compareNasdaq,
+  onCompareNasdaqChange,
+  benchmarkCompareDisabled,
+}: {
+  showTrades: boolean;
+  onShowTradesChange: (next: boolean) => void;
+  compareSpy: boolean;
+  onCompareSpyChange: (next: boolean) => void;
+  compareNasdaq: boolean;
+  onCompareNasdaqChange: (next: boolean) => void;
+  benchmarkCompareDisabled: boolean;
+}) {
   const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const active = BENCHMARK_OPTIONS.find((o) => o.ticker === value) ?? BENCHMARK_OPTIONS[0]!;
+  const [portalMounted, setPortalMounted] = useState(false);
+  const [menuAnchor, setMenuAnchor] = useState<{ top: number; left: number; width: number } | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  const values: Record<PortfolioChartSettingsRowKey, boolean> = {
+    showTrades,
+    compareSpy,
+    compareNasdaq,
+  };
+
+  const onChangeForKey = (key: PortfolioChartSettingsRowKey, next: boolean) => {
+    if (key === "showTrades") onShowTradesChange(next);
+    else if (key === "compareSpy") onCompareSpyChange(next);
+    else onCompareNasdaqChange(next);
+  };
 
   useEffect(() => {
-    if (!open) return;
-    function onDocMouseDown(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setOpen(false);
+    setPortalMounted(true);
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!open || !triggerRef.current) {
+      setMenuAnchor(null);
+      return;
     }
-    document.addEventListener("mousedown", onDocMouseDown);
-    return () => document.removeEventListener("mousedown", onDocMouseDown);
+    const update = () => {
+      const rect = triggerRef.current!.getBoundingClientRect();
+      setMenuAnchor({
+        top: rect.bottom + 4,
+        left: rect.left,
+        width: Math.min(window.innerWidth - 32, 280),
+      });
+    };
+    update();
+    window.addEventListener("resize", update);
+    window.addEventListener("scroll", update, true);
+    return () => {
+      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", update, true);
+    };
   }, [open]);
 
   useEffect(() => {
@@ -370,56 +441,75 @@ function BenchmarkSelectMini({ value, onChange }: { value: string; onChange: (ti
     return () => document.removeEventListener("keydown", onKey);
   }, [open]);
 
-  return (
-    <div ref={containerRef} className="relative z-20 shrink-0">
-      <button
-        type="button"
-        aria-label="Benchmark index"
-        aria-expanded={open}
-        aria-haspopup="listbox"
-        onClick={() => setOpen((v) => !v)}
-        className="relative flex h-9 min-w-[9.5rem] cursor-pointer items-center rounded-[10px] bg-[#F4F4F5] py-2 pl-3 pr-9 text-left text-sm font-normal text-[#09090B] outline-none transition-colors hover:bg-[#EBEBEB] focus-visible:ring-2 focus-visible:ring-[#09090B]/10"
-      >
-        <span className="min-w-0 flex-1 truncate">{active.label}</span>
-      </button>
-      <ChevronDown
-        className={cn(
-          "pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#09090B] transition-transform",
-          open && "rotate-180",
-        )}
-        strokeWidth={2}
-        aria-hidden
-      />
-      {open ? (
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (e: PointerEvent) => {
+      const target = e.target as Node;
+      if (triggerRef.current?.contains(target) || menuRef.current?.contains(target)) return;
+      e.preventDefault();
+      setOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointerDown, true);
+    return () => document.removeEventListener("pointerdown", onPointerDown, true);
+  }, [open]);
+
+  const menuPanel =
+    open && menuAnchor && portalMounted ?
+      createPortal(
         <div
-          className={cn(dropdownMenuPanelClassName(), "absolute right-0 top-[calc(100%+4px)] z-[120] min-w-[10rem]")}
-          role="listbox"
-          aria-label="Benchmark index"
+          ref={menuRef}
+          className={dropdownMenuPanelClassName("fixed")}
+          style={{
+            top: menuAnchor.top,
+            left: menuAnchor.left,
+            width: menuAnchor.width,
+            zIndex: PORTFOLIO_CHART_SETTINGS_MENU_Z,
+          }}
+          role="menu"
+          aria-label="Chart settings"
         >
-          {BENCHMARK_OPTIONS.map((opt) => {
-            const selected = value === opt.ticker;
+          {PORTFOLIO_CHART_SETTINGS_ROWS.map(({ key, label, ariaLabel }) => {
+            const benchmarkRow = key === "compareSpy" || key === "compareNasdaq";
             return (
-              <button
-                key={opt.ticker}
-                type="button"
-                role="option"
-                aria-selected={selected}
-                onClick={() => {
-                  onChange(opt.ticker);
-                  setOpen(false);
-                }}
-                className={dropdownMenuPlainItemRowClassName({ selected })}
-              >
-                <span className="min-w-0 flex-1 truncate text-left">{opt.label}</span>
-                <span className="flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden>
-                  {selected ? <Check className="h-4 w-4 text-[#09090B]" strokeWidth={2} /> : null}
-                </span>
-              </button>
+              <div key={key} role="menuitem" className={dropdownMenuPlainItemRowClassName()}>
+                <span className="min-w-0 flex-1 text-sm font-medium leading-5 text-[#09090B]">{label}</span>
+                <PillSwitch
+                  pressed={values[key]}
+                  onPressedChange={(next) => onChangeForKey(key, next)}
+                  disabled={benchmarkRow && benchmarkCompareDisabled}
+                  title={benchmarkRow && benchmarkCompareDisabled ? BENCHMARK_COMPARE_DISABLED_HINT : undefined}
+                  aria-label={ariaLabel}
+                />
+              </div>
             );
           })}
-        </div>
-      ) : null}
-    </div>
+        </div>,
+        document.body,
+      )
+    : null;
+
+  return (
+    <>
+      {menuPanel}
+      <div className="relative z-20 shrink-0">
+        <button
+          ref={triggerRef}
+          type="button"
+          aria-label="Chart settings"
+          aria-haspopup="menu"
+          aria-expanded={open}
+          onClick={() => setOpen((v) => !v)}
+          className={cn(
+            "inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#09090B]",
+            "shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100",
+            "hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2",
+            open && "bg-[#F4F4F5]",
+          )}
+        >
+          <Settings className="h-5 w-5 shrink-0" strokeWidth={2} aria-hidden />
+        </button>
+      </div>
+    </>
   );
 }
 
@@ -760,8 +850,10 @@ export function PortfolioValueHistoryChartPane({
   points,
   transactions = [],
   showTrades = false,
-  showBenchmark = false,
-  benchmarkPricePoints = null,
+  compareSpy = false,
+  compareNasdaq = false,
+  spyPricePoints = null,
+  nasdaqPricePoints = null,
   benchmarkInvestedUsd = null,
 }: {
   metric: MetricMode;
@@ -769,9 +861,12 @@ export function PortfolioValueHistoryChartPane({
   points: PortfolioValueHistoryPoint[];
   transactions?: readonly PortfolioTransaction[];
   showTrades?: boolean;
-  /** When true with {@link benchmarkPricePoints}, draws benchmark only for the Value metric (same $ scale). */
-  showBenchmark?: boolean;
-  benchmarkPricePoints?: readonly StockChartPoint[] | null;
+  /** When true with {@link spyPricePoints}, draws S&P 500 comparison for the Value metric (same $ scale). */
+  compareSpy?: boolean;
+  /** When true with {@link nasdaqPricePoints}, draws Nasdaq comparison for the Value metric (same $ scale). */
+  compareNasdaq?: boolean;
+  spyPricePoints?: readonly StockChartPoint[] | null;
+  nasdaqPricePoints?: readonly StockChartPoint[] | null;
   /** Open equity cost basis; scales benchmark $ path like “$X invested” on the overview Value card. */
   benchmarkInvestedUsd?: number | null;
 }) {
@@ -780,7 +875,10 @@ export function PortfolioValueHistoryChartPane({
   const tradeOverlayRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Area"> | ISeriesApi<"Baseline"> | null>(null);
-  const compareSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
+  const compareSeriesRefs = useRef<{
+    spy: ISeriesApi<"Line"> | null;
+    nasdaq: ISeriesApi<"Line"> | null;
+  }>({ spy: null, nasdaq: null });
   const yAxisTickLinesRef = useRef<IPriceLine[]>([]);
   const chartRangeRef = useRef<PortfolioChartRange>(range);
   const chartPointsRef = useRef<StockChartPoint[]>([]);
@@ -844,7 +942,8 @@ export function PortfolioValueHistoryChartPane({
     },
   };
 
-  const drawBenchmark = showBenchmark && metric === "value";
+  const drawCompareSpy = compareSpy && metric === "value";
+  const drawCompareNasdaq = compareNasdaq && metric === "value";
 
   chartRangeRef.current = range;
 
@@ -953,18 +1052,31 @@ export function PortfolioValueHistoryChartPane({
           baseValue: { type: "price" as const, price: 0 },
         });
 
-    if (drawBenchmark) {
-      compareSeriesRef.current = chart.addSeries(LineSeries, {
-        color: BENCHMARK_LINE,
-        lineWidth: 2,
-        lineType: LineType.Curved,
-        priceLineVisible: false,
-        lastPriceAnimation: LastPriceAnimationMode.OnDataUpdate,
-        crosshairMarkerVisible: false,
-        priceScaleId: "right",
+    const compareLineOpts = {
+      lineWidth: 2,
+      lineType: LineType.Curved,
+      priceLineVisible: false,
+      lastPriceAnimation: LastPriceAnimationMode.OnDataUpdate,
+      crosshairMarkerVisible: false,
+      priceScaleId: "right",
+    } as const;
+
+    if (drawCompareSpy) {
+      compareSeriesRefs.current.spy = chart.addSeries(LineSeries, {
+        ...compareLineOpts,
+        color: BENCHMARK_SPY_LINE,
       });
     } else {
-      compareSeriesRef.current = null;
+      compareSeriesRefs.current.spy = null;
+    }
+
+    if (drawCompareNasdaq) {
+      compareSeriesRefs.current.nasdaq = chart.addSeries(LineSeries, {
+        ...compareLineOpts,
+        color: BENCHMARK_NASDAQ_LINE,
+      });
+    } else {
+      compareSeriesRefs.current.nasdaq = null;
     }
 
     chartRef.current = chart;
@@ -1104,7 +1216,7 @@ export function PortfolioValueHistoryChartPane({
       chart.remove();
       chartRef.current = null;
       seriesRef.current = null;
-      compareSeriesRef.current = null;
+      compareSeriesRefs.current = { spy: null, nasdaq: null };
       scheduleTradeDotsSyncRef.current = null;
       tradeOverlayRef.current?.replaceChildren();
       hoverTimeRef.current = null;
@@ -1113,7 +1225,7 @@ export function PortfolioValueHistoryChartPane({
       setHoverAxisLabel(null);
       setPeriodAxisLabels([]);
     };
-  }, [metric, drawBenchmark]);
+  }, [metric, compareSpy, compareNasdaq]);
 
   useEffect(() => {
     const chart = chartRef.current;
@@ -1146,7 +1258,8 @@ export function PortfolioValueHistoryChartPane({
       chartPointsRef.current = [];
       tradeDotsConfigRef.current = { show: showTrades, txs: transactions, lineData: [], sessionYmds: [] };
       scheduleTradeDotsSyncRef.current?.();
-      compareSeriesRef.current?.setData([]);
+      compareSeriesRefs.current.spy?.setData([]);
+      compareSeriesRefs.current.nasdaq?.setData([]);
       removeYAxisTickLabels(series, yAxisTickLinesRef);
       setPeriodAxisLabels([]);
       return;
@@ -1162,17 +1275,22 @@ export function PortfolioValueHistoryChartPane({
 
     tradeDotsConfigRef.current = { show: showTrades, txs: transactions, lineData: data, sessionYmds };
 
-    const cmp = compareSeriesRef.current;
-    if (cmp && drawBenchmark) {
-      const bench = buildBenchmarkValueLineData(
-        filtered,
-        benchmarkPricePoints ?? undefined,
-        benchmarkInvestedUsd,
-      );
-      cmp.setData(bench);
-    } else if (cmp) {
-      cmp.setData([]);
-    }
+    const applyBenchmarkSeries = (
+      series: ISeriesApi<"Line"> | null,
+      enabled: boolean,
+      rawPoints: readonly StockChartPoint[] | null | undefined,
+    ) => {
+      if (series && enabled) {
+        series.setData(
+          buildBenchmarkValueLineData(filtered, rawPoints ?? undefined, benchmarkInvestedUsd),
+        );
+      } else if (series) {
+        series.setData([]);
+      }
+    };
+
+    applyBenchmarkSeries(compareSeriesRefs.current.spy, drawCompareSpy, spyPricePoints);
+    applyBenchmarkSeries(compareSeriesRefs.current.nasdaq, drawCompareNasdaq, nasdaqPricePoints);
 
     snapOverviewTimeScale(chart, series);
     let axisSyncCancelled = false;
@@ -1202,7 +1320,18 @@ export function PortfolioValueHistoryChartPane({
     return () => {
       axisSyncCancelled = true;
     };
-  }, [points, metric, range, showTrades, transactions, drawBenchmark, benchmarkPricePoints, benchmarkInvestedUsd]);
+  }, [
+    points,
+    metric,
+    range,
+    showTrades,
+    transactions,
+    drawCompareSpy,
+    drawCompareNasdaq,
+    spyPricePoints,
+    nasdaqPricePoints,
+    benchmarkInvestedUsd,
+  ]);
 
   const metricTitle =
     metric === "value" ? "Value" : metric === "profit" ? "Total profit" : "Return";
@@ -1320,33 +1449,22 @@ function PortfolioOverviewChartInner({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showTrades, setShowTrades] = useState(false);
-  const [showBenchmark, setShowBenchmark] = useState(false);
-  const [benchmarkTicker, setBenchmarkTicker] = useState("SPY");
-  const [benchmarkPoints, setBenchmarkPoints] = useState<StockChartPoint[] | null>(null);
-  const [controlsOpen, setControlsOpen] = useState(false);
-  const controlsRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!controlsOpen) return;
-    function onDocMouseDown(e: MouseEvent) {
-      if (controlsRef.current && !controlsRef.current.contains(e.target as Node)) {
-        setControlsOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", onDocMouseDown);
-    return () => document.removeEventListener("mousedown", onDocMouseDown);
-  }, [controlsOpen]);
-
-  useEffect(() => {
-    if (!controlsOpen) return;
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setControlsOpen(false);
-    }
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [controlsOpen]);
+  const [compareSpy, setCompareSpy] = useState(false);
+  const [compareNasdaq, setCompareNasdaq] = useState(false);
+  const [spyPoints, setSpyPoints] = useState<StockChartPoint[] | null>(null);
+  const [nasdaqPoints, setNasdaqPoints] = useState<StockChartPoint[] | null>(null);
 
   const canLoad = transactions.length > 0;
+  const benchmarkCompareDisabled = metric !== "value";
+  const chartSettingsProps = {
+    showTrades,
+    onShowTradesChange: setShowTrades,
+    compareSpy,
+    onCompareSpyChange: setCompareSpy,
+    compareNasdaq,
+    onCompareNasdaqChange: setCompareNasdaq,
+    benchmarkCompareDisabled,
+  } as const;
 
   const load = useCallback(async () => {
     if (!canLoad) {
@@ -1379,67 +1497,67 @@ function PortfolioOverviewChartInner({
     void load();
   }, [load]);
 
-  const fetchBenchmark = showBenchmark && metric === "value" && canLoad;
+  const fetchSpy = compareSpy && metric === "value" && canLoad;
+  const fetchNasdaq = compareNasdaq && metric === "value" && canLoad;
 
   useEffect(() => {
-    if (!fetchBenchmark) {
-      setBenchmarkPoints(null);
+    if (!fetchSpy) {
+      setSpyPoints(null);
       return;
     }
     const ac = new AbortController();
-    const stockRange = portfolioRangeToStockRange(range);
-    void (async () => {
-      try {
-        const res = await fetch(
-          `/api/stocks/${encodeURIComponent(benchmarkTicker)}/chart?range=${stockRange}&series=price`,
-          { credentials: "include", signal: ac.signal },
-        );
-        if (!res.ok) {
-          setBenchmarkPoints(null);
-          return;
-        }
-        const json = (await res.json()) as { points?: StockChartPoint[] };
-        setBenchmarkPoints(Array.isArray(json.points) ? json.points : []);
-      } catch {
-        if (!ac.signal.aborted) setBenchmarkPoints(null);
-      }
-    })();
+    void fetchBenchmarkChartPoints("SPY", range, ac.signal)
+      .then(setSpyPoints)
+      .catch(() => {
+        if (!ac.signal.aborted) setSpyPoints(null);
+      });
     return () => ac.abort();
-  }, [fetchBenchmark, benchmarkTicker, range, canLoad]);
+  }, [fetchSpy, range, canLoad]);
+
+  useEffect(() => {
+    if (!fetchNasdaq) {
+      setNasdaqPoints(null);
+      return;
+    }
+    const ac = new AbortController();
+    void fetchBenchmarkChartPoints("QQQ", range, ac.signal)
+      .then(setNasdaqPoints)
+      .catch(() => {
+        if (!ac.signal.aborted) setNasdaqPoints(null);
+      });
+    return () => ac.abort();
+  }, [fetchNasdaq, range, canLoad]);
 
   return (
     <section className="mb-6 w-full min-w-0">
-      {/* Web/desktop controls row (keep mobile in gear menu). */}
-      <div className="mb-4 hidden w-full min-w-0 flex-wrap items-center justify-between gap-3 sm:flex">
+      {/* Web/desktop controls row. */}
+      <div className="relative z-20 mb-4 hidden w-full min-w-0 flex-wrap items-center justify-between gap-3 sm:flex">
         <div className="flex min-w-0 items-center gap-3">
-          <FormListboxSelect
+          <div
+            className="flex w-auto min-w-0 flex-nowrap gap-0.5 rounded-[10px] bg-[#F4F4F5] p-0.5"
+            role="group"
             aria-label="Chart metric"
-            className="w-[140px]"
-            options={PORTFOLIO_CHART_METRIC_OPTIONS}
-            value={metric}
-            onChange={(v) => setMetric(v as PortfolioChartMetricMode)}
-          />
+          >
+            {PORTFOLIO_CHART_METRIC_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setMetric(opt.value)}
+                className={cn(
+                  "flex-none rounded-[10px] px-3 py-1.5 text-center font-sans text-[13px] leading-5 tracking-normal",
+                  metric === opt.value ?
+                    "bg-white font-medium text-[#09090B] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]"
+                  : "font-normal text-[#71717A]",
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
 
-        <div className="flex min-w-0 items-center justify-end gap-4">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-[#09090B]">Show Trades</span>
-            <PillSwitch pressed={showTrades} onPressedChange={setShowTrades} aria-label="Show trades on chart" />
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-[#09090B]">Benchmark</span>
-            <BenchmarkSelectMini value={benchmarkTicker} onChange={setBenchmarkTicker} />
-            <PillSwitch
-              pressed={showBenchmark}
-              onPressedChange={setShowBenchmark}
-              disabled={metric !== "value"}
-              title={
-                metric !== "value" ? "Switch to Value to compare portfolio net worth with the index." : undefined
-              }
-              aria-label="Show benchmark comparison on chart"
-            />
-          </div>
+        <div className="flex min-w-0 items-center justify-end gap-3">
+          <PortfolioChartSettingsButton {...chartSettingsProps} />
 
           <div
             className="flex w-auto min-w-0 flex-nowrap justify-end gap-0.5 rounded-[10px] bg-[#F4F4F5] p-0.5"
@@ -1463,6 +1581,16 @@ function PortfolioOverviewChartInner({
             ))}
           </div>
         </div>
+      </div>
+
+      <div className="relative z-20 mb-3 w-full sm:hidden">
+        <FormListboxSelect
+          aria-label="Chart metric"
+          className="w-full"
+          options={PORTFOLIO_CHART_METRIC_OPTIONS}
+          value={metric}
+          onChange={(v) => setMetric(v as PortfolioChartMetricMode)}
+        />
       </div>
 
       <div className="w-full min-w-0">
@@ -1503,8 +1631,10 @@ function PortfolioOverviewChartInner({
             points={points}
             transactions={transactions}
             showTrades={showTrades}
-            showBenchmark={showBenchmark}
-            benchmarkPricePoints={benchmarkPoints}
+            compareSpy={compareSpy}
+            compareNasdaq={compareNasdaq}
+            spyPricePoints={spyPoints}
+            nasdaqPricePoints={nasdaqPoints}
             benchmarkInvestedUsd={benchmarkInvestedUsd}
           />
         )}
@@ -1512,6 +1642,8 @@ function PortfolioOverviewChartInner({
 
       {/* Mobile range + gear below the chart (web uses the header row above). */}
       <div className="mt-3 flex w-full min-w-0 items-start justify-between gap-2 sm:hidden">
+        <PortfolioChartSettingsButton {...chartSettingsProps} />
+
         <div
           className="flex w-full min-w-0 flex-nowrap justify-stretch gap-0.5 rounded-[10px] bg-[#F4F4F5] p-0.5"
           role="group"
@@ -1532,76 +1664,6 @@ function PortfolioOverviewChartInner({
               {r.label}
             </button>
           ))}
-        </div>
-
-        <div ref={controlsRef} className="relative shrink-0">
-          <button
-            type="button"
-            aria-label="Chart settings"
-            aria-haspopup="menu"
-            aria-expanded={controlsOpen}
-            onClick={() => setControlsOpen((v) => !v)}
-            className={cn(
-              "flex h-9 w-9 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#09090B]",
-              "shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100",
-              "hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2",
-            )}
-          >
-            <Settings className="h-5 w-5" strokeWidth={2} aria-hidden />
-          </button>
-
-          {controlsOpen ? (
-            <div
-              className={cn(
-                dropdownMenuPanelClassName(),
-                "absolute right-0 top-[calc(100%+6px)] z-[130] w-[min(100vw-2rem,360px)] p-3",
-              )}
-              role="menu"
-              aria-label="Chart settings"
-            >
-              <div className="space-y-3">
-                <div className="flex min-w-0 flex-col gap-2">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-[#71717A]">Metric</span>
-                    <SegmentedControl
-                      options={PORTFOLIO_CHART_METRIC_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
-                      value={metric}
-                      onChange={setMetric}
-                      size="sm"
-                      fullWidth
-                      aria-label="Chart metric"
-                      className="w-full min-w-0"
-                    />
-                </div>
-
-                <div className="flex items-center justify-between gap-4">
-                  <span className="text-sm font-medium text-[#09090B]">Show trades</span>
-                  <PillSwitch
-                    pressed={showTrades}
-                    onPressedChange={setShowTrades}
-                    aria-label="Show trades on chart"
-                  />
-                </div>
-
-                <div className="flex items-center justify-between gap-4">
-                  <span className="text-sm font-medium text-[#09090B]">Benchmark</span>
-                  <div className="flex items-center gap-2">
-                    <BenchmarkSelectMini value={benchmarkTicker} onChange={setBenchmarkTicker} />
-                    <PillSwitch
-                      pressed={showBenchmark}
-                      onPressedChange={setShowBenchmark}
-                      disabled={metric !== "value"}
-                      title={
-                        metric !== "value" ?
-                          "Switch to Value to compare portfolio net worth with the index."
-                        : undefined
-                      }
-                      aria-label="Show benchmark comparison on chart"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : null}
         </div>
       </div>
     </section>

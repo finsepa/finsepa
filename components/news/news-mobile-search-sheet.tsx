@@ -12,6 +12,7 @@ import {
 } from "@/lib/search/recent-searches-storage";
 import { SearchResultRow } from "@/components/search/search-result-row";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
+import { isWatchlistTickerWatched } from "@/lib/watchlist/normalize-storage-key";
 import { watchlistStorageKeyForSearchItem } from "@/lib/search/watchlist-storage-key";
 
 import { SEARCH_CLIENT_DEBOUNCE_MS } from "@/lib/search/search-policy";
@@ -26,8 +27,7 @@ function useDebouncedValue<T>(value: T, ms: number): T {
 }
 
 function isWatchedItem(item: SearchAssetItem, watched: Set<string>): boolean {
-  const k = watchlistStorageKeyForSearchItem(item).trim().toUpperCase();
-  return watched.has(k);
+  return isWatchlistTickerWatched(watched, watchlistStorageKeyForSearchItem(item));
 }
 
 export function NewsMobileSearchSheet({

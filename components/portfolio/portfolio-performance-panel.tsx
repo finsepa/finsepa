@@ -3,7 +3,7 @@
 import { memo, useCallback, useEffect, useState } from "react";
 import { LineChart } from "lucide-react";
 
-import { PortfolioHoldingsPerformanceTable } from "@/components/portfolio/portfolio-holdings-performance-table";
+import { PortfolioHoldingsPerformanceChart } from "@/components/portfolio/portfolio-holdings-performance-chart";
 import { PortfolioReturnsDynamicsChart } from "@/components/portfolio/portfolio-returns-dynamics-chart";
 import {
   PORTFOLIO_CHART_RANGE_LABELS,
@@ -194,7 +194,7 @@ function PortfolioPerformancePanelInner({
         <h2 className="mb-4 text-2xl font-semibold leading-9 tracking-tight text-[#09090B]">
           Holdings performance
         </h2>
-        <PortfolioHoldingsPerformanceTable holdings={holdings} transactions={transactions} />
+        <PortfolioHoldingsPerformanceChart holdings={holdings} transactions={transactions} />
       </section>
     </>
   );

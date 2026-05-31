@@ -13,6 +13,7 @@ import { SearchLoadingIndicator } from "@/components/search/search-loading-indic
 import { SearchResultRow } from "@/components/search/search-result-row";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
 import { cn } from "@/lib/utils";
+import { isWatchlistTickerWatched } from "@/lib/watchlist/normalize-storage-key";
 import { watchlistStorageKeyForSearchItem } from "@/lib/search/watchlist-storage-key";
 
 const SEARCH_DEBOUNCE_MS = 200;
@@ -27,8 +28,7 @@ function useDebouncedValue<T>(value: T, ms: number): T {
 }
 
 function isWatchedItem(item: SearchAssetItem, watched: Set<string>): boolean {
-  const k = watchlistStorageKeyForSearchItem(item).trim().toUpperCase();
-  return watched.has(k);
+  return isWatchlistTickerWatched(watched, watchlistStorageKeyForSearchItem(item));
 }
 
 export type SearchModalVariant = "default" | "fullscreen";

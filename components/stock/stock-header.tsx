@@ -135,7 +135,7 @@ export function StockHeader({
   const canonicalSector = sectorLabel ? mapProviderSectorToCanonical(sectorLabel) : null;
 
   const breadcrumbCrumbClass = "min-w-0 truncate";
-  const breadcrumbLinkClass = `${breadcrumbCrumbClass} transition-colors hover:text-[#09090B]`;
+  const breadcrumbLinkClass = `${breadcrumbCrumbClass} transition-colors hover:text-[#09090B] hover:underline`;
   const breadcrumbSep = (
     <span className="shrink-0 select-none" aria-hidden>
       /
@@ -145,7 +145,7 @@ export function StockHeader({
   return (
     <div className="space-y-3">
       <div className="flex min-w-0 flex-wrap items-center gap-2 text-[14px] text-[#71717A] sm:flex-nowrap sm:overflow-hidden">
-        <Link href="/screener" className="shrink-0 transition-colors hover:text-[#09090B]">
+        <Link href="/screener" className={`shrink-0 ${breadcrumbLinkClass}`}>
           Stocks
         </Link>
         {sectorLabel && (

@@ -41,8 +41,10 @@ import { MARKET_SNAPSHOT_KEY } from "@/lib/market/market-snapshot-keys";
 import { readMarketSnapshot, readMarketSnapshotSlow } from "@/lib/market/market-snapshot-store";
 import { readCryptoDerivedSnapshot, upsertCryptoDerivedSnapshot } from "@/lib/market/crypto-derived-snapshot";
 import {
+  mergeWatchlistStockMarketSlice,
   pickScreenerDerivedForTickers,
   sliceSimpleMarketDataForStockTickers,
+  stockTickersMissingFromMarketSlice,
   sliceSimpleMarketDataScreenerStocksPage1,
 } from "@/lib/market/market-snapshot-slice";
 
@@ -466,7 +468,27 @@ export async function getSimpleMarketDataForWatchlistStocks(stockTickers: string
   const normalized = [...new Set(stockTickers.map((t) => t.trim().toUpperCase()).filter(Boolean))].sort();
   const fromSnapshot = await readMarketSnapshot<SimpleMarketData>(MARKET_SNAPSHOT_KEY.stocksAllPages);
   if (fromSnapshot && normalized.length) {
-    return sliceSimpleMarketDataForStockTickers(fromSnapshot, normalized);
+    const sliced = sliceSimpleMarketDataForStockTickers(fromSnapshot, normalized);
+    const missing = stockTickersMissingFromMarketSlice(sliced, normalized);
+    if (!missing.length) return sliced;
+
+    const top10Set = new Set<string>(TOP10_TICKERS);
+    const includeTop10Stocks = missing.some((t) => top10Set.has(t));
+    const page2Tickers = missing.filter((t) => !top10Set.has(t));
+    const tickersKey = missing.join(",");
+    const fetched = await withScreenerUsMarketCache(
+      "simple-market-data-watchlist-stocks-off-universe-v1",
+      () =>
+        loadSimpleMarketDataBatch({
+          includeTop10Stocks,
+          page2Tickers,
+          includeCrypto: false,
+          cryptoBatch: "all",
+          includeIndices: false,
+        }),
+      [tickersKey],
+    );
+    return mergeWatchlistStockMarketSlice(sliced, fetched);
   }
   if (!normalized.length) {
     return loadSimpleMarketDataBatch({
@@ -482,7 +504,7 @@ export async function getSimpleMarketDataForWatchlistStocks(stockTickers: string
   const page2Tickers = normalized.filter((t) => !top10Set.has(t));
   const tickersKey = normalized.join(",");
   return withScreenerUsMarketCache(
-    "simple-market-data-watchlist-stocks-v1",
+    "simple-market-data-watchlist-stocks-v2",
     () =>
       loadSimpleMarketDataBatch({
         includeTop10Stocks,

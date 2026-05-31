@@ -32,11 +32,54 @@ const PALETTE = [
 const VB = 100;
 const CX = 50;
 const CY = 50;
-/** Thinner ring: outer ~48, inner ~42.5 → ~5.5 units thick (~12px at 220px). */
-const R_OUT = 48;
-const R_IN = 42.5;
+/** Donut ring — outer ~49.5, inner ~30.5 → ~19 units thick (~42px at 220px). */
+const R_OUT = 49.5;
+const R_IN = 30.5;
 
-type AllocRow = { id: string; name: string; weightPct: number; color: string };
+type AllocRow = { id: string; name: string; symbol: string; weightPct: number; color: string };
+
+/** Always try inline labels for the largest N slices (by weight). */
+const SLICE_INLINE_LABEL_TOP_N = 10;
+/** Min arc (viewBox units) for top-N slices — allow very small top holdings. */
+const SLICE_LABEL_MIN_ARC_TOP_N = 2.2;
+/** Min arc for slices beyond top N — label any slice wide enough to fit text. */
+const SLICE_LABEL_MIN_ARC_DEFAULT = 5.5;
+
+type SliceLabelLayout = {
+  pctSize: number;
+  symSize: number;
+  lineGap: number;
+  singleLine: boolean;
+};
+
+function sliceMidRadius(): number {
+  return (R_OUT + R_IN) / 2;
+}
+
+function sliceArcLength(a0: number, a1: number): number {
+  return (a1 - a0) * sliceMidRadius();
+}
+
+function layoutForArcLength(arcLen: number, minArc: number): SliceLabelLayout | null {
+  if (arcLen < minArc) return null;
+  if (arcLen >= 12) return { pctSize: 4, symSize: 3.5, lineGap: 4.2, singleLine: false };
+  if (arcLen >= 9) return { pctSize: 3.6, symSize: 3.15, lineGap: 3.8, singleLine: false };
+  if (arcLen >= 6.5) return { pctSize: 3.15, symSize: 2.75, lineGap: 3.3, singleLine: false };
+  if (arcLen >= 4.5) return { pctSize: 2.85, symSize: 2.55, lineGap: 2.9, singleLine: false };
+  return { pctSize: 2.35, symSize: 2.35, lineGap: 0, singleLine: true };
+}
+
+function resolveSliceLabelLayout(
+  sliceIndex: number,
+  _weightPct: number,
+  a0: number,
+  a1: number,
+): SliceLabelLayout | null {
+  const arcLen = sliceArcLength(a0, a1);
+  const minArc =
+    sliceIndex < SLICE_INLINE_LABEL_TOP_N ? SLICE_LABEL_MIN_ARC_TOP_N : SLICE_LABEL_MIN_ARC_DEFAULT;
+  return layoutForArcLength(arcLen, minArc);
+}
 
 function buildRows(holdings: PortfolioHolding[], transactions: PortfolioTransaction[]): AllocRow[] {
   const cashUsd = netCashUsd(transactions);
@@ -46,9 +89,10 @@ function buildRows(holdings: PortfolioHolding[], transactions: PortfolioTransact
   const allocationDenomUsd = equity + Math.max(0, cashUsd);
   if (allocationDenomUsd <= 0) return [];
 
-  const raw: { id: string; name: string; weightPct: number }[] = holdings.map((h) => ({
+  const raw: { id: string; name: string; symbol: string; weightPct: number }[] = holdings.map((h) => ({
     id: h.id,
     name: h.name.trim() || h.symbol,
+    symbol: h.symbol.trim().toUpperCase() || h.name.trim(),
     weightPct: Math.min(100, Math.max(0, (h.currentValue / allocationDenomUsd) * 100)),
   }));
 
@@ -56,6 +100,7 @@ function buildRows(holdings: PortfolioHolding[], transactions: PortfolioTransact
     raw.push({
       id: "cash-usd",
       name: "US Dollar",
+      symbol: "USD",
       weightPct: (cashUsd / allocationDenomUsd) * 100,
     });
   }
@@ -158,6 +203,81 @@ function AllocationColumn({ rows }: { rows: AllocRow[] }) {
 
 type TooltipState = { name: string; pctLabel: string; x: number; y: number } | null;
 
+function DonutSliceLabel({
+  row,
+  sliceIndex,
+  a0,
+  a1,
+}: {
+  row: AllocRow;
+  sliceIndex: number;
+  a0: number;
+  a1: number;
+}) {
+  const layout = resolveSliceLabelLayout(sliceIndex, row.weightPct, a0, a1);
+  if (!layout) return null;
+  const midA = (a0 + a1) / 2;
+  const { x, y } = polar(CX, CY, sliceMidRadius(), midA);
+  const pctText = `${pct1.format(row.weightPct)}%`;
+  const symbolText = row.symbol.length > 6 ? `${row.symbol.slice(0, 5)}…` : row.symbol;
+
+  if (layout.singleLine) {
+    return (
+      <text
+        x={x}
+        y={y}
+        textAnchor="middle"
+        dominantBaseline="middle"
+        fill="#FFFFFF"
+        fontSize={layout.pctSize}
+        fontWeight="600"
+        stroke="rgba(0,0,0,0.22)"
+        strokeWidth="0.3"
+        paintOrder="stroke"
+        className="pointer-events-none select-none"
+        style={{ fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif" }}
+      >
+        {symbolText} {pctText}
+      </text>
+    );
+  }
+
+  return (
+    <text
+      x={x}
+      y={y}
+      textAnchor="middle"
+      dominantBaseline="middle"
+      fill="#FFFFFF"
+      className="pointer-events-none select-none"
+      style={{ fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif" }}
+    >
+      <tspan
+        x={x}
+        dy="-0.55"
+        fontSize={layout.pctSize}
+        fontWeight="600"
+        stroke="rgba(0,0,0,0.22)"
+        strokeWidth="0.35"
+        paintOrder="stroke"
+      >
+        {pctText}
+      </tspan>
+      <tspan
+        x={x}
+        dy={layout.lineGap}
+        fontSize={layout.symSize}
+        fontWeight="500"
+        stroke="rgba(0,0,0,0.22)"
+        strokeWidth="0.3"
+        paintOrder="stroke"
+      >
+        {symbolText}
+      </tspan>
+    </text>
+  );
+}
+
 function AllocationDonut({
   rows,
   onTooltipChange,
@@ -202,6 +322,7 @@ function AllocationDonut({
 
   if (rows.length === 1) {
     const row = rows[0]!;
+    const labelPos = polar(CX, CY, sliceMidRadius(), -Math.PI / 2);
     return (
       <svg
         viewBox={`0 0 ${VB} ${VB}`}
@@ -218,6 +339,22 @@ function AllocationDonut({
           className="cursor-pointer"
         >
           <FullRing color={row.color} />
+          <text
+            x={labelPos.x}
+            y={labelPos.y}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            fill="#FFFFFF"
+            className="pointer-events-none select-none"
+            style={{ fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif" }}
+          >
+            <tspan x={labelPos.x} dy="-0.55" fontSize="4" fontWeight="600">
+              {pct1.format(row.weightPct)}%
+            </tspan>
+            <tspan x={labelPos.x} dy="4.2" fontSize="3.5" fontWeight="500">
+              {row.symbol}
+            </tspan>
+          </text>
           <title>
             {row.name} {pct1.format(row.weightPct)}%
           </title>
@@ -229,11 +366,8 @@ function AllocationDonut({
   return (
     <svg viewBox={`0 0 ${VB} ${VB}`} className="h-full w-full touch-none" onMouseLeave={leave}>
       {slices.map(({ row, i, a0, a1 }) => (
-        <path
+        <g
           key={row.id}
-          d={donutSlicePath(CX, CY, R_OUT, R_IN, a0, a1)}
-          fill={row.color}
-          stroke="none"
           className="cursor-pointer transition-[opacity] duration-150"
           style={{
             opacity: dimIndex !== null && dimIndex !== i ? 0.45 : 1,
@@ -245,10 +379,12 @@ function AllocationDonut({
           onMouseMove={(e) => moveTip(e, row)}
           onMouseLeave={leave}
         >
+          <path d={donutSlicePath(CX, CY, R_OUT, R_IN, a0, a1)} fill={row.color} stroke="none" />
+          <DonutSliceLabel row={row} sliceIndex={i} a0={a0} a1={a1} />
           <title>
             {row.name} {pct1.format(row.weightPct)}%
           </title>
-        </path>
+        </g>
       ))}
     </svg>
   );

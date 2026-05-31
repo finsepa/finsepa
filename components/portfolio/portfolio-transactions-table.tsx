@@ -10,8 +10,9 @@ import {
   useState,
   type RefObject,
 } from "react";
-import { ArrowDown, ArrowUp, Check, Filter, ListX, Minus, Search } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, Filter, ListX, Minus, Search, X } from "lucide-react";
 import { format, parseISO } from "date-fns";
+import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
 import {
@@ -195,6 +196,14 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
   } = usePortfolioWorkspace();
   const [filter, setFilter] = useState<TxFilter>("All");
   const [txSearch, setTxSearch] = useState("");
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const asset = searchParams.get("asset")?.trim();
+    if (!asset) return;
+    setTxSearch(asset);
+    setFilter("Trades");
+  }, [searchParams]);
   const [page, setPage] = useState(1);
   const [dateDesc, setDateDesc] = useState(true);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -355,16 +364,30 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
             <div className="relative min-w-[200px] max-w-full flex-1 sm:w-[260px] sm:flex-none">
               <Search
                 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#71717A]"
+                strokeWidth={1.5}
                 aria-hidden
               />
               <input
-                type="search"
+                type="text"
+                inputMode="search"
+                enterKeyHint="search"
+                autoComplete="off"
                 value={txSearch}
                 onChange={(e) => setTxSearch(e.target.value)}
                 placeholder="Type to search..."
-                className="h-9 w-full rounded-[10px] border-0 bg-[#F4F4F5] py-2 pl-9 pr-3 text-sm text-[#09090B] placeholder:text-[#71717A] outline-none focus:ring-2 focus:ring-[#09090B]/10"
+                className="h-9 w-full rounded-[10px] border-0 bg-[#F4F4F5] py-2 pl-9 pr-9 text-sm text-[#09090B] placeholder:text-[#71717A] outline-none focus:ring-2 focus:ring-[#09090B]/10"
                 aria-label="Search transactions by asset name or ticker"
               />
+              {txSearch ? (
+                <button
+                  type="button"
+                  onClick={() => setTxSearch("")}
+                  className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md text-[#71717A] transition-colors hover:bg-[#EBEBEB] hover:text-[#09090B] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/10"
+                  aria-label="Clear search"
+                >
+                  <X className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+                </button>
+              ) : null}
             </div>
             {/* Hide tabs under a filter button (all sizes). */}
             <div className="shrink-0">

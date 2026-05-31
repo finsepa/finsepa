@@ -1,13 +1,24 @@
 "use client";
 
-import { type MouseEvent, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BarChart3, Check, ChevronDown } from "lucide-react";
 
-import { TabSwitcher } from "@/components/design-system";
+import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
 import {
   dropdownMenuPanelClassName,
   dropdownMenuPlainItemRowClassName,
 } from "@/components/design-system/dropdown-menu-styles";
+import {
+  FUNDAMENTALS_CHART_AXIS_LABEL_ROTATE_DEG,
+  FUNDAMENTALS_CHART_AXIS_ROW_PX,
+  FUNDAMENTALS_CHART_HOVER_BAND_BG,
+  FUNDAMENTALS_CHART_PLOT_INSET_BOTTOM_FRAC,
+  FUNDAMENTALS_CHART_PLOT_INSET_TOP_FRAC,
+  FUNDAMENTALS_CHART_TOOLTIP_CLASS,
+  FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS,
+  FUNDAMENTALS_CHART_Y_AXIS_W_PX,
+  FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER,
+} from "@/lib/chart/fundamentals-chart-surface";
 import {
   eachMonthOfInterval,
   eachYearOfInterval,
@@ -33,9 +44,22 @@ import {
 import { cn } from "@/lib/utils";
 import type { PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 
-/** Figma Color/Blue/600 + Color/Orange/600 */
+/** Figma Color/Blue/600 + Color/Orange/600 (Charting bar pair). */
 const DEPOSIT = "#2563EB";
 const WITHDRAWAL = "#EA580C";
+
+const CHART_TOTAL_HEIGHT_PX = 320;
+const CHART_PLOT_HEIGHT_PX = CHART_TOTAL_HEIGHT_PX - FUNDAMENTALS_CHART_AXIS_ROW_PX;
+const CHART_PLOT_BACKDROP_INSET_CLASS = "top-[8%] bottom-[4%]";
+const Y_AXIS_TICK_COUNT = 6;
+
+const CHART_SEGMENT_TRACK_CLASS =
+  "flex w-auto min-w-0 flex-nowrap gap-0.5 rounded-[10px] bg-[#F4F4F5] p-0.5";
+const CHART_SEGMENT_BTN_CLASS =
+  "flex-none rounded-[10px] px-3 py-1.5 text-center font-sans text-[13px] leading-5 tracking-normal";
+const CHART_SEGMENT_ACTIVE_CLASS =
+  "bg-white font-medium text-[#09090B] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]";
+const CHART_SEGMENT_INACTIVE_CLASS = "font-normal text-[#71717A]";
 
 type CashChartRange = "all" | "ytd" | "1y" | "3y";
 type Granularity = "month" | "year";
@@ -169,24 +193,17 @@ const RANGE_OPTIONS: { value: CashChartRange; label: string }[] = [
   { value: "3y", label: "Last 3 years" },
 ];
 
-/** Match Figma cash chart frame (~1079×280 plot + left axis). */
-const VB_W = 1080;
-const VB_H = 280;
-const PAD_L = 48;
-const PAD_R = 20;
-const PAD_T = 20;
-const PAD_B = 36;
-/** Deposit + withdrawal pair: 32px bars, 12px gap (scaled into each slot). */
-const FIGMA_BAR_W = 32;
-const FIGMA_PAIR_GAP = 12;
+const RANGE_TOGGLE_OPTIONS: { value: CashChartRange; label: string }[] = [
+  { value: "all", label: "ALL" },
+  { value: "ytd", label: "YTD" },
+  { value: "1y", label: "1Y" },
+  { value: "3y", label: "3Y" },
+];
 
-type CashBarTooltip = {
-  x: number;
-  y: number;
-  periodLabel: string;
-  depositsLabel: string;
-  withdrawalsLabel: string;
-};
+const GRANULARITY_OPTIONS: { value: Granularity; label: string }[] = [
+  { value: "month", label: "Monthly" },
+  { value: "year", label: "Annually" },
+];
 
 /** Minimum horizontal space (CSS px) for one x-axis label before we skip ticks. */
 const X_LABEL_MIN_PX_MONTH = 42;
@@ -200,11 +217,10 @@ function computeXLabelStep(
   granularity: Granularity,
   n: number,
   containerWidthPx: number,
-  plotWvb: number,
 ): number {
   if (n <= 1) return 1;
   const wPx = containerWidthPx > 8 ? containerWidthPx : 800;
-  const plotWidthPx = wPx * (plotWvb / VB_W);
+  const plotWidthPx = wPx - FUNDAMENTALS_CHART_Y_AXIS_W_PX - 16;
   const slotPx = plotWidthPx / n;
   const minLabel = granularity === "month" ? X_LABEL_MIN_PX_MONTH : X_LABEL_MIN_PX_YEAR;
   if (slotPx >= minLabel) return 1;
@@ -223,222 +239,344 @@ function shouldDrawXLabel(i: number, n: number, step: number): boolean {
   return false;
 }
 
+function tickTopPercent(tick: number, yMax: number): number {
+  const insetTop = FUNDAMENTALS_CHART_PLOT_INSET_TOP_FRAC * 100;
+  const insetBottom = FUNDAMENTALS_CHART_PLOT_INSET_BOTTOM_FRAC * 100;
+  const band = 100 - insetTop - insetBottom;
+  if (yMax <= 0) return insetTop + band;
+  return insetTop + ((yMax - tick) / yMax) * band;
+}
+
+function formatBarLabelUsd(n: number): string {
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(n % 1_000_000 === 0 ? 0 : 1)}M`;
+  if (n >= 1000) return `$${Math.round(n / 1000)}K`;
+  return `$${Math.round(n)}`;
+}
+
+function ChartSegmentToggle<T extends string>({
+  "aria-label": ariaLabel,
+  options,
+  value,
+  onChange,
+  className,
+}: {
+  "aria-label": string;
+  options: readonly { value: T; label: string }[];
+  value: T;
+  onChange: (next: T) => void;
+  className?: string;
+}) {
+  return (
+    <div className={cn(CHART_SEGMENT_TRACK_CLASS, className)} role="group" aria-label={ariaLabel}>
+      {options.map((opt) => (
+        <button
+          key={opt.value}
+          type="button"
+          onClick={() => onChange(opt.value)}
+          className={cn(
+            CHART_SEGMENT_BTN_CLASS,
+            value === opt.value ? CHART_SEGMENT_ACTIVE_CLASS : CHART_SEGMENT_INACTIVE_CLASS,
+          )}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function CashInOutBarChartSvg({ buckets, granularity }: { buckets: Bucket[]; granularity: Granularity }) {
   const wrapRef = useRef<HTMLDivElement>(null);
-  const [tooltip, setTooltip] = useState<CashBarTooltip | null>(null);
-  const [containerWidthPx, setContainerWidthPx] = useState(0);
+  const plotRef = useRef<HTMLDivElement>(null);
+  const [plotWidth, setPlotWidth] = useState(640);
+  const [hover, setHover] = useState<{ i: number; x: number; y: number } | null>(null);
 
   useEffect(() => {
-    const el = wrapRef.current;
+    const el = plotRef.current;
     if (!el) return;
-    const ro = new ResizeObserver((entries) => {
-      const w = entries[0]?.contentRect.width;
-      if (w != null && Number.isFinite(w)) setContainerWidthPx(w);
+    const ro = new ResizeObserver(() => {
+      const w = el.getBoundingClientRect().width;
+      if (w > 0) setPlotWidth(Math.floor(w));
     });
     ro.observe(el);
-    setContainerWidthPx(el.getBoundingClientRect().width);
+    const w0 = el.getBoundingClientRect().width;
+    if (w0 > 0) setPlotWidth(Math.floor(w0));
     return () => ro.disconnect();
   }, []);
 
-  const { yMax, ticks, bars, plotW, plotH, slotW, n } = useMemo(() => {
+  const padL = 8;
+  const padR = 8;
+  const padT = CHART_PLOT_HEIGHT_PX * FUNDAMENTALS_CHART_PLOT_INSET_TOP_FRAC;
+  const padB = CHART_PLOT_HEIGHT_PX * FUNDAMENTALS_CHART_PLOT_INSET_BOTTOM_FRAC;
+  const plotH = CHART_PLOT_HEIGHT_PX;
+  const innerW = Math.max(120, plotWidth - padL - padR);
+  const innerH = plotH - padT - padB;
+
+  const { yMax, ticks, barW, gap, groupW, n } = useMemo(() => {
     const maxVal = buckets.reduce((m, b) => Math.max(m, b.inAmount, b.outAmount), 0);
     const yMax = niceCeiling(maxVal * 1.05) || 1;
-    const tickCount = 5;
-    const ticks: number[] = [];
-    for (let i = 0; i <= tickCount; i++) ticks.push((yMax * i) / tickCount);
-
-    const plotW = VB_W - PAD_L - PAD_R;
-    const plotH = VB_H - PAD_T - PAD_B;
+    const ticks = Array.from(
+      { length: Y_AXIS_TICK_COUNT },
+      (_, i) => (yMax * (Y_AXIS_TICK_COUNT - 1 - i)) / (Y_AXIS_TICK_COUNT - 1),
+    );
     const n = Math.max(buckets.length, 1);
-    const slotW = plotW / n;
-    const scale = Math.min(1, (slotW * 0.72) / (FIGMA_BAR_W * 2 + FIGMA_PAIR_GAP));
-    const barW = FIGMA_BAR_W * scale;
-    const gapBetweenPair = FIGMA_PAIR_GAP * scale;
-    const pairW = barW * 2 + gapBetweenPair;
+    const groupW = innerW / n;
+    const barW = Math.min(28, groupW * 0.32);
+    const gap = groupW * 0.08;
+    return { yMax, ticks, barW, gap, groupW, n };
+  }, [buckets, innerW]);
 
-    const bars = buckets.map((b, i) => {
-      const cx = PAD_L + i * slotW + slotW / 2;
-      const leftX = cx - pairW / 2;
-      const inH = yMax > 0 ? (b.inAmount / yMax) * plotH : 0;
-      const outH = yMax > 0 ? (b.outAmount / yMax) * plotH : 0;
-      const baseY = PAD_T + plotH;
-      return {
-        inRect: {
-          x: leftX,
-          y: baseY - inH,
-          width: barW,
-          height: Math.max(inH, 0),
-        },
-        outRect: {
-          x: leftX + barW + gapBetweenPair,
-          y: baseY - outH,
-          width: barW,
-          height: Math.max(outH, 0),
-        },
-      };
-    });
+  const yFor = useCallback(
+    (v: number) => padT + ((yMax - v) / yMax) * innerH,
+    [yMax, innerH, padT],
+  );
 
-    return { yMax, ticks, bars, plotW, plotH, slotW, n };
-  }, [buckets]);
+  const baseY = yFor(0);
 
   const xLabelStep = useMemo(
-    () => computeXLabelStep(granularity, n, containerWidthPx, plotW),
-    [granularity, n, containerWidthPx, plotW],
+    () => computeXLabelStep(granularity, n, plotWidth + FUNDAMENTALS_CHART_Y_AXIS_W_PX),
+    [granularity, n, plotWidth],
   );
 
-  const baseY = PAD_T + plotH;
-
-  const handleMouseMove = useCallback(
-    (e: MouseEvent<HTMLDivElement>) => {
-      const wrap = wrapRef.current;
-      if (!wrap || n === 0) return;
-
-      const r = wrap.getBoundingClientRect();
-      if (r.width <= 0 || r.height <= 0) return;
-
-      const vx = ((e.clientX - r.left) / r.width) * VB_W;
-      const vy = ((e.clientY - r.top) / r.height) * VB_H;
-
-      if (vx < PAD_L || vx > PAD_L + plotW || vy < PAD_T || vy > VB_H) {
-        setTooltip(null);
-        return;
+  const barValueLabels = useMemo(() => {
+    const labels: { key: string; leftPx: number; topPx: number; text: string }[] = [];
+    for (let i = 0; i < buckets.length; i++) {
+      const b = buckets[i]!;
+      const gx = padL + i * groupW + groupW / 2;
+      const pairW = barW * 2 + gap;
+      const startX = gx - pairW / 2;
+      if (b.inAmount > 0) {
+        labels.push({
+          key: `in-${i}`,
+          leftPx: startX + barW / 2,
+          topPx: yFor(b.inAmount) - 4,
+          text: formatBarLabelUsd(b.inAmount),
+        });
       }
-
-      const idx = Math.min(n - 1, Math.max(0, Math.floor((vx - PAD_L) / slotW)));
-      const b = buckets[idx];
-      if (!b) {
-        setTooltip(null);
-        return;
+      if (b.outAmount > 0) {
+        labels.push({
+          key: `out-${i}`,
+          leftPx: startX + barW + gap + barW / 2,
+          topPx: yFor(b.outAmount) - 4,
+          text: formatBarLabelUsd(b.outAmount),
+        });
       }
+    }
+    return labels;
+  }, [buckets, padL, groupW, barW, gap, yFor]);
 
-      const px = e.clientX - r.left;
-      const py = e.clientY - r.top;
-      const tw = 220;
-      const th = 92;
-      const pad = 8;
-      let x = px + pad;
-      let y = py - th - pad;
-      if (x + tw > r.width - pad) x = r.width - tw - pad;
-      if (x < pad) x = pad;
-      if (y < pad) y = pad;
-      if (y + th > r.height - pad) y = Math.min(r.height - th - pad, py + pad);
+  const updateHoverFromEvent = useCallback((i: number, clientX: number, clientY: number) => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    setHover({ i, x: clientX - r.left, y: clientY - r.top });
+  }, []);
 
-      setTooltip({
-        x,
-        y,
-        periodLabel: b.label,
-        depositsLabel: TOOLTIP_USD.format(b.inAmount),
-        withdrawalsLabel: TOOLTIP_USD.format(b.outAmount),
-      });
-    },
-    [buckets, n, plotW, slotW],
-  );
-
-  const handleMouseLeave = useCallback(() => setTooltip(null), []);
+  const hoveredBucket = hover != null ? buckets[hover.i] : null;
+  const rotateXLabels = buckets.length > 16;
 
   return (
-    <div
-      ref={wrapRef}
-      className="relative w-full min-w-0 aspect-[1080/420] sm:aspect-[1080/280]"
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-    >
-      <svg
-        className="absolute inset-0 h-full w-full"
-        viewBox={`0 0 ${VB_W} ${VB_H}`}
-        preserveAspectRatio="xMidYMid meet"
+    <div ref={wrapRef} className="relative w-full min-w-0" onPointerLeave={() => setHover(null)}>
+      <div
+        style={{ height: CHART_TOTAL_HEIGHT_PX }}
         role="img"
         aria-label="Cash in and cash out amounts by period"
       >
-        <title>Cash in and cash out by period</title>
-      {ticks.map((tv) => {
-        const y = baseY - (yMax > 0 ? (tv / yMax) * plotH : 0);
-        return (
-          <g key={tv}>
-            <line
-              x1={PAD_L}
-              y1={y}
-              x2={PAD_L + plotW}
-              y2={y}
-              stroke="#E4E4E7"
-              strokeWidth={1}
-            />
-            <text
-              x={PAD_L - 10}
-              y={y + 4}
-              textAnchor="end"
-              className="fill-[#71717A]"
-              style={{
-                fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
-                fontSize: 12,
-                fontWeight: 400,
-                lineHeight: "16px",
-              }}
+        <div className="flex min-h-0 w-full overflow-visible" style={{ height: CHART_PLOT_HEIGHT_PX }}>
+          <div ref={plotRef} className="relative min-h-0 min-w-0 flex-1 overflow-visible">
+            <div
+              className={cn(
+                "pointer-events-none absolute inset-x-0 z-0 bg-white",
+                CHART_PLOT_BACKDROP_INSET_CLASS,
+              )}
+              aria-hidden
             >
-              {formatAxisUsd(tv)}
-            </text>
-          </g>
-        );
-      })}
+              <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
+            </div>
 
-      {bars.map((b, i) => (
-        <g key={buckets[i]?.key ?? i}>
-          {b.inRect.height > 0 ? (
-            <rect
-              x={b.inRect.x}
-              y={b.inRect.y}
-              width={b.inRect.width}
-              height={b.inRect.height}
-              rx={Math.min(3, b.inRect.width / 2)}
-              fill={DEPOSIT}
-            />
-          ) : null}
-          {b.outRect.height > 0 ? (
-            <rect
-              x={b.outRect.x}
-              y={b.outRect.y}
-              width={b.outRect.width}
-              height={b.outRect.height}
-              rx={Math.min(3, b.outRect.width / 2)}
-              fill={WITHDRAWAL}
-            />
-          ) : null}
-          <text
-            x={PAD_L + (i + 0.5) * (plotW / Math.max(buckets.length, 1))}
-            y={VB_H - 10}
-            textAnchor="middle"
-            className="fill-[#71717A]"
-            style={{
-              fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
-              fontSize: 12,
-              fontWeight: 400,
-              lineHeight: "16px",
-            }}
+            <svg
+              width={plotWidth}
+              height={plotH}
+              className="relative z-[1] max-w-full"
+              aria-hidden
+            >
+              <title>Cash in and cash out by period</title>
+              <line
+                x1={padL}
+                x2={padL + innerW}
+                y1={baseY}
+                y2={baseY}
+                stroke={FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER}
+                strokeWidth={1}
+              />
+
+              {hover != null ? (
+                <rect
+                  x={padL + hover.i * groupW}
+                  y={padT}
+                  width={groupW}
+                  height={innerH}
+                  fill={FUNDAMENTALS_CHART_HOVER_BAND_BG}
+                />
+              ) : null}
+
+              {buckets.map((b, i) => {
+                const gx = padL + i * groupW + groupW / 2;
+                const pairW = barW * 2 + gap;
+                const startX = gx - pairW / 2;
+                const inH = yMax > 0 ? ((b.inAmount / yMax) * innerH) : 0;
+                const outH = yMax > 0 ? ((b.outAmount / yMax) * innerH) : 0;
+                return (
+                  <g key={b.key}>
+                    {inH > 0 ? (
+                      <rect
+                        x={startX}
+                        y={baseY - inH}
+                        width={barW}
+                        height={Math.max(inH, 1)}
+                        rx={2}
+                        ry={2}
+                        fill={DEPOSIT}
+                      />
+                    ) : null}
+                    {outH > 0 ? (
+                      <rect
+                        x={startX + barW + gap}
+                        y={baseY - outH}
+                        width={barW}
+                        height={Math.max(outH, 1)}
+                        rx={2}
+                        ry={2}
+                        fill={WITHDRAWAL}
+                      />
+                    ) : null}
+                  </g>
+                );
+              })}
+
+              {buckets.map((b, i) => (
+                <rect
+                  key={`hit-${b.key}`}
+                  x={padL + i * groupW}
+                  y={0}
+                  width={groupW}
+                  height={plotH}
+                  fill="transparent"
+                  className="cursor-crosshair"
+                  onPointerEnter={(e) => updateHoverFromEvent(i, e.clientX, e.clientY)}
+                  onPointerMove={(e) => updateHoverFromEvent(i, e.clientX, e.clientY)}
+                />
+              ))}
+            </svg>
+
+            {barValueLabels.map((b) => (
+              <div
+                key={b.key}
+                className="pointer-events-none absolute z-[15] max-w-[5.5rem] truncate text-center text-[11px] font-semibold leading-none tabular-nums text-[#09090B]"
+                style={{
+                  left: b.leftPx,
+                  top: b.topPx,
+                  transform: "translate(-50%, -100%)",
+                  textShadow: "0 0 3px rgba(255,255,255,0.95), 0 1px 2px rgba(255,255,255,0.8)",
+                }}
+                title={b.text}
+              >
+                {b.text}
+              </div>
+            ))}
+
+            {hoveredBucket != null && hover != null ? (
+              <div
+                role="tooltip"
+                className={cn(FUNDAMENTALS_CHART_TOOLTIP_CLASS, "z-20")}
+                style={{
+                  left: hover.x,
+                  top: hover.y,
+                  transform: "translate(-50%, calc(-100% - 10px))",
+                }}
+              >
+                <p className="text-[12px] font-semibold leading-4 text-[#09090B]">{hoveredBucket.label}</p>
+                <div className="mt-1.5 space-y-0.5">
+                  <p className="text-[12px] leading-4 text-[#71717A]">
+                    <span className="font-semibold" style={{ color: DEPOSIT }}>
+                      Deposits
+                    </span>
+                    <span className="tabular-nums text-[#09090B]">
+                      {" "}
+                      {TOOLTIP_USD.format(hoveredBucket.inAmount)}
+                    </span>
+                  </p>
+                  <p className="text-[12px] leading-4 text-[#71717A]">
+                    <span className="font-semibold" style={{ color: WITHDRAWAL }}>
+                      Withdrawals
+                    </span>
+                    <span className="tabular-nums text-[#09090B]">
+                      {" "}
+                      {TOOLTIP_USD.format(hoveredBucket.outAmount)}
+                    </span>
+                  </p>
+                </div>
+              </div>
+            ) : null}
+          </div>
+
+          <div
+            className={cn(
+              "relative h-full shrink-0 text-right font-['Inter'] text-[12px] tabular-nums leading-none text-[#71717A]",
+              FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS,
+            )}
+            style={{ width: FUNDAMENTALS_CHART_Y_AXIS_W_PX }}
+            aria-hidden
           >
-            {shouldDrawXLabel(i, n, xLabelStep) ? (buckets[i]?.label ?? "") : ""}
-          </text>
-        </g>
-      ))}
-      </svg>
-      {tooltip ? (
-        <div
-          className="pointer-events-none absolute z-10 min-w-[200px] rounded-lg border border-[#E4E4E7] bg-white px-3 py-2 shadow-[0px_1px_4px_0px_rgba(10,10,10,0.08),0px_1px_2px_0px_rgba(10,10,10,0.06)]"
-          style={{ left: tooltip.x, top: tooltip.y }}
-          role="tooltip"
-        >
-          <p className="text-[11px] leading-4 text-[#71717A]">{tooltip.periodLabel}</p>
-          <div className="mt-1.5 space-y-1">
-            <p className="text-xs font-semibold tabular-nums text-[#09090B]">
-              <span className="font-medium text-[#71717A]">Total deposits</span>{" "}
-              <span style={{ color: DEPOSIT }}>{tooltip.depositsLabel}</span>
-            </p>
-            <p className="text-xs font-semibold tabular-nums text-[#09090B]">
-              <span className="font-medium text-[#71717A]">Total withdrawals</span>{" "}
-              <span style={{ color: WITHDRAWAL }}>{tooltip.withdrawalsLabel}</span>
-            </p>
+            <div className={cn("pointer-events-none absolute inset-x-0", CHART_PLOT_BACKDROP_INSET_CLASS)}>
+              {ticks.map((t) => (
+                <span
+                  key={t}
+                  className="absolute right-0 z-[1] block -translate-y-1/2 rounded-sm bg-white px-0.5 py-px"
+                  style={{ top: `${tickTopPercent(t, yMax)}%` }}
+                >
+                  {formatAxisUsd(t)}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
-      ) : null}
+
+        <div
+          className="flex w-full shrink-0 pt-1.5"
+          style={{ height: FUNDAMENTALS_CHART_AXIS_ROW_PX }}
+        >
+          <div className="relative min-w-0 flex-1 overflow-visible">
+            {buckets.map((b, i) => {
+              if (!shouldDrawXLabel(i, n, xLabelStep)) return null;
+              const leftPct = ((i + 0.5) / n) * 100;
+              return (
+                <div
+                  key={`axis-${b.key}`}
+                  className="absolute bottom-0 flex min-h-0 -translate-x-1/2 items-end justify-center overflow-visible px-0.5 pb-0.5"
+                  style={{ left: `${leftPct}%` }}
+                  title={b.label}
+                >
+                  <span
+                    className="inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]"
+                    style={
+                      rotateXLabels
+                        ? {
+                            transform: `rotate(${FUNDAMENTALS_CHART_AXIS_LABEL_ROTATE_DEG}deg)`,
+                            transformOrigin: "center bottom",
+                          }
+                        : undefined
+                    }
+                  >
+                    {b.label}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          <div className="shrink-0" style={{ width: FUNDAMENTALS_CHART_Y_AXIS_W_PX }} aria-hidden />
+        </div>
+      </div>
     </div>
   );
 }
@@ -478,7 +616,17 @@ function CashInOutBarChartSectionInner({ rows }: { rows: PortfolioTransaction[] 
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="hidden text-2xl font-semibold leading-9 tracking-tight text-[#09090B] sm:block">Cash</h2>
         <div className="flex w-full min-w-0 flex-nowrap items-center gap-2 sm:w-auto sm:flex-wrap sm:justify-end sm:gap-3 md:flex-nowrap">
-          <div className="relative min-w-0 flex-1 sm:flex-none sm:min-w-[180px]" ref={rangeWrapRef}>
+          {/* Web: compact range toggle (matches portfolio overview / charting). */}
+          <ChartSegmentToggle
+            aria-label="Cash chart time range"
+            className="hidden sm:flex"
+            options={RANGE_TOGGLE_OPTIONS}
+            value={range}
+            onChange={setRange}
+          />
+
+          {/* Mobile: full-label range dropdown. */}
+          <div className="relative min-w-0 flex-1 sm:hidden sm:min-w-[180px]" ref={rangeWrapRef}>
             <button
               type="button"
               aria-expanded={rangeOpen}
@@ -513,7 +661,9 @@ function CashInOutBarChartSectionInner({ rows }: { rows: PortfolioTransaction[] 
                       className={cn(dropdownMenuPlainItemRowClassName({ selected }), "font-medium")}
                     >
                       <span>{o.label}</span>
-                      {selected ? <Check className="h-4 w-4 shrink-0 text-[#09090B]" strokeWidth={2} aria-hidden /> : null}
+                      {selected ? (
+                        <Check className="h-4 w-4 shrink-0 text-[#09090B]" strokeWidth={2} aria-hidden />
+                      ) : null}
                     </button>
                   );
                 })}
@@ -521,14 +671,10 @@ function CashInOutBarChartSectionInner({ rows }: { rows: PortfolioTransaction[] 
             ) : null}
           </div>
 
-          <TabSwitcher
+          <ChartSegmentToggle
             aria-label="Cash chart grouping"
-            fullWidth
-            className="flex-1 min-w-0 sm:flex-none sm:w-[220px]"
-            options={[
-              { value: "month" as const, label: "Monthly" },
-              { value: "year" as const, label: "Annually" },
-            ]}
+            className="min-w-0 flex-1 sm:flex-none"
+            options={GRANULARITY_OPTIONS}
             value={granularity}
             onChange={setGranularity}
           />
@@ -555,20 +701,20 @@ function CashInOutBarChartSectionInner({ rows }: { rows: PortfolioTransaction[] 
           No periods in this range yet.
         </div>
       ) : (
-        <div className="flex w-full min-w-0 flex-col gap-3 px-5">
+        <div className="flex w-full min-w-0 flex-col gap-3">
           <div className={cn("w-full min-w-0", !hasAnyActivity && "opacity-60")}>
             <CashInOutBarChartSvg buckets={buckets} granularity={granularity} />
           </div>
           {!hasAnyActivity ? (
             <p className="text-center text-xs leading-4 text-[#71717A]">No cash movements in this range.</p>
           ) : null}
-          <div className="flex flex-wrap items-center justify-center gap-4 py-1">
-            <span className="inline-flex items-center gap-2 text-sm font-normal leading-5 text-[#09090B]">
-              <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: DEPOSIT }} aria-hidden />
+          <div className="flex flex-wrap items-center justify-center gap-6 text-xs font-medium text-[#71717A]">
+            <span className="inline-flex items-center gap-2">
+              <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: DEPOSIT }} aria-hidden />
               Deposits
             </span>
-            <span className="inline-flex items-center gap-2 text-sm font-normal leading-5 text-[#09090B]">
-              <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: WITHDRAWAL }} aria-hidden />
+            <span className="inline-flex items-center gap-2">
+              <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: WITHDRAWAL }} aria-hidden />
               Withdrawals
             </span>
           </div>
