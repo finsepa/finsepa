@@ -166,15 +166,15 @@ function EconomyWeekdayStrip({
   highlightYmd: string;
 }) {
   return (
-    <div className="relative border-b border-t border-[#E4E4E7] py-2 pb-0">
-      <div className="flex w-full gap-6 text-center text-lg leading-7">
+    <div className="relative border-b border-t border-[#E4E4E7] py-1 pb-0">
+      <div className="flex w-full gap-6 text-center text-lg leading-6">
         {days.map((day) => {
           const active = day.date === highlightYmd;
           return (
             <div
               key={day.date}
               className={cn(
-                "flex min-h-px min-w-0 flex-1 flex-wrap items-center justify-center gap-1 py-1",
+                "flex min-h-px min-w-0 flex-1 flex-wrap items-center justify-center gap-1 py-0.5",
                 active ? "text-[#DC2626]" : "text-[#09090B]",
               )}
             >
@@ -184,7 +184,7 @@ function EconomyWeekdayStrip({
           );
         })}
       </div>
-      <div className="mt-2 flex w-full gap-6" aria-hidden>
+      <div className="mt-1 flex w-full gap-6" aria-hidden>
         {days.map((day) => {
           const active = day.date === highlightYmd;
           return (

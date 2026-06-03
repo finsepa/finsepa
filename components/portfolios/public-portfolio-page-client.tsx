@@ -137,6 +137,7 @@ function PublicPortfolioPageInner({ listingId }: { listingId: string }) {
         readOnly
         showPortfoliosBreadcrumb
         tabBasePath={tabBasePath}
+        publicListingId={listing.id}
       />
     </PublicPortfolioViewProvider>
   );

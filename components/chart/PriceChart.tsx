@@ -41,7 +41,11 @@ import {
   mobileTimeScaleOptions,
   shouldHideMobileYAxisLabels,
 } from "@/lib/chart/mobile-plot-horizontal-gutter";
-import { formatAssetChartTimestamp, usSessionWallClockUnix } from "@/lib/market/chart-timestamp-format";
+import {
+  chartBarTimeForYmd,
+  formatAssetChartTimestamp,
+  usSessionWallClockUnix,
+} from "@/lib/market/chart-timestamp-format";
 import { baselineRelativeGradientEnabled } from "@/lib/chart/baseline-relative-gradient";
 import { cn } from "@/lib/utils";
 import type { StockChartRange, StockChartPoint, StockChartSeries } from "@/lib/market/stock-chart-types";
@@ -416,14 +420,8 @@ function overviewBaselineOptions(
 }
 
 function ymdToBarTime(ymd: string, data: readonly { time: UTCTimestamp }[]): UTCTimestamp | null {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return null;
-  const [y, mo, d] = ymd.split("-").map((x) => Number.parseInt(x, 10));
-  const midnight = Math.floor(Date.UTC(y, mo - 1, d) / 1000) as UTCTimestamp;
-  if (data.some((p) => p.time === midnight)) return midnight;
-  const dayEnd = midnight + 86400;
-  const onDay = data.filter((p) => p.time >= midnight && p.time < dayEnd);
-  if (onDay.length > 0) return onDay[onDay.length - 1]!.time;
-  return null;
+  const t = chartBarTimeForYmd(ymd, data);
+  return t == null ? null : (t as UTCTimestamp);
 }
 
 function tradeMarkersForChart(

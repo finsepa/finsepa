@@ -107,11 +107,23 @@ const PortfolioMetricsPanel = dynamic(
   { loading: () => <PortfolioTabPanelSkeleton className="mb-6" /> },
 );
 
+const PortfolioDividendsPanel = dynamic(
+  () =>
+    import("@/components/portfolio/portfolio-dividends-panel").then((m) => ({
+      default: m.PortfolioDividendsPanel as ComponentType<{
+        holdings: PortfolioHolding[];
+        publicListingId?: string;
+      }>,
+    })),
+  { loading: () => <PortfolioTabPanelSkeleton className="mb-6" /> },
+);
+
 function initialTabsVisited(active: PortfolioViewTab): Record<PortfolioViewTab, boolean> {
   return {
     Overview: active === "Overview",
     Performance: active === "Performance",
     Metrics: active === "Metrics",
+    Dividends: active === "Dividends",
     Cash: active === "Cash",
     Transactions: active === "Transactions",
   };
@@ -130,6 +142,7 @@ export function PortfolioPageView({
   readOnly = false,
   showPortfoliosBreadcrumb = false,
   tabBasePath = "/portfolio",
+  publicListingId,
 }: {
   portfolioName: string;
   holdings: PortfolioHolding[];
@@ -138,6 +151,8 @@ export function PortfolioPageView({
   /** `Portfolios / {name}` for community read-only detail. */
   showPortfoliosBreadcrumb?: boolean;
   tabBasePath?: string;
+  /** Community listing id — dividend schedule uses listing API. */
+  publicListingId?: string;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -403,6 +418,17 @@ export function PortfolioPageView({
               aria-hidden={viewTab !== "Metrics"}
             >
               <PortfolioMetricsPanel holdings={holdings} transactions={transactions} />
+            </div>
+          ) : null}
+
+          {tabsVisited.Dividends ? (
+            <div
+              className={panelClass("Dividends")}
+              role="tabpanel"
+              id="portfolio-tab-dividends"
+              aria-hidden={viewTab !== "Dividends"}
+            >
+              <PortfolioDividendsPanel holdings={holdings} publicListingId={publicListingId} />
             </div>
           ) : null}
 

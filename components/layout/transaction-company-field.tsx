@@ -2,7 +2,7 @@
 
 import { CompanyPicker, type CompanyPick } from "@/components/charting/company-picker";
 
-/** Ticker/Company row for New Transaction — global-search-style shell + portaled picker (stocks only). */
+/** Ticker/Company row for New Transaction — global-search-style shell + portaled picker (stocks + crypto). */
 export function TransactionCompanyField({
   value,
   onChange,
@@ -18,11 +18,10 @@ export function TransactionCompanyField({
       onPick={(p) => onChange(p)}
       maxExtraCompanies={99}
       excludeSymbols={[]}
-      includeCrypto={false}
       menuPortal
       menuAlign="leading"
       shellClassName="rounded-[10px]"
-      placeholder="Start entering in the ticker or company name"
+      placeholder="Start entering a ticker, company, or crypto name"
     />
   );
 }

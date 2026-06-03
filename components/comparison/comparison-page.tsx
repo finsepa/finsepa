@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useMemo } from "react";
 import { LineChart } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 
@@ -9,7 +9,6 @@ import { ComparisonEmptyToolbar } from "@/components/comparison/comparison-empty
 import { ComparisonWorkspace } from "@/components/comparison/comparison-workspace";
 import type { StockPageInitialData } from "@/lib/market/stock-page-initial-data";
 import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
-import { readComparisonSessionTickers } from "@/lib/comparison/comparison-session";
 import { isComparisonSessionReady, parseChartingTickerList } from "@/lib/market/stock-charting-metrics";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 
@@ -24,9 +23,7 @@ type Props = {
  * `/comparison` — empty hero until ≥1 company; chart uses a default metric in code and URL.
  */
 export function ComparisonPage({
-  tickers,
   initialByTicker,
-  comparisonReady,
   allowedChartingTickers,
 }: Props) {
   const searchParams = useSearchParams();
@@ -35,11 +32,6 @@ export function ComparisonPage({
     () => new Set(allowedChartingTickers.map((t) => t.trim().toUpperCase()).filter(Boolean)),
     [allowedChartingTickers],
   );
-
-  const [sessionTickers, setSessionTickers] = useState<string[]>([]);
-  useEffect(() => {
-    setSessionTickers(readComparisonSessionTickers());
-  }, []);
 
   const searchKey = searchParams.toString();
   const { sessionReady, allowedTickers } = useMemo(() => {
@@ -52,19 +44,9 @@ export function ComparisonPage({
     return { sessionReady: isComparisonSessionReady(allowed), allowedTickers: allowed };
   }, [searchParams, searchKey, chartingAllowSet]);
 
-  const sessionAllowed = useMemo(
-    () =>
-      sessionTickers.filter((t) => {
-        if (isSingleAssetMode()) return isSupportedAsset(t);
-        return chartingAllowSet.has(t.trim().toUpperCase());
-      }),
-    [sessionTickers, chartingAllowSet],
-  );
-
-  const showWorkspace =
-    sessionReady || (comparisonReady && tickers.length > 0) || sessionAllowed.length > 0;
-  const tickersForUi =
-    allowedTickers.length > 0 ? allowedTickers : sessionAllowed.length > 0 ? sessionAllowed : tickers;
+  /** Workspace only when `?ticker=` is present — do not restore from localStorage on bare `/comparison`. */
+  const showWorkspace = sessionReady;
+  const tickersForUi = allowedTickers;
 
   if (showWorkspace) {
     return (

@@ -50,6 +50,7 @@ Cron schedule: every 15 minutes (`vercel.json`). Market ingest: **hot** keys (qu
 - **Live marks:** `POST /api/portfolio/live-quotes` batches holdings via EODHD realtime (~1 credit/symbol per chunk), replacing N× `/api/stocks/.../live-price` intraday attempts (~5 credits each).
 - **Hydrate:** Local snapshot applies without quotes; server merge refreshes quotes **once per ledger fingerprint** (no double local+remote fan-out).
 - **Overview:** `POST /api/portfolio/overview-market` shares one fundamentals fetch per symbol for dividend yield; `unstable_cache` 60s per symbol set; client skips duplicate loads when holdings unchanged.
+- **Dividends:** `POST /api/portfolio/dividends-schedule` reads per-ticker calendar/history/yield from `market_snapshot` (`portfolio_dividends_inputs_v1`, day-bucketed keys); reuses `portfolio_yield_pct_*` snapshots; dedupes symbols; `unstable_cache` 60s per holdings set; client sessionStorage + skip when holdings unchanged (same as overview).
 
 ## P6 — load test & budget proof
 
@@ -97,3 +98,21 @@ API: `GET /api/cron/eodhd-traffic-probe?ticker=AAPL` (same `Authorization: Beare
 4. Re-run `eodhd:probe` after changing ingest cadence or asset traffic.
 
 **Note:** In-process caps and probe counts are **per Node isolate**, not global across all Vercel instances. The model assumes snapshot sharing so user traffic does not multiply list-page EODHD cost.
+
+## Adding a new Key Stats chart (or table cell)
+
+Key Stats **history charts** (modal, Multicharts, Charting, Financials) all read the same series:
+
+| Layer | What to touch |
+|-------|----------------|
+| Metric id | `lib/market/stock-charting-metrics.ts` — add to `CHARTING_METRIC_IDS`, field/label/kind maps |
+| Series build | `lib/market/eodhd-charting-series.ts` — populate on `ChartingSeriesPoint`, derive in `fillDerived*` if EODHD omits periods |
+| Server cache | Bump `fetchChartingSeries` `unstable_cache` key suffix (e.g. `eodhd-charting-series-v24-…`) when merge logic changes |
+| API | `GET /api/stocks/[ticker]/fundamentals-series` — no route change if metric is on `ChartingSeriesPoint` |
+| SSR / P5 | `loadStockPageInitialDataUncached` already calls `fetchChartingSeries`; `asset_{TICKER}` snapshots pick up new fields on next segment miss |
+| Table cell only | `lib/market/eodhd-key-stats-*.ts` + `buildStockKeyStatsBundle` (uses cached `fetchEodhdFundamentalsJson`) |
+| Screener column | `lib/screener/screener-key-stats-metric-catalog.ts` + `fetch-screener-key-stat-cell.ts`; cells persist in `market_snapshot` segment `screener_key_stat_v1` |
+
+**Dividend Yield** (`dividend_yield`) is on this path: derived in charting series (`fillDerivedDividendYield`, live patch from `dividendYieldRatioFromFundamentalsRoot`), cached as `eodhd-charting-series-v23-derived-dividend-yield`. The Key Stats “Yield” row uses the dividends bundle section (`stock-key-stats-bundle-v1`).
+
+When asking an agent to add a feature, include: *“Wire backend data + caching like other Key Stats charts — charting series + bump unstable_cache key if needed; screener snapshot if it’s a screener column.”*

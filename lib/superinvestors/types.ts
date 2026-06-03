@@ -70,3 +70,37 @@ export type Berkshire13fComparisonPayload = {
   soldOut: Berkshire13fSoldOutRow[];
   source: "edgar" | "fixture" | "unavailable";
 };
+
+export type SuperinvestorQuarterlyTransactionKind = "buy" | "sell" | "new" | "exit";
+
+export type SuperinvestorQuarterlyTransaction = {
+  kind: SuperinvestorQuarterlyTransactionKind;
+  companyName: string;
+  ticker: string | null;
+  cusip: string | null;
+  /** Human label, e.g. `Q4 2025`. */
+  quarterLabel: string;
+  /** 13F report period end (ISO date). */
+  reportDate: string;
+  sharesChangePct: number | null;
+  sharesDelta: number | null;
+  avgClosingPriceUsd: number | null;
+  priceRangeLowUsd: number | null;
+  priceRangeHighUsd: number | null;
+};
+
+export type SuperinvestorQuarterTransactionGroup = {
+  quarterLabel: string;
+  reportDate: string;
+  /** SEC acceptance date for the newer filing in this pair (unique per amendment). */
+  filingDate: string | null;
+  transactions: SuperinvestorQuarterlyTransaction[];
+};
+
+export type SuperinvestorTransactionsPayload = {
+  filerDisplayName: string;
+  cik: string;
+  /** Quarters newest-first; each lists position changes vs the prior filing. */
+  quarters: SuperinvestorQuarterTransactionGroup[];
+  source: "edgar" | "fixture" | "unavailable";
+};

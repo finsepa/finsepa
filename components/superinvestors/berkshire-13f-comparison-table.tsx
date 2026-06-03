@@ -1,9 +1,17 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { Fragment } from "react";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import type { Berkshire13fComparisonRow } from "@/lib/superinvestors/types";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { Berkshire13fComparisonRow, SuperinvestorTransactionsPayload } from "@/lib/superinvestors/types";
+import { SuperinvestorHoldingExpandButton } from "@/components/superinvestors/superinvestor-holding-expand-button";
+import { SuperinvestorHoldingTransactionsPanel } from "@/components/superinvestors/superinvestor-holding-transactions-panel";
+import {
+  flattenSuperinvestorTransactions,
+  normalizeSuperinvestorActivityHeadline,
+  resolveHoldingRecentActivity,
+  type HoldingRecentActivityDisplay,
+} from "@/lib/superinvestors/superinvestor-transaction-utils";
 import { SUPERINVESTOR_HOLDINGS_PAGE_SIZE } from "@/lib/superinvestors/superinvestors-holdings-page-size";
 import { CompanyLogo } from "@/components/screener/company-logo";
 import { resolveEquityLogoUrlFromListingTicker } from "@/lib/screener/resolve-equity-logo-url";
@@ -21,11 +29,6 @@ const sharesFmt = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 0,
 });
 
-const sharePctFmt = new Intl.NumberFormat("en-US", {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
-
 /** Match screener `ChangeCell`: green / red for up / down. */
 const cellUp = "text-[#16A34A]";
 const cellDown = "text-[#DC2626]";
@@ -39,13 +42,16 @@ const tdCompany = "min-w-0 py-1 text-left text-[14px] leading-5 whitespace-norma
 const tdNum =
   "whitespace-nowrap py-0 text-right align-middle font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]";
 
-/** Company | % of portfolio | Recent activity | Shares | Value — horizontal padding on table shell only. */
+/** Company | % of portfolio | Recent activity | Shares | Value. */
 const rowGridFive =
   "grid w-full min-w-[720px] grid-cols-[minmax(180px,2.05fr)_minmax(72px,0.55fr)_minmax(120px,1.05fr)_minmax(96px,0.9fr)_minmax(96px,0.9fr)] gap-x-4";
 
-/** Mobile: Company | % of Portfolio (merged with activity subline). */
+/** Mobile: Company | % of Portfolio. */
 const mobileRowGrid =
   "grid grid-cols-[minmax(0,1fr)_minmax(5.5rem,auto)] gap-x-3 items-center";
+
+const HOLDING_COMPANY_NAME_CLASS =
+  "line-clamp-1 text-[14px] font-semibold leading-5 text-[#09090B] underline-offset-[3px] decoration-[#09090B] group-hover/company:underline sm:line-clamp-2";
 
 const rowShellBase = "min-h-[60px] items-center transition-colors duration-75";
 
@@ -65,75 +71,45 @@ function issuerDisplayTitle(name: string): string {
     .join(" ");
 }
 
-function CompanyTickerCell({ companyName, ticker }: { companyName: string; ticker: string | null }) {
+function HoldingCompanyCell({
+  companyName,
+  ticker,
+  expanded,
+  onToggleExpand,
+}: {
+  companyName: string;
+  ticker: string | null;
+  expanded: boolean;
+  onToggleExpand: () => void;
+}) {
   const displayName = issuerDisplayTitle(companyName);
   const sym = ticker?.trim() ? ticker.trim().toUpperCase() : null;
   const logoUrl = sym ? resolveEquityLogoUrlFromListingTicker(sym) : "";
+  const href = rowHref(displayName, sym);
+
   return (
-    <div className="flex min-w-0 items-center gap-3 pr-2 text-left">
-      <CompanyLogo name={displayName} logoUrl={logoUrl} symbol={sym ?? undefined} size="md" />
-      <div className="flex min-w-0 max-w-[min(280px,45vw)] flex-col gap-0.5 py-0.5">
-        <span className="line-clamp-1 text-[14px] font-semibold leading-5 text-[#09090B] underline-offset-[3px] decoration-[#09090B] group-hover:underline sm:line-clamp-2">
-          {displayName}
-        </span>
-        <span className="text-[12px] font-normal leading-4 text-[#71717A]">{sym ?? "—"}</span>
-      </div>
+    <div className="flex min-w-0 max-w-full items-center gap-3 py-2 pr-2 text-left">
+      <SuperinvestorHoldingExpandButton expanded={expanded} onToggle={onToggleExpand} />
+      <Link
+        href={href}
+        prefetch={false}
+        className="group/company flex min-w-0 flex-1 items-center gap-3 no-underline"
+        aria-label={sym ? `Open ${displayName} (${sym})` : `Open screener to find ${displayName}`}
+      >
+        <CompanyLogo name={displayName} logoUrl={logoUrl} symbol={sym ?? undefined} size="md" />
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <span className={HOLDING_COMPANY_NAME_CLASS}>{displayName}</span>
+          <span className="text-[12px] font-normal leading-4 text-[#71717A]">{sym ?? "—"}</span>
+        </div>
+      </Link>
     </div>
   );
 }
 
-function formatSharePctChange(n: number | null): string {
-  if (n == null || !Number.isFinite(n)) return "—";
-  if (n === 0) return "0.00%";
-  const s = `${sharePctFmt.format(Math.abs(n))}%`;
-  return n > 0 ? `+${s}` : `-${s}`;
-}
+const holdingActivitySublineClass = "text-[12px] font-normal leading-4 text-[#71717A]";
 
-/** Mobile-only combined cell: "6.13%" top, "Increased +0.78%" subline. */
-function MobilePortfolioCell({
-  weight,
-  hasPriorFiling,
-  sharesChangePct,
-}: {
-  weight: number;
-  hasPriorFiling: boolean;
-  sharesChangePct: number | null;
-}) {
-  const pctVal = sharesChangePct;
-  const hasChange = hasPriorFiling && pctVal != null && Number.isFinite(pctVal) && pctVal !== 0;
-  const up = hasChange && pctVal! > 0;
-  const color = hasChange ? (up ? cellUp : cellDown) : "text-[#71717A]";
-
-  return (
-    <div className="flex flex-col items-end justify-center text-right">
-      <span className="text-[14px] font-medium leading-5 tabular-nums text-[#09090B]">
-        {pct.format(weight)}%
-      </span>
-      <span className={cn("text-[12px] font-normal leading-4 tabular-nums", color)}>
-        {hasChange ? `${up ? "Increased" : "Reduced"} ${formatSharePctChange(pctVal!)}` : "—"}
-      </span>
-    </div>
-  );
-}
-
-/** Shares column when comparing filings: label + Δ%, or "-" / "-" when flat or N/A. */
-function SharesColumnCell({
-  hasPriorFiling,
-  shares,
-  sharesChangePct,
-}: {
-  hasPriorFiling: boolean;
-  shares: number | null;
-  sharesChangePct: number | null;
-}) {
-  if (!hasPriorFiling) {
-    return <>{shares != null ? sharesFmt.format(shares) : "—"}</>;
-  }
-
-  const pct = sharesChangePct;
-  const flat = pct == null || !Number.isFinite(pct) || pct === 0;
-
-  if (flat) {
+function RecentActivityColumnCell({ activity }: { activity: HoldingRecentActivityDisplay | null }) {
+  if (!activity) {
     return (
       <div className="flex flex-col items-end justify-center gap-0.5 py-1 text-right font-medium tabular-nums text-[#71717A]">
         <span className="leading-4">-</span>
@@ -142,12 +118,45 @@ function SharesColumnCell({
     );
   }
 
-  const up = pct > 0;
-  const color = up ? cellUp : cellDown;
+  const color = activity.positive ? cellUp : cellDown;
   return (
-    <div className={cn("flex flex-col items-end justify-center gap-0.5 py-1 text-right text-[14px] font-medium leading-4", color)}>
-      <span>{up ? "Increased" : "Reduced"}</span>
-      <span className="tabular-nums leading-4">{formatSharePctChange(pct)}</span>
+    <div className="flex flex-col items-end justify-center gap-0.5 py-1 text-right">
+      <span className={cn("text-[14px] font-medium leading-4 tabular-nums", color)}>{activity.quarterLabel}</span>
+      <span className={holdingActivitySublineClass}>
+        {normalizeSuperinvestorActivityHeadline(activity.activityDetail)}
+      </span>
+    </div>
+  );
+}
+
+/** Mobile-only combined cell: weight on top; quarter (colored) + action (grey) below. */
+function MobilePortfolioCell({
+  weight,
+  activity,
+}: {
+  weight: number;
+  activity: HoldingRecentActivityDisplay | null;
+}) {
+  return (
+    <div className="flex flex-col items-end justify-center gap-0.5 text-right">
+      <span className="text-[14px] font-medium leading-5 tabular-nums text-[#09090B]">
+        {pct.format(weight)}%
+      </span>
+      {activity ?
+        <>
+          <span
+            className={cn(
+              "text-[12px] font-medium leading-4 tabular-nums",
+              activity.positive ? cellUp : cellDown,
+            )}
+          >
+            {activity.quarterLabel}
+          </span>
+          <span className={holdingActivitySublineClass}>
+            {normalizeSuperinvestorActivityHeadline(activity.activityDetail)}
+          </span>
+        </>
+      : <span className={holdingActivitySublineClass}>—</span>}
     </div>
   );
 }
@@ -252,44 +261,19 @@ function rowHref(displayName: string, ticker: string | null): string {
   return `/screener?${SCREENER_MARKET_QUERY}=stocks${hint}`;
 }
 
-function ComparisonRowShell({
-  ticker,
-  displayName,
-  gridClass,
-  children,
-}: {
-  ticker: string | null;
-  displayName: string;
-  gridClass: string;
-  children: ReactNode;
-}) {
-  const href = rowHref(displayName, ticker);
-  const hasTicker = Boolean(ticker?.trim());
-  const merged = cn(gridClass, rowShellBase, "group cursor-pointer no-underline hover:bg-neutral-50");
-  return (
-    <Link
-      href={href}
-      prefetch={false}
-      className={merged}
-      aria-label={
-        hasTicker
-          ? `Open ${displayName} (${ticker!.trim().toUpperCase()})`
-          : `Open screener to find ${displayName}`
-      }
-    >
-      {children}
-    </Link>
-  );
-}
-
 export function Berkshire13fComparisonTable({
   rows,
   hasPriorFiling,
+  transactions,
+  onViewAllTransactions,
 }: {
   rows: Berkshire13fComparisonRow[];
   hasPriorFiling: boolean;
+  transactions: SuperinvestorTransactionsPayload;
+  onViewAllTransactions: (searchQuery: string) => void;
 }) {
   const [page, setPage] = useState(1);
+  const [expandedRowKey, setExpandedRowKey] = useState<string | null>(null);
   const pageSize = SUPERINVESTOR_HOLDINGS_PAGE_SIZE;
   const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
   const safePage = Math.min(Math.max(1, page), totalPages);
@@ -299,8 +283,19 @@ export function Berkshire13fComparisonTable({
     return rows.slice(start, start + pageSize);
   }, [rows, safePage, pageSize]);
 
+  const allTransactions = useMemo(
+    () => flattenSuperinvestorTransactions(transactions.quarters),
+    [transactions.quarters],
+  );
+
+  const currentQuarterLabel = transactions.quarters[0]?.quarterLabel ?? null;
+
   const headerGrid = cn("h-11 min-h-[44px] items-center bg-white", rowGridFive);
   const resolved = useResolvedTickersForPage(pagedRows);
+
+  const toggleExpanded = useCallback((rowKey: string) => {
+    setExpandedRowKey((prev) => (prev === rowKey ? null : rowKey));
+  }, []);
 
   return (
     <div className="min-w-0 -mx-4 sm:mx-0">
@@ -316,23 +311,47 @@ export function Berkshire13fComparisonTable({
             const displayName = issuerDisplayTitle(r.companyName);
             const key = rowResolveKey(r, displayName);
             const mergedTicker = r.ticker?.trim() ? r.ticker : resolved[key] ?? null;
+            const activityTicker = r.ticker?.trim() ? r.ticker : null;
             const globalIndex = (safePage - 1) * pageSize + i;
+            const rowKey = `${r.cusip ?? r.companyName}-${globalIndex}-m`;
+            const expanded = expandedRowKey === rowKey;
             return (
-              <ComparisonRowShell
-                key={`${r.cusip ?? r.companyName}-${globalIndex}-m`}
-                ticker={mergedTicker}
-                displayName={displayName}
-                gridClass={cn(mobileRowGrid, "px-4")}
-              >
-                <div className={tdCompany}>
-                  <CompanyTickerCell companyName={r.companyName} ticker={mergedTicker} />
+              <Fragment key={rowKey}>
+                <div
+                  className={cn(
+                    mobileRowGrid,
+                    rowShellBase,
+                    "items-center bg-white px-4 transition-colors duration-75 hover:bg-neutral-50",
+                  )}
+                >
+                  <div className={tdCompany}>
+                    <HoldingCompanyCell
+                      companyName={r.companyName}
+                      ticker={mergedTicker}
+                      expanded={expanded}
+                      onToggleExpand={() => toggleExpanded(rowKey)}
+                    />
+                  </div>
+                  <MobilePortfolioCell
+                    weight={r.weight}
+                    activity={resolveHoldingRecentActivity(
+                      r,
+                      allTransactions,
+                      activityTicker,
+                      currentQuarterLabel,
+                      hasPriorFiling,
+                    )}
+                  />
                 </div>
-                <MobilePortfolioCell
-                  weight={r.weight}
-                  hasPriorFiling={hasPriorFiling}
-                  sharesChangePct={r.sharesChangePct}
-                />
-              </ComparisonRowShell>
+                {expanded ?
+                  <SuperinvestorHoldingTransactionsPanel
+                    row={r}
+                    resolvedTicker={mergedTicker}
+                    allTransactions={allTransactions}
+                    onViewAllTransactions={onViewAllTransactions}
+                  />
+                : null}
+              </Fragment>
             );
           })}
         </div>
@@ -354,28 +373,51 @@ export function Berkshire13fComparisonTable({
               const displayName = issuerDisplayTitle(r.companyName);
               const key = rowResolveKey(r, displayName);
               const mergedTicker = r.ticker?.trim() ? r.ticker : resolved[key] ?? null;
+            const activityTicker = r.ticker?.trim() ? r.ticker : null;
               const globalIndex = (safePage - 1) * pageSize + i;
+              const rowKey = `${r.cusip ?? r.companyName}-${globalIndex}`;
+              const expanded = expandedRowKey === rowKey;
               return (
-                <ComparisonRowShell
-                  key={`${r.cusip ?? r.companyName}-${globalIndex}`}
-                  ticker={mergedTicker}
-                  displayName={displayName}
-                  gridClass={cn(rowGridFive, "px-4")}
-                >
-                  <div className={tdCompany}>
-                    <CompanyTickerCell companyName={r.companyName} ticker={mergedTicker} />
+                <Fragment key={rowKey}>
+                  <div
+                    className={cn(
+                      rowGridFive,
+                      rowShellBase,
+                      "items-center bg-white px-4 transition-colors duration-75 hover:bg-neutral-50",
+                    )}
+                  >
+                    <div className={tdCompany}>
+                      <HoldingCompanyCell
+                        companyName={r.companyName}
+                        ticker={mergedTicker}
+                        expanded={expanded}
+                        onToggleExpand={() => toggleExpanded(rowKey)}
+                      />
+                    </div>
+                    <div className={cn(tdNum, "font-medium")}>{pct.format(r.weight)}%</div>
+                    <div className={cn(tdNum, "font-medium")}>
+                      <RecentActivityColumnCell
+                        activity={resolveHoldingRecentActivity(
+                          r,
+                          allTransactions,
+                          activityTicker,
+                          currentQuarterLabel,
+                          hasPriorFiling,
+                        )}
+                      />
+                    </div>
+                    <div className={tdNum}>{r.shares != null ? sharesFmt.format(r.shares) : "—"}</div>
+                    <div className={tdNum}>{formatUsdCompactSigDigits(r.valueUsd, 4)}</div>
                   </div>
-                  <div className={cn(tdNum, "font-medium")}>{pct.format(r.weight)}%</div>
-                  <div className={cn(tdNum, "font-medium")}>
-                    <SharesColumnCell
-                      hasPriorFiling={hasPriorFiling}
-                      shares={r.shares}
-                      sharesChangePct={r.sharesChangePct}
+                  {expanded ?
+                    <SuperinvestorHoldingTransactionsPanel
+                      row={r}
+                      resolvedTicker={mergedTicker}
+                      allTransactions={allTransactions}
+                      onViewAllTransactions={onViewAllTransactions}
                     />
-                  </div>
-                  <div className={tdNum}>{r.shares != null ? sharesFmt.format(r.shares) : "—"}</div>
-                  <div className={tdNum}>{formatUsdCompactSigDigits(r.valueUsd, 4)}</div>
-                </ComparisonRowShell>
+                  : null}
+                </Fragment>
               );
             })}
           </div>

@@ -1,18 +1,7 @@
-import { Superinvestor13fProfile } from "@/components/superinvestors/superinvestor-13f-profile";
-import { getPrimecapHoldingsComparison } from "@/lib/superinvestors/berkshire-13f";
+import { SuperinvestorProfileBySlug } from "@/components/superinvestors/superinvestor-profile-by-slug";
 
 export const dynamic = "force-dynamic";
 
-export default async function PrimecapManagement13fPage() {
-  const data = await getPrimecapHoldingsComparison();
-
-  return (
-    <Superinvestor13fProfile
-      profileName="PRIMECAP Management"
-      breadcrumbCurrentLabel="PRIMECAP Management"
-      avatarSrc="/superinvestors/primecap-management.png"
-      data={data}
-    />
-  );
+export default function SuperinvestorProfilePage() {
+  return <SuperinvestorProfileBySlug slug="primecap-management" />;
 }
-

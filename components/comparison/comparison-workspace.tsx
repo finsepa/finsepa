@@ -27,7 +27,6 @@ import type { StockDetailHeaderMeta } from "@/lib/market/stock-header-meta";
 import {
   mergeComparisonAnchorTickers,
   buildStockPeersComparePath,
-  readComparisonSessionTickers,
   writeComparisonSessionTickers,
 } from "@/lib/comparison/comparison-session";
 import {
@@ -171,24 +170,11 @@ export function ComparisonWorkspace({
     return parsed.filter((t) => isComparisonTickerAllowed(t, chartingAllowSet));
   }, [searchParams, chartingAllowSet, isStockTab]);
 
-  const [sessionTickers, setSessionTickers] = useState<string[]>([]);
-
-  useEffect(() => {
-    setSessionTickers(
-      readComparisonSessionTickers().filter((t) => isComparisonTickerAllowed(t, chartingAllowSet)),
-    );
-  }, [chartingAllowSet]);
-
   const displayTickers = useMemo(() => {
-    let list: string[];
-    if (tickersFromUrl.length > 0) list = tickersFromUrl;
-    else if (sessionTickers.length > 0) list = sessionTickers;
-    else list = tickers;
-    if (anchor) list = mergeComparisonAnchorTickers(list, anchor);
+    const list = tickersFromUrl.length > 0 ? tickersFromUrl : tickers;
+    if (anchor) return mergeComparisonAnchorTickers(list, anchor);
     return list;
-  }, [tickersFromUrl, sessionTickers, tickers, anchor]);
-
-  const sessionHydratedRef = useRef(false);
+  }, [tickersFromUrl, tickers, anchor]);
 
   const [sliceByTicker, setSliceByTicker] = useState<Record<string, ComparisonTickerSlice>>(() => {
     const out: Record<string, ComparisonTickerSlice> = {};
@@ -273,23 +259,6 @@ export function ComparisonWorkspace({
     },
     [router, anchor, isStockTab],
   );
-
-  useEffect(() => {
-    if (sessionHydratedRef.current) return;
-    if (tickersFromUrl.length > 0) {
-      sessionHydratedRef.current = true;
-      return;
-    }
-    const stored = readComparisonSessionTickers().filter((t) =>
-      isComparisonTickerAllowed(t, chartingAllowSet),
-    );
-    const merged = anchor ? mergeComparisonAnchorTickers(stored, anchor) : stored;
-    const fallback = anchor ? mergeComparisonAnchorTickers(tickers, anchor) : tickers;
-    const target = merged.length > 0 ? merged : fallback;
-    if (!target.length) return;
-    sessionHydratedRef.current = true;
-    pushUrl(target);
-  }, [tickersFromUrl.length, chartingAllowSet, anchor, tickers, pushUrl]);
 
   const removeTicker = useCallback(
     (sym: string) => {

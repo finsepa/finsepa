@@ -59,7 +59,7 @@
 | Chart points | `getStockChartPoints` | `fetchEodhdEodDaily` / `fetchEodhdIntraday`, `getCachedSharesOutstanding` | `stock-chart-points-v4-series` | `REVALIDATE_HOT` (60s) |
 | Shares outstanding | `getCachedSharesOutstanding` | `fetchEodhdFundamentalsJson` | `stock-shares-outstanding-v1` | `REVALIDATE_WARM` (300s) |
 | Stock performance | `getStockPerformance` | `fetchEodhdEodDaily` | `stock-performance-v4` | `REVALIDATE_HOT` (60s) |
-| Charting series | `fetchChartingSeries` | `fetchEodhdFundamentalsJson` + merge | `eodhd-charting-series-v4` | `REVALIDATE_WARM` (300s) |
+| Charting series | `fetchChartingSeries` | `fetchEodhdFundamentalsJson` + merge (incl. derived `dividendYield`, live yield patch) | `eodhd-charting-series-v23-derived-dividend-yield` | `REVALIDATE_WARM` (300s) |
 | Header meta (split Phase 5) | `getCachedStockHeaderIdentity` / `getCachedStockHeaderEarningsLine` | `fetchEodhdFundamentalsJson` | `stock-header-identity-v1-phase5` (**12h**), `stock-header-earnings-line-v1-phase5` (**900s**) | Identity: `REVALIDATE_IDENTITY`; earnings line: `REVALIDATE_WARM_LONG` |
 | Peers compare rows | `getPeersCompareRowsCached` | fundamentals + charting per peer | `peers-compare-payload-v3-eps-yoy-fallbacks` | `REVALIDATE_WARM` (300s) |
 | Earnings week payload | `getEarningsWeekDataPackageCached` | calendar + universe + fundamentals filters | `earnings-week-v23-calendar-daily` | `REVALIDATE_EARNINGS_CALENDAR` (~24h) |

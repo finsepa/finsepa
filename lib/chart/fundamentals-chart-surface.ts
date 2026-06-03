@@ -140,15 +140,70 @@ function axisMaxForFiveTicks(rawMax: number, kind: ChartingMetricKind): number {
     const step = niceCeilStep(padded / 4);
     return step * 4;
   }
-  if (kind === "percent") return Math.min(100, niceCeilPositive(rawMax * 1.05));
+  if (kind === "percent") {
+    const padded = rawMax * 1.08;
+    const step = niceCeilStep(padded / 4);
+    return Math.min(1, step * 4);
+  }
   if (kind === "multiple" || kind === "ratio") return axisMaxForMultiplesAndRatios(rawMax);
   return niceCeilPositive(rawMax * 1.08);
 }
 
+export type FundamentalsYAxisDomain = {
+  min: number;
+  max: number;
+  ticks: number[];
+  /** True when the axis spans below zero (e.g. negative YoY / CAGR). */
+  bipolar: boolean;
+};
+
+/** 0% = top of plot band, 100% = bottom — for positioning bars, grid zero line, and Y labels. */
+export function valueToPlotBandTopPercent(v: number, min: number, max: number): number {
+  const range = max - min;
+  if (!Number.isFinite(range) || range <= 0) return 100;
+  return ((max - v) / range) * 100;
+}
+
+function buildFundamentalsYAxisTicksBetween(min: number, max: number): number[] {
+  const lo = Number.isFinite(min) ? min : 0;
+  const hi = Number.isFinite(max) && max > lo ? max : lo + 1;
+  const tickCount = FUNDAMENTALS_CHART_AXIS_TICK_COUNT;
+  return Array.from({ length: tickCount }, (_, i) => hi - (i / (tickCount - 1)) * (hi - lo));
+}
+
+export function buildFundamentalsYAxisDomain(
+  rawMin: number,
+  rawMax: number,
+  kind: ChartingMetricKind,
+): FundamentalsYAxisDomain {
+  const dataMin = Number.isFinite(rawMin) ? rawMin : 0;
+  const dataMax = Number.isFinite(rawMax) ? rawMax : 0;
+  const max = Math.max(dataMax, 0);
+  const min = Math.min(dataMin, 0);
+
+  if (kind === "percent" && min < 0) {
+    const yMax = axisMaxForFiveTicks(max || 1, kind);
+    const yMin = -axisMaxForFiveTicks(Math.abs(min) || 1, kind);
+    return {
+      min: yMin,
+      max: yMax,
+      ticks: buildFundamentalsYAxisTicksBetween(yMin, yMax),
+      bipolar: true,
+    };
+  }
+
+  const yMax = axisMaxForFiveTicks(max || 1, kind);
+  return {
+    min: 0,
+    max: yMax,
+    ticks: buildFixedFundamentalsYAxisTicks(yMax),
+    bipolar: false,
+  };
+}
+
 /** Five evenly spaced Y ticks from 0..max (Multicharts). */
 export function buildFundamentalsYAxisTicks(rawMax: number, kind: ChartingMetricKind): number[] {
-  const top = axisMaxForFiveTicks(rawMax, kind);
-  return buildFixedFundamentalsYAxisTicks(top);
+  return buildFundamentalsYAxisDomain(0, rawMax, kind).ticks;
 }
 
 /** Five evenly spaced ticks from 0..`max` (e.g. percent axis 0–50%). */

@@ -276,17 +276,19 @@ function EarningsDayColumnBody({
 
   if (totalSignals === 0) {
     return (
-      <p className="flex items-center gap-1.5 text-[12px] leading-4 text-[#A1A1AA]">
-        <CalendarDays className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
-        No earnings
-      </p>
+      <div className="flex min-h-0 flex-1 flex-col md:justify-start">
+        <p className="flex items-center gap-1.5 text-[12px] leading-4 text-[#A1A1AA]">
+          <CalendarDays className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
+          No earnings
+        </p>
+      </div>
     );
   }
 
   const beforeHasBody = beforeMarket.items.length > 0 || beforeMarket.overflowCount > 0;
 
   return (
-    <div className="min-w-0">
+    <div className="min-h-0 min-w-0 flex-1">
       <EarningsTimingBlock
         title="Before market"
         bucket={beforeMarket}
@@ -350,12 +352,16 @@ function EarningsCard({
   );
 }
 
-const navBtnClass =
-  "flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-[#09090B] transition-colors hover:bg-[#F4F4F5]";
+/** Week nav — bordered controls (arrows + Today), aligned with toolbar squircles. */
+const weekNavBtnClass =
+  "inline-flex h-9 shrink-0 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5]";
 
-/** Matches `topbarSquircleIconClass` in `components/design-system/topbar-control-classes.ts`. */
-const todayBtnClass =
-  "inline-flex h-9 shrink-0 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white px-3 text-[14px] font-medium leading-5 text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5]";
+const weekNavArrowClass = cn(weekNavBtnClass, "w-9");
+
+const weekNavTodayClass = cn(weekNavBtnClass, "px-3 text-[14px] font-medium leading-5");
+
+/** Shared min height for the five-day week grid (desktop columns stretch to this). */
+const EARNINGS_WEEK_GRID_MIN_H_CLASS = "min-h-[min(60vh,716px)]";
 
 /**
  * Weekly earnings calendar — layout aligned with Figma (Web App Design, Earnings Calendar week view).
@@ -380,51 +386,61 @@ export function EarningsWeekGrid({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-1">
-        <p className="text-[16px] font-normal leading-6 text-[#71717A]">Earnings Calendar</p>
-        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-          <div className="flex min-w-0 flex-wrap items-center gap-2">
-            <h1 className="text-[24px] font-semibold leading-9 tracking-tight text-[#09090B]">{data.weekLabel}</h1>
-            <div className="flex shrink-0 items-center gap-3">
-              <Link
-                href={`/earnings?week=${encodeURIComponent(prevWeekYmd)}`}
-                prefetch={false}
-                className={navBtnClass}
-                aria-label="Previous week"
-              >
-                <ChevronLeft className="h-5 w-5" strokeWidth={1.75} />
-              </Link>
-              <Link
-                href={`/earnings?week=${encodeURIComponent(thisWeekMondayYmd)}`}
-                prefetch={false}
-                className={todayBtnClass}
-                aria-label="Go to this week"
-                aria-current={data.weekMondayYmd === thisWeekMondayYmd ? "page" : undefined}
-              >
-                Today
-              </Link>
-              <Link
-                href={`/earnings?week=${encodeURIComponent(nextWeekYmd)}`}
-                prefetch={false}
-                className={navBtnClass}
-                aria-label="Next week"
-              >
-                <ChevronRight className="h-5 w-5" strokeWidth={1.75} />
-              </Link>
-            </div>
-          </div>
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <h1 className="min-w-0 text-[24px] font-semibold leading-9 tracking-tight text-[#09090B]">
+          {data.weekLabel}
+        </h1>
+        <div className="flex shrink-0 items-center gap-3">
+          <Link
+            href={`/earnings?week=${encodeURIComponent(prevWeekYmd)}`}
+            prefetch={false}
+            className={weekNavArrowClass}
+            aria-label="Previous week"
+          >
+            <ChevronLeft className="h-5 w-5" strokeWidth={1.75} />
+          </Link>
+          <Link
+            href={`/earnings?week=${encodeURIComponent(thisWeekMondayYmd)}`}
+            prefetch={false}
+            className={weekNavTodayClass}
+            aria-label="Go to this week"
+            aria-current={data.weekMondayYmd === thisWeekMondayYmd ? "page" : undefined}
+          >
+            Today
+          </Link>
+          <Link
+            href={`/earnings?week=${encodeURIComponent(nextWeekYmd)}`}
+            prefetch={false}
+            className={weekNavArrowClass}
+            aria-label="Next week"
+          >
+            <ChevronRight className="h-5 w-5" strokeWidth={1.75} />
+          </Link>
         </div>
       </div>
 
       <div className="flex min-w-0 flex-col">
         <div className="-mx-1 overflow-x-auto pb-1 md:mx-0 md:overflow-visible">
-          <div className="flex min-h-[min(60vh,716px)] min-w-0 md:grid md:grid-cols-5 md:divide-x md:divide-[#E4E4E7] md:border-t md:border-[#E4E4E7]">
-            {data.days.map((day: EarningsDayColumn) => {
+          <div
+            className={cn(
+              "flex min-w-0",
+              EARNINGS_WEEK_GRID_MIN_H_CLASS,
+              "md:flex-row md:border-y md:border-[#E4E4E7]",
+            )}
+          >
+            {data.days.map((day: EarningsDayColumn, dayIndex) => {
               const isToday = day.date === todayYmd;
+              const isLastDay = dayIndex === data.days.length - 1;
               return (
                 <div
                   key={day.date}
-                  className="flex w-[min(100%,220px)] shrink-0 flex-col px-2 py-3 md:w-auto md:min-h-0 md:px-3"
+                  className={cn(
+                    "flex w-[min(100%,220px)] shrink-0 flex-col px-2 py-3",
+                    EARNINGS_WEEK_GRID_MIN_H_CLASS,
+                    "md:flex-1 md:shrink md:border-r md:border-[#E4E4E7] md:px-3 md:py-0",
+                    isLastDay && "md:border-r-0",
+                    isToday && "md:bg-[#F4F4F5]",
+                  )}
                 >
                   <div className="mb-3 border-b border-[#E4E4E7] pb-2 md:hidden">
                     <div className="text-[11px] font-semibold uppercase tracking-wide text-[#A1A1AA]">
@@ -438,20 +454,20 @@ export function EarningsWeekGrid({
                       {day.dayNumber}
                     </div>
                   </div>
-                  <div className="hidden border-b border-[#E4E4E7] pt-2 pb-0 md:block">
+                  <div className="hidden border-b border-[#E4E4E7] pt-1 pb-0 md:block">
                     <div
-                      className={`flex flex-wrap items-center justify-center gap-1 py-1 text-center text-[18px] leading-7 ${
+                      className={`flex flex-wrap items-center justify-center gap-1 py-0.5 text-center text-[18px] leading-6 ${
                         isToday ? "text-[#DC2626]" : "text-[#09090B]"
                       }`}
                     >
                       <span className="font-normal">{day.weekdayLabel}</span>
                       <span className="font-semibold tabular-nums">{day.dayNumber}</span>
                     </div>
-                    <div className="mt-2" aria-hidden>
+                    <div className="mt-1" aria-hidden>
                       <div className={`h-0.5 w-full ${isToday ? "bg-[#DC2626]" : "bg-transparent"}`} />
                     </div>
                   </div>
-                  <div className="md:flex-1 md:py-4">
+                  <div className="flex min-h-0 flex-1 flex-col py-0 md:px-0 md:py-4">
                     <EarningsDayColumnBody
                       day={day}
                       weekMondayYmd={data.weekMondayYmd}

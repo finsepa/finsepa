@@ -14,8 +14,8 @@ import {
   heatmapCellBackground,
   heatmapLegendHex,
 } from "@/lib/heatmap/heatmap-colors";
-import { logoDevStockLogoUrl } from "@/lib/screener/company-logo-url";
 import { getCryptoLogoUrl } from "@/lib/crypto/crypto-logo-url";
+import { resolveEquityLogoUrlFromTicker } from "@/lib/screener/resolve-equity-logo-url";
 import { cn } from "@/lib/utils";
 
 const usd2 = new Intl.NumberFormat("en-US", {
@@ -196,16 +196,23 @@ export function HeatmapHoverTooltip({
 
       <div className="max-h-[360px] overflow-y-auto bg-white">
         {rowsToShow.map((row) => {
-          const pos = row.changePct != null && Number.isFinite(row.changePct) && row.changePct >= 0;
           const logoUrl =
             market === "crypto"
               ? getCryptoLogoUrl(row.ticker)
-              : logoDevStockLogoUrl(row.ticker) || "";
+              : resolveEquityLogoUrlFromTicker(row.ticker);
+          const changeColor =
+            row.changePct == null || !Number.isFinite(row.changePct)
+              ? "#71717A"
+              : row.changePct > 0
+                ? HEATMAP_LABEL_POSITIVE_HEX
+                : row.changePct < 0
+                  ? HEATMAP_LABEL_NEGATIVE_HEX
+                  : "#71717A";
           return (
             <Link
               key={row.id}
               href={assetHref(market, row.ticker)}
-              className="flex items-center justify-between gap-4 px-4 py-3 text-sm text-[#09090B] transition-colors hover:bg-[#F4F4F5]"
+              className="flex items-center justify-between gap-3 px-4 py-3 text-sm text-[#09090B] transition-colors hover:bg-[#F4F4F5]"
             >
               <div className="flex min-w-0 items-center gap-3">
                 <CompanyLogo name={row.name} logoUrl={logoUrl} symbol={row.ticker} />
@@ -214,21 +221,11 @@ export function HeatmapHoverTooltip({
                   <div className="truncate text-[12px] font-normal leading-4 text-[#71717A]">{row.ticker}</div>
                 </div>
               </div>
-              <div className="flex shrink-0 items-baseline gap-3">
-                <span className="tabular-nums text-[14px] font-medium leading-5 text-[#09090B]">
+              <div className="flex shrink-0 flex-col items-end text-right tabular-nums">
+                <span className="text-[14px] font-medium leading-5 text-[#09090B]">
                   {formatPrice(row.price, market)}
                 </span>
-                <span
-                  className="tabular-nums text-[14px] font-medium leading-5"
-                  style={{
-                    color:
-                      row.changePct == null || !Number.isFinite(row.changePct)
-                        ? "#71717A"
-                        : pos
-                          ? HEATMAP_LABEL_POSITIVE_HEX
-                          : HEATMAP_LABEL_NEGATIVE_HEX,
-                  }}
-                >
+                <span className="text-[12px] font-normal leading-4" style={{ color: changeColor }}>
                   {pctLabel(row.changePct)}
                 </span>
               </div>

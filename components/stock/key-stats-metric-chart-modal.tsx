@@ -41,6 +41,11 @@ import {
   maxPeriodsForFundamentalsChartTimeRange,
   type FundamentalsChartTimeRange,
 } from "@/lib/market/fundamentals-chart-time-range";
+import { AssetChartSkeleton } from "@/components/ui/chart-skeleton";
+import {
+  fetchChartingFundamentalsSeriesCached,
+  readChartingFundamentalsSeriesCache,
+} from "@/lib/charting/charting-fundamentals-client-cache";
 import { cn } from "@/lib/utils";
 
 /** Mobile Key Stats sheet: last 10 fiscal years (40 quarters). */
@@ -170,6 +175,39 @@ function pickSeedForMode(
   return Array.isArray(initialAnnualPoints) && initialAnnualPoints.length > 0 ? initialAnnualPoints : null;
 }
 
+function seriesHasMetric(
+  points: ChartingSeriesPoint[] | null | undefined,
+  metricId: ChartingMetricId,
+  maxBars: number,
+): boolean {
+  if (!points?.length) return false;
+  return sliceLastAnnualWithMetric(points, metricId, maxBars).length > 0;
+}
+
+function resolveFundamentalsPointsForModal(
+  ticker: string,
+  metricId: ChartingMetricId,
+  mode: FundamentalsSeriesMode,
+  timeRange: FundamentalsChartTimeRange,
+  mobile: boolean,
+  initialAnnualPoints?: ChartingSeriesPoint[],
+  initialQuarterlyPoints?: ChartingSeriesPoint[],
+): { points: ChartingSeriesPoint[]; loading: boolean } {
+  const maxBars = maxBarsForMode(mode, mobile, timeRange);
+  const period = mode === "quarterly" ? ("quarterly" as const) : ("annual" as const);
+  const ssr = pickSeedForMode(mode, initialAnnualPoints, initialQuarterlyPoints);
+  if (seriesHasMetric(ssr, metricId, maxBars)) {
+    return { points: ssr!, loading: false };
+  }
+  const cached = readChartingFundamentalsSeriesCache(ticker, period);
+  if (seriesHasMetric(cached, metricId, maxBars)) {
+    return { points: cached!, loading: false };
+  }
+  if (ssr?.length) return { points: ssr, loading: true };
+  if (cached?.length) return { points: cached, loading: true };
+  return { points: [], loading: true };
+}
+
 function isKeyStatsModalMobileViewport(): boolean {
   return typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
 }
@@ -217,19 +255,29 @@ export function KeyStatsMetricChartModal({
 
   const [points, setPoints] = useState<ChartingSeriesPoint[]>(() => {
     if (metricId == null) return [];
-    const seed = pickSeedForMode("annual", initialAnnualPoints, initialQuarterlyPoints);
-    if (!seed) return [];
     const mobile = isKeyStatsModalMobileViewport();
-    return sliceLastAnnualWithMetric(seed, metricId, maxBarsForMode("annual", mobile, "all")).length > 0
-      ? seed
-      : [];
+    return resolveFundamentalsPointsForModal(
+      ticker,
+      metricId,
+      "annual",
+      "all",
+      mobile,
+      initialAnnualPoints,
+      initialQuarterlyPoints,
+    ).points;
   });
   const [loading, setLoading] = useState(() => {
     if (metricId == null) return false;
-    const seed = pickSeedForMode("annual", initialAnnualPoints, initialQuarterlyPoints);
-    if (!seed) return true;
     const mobile = isKeyStatsModalMobileViewport();
-    return sliceLastAnnualWithMetric(seed, metricId, maxBarsForMode("annual", mobile, "all")).length === 0;
+    return resolveFundamentalsPointsForModal(
+      ticker,
+      metricId,
+      "annual",
+      "all",
+      mobile,
+      initialAnnualPoints,
+      initialQuarterlyPoints,
+    ).loading;
   });
 
   useEffect(() => {
@@ -237,34 +285,27 @@ export function KeyStatsMetricChartModal({
     const activeMetric: ChartingMetricId = metricId;
     let cancelled = false;
     async function load() {
-      const max = maxBarsForMode(periodMode, isMobile, timeRange);
-      const seed = pickSeedForMode(periodMode, initialAnnualPoints, initialQuarterlyPoints);
-      if (seed && sliceLastAnnualWithMetric(seed, activeMetric, max).length > 0) {
+      const resolved = resolveFundamentalsPointsForModal(
+        ticker,
+        activeMetric,
+        periodMode,
+        timeRange,
+        isMobile,
+        initialAnnualPoints,
+        initialQuarterlyPoints,
+      );
+      if (!resolved.loading) {
         if (!cancelled) {
-          setPoints(seed);
+          setPoints(resolved.points);
           setLoading(false);
         }
         return;
       }
       setLoading(true);
-      try {
-        const res = await fetch(
-          `/api/stocks/${encodeURIComponent(ticker)}/fundamentals-series?period=${
-            periodMode === "quarterly" ? "quarterly" : "annual"
-          }`,
-          { credentials: "include", cache: "no-store" },
-        );
-        if (!res.ok) {
-          if (!cancelled) setPoints([]);
-          return;
-        }
-        const json = (await res.json()) as { points?: ChartingSeriesPoint[] };
-        if (!cancelled) setPoints(Array.isArray(json.points) ? json.points : []);
-      } catch {
-        if (!cancelled) setPoints([]);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+      const period = periodMode === "quarterly" ? "quarterly" : "annual";
+      const fetched = await fetchChartingFundamentalsSeriesCached(ticker, period);
+      if (!cancelled) setPoints(fetched ?? []);
+      if (!cancelled) setLoading(false);
     }
     void load();
     return () => {
@@ -327,16 +368,7 @@ export function KeyStatsMetricChartModal({
 
   const chartBody = useMemo(() => {
     if (loading) {
-      return (
-        <div
-          className={cn(
-            "flex items-center justify-center text-[14px] text-[#71717A]",
-            isMobile ? "h-[268px]" : "h-[400px]",
-          )}
-        >
-          Loading…
-        </div>
-      );
+      return <AssetChartSkeleton heightPx={chartHeight} className="w-full min-w-0" />;
     }
     if (!hasSeries) {
       return <p className="text-[14px] leading-6 text-[#71717A]">No data for this metric.</p>;
@@ -362,12 +394,6 @@ export function KeyStatsMetricChartModal({
             Live forward P/E in Key Stats uses current price and consensus EPS. Historical fiscal rows
             rarely include that forward multiple; when it is missing, the bar uses trailing P/E for the
             same period so year-to-year comparisons stay available.
-          </p>
-        ) : null}
-        {!isMobile && (metricId === "dividend_yield" || metricId === "payout_ratio") ? (
-          <p className="mt-3 text-[12px] leading-5 text-[#71717A]">
-            Dividend yield and payout are computed from fiscal cash flow and net income on merged statements
-            (same periods as other fundamentals charts), not a live forward yield from Highlights.
           </p>
         ) : null}
       </div>

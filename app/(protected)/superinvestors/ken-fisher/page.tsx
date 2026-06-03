@@ -1,18 +1,7 @@
-import { Superinvestor13fProfile } from "@/components/superinvestors/superinvestor-13f-profile";
-import { getFisherHoldingsComparison } from "@/lib/superinvestors/berkshire-13f";
+import { SuperinvestorProfileBySlug } from "@/components/superinvestors/superinvestor-profile-by-slug";
 
 export const dynamic = "force-dynamic";
 
-export default async function KenFisher13fPage() {
-  const data = await getFisherHoldingsComparison();
-
-  return (
-    <Superinvestor13fProfile
-      profileName="Ken Fisher"
-      breadcrumbCurrentLabel="Ken Fisher"
-      avatarSrc="/superinvestors/ken-fisher.png"
-      data={data}
-    />
-  );
+export default function SuperinvestorProfilePage() {
+  return <SuperinvestorProfileBySlug slug="ken-fisher" />;
 }
-

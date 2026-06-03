@@ -286,6 +286,9 @@ export const CACHE_CONTROL_PRIVATE_S_MAXAGE_0_SWR_FAST = cacheControlPrivateSMax
 /** Portfolio overview market strip — hot-fast / hot. */
 export const CACHE_CONTROL_PRIVATE_OVERVIEW_MARKET = cacheControlPrivateSMaxageSwr(REVALIDATE_HOT_FAST, REVALIDATE_HOT);
 
+/** Portfolio dividends schedule — same private CDN window as overview-market. */
+export const CACHE_CONTROL_PRIVATE_DIVIDENDS_SCHEDULE = CACHE_CONTROL_PRIVATE_OVERVIEW_MARKET;
+
 /**
  * Insider transactions JSON — aligns with {@link REVALIDATE_WARM_LONG} server cache (15m / 30m CDN hint).
  */

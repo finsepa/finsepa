@@ -11,6 +11,7 @@ import {
   enrichChartingPointsWithTrailingPeFromImpliedMarketCap,
   patchLatestChartingPointLiveTrailingPe,
 } from "@/lib/market/charting-price-implied-market-cap";
+import { dividendYieldRatioFromFundamentalsRoot } from "@/lib/market/eodhd-key-stats-dividends";
 import { livePeRatioPartsFromFundamentalsRoot } from "@/lib/market/eodhd-key-stats-valuation";
 import { fetchEodhdFundamentalsJson } from "@/lib/market/eodhd-fundamentals";
 import { limitFundamentalsHistoryPoints } from "@/lib/market/fundamentals-history-limit";
@@ -1257,8 +1258,70 @@ function fillDerivedForwardPe(p: ChartingSeriesPoint): void {
   }
 }
 
+const MAX_REASONABLE_YIELD_RATIO = 0.35;
+
+/** Normalize provider yield (decimal 0.011 = 1.1% vs occasional whole-percent 1.1). */
+function normalizeDividendYieldRatio(v: number): number | null {
+  if (!Number.isFinite(v) || v <= 0) return null;
+  if (v > 1 && v <= 100) return v / 100;
+  if (v > 100) return null;
+  return v;
+}
+
+function impliedSharePriceFromPoint(p: ChartingSeriesPoint): number | null {
+  const mc = p.marketCap;
+  const sh = p.sharesOutstanding;
+  if (mc == null || sh == null || !Number.isFinite(mc) || !Number.isFinite(sh) || Math.abs(sh) < 1e-9) {
+    return null;
+  }
+  return mc / sh;
+}
+
+/** When `Financials.Ratios` omits dividend yield, derive from DPS ÷ price or cash dividends ÷ market cap. */
+function fillDerivedDividendYield(p: ChartingSeriesPoint): void {
+  const existing = p.dividendYield;
+  if (existing != null && Number.isFinite(existing) && existing > 0) {
+    const norm = normalizeDividendYieldRatio(existing);
+    if (norm != null && norm < MAX_REASONABLE_YIELD_RATIO) {
+      p.dividendYield = norm;
+      return;
+    }
+  }
+
+  const price = impliedSharePriceFromPoint(p);
+  const dps = p.dividendsPerShare;
+  if (dps != null && dps > 0 && price != null && price > 0) {
+    const y = dps / price;
+    if (Number.isFinite(y) && y > 0 && y < MAX_REASONABLE_YIELD_RATIO) {
+      p.dividendYield = y;
+      return;
+    }
+  }
+
+  const mc = p.marketCap;
+  const dp = p.dividendsPaid;
+  if (mc != null && mc > 0 && dp != null && Math.abs(dp) > 0) {
+    const y = Math.abs(dp) / mc;
+    if (Number.isFinite(y) && y > 0 && y < MAX_REASONABLE_YIELD_RATIO) p.dividendYield = y;
+  }
+}
+
+function patchLatestChartingPointLiveDividendYield(
+  points: ChartingSeriesPoint[],
+  yieldRatio: number | null,
+): void {
+  const y = yieldRatio != null ? normalizeDividendYieldRatio(yieldRatio) : null;
+  if (y == null) return;
+  if (points.length === 0) return;
+  const sorted = [...points].sort((a, b) => a.periodEnd.localeCompare(b.periodEnd));
+  const last = sorted[sorted.length - 1]!;
+  last.dividendYield = y;
+}
+
 /** Ratios table fields — derived when EODHD omits per-period values on `Financials.Ratios`. */
 function fillDerivedRatioTableFields(p: ChartingSeriesPoint): void {
+  fillDerivedDividendYield(p);
+
   const mc = p.marketCap;
   const pe = p.trailingPe ?? p.peRatio;
   if (p.earningsYield == null && pe != null && pe > 1e-9 && pe < MAX_DERIVED_VALUATION_MULTIPLE) {
@@ -1721,6 +1784,7 @@ async function fetchChartingSeriesUncached(
   enrichChartingPointsWithImpliedValuationMultiplesFromMarketCap(points);
   for (const p of points) fillDerivedRatioTableFields(p);
   patchLatestChartingPointLiveTrailingPe(points, livePeRatioPartsFromFundamentalsRoot(root));
+  patchLatestChartingPointLiveDividendYield(points, dividendYieldRatioFromFundamentalsRoot(rootRec));
 
   const availableMetrics = computeAvailableMetrics(points);
   const ttmPoint =
@@ -1730,6 +1794,6 @@ async function fetchChartingSeriesUncached(
 
 export const fetchChartingSeries = unstable_cache(
   fetchChartingSeriesUncached,
-  ["eodhd-charting-series-v22-max-20y-history"],
+  ["eodhd-charting-series-v23-derived-dividend-yield"],
   { revalidate: REVALIDATE_WARM },
 );

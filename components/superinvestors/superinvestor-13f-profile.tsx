@@ -2,19 +2,21 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { format, isValid, parseISO } from "date-fns";
 
-import { Berkshire13fComparisonTable } from "@/components/superinvestors/berkshire-13f-comparison-table";
+import { Superinvestor13fProfileTabs } from "@/components/superinvestors/superinvestor-13f-profile-tabs";
 import { SuperinvestorFollowButton } from "@/components/superinvestors/superinvestor-follow-button";
 import { SuperinvestorProfileAvatar } from "@/components/superinvestors/superinvestor-profile-avatar";
-import type { Berkshire13fComparisonPayload } from "@/lib/superinvestors/types";
+import type { Berkshire13fComparisonPayload, SuperinvestorTransactionsPayload } from "@/lib/superinvestors/types";
 import { formatUsdCompactSigDigits } from "@/lib/market/key-stats-basic-format";
 
 export type Superinvestor13fProfileProps = {
+  profileSlug: string;
   profileName: string;
   /** Breadcrumb segment after Superinvestors (e.g. Warren Buffett). */
   breadcrumbCurrentLabel: string;
   /** Public path under `/public`. When omitted, a generic placeholder is shown. */
   avatarSrc?: string | null;
   data: Berkshire13fComparisonPayload;
+  transactions: SuperinvestorTransactionsPayload;
 };
 
 /** SEC filer line → readable subtitle (e.g. `BERKSHIRE HATHAWAY INC` → `Berkshire Hathaway`). */
@@ -42,10 +44,12 @@ function formatLastUpdateLabel(ymd: string | null): string {
 }
 
 export function Superinvestor13fProfile({
+  profileSlug,
   profileName,
   breadcrumbCurrentLabel,
   avatarSrc,
   data,
+  transactions,
 }: Superinvestor13fProfileProps) {
   return (
     <div className="min-w-0 px-4 py-4 sm:px-9 sm:py-6">
@@ -126,20 +130,12 @@ export function Superinvestor13fProfile({
         </p>
       ) : null}
 
-      {!data.hasPriorFiling && data.source !== "unavailable" ? (
-        <p className="mt-4 max-w-3xl text-sm text-[#71717A]">
-          Only one 13F-HR filing appears in the SEC feed; change badges and prior columns are hidden until a second
-          filing is available.
-        </p>
-      ) : null}
-
-      <div className="mt-8">
-        <Berkshire13fComparisonTable
-          key={profileName}
-          rows={data.rows}
-          hasPriorFiling={data.hasPriorFiling}
-        />
-      </div>
+      <Superinvestor13fProfileTabs
+        profileSlug={profileSlug}
+        profileName={profileName}
+        data={data}
+        transactions={transactions}
+      />
     </div>
   );
 }

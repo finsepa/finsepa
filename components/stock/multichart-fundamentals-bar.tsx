@@ -18,8 +18,10 @@ import { formatBarChartDataLabel, formatChartingTableCell } from "@/components/c
 import type { FundamentalsChartDisplayOptions } from "@/lib/chart/fundamentals-chart-display-options";
 import { DEFAULT_FUNDAMENTALS_CHART_DISPLAY_OPTIONS } from "@/lib/chart/fundamentals-chart-display-options";
 import {
+  buildFundamentalsYAxisDomain,
   FUNDAMENTALS_CHART_BAR_VALUE_LABEL_HEIGHT_PX,
   FUNDAMENTALS_CHART_REFERENCE_BADGE_CLASS,
+  valueToPlotBandTopPercent,
   type FundamentalsChartReferenceKind,
 } from "@/lib/chart/fundamentals-chart-surface";
 import {
@@ -43,6 +45,7 @@ import {
   FUNDAMENTALS_HISTORY_MAX_ANNUAL_PERIODS,
   FUNDAMENTALS_HISTORY_MAX_QUARTERLY_PERIODS,
 } from "@/lib/market/fundamentals-history-limit";
+import { cn } from "@/lib/utils";
 
 /** Default bar width (px); extra horizontal space becomes even gaps between columns. */
 export const MULTICHART_BAR_WIDTH_PX = 14;
@@ -157,6 +160,8 @@ export const MULTICHART_LINE_STROKE_WIDTH_PX = 2;
 /** $0 baseline only — same as overview price chart scale edge. */
 const CHART_ZERO_BASELINE_BORDER = "rgba(228, 228, 231, 0.85)";
 
+const NEGATIVE_PERCENT_BAR_COLOR = "#DC2626";
+
 /** Reuse Earnings (Estimates) crosshair-to-tooltip layout — `anchorX` in px, relative to plot (left) edge. */
 function computeTooltipHorizontalPlacement(
   focusX: number,
@@ -227,58 +232,6 @@ function formatAxisValue(kind: ChartingMetricKind, p: number): string {
   }
 }
 
-function niceCeilPositive(n: number): number {
-  if (!Number.isFinite(n) || n <= 0) return 1;
-  const exp = Math.floor(Math.log10(n));
-  const f = n / 10 ** exp;
-  const nf = f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10;
-  return nf * 10 ** exp;
-}
-
-/** Smallest `c * 10^exp` with `c` from a compact ladder and `c * 10^exp >= step`. */
-const NICE_STEP_FACTORS = [1, 1.25, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10] as const;
-
-function niceCeilStep(step: number): number {
-  if (!Number.isFinite(step) || step <= 0) return 1;
-  const exp = Math.floor(Math.log10(step));
-  const base = 10 ** exp;
-  const f = step / base;
-  for (const c of NICE_STEP_FACTORS) {
-    if (c >= f) return c * base;
-  }
-  return 10 * base;
-}
-
-/** Caps for P/E and other multiples — avoids `niceCeilPositive` jumping ~215 → 500. */
-const MULTIPLE_RATIO_AXIS_MAX_LADDER = [50, 100, 150, 200, 250, 300, 400, 500, 750, 1000] as const;
-
-function axisMaxForMultiplesAndRatios(rawMax: number): number {
-  const padded = rawMax <= 0 ? 1 : rawMax * 1.08;
-  const naive = niceCeilPositive(rawMax);
-  if (naive > 300 && rawMax <= 250) return 300;
-  for (const cap of MULTIPLE_RATIO_AXIS_MAX_LADDER) {
-    if (cap >= padded) return cap;
-  }
-  return naive;
-}
-
-/**
- * Y-axis max for exactly 5 ticks (4 equal bands from 0).
- * USD / shares: tighter headroom than {@link niceCeilPositive} alone (e.g. ~$240B vs $500B for ~$215B).
- */
-function axisMaxForFiveTicks(rawMax: number, kind: ChartingMetricKind): number {
-  if (!Number.isFinite(rawMax) || rawMax <= 0) return 1;
-  if (kind === "usd" || kind === "shares") {
-    const padded = rawMax * 1.04;
-    const step = niceCeilStep(padded / 4);
-    return step * 4;
-  }
-  if (kind === "multiple" || kind === "ratio") {
-    return axisMaxForMultiplesAndRatios(rawMax);
-  }
-  return niceCeilPositive(rawMax);
-}
-
 export type MultichartVisual = "bar" | "line";
 
 type Props = {
@@ -305,13 +258,19 @@ type Props = {
   displayOptions?: FundamentalsChartDisplayOptions;
 };
 
-function plotValueTopPercent(v: number, maxV: number, kind: ChartingMetricKind): number {
+function plotValueTopPercent(
+  v: number,
+  yMin: number,
+  yMax: number,
+  kind: ChartingMetricKind,
+): number {
   const top = PLOT_INSET_TOP_FRAC * 100;
   const bottom = PLOT_INSET_BOTTOM_FRAC * 100;
   const span = 100 - top - bottom;
   const plotV = kind === "percent" ? v : Math.max(0, v);
-  const frac = maxV > 0 ? Math.min(1, Math.max(0, plotV / maxV)) : 0;
-  return top + span * (1 - frac);
+  const range = yMax - yMin;
+  const frac = range > 0 ? (yMax - plotV) / range : 0;
+  return top + span * Math.min(1, Math.max(0, frac));
 }
 
 const REFERENCE_BADGE_PREFIX: Record<FundamentalsChartReferenceKind, string> = {
@@ -434,7 +393,7 @@ export function MultichartFundamentalsBar({
 
   const plotHeight = height - MULTICHART_AXIS_ROW_PX - MULTICHART_AXIS_BOTTOM_PAD_PX;
 
-  const { values, labels, axisLabels, maxV, yTicks } = useMemo(() => {
+  const { values, labels, axisLabels, yDomain } = useMemo(() => {
     const vals: number[] = [];
     const labs: string[] = [];
     const axisLabs: string[] = [];
@@ -445,22 +404,26 @@ export function MultichartFundamentalsBar({
       labs.push(formatChartingPeriodLabel(r.periodEnd, periodMode));
       axisLabs.push(formatChartingPeriodAxisLabel(r.periodEnd, periodMode));
     }
-    const rawMax = vals.length ? Math.max(...vals.map((x) => Math.abs(x))) : 0;
-    const top = axisMaxForFiveTicks(rawMax || 1, kind);
-    const tickCount = 5;
-    const ticks = Array.from({ length: tickCount }, (_, i) => (top * (tickCount - 1 - i)) / (tickCount - 1));
-    return { values: vals, labels: labs, axisLabels: axisLabs, maxV: top, yTicks: ticks };
+    const rawMax = vals.length ? Math.max(...vals) : 0;
+    const rawMin = vals.length ? Math.min(...vals) : 0;
+    const domain = buildFundamentalsYAxisDomain(rawMin, rawMax, kind);
+    return { values: vals, labels: labs, axisLabels: axisLabs, yDomain: domain };
   }, [rows, metricId, periodMode, kind]);
 
+  const yMin = yDomain.min;
+  const yMax = yDomain.max;
+  const yTicks = yDomain.ticks;
+  const yBipolar = yDomain.bipolar;
+
   const referenceLevels = useMemo(() => {
-    if (values.length === 0 || maxV <= 0) return null;
+    if (values.length === 0 || yMax <= yMin) return null;
     const sum = values.reduce((a, b) => a + b, 0);
     return {
       avg: sum / values.length,
       max: Math.max(...values),
       min: Math.min(...values),
     };
-  }, [values, maxV]);
+  }, [values, yMin, yMax]);
 
   const metricLabel = CHARTING_METRIC_LABEL[metricId];
   /** One metric × many periods — bars share the primary palette color (not per-period cycling). */
@@ -506,15 +469,15 @@ export function MultichartFundamentalsBar({
     // Match bar x-axis grid: each period label is centered in 1/n of the plot width.
     const pts = values.map((v, i) => {
       const x = resolvePeriodCenterX(i, n, w, periodCenterInset, periodPlotMargins);
-      const frac = maxV > 0 ? Math.max(0, v) / maxV : 0;
-      const y = padT + innerH * (1 - frac);
+      const bandTop = valueToPlotBandTopPercent(v, yMin, yMax);
+      const y = padT + innerH * (bandTop / 100);
       return { x, y, v, i };
     });
     const curvePts = pts.map((p) => ({ x: p.x, y: p.y }));
     const d = smoothLinePathD(curvePts);
     const areaD = smoothAreaPathD(curvePts, areaFloorY);
     return { d, areaD, gradY0: padT, gradY1: areaFloorY, pts };
-  }, [linePlotPx.h, linePlotPx.w, values, maxV, periodCenterInset, periodPlotMargins]);
+  }, [linePlotPx.h, linePlotPx.w, values, yMin, yMax, periodCenterInset, periodPlotMargins]);
 
   if (rows.length === 0 || values.length === 0) {
     return (
@@ -563,8 +526,12 @@ export function MultichartFundamentalsBar({
             >
               <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
               <div
-                className="absolute inset-x-0 bottom-0 border-t"
-                style={{ borderColor: CHART_ZERO_BASELINE_BORDER }}
+                className="absolute inset-x-0 border-t"
+                style={{
+                  borderColor: CHART_ZERO_BASELINE_BORDER,
+                  top: yBipolar ? `${valueToPlotBandTopPercent(0, yMin, yMax)}%` : undefined,
+                  bottom: yBipolar ? undefined : 0,
+                }}
               />
             </div>
             {lineHoverCrosshair ? (
@@ -581,21 +548,21 @@ export function MultichartFundamentalsBar({
             {display.showAvgLine && referenceLevels ? (
               <FundamentalsReferenceLine
                 kind="avg"
-                topPercent={plotValueTopPercent(referenceLevels.avg, maxV, kind)}
+                topPercent={plotValueTopPercent(referenceLevels.avg, yMin, yMax, kind)}
                 badgeLabel={formatReferenceBadgeLabel("avg", metricId, referenceLevels.avg)}
               />
             ) : null}
             {display.showMaxLine && referenceLevels ? (
               <FundamentalsReferenceLine
                 kind="max"
-                topPercent={plotValueTopPercent(referenceLevels.max, maxV, kind)}
+                topPercent={plotValueTopPercent(referenceLevels.max, yMin, yMax, kind)}
                 badgeLabel={formatReferenceBadgeLabel("max", metricId, referenceLevels.max)}
               />
             ) : null}
             {display.showMinLine && referenceLevels ? (
               <FundamentalsReferenceLine
                 kind="min"
-                topPercent={plotValueTopPercent(referenceLevels.min, maxV, kind)}
+                topPercent={plotValueTopPercent(referenceLevels.min, yMin, yMax, kind)}
                 badgeLabel={formatReferenceBadgeLabel("min", metricId, referenceLevels.min)}
               />
             ) : null}
@@ -719,8 +686,12 @@ export function MultichartFundamentalsBar({
                 aria-label={`${metricLabel} bar chart`}
               >
                 {values.map((v, i) => {
-                  const hPct = maxV > 0 ? (Math.max(0, v) / maxV) * 100 : 0;
-                  const barColor = seriesBarColor;
+                  const zeroTop = valueToPlotBandTopPercent(0, yMin, yMax);
+                  const vTop = valueToPlotBandTopPercent(v, yMin, yMax);
+                  const barHeightPct = v >= 0 ? Math.max(0, zeroTop - vTop) : Math.max(0, vTop - zeroTop);
+                  const barTopPct = v >= 0 ? vTop : zeroTop;
+                  const barColor =
+                    kind === "percent" && v < 0 ? NEGATIVE_PERCENT_BAR_COLOR : seriesBarColor;
                   const valueLine = `${metricLabel}: ${formatTooltipValue(kind, v)}`;
                   const leftPct = resolvePeriodCenterLeftPercent(
                     i,
@@ -731,7 +702,7 @@ export function MultichartFundamentalsBar({
                   return (
                     <div
                       key={`${labels[i]}-${i}`}
-                      className="absolute bottom-0 z-0 flex h-full min-h-0 -translate-x-1/2 flex-col items-center justify-end"
+                      className="absolute top-0 z-0 h-full min-h-0 -translate-x-1/2"
                       style={{ left: `${leftPct}%`, width: barHitWidthPx }}
                       onMouseEnter={(e) => {
                         const plot = plotAreaRef.current;
@@ -750,7 +721,7 @@ export function MultichartFundamentalsBar({
                     >
                       {hoveredIndex === i ? (
                         <div
-                          className="pointer-events-none absolute bottom-0 left-1/2 z-0 h-full -translate-x-1/2"
+                          className="pointer-events-none absolute left-1/2 top-0 z-0 h-full -translate-x-1/2"
                           style={{
                             width: barHitWidthPx,
                             backgroundColor: HOVER_DOT_HALO_BG,
@@ -758,20 +729,22 @@ export function MultichartFundamentalsBar({
                           aria-hidden
                         />
                       ) : null}
-                      <div
-                        className="relative z-10 flex h-full min-h-0 w-full flex-col items-center justify-end"
-                      >
+                      {barHeightPct > 0 ? (
                         <div
-                          className="mt-auto shrink-0 rounded-t-[2px] rounded-b-none transition-[height] duration-75"
+                          className={cn(
+                            "absolute left-1/2 z-10 -translate-x-1/2 transition-[height,top] duration-75",
+                            v >= 0 ? "rounded-t-[2px] rounded-b-none" : "rounded-b-[2px] rounded-t-none",
+                          )}
                           style={{
+                            top: `${barTopPct}%`,
                             width: barWidthPx,
                             maxWidth: "100%",
-                            height: `${hPct}%`,
-                            minHeight: hPct > 0 ? 2 : 0,
+                            height: `${barHeightPct}%`,
+                            minHeight: 2,
                             backgroundColor: barColor,
                           }}
                         />
-                      </div>
+                      ) : null}
                     </div>
                   );
                 })}
@@ -781,8 +754,8 @@ export function MultichartFundamentalsBar({
             {display.showBarValues && visual === "bar"
               ? values.map((v, i) => {
                   if (v == null || !Number.isFinite(v) || v === 0) return null;
-                  const hPct = maxV > 0 ? (Math.max(0, v) / maxV) * 100 : 0;
-                  if (hPct <= 0) return null;
+                  const zeroTop = valueToPlotBandTopPercent(0, yMin, yMax);
+                  const vTop = valueToPlotBandTopPercent(v, yMin, yMax);
                   const leftPct = resolvePeriodCenterLeftPercent(
                     i,
                     n,
@@ -790,14 +763,18 @@ export function MultichartFundamentalsBar({
                     periodPlotMargins,
                   );
                   const text = formatBarChartDataLabel(metricId, v);
+                  const labelOnPositive = v >= 0;
+                  const labelTop = labelOnPositive
+                    ? barValueLabelTopStyle(vTop)
+                    : `${Math.min(98, vTop + 1)}%`;
                   return (
                     <div
                       key={`bar-val-${labels[i]}-${i}`}
                       className={BAR_VALUE_LABEL_CLASS}
                       style={{
                         left: `${leftPct}%`,
-                        top: barValueLabelTopStyle(hPct),
-                        transform: "translate(-50%, -100%)",
+                        top: labelTop,
+                        transform: labelOnPositive ? "translate(-50%, -100%)" : "translate(-50%, 0)",
                         textShadow: BAR_VALUE_LABEL_TEXT_SHADOW,
                       }}
                       title={text}
@@ -845,19 +822,15 @@ export function MultichartFundamentalsBar({
             aria-hidden
           >
             <div className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%]">
-              {yTicks.map((t, i) => {
-                const nt = yTicks.length;
-                const pct = nt <= 1 ? 0 : (i / (nt - 1)) * 100;
-                return (
-                  <span
-                    key={i}
-                    className={`absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-white py-px ${yAxisLabelPadClass}`}
-                    style={{ top: `${pct}%` }}
-                  >
-                    {formatAxisValue(kind, t)}
-                  </span>
-                );
-              })}
+              {yTicks.map((t, i) => (
+                <span
+                  key={i}
+                  className={`absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-white py-px ${yAxisLabelPadClass}`}
+                  style={{ top: `${valueToPlotBandTopPercent(t, yMin, yMax)}%` }}
+                >
+                  {formatAxisValue(kind, t)}
+                </span>
+              ))}
             </div>
           </div>
         </div>

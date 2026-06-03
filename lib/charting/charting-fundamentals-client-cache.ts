@@ -14,6 +14,26 @@ function cacheKey(ticker: string, period: "annual" | "quarterly"): string {
   return `${ticker.trim().toUpperCase()}|${period}`;
 }
 
+/** Hydrate in-tab cache from SSR / stock page initial data (same series as Revenue modal). */
+export function seedChartingFundamentalsSeriesCache(
+  ticker: string,
+  period: "annual" | "quarterly",
+  points: ChartingSeriesPoint[],
+): void {
+  if (!points.length) return;
+  cache.set(cacheKey(ticker, period), { at: Date.now(), points });
+}
+
+export function readChartingFundamentalsSeriesCache(
+  ticker: string,
+  period: "annual" | "quarterly",
+): ChartingSeriesPoint[] | null {
+  const key = cacheKey(ticker, period);
+  const hit = cache.get(key);
+  if (!hit || Date.now() - hit.at >= TTL_MS) return null;
+  return hit.points;
+}
+
 /** Dedupe fundamentals-series fetches when switching metrics or remounting charting UI in one tab. */
 export async function fetchChartingFundamentalsSeriesCached(
   ticker: string,

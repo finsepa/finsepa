@@ -58,6 +58,52 @@ export function usSessionWallClockUnix(
   return resolved;
 }
 
+/** US equity session calendar day (`YYYY-MM-DD`) for a chart bar timestamp. */
+export function usSessionYmdFromUnixSeconds(sec: number): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: STOCK_DISPLAY_TZ,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(sec * 1000));
+}
+
+/**
+ * Map a calendar date (insider trade, 13F period end, etc.) to a bar `time` in loaded series data.
+ * Prefers the last session on or before `ymd` so quarter-end markers land on a real trading bar.
+ */
+export function chartBarTimeForYmd(ymd: string, data: readonly { time: number }[]): number | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd) || data.length === 0) return null;
+
+  let bestTime: number | null = null;
+  let bestSessionYmd = "";
+  for (const p of data) {
+    if (!Number.isFinite(p.time)) continue;
+    const sessionYmd = usSessionYmdFromUnixSeconds(p.time);
+    if (sessionYmd > ymd) continue;
+    if (sessionYmd > bestSessionYmd || (sessionYmd === bestSessionYmd && (bestTime == null || p.time > bestTime))) {
+      bestSessionYmd = sessionYmd;
+      bestTime = p.time;
+    }
+  }
+  if (bestTime != null) return bestTime;
+
+  for (const [hour, minute] of [
+    [16, 0],
+    [9, 30],
+  ] as const) {
+    const t = usSessionWallClockUnix(ymd, hour, minute);
+    if (data.some((p) => p.time === t)) return t;
+  }
+
+  const midnight = Math.floor(Date.parse(`${ymd}T00:00:00.000Z`) / 1000);
+  const dayEnd = midnight + 86400;
+  const onDay = data.filter((p) => p.time >= midnight && p.time < dayEnd);
+  if (onDay.length > 0) return onDay[onDay.length - 1]!.time;
+
+  return null;
+}
+
 function formatDateOnly(unixSeconds: number, timeZone: string): string {
   const d = new Date(unixSeconds * 1000);
   if (!Number.isFinite(d.getTime())) return "";

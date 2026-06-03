@@ -41,7 +41,7 @@ function PerformanceLegendFigma() {
           className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[11px] font-semibold leading-4 text-white sm:h-9 sm:w-9 sm:rounded-[10px] sm:text-sm sm:font-medium sm:leading-5"
           style={{ backgroundColor: heatmapLegendHex(s) }}
         >
-          {s > 0 ? `+${s}` : s}
+          {s > 0 ? `+${s}%` : `${s}%`}
         </div>
       ))}
     </div>

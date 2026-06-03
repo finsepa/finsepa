@@ -30,6 +30,10 @@ import { StockComparePicker } from "./stock-compare-picker";
 import { StockCompareReturnChart } from "./stock-compare-return-chart";
 import { KeyStats } from "./key-stats";
 import { KeyStatsMetricChartModal } from "./key-stats-metric-chart-modal";
+import {
+  fetchChartingFundamentalsSeriesCached,
+  seedChartingFundamentalsSeriesCache,
+} from "@/lib/charting/charting-fundamentals-client-cache";
 import { LatestNews } from "./latest-news";
 import type { StockPageInitialData } from "@/lib/market/stock-page-initial-data";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
@@ -341,6 +345,18 @@ export function StockPageContent({
     () => (initialPageData?.ticker === ticker ? initialPageData.fundamentalsSeriesQuarterly : undefined),
     [initialPageData, ticker],
   );
+
+  /** Same fundamentals-series cache as Charting — Key Stats modals (Yield, Revenue, …) read without a loading flash. */
+  useEffect(() => {
+    if (fundamentalsModalAnnual?.length) {
+      seedChartingFundamentalsSeriesCache(ticker, "annual", fundamentalsModalAnnual);
+    }
+    if (fundamentalsModalQuarterly?.length) {
+      seedChartingFundamentalsSeriesCache(ticker, "quarterly", fundamentalsModalQuarterly);
+    }
+    void fetchChartingFundamentalsSeriesCached(ticker, "annual");
+    void fetchChartingFundamentalsSeriesCached(ticker, "quarterly");
+  }, [ticker, fundamentalsModalAnnual, fundamentalsModalQuarterly]);
 
   /** 1D session series — drives header price / change (today / live window). */
   const [sessionHeaderUi, setSessionHeaderUi] = useState<ChartDisplayState>(() =>
