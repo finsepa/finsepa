@@ -1297,10 +1297,11 @@ export function PriceChart({
       }
 
       const axis = holdingsHoverAxisLabelRef.current;
-      if (axis && draft.axisLabel.label) {
+      const axisLabel = draft.axisLabel;
+      if (axis && axisLabel?.label) {
         if (holdingsPeriodAxisRowRef.current) holdingsPeriodAxisRowRef.current.style.visibility = "hidden";
-        axis.textContent = draft.axisLabel.label;
-        axis.style.left = `clamp(8px, ${draft.axisLabel.leftPx}px, calc(100% - 8px))`;
+        axis.textContent = axisLabel.label;
+        axis.style.left = `clamp(8px, ${axisLabel.leftPx}px, calc(100% - 8px))`;
         axis.style.display = "";
       }
     };

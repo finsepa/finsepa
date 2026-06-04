@@ -9,7 +9,7 @@ import { PeerSearchDropdownRow } from "@/components/comparison/peer-search-dropd
 import { SearchInlineInputShell } from "@/components/search/search-inline-input-shell";
 import { SearchLoadingIndicator } from "@/components/search/search-loading-indicator";
 import { isSingleAssetMode, SINGLE_ASSET_SYMBOL } from "@/lib/features/single-asset";
-import type { SearchAssetItem } from "@/lib/search/search-types";
+import { isCommonStockSearchItem, type SearchAssetItem } from "@/lib/search/search-types";
 import { recordSearchNavigation } from "@/lib/search/recent-searches-storage";
 import { eodhdCryptoSpotTickerDisplay } from "@/lib/crypto/eodhd-crypto-ticker-display";
 import { getCryptoLogoUrl } from "@/lib/crypto/crypto-logo-url";
@@ -70,7 +70,7 @@ const TRANSACTION_PICKER_RESULTS_ID = "transaction-company-picker-results";
 
 /**
  * Screener top-10 stocks (from `/api/charting/picker-stocks`) + `/api/search` when typing.
- * @param includeCrypto When false (e.g. Charting), hides the crypto list and limits search to equities only.
+ * @param includeCrypto When false (e.g. Charting), hides crypto and searches common stocks only (no ETFs).
  */
 export function CompanyPicker({
   onPick,
@@ -171,7 +171,7 @@ export function CompanyPicker({
 
   const searchItemsForDisplay = useMemo(() => {
     if (includeCrypto) return searchItems;
-    return searchItems.filter((item) => item.type === "stock");
+    return searchItems.filter(isCommonStockSearchItem);
   }, [includeCrypto, searchItems]);
 
   const closePicker = useCallback(() => {
@@ -233,10 +233,14 @@ export function CompanyPicker({
 
     void (async () => {
       try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(debouncedTrim)}`, {
-          signal: ac.signal,
-          cache: "default",
-        });
+        const searchScope = includeCrypto ? "all" : "equities";
+        const res = await fetch(
+          `/api/search?q=${encodeURIComponent(debouncedTrim)}&scope=${searchScope}`,
+          {
+            signal: ac.signal,
+            cache: "default",
+          },
+        );
         const json = (await res.json()) as { items?: SearchAssetItem[] };
         if (cancelled) return;
         setSearchItems(Array.isArray(json.items) ? json.items : []);
@@ -253,7 +257,7 @@ export function CompanyPicker({
       cancelled = true;
       ac.abort();
     };
-  }, [debouncedTrim, pickerOpen]);
+  }, [debouncedTrim, pickerOpen, includeCrypto]);
 
   const queryTrim = pickerQuery.trim();
   const showSearchPanel = queryTrim.length > 0;

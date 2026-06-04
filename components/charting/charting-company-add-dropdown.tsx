@@ -4,7 +4,7 @@ import { Plus } from "lucide-react";
 
 import { CompanyPicker } from "@/components/charting/company-picker";
 
-/** + Add Company: screener page 1+2 list when opened (then `/api/search` when typing). */
+/** + Add Company: screener stocks when opened; `/api/search?scope=equities` when typing (no ETFs). */
 export function ChartingCompanyAddDropdown({
   onPickStock,
   disabled,

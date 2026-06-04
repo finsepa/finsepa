@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { CACHE_CONTROL_PUBLIC_SEARCH } from "@/lib/data/cache-policy";
 import { globalAssetSearch } from "@/lib/search/global-asset-search";
+import type { SearchScope } from "@/lib/search/search-types";
 import { isSingleAssetMode, SINGLE_ASSET_SYMBOL } from "@/lib/features/single-asset";
 import { TOP10_META } from "@/lib/screener/top10-config";
 import { companyLogoUrlForTicker } from "@/lib/screener/company-logo-url";
@@ -39,8 +40,17 @@ export async function GET(request: Request) {
     });
   }
 
+  const scopeParam = url.searchParams.get("scope")?.trim().toLowerCase() ?? "all";
+  const scope: SearchScope =
+    scopeParam === "equities" ||
+    scopeParam === "stocks" ||
+    scopeParam === "crypto" ||
+    scopeParam === "indices"
+      ? scopeParam
+      : "all";
+
   try {
-    const items = await globalAssetSearch(q, "all");
+    const items = await globalAssetSearch(q, scope);
     return NextResponse.json(
       { items },
       {

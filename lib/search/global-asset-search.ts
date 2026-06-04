@@ -16,7 +16,7 @@ import { getTop500Universe } from "@/lib/screener/top500-companies";
 import { TOP10_TICKERS } from "@/lib/screener/top10-config";
 import { POPULAR_US_ETFS } from "@/lib/search/popular-us-etfs";
 import { SEARCH_MIN_QUERY_LENGTH } from "@/lib/search/search-policy";
-import type { SearchAssetItem, SearchScope } from "@/lib/search/search-types";
+import { isCommonStockSearchItem, type SearchAssetItem, type SearchScope } from "@/lib/search/search-types";
 
 type RankedSearch = { item: SearchAssetItem; score: number; marketCapUsd: number | null };
 
@@ -242,14 +242,17 @@ async function runGlobalAssetSearch(qNorm: string, scope: SearchScope): Promise<
   }
 
   const needCrypto = scope === "all" || scope === "crypto";
-  const needStocks = scope === "all" || scope === "stocks";
+  const needStocks = scope === "all" || scope === "stocks" || scope === "equities";
+  const equitiesOnly = scope === "equities";
 
   const useRemoteSearch = n.length >= SEARCH_MIN_QUERY_LENGTH;
 
   const [cryptoMatches, universe, remote] = await Promise.all([
     needCrypto ? cryptoUniverseMatches(n, scoreItem) : Promise.resolve([] as RankedSearch[]),
     needStocks ? getTop500Universe() : Promise.resolve([]),
-    useRemoteSearch ? fetchEodhdSearch(n, scope === "all" ? 120 : 50) : Promise.resolve([]),
+    useRemoteSearch
+      ? fetchEodhdSearch(n, scope === "all" || scope === "stocks" || scope === "equities" ? 120 : 50)
+      : Promise.resolve([]),
   ]);
 
   for (const c of cryptoMatches) {
@@ -262,11 +265,13 @@ async function runGlobalAssetSearch(qNorm: string, scope: SearchScope): Promise<
   ]);
 
   if (needStocks) {
-    for (const etf of POPULAR_US_ETFS) {
-      const t = etf.ticker.trim().toUpperCase();
-      if (!matchesQuery(etf.name, t, n)) continue;
-      const item = stockItemFromTicker(t, etf.name, { etf: true });
-      candidates.push({ item, score: scoreItem(item.name, item.symbol, item.type), marketCapUsd: null });
+    if (!equitiesOnly) {
+      for (const etf of POPULAR_US_ETFS) {
+        const t = etf.ticker.trim().toUpperCase();
+        if (!matchesQuery(etf.name, t, n)) continue;
+        const item = stockItemFromTicker(t, etf.name, { etf: true });
+        candidates.push({ item, score: scoreItem(item.name, item.symbol, item.type), marketCapUsd: null });
+      }
     }
 
     const hits = universe.filter((u) => {
@@ -295,7 +300,11 @@ async function runGlobalAssetSearch(qNorm: string, scope: SearchScope): Promise<
   for (const row of remote) {
     const item = parseEodhdRow(row);
     if (!item) continue;
-    if (scope !== "all" && item.type !== scope) continue;
+    if (equitiesOnly) {
+      if (!isCommonStockSearchItem(item)) continue;
+    } else if (scope !== "all" && item.type !== scope) {
+      continue;
+    }
     if (item.type === "stock" && shouldHideOtcForeignLineDuplicate(item.symbol, primaryTickerSet)) {
       continue;
     }
@@ -325,13 +334,13 @@ async function runGlobalAssetSearch(qNorm: string, scope: SearchScope): Promise<
     })
     .map((c) => c.item);
 
-  const sliced = out.slice(0, scope === "stocks" ? 200 : 120);
+  const sliced = out.slice(0, scope === "stocks" || scope === "equities" ? 200 : 120);
   return attachStockLogos(sliced);
 }
 
 const getCachedGlobalAssetSearch = unstable_cache(
   async (qNorm: string, scope: SearchScope) => runGlobalAssetSearch(qNorm, scope),
-  ["global-asset-search-v14-etfs"],
+  ["global-asset-search-v15-equities"],
   { revalidate: REVALIDATE_SEARCH },
 );
 

@@ -11,4 +11,9 @@ export type SearchAssetItem = {
   marketLabel: string | null;
 };
 
-export type SearchScope = "all" | "stocks" | "crypto" | "indices";
+export type SearchScope = "all" | "stocks" | "crypto" | "indices" | "equities";
+
+/** Common stocks only — excludes ETF/ETN rows (still `type: "stock"` in search). */
+export function isCommonStockSearchItem(item: SearchAssetItem): boolean {
+  return item.type === "stock" && item.marketLabel?.trim().toUpperCase() !== "ETF";
+}
