@@ -34,7 +34,7 @@ export function SuperinvestorFollowStarToggle({
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          toggleFollow(profileHref);
+          toggleFollow(profileHref, { displayName: label });
         }}
         className={`flex items-center justify-center rounded-md p-0.5 text-[#09090B] outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/20 ${buttonClassName}`}
       >

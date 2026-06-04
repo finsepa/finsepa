@@ -1,6 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type RefObject,
+} from "react";
 import {
   overviewChartAxisRowPx,
   CHART_PLOT_DOTS_PATTERN_CLASS,
@@ -36,6 +45,7 @@ import { ChartSkeleton } from "@/components/ui/chart-skeleton";
 import { computeChartHeaderMetrics } from "@/components/chart/chart-display-metrics";
 import { horzTimeToUnixSeconds, nearestPointByTime } from "@/components/chart/chart-selection-utils";
 import {
+  chartSeriesPlotInsetPct,
   fitContentWithMobilePlotGutter,
   mobileOverviewChartScaleOptions,
   mobileTimeScaleOptions,
@@ -47,6 +57,19 @@ import {
   usSessionWallClockUnix,
 } from "@/lib/market/chart-timestamp-format";
 import { baselineRelativeGradientEnabled } from "@/lib/chart/baseline-relative-gradient";
+import {
+  computeQuarterBandPixelLayouts,
+  findQuarterBandLayoutAtX,
+  quarterBandActivityTooltipLine,
+  quarterBandLayoutsEqual,
+  type QuarterBandPixelLayout,
+} from "@/lib/superinvestors/superinvestor-chart-quarter-bands";
+import { formatEarlierActivityLines } from "@/lib/superinvestors/superinvestor-transaction-utils";
+import {
+  readSuperinvestorHoldingChartCache,
+  superinvestorHoldingChartCacheKey,
+  writeSuperinvestorHoldingChartCache,
+} from "@/lib/superinvestors/superinvestor-holding-chart-client-cache";
 import { cn } from "@/lib/utils";
 import type { StockChartRange, StockChartPoint, StockChartSeries } from "@/lib/market/stock-chart-types";
 
@@ -143,6 +166,20 @@ export type ChartDisplayState = {
 export type HoldingsTradeMarker = { date: string; side: "buy" | "sell" };
 export type HoldingsTradeTooltipItem = { date: string; lines: string[] };
 
+/** Superinvestor holdings chart: quarterly buy/sell column (replaces circle markers). */
+export type HoldingsQuarterTradeBand = {
+  id: string;
+  quarterLabel: string;
+  /** Calendar quarter start (e.g. Q1 2026 → 2026-01-01). */
+  quarterStartYmd: string;
+  /** Calendar quarter end (e.g. Q1 2026 → 2026-03-31). */
+  quarterEndYmd: string;
+  reportDate: string;
+  side: "buy" | "sell";
+  actionLabel: string;
+  pctLabel: string | null;
+};
+
 type Props = {
   kind: "stock" | "crypto";
   symbol: string;
@@ -160,10 +197,18 @@ type Props = {
   holdingsStyle?: boolean;
   /** Trade dates (yyyy-MM-dd) shown as green (buy) / red (sell) dots, snapped to bars in range. */
   tradeMarkers?: readonly HoldingsTradeMarker[];
+  /** Superinvestor only: quarterly activity columns (width ≈ one quarter); hides circle markers when set. */
+  holdingsQuarterBands?: readonly HoldingsQuarterTradeBand[];
+  /** Purchases/sells before the chart range (left “&lt; Earlier” column). */
+  holdingsEarlierSummary?: { purchaseCount: number; sellCount: number } | null;
   /** Optional: lines shown when hovering on a day with trade markers. Keyed by `date` (yyyy-MM-dd). */
   tradeTooltipItems?: readonly HoldingsTradeTooltipItem[];
   /** Avg cost — dashed horizontal price line when holdingsStyle. */
   costBasisPrice?: number | null;
+  /**
+   * `daily` — superinvestor holding charts only: server + client cache refresh at most once per UTC day.
+   */
+  chartDataCadence?: "default" | "daily";
 };
 
 function isFiniteNumber(v: unknown): v is number {
@@ -173,6 +218,19 @@ function isFiniteNumber(v: unknown): v is number {
 const GREEN = "#16A34A";
 const RED = "#DC2626";
 const VALUE_BLUE = "#2563EB";
+/** Holdings expand chart: opaque white underlay masks quarter bars; blue gradient draws on top. */
+const HOLDINGS_FILL_WHITE_TOP = "rgba(255, 255, 255, 0.97)";
+const HOLDINGS_FILL_WHITE_BOTTOM = "#ffffff";
+const HOLDINGS_FILL_BLUE_TOP = "rgba(37, 99, 235, 0.22)";
+const HOLDINGS_FILL_BLUE_BOTTOM = "rgba(37, 99, 235, 0.02)";
+/** Quarter activity columns: compact pill above each quarter's local price peak. */
+const HOLDINGS_QUARTER_BAND_HEIGHT_RATIO = 0.14;
+const HOLDINGS_QUARTER_BAND_BUY_GRADIENT =
+  "linear-gradient(180deg, #F0FDF4 0%, #F0FDF4 90%, #ffffff 97%, #ffffff 100%)";
+const HOLDINGS_QUARTER_BAND_SELL_GRADIENT =
+  "linear-gradient(180deg, #FEF2F2 0%, #FEF2F2 90%, #ffffff 97%, #ffffff 100%)";
+const HOLDINGS_EARLIER_BAND_WIDTH_PX = 58;
+const HOLDINGS_EARLIER_BAND_HEIGHT = "42%";
 const BASELINE_LINE = "rgba(113, 113, 122, 0.55)";
 /** Horizontal rules at the top and bottom of the plot pane (replaces default price grid). */
 const SCALE_EDGE_LINE = "rgba(228, 228, 231, 0.85)";
@@ -469,6 +527,103 @@ function formatTradeTooltipDateHeader(ymd: string): string {
   });
 }
 
+type HoldingsBandsOverlayProps = {
+  layouts: readonly QuarterBandPixelLayout[];
+  earlierSummary: { purchaseCount: number; sellCount: number } | null;
+  earlierLines: readonly string[];
+  plotInsetTop: string;
+  plotInsetBottom: string;
+};
+
+/** Isolated from PriceChart hover state so crosshair moves do not re-render quarter fills. */
+const HoldingsQuarterBandsOverlay = memo(function HoldingsQuarterBandsOverlay({
+  layouts,
+  earlierSummary,
+  earlierLines,
+  plotInsetTop,
+  plotInsetBottom,
+}: HoldingsBandsOverlayProps) {
+  if (layouts.length === 0 && !earlierSummary) return null;
+
+  const insetStyle = { top: plotInsetTop, bottom: plotInsetBottom };
+
+  return (
+    <>
+      <div
+        className="pointer-events-none absolute right-0 left-0 z-[5] overflow-hidden [contain:strict]"
+        style={insetStyle}
+        aria-hidden
+      >
+        {earlierSummary ? (
+          <div
+            className="absolute top-0 left-0 rounded-sm border-t-[3px] border-[#A1A1AA] bg-[rgba(113,113,122,0.14)]"
+            style={{ width: HOLDINGS_EARLIER_BAND_WIDTH_PX, height: HOLDINGS_EARLIER_BAND_HEIGHT }}
+          />
+        ) : null}
+        {layouts.map(({ key, left, width, topPx, band }) => {
+          const isBuy = band.side === "buy";
+          return (
+            <div
+              key={`${key}-fill`}
+              className="absolute [contain:paint]"
+              style={{ left, width, top: topPx, bottom: 0 }}
+            >
+              <div
+                className={cn("h-full border-t-[3px]", isBuy ? "border-[#16A34A]" : "border-[#DC2626]")}
+                style={{
+                  background: isBuy ? HOLDINGS_QUARTER_BAND_BUY_GRADIENT : HOLDINGS_QUARTER_BAND_SELL_GRADIENT,
+                }}
+              />
+            </div>
+          );
+        })}
+      </div>
+      <div
+        className="pointer-events-none absolute right-0 left-0 z-[11] overflow-visible"
+        style={insetStyle}
+        aria-hidden
+      >
+        {earlierSummary ? (
+          <div
+            className="absolute top-0 left-0 flex flex-col items-center gap-0.5 px-1 pt-2 text-center leading-tight"
+            style={{ width: HOLDINGS_EARLIER_BAND_WIDTH_PX }}
+          >
+            <span className="text-[9px] font-semibold text-[#52525B] sm:text-[10px]">&lt; Earlier</span>
+            {earlierLines.map((line) => (
+              <span key={line} className="text-[9px] font-medium text-[#71717A] sm:text-[10px]">
+                {line}
+              </span>
+            ))}
+          </div>
+        ) : null}
+        {layouts.map(({ key, left, width, topPx, heightPx, band }) => {
+          const isBuy = band.side === "buy";
+          return (
+            <div
+              key={`${key}-label`}
+              className="absolute flex justify-center px-0.5 pt-2"
+              style={{ left, width, top: topPx, height: heightPx }}
+            >
+              <div
+                className={cn(
+                  "flex flex-col items-center gap-0 px-0.5 text-center leading-tight",
+                  isBuy ? "text-[#16A34A]" : "text-[#DC2626]",
+                )}
+                style={{ textShadow: "0 0 4px #fff, 0 0 8px #fff, 0 1px 2px #fff" }}
+              >
+                <span className="text-[9px] font-semibold sm:text-[10px]">{band.actionLabel}</span>
+                {band.pctLabel ? (
+                  <span className="text-[9px] font-medium tabular-nums sm:text-[10px]">{band.pctLabel}</span>
+                ) : null}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </>
+  );
+});
+
 const TOOLTIP_MAX_W = 280;
 const TOOLTIP_GAP_PX = 6;
 const TOOLTIP_EDGE_PAD = 8;
@@ -505,8 +660,11 @@ export function PriceChart({
   initialChart,
   holdingsStyle = false,
   tradeMarkers = [],
+  holdingsQuarterBands = [],
+  holdingsEarlierSummary = null,
   tradeTooltipItems = [],
   costBasisPrice = null,
+  chartDataCadence = "default",
 }: Props) {
   const holdingsStyleRef = useRef(holdingsStyle);
   const chartMetricSeriesRef = useRef(series);
@@ -519,6 +677,11 @@ export function PriceChart({
   }, [holdingsStyle]);
 
   useEffect(() => {
+    holdingsQuarterBandsRef.current = holdingsQuarterBands;
+    syncQuarterBandLayoutsRef.current?.();
+  }, [holdingsQuarterBands]);
+
+  useEffect(() => {
     chartMetricSeriesRef.current = series;
   }, [series]);
 
@@ -527,6 +690,8 @@ export function PriceChart({
   const wrapRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Baseline"> | ISeriesApi<"Area"> | null>(null);
+  /** Holdings only: white area underlay (below blue gradient + line). */
+  const holdingsFillUnderlayRef = useRef<ISeriesApi<"Area"> | null>(null);
   const baselinePriceLineRef = useRef<IPriceLine | null>(null);
   const sessionHighPriceLineRef = useRef<IPriceLine | null>(null);
   const sessionLowPriceLineRef = useRef<IPriceLine | null>(null);
@@ -539,6 +704,9 @@ export function PriceChart({
   const overviewInBarMarkersRef = useRef<SeriesMarker<UTCTimestamp>[] | null>(null);
   const rescaleOverviewInBarMarkersRef = useRef<(() => void) | null>(null);
   const syncRangePriceBadgesRef = useRef<(() => void) | null>(null);
+  const syncQuarterBandLayoutsRef = useRef<(() => void) | null>(null);
+  const holdingsQuarterBandsRef = useRef(holdingsQuarterBands);
+  const [quarterBandLayouts, setQuarterBandLayouts] = useState<QuarterBandPixelLayout[]>([]);
   const splitSeriesBundleRef = useRef<{
     left: ISeriesApi<"Baseline">;
     mid: ISeriesApi<"Baseline">;
@@ -579,6 +747,23 @@ export function PriceChart({
   const [overviewHover, setOverviewHover] = useState<OverviewHoverUi | null>(null);
   const overviewHoverDraftRef = useRef<OverviewHoverUi | null>(null);
   const overviewHoverRafRef = useRef(0);
+  const holdingsHoverDraftRef = useRef<{
+    price: number | null;
+    timeUnix: number | null;
+    point: { x: number; y: number } | null;
+    axisLabel: { leftPx: number; label: string } | null;
+  } | null>(null);
+  const holdingsHoverRafRef = useRef(0);
+  const holdingsTradeTooltipLastKeyRef = useRef<string | null>(null);
+  const quarterBandLayoutsRef = useRef<QuarterBandPixelLayout[]>([]);
+  const holdingsPriceTooltipRef = useRef<HTMLDivElement>(null);
+  const holdingsPriceTooltipTextRef = useRef<HTMLParagraphElement>(null);
+  const holdingsTradeTooltipRef = useRef<HTMLDivElement>(null);
+  const holdingsTradeTooltipBodyRef = useRef<HTMLDivElement>(null);
+  const holdingsHoverAxisLabelRef = useRef<HTMLSpanElement>(null);
+  const holdingsPeriodAxisRowRef = useRef<HTMLDivElement>(null);
+  const holdingsClearHoverDomRef = useRef<(() => void) | null>(null);
+  const tooltipByDateRef = useRef<Map<string, string[]>>(new Map());
   const dimOverlayRef = useRef<HTMLDivElement>(null);
   const overviewBottomAxisMode = useMemo(
     () => resolveOverviewBottomAxisMode(range, points),
@@ -676,7 +861,7 @@ export function PriceChart({
         minimumHeight: useCustomBottomAxis ? 0 : undefined,
       },
       crosshair: {
-        mode: hide ? CrosshairMode.Normal : CrosshairMode.Magnet,
+        mode: holdingsStyle ? CrosshairMode.Normal : hide ? CrosshairMode.Normal : CrosshairMode.Magnet,
       },
     });
     const wrapEl = wrapRef.current;
@@ -717,7 +902,7 @@ export function PriceChart({
         fitContentWithMobilePlotGutter(chart, containerWidth, pointsRef.current.length);
       }
     }
-  }, [containerWidth, plotHeight]);
+  }, [containerWidth, plotHeight, holdingsStyle, useCustomBottomAxis]);
 
   useEffect(() => {
     dataTimeZoneRef.current =
@@ -759,6 +944,14 @@ export function PriceChart({
     }
     return m;
   }, [tradeTooltipItems]);
+
+  useEffect(() => {
+    tooltipByDateRef.current = tooltipByDate;
+  }, [tooltipByDate]);
+
+  useEffect(() => {
+    quarterBandLayoutsRef.current = quarterBandLayouts;
+  }, [quarterBandLayouts]);
 
   const dataTimeZoneHint = useMemo(
     () => points.find((p) => typeof p.timeZone === "string" && p.timeZone.length > 0)?.timeZone,
@@ -869,6 +1062,7 @@ export function PriceChart({
 
     // Defer React state updates to avoid cascading render warnings in effects.
     requestAnimationFrame(() => {
+      holdingsClearHoverDomRef.current?.();
       setHoverTimeUnixGuarded(null);
       setHoverAxisLabelGuarded(null);
       setPeriodAxisLabelsGuarded([]);
@@ -908,7 +1102,11 @@ export function PriceChart({
         minimumHeight: useCustomBottomAxis ? 0 : undefined,
       },
       crosshair: {
-        mode: hideMobileYAxisLabelsRef.current ? CrosshairMode.Normal : CrosshairMode.Magnet,
+        mode: holdingsStyleRef.current
+          ? CrosshairMode.Normal
+          : hideMobileYAxisLabelsRef.current
+            ? CrosshairMode.Normal
+            : CrosshairMode.Magnet,
         vertLine: {
           color: "rgba(9, 9, 11, 0.28)",
           labelVisible: false,
@@ -925,22 +1123,38 @@ export function PriceChart({
     });
 
     const series = holdingsStyle
-      ? chart.addSeries(AreaSeries, {
-          lineColor: VALUE_BLUE,
-          topColor: "rgba(37, 99, 235, 0.22)",
-          bottomColor: "rgba(37, 99, 235, 0.02)",
-          lineWidth: 2,
-          lineType: LineType.Curved,
-          priceLineVisible: false,
-          lastValueVisible: false,
-          lastPriceAnimation: LastPriceAnimationMode.OnDataUpdate,
-          crosshairMarkerVisible: true,
-          crosshairMarkerRadius: 5,
-          crosshairMarkerBorderColor: "rgba(255,255,255,0.95)",
-          crosshairMarkerBackgroundColor: VALUE_BLUE,
-          crosshairMarkerBorderWidth: 2,
-        })
-      : chart.addSeries(BaselineSeries, {
+      ? (() => {
+          holdingsFillUnderlayRef.current = chart.addSeries(AreaSeries, {
+            lineColor: "rgba(255,255,255,0)",
+            topColor: HOLDINGS_FILL_WHITE_TOP,
+            bottomColor: HOLDINGS_FILL_WHITE_BOTTOM,
+            lineWidth: 1,
+            lineVisible: false,
+            lineType: LineType.Curved,
+            priceLineVisible: false,
+            lastValueVisible: false,
+            lastPriceAnimation: LastPriceAnimationMode.Disabled,
+            crosshairMarkerVisible: false,
+          });
+          return chart.addSeries(AreaSeries, {
+            lineColor: VALUE_BLUE,
+            topColor: HOLDINGS_FILL_BLUE_TOP,
+            bottomColor: HOLDINGS_FILL_BLUE_BOTTOM,
+            lineWidth: 2,
+            lineType: LineType.Curved,
+            priceLineVisible: false,
+            lastValueVisible: false,
+            lastPriceAnimation: LastPriceAnimationMode.Disabled,
+            crosshairMarkerVisible: true,
+            crosshairMarkerRadius: 5,
+            crosshairMarkerBorderColor: "rgba(255,255,255,0.95)",
+            crosshairMarkerBackgroundColor: VALUE_BLUE,
+            crosshairMarkerBorderWidth: 2,
+          });
+        })()
+      : (() => {
+          holdingsFillUnderlayRef.current = null;
+          return chart.addSeries(BaselineSeries, {
           baseValue: { type: "price", price: 0 },
           relativeGradient: false,
           topFillColor1: "rgba(22, 163, 74, 0.20)",
@@ -958,7 +1172,8 @@ export function PriceChart({
       crosshairMarkerBorderColor: "rgba(255,255,255,0.95)",
       crosshairMarkerBackgroundColor: "",
       crosshairMarkerBorderWidth: 2,
-    });
+          });
+        })();
 
     const markers = createSeriesMarkers(series, [], { autoScale: true });
     markersRef.current = markers as ISeriesMarkersPluginApi<UTCTimestamp>;
@@ -987,6 +1202,117 @@ export function PriceChart({
         : chartMetricSeriesRef.current === "return"
           ? "Return"
           : "Price";
+
+    const clearHoldingsHoverDom = () => {
+      holdingsHoverDraftRef.current = null;
+      holdingsTradeTooltipLastKeyRef.current = null;
+      if (holdingsHoverRafRef.current) {
+        cancelAnimationFrame(holdingsHoverRafRef.current);
+        holdingsHoverRafRef.current = 0;
+      }
+      if (holdingsPriceTooltipRef.current) holdingsPriceTooltipRef.current.style.display = "none";
+      if (holdingsTradeTooltipRef.current) holdingsTradeTooltipRef.current.style.display = "none";
+      if (holdingsHoverAxisLabelRef.current) holdingsHoverAxisLabelRef.current.style.display = "none";
+      if (holdingsPeriodAxisRowRef.current) holdingsPeriodAxisRowRef.current.style.visibility = "";
+    };
+    holdingsClearHoverDomRef.current = clearHoldingsHoverDom;
+
+    const formatHoldingsHoverValue = (price: number) =>
+      kindRef.current === "stock" && chartMetricSeriesRef.current === "marketCap"
+        ? formatMarketCapAxis(price)
+        : kindRef.current === "stock" && chartMetricSeriesRef.current === "return"
+          ? formatReturnAxis(price)
+          : `$${formatStockPriceAxis(price)}`;
+
+    const applyHoldingsHoverDom = () => {
+      const draft = holdingsHoverDraftRef.current;
+      if (!draft?.point || draft.price == null || draft.timeUnix == null) return;
+
+      const plotW = containerWidthRef.current;
+      const point = draft.point;
+      const ymd = ymdFromUnixSeconds(draft.timeUnix);
+      const bandLayout =
+        holdingsQuarterBandsRef.current.length > 0
+          ? findQuarterBandLayoutAtX(quarterBandLayoutsRef.current, point.x)
+          : null;
+      const tradeLines =
+        !bandLayout && ymd ? (tooltipByDateRef.current.get(ymd) ?? null) : null;
+
+      const renderHoldingsTradeTooltip = (title: string, lines: string[], tooltipKey: string) => {
+        if (!holdingsTradeTooltipRef.current) return;
+        if (holdingsPriceTooltipRef.current) holdingsPriceTooltipRef.current.style.display = "none";
+        const tradeTip = holdingsTradeTooltipRef.current;
+        const shown = Math.min(6, lines.length);
+        const estH = Math.min(240, 34 + shown * 22 + (lines.length > 6 ? 18 : 0));
+        const pos = layoutPointTooltip(point, plotW, plotHeight, estH);
+        tradeTip.style.display = "block";
+        tradeTip.style.left = `${pos.left}px`;
+        tradeTip.style.top = `${pos.top}px`;
+        tradeTip.style.transform = pos.transform;
+
+        if (holdingsTradeTooltipLastKeyRef.current !== tooltipKey) {
+          holdingsTradeTooltipLastKeyRef.current = tooltipKey;
+          const body = holdingsTradeTooltipBodyRef.current;
+          if (body) {
+            body.replaceChildren();
+            const titleEl = document.createElement("div");
+            titleEl.className = "font-semibold tabular-nums text-[#09090B]";
+            titleEl.textContent = title;
+            body.appendChild(titleEl);
+            const list = document.createElement("div");
+            list.className = "mt-1 space-y-1 text-[#71717A]";
+            for (let i = 0; i < shown; i++) {
+              const line = document.createElement("div");
+              line.className = "whitespace-normal break-words";
+              line.textContent = lines[i]!;
+              list.appendChild(line);
+            }
+            if (lines.length > 6) {
+              const more = document.createElement("div");
+              more.className = "text-[#71717A]";
+              more.textContent = `+${lines.length - 6} more`;
+              list.appendChild(more);
+            }
+            body.appendChild(list);
+          }
+        }
+      };
+
+      if (bandLayout) {
+        const line = quarterBandActivityTooltipLine(bandLayout.band);
+        const priceTitle = formatHoldingsHoverValue(draft.price);
+        renderHoldingsTradeTooltip(priceTitle, [line], `${bandLayout.key}|${priceTitle}|${line}`);
+      } else if (tradeLines?.length && ymd) {
+        renderHoldingsTradeTooltip(formatTradeTooltipDateHeader(ymd), tradeLines, ymd);
+      } else if (holdingsPriceTooltipRef.current && holdingsPriceTooltipTextRef.current) {
+        if (holdingsTradeTooltipRef.current) holdingsTradeTooltipRef.current.style.display = "none";
+        holdingsTradeTooltipLastKeyRef.current = null;
+        const pos = layoutPointTooltip(point, plotW, plotHeight, 40);
+        const tip = holdingsPriceTooltipRef.current;
+        holdingsPriceTooltipTextRef.current.textContent = `Price: ${formatHoldingsHoverValue(draft.price)}`;
+        tip.style.display = "block";
+        tip.style.left = `${pos.left}px`;
+        tip.style.top = `${pos.top}px`;
+        tip.style.transform = pos.transform;
+      }
+
+      const axis = holdingsHoverAxisLabelRef.current;
+      if (axis && draft.axisLabel.label) {
+        if (holdingsPeriodAxisRowRef.current) holdingsPeriodAxisRowRef.current.style.visibility = "hidden";
+        axis.textContent = draft.axisLabel.label;
+        axis.style.left = `clamp(8px, ${draft.axisLabel.leftPx}px, calc(100% - 8px))`;
+        axis.style.display = "";
+      }
+    };
+
+    const scheduleHoldingsHoverDom = () => {
+      if (!holdingsHoverRafRef.current) {
+        holdingsHoverRafRef.current = requestAnimationFrame(() => {
+          holdingsHoverRafRef.current = 0;
+          applyHoldingsHoverDom();
+        });
+      }
+    };
 
     const applyMobileOverviewCrosshair = (
       point: { x: number; y: number },
@@ -1030,15 +1356,7 @@ export function PriceChart({
         crosshairHoveredRef.current = false;
         hoverTimeRef.current = null;
         if (holdingsStyleRef.current) {
-          setHoverPriceGuarded(null);
-          setHoverTimeUnixGuarded(null);
-          hoverPointRef.current = null;
-          setHoverAxisLabelGuarded(null);
-          if (hoverPointRafRef.current) {
-            cancelAnimationFrame(hoverPointRafRef.current);
-            hoverPointRafRef.current = 0;
-          }
-          setHoverPoint(null);
+          clearHoldingsHoverDom();
         } else if (hideMobileYAxisLabelsRef.current) {
           clearMobileOverviewCrosshairDom();
         } else {
@@ -1084,16 +1402,6 @@ export function PriceChart({
       }
 
       const nextPt = { x: param.point.x, y: param.point.y };
-      const prev = hoverPointRef.current;
-      if (!prev || prev.x !== nextPt.x || prev.y !== nextPt.y) {
-        hoverPointRef.current = nextPt;
-        if (!hoverPointRafRef.current) {
-          hoverPointRafRef.current = requestAnimationFrame(() => {
-            hoverPointRafRef.current = 0;
-            setHoverPoint(hoverPointRef.current);
-          });
-        }
-      }
       let hoverValue: number | null = null;
       let tunix: number | null = null;
       let nearBar: StockChartPoint | null = null;
@@ -1116,37 +1424,22 @@ export function PriceChart({
       }
       if (hoverValue != null && tunix != null) {
         crosshairHoveredRef.current = true;
-        setHoverPriceGuarded(hoverValue);
-        setHoverTimeUnixGuarded(tunix);
-
-        // Match overview hover UX: dim overlay, tooltip, and bottom axis label.
-        if (hoverPointRef.current) {
-          const barTime = nearBar && isFiniteNumber(nearBar.time) ? nearBar.time : tunix;
-          const xCoord = chart.timeScale().timeToCoordinate(barTime as UTCTimestamp);
-          const leftPx = xCoord != null && Number.isFinite(xCoord) ? xCoord : hoverPointRef.current.x;
-          const label = overviewCrosshairLabelByBarTimeRef.current?.get(barTime) ?? "";
-          setHoverAxisLabelGuarded({ leftPx, label });
-          overviewHoverDraftRef.current = {
-            point: hoverPointRef.current,
-            price: hoverValue,
-            axisLabel: { leftPx, label },
-          };
-          scheduleOverviewHoverFlush();
-        }
+        const barTime = nearBar && isFiniteNumber(nearBar.time) ? nearBar.time : tunix;
+        const xCoord = chart.timeScale().timeToCoordinate(barTime as UTCTimestamp);
+        const leftPx = xCoord != null && Number.isFinite(xCoord) ? xCoord : nextPt.x;
+        const label = overviewCrosshairLabelByBarTimeRef.current?.get(barTime) ?? "";
+        holdingsHoverDraftRef.current = {
+          price: hoverValue,
+          timeUnix: tunix,
+          point: nextPt,
+          axisLabel: { leftPx, label },
+        };
+        scheduleHoldingsHoverDom();
       } else {
         const wasHovered = crosshairHoveredRef.current;
         crosshairHoveredRef.current = false;
-        setHoverPriceGuarded(null);
-        setHoverTimeUnixGuarded(null);
-        hoverPointRef.current = null;
         hoverTimeRef.current = null;
-        if (hoverPointRafRef.current) {
-          cancelAnimationFrame(hoverPointRafRef.current);
-          hoverPointRafRef.current = 0;
-        }
-        setHoverPoint(null);
-        setHoverAxisLabelGuarded(null);
-        clearOverviewHover();
+        clearHoldingsHoverDom();
         if (wasHovered) resyncPeriodAxisLabels();
       }
     };
@@ -1159,8 +1452,44 @@ export function PriceChart({
       if (!c || !m || !templates?.length) return;
       scheduleScaledInBarMarkers(c, m, templates);
     };
+    syncQuarterBandLayoutsRef.current = () => {
+      const chart = chartRef.current;
+      const bands = holdingsQuarterBandsRef.current;
+      if (!chart || !holdingsStyleRef.current || bands.length === 0) {
+        setQuarterBandLayouts((prev) => (prev.length === 0 ? prev : []));
+        return;
+      }
+      const pts = pointsRef.current.filter((p) => isFiniteNumber(p.time) && isFiniteNumber(p.value));
+      const series = seriesRef.current;
+      const ts = chart.timeScale();
+      const plotHeightPx = chart.paneSize(0).height;
+      const layouts = computeQuarterBandPixelLayouts(
+        (time) => {
+          const x = ts.timeToCoordinate(time as Time);
+          return x == null ? null : Number(x);
+        },
+        pts.map((p) => ({ time: p.time, value: p.value })),
+        bands,
+        series && plotHeightPx > 0
+          ? {
+              priceToY: (price) => {
+                const y = series.priceToCoordinate(price);
+                return y == null ? null : Number(y);
+              },
+              plotHeightPx,
+              bandHeightRatio: HOLDINGS_QUARTER_BAND_HEIGHT_RATIO,
+            }
+          : undefined,
+      );
+      setQuarterBandLayouts((prev) => (quarterBandLayoutsEqual(prev, layouts) ? prev : layouts));
+    };
     syncRangePriceBadgesRef.current = () => {
       if (hideMobileYAxisLabelsRef.current && crosshairHoveredRef.current) return;
+      if (holdingsStyleRef.current) {
+        setRangeOpenBadge(null);
+        setRangeHighBadge(null);
+        return;
+      }
       const chart = chartRef.current;
       const s = seriesRef.current;
       if (!chart || !s) {
@@ -1228,6 +1557,7 @@ export function PriceChart({
     const runVisRangeSideEffects = () => {
       rescaleOverviewInBarMarkersRef.current?.();
       syncBoundsLines();
+      syncQuarterBandLayoutsRef.current?.();
     };
     const onVisRangeForMarkers = () => {
       if (hideMobileYAxisLabelsRef.current && crosshairHoveredRef.current) return;
@@ -1279,6 +1609,8 @@ export function PriceChart({
     chart.resize(Math.max(2, el.clientWidth), plotHeight);
 
     return () => {
+      clearHoldingsHoverDom();
+      holdingsClearHoverDomRef.current = null;
       if (visRangeTimer) clearTimeout(visRangeTimer);
       if (resizeTimer) clearTimeout(resizeTimer);
       ro.disconnect();
@@ -1286,6 +1618,8 @@ export function PriceChart({
       ts.unsubscribeVisibleTimeRangeChange(onVisRangeForMarkers);
       rescaleOverviewInBarMarkersRef.current = null;
       syncRangePriceBadgesRef.current = null;
+      syncQuarterBandLayoutsRef.current = null;
+      setQuarterBandLayouts([]);
       overviewInBarMarkersRef.current = null;
       setRangeOpenBadge(null);
       setRangeHighBadge(null);
@@ -1303,6 +1637,7 @@ export function PriceChart({
       chart.remove();
       chartRef.current = null;
       seriesRef.current = null;
+      holdingsFillUnderlayRef.current = null;
     };
   }, [
     plotHeight,
@@ -1362,9 +1697,25 @@ export function PriceChart({
       setHoverPriceGuarded(null);
       setHoverTimeUnixGuarded(null);
       setReady(false);
+      const dailyCadence = chartDataCadence === "daily";
+      const cacheKey =
+        dailyCadence && kind === "stock"
+          ? superinvestorHoldingChartCacheKey(symbol, range, series)
+          : null;
+      if (cacheKey) {
+        const cached = readSuperinvestorHoldingChartCache(cacheKey);
+        if (cached?.length) {
+          if (!mounted) return;
+          setPoints(cached);
+          setLoading(false);
+          requestAnimationFrame(() => setReady(true));
+          return;
+        }
+      }
+      const cadenceQ = dailyCadence ? "&cadence=daily" : "";
       const path =
         kind === "stock"
-          ? `/api/stocks/${encodeURIComponent(symbol)}/chart?range=${encodeURIComponent(range)}&series=${encodeURIComponent(series)}`
+          ? `/api/stocks/${encodeURIComponent(symbol)}/chart?range=${encodeURIComponent(range)}&series=${encodeURIComponent(series)}${cadenceQ}`
           : `/api/crypto/${encodeURIComponent(symbol)}/chart?range=${encodeURIComponent(range)}`;
       try {
         const res = await fetch(path, { credentials: "include" });
@@ -1377,7 +1728,9 @@ export function PriceChart({
         }
         const json = (await res.json()) as { points?: StockChartPoint[] };
         if (!mounted) return;
-        setPoints(Array.isArray(json.points) ? json.points : []);
+        const nextPoints = Array.isArray(json.points) ? json.points : [];
+        if (cacheKey && nextPoints.length) writeSuperinvestorHoldingChartCache(cacheKey, nextPoints);
+        setPoints(nextPoints);
         setLoading(false);
         requestAnimationFrame(() => setReady(true));
       } catch {
@@ -1391,7 +1744,7 @@ export function PriceChart({
     return () => {
       mounted = false;
     };
-  }, [kind, symbol, range, series, initialChart]);
+  }, [kind, symbol, range, series, initialChart, chartDataCadence]);
 
   // Series data, price lines, markers
   useEffect(() => {
@@ -1473,6 +1826,7 @@ export function PriceChart({
       removeSplitBundle();
       overviewInBarMarkersRef.current = null;
       series?.setData([]);
+      holdingsFillUnderlayRef.current?.setData([]);
       markers?.setMarkers([]);
       if (series) {
         removeScaleBoundsPriceLines(series, scaleTopPriceLineRef, scaleBottomPriceLineRef);
@@ -1499,6 +1853,7 @@ export function PriceChart({
         removeYAxisTickLabels(sInv, yAxisTickLinesRef);
       }
       seriesRef.current?.setData([]);
+      holdingsFillUnderlayRef.current?.setData([]);
       markersRef.current?.setMarkers([]);
       return;
     }
@@ -1525,6 +1880,7 @@ export function PriceChart({
       } else {
         bl.applyOptions({ price: open });
       }
+      holdingsFillUnderlayRef.current?.setData(data);
       series.setData(data);
       fitContentWithMobilePlotGutter(
         chart,
@@ -1553,7 +1909,12 @@ export function PriceChart({
         removeCostLine();
       }
 
-      markersRef.current?.setMarkers(tradeMarkersForChart(tradeMarkers, data));
+      if (holdingsQuarterBands.length > 0) {
+        markersRef.current?.setMarkers([]);
+      } else {
+        markersRef.current?.setMarkers(tradeMarkersForChart(tradeMarkers, data));
+      }
+      requestAnimationFrame(() => syncQuarterBandLayoutsRef.current?.());
       // Portfolio chart: hide top/bottom plot border lines (keep right-axis numbers).
       removeScaleBoundsPriceLines(series, scaleTopPriceLineRef, scaleBottomPriceLineRef);
       if (!hideMobileYAxisLabelsRef.current) {
@@ -1636,14 +1997,9 @@ export function PriceChart({
         }
       });
     });
-  }, [points, lastPointStroke, holdingsStyle, tradeMarkers, costBasisPrice, kind, series, loading]);
+  }, [points, lastPointStroke, holdingsStyle, tradeMarkers, holdingsQuarterBands, costBasisPrice, kind, series, loading]);
 
   const empty = !loading && points.length === 0;
-  const hoverYmd = useMemo(
-    () => (holdingsStyle && hoverTimeUnix != null ? ymdFromUnixSeconds(hoverTimeUnix) : null),
-    [holdingsStyle, hoverTimeUnix],
-  );
-  const hoverTradeLines = hoverYmd ? tooltipByDate.get(hoverYmd) ?? null : null;
 
   const overviewHoverTooltip = useMemo(() => {
     if (holdingsStyle || !overviewHover) return null;
@@ -1661,48 +2017,28 @@ export function PriceChart({
   const overviewMetricTitle =
     series === "marketCap" ? "Market cap" : series === "return" ? "Return" : "Price";
 
-  const holdingsTooltipEstHeight = useMemo(() => {
-    const n = hoverTradeLines?.length ?? 0;
-    if (n === 0) return 72;
-    const shown = Math.min(6, n);
-    const moreLine = n > 6 ? 18 : 0;
-    return Math.min(240, 34 + shown * 22 + moreLine);
-  }, [hoverTradeLines]);
-
-  const holdingsHoverTooltip = useMemo(() => {
-    if (!holdingsStyle) return null;
-    if (hoverPrice == null || !Number.isFinite(hoverPrice)) return null;
-    const valueLabel =
-      kind === "stock" && series === "marketCap"
-        ? formatMarketCapAxis(hoverPrice)
-        : kind === "stock" && series === "return"
-          ? formatReturnAxis(hoverPrice)
-          : `$${formatStockPriceAxis(hoverPrice)}`;
-    return { title: holdingsStyle ? "Price" : overviewMetricTitle, valueLabel };
-  }, [holdingsStyle, hoverPrice, kind, series, overviewMetricTitle]);
-
-  const holdingsHoverTooltipPos = useMemo(() => {
-    if (!holdingsStyle || hoverPoint == null || containerWidth <= 0) return null;
-    if (hoverPrice == null || !Number.isFinite(hoverPrice)) return null;
-    // Match overview tooltip sizing.
-    return layoutPointTooltip(hoverPoint, containerWidth, height, 40);
-  }, [holdingsStyle, hoverPoint, containerWidth, height, hoverPrice]);
-
-  const holdingsTooltipPos = useMemo(() => {
-    if (!holdingsStyle || hoverPoint == null || containerWidth <= 0) return null;
-    if (!hoverTradeLines?.length) return null;
-    return layoutPointTooltip(hoverPoint, containerWidth, height, holdingsTooltipEstHeight);
-  }, [holdingsStyle, hoverPoint, containerWidth, height, hoverTradeLines, holdingsTooltipEstHeight]);
-
   const overviewTooltipPos = useMemo(() => {
     if (holdingsStyle || !overviewHover || containerWidth <= 0 || !overviewHoverTooltip) return null;
     return layoutPointTooltip(overviewHover.point, containerWidth, plotHeight, 40);
   }, [holdingsStyle, overviewHover, containerWidth, plotHeight, overviewHoverTooltip]);
 
-  const activeBottomAxisLabel = holdingsStyle
+  const quarterBandPlotInset = useMemo(() => {
+    const { top, bottom } = chartSeriesPlotInsetPct(containerWidth);
+    return { top: `${top}%`, bottom: `${bottom}%` };
+  }, [containerWidth]);
+
+  const holdingsEarlierLines = useMemo(
+    () => (holdingsEarlierSummary ? formatEarlierActivityLines(holdingsEarlierSummary) : []),
+    [holdingsEarlierSummary],
+  );
+
+  const showHoldingsActivityOverlay =
+    holdingsStyle && (quarterBandLayouts.length > 0 || holdingsEarlierSummary != null);
+
+  const activeBottomAxisLabel = useMobileOverviewCrosshair
     ? hoverAxisLabel
-    : useMobileOverviewCrosshair
-      ? hoverAxisLabel
+    : holdingsStyle
+      ? null
       : (overviewHover?.axisLabel ?? null);
 
   const visiblePeriodAxisLabels = useMemo(() => {
@@ -1759,6 +2095,15 @@ export function PriceChart({
       <div className="pointer-events-none absolute inset-0 z-0 bg-white" aria-hidden>
         {!useMobileOverviewCrosshair ? <div className={CHART_PLOT_DOTS_PATTERN_CLASS} /> : null}
       </div>
+      {showHoldingsActivityOverlay ? (
+        <HoldingsQuarterBandsOverlay
+          layouts={quarterBandLayouts}
+          earlierSummary={holdingsEarlierSummary}
+          earlierLines={holdingsEarlierLines}
+          plotInsetTop={quarterBandPlotInset.top}
+          plotInsetBottom={quarterBandPlotInset.bottom}
+        />
+      ) : null}
       <div
         ref={wrapRef}
         className={`absolute inset-0 z-10 transition-opacity duration-300 ease-out ${
@@ -1771,47 +2116,27 @@ export function PriceChart({
         style={{ display: "none", left: 0 }}
         aria-hidden
       />
-      {holdingsStyle &&
-      holdingsHoverTooltip &&
-      hoverPoint &&
-      (!hoverTradeLines || hoverTradeLines.length === 0) &&
-      holdingsHoverTooltipPos ? (
-        <div
-          className="pointer-events-none absolute z-30 min-w-[148px] rounded-lg border border-[#E4E4E7] bg-white px-3 py-2 shadow-[0px_1px_4px_0px_rgba(10,10,10,0.08),0px_1px_2px_0px_rgba(10,10,10,0.06)]"
-          style={{
-            left: holdingsHoverTooltipPos.left,
-            top: holdingsHoverTooltipPos.top,
-            transform: holdingsHoverTooltipPos.transform,
-          }}
-          role="tooltip"
-        >
-          <p className="text-xs font-semibold tabular-nums text-[#09090B]">
-            {holdingsHoverTooltip.title}: {holdingsHoverTooltip.valueLabel}
-          </p>
-        </div>
-      ) : null}
-      {holdingsStyle && hoverPoint && hoverYmd && hoverTradeLines && hoverTradeLines.length > 0 && holdingsTooltipPos ? (
-        <div
-          className="pointer-events-none absolute z-30 min-w-[220px] max-w-[280px] rounded-[10px] border border-[#E4E4E7] bg-white px-3 py-2 text-[12px] leading-4 text-[#09090B] shadow-[0px_8px_20px_0px_rgba(10,10,10,0.10)]"
-          style={{
-            left: holdingsTooltipPos.left,
-            top: holdingsTooltipPos.top,
-            transform: holdingsTooltipPos.transform,
-          }}
-          role="status"
-        >
-          <div className="font-semibold text-[#09090B]">{formatTradeTooltipDateHeader(hoverYmd)}</div>
-          <div className="mt-1 space-y-1 text-[#71717A]">
-            {hoverTradeLines.slice(0, 6).map((line, i) => (
-              <div key={`${hoverYmd}-${i}`} className="whitespace-normal break-words">
-                {line}
-              </div>
-            ))}
-            {hoverTradeLines.length > 6 ? <div className="text-[#71717A]">+{hoverTradeLines.length - 6} more</div> : null}
+      {holdingsStyle ? (
+        <>
+          <div
+            ref={holdingsPriceTooltipRef}
+            className="pointer-events-none absolute z-30 min-w-[148px] rounded-lg border border-[#E4E4E7] bg-white px-3 py-2 shadow-[0px_1px_4px_0px_rgba(10,10,10,0.08),0px_1px_2px_0px_rgba(10,10,10,0.06)] will-change-[left,top]"
+            style={{ display: "none" }}
+            role="tooltip"
+          >
+            <p ref={holdingsPriceTooltipTextRef} className="text-xs font-semibold tabular-nums text-[#09090B]" />
           </div>
-        </div>
+          <div
+            ref={holdingsTradeTooltipRef}
+            className="pointer-events-none absolute z-30 min-w-[220px] max-w-[280px] rounded-[10px] border border-[#E4E4E7] bg-white px-3 py-2 text-[12px] leading-4 text-[#09090B] shadow-[0px_8px_20px_0px_rgba(10,10,10,0.10)] will-change-[left,top]"
+            style={{ display: "none" }}
+            role="status"
+          >
+            <div ref={holdingsTradeTooltipBodyRef} />
+          </div>
+        </>
       ) : null}
-      {!loading && ready
+      {!holdingsStyle && !loading && ready
         ? [rangeOpenBadge, rangeHighBadge]
             .filter((b): b is RangeChartPriceBadge => b != null)
             .map((badge) => (
@@ -1877,7 +2202,26 @@ export function PriceChart({
           style={{ height: axisRowPx }}
           aria-hidden={periodAxisLabels.length === 0 && !activeBottomAxisLabel}
         >
-          {activeBottomAxisLabel ? (
+          {holdingsStyle ? (
+            <>
+              <div ref={holdingsPeriodAxisRowRef} className="absolute inset-0">
+                {visiblePeriodAxisLabels.map((lab) => (
+                  <span
+                    key={lab.key}
+                    className="absolute bottom-1 inline-block max-w-[72px] -translate-x-1/2 truncate whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]"
+                    style={{ left: `clamp(8px, ${lab.leftPx}px, calc(100% - 8px))` }}
+                  >
+                    {lab.label}
+                  </span>
+                ))}
+              </div>
+              <span
+                ref={holdingsHoverAxisLabelRef}
+                className="absolute bottom-1 max-w-[min(100%,calc(100%-16px))] -translate-x-1/2 whitespace-nowrap font-['Inter'] text-[11px] font-medium tabular-nums leading-none text-[#09090B] sm:text-[12px]"
+                style={{ display: "none" }}
+              />
+            </>
+          ) : activeBottomAxisLabel ? (
             <span
               className="absolute bottom-1 inline-block max-w-[min(100%,calc(100%-16px))] -translate-x-1/2 whitespace-nowrap font-['Inter'] text-[11px] font-medium tabular-nums leading-none text-[#09090B] sm:text-[12px]"
               style={{ left: `clamp(8px, ${activeBottomAxisLabel.leftPx}px, calc(100% - 8px))` }}

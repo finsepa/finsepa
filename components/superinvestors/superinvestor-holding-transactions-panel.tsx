@@ -9,7 +9,14 @@ import {
   SuperinvestorTransactionPriceCells,
   superinvestorTxTdActivity,
 } from "@/components/superinvestors/superinvestor-transaction-display";
-import { holdingPanelTransactions } from "@/lib/superinvestors/superinvestor-transaction-utils";
+import {
+  cutoffYmdYearsAgo,
+  holdingPanelTableTransactions,
+  SUPERINVESTOR_HOLDING_PANEL_TABLE_LIMIT,
+  SUPERINVESTOR_HOLDING_PANEL_YEARS,
+  summarizeEarlierHoldingActivity,
+  transactionsForHolding,
+} from "@/lib/superinvestors/superinvestor-transaction-utils";
 import { cn } from "@/lib/utils";
 
 const panelRowGridFour =
@@ -31,10 +38,32 @@ function SuperinvestorHoldingTransactionsPanelInner({
   allTransactions: SuperinvestorQuarterlyTransaction[];
   onViewAllTransactions: (searchQuery: string) => void;
 }) {
-  const panelTransactions = useMemo(
-    () => holdingPanelTransactions(allTransactions, row, resolvedTicker),
+  const chartWindowStartYmd = useMemo(() => cutoffYmdYearsAgo(SUPERINVESTOR_HOLDING_PANEL_YEARS), []);
+
+  const holdingTransactionsAll = useMemo(
+    () =>
+      transactionsForHolding(allTransactions, row, resolvedTicker, 0).sort((a, b) =>
+        b.reportDate.localeCompare(a.reportDate),
+      ),
     [allTransactions, row, resolvedTicker],
   );
+
+  const panelTransactions = useMemo(
+    () => holdingTransactionsAll.filter((tx) => tx.reportDate.trim() >= chartWindowStartYmd),
+    [holdingTransactionsAll, chartWindowStartYmd],
+  );
+
+  const earlierActivitySummary = useMemo(
+    () => summarizeEarlierHoldingActivity(holdingTransactionsAll, chartWindowStartYmd),
+    [holdingTransactionsAll, chartWindowStartYmd],
+  );
+
+  const tableTransactions = useMemo(
+    () => holdingPanelTableTransactions(panelTransactions),
+    [panelTransactions],
+  );
+
+  const hasMoreTableRows = panelTransactions.length > SUPERINVESTOR_HOLDING_PANEL_TABLE_LIMIT;
 
   const listingTicker = resolvedTicker?.trim() || row.ticker?.trim() || null;
 
@@ -46,10 +75,14 @@ function SuperinvestorHoldingTransactionsPanelInner({
   return (
     <div className="border-t-2 border-b-2 border-[#E4E4E7] bg-white px-2 pb-4 pt-3 sm:px-4" data-holding-expanded-panel>
       {listingTicker ?
-        <SuperinvestorHoldingPriceChart ticker={listingTicker} transactions={panelTransactions} />
+        <SuperinvestorHoldingPriceChart
+          ticker={listingTicker}
+          transactions={panelTransactions}
+          earlierActivitySummary={earlierActivitySummary}
+        />
       : null}
 
-      <h3 className="mb-3 text-[20px] font-semibold leading-7 tracking-tight text-[#09090B]">Transactions</h3>
+      <h3 className="mb-3 text-[20px] font-semibold leading-7 tracking-tight text-[#09090B]">Activity</h3>
 
       {panelTransactions.length === 0 ? (
         <p className="py-6 text-center text-sm text-[#71717A]">No 13F transactions found for this company.</p>
@@ -57,12 +90,12 @@ function SuperinvestorHoldingTransactionsPanelInner({
         <div className="overflow-x-auto">
           <div className="min-w-[620px]">
             <div className={panelHeaderGrid}>
-              <div className="text-left">Quarter</div>
+              <div className="text-left">Period</div>
               <div className="text-right">Recent Activity</div>
               <div className="text-right">Avg closing price</div>
-              <div className="text-right">Price range</div>
+              <div className="text-right">% of change to portfolio</div>
             </div>
-            {panelTransactions.map((tx) => (
+            {tableTransactions.map((tx) => (
               <div
                 key={`${tx.reportDate}-${tx.cusip ?? tx.companyName}`}
                 className={cn(
@@ -83,17 +116,19 @@ function SuperinvestorHoldingTransactionsPanelInner({
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={() => onViewAllTransactions(searchQuery)}
-        className={cn(
-          "mt-4 flex h-10 w-full items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white",
-          "text-[14px] font-medium leading-5 text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]",
-          "transition-colors hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2",
-        )}
-      >
-        Show all transactions
-      </button>
+      {panelTransactions.length > 0 && hasMoreTableRows ? (
+        <button
+          type="button"
+          onClick={() => onViewAllTransactions(searchQuery)}
+          className={cn(
+            "mt-4 flex h-10 w-full items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white",
+            "text-[14px] font-medium leading-5 text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]",
+            "transition-colors hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2",
+          )}
+        >
+          Show all activity
+        </button>
+      ) : null}
     </div>
   );
 }

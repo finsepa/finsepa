@@ -59,6 +59,17 @@ export function formatSuperinvestorTxPriceRange(low: number | null, high: number
   return `${formatSuperinvestorTxPrice(low)} - ${formatSuperinvestorTxPrice(high)}`;
 }
 
+const portfolioWeightFmt = new Intl.NumberFormat("en-US", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+/** Portfolio weight delta in percentage points (Dataroma-style). */
+export function formatSuperinvestorPortfolioWeightChange(pct: number | null): string {
+  if (pct == null || !Number.isFinite(pct)) return "—";
+  return portfolioWeightFmt.format(Math.abs(pct));
+}
+
 export function SuperinvestorTransactionActivityCell({ tx }: { tx: SuperinvestorQuarterlyTransaction }) {
   const { line1, line2 } = activityLines(tx);
   const color = activityTextColor(tx.kind);
@@ -76,7 +87,7 @@ export function SuperinvestorTransactionPriceCells({ tx }: { tx: SuperinvestorQu
     <>
       <div className={superinvestorTxTdNum}>{formatSuperinvestorTxPrice(tx.avgClosingPriceUsd)}</div>
       <div className={superinvestorTxTdNum}>
-        {formatSuperinvestorTxPriceRange(tx.priceRangeLowUsd, tx.priceRangeHighUsd)}
+        {formatSuperinvestorPortfolioWeightChange(tx.portfolioWeightChangePct)}
       </div>
     </>
   );

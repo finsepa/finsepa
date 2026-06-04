@@ -1,17 +1,28 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { TabSwitcher } from "@/components/design-system";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { UnderlineTabs, type UnderlineTabOption } from "@/components/screener/market-tabs";
 import { Berkshire13fComparisonTable } from "@/components/superinvestors/berkshire-13f-comparison-table";
 import { SuperinvestorTransactionsTable } from "@/components/superinvestors/superinvestor-transactions-table";
 import type { Berkshire13fComparisonPayload, SuperinvestorTransactionsPayload } from "@/lib/superinvestors/types";
 
-type ProfileTab = "holdings" | "transactions";
+const FULL_HISTORY_SEARCH_DEBOUNCE_MS = 500;
 
-const TAB_OPTIONS = [
-  { value: "holdings" as const, label: "Holdings" },
-  { value: "transactions" as const, label: "Transactions" },
+type ProfileTab = "holdings" | "activity";
+
+const TAB_OPTIONS: readonly UnderlineTabOption<ProfileTab>[] = [
+  { value: "holdings", label: "Holdings" },
+  { value: "activity", label: "Activity" },
 ];
+
+function useDebouncedValue<T>(value: T, ms: number): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const id = window.setTimeout(() => setDebounced(value), ms);
+    return () => window.clearTimeout(id);
+  }, [value, ms]);
+  return debounced;
+}
 
 export function Superinvestor13fProfileTabs({
   profileSlug,
@@ -26,29 +37,35 @@ export function Superinvestor13fProfileTabs({
 }) {
   const [tab, setTab] = useState<ProfileTab>("holdings");
   const [txCompanySearch, setTxCompanySearch] = useState("");
-  const [txData, setTxData] = useState(transactions);
+  const [fullHistory, setFullHistory] = useState<SuperinvestorTransactionsPayload | null>(null);
   const [txHistoryLoading, setTxHistoryLoading] = useState(false);
-  const fullHistoryLoadedRef = useRef(false);
+  const fullHistoryFetchStartedRef = useRef(false);
+
+  const debouncedCompanySearch = useDebouncedValue(txCompanySearch, FULL_HISTORY_SEARCH_DEBOUNCE_MS);
 
   useEffect(() => {
-    setTxData(transactions);
-    fullHistoryLoadedRef.current = false;
+    setFullHistory(null);
+    fullHistoryFetchStartedRef.current = false;
   }, [transactions]);
 
-  useEffect(() => {
-    fullHistoryLoadedRef.current = false;
-  }, [txCompanySearch]);
-
-  useEffect(() => {
-    if (tab !== "transactions") return;
-
+  const activityData = useMemo(() => {
     const q = txCompanySearch.trim();
+    if (q.length < 2) return transactions;
+    return fullHistory ?? transactions;
+  }, [transactions, fullHistory, txCompanySearch]);
+
+  useEffect(() => {
+    if (tab !== "activity") return;
+
+    const q = debouncedCompanySearch.trim();
     if (q.length < 2) {
-      setTxData(transactions);
+      setTxHistoryLoading(false);
       return;
     }
-    if (fullHistoryLoadedRef.current) return;
+    if (fullHistory) return;
+    if (fullHistoryFetchStartedRef.current) return;
 
+    fullHistoryFetchStartedRef.current = true;
     let cancelled = false;
     setTxHistoryLoading(true);
     void fetch(`/api/superinvestors/${encodeURIComponent(profileSlug)}/transactions`, { credentials: "include" })
@@ -57,9 +74,9 @@ export function Superinvestor13fProfileTabs({
         return (await res.json()) as SuperinvestorTransactionsPayload;
       })
       .then((payload) => {
-        if (cancelled || !payload?.quarters) return;
-        fullHistoryLoadedRef.current = true;
-        setTxData(payload);
+        if (cancelled) return;
+        if (payload?.quarters) setFullHistory(payload);
+        else fullHistoryFetchStartedRef.current = false;
       })
       .finally(() => {
         if (!cancelled) setTxHistoryLoading(false);
@@ -68,28 +85,27 @@ export function Superinvestor13fProfileTabs({
     return () => {
       cancelled = true;
     };
-  }, [tab, txCompanySearch, profileSlug, transactions]);
+  }, [tab, debouncedCompanySearch, profileSlug, transactions, fullHistory]);
 
   const holdingsTransactions = transactions;
 
   const handleViewAllTransactions = useCallback((searchQuery: string) => {
-    fullHistoryLoadedRef.current = false;
+    setFullHistory(null);
+    fullHistoryFetchStartedRef.current = false;
     setTxCompanySearch(searchQuery);
-    setTab("transactions");
+    setTab("activity");
   }, []);
 
   return (
     <div className="mt-8">
-      <TabSwitcher
-        options={TAB_OPTIONS}
-        value={tab}
+      <UnderlineTabs<ProfileTab>
+        tabs={TAB_OPTIONS}
+        active={tab}
         onChange={setTab}
-        aria-label="Portfolio view"
-        size="sm"
+        ariaLabel="Portfolio view"
       />
 
-      <div className="mt-4">
-        {tab === "holdings" ? (
+      {tab === "holdings" ? (
           <>
             {!data.hasPriorFiling && data.source !== "unavailable" ? (
               <p className="mb-4 max-w-3xl text-sm text-[#71717A]">
@@ -105,15 +121,14 @@ export function Superinvestor13fProfileTabs({
               onViewAllTransactions={handleViewAllTransactions}
             />
           </>
-        ) : (
-          <SuperinvestorTransactionsTable
-            data={txData}
-            companySearch={txCompanySearch}
-            onCompanySearchChange={setTxCompanySearch}
-            historyLoading={txHistoryLoading}
-          />
-        )}
-      </div>
+      ) : (
+        <SuperinvestorTransactionsTable
+          data={activityData}
+          companySearch={txCompanySearch}
+          onCompanySearchChange={setTxCompanySearch}
+          historyLoading={txHistoryLoading}
+        />
+      )}
     </div>
   );
 }

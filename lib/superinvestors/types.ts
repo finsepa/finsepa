@@ -87,6 +87,8 @@ export type SuperinvestorQuarterlyTransaction = {
   avgClosingPriceUsd: number | null;
   priceRangeLowUsd: number | null;
   priceRangeHighUsd: number | null;
+  /** Change in portfolio weight (percentage points), e.g. +2.4 or −29.3. */
+  portfolioWeightChangePct: number | null;
 };
 
 export type SuperinvestorQuarterTransactionGroup = {
@@ -103,4 +105,10 @@ export type SuperinvestorTransactionsPayload = {
   /** Quarters newest-first; each lists position changes vs the prior filing. */
   quarters: SuperinvestorQuarterTransactionGroup[];
   source: "edgar" | "fixture" | "unavailable";
+};
+
+/** Superinvestor profile SSR bundle stored in `market_snapshot`. */
+export type Superinvestor13fProfilePageData = {
+  comparison: Berkshire13fComparisonPayload;
+  transactions: SuperinvestorTransactionsPayload;
 };

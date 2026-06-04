@@ -76,7 +76,7 @@ export function Superinvestor13fProfile({
               </p>
             </div>
           </div>
-          <SuperinvestorFollowButton className="w-full sm:w-auto" />
+          <SuperinvestorFollowButton className="w-full sm:w-auto" investorName={profileName} />
         </div>
 
         {/* ── Mobile: label left / value right on each row ── */}

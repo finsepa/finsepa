@@ -106,24 +106,22 @@ function HoldingCompanyCell({
   );
 }
 
-const holdingActivitySublineClass = "text-[12px] font-normal leading-4 text-[#71717A]";
+const holdingActivityMutedClass = "text-[14px] font-medium leading-4 tabular-nums text-[#71717A]";
 
 function RecentActivityColumnCell({ activity }: { activity: HoldingRecentActivityDisplay | null }) {
   if (!activity) {
     return (
-      <div className="flex flex-col items-end justify-center gap-0.5 py-1 text-right font-medium tabular-nums text-[#71717A]">
-        <span className="leading-4">-</span>
-        <span className="leading-4">-</span>
+      <div className="flex items-center justify-end py-1 text-right">
+        <span className={holdingActivityMutedClass}>—</span>
       </div>
     );
   }
 
   const color = activity.positive ? cellUp : cellDown;
   return (
-    <div className="flex flex-col items-end justify-center gap-0.5 py-1 text-right">
-      <span className={cn("text-[14px] font-medium leading-4 tabular-nums", color)}>{activity.quarterLabel}</span>
-      <span className={holdingActivitySublineClass}>
-        {normalizeSuperinvestorActivityHeadline(activity.activityDetail)}
+    <div className="flex items-center justify-end py-1 text-right">
+      <span className={cn("text-[14px] font-medium leading-4 tabular-nums", color)}>
+        {normalizeSuperinvestorActivityHeadline(activity.headline)}
       </span>
     </div>
   );
@@ -143,20 +141,15 @@ function MobilePortfolioCell({
         {pct.format(weight)}%
       </span>
       {activity ?
-        <>
-          <span
-            className={cn(
-              "text-[12px] font-medium leading-4 tabular-nums",
-              activity.positive ? cellUp : cellDown,
-            )}
-          >
-            {activity.quarterLabel}
-          </span>
-          <span className={holdingActivitySublineClass}>
-            {normalizeSuperinvestorActivityHeadline(activity.activityDetail)}
-          </span>
-        </>
-      : <span className={holdingActivitySublineClass}>—</span>}
+        <span
+          className={cn(
+            "text-[12px] font-medium leading-4 tabular-nums",
+            activity.positive ? cellUp : cellDown,
+          )}
+        >
+          {normalizeSuperinvestorActivityHeadline(activity.headline)}
+        </span>
+      : null}
     </div>
   );
 }
@@ -288,8 +281,6 @@ export function Berkshire13fComparisonTable({
     [transactions.quarters],
   );
 
-  const currentQuarterLabel = transactions.quarters[0]?.quarterLabel ?? null;
-
   const headerGrid = cn("h-11 min-h-[44px] items-center bg-white", rowGridFive);
   const resolved = useResolvedTickersForPage(pagedRows);
 
@@ -311,7 +302,6 @@ export function Berkshire13fComparisonTable({
             const displayName = issuerDisplayTitle(r.companyName);
             const key = rowResolveKey(r, displayName);
             const mergedTicker = r.ticker?.trim() ? r.ticker : resolved[key] ?? null;
-            const activityTicker = r.ticker?.trim() ? r.ticker : null;
             const globalIndex = (safePage - 1) * pageSize + i;
             const rowKey = `${r.cusip ?? r.companyName}-${globalIndex}-m`;
             const expanded = expandedRowKey === rowKey;
@@ -334,13 +324,7 @@ export function Berkshire13fComparisonTable({
                   </div>
                   <MobilePortfolioCell
                     weight={r.weight}
-                    activity={resolveHoldingRecentActivity(
-                      r,
-                      allTransactions,
-                      activityTicker,
-                      currentQuarterLabel,
-                      hasPriorFiling,
-                    )}
+                    activity={resolveHoldingRecentActivity(r, hasPriorFiling)}
                   />
                 </div>
                 {expanded ?
@@ -373,7 +357,6 @@ export function Berkshire13fComparisonTable({
               const displayName = issuerDisplayTitle(r.companyName);
               const key = rowResolveKey(r, displayName);
               const mergedTicker = r.ticker?.trim() ? r.ticker : resolved[key] ?? null;
-            const activityTicker = r.ticker?.trim() ? r.ticker : null;
               const globalIndex = (safePage - 1) * pageSize + i;
               const rowKey = `${r.cusip ?? r.companyName}-${globalIndex}`;
               const expanded = expandedRowKey === rowKey;
@@ -397,13 +380,7 @@ export function Berkshire13fComparisonTable({
                     <div className={cn(tdNum, "font-medium")}>{pct.format(r.weight)}%</div>
                     <div className={cn(tdNum, "font-medium")}>
                       <RecentActivityColumnCell
-                        activity={resolveHoldingRecentActivity(
-                          r,
-                          allTransactions,
-                          activityTicker,
-                          currentQuarterLabel,
-                          hasPriorFiling,
-                        )}
+                        activity={resolveHoldingRecentActivity(r, hasPriorFiling)}
                       />
                     </div>
                     <div className={tdNum}>{r.shares != null ? sharesFmt.format(r.shares) : "—"}</div>

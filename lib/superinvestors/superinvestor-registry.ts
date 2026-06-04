@@ -1,4 +1,4 @@
-import type { Superinvestor13fProfilePageData } from "@/lib/superinvestors/berkshire-13f";
+import type { Superinvestor13fProfilePageData } from "@/lib/superinvestors/types";
 import type { Berkshire13fComparisonPayload, SuperinvestorTransactionsPayload } from "@/lib/superinvestors/types";
 import {
   getArkHoldingsComparison,

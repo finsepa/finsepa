@@ -1,8 +1,16 @@
 import { NextResponse } from "next/server";
 
-import { CACHE_CONTROL_PRIVATE_CHART_STREAM, CACHE_CONTROL_PRIVATE_WARM_CHART } from "@/lib/data/cache-policy";
+import {
+  CACHE_CONTROL_PRIVATE_CHART_STREAM,
+  CACHE_CONTROL_PRIVATE_SUPERINVESTOR_HOLDING_CHART,
+  CACHE_CONTROL_PRIVATE_WARM_CHART,
+} from "@/lib/data/cache-policy";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { getStockChartPoints, pricePointsToReturnIndexPoints } from "@/lib/market/stock-chart-data";
+import {
+  getStockChartPoints,
+  getSuperinvestorHoldingStockChartPoints,
+  pricePointsToReturnIndexPoints,
+} from "@/lib/market/stock-chart-data";
 import { isStockChartRange, sliceStockChartPointsForRange } from "@/lib/market/stock-chart-api";
 import { isStockChartSeries, type StockChartRange, type StockChartSeries } from "@/lib/market/stock-chart-types";
 import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
@@ -55,7 +63,9 @@ export async function GET(request: Request, { params }: Ctx) {
     );
   }
 
-  const rawPoints = await getStockChartPoints(routeTicker, range, series);
+  const cadenceDaily = url.searchParams.get("cadence") === "daily";
+  const loadChartPoints = cadenceDaily ? getSuperinvestorHoldingStockChartPoints : getStockChartPoints;
+  const rawPoints = await loadChartPoints(routeTicker, range, series);
   const points = sliceStockChartPointsForRange(rawPoints, range);
 
   return NextResponse.json(
@@ -67,7 +77,9 @@ export async function GET(request: Request, { params }: Ctx) {
     },
     {
       headers: {
-        "Cache-Control": CACHE_CONTROL_PRIVATE_CHART_STREAM,
+        "Cache-Control": cadenceDaily
+          ? CACHE_CONTROL_PRIVATE_SUPERINVESTOR_HOLDING_CHART
+          : CACHE_CONTROL_PRIVATE_CHART_STREAM,
       },
     },
   );

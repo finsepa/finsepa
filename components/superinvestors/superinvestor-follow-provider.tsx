@@ -11,7 +11,10 @@ import {
   type ReactNode,
 } from "react";
 
+import { toast } from "sonner";
+
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { superinvestorDisplayNameFromProfilePath } from "@/lib/superinvestors/superinvestor-display-names";
 import {
   normalizeSuperinvestorFollowHref,
   readSuperinvestorFollowLocal,
@@ -42,7 +45,7 @@ export type SuperinvestorFollowContextValue = {
   hydrated: boolean;
   loaded: boolean;
   isFollowing: (href: string) => boolean;
-  toggleFollow: (href: string) => void;
+  toggleFollow: (href: string, opts?: { displayName?: string }) => void;
 };
 
 const SuperinvestorFollowContext = createContext<SuperinvestorFollowContextValue | null>(null);
@@ -154,10 +157,11 @@ export function SuperinvestorFollowProvider({ children }: { children: ReactNode 
     [followed],
   );
 
-  const toggleFollow = useCallback((href: string) => {
+  const toggleFollow = useCallback((href: string, opts?: { displayName?: string }) => {
     const key = normalizeSuperinvestorFollowHref(href);
     if (!key) return;
     const removing = followedRef.current.has(key);
+    const name = superinvestorDisplayNameFromProfilePath(key, opts?.displayName);
 
     if (removing) {
       setPendingRemoval((prev) => [...new Set([...prev, key])]);
@@ -171,6 +175,8 @@ export function SuperinvestorFollowProvider({ children }: { children: ReactNode 
       else next.add(key);
       return next;
     });
+
+    toast.success(removing ? `Unfollowed ${name}.` : `Following ${name}.`);
 
     void (async () => {
       try {
@@ -188,6 +194,7 @@ export function SuperinvestorFollowProvider({ children }: { children: ReactNode 
               next.add(key);
               return next;
             });
+            toast.error(`Could not unfollow ${name}. Please try again.`);
           }
         } else {
           const res = await fetch("/api/superinvestor-follows", {
@@ -203,6 +210,7 @@ export function SuperinvestorFollowProvider({ children }: { children: ReactNode 
               next.delete(key);
               return next;
             });
+            toast.error(`Could not follow ${name}. Please try again.`);
           }
         }
       } catch {
@@ -213,12 +221,14 @@ export function SuperinvestorFollowProvider({ children }: { children: ReactNode 
             next.add(key);
             return next;
           });
+          toast.error(`Could not unfollow ${name}. Please try again.`);
         } else {
           setFollowed((prev) => {
             const next = new Set(prev);
             next.delete(key);
             return next;
           });
+          toast.error(`Could not follow ${name}. Please try again.`);
         }
       }
     })();

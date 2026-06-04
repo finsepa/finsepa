@@ -1,12 +1,23 @@
 "use client";
 
-import { useCallback, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 const tabs = ["Stocks", "Crypto", "Indices", "ETF's"] as const;
 export type MarketTab = (typeof tabs)[number];
 
 const TAB_MOTION_MS = 280;
 const TAB_MOTION_EASE = "cubic-bezier(0.33, 1, 0.68, 1)";
+
+export type UnderlineTabOption<T extends string> = {
+  value: T;
+  label: string;
+};
+
+function normalizeUnderlineTabs<T extends string>(
+  tabList: readonly T[] | readonly UnderlineTabOption<T>[],
+): UnderlineTabOption<T>[] {
+  return tabList.map((t) => (typeof t === "string" ? { value: t, label: t } : t));
+}
 
 /** Primary underline tabs — shared by Screener (Stocks/Crypto/Indices) and Portfolio (Overview/Performance/Cash/…). */
 export function UnderlineTabs<T extends string>({
@@ -16,13 +27,14 @@ export function UnderlineTabs<T extends string>({
   ariaLabel,
   trailing,
 }: {
-  tabs: readonly T[];
+  tabs: readonly T[] | readonly UnderlineTabOption<T>[];
   active: T;
   onChange: (tab: T) => void;
   ariaLabel: string;
   /** Right side of the tab row (e.g. U.S. markets session on `/screener`). */
   trailing?: ReactNode;
 }) {
+  const options = useMemo(() => normalizeUnderlineTabs(tabList), [tabList]);
   const navRef = useRef<HTMLElement>(null);
   const tabRefs = useRef(new Map<T, HTMLButtonElement>());
   const [indicator, setIndicator] = useState({ left: 0, width: 0 });
@@ -33,15 +45,17 @@ export function UnderlineTabs<T extends string>({
     if (!nav || !btn) return;
     const navRect = nav.getBoundingClientRect();
     const btnRect = btn.getBoundingClientRect();
-    setIndicator({
-      left: btnRect.left - navRect.left + nav.scrollLeft,
-      width: btnRect.width,
+    const left = btnRect.left - navRect.left + nav.scrollLeft;
+    const width = btnRect.width;
+    setIndicator((prev) => {
+      if (Math.abs(prev.left - left) < 0.5 && Math.abs(prev.width - width) < 0.5) return prev;
+      return { left, width };
     });
   }, [active]);
 
   useLayoutEffect(() => {
     measureIndicator();
-  }, [measureIndicator, tabList]);
+  }, [measureIndicator, active, options.length]);
 
   useLayoutEffect(() => {
     const nav = navRef.current;
@@ -63,22 +77,22 @@ export function UnderlineTabs<T extends string>({
           className="relative flex min-w-0 flex-1 flex-nowrap items-start gap-4 overflow-x-auto overflow-y-hidden pb-px [-webkit-overflow-scrolling:touch] [scrollbar-width:none] md:gap-5 md:overflow-visible [&::-webkit-scrollbar]:hidden"
           aria-label={ariaLabel}
         >
-          {tabList.map((tab) => {
-            const isActive = tab === active;
+          {options.map(({ value, label }) => {
+            const isActive = value === active;
             return (
               <button
-                key={tab}
+                key={value}
                 ref={(el) => {
-                  if (el) tabRefs.current.set(tab, el);
-                  else tabRefs.current.delete(tab);
+                  if (el) tabRefs.current.set(value, el);
+                  else tabRefs.current.delete(value);
                 }}
                 type="button"
-                onClick={() => onChange(tab)}
-                className={`-mb-px shrink-0 cursor-pointer border-b-2 border-solid border-transparent py-2 text-left text-[14px] font-medium leading-6 text-[#09090B] transition-[color,opacity] duration-100 focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2 hover:opacity-80 ${
-                  isActive ? "opacity-100" : "opacity-70"
+                onClick={() => onChange(value)}
+                className={`-mb-px shrink-0 cursor-pointer border-b-2 border-solid border-transparent py-2 text-left text-[14px] font-medium leading-6 transition-[color,opacity] duration-100 focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2 hover:opacity-80 ${
+                  isActive ? "font-semibold text-[#09090B] opacity-100" : "text-[#71717A] opacity-100"
                 }`}
               >
-                {tab}
+                {label}
               </button>
             );
           })}

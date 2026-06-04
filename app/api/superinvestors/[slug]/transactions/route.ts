@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 
 type Ctx = { params: Promise<{ slug: string }> };
 
-/** Full 13F transaction history (~2007–present). Loaded on demand when filtering by company. */
+/** Full 13F transaction history (~2007–present). Berkshire: persisted, scoped to current holdings. */
 export async function GET(_request: Request, { params }: Ctx) {
   const { slug } = await params;
   const item = SUPERINVESTOR_REGISTRY.find((entry) => entry.slug === slug);

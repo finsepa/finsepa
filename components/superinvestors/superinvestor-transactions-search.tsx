@@ -25,7 +25,7 @@ export function SuperinvestorTransactionsSearch({
         onChange={(e) => onChange(e.target.value)}
         placeholder="Type to search..."
         className="h-9 w-full rounded-[10px] border-0 bg-[#F4F4F5] py-2 pl-9 pr-9 text-sm text-[#09090B] placeholder:text-[#71717A] outline-none focus:ring-2 focus:ring-[#09090B]/10"
-        aria-label="Search transactions by company name or ticker"
+        aria-label="Search activity by company name or ticker"
       />
       {value ? (
         <button

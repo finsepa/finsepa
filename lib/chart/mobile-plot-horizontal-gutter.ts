@@ -46,6 +46,12 @@ export function mobileLeftPriceScaleOptions(containerWidthPx: number) {
   };
 }
 
+/** Match `scaleMargins` on the right price scale — DOM overlays should use the same inset. */
+export function chartSeriesPlotInsetPct(containerWidthPx: number): { top: number; bottom: number } {
+  const hideYAxisLabels = shouldHideMobileYAxisLabels(containerWidthPx);
+  return { top: 12, bottom: hideYAxisLabels ? 4.8 : 8 };
+}
+
 /** Apply both price scales for overview / compare charts (call from createChart + applyOptions). */
 export function mobileOverviewChartScaleOptions(containerWidthPx: number) {
   const left = mobileLeftPriceScaleOptions(containerWidthPx);

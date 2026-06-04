@@ -2,7 +2,7 @@ import "server-only";
 
 import { unstable_cache } from "next/cache";
 
-import { REVALIDATE_HOT } from "@/lib/data/cache-policy";
+import { REVALIDATE_HOT, REVALIDATE_STATIC_DAY } from "@/lib/data/cache-policy";
 
 import { fetchEodhdIntraday, type EodhdIntradayBar } from "@/lib/market/eodhd-intraday";
 import { fetchEodhdEodDaily, type EodhdDailyBar } from "@/lib/market/eodhd-eod";
@@ -664,6 +664,14 @@ export const getStockChartPoints = unstable_cache(
     loadStockChartPointsUncached(ticker, range, series),
   ["stock-chart-points-v21-all-monthly-8y-axis"],
   { revalidate: REVALIDATE_HOT },
+);
+
+/** Superinvestor holding panel only — same series as {@link getStockChartPoints}, refreshed ~once per day. */
+export const getSuperinvestorHoldingStockChartPoints = unstable_cache(
+  async (ticker: string, range: StockChartRange, series: StockChartSeries) =>
+    loadStockChartPointsUncached(ticker, range, series),
+  ["stock-chart-superinvestor-holding-daily-v1"],
+  { revalidate: REVALIDATE_STATIC_DAY },
 );
 
 /**

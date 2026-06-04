@@ -2,29 +2,15 @@
 
 import { useMemo } from "react";
 
-import type { HoldingsTradeMarker, HoldingsTradeTooltipItem } from "@/components/chart/PriceChart";
+import type { HoldingsTradeTooltipItem } from "@/components/chart/PriceChart";
 import { PriceChart } from "@/components/chart/PriceChart";
+import { superinvestorQuarterBandsFromTransactions } from "@/lib/superinvestors/superinvestor-chart-quarter-bands";
 import type { SuperinvestorQuarterlyTransaction } from "@/lib/superinvestors/types";
+import type { HoldingEarlierActivitySummary } from "@/lib/superinvestors/superinvestor-transaction-utils";
 import {
+  formatEarlierActivityLines,
   superinvestorTransactionActivityHeadline,
-  superinvestorTxTradeMarkerSide,
 } from "@/lib/superinvestors/superinvestor-transaction-utils";
-
-function tradeMarkersFromTransactions(
-  txs: readonly SuperinvestorQuarterlyTransaction[],
-): readonly HoldingsTradeMarker[] {
-  const seen = new Set<string>();
-  const out: HoldingsTradeMarker[] = [];
-  for (const tx of [...txs].sort((a, b) => a.reportDate.localeCompare(b.reportDate))) {
-    const date = tx.reportDate.trim();
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
-    const key = `${date}|${superinvestorTxTradeMarkerSide(tx.kind)}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push({ date, side: superinvestorTxTradeMarkerSide(tx.kind) });
-  }
-  return out;
-}
 
 function tradeTooltipItemsFromTransactions(
   txs: readonly SuperinvestorQuarterlyTransaction[],
@@ -44,25 +30,31 @@ function tradeTooltipItemsFromTransactions(
 export function SuperinvestorHoldingPriceChart({
   ticker,
   transactions,
+  earlierActivitySummary = null,
 }: {
   ticker: string;
   transactions: readonly SuperinvestorQuarterlyTransaction[];
+  earlierActivitySummary?: HoldingEarlierActivitySummary | null;
 }) {
   const sym = ticker.trim().toUpperCase();
 
-  const tradeMarkers = useMemo(() => tradeMarkersFromTransactions(transactions), [transactions]);
+  const holdingsQuarterBands = useMemo(
+    () => superinvestorQuarterBandsFromTransactions(transactions),
+    [transactions],
+  );
   const tradeTooltipItems = useMemo(() => tradeTooltipItemsFromTransactions(transactions), [transactions]);
 
   return (
-    <section className="mb-6 space-y-4">
-      <h3 className="text-[18px] font-semibold leading-7 tracking-tight text-[#09090B]">Price</h3>
-      <div className="overflow-visible rounded-[12px] bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
+    <section className="mb-6">
+      <div className="overflow-visible rounded-[12px] bg-white">
         <PriceChart
           kind="stock"
           symbol={sym}
           range="5Y"
+          chartDataCadence="daily"
           holdingsStyle
-          tradeMarkers={tradeMarkers}
+          holdingsQuarterBands={holdingsQuarterBands}
+          holdingsEarlierSummary={earlierActivitySummary}
           tradeTooltipItems={tradeTooltipItems}
         />
       </div>

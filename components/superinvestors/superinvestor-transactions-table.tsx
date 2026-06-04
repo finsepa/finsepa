@@ -8,12 +8,15 @@ import { CompanyLogo } from "@/components/screener/company-logo";
 import {
   SuperinvestorTransactionActivityCell,
   formatSuperinvestorTxPrice,
-  formatSuperinvestorTxPriceRange,
+  formatSuperinvestorPortfolioWeightChange,
 } from "@/components/superinvestors/superinvestor-transaction-display";
+import { SegmentedControl } from "@/components/design-system";
 import { SuperinvestorTransactionsSearch } from "@/components/superinvestors/superinvestor-transactions-search";
 import { SUPERINVESTOR_HOLDINGS_PAGE_SIZE } from "@/lib/superinvestors/superinvestors-holdings-page-size";
 import {
   flattenSuperinvestorTransactions,
+  superinvestorTransactionIsBuy,
+  superinvestorTransactionIsSell,
   transactionMatchesCompanySearch,
 } from "@/lib/superinvestors/superinvestor-transaction-utils";
 import { resolveEquityLogoUrlFromListingTicker } from "@/lib/screener/resolve-equity-logo-url";
@@ -22,6 +25,14 @@ import { ScreenerPagination } from "@/components/ui/table-pagination";
 import { cn } from "@/lib/utils";
 
 const TRANSACTIONS_PAGE_SIZE = SUPERINVESTOR_HOLDINGS_PAGE_SIZE;
+
+export type SuperinvestorActivitySideFilter = "all" | "buys" | "sells";
+
+const ACTIVITY_SIDE_FILTER_OPTIONS = [
+  { value: "all" as const, label: "All" },
+  { value: "buys" as const, label: "Buys" },
+  { value: "sells" as const, label: "Sells" },
+] as const;
 
 const thCompany =
   "whitespace-nowrap py-0 text-left align-middle text-[14px] font-medium leading-5 text-[#71717A]";
@@ -33,7 +44,7 @@ const tdActivity =
 const tdNum =
   "whitespace-nowrap py-0 text-right align-middle font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]";
 
-/** Company | Recent activity | Avg closing price | Price range. */
+/** Company | Recent activity | Avg closing price | % of change to portfolio. */
 const rowGridFour =
   "grid w-full min-w-[800px] grid-cols-[minmax(180px,2.05fr)_minmax(140px,1.15fr)_minmax(96px,0.9fr)_minmax(120px,1.05fr)] gap-x-4";
 
@@ -68,12 +79,19 @@ function issuerDisplayTitle(name: string): string {
     .join(" ");
 }
 
+function matchesSideFilter(tx: SuperinvestorQuarterlyTransaction, sideFilter: SuperinvestorActivitySideFilter): boolean {
+  if (sideFilter === "all") return true;
+  if (sideFilter === "buys") return superinvestorTransactionIsBuy(tx.kind);
+  return superinvestorTransactionIsSell(tx.kind);
+}
+
 function flattenTransactions(
   quarters: SuperinvestorTransactionsPayload["quarters"],
   companySearch: string,
+  sideFilter: SuperinvestorActivitySideFilter,
 ): FlatTransactionRow[] {
-  const filtered = flattenSuperinvestorTransactions(quarters).filter((tx) =>
-    transactionMatchesCompanySearch(tx, companySearch),
+  const filtered = flattenSuperinvestorTransactions(quarters).filter(
+    (tx) => transactionMatchesCompanySearch(tx, companySearch) && matchesSideFilter(tx, sideFilter),
   );
   return filtered.map((tx) => ({
     quarterLabel: tx.quarterLabel,
@@ -160,8 +178,38 @@ function MobilePricesCell({ tx }: { tx: SuperinvestorQuarterlyTransaction }) {
     <div className="flex flex-col items-end justify-center gap-1 text-right">
       <span className={cn(tdNum, "block font-medium")}>{formatSuperinvestorTxPrice(tx.avgClosingPriceUsd)}</span>
       <span className="text-[12px] font-normal leading-4 tabular-nums text-[#71717A]">
-        {formatSuperinvestorTxPriceRange(tx.priceRangeLowUsd, tx.priceRangeHighUsd)}
+        {formatSuperinvestorPortfolioWeightChange(tx.portfolioWeightChangePct)}
       </span>
+    </div>
+  );
+}
+
+function ActivityTableToolbar({
+  sideFilter,
+  onSideFilterChange,
+  companySearch,
+  onCompanySearchChange,
+}: {
+  sideFilter: SuperinvestorActivitySideFilter;
+  onSideFilterChange: (next: SuperinvestorActivitySideFilter) => void;
+  companySearch: string;
+  onCompanySearchChange?: (query: string) => void;
+}) {
+  return (
+    <div className="mb-4 flex flex-col gap-3 px-4 sm:flex-row sm:items-center sm:justify-between sm:px-0">
+      <h2 className="text-[20px] font-semibold leading-7 tracking-tight text-[#09090B]">Activity</h2>
+      <div className="flex min-w-0 flex-wrap items-center justify-end gap-3 sm:ml-auto">
+        <SegmentedControl
+          options={ACTIVITY_SIDE_FILTER_OPTIONS}
+          value={sideFilter}
+          onChange={onSideFilterChange}
+          size="sm"
+          aria-label="Filter activity by buys or sells"
+        />
+        {onCompanySearchChange ?
+          <SuperinvestorTransactionsSearch value={companySearch} onChange={onCompanySearchChange} />
+        : null}
+      </div>
     </div>
   );
 }
@@ -186,7 +234,7 @@ function DesktopTransactionRow({ row }: { row: FlatTransactionRow }) {
         <SuperinvestorTransactionActivityCell tx={row.tx} />
       </div>
       <div className={tdNum}>{formatSuperinvestorTxPrice(row.tx.avgClosingPriceUsd)}</div>
-      <div className={tdNum}>{formatSuperinvestorTxPriceRange(row.tx.priceRangeLowUsd, row.tx.priceRangeHighUsd)}</div>
+      <div className={tdNum}>{formatSuperinvestorPortfolioWeightChange(row.tx.portfolioWeightChangePct)}</div>
     </TransactionRowShell>
   );
 }
@@ -220,10 +268,11 @@ export function SuperinvestorTransactionsTable({
   historyLoading?: boolean;
 }) {
   const [page, setPage] = useState(1);
+  const [sideFilter, setSideFilter] = useState<SuperinvestorActivitySideFilter>("all");
 
   const flatTransactions = useMemo(
-    () => flattenTransactions(data.quarters, companySearch),
-    [data.quarters, companySearch],
+    () => flattenTransactions(data.quarters, companySearch, sideFilter),
+    [data.quarters, companySearch, sideFilter],
   );
 
   const totalPages = Math.max(1, Math.ceil(flatTransactions.length / TRANSACTIONS_PAGE_SIZE));
@@ -236,7 +285,7 @@ export function SuperinvestorTransactionsTable({
 
   useEffect(() => {
     setPage(1);
-  }, [data.cik, flatTransactions.length, companySearch]);
+  }, [data.cik, flatTransactions.length, companySearch, sideFilter]);
 
   useEffect(() => {
     if (page > totalPages) setPage(totalPages);
@@ -250,30 +299,24 @@ export function SuperinvestorTransactionsTable({
     );
   }
 
-  if (historyLoading && companySearch.trim().length >= 2) {
-    return (
-      <div>
-        {onCompanySearchChange ? (
-          <div className="mb-4 flex w-full justify-end">
-            <SuperinvestorTransactionsSearch value={companySearch} onChange={onCompanySearchChange} />
-          </div>
-        ) : null}
-        <p className="text-sm text-[#71717A]">Loading full 13F history for this search…</p>
-      </div>
-    );
-  }
-
   if (flatTransactions.length === 0) {
     return (
       <div>
-        {onCompanySearchChange ? (
-          <div className="mb-4 flex w-full justify-end">
-            <SuperinvestorTransactionsSearch value={companySearch} onChange={onCompanySearchChange} />
-          </div>
-        ) : null}
-        <p className="text-sm text-[#71717A]">
-          {companySearch.trim() ?
-            "No transactions match your search."
+        <ActivityTableToolbar
+          sideFilter={sideFilter}
+          onSideFilterChange={setSideFilter}
+          companySearch={companySearch}
+          onCompanySearchChange={onCompanySearchChange}
+        />
+        <p className="px-4 text-sm text-[#71717A] sm:px-0">
+          {companySearch.trim() && historyLoading ?
+            "No matches in the last five years. Loading older 13F quarters…"
+          : companySearch.trim() ?
+            "No activity matches your search."
+          : sideFilter === "buys" ?
+            "No buys found in the last five years of 13F filings."
+          : sideFilter === "sells" ?
+            "No sells found in the last five years of 13F filings."
           : "No quarter-over-quarter position changes found in the last five years of 13F filings."}
         </p>
       </div>
@@ -282,11 +325,15 @@ export function SuperinvestorTransactionsTable({
 
   return (
     <div className="min-w-0 -mx-4 sm:mx-0">
-      {onCompanySearchChange ? (
-        <div className="mb-4 flex w-full justify-end px-4 sm:px-0">
-          <SuperinvestorTransactionsSearch value={companySearch} onChange={onCompanySearchChange} />
-        </div>
-      ) : null}
+      <ActivityTableToolbar
+        sideFilter={sideFilter}
+        onSideFilterChange={setSideFilter}
+        companySearch={companySearch}
+        onCompanySearchChange={onCompanySearchChange}
+      />
+      {historyLoading && companySearch.trim().length >= 2 ?
+        <p className="mb-3 px-4 text-xs text-[#71717A] sm:px-0">Loading older 13F quarters in the background…</p>
+      : null}
       {/* ── Mobile: single table ── */}
       <div className="sm:hidden">
         <div className="divide-y divide-[#E4E4E7] border-t border-b border-[#E4E4E7] bg-white">
@@ -313,7 +360,7 @@ export function SuperinvestorTransactionsTable({
               <div className={thCompany}>Company</div>
               <div className={thRight}>Recent Activity</div>
               <div className={thRight}>Avg closing price</div>
-              <div className={thRight}>Price range</div>
+              <div className={thRight}>% of change to portfolio</div>
             </div>
             {pagedTableRows.map((item) =>
               item.kind === "quarter" ? (

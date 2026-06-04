@@ -251,6 +251,15 @@ export const CACHE_CONTROL_PRIVATE_CHART_STREAM = cacheControlPrivateSMaxageSwr(
 );
 
 /**
+ * Superinvestor holding expand charts (`cadence=daily`) — ~24h server + HTTP coalescing.
+ * 13F context uses weekly EOD points; intraday refresh is unnecessary.
+ */
+export const CACHE_CONTROL_PRIVATE_SUPERINVESTOR_HOLDING_CHART = cacheControlPrivateSMaxageSwr(
+  REVALIDATE_STATIC_DAY,
+  REVALIDATE_STATIC_DAY,
+);
+
+/**
  * Public `s-maxage` / SWR — {@link REVALIDATE_HOT_FAST} / 2× {@link REVALIDATE_HOT} (30 / 120).
  * Used by `/api/search` and the screener indices cards route (same window).
  */
