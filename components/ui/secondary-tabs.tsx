@@ -34,6 +34,9 @@ export function SecondaryTabs<T extends string>({
   const listRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef(new Map<T, HTMLButtonElement>());
   const [indicator, setIndicator] = useState({ left: 0, width: 0, height: 0 });
+  /** Avoid animating from 0×0 on mount (e.g. Screener Companies row after payload loads). */
+  const [indicatorMotionEnabled, setIndicatorMotionEnabled] = useState(false);
+  const hasPositionedOnceRef = useRef(false);
 
   const measureIndicator = useCallback(() => {
     const list = listRef.current;
@@ -41,15 +44,34 @@ export function SecondaryTabs<T extends string>({
     if (!list || !btn) return;
     const listRect = list.getBoundingClientRect();
     const btnRect = btn.getBoundingClientRect();
+    const width = Math.round(btnRect.width);
+    const height = Math.round(btnRect.height);
+    if (width <= 0 || height <= 0) return;
     setIndicator({
-      left: btnRect.left - listRect.left + list.scrollLeft,
-      width: btnRect.width,
-      height: btnRect.height,
+      left: Math.round(btnRect.left - listRect.left + list.scrollLeft),
+      width,
+      height,
     });
   }, [value]);
 
   useLayoutEffect(() => {
     measureIndicator();
+    if (hasPositionedOnceRef.current) return;
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => {
+      measureIndicator();
+      raf2 = requestAnimationFrame(() => {
+        if (hasPositionedOnceRef.current) return;
+        const btn = tabRefs.current.get(value);
+        if (!btn || btn.getBoundingClientRect().width <= 0) return;
+        hasPositionedOnceRef.current = true;
+        setIndicatorMotionEnabled(true);
+      });
+    });
+    return () => {
+      cancelAnimationFrame(raf1);
+      if (raf2) cancelAnimationFrame(raf2);
+    };
   }, [measureIndicator, items, value]);
 
   useLayoutEffect(() => {
@@ -83,8 +105,9 @@ export function SecondaryTabs<T extends string>({
             left: indicator.left,
             width: indicator.width,
             height: indicator.height || undefined,
-            transitionProperty: "left, width, height",
-            transitionDuration: `${TAB_MOTION_MS}ms`,
+            opacity: indicator.width > 0 && indicator.height > 0 ? 1 : 0,
+            transitionProperty: indicatorMotionEnabled ? "left, width, height" : "none",
+            transitionDuration: indicatorMotionEnabled ? `${TAB_MOTION_MS}ms` : "0ms",
             transitionTimingFunction: TAB_MOTION_EASE,
           }}
           aria-hidden

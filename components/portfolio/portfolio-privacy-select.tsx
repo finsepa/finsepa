@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, ChevronDown, Globe, Lock } from "lucide-react";
+import { Check, ChevronDown, Globe, Lock } from "@/lib/icons";
 
 import type { PortfolioPrivacy } from "@/components/portfolio/portfolio-types";
 import {

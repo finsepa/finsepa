@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal } from "@/lib/icons";
 
 import type { PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 import {

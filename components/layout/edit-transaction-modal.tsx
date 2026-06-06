@@ -3,9 +3,14 @@
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { format, parseISO, startOfDay } from "date-fns";
-import { X } from "lucide-react";
-
 import type { CompanyPick } from "@/components/charting/company-picker";
+import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
+import {
+  AppModalFooter,
+  AppModalShell,
+  appModalCancelButtonClass,
+  appModalPrimaryButtonClass,
+} from "@/components/ui/app-modal-shell";
 import { displayLogoUrlForPortfolioSymbol } from "@/lib/portfolio/portfolio-asset-display-logo";
 import { cn } from "@/lib/utils";
 import {
@@ -103,15 +108,6 @@ export function EditTransactionModal({ open, onClose, transaction }: Props) {
       }
     })();
   }, [open, transaction, selectedCompany?.symbol, transactionDate]);
-
-  useEffect(() => {
-    if (!open) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [open]);
 
   const isTrade = transaction?.kind === "trade";
   const isCash = transaction?.kind === "cash";
@@ -240,36 +236,37 @@ export function EditTransactionModal({ open, onClose, transaction }: Props) {
 
   if (!open || !transaction) return null;
 
-  return (
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4"
-      role="presentation"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        className="flex max-h-[min(90vh,804px)] w-full max-w-[480px] flex-col rounded-xl bg-white shadow-[0px_10px_16px_-3px_rgba(10,10,10,0.1),0px_4px_6px_0px_rgba(10,10,10,0.04)] min-h-0"
-        onMouseDown={(e) => e.stopPropagation()}
-      >
-        <div className="flex shrink-0 items-center justify-between border-b border-[#E4E4E7] px-5 py-3">
-          <h2 id={titleId} className="text-lg font-semibold leading-7 tracking-tight text-[#09090B]">
-            Edit Transaction
-          </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-[#09090B] transition-colors hover:bg-[#F4F4F5]"
-            aria-label="Close"
-          >
-            <X className="h-5 w-5" strokeWidth={2} />
-          </button>
-        </div>
+  const canSave = isCash ? canSaveCash : canSaveTrade;
+  const saveEnabled = canSave && !submitting && portfolioId != null;
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5 pt-5">
+  return (
+    <AppModalOverlay open={open} onClose={onClose} zIndex={100}>
+      <AppModalShell
+        titleId={titleId}
+        title="Edit Transaction"
+        onClose={onClose}
+        bodyClassName="px-5 pb-5 pt-5"
+        footer={
+          <AppModalFooter className={isIncome || isExpense ? "justify-start" : undefined}>
+            <button type="button" onClick={onClose} className={appModalCancelButtonClass}>
+              Cancel
+            </button>
+            {isIncome || isExpense ? null : (
+              <button
+                type="button"
+                disabled={!saveEnabled}
+                onClick={() => {
+                  if (isCash) handleSaveCash();
+                  else void handleSaveTrade();
+                }}
+                className={appModalPrimaryButtonClass(saveEnabled)}
+              >
+                {submitting ? "Saving…" : "Save"}
+              </button>
+            )}
+          </AppModalFooter>
+        }
+      >
           {isIncome || isExpense ? (
             <p className="text-sm text-[#71717A]">This transaction type cannot be edited here yet.</p>
           ) : isCash ? (
@@ -346,37 +343,8 @@ export function EditTransactionModal({ open, onClose, transaction }: Props) {
               </Field>
             </div>
           )}
-        </div>
-
-        <div className="flex shrink-0 gap-3 border-t border-[#E4E4E7] px-6 py-4">
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex min-h-9 flex-1 items-center justify-center rounded-[10px] bg-[#F4F4F5] px-4 py-2 text-sm font-medium text-[#09090B] transition-colors hover:bg-[#EBEBEB]"
-          >
-            Cancel
-          </button>
-          {isIncome || isExpense ? null : (
-            <button
-              type="button"
-              disabled={(!canSaveTrade && !canSaveCash) || submitting || portfolioId == null}
-              onClick={() => {
-                if (isCash) handleSaveCash();
-                else void handleSaveTrade();
-              }}
-              className={cn(
-                "flex min-h-9 flex-1 items-center justify-center rounded-[10px] px-4 py-2 text-sm font-medium text-white transition-colors",
-                (isCash ? canSaveCash : canSaveTrade) && !submitting && portfolioId != null
-                  ? "bg-[#09090B] hover:bg-[#27272A]"
-                  : "cursor-not-allowed bg-[#A1A1AA] opacity-50",
-              )}
-            >
-              {submitting ? "Saving…" : "Save"}
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
+      </AppModalShell>
+    </AppModalOverlay>
   );
 }
 

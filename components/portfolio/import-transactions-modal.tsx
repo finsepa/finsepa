@@ -1,9 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useId, useMemo, useState } from "react";
-import { createPortal } from "react-dom";
 import { format, parseISO } from "date-fns";
-import { Check, Loader2, Pencil, Trash2, Upload, X } from "lucide-react";
+import { Check, Loader2, Pencil, Trash2, Upload } from "@/lib/icons";
 
 import {
   newTransactionRowId,
@@ -27,6 +26,13 @@ import {
   replayTradeTransactionsToHoldings,
 } from "@/lib/portfolio/rebuild-holdings-from-trades";
 import { formatPortfolioUsdPerUnit } from "@/lib/portfolio/format-portfolio-usd-unit";
+import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
+import {
+  AppModalFooter,
+  AppModalShell,
+  appModalCancelButtonClass,
+  appModalPrimaryButtonClass,
+} from "@/components/ui/app-modal-shell";
 import { cn } from "@/lib/utils";
 
 const ACCEPT = ".csv,.xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv";
@@ -102,15 +108,6 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
 
   const hasPortfolio =
     selectedPortfolioId != null && portfolios.some((p) => p.id === selectedPortfolioId);
-
-  useEffect(() => {
-    if (!open) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -426,7 +423,6 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
   ]);
 
   if (!open) return null;
-  if (typeof document === "undefined") return null;
 
   const cellClass = (r: ImportRow, field: ImportFieldKey, extra?: string) =>
     cn(
@@ -437,46 +433,50 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
 
   const showAddingOverlay = submitting && phase === "review";
 
-  return createPortal(
+  return (
     <>
-      <div
-        className="fixed inset-0 z-[115] flex items-center justify-center bg-black/40 p-4"
-        role="presentation"
-        onMouseDown={(e) => {
-          if (submitting) return;
-          if (e.target === e.currentTarget) onClose();
-        }}
+      <AppModalOverlay
+        open={open}
+        onClose={submitting ? undefined : onClose}
+        zIndex={115}
       >
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby={titleId}
-          aria-busy={showAddingOverlay}
-          className={cn(
-            "flex w-full flex-col rounded-xl bg-white shadow-[0px_10px_16px_-3px_rgba(10,10,10,0.1),0px_4px_6px_0px_rgba(10,10,10,0.04)] min-h-0",
-            phase === "success" ? "max-w-md" : "max-h-[min(92vh,880px)] max-w-[800px]",
-          )}
-          onMouseDown={(e) => e.stopPropagation()}
-        >
-          <div className="flex shrink-0 items-center justify-between border-b border-[#E4E4E7] px-5 py-3">
-            <h2 id={titleId} className="text-lg font-semibold leading-7 tracking-tight text-[#09090B]">
-              {phase === "success" ? "Import complete" : "Import Transactions"}
-            </h2>
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={submitting}
-              className={cn(
-                "flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-[#09090B] transition-colors",
-                submitting ? "cursor-not-allowed opacity-40" : "hover:bg-[#F4F4F5]",
+        <AppModalShell
+          titleId={titleId}
+          title={phase === "success" ? "Import complete" : "Import Transactions"}
+          onClose={onClose}
+          closeDisabled={submitting}
+          maxWidthClass={phase === "success" ? "w-full max-w-md" : "w-full max-w-[800px]"}
+          maxHeightClass={phase === "success" ? "max-h-[min(90vh,804px)]" : "max-h-[min(92vh,880px)]"}
+          bodyClassName="px-5 pb-4 pt-4"
+          footer={
+            <AppModalFooter className={phase === "success" ? "justify-end" : undefined}>
+              {phase === "success" ? (
+                <button type="button" onClick={onClose} className={appModalCancelButtonClass}>
+                  Close
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    disabled={submitting}
+                    className={appModalCancelButtonClass}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!hasPortfolio || !canImport || submitting}
+                    onClick={() => void handleAdd()}
+                    className={appModalPrimaryButtonClass(hasPortfolio && canImport && !submitting)}
+                  >
+                    {submitting ? "Adding…" : "Add"}
+                  </button>
+                </>
               )}
-              aria-label="Close"
-            >
-              <X className="h-5 w-5" strokeWidth={2} />
-            </button>
-          </div>
-
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-4 pt-4">
+            </AppModalFooter>
+          }
+        >
           {phase === "success" ? (
             <div className="py-2">
               <p className="text-sm leading-relaxed text-[#09090B]">
@@ -803,75 +803,27 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
               ) : null}
             </>
           ) : null}
-        </div>
+        </AppModalShell>
+      </AppModalOverlay>
 
-        <div className="flex shrink-0 gap-3 border-t border-[#E4E4E7] px-6 py-4">
-          {phase === "success" ? (
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex min-h-9 w-full items-center justify-center rounded-[10px] bg-[#F4F4F5] px-4 py-2 text-sm font-medium text-[#09090B] transition-colors hover:bg-[#EBEBEB]"
-            >
-              Close
-            </button>
-          ) : (
-            <>
-              <button
-                type="button"
-                onClick={onClose}
-                disabled={submitting}
-                className={cn(
-                  "flex min-h-9 flex-1 items-center justify-center rounded-[10px] bg-[#F4F4F5] px-4 py-2 text-sm font-medium text-[#09090B] transition-colors",
-                  submitting ? "cursor-not-allowed opacity-50" : "hover:bg-[#EBEBEB]",
-                )}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={!hasPortfolio || !canImport || submitting}
-                onClick={() => void handleAdd()}
-                className={cn(
-                  "flex min-h-9 flex-1 items-center justify-center rounded-[10px] px-4 py-2 text-sm font-medium text-white transition-colors",
-                  hasPortfolio && canImport && !submitting
-                    ? "bg-[#09090B] hover:bg-[#27272A]"
-                    : "cursor-not-allowed bg-[#A1A1AA] opacity-50",
-                )}
-              >
-                {submitting ? "Adding…" : "Add"}
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-      </div>
-
-      {showAddingOverlay ? (
-        <div
-          className="fixed inset-0 z-[120] flex items-center justify-center bg-black/45 p-4"
-          role="presentation"
-          aria-hidden={false}
+      <AppModalOverlay open={showAddingOverlay} zIndex={120} closeOnBackdropClick={false}>
+        <AppModalShell
+          titleId={addingStatusId}
+          showClose={false}
+          maxWidthClass="w-full max-w-[360px]"
+          bodyClassName="px-8 py-10 text-center"
+          bodyScroll={false}
         >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-live="polite"
-            aria-labelledby={addingStatusId}
-            aria-describedby={`${addingStatusId}-desc`}
-            className="w-full max-w-[360px] rounded-xl border border-[#E4E4E7] bg-white px-8 py-10 text-center shadow-[0px_10px_16px_-3px_rgba(10,10,10,0.12)]"
-          >
-            <Loader2 className="mx-auto h-10 w-10 animate-spin text-[#09090B]" strokeWidth={1.75} aria-hidden />
-            <p id={addingStatusId} className="mt-5 text-lg font-semibold tracking-tight text-[#09090B]">
-              Adding
-            </p>
-            <p id={`${addingStatusId}-desc`} className="mt-2 text-sm leading-relaxed text-[#71717A]">
-              Applying your transactions and fetching market prices. Please wait—this can take a little while if you
-              imported many rows.
-            </p>
-          </div>
-        </div>
-      ) : null}
-    </>,
-    document.body,
+          <Loader2 className="mx-auto h-10 w-10 animate-spin text-[#09090B]" strokeWidth={1.75} aria-hidden />
+          <p id={addingStatusId} className="mt-5 text-lg font-semibold tracking-tight text-[#09090B]">
+            Adding
+          </p>
+          <p id={`${addingStatusId}-desc`} className="mt-2 text-sm leading-relaxed text-[#71717A]">
+            Applying your transactions and fetching market prices. Please wait—this can take a little while if you
+            imported many rows.
+          </p>
+        </AppModalShell>
+      </AppModalOverlay>
+    </>
   );
 }

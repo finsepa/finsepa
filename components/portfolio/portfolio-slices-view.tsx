@@ -32,8 +32,8 @@ import {
   ShoppingBag,
   Smartphone,
   Wallet,
-  type LucideIcon,
-} from "lucide-react";
+  type AppIcon,
+} from "@/lib/icons";
 
 /** Same palette as {@link PortfolioAllocationView} for visual consistency. */
 const PALETTE = [
@@ -229,7 +229,7 @@ function allocationDenominatorUsd(holdings: PortfolioHolding[], transactions: Po
   return equity + Math.max(0, cashUsd);
 }
 
-function sectorIconFor(kind: SectorBucket["kind"], label: string): LucideIcon {
+function sectorIconFor(kind: SectorBucket["kind"], label: string): AppIcon {
   if (kind === "cash") return Wallet;
   if (kind === "crypto") return Coins;
   const L = label.toLowerCase();

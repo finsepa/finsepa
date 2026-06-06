@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Landmark } from "lucide-react";
+import { Landmark } from "@/lib/icons";
 import { useEffect, useMemo, useState } from "react";
 
 import { SkeletonBox } from "@/components/markets/skeleton";

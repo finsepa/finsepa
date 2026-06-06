@@ -1,4 +1,4 @@
-import { Check } from "lucide-react";
+import { Check } from "@/lib/icons";
 import type { InputHTMLAttributes, ReactNode } from "react";
 
 import { cn } from "@/lib/utils";

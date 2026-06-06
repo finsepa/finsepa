@@ -23,6 +23,7 @@ import { StockPeersTab } from "./stock-peers-tab";
 import { StockProfileTab } from "./stock-profile-tab";
 import { StockSuperinvestorsTab } from "./stock-superinvestors-tab";
 import { StockTargetPriceTab } from "./stock-target-price-tab";
+import { StockBreadcrumbs } from "./stock-breadcrumbs";
 import { StockHeader } from "./stock-header";
 import { ChartControls } from "./chart-controls";
 import { MiniTable } from "./mini-table";
@@ -364,17 +365,17 @@ export function StockPageContent({
   );
   const onSessionHeaderDisplay = useCallback((s: ChartDisplayState) => {
     setSessionHeaderUi((prev) => {
+      const next: ChartDisplayState = { ...s };
       if (s.loading && prev.displayPrice != null && !s.selectionActive) {
-        return {
-          ...s,
-          loading: false,
-          displayPrice: s.displayPrice ?? prev.displayPrice,
-          displayChangeAbs: s.displayChangeAbs ?? prev.displayChangeAbs,
-          displayChangePct: s.displayChangePct ?? prev.displayChangePct,
-          priceTimestampLabel: s.priceTimestampLabel ?? prev.priceTimestampLabel,
-        };
+        next.loading = false;
+        next.displayPrice = s.displayPrice ?? prev.displayPrice;
+        next.displayChangeAbs = s.displayChangeAbs ?? prev.displayChangeAbs;
+        next.displayChangePct = s.displayChangePct ?? prev.displayChangePct;
       }
-      return s;
+      if (next.priceTimestampLabel == null && prev.priceTimestampLabel != null) {
+        next.priceTimestampLabel = prev.priceTimestampLabel;
+      }
+      return next;
     });
   }, []);
 
@@ -479,7 +480,7 @@ export function StockPageContent({
         : spotHeaderUi;
     if (settled.priceTimestampLabel != null) return settled;
     const pts = initialSessionChartMemo?.points;
-    if (!pts?.length || settled.loading || settled.displayPrice == null) return settled;
+    if (!pts?.length || settled.displayPrice == null) return settled;
     const last = pts[pts.length - 1];
     if (!last || !Number.isFinite(last.time)) return settled;
     return {
@@ -500,7 +501,9 @@ export function StockPageContent({
   const stockChartDrivesHeader = true;
 
   return (
-    <div className="relative min-w-0 space-y-5 px-4 py-0 sm:space-y-5 sm:px-9 sm:py-6">
+    <div className="relative min-w-0">
+      <StockBreadcrumbs ticker={ticker} headerMeta={headerMeta} />
+      <div className="space-y-5 px-4 py-0 sm:space-y-5 sm:px-9 sm:py-6">
       <KeyStatsMetricChartModal
         key={revenueProfitModalMetric ?? "closed"}
         ticker={ticker}
@@ -783,6 +786,7 @@ export function StockPageContent({
           />
         </div>
       ) : null}
+      </div>
     </div>
   );
 }

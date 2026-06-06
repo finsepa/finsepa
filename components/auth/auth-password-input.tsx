@@ -1,6 +1,6 @@
 "use client";
 
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff } from "@/lib/icons";
 import { useState, type InputHTMLAttributes } from "react";
 
 import { authInputClassName } from "@/components/auth/auth-form-ui";

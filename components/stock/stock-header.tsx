@@ -1,9 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { Plus, Search } from "lucide-react";
+import { Plus } from "@/lib/icons";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
 import { useSpringTriplet } from "@/components/chart/use-spring-numbers";
 import { mergeLogoMemory, readLogoMemory } from "@/lib/logos/logo-memory";
 import { getStockDetailMetaFromTicker } from "@/lib/market/stock-detail-meta";
@@ -14,12 +12,7 @@ import {
 import type { StockChartSeries } from "@/lib/market/stock-chart-types";
 import { formatUsdAmountGrouped2dp, formatUsdCompact, formatUsdPrice } from "@/lib/market/key-stats-basic-format";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
-import { UsEquityMarketSessionBadge } from "@/components/stock/us-equity-market-session-badge";
 import { WatchlistStarButton } from "@/components/watchlist/watchlist-star-button";
-import { CompanyPicker } from "@/components/charting/company-picker";
-import { mapProviderSectorToCanonical } from "@/lib/screener/screener-gics-sectors";
-import { screenerSectorCompaniesHref } from "@/lib/screener/screener-sector-url";
-import { screenerIndustryDrillHref } from "@/lib/screener/screener-industry-url";
 
 type Props = {
   ticker: string;
@@ -67,13 +60,10 @@ export function StockHeader({
   headerMetaLoading,
   headerChartMetric = "price",
 }: Props) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
   const { openNewTransactionWithPreset } = usePortfolioWorkspace();
   const meta = getStockDetailMetaFromTicker(ticker);
   const symbol = meta.ticker;
   const exchange = headerMeta?.exchange?.trim() ?? "";
-  const breadcrumbSymbol = symbol;
   const listingSubtitle = getStockListingSubtitleParts({
     ticker: symbol,
     exchange,
@@ -95,6 +85,11 @@ export function StockHeader({
   }, [symbol, serverLogo]);
 
   const settledTripletRef = useRef<{ price: number; abs: number; pct: number } | null>(null);
+  const settledTimestampRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    settledTimestampRef.current = null;
+  }, [ticker]);
   const springTarget = useMemo(() => {
     const hasFull =
       price != null &&
@@ -115,6 +110,12 @@ export function StockHeader({
 
   const anim = useSpringTriplet(springTarget, { stiffness: 520, damping: 38, epsilon: 1e-4 });
 
+  if (priceTimestampLabel) {
+    settledTimestampRef.current = priceTimestampLabel;
+  }
+  const displayTimestamp = priceTimestampLabel ?? settledTimestampRef.current;
+  const showTimestampLoading = chartLoading && anim.price == null && displayTimestamp == null;
+
   const hasChange = changePct != null && changeAbs != null && Number.isFinite(changePct) && Number.isFinite(changeAbs);
   const isPositive = hasChange ? changeAbs >= 0 : true;
   const hasSelectionSecondary =
@@ -130,99 +131,8 @@ export function StockHeader({
         : "text-[#DC2626]"
       : "text-[#09090B]";
 
-  const sectorLabel = headerMeta?.sector?.trim() || null;
-  const industryLabel = headerMeta?.industry?.trim() || null;
-  const canonicalSector = sectorLabel ? mapProviderSectorToCanonical(sectorLabel) : null;
-
-  const breadcrumbCrumbClass = "min-w-0 truncate";
-  const breadcrumbLinkClass = `${breadcrumbCrumbClass} transition-colors hover:text-[#09090B] hover:underline`;
-  const breadcrumbSep = (
-    <span className="shrink-0 select-none" aria-hidden>
-      /
-    </span>
-  );
-
   return (
     <div className="space-y-3">
-      <div className="flex min-w-0 flex-wrap items-center gap-2 text-[14px] text-[#71717A] sm:flex-nowrap sm:overflow-hidden">
-        <Link href="/screener" className={`shrink-0 ${breadcrumbLinkClass}`}>
-          Stocks
-        </Link>
-        {sectorLabel && (
-          <>
-            {breadcrumbSep}
-            {canonicalSector ? (
-              <Link
-                href={screenerSectorCompaniesHref(canonicalSector)}
-                className={`${breadcrumbLinkClass} max-w-[38%] min-w-0 sm:max-w-[min(200px,28vw)]`}
-                title={sectorLabel}
-              >
-                {sectorLabel}
-              </Link>
-            ) : (
-              <span
-                className={`${breadcrumbCrumbClass} max-w-[38%] min-w-0 sm:max-w-[min(200px,28vw)]`}
-                title={sectorLabel}
-              >
-                {sectorLabel}
-              </span>
-            )}
-          </>
-        )}
-        {industryLabel && (
-          <>
-            {breadcrumbSep}
-            {canonicalSector ? (
-              <Link
-                href={screenerIndustryDrillHref(canonicalSector, industryLabel)}
-                className={`${breadcrumbLinkClass} min-w-0 max-w-[42%] sm:max-w-[min(240px,32vw)]`}
-                title={industryLabel}
-              >
-                {industryLabel}
-              </Link>
-            ) : (
-              <span
-                className={`${breadcrumbCrumbClass} min-w-0 max-w-[42%] sm:max-w-[min(240px,32vw)]`}
-                title={industryLabel}
-              >
-                {industryLabel}
-              </span>
-            )}
-          </>
-        )}
-        {breadcrumbSep}
-        <div className="shrink-0">
-        <CompanyPicker
-          includeCrypto={false}
-          alwaysAllowOpen
-          menuAlign="trailing"
-          maxExtraCompanies={1}
-          excludeSymbols={[symbol]}
-          onPick={({ symbol: nextSym }) => {
-            const qs =
-              typeof window !== "undefined" ? window.location.search.replace(/^\?/, "") : searchParams?.toString() ?? "";
-            const url = `/stock/${encodeURIComponent(nextSym)}${qs ? `?${qs}` : ""}`;
-            router.push(url);
-          }}
-        >
-          {({ open, setOpen }) => (
-            <button
-              type="button"
-              onClick={() => setOpen((o) => !o)}
-              aria-expanded={open}
-              aria-haspopup="listbox"
-              aria-label={`${breadcrumbSymbol}, search for another stock`}
-              className="inline-flex h-6 shrink-0 cursor-pointer items-center gap-1.5 rounded-md border border-[#E4E4E7] bg-white px-2 text-[12px] font-medium leading-4 text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors hover:bg-[#FAFAFA]"
-              title={breadcrumbSymbol}
-            >
-              <Search className="h-3.5 w-3.5 shrink-0 text-[#71717A]" strokeWidth={2} aria-hidden />
-              <span className="truncate">{breadcrumbSymbol}</span>
-            </button>
-          )}
-        </CompanyPicker>
-        </div>
-      </div>
-
       <div className="flex items-center justify-between gap-4">
         <div className="flex min-w-0 items-center gap-4">
           {logoSrc ? (
@@ -290,8 +200,7 @@ export function StockHeader({
         </div>
       </div>
 
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+      <div className="min-w-0">
         <div
           className={`flex flex-wrap items-baseline gap-2 transition-[transform,opacity] duration-200 ease-out ${
             chartHovering ? "translate-y-px" : ""
@@ -363,30 +272,15 @@ export function StockHeader({
             </>
           )}
         </div>
-        {chartLoading && anim.price == null ? (
-          <div className="mt-0.5 text-[12px] text-[#71717A]">Loading…</div>
-        ) : chartEmpty ? (
-          <div className="mt-0.5 max-md:block md:hidden">
-            <UsEquityMarketSessionBadge variant="inline" />
+        {!chartEmpty || displayTimestamp != null || showTimestampLoading ? (
+          <div className="mt-0.5 min-h-4 text-[12px] leading-4 text-[#71717A]">
+            {showTimestampLoading ? (
+              "Loading…"
+            ) : displayTimestamp ? (
+              <span className="min-w-0">{displayTimestamp}</span>
+            ) : null}
           </div>
-        ) : priceTimestampLabel ? (
-          <div className="mt-0.5 flex flex-wrap items-center gap-x-1 text-[12px] leading-4 text-[#71717A]">
-            <span className="min-w-0">{priceTimestampLabel}</span>
-            <span className="hidden max-md:inline max-md:shrink-0" aria-hidden>
-              ·
-            </span>
-            <UsEquityMarketSessionBadge
-              variant="inline"
-              className="hidden max-md:inline-flex max-md:shrink-0"
-            />
-          </div>
-        ) : (
-          <div className="mt-0.5 max-md:block md:hidden">
-            <UsEquityMarketSessionBadge variant="inline" />
-          </div>
-        )}
-        </div>
-        <UsEquityMarketSessionBadge className="hidden shrink-0 self-end md:inline-flex" />
+        ) : null}
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, X } from "lucide-react";
+import { Search, X } from "@/lib/icons";
 
 export function SuperinvestorTransactionsSearch({
   value,

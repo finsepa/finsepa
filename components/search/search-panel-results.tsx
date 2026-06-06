@@ -12,6 +12,7 @@ export function SearchPanelResults({
   recent,
   queryTrim,
   loading,
+  searchPending,
   showStaleList,
   noResults,
   items,
@@ -32,6 +33,7 @@ export function SearchPanelResults({
   recent: SearchAssetItem[];
   queryTrim: string;
   loading: boolean;
+  searchPending: boolean;
   showStaleList: boolean;
   noResults: boolean;
   items: SearchAssetItem[];
@@ -74,7 +76,7 @@ export function SearchPanelResults({
             </ul>
           )}
         </>
-      ) : loading && !showStaleList ? (
+      ) : searchPending && !showStaleList ? (
         <SearchLoadingIndicator className={sectionClassName} />
       ) : noResults ? (
         <p className={`${sectionClassName} py-8 text-center text-[12px] leading-5 text-[#71717A]`}>

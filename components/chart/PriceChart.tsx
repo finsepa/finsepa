@@ -144,7 +144,23 @@ function layoutRangePriceBadge(
     anchor === "center"
       ? Math.max(44, Math.min(plotWidth - 44, x))
       : Math.max(8, x);
-  return { left, top: y };
+  return { left: Math.round(left), top: Math.round(y) };
+}
+
+function rangeChartPriceBadgeEqual(
+  a: RangeChartPriceBadge | null,
+  b: RangeChartPriceBadge | null,
+): boolean {
+  if (a === b) return true;
+  if (a == null || b == null) return false;
+  return a.left === b.left && a.top === b.top && a.label === b.label && a.anchor === b.anchor;
+}
+
+function commitRangePriceBadge(
+  setBadge: React.Dispatch<React.SetStateAction<RangeChartPriceBadge | null>>,
+  next: RangeChartPriceBadge | null,
+) {
+  setBadge((prev) => (rangeChartPriceBadgeEqual(prev, next) ? prev : next));
 }
 
 export type ChartDisplayState = {
@@ -214,6 +230,9 @@ type Props = {
 function isFiniteNumber(v: unknown): v is number {
   return typeof v === "number" && Number.isFinite(v);
 }
+
+const EMPTY_TRADE_MARKERS: readonly HoldingsTradeMarker[] = [];
+const EMPTY_HOLDINGS_QUARTER_BANDS: readonly HoldingsQuarterTradeBand[] = [];
 
 const GREEN = "#16A34A";
 const RED = "#DC2626";
@@ -659,8 +678,8 @@ export function PriceChart({
   onDisplayChange,
   initialChart,
   holdingsStyle = false,
-  tradeMarkers = [],
-  holdingsQuarterBands = [],
+  tradeMarkers = EMPTY_TRADE_MARKERS,
+  holdingsQuarterBands = EMPTY_HOLDINGS_QUARTER_BANDS,
   holdingsEarlierSummary = null,
   tradeTooltipItems = [],
   costBasisPrice = null,
@@ -1487,32 +1506,33 @@ export function PriceChart({
     syncRangePriceBadgesRef.current = () => {
       if (hideMobileYAxisLabelsRef.current && crosshairHoveredRef.current) return;
       if (holdingsStyleRef.current) {
-        setRangeOpenBadge(null);
-        setRangeHighBadge(null);
+        commitRangePriceBadge(setRangeOpenBadge, null);
+        commitRangePriceBadge(setRangeHighBadge, null);
         return;
       }
       const chart = chartRef.current;
       const s = seriesRef.current;
       if (!chart || !s) {
-        setRangeOpenBadge(null);
-        setRangeHighBadge(null);
+        commitRangePriceBadge(setRangeOpenBadge, null);
+        commitRangePriceBadge(setRangeHighBadge, null);
         return;
       }
       const pts = pointsRef.current.filter((p) => isFiniteNumber(p.time) && isFiniteNumber(p.value));
       const first = pts[0];
       if (!first) {
-        setRangeOpenBadge(null);
-        setRangeHighBadge(null);
+        commitRangePriceBadge(setRangeOpenBadge, null);
+        commitRangePriceBadge(setRangeHighBadge, null);
         return;
       }
       const plotWidth = containerRef.current?.clientWidth ?? chart.paneSize(0).width;
       const metric = chartMetricSeriesRef.current;
       const openLayout = layoutRangePriceBadge(chart, s, first, "start", plotWidth);
-      setRangeOpenBadge(
+      commitRangePriceBadge(
+        setRangeOpenBadge,
         openLayout
           ? {
               ...openLayout,
-              label: formatOverviewChartAxisValue(first.value, kind, metric),
+              label: formatOverviewChartAxisValue(first.value, kindRef.current, metric),
               anchor: "start",
             }
           : null,
@@ -1523,15 +1543,16 @@ export function PriceChart({
         !highPt ||
         (highPt.time === first.time && Math.abs(highPt.value - first.value) < 1e-9)
       ) {
-        setRangeHighBadge(null);
+        commitRangePriceBadge(setRangeHighBadge, null);
         return;
       }
       const highLayout = layoutRangePriceBadge(chart, s, highPt, "center", plotWidth);
-      setRangeHighBadge(
+      commitRangePriceBadge(
+        setRangeHighBadge,
         highLayout
           ? {
               ...highLayout,
-              label: formatOverviewChartAxisValue(highPt.value, kind, metric),
+              label: formatOverviewChartAxisValue(highPt.value, kindRef.current, metric),
               anchor: "center",
             }
           : null,
@@ -1622,8 +1643,8 @@ export function PriceChart({
       syncQuarterBandLayoutsRef.current = null;
       setQuarterBandLayouts([]);
       overviewInBarMarkersRef.current = null;
-      setRangeOpenBadge(null);
-      setRangeHighBadge(null);
+      commitRangePriceBadge(setRangeOpenBadge, null);
+      commitRangePriceBadge(setRangeHighBadge, null);
       chart.unsubscribeCrosshairMove(onCrosshairMove);
       markersRef.current = null;
       const sUnmount = seriesRef.current;

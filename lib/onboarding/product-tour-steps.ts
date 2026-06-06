@@ -1,4 +1,4 @@
-import type { LucideIcon } from "lucide-react";
+import type { AppIcon } from "@/lib/icons";
 import {
   Briefcase,
   CalendarDays,
@@ -6,7 +6,7 @@ import {
   Globe,
   LineChart,
   Wallet,
-} from "lucide-react";
+} from "@/lib/icons";
 
 /** Native PNG size for tour mockups (Figma app frames exported at 2× scale for crisp crop). */
 export const PRODUCT_TOUR_PREVIEW_NATIVE_WIDTH = 4096;
@@ -16,7 +16,7 @@ export type ProductTourStep = {
   id: string;
   title: string;
   description: string;
-  icon: LucideIcon;
+  icon: AppIcon;
   previewSrc: string;
   /** PNG pixel width when it differs from the default native size. */
   previewNativeWidth?: number;

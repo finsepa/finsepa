@@ -1,10 +1,10 @@
 "use client";
 
-import { createPortal } from "react-dom";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
-import { X } from "lucide-react";
-
 import { SegmentedControl } from "@/components/design-system";
+import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
+import { AppModalCloseButton, AppModalShell } from "@/components/ui/app-modal-shell";
+import { cn } from "@/lib/utils";
 import type { CryptoFearGreedHistoryPoint } from "@/lib/market/alternative-fear-greed";
 import { STOCK_CHART_RANGES, type StockChartRange } from "@/lib/market/stock-chart-types";
 
@@ -87,11 +87,8 @@ export function CryptoFearGreedModal({
   useEffect(() => {
     if (!open) return;
     document.addEventListener("keydown", onKeyDown);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = prev;
     };
   }, [open, onKeyDown]);
 
@@ -208,31 +205,27 @@ export function CryptoFearGreedModal({
 
   if (!open) return null;
 
-  return createPortal(
-    <div
-      className="fixed inset-0 z-[300] flex items-center justify-center p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby={titleId}
-    >
-      <button type="button" className="absolute inset-0 bg-black/40" aria-label="Close" onClick={onClose} />
-      <div className="relative z-10 flex max-h-[min(92vh,900px)] w-full max-w-[min(960px,calc(100vw-2rem))] flex-col overflow-hidden rounded-xl border border-[#E4E4E7] bg-white shadow-[0px_10px_16px_-3px_rgba(10,10,10,0.1),0px_4px_6px_0px_rgba(10,10,10,0.04)]">
-        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[#E4E4E7] px-5 py-4">
-          <div className="min-w-0 flex-1">
-            <h2 id={titleId} className="truncate text-[18px] font-semibold leading-7 text-[#09090B]">
-              Fear &amp; Greed Index
-            </h2>
+  return (
+    <AppModalOverlay open={open} onClose={onClose} zIndex={300}>
+      <AppModalShell
+        titleId={titleId}
+        maxWidthClass="w-full max-w-[min(960px,calc(100vw-2rem))]"
+        maxHeightClass="max-h-[min(92vh,900px)]"
+        bodyScroll={false}
+        header={
+          <div className="flex w-full items-center justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <h2 id={titleId} className="truncate text-[18px] font-semibold leading-7 text-[#09090B]">
+                Fear &amp; Greed Index
+              </h2>
+            </div>
+            <AppModalCloseButton onClick={onClose} />
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-[#71717A] transition-colors hover:bg-[#F4F4F5] hover:text-[#09090B]"
-            aria-label="Close"
-          >
-            <X className="h-5 w-5" strokeWidth={2} aria-hidden />
-          </button>
-        </div>
-
+        }
+        headerClassName="border-b border-[#E4E4E7] px-5 py-4"
+        bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
+        cardClassName="overflow-hidden"
+      >
         <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-2 px-5 py-3">
           <h3 className="min-w-0 text-[17px] font-semibold leading-7 text-[#09090B]">
             {latestLabel}: {latestValue == null ? "—" : latestValue}
@@ -343,9 +336,8 @@ export function CryptoFearGreedModal({
             </div>
           )}
         </div>
-      </div>
-    </div>,
-    document.body,
+      </AppModalShell>
+    </AppModalOverlay>
   );
 }
 

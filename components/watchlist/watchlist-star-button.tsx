@@ -1,6 +1,6 @@
 "use client";
 
-import { Star, Trash2 } from "lucide-react";
+import { Star, Trash2 } from "@/lib/icons";
 
 import { TopbarDelayedTooltip } from "@/components/layout/topbar-delayed-tooltip";
 import { isWatchlistTickerWatched } from "@/lib/watchlist/normalize-storage-key";

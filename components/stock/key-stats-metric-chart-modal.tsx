@@ -1,15 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
-import { createPortal } from "react-dom";
-import Link from "next/link";
-import { X } from "lucide-react";
-
 import { TabSwitcher } from "@/components/design-system";
-import { ScreenerRankBadge } from "@/components/earnings/screener-rank-badge";
+import type { TabSwitcherOption } from "@/components/design-system";
 import { CompanyLogo } from "@/components/screener/company-logo";
-import { FormListboxSelect } from "@/components/ui/form-listbox-select";
-import type { ListboxOption } from "@/components/ui/form-listbox-select";
 import {
   MultichartFundamentalsBar,
   MULTICHART_BAR_WIDTH_PX,
@@ -32,7 +26,6 @@ import type { ChartingSeriesPoint, FundamentalsSeriesMode } from "@/lib/market/c
 import type { StockDetailHeaderMeta } from "@/lib/market/stock-header-meta";
 import {
   CHARTING_METRIC_LABEL,
-  chartingMetricToParam,
   type ChartingMetricId,
 } from "@/lib/market/stock-charting-metrics";
 import {
@@ -41,12 +34,17 @@ import {
   maxPeriodsForFundamentalsChartTimeRange,
   type FundamentalsChartTimeRange,
 } from "@/lib/market/fundamentals-chart-time-range";
+import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
+import { AppModalShell } from "@/components/ui/app-modal-shell";
 import { AssetChartSkeleton } from "@/components/ui/chart-skeleton";
 import {
   fetchChartingFundamentalsSeriesCached,
   readChartingFundamentalsSeriesCache,
 } from "@/lib/charting/charting-fundamentals-client-cache";
 import { cn } from "@/lib/utils";
+
+/** Desktop chart modal width (960px pre–App Modal Shell; avoids shrink-wrapped ~480px default). */
+const KEY_STATS_DESKTOP_MODAL_WIDTH_CLASS = "w-full max-w-[960px]";
 
 /** Mobile Key Stats sheet: last 10 fiscal years (40 quarters). */
 const MOBILE_KEY_STATS_MAX_ANNUAL_BARS = 10;
@@ -117,9 +115,6 @@ function useMobileSheetDragDismiss(onClose: () => void, enabled: boolean) {
         }
       : undefined;
 
-  const backdropStyle =
-    dragOffsetY > 0 ? { opacity: Math.max(0.2, 0.6 - dragOffsetY / 400) } : undefined;
-
   const sheetPointerHandlers = enabled
     ? {
         onPointerDown,
@@ -129,7 +124,7 @@ function useMobileSheetDragDismiss(onClose: () => void, enabled: boolean) {
       }
     : {};
 
-  return { sheetStyle, backdropStyle, sheetPointerHandlers };
+  return { sheetStyle, sheetPointerHandlers };
 }
 
 const DESKTOP_PERIOD_TAB_OPTIONS = [
@@ -142,7 +137,7 @@ const MOBILE_PERIOD_TAB_OPTIONS = [
   { value: "quarterly" as const, label: "Quarter" },
 ] as const;
 
-const KEY_STATS_TIME_RANGE_OPTIONS: ListboxOption<FundamentalsChartTimeRange>[] =
+const KEY_STATS_TIME_RANGE_TAB_OPTIONS: TabSwitcherOption<FundamentalsChartTimeRange>[] =
   FUNDAMENTALS_CHART_TIME_RANGE_ORDER.map((value) => ({
     value,
     label: FUNDAMENTALS_CHART_TIME_RANGE_LABELS[value],
@@ -231,8 +226,6 @@ type Props = {
   initialAnnualPoints?: ChartingSeriesPoint[];
   initialQuarterlyPoints?: ChartingSeriesPoint[];
   headerMeta: StockDetailHeaderMeta | null;
-  /** When set (e.g. from calendar), matches Earnings preview badge. */
-  screenerRank?: number | null;
 };
 
 export function KeyStatsMetricChartModal({
@@ -242,10 +235,9 @@ export function KeyStatsMetricChartModal({
   initialAnnualPoints,
   initialQuarterlyPoints,
   headerMeta,
-  screenerRank = null,
 }: Props) {
   const isMobile = useKeyStatsModalMobile();
-  const { sheetStyle, backdropStyle, sheetPointerHandlers } = useMobileSheetDragDismiss(onClose, isMobile);
+  const { sheetStyle, sheetPointerHandlers } = useMobileSheetDragDismiss(onClose, isMobile);
   const [periodMode, setPeriodMode] = useState<FundamentalsSeriesMode>("annual");
   const [chartVisual, setChartVisual] = useState<MultichartVisual>("bar");
   const [timeRange, setTimeRange] = useState<FundamentalsChartTimeRange>("all");
@@ -323,11 +315,8 @@ export function KeyStatsMetricChartModal({
   useEffect(() => {
     if (!metricId) return;
     document.addEventListener("keydown", onKeyDown);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = prev;
     };
   }, [metricId, onKeyDown]);
 
@@ -355,9 +344,6 @@ export function KeyStatsMetricChartModal({
           ? MULTICHART_BAR_WIDTH_WIDE_PX
           : MULTICHART_BAR_WIDTH_EXTRA_WIDE_PX;
   const hasSeries = sliceLastAnnualWithMetric(points, metricId, maxBars).length > 0;
-  const chartingHref = `/stock/${encodeURIComponent(ticker.trim())}?tab=charting&metric=${encodeURIComponent(
-    chartingMetricToParam(metricId),
-  )}`;
   const metricTitle = CHARTING_METRIC_LABEL[metricId];
   const companyLine = headerMeta?.fullName?.trim() || null;
   const logoName = companyLine ?? ticker;
@@ -413,141 +399,117 @@ export function KeyStatsMetricChartModal({
     displayOptions,
   ]);
 
-  return createPortal(
-    <div
-      className={cn(
-        "fixed inset-0 z-[300]",
-        isMobile ? "flex items-end p-2" : "flex items-center justify-center p-4",
-      )}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="key-stats-metric-chart-title"
+  const shell = isMobile ? (
+    <AppModalShell
+      titleId="key-stats-metric-chart-title"
+      showClose={false}
+      maxWidthClass="w-full"
+      maxHeightClass="max-h-[min(92vh,720px)]"
+      className="key-stats-metric-sheet-enter !rounded-t-xl !rounded-b-none !bg-white !p-0 !shadow-[0px_10px_8px_rgba(10,10,10,0.1),0px_4px_3px_rgba(10,10,10,0.04)]"
+      bareBody
+      bodyScroll={false}
     >
-      <button
-        type="button"
-        className={cn("absolute inset-0", isMobile ? "bg-black/60" : "bg-black/40")}
-        style={isMobile ? backdropStyle : undefined}
-        aria-label="Close"
-        onClick={onClose}
-      />
       <div
-        className={cn(
-          "relative z-10 flex w-full flex-col overflow-hidden bg-white",
-          isMobile
-            ? "key-stats-metric-sheet-enter max-h-[min(92vh,720px)] rounded-xl border border-[#E4E4E7] shadow-[0px_10px_8px_rgba(10,10,10,0.1),0px_4px_3px_rgba(10,10,10,0.04)]"
-            : "max-h-[min(92vh,900px)] max-w-[min(1080px,calc(100vw-2rem))] rounded-xl border border-[#E4E4E7] shadow-[0px_10px_16px_-3px_rgba(10,10,10,0.1),0px_4px_6px_0px_rgba(10,10,10,0.04)]",
-        )}
+        data-sheet-drag-handle
+        className="flex shrink-0 cursor-grab flex-col items-center gap-3 px-4 pb-1 pt-2 active:cursor-grabbing"
+      >
+        <div className="h-1 w-10 shrink-0 rounded-full bg-[#D9D9D9]" aria-hidden />
+        <div className="flex w-full flex-col items-center gap-1 text-center">
+          <h2
+            id="key-stats-metric-chart-title"
+            className="text-[16px] font-semibold leading-6 text-[#09090B]"
+          >
+            {metricTitle}
+          </h2>
+          <p className="text-[11px] leading-4 text-[#71717A]">{mobileSubtitle}</p>
+        </div>
+      </div>
+      <div className="min-h-0 flex-1 touch-pan-y overflow-x-hidden overflow-y-auto px-4 py-2">
+        {chartBody}
+      </div>
+      <div className="flex shrink-0 items-center gap-2 px-4 pb-3 pt-1">
+        <TabSwitcher
+          size="sm"
+          fullWidth
+          options={periodTabOptions}
+          value={periodMode}
+          onChange={setPeriodMode}
+          aria-label="Reporting period"
+          className="min-w-0 flex-1"
+        />
+        <FundamentalsChartSettingsMenu options={displayOptions} onChange={setDisplayOptions} />
+        <MultichartVisualSwitcher variant="icon" value={chartVisual} onChange={setChartVisual} />
+      </div>
+    </AppModalShell>
+  ) : (
+    <AppModalShell
+      titleId="key-stats-metric-chart-title"
+      title="Metric"
+      onClose={onClose}
+      maxWidthClass="w-full"
+      maxHeightClass="max-h-[min(92vh,900px)]"
+      bodyScroll={false}
+      headerClassName="border-b border-[#E4E4E7] px-5 py-3"
+      bodyClassName="min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-0"
+      cardClassName="overflow-hidden rounded-t-none"
+    >
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-[#E4E4E7] px-5 pt-5 pb-3">
+        <div className="flex min-w-0 flex-1 items-start gap-3">
+          <CompanyLogo
+            name={logoName}
+            logoUrl={headerMeta?.logoUrl ?? ""}
+            symbol={ticker}
+            size="lg"
+          />
+          <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <span className="shrink-0 text-[18px] font-semibold leading-7 text-[#09090B]">
+              {metricTitle}
+            </span>
+            {companyLine ? (
+              <span className="min-w-0 truncate text-[14px] leading-5 text-[#71717A]">{companyLine}</span>
+            ) : (
+              <span className="min-w-0 truncate text-[14px] leading-5 text-[#71717A]">{ticker}</span>
+            )}
+          </span>
+        </div>
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+          <TabSwitcher
+            size="sm"
+            options={periodTabOptions}
+            value={periodMode}
+            onChange={setPeriodMode}
+            aria-label="Reporting period"
+          />
+          <FundamentalsChartSettingsMenu options={displayOptions} onChange={setDisplayOptions} />
+          <MultichartVisualSwitcher variant="icon" value={chartVisual} onChange={setChartVisual} />
+          <TabSwitcher
+            size="sm"
+            options={KEY_STATS_TIME_RANGE_TAB_OPTIONS}
+            value={timeRange}
+            onChange={setTimeRange}
+            aria-label="Date range"
+          />
+        </div>
+      </div>
+      <div className="min-h-0 flex-1 px-5 py-4">{chartBody}</div>
+    </AppModalShell>
+  );
+
+  return (
+    <AppModalOverlay
+      open={metricId != null}
+      onClose={onClose}
+      zIndex={300}
+      align={isMobile ? "bottom" : "center"}
+    >
+      <div
+        className={cn(!isMobile && KEY_STATS_DESKTOP_MODAL_WIDTH_CLASS)}
         style={isMobile ? sheetStyle : undefined}
+        onMouseDown={(e) => e.stopPropagation()}
         {...(isMobile ? sheetPointerHandlers : {})}
       >
-        {isMobile ? (
-          <>
-            <div
-              data-sheet-drag-handle
-              className="flex shrink-0 cursor-grab flex-col items-center gap-3 px-4 pb-1 pt-2 active:cursor-grabbing"
-            >
-              <div className="h-1 w-10 shrink-0 rounded-full bg-[#D9D9D9]" aria-hidden />
-              <div className="flex w-full flex-col items-center gap-1 text-center">
-                <h2
-                  id="key-stats-metric-chart-title"
-                  className="text-[16px] font-semibold leading-6 text-[#09090B]"
-                >
-                  {metricTitle}
-                </h2>
-                <p className="text-[11px] leading-4 text-[#71717A]">{mobileSubtitle}</p>
-              </div>
-            </div>
-            <div className="min-h-0 flex-1 touch-pan-y overflow-x-hidden overflow-y-auto px-4 py-2">
-              {chartBody}
-            </div>
-            <div className="flex shrink-0 items-center gap-2 px-4 pb-3 pt-1">
-              <TabSwitcher
-                size="sm"
-                fullWidth
-                options={periodTabOptions}
-                value={periodMode}
-                onChange={setPeriodMode}
-                aria-label="Reporting period"
-                className="min-w-0 flex-1"
-              />
-              <FundamentalsChartSettingsMenu
-                options={displayOptions}
-                onChange={setDisplayOptions}
-              />
-              <MultichartVisualSwitcher
-                variant="icon"
-                value={chartVisual}
-                onChange={setChartVisual}
-              />
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="flex shrink-0 items-center gap-3 border-b border-[#E4E4E7] px-5 py-4">
-              <Link
-                href={chartingHref}
-                onClick={() => onClose()}
-                className="flex min-w-0 flex-1 cursor-pointer items-start gap-3 rounded-[10px] outline-none ring-offset-2 transition-colors hover:bg-[#F4F4F5] focus-visible:ring-2 focus-visible:ring-[#09090B]/15"
-                title={`Open Charting — ${metricTitle}`}
-              >
-                <CompanyLogo name={logoName} logoUrl={headerMeta?.logoUrl ?? ""} symbol={ticker} size="lg" />
-                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <span className="flex min-w-0 flex-wrap items-center gap-2">
-                    <span
-                      id="key-stats-metric-chart-title"
-                      className="shrink-0 text-[18px] font-semibold leading-7 text-[#09090B]"
-                    >
-                      {metricTitle}
-                    </span>
-                    {screenerRank != null ? <ScreenerRankBadge rank={screenerRank} /> : null}
-                  </span>
-                  {companyLine ? (
-                    <span className="min-w-0 truncate text-[14px] leading-5 text-[#71717A]">{companyLine}</span>
-                  ) : (
-                    <span className="min-w-0 truncate text-[14px] leading-5 text-[#71717A]">{ticker}</span>
-                  )}
-                </span>
-              </Link>
-              <div className="flex shrink-0 flex-nowrap items-center gap-2">
-                <FormListboxSelect
-                  compact
-                  value={timeRange}
-                  onChange={setTimeRange}
-                  options={KEY_STATS_TIME_RANGE_OPTIONS}
-                  aria-label="Date range"
-                  className="w-[4.25rem] shrink-0"
-                  listboxClassName="z-[310]"
-                  menuAlign="trailing"
-                />
-                <TabSwitcher
-                  size="sm"
-                  options={periodTabOptions}
-                  value={periodMode}
-                  onChange={setPeriodMode}
-                  aria-label="Reporting period"
-                />
-                <FundamentalsChartSettingsMenu
-                  options={displayOptions}
-                  onChange={setDisplayOptions}
-                />
-                <MultichartVisualSwitcher variant="icon" value={chartVisual} onChange={setChartVisual} />
-              </div>
-              <span className="h-6 w-px shrink-0 bg-[#E4E4E7]" aria-hidden />
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-[#71717A] transition-colors hover:bg-[#F4F4F5] hover:text-[#09090B]"
-                aria-label="Close"
-              >
-                <X className="h-5 w-5" strokeWidth={2} />
-              </button>
-            </div>
-
-            <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-5 py-4">{chartBody}</div>
-          </>
-        )}
+        {shell}
       </div>
-    </div>,
-    document.body,
+    </AppModalOverlay>
   );
 }

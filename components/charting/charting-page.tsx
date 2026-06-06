@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
-import { LineChart } from "lucide-react";
+import { LineChart } from "@/lib/icons";
 import { useSearchParams } from "next/navigation";
 
 import { AssetPageTopLoader } from "@/components/layout/asset-page-top-loader";
@@ -13,7 +13,7 @@ import {
   isChartingSessionReady,
   parseChartingTickerList,
 } from "@/lib/market/stock-charting-metrics";
-import { ChartSkeleton } from "@/components/ui/chart-skeleton";
+import { ChartLoadingIndicator } from "@/components/ui/chart-loading-indicator";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 
 type Props = {
@@ -112,8 +112,7 @@ export function ChartingPage({
       >
         {pendingChartWorkspace ? (
           <div className="flex min-h-[min(50vh,420px)] w-full flex-col rounded-xl border border-[#E4E4E7] bg-white p-4 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
-            <span className="sr-only">Loading chart data</span>
-            <ChartSkeleton heightPx={320} className="min-h-0 flex-1" />
+            <ChartLoadingIndicator className="min-h-0 flex-1" />
           </div>
         ) : (
           <Empty variant="card" className="min-h-[min(50vh,420px)] w-full">

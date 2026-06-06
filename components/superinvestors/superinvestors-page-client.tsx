@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { UserRound } from "lucide-react";
+import { UserRound } from "@/lib/icons";
 
 import { TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
 import {

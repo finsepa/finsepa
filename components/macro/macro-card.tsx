@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Maximize2, TrendingDown, TrendingUp } from "lucide-react";
+import { Maximize2, TrendingDown, TrendingUp } from "@/lib/icons";
 
 import { MacroChartModal } from "@/components/macro/macro-chart-modal";
 import { MacroSparkline, type MacroChartVariant } from "@/components/macro/macro-sparkline";

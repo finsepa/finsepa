@@ -3,19 +3,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { Search } from "lucide-react";
+import { Search } from "@/lib/icons";
 
 import type { SearchAssetItem } from "@/lib/search/search-types";
 import {
   readRecentSearches,
   removeRecentSearchById,
 } from "@/lib/search/recent-searches-storage";
+import { SearchLoadingIndicator } from "@/components/search/search-loading-indicator";
 import { SearchResultRow } from "@/components/search/search-result-row";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
 import { isWatchlistTickerWatched } from "@/lib/watchlist/normalize-storage-key";
 import { watchlistStorageKeyForSearchItem } from "@/lib/search/watchlist-storage-key";
 
-import { SEARCH_CLIENT_DEBOUNCE_MS } from "@/lib/search/search-policy";
+import { getSearchPanelViewState, SEARCH_CLIENT_DEBOUNCE_MS } from "@/lib/search/search-policy";
 
 function useDebouncedValue<T>(value: T, ms: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -164,11 +165,13 @@ export function NewsMobileSearchSheet({
     return () => window.removeEventListener("keydown", onKey);
   }, [close, handleDone, handleSelectItem, highlight, items, open, queryTrim, recent]);
 
-  const showResults = queryTrim.length > 0;
-  const emptyQuery = !showResults;
+  const { emptyQuery, searchPending, showStaleList, noResults } = getSearchPanelViewState({
+    queryTrim,
+    debouncedTrim,
+    loading,
+    resultCount: items.length,
+  });
   const noRecent = emptyQuery && recent.length === 0;
-  const showStaleList = showResults && items.length > 0;
-  const noResults = showResults && !loading && items.length === 0;
 
   const triggerLabel = useMemo(() => (initialQuery?.trim() ? initialQuery.trim() : "Search..."), [initialQuery]);
 
@@ -267,8 +270,8 @@ export function NewsMobileSearchSheet({
                         ))
                       )}
                     </>
-                  ) : loading && !showStaleList ? (
-                    <div className="px-4 py-10 text-center text-[14px] text-[#71717A]">Searching…</div>
+                  ) : searchPending && !showStaleList ? (
+                    <SearchLoadingIndicator className="px-4 py-10" />
                   ) : noResults ? (
                     <div className="px-4 py-10 text-center text-[14px] text-[#71717A]">
                       No results for “{queryTrim}”

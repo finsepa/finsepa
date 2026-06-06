@@ -15,7 +15,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { Wallet } from "lucide-react";
+import { Wallet } from "@/lib/icons";
 
 type ListingDetail = {
   id: string;

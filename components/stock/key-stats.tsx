@@ -6,7 +6,7 @@ import {
   type StockKeyStatsBundle,
 } from "@/lib/market/stock-key-stats-bundle-types";
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { CalendarDays } from "lucide-react";
+import { CalendarDays } from "@/lib/icons";
 
 import { cn } from "@/lib/utils";
 import { consensusLabelTextClass } from "@/lib/market/analyst-consensus-tone";

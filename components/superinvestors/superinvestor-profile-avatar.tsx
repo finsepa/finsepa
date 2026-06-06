@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { UserRound } from "lucide-react";
+import { UserRound } from "@/lib/icons";
 
 import { cn } from "@/lib/utils";
 
@@ -14,28 +14,45 @@ function avatarNeedsDarkTile(src: string): boolean {
  * Profile header avatar: local `/public` paths only — native `img` avoids `next/image`
  * optimizer quirks with protected-route static files; `onError` falls back to the generic icon.
  */
-export function SuperinvestorProfileAvatar({ src, name }: { src: string; name: string }) {
+const headerShell =
+  "relative block h-14 w-14 shrink-0 overflow-hidden rounded-full border border-[#E4E4E7] ring-1 ring-white";
+const donutShell =
+  "relative block h-[72px] w-[72px] shrink-0 overflow-hidden rounded-full border border-[#E4E4E7] ring-[1px] ring-white shadow-[0px_1px_4px_0px_rgba(10,10,10,0.08)]";
+
+export function SuperinvestorProfileAvatar({
+  src,
+  name,
+  size = "header",
+}: {
+  src: string;
+  name: string;
+  /** `donut` matches portfolio allocation center avatar (72px). */
+  size?: "header" | "donut";
+}) {
   const [failed, setFailed] = useState(false);
   const trimmed = src.trim();
+  const iconClass = size === "donut" ? "h-9 w-9" : "h-8 w-8";
+
   if (!trimmed || failed) {
     return (
       <span
-        className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-[#E4E4E7] bg-[#F4F4F5] text-[#71717A]"
+        className={cn(
+          "flex shrink-0 items-center justify-center rounded-full border border-[#E4E4E7] bg-[#F4F4F5] text-[#71717A]",
+          size === "donut" ? "h-[72px] w-[72px] ring-[1px] ring-white shadow-[0px_1px_4px_0px_rgba(10,10,10,0.08)]" : "h-14 w-14",
+        )}
         aria-hidden
       >
-        <UserRound className="h-8 w-8" strokeWidth={1.75} />
+        <UserRound className={iconClass} strokeWidth={1.75} />
       </span>
     );
   }
 
   const darkTile = avatarNeedsDarkTile(trimmed);
+  const shell = size === "donut" ? donutShell : headerShell;
 
   return (
     <span
-      className={cn(
-        "relative block h-14 w-14 shrink-0 overflow-hidden rounded-full border border-[#E4E4E7] ring-1 ring-white",
-        darkTile ? "bg-[#09090B]" : "bg-[#F4F4F5]",
-      )}
+      className={cn(shell, darkTile ? "bg-[#09090B]" : "bg-[#F4F4F5]")}
     >
       {/* eslint-disable-next-line @next/next/no-img-element -- public /superinvestors avatars */}
       <img

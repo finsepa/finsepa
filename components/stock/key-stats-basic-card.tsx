@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays } from "lucide-react";
+import { CalendarDays } from "@/lib/icons";
 import { useEffect, useState } from "react";
 
 import { consensusLabelTextClass } from "@/lib/market/analyst-consensus-tone";

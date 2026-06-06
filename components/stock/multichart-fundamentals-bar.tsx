@@ -19,8 +19,12 @@ import type { FundamentalsChartDisplayOptions } from "@/lib/chart/fundamentals-c
 import { DEFAULT_FUNDAMENTALS_CHART_DISPLAY_OPTIONS } from "@/lib/chart/fundamentals-chart-display-options";
 import {
   buildFundamentalsYAxisDomain,
+  CHARTING_LINE_HOVER_HALO_BG,
+  computeFundamentalsChartTooltipPlacement,
   FUNDAMENTALS_CHART_BAR_VALUE_LABEL_HEIGHT_PX,
+  FUNDAMENTALS_CHART_HOVER_BAND_BG,
   FUNDAMENTALS_CHART_REFERENCE_BADGE_CLASS,
+  FUNDAMENTALS_CHART_TOOLTIP_CLASS,
   valueToPlotBandTopPercent,
   type FundamentalsChartReferenceKind,
 } from "@/lib/chart/fundamentals-chart-surface";
@@ -144,8 +148,9 @@ const AXIS_LABEL_ROTATE_DEG = -42;
 export const MULTICHART_MAX_ANNUAL_BARS = FUNDAMENTALS_HISTORY_MAX_ANNUAL_PERIODS;
 export const MULTICHART_MAX_QUARTERLY_BARS = FUNDAMENTALS_HISTORY_MAX_QUARTERLY_PERIODS;
 
-/** Hover halo behind the active line point (not a full-height column). */
-const HOVER_DOT_HALO_BG = "rgba(59, 130, 246, 0.14)";
+/** Non-hovered period bars while a column is hovered — matches Charting workspace. */
+const BAR_HOVER_DIM_OPACITY = 0.6;
+
 const HOVER_DOT_HALO_RADIUS_PX = 14;
 /** Vertical guide from hovered dot down to the period label row. */
 const LINE_HOVER_CROSSHAIR_CLASS = "border-l border-dashed border-[#2563EB]";
@@ -161,27 +166,6 @@ export const MULTICHART_LINE_STROKE_WIDTH_PX = 2;
 const CHART_ZERO_BASELINE_BORDER = "rgba(228, 228, 231, 0.85)";
 
 const NEGATIVE_PERCENT_BAR_COLOR = "#DC2626";
-
-/** Reuse Earnings (Estimates) crosshair-to-tooltip layout — `anchorX` in px, relative to plot (left) edge. */
-function computeTooltipHorizontalPlacement(
-  focusX: number,
-  containerWidthPx: number,
-): { anchorX: number; side: "left" | "right" } {
-  const pad = 8;
-  const gap = 10;
-  const estW = Math.min(280, Math.max(140, containerWidthPx - 2 * pad));
-
-  if (focusX - gap - estW >= pad) {
-    return { anchorX: focusX, side: "left" };
-  }
-
-  let anchorX = focusX;
-  if (anchorX + gap + estW > containerWidthPx - pad) {
-    anchorX = containerWidthPx - pad - gap - estW;
-  }
-  anchorX = Math.max(pad, anchorX);
-  return { anchorX, side: "right" };
-}
 
 export function readChartingMetricValue(row: ChartingSeriesPoint, id: ChartingMetricId): number | null {
   if (isFinancialsExtraChartingMetricId(id)) {
@@ -206,6 +190,14 @@ export function sliceLastAnnualWithMetric(
 /** Tooltip values — two decimal places in K/M/B/T (e.g. `$258.24B`). */
 function formatTooltipValue(kind: ChartingMetricKind, p: number): string {
   return formatChartingTableCell(kind, p);
+}
+
+function resolveBarFillColor(baseColor: string, dimmed: boolean): string {
+  if (!dimmed) return baseColor;
+  if (baseColor === NEGATIVE_PERCENT_BAR_COLOR) {
+    return `rgba(220, 38, 38, ${BAR_HOVER_DIM_OPACITY})`;
+  }
+  return fundamentalsBarColorAtIndex(0, BAR_HOVER_DIM_OPACITY);
 }
 
 function formatAxisValue(kind: ChartingMetricKind, p: number): string {
@@ -333,23 +325,41 @@ type BarTooltipState = {
   y: number;
   side: "left" | "right";
   periodLabel: string;
-  valueLine: string;
+  metricLabel: string;
+  value: string;
 };
 
 function barTooltipStateFromEvent(
   e: MouseEvent<HTMLElement>,
   plotEl: HTMLElement,
   periodLabel: string,
-  valueLine: string,
+  metricLabel: string,
+  value: string,
 ): BarTooltipState {
   const plot = plotEl.getBoundingClientRect();
   const col = (e.currentTarget as HTMLElement).getBoundingClientRect();
   const focusX = col.left + col.width / 2 - plot.left;
-  const { anchorX, side } = computeTooltipHorizontalPlacement(
+  const { anchorX, side } = computeFundamentalsChartTooltipPlacement(
     focusX,
     Math.max(1, Math.floor(plot.width)),
   );
-  return { anchorX, y: e.clientY - plot.top, side, periodLabel, valueLine };
+  return { anchorX, y: e.clientY - plot.top, side, periodLabel, metricLabel, value };
+}
+
+function fundamentalsChartTooltipAtFocus(
+  plotEl: HTMLElement,
+  focusX: number,
+  pointerY: number,
+  periodLabel: string,
+  metricLabel: string,
+  value: string,
+): BarTooltipState {
+  const plot = plotEl.getBoundingClientRect();
+  const { anchorX, side } = computeFundamentalsChartTooltipPlacement(
+    focusX,
+    Math.max(1, Math.floor(plot.width)),
+  );
+  return { anchorX, y: pointerY - plot.top, side, periodLabel, metricLabel, value };
 }
 
 export function MultichartFundamentalsBar({
@@ -609,7 +619,7 @@ export function MultichartFundamentalsBar({
                         cx={lineSvg.pts[hoveredIndex]!.x}
                         cy={lineSvg.pts[hoveredIndex]!.y}
                         r={HOVER_DOT_HALO_RADIUS_PX}
-                        fill={HOVER_DOT_HALO_BG}
+                        fill={CHARTING_LINE_HOVER_HALO_BG}
                         className="pointer-events-none"
                       />
                     ) : null}
@@ -630,18 +640,17 @@ export function MultichartFundamentalsBar({
                               const plotR = plot.getBoundingClientRect();
                               const lineR = lineEl.getBoundingClientRect();
                               const focusX = x + (lineR.left - plotR.left);
-                              const { anchorX, side } = computeTooltipHorizontalPlacement(
-                                focusX,
-                                Math.max(1, Math.floor(plotR.width)),
-                              );
                               setHoveredIndex(i);
-                              setTip({
-                                anchorX,
-                                y: e.clientY - plotR.top,
-                                side,
-                                periodLabel: labels[i]!,
-                                valueLine: `${metricLabel}: ${formatTooltipValue(kind, v)}`,
-                              });
+                              setTip(
+                                fundamentalsChartTooltipAtFocus(
+                                  plot,
+                                  focusX,
+                                  e.clientY,
+                                  labels[i]!,
+                                  metricLabel,
+                                  formatTooltipValue(kind, v),
+                                ),
+                              );
                             }}
                             onMouseMove={(e) => {
                               const plot = plotAreaRef.current;
@@ -650,18 +659,17 @@ export function MultichartFundamentalsBar({
                               const plotR = plot.getBoundingClientRect();
                               const lineR = lineEl.getBoundingClientRect();
                               const focusX = x + (lineR.left - plotR.left);
-                              const { anchorX, side } = computeTooltipHorizontalPlacement(
-                                focusX,
-                                Math.max(1, Math.floor(plotR.width)),
-                              );
                               setHoveredIndex(i);
-                              setTip({
-                                anchorX,
-                                y: e.clientY - plotR.top,
-                                side,
-                                periodLabel: labels[i]!,
-                                valueLine: `${metricLabel}: ${formatTooltipValue(kind, v)}`,
-                              });
+                              setTip(
+                                fundamentalsChartTooltipAtFocus(
+                                  plot,
+                                  focusX,
+                                  e.clientY,
+                                  labels[i]!,
+                                  metricLabel,
+                                  formatTooltipValue(kind, v),
+                                ),
+                              );
                             }}
                           />
                           <circle
@@ -690,9 +698,13 @@ export function MultichartFundamentalsBar({
                   const vTop = valueToPlotBandTopPercent(v, yMin, yMax);
                   const barHeightPct = v >= 0 ? Math.max(0, zeroTop - vTop) : Math.max(0, vTop - zeroTop);
                   const barTopPct = v >= 0 ? vTop : zeroTop;
-                  const barColor =
+                  const baseBarColor =
                     kind === "percent" && v < 0 ? NEGATIVE_PERCENT_BAR_COLOR : seriesBarColor;
-                  const valueLine = `${metricLabel}: ${formatTooltipValue(kind, v)}`;
+                  const barColor = resolveBarFillColor(
+                    baseBarColor,
+                    hoveredIndex != null && hoveredIndex !== i,
+                  );
+                  const tooltipValue = formatTooltipValue(kind, v);
                   const leftPct = resolvePeriodCenterLeftPercent(
                     i,
                     n,
@@ -709,14 +721,28 @@ export function MultichartFundamentalsBar({
                         if (!plot) return;
                         setHoveredIndex(i);
                         setTip(
-                          barTooltipStateFromEvent(e, plot, labels[i]!, valueLine),
+                          barTooltipStateFromEvent(
+                            e,
+                            plot,
+                            labels[i]!,
+                            metricLabel,
+                            tooltipValue,
+                          ),
                         );
                       }}
                       onMouseMove={(e) => {
                         const plot = plotAreaRef.current;
                         if (!plot) return;
                         setHoveredIndex(i);
-                        setTip(barTooltipStateFromEvent(e, plot, labels[i]!, valueLine));
+                        setTip(
+                          barTooltipStateFromEvent(
+                            e,
+                            plot,
+                            labels[i]!,
+                            metricLabel,
+                            tooltipValue,
+                          ),
+                        );
                       }}
                     >
                       {hoveredIndex === i ? (
@@ -724,7 +750,7 @@ export function MultichartFundamentalsBar({
                           className="pointer-events-none absolute left-1/2 top-0 z-0 h-full -translate-x-1/2"
                           style={{
                             width: barHitWidthPx,
-                            backgroundColor: HOVER_DOT_HALO_BG,
+                            backgroundColor: FUNDAMENTALS_CHART_HOVER_BAND_BG,
                           }}
                           aria-hidden
                         />
@@ -787,7 +813,7 @@ export function MultichartFundamentalsBar({
 
             {tip ? (
               <div
-                className="pointer-events-none absolute z-30 max-w-[min(280px,calc(100%-16px))] rounded-lg border border-[#E4E4E7] bg-white px-3 py-2.5 pr-3.5 text-left shadow-[0px_1px_4px_0px_rgba(10,10,10,0.08),0px_1px_2px_0px_rgba(10,10,10,0.06)]"
+                className={FUNDAMENTALS_CHART_TOOLTIP_CLASS}
                 style={{
                   left: `clamp(8px, ${tip.anchorX}px, calc(100% - 8px))`,
                   top: tip.y,
@@ -796,6 +822,8 @@ export function MultichartFundamentalsBar({
                       ? "translate(calc(-100% - 10px), -50%)"
                       : "translate(10px, -50%)",
                 }}
+                role="tooltip"
+                aria-label="Chart tooltip"
               >
                 {tip.side === "left" ? (
                   <span className="absolute top-1/2 left-full -translate-y-1/2" aria-hidden>
@@ -809,9 +837,23 @@ export function MultichartFundamentalsBar({
                   </span>
                 )}
                 <p className="text-[12px] font-semibold leading-4 text-[#09090B]">{tip.periodLabel}</p>
-                <p className="mt-1.5 whitespace-nowrap text-[12px] font-normal leading-4 text-[#09090B]">
-                  {tip.valueLine}
-                </p>
+                <div className="mt-1.5 space-y-1">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="flex min-w-0 items-baseline gap-2">
+                      <span
+                        className="h-2.5 w-2.5 shrink-0 rounded-full"
+                        style={{ backgroundColor: seriesBarColor }}
+                        aria-hidden
+                      />
+                      <span className="truncate text-[12px] font-normal leading-4 text-[#71717A]">
+                        {tip.metricLabel}
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-[12px] font-semibold leading-4 tabular-nums text-[#09090B]">
+                      {tip.value}
+                    </span>
+                  </div>
+                </div>
               </div>
             ) : null}
           </div>

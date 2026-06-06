@@ -1,22 +1,24 @@
-import type { LucideIcon } from "lucide-react";
 import {
-  BookOpen,
-  CalendarDays,
-  ChartColumn,
-  Compass,
-  LayoutGrid,
-  Newspaper,
-  PanelsTopLeft,
-  Globe,
-  Landmark,
-  Users,
-} from "lucide-react";
+  BarChartSquare01,
+  BookOpen01,
+  Briefcase01,
+  Calendar,
+  Globe01,
+  Globe04,
+  Grid01,
+  IntersectCircle,
+  Rows01,
+  Users01,
+  type AppIcon,
+} from "@/lib/icons";
 
 import { NAV_EARNINGS_ENABLED, NAV_ECONOMY_ENABLED, NAV_MACRO_ENABLED, NAV_NEWS_ENABLED } from "@/lib/features/nav-flags";
 
+export type ProtectedNavIcon = AppIcon;
+
 export type ProtectedNavItem = {
   label: string;
-  icon: LucideIcon;
+  icon: ProtectedNavIcon;
   href: string;
   available: boolean;
   /** When true, item is active for any path that starts with `href` (e.g. nested routes). */
@@ -28,26 +30,26 @@ export type ProtectedNavItem = {
 export const protectedMarketItems: ProtectedNavItem[] = [
   {
     label: "Screener",
-    icon: Globe,
+    icon: Globe01,
     href: "/screener",
     available: true,
     activePathPrefixes: ["/screener", "/stock", "/crypto", "/index"],
   },
-  { label: "Heatmaps", icon: LayoutGrid, href: "/heatmaps", available: true },
-  { label: "News", icon: Newspaper, href: "/news", available: NAV_NEWS_ENABLED },
+  { label: "Heatmaps", icon: Grid01, href: "/heatmaps", available: true },
+  { label: "News", icon: BookOpen01, href: "/news", available: NAV_NEWS_ENABLED },
 ];
 
 export const protectedCalendarItems: ProtectedNavItem[] = [
-  { label: "Earnings", icon: CalendarDays, href: "/earnings", available: NAV_EARNINGS_ENABLED },
-  { label: "Economy", icon: BookOpen, href: "/economy", available: NAV_ECONOMY_ENABLED },
+  { label: "Earnings", icon: IntersectCircle, href: "/earnings", available: NAV_EARNINGS_ENABLED },
+  { label: "Economy", icon: Calendar, href: "/economy", available: NAV_ECONOMY_ENABLED },
 ];
 
 export const protectedDataItems: ProtectedNavItem[] = [
-  { label: "Macro", icon: Compass, href: "/macro", available: NAV_MACRO_ENABLED },
-  { label: "Charting", icon: ChartColumn, href: "/charting", available: true },
+  { label: "Macro", icon: Globe04, href: "/macro", available: NAV_MACRO_ENABLED },
+  { label: "Charting", icon: BarChartSquare01, href: "/charting", available: true },
   {
     label: "Comparison",
-    icon: PanelsTopLeft,
+    icon: Rows01,
     href: "/comparison",
     available: true,
     activePathPrefix: true,
@@ -57,12 +59,12 @@ export const protectedDataItems: ProtectedNavItem[] = [
 export const protectedCommunityItems: ProtectedNavItem[] = [
   {
     label: "Superinvestors",
-    icon: Landmark,
+    icon: Briefcase01,
     href: "/superinvestors",
     available: true,
     activePathPrefix: true,
   },
-  { label: "Portfolios", icon: Users, href: "/portfolios", available: true },
+  { label: "Portfolios", icon: Users01, href: "/portfolios", available: true },
 ];
 
 /** Community entries for the mobile bottom-nav sheet (same as desktop). */

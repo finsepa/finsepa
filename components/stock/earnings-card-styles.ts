@@ -13,6 +13,15 @@ export const EARNINGS_CARD_PRIOR_LINE_CLASS =
 /** Forward / consensus-only periods in Estimates (chart bars, table columns, summary cards). */
 export const EARNINGS_FORECAST_OPACITY_CLASS = "opacity-60";
 
+/** Left rule before the first forecast column in the Estimates summary table. */
+export const EARNINGS_FORECAST_COLUMN_SEPARATOR_CLASS =
+  "border-l border-solid border-[#E4E4E7] pl-2 sm:pl-3";
+
+export function isFirstForecastTableColumn(i: number, columnIsForecast?: boolean[]): boolean {
+  if (!columnIsForecast?.[i]) return false;
+  return i === 0 || !columnIsForecast[i - 1];
+}
+
 /** Multicharts / macro metric cards — Figma: 20px padding, 12px radius, 1px #E4E4E7 stroke. */
 export const MULTICHART_CARD_CLASS =
   "flex flex-col gap-2 overflow-x-hidden overflow-y-visible rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition hover:shadow-[0px_2px_4px_0px_rgba(10,10,10,0.08)]";

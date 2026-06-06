@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useMemo } from "react";
-import { LineChart } from "lucide-react";
+import { LineChart } from "@/lib/icons";
 import { useSearchParams } from "next/navigation";
 
 import { AssetPageTopLoader } from "@/components/layout/asset-page-top-loader";

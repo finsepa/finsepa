@@ -1,7 +1,7 @@
 "use client";
 
 import { format, parseISO, subMonths } from "date-fns";
-import { Loader2, UserRound } from "lucide-react";
+import { Loader2, UserRound } from "@/lib/icons";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { HoldingsTradeMarker, HoldingsTradeTooltipItem } from "@/components/chart/PriceChart";

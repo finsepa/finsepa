@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, LineChart } from "lucide-react";
+import { BarChart3, LineChart } from "@/lib/icons";
 
 import type { MultichartVisual } from "@/components/stock/multichart-fundamentals-bar";
 import { SegmentedControl } from "@/components/design-system/segmented-control";

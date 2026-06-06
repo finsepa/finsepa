@@ -2,7 +2,7 @@
 
 import { memo, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Bell, Briefcase, CircleQuestionMark, Star } from "lucide-react";
+import { Bell, Briefcase, Star } from "@/lib/icons";
 import { TOPBAR_SHOW_NOTIFICATIONS } from "@/lib/features/topbar-flags";
 import { TransactionPortfolioField } from "@/components/portfolio/transaction-portfolio-field";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
@@ -115,7 +115,7 @@ export function Topbar({
 }) {
   return (
     <>
-      <header className="flex h-14 min-w-0 flex-nowrap items-center gap-2 overflow-hidden max-md:px-4 md:min-h-[60px] md:h-auto md:gap-3 md:px-4 md:py-3">
+      <header className="flex h-14 min-w-0 flex-nowrap items-center gap-2 overflow-hidden max-md:px-4 md:min-h-[var(--shell-chrome-header-height)] md:h-auto md:gap-3 md:px-4 md:py-3">
         <div className="flex h-9 min-w-0 flex-1 items-center">
           <div className="min-w-0 w-full md:max-w-[360px]">
             <TopbarSearch />
@@ -159,16 +159,6 @@ export function Topbar({
             userDisplayName={userDisplayName}
             platformTrialDaysLeft={platformTrialDaysLeft}
           />
-
-          <TopbarDelayedTooltip label="Help" className="hidden md:inline-flex">
-            <a
-              href="mailto:hi@finsepa.com"
-              className={cn(topbarSquircleIconClass, "inline-flex")}
-              aria-label="Email hi@finsepa.com"
-            >
-              <CircleQuestionMark className="h-5 w-5 shrink-0" aria-hidden />
-            </a>
-          </TopbarDelayedTooltip>
         </div>
       </header>
     </>

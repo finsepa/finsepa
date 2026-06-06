@@ -327,6 +327,13 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
 
   const n = periods.length;
   const showChart = n > 0;
+  const firstForecastIndex = periods.findIndex((p) => p.isForecast);
+  const forecastSeparatorLeftPct =
+    firstForecastIndex > 0
+      ? (periodCenterLeftPercent(firstForecastIndex - 1, n) +
+          periodCenterLeftPercent(firstForecastIndex, n)) /
+        2
+      : null;
 
   const clearHover = () => {
     setHoveredIndex(null);
@@ -357,6 +364,13 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
                   role="img"
                   aria-label={metricConfig.ariaLabel}
                 >
+                {forecastSeparatorLeftPct != null ? (
+                  <div
+                    className="pointer-events-none absolute top-0 bottom-0 z-[1] w-px -translate-x-1/2 bg-[#E4E4E7]"
+                    style={{ left: `${forecastSeparatorLeftPct}%` }}
+                    aria-hidden
+                  />
+                ) : null}
                 {periods.map((p, i) => {
                   const leftPct = periodCenterLeftPercent(i, n);
                   /** Estimate bar height — fall back to reported actual when consensus is missing (common on Q1). */
@@ -513,7 +527,10 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
                     title={p.title}
                   >
                     <span
-                      className="inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]"
+                      className={cn(
+                        "inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]",
+                        p.isForecast && EARNINGS_FORECAST_OPACITY_CLASS,
+                      )}
                       style={{
                         transform: `rotate(${AXIS_LABEL_ROTATE_DEG}deg)`,
                         transformOrigin: "center bottom",

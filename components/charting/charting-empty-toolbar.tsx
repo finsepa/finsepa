@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Plus, RefreshCw, X } from "lucide-react";
+import { Plus, RefreshCw, X } from "@/lib/icons";
 
 import { ChartingCompanyAddDropdown } from "@/components/charting/charting-company-add-dropdown";
 import {
@@ -11,10 +11,12 @@ import {
   type ChartTimeRange,
 } from "@/components/charting/charting-workspace";
 import { ChartingVisualSwitcher } from "@/components/stock/multichart-visual-switcher";
-import { secondaryOutlineButtonClassName, TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
+import { secondaryFillButtonClassName, TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
 import {
   dropdownMenuFloatingScrollClassName,
   dropdownMenuRichItemClassName,
+  dropdownMenuSearchHeaderClassName,
+  dropdownMenuSearchInputClassName,
   dropdownMenuSurfaceClassName,
 } from "@/components/design-system/dropdown-menu-styles";
 import { cn } from "@/lib/utils";
@@ -287,7 +289,7 @@ export function ChartingEmptyToolbar({
                   return !o;
                 });
               }}
-              className={cn(secondaryOutlineButtonClassName, "gap-2 px-4")}
+              className={secondaryFillButtonClassName}
             >
               <Plus className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
               Add Metric
@@ -300,13 +302,13 @@ export function ChartingEmptyToolbar({
                 )}
                 role="listbox"
               >
-                <div className="border-b border-[#F4E4F5] px-2 pb-1 pt-1">
+                <div className={dropdownMenuSearchHeaderClassName}>
                   <input
                     ref={pickerInputRef}
                     value={pickerQuery}
                     onChange={(e) => setPickerQuery(e.target.value)}
                     placeholder="Search metrics…"
-                    className="w-full rounded-md border-0 bg-[#FAFAFA] px-2 py-1.5 text-[13px] text-[#09090B] placeholder:text-[#A1A1AA] outline-none ring-1 ring-transparent focus:ring-[#E4E4E7]"
+                    className={dropdownMenuSearchInputClassName}
                     aria-label="Search metrics"
                   />
                 </div>

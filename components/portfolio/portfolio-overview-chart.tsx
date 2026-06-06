@@ -28,7 +28,7 @@ import {
   type MouseEventParams,
   type Time,
 } from "lightweight-charts";
-import { LineChart, Settings } from "lucide-react";
+import { LineChart, Settings } from "@/lib/icons";
 
 import { baselineRelativeGradientEnabled } from "@/lib/chart/baseline-relative-gradient";
 

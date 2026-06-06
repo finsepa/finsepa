@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type MouseEvent } from "react";
-import { createPortal } from "react-dom";
-import { X } from "lucide-react";
+import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
+import { AppModalCloseButton, AppModalShell } from "@/components/ui/app-modal-shell";
 
 import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
 import {
@@ -479,11 +479,8 @@ export function EconomyEventHistoryModal({
   useEffect(() => {
     if (!open) return;
     document.addEventListener("keydown", onKeyDown);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = prev;
     };
   }, [open, onKeyDown]);
 
@@ -491,50 +488,46 @@ export function EconomyEventHistoryModal({
 
   const latestActual = points.length > 0 ? points[points.length - 1]! : null;
 
-  return createPortal(
-    <div
-      className="fixed inset-0 z-[300] flex items-center justify-center p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby={titleId}
-    >
-      <button type="button" className="absolute inset-0 bg-black/40" aria-label="Close" onClick={onClose} />
-      <div className="relative z-10 flex max-h-[min(92vh,720px)] w-full max-w-[min(960px,calc(100vw-2rem))] flex-col overflow-hidden rounded-xl border border-[#E4E4E7] bg-white shadow-[0px_10px_16px_-3px_rgba(10,10,10,0.1),0px_4px_6px_0px_rgba(10,10,10,0.04)]">
-        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[#E4E4E7] px-5 py-4">
-          <div className="min-w-0 flex-1">
-            <h2 id={titleId} className="truncate text-[18px] font-semibold leading-7 text-[#09090B]">
-              {eventLabel}
-            </h2>
-            {latestActual && (
-              <div className="mt-0.5 flex flex-wrap items-baseline gap-x-3 text-[13px] leading-5 text-[#71717A]">
-                {latestActual.actual != null && (
-                  <span>
-                    Actual: <span className="font-medium text-[#09090B]">{formatEconomyMetric(latestActual.actual)}</span>
-                  </span>
-                )}
-                {latestActual.estimate != null && (
-                  <span>
-                    Forecast: <span className="font-medium text-[#09090B]">{formatEconomyMetric(latestActual.estimate)}</span>
-                  </span>
-                )}
-                {latestActual.previous != null && (
-                  <span>
-                    Prior: <span className="font-medium text-[#09090B]">{formatEconomyMetric(latestActual.previous)}</span>
-                  </span>
-                )}
-              </div>
-            )}
+  return (
+    <AppModalOverlay open={open} onClose={onClose} zIndex={300}>
+      <AppModalShell
+        titleId={titleId}
+        maxWidthClass="w-full max-w-[min(960px,calc(100vw-2rem))]"
+        maxHeightClass="max-h-[min(92vh,720px)]"
+        bodyScroll={false}
+        header={
+          <div className="flex w-full items-center justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <h2 id={titleId} className="truncate text-[18px] font-semibold leading-7 text-[#09090B]">
+                {eventLabel}
+              </h2>
+              {latestActual && (
+                <div className="mt-0.5 flex flex-wrap items-baseline gap-x-3 text-[13px] leading-5 text-[#71717A]">
+                  {latestActual.actual != null && (
+                    <span>
+                      Actual: <span className="font-medium text-[#09090B]">{formatEconomyMetric(latestActual.actual)}</span>
+                    </span>
+                  )}
+                  {latestActual.estimate != null && (
+                    <span>
+                      Forecast: <span className="font-medium text-[#09090B]">{formatEconomyMetric(latestActual.estimate)}</span>
+                    </span>
+                  )}
+                  {latestActual.previous != null && (
+                    <span>
+                      Prior: <span className="font-medium text-[#09090B]">{formatEconomyMetric(latestActual.previous)}</span>
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+            <AppModalCloseButton onClick={onClose} />
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-[#71717A] transition-colors hover:bg-[#F4F4F5] hover:text-[#09090B]"
-            aria-label="Close"
-          >
-            <X className="h-5 w-5" strokeWidth={2} aria-hidden />
-          </button>
-        </div>
-
+        }
+        headerClassName="border-b border-[#E4E4E7] px-5 py-4"
+        bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
+        cardClassName="overflow-hidden"
+      >
         <div className="min-h-0 flex-1 overflow-hidden px-5 py-4">
           {loading ? (
             <div
@@ -595,8 +588,7 @@ export function EconomyEventHistoryModal({
             </div>
           </div>
         )}
-      </div>
-    </div>,
-    document.body,
+      </AppModalShell>
+    </AppModalOverlay>
   );
 }

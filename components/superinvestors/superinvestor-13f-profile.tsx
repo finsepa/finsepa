@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
 import { format, isValid, parseISO } from "date-fns";
 
 import { Superinvestor13fProfileTabs } from "@/components/superinvestors/superinvestor-13f-profile-tabs";
 import { SuperinvestorFollowButton } from "@/components/superinvestors/superinvestor-follow-button";
+import { SuperinvestorProfileAllocationDonut } from "@/components/superinvestors/superinvestor-profile-allocation-donut";
 import { SuperinvestorProfileAvatar } from "@/components/superinvestors/superinvestor-profile-avatar";
 import type { Berkshire13fComparisonPayload, SuperinvestorTransactionsPayload } from "@/lib/superinvestors/types";
 import { formatUsdCompactSigDigits } from "@/lib/market/key-stats-basic-format";
@@ -43,6 +43,39 @@ function formatLastUpdateLabel(ymd: string | null): string {
   return format(d, "MMM d, yyyy");
 }
 
+function ProfileHeaderStats({
+  sizeLabel,
+  stocksLabel,
+  lastUpdateLabel,
+}: {
+  sizeLabel: string;
+  stocksLabel: string;
+  lastUpdateLabel: string;
+}) {
+  return (
+    <dl className="mt-4 flex w-full max-w-3xl flex-row items-stretch gap-0 sm:mt-5">
+      <div className="flex min-w-0 flex-1 flex-col gap-1 border-r border-[#E4E4E7] pr-4 sm:pr-8">
+        <dt className="text-[13px] font-normal leading-5 text-[#71717A]">Size</dt>
+        <dd className="text-[16px] font-semibold leading-6 tabular-nums text-[#09090B] sm:text-[20px] sm:leading-7">
+          {sizeLabel}
+        </dd>
+      </div>
+      <div className="flex min-w-0 flex-1 flex-col gap-1 border-r border-[#E4E4E7] px-4 sm:px-8">
+        <dt className="text-[13px] font-normal leading-5 text-[#71717A]">No. of stocks</dt>
+        <dd className="text-[16px] font-semibold leading-6 tabular-nums text-[#09090B] sm:text-[20px] sm:leading-7">
+          {stocksLabel}
+        </dd>
+      </div>
+      <div className="flex min-w-0 flex-1 flex-col gap-1 pl-4 sm:pl-8">
+        <dt className="text-[13px] font-normal leading-5 text-[#71717A]">Last update</dt>
+        <dd className="text-[16px] font-semibold leading-6 text-[#09090B] sm:text-[20px] sm:leading-7">
+          {lastUpdateLabel}
+        </dd>
+      </div>
+    </dl>
+  );
+}
+
 export function Superinvestor13fProfile({
   profileSlug,
   profileName,
@@ -51,23 +84,38 @@ export function Superinvestor13fProfile({
   data,
   transactions,
 }: Superinvestor13fProfileProps) {
+  const sizeLabel = formatSizeForHeader(data.totalValueUsd);
+  const stocksLabel = `${data.positionCount.toLocaleString("en-US")} ${data.positionCount === 1 ? "Stock" : "Stocks"}`;
+  const lastUpdateLabel = formatLastUpdateLabel(data.current.filingDate ?? data.current.reportDate);
+  const showAllocationDonut = data.source !== "unavailable" && data.rows.length > 0;
+
+  const breadcrumbLinkClass =
+    "min-w-0 truncate transition-colors hover:text-[#09090B] hover:underline";
+
   return (
-    <div className="min-w-0 px-4 py-4 sm:px-9 sm:py-6">
-      <nav aria-label="Breadcrumb" className="flex items-center">
-        <div className="flex items-center gap-1 text-[14px] text-[#71717A]">
-          <Link href="/superinvestors" className="transition-colors hover:text-[#09090B]">
+    <div className="relative min-w-0">
+      <nav
+        aria-label="Breadcrumb"
+        className="flex min-w-0 items-center px-4 py-3 text-[14px] text-[#71717A] max-md:border-b-0 md:border-b md:border-[#E4E4E7] sm:px-9"
+      >
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 sm:flex-nowrap">
+          <Link href="/superinvestors" className={`shrink-0 ${breadcrumbLinkClass}`}>
             Superinvestors
           </Link>
-          <ChevronRight className="h-3.5 w-3.5 shrink-0" aria-hidden />
-          <span className="font-medium text-[#09090B]" aria-current="page">
+          <span className="shrink-0 select-none" aria-hidden>
+            /
+          </span>
+          <span className="min-w-0 truncate font-medium text-[#09090B]" aria-current="page">
             {breadcrumbCurrentLabel}
           </span>
         </div>
       </nav>
 
-      <header className="mt-8">
-        <div className="flex h-fit flex-wrap items-center gap-4 sm:justify-between">
-          <div className="flex min-w-0 items-center gap-4">
+      <div className="min-w-0 px-4 py-4 sm:px-9 sm:py-6">
+      <header>
+        {/* Mobile — stats directly under name */}
+        <div className="sm:hidden">
+          <div className="flex items-center gap-4">
             <SuperinvestorProfileAvatar src={avatarSrc?.trim() ?? ""} name={profileName} />
             <div className="min-w-0">
               <h1 className="text-[24px] font-semibold leading-8 tracking-tight text-[#09090B]">{profileName}</h1>
@@ -76,51 +124,35 @@ export function Superinvestor13fProfile({
               </p>
             </div>
           </div>
-          <SuperinvestorFollowButton className="w-full sm:w-auto" investorName={profileName} />
+          <ProfileHeaderStats
+            sizeLabel={sizeLabel}
+            stocksLabel={stocksLabel}
+            lastUpdateLabel={lastUpdateLabel}
+          />
+          <SuperinvestorFollowButton className="mt-4 w-full" investorName={profileName} />
         </div>
 
-        {/* ── Mobile: label left / value right on each row ── */}
-        <dl className="mt-4 flex flex-col gap-2.5 sm:hidden">
-          <div className="flex items-baseline justify-between">
-            <dt className="text-[14px] font-normal leading-5 text-[#71717A]">Size</dt>
-            <dd className="text-[14px] font-semibold leading-5 tabular-nums text-[#09090B]">
-              {formatSizeForHeader(data.totalValueUsd)}
-            </dd>
+        {/* Desktop — name + stats left, donut right */}
+        <div className="hidden items-center justify-between gap-6 sm:flex">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-[24px] font-semibold leading-8 tracking-tight text-[#09090B]">{profileName}</h1>
+            <p className="mt-0.5 text-[14px] font-normal leading-5 text-[#71717A]">
+              {filerSubtitle(data.filerDisplayName)}
+            </p>
+            <ProfileHeaderStats
+              sizeLabel={sizeLabel}
+              stocksLabel={stocksLabel}
+              lastUpdateLabel={lastUpdateLabel}
+            />
           </div>
-          <div className="flex items-baseline justify-between">
-            <dt className="text-[14px] font-normal leading-5 text-[#71717A]">No. of stocks</dt>
-            <dd className="text-[14px] font-semibold leading-5 tabular-nums text-[#09090B]">
-              {data.positionCount.toLocaleString("en-US")} {data.positionCount === 1 ? "Stock" : "Stocks"}
-            </dd>
-          </div>
-          <div className="flex items-baseline justify-between">
-            <dt className="text-[14px] font-normal leading-5 text-[#71717A]">Last update</dt>
-            <dd className="text-[14px] font-semibold leading-5 text-[#09090B]">
-              {formatLastUpdateLabel(data.current.filingDate ?? data.current.reportDate)}
-            </dd>
-          </div>
-        </dl>
-        {/* ── Desktop: horizontal with dividers ── */}
-        <dl className="mt-3 hidden max-w-3xl sm:flex sm:flex-row sm:items-stretch sm:gap-0">
-          <div className="flex h-fit flex-1 flex-col gap-1 border-r border-[#E4E4E7] pr-8 py-1">
-            <dt className="text-[13px] font-normal leading-5 text-[#71717A]">Size</dt>
-            <dd className="text-[20px] font-semibold leading-7 tabular-nums text-[#09090B]">
-              {formatSizeForHeader(data.totalValueUsd)}
-            </dd>
-          </div>
-          <div className="flex flex-1 flex-col gap-1 border-r border-[#E4E4E7] px-8 py-1">
-            <dt className="text-[13px] font-normal leading-5 text-[#71717A]">No. of stocks</dt>
-            <dd className="text-[20px] font-semibold leading-7 tabular-nums text-[#09090B]">
-              {data.positionCount.toLocaleString("en-US")} {data.positionCount === 1 ? "Stock" : "Stocks"}
-            </dd>
-          </div>
-          <div className="flex flex-1 flex-col gap-1 pl-8 py-1">
-            <dt className="text-[13px] font-normal leading-5 text-[#71717A]">Last update</dt>
-            <dd className="text-[20px] font-semibold leading-7 text-[#09090B]">
-              {formatLastUpdateLabel(data.current.filingDate ?? data.current.reportDate)}
-            </dd>
-          </div>
-        </dl>
+          {showAllocationDonut ? (
+            <SuperinvestorProfileAllocationDonut
+              rows={data.rows}
+              avatarSrc={avatarSrc}
+              profileName={profileName}
+            />
+          ) : null}
+        </div>
       </header>
 
       {data.source === "unavailable" ? (
@@ -136,6 +168,7 @@ export function Superinvestor13fProfile({
         data={data}
         transactions={transactions}
       />
+      </div>
     </div>
   );
 }

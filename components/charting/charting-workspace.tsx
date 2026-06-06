@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, RefreshCw, X } from "lucide-react";
+import { Plus, RefreshCw, X } from "@/lib/icons";
 import type { CanvasRenderingTarget2D } from "fancy-canvas";
 import {
   ColorType,
@@ -45,12 +45,14 @@ import {
   formatChartingTableCell,
 } from "@/components/charting/charting-individual-company-table";
 import { DataFetchTopLoader } from "@/components/layout/data-fetch-top-loader";
-import { ChartSkeleton } from "@/components/ui/chart-skeleton";
+import { ChartLoadingIndicator } from "@/components/ui/chart-loading-indicator";
 import { ChartingVisualSwitcher } from "@/components/stock/multichart-visual-switcher";
-import { secondaryOutlineButtonClassName, TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
+import { secondaryFillButtonClassName, TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
 import {
   dropdownMenuFloatingScrollClassName,
   dropdownMenuRichItemClassName,
+  dropdownMenuSearchHeaderClassName,
+  dropdownMenuSearchInputClassName,
   dropdownMenuSurfaceClassName,
 } from "@/components/design-system/dropdown-menu-styles";
 import { cn } from "@/lib/utils";
@@ -571,13 +573,14 @@ function seriesDataBarsWithGapSlots(
     if (v == null || !Number.isFinite(v)) continue;
     const base = baseTimeByPeriodEnd.get(row.periodEnd);
     if (base == null) continue;
+    const barTime = (base + shiftSeconds) as UTCTimestamp;
     out.push({
-      time: (base + shiftSeconds) as UTCTimestamp,
+      time: barTime,
       value: v,
       periodIndex: i,
     });
     out.push({
-      time: (base + BAR_GAP_SLOT_SEC) as UTCTimestamp,
+      time: (barTime + BAR_GAP_SLOT_SEC) as UTCTimestamp,
       value: 0,
       color: CHARTING_BAR_TRANSPARENT,
       periodIndex: -1,
@@ -890,11 +893,11 @@ function timeRangeTabOptionsFor(order: ChartTimeRange[]): TabSwitcherOption<Char
   return order.map((r) => ({ value: r, label: TIME_RANGE_LABELS[r] }));
 }
 
-const CHARTING_HEIGHT_PX = 332;
-const CHARTING_PLOT_HEIGHT_PX = CHARTING_HEIGHT_PX - FUNDAMENTALS_CHART_AXIS_ROW_PX;
+export const CHARTING_HEIGHT_PX = 332;
+export const CHARTING_PLOT_HEIGHT_PX = CHARTING_HEIGHT_PX - FUNDAMENTALS_CHART_AXIS_ROW_PX;
 
 /** Dot-grid band — matches Key Stats / Multicharts (`MultichartFundamentalsBar`). */
-const CHARTING_PLOT_BACKDROP_INSET_CLASS = "top-[8%] bottom-[4%]";
+export const CHARTING_PLOT_BACKDROP_INSET_CLASS = "top-[8%] bottom-[4%]";
 
 function clamp(n: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, n));
@@ -934,18 +937,18 @@ export function applySparseHistogramVisiblePadding(
 }
 
 /** Minimum horizontal inset before first / after last bar group (each side). */
-const CHARTING_TIME_SCALE_SIDE_GUTTER_PX = 32;
+const CHARTING_TIME_SCALE_SIDE_GUTTER_PX = 8;
 
 /**
- * Fit bar histogram to container width: shrink `barSpacing` when needed and pad logical range
- * so the first and last period labels (e.g. 2012) stay on screen.
+ * Fit bar histogram to container width: stretch or shrink `barSpacing` so bars fill the plot
+ * with only a minimal fixed side inset.
  */
 type ChartingTimeScaleLayoutOptions = {
   /** Stock tab: stretch `barSpacing` so content fills plot width (minus side gutters). */
   fixedBarSpacingPx?: number;
 };
 
-function layoutChartingTimeScale(
+export function layoutChartingTimeScale(
   chart: IChartApi,
   containerWidthPx: number,
   layoutAttempt = 0,
@@ -1013,62 +1016,56 @@ function layoutChartingTimeScale(
     return;
   }
 
-  const plotBudget = Math.max(120, containerWidthPx - 2 * CHARTING_TIME_SCALE_SIDE_GUTTER_PX);
+  const plotFallback = Math.max(120, containerWidthPx);
   ts.fitContent();
   requestAnimationFrame(() => {
     const lr = ts.getVisibleLogicalRange();
-    if (lr === null) return;
+    if (lr === null) {
+      if (layoutAttempt < 4) {
+        layoutChartingTimeScale(chart, containerWidthPx, layoutAttempt + 1, layoutOptions);
+      }
+      return;
+    }
+    const contentFrom = lr.from;
+    const contentTo = lr.to;
+    const contentSpan = Math.max(1, contentTo - contentFrom);
     const measuredPlot = ts.width();
-    const plotW = measuredPlot > 8 ? Math.min(measuredPlot, plotBudget) : plotBudget;
+    const plotW = measuredPlot > 8 ? measuredPlot : plotFallback;
     if (plotW < 16 && layoutAttempt < 4) {
       layoutChartingTimeScale(chart, containerWidthPx, layoutAttempt + 1, layoutOptions);
       return;
     }
     if (plotW < 16) return;
 
-    const logicalSpan = Math.max(1, lr.to - lr.from);
-    const targetSpacing =
-      fixedBarSpacingPx ??
-      Math.min(
-        HISTO_BAR_SPACING_MAX_PX,
-        Math.max(2, (plotW - 2 * CHARTING_TIME_SCALE_SIDE_GUTTER_PX) / logicalSpan),
-      );
+    const plotInner = plotW - 2 * CHARTING_TIME_SCALE_SIDE_GUTTER_PX;
+    const spacing = Math.max(2, plotInner / contentSpan);
     ts.applyOptions({
-      barSpacing: targetSpacing,
-      minBarSpacing: fixedBarSpacingPx != null ? fixedBarSpacingPx : 2,
-      maxBarSpacing: fixedBarSpacingPx ?? HISTO_BAR_SPACING_MAX_PX,
+      barSpacing: spacing,
+      minBarSpacing: 2,
+      maxBarSpacing: Math.max(spacing, fixedBarSpacingPx ?? HISTO_BAR_SPACING_MAX_PX),
     });
 
-    const contentPx = logicalSpan * targetSpacing;
-    const extraPx = Math.max(0, plotW - contentPx - 2 * CHARTING_TIME_SCALE_SIDE_GUTTER_PX);
-    const padLogicalEachSide =
-      (extraPx / 2 + CHARTING_TIME_SCALE_SIDE_GUTTER_PX) / targetSpacing;
+    const sidePadLogical = CHARTING_TIME_SCALE_SIDE_GUTTER_PX / spacing;
     ts.setVisibleLogicalRange({
-      from: lr.from - padLogicalEachSide,
-      to: lr.to + padLogicalEachSide,
+      from: contentFrom - sidePadLogical,
+      to: contentTo + sidePadLogical,
     });
 
     requestAnimationFrame(() => {
-      const lr2 = ts.getVisibleLogicalRange();
-      if (lr2 === null) return;
       const plotW2 = ts.width() > 8 ? ts.width() : plotW;
-      const span2 = Math.max(1, lr2.to - lr2.from);
-      const refined =
-        fixedBarSpacingPx ??
-        Math.min(
-          HISTO_BAR_SPACING_MAX_PX,
-          Math.max(2, (plotW2 - 2 * CHARTING_TIME_SCALE_SIDE_GUTTER_PX) / span2),
-        );
-      if (Math.abs(refined - targetSpacing) > 0.5) {
-        ts.applyOptions({ barSpacing: refined });
+      const plotInner2 = plotW2 - 2 * CHARTING_TIME_SCALE_SIDE_GUTTER_PX;
+      const refined = Math.max(2, plotInner2 / contentSpan);
+      if (Math.abs(refined - spacing) > 0.5) {
+        ts.applyOptions({
+          barSpacing: refined,
+          minBarSpacing: 2,
+          maxBarSpacing: Math.max(refined, fixedBarSpacingPx ?? HISTO_BAR_SPACING_MAX_PX),
+        });
       }
-      const contentPx2 = span2 * refined;
-      const extraPx2 = Math.max(0, plotW2 - contentPx2 - 2 * CHARTING_TIME_SCALE_SIDE_GUTTER_PX);
-      const padLogicalEachSide2 =
-        (extraPx2 / 2 + CHARTING_TIME_SCALE_SIDE_GUTTER_PX) / refined;
+      const sidePadLogical2 = CHARTING_TIME_SCALE_SIDE_GUTTER_PX / refined;
       ts.setVisibleLogicalRange({
-        from: lr2.from - padLogicalEachSide2,
-        to: lr2.to + padLogicalEachSide2,
+        from: contentFrom - sidePadLogical2,
+        to: contentTo + sidePadLogical2,
       });
     });
   });
@@ -1099,7 +1096,7 @@ function chartingStockBarBaseTimeSec(periodIndex: number): number {
 }
 
 /** Column hover band behind bars — same treatment as Multicharts / Earnings estimates. */
-class ChartingHoverBandPrimitive implements IPanePrimitive {
+export class ChartingHoverBandPrimitive implements IPanePrimitive {
   private _requestUpdate: (() => void) | null = null;
   private _x0: number | null = null;
   private _x1: number | null = null;
@@ -1183,13 +1180,14 @@ export function ChartingWorkspace({
   histogramLayout = "default",
 }: Props) {
   const router = useRouter();
-  const wrapRef = useRef<HTMLDivElement>(null);
+  const chartPlotCleanupRef = useRef<(() => void) | null>(null);
   const pickerWrapRef = useRef<HTMLDivElement>(null);
   const pickerInputRef = useRef<HTMLInputElement>(null);
 
   const isFigmaToolbar = toolbarLayout === "figma70857";
   const metricControlsInLegend = metricControlsPlacement === "legend";
   const stockFullWidthFixedBars = histogramLayout === "stockFullWidthFixedBars";
+  const isFullPageCharting = fullPageCompanyChipSlot != null;
   const barTimeScaleLayoutOptions = useMemo(
     (): ChartingTimeScaleLayoutOptions | undefined =>
       stockFullWidthFixedBars ? { fixedBarSpacingPx: HISTO_BAR_SPACING_MAX_PX } : undefined,
@@ -1522,11 +1520,47 @@ export function ChartingWorkspace({
   const yAxisColumnCount = (primaryYAxis ? 1 : 0) + (percentYAxis ? 1 : 0);
   const yAxisColumnsWidthPx = yAxisColumnCount * FUNDAMENTALS_CHART_Y_AXIS_W_PX;
 
-  useEffect(() => {
-    const el = wrapRef.current;
-    if (!el) return;
+  /** Single primitive dep — avoids React "dependency array changed size" when lists/maps are in deps. */
+  const chartMountDepsKey = useMemo(() => {
+    const valueSig = ordered
+      .map((row) => selected.map((id) => rowValue(row, id) ?? "").join(","))
+      .join("|");
+    return [
+      ordered.map((r) => r.periodEnd).join("|"),
+      valueSig,
+      selected.join(","),
+      canPlot,
+      chartType,
+      chartPlotHeight,
+      periodMode,
+      timeRange,
+      unitScale,
+      stockFullWidthFixedBars,
+      isFullPageCharting,
+      chartAxes.primary?.ticks.join(",") ?? "",
+      chartAxes.percent?.ticks.join(",") ?? "",
+    ].join("::");
+  }, [
+    ordered,
+    selected,
+    canPlot,
+    chartType,
+    chartPlotHeight,
+    periodMode,
+    timeRange,
+    unitScale,
+    stockFullWidthFixedBars,
+    isFullPageCharting,
+    chartAxes,
+  ]);
 
-    if (!ordered.length || !selected.length || !canPlot) {
+  const chartPlotRef = useCallback(
+    (el: HTMLDivElement | null) => {
+      chartPlotCleanupRef.current?.();
+      chartPlotCleanupRef.current = null;
+      if (!el) return;
+
+      if (!ordered.length || !selected.length || !canPlot) {
       setLineEndBadges([]);
       setBarValueLabels([]);
       setLinePointMarkers([]);
@@ -2010,7 +2044,7 @@ export function ChartingWorkspace({
             if (c) {
               if (chartType === "bars") {
                 layoutChartingTimeScale(c, rw, 0, barTimeScaleLayoutOptions);
-                if (!stockFullWidthFixedBars) {
+                if (!stockFullWidthFixedBars && !isFullPageCharting) {
                   applySparseHistogramVisiblePadding(c, ordered, chartType, timeRange, ordered.length);
                 }
               } else {
@@ -2024,7 +2058,7 @@ export function ChartingWorkspace({
           chart.resize(el.clientWidth, chartPlotHeight);
           if (chartType === "bars") {
             layoutChartingTimeScale(chart, el.clientWidth, 0, barTimeScaleLayoutOptions);
-            if (!stockFullWidthFixedBars) {
+            if (!stockFullWidthFixedBars && !isFullPageCharting) {
               applySparseHistogramVisiblePadding(chart, ordered, chartType, timeRange, ordered.length);
             }
           } else {
@@ -2034,51 +2068,41 @@ export function ChartingWorkspace({
       });
     };
 
-    mountChart();
+      mountChart();
 
-    return () => {
-      cancelled = true;
-      resizeObserver?.disconnect();
-      resizeObserver = null;
-      if (chartRef.current) {
-        if (onVisibleRangeChange) {
-          chartRef.current.timeScale().unsubscribeVisibleLogicalRangeChange(onVisibleRangeChange);
+      chartPlotCleanupRef.current = () => {
+        cancelled = true;
+        resizeObserver?.disconnect();
+        resizeObserver = null;
+        if (chartRef.current) {
+          if (onVisibleRangeChange) {
+            chartRef.current.timeScale().unsubscribeVisibleLogicalRangeChange(onVisibleRangeChange);
+          }
+          chartRef.current.remove();
+          chartRef.current = null;
         }
-        chartRef.current.remove();
-        chartRef.current = null;
-      }
-      seriesByMetricRef.current = new Map();
-      barSeriesPointsRef.current = new Map();
-      barSeriesColorIdxRef.current = new Map();
-      hoveredBarPeriodRef.current = null;
-      hoverBandPrimitiveRef.current?.setBand(null, null);
-      hoverBandPrimitiveRef.current = null;
-      if (hoverRafRef.current) cancelAnimationFrame(hoverRafRef.current);
-      setHover(null);
-      setLineEndBadges([]);
-      setBarValueLabels([]);
-      setLinePointMarkers([]);
-      setPeriodAxisLabels([]);
-      setYGridTickTopsPx(null);
-      setYPercentGridTickTopsPx(null);
-    };
-  }, [
-    ordered,
-    selected,
-    canPlot,
-    chartType,
-    chartPlotHeight,
-    periodMode,
-    timeToRow,
-    groupedTimeToRow,
-    periodMode,
-    timeRange,
-    unitScale,
-    barBaseTimeByPeriodEnd,
-    stockFullWidthFixedBars,
-    barTimeScaleLayoutOptions,
-    chartAxes,
-  ]);
+        seriesByMetricRef.current = new Map();
+        barSeriesPointsRef.current = new Map();
+        barSeriesColorIdxRef.current = new Map();
+        hoveredBarPeriodRef.current = null;
+        hoverBandPrimitiveRef.current?.setBand(null, null);
+        hoverBandPrimitiveRef.current = null;
+        if (hoverRafRef.current) cancelAnimationFrame(hoverRafRef.current);
+        setHover(null);
+        setLineEndBadges([]);
+        setBarValueLabels([]);
+        setLinePointMarkers([]);
+        setPeriodAxisLabels([]);
+        setYGridTickTopsPx(null);
+        setYPercentGridTickTopsPx(null);
+      };
+    },
+    [chartMountDepsKey],
+  );
+
+  useEffect(() => {
+    return () => chartPlotCleanupRef.current?.();
+  }, []);
 
   const empty = !loading && (!points || points.length === 0);
   const noMetricData = !loading && !empty && !canPlot;
@@ -2105,8 +2129,8 @@ export function ChartingWorkspace({
           });
         }}
         className={cn(
-          secondaryOutlineButtonClassName,
-          metricControlsInLegend && "h-6 gap-1.5 rounded-[8px] px-3 text-[12px] font-medium",
+          secondaryFillButtonClassName,
+          metricControlsInLegend && "h-6 gap-1.5 rounded-[8px] px-3 text-[12px] font-medium leading-none",
         )}
       >
         <Plus className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
@@ -2121,13 +2145,13 @@ export function ChartingWorkspace({
           )}
           role="listbox"
         >
-          <div className="border-b border-[#F4F4F5] px-2 pb-1 pt-1">
+          <div className={dropdownMenuSearchHeaderClassName}>
             <input
               ref={pickerInputRef}
               value={pickerQuery}
               onChange={(e) => setPickerQuery(e.target.value)}
               placeholder="Search metrics…"
-              className="w-full rounded-md border-0 bg-[#FAFAFA] px-2 py-1.5 text-[13px] text-[#09090B] placeholder:text-[#A1A1AA] outline-none ring-1 ring-transparent focus:ring-[#E4E4E7]"
+              className={dropdownMenuSearchInputClassName}
               aria-label="Search metrics"
             />
           </div>
@@ -2250,7 +2274,10 @@ export function ChartingWorkspace({
       </div>
 
       {loading ? (
-        <ChartSkeleton heightPx={chartHeight} />
+        <ChartLoadingIndicator
+          minHeightPx={chartHeight}
+          className="min-h-[min(50vh,420px)]"
+        />
       ) : empty ? (
         <p className="max-w-md text-[14px] leading-6 text-[#71717A]">
           Financial statement data isn&apos;t available for this symbol.
@@ -2291,7 +2318,7 @@ export function ChartingWorkspace({
                       );
                     })()}
                   </div>
-                  <div ref={wrapRef} className="relative z-[1] h-full w-full" />
+                  <div ref={chartPlotRef} className="relative z-[1] h-full w-full" />
                   {chartType === "bars" && barValueLabels.length > 0
                     ? barValueLabels.map((b) => (
                         <div

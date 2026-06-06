@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Check, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { Check, ChevronDown, ChevronLeft, ChevronRight } from "@/lib/icons";
 import { DayButton, DayPicker, Dropdown as DayPickerDropdown, getDefaultClassNames, UI } from "react-day-picker";
 
 import {
@@ -168,7 +168,7 @@ function FinsepaCalendarDropdown({
           className={cn(
             dropdownMenuPanelClassName(),
             dropdownMenuFloatingScrollClassName,
-            "absolute left-0 top-[calc(100%+4px)] z-[200] min-w-full max-h-60 w-max max-w-[min(18rem,calc(100vw-2rem))] overflow-y-auto py-2",
+            "absolute left-0 top-[calc(100%+4px)] z-[200] min-w-full max-h-60 w-max max-w-[min(18rem,calc(100vw-2rem))] overflow-y-auto",
           )}
           role="listbox"
           aria-label={ariaLabel}

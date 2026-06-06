@@ -1,6 +1,6 @@
 "use client";
 
-import { Info } from "lucide-react";
+import { Info } from "@/lib/icons";
 import { useId, useMemo, useState } from "react";
 
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";

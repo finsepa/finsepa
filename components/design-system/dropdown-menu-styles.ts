@@ -8,21 +8,28 @@ export const dropdownMenuElevationClass =
   "shadow-[0px_10px_16px_-3px_rgba(10,10,10,0.10),0px_4px_6px_0px_rgba(10,10,10,0.04)]";
 
 /**
- * Figma — menu shell: 12px radius, white fill, 1px `#E4E4E7` border, elevation.
+ * Figma — menu shell: 16px radius, white fill, 1px `#E4E4E7` border, dual elevation.
  * No padding — use for composite menus (search header + scroll list).
  */
 export function dropdownMenuSurfaceClassName(...extra: (string | undefined | null | false)[]) {
   return cn(
-    "rounded-[12px] border border-[#E4E4E7] bg-white text-[#09090B] outline-none",
+    "rounded-2xl border border-[#E4E4E7] bg-white text-[#09090B] outline-none",
     dropdownMenuElevationClass,
     ...extra.filter(Boolean),
   );
 }
 
 /**
- * Figma — padded panel body: vertical stack, 4px gap, 8px vertical / 4px horizontal padding.
+ * Figma — padded panel body: vertical stack, 4px gap between rows, 4px inset on all sides.
  */
-export const dropdownMenuPanelBodyClassName = "flex flex-col gap-1 py-2 pl-1 pr-1";
+export const dropdownMenuPanelBodyClassName = "flex flex-col gap-1 p-1";
+
+/** Search field row above a scrollable list — equal inset on all sides of the input. */
+export const dropdownMenuSearchHeaderClassName = "border-b border-[#F4F4F5] p-2";
+
+/** Matches top bar / {@link SearchInlineInputShell} search shell (`#F4F4F5`, `h-9`, `rounded-lg`). */
+export const dropdownMenuSearchInputClassName =
+  "h-9 w-full rounded-lg border-0 bg-[#F4F4F5] px-3 text-sm leading-5 text-[#09090B] placeholder:text-[#A1A1AA] outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/10";
 
 /**
  * Overlay scrollbar: transparent track (no gutter background or edge border), visible thumb only.

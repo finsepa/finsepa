@@ -3,7 +3,7 @@
 import { memo, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { usePortfolioOverviewAthPublisher } from "@/components/portfolio/portfolio-overview-ath-context";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown } from "@/lib/icons";
 
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 import { earliestStockBuyYmd } from "@/lib/portfolio/benchmark-inception";
@@ -49,15 +49,16 @@ const PERIOD_OPTIONS: { id: OverviewProfitPeriod; label: string }[] = [
   { id: "y5", label: "5Y" },
 ];
 
+/** Matches {@link IndexCards} screener index tile chrome. */
+const OVERVIEW_METRIC_CARD_CLASS =
+  "flex flex-col items-start gap-1 overflow-hidden rounded-2xl border border-[#E4E4E7] bg-white px-3 py-3 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] sm:px-4 sm:py-4";
+
 function OverviewMetricCardSkeleton() {
   return (
-    <div
-      className="rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]"
-      aria-hidden
-    >
+    <div className={OVERVIEW_METRIC_CARD_CLASS} aria-hidden>
       <div className="h-3 w-14 animate-pulse rounded bg-neutral-200" />
-      <div className="mt-3 h-8 w-[min(100%,11rem)] max-w-full animate-pulse rounded-md bg-neutral-200" />
-      <div className="mt-2 h-4 w-24 animate-pulse rounded bg-neutral-100" />
+      <div className="h-8 w-[min(100%,11rem)] max-w-full animate-pulse rounded-md bg-neutral-200" />
+      <div className="h-4 w-24 animate-pulse rounded bg-neutral-100" />
     </div>
   );
 }
@@ -426,29 +427,29 @@ function PortfolioOverviewCardsInner({
         </>
       ) : (
         <>
-          <div className="rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
+          <div className={OVERVIEW_METRIC_CARD_CLASS}>
             <p className="text-xs font-medium text-[#71717A]">Value</p>
-            <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight text-[#09090B]">
+            <p className="text-2xl font-semibold tabular-nums tracking-tight text-[#09090B]">
               {usd.format(normalizeUsdForDisplay(netWorth))}
             </p>
-            <p className="mt-2 text-sm text-[#71717A]">{usd.format(invested)} invested</p>
+            <p className="text-sm text-[#71717A]">{usd.format(invested)} invested</p>
           </div>
 
           {/* Total profit */}
-          <div className="rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
+          <div className={OVERVIEW_METRIC_CARD_CLASS}>
             <p className="text-xs font-medium text-[#71717A]">Total profit</p>
             {showEmptyPortfolioMetrics ? (
               <>
-                <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight text-[#16A34A]">
+                <p className="text-2xl font-semibold tabular-nums tracking-tight text-[#16A34A]">
                   +{usd.format(0)}
                 </p>
-                <div className="mt-2 flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className="text-sm font-medium tabular-nums text-[#16A34A]">+{pctFmt.format(0)}%</span>
                 </div>
               </>
             ) : (
               <div
-                className="group/profit relative mt-2 outline-none"
+                className="group/profit relative w-full outline-none"
                 tabIndex={0}
                 aria-describedby={totalProfitBreakdownId}
               >
@@ -463,7 +464,7 @@ function PortfolioOverviewCardsInner({
                     : "—"}
                 </p>
                 {period === "all" ? (
-                  <div className="mt-2 flex cursor-help flex-wrap items-center gap-2">
+                  <div className="flex cursor-help flex-wrap items-center gap-2">
                     <span
                       className={cn(
                         "text-sm font-medium tabular-nums",
@@ -476,7 +477,7 @@ function PortfolioOverviewCardsInner({
                     </span>
                   </div>
                 ) : (
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <span
                       className={cn(
                         "cursor-help text-sm font-medium tabular-nums",
@@ -542,20 +543,20 @@ function PortfolioOverviewCardsInner({
           </div>
 
           {/* S&P 500 */}
-          <div className="rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
+          <div className={OVERVIEW_METRIC_CARD_CLASS}>
             <p className="text-xs font-medium text-[#71717A]">S&amp;P 500</p>
             {showEmptyPortfolioMetrics ? (
               <>
-                <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight text-[#16A34A]">
+                <p className="text-2xl font-semibold tabular-nums tracking-tight text-[#16A34A]">
                   +{pctFmt.format(0)}%
                 </p>
-                <p className="mt-2 text-sm leading-snug text-[#71717A]">Compare to S&amp;P 500</p>
+                <p className="text-sm leading-snug text-[#71717A]">Compare to S&amp;P 500</p>
               </>
             ) : (
               <>
                 <p
                   className={cn(
-                    "mt-2 text-2xl font-semibold tabular-nums tracking-tight",
+                    "text-2xl font-semibold tabular-nums tracking-tight",
                     inceptionBenchmarkMetrics.rSpy == null
                       ? "text-[#09090B]"
                       : inceptionBenchmarkMetrics.rSpy >= 0
@@ -567,7 +568,7 @@ function PortfolioOverviewCardsInner({
                     ? `${inceptionBenchmarkMetrics.rSpy >= 0 ? "+" : ""}${pctFmt.format(inceptionBenchmarkMetrics.rSpy)}%`
                     : "—"}
                 </p>
-                <p className="mt-2 text-sm leading-snug text-[#71717A]">
+                <p className="text-sm leading-snug text-[#71717A]">
                   {inceptionBenchmarkMetrics.diff != null ? (
                     inceptionBenchmarkMetrics.diff >= 0 ? (
                       <>Ahead on {pctFmt.format(inceptionBenchmarkMetrics.diff)}%</>
@@ -583,21 +584,21 @@ function PortfolioOverviewCardsInner({
           </div>
 
           {/* Dividends */}
-          <div className="rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
+          <div className={OVERVIEW_METRIC_CARD_CLASS}>
             <p className="text-xs font-medium text-[#71717A]">Dividends</p>
             {showEmptyPortfolioMetrics ? (
               <>
-                <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight text-[#09090B]">
+                <p className="text-2xl font-semibold tabular-nums tracking-tight text-[#09090B]">
                   {pctFmt.format(0)}%
                 </p>
-                <p className="mt-2 text-sm text-[#71717A]">{usd.format(0)} annually</p>
+                <p className="text-sm text-[#71717A]">{usd.format(0)} annually</p>
               </>
             ) : (
               <>
-                <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight text-[#09090B]">
+                <p className="text-2xl font-semibold tabular-nums tracking-tight text-[#09090B]">
                   {dividendWeightedYield != null ? `${pctFmt.format(dividendWeightedYield)}%` : "—"}
                 </p>
-                <p className="mt-2 text-sm text-[#71717A]">
+                <p className="text-sm text-[#71717A]">
                   {dividendAnnualUsd != null ? `${usd.format(dividendAnnualUsd)} annually` : "No dividend data"}
                 </p>
               </>

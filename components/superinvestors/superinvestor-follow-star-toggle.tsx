@@ -1,6 +1,6 @@
 "use client";
 
-import { Star } from "lucide-react";
+import { Star } from "@/lib/icons";
 
 import { TopbarDelayedTooltip } from "@/components/layout/topbar-delayed-tooltip";
 import { useSuperinvestorFollow } from "@/lib/superinvestors/use-superinvestor-follow";

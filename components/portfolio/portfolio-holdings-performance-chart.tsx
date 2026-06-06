@@ -3,7 +3,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { ArrowDown, ArrowUp, ChartSpline } from "lucide-react";
+import { ArrowDown, ArrowUp, ChartSpline } from "@/lib/icons";
 
 import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
 import {

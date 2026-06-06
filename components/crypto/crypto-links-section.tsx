@@ -1,7 +1,7 @@
 "use client";
 
 import { createElement } from "react";
-import type { LucideIcon } from "lucide-react";
+import type { AppIcon } from "@/lib/icons";
 import {
   FileCode,
   FileText,
@@ -12,11 +12,11 @@ import {
   Send,
   Share2,
   Wallet,
-} from "lucide-react";
+} from "@/lib/icons";
 
 import type { CryptoAssetLinks } from "@/lib/market/crypto-asset";
 
-function iconForLabel(label: string): LucideIcon {
+function iconForLabel(label: string): AppIcon {
   const l = label.toLowerCase();
   if (l.includes("website")) return Globe;
   if (l.includes("whitepaper")) return FileText;

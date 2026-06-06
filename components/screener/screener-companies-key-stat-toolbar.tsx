@@ -1,6 +1,6 @@
 "use client";
 
-import { RotateCcw, Search, SlidersHorizontal } from "lucide-react";
+import { RotateCcw, Search, SlidersHorizontal } from "@/lib/icons";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
@@ -161,14 +161,14 @@ export function ScreenerCompaniesKeyStatToolbar({
 
               <div
                 className={cn(
-                  "min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-2 py-2",
+                  "min-h-0 flex-1 overflow-y-auto overscroll-y-contain p-1",
                   dropdownMenuFloatingScrollClassName,
                 )}
               >
                 {filteredMetrics.length === 0 ? (
                   <div className="px-3 py-6 text-center text-[13px] text-[#71717A]">No metrics match.</div>
                 ) : (
-                  filteredMetrics.map(({ metric, categoryTitle }) => {
+                  filteredMetrics.map(({ metric }) => {
                     const builtin = isScreenerBuiltinTableMetricId(metric.id);
                     const checked = builtin || selectedMetricIds.has(metric.id);
                     return (
@@ -186,9 +186,8 @@ export function ScreenerCompaniesKeyStatToolbar({
                         )}
                       >
                         <MetricCheckbox checked={checked} />
-                        <span className="min-w-0 flex-1">
-                          <span className="block text-[13px] leading-5 text-[#09090B]">{metric.label}</span>
-                          <span className="block text-[11px] leading-4 text-[#71717A]">{categoryTitle}</span>
+                        <span className="min-w-0 flex-1 text-[13px] leading-5 text-[#09090B]">
+                          {metric.label}
                         </span>
                       </button>
                     );

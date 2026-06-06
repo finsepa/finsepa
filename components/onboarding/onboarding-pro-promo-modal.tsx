@@ -1,14 +1,19 @@
 "use client";
 
-import { Check } from "lucide-react";
+import { Check } from "@/lib/icons";
 import { useMemo, useState } from "react";
-import { createPortal } from "react-dom";
 import { toast } from "sonner";
 
 import { SegmentedControl } from "@/components/design-system/segmented-control";
+import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
+import {
+  AppModalFooter,
+  AppModalShell,
+  appModalCancelButtonClass,
+  appModalPrimaryButtonClass,
+} from "@/components/ui/app-modal-shell";
 import { markOnboardingCompleteForUser } from "@/lib/auth/onboarding";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
-import { cn } from "@/lib/utils";
 
 import { useClientMounted } from "./use-client-mounted";
 
@@ -70,87 +75,59 @@ export function OnboardingProPromoModal({
     }
   }
 
-  return createPortal(
-    <div className="fixed inset-0 z-[282] flex items-center justify-center bg-black/40 p-4">
-      <button type="button" aria-label="Close" className="absolute inset-0" onClick={onSkip} />
-
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="onboarding-pro-title"
-        className="relative flex w-full max-w-[480px] flex-col overflow-hidden rounded-xl bg-white shadow-[0px_10px_16px_-3px_rgba(10,10,10,0.1),0px_4px_6px_0px_rgba(10,10,10,0.04)]"
-        onClick={(e) => e.stopPropagation()}
+  return (
+    <AppModalOverlay open={open} onClose={onSkip} zIndex={282}>
+      <AppModalShell
+        titleId="onboarding-pro-title"
+        title="Finsepa Pro"
+        onClose={onSkip}
+        bodyClassName="space-y-8 px-6 py-6"
+        footer={
+          <AppModalFooter>
+            <button type="button" onClick={onSkip} className={appModalCancelButtonClass}>
+              Skip
+            </button>
+            <button
+              type="button"
+              onClick={() => void startCheckout()}
+              disabled={startingCheckout}
+              className={appModalPrimaryButtonClass(!startingCheckout)}
+            >
+              {startingCheckout ? "Redirecting…" : "Get Started"}
+            </button>
+          </AppModalFooter>
+        }
       >
-        <div className="flex items-center justify-between border-b border-[#E4E4E7] px-5 py-3">
-          <h2 id="onboarding-pro-title" className="text-lg font-semibold leading-7 text-[#09090B]">
-            Finsepa Pro
-          </h2>
-          <button
-            type="button"
-            onClick={onSkip}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-[10px] text-[#09090B] transition-colors hover:bg-[#F4F4F5]"
-            aria-label="Close"
-          >
-            <span className="text-xl leading-none" aria-hidden>
-              ×
-            </span>
-          </button>
+        <SegmentedControl
+          options={[
+            { value: "monthly", label: "Monthly" },
+            { value: "annually", label: "Annually" },
+          ]}
+          value={cycle}
+          onChange={setCycle}
+          fullWidth
+          aria-label="Billing cycle"
+        />
+
+        <div className="flex items-end gap-2">
+          <span className="text-[36px] font-bold leading-10 text-[#0A0A0A]">{priceText}</span>
+          <span className="pb-1 text-sm leading-5 text-[#71717A]">{suffixText}</span>
         </div>
 
-        <div className="space-y-8 px-6 py-6">
-          <SegmentedControl
-            options={[
-              { value: "monthly", label: "Monthly" },
-              { value: "annually", label: "Annually" },
-            ]}
-            value={cycle}
-            onChange={setCycle}
-            fullWidth
-            aria-label="Billing cycle"
-          />
-
-          <div className="flex items-end gap-2">
-            <span className="text-[36px] font-bold leading-10 text-[#0A0A0A]">{priceText}</span>
-            <span className="pb-1 text-sm leading-5 text-[#71717A]">{suffixText}</span>
-          </div>
-
-          <ul className="space-y-4">
-            {FEATURES.map((item) => (
-              <li key={item} className="flex items-center gap-3">
-                <span
-                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#BFDBFE]"
-                  aria-hidden
-                >
-                  <Check className="h-3 w-3 text-[#09090B]" strokeWidth={3} />
-                </span>
-                <span className="text-sm leading-5 text-[#09090B]">{item}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div className="flex items-center justify-end gap-3 border-t border-[#E4E4E7] px-6 py-4">
-          <button
-            type="button"
-            onClick={onSkip}
-            className="inline-flex h-9 items-center justify-center rounded-[10px] bg-[#F4F4F5] px-4 text-sm font-medium leading-5 text-[#09090B] transition-colors hover:bg-[#E4E4E7]"
-          >
-            Skip
-          </button>
-          <button
-            type="button"
-            onClick={() => void startCheckout()}
-            disabled={startingCheckout}
-            className={cn(
-              "inline-flex h-9 items-center justify-center rounded-[10px] bg-[#09090B] px-4 text-sm font-medium leading-5 text-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors hover:bg-[#27272A]",
-              "disabled:cursor-not-allowed disabled:opacity-50",
-            )}
-          >
-            {startingCheckout ? "Redirecting…" : "Get Started"}
-          </button>
-        </div>
-      </div>
-    </div>,
-    document.body,
+        <ul className="space-y-4">
+          {FEATURES.map((item) => (
+            <li key={item} className="flex items-center gap-3">
+              <span
+                className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#BFDBFE]"
+                aria-hidden
+              >
+                <Check className="h-3 w-3 text-[#09090B]" strokeWidth={3} />
+              </span>
+              <span className="text-sm leading-5 text-[#09090B]">{item}</span>
+            </li>
+          ))}
+        </ul>
+      </AppModalShell>
+    </AppModalOverlay>
   );
 }

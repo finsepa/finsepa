@@ -1,7 +1,7 @@
 "use client";
 
 import { format } from "date-fns";
-import { Calendar as CalendarIcon } from "lucide-react";
+import { Calendar as CalendarIcon } from "@/lib/icons";
 import * as React from "react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -85,9 +85,7 @@ export function TransactionDateField({
         </button>
       </PopoverTrigger>
       <PopoverContent
-        className={cn(
-          "min-w-[280px] w-[min(100vw-2rem,320px)] shrink-0 overflow-hidden rounded-xl border border-[#E4E4E7] bg-white p-0 text-[#09090B] shadow-[0px_10px_16px_0px_rgba(10,10,10,0.1),0px_4px_6px_0px_rgba(10,10,10,0.04)]",
-        )}
+        className="min-w-[280px] w-[min(100vw-2rem,320px)] shrink-0 overflow-hidden"
         align="start"
         sideOffset={8}
       >

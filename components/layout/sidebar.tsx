@@ -4,7 +4,7 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { PanelLeft, PanelLeftOpen } from "lucide-react";
+import { PanelLeft, PanelLeftOpen } from "@/lib/icons";
 
 import { DWELL_TOOLTIP_DELAY_MS, TopbarDelayedTooltip } from "@/components/layout/topbar-delayed-tooltip";
 import {
@@ -30,7 +30,15 @@ type NavItem = ProtectedNavItem;
 
 const TOOLTIP_HIDE_MS = 100;
 
-function CollapsedRailTooltip({ label, children }: { label: string; children: React.ReactNode }) {
+function CollapsedRailTooltip({
+  label,
+  children,
+  enabled,
+}: {
+  label: string;
+  children: React.ReactNode;
+  enabled: boolean;
+}) {
   const rootRef = useRef<HTMLDivElement>(null);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const showTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -87,6 +95,7 @@ function CollapsedRailTooltip({ label, children }: { label: string; children: Re
   }, [open, updatePosition]);
 
   const scheduleShow = useCallback(() => {
+    if (!enabled) return;
     clearHideTimer();
     clearShowTimer();
     showTimerRef.current = setTimeout(() => {
@@ -94,7 +103,7 @@ function CollapsedRailTooltip({ label, children }: { label: string; children: Re
       updatePosition();
       setOpen(true);
     }, DWELL_TOOLTIP_DELAY_MS);
-  }, [clearHideTimer, clearShowTimer, updatePosition]);
+  }, [clearHideTimer, clearShowTimer, enabled, updatePosition]);
 
   const hide = useCallback(() => {
     clearShowTimer();
@@ -109,7 +118,7 @@ function CollapsedRailTooltip({ label, children }: { label: string; children: Re
   }, [clearHideTimer, clearShowTimer]);
 
   const tooltip =
-    open && mounted ? (
+    enabled && open && mounted ? (
       <div
         className="pointer-events-none fixed z-[200] flex -translate-y-1/2 items-center shadow-[0px_8px_20px_0px_rgba(10,10,10,0.12)]"
         style={{ left: pos.left, top: pos.top }}
@@ -127,16 +136,16 @@ function CollapsedRailTooltip({ label, children }: { label: string; children: Re
 
   return (
     <div
-      ref={rootRef}
-      className="relative flex justify-center"
-      onPointerEnter={scheduleShow}
-      onPointerLeave={hide}
-      onPointerDown={cancelPendingAndHide}
-      onFocusCapture={scheduleShow}
-      onBlurCapture={hide}
+      ref={enabled ? rootRef : undefined}
+      className={cn(enabled && "relative flex justify-center")}
+      onPointerEnter={enabled ? scheduleShow : undefined}
+      onPointerLeave={enabled ? hide : undefined}
+      onPointerDown={enabled ? cancelPendingAndHide : undefined}
+      onFocusCapture={enabled ? scheduleShow : undefined}
+      onBlurCapture={enabled ? hide : undefined}
     >
       {children}
-      {mounted && tooltip ? createPortal(tooltip, document.body) : null}
+      {enabled && mounted && tooltip ? createPortal(tooltip, document.body) : null}
     </div>
   );
 }
@@ -151,7 +160,10 @@ function SidebarRow({ item, pathname, collapsed }: { item: NavItem; pathname: st
     SIDEBAR_CONTENT_MOTION_CLASS,
     collapsed ? "h-9 w-9 justify-center gap-0 px-0 py-0" : "h-9 gap-2 px-4 py-2",
     item.available ? "text-[#09090B]" : "cursor-not-allowed text-[#A1A1AA] select-none",
-    item.available && (isActive ? "bg-[#F4F4F5]" : "hover:bg-[#F4F4F5]"),
+    item.available &&
+      (isActive
+        ? "border border-[#E4E4E7] bg-white"
+        : "border border-transparent opacity-70 hover:bg-[#EBEBEB]"),
   );
 
   const labelWrapClass = cn(
@@ -188,11 +200,11 @@ function SidebarRow({ item, pathname, collapsed }: { item: NavItem; pathname: st
       </div>
     );
 
-  if (!collapsed) {
-    return content;
-  }
-
-  return <CollapsedRailTooltip label={tooltipLabel}>{content}</CollapsedRailTooltip>;
+  return (
+    <CollapsedRailTooltip label={tooltipLabel} enabled={collapsed}>
+      {content}
+    </CollapsedRailTooltip>
+  );
 }
 
 function SidebarSection({
@@ -207,7 +219,7 @@ function SidebarSection({
   collapsed: boolean;
 }) {
   return (
-    <div className={cn("px-2", SIDEBAR_CONTENT_MOTION_CLASS, collapsed && "px-1")}>
+    <div className={SIDEBAR_CONTENT_MOTION_CLASS}>
       <p
         className={cn(
           "overflow-hidden pl-4 text-sm font-semibold leading-5 text-[#52525B]",
@@ -233,16 +245,17 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "flex h-full min-h-0 shrink-0 flex-col rounded-[4px] bg-white py-2",
+        "flex h-full min-h-0 shrink-0 flex-col bg-[#F4F4F5] max-md:rounded-[4px] max-md:py-2 md:rounded-none md:pb-2 md:pt-[var(--shell-desktop-padding-top)]",
         SIDEBAR_WIDTH_MOTION_CLASS,
         collapsed ? "w-full overflow-visible" : "w-[240px] overflow-y-auto overflow-x-hidden",
       )}
     >
       <div
+        suppressHydrationWarning
         className={cn(
-          "mb-5 flex shrink-0 items-center",
+          "mb-3 flex shrink-0 items-center md:mb-3 md:h-[var(--shell-chrome-header-height)] md:py-3",
           SIDEBAR_CONTENT_MOTION_CLASS,
-          collapsed ? "justify-center px-1" : "justify-between gap-2 px-3",
+          collapsed ? "justify-center px-3" : "justify-between gap-2 pl-7 pr-3",
         )}
       >
         <div
@@ -258,7 +271,7 @@ export function Sidebar() {
         <TopbarDelayedTooltip label={collapsed ? "Expand Menu" : "Collapse Menu"}>
           <button
             type="button"
-            className={shellChromeToggleButtonClass}
+            className={cn(shellChromeToggleButtonClass, "hover:bg-[#EBEBEB]")}
             onClick={toggleCollapsed}
             aria-expanded={!collapsed}
             aria-label={collapsed ? "Expand Menu" : "Collapse Menu"}
@@ -273,8 +286,11 @@ export function Sidebar() {
       </div>
 
       <div
+        role="navigation"
+        aria-label="Main"
+        suppressHydrationWarning
         className={cn(
-          "flex min-h-0 flex-1 flex-col space-y-3",
+          "flex min-h-0 flex-1 flex-col space-y-3 px-3 pb-1 pt-0",
           collapsed ? "overflow-y-auto overflow-x-visible" : "",
         )}
       >

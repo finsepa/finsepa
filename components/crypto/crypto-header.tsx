@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search } from "@/lib/icons";
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 

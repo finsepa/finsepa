@@ -1,15 +1,20 @@
 "use client";
 
 import { useId, useMemo, useState } from "react";
-import { X } from "lucide-react";
 
 import { ClearableInput } from "@/components/layout/clearable-input";
+import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
+import {
+  AppModalFooter,
+  AppModalShell,
+  appModalCancelButtonClass,
+  appModalPrimaryButtonClass,
+} from "@/components/ui/app-modal-shell";
 import {
   CombinedPortfolioSourceHint,
   CombinedPortfolioSourcesPicker,
 } from "@/components/portfolio/combined-portfolio-sources-picker";
 import type { PortfolioEntry } from "@/components/portfolio/portfolio-types";
-import { cn } from "@/lib/utils";
 
 function ModalField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -50,78 +55,48 @@ export function CreateCombinedPortfolioModal({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40 p-4"
-      role="presentation"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        className="flex max-h-[min(90vh,640px)] w-full max-w-[480px] flex-col rounded-xl bg-white shadow-[0px_10px_16px_-3px_rgba(10,10,10,0.1),0px_4px_6px_0px_rgba(10,10,10,0.04)]"
-        onMouseDown={(e) => e.stopPropagation()}
+    <AppModalOverlay open onClose={onClose} zIndex={110}>
+      <AppModalShell
+        titleId={titleId}
+        title="Create combined portfolio"
+        onClose={onClose}
+        maxHeightClass="max-h-[min(90vh,640px)]"
+        bodyClassName="flex flex-col gap-4 px-5 pb-5 pt-5"
+        footer={
+          <AppModalFooter>
+            <button type="button" onClick={onClose} className={appModalCancelButtonClass}>
+              Cancel
+            </button>
+            <button
+              type="button"
+              disabled={!canAdd}
+              onClick={() => onAdd(name.trim(), selectedIds)}
+              className={appModalPrimaryButtonClass(canAdd)}
+            >
+              Add
+            </button>
+          </AppModalFooter>
+        }
       >
-        <div className="flex shrink-0 items-center justify-between border-b border-[#E4E4E7] px-5 py-3">
-          <h2 id={titleId} className="text-lg font-semibold leading-7 tracking-tight text-[#09090B]">
-            Create combined portfolio
-          </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-[#09090B] transition-colors hover:bg-[#F4F4F5]"
-            aria-label="Close"
-          >
-            <X className="h-5 w-5" strokeWidth={2} />
-          </button>
-        </div>
+        <ModalField label="Name">
+          <ClearableInput
+            type="text"
+            value={name}
+            onChange={setName}
+            placeholder="Combined portfolio"
+            clearLabel="Clear name"
+          />
+        </ModalField>
 
-        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 pb-5 pt-5">
-          <ModalField label="Name">
-            <ClearableInput
-              type="text"
-              value={name}
-              onChange={setName}
-              placeholder="Combined portfolio"
-              clearLabel="Clear name"
-            />
-          </ModalField>
-
-          <ModalField label="Portfolios to include">
-            <CombinedPortfolioSourceHint />
-            <CombinedPortfolioSourcesPicker
-              standardPortfolios={standardPortfolios}
-              picked={picked}
-              onToggle={toggle}
-            />
-          </ModalField>
-        </div>
-
-        <div className="flex shrink-0 gap-3 border-t border-[#E4E4E7] px-6 py-4">
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex min-h-9 flex-1 items-center justify-center rounded-[10px] bg-[#F4F4F5] px-4 py-2 text-sm font-medium text-[#09090B] transition-colors hover:bg-[#EBEBEB]"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            disabled={!canAdd}
-            onClick={() => onAdd(name.trim(), selectedIds)}
-            className={cn(
-              "flex min-h-9 flex-1 items-center justify-center rounded-[10px] px-4 py-2 text-sm font-medium text-white transition-colors",
-              canAdd
-                ? "bg-[#09090B] hover:bg-[#27272A]"
-                : "cursor-not-allowed bg-[#A1A1AA] opacity-50",
-            )}
-          >
-            Add
-          </button>
-        </div>
-      </div>
-    </div>
+        <ModalField label="Portfolios to include">
+          <CombinedPortfolioSourceHint />
+          <CombinedPortfolioSourcesPicker
+            standardPortfolios={standardPortfolios}
+            picked={picked}
+            onToggle={toggle}
+          />
+        </ModalField>
+      </AppModalShell>
+    </AppModalOverlay>
   );
 }

@@ -30,6 +30,9 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
+# npm private registry auth (Untitled UI PRO, etc.)
+.npmrc
+
 # env files (never commit secrets)
 .env.local
 .env

@@ -23,8 +23,11 @@ import {
   dropdownMenuFloatingScrollClassName,
   dropdownMenuPanelBodyClassName,
   dropdownMenuRichItemClassName,
+  dropdownMenuSearchHeaderClassName,
+  dropdownMenuSearchInputClassName,
   dropdownMenuSurfaceClassName,
 } from "@/components/design-system/dropdown-menu-styles";
+import { getSearchPanelViewState } from "@/lib/search/search-policy";
 import { cn } from "@/lib/utils";
 
 const SEARCH_DEBOUNCE_MS = 250;
@@ -261,6 +264,12 @@ export function CompanyPicker({
 
   const queryTrim = pickerQuery.trim();
   const showSearchPanel = queryTrim.length > 0;
+  const { searchPending, showStaleList, noResults } = getSearchPanelViewState({
+    queryTrim,
+    debouncedTrim,
+    loading: searchLoading,
+    resultCount: searchItemsForDisplay.length,
+  });
   const atCapacity = disabled || (!alwaysAllowOpen && maxExtraCompanies <= 0);
 
   const searchPlaceholder = includeCrypto ? "Search stocks, crypto, indices…" : "Search stocks…";
@@ -280,7 +289,7 @@ export function CompanyPicker({
       className={cn(
         dropdownMenuPanelBodyClassName,
         dropdownMenuFloatingScrollClassName,
-        "flex max-h-[min(400px,calc(100vh-12rem))] flex-col gap-1 overflow-y-auto px-1 py-2",
+        "flex max-h-[min(400px,calc(100vh-12rem))] flex-col overflow-y-auto",
       )}
     >
       {!showSearchPanel ? (
@@ -360,13 +369,13 @@ export function CompanyPicker({
             </>
           ) : null}
         </>
-      ) : searchLoading && searchItemsForDisplay.length === 0 ? (
+      ) : searchPending && !showStaleList ? (
         <SearchLoadingIndicator />
-      ) : !searchLoading && searchItemsForDisplay.length === 0 ? (
+      ) : noResults ? (
         <p className="px-3 py-2 text-[12px] text-[#71717A]">No results for &ldquo;{queryTrim}&rdquo;</p>
       ) : (
         <>
-          {searchLoading && searchItemsForDisplay.length > 0 ? (
+          {searchLoading && showStaleList ? (
             <p className="px-3 pb-1 text-center text-[11px] text-[#A1A1AA]" aria-hidden>
               Updating…
             </p>
@@ -390,13 +399,13 @@ export function CompanyPicker({
       aria-label={listboxAriaLabel}
     >
       {variant === "button" ? (
-        <div className="border-b border-[#F4F4F5] px-2 pb-1 pt-1">
+        <div className={dropdownMenuSearchHeaderClassName}>
           <input
             ref={pickerInputRef}
             value={pickerQuery}
             onChange={(e) => setPickerQuery(e.target.value)}
             placeholder={searchPlaceholder}
-            className="w-full rounded-md border-0 bg-[#FAFAFA] px-2 py-1.5 text-[13px] text-[#09090B] placeholder:text-[#A1A1AA] outline-none ring-1 ring-transparent focus:ring-[#E4E4E7]"
+            className={dropdownMenuSearchInputClassName}
             aria-label="Search to add company"
             autoComplete="off"
             autoCorrect="off"
@@ -442,7 +451,18 @@ export function CompanyPicker({
         children?.({ open: pickerOpen, setOpen: setPickerOpen, atCapacity })
       )}
 
-      {pickerOpen && variant === "button" ? (
+      {pickerOpen && variant === "button" && menuPortal ? (
+        <TopbarDropdownPortal
+          open={pickerOpen}
+          anchorRef={pickerWrapRef}
+          align={portalAlign}
+          ref={menuPortalRef}
+        >
+          {pickerDropdownPanel}
+        </TopbarDropdownPortal>
+      ) : null}
+
+      {pickerOpen && variant === "button" && !menuPortal ? (
         <div
           className={cn(
             "absolute top-full z-[200] mt-1",

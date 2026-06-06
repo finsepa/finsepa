@@ -1,12 +1,16 @@
 "use client";
 
 import Image from "next/image";
-import { X } from "lucide-react";
-import { useMemo, useState } from "react";
-import { createPortal } from "react-dom";
+import { useId, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { SegmentedControl } from "@/components/design-system/segmented-control";
+import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
+import {
+  AppModalFooter,
+  AppModalShell,
+  appModalPrimaryButtonClass,
+} from "@/components/ui/app-modal-shell";
 
 type BillingCycle = "monthly" | "annually";
 
@@ -31,6 +35,7 @@ export function BillingUpgradeModal({
   open: boolean;
   onClose: () => void;
 }) {
+  const titleId = useId();
   const [cycle, setCycle] = useState<BillingCycle>("monthly");
   const [startingCheckout, setStartingCheckout] = useState(false);
 
@@ -40,7 +45,7 @@ export function BillingUpgradeModal({
   }, [cycle]);
 
   const suffixText = cycle === "monthly" ? "/ month" : "/ year";
-  if (!open || typeof document === "undefined") return null;
+  if (!open) return null;
 
   async function startCheckout() {
     setStartingCheckout(true);
@@ -63,81 +68,60 @@ export function BillingUpgradeModal({
     }
   }
 
-  return createPortal(
-    <div className="fixed inset-0 z-[260] flex items-center justify-center bg-black/40 p-4">
-      <button
-        type="button"
-        aria-label="Close upgrade modal backdrop"
-        className="absolute inset-0"
-        onClick={onClose}
-      />
-
-      <div
-        role="dialog"
-        aria-modal="true"
-        className="relative flex max-h-[min(90vh,804px)] w-full max-w-[480px] min-h-0 flex-col overflow-hidden rounded-xl border border-[#E4E4E7] bg-white shadow-[0px_10px_16px_-3px_rgba(10,10,10,0.1),0px_4px_6px_0px_rgba(10,10,10,0.04)]"
+  return (
+    <AppModalOverlay open={open} onClose={onClose} zIndex={260}>
+      <AppModalShell
+        titleId={titleId}
+        title="Finsepa Pro"
+        onClose={onClose}
+        bodyClassName="space-y-8 px-5 py-5"
+        footer={
+          <AppModalFooter className="justify-end">
+            <button
+              type="button"
+              onClick={() => {
+                void startCheckout();
+              }}
+              disabled={startingCheckout}
+              className={appModalPrimaryButtonClass(!startingCheckout)}
+            >
+              {startingCheckout ? "Redirecting…" : "Get Started"}
+            </button>
+          </AppModalFooter>
+        }
       >
-        <div className="flex shrink-0 items-center justify-between border-b border-[#E4E4E7] px-5 py-3">
-          <h3 className="text-lg font-semibold leading-7 tracking-tight text-[#09090B]">Finsepa Pro</h3>
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-[10px] border border-transparent text-[#09090B] transition-colors hover:bg-[#F4F4F5]"
-            aria-label="Close"
-          >
-            <X className="h-5 w-5" aria-hidden />
-          </button>
+        <SegmentedControl
+          options={[
+            { value: "monthly", label: "Monthly" },
+            { value: "annually", label: "Annually (17% off)" },
+          ]}
+          value={cycle}
+          onChange={setCycle}
+          fullWidth
+          aria-label="Billing cycle"
+        />
+
+        <div className="flex items-end gap-2">
+          <span className="text-[36px] font-bold leading-[40px] tracking-normal text-[#0A0A0A]">{priceText}</span>
+          <span className="pb-1 text-[14px] font-normal leading-5 tracking-normal text-[#71717A]">{suffixText}</span>
         </div>
 
-        <div className="min-h-0 flex-1 space-y-8 overflow-y-auto px-5 py-5">
-          <SegmentedControl
-            options={[
-              { value: "monthly", label: "Monthly" },
-              { value: "annually", label: "Annually (17% off)" },
-            ]}
-            value={cycle}
-            onChange={setCycle}
-            fullWidth
-            aria-label="Billing cycle"
-          />
-
-          <div className="flex items-end gap-2">
-            <span className="text-[36px] font-bold leading-[40px] tracking-normal text-[#0A0A0A]">{priceText}</span>
-            <span className="pb-1 text-[14px] font-normal leading-5 tracking-normal text-[#71717A]">{suffixText}</span>
-          </div>
-
-          <ul className="space-y-4">
-            {FEATURES.map((item) => (
-              <li key={item} className="flex items-center gap-3">
-                <Image
-                  src="/icons/finsepa-pro-check.svg"
-                  alt=""
-                  width={20}
-                  height={20}
-                  className="h-5 w-5 shrink-0"
-                  aria-hidden
-                />
-                <span className="text-[14px] leading-5 text-[#09090B]">{item}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div className="flex shrink-0 border-t border-[#E4E4E7] px-5 py-4">
-          <button
-            type="button"
-            onClick={() => {
-              void startCheckout();
-            }}
-            disabled={startingCheckout}
-            className="h-10 w-full rounded-[10px] bg-[#09090B] px-6 text-sm font-semibold text-white transition-colors hover:bg-[#18181B] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-[#09090B]"
-          >
-            {startingCheckout ? "Redirecting…" : "Get Started"}
-          </button>
-        </div>
-      </div>
-    </div>,
-    document.body,
+        <ul className="space-y-4">
+          {FEATURES.map((item) => (
+            <li key={item} className="flex items-center gap-3">
+              <Image
+                src="/icons/finsepa-pro-check.svg"
+                alt=""
+                width={20}
+                height={20}
+                className="h-5 w-5 shrink-0"
+                aria-hidden
+              />
+              <span className="text-[14px] leading-5 text-[#09090B]">{item}</span>
+            </li>
+          ))}
+        </ul>
+      </AppModalShell>
+    </AppModalOverlay>
   );
 }
-

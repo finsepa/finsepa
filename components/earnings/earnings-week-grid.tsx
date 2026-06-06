@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { CalendarDays, ChevronLeft, ChevronRight, Clock } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Clock } from "@/lib/icons";
 
 import { EarningsPreviewModal } from "@/components/earnings/earnings-preview-modal";
 import { PostMarketEarningsIcon } from "@/components/stock/post-market-earnings-icon";

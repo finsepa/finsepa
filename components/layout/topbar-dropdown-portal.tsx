@@ -26,16 +26,24 @@ type TopbarDropdownPortalProps = {
    * `leading`: fixed box’s left edge matches anchor’s left (e.g. portfolio title row).
    */
   align?: "trailing" | "leading";
+  /** Match the anchor element width (full-width form dropdowns). */
+  matchAnchorWidth?: boolean;
 };
 
-type PortalPos = { top: number } & ({ right: number; left?: undefined } | { left: number; right?: undefined });
+type PortalPos = { top: number; width?: number } & (
+  | { right: number; left?: undefined }
+  | { left: number; right?: undefined }
+);
 
 /**
  * Renders a fixed-position layer in `document.body` aligned under the anchor,
  * so parent `overflow` on the top bar (or other shells) does not clip dropdowns.
  */
 export const TopbarDropdownPortal = forwardRef<HTMLDivElement, TopbarDropdownPortalProps>(
-  function TopbarDropdownPortal({ open, anchorRef, children, className, align = "trailing" }, ref) {
+  function TopbarDropdownPortal(
+    { open, anchorRef, children, className, align = "trailing", matchAnchorWidth = false },
+    ref,
+  ) {
     const [mounted, setMounted] = useState(false);
     const [pos, setPos] = useState<PortalPos>({ top: 0, right: 0 });
 
@@ -48,12 +56,13 @@ export const TopbarDropdownPortal = forwardRef<HTMLDivElement, TopbarDropdownPor
       if (!el) return;
       const r = el.getBoundingClientRect();
       const vw = window.visualViewport?.width ?? window.innerWidth;
+      const width = matchAnchorWidth ? r.width : undefined;
       if (align === "leading") {
-        setPos({ top: r.bottom + 4, left: r.left });
+        setPos({ top: r.bottom + 4, left: r.left, width });
       } else {
-        setPos({ top: r.bottom + 4, right: vw - r.right });
+        setPos({ top: r.bottom + 4, right: vw - r.right, width });
       }
-    }, [anchorRef, align]);
+    }, [anchorRef, align, matchAnchorWidth]);
 
     useLayoutEffect(() => {
       if (!open) return;
@@ -84,7 +93,13 @@ export const TopbarDropdownPortal = forwardRef<HTMLDivElement, TopbarDropdownPor
     return createPortal(
       <div
         ref={ref}
-        style={{ position: "fixed", top: pos.top, zIndex: TOPBAR_DROPDOWN_PORTAL_Z, ...horizontal }}
+        style={{
+          position: "fixed",
+          top: pos.top,
+          zIndex: TOPBAR_DROPDOWN_PORTAL_Z,
+          width: pos.width,
+          ...horizontal,
+        }}
         className={cn(className)}
       >
         {children}

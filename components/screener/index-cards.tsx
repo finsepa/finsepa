@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDown, ArrowUp } from "lucide-react";
+import { ArrowDown, ArrowUp } from "@/lib/icons";
 import { useEffect, useMemo, useState } from "react";
 
 import { FadeIn } from "@/components/markets/skeleton";

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { FileSearch, Presentation } from "lucide-react";
+import { FileSearch, Presentation } from "@/lib/icons";
 
 import { EarningsPdfPreviewModal } from "@/components/stock/earnings-pdf-preview-modal";
 import { getCuratedIrEarningsRowUrls } from "@/lib/market/earnings-ir-curated-lookup";

@@ -11,7 +11,7 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
-import { LineChart, Settings } from "lucide-react";
+import { LineChart, Settings } from "@/lib/icons";
 
 import { TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
 import {

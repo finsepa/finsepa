@@ -32,9 +32,21 @@
     var(--mobile-bottom-nav-inset-bottom) + env(safe-area-inset-bottom, 0px) +
       (var(--mobile-bottom-nav-height) - 3rem) / 2
   );
-  /** Desktop protected shell: grey gutter between sidebar, topbar, and main (Figma Web App). */
+  /** Desktop protected shell: outer padding around the combined topbar + main + watchlist card. */
   --shell-chrome-inset: 4px;
   --shell-chrome-gap: 4px;
+  --shell-desktop-padding-top: 8px;
+  --shell-desktop-padding-right: 8px;
+  --shell-desktop-padding-bottom: 8px;
+  --shell-desktop-panel-radius: 16px;
+  /** Shared height for topbar + sidebar logo/toggle row (desktop). */
+  --shell-chrome-header-height: 60px;
+  /** Figma modal chrome — inset + radius on `#app-shell-root` when a modal is open. */
+  --app-modal-shell-inset: 20px;
+  --app-modal-shell-radius: 16px;
+  --app-modal-motion-duration: 400ms;
+  --app-modal-motion-easing: cubic-bezier(0.32, 0.72, 0, 1);
+  --app-modal-dialog-slide: 48px;
   /**
    * Stock Financials wide table: cap height so horizontal scroll sits at the bottom of the viewport
    * (not at the bottom of a tall table). Tune offset if header/toolbar chrome changes.
@@ -63,7 +75,17 @@
 @media (min-width: 768px) {
   :root {
     --financials-table-max-h: calc(100dvh - 17.5rem);
+    --shell-chrome-inset: 0px;
+    --shell-chrome-gap: 0px;
   }
+}
+
+/** Combined desktop chrome card (topbar + main + watchlist). */
+.shell-desktop-panel {
+  border: 1px solid #e4e4e7;
+  border-radius: var(--shell-desktop-panel-radius);
+  background: #fff;
+  box-shadow: 0 1px 2px 0 rgba(10, 10, 10, 0.06);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -276,5 +298,62 @@ body {
     animation: none;
     transform: none;
     will-change: auto;
+  }
+}
+
+/* ── App modal overlay (Figma Web App — scaled shell + blurred backdrop) ── */
+
+@media (min-width: 768px) {
+  #app-shell-root {
+    transition:
+      inset var(--app-modal-motion-duration) var(--app-modal-motion-easing),
+      border-radius var(--app-modal-motion-duration) var(--app-modal-motion-easing),
+      transform var(--app-modal-motion-duration) var(--app-modal-motion-easing),
+      box-shadow var(--app-modal-motion-duration) var(--app-modal-motion-easing);
+  }
+}
+
+@media (min-width: 768px) {
+  html[data-app-modal-open] #app-shell-root {
+    position: fixed !important;
+    inset: var(--app-modal-shell-inset) !important;
+    width: auto !important;
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    border-radius: var(--app-modal-shell-radius);
+    overflow: hidden;
+    z-index: 1;
+    box-shadow: 0 0 0 1px rgba(10, 10, 10, 0.04);
+  }
+}
+
+@keyframes app-modal-dialog-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, var(--app-modal-dialog-slide), 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.app-modal-dialog-enter {
+  animation-name: app-modal-dialog-in;
+  animation-duration: var(--app-modal-motion-duration);
+  animation-timing-function: var(--app-modal-motion-easing);
+  animation-fill-mode: both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @media (min-width: 768px) {
+    #app-shell-root {
+      transition: none;
+    }
+  }
+
+  .app-modal-dialog-enter {
+    animation: none;
   }
 }

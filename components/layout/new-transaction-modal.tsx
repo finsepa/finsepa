@@ -1,11 +1,16 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { format, startOfDay } from "date-fns";
-import { X } from "lucide-react";
-
 import type { CompanyPick } from "@/components/charting/company-picker";
+import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
+import {
+  AppModalFooter,
+  AppModalShell,
+  appModalCancelButtonClass,
+  appModalPrimaryButtonClass,
+} from "@/components/ui/app-modal-shell";
 import { cn } from "@/lib/utils";
 import {
   CashDirectionSelect,
@@ -193,15 +198,6 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
       }
     })();
   }, [open, transactionTab, tradeAssetSource, selectedCompany?.symbol, transactionDate]);
-
-  useEffect(() => {
-    if (!open) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -628,35 +624,32 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
   if (!open) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4"
-      role="presentation"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        className="flex max-h-[min(90vh,804px)] w-full max-w-[480px] flex-col rounded-xl bg-white shadow-[0px_10px_16px_-3px_rgba(10,10,10,0.1),0px_4px_6px_0px_rgba(10,10,10,0.04)] min-h-0"
-        onMouseDown={(e) => e.stopPropagation()}
+    <AppModalOverlay open={open} onClose={onClose} zIndex={100}>
+      <AppModalShell
+        titleId={titleId}
+        title="New Transaction"
+        onClose={onClose}
+        bodyClassName="px-5 pb-5 pt-5"
+        footer={
+          <AppModalFooter>
+            <button type="button" onClick={onClose} className={appModalCancelButtonClass}>
+              Cancel
+            </button>
+            <button
+              type="button"
+              disabled={!canAdd || submitting}
+              onClick={() => void handleAdd()}
+              className={appModalPrimaryButtonClass(canAdd && !submitting)}
+            >
+              {transactionTab === "Trades" ? (
+                submitting ? (operation === "Sell" ? "Selling..." : "Adding") : (operation === "Sell" ? "Sell" : "Add")
+              ) : (
+                submitting ? "Adding" : "Add"
+              )}
+            </button>
+          </AppModalFooter>
+        }
       >
-        <div className="flex shrink-0 items-center justify-between border-b border-[#E4E4E7] px-5 py-3">
-          <h2 id={titleId} className="text-lg font-semibold leading-7 tracking-tight text-[#09090B]">
-            New Transaction
-          </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-[#09090B] transition-colors hover:bg-[#F4F4F5]"
-            aria-label="Close"
-          >
-            <X className="h-5 w-5" strokeWidth={2} />
-          </button>
-        </div>
-
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5 pt-5">
           <div className="flex flex-col gap-5">
             <Field label="Portfolio">
               <TransactionPortfolioField />
@@ -948,36 +941,8 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
               ) : null}
             </div>
           </div>
-        </div>
-
-        <div className="flex shrink-0 gap-3 border-t border-[#E4E4E7] px-6 py-4">
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex min-h-9 flex-1 items-center justify-center rounded-[10px] bg-[#F4F4F5] px-4 py-2 text-sm font-medium text-[#09090B] transition-colors hover:bg-[#EBEBEB]"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            disabled={!canAdd || submitting}
-            onClick={() => void handleAdd()}
-            className={cn(
-              "flex min-h-9 flex-1 items-center justify-center rounded-[10px] px-4 py-2 text-sm font-medium text-white transition-colors",
-              canAdd && !submitting
-                ? "bg-[#09090B] hover:bg-[#27272A]"
-                : "cursor-not-allowed bg-[#A1A1AA] opacity-50",
-            )}
-          >
-            {transactionTab === "Trades" ? (
-              submitting ? (operation === "Sell" ? "Selling..." : "Adding") : (operation === "Sell" ? "Sell" : "Add")
-            ) : (
-              submitting ? "Adding" : "Add"
-            )}
-          </button>
-        </div>
-      </div>
-    </div>
+      </AppModalShell>
+    </AppModalOverlay>
   );
 }
 
@@ -990,6 +955,9 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
+const TRANSACTION_TAB_MOTION_MS = 280;
+const TRANSACTION_TAB_MOTION_EASE = "cubic-bezier(0.33, 1, 0.68, 1)";
+
 function TransactionTypeTabs({
   active,
   onChange,
@@ -997,25 +965,95 @@ function TransactionTypeTabs({
   active: (typeof TABS)[number];
   onChange: (tab: (typeof TABS)[number]) => void;
 }) {
+  const navRef = useRef<HTMLElement>(null);
+  const tabRefs = useRef(new Map<(typeof TABS)[number], HTMLButtonElement>());
+  const [indicator, setIndicator] = useState({ left: 0, width: 0 });
+  const [indicatorMotionEnabled, setIndicatorMotionEnabled] = useState(false);
+  const hasPositionedOnceRef = useRef(false);
+
+  const measureIndicator = useCallback(() => {
+    const nav = navRef.current;
+    const btn = tabRefs.current.get(active);
+    if (!nav || !btn) return;
+    const navRect = nav.getBoundingClientRect();
+    const btnRect = btn.getBoundingClientRect();
+    const width = Math.round(btnRect.width);
+    if (width <= 0) return;
+    const left = Math.round(btnRect.left - navRect.left + nav.scrollLeft);
+    setIndicator((prev) => {
+      if (prev.left === left && prev.width === width) return prev;
+      return { left, width };
+    });
+  }, [active]);
+
+  useLayoutEffect(() => {
+    measureIndicator();
+    if (hasPositionedOnceRef.current) return;
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => {
+      measureIndicator();
+      raf2 = requestAnimationFrame(() => {
+        if (hasPositionedOnceRef.current) return;
+        const btn = tabRefs.current.get(active);
+        if (!btn || btn.getBoundingClientRect().width <= 0) return;
+        hasPositionedOnceRef.current = true;
+        setIndicatorMotionEnabled(true);
+      });
+    });
+    return () => {
+      cancelAnimationFrame(raf1);
+      if (raf2) cancelAnimationFrame(raf2);
+    };
+  }, [measureIndicator, active]);
+
+  useLayoutEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return;
+    const ro = new ResizeObserver(measureIndicator);
+    ro.observe(nav);
+    window.addEventListener("resize", measureIndicator);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measureIndicator);
+    };
+  }, [measureIndicator]);
+
   return (
-    <div className="flex w-full gap-5 border-b border-[#E4E4E7]">
-      {TABS.map((tab) => {
-        const isOn = tab === active;
-        return (
-          <button
-            key={tab}
-            type="button"
-            onClick={() => onChange(tab)}
-            className={
-              isOn
-                ? "-mb-px border-b-2 border-[#09090B] pb-2 text-sm font-medium leading-6 text-[#09090B]"
-                : "pb-2.5 text-sm font-medium leading-6 text-[#09090B] opacity-80 hover:opacity-100"
-            }
-          >
-            {tab}
-          </button>
-        );
-      })}
+    <div className="w-full border-b border-[#E4E4E7]">
+      <nav ref={navRef} className="relative flex w-full flex-nowrap items-start gap-5 pb-px" aria-label="Transaction type">
+        {TABS.map((tab) => {
+          const isOn = tab === active;
+          return (
+            <button
+              key={tab}
+              ref={(el) => {
+                if (el) tabRefs.current.set(tab, el);
+                else tabRefs.current.delete(tab);
+              }}
+              type="button"
+              onClick={() => onChange(tab)}
+              className={cn(
+                "-mb-px shrink-0 cursor-pointer border-b-2 border-transparent py-2 text-sm font-medium leading-6 transition-[color,opacity] duration-100 hover:opacity-100",
+                isOn ? "font-semibold text-[#09090B] opacity-100" : "text-[#09090B] opacity-80",
+              )}
+            >
+              {tab}
+            </button>
+          );
+        })}
+        <span
+          className="pointer-events-none absolute bottom-0 z-[1] h-0.5 rounded-full bg-[#09090B] motion-reduce:transition-none"
+          style={{
+            left: indicator.left,
+            width: indicator.width,
+            opacity: indicator.width > 0 ? 1 : 0,
+            transitionProperty: indicatorMotionEnabled ? "left, width" : "none",
+            transitionDuration: indicatorMotionEnabled ? `${TRANSACTION_TAB_MOTION_MS}ms` : "0ms",
+            transitionTimingFunction: TRANSACTION_TAB_MOTION_EASE,
+          }}
+          aria-hidden
+        />
+      </nav>
     </div>
   );
 }

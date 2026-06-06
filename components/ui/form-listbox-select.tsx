@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
-import { Check, ChevronDown } from "lucide-react";
+import { Check, ChevronDown } from "@/lib/icons";
 
 import {
   dropdownMenuPanelClassName,
@@ -141,7 +141,7 @@ export function FormListboxSelect<V extends string>({
           className={cn(
             dropdownMenuPanelClassName(),
             /** At least trigger width; grow with option labels (narrow triggers used to clip flags + text). */
-            "absolute top-[calc(100%+4px)] z-[120] min-w-full w-max max-w-[min(24rem,calc(100vw-2rem))] bg-white",
+            "absolute top-[calc(100%+4px)] z-[120] min-w-full w-max max-w-[min(24rem,calc(100vw-2rem))]",
             menuAlign === "trailing" ? "right-0" : "left-0",
             menuClassName,
           )}

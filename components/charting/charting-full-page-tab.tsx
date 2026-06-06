@@ -1,15 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { X } from "lucide-react";
+import { X } from "@/lib/icons";
 
 import { ChartingCompareWorkspace } from "@/components/charting/charting-compare-workspace";
 import { ChartingCompanyAddDropdown } from "@/components/charting/charting-company-add-dropdown";
-import {
-  ChartingWorkspace,
-  DEFAULT_CHART_TIME_RANGE_ORDER,
-  STANDALONE_CHARTING_TIME_RANGE_ORDER,
-} from "@/components/charting/charting-workspace";
+import { ChartingWorkspace, STANDALONE_CHARTING_TIME_RANGE_ORDER } from "@/components/charting/charting-workspace";
 import type { StockPageInitialData } from "@/lib/market/stock-page-initial-data";
 import {
   CHARTING_MAX_COMPARE_TICKERS,
@@ -55,8 +51,6 @@ export function ChartingFullPageTab({
   const t = tickers[0]!;
   const init = initialByTicker[t];
   const metricsInUrl = parseChartingMetricsParam(metricParam);
-  /** Match stock tab Charting: full-width fixed bars, legend chips, no toolbar company row. */
-  const assetStyleSingleSeries = tickers.length === 1 && metricsInUrl.length === 1;
 
   return (
     <ChartingWorkspace
@@ -66,40 +60,34 @@ export function ChartingFullPageTab({
       initialQuarterlyPoints={init?.fundamentalsSeriesQuarterly}
       pathRoute={pathRoute}
       workspaceTitle={workspaceTitle}
-      timeRangeOrder={
-        assetStyleSingleSeries ? DEFAULT_CHART_TIME_RANGE_ORDER : STANDALONE_CHARTING_TIME_RANGE_ORDER
-      }
-      metricControlsPlacement={assetStyleSingleSeries ? "legend" : "toolbar"}
-      histogramLayout={assetStyleSingleSeries ? "stockFullWidthFixedBars" : "default"}
+      timeRangeOrder={STANDALONE_CHARTING_TIME_RANGE_ORDER}
+      metricControlsPlacement="toolbar"
+      histogramLayout="default"
       fullPageCompanyChipSlot={
-        assetStyleSingleSeries ? undefined : (
-          <div className="inline-flex max-w-full min-w-0 items-stretch overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white">
-            <span className="flex min-h-[36px] min-w-0 items-center border-r border-[#E4E4E7] px-4 py-2 text-[14px] font-medium leading-5 text-[#09090B]">
-              <span className="truncate">{t}</span>
-            </span>
-            <button
-              type="button"
-              onClick={() => {
-                router.push(buildStandaloneChartPath(pathRoute, [], metricsInUrl));
-              }}
-              className="flex w-9 shrink-0 items-center justify-center text-[#09090B] transition-colors hover:bg-[#FAFAFA]"
-              aria-label={`Remove ${t}`}
-            >
-              <X className="h-5 w-5" strokeWidth={1.5} aria-hidden />
-            </button>
-          </div>
-        )
+        <div className="inline-flex max-w-full min-w-0 items-stretch overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white">
+          <span className="flex min-h-[36px] min-w-0 items-center border-r border-[#E4E4E7] px-4 py-2 text-[14px] font-medium leading-5 text-[#09090B]">
+            <span className="truncate">{t}</span>
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              router.push(buildStandaloneChartPath(pathRoute, [], metricsInUrl));
+            }}
+            className="flex w-9 shrink-0 items-center justify-center text-[#09090B] transition-colors hover:bg-[#FAFAFA]"
+            aria-label={`Remove ${t}`}
+          >
+            <X className="h-5 w-5" strokeWidth={1.5} aria-hidden />
+          </button>
+        </div>
       }
       fullPageCompanyAddSlot={
-        assetStyleSingleSeries ? undefined : (
-          <ChartingCompanyAddDropdown
-            onPickStock={(sym) => {
-              router.push(buildStandaloneChartPath(pathRoute, [t, sym], metricsInUrl));
-            }}
-            maxExtraCompanies={Math.max(0, CHARTING_MAX_COMPARE_TICKERS - 1)}
-            excludeSymbols={[t]}
-          />
-        )
+        <ChartingCompanyAddDropdown
+          onPickStock={(sym) => {
+            router.push(buildStandaloneChartPath(pathRoute, [t, sym], metricsInUrl));
+          }}
+          maxExtraCompanies={Math.max(0, CHARTING_MAX_COMPARE_TICKERS - 1)}
+          excludeSymbols={[t]}
+        />
       }
     />
   );

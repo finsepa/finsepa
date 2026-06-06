@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useCallback, useEffect, useState } from "react";
-import { LineChart } from "lucide-react";
+import { LineChart } from "@/lib/icons";
 
 import { PortfolioHoldingsPerformanceChart } from "@/components/portfolio/portfolio-holdings-performance-chart";
 import { PortfolioReturnsDynamicsChart } from "@/components/portfolio/portfolio-returns-dynamics-chart";

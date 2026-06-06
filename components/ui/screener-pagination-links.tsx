@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "@/lib/icons";
 
 import { cn } from "@/lib/utils";
 import { SCREENER_TABLE_PAGINATION_BTN } from "@/components/ui/table-pagination";

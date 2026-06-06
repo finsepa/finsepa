@@ -1,9 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useId, useState } from "react";
-import { createPortal } from "react-dom";
-import { X } from "lucide-react";
 
+import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
+import {
+  AppModalCloseButton,
+  AppModalFooter,
+  AppModalShell,
+  appModalCancelButtonClass,
+  appModalPrimaryButtonClass,
+} from "@/components/ui/app-modal-shell";
 import { cn } from "@/lib/utils";
 import {
   preloadProductTourImages,
@@ -138,11 +144,8 @@ export function ProductTourModal({
   useEffect(() => {
     if (!open) return;
     document.addEventListener("keydown", onKeyDown);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = prev;
     };
   }, [open, onKeyDown]);
 
@@ -160,102 +163,84 @@ export function ProductTourModal({
 
   if (!mounted || !open) return null;
 
-  return createPortal(
-    <div className="fixed inset-0 z-[281] flex items-center justify-center bg-black/40 p-4">
-      <button type="button" aria-label="Close product tour" className="absolute inset-0" onClick={onDismiss} />
-
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        className="relative flex max-h-[min(90vh,800px)] w-full max-w-[800px] flex-col overflow-hidden rounded-xl bg-white shadow-[0px_10px_16px_-3px_rgba(10,10,10,0.1),0px_4px_6px_0px_rgba(10,10,10,0.04)]"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button
-          type="button"
-          onClick={onDismiss}
-          className="absolute right-5 top-5 z-20 inline-flex h-9 w-9 items-center justify-center rounded-[10px] border border-transparent text-[#09090B] transition-colors hover:bg-[#F4F4F5]"
-          aria-label="Close"
-        >
-          <X className="h-5 w-5" aria-hidden />
-        </button>
-
-        <header className="shrink-0 px-5 pb-0 pt-6 pr-14 md:px-8 md:pt-8 md:pr-16">
-          <div className="flex max-w-[400px] flex-col gap-3">
-            <div className="flex items-center gap-2">
-              <span className="relative flex h-5 w-5 shrink-0 items-center justify-center">
-                <span className="absolute left-1.5 top-1 h-4 w-4 rounded-full bg-[#E4E4E7]" aria-hidden />
-                <Icon className="relative h-5 w-5 text-[#09090B]" aria-hidden />
-              </span>
-              <p id={titleId} className="text-base font-semibold leading-6 text-[#09090B]">
-                {step.title}
-              </p>
+  return (
+    <AppModalOverlay open={open} onClose={onDismiss} zIndex={281}>
+      <AppModalShell
+        titleId={titleId}
+        maxWidthClass="w-full max-w-[800px]"
+        maxHeightClass="max-h-[min(90vh,800px)]"
+        bodyScroll={false}
+        header={
+          <div className="flex w-full items-start justify-between gap-3">
+            <div className="flex min-w-0 max-w-[400px] flex-col gap-3">
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-5 w-5 shrink-0 items-center justify-center">
+                  <span className="absolute left-1.5 top-1 h-4 w-4 rounded-full bg-[#E4E4E7]" aria-hidden />
+                  <Icon className="relative h-5 w-5 text-[#09090B]" aria-hidden />
+                </span>
+                <p id={titleId} className="text-base font-semibold leading-6 text-[#09090B]">
+                  {step.title}
+                </p>
+              </div>
+              <p className="text-base leading-6 text-[#52525B]">{step.description}</p>
             </div>
-            <p className="text-base leading-6 text-[#52525B]">{step.description}</p>
+            <AppModalCloseButton onClick={onDismiss} />
           </div>
-        </header>
+        }
+        headerClassName="px-5 pb-0 pt-6 md:px-8 md:pt-8"
+        cardClassName="overflow-hidden"
+        bodyClassName="min-h-0 flex-1 overflow-hidden bg-white py-3 pl-4 pr-0 md:py-6 md:pl-8"
+        footer={
+          <AppModalFooter className="border-transparent">
+            <div className="flex w-full items-center justify-between gap-4">
+              <div className="w-[120px]">
+                {!isFirst ? (
+                  <button type="button" onClick={goBack} className={appModalCancelButtonClass}>
+                    Back
+                  </button>
+                ) : null}
+              </div>
 
-        {/* Left-aligned mockup; clips on the right and bottom like Figma */}
-        <div className="min-h-0 shrink-0 overflow-hidden bg-white py-3 pl-4 pr-0 md:py-6 md:pl-8">
-          <div className="md:hidden">
-            <TourMockupViewport
-              activeIndex={stepIndex}
-              previewHeightPx={TOUR_PREVIEW_HEIGHT_MOBILE_PX}
-              mockupWidthPx={TOUR_MOCKUP_WIDTH_MOBILE_PX}
-            />
-          </div>
-          <div className="hidden md:block">
-            <TourMockupViewport
-              activeIndex={stepIndex}
-              previewHeightPx={TOUR_PREVIEW_HEIGHT_DESKTOP_PX}
-              mockupWidthPx={TOUR_MOCKUP_WIDTH_DESKTOP_PX}
-            />
-          </div>
-        </div>
-
-        <footer className="shrink-0 border-t border-transparent px-5 py-5">
-          <div className="flex items-center justify-between gap-4">
-            <div className="w-[120px]">
-              {!isFirst ? (
-                <button
-                  type="button"
-                  onClick={goBack}
-                  className="inline-flex h-9 items-center justify-center rounded-[10px] bg-[#F4F4F5] px-4 text-sm font-medium leading-5 text-[#09090B] transition-colors hover:bg-[#E4E4E7]"
-                >
-                  Back
-                </button>
-              ) : null}
-            </div>
-
-            <div
-              className="flex items-center justify-center gap-2"
-              aria-label={`Step ${stepIndex + 1} of ${PRODUCT_TOUR_STEP_COUNT}`}
-            >
-              {PRODUCT_TOUR_STEPS.map((s, i) => (
-                <span
-                  key={s.id}
-                  className={cn(
-                    "h-1.5 w-1.5 rounded-full transition-colors",
-                    i === stepIndex ? "bg-[#09090B]" : "bg-[#E4E4E7]",
-                  )}
-                  aria-hidden
-                />
-              ))}
-            </div>
-
-            <div className="flex w-[120px] justify-end">
-              <button
-                type="button"
-                onClick={goNext}
-                className="inline-flex h-9 items-center justify-center rounded-[10px] bg-[#09090B] px-4 text-sm font-medium leading-5 text-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors hover:bg-[#27272A]"
+              <div
+                className="flex items-center justify-center gap-2"
+                aria-label={`Step ${stepIndex + 1} of ${PRODUCT_TOUR_STEP_COUNT}`}
               >
-                {isLast ? "Get Started" : "Next"}
-              </button>
+                {PRODUCT_TOUR_STEPS.map((s, i) => (
+                  <span
+                    key={s.id}
+                    className={cn(
+                      "h-1.5 w-1.5 rounded-full transition-colors",
+                      i === stepIndex ? "bg-[#09090B]" : "bg-[#E4E4E7]",
+                    )}
+                    aria-hidden
+                  />
+                ))}
+              </div>
+
+              <div className="flex w-[120px] justify-end">
+                <button type="button" onClick={goNext} className={appModalPrimaryButtonClass(true)}>
+                  {isLast ? "Get Started" : "Next"}
+                </button>
+              </div>
             </div>
-          </div>
-        </footer>
-      </div>
-    </div>,
-    document.body,
+          </AppModalFooter>
+        }
+      >
+        <div className="md:hidden">
+          <TourMockupViewport
+            activeIndex={stepIndex}
+            previewHeightPx={TOUR_PREVIEW_HEIGHT_MOBILE_PX}
+            mockupWidthPx={TOUR_MOCKUP_WIDTH_MOBILE_PX}
+          />
+        </div>
+        <div className="hidden md:block">
+          <TourMockupViewport
+            activeIndex={stepIndex}
+            previewHeightPx={TOUR_PREVIEW_HEIGHT_DESKTOP_PX}
+            mockupWidthPx={TOUR_MOCKUP_WIDTH_DESKTOP_PX}
+          />
+        </div>
+      </AppModalShell>
+    </AppModalOverlay>
   );
 }

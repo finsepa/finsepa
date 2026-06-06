@@ -10,7 +10,7 @@ import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
 import { isWatchlistTickerWatched } from "@/lib/watchlist/normalize-storage-key";
 import { watchlistStorageKeyForSearchItem } from "@/lib/search/watchlist-storage-key";
 
-import { SEARCH_CLIENT_DEBOUNCE_MS } from "@/lib/search/search-policy";
+import { getSearchPanelViewState, SEARCH_CLIENT_DEBOUNCE_MS } from "@/lib/search/search-policy";
 
 function useDebouncedValue<T>(value: T, ms: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -145,11 +145,13 @@ export function useSearchPanel({
     return () => window.removeEventListener("keydown", onK);
   }, [open, queryTrim, items, recent, highlight, navigateTo, onClose]);
 
-  const showResults = queryTrim.length > 0;
-  const emptyQuery = !showResults;
+  const { emptyQuery, searchPending, showStaleList, noResults } = getSearchPanelViewState({
+    queryTrim,
+    debouncedTrim,
+    loading,
+    resultCount: items.length,
+  });
   const noRecent = emptyQuery && recent.length === 0;
-  const showStaleList = showResults && items.length > 0;
-  const noResults = showResults && !loading && items.length === 0;
 
   const isWatched = useCallback((item: SearchAssetItem) => isWatchedItem(item, watched), [watched]);
 
@@ -166,6 +168,7 @@ export function useSearchPanel({
     handleRemoveRecent,
     emptyQuery,
     noRecent,
+    searchPending,
     showStaleList,
     noResults,
     isWatched,

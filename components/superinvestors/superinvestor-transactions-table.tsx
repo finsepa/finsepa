@@ -21,6 +21,10 @@ import {
 } from "@/lib/superinvestors/superinvestor-transaction-utils";
 import { resolveEquityLogoUrlFromListingTicker } from "@/lib/screener/resolve-equity-logo-url";
 import { SCREENER_MARKET_QUERY } from "@/lib/screener/screener-market-url";
+import {
+  SCREENER_TABLE_BODY_DIVIDE_CLASS,
+  SCREENER_TABLE_HEADER_STICKY_CLASS,
+} from "@/components/screener/screener-table-scroll";
 import { ScreenerPagination } from "@/components/ui/table-pagination";
 import { cn } from "@/lib/utils";
 
@@ -336,12 +340,19 @@ export function SuperinvestorTransactionsTable({
       : null}
       {/* ── Mobile: single table ── */}
       <div className="sm:hidden">
-        <div className="divide-y divide-[#E4E4E7] border-t border-b border-[#E4E4E7] bg-white">
-          <div className={cn(mobileRowGrid, "h-11 min-h-[44px] bg-white px-4")}>
+        <div className="border-t border-b border-[#E4E4E7] bg-white">
+          <div
+            className={cn(
+              mobileRowGrid,
+              "h-11 min-h-[44px] bg-white px-4",
+              SCREENER_TABLE_HEADER_STICKY_CLASS,
+            )}
+          >
             <div className={thCompany}>Company</div>
             <div className={thRight}>Recent Activity</div>
             <div className={thRight}>Price</div>
           </div>
+          <div className={SCREENER_TABLE_BODY_DIVIDE_CLASS}>
           {pagedTableRows.map((item) =>
             item.kind === "quarter" ? (
               <QuarterDividerRow key={`q-${item.sectionKey}`} quarterLabel={item.quarterLabel} />
@@ -349,19 +360,21 @@ export function SuperinvestorTransactionsTable({
               <MobileTransactionRow key={item.row.rowKey} row={item.row} />
             ),
           )}
+          </div>
         </div>
       </div>
 
       {/* ── Desktop: single table ── */}
       <div className="hidden overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch] sm:block sm:overflow-visible sm:pb-0">
         <div className="min-w-[720px] sm:min-w-0">
-          <div className="divide-y divide-[#E4E4E7] border-t border-b border-[#E4E4E7] bg-white">
-            <div className={cn(headerGrid, "px-4")}>
+          <div className="border-t border-b border-[#E4E4E7] bg-white">
+            <div className={cn(headerGrid, "px-4", SCREENER_TABLE_HEADER_STICKY_CLASS)}>
               <div className={thCompany}>Company</div>
               <div className={thRight}>Recent Activity</div>
               <div className={thRight}>Avg closing price</div>
               <div className={thRight}>% of change to portfolio</div>
             </div>
+            <div className={SCREENER_TABLE_BODY_DIVIDE_CLASS}>
             {pagedTableRows.map((item) =>
               item.kind === "quarter" ? (
                 <QuarterDividerRow key={`q-${item.sectionKey}`} quarterLabel={item.quarterLabel} />
@@ -369,6 +382,7 @@ export function SuperinvestorTransactionsTable({
                 <DesktopTransactionRow key={item.row.rowKey} row={item.row} />
               ),
             )}
+            </div>
           </div>
         </div>
       </div>

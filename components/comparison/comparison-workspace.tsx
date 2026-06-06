@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { RefreshCw, X } from "lucide-react";
+import { RefreshCw, X } from "@/lib/icons";
 
 import { ChartingCompanyAddDropdown } from "@/components/charting/charting-company-add-dropdown";
 import {

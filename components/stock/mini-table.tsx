@@ -1,6 +1,6 @@
 "use client";
 
-import { X } from "lucide-react";
+import { X } from "@/lib/icons";
 import { getStockDetailMetaFromTicker } from "@/lib/market/stock-detail-meta";
 import { useEffect, useMemo, useState } from "react";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";

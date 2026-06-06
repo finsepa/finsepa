@@ -1,20 +1,22 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { Search } from "lucide-react";
+import { Search } from "@/lib/icons";
 
 import { fetchSearchItems } from "@/lib/search/fetch-search-items";
 import type { SearchAssetItem } from "@/lib/search/search-types";
 import { readRecentSearches, recordSearchNavigation, removeRecentSearchById } from "@/lib/search/recent-searches-storage";
 import { dropdownMenuFloatingScrollClassName } from "@/components/design-system/dropdown-menu-styles";
+import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
+import { AppModalShell } from "@/components/ui/app-modal-shell";
 import { SearchLoadingIndicator } from "@/components/search/search-loading-indicator";
 import { SearchResultRow } from "@/components/search/search-result-row";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
 import { cn } from "@/lib/utils";
 import { isWatchlistTickerWatched } from "@/lib/watchlist/normalize-storage-key";
 import { watchlistStorageKeyForSearchItem } from "@/lib/search/watchlist-storage-key";
+import { getSearchPanelViewState } from "@/lib/search/search-policy";
 
 const SEARCH_DEBOUNCE_MS = 200;
 
@@ -148,126 +150,131 @@ export function SearchModal({
     return () => window.removeEventListener("keydown", onK);
   }, [queryTrim, items, recent, highlight, navigateTo, onClose]);
 
-  const showResults = queryTrim.length > 0;
-  const emptyQuery = !showResults;
+  const { emptyQuery, searchPending, showStaleList, noResults } = getSearchPanelViewState({
+    queryTrim,
+    debouncedTrim,
+    loading,
+    resultCount: items.length,
+  });
   const noRecent = emptyQuery && recent.length === 0;
-  const showStaleList = showResults && items.length > 0;
-  const noResults = showResults && !loading && items.length === 0;
 
-  /** Portal to `document.body` so backdrop stacks above `MobileBottomNav` (`z-[43]`); topbar is only `z-30`. */
-  const layer = (
+  const resultsContent = (
     <div
-      className={
-        fullscreen
-          ? "fixed inset-0 z-[100] flex flex-col bg-white"
-          : "fixed inset-0 z-[100] flex items-start justify-center bg-black/40 px-4 pt-[max(2vh,env(safe-area-inset-top,0px))] sm:pt-[10vh]"
-      }
-      onClick={fullscreen ? undefined : onClose}
-      role="presentation"
+      className={cn(
+        dropdownMenuFloatingScrollClassName,
+        "overflow-y-auto overscroll-y-contain py-2 [-webkit-overflow-scrolling:touch]",
+        fullscreen ? "min-h-0 flex-1" : "max-h-[min(420px,60dvh)]",
+      )}
     >
-      <div
-        className={
-          fullscreen
-            ? "flex min-h-0 w-full flex-1 flex-col"
-            : "w-full max-w-[640px] overflow-hidden rounded-2xl bg-white shadow-2xl"
-        }
-        onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-        aria-label={fullscreen ? "Add company" : "Search"}
-      >
-        <div
-          className={
-            fullscreen
-              ? "flex shrink-0 items-center gap-3 border-b border-[#E4E4E7] px-6 py-4 sm:px-9"
-              : "flex items-center gap-3 border-b border-[#E4E4E7] px-5 py-3.5"
-          }
-        >
-          <Search className="h-5 w-5 shrink-0 text-[#71717A]" />
-          <input
-            ref={inputRef}
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search Apple, NVIDIA, Bitcoin, Ethereum, S&P 500…"
-            className="flex-1 bg-transparent text-[15px] leading-6 text-[#09090B] outline-none placeholder:text-[#A1A1AA]"
-            autoComplete="off"
-            autoCorrect="off"
-          />
-          <kbd
-            onClick={onClose}
-            className="cursor-pointer select-none rounded-lg border border-[#E4E4E7] bg-[#F4F4F5] px-2 py-1 text-[12px] font-medium text-[#71717A] transition-colors hover:bg-[#E4E4E7]"
-          >
-            ESC
-          </kbd>
-        </div>
-
-        <div
-          className={cn(
-            dropdownMenuFloatingScrollClassName,
-            "overflow-y-auto overscroll-y-contain py-2 [-webkit-overflow-scrolling:touch]",
-            fullscreen ? "min-h-0 flex-1" : "max-h-[min(420px,60dvh)]",
-          )}
-        >
-          {emptyQuery ? (
-            <>
-              <div className="px-5 pb-2 pt-1 text-[11px] font-semibold uppercase tracking-wide text-[#A1A1AA]">
-                Recent searches
-              </div>
-              {noRecent ? (
-                <div className="px-5 py-10 text-center text-[14px] text-[#71717A]">
-                  No recent searches yet. Type to find assets — we will remember what you open here.
-                </div>
-              ) : (
-                recent.map((item, i) => (
-                  <SearchResultRow
-                    key={item.id}
-                    variant="recent"
-                    item={item}
-                    onNavigate={navigateTo}
-                    onRemoveRecent={() => handleRemoveRecent(item.id)}
-                    active={highlight === i}
-                    starred={isWatchedItem(item, watched)}
-                    loaded={loaded}
-                    toggleTicker={toggleTicker}
-                  />
-                ))
-              )}
-            </>
-          ) : loading && !showStaleList ? (
-            <SearchLoadingIndicator className="px-5 py-10" />
-          ) : noResults ? (
+      {emptyQuery ? (
+        <>
+          <div className="px-5 pb-2 pt-1 text-[11px] font-semibold uppercase tracking-wide text-[#A1A1AA]">
+            Recent searches
+          </div>
+          {noRecent ? (
             <div className="px-5 py-10 text-center text-[14px] text-[#71717A]">
-              No results for &ldquo;{queryTrim}&rdquo;
+              No recent searches yet. Type to find assets — we will remember what you open here.
             </div>
           ) : (
-            <>
-              {loading && showStaleList ? (
-                <div className="px-5 pb-1 text-center text-[11px] text-[#A1A1AA]" aria-hidden>
-                  Updating…
-                </div>
-              ) : null}
-              {items.map((item, i) => (
-                <SearchResultRow
-                  key={item.id}
-                  variant="live"
-                  item={item}
-                  onNavigate={navigateTo}
-                  active={highlight === i}
-                  starred={isWatchedItem(item, watched)}
-                  loaded={loaded}
-                  toggleTicker={toggleTicker}
-                />
-              ))}
-            </>
+            recent.map((item, i) => (
+              <SearchResultRow
+                key={item.id}
+                variant="recent"
+                item={item}
+                onNavigate={navigateTo}
+                onRemoveRecent={() => handleRemoveRecent(item.id)}
+                active={highlight === i}
+                starred={isWatchedItem(item, watched)}
+                loaded={loaded}
+                toggleTicker={toggleTicker}
+              />
+            ))
           )}
+        </>
+      ) : searchPending && !showStaleList ? (
+        <SearchLoadingIndicator className="px-5 py-10" />
+      ) : noResults ? (
+        <div className="px-5 py-10 text-center text-[14px] text-[#71717A]">
+          No results for &ldquo;{queryTrim}&rdquo;
         </div>
-      </div>
+      ) : (
+        <>
+          {loading && showStaleList ? (
+            <div className="px-5 pb-1 text-center text-[11px] text-[#A1A1AA]" aria-hidden>
+              Updating…
+            </div>
+          ) : null}
+          {items.map((item, i) => (
+            <SearchResultRow
+              key={item.id}
+              variant="live"
+              item={item}
+              onNavigate={navigateTo}
+              active={highlight === i}
+              starred={isWatchedItem(item, watched)}
+              loaded={loaded}
+              toggleTicker={toggleTicker}
+            />
+          ))}
+        </>
+      )}
     </div>
   );
 
-  if (typeof document === "undefined") return null;
-  return createPortal(layer, document.body);
+  return (
+    <AppModalOverlay
+      open
+      onClose={fullscreen ? undefined : onClose}
+      zIndex={100}
+      align={fullscreen ? "fullscreen" : "top"}
+      shellEffect={!fullscreen}
+    >
+      <AppModalShell
+        showClose={false}
+        maxWidthClass={fullscreen ? "w-full" : "w-full max-w-[640px]"}
+        className={fullscreen ? "flex min-h-0 w-full flex-1 flex-col" : undefined}
+        dialogClassName={fullscreen ? "flex min-h-0 flex-1 flex-col" : undefined}
+        bareBody={fullscreen}
+        bodyScroll={false}
+        header={
+          <div
+            className={
+              fullscreen
+                ? "flex w-full items-center gap-3 border-b border-[#E4E4E7] px-6 py-4 sm:px-9"
+                : "flex w-full items-center gap-3"
+            }
+          >
+            <Search className="h-5 w-5 shrink-0 text-[#71717A]" />
+            <input
+              ref={inputRef}
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search Apple, NVIDIA, Bitcoin, Ethereum, S&P 500…"
+              className="flex-1 bg-transparent text-[15px] leading-6 text-[#09090B] outline-none placeholder:text-[#A1A1AA]"
+              autoComplete="off"
+              autoCorrect="off"
+            />
+            <kbd
+              onClick={onClose}
+              className="cursor-pointer select-none rounded-lg border border-[#E4E4E7] bg-[#F4F4F5] px-2 py-1 text-[12px] font-medium text-[#71717A] transition-colors hover:bg-[#E4E4E7]"
+            >
+              ESC
+            </kbd>
+          </div>
+        }
+        headerClassName={fullscreen ? "shrink-0 bg-white px-0 py-0" : undefined}
+        bodyClassName={fullscreen ? undefined : "p-0"}
+        cardClassName={fullscreen ? undefined : "overflow-hidden"}
+      >
+        {fullscreen ? (
+          <div className="flex min-h-0 flex-1 flex-col bg-white">{resultsContent}</div>
+        ) : (
+          resultsContent
+        )}
+      </AppModalShell>
+    </AppModalOverlay>
+  );
 }
 
 /** Dispatched globally so any UI (e.g. stock bottom bar) can open the same modal as the top bar. */

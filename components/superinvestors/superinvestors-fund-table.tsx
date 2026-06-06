@@ -2,7 +2,7 @@
 
 import { memo, useState } from "react";
 import Link from "next/link";
-import { UserRound } from "lucide-react";
+import { UserRound } from "@/lib/icons";
 import { format, isValid, parseISO } from "date-fns";
 
 import { CompanyLogo } from "@/components/screener/company-logo";

@@ -1,4 +1,4 @@
-import { PlayCircle, FileText, MonitorPlay, FileBarChart } from "lucide-react";
+import { PlayCircle, FileText, MonitorPlay, FileBarChart } from "@/lib/icons";
 
 type EventRow = {
   name: string;

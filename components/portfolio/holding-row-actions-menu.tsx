@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { MoreHorizontal, Plus, Trash2 } from "lucide-react";
+import { MoreHorizontal, Plus, Trash2 } from "@/lib/icons";
 
 import type { PortfolioHolding } from "@/components/portfolio/portfolio-types";
 import {
@@ -75,7 +75,7 @@ export function HoldingRowActionsMenu({
           ref={menuRef}
           role="menu"
           aria-orientation="vertical"
-          className={cn(dropdownMenuPanelClassName(), "fixed z-[200] min-w-[12.25rem] py-1")}
+          className={cn(dropdownMenuPanelClassName(), "fixed z-[200] min-w-[12.25rem]")}
           style={{ top: coords.top, left: coords.left }}
         >
           <button

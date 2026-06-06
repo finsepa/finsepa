@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Search, X } from "lucide-react";
+import { Search, X } from "@/lib/icons";
 
 import {
   dropdownMenuFloatingScrollClassName,
@@ -225,6 +225,7 @@ export function TopbarSearch() {
             recent={panel.recent}
             queryTrim={panel.queryTrim}
             loading={panel.loading}
+            searchPending={panel.searchPending}
             showStaleList={panel.showStaleList}
             noResults={panel.noResults}
             items={panel.items}

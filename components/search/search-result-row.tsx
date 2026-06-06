@@ -2,7 +2,7 @@
 
 import { memo, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { X } from "lucide-react";
+import { X } from "@/lib/icons";
 
 import { dropdownMenuRichItemClassName } from "@/components/design-system/dropdown-menu-styles";
 import { WatchlistStarToggle } from "@/components/watchlist/watchlist-star-button";

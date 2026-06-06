@@ -2,7 +2,7 @@
 
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { format, parseISO } from "date-fns";
-import { CalendarDays, Clock } from "lucide-react";
+import { CalendarDays, Clock } from "@/lib/icons";
 
 import { CompanyLogo } from "@/components/screener/company-logo";
 import { displayLogoUrlForPortfolioSymbol } from "@/lib/portfolio/portfolio-asset-display-logo";

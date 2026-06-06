@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { X } from "lucide-react";
+import { X } from "@/lib/icons";
 
 import { ChartingCompanyAddDropdown } from "@/components/charting/charting-company-add-dropdown";
 import { writeComparisonSessionTickers } from "@/lib/comparison/comparison-session";

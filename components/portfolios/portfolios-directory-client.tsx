@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronRight, Wallet } from "lucide-react";
+import { ChevronRight, Wallet } from "@/lib/icons";
 import { format, parseISO } from "date-fns";
 
 import {

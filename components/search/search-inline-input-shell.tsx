@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, type RefObject } from "react";
-import { Search, X } from "lucide-react";
+import { Search, X } from "@/lib/icons";
 
 import { cn } from "@/lib/utils";
 

@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { startTransition, useCallback, useEffect, useState, type ComponentType } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FileSpreadsheet, Layers2, Settings } from "lucide-react";
+import { FileSpreadsheet, Layers2, Settings } from "@/lib/icons";
 
 import { AssetPageTopLoader } from "@/components/layout/asset-page-top-loader";
 import { PortfolioQuickAddMenu } from "@/components/layout/portfolio-quick-add-menu";

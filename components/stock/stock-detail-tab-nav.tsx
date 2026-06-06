@@ -83,14 +83,11 @@ export function StockDetailTabNav({
     };
   }, [measureIndicator]);
 
+  const shellClassName =
+    "bg-white max-md:mx-0 max-md:pt-1 max-md:pb-1 sm:-mx-9 sm:-mt-5 sm:px-9 sm:pt-2 sm:pb-2";
+
   return (
-    <div
-      className={
-        sticky
-          ? "sticky top-0 z-40 bg-white max-md:mx-0 max-md:pt-1 sm:-mx-9 sm:-mt-5 sm:px-9 sm:pt-2"
-          : "bg-white max-md:mx-0 max-md:pt-1 sm:-mx-9 sm:-mt-5 sm:px-9 sm:pt-2"
-      }
-    >
+    <div className={sticky ? `sticky top-0 z-40 ${shellClassName}` : shellClassName}>
       <div className="border-b border-solid border-[#E4E4E7]">
         <nav
           ref={navRef}

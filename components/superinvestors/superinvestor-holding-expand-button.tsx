@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 
 /** Expand/collapse control — matches portfolio holdings table. */

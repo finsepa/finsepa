@@ -10,7 +10,7 @@ import {
   useState,
   type RefObject,
 } from "react";
-import { ArrowDown, ArrowUp, Check, Filter, ListX, Minus, Search, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, Filter, ListX, Minus, Search, X } from "@/lib/icons";
 import { format, parseISO } from "date-fns";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
@@ -37,7 +37,7 @@ import { TABLE_PAGE_SIZE, TablePaginationBar, tablePageCount } from "@/component
 import { buildSplitAdjustedTradeIndex } from "@/lib/portfolio/split-adjusted-trades";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
-  dropdownMenuPanelClassName,
+  dropdownMenuPanelBodyClassName,
   dropdownMenuPlainItemRowClassName,
 } from "@/components/design-system/dropdown-menu-styles";
 import { cn } from "@/lib/utils";
@@ -401,11 +401,8 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                     <Filter className="h-4 w-4 opacity-90" aria-hidden />
                   </button>
                 </PopoverTrigger>
-                <PopoverContent
-                  align="end"
-                  className={cn(dropdownMenuPanelClassName(), "w-[min(calc(100vw-2rem),260px)] p-1")}
-                >
-                  <div role="listbox" aria-label="Transaction type">
+                <PopoverContent align="end" className="w-[min(calc(100vw-2rem),260px)]">
+                  <div className={dropdownMenuPanelBodyClassName} role="listbox" aria-label="Transaction type">
                     {FILTERS.map((f) => {
                       const selected = f === filter;
                       return (

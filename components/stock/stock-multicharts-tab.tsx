@@ -1,6 +1,6 @@
 "use client";
 
-import { GripVertical, Maximize2, Plus, Search, Trash2, TrendingDown, TrendingUp } from "lucide-react";
+import { GripVertical, Maximize2, Plus, Search, Trash2, TrendingDown, TrendingUp } from "@/lib/icons";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
@@ -25,6 +25,12 @@ import {
   multichartPriorPeriodComparisonLabel,
 } from "@/lib/market/multichart-period-comparison";
 import { MultichartsTabSkeletonGrid } from "@/components/stock/stock-multicharts-tab-skeleton";
+import {
+  dropdownMenuFloatingScrollClassName,
+  dropdownMenuPanelBodyClassName,
+  dropdownMenuSearchHeaderClassName,
+  dropdownMenuSurfaceClassName,
+} from "@/components/design-system/dropdown-menu-styles";
 import {
   EARNINGS_CARD_LABEL_CLASS,
   EARNINGS_CARD_VALUE_CLASS,
@@ -284,9 +290,13 @@ export function StockMultichartsTab({
               Add Metric
             </button>
             {pickerOpen ? (
-              <div className="absolute right-0 z-[60] mt-2 w-[min(360px,calc(100vw-2rem))] overflow-hidden rounded-xl border border-[#E4E4E7] bg-white shadow-[0px_10px_16px_-3px_rgba(10,10,10,0.1),0px_4px_6px_0px_rgba(10,10,10,0.04)]">
-                <div className="flex h-11 items-center gap-2 border-b border-[#E4E4E7] px-3">
-                  <Search className="h-4 w-4 text-[#71717A]" aria-hidden />
+              <div
+                className={dropdownMenuSurfaceClassName(
+                  "absolute right-0 z-[60] mt-2 w-[min(360px,calc(100vw-2rem))] overflow-hidden",
+                )}
+              >
+                <div className={cn(dropdownMenuSearchHeaderClassName, "flex h-11 items-center gap-2")}>
+                  <Search className="h-4 w-4 shrink-0 text-[#71717A]" aria-hidden />
                   <input
                     value={pickerQuery}
                     onChange={(e) => setPickerQuery(e.target.value)}
@@ -296,7 +306,13 @@ export function StockMultichartsTab({
                   />
                   <span className="text-[12px] font-medium text-[#71717A]">{totalAddable}</span>
                 </div>
-                <div className="max-h-[320px] overflow-y-auto p-1.5">
+                <div
+                  className={cn(
+                    dropdownMenuPanelBodyClassName,
+                    dropdownMenuFloatingScrollClassName,
+                    "max-h-[320px] overflow-y-auto",
+                  )}
+                >
                   {addableGroups.map((g) => (
                     <div key={g.id} className="py-1">
                       <div className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#71717A]">

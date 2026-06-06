@@ -59,7 +59,7 @@ export async function ProtectedAppShell({ children }: { children: ReactNode }) {
     cookieStore.get(WATCHLIST_RAIL_COLLAPSED_PREFERENCE_KEY)?.value,
   );
 
-  /* Sidebar width: 248px expanded / 72px lite (see sidebar-layout-context). Topbar strip → main at 76px. */
+  /* Sidebar width: 240px expanded / 72px collapsed (see sidebar-layout-context). */
   return (
     <PortfolioWorkspaceProvider
       userId={user.id}

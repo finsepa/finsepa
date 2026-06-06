@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useId } from "react";
-import { createPortal } from "react-dom";
 
 import { AuthBrandMark } from "@/components/auth/auth-brand-mark";
+import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
+import { AppModalShell } from "@/components/ui/app-modal-shell";
 
 import { useClientMounted } from "./use-client-mounted";
 
@@ -27,33 +28,23 @@ export function WelcomeOnboardingModal({
   useEffect(() => {
     if (!open) return;
     document.addEventListener("keydown", onKeyDown);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = prev;
     };
   }, [open, onKeyDown]);
 
   if (!mounted || !open) return null;
 
-  return createPortal(
-    <div className="fixed inset-0 z-[280] flex items-center justify-center bg-black/40 p-4">
-      <button
-        type="button"
-        aria-label="Close welcome dialog"
-        className="absolute inset-0"
-        onClick={onContinue}
-      />
-
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        className="relative w-full max-w-[800px] overflow-hidden rounded-xl bg-white shadow-[0px_10px_16px_-3px_rgba(10,10,10,0.1),0px_4px_6px_0px_rgba(10,10,10,0.04)]"
-        onClick={(e) => e.stopPropagation()}
+  return (
+    <AppModalOverlay open={open} onClose={onContinue} zIndex={280}>
+      <AppModalShell
+        titleId={titleId}
+        showClose={false}
+        maxWidthClass="w-full max-w-[800px]"
+        bodyClassName="px-8 py-16"
+        bodyScroll={false}
       >
-        <div className="flex flex-col items-center px-8 py-16">
+        <div className="flex flex-col items-center">
           <div className="flex items-center justify-center rounded-[20px] bg-[#09090B] p-3">
             <AuthBrandMark size={49} className="h-[49px] w-[49px]" />
           </div>
@@ -78,8 +69,7 @@ export function WelcomeOnboardingModal({
             Continue
           </button>
         </div>
-      </div>
-    </div>,
-    document.body,
+      </AppModalShell>
+    </AppModalOverlay>
   );
 }

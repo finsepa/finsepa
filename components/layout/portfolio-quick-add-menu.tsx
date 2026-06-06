@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Briefcase, Plus, Wallet, X } from "lucide-react";
+import { Briefcase, Plus, Wallet, X } from "@/lib/icons";
 
 import {
   dropdownMenuPanelClassName,

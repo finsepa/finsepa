@@ -1,8 +1,9 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import { Plus } from "@/lib/icons";
 
 import { CompanyPicker } from "@/components/charting/company-picker";
+import { secondaryFillButtonClassName } from "@/components/design-system";
 
 /** + Add Company: screener stocks when opened; `/api/search?scope=equities` when typing (no ETFs). */
 export function ChartingCompanyAddDropdown({
@@ -37,7 +38,7 @@ export function ChartingCompanyAddDropdown({
             });
           }}
           disabled={atCapacity}
-          className="inline-flex items-center gap-2 rounded-[10px] bg-[#F4F4F5] px-4 py-2 text-[14px] font-medium leading-5 text-[#09090B] transition-colors hover:bg-[#EBEBEB] disabled:pointer-events-none disabled:opacity-50"
+          className={secondaryFillButtonClassName}
           aria-expanded={open}
           aria-haspopup="listbox"
         >

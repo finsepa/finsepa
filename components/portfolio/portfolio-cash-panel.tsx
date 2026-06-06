@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowDown, ArrowUp, Check, Filter, Search, Wallet } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, Filter, Search, Wallet } from "@/lib/icons";
 import { format, parseISO } from "date-fns";
 
 import { CashInOutBarChartSection } from "@/components/portfolio/cash-in-out-bar-chart";

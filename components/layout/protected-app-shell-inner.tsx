@@ -47,8 +47,9 @@ function ProtectedAppChrome({
 
   return (
     <div
+      id="app-shell-root"
       suppressHydrationWarning
-      className="mobile-document-scroll-shell relative flex min-h-[var(--app-vh)] w-full flex-1 flex-col bg-white max-md:overflow-visible md:block md:h-dvh md:max-h-dvh md:flex-none md:overflow-hidden md:bg-[var(--background)]"
+      className="mobile-document-scroll-shell relative flex min-h-[var(--app-vh)] w-full flex-1 flex-col bg-white max-md:overflow-visible md:block md:h-dvh md:max-h-dvh md:flex-none md:overflow-hidden md:bg-[#F4F4F5]"
     >
       <Suspense fallback={null}>
         <NavigationTopLoader />
@@ -56,7 +57,7 @@ function ProtectedAppChrome({
       <div
         suppressHydrationWarning
         className={cn(
-          "fixed inset-y-0 left-0 z-20 hidden p-1 md:block md:top-[var(--shell-chrome-inset)] md:bottom-[var(--shell-chrome-inset)] md:p-0 md:px-1 md:py-0",
+          "fixed inset-y-0 left-0 z-20 hidden p-1 md:block md:border-r md:border-[#E4E4E7] md:p-0",
           SIDEBAR_WIDTH_MOTION_CLASS,
         )}
         style={{ width: leftOffset }}
@@ -65,13 +66,13 @@ function ProtectedAppChrome({
       </div>
 
       {/*
-       * Desktop: inset column with 4px gaps — topbar full width, then main + watchlist rail below.
+       * Desktop: one card (topbar + main + watchlist) with outer padding top/right/bottom.
        * Mobile: stacked column with document scroll (unchanged).
        */}
       <div
         suppressHydrationWarning
         className={cn(
-          "flex min-h-0 min-w-0 flex-1 flex-col max-md:min-h-[var(--app-vh)] md:fixed md:top-[var(--shell-chrome-inset)] md:right-[var(--shell-chrome-inset)] md:bottom-[var(--shell-chrome-inset)] md:left-[length:var(--shell-left)] md:z-0 md:gap-[var(--shell-chrome-gap)] md:overflow-hidden",
+          "flex min-h-0 min-w-0 flex-1 flex-col max-md:min-h-[var(--app-vh)] md:fixed md:inset-y-0 md:right-0 md:left-[length:var(--shell-left)] md:z-0 md:overflow-hidden md:bg-[#F4F4F5] md:pt-[var(--shell-desktop-padding-top)] md:pr-[var(--shell-desktop-padding-right)] md:pb-[var(--shell-desktop-padding-bottom)]",
           SIDEBAR_WIDTH_MOTION_CLASS,
         )}
         style={chromeColumnStyle}
@@ -79,33 +80,41 @@ function ProtectedAppChrome({
         <div
           suppressHydrationWarning
           className={cn(
-            "z-30 min-w-0 w-full max-w-full shrink-0 bg-white max-md:relative max-md:shadow-none md:rounded-[4px] md:bg-white md:shadow-[0_1px_0_0_rgba(0,0,0,0.03)]",
+            "shell-desktop-panel flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden max-md:min-h-[var(--app-vh)] max-md:rounded-none max-md:border-0 max-md:bg-transparent max-md:shadow-none",
             SIDEBAR_WIDTH_MOTION_CLASS,
           )}
         >
-          <Topbar
-            userId={userId}
-            userInitials={userInitials}
-            avatarUrl={avatarUrl}
-            userDisplayName={userDisplayName}
-            platformTrialDaysLeft={platformTrialDaysLeft}
-          />
-        </div>
-        <div
-          suppressHydrationWarning
-          className="flex min-h-0 min-w-0 flex-1 max-md:flex-col md:gap-[var(--shell-chrome-gap)]"
-        >
-          <main
-            ref={mainRef}
+          <div
             suppressHydrationWarning
             className={cn(
-              "relative z-0 min-h-0 min-w-0 w-full max-w-full flex-1 bg-white max-md:overflow-visible max-md:pb-[var(--mobile-bottom-nav-main-clearance)] md:overflow-x-hidden md:overflow-y-auto md:overscroll-y-contain md:rounded-[4px]",
-              dropdownMenuFloatingScrollClassName,
+              "z-30 min-w-0 w-full max-w-full shrink-0 bg-white max-md:relative max-md:shadow-none md:border-b md:border-[#E4E4E7] md:bg-white",
+              SIDEBAR_WIDTH_MOTION_CLASS,
             )}
           >
-            {children}
-          </main>
-          <WatchlistRail />
+            <Topbar
+              userId={userId}
+              userInitials={userInitials}
+              avatarUrl={avatarUrl}
+              userDisplayName={userDisplayName}
+              platformTrialDaysLeft={platformTrialDaysLeft}
+            />
+          </div>
+          <div
+            suppressHydrationWarning
+            className="flex min-h-0 min-w-0 flex-1 max-md:flex-col"
+          >
+            <main
+              ref={mainRef}
+              suppressHydrationWarning
+              className={cn(
+                "relative z-0 min-h-0 min-w-0 w-full max-w-full flex-1 bg-white max-md:overflow-visible max-md:pb-[var(--mobile-bottom-nav-main-clearance)] md:overflow-x-hidden md:overflow-y-auto md:overscroll-y-contain",
+                dropdownMenuFloatingScrollClassName,
+              )}
+            >
+              {children}
+            </main>
+            <WatchlistRail />
+          </div>
         </div>
       </div>
 

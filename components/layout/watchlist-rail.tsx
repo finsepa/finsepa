@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { ChevronRight, PanelLeftOpen, Star } from "lucide-react";
+import { ChevronRight, PanelLeftOpen, Star } from "@/lib/icons";
 
 import { CompanyLogo } from "@/components/screener/company-logo";
 import { dropdownMenuFloatingScrollClassName } from "@/components/design-system/dropdown-menu-styles";
@@ -132,7 +132,7 @@ function WatchlistRailSkeleton() {
 }
 
 const watchlistRailSurfaceClass =
-  "flex h-full min-h-0 flex-col overflow-hidden rounded-[4px] bg-white shadow-[0_1px_0_0_rgba(0,0,0,0.03)]";
+  "flex h-full min-h-0 flex-col overflow-hidden bg-white md:rounded-none";
 
 function WatchlistRailToggle({
   expanded,
@@ -183,7 +183,7 @@ export function WatchlistRail() {
     <div
       suppressHydrationWarning
       className={cn(
-        "hidden h-full min-h-0 shrink-0 overflow-hidden rounded-[4px] md:flex",
+        "hidden h-full min-h-0 shrink-0 overflow-hidden md:flex md:border-l md:border-[#E4E4E7]",
         WATCHLIST_RAIL_WIDTH_MOTION_CLASS,
       )}
       style={{ width: `${outerWidthPx}px` }}
@@ -195,8 +195,8 @@ export function WatchlistRail() {
       >
         <div
           className={cn(
-            "flex shrink-0 items-center px-2 pt-2",
-            expanded ? "justify-between gap-2 pl-3 pr-2" : "justify-end",
+            "flex shrink-0 items-center pt-2",
+            expanded ? "justify-between gap-2 px-2 pl-3 pr-2" : "justify-center px-1",
           )}
         >
           {expanded ? (

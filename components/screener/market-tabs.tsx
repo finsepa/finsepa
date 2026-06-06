@@ -38,6 +38,9 @@ export function UnderlineTabs<T extends string>({
   const navRef = useRef<HTMLElement>(null);
   const tabRefs = useRef(new Map<T, HTMLButtonElement>());
   const [indicator, setIndicator] = useState({ left: 0, width: 0 });
+  /** Avoid underline sliding from x=0 on first Screener paint. */
+  const [indicatorMotionEnabled, setIndicatorMotionEnabled] = useState(false);
+  const hasPositionedOnceRef = useRef(false);
 
   const measureIndicator = useCallback(() => {
     const nav = navRef.current;
@@ -45,16 +48,33 @@ export function UnderlineTabs<T extends string>({
     if (!nav || !btn) return;
     const navRect = nav.getBoundingClientRect();
     const btnRect = btn.getBoundingClientRect();
-    const left = btnRect.left - navRect.left + nav.scrollLeft;
-    const width = btnRect.width;
+    const left = Math.round(btnRect.left - navRect.left + nav.scrollLeft);
+    const width = Math.round(btnRect.width);
+    if (width <= 0) return;
     setIndicator((prev) => {
-      if (Math.abs(prev.left - left) < 0.5 && Math.abs(prev.width - width) < 0.5) return prev;
+      if (prev.left === left && prev.width === width) return prev;
       return { left, width };
     });
   }, [active]);
 
   useLayoutEffect(() => {
     measureIndicator();
+    if (hasPositionedOnceRef.current) return;
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => {
+      measureIndicator();
+      raf2 = requestAnimationFrame(() => {
+        if (hasPositionedOnceRef.current) return;
+        const btn = tabRefs.current.get(active);
+        if (!btn || btn.getBoundingClientRect().width <= 0) return;
+        hasPositionedOnceRef.current = true;
+        setIndicatorMotionEnabled(true);
+      });
+    });
+    return () => {
+      cancelAnimationFrame(raf1);
+      if (raf2) cancelAnimationFrame(raf2);
+    };
   }, [measureIndicator, active, options.length]);
 
   useLayoutEffect(() => {
@@ -101,8 +121,9 @@ export function UnderlineTabs<T extends string>({
             style={{
               left: indicator.left,
               width: indicator.width,
-              transitionProperty: "left, width",
-              transitionDuration: `${TAB_MOTION_MS}ms`,
+              opacity: indicator.width > 0 ? 1 : 0,
+              transitionProperty: indicatorMotionEnabled ? "left, width" : "none",
+              transitionDuration: indicatorMotionEnabled ? `${TAB_MOTION_MS}ms` : "0ms",
               transitionTimingFunction: TAB_MOTION_EASE,
             }}
             aria-hidden

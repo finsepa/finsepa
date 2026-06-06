@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
-import { CalendarDays, ChevronLeft, ChevronRight, LayoutList, Settings2 } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, LayoutList, Settings2 } from "@/lib/icons";
 
 import { EconomyEventHistoryModal } from "@/components/economy/economy-event-history-modal";
 import { ScreenerTableScroll } from "@/components/screener/screener-table-scroll";

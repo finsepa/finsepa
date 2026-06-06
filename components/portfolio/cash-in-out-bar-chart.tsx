@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { BarChart3, Check, ChevronDown } from "lucide-react";
+import { BarChart3, Check, ChevronDown } from "@/lib/icons";
 
 import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
 import {

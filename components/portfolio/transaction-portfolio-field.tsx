@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, ChevronDown, GitMerge, Globe, Lock, Pencil, Plus } from "lucide-react";
+import { Check, ChevronDown, GitMerge, Globe, Lock, Pencil, Plus } from "@/lib/icons";
 
 import {
   dropdownMenuCompositeRowClassName,
@@ -76,15 +76,6 @@ export function TransactionPortfolioField({
       document.removeEventListener("keydown", onKey);
     };
   }, [open]);
-
-  const dropdownAlign =
-    variant === "compact" || variant === "toolbar" || variant === "titleGhost" ?
-      compactMenuAlign === "trailing" ?
-        "right-0 left-auto w-max min-w-[min(calc(100vw-2rem),280px)] max-w-[min(calc(100vw-2rem),320px)]"
-      : "left-0 right-auto w-max min-w-[min(calc(100vw-2rem),280px)] max-w-[min(calc(100vw-2rem),320px)]"
-    : "left-0 right-0";
-
-  const zDropdown = variant === "field" ? "z-10" : undefined;
 
   const menuPanel = (
     <>
@@ -219,31 +210,25 @@ export function TransactionPortfolioField({
           />
         )}
       </button>
-      {open && (variant === "compact" || variant === "toolbar" || variant === "titleGhost") ? (
+      {open ? (
         <TopbarDropdownPortal
           open={open}
           anchorRef={containerRef}
           ref={menuPortalRef}
-          align={compactMenuAlign === "trailing" ? "trailing" : "leading"}
-          className="w-max min-w-[min(calc(100vw-2rem),280px)] max-w-[min(calc(100vw-2rem),320px)]"
+          align={
+            variant === "field" || compactMenuAlign === "leading" ? "leading" : "trailing"
+          }
+          matchAnchorWidth={variant === "field"}
+          className={
+            variant === "field" ?
+              undefined
+            : "w-max min-w-[min(calc(100vw-2rem),280px)] max-w-[min(calc(100vw-2rem),320px)]"
+          }
         >
           <div className={dropdownMenuPanelClassName()} role="presentation">
             {menuPanel}
           </div>
         </TopbarDropdownPortal>
-      ) : null}
-      {open && variant === "field" ? (
-        <div
-          className={cn(
-            dropdownMenuPanelClassName(),
-            "absolute top-[calc(100%+4px)]",
-            dropdownAlign,
-            zDropdown,
-          )}
-          role="presentation"
-        >
-          {menuPanel}
-        </div>
       ) : null}
     </div>
   );

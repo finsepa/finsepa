@@ -1,7 +1,7 @@
 "use client";
 
 import type { ComponentProps } from "react";
-import { CircleCheck } from "lucide-react";
+import { CircleCheck } from "@/lib/icons";
 import { Toaster as Sonner } from "sonner";
 
 import "sonner/dist/styles.css";

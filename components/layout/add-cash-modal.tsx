@@ -3,7 +3,6 @@
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { format, startOfDay } from "date-fns";
-import { X } from "lucide-react";
 
 import {
   CashDirectionSelect,
@@ -15,10 +14,16 @@ import { UsdMoneyClearableInput } from "@/components/layout/usd-money-clearable-
 import { TransactionDateField } from "@/components/layout/transaction-date-field";
 import { newTransactionRowId, portfolioIsCombined } from "@/components/portfolio/portfolio-types";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
+import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
+import {
+  AppModalFooter,
+  AppModalShell,
+  appModalCancelButtonClass,
+  appModalPrimaryButtonClass,
+} from "@/components/ui/app-modal-shell";
 import { FormListboxSelect, type ListboxOption } from "@/components/ui/form-listbox-select";
 import { toastTransactionAdded } from "@/lib/portfolio/transaction-added-toast";
 import { parseUsdStyleNumber } from "@/lib/portfolio/amount-input-format";
-import { cn } from "@/lib/utils";
 
 const usdFormatter = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
 
@@ -61,15 +66,6 @@ export function AddCashModal({ open, onClose }: Props) {
         : (standardPortfolios[0]?.id ?? "");
     setCashPortfolioId(preferred);
   }, [open, selectedPortfolioId, standardPortfolios]);
-
-  useEffect(() => {
-    if (!open) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [open]);
 
   const amountNum = useMemo(() => parseUsdStyleNumber(amount), [amount]);
 
@@ -119,95 +115,64 @@ export function AddCashModal({ open, onClose }: Props) {
   if (!open) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4"
-      role="presentation"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        className="flex w-full max-w-[480px] flex-col rounded-xl bg-white shadow-[0px_10px_16px_-3px_rgba(10,10,10,0.1),0px_4px_6px_0px_rgba(10,10,10,0.04)]"
-        onMouseDown={(e) => e.stopPropagation()}
+    <AppModalOverlay open={open} onClose={onClose} zIndex={100}>
+      <AppModalShell
+        titleId={titleId}
+        title="Add Cash"
+        onClose={onClose}
+        bodyClassName="px-5 pb-5 pt-5"
+        footer={
+          <AppModalFooter>
+            <button type="button" onClick={onClose} className={appModalCancelButtonClass}>
+              Cancel
+            </button>
+            <button
+              type="button"
+              disabled={!canAdd || submitting}
+              onClick={() => void handleAdd()}
+              className={appModalPrimaryButtonClass(canAdd && !submitting)}
+            >
+              {submitting ? "Adding…" : "Add"}
+            </button>
+          </AppModalFooter>
+        }
       >
-        <div className="flex shrink-0 items-center justify-between border-b border-[#E4E4E7] px-5 py-3">
-          <h2 id={titleId} className="text-lg font-semibold leading-7 tracking-tight text-[#09090B]">
-            Add Cash
-          </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-[#09090B] transition-colors hover:bg-[#F4F4F5]"
-            aria-label="Close"
-          >
-            <X className="h-5 w-5" strokeWidth={2} />
-          </button>
-        </div>
-
-        <div className="px-5 pb-5 pt-5">
-          <div className="flex flex-col gap-5">
-            {portfolioOptions.length > 0 ? (
-              <Field label="Portfolio">
-                <FormListboxSelect
-                  listboxClassName="z-[120]"
-                  value={resolvedCashPortfolioId}
-                  onChange={setCashPortfolioId}
-                  options={portfolioOptions}
-                  aria-label="Portfolio to add cash to"
-                />
-              </Field>
-            ) : (
-              <p className="text-sm leading-5 text-[#71717A]">
-                Create a standard portfolio to record cash movements.
-              </p>
-            )}
-
-            <Field label="Operation type">
-              <CashDirectionSelect value={direction} onChange={setDirection} />
-            </Field>
-
-            <Field label="Date">
-              <TransactionDateField date={date} onDateChange={setDate} />
-            </Field>
-
-            <Field label="Amount">
-              <UsdMoneyClearableInput
-                value={amount}
-                onChange={setAmount}
-                placeholder="0.00"
-                clearLabel="Clear amount"
+        <div className="flex flex-col gap-5">
+          {portfolioOptions.length > 0 ? (
+            <Field label="Portfolio">
+              <FormListboxSelect
+                listboxClassName="z-[120]"
+                value={resolvedCashPortfolioId}
+                onChange={setCashPortfolioId}
+                options={portfolioOptions}
+                aria-label="Portfolio to add cash to"
               />
             </Field>
-          </div>
-        </div>
+          ) : (
+            <p className="text-sm leading-5 text-[#71717A]">
+              Create a standard portfolio to record cash movements.
+            </p>
+          )}
 
-        <div className="flex shrink-0 gap-3 border-t border-[#E4E4E7] px-6 py-4">
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex min-h-9 flex-1 items-center justify-center rounded-[10px] bg-[#F4F4F5] px-4 py-2 text-sm font-medium text-[#09090B] transition-colors hover:bg-[#EBEBEB]"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            disabled={!canAdd || submitting}
-            onClick={() => void handleAdd()}
-            className={cn(
-              "flex min-h-9 flex-1 items-center justify-center rounded-[10px] px-4 py-2 text-sm font-medium text-white transition-colors",
-              canAdd && !submitting
-                ? "bg-[#09090B] hover:bg-[#27272A]"
-                : "cursor-not-allowed bg-[#A1A1AA] opacity-50",
-            )}
-          >
-            {submitting ? "Adding…" : "Add"}
-          </button>
+          <Field label="Operation type">
+            <CashDirectionSelect value={direction} onChange={setDirection} />
+          </Field>
+
+          <Field label="Date">
+            <TransactionDateField date={date} onDateChange={setDate} />
+          </Field>
+
+          <Field label="Amount">
+            <UsdMoneyClearableInput
+              value={amount}
+              onChange={setAmount}
+              placeholder="0.00"
+              clearLabel="Clear amount"
+            />
+          </Field>
         </div>
-      </div>
-    </div>
+      </AppModalShell>
+    </AppModalOverlay>
   );
 }
 

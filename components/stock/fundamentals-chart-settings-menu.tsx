@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Settings } from "lucide-react";
+import { Settings } from "@/lib/icons";
 
 import {
   dropdownMenuPanelClassName,

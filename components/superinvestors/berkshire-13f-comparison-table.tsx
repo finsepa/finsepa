@@ -17,6 +17,10 @@ import { CompanyLogo } from "@/components/screener/company-logo";
 import { resolveEquityLogoUrlFromListingTicker } from "@/lib/screener/resolve-equity-logo-url";
 import { formatUsdCompactSigDigits } from "@/lib/market/key-stats-basic-format";
 import { SCREENER_MARKET_QUERY } from "@/lib/screener/screener-market-url";
+import {
+  SCREENER_TABLE_BODY_DIVIDE_CLASS,
+  SCREENER_TABLE_HEADER_STICKY_CLASS,
+} from "@/components/screener/screener-table-scroll";
 import { ScreenerPagination } from "@/components/ui/table-pagination";
 import { cn } from "@/lib/utils";
 
@@ -292,12 +296,19 @@ export function Berkshire13fComparisonTable({
     <div className="min-w-0 -mx-4 sm:mx-0">
       {/* ── Mobile layout ── */}
       <div className="sm:hidden">
-        <div className="divide-y divide-[#E4E4E7] border-t border-b border-[#E4E4E7] bg-white">
-          <div className={cn(mobileRowGrid, "h-11 min-h-[44px] bg-white px-4")}>
+        <div className="border-t border-b border-[#E4E4E7] bg-white">
+          <div
+            className={cn(
+              mobileRowGrid,
+              "h-11 min-h-[44px] bg-white px-4",
+              SCREENER_TABLE_HEADER_STICKY_CLASS,
+            )}
+          >
             <div className={thCompany}>Company</div>
             <div className={thRight}>% of Portfolio</div>
           </div>
 
+          <div className={SCREENER_TABLE_BODY_DIVIDE_CLASS}>
           {pagedRows.map((r, i) => {
             const displayName = issuerDisplayTitle(r.companyName);
             const key = rowResolveKey(r, displayName);
@@ -338,14 +349,15 @@ export function Berkshire13fComparisonTable({
               </Fragment>
             );
           })}
+          </div>
         </div>
       </div>
 
       {/* ── Desktop layout ── */}
       <div className="hidden overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch] sm:block sm:overflow-visible sm:pb-0">
         <div className="min-w-[720px] sm:min-w-0">
-          <div className="divide-y divide-[#E4E4E7] border-t border-b border-[#E4E4E7] bg-white">
-            <div className={cn(headerGrid, "px-4")}>
+          <div className="border-t border-b border-[#E4E4E7] bg-white">
+            <div className={cn(headerGrid, "px-4", SCREENER_TABLE_HEADER_STICKY_CLASS)}>
               <div className={thCompany}>Company</div>
               <div className={thRight}>% of Portfolio</div>
               <div className={thRight}>Recent Activity</div>
@@ -353,6 +365,7 @@ export function Berkshire13fComparisonTable({
               <div className={thRight}>Value</div>
             </div>
 
+            <div className={SCREENER_TABLE_BODY_DIVIDE_CLASS}>
             {pagedRows.map((r, i) => {
               const displayName = issuerDisplayTitle(r.companyName);
               const key = rowResolveKey(r, displayName);
@@ -397,6 +410,7 @@ export function Berkshire13fComparisonTable({
                 </Fragment>
               );
             })}
+            </div>
           </div>
         </div>
       </div>

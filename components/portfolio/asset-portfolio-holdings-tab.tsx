@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Layers2, Plus } from "lucide-react";
+import { Layers2, Plus } from "@/lib/icons";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { format, parseISO } from "date-fns";

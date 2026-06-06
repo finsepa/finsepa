@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CircleQuestionMark, CreditCard, LogOut, Menu, Sparkles, User } from "lucide-react";
+import { CircleQuestionMark, CreditCard, LogOut, Menu, Sparkles, User } from "@/lib/icons";
 
 import { BillingUpgradeModal } from "@/components/account/billing-upgrade-modal";
 import {

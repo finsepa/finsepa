@@ -1,4 +1,7 @@
-export { secondaryOutlineButtonClassName } from "./secondary-button-styles";
+export {
+  secondaryFillButtonClassName,
+  secondaryOutlineButtonClassName,
+} from "./secondary-button-styles";
 export { SegmentedControl, type SegmentedControlOption, type SegmentedControlSize } from "./segmented-control";
 export { TabSwitcher, type TabSwitcherOption } from "./tab-switcher";
 export {

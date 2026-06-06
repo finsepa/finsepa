@@ -5,7 +5,7 @@ import { isSingleAssetMode } from "@/lib/features/single-asset";
 import { NewsTable } from "@/components/news/news-table";
 import { NewsCards } from "@/components/news/news-cards";
 import { ScreenerPaginationLinks } from "@/components/ui/screener-pagination-links";
-import { Search } from "lucide-react";
+import { Search } from "@/lib/icons";
 
 function toInt(v: string | null | undefined, fallback: number): number {
   const n = Number(v);

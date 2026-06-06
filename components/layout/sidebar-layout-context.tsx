@@ -15,7 +15,7 @@ import {
   SIDEBAR_COLLAPSED_PREFERENCE_KEY,
 } from "@/lib/layout/sidebar-collapsed-preference";
 
-export const SIDEBAR_OUTER_EXPANDED_PX = 248;
+export const SIDEBAR_OUTER_EXPANDED_PX = 240;
 export const SIDEBAR_OUTER_COLLAPSED_PX = 72;
 
 export const SIDEBAR_MOTION_MS = 280;
@@ -30,7 +30,10 @@ export const SIDEBAR_CONTENT_MOTION_CLASS =
   "transition-[opacity,max-width,max-height,margin,padding,gap] duration-[280ms] ease-[cubic-bezier(0.33,1,0.68,1)] motion-reduce:transition-none";
 
 type SidebarLayoutContextValue = {
+  /** Live preference (may update after hydration from localStorage). */
   collapsed: boolean;
+  /** Server cookie value — stable for the first client render to match SSR. */
+  initialCollapsed: boolean;
   setCollapsed: (value: boolean) => void;
   toggleCollapsed: () => void;
 };
@@ -61,16 +64,21 @@ export function SidebarLayoutProvider({
   initialCollapsed?: boolean;
 }) {
   const [collapsed, setCollapsedState] = useState(initialCollapsed);
+  const [hasHydrated, setHasHydrated] = useState(false);
 
   useEffect(() => {
+    setHasHydrated(true);
     try {
-      const fromStorage = readSidebarCollapsedPreference(
-        localStorage.getItem(SIDEBAR_COLLAPSED_PREFERENCE_KEY),
-      );
-      if (fromStorage !== initialCollapsed) {
-        setCollapsedState(fromStorage);
-        writeSidebarCollapsedCookie(fromStorage);
+      const raw = localStorage.getItem(SIDEBAR_COLLAPSED_PREFERENCE_KEY);
+      if (raw !== null) {
+        const fromStorage = readSidebarCollapsedPreference(raw);
+        if (fromStorage !== initialCollapsed) {
+          setCollapsedState(fromStorage);
+          writeSidebarCollapsedCookie(fromStorage);
+        }
+        return;
       }
+      writeSidebarCollapsedCookie(initialCollapsed);
     } catch {
       /* ignore */
     }
@@ -96,9 +104,16 @@ export function SidebarLayoutProvider({
     });
   }, [persist]);
 
+  const layoutCollapsed = hasHydrated ? collapsed : initialCollapsed;
+
   const value = useMemo(
-    () => ({ collapsed, setCollapsed, toggleCollapsed }),
-    [collapsed, setCollapsed, toggleCollapsed],
+    () => ({
+      collapsed: layoutCollapsed,
+      initialCollapsed,
+      setCollapsed,
+      toggleCollapsed,
+    }),
+    [layoutCollapsed, initialCollapsed, setCollapsed, toggleCollapsed],
   );
 
   return <SidebarLayoutContext.Provider value={value}>{children}</SidebarLayoutContext.Provider>;
