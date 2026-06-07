@@ -238,7 +238,6 @@ export function MobileBottomNav() {
 
   const goToPortfolio = useCallback(() => {
     if (displayTab === "portfolio" && urlTab === "portfolio") return;
-    haptic();
     selectTab("portfolio");
     setOpenSheet(null);
     startTransition(() => {
@@ -299,9 +298,9 @@ export function MobileBottomNav() {
                 )}
                 aria-expanded={sheetOpen}
                 aria-controls={sheetOpen ? `mobile-nav-sheet-${tab.id}` : undefined}
+                onPointerDown={() => haptic()}
                 onClick={() => {
                   if (!isSheetTab(tab.id)) return;
-                  haptic();
                   setOpenSheet((s) => (s === tab.id ? null : (tab.id as SheetId)));
                 }}
               >
@@ -329,6 +328,7 @@ export function MobileBottomNav() {
               "flex w-full flex-col items-center gap-0.5 rounded-full px-2 py-1.5 text-[10px] leading-[14px] font-semibold uppercase tracking-wide transition-[color,opacity] duration-100",
               urlTab === "portfolio" || displayTab === "portfolio" ? "text-[#09090B] opacity-100" : "text-[#A1A1AA] opacity-80 active:opacity-100",
             )}
+            onPointerDown={() => haptic()}
             onClick={goToPortfolio}
           >
             <ChartPieSlice
