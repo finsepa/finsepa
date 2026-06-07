@@ -43,7 +43,11 @@ import {
 
 import { ChartSkeleton } from "@/components/ui/chart-skeleton";
 import { computeChartHeaderMetrics } from "@/components/chart/chart-display-metrics";
-import { horzTimeToUnixSeconds, nearestPointByTime } from "@/components/chart/chart-selection-utils";
+import {
+  horzTimeToUnixSeconds,
+  nearestPointByTime,
+  pointAtChartX,
+} from "@/components/chart/chart-selection-utils";
 import {
   chartSeriesPlotInsetPct,
   fitContentWithMobilePlotGutter,
@@ -737,6 +741,10 @@ export function PriceChart({
   const hideMobileYAxisLabelsRef = useRef(false);
   const mobileHoverBarTimeRef = useRef<number | null>(null);
   const mobileHoverPointRef = useRef<{ x: number; y: number } | null>(null);
+  const mobileScrubApplyRef = useRef<
+    ((point: { x: number; y: number }, bar: StockChartPoint) => void) | null
+  >(null);
+  const mobileScrubClearRef = useRef<(() => void) | null>(null);
   const overviewTooltipRef = useRef<HTMLDivElement>(null);
   const overviewTooltipTextRef = useRef<HTMLParagraphElement>(null);
 
@@ -871,6 +879,21 @@ export function PriceChart({
     return attachMobilePriceChartHaptics(host, {
       getChart: () => chartRef.current,
       getPoints: () => pointsRef.current,
+      onScrub: (clientX, clientY) => {
+        const chart = chartRef.current;
+        const apply = mobileScrubApplyRef.current;
+        if (!chart || !apply) return;
+        const rect = host.getBoundingClientRect();
+        const x = clientX - rect.left;
+        const y = clientY - rect.top;
+        const bar = pointAtChartX(chart, pointsRef.current, x);
+        if (bar && isFiniteNumber(bar.time) && isFiniteNumber(bar.value)) {
+          apply({ x, y }, bar);
+        }
+      },
+      onScrubEnd: () => {
+        mobileScrubClearRef.current?.();
+      },
     });
   }, [useMobileOverviewCrosshair, ready]);
 
@@ -1379,6 +1402,17 @@ export function PriceChart({
       }
     };
 
+    mobileScrubApplyRef.current = (point, nearBar) => {
+      crosshairHoveredRef.current = true;
+      hoverTimeRef.current = nearBar.time as Time;
+      applyMobileOverviewCrosshair(point, nearBar);
+    };
+    mobileScrubClearRef.current = () => {
+      crosshairHoveredRef.current = false;
+      hoverTimeRef.current = null;
+      clearMobileOverviewCrosshairDom();
+    };
+
     const onCrosshairMove = (param: MouseEventParams) => {
       const s = seriesRef.current;
       if (!s) return;
@@ -1642,6 +1676,8 @@ export function PriceChart({
     chart.resize(Math.max(2, el.clientWidth), plotHeight);
 
     return () => {
+      mobileScrubApplyRef.current = null;
+      mobileScrubClearRef.current = null;
       clearHoldingsHoverDom();
       holdingsClearHoverDomRef.current = null;
       if (visRangeTimer) clearTimeout(visRangeTimer);

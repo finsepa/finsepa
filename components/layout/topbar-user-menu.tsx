@@ -177,9 +177,9 @@ export function TopbarUserMenu({
         open={open}
         anchorRef={rootRef}
         ref={menuPortalRef}
-        className="min-w-[240px] overflow-hidden"
+        className={cn(dropdownMenuSurfaceClassName(), "min-w-[240px] overflow-hidden")}
       >
-        <div role="menu" className={dropdownMenuSurfaceClassName()}>
+        <div role="menu">
           <div className="flex gap-3 border-b border-[#E4E4E7] px-3 py-3">
             <UserAvatar imageSrc={avatarUrl} initials={userInitials} size="menu" />
             <div className="min-w-0 flex-1 pt-0.5">
