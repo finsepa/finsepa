@@ -74,6 +74,7 @@ function ProtectedAppChrome({
         suppressHydrationWarning
         className={cn(
           "flex min-h-0 min-w-0 flex-1 flex-col max-md:min-h-[var(--app-vh)] md:fixed md:inset-y-0 md:right-0 md:left-[length:var(--shell-left)] md:z-0 md:overflow-hidden md:bg-[#F4F4F5] md:pt-[var(--shell-desktop-padding-top)] md:pr-[var(--shell-desktop-padding-right)] md:pb-[var(--shell-desktop-padding-bottom)]",
+          "md:pl-[var(--shell-desktop-padding-left)]",
           SIDEBAR_WIDTH_MOTION_CLASS,
         )}
         style={chromeColumnStyle}
@@ -82,14 +83,13 @@ function ProtectedAppChrome({
           suppressHydrationWarning
           className={cn(
             "shell-desktop-panel flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden max-md:min-h-[var(--app-vh)] max-md:rounded-none max-md:border-0 max-md:bg-transparent max-md:shadow-none",
-            collapsed && "shell-desktop-panel--sidebar-collapsed",
             SIDEBAR_WIDTH_MOTION_CLASS,
           )}
         >
           <div
             suppressHydrationWarning
             className={cn(
-              "z-30 min-w-0 w-full max-w-full shrink-0 bg-white max-md:relative max-md:shadow-none md:border-b md:border-[#E4E4E7] md:bg-white",
+              "shell-desktop-panel__header z-30 min-w-0 w-full max-w-full shrink-0 bg-white max-md:relative max-md:shadow-none md:border-b md:border-[#E4E4E7] md:bg-white",
               SIDEBAR_WIDTH_MOTION_CLASS,
             )}
           >
@@ -103,7 +103,7 @@ function ProtectedAppChrome({
           </div>
           <div
             suppressHydrationWarning
-            className="flex min-h-0 min-w-0 flex-1 max-md:flex-col"
+            className="shell-desktop-panel__content flex min-h-0 min-w-0 flex-1 max-md:flex-col"
           >
             <main
               ref={mainRef}

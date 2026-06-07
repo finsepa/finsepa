@@ -51,6 +51,7 @@ import {
   mobileTimeScaleOptions,
   shouldHideMobileYAxisLabels,
 } from "@/lib/chart/mobile-plot-horizontal-gutter";
+import { triggerMobileChartHaptic } from "@/lib/haptic";
 import {
   chartBarTimeForYmd,
   formatAssetChartTimestamp,
@@ -1360,6 +1361,7 @@ export function PriceChart({
         tip.style.transform = pos.transform;
       }
       if (mobileHoverBarTimeRef.current !== nearBar.time) {
+        triggerMobileChartHaptic();
         mobileHoverBarTimeRef.current = nearBar.time;
         const xCoord = chart.timeScale().timeToCoordinate(nearBar.time as UTCTimestamp);
         const leftPx = xCoord != null && Number.isFinite(xCoord) ? xCoord : point.x;

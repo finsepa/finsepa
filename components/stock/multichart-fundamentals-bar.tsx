@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  useCallback,
   useEffect,
   useId,
   useLayoutEffect,
@@ -9,6 +10,7 @@ import {
   useState,
   type CSSProperties,
   type MouseEvent,
+  type PointerEvent,
 } from "react";
 
 import type { ChartingSeriesPoint, FundamentalsSeriesMode } from "@/lib/market/charting-series-types";
@@ -32,6 +34,7 @@ import {
   fundamentalsBarStaggerDelaySec,
   runFundamentalsBarEnterAnimation,
 } from "@/lib/chart/fundamentals-bar-enter-animation";
+import { isTouchDeviceNow, triggerMobileChartHaptic } from "@/lib/haptic";
 import {
   buildFundamentalsYAxisDomain,
   CHARTING_LINE_HOVER_HALO_BG,
@@ -211,7 +214,7 @@ export const MULTICHART_LINE_STROKE_WIDTH_PX = 2;
 /** $0 baseline only — same as overview price chart scale edge. */
 const CHART_ZERO_BASELINE_BORDER = "rgba(228, 228, 231, 0.85)";
 
-const NEGATIVE_PERCENT_BAR_COLOR = "#DC2626";
+const NEGATIVE_BAR_COLOR = "#DC2626";
 
 export function readChartingMetricValue(row: ChartingSeriesPoint, id: ChartingMetricId): number | null {
   if (isFinancialsExtraChartingMetricId(id)) {
@@ -240,7 +243,7 @@ function formatTooltipValue(kind: ChartingMetricKind, p: number): string {
 
 function resolveBarFillColor(baseColor: string, dimmed: boolean): string {
   if (!dimmed) return baseColor;
-  if (baseColor === NEGATIVE_PERCENT_BAR_COLOR) {
+  if (baseColor === NEGATIVE_BAR_COLOR) {
     return `rgba(220, 38, 38, ${BAR_HOVER_DIM_OPACITY})`;
   }
   return fundamentalsBarColorAtIndex(0, BAR_HOVER_DIM_OPACITY);
@@ -443,6 +446,7 @@ export function MultichartFundamentalsBar({
   const yAxisLabelPadClass = compactHorizontalLayout ? "px-0.5" : "px-1";
   const wrapRef = useRef<HTMLDivElement>(null);
   const plotAreaRef = useRef<HTMLDivElement>(null);
+  const barChartTouchGestureRef = useRef(false);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [tip, setTip] = useState<BarTooltipState | null>(null);
 
@@ -585,6 +589,34 @@ export function MultichartFundamentalsBar({
     });
   }, [shouldAnimateLine, n, metricId, periodMode, visual, maxBars, points, linePlotPx.w]);
 
+  const noteBarHoveredIndex = useCallback((next: number) => {
+    setHoveredIndex((prev) => {
+      if (
+        isTouchDeviceNow() &&
+        visual === "bar" &&
+        prev != null &&
+        prev !== next
+      ) {
+        triggerMobileChartHaptic();
+      }
+      return next;
+    });
+  }, [visual]);
+
+  const onBarPlotPointerDown = useCallback(
+    (event: PointerEvent<HTMLDivElement>) => {
+      if (!isTouchDeviceNow() || event.pointerType === "mouse" || visual !== "bar") return;
+      if (barChartTouchGestureRef.current) return;
+      barChartTouchGestureRef.current = true;
+      triggerMobileChartHaptic();
+    },
+    [visual],
+  );
+
+  const onBarPlotPointerUp = useCallback(() => {
+    barChartTouchGestureRef.current = false;
+  }, []);
+
   if (rows.length === 0 || values.length === 0) {
     return (
       <div className="w-full">
@@ -601,6 +633,7 @@ export function MultichartFundamentalsBar({
   const barStaggerDelaySec = fundamentalsBarStaggerDelaySec(n);
 
   const clearChartHover = () => {
+    barChartTouchGestureRef.current = false;
     setHoveredIndex(null);
     setTip(null);
   };
@@ -623,6 +656,9 @@ export function MultichartFundamentalsBar({
           <div
             ref={plotAreaRef}
             className="relative min-h-0 min-w-0 flex-1"
+            onPointerDown={onBarPlotPointerDown}
+            onPointerUp={onBarPlotPointerUp}
+            onPointerCancel={onBarPlotPointerUp}
             onPointerLeave={clearChartHover}
           >
             {/* Dot grid + single $0 baseline (no other horizontal rules). */}
@@ -812,8 +848,7 @@ export function MultichartFundamentalsBar({
                   const vTop = valueToPlotBandTopPercent(v, yMin, yMax);
                   const barHeightPct = v >= 0 ? Math.max(0, zeroTop - vTop) : Math.max(0, vTop - zeroTop);
                   const barTopPct = v >= 0 ? vTop : zeroTop;
-                  const baseBarColor =
-                    kind === "percent" && v < 0 ? NEGATIVE_PERCENT_BAR_COLOR : seriesBarColor;
+                  const baseBarColor = v < 0 ? NEGATIVE_BAR_COLOR : seriesBarColor;
                   const barColor = resolveBarFillColor(
                     baseBarColor,
                     hoveredIndex != null && hoveredIndex !== i,
@@ -839,7 +874,7 @@ export function MultichartFundamentalsBar({
                       onMouseEnter={(e) => {
                         const plot = plotAreaRef.current;
                         if (!plot) return;
-                        setHoveredIndex(i);
+                        noteBarHoveredIndex(i);
                         setTip(
                           barTooltipStateFromEvent(
                             e,
@@ -853,7 +888,7 @@ export function MultichartFundamentalsBar({
                       onMouseMove={(e) => {
                         const plot = plotAreaRef.current;
                         if (!plot) return;
-                        setHoveredIndex(i);
+                        noteBarHoveredIndex(i);
                         setTip(
                           barTooltipStateFromEvent(
                             e,

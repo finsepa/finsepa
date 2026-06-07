@@ -184,7 +184,7 @@ export function buildFundamentalsYAxisDomain(
   const max = Math.max(dataMax, 0);
   const min = Math.min(dataMin, 0);
 
-  if (kind === "percent" && min < 0) {
+  if (min < 0) {
     const yMax = axisMaxForFiveTicks(max || 1, kind);
     const yMin = -axisMaxForFiveTicks(Math.abs(min) || 1, kind);
     return {

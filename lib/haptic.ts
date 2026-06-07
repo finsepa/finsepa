@@ -89,6 +89,11 @@ export function supportsHaptics(): boolean {
   return isTouchDeviceNow() && (canUseVibrationApi() || isAppleMobileDevice());
 }
 
+/** Light tick for mobile chart tap / interval scrub — no-op on desktop. */
+export function triggerMobileChartHaptic(): void {
+  haptic(35);
+}
+
 /**
  * Best-effort imperative haptic. Works on Android; on iOS only before 26.5.
  * For buttons on iOS 26.5+, use `HapticButton` instead.
