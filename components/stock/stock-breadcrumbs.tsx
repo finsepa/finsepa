@@ -9,23 +9,25 @@ import { UsEquityMarketSessionBadge } from "@/components/stock/us-equity-market-
 import { getStockDetailMetaFromTicker } from "@/lib/market/stock-detail-meta";
 import type { StockDetailHeaderMeta } from "@/lib/market/stock-header-meta";
 import { mapProviderSectorToCanonical } from "@/lib/screener/screener-gics-sectors";
+import { SCREENER_ETFS_HREF } from "@/lib/screener/screener-market-url";
 import { screenerIndustryDrillHref } from "@/lib/screener/screener-industry-url";
 import { screenerSectorCompaniesHref } from "@/lib/screener/screener-sector-url";
 
 type Props = {
   ticker: string;
   headerMeta: StockDetailHeaderMeta | null;
+  isEtf?: boolean;
 };
 
-export function StockBreadcrumbs({ ticker, headerMeta }: Props) {
+export function StockBreadcrumbs({ ticker, headerMeta, isEtf = false }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const meta = getStockDetailMetaFromTicker(ticker);
   const symbol = meta.ticker;
   const breadcrumbSymbol = symbol;
 
-  const sectorLabel = headerMeta?.sector?.trim() || null;
-  const industryLabel = headerMeta?.industry?.trim() || null;
+  const sectorLabel = isEtf ? null : headerMeta?.sector?.trim() || null;
+  const industryLabel = isEtf ? null : headerMeta?.industry?.trim() || null;
   const canonicalSector = sectorLabel ? mapProviderSectorToCanonical(sectorLabel) : null;
 
   const breadcrumbCrumbClass = "min-w-0 truncate";
@@ -42,8 +44,11 @@ export function StockBreadcrumbs({ ticker, headerMeta }: Props) {
       className="flex min-w-0 items-center justify-between gap-3 px-4 py-3 text-[14px] text-[#71717A] max-md:border-b-0 md:border-b md:border-[#E4E4E7] sm:px-9"
     >
       <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 sm:flex-nowrap">
-      <Link href="/screener" className={`shrink-0 ${breadcrumbLinkClass}`}>
-        Stocks
+      <Link
+        href={isEtf ? SCREENER_ETFS_HREF : "/screener"}
+        className={`shrink-0 ${breadcrumbLinkClass}`}
+      >
+        {isEtf ? "ETF's" : "Stocks"}
       </Link>
       {sectorLabel ? (
         <>
@@ -109,7 +114,7 @@ export function StockBreadcrumbs({ ticker, headerMeta }: Props) {
               onClick={() => setOpen((o) => !o)}
               aria-expanded={open}
               aria-haspopup="listbox"
-              aria-label={`${breadcrumbSymbol}, search for another stock`}
+              aria-label={`${breadcrumbSymbol}, search for another ${isEtf ? "ETF" : "stock"}`}
               className="inline-flex h-6 shrink-0 cursor-pointer items-center gap-1.5 rounded-md border border-[#E4E4E7] bg-white px-2 text-[12px] font-medium leading-4 text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors hover:bg-[#FAFAFA]"
               title={breadcrumbSymbol}
             >
@@ -120,7 +125,7 @@ export function StockBreadcrumbs({ ticker, headerMeta }: Props) {
         </CompanyPicker>
       </div>
       </div>
-      <UsEquityMarketSessionBadge className="shrink-0" />
+      {!isEtf ? <UsEquityMarketSessionBadge className="shrink-0" /> : null}
     </nav>
   );
 }

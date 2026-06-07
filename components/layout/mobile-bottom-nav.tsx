@@ -30,7 +30,7 @@ import {
   type ProtectedNavItem,
 } from "@/components/layout/protected-nav-config";
 import { dropdownMenuPanelBodyClassName, dropdownMenuSurfaceClassName } from "@/components/design-system/dropdown-menu-styles";
-import { haptic } from "@/lib/haptic";
+import { HapticButton } from "@/components/haptic-button";
 import { useMobileBottomNavScrollHide } from "@/lib/layout/use-mobile-bottom-nav-scroll-hide";
 import { cn } from "@/lib/utils";
 
@@ -290,15 +290,13 @@ export function MobileBottomNav() {
               }}
               className="relative z-[1] flex min-w-0 flex-1 flex-col items-stretch"
             >
-              <button
-                type="button"
+              <HapticButton
                 className={cn(
                   "flex w-full flex-col items-center gap-0.5 rounded-full px-2 py-1.5 text-[10px] leading-[14px] font-semibold uppercase tracking-wide transition-[color,opacity,background-color] duration-100",
                   routeActive ? "text-[#09090B] opacity-100" : sheetPeek ? "bg-[#F4F4F5] text-[#09090B] opacity-100" : "text-[#A1A1AA] opacity-80 active:opacity-100",
                 )}
                 aria-expanded={sheetOpen}
                 aria-controls={sheetOpen ? `mobile-nav-sheet-${tab.id}` : undefined}
-                onPointerDown={() => haptic()}
                 onClick={() => {
                   if (!isSheetTab(tab.id)) return;
                   setOpenSheet((s) => (s === tab.id ? null : (tab.id as SheetId)));
@@ -310,7 +308,7 @@ export function MobileBottomNav() {
                   aria-hidden
                 />
                 <span>{tab.label}</span>
-              </button>
+              </HapticButton>
             </div>
           );
         })}
@@ -322,13 +320,11 @@ export function MobileBottomNav() {
           }}
           className="relative z-[1] flex min-w-0 flex-1 flex-col items-stretch"
         >
-          <button
-            type="button"
+          <HapticButton
             className={cn(
               "flex w-full flex-col items-center gap-0.5 rounded-full px-2 py-1.5 text-[10px] leading-[14px] font-semibold uppercase tracking-wide transition-[color,opacity] duration-100",
               urlTab === "portfolio" || displayTab === "portfolio" ? "text-[#09090B] opacity-100" : "text-[#A1A1AA] opacity-80 active:opacity-100",
             )}
-            onPointerDown={() => haptic()}
             onClick={goToPortfolio}
           >
             <ChartPieSlice
@@ -337,7 +333,7 @@ export function MobileBottomNav() {
               aria-hidden
             />
             <span>Portfolio</span>
-          </button>
+          </HapticButton>
         </div>
       </nav>
     </>

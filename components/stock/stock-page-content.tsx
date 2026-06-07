@@ -502,7 +502,7 @@ export function StockPageContent({
 
   return (
     <div className="relative min-w-0">
-      <StockBreadcrumbs ticker={ticker} headerMeta={headerMeta} />
+      <StockBreadcrumbs ticker={ticker} headerMeta={headerMeta} isEtf={isEtf} />
       <div className="space-y-5 px-4 py-0 sm:space-y-5 sm:px-9 sm:py-6">
       <KeyStatsMetricChartModal
         key={revenueProfitModalMetric ?? "closed"}

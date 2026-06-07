@@ -7,6 +7,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AssetPageTopLoader } from "@/components/layout/asset-page-top-loader";
 import type { ChartDisplayState } from "@/components/chart/PriceChart";
 import { PriceChart } from "@/components/chart/PriceChart";
+import { CryptoBreadcrumbs } from "@/components/crypto/crypto-breadcrumbs";
 import { CryptoHeader } from "@/components/crypto/crypto-header";
 import { CryptoKeyStats } from "@/components/crypto/crypto-key-stats";
 import { CryptoLinksSection } from "@/components/crypto/crypto-links-section";
@@ -291,18 +292,15 @@ export function CryptoPageContent({
   const headerLogoUrl = loading ? null : cryptoLogoSrc || null;
 
   return (
-    <div className="relative min-w-0 space-y-5 px-0 py-0 sm:space-y-5 sm:px-9 sm:py-6">
+    <div className="relative min-w-0">
+      <CryptoBreadcrumbs symbol={symUpper} />
+      <div className="space-y-5 px-4 py-0 sm:space-y-5 sm:px-9 sm:py-6">
       <Suspense fallback={null}>
         <AssetPageTopLoader />
       </Suspense>
 
       {loading ? (
         <div className="space-y-3">
-          <div className="flex items-center gap-1 text-[14px] text-[#71717A]">
-            <span>Crypto</span>
-            <span>/</span>
-            <span className="font-medium text-[#09090B]">{symUpper}</span>
-          </div>
           <div className="flex items-center gap-4">
             <LogoSkeleton sizeClass="h-12 w-12" />
             <div className="space-y-2">
@@ -424,6 +422,7 @@ export function CryptoPageContent({
           ) : null}
         </>
       ) : null}
+      </div>
     </div>
   );
 }
