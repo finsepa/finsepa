@@ -30,6 +30,7 @@ import {
   type ProtectedNavItem,
 } from "@/components/layout/protected-nav-config";
 import { dropdownMenuPanelBodyClassName, dropdownMenuSurfaceClassName } from "@/components/design-system/dropdown-menu-styles";
+import { haptic } from "@/lib/haptic";
 import { useMobileBottomNavScrollHide } from "@/lib/layout/use-mobile-bottom-nav-scroll-hide";
 import { cn } from "@/lib/utils";
 
@@ -237,6 +238,7 @@ export function MobileBottomNav() {
 
   const goToPortfolio = useCallback(() => {
     if (displayTab === "portfolio" && urlTab === "portfolio") return;
+    haptic();
     selectTab("portfolio");
     setOpenSheet(null);
     startTransition(() => {
@@ -299,6 +301,7 @@ export function MobileBottomNav() {
                 aria-controls={sheetOpen ? `mobile-nav-sheet-${tab.id}` : undefined}
                 onClick={() => {
                   if (!isSheetTab(tab.id)) return;
+                  haptic();
                   setOpenSheet((s) => (s === tab.id ? null : (tab.id as SheetId)));
                 }}
               >

@@ -5,6 +5,7 @@ import {
   SCREENER_TABLE_HEADER_STICKY_CLASS,
   ScreenerTableScroll,
 } from "@/components/screener/screener-table-scroll";
+import { SCREENER_COMPANIES_PAGE_SIZE } from "@/lib/screener/screener-markets-page-size";
 
 /** Matches {@link ScreenerTable}: mobile hides star + 1M / YTD / M Cap / PE. */
 const stocksColLayout =
@@ -231,6 +232,29 @@ export function StocksGainersLosersSkeleton({ rows = 10 }: { rows?: number }) {
 
 export type ScreenerMarketTabSkeletonVariant = "Stocks" | "Crypto" | "Indices" | "ETF's";
 
+/** Matches {@link MarketTabs} / {@link UnderlineTabs} chrome while tabs are not yet interactive. */
+export function MarketTabsSkeleton() {
+  const tabWidths = ["w-12", "w-14", "w-14", "w-11"] as const;
+
+  return (
+    <div className="mb-4 border-b border-solid border-[#E4E4E7] md:mb-6">
+      <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 md:gap-x-3">
+        <nav
+          className="flex min-w-0 flex-1 flex-nowrap items-start gap-4 pb-px md:gap-5"
+          aria-hidden
+        >
+          {tabWidths.map((width, index) => (
+            <SkeletonBox key={index} className={`h-6 shrink-0 rounded ${width}`} />
+          ))}
+        </nav>
+        <div className="hidden shrink-0 md:block md:pb-[9px] md:pl-2">
+          <SkeletonBox className="h-5 w-28 rounded" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** Shown while the server payload for the selected market tab is still loading. */
 export function ScreenerMarketTabSkeleton({ tab }: { tab: ScreenerMarketTabSkeletonVariant }) {
   if (tab === "Crypto") {
@@ -272,7 +296,7 @@ export function ScreenerMarketTabSkeleton({ tab }: { tab: ScreenerMarketTabSkele
         </div>
       </div>
       <div className="mb-5 h-10 w-48 rounded-lg skeleton" />
-      <StocksTableSkeleton rows={10} />
+      <StocksTableSkeleton rows={SCREENER_COMPANIES_PAGE_SIZE} />
     </div>
   );
 }

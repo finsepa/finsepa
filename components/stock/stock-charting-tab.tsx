@@ -109,6 +109,7 @@ export function StockChartingTab({
       allowedMetricIds={buildAllowedMetricsFromKeyStats(initialKeyStatsBundle)}
       metricControlsPlacement="legend"
       histogramLayout="stockFullWidthFixedBars"
+      animateBarsOnAppear
     />
   );
 }

@@ -362,6 +362,7 @@ export function KeyStatsMetricChartModal({
     return (
       <div className="min-w-0">
         <MultichartFundamentalsBar
+          key={`${metricId}-${periodMode}-${timeRange}-${chartVisual}`}
           metricId={metricId}
           points={points}
           height={chartHeight}
@@ -371,6 +372,10 @@ export function KeyStatsMetricChartModal({
           barWidthPx={barWidthPx}
           compactHorizontalLayout
           displayOptions={displayOptions}
+          animateBarsOnAppear
+          horizontalPeriodAxisLabels={
+            periodMode === "annual" && (timeRange === "5Y" || timeRange === "10Y")
+          }
           periodPlotMargins={
             timeRange === "all" ? { left: 0.012, right: 0.018 } : undefined
           }
@@ -449,9 +454,7 @@ export function KeyStatsMetricChartModal({
       maxWidthClass="w-full"
       maxHeightClass="max-h-[min(92vh,900px)]"
       bodyScroll={false}
-      headerClassName="border-b border-[#E4E4E7] px-5 py-3"
       bodyClassName="min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-0"
-      cardClassName="overflow-hidden rounded-t-none"
     >
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-[#E4E4E7] px-5 pt-5 pb-3">
         <div className="flex min-w-0 flex-1 items-start gap-3">
@@ -460,6 +463,7 @@ export function KeyStatsMetricChartModal({
             logoUrl={headerMeta?.logoUrl ?? ""}
             symbol={ticker}
             size="lg"
+            className="!rounded-xl"
           />
           <span className="flex min-w-0 flex-1 flex-col gap-0.5">
             <span className="shrink-0 text-[18px] font-semibold leading-7 text-[#09090B]">

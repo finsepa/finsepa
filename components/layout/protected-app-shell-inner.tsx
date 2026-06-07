@@ -57,7 +57,8 @@ function ProtectedAppChrome({
       <div
         suppressHydrationWarning
         className={cn(
-          "fixed inset-y-0 left-0 z-20 hidden p-1 md:block md:border-r md:border-[#E4E4E7] md:p-0",
+          "fixed inset-y-0 left-0 z-20 hidden p-1 md:block md:p-0",
+          !collapsed && "md:border-r md:border-[#E4E4E7]",
           SIDEBAR_WIDTH_MOTION_CLASS,
         )}
         style={{ width: leftOffset }}
@@ -81,6 +82,7 @@ function ProtectedAppChrome({
           suppressHydrationWarning
           className={cn(
             "shell-desktop-panel flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden max-md:min-h-[var(--app-vh)] max-md:rounded-none max-md:border-0 max-md:bg-transparent max-md:shadow-none",
+            collapsed && "shell-desktop-panel--sidebar-collapsed",
             SIDEBAR_WIDTH_MOTION_CLASS,
           )}
         >

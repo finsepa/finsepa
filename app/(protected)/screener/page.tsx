@@ -1,10 +1,13 @@
 import { Suspense } from "react";
 
 import { ScreenerBrowserTrace } from "@/components/screener/screener-browser-trace";
-import { MarketsSection } from "@/components/screener/markets-section";
-import { runWithProviderTrace } from "@/lib/market/provider-trace";
-import { buildScreenerPagePayload } from "@/lib/screener/screener-page-payload";
-import { parseScreenerMarketTab, SCREENER_MARKET_QUERY } from "@/lib/screener/screener-market-url";
+import { ScreenerContentSkeleton } from "@/components/screener/screener-content-skeleton";
+import { ScreenerPageContent } from "@/components/screener/screener-page-content";
+import {
+  parseScreenerMarketTab,
+  SCREENER_MARKET_QUERY,
+  screenerMarketTabLabelFromParam,
+} from "@/lib/screener/screener-market-url";
 import {
   parseScreenerIndustryDrill,
   SCREENER_INDUSTRY_QUERY,
@@ -28,18 +31,15 @@ export default async function ScreenerPage({ searchParams }: PageProps) {
   const industrySectorParam = Array.isArray(indSecRaw) ? indSecRaw[0] : indSecRaw;
   const stocksIndustry =
     market === "stocks" ? parseScreenerIndustryDrill(industryParam, industrySectorParam) : null;
-  const payload = await runWithProviderTrace(`/screener ssr market=${market}`, () =>
-    buildScreenerPagePayload(market, {
-      stocksSector: stocksIndustry ? null : stocksSector,
-      stocksIndustry,
-    }),
-  );
-
   return (
     <div className="min-w-0 w-full max-w-full max-md:overflow-x-hidden max-md:px-4 max-md:pb-2 max-md:pt-0 md:overflow-x-hidden md:px-9 md:py-6">
       <ScreenerBrowserTrace />
-      <Suspense fallback={null}>
-        <MarketsSection payload={payload} />
+      <Suspense fallback={<ScreenerContentSkeleton market={screenerMarketTabLabelFromParam(market)} />}>
+        <ScreenerPageContent
+          market={market}
+          stocksSector={stocksSector}
+          stocksIndustry={stocksIndustry}
+        />
       </Suspense>
     </div>
   );

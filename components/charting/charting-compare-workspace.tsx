@@ -22,7 +22,9 @@ import {
   DEFAULT_CHART_TIME_RANGE_ORDER,
   CHARTING_HEIGHT_PX,
   CHARTING_PLOT_BACKDROP_INSET_CLASS,
-  CHARTING_PLOT_HEIGHT_PX,
+  chartingAxisRowPx,
+  chartingPlotHeightPx,
+  CHARTING_STOCK_GROUPED_BAR_SHIFT_FRAC,
   ChartingHoverBandPrimitive,
   layoutChartingTimeScale,
   type ChartTimeRange,
@@ -32,6 +34,7 @@ import {
 import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
 import { ChartingVisualSwitcher } from "@/components/stock/multichart-visual-switcher";
 import { DataFetchTopLoader } from "@/components/layout/data-fetch-top-loader";
+import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
 import { ChartLoadingIndicator } from "@/components/ui/chart-loading-indicator";
 import { secondaryFillButtonClassName, TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
 import {
@@ -49,7 +52,6 @@ import {
   computeFundamentalsChartTooltipPlacement,
   formatFundamentalsAxisTickLabel,
   FUNDAMENTALS_CHART_AXIS_LABEL_ROTATE_DEG,
-  FUNDAMENTALS_CHART_AXIS_ROW_PX,
   FUNDAMENTALS_CHART_SCALE_MARGIN_BOTTOM_BARS,
   FUNDAMENTALS_CHART_SCALE_MARGIN_BOTTOM_LINE,
   FUNDAMENTALS_CHART_TOOLTIP_CLASS,
@@ -248,7 +250,7 @@ function compareBarBaseTimeSec(labelIndex: number): number {
 function compareSeriesShiftSec(colorIdx: number, seriesCount: number): number {
   if (seriesCount <= 1) return 0;
   const center = (seriesCount - 1) / 2;
-  return Math.round((colorIdx - center) * GROUPED_BAR_SHIFT_SEC);
+  return Math.round((colorIdx - center) * CHARTING_BAR_PERIOD_STEP_SEC * CHARTING_STOCK_GROUPED_BAR_SHIFT_FRAC);
 }
 
 function comparePeriodCenterTimeSec(
@@ -495,6 +497,8 @@ export function ChartingCompareWorkspace({
   const router = useRouter();
   const wrapRef = useRef<HTMLDivElement>(null);
   const pickerWrapRef = useRef<HTMLDivElement>(null);
+  const pickerButtonRef = useRef<HTMLButtonElement>(null);
+  const pickerMenuPortalRef = useRef<HTMLDivElement>(null);
   const pickerInputRef = useRef<HTMLInputElement>(null);
 
   const timeRangeTabOptions = useMemo(
@@ -507,7 +511,8 @@ export function ChartingCompareWorkspace({
   const [chartType, setChartType] = useState<ChartType>("bars");
   const unitScale: ChartingUnitScale = "auto";
   const chartHeight = CHARTING_HEIGHT_PX;
-  const chartPlotHeight = CHARTING_PLOT_HEIGHT_PX;
+  const axisRowPx = chartingAxisRowPx(periodMode);
+  const chartPlotHeight = chartingPlotHeightPx(periodMode);
 
   const seedByTicker = useMemo(() => {
     const out: Record<string, ChartingSeriesPoint[] | null> = {};
@@ -890,14 +895,15 @@ export function ChartingCompareWorkspace({
 
   useEffect(() => {
     if (!pickerOpen) return;
-    pickerInputRef.current?.focus();
+    pickerInputRef.current?.focus({ preventScroll: true });
   }, [pickerOpen]);
 
   useEffect(() => {
     if (!pickerOpen) return;
     function onDocMouseDown(e: MouseEvent) {
-      const el = pickerWrapRef.current;
-      if (!el || !(e.target instanceof Node) || el.contains(e.target)) return;
+      const t = e.target;
+      if (!(t instanceof Node)) return;
+      if (pickerWrapRef.current?.contains(t) || pickerMenuPortalRef.current?.contains(t)) return;
       setPickerOpen(false);
       setPickerQuery("");
     }
@@ -926,6 +932,7 @@ export function ChartingCompareWorkspace({
     }
 
     let cancelled = false;
+    let lastPlotWidthPx = el.clientWidth;
     let resizeObserver: ResizeObserver | null = null;
     let onVisibleRangeChange: (() => void) | null = null;
 
@@ -1333,22 +1340,23 @@ export function ChartingCompareWorkspace({
 
           resizeObserver = new ResizeObserver(() => {
             const rw = el.clientWidth;
-            if (rw > 0 && chartRef.current) chartRef.current.resize(rw, chartPlotHeight);
+            if (rw <= 0 || !chartRef.current) return;
+            if (rw === lastPlotWidthPx) return;
+            lastPlotWidthPx = rw;
+            chartRef.current.resize(rw, chartPlotHeight);
             const c = chartRef.current;
-            if (c) {
-              if (chartType === "bars") {
-                layoutChartingTimeScale(c, rw, 0);
-                applyCompareSparseHistogramVisiblePadding(
-                  c,
-                  tableColumnLabels.length,
-                  chartType,
-                  timeRange,
-                );
-              } else {
-                c.timeScale().fitContent();
-              }
-              requestAnimationFrame(syncChartOverlays);
+            if (chartType === "bars") {
+              layoutChartingTimeScale(c, rw, 0);
+              applyCompareSparseHistogramVisiblePadding(
+                c,
+                tableColumnLabels.length,
+                chartType,
+                timeRange,
+              );
+            } else {
+              c.timeScale().fitContent();
             }
+            requestAnimationFrame(syncChartOverlays);
           });
           resizeObserver.observe(el);
           chart.resize(el.clientWidth, chartPlotHeight);
@@ -1479,8 +1487,9 @@ export function ChartingCompareWorkspace({
               </div>
             ))}
 
-            <div className="relative order-2" ref={pickerWrapRef}>
+            <div className="order-2" ref={pickerWrapRef}>
               <button
+                ref={pickerButtonRef}
                 type="button"
                 onClick={() => {
                   setPickerOpen((o) => {
@@ -1493,59 +1502,61 @@ export function ChartingCompareWorkspace({
                 <Plus className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
                 Add Metric
               </button>
-              {pickerOpen && (
-                <div
-                  className={cn(
-                    dropdownMenuSurfaceClassName(),
-                    "absolute left-0 top-full z-[210] mt-1 w-[min(calc(100vw-2rem),300px)] overflow-hidden",
-                  )}
-                  role="listbox"
+              {pickerOpen ? (
+                <TopbarDropdownPortal
+                  open={pickerOpen}
+                  anchorRef={pickerButtonRef}
+                  ref={pickerMenuPortalRef}
+                  align="leading"
+                  className="w-[min(calc(100vw-2rem),300px)]"
                 >
-                  <div className={dropdownMenuSearchHeaderClassName}>
-                    <input
-                      ref={pickerInputRef}
-                      value={pickerQuery}
-                      onChange={(e) => setPickerQuery(e.target.value)}
-                      placeholder="Search metrics…"
-                      className={dropdownMenuSearchInputClassName}
-                      aria-label="Search metrics"
-                    />
-                  </div>
-                  <div
-                    className={cn(
-                      "flex max-h-[min(400px,calc(100vh-12rem))] flex-col gap-1 overflow-y-auto px-1 py-2",
-                      dropdownMenuFloatingScrollClassName,
-                    )}
-                  >
-                    {groupedAddable.map((group) => (
-                      <div key={group.id} className="pb-2 last:pb-0">
-                        <div className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wide text-[#A1A1AA]">
-                          {group.label}
+                  <div className={cn(dropdownMenuSurfaceClassName(), "overflow-hidden")} role="listbox">
+                    <div className={dropdownMenuSearchHeaderClassName}>
+                      <input
+                        ref={pickerInputRef}
+                        value={pickerQuery}
+                        onChange={(e) => setPickerQuery(e.target.value)}
+                        placeholder="Search metrics…"
+                        className={dropdownMenuSearchInputClassName}
+                        aria-label="Search metrics"
+                      />
+                    </div>
+                    <div
+                      className={cn(
+                        "flex max-h-[min(400px,calc(100vh-12rem))] flex-col gap-1 overflow-y-auto px-1 py-2",
+                        dropdownMenuFloatingScrollClassName,
+                      )}
+                    >
+                      {groupedAddable.map((group) => (
+                        <div key={group.id} className="pb-2 last:pb-0">
+                          <div className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wide text-[#A1A1AA]">
+                            {group.label}
+                          </div>
+                          <ul className="flex flex-col gap-1">
+                            {group.ids.map((mid) => (
+                              <li key={mid}>
+                                <button
+                                  type="button"
+                                  role="option"
+                                  className={dropdownMenuRichItemClassName()}
+                                  onClick={() => addMetric(mid)}
+                                >
+                                  {CHARTING_METRIC_LABEL[mid]}
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
                         </div>
-                        <ul className="flex flex-col gap-1">
-                          {group.ids.map((mid) => (
-                            <li key={mid}>
-                              <button
-                                type="button"
-                                role="option"
-                                className={dropdownMenuRichItemClassName()}
-                                onClick={() => addMetric(mid)}
-                              >
-                                {CHARTING_METRIC_LABEL[mid]}
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
+                    {totalAddable === 0 ? (
+                      <p className="px-3 py-2 text-[12px] text-[#71717A]">
+                        {qLower ? "No metrics match" : "No additional metrics for this range"}
+                      </p>
+                    ) : null}
                   </div>
-                  {totalAddable === 0 ? (
-                    <p className="px-3 py-2 text-[12px] text-[#71717A]">
-                      {qLower ? "No metrics match" : "No additional metrics for this range"}
-                    </p>
-                  ) : null}
-                </div>
-              )}
+                </TopbarDropdownPortal>
+              ) : null}
             </div>
 
             {tickers.map((t) => {
@@ -1761,21 +1772,29 @@ export function ChartingCompareWorkspace({
                   ) : null}
                 </div>
                 <div
-                  className="flex w-full min-w-0 overflow-visible pt-2"
-                  style={{ height: FUNDAMENTALS_CHART_AXIS_ROW_PX }}
+                  className={cn(
+                    "flex w-full min-w-0 overflow-visible",
+                    periodMode === "annual" ? "pt-1.5" : "pt-0",
+                  )}
+                  style={{ height: axisRowPx }}
                 >
-                  <div className="relative min-h-0 min-w-0 flex-1 overflow-visible pb-1">
+                  <div className="relative min-h-0 min-w-0 flex-1 overflow-visible">
                     {periodAxisLabels.map((lab, i) => {
                       if (!fundamentalsPeriodAxisShowsLabel(i, periodAxisLabels.length, periodMode)) {
                         return null;
                       }
+                      const axisLabelRotateDeg =
+                        periodMode === "annual" ? 0 : FUNDAMENTALS_CHART_AXIS_LABEL_ROTATE_DEG;
                       return (
                         <span
                           key={lab.key}
-                          className="absolute bottom-2 inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]"
+                          className={cn(
+                            "absolute inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]",
+                            periodMode === "annual" ? "top-1.5" : "bottom-1",
+                          )}
                           style={{
                             left: lab.leftPx,
-                            transform: `translateX(-50%) rotate(${FUNDAMENTALS_CHART_AXIS_LABEL_ROTATE_DEG}deg)`,
+                            transform: `translateX(-50%) rotate(${axisLabelRotateDeg}deg)`,
                             transformOrigin: "center bottom",
                           }}
                           title={lab.title}

@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, ChevronDown, GitMerge, Globe, Lock, Pencil, Plus } from "@/lib/icons";
+import { Check, GitMerge, Globe, Lock, Pencil, Plus } from "@/lib/icons";
+
+import {
+  ChevronsUpDownIcon,
+  type ChevronsUpDownIconHandle,
+} from "@/components/chevrons-up-down-icon";
 
 import {
   dropdownMenuCompositeRowClassName,
@@ -55,6 +60,7 @@ export function TransactionPortfolioField({
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const menuPortalRef = useRef<HTMLDivElement>(null);
+  const chevronsRef = useRef<ChevronsUpDownIconHandle>(null);
   const selected =
     portfolios.find((p) => p.id === selectedPortfolioId) ?? portfolios[0] ?? null;
   const hasPortfolio = selected != null;
@@ -76,6 +82,17 @@ export function TransactionPortfolioField({
       document.removeEventListener("keydown", onKey);
     };
   }, [open]);
+
+  useEffect(() => {
+    if (open) chevronsRef.current?.startAnimation();
+    else chevronsRef.current?.stopAnimation();
+  }, [open]);
+
+  const chevronClass = cn(
+    "shrink-0",
+    variant === "toolbar" ? "h-4 w-4 text-[#09090B]" : "h-5 w-5",
+    variant !== "titleGhost" && "text-[#09090B]",
+  );
 
   const menuPanel = (
     <>
@@ -177,13 +194,7 @@ export function TransactionPortfolioField({
             >
               {hasPortfolio ? selected.name : "No portfolio"}
             </span>
-            <ChevronDown
-              className={cn(
-                "h-5 w-5 shrink-0 text-[#09090B] transition-transform",
-                open && "rotate-180",
-              )}
-              aria-hidden
-            />
+            <ChevronsUpDownIcon ref={chevronsRef} className={chevronClass} />
           </>
         ) : variant === "toolbar" ? (
           <>
@@ -191,23 +202,10 @@ export function TransactionPortfolioField({
             <span className={cn("min-w-0 flex-1 truncate", hasPortfolio ? "text-[#09090B]" : "text-[#71717A]")}>
               {hasPortfolio ? selected.name : "No portfolio"}
             </span>
-            <ChevronDown
-              className={cn("h-4 w-4 shrink-0 text-[#09090B] transition-transform", open && "rotate-180")}
-              strokeWidth={2}
-              aria-hidden
-            />
+            <ChevronsUpDownIcon ref={chevronsRef} className={chevronClass} />
           </>
-        ) : variant === "titleGhost" ? (
-          <ChevronDown
-            className={cn("h-5 w-5 shrink-0 transition-transform", open && "rotate-180")}
-            strokeWidth={2}
-            aria-hidden
-          />
         ) : (
-          <ChevronDown
-            className={cn("h-5 w-5 shrink-0 transition-transform", open && "rotate-180")}
-            aria-hidden
-          />
+          <ChevronsUpDownIcon ref={chevronsRef} className={chevronClass} />
         )}
       </button>
       {open ? (

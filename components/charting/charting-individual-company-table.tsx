@@ -16,6 +16,7 @@ import {
   type ChartingMetricId,
   type ChartingMetricKind,
 } from "@/lib/market/stock-charting-metrics";
+import { ChartingDataTableSettingsMenu } from "@/components/charting/charting-data-table-settings-menu";
 import { fundamentalsBarSolidAtIndex } from "@/lib/colors/fundamentals-multi-bar-colors";
 import { cn } from "@/lib/utils";
 
@@ -88,6 +89,8 @@ type Props = {
   /** Matches chart legend, e.g. `RACE Revenue`. */
   ticker?: string;
   metricColors?: Map<ChartingMetricId, string>;
+  isBarValuesVisible?: (id: ChartingMetricId) => boolean;
+  onShowBarValuesChange?: (id: ChartingMetricId, next: boolean) => void;
   className?: string;
 };
 
@@ -101,6 +104,8 @@ export function ChartingIndividualCompanyTable({
   periodMode,
   ticker,
   metricColors,
+  isBarValuesVisible,
+  onShowBarValuesChange,
   className,
 }: Props) {
   if (!ordered.length || !selected.length) return null;
@@ -142,15 +147,22 @@ export function ChartingIndividualCompanyTable({
                 className="h-[60px] max-h-[60px] border-b border-[#E4E4E7] transition-colors duration-75 hover:bg-neutral-50"
               >
                 <td className="relative sticky left-0 z-[1] bg-white px-3 align-middle after:pointer-events-none after:absolute after:top-0 after:right-0 after:h-full after:w-px after:bg-[#E4E4E7]">
-                  <div className="flex min-w-0 items-center gap-2.5 py-0.5">
+                  <div className="flex min-w-0 items-center gap-2.5 py-0.5 pr-0.5">
                     <span
                       className="h-4 w-1 shrink-0 rounded-full"
                       style={{ backgroundColor: color }}
                       aria-hidden
                     />
-                    <span className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">
+                    <span className="min-w-0 flex-1 truncate text-[14px] font-semibold leading-5 text-[#09090B]">
                       {metricRowLabel(ticker, id)}
                     </span>
+                    {onShowBarValuesChange && isBarValuesVisible ? (
+                      <ChartingDataTableSettingsMenu
+                        showBarValues={isBarValuesVisible(id)}
+                        onShowBarValuesChange={(next) => onShowBarValuesChange(id, next)}
+                        metricLabel={CHARTING_METRIC_LABEL[id]}
+                      />
+                    ) : null}
                   </div>
                 </td>
                 {ordered.map((row) => {

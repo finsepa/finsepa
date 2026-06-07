@@ -24,19 +24,25 @@ export default async function ProtectedLayout({ children }: { children: ReactNod
   } = await supabase.auth.getUser();
 
   if (sessionUser && shouldSendWelcomeTrialStartEmail(sessionUser)) {
-    let user = sessionUser;
-    const admin = getSupabaseAdminClient();
-    if (admin) {
-      const { data } = await admin.auth.admin.getUserById(sessionUser.id);
-      if (data.user) user = data.user;
-    }
-    if (shouldSendWelcomeTrialStartEmail(user)) {
-      const h = await headers();
-      const result = await sendWelcomeTrialStartEmailIfNeeded(user, requestOriginFromHeaders(h));
-      if (!result.sent && result.reason === "send_failed") {
-        console.error("[welcome-trial-start]", result.message);
+    const welcomeUser = sessionUser;
+    const requestOrigin = requestOriginFromHeaders(await headers());
+    void (async () => {
+      try {
+        let user = welcomeUser;
+        const admin = getSupabaseAdminClient();
+        if (admin) {
+          const { data } = await admin.auth.admin.getUserById(welcomeUser.id);
+          if (data.user) user = data.user;
+        }
+        if (!shouldSendWelcomeTrialStartEmail(user)) return;
+        const result = await sendWelcomeTrialStartEmailIfNeeded(user, requestOrigin);
+        if (!result.sent && result.reason === "send_failed") {
+          console.error("[welcome-trial-start]", result.message);
+        }
+      } catch (err) {
+        console.error("[welcome-trial-start]", err);
       }
-    }
+    })();
   }
 
   return <ProtectedAppShell>{children}</ProtectedAppShell>;

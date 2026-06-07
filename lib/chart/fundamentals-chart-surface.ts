@@ -80,6 +80,9 @@ export const FUNDAMENTALS_CHART_SCALE_MARGIN_BOTTOM_LINE = 0.08;
 /** Space reserved above the tallest bar for `translate(-100%)` value labels. */
 export const FUNDAMENTALS_CHART_BAR_VALUE_LABEL_HEIGHT_PX = 12;
 
+/** Top-only corner radius on fundamentals bar columns (bottom stays square). */
+export const FUNDAMENTALS_BAR_TOP_RADIUS_PX = 4;
+
 export type FundamentalsChartReferenceKind = "avg" | "max" | "min";
 
 const FUNDAMENTALS_CHART_REFERENCE_BADGE_BASE_CLASS =

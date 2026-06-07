@@ -134,7 +134,7 @@ export function StockHeader({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-4">
-        <div className="flex min-w-0 items-center gap-4">
+        <div className="flex min-w-0 items-center gap-3">
           {logoSrc ? (
             // eslint-disable-next-line @next/next/no-img-element -- remote favicon with onError fallback in-browser
             <img
@@ -142,14 +142,14 @@ export function StockHeader({
               alt=""
               width={48}
               height={48}
-              className={`h-12 w-12 shrink-0 rounded-xl border border-neutral-200 bg-white object-contain shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]${symbol === "AAPL" ? " p-1.5" : ""}`}
+              className={`h-12 w-12 shrink-0 rounded-2xl border border-neutral-200 bg-white object-contain shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]${symbol === "AAPL" ? " p-1.5" : ""}`}
               onError={() => {
                 setImgFailedForKey(logoFailureKey);
                 mergeLogoMemory(symbol, null);
               }}
             />
           ) : (
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-[#E4E4E7] bg-[#F4F4F5] text-[18px] font-bold text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[#E4E4E7] bg-[#F4F4F5] text-[18px] font-bold text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
               {meta.ticker.slice(0, 1)}
             </div>
           )}

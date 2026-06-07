@@ -1,6 +1,15 @@
 "use client";
 
-import { useId, useLayoutEffect, useMemo, useRef, useState, type MouseEvent } from "react";
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type MouseEvent,
+} from "react";
 
 import type { ChartingSeriesPoint, FundamentalsSeriesMode } from "@/lib/market/charting-series-types";
 import {
@@ -17,6 +26,12 @@ import {
 import { formatBarChartDataLabel, formatChartingTableCell } from "@/components/charting/charting-individual-company-table";
 import type { FundamentalsChartDisplayOptions } from "@/lib/chart/fundamentals-chart-display-options";
 import { DEFAULT_FUNDAMENTALS_CHART_DISPLAY_OPTIONS } from "@/lib/chart/fundamentals-chart-display-options";
+import {
+  FUNDAMENTALS_BAR_VALUE_LABEL_STAGGER_MS,
+  fundamentalsBarEnterProgress,
+  fundamentalsBarStaggerDelaySec,
+  runFundamentalsBarEnterAnimation,
+} from "@/lib/chart/fundamentals-bar-enter-animation";
 import {
   buildFundamentalsYAxisDomain,
   CHARTING_LINE_HOVER_HALO_BG,
@@ -71,6 +86,12 @@ const MULTICHART_Y_AXIS_W_PX = 50;
 const MULTICHART_Y_AXIS_W_COMPACT_PX = 42;
 
 export type PeriodPlotEdgeMargin = { left: number; right: number };
+
+/** Key Stats 5Y/10Y line — pull first/last points toward plot edges (bars keep column inset). */
+const KEY_STATS_COMPACT_LINE_PERIOD_MARGINS: PeriodPlotEdgeMargin = {
+  left: 0.012,
+  right: 0.018,
+};
 
 /** Center of period `i` in `n` equal columns (`inset` = half-column fraction; 0.5 = default). */
 function periodCenterX(i: number, n: number, w: number, inset: number): number {
@@ -129,6 +150,31 @@ function resolvePeriodCenterLeftPercent(
   return margins
     ? periodCenterLeftPercentWithMargins(i, n, margins)
     : periodCenterLeftPercent(i, n, inset);
+}
+
+/** Full period column width (%) — hover band tiles between adjacent period centers. */
+function periodColumnWidthPercent(
+  i: number,
+  n: number,
+  inset: number,
+  margins?: PeriodPlotEdgeMargin,
+): number {
+  if (n <= 0) return 100;
+  if (n === 1) return margins ? (1 - margins.left - margins.right) * 100 : 100;
+
+  const center = resolvePeriodCenterLeftPercent(i, n, inset, margins);
+  const prev =
+    i > 0
+      ? resolvePeriodCenterLeftPercent(i - 1, n, inset, margins)
+      : center - (resolvePeriodCenterLeftPercent(1, n, inset, margins) - center);
+  const next =
+    i < n - 1
+      ? resolvePeriodCenterLeftPercent(i + 1, n, inset, margins)
+      : center + (center - resolvePeriodCenterLeftPercent(n - 2, n, inset, margins));
+
+  const left = i === 0 ? (margins ? margins.left * 100 : 0) : (prev + center) / 2;
+  const right = i === n - 1 ? (margins ? 100 - margins.right * 100 : 100) : (center + next) / 2;
+  return Math.max(0, right - left);
 }
 
 /** Insets (% of plot height): top breathing room; bottom gap above x-axis labels. */
@@ -248,6 +294,10 @@ type Props = {
   periodPlotMargins?: PeriodPlotEdgeMargin;
   /** Avg / max / min guides and bar value labels. */
   displayOptions?: FundamentalsChartDisplayOptions;
+  /** Grow bars / reveal line from left on appear (Key Stats metric modal). */
+  animateBarsOnAppear?: boolean;
+  /** Level period labels (e.g. Key Stats annual 10Y) instead of the default slant. */
+  horizontalPeriodAxisLabels?: boolean;
 };
 
 function plotValueTopPercent(
@@ -307,15 +357,20 @@ function FundamentalsReferenceLine({
 }
 
 /** Matches Charting workspace bar value labels ({@link charting-workspace.tsx}). */
-const BAR_VALUE_LABEL_CLASS =
-  "pointer-events-none absolute z-[15] max-w-[5.5rem] truncate text-center text-[11px] font-semibold leading-none tabular-nums text-[#09090B]";
+const BAR_VALUE_LABEL_ANCHOR_CLASS =
+  "pointer-events-none absolute z-[15] max-w-[5.5rem] -translate-x-1/2 text-center";
+
+const BAR_VALUE_LABEL_TEXT_CLASS =
+  "block truncate text-[11px] font-semibold leading-none tabular-nums text-[#09090B]";
 
 const BAR_VALUE_LABEL_TEXT_SHADOW =
   "0 0 3px rgba(255,255,255,0.95), 0 1px 2px rgba(255,255,255,0.8)";
 
 function barValueLabelTopStyle(hPct: number): string {
   const innerFrac = 1 - PLOT_INSET_TOP_FRAC - PLOT_INSET_BOTTOM_FRAC;
-  const barTopFrac = PLOT_INSET_TOP_FRAC + innerFrac * (1 - Math.min(100, Math.max(0, hPct)) / 100);
+  // `hPct` is {@link valueToPlotBandTopPercent}: 0% = band top, 100% = band bottom — same as bar `top`.
+  const barTopFrac =
+    PLOT_INSET_TOP_FRAC + innerFrac * (Math.min(100, Math.max(0, hPct)) / 100);
   const minTopPx = FUNDAMENTALS_CHART_BAR_VALUE_LABEL_HEIGHT_PX + 4;
   return `max(${minTopPx}px, calc(${barTopFrac * 100}% - 4px))`;
 }
@@ -374,6 +429,8 @@ export function MultichartFundamentalsBar({
   periodCenterInset = 0.5,
   periodPlotMargins,
   displayOptions: displayOptionsProp,
+  animateBarsOnAppear = false,
+  horizontalPeriodAxisLabels = false,
 }: Props) {
   const display = displayOptionsProp ?? DEFAULT_FUNDAMENTALS_CHART_DISPLAY_OPTIONS;
   const tightYAxis = compactHorizontalLayout || periodPlotMargins != null;
@@ -384,9 +441,6 @@ export function MultichartFundamentalsBar({
       ? "pl-1.5"
       : "pl-3";
   const yAxisLabelPadClass = compactHorizontalLayout ? "px-0.5" : "px-1";
-  const barHoverPadPx =
-    barWidthPx <= MULTICHART_BAR_WIDTH_ALL_QUARTERLY_PX ? 3 : 6;
-  const barHitWidthPx = barWidthPx + barHoverPadPx * 2;
   const wrapRef = useRef<HTMLDivElement>(null);
   const plotAreaRef = useRef<HTMLDivElement>(null);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
@@ -441,6 +495,14 @@ export function MultichartFundamentalsBar({
   const linePlotRef = useRef<HTMLDivElement>(null);
   const [linePlotPx, setLinePlotPx] = useState({ w: 0, h: 0 });
   const lineAreaGradientId = useId();
+  const lineEnterClipId = useId();
+
+  const linePeriodPlotMargins = useMemo(
+    (): PeriodPlotEdgeMargin | undefined =>
+      periodPlotMargins ??
+      (visual === "line" && compactHorizontalLayout ? KEY_STATS_COMPACT_LINE_PERIOD_MARGINS : undefined),
+    [periodPlotMargins, visual, compactHorizontalLayout],
+  );
   const lineAreaGradientTop = fundamentalsBarColorAtIndex(0, LINE_AREA_GRADIENT_TOP_OPACITY);
   const lineAreaGradientBottom = fundamentalsBarColorAtIndex(0, LINE_AREA_GRADIENT_BOTTOM_OPACITY);
 
@@ -478,7 +540,7 @@ export function MultichartFundamentalsBar({
     const areaFloorY = h;
     // Match bar x-axis grid: each period label is centered in 1/n of the plot width.
     const pts = values.map((v, i) => {
-      const x = resolvePeriodCenterX(i, n, w, periodCenterInset, periodPlotMargins);
+      const x = resolvePeriodCenterX(i, n, w, periodCenterInset, linePeriodPlotMargins);
       const bandTop = valueToPlotBandTopPercent(v, yMin, yMax);
       const y = padT + innerH * (bandTop / 100);
       return { x, y, v, i };
@@ -487,7 +549,41 @@ export function MultichartFundamentalsBar({
     const d = smoothLinePathD(curvePts);
     const areaD = smoothAreaPathD(curvePts, areaFloorY);
     return { d, areaD, gradY0: padT, gradY1: areaFloorY, pts };
-  }, [linePlotPx.h, linePlotPx.w, values, yMin, yMax, periodCenterInset, periodPlotMargins]);
+  }, [linePlotPx.h, linePlotPx.w, values, yMin, yMax, periodCenterInset, linePeriodPlotMargins]);
+
+  const n = values.length;
+  const shouldAnimateBars = animateBarsOnAppear && visual === "bar" && n > 0;
+  const shouldAnimateLine = animateBarsOnAppear && visual === "line" && n > 0;
+  const [barValueLabelsVisible, setBarValueLabelsVisible] = useState(!shouldAnimateBars);
+  const [lineRevealProgress, setLineRevealProgress] = useState(shouldAnimateLine ? 0 : 1);
+
+  useEffect(() => {
+    if (!shouldAnimateBars) {
+      setBarValueLabelsVisible(true);
+      return;
+    }
+    setBarValueLabelsVisible(false);
+    return runFundamentalsBarEnterAnimation({
+      periodCount: n,
+      onFrame: () => {},
+      onComplete: () => setBarValueLabelsVisible(true),
+    });
+  }, [shouldAnimateBars, n, metricId, periodMode, visual, maxBars, points]);
+
+  useEffect(() => {
+    if (!shouldAnimateLine || linePlotPx.w <= 0) {
+      setLineRevealProgress(1);
+      return;
+    }
+    setLineRevealProgress(0);
+    return runFundamentalsBarEnterAnimation({
+      periodCount: 1,
+      onFrame: (elapsedMs) => {
+        setLineRevealProgress(fundamentalsBarEnterProgress(0, 1, elapsedMs));
+      },
+      onComplete: () => setLineRevealProgress(1),
+    });
+  }, [shouldAnimateLine, n, metricId, periodMode, visual, maxBars, points, linePlotPx.w]);
 
   if (rows.length === 0 || values.length === 0) {
     return (
@@ -502,7 +598,7 @@ export function MultichartFundamentalsBar({
     );
   }
 
-  const n = values.length;
+  const barStaggerDelaySec = fundamentalsBarStaggerDelaySec(n);
 
   const clearChartHover = () => {
     setHoveredIndex(null);
@@ -602,28 +698,45 @@ export function MultichartFundamentalsBar({
                         <stop offset="0" stopColor={lineAreaGradientTop} />
                         <stop offset="1" stopColor={lineAreaGradientBottom} />
                       </linearGradient>
+                      {shouldAnimateLine && lineRevealProgress < 1 ? (
+                        <clipPath id={lineEnterClipId}>
+                          <rect
+                            x={0}
+                            y={0}
+                            width={Math.max(0, linePlotPx.w * lineRevealProgress)}
+                            height={linePlotPx.h}
+                          />
+                        </clipPath>
+                      ) : null}
                     </defs>
-                    {lineSvg.areaD ? (
-                      <path d={lineSvg.areaD} fill={`url(#${lineAreaGradientId})`} />
-                    ) : null}
-                    <path
-                      d={lineSvg.d}
-                      fill="none"
-                      stroke={seriesBarColor}
-                      strokeWidth={MULTICHART_LINE_STROKE_WIDTH_PX}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    {hoveredIndex != null && lineSvg.pts[hoveredIndex] ? (
-                      <circle
-                        cx={lineSvg.pts[hoveredIndex]!.x}
-                        cy={lineSvg.pts[hoveredIndex]!.y}
-                        r={HOVER_DOT_HALO_RADIUS_PX}
-                        fill={CHARTING_LINE_HOVER_HALO_BG}
-                        className="pointer-events-none"
+                    <g
+                      clipPath={
+                        shouldAnimateLine && lineRevealProgress < 1
+                          ? `url(#${lineEnterClipId})`
+                          : undefined
+                      }
+                    >
+                      {lineSvg.areaD ? (
+                        <path d={lineSvg.areaD} fill={`url(#${lineAreaGradientId})`} />
+                      ) : null}
+                      <path
+                        d={lineSvg.d}
+                        fill="none"
+                        stroke={seriesBarColor}
+                        strokeWidth={MULTICHART_LINE_STROKE_WIDTH_PX}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
                       />
-                    ) : null}
-                    {lineSvg.pts.map(({ x, y, v, i }) => {
+                      {hoveredIndex != null && lineSvg.pts[hoveredIndex] ? (
+                        <circle
+                          cx={lineSvg.pts[hoveredIndex]!.x}
+                          cy={lineSvg.pts[hoveredIndex]!.y}
+                          r={HOVER_DOT_HALO_RADIUS_PX}
+                          fill={CHARTING_LINE_HOVER_HALO_BG}
+                          className="pointer-events-none"
+                        />
+                      ) : null}
+                      {lineSvg.pts.map(({ x, y, v, i }) => {
                       const ptColor = seriesBarColor;
                       return (
                         <g key={`pt-${labels[i]}-${i}`}>
@@ -684,6 +797,7 @@ export function MultichartFundamentalsBar({
                         </g>
                       );
                     })}
+                    </g>
                   </svg>
                 ) : null}
               </div>
@@ -711,11 +825,17 @@ export function MultichartFundamentalsBar({
                     periodCenterInset,
                     periodPlotMargins,
                   );
+                  const columnWidthPct = periodColumnWidthPercent(
+                    i,
+                    n,
+                    periodCenterInset,
+                    periodPlotMargins,
+                  );
                   return (
                     <div
                       key={`${labels[i]}-${i}`}
                       className="absolute top-0 z-0 h-full min-h-0 -translate-x-1/2"
-                      style={{ left: `${leftPct}%`, width: barHitWidthPx }}
+                      style={{ left: `${leftPct}%`, width: `${columnWidthPct}%` }}
                       onMouseEnter={(e) => {
                         const plot = plotAreaRef.current;
                         if (!plot) return;
@@ -747,26 +867,35 @@ export function MultichartFundamentalsBar({
                     >
                       {hoveredIndex === i ? (
                         <div
-                          className="pointer-events-none absolute left-1/2 top-0 z-0 h-full -translate-x-1/2"
-                          style={{
-                            width: barHitWidthPx,
-                            backgroundColor: FUNDAMENTALS_CHART_HOVER_BAND_BG,
-                          }}
+                          className="pointer-events-none absolute inset-x-0 top-0 z-0 h-full"
+                          style={{ backgroundColor: FUNDAMENTALS_CHART_HOVER_BAND_BG }}
                           aria-hidden
                         />
                       ) : null}
                       {barHeightPct > 0 ? (
                         <div
                           className={cn(
-                            "absolute left-1/2 z-10 -translate-x-1/2 transition-[height,top] duration-75",
-                            v >= 0 ? "rounded-t-[2px] rounded-b-none" : "rounded-b-[2px] rounded-t-none",
+                            "absolute left-1/2 z-10 -translate-x-1/2",
+                            v >= 0 ? "rounded-t-[4px] rounded-b-none" : "rounded-b-[4px] rounded-t-none",
+                            shouldAnimateBars
+                              ? "fundamentals-bar-grow-in"
+                              : "transition-[height,top] duration-75",
                           )}
                           style={{
-                            top: `${barTopPct}%`,
+                            ...(shouldAnimateBars
+                              ? ({
+                                  ["--bar-grow-origin-top"]: `${zeroTop}%`,
+                                  ["--bar-target-height"]: `${barHeightPct}%`,
+                                  ["--bar-target-top"]: `${barTopPct}%`,
+                                  animationDelay: `${i * barStaggerDelaySec}s`,
+                                } as CSSProperties)
+                              : {
+                                  top: `${barTopPct}%`,
+                                  height: `${barHeightPct}%`,
+                                  minHeight: 2,
+                                }),
                             width: barWidthPx,
                             maxWidth: "100%",
-                            height: `${barHeightPct}%`,
-                            minHeight: 2,
                             backgroundColor: barColor,
                           }}
                         />
@@ -777,7 +906,7 @@ export function MultichartFundamentalsBar({
               </div>
             )}
 
-            {display.showBarValues && visual === "bar"
+            {display.showBarValues && visual === "bar" && barValueLabelsVisible
               ? values.map((v, i) => {
                   if (v == null || !Number.isFinite(v) || v === 0) return null;
                   const zeroTop = valueToPlotBandTopPercent(0, yMin, yMax);
@@ -796,16 +925,30 @@ export function MultichartFundamentalsBar({
                   return (
                     <div
                       key={`bar-val-${labels[i]}-${i}`}
-                      className={BAR_VALUE_LABEL_CLASS}
+                      className={cn(
+                        BAR_VALUE_LABEL_ANCHOR_CLASS,
+                        labelOnPositive ? "-translate-y-full" : "",
+                      )}
                       style={{
                         left: `${leftPct}%`,
                         top: labelTop,
-                        transform: labelOnPositive ? "translate(-50%, -100%)" : "translate(-50%, 0)",
-                        textShadow: BAR_VALUE_LABEL_TEXT_SHADOW,
                       }}
                       title={text}
                     >
-                      {text}
+                      <span
+                        className={cn(
+                          BAR_VALUE_LABEL_TEXT_CLASS,
+                          shouldAnimateBars && "fundamentals-bar-value-label-in",
+                        )}
+                        style={{
+                          animationDelay: shouldAnimateBars
+                            ? `${i * FUNDAMENTALS_BAR_VALUE_LABEL_STAGGER_MS}ms`
+                            : undefined,
+                          textShadow: BAR_VALUE_LABEL_TEXT_SHADOW,
+                        }}
+                      >
+                        {text}
+                      </span>
                     </div>
                   );
                 })
@@ -886,20 +1029,24 @@ export function MultichartFundamentalsBar({
                 i,
                 n,
                 periodCenterInset,
-                periodPlotMargins,
+                visual === "line" ? linePeriodPlotMargins : periodPlotMargins,
               );
+              const axisLabelRotateDeg = horizontalPeriodAxisLabels ? 0 : AXIS_LABEL_ROTATE_DEG;
               return (
                 <div
                   key={`${labels[i]}-${i}`}
-                  className="absolute bottom-0.5 flex max-w-[min(100%,4.5rem)] -translate-x-1/2 justify-center overflow-visible"
+                  className={cn(
+                    "absolute flex max-w-[min(100%,4.5rem)] -translate-x-1/2 justify-center overflow-visible",
+                    horizontalPeriodAxisLabels ? "top-1.5" : "bottom-0.5",
+                  )}
                   style={{ left: `${leftPct}%` }}
                   title={labels[i]}
                 >
                   <span
                     className="inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]"
                     style={{
-                      transform: `rotate(${AXIS_LABEL_ROTATE_DEG}deg)`,
-                      transformOrigin: "center bottom",
+                      transform: axisLabelRotateDeg === 0 ? undefined : `rotate(${axisLabelRotateDeg}deg)`,
+                      transformOrigin: horizontalPeriodAxisLabels ? undefined : "center bottom",
                     }}
                   >
                     {axisLab}

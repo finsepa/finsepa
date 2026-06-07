@@ -45,6 +45,7 @@ import {
   formatChartingTableCell,
 } from "@/components/charting/charting-individual-company-table";
 import { DataFetchTopLoader } from "@/components/layout/data-fetch-top-loader";
+import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
 import { ChartLoadingIndicator } from "@/components/ui/chart-loading-indicator";
 import { ChartingVisualSwitcher } from "@/components/stock/multichart-visual-switcher";
 import { secondaryFillButtonClassName, TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
@@ -72,7 +73,6 @@ import {
   computeFundamentalsChartTooltipPlacement,
   formatFundamentalsAxisTickLabel,
   FUNDAMENTALS_CHART_AXIS_LABEL_ROTATE_DEG,
-  FUNDAMENTALS_CHART_AXIS_ROW_PX,
   FUNDAMENTALS_CHART_HOVER_BAND_BG,
   FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER,
   FUNDAMENTALS_CHART_SCALE_MARGIN_BOTTOM_BARS,
@@ -84,6 +84,16 @@ import {
   FUNDAMENTALS_CHART_Y_AXIS_W_PX,
   HIDE_NATIVE_Y_AXIS_TICK_LABELS,
 } from "@/lib/chart/fundamentals-chart-surface";
+import {
+  FUNDAMENTALS_BAR_VALUE_LABEL_STAGGER_MS,
+  prefersReducedFundamentalsBarMotion,
+  runFundamentalsBarEnterAnimation,
+  scaleBarPointsForEnter,
+} from "@/lib/chart/fundamentals-bar-enter-animation";
+import {
+  FundamentalsRoundedBarsPrimitive,
+  type FundamentalsRoundedBarItem,
+} from "@/lib/chart/fundamentals-rounded-bar-primitive";
 import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
 import { fetchChartingFundamentalsSeriesCached } from "@/lib/charting/charting-fundamentals-client-cache";
 
@@ -224,10 +234,12 @@ type LineEndBadge = {
 /** Value label centered above a histogram bar. */
 type BarValueLabel = {
   key: string;
+  metricId: ChartingMetricId;
   leftPx: number;
   topPx: number;
   text: string;
   color: string;
+  periodIndex: number;
 };
 
 /** Hollow dot on a line series (white fill, series-color stroke). */
@@ -346,6 +358,7 @@ function computePeriodAxisLabelsLayout(
   chartType: ChartType,
   selected: ChartingMetricId[],
   barBaseTimeByPeriodEnd: Map<string, number> | null,
+  stockFullWidthFixedBars: boolean,
 ): PeriodAxisLabel[] {
   if (!ordered.length) return [];
   const ts = chart.timeScale();
@@ -354,16 +367,24 @@ function computePeriodAxisLabelsLayout(
 
   for (let i = 0; i < ordered.length; i++) {
     const row = ordered[i]!;
-    let timeSec: number | null = null;
+    let x: number | null = null;
     if (chartType === "bars" && barBaseTimeByPeriodEnd) {
-      timeSec = chartingPeriodCenterTimeSec(i, ordered, seriesOrder, barBaseTimeByPeriodEnd);
+      x = chartingPeriodCenterXPx(
+        chart,
+        i,
+        ordered,
+        seriesOrder,
+        barBaseTimeByPeriodEnd,
+        stockFullWidthFixedBars,
+      );
     } else {
       const ms = Date.parse(row.periodEnd.includes("T") ? row.periodEnd : `${row.periodEnd}T12:00:00.000Z`);
-      if (Number.isFinite(ms)) timeSec = Math.floor(ms / 1000);
+      if (Number.isFinite(ms)) {
+        const coord = ts.timeToCoordinate(Math.floor(ms / 1000) as UTCTimestamp);
+        if (coord != null && Number.isFinite(coord)) x = coord;
+      }
     }
-    if (timeSec == null) continue;
-    const x = ts.timeToCoordinate(timeSec as UTCTimestamp);
-    if (x == null || !Number.isFinite(x)) continue;
+    if (x == null) continue;
     labels.push({
       key: row.periodEnd,
       leftPx: x,
@@ -380,6 +401,7 @@ function computeBarValueLabelsLayout(
   ordered: ChartingSeriesPoint[],
   selected: ChartingMetricId[],
   barBaseTimeByPeriodEnd: Map<string, number> | null,
+  stockFullWidthFixedBars: boolean,
 ): BarValueLabel[] {
   if (!ordered.length || !selected.length) return [];
   const seriesOrder = barMetricOrder(selected);
@@ -391,9 +413,11 @@ function computeBarValueLabelsLayout(
     const series = seriesByMetric.get(id);
     if (!series) continue;
     const kind = CHARTING_METRIC_KIND[id];
-    const shiftSec = selected.length > 1 ? groupedBarShiftSeconds(id, seriesOrder) : 0;
+    const shiftSec =
+      selected.length > 1 ? groupedBarShiftSeconds(id, seriesOrder, stockFullWidthFixedBars) : 0;
 
-    for (const row of ordered) {
+    for (let periodIndex = 0; periodIndex < ordered.length; periodIndex++) {
+      const row = ordered[periodIndex]!;
       const v = rowValue(row, id);
       if (v == null || !Number.isFinite(v) || v === 0) continue;
 
@@ -418,10 +442,12 @@ function computeBarValueLabelsLayout(
         FUNDAMENTALS_CHART_BAR_VALUE_LABEL_HEIGHT_PX + 4;
       labels.push({
         key: `${id}-${row.periodEnd}`,
+        metricId: id,
         leftPx: x,
         topPx: Math.max(labelAnchorMin, barTop - 4),
         text: formatBarChartDataLabel(id, v),
         color: fundamentalsBarSolidAtIndex(ci),
+        periodIndex,
       });
     }
   }
@@ -527,16 +553,110 @@ function chartingBarPointFillColor(
 
 function chartingBarPointsToHistogramData(
   points: ChartingBarSeriesPoint[],
-  colorIdx: number,
-  hoveredPeriodIndex: number | null,
+  _colorIdx: number,
+  _hoveredPeriodIndex: number | null,
 ) {
   return points.map((p) => ({
     time: p.time,
     value: p.value,
-    color: isTransparentChartingBarPoint(p)
-      ? CHARTING_BAR_TRANSPARENT
-      : chartingBarPointFillColor(colorIdx, p.periodIndex, hoveredPeriodIndex),
+    color: CHARTING_BAR_TRANSPARENT,
   }));
+}
+
+function chartingHistogramBarWidthPx(chart: IChartApi, denseQuarterly = false): number {
+  const barSpacing = chart.timeScale().options().barSpacing;
+  if (denseQuarterly) {
+    return Math.max(5, Math.floor(barSpacing * 0.84));
+  }
+  return Math.max(1, Math.round(barSpacing) - (barSpacing > 4 ? 1 : 0));
+}
+
+const CHARTING_GROUPED_BAR_GAP_PX = 3;
+
+/** Grouped bars: width from center spacing so a visible gutter remains between columns. */
+function chartingGroupedHistogramBarWidthPx(
+  chart: IChartApi,
+  ordered: ChartingSeriesPoint[],
+  seriesOrder: ChartingMetricId[],
+  barBaseTimeByPeriodEnd: Map<string, number> | null,
+  stockFullWidthFixedBars: boolean,
+  denseQuarterly = false,
+): number {
+  const soloWidth = chartingHistogramBarWidthPx(chart, denseQuarterly);
+  if (!barBaseTimeByPeriodEnd || seriesOrder.length <= 1) return soloWidth;
+
+  const ts = chart.timeScale();
+  let minNeighborDist = Infinity;
+
+  for (const row of ordered) {
+    const base = barBaseTimeByPeriodEnd.get(row.periodEnd);
+    if (base == null) continue;
+    const xs: number[] = [];
+    for (const id of seriesOrder) {
+      const v = rowValue(row, id);
+      if (v == null || !Number.isFinite(v)) continue;
+      const coord = ts.timeToCoordinate(
+        (base + groupedBarShiftSeconds(id, seriesOrder, stockFullWidthFixedBars)) as UTCTimestamp,
+      );
+      if (coord != null && Number.isFinite(coord)) xs.push(coord);
+    }
+    if (xs.length < 2) continue;
+    xs.sort((a, b) => a - b);
+    for (let i = 1; i < xs.length; i++) {
+      const d = xs[i]! - xs[i - 1]!;
+      if (d > 0) minNeighborDist = Math.min(minNeighborDist, d);
+    }
+  }
+
+  if (!Number.isFinite(minNeighborDist)) return soloWidth;
+  return Math.max(4, Math.floor(minNeighborDist - CHARTING_GROUPED_BAR_GAP_PX));
+}
+
+function computeRoundedBarDrawLayout(
+  chart: IChartApi,
+  seriesByMetric: Map<ChartingMetricId, ISeriesApi<"Line"> | ISeriesApi<"Histogram">>,
+  displayedByMetric: Map<ChartingMetricId, ChartingBarSeriesPoint[]>,
+  colorIdxByMetric: Map<ChartingMetricId, number>,
+  hoveredPeriodIndex: number | null,
+): FundamentalsRoundedBarItem[] {
+  const ts = chart.timeScale();
+  const items: FundamentalsRoundedBarItem[] = [];
+
+  for (const [metricId, points] of displayedByMetric) {
+    const series = seriesByMetric.get(metricId);
+    if (!series) continue;
+    const colorIdx = colorIdxByMetric.get(metricId) ?? 0;
+
+    for (const p of points) {
+      if (isTransparentChartingBarPoint(p)) continue;
+      const x = ts.timeToCoordinate(p.time);
+      const yVal = series.priceToCoordinate(p.value);
+      const yZero = series.priceToCoordinate(0);
+      if (
+        x == null ||
+        yVal == null ||
+        yZero == null ||
+        !Number.isFinite(x) ||
+        !Number.isFinite(yVal) ||
+        !Number.isFinite(yZero)
+      ) {
+        continue;
+      }
+
+      const top = Math.min(yVal, yZero);
+      const bottom = Math.max(yVal, yZero);
+      if (bottom - top <= 0) continue;
+
+      items.push({
+        centerX: x,
+        top,
+        bottom,
+        color: chartingBarPointFillColor(colorIdx, p.periodIndex, hoveredPeriodIndex),
+      });
+    }
+  }
+
+  return items;
 }
 
 function seriesData(
@@ -591,16 +711,43 @@ function seriesDataBarsWithGapSlots(
 
 const CHARTING_STOCK_INTER_GROUP_GAP_SLOTS = 3;
 
+function chartingIsDenseQuarterlyStockBars(
+  stockFullWidthFixedBars: boolean,
+  periodMode: "annual" | "quarterly",
+  timeRange: ChartTimeRange,
+  periodCount: number,
+): boolean {
+  return (
+    stockFullWidthFixedBars &&
+    periodMode === "quarterly" &&
+    (timeRange === "10Y" || periodCount >= 36)
+  );
+}
+
+function chartingStockInterGroupGapSlots(
+  stockFullWidthFixedBars: boolean,
+  periodMode: "annual" | "quarterly",
+  timeRange: ChartTimeRange,
+  periodCount: number,
+): number {
+  if (!stockFullWidthFixedBars) return CHARTING_STOCK_INTER_GROUP_GAP_SLOTS;
+  if (periodMode !== "quarterly") return CHARTING_STOCK_INTER_GROUP_GAP_SLOTS;
+  if (timeRange === "10Y" || periodCount >= 36) return 1;
+  if (timeRange === "5Y" || periodCount >= 18) return 2;
+  return CHARTING_STOCK_INTER_GROUP_GAP_SLOTS;
+}
+
 function chartingPeriodBarTimesSec(
   base: number,
   row: ChartingSeriesPoint,
   ids: ChartingMetricId[],
+  stockFullWidthFixedBars: boolean,
 ): number[] {
   const times: number[] = [];
   for (const metricId of ids) {
     const v = rowValue(row, metricId);
     if (v == null || !Number.isFinite(v)) continue;
-    times.push(base + groupedBarShiftSeconds(metricId, ids));
+    times.push(base + groupedBarShiftSeconds(metricId, ids, stockFullWidthFixedBars));
   }
   return times;
 }
@@ -612,6 +759,7 @@ function seriesDataBarsStockFullWidth(
   baseTimeByPeriodEnd: Map<string, number>,
   shiftSeconds: number,
   seriesOrder: ChartingMetricId[],
+  interGroupGapSlots = CHARTING_STOCK_INTER_GROUP_GAP_SLOTS,
 ): ChartingBarSeriesPoint[] {
   const out: ChartingBarSeriesPoint[] = [];
 
@@ -632,8 +780,8 @@ function seriesDataBarsStockFullWidth(
     const baseNext = baseTimeByPeriodEnd.get(next.periodEnd);
     if (baseNext == null) continue;
 
-    const curTimes = chartingPeriodBarTimesSec(base, row, seriesOrder);
-    const nextTimes = chartingPeriodBarTimesSec(baseNext, next, seriesOrder);
+    const curTimes = chartingPeriodBarTimesSec(base, row, seriesOrder, true);
+    const nextTimes = chartingPeriodBarTimesSec(baseNext, next, seriesOrder, true);
     if (!curTimes.length || !nextTimes.length) continue;
 
     const groupEnd = Math.max(...curTimes);
@@ -642,9 +790,9 @@ function seriesDataBarsStockFullWidth(
       continue;
     }
     const span = nextGroupStart - groupEnd;
-    for (let g = 0; g < CHARTING_STOCK_INTER_GROUP_GAP_SLOTS; g++) {
+    for (let g = 0; g < interGroupGapSlots; g++) {
       out.push({
-        time: (groupEnd + ((g + 1) / (CHARTING_STOCK_INTER_GROUP_GAP_SLOTS + 1)) * span) as UTCTimestamp,
+        time: (groupEnd + ((g + 1) / (interGroupGapSlots + 1)) * span) as UTCTimestamp,
         value: 0,
         color: CHARTING_BAR_TRANSPARENT,
         periodIndex: -1,
@@ -655,6 +803,7 @@ function seriesDataBarsStockFullWidth(
   return out;
 }
 
+/** Period column anchor in time — grouped bar shifts are symmetric around `base`. */
 function chartingPeriodCenterTimeSec(
   periodIndex: number,
   ordered: ChartingSeriesPoint[],
@@ -665,13 +814,96 @@ function chartingPeriodCenterTimeSec(
   if (!row) return null;
   const base = baseTimeByPeriodEnd.get(row.periodEnd);
   if (base == null) return null;
-  if (seriesOrder.length <= 1) return base;
-  const centerId = seriesOrder[Math.floor((seriesOrder.length - 1) / 2)]!;
-  return base + groupedBarShiftSeconds(centerId, seriesOrder);
+  return base;
+}
+
+/** Pixel center of a period column — average of visible grouped bar x coords. */
+function chartingPeriodCenterXPx(
+  chart: IChartApi,
+  periodIndex: number,
+  ordered: ChartingSeriesPoint[],
+  seriesOrder: ChartingMetricId[],
+  baseTimeByPeriodEnd: Map<string, number>,
+  stockFullWidthFixedBars: boolean,
+): number | null {
+  const row = ordered[periodIndex];
+  if (!row) return null;
+  const base = baseTimeByPeriodEnd.get(row.periodEnd);
+  if (base == null) return null;
+  const ts = chart.timeScale();
+  const xs: number[] = [];
+  for (const id of seriesOrder) {
+    const v = rowValue(row, id);
+    if (v == null || !Number.isFinite(v)) continue;
+    const coord = ts.timeToCoordinate(
+      (base + groupedBarShiftSeconds(id, seriesOrder, stockFullWidthFixedBars)) as UTCTimestamp,
+    );
+    if (coord != null && Number.isFinite(coord)) xs.push(coord);
+  }
+  if (xs.length === 0) {
+    const centerTime = chartingPeriodCenterTimeSec(periodIndex, ordered, seriesOrder, baseTimeByPeriodEnd);
+    if (centerTime == null) return null;
+    const fallback = ts.timeToCoordinate(centerTime as UTCTimestamp);
+    return fallback != null && Number.isFinite(fallback) ? fallback : null;
+  }
+  return xs.reduce((sum, x) => sum + x, 0) / xs.length;
 }
 
 /** Extra px beyond bar half-width on non–full-width bar layouts. */
 const CHARTING_HOVER_BAND_EXTRA_PX = 10;
+
+/** Equal-width period columns that tile between adjacent year centers (Multicharts parity). */
+function chartingPeriodColumnBoundsPx(
+  chart: IChartApi,
+  periodIndex: number,
+  ordered: ChartingSeriesPoint[],
+  seriesOrder: ChartingMetricId[],
+  baseTimeByPeriodEnd: Map<string, number>,
+  stockFullWidthFixedBars: boolean,
+): { x0: number; x1: number } | null {
+  const ts = chart.timeScale();
+  const centerXs: number[] = [];
+
+  for (let i = 0; i < ordered.length; i++) {
+    const centerX = chartingPeriodCenterXPx(
+      chart,
+      i,
+      ordered,
+      seriesOrder,
+      baseTimeByPeriodEnd,
+      stockFullWidthFixedBars,
+    );
+    if (centerX == null) continue;
+    centerXs.push(centerX);
+  }
+
+  if (centerXs.length === 0 || periodIndex < 0 || periodIndex >= centerXs.length) return null;
+
+  const n = centerXs.length;
+  const centerX = centerXs[periodIndex]!;
+  const plotW = ts.width();
+  const spacing =
+    n > 1
+      ? (centerXs[n - 1]! - centerXs[0]!) / (n - 1)
+      : chartingEqualPeriodColumnHalfPx(plotW > 0 ? plotW : 1, 1) * 2;
+
+  if (periodIndex === 0) {
+    return {
+      x0: centerX - spacing / 2,
+      x1: n > 1 ? (centerX + centerXs[1]!) / 2 : centerX + spacing / 2,
+    };
+  }
+  if (periodIndex === n - 1) {
+    return {
+      x0: (centerXs[periodIndex - 1]! + centerX) / 2,
+      x1: centerX + spacing / 2,
+    };
+  }
+  return {
+    x0: (centerXs[periodIndex - 1]! + centerX) / 2,
+    x1: (centerX + centerXs[periodIndex + 1]!) / 2,
+  };
+}
 
 /** Hover band: bar span, or full period column (stock tab — matches year label width). */
 function chartingPeriodBarHighlightRange(
@@ -680,6 +912,7 @@ function chartingPeriodBarHighlightRange(
   ordered: ChartingSeriesPoint[],
   seriesOrder: ChartingMetricId[],
   baseTimeByPeriodEnd: Map<string, number>,
+  stockFullWidthFixedBars: boolean,
   spanMode: "bars" | "periodColumn" = "bars",
 ): { x0: number; x1: number } | null {
   const ts = chart.timeScale();
@@ -693,7 +926,9 @@ function chartingPeriodBarHighlightRange(
   for (const id of seriesOrder) {
     const v = rowValue(row, id);
     if (v == null || !Number.isFinite(v)) continue;
-    const coord = ts.timeToCoordinate((base + groupedBarShiftSeconds(id, seriesOrder)) as UTCTimestamp);
+    const coord = ts.timeToCoordinate(
+      (base + groupedBarShiftSeconds(id, seriesOrder, stockFullWidthFixedBars)) as UTCTimestamp,
+    );
     if (coord != null && Number.isFinite(coord)) xs.push(coord);
   }
 
@@ -714,27 +949,16 @@ function chartingPeriodBarHighlightRange(
   }
 
   if (spanMode === "periodColumn") {
-    const centerTime = chartingPeriodCenterTimeSec(periodIndex, ordered, seriesOrder, baseTimeByPeriodEnd);
-    if (centerTime == null) return { x0, x1 };
-    const centerX = ts.timeToCoordinate(centerTime as UTCTimestamp);
-    if (centerX == null || !Number.isFinite(centerX)) return { x0, x1 };
-
-    if (periodIndex > 0) {
-      const prevTime = chartingPeriodCenterTimeSec(periodIndex - 1, ordered, seriesOrder, baseTimeByPeriodEnd);
-      const prevX = prevTime != null ? ts.timeToCoordinate(prevTime as UTCTimestamp) : null;
-      if (prevX != null && Number.isFinite(prevX)) {
-        x0 = (prevX + centerX) / 2;
-      }
-    }
-    if (periodIndex < ordered.length - 1) {
-      const nextTime = chartingPeriodCenterTimeSec(periodIndex + 1, ordered, seriesOrder, baseTimeByPeriodEnd);
-      const nextX = nextTime != null ? ts.timeToCoordinate(nextTime as UTCTimestamp) : null;
-      if (nextX != null && Number.isFinite(nextX)) {
-        x1 = (centerX + nextX) / 2;
-      }
-    }
-    const colHalf = Math.max(x1 - centerX, centerX - x0, half * 2);
-    return { x0: centerX - colHalf, x1: centerX + colHalf };
+    return (
+      chartingPeriodColumnBoundsPx(
+        chart,
+        periodIndex,
+        ordered,
+        seriesOrder,
+        baseTimeByPeriodEnd,
+        stockFullWidthFixedBars,
+      ) ?? { x0, x1 }
+    );
   }
 
   return { x0: x0 - CHARTING_HOVER_BAND_EXTRA_PX, x1: x1 + CHARTING_HOVER_BAND_EXTRA_PX };
@@ -746,14 +970,20 @@ function pickChartingPeriodAtX(
   ordered: ChartingSeriesPoint[],
   seriesOrder: ChartingMetricId[],
   baseTimeByPeriodEnd: Map<string, number>,
+  stockFullWidthFixedBars: boolean,
 ): { row: ChartingSeriesPoint; index: number } | null {
   let bestIdx = -1;
   let bestDist = Infinity;
   for (let i = 0; i < ordered.length; i++) {
-    const centerTime = chartingPeriodCenterTimeSec(i, ordered, seriesOrder, baseTimeByPeriodEnd);
-    if (centerTime == null) continue;
-    const coord = chart.timeScale().timeToCoordinate(centerTime as UTCTimestamp);
-    if (coord == null || !Number.isFinite(coord)) continue;
+    const coord = chartingPeriodCenterXPx(
+      chart,
+      i,
+      ordered,
+      seriesOrder,
+      baseTimeByPeriodEnd,
+      stockFullWidthFixedBars,
+    );
+    if (coord == null) continue;
     const d = Math.abs(coord - cx);
     if (d < bestDist) {
       bestDist = d;
@@ -767,6 +997,7 @@ function pickChartingPeriodAtX(
     ordered,
     seriesOrder,
     baseTimeByPeriodEnd,
+    stockFullWidthFixedBars,
     "periodColumn",
   );
   const threshold = band ? Math.max(20, (band.x1 - band.x0) / 2) : 120;
@@ -882,6 +1113,8 @@ type Props = {
    * (32px side gutters) on resize.
    */
   histogramLayout?: "default" | "stockFullWidthFixedBars";
+  /** Grow histogram bars from $0 on appear (stock Charting tab / Key Stats metrics). */
+  animateBarsOnAppear?: boolean;
 };
 
 const PERIOD_TAB_OPTIONS = [
@@ -894,7 +1127,21 @@ function timeRangeTabOptionsFor(order: ChartTimeRange[]): TabSwitcherOption<Char
 }
 
 export const CHARTING_HEIGHT_PX = 332;
-export const CHARTING_PLOT_HEIGHT_PX = CHARTING_HEIGHT_PX - FUNDAMENTALS_CHART_AXIS_ROW_PX;
+/** Annual x-axis row — tight under the $0 baseline. */
+export const CHARTING_AXIS_ROW_PX_ANNUAL = 34;
+/** Quarterly slanted labels need more vertical room. */
+export const CHARTING_AXIS_ROW_PX_QUARTERLY = 44;
+
+export function chartingAxisRowPx(periodMode: "annual" | "quarterly"): number {
+  return periodMode === "annual" ? CHARTING_AXIS_ROW_PX_ANNUAL : CHARTING_AXIS_ROW_PX_QUARTERLY;
+}
+
+export function chartingPlotHeightPx(periodMode: "annual" | "quarterly"): number {
+  return CHARTING_HEIGHT_PX - chartingAxisRowPx(periodMode);
+}
+
+/** Largest plot band (annual axis row). */
+export const CHARTING_PLOT_HEIGHT_PX = chartingPlotHeightPx("annual");
 
 /** Dot-grid band — matches Key Stats / Multicharts (`MultichartFundamentalsBar`). */
 export const CHARTING_PLOT_BACKDROP_INSET_CLASS = "top-[8%] bottom-[4%]";
@@ -939,6 +1186,20 @@ export function applySparseHistogramVisiblePadding(
 /** Minimum horizontal inset before first / after last bar group (each side). */
 const CHARTING_TIME_SCALE_SIDE_GUTTER_PX = 8;
 
+/** Equal period-column half-width — same slot model as Multicharts (`plotW / (2n)`). */
+function chartingEqualPeriodColumnHalfPx(plotW: number, periodCount: number): number {
+  if (plotW <= 0 || periodCount <= 0) return CHARTING_TIME_SCALE_SIDE_GUTTER_PX;
+  if (periodCount === 1) return plotW / 2;
+  return plotW / (2 * periodCount);
+}
+
+function chartingTimeScaleSideGutterPx(plotW: number, periodCount?: number): number {
+  if (periodCount != null && periodCount > 0) {
+    return Math.max(CHARTING_TIME_SCALE_SIDE_GUTTER_PX, chartingEqualPeriodColumnHalfPx(plotW, periodCount));
+  }
+  return CHARTING_TIME_SCALE_SIDE_GUTTER_PX;
+}
+
 /**
  * Fit bar histogram to container width: stretch or shrink `barSpacing` so bars fill the plot
  * with only a minimal fixed side inset.
@@ -946,6 +1207,8 @@ const CHARTING_TIME_SCALE_SIDE_GUTTER_PX = 8;
 type ChartingTimeScaleLayoutOptions = {
   /** Stock tab: stretch `barSpacing` so content fills plot width (minus side gutters). */
   fixedBarSpacingPx?: number;
+  /** Stock tab: period count — reserves half-column inset so edge hover bands are not clipped. */
+  periodCount?: number;
 };
 
 export function layoutChartingTimeScale(
@@ -955,10 +1218,11 @@ export function layoutChartingTimeScale(
   layoutOptions?: ChartingTimeScaleLayoutOptions,
 ): void {
   const fixedBarSpacingPx = layoutOptions?.fixedBarSpacingPx;
+  const periodCount = layoutOptions?.periodCount;
   const ts = chart.timeScale();
   ts.applyOptions({ fixLeftEdge: false, fixRightEdge: false });
 
-  /** Stock tab bars — fill plot width; keep {@link CHARTING_TIME_SCALE_SIDE_GUTTER_PX} side inset only. */
+  /** Stock tab bars — fill plot width; side inset = half column width when `periodCount` is set. */
   if (fixedBarSpacingPx != null) {
     const plotFallback = Math.max(120, containerWidthPx);
     ts.fitContent();
@@ -981,7 +1245,8 @@ export function layoutChartingTimeScale(
       }
       if (plotW < 16) return;
 
-      const plotInner = plotW - 2 * CHARTING_TIME_SCALE_SIDE_GUTTER_PX;
+      const sideGutterPx = chartingTimeScaleSideGutterPx(plotW, periodCount);
+      const plotInner = plotW - 2 * sideGutterPx;
       const spacing = Math.max(2, plotInner / contentSpan);
       ts.applyOptions({
         barSpacing: spacing,
@@ -989,7 +1254,7 @@ export function layoutChartingTimeScale(
         maxBarSpacing: Math.max(spacing, fixedBarSpacingPx),
       });
 
-      const sidePadLogical = CHARTING_TIME_SCALE_SIDE_GUTTER_PX / spacing;
+      const sidePadLogical = sideGutterPx / spacing;
       ts.setVisibleLogicalRange({
         from: contentFrom - sidePadLogical,
         to: contentTo + sidePadLogical,
@@ -997,7 +1262,8 @@ export function layoutChartingTimeScale(
 
       requestAnimationFrame(() => {
         const plotW2 = ts.width() > 8 ? ts.width() : plotW;
-        const plotInner2 = plotW2 - 2 * CHARTING_TIME_SCALE_SIDE_GUTTER_PX;
+        const sideGutterPx2 = chartingTimeScaleSideGutterPx(plotW2, periodCount);
+        const plotInner2 = plotW2 - 2 * sideGutterPx2;
         const refined = Math.max(2, plotInner2 / contentSpan);
         if (Math.abs(refined - spacing) > 0.5) {
           ts.applyOptions({
@@ -1006,7 +1272,7 @@ export function layoutChartingTimeScale(
             maxBarSpacing: Math.max(refined, fixedBarSpacingPx),
           });
         }
-        const sidePadLogical2 = CHARTING_TIME_SCALE_SIDE_GUTTER_PX / refined;
+        const sidePadLogical2 = sideGutterPx2 / refined;
         ts.setVisibleLogicalRange({
           from: contentFrom - sidePadLogical2,
           to: contentTo + sidePadLogical2,
@@ -1084,6 +1350,10 @@ type HoverState = {
 } | null;
 
 const GROUPED_BAR_SHIFT_SEC = 24 * 60 * 60;
+/** Calendar-timestamp grouped bars (standalone `/charting`). */
+export const CHARTING_GROUPED_BAR_SHIFT_SEC = 36 * 60 * 60;
+/** Stock tab: spread grouped bars as a fraction of the uniform period step. */
+export const CHARTING_STOCK_GROUPED_BAR_SHIFT_FRAC = 0.18;
 /** Gap “slot” after each bar (transparent histogram point) — one day, still well inside the next quarter. */
 const BAR_GAP_SLOT_SEC = GROUPED_BAR_SHIFT_SEC;
 const HISTO_BAR_SPACING_MAX_PX = 28;
@@ -1155,13 +1425,22 @@ export class ChartingHoverBandPrimitive implements IPanePrimitive {
   };
 }
 
-function groupedBarShiftSeconds(id: ChartingMetricId, ids: ChartingMetricId[]): number {
+function groupedBarShiftUnitSec(stockFullWidthFixedBars: boolean): number {
+  return stockFullWidthFixedBars
+    ? CHARTING_STOCK_BAR_PERIOD_STEP_SEC * CHARTING_STOCK_GROUPED_BAR_SHIFT_FRAC
+    : CHARTING_GROUPED_BAR_SHIFT_SEC;
+}
+
+function groupedBarShiftSeconds(
+  id: ChartingMetricId,
+  ids: ChartingMetricId[],
+  stockFullWidthFixedBars = false,
+): number {
   if (ids.length <= 1) return 0;
   const idx = ids.indexOf(id);
   if (idx < 0) return 0;
-  // Center the group around the original period end timestamp.
   const center = (ids.length - 1) / 2;
-  return Math.round((idx - center) * GROUPED_BAR_SHIFT_SEC);
+  return Math.round((idx - center) * groupedBarShiftUnitSec(stockFullWidthFixedBars));
 }
 
 export function ChartingWorkspace({
@@ -1178,22 +1457,19 @@ export function ChartingWorkspace({
   workspaceTitle = "Charting",
   timeRangeOrder = DEFAULT_CHART_TIME_RANGE_ORDER,
   histogramLayout = "default",
+  animateBarsOnAppear = false,
 }: Props) {
   const router = useRouter();
   const chartPlotCleanupRef = useRef<(() => void) | null>(null);
   const pickerWrapRef = useRef<HTMLDivElement>(null);
+  const pickerButtonRef = useRef<HTMLButtonElement>(null);
+  const pickerMenuPortalRef = useRef<HTMLDivElement>(null);
   const pickerInputRef = useRef<HTMLInputElement>(null);
 
   const isFigmaToolbar = toolbarLayout === "figma70857";
   const metricControlsInLegend = metricControlsPlacement === "legend";
   const stockFullWidthFixedBars = histogramLayout === "stockFullWidthFixedBars";
   const isFullPageCharting = fullPageCompanyChipSlot != null;
-  const barTimeScaleLayoutOptions = useMemo(
-    (): ChartingTimeScaleLayoutOptions | undefined =>
-      stockFullWidthFixedBars ? { fixedBarSpacingPx: HISTO_BAR_SPACING_MAX_PX } : undefined,
-    [stockFullWidthFixedBars],
-  );
-
   const timeRangeTabOptions = useMemo(
     () => timeRangeTabOptionsFor(timeRangeOrder),
     [timeRangeOrder],
@@ -1204,7 +1480,8 @@ export function ChartingWorkspace({
   const [chartType, setChartType] = useState<ChartType>("bars");
   const unitScale: ChartingUnitScale = isFigmaToolbar ? "billions" : "auto";
   const chartHeight = CHARTING_HEIGHT_PX;
-  const chartPlotHeight = CHARTING_PLOT_HEIGHT_PX;
+  const axisRowPx = chartingAxisRowPx(periodMode);
+  const chartPlotHeight = chartingPlotHeightPx(periodMode);
   const seedPoints = useMemo(() => {
     const src = periodMode === "quarterly" ? initialQuarterlyPoints : initialAnnualPoints;
     return Array.isArray(src) && src.length > 0 ? src : null;
@@ -1223,10 +1500,28 @@ export function ChartingWorkspace({
 
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerQuery, setPickerQuery] = useState("");
+  const [showBarValuesByMetric, setShowBarValuesByMetric] = useState<
+    Partial<Record<ChartingMetricId, boolean>>
+  >({});
+
+  const isBarValuesVisible = useCallback(
+    (id: ChartingMetricId) => showBarValuesByMetric[id] !== false,
+    [showBarValuesByMetric],
+  );
+
+  const setBarValuesVisibleForMetric = useCallback((id: ChartingMetricId, next: boolean) => {
+    setShowBarValuesByMetric((prev) => ({ ...prev, [id]: next }));
+  }, []);
+
+  const visibleBarValueLabels = useMemo(
+    () => barValueLabels.filter((b) => isBarValuesVisible(b.metricId)),
+    [barValueLabels, isBarValuesVisible],
+  );
 
   const chartRef = useRef<IChartApi | null>(null);
   const seriesByMetricRef = useRef<Map<ChartingMetricId, ISeriesApi<"Line"> | ISeriesApi<"Histogram">>>(new Map());
   const hoverBandPrimitiveRef = useRef<ChartingHoverBandPrimitive | null>(null);
+  const roundedBarsPrimitiveRef = useRef<FundamentalsRoundedBarsPrimitive | null>(null);
   const hoverRafRef = useRef<number>(0);
   const barSeriesPointsRef = useRef<Map<ChartingMetricId, ChartingBarSeriesPoint[]>>(new Map());
   const barSeriesColorIdxRef = useRef<Map<ChartingMetricId, number>>(new Map());
@@ -1278,14 +1573,15 @@ export function ChartingWorkspace({
 
   useEffect(() => {
     if (!pickerOpen) return;
-    pickerInputRef.current?.focus();
+    pickerInputRef.current?.focus({ preventScroll: true });
   }, [pickerOpen]);
 
   useEffect(() => {
     if (!pickerOpen) return;
     function onDocMouseDown(e: MouseEvent) {
-      const el = pickerWrapRef.current;
-      if (!el || !(e.target instanceof Node) || el.contains(e.target)) return;
+      const t = e.target;
+      if (!(t instanceof Node)) return;
+      if (pickerWrapRef.current?.contains(t) || pickerMenuPortalRef.current?.contains(t)) return;
       setPickerOpen(false);
       setPickerQuery("");
     }
@@ -1307,6 +1603,16 @@ export function ChartingWorkspace({
   const ordered = useMemo(
     () => applyTimeRange(fullSeries, periodMode, timeRange),
     [fullSeries, periodMode, timeRange],
+  );
+
+  const barTimeScaleLayoutOptions = useMemo(
+    (): ChartingTimeScaleLayoutOptions | undefined =>
+      stockFullWidthFixedBars && ordered.length > 0
+        ? { fixedBarSpacingPx: HISTO_BAR_SPACING_MAX_PX, periodCount: ordered.length }
+        : stockFullWidthFixedBars
+          ? { fixedBarSpacingPx: HISTO_BAR_SPACING_MAX_PX }
+          : undefined,
+    [stockFullWidthFixedBars, ordered.length],
   );
 
   const barBaseTimeByPeriodEnd = useMemo(() => {
@@ -1350,21 +1656,20 @@ export function ChartingWorkspace({
       const base = barBaseTimeByPeriodEnd?.get(row.periodEnd);
       if (base == null) continue;
       for (const id of ids) {
-        m.set(base + groupedBarShiftSeconds(id, ids), row);
+        m.set(base + groupedBarShiftSeconds(id, ids, stockFullWidthFixedBars), row);
       }
     }
     return m;
-  }, [chartType, selected, ordered, timeToRow, barBaseTimeByPeriodEnd]);
+  }, [chartType, selected, ordered, timeToRow, barBaseTimeByPeriodEnd, stockFullWidthFixedBars]);
 
   const groupedTickLabelByTime = useMemo(() => {
     if (chartType !== "bars" || selected.length <= 1) return null;
     const ids = barMetricOrder(selected);
-    const centerId = ids[Math.floor((ids.length - 1) / 2)] ?? ids[0];
     const m = new Map<number, string>();
     for (const row of ordered) {
       const base = barBaseTimeByPeriodEnd?.get(row.periodEnd);
       if (base == null) continue;
-      m.set(base + groupedBarShiftSeconds(centerId, ids), formatChartingPeriodLabel(row.periodEnd, periodMode));
+      m.set(base, formatChartingPeriodLabel(row.periodEnd, periodMode));
     }
     return m;
   }, [chartType, selected, ordered, periodMode, barBaseTimeByPeriodEnd]);
@@ -1537,6 +1842,7 @@ export function ChartingWorkspace({
       unitScale,
       stockFullWidthFixedBars,
       isFullPageCharting,
+      animateBarsOnAppear,
       chartAxes.primary?.ticks.join(",") ?? "",
       chartAxes.percent?.ticks.join(",") ?? "",
     ].join("::");
@@ -1551,6 +1857,7 @@ export function ChartingWorkspace({
     unitScale,
     stockFullWidthFixedBars,
     isFullPageCharting,
+    animateBarsOnAppear,
     chartAxes,
   ]);
 
@@ -1569,8 +1876,11 @@ export function ChartingWorkspace({
     }
 
     let cancelled = false;
+    let lastPlotWidthPx = el.clientWidth;
     let resizeObserver: ResizeObserver | null = null;
     let onVisibleRangeChange: (() => void) | null = null;
+    let cancelBarEnterAnim: (() => void) | null = null;
+    let barEnterElapsedMs = Number.POSITIVE_INFINITY;
 
     const mountChart = () => {
       if (cancelled) return;
@@ -1584,6 +1894,18 @@ export function ChartingWorkspace({
           if (cancelled) return;
 
           const nPoints = ordered.length;
+          const stockInterGroupGapSlots = chartingStockInterGroupGapSlots(
+            stockFullWidthFixedBars,
+            periodMode,
+            timeRange,
+            nPoints,
+          );
+          const denseQuarterlyBars = chartingIsDenseQuarterlyStockBars(
+            stockFullWidthFixedBars,
+            periodMode,
+            timeRange,
+            nPoints,
+          );
           const barSpacingRaw =
             chartType === "bars"
               ? stockFullWidthFixedBars
@@ -1663,6 +1985,10 @@ export function ChartingWorkspace({
           hoverBandPrimitiveRef.current = hoverBandPrimitive;
           chart.panes()[0]?.attachPrimitive(hoverBandPrimitive);
 
+          const roundedBarsPrimitive = new FundamentalsRoundedBarsPrimitive();
+          roundedBarsPrimitiveRef.current = roundedBarsPrimitive;
+          chart.panes()[0]?.attachPrimitive(roundedBarsPrimitive);
+
           const usedScales = new Set<string>();
 
           const seriesOrder = chartType === "bars" ? barMetricOrder(selected) : selected;
@@ -1687,11 +2013,20 @@ export function ChartingWorkspace({
           let seriesColorIdx = 0;
           for (const id of seriesOrder) {
             const shiftSec =
-              chartType === "bars" && selected.length > 1 ? groupedBarShiftSeconds(id, seriesOrder) : 0;
+              chartType === "bars" && selected.length > 1
+                ? groupedBarShiftSeconds(id, seriesOrder, stockFullWidthFixedBars)
+                : 0;
             const data =
               chartType === "bars" && barBaseTimeByPeriodEnd
                 ? stockFullWidthFixedBars
-                  ? seriesDataBarsStockFullWidth(ordered, id, barBaseTimeByPeriodEnd, shiftSec, seriesOrder)
+                  ? seriesDataBarsStockFullWidth(
+                      ordered,
+                      id,
+                      barBaseTimeByPeriodEnd,
+                      shiftSec,
+                      seriesOrder,
+                      stockInterGroupGapSlots,
+                    )
                   : seriesDataBarsWithGapSlots(ordered, id, barBaseTimeByPeriodEnd, shiftSec)
                 : seriesData(ordered, id, shiftSec);
             if (!data.length) continue;
@@ -1711,7 +2046,19 @@ export function ChartingWorkspace({
                 priceFormat: priceFormatForKind(kind),
                 title: CHARTING_METRIC_LABEL[id],
               });
-              s.setData(chartingBarPointsToHistogramData(barPoints, seriesColorIdx, null));
+              const shouldAnimateBars =
+                animateBarsOnAppear &&
+                !prefersReducedFundamentalsBarMotion() &&
+                ordered.length > 0;
+              const initialBarPoints = shouldAnimateBars
+                ? scaleBarPointsForEnter(
+                    barPoints,
+                    ordered.length,
+                    0,
+                    isTransparentChartingBarPoint,
+                  )
+                : barPoints;
+              s.setData(chartingBarPointsToHistogramData(initialBarPoints, seriesColorIdx, null));
               seriesByMetricRef.current.set(id, s);
             } else {
               const lineColor = fundamentalsBarSolidAtIndex(seriesColorIdx);
@@ -1750,11 +2097,29 @@ export function ChartingWorkspace({
             chart.timeScale().fitContent();
           }
 
+          const willAnimateBars =
+            chartType === "bars" &&
+            animateBarsOnAppear &&
+            !prefersReducedFundamentalsBarMotion() &&
+            ordered.length > 0 &&
+            barSeriesPointsRef.current.size > 0;
+          if (willAnimateBars) {
+            barEnterElapsedMs = 0;
+          }
+
           const syncChartOverlays = () => {
             if (cancelled || !chartRef.current) return;
             const c = chartRef.current;
             setPeriodAxisLabels(
-              computePeriodAxisLabelsLayout(c, ordered, periodMode, chartType, selected, barBaseTimeByPeriodEnd),
+              computePeriodAxisLabelsLayout(
+                c,
+                ordered,
+                periodMode,
+                chartType,
+                selected,
+                barBaseTimeByPeriodEnd,
+                stockFullWidthFixedBars,
+              ),
             );
             const yRefSeries = (() => {
               for (const id of seriesOrder) {
@@ -1790,6 +2155,7 @@ export function ChartingWorkspace({
                 : null,
             );
             if (chartType === "line") {
+              roundedBarsPrimitiveRef.current?.setBars([], 0);
               setBarValueLabels([]);
               setLinePointMarkers(
                 computeLinePointMarkersLayout(c, seriesByMetricRef.current, ordered, selected),
@@ -1802,14 +2168,52 @@ export function ChartingWorkspace({
             if (chartType === "bars") {
               setLineEndBadges([]);
               setLinePointMarkers([]);
-              setBarValueLabels(
-                computeBarValueLabelsLayout(
+              const displayedByMetric = new Map<ChartingMetricId, ChartingBarSeriesPoint[]>();
+              for (const [metricId, barPoints] of barSeriesPointsRef.current) {
+                const displayed =
+                  Number.isFinite(barEnterElapsedMs) && barEnterElapsedMs < Number.POSITIVE_INFINITY
+                    ? scaleBarPointsForEnter(
+                        barPoints,
+                        ordered.length,
+                        barEnterElapsedMs,
+                        isTransparentChartingBarPoint,
+                      )
+                    : barPoints;
+                displayedByMetric.set(metricId, displayed);
+              }
+              const seriesOrderForBars = barMetricOrder(selected);
+              roundedBarsPrimitiveRef.current?.setBars(
+                computeRoundedBarDrawLayout(
                   c,
                   seriesByMetricRef.current,
-                  ordered,
-                  selected,
-                  barBaseTimeByPeriodEnd,
+                  displayedByMetric,
+                  barSeriesColorIdxRef.current,
+                  hoveredBarPeriodRef.current,
                 ),
+                chartingGroupedHistogramBarWidthPx(
+                  c,
+                  ordered,
+                  seriesOrderForBars,
+                  barBaseTimeByPeriodEnd,
+                  stockFullWidthFixedBars,
+                  denseQuarterlyBars,
+                ),
+              );
+              const barValueLabelsReady =
+                !animateBarsOnAppear ||
+                prefersReducedFundamentalsBarMotion() ||
+                barEnterElapsedMs >= Number.POSITIVE_INFINITY;
+              setBarValueLabels(
+                barValueLabelsReady
+                  ? computeBarValueLabelsLayout(
+                      c,
+                      seriesByMetricRef.current,
+                      ordered,
+                      selected,
+                      barBaseTimeByPeriodEnd,
+                      stockFullWidthFixedBars,
+                    )
+                  : [],
               );
               return;
             }
@@ -1817,10 +2221,30 @@ export function ChartingWorkspace({
             setBarValueLabels([]);
             setLinePointMarkers([]);
           };
+          if (willAnimateBars) {
+            setBarValueLabels([]);
+          }
+
           requestAnimationFrame(() => {
             if (cancelled) return;
             requestAnimationFrame(syncChartOverlays);
           });
+
+          if (willAnimateBars) {
+            cancelBarEnterAnim = runFundamentalsBarEnterAnimation({
+              periodCount: ordered.length,
+              onFrame: (elapsedMs) => {
+                if (cancelled) return;
+                syncAnimatedHistogramBars(elapsedMs);
+              },
+              onComplete: () => {
+                if (cancelled) return;
+                barEnterElapsedMs = Number.POSITIVE_INFINITY;
+                applyBarHoverDimming(hoveredBarPeriodRef.current);
+                syncChartOverlays();
+              },
+            });
+          }
 
           onVisibleRangeChange = () => {
             requestAnimationFrame(syncChartOverlays);
@@ -1834,8 +2258,36 @@ export function ChartingWorkspace({
               const s = seriesByMetricRef.current.get(metricId);
               if (!s) continue;
               const ci = barSeriesColorIdxRef.current.get(metricId) ?? 0;
-              s.setData(chartingBarPointsToHistogramData(barPoints, ci, periodIndex));
+              const displayed =
+                Number.isFinite(barEnterElapsedMs) && barEnterElapsedMs < Number.POSITIVE_INFINITY
+                  ? scaleBarPointsForEnter(
+                      barPoints,
+                      ordered.length,
+                      barEnterElapsedMs,
+                      isTransparentChartingBarPoint,
+                    )
+                  : barPoints;
+              s.setData(chartingBarPointsToHistogramData(displayed, ci, periodIndex));
             }
+          };
+
+          const syncAnimatedHistogramBars = (elapsedMs: number) => {
+            if (chartType !== "bars") return;
+            barEnterElapsedMs = elapsedMs;
+            const hovered = hoveredBarPeriodRef.current;
+            for (const [metricId, barPoints] of barSeriesPointsRef.current) {
+              const s = seriesByMetricRef.current.get(metricId);
+              if (!s) continue;
+              const ci = barSeriesColorIdxRef.current.get(metricId) ?? 0;
+              const displayed = scaleBarPointsForEnter(
+                barPoints,
+                ordered.length,
+                elapsedMs,
+                isTransparentChartingBarPoint,
+              );
+              s.setData(chartingBarPointsToHistogramData(displayed, ci, hovered));
+            }
+            syncChartOverlays();
           };
 
           const onCrosshairMove = (param: MouseEventParams) => {
@@ -1885,7 +2337,14 @@ export function ChartingWorkspace({
               }
 
             if (chartType === "bars" && stockFullWidthFixedBars && barBaseTimeByPeriodEnd) {
-              const picked = pickChartingPeriodAtX(chart, x, ordered, seriesOrder, barBaseTimeByPeriodEnd);
+              const picked = pickChartingPeriodAtX(
+                chart,
+                x,
+                ordered,
+                seriesOrder,
+                barBaseTimeByPeriodEnd,
+                stockFullWidthFixedBars,
+              );
               if (!picked) {
                 applyBarHoverDimming(null);
                 hoverBandPrimitiveRef.current?.setBand(null, null);
@@ -1972,6 +2431,7 @@ export function ChartingWorkspace({
                 ordered,
                 seriesOrder,
                 barBaseTimeByPeriodEnd,
+                stockFullWidthFixedBars,
                 "periodColumn",
               );
               if (barBand) {
@@ -1990,10 +2450,9 @@ export function ChartingWorkspace({
                   ? Date.parse(row.periodEnd.includes("T") ? row.periodEnd : `${row.periodEnd}T12:00:00.000Z`)
                   : NaN;
               const baseSec = Number.isFinite(baseMs) ? Math.floor(baseMs / 1000) : null;
-              const centerId = idsForBars[Math.floor((idsForBars.length - 1) / 2)] ?? idsForBars[0];
               const centerTime =
-                chartType === "bars" && selected.length > 1 && baseSec != null && centerId
-                  ? ((baseSec + groupedBarShiftSeconds(centerId, idsForBars)) as UTCTimestamp)
+                chartType === "bars" && selected.length > 1 && baseSec != null && row
+                  ? (baseSec as UTCTimestamp)
                   : null;
               const centerX = centerTime != null ? ts.timeToCoordinate(centerTime) : null;
               const bandCenterX = Number.isFinite(centerX ?? NaN) ? (centerX as number) : x;
@@ -2039,18 +2498,18 @@ export function ChartingWorkspace({
 
           resizeObserver = new ResizeObserver(() => {
             const rw = el.clientWidth;
-            if (rw > 0 && chartRef.current) chartRef.current.resize(rw, chartPlotHeight);
+            if (rw <= 0 || !chartRef.current) return;
+            if (rw === lastPlotWidthPx) return;
+            lastPlotWidthPx = rw;
+            chartRef.current.resize(rw, chartPlotHeight);
             const c = chartRef.current;
-            if (c) {
-              if (chartType === "bars") {
-                layoutChartingTimeScale(c, rw, 0, barTimeScaleLayoutOptions);
-                if (!stockFullWidthFixedBars && !isFullPageCharting) {
-                  applySparseHistogramVisiblePadding(c, ordered, chartType, timeRange, ordered.length);
-                }
-              } else {
-                c.timeScale().fitContent();
+            if (chartType === "bars") {
+              layoutChartingTimeScale(c, rw, 0, barTimeScaleLayoutOptions);
+              if (!stockFullWidthFixedBars && !isFullPageCharting) {
+                applySparseHistogramVisiblePadding(c, ordered, chartType, timeRange, ordered.length);
               }
-              requestAnimationFrame(syncChartOverlays);
+            } else {
+              c.timeScale().fitContent();
             }
             requestAnimationFrame(syncChartOverlays);
           });
@@ -2072,6 +2531,8 @@ export function ChartingWorkspace({
 
       chartPlotCleanupRef.current = () => {
         cancelled = true;
+        cancelBarEnterAnim?.();
+        cancelBarEnterAnim = null;
         resizeObserver?.disconnect();
         resizeObserver = null;
         if (chartRef.current) {
@@ -2087,6 +2548,8 @@ export function ChartingWorkspace({
         hoveredBarPeriodRef.current = null;
         hoverBandPrimitiveRef.current?.setBand(null, null);
         hoverBandPrimitiveRef.current = null;
+        roundedBarsPrimitiveRef.current?.setBars([], 0);
+        roundedBarsPrimitiveRef.current = null;
         if (hoverRafRef.current) cancelAnimationFrame(hoverRafRef.current);
         setHover(null);
         setLineEndBadges([]);
@@ -2119,8 +2582,9 @@ export function ChartingWorkspace({
   }, [chartType, selected]);
 
   const addMetricPicker = (
-    <div className="relative" ref={pickerWrapRef}>
+    <div ref={pickerWrapRef}>
       <button
+        ref={pickerButtonRef}
         type="button"
         onClick={() => {
           setPickerOpen((o) => {
@@ -2137,58 +2601,59 @@ export function ChartingWorkspace({
         Add Metric
       </button>
       {pickerOpen ? (
-        <div
-          className={cn(
-            dropdownMenuSurfaceClassName(),
-            "absolute left-0 top-full z-[210] mt-1 w-[min(calc(100vw-2rem),300px)] overflow-hidden",
-            metricControlsInLegend && "left-1/2 -translate-x-1/2 sm:left-0 sm:translate-x-0",
-          )}
-          role="listbox"
+        <TopbarDropdownPortal
+          open={pickerOpen}
+          anchorRef={pickerButtonRef}
+          ref={pickerMenuPortalRef}
+          align="leading"
+          className="w-[min(calc(100vw-2rem),300px)]"
         >
-          <div className={dropdownMenuSearchHeaderClassName}>
-            <input
-              ref={pickerInputRef}
-              value={pickerQuery}
-              onChange={(e) => setPickerQuery(e.target.value)}
-              placeholder="Search metrics…"
-              className={dropdownMenuSearchInputClassName}
-              aria-label="Search metrics"
-            />
-          </div>
-          <div
-            className={cn(
-              "flex max-h-[min(400px,calc(100vh-12rem))] flex-col gap-1 overflow-y-auto px-1 py-2",
-              dropdownMenuFloatingScrollClassName,
-            )}
-          >
-            {groupedAddable.map((group) => (
-              <div key={group.id} className="pb-2 last:pb-0">
-                <div className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wide text-[#A1A1AA]">
-                  {group.label}
+          <div className={cn(dropdownMenuSurfaceClassName(), "overflow-hidden")} role="listbox">
+            <div className={dropdownMenuSearchHeaderClassName}>
+              <input
+                ref={pickerInputRef}
+                value={pickerQuery}
+                onChange={(e) => setPickerQuery(e.target.value)}
+                placeholder="Search metrics…"
+                className={dropdownMenuSearchInputClassName}
+                aria-label="Search metrics"
+              />
+            </div>
+            <div
+              className={cn(
+                "flex max-h-[min(400px,calc(100vh-12rem))] flex-col gap-1 overflow-y-auto px-1 py-2",
+                dropdownMenuFloatingScrollClassName,
+              )}
+            >
+              {groupedAddable.map((group) => (
+                <div key={group.id} className="pb-2 last:pb-0">
+                  <div className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wide text-[#A1A1AA]">
+                    {group.label}
+                  </div>
+                  <ul className="flex flex-col gap-1">
+                    {group.ids.map((id) => (
+                      <li key={id}>
+                        <button
+                          type="button"
+                          role="option"
+                          className={dropdownMenuRichItemClassName()}
+                          onClick={() => addMetric(id)}
+                        >
+                          {CHARTING_METRIC_LABEL[id]}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-                <ul className="flex flex-col gap-1">
-                  {group.ids.map((id) => (
-                    <li key={id}>
-                      <button
-                        type="button"
-                        role="option"
-                        className={dropdownMenuRichItemClassName()}
-                        onClick={() => addMetric(id)}
-                      >
-                        {CHARTING_METRIC_LABEL[id]}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+              ))}
+            </div>
+            {totalAddable === 0 ? (
+              <p className="px-3 py-2 text-[12px] text-[#71717A]">
+                {qLower ? "No metrics match" : "No additional metrics for this range"}
+              </p>
+            ) : null}
           </div>
-          {totalAddable === 0 ? (
-            <p className="px-3 py-2 text-[12px] text-[#71717A]">
-              {qLower ? "No metrics match" : "No additional metrics for this range"}
-            </p>
-          ) : null}
-        </div>
+        </TopbarDropdownPortal>
       ) : null}
     </div>
   );
@@ -2319,20 +2784,27 @@ export function ChartingWorkspace({
                     })()}
                   </div>
                   <div ref={chartPlotRef} className="relative z-[1] h-full w-full" />
-                  {chartType === "bars" && barValueLabels.length > 0
-                    ? barValueLabels.map((b) => (
+                  {chartType === "bars" && visibleBarValueLabels.length > 0
+                    ? visibleBarValueLabels.map((b) => (
                         <div
                           key={b.key}
-                          className="pointer-events-none absolute z-[15] max-w-[5.5rem] truncate text-center text-[11px] font-semibold leading-none tabular-nums text-[#09090B]"
+                          className="pointer-events-none absolute z-[15] max-w-[5.5rem] -translate-x-1/2 -translate-y-full text-center"
                           style={{
                             left: b.leftPx,
                             top: b.topPx,
-                            transform: "translate(-50%, -100%)",
-                            textShadow: "0 0 3px rgba(255,255,255,0.95), 0 1px 2px rgba(255,255,255,0.8)",
                           }}
                           title={b.text}
                         >
-                          {b.text}
+                          <span
+                            className="fundamentals-bar-value-label-in truncate text-[11px] font-semibold leading-none tabular-nums text-[#09090B]"
+                            style={{
+                              animationDelay: `${b.periodIndex * FUNDAMENTALS_BAR_VALUE_LABEL_STAGGER_MS}ms`,
+                              textShadow:
+                                "0 0 3px rgba(255,255,255,0.95), 0 1px 2px rgba(255,255,255,0.8)",
+                            }}
+                          >
+                            {b.text}
+                          </span>
                         </div>
                       ))
                     : null}
@@ -2505,21 +2977,29 @@ export function ChartingWorkspace({
                 ) : null}
               </div>
               <div
-                className="flex w-full min-w-0 overflow-visible pt-2"
-                style={{ height: FUNDAMENTALS_CHART_AXIS_ROW_PX }}
+                className={cn(
+                  "flex w-full min-w-0 overflow-visible",
+                  periodMode === "annual" ? "pt-1.5" : "pt-0",
+                )}
+                style={{ height: axisRowPx }}
               >
-                <div className="relative min-h-0 min-w-0 flex-1 overflow-visible pb-1">
+                <div className="relative min-h-0 min-w-0 flex-1 overflow-visible">
                   {periodAxisLabels.map((lab, i) => {
                     if (!fundamentalsPeriodAxisShowsLabel(i, periodAxisLabels.length, periodMode)) {
                       return null;
                     }
+                    const axisLabelRotateDeg =
+                      periodMode === "annual" ? 0 : FUNDAMENTALS_CHART_AXIS_LABEL_ROTATE_DEG;
                     return (
                       <span
                         key={lab.key}
-                        className="absolute bottom-2 inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]"
+                        className={cn(
+                          "absolute inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]",
+                          periodMode === "annual" ? "top-1.5" : "bottom-1",
+                        )}
                         style={{
                           left: lab.leftPx,
-                          transform: `translateX(-50%) rotate(${FUNDAMENTALS_CHART_AXIS_LABEL_ROTATE_DEG}deg)`,
+                          transform: `translateX(-50%) rotate(${axisLabelRotateDeg}deg)`,
                           transformOrigin: "center bottom",
                         }}
                         title={lab.title}
@@ -2591,6 +3071,8 @@ export function ChartingWorkspace({
               periodMode={periodMode}
               ticker={ticker}
               metricColors={metricChipColorById}
+              isBarValuesVisible={isBarValuesVisible}
+              onShowBarValuesChange={setBarValuesVisibleForMetric}
             />
           ) : null}
         </>

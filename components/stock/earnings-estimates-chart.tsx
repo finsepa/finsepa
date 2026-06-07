@@ -437,7 +437,7 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
                       >
                         {barPlotValue != null ? (
                           <div
-                            className="absolute bottom-0 left-1/2 mt-auto shrink-0 -translate-x-1/2 rounded-t-[2px] rounded-b-none"
+                            className="absolute bottom-0 left-1/2 mt-auto shrink-0 -translate-x-1/2 rounded-t-[4px] rounded-b-none"
                             style={{
                               width: barLayout.barWidthPx,
                               height: `${estH}%`,

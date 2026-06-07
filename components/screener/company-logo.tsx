@@ -6,7 +6,7 @@ import { readScreenerCompanyIdentity } from "@/lib/screener/screener-company-ide
 import { cn } from "@/lib/utils";
 import { logoColors } from "./data";
 
-const LOGO_INSET_TICKERS = new Set(["AAPL", "GOOGL", "GOOG", "MSFT"]);
+const LOGO_INSET_TICKERS = new Set(["AAPL", "GOOGL", "GOOG", "MSFT", "MU"]);
 
 /** Full-bleed marks look oversized — pad inside the fixed frame only. */
 function brandLogoInsetClass(
@@ -15,7 +15,7 @@ function brandLogoInsetClass(
 ): string {
   const sym = symbol?.trim().toUpperCase();
   if (!sym || !LOGO_INSET_TICKERS.has(sym)) return "";
-  const mediumInset = sym === "GOOGL" || sym === "GOOG" || sym === "MSFT";
+  const mediumInset = sym === "GOOGL" || sym === "GOOG" || sym === "MSFT" || sym === "MU";
   switch (size) {
     case "lg":
       return mediumInset ? "p-1.5" : "p-2";
@@ -29,7 +29,15 @@ function brandLogoInsetClass(
   }
 }
 
-function InitialsMark({ name, size }: { name: string; size: "xs" | "sm" | "28" | "md" | "40" | "lg" }) {
+function InitialsMark({
+  name,
+  size,
+  className,
+}: {
+  name: string;
+  size: "xs" | "sm" | "28" | "md" | "40" | "lg";
+  className?: string;
+}) {
   const colors = logoColors[name] ?? {
     bg: "bg-neutral-100",
     text: "text-neutral-600",
@@ -48,14 +56,20 @@ function InitialsMark({ name, size }: { name: string; size: "xs" | "sm" | "28" |
               ? "flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border text-[12px] font-bold"
               : "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border text-[11px] font-bold";
   return (
-    <div className={`${box} ${colors.bg} ${colors.text} ${colors.border}`}>
+    <div className={cn(box, colors.bg, colors.text, colors.border, className)}>
       {name.slice(0, 2).toUpperCase()}
     </div>
   );
 }
 
 /** Cash / USD row icon: US flag asset (`/usd.svg`). */
-function UsdCashMark({ size }: { size: "xs" | "sm" | "28" | "md" | "40" | "lg" }) {
+function UsdCashMark({
+  size,
+  className,
+}: {
+  size: "xs" | "sm" | "28" | "md" | "40" | "lg";
+  className?: string;
+}) {
   const px =
     size === "xs" ? 20 : size === "sm" ? 24 : size === "28" ? 28 : size === "lg" ? 48 : size === "40" ? 40 : 32;
   const imgBox =
@@ -79,7 +93,11 @@ function UsdCashMark({ size }: { size: "xs" | "sm" | "28" | "md" | "40" | "lg" }
       height={px}
       loading="lazy"
       decoding="async"
-      className={`${imgBox} shrink-0 border-0 object-cover shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]`}
+      className={cn(
+        imgBox,
+        "shrink-0 border-0 object-cover shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]",
+        className,
+      )}
     />
   );
 }
@@ -89,6 +107,7 @@ export function CompanyLogo({
   logoUrl,
   symbol,
   size = "md",
+  className,
 }: {
   name: string;
   logoUrl: string;
@@ -96,6 +115,7 @@ export function CompanyLogo({
   symbol?: string;
   /** `xs` = 20×20, `sm` = 24×24, `28` = 28×28, `md` = 32×32 (default), `40` = 40×40, `lg` = 48×48. */
   size?: "xs" | "sm" | "28" | "md" | "40" | "lg";
+  className?: string;
 }) {
   const [failed, setFailed] = useState(false);
   const [storageHydrated, setStorageHydrated] = useState(false);
@@ -115,7 +135,7 @@ export function CompanyLogo({
   }, [symbol, fromServer]);
 
   if (symbol?.trim().toUpperCase() === "USD") {
-    return <UsdCashMark size={size} />;
+    return <UsdCashMark size={size} className={className} />;
   }
 
   const hasLogoUrl =
@@ -123,7 +143,7 @@ export function CompanyLogo({
     (/^https?:\/\//i.test(effective) || effective.startsWith("//") || effective.startsWith("/"));
 
   if (failed || !hasLogoUrl) {
-    return <InitialsMark name={displayName} size={size} />;
+    return <InitialsMark name={displayName} size={size} className={className} />;
   }
   const px =
     size === "xs" ? 20 : size === "sm" ? 24 : size === "28" ? 28 : size === "lg" ? 48 : size === "40" ? 40 : 32;
@@ -149,7 +169,11 @@ export function CompanyLogo({
   if (intelBoost) {
     return (
       <div
-        className={cn(imgBox, "relative shrink-0 overflow-hidden border border-neutral-200 bg-white")}
+        className={cn(
+          imgBox,
+          "relative shrink-0 overflow-hidden border border-neutral-200 bg-white",
+          className,
+        )}
       >
         {/* eslint-disable-next-line @next/next/no-img-element -- dynamic remote favicon with onError fallback */}
         <img
@@ -179,6 +203,7 @@ export function CompanyLogo({
         imgBox,
         "shrink-0 border border-neutral-200 bg-white object-contain",
         brandLogoInsetClass(symbol, size),
+        className,
       )}
       onError={onLogoError}
     />
