@@ -15,6 +15,7 @@
     "loops:diagnose": "node --env-file=.env.local scripts/diagnose-loops-transactional.mjs",
     "eodhd:estimate": "node scripts/eodhd-load-estimate.mjs",
     "eodhd:probe": "node scripts/eodhd-traffic-probe.mjs",
+    "install:local": "node scripts/npm-install.mjs",
     "lint": "eslint",
     "commit": "sh -c 'git add -A && git commit -m \"$1\"' --",
     "checkpoint": "sh -c 'git add -A && git commit -m \"checkpoint: $(date +%Y-%m-%d_%H-%M-%S)\"'"
