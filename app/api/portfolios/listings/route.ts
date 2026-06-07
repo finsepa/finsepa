@@ -2,6 +2,7 @@ import type { User } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
 import { avatarUrlFromUser, displayNameFromUser } from "@/lib/auth/user-display";
+import { enrichPublicListingCardMetrics } from "@/lib/portfolio/public-listing-metrics";
 import { sanitizePublicListingSnapshot } from "@/lib/portfolio/public-listing-snapshot";
 import { requireAuthUser, AuthRequiredError } from "@/lib/watchlist/api-auth";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
@@ -75,12 +76,17 @@ export async function GET() {
       return NextResponse.json({ listings: [] as const, warning: "db_unavailable" as const });
     }
 
-    const listings = (data ?? []).map((row) => ({
-      id: row.id as string,
-      name: row.display_name as string,
-      metrics: (row.metrics ?? {}) as Record<string, unknown>,
-      updatedAt: typeof row.updated_at === "string" ? row.updated_at : null,
-    }));
+    const listings = (data ?? []).map((row) => {
+      const rawMetrics = (row.metrics ?? {}) as Record<string, unknown>;
+      const { metrics, ready } = enrichPublicListingCardMetrics(rawMetrics);
+      return {
+        id: row.id as string,
+        name: row.display_name as string,
+        metrics,
+        metricsReady: ready,
+        updatedAt: typeof row.updated_at === "string" ? row.updated_at : null,
+      };
+    });
 
     return NextResponse.json({ listings });
   } catch (e) {

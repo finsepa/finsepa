@@ -4,7 +4,7 @@ const cardShell =
   "mb-6 rounded-[12px] border border-[#E4E4E7] bg-white p-[20px] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.08)]";
 
 /** Mirrors `PublicPortfolioBlock`: header (avatar + titles, returns), stats row + chevron, Top 5 icon stack. */
-function PublicPortfolioCardSkeleton() {
+export function PublicPortfolioCardSkeleton() {
   return (
     <div className={cardShell}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

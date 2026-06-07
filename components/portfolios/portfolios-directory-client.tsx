@@ -17,7 +17,10 @@ import {
 import { CompanyLogo } from "@/components/screener/company-logo";
 import { UserAvatar } from "@/components/user/user-avatar";
 import { displayLogoUrlForPortfolioSymbol } from "@/lib/portfolio/portfolio-asset-display-logo";
-import { PortfoliosDirectorySkeleton } from "@/components/portfolios/portfolios-directory-skeleton";
+import {
+  PortfoliosDirectorySkeleton,
+  PublicPortfolioCardSkeleton,
+} from "@/components/portfolios/portfolios-directory-skeleton";
 import { PUBLIC_LISTINGS_CHANGED_EVENT } from "@/lib/portfolio/sync-public-listing-client";
 import { cn } from "@/lib/utils";
 
@@ -37,6 +40,8 @@ export type PublicListingRow = {
   id: string;
   name: string;
   metrics: Record<string, unknown>;
+  /** False while card scalars are missing and no snapshot is available to recompute. */
+  metricsReady?: boolean;
   updatedAt: string | null;
 };
 
@@ -206,10 +211,12 @@ function PublicPortfolioBlock({ listing }: { listing: PublicListingRow }) {
 export function PortfoliosDirectoryClient() {
   const pathname = usePathname();
   const [listings, setListings] = useState<PublicListingRow[] | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setError(null);
+    setLoading(true);
     try {
       const res = await fetch("/api/portfolios/listings", { credentials: "include" });
       if (!res.ok) {
@@ -224,6 +231,8 @@ export function PortfoliosDirectoryClient() {
     } catch {
       setError("Could not load community portfolios.");
       setListings([]);
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -244,7 +253,7 @@ export function PortfoliosDirectoryClient() {
     };
   }, [load]);
 
-  if (listings === null) {
+  if (loading && listings === null) {
     return <PortfoliosDirectorySkeleton cards={2} />;
   }
 
@@ -256,7 +265,7 @@ export function PortfoliosDirectoryClient() {
     );
   }
 
-  if (listings.length === 0) {
+  if ((listings ?? []).length === 0) {
     return (
       <Empty variant="card" className="min-h-[min(50vh,420px)] w-full">
         <EmptyHeader className="gap-3">
@@ -279,11 +288,17 @@ export function PortfoliosDirectoryClient() {
     );
   }
 
+  const rows = listings ?? [];
+
   return (
     <div className="flex min-w-0 flex-col">
-      {listings.map((row) => (
-        <PublicPortfolioBlock key={row.id} listing={row} />
-      ))}
+      {rows.map((row) =>
+        row.metricsReady === false ? (
+          <PublicPortfolioCardSkeleton key={row.id} />
+        ) : (
+          <PublicPortfolioBlock key={row.id} listing={row} />
+        ),
+      )}
     </div>
   );
 }
