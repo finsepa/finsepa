@@ -22,7 +22,10 @@ import {
 import { SecondaryTabs } from "@/components/ui/secondary-tabs";
 import { PortfolioOverviewAthProvider } from "@/components/portfolio/portfolio-overview-ath-context";
 import { PortfolioOverviewCards } from "@/components/portfolio/portfolio-overview-cards";
-import { PortfolioTabPanelSkeleton } from "@/components/portfolio/portfolio-page-loading";
+import {
+  PortfolioPageLoadingShell,
+  PortfolioTabPanelSkeleton,
+} from "@/components/portfolio/portfolio-page-loading";
 import {
   PortfolioPageTabs,
   type OverviewHoldingsSubTab,
@@ -177,6 +180,7 @@ export function PortfolioPageView({
     selectedPortfolioId,
     openEditPortfolio,
     selectedPortfolioReadOnly,
+    portfolioDisplayReady,
   } = usePortfolioWorkspace();
 
   const editDisabled = readOnly || selectedPortfolioReadOnly;
@@ -235,6 +239,15 @@ export function PortfolioPageView({
 
   const panelClass = (tab: PortfolioViewTab) =>
     cn(viewTab === tab ? "flex min-h-0 flex-1 flex-col" : "hidden");
+
+  if (!portfolioDisplayReady) {
+    return (
+      <PortfolioPageLoadingShell
+        publicView={readOnly}
+        showPortfoliosBreadcrumb={showPortfoliosBreadcrumb}
+      />
+    );
+  }
 
   return (
     <div className="relative flex min-h-full min-w-0 flex-col overflow-x-hidden bg-white px-4 py-4 sm:px-9 sm:py-6">

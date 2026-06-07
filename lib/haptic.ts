@@ -1,5 +1,5 @@
 const TOUCH_MEDIA_QUERY = "(hover: none), (pointer: coarse)";
-const HAPTIC_OVERLAY_ATTR = "data-haptic-overlay";
+export const HAPTIC_OVERLAY_ATTR = "data-haptic-overlay";
 
 export function isTouchDeviceNow(): boolean {
   if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
@@ -26,23 +26,132 @@ export function canUseVibrationApi(): boolean {
   );
 }
 
-function triggerIosSwitchProgrammaticHaptic(): void {
-  const label = document.createElement("label");
-  label.setAttribute("aria-hidden", "true");
-  label.style.cssText =
-    "position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none;";
+let iosGestureSwitch: HTMLInputElement | null = null;
 
-  const input = document.createElement("input");
-  input.type = "checkbox";
-  input.setAttribute("switch", "");
-  label.appendChild(input);
-
-  document.body.appendChild(label);
-  try {
-    label.click();
-  } finally {
-    label.remove();
+function ensureIosGestureSwitch(): HTMLInputElement {
+  if (!iosGestureSwitch) {
+    iosGestureSwitch = document.createElement("input");
+    iosGestureSwitch.type = "checkbox";
+    iosGestureSwitch.setAttribute("switch", "");
+    iosGestureSwitch.setAttribute("aria-hidden", "true");
+    iosGestureSwitch.style.cssText =
+      "position:fixed;left:0;top:0;width:1px;height:1px;margin:0;padding:0;border:0;opacity:0.001;";
+    document.body.appendChild(iosGestureSwitch);
   }
+  return iosGestureSwitch;
+}
+
+/** Toggle the iOS switch during an active user gesture (e.g. chart scrub). */
+export function triggerIosHapticInUserGesture(): void {
+  if (!isAppleMobileDevice() || !isTouchDeviceNow()) return;
+  ensureIosGestureSwitch().click();
+}
+
+/** Pulse the pass-through overlay on `host`, if present (chart scrub). */
+export function triggerHostHapticOverlayClick(host: HTMLElement): void {
+  const overlay = host.querySelector(`[${HAPTIC_OVERLAY_ATTR}]`);
+  if (overlay instanceof HTMLInputElement) {
+    overlay.click();
+    return;
+  }
+  triggerIosHapticInUserGesture();
+}
+
+function triggerIosSwitchProgrammaticHaptic(): void {
+  triggerIosHapticInUserGesture();
+}
+
+function clonePointerEvent(event: PointerEvent): PointerEvent {
+  return new PointerEvent(event.type, {
+    bubbles: true,
+    cancelable: true,
+    composed: true,
+    clientX: event.clientX,
+    clientY: event.clientY,
+    screenX: event.screenX,
+    screenY: event.screenY,
+    pointerId: event.pointerId,
+    pointerType: event.pointerType,
+    pressure: event.pressure,
+    buttons: event.buttons,
+    button: event.button,
+    width: event.width,
+    height: event.height,
+    isPrimary: event.isPrimary,
+  });
+}
+
+function forwardPointerThroughOverlay(overlay: HTMLElement, event: PointerEvent): void {
+  if (event.pointerType === "mouse") return;
+  overlay.style.pointerEvents = "none";
+  const under = document.elementFromPoint(event.clientX, event.clientY);
+  overlay.style.pointerEvents = "auto";
+  if (!under || under === overlay) return;
+  under.dispatchEvent(clonePointerEvent(event));
+}
+
+/**
+ * iOS switch overlay that forwards pointer events to the chart canvas underneath.
+ * User finger toggles the switch (haptic); chart still receives scrub gestures.
+ */
+export function attachPassThroughIosHapticOverlay(host: HTMLElement): () => void {
+  if (host.querySelector(`[${HAPTIC_OVERLAY_ATTR}]`)) return () => {};
+
+  const position = getComputedStyle(host).position;
+  if (position !== "absolute" && position !== "relative" && position !== "fixed" && position !== "sticky") {
+    host.style.position = "relative";
+  }
+
+  const overlay = document.createElement("input");
+  overlay.type = "checkbox";
+  overlay.setAttribute("switch", "");
+  overlay.setAttribute(HAPTIC_OVERLAY_ATTR, "");
+  overlay.setAttribute("aria-hidden", "true");
+  overlay.tabIndex = -1;
+  overlay.style.cssText =
+    "position:absolute;inset:0;width:100%;height:100%;margin:0;padding:0;border:0;" +
+    "-webkit-appearance:switch;appearance:auto;opacity:0;cursor:inherit;pointer-events:auto;z-index:2;";
+
+  const forward = (event: PointerEvent) => {
+    forwardPointerThroughOverlay(overlay, event);
+  };
+
+  const onPointerDown = (event: PointerEvent) => {
+    if (event.pointerType !== "mouse") {
+      try {
+        overlay.setPointerCapture(event.pointerId);
+      } catch {
+        // Best-effort — forwarding still works without capture.
+      }
+    }
+    forward(event);
+  };
+
+  const onPointerUp = (event: PointerEvent) => {
+    if (overlay.hasPointerCapture(event.pointerId)) {
+      try {
+        overlay.releasePointerCapture(event.pointerId);
+      } catch {
+        // Ignore release failures.
+      }
+    }
+    forward(event);
+  };
+
+  overlay.addEventListener("pointerdown", onPointerDown);
+  overlay.addEventListener("pointermove", forward);
+  overlay.addEventListener("pointerup", onPointerUp);
+  overlay.addEventListener("pointercancel", onPointerUp);
+
+  host.appendChild(overlay);
+
+  return () => {
+    overlay.removeEventListener("pointerdown", onPointerDown);
+    overlay.removeEventListener("pointermove", forward);
+    overlay.removeEventListener("pointerup", onPointerUp);
+    overlay.removeEventListener("pointercancel", onPointerUp);
+    overlay.remove();
+  };
 }
 
 /**
@@ -91,7 +200,14 @@ export function supportsHaptics(): boolean {
 
 /** Light tick for mobile chart tap / interval scrub — no-op on desktop. */
 export function triggerMobileChartHaptic(): void {
-  haptic(35);
+  if (!isTouchDeviceNow()) return;
+  if (canUseVibrationApi()) {
+    navigator.vibrate(35);
+    return;
+  }
+  if (isAppleMobileDevice()) {
+    triggerIosHapticInUserGesture();
+  }
 }
 
 /**

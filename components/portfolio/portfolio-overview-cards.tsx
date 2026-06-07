@@ -1,6 +1,16 @@
 "use client";
 
-import { memo, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import { createPortal } from "react-dom";
 
 import { usePortfolioOverviewAthPublisher } from "@/components/portfolio/portfolio-overview-ath-context";
 import { ChevronDown } from "@/lib/icons";
@@ -60,6 +70,116 @@ function OverviewMetricCardSkeleton() {
       <div className="h-8 w-[min(100%,11rem)] max-w-full animate-pulse rounded-md bg-neutral-200" />
       <div className="h-4 w-24 animate-pulse rounded bg-neutral-100" />
     </div>
+  );
+}
+
+function totalProfitTooltipPosition(trigger: HTMLElement) {
+  const rect = trigger.getBoundingClientRect();
+  const maxWidth = Math.min(window.innerWidth - 16, 280);
+  const left = Math.min(Math.max(8, rect.left), window.innerWidth - maxWidth - 8);
+  return { left, top: rect.bottom + 8, maxWidth };
+}
+
+function TotalProfitBreakdownTooltip({
+  tooltipId,
+  period,
+  realizedLifetimeUsd,
+  unrealizedLifetimeUsd,
+  children,
+}: {
+  tooltipId: string;
+  period: OverviewProfitPeriod;
+  realizedLifetimeUsd: number;
+  unrealizedLifetimeUsd: number;
+  children: ReactNode;
+}) {
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [pos, setPos] = useState({ left: 0, top: 0, maxWidth: 280 });
+
+  useEffect(() => setMounted(true), []);
+
+  const reposition = useCallback(() => {
+    const trigger = triggerRef.current;
+    if (!trigger) return;
+    setPos(totalProfitTooltipPosition(trigger));
+  }, []);
+
+  const show = useCallback(() => {
+    reposition();
+    setOpen(true);
+  }, [reposition]);
+
+  const hide = useCallback(() => setOpen(false), []);
+
+  useEffect(() => {
+    if (!open) return;
+    reposition();
+    window.addEventListener("scroll", reposition, true);
+    window.addEventListener("resize", reposition);
+    return () => {
+      window.removeEventListener("scroll", reposition, true);
+      window.removeEventListener("resize", reposition);
+    };
+  }, [open, reposition]);
+
+  const tooltip =
+    open && mounted ? (
+      <div
+        id={tooltipId}
+        role="tooltip"
+        className="pointer-events-none fixed z-[200] w-max min-w-[220px] rounded-lg border border-[#E4E4E7] bg-white px-3 py-2.5 text-left text-xs shadow-[0px_4px_14px_0px_rgba(10,10,10,0.08)]"
+        style={{ left: pos.left, top: pos.top, maxWidth: pos.maxWidth }}
+      >
+        {period !== "all" ? (
+          <p className="mb-2 border-b border-[#F4F4F5] pb-2 text-[11px] font-medium leading-4 text-[#71717A]">
+            Lifetime equity P&amp;L (open vs sold). Headline uses the period you selected.
+          </p>
+        ) : null}
+        <div className="flex items-baseline justify-between gap-4">
+          <span className="shrink-0 text-[#71717A]">Realized (sold)</span>
+          <span
+            className={cn(
+              "tabular-nums font-semibold",
+              normalizeUsdForDisplay(realizedLifetimeUsd) >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
+            )}
+          >
+            {`${normalizeUsdForDisplay(realizedLifetimeUsd) >= 0 ? "+" : ""}${usd.format(normalizeUsdForDisplay(realizedLifetimeUsd))}`}
+          </span>
+        </div>
+        <div className="mt-2 flex items-baseline justify-between gap-4">
+          <span className="shrink-0 text-[#71717A]">Unrealized (not sold yet)</span>
+          <span
+            className={cn(
+              "tabular-nums font-semibold",
+              normalizeUsdForDisplay(unrealizedLifetimeUsd) >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
+            )}
+          >
+            {`${normalizeUsdForDisplay(unrealizedLifetimeUsd) >= 0 ? "+" : ""}${usd.format(normalizeUsdForDisplay(unrealizedLifetimeUsd))}`}
+          </span>
+        </div>
+      </div>
+    ) : null;
+
+  return (
+    <>
+      <div
+        ref={triggerRef}
+        className="w-full outline-none"
+        tabIndex={0}
+        aria-describedby={open ? tooltipId : undefined}
+        onMouseEnter={show}
+        onMouseLeave={hide}
+        onFocus={show}
+        onBlur={(event) => {
+          if (!triggerRef.current?.contains(event.relatedTarget as Node | null)) hide();
+        }}
+      >
+        {children}
+      </div>
+      {mounted && tooltip ? createPortal(tooltip, document.body) : null}
+    </>
   );
 }
 
@@ -448,10 +568,11 @@ function PortfolioOverviewCardsInner({
                 </div>
               </>
             ) : (
-              <div
-                className="group/profit relative w-full outline-none"
-                tabIndex={0}
-                aria-describedby={totalProfitBreakdownId}
+              <TotalProfitBreakdownTooltip
+                tooltipId={totalProfitBreakdownId}
+                period={period}
+                realizedLifetimeUsd={realizedLifetimeUsd}
+                unrealizedLifetimeUsd={unrealizedLifetimeUsd}
               >
                 <p
                   className={cn(
@@ -505,40 +626,7 @@ function PortfolioOverviewCardsInner({
                     </div>
                   </div>
                 )}
-                <div
-                  id={totalProfitBreakdownId}
-                  role="tooltip"
-                  className="pointer-events-none absolute left-0 top-full z-20 mt-2 w-max min-w-[220px] max-w-[min(calc(100vw-2rem),280px)] rounded-lg border border-[#E4E4E7] bg-white px-3 py-2.5 text-left text-xs shadow-[0px_4px_14px_0px_rgba(10,10,10,0.08)] opacity-0 transition-opacity duration-150 group-hover/profit:opacity-100 group-focus-within/profit:opacity-100"
-                >
-                  {period !== "all" ? (
-                    <p className="mb-2 border-b border-[#F4F4F5] pb-2 text-[11px] font-medium leading-4 text-[#71717A]">
-                      Lifetime equity P&amp;L (open vs sold). Headline uses the period you selected.
-                    </p>
-                  ) : null}
-                  <div className="flex items-baseline justify-between gap-4">
-                    <span className="shrink-0 text-[#71717A]">Realized (sold)</span>
-                    <span
-                      className={cn(
-                        "tabular-nums font-semibold",
-                        normalizeUsdForDisplay(realizedLifetimeUsd) >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
-                      )}
-                    >
-                      {`${normalizeUsdForDisplay(realizedLifetimeUsd) >= 0 ? "+" : ""}${usd.format(normalizeUsdForDisplay(realizedLifetimeUsd))}`}
-                    </span>
-                  </div>
-                  <div className="mt-2 flex items-baseline justify-between gap-4">
-                    <span className="shrink-0 text-[#71717A]">Unrealized (not sold yet)</span>
-                    <span
-                      className={cn(
-                        "tabular-nums font-semibold",
-                        normalizeUsdForDisplay(unrealizedLifetimeUsd) >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
-                      )}
-                    >
-                      {`${normalizeUsdForDisplay(unrealizedLifetimeUsd) >= 0 ? "+" : ""}${usd.format(normalizeUsdForDisplay(unrealizedLifetimeUsd))}`}
-                    </span>
-                  </div>
-                </div>
-              </div>
+              </TotalProfitBreakdownTooltip>
             )}
           </div>
 
