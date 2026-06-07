@@ -17,7 +17,7 @@ import {
 import { Topbar } from "@/components/layout/topbar";
 import { WatchlistRail } from "@/components/layout/watchlist-rail";
 import { WatchlistRailLayoutProvider } from "@/components/layout/watchlist-rail-layout-context";
-import { dropdownMenuFloatingScrollClassName } from "@/components/design-system/dropdown-menu-styles";
+import { dropdownMenuFloatingScrollbarClassName } from "@/components/design-system/dropdown-menu-styles";
 import { cn } from "@/lib/utils";
 
 function ProtectedAppChrome({
@@ -110,7 +110,7 @@ function ProtectedAppChrome({
               suppressHydrationWarning
               className={cn(
                 "relative z-0 min-h-0 min-w-0 w-full max-w-full flex-1 bg-white max-md:overflow-visible max-md:pb-[var(--mobile-bottom-nav-main-clearance)] md:overflow-x-hidden md:overflow-y-auto md:overscroll-y-contain",
-                dropdownMenuFloatingScrollClassName,
+                dropdownMenuFloatingScrollbarClassName,
               )}
             >
               {children}

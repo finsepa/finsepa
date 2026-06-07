@@ -17,7 +17,7 @@ export function haptic(pattern: number | number[] = 50) {
     }
 
     const label = document.createElement("label");
-    label.ariaHidden = true;
+    label.setAttribute("aria-hidden", "true");
     label.style.display = "none";
 
     const input = document.createElement("input");

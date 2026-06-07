@@ -31,11 +31,18 @@ export const dropdownMenuSearchHeaderClassName = "border-b border-[#F4F4F5] p-2"
 export const dropdownMenuSearchInputClassName =
   "h-9 w-full rounded-lg border-0 bg-[#F4F4F5] px-3 text-sm leading-5 text-[#09090B] placeholder:text-[#A1A1AA] outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/10";
 
-/**
- * Overlay scrollbar: transparent track (no gutter background or edge border), visible thumb only.
- */
-export const dropdownMenuFloatingScrollClassName =
+/** Overlay scrollbar — transparent track, visible thumb only. */
+export const dropdownMenuFloatingScrollbarClassName =
   "[scrollbar-width:thin] [scrollbar-color:rgba(161,161,170,0.65)_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:border-0 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-solid [&::-webkit-scrollbar-thumb]:border-transparent [&::-webkit-scrollbar-thumb]:bg-clip-padding [&::-webkit-scrollbar-thumb]:bg-[#A1A1AA]/60";
+
+/**
+ * Scrollable dropdown lists — thin scrollbar + edge fade on scroll
+ * ({@link https://chanhdai.com/components/scroll-fade-effect}).
+ */
+export const dropdownMenuFloatingScrollClassName = cn(
+  dropdownMenuFloatingScrollbarClassName,
+  "scroll-fade-effect-y",
+);
 
 /**
  * Simple list dropdown (surface + padded body).

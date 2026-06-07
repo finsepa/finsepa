@@ -5,7 +5,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { ChevronRight, PanelLeftOpen, Star } from "@/lib/icons";
 
 import { CompanyLogo } from "@/components/screener/company-logo";
-import { dropdownMenuFloatingScrollClassName } from "@/components/design-system/dropdown-menu-styles";
+import { dropdownMenuFloatingScrollbarClassName } from "@/components/design-system/dropdown-menu-styles";
 import {
   WATCHLIST_PANEL_WIDTH_PX,
   WATCHLIST_RAIL_WIDTH_MOTION_CLASS,
@@ -224,7 +224,7 @@ export function WatchlistRail() {
             <div
               className={cn(
                 "min-h-0 overflow-y-auto overscroll-y-contain px-1 pb-2",
-                dropdownMenuFloatingScrollClassName,
+                dropdownMenuFloatingScrollbarClassName,
               )}
             >
               {showSkeleton ? <WatchlistRailSkeleton /> : null}
