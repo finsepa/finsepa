@@ -113,9 +113,10 @@ export function Topbar({
   platformTrialDaysLeft?: number | null;
 }) {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const { unread: unreadNotifications } = useNotificationsClient({
+  const notificationsClient = useNotificationsClient({
     enabled: TOPBAR_SHOW_NOTIFICATIONS,
   });
+  const { unread: unreadNotifications } = notificationsClient;
 
   return (
     <>
@@ -187,7 +188,11 @@ export function Topbar({
         </div>
       </header>
 
-      <NotificationsPanelModal open={notificationsOpen} onClose={() => setNotificationsOpen(false)} />
+      <NotificationsPanelModal
+        open={notificationsOpen}
+        onClose={() => setNotificationsOpen(false)}
+        client={notificationsClient}
+      />
     </>
   );
 }

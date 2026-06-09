@@ -18,7 +18,9 @@ export const APP_PANEL_MODAL_WIDTH_CLASS =
 type AppPanelModalShellProps = {
   titleId?: string;
   title?: ReactNode;
+  headerLeading?: ReactNode;
   onClose?: () => void;
+  headerActions?: ReactNode;
   children: ReactNode;
   footer?: ReactNode;
   className?: string;
@@ -34,7 +36,9 @@ type AppPanelModalShellProps = {
 export function AppPanelModalShell({
   titleId,
   title,
+  headerLeading,
   onClose,
+  headerActions,
   children,
   footer,
   className,
@@ -66,14 +70,25 @@ export function AppPanelModalShell({
             headerClassName,
           )}
         >
-          {title != null ? (
-            <h2 id={titleId} className={cn(APP_MODAL_TITLE_CLASS, "min-w-0 truncate")}>
-              {title}
-            </h2>
-          ) : (
-            <span className="min-w-0 flex-1" />
-          )}
-          {onClose ? <AppModalCloseButton onClick={onClose} /> : null}
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            {headerLeading}
+            {title != null ? (
+              <h2 id={titleId} className={cn(APP_MODAL_TITLE_CLASS, "min-w-0 truncate")}>
+                {title}
+              </h2>
+            ) : (
+              <span className="min-w-0 flex-1" />
+            )}
+          </div>
+          {headerActions || onClose ? (
+            <div className="flex shrink-0 items-center gap-1">
+              {headerActions}
+              {headerActions && onClose ? (
+                <span className="mx-0.5 h-4 w-px shrink-0 bg-[#E4E4E7]" aria-hidden />
+              ) : null}
+              {onClose ? <AppModalCloseButton onClick={onClose} /> : null}
+            </div>
+          ) : null}
         </div>
 
         <div className={cn(APP_MODAL_SHELL_CARD_CLASS, cardClassName)}>

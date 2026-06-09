@@ -12,6 +12,7 @@
     "db:migrate": "node --env-file=.env.local scripts/apply-supabase-migrations.mjs",
     "billing:backfill": "node --env-file=.env.local scripts/backfill-billing-from-stripe.mjs",
     "loops:test-pro-emails": "node --env-file=.env.local scripts/test-loops-pro-emails.mjs",
+    "notifications:test": "node --env-file=.env.local scripts/insert-test-notification.mjs",
     "loops:diagnose": "node --env-file=.env.local scripts/diagnose-loops-transactional.mjs",
     "eodhd:estimate": "node scripts/eodhd-load-estimate.mjs",
     "eodhd:probe": "node scripts/eodhd-traffic-probe.mjs",

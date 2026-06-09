@@ -96,6 +96,16 @@ export function useNotificationsClient(options?: { pollUnreadMs?: number; enable
     }
   }, []);
 
+  const clearAll = useCallback(async () => {
+    try {
+      await fetch("/api/notifications", { method: "DELETE", credentials: "include" });
+      setItems([]);
+      setUnread(0);
+    } catch {
+      /* best-effort */
+    }
+  }, []);
+
   useEffect(() => {
     if (!enabled) return;
     void refresh({ full: false });
@@ -111,5 +121,8 @@ export function useNotificationsClient(options?: { pollUnreadMs?: number; enable
     refresh,
     markRead,
     markAllRead,
+    clearAll,
   };
 }
+
+export type NotificationsClient = ReturnType<typeof useNotificationsClient>;

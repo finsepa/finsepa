@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import {
   countUnreadNotifications,
+  deleteAllNotifications,
   listUserNotifications,
   markAllNotificationsRead,
 } from "@/lib/notifications/user-notifications-store";
@@ -41,6 +42,21 @@ export async function PATCH() {
     const supabase = await getSupabaseServerClient();
     const user = await requireAuthUser(supabase);
     await markAllNotificationsRead(supabase, user.id);
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    if (e instanceof AuthRequiredError) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const message = e instanceof Error ? e.message : "Server error";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
+export async function DELETE() {
+  try {
+    const supabase = await getSupabaseServerClient();
+    const user = await requireAuthUser(supabase);
+    await deleteAllNotifications(supabase, user.id);
     return NextResponse.json({ ok: true });
   } catch (e) {
     if (e instanceof AuthRequiredError) {

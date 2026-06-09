@@ -5,6 +5,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { DetectedEarningsRelease } from "@/lib/notifications/earnings-release-detect";
 import type { TickerInterestMap } from "@/lib/notifications/earnings-notify-universe";
 import type { UserNotificationRow } from "@/lib/notifications/earnings-notify-types";
+import { loadEarningsNotificationsDisabledUserIds } from "@/lib/notifications/notification-preferences-store";
 
 export async function insertEarningsReleaseNotifications(
   admin: SupabaseClient,
@@ -12,6 +13,8 @@ export async function insertEarningsReleaseNotifications(
   releases: readonly DetectedEarningsRelease[],
 ): Promise<number> {
   if (releases.length === 0) return 0;
+
+  const disabledUserIds = await loadEarningsNotificationsDisabledUserIds(admin);
 
   const rows: {
     user_id: string;
@@ -28,6 +31,7 @@ export async function insertEarningsReleaseNotifications(
     const users = interest.get(release.row.ticker);
     if (!users || users.size === 0) continue;
     for (const userId of users) {
+      if (disabledUserIds.has(userId)) continue;
       rows.push({
         user_id: userId,
         kind: "earnings_released",
@@ -106,6 +110,15 @@ export async function markAllNotificationsRead(
     .update({ read_at: new Date().toISOString() })
     .eq("user_id", userId)
     .is("read_at", null);
+
+  if (error) throw new Error(error.message);
+}
+
+export async function deleteAllNotifications(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<void> {
+  const { error } = await supabase.from("user_notifications").delete().eq("user_id", userId);
 
   if (error) throw new Error(error.message);
 }
