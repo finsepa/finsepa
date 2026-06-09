@@ -1,10 +1,16 @@
+import {
+  portfolioIsCombined,
+  type PortfolioEntry,
+  type PortfolioHolding,
+} from "@/components/portfolio/portfolio-types";
+
 /**
- * Routes where we **skip** live mark-to-market on workspace hydrate (saves EODHD calls on
- * read-mostly pages). Everywhere else we refresh so the top-bar portfolio total matches
- * Portfolio → Overview (otherwise `/stock/...` etc. kept last-fill prices and read low).
+ * Routes where we **skip full** live mark-to-market on workspace hydrate (saves EODHD calls on
+ * read-mostly pages). On these routes we still refresh quotes for the **selected** portfolio
+ * only so the top-bar total matches Portfolio → Overview without fanning out every holding.
  *
- * Market list pages (`/screener`, `/heatmaps`) must defer — otherwise each visit fans out
- * per-ticker stock live-price API calls (intraday) for every holding while browsing quotes.
+ * Market list pages (`/screener`, `/heatmaps`) must defer full refresh — otherwise each visit
+ * fans out per-ticker live-price calls for every portfolio while browsing quotes.
  */
 const DEFER_LIVE_QUOTE_REFRESH_PREFIXES = [
   "/screener",
@@ -32,4 +38,33 @@ function pathnameDefersLiveQuotes(pathname: string): boolean {
  */
 export function portfolioPathnameUsesEagerLiveQuotes(pathname: string): boolean {
   return !pathnameDefersLiveQuotes(pathname);
+}
+
+/** Source portfolio ids whose holdings need quotes for the selected (or combined) portfolio total. */
+export function portfolioSourceIdsForLiveQuotes(
+  portfolios: PortfolioEntry[],
+  selectedPortfolioId: string | null,
+): string[] {
+  if (!selectedPortfolioId) return [];
+  const selected = portfolios.find((p) => p.id === selectedPortfolioId);
+  if (!selected) return [];
+  if (portfolioIsCombined(selected)) {
+    const from = selected.combinedFrom ?? [];
+    return from.filter((sid) => portfolios.some((x) => x.id === sid && !portfolioIsCombined(x)));
+  }
+  return [selected.id];
+}
+
+/** Holdings slice to quote for top-bar / selected-portfolio display on deferred routes. */
+export function holdingsSliceForPortfolioLiveQuotes(
+  holdingsByPortfolioId: Record<string, PortfolioHolding[]>,
+  portfolios: PortfolioEntry[],
+  selectedPortfolioId: string | null,
+): Record<string, PortfolioHolding[]> {
+  const ids = portfolioSourceIdsForLiveQuotes(portfolios, selectedPortfolioId);
+  const out: Record<string, PortfolioHolding[]> = {};
+  for (const id of ids) {
+    out[id] = holdingsByPortfolioId[id] ?? [];
+  }
+  return out;
 }

@@ -6,6 +6,7 @@ import {
   formatNotificationTimestamp,
   formatPeriodLabelForDisplay,
   parseEarningsNotificationPayload,
+  resolveNotificationTicker,
   surpriseToneClass,
   type EarningsMetricLine,
 } from "@/lib/notifications/earnings-notification-model";
@@ -56,8 +57,9 @@ export function EarningsNotificationCard({
   className?: string;
 }) {
   const payload = parseEarningsNotificationPayload(item.payload);
-  const identity = readScreenerCompanyIdentity(item.ticker);
-  const companyName = payload?.companyName ?? identity?.name ?? item.ticker;
+  const displayTicker = resolveNotificationTicker(item);
+  const identity = readScreenerCompanyIdentity(displayTicker);
+  const companyName = payload?.companyName ?? identity?.name ?? displayTicker;
   const logoUrl = payload?.logoUrl ?? identity?.logoUrl ?? "";
   const periodLabel = formatPeriodLabelForDisplay(
     payload?.fiscalPeriodLabel ?? item.body,
@@ -70,7 +72,7 @@ export function EarningsNotificationCard({
   return (
     <div className={cn("min-w-0", className)}>
       <div className="flex items-start gap-2 pr-7">
-        <CompanyLogo name={companyName} logoUrl={logoUrl} symbol={item.ticker} size="40" />
+        <CompanyLogo name={companyName} logoUrl={logoUrl} symbol={displayTicker} size="40" />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-1">
             <span
@@ -79,7 +81,7 @@ export function EarningsNotificationCard({
                 "underline-offset-2 group-hover:underline",
               )}
             >
-              {item.ticker}
+              {displayTicker}
             </span>
             <span className={notificationMetaTextClass}>reported earnings</span>
           </div>

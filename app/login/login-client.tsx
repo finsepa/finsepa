@@ -14,7 +14,6 @@ import {
 import { AuthPasswordInput } from "@/components/auth/auth-password-input";
 import { TurnstileField } from "@/components/auth/turnstile-field";
 import { PATH_APP_ENTRY, PATH_AUTH_CALLBACK } from "@/lib/auth/routes";
-import { shouldBypassTurnstileOnClient } from "@/lib/auth/turnstile-public";
 import { useTurnstileConfig } from "@/lib/auth/use-turnstile-config";
 import { friendlySupabaseAuthErrorMessage } from "@/lib/auth/supabase-error-message";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
@@ -57,17 +56,16 @@ export function LoginClient({ resetSuccess, callbackError }: Props) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
-  const { siteKey: turnstileSiteKey, enabled: turnstileEnabled, ready: turnstileReady } =
+  const { siteKey: turnstileSiteKey, enabled: turnstileEnabled, ready: turnstileConfigReady } =
     useTurnstileConfig();
 
   const emailNorm = email.trim().toLowerCase();
   const emailReady = emailNorm.length > 0 && EMAIL_RE.test(emailNorm);
   const passwordReady = password.length >= MIN_PASSWORD_LEN;
-  const bypassTurnstile = shouldBypassTurnstileOnClient();
   const showTurnstile =
-    !bypassTurnstile &&
-    turnstileReady &&
+    turnstileConfigReady &&
     turnstileEnabled &&
+    Boolean(turnstileSiteKey) &&
     emailReady &&
     passwordReady;
   const formCanSubmit =
@@ -137,63 +135,26 @@ export function LoginClient({ resetSuccess, callbackError }: Props) {
     try {
       const supabase = getSupabaseBrowserClient();
 
-      if (bypassTurnstile) {
-        const res = await fetch("/api/auth/local-password-login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
-        });
-        const payload = (await res.json().catch(() => null)) as {
-          error?: string;
-          access_token?: string;
-          refresh_token?: string;
-        } | null;
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+        options: turnstileToken ? { captchaToken: turnstileToken } : undefined,
+      });
 
-        if (!res.ok) {
+      if (error) {
+        const raw = friendlySupabaseAuthErrorMessage(error.message);
+        const captchaRelated = /captcha|security check/i.test(raw) || /captcha/i.test(error.message);
+        if (captchaRelated && !turnstileEnabled) {
           setErrorMessage(
-            payload?.error ??
-              (res.status === 404
-                ? "Local password login is only available on localhost during npm run dev."
-                : "Something went wrong. Please try again."),
+            "Supabase requires Turnstile, but this app has no site key. Add NEXT_PUBLIC_TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY to .env.local (Cloudflare → Turnstile → Finsepa), use the same secret in Supabase → Bot Protection, then restart npm run dev.",
           );
-          return;
+        } else if (captchaRelated && turnstileEnabled && !turnstileToken) {
+          setErrorMessage("Complete the Cloudflare security check below before logging in.");
+        } else {
+          setErrorMessage(raw);
         }
-
-        if (!payload?.access_token || !payload.refresh_token) {
-          setErrorMessage("Something went wrong. Please try again.");
-          return;
-        }
-
-        const { error: sessionError } = await supabase.auth.setSession({
-          access_token: payload.access_token,
-          refresh_token: payload.refresh_token,
-        });
-        if (sessionError) {
-          setErrorMessage(friendlySupabaseAuthErrorMessage(sessionError.message));
-          return;
-        }
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-          options: turnstileToken ? { captchaToken: turnstileToken } : undefined,
-        });
-
-        if (error) {
-          const raw = friendlySupabaseAuthErrorMessage(error.message);
-          const captchaRelated = /captcha|security check/i.test(raw) || /captcha/i.test(error.message);
-          if (captchaRelated && !turnstileEnabled) {
-            setErrorMessage(
-              "Supabase requires Turnstile, but this app has no site key. Add NEXT_PUBLIC_TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY to .env.local (Cloudflare → Turnstile → Finsepa), use the same secret in Supabase → Bot Protection, then restart npm run dev.",
-            );
-          } else if (captchaRelated && turnstileEnabled && !turnstileToken) {
-            setErrorMessage("Complete the Cloudflare security check below before logging in.");
-          } else {
-            setErrorMessage(raw);
-          }
-          setTurnstileToken(null);
-          return;
-        }
+        setTurnstileToken(null);
+        return;
       }
 
       try {
@@ -248,16 +209,6 @@ export function LoginClient({ resetSuccess, callbackError }: Props) {
           className="rounded-[10px] border border-[#FECACA] bg-[#FEF2F2] px-3 py-2 text-sm leading-5 text-[#B91C1C]"
         >
           {callbackHint}
-        </div>
-      ) : null}
-
-      {turnstileReady && !turnstileEnabled ? (
-        <div
-          role="status"
-          className="rounded-[10px] border border-[#FDE68A] bg-[#FFFBEB] px-3 py-2 text-sm leading-5 text-[#92400E]"
-        >
-          Local dev: add Turnstile keys to <code className="text-xs">.env.local</code> and restart{" "}
-          <code className="text-xs">npm run dev</code> so the security check can appear.
         </div>
       ) : null}
 

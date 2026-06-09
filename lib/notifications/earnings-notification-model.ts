@@ -50,6 +50,27 @@ export function formatPeriodLabelForDisplay(
   return raw;
 }
 
+/** Listing symbol for notification UI — row, payload, or legacy `AAPL reported earnings` title. */
+export function resolveNotificationTicker(input: {
+  ticker?: string | null;
+  title?: string | null;
+  payload?: Record<string, unknown> | null;
+}): string {
+  const row = input.ticker?.trim();
+  if (row) return row.toUpperCase();
+
+  const payload = input.payload;
+  if (payload && typeof payload.ticker === "string" && payload.ticker.trim()) {
+    return payload.ticker.trim().toUpperCase();
+  }
+
+  const title = input.title?.trim() ?? "";
+  const legacy = title.match(/^([A-Z][A-Z0-9.-]{0,11})\s+reported\s+earnings$/i);
+  if (legacy?.[1]) return legacy[1].toUpperCase();
+
+  return "";
+}
+
 export function parseEarningsNotificationPayload(
   payload: Record<string, unknown> | null | undefined,
 ): EarningsNotificationPayload | null {

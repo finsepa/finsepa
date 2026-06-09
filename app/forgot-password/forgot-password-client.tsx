@@ -5,7 +5,7 @@ import { AuthInput, AuthLabel, AuthPrimaryButton } from "@/components/auth/auth-
 import { TurnstileField } from "@/components/auth/turnstile-field";
 import { getAuthAppOriginForClient } from "@/lib/auth/app-origin";
 import { PATH_AUTH_RESET_PASSWORD } from "@/lib/auth/routes";
-import { TURNSTILE_ENABLED, TURNSTILE_SITE_KEY } from "@/lib/auth/turnstile-public";
+import { useTurnstileConfig } from "@/lib/auth/use-turnstile-config";
 import { friendlySupabaseAuthErrorMessage } from "@/lib/auth/supabase-error-message";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
@@ -14,6 +14,8 @@ export function ForgotPasswordClient() {
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const { siteKey: turnstileSiteKey, enabled: turnstileEnabled, ready: turnstileConfigReady } =
+    useTurnstileConfig();
 
   const onTurnstileToken = useCallback((token: string) => setTurnstileToken(token), []);
   const onTurnstileExpire = useCallback(() => setTurnstileToken(null), []);
@@ -116,15 +118,18 @@ export function ForgotPasswordClient() {
             <AuthInput type="email" name="email" autoComplete="email" placeholder="Enter your email" required disabled={loading} />
           </div>
 
-          {TURNSTILE_ENABLED ? (
+          {turnstileConfigReady && turnstileEnabled && turnstileSiteKey ? (
             <TurnstileField
-              siteKey={TURNSTILE_SITE_KEY}
+              siteKey={turnstileSiteKey}
               onToken={onTurnstileToken}
               onExpire={onTurnstileExpire}
             />
           ) : null}
 
-          <AuthPrimaryButton type="submit" disabled={loading || (TURNSTILE_ENABLED && !turnstileToken)}>
+          <AuthPrimaryButton
+            type="submit"
+            disabled={loading || (turnstileEnabled && !turnstileToken)}
+          >
             {loading ? "Sending…" : "Send reset link"}
           </AuthPrimaryButton>
         </form>

@@ -248,15 +248,15 @@ export function holdingMatchesTransaction(
 ): boolean {
   const cusip = row.cusip?.trim().toUpperCase() ?? "";
   const txCusip = tx.cusip?.trim().toUpperCase() ?? "";
-  // 13F lines are per CUSIP — do not merge GOOG / GOOGL (etc.) via issuer name alone.
-  if (cusip.length >= 6) {
-    if (txCusip.length >= 6) return cusip === txCusip;
-    return false;
-  }
+  if (cusip.length >= 6 && txCusip.length >= 6 && cusip === txCusip) return true;
 
   const ticker = (row.ticker?.trim() || resolvedTicker?.trim() || "").toUpperCase();
   const txTicker = tx.ticker?.trim().toUpperCase() ?? "";
+  // Same listing symbol (e.g. GOOGL) even when SEC CUSIPs differ across filings.
   if (ticker && txTicker) return ticker === txTicker;
+
+  // 13F lines are per CUSIP — do not merge GOOG / GOOGL (etc.) via issuer name alone.
+  if (cusip.length >= 6 || txCusip.length >= 6) return false;
 
   const issuer = normalizeSuperinvestorIssuerKey(row.companyName);
   const txIssuer = normalizeSuperinvestorIssuerKey(tx.companyName);

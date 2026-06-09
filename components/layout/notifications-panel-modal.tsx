@@ -18,7 +18,10 @@ import {
 } from "@/components/ui/empty";
 import { EarningsNotificationCard } from "@/components/layout/earnings-notification-card";
 import { Spinner } from "@/components/ui/spinner";
-import { parseEarningsNotificationPayload } from "@/lib/notifications/earnings-notification-model";
+import {
+  parseEarningsNotificationPayload,
+  resolveNotificationTicker,
+} from "@/lib/notifications/earnings-notification-model";
 import type { NotificationItem, NotificationsClient } from "@/lib/notifications/use-notifications-client";
 import { useNotificationPreferences } from "@/lib/notifications/use-notification-preferences";
 import type { EarningsCalendarItem } from "@/lib/market/earnings-calendar-types";
@@ -39,12 +42,13 @@ const notificationDismissButtonClass =
 
 function notificationToEarningsPreviewItem(item: NotificationItem): EarningsCalendarItem {
   const payload = parseEarningsNotificationPayload(item.payload);
-  const identity = readScreenerCompanyIdentity(item.ticker);
+  const displayTicker = resolveNotificationTicker(item);
+  const identity = readScreenerCompanyIdentity(displayTicker);
   const reportDate =
     payload?.reportDateYmd ?? (item.createdAt ? item.createdAt.slice(0, 10) : "");
   return {
-    ticker: item.ticker,
-    companyName: payload?.companyName ?? identity?.name ?? item.ticker,
+    ticker: displayTicker,
+    companyName: payload?.companyName ?? identity?.name ?? displayTicker,
     logoUrl: payload?.logoUrl ?? identity?.logoUrl ?? "",
     screenerRank: null,
     reportDate,

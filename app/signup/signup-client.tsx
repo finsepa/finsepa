@@ -111,7 +111,7 @@ export function SignupClient() {
   const [isDuplicateEmail, setIsDuplicateEmail] = useState(false);
   const [loading, setLoading] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
-  const { siteKey: turnstileSiteKey, enabled: turnstileEnabled, ready: turnstileReady } =
+  const { siteKey: turnstileSiteKey, enabled: turnstileEnabled, ready: turnstileConfigReady } =
     useTurnstileConfig();
 
   const [firstName, setFirstName] = useState("");
@@ -125,8 +125,9 @@ export function SignupClient() {
   const firstOk = firstName.trim().length > 0;
   const passOk = password.length >= MIN_PASSWORD_LEN;
   const showTurnstile =
-    turnstileReady &&
+    turnstileConfigReady &&
     turnstileEnabled &&
+    Boolean(turnstileSiteKey) &&
     !SIGNUP_DISABLED &&
     firstOk &&
     emailLooksValid &&
