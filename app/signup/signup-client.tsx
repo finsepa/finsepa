@@ -24,7 +24,8 @@ import { AuthDivider, AuthInput, AuthLabel, AuthPrimaryButton, AuthSecondaryButt
 import { AuthPasswordInput } from "@/components/auth/auth-password-input";
 import { TurnstileField } from "@/components/auth/turnstile-field";
 import { getAuthAppOriginForClient } from "@/lib/auth/app-origin";
-import { TURNSTILE_ENABLED, TURNSTILE_SITE_KEY } from "@/lib/auth/turnstile-public";
+import { TURNSTILE_ENABLED } from "@/lib/auth/turnstile-public";
+import { useTurnstileConfig } from "@/lib/auth/use-turnstile-config";
 import { appendOnboardingQuery, markOnboardingPending } from "@/lib/auth/onboarding";
 import { PATH_APP_ENTRY, PATH_AUTH_CALLBACK } from "@/lib/auth/routes";
 
@@ -110,6 +111,8 @@ export function SignupClient() {
   const [isDuplicateEmail, setIsDuplicateEmail] = useState(false);
   const [loading, setLoading] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const { siteKey: turnstileSiteKey, enabled: turnstileEnabled, ready: turnstileReady } =
+    useTurnstileConfig();
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -122,7 +125,12 @@ export function SignupClient() {
   const firstOk = firstName.trim().length > 0;
   const passOk = password.length >= MIN_PASSWORD_LEN;
   const showTurnstile =
-    TURNSTILE_ENABLED && !SIGNUP_DISABLED && firstOk && emailLooksValid && passOk;
+    turnstileReady &&
+    turnstileEnabled &&
+    !SIGNUP_DISABLED &&
+    firstOk &&
+    emailLooksValid &&
+    passOk;
   const formCanSubmit =
     firstOk &&
     email.trim().length > 0 &&
@@ -478,7 +486,7 @@ export function SignupClient() {
       {showTurnstile ? (
         <TurnstileField
           key={emailNorm}
-          siteKey={TURNSTILE_SITE_KEY}
+          siteKey={turnstileSiteKey}
           onToken={onTurnstileToken}
           onExpire={onTurnstileExpire}
         />

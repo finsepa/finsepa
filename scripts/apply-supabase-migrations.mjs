@@ -88,14 +88,41 @@ async function main() {
 
   await client.connect();
   try {
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS public.schema_migrations (
+        filename text PRIMARY KEY,
+        applied_at timestamptz NOT NULL DEFAULT (now() AT TIME ZONE 'utc')
+      );
+    `);
+
     for (const name of files) {
+      const { rows } = await client.query(
+        "SELECT 1 FROM public.schema_migrations WHERE filename = $1",
+        [name],
+      );
+      if (rows.length > 0) {
+        console.log(`Skipping ${name} (already applied)`);
+        continue;
+      }
+
       const full = path.join(migrationsDir, name);
       const sql = fs.readFileSync(full, "utf8");
       process.stdout.write(`Applying ${name} … `);
-      await client.query(sql);
-      console.log("ok");
+      await client.query("BEGIN");
+      try {
+        await client.query(sql);
+        await client.query(
+          "INSERT INTO public.schema_migrations (filename) VALUES ($1)",
+          [name],
+        );
+        await client.query("COMMIT");
+        console.log("ok");
+      } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+      }
     }
-    console.log(`Done (${files.length} file(s)).`);
+    console.log(`Done (${files.length} file(s) checked).`);
   } finally {
     await client.end();
   }

@@ -318,7 +318,25 @@ export async function upsertBillingSubscription(args: {
 export async function setSubscriptionTrial(args: { userId: string }) {
   const admin = getSupabaseAdminClient();
   if (!admin) return;
-  const platformEnds = new Date(Date.now() + 7 * 86_400_000).toISOString();
+
+  const { data: existing } = await admin
+    .from("billing_subscriptions")
+    .select("platform_trial_ends_at, created_at")
+    .eq("user_id", args.userId)
+    .maybeSingle<Pick<BillingSubscriptionRow, "platform_trial_ends_at" | "created_at">>();
+
+  let platformEnds =
+    typeof existing?.platform_trial_ends_at === "string" ? existing.platform_trial_ends_at.trim() : "";
+  if (!platformEnds && existing?.created_at) {
+    const created = new Date(existing.created_at);
+    if (Number.isFinite(created.getTime())) {
+      platformEnds = new Date(created.getTime() + 7 * 86_400_000).toISOString();
+    }
+  }
+  if (!platformEnds) {
+    platformEnds = new Date(0).toISOString();
+  }
+
   await admin.from("billing_subscriptions").upsert(
     {
       user_id: args.userId,
@@ -327,6 +345,8 @@ export async function setSubscriptionTrial(args: { userId: string }) {
       recurring_amount_usd: 0,
       current_period_end: null,
       cancel_at_period_end: false,
+      stripe_subscription_id: null,
+      stripe_price_id: null,
       platform_trial_ends_at: platformEnds,
       updated_at: new Date().toISOString(),
     },
