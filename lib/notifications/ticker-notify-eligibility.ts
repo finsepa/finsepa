@@ -1,7 +1,7 @@
 import { isSupportedCryptoAssetSymbol } from "@/lib/crypto/crypto-logo-url";
 import { isCustomPortfolioSymbol } from "@/lib/portfolio/custom-asset-symbol";
 import { WATCHLIST_CRYPTO_PREFIX, WATCHLIST_INDEX_PREFIX } from "@/lib/watchlist/constants";
-import { canonicalEarningsScopeKey } from "@/lib/market/earnings-scope-filter";
+import { earningsScopeKey } from "@/lib/market/earnings-scope-filter";
 
 /** US equity tickers we can query on EODHD calendar (excludes crypto, indices, custom assets). */
 export function isEarningsNotifiableTicker(raw: string): boolean {
@@ -19,8 +19,12 @@ export function isEarningsNotifiableTicker(raw: string): boolean {
   return /^[A-Z0-9][A-Z0-9.\-]{0,14}$/i.test(upper);
 }
 
+/**
+ * Listing ticker for EODHD calendar + notification fan-out (e.g. `BF.B`, `CHWY`).
+ * Do **not** use {@link canonicalEarningsScopeKey} here — collapsing `BF.B` → `BF` queries the wrong symbol (`BF.US`).
+ */
 export function canonicalNotifyTicker(raw: string): string {
-  return canonicalEarningsScopeKey(raw);
+  return earningsScopeKey(raw);
 }
 
 /** EODHD listing code for calendar batch (`BRK.B` → `BRK-B.US`). */

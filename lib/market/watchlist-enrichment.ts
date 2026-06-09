@@ -24,7 +24,18 @@ import {
   screenerPeDisplayFromUniverse,
 } from "@/lib/screener/companies-rows";
 import { getScreenerCompaniesStaticLayer, type ScreenerCompanyIdentity } from "@/lib/screener/screener-companies-layers";
-import { resolveEquityLogoUrlFromTicker } from "@/lib/screener/resolve-equity-logo-url";
+import {
+  extractMarketCapUsdFromFundamentalsRoot,
+  fetchEodhdFundamentalsJson,
+  resolveEarningsDateDisplay,
+} from "@/lib/market/eodhd-fundamentals";
+import { peRatioKeyStatsDisplayFromFundamentalsRoot } from "@/lib/market/eodhd-key-stats-valuation";
+import { formatUsdCompact } from "@/lib/market/key-stats-basic-format";
+import { logoUrlFromFundamentalsRoot } from "@/lib/market/stock-logo-url";
+import {
+  resolveEquityLogoUrlFromListingTicker,
+  resolveEquityLogoUrlFromTicker,
+} from "@/lib/screener/resolve-equity-logo-url";
 import type { EodhdTopUniverseRow } from "@/lib/market/eodhd-screener";
 import { getCryptoLogoUrl } from "@/lib/crypto/crypto-logo-url";
 import { isTop10Ticker } from "@/lib/screener/top10-config";
@@ -65,12 +76,71 @@ function pickPct(snapshot: number | null | undefined, derived: number | null | u
   return null;
 }
 
+type WatchlistOffUniverseMeta = {
+  name: string | null;
+  logoUrl: string | null;
+  mcapDisplay: string;
+  peDisplay: string;
+  earningsDisplay: string;
+};
+
 type WatchlistStockBatch = {
   identityByTicker: Record<string, ScreenerCompanyIdentity>;
   universeByTicker: Map<string, EodhdTopUniverseRow>;
   marketData: SimpleMarketData;
   derivedByTicker: Record<string, SimpleScreenerStockDerived>;
+  offUniverseMetaByTicker: Record<string, WatchlistOffUniverseMeta>;
 };
+
+function watchlistMetaFromFundamentalsRoot(
+  ticker: string,
+  root: Record<string, unknown> | null,
+): WatchlistOffUniverseMeta | null {
+  if (!root) return null;
+  const general =
+    root.General && typeof root.General === "object" ? (root.General as Record<string, unknown>) : null;
+  const highlights =
+    root.Highlights && typeof root.Highlights === "object"
+      ? (root.Highlights as Record<string, unknown>)
+      : null;
+  const nameRaw = general?.Name ?? general?.CompanyName ?? general?.ShortName;
+  const name = typeof nameRaw === "string" && nameRaw.trim() ? nameRaw.trim() : null;
+  const marketCapUsd = extractMarketCapUsdFromFundamentalsRoot(root);
+  const mcapDisplay =
+    marketCapUsd != null && Number.isFinite(marketCapUsd) ? formatUsdCompact(marketCapUsd) : "-";
+  const peRaw = peRatioKeyStatsDisplayFromFundamentalsRoot(root);
+  const peDisplay = peRaw && peRaw !== "—" ? peRaw : "-";
+  const earningsRaw = resolveEarningsDateDisplay(highlights, root);
+  const earningsDisplay = earningsRaw?.trim() ? earningsRaw.trim() : "-";
+  const logoFromRoot = logoUrlFromFundamentalsRoot(root, ticker).trim();
+  const logoUrl =
+    logoFromRoot || resolveEquityLogoUrlFromListingTicker(ticker).trim() || null;
+  return { name, logoUrl, mcapDisplay, peDisplay, earningsDisplay };
+}
+
+async function fetchWatchlistOffUniverseMetaByTicker(
+  tickers: string[],
+): Promise<Record<string, WatchlistOffUniverseMeta>> {
+  if (!tickers.length) return {};
+  const rows = await runWithConcurrencyLimit(tickers, WATCHLIST_ENRICH_CONCURRENCY, async (t) => {
+    const tk = t.trim().toUpperCase();
+    try {
+      const root = await fetchEodhdFundamentalsJson(tk);
+      const meta = watchlistMetaFromFundamentalsRoot(
+        tk,
+        root && typeof root === "object" ? (root as Record<string, unknown>) : null,
+      );
+      return { tk, meta };
+    } catch {
+      return { tk, meta: null as WatchlistOffUniverseMeta | null };
+    }
+  });
+  const out: Record<string, WatchlistOffUniverseMeta> = {};
+  for (const { tk, meta } of rows) {
+    if (meta) out[tk] = meta;
+  }
+  return out;
+}
 
 async function buildWatchlistStockBatch(stockTickers: string[]): Promise<WatchlistStockBatch> {
   const staticLayer = await getScreenerCompaniesStaticLayer();
@@ -87,6 +157,7 @@ async function buildWatchlistStockBatch(stockTickers: string[]): Promise<Watchli
         indices: {},
       },
       derivedByTicker: {},
+      offUniverseMetaByTicker: {},
     };
   }
   const marketData = await getSimpleMarketDataForWatchlistStocks(stockTickers);
@@ -95,11 +166,16 @@ async function buildWatchlistStockBatch(stockTickers: string[]): Promise<Watchli
     marketData,
     staticLayer.universe,
   );
+  const offUniverseTickers = stockTickers
+    .map((t) => t.trim().toUpperCase())
+    .filter((t) => !universeByTicker.has(t));
+  const offUniverseMetaByTicker = await fetchWatchlistOffUniverseMetaByTicker(offUniverseTickers);
   return {
     identityByTicker: staticLayer.identityByTicker,
     universeByTicker,
     marketData,
     derivedByTicker,
+    offUniverseMetaByTicker,
   };
 }
 
@@ -117,7 +193,11 @@ function enrichStockWithBatch(entry: WatchlistRow, batch: WatchlistStockBatch): 
   const datum = stockDatum(batch, ticker);
   const derived = batch.derivedByTicker[ticker] ?? null;
   const logoUrl =
-    identity?.logoUrl?.trim() || resolveEquityLogoUrlFromTicker(ticker).trim() || meta.logoUrl?.trim() || null;
+    identity?.logoUrl?.trim() ||
+    resolveEquityLogoUrlFromListingTicker(ticker).trim() ||
+    resolveEquityLogoUrlFromTicker(ticker).trim() ||
+    meta.logoUrl?.trim() ||
+    null;
 
   if (u) {
     const row = buildScreenerCompanyRowFromUniverse(
@@ -150,22 +230,23 @@ function enrichStockWithBatch(entry: WatchlistRow, batch: WatchlistStockBatch): 
   const pct1d = datum?.changePercent1D ?? null;
   const pct1m = pickPct(null, derived?.changePercent1M);
   const ytd = pickPct(null, derived?.changePercentYTD);
+  const offMeta = batch.offUniverseMetaByTicker[ticker];
 
   return {
     entryId: entry.id,
     storageKey: entry.ticker,
     symbol: meta.ticker,
-    name: identity?.name ?? meta.name,
+    name: offMeta?.name ?? identity?.name ?? meta.name,
     kind: "stock",
     href: `/stock/${encodeURIComponent(meta.ticker)}`,
-    logoUrl,
+    logoUrl: offMeta?.logoUrl ?? logoUrl,
     price,
     pct1d,
     pct1m,
     ytd,
-    mcapDisplay: "-",
-    peDisplay: "-",
-    earningsDisplay: "-",
+    mcapDisplay: offMeta?.mcapDisplay ?? "-",
+    peDisplay: offMeta?.peDisplay ?? "-",
+    earningsDisplay: offMeta?.earningsDisplay ?? "-",
   };
 }
 
@@ -454,7 +535,7 @@ export async function buildWatchlistEnrichedGroups(items: WatchlistRow[]): Promi
     .map((i) => i.ticker.trim().toUpperCase())
     .sort()
     .join(",");
-  return withScreenerUsMarketCache("watchlist-enriched-groups-v4", () => buildWatchlistEnrichedGroupsUncached(items), [
+  return withScreenerUsMarketCache("watchlist-enriched-groups-v5", () => buildWatchlistEnrichedGroupsUncached(items), [
     tickersKey,
   ]);
 }

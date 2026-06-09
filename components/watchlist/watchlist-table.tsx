@@ -36,14 +36,6 @@ function ChangeCell({ value }: { value: number | null }) {
   );
 }
 
-function LogoMark({ name }: { name: string }) {
-  return (
-    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-neutral-200 bg-neutral-100 text-[11px] font-bold text-neutral-600">
-      {name.slice(0, 2).toUpperCase()}
-    </div>
-  );
-}
-
 function WatchlistTableSkeleton() {
   return (
     <div className="min-w-0 -mx-4 overflow-x-auto pb-1 sm:mx-0">
@@ -126,11 +118,7 @@ function GroupSection({
                 href={row.href}
                 className="flex items-center gap-3 text-left text-[#09090B] no-underline visited:text-[#09090B]"
               >
-                {row.logoUrl ? (
-                  <CompanyLogo name={row.name} logoUrl={row.logoUrl} symbol={row.symbol} />
-                ) : (
-                  <LogoMark name={row.symbol} />
-                )}
+                <CompanyLogo name={row.name} logoUrl={row.logoUrl ?? ""} symbol={row.symbol} />
                 <div className="min-w-0">
                   <div className="truncate text-[14px] font-semibold leading-5 underline-offset-2 decoration-[#71717A] group-hover:underline">
                     {row.name}

@@ -20,6 +20,8 @@ type TopbarDelayedTooltipProps = {
   label: string;
   /** Hover / focus dwell time before the tooltip shows (avoids flashes on quick pass-through and clicks). */
   delayMs?: number;
+  /** Portal z-index — raise above modals (e.g. `350` when nested in `AppModalOverlay`). */
+  zIndex?: number;
   /** When false, hover/focus hints are suppressed (e.g. while search dropdown is open). */
   enabled?: boolean;
   /** `trailing` anchors to the control's right edge so the pill extends left (right-rail controls). */
@@ -38,6 +40,7 @@ type TopbarDelayedTooltipProps = {
 export function TopbarDelayedTooltip({
   label,
   delayMs = DEFAULT_DELAY_MS,
+  zIndex = TOOLTIP_PORTAL_Z,
   enabled = true,
   align = "center",
   placement = "bottom",
@@ -128,7 +131,7 @@ export function TopbarDelayedTooltip({
             ? "flex-row items-center"
             : cn("flex-col", align === "trailing" ? "items-end" : "items-center"),
         )}
-        style={{ left: pos.left, top: pos.top, transform: pos.transform, zIndex: TOOLTIP_PORTAL_Z }}
+        style={{ left: pos.left, top: pos.top, transform: pos.transform, zIndex }}
         role="tooltip"
       >
         {placement === "right" ? (

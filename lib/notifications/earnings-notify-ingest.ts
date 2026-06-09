@@ -25,7 +25,7 @@ import { insertEarningsReleaseNotifications } from "@/lib/notifications/user-not
 
 /**
  * Detect new earnings actuals for watchlist + holdings tickers via batched EODHD calendar/earnings.
- * ~1 API credit per 80 symbols; default cron every 30m ≈ 48 runs/day.
+ * ~1 API credit per 80 symbols; cron every 15m ≈ 96 runs/day.
  */
 export async function ingestEarningsReleaseNotifications(): Promise<EarningsNotifyIngestResult> {
   return runWithProviderTrace("cron/earnings-notifications", async () => {

@@ -7,6 +7,7 @@ import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
 import { AppModalCloseButton, AppModalShell } from "@/components/ui/app-modal-shell";
 import { CompanyLogo } from "@/components/screener/company-logo";
 import { StockEarningsTabContent } from "@/components/stock/stock-earnings-tab";
+import { WatchlistBellButton } from "@/components/watchlist/watchlist-bell-button";
 import type { EarningsCalendarItem } from "@/lib/market/earnings-calendar-types";
 
 export function EarningsPreviewModal({
@@ -71,7 +72,15 @@ export function EarningsPreviewModal({
                 </span>
               </span>
             </Link>
-            <AppModalCloseButton onClick={onClose} />
+            <div className="flex shrink-0 items-center gap-1">
+              <WatchlistBellButton
+                variant="detail"
+                storageKey={item.ticker.trim().toUpperCase()}
+                label={item.ticker.trim()}
+              />
+              <span className="mx-0.5 h-4 w-px shrink-0 bg-[#E4E4E7]" aria-hidden />
+              <AppModalCloseButton onClick={onClose} />
+            </div>
           </div>
         }
         headerClassName="px-5 py-4"

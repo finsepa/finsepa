@@ -755,18 +755,19 @@ export async function getSimpleScreenerStockDerivedForTickers(
   marketLive: SimpleMarketData,
   universeRows?: readonly { ticker: string; refund1mP: number | null; refundYtdP: number | null }[],
 ): Promise<Record<string, SimpleScreenerStockDerived>> {
+  const normalized = [...new Set(tickers.map((t) => t.trim().toUpperCase()).filter(Boolean))];
   const fromSnapshot = await readMarketSnapshotSlow<SimpleScreenerDerived>(MARKET_SNAPSHOT_KEY.screenerDerived);
-  if (fromSnapshot) return pickScreenerDerivedForTickers(fromSnapshot, tickers);
+  const fromSnapshotPartial = fromSnapshot ? pickScreenerDerivedForTickers(fromSnapshot, normalized) : {};
 
-  const tickersKey = [...tickers]
-    .map((t) => t.trim().toUpperCase())
-    .sort()
-    .join(",");
-  return withScreenerUsMarketCache(
+  const missing = normalized.filter((tk) => !fromSnapshotPartial[tk]);
+  if (!missing.length) return fromSnapshotPartial;
+
+  const fetched = await withScreenerUsMarketCache(
     "screener-stock-derived-slice-v1",
-    () => loadSimpleScreenerStockDerivedForTickersUncached(tickers, marketLive, universeRows),
-    [tickersKey],
+    () => loadSimpleScreenerStockDerivedForTickersUncached(missing, marketLive, universeRows),
+    [missing.sort().join(",")],
   );
+  return { ...fromSnapshotPartial, ...fetched };
 }
 
 function barsToCryptoDerived(bars: EodhdDailyBar[]): CryptoDerivedSlice {

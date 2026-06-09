@@ -29,6 +29,8 @@ export {
   BarChart03 as BarChart3,
   BarLineChart as FileBarChart,
   Bell01 as Bell,
+  BellMinus,
+  BellPlus,
   Briefcase01 as Briefcase,
   Calendar as CalendarDays,
   Calendar as CalendarIcon,

@@ -13,7 +13,7 @@
     },
     {
       "path": "/api/cron/earnings-notifications",
-      "schedule": "*/30 * * * *"
+      "schedule": "*/15 * * * *"
     }
   ]
 }

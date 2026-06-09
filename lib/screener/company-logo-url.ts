@@ -24,9 +24,14 @@ export function logoDevDomainLogoUrl(domain: string): string | null {
   return `/api/media/logo?kind=domain&h=${encodeURIComponent(host)}`;
 }
 
+/** Logo.dev ticker slugs use hyphens for share classes (e.g. `BF.B` → `BF-B`). */
+export function logoDevTickerSlug(ticker: string): string {
+  return ticker.trim().toUpperCase().replace(/\./g, "-");
+}
+
 /** @returns Same-origin path for ticker-based Logo.dev artwork. */
 export function logoDevStockLogoUrl(ticker: string): string | null {
-  const t = ticker.trim().toUpperCase();
+  const t = logoDevTickerSlug(ticker);
   if (!TICKER_RE.test(t)) return null;
   return `/api/media/logo?kind=stock&t=${encodeURIComponent(t)}`;
 }

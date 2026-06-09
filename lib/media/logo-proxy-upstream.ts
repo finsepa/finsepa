@@ -28,7 +28,7 @@ export function buildLogoDevUpstreamUrl(kind: LogoProxyKind, id: string): string
   if (!key) return null;
   const tok = encodeURIComponent(key);
   if (kind === "stock") {
-    const sym = id.trim().toLowerCase();
+    const sym = id.trim().toLowerCase().replace(/\./g, "-");
     if (!sym) return null;
     return `https://img.logo.dev/ticker/${encodeURIComponent(sym)}?token=${tok}&size=128`;
   }
