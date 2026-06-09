@@ -11,11 +11,7 @@ import {
   SCREENER_TABLE_HEADER_STICKY_CLASS,
   ScreenerTableScroll,
 } from "@/components/screener/screener-table-scroll";
-import {
-  EARNINGS_FORECAST_COLUMN_SEPARATOR_CLASS,
-  EARNINGS_FORECAST_OPACITY_CLASS,
-  isFirstForecastTableColumn,
-} from "@/components/stock/earnings-card-styles";
+import { EARNINGS_FORECAST_OPACITY_CLASS } from "@/components/stock/earnings-card-styles";
 import { cn } from "@/lib/utils";
 
 const pct2 = new Intl.NumberFormat("en-US", {
@@ -145,11 +141,10 @@ export function StockIncomeStatementTable({
             <div className={headerLabelCellClass}>{periodHeaderLabel}</div>
             {columns.map((y, i) => (
               <div
-                key={y}
+                key={`col-${i}`}
                 className={cn(
                   headerYearClass,
                   headerValueCellClass,
-                  isFirstForecastTableColumn(i, columnIsForecast) && EARNINGS_FORECAST_COLUMN_SEPARATOR_CLASS,
                   columnIsForecast?.[i] && EARNINGS_FORECAST_OPACITY_CLASS,
                 )}
               >
@@ -167,11 +162,10 @@ export function StockIncomeStatementTable({
             <div className={headerLabelCellClass}>Period Ending</div>
             {columnPeriodEnds.map((label, i) => (
               <div
-                key={`${columns[i] ?? i}-period-end`}
+                key={`period-end-${i}`}
                 className={cn(
                   headerPeriodEndClass,
                   headerValueCellClass,
-                  isFirstForecastTableColumn(i, columnIsForecast) && EARNINGS_FORECAST_COLUMN_SEPARATOR_CLASS,
                   columnIsForecast?.[i] && EARNINGS_FORECAST_OPACITY_CLASS,
                 )}
               >
@@ -244,7 +238,6 @@ function IncomeRow({
           "flex min-h-full items-center justify-end truncate self-stretch",
           isGrowth && "font-medium",
           isGrowth && (growthMissing ? "text-[#71717A]" : toneClass(tone)),
-          isFirstForecastTableColumn(i, columnIsForecast) && EARNINGS_FORECAST_COLUMN_SEPARATOR_CLASS,
           columnIsForecast?.[i] && EARNINGS_FORECAST_OPACITY_CLASS,
         )}
       >

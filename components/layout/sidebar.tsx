@@ -137,7 +137,7 @@ function CollapsedRailTooltip({
   return (
     <div
       ref={enabled ? rootRef : undefined}
-      className={cn(enabled && "relative flex justify-center")}
+      className={cn(enabled && "relative flex w-full justify-center")}
       onPointerEnter={enabled ? scheduleShow : undefined}
       onPointerLeave={enabled ? hide : undefined}
       onPointerDown={enabled ? cancelPendingAndHide : undefined}
@@ -161,9 +161,7 @@ function SidebarRow({ item, pathname, collapsed }: { item: NavItem; pathname: st
     collapsed ? "h-9 w-9 justify-center gap-0 px-0 py-0" : "h-9 gap-2 px-4 py-2",
     item.available ? "text-[#09090B]" : "cursor-not-allowed text-[#A1A1AA] select-none",
     item.available &&
-      (isActive
-        ? "border border-[#E4E4E7] bg-white"
-        : "border border-transparent opacity-70 hover:bg-[#EBEBEB]"),
+      (isActive ? "bg-white" : "opacity-70 hover:bg-[#EBEBEB]"),
   );
 
   const labelWrapClass = cn(
@@ -219,7 +217,7 @@ function SidebarSection({
   collapsed: boolean;
 }) {
   return (
-    <div className={SIDEBAR_CONTENT_MOTION_CLASS}>
+    <div className={cn(SIDEBAR_CONTENT_MOTION_CLASS, collapsed && "w-full")}>
       <p
         className={cn(
           "overflow-hidden pl-4 text-sm font-semibold leading-5 text-[#52525B]",
@@ -229,7 +227,7 @@ function SidebarSection({
       >
         {title}
       </p>
-      <div className="space-y-0.5">
+      <div className={cn("space-y-0.5", collapsed && "w-full")}>
         {items.map((item) => (
           <SidebarRow key={item.label} item={item} pathname={pathname} collapsed={collapsed} />
         ))}
@@ -268,7 +266,7 @@ export function Sidebar() {
         >
           <img src="/logo.svg" alt="Finsepa" width={32} height={32} className="h-8 w-8 shrink-0" />
         </div>
-        <TopbarDelayedTooltip label={collapsed ? "Expand Menu" : "Collapse Menu"}>
+        <TopbarDelayedTooltip label={collapsed ? "Expand Menu" : "Collapse Menu"} placement="right">
           <button
             type="button"
             className={cn(shellChromeToggleButtonClass, "hover:bg-[#EBEBEB]")}
@@ -291,7 +289,7 @@ export function Sidebar() {
         suppressHydrationWarning
         className={cn(
           "flex min-h-0 flex-1 flex-col space-y-3 px-3 pb-1 pt-0",
-          collapsed ? "overflow-y-auto overflow-x-visible" : "",
+          collapsed ? "items-center overflow-y-auto overflow-x-visible" : "",
         )}
       >
         <SidebarSection title="Markets" items={protectedMarketItems} pathname={pathname} collapsed={collapsed} />

@@ -10,6 +10,10 @@
     {
       "path": "/api/cron/superinvestor-13f",
       "schedule": "0 14 * * *"
+    },
+    {
+      "path": "/api/cron/earnings-notifications",
+      "schedule": "*/30 * * * *"
     }
   ]
 }

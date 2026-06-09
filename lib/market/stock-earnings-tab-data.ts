@@ -722,23 +722,84 @@ function getYearlyIncomeBlock(root: Record<string, unknown>): Record<string, unk
   return block as Record<string, unknown>;
 }
 
+function mergeQuarterlyEstimatePoint(
+  prev: StockEarningsEstimatesPoint,
+  next: StockEarningsEstimatesPoint,
+): StockEarningsEstimatesPoint {
+  return {
+    ...next,
+    revenueEstimateUsd: next.revenueEstimateUsd ?? prev.revenueEstimateUsd,
+    epsEstimate: next.epsEstimate ?? prev.epsEstimate,
+    revenueActualUsd: next.revenueActualUsd ?? prev.revenueActualUsd,
+    epsActual: next.epsActual ?? prev.epsActual,
+    reported: prev.reported || next.reported,
+  };
+}
+
 function buildQuarterlyEstimatesFromHistory(history: StockEarningsHistoryRow[]): StockEarningsEstimatesPoint[] {
-  const ordered = [...history].reverse();
-  const out: StockEarningsEstimatesPoint[] = [];
-  for (const r of ordered) {
+  const byKey = new Map<string, StockEarningsEstimatesPoint>();
+  for (const r of [...history].reverse()) {
     if (!r.fiscalPeriodEndYmd && !r.fiscalPeriodLabel) continue;
+    const sortKey = r.fiscalPeriodEndYmd ?? r.fiscalPeriodLabel ?? "";
     const revAct = r.reported ? r.revenueActualUsd : null;
-    out.push({
-      sortKey: r.fiscalPeriodEndYmd ?? r.fiscalPeriodLabel ?? "",
+    const next: StockEarningsEstimatesPoint = {
+      sortKey,
       label: r.fiscalPeriodLabel ?? "—",
       revenueEstimateUsd: sanitizeQuarterlyRevenueEstimateUsd(r.revenueEstimateUsd, revAct),
       revenueActualUsd: revAct,
       epsEstimate: r.epsEstimateRaw,
       epsActual: r.reported ? r.epsActualRaw : null,
       reported: r.reported,
-    });
+    };
+    const prev = byKey.get(sortKey);
+    byKey.set(sortKey, prev ? mergeQuarterlyEstimatePoint(prev, next) : next);
   }
-  return out;
+  return [...byKey.values()].sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+}
+
+/** Restore consensus revenue on reported quarters so Estimates beat/miss lines can render. */
+function backfillQuarterlyRevenueEstimates(
+  quarterly: StockEarningsEstimatesPoint[],
+  history: StockEarningsHistoryRow[],
+  quarterlyRevenueTrend: Map<string, number>,
+  annualRevenueTrend: Map<string, number>,
+  annual: StockEarningsEstimatesPoint[],
+): StockEarningsEstimatesPoint[] {
+  const historyByYmd = new Map<string, StockEarningsHistoryRow>();
+  const historyByLabel = new Map<string, StockEarningsHistoryRow>();
+  for (const row of history) {
+    if (row.fiscalPeriodEndYmd) historyByYmd.set(row.fiscalPeriodEndYmd, row);
+    if (row.fiscalPeriodLabel) historyByLabel.set(row.fiscalPeriodLabel, row);
+  }
+  const annualByYmd = new Map(annual.map((p) => [p.sortKey, p]));
+
+  return quarterly.map((point) => {
+    if (!point.reported || point.revenueActualUsd == null || point.revenueEstimateUsd != null) {
+      return point;
+    }
+    const actual = point.revenueActualUsd;
+    const hist = historyByYmd.get(point.sortKey) ?? historyByLabel.get(point.label);
+
+    const candidates: number[] = [];
+    const trend = quarterlyRevenueTrend.get(point.sortKey);
+    if (trend != null) candidates.push(trend);
+    if (hist?.revenueEstimateUsd != null) candidates.push(hist.revenueEstimateUsd);
+
+    const annualTrend = annualRevenueTrend.get(point.sortKey);
+    if (annualTrend != null) {
+      candidates.push(annualTrend, annualTrend / 4);
+    }
+    const annualPoint = annualByYmd.get(point.sortKey);
+    if (annualPoint?.revenueEstimateUsd != null) {
+      candidates.push(annualPoint.revenueEstimateUsd, annualPoint.revenueEstimateUsd / 4);
+    }
+
+    for (const raw of candidates) {
+      const est = sanitizeQuarterlyRevenueEstimateUsd(coerceRevenueEstimateToUsd(raw, actual), actual);
+      if (est != null) return { ...point, revenueEstimateUsd: est };
+    }
+    return point;
+  });
 }
 
 function buildAnnualEstimatesSeries(
@@ -1063,6 +1124,13 @@ function buildEstimatesChart(
   );
   quarterly = applyDerivedEpsToForwardEstimates(quarterly, annual);
   annual = backfillAnnualEpsEstimates(annual, history, epsTrendMaps.annual);
+  quarterly = backfillQuarterlyRevenueEstimates(
+    quarterly,
+    history,
+    revenueTrendMaps.quarterly,
+    revenueTrendMaps.annual,
+    annual,
+  );
   if (quarterly.length === 0 && annual.length === 0) return null;
   return { quarterly, annual };
 }
@@ -1275,14 +1343,21 @@ async function fetchStockEarningsTabPayloadUncached(
       epsTrendMaps.annual,
     );
     const quarterlyDerived = applyDerivedEpsToForwardEstimates(estimatesChart.quarterly, annualExtended);
+    const annualBackfilled = backfillAnnualEpsEstimates(
+      applyDerivedEpsToForwardEstimates(annualExtended),
+      historyParsed,
+      epsTrendMaps.annual,
+    );
     estimatesChart = {
       ...estimatesChart,
-      annual: backfillAnnualEpsEstimates(
-        applyDerivedEpsToForwardEstimates(annualExtended),
+      annual: annualBackfilled,
+      quarterly: backfillQuarterlyRevenueEstimates(
+        quarterlyDerived,
         historyParsed,
-        epsTrendMaps.annual,
+        revenueTrendMaps.quarterly,
+        revenueTrendMaps.annual,
+        annualBackfilled,
       ),
-      quarterly: quarterlyDerived,
     };
   }
 

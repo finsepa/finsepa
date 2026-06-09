@@ -1,12 +1,17 @@
 "use client";
 
-import { useMemo, useRef, useState, type MouseEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 
 import { formatChartingTableCell } from "@/components/charting/charting-individual-company-table";
 import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
 import { SegmentedControl } from "@/components/design-system";
 import { MULTICHART_BAR_WIDTH_WIDE_PX } from "@/components/stock/multichart-fundamentals-bar";
 import { fundamentalsBarSolidAtIndex } from "@/lib/colors/fundamentals-multi-bar-colors";
+import {
+  fundamentalsBarEnterProgress,
+  prefersReducedFundamentalsBarMotion,
+  runFundamentalsBarEnterAnimation,
+} from "@/lib/chart/fundamentals-bar-enter-animation";
 import {
   buildFundamentalsYAxisTicks,
   computeFundamentalsChartTooltipPlacement,
@@ -20,7 +25,10 @@ import {
   sliceLatestAnnualEstimates,
   sliceLatestQuarterlyEstimates,
 } from "@/lib/market/earnings-annual-display";
-import { EARNINGS_FORECAST_OPACITY_CLASS } from "@/components/stock/earnings-card-styles";
+import {
+  EARNINGS_FORECAST_OPACITY_CLASS,
+  earningsForecastBarFillStyle,
+} from "@/components/stock/earnings-card-styles";
 import { cn } from "@/lib/utils";
 import {
   formatChartingPeriodAxisLabel,
@@ -327,13 +335,29 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
 
   const n = periods.length;
   const showChart = n > 0;
-  const firstForecastIndex = periods.findIndex((p) => p.isForecast);
-  const forecastSeparatorLeftPct =
-    firstForecastIndex > 0
-      ? (periodCenterLeftPercent(firstForecastIndex - 1, n) +
-          periodCenterLeftPercent(firstForecastIndex, n)) /
-        2
-      : null;
+  const shouldAnimateBars = showChart && !prefersReducedFundamentalsBarMotion();
+  const [barEnterElapsedMs, setBarEnterElapsedMs] = useState(() =>
+    prefersReducedFundamentalsBarMotion() ? Number.POSITIVE_INFINITY : 0,
+  );
+  const [barsEnterComplete, setBarsEnterComplete] = useState(() => prefersReducedFundamentalsBarMotion());
+
+  useEffect(() => {
+    if (!showChart || prefersReducedFundamentalsBarMotion()) {
+      setBarEnterElapsedMs(Number.POSITIVE_INFINITY);
+      setBarsEnterComplete(true);
+      return;
+    }
+    setBarEnterElapsedMs(0);
+    setBarsEnterComplete(false);
+    return runFundamentalsBarEnterAnimation({
+      periodCount: n,
+      onFrame: (elapsedMs) => setBarEnterElapsedMs(elapsedMs),
+      onComplete: () => {
+        setBarEnterElapsedMs(Number.POSITIVE_INFINITY);
+        setBarsEnterComplete(true);
+      },
+    });
+  }, [showChart, n, period, metric, data]);
 
   const clearHover = () => {
     setHoveredIndex(null);
@@ -360,22 +384,20 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
 
                 {/* Bars live in the same inset band as the $0 baseline (Multicharts). */}
                 <div
-                  className="absolute inset-x-0 top-[8%] bottom-[4%] min-h-0 w-full min-w-0"
+                  key={`${period}-${metric}-${n}`}
+                  className="absolute inset-x-0 top-[8%] bottom-[4%] min-h-0 w-full min-w-0 overflow-visible"
                   role="img"
                   aria-label={metricConfig.ariaLabel}
                 >
-                {forecastSeparatorLeftPct != null ? (
-                  <div
-                    className="pointer-events-none absolute top-0 bottom-0 z-[1] w-px -translate-x-1/2 bg-[#E4E4E7]"
-                    style={{ left: `${forecastSeparatorLeftPct}%` }}
-                    aria-hidden
-                  />
-                ) : null}
                 {periods.map((p, i) => {
                   const leftPct = periodCenterLeftPercent(i, n);
                   /** Estimate bar height — fall back to reported actual when consensus is missing (common on Q1). */
                   const barPlotValue = p.estimate ?? p.actual;
                   const estH = valueHeightPct(barPlotValue, maxV);
+                  const enterProgress = shouldAnimateBars
+                    ? fundamentalsBarEnterProgress(i, n, barEnterElapsedMs)
+                    : 1;
+                  const animatedEstH = estH * enterProgress;
                   const beatMiss =
                     !p.isForecast && p.estimate != null && p.actual != null
                       ? earningsBeatMiss(p.estimate, p.actual)
@@ -403,10 +425,7 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
                   return (
                     <div
                       key={p.key}
-                      className={cn(
-                        "absolute bottom-0 z-0 flex h-full min-h-0 -translate-x-1/2 flex-col items-center justify-end",
-                        p.isForecast && EARNINGS_FORECAST_OPACITY_CLASS,
-                      )}
+                      className="absolute bottom-0 z-0 flex h-full min-h-0 -translate-x-1/2 flex-col items-center justify-end"
                       style={{ left: `${leftPct}%`, width: barLayout.barHitWidthPx }}
                       onMouseEnter={(e) => {
                         const plot = plotAreaRef.current;
@@ -432,21 +451,26 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
                         />
                       ) : null}
                       <div
-                        className="relative z-10 h-full min-h-0"
+                        className="relative z-10 h-full min-h-0 overflow-visible"
                         style={{ width: barLayout.barWidthPx }}
                       >
-                        {barPlotValue != null ? (
+                        {barPlotValue != null && estH > 0 ? (
                           <div
-                            className="absolute bottom-0 left-1/2 mt-auto shrink-0 -translate-x-1/2 rounded-t-[4px] rounded-b-none"
+                            className="absolute bottom-0 left-1/2 shrink-0 -translate-x-1/2 overflow-hidden rounded-t-[4px] rounded-b-none"
                             style={{
                               width: barLayout.barWidthPx,
-                              height: `${estH}%`,
-                              minHeight: estH > 0 ? 2 : 0,
-                              backgroundColor: ESTIMATE_BAR,
+                              height: `${animatedEstH}%`,
+                              minHeight: animatedEstH > 0 ? 2 : 0,
+                              ...(p.isForecast
+                                ? earningsForecastBarFillStyle(ESTIMATE_BAR)
+                                : { backgroundColor: ESTIMATE_BAR }),
                             }}
                           />
                         ) : null}
-                        {!p.isForecast && p.estimate != null && p.actual != null ? (
+                        {barsEnterComplete &&
+                        !p.isForecast &&
+                        p.estimate != null &&
+                        p.actual != null ? (
                           <EarningsActualBeatMissIndicator
                             estimate={p.estimate}
                             actual={p.actual}
@@ -519,27 +543,34 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
 
             <div className="flex w-full min-w-0 overflow-visible" style={{ height: MULTICHART_AXIS_ROW_PX }}>
               <div className="relative mb-1 min-w-0 flex-1 px-0" style={{ height: MULTICHART_AXIS_ROW_PX }}>
-                {periods.map((p, i) => (
-                  <div
-                    key={`axis-${p.key}`}
-                    className="absolute bottom-0.5 flex max-w-[min(100%,4.5rem)] -translate-x-1/2 justify-center overflow-visible"
-                    style={{ left: `${periodCenterLeftPercent(i, n)}%` }}
-                    title={p.title}
-                  >
-                    <span
+                {periods.map((p, i) => {
+                  const horizontalAxisLabels = period === "annual";
+                  const axisLabelRotateDeg = horizontalAxisLabels ? 0 : AXIS_LABEL_ROTATE_DEG;
+                  return (
+                    <div
+                      key={`axis-${p.key}`}
                       className={cn(
-                        "inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]",
-                        p.isForecast && EARNINGS_FORECAST_OPACITY_CLASS,
+                        "absolute flex max-w-[min(100%,4.5rem)] -translate-x-1/2 justify-center overflow-visible",
+                        horizontalAxisLabels ? "top-1.5" : "bottom-0.5",
                       )}
-                      style={{
-                        transform: `rotate(${AXIS_LABEL_ROTATE_DEG}deg)`,
-                        transformOrigin: "center bottom",
-                      }}
+                      style={{ left: `${periodCenterLeftPercent(i, n)}%` }}
+                      title={p.title}
                     >
-                      {p.axisLabel}
-                    </span>
-                  </div>
-                ))}
+                      <span
+                        className={cn(
+                          "inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]",
+                          p.isForecast && EARNINGS_FORECAST_OPACITY_CLASS,
+                        )}
+                        style={{
+                          transform: axisLabelRotateDeg === 0 ? undefined : `rotate(${axisLabelRotateDeg}deg)`,
+                          transformOrigin: horizontalAxisLabels ? undefined : "center bottom",
+                        }}
+                      >
+                        {p.axisLabel}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
               <div className="shrink-0 pl-1.5" style={{ width: Y_AXIS_W_PX }} aria-hidden />
             </div>

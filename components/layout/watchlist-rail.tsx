@@ -143,7 +143,7 @@ function WatchlistRailToggle({
 }) {
   const label = expanded ? "Collapse watchlist" : "Expand watchlist";
   return (
-    <TopbarDelayedTooltip label={label}>
+    <TopbarDelayedTooltip label={label} placement="left">
       <button
         type="button"
         onClick={onToggle}

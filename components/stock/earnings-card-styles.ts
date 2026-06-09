@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 /** Figma: card value titles — Inter Semi Bold 24 / 36, #09090B. Shared by Earnings summary cards and Multicharts metric cards. */
 export const EARNINGS_CARD_VALUE_CLASS =
   "font-['Inter'] text-[24px] font-semibold leading-[36px] tracking-normal text-[#09090B]";
@@ -13,13 +15,27 @@ export const EARNINGS_CARD_PRIOR_LINE_CLASS =
 /** Forward / consensus-only periods in Estimates (chart bars, table columns, summary cards). */
 export const EARNINGS_FORECAST_OPACITY_CLASS = "opacity-60";
 
-/** Left rule before the first forecast column in the Estimates summary table. */
-export const EARNINGS_FORECAST_COLUMN_SEPARATOR_CLASS =
-  "border-l border-solid border-[#E4E4E7] pl-2 sm:pl-3";
-
-export function isFirstForecastTableColumn(i: number, columnIsForecast?: boolean[]): boolean {
-  if (!columnIsForecast?.[i]) return false;
-  return i === 0 || !columnIsForecast[i - 1];
+/** Diagonal hatch fill for forward estimate bars in the Estimates chart. */
+export function earningsForecastBarFillStyle(barColor: string): CSSProperties {
+  const hex = barColor.match(/^#([0-9a-f]{6})$/i);
+  let fill = "rgba(37, 99, 235, 0.16)";
+  let line = "rgba(37, 99, 235, 0.72)";
+  let border = "rgba(37, 99, 235, 0.45)";
+  if (hex) {
+    const v = parseInt(hex[1]!, 16);
+    const r = (v >> 16) & 255;
+    const g = (v >> 8) & 255;
+    const b = v & 255;
+    fill = `rgba(${r},${g},${b},0.16)`;
+    line = `rgba(${r},${g},${b},0.72)`;
+    border = `rgba(${r},${g},${b},0.45)`;
+  }
+  return {
+    backgroundColor: fill,
+    backgroundImage: `repeating-linear-gradient(45deg, ${line} 0, ${line} 1.5px, transparent 1.5px, transparent 7px)`,
+    border: `1px solid ${border}`,
+    boxSizing: "border-box",
+  };
 }
 
 /** Multicharts / macro metric cards — Figma: 20px padding, 12px radius, 1px #E4E4E7 stroke. */

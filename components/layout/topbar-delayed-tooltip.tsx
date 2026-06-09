@@ -14,6 +14,7 @@ export const DWELL_TOOLTIP_DELAY_MS = 1000;
 const DEFAULT_DELAY_MS = DWELL_TOOLTIP_DELAY_MS;
 
 type TopbarDelayedTooltipAlign = "center" | "trailing";
+type TopbarDelayedTooltipPlacement = "bottom" | "left" | "right";
 
 type TopbarDelayedTooltipProps = {
   label: string;
@@ -23,12 +24,14 @@ type TopbarDelayedTooltipProps = {
   enabled?: boolean;
   /** `trailing` anchors to the control's right edge so the pill extends left (right-rail controls). */
   align?: TopbarDelayedTooltipAlign;
+  /** `bottom` = pill below control (default). `right` = pill to the right (collapsed sidebar). `left` = pill to the left (right-rail controls). */
+  placement?: TopbarDelayedTooltipPlacement;
   children: ReactNode;
   className?: string;
 };
 
 /**
- * Figma-style top bar hint: dark pill below the control with a small upward caret.
+ * Figma-style hint: dark pill with a caret (`placement="bottom"`, `"left"`, or `"right"`).
  * Appears only after {@link delayMs} of continuous hover or keyboard focus.
  * Rendered in a **portal** so it is not clipped by sidebar `overflow-y-auto` or stacked under the top bar (`z-30`).
  */
@@ -37,6 +40,7 @@ export function TopbarDelayedTooltip({
   delayMs = DEFAULT_DELAY_MS,
   enabled = true,
   align = "center",
+  placement = "bottom",
   children,
   className,
 }: TopbarDelayedTooltipProps) {
@@ -78,12 +82,20 @@ export function TopbarDelayedTooltip({
     const el = rootRef.current;
     if (!el) return;
     const r = el.getBoundingClientRect();
+    if (placement === "right") {
+      setPos({ left: r.right + 6, top: r.top + r.height / 2, transform: "translateY(-50%)" });
+      return;
+    }
+    if (placement === "left") {
+      setPos({ left: r.left - 6, top: r.top + r.height / 2, transform: "translate(-100%, -50%)" });
+      return;
+    }
     if (align === "trailing") {
       setPos({ left: r.right, top: r.bottom + 6, transform: "translateX(-100%)" });
       return;
     }
     setPos({ left: r.left + r.width / 2, top: r.bottom + 6, transform: "translateX(-50%)" });
-  }, [align]);
+  }, [align, placement]);
 
   useLayoutEffect(() => {
     if (!visible) return;
@@ -111,19 +123,40 @@ export function TopbarDelayedTooltip({
     visible && mounted ? (
       <div
         className={cn(
-          "pointer-events-none fixed flex flex-col",
-          align === "trailing" ? "items-end" : "items-center",
+          "pointer-events-none fixed flex",
+          placement === "right" || placement === "left"
+            ? "flex-row items-center"
+            : cn("flex-col", align === "trailing" ? "items-end" : "items-center"),
         )}
         style={{ left: pos.left, top: pos.top, transform: pos.transform, zIndex: TOOLTIP_PORTAL_Z }}
         role="tooltip"
       >
+        {placement === "right" ? (
+          <div
+            className="h-0 w-0 border-y-[6px] border-r-[7px] border-y-transparent border-r-[#09090B]"
+            aria-hidden
+          />
+        ) : null}
+        {placement === "bottom" ? (
+          <div
+            className="h-0 w-0 border-x-[6px] border-b-[7px] border-x-transparent border-b-[#09090B]"
+            aria-hidden
+          />
+        ) : null}
         <div
-          className="h-0 w-0 border-x-[6px] border-b-[7px] border-x-transparent border-b-[#09090B]"
-          aria-hidden
-        />
-        <div className="-mt-px whitespace-nowrap rounded-md bg-[#09090B] px-2.5 py-1.5 text-center text-xs font-medium leading-4 text-white">
+          className={cn(
+            "whitespace-nowrap rounded-md bg-[#09090B] px-2.5 py-1.5 text-center text-xs font-medium leading-4 text-white",
+            placement === "right" ? "-ml-px" : placement === "left" ? "-mr-px" : "-mt-px",
+          )}
+        >
           {label}
         </div>
+        {placement === "left" ? (
+          <div
+            className="h-0 w-0 border-y-[6px] border-l-[7px] border-y-transparent border-l-[#09090B]"
+            aria-hidden
+          />
+        ) : null}
       </div>
     ) : null;
 

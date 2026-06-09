@@ -8,10 +8,8 @@ import { getNvdaHeaderMeta, getNvdaKeyStatsBundle, getNvdaPerformance } from "@/
 import { getStockDetailHeaderMetaForPage } from "@/lib/market/stock-header-meta-server";
 import { buildStockKeyStatsBundle } from "@/lib/market/stock-key-stats-bundle";
 import { getStockPerformance } from "@/lib/market/stock-performance";
-import {
-  CHARTING_MAX_COMPARE_TICKERS,
-  parseChartingTickerList,
-} from "@/lib/market/stock-charting-metrics";
+import { capComparisonTickers } from "@/lib/comparison/comparison-session";
+import { parseChartingTickerList } from "@/lib/market/stock-charting-metrics";
 import type { ComparisonTickerSlice } from "@/lib/comparison/fetch-comparison-ticker-slice";
 
 const getCachedKeyStatsBundle = unstable_cache(
@@ -60,7 +58,7 @@ export async function GET(request: Request) {
   }
 
   const raw = new URL(request.url).searchParams.get("tickers")?.trim() ?? "";
-  const tickers = parseChartingTickerList(raw || null).slice(0, CHARTING_MAX_COMPARE_TICKERS);
+  const tickers = capComparisonTickers(parseChartingTickerList(raw || null));
 
   if (!tickers.length) {
     return NextResponse.json({ slices: {} as Record<string, ComparisonTickerSlice> }, {

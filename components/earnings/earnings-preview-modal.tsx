@@ -72,9 +72,9 @@ export function EarningsPreviewModal({
             <AppModalCloseButton onClick={onClose} />
           </div>
         }
-        headerClassName="border-b border-[#E4E4E7] px-5 py-4"
+        headerClassName="px-5 py-4"
         bodyClassName="min-h-0 min-w-0 px-5 pb-5 pt-2"
-        cardClassName="overflow-hidden"
+        cardClassName="overflow-hidden shadow-none"
       >
         <div ref={setBodyScrollEl} className="min-h-0 min-w-0">
           <StockEarningsTabContent ticker={item.ticker} scrollRoot={bodyScrollEl} previewMode />

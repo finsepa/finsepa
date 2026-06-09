@@ -1,17 +1,18 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { X } from "@/lib/icons";
 
 import { ChartingCompanyAddDropdown } from "@/components/charting/charting-company-add-dropdown";
-import { writeComparisonSessionTickers } from "@/lib/comparison/comparison-session";
-import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
+import { ComparisonCompanyLimitModal } from "@/components/comparison/comparison-company-limit-modal";
 import {
-  CHARTING_MAX_COMPARE_TICKERS,
-  buildComparisonPath,
-  parseChartingTickerList,
-} from "@/lib/market/stock-charting-metrics";
+  COMPARISON_MAX_COMPANIES,
+  capComparisonTickers,
+  writeComparisonSessionTickers,
+} from "@/lib/comparison/comparison-session";
+import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
+import { buildComparisonPath, parseChartingTickerList } from "@/lib/market/stock-charting-metrics";
 
 type Props = {
   tickers: string[];
@@ -38,17 +39,21 @@ export function ComparisonEmptyToolbar({ tickers, allowedChartingTickers }: Prop
   }, [searchParams, chartingAllowSet]);
 
   const displayTickers = useMemo(
-    () => (tickersFromRouter.length > 0 ? tickersFromRouter : tickers),
+    () => capComparisonTickers(tickersFromRouter.length > 0 ? tickersFromRouter : tickers),
     [tickers, tickersFromRouter],
   );
 
+  const [limitModalOpen, setLimitModalOpen] = useState(false);
+
   const syncUrl = useCallback(
     (nextTickers: string[]) => {
-      const normalized = parseChartingTickerList(
-        nextTickers
-          .map((t) => t.trim().toUpperCase())
-          .filter(Boolean)
-          .join(","),
+      const normalized = capComparisonTickers(
+        parseChartingTickerList(
+          nextTickers
+            .map((t) => t.trim().toUpperCase())
+            .filter(Boolean)
+            .join(","),
+        ),
       );
       writeComparisonSessionTickers(normalized);
       router.replace(buildComparisonPath(normalized, []), { scroll: false });
@@ -90,14 +95,19 @@ export function ComparisonEmptyToolbar({ tickers, allowedChartingTickers }: Prop
           onPickStock={(sym) => {
             const u = sym.trim().toUpperCase();
             if (displayTickers.includes(u)) return;
-            if (displayTickers.length >= CHARTING_MAX_COMPARE_TICKERS) return;
+            if (displayTickers.length >= COMPARISON_MAX_COMPANIES) {
+              setLimitModalOpen(true);
+              return;
+            }
             syncUrl([...displayTickers, u]);
           }}
-          disabled={displayTickers.length >= CHARTING_MAX_COMPARE_TICKERS}
-          maxExtraCompanies={Math.max(0, CHARTING_MAX_COMPARE_TICKERS - displayTickers.length)}
+          maxExtraCompanies={Math.max(0, COMPARISON_MAX_COMPANIES - displayTickers.length)}
           excludeSymbols={displayTickers}
+          alwaysAllowOpen
         />
       </div>
+
+      <ComparisonCompanyLimitModal open={limitModalOpen} onClose={() => setLimitModalOpen(false)} />
     </div>
   );
 }

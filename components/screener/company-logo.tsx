@@ -8,6 +8,18 @@ import { logoColors } from "./data";
 
 const LOGO_INSET_TICKERS = new Set(["AAPL", "GOOGL", "GOOG", "MSFT", "MU"]);
 
+/** Per-ticker zoom inside the fixed frame (logos with baked-in whitespace). */
+const LOGO_SCALE_BOOST: Partial<Record<string, number>> = {
+  INTC: 1.16,
+  HD: 1.28,
+};
+
+function logoScaleBoost(symbol: string | undefined): number | null {
+  const sym = symbol?.trim().toUpperCase();
+  if (!sym) return null;
+  return LOGO_SCALE_BOOST[sym] ?? null;
+}
+
 /** Full-bleed marks look oversized — pad inside the fixed frame only. */
 function brandLogoInsetClass(
   symbol: string | undefined,
@@ -107,6 +119,7 @@ export function CompanyLogo({
   logoUrl,
   symbol,
   size = "md",
+  fill = false,
   className,
 }: {
   name: string;
@@ -115,6 +128,8 @@ export function CompanyLogo({
   symbol?: string;
   /** `xs` = 20×20, `sm` = 24×24, `28` = 28×28, `md` = 32×32 (default), `40` = 40×40, `lg` = 48×48. */
   size?: "xs" | "sm" | "28" | "md" | "40" | "lg";
+  /** Zoom logo to fill the square (earnings grid, etc.). Inset brands keep their padding. */
+  fill?: boolean;
   className?: string;
 }) {
   const [failed, setFailed] = useState(false);
@@ -160,13 +175,16 @@ export function CompanyLogo({
               ? "h-12 w-12 rounded-lg"
               : "h-8 w-8 rounded-lg";
   const sym = symbol?.trim().toUpperCase();
-  const intelBoost = sym === "INTC";
+  const scaleBoost = logoScaleBoost(sym);
+  const useFillFrame =
+    (fill && !LOGO_INSET_TICKERS.has(sym ?? "")) || scaleBoost != null;
+  const fillScale = scaleBoost ?? 1.22;
   const onLogoError = () => {
     setFailed(true);
     if (symbol) mergeLogoMemory(symbol, null);
   };
 
-  if (intelBoost) {
+  if (useFillFrame) {
     return (
       <div
         className={cn(
@@ -183,7 +201,8 @@ export function CompanyLogo({
           height={px}
           loading="lazy"
           decoding="async"
-          className="absolute inset-0 h-full w-full scale-[1.16] object-contain"
+          className="absolute inset-0 h-full w-full object-contain"
+          style={{ transform: `scale(${fillScale})` }}
           onError={onLogoError}
         />
       </div>

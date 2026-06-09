@@ -9,6 +9,7 @@ import { ComparisonEmptyToolbar } from "@/components/comparison/comparison-empty
 import { ComparisonWorkspace } from "@/components/comparison/comparison-workspace";
 import type { StockPageInitialData } from "@/lib/market/stock-page-initial-data";
 import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
+import { capComparisonTickers } from "@/lib/comparison/comparison-session";
 import { isComparisonSessionReady, parseChartingTickerList } from "@/lib/market/stock-charting-metrics";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 
@@ -41,7 +42,8 @@ export function ComparisonPage({
       if (isSingleAssetMode()) return isSupportedAsset(t);
       return chartingAllowSet.has(t.trim().toUpperCase());
     });
-    return { sessionReady: isComparisonSessionReady(allowed), allowedTickers: allowed };
+    const capped = capComparisonTickers(allowed);
+    return { sessionReady: isComparisonSessionReady(capped), allowedTickers: capped };
   }, [searchParams, searchKey, chartingAllowSet]);
 
   /** Workspace only when `?ticker=` is present — do not restore from localStorage on bare `/comparison`. */

@@ -5,6 +5,13 @@ import {
 
 const STORAGE_KEY = "finsepa:comparison-tickers-v1";
 
+/** Max companies on `/comparison` and stock Peers tab. */
+export const COMPARISON_MAX_COMPANIES = 5;
+
+export function capComparisonTickers(tickers: string[]): string[] {
+  return parseChartingTickerList(chartingTickersToParam(tickers)).slice(0, COMPARISON_MAX_COMPANIES);
+}
+
 /** Persisted compare list — shared by `/comparison` and stock `?tab=peers`. */
 export function readComparisonSessionTickers(): string[] {
   if (typeof window === "undefined") return [];
@@ -19,7 +26,7 @@ export function readComparisonSessionTickers(): string[] {
 export function writeComparisonSessionTickers(tickers: string[]): void {
   if (typeof window === "undefined") return;
   try {
-    const normalized = parseChartingTickerList(chartingTickersToParam(tickers));
+    const normalized = capComparisonTickers(tickers);
     if (!normalized.length) {
       window.localStorage.removeItem(STORAGE_KEY);
       return;

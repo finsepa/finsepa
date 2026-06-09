@@ -424,6 +424,24 @@ body {
   animation-fill-mode: both;
 }
 
+@keyframes app-panel-modal-in {
+  from {
+    opacity: 0;
+    transform: translate3d(100%, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.app-panel-modal-enter {
+  animation-name: app-panel-modal-in;
+  animation-duration: var(--app-modal-motion-duration);
+  animation-timing-function: var(--app-modal-motion-easing);
+  animation-fill-mode: both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   @media (min-width: 768px) {
     #app-shell-root {
@@ -432,6 +450,10 @@ body {
   }
 
   .app-modal-dialog-enter {
+    animation: none;
+  }
+
+  .app-panel-modal-enter {
     animation: none;
   }
 }

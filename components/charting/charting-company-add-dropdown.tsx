@@ -11,6 +11,7 @@ export function ChartingCompanyAddDropdown({
   disabled,
   maxExtraCompanies,
   excludeSymbols = [],
+  alwaysAllowOpen = false,
 }: {
   onPickStock: (symbol: string) => void;
   disabled?: boolean;
@@ -18,6 +19,8 @@ export function ChartingCompanyAddDropdown({
   maxExtraCompanies: number;
   /** Hide these tickers from the screener list (e.g. primary + already compared). */
   excludeSymbols?: string[];
+  /** Keep the trigger enabled at capacity (caller shows an error on pick). */
+  alwaysAllowOpen?: boolean;
 }) {
   return (
     <CompanyPicker
@@ -26,6 +29,7 @@ export function ChartingCompanyAddDropdown({
       maxExtraCompanies={maxExtraCompanies}
       excludeSymbols={excludeSymbols}
       includeCrypto={false}
+      alwaysAllowOpen={alwaysAllowOpen}
     >
       {({ open, setOpen, atCapacity }) => (
         <button

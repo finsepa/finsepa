@@ -9,9 +9,12 @@ import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspac
 import { netCashUsd, normalizeUsdForDisplay, totalNetWorth } from "@/lib/portfolio/overview-metrics";
 import { TopbarDelayedTooltip } from "./topbar-delayed-tooltip";
 import { TopbarSearch } from "./topbar-search";
+import { NotificationsPanelModal } from "./notifications-panel-modal";
+import { useNotificationsClient } from "@/lib/notifications/use-notifications-client";
 import { TopbarQuickAddMenu } from "./topbar-quick-add-menu";
 import { TopbarUserMenu } from "./topbar-user-menu";
 import {
+  topbarSquircleActiveClass,
   topbarSquircleIconClass,
   topbarSquircleTextButtonClass,
   topbarSquircleSplitShellClass,
@@ -24,10 +27,6 @@ const usdTopbar = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
-
-function IconButton({ children }: { children: React.ReactNode }) {
-  return <button type="button" className={topbarSquircleIconClass}>{children}</button>;
-}
 
 const TopbarPortfolioBlock = memo(function TopbarPortfolioBlock() {
   const {
@@ -113,6 +112,11 @@ export function Topbar({
   /** Passed into the user menu: trial countdown after avatar + Upgrade to Pro in the dropdown. */
   platformTrialDaysLeft?: number | null;
 }) {
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const { unread: unreadNotifications } = useNotificationsClient({
+    enabled: TOPBAR_SHOW_NOTIFICATIONS,
+  });
+
   return (
     <>
       <header className="flex h-14 min-w-0 flex-nowrap items-center gap-2 overflow-hidden max-md:px-4 md:min-h-[var(--shell-chrome-header-height)] md:h-auto md:gap-3 md:px-4 md:py-3">
@@ -123,14 +127,6 @@ export function Topbar({
         </div>
 
         <div className="flex h-9 shrink-0 items-center gap-2 md:gap-3">
-          {TOPBAR_SHOW_NOTIFICATIONS ? (
-            <TopbarDelayedTooltip label="Notifications">
-              <IconButton>
-                <Bell className="h-5 w-5" />
-              </IconButton>
-            </TopbarDelayedTooltip>
-          ) : null}
-
           <TopbarDelayedTooltip label="Watchlist" className="inline-flex shrink-0 md:hidden">
             <Link
               href="/watchlist"
@@ -152,6 +148,35 @@ export function Topbar({
             <TopbarPortfolioBlock />
           </div>
 
+          {TOPBAR_SHOW_NOTIFICATIONS ? (
+            <TopbarDelayedTooltip label="Notifications" className="shrink-0" enabled={!notificationsOpen}>
+              <button
+                type="button"
+                aria-label={
+                  unreadNotifications > 0
+                    ? `Notifications, ${unreadNotifications} unread`
+                    : "Notifications"
+                }
+                aria-expanded={notificationsOpen}
+                aria-haspopup="dialog"
+                onClick={() => setNotificationsOpen(true)}
+                className={cn(
+                  topbarSquircleIconClass,
+                  "relative",
+                  notificationsOpen && topbarSquircleActiveClass,
+                )}
+              >
+                <Bell className="h-5 w-5" strokeWidth={1.75} aria-hidden />
+                {unreadNotifications > 0 ? (
+                  <span
+                    className="absolute right-1 top-1 h-2 w-2 rounded-full bg-[#2563EB] ring-2 ring-white"
+                    aria-hidden
+                  />
+                ) : null}
+              </button>
+            </TopbarDelayedTooltip>
+          ) : null}
+
           <TopbarUserMenu
             userId={userId}
             userInitials={userInitials}
@@ -161,6 +186,8 @@ export function Topbar({
           />
         </div>
       </header>
+
+      <NotificationsPanelModal open={notificationsOpen} onClose={() => setNotificationsOpen(false)} />
     </>
   );
 }

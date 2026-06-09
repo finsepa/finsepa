@@ -24,16 +24,15 @@ import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset
 import type { StockPageInitialData } from "@/lib/market/stock-page-initial-data";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
 import type { StockDetailHeaderMeta } from "@/lib/market/stock-header-meta";
+import { ComparisonCompanyLimitModal } from "@/components/comparison/comparison-company-limit-modal";
 import {
+  COMPARISON_MAX_COMPANIES,
+  capComparisonTickers,
   mergeComparisonAnchorTickers,
   buildStockPeersComparePath,
   writeComparisonSessionTickers,
 } from "@/lib/comparison/comparison-session";
-import {
-  CHARTING_MAX_COMPARE_TICKERS,
-  buildComparisonPath,
-  parseChartingTickerList,
-} from "@/lib/market/stock-charting-metrics";
+import { buildComparisonPath, parseChartingTickerList } from "@/lib/market/stock-charting-metrics";
 
 /** Client-only chart avoids SSR/client HTML drift (e.g. after HMR). */
 const ComparisonReturnChart = dynamic(
@@ -172,9 +171,11 @@ export function ComparisonWorkspace({
 
   const displayTickers = useMemo(() => {
     const list = tickersFromUrl.length > 0 ? tickersFromUrl : tickers;
-    if (anchor) return mergeComparisonAnchorTickers(list, anchor);
-    return list;
+    if (anchor) return capComparisonTickers(mergeComparisonAnchorTickers(list, anchor));
+    return capComparisonTickers(list);
   }, [tickersFromUrl, tickers, anchor]);
+
+  const [limitModalOpen, setLimitModalOpen] = useState(false);
 
   const [sliceByTicker, setSliceByTicker] = useState<Record<string, ComparisonTickerSlice>>(() => {
     const out: Record<string, ComparisonTickerSlice> = {};
@@ -243,13 +244,15 @@ export function ComparisonWorkspace({
 
   const pushUrl = useCallback(
     (next: string[]) => {
-      let normalized = parseChartingTickerList(
-        next
-          .map((t) => t.trim().toUpperCase())
-          .filter(Boolean)
-          .join(","),
+      let normalized = capComparisonTickers(
+        parseChartingTickerList(
+          next
+            .map((t) => t.trim().toUpperCase())
+            .filter(Boolean)
+            .join(","),
+        ),
       );
-      if (anchor) normalized = mergeComparisonAnchorTickers(normalized, anchor);
+      if (anchor) normalized = capComparisonTickers(mergeComparisonAnchorTickers(normalized, anchor));
       writeComparisonSessionTickers(normalized);
       if (isStockTab && anchor) {
         router.replace(buildStockPeersComparePath(anchor, normalized), { scroll: false });
@@ -277,7 +280,19 @@ export function ComparisonWorkspace({
     pushUrl([]);
   }, [pushUrl, anchor]);
 
-  const atCap = displayTickers.length >= CHARTING_MAX_COMPARE_TICKERS;
+  const tryAddTicker = useCallback(
+    (sym: string) => {
+      const u = sym.trim().toUpperCase();
+      if (!u || displayTickers.includes(u)) return;
+      if (displayTickers.length >= COMPARISON_MAX_COMPANIES) {
+        setLimitModalOpen(true);
+        return;
+      }
+      pushUrl([...displayTickers, u]);
+    },
+    [displayTickers, pushUrl],
+  );
+
   const TitleTag = titleAs;
 
   const rows = useMemo(() => {
@@ -372,17 +387,14 @@ export function ComparisonWorkspace({
           );
         })}
         <ChartingCompanyAddDropdown
-          onPickStock={(sym) => {
-            const u = sym.trim().toUpperCase();
-            if (displayTickers.includes(u)) return;
-            if (atCap) return;
-            pushUrl([...displayTickers, u]);
-          }}
-          disabled={atCap}
-          maxExtraCompanies={Math.max(0, CHARTING_MAX_COMPARE_TICKERS - displayTickers.length)}
+          onPickStock={tryAddTicker}
+          maxExtraCompanies={Math.max(0, COMPARISON_MAX_COMPANIES - displayTickers.length)}
           excludeSymbols={displayTickers}
+          alwaysAllowOpen
         />
       </div>
+
+      <ComparisonCompanyLimitModal open={limitModalOpen} onClose={() => setLimitModalOpen(false)} />
 
       <div className="overflow-x-auto" aria-busy={chartLoading}>
         <div className="inline-block min-w-full">

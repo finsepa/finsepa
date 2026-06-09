@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 
 import { addDaysUtc, getEarningsTimingBucketOverflow, mondayOfWeekUtc, toYmdUtc } from "@/lib/market/earnings-week-data";
 import type { EarningsTimingBucketId } from "@/lib/market/earnings-calendar-types";
+import {
+  filterEarningsCalendarItems,
+  parseAllowedScopeKeysParam,
+} from "@/lib/market/earnings-scope-filter";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { AuthRequiredError, requireAuthUser } from "@/lib/watchlist/api-auth";
 
@@ -58,12 +62,15 @@ export async function GET(request: Request) {
   }
 
   const all = await getEarningsTimingBucketOverflow(monday, day, timingRaw);
+  const allowedKeys = parseAllowedScopeKeysParam(url.searchParams.get("allowed"));
+  const filtered =
+    allowedKeys && allowedKeys.size === 0 ? [] : filterEarningsCalendarItems(all, allowedKeys);
 
   const offset = offsetRaw != null ? Number(offsetRaw) : 0;
   const limit = limitRaw != null ? Number(limitRaw) : 10;
   const safeOffset = Number.isFinite(offset) && offset > 0 ? Math.floor(offset) : 0;
   const safeLimit = Number.isFinite(limit) ? Math.min(50, Math.max(1, Math.floor(limit))) : 10;
 
-  const items = all.slice(safeOffset, safeOffset + safeLimit);
-  return NextResponse.json({ items, total: all.length, offset: safeOffset, limit: safeLimit });
+  const items = filtered.slice(safeOffset, safeOffset + safeLimit);
+  return NextResponse.json({ items, total: filtered.length, offset: safeOffset, limit: safeLimit });
 }

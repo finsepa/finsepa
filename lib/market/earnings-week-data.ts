@@ -156,6 +156,15 @@ export function formatWeekRangeLabel(monday: Date, friday: Date): string {
   return `${monthShort(monday)} ${dayNum(monday)} - ${monthShort(friday)} ${dayNum(friday)}, ${year(friday)}`;
 }
 
+/** Earnings page title — month + year for the week’s Monday (e.g. `June 2026`). */
+export function formatWeekMonthYearLabel(weekMonday: Date): string {
+  return weekMonday.toLocaleDateString("en-US", {
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
 function weekdayShortUtc(ymd: string): string {
   const t = Date.parse(`${ymd}T12:00:00.000Z`);
   if (!Number.isFinite(t)) return "";
@@ -208,8 +217,11 @@ function nameFromRawRow(row: EodhdRawEarningRow): string | null {
  */
 const MIN_MARKET_CAP_USD = 1_500_000_000;
 
-/** SSR + initial paint: first N names per timing bucket; overflow loads via `/api/earnings/week-bucket`. */
-const EARNINGS_BUCKET_PREVIEW_COUNT = 10;
+/**
+ * SSR + initial paint: first N names per timing bucket; overflow loads via `/api/earnings/week-bucket`.
+ * Matches the 4×3 grid minus the last-cell overflow tile (11 company slots + `+N`).
+ */
+const EARNINGS_BUCKET_PREVIEW_COUNT = 11;
 
 /**
  * Parallel fundamentals fetches for market-cap filtering. Previously a fixed chunk size of 10 ran
@@ -779,7 +791,7 @@ async function buildEarningsWeekDataPackageUncached(
     );
   const payload: EarningsWeekPayload = {
     weekMondayYmd: fromYmd,
-    weekLabel: formatWeekRangeLabel(monday, friday),
+    weekLabel: formatWeekMonthYearLabel(monday),
     days,
     hasAnyEvents,
     datasetFilter: strictMc ? "fundamentals_mc" : "universe_mc",
@@ -796,7 +808,7 @@ const getEarningsWeekDataPackageCached = unstable_cache(
     const monday = Number.isFinite(t) ? mondayOfWeekUtc(new Date(t)) : mondayOfWeekUtc(new Date());
     return buildEarningsWeekDataPackageUncached(monday, mode === "fund");
   },
-  ["earnings-week-v28-off-universe-fundamentals-mc"],
+  ["earnings-week-v30-month-year-title"],
   { revalidate: REVALIDATE_EARNINGS_CALENDAR },
 );
 

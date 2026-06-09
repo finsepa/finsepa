@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState, type MouseEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 
 import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
 import { ComparisonReturnChartSkeleton } from "@/components/comparison/comparison-skeletons";
@@ -24,9 +24,11 @@ const RETURN_CHART_AXIS_ROW_PX = 32;
 const RETURN_CHART_TOTAL_HEIGHT_PX = RETURN_CHART_PLOT_HEIGHT_PX + RETURN_CHART_AXIS_ROW_PX;
 const RETURN_CHART_Y_AXIS_W_PX = 56;
 
-const BAR_WIDTH_PX = 22;
-const BAR_GAP_PX = 4;
-const BAR_HIT_PAD_PX = 10;
+const RETURN_BAR_WIDTH_MAX_PX = 20;
+const RETURN_BAR_GAP_MAX_PX = 4;
+const RETURN_BAR_GAP_MIN_PX = 1;
+/** Fraction of each year slot used by the bar group (leaves gutter between years). */
+const RETURN_YEAR_SLOT_FILL = 0.82;
 /** Cap bar height inside each zone so columns stay inside the plot band. */
 const RETURN_BAR_MAX_HEIGHT_FRAC = 0.88;
 
@@ -43,8 +45,12 @@ type SeriesBar = {
 
 type YearColumn = {
   year: number;
-  leftPct: number;
   bars: SeriesBar[];
+};
+
+type ReturnBarLayout = {
+  barWidthPx: number;
+  gapPx: number;
 };
 
 type TooltipState = {
@@ -54,12 +60,6 @@ type TooltipState = {
   periodLabel: string;
   lines: { ticker: string; text: string; color: string }[];
 };
-
-function periodCenterLeftPercent(i: number, n: number): number {
-  if (n <= 0) return 50;
-  if (n === 1) return 50;
-  return ((i + 0.5) / n) * 100;
-}
 
 function formatReturnPct(v: number): string {
   if (!Number.isFinite(v)) return "—";
@@ -73,9 +73,59 @@ function formatReturnAxisTick(v: number): string {
   return `${sign}${Math.abs(v).toFixed(2)}%`;
 }
 
-function yearColumnHitWidthPx(barCount: number): number {
-  const n = Math.max(1, barCount);
-  return n * BAR_WIDTH_PX + (n - 1) * BAR_GAP_PX + BAR_HIT_PAD_PX * 2;
+function returnBarWidthMaxPx(barCount: number): number {
+  if (barCount >= 5) return 9;
+  if (barCount >= 4) return 12;
+  if (barCount >= 3) return 16;
+  return RETURN_BAR_WIDTH_MAX_PX;
+}
+
+/** Fit grouped bars inside each year column when many companies are selected. */
+function computeReturnBarLayout(
+  plotWidthPx: number,
+  yearCount: number,
+  barCount: number,
+): ReturnBarLayout {
+  const years = Math.max(1, yearCount);
+  const bars = Math.max(1, barCount);
+  const maxBarPx = returnBarWidthMaxPx(bars);
+  const slotWidthPx = plotWidthPx > 0 ? plotWidthPx / years : 0;
+  const groupBudgetPx = slotWidthPx > 0 ? slotWidthPx * RETURN_YEAR_SLOT_FILL : 0;
+
+  if (bars === 1) {
+    return {
+      barWidthPx: groupBudgetPx > 0 ? Math.min(maxBarPx, groupBudgetPx) : maxBarPx,
+      gapPx: 0,
+    };
+  }
+
+  if (groupBudgetPx <= 0) {
+    return { barWidthPx: maxBarPx, gapPx: RETURN_BAR_GAP_MIN_PX };
+  }
+
+  let gapPx = bars >= 5 ? RETURN_BAR_GAP_MIN_PX : bars >= 3 ? 2 : RETURN_BAR_GAP_MAX_PX;
+  let barWidthPx = (groupBudgetPx - (bars - 1) * gapPx) / bars;
+
+  if (barWidthPx > maxBarPx) {
+    barWidthPx = maxBarPx;
+    gapPx = Math.max(0, (groupBudgetPx - bars * barWidthPx) / (bars - 1));
+  }
+
+  let groupWidthPx = bars * barWidthPx + (bars - 1) * gapPx;
+  if (groupWidthPx > groupBudgetPx) {
+    gapPx = RETURN_BAR_GAP_MIN_PX;
+    barWidthPx = (groupBudgetPx - (bars - 1) * gapPx) / bars;
+    groupWidthPx = bars * barWidthPx + (bars - 1) * gapPx;
+    if (groupWidthPx > groupBudgetPx) {
+      gapPx = 0;
+      barWidthPx = groupBudgetPx / bars;
+    }
+  }
+
+  return {
+    barWidthPx: Math.max(2, Math.round(barWidthPx * 10) / 10),
+    gapPx: Math.max(0, Math.round(gapPx * 10) / 10),
+  };
 }
 
 function computeReturnChartScale(columns: YearColumn[]): ReturnChartScale {
@@ -133,24 +183,79 @@ function ComparisonReturnBar({
   scale,
   fill,
   direction,
+  widthPx,
 }: {
   value: number;
   scale: ReturnChartScale;
   fill: string;
   direction: "up" | "down";
+  widthPx: number;
 }) {
   const cap = RETURN_BAR_MAX_HEIGHT_FRAC * 100;
   const hPct =
     direction === "up"
       ? (value / scale.maxPos) * cap
       : (-value / Math.max(scale.maxNeg, 1)) * cap;
-  if (hPct <= 0) return <div style={{ width: BAR_WIDTH_PX }} aria-hidden />;
   const rounded = direction === "up" ? "rounded-t-[2px]" : "rounded-b-[2px]";
+  if (hPct <= 0) return null;
   return (
     <div
-      className={`w-full ${rounded}`}
-      style={{ height: `${hPct}%`, minHeight: 2, backgroundColor: fill }}
+      className={`shrink-0 ${rounded}`}
+      style={{
+        width: widthPx,
+        height: `${hPct}%`,
+        minHeight: 2,
+        backgroundColor: fill,
+      }}
     />
+  );
+}
+
+function ComparisonReturnBarSlot({
+  bar,
+  color,
+  scale,
+  barWidthPx,
+}: {
+  bar: SeriesBar | undefined;
+  color: string;
+  scale: ReturnChartScale;
+  barWidthPx: number;
+}) {
+  const hasNegZone = scale.maxNeg > 0;
+  return (
+    <div
+      className="grid h-full min-h-0"
+      style={{
+        width: barWidthPx,
+        gridTemplateRows: hasNegZone ? `${scale.maxPos}fr ${scale.maxNeg}fr` : "1fr",
+      }}
+    >
+      <div className="flex min-h-0 items-end justify-center overflow-hidden">
+        {bar && bar.value >= 0 ? (
+          <ComparisonReturnBar
+            value={bar.value}
+            scale={scale}
+            fill={color}
+            direction="up"
+            widthPx={barWidthPx}
+          />
+        ) : null}
+      </div>
+      {hasNegZone ? (
+        <div className="flex min-h-0 items-start justify-center overflow-hidden">
+          {bar && bar.value < 0 ? (
+            <ComparisonReturnBar
+              value={bar.value}
+              scale={scale}
+              fill={color}
+              direction="down"
+              widthPx={barWidthPx}
+            />
+          ) : null}
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -166,8 +271,19 @@ export function ComparisonReturnChart({
   loading?: boolean;
 }) {
   const plotAreaRef = useRef<HTMLDivElement>(null);
+  const [plotWidthPx, setPlotWidthPx] = useState(0);
   const [hoveredYear, setHoveredYear] = useState<number | null>(null);
   const [tip, setTip] = useState<TooltipState | null>(null);
+
+  useEffect(() => {
+    const el = plotAreaRef.current;
+    if (!el) return;
+    const sync = () => setPlotWidthPx(Math.max(0, Math.floor(el.clientWidth)));
+    sync();
+    const ro = new ResizeObserver(sync);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [loading, tickers.length]);
 
   const chartYears = useMemo(() => {
     for (const t of tickers) {
@@ -178,8 +294,7 @@ export function ComparisonReturnChart({
   }, [tickers, performances]);
 
   const yearColumns = useMemo((): YearColumn[] => {
-    const nYears = chartYears.length;
-    return chartYears.map((year, yearIndex) => {
+    return chartYears.map((year) => {
       const bars: SeriesBar[] = [];
       tickers.forEach((sym, j) => {
         const v = annualReturnPctForYear(performances[sym], year);
@@ -190,13 +305,20 @@ export function ComparisonReturnChart({
           color: colors[j] ?? "#2563EB",
         });
       });
-      return {
-        year,
-        leftPct: periodCenterLeftPercent(yearIndex, nYears),
-        bars,
-      };
+      return { year, bars };
     });
   }, [chartYears, tickers, performances, colors]);
+
+  const barLayout = useMemo(
+    () => computeReturnBarLayout(plotWidthPx, chartYears.length, tickers.length),
+    [plotWidthPx, chartYears.length, tickers.length],
+  );
+
+  const barGroupWidthPx = useMemo(() => {
+    const n = tickers.length;
+    if (n <= 0) return 0;
+    return n * barLayout.barWidthPx + Math.max(0, n - 1) * barLayout.gapPx;
+  }, [tickers.length, barLayout.barWidthPx, barLayout.gapPx]);
 
   const scale = useMemo(() => computeReturnChartScale(yearColumns), [yearColumns]);
 
@@ -270,7 +392,12 @@ export function ComparisonReturnChart({
                     <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
                   </div>
 
-                  <div className="absolute inset-x-0 top-[8%] bottom-[4%] z-[1] flex min-h-0 w-full min-w-0 flex-col overflow-hidden">
+                  <div
+                    className="absolute inset-x-0 top-[8%] bottom-[4%] z-[1] grid h-full min-h-0 w-full min-w-0 overflow-hidden"
+                    style={{
+                      gridTemplateColumns: `repeat(${Math.max(1, chartYears.length)}, minmax(0, 1fr))`,
+                    }}
+                  >
                     <div
                       className="pointer-events-none absolute inset-x-0 border-t"
                       style={{
@@ -280,20 +407,18 @@ export function ComparisonReturnChart({
                       aria-hidden
                     />
                     {yearColumns.map((col) => {
-                      if (!col.bars.length) return null;
-                      const hitW = yearColumnHitWidthPx(col.bars.length);
+                      if (!col.bars.length) {
+                        return <div key={col.year} className="min-w-0" aria-hidden />;
+                      }
                       const lines = col.bars.map((b) => ({
                         ticker: b.ticker,
                         text: formatReturnPct(b.value),
                         color: b.color,
                       }));
-                      const posBars = col.bars.filter((b) => b.value >= 0);
-                      const negBars = col.bars.filter((b) => b.value < 0);
                       return (
                         <div
                           key={col.year}
-                          className="absolute top-0 bottom-0 z-[2] flex -translate-x-1/2 flex-col"
-                          style={{ left: `${col.leftPct}%`, width: hitW }}
+                          className="relative z-[2] flex h-full min-w-0 flex-col items-center overflow-hidden px-px"
                           onMouseEnter={(e) => {
                             const plot = plotAreaRef.current;
                             if (!plot) return;
@@ -315,35 +440,28 @@ export function ComparisonReturnChart({
                             />
                           ) : null}
                           <div
-                            className="relative z-10 flex min-h-0 w-full flex-1 items-end justify-center gap-1"
-                            style={{ flex: scale.maxPos }}
+                            className="relative z-10 grid h-full min-h-0 shrink-0 overflow-hidden"
+                            style={{
+                              width: barGroupWidthPx,
+                              maxWidth: "100%",
+                              gridTemplateColumns: `repeat(${tickers.length}, ${barLayout.barWidthPx}px)`,
+                              columnGap: barLayout.gapPx,
+                            }}
                           >
-                            {posBars.map((b) => (
-                              <ComparisonReturnBar
-                                key={`${col.year}-${b.ticker}-up`}
-                                value={b.value}
-                                scale={scale}
-                                fill={b.color}
-                                direction="up"
-                              />
-                            ))}
-                          </div>
-                          {scale.maxNeg > 0 ? (
-                            <div
-                              className="relative z-10 flex min-h-0 w-full items-start justify-center gap-1"
-                              style={{ flex: scale.maxNeg }}
-                            >
-                              {negBars.map((b) => (
-                                <ComparisonReturnBar
-                                  key={`${col.year}-${b.ticker}-down`}
-                                  value={b.value}
+                            {tickers.map((sym, j) => {
+                              const bar = col.bars.find((b) => b.ticker === sym);
+                              const color = colors[j] ?? "#2563EB";
+                              return (
+                                <ComparisonReturnBarSlot
+                                  key={`${col.year}-${sym}`}
+                                  bar={bar}
+                                  color={color}
                                   scale={scale}
-                                  fill={b.color}
-                                  direction="down"
+                                  barWidthPx={barLayout.barWidthPx}
                                 />
-                              ))}
-                            </div>
-                          ) : null}
+                              );
+                            })}
+                          </div>
                         </div>
                       );
                     })}
