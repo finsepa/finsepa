@@ -2,36 +2,15 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-export type NotificationItem = {
-  id: string;
-  kind: string;
-  ticker: string;
-  title: string;
-  body: string;
-  href: string | null;
-  readAt: string | null;
-  createdAt: string;
-};
+import { parseClientNotificationItem, type ClientNotificationItem } from "@/lib/notifications/notification-api-map";
+
+export type NotificationItem = ClientNotificationItem;
 
 type NotificationsResponse = {
   items?: NotificationItem[];
   unread?: number;
   error?: string;
 };
-
-function mapItem(raw: Record<string, unknown>): NotificationItem | null {
-  if (typeof raw.id !== "string") return null;
-  return {
-    id: raw.id,
-    kind: typeof raw.kind === "string" ? raw.kind : "earnings_released",
-    ticker: typeof raw.ticker === "string" ? raw.ticker : "",
-    title: typeof raw.title === "string" ? raw.title : "",
-    body: typeof raw.body === "string" ? raw.body : "",
-    href: typeof raw.href === "string" ? raw.href : null,
-    readAt: typeof raw.read_at === "string" ? raw.read_at : null,
-    createdAt: typeof raw.created_at === "string" ? raw.created_at : "",
-  };
-}
 
 export function useNotificationsClient(options?: { pollUnreadMs?: number; enabled?: boolean }) {
   const enabled = options?.enabled ?? true;
@@ -60,7 +39,7 @@ export function useNotificationsClient(options?: { pollUnreadMs?: number; enable
       if (full && Array.isArray(json.items)) {
         setItems(
           json.items
-            .map((row) => mapItem(row as unknown as Record<string, unknown>))
+            .map((row) => parseClientNotificationItem(row as unknown as Record<string, unknown>))
             .filter(Boolean) as NotificationItem[],
         );
       }
@@ -72,23 +51,40 @@ export function useNotificationsClient(options?: { pollUnreadMs?: number; enable
   }, [enabled]);
 
   const markRead = useCallback(async (id: string) => {
+    let wasUnread = false;
+    setItems((prev) => {
+      const target = prev.find((n) => n.id === id);
+      wasUnread = Boolean(target && !target.readAt);
+      if (!wasUnread) return prev;
+      return prev.map((n) =>
+        n.id === id ? { ...n, readAt: new Date().toISOString() } : n,
+      );
+    });
+    if (wasUnread) setUnread((c) => Math.max(0, c - 1));
+
     try {
-      await fetch(`/api/notifications/${encodeURIComponent(id)}/read`, {
+      const res = await fetch(`/api/notifications/${encodeURIComponent(id)}/read`, {
         method: "POST",
         credentials: "include",
       });
-      setItems((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, readAt: new Date().toISOString() } : n)),
-      );
-      setUnread((c) => Math.max(0, c - 1));
+      if (!res.ok) {
+        setItems((prev) =>
+          prev.map((n) => (n.id === id ? { ...n, readAt: null } : n)),
+        );
+        if (wasUnread) setUnread((c) => c + 1);
+      }
     } catch {
-      /* best-effort */
+      setItems((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, readAt: null } : n)),
+      );
+      if (wasUnread) setUnread((c) => c + 1);
     }
   }, []);
 
   const markAllRead = useCallback(async () => {
     try {
-      await fetch("/api/notifications", { method: "PATCH", credentials: "include" });
+      const res = await fetch("/api/notifications", { method: "PATCH", credentials: "include" });
+      if (!res.ok) return;
       setItems((prev) => prev.map((n) => ({ ...n, readAt: n.readAt ?? new Date().toISOString() })));
       setUnread(0);
     } catch {
@@ -98,9 +94,30 @@ export function useNotificationsClient(options?: { pollUnreadMs?: number; enable
 
   const clearAll = useCallback(async () => {
     try {
-      await fetch("/api/notifications", { method: "DELETE", credentials: "include" });
+      const res = await fetch("/api/notifications", { method: "DELETE", credentials: "include" });
+      if (!res.ok) return;
       setItems([]);
       setUnread(0);
+      void refresh({ full: false });
+    } catch {
+      /* best-effort */
+    }
+  }, [refresh]);
+
+  const removeNotification = useCallback(async (id: string) => {
+    try {
+      const res = await fetch(`/api/notifications/${encodeURIComponent(id)}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!res.ok) return;
+      setItems((prev) => {
+        const target = prev.find((n) => n.id === id);
+        if (target && !target.readAt) {
+          setUnread((c) => Math.max(0, c - 1));
+        }
+        return prev.filter((n) => n.id !== id);
+      });
     } catch {
       /* best-effort */
     }
@@ -122,6 +139,7 @@ export function useNotificationsClient(options?: { pollUnreadMs?: number; enable
     markRead,
     markAllRead,
     clearAll,
+    removeNotification,
   };
 }
 

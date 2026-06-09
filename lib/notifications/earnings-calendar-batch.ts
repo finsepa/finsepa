@@ -1,7 +1,6 @@
 import "server-only";
 
 import { getEodhdApiKey } from "@/lib/env/server";
-import { tryConsumeEodhdRequestSlot } from "@/lib/market/eodhd-hourly-budget";
 import { traceEodhdHttp } from "@/lib/market/provider-trace";
 import type { EarningsNotifyCalendarRow } from "@/lib/notifications/earnings-notify-types";
 import {
@@ -64,9 +63,6 @@ export async function fetchEarningsCalendarBatch(
   if (!key || canonicalTickers.length === 0) return { rows: [], requests: 0 };
 
   const symbols = canonicalTickers.map(eodhdCalendarCodeFromTicker).join(",");
-  if (!tryConsumeEodhdRequestSlot()) {
-    return { rows: [], requests: 0 };
-  }
 
   const params = new URLSearchParams({
     symbols,

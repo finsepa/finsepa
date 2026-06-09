@@ -53,17 +53,21 @@ async function main() {
   try {
     const userId = await resolveUserId(client);
     const dedupeKey = `TEST:${Date.now()}`;
-    const title = "HQY reported earnings";
-    const body = "Q2 2026 · EPS $1.24 vs $1.13 est (+9.7%) — test notification";
+    const title = "HealthEquity reported earnings";
+    const body = "Q2 · 2026";
     const href = "/stock/HQY?tab=earnings";
     const payload = {
       ticker: "HQY",
-      fiscalPeriodLabel: "Q2 2026",
-      fiscalPeriodEndYmd: "2026-01-31",
+      companyName: "HealthEquity",
+      fiscalPeriodLabel: "Q2 · 2026",
+      fiscalPeriodEndYmd: "2026-04-30",
       reportDateYmd: "2026-06-08",
       epsActual: 1.24,
       epsEstimate: 1.13,
-      surprisePct: 9.7,
+      surprisePct: 9.7345,
+      revenueActual: 354_641_000,
+      revenueEstimate: 352_170_990,
+      revenueSurprisePct: 0.7014,
       href,
       test: true,
     };

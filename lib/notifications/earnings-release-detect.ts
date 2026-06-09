@@ -2,6 +2,7 @@ import type {
   EarningsNotifyCalendarRow,
   EarningsReleaseSnapshotRow,
 } from "@/lib/notifications/earnings-notify-types";
+import { quarterLabelFromPeriodEndYmd } from "@/lib/notifications/earnings-notification-model";
 
 export const MAX_REPORT_AGE_DAYS = 14;
 export const FIRST_SEEN_MAX_AGE_DAYS = 3;
@@ -18,24 +19,6 @@ export function daysBetweenYmd(fromYmd: string, toYmd: string): number {
   const b = Date.parse(`${toYmd}T12:00:00.000Z`);
   if (!Number.isFinite(a) || !Number.isFinite(b)) return Number.POSITIVE_INFINITY;
   return Math.floor(Math.abs(b - a) / 86_400_000);
-}
-
-function quarterLabelFromPeriodEndYmd(ymd: string): string {
-  const [, ms] = ymd.split("-");
-  const m = Number(ms);
-  if (!Number.isFinite(m)) return ymd;
-  const y = ymd.slice(0, 4);
-  return `Q${Math.ceil(m / 3)} ${y}`;
-}
-
-function formatEps(n: number): string {
-  return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-function formatSurprisePct(pct: number | null): string | null {
-  if (pct == null || !Number.isFinite(pct)) return null;
-  const sign = pct > 0 ? "+" : "";
-  return `${sign}${pct.toFixed(1)}%`;
 }
 
 export type DetectedEarningsRelease = {
@@ -81,26 +64,13 @@ export function buildEarningsReleaseNotification(
 ): DetectedEarningsRelease {
   const periodLabel = quarterLabelFromPeriodEndYmd(row.fiscalPeriodEndYmd!);
   const dedupeKey = `${row.ticker}:${row.fiscalPeriodEndYmd}`;
-  const epsAct = formatEps(row.epsActual!);
-  const epsEst =
-    row.epsEstimate != null ? formatEps(row.epsEstimate) : null;
-  const surprise = formatSurprisePct(row.surprisePct);
-
-  let body = periodLabel;
-  if (epsEst != null) {
-    body += ` · EPS $${epsAct} vs $${epsEst} est`;
-    if (surprise) body += ` (${surprise})`;
-  } else {
-    body += ` · EPS $${epsAct}`;
-  }
-
   const href = `/stock/${encodeURIComponent(row.ticker)}?tab=earnings`;
 
   return {
     row,
     dedupeKey,
     title: `${row.ticker} reported earnings`,
-    body,
+    body: periodLabel,
     href,
     payload: {
       ticker: row.ticker,

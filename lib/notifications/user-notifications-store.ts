@@ -122,3 +122,17 @@ export async function deleteAllNotifications(
 
   if (error) throw new Error(error.message);
 }
+
+export async function deleteNotification(
+  supabase: SupabaseClient,
+  userId: string,
+  notificationId: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from("user_notifications")
+    .delete()
+    .eq("id", notificationId)
+    .eq("user_id", userId);
+
+  if (error) throw new Error(error.message);
+}

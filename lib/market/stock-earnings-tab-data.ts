@@ -1254,6 +1254,88 @@ function pickUpcomingFromHistory(
   };
 }
 
+export type EarningsPeriodMetrics = {
+  fiscalPeriodLabel: string | null;
+  epsActual: number | null;
+  epsEstimate: number | null;
+  surprisePct: number | null;
+  revenueActual: number | null;
+  revenueEstimate: number | null;
+  revenueSurprisePct: number | null;
+};
+
+/** Same EPS/revenue actuals and estimates as the stock earnings tab (preview path). */
+export function resolveEarningsPeriodMetricsFromFundamentals(
+  root: Record<string, unknown>,
+  fiscalPeriodEndYmd: string,
+): EarningsPeriodMetrics | null {
+  const earn = root.Earnings;
+  if (!earn || typeof earn !== "object") return null;
+  const history = (earn as Record<string, unknown>).History;
+  if (!history || typeof history !== "object") return null;
+  const h = history as Record<string, unknown>;
+
+  let rawRow: Record<string, unknown> | null = null;
+  const direct = h[fiscalPeriodEndYmd];
+  if (direct && typeof direct === "object") {
+    rawRow = direct as Record<string, unknown>;
+  } else {
+    for (const row of Object.values(h)) {
+      if (!row || typeof row !== "object") continue;
+      const r = row as Record<string, unknown>;
+      const dateYmd = toYmdUtcFromUnknown(r.date ?? r.Date);
+      if (dateYmd === fiscalPeriodEndYmd) {
+        rawRow = r;
+        break;
+      }
+    }
+  }
+  if (!rawRow) return null;
+
+  const revenueByFiscalPeriodEnd = buildRevenueByFiscalPeriodEndYmd(root);
+  const revenueTrendMaps = buildRevenueEstimateTrendMaps(root);
+  const epsTrendMaps = buildEpsEstimateTrendMaps(root);
+  const quarterlyRevenueByLabel = quarterlyEstimateMapsByQuarterLabel(
+    revenueTrendMaps.quarterly,
+    quarterLabelFromPeriodEndYmd,
+  );
+  const quarterlyEpsByLabel = quarterlyEstimateMapsByQuarterLabel(
+    epsTrendMaps.quarterly,
+    quarterLabelFromPeriodEndYmd,
+  );
+
+  const parsed = historyRowFromRaw(
+    rawRow,
+    revenueByFiscalPeriodEnd,
+    revenueTrendMaps.quarterly,
+    epsTrendMaps.quarterly,
+    quarterlyRevenueByLabel,
+    quarterlyEpsByLabel,
+  );
+
+  let revenueSurprisePct: number | null = null;
+  if (
+    parsed.revenueActualUsd != null &&
+    parsed.revenueEstimateUsd != null &&
+    parsed.revenueEstimateUsd !== 0
+  ) {
+    revenueSurprisePct =
+      ((parsed.revenueActualUsd - parsed.revenueEstimateUsd) /
+        Math.abs(parsed.revenueEstimateUsd)) *
+      100;
+  }
+
+  return {
+    fiscalPeriodLabel: parsed.fiscalPeriodLabel,
+    epsActual: parsed.epsActualRaw,
+    epsEstimate: parsed.epsEstimateRaw,
+    surprisePct: parsed.surprisePct,
+    revenueActual: parsed.revenueActualUsd,
+    revenueEstimate: parsed.revenueEstimateUsd,
+    revenueSurprisePct,
+  };
+}
+
 export type StockEarningsTabFetchMode = "full" | "preview";
 
 /**

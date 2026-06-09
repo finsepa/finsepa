@@ -170,7 +170,7 @@ export function Topbar({
                 <Bell className="h-5 w-5" strokeWidth={1.75} aria-hidden />
                 {unreadNotifications > 0 ? (
                   <span
-                    className="absolute right-1 top-1 h-2 w-2 rounded-full bg-[#2563EB] ring-2 ring-white"
+                    className="absolute right-1 top-1 h-2 w-2 rounded-full bg-[#DC2626] ring-2 ring-white"
                     aria-hidden
                   />
                 ) : null}

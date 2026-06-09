@@ -28,6 +28,8 @@ type AppPanelModalShellProps = {
   bodyClassName?: string;
   cardClassName?: string;
   bodyScroll?: boolean;
+  /** Slide-in on mount (disable when parent drives exit/enter). */
+  animateEnter?: boolean;
 };
 
 /**
@@ -46,11 +48,12 @@ export function AppPanelModalShell({
   bodyClassName,
   cardClassName,
   bodyScroll = true,
+  animateEnter = true,
 }: AppPanelModalShellProps) {
   return (
     <div
       className={cn(
-        APP_PANEL_MODAL_ENTER_CLASS,
+        animateEnter && APP_PANEL_MODAL_ENTER_CLASS,
         APP_MODAL_SHELL_OUTER_CLASS,
         APP_PANEL_MODAL_WIDTH_CLASS,
         "mt-2 mb-2 mr-2 h-[calc(100dvh-16px)]",

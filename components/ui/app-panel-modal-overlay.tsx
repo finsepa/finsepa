@@ -7,6 +7,7 @@ import { useModalStackRegister } from "@/components/ui/modal-stack-provider";
 import { cn } from "@/lib/utils";
 
 export const APP_PANEL_MODAL_ENTER_CLASS = "app-panel-modal-enter";
+export const APP_PANEL_MODAL_EXIT_CLASS = "app-panel-modal-exit";
 
 type AppPanelModalOverlayProps = {
   open: boolean;
@@ -16,6 +17,8 @@ type AppPanelModalOverlayProps = {
   closeOnBackdropClick?: boolean;
   /** Shrinks + rounds `#app-shell-root` behind the overlay (same as v1 modals). */
   shellEffect?: boolean;
+  /** `panel` docks children on the right; `layered` is a full-screen backdrop for stacked surfaces. */
+  layout?: "panel" | "layered";
   className?: string;
 };
 
@@ -29,6 +32,7 @@ export function AppPanelModalOverlay({
   zIndex = 100,
   closeOnBackdropClick = true,
   shellEffect = true,
+  layout = "panel",
   className,
 }: AppPanelModalOverlayProps) {
   const [mounted, setMounted] = useState(false);
@@ -54,7 +58,8 @@ export function AppPanelModalOverlay({
   return createPortal(
     <div
       className={cn(
-        "fixed inset-0 flex justify-end bg-black/40 backdrop-blur-[2px]",
+        "fixed inset-0 bg-black/40 backdrop-blur-[2px]",
+        layout === "panel" && "flex justify-end",
         className,
       )}
       style={{ zIndex }}

@@ -13,6 +13,7 @@
     "billing:backfill": "node --env-file=.env.local scripts/backfill-billing-from-stripe.mjs",
     "loops:test-pro-emails": "node --env-file=.env.local scripts/test-loops-pro-emails.mjs",
     "notifications:test": "node --env-file=.env.local scripts/insert-test-notification.mjs",
+    "notifications:universe": "node --env-file=.env.local scripts/notifications-universe.mjs",
     "loops:diagnose": "node --env-file=.env.local scripts/diagnose-loops-transactional.mjs",
     "eodhd:estimate": "node scripts/eodhd-load-estimate.mjs",
     "eodhd:probe": "node scripts/eodhd-traffic-probe.mjs",

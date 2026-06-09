@@ -63,7 +63,7 @@ function InitialsMark({
         : size === "28"
           ? "flex h-7 w-7 shrink-0 items-center justify-center rounded-md border text-[10px] font-bold"
           : size === "40"
-            ? "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border text-[12px] font-bold"
+            ? "flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] border text-[12px] font-bold"
             : size === "lg"
               ? "flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border text-[12px] font-bold"
               : "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border text-[11px] font-bold";
@@ -92,7 +92,7 @@ function UsdCashMark({
         : size === "28"
           ? "h-7 w-7 rounded-md"
           : size === "40"
-            ? "h-10 w-10 rounded-lg"
+            ? "h-10 w-10 rounded-[12px]"
             : size === "lg"
               ? "h-12 w-12 rounded-lg"
               : "h-8 w-8 rounded-lg";
@@ -170,7 +170,7 @@ export function CompanyLogo({
         : size === "28"
           ? "h-7 w-7 rounded-md"
           : size === "40"
-            ? "h-10 w-10 rounded-lg"
+            ? "h-10 w-10 rounded-[12px]"
             : size === "lg"
               ? "h-12 w-12 rounded-lg"
               : "h-8 w-8 rounded-lg";

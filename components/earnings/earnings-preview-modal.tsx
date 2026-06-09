@@ -12,9 +12,12 @@ import type { EarningsCalendarItem } from "@/lib/market/earnings-calendar-types"
 export function EarningsPreviewModal({
   item,
   onClose,
+  embedded = false,
 }: {
   item: EarningsCalendarItem | null;
   onClose: () => void;
+  /** Render inside a parent backdrop (notifications → earnings handoff). */
+  embedded?: boolean;
 }) {
   const [bodyScrollEl, setBodyScrollEl] = useState<HTMLDivElement | null>(null);
 
@@ -41,8 +44,7 @@ export function EarningsPreviewModal({
 
   const stockEarningsHref = `/stock/${encodeURIComponent(item.ticker.trim())}?tab=earnings`;
 
-  return (
-    <AppModalOverlay open={item != null} onClose={onClose} zIndex={300}>
+  const shell = (
       <AppModalShell
         titleId="earnings-preview-title"
         maxWidthClass="w-full max-w-[min(960px,calc(100vw-2rem))]"
@@ -80,6 +82,13 @@ export function EarningsPreviewModal({
           <StockEarningsTabContent ticker={item.ticker} scrollRoot={bodyScrollEl} previewMode />
         </div>
       </AppModalShell>
+  );
+
+  if (embedded) return shell;
+
+  return (
+    <AppModalOverlay open={item != null} onClose={onClose} zIndex={300}>
+      {shell}
     </AppModalOverlay>
   );
 }

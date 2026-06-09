@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { toClientNotificationItem } from "@/lib/notifications/notification-api-map";
 import {
   countUnreadNotifications,
   deleteAllNotifications,
@@ -27,7 +28,10 @@ export async function GET(request: Request) {
       countUnreadNotifications(supabase, user.id),
     ]);
 
-    return NextResponse.json({ items, unread });
+    return NextResponse.json({
+      items: items.map(toClientNotificationItem),
+      unread,
+    });
   } catch (e) {
     if (e instanceof AuthRequiredError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

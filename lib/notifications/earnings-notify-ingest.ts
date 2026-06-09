@@ -20,6 +20,7 @@ import {
   loadEarningsReleaseSnapshots,
   upsertEarningsReleaseSnapshots,
 } from "@/lib/notifications/earnings-release-snapshot-store";
+import { enrichEarningsReleaseNotifications } from "@/lib/notifications/earnings-release-enrich";
 import { insertEarningsReleaseNotifications } from "@/lib/notifications/user-notifications-store";
 
 /**
@@ -98,9 +99,10 @@ export async function ingestEarningsReleaseNotifications(): Promise<EarningsNoti
       }
     }
 
-    await upsertEarningsReleaseSnapshots(admin, recentReportedRows);
+    const enrichedReleases = await enrichEarningsReleaseNotifications(releases);
+    const notificationsCreated = await insertEarningsReleaseNotifications(admin, interest, enrichedReleases);
 
-    const notificationsCreated = await insertEarningsReleaseNotifications(admin, interest, releases);
+    await upsertEarningsReleaseSnapshots(admin, recentReportedRows);
 
     return {
       skipped: false,
