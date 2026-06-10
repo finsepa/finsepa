@@ -49,8 +49,8 @@ import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal
 import { ChartLoadingIndicator } from "@/components/ui/chart-loading-indicator";
 import { ChartingVisualSwitcher } from "@/components/stock/multichart-visual-switcher";
 import { secondaryFillButtonClassName, TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
+import { DropdownScrollArea } from "@/components/design-system/dropdown-scroll-area";
 import {
-  dropdownMenuFloatingScrollClassName,
   dropdownMenuRichItemClassName,
   dropdownMenuSearchHeaderClassName,
   dropdownMenuSearchInputClassName,
@@ -2619,12 +2619,7 @@ export function ChartingWorkspace({
                 aria-label="Search metrics"
               />
             </div>
-            <div
-              className={cn(
-                "flex max-h-[min(400px,calc(100vh-12rem))] flex-col gap-1 overflow-y-auto px-1 py-2",
-                dropdownMenuFloatingScrollClassName,
-              )}
-            >
+            <DropdownScrollArea className="flex max-h-[min(400px,calc(100vh-12rem))] flex-col gap-1 overflow-y-auto px-1 py-2">
               {groupedAddable.map((group) => (
                 <div key={group.id} className="pb-2 last:pb-0">
                   <div className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wide text-[#A1A1AA]">
@@ -2646,7 +2641,7 @@ export function ChartingWorkspace({
                   </ul>
                 </div>
               ))}
-            </div>
+            </DropdownScrollArea>
             {totalAddable === 0 ? (
               <p className="px-3 py-2 text-[12px] text-[#71717A]">
                 {qLower ? "No metrics match" : "No additional metrics for this range"}

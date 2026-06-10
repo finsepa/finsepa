@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type MouseEvent } from "react";
 import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
 import { AppModalCloseButton, AppModalShell } from "@/components/ui/app-modal-shell";
+import { Spinner } from "@/components/ui/spinner";
 
 import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
 import {
@@ -531,10 +532,13 @@ export function EconomyEventHistoryModal({
         <div className="min-h-0 flex-1 overflow-hidden px-5 py-4">
           {loading ? (
             <div
-              className="flex items-center justify-center text-[14px] text-[#71717A]"
+              className="flex items-center justify-center"
               style={{ height: CHART_TOTAL_HEIGHT_PX }}
+              role="status"
+              aria-live="polite"
+              aria-label="Loading historical data"
             >
-              Loading historical data…
+              <Spinner className="size-6 text-[#71717A]" />
             </div>
           ) : error ? (
             <div

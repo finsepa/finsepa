@@ -4,16 +4,16 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
-import { dropdownMenuSurfaceClassName } from "@/components/design-system/dropdown-menu-styles";
-import { CompanyLogo } from "@/components/screener/company-logo";
-import { HeatmapSparkline } from "@/components/heatmap/heatmap-sparkline";
-import type { HeatmapLeaf, HeatmapMarket } from "@/lib/heatmap/heatmap-types";
+import { DropdownScrollArea } from "@/components/design-system/dropdown-scroll-area";
 import {
-  HEATMAP_LABEL_NEGATIVE_HEX,
-  HEATMAP_LABEL_POSITIVE_HEX,
-  heatmapCellBackground,
-  heatmapLegendHex,
-} from "@/lib/heatmap/heatmap-colors";
+  dropdownMenuPanelBodyClassName,
+  dropdownMenuRichItemClassName,
+  dropdownMenuSearchHeaderClassName,
+  dropdownMenuSurfaceClassName,
+} from "@/components/design-system/dropdown-menu-styles";
+import { CompanyLogo } from "@/components/screener/company-logo";
+import type { HeatmapLeaf, HeatmapMarket } from "@/lib/heatmap/heatmap-types";
+import { HEATMAP_LABEL_NEGATIVE_HEX, HEATMAP_LABEL_POSITIVE_HEX } from "@/lib/heatmap/heatmap-colors";
 import { getCryptoLogoUrl } from "@/lib/crypto/crypto-logo-url";
 import { resolveEquityLogoUrlFromTicker } from "@/lib/screener/resolve-equity-logo-url";
 import { cn } from "@/lib/utils";
@@ -43,18 +43,6 @@ function normalizeIndustryLabel(v: string | null | undefined): string {
   if (typeof v !== "string") return "Unclassified";
   const t = v.trim();
   return t.length > 0 ? t : "Unclassified";
-}
-
-function heatmapBreadcrumb(sector: string, industry: string | null | undefined, market: HeatmapMarket): string {
-  const s = (sector ?? "").trim().split(/\s+/).filter(Boolean).join(" — ");
-  const i = normalizeIndustryLabel(industry)
-    .split(/\s+/)
-    .filter(Boolean)
-    .join(" — ");
-  if (market === "crypto" || !i || i === s) {
-    return s.toUpperCase();
-  }
-  return `${s} — ${i}`.toUpperCase();
 }
 
 function assetHref(market: HeatmapMarket, ticker: string): string {
@@ -169,8 +157,7 @@ export function HeatmapHoverTooltip({
     <div
       ref={wrapRef}
       className={cn(
-        dropdownMenuSurfaceClassName(),
-        "fixed z-[200] w-[min(100vw-24px,300px)] overflow-hidden",
+        dropdownMenuSurfaceClassName("fixed z-[200] w-[min(100vw-24px,300px)] overflow-hidden"),
       )}
       style={{ left: p0.left, top: p0.top }}
       onMouseEnter={() => {
@@ -188,51 +175,57 @@ export function HeatmapHoverTooltip({
       role="dialog"
       aria-label={`${f.ticker} details`}
     >
-      <div className="border-b border-[#E4E4E7] bg-white px-4 py-3">
-        <p className="truncate whitespace-nowrap text-[18px] font-semibold leading-7 tracking-tight text-[#09090B]">
+      <div className={dropdownMenuSearchHeaderClassName}>
+        <p className="truncate px-2 text-[11px] font-semibold tracking-wide text-[#A1A1AA] uppercase">
           {title}
         </p>
       </div>
 
-      <div className="max-h-[360px] overflow-y-auto bg-white">
-        {rowsToShow.map((row) => {
-          const logoUrl =
-            market === "crypto"
-              ? getCryptoLogoUrl(row.ticker)
-              : resolveEquityLogoUrlFromTicker(row.ticker);
-          const changeColor =
-            row.changePct == null || !Number.isFinite(row.changePct)
-              ? "#71717A"
-              : row.changePct > 0
-                ? HEATMAP_LABEL_POSITIVE_HEX
-                : row.changePct < 0
-                  ? HEATMAP_LABEL_NEGATIVE_HEX
-                  : "#71717A";
-          return (
-            <Link
-              key={row.id}
-              href={assetHref(market, row.ticker)}
-              className="flex items-center justify-between gap-3 px-4 py-3 text-sm text-[#09090B] transition-colors hover:bg-[#F4F4F5]"
-            >
-              <div className="flex min-w-0 items-center gap-3">
-                <CompanyLogo name={row.name} logoUrl={logoUrl} symbol={row.ticker} />
-                <div className="min-w-0">
-                  <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">{row.name}</div>
-                  <div className="truncate text-[12px] font-normal leading-4 text-[#71717A]">{row.ticker}</div>
-                </div>
-              </div>
-              <div className="flex shrink-0 flex-col items-end text-right tabular-nums">
-                <span className="text-[14px] font-medium leading-5 text-[#09090B]">
-                  {formatPrice(row.price, market)}
-                </span>
-                <span className="text-[12px] font-normal leading-4" style={{ color: changeColor }}>
-                  {pctLabel(row.changePct)}
-                </span>
-              </div>
-            </Link>
-          );
-        })}
-      </div>
+      <DropdownScrollArea
+        className={cn(
+          dropdownMenuPanelBodyClassName,
+          "max-h-[360px] overflow-y-auto overscroll-y-contain",
+        )}
+      >
+        <ul className="flex flex-col gap-1">
+          {rowsToShow.map((row) => {
+            const logoUrl =
+              market === "crypto"
+                ? getCryptoLogoUrl(row.ticker)
+                : resolveEquityLogoUrlFromTicker(row.ticker);
+            const changeColor =
+              row.changePct == null || !Number.isFinite(row.changePct)
+                ? "#71717A"
+                : row.changePct > 0
+                  ? HEATMAP_LABEL_POSITIVE_HEX
+                  : row.changePct < 0
+                    ? HEATMAP_LABEL_NEGATIVE_HEX
+                    : "#71717A";
+            return (
+              <li key={row.id}>
+                <Link
+                  href={assetHref(market, row.ticker)}
+                  className={cn(dropdownMenuRichItemClassName(), "items-center no-underline")}
+                >
+                  <CompanyLogo name={row.name} logoUrl={logoUrl} symbol={row.ticker} />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate font-medium">{row.name}</div>
+                    <div className="truncate text-[12px] text-[#71717A]">{row.ticker}</div>
+                  </div>
+                  <div className="flex shrink-0 flex-col items-end text-right tabular-nums">
+                    <span className="text-[14px] font-medium leading-5 text-[#09090B]">
+                      {formatPrice(row.price, market)}
+                    </span>
+                    <span className="text-[12px] font-normal leading-4" style={{ color: changeColor }}>
+                      {pctLabel(row.changePct)}
+                    </span>
+                  </div>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </DropdownScrollArea>
     </div>,
     document.body,
   );

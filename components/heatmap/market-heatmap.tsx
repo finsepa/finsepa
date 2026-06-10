@@ -12,14 +12,27 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 
 import type { HeatmapLeaf, HeatmapMarket } from "@/lib/heatmap/heatmap-types";
 import { heatmapCellBackground, heatmapCellTextClass } from "@/lib/heatmap/heatmap-colors";
+import { heatmapLeavesForTreemapLayout } from "@/lib/heatmap/heatmap-treemap-weight";
 import { HeatmapHoverTooltip } from "@/components/heatmap/heatmap-hover-tooltip";
 import { cn } from "@/lib/utils";
 
+/** Outer heatmap shell — 4px inset, zinc-100 fill, 16px radius. */
+const HEATMAP_SHELL_CLASS = "rounded-2xl bg-[#F4F4F5] p-1";
+
+/** Gap between sector cards (treemap padding + visible gutter). */
+const SECTOR_GAP = 4;
+/** Corner radius for each sector card. */
+const SECTOR_RADIUS = 16;
 /** Figma sector title bar height */
 const HEADER_H = 24;
 /** Industry / sub-sector strip inside a sector (stocks only) */
 const INDUSTRY_HEADER_H = 18;
-const PAD = 2;
+/** Inner padding inside each sector card (all sides). */
+const PAD = 4;
+/** Corner radius for every company tile. */
+const TILE_CORNER_RADIUS = 8;
+const SECTOR_BORDER = "#E4E4E7";
+const SECTOR_SHADOW_FILTER_ID = "heatmap-sector-shadow";
 
 function leafIndustryGroupKey(L: HeatmapLeaf): string {
   const v = L.industry;
@@ -28,7 +41,17 @@ function leafIndustryGroupKey(L: HeatmapLeaf): string {
   return t.length > 0 ? t : "Unclassified";
 }
 
-type Tile = { leaf: HeatmapLeaf; x0: number; y0: number; x1: number; y1: number };
+type Tile = {
+  leaf: HeatmapLeaf;
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+};
+
+function tileCornerRadius(w: number, h: number): number {
+  return Math.min(TILE_CORNER_RADIUS, w / 2, h / 2);
+}
 
 type IndustryLayout = {
   name: string;
@@ -106,12 +129,12 @@ function buildSectorLayout(
   const oy1 = rect.y1;
   const ow = ox1 - ox0;
   const oh = oy1 - oy0;
-  if (ow < 20 || oh < HEADER_H + 6) return null;
+  if (ow < 20 || oh < HEADER_H + PAD * 2 + 6) return null;
 
   const innerW = Math.max(1, ow - PAD * 2);
-  const innerH = Math.max(1, oh - HEADER_H - PAD);
+  const innerH = Math.max(1, oh - HEADER_H - PAD * 2);
   const innerOriginX = ox0 + PAD;
-  const innerOriginY = oy0 + HEADER_H + PAD;
+  const innerOriginY = oy0 + PAD + HEADER_H;
 
   if (!nestIndustries) {
     const tiles = layoutStocksInRect(item.stocks, innerOriginX, innerOriginY, innerW, innerH);
@@ -259,11 +282,11 @@ function layoutNestedTreemap(
   if (stackSectorsVertically) {
     const out: SectorLayout[] = [];
     const n = sectorInputs.length;
-    const gap = PAD; // vertical gap between rows
-    const topPad = PAD;
-    const bottomPad = PAD;
+    const gap = SECTOR_GAP;
+    const topPad = 0;
+    const bottomPad = 0;
     const availableH = Math.max(1, height - topPad - bottomPad - gap * Math.max(0, n - 1));
-    const rowH = Math.max(HEADER_H + PAD + 40, Math.floor(availableH / n));
+    const rowH = Math.max(HEADER_H + PAD * 2 + 40, Math.floor(availableH / n));
     let y = topPad;
     const ox0 = 0;
     const ox1 = width;
@@ -291,8 +314,8 @@ function layoutNestedTreemap(
   treemap()
     .tile(treemapSquarify)
     .size([width, height])
-    .paddingOuter(PAD)
-    .paddingInner(PAD)
+    .paddingOuter(0)
+    .paddingInner(SECTOR_GAP)
     .round(true)(outerRoot as HierarchyNode<unknown>);
 
   const out: SectorLayout[] = [];
@@ -308,12 +331,12 @@ function layoutNestedTreemap(
     const oy1 = sectorNode.y1;
     const ow = ox1 - ox0;
     const oh = oy1 - oy0;
-    if (ow < 20 || oh < HEADER_H + 6) continue;
+    if (ow < 20 || oh < HEADER_H + PAD * 2 + 6) continue;
 
     const innerW = Math.max(1, ow - PAD * 2);
-    const innerH = Math.max(1, oh - HEADER_H - PAD);
+    const innerH = Math.max(1, oh - HEADER_H - PAD * 2);
     const innerOriginX = ox0 + PAD;
-    const innerOriginY = oy0 + HEADER_H + PAD;
+    const innerOriginY = oy0 + PAD + HEADER_H;
 
     if (!nestIndustries) {
       const tiles = layoutStocksInRect(item.stocks, innerOriginX, innerOriginY, innerW, innerH);
@@ -441,7 +464,7 @@ function highlightRectForHover(
   if (!sec.nestIndustries) {
     return {
       x: sec.outerX0 + PAD,
-      y: sec.outerY0 + HEADER_H + PAD,
+      y: sec.outerY0 + PAD + HEADER_H,
       width: sec.outerX1 - sec.outerX0 - 2 * PAD,
       height: sec.outerY1 - sec.outerY0 - HEADER_H - 2 * PAD,
     };
@@ -464,6 +487,121 @@ function pctLabel(n: number | null): string {
 
 function assetHref(market: HeatmapMarket, ticker: string): string {
   return market === "crypto" ? `/crypto/${encodeURIComponent(ticker)}` : `/stock/${encodeURIComponent(ticker)}`;
+}
+
+function HeatmapSectorShadowFilter() {
+  return (
+    <filter id={SECTOR_SHADOW_FILTER_ID} x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="1" stdDeviation="1" floodColor="#0A0A0A" floodOpacity="0.06" />
+    </filter>
+  );
+}
+
+function sectorCardRadius(sec: SectorLayout): number {
+  const w = sec.outerX1 - sec.outerX0;
+  const h = sec.outerY1 - sec.outerY0;
+  return Math.min(SECTOR_RADIUS, w / 2, h / 2);
+}
+
+function renderSectorGroup(
+  sec: SectorLayout,
+  clipId: string,
+  market: HeatmapMarket,
+  hover: { sector: string; featured: HeatmapLeaf } | null,
+  onTileEnter: (leaf: HeatmapLeaf, e: { clientX: number; clientY: number }) => void,
+  scheduleClearHover: () => void,
+) {
+  const sw = sec.outerX1 - sec.outerX0;
+  const sh = sec.outerY1 - sec.outerY0;
+  const r = sectorCardRadius(sec);
+  const hoverRect = hover ? highlightRectForHover(sec, hover) : null;
+
+  return (
+    <g>
+      <defs>
+        <clipPath id={clipId}>
+          <rect x={sec.outerX0} y={sec.outerY0} width={sw} height={sh} rx={r} ry={r} />
+        </clipPath>
+      </defs>
+      <rect
+        x={sec.outerX0}
+        y={sec.outerY0}
+        width={sw}
+        height={sh}
+        rx={r}
+        ry={r}
+        fill="#FFFFFF"
+        stroke={SECTOR_BORDER}
+        strokeWidth={1}
+        filter={`url(#${SECTOR_SHADOW_FILTER_ID})`}
+      />
+      <g clipPath={`url(#${clipId})`}>
+        <rect
+          x={sec.outerX0 + PAD}
+          y={sec.outerY0 + PAD}
+          width={sw - PAD * 2}
+          height={HEADER_H}
+          fill="#FFFFFF"
+        />
+        <text
+          x={sec.outerX0 + PAD + (sw - PAD * 2) / 2}
+          y={sec.outerY0 + PAD + 16}
+          textAnchor="middle"
+          fontSize={12}
+          fontWeight={500}
+          style={{ fontFamily: "inherit", fill: "#09090B" }}
+          className="uppercase"
+        >
+          {sec.name}
+        </text>
+        {sec.nestIndustries
+          ? sec.industries.map((ind) => (
+              <g key={`${sec.name}-${ind.name}`}>
+                <rect
+                  x={ind.outerX0}
+                  y={ind.outerY0}
+                  width={ind.outerX1 - ind.outerX0}
+                  height={INDUSTRY_HEADER_H}
+                  fill={ind.headerFill}
+                  className="cursor-pointer"
+                  onMouseEnter={(e) => onTileEnter(ind.featuredLeaf, e)}
+                  onMouseLeave={scheduleClearHover}
+                />
+                {ind.outerX1 - ind.outerX0 >= 48 ? (
+                  <text
+                    x={(ind.outerX0 + ind.outerX1) / 2}
+                    y={ind.outerY0 + 13}
+                    textAnchor="middle"
+                    fill="white"
+                    fontSize={9}
+                    fontWeight={600}
+                    style={{ fontFamily: "inherit" }}
+                    className="uppercase"
+                    onMouseEnter={(e) => onTileEnter(ind.featuredLeaf, e)}
+                    onMouseLeave={scheduleClearHover}
+                  >
+                    {(ind.name.length > 28 ? `${ind.name.slice(0, 26)}…` : ind.name).toUpperCase()}
+                  </text>
+                ) : null}
+                {ind.tiles.map((t) => renderTile(t, market, onTileEnter, scheduleClearHover))}
+              </g>
+            ))
+          : sec.tiles.map((t) => renderTile(t, market, onTileEnter, scheduleClearHover))}
+        {hoverRect ? (
+          <rect
+            x={hoverRect.x}
+            y={hoverRect.y}
+            width={hoverRect.width}
+            height={hoverRect.height}
+            fill="none"
+            stroke="#FACC15"
+            strokeWidth={2}
+            pointerEvents="none"
+          />
+        ) : null}
+      </g>
+    </g>
+  );
 }
 
 function renderTile(
@@ -494,7 +632,17 @@ function renderTile(
       onMouseEnter={(e) => onTileEnter(t.leaf, e)}
       onMouseLeave={scheduleClearHover}
     >
-      <rect x={t.x0} y={t.y0} width={w} height={h} fill={bg} stroke="white" strokeWidth={1} />
+      <rect
+        x={t.x0}
+        y={t.y0}
+        width={w}
+        height={h}
+        rx={tileCornerRadius(w, h)}
+        ry={tileCornerRadius(w, h)}
+        fill={bg}
+        stroke="white"
+        strokeWidth={1}
+      />
       {showTickerAndPct ? (
         <>
           <text
@@ -622,15 +770,17 @@ export function MarketHeatmap({ leaves, market }: { leaves: HeatmapLeaf[]; marke
     };
   }, []);
 
+  const layoutLeaves = useMemo(() => heatmapLeavesForTreemapLayout(leaves, market), [leaves, market]);
+
   const sectors = useMemo(
-    () => layoutNestedTreemap(leaves, size.w, size.h, nestIndustries),
-    [leaves, size.w, size.h, nestIndustries],
+    () => layoutNestedTreemap(layoutLeaves, size.w, size.h, nestIndustries),
+    [layoutLeaves, size.w, size.h, nestIndustries],
   );
 
   const mobileSectors = useMemo(() => {
     if (size.w >= 520) return [] as SectorLayout[];
     const bySector = new Map<string, HeatmapLeaf[]>();
-    for (const L of leaves) {
+    for (const L of layoutLeaves) {
       const list = bySector.get(L.sector) ?? [];
       list.push(L);
       bySector.set(L.sector, list);
@@ -646,7 +796,7 @@ export function MarketHeatmap({ leaves, market }: { leaves: HeatmapLeaf[]; marke
     return sectorInputs
       .map((s) => buildSectorLayout(s, { x0: 0, y0: 0, x1: size.w, y1: size.h }, nestIndustries))
       .filter((x): x is SectorLayout => x != null);
-  }, [leaves, nestIndustries, size.h, size.w]);
+  }, [layoutLeaves, nestIndustries, size.h, size.w]);
 
   const [activeSectorIdx, setActiveSectorIdx] = useState(0);
 
@@ -671,10 +821,11 @@ export function MarketHeatmap({ leaves, market }: { leaves: HeatmapLeaf[]; marke
       />
       {size.w < 520 ? (
         <div className="w-full">
-          <div
-            ref={sliderRef}
-            className="flex w-full snap-x snap-mandatory overflow-x-auto [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-            style={{ height: size.h }}
+          <div className={cn(HEATMAP_SHELL_CLASS, "overflow-hidden")}>
+            <div
+              ref={sliderRef}
+              className="flex w-full snap-x snap-mandatory overflow-x-auto [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              style={{ height: size.h }}
             onScroll={() => {
               const el = sliderRef.current;
               if (!el) return;
@@ -682,86 +833,31 @@ export function MarketHeatmap({ leaves, market }: { leaves: HeatmapLeaf[]; marke
               setActiveSectorIdx(Math.max(0, Math.min(mobileSectors.length - 1, idx)));
             }}
           >
-            {mobileSectors.map((sec) => {
-              const hoverRect = hover ? highlightRectForHover(sec, hover) : null;
-              return (
-                <div key={sec.name} className="w-full flex-none snap-start">
-                  <svg
-                    width={size.w}
-                    height={size.h}
-                    className="max-w-full rounded-[4px] border border-[#E4E4E7] bg-white"
-                    role="img"
-                    aria-label={`Market cap treemap: ${sec.name}`}
-                  >
-                    <g>
-                      <rect
-                        x={sec.outerX0}
-                        y={sec.outerY0}
-                        width={sec.outerX1 - sec.outerX0}
-                        height={HEADER_H}
-                        fill="#FFFFFF"
-                        stroke="#E4E4E7"
-                        strokeWidth={1}
-                      />
-                      <text
-                        x={sec.outerX0 + 8}
-                        y={sec.outerY0 + 16}
-                        fontSize={12}
-                        fontWeight={500}
-                        style={{ fontFamily: "inherit", fill: "#09090B" }}
-                        className="uppercase"
-                      >
-                        {sec.name}
-                      </text>
-                      {sec.nestIndustries
-                        ? sec.industries.map((ind) => (
-                            <g key={`${sec.name}-${ind.name}`}>
-                              <rect
-                                x={ind.outerX0}
-                                y={ind.outerY0}
-                                width={ind.outerX1 - ind.outerX0}
-                                height={INDUSTRY_HEADER_H}
-                                fill={ind.headerFill}
-                                className="cursor-pointer"
-                                onMouseEnter={(e) => onTileEnter(ind.featuredLeaf, e)}
-                                onMouseLeave={scheduleClearHover}
-                              />
-                              {ind.outerX1 - ind.outerX0 >= 48 ? (
-                                <text
-                                  x={ind.outerX0 + 4}
-                                  y={ind.outerY0 + 13}
-                                  fill="white"
-                                  fontSize={9}
-                                  fontWeight={600}
-                                  style={{ fontFamily: "inherit" }}
-                                  className="uppercase"
-                                  onMouseEnter={(e) => onTileEnter(ind.featuredLeaf, e)}
-                                  onMouseLeave={scheduleClearHover}
-                                >
-                                  {(ind.name.length > 28 ? `${ind.name.slice(0, 26)}…` : ind.name).toUpperCase()}
-                                </text>
-                              ) : null}
-                              {ind.tiles.map((t) => renderTile(t, market, onTileEnter, scheduleClearHover))}
-                            </g>
-                          ))
-                        : sec.tiles.map((t) => renderTile(t, market, onTileEnter, scheduleClearHover))}
-                      {hoverRect ? (
-                        <rect
-                          x={hoverRect.x}
-                          y={hoverRect.y}
-                          width={hoverRect.width}
-                          height={hoverRect.height}
-                          fill="none"
-                          stroke="#FACC15"
-                          strokeWidth={2}
-                          pointerEvents="none"
-                        />
-                      ) : null}
-                    </g>
-                  </svg>
-                </div>
-              );
-            })}
+            {mobileSectors.map((sec, idx) => (
+              <div key={sec.name} className="w-full flex-none snap-start">
+                <svg
+                  width={size.w}
+                  height={size.h}
+                  className="max-w-full"
+                  role="img"
+                  aria-label={`Market cap treemap: ${sec.name}`}
+                >
+                  <rect width={size.w} height={size.h} fill="#F4F4F5" />
+                  <defs>
+                    <HeatmapSectorShadowFilter />
+                  </defs>
+                  {renderSectorGroup(
+                    sec,
+                    `heatmap-sector-mobile-${idx}`,
+                    market,
+                    hover,
+                    onTileEnter,
+                    scheduleClearHover,
+                  )}
+                </svg>
+              </div>
+            ))}
+            </div>
           </div>
           {mobileSectors.length > 1 ? (
             <div className="mt-2 flex items-center justify-center gap-1.5">
@@ -786,84 +882,32 @@ export function MarketHeatmap({ leaves, market }: { leaves: HeatmapLeaf[]; marke
           ) : null}
         </div>
       ) : (
-        <svg
-          width={size.w}
-          height={size.h}
-          className="max-w-full rounded-[4px] border border-[#E4E4E7] bg-white"
-          role="img"
-          aria-label="Market cap treemap colored by performance"
-        >
-          {sectors.map((sec) => {
-            const hoverRect = hover ? highlightRectForHover(sec, hover) : null;
-            return (
+        <div className={cn(HEATMAP_SHELL_CLASS, "overflow-hidden")}>
+          <svg
+            width={size.w}
+            height={size.h}
+            className="max-w-full"
+            role="img"
+            aria-label="Market cap treemap colored by performance"
+          >
+            <rect width={size.w} height={size.h} fill="#F4F4F5" />
+            <defs>
+              <HeatmapSectorShadowFilter />
+            </defs>
+            {sectors.map((sec, idx) => (
               <g key={sec.name}>
-                <rect
-                  x={sec.outerX0}
-                  y={sec.outerY0}
-                  width={sec.outerX1 - sec.outerX0}
-                  height={HEADER_H}
-                  fill="#FFFFFF"
-                  stroke="#E4E4E7"
-                  strokeWidth={1}
-                />
-                <text
-                  x={sec.outerX0 + 8}
-                  y={sec.outerY0 + 16}
-                  fontSize={12}
-                  fontWeight={500}
-                  style={{ fontFamily: "inherit", fill: "#09090B" }}
-                  className="uppercase"
-                >
-                  {sec.name}
-                </text>
-                {sec.nestIndustries
-                  ? sec.industries.map((ind) => (
-                      <g key={`${sec.name}-${ind.name}`}>
-                        <rect
-                          x={ind.outerX0}
-                          y={ind.outerY0}
-                          width={ind.outerX1 - ind.outerX0}
-                          height={INDUSTRY_HEADER_H}
-                          fill={ind.headerFill}
-                          className="cursor-pointer"
-                          onMouseEnter={(e) => onTileEnter(ind.featuredLeaf, e)}
-                          onMouseLeave={scheduleClearHover}
-                        />
-                        {ind.outerX1 - ind.outerX0 >= 48 ? (
-                          <text
-                            x={ind.outerX0 + 4}
-                            y={ind.outerY0 + 13}
-                            fill="white"
-                            fontSize={9}
-                            fontWeight={600}
-                            style={{ fontFamily: "inherit" }}
-                            className="uppercase"
-                            onMouseEnter={(e) => onTileEnter(ind.featuredLeaf, e)}
-                            onMouseLeave={scheduleClearHover}
-                          >
-                            {(ind.name.length > 28 ? `${ind.name.slice(0, 26)}…` : ind.name).toUpperCase()}
-                          </text>
-                        ) : null}
-                        {ind.tiles.map((t) => renderTile(t, market, onTileEnter, scheduleClearHover))}
-                      </g>
-                    ))
-                  : sec.tiles.map((t) => renderTile(t, market, onTileEnter, scheduleClearHover))}
-                {hoverRect ? (
-                  <rect
-                    x={hoverRect.x}
-                    y={hoverRect.y}
-                    width={hoverRect.width}
-                    height={hoverRect.height}
-                    fill="none"
-                    stroke="#FACC15"
-                    strokeWidth={2}
-                    pointerEvents="none"
-                  />
-                ) : null}
+                {renderSectorGroup(
+                  sec,
+                  `heatmap-sector-${idx}`,
+                  market,
+                  hover,
+                  onTileEnter,
+                  scheduleClearHover,
+                )}
               </g>
-            );
-          })}
-        </svg>
+            ))}
+          </svg>
+        </div>
       )}
     </div>
   );

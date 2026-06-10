@@ -873,7 +873,7 @@ export async function getSimpleCryptoDerivedForMetas(metas: readonly CryptoMeta[
     .join(",");
 
   return withScreenerUsMarketCache(
-    "simple-crypto-derived-metas-v1",
+    "simple-crypto-derived-metas-v2-uni7083",
     async () => {
       const window = eodFetchWindowUtc();
       const list = [...metas];

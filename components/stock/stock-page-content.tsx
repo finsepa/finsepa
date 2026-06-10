@@ -359,7 +359,7 @@ export function StockPageContent({
     void fetchChartingFundamentalsSeriesCached(ticker, "quarterly");
   }, [ticker, fundamentalsModalAnnual, fundamentalsModalQuarterly]);
 
-  /** 1D session series — drives header price / change (today / live window). */
+  /** Hidden 1D price chart — drives header on non-overview tabs (today / live spot). */
   const [sessionHeaderUi, setSessionHeaderUi] = useState<ChartDisplayState>(() =>
     buildInitialSessionHeaderUi(initialPageData, ticker),
   );
@@ -379,9 +379,20 @@ export function StockPageContent({
     });
   }, []);
 
+  /** Visible overview chart — drives header metric + range on Overview (price / market cap / return). */
+  const [overviewHeaderUi, setOverviewHeaderUi] = useState<ChartDisplayState | null>(null);
+  const onOverviewHeaderDisplay = useCallback((s: ChartDisplayState) => {
+    setOverviewHeaderUi(s);
+  }, []);
+
   useEffect(() => {
     setSessionHeaderUi(buildInitialSessionHeaderUi(initialPageData, ticker));
+    setOverviewHeaderUi(null);
   }, [ticker, initialPageData]);
+
+  useEffect(() => {
+    setOverviewHeaderUi(null);
+  }, [chartSeries, range]);
 
   const performanceFromServer = useMemo(
     (): StockPerformance | null =>
@@ -452,15 +463,15 @@ export function StockPageContent({
     headerLiveSpotClient ??
     (initialPageData?.ticker === ticker ? (initialPageData.headerLiveSpotUsd ?? null) : null);
 
-  const spotHeaderUi = useMemo(
+  const sessionSpotHeaderUi = useMemo(
     () =>
       mergeSessionHeaderWithPerformanceSpot(
         sessionHeaderUi,
         performanceForHeaderFallback,
-        chartSeries,
+        "price",
         headerLiveSpotForMerge,
       ),
-    [chartSeries, headerLiveSpotForMerge, performanceForHeaderFallback, sessionHeaderUi],
+    [headerLiveSpotForMerge, performanceForHeaderFallback, sessionHeaderUi],
   );
 
   const initialSessionChartMemo = useMemo(
@@ -471,15 +482,49 @@ export function StockPageContent({
     [initialPageData, ticker],
   );
 
-  // Header should always represent "today" spot (1D session + live spot merge),
-  // independent of which tab is open or which range is selected in Overview/Portfolio.
+  const initialChartMemo = useMemo(
+    () => (initialPageData?.ticker === ticker ? initialPageData.chart : null),
+    [initialPageData, ticker],
+  );
+
+  const overviewDrivesHeader = displayTab === "overview" && comparePicks.length === 0;
+
+  const overviewHeaderUiMerged = useMemo(() => {
+    if (!overviewHeaderUi) return null;
+    if (chartSeries === "price" && range === "1D") {
+      return mergeSessionHeaderWithPerformanceSpot(
+        overviewHeaderUi,
+        performanceForHeaderFallback,
+        "price",
+        headerLiveSpotForMerge,
+      );
+    }
+    return overviewHeaderUi;
+  }, [
+    chartSeries,
+    headerLiveSpotForMerge,
+    overviewHeaderUi,
+    performanceForHeaderFallback,
+    range,
+  ]);
+
   const chartUi = useMemo((): ChartDisplayState => {
+    const raw = overviewDrivesHeader
+      ? (overviewHeaderUiMerged ?? { ...EMPTY_CHART_DISPLAY, loading: true, empty: false })
+      : sessionSpotHeaderUi;
+
     const settled =
-      spotHeaderUi.displayPrice != null && spotHeaderUi.loading
-        ? { ...spotHeaderUi, loading: false }
-        : spotHeaderUi;
+      raw.displayPrice != null && raw.loading && !overviewDrivesHeader
+        ? { ...raw, loading: false }
+        : raw;
     if (settled.priceTimestampLabel != null) return settled;
-    const pts = initialSessionChartMemo?.points;
+
+    const pts = overviewDrivesHeader
+      ? initialChartMemo?.range === range
+        ? initialChartMemo.points
+        : null
+      : initialSessionChartMemo?.points;
+
     if (!pts?.length || settled.displayPrice == null) return settled;
     const last = pts[pts.length - 1];
     if (!last || !Number.isFinite(last.time)) return settled;
@@ -490,12 +535,16 @@ export function StockPageContent({
         timeZone: last.timeZone,
       }),
     };
-  }, [spotHeaderUi, initialSessionChartMemo]);
+  }, [
+    overviewDrivesHeader,
+    overviewHeaderUiMerged,
+    sessionSpotHeaderUi,
+    initialChartMemo,
+    initialSessionChartMemo,
+    range,
+  ]);
 
-  const initialChartMemo = useMemo(
-    () => (initialPageData?.ticker === ticker ? initialPageData.chart : null),
-    [initialPageData, ticker],
-  );
+  const headerPeriodLabel = overviewDrivesHeader ? (range === "1D" ? "Today" : range) : "Today";
 
   /** Hidden 1D chart keeps session/live spot for the header on every tab (including Holdings). */
   const stockChartDrivesHeader = true;
@@ -518,10 +567,9 @@ export function StockPageContent({
       </Suspense>
       <StockHeader
         ticker={ticker}
-        periodLabel="Today"
+        periodLabel={headerPeriodLabel}
         periodLabelOverride={chartUi.periodLabelOverride}
-        // Header is driven by the hidden 1D session chart.
-        chartRangeLabel="1D"
+        chartRangeLabel={overviewDrivesHeader ? range : "1D"}
         price={chartUi.displayPrice}
         changePct={chartUi.displayChangePct}
         changeAbs={chartUi.displayChangeAbs}
@@ -539,11 +587,11 @@ export function StockPageContent({
       {stockChartDrivesHeader ? (
         <div className={OFFSCREEN_PRICE_CHART} aria-hidden>
           <PriceChart
-            key={`${ticker}-${comparePicks.length > 0 ? "price" : chartSeries}-header-1d`}
+            key={`${ticker}-price-header-1d`}
             kind="stock"
             symbol={ticker}
             range="1D"
-            series={comparePicks.length > 0 ? "price" : chartSeries}
+            series="price"
             height={320}
             initialChart={initialSessionChartMemo}
             onDisplayChange={onSessionHeaderDisplay}
@@ -592,12 +640,13 @@ export function StockPageContent({
           />
         ) : (
           <PriceChart
-            key={`stock-overview-${ticker}-${chartSeries}`}
+            key={`stock-overview-${ticker}-${chartSeries}-${range}`}
             kind="stock"
             symbol={ticker}
             range={range}
             series={chartSeries}
-            initialChart={initialChartMemo}
+            initialChart={initialChartMemo?.range === range ? initialChartMemo : null}
+            onDisplayChange={onOverviewHeaderDisplay}
           />
         )}
       </div>

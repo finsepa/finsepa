@@ -4,9 +4,18 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
 import { SegmentedControl } from "@/components/design-system";
 import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
 import { AppModalCloseButton, AppModalShell } from "@/components/ui/app-modal-shell";
-import { cn } from "@/lib/utils";
+import { MULTICHART_LINE_STROKE_WIDTH_PX } from "@/components/stock/multichart-fundamentals-bar";
+import { smoothAreaPathD, smoothLinePathD } from "@/lib/chart/smooth-line-path";
+import {
+  fundamentalsBarColorAtIndex,
+  fundamentalsBarSolidAtIndex,
+} from "@/lib/colors/fundamentals-multi-bar-colors";
 import type { CryptoFearGreedHistoryPoint } from "@/lib/market/alternative-fear-greed";
 import { STOCK_CHART_RANGES, type StockChartRange } from "@/lib/market/stock-chart-types";
+
+const LINE_AREA_GRADIENT_TOP_OPACITY = 0.22;
+const LINE_AREA_GRADIENT_BOTTOM_OPACITY = 0.02;
+const FEAR_GREED_LINE_COLOR = fundamentalsBarSolidAtIndex(0);
 
 function fmtDate(tsSec: number): string {
   const d = new Date(tsSec * 1000);
@@ -65,6 +74,7 @@ export function CryptoFearGreedModal({
   latestLabel: string;
 }) {
   const titleId = useId();
+  const areaGradientId = useId();
   const chartWrapRef = useRef<HTMLDivElement | null>(null);
   const [range, setRange] = useState<StockChartRange>("1M");
   const [loading, setLoading] = useState(false);
@@ -151,16 +161,13 @@ export function CryptoFearGreedModal({
     const toX = (ts: number) => scaleLinear(ts, xMin, xMax, padX, padX + innerW);
     const toY = (v: number) => scaleLinear(v, yMin, yMax, padY + innerH, padY);
 
-    const d =
+    const curvePts =
       points.length >= 2
-        ? points
-            .map((p, i) => {
-              const x = toX(p.timestamp);
-              const y = toY(p.value);
-              return `${i === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)}`;
-            })
-            .join(" ")
-        : "";
+        ? points.map((p) => ({ x: toX(p.timestamp), y: toY(p.value) }))
+        : [];
+    const areaFloorY = padY + innerH;
+    const d = curvePts.length >= 2 ? smoothLinePathD(curvePts) : "";
+    const areaD = curvePts.length >= 2 ? smoothAreaPathD(curvePts, areaFloorY) : "";
 
     const last = points.length ? points[points.length - 1]! : null;
     const lastX = last ? toX(last.timestamp) : null;
@@ -181,7 +188,28 @@ export function CryptoFearGreedModal({
 
     const fromX = (x: number) => scaleLinear(x, padX, padX + innerW, xMin, xMax);
 
-    return { w, h, d, last, lastX, lastY, ticksX, padX, padY, padBottom, innerH, innerW, toX, toY, fromX, xMin, xMax };
+    return {
+      w,
+      h,
+      d,
+      areaD,
+      areaFloorY,
+      gradY0: padY,
+      last,
+      lastX,
+      lastY,
+      ticksX,
+      padX,
+      padY,
+      padBottom,
+      innerH,
+      innerW,
+      toX,
+      toY,
+      fromX,
+      xMin,
+      xMax,
+    };
   }, [points, range]);
 
   const onChartMouseMove = useCallback(
@@ -224,9 +252,9 @@ export function CryptoFearGreedModal({
         }
         headerClassName="border-b border-[#E4E4E7] px-5 py-4"
         bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
-        cardClassName="overflow-hidden"
+        cardClassName="overflow-hidden border-0 shadow-none"
       >
-        <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-2 px-5 py-3">
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-[#E4E4E7] px-5 py-3">
           <h3 className="min-w-0 text-[17px] font-semibold leading-7 text-[#09090B]">
             {latestLabel}: {latestValue == null ? "—" : latestValue}
           </h3>
@@ -242,7 +270,7 @@ export function CryptoFearGreedModal({
           </div>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-5 py-4">
+        <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-5 pt-4 pb-5">
           {loading ? (
             <div className="flex h-[400px] items-center justify-center text-[14px] text-[#71717A]">Loading…</div>
           ) : points.length < 2 ? (
@@ -260,6 +288,25 @@ export function CryptoFearGreedModal({
                   onMouseMove={onChartMouseMove}
                   onMouseLeave={onChartMouseLeave}
                 >
+                  <defs>
+                    <linearGradient
+                      id={areaGradientId}
+                      x1="0"
+                      y1={chart.gradY0}
+                      x2="0"
+                      y2={chart.areaFloorY}
+                      gradientUnits="userSpaceOnUse"
+                    >
+                      <stop
+                        offset="0"
+                        stopColor={fundamentalsBarColorAtIndex(0, LINE_AREA_GRADIENT_TOP_OPACITY)}
+                      />
+                      <stop
+                        offset="1"
+                        stopColor={fundamentalsBarColorAtIndex(0, LINE_AREA_GRADIENT_BOTTOM_OPACITY)}
+                      />
+                    </linearGradient>
+                  </defs>
                   {/* grid */}
                   {[0, 25, 50, 75, 100].map((v) => {
                     const y = scaleLinear(v, 0, 100, chart.padY + chart.innerH, chart.padY);
@@ -272,17 +319,24 @@ export function CryptoFearGreedModal({
                       </g>
                     );
                   })}
-                  {/* path */}
-                  <path d={chart.d} fill="none" stroke="#2563EB" strokeWidth="2.5" />
+                  {chart.areaD ? <path d={chart.areaD} fill={`url(#${areaGradientId})`} /> : null}
+                  <path
+                    d={chart.d}
+                    fill="none"
+                    stroke={FEAR_GREED_LINE_COLOR}
+                    strokeWidth={MULTICHART_LINE_STROKE_WIDTH_PX}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
                   {/* last point */}
                   {chart.lastX != null && chart.lastY != null ? (
                     <circle
                       cx={chart.lastX}
                       cy={chart.lastY}
-                      r="5"
+                      r="4.5"
                       fill="#FFFFFF"
-                      stroke="#2563EB"
-                      strokeWidth="2.5"
+                      stroke={FEAR_GREED_LINE_COLOR}
+                      strokeWidth={MULTICHART_LINE_STROKE_WIDTH_PX}
                     />
                   ) : null}
 
@@ -294,10 +348,18 @@ export function CryptoFearGreedModal({
                         x2={hover.x}
                         y1={chart.padY}
                         y2={chart.padY + chart.innerH}
-                        stroke="#F4F4F5"
+                        stroke={FEAR_GREED_LINE_COLOR}
                         strokeWidth="1"
+                        strokeDasharray="4 4"
                       />
-                      <circle cx={hover.x} cy={hover.y} r="5" fill="#FFFFFF" stroke="#2563EB" strokeWidth="2.5" />
+                      <circle
+                        cx={hover.x}
+                        cy={hover.y}
+                        r="4.5"
+                        fill="#FFFFFF"
+                        stroke={FEAR_GREED_LINE_COLOR}
+                        strokeWidth={MULTICHART_LINE_STROKE_WIDTH_PX}
+                      />
                     </g>
                   ) : null}
 

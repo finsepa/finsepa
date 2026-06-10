@@ -24,9 +24,9 @@ import {
   multichartComparisonFromLastTwo,
   multichartPriorPeriodComparisonLabel,
 } from "@/lib/market/multichart-period-comparison";
+import { DropdownScrollArea } from "@/components/design-system/dropdown-scroll-area";
 import { MultichartsTabSkeletonGrid } from "@/components/stock/stock-multicharts-tab-skeleton";
 import {
-  dropdownMenuFloatingScrollClassName,
   dropdownMenuPanelBodyClassName,
   dropdownMenuSearchHeaderClassName,
   dropdownMenuSurfaceClassName,
@@ -306,12 +306,8 @@ export function StockMultichartsTab({
                   />
                   <span className="text-[12px] font-medium text-[#71717A]">{totalAddable}</span>
                 </div>
-                <div
-                  className={cn(
-                    dropdownMenuPanelBodyClassName,
-                    dropdownMenuFloatingScrollClassName,
-                    "max-h-[320px] overflow-y-auto",
-                  )}
+                <DropdownScrollArea
+                  className={cn(dropdownMenuPanelBodyClassName, "max-h-[320px] overflow-y-auto")}
                 >
                   {addableGroups.map((g) => (
                     <div key={g.id} className="py-1">
@@ -338,7 +334,7 @@ export function StockMultichartsTab({
                       {qLower ? "No matching metrics." : "All metrics already added."}
                     </div>
                   ) : null}
-                </div>
+                </DropdownScrollArea>
               </div>
             ) : null}
           </div>

@@ -11,9 +11,9 @@ import {
   ScreenerTableScroll,
 } from "@/components/screener/screener-table-scroll";
 
-/** # | Industry | 1D | YTD | MCap — sector appears only in group headers; industry links drill in on the Industries tab. */
-const colLayoutMobile = "grid-cols-[28px_minmax(0,1fr)_72px_72px] gap-x-2";
-const colLayoutDesktop = "sm:grid-cols-[48px_minmax(0,1.6fr)_1fr_1fr_1fr] sm:gap-x-2";
+/** # | Industry | 1D | MCap — sector appears only in group headers; industry links drill in on the Industries tab. */
+const colLayoutMobile = "grid-cols-[28px_minmax(0,1fr)_72px] gap-x-2";
+const colLayoutDesktop = "sm:grid-cols-[48px_minmax(0,1.6fr)_1fr_1fr] sm:gap-x-2";
 
 function formatPctValue(value: number) {
   return `${value > 0 ? "+" : ""}${value.toFixed(2)}%`;
@@ -64,7 +64,7 @@ export function ScreenerIndustriesTable({ rows }: { rows: ScreenerIndustryRow[] 
   }
 
   return (
-    <ScreenerTableScroll minWidthClassName="min-w-0" className="overflow-x-hidden">
+    <ScreenerTableScroll minWidthClassName="min-w-0">
       <div className="bg-white">
         <div
           className={`grid ${colLayoutMobile} ${colLayoutDesktop} min-h-[44px] items-center px-2 py-0 text-[12px] font-medium leading-5 text-[#71717A] sm:px-4 sm:text-[14px] ${SCREENER_TABLE_HEADER_STICKY_CLASS}`}
@@ -72,7 +72,6 @@ export function ScreenerIndustriesTable({ rows }: { rows: ScreenerIndustryRow[] 
           <div className="text-center">#</div>
           <div className="text-left">Industry</div>
           <div className="min-w-0 w-full text-right">1D %</div>
-          <div className="min-w-0 w-full text-right">YTD %</div>
           <div className="hidden min-w-0 w-full text-right sm:block">Market Cap</div>
         </div>
 
@@ -100,7 +99,6 @@ export function ScreenerIndustriesTable({ rows }: { rows: ScreenerIndustryRow[] 
                   </span>
                 </div>
                 <PctCell value={row.change1D} />
-                <PctCell value={row.changeYTD} />
                 <div className="hidden min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B] sm:block">
                   {row.marketCapDisplay}
                 </div>

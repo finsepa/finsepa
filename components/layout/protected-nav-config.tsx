@@ -11,7 +11,6 @@ import {
   Users01,
   type AppIcon,
 } from "@/lib/icons";
-
 import { NAV_EARNINGS_ENABLED, NAV_ECONOMY_ENABLED, NAV_MACRO_ENABLED, NAV_NEWS_ENABLED } from "@/lib/features/nav-flags";
 
 export type ProtectedNavIcon = AppIcon;
@@ -36,17 +35,42 @@ export const protectedMarketItems: ProtectedNavItem[] = [
     activePathPrefixes: ["/screener", "/stock", "/crypto", "/index"],
   },
   { label: "Heatmaps", icon: Grid01, href: "/heatmaps", available: true },
-  { label: "News", icon: BookOpen01, href: "/news", available: NAV_NEWS_ENABLED },
+  {
+    label: "News",
+    icon: BookOpen01,
+    href: "/news",
+    available: NAV_NEWS_ENABLED,
+  },
 ];
 
 export const protectedCalendarItems: ProtectedNavItem[] = [
-  { label: "Earnings", icon: IntersectCircle, href: "/earnings", available: NAV_EARNINGS_ENABLED },
-  { label: "Economy", icon: Calendar, href: "/economy", available: NAV_ECONOMY_ENABLED },
+  {
+    label: "Earnings",
+    icon: IntersectCircle,
+    href: "/earnings",
+    available: NAV_EARNINGS_ENABLED,
+  },
+  {
+    label: "Economy",
+    icon: Calendar,
+    href: "/economy",
+    available: NAV_ECONOMY_ENABLED,
+  },
 ];
 
 export const protectedDataItems: ProtectedNavItem[] = [
-  { label: "Macro", icon: Globe04, href: "/macro", available: NAV_MACRO_ENABLED },
-  { label: "Charting", icon: BarChartSquare01, href: "/charting", available: true },
+  {
+    label: "Macro",
+    icon: Globe04,
+    href: "/macro",
+    available: NAV_MACRO_ENABLED,
+  },
+  {
+    label: "Charting",
+    icon: BarChartSquare01,
+    href: "/charting",
+    available: true,
+  },
   {
     label: "Comparison",
     icon: Rows01,
@@ -64,7 +88,12 @@ export const protectedCommunityItems: ProtectedNavItem[] = [
     available: true,
     activePathPrefix: true,
   },
-  { label: "Portfolios", icon: Users01, href: "/portfolios", available: true },
+  {
+    label: "Portfolios",
+    icon: Users01,
+    href: "/portfolios",
+    available: true,
+  },
 ];
 
 /** Community entries for the mobile bottom-nav sheet (same as desktop). */

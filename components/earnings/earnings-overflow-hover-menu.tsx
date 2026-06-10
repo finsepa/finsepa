@@ -2,9 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { DropdownScrollArea } from "@/components/design-system/dropdown-scroll-area";
 import { CompanyLogo } from "@/components/screener/company-logo";
 import {
-  dropdownMenuFloatingScrollClassName,
   dropdownMenuPanelClassName,
   dropdownMenuRichItemClassName,
 } from "@/components/design-system/dropdown-menu-styles";
@@ -153,7 +153,7 @@ export function EarningsOverflowHoverMenu({
               "min-w-[148px] max-w-[min(200px,calc(100vw-1.5rem))]",
             )}
           >
-            <div className={cn(dropdownMenuFloatingScrollClassName, "max-h-[min(280px,50vh)] overflow-y-auto")}>
+            <DropdownScrollArea className="max-h-[min(280px,50vh)] overflow-y-auto">
               {loading && items.length === 0 ? (
                 <div
                   className="flex items-center justify-center px-3 py-6"
@@ -197,7 +197,7 @@ export function EarningsOverflowHoverMenu({
                   ))}
                 </ul>
               )}
-            </div>
+            </DropdownScrollArea>
           </div>
         </div>
       </TopbarDropdownPortal>

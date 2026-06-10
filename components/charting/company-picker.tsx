@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { DropdownScrollArea } from "@/components/design-system/dropdown-scroll-area";
 import { CompanyLogo } from "@/components/screener/company-logo";
 import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
 import { PeerSearchDropdownRow } from "@/components/comparison/peer-search-dropdown-row";
@@ -20,7 +21,6 @@ import {
 } from "@/lib/screener/company-logo-url";
 import { isTop10Ticker, TOP10_META } from "@/lib/screener/top10-config";
 import {
-  dropdownMenuFloatingScrollClassName,
   dropdownMenuPanelBodyClassName,
   dropdownMenuRichItemClassName,
   dropdownMenuSearchHeaderClassName,
@@ -285,10 +285,9 @@ export function CompanyPicker({
       : "";
 
   const pickerListBody = (
-    <div
+    <DropdownScrollArea
       className={cn(
         dropdownMenuPanelBodyClassName,
-        dropdownMenuFloatingScrollClassName,
         "flex max-h-[min(400px,calc(100vh-12rem))] flex-col overflow-y-auto",
       )}
     >
@@ -385,7 +384,7 @@ export function CompanyPicker({
           ))}
         </>
       )}
-    </div>
+    </DropdownScrollArea>
   );
 
   const pickerDropdownPanel = (

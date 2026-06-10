@@ -5,7 +5,7 @@ import { unstable_cache } from "next/cache";
 import { REVALIDATE_EARNINGS_CALENDAR } from "@/lib/data/cache-policy";
 import type { EconomyCalendarEvent, EconomyDayColumn, EconomyWeekPayload } from "@/lib/market/economy-calendar-types";
 import { fetchEodhdEconomicEventsAll, type EodhdRawEconomicEventRow } from "@/lib/market/eodhd-economic-events";
-import { addDaysUtc, formatWeekRangeLabel, mondayOfWeekUtc, toYmdUtc } from "@/lib/market/earnings-week-data";
+import { addDaysUtc, formatWeekMonthYearLabel, mondayOfWeekUtc, toYmdUtc } from "@/lib/market/earnings-week-data";
 import { economyWeekHubSegment, hubEconomyWeekKey } from "@/lib/market/hub-snapshot-keys";
 import { readHubSnapshot } from "@/lib/market/hub-snapshot-store";
 
@@ -125,7 +125,7 @@ async function buildEconomyWeekPayloadUncached(weekMondayYmd: string, countryCod
 
   return {
     weekMondayYmd: fromYmd,
-    weekLabel: formatWeekRangeLabel(monday, friday),
+    weekLabel: formatWeekMonthYearLabel(monday),
     days,
   };
 }

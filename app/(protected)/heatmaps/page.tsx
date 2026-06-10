@@ -15,7 +15,7 @@ export default async function HeatmapsPage({ searchParams }: PageProps) {
 
   return (
     <div className="min-w-0 px-4 py-4 sm:px-9 sm:py-6">
-      <HeatmapPageClient key={`${market}-${metric}`} initial={payload} />
+      <HeatmapPageClient initial={payload} />
     </div>
   );
 }

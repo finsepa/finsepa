@@ -1,8 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight, Clock } from "@/lib/icons";
 
 import { EarningsOverflowHoverMenu } from "@/components/earnings/earnings-overflow-hover-menu";
@@ -12,6 +11,7 @@ import { PostMarketEarningsIcon } from "@/components/stock/post-market-earnings-
 import { PreMarketEarningsIcon } from "@/components/stock/pre-market-earnings-icon";
 import { CompanyLogo } from "@/components/screener/company-logo";
 import { SCREENER_TABLE_HEADER_STICKY_CLASS } from "@/components/screener/screener-table-scroll";
+import { LogoSkeleton, TextSkeleton } from "@/components/markets/skeleton";
 import { FormListboxSelect, type ListboxOption } from "@/components/ui/form-listbox-select";
 import type {
   EarningsCalendarItem,
@@ -35,6 +35,11 @@ import {
   timingBucketHasContent,
   type WeekTimingGridRows,
 } from "@/lib/market/earnings-week-grid-layout";
+import {
+  addDaysUtc,
+  formatWeekMonthYearLabelFromYmds,
+  toYmdUtc,
+} from "@/lib/market/utc-calendar-dates";
 import { prefetchStockEarningsTabPayload } from "@/lib/market/stock-earnings-tab-client";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
 import { cn } from "@/lib/utils";
@@ -312,22 +317,125 @@ function earningsWeekHref(weekYmd: string, scope: EarningsScopeFilter): string {
   return `/earnings?${qs.toString()}`;
 }
 
+type WeekDayDateStub = {
+  date: string;
+  weekdayLabel: string;
+  dayNumber: string;
+};
+
+function buildWeekDayDateStubs(weekMondayYmd: string): WeekDayDateStub[] {
+  const monday = new Date(Date.parse(`${weekMondayYmd}T12:00:00.000Z`));
+  return Array.from({ length: 5 }, (_, i) => {
+    const d = addDaysUtc(monday, i);
+    return {
+      date: toYmdUtc(d),
+      weekdayLabel: d.toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" }),
+      dayNumber: String(d.getUTCDate()),
+    };
+  });
+}
+
+function EarningsTimingSectionSkeleton({ timing, title }: { timing: EarningsReportTiming; title: string }) {
+  return (
+    <div className="mt-3 first:mt-0">
+      <EarningsTimingSectionHeading timing={timing} title={title} />
+      <div className="grid grid-cols-3 gap-1">
+        {Array.from({ length: 3 }, (_, i) => (
+          <div
+            key={i}
+            className="flex min-h-[72px] flex-col items-center justify-center gap-1.5 px-1 py-1.5"
+          >
+            <LogoSkeleton sizeClass="h-8 w-8" />
+            <TextSkeleton wClass="w-10" hClass="h-3.5" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function EarningsWeekGridSkeleton({
+  weekMondayYmd,
+  todayYmd,
+}: {
+  weekMondayYmd: string;
+  todayYmd: string;
+}) {
+  const days = useMemo(() => buildWeekDayDateStubs(weekMondayYmd), [weekMondayYmd]);
+
+  return (
+    <div className="flex min-w-0 flex-col" aria-busy="true" aria-label="Loading earnings calendar">
+      <div className="-mx-1 flex flex-col overflow-x-auto pb-1 md:mx-0 md:overflow-x-hidden md:overflow-y-visible">
+        <div className="flex w-max min-w-full flex-col rounded-2xl bg-[#F4F4F5] p-1 md:w-full">
+          <div className="flex w-max min-w-full gap-1 rounded-2xl bg-[#F4F4F5] md:w-full md:flex-row md:items-stretch">
+            {days.map((day) => {
+              const isToday = day.date === todayYmd;
+              return (
+                <div
+                  key={day.date}
+                  className="flex w-[min(100%,220px)] shrink-0 flex-col rounded-xl border border-[#E4E4E7] bg-white px-2 py-3 md:min-h-0 md:flex-1 md:shrink md:px-0 md:py-0"
+                >
+                  <div
+                    className={cn(
+                      "-mx-2 mb-3 rounded-t-xl px-2 pb-2 md:hidden",
+                      SCREENER_TABLE_HEADER_STICKY_CLASS,
+                    )}
+                  >
+                    <div className="text-[11px] font-semibold uppercase tracking-wide text-[#A1A1AA]">
+                      {day.weekdayLabel}
+                    </div>
+                    <div
+                      className={`text-[15px] font-semibold tabular-nums ${
+                        isToday ? "text-[#DC2626]" : "text-[#09090B]"
+                      }`}
+                    >
+                      {day.dayNumber}
+                    </div>
+                  </div>
+                  <div
+                    className={cn(
+                      "hidden rounded-t-xl pt-1 pb-0 md:block",
+                      SCREENER_TABLE_HEADER_STICKY_CLASS,
+                    )}
+                  >
+                    <div
+                      className={`flex flex-wrap items-center justify-center gap-1 py-0.5 text-center text-[18px] leading-6 ${
+                        isToday ? "text-[#DC2626]" : "text-[#09090B]"
+                      }`}
+                    >
+                      <span className="font-normal">{day.weekdayLabel}</span>
+                      <span className="font-semibold tabular-nums">{day.dayNumber}</span>
+                    </div>
+                    <div className="mt-1" aria-hidden>
+                      <div className={`h-0.5 w-full ${isToday ? "bg-[#DC2626]" : "bg-transparent"}`} />
+                    </div>
+                  </div>
+                  <div className="flex flex-col px-2 pt-2 pb-4 md:overflow-visible">
+                    <EarningsTimingSectionSkeleton timing="bmo" title="Before Market" />
+                    <EarningsTimingSectionSkeleton timing="amc" title="After Market" />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /**
  * Weekly earnings calendar — layout aligned with Figma (Web App Design, Earnings Calendar week view).
  * Weeks with no events still show the five-column grid; empty days display “No earnings”.
  */
 export function EarningsWeekGrid({
   data,
-  prevWeekYmd,
-  nextWeekYmd,
   todayYmd,
   thisWeekMondayYmd,
   scope,
   weekTimingGridRows: weekTimingGridRowsFromServer,
 }: {
   data: EarningsWeekPayload;
-  prevWeekYmd: string;
-  nextWeekYmd: string;
   /** UTC calendar day from the server — avoids SSR/client date drift for “today” styling. */
   todayYmd: string;
   /** Monday YMD of the week containing today (UTC), from the server. */
@@ -338,13 +446,21 @@ export function EarningsWeekGrid({
   weekTimingGridRows: WeekTimingGridRows;
 }) {
   const router = useRouter();
+  const [, startWeekTransition] = useTransition();
   const { watched, storageHydrated: watchlistHydrated } = useWatchlist();
   const { holdingsByPortfolioId, portfolioDisplayReady } = usePortfolioWorkspace();
   const [clientReady, setClientReady] = useState(false);
+  const [pendingWeekMondayYmd, setPendingWeekMondayYmd] = useState<string | null>(null);
 
   useEffect(() => {
     setClientReady(true);
   }, []);
+
+  useEffect(() => {
+    if (pendingWeekMondayYmd && pendingWeekMondayYmd === data.weekMondayYmd) {
+      setPendingWeekMondayYmd(null);
+    }
+  }, [data.weekMondayYmd, pendingWeekMondayYmd]);
 
   // Keep the first client render identical to SSR; apply scope filters only after mount.
   const scopeFilterReady =
@@ -376,8 +492,46 @@ export function EarningsWeekGrid({
     ? weekTimingGridRowsClient
     : weekTimingGridRowsFromServer;
 
+  const displayWeekMondayYmd = pendingWeekMondayYmd ?? data.weekMondayYmd;
+  const isWeekLoading =
+    pendingWeekMondayYmd !== null && pendingWeekMondayYmd !== data.weekMondayYmd;
+
+  const displayMonday = useMemo(() => {
+    const t = Date.parse(`${displayWeekMondayYmd}T12:00:00.000Z`);
+    return Number.isFinite(t) ? new Date(t) : new Date();
+  }, [displayWeekMondayYmd]);
+
+  const displayWeekLabel = useMemo(() => {
+    if (!isWeekLoading && data.days.length > 0) {
+      return formatWeekMonthYearLabelFromYmds(data.days.map((day) => day.date));
+    }
+    const stubYmds = Array.from({ length: 5 }, (_, i) => toYmdUtc(addDaysUtc(displayMonday, i)));
+    return formatWeekMonthYearLabelFromYmds(stubYmds);
+  }, [isWeekLoading, data.days, displayMonday]);
+
+  const displayPrevWeekYmd = useMemo(
+    () => toYmdUtc(addDaysUtc(displayMonday, -7)),
+    [displayMonday],
+  );
+
+  const displayNextWeekYmd = useMemo(
+    () => toYmdUtc(addDaysUtc(displayMonday, 7)),
+    [displayMonday],
+  );
+
+  const navigateWeek = useCallback(
+    (weekYmd: string) => {
+      if (weekYmd === displayWeekMondayYmd && !isWeekLoading) return;
+      setPendingWeekMondayYmd(weekYmd);
+      startWeekTransition(() => {
+        router.push(earningsWeekHref(weekYmd, scope));
+      });
+    },
+    [displayWeekMondayYmd, isWeekLoading, router, scope],
+  );
+
   const setScope = (next: EarningsScopeFilter) => {
-    const qs = new URLSearchParams({ week: data.weekMondayYmd });
+    const qs = new URLSearchParams({ week: displayWeekMondayYmd });
     if (next !== "all") qs.set("scope", next);
     router.push(`/earnings?${qs.toString()}`);
   };
@@ -388,7 +542,7 @@ export function EarningsWeekGrid({
     <div className="flex min-w-0 flex-col gap-6">
       <div className="relative z-30 flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-2">
         <h1 className="min-w-0 text-[24px] font-semibold leading-9 tracking-tight text-[#09090B]">
-          {data.weekLabel}
+          {displayWeekLabel}
         </h1>
         <div className="flex shrink-0 flex-wrap items-center gap-3">
           <FormListboxSelect
@@ -400,35 +554,38 @@ export function EarningsWeekGrid({
             className="w-max shrink-0"
             triggerClassName={earningsScopeDropdownTriggerClass}
           />
-          <Link
-            href={earningsWeekHref(prevWeekYmd, scope)}
-            prefetch={false}
+          <button
+            type="button"
+            onClick={() => navigateWeek(displayPrevWeekYmd)}
             className={weekNavArrowClass}
             aria-label="Previous week"
           >
             <ChevronLeft className="h-5 w-5" strokeWidth={1.75} />
-          </Link>
-          <Link
-            href={earningsWeekHref(thisWeekMondayYmd, scope)}
-            prefetch={false}
+          </button>
+          <button
+            type="button"
+            onClick={() => navigateWeek(thisWeekMondayYmd)}
             className={weekNavTodayClass}
             aria-label="Go to this week"
-            aria-current={data.weekMondayYmd === thisWeekMondayYmd ? "page" : undefined}
+            aria-current={displayWeekMondayYmd === thisWeekMondayYmd ? "page" : undefined}
           >
             Today
-          </Link>
-          <Link
-            href={earningsWeekHref(nextWeekYmd, scope)}
-            prefetch={false}
+          </button>
+          <button
+            type="button"
+            onClick={() => navigateWeek(displayNextWeekYmd)}
             className={weekNavArrowClass}
             aria-label="Next week"
           >
             <ChevronRight className="h-5 w-5" strokeWidth={1.75} />
-          </Link>
+          </button>
         </div>
       </div>
 
       <div className="flex min-w-0 flex-col">
+        {isWeekLoading ? (
+          <EarningsWeekGridSkeleton weekMondayYmd={displayWeekMondayYmd} todayYmd={todayYmd} />
+        ) : (
         <div className="-mx-1 flex flex-col overflow-x-auto pb-1 md:mx-0 md:overflow-x-hidden md:overflow-y-visible">
           <div className="flex w-max min-w-full flex-col rounded-2xl bg-[#F4F4F5] p-1 md:w-full">
             <div className="flex w-max min-w-full gap-1 rounded-2xl bg-[#F4F4F5] md:w-full md:flex-row md:items-stretch">
@@ -490,6 +647,7 @@ export function EarningsWeekGrid({
             </div>
           </div>
         </div>
+        )}
       </div>
 
       <EarningsPreviewModal item={previewItem} onClose={() => setPreviewItem(null)} />

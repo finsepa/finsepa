@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
-/** Column label row — sticks to the top of the app main scroll area while rows scroll beneath. */
+/** Column label row — sticks to the top of `<main>` while rows scroll (no `overflow` on ancestors). */
 export const SCREENER_TABLE_HEADER_STICKY_CLASS =
   "sticky top-0 z-20 border-b border-solid border-[#E4E4E7] bg-white";
 
@@ -33,6 +33,8 @@ export function ScreenerTableScroll({
 }) {
   const scrollWide = mobileScroll || (tableMinWidthPx != null && tableMinWidthPx > 0);
   const useViewportScroll = viewportScroll && scrollWide;
+  /** Horizontal pan on small screens only — avoid `overflow-x` on desktop so sticky headers work in `<main>`. */
+  const mobileHorizontalPan = mobileScroll && tableMinWidthPx == null;
 
   return (
     <div
@@ -40,9 +42,9 @@ export function ScreenerTableScroll({
         "w-full min-w-0 max-w-full border-x-0 border-y border-solid border-[#E4E4E7]",
         useViewportScroll ?
           "max-h-[var(--financials-table-max-h)] overflow-auto overscroll-contain [-webkit-overflow-scrolling:touch]"
-        : scrollWide ?
-          "overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]"
-        : "overflow-x-hidden",
+        : mobileHorizontalPan ?
+          "max-md:overflow-x-auto max-md:overscroll-x-contain max-md:[-webkit-overflow-scrolling:touch]"
+        : undefined,
         className,
       )}
     >

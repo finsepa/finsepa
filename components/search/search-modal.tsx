@@ -7,11 +7,9 @@ import { Search } from "@/lib/icons";
 import { fetchSearchItems } from "@/lib/search/fetch-search-items";
 import type { SearchAssetItem } from "@/lib/search/search-types";
 import { readRecentSearches, recordSearchNavigation, removeRecentSearchById } from "@/lib/search/recent-searches-storage";
-import { dropdownMenuFloatingScrollClassName } from "@/components/design-system/dropdown-menu-styles";
 import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
 import { AppModalShell } from "@/components/ui/app-modal-shell";
-import { SearchLoadingIndicator } from "@/components/search/search-loading-indicator";
-import { SearchResultRow } from "@/components/search/search-result-row";
+import { SearchPanelResults } from "@/components/search/search-panel-results";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
 import { cn } from "@/lib/utils";
 import { isWatchlistTickerWatched } from "@/lib/watchlist/normalize-storage-key";
@@ -56,7 +54,7 @@ export function SearchModal({
   const [items, setItems] = useState<SearchAssetItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [recent, setRecent] = useState<SearchAssetItem[]>([]);
-  const [highlight, setHighlight] = useState(0);
+  const [highlight, setHighlight] = useState(-1);
 
   const debouncedTrim = debounced.trim();
   const queryTrim = query.trim();
@@ -69,7 +67,7 @@ export function SearchModal({
   }, []);
 
   useEffect(() => {
-    setHighlight(0);
+    setHighlight(-1);
   }, [debouncedTrim]);
 
   useEffect(() => {
@@ -121,7 +119,7 @@ export function SearchModal({
     removeRecentSearchById(id);
     const next = readRecentSearches();
     setRecent(next);
-    setHighlight((h) => Math.min(h, Math.max(0, next.length - 1)));
+    setHighlight((h) => (h < 0 ? -1 : Math.min(h, Math.max(0, next.length - 1))));
   }, []);
 
   useEffect(() => {
@@ -134,12 +132,12 @@ export function SearchModal({
       if (list.length === 0) return;
       if (e.key === "ArrowDown") {
         e.preventDefault();
-        setHighlight((h) => Math.min(h + 1, list.length - 1));
+        setHighlight((h) => Math.min(h < 0 ? 0 : h + 1, list.length - 1));
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
-        setHighlight((h) => Math.max(h - 1, 0));
+        setHighlight((h) => Math.max(h - 1, -1));
       } else if (e.key === "Enter") {
-        const row = list[highlight];
+        const row = highlight >= 0 ? list[highlight] : undefined;
         if (row) {
           e.preventDefault();
           navigateTo(row);
@@ -159,66 +157,27 @@ export function SearchModal({
   const noRecent = emptyQuery && recent.length === 0;
 
   const resultsContent = (
-    <div
-      className={cn(
-        dropdownMenuFloatingScrollClassName,
-        "overflow-y-auto overscroll-y-contain py-2 [-webkit-overflow-scrolling:touch]",
+    <SearchPanelResults
+      emptyQuery={emptyQuery}
+      noRecent={noRecent}
+      recent={recent}
+      queryTrim={queryTrim}
+      loading={loading}
+      searchPending={searchPending}
+      showStaleList={showStaleList}
+      noResults={noResults}
+      items={items}
+      highlight={highlight}
+      onNavigate={navigateTo}
+      onRemoveRecent={handleRemoveRecent}
+      isWatched={(item) => isWatchedItem(item, watched)}
+      watchlistLoaded={loaded}
+      toggleTicker={toggleTicker}
+      listClassName={cn(
         fullscreen ? "min-h-0 flex-1" : "max-h-[min(420px,60dvh)]",
+        "overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch]",
       )}
-    >
-      {emptyQuery ? (
-        <>
-          <div className="px-5 pb-2 pt-1 text-[11px] font-semibold uppercase tracking-wide text-[#A1A1AA]">
-            Recent searches
-          </div>
-          {noRecent ? (
-            <div className="px-5 py-10 text-center text-[14px] text-[#71717A]">
-              No recent searches yet. Type to find assets — we will remember what you open here.
-            </div>
-          ) : (
-            recent.map((item, i) => (
-              <SearchResultRow
-                key={item.id}
-                variant="recent"
-                item={item}
-                onNavigate={navigateTo}
-                onRemoveRecent={() => handleRemoveRecent(item.id)}
-                active={highlight === i}
-                starred={isWatchedItem(item, watched)}
-                loaded={loaded}
-                toggleTicker={toggleTicker}
-              />
-            ))
-          )}
-        </>
-      ) : searchPending && !showStaleList ? (
-        <SearchLoadingIndicator className="px-5 py-10" />
-      ) : noResults ? (
-        <div className="px-5 py-10 text-center text-[14px] text-[#71717A]">
-          No results for &ldquo;{queryTrim}&rdquo;
-        </div>
-      ) : (
-        <>
-          {loading && showStaleList ? (
-            <div className="px-5 pb-1 text-center text-[11px] text-[#A1A1AA]" aria-hidden>
-              Updating…
-            </div>
-          ) : null}
-          {items.map((item, i) => (
-            <SearchResultRow
-              key={item.id}
-              variant="live"
-              item={item}
-              onNavigate={navigateTo}
-              active={highlight === i}
-              starred={isWatchedItem(item, watched)}
-              loaded={loaded}
-              toggleTicker={toggleTicker}
-            />
-          ))}
-        </>
-      )}
-    </div>
+    />
   );
 
   return (

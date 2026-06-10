@@ -35,14 +35,18 @@ export const dropdownMenuSearchInputClassName =
 export const dropdownMenuFloatingScrollbarClassName =
   "[scrollbar-width:thin] [scrollbar-color:rgba(161,161,170,0.65)_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:border-0 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-solid [&::-webkit-scrollbar-thumb]:border-transparent [&::-webkit-scrollbar-thumb]:bg-clip-padding [&::-webkit-scrollbar-thumb]:bg-[#A1A1AA]/60";
 
+/** Hidden overlay scrollbar — thumb appears only while actively scrolling. */
+export const dropdownMenuOverlayScrollbarClassName =
+  "[scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar]:bg-transparent [&::-webkit-scrollbar-track]:border-0 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-solid [&::-webkit-scrollbar-thumb]:border-transparent [&::-webkit-scrollbar-thumb]:bg-clip-padding [&::-webkit-scrollbar-thumb]:bg-transparent";
+
+export const dropdownMenuOverlayScrollbarActiveClassName =
+  "[scrollbar-width:thin] [scrollbar-color:rgba(161,161,170,0.65)_transparent] [&::-webkit-scrollbar-thumb]:bg-[#A1A1AA]/60";
+
 /**
- * Scrollable dropdown lists — thin scrollbar + edge fade on scroll
- * ({@link https://chanhdai.com/components/scroll-fade-effect}).
+ * Scrollable dropdown lists — thin scrollbar only.
+ * Use {@link DropdownScrollArea} for edge fade when content overflows.
  */
-export const dropdownMenuFloatingScrollClassName = cn(
-  dropdownMenuFloatingScrollbarClassName,
-  "scroll-fade-effect-y",
-);
+export const dropdownMenuFloatingScrollClassName = dropdownMenuFloatingScrollbarClassName;
 
 /**
  * Simple list dropdown (surface + padded body).

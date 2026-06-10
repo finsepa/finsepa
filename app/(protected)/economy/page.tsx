@@ -1,12 +1,7 @@
 import { EconomyCalendarClient } from "@/components/economy/economy-calendar-client";
 import { isSingleAssetMode } from "@/lib/features/single-asset";
 import { getEconomyWeekPayload } from "@/lib/market/economy-week-data";
-import {
-  addDaysUtc,
-  mondayOfWeekUtc,
-  parseWeekMondayParam,
-  toYmdUtc,
-} from "@/lib/market/earnings-week-data";
+import { mondayOfWeekUtc, parseWeekMondayParam } from "@/lib/market/earnings-week-data";
 
 const ALLOWED_ECONOMY_COUNTRIES = new Set([
   "US",
@@ -40,15 +35,11 @@ export default async function EconomyPage({ searchParams }: PageProps) {
   const monday = parsedMonday ?? mondayOfWeekUtc(new Date());
   const country = parseEconomyCountry(typeof sp.country === "string" ? sp.country : undefined);
   const data = await getEconomyWeekPayload(monday, country);
-  const prevMonday = addDaysUtc(monday, -7);
-  const nextMonday = addDaysUtc(monday, 7);
 
   return (
     <div className="min-w-0 px-4 py-5 sm:px-9 sm:py-8">
       <EconomyCalendarClient
         data={data}
-        prevWeekYmd={toYmdUtc(prevMonday)}
-        nextWeekYmd={toYmdUtc(nextMonday)}
         country={country}
       />
     </div>

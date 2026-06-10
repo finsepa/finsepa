@@ -49,16 +49,13 @@ export function ScreenerSectorsTable({ rows }: { rows: ScreenerSectorRow[] }) {
   }
 
   return (
-    <ScreenerTableScroll
-      minWidthClassName="min-w-0"
-      className="overflow-x-hidden"
-    >
+    <ScreenerTableScroll minWidthClassName="min-w-0">
       <div className="bg-white">
         <div
           className={`grid ${colLayoutMobile} ${colLayoutDesktop} min-h-[44px] items-center px-2 py-0 text-[12px] font-medium leading-5 text-[#71717A] sm:px-4 sm:text-[14px] ${SCREENER_TABLE_HEADER_STICKY_CLASS}`}
         >
           <div className="text-center">#</div>
-          <div className="text-left">Sector Name</div>
+          <div className="text-left">Sector</div>
           <div className="min-w-0 w-full text-right">1D %</div>
           <div className="min-w-0 w-full text-right">YTD %</div>
           <div className="hidden min-w-0 w-full text-right sm:block">Market Cap</div>

@@ -22,6 +22,14 @@ import { issuerKeyForOtcListingCollapse } from "@/lib/market/otc-duplicate-ticke
 import { runWithConcurrencyLimit } from "@/lib/utils/run-with-concurrency-limit";
 import { earningsWeekHubSegment, hubEarningsWeekKey } from "@/lib/market/hub-snapshot-keys";
 import { readHubSnapshot } from "@/lib/market/hub-snapshot-store";
+import {
+  addDaysUtc,
+  formatWeekMonthYearLabel,
+  mondayOfWeekUtc,
+  toYmdUtc,
+} from "@/lib/market/utc-calendar-dates";
+
+export { addDaysUtc, formatWeekMonthYearLabel, mondayOfWeekUtc, toYmdUtc };
 
 /**
  * Symbols: Top-500 US equities from the Screener static universe (market-cap order). Calendar rows outside
@@ -85,10 +93,6 @@ function pad2(n: number): string {
   return String(n).padStart(2, "0");
 }
 
-export function toYmdUtc(d: Date): string {
-  return `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())}`;
-}
-
 /**
  * Canonical calendar key for placing an earnings row in a day column.
  *
@@ -121,21 +125,6 @@ function normalizeReportDateYmdUtc(raw: string): string | null {
   return toYmdUtc(new Date(tMs));
 }
 
-/** Monday 00:00 UTC of the week containing `date` (week starts Monday). */
-export function mondayOfWeekUtc(date: Date): Date {
-  const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
-  const day = d.getUTCDay(); // 0 Sun .. 6 Sat
-  const diff = day === 0 ? -6 : 1 - day;
-  d.setUTCDate(d.getUTCDate() + diff);
-  return d;
-}
-
-export function addDaysUtc(d: Date, days: number): Date {
-  const out = new Date(d);
-  out.setUTCDate(out.getUTCDate() + days);
-  return out;
-}
-
 export function parseWeekMondayParam(week: string | undefined): Date | null {
   if (!week?.trim()) return null;
   const t = Date.parse(`${week.trim()}T12:00:00.000Z`);
@@ -154,15 +143,6 @@ export function formatWeekRangeLabel(monday: Date, friday: Date): string {
     return `${monthShort(monday)} ${dayNum(monday)} - ${dayNum(friday)}, ${year(monday)}`;
   }
   return `${monthShort(monday)} ${dayNum(monday)} - ${monthShort(friday)} ${dayNum(friday)}, ${year(friday)}`;
-}
-
-/** Earnings page title — month + year for the week’s Monday (e.g. `June 2026`). */
-export function formatWeekMonthYearLabel(weekMonday: Date): string {
-  return weekMonday.toLocaleDateString("en-US", {
-    month: "long",
-    year: "numeric",
-    timeZone: "UTC",
-  });
 }
 
 function weekdayShortUtc(ymd: string): string {

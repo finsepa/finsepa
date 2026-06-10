@@ -689,7 +689,7 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
 
     const cached = readScreenerGainersLosersCache(companiesMarketCacheSegment);
     if (cached) {
-      setGainersLosers(cached);
+      setGainersLosers((prev) => prev ?? cached);
       return;
     }
     if (gainersLosers) return;
@@ -723,7 +723,7 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
 
     const cached = readScreenerSectorsCache(companiesMarketCacheSegment);
     if (cached) {
-      setSectorsRows(cached);
+      setSectorsRows((prev) => prev ?? cached);
       return;
     }
     if (sectorsRows) return;
@@ -756,7 +756,7 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
 
     const cached = readScreenerIndustriesCache(companiesMarketCacheSegment);
     if (cached) {
-      setIndustriesRows(cached);
+      setIndustriesRows((prev) => prev ?? cached);
       return;
     }
     if (industriesRows) return;

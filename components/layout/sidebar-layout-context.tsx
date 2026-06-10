@@ -27,7 +27,7 @@ export const SIDEBAR_WIDTH_MOTION_CLASS =
 
 /** Labels, section headers, and row layout inside the rail. */
 export const SIDEBAR_CONTENT_MOTION_CLASS =
-  "transition-[opacity,max-width,max-height,margin,padding,gap] duration-[280ms] ease-[cubic-bezier(0.33,1,0.68,1)] motion-reduce:transition-none";
+  "transition-[opacity,max-width,max-height,width,margin,margin-right,padding,gap] duration-[280ms] ease-[cubic-bezier(0.33,1,0.68,1)] motion-reduce:transition-none";
 
 type SidebarLayoutContextValue = {
   /** Live preference (may update after hydration from localStorage). */

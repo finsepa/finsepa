@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Plus, RefreshCw, X } from "@/lib/icons";
 
 import { ChartingCompanyAddDropdown } from "@/components/charting/charting-company-add-dropdown";
+import { DropdownScrollArea } from "@/components/design-system/dropdown-scroll-area";
 import {
   DEFAULT_CHART_TIME_RANGE,
   STANDALONE_CHARTING_TIME_RANGE_ORDER,
@@ -13,7 +14,6 @@ import {
 import { ChartingVisualSwitcher } from "@/components/stock/multichart-visual-switcher";
 import { secondaryFillButtonClassName, TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
 import {
-  dropdownMenuFloatingScrollClassName,
   dropdownMenuRichItemClassName,
   dropdownMenuSearchHeaderClassName,
   dropdownMenuSearchInputClassName,
@@ -312,12 +312,7 @@ export function ChartingEmptyToolbar({
                     aria-label="Search metrics"
                   />
                 </div>
-                <div
-                  className={cn(
-                    "flex max-h-[min(400px,calc(100vh-12rem))] flex-col gap-1 overflow-y-auto px-1 py-2",
-                    dropdownMenuFloatingScrollClassName,
-                  )}
-                >
+                <DropdownScrollArea className="flex max-h-[min(400px,calc(100vh-12rem))] flex-col gap-1 overflow-y-auto px-1 py-2">
                   {groupedAddable.map((group) => (
                     <div key={group.id} className="pb-2 last:pb-0">
                       <div className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wide text-[#A1A1AA]">
@@ -339,7 +334,7 @@ export function ChartingEmptyToolbar({
                       </ul>
                     </div>
                   ))}
-                </div>
+                </DropdownScrollArea>
                 {totalAddable === 0 ? (
                   <p className="px-3 py-2 text-[12px] text-[#71717A]">
                     {qLower ? "No metrics match" : "All available metrics are selected"}

@@ -1,10 +1,19 @@
 "use client";
 
-import { dropdownMenuFloatingScrollClassName } from "@/components/design-system/dropdown-menu-styles";
+import { DropdownScrollArea } from "@/components/design-system/dropdown-scroll-area";
+import { dropdownMenuPanelBodyClassName } from "@/components/design-system/dropdown-menu-styles";
 import { SearchLoadingIndicator } from "@/components/search/search-loading-indicator";
+import { SearchRecentEmpty } from "@/components/search/search-recent-empty";
 import { SearchResultRow } from "@/components/search/search-result-row";
 import type { SearchAssetItem } from "@/lib/search/search-types";
 import { cn } from "@/lib/utils";
+
+/** Section label inside {@link dropdownMenuPanelBodyClassName} — matches company/search pickers. */
+export const searchDropdownSectionClassName =
+  "px-2 pb-1 pt-0 text-[11px] font-semibold tracking-wide text-[#A1A1AA] uppercase";
+
+const defaultListClassName =
+  "max-h-[min(420px,60dvh)] overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch]";
 
 export function SearchPanelResults({
   emptyQuery,
@@ -22,11 +31,8 @@ export function SearchPanelResults({
   isWatched,
   watchlistLoaded,
   toggleTicker,
-  listClassName = cn(
-    dropdownMenuFloatingScrollClassName,
-    "max-h-[min(420px,60dvh)] overflow-y-auto overscroll-y-contain",
-  ),
-  sectionClassName = "px-3 pb-1 pt-1",
+  listClassName = defaultListClassName,
+  sectionClassName = searchDropdownSectionClassName,
 }: {
   emptyQuery: boolean;
   noRecent: boolean;
@@ -46,17 +52,17 @@ export function SearchPanelResults({
   listClassName?: string;
   sectionClassName?: string;
 }) {
+  const showRecentList = emptyQuery && !noRecent;
+
   return (
-    <div className={listClassName}>
+    <DropdownScrollArea
+      className={cn(dropdownMenuPanelBodyClassName, showRecentList && "pt-2", listClassName)}
+    >
       {emptyQuery ? (
         <>
-          <div className={`${sectionClassName} text-[11px] font-semibold tracking-wide text-[#A1A1AA] uppercase`}>
-            Recent searches
-          </div>
+          {showRecentList ? <div className={sectionClassName}>Recent searches</div> : null}
           {noRecent ? (
-            <p className={`${sectionClassName} py-8 text-center text-[12px] leading-5 text-[#71717A]`}>
-              No recent searches yet. Type to find assets — we will remember what you open here.
-            </p>
+            <SearchRecentEmpty />
           ) : (
             <ul className="flex flex-col gap-1">
               {recent.map((item, i) => (
@@ -66,7 +72,7 @@ export function SearchPanelResults({
                     item={item}
                     onNavigate={onNavigate}
                     onRemoveRecent={() => onRemoveRecent(item.id)}
-                    active={highlight === i}
+                    active={highlight >= 0 && highlight === i}
                     starred={isWatched(item)}
                     loaded={watchlistLoaded}
                     toggleTicker={toggleTicker}
@@ -77,15 +83,15 @@ export function SearchPanelResults({
           )}
         </>
       ) : searchPending && !showStaleList ? (
-        <SearchLoadingIndicator className={sectionClassName} />
+        <SearchLoadingIndicator />
       ) : noResults ? (
-        <p className={`${sectionClassName} py-8 text-center text-[12px] leading-5 text-[#71717A]`}>
+        <p className="px-2 py-8 text-center text-[12px] leading-5 text-[#71717A]">
           No results for &ldquo;{queryTrim}&rdquo;
         </p>
       ) : (
         <>
           {loading && showStaleList ? (
-            <p className={`${sectionClassName} pb-1 text-center text-[11px] text-[#A1A1AA]`} aria-hidden>
+            <p className="px-2 pb-1 text-center text-[11px] text-[#A1A1AA]" aria-hidden>
               Updating…
             </p>
           ) : null}
@@ -96,7 +102,7 @@ export function SearchPanelResults({
                   variant="live"
                   item={item}
                   onNavigate={onNavigate}
-                  active={highlight === i}
+                  active={highlight >= 0 && highlight === i}
                   starred={isWatched(item)}
                   loaded={watchlistLoaded}
                   toggleTicker={toggleTicker}
@@ -106,6 +112,6 @@ export function SearchPanelResults({
           </ul>
         </>
       )}
-    </div>
+    </DropdownScrollArea>
   );
 }

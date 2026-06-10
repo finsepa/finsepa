@@ -44,7 +44,8 @@ export function useSearchPanel({
   const [items, setItems] = useState<SearchAssetItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [recent, setRecent] = useState<SearchAssetItem[]>([]);
-  const [highlight, setHighlight] = useState(0);
+  /** -1 = no keyboard row selected (avoids highlighting the first recent item on open). */
+  const [highlight, setHighlight] = useState(-1);
 
   const debouncedTrim = debounced.trim();
   const queryTrim = query.trim();
@@ -58,12 +59,12 @@ export function useSearchPanel({
   useEffect(() => {
     if (!open) {
       setQuery("");
-      setHighlight(0);
+      setHighlight(-1);
     }
   }, [open]);
 
   useEffect(() => {
-    setHighlight(0);
+    setHighlight(-1);
   }, [debouncedTrim]);
 
   useEffect(() => {
@@ -115,7 +116,7 @@ export function useSearchPanel({
     removeRecentSearchById(id);
     const next = readRecentSearches();
     setRecent(next);
-    setHighlight((h) => Math.min(h, Math.max(0, next.length - 1)));
+    setHighlight((h) => (h < 0 ? -1 : Math.min(h, Math.max(0, next.length - 1))));
   }, []);
 
   useEffect(() => {
@@ -129,12 +130,12 @@ export function useSearchPanel({
       if (list.length === 0) return;
       if (e.key === "ArrowDown") {
         e.preventDefault();
-        setHighlight((h) => Math.min(h + 1, list.length - 1));
+        setHighlight((h) => Math.min(h < 0 ? 0 : h + 1, list.length - 1));
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
-        setHighlight((h) => Math.max(h - 1, 0));
+        setHighlight((h) => Math.max(h - 1, -1));
       } else if (e.key === "Enter") {
-        const row = list[highlight];
+        const row = highlight >= 0 ? list[highlight] : undefined;
         if (row) {
           e.preventDefault();
           navigateTo(row);

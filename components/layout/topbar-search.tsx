@@ -4,11 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Search, X } from "@/lib/icons";
 
-import {
-  dropdownMenuFloatingScrollClassName,
-  dropdownMenuPanelBodyClassName,
-  dropdownMenuSurfaceClassName,
-} from "@/components/design-system/dropdown-menu-styles";
+import { dropdownMenuSurfaceClassName } from "@/components/design-system/dropdown-menu-styles";
 import { TopbarDelayedTooltip } from "@/components/layout/topbar-delayed-tooltip";
 import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
 import { OPEN_SEARCH_EVENT } from "@/components/search/search-modal";
@@ -45,7 +41,6 @@ export function TopbarSearch() {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const close = useCallback(() => setOpen(false), []);
-  const openSearch = useCallback(() => setOpen(true), []);
 
   const panel = useSearchPanel({ open, onClose: close });
 
@@ -76,24 +71,48 @@ export function TopbarSearch() {
   );
 
   useEffect(() => {
+    function isForeignEditableField(target: HTMLElement | null): boolean {
+      if (!target) return false;
+      if (target.closest("[data-topbar-search-input]")) return false;
+      return Boolean(
+        target.closest(
+          "input, textarea, select, [contenteditable=true], [role=textbox], [role=searchbox]",
+        ),
+      );
+    }
+
     function onKey(e: KeyboardEvent) {
-      if (e.key !== "s" && e.key !== "S") return;
+      if (e.code !== "KeyS") return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.repeat) return;
+
       const t = e.target as HTMLElement | null;
-      if (t?.closest("input, textarea, [contenteditable=true], [role=textbox]")) return;
+      const fromOurInput = Boolean(t?.closest("[data-topbar-search-input]"));
+
+      if (open) {
+        if (fromOurInput) return;
+        e.preventDefault();
+        focusSearchInput();
+        return;
+      }
+
+      if (isForeignEditableField(t)) return;
+
       e.preventDefault();
-      openSearch();
+      activateSearch();
     }
+
     function onOpenSearch() {
-      openSearch();
+      activateSearch();
     }
-    window.addEventListener("keydown", onKey);
+
+    window.addEventListener("keydown", onKey, true);
     window.addEventListener(OPEN_SEARCH_EVENT, onOpenSearch);
     return () => {
-      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("keydown", onKey, true);
       window.removeEventListener(OPEN_SEARCH_EVENT, onOpenSearch);
     };
-  }, [openSearch]);
+  }, [activateSearch, focusSearchInput, open]);
 
   useEffect(() => {
     setPortalMounted(true);
@@ -135,8 +154,10 @@ export function TopbarSearch() {
 
         <input
           ref={panel.inputRef}
+          data-topbar-search-input
           type="text"
           inputMode="search"
+          tabIndex={open ? 0 : -1}
           readOnly={!open}
           value={panel.query}
           onChange={(e) => panel.setQuery(e.target.value)}
@@ -235,12 +256,6 @@ export function TopbarSearch() {
             isWatched={panel.isWatched}
             watchlistLoaded={panel.watchlistLoaded}
             toggleTicker={panel.toggleTicker}
-            listClassName={cn(
-              dropdownMenuPanelBodyClassName,
-              dropdownMenuFloatingScrollClassName,
-              "max-h-[min(420px,60dvh)] overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch]",
-            )}
-            sectionClassName="px-3 pb-1 pt-1"
           />
         </div>
       </TopbarDropdownPortal>

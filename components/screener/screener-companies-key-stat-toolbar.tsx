@@ -3,10 +3,8 @@
 import { RotateCcw, Search, SlidersHorizontal } from "@/lib/icons";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import {
-  dropdownMenuFloatingScrollClassName,
-  dropdownMenuSurfaceClassName,
-} from "@/components/design-system/dropdown-menu-styles";
+import { DropdownScrollArea } from "@/components/design-system/dropdown-scroll-area";
+import { dropdownMenuSurfaceClassName } from "@/components/design-system/dropdown-menu-styles";
 import {
   topbarSquircleIconClass,
   topbarSquircleTextButtonClass,
@@ -159,12 +157,7 @@ export function ScreenerCompaniesKeyStatToolbar({
                 </div>
               </div>
 
-              <div
-                className={cn(
-                  "min-h-0 flex-1 overflow-y-auto overscroll-y-contain p-1",
-                  dropdownMenuFloatingScrollClassName,
-                )}
-              >
+              <DropdownScrollArea className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain p-1">
                 {filteredMetrics.length === 0 ? (
                   <div className="px-3 py-6 text-center text-[13px] text-[#71717A]">No metrics match.</div>
                 ) : (
@@ -193,7 +186,7 @@ export function ScreenerCompaniesKeyStatToolbar({
                     );
                   })
                 )}
-              </div>
+              </DropdownScrollArea>
             </div>
           </div>
         ) : null}

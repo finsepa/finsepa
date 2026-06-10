@@ -88,9 +88,14 @@ export function StockHeader({
   const settledTimestampRef = useRef<string | null>(null);
 
   useEffect(() => {
+    settledTripletRef.current = null;
     settledTimestampRef.current = null;
-  }, [ticker]);
+  }, [ticker, headerChartMetric]);
+
   const springTarget = useMemo(() => {
+    if (chartLoading) {
+      return { price: null, abs: null, pct: null };
+    }
     const hasFull =
       price != null &&
       changeAbs != null &&
@@ -98,23 +103,19 @@ export function StockHeader({
       Number.isFinite(price) &&
       Number.isFinite(changeAbs) &&
       Number.isFinite(changePct);
-    if (hasFull && !chartLoading) {
+    if (hasFull) {
       settledTripletRef.current = { price, abs: changeAbs, pct: changePct };
       return { price, abs: changeAbs, pct: changePct };
-    }
-    if (chartLoading && settledTripletRef.current) {
-      return settledTripletRef.current;
     }
     return { price, abs: changeAbs, pct: changePct };
   }, [chartLoading, price, changeAbs, changePct]);
 
   const anim = useSpringTriplet(springTarget, { stiffness: 520, damping: 38, epsilon: 1e-4 });
 
-  if (priceTimestampLabel) {
+  if (priceTimestampLabel && !chartLoading) {
     settledTimestampRef.current = priceTimestampLabel;
   }
-  const displayTimestamp = priceTimestampLabel ?? settledTimestampRef.current;
-  const showTimestampLoading = chartLoading && anim.price == null && displayTimestamp == null;
+  const displayTimestamp = chartLoading ? null : (priceTimestampLabel ?? settledTimestampRef.current);
 
   const hasChange = changePct != null && changeAbs != null && Number.isFinite(changePct) && Number.isFinite(changeAbs);
   const isPositive = hasChange ? changeAbs >= 0 : true;
@@ -201,6 +202,18 @@ export function StockHeader({
       </div>
 
       <div className="min-w-0">
+        {chartLoading ? (
+          <div
+            className="flex flex-wrap items-center gap-2"
+            aria-busy="true"
+            aria-label="Loading chart value"
+          >
+            <div className="h-9 w-[7.5rem] rounded-md bg-neutral-200/80 animate-pulse" aria-hidden />
+            {headerChartMetric === "return" ? null : (
+              <div className="h-5 w-[10rem] rounded-md bg-neutral-200/80 animate-pulse" aria-hidden />
+            )}
+          </div>
+        ) : (
         <div
           className={`flex flex-wrap items-baseline gap-2 transition-[transform,opacity] duration-200 ease-out ${
             chartHovering ? "translate-y-px" : ""
@@ -272,10 +285,11 @@ export function StockHeader({
             </>
           )}
         </div>
-        {!chartEmpty || displayTimestamp != null || showTimestampLoading ? (
+        )}
+        {!chartEmpty || displayTimestamp != null || chartLoading ? (
           <div className="mt-0.5 min-h-4 text-[12px] leading-4 text-[#71717A]">
-            {showTimestampLoading ? (
-              "Loading…"
+            {chartLoading ? (
+              <div className="h-4 w-52 max-w-full rounded bg-neutral-200/80 animate-pulse" aria-hidden />
             ) : displayTimestamp ? (
               <span className="min-w-0">{displayTimestamp}</span>
             ) : null}

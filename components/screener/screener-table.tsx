@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState, type UIEvent } from "react";
 import type { ScreenerTableRow } from "@/lib/screener/screener-static";
 import { WatchlistStarToggle } from "@/components/watchlist/watchlist-star-button";
 import { CompanyLogo } from "./company-logo";
@@ -16,6 +16,38 @@ import { cn } from "@/lib/utils";
 function formatPercentValue(value: number) {
   return `${value > 0 ? "+" : ""}${value.toFixed(2)}%`;
 }
+
+/** Keep header/body columns aligned when the table is wider than the viewport. */
+function useSyncedHorizontalScroll() {
+  const headerRef = useRef<HTMLDivElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const lock = useRef(false);
+
+  const onHeaderScroll = (e: UIEvent<HTMLDivElement>) => {
+    if (lock.current) return;
+    lock.current = true;
+    const left = e.currentTarget.scrollLeft;
+    const peer = bodyRef.current;
+    if (peer && peer.scrollLeft !== left) peer.scrollLeft = left;
+    lock.current = false;
+  };
+
+  const onBodyScroll = (e: UIEvent<HTMLDivElement>) => {
+    if (lock.current) return;
+    lock.current = true;
+    const left = e.currentTarget.scrollLeft;
+    const peer = headerRef.current;
+    if (peer && peer.scrollLeft !== left) peer.scrollLeft = left;
+    lock.current = false;
+  };
+
+  return { headerRef, bodyRef, onHeaderScroll, onBodyScroll };
+}
+
+const screenerTableWideHorizontalScrollClass =
+  "overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]";
+const screenerTableWideHeaderScrollClass =
+  "overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden";
 
 function ChangeCell({ value }: { value: number | null }) {
   if (value == null || !Number.isFinite(value)) {
@@ -265,58 +297,84 @@ export function ScreenerTable({
   const gridTemplateColumns = useScreenerTableGridTemplate(keyStatCount);
   const tableMinWidthPx = screenerTableMinWidthPx(keyStatCount);
   const desktopNumericCellClass = screenerDesktopNumericCellClass(useFluidDesktopColumns);
+  const { headerRef, bodyRef, onHeaderScroll, onBodyScroll } = useSyncedHorizontalScroll();
+
+  const headerRow = (
+    <div
+      className={`flex min-h-[44px] min-w-0 w-full items-center gap-x-1.5 px-2 py-0 text-[12px] font-medium leading-5 text-[#71717A] max-md:gap-x-1.5 sm:gap-x-2 sm:px-4 sm:text-[14px]`}
+    >
+      <div className="hidden w-6 shrink-0 sm:block sm:w-10" aria-hidden />
+      <div
+        className={`${rowLinkGridBase} min-h-[44px] items-center text-[12px] font-medium leading-5 text-[#71717A] sm:text-[14px]`}
+        style={{ gridTemplateColumns }}
+      >
+        <div className="text-center">#</div>
+        <div className="text-left">Company</div>
+        <div className={cn("min-w-0 w-full text-right", !useFluidDesktopColumns && "sm:shrink-0 sm:max-w-[8rem] sm:min-w-[5.25rem]")}>
+          <span className="sm:hidden">Price</span>
+          <span className="hidden sm:inline">Price</span>
+          <span className="hidden text-[12px] font-medium leading-4 text-[#A1A1AA] sm:hidden">1D %</span>
+        </div>
+        <div className={cn(desktopNumericCellClass, "truncate")}>1D %</div>
+        <div className={cn(desktopNumericCellClass, "truncate")}>1M %</div>
+        <div className={cn(desktopNumericCellClass, "truncate")}>YTD %</div>
+        <div className={cn(desktopNumericCellClass, "truncate")}>M Cap</div>
+        <div className={cn(desktopNumericCellClass, "truncate")}>PE</div>
+        {keyStatColumns.map((col) => (
+          <div
+            key={col.header}
+            className={cn(desktopKeyStatCellClass, "truncate")}
+            title={col.header}
+          >
+            {col.header}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const bodyRows = (
+    <div className={SCREENER_TABLE_BODY_DIVIDE_CLASS}>
+      {rows.map((item, index) => (
+        <ScreenerDataRow
+          key={item.ticker}
+          item={item}
+          rank={rankOffset + index + 1}
+          starred={watched.has(item.ticker)}
+          loaded={loaded}
+          toggleTicker={toggleTicker}
+          keyStatColumns={keyStatColumns}
+          gridTemplateColumns={gridTemplateColumns}
+          desktopNumericCellClass={desktopNumericCellClass}
+        />
+      ))}
+    </div>
+  );
+
+  if (tableMinWidthPx != null) {
+    return (
+      <div className="w-full min-w-0 max-w-full border-x-0 border-y border-solid border-[#E4E4E7] bg-white">
+        <div className={SCREENER_TABLE_HEADER_STICKY_CLASS}>
+          <div
+            ref={headerRef}
+            onScroll={onHeaderScroll}
+            className={screenerTableWideHeaderScrollClass}
+          >
+            <div style={{ minWidth: tableMinWidthPx }}>{headerRow}</div>
+          </div>
+        </div>
+        <div ref={bodyRef} onScroll={onBodyScroll} className={screenerTableWideHorizontalScrollClass}>
+          <div style={{ minWidth: tableMinWidthPx }}>{bodyRows}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <ScreenerTableScroll tableMinWidthPx={tableMinWidthPx}>
+    <ScreenerTableScroll>
       <div className="bg-white">
-        {/* Column headers */}
-      <div
-        className={`flex min-h-[44px] min-w-0 w-full items-center gap-x-1.5 px-2 py-0 text-[12px] font-medium leading-5 text-[#71717A] max-md:gap-x-1.5 sm:gap-x-2 sm:px-4 sm:text-[14px] ${SCREENER_TABLE_HEADER_STICKY_CLASS}`}
-      >
-        <div className="hidden w-6 shrink-0 sm:block sm:w-10" aria-hidden />
-        <div
-          className={`${rowLinkGridBase} min-h-[44px] items-center text-[12px] font-medium leading-5 text-[#71717A] sm:text-[14px]`}
-          style={{ gridTemplateColumns }}
-        >
-          <div className="text-center">#</div>
-          <div className="text-left">Company</div>
-          <div className={cn("min-w-0 w-full text-right", !useFluidDesktopColumns && "sm:shrink-0 sm:max-w-[8rem] sm:min-w-[5.25rem]")}>
-            <span className="sm:hidden">Price</span>
-            <span className="hidden sm:inline">Price</span>
-            <span className="hidden text-[12px] font-medium leading-4 text-[#A1A1AA] sm:hidden">1D %</span>
-          </div>
-          <div className={cn(desktopNumericCellClass, "truncate")}>1D %</div>
-          <div className={cn(desktopNumericCellClass, "truncate")}>1M %</div>
-          <div className={cn(desktopNumericCellClass, "truncate")}>YTD %</div>
-          <div className={cn(desktopNumericCellClass, "truncate")}>M Cap</div>
-          <div className={cn(desktopNumericCellClass, "truncate")}>PE</div>
-          {keyStatColumns.map((col) => (
-            <div
-              key={col.header}
-              className={cn(desktopKeyStatCellClass, "truncate")}
-              title={col.header}
-            >
-              {col.header}
-            </div>
-          ))}
-        </div>
-        </div>
-
-        <div className={SCREENER_TABLE_BODY_DIVIDE_CLASS}>
-          {rows.map((item, index) => (
-            <ScreenerDataRow
-              key={item.ticker}
-              item={item}
-              rank={rankOffset + index + 1}
-              starred={watched.has(item.ticker)}
-              loaded={loaded}
-              toggleTicker={toggleTicker}
-              keyStatColumns={keyStatColumns}
-              gridTemplateColumns={gridTemplateColumns}
-              desktopNumericCellClass={desktopNumericCellClass}
-            />
-          ))}
-        </div>
+        <div className={SCREENER_TABLE_HEADER_STICKY_CLASS}>{headerRow}</div>
+        {bodyRows}
       </div>
     </ScreenerTableScroll>
   );

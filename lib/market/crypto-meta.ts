@@ -60,7 +60,12 @@ export const CRYPTO_SEARCH_EXTRA: CryptoMeta[] = [
   { symbol: "LTC", name: "Litecoin", eodhdSymbol: "LTC-USD.CC" },
   { symbol: "BCH", name: "Bitcoin Cash", eodhdSymbol: "BCH-USD.CC" },
   { symbol: "NEAR", name: "NEAR Protocol", eodhdSymbol: "NEAR-USD.CC" },
-  { symbol: "UNI", name: "Uniswap", eodhdSymbol: "UNI-USD.CC" },
+  {
+    symbol: "UNI",
+    name: "Uniswap",
+    eodhdSymbol: "UNI7083-USD.CC",
+    eodhdAltSymbols: ["UNI-USD.CC"],
+  },
   { symbol: "XLM", name: "Stellar", eodhdSymbol: "XLM-USD.CC" },
   { symbol: "FIL", name: "Filecoin", eodhdSymbol: "FIL-USD.CC" },
   { symbol: "APT", name: "Aptos", eodhdSymbol: "APT-USD.CC" },

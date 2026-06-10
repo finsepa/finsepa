@@ -75,13 +75,14 @@ export function googleFaviconHostForCryptoSymbol(symbol: string): string {
 }
 
 /**
- * Logo.dev crypto CDN when configured; otherwise deterministic favicon domains / generic fallback.
+ * Prefer curated brand domains (same as equities) — Logo.dev `/crypto/{symbol}` often 404s (e.g. XLM).
+ * Falls back to Logo.dev crypto slug, then a generic `.org` favicon.
  */
 export function getCryptoLogoUrl(symbol: string): string {
   const u = cryptoRouteBase(symbol.trim().toUpperCase());
-  const dev = logoDevCryptoLogoUrl(u);
-  if (dev) return dev;
   const domain = DOMAIN_BY_SYMBOL[u];
   if (domain) return logoDevDomainLogoUrl(domain) ?? companyLogoUrlFromDomain(domain);
-  return `https://www.google.com/s2/favicons?sz=64&domain=${encodeURIComponent(`${u.toLowerCase()}.org`)}`;
+  const dev = logoDevCryptoLogoUrl(u);
+  if (dev) return dev;
+  return companyLogoUrlFromDomain(`${u.toLowerCase()}.org`);
 }

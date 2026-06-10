@@ -1,12 +1,12 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight, LayoutList, Settings2 } from "@/lib/icons";
 
 import { EconomyEventHistoryModal } from "@/components/economy/economy-event-history-modal";
-import { ScreenerTableScroll } from "@/components/screener/screener-table-scroll";
+import { SkeletonBox, TextSkeleton } from "@/components/markets/skeleton";
+import { ScreenerTableScroll, SCREENER_TABLE_HEADER_STICKY_CLASS } from "@/components/screener/screener-table-scroll";
 import { FormListboxSelect, type ListboxOption } from "@/components/ui/form-listbox-select";
 import type { EconomyCalendarEvent, EconomyDayColumn, EconomyWeekPayload } from "@/lib/market/economy-calendar-types";
 import {
@@ -17,19 +17,24 @@ import {
   formatEconomyMetric,
   type EconomyTimezoneOption,
 } from "@/lib/market/economy-format-display";
+import {
+  addDaysUtc,
+  formatWeekMonthYearLabelFromYmds,
+  toYmdUtc,
+} from "@/lib/market/utc-calendar-dates";
 import { cn } from "@/lib/utils";
 
 const ECONOMY_COUNTRY_OPTIONS: ListboxOption[] = [
-  { value: "US", label: `${countryFlagEmoji("US")} United States` },
-  { value: "GB", label: `${countryFlagEmoji("GB")} United Kingdom` },
-  { value: "DE", label: `${countryFlagEmoji("DE")} Germany` },
-  { value: "FR", label: `${countryFlagEmoji("FR")} France` },
-  { value: "JP", label: `${countryFlagEmoji("JP")} Japan` },
-  { value: "CN", label: `${countryFlagEmoji("CN")} China` },
-  { value: "CA", label: `${countryFlagEmoji("CA")} Canada` },
-  { value: "AU", label: `${countryFlagEmoji("AU")} Australia` },
-  { value: "IT", label: `${countryFlagEmoji("IT")} Italy` },
-  { value: "ES", label: `${countryFlagEmoji("ES")} Spain` },
+  { value: "US", label: `${countryFlagEmoji("US")} US` },
+  { value: "GB", label: `${countryFlagEmoji("GB")} UK` },
+  { value: "DE", label: `${countryFlagEmoji("DE")} DE` },
+  { value: "FR", label: `${countryFlagEmoji("FR")} FR` },
+  { value: "JP", label: `${countryFlagEmoji("JP")} JP` },
+  { value: "CN", label: `${countryFlagEmoji("CN")} CN` },
+  { value: "CA", label: `${countryFlagEmoji("CA")} CA` },
+  { value: "AU", label: `${countryFlagEmoji("AU")} AU` },
+  { value: "IT", label: `${countryFlagEmoji("IT")} IT` },
+  { value: "ES", label: `${countryFlagEmoji("ES")} ES` },
 ];
 
 type ImpactFilter = "all" | "major" | "notable" | "low";
@@ -157,47 +162,6 @@ function EconomyEventCard({
   );
 }
 
-/** Week grid column headers only (list view does not show this strip). */
-function EconomyWeekdayStrip({
-  days,
-  highlightYmd,
-}: {
-  days: Pick<EconomyDayColumn, "date" | "weekdayLabel" | "dayNumber">[];
-  highlightYmd: string;
-}) {
-  return (
-    <div className="relative border-b border-t border-[#E4E4E7] py-1 pb-0">
-      <div className="flex w-full gap-6 text-center text-lg leading-6">
-        {days.map((day) => {
-          const active = day.date === highlightYmd;
-          return (
-            <div
-              key={day.date}
-              className={cn(
-                "flex min-h-px min-w-0 flex-1 flex-wrap items-center justify-center gap-1 py-0.5",
-                active ? "text-[#DC2626]" : "text-[#09090B]",
-              )}
-            >
-              <span className="font-normal">{day.weekdayLabel}</span>
-              <span className="font-semibold tabular-nums">{day.dayNumber}</span>
-            </div>
-          );
-        })}
-      </div>
-      <div className="mt-1 flex w-full gap-6" aria-hidden>
-        {days.map((day) => {
-          const active = day.date === highlightYmd;
-          return (
-            <div key={`u-${day.date}`} className="min-h-px min-w-0 flex-1">
-              <div className={cn("h-0.5 w-full", active ? "bg-[#DC2626]" : "bg-transparent")} />
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 function EconomyListRow({
   event,
   offsetMinutes,
@@ -235,8 +199,148 @@ function EconomyListRow({
   );
 }
 
-const navBtnClass =
-  "flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-[#09090B] transition-colors hover:bg-[#F4F4F5]";
+const weekNavBtnClass =
+  "inline-flex h-9 shrink-0 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5]";
+
+const weekNavArrowClass = cn(weekNavBtnClass, "w-9");
+
+const weekNavTodayClass = cn(weekNavBtnClass, "px-3 text-sm font-medium leading-5");
+
+type WeekDayDateStub = {
+  date: string;
+  weekdayLabel: string;
+  dayNumber: string;
+};
+
+function buildWeekDayDateStubs(weekMondayYmd: string): WeekDayDateStub[] {
+  const monday = new Date(Date.parse(`${weekMondayYmd}T12:00:00.000Z`));
+  return Array.from({ length: 5 }, (_, i) => {
+    const d = addDaysUtc(monday, i);
+    return {
+      date: toYmdUtc(d),
+      weekdayLabel: d.toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" }),
+      dayNumber: String(d.getUTCDate()),
+    };
+  });
+}
+
+function EconomyEventCardSkeleton() {
+  return (
+    <div className="w-full rounded-lg border border-[#E4E4E7] bg-white px-3 py-2 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
+      <div className="flex items-center gap-2">
+        <SkeletonBox className="h-5 w-5 shrink-0 rounded-[10px]" />
+        <TextSkeleton wClass="w-14" hClass="h-3" />
+        <SkeletonBox className="ml-auto h-4 w-4 shrink-0 rounded" />
+      </div>
+      <SkeletonBox className="mt-2 h-4 w-[85%] rounded-md" />
+      <div className="mt-2 space-y-1.5">
+        <div className="flex justify-between gap-3">
+          <TextSkeleton wClass="w-14" hClass="h-3" />
+          <TextSkeleton wClass="w-10" hClass="h-3" />
+        </div>
+        <div className="flex justify-between gap-3">
+          <TextSkeleton wClass="w-12" hClass="h-3" />
+          <TextSkeleton wClass="w-10" hClass="h-3" />
+        </div>
+        <div className="flex justify-between gap-3">
+          <TextSkeleton wClass="w-10" hClass="h-3" />
+          <TextSkeleton wClass="w-10" hClass="h-3" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EconomyWeekGridSkeleton({
+  weekMondayYmd,
+  todayYmd,
+}: {
+  weekMondayYmd: string;
+  todayYmd: string;
+}) {
+  const days = useMemo(() => buildWeekDayDateStubs(weekMondayYmd), [weekMondayYmd]);
+
+  return (
+    <div className="flex min-w-0 flex-col" aria-busy="true" aria-label="Loading economy calendar">
+      <div className="-mx-1 flex flex-col overflow-x-auto pb-1 md:mx-0 md:overflow-x-hidden md:overflow-y-visible">
+        <div className="flex w-max min-w-full flex-col rounded-2xl bg-[#F4F4F5] p-1 md:w-full">
+          <div className="flex min-h-[min(60vh,716px)] w-max min-w-full gap-1 rounded-2xl bg-[#F4F4F5] md:w-full md:flex-row md:items-stretch">
+            {days.map((day) => {
+              const isToday = day.date === todayYmd;
+              return (
+                <div
+                  key={day.date}
+                  className="flex w-[min(100%,240px)] shrink-0 flex-col rounded-xl border border-[#E4E4E7] bg-white px-2 py-3 md:min-h-0 md:flex-1 md:shrink md:px-0 md:py-0"
+                >
+                  <div
+                    className={cn(
+                      "-mx-2 mb-3 rounded-t-xl px-2 pb-2 md:hidden",
+                      SCREENER_TABLE_HEADER_STICKY_CLASS,
+                    )}
+                  >
+                    <div className="text-[11px] font-semibold uppercase tracking-wide text-[#A1A1AA]">
+                      {day.weekdayLabel}
+                    </div>
+                    <div
+                      className={cn(
+                        "text-[15px] font-semibold tabular-nums",
+                        isToday ? "text-[#DC2626]" : "text-[#09090B]",
+                      )}
+                    >
+                      {day.dayNumber}
+                    </div>
+                  </div>
+                  <div
+                    className={cn(
+                      "hidden rounded-t-xl pt-1 pb-0 md:block",
+                      SCREENER_TABLE_HEADER_STICKY_CLASS,
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "flex flex-wrap items-center justify-center gap-1 py-0.5 text-center text-[18px] leading-6",
+                        isToday ? "text-[#DC2626]" : "text-[#09090B]",
+                      )}
+                    >
+                      <span className="font-normal">{day.weekdayLabel}</span>
+                      <span className="font-semibold tabular-nums">{day.dayNumber}</span>
+                    </div>
+                    <div className="mt-1" aria-hidden>
+                      <div className={cn("h-0.5 w-full", isToday ? "bg-[#DC2626]" : "bg-transparent")} />
+                    </div>
+                  </div>
+                  <div className="flex min-h-[120px] flex-col gap-2 px-2 pt-2 pb-4 md:overflow-visible">
+                    <EconomyEventCardSkeleton />
+                    <EconomyEventCardSkeleton />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EconomyWeekListSkeleton() {
+  return (
+    <div className="flex min-w-0 flex-col space-y-0" aria-busy="true" aria-label="Loading economy calendar">
+      <div className="divide-y divide-[#E4E4E7] rounded-xl border border-[#E4E4E7] bg-white">
+        {Array.from({ length: 8 }, (_, i) => (
+          <div key={i} className={cn(listTableRowClass, "gap-y-2 py-3")}>
+            <SkeletonBox className="mx-auto h-8 w-7 rounded-md" />
+            <TextSkeleton wClass="w-14" hClass="h-3.5" />
+            <TextSkeleton wClass="w-full max-w-[200px]" hClass="h-3.5" />
+            <TextSkeleton wClass="w-full" hClass="h-3.5" />
+            <TextSkeleton wClass="w-full" hClass="h-3.5" />
+            <TextSkeleton wClass="w-full" hClass="h-3.5" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 /** Matches toolbar listboxes elsewhere (e.g. heatmap): do not set `px-*` here — label padding is inside the component. */
 const dropdownTriggerClass =
@@ -262,19 +366,17 @@ const listNumericCellClass =
 
 export function EconomyCalendarClient({
   data,
-  prevWeekYmd,
-  nextWeekYmd,
   country,
 }: {
   data: EconomyWeekPayload;
-  prevWeekYmd: string;
-  nextWeekYmd: string;
   country: string;
 }) {
   const router = useRouter();
+  const [, startWeekTransition] = useTransition();
   const todayKey = useMemo(() => todayYmdUtc(), []);
   const thisWeekMondayYmd = useMemo(() => currentWeekMondayYmdUtc(), []);
 
+  const [pendingWeekMondayYmd, setPendingWeekMondayYmd] = useState<string | null>(null);
   const [view, setView] = useState<"grid" | "list">("grid");
   const [impactFilter, setImpactFilter] = useState<ImpactFilter>("major");
   const [tzId, setTzId] = useState<EconomyTimezoneOption["id"]>("utc+4");
@@ -298,8 +400,55 @@ export function EconomyCalendarClient({
     [data.days, impactFilter],
   );
 
-  const weekHref = (weekYmd: string) =>
-    `/economy?week=${encodeURIComponent(weekYmd)}&country=${encodeURIComponent(country)}`;
+  const weekHref = useCallback(
+    (weekYmd: string) =>
+      `/economy?week=${encodeURIComponent(weekYmd)}&country=${encodeURIComponent(country)}`,
+    [country],
+  );
+
+  useEffect(() => {
+    if (pendingWeekMondayYmd && pendingWeekMondayYmd === data.weekMondayYmd) {
+      setPendingWeekMondayYmd(null);
+    }
+  }, [data.weekMondayYmd, pendingWeekMondayYmd]);
+
+  const displayWeekMondayYmd = pendingWeekMondayYmd ?? data.weekMondayYmd;
+  const isWeekLoading =
+    pendingWeekMondayYmd !== null && pendingWeekMondayYmd !== data.weekMondayYmd;
+
+  const displayMonday = useMemo(() => {
+    const t = Date.parse(`${displayWeekMondayYmd}T12:00:00.000Z`);
+    return Number.isFinite(t) ? new Date(t) : new Date();
+  }, [displayWeekMondayYmd]);
+
+  const displayWeekLabel = useMemo(() => {
+    if (!isWeekLoading && data.days.length > 0) {
+      return formatWeekMonthYearLabelFromYmds(data.days.map((day) => day.date));
+    }
+    const stubYmds = Array.from({ length: 5 }, (_, i) => toYmdUtc(addDaysUtc(displayMonday, i)));
+    return formatWeekMonthYearLabelFromYmds(stubYmds);
+  }, [isWeekLoading, data.days, displayMonday]);
+
+  const displayPrevWeekYmd = useMemo(
+    () => toYmdUtc(addDaysUtc(displayMonday, -7)),
+    [displayMonday],
+  );
+
+  const displayNextWeekYmd = useMemo(
+    () => toYmdUtc(addDaysUtc(displayMonday, 7)),
+    [displayMonday],
+  );
+
+  const navigateWeek = useCallback(
+    (weekYmd: string) => {
+      if (weekYmd === displayWeekMondayYmd && !isWeekLoading) return;
+      setPendingWeekMondayYmd(weekYmd);
+      startWeekTransition(() => {
+        router.push(weekHref(weekYmd));
+      });
+    },
+    [displayWeekMondayYmd, isWeekLoading, router, weekHref],
+  );
 
   const totalFilteredEvents = filteredDays.reduce((n, d) => n + d.events.length, 0);
 
@@ -314,32 +463,12 @@ export function EconomyCalendarClient({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-0.5">
-        <p className="text-base font-normal leading-6 text-[#71717A]">Economy Calendar</p>
+      <div className="relative z-30 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <h1 className="min-w-0 text-2xl font-semibold leading-9 tracking-tight text-[#09090B]">
+            {displayWeekLabel}
+          </h1>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex min-w-0 flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-semibold leading-9 tracking-tight text-[#09090B]">{data.weekLabel}</h1>
-            <div className="flex shrink-0 items-center gap-3">
-              <Link href={weekHref(prevWeekYmd)} prefetch={false} className={navBtnClass} aria-label="Previous week">
-                <ChevronLeft className="h-5 w-5" strokeWidth={1.75} />
-              </Link>
-              <Link
-                href={weekHref(thisWeekMondayYmd)}
-                prefetch={false}
-                className="inline-flex h-9 shrink-0 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white px-3 text-sm font-medium leading-5 text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5]"
-                aria-label="Go to this week"
-                aria-current={data.weekMondayYmd === thisWeekMondayYmd ? "page" : undefined}
-              >
-                Today
-              </Link>
-              <Link href={weekHref(nextWeekYmd)} prefetch={false} className={navBtnClass} aria-label="Next week">
-                <ChevronRight className="h-5 w-5" strokeWidth={1.75} />
-              </Link>
-            </div>
-          </div>
-
-          <div className="flex w-full items-center justify-end gap-3 sm:w-auto sm:shrink-0">
+          <div className="flex w-full flex-wrap items-center justify-end gap-3 sm:w-auto sm:shrink-0">
             {/* Mobile: settings toggle button */}
             <button
               type="button"
@@ -411,7 +540,7 @@ export function EconomyCalendarClient({
                 value={ECONOMY_COUNTRY_OPTIONS.some((o) => o.value === country) ? country : "US"}
                 onChange={(next) => {
                   const qs = new URLSearchParams({
-                    week: data.weekMondayYmd,
+                    week: displayWeekMondayYmd,
                     country: next,
                   });
                   router.push(`/economy?${qs.toString()}`);
@@ -423,12 +552,40 @@ export function EconomyCalendarClient({
                 triggerClassName={dropdownTriggerClass}
               />
             </div>
+
+            <div className="flex shrink-0 items-center gap-3">
+              <button
+                type="button"
+                onClick={() => navigateWeek(displayPrevWeekYmd)}
+                className={weekNavArrowClass}
+                aria-label="Previous week"
+              >
+                <ChevronLeft className="h-5 w-5" strokeWidth={1.75} />
+              </button>
+              <button
+                type="button"
+                onClick={() => navigateWeek(thisWeekMondayYmd)}
+                className={weekNavTodayClass}
+                aria-label="Go to this week"
+                aria-current={displayWeekMondayYmd === thisWeekMondayYmd ? "page" : undefined}
+              >
+                Today
+              </button>
+              <button
+                type="button"
+                onClick={() => navigateWeek(displayNextWeekYmd)}
+                className={weekNavArrowClass}
+                aria-label="Next week"
+              >
+                <ChevronRight className="h-5 w-5" strokeWidth={1.75} />
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Mobile settings panel */}
         {mobileSettingsOpen && (
-          <div className="relative z-20 flex flex-col gap-3 sm:hidden">
+          <div className="relative z-30 flex flex-col gap-3 sm:hidden">
             <div className="flex shrink-0 self-start rounded-[10px] bg-[#F4F4F5] p-0.5">
               <button
                 type="button"
@@ -482,7 +639,7 @@ export function EconomyCalendarClient({
               value={ECONOMY_COUNTRY_OPTIONS.some((o) => o.value === country) ? country : "US"}
               onChange={(next) => {
                 const qs = new URLSearchParams({
-                  week: data.weekMondayYmd,
+                  week: displayWeekMondayYmd,
                   country: next,
                 });
                 router.push(`/economy?${qs.toString()}`);
@@ -495,36 +652,60 @@ export function EconomyCalendarClient({
             />
           </div>
         )}
-      </div>
 
       {view === "grid" ? (
+        isWeekLoading ? (
+          <EconomyWeekGridSkeleton weekMondayYmd={displayWeekMondayYmd} todayYmd={todayKey} />
+        ) : (
         <div className="flex min-w-0 flex-col">
-          <div className="relative hidden md:block">
-            <EconomyWeekdayStrip days={filteredDays} highlightYmd={todayKey} />
-          </div>
-
-          <div className="-mx-1 overflow-x-auto pb-1 md:mx-0 md:overflow-visible">
-            <div className="flex min-h-[min(60vh,716px)] min-w-0 md:grid md:grid-cols-5 md:gap-0">
-              {filteredDays.map((day, i) => (
+          <div className="-mx-1 flex flex-col overflow-x-auto pb-1 md:mx-0 md:overflow-x-hidden md:overflow-y-visible">
+            <div className="flex w-max min-w-full flex-col rounded-2xl bg-[#F4F4F5] p-1 md:w-full">
+              <div className="flex min-h-[min(60vh,716px)] w-max min-w-full gap-1 rounded-2xl bg-[#F4F4F5] md:w-full md:flex-row md:items-stretch">
+              {filteredDays.map((day) => {
+                const isToday = day.date === todayKey;
+                return (
                 <div
                   key={day.date}
-                  className={cn(
-                    "flex w-[min(100%,240px)] shrink-0 flex-col border-[#E4E4E7] px-2 py-3 md:w-auto md:border-r md:px-3 md:py-4",
-                    i === filteredDays.length - 1 ? "md:border-r-0" : "",
-                  )}
+                  className="flex w-[min(100%,240px)] shrink-0 flex-col rounded-xl border border-[#E4E4E7] bg-white px-2 py-3 md:min-h-0 md:flex-1 md:shrink md:px-0 md:py-0"
                 >
-                  <div className="mb-3 border-b border-[#E4E4E7] pb-2 md:hidden">
-                    <div className="text-[11px] font-semibold uppercase tracking-wide text-[#A1A1AA]">{day.weekdayLabel}</div>
+                  <div
+                    className={cn(
+                      "-mx-2 mb-3 rounded-t-xl px-2 pb-2 md:hidden",
+                      SCREENER_TABLE_HEADER_STICKY_CLASS,
+                    )}
+                  >
+                    <div className="text-[11px] font-semibold uppercase tracking-wide text-[#A1A1AA]">
+                      {day.weekdayLabel}
+                    </div>
                     <div
                       className={cn(
                         "text-[15px] font-semibold tabular-nums",
-                        day.date === todayKey ? "text-[#DC2626]" : "text-[#09090B]",
+                        isToday ? "text-[#DC2626]" : "text-[#09090B]",
                       )}
                     >
                       {day.dayNumber}
                     </div>
                   </div>
-                  <div className="flex min-h-[120px] flex-col gap-2">
+                  <div
+                    className={cn(
+                      "hidden rounded-t-xl pt-1 pb-0 md:block",
+                      SCREENER_TABLE_HEADER_STICKY_CLASS,
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "flex flex-wrap items-center justify-center gap-1 py-0.5 text-center text-[18px] leading-6",
+                        isToday ? "text-[#DC2626]" : "text-[#09090B]",
+                      )}
+                    >
+                      <span className="font-normal">{day.weekdayLabel}</span>
+                      <span className="font-semibold tabular-nums">{day.dayNumber}</span>
+                    </div>
+                    <div className="mt-1" aria-hidden>
+                      <div className={cn("h-0.5 w-full", isToday ? "bg-[#DC2626]" : "bg-transparent")} />
+                    </div>
+                  </div>
+                  <div className="flex min-h-[120px] flex-col gap-2 px-2 pt-2 pb-4 md:overflow-visible">
                     {day.events.length === 0 ? (
                       <div className="flex flex-1 flex-col items-center justify-center rounded-lg bg-white px-3 py-6 text-center">
                         <p className="text-sm leading-5 text-[#09090B]">No scheduled Reports</p>
@@ -536,10 +717,15 @@ export function EconomyCalendarClient({
                     )}
                   </div>
                 </div>
-              ))}
+                );
+              })}
+              </div>
             </div>
           </div>
         </div>
+        )
+      ) : isWeekLoading ? (
+        <EconomyWeekListSkeleton />
       ) : (
         <div className="flex min-w-0 flex-col space-y-0">
           {totalFilteredEvents === 0 ? (
