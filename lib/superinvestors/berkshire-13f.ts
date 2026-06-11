@@ -1796,7 +1796,7 @@ function createSuperinvestorProfilePageLoader(
 
   return () =>
     devMemoAsync(`13f:profile-page:${paddedCik}`, () =>
-      withAccessionKeyed13fCache("superinvestor-13f-profile-page-v8-standard", paddedCik, uncached),
+      withAccessionKeyed13fCache("superinvestor-13f-profile-page-v9-standard", paddedCik, uncached),
     );
 }
 

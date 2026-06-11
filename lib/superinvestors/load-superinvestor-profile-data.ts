@@ -1,8 +1,14 @@
 import type { Superinvestor13fProfilePageData } from "@/lib/superinvestors/types";
 import { clearSuperinvestor13fInMemoryCaches } from "@/lib/superinvestors/berkshire-13f";
 import { deleteSuperinvestor13fSnapshotsForCik } from "@/lib/superinvestors/superinvestor-13f-holdings-transactions-snapshot";
-import { clearSuperinvestor13fDevMemoCaches } from "@/lib/superinvestors/superinvestor-13f-cache-utils";
-import { cikPad10 } from "@/lib/superinvestors/superinvestor-13f-freshness";
+import {
+  clearSuperinvestor13fDevMemoCaches,
+  filingHeadMatchesComparison,
+} from "@/lib/superinvestors/superinvestor-13f-cache-utils";
+import {
+  cikPad10,
+  getLatest13fFilingHeadCached,
+} from "@/lib/superinvestors/superinvestor-13f-freshness";
 import { SUPERINVESTOR_REGISTRY } from "@/lib/superinvestors/superinvestor-registry";
 
 export type SuperinvestorProfilePageData = Superinvestor13fProfilePageData;
@@ -24,6 +30,28 @@ function devMemoProfilePage<T>(slug: string, fn: () => Promise<T>): Promise<T> {
 }
 
 /**
+ * Match the superinvestors list page: probe SEC for the latest 13F-HR and reload when
+ * cached profile data is behind (Supabase snapshot / dev memo).
+ */
+async function loadProfilePageMatchingLatestFilingHead(
+  load: () => Promise<Superinvestor13fProfilePageData>,
+): Promise<Superinvestor13fProfilePageData> {
+  let page = await load();
+  const cikPadded = cikPad10(page.comparison.cik);
+  if (!cikPadded) return page;
+
+  const head = await getLatest13fFilingHeadCached(cikPadded);
+  if (filingHeadMatchesComparison(head, page.comparison)) return page;
+
+  clearSuperinvestor13fDevMemoCaches();
+  clearSuperinvestor13fInMemoryCaches();
+  await deleteSuperinvestor13fSnapshotsForCik(cikPadded);
+
+  page = await load();
+  return page;
+}
+
+/**
  * One SEC snapshot pass per profile (comparison + transactions share filings via `getInstitutional13fSnapshots`).
  * Cached by latest 13F accession — repeat visits only probe SEC submissions JSON (~1 req/hr per filer).
  * Berkshire also persists the full page + holdings-scoped tx history in `market_snapshot` (incremental on new 13F).
@@ -34,7 +62,9 @@ export async function loadSuperinvestorProfilePageData(
   const item = SUPERINVESTOR_REGISTRY.find((entry) => entry.slug === slug);
   if (!item) return null;
 
-  return devMemoProfilePage(slug, () => item.loadProfilePage());
+  return devMemoProfilePage(slug, () =>
+    loadProfilePageMatchingLatestFilingHead(() => item.loadProfilePage()),
+  );
 }
 
 /** Bust dev memo + Supabase 13F snapshots, then reload from SEC (new filing detection). */
@@ -47,14 +77,13 @@ export async function forceRefreshSuperinvestorProfilePage(
   clearSuperinvestor13fDevMemoCaches();
   clearSuperinvestor13fInMemoryCaches();
 
-  const probe = await item.loadProfilePage();
-  const cikPadded = cikPad10(probe.comparison.cik);
+  const cikPadded = cikPad10((await item.loadProfilePage()).comparison.cik);
   if (cikPadded) await deleteSuperinvestor13fSnapshotsForCik(cikPadded);
 
   clearSuperinvestor13fDevMemoCaches();
   clearSuperinvestor13fInMemoryCaches();
 
-  return item.loadProfilePage();
+  return loadProfilePageMatchingLatestFilingHead(() => item.loadProfilePage());
 }
 
 /** Cron: probe all filers and warm portfolio cache when a new 13F-HR appears. */
@@ -77,7 +106,17 @@ export async function refreshAllSuperinvestor13fPortfolios(): Promise<
 
   for (const item of SUPERINVESTOR_REGISTRY) {
     try {
-      const data = await item.loadProfilePage();
+      const data = await forceRefreshSuperinvestorProfilePage(item.slug);
+      if (!data) {
+        results.push({
+          slug: item.slug,
+          ok: false,
+          filingDate: null,
+          accession: null,
+          error: "unknown_slug",
+        });
+        continue;
+      }
       results.push({
         slug: item.slug,
         ok: true,
