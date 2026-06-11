@@ -1,18 +1,16 @@
 "use client";
 
-import { useMemo, useRef, useState, type CSSProperties, type MouseEvent } from "react";
+import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent } from "react";
 
 import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
 import { MULTICHART_BAR_WIDTH_PX } from "@/components/stock/multichart-fundamentals-bar";
 import {
-  buildFundamentalsYAxisDomain,
   computeFundamentalsChartTooltipPlacement,
   FUNDAMENTALS_CHART_HOVER_BAND_BG,
   FUNDAMENTALS_CHART_TOOLTIP_CLASS,
   FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS,
   FUNDAMENTALS_CHART_Y_AXIS_W_PX,
   FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER,
-  formatFundamentalsAxisTickLabel,
   valueToPlotBandTopPercent,
 } from "@/lib/chart/fundamentals-chart-surface";
 import { fundamentalsBarStaggerDelaySec } from "@/lib/chart/fundamentals-bar-enter-animation";
@@ -22,7 +20,10 @@ import {
 } from "@/lib/colors/fundamentals-multi-bar-colors";
 import type { MacroRangeId } from "@/components/macro/macro-range";
 import { formatMacroValue, type MacroValueKind } from "@/components/macro/macro-format";
-import { macroKindToChartingKind } from "@/lib/macro/macro-chart-axis-kind";
+import {
+  buildMacroChartYAxisDomain,
+  formatMacroChartAxisTick,
+} from "@/lib/macro/macro-chart-axis-kind";
 import { cn } from "@/lib/utils";
 import {
   formatMacroAxisLabel,
@@ -30,9 +31,9 @@ import {
   macroChartAxisGranularity,
 } from "@/lib/macro/macro-chart-points";
 
-const BAR_WIDTH_PX = MULTICHART_BAR_WIDTH_PX;
-const BAR_HIT_PAD_PX = 6;
-const BAR_HIT_WIDTH_PX = BAR_WIDTH_PX + BAR_HIT_PAD_PX * 2;
+const BAR_WIDTH_MAX_PX = MULTICHART_BAR_WIDTH_PX;
+const BAR_WIDTH_DENSE_MAX_PX = 10;
+const BAR_WIDTH_VERY_DENSE_MAX_PX = 8;
 const BAR_HOVER_DIM_OPACITY = 0.6;
 const NEGATIVE_BAR_COLOR = "#DC2626";
 const POSITIVE_BAR_COLOR = fundamentalsBarSolidAtIndex(0);
@@ -63,6 +64,21 @@ function periodCenterLeftPercent(i: number, n: number): number {
   if (n <= 0) return 50;
   if (n === 1) return 50;
   return ((i + 0.5) / n) * 100;
+}
+
+function macroColumnWidthPercent(n: number): number {
+  if (n <= 1) return 100;
+  return 100 / n;
+}
+
+/** Scale bar width to the available period slot so dense macro series do not overlap. */
+function macroBarWidthPx(plotWidthPx: number, n: number): number {
+  if (n <= 0 || plotWidthPx <= 0) return BAR_WIDTH_MAX_PX;
+  if (n === 1) return Math.min(BAR_WIDTH_MAX_PX, Math.max(8, plotWidthPx * 0.12));
+  const slot = plotWidthPx / n;
+  if (n > 48) return Math.max(2, Math.min(BAR_WIDTH_VERY_DENSE_MAX_PX, slot * 0.5));
+  if (n > 24) return Math.max(2, Math.min(BAR_WIDTH_DENSE_MAX_PX, slot * 0.55));
+  return Math.max(2, Math.min(BAR_WIDTH_MAX_PX, slot * 0.62));
 }
 
 function formatMacroTooltipTime(ymd: string): string {
@@ -118,6 +134,7 @@ export function MacroSparklineBars({
   prominent?: boolean;
 }) {
   const plotAreaRef = useRef<HTMLDivElement>(null);
+  const [plotWidthPx, setPlotWidthPx] = useState(0);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [tip, setTip] = useState<TipState | null>(null);
 
@@ -144,13 +161,7 @@ export function MacroSparklineBars({
 
   const values = useMemo(() => barPoints.map((p) => p.value), [barPoints]);
 
-  const chartingKind = macroKindToChartingKind(kind);
-
-  const yDomain = useMemo(() => {
-    const rawMin = values.length ? Math.min(...values, 0) : 0;
-    const rawMax = values.length ? Math.max(...values) : 1;
-    return buildFundamentalsYAxisDomain(rawMin, rawMax, chartingKind);
-  }, [values, chartingKind]);
+  const yDomain = useMemo(() => buildMacroChartYAxisDomain(values, kind), [values, kind]);
 
   const yMin = yDomain.min;
   const yMax = yDomain.max;
@@ -161,6 +172,20 @@ export function MacroSparklineBars({
   const n = barPoints.length;
   const shouldAnimateBars = animateBarsOnAppear && n > 0;
   const barStaggerDelaySec = fundamentalsBarStaggerDelaySec(n);
+  const columnWidthPct = useMemo(() => macroColumnWidthPercent(n), [n]);
+  const barWidthPx = useMemo(() => macroBarWidthPx(plotWidthPx, n), [plotWidthPx, n]);
+
+  useLayoutEffect(() => {
+    const el = plotAreaRef.current;
+    if (!el) return;
+    const measure = () => {
+      setPlotWidthPx(Math.max(0, el.getBoundingClientRect().width));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [n, plotHeight]);
 
   const clearHover = () => {
     setHoveredIndex(null);
@@ -227,7 +252,7 @@ export function MacroSparklineBars({
                 <div
                   key={`${pt.time}-${i}`}
                   className="absolute top-0 z-0 h-full min-h-0 -translate-x-1/2"
-                  style={{ left: `${periodCenterLeftPercent(i, n)}%`, width: BAR_HIT_WIDTH_PX }}
+                  style={{ left: `${periodCenterLeftPercent(i, n)}%`, width: `${columnWidthPct}%` }}
                   onMouseEnter={(e) => {
                     const plot = plotAreaRef.current;
                     if (!plot) return;
@@ -270,7 +295,7 @@ export function MacroSparklineBars({
                               height: `${barHeightPct}%`,
                               minHeight: 2,
                             }),
-                        width: BAR_WIDTH_PX,
+                        width: barWidthPx,
                         maxWidth: "100%",
                         backgroundColor: barColor,
                       }}
@@ -353,7 +378,7 @@ export function MacroSparklineBars({
                 className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-white px-1 py-px"
                 style={{ top: `${valueToPlotBandTopPercent(t, yMin, yMax)}%` }}
               >
-                {formatFundamentalsAxisTickLabel(chartingKind, t)}
+                {formatMacroChartAxisTick(t, kind)}
               </span>
             ))}
           </div>
@@ -368,7 +393,7 @@ export function MacroSparklineBars({
               <div
                 key={`axis-${pt.time}-${i}`}
                 className="absolute bottom-0 flex min-h-0 -translate-x-1/2 items-end justify-center overflow-visible px-0.5"
-                style={{ left: `${periodCenterLeftPercent(i, n)}%`, width: BAR_HIT_WIDTH_PX }}
+                style={{ left: `${periodCenterLeftPercent(i, n)}%`, width: `${columnWidthPct}%` }}
                 title={formatMacroTooltipTime(pt.time)}
               >
                 {show ? (

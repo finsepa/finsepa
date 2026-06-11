@@ -174,6 +174,42 @@ function buildFundamentalsYAxisTicksBetween(min: number, max: number): number[] 
   return Array.from({ length: tickCount }, (_, i) => hi - (i / (tickCount - 1)) * (hi - lo));
 }
 
+function axisMaxForTightNumeric(rawMax: number): number {
+  if (!Number.isFinite(rawMax) || rawMax <= 0) return 1;
+  const padded = rawMax * 1.12;
+  const step = niceCeilStep(padded / 4);
+  return step * 4;
+}
+
+/**
+ * Y-axis for values already in display units (macro % points, treasury yields)
+ * without the 50+ ratio/multiple ladder.
+ */
+export function buildTightNumericYAxisDomain(rawMin: number, rawMax: number): FundamentalsYAxisDomain {
+  const dataMin = Number.isFinite(rawMin) ? rawMin : 0;
+  const dataMax = Number.isFinite(rawMax) ? rawMax : 0;
+  const max = Math.max(dataMax, 0);
+  const min = Math.min(dataMin, 0);
+
+  if (min < 0) {
+    const extent = Math.max(axisMaxForTightNumeric(max), axisMaxForTightNumeric(Math.abs(min)), 1);
+    return {
+      min: -extent,
+      max: extent,
+      ticks: buildFundamentalsYAxisTicksBetween(-extent, extent),
+      bipolar: true,
+    };
+  }
+
+  const yMax = axisMaxForTightNumeric(max || 1);
+  return {
+    min: 0,
+    max: yMax,
+    ticks: buildFixedFundamentalsYAxisTicks(yMax),
+    bipolar: false,
+  };
+}
+
 export function buildFundamentalsYAxisDomain(
   rawMin: number,
   rawMax: number,

@@ -22,7 +22,6 @@ import {
   runFundamentalsBarEnterAnimation,
 } from "@/lib/chart/fundamentals-bar-enter-animation";
 import {
-  buildFundamentalsYAxisDomain,
   CHARTING_LINE_HOVER_HALO_BG,
   CHARTING_LINE_POINT_MARKER_BORDER_PX,
   CHARTING_LINE_POINT_MARKER_RADIUS_PX,
@@ -32,10 +31,12 @@ import {
   FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS,
   FUNDAMENTALS_CHART_Y_AXIS_W_PX,
   FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER,
-  formatFundamentalsAxisTickLabel,
   valueToPlotBandTopPercent,
 } from "@/lib/chart/fundamentals-chart-surface";
-import { macroKindToChartingKind } from "@/lib/macro/macro-chart-axis-kind";
+import {
+  buildMacroChartYAxisDomain,
+  formatMacroChartAxisTick,
+} from "@/lib/macro/macro-chart-axis-kind";
 import {
   formatMacroAxisLabel,
   macroAxisLabelIndices,
@@ -116,13 +117,7 @@ function MacroProminentLineChart({
   }, [points]);
 
   const values = useMemo(() => cleaned.map((p) => p.value), [cleaned]);
-  const chartingKind = macroKindToChartingKind(kind);
-
-  const yDomain = useMemo(() => {
-    const rawMin = values.length ? Math.min(...values, 0) : 0;
-    const rawMax = values.length ? Math.max(...values) : 1;
-    return buildFundamentalsYAxisDomain(rawMin, rawMax, chartingKind);
-  }, [values, chartingKind]);
+  const yDomain = useMemo(() => buildMacroChartYAxisDomain(values, kind), [values, kind]);
 
   const yMin = yDomain.min;
   const yMax = yDomain.max;
@@ -463,7 +458,7 @@ function MacroProminentLineChart({
                   className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-white px-1 py-px"
                   style={{ top: `${valueToPlotBandTopPercent(t, yMin, yMax)}%` }}
                 >
-                  {formatFundamentalsAxisTickLabel(chartingKind, t)}
+                  {formatMacroChartAxisTick(t, kind)}
                 </span>
               ))}
             </div>
