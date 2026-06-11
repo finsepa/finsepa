@@ -5,6 +5,7 @@ import { useMemo } from "react";
 import { AllocationDonutChart } from "@/components/portfolio/allocation-donut-chart";
 import { SuperinvestorProfileAvatar } from "@/components/superinvestors/superinvestor-profile-avatar";
 import { buildTopNAllocationRows } from "@/lib/portfolio/allocation-donut-rows";
+import { logoDevStockLogoUrl } from "@/lib/screener/company-logo-url";
 import type { Berkshire13fComparisonRow } from "@/lib/superinvestors/types";
 
 export function SuperinvestorProfileAllocationDonut({
@@ -26,6 +27,7 @@ export function SuperinvestorProfileAllocationDonut({
           name: r.companyName,
           symbol: ticker || r.companyName,
           weightPct: r.weight,
+          logoUrl: ticker ? logoDevStockLogoUrl(ticker) : null,
         };
       });
     return buildTopNAllocationRows(raw);
@@ -36,8 +38,7 @@ export function SuperinvestorProfileAllocationDonut({
   return (
     <AllocationDonutChart
       rows={allocRows}
-      className="size-[176px]"
-      chartSizePx={176}
+      chartSizePx={280}
       center={
         <SuperinvestorProfileAvatar
           src={avatarSrc?.trim() ?? ""}

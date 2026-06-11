@@ -14,7 +14,7 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { cn } from "@/lib/utils";
-import { formatUsdCompactSigDigits } from "@/lib/market/key-stats-basic-format";
+import { formatSharesCompact, formatUsdCompactSigDigits } from "@/lib/market/key-stats-basic-format";
 
 type SuperinvestorPosition = {
   superinvestorSlug: string;
@@ -33,7 +33,6 @@ type Payload = {
 };
 
 const pct = new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const sharesFmt = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
 
 function ActivityCell({ label }: { label: string | null }) {
   if (!label) return <span className="text-[#71717A]">—</span>;
@@ -202,7 +201,7 @@ export function StockSuperinvestorsTab({ ticker }: { ticker: string }) {
                 </div>
 
                 <div className="text-right font-['Inter'] text-[14px] font-normal tabular-nums text-[#09090B]">
-                  {p.shares != null ? sharesFmt.format(p.shares) : "—"}
+                  {p.shares != null ? formatSharesCompact(p.shares) : "—"}
                 </div>
 
                 <div className="text-right font-['Inter'] text-[14px] font-normal tabular-nums text-[#09090B]">

@@ -17,6 +17,7 @@ import {
   upsertSuperinvestor13fProfileSnapshot,
   upsertSuperinvestorHoldingsTransactionsSnapshot,
 } from "@/lib/superinvestors/superinvestor-13f-holdings-transactions-snapshot";
+import { filingHeadMatchesComparison } from "@/lib/superinvestors/superinvestor-13f-cache-utils";
 import {
   filterSuperinvestorTransactionsToCurrentHoldings,
   prependSuperinvestorQuarterGroups,
@@ -106,10 +107,10 @@ async function secFetch(url: string, init: RequestInit & { headers: HeadersInit 
 const BERKSHIRE_CIK = "0001067983";
 
 /** EDGAR dates for the offline Berkshire snapshot (`berkshire-holdings-fallback.json`). */
-const BERKSHIRE_FIXTURE_CURRENT_FILING_DATE = "2026-02-17";
-const BERKSHIRE_FIXTURE_CURRENT_REPORT_DATE = "2025-12-31";
-const BERKSHIRE_FIXTURE_PREVIOUS_FILING_DATE = "2025-11-14";
-const BERKSHIRE_FIXTURE_PREVIOUS_REPORT_DATE = "2025-09-30";
+const BERKSHIRE_FIXTURE_CURRENT_FILING_DATE = "2026-05-15";
+const BERKSHIRE_FIXTURE_CURRENT_REPORT_DATE = "2026-03-31";
+const BERKSHIRE_FIXTURE_PREVIOUS_FILING_DATE = "2026-02-17";
+const BERKSHIRE_FIXTURE_PREVIOUS_REPORT_DATE = "2025-12-31";
 
 /** Pershing Square Capital Management, L.P. */
 export const PERSHING_SQUARE_CIK = "0001336528";
@@ -440,7 +441,7 @@ function get13fFilingIndexCached(cikPadded: string, ua: string): Promise<Thirtee
     const uncached = () => load13fFilingIndexUncached(cikPadded, ua);
     loader =
       process.env.NODE_ENV === "production"
-        ? unstable_cache(uncached, ["superinvestor-13f-filing-index-v4-flat-chunks", cikPadded], { revalidate: 86_400 })
+        ? unstable_cache(uncached, ["superinvestor-13f-filing-index-v5", cikPadded], { revalidate: 86_400 })
         : () => uncached();
     thirteenFIndexCacheByCik.set(cikPadded, loader);
   }
@@ -1650,6 +1651,12 @@ type SnapshotsInflightEntry = {
 
 const snapshotsInflight = new Map<string, SnapshotsInflightEntry>();
 
+/** Clear module-level SEC index coalescing (development refresh after new 13F). */
+export function clearSuperinvestor13fInMemoryCaches(): void {
+  thirteenFIndexCacheByCik.clear();
+  snapshotsInflight.clear();
+}
+
 async function fetchInstitutional13fSnapshotsUncached(
   cik: string,
   maxFilings: number,
@@ -2232,7 +2239,9 @@ async function fetchBerkshireProfilePageUncached(): Promise<Superinvestor13fProf
   const accKey = thirteenFilingHeadCacheKey(head);
 
   const profileCached = await readSuperinvestor13fProfileSnapshot(paddedCik, accKey);
-  if (profileCached) return profileCached;
+  if (profileCached && filingHeadMatchesComparison(head, profileCached.comparison)) {
+    return profileCached;
+  }
 
   const comparison = await fetchBerkshireComparisonUncached();
   const transactions = await loadBerkshireHoldingsScopedTransactionsForComparison(comparison, accKey);
@@ -2567,7 +2576,7 @@ async function fetchGmoTransactionsUncached(): Promise<SuperinvestorTransactions
 export const getBerkshireProfilePage = () =>
   devMemoAsync(`13f:profile-page:${BERKSHIRE_CIK}`, () =>
     withAccessionKeyed13fCache(
-      "superinvestor-13f-profile-page-v11-berkshire-share-changes-only",
+      "superinvestor-13f-profile-page-v13-berkshire-q1-2026",
       BERKSHIRE_CIK,
       fetchBerkshireProfilePageUncached,
     ),
@@ -2754,7 +2763,7 @@ export async function getBerkshireHoldings() {
 
 export async function getBerkshireHoldingsComparison() {
   return devMemoAsync("13f:berkshire:comparison", () =>
-    withAccessionKeyed13fCache("superinvestor-13f-comparison-v9", BERKSHIRE_CIK, fetchBerkshireComparisonUncached),
+    withAccessionKeyed13fCache("superinvestor-13f-comparison-v10", BERKSHIRE_CIK, fetchBerkshireComparisonUncached),
   );
 }
 

@@ -103,6 +103,7 @@ export function Superinvestor13fProfileTabs({
         active={tab}
         onChange={setTab}
         ariaLabel="Portfolio view"
+        className="mb-0"
       />
 
       {tab === "holdings" ? (

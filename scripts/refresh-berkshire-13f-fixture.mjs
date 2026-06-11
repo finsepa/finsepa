@@ -5,7 +5,7 @@
  * Usage:
  *   node scripts/refresh-berkshire-13f-fixture.mjs [url-to-xml]
  *
- * Default URL: latest known Q4 2025 13F-HR infotable path on www.sec.gov.
+ * Default URL: latest known Q1 2026 13F-HR infotable path on www.sec.gov.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -15,7 +15,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const OUT = path.join(__dirname, "../lib/superinvestors/fixtures/berkshire-holdings-fallback.json");
 
 const DEFAULT_XML_URL =
-  "https://www.sec.gov/Archives/edgar/data/1067983/000119312526054580/50240.xml";
+  "https://www.sec.gov/Archives/edgar/data/1067983/000119312526226661/53405.xml";
 
 const UA = process.env.SEC_EDGAR_USER_AGENT?.trim() || "Finsepa/1.0 (https://finsepa.com)";
 

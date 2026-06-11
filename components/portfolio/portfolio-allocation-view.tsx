@@ -29,6 +29,7 @@ function buildRows(holdings: PortfolioHolding[], transactions: PortfolioTransact
     name: h.name.trim() || h.symbol,
     symbol: h.symbol.trim().toUpperCase() || h.name.trim(),
     weightPct: (h.currentValue / allocationDenomUsd) * 100,
+    logoUrl: h.logoUrl,
   }));
 
   if (cashUsd > 0) {
@@ -37,6 +38,7 @@ function buildRows(holdings: PortfolioHolding[], transactions: PortfolioTransact
       name: "US Dollar",
       symbol: "USD",
       weightPct: (cashUsd / allocationDenomUsd) * 100,
+      logoUrl: null,
     });
   }
 

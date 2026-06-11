@@ -2,6 +2,8 @@
 
 import { useCallback, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
+import { cn } from "@/lib/utils";
+
 const tabs = ["Stocks", "Crypto", "Indices", "ETF's"] as const;
 export type MarketTab = (typeof tabs)[number];
 
@@ -26,6 +28,7 @@ export function UnderlineTabs<T extends string>({
   onChange,
   ariaLabel,
   trailing,
+  className,
 }: {
   tabs: readonly T[] | readonly UnderlineTabOption<T>[];
   active: T;
@@ -33,6 +36,7 @@ export function UnderlineTabs<T extends string>({
   ariaLabel: string;
   /** Right side of the tab row (e.g. U.S. markets session on `/screener`). */
   trailing?: ReactNode;
+  className?: string;
 }) {
   const options = useMemo(() => normalizeUnderlineTabs(tabList), [tabList]);
   const navRef = useRef<HTMLElement>(null);
@@ -90,7 +94,7 @@ export function UnderlineTabs<T extends string>({
   }, [measureIndicator]);
 
   return (
-    <div className="mb-4 border-b border-solid border-[#E4E4E7] md:mb-6">
+    <div className={cn("mb-4 border-b border-solid border-[#E4E4E7] md:mb-6", className)}>
       <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 md:gap-x-3">
         <nav
           ref={navRef}

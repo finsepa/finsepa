@@ -64,6 +64,18 @@ export function formatSharesOutstanding(n: number): string {
   return n.toLocaleString("en-US", { maximumFractionDigits: 0 });
 }
 
+/** Holdings table share count → 943, 23.30K, 12.30M, 1.30B */
+export function formatSharesCompact(n: number): string {
+  if (!Number.isFinite(n)) return "—";
+  const neg = n < 0;
+  const abs = Math.abs(n);
+  const sign = neg ? "-" : "";
+  if (abs >= 1e9) return `${sign}${(abs / 1e9).toFixed(2)}B`;
+  if (abs >= 1e6) return `${sign}${(abs / 1e6).toFixed(2)}M`;
+  if (abs >= 1e3) return `${sign}${(abs / 1e3).toFixed(2)}K`;
+  return `${sign}${Math.round(abs).toLocaleString("en-US")}`;
+}
+
 /** Stock-style USD price */
 export function formatUsdPrice(n: number): string {
   if (!Number.isFinite(n)) return "—";

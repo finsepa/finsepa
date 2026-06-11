@@ -2,7 +2,7 @@ type UserAvatarProps = {
   /** Resolved image URL (remote or blob) or null to show initials. */
   imageSrc: string | null;
   initials: string;
-  /** `sm` = 28px, `md` = 32px, `menu` = 40px (topbar profile menu), `portfolios` = 56px, `lg` = 80px, `xl` = 72px donut. */
+  /** `sm` = 28px, `md` = 32px, `menu` = 40px (topbar profile menu), `portfolios` = 56px, `lg` = 80px, `xl` = 60px donut. */
   size: "sm" | "md" | "menu" | "portfolios" | "lg" | "xl";
 };
 
@@ -21,7 +21,7 @@ const lgShell =
   "flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#F4F4F5] text-lg font-semibold text-[#52525B] ring-1 ring-[#E4E4E7]";
 /** Center of portfolio allocation donut — white ring reads on colored slices. */
 const xlShell =
-  "flex h-[72px] w-[72px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#F4F4F5] text-lg font-semibold text-[#52525B] ring-[1px] ring-white shadow-[0px_1px_4px_0px_rgba(10,10,10,0.08)]";
+  "flex h-[60px] w-[60px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#F4F4F5] text-base font-semibold text-[#52525B] ring-[1px] ring-white shadow-[0px_1px_4px_0px_rgba(10,10,10,0.08)]";
 
 export function UserAvatar({ imageSrc, initials, size }: UserAvatarProps) {
   const shell =

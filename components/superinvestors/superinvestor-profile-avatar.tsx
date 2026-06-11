@@ -17,7 +17,7 @@ function avatarNeedsDarkTile(src: string): boolean {
 const headerShell =
   "relative block h-14 w-14 shrink-0 overflow-hidden rounded-full border border-[#E4E4E7] ring-1 ring-white";
 const donutShell =
-  "relative block h-[72px] w-[72px] shrink-0 overflow-hidden rounded-full border border-[#E4E4E7] ring-[1px] ring-white shadow-[0px_1px_4px_0px_rgba(10,10,10,0.08)]";
+  "relative block h-[60px] w-[60px] shrink-0 overflow-hidden rounded-full border border-[#E4E4E7] ring-[1px] ring-white shadow-[0px_1px_4px_0px_rgba(10,10,10,0.08)]";
 
 export function SuperinvestorProfileAvatar({
   src,
@@ -26,19 +26,19 @@ export function SuperinvestorProfileAvatar({
 }: {
   src: string;
   name: string;
-  /** `donut` matches portfolio allocation center avatar (72px). */
+  /** `donut` matches portfolio allocation center avatar (60px). */
   size?: "header" | "donut";
 }) {
   const [failed, setFailed] = useState(false);
   const trimmed = src.trim();
-  const iconClass = size === "donut" ? "h-9 w-9" : "h-8 w-8";
+  const iconClass = "h-8 w-8";
 
   if (!trimmed || failed) {
     return (
       <span
         className={cn(
           "flex shrink-0 items-center justify-center rounded-full border border-[#E4E4E7] bg-[#F4F4F5] text-[#71717A]",
-          size === "donut" ? "h-[72px] w-[72px] ring-[1px] ring-white shadow-[0px_1px_4px_0px_rgba(10,10,10,0.08)]" : "h-14 w-14",
+          size === "donut" ? "h-[60px] w-[60px] ring-[1px] ring-white shadow-[0px_1px_4px_0px_rgba(10,10,10,0.08)]" : "h-14 w-14",
         )}
         aria-hidden
       >

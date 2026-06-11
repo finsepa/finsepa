@@ -15,11 +15,10 @@ import {
 import { SUPERINVESTOR_HOLDINGS_PAGE_SIZE } from "@/lib/superinvestors/superinvestors-holdings-page-size";
 import { CompanyLogo } from "@/components/screener/company-logo";
 import { resolveEquityLogoUrlFromListingTicker } from "@/lib/screener/resolve-equity-logo-url";
-import { formatUsdCompactSigDigits } from "@/lib/market/key-stats-basic-format";
+import { formatSharesCompact, formatUsdCompactSigDigits } from "@/lib/market/key-stats-basic-format";
 import { SCREENER_MARKET_QUERY } from "@/lib/screener/screener-market-url";
 import {
   SCREENER_TABLE_BODY_DIVIDE_CLASS,
-  SCREENER_TABLE_HEADER_STICKY_CLASS,
 } from "@/components/screener/screener-table-scroll";
 import { ScreenerPagination } from "@/components/ui/table-pagination";
 import { cn } from "@/lib/utils";
@@ -27,10 +26,6 @@ import { cn } from "@/lib/utils";
 const pct = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
-});
-
-const sharesFmt = new Intl.NumberFormat("en-US", {
-  maximumFractionDigits: 0,
 });
 
 /** Match screener `ChangeCell`: green / red for up / down. */
@@ -46,9 +41,15 @@ const tdCompany = "min-w-0 py-1 text-left text-[14px] leading-5 whitespace-norma
 const tdNum =
   "whitespace-nowrap py-0 text-right align-middle font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]";
 
+const HOLDINGS_TABLE_HEADER_CLASS =
+  "sticky top-0 z-20 border-b border-solid border-[#E4E4E7] bg-white";
+
 /** Company | % of portfolio | Recent activity | Shares | Value. */
 const rowGridFive =
   "grid w-full min-w-[720px] grid-cols-[minmax(180px,2.05fr)_minmax(72px,0.55fr)_minmax(120px,1.05fr)_minmax(96px,0.9fr)_minmax(96px,0.9fr)] gap-x-4";
+
+/** Desktop header row — same column grid as data rows. */
+const headerGrid = cn("h-11 min-h-[44px] items-center bg-white", rowGridFive);
 
 /** Mobile: Company | % of Portfolio. */
 const mobileRowGrid =
@@ -285,7 +286,6 @@ export function Berkshire13fComparisonTable({
     [transactions.quarters],
   );
 
-  const headerGrid = cn("h-11 min-h-[44px] items-center bg-white", rowGridFive);
   const resolved = useResolvedTickersForPage(pagedRows);
 
   const toggleExpanded = useCallback((rowKey: string) => {
@@ -296,12 +296,12 @@ export function Berkshire13fComparisonTable({
     <div className="min-w-0 -mx-4 sm:mx-0">
       {/* ── Mobile layout ── */}
       <div className="sm:hidden">
-        <div className="border-t border-b border-[#E4E4E7] bg-white">
+        <div className="bg-white">
           <div
             className={cn(
               mobileRowGrid,
               "h-11 min-h-[44px] bg-white px-4",
-              SCREENER_TABLE_HEADER_STICKY_CLASS,
+              HOLDINGS_TABLE_HEADER_CLASS,
             )}
           >
             <div className={thCompany}>Company</div>
@@ -356,8 +356,8 @@ export function Berkshire13fComparisonTable({
       {/* ── Desktop layout ── */}
       <div className="hidden overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch] sm:block sm:overflow-visible sm:pb-0">
         <div className="min-w-[720px] sm:min-w-0">
-          <div className="border-t border-b border-[#E4E4E7] bg-white">
-            <div className={cn(headerGrid, "px-4", SCREENER_TABLE_HEADER_STICKY_CLASS)}>
+          <div className="bg-white">
+            <div className={cn(headerGrid, "px-4", HOLDINGS_TABLE_HEADER_CLASS)}>
               <div className={thCompany}>Company</div>
               <div className={thRight}>% of Portfolio</div>
               <div className={thRight}>Recent Activity</div>
@@ -396,7 +396,7 @@ export function Berkshire13fComparisonTable({
                         activity={resolveHoldingRecentActivity(r, hasPriorFiling)}
                       />
                     </div>
-                    <div className={tdNum}>{r.shares != null ? sharesFmt.format(r.shares) : "—"}</div>
+                    <div className={tdNum}>{r.shares != null ? formatSharesCompact(r.shares) : "—"}</div>
                     <div className={tdNum}>{formatUsdCompactSigDigits(r.valueUsd, 4)}</div>
                   </div>
                   {expanded ?

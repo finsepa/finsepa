@@ -135,3 +135,16 @@ export async function upsertSuperinvestor13fProfileSnapshot(
     { onConflict: "key" },
   );
 }
+
+/** Drop persisted 13F profile + holdings-scoped tx rows so the next load re-fetches SEC. */
+export async function deleteSuperinvestor13fSnapshotsForCik(cikPadded: string): Promise<boolean> {
+  const admin = getSupabaseAdminClient();
+  if (!admin || !cikPadded.trim()) return false;
+
+  const keys = [
+    superinvestor13fProfileSnapshotKey(cikPadded),
+    superinvestor13fHoldingsTxSnapshotKey(cikPadded),
+  ];
+  const { error } = await admin.from("market_snapshot").delete().in("key", keys);
+  return !error;
+}

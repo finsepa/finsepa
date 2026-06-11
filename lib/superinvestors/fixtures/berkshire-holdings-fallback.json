@@ -5,212 +5,147 @@
     {
       "issuer": "APPLE INC",
       "titleOfClass": "COM",
-      "valueUsd": 61961735000
+      "valueUsd": 57843261000
     },
     {
       "issuer": "AMERICAN EXPRESS CO",
       "titleOfClass": "COM",
-      "valueUsd": 56088379000
-    },
-    {
-      "issuer": "BANK AMERICA CORP",
-      "titleOfClass": "COM",
-      "valueUsd": 28451277000
+      "valueUsd": 45859204000
     },
     {
       "issuer": "COCA COLA CO",
       "titleOfClass": "COM",
-      "valueUsd": 27964001000
+      "valueUsd": 30420000000
     },
     {
-      "issuer": "CHEVRON CORP NEW",
+      "issuer": "BANK AMERICA CORP",
       "titleOfClass": "COM",
-      "valueUsd": 19837132000
+      "valueUsd": 25039178000
     },
     {
-      "issuer": "MOODYS CORP",
+      "issuer": "CHEVRON CORPORATION",
       "titleOfClass": "COM",
-      "valueUsd": 12602556000
+      "valueUsd": 17457365000
     },
     {
       "issuer": "OCCIDENTAL PETE CORP",
       "titleOfClass": "COM",
-      "valueUsd": 10894392000
-    },
-    {
-      "issuer": "CHUBB LIMITED",
-      "titleOfClass": "COM",
-      "valueUsd": 10689855000
-    },
-    {
-      "issuer": "KRAFT HEINZ CO",
-      "titleOfClass": "COM",
-      "valueUsd": 7896644000
+      "valueUsd": 17221193000
     },
     {
       "issuer": "ALPHABET INC",
       "titleOfClass": "CAP STK CL A",
-      "valueUsd": 5585842000
+      "valueUsd": 15600072000
+    },
+    {
+      "issuer": "CHUBB LTD SWITZ",
+      "titleOfClass": "COM",
+      "valueUsd": 11162836000
+    },
+    {
+      "issuer": "MOODYS CORP",
+      "titleOfClass": "COM",
+      "valueUsd": 10762191000
+    },
+    {
+      "issuer": "KRAFT HEINZ CO",
+      "titleOfClass": "COM",
+      "valueUsd": 7323527000
     },
     {
       "issuer": "DAVITA INC",
       "titleOfClass": "COM",
-      "valueUsd": 3608148000
+      "valueUsd": 4626159000
     },
     {
       "issuer": "KROGER CO",
       "titleOfClass": "COM",
-      "valueUsd": 3124001000
+      "valueUsd": 3618000000
     },
     {
-      "issuer": "VISA INC",
-      "titleOfClass": "COM CL A",
-      "valueUsd": 2910002000
-    },
-    {
-      "issuer": "SIRIUS XM HOLDINGS INC",
+      "issuer": "SIRIUSXM HOLDINGS INC",
       "titleOfClass": "COMMON STOCK",
-      "valueUsd": 2495518000
+      "valueUsd": 2880548000
     },
     {
-      "issuer": "MASTERCARD INCORPORATED",
-      "titleOfClass": "CL A",
-      "valueUsd": 2275898000
+      "issuer": "DELTA AIR LINES INC",
+      "titleOfClass": "COM NEW",
+      "valueUsd": 2646533000
     },
     {
       "issuer": "VERISIGN INC",
       "titleOfClass": "COM",
-      "valueUsd": 2184091000
-    },
-    {
-      "issuer": "CONSTELLATION BRANDS INC",
-      "titleOfClass": "CL A",
-      "valueUsd": 1793480000
+      "valueUsd": 2232726000
     },
     {
       "issuer": "CAPITAL ONE FINL CORP",
       "titleOfClass": "COM",
-      "valueUsd": 1732874000
+      "valueUsd": 1304375000
     },
     {
-      "issuer": "UNITEDHEALTH GROUP INC",
-      "titleOfClass": "COM",
-      "valueUsd": 1663610000
-    },
-    {
-      "issuer": "DOMINOS PIZZA INC",
-      "titleOfClass": "COM",
-      "valueUsd": 1396347000
+      "issuer": "NEW YORK TIMES CO MTN BE",
+      "titleOfClass": "CL A",
+      "valueUsd": 1268219000
     },
     {
       "issuer": "ALLY FINL INC",
       "titleOfClass": "COM",
-      "valueUsd": 1313410000
+      "valueUsd": 1137670000
     },
     {
-      "issuer": "AON PLC",
-      "titleOfClass": "SHS CL A",
-      "valueUsd": 1271424000
-    },
-    {
-      "issuer": "NUCOR CORP",
-      "titleOfClass": "COM",
-      "valueUsd": 1045168000
+      "issuer": "ALPHABET INC",
+      "titleOfClass": "CAP STK CL C",
+      "valueUsd": 1028455000
     },
     {
       "issuer": "LIBERTY LIVE HOLDINGS INC",
       "titleOfClass": "COM SHS SER C",
-      "valueUsd": 907912000
+      "valueUsd": 996356000
     },
     {
       "issuer": "LENNAR CORP",
       "titleOfClass": "CL A",
-      "valueUsd": 724838000
+      "valueUsd": 877053000
     },
     {
-      "issuer": "POOL CORP",
+      "issuer": "NUCOR CORP",
       "titleOfClass": "COM",
-      "valueUsd": 702007000
-    },
-    {
-      "issuer": "AMAZON COM INC",
-      "titleOfClass": "COM",
-      "valueUsd": 525346000
-    },
-    {
-      "issuer": "LOUISIANA PAC CORP",
-      "titleOfClass": "COM",
-      "valueUsd": 457489000
+      "valueUsd": 660686000
     },
     {
       "issuer": "LIBERTY LIVE HOLDINGS INC",
       "titleOfClass": "COM SER A",
-      "valueUsd": 406407000
+      "valueUsd": 456971000
     },
     {
-      "issuer": "NEW YORK TIMES CO",
+      "issuer": "LOUISIANA PAC CORP",
+      "titleOfClass": "COM",
+      "valueUsd": 412114000
+    },
+    {
+      "issuer": "CONSTELLATION BRANDS INC",
       "titleOfClass": "CL A",
-      "valueUsd": 351664000
-    },
-    {
-      "issuer": "HEICO CORP NEW",
-      "titleOfClass": "CL A",
-      "valueUsd": 326799000
-    },
-    {
-      "issuer": "LIBERTY MEDIA CORP DEL",
-      "titleOfClass": "COM LBTY ONE S C",
-      "valueUsd": 297358000
-    },
-    {
-      "issuer": "CHARTER COMMUNICATIONS INC N",
-      "titleOfClass": "CL A",
-      "valueUsd": 221459000
-    },
-    {
-      "issuer": "LAMAR ADVERTISING CO NEW",
-      "titleOfClass": "CL A",
-      "valueUsd": 152201000
-    },
-    {
-      "issuer": "ALLEGION PLC",
-      "titleOfClass": "ORD SHS",
-      "valueUsd": 124213000
+      "valueUsd": 94934000
     },
     {
       "issuer": "NVR INC",
       "titleOfClass": "COM",
-      "valueUsd": 81037000
+      "valueUsd": 73226000
     },
     {
-      "issuer": "JEFFERIES FINL GROUP INC",
+      "issuer": "MACYS INC",
       "titleOfClass": "COM",
-      "valueUsd": 26868000
-    },
-    {
-      "issuer": "DIAGEO PLC",
-      "titleOfClass": "SPON ADR NEW",
-      "valueUsd": 19648000
-    },
-    {
-      "issuer": "LIBERTY LATIN AMERICA LTD",
-      "titleOfClass": "COM CL A",
-      "valueUsd": 17711000
+      "valueUsd": 54964000
     },
     {
       "issuer": "LENNAR CORP",
       "titleOfClass": "CL B",
-      "valueUsd": 17215000
+      "valueUsd": 19996000
     },
     {
-      "issuer": "LIBERTY LATIN AMERICA LTD",
-      "titleOfClass": "COM CL C",
-      "valueUsd": 9579000
-    },
-    {
-      "issuer": "ATLANTA BRAVES HLDGS INC",
-      "titleOfClass": "COM SER C",
-      "valueUsd": 4553000
+      "issuer": "JEFFERIES FINANCIAL GROUP IN",
+      "titleOfClass": "COM",
+      "valueUsd": 17893000
     }
   ]
 }

@@ -1,18 +1,10 @@
-/** Distinct colors for allocation dots (cycles if there are many positions). */
-export const ALLOCATION_DONUT_PALETTE = [
-  "#2563EB",
-  "#DC2626",
-  "#9333EA",
-  "#EA580C",
-  "#16A34A",
-  "#CA8A04",
-  "#B91C1C",
-  "#64748B",
-  "#0891B2",
-  "#DB2777",
-  "#4F46E5",
-  "#65A30D",
-] as const;
+import {
+  FUNDAMENTALS_MULTI_BAR_COLORS,
+  fundamentalsBarSolidAtIndex,
+} from "@/lib/colors/fundamentals-multi-bar-colors";
+
+/** Same cycle as Charting / Multicharts bar series. */
+export const ALLOCATION_DONUT_PALETTE = FUNDAMENTALS_MULTI_BAR_COLORS;
 
 /** Pie shows top N holdings; remainder rolls into one grey “Other” slice. */
 export const TOP_ALLOCATION_SLICES = 10;
@@ -24,6 +16,7 @@ export type AllocationDonutRow = {
   symbol: string;
   weightPct: number;
   color: string;
+  logoUrl?: string | null;
 };
 
 export type AllocationDonutWeightInput = {
@@ -31,6 +24,7 @@ export type AllocationDonutWeightInput = {
   name: string;
   symbol: string;
   weightPct: number;
+  logoUrl?: string | null;
 };
 
 export function buildTopNAllocationRows(raw: AllocationDonutWeightInput[]): AllocationDonutRow[] {
@@ -45,7 +39,7 @@ export function buildTopNAllocationRows(raw: AllocationDonutWeightInput[]): Allo
   const rest = sorted.slice(TOP_ALLOCATION_SLICES);
   const rows: AllocationDonutRow[] = top.map((r, i) => ({
     ...r,
-    color: ALLOCATION_DONUT_PALETTE[i % ALLOCATION_DONUT_PALETTE.length]!,
+    color: fundamentalsBarSolidAtIndex(i),
   }));
 
   if (rest.length > 0) {
@@ -57,6 +51,7 @@ export function buildTopNAllocationRows(raw: AllocationDonutWeightInput[]): Allo
         symbol: "Other",
         weightPct: otherPct,
         color: OTHER_SLICE_COLOR,
+        logoUrl: null,
       });
     }
   }

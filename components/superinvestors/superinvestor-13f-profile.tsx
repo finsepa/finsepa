@@ -15,6 +15,8 @@ export type Superinvestor13fProfileProps = {
   breadcrumbCurrentLabel: string;
   /** Public path under `/public`. When omitted, a generic placeholder is shown. */
   avatarSrc?: string | null;
+  /** 3–5 line bio shown under header stats. */
+  profileDescription?: string;
   data: Berkshire13fComparisonPayload;
   transactions: SuperinvestorTransactionsPayload;
 };
@@ -41,6 +43,13 @@ function formatLastUpdateLabel(ymd: string | null): string {
   const d = parseISO(ymd.trim());
   if (!isValid(d)) return ymd.trim();
   return format(d, "MMM d, yyyy");
+}
+
+function ProfileHeaderDescription({ text }: { text: string }) {
+  if (!text.trim()) return null;
+  return (
+    <p className="mt-4 max-w-3xl text-[14px] font-normal leading-5 text-[#71717A] sm:mt-5">{text}</p>
+  );
 }
 
 function ProfileHeaderStats({
@@ -81,6 +90,7 @@ export function Superinvestor13fProfile({
   profileName,
   breadcrumbCurrentLabel,
   avatarSrc,
+  profileDescription = "",
   data,
   transactions,
 }: Superinvestor13fProfileProps) {
@@ -129,6 +139,7 @@ export function Superinvestor13fProfile({
             stocksLabel={stocksLabel}
             lastUpdateLabel={lastUpdateLabel}
           />
+          <ProfileHeaderDescription text={profileDescription} />
           <SuperinvestorFollowButton className="mt-4 w-full" investorName={profileName} />
         </div>
 
@@ -144,6 +155,8 @@ export function Superinvestor13fProfile({
               stocksLabel={stocksLabel}
               lastUpdateLabel={lastUpdateLabel}
             />
+            <ProfileHeaderDescription text={profileDescription} />
+            <SuperinvestorFollowButton className="mt-4" investorName={profileName} />
           </div>
           {showAllocationDonut ? (
             <SuperinvestorProfileAllocationDonut

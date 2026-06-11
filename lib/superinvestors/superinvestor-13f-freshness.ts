@@ -102,7 +102,7 @@ export function thirteenFilingHeadCacheKey(head: Superinvestor13fFilingHead | nu
 export function getLatest13fFilingHeadCached(cikPadded: string): Promise<Superinvestor13fFilingHead | null> {
   const uncached = () => loadLatest13fFilingHeadUncached(cikPadded);
   if (process.env.NODE_ENV !== "production") return uncached();
-  return unstable_cache(uncached, ["superinvestor-13f-filing-head-v1", cikPadded], {
+  return unstable_cache(uncached, ["superinvestor-13f-filing-head-v2", cikPadded], {
     revalidate: REVALIDATE_13F_FILING_HEAD_SEC,
   })();
 }
