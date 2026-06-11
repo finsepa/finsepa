@@ -1,33 +1,45 @@
 "use client";
 
-import { useMemo, useRef, useState, type MouseEvent } from "react";
+import { useMemo, useRef, useState, type CSSProperties, type MouseEvent } from "react";
 
 import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
+import { MULTICHART_BAR_WIDTH_PX } from "@/components/stock/multichart-fundamentals-bar";
 import {
+  buildFundamentalsYAxisDomain,
   computeFundamentalsChartTooltipPlacement,
   FUNDAMENTALS_CHART_HOVER_BAND_BG,
+  FUNDAMENTALS_CHART_TOOLTIP_CLASS,
+  FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS,
+  FUNDAMENTALS_CHART_Y_AXIS_W_PX,
   FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER,
+  formatFundamentalsAxisTickLabel,
+  valueToPlotBandTopPercent,
 } from "@/lib/chart/fundamentals-chart-surface";
+import { fundamentalsBarStaggerDelaySec } from "@/lib/chart/fundamentals-bar-enter-animation";
+import {
+  fundamentalsBarColorAtIndex,
+  fundamentalsBarSolidAtIndex,
+} from "@/lib/colors/fundamentals-multi-bar-colors";
 import type { MacroRangeId } from "@/components/macro/macro-range";
 import { formatMacroValue, type MacroValueKind } from "@/components/macro/macro-format";
+import { macroKindToChartingKind } from "@/lib/macro/macro-chart-axis-kind";
+import { cn } from "@/lib/utils";
 import {
   formatMacroAxisLabel,
   macroAxisLabelIndices,
   macroChartAxisGranularity,
 } from "@/lib/macro/macro-chart-points";
 
-const BAR_WIDTH_PX = 14;
+const BAR_WIDTH_PX = MULTICHART_BAR_WIDTH_PX;
 const BAR_HIT_PAD_PX = 6;
 const BAR_HIT_WIDTH_PX = BAR_WIDTH_PX + BAR_HIT_PAD_PX * 2;
+const BAR_HOVER_DIM_OPACITY = 0.6;
+const NEGATIVE_BAR_COLOR = "#DC2626";
+const POSITIVE_BAR_COLOR = fundamentalsBarSolidAtIndex(0);
 const AXIS_ROW_PX = 32;
 const AXIS_BOTTOM_PAD_PX = 10;
 const PLOT_INSET_TOP_FRAC = 0.08;
 const PLOT_INSET_BOTTOM_FRAC = 0.04;
-const BAR_COLOR = "#2563EB";
-const Y_TICK_COUNT = 5;
-
-const NICE_STEP_FACTORS = [1, 1.25, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10] as const;
-const MULTIPLE_RATIO_AXIS_MAX_LADDER = [50, 100, 150, 200, 250, 300, 400, 500, 750, 1000] as const;
 
 type BarPoint = { time: string; value: number; axisLabel: string };
 
@@ -39,43 +51,12 @@ type TipState = {
   valueLine: string;
 };
 
-function niceCeilPositive(n: number): number {
-  if (!Number.isFinite(n) || n <= 0) return 1;
-  const exp = Math.floor(Math.log10(n));
-  const f = n / 10 ** exp;
-  const nf = f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10;
-  return nf * 10 ** exp;
-}
-
-function niceCeilStep(step: number): number {
-  if (!Number.isFinite(step) || step <= 0) return 1;
-  const exp = Math.floor(Math.log10(step));
-  const base = 10 ** exp;
-  const f = step / base;
-  for (const c of NICE_STEP_FACTORS) {
-    if (c >= f) return c * base;
+function resolveBarFillColor(baseColor: string, dimmed: boolean): string {
+  if (!dimmed) return baseColor;
+  if (baseColor === NEGATIVE_BAR_COLOR) {
+    return `rgba(220, 38, 38, ${BAR_HOVER_DIM_OPACITY})`;
   }
-  return 10 * base;
-}
-
-function axisMaxForMultiplesAndRatios(rawMax: number): number {
-  const padded = rawMax <= 0 ? 1 : rawMax * 1.08;
-  const naive = niceCeilPositive(rawMax);
-  if (naive > 300 && rawMax <= 250) return 300;
-  for (const cap of MULTIPLE_RATIO_AXIS_MAX_LADDER) {
-    if (cap >= padded) return cap;
-  }
-  return naive;
-}
-
-function macroBarAxisMax(rawMax: number, kind: MacroValueKind): number {
-  if (!Number.isFinite(rawMax) || rawMax <= 0) return 1;
-  if (kind === "usd") {
-    const padded = rawMax * 1.04;
-    return niceCeilStep(padded / 4) * 4;
-  }
-  if (kind === "number") return axisMaxForMultiplesAndRatios(rawMax);
-  return niceCeilPositive(rawMax);
+  return fundamentalsBarColorAtIndex(0, BAR_HOVER_DIM_OPACITY);
 }
 
 function periodCenterLeftPercent(i: number, n: number): number {
@@ -125,12 +106,16 @@ export function MacroSparklineBars({
   points,
   rangeId,
   height,
+  animateBarsOnAppear = false,
+  prominent = false,
 }: {
   title: string;
   kind: MacroValueKind;
   points: Array<{ time: string; value: number }>;
   rangeId: MacroRangeId;
   height: number;
+  animateBarsOnAppear?: boolean;
+  prominent?: boolean;
 }) {
   const plotAreaRef = useRef<HTMLDivElement>(null);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
@@ -159,15 +144,23 @@ export function MacroSparklineBars({
 
   const values = useMemo(() => barPoints.map((p) => p.value), [barPoints]);
 
-  const { maxV, yTicks } = useMemo(() => {
-    const rawMax = values.length ? Math.max(...values.map((v) => Math.max(0, v))) : 0;
-    const top = macroBarAxisMax(rawMax || 1, kind);
-    const ticks = Array.from({ length: Y_TICK_COUNT }, (_, i) => (top * (Y_TICK_COUNT - 1 - i)) / (Y_TICK_COUNT - 1));
-    return { maxV: top, yTicks: ticks };
-  }, [values, kind]);
+  const chartingKind = macroKindToChartingKind(kind);
+
+  const yDomain = useMemo(() => {
+    const rawMin = values.length ? Math.min(...values, 0) : 0;
+    const rawMax = values.length ? Math.max(...values) : 1;
+    return buildFundamentalsYAxisDomain(rawMin, rawMax, chartingKind);
+  }, [values, chartingKind]);
+
+  const yMin = yDomain.min;
+  const yMax = yDomain.max;
+  const yTicks = yDomain.ticks;
+  const yBipolar = yDomain.bipolar;
 
   const plotHeight = height - AXIS_ROW_PX - AXIS_BOTTOM_PAD_PX;
   const n = barPoints.length;
+  const shouldAnimateBars = animateBarsOnAppear && n > 0;
+  const barStaggerDelaySec = fundamentalsBarStaggerDelaySec(n);
 
   const clearHover = () => {
     setHoveredIndex(null);
@@ -204,8 +197,12 @@ export function MacroSparklineBars({
           >
             <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
             <div
-              className="absolute inset-x-0 bottom-0 border-t"
-              style={{ borderColor: FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER }}
+              className="absolute inset-x-0 border-t"
+              style={{
+                borderColor: FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER,
+                top: yBipolar ? `${valueToPlotBandTopPercent(0, yMin, yMax)}%` : undefined,
+                bottom: yBipolar ? undefined : 0,
+              }}
             />
           </div>
 
@@ -215,13 +212,21 @@ export function MacroSparklineBars({
             aria-label={`${title} bar chart`}
           >
             {barPoints.map((pt, i) => {
-              const plotV = Math.max(0, pt.value);
-              const hPct = maxV > 0 ? (plotV / maxV) * 100 : 0;
-              const valueLine = `${title}: ${formatMacroValue(kind, pt.value)}`;
+              const v = pt.value;
+              const zeroTop = valueToPlotBandTopPercent(0, yMin, yMax);
+              const vTop = valueToPlotBandTopPercent(v, yMin, yMax);
+              const barHeightPct = v >= 0 ? Math.max(0, zeroTop - vTop) : Math.max(0, vTop - zeroTop);
+              const barTopPct = v >= 0 ? vTop : zeroTop;
+              const baseBarColor = v < 0 ? NEGATIVE_BAR_COLOR : POSITIVE_BAR_COLOR;
+              const barColor = resolveBarFillColor(
+                baseBarColor,
+                hoveredIndex != null && hoveredIndex !== i,
+              );
+              const valueLine = formatMacroValue(kind, pt.value);
               return (
                 <div
                   key={`${pt.time}-${i}`}
-                  className="absolute bottom-0 z-0 flex h-full min-h-0 -translate-x-1/2 flex-col items-center justify-end"
+                  className="absolute top-0 z-0 h-full min-h-0 -translate-x-1/2"
                   style={{ left: `${periodCenterLeftPercent(i, n)}%`, width: BAR_HIT_WIDTH_PX }}
                   onMouseEnter={(e) => {
                     const plot = plotAreaRef.current;
@@ -238,26 +243,39 @@ export function MacroSparklineBars({
                 >
                   {hoveredIndex === i ? (
                     <div
-                      className="pointer-events-none absolute bottom-0 left-1/2 z-0 h-full -translate-x-1/2"
-                      style={{
-                        width: BAR_HIT_WIDTH_PX,
-                        backgroundColor: FUNDAMENTALS_CHART_HOVER_BAND_BG,
-                      }}
+                      className="pointer-events-none absolute inset-x-0 top-0 z-0 h-full"
+                      style={{ backgroundColor: FUNDAMENTALS_CHART_HOVER_BAND_BG }}
                       aria-hidden
                     />
                   ) : null}
-                  <div className="relative z-10 flex h-full min-h-0 w-full flex-col items-center justify-end">
+                  {barHeightPct > 0 ? (
                     <div
-                      className="mt-auto shrink-0 rounded-t-[2px] rounded-b-none transition-[height] duration-75"
+                      className={cn(
+                        "absolute left-1/2 z-10 -translate-x-1/2",
+                        v >= 0 ? "rounded-t-[4px] rounded-b-none" : "rounded-b-[4px] rounded-t-none",
+                        shouldAnimateBars
+                          ? "fundamentals-bar-grow-in"
+                          : "transition-[height,top] duration-75",
+                      )}
                       style={{
+                        ...(shouldAnimateBars
+                          ? ({
+                              ["--bar-grow-origin-top"]: `${zeroTop}%`,
+                              ["--bar-target-height"]: `${barHeightPct}%`,
+                              ["--bar-target-top"]: `${barTopPct}%`,
+                              animationDelay: `${i * barStaggerDelaySec}s`,
+                            } as CSSProperties)
+                          : {
+                              top: `${barTopPct}%`,
+                              height: `${barHeightPct}%`,
+                              minHeight: 2,
+                            }),
                         width: BAR_WIDTH_PX,
                         maxWidth: "100%",
-                        height: `${hPct}%`,
-                        minHeight: hPct > 0 ? 2 : 0,
-                        backgroundColor: BAR_COLOR,
+                        backgroundColor: barColor,
                       }}
                     />
-                  </div>
+                  ) : null}
                 </div>
               );
             })}
@@ -265,7 +283,7 @@ export function MacroSparklineBars({
 
           {tip ? (
             <div
-              className="pointer-events-none absolute z-30 max-w-[min(280px,calc(100%-16px))] rounded-lg border border-[#E4E4E7] bg-white px-3 py-2.5 pr-3.5 text-left shadow-[0px_1px_4px_0px_rgba(10,10,10,0.08),0px_1px_2px_0px_rgba(10,10,10,0.06)]"
+              className={FUNDAMENTALS_CHART_TOOLTIP_CLASS}
               style={{
                 left: `clamp(8px, ${tip.anchorX}px, calc(100% - 8px))`,
                 top: tip.y,
@@ -287,16 +305,39 @@ export function MacroSparklineBars({
                 </span>
               )}
               <p className="text-[12px] font-semibold leading-4 text-[#09090B]">{tip.periodLabel}</p>
-              <p className="mt-1.5 whitespace-nowrap text-[12px] font-normal leading-4 text-[#09090B]">
-                {tip.valueLine}
-              </p>
+              {prominent ? (
+                <div className="mt-1.5 space-y-1">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="flex min-w-0 items-baseline gap-2">
+                      <span
+                        className="h-2.5 w-2.5 shrink-0 rounded-full"
+                        style={{ backgroundColor: POSITIVE_BAR_COLOR }}
+                        aria-hidden
+                      />
+                      <span className="truncate text-[12px] font-normal leading-4 text-[#71717A]">
+                        {title}
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-[12px] font-semibold leading-4 tabular-nums text-[#09090B]">
+                      {tip.valueLine}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <p className="mt-1.5 whitespace-nowrap text-[12px] font-normal leading-4 text-[#09090B]">
+                  {`${title}: ${tip.valueLine}`}
+                </p>
+              )}
             </div>
           ) : null}
         </div>
 
         <div
-          className="relative h-full shrink-0 pl-3 text-left font-['Inter'] text-[12px] tabular-nums leading-none text-[#71717A]"
-          style={{ width: 50 }}
+          className={cn(
+            "relative h-full shrink-0 text-left font-['Inter'] text-[12px] tabular-nums leading-none text-[#71717A]",
+            prominent ? FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS : "pl-3",
+          )}
+          style={{ width: prominent ? FUNDAMENTALS_CHART_Y_AXIS_W_PX : 50 }}
           aria-hidden
         >
           <div
@@ -306,19 +347,15 @@ export function MacroSparklineBars({
               bottom: `${PLOT_INSET_BOTTOM_FRAC * 100}%`,
             }}
           >
-            {yTicks.map((t, i) => {
-              const nt = yTicks.length;
-              const pct = nt <= 1 ? 0 : (i / (nt - 1)) * 100;
-              return (
-                <span
-                  key={i}
-                  className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-white px-1 py-px"
-                  style={{ top: `${pct}%` }}
-                >
-                  {formatMacroValue(kind, t)}
-                </span>
-              );
-            })}
+            {yTicks.map((t, i) => (
+              <span
+                key={i}
+                className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-white px-1 py-px"
+                style={{ top: `${valueToPlotBandTopPercent(t, yMin, yMax)}%` }}
+              >
+                {formatFundamentalsAxisTickLabel(chartingKind, t)}
+              </span>
+            ))}
           </div>
         </div>
       </div>
@@ -349,7 +386,11 @@ export function MacroSparklineBars({
             );
           })}
         </div>
-        <div className="shrink-0" style={{ width: 50 }} aria-hidden />
+        <div
+          className={cn("shrink-0", prominent && FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS)}
+          style={{ width: prominent ? FUNDAMENTALS_CHART_Y_AXIS_W_PX : 50 }}
+          aria-hidden
+        />
       </div>
       <div className="shrink-0" style={{ height: AXIS_BOTTOM_PAD_PX }} aria-hidden />
     </div>

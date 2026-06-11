@@ -3,8 +3,6 @@ import type { MacroRangeId } from "@/components/macro/macro-range";
 export type MacroChartPoint = { time: string; value: number };
 
 const RANGE_YEARS: Record<Exclude<MacroRangeId, "all">, number> = {
-  "1y": 1,
-  "2y": 2,
   "5y": 5,
   "10y": 10,
 };
@@ -46,9 +44,9 @@ export function downsampleMacroPointsMonthly(points: readonly MacroChartPoint[])
   return Array.from(byMonth.values()).sort((a, b) => a.time.localeCompare(b.time));
 }
 
-/** 1Y–5Y charts use one point per calendar month (when source data allows). */
+/** 5Y–10Y charts use one point per calendar month (when source data allows). */
 export function macroRangeUsesMonthlyPoints(rangeId: MacroRangeId): boolean {
-  return rangeId === "1y" || rangeId === "2y" || rangeId === "5y";
+  return rangeId === "5y" || rangeId === "10y";
 }
 
 export function macroRangeUsesMonthlyAxisLabels(rangeId: MacroRangeId): boolean {

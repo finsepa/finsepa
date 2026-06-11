@@ -11,22 +11,12 @@ import {
   AppModalShell,
   appModalPrimaryButtonClass,
 } from "@/components/ui/app-modal-shell";
+import { PRO_PLAN_FEATURES } from "@/lib/account/pro-plan-features";
 
 type BillingCycle = "monthly" | "annually";
 
 const MONTHLY_PRICE = 15;
 const ANNUAL_PRICE = 150;
-
-const FEATURES = [
-  "Full historical financial data",
-  "Advanced fundamental charts",
-  "Unlimited portfolios and watchlists",
-  "Portfolio performance tracking",
-  "Premium charts and data",
-  "Earnings data and calendar",
-  "Faster data access and updates",
-  "Ad-free experience",
-];
 
 export function BillingUpgradeModal({
   open,
@@ -107,7 +97,7 @@ export function BillingUpgradeModal({
         </div>
 
         <ul className="space-y-4">
-          {FEATURES.map((item) => (
+          {PRO_PLAN_FEATURES.map((item) => (
             <li key={item} className="flex items-center gap-3">
               <Image
                 src="/icons/finsepa-pro-check.svg"

@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useId, useMemo, useRef, useState, type MouseEvent } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type CSSProperties, type MouseEvent } from "react";
 import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
-import { AppModalCloseButton, AppModalShell } from "@/components/ui/app-modal-shell";
+import { AppModalShell } from "@/components/ui/app-modal-shell";
 import { Spinner } from "@/components/ui/spinner";
 
 import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
@@ -14,12 +14,18 @@ import {
   FUNDAMENTALS_CHART_PLOT_INSET_BOTTOM_FRAC,
   FUNDAMENTALS_CHART_PLOT_INSET_TOP_FRAC,
   FUNDAMENTALS_CHART_TOOLTIP_CLASS,
-  FUNDAMENTALS_CHART_Y_AXIS_LABEL_COUNT,
   FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS,
   FUNDAMENTALS_CHART_Y_AXIS_W_PX,
   FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER,
+  valueToPlotBandTopPercent,
 } from "@/lib/chart/fundamentals-chart-surface";
+import { fundamentalsBarStaggerDelaySec } from "@/lib/chart/fundamentals-bar-enter-animation";
+import { fundamentalsBarColorAtIndex, fundamentalsBarSolidAtIndex } from "@/lib/colors/fundamentals-multi-bar-colors";
 import { formatEconomyMetric } from "@/lib/market/economy-format-display";
+import {
+  buildEconomyHistoryYAxisDomain,
+  formatEconomyChartAxisTick,
+} from "@/lib/market/economy-chart-axis";
 import type { EconomyCalendarEvent } from "@/lib/market/economy-calendar-types";
 import { cn } from "@/lib/utils";
 
@@ -31,12 +37,12 @@ type HistoryPoint = {
   previous: number | null;
 };
 
-const POSITIVE_BAR_COLOR = "#2563EB";
 const NEGATIVE_BAR_COLOR = "#DC2626";
+const BAR_HOVER_DIM_OPACITY = 0.6;
 const CHART_PLOT_HEIGHT_PX = 320;
 const CHART_TOTAL_HEIGHT_PX = CHART_PLOT_HEIGHT_PX + FUNDAMENTALS_CHART_AXIS_ROW_PX;
 const BAR_WIDTH_PX = 14;
-const BAR_MAX_HEIGHT_FRAC = 0.88;
+const POSITIVE_BAR_COLOR = fundamentalsBarSolidAtIndex(0);
 
 /** Matches {@link StockIncomeStatementTable} / screener numeric cells. */
 const historyTableGrid =
@@ -72,20 +78,13 @@ function formatAxisLabel(dateStr: string, period: string | null): string {
   return d.toLocaleDateString("en-US", { month: "short", year: "2-digit", timeZone: "UTC" });
 }
 
-function formatYAxisValue(n: number): string {
-  if (!Number.isFinite(n)) return "";
-  const abs = Math.abs(n);
-  if (abs >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (abs >= 10_000) return `${(n / 1_000).toFixed(1)}K`;
-  if (abs >= 1_000) return new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 }).format(n);
-  if (!Number.isInteger(n)) return `${n.toFixed(2)}%`;
-  return String(n);
+function resolveBarFillColor(baseColor: string, dimmed: boolean): string {
+  if (!dimmed) return baseColor;
+  if (baseColor === NEGATIVE_BAR_COLOR) {
+    return `rgba(220, 38, 38, ${BAR_HOVER_DIM_OPACITY})`;
+  }
+  return fundamentalsBarColorAtIndex(0, BAR_HOVER_DIM_OPACITY);
 }
-
-type EconomyChartScale = {
-  maxPos: number;
-  maxNeg: number;
-};
 
 type ChartColumn = {
   value: number;
@@ -100,33 +99,6 @@ function periodCenterLeftPercent(i: number, n: number): number {
   return ((i + 0.5) / n) * 100;
 }
 
-function computeEconomyChartScale(values: number[]): EconomyChartScale {
-  let maxPos = 0;
-  let maxNeg = 0;
-  for (const v of values) {
-    if (v > 0) maxPos = Math.max(maxPos, v);
-    if (v < 0) maxNeg = Math.max(maxNeg, -v);
-  }
-  return { maxPos: Math.max(maxPos, 1), maxNeg };
-}
-
-function buildEconomyYAxisTicks(maxPos: number, maxNeg: number): number[] {
-  if (maxNeg <= 0) {
-    const top = Math.max(maxPos, 1);
-    const n = FUNDAMENTALS_CHART_Y_AXIS_LABEL_COUNT;
-    return Array.from({ length: n }, (_, i) => (top * (n - 1 - i)) / (n - 1));
-  }
-  const span = maxPos + maxNeg;
-  const n = FUNDAMENTALS_CHART_Y_AXIS_LABEL_COUNT;
-  return Array.from({ length: n }, (_, i) => maxPos - (i / (n - 1)) * span);
-}
-
-function economyTickTopPercent(tick: number, scale: EconomyChartScale): number {
-  const span = scale.maxPos + scale.maxNeg;
-  if (span <= 0) return 100;
-  return 100 - ((tick + scale.maxNeg) / span) * 100;
-}
-
 type TipState = {
   anchorX: number;
   y: number;
@@ -135,38 +107,6 @@ type TipState = {
   valueLine: string;
   dotColor: string;
 };
-
-function EconomyHistoryBar({
-  value,
-  scale,
-  fill,
-  direction,
-}: {
-  value: number;
-  scale: EconomyChartScale;
-  fill: string;
-  direction: "up" | "down";
-}) {
-  const cap = BAR_MAX_HEIGHT_FRAC * 100;
-  const hPct =
-    direction === "up"
-      ? (value / scale.maxPos) * cap
-      : (-value / Math.max(scale.maxNeg, 1)) * cap;
-  if (hPct <= 0) return <div style={{ width: BAR_WIDTH_PX }} aria-hidden />;
-  const rounded = direction === "up" ? "rounded-t-[2px]" : "rounded-b-[2px]";
-  return (
-    <div
-      className={cn("shrink-0", rounded)}
-      style={{
-        width: BAR_WIDTH_PX,
-        maxWidth: "100%",
-        height: `${hPct}%`,
-        minHeight: 2,
-        backgroundColor: fill,
-      }}
-    />
-  );
-}
 
 function EconomyHistoryBarChart({
   points,
@@ -198,15 +138,17 @@ function EconomyHistoryBarChart({
   }, [points]);
 
   const values = useMemo(() => columns.map((c) => c.value), [columns]);
-  const scale = useMemo(() => computeEconomyChartScale(values), [values]);
-  const yTicks = useMemo(
-    () => buildEconomyYAxisTicks(scale.maxPos, scale.maxNeg),
-    [scale.maxPos, scale.maxNeg],
-  );
+  const yDomain = useMemo(() => buildEconomyHistoryYAxisDomain(values), [values]);
+  const yMin = yDomain.min;
+  const yMax = yDomain.max;
+  const yTicks = yDomain.ticks;
+  const yBipolar = yDomain.bipolar;
 
   const plotInsetTop = `${FUNDAMENTALS_CHART_PLOT_INSET_TOP_FRAC * 100}%`;
   const plotInsetBottom = `${FUNDAMENTALS_CHART_PLOT_INSET_BOTTOM_FRAC * 100}%`;
   const n = columns.length;
+  const shouldAnimateBars = n > 0;
+  const barStaggerDelaySec = fundamentalsBarStaggerDelaySec(n);
 
   const clearHover = () => {
     setHoveredIndex(null);
@@ -262,65 +204,77 @@ function EconomyHistoryBarChart({
               aria-hidden
             >
               <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
-            </div>
-
-            <div
-              className="absolute inset-x-0 z-[1] flex min-h-0 w-full min-w-0 flex-col overflow-hidden"
-              style={{ top: plotInsetTop, bottom: plotInsetBottom }}
-            >
               <div
-                className="pointer-events-none absolute inset-x-0 border-t"
+                className="absolute inset-x-0 border-t"
                 style={{
-                  top: `${economyTickTopPercent(0, scale)}%`,
                   borderColor: FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER,
+                  top: yBipolar ? `${valueToPlotBandTopPercent(0, yMin, yMax)}%` : undefined,
+                  bottom: yBipolar ? undefined : 0,
                 }}
                 aria-hidden
               />
-              {columns.map((col, i) => (
-                <div
-                  key={`${col.axisLabel}-${i}`}
-                  className="absolute top-0 bottom-0 z-[2] flex -translate-x-1/2 flex-col"
-                  style={{ left: `${col.leftPct}%`, width: BAR_WIDTH_PX + 12 }}
-                  onMouseEnter={(e) => handleColumnHover(e, i, col)}
-                  onMouseMove={(e) => handleColumnHover(e, i, col)}
-                >
-                  {hoveredIndex === i ? (
-                    <div
-                      className="pointer-events-none absolute inset-0 z-0"
-                      style={{ backgroundColor: FUNDAMENTALS_CHART_HOVER_BAND_BG }}
-                      aria-hidden
-                    />
-                  ) : null}
+            </div>
+
+            <div
+              className="absolute inset-x-0 z-[1] min-h-0 w-full min-w-0"
+              style={{ top: plotInsetTop, bottom: plotInsetBottom }}
+            >
+              {columns.map((col, i) => {
+                const v = col.value;
+                const zeroTop = valueToPlotBandTopPercent(0, yMin, yMax);
+                const vTop = valueToPlotBandTopPercent(v, yMin, yMax);
+                const barHeightPct = v >= 0 ? Math.max(0, zeroTop - vTop) : Math.max(0, vTop - zeroTop);
+                const barTopPct = v >= 0 ? vTop : zeroTop;
+                const baseBarColor = v < 0 ? NEGATIVE_BAR_COLOR : POSITIVE_BAR_COLOR;
+                const barColor = resolveBarFillColor(
+                  baseBarColor,
+                  hoveredIndex != null && hoveredIndex !== i,
+                );
+
+                return (
                   <div
-                    className="relative z-10 flex min-h-0 w-full flex-1 items-end justify-center"
-                    style={{ flex: scale.maxPos }}
+                    key={`${col.axisLabel}-${i}`}
+                    className="absolute top-0 z-0 h-full min-h-0 -translate-x-1/2"
+                    style={{ left: `${col.leftPct}%`, width: BAR_WIDTH_PX + 12 }}
+                    onMouseEnter={(e) => handleColumnHover(e, i, col)}
+                    onMouseMove={(e) => handleColumnHover(e, i, col)}
                   >
-                    {col.value >= 0 ? (
-                      <EconomyHistoryBar
-                        value={col.value}
-                        scale={scale}
-                        fill={POSITIVE_BAR_COLOR}
-                        direction="up"
+                    {hoveredIndex === i ? (
+                      <div
+                        className="pointer-events-none absolute inset-x-0 top-0 z-0 h-full"
+                        style={{ backgroundColor: FUNDAMENTALS_CHART_HOVER_BAND_BG }}
+                        aria-hidden
+                      />
+                    ) : null}
+                    {barHeightPct > 0 ? (
+                      <div
+                        className={cn(
+                          "absolute left-1/2 z-10 -translate-x-1/2",
+                          v >= 0 ? "rounded-t-[4px] rounded-b-none" : "rounded-b-[4px] rounded-t-none",
+                          shouldAnimateBars ? "fundamentals-bar-grow-in" : "transition-[height,top] duration-75",
+                        )}
+                        style={{
+                          ...(shouldAnimateBars
+                            ? ({
+                                ["--bar-grow-origin-top"]: `${zeroTop}%`,
+                                ["--bar-target-height"]: `${barHeightPct}%`,
+                                ["--bar-target-top"]: `${barTopPct}%`,
+                                animationDelay: `${i * barStaggerDelaySec}s`,
+                              } as CSSProperties)
+                            : {
+                                top: `${barTopPct}%`,
+                                height: `${barHeightPct}%`,
+                                minHeight: 2,
+                              }),
+                          width: BAR_WIDTH_PX,
+                          maxWidth: "100%",
+                          backgroundColor: barColor,
+                        }}
                       />
                     ) : null}
                   </div>
-                  {scale.maxNeg > 0 ? (
-                    <div
-                      className="relative z-10 flex min-h-0 w-full items-start justify-center"
-                      style={{ flex: scale.maxNeg }}
-                    >
-                      {col.value < 0 ? (
-                        <EconomyHistoryBar
-                          value={col.value}
-                          scale={scale}
-                          fill={NEGATIVE_BAR_COLOR}
-                          direction="down"
-                        />
-                      ) : null}
-                    </div>
-                  ) : null}
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {tip ? (
@@ -334,11 +288,24 @@ function EconomyHistoryBarChart({
                       ? "translate(calc(-100% - 10px), -50%)"
                       : "translate(10px, -50%)",
                 }}
+                role="tooltip"
+                aria-label="Chart tooltip"
               >
+                {tip.side === "left" ? (
+                  <span className="absolute top-1/2 left-full -translate-y-1/2" aria-hidden>
+                    <span className="block border-y-[7px] border-y-transparent border-l-[8px] border-l-[#E4E4E7]" />
+                    <span className="absolute top-1/2 left-px -translate-y-1/2 border-y-[6px] border-y-transparent border-l-[7px] border-l-white" />
+                  </span>
+                ) : (
+                  <span className="absolute top-1/2 right-full -translate-y-1/2" aria-hidden>
+                    <span className="block border-y-[7px] border-y-transparent border-r-[8px] border-r-[#E4E4E7]" />
+                    <span className="absolute top-1/2 right-px -translate-y-1/2 border-y-[6px] border-y-transparent border-r-[7px] border-r-white" />
+                  </span>
+                )}
                 <p className="text-[12px] font-semibold leading-4 text-[#09090B]">{tip.periodLabel}</p>
                 <p className="mt-1.5 flex items-center gap-2 whitespace-nowrap text-[12px] font-normal leading-4 text-[#71717A]">
                   <span
-                    className="h-2 w-2 shrink-0 rounded-full"
+                    className="h-2.5 w-2.5 shrink-0 rounded-full"
                     style={{ backgroundColor: tip.dotColor }}
                     aria-hidden
                   />
@@ -366,9 +333,9 @@ function EconomyHistoryBarChart({
                 <span
                   key={i}
                   className="absolute right-0 z-[1] block -translate-y-1/2 rounded-sm bg-white px-1 py-px"
-                  style={{ top: `${economyTickTopPercent(t, scale)}%` }}
+                  style={{ top: `${valueToPlotBandTopPercent(t, yMin, yMax)}%` }}
                 >
-                  {formatYAxisValue(t)}
+                  {formatEconomyChartAxisTick(t, yMax)}
                 </span>
               ))}
             </div>
@@ -493,42 +460,47 @@ export function EconomyEventHistoryModal({
     <AppModalOverlay open={open} onClose={onClose} zIndex={300}>
       <AppModalShell
         titleId={titleId}
+        title={eventLabel}
+        onClose={onClose}
         maxWidthClass="w-full max-w-[min(960px,calc(100vw-2rem))]"
         maxHeightClass="max-h-[min(92vh,720px)]"
         bodyScroll={false}
-        header={
-          <div className="flex w-full items-center justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <h2 id={titleId} className="truncate text-[18px] font-semibold leading-7 text-[#09090B]">
-                {eventLabel}
-              </h2>
-              {latestActual && (
-                <div className="mt-0.5 flex flex-wrap items-baseline gap-x-3 text-[13px] leading-5 text-[#71717A]">
-                  {latestActual.actual != null && (
-                    <span>
-                      Actual: <span className="font-medium text-[#09090B]">{formatEconomyMetric(latestActual.actual)}</span>
-                    </span>
-                  )}
-                  {latestActual.estimate != null && (
-                    <span>
-                      Forecast: <span className="font-medium text-[#09090B]">{formatEconomyMetric(latestActual.estimate)}</span>
-                    </span>
-                  )}
-                  {latestActual.previous != null && (
-                    <span>
-                      Prior: <span className="font-medium text-[#09090B]">{formatEconomyMetric(latestActual.previous)}</span>
-                    </span>
-                  )}
-                </div>
-              )}
-            </div>
-            <AppModalCloseButton onClick={onClose} />
-          </div>
-        }
-        headerClassName="border-b border-[#E4E4E7] px-5 py-4"
+        headerClassName="px-5 py-4"
         bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
         cardClassName="overflow-hidden"
       >
+        {latestActual ? (
+          <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-[#E4E4E7] px-5 pt-5 pb-3">
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-baseline gap-x-3 text-[13px] leading-5 text-[#71717A]">
+                {latestActual.actual != null && (
+                  <span>
+                    Actual:{" "}
+                    <span className="font-medium text-[#09090B]">
+                      {formatEconomyMetric(latestActual.actual)}
+                    </span>
+                  </span>
+                )}
+                {latestActual.estimate != null && (
+                  <span>
+                    Forecast:{" "}
+                    <span className="font-medium text-[#09090B]">
+                      {formatEconomyMetric(latestActual.estimate)}
+                    </span>
+                  </span>
+                )}
+                {latestActual.previous != null && (
+                  <span>
+                    Prior:{" "}
+                    <span className="font-medium text-[#09090B]">
+                      {formatEconomyMetric(latestActual.previous)}
+                    </span>
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : null}
         <div className="min-h-0 flex-1 overflow-hidden px-5 py-4">
           {loading ? (
             <div
@@ -555,7 +527,7 @@ export function EconomyEventHistoryModal({
               No historical data available
             </div>
           ) : (
-            <EconomyHistoryBarChart points={points} eventLabel={eventLabel} />
+            <EconomyHistoryBarChart key={event.id} points={points} eventLabel={eventLabel} />
           )}
         </div>
 

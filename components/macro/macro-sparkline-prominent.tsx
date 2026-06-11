@@ -1,16 +1,28 @@
 "use client";
 
-import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type MouseEvent } from "react";
-import { TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
-import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
-import { AppModalCloseButton, AppModalShell } from "@/components/ui/app-modal-shell";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent,
+} from "react";
+
 import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
+import type { MacroChartVariant } from "@/components/macro/macro-sparkline";
+import { MacroSparklineBars } from "@/components/macro/macro-sparkline-bars";
+import type { MacroRangeId } from "@/components/macro/macro-range";
+import { formatMacroValue, type MacroValueKind } from "@/components/macro/macro-format";
 import { MULTICHART_LINE_STROKE_WIDTH_PX } from "@/components/stock/multichart-fundamentals-bar";
 import {
   fundamentalsBarEnterProgress,
   runFundamentalsBarEnterAnimation,
 } from "@/lib/chart/fundamentals-bar-enter-animation";
 import {
+  buildFundamentalsYAxisDomain,
   CHARTING_LINE_HOVER_HALO_BG,
   CHARTING_LINE_POINT_MARKER_BORDER_PX,
   CHARTING_LINE_POINT_MARKER_RADIUS_PX,
@@ -20,87 +32,45 @@ import {
   FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS,
   FUNDAMENTALS_CHART_Y_AXIS_W_PX,
   FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER,
+  formatFundamentalsAxisTickLabel,
   valueToPlotBandTopPercent,
 } from "@/lib/chart/fundamentals-chart-surface";
+import { macroKindToChartingKind } from "@/lib/macro/macro-chart-axis-kind";
+import {
+  formatMacroAxisLabel,
+  macroAxisLabelIndices,
+  macroChartAxisGranularity,
+} from "@/lib/macro/macro-chart-points";
 import { smoothAreaPathD, smoothLinePathD } from "@/lib/chart/smooth-line-path";
 import {
   fundamentalsBarColorAtIndex,
   fundamentalsBarSolidAtIndex,
 } from "@/lib/colors/fundamentals-multi-bar-colors";
-import type { CryptoFearGreedHistoryPoint } from "@/lib/market/alternative-fear-greed";
 import { cn } from "@/lib/utils";
 
-const FEAR_GREED_CHART_RANGES = ["1M", "6M", "YTD", "1Y", "5Y", "ALL"] as const;
-type FearGreedChartRange = (typeof FEAR_GREED_CHART_RANGES)[number];
-
-const FEAR_GREED_RANGE_TAB_OPTIONS: TabSwitcherOption<FearGreedChartRange>[] =
-  FEAR_GREED_CHART_RANGES.map((value) => ({ value, label: value }));
-
-const LINE_AREA_GRADIENT_TOP_OPACITY = 0.22;
-const LINE_AREA_GRADIENT_BOTTOM_OPACITY = 0.02;
-const FEAR_GREED_LINE_COLOR = fundamentalsBarSolidAtIndex(0);
-
-const CHART_HEIGHT_PX = 400;
 const AXIS_ROW_PX = 32;
 const AXIS_BOTTOM_PAD_PX = 10;
 const PLOT_INSET_TOP_FRAC = 0.08;
 const PLOT_INSET_BOTTOM_FRAC = 0.04;
-const Y_MIN = 0;
-const Y_MAX = 100;
-const Y_TICKS = [0, 25, 50, 75, 100] as const;
+const LINE_AREA_GRADIENT_TOP_OPACITY = 0.22;
+const LINE_AREA_GRADIENT_BOTTOM_OPACITY = 0.02;
 const LINE_HOVER_CROSSHAIR_CLASS = "border-l border-dashed border-[#2563EB]";
+const SERIES_COLOR = fundamentalsBarSolidAtIndex(0);
 
-const HORIZONTAL_X_LABEL_RANGES: ReadonlySet<FearGreedChartRange> = new Set([
-  "6M",
-  "YTD",
-  "1Y",
-  "5Y",
-  "ALL",
-]);
-
-function fmtDate(tsSec: number): string {
-  const d = new Date(tsSec * 1000);
-  return d.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
-}
-
-function fmtYear(tsSec: number): string {
-  const d = new Date(tsSec * 1000);
-  return d.toLocaleDateString("en-US", { year: "numeric" });
-}
-
-function fmtMonth(tsSec: number): string {
-  const d = new Date(tsSec * 1000);
-  return d.toLocaleDateString("en-US", { month: "short" });
-}
-
-function fmtMonthDay(tsSec: number): string {
-  const d = new Date(tsSec * 1000);
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
-
-function scaleLinear(x: number, x0: number, x1: number, y0: number, y1: number): number {
-  if (x1 === x0) return (y0 + y1) / 2;
-  const t = (x - x0) / (x1 - x0);
-  return y0 + t * (y1 - y0);
-}
-
-function clamp(n: number, lo: number, hi: number): number {
+function clamp(n: number, lo: number, hi: number) {
   return Math.max(lo, Math.min(hi, n));
 }
 
-function nearestPointByTs(points: CryptoFearGreedHistoryPoint[], ts: number): CryptoFearGreedHistoryPoint | null {
-  if (!points.length) return null;
-  let lo = 0;
-  let hi = points.length - 1;
-  while (lo < hi) {
-    const mid = Math.floor((lo + hi) / 2);
-    if (points[mid]!.timestamp < ts) lo = mid + 1;
-    else hi = mid;
-  }
-  const a = points[lo]!;
-  const b = lo > 0 ? points[lo - 1]! : null;
-  if (!b) return a;
-  return Math.abs(a.timestamp - ts) <= Math.abs(b.timestamp - ts) ? a : b;
+function formatMacroTooltipTime(ymd: string): string {
+  const t = ymd.trim().slice(0, 10);
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(t);
+  if (!m) return t;
+  const y = Number(m[1]);
+  const mo = Number(m[2]) - 1;
+  const day = Number(m[3]);
+  const d = new Date(Date.UTC(y, mo, day));
+  if (!Number.isFinite(d.getTime())) return t;
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
 }
 
 type TipState = {
@@ -108,17 +78,25 @@ type TipState = {
   y: number;
   side: "left" | "right";
   periodLabel: string;
-  value: string;
+  valueLabel: string;
 };
 
-function FearGreedHistoryLineChart({
+function MacroProminentLineChart({
+  title,
+  kind,
   points,
-  range,
-  loading,
+  rangeId,
+  height,
+  animateOnAppear = true,
+  prominent = true,
 }: {
-  points: CryptoFearGreedHistoryPoint[];
-  range: FearGreedChartRange;
-  loading: boolean;
+  title: string;
+  kind: MacroValueKind;
+  points: Array<{ time: string; value: number }>;
+  rangeId: MacroRangeId;
+  height: number;
+  animateOnAppear?: boolean;
+  prominent?: boolean;
 }) {
   const areaGradientId = useId();
   const lineEnterClipId = useId();
@@ -129,21 +107,35 @@ function FearGreedHistoryLineChart({
   const [tip, setTip] = useState<TipState | null>(null);
   const [lineRevealProgress, setLineRevealProgress] = useState(0);
 
-  const plotHeight = CHART_HEIGHT_PX - AXIS_ROW_PX - AXIS_BOTTOM_PAD_PX;
-  const horizontalXLabels = HORIZONTAL_X_LABEL_RANGES.has(range);
-
-  const xDomain = useMemo(() => {
-    const xs = points.map((p) => p.timestamp);
-    return {
-      min: xs.length ? Math.min(...xs) : 0,
-      max: xs.length ? Math.max(...xs) : 1,
-    };
+  const cleaned = useMemo(() => {
+    const out = points
+      .filter((p) => typeof p.time === "string" && p.time.trim() && Number.isFinite(p.value))
+      .map((p) => ({ time: p.time.slice(0, 10), value: p.value }));
+    out.sort((a, b) => a.time.localeCompare(b.time));
+    return out;
   }, [points]);
+
+  const values = useMemo(() => cleaned.map((p) => p.value), [cleaned]);
+  const chartingKind = macroKindToChartingKind(kind);
+
+  const yDomain = useMemo(() => {
+    const rawMin = values.length ? Math.min(...values, 0) : 0;
+    const rawMax = values.length ? Math.max(...values) : 1;
+    return buildFundamentalsYAxisDomain(rawMin, rawMax, chartingKind);
+  }, [values, chartingKind]);
+
+  const yMin = yDomain.min;
+  const yMax = yDomain.max;
+  const yTicks = yDomain.ticks;
+  const yBipolar = yDomain.bipolar;
+
+  const plotHeight = height - AXIS_ROW_PX - AXIS_BOTTOM_PAD_PX;
+  const yAxisWidthPx = prominent ? FUNDAMENTALS_CHART_Y_AXIS_W_PX : 50;
+  const n = cleaned.length;
 
   const lineSvg = useMemo(() => {
     const w = plotPx.w;
     const h = plotPx.h;
-    const n = points.length;
     if (n < 2 || w <= 0 || h <= 0) {
       return {
         d: "",
@@ -160,9 +152,9 @@ function FearGreedHistoryLineChart({
     const innerH = Math.max(1, h - padT - padB);
     const areaFloorY = h;
 
-    const pts = points.map((p, i) => {
-      const x = scaleLinear(p.timestamp, xDomain.min, xDomain.max, 0, w);
-      const bandTop = valueToPlotBandTopPercent(p.value, Y_MIN, Y_MAX);
+    const pts = cleaned.map((p, i) => {
+      const x = n <= 1 ? w / 2 : (i / (n - 1)) * w;
+      const bandTop = valueToPlotBandTopPercent(p.value, yMin, yMax);
       const y = padT + innerH * (bandTop / 100);
       return { x, y, v: p.value, i };
     });
@@ -178,24 +170,13 @@ function FearGreedHistoryLineChart({
       pts,
       lastPt: last ? { x: last.x, y: last.y } : null,
     };
-  }, [plotPx.h, plotPx.w, points, xDomain.max, xDomain.min]);
+  }, [cleaned, n, plotPx.h, plotPx.w, yMax, yMin]);
 
-  const xTicks = useMemo(() => {
-    if (points.length < 2) return [];
-    const tickCount = range === "1M" ? 6 : 7;
-    return Array.from({ length: tickCount }, (_, i) => {
-      const t = i / (tickCount - 1);
-      const ts = xDomain.min + t * (xDomain.max - xDomain.min);
-      const label =
-        range === "5Y" || range === "ALL"
-          ? fmtYear(ts)
-          : range === "6M" || range === "1Y" || range === "YTD"
-            ? fmtMonth(ts)
-            : fmtMonthDay(ts);
-      const leftPct = t * 100;
-      return { ts, leftPct, label };
-    });
-  }, [points.length, range, xDomain.max, xDomain.min]);
+  const axisLabelIndexSet = useMemo(() => new Set(macroAxisLabelIndices(n, 8)), [n]);
+  const axisGranularity = useMemo(() => {
+    if (!n) return "year" as const;
+    return macroChartAxisGranularity(rangeId, cleaned[0]!.time, cleaned[n - 1]!.time);
+  }, [cleaned, n, rangeId]);
 
   useLayoutEffect(() => {
     const el = linePlotRef.current;
@@ -208,10 +189,12 @@ function FearGreedHistoryLineChart({
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [points.length, range]);
+  }, [n, plotHeight]);
+
+  const shouldAnimateLine = animateOnAppear && n >= 2 && plotPx.w > 0;
 
   useEffect(() => {
-    if (loading || points.length < 2 || plotPx.w <= 0) {
+    if (!shouldAnimateLine) {
       setLineRevealProgress(1);
       return;
     }
@@ -223,10 +206,17 @@ function FearGreedHistoryLineChart({
       },
       onComplete: () => setLineRevealProgress(1),
     });
-  }, [loading, points, range, plotPx.w]);
+  }, [shouldAnimateLine, animateOnAppear, n, points, plotPx.w]);
 
-  const shouldAnimateLine = !loading && points.length >= 2 && plotPx.w > 0;
   const hoveredPt = hoveredIndex != null ? lineSvg.pts[hoveredIndex] : undefined;
+  const lineHoverCrosshair =
+    hoveredPt != null
+      ? {
+          left: hoveredPt.x,
+          top: plotHeight * PLOT_INSET_TOP_FRAC,
+          height: plotHeight * (1 - PLOT_INSET_TOP_FRAC - PLOT_INSET_BOTTOM_FRAC),
+        }
+      : null;
 
   const clearHover = useCallback(() => {
     setHoveredIndex(null);
@@ -237,16 +227,12 @@ function FearGreedHistoryLineChart({
     (e: MouseEvent<HTMLDivElement>) => {
       const plot = plotAreaRef.current;
       const lineEl = linePlotRef.current;
-      if (!plot || !lineEl || points.length < 2 || plotPx.w <= 0) return;
+      if (!plot || !lineEl || n < 2 || plotPx.w <= 0) return;
 
       const plotR = plot.getBoundingClientRect();
       const lineR = lineEl.getBoundingClientRect();
       const x = clamp(e.clientX - lineR.left, 0, plotPx.w);
-      const ts = scaleLinear(x, 0, plotPx.w, xDomain.min, xDomain.max);
-      const pt = nearestPointByTs(points, ts);
-      if (!pt) return;
-
-      const idx = points.indexOf(pt);
+      const idx = clamp(Math.round((x / Math.max(1, plotPx.w)) * (n - 1)), 0, n - 1);
       const svgPt = lineSvg.pts[idx];
       if (!svgPt) return;
 
@@ -255,29 +241,28 @@ function FearGreedHistoryLineChart({
         focusX,
         Math.max(1, Math.floor(plotR.width)),
       );
+      const point = cleaned[idx];
+      if (!point) return;
 
       setHoveredIndex(idx);
       setTip({
         anchorX,
         y: e.clientY - plotR.top,
         side,
-        periodLabel: fmtDate(pt.timestamp),
-        value: String(pt.value),
+        periodLabel: formatMacroTooltipTime(point.time),
+        valueLabel: formatMacroValue(kind, point.value),
       });
     },
-    [lineSvg.pts, plotPx.w, points, xDomain.max, xDomain.min],
+    [cleaned, kind, lineSvg.pts, n, plotPx.w],
   );
 
-  if (loading) {
+  if (n < 2) {
     return (
-      <div className="flex h-[400px] items-center justify-center text-[14px] text-[#71717A]">Loading…</div>
-    );
-  }
-
-  if (points.length < 2) {
-    return (
-      <div className="flex h-[400px] items-center justify-center text-[14px] text-[#71717A]">
-        No history available.
+      <div
+        className="flex w-full items-center justify-center rounded-xl border border-dashed border-[#E4E4E7] bg-[#FAFAFA] text-[13px] text-[#71717A]"
+        style={{ height }}
+      >
+        No data
       </div>
     );
   }
@@ -286,7 +271,7 @@ function FearGreedHistoryLineChart({
     <div className="w-full min-w-0 max-w-full overflow-visible">
       <div
         className="relative flex w-full min-w-0 max-w-full flex-col overflow-visible"
-        style={{ height: CHART_HEIGHT_PX }}
+        style={{ height }}
       >
         <div className="flex min-h-0 w-full min-w-0 flex-1" style={{ height: plotHeight }}>
           <div
@@ -301,20 +286,23 @@ function FearGreedHistoryLineChart({
             >
               <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
               <div
-                className="absolute inset-x-0 bottom-0 border-t"
-                style={{ borderColor: FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER }}
-                aria-hidden
+                className="absolute inset-x-0 border-t"
+                style={{
+                  borderColor: FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER,
+                  top: yBipolar ? `${valueToPlotBandTopPercent(0, yMin, yMax)}%` : undefined,
+                  bottom: yBipolar ? undefined : 0,
+                }}
               />
             </div>
 
-            {hoveredPt ? (
+            {lineHoverCrosshair ? (
               <div
                 aria-hidden
                 className={cn("pointer-events-none absolute z-[1] w-0", LINE_HOVER_CROSSHAIR_CLASS)}
                 style={{
-                  left: hoveredPt.x,
-                  top: plotHeight * PLOT_INSET_TOP_FRAC,
-                  height: plotHeight * (1 - PLOT_INSET_TOP_FRAC - PLOT_INSET_BOTTOM_FRAC),
+                  left: lineHoverCrosshair.left,
+                  top: lineHoverCrosshair.top,
+                  height: lineHoverCrosshair.height,
                 }}
               />
             ) : null}
@@ -323,7 +311,7 @@ function FearGreedHistoryLineChart({
               ref={linePlotRef}
               className="absolute inset-x-0 top-[8%] bottom-[4%] z-0 min-h-0 w-full min-w-0"
               role="img"
-              aria-label="Fear & Greed history"
+              aria-label={`${title} line chart`}
             >
               {lineSvg.d ? (
                 <svg
@@ -372,7 +360,7 @@ function FearGreedHistoryLineChart({
                     <path
                       d={lineSvg.d}
                       fill="none"
-                      stroke={FEAR_GREED_LINE_COLOR}
+                      stroke={SERIES_COLOR}
                       strokeWidth={MULTICHART_LINE_STROKE_WIDTH_PX}
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -392,7 +380,7 @@ function FearGreedHistoryLineChart({
                         cy={lineSvg.pts[hoveredIndex]!.y}
                         r={CHARTING_LINE_POINT_MARKER_RADIUS_PX}
                         fill="white"
-                        stroke={FEAR_GREED_LINE_COLOR}
+                        stroke={SERIES_COLOR}
                         strokeWidth={CHARTING_LINE_POINT_MARKER_BORDER_PX}
                         className="pointer-events-none"
                       />
@@ -404,7 +392,7 @@ function FearGreedHistoryLineChart({
                       cy={lineSvg.lastPt.y}
                       r={CHARTING_LINE_POINT_MARKER_RADIUS_PX}
                       fill="white"
-                      stroke={FEAR_GREED_LINE_COLOR}
+                      stroke={SERIES_COLOR}
                       strokeWidth={CHARTING_LINE_POINT_MARKER_BORDER_PX}
                       className="pointer-events-none"
                     />
@@ -444,15 +432,15 @@ function FearGreedHistoryLineChart({
                     <span className="flex min-w-0 items-baseline gap-2">
                       <span
                         className="h-2.5 w-2.5 shrink-0 rounded-full"
-                        style={{ backgroundColor: FEAR_GREED_LINE_COLOR }}
+                        style={{ backgroundColor: SERIES_COLOR }}
                         aria-hidden
                       />
                       <span className="truncate text-[12px] font-normal leading-4 text-[#71717A]">
-                        Fear &amp; Greed Index
+                        {title}
                       </span>
                     </span>
                     <span className="shrink-0 text-[12px] font-semibold leading-4 tabular-nums text-[#09090B]">
-                      {tip.value}
+                      {tip.valueLabel}
                     </span>
                   </div>
                 </div>
@@ -463,19 +451,19 @@ function FearGreedHistoryLineChart({
           <div
             className={cn(
               "relative h-full shrink-0 text-left font-['Inter'] text-[12px] tabular-nums leading-none text-[#71717A]",
-              FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS,
+              prominent ? FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS : "pl-3",
             )}
-            style={{ width: FUNDAMENTALS_CHART_Y_AXIS_W_PX }}
+            style={{ width: yAxisWidthPx }}
             aria-hidden
           >
             <div className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%]">
-              {Y_TICKS.map((t, i) => (
+              {yTicks.map((t, i) => (
                 <span
                   key={i}
                   className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-white px-1 py-px"
-                  style={{ top: `${valueToPlotBandTopPercent(t, Y_MIN, Y_MAX)}%` }}
+                  style={{ top: `${valueToPlotBandTopPercent(t, yMin, yMax)}%` }}
                 >
-                  {t}
+                  {formatFundamentalsAxisTickLabel(chartingKind, t)}
                 </span>
               ))}
             </div>
@@ -484,33 +472,34 @@ function FearGreedHistoryLineChart({
 
         <div className="flex w-full min-w-0 overflow-visible" style={{ height: AXIS_ROW_PX }}>
           <div className="relative mb-1 min-w-0 flex-1 px-0" style={{ height: AXIS_ROW_PX }}>
-            {xTicks.map((t, idx) => (
-              <div
-                key={`${t.ts}-${idx}`}
-                className={cn(
-                  "absolute flex max-w-[min(100%,4.5rem)] -translate-x-1/2 justify-center overflow-visible",
-                  horizontalXLabels ? "top-1.5" : "bottom-0.5",
-                )}
-                style={{ left: `${t.leftPct}%` }}
-                title={t.label}
-              >
-                <span
-                  className="inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]"
-                  style={{
-                    transform: horizontalXLabels
-                      ? undefined
-                      : `rotate(${FUNDAMENTALS_CHART_AXIS_LABEL_ROTATE_DEG}deg)`,
-                    transformOrigin: horizontalXLabels ? undefined : "center bottom",
-                  }}
+            {cleaned.map((pt, i) => {
+              const show = axisLabelIndexSet.has(i);
+              const leftPct = n <= 1 ? 50 : (i / (n - 1)) * 100;
+              return (
+                <div
+                  key={`axis-${pt.time}-${i}`}
+                  className="absolute bottom-0 flex min-h-0 -translate-x-1/2 items-end justify-center overflow-visible px-0.5 pb-0.5"
+                  style={{ left: `${leftPct}%`, maxWidth: "4.5rem" }}
+                  title={formatMacroTooltipTime(pt.time)}
                 >
-                  {t.label}
-                </span>
-              </div>
-            ))}
+                  {show ? (
+                    <span
+                      className="inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]"
+                      style={{
+                        transform: `rotate(${FUNDAMENTALS_CHART_AXIS_LABEL_ROTATE_DEG}deg)`,
+                        transformOrigin: "center bottom",
+                      }}
+                    >
+                      {formatMacroAxisLabel(pt.time, axisGranularity)}
+                    </span>
+                  ) : null}
+                </div>
+              );
+            })}
           </div>
           <div
-            className={cn("shrink-0", FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS)}
-            style={{ width: FUNDAMENTALS_CHART_Y_AXIS_W_PX }}
+            className={cn("shrink-0", prominent && FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS)}
+            style={{ width: yAxisWidthPx }}
             aria-hidden
           />
         </div>
@@ -520,116 +509,52 @@ function FearGreedHistoryLineChart({
   );
 }
 
-export function CryptoFearGreedModal({
-  open,
-  onClose,
-  latestValue,
-  latestLabel,
+export function MacroSparklineProminent({
+  title,
+  kind,
+  points,
+  rangeId,
+  height,
+  heightMode,
+  variant,
+  animateOnAppear = true,
+  prominent = true,
 }: {
-  open: boolean;
-  onClose: () => void;
-  latestValue: number | null;
-  latestLabel: string;
+  title: string;
+  kind: MacroValueKind;
+  points: Array<{ time: string; value: number }>;
+  rangeId: MacroRangeId;
+  height: number;
+  heightMode: "svg" | "total";
+  variant: MacroChartVariant;
+  animateOnAppear?: boolean;
+  prominent?: boolean;
 }) {
-  const titleId = useId();
-  const [range, setRange] = useState<FearGreedChartRange>("1M");
-  const [loading, setLoading] = useState(false);
-  const [allPoints, setAllPoints] = useState<CryptoFearGreedHistoryPoint[]>([]);
+  const totalHeight = heightMode === "total" ? height : height + AXIS_ROW_PX + AXIS_BOTTOM_PAD_PX;
 
-  const onKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    },
-    [onClose],
-  );
-
-  useEffect(() => {
-    if (!open) return;
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [open, onKeyDown]);
-
-  useEffect(() => {
-    if (!open) return;
-    let cancelled = false;
-    setLoading(true);
-    fetch("/api/crypto/fear-greed?limit=0", { credentials: "include" })
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("Request failed"))))
-      .then((data: { points?: CryptoFearGreedHistoryPoint[] }) => {
-        if (cancelled) return;
-        setAllPoints(Array.isArray(data.points) ? data.points : []);
-      })
-      .catch(() => {
-        if (!cancelled) setAllPoints([]);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [open]);
-
-  const points = useMemo(() => {
-    if (!allPoints.length) return [];
-    if (range === "ALL") return allPoints;
-
-    const lastTs = allPoints[allPoints.length - 1]!.timestamp;
-    const lastDate = new Date(lastTs * 1000);
-    const start = (() => {
-      if (range === "1M") return lastTs - 30 * 24 * 60 * 60;
-      if (range === "6M") return lastTs - 183 * 24 * 60 * 60;
-      if (range === "YTD") return Math.floor(Date.UTC(lastDate.getUTCFullYear(), 0, 1) / 1000);
-      if (range === "1Y") return lastTs - 365 * 24 * 60 * 60;
-      if (range === "5Y") return lastTs - 5 * 365 * 24 * 60 * 60;
-      return lastTs - 30 * 24 * 60 * 60;
-    })();
-
-    return allPoints.filter((p) => p.timestamp >= start);
-  }, [allPoints, range]);
-
-  if (!open) return null;
+  if (variant === "bar") {
+    return (
+      <MacroSparklineBars
+        title={title}
+        kind={kind}
+        points={points}
+        height={totalHeight}
+        rangeId={rangeId}
+        animateBarsOnAppear={animateOnAppear}
+        prominent={prominent}
+      />
+    );
+  }
 
   return (
-    <AppModalOverlay open={open} onClose={onClose} zIndex={300}>
-      <AppModalShell
-        titleId={titleId}
-        maxWidthClass="w-full max-w-[min(960px,calc(100vw-2rem))]"
-        maxHeightClass="max-h-[min(92vh,900px)]"
-        bodyScroll={false}
-        header={
-          <div className="flex w-full items-center justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <h2 id={titleId} className="truncate text-[18px] font-semibold leading-7 text-[#09090B]">
-                Fear &amp; Greed Index
-              </h2>
-            </div>
-            <AppModalCloseButton onClick={onClose} />
-          </div>
-        }
-        headerClassName="px-5 py-4"
-        bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
-        cardClassName="overflow-hidden border-0 shadow-none"
-      >
-        <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-[#E4E4E7] px-5 pt-5 pb-3">
-          <p className="min-w-0 text-[18px] font-semibold leading-7 text-[#09090B]">
-            {latestLabel}: {latestValue == null ? "—" : latestValue}
-          </p>
-          <TabSwitcher
-            size="sm"
-            options={FEAR_GREED_RANGE_TAB_OPTIONS}
-            value={range}
-            onChange={setRange}
-            aria-label="Date range"
-          />
-        </div>
-
-        <div className="min-h-0 flex-1 px-5 py-4">
-          <FearGreedHistoryLineChart key={range} points={points} range={range} loading={loading} />
-        </div>
-      </AppModalShell>
-    </AppModalOverlay>
+    <MacroProminentLineChart
+      title={title}
+      kind={kind}
+      points={points}
+      rangeId={rangeId}
+      height={totalHeight}
+      animateOnAppear={animateOnAppear}
+      prominent={prominent}
+    />
   );
 }

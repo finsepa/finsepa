@@ -5,7 +5,11 @@ import { Maximize2, TrendingDown, TrendingUp } from "@/lib/icons";
 
 import { MacroChartModal } from "@/components/macro/macro-chart-modal";
 import { MacroSparkline, type MacroChartVariant } from "@/components/macro/macro-sparkline";
-import type { MacroRangeId } from "@/components/macro/macro-range";
+import {
+  macroModelForWindow,
+  prepareMacroPointsForRange,
+  type MacroRangeId,
+} from "@/components/macro/macro-range";
 import { formatMacroChange, formatMacroPeriodCaption, formatMacroValue } from "@/components/macro/macro-format";
 import {
   EARNINGS_CARD_LABEL_CLASS,
@@ -26,7 +30,7 @@ export type MacroCardModel = {
 
 export function MacroCard({
   model,
-  chartVariant = "area",
+  chartVariant = "bar",
   rangeId,
 }: {
   model: MacroCardModel;
@@ -35,20 +39,25 @@ export function MacroCard({
 }) {
   const [modalOpen, setModalOpen] = useState(false);
 
-  const latestValue = model.latest?.value ?? null;
-  const latestText = latestValue == null ? "—" : formatMacroValue(model.kind, latestValue);
+  const windowedModel = useMemo(
+    () => macroModelForWindow(model, prepareMacroPointsForRange(model.points, rangeId)),
+    [model, rangeId],
+  );
+
+  const latestValue = windowedModel.latest?.value ?? null;
+  const latestText = latestValue == null ? "—" : formatMacroValue(windowedModel.kind, latestValue);
 
   const changeText = useMemo(() => {
-    if (!model.change) return null;
-    return formatMacroChange(model.kind, model.change.abs, model.change.pct);
-  }, [model.change, model.kind]);
+    if (!windowedModel.change) return null;
+    return formatMacroChange(windowedModel.kind, windowedModel.change.abs, windowedModel.change.pct);
+  }, [windowedModel.change, windowedModel.kind]);
 
   const priorPeriodLabel = useMemo(() => {
-    if (model.points.length < 2) return null;
-    return formatMacroPeriodCaption(model.points[model.points.length - 2]!.time);
-  }, [model.points]);
+    if (windowedModel.points.length < 2) return null;
+    return formatMacroPeriodCaption(windowedModel.points[windowedModel.points.length - 2]!.time);
+  }, [windowedModel.points]);
 
-  const changeDelta = model.change?.abs ?? null;
+  const changeDelta = windowedModel.change?.abs ?? null;
 
   return (
     <>
@@ -88,7 +97,7 @@ export function MacroCard({
         <MacroSparkline
           title={model.title}
           kind={model.kind}
-          points={model.points}
+          points={windowedModel.points}
           height={MULTICHART_CARD_CHART_HEIGHT_PX}
           heightMode="total"
           variant={chartVariant}

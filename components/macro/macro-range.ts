@@ -1,14 +1,13 @@
 import type { MacroCardModel } from "@/components/macro/macro-card";
 
-export type MacroRangeId = "1y" | "2y" | "5y" | "10y" | "all";
+/** Matches {@link FUNDAMENTALS_CHART_TIME_RANGE_ORDER} on stock Multicharts. */
+export type MacroRangeId = "5y" | "10y" | "all";
 
-export const MACRO_RANGE_IDS: MacroRangeId[] = ["1y", "2y", "5y", "10y", "all"];
+export const MACRO_RANGE_IDS: MacroRangeId[] = ["5y", "10y", "all"];
 
 export const DEFAULT_MACRO_RANGE: MacroRangeId = "5y";
 
 export const MACRO_RANGE_LABELS: Record<MacroRangeId, string> = {
-  "1y": "1Y",
-  "2y": "2Y",
   "5y": "5Y",
   "10y": "10Y",
   all: "All",

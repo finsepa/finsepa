@@ -1,26 +1,34 @@
 "use client";
 
 import { useCallback, useEffect, useId, useMemo, useState } from "react";
-import { SegmentedControl } from "@/components/design-system";
+import { TabSwitcher } from "@/components/design-system";
 import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
-import { AppModalCloseButton, AppModalShell } from "@/components/ui/app-modal-shell";
-import { cn } from "@/lib/utils";
+import { AppModalShell } from "@/components/ui/app-modal-shell";
 import type { MacroCardModel } from "@/components/macro/macro-card";
 import { formatMacroChange, formatMacroPeriodCaption, formatMacroValue } from "@/components/macro/macro-format";
-import type { MacroRangeId } from "@/components/macro/macro-range";
+import {
+  MACRO_RANGE_IDS,
+  MACRO_RANGE_LABELS,
+  macroModelForWindow,
+  prepareMacroPointsForRange,
+  type MacroRangeId,
+} from "@/components/macro/macro-range";
 import { MacroSparkline, type MacroChartVariant } from "@/components/macro/macro-sparkline";
+import { MultichartVisualSwitcher } from "@/components/stock/multichart-visual-switcher";
 
-const VARIANT_OPTIONS = [
-  { value: "area" as const, label: "Area" },
-  { value: "bar" as const, label: "Bars" },
-];
+const MACRO_MODAL_CHART_HEIGHT_PX = 400;
+
+const RANGE_OPTIONS = MACRO_RANGE_IDS.map((id) => ({
+  value: id,
+  label: MACRO_RANGE_LABELS[id],
+}));
 
 export function MacroChartModal({
   open,
   onClose,
   model,
   chartVariant: initialChartVariant,
-  rangeId,
+  rangeId: pageRangeId,
 }: {
   open: boolean;
   onClose: () => void;
@@ -30,18 +38,31 @@ export function MacroChartModal({
 }) {
   const titleId = useId();
   const [chartVariant, setChartVariant] = useState<MacroChartVariant>(initialChartVariant);
+  const [rangeId, setRangeId] = useState<MacroRangeId>(pageRangeId);
+
+  const windowedModel = useMemo(
+    () => macroModelForWindow(model, prepareMacroPointsForRange(model.points, rangeId)),
+    [model, rangeId],
+  );
 
   const changeText = useMemo(() => {
-    if (!model.change) return null;
-    return formatMacroChange(model.kind, model.change.abs, model.change.pct);
-  }, [model.change, model.kind]);
+    if (!windowedModel.change) return null;
+    return formatMacroChange(windowedModel.kind, windowedModel.change.abs, windowedModel.change.pct);
+  }, [windowedModel.change, windowedModel.kind]);
 
-  const changeTone = model.change?.abs == null ? "text-[#71717A]" : model.change.abs >= 0 ? "text-emerald-700" : "text-red-700";
+  const changeTone =
+    windowedModel.change?.abs == null
+      ? "text-[#71717A]"
+      : windowedModel.change.abs >= 0
+        ? "text-emerald-700"
+        : "text-red-700";
 
-  const periodCaption = model.latest?.time ? formatMacroPeriodCaption(model.latest.time) : null;
+  const periodCaption = windowedModel.latest?.time
+    ? formatMacroPeriodCaption(windowedModel.latest.time)
+    : null;
 
-  const latestValue = model.latest?.value ?? null;
-  const latestText = latestValue == null ? "—" : formatMacroValue(model.kind, latestValue);
+  const latestValue = windowedModel.latest?.value ?? null;
+  const latestText = latestValue == null ? "—" : formatMacroValue(windowedModel.kind, latestValue);
 
   const onKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -61,7 +82,8 @@ export function MacroChartModal({
   useEffect(() => {
     if (!open) return;
     setChartVariant(initialChartVariant);
-  }, [open, initialChartVariant]);
+    setRangeId(pageRangeId);
+  }, [open, initialChartVariant, pageRangeId]);
 
   if (!open) return null;
 
@@ -69,46 +91,54 @@ export function MacroChartModal({
     <AppModalOverlay open={open} onClose={onClose} zIndex={300}>
       <AppModalShell
         titleId={titleId}
+        title={model.title}
+        onClose={onClose}
         maxWidthClass="w-full max-w-[min(960px,calc(100vw-2rem))]"
         maxHeightClass="max-h-[min(92vh,900px)]"
         bodyScroll={false}
-        header={
-          <div className="flex w-full items-center justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <h2 id={titleId} className="truncate text-[18px] font-semibold leading-7 text-[#09090B]">
-                {model.title}
-              </h2>
-              <div className="mt-0 flex flex-wrap items-baseline gap-x-2 gap-y-0">
-                <span className="text-[18px] font-semibold leading-6 tracking-tight text-[#09090B] tabular-nums">{latestText}</span>
-                {changeText ? (
-                  <span className={`text-[12px] font-medium leading-5 tabular-nums ${changeTone}`}>{changeText}</span>
-                ) : null}
-              </div>
-              {periodCaption ? <p className="mt-1 text-[12px] leading-4 text-[#71717A]">{periodCaption}</p> : null}
-            </div>
-            <AppModalCloseButton onClick={onClose} />
-          </div>
-        }
-        headerClassName="border-b border-[#E4E4E7] px-5 py-4"
+        headerClassName="px-5 py-4"
         bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
         cardClassName="overflow-hidden"
       >
-        <div className="flex shrink-0 flex-wrap items-center justify-end gap-x-3 gap-y-2 border-b border-[#E4E4E7] px-5 py-3">
-          <SegmentedControl
-            options={VARIANT_OPTIONS}
-            value={chartVariant}
-            onChange={setChartVariant}
-            aria-label="Chart type"
-          />
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-[#E4E4E7] px-5 pt-5 pb-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0">
+              <span className="text-[18px] font-semibold leading-6 tracking-tight text-[#09090B] tabular-nums">
+                {latestText}
+              </span>
+              {changeText ? (
+                <span className={`text-[12px] font-medium leading-5 tabular-nums ${changeTone}`}>
+                  {changeText}
+                </span>
+              ) : null}
+            </div>
+            {periodCaption ? (
+              <p className="mt-1 text-[12px] leading-4 text-[#71717A]">{periodCaption}</p>
+            ) : null}
+          </div>
+          <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+            <MultichartVisualSwitcher
+              variant="icon"
+              value={chartVariant === "bar" ? "bar" : "line"}
+              onChange={(next) => setChartVariant(next === "bar" ? "bar" : "area")}
+            />
+            <TabSwitcher
+              size="sm"
+              options={RANGE_OPTIONS}
+              value={rangeId}
+              onChange={setRangeId}
+              aria-label="Date range"
+            />
+          </div>
         </div>
         <div className="min-h-0 flex-1 overflow-hidden px-5 py-4">
           <div className="min-w-0">
             <MacroSparkline
               title={model.title}
               kind={model.kind}
-              points={model.points}
+              points={windowedModel.points}
               rangeId={rangeId}
-              height={360}
+              height={MACRO_MODAL_CHART_HEIGHT_PX}
               variant={chartVariant}
               visualWeight="prominent"
               heightMode="total"
