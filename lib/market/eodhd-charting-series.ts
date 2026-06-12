@@ -14,6 +14,12 @@ import {
 import { dividendYieldRatioFromFundamentalsRoot } from "@/lib/market/eodhd-key-stats-dividends";
 import { livePeRatioPartsFromFundamentalsRoot } from "@/lib/market/eodhd-key-stats-valuation";
 import { fetchEodhdFundamentalsJson } from "@/lib/market/eodhd-fundamentals";
+import {
+  type EarningsActualByPeriod,
+  fetchFundamentalsRootForMetrics,
+  overlayReportedEarningsOnChartingPoints,
+  resolveReportedEarningsActuals,
+} from "@/lib/market/earnings-reported-actuals-overlay";
 import { limitFundamentalsHistoryPoints } from "@/lib/market/fundamentals-history-limit";
 import {
   CHARTING_METRIC_FIELD,
@@ -1607,8 +1613,11 @@ function emptyPoint(periodEnd: string): ChartingSeriesPoint {
 export function buildChartingPointsFromFundamentalsRoot(
   root: Record<string, unknown>,
   mode: FundamentalsSeriesMode,
+  earningsActuals?: EarningsActualByPeriod | null,
 ): ChartingSeriesPoint[] {
-  return buildMergedPoints(root, mode) ?? [];
+  const points = buildMergedPoints(root, mode);
+  if (!points?.length) return [];
+  return finalizeChartingPointsWithEarningsOverlay(points, root, mode, earningsActuals ?? new Map());
 }
 
 function getFinancialStatementRoot(
@@ -1748,6 +1757,81 @@ function buildMergedPoints(root: Record<string, unknown>, mode: FundamentalsSeri
   return out.length ? limitFundamentalsHistoryPoints(out, mode) : null;
 }
 
+/**
+ * After earnings overlay — merge income / BS / CF / ratios so statement fields
+ * (e.g. operating income) populate when EODHD income rows exist but overlay only set revenue/EPS.
+ */
+function enrichChartingPointsFromFinancialStatements(
+  points: ChartingSeriesPoint[],
+  root: Record<string, unknown>,
+  mode: FundamentalsSeriesMode,
+): ChartingSeriesPoint[] {
+  const isBlock = getFinancialBlock(root, "Income_Statement", mode);
+  if (!isBlock) return points;
+
+  const bsBlock = getFinancialBlock(root, "Balance_Sheet", mode);
+  const cfBlock = getFinancialBlock(root, "Cash_Flow", mode);
+  const ratiosBlock = getRatiosBlock(root, mode);
+
+  const out: ChartingSeriesPoint[] = [];
+  for (const p of points) {
+    const isRow = findRowForPeriodKey(p.periodEnd, isBlock, mode);
+    if (!isRow) {
+      out.push(p);
+      continue;
+    }
+
+    const next = { ...p };
+    mergeIncomeRow(next, isRow);
+    if (bsBlock) {
+      const bsRow = findRowForPeriodKey(p.periodEnd, bsBlock, mode);
+      if (bsRow) mergeBalanceRow(next, bsRow);
+    }
+    if (cfBlock) {
+      const cfRow = findRowForPeriodKey(p.periodEnd, cfBlock, mode);
+      if (cfRow) mergeCashFlowRow(next, cfRow);
+    }
+    if (ratiosBlock) {
+      const rr = findRowForPeriodKey(p.periodEnd, ratiosBlock, mode);
+      if (rr) mergeRatiosRow(next, rr);
+    }
+
+    fillDerivedMarketCap(next);
+    computeDerivedMarginsAndReturns(next);
+    fillDerivedEpsBasicIfMissing(next, isRow);
+    fillDerivedEpsIfMissing(next);
+    fillDerivedDividendsPerShare(next);
+    fillDerivedValuationMultiples(next);
+    fillDerivedRatioTableFields(next);
+    fillDerivedEnterpriseValue(next);
+    fillDerivedForwardPe(next);
+    out.push(next);
+  }
+
+  return out;
+}
+
+function finalizeChartingPointsWithEarningsOverlay(
+  points: ChartingSeriesPoint[],
+  root: Record<string, unknown>,
+  mode: FundamentalsSeriesMode,
+  earningsActuals: EarningsActualByPeriod,
+): ChartingSeriesPoint[] {
+  let out = points;
+  if (earningsActuals.size > 0) {
+    out = overlayReportedEarningsOnChartingPoints(
+      out,
+      earningsActuals,
+      mode,
+      computeGrowthSeries,
+      limitFundamentalsHistoryPoints,
+    );
+  }
+  out = enrichChartingPointsFromFinancialStatements(out, root, mode);
+  computeGrowthSeries(out, mode);
+  return limitFundamentalsHistoryPoints(out, mode);
+}
+
 function metricHasSeries(points: ChartingSeriesPoint[], id: ChartingMetricId): boolean {
   const field = CHARTING_METRIC_FIELD[id];
   if (!field) return false;
@@ -1772,12 +1856,14 @@ async function fetchChartingSeriesUncached(
   ticker: string,
   mode: FundamentalsSeriesMode,
 ): Promise<ChartingSeriesBundle | null> {
-  const root = await fetchEodhdFundamentalsJson(ticker);
+  const root = await fetchFundamentalsRootForMetrics(ticker);
   if (!root) return null;
 
   const rootRec = root as Record<string, unknown>;
-  const points = buildMergedPoints(rootRec, mode);
+  const earningsActuals = await resolveReportedEarningsActuals(rootRec, ticker);
+  let points = buildMergedPoints(rootRec, mode);
   if (!points?.length) return null;
+  points = finalizeChartingPointsWithEarningsOverlay(points, rootRec, mode, earningsActuals);
 
   await enrichChartingPointsWithPriceImpliedMarketCap(ticker, points);
   enrichChartingPointsWithTrailingPeFromImpliedMarketCap(points);
@@ -1794,6 +1880,6 @@ async function fetchChartingSeriesUncached(
 
 export const fetchChartingSeries = unstable_cache(
   fetchChartingSeriesUncached,
-  ["eodhd-charting-series-v23-derived-dividend-yield"],
+  ["eodhd-charting-series-v26-statement-enrich"],
   { revalidate: REVALIDATE_WARM },
 );

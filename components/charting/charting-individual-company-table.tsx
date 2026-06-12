@@ -82,10 +82,20 @@ function metricColor(
   return metricColors?.get(id) ?? fundamentalsBarSolidAtIndex(metricIndex);
 }
 
+/** Sticky metric column — fixed cap when few period columns; All stays content-sized. */
+const CHARTING_TABLE_FIRST_COL_ALL_CLASS = "min-w-[11rem]";
+const CHARTING_TABLE_FIRST_COL_CAPPED_CLASS = "w-[12.5rem] min-w-[12.5rem] max-w-[12.5rem]";
+
+function chartingTableFirstColClass(timeRange: Props["timeRange"]): string {
+  return timeRange === "all" ? CHARTING_TABLE_FIRST_COL_ALL_CLASS : CHARTING_TABLE_FIRST_COL_CAPPED_CLASS;
+}
+
 type Props = {
   ordered: ChartingSeriesPoint[];
   selected: ChartingMetricId[];
   periodMode: "annual" | "quarterly";
+  /** When not `all`, caps sticky metric column width so it does not stretch on sparse ranges (e.g. 1Y). */
+  timeRange?: "1Y" | "2Y" | "3Y" | "5Y" | "10Y" | "all";
   /** Matches chart legend, e.g. `RACE Revenue`. */
   ticker?: string;
   metricColors?: Map<ChartingMetricId, string>;
@@ -102,6 +112,7 @@ export function ChartingIndividualCompanyTable({
   ordered,
   selected,
   periodMode,
+  timeRange,
   ticker,
   metricColors,
   isBarValuesVisible,
@@ -109,6 +120,8 @@ export function ChartingIndividualCompanyTable({
   className,
 }: Props) {
   if (!ordered.length || !selected.length) return null;
+
+  const firstColClass = chartingTableFirstColClass(timeRange);
 
   return (
     <div
@@ -122,7 +135,10 @@ export function ChartingIndividualCompanyTable({
           <tr className="border-t border-b border-[#E4E4E7] bg-white">
             <th
               scope="col"
-              className="sticky left-0 z-[1] min-w-[11rem] bg-white px-3 py-2.5 text-left align-middle text-[14px] font-semibold leading-5 text-[#71717A] relative after:pointer-events-none after:absolute after:top-0 after:right-0 after:h-full after:w-px after:bg-[#E4E4E7]"
+              className={cn(
+                "sticky left-0 z-[1] bg-white px-3 py-2.5 text-left align-middle text-[14px] font-semibold leading-5 text-[#71717A] relative after:pointer-events-none after:absolute after:top-0 after:right-0 after:h-full after:w-px after:bg-[#E4E4E7]",
+                firstColClass,
+              )}
             >
               Data
             </th>
@@ -146,7 +162,12 @@ export function ChartingIndividualCompanyTable({
                 key={id}
                 className="h-[60px] max-h-[60px] border-b border-[#E4E4E7] transition-colors duration-75 hover:bg-neutral-50"
               >
-                <td className="relative sticky left-0 z-[1] bg-white px-3 align-middle after:pointer-events-none after:absolute after:top-0 after:right-0 after:h-full after:w-px after:bg-[#E4E4E7]">
+                <td
+                  className={cn(
+                    "relative sticky left-0 z-[1] bg-white px-3 align-middle after:pointer-events-none after:absolute after:top-0 after:right-0 after:h-full after:w-px after:bg-[#E4E4E7]",
+                    firstColClass,
+                  )}
+                >
                   <div className="flex min-w-0 items-center gap-2.5 py-0.5 pr-0.5">
                     <span
                       className="h-4 w-1 shrink-0 rounded-full"

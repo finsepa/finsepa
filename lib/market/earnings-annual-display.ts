@@ -185,7 +185,9 @@ export function applyDerivedEpsToForwardEstimates(
   calibrationSource?: StockEarningsEstimatesPoint[],
 ): StockEarningsEstimatesPoint[] {
   const todayYmd = todayYmdUtc();
-  const ratio = medianEpsPerRevenueRatio(calibrationSource ?? points, todayYmd);
+  const ratio =
+    (calibrationSource ? medianEpsPerRevenueRatio(calibrationSource, todayYmd) : null) ??
+    medianEpsPerRevenueRatio(points, todayYmd);
   if (ratio == null || !Number.isFinite(ratio) || ratio <= 0) return points;
 
   return points.map((p) => {

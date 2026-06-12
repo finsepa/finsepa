@@ -2,6 +2,11 @@ import "server-only";
 
 import { getSecEdgarUserAgent } from "@/lib/env/server";
 import { normalizeSecCik } from "@/lib/market/earnings-report-external-links";
+import {
+  applyRevenueUsdToHistoryRow,
+  extractTotalRevenueUsdFromPressReleaseHtml,
+  pickExhibit99PressReleaseHtmlUrl,
+} from "@/lib/market/sec-earnings-press-release-revenue";
 import type { StockEarningsHistoryRow } from "@/lib/market/stock-earnings-types";
 
 const SEC_ORIGIN = "https://www.sec.gov";
@@ -279,6 +284,8 @@ export async function enrichEarningsHistoryWithSecDocuments(
   }
 
   const next = rows.map((r) => ({ ...r }));
+  const revenueExhibits: { idx: number; url: string }[] = [];
+
   for (const m of matches) {
     const row = next[m.idx]!;
     const cached = cache.get(m.accession);
@@ -296,6 +303,75 @@ export async function enrichEarningsHistoryWithSecDocuments(
     const { slides, filings } = pickEarningsSlideAndFilingPdfs(pdfs);
     if (slides) row.secSlidesUrl = slides;
     if (filings) row.secFilingsUrl = filings;
+
+    if (row.reported && row.revenueActualUsd == null) {
+      const exhibitUrl = pickExhibit99PressReleaseHtmlUrl(html, cikNum, flat);
+      if (exhibitUrl) revenueExhibits.push({ idx: m.idx, url: exhibitUrl });
+    }
+  }
+
+  for (const { idx, url } of revenueExhibits) {
+    const exHtml = await secFetchText(url);
+    await sleep(INDEX_FETCH_DELAY_MS);
+    const rev = exHtml ? extractTotalRevenueUsdFromPressReleaseHtml(exHtml) : null;
+    if (rev != null) next[idx] = applyRevenueUsdToHistoryRow(next[idx]!, rev);
+  }
+
+  return next;
+}
+
+/**
+ * When EODHD ships `epsActual` before quarterly income statements / revenue fields, parse
+ * Exhibit 99.1 press releases from the nearest Form 8-K. Used in preview mode (no PDF crawl).
+ */
+export async function enrichReportedHistoryRevenueFromSec8k(
+  rows: StockEarningsHistoryRow[],
+  cikRaw: string | null,
+  options?: { maxRows?: number },
+): Promise<StockEarningsHistoryRow[]> {
+  const cik10 = normalizeSecCik(cikRaw);
+  if (!cik10) return rows;
+
+  const body = await secFetchText(submissionsJsonUrl(cik10));
+  if (!body) return rows;
+  let root: unknown;
+  try {
+    root = JSON.parse(body) as unknown;
+  } catch {
+    return rows;
+  }
+
+  const recent = parseSubmissionsRecent(root);
+  if (!recent) return rows;
+
+  const cikNum = cikToNumericPathSegment(cik10);
+  const maxRows = options?.maxRows ?? 2;
+  const next = rows.map((r) => ({ ...r }));
+  let enriched = 0;
+
+  for (let i = 0; i < next.length; i++) {
+    if (enriched >= maxRows) break;
+    const row = next[i]!;
+    if (!row.reported || row.revenueActualUsd != null || !row.reportDateYmd) continue;
+
+    const hit = findBestIssuer8kNearReportDate(recent, cik10, row.reportDateYmd);
+    if (!hit) continue;
+
+    const flat = accessionToFlat(hit.accessionNumber);
+    const indexHtml = await secFetchText(filingIndexHtmUrl(cikNum, hit.accessionNumber));
+    await sleep(INDEX_FETCH_DELAY_MS);
+    if (!indexHtml) continue;
+
+    const exhibitUrl = pickExhibit99PressReleaseHtmlUrl(indexHtml, cikNum, flat);
+    if (!exhibitUrl) continue;
+
+    const exHtml = await secFetchText(exhibitUrl);
+    await sleep(INDEX_FETCH_DELAY_MS);
+    const rev = exHtml ? extractTotalRevenueUsdFromPressReleaseHtml(exHtml) : null;
+    if (rev == null) continue;
+
+    next[i] = applyRevenueUsdToHistoryRow(row, rev);
+    enriched += 1;
   }
 
   return next;

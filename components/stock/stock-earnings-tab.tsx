@@ -91,8 +91,15 @@ function buildEarningsMetricSummarySlots(
   const upcomingFallback = metric === "revenue" ? upcomingRevenueFallback : upcomingEpsFallback;
 
   if (period === "quarterly" && chart?.quarterly?.length) {
+    const seenForwardLabels = new Set<string>();
     const forward = sliceLatestQuarterlyEstimates(chart.quarterly)
       .filter((p) => isAnnualForecastPoint(p))
+      .filter((p) => {
+        const key = p.label?.trim() || p.sortKey;
+        if (seenForwardLabels.has(key)) return false;
+        seenForwardLabels.add(key);
+        return true;
+      })
       .slice(0, 2);
     const sliced = sliceLatestQuarterlyEstimates(chart.quarterly);
     const slot = (p: (typeof forward)[number] | undefined, idx: number): EarningsMetricSummarySlot => {

@@ -32,7 +32,7 @@ import { StockCompareReturnChart } from "./stock-compare-return-chart";
 import { KeyStats } from "./key-stats";
 import { KeyStatsMetricChartModal } from "./key-stats-metric-chart-modal";
 import {
-  fetchChartingFundamentalsSeriesCached,
+  revalidateChartingFundamentalsSeriesCached,
   seedChartingFundamentalsSeriesCache,
 } from "@/lib/charting/charting-fundamentals-client-cache";
 import { LatestNews } from "./latest-news";
@@ -346,18 +346,22 @@ export function StockPageContent({
     () => (initialPageData?.ticker === ticker ? initialPageData.fundamentalsSeriesQuarterly : undefined),
     [initialPageData, ticker],
   );
+  const fundamentalsModalTtm = useMemo(
+    () => (initialPageData?.ticker === ticker ? initialPageData.fundamentalsTtmPoint : null),
+    [initialPageData, ticker],
+  );
 
   /** Same fundamentals-series cache as Charting — Key Stats modals (Yield, Revenue, …) read without a loading flash. */
   useEffect(() => {
     if (fundamentalsModalAnnual?.length) {
-      seedChartingFundamentalsSeriesCache(ticker, "annual", fundamentalsModalAnnual);
+      seedChartingFundamentalsSeriesCache(ticker, "annual", fundamentalsModalAnnual, fundamentalsModalTtm);
     }
     if (fundamentalsModalQuarterly?.length) {
       seedChartingFundamentalsSeriesCache(ticker, "quarterly", fundamentalsModalQuarterly);
     }
-    void fetchChartingFundamentalsSeriesCached(ticker, "annual");
-    void fetchChartingFundamentalsSeriesCached(ticker, "quarterly");
-  }, [ticker, fundamentalsModalAnnual, fundamentalsModalQuarterly]);
+    void revalidateChartingFundamentalsSeriesCached(ticker, "annual");
+    void revalidateChartingFundamentalsSeriesCached(ticker, "quarterly");
+  }, [ticker, fundamentalsModalAnnual, fundamentalsModalQuarterly, fundamentalsModalTtm]);
 
   /** Hidden 1D price chart — drives header on non-overview tabs (today / live spot). */
   const [sessionHeaderUi, setSessionHeaderUi] = useState<ChartDisplayState>(() =>
@@ -788,7 +792,10 @@ export function StockPageContent({
             initialQuarterlyPoints={
               initialPageData?.ticker === ticker ? initialPageData.fundamentalsSeriesQuarterly : undefined
             }
+            initialTtmPoint={initialPageData?.ticker === ticker ? initialPageData.fundamentalsTtmPoint : undefined}
             initialKeyStatsBundle={initialPageData?.ticker === ticker ? initialPageData.keyStatsBundle : null}
+            assetDisplayName={headerMeta?.fullName}
+            assetLogoUrl={headerMeta?.logoUrl}
           />
         </div>
       ) : null}

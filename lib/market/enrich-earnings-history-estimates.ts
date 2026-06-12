@@ -290,6 +290,33 @@ export function prependUpcomingReportRow(
   return [historyRowFromUpcoming(upcoming, quarterly), ...rows];
 }
 
+/** Copy reported revenue actuals from the quarterly estimates chart when history rows lag. */
+export function enrichReportedHistoryRevenueFromEstimatesChart(
+  history: StockEarningsHistoryRow[],
+  quarterly: readonly StockEarningsEstimatesPoint[],
+): StockEarningsHistoryRow[] {
+  const bySortKey = new Map<string, StockEarningsEstimatesPoint>();
+  const byLabel = new Map<string, StockEarningsEstimatesPoint>();
+  for (const p of quarterly) {
+    if (p.sortKey) bySortKey.set(p.sortKey, p);
+    if (p.label) byLabel.set(p.label, p);
+  }
+
+  return history.map((row) => {
+    if (!row.reported || row.revenueActualUsd != null) return row;
+    const pt =
+      (row.fiscalPeriodEndYmd && bySortKey.get(row.fiscalPeriodEndYmd)) ||
+      (row.fiscalPeriodLabel && byLabel.get(row.fiscalPeriodLabel)) ||
+      null;
+    if (pt?.revenueActualUsd == null) return row;
+    return {
+      ...row,
+      revenueActualUsd: pt.revenueActualUsd,
+      revenueActualDisplay: formatUsdCompact(pt.revenueActualUsd),
+    };
+  });
+}
+
 /** Enrich unreleased rows, resolve upcoming from trend if needed, and pin it to the top of Reports. */
 export function buildReportsTableRows(
   history: StockEarningsHistoryRow[],

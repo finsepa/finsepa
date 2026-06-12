@@ -20,6 +20,7 @@ import type {
 } from "@/lib/market/stock-earnings-types";
 import {
   buildReportsTableRows,
+  enrichReportedHistoryRevenueFromEstimatesChart,
   quarterlyEstimateMapsByQuarterLabel,
   resolveUpcomingFromEstimates,
 } from "@/lib/market/enrich-earnings-history-estimates";
@@ -27,7 +28,10 @@ import { formatUsdCompact } from "@/lib/market/key-stats-basic-format";
 import { parseEarningsDocumentHubFromFundamentalsRoot } from "@/lib/market/earnings-report-external-links";
 import { applyCuratedIrEarningsDocumentUrls } from "@/lib/market/earnings-ir-curated-lookup";
 import { applyIrSeedDocumentUrls } from "@/lib/market/ir-seed-apply";
-import { enrichEarningsHistoryWithSecDocuments } from "@/lib/market/sec-edgar-earnings-documents";
+import {
+  enrichEarningsHistoryWithSecDocuments,
+  enrichReportedHistoryRevenueFromSec8k,
+} from "@/lib/market/sec-edgar-earnings-documents";
 import { fetchChartingSeries } from "@/lib/market/eodhd-charting-series";
 import {
   applyDerivedEpsToForwardEstimates,
@@ -36,6 +40,7 @@ import {
   mergeFundamentalsIntoAnnualEstimates,
   sliceEarningsHistoryForReports,
 } from "@/lib/market/earnings-annual-display";
+import { fundamentalsNeedsFreshForRevenueGap } from "@/lib/market/earnings-reported-actuals-overlay";
 import { ymdYearLabel } from "@/lib/market/stock-financials-annual-slice";
 
 function pad2(n: number): string {
@@ -182,6 +187,33 @@ function revenueEstimateFromLooseKeys(row: Record<string, unknown>): number | nu
   return null;
 }
 
+/** Last-resort: EPS consensus fields on `Earnings.Trend` rows (`earningsEstimateAvg`, etc.). */
+function epsEstimateFromLooseKeys(row: Record<string, unknown>): number | null {
+  for (const [k, v] of Object.entries(row)) {
+    const kl = k.toLowerCase();
+    const looksEps =
+      kl.includes("eps") ||
+      (kl.includes("earnings") &&
+        (kl.includes("est") || kl.includes("avg") || kl.includes("mean") || kl.includes("consensus")));
+    if (!looksEps) continue;
+    if (
+      kl.includes("actual") ||
+      kl.includes("report") ||
+      kl.includes("yoy") ||
+      kl.includes("growth") ||
+      kl.includes("pct") ||
+      kl.includes("percent") ||
+      kl.includes("surprise") ||
+      kl.includes("numberofanalysts")
+    ) {
+      continue;
+    }
+    const n = num(v);
+    if (n != null) return n;
+  }
+  return null;
+}
+
 /** Any revenue-like numeric that is not clearly “actual / reported / yoy”. */
 function revenueEstimateFromRevenueNamedFields(row: Record<string, unknown>): number | null {
   for (const [k, v] of Object.entries(row)) {
@@ -263,11 +295,21 @@ function fundamentalsHasEarningsRows(root: Record<string, unknown>): boolean {
   return collectEarningsHistoryRawRows(earn as Record<string, unknown>).length > 0;
 }
 
-/** Cached fundamentals; one fresh retry only on cache miss (avoids doubling EODHD on empty `Earnings`). */
+function ymdDaysAgoUtc(days: number): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() - days);
+  return toYmdUtc(d);
+}
+
+/** Cached fundamentals; fresh retry on cache miss or recent statement gaps after earnings. */
 async function fetchFundamentalsRootForEarningsTab(ticker: string): Promise<Record<string, unknown> | null> {
-  const cached = await fetchEodhdFundamentalsJson(ticker);
-  if (cached) return cached;
-  return fetchEodhdFundamentalsJsonFresh(ticker);
+  let root = await fetchEodhdFundamentalsJson(ticker);
+  if (!root) return fetchEodhdFundamentalsJsonFresh(ticker);
+  if (fundamentalsNeedsFreshForRevenueGap(root)) {
+    const fresh = await fetchEodhdFundamentalsJsonFresh(ticker);
+    if (fresh) root = fresh;
+  }
+  return root;
 }
 
 function collectEarningsTrendRows(trend: unknown): Record<string, unknown>[] {
@@ -295,6 +337,12 @@ const EARNINGS_EPS_ESTIMATE_KEYS = [
   "EPSEstimate",
   "epsAverage",
   "epsAvg",
+  /** EODHD `Earnings.Trend` quarterly / annual consensus rows */
+  "earningsEstimateAvg",
+  "earningsEstimateAverage",
+  "EarningsEstimateAvg",
+  "epsTrendCurrent",
+  "epsTrend7daysAgo",
 ];
 
 /** Quarterly/history rows — may include generic `eps` fields. */
@@ -375,7 +423,8 @@ function buildEpsEstimateTrendMaps(root: Record<string, unknown>): EpsEstimateTr
 
   const parsed: { ymds: string[]; est: number }[] = [];
   for (const r of rows) {
-    const est = numFromRow(r, EARNINGS_EPS_ESTIMATE_KEYS);
+    let est = numFromRow(r, EARNINGS_EPS_ESTIMATE_KEYS);
+    if (est == null) est = epsEstimateFromLooseKeys(r);
     if (est == null || !Number.isFinite(est)) continue;
     const ymds = trendRowFiscalPeriodEndYmds(r);
     if (ymds.length === 0) continue;
@@ -1405,6 +1454,14 @@ async function fetchStockEarningsTabPayloadUncached(
     } catch {
       /* Best-effort */
     }
+  } else {
+    try {
+      historyParsed = await enrichReportedHistoryRevenueFromSec8k(historyParsed, documentHub.cik, {
+        maxRows: 1,
+      });
+    } catch {
+      /* Best-effort */
+    }
   }
   historyParsed = applyCuratedIrEarningsDocumentUrls(ticker, historyParsed);
 
@@ -1453,6 +1510,10 @@ async function fetchStockEarningsTabPayloadUncached(
     quarterlyEpsByLabel,
   );
   if (estimatesChart) {
+    historyParsed = enrichReportedHistoryRevenueFromEstimatesChart(
+      historyParsed,
+      estimatesChart.quarterly,
+    );
     upcoming = resolveUpcomingFromEstimates(upcoming, historyParsed, estimatesChart.quarterly);
     historyParsed = buildReportsTableRows(historyParsed, estimatesChart.quarterly, upcoming);
   } else if (upcoming) {
@@ -1475,7 +1536,7 @@ async function fetchStockEarningsTabPayloadUncached(
 
 const fetchStockEarningsTabPayloadCached = unstable_cache(
   fetchStockEarningsTabPayloadUncached,
-  ["stock-earnings-tab-payload-v15-upcoming-reports-row"],
+  ["stock-earnings-tab-payload-v17-trend-eps-estimates"],
   { revalidate: REVALIDATE_WARM_LONG },
 );
 

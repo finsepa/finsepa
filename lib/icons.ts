@@ -47,6 +47,7 @@ export {
   Dataflow03 as ChartSpline,
   DotsGrid as GripVertical,
   DotsHorizontal as MoreHorizontal,
+  Download01 as Download,
   Eye,
   EyeOff,
   File02 as FileText,

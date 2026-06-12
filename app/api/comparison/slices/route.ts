@@ -14,7 +14,7 @@ import type { ComparisonTickerSlice } from "@/lib/comparison/fetch-comparison-ti
 
 const getCachedKeyStatsBundle = unstable_cache(
   async (ticker: string) => buildStockKeyStatsBundle(ticker, { refreshFundamentals: false }),
-  ["stock-key-stats-bundle-v1"],
+  ["stock-key-stats-bundle-v2-earnings-actuals-overlay"],
   { revalidate: 12 * 60 * 60 },
 );
 

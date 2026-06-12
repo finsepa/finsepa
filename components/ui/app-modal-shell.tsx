@@ -6,8 +6,13 @@ import { X } from "@/lib/icons";
 import { APP_MODAL_DIALOG_ENTER_CLASS } from "@/components/ui/app-modal-overlay";
 import { cn } from "@/lib/utils";
 
-export const APP_MODAL_SHELL_OUTER_CLASS =
-  "rounded-2xl bg-[#F4F4F5] p-1 shadow-[0px_10px_16px_-3px_rgba(10,10,10,0.1),0px_4px_6px_0px_rgba(10,10,10,0.04)]";
+export const APP_MODAL_SHELL_SHADOW_CLASS =
+  "shadow-[0px_10px_16px_-3px_rgba(10,10,10,0.1),0px_4px_6px_0px_rgba(10,10,10,0.04)]";
+
+export const APP_MODAL_SHELL_OUTER_CLASS = cn(
+  "rounded-2xl bg-[#F4F4F5] p-1",
+  APP_MODAL_SHELL_SHADOW_CLASS,
+);
 
 export const APP_MODAL_SHELL_CARD_CLASS =
   "flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[#E4E4E7] bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]";

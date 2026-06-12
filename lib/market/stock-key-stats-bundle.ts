@@ -1,6 +1,10 @@
 import "server-only";
 
-import { fetchEodhdFundamentalsJson, fetchEodhdFundamentalsJsonFresh } from "@/lib/market/eodhd-fundamentals";
+import { fetchEodhdFundamentalsJsonFresh } from "@/lib/market/eodhd-fundamentals";
+import {
+  fetchFundamentalsRootForMetrics,
+  resolveReportedEarningsActuals,
+} from "@/lib/market/earnings-reported-actuals-overlay";
 import { fetchEodhdKeyStatsAssetsLiabilities } from "@/lib/market/eodhd-key-stats-assets-liabilities";
 import { fetchEodhdKeyStatsBasic } from "@/lib/market/eodhd-key-stats-basic";
 import { fetchEodhdKeyStatsDividends } from "@/lib/market/eodhd-key-stats-dividends";
@@ -30,8 +34,10 @@ export async function buildStockKeyStatsBundle(
 ): Promise<StockKeyStatsBundle> {
   const root = opts?.refreshFundamentals
     ? await fetchEodhdFundamentalsJsonFresh(ticker)
-    : await fetchEodhdFundamentalsJson(ticker);
+    : await fetchFundamentalsRootForMetrics(ticker);
   if (!root) return { ...EMPTY_BUNDLE };
+
+  const earningsActuals = await resolveReportedEarningsActuals(root, ticker);
 
   const [
     basic,
@@ -46,9 +52,9 @@ export async function buildStockKeyStatsBundle(
   ] = await Promise.all([
     fetchEodhdKeyStatsBasic(ticker, root),
     fetchEodhdKeyStatsValuation(ticker, root),
-    fetchEodhdKeyStatsRevenueProfit(ticker, root),
+    fetchEodhdKeyStatsRevenueProfit(ticker, root, earningsActuals),
     fetchEodhdKeyStatsMargins(ticker, root),
-    fetchEodhdKeyStatsGrowth(ticker, root),
+    fetchEodhdKeyStatsGrowth(ticker, root, earningsActuals),
     fetchEodhdKeyStatsAssetsLiabilities(ticker, root),
     fetchEodhdKeyStatsReturns(ticker, root),
     fetchEodhdKeyStatsDividends(ticker, root),

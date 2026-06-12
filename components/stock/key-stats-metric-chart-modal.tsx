@@ -195,11 +195,11 @@ function resolveFundamentalsPointsForModal(
     return { points: ssr!, loading: false };
   }
   const cached = readChartingFundamentalsSeriesCache(ticker, period);
-  if (seriesHasMetric(cached, metricId, maxBars)) {
-    return { points: cached!, loading: false };
+  if (seriesHasMetric(cached?.points ?? null, metricId, maxBars)) {
+    return { points: cached!.points, loading: false };
   }
   if (ssr?.length) return { points: ssr, loading: true };
-  if (cached?.length) return { points: cached, loading: true };
+  if (cached?.points.length) return { points: cached.points, loading: true };
   return { points: [], loading: true };
 }
 
@@ -296,7 +296,7 @@ export function KeyStatsMetricChartModal({
       setLoading(true);
       const period = periodMode === "quarterly" ? "quarterly" : "annual";
       const fetched = await fetchChartingFundamentalsSeriesCached(ticker, period);
-      if (!cancelled) setPoints(fetched ?? []);
+      if (!cancelled) setPoints(fetched?.points ?? []);
       if (!cancelled) setLoading(false);
     }
     void load();

@@ -112,7 +112,7 @@ export function ChartingDataTableSettingsMenu({
               <PillSwitch
                 pressed={showBarValues}
                 onPressedChange={onShowBarValuesChange}
-                aria-label="Show values above bars"
+                aria-label="Show values on chart"
               />
             </div>
           </div>

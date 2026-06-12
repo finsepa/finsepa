@@ -58,6 +58,7 @@ export function ChartingFullPageTab({
       metricParam={metricParam}
       initialAnnualPoints={init?.fundamentalsSeriesAnnual}
       initialQuarterlyPoints={init?.fundamentalsSeriesQuarterly}
+      initialTtmPoint={init?.fundamentalsTtmPoint}
       pathRoute={pathRoute}
       workspaceTitle={workspaceTitle}
       timeRangeOrder={STANDALONE_CHARTING_TIME_RANGE_ORDER}

@@ -1,6 +1,10 @@
 import "server-only";
 
 import { fetchEodhdFundamentalsJson } from "@/lib/market/eodhd-fundamentals";
+import {
+  type EarningsActualByPeriod,
+  latestReportedEarningsSnapshot,
+} from "@/lib/market/earnings-reported-actuals-overlay";
 import { pickLatestIncomeStatementRow } from "@/lib/market/eodhd-income-statement";
 import { pickLatestFinancialSubTable } from "@/lib/market/eodhd-pick-financial-block";
 import { formatUsdCompact, formatUsdPrice } from "@/lib/market/key-stats-basic-format";
@@ -28,6 +32,7 @@ export type KeyStatsRevenueProfitRow = { label: string; value: string };
 export async function fetchEodhdKeyStatsRevenueProfit(
   ticker: string,
   fundamentalsRoot?: Record<string, unknown> | null,
+  earningsActuals?: EarningsActualByPeriod | null,
 ): Promise<{ rows: KeyStatsRevenueProfitRow[] } | null> {
   const root = fundamentalsRoot ?? (await fetchEodhdFundamentalsJson(ticker));
   if (!root) return null;
@@ -36,6 +41,7 @@ export async function fetchEodhdKeyStatsRevenueProfit(
   const earn = root.Earnings && typeof root.Earnings === "object" ? (root.Earnings as Record<string, unknown>) : null;
 
   const row = pickLatestIncomeStatementRow(root);
+  const latestEarnings = earningsActuals ? latestReportedEarningsSnapshot(earningsActuals) : null;
 
   let revenue = numFromRow(row, [
     "totalRevenue",
@@ -70,6 +76,19 @@ export async function fetchEodhdKeyStatsRevenueProfit(
   let eps = numFromRow(row, ["dilutedEPS", "DilutedEPS", "epsDiluted", "eps", "EPS", "basicEPS", "BasicEPS"]);
   if (eps == null && hl) eps = num(hl.EarningsShare ?? hl.EPS ?? hl.DilutedEps ?? hl.DilutedEPS);
   if (eps == null && earn) eps = num(earn.EPS ?? earn.DilutedEPS ?? earn.EpsDiluted);
+
+  if (latestEarnings) {
+    const incomePeriodYmd =
+      hl && typeof hl.MostRecentQuarter === "string" && /^\d{4}-\d{2}-\d{2}$/.test(hl.MostRecentQuarter.trim())
+        ? hl.MostRecentQuarter.trim()
+        : null;
+    const earningsIsNewer =
+      !incomePeriodYmd || latestEarnings.fiscalPeriodEndYmd > incomePeriodYmd;
+    if (earningsIsNewer) {
+      if (latestEarnings.revenueUsd != null) revenue = latestEarnings.revenueUsd;
+      if (latestEarnings.eps != null) eps = latestEarnings.eps;
+    }
+  }
 
   const cfRow = pickLatestFinancialSubTable(root, [["Cash_Flow", "CashFlow"]]);
   let fcf = cfRow

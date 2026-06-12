@@ -24,6 +24,8 @@ import {
   CHARTING_PLOT_BACKDROP_INSET_CLASS,
   chartingAxisRowPx,
   chartingPlotHeightPx,
+  chartingUsesHorizontalPeriodAxisLabels,
+  chartingUsesSpacedHorizontalPeriodAxis,
   CHARTING_STOCK_GROUPED_BAR_SHIFT_FRAC,
   ChartingHoverBandPrimitive,
   layoutChartingTimeScale,
@@ -68,9 +70,12 @@ import {
 import { cn } from "@/lib/utils";
 import type { ChartingSeriesPoint } from "@/lib/market/charting-series-types";
 import {
+  appendChartingTtmPeriod,
+  compareChartingPeriodColumnLabels,
   formatChartingPeriodAxisLabel,
   formatChartingPeriodLabel,
   fundamentalsPeriodAxisShowsLabel,
+  parseChartingTtmPoint,
 } from "@/lib/market/charting-period-display";
 import type { StockPageInitialData } from "@/lib/market/stock-page-initial-data";
 import {
@@ -511,8 +516,10 @@ export function ChartingCompareWorkspace({
   const [chartType, setChartType] = useState<ChartType>("bars");
   const unitScale: ChartingUnitScale = "auto";
   const chartHeight = CHARTING_HEIGHT_PX;
-  const axisRowPx = chartingAxisRowPx(periodMode);
-  const chartPlotHeight = chartingPlotHeightPx(periodMode);
+  const axisRowPx = chartingAxisRowPx(periodMode, timeRange);
+  const chartPlotHeight = chartingPlotHeightPx(periodMode, timeRange);
+  const horizontalPeriodAxisLabels = chartingUsesHorizontalPeriodAxisLabels(periodMode, timeRange);
+  const spacedHorizontalPeriodAxis = chartingUsesSpacedHorizontalPeriodAxis(timeRange);
 
   const seedByTicker = useMemo(() => {
     const out: Record<string, ChartingSeriesPoint[] | null> = {};
@@ -528,7 +535,17 @@ export function ChartingCompareWorkspace({
     return out;
   }, [tickers, periodMode, initialByTicker]);
 
+  const seedTtmByTicker = useMemo(() => {
+    const out: Record<string, ChartingSeriesPoint | null> = {};
+    for (const t of tickers) {
+      const d = initialByTicker[t];
+      out[t] = periodMode === "annual" && d ? parseChartingTtmPoint(d.fundamentalsTtmPoint) : null;
+    }
+    return out;
+  }, [tickers, periodMode, initialByTicker]);
+
   const [pointsByTicker, setPointsByTicker] = useState<Record<string, ChartingSeriesPoint[] | null>>({});
+  const [ttmByTicker, setTtmByTicker] = useState<Record<string, ChartingSeriesPoint | null>>({});
   const [loading, setLoading] = useState(true);
   /** Newly added tickers still fetching fundamentals — chip shows spinner until row loads (not used on first mount). */
   const [pendingTickerChips, setPendingTickerChips] = useState<string[]>([]);
@@ -571,12 +588,15 @@ export function ChartingCompareWorkspace({
 
       if (allSeeded) {
         const next: Record<string, ChartingSeriesPoint[]> = {};
+        const nextTtm: Record<string, ChartingSeriesPoint | null> = {};
         for (const t of tickers) {
           const s = seedByTicker[t];
           next[t] = Array.isArray(s) ? s : [];
+          nextTtm[t] = seedTtmByTicker[t] ?? null;
         }
         if (!cancelled) {
           setPointsByTicker(next);
+          setTtmByTicker(nextTtm);
           setLoading(false);
           setPendingTickerChips((p) => p.filter((x) => tickers.includes(x)));
         }
@@ -623,9 +643,13 @@ export function ChartingCompareWorkspace({
           needFetch.map(async (t) => {
             try {
               const period = periodMode === "quarterly" ? "quarterly" : "annual";
-              const pts = (await fetchChartingFundamentalsSeriesCached(t, period)) ?? [];
+              const payload = (await fetchChartingFundamentalsSeriesCached(t, period)) ?? null;
               if (!cancelled) {
-                setPointsByTicker((p) => ({ ...p, [t]: pts }));
+                setPointsByTicker((p) => ({ ...p, [t]: payload?.points ?? [] }));
+                setTtmByTicker((p) => ({
+                  ...p,
+                  [t]: period === "annual" ? payload?.ttmPoint ?? null : null,
+                }));
               }
             } finally {
               if (!cancelled) {
@@ -652,16 +676,20 @@ export function ChartingCompareWorkspace({
     return () => {
       cancelled = true;
     };
-  }, [tickers, periodMode, seedByTicker]);
+  }, [tickers, periodMode, seedByTicker, seedTtmByTicker]);
 
   const orderedByTicker = useMemo(() => {
     const o: Record<string, ChartingSeriesPoint[]> = {};
     for (const t of tickers) {
       const pts = pointsByTicker[t];
-      o[t] = applyTimeRange(Array.isArray(pts) ? pts : [], periodMode, timeRange);
+      const ranged = applyTimeRange(Array.isArray(pts) ? pts : [], periodMode, timeRange);
+      o[t] =
+        periodMode === "annual"
+          ? appendChartingTtmPeriod(ranged, ttmByTicker[t] ?? null)
+          : ranged;
     }
     return o;
-  }, [tickers, pointsByTicker, periodMode, timeRange]);
+  }, [tickers, pointsByTicker, ttmByTicker, periodMode, timeRange]);
 
   /** One column per calendar period label — tickers can share the same FY (e.g. "2025") with different `periodEnd` dates. */
   const tableColumnLabels = useMemo(() => {
@@ -673,7 +701,7 @@ export function ChartingCompareWorkspace({
     }
     const arr = [...labels];
     if (periodMode === "annual") {
-      arr.sort((a, b) => Number(a) - Number(b));
+      arr.sort((a, b) => compareChartingPeriodColumnLabels(a, b, periodMode, new Map()));
     } else {
       const labelToSampleEnd = new Map<string, string>();
       for (const t of tickers) {
@@ -1769,7 +1797,11 @@ export function ChartingCompareWorkspace({
                 <div
                   className={cn(
                     "flex w-full min-w-0 overflow-visible",
-                    periodMode === "annual" ? "pt-1.5" : "pt-0",
+                    spacedHorizontalPeriodAxis
+                      ? "pt-2.5"
+                      : periodMode === "annual"
+                        ? "pt-1.5"
+                        : "pt-0",
                   )}
                   style={{ height: axisRowPx }}
                 >
@@ -1778,19 +1810,26 @@ export function ChartingCompareWorkspace({
                       if (!fundamentalsPeriodAxisShowsLabel(i, periodAxisLabels.length, periodMode)) {
                         return null;
                       }
-                      const axisLabelRotateDeg =
-                        periodMode === "annual" ? 0 : FUNDAMENTALS_CHART_AXIS_LABEL_ROTATE_DEG;
+                      const axisLabelRotateDeg = horizontalPeriodAxisLabels
+                        ? 0
+                        : FUNDAMENTALS_CHART_AXIS_LABEL_ROTATE_DEG;
                       return (
                         <span
                           key={lab.key}
                           className={cn(
                             "absolute inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]",
-                            periodMode === "annual" ? "top-1.5" : "bottom-1",
+                            horizontalPeriodAxisLabels
+                              ? spacedHorizontalPeriodAxis
+                                ? "top-3"
+                                : "top-1.5"
+                              : "bottom-1",
                           )}
                           style={{
                             left: lab.leftPx,
-                            transform: `translateX(-50%) rotate(${axisLabelRotateDeg}deg)`,
-                            transformOrigin: "center bottom",
+                            transform: horizontalPeriodAxisLabels
+                              ? "translateX(-50%)"
+                              : `translateX(-50%) rotate(${axisLabelRotateDeg}deg)`,
+                            transformOrigin: horizontalPeriodAxisLabels ? undefined : "center bottom",
                           }}
                           title={lab.title}
                         >

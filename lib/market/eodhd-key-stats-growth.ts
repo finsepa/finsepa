@@ -2,6 +2,7 @@ import "server-only";
 
 import type { ChartingSeriesPoint } from "@/lib/market/charting-series-types";
 import { buildChartingPointsFromFundamentalsRoot } from "@/lib/market/eodhd-charting-series";
+import type { EarningsActualByPeriod } from "@/lib/market/earnings-reported-actuals-overlay";
 import { fetchEodhdFundamentalsJson } from "@/lib/market/eodhd-fundamentals";
 import { formatPercentMetric } from "@/lib/market/key-stats-basic-format";
 
@@ -37,6 +38,7 @@ function lastFiniteMetric(points: ChartingSeriesPoint[], key: keyof ChartingSeri
 export async function fetchEodhdKeyStatsGrowth(
   ticker: string,
   fundamentalsRoot?: Record<string, unknown> | null,
+  earningsActuals?: EarningsActualByPeriod | null,
 ): Promise<{ rows: KeyStatsGrowthRow[] } | null> {
   const root = fundamentalsRoot ?? (await fetchEodhdFundamentalsJson(ticker));
   if (!root) return null;
@@ -75,8 +77,8 @@ export async function fetchEodhdKeyStatsGrowth(
   ]);
 
   const rootRec = root as Record<string, unknown>;
-  const quarterlyPts = buildChartingPointsFromFundamentalsRoot(rootRec, "quarterly");
-  const annualPts = buildChartingPointsFromFundamentalsRoot(rootRec, "annual");
+  const quarterlyPts = buildChartingPointsFromFundamentalsRoot(rootRec, "quarterly", earningsActuals);
+  const annualPts = buildChartingPointsFromFundamentalsRoot(rootRec, "annual", earningsActuals);
 
   /** Same definitions as charting `computeGrowthSeries`: revenue/EPS YoY from quarterly (lag 4q); 3Y CAGR from annual (lag 3y) else quarterly (lag 12q). */
   const qRevYoyResolved = qRevYoy ?? lastFiniteMetric(quarterlyPts, "revenueYoy");

@@ -8,8 +8,11 @@ type Props = {
   metricParam: string | null;
   initialAnnualPoints?: ChartingSeriesPoint[];
   initialQuarterlyPoints?: ChartingSeriesPoint[];
+  initialTtmPoint?: ChartingSeriesPoint | null;
   /** Used to filter the Metric dropdown to “what Key Stats has”. */
   initialKeyStatsBundle?: StockKeyStatsBundle | null;
+  assetDisplayName?: string | null;
+  assetLogoUrl?: string | null;
 };
 
 const LABEL_TO_METRIC: Partial<Record<string, ChartingMetricId>> = {
@@ -98,7 +101,10 @@ export function StockChartingTab({
   metricParam,
   initialAnnualPoints,
   initialQuarterlyPoints,
+  initialTtmPoint,
   initialKeyStatsBundle,
+  assetDisplayName,
+  assetLogoUrl,
 }: Props) {
   return (
     <ChartingWorkspace
@@ -106,10 +112,15 @@ export function StockChartingTab({
       metricParam={metricParam}
       initialAnnualPoints={initialAnnualPoints}
       initialQuarterlyPoints={initialQuarterlyPoints}
+      initialTtmPoint={initialTtmPoint}
       allowedMetricIds={buildAllowedMetricsFromKeyStats(initialKeyStatsBundle)}
       metricControlsPlacement="legend"
+      omitTickerInLegend
       histogramLayout="stockFullWidthFixedBars"
       animateBarsOnAppear
+      enableScreenshotDownload
+      assetDisplayName={assetDisplayName}
+      assetLogoUrl={assetLogoUrl}
     />
   );
 }

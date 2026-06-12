@@ -1,3 +1,5 @@
+import type { ChartingSeriesPoint } from "@/lib/market/charting-series-types";
+
 /**
  * Period-end strings from fundamentals APIs are typically `YYYY-MM-DD`.
  * Parse as UTC noon so calendar month/day match the stored fiscal period end.
@@ -14,10 +16,72 @@ export function parseChartingPeriodEndUtc(periodEnd: string): Date | null {
  * Slanted x-axis copy — annual fiscal year (e.g. `2024`); quarterly `Q2 '25`.
  * Matches Multichart fundamentals bar axis labels.
  */
+export const CHARTING_TTM_PERIOD_END = "TTM";
+
+export function isChartingTtmPeriodEnd(periodEnd: string): boolean {
+  return periodEnd.trim().toUpperCase() === CHARTING_TTM_PERIOD_END;
+}
+
+export function parseChartingTtmPoint(raw: unknown): ChartingSeriesPoint | null {
+  if (!raw || typeof raw !== "object" || !("periodEnd" in raw)) return null;
+  return raw as ChartingSeriesPoint;
+}
+
+/** Append trailing-twelve-months as the final annual column (Financials-style). */
+export function appendChartingTtmPeriod(
+  points: ChartingSeriesPoint[],
+  ttmPoint: ChartingSeriesPoint | null | undefined,
+): ChartingSeriesPoint[] {
+  if (!ttmPoint) return points;
+  if (points.some((p) => isChartingTtmPeriodEnd(p.periodEnd))) return points;
+  return [...points, { ...ttmPoint, periodEnd: CHARTING_TTM_PERIOD_END }];
+}
+
+/** Plot time for TTM — one year after the prior fiscal period (calendar-based charts). */
+export function chartingTtmPlotTimeSec(
+  points: ChartingSeriesPoint[],
+  ttmIndex: number,
+): number | null {
+  for (let i = ttmIndex - 1; i >= 0; i--) {
+    const row = points[i];
+    if (!row || isChartingTtmPeriodEnd(row.periodEnd)) continue;
+    const ms = Date.parse(row.periodEnd.includes("T") ? row.periodEnd : `${row.periodEnd}T12:00:00.000Z`);
+    if (!Number.isFinite(ms)) continue;
+    return Math.floor(ms / 1000) + 365 * 86400;
+  }
+  return null;
+}
+
+export function chartingRowPlotTimeSec(
+  points: ChartingSeriesPoint[],
+  index: number,
+): number | null {
+  const row = points[index];
+  if (!row) return null;
+  if (isChartingTtmPeriodEnd(row.periodEnd)) return chartingTtmPlotTimeSec(points, index);
+  const ms = Date.parse(row.periodEnd.includes("T") ? row.periodEnd : `${row.periodEnd}T12:00:00.000Z`);
+  return Number.isFinite(ms) ? Math.floor(ms / 1000) : null;
+}
+
+export function compareChartingPeriodColumnLabels(
+  a: string,
+  b: string,
+  periodMode: "annual" | "quarterly",
+  labelToSampleEnd: Map<string, string>,
+): number {
+  if (periodMode === "annual") {
+    if (a === CHARTING_TTM_PERIOD_END) return b === CHARTING_TTM_PERIOD_END ? 0 : 1;
+    if (b === CHARTING_TTM_PERIOD_END) return -1;
+    return Number(a) - Number(b);
+  }
+  return (labelToSampleEnd.get(a) ?? "").localeCompare(labelToSampleEnd.get(b) ?? "");
+}
+
 export function formatChartingPeriodAxisLabel(
   periodEnd: string,
   periodMode: "annual" | "quarterly",
 ): string {
+  if (isChartingTtmPeriodEnd(periodEnd)) return CHARTING_TTM_PERIOD_END;
   const s = periodEnd.trim();
   if (periodMode === "quarterly") {
     const year = s.slice(0, 4);
@@ -51,6 +115,7 @@ export function fundamentalsPeriodAxisShowsLabel(
 
 /** Primary line for chart axis + tables (annual = year; quarterly = `Q2 2025`). */
 export function formatChartingPeriodLabel(periodEnd: string, periodMode: "annual" | "quarterly"): string {
+  if (isChartingTtmPeriodEnd(periodEnd)) return CHARTING_TTM_PERIOD_END;
   const s = periodEnd.trim();
   const year = s.slice(0, 4);
   if (periodMode === "annual") return year && /^\d{4}$/.test(year) ? year : s;
