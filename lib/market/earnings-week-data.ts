@@ -605,13 +605,14 @@ function preparedToCalendarItem(
 export type EarningsWeekDataPackage = {
   payload: EarningsWeekPayload;
   overflowByKey: Record<string, EarningsCalendarItem[]>;
+  /** Set after fundamentals estimates pass — hub snapshots without this are rebuilt once. */
+  estimatesHydrated?: boolean;
 };
 
 /** Cron / hub ingest — universe market-cap filter; estimates baked in for fast SSR. */
 export async function buildEarningsWeekHubPackage(weekMondayUtc: Date): Promise<EarningsWeekDataPackage> {
   const monday = mondayOfWeekUtc(weekMondayUtc);
-  const built = await buildEarningsWeekDataPackageUncached(monday, false);
-  return hydrateEarningsWeekPackageEstimates(built);
+  return buildEarningsWeekDataPackageUncached(monday, false);
 }
 
 async function buildEarningsWeekDataPackageUncached(
@@ -818,11 +819,8 @@ async function buildEarningsWeekDataPackageUncached(
     datasetFilter: strictMc ? "fundamentals_mc" : "universe_mc",
   };
 
-  return { payload, overflowByKey };
-}
-
-function calendarItemNeedsEstimateHydration(item: EarningsCalendarItem): boolean {
-  return item.estRevenueDisplay == null && item.estEpsDisplay == null;
+  const pack: EarningsWeekDataPackage = { payload, overflowByKey };
+  return hydrateEarningsWeekPackageEstimates(pack, fundamentalsRootByTicker);
 }
 
 function enrichCalendarItemEstimates(
@@ -839,20 +837,16 @@ function enrichCalendarItemEstimates(
   };
 }
 
-function weekPackageNeedsEstimateHydration(pack: EarningsWeekDataPackage): boolean {
-  const items = pack.payload.days.flatMap((day) => earningsDayListItems(day));
-  return items.length > 0 && items.some(calendarItemNeedsEstimateHydration);
-}
-
 async function hydrateEarningsWeekPackageEstimates(
   pack: EarningsWeekDataPackage,
+  existingRoots?: Map<string, Record<string, unknown> | null> | null,
 ): Promise<EarningsWeekDataPackage> {
-  if (!weekPackageNeedsEstimateHydration(pack)) return pack;
+  if (pack.estimatesHydrated) return pack;
 
   const tickers = [
     ...new Set(pack.payload.days.flatMap((day) => earningsDayListItems(day).map((item) => item.ticker))),
   ];
-  const roots = await ensureFundamentalsRootsForTickers(tickers, null);
+  const roots = await ensureFundamentalsRootsForTickers(tickers, existingRoots ?? null);
 
   const days: EarningsDayColumn[] = pack.payload.days.map((day) => {
     const enrich = (item: EarningsCalendarItem) => enrichCalendarItemEstimates(item, roots);
@@ -882,6 +876,7 @@ async function hydrateEarningsWeekPackageEstimates(
   return {
     payload: { ...pack.payload, days },
     overflowByKey,
+    estimatesHydrated: true,
   };
 }
 
@@ -891,8 +886,7 @@ const getEarningsWeekDataPackageCached = unstable_cache(
   async (weekMondayYmd: string, mode: EarningsCacheMode): Promise<EarningsWeekDataPackage> => {
     const t = Date.parse(`${weekMondayYmd}T12:00:00.000Z`);
     const monday = Number.isFinite(t) ? mondayOfWeekUtc(new Date(t)) : mondayOfWeekUtc(new Date());
-    const built = await buildEarningsWeekDataPackageUncached(monday, mode === "fund");
-    return hydrateEarningsWeekPackageEstimates(built);
+    return buildEarningsWeekDataPackageUncached(monday, mode === "fund");
   },
   ["earnings-week-v34-precomputed-estimates"],
   { revalidate: REVALIDATE_EARNINGS_CALENDAR },
@@ -902,7 +896,6 @@ async function persistHubEarningsWeekSnapshotIfReady(
   weekMondayYmd: string,
   pack: EarningsWeekDataPackage,
 ): Promise<void> {
-  if (weekPackageNeedsEstimateHydration(pack)) return;
   await upsertHubSnapshot(hubEarningsWeekKey(weekMondayYmd), earningsWeekHubSegment(weekMondayYmd), pack);
 }
 
@@ -910,21 +903,22 @@ async function getEarningsWeekDataPackage(weekMondayUtc: Date): Promise<Earnings
   const ymd = toYmdUtc(mondayOfWeekUtc(weekMondayUtc));
   const segment = earningsWeekHubSegment(ymd);
   const snap = await readHubSnapshot<EarningsWeekDataPackage>(hubEarningsWeekKey(ymd), segment);
-  if (snap && !weekPackageNeedsEstimateHydration(snap)) {
-    return snap;
-  }
+  if (snap) return snap;
 
   const mode: EarningsCacheMode = isEarningsFundamentalsMcFilterEnabled() ? "fund" : "universe";
   const pack = await getEarningsWeekDataPackageCached(ymd, mode);
-  if (!weekPackageNeedsEstimateHydration(pack)) {
-    void persistHubEarningsWeekSnapshotIfReady(ymd, pack).catch(() => {});
-  }
+  void persistHubEarningsWeekSnapshotIfReady(ymd, pack).catch(() => {});
   return pack;
 }
 
 export async function getEarningsWeekPayload(weekMondayUtc: Date): Promise<EarningsWeekPayload> {
   const pack = await getEarningsWeekDataPackage(weekMondayUtc);
   return pack.payload;
+}
+
+/** SSR — week grid payload plus overflow rows for client-side expand (no lazy API when present). */
+export async function getEarningsWeekPageData(weekMondayUtc: Date): Promise<EarningsWeekDataPackage> {
+  return getEarningsWeekDataPackage(weekMondayUtc);
 }
 
 /** Overflow cards for one weekday timing bucket — backed by the same `unstable_cache` entry as the week grid. */

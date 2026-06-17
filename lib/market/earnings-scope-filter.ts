@@ -89,13 +89,29 @@ export function serializeAllowedScopeKeys(keys: ReadonlySet<string>): string {
 
 function filterEarningsTimingBucket(
   bucket: EarningsTimingBucket,
+  overflowItems: readonly EarningsCalendarItem[],
   allowed: ReadonlySet<string>,
 ): EarningsTimingBucket {
   const items = bucket.items.filter((it) => earningsItemMatchesScope(it, allowed));
+  const scopedOverflow = overflowItems.filter((it) => earningsItemMatchesScope(it, allowed));
   return {
     items,
-    overflowCount: allowed.size === 0 ? 0 : bucket.overflowCount,
+    overflowCount: scopedOverflow.length,
   };
+}
+
+/** Scope-filter grid overflow rows — used when portfolio filter is active client-side. */
+export function filterEarningsOverflowByKey(
+  overflowByKey: Readonly<Record<string, EarningsCalendarItem[]>>,
+  allowed: ReadonlySet<string> | null,
+): Record<string, EarningsCalendarItem[]> {
+  if (!allowed) return { ...overflowByKey };
+  const out: Record<string, EarningsCalendarItem[]> = {};
+  for (const [key, items] of Object.entries(overflowByKey)) {
+    const filtered = items.filter((it) => earningsItemMatchesScope(it, allowed));
+    if (filtered.length > 0) out[key] = filtered;
+  }
+  return out;
 }
 
 /** All companies for a weekday — supports hub snapshots built before `listItems` existed. */
@@ -107,14 +123,27 @@ export function earningsDayListItems(day: EarningsDayColumn): EarningsCalendarIt
 export function filterEarningsWeekPayload(
   data: EarningsWeekPayload,
   allowed: ReadonlySet<string> | null,
+  overflowByKey?: Readonly<Record<string, EarningsCalendarItem[]>>,
 ): EarningsWeekPayload {
   if (!allowed) return data;
 
   const days: EarningsDayColumn[] = data.days.map((day) => ({
     ...day,
-    beforeMarket: filterEarningsTimingBucket(day.beforeMarket, allowed),
-    afterMarket: filterEarningsTimingBucket(day.afterMarket, allowed),
-    timeTbd: filterEarningsTimingBucket(day.timeTbd, allowed),
+    beforeMarket: filterEarningsTimingBucket(
+      day.beforeMarket,
+      overflowByKey?.[`${day.date}:bmo`] ?? [],
+      allowed,
+    ),
+    afterMarket: filterEarningsTimingBucket(
+      day.afterMarket,
+      overflowByKey?.[`${day.date}:amc`] ?? [],
+      allowed,
+    ),
+    timeTbd: filterEarningsTimingBucket(
+      day.timeTbd,
+      overflowByKey?.[`${day.date}:unknown`] ?? [],
+      allowed,
+    ),
     listItems: earningsDayListItems(day).filter((it) => earningsItemMatchesScope(it, allowed)),
   }));
 

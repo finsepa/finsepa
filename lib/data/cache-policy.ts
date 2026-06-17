@@ -283,6 +283,12 @@ export const CACHE_CONTROL_PRIVATE_EARNINGS_PREVIEW = cacheControlPrivateMax0SMa
   REVALIDATE_WARM,
 );
 
+/** Earnings week overflow slices — calendar tier (~24h). */
+export const CACHE_CONTROL_PRIVATE_EARNINGS_OVERFLOW = cacheControlPrivateMax0SMaxageSwr(
+  REVALIDATE_EARNINGS_CALENDAR,
+  REVALIDATE_EARNINGS_CALENDAR,
+);
+
 /** Peers compare empty response — private {@link REVALIDATE_HOT_FAST} only. */
 export const CACHE_CONTROL_PRIVATE_S_MAXAGE_HOT_FAST = `private, s-maxage=${REVALIDATE_HOT_FAST}`;
 

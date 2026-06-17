@@ -24,6 +24,7 @@ function isCoarsePointer(): boolean {
 
 export function EarningsOverflowHoverMenu({
   count,
+  preloadedItems,
   weekMondayYmd,
   dayYmd,
   timing,
@@ -32,6 +33,8 @@ export function EarningsOverflowHoverMenu({
   onOpenCard,
 }: {
   count: number;
+  /** When set, dropdown uses SSR overflow without fetching. */
+  preloadedItems?: EarningsCalendarItem[];
   weekMondayYmd: string;
   dayYmd: string;
   timing: EarningsReportTiming;
@@ -45,9 +48,13 @@ export function EarningsOverflowHoverMenu({
   const loadingRef = useRef(false);
 
   const [open, setOpen] = useState(false);
-  const [items, setItems] = useState<EarningsCalendarItem[]>([]);
+  const [items, setItems] = useState<EarningsCalendarItem[]>(preloadedItems ?? []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
+
+  useEffect(() => {
+    if (preloadedItems?.length) setItems(preloadedItems);
+  }, [preloadedItems]);
 
   const clearHideTimer = useCallback(() => {
     if (hideTimerRef.current != null) {
@@ -62,6 +69,7 @@ export function EarningsOverflowHoverMenu({
   }, [clearHideTimer]);
 
   const fetchOverflow = useCallback(async () => {
+    if (preloadedItems?.length) return;
     if (loadingRef.current || items.length > 0) return;
     loadingRef.current = true;
     setLoading(true);
@@ -89,7 +97,9 @@ export function EarningsOverflowHoverMenu({
       loadingRef.current = false;
       setLoading(false);
     }
-  }, [allowedScopeKeys, count, dayYmd, items, timing, weekMondayYmd]);
+  }, [allowedScopeKeys, count, dayYmd, items.length, preloadedItems, timing, weekMondayYmd]);
+
+  const displayItems = preloadedItems?.length ? preloadedItems : items;
 
   const show = useCallback(() => {
     if (isCoarsePointer()) return;
@@ -154,7 +164,7 @@ export function EarningsOverflowHoverMenu({
             )}
           >
             <DropdownScrollArea className="max-h-[min(280px,50vh)] overflow-y-auto">
-              {loading && items.length === 0 ? (
+              {loading && displayItems.length === 0 ? (
                 <div
                   className="flex items-center justify-center px-3 py-6"
                   role="status"
@@ -163,13 +173,13 @@ export function EarningsOverflowHoverMenu({
                 >
                   <Spinner className="size-5 text-[#71717A]" />
                 </div>
-              ) : error && items.length === 0 ? (
+              ) : error && displayItems.length === 0 ? (
                 <p className="px-3 py-2 text-[12px] text-[#DC2626]">Could not load</p>
-              ) : items.length === 0 ? (
+              ) : displayItems.length === 0 ? (
                 <p className="px-3 py-2 text-[12px] text-[#71717A]">No companies</p>
               ) : (
                 <ul className="flex flex-col gap-1">
-                  {items.map((item) => (
+                  {displayItems.map((item) => (
                     <li key={`${item.ticker}-${item.reportDate}`}>
                       <button
                         type="button"

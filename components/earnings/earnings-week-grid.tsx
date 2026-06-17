@@ -23,6 +23,7 @@ import type {
 import {
   buildAllowedKeysFromPortfolio,
   earningsDayListItems,
+  filterEarningsOverflowByKey,
   filterEarningsWeekPayload,
   type EarningsScopeFilter,
 } from "@/lib/market/earnings-scope-filter";
@@ -289,6 +290,7 @@ function EarningsTimingBlock({
   stackOffset,
   allowedScopeKeys,
   gridRows,
+  preloadedOverflow,
 }: {
   title: string;
   bucket: EarningsTimingBucket;
@@ -302,6 +304,7 @@ function EarningsTimingBlock({
   allowedScopeKeys: ReadonlySet<string> | null;
   /** Week-wide row height for this timing band — shorter days keep empty rows for alignment. */
   gridRows: number;
+  preloadedOverflow?: EarningsCalendarItem[];
 }) {
   const gridItems = useMemo(() => dedupeEarningsCalendarItems(bucket.items), [bucket.items]);
 
@@ -340,6 +343,7 @@ function EarningsTimingBlock({
             ) : slot.kind === "expand" ? (
               <EarningsOverflowHoverMenu
                 count={bucket.overflowCount}
+                preloadedItems={preloadedOverflow}
                 weekMondayYmd={weekMondayYmd}
                 dayYmd={dayYmd}
                 timing={timing}
@@ -372,6 +376,7 @@ function EarningsDayColumnBody({
   allowedScopeKeys,
   scope,
   weekTimingGridRows,
+  overflowByKey,
 }: {
   day: EarningsDayColumn;
   weekMondayYmd: string;
@@ -379,6 +384,7 @@ function EarningsDayColumnBody({
   allowedScopeKeys: ReadonlySet<string> | null;
   scope: EarningsScopeFilter;
   weekTimingGridRows: WeekTimingGridRows;
+  overflowByKey: Record<string, EarningsCalendarItem[]>;
 }) {
   const { date } = day;
   const totalSignals =
@@ -425,6 +431,7 @@ function EarningsDayColumnBody({
           stackOffset={index}
           allowedScopeKeys={allowedScopeKeys}
           gridRows={section.gridRows}
+          preloadedOverflow={overflowByKey[`${date}:${section.timing}`]}
         />
       ))}
     </div>
@@ -656,12 +663,15 @@ function EarningsWeekListSkeleton() {
  */
 export function EarningsWeekGrid({
   data,
+  overflowByKey,
   todayYmd,
   thisWeekMondayYmd,
   scope,
   weekTimingGridRows: weekTimingGridRowsFromServer,
 }: {
   data: EarningsWeekPayload;
+  /** SSR overflow rows keyed by `${dayYmd}:${timing}` — avoids lazy API when present. */
+  overflowByKey: Record<string, EarningsCalendarItem[]>;
   /** UTC calendar day from the server — avoids SSR/client date drift for “today” styling. */
   todayYmd: string;
   /** Monday YMD of the week containing today (UTC), from the server. */
@@ -702,9 +712,14 @@ export function EarningsWeekGrid({
     return buildAllowedKeysFromPortfolio(watched, symbols);
   }, [scopeFilterReady, scope, watched, holdingsByPortfolioId]);
 
+  const filteredOverflowByKey = useMemo(
+    () => filterEarningsOverflowByKey(overflowByKey, allowedScopeKeys),
+    [overflowByKey, allowedScopeKeys],
+  );
+
   const filteredData = useMemo(
-    () => filterEarningsWeekPayload(data, allowedScopeKeys),
-    [data, allowedScopeKeys],
+    () => filterEarningsWeekPayload(data, allowedScopeKeys, overflowByKey),
+    [data, allowedScopeKeys, overflowByKey],
   );
 
   const weekTimingGridRowsClient = useMemo(
@@ -898,6 +913,7 @@ export function EarningsWeekGrid({
                       allowedScopeKeys={allowedScopeKeys}
                       scope={scope}
                       weekTimingGridRows={weekTimingGridRows}
+                      overflowByKey={filteredOverflowByKey}
                     />
                   </div>
                 </div>

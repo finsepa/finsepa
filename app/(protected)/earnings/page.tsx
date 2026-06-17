@@ -3,7 +3,7 @@ import { isSingleAssetMode } from "@/lib/features/single-asset";
 import { parseEarningsScopeFilter } from "@/lib/market/earnings-scope-filter";
 import { computeWeekTimingGridRows } from "@/lib/market/earnings-week-grid-layout";
 import {
-  getEarningsWeekPayload,
+  getEarningsWeekPageData,
   mondayOfWeekUtc,
   parseWeekMondayParam,
   toYmdUtc,
@@ -21,16 +21,17 @@ export default async function EarningsPage({ searchParams }: PageProps) {
   const sp = await searchParams;
   const parsedMonday = parseWeekMondayParam(sp.week);
   const monday = parsedMonday ?? mondayOfWeekUtc(new Date());
-  const data = await getEarningsWeekPayload(monday);
+  const pack = await getEarningsWeekPageData(monday);
   const scope = parseEarningsScopeFilter(sp.scope);
-  const weekTimingGridRows = computeWeekTimingGridRows(data.days);
+  const weekTimingGridRows = computeWeekTimingGridRows(pack.payload.days);
   const todayYmd = toYmdUtc(new Date());
   const thisWeekMondayYmd = toYmdUtc(mondayOfWeekUtc(new Date()));
 
   return (
     <div className="flex min-w-0 flex-col px-4 py-5 sm:px-9 sm:py-8">
       <EarningsWeekGrid
-        data={data}
+        data={pack.payload}
+        overflowByKey={pack.overflowByKey}
         todayYmd={todayYmd}
         thisWeekMondayYmd={thisWeekMondayYmd}
         scope={scope}

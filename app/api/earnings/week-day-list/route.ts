@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { CACHE_CONTROL_PRIVATE_EARNINGS_OVERFLOW } from "@/lib/data/cache-policy";
 import { getEarningsDayListSlice, mondayOfWeekUtc } from "@/lib/market/earnings-week-data";
 import {
   filterEarningsCalendarItems,
@@ -16,7 +17,7 @@ function parseWeekMonday(week: string | null): Date | null {
 }
 
 /**
- * Lazy-loaded earnings list rows for one weekday (same cached week package as the SSR grid).
+ * Lazy-loaded earnings list rows for one weekday (fallback when SSR `listItems` is missing).
  */
 export async function GET(request: Request) {
   try {
@@ -45,11 +46,23 @@ export async function GET(request: Request) {
   const safeOffset = Number.isFinite(offset) && offset > 0 ? Math.floor(offset) : 0;
   const safeLimit = Number.isFinite(limit) ? Math.min(50, Math.max(1, Math.floor(limit))) : 50;
 
-  const all = await getEarningsDayListSlice(monday, day, 0, 500);
   const allowedKeys = parseAllowedScopeKeysParam(url.searchParams.get("allowed"));
-  const filtered =
-    allowedKeys && allowedKeys.size === 0 ? [] : filterEarningsCalendarItems(all, allowedKeys);
 
-  const items = filtered.slice(safeOffset, safeOffset + safeLimit);
-  return NextResponse.json({ items, total: filtered.length, offset: safeOffset, limit: safeLimit });
+  let items;
+  let total: number;
+
+  if (allowedKeys) {
+    const all = await getEarningsDayListSlice(monday, day, 0, 500);
+    const filtered = allowedKeys.size === 0 ? [] : filterEarningsCalendarItems(all, allowedKeys);
+    total = filtered.length;
+    items = filtered.slice(safeOffset, safeOffset + safeLimit);
+  } else {
+    items = await getEarningsDayListSlice(monday, day, safeOffset, safeLimit);
+    total = safeOffset + items.length;
+  }
+
+  return NextResponse.json(
+    { items, total, offset: safeOffset, limit: safeLimit },
+    { headers: { "Cache-Control": CACHE_CONTROL_PRIVATE_EARNINGS_OVERFLOW } },
+  );
 }

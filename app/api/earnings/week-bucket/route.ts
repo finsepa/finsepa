@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { CACHE_CONTROL_PRIVATE_EARNINGS_OVERFLOW } from "@/lib/data/cache-policy";
 import { addDaysUtc, getEarningsTimingBucketOverflow, mondayOfWeekUtc, toYmdUtc } from "@/lib/market/earnings-week-data";
 import type { EarningsTimingBucketId } from "@/lib/market/earnings-calendar-types";
 import {
@@ -72,5 +73,8 @@ export async function GET(request: Request) {
   const safeLimit = Number.isFinite(limit) ? Math.min(50, Math.max(1, Math.floor(limit))) : 10;
 
   const items = filtered.slice(safeOffset, safeOffset + safeLimit);
-  return NextResponse.json({ items, total: filtered.length, offset: safeOffset, limit: safeLimit });
+  return NextResponse.json(
+    { items, total: filtered.length, offset: safeOffset, limit: safeLimit },
+    { headers: { "Cache-Control": CACHE_CONTROL_PRIVATE_EARNINGS_OVERFLOW } },
+  );
 }
