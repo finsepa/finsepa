@@ -9,6 +9,11 @@ export const MARKET_SNAPSHOT_KEY = {
   indicesDerived: "indices_derived",
   /** Screener stocks tab index strip — hot tier, built during cron. */
   indexCards: "index_cards",
+  /** Top-500 screener rows with live 1D/1M/YTD fields — hot tier, 15m refresh. */
+  top500Market: "top500_market",
+  screenerSectors: "screener_sectors",
+  screenerIndustries: "screener_industries",
+  screenerGainersLosers: "screener_gainers_losers",
 } as const;
 
 export type MarketSnapshotKey = (typeof MARKET_SNAPSHOT_KEY)[keyof typeof MARKET_SNAPSHOT_KEY];
@@ -30,6 +35,10 @@ export const MARKET_SNAPSHOT_HOT_INGEST_KEYS: readonly MarketSnapshotKey[] = [
   MARKET_SNAPSHOT_KEY.cryptoPage2,
   MARKET_SNAPSHOT_KEY.indicesTab,
   MARKET_SNAPSHOT_KEY.indexCards,
+  MARKET_SNAPSHOT_KEY.top500Market,
+  MARKET_SNAPSHOT_KEY.screenerSectors,
+  MARKET_SNAPSHOT_KEY.screenerIndustries,
+  MARKET_SNAPSHOT_KEY.screenerGainersLosers,
 ];
 
 /** EOD-bar derived blobs — once per regular session day during live hours. */

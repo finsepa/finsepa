@@ -22,6 +22,7 @@ import {
 } from "@/lib/market/market-snapshot-ingest-sources";
 import { getScreenerUsMarketCacheEpoch } from "@/lib/screener/screener-us-market-cache";
 import { buildMarketSnapshotIndexCardsForIngest } from "@/lib/screener/simple-index-cards";
+import { buildScreenerStocksSubtabSnapshotsForIngest } from "@/lib/screener/screener-stocks-subtab-snapshot-ingest";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 
 const LIVE_HOT_INGEST_MIN_INTERVAL_MS = MARKET_SNAPSHOT_HOT_STALE_MS;
@@ -172,6 +173,45 @@ export async function ingestMarketSnapshots(now: Date = new Date()): Promise<Mar
       const cards = await buildMarketSnapshotIndexCardsForIngest();
       const res = await upsertMarketSnapshot(indexCardsKey, hotSeg, cards);
       keys[indexCardsKey] = res.ok ? "ok" : res.reason;
+    }
+
+    const subtabSnapshotKeys = [
+      MARKET_SNAPSHOT_KEY.top500Market,
+      MARKET_SNAPSHOT_KEY.screenerSectors,
+      MARKET_SNAPSHOT_KEY.screenerIndustries,
+      MARKET_SNAPSHOT_KEY.screenerGainersLosers,
+    ] as const;
+    const subtabFresh = await Promise.all(
+      subtabSnapshotKeys.map((k) => marketSnapshotKeyIsFresh(k, hotSeg, LIVE_HOT_INGEST_MIN_INTERVAL_MS)),
+    );
+    if (subtabFresh.every(Boolean)) {
+      for (const k of subtabSnapshotKeys) keys[k] = "ok";
+    } else {
+      let needSubtabBuild = false;
+      for (const k of subtabSnapshotKeys) {
+        if (await marketSnapshotKeyIsFresh(k, hotSeg, LIVE_HOT_INGEST_MIN_INTERVAL_MS)) {
+          keys[k] = "ok";
+          continue;
+        }
+        if (await retagRecentMarketSnapshotSegment(k, hotSeg, LIVE_HOT_INGEST_MIN_INTERVAL_MS)) {
+          keys[k] = "segment_retagged";
+          continue;
+        }
+        needSubtabBuild = true;
+      }
+      if (needSubtabBuild) {
+        const sub = await buildScreenerStocksSubtabSnapshotsForIngest();
+        const entries: [MarketSnapshotKey, unknown][] = [
+          [MARKET_SNAPSHOT_KEY.top500Market, sub.top500Market],
+          [MARKET_SNAPSHOT_KEY.screenerSectors, sub.sectors],
+          [MARKET_SNAPSHOT_KEY.screenerIndustries, sub.industries],
+          [MARKET_SNAPSHOT_KEY.screenerGainersLosers, sub.gainersLosers],
+        ];
+        for (const [snapshotKey, payload] of entries) {
+          const res = await upsertMarketSnapshot(snapshotKey, hotSeg, payload);
+          keys[snapshotKey] = res.ok ? "ok" : res.reason;
+        }
+      }
     }
 
     const skipped = Boolean(hotSkipReason && slowSkipReason);

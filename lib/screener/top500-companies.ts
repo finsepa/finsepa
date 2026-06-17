@@ -6,6 +6,8 @@ import { unstable_cache } from "next/cache";
 import { REVALIDATE_SCREENER_IDENTITY } from "@/lib/data/cache-policy";
 import { withScreenerUsMarketCache } from "@/lib/screener/screener-us-market-cache";
 import { type EodhdTopUniverseRow, fetchEodhdTopByMarketCap } from "@/lib/market/eodhd-screener";
+import { readMarketSnapshot } from "@/lib/market/market-snapshot-store";
+import { MARKET_SNAPSHOT_KEY } from "@/lib/market/market-snapshot-keys";
 import { filterUniverseRowsRemovingOtcDuplicates } from "@/lib/market/otc-duplicate-tickers";
 import { filterIssuerLineDuplicatesInUniverse } from "@/lib/screener/universe-issuer-dedupe";
 
@@ -45,6 +47,11 @@ async function buildTop500UniverseUncached(): Promise<TopCompanyUniverseRow[]> {
   return merged.slice(0, 500);
 }
 
+/** Cron ingest — one EODHD screener fan-out per 15m slot for all users. */
+export async function buildTop500MarketSnapshotForIngest(): Promise<TopCompanyUniverseRow[]> {
+  return buildTop500UniverseUncached();
+}
+
 const getTop500UniverseData = unstable_cache(
   buildTop500UniverseUncached,
   ["screener-top500-universe-v13-identity-7d"],
@@ -60,5 +67,7 @@ export const getTop500Universe = cache(async () => getTop500UniverseData());
  * Identity (names/logos) still comes from {@link getScreenerCompaniesStaticLayer} (7d).
  */
 export async function getTop500UniverseMarketSnapshot(): Promise<TopCompanyUniverseRow[]> {
+  const fromSnapshot = await readMarketSnapshot<TopCompanyUniverseRow[]>(MARKET_SNAPSHOT_KEY.top500Market);
+  if (fromSnapshot?.length) return fromSnapshot;
   return withScreenerUsMarketCache("screener-top500-market-snapshot-v1", buildTop500UniverseUncached);
 }
