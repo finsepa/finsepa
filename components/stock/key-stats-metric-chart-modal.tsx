@@ -34,6 +34,8 @@ import {
   maxPeriodsForFundamentalsChartTimeRange,
   type FundamentalsChartTimeRange,
 } from "@/lib/market/fundamentals-chart-time-range";
+import { ChartScreenshotDownloadModal } from "@/components/chart/chart-screenshot-download-modal";
+import type { ChartType } from "@/components/charting/charting-workspace";
 import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
 import { AppModalShell } from "@/components/ui/app-modal-shell";
 import { AssetChartSkeleton } from "@/components/ui/chart-skeleton";
@@ -41,6 +43,8 @@ import {
   fetchChartingFundamentalsSeriesCached,
   readChartingFundamentalsSeriesCache,
 } from "@/lib/charting/charting-fundamentals-client-cache";
+import type { ChartScreenshotSnapshot } from "@/lib/chart/chart-screenshot-types";
+import { Download } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 
 /** Desktop chart modal width (960px pre–App Modal Shell; avoids shrink-wrapped ~480px default). */
@@ -244,6 +248,8 @@ export function KeyStatsMetricChartModal({
   const [displayOptions, setDisplayOptions] = useState<FundamentalsChartDisplayOptions>(
     () => ({ ...DEFAULT_FUNDAMENTALS_CHART_DISPLAY_OPTIONS }),
   );
+  const [downloadOpen, setDownloadOpen] = useState(false);
+  const [downloadSnapshot, setDownloadSnapshot] = useState<ChartScreenshotSnapshot | null>(null);
 
   const [points, setPoints] = useState<ChartingSeriesPoint[]>(() => {
     if (metricId == null) return [];
@@ -348,6 +354,37 @@ export function KeyStatsMetricChartModal({
   const companyLine = headerMeta?.fullName?.trim() || null;
   const logoName = companyLine ?? ticker;
   const mobileSubtitle = companyLine ? `${ticker} · ${companyLine}` : ticker;
+  const horizontalPeriodAxisLabels =
+    periodMode === "annual" && (timeRange === "5Y" || timeRange === "10Y");
+  const periodPlotMargins = timeRange === "all" ? { left: 0.012, right: 0.018 } : undefined;
+
+  const handleOpenDownload = () => {
+    const chartType: ChartType = chartVisual === "line" ? "line" : "bars";
+    setDownloadSnapshot({
+      variant: "keyStatsMetric",
+      ticker,
+      companyName: companyLine,
+      logoUrl: headerMeta?.logoUrl ?? null,
+      periodMode,
+      timeRange,
+      chartType,
+      selectedMetrics: [metricId],
+      fullPoints: points,
+      keyStatsMetric: {
+        metricId,
+        metricLabel: metricTitle,
+        chartVisual,
+        timeRange,
+        displayOptions,
+        maxBars,
+        barWidthPx,
+        denseQuarterlyBars,
+        horizontalPeriodAxisLabels,
+        periodPlotMargins,
+      },
+    });
+    setDownloadOpen(true);
+  };
 
   const chartHeight = isMobile ? MOBILE_KEY_STATS_CHART_HEIGHT_PX : 400;
   const periodTabOptions = isMobile ? MOBILE_PERIOD_TAB_OPTIONS : DESKTOP_PERIOD_TAB_OPTIONS;
@@ -373,12 +410,8 @@ export function KeyStatsMetricChartModal({
           compactHorizontalLayout
           displayOptions={displayOptions}
           animateBarsOnAppear
-          horizontalPeriodAxisLabels={
-            periodMode === "annual" && (timeRange === "5Y" || timeRange === "10Y")
-          }
-          periodPlotMargins={
-            timeRange === "all" ? { left: 0.012, right: 0.018 } : undefined
-          }
+          horizontalPeriodAxisLabels={horizontalPeriodAxisLabels}
+          periodPlotMargins={periodPlotMargins}
         />
         {!isMobile && metricId === "forward_pe" ? (
           <p className="mt-3 text-[12px] leading-5 text-[#71717A]">
@@ -493,6 +526,15 @@ export function KeyStatsMetricChartModal({
             onChange={setTimeRange}
             aria-label="Date range"
           />
+          <button
+            type="button"
+            onClick={handleOpenDownload}
+            disabled={loading || !hasSeries}
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#09090B] transition-colors hover:bg-[#FAFAFA] disabled:cursor-not-allowed disabled:opacity-40"
+            aria-label="Download chart"
+          >
+            <Download className="h-4 w-4" strokeWidth={2} aria-hidden />
+          </button>
         </div>
       </div>
       <div className="min-h-0 flex-1 px-5 py-4">{chartBody}</div>
@@ -500,20 +542,30 @@ export function KeyStatsMetricChartModal({
   );
 
   return (
-    <AppModalOverlay
-      open={metricId != null}
-      onClose={onClose}
-      zIndex={300}
-      align={isMobile ? "bottom" : "center"}
-    >
-      <div
-        className={cn(!isMobile && KEY_STATS_DESKTOP_MODAL_WIDTH_CLASS)}
-        style={isMobile ? sheetStyle : undefined}
-        onMouseDown={(e) => e.stopPropagation()}
-        {...(isMobile ? sheetPointerHandlers : {})}
+    <>
+      <AppModalOverlay
+        open={metricId != null}
+        onClose={onClose}
+        zIndex={300}
+        align={isMobile ? "bottom" : "center"}
       >
-        {shell}
-      </div>
-    </AppModalOverlay>
+        <div
+          className={cn(!isMobile && KEY_STATS_DESKTOP_MODAL_WIDTH_CLASS)}
+          style={isMobile ? sheetStyle : undefined}
+          onMouseDown={(e) => e.stopPropagation()}
+          {...(isMobile ? sheetPointerHandlers : {})}
+        >
+          {shell}
+        </div>
+      </AppModalOverlay>
+      {!isMobile ? (
+        <ChartScreenshotDownloadModal
+          open={downloadOpen}
+          onClose={() => setDownloadOpen(false)}
+          snapshot={downloadSnapshot}
+          zIndex={350}
+        />
+      ) : null}
+    </>
   );
 }

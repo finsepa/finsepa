@@ -9,14 +9,14 @@ function StatRow({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-3 border-b border-[#E4E4E7] py-1.5 last:border-0">
       <span className="min-w-0 shrink text-[14px] leading-5 text-[#09090B]">{label}</span>
-      <span className="shrink-0 text-right text-[14px] leading-5 tabular-nums text-[#09090B]">{value}</span>
+      <span className="shrink-0 text-right text-[14px] font-medium leading-5 tabular-nums text-[#09090B]">{value}</span>
     </div>
   );
 }
 
 function Card({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="rounded-xl bg-white p-4">
+    <div className="rounded-xl border border-[#E4E4E7] bg-white p-4">
       <h3 className="mb-2 text-[14px] font-semibold leading-5 text-[#09090B]">{title}</h3>
       {children}
     </div>

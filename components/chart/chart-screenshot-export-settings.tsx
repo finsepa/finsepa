@@ -1,6 +1,7 @@
 "use client";
 
 import type { ChartScreenshotExportOptions } from "@/lib/chart/chart-screenshot-export-options";
+import type { ChartScreenshotSnapshotVariant } from "@/lib/chart/chart-screenshot-types";
 import { cn } from "@/lib/utils";
 
 function PillSwitch({
@@ -63,14 +64,47 @@ export function ChartScreenshotExportSettings({
   value,
   onChange,
   disabled,
+  variant = "charting",
 }: {
   value: ChartScreenshotExportOptions;
   onChange: (next: ChartScreenshotExportOptions) => void;
   disabled?: boolean;
+  variant?: ChartScreenshotSnapshotVariant;
 }) {
   const patch = (partial: Partial<ChartScreenshotExportOptions>) => {
     onChange({ ...value, ...partial });
   };
+
+  if (variant === "keyStatsMetric") {
+    return (
+      <div className="flex h-full flex-col px-5 py-4">
+        <SettingRow
+          label="Show values"
+          pressed={value.showValues}
+          onPressedChange={(showValues) => patch({ showValues })}
+          disabled={disabled}
+        />
+        <SettingRow
+          label="Avg. line"
+          pressed={value.showAvgLine ?? false}
+          onPressedChange={(showAvgLine) => patch({ showAvgLine })}
+          disabled={disabled}
+        />
+        <SettingRow
+          label="Max line"
+          pressed={value.showMaxLine ?? false}
+          onPressedChange={(showMaxLine) => patch({ showMaxLine })}
+          disabled={disabled}
+        />
+        <SettingRow
+          label="Min line"
+          pressed={value.showMinLine ?? false}
+          onPressedChange={(showMinLine) => patch({ showMinLine })}
+          disabled={disabled}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full flex-col px-5 py-4">

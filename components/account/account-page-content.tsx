@@ -537,9 +537,8 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
               ) : (
                 <>
                   <article className="rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
-                    <p className="text-[13px] font-medium text-[#71717A]">Your subscription</p>
+                    <p className="text-[13px] font-medium text-[#71717A]">{subscriptionStatusBelowTitle}</p>
                     <p className="mt-2 text-[22px] font-semibold leading-7 text-[#09090B]">{subscriptionTitle}</p>
-                    <p className="mt-1 text-[14px] leading-5 text-[#71717A]">{subscriptionStatusBelowTitle}</p>
                     <button
                       type="button"
                       onClick={() => {
@@ -557,9 +556,8 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
                   </article>
 
                   <article className="rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
-                    <p className="text-[13px] font-medium text-[#71717A]">Payments</p>
+                    <p className="text-[13px] font-medium text-[#71717A]">{recurringMeta}</p>
                     <p className="mt-2 text-[22px] font-semibold leading-7 text-[#09090B]">{recurringAmount}</p>
-                    <p className="mt-1 text-[14px] leading-5 text-[#71717A]">{recurringMeta}</p>
                   </article>
                 </>
               )}

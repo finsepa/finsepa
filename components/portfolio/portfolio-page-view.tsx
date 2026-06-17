@@ -22,6 +22,7 @@ import {
 import { SecondaryTabs } from "@/components/ui/secondary-tabs";
 import { PortfolioOverviewAthProvider } from "@/components/portfolio/portfolio-overview-ath-context";
 import { PortfolioOverviewCards } from "@/components/portfolio/portfolio-overview-cards";
+import { PortfolioOverviewMetrics } from "@/components/portfolio/portfolio-overview-metrics";
 import {
   PortfolioPageLoadingShell,
   PortfolioTabPanelSkeleton,
@@ -99,17 +100,6 @@ const PortfolioPerformancePanel = dynamic(
   },
 );
 
-const PortfolioMetricsPanel = dynamic(
-  () =>
-    import("@/components/portfolio/portfolio-metrics-panel").then((m) => ({
-      default: m.PortfolioMetricsPanel as ComponentType<{
-        holdings: PortfolioHolding[];
-        transactions: PortfolioTransaction[];
-      }>,
-    })),
-  { loading: () => <PortfolioTabPanelSkeleton className="mb-6" /> },
-);
-
 const PortfolioDividendsPanel = dynamic(
   () =>
     import("@/components/portfolio/portfolio-dividends-panel").then((m) => ({
@@ -125,7 +115,6 @@ function initialTabsVisited(active: PortfolioViewTab): Record<PortfolioViewTab, 
   return {
     Overview: active === "Overview",
     Performance: active === "Performance",
-    Metrics: active === "Metrics",
     Dividends: active === "Dividends",
     Cash: active === "Cash",
     Transactions: active === "Transactions",
@@ -197,6 +186,11 @@ export function PortfolioPageView({
   useEffect(() => {
     if (searchParams.get("tab")?.toLowerCase() !== "slices") return;
     router.replace(`${tabBasePath}?tab=overview&view=slices`, { scroll: false });
+  }, [searchParams, router, tabBasePath]);
+
+  useEffect(() => {
+    if (searchParams.get("tab")?.toLowerCase() !== "metrics") return;
+    router.replace(`${tabBasePath}?tab=overview`, { scroll: false });
   }, [searchParams, router, tabBasePath]);
 
   useEffect(() => {
@@ -374,6 +368,7 @@ export function PortfolioPageView({
                 transactions={transactions}
                 benchmarkInvestedUsd={benchmarkInvestedUsd}
               />
+              <PortfolioOverviewMetrics holdings={holdings} transactions={transactions} />
               <div className="pt-6">
                 <SecondaryTabs
                   className="mb-4"
@@ -420,17 +415,6 @@ export function PortfolioPageView({
               aria-hidden={viewTab !== "Performance"}
             >
               <PortfolioPerformancePanel holdings={holdings} transactions={transactions} />
-            </div>
-          ) : null}
-
-          {tabsVisited.Metrics ? (
-            <div
-              className={panelClass("Metrics")}
-              role="tabpanel"
-              id="portfolio-tab-metrics"
-              aria-hidden={viewTab !== "Metrics"}
-            >
-              <PortfolioMetricsPanel holdings={holdings} transactions={transactions} />
             </div>
           ) : null}
 

@@ -24,15 +24,17 @@ type TopbarDropdownPortalProps = {
   /**
    * `trailing`: fixed box’s right edge matches anchor’s right (top bar menus).
    * `leading`: fixed box’s left edge matches anchor’s left (e.g. portfolio title row).
+   * `center`: horizontally centered under the anchor.
    */
-  align?: "trailing" | "leading";
+  align?: "trailing" | "leading" | "center";
   /** Match the anchor element width (full-width form dropdowns). */
   matchAnchorWidth?: boolean;
 };
 
 type PortalPos = { top: number; width?: number } & (
-  | { right: number; left?: undefined }
-  | { left: number; right?: undefined }
+  | { right: number; left?: undefined; centerX?: undefined }
+  | { left: number; right?: undefined; centerX?: undefined }
+  | { centerX: number; left?: undefined; right?: undefined }
 );
 
 /**
@@ -59,6 +61,8 @@ export const TopbarDropdownPortal = forwardRef<HTMLDivElement, TopbarDropdownPor
       const width = matchAnchorWidth ? r.width : undefined;
       if (align === "leading") {
         setPos({ top: r.bottom + 4, left: r.left, width });
+      } else if (align === "center") {
+        setPos({ top: r.bottom + 4, centerX: r.left + r.width / 2, width });
       } else {
         setPos({ top: r.bottom + 4, right: vw - r.right, width });
       }
@@ -88,7 +92,11 @@ export const TopbarDropdownPortal = forwardRef<HTMLDivElement, TopbarDropdownPor
     if (!open || !mounted) return null;
 
     const horizontal =
-      "left" in pos && pos.left != null ? { left: pos.left } : { right: pos.right as number };
+      "centerX" in pos && pos.centerX != null
+        ? { left: pos.centerX, transform: "translateX(-50%)" as const }
+        : "left" in pos && pos.left != null
+          ? { left: pos.left }
+          : { right: pos.right as number };
 
     return createPortal(
       <div

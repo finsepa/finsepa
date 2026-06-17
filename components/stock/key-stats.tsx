@@ -268,7 +268,7 @@ function BasicValueDisplay({
   valueClassName?: string;
 }) {
   const textClass = cn(
-    "text-[14px] leading-5 tabular-nums",
+    "text-[14px] font-medium leading-5 tabular-nums",
     valueClassName ?? "text-[#09090B]",
   );
 

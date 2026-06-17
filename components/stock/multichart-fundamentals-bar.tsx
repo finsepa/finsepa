@@ -38,6 +38,7 @@ import { isTouchDeviceNow, triggerMobileChartHaptic } from "@/lib/haptic";
 import {
   buildFundamentalsYAxisDomain,
   CHARTING_LINE_HOVER_HALO_BG,
+  CHARTING_LINE_POINT_MARKER_DIAMETER_PX,
   computeFundamentalsChartTooltipPlacement,
   FUNDAMENTALS_CHART_BAR_VALUE_LABEL_HEIGHT_PX,
   FUNDAMENTALS_CHART_HOVER_BAND_BG,
@@ -87,8 +88,16 @@ export const MULTICHART_BAR_WIDTH_ALL_QUARTERLY_PX = 10;
 /** Right column for Y-axis tick labels; `pl-*` gaps tick text from the plot / grid strokes. */
 const MULTICHART_Y_AXIS_W_PX = 50;
 const MULTICHART_Y_AXIS_W_COMPACT_PX = 42;
+/** Screenshot export — room for wide tick labels (e.g. 500.00) without clipping. */
+const MULTICHART_Y_AXIS_W_SCREENSHOT_PX = 52;
 
 export type PeriodPlotEdgeMargin = { left: number; right: number };
+
+/** Key Stats screenshot export — inset plot + period labels from frame edges. */
+export const KEY_STATS_SCREENSHOT_PERIOD_MARGINS: PeriodPlotEdgeMargin = {
+  left: 0.022,
+  right: 0.028,
+};
 
 /** Key Stats 5Y/10Y line — pull first/last points toward plot edges (bars keep column inset). */
 const KEY_STATS_COMPACT_LINE_PERIOD_MARGINS: PeriodPlotEdgeMargin = {
@@ -301,6 +310,8 @@ type Props = {
   animateBarsOnAppear?: boolean;
   /** Level period labels (e.g. Key Stats annual 10Y) instead of the default slant. */
   horizontalPeriodAxisLabels?: boolean;
+  /** Wide export frame — side padding, wider y-axis, and plot insets for labels. */
+  screenshotExportMode?: boolean;
 };
 
 function plotValueTopPercent(
@@ -434,15 +445,23 @@ export function MultichartFundamentalsBar({
   displayOptions: displayOptionsProp,
   animateBarsOnAppear = false,
   horizontalPeriodAxisLabels = false,
+  screenshotExportMode = false,
 }: Props) {
   const display = displayOptionsProp ?? DEFAULT_FUNDAMENTALS_CHART_DISPLAY_OPTIONS;
   const tightYAxis = compactHorizontalLayout || periodPlotMargins != null;
-  const yAxisWidthPx = tightYAxis ? MULTICHART_Y_AXIS_W_COMPACT_PX : MULTICHART_Y_AXIS_W_PX;
-  const yAxisPlClass = periodPlotMargins
-    ? "pl-0 pr-3"
-    : compactHorizontalLayout
-      ? "pl-1.5"
-      : "pl-3";
+  const yAxisWidthPx = screenshotExportMode
+    ? MULTICHART_Y_AXIS_W_SCREENSHOT_PX
+    : tightYAxis
+      ? MULTICHART_Y_AXIS_W_COMPACT_PX
+      : MULTICHART_Y_AXIS_W_PX;
+  const yAxisPlClass = screenshotExportMode
+    ? "pl-0 pr-1"
+    : periodPlotMargins
+      ? "pl-0 pr-3"
+      : compactHorizontalLayout
+        ? "pl-1.5"
+        : "pl-3";
+  const chartSidePadClass = screenshotExportMode ? "px-2.5" : "";
   const yAxisLabelPadClass = compactHorizontalLayout ? "px-0.5" : "px-1";
   const wrapRef = useRef<HTMLDivElement>(null);
   const plotAreaRef = useRef<HTMLDivElement>(null);
@@ -515,8 +534,8 @@ export function MultichartFundamentalsBar({
     const el = linePlotRef.current;
     if (!el) return;
     const measure = () => {
-      const r = el.getBoundingClientRect();
-      setLinePlotPx({ w: Math.max(0, r.width), h: Math.max(0, r.height) });
+      // clientWidth/Height ignore ancestor transform:scale (getBoundingClientRect does not).
+      setLinePlotPx({ w: Math.max(0, el.clientWidth), h: Math.max(0, el.clientHeight) });
     };
     measure();
     const ro = new ResizeObserver(measure);
@@ -560,6 +579,7 @@ export function MultichartFundamentalsBar({
   const shouldAnimateLine = animateBarsOnAppear && visual === "line" && n > 0;
   const [barValueLabelsVisible, setBarValueLabelsVisible] = useState(!shouldAnimateBars);
   const [lineRevealProgress, setLineRevealProgress] = useState(shouldAnimateLine ? 0 : 1);
+  const lineValueLabelsVisible = !shouldAnimateLine || lineRevealProgress >= 1;
 
   useEffect(() => {
     if (!shouldAnimateBars) {
@@ -650,9 +670,18 @@ export function MultichartFundamentalsBar({
       : null;
 
   return (
-    <div ref={wrapRef} className="w-full min-w-0 max-w-full overflow-visible">
+    <div
+      ref={wrapRef}
+      className={cn(
+        "w-full min-w-0 max-w-full overflow-visible",
+        screenshotExportMode && "pr-2",
+      )}
+    >
       <div className="relative flex w-full min-w-0 max-w-full flex-col overflow-visible" style={{ height }}>
-        <div className="flex min-h-0 w-full min-w-0 flex-1" style={{ height: plotHeight }}>
+        <div
+          className={cn("flex min-h-0 w-full min-w-0 flex-1", chartSidePadClass)}
+          style={{ height: plotHeight }}
+        >
           <div
             ref={plotAreaRef}
             className="relative min-h-0 min-w-0 flex-1"
@@ -836,6 +865,40 @@ export function MultichartFundamentalsBar({
                     </g>
                   </svg>
                 ) : null}
+                {display.showBarValues && lineValueLabelsVisible && lineSvg.pts.length > 0
+                  ? lineSvg.pts.map(({ x, y, v, i }) => {
+                      if (v == null || !Number.isFinite(v) || v === 0) return null;
+                      const text = formatBarChartDataLabel(metricId, v);
+                      const dotClearance = CHARTING_LINE_POINT_MARKER_DIAMETER_PX / 2 + 4;
+                      const minTop = FUNDAMENTALS_CHART_BAR_VALUE_LABEL_HEIGHT_PX + 4;
+                      return (
+                        <div
+                          key={`line-val-${labels[i]}-${i}`}
+                          className={cn(BAR_VALUE_LABEL_ANCHOR_CLASS, "-translate-y-full")}
+                          style={{
+                            left: x,
+                            top: Math.max(minTop, y - dotClearance),
+                          }}
+                          title={text}
+                        >
+                          <span
+                            className={cn(
+                              BAR_VALUE_LABEL_TEXT_CLASS,
+                              shouldAnimateLine && "fundamentals-bar-value-label-in",
+                            )}
+                            style={{
+                              animationDelay: shouldAnimateLine
+                                ? `${i * FUNDAMENTALS_BAR_VALUE_LABEL_STAGGER_MS}ms`
+                                : undefined,
+                              textShadow: BAR_VALUE_LABEL_TEXT_SHADOW,
+                            }}
+                          >
+                            {text}
+                          </span>
+                        </div>
+                      );
+                    })
+                  : null}
               </div>
             ) : (
               <div
@@ -1055,7 +1118,10 @@ export function MultichartFundamentalsBar({
           </div>
         </div>
 
-        <div className="flex w-full min-w-0 overflow-visible" style={{ height: MULTICHART_AXIS_ROW_PX }}>
+        <div
+          className={cn("flex w-full min-w-0 overflow-visible", chartSidePadClass)}
+          style={{ height: MULTICHART_AXIS_ROW_PX }}
+        >
           <div className="relative mb-1 min-w-0 flex-1 px-0" style={{ height: MULTICHART_AXIS_ROW_PX }}>
             {axisLabels.map((axisLab, i) => {
               const showAxisText = fundamentalsPeriodAxisShowsLabel(i, axisLabels.length, periodMode);

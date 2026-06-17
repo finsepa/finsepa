@@ -2,7 +2,7 @@
 
 import { UnderlineTabs } from "@/components/screener/market-tabs";
 
-const tabs = ["Overview", "Performance", "Metrics", "Dividends", "Cash", "Transactions"] as const;
+const tabs = ["Overview", "Performance", "Dividends", "Cash", "Transactions"] as const;
 export type PortfolioViewTab = (typeof tabs)[number];
 
 export type OverviewHoldingsSubTab = "assets" | "allocation" | "slices";
@@ -11,7 +11,6 @@ export type OverviewHoldingsSubTab = "assets" | "allocation" | "slices";
 export const publicPortfolioViewTabs = [
   "Overview",
   "Performance",
-  "Metrics",
   "Dividends",
   "Transactions",
 ] as const satisfies readonly PortfolioViewTab[];
@@ -23,7 +22,7 @@ export function portfolioViewTabFromSearchParam(value: string | null): Portfolio
     case "performance":
       return "Performance";
     case "metrics":
-      return "Metrics";
+      return "Overview";
     case "dividends":
       return "Dividends";
     case "cash":
@@ -61,8 +60,6 @@ export function searchParamFromPortfolioViewTab(tab: PortfolioViewTab): string {
   switch (tab) {
     case "Performance":
       return "performance";
-    case "Metrics":
-      return "metrics";
     case "Dividends":
       return "dividends";
     case "Cash":

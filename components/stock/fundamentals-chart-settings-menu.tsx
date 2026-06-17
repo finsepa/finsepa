@@ -54,7 +54,7 @@ const TOGGLE_ROWS: {
   { key: "showAvgLine", label: "Avg. line", ariaLabel: "Show average line" },
   { key: "showMaxLine", label: "Max line", ariaLabel: "Show maximum line" },
   { key: "showMinLine", label: "Min line", ariaLabel: "Show minimum line" },
-  { key: "showBarValues", label: "Values", ariaLabel: "Show values above bars" },
+  { key: "showBarValues", label: "Values", ariaLabel: "Show values on chart" },
 ];
 
 type MenuAnchor = { top: number; right: number; width: number };

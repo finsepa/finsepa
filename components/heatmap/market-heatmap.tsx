@@ -27,6 +27,10 @@ const SECTOR_RADIUS = 16;
 const HEADER_H = 24;
 /** Industry / sub-sector strip inside a sector (stocks only) */
 const INDUSTRY_HEADER_H = 18;
+const INDUSTRY_HEADER_RADIUS = 2;
+const INDUSTRY_LABEL_H_PAD = 5;
+/** ~px per glyph at 9px semibold uppercase (Inter). */
+const INDUSTRY_LABEL_CHAR_PX = 5.5;
 /** Inner padding inside each sector card (all sides). */
 const PAD = 4;
 /** Corner radius for every company tile. */
@@ -51,6 +55,16 @@ type Tile = {
 
 function tileCornerRadius(w: number, h: number): number {
   return Math.min(TILE_CORNER_RADIUS, w / 2, h / 2);
+}
+
+function truncateIndustryHeaderLabel(name: string, barWidthPx: number): string {
+  const innerW = barWidthPx - INDUSTRY_LABEL_H_PAD * 2;
+  if (innerW < INDUSTRY_LABEL_CHAR_PX * 3) return "";
+  const upper = name.trim().toUpperCase();
+  const maxChars = Math.floor(innerW / INDUSTRY_LABEL_CHAR_PX);
+  if (upper.length <= maxChars) return upper;
+  const keep = Math.max(1, maxChars - 1);
+  return `${upper.slice(0, keep)}…`;
 }
 
 type IndustryLayout = {
@@ -522,6 +536,21 @@ function renderSectorGroup(
         <clipPath id={clipId}>
           <rect x={sec.outerX0} y={sec.outerY0} width={sw} height={sh} rx={r} ry={r} />
         </clipPath>
+        {sec.nestIndustries
+          ? sec.industries.map((ind, indIndex) => {
+              const barWidth = ind.outerX1 - ind.outerX0;
+              return (
+                <clipPath key={`${ind.name}-${indIndex}`} id={`${clipId}-ind-${indIndex}`}>
+                  <rect
+                    x={ind.outerX0 + INDUSTRY_LABEL_H_PAD}
+                    y={ind.outerY0}
+                    width={Math.max(0, barWidth - INDUSTRY_LABEL_H_PAD * 2)}
+                    height={INDUSTRY_HEADER_H}
+                  />
+                </clipPath>
+              );
+            })
+          : null}
       </defs>
       <rect
         x={sec.outerX0}
@@ -555,19 +584,24 @@ function renderSectorGroup(
           {sec.name}
         </text>
         {sec.nestIndustries
-          ? sec.industries.map((ind) => (
+          ? sec.industries.map((ind, indIndex) => {
+              const barWidth = ind.outerX1 - ind.outerX0;
+              const label = truncateIndustryHeaderLabel(ind.name, barWidth);
+              return (
               <g key={`${sec.name}-${ind.name}`}>
                 <rect
                   x={ind.outerX0}
                   y={ind.outerY0}
-                  width={ind.outerX1 - ind.outerX0}
+                  width={barWidth}
                   height={INDUSTRY_HEADER_H}
+                  rx={INDUSTRY_HEADER_RADIUS}
+                  ry={INDUSTRY_HEADER_RADIUS}
                   fill={ind.headerFill}
                   className="cursor-pointer"
                   onMouseEnter={(e) => onTileEnter(ind.featuredLeaf, e)}
                   onMouseLeave={scheduleClearHover}
                 />
-                {ind.outerX1 - ind.outerX0 >= 48 ? (
+                {label ? (
                   <text
                     x={(ind.outerX0 + ind.outerX1) / 2}
                     y={ind.outerY0 + 13}
@@ -577,15 +611,18 @@ function renderSectorGroup(
                     fontWeight={600}
                     style={{ fontFamily: "inherit" }}
                     className="uppercase"
+                    clipPath={`url(#${clipId}-ind-${indIndex})`}
                     onMouseEnter={(e) => onTileEnter(ind.featuredLeaf, e)}
                     onMouseLeave={scheduleClearHover}
                   >
-                    {(ind.name.length > 28 ? `${ind.name.slice(0, 26)}…` : ind.name).toUpperCase()}
+                    <title>{ind.name}</title>
+                    {label}
                   </text>
                 ) : null}
                 {ind.tiles.map((t) => renderTile(t, market, onTileEnter, scheduleClearHover))}
               </g>
-            ))
+            );
+            })
           : sec.tiles.map((t) => renderTile(t, market, onTileEnter, scheduleClearHover))}
         {hoverRect ? (
           <rect
@@ -619,6 +656,11 @@ function renderTile(
   const cx = t.x0 + w / 2;
   const cy = t.y0 + h / 2;
   const large = w >= 72 && h >= 56;
+  const tickerFontSize = large ? 24 : 12;
+  const pctFontSize = large ? 16 : 12;
+  const tileLabelGapPx = 8;
+  const labelPairHeight = tickerFontSize + tileLabelGapPx + pctFontSize;
+  const labelPairTop = t.y0 + (h - labelPairHeight) / 2;
   const tickerOnlyFont = Math.min(
     11,
     Math.floor(h * 0.55),
@@ -647,10 +689,11 @@ function renderTile(
         <>
           <text
             x={cx}
-            y={t.y0 + (large ? h * 0.38 : h * 0.36)}
+            y={labelPairTop}
             textAnchor="middle"
+            dominantBaseline="hanging"
             fill="white"
-            fontSize={large ? 24 : 12}
+            fontSize={tickerFontSize}
             fontWeight={600}
             className={cn("pointer-events-none", heatmapCellTextClass(t.leaf.changePct))}
             style={{ fontFamily: "inherit" }}
@@ -659,10 +702,11 @@ function renderTile(
           </text>
           <text
             x={cx}
-            y={t.y0 + (large ? h * 0.62 : h * 0.64)}
+            y={labelPairTop + tickerFontSize + tileLabelGapPx}
             textAnchor="middle"
+            dominantBaseline="hanging"
             fill="white"
-            fontSize={large ? 16 : 12}
+            fontSize={pctFontSize}
             fontWeight={400}
             className="pointer-events-none tabular-nums"
             style={{ fontFamily: "inherit" }}

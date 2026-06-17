@@ -4,6 +4,10 @@ import { forwardRef, useMemo } from "react";
 import { ChartingWorkspace } from "@/components/charting/charting-workspace";
 import { ChartScreenshotAssetHeader } from "@/components/chart/chart-screenshot-asset-header";
 import {
+  MultichartFundamentalsBar,
+  KEY_STATS_SCREENSHOT_PERIOD_MARGINS,
+} from "@/components/stock/multichart-fundamentals-bar";
+import {
   CHART_SCREENSHOT_CONTENT_SCALE,
   CHART_SCREENSHOT_FRAME_PADDING_PX,
   CHART_SCREENSHOT_HEADER_CHART_GAP_PX,
@@ -36,6 +40,23 @@ export const ChartScreenshotPreview = forwardRef<HTMLDivElement, ChartScreenshot
     const chartArea = useMemo(() => chartScreenshotChartAreaSize(), []);
     const chartBlockHeightPx = useMemo(() => chartScreenshotChartBlockHeightPx(), []);
     const contentLogicalWidth = chartArea.width / CHART_SCREENSHOT_CONTENT_SCALE;
+    const isKeyStatsMetric = snapshot.variant === "keyStatsMetric" && snapshot.keyStatsMetric;
+    const keyStatsPreviewDisplayOptions = useMemo(() => {
+      if (!snapshot.keyStatsMetric) return null;
+      return {
+        ...snapshot.keyStatsMetric.displayOptions,
+        showBarValues: exportOptions.showValues,
+        showAvgLine: exportOptions.showAvgLine ?? snapshot.keyStatsMetric.displayOptions.showAvgLine,
+        showMaxLine: exportOptions.showMaxLine ?? snapshot.keyStatsMetric.displayOptions.showMaxLine,
+        showMinLine: exportOptions.showMinLine ?? snapshot.keyStatsMetric.displayOptions.showMinLine,
+      };
+    }, [
+      snapshot.keyStatsMetric,
+      exportOptions.showValues,
+      exportOptions.showAvgLine,
+      exportOptions.showMaxLine,
+      exportOptions.showMinLine,
+    ]);
 
     /** Preview card grows/shrinks with zoom — 100% = fit-to-pane size. */
     const frameWidth = CHART_SCREENSHOT_WIDTH_PX * previewScale;
@@ -79,9 +100,13 @@ export const ChartScreenshotPreview = forwardRef<HTMLDivElement, ChartScreenshot
                 ticker={snapshot.ticker}
                 companyName={snapshot.companyName}
                 logoUrl={snapshot.logoUrl}
+                metricTitle={isKeyStatsMetric ? snapshot.keyStatsMetric!.metricLabel : null}
               />
               <div
-                className="flex min-h-0 flex-1 items-center justify-center overflow-hidden"
+                className={cn(
+                  "flex min-h-0 flex-1",
+                  isKeyStatsMetric ? "items-stretch overflow-visible" : "items-center justify-center overflow-hidden",
+                )}
                 style={{
                   marginTop: CHART_SCREENSHOT_HEADER_CHART_GAP_PX,
                   width: contentBox.width,
@@ -90,12 +115,33 @@ export const ChartScreenshotPreview = forwardRef<HTMLDivElement, ChartScreenshot
               >
                 <div
                   className="[&_*]:!animate-none [&_*]:!transition-none"
-                  style={{
-                    width: contentLogicalWidth,
-                    transform: `scale(${CHART_SCREENSHOT_CONTENT_SCALE})`,
-                    transformOrigin: "center center",
-                  }}
+                  style={
+                    isKeyStatsMetric
+                      ? { width: "100%", minWidth: 0 }
+                      : {
+                          width: contentLogicalWidth,
+                          transform: `scale(${CHART_SCREENSHOT_CONTENT_SCALE})`,
+                          transformOrigin: "center center",
+                        }
+                  }
                 >
+                  {isKeyStatsMetric && keyStatsPreviewDisplayOptions ? (
+                    <MultichartFundamentalsBar
+                      metricId={snapshot.keyStatsMetric!.metricId}
+                      points={snapshot.fullPoints}
+                      height={chartBlockHeightPx}
+                      periodMode={snapshot.periodMode}
+                      visual={snapshot.keyStatsMetric!.chartVisual}
+                      maxBars={snapshot.keyStatsMetric!.maxBars}
+                      barWidthPx={snapshot.keyStatsMetric!.barWidthPx}
+                      compactHorizontalLayout
+                      displayOptions={keyStatsPreviewDisplayOptions}
+                      animateBarsOnAppear={false}
+                      horizontalPeriodAxisLabels={snapshot.keyStatsMetric!.horizontalPeriodAxisLabels}
+                      periodPlotMargins={KEY_STATS_SCREENSHOT_PERIOD_MARGINS}
+                      screenshotExportMode
+                    />
+                  ) : (
                   <ChartingWorkspace
                     ticker={snapshot.ticker}
                     metricParam={chartingMetricsToParam(snapshot.selectedMetrics)}
@@ -119,6 +165,7 @@ export const ChartScreenshotPreview = forwardRef<HTMLDivElement, ChartScreenshot
                       selectedMetrics: snapshot.selectedMetrics,
                     }}
                   />
+                  )}
                 </div>
               </div>
             </div>

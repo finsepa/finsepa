@@ -2,8 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
-import { CalendarDays, ChevronLeft, ChevronRight, Clock } from "@/lib/icons";
+import { CalendarDays, ChevronLeft, ChevronRight, Clock, LayoutList } from "@/lib/icons";
 
+import { EarningsListSeeMoreMenu } from "@/components/earnings/earnings-list-see-more-menu";
 import { EarningsOverflowHoverMenu } from "@/components/earnings/earnings-overflow-hover-menu";
 import { EarningsPreviewModal } from "@/components/earnings/earnings-preview-modal";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
@@ -11,8 +12,7 @@ import { PostMarketEarningsIcon } from "@/components/stock/post-market-earnings-
 import { PreMarketEarningsIcon } from "@/components/stock/pre-market-earnings-icon";
 import { CompanyLogo } from "@/components/screener/company-logo";
 import { SCREENER_TABLE_HEADER_STICKY_CLASS } from "@/components/screener/screener-table-scroll";
-import { LogoSkeleton, TextSkeleton } from "@/components/markets/skeleton";
-import { FormListboxSelect, type ListboxOption } from "@/components/ui/form-listbox-select";
+import { LogoSkeleton, SkeletonBox, TextSkeleton } from "@/components/markets/skeleton";
 import type {
   EarningsCalendarItem,
   EarningsDayColumn,
@@ -21,8 +21,8 @@ import type {
   EarningsWeekPayload,
 } from "@/lib/market/earnings-calendar-types";
 import {
-  buildAllowedKeysFromHoldings,
-  buildAllowedKeysFromWatchlist,
+  buildAllowedKeysFromPortfolio,
+  earningsDayListItems,
   filterEarningsWeekPayload,
   type EarningsScopeFilter,
 } from "@/lib/market/earnings-scope-filter";
@@ -32,6 +32,7 @@ import {
   EARNINGS_TIMING_GRID_COLS,
   EARNINGS_TIMING_GRID_ROWS,
   EARNINGS_TIMING_GRID_SLOTS,
+  sortEarningsCalendarItemsByMarketCap,
   timingBucketHasContent,
   type WeekTimingGridRows,
 } from "@/lib/market/earnings-week-grid-layout";
@@ -40,18 +41,176 @@ import {
   formatWeekMonthYearLabelFromYmds,
   toYmdUtc,
 } from "@/lib/market/utc-calendar-dates";
+import { formatEconomyLongDateUtc } from "@/lib/market/economy-format-display";
 import { prefetchStockEarningsTabPayload } from "@/lib/market/stock-earnings-tab-client";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
 import { cn } from "@/lib/utils";
 
-const EARNINGS_SCOPE_OPTIONS: ListboxOption<EarningsScopeFilter>[] = [
-  { value: "all", label: "All companies" },
-  { value: "watchlist", label: "My watchlist" },
-  { value: "holdings", label: "My holdings" },
-];
-
 /** Icon size inside 24px timing bars. */
 const EARNINGS_CALENDAR_TIMING_ICON_PX = 16;
+
+/** Max companies shown per day in list view before "See more". */
+const EARNINGS_LIST_PREVIEW_COUNT = 10;
+
+function splitEarningsDayListForView(day: EarningsDayColumn): {
+  visibleItems: EarningsCalendarItem[];
+  overflowCount: number;
+  preloadedOverflow?: EarningsCalendarItem[];
+} {
+  const items = sortEarningsCalendarItemsByMarketCap(earningsDayListItems(day));
+  const visibleItems = items.slice(0, EARNINGS_LIST_PREVIEW_COUNT);
+
+  if (day.listItems?.length) {
+    const overflowItems = items.slice(EARNINGS_LIST_PREVIEW_COUNT);
+    return {
+      visibleItems,
+      overflowCount: overflowItems.length,
+      preloadedOverflow: overflowItems.length > 0 ? overflowItems : undefined,
+    };
+  }
+
+  const bucketOverflow =
+    day.beforeMarket.overflowCount + day.afterMarket.overflowCount + day.timeTbd.overflowCount;
+  const inlineOverflow = items.slice(EARNINGS_LIST_PREVIEW_COUNT);
+  const overflowCount = inlineOverflow.length + bucketOverflow;
+
+  return {
+    visibleItems,
+    overflowCount,
+    preloadedOverflow:
+      bucketOverflow > 0 ? undefined : inlineOverflow.length > 0 ? inlineOverflow : undefined,
+  };
+}
+
+const earningsListColLayout = "grid grid-cols-[minmax(0,2fr)_minmax(5.5rem,max-content)_1fr_1fr] gap-x-2";
+
+const earningsListTableHeaderClass = cn(
+  earningsListColLayout,
+  "min-h-[44px] items-center bg-white px-2 py-0 text-[12px] font-medium leading-5 text-[#71717A] sm:px-4 sm:text-[14px]",
+);
+
+const earningsListTableRowClass = cn(
+  earningsListColLayout,
+  "min-h-[60px] items-center bg-white px-2 transition-colors duration-75 hover:bg-neutral-50 sm:px-4",
+);
+
+const earningsListTimeHeaderClass = "min-w-0 text-center";
+
+const earningsListTimeCellClass = "flex min-w-0 items-center justify-center";
+
+const earningsListNumericCellClass =
+  "min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]";
+
+function EarningsListDayHeader({ dateYmd, isToday }: { dateYmd: string; isToday: boolean }) {
+  return (
+    <div
+      className={cn(earningsListTableHeaderClass, isToday && "border-b-2 border-[#DC2626]")}
+      role="row"
+      aria-label={`${formatEconomyLongDateUtc(dateYmd)}, time, estimated revenue, estimated EPS`}
+    >
+      <div
+        className={cn(
+          "min-w-0 text-left text-[14px] font-semibold leading-5",
+          isToday ? "text-[#DC2626]" : "text-[#09090B]",
+        )}
+      >
+        {formatEconomyLongDateUtc(dateYmd)}
+      </div>
+      <div className={earningsListTimeHeaderClass}>Time</div>
+      <div className={cn(earningsListNumericCellClass, "font-medium text-[#71717A]")}>Est. Revenue</div>
+      <div className={cn(earningsListNumericCellClass, "font-medium text-[#71717A]")}>Est. EPS</div>
+    </div>
+  );
+}
+
+function formatEarningsListMetric(value: string | null | undefined): string {
+  if (value == null || !value.trim()) return "—";
+  return value;
+}
+
+function earningsListTimingDisplayLabel(timing: EarningsReportTiming): string {
+  if (timing === "bmo") return "Before market";
+  if (timing === "amc") return "After market";
+  return "TBD";
+}
+
+function EarningsListTimingBadge({ timing }: { timing: EarningsReportTiming }) {
+  const barClass =
+    timing === "bmo"
+      ? "bg-[#FFF7ED] text-[#EA580C]"
+      : timing === "amc"
+        ? "bg-[#EFF6FF] text-[#2563EB]"
+        : "bg-[#FAFAFA] text-[#71717A]";
+
+  const icon =
+    timing === "bmo" ? (
+      <PreMarketEarningsIcon size={12} />
+    ) : timing === "amc" ? (
+      <PostMarketEarningsIcon size={12} />
+    ) : (
+      <Clock className="text-[#71717A]" size={10} strokeWidth={2} />
+    );
+
+  return (
+    <span
+      className={cn(
+        "inline-flex max-w-full items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium leading-none whitespace-nowrap",
+        barClass,
+      )}
+    >
+      <span className="inline-flex shrink-0 items-center justify-center" aria-hidden>
+        {icon}
+      </span>
+      {earningsListTimingDisplayLabel(timing)}
+    </span>
+  );
+}
+
+function EarningsListRow({
+  item,
+  estRevenueDisplay,
+  estEpsDisplay,
+  onOpen,
+}: {
+  item: EarningsCalendarItem;
+  estRevenueDisplay: string | null | undefined;
+  estEpsDisplay: string | null | undefined;
+  onOpen: (item: EarningsCalendarItem) => void;
+}) {
+  return (
+    <div
+      className={cn(earningsListTableRowClass, "group cursor-pointer text-[14px] leading-5 text-[#09090B]")}
+      onClick={() => onOpen(item)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onOpen(item);
+        }
+      }}
+    >
+      <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+        <CompanyLogo
+          name={item.companyName || item.ticker}
+          logoUrl={item.logoUrl}
+          symbol={item.ticker}
+        />
+        <div className="min-w-0">
+          <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B] underline-offset-2 group-hover:underline">
+            {item.companyName}
+          </div>
+          <div className="text-[12px] font-normal leading-4 text-[#71717A] tabular-nums">{item.ticker}</div>
+        </div>
+      </div>
+      <div className={earningsListTimeCellClass}>
+        <EarningsListTimingBadge timing={item.timing} />
+      </div>
+      <div className={earningsListNumericCellClass}>{formatEarningsListMetric(estRevenueDisplay)}</div>
+      <div className={earningsListNumericCellClass}>{formatEarningsListMetric(estEpsDisplay)}</div>
+    </div>
+  );
+}
 
 /** Matches logo (32px) + label + card padding in {@link EarningsCard}. */
 const EARNINGS_TIMING_GRID_CELL_MIN_H_PX = 72;
@@ -307,9 +466,37 @@ const weekNavArrowClass = cn(weekNavBtnClass, "w-9");
 
 const weekNavTodayClass = cn(weekNavBtnClass, "px-3 text-[14px] font-medium leading-5");
 
-/** Matches economy calendar toolbar listboxes. */
-const earningsScopeDropdownTriggerClass =
-  "border border-solid border-[#E4E4E7] bg-white shadow-[0px_1px_1px_0px_rgba(10,10,10,0.06)] hover:bg-[#FAFAFA]";
+function EarningsHoldingsWatchlistSwitch({
+  pressed,
+  onPressedChange,
+  "aria-label": ariaLabel,
+}: {
+  pressed: boolean;
+  onPressedChange: (next: boolean) => void;
+  "aria-label": string;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={pressed}
+      aria-label={ariaLabel}
+      onClick={() => onPressedChange(!pressed)}
+      className={cn(
+        "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15",
+        pressed ? "bg-[#2563EB]" : "bg-[#E4E4E7]",
+      )}
+    >
+      <span
+        className={cn(
+          "pointer-events-none absolute left-0.5 top-1/2 h-4 w-4 -translate-y-1/2 rounded-full bg-white shadow-sm transition-transform",
+          pressed && "translate-x-4",
+        )}
+        aria-hidden
+      />
+    </button>
+  );
+}
 
 function earningsWeekHref(weekYmd: string, scope: EarningsScopeFilter): string {
   const qs = new URLSearchParams({ week: weekYmd });
@@ -424,6 +611,45 @@ function EarningsWeekGridSkeleton({
   );
 }
 
+const earningsListDayCardClass = "overflow-hidden rounded-xl border border-[#E4E4E7] bg-white";
+
+function EarningsWeekListSkeleton() {
+  return (
+    <div
+      className="-mx-1 flex flex-col overflow-x-auto pb-1 md:mx-0 md:overflow-x-hidden md:overflow-y-visible"
+      aria-busy="true"
+      aria-label="Loading earnings calendar"
+    >
+      <div className="flex w-full min-w-0 flex-col rounded-2xl bg-[#F4F4F5] p-1">
+        <div className="flex flex-col gap-1">
+          <div className={cn(earningsListDayCardClass, "divide-y divide-[#E4E4E7]")}>
+            <div className={earningsListTableHeaderClass}>
+              <TextSkeleton wClass="w-40" hClass="h-3.5" />
+              <TextSkeleton wClass="w-10" hClass="h-3.5" />
+              <TextSkeleton wClass="w-full" hClass="h-3.5" />
+              <TextSkeleton wClass="w-full" hClass="h-3.5" />
+            </div>
+            {Array.from({ length: 8 }, (_, i) => (
+              <div key={i} className={cn(earningsListTableRowClass, "gap-y-2 py-3")}>
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <SkeletonBox className="h-8 w-8 shrink-0 rounded-full" />
+                  <div className="min-w-0 flex-1 space-y-1.5">
+                    <TextSkeleton wClass="w-16" hClass="h-3.5" />
+                    <TextSkeleton wClass="w-full max-w-[180px]" hClass="h-3.5" />
+                  </div>
+                </div>
+                <SkeletonBox className="mx-auto h-5 w-12 rounded-md" />
+                <TextSkeleton wClass="w-full" hClass="h-3.5" />
+                <TextSkeleton wClass="w-full" hClass="h-3.5" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /**
  * Weekly earnings calendar — layout aligned with Figma (Web App Design, Earnings Calendar week view).
  * Weeks with no events still show the five-column grid; empty days display “No earnings”.
@@ -451,6 +677,7 @@ export function EarningsWeekGrid({
   const { holdingsByPortfolioId, portfolioDisplayReady } = usePortfolioWorkspace();
   const [clientReady, setClientReady] = useState(false);
   const [pendingWeekMondayYmd, setPendingWeekMondayYmd] = useState<string | null>(null);
+  const [view, setView] = useState<"grid" | "list">("grid");
 
   useEffect(() => {
     setClientReady(true);
@@ -465,17 +692,14 @@ export function EarningsWeekGrid({
   // Keep the first client render identical to SSR; apply scope filters only after mount.
   const scopeFilterReady =
     clientReady &&
-    (scope === "all" ||
-      (scope === "watchlist" && watchlistHydrated) ||
-      (scope === "holdings" && portfolioDisplayReady));
+    (scope === "all" || (scope === "portfolio" && watchlistHydrated && portfolioDisplayReady));
 
   const allowedScopeKeys = useMemo((): ReadonlySet<string> | null => {
     if (!scopeFilterReady || scope === "all") return null;
-    if (scope === "watchlist") return buildAllowedKeysFromWatchlist(watched);
     const symbols = Object.values(holdingsByPortfolioId).flatMap((rows) =>
       rows.map((h) => h.symbol),
     );
-    return buildAllowedKeysFromHoldings(symbols);
+    return buildAllowedKeysFromPortfolio(watched, symbols);
   }, [scopeFilterReady, scope, watched, holdingsByPortfolioId]);
 
   const filteredData = useMemo(
@@ -491,6 +715,11 @@ export function EarningsWeekGrid({
   const weekTimingGridRows = scopeFilterReady
     ? weekTimingGridRowsClient
     : weekTimingGridRowsFromServer;
+
+  const totalListItems = useMemo(
+    () => filteredData.days.reduce((n, day) => n + earningsDayListItems(day).length, 0),
+    [filteredData.days],
+  );
 
   const displayWeekMondayYmd = pendingWeekMondayYmd ?? data.weekMondayYmd;
   const isWeekLoading =
@@ -530,9 +759,9 @@ export function EarningsWeekGrid({
     [displayWeekMondayYmd, isWeekLoading, router, scope],
   );
 
-  const setScope = (next: EarningsScopeFilter) => {
+  const setHoldingsWatchlistFilter = (enabled: boolean) => {
     const qs = new URLSearchParams({ week: displayWeekMondayYmd });
-    if (next !== "all") qs.set("scope", next);
+    if (enabled) qs.set("scope", "portfolio");
     router.push(`/earnings?${qs.toString()}`);
   };
 
@@ -545,15 +774,14 @@ export function EarningsWeekGrid({
           {displayWeekLabel}
         </h1>
         <div className="flex shrink-0 flex-wrap items-center gap-3">
-          <FormListboxSelect
-            aria-label="Earnings scope"
-            value={scope}
-            onChange={setScope}
-            options={EARNINGS_SCOPE_OPTIONS}
-            truncateLabel={false}
-            className="w-max shrink-0"
-            triggerClassName={earningsScopeDropdownTriggerClass}
-          />
+          <div className="flex items-center gap-2">
+            <span className="text-[14px] font-medium leading-5 text-[#71717A]">Holdings &amp; Watchlist</span>
+            <EarningsHoldingsWatchlistSwitch
+              pressed={scope === "portfolio"}
+              onPressedChange={setHoldingsWatchlistFilter}
+              aria-label="Show only holdings and watchlist"
+            />
+          </div>
           <button
             type="button"
             onClick={() => navigateWeek(displayPrevWeekYmd)}
@@ -579,11 +807,42 @@ export function EarningsWeekGrid({
           >
             <ChevronRight className="h-5 w-5" strokeWidth={1.75} />
           </button>
+          <div className="flex shrink-0 rounded-[10px] bg-[#F4F4F5] p-0.5">
+            <button
+              type="button"
+              onClick={() => setView("grid")}
+              className={cn(
+                "flex h-8 w-9 items-center justify-center rounded-[10px] transition-colors",
+                view === "grid"
+                  ? "bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.12),0px_1px_1px_0px_rgba(10,10,10,0.07)]"
+                  : "text-[#52525B] hover:text-[#09090B]",
+              )}
+              aria-pressed={view === "grid"}
+              aria-label="Week grid view"
+            >
+              <CalendarDays className="h-5 w-5" strokeWidth={1.75} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setView("list")}
+              className={cn(
+                "flex h-8 w-9 items-center justify-center rounded-[10px] transition-colors",
+                view === "list"
+                  ? "bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.12),0px_1px_1px_0px_rgba(10,10,10,0.07)]"
+                  : "text-[#52525B] hover:text-[#09090B]",
+              )}
+              aria-pressed={view === "list"}
+              aria-label="List view"
+            >
+              <LayoutList className="h-5 w-5" strokeWidth={1.75} />
+            </button>
+          </div>
         </div>
       </div>
 
       <div className="flex min-w-0 flex-col">
-        {isWeekLoading ? (
+        {view === "grid" ? (
+        isWeekLoading ? (
           <EarningsWeekGridSkeleton weekMondayYmd={displayWeekMondayYmd} todayYmd={todayYmd} />
         ) : (
         <div className="-mx-1 flex flex-col overflow-x-auto pb-1 md:mx-0 md:overflow-x-hidden md:overflow-y-visible">
@@ -646,6 +905,60 @@ export function EarningsWeekGrid({
             })}
             </div>
           </div>
+        </div>
+        )
+        ) : isWeekLoading ? (
+          <EarningsWeekListSkeleton />
+        ) : (
+        <div className="flex min-w-0 flex-col space-y-0">
+          {totalListItems === 0 ? (
+            <div className="rounded-xl border border-[#E4E4E7] bg-white px-4 py-12 text-center text-sm text-[#71717A]">
+              No scheduled earnings
+            </div>
+          ) : (
+            <div className="-mx-1 flex flex-col overflow-x-auto pb-1 md:mx-0 md:overflow-x-hidden md:overflow-y-visible">
+              <div className="flex w-full min-w-0 flex-col rounded-2xl bg-[#F4F4F5] p-1">
+                <div className="flex flex-col gap-1">
+                  {filteredData.days.map((day) => {
+                    const { visibleItems, overflowCount, preloadedOverflow } = splitEarningsDayListForView(day);
+                    if (visibleItems.length === 0 && overflowCount === 0) return null;
+                    const isToday = day.date === todayYmd;
+                    return (
+                      <section
+                        key={day.date}
+                        id={`earnings-list-${day.date}`}
+                        className={cn(earningsListDayCardClass, "divide-y divide-[#E4E4E7]")}
+                      >
+                        <EarningsListDayHeader dateYmd={day.date} isToday={isToday} />
+
+                        {visibleItems.map((item) => (
+                          <EarningsListRow
+                            key={`${item.ticker}:${item.reportDate}`}
+                            item={item}
+                            estRevenueDisplay={item.estRevenueDisplay}
+                            estEpsDisplay={item.estEpsDisplay}
+                            onOpen={setPreviewItem}
+                          />
+                        ))}
+
+                        {overflowCount > 0 ? (
+                          <EarningsListSeeMoreMenu
+                            overflowCount={overflowCount}
+                            preloadedItems={preloadedOverflow}
+                            weekMondayYmd={filteredData.weekMondayYmd}
+                            dayYmd={day.date}
+                            allowedScopeKeys={allowedScopeKeys}
+                            listOffset={visibleItems.length}
+                            onOpenCard={setPreviewItem}
+                          />
+                        ) : null}
+                      </section>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
         )}
       </div>

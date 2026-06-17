@@ -56,6 +56,20 @@ export function dedupeEarningsCalendarItems(items: readonly EarningsCalendarItem
   return [...byKey.values()];
 }
 
+/** List view — largest market cap first (`screenerRank` ascending). */
+export function sortEarningsCalendarItemsByMarketCap(
+  items: readonly EarningsCalendarItem[],
+): EarningsCalendarItem[] {
+  return [...items].sort((a, b) => {
+    const ra = a.screenerRank;
+    const rb = b.screenerRank;
+    if (ra != null && rb != null && ra !== rb) return ra - rb;
+    if (ra != null && rb == null) return -1;
+    if (ra == null && rb != null) return 1;
+    return a.ticker.localeCompare(b.ticker);
+  });
+}
+
 export function timingBucketHasContent(bucket: EarningsTimingBucket): boolean {
   return bucket.items.length > 0 || bucket.overflowCount > 0;
 }

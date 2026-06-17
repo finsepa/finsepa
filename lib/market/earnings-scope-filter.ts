@@ -8,10 +8,10 @@ import type {
   EarningsWeekPayload,
 } from "./earnings-calendar-types";
 
-export type EarningsScopeFilter = "all" | "watchlist" | "holdings";
+export type EarningsScopeFilter = "all" | "portfolio";
 
 export function parseEarningsScopeFilter(raw: string | null | undefined): EarningsScopeFilter {
-  if (raw === "watchlist" || raw === "holdings") return raw;
+  if (raw === "portfolio" || raw === "watchlist" || raw === "holdings") return "portfolio";
   return "all";
 }
 
@@ -62,6 +62,17 @@ export function buildAllowedKeysFromHoldings(symbols: readonly string[]): Set<st
   return keys;
 }
 
+export function buildAllowedKeysFromPortfolio(
+  watched: ReadonlySet<string>,
+  holdingSymbols: readonly string[],
+): Set<string> {
+  const keys = buildAllowedKeysFromWatchlist(watched);
+  for (const key of buildAllowedKeysFromHoldings(holdingSymbols)) {
+    keys.add(key);
+  }
+  return keys;
+}
+
 export function parseAllowedScopeKeysParam(raw: string | null): Set<string> | null {
   if (!raw?.trim()) return null;
   const keys = raw
@@ -87,6 +98,12 @@ function filterEarningsTimingBucket(
   };
 }
 
+/** All companies for a weekday — supports hub snapshots built before `listItems` existed. */
+export function earningsDayListItems(day: EarningsDayColumn): EarningsCalendarItem[] {
+  if (day.listItems?.length) return day.listItems;
+  return [...day.beforeMarket.items, ...day.afterMarket.items, ...day.timeTbd.items];
+}
+
 export function filterEarningsWeekPayload(
   data: EarningsWeekPayload,
   allowed: ReadonlySet<string> | null,
@@ -98,9 +115,11 @@ export function filterEarningsWeekPayload(
     beforeMarket: filterEarningsTimingBucket(day.beforeMarket, allowed),
     afterMarket: filterEarningsTimingBucket(day.afterMarket, allowed),
     timeTbd: filterEarningsTimingBucket(day.timeTbd, allowed),
+    listItems: earningsDayListItems(day).filter((it) => earningsItemMatchesScope(it, allowed)),
   }));
 
   const hasAnyEvents = days.some((day) => {
+    if ((day.listItems?.length ?? 0) > 0) return true;
     const b = day.beforeMarket;
     const a = day.afterMarket;
     const t = day.timeTbd;

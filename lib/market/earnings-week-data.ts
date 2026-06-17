@@ -13,6 +13,9 @@ import type {
   EarningsTimingBucketId,
   EarningsWeekPayload,
 } from "@/lib/market/earnings-calendar-types";
+import { estimatesDisplayFromFundamentalsRoot } from "@/lib/market/earnings-history-estimates";
+import { sortEarningsCalendarItemsByMarketCap } from "@/lib/market/earnings-week-grid-layout";
+import { earningsDayListItems } from "@/lib/market/earnings-scope-filter";
 import { logoUrlFromFundamentalsRoot } from "@/lib/market/stock-logo-url";
 import { listTop500EquityTickersOrdered } from "@/lib/screener/screener-earnings-universe";
 import { getScreenerCompaniesStaticLayer } from "@/lib/screener/screener-companies-layers";
@@ -21,7 +24,7 @@ import { TOP10_META, TOP10_TICKERS, type Top10Ticker } from "@/lib/screener/top1
 import { issuerKeyForOtcListingCollapse } from "@/lib/market/otc-duplicate-tickers";
 import { runWithConcurrencyLimit } from "@/lib/utils/run-with-concurrency-limit";
 import { earningsWeekHubSegment, hubEarningsWeekKey } from "@/lib/market/hub-snapshot-keys";
-import { readHubSnapshot } from "@/lib/market/hub-snapshot-store";
+import { readHubSnapshot, upsertHubSnapshot } from "@/lib/market/hub-snapshot-store";
 import {
   addDaysUtc,
   formatWeekMonthYearLabel,
@@ -319,6 +322,21 @@ async function fetchFundamentalsRootsForMarketCap(
   return map;
 }
 
+/** Merge cached fundamentals JSON for list estimates — skips tickers already in `existing`. */
+async function ensureFundamentalsRootsForTickers(
+  tickers: readonly string[],
+  existing: Map<string, Record<string, unknown> | null> | null,
+): Promise<Map<string, Record<string, unknown> | null>> {
+  const missing = [...new Set(tickers)].filter((t) => !existing?.has(t));
+  if (missing.length === 0) return existing ?? new Map();
+  const fetched = await fetchFundamentalsRootsForMarketCap(missing);
+  const merged = new Map(existing ?? []);
+  for (const [ticker, root] of fetched) {
+    merged.set(ticker, root);
+  }
+  return merged;
+}
+
 /**
  * Before {@link EARNINGS_TOP500_PER_DAY_CAP}: sort by static-universe market cap (largest first), then
  * screener rank. Sorting only by timing (all BMO before AMC) would drop every after-market name when a
@@ -562,9 +580,10 @@ function preparedToCalendarItem(
   p: PreparedEarning,
   bundle: TickerFundamentalsBundle | undefined,
   rankByKey: Map<string, number>,
+  fundamentalsRoot: Record<string, unknown> | null | undefined,
 ): EarningsCalendarItem {
   const key = earningsUniverseKey(p.ticker);
-  return {
+  const item: EarningsCalendarItem = {
     ticker: p.ticker,
     companyName: p.fallbackName ?? bundle?.name ?? p.ticker,
     logoUrl: bundle?.logoUrl ?? "",
@@ -573,6 +592,14 @@ function preparedToCalendarItem(
     timing: p.timing,
     timingLabel: p.timingLabel,
   };
+  if (fundamentalsRoot) {
+    const { estRevenueDisplay, estEpsDisplay } = estimatesDisplayFromFundamentalsRoot(
+      fundamentalsRoot,
+      p.reportDate,
+    );
+    return { ...item, estRevenueDisplay, estEpsDisplay };
+  }
+  return { ...item, estRevenueDisplay: null, estEpsDisplay: null };
 }
 
 export type EarningsWeekDataPackage = {
@@ -580,10 +607,11 @@ export type EarningsWeekDataPackage = {
   overflowByKey: Record<string, EarningsCalendarItem[]>;
 };
 
-/** Cron / hub ingest — universe market-cap filter only (no per-ticker fundamentals fan-out). */
+/** Cron / hub ingest — universe market-cap filter; estimates baked in for fast SSR. */
 export async function buildEarningsWeekHubPackage(weekMondayUtc: Date): Promise<EarningsWeekDataPackage> {
   const monday = mondayOfWeekUtc(weekMondayUtc);
-  return buildEarningsWeekDataPackageUncached(monday, false);
+  const built = await buildEarningsWeekDataPackageUncached(monday, false);
+  return hydrateEarningsWeekPackageEstimates(built);
 }
 
 async function buildEarningsWeekDataPackageUncached(
@@ -660,6 +688,12 @@ async function buildEarningsWeekDataPackageUncached(
 
   const preparedForWeek = dedupePreparedByReportDateAndTicker(preparedMarketCap);
 
+  const estimateTickers = [...new Set(preparedForWeek.map((p) => p.ticker))];
+  fundamentalsRootByTicker = await ensureFundamentalsRootsForTickers(
+    estimateTickers,
+    fundamentalsRootByTicker,
+  );
+
   const byDate = new Map<string, PreparedEarning[]>();
   for (const p of preparedForWeek) {
     const list = byDate.get(p.reportDate) ?? [];
@@ -701,16 +735,19 @@ async function buildEarningsWeekDataPackageUncached(
 
   const overflowByKey: Record<string, EarningsCalendarItem[]> = {};
 
+  function calendarItemForPrepared(p: PreparedEarning): EarningsCalendarItem {
+    const root = fundamentalsRootByTicker?.get(p.ticker) ?? null;
+    return preparedToCalendarItem(p, bundleByTicker.get(p.ticker), screenerRankByKey, root);
+  }
+
   function bucketForTiming(ymd: string, timing: EarningsReportTiming, timingRows: PreparedEarning[]): EarningsTimingBucket {
     const ordered = sortPreparedByMarketCapUsdDesc(timingRows, bundleByTicker);
     const preview = ordered.slice(0, EARNINGS_BUCKET_PREVIEW_COUNT);
     const rest = ordered.slice(EARNINGS_BUCKET_PREVIEW_COUNT);
     const key = `${ymd}:${timing}`;
-    overflowByKey[key] = rest.map((p) =>
-      preparedToCalendarItem(p, bundleByTicker.get(p.ticker), screenerRankByKey),
-    );
+    overflowByKey[key] = rest.map((p) => calendarItemForPrepared(p));
     return {
-      items: preview.map((p) => preparedToCalendarItem(p, bundleByTicker.get(p.ticker), screenerRankByKey)),
+      items: preview.map((p) => calendarItemForPrepared(p)),
       overflowCount: rest.length,
     };
   }
@@ -725,6 +762,9 @@ async function buildEarningsWeekDataPackageUncached(
     const beforeMarket = bucketForTiming(ymd, "bmo", bmo);
     const afterMarket = bucketForTiming(ymd, "amc", amc);
     const timeTbd = bucketForTiming(ymd, "unknown", unknown);
+    const listItems = sortPreparedByMarketCapUsdDesc(colPrepared, bundleByTicker).map((p) =>
+      calendarItemForPrepared(p),
+    );
     previewCardsRendered += beforeMarket.items.length + afterMarket.items.length + timeTbd.items.length;
     days.push({
       date: ymd,
@@ -733,6 +773,7 @@ async function buildEarningsWeekDataPackageUncached(
       beforeMarket,
       afterMarket,
       timeTbd,
+      listItems,
     });
   }
 
@@ -780,26 +821,105 @@ async function buildEarningsWeekDataPackageUncached(
   return { payload, overflowByKey };
 }
 
+function calendarItemNeedsEstimateHydration(item: EarningsCalendarItem): boolean {
+  return item.estRevenueDisplay == null && item.estEpsDisplay == null;
+}
+
+function enrichCalendarItemEstimates(
+  item: EarningsCalendarItem,
+  roots: ReadonlyMap<string, Record<string, unknown> | null>,
+): EarningsCalendarItem {
+  const root = roots.get(item.ticker) ?? null;
+  if (!root) return item;
+  const est = estimatesDisplayFromFundamentalsRoot(root, item.reportDate);
+  return {
+    ...item,
+    estRevenueDisplay: item.estRevenueDisplay ?? est.estRevenueDisplay,
+    estEpsDisplay: item.estEpsDisplay ?? est.estEpsDisplay,
+  };
+}
+
+function weekPackageNeedsEstimateHydration(pack: EarningsWeekDataPackage): boolean {
+  const items = pack.payload.days.flatMap((day) => earningsDayListItems(day));
+  return items.length > 0 && items.some(calendarItemNeedsEstimateHydration);
+}
+
+async function hydrateEarningsWeekPackageEstimates(
+  pack: EarningsWeekDataPackage,
+): Promise<EarningsWeekDataPackage> {
+  if (!weekPackageNeedsEstimateHydration(pack)) return pack;
+
+  const tickers = [
+    ...new Set(pack.payload.days.flatMap((day) => earningsDayListItems(day).map((item) => item.ticker))),
+  ];
+  const roots = await ensureFundamentalsRootsForTickers(tickers, null);
+
+  const days: EarningsDayColumn[] = pack.payload.days.map((day) => {
+    const enrich = (item: EarningsCalendarItem) => enrichCalendarItemEstimates(item, roots);
+    return {
+      ...day,
+      listItems: earningsDayListItems(day).map(enrich),
+      beforeMarket: {
+        ...day.beforeMarket,
+        items: day.beforeMarket.items.map(enrich),
+      },
+      afterMarket: {
+        ...day.afterMarket,
+        items: day.afterMarket.items.map(enrich),
+      },
+      timeTbd: {
+        ...day.timeTbd,
+        items: day.timeTbd.items.map(enrich),
+      },
+    };
+  });
+
+  const overflowByKey: Record<string, EarningsCalendarItem[]> = {};
+  for (const [key, items] of Object.entries(pack.overflowByKey)) {
+    overflowByKey[key] = items.map((item) => enrichCalendarItemEstimates(item, roots));
+  }
+
+  return {
+    payload: { ...pack.payload, days },
+    overflowByKey,
+  };
+}
+
 type EarningsCacheMode = "universe" | "fund";
 
 const getEarningsWeekDataPackageCached = unstable_cache(
   async (weekMondayYmd: string, mode: EarningsCacheMode): Promise<EarningsWeekDataPackage> => {
     const t = Date.parse(`${weekMondayYmd}T12:00:00.000Z`);
     const monday = Number.isFinite(t) ? mondayOfWeekUtc(new Date(t)) : mondayOfWeekUtc(new Date());
-    return buildEarningsWeekDataPackageUncached(monday, mode === "fund");
+    const built = await buildEarningsWeekDataPackageUncached(monday, mode === "fund");
+    return hydrateEarningsWeekPackageEstimates(built);
   },
-  ["earnings-week-v30-month-year-title"],
+  ["earnings-week-v34-precomputed-estimates"],
   { revalidate: REVALIDATE_EARNINGS_CALENDAR },
 );
+
+async function persistHubEarningsWeekSnapshotIfReady(
+  weekMondayYmd: string,
+  pack: EarningsWeekDataPackage,
+): Promise<void> {
+  if (weekPackageNeedsEstimateHydration(pack)) return;
+  await upsertHubSnapshot(hubEarningsWeekKey(weekMondayYmd), earningsWeekHubSegment(weekMondayYmd), pack);
+}
 
 async function getEarningsWeekDataPackage(weekMondayUtc: Date): Promise<EarningsWeekDataPackage> {
   const ymd = toYmdUtc(mondayOfWeekUtc(weekMondayUtc));
   const segment = earningsWeekHubSegment(ymd);
   const snap = await readHubSnapshot<EarningsWeekDataPackage>(hubEarningsWeekKey(ymd), segment);
-  if (snap) return snap;
+  if (snap && !weekPackageNeedsEstimateHydration(snap)) {
+    return snap;
+  }
 
   const mode: EarningsCacheMode = isEarningsFundamentalsMcFilterEnabled() ? "fund" : "universe";
-  return getEarningsWeekDataPackageCached(ymd, mode);
+  const pack = await getEarningsWeekDataPackageCached(ymd, mode);
+  if (!weekPackageNeedsEstimateHydration(pack)) {
+    void persistHubEarningsWeekSnapshotIfReady(ymd, pack).catch(() => {});
+  }
+  return pack;
 }
 
 export async function getEarningsWeekPayload(weekMondayUtc: Date): Promise<EarningsWeekPayload> {
@@ -826,4 +946,53 @@ export async function getEarningsTimingBucketOverflow(
 
   const pack = await getEarningsWeekDataPackage(weekMondayUtc);
   return pack.overflowByKey[`${dayYmd}:${timing}`] ?? [];
+}
+
+function earningsDayFullListFromPackage(
+  pack: EarningsWeekDataPackage,
+  dayYmd: string,
+): EarningsCalendarItem[] {
+  const day = pack.payload.days.find((d) => d.date === dayYmd);
+  if (!day) return [];
+  if (day.listItems?.length) return day.listItems;
+  const seen = new Set<string>();
+  const merged: EarningsCalendarItem[] = [];
+  const push = (item: EarningsCalendarItem) => {
+    const key = `${item.ticker}:${item.reportDate}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    merged.push(item);
+  };
+  for (const item of day.beforeMarket.items) push(item);
+  for (const item of day.afterMarket.items) push(item);
+  for (const item of day.timeTbd.items) push(item);
+  for (const timing of ["bmo", "amc", "unknown"] as const) {
+    for (const item of pack.overflowByKey[`${dayYmd}:${timing}`] ?? []) push(item);
+  }
+  return merged;
+}
+
+/** List-view overflow for one weekday — backed by the same `unstable_cache` entry as the week grid. */
+export async function getEarningsDayListSlice(
+  weekMondayUtc: Date,
+  dayYmd: string,
+  offset: number,
+  limit: number,
+): Promise<EarningsCalendarItem[]> {
+  const monday = mondayOfWeekUtc(weekMondayUtc);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dayYmd)) return [];
+  let inWeek = false;
+  for (let i = 0; i < 5; i++) {
+    if (toYmdUtc(addDaysUtc(monday, i)) === dayYmd) {
+      inWeek = true;
+      break;
+    }
+  }
+  if (!inWeek) return [];
+
+  const pack = await getEarningsWeekDataPackage(weekMondayUtc);
+  const all = sortEarningsCalendarItemsByMarketCap(earningsDayFullListFromPackage(pack, dayYmd));
+  const safeOffset = Number.isFinite(offset) && offset > 0 ? Math.floor(offset) : 0;
+  const safeLimit = Number.isFinite(limit) ? Math.min(50, Math.max(1, Math.floor(limit))) : 50;
+  return all.slice(safeOffset, safeOffset + safeLimit);
 }

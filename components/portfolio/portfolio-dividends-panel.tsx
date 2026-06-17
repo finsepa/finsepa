@@ -243,7 +243,7 @@ function DividendsScheduleTables({
         ))}
       </div>
 
-      <div className="hidden w-full overflow-x-auto border-t border-[#E4E4E7] sm:block">
+      <div className="hidden w-full overflow-x-auto sm:block">
         <table className={DIVIDENDS_DESKTOP_TABLE_CLASS}>
           <DividendsTableColGroup />
           {months.map((month, monthIndex) => (
@@ -345,7 +345,8 @@ function PortfolioDividendsPanelInner({
     }
 
     const loadKey = publicListingId ? `listing:${publicListingId}` : holdingsKey;
-    if (loadKey === lastLoadKeyRef.current && lastLoadStateRef.current !== "error") {
+    if (loadKey === lastLoadKeyRef.current && lastLoadStateRef.current === "done") {
+      setLoading(false);
       return;
     }
     lastLoadKeyRef.current = loadKey;
@@ -410,12 +411,15 @@ function PortfolioDividendsPanelInner({
         lastLoadStateRef.current = "error";
         setPayload((prev) => prev ?? { months: [] });
       } finally {
-        if (!cancelled && gen === loadGenRef.current) setLoading(false);
+        if (gen === loadGenRef.current) setLoading(false);
       }
     })();
 
     return () => {
       cancelled = true;
+      if (lastLoadStateRef.current === "inflight") {
+        lastLoadStateRef.current = "idle";
+      }
     };
   }, [holdingsKey, publicListingId]);
 

@@ -5,6 +5,10 @@ import { format, parseISO } from "date-fns";
 
 import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
 import {
+  EARNINGS_FORECAST_OPACITY_CLASS,
+  earningsForecastBarFillStyle,
+} from "@/components/stock/earnings-card-styles";
+import {
   buildFundamentalsYAxisTicks,
   computeFundamentalsChartTooltipPlacement,
   FUNDAMENTALS_CHART_HOVER_BAND_BG,
@@ -12,7 +16,6 @@ import {
   formatFundamentalsAxisTickLabel,
 } from "@/lib/chart/fundamentals-chart-surface";
 import {
-  fundamentalsBarColorAtIndex,
   fundamentalsBarSolidAtIndex,
 } from "@/lib/colors/fundamentals-multi-bar-colors";
 import { formatUsdCompact } from "@/lib/market/key-stats-basic-format";
@@ -20,7 +23,8 @@ import type { PortfolioDividendScheduleMonth } from "@/lib/portfolio/portfolio-d
 import { cn } from "@/lib/utils";
 
 const DECLARED_BAR = fundamentalsBarSolidAtIndex(0);
-const ESTIMATED_BAR = fundamentalsBarColorAtIndex(0, 0.42);
+const ESTIMATE_BAR = fundamentalsBarSolidAtIndex(0);
+const ESTIMATED_BAR_FILL = earningsForecastBarFillStyle(ESTIMATE_BAR);
 
 const PLOT_INSET_TOP_FRAC = 0.08;
 const PLOT_INSET_BOTTOM_FRAC = 0.04;
@@ -222,12 +226,12 @@ function PortfolioDividendsChartInner({ months }: { months: PortfolioDividendSch
                       {hasEstimated ? (
                         <div className="relative flex h-full min-h-0 flex-col items-center justify-end">
                           <div
-                            className="mt-auto shrink-0 rounded-t-[2px] rounded-b-none"
+                            className="mt-auto shrink-0 overflow-hidden rounded-t-[2px] rounded-b-none"
                             style={{
                               width: barWidthPx,
                               height: `${valueHeightPct(p.estimatedUsd, maxV)}%`,
                               minHeight: p.estimatedUsd > 0 ? 2 : 0,
-                              backgroundColor: ESTIMATED_BAR,
+                              ...ESTIMATED_BAR_FILL,
                             }}
                           />
                         </div>
@@ -284,7 +288,10 @@ function PortfolioDividendsChartInner({ months }: { months: PortfolioDividendSch
                 ) : null}
                 {tip.estimatedUsd > 0 ? (
                   <p className="mt-0.5 text-[12px] leading-4 text-[#09090B]">
-                    <span className="inline-block h-2 w-2 rounded-sm align-middle" style={{ background: ESTIMATED_BAR }} />{" "}
+                    <span
+                      className="inline-block h-2 w-2 overflow-hidden rounded-sm align-middle"
+                      style={ESTIMATED_BAR_FILL}
+                    />{" "}
                     Estimated: {formatUsdCompact(tip.estimatedUsd)}
                   </p>
                 ) : null}
@@ -326,7 +333,10 @@ function PortfolioDividendsChartInner({ months }: { months: PortfolioDividendSch
                 title={p.title}
               >
                 <span
-                  className="inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]"
+                  className={cn(
+                    "inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]",
+                    !(p.declaredUsd > 0) && p.estimatedUsd > 0 && EARNINGS_FORECAST_OPACITY_CLASS,
+                  )}
                   style={{
                     transform: `rotate(${AXIS_LABEL_ROTATE_DEG}deg)`,
                     transformOrigin: "center bottom",
@@ -348,7 +358,7 @@ function PortfolioDividendsChartInner({ months }: { months: PortfolioDividendSch
           Declared
         </span>
         <span className="inline-flex items-center gap-2">
-          <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ background: ESTIMATED_BAR }} aria-hidden />
+          <span className="h-2.5 w-2.5 shrink-0 overflow-hidden rounded-sm" style={ESTIMATED_BAR_FILL} aria-hidden />
           Estimated
         </span>
       </div>

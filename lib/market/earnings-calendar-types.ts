@@ -14,6 +14,10 @@ export type EarningsCalendarItem = {
   reportDate: string;
   timing: EarningsReportTiming;
   timingLabel: string;
+  /** Formatted consensus revenue estimate when available. */
+  estRevenueDisplay?: string | null;
+  /** Formatted consensus EPS estimate when available. */
+  estEpsDisplay?: string | null;
 };
 
 /** One timing bucket for a weekday column (SSR includes a short preview; overflow loads on expand). */
@@ -31,6 +35,8 @@ export type EarningsDayColumn = {
   beforeMarket: EarningsTimingBucket;
   afterMarket: EarningsTimingBucket;
   timeTbd: EarningsTimingBucket;
+  /** Full-day list (all timings), market-cap order — used by list view. */
+  listItems?: EarningsCalendarItem[];
 };
 
 export type EarningsDatasetFilter = "universe_mc" | "fundamentals_mc";

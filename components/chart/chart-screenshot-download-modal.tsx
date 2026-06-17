@@ -23,6 +23,7 @@ import {
 } from "@/lib/chart/export-chart-screenshot-jpeg";
 import {
   DEFAULT_CHART_SCREENSHOT_EXPORT_OPTIONS,
+  chartScreenshotExportOptionsForSnapshot,
   type ChartScreenshotExportOptions,
 } from "@/lib/chart/chart-screenshot-export-options";
 import type { ChartScreenshotSnapshot } from "@/lib/chart/chart-screenshot-types";
@@ -35,10 +36,12 @@ export function ChartScreenshotDownloadModal({
   open,
   onClose,
   snapshot,
+  zIndex,
 }: {
   open: boolean;
   onClose: () => void;
   snapshot: ChartScreenshotSnapshot | null;
+  zIndex?: number;
 }) {
   const previewPaneRef = useRef<HTMLDivElement>(null);
   const exportRootRef = useRef<HTMLDivElement>(null);
@@ -70,7 +73,9 @@ export function ChartScreenshotDownloadModal({
       return;
     }
     setPreviewZoomPercent(CHART_SCREENSHOT_PREVIEW_ZOOM_DEFAULT_PERCENT);
-    setExportOptions(DEFAULT_CHART_SCREENSHOT_EXPORT_OPTIONS);
+    setExportOptions(
+      snapshot ? chartScreenshotExportOptionsForSnapshot(snapshot) : DEFAULT_CHART_SCREENSHOT_EXPORT_OPTIONS,
+    );
 
     const pane = previewPaneRef.current;
     if (!pane) return;
@@ -98,7 +103,15 @@ export function ChartScreenshotDownloadModal({
 
     setExporting(true);
     try {
-      await exportChartScreenshotJpeg(root, chartScreenshotExportFilename(snapshot.ticker));
+      await exportChartScreenshotJpeg(
+        root,
+        chartScreenshotExportFilename(
+          snapshot.ticker,
+          snapshot.variant === "keyStatsMetric"
+            ? snapshot.keyStatsMetric?.metricId
+            : undefined,
+        ),
+      );
     } catch (err) {
       console.error("[chart-screenshot] export failed", err);
     } finally {
@@ -109,7 +122,7 @@ export function ChartScreenshotDownloadModal({
   if (!open || !snapshot) return null;
 
   return (
-    <AppModalOverlay open={open} onClose={onClose}>
+    <AppModalOverlay open={open} onClose={onClose} zIndex={zIndex}>
       <AppModalShell
         title="Download"
         titleId="chart-screenshot-download-title"
@@ -174,6 +187,7 @@ export function ChartScreenshotDownloadModal({
               value={exportOptions}
               onChange={setExportOptions}
               disabled={exporting}
+              variant={snapshot.variant ?? "charting"}
             />
           </aside>
         </div>

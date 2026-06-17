@@ -33,8 +33,9 @@ export async function exportChartScreenshotJpeg(
   }
 }
 
-export function chartScreenshotExportFilename(ticker: string): string {
+export function chartScreenshotExportFilename(ticker: string, metricSlug?: string): string {
   const sym = ticker.trim().toUpperCase() || "chart";
   const stamp = new Date().toISOString().slice(0, 10);
-  return `${sym}-chart-${stamp}.jpg`;
+  const slug = metricSlug?.trim().replace(/_/g, "-").toLowerCase();
+  return slug ? `${sym}-${slug}-${stamp}.jpg` : `${sym}-chart-${stamp}.jpg`;
 }

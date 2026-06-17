@@ -10,7 +10,7 @@ function StatRow({ label, value }: { label: string; value: string }) {
       <span className="min-w-0 shrink cursor-pointer text-[14px] leading-5 text-[#09090B] underline decoration-[#E4E4E7] underline-offset-2">
         {label}
       </span>
-      <span className="shrink-0 text-right text-[14px] leading-5 text-[#09090B] tabular-nums">{value}</span>
+      <span className="shrink-0 text-right text-[14px] font-medium leading-5 text-[#09090B] tabular-nums">{value}</span>
     </div>
   );
 }

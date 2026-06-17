@@ -19,10 +19,10 @@ function StatRow({ label, value }: { label: string; value: string }) {
       {label === "Earnings Date" && value !== "—" ? (
         <span className="inline-flex shrink-0 items-center justify-end gap-1.5 text-right">
           <CalendarDays className="h-3.5 w-3.5 shrink-0 text-[#71717A]" strokeWidth={2} aria-hidden />
-          <span className={cn("text-[14px] leading-5 tabular-nums", valueClass)}>{value}</span>
+        <span className={cn("text-[14px] font-medium leading-5 tabular-nums", valueClass)}>{value}</span>
         </span>
       ) : (
-        <span className={cn("shrink-0 text-right text-[14px] leading-5 tabular-nums", valueClass)}>{value}</span>
+        <span className={cn("shrink-0 text-right text-[14px] font-medium leading-5 tabular-nums", valueClass)}>{value}</span>
       )}
     </div>
   );
