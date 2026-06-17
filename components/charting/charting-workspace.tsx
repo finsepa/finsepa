@@ -628,13 +628,17 @@ function chartingBarPointFillColor(
 
 function chartingBarPointsToHistogramData(
   points: ChartingBarSeriesPoint[],
-  _colorIdx: number,
-  _hoveredPeriodIndex: number | null,
+  colorIdx: number,
+  hoveredPeriodIndex: number | null,
+  useNativeHistogramBarColors: boolean,
 ) {
   return points.map((p) => ({
     time: p.time,
     value: p.value,
-    color: CHARTING_BAR_TRANSPARENT,
+    color:
+      useNativeHistogramBarColors && !isTransparentChartingBarPoint(p)
+        ? chartingBarPointFillColor(colorIdx, p.periodIndex, hoveredPeriodIndex)
+        : CHARTING_BAR_TRANSPARENT,
   }));
 }
 
@@ -2283,6 +2287,7 @@ export function ChartingWorkspace({
       stockFullWidthFixedBars,
       isFullPageCharting,
       animateBars,
+      screenshotPreviewMode,
       chartAxes.primary?.ticks.join(",") ?? "",
       chartAxes.percent?.ticks.join(",") ?? "",
     ].join("::");
@@ -2298,6 +2303,7 @@ export function ChartingWorkspace({
     stockFullWidthFixedBars,
     isFullPageCharting,
     animateBars,
+    screenshotPreviewMode,
     chartAxes,
   ]);
 
@@ -2427,9 +2433,11 @@ export function ChartingWorkspace({
           hoverBandPrimitiveRef.current = hoverBandPrimitive;
           chart.panes()[0]?.attachPrimitive(hoverBandPrimitive);
 
-          const roundedBarsPrimitive = new FundamentalsRoundedBarsPrimitive();
-          roundedBarsPrimitiveRef.current = roundedBarsPrimitive;
-          chart.panes()[0]?.attachPrimitive(roundedBarsPrimitive);
+          if (!screenshotPreviewMode) {
+            const roundedBarsPrimitive = new FundamentalsRoundedBarsPrimitive();
+            roundedBarsPrimitiveRef.current = roundedBarsPrimitive;
+            chart.panes()[0]?.attachPrimitive(roundedBarsPrimitive);
+          }
 
           const usedScales = new Set<string>();
 
@@ -2500,7 +2508,14 @@ export function ChartingWorkspace({
                     isTransparentChartingBarPoint,
                   )
                 : barPoints;
-              s.setData(chartingBarPointsToHistogramData(initialBarPoints, seriesColorIdx, null));
+              s.setData(
+                chartingBarPointsToHistogramData(
+                  initialBarPoints,
+                  seriesColorIdx,
+                  null,
+                  screenshotPreviewMode,
+                ),
+              );
               seriesByMetricRef.current.set(id, s);
             } else {
               const lineColor = fundamentalsBarSolidAtIndex(seriesColorIdx);
@@ -2560,7 +2575,7 @@ export function ChartingWorkspace({
           }
 
           const syncRoundedBarHoverPrimitive = () => {
-            if (chartType !== "bars" || !chartRef.current) return;
+            if (screenshotPreviewMode || chartType !== "bars" || !chartRef.current) return;
             const c = chartRef.current;
             const displayedByMetric = new Map<ChartingMetricId, ChartingBarSeriesPoint[]>();
             for (const [metricId, barPoints] of barSeriesPointsRef.current) {
@@ -2787,7 +2802,9 @@ export function ChartingWorkspace({
                       isTransparentChartingBarPoint,
                     )
                   : barPoints;
-              s.setData(chartingBarPointsToHistogramData(displayed, ci, periodIndex));
+              s.setData(
+                chartingBarPointsToHistogramData(displayed, ci, periodIndex, screenshotPreviewMode),
+              );
             }
             syncRoundedBarHoverPrimitive();
           };
@@ -2806,7 +2823,9 @@ export function ChartingWorkspace({
                 elapsedMs,
                 isTransparentChartingBarPoint,
               );
-              s.setData(chartingBarPointsToHistogramData(displayed, ci, hovered));
+              s.setData(
+                chartingBarPointsToHistogramData(displayed, ci, hovered, screenshotPreviewMode),
+              );
             }
             syncChartOverlays();
           };
