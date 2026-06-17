@@ -21,6 +21,7 @@ import {
   buildMarketSnapshotSlowPayloadsForIngest,
 } from "@/lib/market/market-snapshot-ingest-sources";
 import { getScreenerUsMarketCacheEpoch } from "@/lib/screener/screener-us-market-cache";
+import { buildMarketSnapshotIndexCardsForIngest } from "@/lib/screener/simple-index-cards";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 
 const LIVE_HOT_INGEST_MIN_INTERVAL_MS = MARKET_SNAPSHOT_HOT_STALE_MS;
@@ -160,6 +161,17 @@ export async function ingestMarketSnapshots(now: Date = new Date()): Promise<Mar
       }
     } else {
       Object.assign(keys, skippedKeys(MARKET_SNAPSHOT_SLOW_INGEST_KEYS));
+    }
+
+    const indexCardsKey = MARKET_SNAPSHOT_KEY.indexCards;
+    if (await marketSnapshotKeyIsFresh(indexCardsKey, hotSeg, LIVE_HOT_INGEST_MIN_INTERVAL_MS)) {
+      keys[indexCardsKey] = "ok";
+    } else if (await retagRecentMarketSnapshotSegment(indexCardsKey, hotSeg, LIVE_HOT_INGEST_MIN_INTERVAL_MS)) {
+      keys[indexCardsKey] = "segment_retagged";
+    } else {
+      const cards = await buildMarketSnapshotIndexCardsForIngest();
+      const res = await upsertMarketSnapshot(indexCardsKey, hotSeg, cards);
+      keys[indexCardsKey] = res.ok ? "ok" : res.reason;
     }
 
     const skipped = Boolean(hotSkipReason && slowSkipReason);

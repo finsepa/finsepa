@@ -12,8 +12,16 @@ import {
   type SimpleIndicesDerived,
   type SimpleMarketData,
 } from "@/lib/market/simple-market-layer";
+import { MARKET_SNAPSHOT_KEY } from "@/lib/market/market-snapshot-keys";
+import { readMarketSnapshot } from "@/lib/market/market-snapshot-store";
 import { fetchEodhdEodDaily } from "@/lib/market/eodhd-eod";
 import { fetchEodhdIntraday } from "@/lib/market/eodhd-intraday";
+
+const INDEX_CARD_EODHD_SYMBOLS = ["GSPC.INDX", "NDX.INDX", "DJI.INDX", "IWM.US", "VIX.INDX"] as const;
+
+function indexCardSymbolsHaveDerivedSparklines(indicesDerived: SimpleIndicesDerived): boolean {
+  return INDEX_CARD_EODHD_SYMBOLS.every((sym) => (indicesDerived[sym]?.last5DailyCloses?.length ?? 0) >= 2);
+}
 
 function toUtcDateStr(d: Date): string {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())).toISOString().slice(0, 10);
@@ -117,7 +125,8 @@ async function loadSimpleIndexCardsUncached(): Promise<IndexCardData[]> {
   const fromUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0);
   const fromUnix = Math.floor(fromUtc / 1000);
 
-  const skipIntraday = epoch.mode === "frozen";
+  const skipIntraday =
+    epoch.mode === "frozen" || indexCardSymbolsHaveDerivedSparklines(indicesDerived);
   const [spxIntradaySettled, ndxIntradaySettled, djiIntradaySettled, rutIntradaySettled, vixIntradaySettled] =
     skipIntraday
     ? [
@@ -279,6 +288,13 @@ async function loadSimpleIndexCardsUncached(): Promise<IndexCardData[]> {
 }
 
 export async function getSimpleIndexCards(): Promise<IndexCardData[]> {
+  const fromSnapshot = await readMarketSnapshot<IndexCardData[]>(MARKET_SNAPSHOT_KEY.indexCards);
+  if (fromSnapshot?.length) return fromSnapshot;
   return withScreenerUsMarketCache("simple-index-cards-v10-frozen-close", () => loadSimpleIndexCardsUncached());
+}
+
+/** Cron ingest — uses tab + derived snapshots when present. */
+export async function buildMarketSnapshotIndexCardsForIngest(): Promise<IndexCardData[]> {
+  return loadSimpleIndexCardsUncached();
 }
 

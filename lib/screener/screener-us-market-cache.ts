@@ -94,6 +94,35 @@ export function getScreenerUsMarketCacheEpoch(now: Date = new Date()): ScreenerU
 }
 
 /** Cross-user `unstable_cache` keyed by US market session (live 15m bucket or frozen close day). */
+type ScreenerSessionMemEntry = { value: unknown; expiresAt: number };
+
+/** Survives dev reloads where Next `unstable_cache` may not dedupe hard refreshes. */
+const screenerUsSessionMem = new Map<string, ScreenerSessionMemEntry>();
+const SCREENER_US_SESSION_MEM_MAX = 512;
+
+function screenerSessionMemTtlMs(epoch: ScreenerUsMarketCacheEpoch): number {
+  if (epoch.revalidateSec === false) return 24 * 60 * 60 * 1000;
+  return epoch.revalidateSec * 1000;
+}
+
+function readScreenerSessionMem<T>(key: string): T | undefined {
+  const hit = screenerUsSessionMem.get(key);
+  if (!hit) return undefined;
+  if (hit.expiresAt <= Date.now()) {
+    screenerUsSessionMem.delete(key);
+    return undefined;
+  }
+  return hit.value as T;
+}
+
+function writeScreenerSessionMem(key: string, value: unknown, ttlMs: number): void {
+  if (screenerUsSessionMem.size >= SCREENER_US_SESSION_MEM_MAX) {
+    const oldest = screenerUsSessionMem.keys().next().value;
+    if (oldest) screenerUsSessionMem.delete(oldest);
+  }
+  screenerUsSessionMem.set(key, { value, expiresAt: Date.now() + ttlMs });
+}
+
 export function withScreenerUsMarketCache<T>(
   baseKey: string,
   loader: () => Promise<T>,
@@ -101,9 +130,22 @@ export function withScreenerUsMarketCache<T>(
   now: Date = new Date(),
 ): Promise<T> {
   const epoch = getScreenerUsMarketCacheEpoch(now);
+  const parts = [baseKey, "us-session-v1", epoch.segment, ...extraKeyParts];
+  const memKey = parts.join("\0");
+  const ttlMs = screenerSessionMemTtlMs(epoch);
+
+  const memHit = readScreenerSessionMem<T>(memKey);
+  if (memHit !== undefined) return Promise.resolve(memHit);
+
   return unstable_cache(
-    loader,
-    [baseKey, "us-session-v1", epoch.segment, ...extraKeyParts],
+    async () => {
+      const again = readScreenerSessionMem<T>(memKey);
+      if (again !== undefined) return again;
+      const value = await loader();
+      writeScreenerSessionMem(memKey, value, ttlMs);
+      return value;
+    },
+    parts,
     { revalidate: epoch.revalidateSec },
   )();
 }
