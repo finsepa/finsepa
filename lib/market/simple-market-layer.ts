@@ -660,6 +660,8 @@ export async function getSimpleScreenerDerived(): Promise<SimpleScreenerDerived>
 }
 
 export async function getSimpleScreenerDerivedTop10(): Promise<SimpleScreenerDerived> {
+  const snap = await readMarketSnapshotSlow<SimpleScreenerDerived>(MARKET_SNAPSHOT_KEY.screenerDerived);
+  if (snap) return { top10: snap.top10, page2: {} };
   return withScreenerUsMarketCache(
     "simple-screener-derived-top10-v2-session",
     () => loadSimpleScreenerDerivedTop10Uncached(),

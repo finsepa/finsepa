@@ -2,7 +2,7 @@ import "server-only";
 
 import { unstable_cache } from "next/cache";
 
-import { REVALIDATE_HOT_FAST } from "@/lib/data/cache-policy";
+import { REVALIDATE_WARM } from "@/lib/data/cache-policy";
 import { cryptoRouteBase } from "@/lib/crypto/crypto-symbol-base";
 import { isSupportedCryptoAssetSymbol } from "@/lib/crypto/crypto-logo-url";
 import { getCryptoLiveSpotPriceUsd } from "@/lib/market/crypto-live-price";
@@ -73,10 +73,10 @@ const getCachedPortfolioLivePricesUsd = unstable_cache(
     return fetchPortfolioLivePricesUsd(symbols);
   },
   ["portfolio-live-quotes-v1"],
-  { revalidate: REVALIDATE_HOT_FAST },
+  { revalidate: REVALIDATE_WARM },
 );
 
-/** Server-side TTL cache to dedupe refresh spam (esp. across hard reloads). */
+/** Server-side TTL cache to dedupe refresh spam (esp. across hard reloads on deferred routes). */
 export async function fetchPortfolioLivePricesUsdCached(
   symbols: string[],
 ): Promise<Record<string, number | null>> {

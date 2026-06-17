@@ -8,9 +8,11 @@ import {
   type MarketSnapshotKey,
 } from "@/lib/market/market-snapshot-keys";
 import {
+  MARKET_SNAPSHOT_HOT_STALE_MS,
   marketSnapshotHotSegment,
   marketSnapshotKeyIsFresh,
   marketSnapshotSlowSegment,
+  retagRecentMarketSnapshotSegment,
   upsertMarketSnapshot,
 } from "@/lib/market/market-snapshot-store";
 import { runWithProviderTrace } from "@/lib/market/provider-trace";
@@ -21,7 +23,7 @@ import {
 import { getScreenerUsMarketCacheEpoch } from "@/lib/screener/screener-us-market-cache";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 
-const LIVE_HOT_INGEST_MIN_INTERVAL_MS = 14 * 60 * 1000;
+const LIVE_HOT_INGEST_MIN_INTERVAL_MS = MARKET_SNAPSHOT_HOT_STALE_MS;
 const FROZEN_INGEST_MAX_AGE_MS = 48 * 60 * 60 * 1000;
 /** Live session: derived EOD bars need at most one cron fill per regular day. */
 const LIVE_SLOW_INGEST_MAX_AGE_MS = 20 * 60 * 60 * 1000;
@@ -110,16 +112,36 @@ export async function ingestMarketSnapshots(now: Date = new Date()): Promise<Mar
     const { hotSkipReason, slowSkipReason } = await getMarketSnapshotIngestSkipState(now);
 
     if (!hotSkipReason) {
-      const hot = await buildMarketSnapshotHotPayloadsForIngest();
-      const hotEntries: [keyof typeof hot, MarketSnapshotKey][] = [
+      const hotEntries: [keyof Awaited<ReturnType<typeof buildMarketSnapshotHotPayloadsForIngest>>, MarketSnapshotKey][] = [
         ["stocksAllPages", MARKET_SNAPSHOT_KEY.stocksAllPages],
         ["cryptoTab", MARKET_SNAPSHOT_KEY.cryptoTab],
         ["cryptoPage2", MARKET_SNAPSHOT_KEY.cryptoPage2],
         ["indicesTab", MARKET_SNAPSHOT_KEY.indicesTab],
       ];
-      for (const [name, snapshotKey] of hotEntries) {
-        const res = await upsertMarketSnapshot(snapshotKey, hotSeg, hot[name]);
-        keys[snapshotKey] = res.ok ? "ok" : res.reason;
+      const pendingFetch: typeof hotEntries = [];
+      for (const entry of hotEntries) {
+        const [, snapshotKey] = entry;
+        if (await marketSnapshotKeyIsFresh(snapshotKey, hotSeg, LIVE_HOT_INGEST_MIN_INTERVAL_MS)) {
+          keys[snapshotKey] = "ok";
+          continue;
+        }
+        const retagged = await retagRecentMarketSnapshotSegment(
+          snapshotKey,
+          hotSeg,
+          LIVE_HOT_INGEST_MIN_INTERVAL_MS,
+        );
+        if (retagged) {
+          keys[snapshotKey] = "segment_retagged";
+          continue;
+        }
+        pendingFetch.push(entry);
+      }
+      if (pendingFetch.length) {
+        const hot = await buildMarketSnapshotHotPayloadsForIngest();
+        for (const [name, snapshotKey] of pendingFetch) {
+          const res = await upsertMarketSnapshot(snapshotKey, hotSeg, hot[name]);
+          keys[snapshotKey] = res.ok ? "ok" : res.reason;
+        }
       }
     } else {
       Object.assign(keys, skippedKeys(MARKET_SNAPSHOT_HOT_INGEST_KEYS));
