@@ -2,12 +2,12 @@
 
 import type { ReactNode } from "react";
 
-import { SegmentedControl } from "@/components/design-system";
+import { SegmentedControl, type SegmentedControlOption } from "@/components/design-system";
 import { FormListboxSelect } from "@/components/ui/form-listbox-select";
 import type { ListboxOption } from "@/components/ui/form-listbox-select";
 import { STOCK_CHART_RANGES, type StockChartRange, type StockChartSeries } from "@/lib/market/stock-chart-types";
 
-const CHART_SERIES_OPTIONS: readonly ListboxOption<StockChartSeries>[] = [
+const CHART_SERIES_OPTIONS: readonly SegmentedControlOption<StockChartSeries>[] = [
   { value: "price", label: "Price" },
   { value: "marketCap", label: "Market cap" },
   { value: "return", label: "Return" },
@@ -29,21 +29,25 @@ export function ChartControls({
 }: {
   activeRange: StockChartRange;
   onRangeChange: (range: StockChartRange) => void;
-  /** When set (stock overview), show metric listbox instead of a static title. */
+  /** When set (stock overview), show metric toggle instead of a static title. */
   chartSeries?: StockChartSeries;
   onChartSeriesChange?: (s: StockChartSeries) => void;
   /** Stock overview: “Compare” picker placed just left of the range control. */
   compareSlot?: ReactNode;
   /** Holdings: replace the default "Price" title (e.g. with portfolio switcher). */
   titleSlot?: ReactNode;
-  /** When comparing symbols, metric is fixed to return — disable listbox. */
+  /** When comparing symbols, metric is fixed to return — disable toggle. */
   seriesSelectDisabled?: boolean;
 }) {
   const showSeriesToggle = chartSeries != null && onChartSeriesChange != null;
+  const chartSeriesSegmentOptions = CHART_SERIES_OPTIONS.map((option) => ({
+    ...option,
+    disabled: seriesSelectDisabled,
+  }));
 
   return (
     <div className="relative z-10 mb-4">
-      {/* Mobile: metric, compare, and range dropdowns on one row (fixed columns so labels don’t collapse). */}
+      {/* Mobile: metric toggle, compare, and range dropdown on one row. */}
       <div
         className={
           compareSlot
@@ -52,16 +56,16 @@ export function ChartControls({
         }
       >
         {showSeriesToggle ? (
-          <FormListboxSelect
-            key={seriesSelectDisabled ? "chart-metric-locked-mobile" : "chart-metric-mobile"}
-            compact
-            className="min-w-0"
-            value={chartSeries}
-            onChange={onChartSeriesChange}
-            options={CHART_SERIES_OPTIONS}
-            aria-label="Chart metric"
-            disabled={seriesSelectDisabled}
-          />
+          <div className={compareSlot ? "col-span-2 min-w-0 overflow-x-auto pb-0.5" : "min-w-0 overflow-x-auto pb-0.5"}>
+            <SegmentedControl
+              options={chartSeriesSegmentOptions}
+              value={chartSeries}
+              onChange={onChartSeriesChange}
+              size="sm"
+              aria-label="Chart metric"
+              className="min-w-min flex-nowrap"
+            />
+          </div>
         ) : titleSlot ? (
           <div className="min-w-0 overflow-hidden">{titleSlot}</div>
         ) : (
@@ -82,15 +86,16 @@ export function ChartControls({
       {/* Desktop: metric/title left; compare + range segmented control right. */}
       <div className="hidden flex-col gap-3 sm:flex sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
         {showSeriesToggle ? (
-          <FormListboxSelect
-            key={seriesSelectDisabled ? "chart-metric-locked" : "chart-metric"}
-            className="w-full min-w-0 shrink-0 sm:w-[min(100%,220px)]"
-            value={chartSeries}
-            onChange={onChartSeriesChange}
-            options={CHART_SERIES_OPTIONS}
-            aria-label="Chart metric"
-            disabled={seriesSelectDisabled}
-          />
+          <div className="min-w-0 shrink-0 overflow-x-auto pb-0.5 sm:overflow-visible sm:pb-0">
+            <SegmentedControl
+              options={chartSeriesSegmentOptions}
+              value={chartSeries}
+              onChange={onChartSeriesChange}
+              size="sm"
+              aria-label="Chart metric"
+              className="min-w-min flex-nowrap"
+            />
+          </div>
         ) : titleSlot ? (
           <div className="min-w-0 w-full max-w-full shrink-0 sm:w-auto">{titleSlot}</div>
         ) : (

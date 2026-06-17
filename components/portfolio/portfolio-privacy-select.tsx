@@ -3,11 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, ChevronDown, Globe, Lock } from "@/lib/icons";
 
-import type { PortfolioPrivacy } from "@/components/portfolio/portfolio-types";
 import {
   dropdownMenuPanelClassName,
   dropdownMenuPlainItemRowClassName,
 } from "@/components/design-system/dropdown-menu-styles";
+import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
+import type { PortfolioPrivacy } from "@/components/portfolio/portfolio-types";
 import { cn } from "@/lib/utils";
 
 const OPTIONS: { value: PortfolioPrivacy; label: string; Icon: typeof Lock }[] = [
@@ -47,31 +48,30 @@ export function PortfolioPrivacySelect({
 }) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const menuPortalRef = useRef<HTMLDivElement>(null);
   const active = optionByValue(value);
   const ActiveIcon = active.Icon;
 
   useEffect(() => {
     if (!open) return;
     function onDocMouseDown(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+      const t = e.target as Node;
+      if (containerRef.current?.contains(t) || menuPortalRef.current?.contains(t)) return;
+      setOpen(false);
     }
-    document.addEventListener("mousedown", onDocMouseDown);
-    return () => document.removeEventListener("mousedown", onDocMouseDown);
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") setOpen(false);
     }
+    document.addEventListener("mousedown", onDocMouseDown);
     document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDocMouseDown);
+      document.removeEventListener("keydown", onKey);
+    };
   }, [open]);
 
   return (
-    <div ref={containerRef} className="relative z-10 w-full">
+    <div ref={containerRef} className="relative w-full">
       <button
         type="button"
         id={id}
@@ -95,40 +95,41 @@ export function PortfolioPrivacySelect({
         aria-hidden
       />
       {open ? (
-        <div
-          className={cn(
-            dropdownMenuPanelClassName(),
-            "absolute left-0 right-0 top-[calc(100%+4px)] z-[120]",
-          )}
-          role="listbox"
-          aria-label={ariaLabel}
+        <TopbarDropdownPortal
+          open={open}
+          anchorRef={containerRef}
+          ref={menuPortalRef}
+          align="leading"
+          matchAnchorWidth
         >
-          {OPTIONS.map((opt) => {
-            const OptIcon = opt.Icon;
-            const selected = value === opt.value;
-            return (
-              <button
-                key={opt.value}
-                type="button"
-                role="option"
-                aria-selected={selected}
-                onClick={() => {
-                  onChange(opt.value);
-                  setOpen(false);
-                }}
-                className={dropdownMenuPlainItemRowClassName({ selected })}
-              >
-                <span className="flex min-w-0 flex-1 items-center gap-2">
-                  <OptIcon className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
-                  {opt.label}
-                </span>
-                <span className="flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden>
-                  {selected ? <Check className="h-4 w-4 text-[#09090B]" strokeWidth={2} /> : null}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+          <div className={dropdownMenuPanelClassName()} role="listbox" aria-label={ariaLabel}>
+            {OPTIONS.map((opt) => {
+              const OptIcon = opt.Icon;
+              const selected = value === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  role="option"
+                  aria-selected={selected}
+                  onClick={() => {
+                    onChange(opt.value);
+                    setOpen(false);
+                  }}
+                  className={dropdownMenuPlainItemRowClassName({ selected })}
+                >
+                  <span className="flex min-w-0 flex-1 items-center gap-2">
+                    <OptIcon className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
+                    {opt.label}
+                  </span>
+                  <span className="flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden>
+                    {selected ? <Check className="h-4 w-4 text-[#09090B]" strokeWidth={2} /> : null}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </TopbarDropdownPortal>
       ) : null}
     </div>
   );

@@ -423,44 +423,55 @@ export function PortfolioWorkspaceProvider({
     ) => {
       const eagerQuotes = portfolioPathnameUsesEagerLiveQuotes(pathnameRef.current);
 
+      const skipForRecentSessionQuote = (): boolean => {
+        try {
+          const raw = sessionStorage.getItem(quoteSessionKey);
+          if (raw) {
+            const parsed = JSON.parse(raw) as { ledger: string; at: number } | null;
+            if (
+              parsed &&
+              parsed.ledger === ledgerFingerprint &&
+              typeof parsed.at === "number" &&
+              Date.now() - parsed.at < QUOTE_DEDUPE_TTL_MS
+            ) {
+              quotedLedgerFingerprintRef.current = ledgerFingerprint;
+              setHoldingsMarkToMarketReady(true);
+              return true;
+            }
+          }
+        } catch {
+          // ignore
+        }
+        if (quotedLedgerFingerprintRef.current === ledgerFingerprint) {
+          setHoldingsMarkToMarketReady(true);
+          return true;
+        }
+        return false;
+      };
+
       if (!eagerQuotes) {
         setDeferredQuotesPending(true);
+        if (skipForRecentSessionQuote()) {
+          prevQuotedSelectionRef.current = scope.selectedPortfolioId;
+          return;
+        }
         const topbarSlice = holdingsSliceForPortfolioLiveQuotes(
           rebuilt,
           scope.portfolios,
           scope.selectedPortfolioId,
         );
-        runHoldingsQuoteRefresh(topbarSlice);
+        quotedLedgerFingerprintRef.current = ledgerFingerprint;
+        runHoldingsQuoteRefresh(topbarSlice, { recordQuotedLedger: ledgerFingerprint });
         prevQuotedSelectionRef.current = scope.selectedPortfolioId;
         return;
       }
 
       setDeferredQuotesPending(false);
 
-      // Dedupe across hard refresh (F5) within a short TTL.
-      try {
-        const raw = sessionStorage.getItem(quoteSessionKey);
-        if (raw) {
-          const parsed = JSON.parse(raw) as { ledger: string; at: number } | null;
-          if (
-            parsed &&
-            parsed.ledger === ledgerFingerprint &&
-            typeof parsed.at === "number" &&
-            Date.now() - parsed.at < QUOTE_DEDUPE_TTL_MS
-          ) {
-            quotedLedgerFingerprintRef.current = ledgerFingerprint;
-            setHoldingsMarkToMarketReady(true);
-            return;
-          }
-        }
-      } catch {
-        // ignore
-      }
-
-      if (quotedLedgerFingerprintRef.current === ledgerFingerprint) {
-        setHoldingsMarkToMarketReady(true);
+      if (skipForRecentSessionQuote()) {
         return;
       }
+
       quotedLedgerFingerprintRef.current = ledgerFingerprint;
       runHoldingsQuoteRefresh(rebuilt, { recordQuotedLedger: ledgerFingerprint });
     },

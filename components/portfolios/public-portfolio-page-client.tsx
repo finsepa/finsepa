@@ -1,10 +1,10 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useState } from "react";
-import Link from "next/link";
 
 import { PortfolioPageView } from "@/components/portfolio/portfolio-page-view";
 import { PortfolioPageLoadingShell } from "@/components/portfolio/portfolio-page-loading";
+import { PortfoliosBreadcrumbs } from "@/components/portfolios/portfolios-breadcrumbs";
 import { PublicPortfolioViewProvider } from "@/components/portfolio/public-portfolio-view-provider";
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 import type { PublicPortfolioListingSnapshot } from "@/lib/portfolio/public-listing-snapshot";
@@ -66,17 +66,14 @@ function PublicPortfolioPageInner({ listingId }: { listingId: string }) {
   }, [load]);
 
   if (loading) {
-    return <PortfolioPageLoadingShell />;
+    return <PortfolioPageLoadingShell showPortfoliosBreadcrumb />;
   }
 
   if (error || !listing) {
     return (
-      <div className="flex min-h-full flex-col bg-white px-4 py-8 sm:px-9">
-        <nav aria-label="Breadcrumb" className="mb-6 flex items-center gap-2 text-sm">
-          <Link href="/portfolios" className="text-[#71717A] hover:text-[#09090B]">
-            Portfolios
-          </Link>
-        </nav>
+      <div className="relative flex min-h-full min-w-0 flex-col bg-white">
+        <PortfoliosBreadcrumbs />
+        <div className="flex min-h-full flex-1 flex-col px-4 py-8 sm:px-9">
         <Empty variant="card" className="min-h-[min(50vh,400px)]">
           <EmptyHeader>
             <EmptyMedia variant="icon">
@@ -86,24 +83,16 @@ function PublicPortfolioPageInner({ listingId }: { listingId: string }) {
             <EmptyDescription>{error ?? "Portfolio not found."}</EmptyDescription>
           </EmptyHeader>
         </Empty>
+        </div>
       </div>
     );
   }
 
   if (!listing.snapshot) {
     return (
-      <div className="flex min-h-full flex-col bg-white px-4 py-8 sm:px-9">
-        <nav aria-label="Breadcrumb" className="mb-6 flex min-w-0 items-center gap-2 text-sm">
-          <Link href="/portfolios" className="shrink-0 text-[#71717A] hover:text-[#09090B]">
-            Portfolios
-          </Link>
-          <span className="shrink-0 text-[#71717A]" aria-hidden>
-            /
-          </span>
-          <span className="min-w-0 truncate text-sm font-normal text-[#09090B]" aria-current="page">
-            {listing.name}
-          </span>
-        </nav>
+      <div className="relative flex min-h-full min-w-0 flex-col bg-white">
+        <PortfoliosBreadcrumbs currentLabel={listing.name} />
+        <div className="flex min-h-full flex-1 flex-col px-4 py-8 sm:px-9">
         <Empty variant="card" className="min-h-[min(50vh,400px)]">
           <EmptyHeader>
             <EmptyMedia variant="icon">
@@ -116,6 +105,7 @@ function PublicPortfolioPageInner({ listingId }: { listingId: string }) {
             </EmptyDescription>
           </EmptyHeader>
         </Empty>
+        </div>
       </div>
     );
   }

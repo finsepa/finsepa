@@ -95,9 +95,9 @@ const earningsListTableRowClass = cn(
   "min-h-[60px] items-center bg-white px-2 transition-colors duration-75 hover:bg-neutral-50 sm:px-4",
 );
 
-const earningsListTimeHeaderClass = "min-w-0 text-center";
+const earningsListTimeHeaderClass = "min-w-0 w-full text-right";
 
-const earningsListTimeCellClass = "flex min-w-0 items-center justify-center";
+const earningsListTimeCellClass = "flex min-w-0 w-full items-center justify-end";
 
 const earningsListNumericCellClass =
   "min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]";

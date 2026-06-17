@@ -1,7 +1,6 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import Link from "next/link";
 import { startTransition, useCallback, useEffect, useState, type ComponentType } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FileSpreadsheet, Layers2, Settings } from "@/lib/icons";
@@ -37,6 +36,7 @@ import {
   searchParamFromPortfolioViewTab,
 } from "@/components/portfolio/portfolio-page-tabs";
 import { TransactionPortfolioField } from "@/components/portfolio/transaction-portfolio-field";
+import { PortfoliosBreadcrumbs } from "@/components/portfolios/portfolios-breadcrumbs";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 import { netCashUsd, totalCostBasisInvested, totalNetWorth } from "@/lib/portfolio/overview-metrics";
@@ -244,7 +244,9 @@ export function PortfolioPageView({
   }
 
   return (
-    <div className="relative flex min-h-full min-w-0 flex-col overflow-x-hidden bg-white px-4 py-4 sm:px-9 sm:py-6">
+    <div className="relative flex min-h-full min-w-0 flex-col overflow-x-hidden bg-white">
+      {showPortfoliosBreadcrumb ? <PortfoliosBreadcrumbs currentLabel={portfolioName} /> : null}
+      <div className="relative flex min-h-full min-w-0 flex-1 flex-col overflow-x-hidden px-4 py-4 sm:px-9 sm:py-6">
       {!readOnly ? (
         <ImportTransactionsModal open={importTransactionsOpen} onClose={() => setImportTransactionsOpen(false)} />
       ) : null}
@@ -253,23 +255,9 @@ export function PortfolioPageView({
         <div className="flex min-w-0 items-start justify-between gap-3 sm:flex-1 sm:items-center">
           <div className="flex min-w-0 flex-col gap-1">
             {showPortfoliosBreadcrumb ? (
-              <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-2 text-sm">
-                <Link
-                  href="/portfolios"
-                  className="shrink-0 text-[#71717A] transition-colors hover:text-[#09090B]"
-                >
-                  Portfolios
-                </Link>
-                <span className="shrink-0 text-[#71717A]" aria-hidden>
-                  /
-                </span>
-                <span
-                  className="min-w-0 truncate text-sm font-normal text-[#09090B]"
-                  aria-current="page"
-                >
-                  {portfolioName}
-                </span>
-              </nav>
+              <h1 className="min-w-0 truncate text-2xl font-semibold tracking-tight text-[#09090B]">
+                {portfolioName}
+              </h1>
             ) : (
               <div className="flex min-w-0 max-w-full items-center gap-0">
                 <h1 className="min-w-0 truncate text-2xl font-semibold tracking-tight text-[#09090B]">
@@ -452,6 +440,7 @@ export function PortfolioPageView({
           ) : null}
         </div>
       </PortfolioOverviewAthProvider>
+      </div>
     </div>
   );
 }

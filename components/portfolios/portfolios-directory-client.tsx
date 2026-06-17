@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronRight, Wallet } from "@/lib/icons";
+import { ChevronRight, Grid01, LayoutList, Wallet } from "@/lib/icons";
 import { format, parseISO } from "date-fns";
 
 import {
@@ -19,10 +19,14 @@ import { UserAvatar } from "@/components/user/user-avatar";
 import { displayLogoUrlForPortfolioSymbol } from "@/lib/portfolio/portfolio-asset-display-logo";
 import {
   PortfoliosDirectorySkeleton,
+  PortfoliosDirectoryTableSkeleton,
   PublicPortfolioCardSkeleton,
 } from "@/components/portfolios/portfolios-directory-skeleton";
+import { PortfoliosDirectoryTable } from "@/components/portfolios/portfolios-directory-table";
 import { PUBLIC_LISTINGS_CHANGED_EVENT } from "@/lib/portfolio/sync-public-listing-client";
 import { cn } from "@/lib/utils";
+
+type PortfoliosDirectoryView = "cards" | "list";
 
 const usd = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -208,8 +212,50 @@ function PublicPortfolioBlock({ listing }: { listing: PublicListingRow }) {
   );
 }
 
+function PortfoliosViewToggle({
+  view,
+  onChange,
+}: {
+  view: PortfoliosDirectoryView;
+  onChange: (view: PortfoliosDirectoryView) => void;
+}) {
+  return (
+    <div className="flex shrink-0 rounded-[10px] bg-[#F4F4F5] p-0.5">
+      <button
+        type="button"
+        onClick={() => onChange("cards")}
+        className={cn(
+          "flex h-8 w-9 items-center justify-center rounded-[10px] transition-colors",
+          view === "cards"
+            ? "bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.12),0px_1px_1px_0px_rgba(10,10,10,0.07)]"
+            : "text-[#52525B] hover:text-[#09090B]",
+        )}
+        aria-pressed={view === "cards"}
+        aria-label="Card view"
+      >
+        <Grid01 className="h-5 w-5" strokeWidth={1.75} />
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange("list")}
+        className={cn(
+          "flex h-8 w-9 items-center justify-center rounded-[10px] transition-colors",
+          view === "list"
+            ? "bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.12),0px_1px_1px_0px_rgba(10,10,10,0.07)]"
+            : "text-[#52525B] hover:text-[#09090B]",
+        )}
+        aria-pressed={view === "list"}
+        aria-label="List view"
+      >
+        <LayoutList className="h-5 w-5" strokeWidth={1.75} />
+      </button>
+    </div>
+  );
+}
+
 export function PortfoliosDirectoryClient() {
   const pathname = usePathname();
+  const [view, setView] = useState<PortfoliosDirectoryView>("cards");
   const [listings, setListings] = useState<PublicListingRow[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -254,20 +300,39 @@ export function PortfoliosDirectoryClient() {
   }, [load]);
 
   if (loading && listings === null) {
-    return <PortfoliosDirectorySkeleton cards={2} />;
+    return (
+      <div className="flex min-w-0 flex-col">
+        <div className="mb-6 flex min-w-0 items-center justify-between gap-4 sm:mb-8">
+          <h1 className="text-2xl font-semibold tracking-tight text-[#09090B]">Portfolios</h1>
+          <PortfoliosViewToggle view={view} onChange={setView} />
+        </div>
+        <PortfoliosDirectorySkeleton cards={5} variant={view === "list" ? "table" : "cards"} />
+      </div>
+    );
   }
 
   if (error) {
     return (
-      <div className="rounded-xl border border-[#E4E4E7] bg-white px-6 py-12 text-center text-sm text-[#71717A]">
-        {error}
+      <div className="flex min-w-0 flex-col">
+        <div className="mb-6 flex min-w-0 items-center justify-between gap-4 sm:mb-8">
+          <h1 className="text-2xl font-semibold tracking-tight text-[#09090B]">Portfolios</h1>
+          <PortfoliosViewToggle view={view} onChange={setView} />
+        </div>
+        <div className="rounded-xl border border-[#E4E4E7] bg-white px-6 py-12 text-center text-sm text-[#71717A]">
+          {error}
+        </div>
       </div>
     );
   }
 
   if ((listings ?? []).length === 0) {
     return (
-      <Empty variant="card" className="min-h-[min(50vh,420px)] w-full">
+      <div className="flex min-w-0 flex-col">
+        <div className="mb-6 flex min-w-0 items-center justify-between gap-4 sm:mb-8">
+          <h1 className="text-2xl font-semibold tracking-tight text-[#09090B]">Portfolios</h1>
+          <PortfoliosViewToggle view={view} onChange={setView} />
+        </div>
+        <Empty variant="card" className="min-h-[min(50vh,420px)] w-full">
         <EmptyHeader className="gap-3">
           <EmptyMedia variant="icon">
             <Wallet className="h-6 w-6" strokeWidth={1.75} aria-hidden />
@@ -285,19 +350,36 @@ export function PortfoliosDirectoryClient() {
           Go to My Portfolio
         </Link>
       </Empty>
+      </div>
     );
   }
 
   const rows = listings ?? [];
+  const readyRows = rows.filter((row) => row.metricsReady !== false);
+  const pendingRows = rows.filter((row) => row.metricsReady === false);
 
   return (
     <div className="flex min-w-0 flex-col">
-      {rows.map((row) =>
-        row.metricsReady === false ? (
-          <PublicPortfolioCardSkeleton key={row.id} />
-        ) : (
-          <PublicPortfolioBlock key={row.id} listing={row} />
-        ),
+      <div className="mb-6 flex min-w-0 items-center justify-between gap-4 sm:mb-8">
+        <h1 className="text-2xl font-semibold tracking-tight text-[#09090B]">Portfolios</h1>
+        <PortfoliosViewToggle view={view} onChange={setView} />
+      </div>
+
+      {view === "list" ? (
+        <>
+          {readyRows.length > 0 ? <PortfoliosDirectoryTable listings={readyRows} /> : null}
+          {pendingRows.length > 0 ? <PortfoliosDirectoryTableSkeleton rows={pendingRows.length} /> : null}
+        </>
+      ) : (
+        <div className="flex min-w-0 flex-col">
+          {rows.map((row) =>
+            row.metricsReady === false ? (
+              <PublicPortfolioCardSkeleton key={row.id} />
+            ) : (
+              <PublicPortfolioBlock key={row.id} listing={row} />
+            ),
+          )}
+        </div>
       )}
     </div>
   );

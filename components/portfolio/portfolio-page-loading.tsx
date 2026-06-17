@@ -163,11 +163,7 @@ function PortfolioPageHeaderSkeleton({
       <div className="flex min-w-0 items-start justify-between gap-3 sm:flex-1 sm:items-center">
         <div className="flex min-w-0 flex-col gap-1">
           {showPortfoliosBreadcrumb ? (
-            <div className="flex items-center gap-2">
-              <Pulse className="h-4 w-20 bg-neutral-100" />
-              <Pulse className="h-4 w-1 bg-neutral-100" />
-              <Pulse className="h-4 w-28" />
-            </div>
+            <Pulse className="h-8 w-[min(100%,12rem)] max-w-full rounded-lg" />
           ) : (
             <div className="flex min-w-0 items-center gap-2">
               <Pulse className="h-8 w-[min(100%,12rem)] max-w-full rounded-lg" />
@@ -205,10 +201,23 @@ export function PortfolioPageLoadingShell({
 } = {}) {
   return (
     <div
-      className="relative flex min-h-full min-w-0 flex-col overflow-x-hidden bg-white px-4 py-4 sm:px-9 sm:py-6"
+      className="relative flex min-h-full min-w-0 flex-col overflow-x-hidden bg-white"
       aria-busy="true"
       aria-label="Loading portfolio"
     >
+      {showPortfoliosBreadcrumb ? (
+        <nav
+          aria-hidden
+          className="flex min-w-0 items-center px-4 py-3 max-md:border-b-0 md:border-b md:border-[#E4E4E7] sm:px-9"
+        >
+          <div className="flex min-w-0 items-center gap-2">
+            <Pulse className="h-4 w-20 bg-neutral-100" />
+            <Pulse className="h-4 w-1 bg-neutral-100" />
+            <Pulse className="h-4 w-28 bg-neutral-100" />
+          </div>
+        </nav>
+      ) : null}
+      <div className="relative flex min-h-full min-w-0 flex-1 flex-col overflow-x-hidden px-4 py-4 sm:px-9 sm:py-6">
       <PortfolioPageHeaderSkeleton showPortfoliosBreadcrumb={showPortfoliosBreadcrumb} />
       <PortfolioOverviewCardsSkeleton />
       <PortfolioPageTabsSkeleton publicView={publicView} />
@@ -221,6 +230,7 @@ export function PortfolioPageLoadingShell({
       <div className="pt-6" aria-hidden>
         <PortfolioHoldingsSubTabsSkeleton />
         <PortfolioHoldingsTableSkeleton />
+      </div>
       </div>
     </div>
   );

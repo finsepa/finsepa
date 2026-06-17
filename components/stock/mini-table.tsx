@@ -108,6 +108,23 @@ function parseHeaderMetaPayload(json: {
   };
 }
 
+function sanitizeCompareDisplayName(raw: string | null | undefined): string {
+  if (typeof raw !== "string") return "";
+  return raw.replace(/[\u200B-\u200D\uFEFF]/g, "").trim();
+}
+
+function resolveCompareDisplayName(
+  meta: Pick<StockDetailHeaderMeta, "fullName"> | null,
+  nameHint: string,
+  symbol: string,
+): string {
+  const fromMeta = sanitizeCompareDisplayName(meta?.fullName);
+  if (fromMeta) return fromMeta;
+  const fromHint = sanitizeCompareDisplayName(nameHint);
+  if (fromHint) return fromHint;
+  return symbol;
+}
+
 function OverviewCompareRow({
   pick,
   borderColor,
@@ -172,14 +189,14 @@ function OverviewCompareRow({
   }, [compareSym, nameHint]);
 
   const compareRow = comparePerf;
-  const compareDisplayName = compareMeta?.fullName?.trim() ? compareMeta.fullName : nameHint;
+  const compareDisplayName = resolveCompareDisplayName(compareMeta, nameHint, compareSym);
   const compareLogoUrl = compareMeta?.logoUrl?.trim() ? compareMeta.logoUrl : "";
 
   return (
     <tr className="border-b border-[#E4E4E7]">
       <td className="max-w-0 px-3 py-3 text-left align-middle">
         <div
-          className="flex min-w-0 items-center justify-start gap-3 pl-2 text-left"
+          className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 pl-2 text-left"
           style={{ borderLeftWidth: 3, borderLeftStyle: "solid", borderLeftColor: borderColor }}
         >
           {compareMetaLoading ? (
@@ -187,7 +204,7 @@ function OverviewCompareRow({
           ) : (
             <CompanyLogo name={compareDisplayName} logoUrl={compareLogoUrl} symbol={compareSym} />
           )}
-          <div className="min-w-0 flex-1 overflow-hidden">
+          <div className="min-w-0 overflow-hidden">
             <div
               className="truncate text-[14px] font-semibold leading-5 text-[#09090B]"
               title={compareDisplayName}
@@ -201,7 +218,7 @@ function OverviewCompareRow({
           <button
             type="button"
             onClick={onRemove}
-            className="ml-auto flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[#71717A] transition-colors hover:bg-[#F4F4F5] hover:text-[#09090B]"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[#71717A] transition-colors hover:bg-[#F4F4F5] hover:text-[#09090B]"
             aria-label={`Remove ${compareSym} from comparison`}
           >
             <X className="h-4 w-4" strokeWidth={2} />
@@ -309,7 +326,7 @@ export function MiniTable({
             )}
           >
             {hasCompare ? (
-              <th className="min-w-0 px-3 py-2.5 text-left text-[14px] font-semibold text-[#71717A] max-md:w-[52%] md:min-w-[200px]">
+              <th className="min-w-0 px-3 py-2.5 text-left text-[14px] font-semibold text-[#71717A] max-md:min-w-[9.5rem] max-md:w-[52%] md:min-w-[200px]">
                 Company
               </th>
             ) : null}
@@ -326,14 +343,14 @@ export function MiniTable({
         <tbody>
           <tr className={cn(!hideCompanyColumn && "border-b border-[#E4E4E7]")}>
             {hasCompare ? (
-              <td className="max-w-0 px-3 py-3 text-left align-middle">
-                <div className="flex min-w-0 items-center justify-start gap-3 border-l-[3px] border-l-[#2563EB] pl-2 text-left">
+              <td className="max-w-0 px-3 py-3 text-left align-middle max-md:min-w-[9.5rem]">
+                <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 border-l-[3px] border-l-[#2563EB] pl-2 text-left">
                 {primaryMetaLoading ? (
                   <div className="h-8 w-8 shrink-0 rounded-lg border border-[#E4E4E7] bg-[#F4F4F5] animate-pulse" aria-hidden />
                 ) : (
                   <CompanyLogo name={displayName} logoUrl={logoUrl} symbol={sym} />
                 )}
-                <div className="min-w-0 flex-1 overflow-hidden">
+                <div className="min-w-0 overflow-hidden">
                   <div
                     className="truncate text-[14px] font-semibold leading-5 text-[#09090B]"
                     title={displayName}

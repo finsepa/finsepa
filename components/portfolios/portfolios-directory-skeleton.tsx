@@ -58,8 +58,53 @@ export function PublicPortfolioCardSkeleton() {
   );
 }
 
+/** Table rows while listings load or individual rows recompute metrics. */
+export function PortfoliosDirectoryTableSkeleton({ rows = 5 }: { rows?: number }) {
+  return (
+    <div className="min-w-0 -mx-4 sm:mx-0" role="status" aria-busy="true" aria-live="polite">
+      <span className="sr-only">Loading public portfolios…</span>
+      <div className="min-w-0 overflow-x-auto">
+        <div className="min-w-[720px] divide-y divide-[#E4E4E7] border-t border-b border-[#E4E4E7]">
+          <div className="hidden min-h-[44px] items-center px-4 sm:grid sm:grid-cols-[minmax(0,2fr)_minmax(5.5rem,1fr)_minmax(6.5rem,1fr)_minmax(5.5rem,1fr)_minmax(0,1.35fr)] sm:gap-x-3">
+            {["Investor", "Value", "No. of Holdings", "ATH", "Top 5 Holdings"].map((label) => (
+              <SkeletonBox key={label} className="h-5 w-20 rounded" />
+            ))}
+          </div>
+          {Array.from({ length: rows }, (_, i) => (
+            <div key={i} className="flex h-[60px] items-center gap-3 px-4">
+              <SkeletonBox className="h-10 w-10 shrink-0 rounded-full" />
+              <div className="min-w-0 flex-1 space-y-2">
+                <SkeletonBox className="h-4 w-40 max-w-full rounded-md" />
+                <SkeletonBox className="h-3 w-24 rounded-md" />
+              </div>
+              <SkeletonBox className="hidden h-4 w-16 rounded-md sm:block" />
+              <SkeletonBox className="hidden h-4 w-12 rounded-md sm:block" />
+              <SkeletonBox className="hidden h-4 w-14 rounded-md sm:block" />
+              <div className="hidden flex-row items-center sm:flex">
+                {[0, 1, 2, 3, 4].map((j) => (
+                  <SkeletonBox key={j} className="-ml-1 h-7 w-7 shrink-0 rounded-full first:ml-0" />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** Shown while `/api/portfolios/listings` is in flight — matches public portfolio card layout. */
-export function PortfoliosDirectorySkeleton({ cards = 2 }: { cards?: number }) {
+export function PortfoliosDirectorySkeleton({
+  cards = 2,
+  variant = "cards",
+}: {
+  cards?: number;
+  variant?: "cards" | "table";
+}) {
+  if (variant === "table") {
+    return <PortfoliosDirectoryTableSkeleton rows={cards} />;
+  }
+
   return (
     <div
       role="status"
