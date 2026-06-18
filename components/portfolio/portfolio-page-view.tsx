@@ -3,20 +3,14 @@
 import dynamic from "next/dynamic";
 import { startTransition, useCallback, useEffect, useState, type ComponentType } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Layers2, Pencil } from "@/lib/icons";
+import { Pencil } from "@/lib/icons";
 
 import { AssetPageTopLoader } from "@/components/layout/asset-page-top-loader";
 import { PortfolioQuickAddMenu } from "@/components/layout/portfolio-quick-add-menu";
 import { PortfolioAllocationView } from "@/components/portfolio/portfolio-allocation-view";
+import { PortfolioHoldingsEmptyState } from "@/components/portfolio/portfolio-holdings-empty-state";
 import { PortfolioHoldingsTable } from "@/components/portfolio/portfolio-holdings-table";
 import { PortfolioSlicesView } from "@/components/portfolio/portfolio-slices-view";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
 import { SecondaryTabs } from "@/components/ui/secondary-tabs";
 import { PortfolioOverviewAthProvider } from "@/components/portfolio/portfolio-overview-ath-context";
 import { PortfolioOverviewCards } from "@/components/portfolio/portfolio-overview-cards";
@@ -351,31 +345,19 @@ export function PortfolioPageView({
                   value={overviewHoldingsSubTab}
                   onValueChange={onOverviewHoldingsSubTabChange}
                 />
-                {overviewHoldingsSubTab === "slices" ? (
-                  <PortfolioSlicesView holdings={holdings} transactions={transactions} />
-                ) : showOverviewHoldingsBlock ? (
-                  overviewHoldingsSubTab === "assets" ? (
-                    <PortfolioHoldingsTable
-                      holdings={holdings}
-                      transactions={transactions}
-                      className="border-t-0"
-                      assetLinkTab={readOnly ? "overview" : "holdings"}
-                    />
-                  ) : (
-                    <PortfolioAllocationView holdings={holdings} transactions={transactions} />
-                  )
+                {!showOverviewHoldingsBlock ? (
+                  <PortfolioHoldingsEmptyState readOnly={readOnly} />
+                ) : overviewHoldingsSubTab === "slices" ? (
+                  <PortfolioSlicesView holdings={holdings} transactions={transactions} readOnly={readOnly} />
+                ) : overviewHoldingsSubTab === "assets" ? (
+                  <PortfolioHoldingsTable
+                    holdings={holdings}
+                    transactions={transactions}
+                    className="border-t-0"
+                    assetLinkTab={readOnly ? "overview" : "holdings"}
+                  />
                 ) : (
-                  <Empty variant="card" className="min-h-[min(50vh,400px)]">
-                    <EmptyHeader>
-                      <EmptyMedia variant="icon">
-                        <Layers2 className="h-6 w-6" strokeWidth={1.75} aria-hidden />
-                      </EmptyMedia>
-                      <EmptyTitle>No holdings yet</EmptyTitle>
-                      <EmptyDescription>
-                        This public portfolio has no holdings in its published snapshot.
-                      </EmptyDescription>
-                    </EmptyHeader>
-                  </Empty>
+                  <PortfolioAllocationView holdings={holdings} transactions={transactions} readOnly={readOnly} />
                 )}
               </div>
             </div>

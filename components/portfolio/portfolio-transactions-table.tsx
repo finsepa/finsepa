@@ -10,7 +10,7 @@ import {
   useState,
   type RefObject,
 } from "react";
-import { ArrowDown, ArrowUp, Check, Filter, ListX, Minus, Search, X } from "@/lib/icons";
+import { ArrowDown, ArrowUp, Check, Clock, Filter, Minus, Search, X } from "@/lib/icons";
 import { format, parseISO } from "date-fns";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
@@ -436,7 +436,7 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
         <Empty variant="card">
           <EmptyHeader>
             <EmptyMedia variant="icon">
-              <ListX className="h-6 w-6" strokeWidth={1.75} aria-hidden />
+              <Clock className="h-6 w-6" strokeWidth={1.75} aria-hidden />
             </EmptyMedia>
             <EmptyTitle>No transactions</EmptyTitle>
             <EmptyDescription>

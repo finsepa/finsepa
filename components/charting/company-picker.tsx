@@ -11,7 +11,7 @@ import { SearchInlineInputShell } from "@/components/search/search-inline-input-
 import { SearchLoadingIndicator } from "@/components/search/search-loading-indicator";
 import { isSingleAssetMode, SINGLE_ASSET_SYMBOL } from "@/lib/features/single-asset";
 import { isCommonStockSearchItem, type SearchAssetItem } from "@/lib/search/search-types";
-import { recordSearchNavigation } from "@/lib/search/recent-searches-storage";
+import { useSearchRecentStorage } from "@/lib/search/use-search-recent-storage";
 import { eodhdCryptoSpotTickerDisplay } from "@/lib/crypto/eodhd-crypto-ticker-display";
 import { getCryptoLogoUrl } from "@/lib/crypto/crypto-logo-url";
 import { CRYPTO_PICKER_TOP } from "@/lib/crypto/crypto-picker-universe";
@@ -127,6 +127,7 @@ export function CompanyPicker({
 
   const debouncedQuery = useDebouncedValue(pickerQuery, SEARCH_DEBOUNCE_MS);
   const debouncedTrim = debouncedQuery.trim();
+  const { recordRecent } = useSearchRecentStorage();
 
   const excludeSet = useMemo(
     () => new Set(excludeSymbols.map((s) => s.trim().toUpperCase()).filter(Boolean)),
@@ -185,7 +186,7 @@ export function CompanyPicker({
 
   const onChooseAsset = useCallback(
     (item: SearchAssetItem) => {
-      recordSearchNavigation(item);
+      recordRecent(item);
       if (item.type === "stock" || (includeCrypto && item.type === "crypto")) {
         onPick({
           symbol: item.symbol.trim().toUpperCase(),
@@ -194,7 +195,7 @@ export function CompanyPicker({
       }
       closePicker();
     },
-    [includeCrypto, onPick, closePicker],
+    [includeCrypto, onPick, closePicker, recordRecent],
   );
 
   useEffect(() => {

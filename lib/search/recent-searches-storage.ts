@@ -1,8 +1,13 @@
 import type { SearchAssetItem } from "@/lib/search/search-types";
 
-const STORAGE_KEY = "finsepa-search-recent-v1";
+const STORAGE_KEY_LEGACY = "finsepa-search-recent-v1";
 /** Most recent first; oldest dropped when a new navigation is recorded past this cap. */
 export const MAX_RECENT_SEARCHES = 10;
+
+function storageKeyForUser(userId: string | null): string {
+  if (userId && userId.length > 0) return `${STORAGE_KEY_LEGACY}.u.${userId}`;
+  return `${STORAGE_KEY_LEGACY}.guest`;
+}
 
 function safeParse(raw: string | null): SearchAssetItem[] {
   if (!raw) return [];
@@ -39,16 +44,47 @@ function dedupeNewestFirst(list: SearchAssetItem[]): SearchAssetItem[] {
   return out;
 }
 
-export function readRecentSearches(): SearchAssetItem[] {
+function readRawFromKey(key: string): SearchAssetItem[] {
   if (typeof window === "undefined") return [];
-  const raw = safeParse(window.localStorage.getItem(STORAGE_KEY));
+  return safeParse(window.localStorage.getItem(key));
+}
+
+function writeRawToKey(key: string, list: SearchAssetItem[]): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(key, JSON.stringify(list));
+  } catch {
+    /* ignore quota / private mode */
+  }
+}
+
+/**
+ * Recent searches are scoped per signed-in user (same browser, separate accounts).
+ * Guest browsing uses a guest key only — never merged into a new account on signup.
+ */
+export function readRecentSearches(userId: string | null = null): SearchAssetItem[] {
+  if (typeof window === "undefined") return [];
+
+  const key = storageKeyForUser(userId);
+  let raw = readRawFromKey(key);
+
+  // One-time migration: legacy global key → guest bucket only (not signed-in users).
+  if (raw.length === 0 && !userId) {
+    const legacy = readRawFromKey(STORAGE_KEY_LEGACY);
+    if (legacy.length > 0) {
+      raw = legacy;
+      writeRawToKey(storageKeyForUser(null), legacy);
+      try {
+        window.localStorage.removeItem(STORAGE_KEY_LEGACY);
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
   const next = dedupeNewestFirst(raw).slice(0, MAX_RECENT_SEARCHES);
   if (next.length !== raw.length) {
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    } catch {
-      /* ignore quota / private mode */
-    }
+    writeRawToKey(key, next);
   }
   return next;
 }
@@ -57,24 +93,16 @@ export function readRecentSearches(): SearchAssetItem[] {
  * Call when user opens an asset from search (or peers / charting picker).
  * Moves `item` to the front; drops the oldest entry when already at {@link MAX_RECENT_SEARCHES}.
  */
-export function recordSearchNavigation(item: SearchAssetItem): void {
+export function recordSearchNavigation(item: SearchAssetItem, userId: string | null = null): void {
   if (typeof window === "undefined") return;
-  const prev = readRecentSearches().filter((r) => r.id !== item.id);
+  const prev = readRecentSearches(userId).filter((r) => r.id !== item.id);
   const next = [item, ...prev].slice(0, MAX_RECENT_SEARCHES);
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-  } catch {
-    /* ignore */
-  }
+  writeRawToKey(storageKeyForUser(userId), next);
 }
 
 /** Drops one entry from recents only; does not touch watchlist. */
-export function removeRecentSearchById(id: string): void {
+export function removeRecentSearchById(id: string, userId: string | null = null): void {
   if (typeof window === "undefined") return;
-  const next = readRecentSearches().filter((r) => r.id !== id);
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-  } catch {
-    /* ignore */
-  }
+  const next = readRecentSearches(userId).filter((r) => r.id !== id);
+  writeRawToKey(storageKeyForUser(userId), next);
 }

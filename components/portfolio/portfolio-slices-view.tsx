@@ -10,6 +10,7 @@ import {
 } from "react";
 
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
+import { PortfolioHoldingsEmptyState } from "@/components/portfolio/portfolio-holdings-empty-state";
 import { isSupportedCryptoAssetSymbol } from "@/lib/crypto/crypto-logo-url";
 import {
   netCashUsd,
@@ -366,9 +367,11 @@ function compareHoldingRows(a: HoldingTableRow, b: HoldingTableRow, key: SortKey
 function PortfolioSlicesViewInner({
   holdings,
   transactions,
+  readOnly = false,
 }: {
   holdings: PortfolioHolding[];
   transactions: PortfolioTransaction[];
+  readOnly?: boolean;
 }) {
   const [stockSectorBySymbol, setStockSectorBySymbol] = useState<Record<string, string | null>>({});
 
@@ -572,11 +575,7 @@ function PortfolioSlicesViewInner({
   }
 
   if (sectorRows.length === 0) {
-    return (
-      <div className="rounded-[12px] border border-[#E4E4E7] bg-white px-6 py-12 text-center text-sm text-[#71717A] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
-        No sector breakdown to display.
-      </div>
-    );
+    return <PortfolioHoldingsEmptyState readOnly={readOnly} />;
   }
 
   return (

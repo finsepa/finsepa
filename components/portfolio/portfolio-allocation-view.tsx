@@ -3,6 +3,7 @@
 import { memo, useEffect, useMemo, useState } from "react";
 
 import { AllocationDonutChart } from "@/components/portfolio/allocation-donut-chart";
+import { PortfolioHoldingsEmptyState } from "@/components/portfolio/portfolio-holdings-empty-state";
 import { UserAvatar } from "@/components/user/user-avatar";
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 import { avatarUrlFromUser, initialsFromUser } from "@/lib/auth/user-display";
@@ -96,9 +97,11 @@ function AllocationColumn({ rows }: { rows: AllocationDonutRow[] }) {
 function PortfolioAllocationViewInner({
   holdings,
   transactions,
+  readOnly = false,
 }: {
   holdings: PortfolioHolding[];
   transactions: PortfolioTransaction[];
+  readOnly?: boolean;
 }) {
   const rows = useMemo(() => buildRows(holdings, transactions), [holdings, transactions]);
   const { imageSrc, initials } = useAllocationCenterAvatar();
@@ -109,11 +112,7 @@ function PortfolioAllocationViewInner({
   }, [rows]);
 
   if (rows.length === 0) {
-    return (
-      <div className="rounded-[12px] border border-[#E4E4E7] bg-white px-6 py-12 text-center text-sm text-[#71717A]">
-        No allocation to display.
-      </div>
-    );
+    return <PortfolioHoldingsEmptyState readOnly={readOnly} />;
   }
 
   return (

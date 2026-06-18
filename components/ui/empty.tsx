@@ -62,9 +62,13 @@ export function EmptyMedia({
   return <div className={cn("shrink-0", className)}>{children}</div>;
 }
 
+/** Shared empty-state typography (16/24 title, 14/20 description). */
+export const emptyTitleClassName = "text-[16px] font-semibold leading-[24px] text-[#09090B]";
+export const emptyDescriptionClassName = "text-[14px] font-normal leading-[20px] text-[#71717A]";
+
 export function EmptyTitle({ className, children }: { className?: string; children?: ReactNode }) {
   return (
-    <p className={cn("text-lg font-semibold leading-7 text-[#09090B]", className)}>
+    <p className={cn(emptyTitleClassName, className)}>
       {children ?? EMPTY_DEFAULT_TITLE}
     </p>
   );
@@ -72,7 +76,7 @@ export function EmptyTitle({ className, children }: { className?: string; childr
 
 export function EmptyDescription({ className, children }: { className?: string; children?: ReactNode }) {
   return (
-    <p className={cn("-mt-0.5 text-sm leading-5 text-[#71717A]", className)}>
+    <p className={cn(emptyDescriptionClassName, className)}>
       {children ?? EMPTY_DEFAULT_DESCRIPTION}
     </p>
   );

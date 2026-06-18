@@ -6,7 +6,7 @@ import { Search } from "@/lib/icons";
 
 import { fetchSearchItems } from "@/lib/search/fetch-search-items";
 import type { SearchAssetItem } from "@/lib/search/search-types";
-import { readRecentSearches, recordSearchNavigation, removeRecentSearchById } from "@/lib/search/recent-searches-storage";
+import { useSearchRecentStorage } from "@/lib/search/use-search-recent-storage";
 import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
 import { AppModalShell } from "@/components/ui/app-modal-shell";
 import { SearchPanelResults } from "@/components/search/search-panel-results";
@@ -48,6 +48,7 @@ export function SearchModal({
   const inputRef = useRef<HTMLInputElement>(null);
   const searchGenRef = useRef(0);
   const { watched, loaded, toggleTicker } = useWatchlist();
+  const { readRecent, recordRecent, removeRecent, userId, authReady } = useSearchRecentStorage();
 
   const [query, setQuery] = useState("");
   const debounced = useDebouncedValue(query, SEARCH_DEBOUNCE_MS);
@@ -63,8 +64,8 @@ export function SearchModal({
 
   useEffect(() => {
     inputRef.current?.focus();
-    setRecent(readRecentSearches());
-  }, []);
+    setRecent(readRecent());
+  }, [readRecent, userId, authReady]);
 
   useEffect(() => {
     setHighlight(-1);
@@ -102,8 +103,8 @@ export function SearchModal({
 
   const navigateTo = useCallback(
     (item: SearchAssetItem) => {
-      recordSearchNavigation(item);
-      setRecent(readRecentSearches());
+      recordRecent(item);
+      setRecent(readRecent());
       if (onSelectItem) {
         onSelectItem(item);
         onClose();
@@ -112,15 +113,15 @@ export function SearchModal({
       router.push(item.route);
       onClose();
     },
-    [onClose, onSelectItem, router],
+    [onClose, onSelectItem, readRecent, recordRecent, router],
   );
 
   const handleRemoveRecent = useCallback((id: string) => {
-    removeRecentSearchById(id);
-    const next = readRecentSearches();
+    removeRecent(id);
+    const next = readRecent();
     setRecent(next);
     setHighlight((h) => (h < 0 ? -1 : Math.min(h, Math.max(0, next.length - 1))));
-  }, []);
+  }, [readRecent, removeRecent]);
 
   useEffect(() => {
     function onK(e: KeyboardEvent) {

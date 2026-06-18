@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { fetchSearchItems } from "@/lib/search/fetch-search-items";
 import type { SearchAssetItem } from "@/lib/search/search-types";
-import { readRecentSearches, recordSearchNavigation, removeRecentSearchById } from "@/lib/search/recent-searches-storage";
+import { useSearchRecentStorage } from "@/lib/search/use-search-recent-storage";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
 import { isWatchlistTickerWatched } from "@/lib/watchlist/normalize-storage-key";
 import { watchlistStorageKeyForSearchItem } from "@/lib/search/watchlist-storage-key";
@@ -38,6 +38,7 @@ export function useSearchPanel({
   const inputRef = useRef<HTMLInputElement>(null);
   const searchGenRef = useRef(0);
   const { watched, loaded, toggleTicker } = useWatchlist();
+  const { readRecent, recordRecent, removeRecent, userId, authReady } = useSearchRecentStorage();
 
   const [query, setQuery] = useState("");
   const debounced = useDebouncedValue(query, SEARCH_CLIENT_DEBOUNCE_MS);
@@ -53,8 +54,8 @@ export function useSearchPanel({
   useLayoutEffect(() => {
     if (!open) return;
     inputRef.current?.focus({ preventScroll: true });
-    setRecent(readRecentSearches());
-  }, [open]);
+    setRecent(readRecent());
+  }, [open, readRecent, userId, authReady]);
 
   useEffect(() => {
     if (!open) {
@@ -99,8 +100,8 @@ export function useSearchPanel({
 
   const navigateTo = useCallback(
     (item: SearchAssetItem) => {
-      recordSearchNavigation(item);
-      setRecent(readRecentSearches());
+      recordRecent(item);
+      setRecent(readRecent());
       if (onSelectItem) {
         onSelectItem(item);
         onClose();
@@ -109,15 +110,15 @@ export function useSearchPanel({
       router.push(item.route);
       onClose();
     },
-    [onClose, onSelectItem, router],
+    [onClose, onSelectItem, readRecent, recordRecent, router],
   );
 
   const handleRemoveRecent = useCallback((id: string) => {
-    removeRecentSearchById(id);
-    const next = readRecentSearches();
+    removeRecent(id);
+    const next = readRecent();
     setRecent(next);
     setHighlight((h) => (h < 0 ? -1 : Math.min(h, Math.max(0, next.length - 1))));
-  }, []);
+  }, [readRecent, removeRecent]);
 
   useEffect(() => {
     if (!open) return;

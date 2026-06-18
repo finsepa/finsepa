@@ -5,6 +5,7 @@ import { unstable_cache } from "next/cache";
 import { REVALIDATE_STATIC_DAY } from "@/lib/data/cache-policy";
 
 import { getEodhdApiKey } from "@/lib/env/server";
+import { fetchBlsCpiIndexSeriesCached } from "@/lib/market/bls-cpi-macro";
 import { fetchShillerIeMacroSeriesCached, type ShillerIeMacroMetric } from "@/lib/market/shiller-ie-macro";
 import { fetchFedFundsTargetSeriesCached } from "@/lib/market/eodhd-fed-funds-macro";
 import { fetchUstParYieldTenorCached } from "@/lib/market/eodhd-ust-par-yield";
@@ -54,6 +55,13 @@ export type MacroSeriesDef =
       kind: MacroSeriesKind;
       /** FOMC `actual` → federal funds target (not World Bank annual policy rate). */
       provider: { type: "fed_funds_fomc" };
+    }
+  | {
+      id: string;
+      title: string;
+      kind: MacroSeriesKind;
+      /** Monthly BLS CPI-U rebased to 2010 = 100 (World Bank macro card scale). */
+      provider: { type: "bls_cpi_index" };
     };
 
 /**
@@ -73,7 +81,7 @@ export const MACRO_SERIES: MacroSeriesDef[] = [
   { id: "fed_interest_rate", title: "Fed funds rate", kind: "percent", provider: { type: "fed_funds_fomc" } },
   { id: "inflation_consumer_prices_annual", title: "Inflation", kind: "percent", provider: { type: "macro_indicator", indicator: "inflation_consumer_prices_annual" } },
   { id: "inflation_gdp_deflator_annual", title: "GDP deflator", kind: "percent", provider: { type: "macro_indicator", indicator: "inflation_gdp_deflator_annual" } },
-  { id: "consumer_price_index", title: "Consumer Price Index", kind: "index", provider: { type: "macro_indicator", indicator: "consumer_price_index" } },
+  { id: "consumer_price_index", title: "Consumer Price Index", kind: "index", provider: { type: "bls_cpi_index" } },
   { id: "gdp_growth_annual", title: "GDP Growth", kind: "percent", provider: { type: "macro_indicator", indicator: "gdp_growth_annual" } },
   { id: "gdp_current_usd", title: "GDP", kind: "usd", provider: { type: "macro_indicator", indicator: "gdp_current_usd" } },
   { id: "gdp_per_capita_usd", title: "GDP per capita", kind: "usd", provider: { type: "macro_indicator", indicator: "gdp_per_capita_usd" } },
@@ -148,6 +156,9 @@ export async function fetchMacroSeriesAll(country: string, def: MacroSeriesDef):
   }
   if (def.provider.type === "fed_funds_fomc") {
     return fetchFedFundsTargetSeriesCached();
+  }
+  if (def.provider.type === "bls_cpi_index") {
+    return fetchBlsCpiIndexSeriesCached();
   }
   return fetchMacroIndicatorCached({ country, indicator: def.provider.indicator });
 }

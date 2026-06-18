@@ -6,10 +6,7 @@ import { useRouter } from "next/navigation";
 import { Search } from "@/lib/icons";
 
 import type { SearchAssetItem } from "@/lib/search/search-types";
-import {
-  readRecentSearches,
-  removeRecentSearchById,
-} from "@/lib/search/recent-searches-storage";
+import { useSearchRecentStorage } from "@/lib/search/use-search-recent-storage";
 import { SearchLoadingIndicator } from "@/components/search/search-loading-indicator";
 import { SearchResultRow } from "@/components/search/search-result-row";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
@@ -43,6 +40,7 @@ export function NewsMobileSearchSheet({
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const { watched, loaded, toggleTicker } = useWatchlist();
+  const { readRecent, removeRecent, userId, authReady } = useSearchRecentStorage();
 
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -61,10 +59,10 @@ export function NewsMobileSearchSheet({
 
   useEffect(() => {
     if (!open) return;
-    setRecent(readRecentSearches());
+    setRecent(readRecent());
     // focus after paint
     requestAnimationFrame(() => inputRef.current?.focus());
-  }, [open]);
+  }, [open, readRecent, userId, authReady]);
 
   useEffect(() => setHighlight(0), [debouncedTrim]);
 
@@ -128,11 +126,11 @@ export function NewsMobileSearchSheet({
   );
 
   const handleRemoveRecent = useCallback((id: string) => {
-    removeRecentSearchById(id);
-    const next = readRecentSearches();
+    removeRecent(id);
+    const next = readRecent();
     setRecent(next);
     setHighlight((h) => Math.min(h, Math.max(0, next.length - 1)));
-  }, []);
+  }, [readRecent, removeRecent]);
 
   useEffect(() => {
     if (!open) return;
@@ -238,9 +236,8 @@ export function NewsMobileSearchSheet({
                           <button
                             type="button"
                             onClick={() => {
-                              // “Clear” = remove all by id
-                              const cur = readRecentSearches();
-                              cur.forEach((r) => removeRecentSearchById(r.id));
+                              const cur = readRecent();
+                              cur.forEach((r) => removeRecent(r.id));
                               setRecent([]);
                               setHighlight(0);
                             }}

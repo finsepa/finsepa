@@ -682,15 +682,12 @@ function CashInOutBarChartSectionInner({ rows }: { rows: PortfolioTransaction[] 
       </div>
 
       {rows.length === 0 ? (
-        <Empty
-          variant="plain"
-          className="min-h-[200px] justify-center rounded-[12px] border border-dashed border-[#E4E4E7] bg-[#FAFAFA] py-12"
-        >
+        <Empty variant="card" className="min-h-[200px]">
           <EmptyHeader className="gap-2">
             <EmptyMedia variant="icon">
               <BarChart3 className="h-6 w-6" strokeWidth={1.75} aria-hidden />
             </EmptyMedia>
-            <EmptyTitle className="text-sm font-medium leading-5">No cash activity yet</EmptyTitle>
+            <EmptyTitle>No cash activity yet</EmptyTitle>
             <EmptyDescription className="max-w-sm">
               Add cash in or cash out to see deposits and withdrawals over time.
             </EmptyDescription>

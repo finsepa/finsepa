@@ -67,6 +67,8 @@ export function TransactionPortfolioField({
   const selected =
     portfolios.find((p) => p.id === selectedPortfolioId) ?? portfolios[0] ?? null;
   const hasPortfolio = selected != null;
+  const canCreateCombinedPortfolio =
+    portfolios.filter((p) => p.kind !== "combined").length >= 2;
 
   useEffect(() => {
     if (!open) return;
@@ -178,12 +180,23 @@ export function TransactionPortfolioField({
           </button>
           <button
             type="button"
+            disabled={!canCreateCombinedPortfolio}
+            title={
+              canCreateCombinedPortfolio ?
+                undefined
+              : "Create at least two portfolios to combine them"
+            }
             onClick={(e) => {
               e.stopPropagation();
+              if (!canCreateCombinedPortfolio) return;
               setOpen(false);
               openCreateCombinedPortfolio();
             }}
-            className={dropdownMenuPlainItemClassName()}
+            className={cn(
+              dropdownMenuPlainItemClassName(),
+              !canCreateCombinedPortfolio &&
+                "cursor-not-allowed opacity-40 hover:bg-white disabled:pointer-events-none",
+            )}
           >
             <GitMerge className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
             <span>Create combined portfolio</span>

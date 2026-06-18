@@ -18,6 +18,7 @@ import {
   transactionsForHolding,
 } from "@/lib/superinvestors/superinvestor-transaction-utils";
 import { cn } from "@/lib/utils";
+import { emptyDescriptionClassName } from "@/components/ui/empty";
 
 const panelRowGridFour =
   "grid w-full min-w-[620px] grid-cols-[minmax(88px,0.75fr)_minmax(140px,1.15fr)_minmax(96px,0.9fr)_minmax(120px,1.05fr)] gap-x-4";
@@ -85,7 +86,9 @@ function SuperinvestorHoldingTransactionsPanelInner({
       <h3 className="mb-3 text-[20px] font-semibold leading-7 tracking-tight text-[#09090B]">Activity</h3>
 
       {panelTransactions.length === 0 ? (
-        <p className="py-6 text-center text-sm text-[#71717A]">No 13F transactions found for this company.</p>
+        <p className={cn("py-6 text-center", emptyDescriptionClassName)}>
+          No 13F transactions found for this company.
+        </p>
       ) : (
         <div className="overflow-x-auto">
           <div className="min-w-[620px]">

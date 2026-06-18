@@ -15,6 +15,7 @@ import {
 } from "@/lib/account/billing-summary-menu-cache";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { UserAvatar } from "@/components/user/user-avatar";
+import { emptyDescriptionClassName, emptyTitleClassName } from "@/components/ui/empty";
 import { BillingUpgradeModal } from "@/components/account/billing-upgrade-modal";
 
 export type AccountPageInitial = {
@@ -600,8 +601,8 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
                 </div>
               ) : paymentHistory.length === 0 ? (
                 <div className="mt-4 rounded-[10px] border border-dashed border-[#D4D4D8] bg-[#FAFAFA] px-4 py-8 text-center">
-                  <p className="text-[14px] font-medium text-[#09090B]">No payments yet</p>
-                  <p className="mt-1 text-[13px] leading-5 text-[#71717A]">
+                  <p className={emptyTitleClassName}>No payments yet</p>
+                  <p className={`mt-1 ${emptyDescriptionClassName}`}>
                     Your payment history will appear here once your first charge is processed.
                   </p>
                 </div>

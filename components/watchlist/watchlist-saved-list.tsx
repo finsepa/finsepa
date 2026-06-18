@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { emptyDescriptionClassName, emptyTitleClassName } from "@/components/ui/empty";
 import type { WatchlistRow } from "@/lib/watchlist/types";
 import { getWatchlistTickerMeta } from "@/lib/watchlist/ticker-meta";
 
@@ -47,8 +48,8 @@ export function WatchlistSavedList() {
   if (!items?.length) {
     return (
       <div className="flex min-h-[200px] flex-col items-center justify-center rounded-xl border border-[#E4E4E7] bg-white px-6 py-12 text-center">
-        <p className="text-[14px] font-medium text-[#09090B]">No saved symbols yet</p>
-        <p className="mt-2 max-w-sm text-sm leading-6 text-[#71717A]">
+        <p className={emptyTitleClassName}>No saved symbols yet</p>
+        <p className={`mt-2 max-w-sm ${emptyDescriptionClassName}`}>
           Add stocks from the screener or a stock page with the star. They will show up here.
         </p>
         <Link

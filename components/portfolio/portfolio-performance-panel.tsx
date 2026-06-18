@@ -80,7 +80,7 @@ function PerformanceChartSection({
               <EmptyMedia variant="icon">
                 <LineChart className="h-6 w-6" strokeWidth={1.75} aria-hidden />
               </EmptyMedia>
-              <EmptyTitle className="text-sm font-medium leading-5">No activity yet</EmptyTitle>
+              <EmptyTitle>No activity yet</EmptyTitle>
               <EmptyDescription className="max-w-sm">
                 Add trades or cash movements to see performance over time.
               </EmptyDescription>
@@ -98,7 +98,7 @@ function PerformanceChartSection({
               <EmptyMedia variant="icon">
                 <LineChart className="h-6 w-6" strokeWidth={1.75} aria-hidden />
               </EmptyMedia>
-              <EmptyTitle className="text-sm font-medium leading-5">Not enough data</EmptyTitle>
+              <EmptyTitle>Not enough data</EmptyTitle>
               <EmptyDescription className="max-w-sm">
                 Try a different range or add more activity to this portfolio.
               </EmptyDescription>
