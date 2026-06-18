@@ -117,3 +117,15 @@ export function getLoopsTransactionalWelcomeTrialStartId(): string {
 export function getLoopsTransactionalGoogleWelcomeId(): string {
   return getLoopsTransactionalWelcomeTrialStartId();
 }
+
+/** SnapTrade partner client ID (server-only). */
+export function getSnapTradeClientId(): string | undefined {
+  const v = process.env.SNAPTRADE_CLIENT_ID?.trim();
+  return v || undefined;
+}
+
+/** SnapTrade consumer key (server-only). */
+export function getSnapTradeConsumerKey(): string | undefined {
+  const v = process.env.SNAPTRADE_CONSUMER_KEY?.trim();
+  return v || undefined;
+}

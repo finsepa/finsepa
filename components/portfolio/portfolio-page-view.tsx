@@ -8,6 +8,7 @@ import { FileSpreadsheet, Layers2, Settings } from "@/lib/icons";
 import { AssetPageTopLoader } from "@/components/layout/asset-page-top-loader";
 import { PortfolioQuickAddMenu } from "@/components/layout/portfolio-quick-add-menu";
 import { ImportTransactionsModal } from "@/components/portfolio/import-transactions-modal";
+import { ConnectBrokerageButton } from "@/components/portfolio/connect-brokerage-modal";
 import { PortfolioAllocationView } from "@/components/portfolio/portfolio-allocation-view";
 import { PortfolioHoldingsTable } from "@/components/portfolio/portfolio-holdings-table";
 import { PortfolioSlicesView } from "@/components/portfolio/portfolio-slices-view";
@@ -283,6 +284,7 @@ export function PortfolioPageView({
               >
                 <FileSpreadsheet className="h-4 w-4" aria-hidden />
               </button>
+              <ConnectBrokerageButton compact />
               <button
                 type="button"
                 aria-label="Portfolio settings"
@@ -319,6 +321,7 @@ export function PortfolioPageView({
               <FileSpreadsheet className="h-4 w-4" aria-hidden />
               <span className="hidden sm:inline">Import Transactions</span>
             </button>
+            <ConnectBrokerageButton />
             <button
               type="button"
               aria-label="Portfolio settings"
