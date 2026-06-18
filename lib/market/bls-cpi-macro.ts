@@ -11,7 +11,6 @@ const BLS_CPI_ALL_ITEMS_URL = "https://download.bls.gov/pub/time.series/cu/cu.da
 /** CPI-U All Items, seasonally adjusted (1982–84 = 100). */
 const BLS_SERIES_ID = "CUSR0000SA0";
 const BASE_YEAR = 2010;
-const BASE_PERIOD = "M01";
 
 function blsUserAgent(): string {
   const fromEnv = process.env.SEC_EDGAR_USER_AGENT?.trim();
@@ -57,8 +56,8 @@ function parseBlsCpiIndexText(text: string): BlsCpiMacroPoint[] {
 
   raw.sort((a, b) => a.time.localeCompare(b.time));
 
-  const baseRow = raw.find((p) => p.time.startsWith(`${BASE_YEAR}-${BASE_PERIOD.slice(1)}`));
-  const baseValue = baseRow?.value ?? raw.find((p) => p.time.startsWith(String(BASE_YEAR)))?.value;
+  const baseRow = raw.find((p) => p.time === `${BASE_YEAR}-01-01`);
+  const baseValue = baseRow?.value ?? raw.find((p) => p.time.startsWith(`${BASE_YEAR}-`))?.value;
   if (!baseValue || baseValue <= 0) return [];
 
   return raw.map((p) => ({

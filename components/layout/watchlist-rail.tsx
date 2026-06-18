@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { ChevronRight, PanelLeftOpen, Star } from "@/lib/icons";
 
+import { WatchlistEmptyState } from "@/components/watchlist/watchlist-empty-state";
 import { CompanyLogo } from "@/components/screener/company-logo";
 import { dropdownMenuFloatingScrollbarClassName } from "@/components/design-system/dropdown-menu-styles";
 import {
@@ -229,9 +230,7 @@ export function WatchlistRail() {
             >
               {showSkeleton ? <WatchlistRailSkeleton /> : null}
               {!showSkeleton && empty ? (
-                <p className="px-3 py-4 text-[13px] leading-5 text-[#71717A]">
-                  Star symbols from any page to build your watchlist.
-                </p>
+                <WatchlistEmptyState variant="plain" className="min-h-0 py-10" showLink={false} />
               ) : null}
               {!showSkeleton && error ? (
                 <p className="px-3 py-4 text-[13px] leading-5 text-[#DC2626]">{error}</p>

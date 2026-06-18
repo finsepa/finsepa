@@ -1,13 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
+import { useState } from "react";
 import { ChevronDown, ChevronRight } from "@/lib/icons";
 
 import { eodhdCryptoSpotTickerDisplay } from "@/lib/crypto/eodhd-crypto-ticker-display";
 import { CompanyLogo } from "@/components/screener/company-logo";
-import { emptyDescriptionClassName, emptyTitleClassName } from "@/components/ui/empty";
-import { cn } from "@/lib/utils";
+import { WatchlistEmptyState } from "@/components/watchlist/watchlist-empty-state";
 import { WatchlistRowRemoveButton } from "@/components/watchlist/watchlist-star-button";
 import type { WatchlistEnrichedItem } from "@/lib/watchlist/enriched-types";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
@@ -169,14 +168,7 @@ export function WatchlistTable() {
   const { stocks, crypto, indices, loading, ready, error } = useWatchlistEnrichedItems({ enabled: true });
 
   const hasUsableRows = stocks.length > 0 || crypto.length > 0 || indices.length > 0;
-  const empty =
-    storageHydrated &&
-    watched.size === 0 &&
-    !error &&
-    stocks.length === 0 &&
-    crypto.length === 0 &&
-    indices.length === 0 &&
-    ready;
+  const empty = storageHydrated && watched.size === 0 && !error;
   const showBlockingSkeleton = storageHydrated && watched.size > 0 && !hasUsableRows && !error && !ready;
   const refreshing = loading && hasUsableRows;
 
@@ -208,21 +200,7 @@ export function WatchlistTable() {
 
       {storageHydrated && showBlockingSkeleton ? <WatchlistTableSkeleton /> : null}
 
-      {storageHydrated && !showBlockingSkeleton && empty ? (
-        <div className="flex min-h-[200px] flex-col items-center justify-center rounded-xl border border-[#E4E4E7] bg-white px-6 py-12 text-center">
-          <p className={emptyTitleClassName}>No saved assets yet</p>
-          <p className={cn("mt-2 max-w-sm", emptyDescriptionClassName)}>
-            Add stocks from the screener or a stock page, crypto from a crypto asset page, and indices from the markets
-            table. They will show up here.
-          </p>
-          <Link
-            href="/screener"
-            className="mt-6 text-sm font-semibold text-[#09090B] underline decoration-[#E4E4E7] underline-offset-4 transition-colors hover:decoration-[#A1A1AA]"
-          >
-            Go to Markets
-          </Link>
-        </div>
-      ) : null}
+      {storageHydrated && !showBlockingSkeleton && empty ? <WatchlistEmptyState /> : null}
 
       {storageHydrated && hasUsableRows ? (
         <div className="min-w-0 -mx-4 overflow-x-auto pb-1 sm:mx-0">

@@ -15,7 +15,14 @@ import {
 } from "@/lib/account/billing-summary-menu-cache";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { UserAvatar } from "@/components/user/user-avatar";
-import { emptyDescriptionClassName, emptyTitleClassName } from "@/components/ui/empty";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import { CreditCard } from "@/lib/icons";
 import { BillingUpgradeModal } from "@/components/account/billing-upgrade-modal";
 
 export type AccountPageInitial = {
@@ -600,12 +607,17 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
                   </div>
                 </div>
               ) : paymentHistory.length === 0 ? (
-                <div className="mt-4 rounded-[10px] border border-dashed border-[#D4D4D8] bg-[#FAFAFA] px-4 py-8 text-center">
-                  <p className={emptyTitleClassName}>No payments yet</p>
-                  <p className={`mt-1 ${emptyDescriptionClassName}`}>
-                    Your payment history will appear here once your first charge is processed.
-                  </p>
-                </div>
+                <Empty variant="plain" className="mt-4 min-h-0 py-8">
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon">
+                      <CreditCard className="h-6 w-6" strokeWidth={1.75} aria-hidden />
+                    </EmptyMedia>
+                    <EmptyTitle>No payments yet</EmptyTitle>
+                    <EmptyDescription>
+                      Your payment history will appear here once your first charge is processed.
+                    </EmptyDescription>
+                  </EmptyHeader>
+                </Empty>
               ) : (
                 <div className="mt-4">
                   <div className="-mx-5 overflow-x-auto px-5 [-webkit-overflow-scrolling:touch]">

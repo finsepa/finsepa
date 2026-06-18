@@ -91,7 +91,7 @@ export function useWatchlistEnrichedItems(options: UseWatchlistEnrichedItemsOpti
       clearWatchlistEnrichedCache();
       setItems([]);
       setLoading(false);
-      setReady(false);
+      setReady(true);
       setError(null);
       return;
     }
