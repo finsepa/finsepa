@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Briefcase, Plus, Wallet, X } from "@/lib/icons";
+import { FileSpreadsheet, Plus, Wallet, X } from "@/lib/icons";
 
 import {
   dropdownMenuPanelClassName,
@@ -25,7 +25,7 @@ const DESKTOP_WEB_MQ = "(min-width: 768px)";
 export function PortfolioQuickAddMenu({
   triggerClassName,
   showDesktopLabel = false,
-  desktopLabel = "Add/Create",
+  desktopLabel = "Add",
   "aria-label": ariaLabel = "Quick add",
   dwellTooltipLabel,
 }: {
@@ -39,8 +39,13 @@ export function PortfolioQuickAddMenu({
 }) {
   const [open, setOpen] = useState(false);
   const [isDesktopWeb, setIsDesktopWeb] = useState(false);
-  const { openNewTransaction, openCreatePortfolio, openAddCash, selectedPortfolioReadOnly } =
-    usePortfolioWorkspace();
+  const {
+    openNewTransaction,
+    openAddCash,
+    openImportTransactions,
+    selectedPortfolioReadOnly,
+    selectedPortfolioId,
+  } = usePortfolioWorkspace();
   const rootRef = useRef<HTMLDivElement>(null);
   const menuPortalRef = useRef<HTMLDivElement>(null);
 
@@ -60,14 +65,18 @@ export function PortfolioQuickAddMenu({
       Icon: Plus,
       disabled: selectedPortfolioReadOnly,
     },
-    { id: "dividend" as const, label: "New Dividend Income", Icon: Plus, disabled: true },
     {
       id: "cash" as const,
       label: "Add Cash",
       Icon: Wallet,
       disabled: selectedPortfolioReadOnly,
     },
-    { id: "portfolio" as const, label: "New Portfolio", Icon: Briefcase, disabled: false },
+    {
+      id: "import" as const,
+      label: "Import Transactions",
+      Icon: FileSpreadsheet,
+      disabled: selectedPortfolioReadOnly || selectedPortfolioId == null,
+    },
   ];
 
   useEffect(() => {
@@ -164,7 +173,7 @@ export function PortfolioQuickAddMenu({
                 setOpen(false);
                 if (id === "trade") openNewTransaction();
                 if (id === "cash") openAddCash();
-                if (id === "portfolio") openCreatePortfolio();
+                if (id === "import") openImportTransactions();
               }}
               className={cn(
                 dropdownMenuPlainItemClassName(),

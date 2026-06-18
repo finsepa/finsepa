@@ -141,8 +141,8 @@ export function Topbar({
 
           <TopbarQuickAddMenu
             showDesktopLabel
-            desktopLabel="Add/Create"
-            dwellTooltipLabel="Add/Create"
+            desktopLabel="Add"
+            dwellTooltipLabel="Add"
           />
 
           <div className="hidden sm:flex sm:shrink-0">

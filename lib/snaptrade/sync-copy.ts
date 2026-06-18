@@ -3,7 +3,7 @@ import { format, parseISO } from "date-fns";
 export function formatPortfolioLastSyncLine(syncedAt: string): string {
   const parsed = parseISO(syncedAt);
   if (!Number.isFinite(parsed.getTime())) return "Last synced recently";
-  return `Last synced ${format(parsed, "MMM d, yyyy 'at' h:mm a")}`;
+  return `Last synced at ${format(parsed, "MMM d, yyyy 'at' h:mm a")}`;
 }
 
 /** SnapTrade holdings refresh cadence for the connected brokerage. */

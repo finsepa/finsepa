@@ -12,9 +12,12 @@ import {
   useState,
 } from "react";
 import { usePathname } from "next/navigation";
+import { Loader2 } from "@/lib/icons";
 import { toast } from "sonner";
 
+import { SegmentedControl } from "@/components/design-system/segmented-control";
 import { AddCashModal } from "@/components/layout/add-cash-modal";
+import { ImportTransactionsModal } from "@/components/portfolio/import-transactions-modal";
 import { DeletePortfolioConfirmModal } from "@/components/portfolio/delete-portfolio-confirm-modal";
 import { EditTransactionModal } from "@/components/layout/edit-transaction-modal";
 import { NewTransactionModal } from "@/components/layout/new-transaction-modal";
@@ -23,7 +26,8 @@ import {
   CombinedPortfolioSourceHint,
   CombinedPortfolioSourcesPicker,
 } from "@/components/portfolio/combined-portfolio-sources-picker";
-import { ConnectBrokerageFlow, type ConnectBrokerageCompletePayload } from "@/components/portfolio/connect-brokerage-flow";
+import { ConnectBrokerageFlow } from "@/components/portfolio/connect-brokerage-flow";
+import { useSnapTradeConnectPortal } from "@/components/portfolio/use-snaptrade-connect-portal";
 import { PortfolioSnaptradeSyncModal } from "@/components/portfolio/portfolio-snaptrade-sync-modal";
 import { CreateCombinedPortfolioModal } from "@/components/portfolio/create-combined-portfolio-modal";
 import { PortfolioWorkspaceContext } from "@/components/portfolio/portfolio-workspace-context";
@@ -39,13 +43,14 @@ import {
 } from "@/lib/snaptrade/sync-settings";
 import { mergePortfolioSnaptradeSync } from "@/lib/snaptrade/merge-sync-transactions";
 import { defaultSnaptradeUpdateFromYmd } from "@/lib/snaptrade/sync-update-from";
-import { PortfolioPrivacySelect } from "@/components/portfolio/portfolio-privacy-select";
+import { PortfolioPrivacySelect, PortfolioPrivacyFieldLabel } from "@/components/portfolio/portfolio-privacy-select";
 import { PortfolioSnaptradeConnectionInfo } from "@/components/portfolio/portfolio-snaptrade-connection-info";
 import type { CompanyPick } from "@/components/charting/company-picker";
 import {
   newPortfolioId,
   newTransactionRowId,
   portfolioIsCombined,
+  type ConnectBrokerageCompletePayload,
   type PortfolioEntry,
   type PortfolioHolding,
   type PortfolioPrivacy,
@@ -84,10 +89,14 @@ function ensureAtLeastOnePortfolio(portfolios: PortfolioEntry[]): PortfolioEntry
   return [{ id: newPortfolioId(), name: DEFAULT_PORTFOLIO_NAME, privacy: "private" }];
 }
 
-function ModalField({ label, children }: { label: string; children: ReactNode }) {
+function ModalField({ label, children }: { label: ReactNode; children: ReactNode }) {
   return (
     <div className="flex w-full flex-col gap-2">
-      <span className="text-sm font-medium leading-5 text-[#09090B]">{label}</span>
+      {typeof label === "string" ? (
+        <span className="text-sm font-medium leading-5 text-[#09090B]">{label}</span>
+      ) : (
+        label
+      )}
       {children}
     </div>
   );
@@ -162,7 +171,11 @@ function EditPortfolioModal({
         bodyClassName="flex flex-col gap-4 px-5 pb-5 pt-5"
         footer={
           <AppModalFooter>
-            <button type="button" onClick={onRequestDelete} className={appModalCancelButtonClass}>
+            <button
+              type="button"
+              onClick={onRequestDelete}
+              className="inline-flex min-h-9 shrink-0 items-center justify-center rounded-[10px] px-4 py-2 text-sm font-medium text-[#DC2626] transition-colors hover:bg-[#FEE2E2] hover:text-[#B91C1C]"
+            >
               Delete
             </button>
             <button
@@ -199,7 +212,7 @@ function EditPortfolioModal({
             />
           </ModalField>
         ) : null}
-        <ModalField label="Privacy">
+        <ModalField label={<PortfolioPrivacyFieldLabel />}>
           <PortfolioPrivacySelect value={privacy} onChange={setPrivacy} />
         </ModalField>
         {snaptradeLink ? <PortfolioSnaptradeConnectionInfo snaptrade={snaptradeLink} /> : null}
@@ -208,41 +221,95 @@ function EditPortfolioModal({
   );
 }
 
+type CreatePortfolioMode = "manual" | "brokerage";
+
 function CreatePortfolioModal({
   onClose,
   onAdd,
+  onConnectBrokerageComplete,
 }: {
   onClose: () => void;
   onAdd: (name: string, privacy: PortfolioPrivacy) => void;
+  onConnectBrokerageComplete: (payload: ConnectBrokerageCompletePayload) => void | Promise<void>;
 }) {
   const titleId = useId();
+  const [mode, setMode] = useState<CreatePortfolioMode>("manual");
   const [name, setName] = useState("");
   const [privacy, setPrivacy] = useState<PortfolioPrivacy>("private");
-  const canAdd = name.trim().length > 0;
+
+  const { portalLoading, portalActive, portalNode, reset, startPortal } = useSnapTradeConnectPortal({
+    onComplete: onConnectBrokerageComplete,
+    onClose,
+  });
+
+  const closeAll = useCallback(() => {
+    reset();
+    setMode("manual");
+    setName("");
+    setPrivacy("private");
+    onClose();
+  }, [onClose, reset]);
+
+  const canSubmit = name.trim().length > 0 && !portalLoading;
+  const isBrokerage = mode === "brokerage";
+
+  if (portalActive) return portalNode;
 
   return (
-    <AppModalOverlay open onClose={onClose} zIndex={110}>
+    <AppModalOverlay open onClose={closeAll} zIndex={110}>
       <AppModalShell
         titleId={titleId}
         title="Create new portfolio"
-        onClose={onClose}
+        onClose={closeAll}
         bodyClassName="flex flex-col gap-4 px-5 pb-5 pt-5"
         footer={
           <AppModalFooter>
-            <button type="button" onClick={onClose} className={appModalCancelButtonClass}>
+            <button type="button" onClick={closeAll} className={appModalCancelButtonClass}>
               Cancel
             </button>
-            <button
-              type="button"
-              disabled={!canAdd}
-              onClick={() => onAdd(name, privacy)}
-              className={appModalPrimaryButtonClass(canAdd)}
-            >
-              Add
-            </button>
+            {isBrokerage ? (
+              <button
+                type="button"
+                disabled={!canSubmit}
+                onClick={() => {
+                  const t = name.trim();
+                  if (!t) return;
+                  void startPortal({ name: t, privacy });
+                }}
+                className={appModalPrimaryButtonClass(canSubmit)}
+              >
+                {portalLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+                    Opening…
+                  </>
+                ) : (
+                  "Continue"
+                )}
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled={!canSubmit}
+                onClick={() => onAdd(name, privacy)}
+                className={appModalPrimaryButtonClass(canSubmit)}
+              >
+                Add
+              </button>
+            )}
           </AppModalFooter>
         }
       >
+        <SegmentedControl
+          fullWidth
+          aria-label="Portfolio type"
+          value={mode}
+          onChange={setMode}
+          options={[
+            { value: "manual", label: "Manual Portfolio" },
+            { value: "brokerage", label: "Connect brokerage" },
+          ]}
+        />
         <ModalField label="Name">
           <ClearableInput
             type="text"
@@ -252,7 +319,7 @@ function CreatePortfolioModal({
             clearLabel="Clear name"
           />
         </ModalField>
-        <ModalField label="Privacy">
+        <ModalField label={<PortfolioPrivacyFieldLabel />}>
           <PortfolioPrivacySelect value={privacy} onChange={setPrivacy} />
         </ModalField>
       </AppModalShell>
@@ -320,6 +387,7 @@ export function PortfolioWorkspaceProvider({
   const [newTransactionOpen, setNewTransactionOpen] = useState(false);
   const [newTransactionPreset, setNewTransactionPreset] = useState<CompanyPick | null>(null);
   const [addCashModalOpen, setAddCashModalOpen] = useState(false);
+  const [importTransactionsOpen, setImportTransactionsOpen] = useState(false);
   const [editTransaction, setEditTransaction] = useState<PortfolioTransaction | null>(null);
   const [holdingsByPortfolioId, setHoldingsByPortfolioId] = useState<Record<string, PortfolioHolding[]>>(
     {},
@@ -728,72 +796,43 @@ export function PortfolioWorkspaceProvider({
   /** One attempt per user session: publish public portfolios to Supabase right after hydrate (table row for /portfolios). */
   const attemptedHydratePublicListingSyncRef = useRef(false);
 
-  useEffect(() => {
-    attemptedHydratePublicListingSyncRef.current = false;
-  }, [userId]);
+  const syncPublicPortfolioListings = useCallback(
+    async (opts?: { unpublishRemoved?: boolean }) => {
+      const publicListed = portfolios.filter(
+        (p) => p.privacy === "public" && (p.kind !== "combined" || portfolioIsCombined(p)),
+      );
+      const current = new Set(publicListed.map((p) => p.id));
+      const prev = prevPublishedPortfolioIdsRef.current;
 
-  useEffect(() => {
-    if (!workspaceHydrated || attemptedHydratePublicListingSyncRef.current) return;
-    const publicListed = portfolios.filter(
-      (p) => p.privacy === "public" && (p.kind !== "combined" || portfolioIsCombined(p)),
-    );
-    if (publicListed.length === 0) return;
+      let listingsUpdated = false;
 
-    attemptedHydratePublicListingSyncRef.current = true;
-
-    void (async () => {
-      let anyOk = false;
-      for (const p of publicListed) {
-        const holdings = displayHoldingsByPortfolioId[p.id] ?? [];
-        const txs = displayTransactionsByPortfolioId[p.id] ?? [];
-        const r = await putPublicPortfolioListingRequest({
-          portfolioId: p.id,
-          publish: true,
-          displayName: p.name,
-          metrics: metricsForPublicListing(holdings, txs),
-        });
-        if (r.ok) anyOk = true;
-      }
-      if (anyOk) dispatchPublicListingsChanged();
-    })();
-  }, [
-    workspaceHydrated,
-    portfolios,
-    displayHoldingsByPortfolioId,
-    displayTransactionsByPortfolioId,
-    metricsForPublicListing,
-  ]);
-
-  /** Sync Supabase community listings when public standard portfolios change (debounced). */
-  useEffect(() => {
-    if (!workspaceHydrated) return;
-    const tid = window.setTimeout(() => {
-      void (async () => {
-        const publicListed = portfolios.filter(
-          (p) => p.privacy === "public" && (p.kind !== "combined" || portfolioIsCombined(p)),
-        );
-        const current = new Set(publicListed.map((p) => p.id));
-        const prev = prevPublishedPortfolioIdsRef.current;
-
-        let listingsUpdated = false;
+      if (opts?.unpublishRemoved !== false) {
         for (const id of prev) {
-          if (!current.has(id)) {
-            try {
-              const res = await fetch("/api/portfolios/listings", {
-                method: "PUT",
-                credentials: "include",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ portfolioId: id, publish: false }),
-              });
-              const data = (await res.json()) as { ok?: boolean; warning?: string };
-              if (res.ok && data.ok !== false && data.warning !== "db_unavailable") listingsUpdated = true;
-            } catch {
-              /* ignore */
-            }
+          if (current.has(id)) continue;
+          try {
+            const res = await fetch("/api/portfolios/listings", {
+              method: "PUT",
+              credentials: "include",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ portfolioId: id, publish: false }),
+            });
+            const data = (await res.json()) as { ok?: boolean; warning?: string };
+            if (res.ok && data.ok !== false && data.warning !== "db_unavailable") listingsUpdated = true;
+          } catch {
+            /* ignore */
           }
         }
+      }
+
+      if (publicListed.length > 0) {
+        const slice: Record<string, PortfolioHolding[]> = {};
         for (const p of publicListed) {
-          const holdings = displayHoldingsByPortfolioId[p.id] ?? [];
+          slice[p.id] = displayHoldingsByPortfolioId[p.id] ?? [];
+        }
+        const quotedByPortfolioId = await refreshHoldingsByPortfolioIdMarketPrices(slice);
+
+        for (const p of publicListed) {
+          const holdings = quotedByPortfolioId[p.id] ?? [];
           const txs = displayTransactionsByPortfolioId[p.id] ?? [];
           const metrics = metricsForPublicListing(holdings, txs);
           try {
@@ -814,18 +853,49 @@ export function PortfolioWorkspaceProvider({
             /* ignore */
           }
         }
+      }
 
-        prevPublishedPortfolioIdsRef.current = new Set(current);
-        if (listingsUpdated) dispatchPublicListingsChanged();
-      })();
+      prevPublishedPortfolioIdsRef.current = new Set(current);
+      if (listingsUpdated) dispatchPublicListingsChanged();
+    },
+    [portfolios, displayHoldingsByPortfolioId, displayTransactionsByPortfolioId, metricsForPublicListing],
+  );
+
+  useEffect(() => {
+    attemptedHydratePublicListingSyncRef.current = false;
+  }, [userId]);
+
+  useEffect(() => {
+    if (!workspaceHydrated || !holdingsMarkToMarketReady) return;
+    const publicListed = portfolios.filter(
+      (p) => p.privacy === "public" && (p.kind !== "combined" || portfolioIsCombined(p)),
+    );
+    if (publicListed.length === 0) return;
+    if (attemptedHydratePublicListingSyncRef.current) return;
+
+    attemptedHydratePublicListingSyncRef.current = true;
+    void syncPublicPortfolioListings({ unpublishRemoved: false });
+  }, [
+    workspaceHydrated,
+    holdingsMarkToMarketReady,
+    portfolios,
+    syncPublicPortfolioListings,
+  ]);
+
+  /** Sync Supabase community listings when public standard portfolios change (debounced). */
+  useEffect(() => {
+    if (!workspaceHydrated || !holdingsMarkToMarketReady) return;
+    const tid = window.setTimeout(() => {
+      void syncPublicPortfolioListings({ unpublishRemoved: true });
     }, 600);
     return () => window.clearTimeout(tid);
   }, [
     workspaceHydrated,
+    holdingsMarkToMarketReady,
     portfolios,
     displayHoldingsByPortfolioId,
     displayTransactionsByPortfolioId,
-    metricsForPublicListing,
+    syncPublicPortfolioListings,
   ]);
 
   /** Replaces the row for the same ticker, or appends — supports merged positions after multiple buys. */
@@ -1236,6 +1306,12 @@ export function PortfolioWorkspaceProvider({
     setAddCashModalOpen(true);
   }, [portfolios, selectedPortfolioId]);
   const closeAddCash = useCallback(() => setAddCashModalOpen(false), []);
+  const openImportTransactions = useCallback(() => {
+    const p = portfolios.find((x) => x.id === selectedPortfolioId);
+    if (!p || p.kind === "combined") return;
+    setImportTransactionsOpen(true);
+  }, [portfolios, selectedPortfolioId]);
+  const closeImportTransactions = useCallback(() => setImportTransactionsOpen(false), []);
 
   const updatePortfolioPrivacy = useCallback(
     (portfolioId: string, nextPrivacy: PortfolioPrivacy) => {
@@ -1336,6 +1412,7 @@ export function PortfolioWorkspaceProvider({
       addCashModalOpen,
       openAddCash,
       closeAddCash,
+      openImportTransactions,
       editTransaction,
       openEditTransaction,
       closeEditTransaction,
@@ -1373,6 +1450,7 @@ export function PortfolioWorkspaceProvider({
       addCashModalOpen,
       openAddCash,
       closeAddCash,
+      openImportTransactions,
       editTransaction,
       openEditTransaction,
       closeEditTransaction,
@@ -1390,6 +1468,7 @@ export function PortfolioWorkspaceProvider({
         onClose={closeNewTransaction}
       />
       <AddCashModal open={addCashModalOpen} onClose={closeAddCash} />
+      <ImportTransactionsModal open={importTransactionsOpen} onClose={closeImportTransactions} />
       <EditTransactionModal
         open={editTransaction != null}
         transaction={editTransaction}
@@ -1592,6 +1671,10 @@ export function PortfolioWorkspaceProvider({
       {createPortfolioOpen ? (
         <CreatePortfolioModal
           onClose={() => setCreatePortfolioOpen(false)}
+          onConnectBrokerageComplete={async (payload) => {
+            await finalizeConnectBrokerage(payload);
+            setCreatePortfolioOpen(false);
+          }}
           onAdd={(name, nextPrivacy) => {
             const t = name.trim();
             if (t.length === 0) return;

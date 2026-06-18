@@ -31,7 +31,8 @@ function AuthMockupCard({ src }: { src: string }) {
             height={AUTH_ASIDE_MOCKUP_IMAGE.height}
             sizes="500px"
             decoding="async"
-            loading="eager"
+            loading="lazy"
+            fetchPriority="low"
             className="auth-aside-mockup-img block h-full w-full max-w-none object-cover object-top"
           />
         </div>

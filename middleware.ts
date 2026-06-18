@@ -1,6 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
+import { requestHasSupabaseAuthCookies } from "@/lib/auth/supabase-auth-cookies";
+
 export async function middleware(request: NextRequest) {
   // Keep middleware Edge-safe: do not import app modules or server-only utilities.
   const PATH_LOGIN = "/login";
@@ -49,6 +51,11 @@ export async function middleware(request: NextRequest) {
     path.startsWith("/index/");
 
   const isAuthGatePagePath = path === PATH_LOGIN || path === PATH_SIGNUP || path === PATH_FORGOT_PASSWORD;
+
+  // Logged-out visitors on auth pages: skip Supabase round-trip (major TTFB win on /login).
+  if (isAuthGatePagePath && !requestHasSupabaseAuthCookies(request.cookies.getAll())) {
+    return NextResponse.next();
+  }
 
   // If Supabase env is missing, fall back to basic protection.
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;

@@ -287,7 +287,7 @@ function PortfolioCashPanelInner() {
               </EmptyMedia>
               <EmptyTitle>No cash movements yet</EmptyTitle>
               <EmptyDescription>
-                Add a deposit or withdrawal with New Transaction → Cash, or use Import Transactions above.
+                Add a deposit or withdrawal with New Transaction → Cash, or import from the + menu.
               </EmptyDescription>
             </EmptyHeader>
           </Empty>

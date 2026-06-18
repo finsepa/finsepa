@@ -1,5 +1,11 @@
 export type PortfolioPrivacy = "private" | "public";
 
+export type ConnectBrokerageCompletePayload = {
+  name: string;
+  privacy: PortfolioPrivacy;
+  authorizationId: string;
+};
+
 export type PortfolioKind = "standard" | "combined";
 
 import {
@@ -34,6 +40,13 @@ export type PortfolioEntry = {
 
 export function portfolioIsCombined(p: PortfolioEntry | null | undefined): boolean {
   return p?.kind === "combined" && Array.isArray(p.combinedFrom) && p.combinedFrom.length >= 2;
+}
+
+/** Subtitle for portfolio picker rows (combined / SnapTrade / manual). */
+export function portfolioKindSubtext(p: PortfolioEntry): string {
+  if (portfolioIsCombined(p)) return "Combined portfolio";
+  if (p.snaptrade) return "Brokerage";
+  return "Manual";
 }
 
 /** Coerce persisted / partial rows to a full entry (missing privacy → private). */

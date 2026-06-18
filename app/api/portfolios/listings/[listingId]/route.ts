@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { requireAuthUser, AuthRequiredError } from "@/lib/watchlist/api-auth";
 import { parsePublicListingSnapshotFromMetrics } from "@/lib/portfolio/public-listing-snapshot";
+import { quoteHoldingsToMarketServer } from "@/lib/portfolio/portfolio-live-quotes-server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 type RouteCtx = { params: Promise<{ listingId: string }> };
@@ -34,7 +35,14 @@ export async function GET(_request: Request, ctx: RouteCtx) {
     }
 
     const metrics = (data.metrics ?? {}) as Record<string, unknown>;
-    const snapshot = parsePublicListingSnapshotFromMetrics(metrics);
+    const parsedSnapshot = parsePublicListingSnapshotFromMetrics(metrics);
+    const snapshot =
+      parsedSnapshot ?
+        {
+          holdings: await quoteHoldingsToMarketServer(parsedSnapshot.holdings),
+          transactions: parsedSnapshot.transactions,
+        }
+      : null;
 
     return NextResponse.json({
       id: data.id as string,

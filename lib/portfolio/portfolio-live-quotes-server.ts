@@ -2,6 +2,8 @@ import "server-only";
 
 import { unstable_cache } from "next/cache";
 
+import type { PortfolioHolding } from "@/components/portfolio/portfolio-types";
+import { applyLivePricesToHoldings } from "@/lib/portfolio/apply-live-prices-to-holdings";
 import { REVALIDATE_WARM } from "@/lib/data/cache-policy";
 import { cryptoRouteBase } from "@/lib/crypto/crypto-symbol-base";
 import { isSupportedCryptoAssetSymbol } from "@/lib/crypto/crypto-logo-url";
@@ -83,4 +85,13 @@ export async function fetchPortfolioLivePricesUsdCached(
   const key = normalizeSymbolsKey(symbols);
   if (!key) return {};
   return getCachedPortfolioLivePricesUsd(key);
+}
+
+export async function quoteHoldingsToMarketServer(
+  holdings: PortfolioHolding[],
+): Promise<PortfolioHolding[]> {
+  if (!holdings.length) return holdings;
+  const symbols = [...new Set(holdings.map((h) => h.symbol.trim().toUpperCase()).filter(Boolean))];
+  const prices = await fetchPortfolioLivePricesUsdCached(symbols);
+  return applyLivePricesToHoldings(holdings, prices);
 }

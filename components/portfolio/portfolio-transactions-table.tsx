@@ -440,7 +440,7 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
             </EmptyMedia>
             <EmptyTitle>No transactions</EmptyTitle>
             <EmptyDescription>
-              Add a trade, cash movement, or use Import Transactions above to see it here.
+              Add a trade, cash movement, or import transactions from the + menu to see it here.
             </EmptyDescription>
           </EmptyHeader>
         </Empty>

@@ -1,5 +1,6 @@
 import "server-only";
 
+import { prepareLoopsTransactionalRecipient } from "@/lib/loops/contacts";
 import { sendLoopsTransactionalEmail } from "@/lib/loops/transactional";
 import { SUPPORT_FEEDBACK_TO_EMAIL } from "@/lib/support/feedback-constants";
 
@@ -19,26 +20,43 @@ export async function sendHelpFeedbackEmail(params: {
   message: string;
   pageUrl?: string | null;
   attachmentLinks?: string | null;
+  /** First uploaded image — shown inline in the Loops template when set. */
+  imageUrl?: string | null;
 }): Promise<{ ok: true; to: string } | { ok: false; message: string }> {
   const userEmail = params.userEmail.trim();
   const userName = params.userName.trim() || userEmail.split("@")[0] || "Finsepa user";
+
+  const prepared = await prepareLoopsTransactionalRecipient({
+    apiKey: params.apiKey,
+    email: SUPPORT_FEEDBACK_TO_EMAIL,
+  });
+  if (!prepared.ok) {
+    console.error("[loops/help-feedback] could not prepare support inbox:", prepared.message);
+    return prepared;
+  }
+
+  const dataVariables: Record<string, string> = {
+    userEmail,
+    userName,
+    replyToEmail: userEmail,
+    senderLabel: `${userName} <${userEmail}>`,
+    messageText: params.message,
+    pageUrl: params.pageUrl?.trim() || "—",
+    attachmentLinks: params.attachmentLinks?.trim() || "None",
+  };
+  const imageUrl = params.imageUrl?.trim();
+  if (imageUrl) {
+    dataVariables.imageUrl = imageUrl;
+  }
 
   const result = await sendLoopsTransactionalEmail({
     apiKey: params.apiKey,
     transactionalId: params.transactionalId,
     to: SUPPORT_FEEDBACK_TO_EMAIL,
     addContact: false,
-    dataVariables: {
-      userEmail,
-      userName,
-      replyToEmail: userEmail,
-      senderLabel: `${userName} <${userEmail}>`,
-      messageText: params.message,
-      pageUrl: params.pageUrl?.trim() || "—",
-      attachmentLinks: params.attachmentLinks?.trim() || "None",
-    },
+    dataVariables,
     errorHint:
-      "Check LOOPS_API_KEY, LOOPS_TRANSACTIONAL_ID_HELP_FEEDBACK, and template: publish it, From = verified domain, Reply-To = {{userEmail}}, variables userEmail, userName, replyToEmail, senderLabel, messageText, pageUrl, attachmentLinks.",
+      "Check LOOPS_API_KEY, LOOPS_TRANSACTIONAL_ID_HELP_FEEDBACK, and template: publish it, From = hello@mail.finsepa.com, Reply-To = {data.userEmail}, LMX tags {data.userName}, optional {data.imageUrl}.",
   });
   if (!result.ok) return result;
   return { ok: true, to: SUPPORT_FEEDBACK_TO_EMAIL };

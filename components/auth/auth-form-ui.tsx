@@ -38,8 +38,22 @@ export const authInputClassName = cn(
   "disabled:cursor-not-allowed disabled:opacity-60",
 );
 
-export function AuthInput(props: InputHTMLAttributes<HTMLInputElement>) {
-  return <input {...props} className={cn(authInputClassName, "pr-5", props.className)} />;
+export function AuthInput({
+  value,
+  onChange,
+  className,
+  ...props
+}: InputHTMLAttributes<HTMLInputElement>) {
+  const isControlled = value !== undefined || onChange !== undefined;
+
+  return (
+    <input
+      {...props}
+      onChange={onChange}
+      {...(isControlled ? { value: value ?? "" } : {})}
+      className={cn(authInputClassName, "pr-5", className)}
+    />
+  );
 }
 
 export function AuthPrimaryButton({

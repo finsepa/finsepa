@@ -42,6 +42,7 @@ export type PortfolioWorkspaceContextValue = {
   addCashModalOpen: boolean;
   openAddCash: () => void;
   closeAddCash: () => void;
+  openImportTransactions: () => void;
   /** Row being edited in `EditTransactionModal` (null when closed). */
   editTransaction: PortfolioTransaction | null;
   openEditTransaction: (t: PortfolioTransaction) => void;

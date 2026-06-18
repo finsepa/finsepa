@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, ChevronDown, Globe, Lock } from "@/lib/icons";
+import { Check, ChevronDown, Globe, Info, Lock } from "@/lib/icons";
 
 import {
   dropdownMenuPanelClassName,
   dropdownMenuPlainItemRowClassName,
 } from "@/components/design-system/dropdown-menu-styles";
+import { TopbarDelayedTooltip } from "@/components/layout/topbar-delayed-tooltip";
 import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
 import type { PortfolioPrivacy } from "@/components/portfolio/portfolio-types";
 import { cn } from "@/lib/utils";
@@ -18,6 +19,34 @@ const OPTIONS: { value: PortfolioPrivacy; label: string; Icon: typeof Lock }[] =
 
 function optionByValue(v: PortfolioPrivacy) {
   return OPTIONS.find((o) => o.value === v) ?? OPTIONS[0]!;
+}
+
+export const PORTFOLIO_PRIVACY_TOOLTIP =
+  "Private — Only you can view this portfolio.\nPublic — Others can discover and view your holdings on Finsepa.";
+
+/** Privacy field label with info tooltip (Create / Edit / Connect brokerage modals). */
+export function PortfolioPrivacyFieldLabel() {
+  return (
+    <div className="flex items-center gap-1">
+      <span className="text-sm font-medium leading-5 text-[#09090B]">Privacy</span>
+      <TopbarDelayedTooltip
+        label={PORTFOLIO_PRIVACY_TOOLTIP}
+        multiline
+        delayMs={400}
+        placement="right"
+        zIndex={350}
+      >
+        <span
+          className="inline-flex cursor-default text-[#A1A1AA] transition-colors hover:text-[#71717A]"
+          tabIndex={0}
+          role="img"
+          aria-label="About portfolio privacy"
+        >
+          <Info className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
+        </span>
+      </TopbarDelayedTooltip>
+    </div>
+  );
 }
 
 /** Lock / Globe privacy indicator (used near portfolio title). */

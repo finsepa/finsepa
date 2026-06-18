@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, GitMerge, Globe, Landmark, Lock, Pencil, Plus } from "@/lib/icons";
+import { Check, GitMerge, Globe, Lock, Pencil, Plus } from "@/lib/icons";
 
 import {
   ChevronsUpDownIcon,
@@ -13,9 +13,9 @@ import {
   dropdownMenuPlainItemClassName,
 } from "@/components/design-system/dropdown-menu-styles";
 import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
-import { PortfolioSyncStatusIcon } from "@/components/portfolio/portfolio-sync-status-icon";
+import { PortfolioListLogo } from "@/components/portfolio/portfolio-brokerage-logo";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
-import type { PortfolioPrivacy } from "@/components/portfolio/portfolio-types";
+import { portfolioKindSubtext, type PortfolioPrivacy } from "@/components/portfolio/portfolio-types";
 import { cn } from "@/lib/utils";
 
 function PrivacyGlyph({ privacy }: { privacy: PortfolioPrivacy }) {
@@ -44,9 +44,12 @@ export type CompactMenuAlign = "leading" | "trailing";
 export function TransactionPortfolioField({
   variant = "field",
   compactMenuAlign = "leading",
+  /** Import modal: list portfolios only — no create/connect actions or row edit/sync controls. */
+  portfoliosOnly = false,
 }: {
   variant?: Variant;
   compactMenuAlign?: CompactMenuAlign;
+  portfoliosOnly?: boolean;
 }) {
   const {
     portfolios,
@@ -55,7 +58,6 @@ export function TransactionPortfolioField({
     openEditPortfolio,
     openCreatePortfolio,
     openCreateCombinedPortfolio,
-    openConnectBrokerage,
   } = usePortfolioWorkspace();
 
   const [open, setOpen] = useState(false);
@@ -102,6 +104,7 @@ export function TransactionPortfolioField({
           key={p.id}
           className={cn(
             dropdownMenuCompositeRowClassName,
+            "group",
             p.id === selectedPortfolioId && "bg-[#F4F4F5]",
           )}
         >
@@ -112,74 +115,81 @@ export function TransactionPortfolioField({
               setSelectedPortfolioId(p.id);
               setOpen(false);
             }}
-            className="min-h-10 min-w-0 flex-1 truncate px-4 py-2 text-left text-sm transition-colors hover:bg-transparent"
+            className={cn(
+              "flex min-w-0 flex-1 items-center gap-3 py-2 pl-3 pr-4 text-left transition-colors hover:bg-transparent",
+              portfoliosOnly && "pr-10",
+            )}
           >
-            {p.name}
-          </button>
-          {p.snaptrade ? (
-            <span
-              className="flex shrink-0 self-center"
-              onClick={(e) => e.stopPropagation()}
-              onMouseDown={(e) => e.stopPropagation()}
-            >
-              <PortfolioSyncStatusIcon portfolioId={p.id} snaptrade={p.snaptrade} variant="menu" />
+            <PortfolioListLogo portfolio={p} />
+            <span className="flex min-w-0 flex-1 flex-col items-start gap-0">
+              <span className="w-full truncate text-sm font-medium leading-5 text-[#09090B]">{p.name}</span>
+              <span className="text-xs leading-4 text-[#71717A]">{portfolioKindSubtext(p)}</span>
             </span>
-          ) : null}
-          <span className="flex h-4 w-4 shrink-0 items-center justify-center self-center" aria-hidden>
-            {p.id === selectedPortfolioId ? (
-              <Check className="h-4 w-4 text-[#09090B]" strokeWidth={2} />
-            ) : null}
-          </span>
+          </button>
+          {portfoliosOnly ? (
+            <span className="flex h-4 w-4 shrink-0 items-center justify-center self-center" aria-hidden>
+              {p.id === selectedPortfolioId ? (
+                <Check className="h-4 w-4 text-[#09090B]" strokeWidth={2} />
+              ) : null}
+            </span>
+          ) : (
+            <span className="relative mr-1 flex h-9 w-9 shrink-0 items-center justify-center self-center">
+              {p.id === selectedPortfolioId ? (
+                <Check
+                  className="h-4 w-4 text-[#09090B] group-hover:invisible group-focus-within:invisible"
+                  strokeWidth={2}
+                  aria-hidden
+                />
+              ) : null}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setOpen(false);
+                  openEditPortfolio(p.id);
+                }}
+                className="absolute inset-0 flex items-center justify-center rounded-lg text-[#09090B] opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 hover:bg-[#EBEBEB] focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/10"
+                aria-label={`Edit ${p.name}`}
+              >
+                <Pencil className="h-4 w-4" strokeWidth={2} aria-hidden />
+              </button>
+            </span>
+          )}
+        </div>
+      ))}
+      {!portfoliosOnly ? (
+        <>
+          <div
+            role="separator"
+            aria-hidden
+            className="-mx-1 my-0.5 h-px shrink-0 bg-[#E4E4E7]"
+          />
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
               setOpen(false);
-              openEditPortfolio(p.id);
+              openCreatePortfolio();
             }}
-            className="mr-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[#09090B] transition-colors hover:bg-[#F4F4F5]"
-            aria-label={`Edit ${p.name}`}
+            className={dropdownMenuPlainItemClassName()}
           >
-            <Pencil className="h-4 w-4" strokeWidth={2} aria-hidden />
+            <Plus className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
+            <span>Create new portfolio</span>
           </button>
-        </div>
-      ))}
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          setOpen(false);
-          openCreatePortfolio();
-        }}
-        className={dropdownMenuPlainItemClassName()}
-      >
-        <Plus className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
-        <span>Create New Portfolio</span>
-      </button>
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          setOpen(false);
-          openCreateCombinedPortfolio();
-        }}
-        className={dropdownMenuPlainItemClassName()}
-      >
-        <GitMerge className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
-        <span>Create combined portfolio</span>
-      </button>
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          setOpen(false);
-          openConnectBrokerage();
-        }}
-        className={dropdownMenuPlainItemClassName()}
-      >
-        <Landmark className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
-        <span>Connect brokerage</span>
-      </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setOpen(false);
+              openCreateCombinedPortfolio();
+            }}
+            className={dropdownMenuPlainItemClassName()}
+          >
+            <GitMerge className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
+            <span>Create combined portfolio</span>
+          </button>
+        </>
+      ) : null}
     </>
   );
 

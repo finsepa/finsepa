@@ -1,8 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Briefcase, GitMerge } from "@/lib/icons";
 
-import type { PortfolioSnaptradeLink } from "@/components/portfolio/portfolio-types";
+import {
+  portfolioIsCombined,
+  type PortfolioEntry,
+  type PortfolioSnaptradeLink,
+} from "@/components/portfolio/portfolio-types";
 import { cn } from "@/lib/utils";
 
 function BrokerageInitials({ name, className }: { name: string; className?: string }) {
@@ -16,6 +21,36 @@ function BrokerageInitials({ name, className }: { name: string; className?: stri
       aria-hidden
     >
       {label.slice(0, 2).toUpperCase()}
+    </div>
+  );
+}
+
+const portfolioListLogoShellClass =
+  "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#E4E4E7] bg-[#F4F4F5]";
+
+/** Logo in portfolio picker rows — brokerage image, or icon tile for manual / combined. */
+export function PortfolioListLogo({
+  portfolio,
+  className,
+}: {
+  portfolio: PortfolioEntry;
+  className?: string;
+}) {
+  if (portfolioIsCombined(portfolio)) {
+    return (
+      <div className={cn(portfolioListLogoShellClass, className)} aria-hidden>
+        <GitMerge className="h-4 w-4 text-[#71717A]" strokeWidth={2} />
+      </div>
+    );
+  }
+
+  if (portfolio.snaptrade) {
+    return <PortfolioBrokerageLogo snaptrade={portfolio.snaptrade} className={className} />;
+  }
+
+  return (
+    <div className={cn(portfolioListLogoShellClass, className)} aria-hidden>
+      <Briefcase className="h-4 w-4 text-[#71717A]" strokeWidth={2} />
     </div>
   );
 }

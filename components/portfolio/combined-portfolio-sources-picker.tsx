@@ -1,6 +1,7 @@
 "use client";
 
 import type { PortfolioEntry } from "@/components/portfolio/portfolio-types";
+import { AppCheckbox } from "@/components/ui/app-checkbox";
 import { cn } from "@/lib/utils";
 
 export function CombinedPortfolioSourcesPicker({
@@ -28,11 +29,10 @@ export function CombinedPortfolioSourcesPicker({
                 on ? "bg-white" : "hover:bg-[#F4F4F5]",
               )}
             >
-              <input
-                type="checkbox"
+              <AppCheckbox
                 checked={on}
                 onChange={() => onToggle(p.id)}
-                className="h-4 w-4 shrink-0 rounded border-[#E4E4E7] text-[#09090B] focus:ring-2 focus:ring-[#09090B]/15"
+                aria-label={`Include ${p.name}`}
               />
               <span className="min-w-0 flex-1 truncate font-medium">{p.name}</span>
             </label>

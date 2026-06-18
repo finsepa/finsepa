@@ -3,11 +3,10 @@
 import dynamic from "next/dynamic";
 import { startTransition, useCallback, useEffect, useState, type ComponentType } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FileSpreadsheet, Layers2, Settings } from "@/lib/icons";
+import { Layers2, Pencil } from "@/lib/icons";
 
 import { AssetPageTopLoader } from "@/components/layout/asset-page-top-loader";
 import { PortfolioQuickAddMenu } from "@/components/layout/portfolio-quick-add-menu";
-import { ImportTransactionsModal } from "@/components/portfolio/import-transactions-modal";
 import { PortfolioAllocationView } from "@/components/portfolio/portfolio-allocation-view";
 import { PortfolioHoldingsTable } from "@/components/portfolio/portfolio-holdings-table";
 import { PortfolioSlicesView } from "@/components/portfolio/portfolio-slices-view";
@@ -35,7 +34,7 @@ import {
   searchParamFromOverviewHoldingsSubTab,
   searchParamFromPortfolioViewTab,
 } from "@/components/portfolio/portfolio-page-tabs";
-import { PortfolioBrokerageLogo } from "@/components/portfolio/portfolio-brokerage-logo";
+import { PortfolioListLogo } from "@/components/portfolio/portfolio-brokerage-logo";
 import { PortfolioSyncStatusIcon } from "@/components/portfolio/portfolio-sync-status-icon";
 import { TransactionPortfolioField } from "@/components/portfolio/transaction-portfolio-field";
 import { PortfoliosBreadcrumbs } from "@/components/portfolios/portfolios-breadcrumbs";
@@ -165,20 +164,16 @@ export function PortfolioPageView({
   const [overviewHoldingsSubTab, setOverviewHoldingsSubTab] = useState<OverviewHoldingsSubTab>(() =>
     overviewHoldingsSubTabFromSearchParam(searchParams.get("tab"), searchParams.get("view")),
   );
-  const [importTransactionsOpen, setImportTransactionsOpen] = useState(false);
 
   const {
     portfolios,
     selectedPortfolioId,
     openEditPortfolio,
-    selectedPortfolioReadOnly,
     portfolioDisplayReady,
   } = usePortfolioWorkspace();
 
   const selectedPortfolio =
     portfolios.find((p) => p.id === selectedPortfolioId) ?? portfolios[0] ?? null;
-
-  const editDisabled = readOnly || selectedPortfolioReadOnly;
 
   useEffect(() => {
     setViewTab(tabFromUrl(searchParams.get("tab")));
@@ -253,9 +248,6 @@ export function PortfolioPageView({
     <div className="relative flex min-h-full min-w-0 flex-col overflow-x-hidden bg-white">
       {showPortfoliosBreadcrumb ? <PortfoliosBreadcrumbs currentLabel={portfolioName} /> : null}
       <div className="relative flex min-h-full min-w-0 flex-1 flex-col overflow-x-hidden px-4 py-4 sm:px-9 sm:py-6">
-      {!readOnly ? (
-        <ImportTransactionsModal open={importTransactionsOpen} onClose={() => setImportTransactionsOpen(false)} />
-      ) : null}
       <AssetPageTopLoader />
       <div className="mb-6 flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
         <div className="flex min-w-0 items-start justify-between gap-3 sm:flex-1 sm:items-center">
@@ -266,17 +258,10 @@ export function PortfolioPageView({
               </h1>
             ) : (
               <div className="flex min-w-0 max-w-full items-center gap-2">
-                <PortfolioBrokerageLogo snaptrade={selectedPortfolio?.snaptrade} />
+                {selectedPortfolio ? <PortfolioListLogo portfolio={selectedPortfolio} /> : null}
                 <h1 className="min-w-0 truncate text-2xl font-semibold tracking-tight text-[#09090B]">
                   {portfolioName}
                 </h1>
-                {selectedPortfolioId != null ? (
-                  <PortfolioSyncStatusIcon
-                    portfolioId={selectedPortfolioId}
-                    snaptrade={selectedPortfolio?.snaptrade}
-                    variant="title"
-                  />
-                ) : null}
                 <TransactionPortfolioField variant="titleGhost" compactMenuAlign="leading" />
               </div>
             )}
@@ -284,22 +269,16 @@ export function PortfolioPageView({
 
           {!readOnly ? (
             <div className="flex shrink-0 flex-nowrap items-center justify-end gap-2 sm:hidden">
+              {selectedPortfolioId != null && selectedPortfolio?.snaptrade ? (
+                <PortfolioSyncStatusIcon
+                  portfolioId={selectedPortfolioId}
+                  snaptrade={selectedPortfolio.snaptrade}
+                  variant="toolbar"
+                />
+              ) : null}
               <button
                 type="button"
-                aria-label="Import transactions"
-                disabled={selectedPortfolioId == null || editDisabled}
-                onClick={() => setImportTransactionsOpen(true)}
-                className={cn(
-                  "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-[10px] border border-[#E4E4E7] bg-white px-3 text-sm font-medium text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100",
-                  "hover:bg-[#F4F4F4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2",
-                  "disabled:pointer-events-none disabled:opacity-40",
-                )}
-              >
-                <FileSpreadsheet className="h-4 w-4" aria-hidden />
-              </button>
-              <button
-                type="button"
-                aria-label="Portfolio settings"
+                aria-label="Edit portfolio"
                 disabled={selectedPortfolioId == null}
                 onClick={() => {
                   if (selectedPortfolioId != null) openEditPortfolio(selectedPortfolioId);
@@ -310,7 +289,7 @@ export function PortfolioPageView({
                   "disabled:pointer-events-none disabled:opacity-40",
                 )}
               >
-                <Settings className="h-5 w-5" strokeWidth={2} aria-hidden />
+                <Pencil className="h-5 w-5" strokeWidth={2} aria-hidden />
               </button>
               <PortfolioQuickAddMenu aria-label="Portfolio quick add" />
             </div>
@@ -319,23 +298,16 @@ export function PortfolioPageView({
 
         {!readOnly ? (
           <div className="hidden min-w-0 shrink-0 flex-nowrap items-center justify-end gap-2 sm:flex">
+            {selectedPortfolioId != null && selectedPortfolio?.snaptrade ? (
+              <PortfolioSyncStatusIcon
+                portfolioId={selectedPortfolioId}
+                snaptrade={selectedPortfolio.snaptrade}
+                variant="toolbar"
+              />
+            ) : null}
             <button
               type="button"
-              aria-label="Import transactions"
-              disabled={selectedPortfolioId == null || editDisabled}
-              onClick={() => setImportTransactionsOpen(true)}
-              className={cn(
-                "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-[10px] border border-[#E4E4E7] bg-white px-3 text-sm font-medium text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100",
-                "hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2",
-                "disabled:pointer-events-none disabled:opacity-40",
-              )}
-            >
-              <FileSpreadsheet className="h-4 w-4" aria-hidden />
-              <span className="hidden sm:inline">Import Transactions</span>
-            </button>
-            <button
-              type="button"
-              aria-label="Portfolio settings"
+              aria-label="Edit portfolio"
               disabled={selectedPortfolioId == null}
               onClick={() => {
                 if (selectedPortfolioId != null) openEditPortfolio(selectedPortfolioId);
@@ -346,7 +318,7 @@ export function PortfolioPageView({
                 "disabled:pointer-events-none disabled:opacity-40",
               )}
             >
-              <Settings className="h-5 w-5" strokeWidth={2} aria-hidden />
+              <Pencil className="h-5 w-5" strokeWidth={2} aria-hidden />
             </button>
             <PortfolioQuickAddMenu aria-label="Portfolio quick add" />
           </div>

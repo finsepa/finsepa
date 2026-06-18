@@ -1,24 +1,21 @@
 "use client";
 
-import { useCallback, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { AuthInput, AuthLabel, AuthPrimaryButton } from "@/components/auth/auth-form-ui";
-import { TurnstileField } from "@/components/auth/turnstile-field";
 import { getAuthAppOriginForClient } from "@/lib/auth/app-origin";
 import { PATH_AUTH_RESET_PASSWORD } from "@/lib/auth/routes";
-import { useTurnstileConfig } from "@/lib/auth/use-turnstile-config";
 import { friendlySupabaseAuthErrorMessage } from "@/lib/auth/supabase-error-message";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function ForgotPasswordClient() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
-  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
-  const { siteKey: turnstileSiteKey, enabled: turnstileEnabled, ready: turnstileConfigReady } =
-    useTurnstileConfig();
+  const [email, setEmail] = useState("");
 
-  const onTurnstileToken = useCallback((token: string) => setTurnstileToken(token), []);
-  const onTurnstileExpire = useCallback(() => setTurnstileToken(null), []);
+  const emailReady = email.trim().length > 0 && EMAIL_RE.test(email.trim());
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -68,12 +65,10 @@ export function ForgotPasswordClient() {
 
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
           redirectTo,
-          captchaToken: turnstileToken ?? undefined,
         });
 
         if (error) {
           setErrorMessage(friendlySupabaseAuthErrorMessage(error.message));
-          setTurnstileToken(null);
           return;
         }
 
@@ -115,21 +110,19 @@ export function ForgotPasswordClient() {
 
           <div>
             <AuthLabel>Email</AuthLabel>
-            <AuthInput type="email" name="email" autoComplete="email" placeholder="Enter your email" required disabled={loading} />
+            <AuthInput
+              type="email"
+              name="email"
+              autoComplete="email"
+              placeholder="Enter your email"
+              required
+              disabled={loading}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
           </div>
 
-          {turnstileConfigReady && turnstileEnabled && turnstileSiteKey ? (
-            <TurnstileField
-              siteKey={turnstileSiteKey}
-              onToken={onTurnstileToken}
-              onExpire={onTurnstileExpire}
-            />
-          ) : null}
-
-          <AuthPrimaryButton
-            type="submit"
-            disabled={loading || (turnstileEnabled && !turnstileToken)}
-          >
+          <AuthPrimaryButton type="submit" disabled={loading || !emailReady}>
             {loading ? "Sending…" : "Send reset link"}
           </AuthPrimaryButton>
         </form>

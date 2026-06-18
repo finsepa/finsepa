@@ -9,6 +9,7 @@ export { authMetadata as metadata, authViewport as viewport } from "@/lib/auth/a
 export default function SignupPage() {
   return (
     <AuthCenteredLayout
+      split={false}
       title="Start your free trial"
       subtitle={
         <>

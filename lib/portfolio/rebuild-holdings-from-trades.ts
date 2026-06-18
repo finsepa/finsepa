@@ -2,6 +2,7 @@ import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfo
 import { newHoldingId } from "@/components/portfolio/portfolio-types";
 import { applyStockSplitToHolding } from "@/lib/portfolio/apply-stock-split-to-holding";
 import { fetchPortfolioLivePricesClient } from "@/lib/portfolio/client-symbol-quotes";
+import { applyLivePricesToHoldings } from "@/lib/portfolio/apply-live-prices-to-holdings";
 import { mergeBuyIntoPosition, type BuyLot } from "@/lib/portfolio/holding-position";
 import { splitRatioFromTransaction } from "@/lib/portfolio/split-ratio-from-transaction";
 
@@ -130,20 +131,7 @@ export async function refreshHoldingMarketPrices(holdings: PortfolioHolding[]): 
   return applyLivePricesToHoldings(holdings, prices);
 }
 
-export function applyLivePricesToHoldings(
-  holdings: PortfolioHolding[],
-  prices: Record<string, number | null>,
-): PortfolioHolding[] {
-  return holdings.map((h) => {
-    const p = prices[h.symbol.trim().toUpperCase()];
-    if (p == null) return h;
-    return {
-      ...h,
-      marketPrice: p,
-      currentValue: h.shares * p,
-    };
-  });
-}
+export { applyLivePricesToHoldings };
 
 /** Batch live quotes once across all portfolios. */
 export async function refreshHoldingsByPortfolioIdMarketPrices(

@@ -14,6 +14,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
 
   return (
     <AuthCenteredLayout
+      split={false}
       title="Log in to your account"
       subtitle={
         <>

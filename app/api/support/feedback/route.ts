@@ -12,6 +12,7 @@ import {
   SUPPORT_FEEDBACK_MAX_TOTAL_BYTES,
   SUPPORT_FEEDBACK_MESSAGE_MAX_LENGTH,
 } from "@/lib/support/feedback-constants";
+import { uploadFeedbackAttachments } from "@/lib/support/upload-feedback-attachments";
 import { AuthRequiredError, requireAuthUser } from "@/lib/watchlist/api-auth";
 
 function sanitizeFileName(name: string): string {
@@ -62,35 +63,30 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Total attachment size must be 50 MB or smaller." }, { status: 400 });
     }
 
-    const attachmentUrls: string[] = [];
     const admin = getSupabaseAdminClient();
-    if (admin && fileEntries.length > 0) {
-      const prefix = `${user.id}/${Date.now()}`;
-      for (const file of fileEntries) {
-        const path = `${prefix}/${sanitizeFileName(file.name)}`;
-        const buffer = Buffer.from(await file.arrayBuffer());
-        const { error } = await admin.storage.from("support-feedback").upload(path, buffer, {
-          contentType: file.type || "application/octet-stream",
-          upsert: false,
-        });
-        if (error) {
-          console.error("[support/feedback] attachment upload failed:", error.message);
-          attachmentUrls.push(`${file.name} (upload failed)`);
-          continue;
-        }
-        const { data, error: signErr } = await admin.storage
-          .from("support-feedback")
-          .createSignedUrl(path, 60 * 60 * 24 * 14);
-        if (signErr || !data?.signedUrl) {
-          attachmentUrls.push(`${file.name} (link unavailable)`);
-        } else {
-          attachmentUrls.push(`${file.name}: ${data.signedUrl}`);
-        }
+    let attachmentLinks: string | null = null;
+    let imageUrl: string | null = null;
+
+    if (fileEntries.length > 0) {
+      if (!admin) {
+        return NextResponse.json(
+          { error: "File uploads are not available on this environment yet." },
+          { status: 503 },
+        );
       }
-    } else if (fileEntries.length > 0) {
-      for (const file of fileEntries) {
-        attachmentUrls.push(`${file.name} (storage unavailable)`);
+
+      const uploaded = await uploadFeedbackAttachments({
+        admin,
+        userId: user.id,
+        files: fileEntries,
+        sanitizeFileName,
+      });
+      if (!uploaded.ok) {
+        return NextResponse.json({ error: uploaded.message }, { status: 502 });
       }
+
+      attachmentLinks = uploaded.attachmentLinks;
+      imageUrl = uploaded.imageUrl;
     }
 
     const loopsKey = getLoopsApiKey();
@@ -110,7 +106,8 @@ export async function POST(request: Request) {
       userName,
       message,
       pageUrl: pageUrl || null,
-      attachmentLinks: attachmentUrls.length > 0 ? attachmentUrls.join("\n") : null,
+      attachmentLinks,
+      imageUrl,
     });
 
     if (!sent.ok) {

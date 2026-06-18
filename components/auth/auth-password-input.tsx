@@ -8,14 +8,19 @@ import { cn } from "@/lib/utils";
 
 export function AuthPasswordInput({
   className,
+  value,
+  onChange,
   ...props
 }: Omit<InputHTMLAttributes<HTMLInputElement>, "type">) {
   const [visible, setVisible] = useState(false);
+  const isControlled = value !== undefined || onChange !== undefined;
 
   return (
     <div className="relative">
       <input
         {...props}
+        onChange={onChange}
+        {...(isControlled ? { value: value ?? "" } : {})}
         type={visible ? "text" : "password"}
         className={cn(authInputClassName, "pr-[34px]", className)}
       />

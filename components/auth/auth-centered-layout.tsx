@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 import { AuthBrandMark } from "./auth-brand-mark";
-import { AuthSplitAsidePanel } from "./auth-split-aside-panel";
+import { AuthSplitAsidePanelLazy } from "./auth-split-aside-lazy";
 import { AuthSplitLayout } from "./auth-split-layout";
 
 function AuthHeaderBlock({
@@ -42,7 +42,7 @@ export function AuthCenteredLayout({
   compact = false,
   belowCard,
   footer,
-  split = true,
+  split = false,
 }: {
   title: string;
   subtitle: ReactNode;
@@ -68,7 +68,7 @@ export function AuthCenteredLayout({
     return (
       <AuthSplitLayout
         form={formBlock}
-        aside={<AuthSplitAsidePanel />}
+        aside={<AuthSplitAsidePanelLazy />}
         footer={footer ?? undefined}
       />
     );

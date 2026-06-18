@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { TopbarDelayedTooltip } from "@/components/layout/topbar-delayed-tooltip";
+import { topbarSquircleTextButtonClass } from "@/components/design-system/topbar-control-classes";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import type { PortfolioSnaptradeLink } from "@/components/portfolio/portfolio-types";
 import { formatPortfolioSyncTooltipLines } from "@/lib/snaptrade/sync-copy";
@@ -12,8 +13,8 @@ import { cn } from "@/lib/utils";
 type PortfolioSyncStatusIconProps = {
   portfolioId: string;
   snaptrade?: PortfolioSnaptradeLink | null;
-  /** `title`: inline after the portfolio page title. `menu`: inside the portfolio picker dropdown. */
-  variant?: "title" | "menu";
+  /** `toolbar`: white bordered button with icon + label (portfolio header actions). */
+  variant?: "title" | "menu" | "toolbar";
   className?: string;
 };
 
@@ -66,7 +67,7 @@ export function PortfolioSyncStatusIcon({
     <TopbarDelayedTooltip
       label={tooltipLabel}
       multiline
-      align={variant === "menu" ? "trailing" : "center"}
+      align={variant === "menu" || variant === "toolbar" ? "trailing" : "center"}
       className={cn("shrink-0", className)}
     >
       <button
@@ -76,14 +77,17 @@ export function PortfolioSyncStatusIcon({
           openSnaptradeSyncModal(portfolioId);
         }}
         className={cn(
-          "inline-flex items-center justify-center text-[#71717A]",
-          variant === "title" ?
-            "h-9 w-9 rounded-[10px] transition-colors hover:bg-[#F4F4F5] hover:text-[#09090B]"
-          : "h-9 w-9 rounded-lg hover:bg-[#F4F4F5] hover:text-[#09090B]",
+          "inline-flex items-center justify-center",
+          variant === "toolbar" ?
+            cn(topbarSquircleTextButtonClass, "text-[#09090B] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2")
+          : variant === "title" ?
+            "h-9 w-9 rounded-[10px] text-[#71717A] transition-colors hover:bg-[#F4F4F5] hover:text-[#09090B]"
+          : "h-9 w-9 rounded-lg text-[#71717A] hover:bg-[#F4F4F5] hover:text-[#09090B]",
         )}
         aria-label={tooltipLabel.replace(/\n/g, ". ")}
       >
         <RefreshCw className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
+        {variant === "toolbar" ? <span className="text-sm font-medium leading-5">Sync</span> : null}
       </button>
     </TopbarDelayedTooltip>
   );

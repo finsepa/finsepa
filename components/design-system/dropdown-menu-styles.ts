@@ -78,7 +78,7 @@ export function dropdownMenuPlainItemRowClassName(opts?: { selected?: boolean })
  * Row with split hit targets (e.g. portfolio label + edit icon).
  */
 export const dropdownMenuCompositeRowClassName =
-  "flex min-h-10 w-full items-center gap-0 overflow-hidden rounded-lg bg-white text-sm text-[#09090B] transition-colors hover:bg-[#F4F4F5]";
+  "flex min-h-12 w-full items-center gap-0 overflow-hidden rounded-lg bg-white text-sm text-[#09090B] transition-colors hover:bg-[#F4F4F5]";
 
 /**
  * Searchable menus — slightly denser two-line rows (company / metric pickers).
