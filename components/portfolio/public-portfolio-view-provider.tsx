@@ -58,6 +58,7 @@ export function PublicPortfolioViewProvider({
       addCashModalOpen: false,
       openAddCash: noop,
       closeAddCash: noop,
+      openImportTransactions: noop,
       editTransaction: null,
       openEditTransaction: noop,
       closeEditTransaction: noop,
