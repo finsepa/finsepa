@@ -8,7 +8,6 @@ import { FileSpreadsheet, Layers2, Settings } from "@/lib/icons";
 import { AssetPageTopLoader } from "@/components/layout/asset-page-top-loader";
 import { PortfolioQuickAddMenu } from "@/components/layout/portfolio-quick-add-menu";
 import { ImportTransactionsModal } from "@/components/portfolio/import-transactions-modal";
-import { ConnectBrokerageButton } from "@/components/portfolio/connect-brokerage-modal";
 import { PortfolioAllocationView } from "@/components/portfolio/portfolio-allocation-view";
 import { PortfolioHoldingsTable } from "@/components/portfolio/portfolio-holdings-table";
 import { PortfolioSlicesView } from "@/components/portfolio/portfolio-slices-view";
@@ -36,6 +35,8 @@ import {
   searchParamFromOverviewHoldingsSubTab,
   searchParamFromPortfolioViewTab,
 } from "@/components/portfolio/portfolio-page-tabs";
+import { PortfolioBrokerageLogo } from "@/components/portfolio/portfolio-brokerage-logo";
+import { PortfolioSyncStatusIcon } from "@/components/portfolio/portfolio-sync-status-icon";
 import { TransactionPortfolioField } from "@/components/portfolio/transaction-portfolio-field";
 import { PortfoliosBreadcrumbs } from "@/components/portfolios/portfolios-breadcrumbs";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
@@ -167,11 +168,15 @@ export function PortfolioPageView({
   const [importTransactionsOpen, setImportTransactionsOpen] = useState(false);
 
   const {
+    portfolios,
     selectedPortfolioId,
     openEditPortfolio,
     selectedPortfolioReadOnly,
     portfolioDisplayReady,
   } = usePortfolioWorkspace();
+
+  const selectedPortfolio =
+    portfolios.find((p) => p.id === selectedPortfolioId) ?? portfolios[0] ?? null;
 
   const editDisabled = readOnly || selectedPortfolioReadOnly;
 
@@ -260,10 +265,18 @@ export function PortfolioPageView({
                 {portfolioName}
               </h1>
             ) : (
-              <div className="flex min-w-0 max-w-full items-center gap-0">
+              <div className="flex min-w-0 max-w-full items-center gap-2">
+                <PortfolioBrokerageLogo snaptrade={selectedPortfolio?.snaptrade} />
                 <h1 className="min-w-0 truncate text-2xl font-semibold tracking-tight text-[#09090B]">
                   {portfolioName}
                 </h1>
+                {selectedPortfolioId != null ? (
+                  <PortfolioSyncStatusIcon
+                    portfolioId={selectedPortfolioId}
+                    snaptrade={selectedPortfolio?.snaptrade}
+                    variant="title"
+                  />
+                ) : null}
                 <TransactionPortfolioField variant="titleGhost" compactMenuAlign="leading" />
               </div>
             )}
@@ -284,7 +297,6 @@ export function PortfolioPageView({
               >
                 <FileSpreadsheet className="h-4 w-4" aria-hidden />
               </button>
-              <ConnectBrokerageButton compact />
               <button
                 type="button"
                 aria-label="Portfolio settings"
@@ -321,7 +333,6 @@ export function PortfolioPageView({
               <FileSpreadsheet className="h-4 w-4" aria-hidden />
               <span className="hidden sm:inline">Import Transactions</span>
             </button>
-            <ConnectBrokerageButton />
             <button
               type="button"
               aria-label="Portfolio settings"

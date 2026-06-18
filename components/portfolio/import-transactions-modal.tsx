@@ -6,8 +6,10 @@ import { Check, Loader2, Pencil, Trash2, Upload } from "@/lib/icons";
 
 import {
   newTransactionRowId,
+  portfolioIsCombined,
   type PortfolioTransaction,
 } from "@/components/portfolio/portfolio-types";
+import { TransactionPortfolioField } from "@/components/portfolio/transaction-portfolio-field";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import { displayLogoUrlForPortfolioSymbol } from "@/lib/portfolio/portfolio-asset-display-logo";
 import {
@@ -106,8 +108,11 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
   const [importedCount, setImportedCount] = useState(0);
   const [commitError, setCommitError] = useState<string | null>(null);
 
-  const hasPortfolio =
-    selectedPortfolioId != null && portfolios.some((p) => p.id === selectedPortfolioId);
+  const importPortfolio =
+    selectedPortfolioId != null ?
+      portfolios.find((p) => p.id === selectedPortfolioId) ?? null
+    : null;
+  const hasPortfolio = importPortfolio != null && !portfolioIsCombined(importPortfolio);
 
   useEffect(() => {
     if (!open) return;
@@ -488,51 +493,54 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
                 portfolio will refresh as data finishes loading.
               </p>
             </div>
-          ) : rows.length === 0 ? (
-            <div
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") e.preventDefault();
-              }}
-              onDragEnter={(e) => {
-                e.preventDefault();
-                setDragOver(true);
-              }}
-              onDragLeave={() => setDragOver(false)}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={onDrop}
-              className={cn(
-                "flex min-h-[200px] cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed px-6 py-12 transition-colors",
-                dragOver ? "border-[#09090B] bg-[#F4F4F5]" : "border-[#D4D4D8] bg-[#FAFAFA] hover:border-[#A1A1AA]",
-              )}
-            >
-              <label className="flex cursor-pointer flex-col items-center gap-2 text-center">
-                <Upload className="h-8 w-8 text-[#71717A]" aria-hidden />
-                <span className="text-sm font-medium text-[#09090B]">Drop your spreadsheet here</span>
-                <span className="text-xs text-[#71717A]">or click to choose · .csv, .xls, .xlsx</span>
-                <input
-                  type="file"
-                  accept={ACCEPT}
-                  className="sr-only"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f) void ingestFile(f);
-                    e.target.value = "";
-                  }}
-                />
-              </label>
-            </div>
-          ) : null}
-
-          {phase === "review" ? (
+          ) : (
             <>
-              {parseError ? (
-                <p className="mb-3 text-sm text-red-700">{parseError}</p>
-              ) : null}
+              <div className="mb-4 flex flex-col gap-2">
+                <span className="text-sm font-medium leading-5 text-[#09090B]">Portfolio</span>
+                <TransactionPortfolioField />
+              </div>
 
-              {rows.length > 0 ? (
+              {rows.length === 0 ? (
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") e.preventDefault();
+                  }}
+                  onDragEnter={(e) => {
+                    e.preventDefault();
+                    setDragOver(true);
+                  }}
+                  onDragLeave={() => setDragOver(false)}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={onDrop}
+                  className={cn(
+                    "flex min-h-[200px] cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed px-6 py-12 transition-colors",
+                    dragOver ? "border-[#09090B] bg-[#F4F4F5]" : "border-[#D4D4D8] bg-[#FAFAFA] hover:border-[#A1A1AA]",
+                  )}
+                >
+                  <label className="flex cursor-pointer flex-col items-center gap-2 text-center">
+                    <Upload className="h-8 w-8 text-[#71717A]" aria-hidden />
+                    <span className="text-sm font-medium text-[#09090B]">Drop your spreadsheet here</span>
+                    <span className="text-xs text-[#71717A]">or click to choose · .csv, .xls, .xlsx</span>
+                    <input
+                      type="file"
+                      accept={ACCEPT}
+                      className="sr-only"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) void ingestFile(f);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                </div>
+              ) : (
                 <>
+                  {parseError ? (
+                    <p className="mb-3 text-sm text-red-700">{parseError}</p>
+                  ) : null}
+
                   {missingCellCount > 0 ? (
                     <div
                       className="mb-2 rounded-[10px] border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-950"
@@ -790,6 +798,10 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
                 </ul>
               </div>
                 </>
+              )}
+
+              {parseError && rows.length === 0 ? (
+                <p className="mt-3 text-sm text-red-700">{parseError}</p>
               ) : null}
 
               {commitError ? (
@@ -799,10 +811,14 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
               ) : null}
 
               {!hasPortfolio ? (
-                <p className="mt-3 text-sm text-amber-800">Select a portfolio in the header first.</p>
+                <p className="mt-3 text-sm text-amber-800">
+                  {importPortfolio && portfolioIsCombined(importPortfolio) ?
+                    "Choose a standard portfolio—combined portfolios are read-only."
+                  : "Choose a portfolio to import into."}
+                </p>
               ) : null}
             </>
-          ) : null}
+          )}
         </AppModalShell>
       </AppModalOverlay>
 

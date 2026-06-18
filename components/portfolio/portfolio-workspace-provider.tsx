@@ -23,6 +23,8 @@ import {
   CombinedPortfolioSourceHint,
   CombinedPortfolioSourcesPicker,
 } from "@/components/portfolio/combined-portfolio-sources-picker";
+import { ConnectBrokerageFlow, type ConnectBrokerageCompletePayload } from "@/components/portfolio/connect-brokerage-flow";
+import { PortfolioSnaptradeSyncModal } from "@/components/portfolio/portfolio-snaptrade-sync-modal";
 import { CreateCombinedPortfolioModal } from "@/components/portfolio/create-combined-portfolio-modal";
 import { PortfolioWorkspaceContext } from "@/components/portfolio/portfolio-workspace-context";
 import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
@@ -32,11 +34,19 @@ import {
   appModalCancelButtonClass,
   appModalPrimaryButtonClass,
 } from "@/components/ui/app-modal-shell";
-import { cn } from "@/lib/utils";
+import {
+  DEFAULT_PORTFOLIO_SNAPTRADE_SYNC_SETTINGS,
+  normalizePortfolioSnaptradeSyncSettings,
+  type PortfolioSnaptradeSyncSettings,
+} from "@/lib/snaptrade/sync-settings";
+import { mergePortfolioSnaptradeSync } from "@/lib/snaptrade/merge-sync-transactions";
+import { defaultSnaptradeUpdateFromYmd } from "@/lib/snaptrade/sync-update-from";
 import { PortfolioPrivacySelect } from "@/components/portfolio/portfolio-privacy-select";
+import { PortfolioSnaptradeSyncSettingsFields } from "@/components/portfolio/portfolio-snaptrade-sync-settings-fields";
 import type { CompanyPick } from "@/components/charting/company-picker";
 import {
   newPortfolioId,
+  newTransactionRowId,
   portfolioIsCombined,
   type PortfolioEntry,
   type PortfolioHolding,
@@ -90,6 +100,7 @@ function EditPortfolioModal({
   isCombined = false,
   allPortfolios,
   initialCombinedFromIds,
+  initialSnaptradeSyncSettings,
   onClose,
   onSave,
   onRequestDelete,
@@ -99,14 +110,24 @@ function EditPortfolioModal({
   isCombined?: boolean;
   allPortfolios: PortfolioEntry[];
   initialCombinedFromIds?: string[];
+  initialSnaptradeSyncSettings?: PortfolioSnaptradeSyncSettings | null;
   onClose: () => void;
-  onSave: (name: string, privacy: PortfolioPrivacy, combinedSourceIds?: string[]) => void;
+  onSave: (
+    name: string,
+    privacy: PortfolioPrivacy,
+    combinedSourceIds?: string[],
+    snaptradeSyncSettings?: PortfolioSnaptradeSyncSettings,
+  ) => void;
   /** Opens delete confirmation; does not delete immediately. */
   onRequestDelete: () => void;
 }) {
   const titleId = useId();
   const [name, setName] = useState(initialName);
   const [privacy, setPrivacy] = useState<PortfolioPrivacy>(initialPrivacy);
+  const [syncSettings, setSyncSettings] = useState<PortfolioSnaptradeSyncSettings>(
+    () => normalizePortfolioSnaptradeSyncSettings(initialSnaptradeSyncSettings),
+  );
+  const showSnaptradeSyncSettings = initialSnaptradeSyncSettings != null;
 
   const standardPortfolios = useMemo(
     () => allPortfolios.filter((p) => p.kind !== "combined"),
@@ -140,6 +161,12 @@ function EditPortfolioModal({
     setPrivacy(initialPrivacy);
   }, [initialPrivacy]);
 
+  useEffect(() => {
+    if (initialSnaptradeSyncSettings != null) {
+      setSyncSettings(normalizePortfolioSnaptradeSyncSettings(initialSnaptradeSyncSettings));
+    }
+  }, [initialSnaptradeSyncSettings]);
+
   const saveEnabled = !(isCombined && (name.trim().length === 0 || selectedSourceIds.length < 2));
 
   return (
@@ -160,6 +187,8 @@ function EditPortfolioModal({
               onClick={() =>
                 isCombined ?
                   onSave(name.trim(), privacy, selectedSourceIds)
+                : showSnaptradeSyncSettings ?
+                  onSave(name, privacy, undefined, syncSettings)
                 : onSave(name, privacy)
               }
               className={appModalPrimaryButtonClass(saveEnabled)}
@@ -191,6 +220,9 @@ function EditPortfolioModal({
         <ModalField label="Privacy">
           <PortfolioPrivacySelect value={privacy} onChange={setPrivacy} />
         </ModalField>
+        {showSnaptradeSyncSettings ? (
+          <PortfolioSnaptradeSyncSettingsFields value={syncSettings} onChange={setSyncSettings} />
+        ) : null}
       </AppModalShell>
     </AppModalOverlay>
   );
@@ -302,6 +334,9 @@ export function PortfolioWorkspaceProvider({
   const [deletePortfolioConfirmId, setDeletePortfolioConfirmId] = useState<string | null>(null);
   const [createPortfolioOpen, setCreatePortfolioOpen] = useState(false);
   const [createCombinedOpen, setCreateCombinedOpen] = useState(false);
+  const [connectBrokerageOpen, setConnectBrokerageOpen] = useState(false);
+  const [snaptradeSyncPortfolioId, setSnaptradeSyncPortfolioId] = useState<string | null>(null);
+  const [snaptradeSyncUpdating, setSnaptradeSyncUpdating] = useState(false);
   const [newTransactionOpen, setNewTransactionOpen] = useState(false);
   const [newTransactionPreset, setNewTransactionPreset] = useState<CompanyPick | null>(null);
   const [addCashModalOpen, setAddCashModalOpen] = useState(false);
@@ -936,8 +971,268 @@ export function PortfolioWorkspaceProvider({
     setEditPortfolioOpen(false);
     setEditPortfolioId(null);
     setCreatePortfolioOpen(false);
+    setConnectBrokerageOpen(false);
     setCreateCombinedOpen(true);
   }, []);
+
+  const openConnectBrokerage = useCallback(() => {
+    setEditPortfolioOpen(false);
+    setEditPortfolioId(null);
+    setCreatePortfolioOpen(false);
+    setCreateCombinedOpen(false);
+    setConnectBrokerageOpen(true);
+  }, []);
+
+  const openSnaptradeSyncModal = useCallback((portfolioId: string) => {
+    setSnaptradeSyncPortfolioId(portfolioId);
+  }, []);
+
+  const closeSnaptradeSyncModal = useCallback(() => {
+    if (snaptradeSyncUpdating) return;
+    setSnaptradeSyncPortfolioId(null);
+  }, [snaptradeSyncUpdating]);
+
+  type SnapTradeSyncApiResponse = {
+    error?: string;
+    authorizationId?: string;
+    brokerageName?: string | null;
+    brokerageSlug?: string | null;
+    brokerageLogoUrl?: string | null;
+    isRealTimeConnection?: boolean;
+    accountIds?: string[];
+    transactions?: Omit<PortfolioTransaction, "id" | "portfolioId">[];
+  };
+
+  const applySnapTradeSyncToPortfolio = useCallback(
+    async (
+      portfolioId: string,
+      authorizationId: string,
+      data: SnapTradeSyncApiResponse,
+      options?: { updateFromYmd?: string | null; existingTransactions?: PortfolioTransaction[] },
+    ) => {
+      const draftTxs = Array.isArray(data.transactions) ? data.transactions : [];
+      const imported: PortfolioTransaction[] = draftTxs.map((row) => ({
+        ...row,
+        id: newTransactionRowId(),
+        portfolioId,
+      }));
+
+      const updateFrom = options?.updateFromYmd ?? null;
+      const existing = options?.existingTransactions ?? [];
+      const kept = updateFrom ? existing.filter((t) => t.date < updateFrom) : [];
+      const transactions =
+        updateFrom ? mergePortfolioSnaptradeSync(kept, imported) : imported;
+
+      setPortfolioTransactions(portfolioId, transactions);
+      const rebuilt = replayTradeTransactionsToHoldings(transactions);
+      const quoted = await refreshHoldingMarketPrices(rebuilt);
+      setPortfolioHoldings(portfolioId, quoted);
+
+      setPortfolios((prev) =>
+        prev.map((p) =>
+          p.id !== portfolioId ?
+            p
+          : {
+              ...p,
+              snaptrade: {
+                authorizationId: data.authorizationId ?? authorizationId,
+                accountIds: Array.isArray(data.accountIds) ? data.accountIds : (p.snaptrade?.accountIds ?? []),
+                brokerageName: data.brokerageName ?? p.snaptrade?.brokerageName ?? null,
+                brokerageSlug: data.brokerageSlug ?? p.snaptrade?.brokerageSlug ?? null,
+                brokerageLogoUrl: data.brokerageLogoUrl ?? p.snaptrade?.brokerageLogoUrl ?? null,
+                isRealTimeConnection:
+                  data.isRealTimeConnection === true ?
+                    true
+                  : data.isRealTimeConnection === false ?
+                    false
+                  : (p.snaptrade?.isRealTimeConnection ?? false),
+                syncedAt: new Date().toISOString(),
+              },
+            },
+        ),
+      );
+
+      return { quoted, transactions };
+    },
+    [setPortfolioHoldings, setPortfolioTransactions],
+  );
+
+  const resyncLinkedPortfolio = useCallback(
+    async (
+      portfolioId: string,
+      options?: { silent?: boolean; updateFromYmd?: string | null },
+    ) => {
+      const portfolio = portfolios.find((p) => p.id === portfolioId);
+      const authorizationId = portfolio?.snaptrade?.authorizationId;
+      if (!portfolio || !authorizationId) return;
+
+      const syncSettings = normalizePortfolioSnaptradeSyncSettings(portfolio.snaptrade?.syncSettings);
+      const existingTransactions = transactionsByPortfolioId[portfolioId] ?? [];
+      const updateFromYmd =
+        options?.updateFromYmd !== undefined ?
+          options.updateFromYmd
+        : defaultSnaptradeUpdateFromYmd(existingTransactions);
+      const silent = options?.silent === true;
+      const toastId = silent ? undefined : toast.loading("Syncing brokerage…");
+      try {
+        const res = await fetch("/api/snaptrade/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ authorizationId, syncSettings, updateFromYmd }),
+        });
+        const data = (await res.json()) as SnapTradeSyncApiResponse;
+        if (!res.ok) {
+          throw new Error(data.error ?? "Failed to sync brokerage.");
+        }
+
+        const { quoted, transactions } = await applySnapTradeSyncToPortfolio(
+          portfolioId,
+          authorizationId,
+          data,
+          { updateFromYmd, existingTransactions },
+        );
+
+        if (!silent) {
+          const isRealTime = data.isRealTimeConnection === true;
+          toast.success(`"${portfolio.name}" synced from ${data.brokerageName ?? "brokerage"}.`, {
+            id: toastId,
+            description:
+              isRealTime ? "Holdings and cash updated from SnapTrade."
+              : "Used SnapTrade daily cache (no extra refresh charge). Data may be up to 24h old.",
+          });
+        }
+
+        if (portfolio.privacy === "public") {
+          void putPublicPortfolioListingRequest({
+            portfolioId,
+            publish: true,
+            displayName: portfolio.name,
+            metrics: metricsForPublicListing(quoted, transactions),
+          }).then((r) => {
+            if (r.ok) dispatchPublicListingsChanged();
+          });
+        }
+      } catch (e) {
+        const message = e instanceof Error ? e.message : "Failed to sync brokerage.";
+        if (!silent) {
+          toast.error(message, { id: toastId });
+        }
+        throw e;
+      }
+    },
+    [applySnapTradeSyncToPortfolio, metricsForPublicListing, portfolios, transactionsByPortfolioId],
+  );
+
+  const autoSyncInFlightRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    const MS_DAY = 24 * 60 * 60 * 1000;
+    const now = Date.now();
+
+    for (const portfolio of portfolios) {
+      const authorizationId = portfolio.snaptrade?.authorizationId;
+      if (!authorizationId) continue;
+
+      const settings = normalizePortfolioSnaptradeSyncSettings(portfolio.snaptrade?.syncSettings);
+      if (!settings.autoSyncDaily) continue;
+
+      const syncedAtMs = Date.parse(portfolio.snaptrade?.syncedAt ?? "");
+      if (!Number.isFinite(syncedAtMs) || now - syncedAtMs < MS_DAY) continue;
+      if (autoSyncInFlightRef.current.has(portfolio.id)) continue;
+
+      autoSyncInFlightRef.current.add(portfolio.id);
+      void resyncLinkedPortfolio(portfolio.id, { silent: true })
+        .catch(() => {
+          /* toast shown in resyncLinkedPortfolio */
+        })
+        .finally(() => {
+          autoSyncInFlightRef.current.delete(portfolio.id);
+        });
+    }
+  }, [portfolios, resyncLinkedPortfolio]);
+
+  const finalizeConnectBrokerage = useCallback(
+    async ({ name, privacy, authorizationId }: ConnectBrokerageCompletePayload) => {
+      const t = name.trim();
+      if (!t) return;
+
+      const toastId = toast.loading("Syncing brokerage…");
+      try {
+        const res = await fetch("/api/snaptrade/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            authorizationId,
+            syncSettings: DEFAULT_PORTFOLIO_SNAPTRADE_SYNC_SETTINGS,
+          }),
+        });
+        const data = (await res.json()) as SnapTradeSyncApiResponse;
+        if (!res.ok) {
+          throw new Error(data.error ?? "Failed to sync brokerage.");
+        }
+
+        const portfolioId = newPortfolioId();
+
+        setPortfolios((prev) => [
+          ...prev,
+          {
+            id: portfolioId,
+            name: t,
+            privacy,
+            snaptrade: {
+              authorizationId: data.authorizationId ?? authorizationId,
+              accountIds: Array.isArray(data.accountIds) ? data.accountIds : [],
+              brokerageName: data.brokerageName ?? null,
+              brokerageSlug: data.brokerageSlug ?? null,
+              brokerageLogoUrl: data.brokerageLogoUrl ?? null,
+              isRealTimeConnection: data.isRealTimeConnection === true,
+              syncedAt: new Date().toISOString(),
+              syncSettings: { ...DEFAULT_PORTFOLIO_SNAPTRADE_SYNC_SETTINGS },
+            },
+          },
+        ]);
+
+        const { quoted, transactions } = await applySnapTradeSyncToPortfolio(
+          portfolioId,
+          authorizationId,
+          data,
+        );
+        setSelectedPortfolioId(portfolioId);
+
+        toast.success(
+          <span>
+            Portfolio{" "}
+            <a href="/portfolio" className="font-semibold underline underline-offset-2">
+              &ldquo;{t}&rdquo;
+            </a>{" "}
+            connected
+            {data.brokerageName ? ` to ${data.brokerageName}` : ""}.
+          </span>,
+          { id: toastId },
+        );
+
+        if (privacy === "public") {
+          void putPublicPortfolioListingRequest({
+            portfolioId,
+            publish: true,
+            displayName: t,
+            metrics: metricsForPublicListing(quoted, transactions),
+          }).then((r) => {
+            if (r.ok) dispatchPublicListingsChanged();
+          });
+        }
+      } catch (e) {
+        const message = e instanceof Error ? e.message : "Failed to sync brokerage.";
+        toast.error(message, { id: toastId });
+        throw e;
+      }
+    },
+    [
+      applySnapTradeSyncToPortfolio,
+      metricsForPublicListing,
+      setSelectedPortfolioId,
+    ],
+  );
 
   const openNewTransaction = useCallback(() => {
     const p = portfolios.find((x) => x.id === selectedPortfolioId);
@@ -1007,11 +1302,15 @@ export function PortfolioWorkspaceProvider({
       if (e.key !== "Escape") return;
       if (createPortfolioOpen) {
         setCreatePortfolioOpen(false);
+      } else if (connectBrokerageOpen) {
+        setConnectBrokerageOpen(false);
       } else if (createCombinedOpen) {
         setCreateCombinedOpen(false);
       } else if (editPortfolioOpen) {
         setEditPortfolioOpen(false);
         setEditPortfolioId(null);
+      } else if (snaptradeSyncPortfolioId) {
+        closeSnaptradeSyncModal();
       } else if (addCashModalOpen) {
         setAddCashModalOpen(false);
       } else if (newTransactionOpen) {
@@ -1022,7 +1321,7 @@ export function PortfolioWorkspaceProvider({
     }
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [addCashModalOpen, createCombinedOpen, createPortfolioOpen, editPortfolioOpen, editTransaction, newTransactionOpen]);
+  }, [addCashModalOpen, closeSnaptradeSyncModal, connectBrokerageOpen, createCombinedOpen, createPortfolioOpen, editPortfolioOpen, editTransaction, newTransactionOpen, snaptradeSyncPortfolioId]);
 
   useEffect(() => {
     if (!newTransactionOpen) {
@@ -1048,6 +1347,9 @@ export function PortfolioWorkspaceProvider({
       openEditPortfolio,
       openCreatePortfolio,
       openCreateCombinedPortfolio,
+      openConnectBrokerage,
+      openSnaptradeSyncModal,
+      resyncLinkedPortfolio,
       updatePortfolioPrivacy,
       selectedPortfolioReadOnly,
       newTransactionOpen,
@@ -1082,6 +1384,9 @@ export function PortfolioWorkspaceProvider({
       openEditPortfolio,
       openCreatePortfolio,
       openCreateCombinedPortfolio,
+      openConnectBrokerage,
+      openSnaptradeSyncModal,
+      resyncLinkedPortfolio,
       updatePortfolioPrivacy,
       selectedPortfolioReadOnly,
       newTransactionOpen,
@@ -1113,6 +1418,32 @@ export function PortfolioWorkspaceProvider({
         transaction={editTransaction}
         onClose={closeEditTransaction}
       />
+      {snaptradeSyncPortfolioId ?
+        (() => {
+          const syncPortfolio = portfolios.find((p) => p.id === snaptradeSyncPortfolioId);
+          if (!syncPortfolio?.snaptrade) return null;
+          return (
+            <PortfolioSnaptradeSyncModal
+              open
+              portfolioName={syncPortfolio.name}
+              transactions={displayTransactionsByPortfolioId[snaptradeSyncPortfolioId] ?? []}
+              updating={snaptradeSyncUpdating}
+              onClose={closeSnaptradeSyncModal}
+              onUpdate={(updateFromYmd) => {
+                const id = snaptradeSyncPortfolioId;
+                if (!id) return;
+                setSnaptradeSyncUpdating(true);
+                void resyncLinkedPortfolio(id, { updateFromYmd })
+                  .then(() => setSnaptradeSyncPortfolioId(null))
+                  .catch(() => {
+                    /* toast handled in resync */
+                  })
+                  .finally(() => setSnaptradeSyncUpdating(false));
+              }}
+            />
+          );
+        })()
+      : null}
       {editPortfolioOpen && editPortfolioId ? (
         <EditPortfolioModal
           key={editPortfolioId}
@@ -1121,11 +1452,18 @@ export function PortfolioWorkspaceProvider({
           isCombined={portfolios.find((p) => p.id === editPortfolioId)?.kind === "combined"}
           allPortfolios={portfolios}
           initialCombinedFromIds={portfolios.find((p) => p.id === editPortfolioId)?.combinedFrom}
+          initialSnaptradeSyncSettings={
+            portfolios.find((p) => p.id === editPortfolioId)?.snaptrade ?
+              normalizePortfolioSnaptradeSyncSettings(
+                portfolios.find((p) => p.id === editPortfolioId)?.snaptrade?.syncSettings,
+              )
+            : null
+          }
           onClose={() => {
             setEditPortfolioOpen(false);
             setEditPortfolioId(null);
           }}
-          onSave={(name, nextPrivacy, combinedSourceIds) => {
+          onSave={(name, nextPrivacy, combinedSourceIds, snaptradeSyncSettings) => {
             const t = name.trim();
             const id = editPortfolioId;
             const editing = portfolios.find((p) => p.id === id);
@@ -1191,7 +1529,18 @@ export function PortfolioWorkspaceProvider({
                 });
                 return next;
               }
-              return prev.map((p) => (p.id === id ? { ...p, name: t, privacy: nextPrivacy } : p));
+              return prev.map((p) =>
+                p.id === id ?
+                  {
+                    ...p,
+                    name: t,
+                    privacy: nextPrivacy,
+                    ...(p.snaptrade && snaptradeSyncSettings ?
+                      { snaptrade: { ...p.snaptrade, syncSettings: snaptradeSyncSettings } }
+                    : {}),
+                  }
+                : p,
+              );
             });
 
             if (id && t.length > 0) {
@@ -1341,6 +1690,11 @@ export function PortfolioWorkspaceProvider({
           }}
         />
       ) : null}
+      <ConnectBrokerageFlow
+        open={connectBrokerageOpen}
+        onClose={() => setConnectBrokerageOpen(false)}
+        onComplete={finalizeConnectBrokerage}
+      />
     </PortfolioWorkspaceContext.Provider>
   );
 }

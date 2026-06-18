@@ -22,6 +22,14 @@ export type PortfolioWorkspaceContextValue = {
   openEditPortfolio: (id: string) => void;
   openCreatePortfolio: () => void;
   openCreateCombinedPortfolio: () => void;
+  openConnectBrokerage: () => void;
+  /** Re-pull holdings and cash from SnapTrade for a linked portfolio (no paid refresh endpoint). */
+  resyncLinkedPortfolio: (
+    portfolioId: string,
+    options?: { silent?: boolean; updateFromYmd?: string | null },
+  ) => Promise<void>;
+  /** Open the manual brokerage sync modal (update-from date + sync settings link). */
+  openSnaptradeSyncModal: (portfolioId: string) => void;
   /** Updates visibility for a portfolio and syncs the public listing (same behavior as Edit → Save). */
   updatePortfolioPrivacy: (portfolioId: string, nextPrivacy: PortfolioPrivacy) => void;
   /** True when the selected portfolio is a read-only combined view (no trades / imports). */

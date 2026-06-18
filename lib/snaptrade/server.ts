@@ -7,6 +7,12 @@ import {
   getSnapTradeConsumerKey,
 } from "@/lib/env/server";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
+import {
+  readSnapTradeBrokerageLogoUrl,
+  readSnapTradeBrokerageName,
+  readSnapTradeBrokerageSlug,
+  readSnapTradeIsRealTimeConnection,
+} from "@/lib/snaptrade/brokerage-meta";
 
 export class SnapTradeNotConfiguredError extends Error {
   constructor() {
@@ -27,7 +33,7 @@ type SnapTradeCredentials = {
   userSecret: string;
 };
 
-function getSnapTradeClient(): Snaptrade {
+function getSnaptradeSdk(): Snaptrade {
   const clientId = getSnapTradeClientId();
   const consumerKey = getSnapTradeConsumerKey();
   if (!clientId || !consumerKey) {
@@ -35,6 +41,8 @@ function getSnapTradeClient(): Snaptrade {
   }
   return new Snaptrade({ clientId, consumerKey });
 }
+
+export { getSnaptradeSdk };
 
 export function isSnapTradeConfigured(): boolean {
   return Boolean(getSnapTradeClientId() && getSnapTradeConsumerKey());
@@ -94,7 +102,7 @@ export async function ensureSnapTradeUser(userId: string): Promise<SnapTradeCred
   const existing = await readStoredCredentials(userId);
   if (existing) return existing;
 
-  const snaptrade = getSnapTradeClient();
+  const snaptrade = getSnaptradeSdk();
   const snaptradeUserId = snaptradeUserIdForFinsepaUser(userId);
 
   const registerResponse = (
@@ -128,7 +136,7 @@ export async function createSnapTradePortalLink(
   options?: { reconnectAuthorizationId?: string | null },
 ): Promise<string> {
   const credentials = await ensureSnapTradeUser(userId);
-  const snaptrade = getSnapTradeClient();
+  const snaptrade = getSnaptradeSdk();
 
   const loginResponse = await snaptrade.authentication.loginSnapTradeUser({
     userId: credentials.snaptradeUserId,
@@ -143,7 +151,7 @@ export async function createSnapTradePortalLink(
 
 export async function listSnapTradeConnections(userId: string) {
   const credentials = await ensureSnapTradeUser(userId);
-  const snaptrade = getSnapTradeClient();
+  const snaptrade = getSnaptradeSdk();
 
   const response = await snaptrade.connections.listBrokerageAuthorizations({
     userId: credentials.snaptradeUserId,
@@ -155,15 +163,14 @@ export async function listSnapTradeConnections(userId: string) {
     .map((row) => {
       const id = typeof row.id === "string" ? row.id : null;
       if (!id) return null;
-      const brokerage =
-        row.brokerage && typeof row.brokerage === "object" ?
-          (row.brokerage as { name?: unknown; slug?: unknown })
-        : null;
+      const brokerage = row.brokerage && typeof row.brokerage === "object" ? row.brokerage : null;
       return {
         id,
         name: typeof row.name === "string" ? row.name : null,
-        brokerageName: typeof brokerage?.name === "string" ? brokerage.name : null,
-        brokerageSlug: typeof brokerage?.slug === "string" ? brokerage.slug : null,
+        brokerageName: readSnapTradeBrokerageName(brokerage),
+        brokerageSlug: readSnapTradeBrokerageSlug(brokerage),
+        brokerageLogoUrl: readSnapTradeBrokerageLogoUrl(brokerage),
+        isRealTimeConnection: readSnapTradeIsRealTimeConnection(brokerage),
         disabled: row.disabled === true,
         createdDate: typeof row.created_date === "string" ? row.created_date : null,
         connectionType: typeof row.type === "string" ? row.type : null,
@@ -172,12 +179,32 @@ export async function listSnapTradeConnections(userId: string) {
     .filter((row): row is NonNullable<typeof row> => row != null);
 }
 
+export async function getSnapTradeBrokerageBrandForAuthorization(
+  userId: string,
+  authorizationId: string,
+): Promise<{
+  brokerageName: string | null;
+  brokerageSlug: string | null;
+  brokerageLogoUrl: string | null;
+  isRealTimeConnection: boolean;
+} | null> {
+  const connections = await listSnapTradeConnections(userId);
+  const match = connections.find((c) => c.id === authorizationId);
+  if (!match) return null;
+  return {
+    brokerageName: match.brokerageName,
+    brokerageSlug: match.brokerageSlug,
+    brokerageLogoUrl: match.brokerageLogoUrl,
+    isRealTimeConnection: match.isRealTimeConnection,
+  };
+}
+
 export async function deleteSnapTradeConnection(
   userId: string,
   authorizationId: string,
 ): Promise<void> {
   const credentials = await ensureSnapTradeUser(userId);
-  const snaptrade = getSnapTradeClient();
+  const snaptrade = getSnaptradeSdk();
 
   await snaptrade.connections.deleteConnection({
     userId: credentials.snaptradeUserId,

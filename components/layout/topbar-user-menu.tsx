@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { CircleQuestionMark, CreditCard, LogOut, Menu, Sparkles, User } from "@/lib/icons";
 
 import { BillingUpgradeModal } from "@/components/account/billing-upgrade-modal";
+import { HelpFeedbackModal } from "@/components/layout/help-feedback-modal";
 import {
   dropdownMenuPanelBodyClassName,
   dropdownMenuPlainItemClassName,
@@ -50,6 +51,7 @@ export function TopbarUserMenu({
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
+  const [helpModalOpen, setHelpModalOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [planLabel, setPlanLabel] = useState<string>(() =>
     subscriptionTitleFromBillingSummary(EMPTY_BILLING_SUMMARY),
@@ -213,15 +215,18 @@ export function TopbarUserMenu({
               <CreditCard className="h-4 w-4 shrink-0 text-[#09090B]" strokeWidth={1.75} aria-hidden />
               <span className="min-w-0 flex-1 truncate text-left">Billing</span>
             </Link>
-            <a
-              href="mailto:hi@finsepa.com"
+            <button
+              type="button"
               role="menuitem"
               className={itemClass}
-              onClick={() => setOpen(false)}
+              onClick={() => {
+                setOpen(false);
+                setHelpModalOpen(true);
+              }}
             >
               <CircleQuestionMark className="h-4 w-4 shrink-0 text-[#09090B]" strokeWidth={1.75} aria-hidden />
               <span className="min-w-0 flex-1 truncate text-left">Help</span>
-            </a>
+            </button>
             <button
               type="button"
               role="menuitem"
@@ -265,6 +270,12 @@ export function TopbarUserMenu({
           void fetchBillingSummaryForMenu({ showSkeleton: false });
           router.refresh();
         }}
+      />
+
+      <HelpFeedbackModal
+        open={helpModalOpen}
+        userDisplayName={userDisplayName}
+        onClose={() => setHelpModalOpen(false)}
       />
     </div>
   );

@@ -28,6 +28,8 @@ type TopbarDelayedTooltipProps = {
   align?: TopbarDelayedTooltipAlign;
   /** `bottom` = pill below control (default). `right` = pill to the right (collapsed sidebar). `left` = pill to the left (right-rail controls). */
   placement?: TopbarDelayedTooltipPlacement;
+  /** When true, tooltip text may span multiple lines (`\n`). */
+  multiline?: boolean;
   children: ReactNode;
   className?: string;
 };
@@ -44,6 +46,7 @@ export function TopbarDelayedTooltip({
   enabled = true,
   align = "center",
   placement = "bottom",
+  multiline = false,
   children,
   className,
 }: TopbarDelayedTooltipProps) {
@@ -148,7 +151,8 @@ export function TopbarDelayedTooltip({
         ) : null}
         <div
           className={cn(
-            "whitespace-nowrap rounded-md bg-[#09090B] px-2.5 py-1.5 text-center text-xs font-medium leading-4 text-white",
+            "rounded-md bg-[#09090B] px-2.5 py-1.5 text-xs font-medium leading-4 text-white",
+            multiline ? "max-w-[min(calc(100vw-2rem),16rem)] whitespace-pre-line text-left" : "whitespace-nowrap text-center",
             placement === "right" ? "-ml-px" : placement === "left" ? "-mr-px" : "-mt-px",
           )}
         >

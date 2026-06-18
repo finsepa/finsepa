@@ -2,6 +2,25 @@ export type PortfolioPrivacy = "private" | "public";
 
 export type PortfolioKind = "standard" | "combined";
 
+import {
+  normalizePortfolioSnaptradeSyncSettings,
+  type PortfolioSnaptradeSyncSettings,
+} from "@/lib/snaptrade/sync-settings";
+
+export type { PortfolioSnaptradeSyncSettings };
+
+export type PortfolioSnaptradeLink = {
+  authorizationId: string;
+  accountIds: string[];
+  brokerageName: string | null;
+  brokerageSlug?: string | null;
+  brokerageLogoUrl?: string | null;
+  /** SnapTrade brokerage.supports real-time holdings on API fetch. */
+  isRealTimeConnection?: boolean;
+  syncedAt: string;
+  syncSettings?: PortfolioSnaptradeSyncSettings;
+};
+
 export type PortfolioEntry = {
   id: string;
   name: string;
@@ -9,6 +28,8 @@ export type PortfolioEntry = {
   kind?: PortfolioKind;
   /** When `kind` is `combined`, IDs of standard portfolios merged into this view (read-only aggregate). */
   combinedFrom?: string[];
+  /** Present when portfolio was created via Connect brokerage. */
+  snaptrade?: PortfolioSnaptradeLink;
 };
 
 export function portfolioIsCombined(p: PortfolioEntry | null | undefined): boolean {
@@ -22,9 +43,13 @@ export function normalizePortfolioEntry(p: {
   privacy?: unknown;
   kind?: unknown;
   combinedFrom?: unknown;
+  snaptrade?: unknown;
 }): PortfolioEntry {
   const privacy: PortfolioPrivacy = p.privacy === "public" ? "public" : "private";
   const base: PortfolioEntry = { id: p.id, name: p.name, privacy };
+
+  const snaptrade = normalizePortfolioSnaptradeLink(p.snaptrade);
+  const withSnaptrade = snaptrade ? { ...base, snaptrade } : base;
 
   const kind = p.kind === "combined" ? "combined" : "standard";
   const combinedFrom =
@@ -33,9 +58,35 @@ export function normalizePortfolioEntry(p: {
     : undefined;
 
   if (kind === "combined" && combinedFrom && combinedFrom.length >= 2) {
-    return { ...base, kind: "combined", combinedFrom };
+    return { ...withSnaptrade, kind: "combined", combinedFrom };
   }
-  return base;
+  return withSnaptrade;
+}
+
+function normalizePortfolioSnaptradeLink(raw: unknown): PortfolioSnaptradeLink | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const o = raw as Record<string, unknown>;
+  const authorizationId = typeof o.authorizationId === "string" ? o.authorizationId.trim() : "";
+  if (!authorizationId) return undefined;
+  const accountIds = Array.isArray(o.accountIds)
+    ? o.accountIds.filter((x): x is string => typeof x === "string")
+    : [];
+  const brokerageName = typeof o.brokerageName === "string" ? o.brokerageName : null;
+  const brokerageSlug = typeof o.brokerageSlug === "string" ? o.brokerageSlug : null;
+  const brokerageLogoUrl = typeof o.brokerageLogoUrl === "string" ? o.brokerageLogoUrl : null;
+  const isRealTimeConnection = o.isRealTimeConnection === true ? true : o.isRealTimeConnection === false ? false : undefined;
+  const syncedAt = typeof o.syncedAt === "string" ? o.syncedAt : new Date().toISOString();
+  const syncSettings = normalizePortfolioSnaptradeSyncSettings(o.syncSettings);
+  return {
+    authorizationId,
+    accountIds,
+    brokerageName,
+    brokerageSlug,
+    brokerageLogoUrl,
+    ...(isRealTimeConnection !== undefined ? { isRealTimeConnection } : {}),
+    syncedAt,
+    syncSettings,
+  };
 }
 
 /** One lot / line in the portfolio holdings table (local UI until backend exists). */

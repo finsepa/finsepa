@@ -31,6 +31,7 @@ import {
 import { LineChart, Settings } from "@/lib/icons";
 
 import { baselineRelativeGradientEnabled } from "@/lib/chart/baseline-relative-gradient";
+import { fitSeriesLogicalRangeToPlotWidth } from "@/lib/chart/mobile-plot-horizontal-gutter";
 
 import { horzTimeToUnixSeconds } from "@/components/chart/chart-selection-utils";
 import {
@@ -831,16 +832,7 @@ function snapOverviewTimeScale(
   chart: IChartApi,
   series: ISeriesApi<"Area"> | ISeriesApi<"Baseline">,
 ) {
-  const d = series.data();
-  const n = d.length;
-  if (n === 0) return;
-  chart.timeScale().fitContent();
-  requestAnimationFrame(() => {
-    chart.timeScale().setVisibleLogicalRange({
-      from: 0,
-      to: Math.max(0, n - 1),
-    });
-  });
+  fitSeriesLogicalRangeToPlotWidth(chart, series.data().length);
 }
 
 /** Shared chart body for portfolio value history (Overview + Performance). */

@@ -118,14 +118,25 @@ export function getLoopsTransactionalGoogleWelcomeId(): string {
   return getLoopsTransactionalWelcomeTrialStartId();
 }
 
+/**
+ * Loops transactional ID for in-app Help feedback (delivered to hi@finsepa.com).
+ * Template: “New Feedback from Finsepa”. Variables: userEmail, userName, messageText, pageUrl, attachmentLinks.
+ */
+const LOOPS_TRANSACTIONAL_ID_HELP_FEEDBACK_DEFAULT = "cmqjb6sdh11hr0j2pf1gcg0co";
+
+export function getLoopsTransactionalHelpFeedbackId(): string {
+  const v = pickProcessEnv("LOOPS" + "_" + "TRANSACTIONAL" + "_" + "ID" + "_" + "HELP" + "_" + "FEEDBACK");
+  return v?.trim() || LOOPS_TRANSACTIONAL_ID_HELP_FEEDBACK_DEFAULT;
+}
+
 /** SnapTrade partner client ID (server-only). */
 export function getSnapTradeClientId(): string | undefined {
-  const v = process.env.SNAPTRADE_CLIENT_ID?.trim();
+  const v = pickProcessEnv("SNAPTRADE" + "_" + "CLIENT" + "_" + "ID");
   return v || undefined;
 }
 
 /** SnapTrade consumer key (server-only). */
 export function getSnapTradeConsumerKey(): string | undefined {
-  const v = process.env.SNAPTRADE_CONSUMER_KEY?.trim();
+  const v = pickProcessEnv("SNAPTRADE" + "_" + "CONSUMER" + "_" + "KEY");
   return v || undefined;
 }

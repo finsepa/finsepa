@@ -96,20 +96,20 @@ export function applyMobilePlotHorizontalGutter(
   });
 }
 
-/** Fit series to plot width on mobile — snap logical range 0…n−1 with no trailing whitespace. */
-export function fitContentWithMobilePlotGutter(
+/**
+ * Stretch sparse series across the plot width by pinning logical indices 0…n−1 to the pane edges.
+ * `fitContent()` alone leaves trailing whitespace when points are few or unevenly spaced in time.
+ */
+export function fitSeriesLogicalRangeToPlotWidth(
   chart: IChartApi,
-  containerWidthPx: number,
-  logicalPointCount = 0,
+  logicalPointCount: number,
+  options?: { fixEdges?: boolean },
 ): void {
-  const ts = chart.timeScale();
-  if (!shouldApplyMobilePlotGutter(containerWidthPx) || logicalPointCount < 1) {
-    ts.fitContent();
-    return;
-  }
+  if (logicalPointCount < 1) return;
 
+  const ts = chart.timeScale();
   const lastIdx = logicalPointCount - 1;
-  ts.applyOptions(mobileTimeScaleOptions(containerWidthPx));
+  const fixEdges = options?.fixEdges ?? true;
 
   const layout = (attempt = 0) => {
     requestAnimationFrame(() => {
@@ -118,12 +118,18 @@ export function fitContentWithMobilePlotGutter(
         layout(attempt + 1);
         return;
       }
-      if (plotW < 12) return;
+      if (plotW < 12) {
+        ts.fitContent();
+        return;
+      }
 
       // Visible range is logical indices 0…lastIdx (n−1 bars apart). Spacing must be
       // plotW / lastIdx, not plotW / n, or the last point stops one bar short of the edge.
       const spacing = lastIdx > 0 ? plotW / lastIdx : plotW;
       ts.applyOptions({
+        ...(fixEdges ?
+          { fixLeftEdge: true, fixRightEdge: true, rightOffset: 0 }
+        : {}),
         barSpacing: Math.max(0.5, spacing),
         minBarSpacing: 0.5,
       });
@@ -136,4 +142,20 @@ export function fitContentWithMobilePlotGutter(
   };
 
   layout();
+}
+
+/** Fit series to plot width on mobile — snap logical range 0…n−1 with no trailing whitespace. */
+export function fitContentWithMobilePlotGutter(
+  chart: IChartApi,
+  containerWidthPx: number,
+  logicalPointCount = 0,
+): void {
+  const ts = chart.timeScale();
+  if (!shouldApplyMobilePlotGutter(containerWidthPx) || logicalPointCount < 1) {
+    ts.fitContent();
+    return;
+  }
+
+  ts.applyOptions(mobileTimeScaleOptions(containerWidthPx));
+  fitSeriesLogicalRangeToPlotWidth(chart, logicalPointCount, { fixEdges: false });
 }

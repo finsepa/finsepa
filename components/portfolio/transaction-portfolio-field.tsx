@@ -1,22 +1,22 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, GitMerge, Globe, Lock, Pencil, Plus } from "@/lib/icons";
+import { Check, GitMerge, Globe, Landmark, Lock, Pencil, Plus } from "@/lib/icons";
 
 import {
   ChevronsUpDownIcon,
   type ChevronsUpDownIconHandle,
 } from "@/components/chevrons-up-down-icon";
-
 import {
   dropdownMenuCompositeRowClassName,
   dropdownMenuPanelClassName,
   dropdownMenuPlainItemClassName,
 } from "@/components/design-system/dropdown-menu-styles";
 import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
-import { cn } from "@/lib/utils";
+import { PortfolioSyncStatusIcon } from "@/components/portfolio/portfolio-sync-status-icon";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import type { PortfolioPrivacy } from "@/components/portfolio/portfolio-types";
+import { cn } from "@/lib/utils";
 
 function PrivacyGlyph({ privacy }: { privacy: PortfolioPrivacy }) {
   const Icon = privacy === "public" ? Globe : Lock;
@@ -55,6 +55,7 @@ export function TransactionPortfolioField({
     openEditPortfolio,
     openCreatePortfolio,
     openCreateCombinedPortfolio,
+    openConnectBrokerage,
   } = usePortfolioWorkspace();
 
   const [open, setOpen] = useState(false);
@@ -115,6 +116,15 @@ export function TransactionPortfolioField({
           >
             {p.name}
           </button>
+          {p.snaptrade ? (
+            <span
+              className="flex shrink-0 self-center"
+              onClick={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              <PortfolioSyncStatusIcon portfolioId={p.id} snaptrade={p.snaptrade} variant="menu" />
+            </span>
+          ) : null}
           <span className="flex h-4 w-4 shrink-0 items-center justify-center self-center" aria-hidden>
             {p.id === selectedPortfolioId ? (
               <Check className="h-4 w-4 text-[#09090B]" strokeWidth={2} />
@@ -157,6 +167,18 @@ export function TransactionPortfolioField({
       >
         <GitMerge className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
         <span>Create combined portfolio</span>
+      </button>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen(false);
+          openConnectBrokerage();
+        }}
+        className={dropdownMenuPlainItemClassName()}
+      >
+        <Landmark className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
+        <span>Connect brokerage</span>
       </button>
     </>
   );
