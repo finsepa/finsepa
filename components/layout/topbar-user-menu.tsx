@@ -272,11 +272,7 @@ export function TopbarUserMenu({
         }}
       />
 
-      <HelpFeedbackModal
-        open={helpModalOpen}
-        userDisplayName={userDisplayName}
-        onClose={() => setHelpModalOpen(false)}
-      />
+      <HelpFeedbackModal open={helpModalOpen} onClose={() => setHelpModalOpen(false)} />
     </div>
   );
 }

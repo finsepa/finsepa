@@ -1,7 +1,7 @@
 import "server-only";
 
+import { getSupportFeedbackToEmail } from "@/lib/env/server";
 import { sendLoopsTransactionalEmail } from "@/lib/loops/transactional";
-import { SUPPORT_FEEDBACK_TO_EMAIL } from "@/lib/support/feedback-constants";
 
 export async function sendHelpFeedbackEmail(params: {
   apiKey: string;
@@ -11,11 +11,12 @@ export async function sendHelpFeedbackEmail(params: {
   message: string;
   pageUrl?: string | null;
   attachmentLinks?: string | null;
-}): Promise<{ ok: true } | { ok: false; message: string }> {
-  return sendLoopsTransactionalEmail({
+}): Promise<{ ok: true; to: string } | { ok: false; message: string }> {
+  const to = getSupportFeedbackToEmail();
+  const result = await sendLoopsTransactionalEmail({
     apiKey: params.apiKey,
     transactionalId: params.transactionalId,
-    to: SUPPORT_FEEDBACK_TO_EMAIL,
+    to,
     addContact: false,
     dataVariables: {
       userEmail: params.userEmail,
@@ -25,6 +26,8 @@ export async function sendHelpFeedbackEmail(params: {
       attachmentLinks: params.attachmentLinks?.trim() || "None",
     },
     errorHint:
-      "Check LOOPS_API_KEY, LOOPS_TRANSACTIONAL_ID_HELP_FEEDBACK, and template variables userEmail, userName, messageText, pageUrl, attachmentLinks.",
+      "Check LOOPS_API_KEY, LOOPS_TRANSACTIONAL_ID_HELP_FEEDBACK, SUPPORT_FEEDBACK_TO_EMAIL, and template variables userEmail, userName, messageText, pageUrl, attachmentLinks.",
   });
+  if (!result.ok) return result;
+  return { ok: true, to };
 }

@@ -129,6 +129,19 @@ export function getLoopsTransactionalHelpFeedbackId(): string {
   return v?.trim() || LOOPS_TRANSACTIONAL_ID_HELP_FEEDBACK_DEFAULT;
 }
 
+/** Default inbox for in-app Help feedback (override with `SUPPORT_FEEDBACK_TO_EMAIL`). */
+const SUPPORT_FEEDBACK_TO_EMAIL_DEFAULT = "hi@finsepa.com";
+
+/**
+ * Where Help modal submissions are delivered via Loops transactional.
+ * Use a real inbox that accepts mail from your Loops sending domain — avoid using the
+ * same address as the template From (often hard-bounces).
+ */
+export function getSupportFeedbackToEmail(): string {
+  const v = pickProcessEnv("SUPPORT" + "_" + "FEEDBACK" + "_" + "TO" + "_" + "EMAIL");
+  return v?.trim() || SUPPORT_FEEDBACK_TO_EMAIL_DEFAULT;
+}
+
 /** SnapTrade partner client ID (server-only). */
 export function getSnapTradeClientId(): string | undefined {
   const v = pickProcessEnv("SNAPTRADE" + "_" + "CLIENT" + "_" + "ID");

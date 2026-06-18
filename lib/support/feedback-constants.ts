@@ -1,5 +1,3 @@
-export const SUPPORT_FEEDBACK_TO_EMAIL = "hi@finsepa.com";
-
 export const SUPPORT_FEEDBACK_MAX_FILES = 5;
 export const SUPPORT_FEEDBACK_MAX_FILE_BYTES = 50 * 1024 * 1024;
 export const SUPPORT_FEEDBACK_MAX_TOTAL_BYTES = 50 * 1024 * 1024;

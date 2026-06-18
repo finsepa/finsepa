@@ -2,7 +2,6 @@
 
 import { useEffect, useId, useState } from "react";
 
-import { TopbarDelayedTooltip } from "@/components/layout/topbar-delayed-tooltip";
 import { SnaptradeUpdateFromDateField } from "@/components/portfolio/snaptrade-update-from-date-field";
 import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
 import {
@@ -12,36 +11,8 @@ import {
   appModalPrimaryButtonClass,
 } from "@/components/ui/app-modal-shell";
 import type { PortfolioTransaction } from "@/components/portfolio/portfolio-types";
-import {
-  defaultSnaptradeUpdateFromYmd,
-  SNAPTRADE_UPDATE_FROM_TOOLTIP,
-} from "@/lib/snaptrade/sync-update-from";
-import { CircleQuestionMark, Loader2 } from "@/lib/icons";
-
-function ModalFieldLabel({
-  label,
-  tooltip,
-}: {
-  label: string;
-  tooltip: string;
-}) {
-  return (
-    <div className="flex items-center gap-1.5">
-      <span className="text-sm font-medium leading-5 text-[#09090B]">{label}</span>
-      <TopbarDelayedTooltip label={tooltip} delayMs={200} zIndex={350}>
-        <button
-          type="button"
-          tabIndex={-1}
-          className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-[#71717A] transition-colors hover:bg-[#F4F4F5] hover:text-[#09090B]"
-          aria-label={tooltip}
-          onClick={(e) => e.preventDefault()}
-        >
-          <CircleQuestionMark className="h-4 w-4" strokeWidth={1.75} aria-hidden />
-        </button>
-      </TopbarDelayedTooltip>
-    </div>
-  );
-}
+import { defaultSnaptradeUpdateFromYmd } from "@/lib/snaptrade/sync-update-from";
+import { Loader2 } from "@/lib/icons";
 
 export function PortfolioSnaptradeSyncModal({
   open,
@@ -108,7 +79,7 @@ export function PortfolioSnaptradeSyncModal({
         }
       >
         <div className="flex flex-col gap-2">
-          <ModalFieldLabel label="Update from…" tooltip={SNAPTRADE_UPDATE_FROM_TOOLTIP} />
+          <span className="text-sm font-medium leading-5 text-[#09090B]">Update from</span>
           <SnaptradeUpdateFromDateField valueYmd={updateFromYmd} onChangeYmd={setUpdateFromYmd} />
         </div>
         <p className="text-xs leading-5 text-[#71717A]">

@@ -36,13 +36,11 @@ import {
 } from "@/components/ui/app-modal-shell";
 import {
   DEFAULT_PORTFOLIO_SNAPTRADE_SYNC_SETTINGS,
-  normalizePortfolioSnaptradeSyncSettings,
-  type PortfolioSnaptradeSyncSettings,
 } from "@/lib/snaptrade/sync-settings";
 import { mergePortfolioSnaptradeSync } from "@/lib/snaptrade/merge-sync-transactions";
 import { defaultSnaptradeUpdateFromYmd } from "@/lib/snaptrade/sync-update-from";
 import { PortfolioPrivacySelect } from "@/components/portfolio/portfolio-privacy-select";
-import { PortfolioSnaptradeSyncSettingsFields } from "@/components/portfolio/portfolio-snaptrade-sync-settings-fields";
+import { PortfolioSnaptradeConnectionInfo } from "@/components/portfolio/portfolio-snaptrade-connection-info";
 import type { CompanyPick } from "@/components/charting/company-picker";
 import {
   newPortfolioId,
@@ -51,6 +49,7 @@ import {
   type PortfolioEntry,
   type PortfolioHolding,
   type PortfolioPrivacy,
+  type PortfolioSnaptradeLink,
   type PortfolioTransaction,
 } from "@/components/portfolio/portfolio-types";
 import { mergeHoldingsBySymbol, mergeTransactionsSorted } from "@/lib/portfolio/merge-combined-portfolio";
@@ -100,7 +99,7 @@ function EditPortfolioModal({
   isCombined = false,
   allPortfolios,
   initialCombinedFromIds,
-  initialSnaptradeSyncSettings,
+  snaptradeLink,
   onClose,
   onSave,
   onRequestDelete,
@@ -110,24 +109,15 @@ function EditPortfolioModal({
   isCombined?: boolean;
   allPortfolios: PortfolioEntry[];
   initialCombinedFromIds?: string[];
-  initialSnaptradeSyncSettings?: PortfolioSnaptradeSyncSettings | null;
+  snaptradeLink?: PortfolioSnaptradeLink | null;
   onClose: () => void;
-  onSave: (
-    name: string,
-    privacy: PortfolioPrivacy,
-    combinedSourceIds?: string[],
-    snaptradeSyncSettings?: PortfolioSnaptradeSyncSettings,
-  ) => void;
+  onSave: (name: string, privacy: PortfolioPrivacy, combinedSourceIds?: string[]) => void;
   /** Opens delete confirmation; does not delete immediately. */
   onRequestDelete: () => void;
 }) {
   const titleId = useId();
   const [name, setName] = useState(initialName);
   const [privacy, setPrivacy] = useState<PortfolioPrivacy>(initialPrivacy);
-  const [syncSettings, setSyncSettings] = useState<PortfolioSnaptradeSyncSettings>(
-    () => normalizePortfolioSnaptradeSyncSettings(initialSnaptradeSyncSettings),
-  );
-  const showSnaptradeSyncSettings = initialSnaptradeSyncSettings != null;
 
   const standardPortfolios = useMemo(
     () => allPortfolios.filter((p) => p.kind !== "combined"),
@@ -161,12 +151,6 @@ function EditPortfolioModal({
     setPrivacy(initialPrivacy);
   }, [initialPrivacy]);
 
-  useEffect(() => {
-    if (initialSnaptradeSyncSettings != null) {
-      setSyncSettings(normalizePortfolioSnaptradeSyncSettings(initialSnaptradeSyncSettings));
-    }
-  }, [initialSnaptradeSyncSettings]);
-
   const saveEnabled = !(isCombined && (name.trim().length === 0 || selectedSourceIds.length < 2));
 
   return (
@@ -187,8 +171,6 @@ function EditPortfolioModal({
               onClick={() =>
                 isCombined ?
                   onSave(name.trim(), privacy, selectedSourceIds)
-                : showSnaptradeSyncSettings ?
-                  onSave(name, privacy, undefined, syncSettings)
                 : onSave(name, privacy)
               }
               className={appModalPrimaryButtonClass(saveEnabled)}
@@ -220,9 +202,7 @@ function EditPortfolioModal({
         <ModalField label="Privacy">
           <PortfolioPrivacySelect value={privacy} onChange={setPrivacy} />
         </ModalField>
-        {showSnaptradeSyncSettings ? (
-          <PortfolioSnaptradeSyncSettingsFields value={syncSettings} onChange={setSyncSettings} />
-        ) : null}
+        {snaptradeLink ? <PortfolioSnaptradeConnectionInfo snaptrade={snaptradeLink} /> : null}
       </AppModalShell>
     </AppModalOverlay>
   );
@@ -1066,7 +1046,7 @@ export function PortfolioWorkspaceProvider({
       const authorizationId = portfolio?.snaptrade?.authorizationId;
       if (!portfolio || !authorizationId) return;
 
-      const syncSettings = normalizePortfolioSnaptradeSyncSettings(portfolio.snaptrade?.syncSettings);
+      const syncSettings = DEFAULT_PORTFOLIO_SNAPTRADE_SYNC_SETTINGS;
       const existingTransactions = transactionsByPortfolioId[portfolioId] ?? [];
       const updateFromYmd =
         options?.updateFromYmd !== undefined ?
@@ -1132,9 +1112,6 @@ export function PortfolioWorkspaceProvider({
     for (const portfolio of portfolios) {
       const authorizationId = portfolio.snaptrade?.authorizationId;
       if (!authorizationId) continue;
-
-      const settings = normalizePortfolioSnaptradeSyncSettings(portfolio.snaptrade?.syncSettings);
-      if (!settings.autoSyncDaily) continue;
 
       const syncedAtMs = Date.parse(portfolio.snaptrade?.syncedAt ?? "");
       if (!Number.isFinite(syncedAtMs) || now - syncedAtMs < MS_DAY) continue;
@@ -1452,18 +1429,12 @@ export function PortfolioWorkspaceProvider({
           isCombined={portfolios.find((p) => p.id === editPortfolioId)?.kind === "combined"}
           allPortfolios={portfolios}
           initialCombinedFromIds={portfolios.find((p) => p.id === editPortfolioId)?.combinedFrom}
-          initialSnaptradeSyncSettings={
-            portfolios.find((p) => p.id === editPortfolioId)?.snaptrade ?
-              normalizePortfolioSnaptradeSyncSettings(
-                portfolios.find((p) => p.id === editPortfolioId)?.snaptrade?.syncSettings,
-              )
-            : null
-          }
+          snaptradeLink={portfolios.find((p) => p.id === editPortfolioId)?.snaptrade ?? null}
           onClose={() => {
             setEditPortfolioOpen(false);
             setEditPortfolioId(null);
           }}
-          onSave={(name, nextPrivacy, combinedSourceIds, snaptradeSyncSettings) => {
+          onSave={(name, nextPrivacy, combinedSourceIds) => {
             const t = name.trim();
             const id = editPortfolioId;
             const editing = portfolios.find((p) => p.id === id);
@@ -1529,18 +1500,7 @@ export function PortfolioWorkspaceProvider({
                 });
                 return next;
               }
-              return prev.map((p) =>
-                p.id === id ?
-                  {
-                    ...p,
-                    name: t,
-                    privacy: nextPrivacy,
-                    ...(p.snaptrade && snaptradeSyncSettings ?
-                      { snaptrade: { ...p.snaptrade, syncSettings: snaptradeSyncSettings } }
-                    : {}),
-                  }
-                : p,
-              );
+              return prev.map((p) => (p.id === id ? { ...p, name: t, privacy: nextPrivacy } : p));
             });
 
             if (id && t.length > 0) {

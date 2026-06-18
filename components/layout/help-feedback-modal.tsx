@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
-import { Loader2, Upload, X } from "@/lib/icons";
+import { CircleCheck, Loader2, Upload, X } from "@/lib/icons";
 
 import { ClearableInput } from "@/components/layout/clearable-input";
 import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
@@ -28,11 +28,9 @@ function formatFileSize(bytes: number): string {
 
 export function HelpFeedbackModal({
   open,
-  userDisplayName,
   onClose,
 }: {
   open: boolean;
-  userDisplayName: string;
   onClose: () => void;
 }) {
   const titleId = useId();
@@ -141,11 +139,11 @@ export function HelpFeedbackModal({
     <AppModalOverlay open={open} onClose={submitting ? undefined : onClose} zIndex={120}>
       <AppModalShell
         titleId={titleId}
-        title={phase === "success" ? "Thanks for reaching out" : "What happened?"}
+        title={phase === "success" ? "Your email was sent" : "What happened?"}
         onClose={onClose}
         closeDisabled={submitting}
         maxWidthClass="w-full max-w-[480px]"
-        bodyClassName="flex flex-col gap-4 px-5 pb-5 pt-5"
+        bodyClassName={phase === "success" ? "px-5 pb-6 pt-2" : "flex flex-col gap-4 px-5 pb-5 pt-5"}
         footer={
           <AppModalFooter className={phase === "success" ? "justify-end" : undefined}>
             {phase === "success" ? (
@@ -181,10 +179,15 @@ export function HelpFeedbackModal({
         }
       >
         {phase === "success" ? (
-          <div className="py-1">
-            <p className="text-sm leading-relaxed text-[#09090B]">
-              Your message was sent to the Finsepa team{userDisplayName.trim() ? `, ${userDisplayName.trim()}` : ""}.
-              We&apos;ll get back to you at <span className="font-medium">{email.trim()}</span> as soon as we can.
+          <div className="flex flex-col items-center px-2 pb-2 pt-4 text-center">
+            <div
+              className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[#DCFCE7]"
+              aria-hidden
+            >
+              <CircleCheck className="h-7 w-7 text-[#16A34A]" strokeWidth={2} />
+            </div>
+            <p className="max-w-[320px] text-sm leading-relaxed text-[#71717A]">
+              Thank you for your message. We&apos;ll review it and get back to you as soon as we can.
             </p>
           </div>
         ) : (

@@ -17,7 +17,24 @@ export function snapTradeHoldingsCadenceLine(isRealTimeConnection: boolean): str
 export const SNAPTRADE_TRANSACTIONS_CADENCE_LINE =
   "Transactions update once per day (T+1) via SnapTrade";
 
-export const FINSEPA_MANUAL_SYNC_LINE = "Click to refresh holdings and cash";
+export const FINSEPA_MANUAL_SYNC_LINE = "Click the sync icon next to the portfolio name to refresh anytime.";
+
+/** Short bullets for Edit portfolio → brokerage connection. */
+export function brokerageSyncExplanationBullets(isRealTimeConnection?: boolean | null): string[] {
+  const holdingsLine =
+    typeof isRealTimeConnection === "boolean" ?
+      snapTradeHoldingsCadenceLine(isRealTimeConnection)
+    : "Holdings and cash refresh when you sync or once per day automatically.";
+
+  return [
+    "Finsepa syncs linked portfolios automatically about once a day while you use the app.",
+    holdingsLine,
+    SNAPTRADE_TRANSACTIONS_CADENCE_LINE,
+    "Manual sync imports transactions from your chosen start date and always refreshes current holdings and cash.",
+    "If broker balances differ from imported history, Finsepa adds small adjustments so positions stay correct.",
+    FINSEPA_MANUAL_SYNC_LINE,
+  ];
+}
 
 export function formatPortfolioSyncTooltipLines({
   syncedAt,
