@@ -1,7 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
-import { handleAuthCallbackRequest } from "@/lib/auth/handle-auth-callback-request";
 import { requestHasSupabaseAuthCookies } from "@/lib/auth/supabase-auth-cookies";
 
 export async function middleware(request: NextRequest) {
@@ -13,11 +12,6 @@ export async function middleware(request: NextRequest) {
   const PATH_ACTIVATE_SUBSCRIPTION = "/activate-subscription";
 
   const path = request.nextUrl.pathname;
-
-  const authCallback = await handleAuthCallbackRequest(request);
-  if (authCallback.handled) {
-    return authCallback.response;
-  }
 
   /**
    * Avatar files live in `public/superinvestors/*.png`. `next/image` loads the source URL from the
@@ -65,24 +59,27 @@ export async function middleware(request: NextRequest) {
 
   // If Supabase env is missing, fall back to basic protection.
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const key =
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim() ||
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim();
   if (!url || !key) {
     if (isProtectedPath) return NextResponse.redirect(new URL(PATH_LOGIN, request.url));
     return NextResponse.next();
   }
 
   // Minimal, Edge-safe Supabase client that reads/writes cookies.
-  let response = NextResponse.next({ request });
+  const response = NextResponse.next({ request });
   const supabase = createServerClient(url, key, {
     cookies: {
       getAll() {
         return request.cookies.getAll();
       },
       setAll(cookiesToSet) {
-        // Reflect Supabase cookie updates back into the response.
-        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-        response = NextResponse.next({ request });
-        cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
+        // Merge every chunk onto the same response — recreating NextResponse drops prior Set-Cookie headers.
+        cookiesToSet.forEach(({ name, value, options }) => {
+          request.cookies.set(name, value);
+          response.cookies.set(name, value, options);
+        });
       },
     },
   });
@@ -127,7 +124,6 @@ export const config = {
     "/login",
     "/signup",
     "/forgot-password",
-    "/auth/callback",
     "/activate-subscription",
   ],
 };

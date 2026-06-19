@@ -13,7 +13,6 @@ import {
 } from "@/components/auth/auth-form-ui";
 import { AuthPasswordInput } from "@/components/auth/auth-password-input";
 import { TurnstileField } from "@/components/auth/turnstile-field";
-import { getAuthAppOriginForClient } from "@/lib/auth/app-origin";
 import { PATH_APP_ENTRY, PATH_AUTH_CALLBACK } from "@/lib/auth/routes";
 import { useTurnstileConfig } from "@/lib/auth/use-turnstile-config";
 import { friendlySupabaseAuthErrorMessage } from "@/lib/auth/supabase-error-message";
@@ -114,8 +113,8 @@ export function LoginClient({ resetSuccess, callbackError, authNext }: Props) {
         /* ignore */
       }
       const supabase = getSupabaseBrowserClient();
-      const authOrigin = getAuthAppOriginForClient();
-      const redirectTo = `${authOrigin}${PATH_AUTH_CALLBACK}?next=${encodeURIComponent(PATH_APP_ENTRY)}`;
+      // Always use the current origin so the PKCE verifier cookie matches the callback URL.
+      const redirectTo = `${window.location.origin}${PATH_AUTH_CALLBACK}?next=${encodeURIComponent(PATH_APP_ENTRY)}`;
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: { redirectTo },

@@ -17,7 +17,10 @@ export function setSupabaseBrowserEnv(
 
 export function getSupabaseBrowserClient() {
   const url = injected?.url || process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-  const key = injected?.anonKey || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
+  const key =
+    injected?.anonKey ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim() ||
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim();
   if (!url || !key) {
        throw new Error(
       "Supabase is not configured (missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY). Local: copy `.env.example` to `.env.local` and add your Supabase URL + anon key from the Supabase dashboard, then restart `npm run dev`. Production: set the same vars in Vercel → Environment Variables and redeploy.",

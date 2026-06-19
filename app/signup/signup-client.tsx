@@ -163,8 +163,7 @@ export function SignupClient() {
     try {
       markOnboardingPending();
       const supabase = getSupabaseBrowserClient();
-      const authOrigin = getAuthAppOriginForClient();
-      const redirectTo = `${authOrigin}${PATH_AUTH_CALLBACK}?next=${encodeURIComponent(PATH_APP_ENTRY)}&type=signup`;
+      const redirectTo = `${window.location.origin}${PATH_AUTH_CALLBACK}?next=${encodeURIComponent(PATH_APP_ENTRY)}&type=signup`;
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: { redirectTo },
