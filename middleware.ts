@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
+import { handleAuthCallbackRequest } from "@/lib/auth/handle-auth-callback-request";
 import { requestHasSupabaseAuthCookies } from "@/lib/auth/supabase-auth-cookies";
 
 export async function middleware(request: NextRequest) {
@@ -12,6 +13,11 @@ export async function middleware(request: NextRequest) {
   const PATH_ACTIVATE_SUBSCRIPTION = "/activate-subscription";
 
   const path = request.nextUrl.pathname;
+
+  const authCallback = await handleAuthCallbackRequest(request);
+  if (authCallback.handled) {
+    return authCallback.response;
+  }
 
   /**
    * Avatar files live in `public/superinvestors/*.png`. `next/image` loads the source URL from the
@@ -121,6 +127,7 @@ export const config = {
     "/login",
     "/signup",
     "/forgot-password",
+    "/auth/callback",
     "/activate-subscription",
   ],
 };

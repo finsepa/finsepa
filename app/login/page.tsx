@@ -5,7 +5,7 @@ import { authAccentLinkClassName } from "@/components/auth/auth-form-ui";
 
 import { LoginClient } from "./login-client";
 
-type SearchParams = { reset?: string; error?: string };
+type SearchParams = { reset?: string; error?: string; next?: string };
 
 export { authMetadata as metadata, authViewport as viewport } from "@/lib/auth/auth-viewport";
 
@@ -30,7 +30,11 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         </p>
       }
     >
-      <LoginClient resetSuccess={sp.reset === "success"} callbackError={sp.error ?? null} />
+      <LoginClient
+        resetSuccess={sp.reset === "success"}
+        callbackError={sp.error ?? null}
+        authNext={sp.next ?? null}
+      />
     </AuthCenteredLayout>
   );
 }

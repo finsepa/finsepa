@@ -34,6 +34,7 @@ const CALLBACK_ERROR_MESSAGES: Record<string, string> = {
 type Props = {
   resetSuccess?: boolean;
   callbackError?: string | null;
+  authNext?: string | null;
 };
 
 function GoogleMark() {
@@ -52,7 +53,7 @@ const REDIRECT_AFTER_LOGIN_MS = 900;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD_LEN = 8;
 
-export function LoginClient({ resetSuccess, callbackError }: Props) {
+export function LoginClient({ resetSuccess, callbackError, authNext }: Props) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
@@ -87,6 +88,11 @@ export function LoginClient({ resetSuccess, callbackError }: Props) {
   const onTurnstileExpire = useCallback(() => setTurnstileToken(null), []);
 
   const callbackHint = callbackError ? CALLBACK_ERROR_MESSAGES[callbackError] ?? "Something went wrong. Please try again." : null;
+  const sessionExpiredHint =
+    !callbackHint && authNext ?
+      "Your session could not be restored. Sign in again to continue."
+    : null;
+  const bannerHint = callbackHint ?? sessionExpiredHint;
 
   useEffect(() => {
     try {
@@ -207,12 +213,12 @@ export function LoginClient({ resetSuccess, callbackError }: Props) {
         </div>
       ) : null}
 
-      {callbackHint ? (
+      {bannerHint ? (
         <div
           role="alert"
           className="rounded-[10px] border border-[#FECACA] bg-[#FEF2F2] px-3 py-2 text-sm leading-5 text-[#B91C1C]"
         >
-          {callbackHint}
+          {bannerHint}
         </div>
       ) : null}
 
