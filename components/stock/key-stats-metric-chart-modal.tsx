@@ -548,9 +548,10 @@ export function KeyStatsMetricChartModal({
         onClose={onClose}
         zIndex={300}
         align={isMobile ? "bottom" : "center"}
+        className={isMobile ? "!px-4 !pb-4 !pt-0" : undefined}
       >
         <div
-          className={cn(!isMobile && KEY_STATS_DESKTOP_MODAL_WIDTH_CLASS)}
+          className={cn(isMobile ? "w-full min-w-0" : KEY_STATS_DESKTOP_MODAL_WIDTH_CLASS)}
           style={isMobile ? sheetStyle : undefined}
           onMouseDown={(e) => e.stopPropagation()}
           {...(isMobile ? sheetPointerHandlers : {})}

@@ -1,45 +1,69 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 
 const MOBILE_SHELL_MQ = "(max-width: 767px)";
 const SCROLL_DELTA_PX = 6;
 const TOP_ALWAYS_SHOW_PX = 16;
 
-/** Synced with `globals.css` — docks back-to-top FAB where the nav pill sits. */
-export const MOBILE_BOTTOM_NAV_SCROLL_HIDDEN_CLASS = "mobile-bottom-nav-scroll-hidden";
+/** Synced with `globals.css` — compact bottom nav (icon-only) while scrolling down. */
+export const MOBILE_BOTTOM_NAV_SCROLL_COMPACT_CLASS = "mobile-bottom-nav-scroll-compact";
 
-function syncMobileBottomNavScrollHiddenClass(hidden: boolean, mobile: boolean) {
+function syncMobileBottomNavScrollCompactClass(compact: boolean, mobile: boolean) {
   if (typeof document === "undefined") return;
-  document.documentElement.classList.toggle(MOBILE_BOTTOM_NAV_SCROLL_HIDDEN_CLASS, mobile && hidden);
+  document.documentElement.classList.toggle(MOBILE_BOTTOM_NAV_SCROLL_COMPACT_CLASS, mobile && compact);
 }
 
 /**
- * Hides the mobile bottom nav while scrolling down; shows again on scroll up.
+ * Compacts the mobile bottom nav while scrolling down (icon-only); expands again on scroll up.
  * Uses `window` scroll (document scroll shell on mobile).
  */
-export function useMobileBottomNavScrollHide(enabled: boolean, resetKey = ""): boolean {
-  const [hidden, setHidden] = useState(false);
+export function useMobileBottomNavScrollHide(enabled: boolean): boolean {
+  const pathname = usePathname();
+  const [compact, setCompact] = useState(false);
   const lastScrollYRef = useRef(0);
   const rafRef = useRef(0);
 
   useEffect(() => {
-    setHidden(false);
-    syncMobileBottomNavScrollHiddenClass(false, false);
-    if (typeof window !== "undefined") lastScrollYRef.current = window.scrollY;
-  }, [resetKey]);
-
-  useEffect(() => {
     if (!enabled) {
-      setHidden(false);
-      syncMobileBottomNavScrollHiddenClass(false, false);
+      setCompact(false);
+      syncMobileBottomNavScrollCompactClass(false, false);
       return;
     }
 
     const mq = window.matchMedia(MOBILE_SHELL_MQ);
-    const applyHidden = (next: boolean) => {
-      setHidden(next);
-      syncMobileBottomNavScrollHiddenClass(next, mq.matches);
+    let raf2 = 0;
+
+    const sync = () => {
+      const y = window.scrollY;
+      lastScrollYRef.current = y;
+      const next = mq.matches && y > TOP_ALWAYS_SHOW_PX;
+      setCompact(next);
+      syncMobileBottomNavScrollCompactClass(next, mq.matches);
+    };
+
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(sync);
+    });
+
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+    };
+  }, [pathname, enabled]);
+
+  useEffect(() => {
+    if (!enabled) {
+      setCompact(false);
+      syncMobileBottomNavScrollCompactClass(false, false);
+      return;
+    }
+
+    const mq = window.matchMedia(MOBILE_SHELL_MQ);
+    const applyCompact = (next: boolean) => {
+      setCompact(next);
+      syncMobileBottomNavScrollCompactClass(next, mq.matches);
     };
 
     const onScroll = () => {
@@ -47,24 +71,24 @@ export function useMobileBottomNavScrollHide(enabled: boolean, resetKey = ""): b
       rafRef.current = requestAnimationFrame(() => {
         rafRef.current = 0;
         if (!mq.matches) {
-          applyHidden(false);
+          applyCompact(false);
           return;
         }
         const y = window.scrollY;
         if (y <= TOP_ALWAYS_SHOW_PX) {
-          applyHidden(false);
+          applyCompact(false);
           lastScrollYRef.current = y;
           return;
         }
         const delta = y - lastScrollYRef.current;
-        if (delta > SCROLL_DELTA_PX) applyHidden(true);
-        else if (delta < -SCROLL_DELTA_PX) applyHidden(false);
+        if (delta > SCROLL_DELTA_PX) applyCompact(true);
+        else if (delta < -SCROLL_DELTA_PX) applyCompact(false);
         lastScrollYRef.current = y;
       });
     };
 
     const onMqChange = () => {
-      if (!mq.matches) applyHidden(false);
+      if (!mq.matches) applyCompact(false);
       lastScrollYRef.current = window.scrollY;
     };
 
@@ -75,36 +99,9 @@ export function useMobileBottomNavScrollHide(enabled: boolean, resetKey = ""): b
       window.removeEventListener("scroll", onScroll);
       mq.removeEventListener("change", onMqChange);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      syncMobileBottomNavScrollHiddenClass(false, false);
+      syncMobileBottomNavScrollCompactClass(false, false);
     };
   }, [enabled]);
 
-  return hidden;
-}
-
-/** True when mobile bottom nav is scroll-hidden (scroll down); false on scroll up / top / desktop. */
-export function useMobileBottomNavScrollHidden(): boolean {
-  const [hidden, setHidden] = useState(false);
-
-  useEffect(() => {
-    const mq = window.matchMedia(MOBILE_SHELL_MQ);
-    const read = () => {
-      if (!mq.matches) {
-        setHidden(false);
-        return;
-      }
-      setHidden(document.documentElement.classList.contains(MOBILE_BOTTOM_NAV_SCROLL_HIDDEN_CLASS));
-    };
-
-    read();
-    const observer = new MutationObserver(read);
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
-    mq.addEventListener("change", read);
-    return () => {
-      observer.disconnect();
-      mq.removeEventListener("change", read);
-    };
-  }, []);
-
-  return hidden;
+  return compact;
 }

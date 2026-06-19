@@ -28,6 +28,8 @@ export type ChartHeaderMetrics = {
   periodLabelOverride: string | null;
   /** Unix seconds for the point matching displayPrice (crosshair / last bar; headline stays on last bar when a range is selected). */
   displayTimeUnix: number | null;
+  /** Mobile scrub: same copy as the chart bottom-axis label (e.g. `Dec 9, 2025 at 1:30 PM`). */
+  scrubPeriodLabel: string | null;
 };
 
 /**
@@ -38,7 +40,7 @@ export type ChartHeaderMetrics = {
 export function computeChartHeaderMetrics(
   points: StockChartPoint[],
   selection: ChartRangeSelection,
-  crosshairForHeader: { price: number; timeUnix: number } | null = null,
+  crosshairForHeader: { price: number; timeUnix: number; periodLabel?: string | null } | null = null,
 ): ChartHeaderMetrics {
   if (!points.length) {
     return {
@@ -51,6 +53,7 @@ export function computeChartHeaderMetrics(
       selectionActive: false,
       periodLabelOverride: null,
       displayTimeUnix: null,
+      scrubPeriodLabel: null,
     };
   }
 
@@ -74,6 +77,7 @@ export function computeChartHeaderMetrics(
       selectionActive: false,
       periodLabelOverride: null,
       displayTimeUnix: null,
+      scrubPeriodLabel: null,
     };
   }
 
@@ -101,6 +105,7 @@ export function computeChartHeaderMetrics(
       selectionActive: true,
       periodLabelOverride: null,
       displayTimeUnix: isFiniteNumber(lastTime) ? lastTime : null,
+      scrubPeriodLabel: null,
     };
   }
 
@@ -114,6 +119,7 @@ export function computeChartHeaderMetrics(
     const hp = crosshairForHeader.price;
     const abs = hp - first;
     const pct = first !== 0 ? (abs / first) * 100 : null;
+    const scrubLabel = crosshairForHeader.periodLabel?.trim() || null;
     return {
       displayPrice: hp,
       displayChangePct: pct,
@@ -124,6 +130,7 @@ export function computeChartHeaderMetrics(
       selectionActive: false,
       periodLabelOverride: null,
       displayTimeUnix: crosshairForHeader.timeUnix,
+      scrubPeriodLabel: scrubLabel,
     };
   }
 
@@ -142,5 +149,6 @@ export function computeChartHeaderMetrics(
     selectionActive: false,
     periodLabelOverride: null,
     displayTimeUnix: isFiniteNumber(lastTime) ? lastTime : null,
+    scrubPeriodLabel: null,
   };
 }

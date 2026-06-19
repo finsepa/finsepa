@@ -99,6 +99,33 @@ export const protectedCommunityItems: ProtectedNavItem[] = [
 /** Community entries for the mobile bottom-nav sheet (same as desktop). */
 export const protectedCommunityMobileNavItems: ProtectedNavItem[] = protectedCommunityItems;
 
+function itemByLabel(items: readonly ProtectedNavItem[], label: string): ProtectedNavItem | undefined {
+  return items.find((i) => i.label === label);
+}
+
+/** Mobile bottom-nav “More” menu — same order as desktop sidebar extras. */
+export const protectedMobileMoreNavItems: ProtectedNavItem[] = (
+  [
+    "Heatmaps",
+    "News",
+    "Earnings",
+    "Economy",
+    "Macro",
+    "Charting",
+    "Comparison",
+    "Superinvestors",
+    "Portfolios",
+  ] as const
+).map((label) => {
+  const item =
+    itemByLabel(protectedMarketItems, label) ??
+    itemByLabel(protectedCalendarItems, label) ??
+    itemByLabel(protectedDataItems, label) ??
+    itemByLabel(protectedCommunityItems, label);
+  if (!item) throw new Error(`Missing mobile more nav item: ${label}`);
+  return item;
+});
+
 function pathnameMatchesPrefix(pathname: string, prefix: string): boolean {
   return pathname === prefix || pathname.startsWith(`${prefix}/`);
 }
@@ -119,21 +146,29 @@ export function protectedNavSectionHasActive(items: readonly ProtectedNavItem[],
   return items.some((item) => protectedNavItemIsActive(item, pathname));
 }
 
-export type MobilePrimaryNavTab = "markets" | "calendar" | "data" | "community" | "portfolio";
+export type MobilePrimaryNavTab = "markets" | "portfolio" | "watchlist" | "more";
 
 /** Which bottom-nav pill is active for the current route (used to sync optimistic mobile tab UI). */
 export function mobilePrimaryNavTabFromPathname(pathname: string): MobilePrimaryNavTab {
-  if (
-    pathname === "/portfolio" ||
-    pathname.startsWith("/portfolio/") ||
-    pathname === "/portfolios" ||
-    pathname.startsWith("/portfolios/")
-  ) {
+  if (pathname === "/portfolio" || pathname.startsWith("/portfolio/")) {
     return "portfolio";
   }
+  if (pathname === "/watchlist" || pathname.startsWith("/watchlist/")) {
+    return "watchlist";
+  }
+  if (protectedNavSectionHasActive(protectedMobileMoreNavItems, pathname)) return "more";
   if (protectedNavSectionHasActive(protectedMarketItems, pathname)) return "markets";
-  if (protectedNavSectionHasActive(protectedCalendarItems, pathname)) return "calendar";
-  if (protectedNavSectionHasActive(protectedDataItems, pathname)) return "data";
-  if (protectedNavSectionHasActive(protectedCommunityMobileNavItems, pathname)) return "community";
   return "markets";
+}
+
+/** Large mobile top-bar title (Linear-style) for the current primary section. */
+export function mobileTopbarTitleFromPathname(pathname: string): string {
+  const tab = mobilePrimaryNavTabFromPathname(pathname);
+  if (tab === "portfolio") return "Portfolio";
+  if (tab === "watchlist") return "Watchlist";
+  if (tab === "more") {
+    const active = protectedMobileMoreNavItems.find((item) => protectedNavItemIsActive(item, pathname));
+    return active?.label ?? "More";
+  }
+  return "Markets";
 }

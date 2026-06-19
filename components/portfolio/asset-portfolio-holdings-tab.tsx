@@ -323,19 +323,20 @@ export function AssetPortfolioHoldingsTab({
           activeRange={holdingsChartRange}
           onRangeChange={setHoldingsChartRange}
           titleSlot={portfolioTitleSlot}
-        />
-        <div className="overflow-visible rounded-[12px] bg-white">
-          <PriceChart
-            kind={assetKind}
-            symbol={route}
-            range={holdingsChartRange}
-            holdingsStyle
-            tradeMarkers={tradeMarkersForChart}
-            tradeTooltipItems={tradeTooltipItems}
-            costBasisPrice={holding.avgPrice}
-            onDisplayChange={onChartDisplayChange}
-          />
-        </div>
+        >
+          <div className="overflow-visible rounded-[12px] bg-white">
+            <PriceChart
+              kind={assetKind}
+              symbol={route}
+              range={holdingsChartRange}
+              holdingsStyle
+              tradeMarkers={tradeMarkersForChart}
+              tradeTooltipItems={tradeTooltipItems}
+              costBasisPrice={holding.avgPrice}
+              onDisplayChange={onChartDisplayChange}
+            />
+          </div>
+        </ChartControls>
       </section>
 
       <section>

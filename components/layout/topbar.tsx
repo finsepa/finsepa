@@ -2,6 +2,7 @@
 
 import { memo, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Bell, Briefcase, Star } from "@/lib/icons";
 import { TOPBAR_SHOW_NOTIFICATIONS } from "@/lib/features/topbar-flags";
 import { TransactionPortfolioField } from "@/components/portfolio/transaction-portfolio-field";
@@ -13,12 +14,21 @@ import { NotificationsPanelModal } from "./notifications-panel-modal";
 import { useNotificationsClient } from "@/lib/notifications/use-notifications-client";
 import { TopbarQuickAddMenu } from "./topbar-quick-add-menu";
 import { TopbarUserMenu } from "./topbar-user-menu";
+import { MobileAssetTopbarChrome } from "./mobile-asset-topbar-chrome";
+import {
+  isPortfolioWorkspaceRoute,
+  MobilePortfolioTopbarChrome,
+} from "./mobile-portfolio-topbar-chrome";
+import {
+  mobileTopbarTitleFromPathname,
+} from "@/components/layout/protected-nav-config";
 import {
   topbarSquircleActiveClass,
   topbarSquircleIconClass,
-  topbarSquircleTextButtonClass,
   topbarSquircleSplitShellClass,
+  topbarSquircleTextButtonClass,
 } from "@/components/design-system/topbar-control-classes";
+import { parseMobileAssetTopbarRoute } from "@/lib/layout/mobile-asset-topbar-route";
 import { cn } from "@/lib/utils";
 
 const usdTopbar = new Intl.NumberFormat("en-US", {
@@ -117,33 +127,66 @@ export function Topbar({
     enabled: TOPBAR_SHOW_NOTIFICATIONS,
   });
   const { unread: unreadNotifications } = notificationsClient;
+  const pathname = usePathname() ?? "";
+  const mobileAssetRoute = parseMobileAssetTopbarRoute(pathname);
+  const mobilePortfolioRoute = isPortfolioWorkspaceRoute(pathname);
+  const mobileTopbarTitle = useMemo(() => mobileTopbarTitleFromPathname(pathname), [pathname]);
 
   return (
     <>
-      <header className="flex h-14 min-w-0 flex-nowrap items-center gap-2 overflow-hidden max-md:px-4 md:min-h-[var(--shell-chrome-header-height)] md:h-auto md:gap-3 md:px-4 md:py-3">
-        <div className="flex h-9 min-w-0 flex-1 items-center">
+      <header
+        className={cn(
+          "flex min-w-0 flex-nowrap items-center gap-2 overflow-hidden max-md:bg-transparent max-md:px-4 md:min-h-[var(--shell-chrome-header-height)] md:h-auto md:gap-3 md:px-4 md:py-3",
+          mobileAssetRoute
+            ? "max-md:min-h-[var(--mobile-topbar-height)] max-md:h-auto max-md:py-1.5"
+            : "max-md:min-h-[var(--mobile-topbar-height)] max-md:h-auto max-md:py-2 md:h-14",
+        )}
+      >
+        {mobileAssetRoute ? (
+          <div className="flex min-w-0 flex-1 items-center md:hidden">
+            <MobileAssetTopbarChrome />
+          </div>
+        ) : mobilePortfolioRoute ? (
+          <div className="flex min-w-0 flex-1 items-center md:hidden">
+            <MobilePortfolioTopbarChrome />
+          </div>
+        ) : (
+          <div className="min-w-0 flex-1 md:hidden">
+            <h1
+              suppressHydrationWarning
+              className="truncate text-[22px] font-semibold leading-7 tracking-[-0.02em] text-[#09090B]"
+            >
+              {mobileTopbarTitle}
+            </h1>
+          </div>
+        )}
+
+        <div className="hidden h-9 min-w-0 flex-1 items-center md:flex">
           <div className="min-w-0 w-full md:max-w-[360px]">
             <TopbarSearch />
           </div>
         </div>
 
-        <div className="flex h-9 shrink-0 items-center gap-2 md:gap-3">
-          <TopbarDelayedTooltip label="Watchlist" className="inline-flex shrink-0 md:hidden">
-            <Link
-              href="/watchlist"
-              prefetch={false}
-              aria-label="Watchlist"
-              className={cn(topbarSquircleIconClass, "inline-flex")}
-            >
-              <Star className="h-5 w-5" aria-hidden />
-            </Link>
-          </TopbarDelayedTooltip>
+        <div
+          className={cn(
+            "flex h-9 shrink-0 items-center gap-2 md:gap-3",
+            mobileAssetRoute ? "hidden md:flex" : "max-md:ml-auto",
+          )}
+        >
+          {!mobileAssetRoute ? (
+            <TopbarDelayedTooltip label="Watchlist" className="hidden shrink-0 md:inline-flex">
+              <Link
+                href="/watchlist"
+                prefetch={false}
+                aria-label="Watchlist"
+                className={cn(topbarSquircleIconClass, "inline-flex")}
+              >
+                <Star className="h-5 w-5" aria-hidden />
+              </Link>
+            </TopbarDelayedTooltip>
+          ) : null}
 
-          <TopbarQuickAddMenu
-            showDesktopLabel
-            desktopLabel="Add"
-            dwellTooltipLabel="Add"
-          />
+          <TopbarQuickAddMenu showDesktopLabel desktopLabel="Add" dwellTooltipLabel="Add" />
 
           <div className="hidden sm:flex sm:shrink-0">
             <TopbarPortfolioBlock />

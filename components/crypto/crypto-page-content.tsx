@@ -39,6 +39,7 @@ const EMPTY_CHART_DISPLAY: ChartDisplayState = {
   selectionActive: false,
   periodLabelOverride: null,
   priceTimestampLabel: null,
+  scrubPeriodLabel: null,
 };
 
 const OFFSCREEN_PRICE_CHART =
@@ -294,7 +295,7 @@ export function CryptoPageContent({
   return (
     <div className="relative min-w-0">
       <CryptoBreadcrumbs symbol={symUpper} />
-      <div className="space-y-5 px-4 py-0 sm:space-y-5 sm:px-9 sm:py-6">
+      <div className="space-y-5 px-4 py-0 max-md:pt-4 sm:space-y-5 sm:px-9 sm:py-6">
       <Suspense fallback={null}>
         <AssetPageTopLoader />
       </Suspense>
@@ -329,6 +330,7 @@ export function CryptoPageContent({
           chartLoading={chartUi.loading}
           chartEmpty={chartUi.empty}
           priceTimestampLabel={chartUi.priceTimestampLabel}
+          scrubPeriodLabel={chartUi.scrubPeriodLabel}
           chartHovering={chartUi.isHovering && !chartUi.selectionActive}
           headerLoading={false}
         />
@@ -343,7 +345,7 @@ export function CryptoPageContent({
               role="tabpanel"
               id="crypto-tab-overview"
               aria-hidden={activeTab !== "overview"}
-              className={activeTab === "overview" ? "space-y-5" : "hidden"}
+              className={activeTab === "overview" ? "space-y-5 max-md:space-y-3" : "hidden"}
             >
               <ChartControls
                 activeRange={range}
@@ -356,22 +358,23 @@ export function CryptoPageContent({
                     onRemove={onRemoveComparePick}
                   />
                 }
-              />
-              {comparePicks.length > 0 ? (
-                <StockCompareReturnChart
-                  key={`compare-${symUpper}-${comparePicks.map((p) => p.symbol.trim().toUpperCase()).join("-")}-${range}`}
-                  primaryTicker={symUpper}
-                  comparePicks={comparePicks}
-                  range={range}
-                />
-              ) : (
-                <PriceChart
-                  kind="crypto"
-                  symbol={symUpper}
-                  range={range}
-                  initialChart={initialChartMemo}
-                />
-              )}
+              >
+                {comparePicks.length > 0 ? (
+                  <StockCompareReturnChart
+                    key={`compare-${symUpper}-${comparePicks.map((p) => p.symbol.trim().toUpperCase()).join("-")}-${range}`}
+                    primaryTicker={symUpper}
+                    comparePicks={comparePicks}
+                    range={range}
+                  />
+                ) : (
+                  <PriceChart
+                    kind="crypto"
+                    symbol={symUpper}
+                    range={range}
+                    initialChart={initialChartMemo}
+                  />
+                )}
+              </ChartControls>
               {cryptoChartDrivesHeader && mountHeaderChart ? (
                 <div className={OFFSCREEN_PRICE_CHART} aria-hidden>
                   <PriceChart
@@ -385,17 +388,19 @@ export function CryptoPageContent({
                   />
                 </div>
               ) : null}
-              <MiniTable
-                ticker={symUpper}
-                cryptoPrimary={{
-                  displayName: safeRow.name,
-                  logoUrl: cryptoLogoSrc || serverCryptoLogo,
-                }}
-                initialPerformance={initialPerformance ?? null}
-                comparePicks={comparePicks}
-                onRemoveCompare={comparePicks.length > 0 ? onRemoveComparePick : undefined}
-              />
-              <div className="pt-2">
+              {comparePicks.length > 0 ? (
+                <MiniTable
+                  ticker={symUpper}
+                  cryptoPrimary={{
+                    displayName: safeRow.name,
+                    logoUrl: cryptoLogoSrc || serverCryptoLogo,
+                  }}
+                  initialPerformance={initialPerformance ?? null}
+                  comparePicks={comparePicks}
+                  onRemoveCompare={onRemoveComparePick}
+                />
+              ) : null}
+              <div className="max-md:pt-0 md:pt-2">
                 <CryptoKeyStats row={safeRow} />
               </div>
               <CryptoLinksSection links={safeRow.links} />

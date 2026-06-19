@@ -8,6 +8,7 @@ import type { ScreenerCanonicalSector } from "@/lib/screener/screener-gics-secto
 import { screenerIndustryDrillHref } from "@/lib/screener/screener-industry-url";
 import {
   SCREENER_TABLE_HEADER_STICKY_CLASS,
+  SCREENER_TABLE_ROW_BORDER_B_CLASS,
   ScreenerTableScroll,
 } from "@/components/screener/screener-table-scroll";
 
@@ -67,7 +68,7 @@ export function ScreenerIndustriesTable({ rows }: { rows: ScreenerIndustryRow[] 
     <ScreenerTableScroll minWidthClassName="min-w-0">
       <div className="bg-white">
         <div
-          className={`grid ${colLayoutMobile} ${colLayoutDesktop} min-h-[44px] items-center px-2 py-0 text-[12px] font-medium leading-5 text-[#71717A] sm:px-4 sm:text-[14px] ${SCREENER_TABLE_HEADER_STICKY_CLASS}`}
+          className={`grid ${colLayoutMobile} ${colLayoutDesktop} min-h-[44px] items-center px-4 py-0 text-[12px] font-medium leading-5 text-[#71717A] sm:text-[14px] ${SCREENER_TABLE_HEADER_STICKY_CLASS}`}
         >
           <div className="text-center">#</div>
           <div className="text-left">Industry</div>
@@ -77,7 +78,7 @@ export function ScreenerIndustriesTable({ rows }: { rows: ScreenerIndustryRow[] 
 
         {grouped.map(({ sector, items }) => (
           <div key={sector}>
-            <div className="border-b border-[#E4E4E7] bg-[#F4F4F5] px-2 py-2.5 sm:px-4">
+            <div className={`${SCREENER_TABLE_ROW_BORDER_B_CLASS} bg-[#F4F4F5] px-4 py-2.5`}>
               <h3 className="text-[14px] font-semibold leading-5 text-[#09090B]">{sector}</h3>
             </div>
             {items.map((row, i) => (
@@ -85,7 +86,7 @@ export function ScreenerIndustriesTable({ rows }: { rows: ScreenerIndustryRow[] 
                 key={`${row.sector}-${row.industry}`}
                 href={screenerIndustryDrillHref(row.sector as ScreenerCanonicalSector, row.industry)}
                 prefetch={false}
-                className={`group grid ${colLayoutMobile} ${colLayoutDesktop} min-h-[56px] cursor-pointer items-center border-b border-[#E4E4E7] bg-white px-2 no-underline transition-colors duration-75 visited:text-inherit hover:bg-neutral-50 focus-visible:z-[1] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#09090B]/25 sm:min-h-[60px] sm:px-4`}
+                className={`group grid ${colLayoutMobile} ${colLayoutDesktop} min-h-[56px] cursor-pointer items-center ${SCREENER_TABLE_ROW_BORDER_B_CLASS} bg-white px-4 no-underline transition-colors duration-75 visited:text-inherit hover:bg-neutral-50 focus-visible:z-[1] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#09090B]/25 sm:min-h-[60px]`}
               >
                 <div className="text-center text-[14px] font-semibold leading-5 tabular-nums text-[#71717A]">
                   {i + 1}

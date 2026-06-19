@@ -66,7 +66,17 @@ export function getStockListingSubtitleParts(args: {
   };
 }
 
-/** Subtitle under the company name, e.g. `NVDA · NASDAQ · 🇺🇸`. */
+/** Mobile top bar line 2 — e.g. `NASDAQ · 🇺🇸` (ticker is line 1). */
+export function formatStockTopbarSecondaryLine(parts: {
+  exchange: string | null;
+  countryFlag: string | null;
+}): string | null {
+  const segments: string[] = [];
+  if (parts.exchange) segments.push(parts.exchange);
+  if (parts.countryFlag) segments.push(parts.countryFlag);
+  return segments.length > 0 ? segments.join(" · ") : null;
+}
+
 /** True when the listing is treated as a US equity (extended-hours header eligible). */
 export function isUsListedStockHeaderMeta(
   meta: Pick<StockDetailHeaderMeta, "exchange" | "countryIso"> | null,

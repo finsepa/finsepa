@@ -69,6 +69,7 @@ const EMPTY_CHART_DISPLAY: ChartDisplayState = {
   selectionActive: false,
   periodLabelOverride: null,
   priceTimestampLabel: null,
+  scrubPeriodLabel: null,
 };
 
 function stockHeaderMetaIsIncomplete(meta: StockDetailHeaderMeta | null): boolean {
@@ -556,7 +557,7 @@ export function StockPageContent({
   return (
     <div className="relative min-w-0">
       <StockBreadcrumbs ticker={ticker} headerMeta={headerMeta} isEtf={isEtf} />
-      <div className="space-y-5 px-4 py-0 sm:space-y-5 sm:px-9 sm:py-6">
+      <div className="space-y-5 px-4 py-0 max-md:pt-4 sm:space-y-5 sm:px-9 sm:py-6">
       <KeyStatsMetricChartModal
         key={revenueProfitModalMetric ?? "closed"}
         ticker={ticker}
@@ -582,6 +583,7 @@ export function StockPageContent({
         chartLoading={chartUi.loading}
         chartEmpty={chartUi.empty}
         priceTimestampLabel={chartUi.priceTimestampLabel}
+        scrubPeriodLabel={chartUi.scrubPeriodLabel}
         chartHovering={chartUi.isHovering && !chartUi.selectionActive}
         headerMeta={headerMeta}
         headerMetaLoading={headerMetaLoading}
@@ -633,26 +635,27 @@ export function StockPageContent({
             compareSlot={
               <StockComparePicker baseTicker={ticker} values={comparePicks} onAdd={onAddComparePick} onRemove={onRemoveComparePick} />
             }
-          />
+          >
+            {comparePicks.length > 0 ? (
+              <StockCompareReturnChart
+                key={`compare-${ticker}-${comparePicks.map((p) => p.symbol.trim().toUpperCase()).join("-")}-${range}`}
+                primaryTicker={ticker}
+                comparePicks={comparePicks}
+                range={range}
+              />
+            ) : (
+              <PriceChart
+                key={`stock-overview-${ticker}-${chartSeries}-${range}`}
+                kind="stock"
+                symbol={ticker}
+                range={range}
+                series={chartSeries}
+                initialChart={initialChartMemo?.range === range ? initialChartMemo : null}
+                onDisplayChange={onOverviewHeaderDisplay}
+              />
+            )}
+          </ChartControls>
         ) : null}
-        {comparePicks.length > 0 ? (
-          <StockCompareReturnChart
-            key={`compare-${ticker}-${comparePicks.map((p) => p.symbol.trim().toUpperCase()).join("-")}-${range}`}
-            primaryTicker={ticker}
-            comparePicks={comparePicks}
-            range={range}
-          />
-        ) : (
-          <PriceChart
-            key={`stock-overview-${ticker}-${chartSeries}-${range}`}
-            kind="stock"
-            symbol={ticker}
-            range={range}
-            series={chartSeries}
-            initialChart={initialChartMemo?.range === range ? initialChartMemo : null}
-            onDisplayChange={onOverviewHeaderDisplay}
-          />
-        )}
       </div>
 
       {tabsMounted.overview ? (
@@ -660,18 +663,20 @@ export function StockPageContent({
           role="tabpanel"
           id="stock-tab-overview"
           aria-hidden={displayTab !== "overview"}
-          className={displayTab === "overview" ? "space-y-5" : "hidden"}
+          className={displayTab === "overview" ? "space-y-5 max-md:-mt-2" : "hidden"}
         >
-          <MiniTable
-            ticker={ticker}
-            headerMeta={headerMeta}
-            headerMetaLoading={headerMetaLoading}
-            initialPerformance={initialPageData?.ticker === ticker ? initialPageData.performance : null}
-            comparePicks={comparePicks}
-            onRemoveCompare={comparePicks.length > 0 ? onRemoveComparePick : undefined}
-          />
+          {comparePicks.length > 0 ? (
+            <MiniTable
+              ticker={ticker}
+              headerMeta={headerMeta}
+              headerMetaLoading={headerMetaLoading}
+              initialPerformance={initialPageData?.ticker === ticker ? initialPageData.performance : null}
+              comparePicks={comparePicks}
+              onRemoveCompare={onRemoveComparePick}
+            />
+          ) : null}
           {!isEtf ? (
-            <div className="pt-2">
+            <div className="max-md:pt-0 md:pt-2">
               <KeyStats
                 ticker={ticker}
                 initialBundle={initialPageData?.ticker === ticker ? initialPageData.keyStatsBundle : null}

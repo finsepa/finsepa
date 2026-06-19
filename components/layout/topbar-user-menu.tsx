@@ -12,7 +12,7 @@ import {
   dropdownMenuPlainItemClassName,
   dropdownMenuSurfaceClassName,
 } from "@/components/design-system/dropdown-menu-styles";
-import { topbarSquircleActiveClass } from "@/components/design-system/topbar-control-classes";
+import { topbarSquircleActiveClass, topbarSquircleIconClass } from "@/components/design-system/topbar-control-classes";
 import { TopbarDelayedTooltip } from "@/components/layout/topbar-delayed-tooltip";
 import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
 import { UserAvatar } from "@/components/user/user-avatar";
@@ -39,6 +39,7 @@ type TopbarUserMenuProps = {
   userDisplayName: string;
   /** Days left in platform trial; shown after avatar on the menu trigger when &gt; 0. */
   platformTrialDaysLeft?: number | null;
+  triggerClassName?: string;
 };
 
 export function TopbarUserMenu({
@@ -47,6 +48,7 @@ export function TopbarUserMenu({
   avatarUrl,
   userDisplayName,
   platformTrialDaysLeft = null,
+  triggerClassName,
 }: TopbarUserMenuProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -155,12 +157,11 @@ export function TopbarUserMenu({
           aria-label={menuTriggerLabel}
           onClick={() => setOpen((v) => !v)}
           className={cn(
-            // Mobile: match topbar icon buttons (Star / Plus) — icon only.
-            "flex h-9 w-9 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#09090B]",
-            "shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5]",
+            triggerClassName ?? topbarSquircleIconClass,
             open && topbarSquircleActiveClass,
             // md+: keep the existing combined trigger (menu + avatar + trial text).
-            "md:h-9 md:w-auto md:max-w-[min(100vw-10rem,280px)] md:min-w-0 md:justify-start md:gap-2 md:px-2",
+            !triggerClassName &&
+              "md:h-9 md:w-auto md:max-w-[min(100vw-10rem,280px)] md:min-w-0 md:justify-start md:gap-2 md:px-2",
           )}
         >
           <Menu className="h-5 w-5 shrink-0" aria-hidden />

@@ -100,7 +100,7 @@ export function SecondaryTabs<T extends string>({
         aria-label={ariaLabel}
       >
         <span
-          className="pointer-events-none absolute top-0 z-0 rounded-[10px] bg-[#F4F4F5] motion-reduce:transition-none"
+          className="pointer-events-none absolute top-0 z-0 rounded-[10px] bg-[#EDEDEF] motion-reduce:transition-none md:bg-[#F4F4F5]"
           style={{
             left: indicator.left,
             width: indicator.width,

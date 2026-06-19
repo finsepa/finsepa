@@ -29,6 +29,9 @@ export function mergeSessionHeaderWithPerformanceSpot(
 ): ChartDisplayState {
   if (chartSeries !== "price" || base.selectionActive) return base;
 
+  // Chart crosshair / mobile scrub — keep chart-driven price and change (1D overview).
+  if (base.isHovering) return base;
+
   const eodSpot = perf?.price;
   const liveSpot = isPositiveUsd(sessionLiveSpotUsd) ? sessionLiveSpotUsd : null;
   const spotFromBase =

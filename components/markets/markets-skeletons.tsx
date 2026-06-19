@@ -1,6 +1,7 @@
 "use client";
 
 import { LogoSkeleton, SkeletonBox, TextSkeleton } from "@/components/markets/skeleton";
+import { INDEX_CARD_SURFACE_CLASS, INDEX_CARDS_GRID_CLASS, INDEX_CARDS_SCROLL_CLASS } from "@/components/screener/index-cards";
 import {
   SCREENER_TABLE_HEADER_STICKY_CLASS,
   ScreenerTableScroll,
@@ -18,7 +19,7 @@ const indicesColLayout =
 /** Matches {@link IndexCards} — stacked label / value / change, no sparkline. */
 export function IndexCardSkeleton({ name }: { name: string }) {
   return (
-    <div className="flex min-h-[112px] w-[10.75rem] shrink-0 flex-col items-start gap-1 overflow-hidden rounded-2xl border border-[#E4E4E7] bg-white px-4 py-4 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] md:w-auto md:min-w-0 md:shrink">
+    <div className={`${INDEX_CARD_SURFACE_CLASS} min-h-[112px]`}>
       <span className="text-[14px] font-medium leading-5 text-[#A1A1AA]">{name}</span>
       <SkeletonBox className="h-8 w-[7.5rem] max-w-full rounded-md" />
       <TextSkeleton wClass="w-14" hClass="h-3.5" />
@@ -288,14 +289,14 @@ export function ScreenerMarketTabSkeleton({ tab }: { tab: ScreenerMarketTabSkele
 
   return (
     <div className="min-w-0 w-full max-w-full">
-      <div className="mb-6 -mx-4 overflow-x-auto overscroll-x-contain px-4 [-webkit-overflow-scrolling:touch] [scrollbar-width:none] md:mx-0 md:overflow-visible md:px-0 [&::-webkit-scrollbar]:hidden">
-        <div className="flex w-max flex-nowrap gap-3 md:grid md:w-full md:max-w-full md:grid-cols-3 md:gap-4 lg:grid-cols-4 xl:grid-cols-5">
+      <div className={INDEX_CARDS_SCROLL_CLASS}>
+        <div className={INDEX_CARDS_GRID_CLASS}>
           {["S&P 500", "Nasdaq 100", "Dow Jones", "Russell 2000", "VIX"].map((name) => (
             <IndexCardSkeleton key={name} name={name} />
           ))}
         </div>
       </div>
-      <div className="mb-5 h-10 w-48 rounded-lg skeleton" />
+      <div className="mb-5 h-9 w-full rounded-[10px] skeleton md:w-48" />
       <StocksTableSkeleton rows={SCREENER_COMPANIES_PAGE_SIZE} />
     </div>
   );

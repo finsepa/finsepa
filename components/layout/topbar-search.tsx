@@ -21,6 +21,7 @@ const SEARCH_DISMISS_BACKDROP_Z = 29;
 
 const SEARCH_MOTION_MS = 280;
 const SEARCH_MOTION_EASE = "cubic-bezier(0.33, 1, 0.68, 1)";
+const MOBILE_MAX_WIDTH_MQ = "(max-width: 767px)";
 
 const SEARCH_ICON_SIZE_PX = 20;
 const SEARCH_ICON_GAP_PX = 8;
@@ -82,6 +83,7 @@ export function TopbarSearch() {
     }
 
     function onKey(e: KeyboardEvent) {
+      if (window.matchMedia(MOBILE_MAX_WIDTH_MQ).matches) return;
       if (e.code !== "KeyS") return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       if (e.repeat) return;
@@ -103,6 +105,7 @@ export function TopbarSearch() {
     }
 
     function onOpenSearch() {
+      if (window.matchMedia(MOBILE_MAX_WIDTH_MQ).matches) return;
       activateSearch();
     }
 
@@ -130,7 +133,7 @@ export function TopbarSearch() {
         role="search"
         data-open={open ? "true" : "false"}
         className={cn(
-          "relative flex h-9 min-w-0 w-full cursor-text items-center overflow-hidden rounded-lg bg-[#F4F4F5] pl-4 pr-3",
+          "relative flex h-9 min-w-0 w-full cursor-text items-center overflow-hidden rounded-lg bg-[#EDEDEF] pl-4 pr-3 md:bg-[#F4F4F5]",
           "transition-colors motion-reduce:transition-none",
           !open && "hover:bg-[#EBEBEB]",
         )}

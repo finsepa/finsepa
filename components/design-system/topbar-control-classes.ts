@@ -12,3 +12,7 @@ export const topbarSquircleSplitShellClass =
 
 /** Open dropdown / menu trigger — same grey fill as hover. */
 export const topbarSquircleActiveClass = "bg-[#F4F4F5]";
+
+/** Icon cell inside a grouped mobile top-bar control (no per-button border). */
+export const topbarSquircleClusterItemClass =
+  "flex h-9 w-9 shrink-0 items-center justify-center text-[#09090B] transition-colors hover:bg-[#F4F4F5] active:bg-[#E4E4E7]";

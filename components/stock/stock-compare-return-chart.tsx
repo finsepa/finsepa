@@ -592,7 +592,7 @@ export function StockCompareReturnChart({ primaryTicker, comparePicks, range, he
       }}
     >
       <div className="relative min-h-0 min-w-0 flex-1" style={{ height: plotHeight }}>
-        <div className="pointer-events-none absolute inset-0 z-0 bg-white" aria-hidden>
+        <div className="pointer-events-none absolute inset-0 z-0 max-md:bg-[#FAFAFA] bg-white" aria-hidden>
           <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
         </div>
         <div
@@ -604,7 +604,7 @@ export function StockCompareReturnChart({ primaryTicker, comparePicks, range, he
         />
         {hoverPoint && ready && !loading ? (
           <div
-            className="pointer-events-none absolute inset-y-0 right-0 z-[15] bg-white/55"
+            className="pointer-events-none absolute inset-y-0 right-0 z-[15] max-md:bg-[#FAFAFA]/55 bg-white/55"
             style={{ left: Math.max(0, hoverPoint.x) }}
             aria-hidden
           />

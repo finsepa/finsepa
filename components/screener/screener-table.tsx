@@ -8,6 +8,8 @@ import { CompanyLogo } from "./company-logo";
 import {
   SCREENER_TABLE_BODY_DIVIDE_CLASS,
   SCREENER_TABLE_HEADER_STICKY_CLASS,
+  SCREENER_TABLE_OUTER_BORDER_CLASS,
+  SCREENER_TABLE_MOBILE_SURFACE_CLASS,
   ScreenerTableScroll,
 } from "@/components/screener/screener-table-scroll";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
@@ -198,7 +200,7 @@ const ScreenerDataRow = memo(function ScreenerDataRow({
 
   return (
     <div
-      className="group flex min-h-[60px] min-w-0 w-full items-center gap-x-1.5 bg-white px-2 transition-colors duration-75 hover:bg-neutral-50 max-md:gap-x-1.5 sm:gap-x-2 sm:px-4"
+      className="group flex min-h-[60px] min-w-0 w-full items-center gap-x-1.5 bg-white px-4 transition-colors duration-75 hover:bg-neutral-50 max-md:gap-x-1.5 sm:gap-x-2"
     >
       <WatchlistStarToggle
         className="hidden w-6 shrink-0 items-center justify-center px-1 sm:flex sm:w-10 sm:px-3"
@@ -301,11 +303,11 @@ export function ScreenerTable({
 
   const headerRow = (
     <div
-      className={`flex min-h-[44px] min-w-0 w-full items-center gap-x-1.5 px-2 py-0 text-[12px] font-medium leading-5 text-[#71717A] max-md:gap-x-1.5 sm:gap-x-2 sm:px-4 sm:text-[14px]`}
+      className={`flex min-h-[44px] max-md:min-h-10 min-w-0 w-full items-center gap-x-1.5 px-4 py-0 max-md:py-2 text-[12px] font-medium leading-5 text-[#71717A] max-md:gap-x-1.5 sm:gap-x-2 sm:text-[14px]`}
     >
       <div className="hidden w-6 shrink-0 sm:block sm:w-10" aria-hidden />
       <div
-        className={`${rowLinkGridBase} min-h-[44px] items-center text-[12px] font-medium leading-5 text-[#71717A] sm:text-[14px]`}
+        className={`${rowLinkGridBase} min-h-[44px] max-md:min-h-0 items-center text-[12px] font-medium leading-5 text-[#71717A] sm:text-[14px]`}
         style={{ gridTemplateColumns }}
       >
         <div className="text-center">#</div>
@@ -353,7 +355,13 @@ export function ScreenerTable({
 
   if (tableMinWidthPx != null) {
     return (
-      <div className="w-full min-w-0 max-w-full border-x-0 border-y border-solid border-[#E4E4E7] bg-white">
+      <div
+        className={cn(
+          "w-full min-w-0 max-w-full bg-white",
+          SCREENER_TABLE_OUTER_BORDER_CLASS,
+          SCREENER_TABLE_MOBILE_SURFACE_CLASS,
+        )}
+      >
         <div className={SCREENER_TABLE_HEADER_STICKY_CLASS}>
           <div
             ref={headerRef}

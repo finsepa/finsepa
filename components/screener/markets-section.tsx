@@ -357,7 +357,8 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const urlTab = useMemo(() => marketTabFromUrl(searchParams), [searchParams]);
-  const [displayTab, setDisplayTab] = useState<MarketTab>(urlTab);
+  const tabFromPayload = screenerMarketTabLabelFromParam(payload.market);
+  const [displayTab, setDisplayTab] = useState<MarketTab>(tabFromPayload);
   const [activePayload, setActivePayload] = useState<ScreenerPagePayload>(payload);
   const [tabLoading, setTabLoading] = useState(false);
   const [, startTransition] = useTransition();
@@ -943,7 +944,7 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
             marketCacheSegment={activePayload.companiesMarketCacheSegment}
           />
           {!isStocksDrill ? (
-            <div className="mb-5 flex min-w-0 w-full max-w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <div className="mb-5 flex min-w-0 w-full max-w-full max-md:mb-3 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
               <ScreenerTabs active={displayStocksSubTab} onChange={setStocksSubTabWithUrl} />
               {showCompaniesKeyStatToolbar ? (
                 <ScreenerCompaniesKeyStatToolbar

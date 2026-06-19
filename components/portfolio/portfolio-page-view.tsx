@@ -245,7 +245,7 @@ export function PortfolioPageView({
       <AssetPageTopLoader />
       <div className="mb-6 flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
         <div className="flex min-w-0 items-start justify-between gap-3 sm:flex-1 sm:items-center">
-          <div className="flex min-w-0 flex-col gap-1">
+          <div className="hidden min-w-0 flex-col gap-1 sm:flex">
             {showPortfoliosBreadcrumb ? (
               <h1 className="min-w-0 truncate text-2xl font-semibold tracking-tight text-[#09090B]">
                 {portfolioName}
@@ -262,7 +262,7 @@ export function PortfolioPageView({
           </div>
 
           {!readOnly ? (
-            <div className="flex shrink-0 flex-nowrap items-center justify-end gap-2 sm:hidden">
+            <div className="flex w-full shrink-0 flex-nowrap items-center justify-end gap-2 sm:hidden">
               {selectedPortfolioId != null && selectedPortfolio?.snaptrade ? (
                 <PortfolioSyncStatusIcon
                   portfolioId={selectedPortfolioId}

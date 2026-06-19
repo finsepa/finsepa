@@ -12,25 +12,39 @@
   --sat: env(safe-area-inset-top, 0px);
   /** Extra space below `<main>` above the floating nav; 0 when the shell is flush (white edge-to-edge). */
   --mobile-main-bottom-gap: 0px;
-  /** Sync with `MobileBottomNav`: inset above home indicator + 60px tab container. */
-  --mobile-bottom-nav-inset-bottom: 8px;
-  --mobile-bottom-nav-height: 60px;
+  /** Sync with `MobileBottomNav`: inset above home indicator + icon-only tab row. */
+  --mobile-bottom-nav-inset-bottom: 16px;
+  --mobile-bottom-nav-expanded-height: 52px;
+  --mobile-bottom-nav-height: var(--mobile-bottom-nav-expanded-height);
+  --mobile-bottom-nav-compact-height: 44px;
+  --mobile-bottom-nav-expanded-inset-x: 1rem;
+  --mobile-bottom-nav-compact-inset-x: 2.75rem;
+  --mobile-bottom-nav-inset-x: var(--mobile-bottom-nav-expanded-inset-x);
+  --mobile-bottom-nav-radius: 32px;
   /**
    * Space reserved for the floating bottom nav pill over `<main>` (padding-bottom on mobile).
-   * Sync with `MobileBottomNav` + FAB.
+   * Uses expanded height so compacting the pill does not shift scroll layout.
    */
   --mobile-bottom-nav-main-clearance: calc(
-    var(--mobile-bottom-nav-inset-bottom) + var(--mobile-bottom-nav-height) + var(--mobile-main-bottom-gap) +
+    var(--mobile-bottom-nav-inset-bottom) + var(--mobile-bottom-nav-expanded-height) + var(--mobile-main-bottom-gap) +
       env(safe-area-inset-bottom, 0px)
   );
   --mobile-bottom-nav-sheet-bottom: calc(
     var(--mobile-bottom-nav-inset-bottom) + var(--mobile-bottom-nav-height) + 10px + env(safe-area-inset-bottom, 0px)
   );
-  --mobile-bottom-nav-fab-bottom: calc(var(--mobile-bottom-nav-main-clearance) + 0.75rem);
-  /** Back-to-top sits in the nav row when the bottom pill is scroll-hidden (48px FAB in 60px nav). */
-  --mobile-bottom-nav-fab-bottom-docked: calc(
-    var(--mobile-bottom-nav-inset-bottom) + env(safe-area-inset-bottom, 0px) +
-      (var(--mobile-bottom-nav-height) - 3rem) / 2
+  /** Progressive blur zone above the floating bottom nav (mobile). */
+  --mobile-bottom-nav-blur-extension: 40px;
+  --mobile-bottom-nav-blur-fade-height: calc(
+    var(--mobile-bottom-nav-blur-extension) + var(--mobile-bottom-nav-height) +
+      var(--mobile-bottom-nav-inset-bottom) + env(safe-area-inset-bottom, 0px)
+  );
+  /** Mobile topbar chrome + progressive blur below it (Revolut-style). */
+  --mobile-topbar-height: 4rem;
+  --mobile-topbar-offset: calc(env(safe-area-inset-top, 0px) + var(--mobile-topbar-height));
+  --mobile-topbar-blur-extension: 40px;
+  --mobile-topbar-blur-extension-current: 0px;
+  --mobile-topbar-blur-fade-height: calc(
+    env(safe-area-inset-top, 0px) + var(--mobile-topbar-height) + var(--mobile-topbar-blur-extension-current)
   );
   /** Desktop protected shell: outer padding around the combined topbar + main + watchlist card. */
   --shell-chrome-inset: 4px;
@@ -82,15 +96,23 @@
 }
 
 /** Combined desktop chrome card (topbar + main + watchlist). */
-.shell-desktop-panel {
-  border: 1px solid #e4e4e7;
-  border-radius: var(--shell-desktop-panel-radius);
-  background: #fff;
-  box-shadow: 0 1px 2px 0 rgba(10, 10, 10, 0.06);
+@media (max-width: 767px) {
+  .shell-desktop-panel,
+  .shell-desktop-panel__content {
+    background: #fafafa;
+  }
 }
 
 @media (min-width: 768px) {
+  .shell-desktop-chrome-column {
+    left: var(--shell-left);
+  }
+
   .shell-desktop-panel {
+    background: #fff;
+    border: 1px solid #e4e4e7;
+    border-radius: var(--shell-desktop-panel-radius);
+    box-shadow: 0 1px 2px 0 rgba(10, 10, 10, 0.06);
     overflow: hidden;
     border-top-left-radius: var(--shell-desktop-panel-radius);
     border-top-right-radius: var(--shell-desktop-panel-radius);
@@ -148,42 +170,264 @@ body {
     overflow-x: hidden;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    background: #ffffff;
+    background: #fafafa;
   }
 
-  /** Fixed bottom pill — `env()` in global CSS avoids Tailwind SSR/client `className` mismatch. */
-  .mobile-bottom-nav-pill {
+  /** Fixed bottom bar — main pill + search; `env()` avoids Tailwind SSR/client mismatch. */
+  .mobile-bottom-nav-bar {
+    position: fixed;
+    z-index: 43;
+    overflow: visible;
+    left: var(--mobile-bottom-nav-inset-x);
+    right: var(--mobile-bottom-nav-inset-x);
     bottom: calc(var(--mobile-bottom-nav-inset-bottom) + env(safe-area-inset-bottom, 0px));
+    height: var(--mobile-bottom-nav-height);
+    transition:
+      left 280ms cubic-bezier(0.33, 1, 0.68, 1),
+      right 280ms cubic-bezier(0.33, 1, 0.68, 1),
+      height 280ms cubic-bezier(0.33, 1, 0.68, 1);
+  }
+
+  .mobile-bottom-nav-bar--more-open {
+    z-index: 44;
+  }
+
+  /** Anchor the nav pill to the bar bottom so height growth expands upward. */
+  .mobile-bottom-nav-pill {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: calc(100% - 10px - var(--mobile-bottom-nav-height));
+    min-height: 0;
+    padding: 2px;
+    border-radius: var(--mobile-bottom-nav-radius);
+    transition:
+      box-shadow 200ms ease,
+      border-color 200ms ease,
+      width 280ms cubic-bezier(0.33, 1, 0.68, 1);
+  }
+
+  .mobile-bottom-nav-pill--expanded {
+    z-index: 44;
+  }
+
+  .mobile-bottom-nav-more-list {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .mobile-bottom-nav-pill--expanded .mobile-bottom-nav-tabs {
+    margin-top: auto;
+    flex: 0 0 auto;
+    height: calc(var(--mobile-bottom-nav-height) - 4px);
+    max-height: calc(var(--mobile-bottom-nav-height) - 4px);
+  }
+
+  /** Search morph: circle on the right expands into the full-width input bar. */
+  .mobile-bottom-nav-search-morph {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    box-sizing: border-box;
+    height: var(--mobile-bottom-nav-height);
+    width: var(--mobile-bottom-nav-height);
+    border-radius: 9999px;
+    transition:
+      width 280ms cubic-bezier(0.33, 1, 0.68, 1),
+      height 280ms cubic-bezier(0.33, 1, 0.68, 1),
+      border-radius 280ms cubic-bezier(0.33, 1, 0.68, 1);
+  }
+
+  .mobile-bottom-nav-search-morph--open {
+    width: 100%;
+    border-radius: var(--mobile-bottom-nav-radius);
+  }
+
+  .mobile-bottom-nav-tabs {
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+  }
+
+  .mobile-bottom-nav-tab-icon-slot {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+
+  .mobile-bottom-nav-search-pill {
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    border-radius: 9999px;
+    flex-shrink: 0;
+  }
+
+  .mobile-bottom-nav-search-pill--close {
+    width: var(--mobile-bottom-nav-height);
+    height: var(--mobile-bottom-nav-height);
+    flex-shrink: 0;
+  }
+
+  /** Hide WebKit’s native clear control; close is the morph pill X. */
+  [data-mobile-bottom-search-input]::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+    appearance: none;
+    display: none;
+  }
+
+  .mobile-bottom-nav-search-pill svg,
+  .mobile-bottom-nav-search-icon {
+    width: 1.5rem;
+    height: 1.5rem;
+    transition:
+      width 280ms cubic-bezier(0.33, 1, 0.68, 1),
+      height 280ms cubic-bezier(0.33, 1, 0.68, 1);
+  }
+
+  html.mobile-bottom-nav-scroll-compact {
+    --mobile-bottom-nav-height: var(--mobile-bottom-nav-compact-height);
+    --mobile-bottom-nav-inset-x: var(--mobile-bottom-nav-compact-inset-x);
+  }
+
+  html.mobile-bottom-nav-scroll-compact .mobile-bottom-nav-search-pill svg,
+  html.mobile-bottom-nav-scroll-compact .mobile-bottom-nav-search-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  .mobile-bottom-nav-indicator {
+    will-change: left, width;
+  }
+
+  .mobile-bottom-nav-tab-button {
+    padding: 0;
+    transition:
+      color 100ms ease,
+      opacity 100ms ease,
+      background-color 100ms ease;
+  }
+
+  html.mobile-bottom-nav-scroll-compact .mobile-bottom-nav-tab-button {
+    padding: 0;
+  }
+
+  .mobile-bottom-nav-tab-button svg,
+  .mobile-bottom-nav-tab-icon {
+    display: block;
+    width: 1.5rem;
+    height: 1.5rem;
+    flex-shrink: 0;
+    transition:
+      width 280ms cubic-bezier(0.33, 1, 0.68, 1),
+      height 280ms cubic-bezier(0.33, 1, 0.68, 1);
+  }
+
+  html.mobile-bottom-nav-scroll-compact .mobile-bottom-nav-tab-button svg,
+  html.mobile-bottom-nav-scroll-compact .mobile-bottom-nav-tab-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  /**
+   * Progressive blur behind the mobile topbar — frosted at top, sharp toward content.
+   * Masked backdrop-filter + FAFAFA wash to match the mobile page background.
+   */
+  .mobile-topbar-blur-fade {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: 0;
+    z-index: 29;
+    height: var(--mobile-topbar-blur-fade-height);
+    pointer-events: none;
+    opacity: 0;
+    background: linear-gradient(
+      to bottom,
+      rgba(250, 250, 250, 0.88) 0%,
+      rgba(250, 250, 250, 0.45) 42%,
+      rgba(250, 250, 250, 0) 100%
+    );
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 48%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 0%, #000 48%, transparent 100%);
+    transition:
+      opacity 220ms ease,
+      height 220ms cubic-bezier(0.33, 1, 0.68, 1);
+  }
+
+  html.mobile-topbar-scroll-active {
+    --mobile-topbar-blur-extension-current: var(--mobile-topbar-blur-extension);
+  }
+
+  html.mobile-topbar-scroll-active .mobile-topbar-blur-fade {
+    opacity: 1;
+  }
+
+  /** Fixed topbar on mobile — content scrolls underneath (Revolut-style). */
+  .mobile-topbar-shell {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 30;
+    padding-top: env(safe-area-inset-top, 0px);
+    background: transparent;
+  }
+
+  /**
+   * Progressive blur behind the floating bottom nav — content sharp at top, frosted at bottom.
+   * Masked backdrop-filter + FAFAFA wash to match the mobile page background.
+   */
+  .mobile-bottom-nav-blur-fade {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    height: var(--mobile-bottom-nav-blur-fade-height);
+    pointer-events: none;
+    background: linear-gradient(
+      to bottom,
+      rgba(250, 250, 250, 0) 0%,
+      rgba(250, 250, 250, 0.45) 42%,
+      rgba(250, 250, 250, 0.88) 100%
+    );
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 48%, #000 100%);
+    mask-image: linear-gradient(to bottom, transparent 0%, #000 48%, #000 100%);
     transition:
       transform 280ms cubic-bezier(0.33, 1, 0.68, 1),
       opacity 200ms ease;
   }
 
-  .mobile-bottom-nav-pill.mobile-bottom-nav-pill--hidden {
-    transform: translate3d(
-      0,
-      calc(100% + var(--mobile-bottom-nav-inset-bottom) + env(safe-area-inset-bottom, 0px) + 8px),
-      0
-    );
+  .mobile-bottom-nav-blur-fade.mobile-bottom-nav-blur-fade--hidden {
     opacity: 0;
     pointer-events: none;
   }
+}
 
-  .main-scroll-to-top-fab {
-    bottom: var(--mobile-bottom-nav-fab-bottom);
-    transition:
-      bottom 280ms cubic-bezier(0.33, 1, 0.68, 1),
-      opacity 200ms ease;
-  }
-
-  html.mobile-bottom-nav-scroll-hidden .main-scroll-to-top-fab {
-    bottom: var(--mobile-bottom-nav-fab-bottom-docked);
+@media (min-width: 768px) {
+  .mobile-topbar-shell {
+    position: static;
+    padding-top: 0;
+    background: #fff;
   }
 }
 
 @media (max-width: 767px) and (prefers-reduced-motion: reduce) {
+  .mobile-bottom-nav-bar,
   .mobile-bottom-nav-pill,
-  .main-scroll-to-top-fab {
+  .mobile-bottom-nav-search-morph,
+  .mobile-bottom-nav-search-pill,
+  .mobile-bottom-nav-indicator,
+  .mobile-bottom-nav-blur-fade {
     transition: none;
   }
 }
@@ -252,6 +496,52 @@ body {
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
+  }
+}
+
+/** Top-bar (+) trigger — stable SVG classNames for SSR; motion via `data-open` on the button. */
+.quick-add-trigger-icons {
+  position: relative;
+  display: grid;
+  height: 1.25rem;
+  width: 1.25rem;
+  flex-shrink: 0;
+  place-items: center;
+}
+
+.quick-add-trigger-icons > svg {
+  grid-area: 1 / 1;
+  height: 1.25rem;
+  width: 1.25rem;
+  pointer-events: none;
+  transition:
+    opacity 200ms ease-out,
+    transform 200ms ease-out;
+}
+
+.quick-add-trigger-icons > .quick-add-trigger-plus {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+}
+
+.quick-add-trigger-icons > .quick-add-trigger-close {
+  opacity: 0;
+  transform: rotate(-45deg) scale(0.75);
+}
+
+.quick-add-trigger[data-open="true"] .quick-add-trigger-plus {
+  opacity: 0;
+  transform: rotate(45deg) scale(0.75);
+}
+
+.quick-add-trigger[data-open="true"] .quick-add-trigger-close {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .quick-add-trigger-icons > svg {
+    transition: none;
   }
 }
 

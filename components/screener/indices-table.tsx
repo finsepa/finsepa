@@ -96,7 +96,7 @@ export function IndicesTable({
     >
       <div className="bg-white">
       <div
-        className={`grid ${colLayout} min-h-[44px] items-center px-2 py-0 text-[12px] font-medium leading-5 text-[#71717A] sm:px-4 sm:text-[14px] ${SCREENER_TABLE_HEADER_STICKY_CLASS}`}
+        className={`grid ${colLayout} min-h-[44px] items-center px-4 py-0 text-[12px] font-medium leading-5 text-[#71717A] sm:text-[14px] ${SCREENER_TABLE_HEADER_STICKY_CLASS}`}
       >
         <div className="hidden sm:block" aria-hidden />
         <div className="text-center">#</div>
@@ -113,7 +113,7 @@ export function IndicesTable({
         return (
           <div
             key={r.symbol}
-            className={`group grid min-h-[56px] ${colLayout} items-center bg-white px-2 transition-colors duration-75 hover:bg-neutral-50 sm:min-h-[60px] sm:px-4`}
+            className={`group grid min-h-[56px] ${colLayout} items-center bg-white px-4 transition-colors duration-75 hover:bg-neutral-50 sm:min-h-[60px]`}
           >
             <WatchlistStarToggle
               className="hidden w-6 shrink-0 items-center justify-center px-1 sm:flex sm:w-10 sm:px-3"

@@ -182,6 +182,8 @@ export type ChartDisplayState = {
   periodLabelOverride: string | null;
   /** Formatted "Month D, YYYY at h:mm AM/PM TZ, USD"; null when no display time. */
   priceTimestampLabel: string | null;
+  /** Mobile chart scrub: bottom-axis date string for the header period badge. */
+  scrubPeriodLabel: string | null;
 };
 
 export type HoldingsTradeMarker = { date: string; side: "buy" | "sell" };
@@ -745,8 +747,6 @@ export function PriceChart({
     ((point: { x: number; y: number }, bar: StockChartPoint) => void) | null
   >(null);
   const mobileScrubClearRef = useRef<(() => void) | null>(null);
-  const overviewTooltipRef = useRef<HTMLDivElement>(null);
-  const overviewTooltipTextRef = useRef<HTMLParagraphElement>(null);
 
   const [loading, setLoading] = useState(true);
   const [points, setPoints] = useState<StockChartPoint[]>([]);
@@ -775,6 +775,14 @@ export function PriceChart({
   const [overviewHover, setOverviewHover] = useState<OverviewHoverUi | null>(null);
   const overviewHoverDraftRef = useRef<OverviewHoverUi | null>(null);
   const overviewHoverRafRef = useRef(0);
+  /** Mobile overview scrub: drives header price via `crosshairForHeader` (no in-chart tooltip). */
+  const [mobileOverviewHeaderCrosshair, setMobileOverviewHeaderCrosshair] = useState<{
+    price: number;
+    timeUnix: number;
+    periodLabel: string | null;
+  } | null>(null);
+  const setMobileOverviewHeaderCrosshairRef = useRef(setMobileOverviewHeaderCrosshair);
+  setMobileOverviewHeaderCrosshairRef.current = setMobileOverviewHeaderCrosshair;
   const holdingsHoverDraftRef = useRef<{
     price: number | null;
     timeUnix: number | null;
@@ -978,9 +986,11 @@ export function PriceChart({
     );
   }, [overviewBottomAxisMode, useCustomBottomAxis, holdingsStyle, points, containerWidth, loading]);
 
-  // Even on holdings (Portfolio) charts, hover should NOT drive the page header price.
-  // Hover is used only for in-chart UI (tooltip, bottom axis label, dim overlay).
-  const crosshairForHeader = useMemo((): { price: number; timeUnix: number } | null => null, []);
+  // Holdings charts never drive the page header. Mobile overview scrub updates the header price.
+  const crosshairForHeader = useMemo((): { price: number; timeUnix: number } | null => {
+    if (holdingsStyle || !useMobileOverviewCrosshair) return null;
+    return mobileOverviewHeaderCrosshair;
+  }, [holdingsStyle, useMobileOverviewCrosshair, mobileOverviewHeaderCrosshair]);
 
   const metrics = useMemo(
     () => computeChartHeaderMetrics(points, null, crosshairForHeader),
@@ -1040,6 +1050,7 @@ export function PriceChart({
       selectionActive: metrics.selectionActive,
       periodLabelOverride: metrics.periodLabelOverride,
       priceTimestampLabel,
+      scrubPeriodLabel: metrics.scrubPeriodLabel,
     });
   }, [loading, points.length, metrics, onDisplayChange, kind, dataTimeZoneHint]);
 
@@ -1067,9 +1078,9 @@ export function PriceChart({
   const clearMobileOverviewCrosshairDom = useCallback(() => {
     mobileHoverBarTimeRef.current = null;
     mobileHoverPointRef.current = null;
+    setMobileOverviewHeaderCrosshairRef.current(null);
     setHoverAxisLabelGuarded(null);
     if (dimOverlayRef.current) dimOverlayRef.current.style.display = "none";
-    if (overviewTooltipRef.current) overviewTooltipRef.current.style.display = "none";
   }, []);
 
   const flushOverviewHover = useCallback(() => {
@@ -1249,13 +1260,6 @@ export function PriceChart({
       );
     };
 
-    const overviewMetricTitleForTooltip =
-      chartMetricSeriesRef.current === "marketCap"
-        ? "Market cap"
-        : chartMetricSeriesRef.current === "return"
-          ? "Return"
-          : "Price";
-
     const clearHoldingsHoverDom = () => {
       holdingsHoverDraftRef.current = null;
       holdingsTradeTooltipLastKeyRef.current = null;
@@ -1377,27 +1381,20 @@ export function PriceChart({
         dimOverlayRef.current.style.display = "";
         dimOverlayRef.current.style.left = `${Math.max(0, point.x)}px`;
       }
-      const tip = overviewTooltipRef.current;
-      const tipText = overviewTooltipTextRef.current;
-      const plotW = containerWidthRef.current;
-      if (tip && tipText && plotW > 0) {
-        const valueLabel = formatOverviewChartAxisValue(
-          nearBar.value,
-          kindRef.current,
-          chartMetricSeriesRef.current,
-        );
-        tipText.textContent = `${overviewMetricTitleForTooltip}: ${valueLabel}`;
-        const pos = layoutPointTooltip(point, plotW, plotHeight, 40);
-        tip.style.display = "block";
-        tip.style.left = `${pos.left}px`;
-        tip.style.top = `${pos.top}px`;
-        tip.style.transform = pos.transform;
+      const timeUnix = chartPointDisplayUnix(nearBar, overviewBottomAxisModeRef.current);
+      const periodLabel = overviewCrosshairLabelByBarTimeRef.current?.get(nearBar.time)?.trim() || null;
+      if (isFiniteNumber(nearBar.value) && isFiniteNumber(timeUnix)) {
+        setMobileOverviewHeaderCrosshairRef.current({
+          price: nearBar.value,
+          timeUnix,
+          periodLabel,
+        });
       }
       if (mobileHoverBarTimeRef.current !== nearBar.time) {
         mobileHoverBarTimeRef.current = nearBar.time;
         const xCoord = chart.timeScale().timeToCoordinate(nearBar.time as UTCTimestamp);
         const leftPx = xCoord != null && Number.isFinite(xCoord) ? xCoord : point.x;
-        const label = overviewCrosshairLabelByBarTimeRef.current?.get(nearBar.time) ?? "";
+        const label = periodLabel ?? "";
         setHoverAxisLabelGuarded({ leftPx, label });
       }
     };
@@ -2161,7 +2158,7 @@ export function PriceChart({
       }
     >
       <div className={cn("relative min-h-0", useCustomBottomAxis ? "min-w-0 flex-1" : "absolute inset-0")} style={useCustomBottomAxis ? { height: plotHeight } : undefined}>
-      <div className="pointer-events-none absolute inset-0 z-0 bg-white" aria-hidden>
+      <div className="pointer-events-none absolute inset-0 z-0 max-md:bg-[#FAFAFA] bg-white" aria-hidden>
         {!useMobileOverviewCrosshair ? <div className={CHART_PLOT_DOTS_PATTERN_CLASS} /> : null}
       </div>
       {showHoldingsActivityOverlay ? (
@@ -2181,7 +2178,7 @@ export function PriceChart({
       />
       <div
         ref={dimOverlayRef}
-        className="pointer-events-none absolute inset-y-0 right-0 z-[15] bg-white/55"
+        className="pointer-events-none absolute inset-y-0 right-0 z-[15] max-md:bg-[#FAFAFA]/55 bg-white/55"
         style={{ display: "none", left: 0 }}
         aria-hidden
       />
@@ -2221,16 +2218,6 @@ export function PriceChart({
               </div>
             ))
         : null}
-      {!holdingsStyle && useMobileOverviewCrosshair ? (
-        <div
-          ref={overviewTooltipRef}
-          className="pointer-events-none absolute z-30 min-w-[148px] rounded-lg border border-[#E4E4E7] bg-white px-3 py-2 shadow-[0px_1px_4px_0px_rgba(10,10,10,0.08),0px_1px_2px_0px_rgba(10,10,10,0.06)]"
-          style={{ display: "none" }}
-          role="tooltip"
-        >
-          <p ref={overviewTooltipTextRef} className="text-xs font-semibold tabular-nums text-[#09090B]" />
-        </div>
-      ) : null}
       {!holdingsStyle &&
       !useMobileOverviewCrosshair &&
       overviewHoverTooltip &&

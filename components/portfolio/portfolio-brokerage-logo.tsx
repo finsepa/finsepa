@@ -28,6 +28,10 @@ function BrokerageInitials({ name, className }: { name: string; className?: stri
 const portfolioListLogoShellClass =
   "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#E4E4E7] bg-[#F4F4F5]";
 
+/** Top bar squircle — matches `topbarSquircleIconClass` (36×36). */
+export const portfolioTopbarLogoClass =
+  "h-9 w-9 shrink-0 rounded-[10px] border border-[#E4E4E7] bg-[#F4F4F5] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]";
+
 /** Logo in portfolio picker rows — brokerage image, or icon tile for manual / combined. */
 export function PortfolioListLogo({
   portfolio,

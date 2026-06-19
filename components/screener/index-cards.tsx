@@ -4,6 +4,7 @@ import { ArrowDown, ArrowUp } from "@/lib/icons";
 import { useEffect, useMemo, useState } from "react";
 
 import { FadeIn } from "@/components/markets/skeleton";
+import { MOBILE_CARD_SURFACE_CLASS } from "@/components/design-system/card-surface-styles";
 import type { IndexCardData } from "@/lib/screener/indices-today";
 import {
   fetchScreenerIndexCardsCached,
@@ -26,7 +27,11 @@ type IndexEntry = {
 
 function formatIndexValue(price: number | null): string {
   if (price == null || !Number.isFinite(price)) return "—";
-  return price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const sign = price < 0 ? "-" : "";
+  const abs = Math.abs(price);
+  const [whole, frac] = abs.toFixed(2).split(".");
+  const grouped = whole!.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return `${sign}${grouped}.${frac}`;
 }
 
 function formatChangePercent(changePercent1D: number | null): string {
@@ -48,6 +53,21 @@ function entriesFromCards(cards: IndexCardData[]): IndexEntry[] {
   });
 }
 
+export const INDEX_CARDS_GRID_CLASS =
+  "flex w-max flex-nowrap gap-3 md:grid md:w-full md:max-w-full md:grid-cols-3 md:gap-4 lg:grid-cols-4 xl:grid-cols-5";
+
+/** Horizontal scroll shell — padding on mobile leaves room for card shadows inside the scrollport. */
+export const INDEX_CARDS_SCROLL_CLASS =
+  "mb-5 max-md:mb-2 -mx-4 overflow-x-auto overscroll-x-contain px-4 pb-3 max-md:pb-1 pt-1 [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mb-6 md:mx-0 md:overflow-visible md:px-0 md:pb-0 md:pt-0";
+
+export const INDEX_CARD_SURFACE_CLASS =
+  `flex w-[8.0625rem] shrink-0 flex-col items-start gap-1 max-md:overflow-visible overflow-hidden rounded-2xl border border-[#E4E4E7] bg-white px-3 py-3 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition md:hover:shadow-[0px_2px_6px_0px_rgba(10,10,10,0.08)] sm:px-4 sm:py-4 md:w-auto md:min-w-0 md:shrink ${MOBILE_CARD_SURFACE_CLASS}`;
+
+function seedIndexCards(initialCards?: IndexCardData[]): IndexCardData[] {
+  if (Array.isArray(initialCards) && initialCards.length > 0) return initialCards;
+  return withIndexCardLocalFallbacks([]);
+}
+
 export function IndexCards({
   initialCards,
   marketCacheSegment = "",
@@ -56,9 +76,7 @@ export function IndexCards({
   /** From SSR stocks payload — live 15m slot or frozen last regular session. */
   marketCacheSegment?: string;
 }) {
-  const [cards, setCards] = useState<IndexCardData[]>(() =>
-    Array.isArray(initialCards) && initialCards.length > 0 ? initialCards : [],
-  );
+  const [cards, setCards] = useState<IndexCardData[]>(() => seedIndexCards(initialCards));
 
   useEffect(() => {
     if (Array.isArray(initialCards) && initialCards.length > 0) {
@@ -100,26 +118,21 @@ export function IndexCards({
   const entries = useMemo(() => entriesFromCards(cards), [cards]);
   const fadeIn = true;
 
-  if (entries.length !== SCREENER_INDEX_CARD_LABELS.length) return null;
-
   return (
-    <div
-      className="mb-5 -mx-4 overflow-x-auto overscroll-x-contain px-4 [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mb-6 md:mx-0 md:overflow-visible md:px-0"
-      aria-label="Market indices"
-    >
-      <div className="flex w-max flex-nowrap gap-3 md:grid md:w-full md:max-w-full md:grid-cols-3 md:gap-4 lg:grid-cols-4 xl:grid-cols-5">
+    <div className={INDEX_CARDS_SCROLL_CLASS} aria-label="Market indices">
+      <div className={INDEX_CARDS_GRID_CLASS}>
         {entries.map(({ name, value, change, positive, neutral }) => {
           const TrendIcon = neutral ? null : positive ? ArrowUp : ArrowDown;
           return (
-            <div
-              key={name}
-              className="flex w-[10.75rem] shrink-0 flex-col items-start gap-1 overflow-hidden rounded-2xl border border-[#E4E4E7] bg-white px-3 py-3 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition hover:shadow-[0px_2px_6px_0px_rgba(10,10,10,0.08)] sm:px-4 sm:py-4 md:w-auto md:min-w-0 md:shrink"
-            >
+            <div key={name} className={INDEX_CARD_SURFACE_CLASS}>
               <p className="w-full truncate text-left text-[13px] font-medium leading-5 text-[#09090B] sm:text-[14px]">
                 {name}
               </p>
               <FadeIn show={fadeIn}>
-                <p className="w-full truncate text-left text-[15px] font-bold leading-6 tabular-nums text-[#09090B] sm:text-base">
+                <p
+                  className="w-full truncate text-left text-[15px] font-bold leading-6 tabular-nums text-[#09090B] sm:text-base"
+                  suppressHydrationWarning
+                >
                   {value}
                 </p>
               </FadeIn>
@@ -128,6 +141,7 @@ export function IndexCards({
                   className={`flex w-full items-center gap-1 text-left text-[13px] font-medium leading-5 tabular-nums sm:text-[14px] ${
                     neutral ? "text-[#71717A]" : positive ? "text-[#16A34A]" : "text-[#DC2626]"
                   }`}
+                  suppressHydrationWarning
                 >
                   <span className="truncate">{change}</span>
                   {TrendIcon ? <TrendIcon className="h-4 w-4 shrink-0" aria-hidden /> : null}

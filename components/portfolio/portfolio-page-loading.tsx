@@ -161,18 +161,19 @@ function PortfolioPageHeaderSkeleton({
   return (
     <div className="mb-6 flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4" aria-hidden>
       <div className="flex min-w-0 items-start justify-between gap-3 sm:flex-1 sm:items-center">
-        <div className="flex min-w-0 flex-col gap-1">
+        <div className="hidden min-w-0 flex-col gap-1 sm:flex">
           {showPortfoliosBreadcrumb ? (
             <Pulse className="h-8 w-[min(100%,12rem)] max-w-full rounded-lg" />
           ) : (
             <div className="flex min-w-0 items-center gap-2">
+              <Pulse className="h-8 w-8 shrink-0 rounded-lg bg-neutral-100" />
               <Pulse className="h-8 w-[min(100%,12rem)] max-w-full rounded-lg" />
-              <Pulse className="h-6 w-6 shrink-0 rounded-md bg-neutral-100" />
+              <Pulse className="h-9 w-9 shrink-0 rounded-[10px] bg-neutral-100" />
             </div>
           )}
         </div>
 
-        <div className="flex shrink-0 items-center gap-2 sm:hidden">
+        <div className="flex w-full shrink-0 items-center justify-end gap-2 sm:hidden">
           <Pulse className="h-9 w-9 rounded-[10px] bg-neutral-100" />
           <Pulse className="h-9 w-9 rounded-[10px] bg-neutral-100" />
           <Pulse className="h-9 w-9 rounded-[10px] bg-neutral-100" />

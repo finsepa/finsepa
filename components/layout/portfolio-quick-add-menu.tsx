@@ -17,8 +17,6 @@ import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import { cn } from "@/lib/utils";
 
-const DESKTOP_WEB_MQ = "(min-width: 768px)";
-
 /**
  * (+) quick menu — used on the global top bar and the Portfolio page header.
  */
@@ -34,11 +32,10 @@ export function PortfolioQuickAddMenu({
   showDesktopLabel?: boolean;
   desktopLabel?: string;
   "aria-label"?: string;
-  /** Shown on mobile when `showDesktopLabel` is true; suppressed on desktop web. */
+  /** Shown on mobile when `showDesktopLabel` is true; suppressed on touch via tooltip helper. */
   dwellTooltipLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
-  const [isDesktopWeb, setIsDesktopWeb] = useState(false);
   const {
     openNewTransaction,
     openAddCash,
@@ -48,15 +45,6 @@ export function PortfolioQuickAddMenu({
   } = usePortfolioWorkspace();
   const rootRef = useRef<HTMLDivElement>(null);
   const menuPortalRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!showDesktopLabel) return;
-    const mq = window.matchMedia(DESKTOP_WEB_MQ);
-    const update = () => setIsDesktopWeb(mq.matches);
-    update();
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
-  }, [showDesktopLabel]);
 
   const items = [
     {
@@ -97,38 +85,27 @@ export function PortfolioQuickAddMenu({
     };
   }, [open]);
 
-  const tooltipEnabled = Boolean(dwellTooltipLabel) && !(showDesktopLabel && isDesktopWeb);
+  const tooltipEnabled = Boolean(dwellTooltipLabel);
 
   const trigger = (
     <button
       type="button"
+      data-open={open ? "true" : "false"}
       aria-expanded={open}
       aria-haspopup="menu"
-      aria-label={showDesktopLabel && isDesktopWeb ? undefined : ariaLabel}
+      aria-label={ariaLabel}
       onClick={() => setOpen((v) => !v)}
       className={cn(
-        showDesktopLabel ? topbarSquircleTextButtonClass : topbarSquircleIconClass,
+        "quick-add-trigger",
+        triggerClassName ?? (showDesktopLabel ? topbarSquircleTextButtonClass : topbarSquircleIconClass),
         "justify-center",
         showDesktopLabel ? "w-9 gap-0 px-0 md:w-auto md:gap-1.5 md:px-3.5" : undefined,
         open && topbarSquircleActiveClass,
-        triggerClassName,
       )}
     >
-      <span className="relative grid h-5 w-5 shrink-0 place-items-center" aria-hidden>
-        <Plus
-          strokeWidth={2}
-          className={cn(
-            "pointer-events-none col-start-1 row-start-1 h-5 w-5 transition-all duration-200 ease-out motion-reduce:transition-none",
-            open ? "rotate-45 scale-75 opacity-0" : "rotate-0 scale-100 opacity-100",
-          )}
-        />
-        <X
-          strokeWidth={2}
-          className={cn(
-            "pointer-events-none col-start-1 row-start-1 h-5 w-5 transition-all duration-200 ease-out motion-reduce:transition-none",
-            open ? "rotate-0 scale-100 opacity-100" : "-rotate-45 scale-75 opacity-0",
-          )}
-        />
+      <span className="quick-add-trigger-icons" aria-hidden>
+        <Plus strokeWidth={2} className="h-5 w-5 quick-add-trigger-plus" />
+        <X strokeWidth={2} className="h-5 w-5 quick-add-trigger-close" />
       </span>
       {showDesktopLabel ? (
         <span className="hidden text-[13px] font-medium leading-5 md:inline">{desktopLabel}</span>

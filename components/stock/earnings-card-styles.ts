@@ -1,5 +1,8 @@
 import type { CSSProperties } from "react";
 
+import { MOBILE_CARD_SURFACE_CLASS } from "@/components/design-system/card-surface-styles";
+import { cn } from "@/lib/utils";
+
 /** Figma: card value titles — Inter Semi Bold 24 / 36, #09090B. Shared by Earnings summary cards and Multicharts metric cards. */
 export const EARNINGS_CARD_VALUE_CLASS =
   "font-['Inter'] text-[24px] font-semibold leading-[36px] tracking-normal text-[#09090B]";
@@ -38,9 +41,12 @@ export function earningsForecastBarFillStyle(barColor: string): CSSProperties {
   };
 }
 
-/** Multicharts / macro metric cards — Figma: 20px padding, 12px radius, 1px #E4E4E7 stroke. */
-export const MULTICHART_CARD_CLASS =
-  "flex flex-col gap-2 overflow-x-hidden overflow-y-visible rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition hover:shadow-[0px_2px_4px_0px_rgba(10,10,10,0.08)]";
+/** Multicharts / macro metric cards — Figma desktop: 20px padding, 12px radius, 1px stroke; mobile matches home screener table card. */
+export const MULTICHART_CARD_CLASS = cn(
+  "flex flex-col gap-2 overflow-x-hidden overflow-y-visible rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition md:hover:shadow-[0px_2px_4px_0px_rgba(10,10,10,0.08)]",
+  "max-md:rounded-2xl",
+  MOBILE_CARD_SURFACE_CLASS,
+);
 
 /** Default chart plot height inside a multichart / macro card. */
 export const MULTICHART_CARD_CHART_HEIGHT_PX = 278;

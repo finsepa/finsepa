@@ -9,10 +9,19 @@ import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useStat
 import { CalendarDays } from "@/lib/icons";
 
 import { cn } from "@/lib/utils";
+import { MOBILE_CARD_SURFACE_CLASS } from "@/components/design-system/card-surface-styles";
 import { consensusLabelTextClass } from "@/lib/market/analyst-consensus-tone";
 
 const KEY_STATS_TAB_MOTION_MS = 280;
 const KEY_STATS_TAB_MOTION_EASE = "cubic-bezier(0.33, 1, 0.68, 1)";
+
+/** Mobile matches screener home table card — 16px radius, stacked shadow, no outer border. */
+const KEY_STATS_CARD_CLASS = cn(
+  "mb-5 rounded-xl border border-[#E4E4E7] bg-white p-4 max-md:mb-0 max-md:rounded-2xl",
+  MOBILE_CARD_SURFACE_CLASS,
+);
+
+const KEY_STATS_ROW_BORDER_CLASS = "border-b border-[#E4E4E7] max-md:border-b-[0.5px]";
 
 type KeyStatsTabId =
   | "basic"
@@ -81,7 +90,7 @@ function KeyStatsSectionTabNav({
   }, [measureIndicator]);
 
   return (
-    <div className="-mx-1 mb-4 border-b border-solid border-[#E4E4E7]">
+    <div className="mb-4 border-b border-solid border-[#E4E4E7]">
       <nav
         ref={navRef}
         className="relative flex flex-nowrap items-start gap-4 overflow-x-auto overflow-y-hidden pb-px [-webkit-overflow-scrolling:touch] max-md:[-ms-overflow-style:none] max-md:[scrollbar-width:none] max-md:[&::-webkit-scrollbar]:hidden"
@@ -306,7 +315,10 @@ function KeyStatMetricRow({
     <button
       type="button"
       onClick={() => metricId && onMetricClick?.(metricId)}
-      className="group flex w-full min-w-0 cursor-pointer items-center justify-between gap-3 border-b border-[#E4E4E7] py-1.5 text-left last:border-0 hover:bg-[#FAFAFA]"
+      className={cn(
+        "group flex w-full min-w-0 cursor-pointer items-center justify-between gap-3 py-1.5 text-left last:border-0 hover:bg-[#FAFAFA]",
+        KEY_STATS_ROW_BORDER_CLASS,
+      )}
     >
       <span className="min-w-0 shrink text-[14px] leading-5 text-[#09090B] underline-offset-2 decoration-[#71717A] group-hover:underline">
         {label}
@@ -326,7 +338,7 @@ function StatRow({
   valueClassName?: string;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 border-b border-[#E4E4E7] py-1.5 last:border-0">
+    <div className={cn("flex items-center justify-between gap-3 py-1.5 last:border-0", KEY_STATS_ROW_BORDER_CLASS)}>
       <span className="min-w-0 shrink text-[14px] leading-5 text-[#09090B]">{label}</span>
       <BasicValueDisplay label={label} value={value} valueClassName={valueClassName} />
     </div>
@@ -337,7 +349,7 @@ function CardSkeleton({ rowLabels }: { rowLabels: string[] }) {
   return (
     <div className="space-y-2 pt-0.5" aria-hidden>
       {rowLabels.map((label) => (
-        <div key={label} className="flex justify-between gap-3 border-b border-[#E4E4E7] py-1.5 last:border-0">
+        <div key={label} className={cn("flex justify-between gap-3 py-1.5 last:border-0", KEY_STATS_ROW_BORDER_CLASS)}>
           <div className="h-4 w-28 rounded bg-neutral-100" />
           <div className="h-4 w-20 rounded bg-neutral-100" />
         </div>
@@ -371,7 +383,7 @@ const DynamicCard = memo(function DynamicCard({
   const clickable = map != null && typeof onMetricClick === "function";
 
   return (
-    <div className="mb-5 rounded-xl border border-[#E4E4E7] bg-white p-4 max-md:mb-0">
+    <div className={KEY_STATS_CARD_CLASS}>
       {hideTitle ? null : (
         <h3 className="mb-2 text-[14px] font-semibold leading-5 text-[#09090B]">{title}</h3>
       )}
@@ -409,7 +421,7 @@ const BasicCard = memo(function BasicCard({
   const clickable = typeof onMetricClick === "function";
 
   return (
-    <div className="mb-5 rounded-xl border border-[#E4E4E7] bg-white p-4 max-md:mb-0">
+    <div className={KEY_STATS_CARD_CLASS}>
       {hideTitle ? null : (
         <h3 className="mb-2 text-[14px] font-semibold leading-5 text-[#09090B]">Basic</h3>
       )}
@@ -467,7 +479,7 @@ const RevenueProfitCard = memo(function RevenueProfitCard({
   const displayRows = rows ?? placeholder;
 
   return (
-    <div className="mb-5 rounded-xl border border-[#E4E4E7] bg-white p-4 max-md:mb-0">
+    <div className={KEY_STATS_CARD_CLASS}>
       {hideTitle ? null : (
         <h3 className="mb-2 text-[14px] font-semibold leading-5 text-[#09090B]">Revenue &amp; Profit</h3>
       )}

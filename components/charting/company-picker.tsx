@@ -273,7 +273,9 @@ export function CompanyPicker({
   });
   const atCapacity = disabled || (!alwaysAllowOpen && maxExtraCompanies <= 0);
 
-  const searchPlaceholder = includeCrypto ? "Search stocks, crypto, indices…" : "Search stocks…";
+  const searchPlaceholder =
+    placeholderProp ??
+    (includeCrypto ? "Search stocks, crypto, indices…" : "Search stocks…");
   const listboxAriaLabel = includeCrypto ? "Stocks, crypto, and search" : "Stocks and search";
   const inlinePlaceholder =
     placeholderProp ??
