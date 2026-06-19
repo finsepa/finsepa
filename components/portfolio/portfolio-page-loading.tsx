@@ -25,9 +25,17 @@ function PortfolioOverviewCardsSkeleton() {
   return (
     <div className="mb-4 w-full min-w-0 sm:mb-6">
       <div className="sm:hidden">
-        <Pulse className="h-3 w-10 bg-neutral-200" />
-        <Pulse className="mt-2 h-8 w-[min(100%,14rem)] max-w-full rounded-md" />
-        <Pulse className="mt-2 h-4 w-36 bg-neutral-100" />
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1 space-y-2">
+            <Pulse className="h-3 w-10 bg-neutral-200" />
+            <Pulse className="mt-2 h-8 w-[min(100%,14rem)] max-w-full rounded-md" />
+            <Pulse className="h-4 w-36 bg-neutral-100" />
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <Pulse className="h-9 w-9 rounded-[10px] bg-neutral-100" />
+            <Pulse className="h-9 w-9 rounded-[10px] bg-neutral-100" />
+          </div>
+        </div>
         <div className="mt-4 space-y-0">
           <div className="flex items-center justify-between gap-4 py-3">
             <Pulse className="h-4 w-20 bg-neutral-100" />
@@ -159,29 +167,23 @@ function PortfolioPageHeaderSkeleton({
   showPortfoliosBreadcrumb?: boolean;
 }) {
   return (
-    <div className="mb-6 flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4" aria-hidden>
-      <div className="flex min-w-0 items-start justify-between gap-3 sm:flex-1 sm:items-center">
-        <div className="hidden min-w-0 flex-col gap-1 sm:flex">
-          {showPortfoliosBreadcrumb ? (
+    <div
+      className="mb-6 hidden shrink-0 flex-col gap-2 sm:flex sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+      aria-hidden
+    >
+      <div className="min-w-0 flex-1">
+        {showPortfoliosBreadcrumb ? (
+          <Pulse className="h-8 w-[min(100%,12rem)] max-w-full rounded-lg" />
+        ) : (
+          <div className="flex min-w-0 items-center gap-2">
+            <Pulse className="h-8 w-8 shrink-0 rounded-lg bg-neutral-100" />
             <Pulse className="h-8 w-[min(100%,12rem)] max-w-full rounded-lg" />
-          ) : (
-            <div className="flex min-w-0 items-center gap-2">
-              <Pulse className="h-8 w-8 shrink-0 rounded-lg bg-neutral-100" />
-              <Pulse className="h-8 w-[min(100%,12rem)] max-w-full rounded-lg" />
-              <Pulse className="h-9 w-9 shrink-0 rounded-[10px] bg-neutral-100" />
-            </div>
-          )}
-        </div>
-
-        <div className="flex w-full shrink-0 items-center justify-end gap-2 sm:hidden">
-          <Pulse className="h-9 w-9 rounded-[10px] bg-neutral-100" />
-          <Pulse className="h-9 w-9 rounded-[10px] bg-neutral-100" />
-          <Pulse className="h-9 w-9 rounded-[10px] bg-neutral-100" />
-        </div>
+            <Pulse className="h-9 w-9 shrink-0 rounded-[10px] bg-neutral-100" />
+          </div>
+        )}
       </div>
 
-      <div className="hidden shrink-0 items-center gap-2 sm:flex">
-        <Pulse className="h-9 w-40 rounded-[10px] bg-neutral-100" />
+      <div className="flex shrink-0 items-center gap-2">
         <Pulse className="h-9 w-9 rounded-[10px] bg-neutral-100" />
         <Pulse className="h-9 w-9 rounded-[10px] bg-neutral-100" />
       </div>
@@ -202,7 +204,7 @@ export function PortfolioPageLoadingShell({
 } = {}) {
   return (
     <div
-      className="relative flex min-h-full min-w-0 flex-col overflow-x-hidden bg-white"
+      className="relative flex min-h-full min-w-0 flex-col overflow-x-hidden"
       aria-busy="true"
       aria-label="Loading portfolio"
     >

@@ -30,31 +30,41 @@ const portfolioListLogoShellClass =
 
 /** Top bar squircle — matches `topbarSquircleIconClass` (36×36). */
 export const portfolioTopbarLogoClass =
-  "h-9 w-9 shrink-0 rounded-[10px] border border-[#E4E4E7] bg-[#F4F4F5] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]";
+  "flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-[#F4F4F5] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]";
+
+type PortfolioLogoSize = "list" | "topbar";
 
 /** Logo in portfolio picker rows — brokerage image, or icon tile for manual / combined. */
 export function PortfolioListLogo({
   portfolio,
   className,
+  size = "list",
 }: {
   portfolio: PortfolioEntry;
   className?: string;
+  size?: PortfolioLogoSize;
 }) {
+  const shellClass = cn(
+    size === "topbar" ? portfolioTopbarLogoClass : portfolioListLogoShellClass,
+    className,
+  );
+  const iconClass = size === "topbar" ? "h-5 w-5" : "h-4 w-4";
+
   if (portfolioIsCombined(portfolio)) {
     return (
-      <div className={cn(portfolioListLogoShellClass, className)} aria-hidden>
-        <GitMerge className="h-4 w-4 text-[#71717A]" strokeWidth={2} />
+      <div className={shellClass} aria-hidden>
+        <GitMerge className={cn(iconClass, "text-[#71717A]")} strokeWidth={2} />
       </div>
     );
   }
 
   if (portfolio.snaptrade) {
-    return <PortfolioBrokerageLogo snaptrade={portfolio.snaptrade} className={className} />;
+    return <PortfolioBrokerageLogo snaptrade={portfolio.snaptrade} size={size} className={className} />;
   }
 
   return (
-    <div className={cn(portfolioListLogoShellClass, className)} aria-hidden>
-      <Briefcase className="h-4 w-4 text-[#71717A]" strokeWidth={2} />
+    <div className={shellClass} aria-hidden>
+      <Briefcase className={cn(iconClass, "text-[#71717A]")} strokeWidth={2} />
     </div>
   );
 }
@@ -62,9 +72,11 @@ export function PortfolioListLogo({
 export function PortfolioBrokerageLogo({
   snaptrade,
   className,
+  size = "list",
 }: {
   snaptrade?: PortfolioSnaptradeLink | null;
   className?: string;
+  size?: PortfolioLogoSize;
 }) {
   const [logoUrl, setLogoUrl] = useState(() => snaptrade?.brokerageLogoUrl?.trim() ?? "");
   const [failed, setFailed] = useState(false);
@@ -98,7 +110,15 @@ export function PortfolioBrokerageLogo({
   const hasLogo = logoUrl.length > 0 && !failed;
 
   if (!hasLogo) {
-    return <BrokerageInitials name={name} className={className} />;
+    return (
+      <BrokerageInitials
+        name={name}
+        className={cn(
+          size === "topbar" ? portfolioTopbarLogoClass : undefined,
+          className,
+        )}
+      />
+    );
   }
 
   return (
@@ -106,7 +126,9 @@ export function PortfolioBrokerageLogo({
       src={logoUrl}
       alt=""
       className={cn(
-        "h-8 w-8 shrink-0 rounded-lg border border-[#E4E4E7] bg-white object-contain p-0.5",
+        size === "topbar" ?
+          cn(portfolioTopbarLogoClass, "bg-white object-contain p-0.5")
+        : "h-8 w-8 shrink-0 rounded-lg border border-[#E4E4E7] bg-white object-contain p-0.5",
         className,
       )}
       onError={() => setFailed(true)}

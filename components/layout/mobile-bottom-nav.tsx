@@ -13,7 +13,7 @@ import {
 import { AnimatePresence, motion } from "motion/react";
 import { ChartPieSlice, Globe, Star } from "@phosphor-icons/react";
 
-import { ChevronsUpDownIcon, type ChevronsUpDownIconHandle } from "@/components/chevrons-up-down-icon";
+import { ChevronsUpDownIcon } from "@/components/chevrons-up-down-icon";
 import {
   MobileBottomNavSearchField,
   MobileBottomNavSearchResults,
@@ -28,6 +28,7 @@ import { OPEN_SEARCH_EVENT } from "@/components/search/search-modal";
 import { useSearchPanel } from "@/components/search/use-search-panel";
 import { HapticButton } from "@/components/haptic-button";
 import { useMobileBottomNavScrollHide } from "@/lib/layout/use-mobile-bottom-nav-scroll-hide";
+import { useMobileVisualViewport } from "@/lib/layout/use-mobile-visual-viewport";
 import { Search, X } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 
@@ -44,15 +45,41 @@ const MORE_MENU_PILL_PADDING_PX = 4;
 /** Sync with `--mobile-bottom-nav-expanded-height`. */
 const MORE_MENU_TAB_ROW_PX = 52;
 
-function moreMenuExpandedHeightPx(itemCount: number): number {
+/** Fallback when `window` is unavailable (SSR / first paint). */
+const FALLBACK_VIEWPORT_HEIGHT_PX = 844;
+
+function viewportHeightPx(): number {
+  if (typeof window === "undefined") return FALLBACK_VIEWPORT_HEIGHT_PX;
+  return window.innerHeight;
+}
+
+function computeMoreMenuListHeightPx(
+  itemCount: number,
+  viewportHeight = viewportHeightPx(),
+): number {
   const contentHeight =
     MORE_MENU_PILL_PADDING_PX +
     MORE_MENU_LIST_PADDING_PX +
     itemCount * MORE_MENU_ROW_HEIGHT_PX +
-    Math.max(0, itemCount - 1) * MORE_MENU_ROW_GAP_PX +
-    MORE_MENU_TAB_ROW_PX;
-  const viewportCap = Math.max(MORE_MENU_ROW_HEIGHT_PX * 3, window.innerHeight - 120);
+    Math.max(0, itemCount - 1) * MORE_MENU_ROW_GAP_PX;
+  const viewportCap =
+    Math.max(MORE_MENU_ROW_HEIGHT_PX * 3, viewportHeight - 120) - MORE_MENU_TAB_ROW_PX;
   return Math.min(contentHeight, viewportCap);
+}
+
+function moreMenuExpandedHeightPx(
+  itemCount: number,
+  viewportHeight = viewportHeightPx(),
+): number {
+  return computeMoreMenuListHeightPx(itemCount, viewportHeight) + MORE_MENU_TAB_ROW_PX;
+}
+
+/** Locks tab-row size while the More sheet opens/closes so icons do not morph. */
+export const MOBILE_BOTTOM_NAV_MORE_ACTIVE_CLASS = "mobile-bottom-nav-more-active";
+
+function syncMobileBottomNavMoreActiveClass(active: boolean) {
+  if (typeof document === "undefined") return;
+  document.documentElement.classList.toggle(MOBILE_BOTTOM_NAV_MORE_ACTIVE_CLASS, active);
 }
 
 const MORPH_SPRING = { type: "spring" as const, stiffness: 360, damping: 32, mass: 0.9 };
@@ -78,138 +105,66 @@ const LINK_TABS: LinkTabConfig[] = [
   { id: "watchlist", label: "Watchlist", href: "/watchlist", Icon: Star },
 ];
 
+/** Equal-width tab row — used for %-based active highlight (tracks bar resize smoothly). */
+const MOBILE_BOTTOM_NAV_TAB_ORDER: MobilePrimaryNavTab[] = [
+  "markets",
+  "portfolio",
+  "watchlist",
+  "more",
+];
+
+function mobileBottomNavHighlightIndex(tab: MobilePrimaryNavTab): number {
+  const index = MOBILE_BOTTOM_NAV_TAB_ORDER.indexOf(tab);
+  return index >= 0 ? index : 0;
+}
+
 export function MobileBottomNav() {
   const pathname = usePathname();
   const router = useRouter();
   const urlTab = useMemo(() => mobilePrimaryNavTabFromPathname(pathname), [pathname]);
   const [displayTab, setDisplayTab] = useState<MobilePrimaryNavTab>(urlTab);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [moreMenuAnimating, setMoreMenuAnimating] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchMorphComplete, setSearchMorphComplete] = useState(false);
   const [, startTransition] = useTransition();
-  const scrollCompact = useMobileBottomNavScrollHide(!moreOpen && !searchOpen);
+  const navFrozen = moreOpen || moreMenuAnimating;
+  useMobileBottomNavScrollHide(!searchOpen && !navFrozen);
 
   const searchMorphRef = useRef<HTMLDivElement>(null);
   const closeSearch = useCallback(() => setSearchOpen(false), []);
   const searchPanel = useSearchPanel({ open: searchOpen, onClose: closeSearch });
+  const visualViewport = useMobileVisualViewport(searchOpen);
 
   const barRef = useRef<HTMLDivElement>(null);
   const navRef = useRef<HTMLElement>(null);
-  const chevronsRef = useRef<ChevronsUpDownIconHandle>(null);
-  const tabRefs = useRef(new Map<MobilePrimaryNavTab, HTMLDivElement>());
-  const [indicator, setIndicator] = useState({ left: 0, width: 0 });
-  const [indicatorReady, setIndicatorReady] = useState(false);
-  const [indicatorResizeLock, setIndicatorResizeLock] = useState(false);
+  const moreOpenRef = useRef(moreOpen);
+  moreOpenRef.current = moreOpen;
   const [expandedHeightPx, setExpandedHeightPx] = useState(() =>
-    moreMenuExpandedHeightPx(protectedMobileMoreNavItems.length),
+    moreMenuExpandedHeightPx(protectedMobileMoreNavItems.length, FALLBACK_VIEWPORT_HEIGHT_PX),
   );
+
+  const highlightTab = moreOpen ? urlTab : displayTab;
+  const highlightIndex = mobileBottomNavHighlightIndex(highlightTab);
+  const highlightTabCount = MOBILE_BOTTOM_NAV_TAB_ORDER.length;
 
   useEffect(() => {
     if (!moreOpen) setDisplayTab(urlTab);
   }, [urlTab, moreOpen]);
 
-  useEffect(() => {
-    const updateHeight = () =>
+  useLayoutEffect(() => {
+    syncMobileBottomNavMoreActiveClass(navFrozen);
+    return () => syncMobileBottomNavMoreActiveClass(false);
+  }, [navFrozen]);
+
+  useLayoutEffect(() => {
+    const updateHeight = () => {
       setExpandedHeightPx(moreMenuExpandedHeightPx(protectedMobileMoreNavItems.length));
+    };
     updateHeight();
     window.addEventListener("resize", updateHeight);
     return () => window.removeEventListener("resize", updateHeight);
   }, []);
-
-  const measureIndicator = useCallback(() => {
-    if (moreOpen) return;
-    const nav = navRef.current;
-    const cell = tabRefs.current.get(displayTab);
-    if (!nav || !cell) return;
-    const navRect = nav.getBoundingClientRect();
-    const cellRect = cell.getBoundingClientRect();
-    const left = Math.round(cellRect.left - navRect.left);
-    const width = Math.round(cellRect.width);
-    if (width <= 0) return;
-    setIndicator((prev) => {
-      if (prev.left === left && prev.width === width) return prev;
-      return { left, width };
-    });
-  }, [displayTab, moreOpen]);
-
-  const measureIndicatorRef = useRef(measureIndicator);
-  measureIndicatorRef.current = measureIndicator;
-
-  useLayoutEffect(() => {
-    if (searchOpen || moreOpen) return;
-    measureIndicatorRef.current();
-    const readyRaf = requestAnimationFrame(() => setIndicatorReady(true));
-
-    const nav = navRef.current;
-    const bar = barRef.current;
-    if (!nav) {
-      return () => cancelAnimationFrame(readyRaf);
-    }
-
-    const onTransitionEnd = (e: TransitionEvent) => {
-      const target = e.target;
-      if (target !== nav && target !== bar) return;
-      if (
-        e.propertyName === "height" ||
-        e.propertyName === "border-radius" ||
-        e.propertyName === "width"
-      ) {
-        if (!moreOpen) measureIndicatorRef.current();
-      }
-    };
-
-    const onResize = () => measureIndicatorRef.current();
-    const ro = new ResizeObserver(onResize);
-    ro.observe(nav);
-    bar?.addEventListener("transitionend", onTransitionEnd);
-    nav.addEventListener("transitionend", onTransitionEnd);
-    window.addEventListener("resize", onResize);
-
-    return () => {
-      cancelAnimationFrame(readyRaf);
-      ro.disconnect();
-      bar?.removeEventListener("transitionend", onTransitionEnd);
-      nav.removeEventListener("transitionend", onTransitionEnd);
-      window.removeEventListener("resize", onResize);
-    };
-  }, [moreOpen, searchOpen]);
-
-  useEffect(() => {
-    if (!indicatorReady || searchOpen || moreOpen) return;
-    const raf = requestAnimationFrame(() => measureIndicatorRef.current());
-    return () => cancelAnimationFrame(raf);
-  }, [displayTab, indicatorReady, moreOpen, searchOpen]);
-
-  useEffect(() => {
-    if (moreOpen || searchOpen) return;
-    const bar = barRef.current;
-    if (!bar) return;
-
-    setIndicatorResizeLock(true);
-    const ro = new ResizeObserver(() => measureIndicatorRef.current());
-    ro.observe(bar);
-
-    const unlock = () => {
-      measureIndicatorRef.current();
-      setIndicatorResizeLock(false);
-    };
-
-    const onTransitionEnd = (e: TransitionEvent) => {
-      if (e.target !== bar) return;
-      if (e.propertyName === "height" || e.propertyName === "left" || e.propertyName === "right") {
-        unlock();
-      }
-    };
-
-    bar.addEventListener("transitionend", onTransitionEnd);
-    const timer = window.setTimeout(unlock, TAB_MOTION_MS + 48);
-
-    return () => {
-      ro.disconnect();
-      bar.removeEventListener("transitionend", onTransitionEnd);
-      window.clearTimeout(timer);
-    };
-  }, [scrollCompact, moreOpen, searchOpen]);
 
   useEffect(() => {
     if (!searchOpen) {
@@ -255,11 +210,14 @@ export function MobileBottomNav() {
   }, []);
 
   const closeMore = useCallback(() => {
+    if (!moreOpenRef.current) return;
+    setMoreMenuAnimating(true);
     setMoreOpen(false);
   }, []);
 
   const toggleMore = useCallback(() => {
     setSearchOpen(false);
+    setMoreMenuAnimating(true);
     setMoreOpen((open) => !open);
   }, []);
 
@@ -271,14 +229,6 @@ export function MobileBottomNav() {
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [moreOpen, closeMore]);
-
-  useEffect(() => {
-    if (moreOpen) {
-      chevronsRef.current?.startAnimation();
-    } else {
-      chevronsRef.current?.stopAnimation();
-    }
-  }, [moreOpen]);
 
   const goToTab = useCallback(
     (tab: Exclude<MobilePrimaryNavTab, "more">, href: string) => {
@@ -307,7 +257,6 @@ export function MobileBottomNav() {
       <MobileBottomNavSearchResults
         open={searchOpen && searchMorphComplete}
         panel={searchPanel}
-        barRef={barRef}
         searchMorphRef={searchMorphRef}
       />
 
@@ -331,16 +280,30 @@ export function MobileBottomNav() {
         aria-hidden
         className={cn(
           "mobile-bottom-nav-blur-fade md:hidden",
-          (moreOpen || searchOpen) && "mobile-bottom-nav-blur-fade--hidden",
+          searchOpen && "mobile-bottom-nav-blur-fade--hidden",
         )}
+        style={
+          navFrozen ?
+            {
+              height: `calc(var(--mobile-bottom-nav-blur-extension) + ${expandedHeightPx}px + var(--mobile-bottom-nav-inset-bottom) + env(safe-area-inset-bottom, 0px))`,
+            }
+          : undefined
+        }
       />
 
       <div
         ref={barRef}
         className={cn(
           "mobile-bottom-nav-bar md:hidden",
-          (moreOpen || searchOpen) && "mobile-bottom-nav-bar--more-open",
+          (navFrozen || searchOpen) && "mobile-bottom-nav-bar--more-open",
         )}
+        style={
+          searchOpen ?
+            {
+              bottom: `calc(${visualViewport.keyboardInsetPx}px + var(--mobile-bottom-nav-inset-bottom) + env(safe-area-inset-bottom, 0px))`,
+            }
+          : undefined
+        }
         aria-label="Primary navigation"
       >
         <AnimatePresence initial={false}>
@@ -351,7 +314,7 @@ export function MobileBottomNav() {
               className={cn(
                 "mobile-bottom-nav-pill relative z-[1] flex min-w-0 flex-col overflow-hidden",
                 pillSurfaceClass,
-                moreOpen && "mobile-bottom-nav-pill--expanded z-[44]",
+                navFrozen && "mobile-bottom-nav-pill--expanded z-[44]",
               )}
               aria-label={moreOpen ? "More" : "Primary"}
               role={moreOpen ? "dialog" : undefined}
@@ -364,9 +327,11 @@ export function MobileBottomNav() {
               transition={moreOpen ? MORPH_SPRING : MORE_CLOSE_TRANSITION}
               style={{ transformOrigin: "bottom center" }}
               onAnimationComplete={() => {
-                if (!moreOpen && !searchOpen) {
-                  measureIndicatorRef.current();
+                if (moreOpen) {
+                  setMoreMenuAnimating(false);
+                  return;
                 }
+                setMoreMenuAnimating(false);
               }}
             >
               <AnimatePresence initial={false}>
@@ -375,9 +340,8 @@ export function MobileBottomNav() {
                     key="more-list"
                     className="mobile-bottom-nav-more-list flex min-h-0 flex-col overflow-hidden"
                     initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.16, delay: 0.06 }}
+                    animate={{ opacity: 1, transition: { duration: 0.16, delay: 0.06 } }}
+                    exit={{ opacity: 0, transition: { duration: 0.12, delay: 0 } }}
                   >
                     <MobileMoreNavList
                       items={protectedMobileMoreNavItems}
@@ -388,31 +352,21 @@ export function MobileBottomNav() {
                 ) : null}
               </AnimatePresence>
 
-              <div className="mobile-bottom-nav-tabs relative flex w-full shrink-0 items-stretch">
-                    {indicatorReady && indicator.width > 0 ? (
-                      <span
-                        className="mobile-bottom-nav-indicator pointer-events-none absolute top-[2px] bottom-[2px] z-0 rounded-full bg-[#09090B]/[0.05] motion-reduce:transition-none"
-                        style={{
-                          left: indicator.left,
-                          width: indicator.width,
-                          transitionProperty:
-                            indicatorResizeLock || moreOpen ? "none" : "left, width",
-                          transitionDuration: `${TAB_MOTION_MS}ms`,
-                          transitionTimingFunction: `cubic-bezier(${TAB_MOTION_EASE.join(",")})`,
-                        }}
-                        aria-hidden
-                      />
-                    ) : null}
+              <div
+                className="mobile-bottom-nav-tabs relative flex w-full shrink-0 items-stretch"
+                style={
+                  {
+                    "--mobile-bottom-nav-highlight-index": highlightIndex,
+                    "--mobile-bottom-nav-highlight-count": highlightTabCount,
+                  } as React.CSSProperties
+                }
+              >
                     {LINK_TABS.map((tab) => {
                       const visuallyActive = moreOpen ? urlTab === tab.id : displayTab === tab.id;
                       const Icon = tab.Icon;
                       return (
                         <div
                           key={tab.id}
-                          ref={(el) => {
-                            if (el) tabRefs.current.set(tab.id, el);
-                            else tabRefs.current.delete(tab.id);
-                          }}
                           className="relative z-[1] flex min-w-0 flex-1 flex-col items-stretch self-stretch"
                         >
                           <HapticButton
@@ -431,13 +385,7 @@ export function MobileBottomNav() {
                       );
                     })}
 
-                    <div
-                      ref={(el) => {
-                        if (el) tabRefs.current.set("more", el);
-                        else tabRefs.current.delete("more");
-                      }}
-                      className="relative z-[1] flex min-w-0 flex-1 flex-col items-stretch self-stretch"
-                    >
+                    <div className="relative z-[1] flex min-w-0 flex-1 flex-col items-stretch self-stretch">
                       {moreOpen && urlTab !== "more" ? (
                         <span className={tabHighlightClass} aria-hidden />
                       ) : null}
@@ -454,7 +402,7 @@ export function MobileBottomNav() {
                         onClick={toggleMore}
                       >
                         <span className="mobile-bottom-nav-tab-icon-slot" aria-hidden>
-                          <ChevronsUpDownIcon ref={chevronsRef} className="mobile-bottom-nav-tab-icon shrink-0" />
+                          <ChevronsUpDownIcon className="mobile-bottom-nav-tab-icon shrink-0" />
                         </span>
                       </HapticButton>
                     </div>
@@ -484,7 +432,7 @@ export function MobileBottomNav() {
                 >
                   <MobileBottomNavSearchField
                     panel={searchPanel}
-                    resultsVisible={searchMorphComplete}
+                    resultsVisible={searchOpen && searchMorphComplete}
                   />
                 </motion.div>
               ) : null}

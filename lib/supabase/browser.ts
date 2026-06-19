@@ -23,5 +23,10 @@ export function getSupabaseBrowserClient() {
       "Supabase is not configured (missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY). Local: copy `.env.example` to `.env.local` and add your Supabase URL + anon key from the Supabase dashboard, then restart `npm run dev`. Production: set the same vars in Vercel → Environment Variables and redeploy.",
     );
   }
-  return createBrowserClient(url, key);
+  return createBrowserClient(url, key, {
+    auth: {
+      // `/auth/callback` exchanges the OAuth `code` explicitly in establish-session-from-url.
+      detectSessionInUrl: false,
+    },
+  });
 }

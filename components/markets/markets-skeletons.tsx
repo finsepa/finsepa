@@ -7,6 +7,7 @@ import {
   ScreenerTableScroll,
 } from "@/components/screener/screener-table-scroll";
 import { SCREENER_COMPANIES_PAGE_SIZE } from "@/lib/screener/screener-markets-page-size";
+import { cn } from "@/lib/utils";
 
 /** Matches {@link ScreenerTable}: mobile hides star + 1M / YTD / M Cap / PE. */
 const stocksColLayout =
@@ -55,11 +56,25 @@ function StocksRowSkeleton() {
   );
 }
 
-export function StocksTableSkeleton({ rows = 10 }: { rows?: number }) {
+export function StocksTableSkeleton({
+  rows = 10,
+  embeddedInMobileCard = false,
+  hideMobileHeader = false,
+}: {
+  rows?: number;
+  embeddedInMobileCard?: boolean;
+  hideMobileHeader?: boolean;
+}) {
   return (
-    <ScreenerTableScroll>
+    <ScreenerTableScroll embeddedInMobileCard={embeddedInMobileCard}>
       <div className="divide-y divide-[#E4E4E7] bg-white">
-      <div className={`grid ${stocksColLayout} items-center px-2 py-3 sm:px-4 ${SCREENER_TABLE_HEADER_STICKY_CLASS}`}>
+      <div
+        className={cn(
+          `grid ${stocksColLayout} items-center px-2 py-3 sm:px-4`,
+          SCREENER_TABLE_HEADER_STICKY_CLASS,
+          hideMobileHeader && "max-md:hidden",
+        )}
+      >
         {Array.from({ length: 9 }).map((_, i) => (
           <div
             key={i}
@@ -216,16 +231,25 @@ function FearGreedCardSkeleton() {
 }
 
 /** Gainers & Losers sub-tab while `/api/screener/companies?gainersLosers=1` loads. */
-export function StocksGainersLosersSkeleton({ rows = 10 }: { rows?: number }) {
+export function StocksGainersLosersSkeleton({
+  rows = 10,
+  embeddedInMobileCard = false,
+  hideMobileHeader = false,
+}: {
+  rows?: number;
+  embeddedInMobileCard?: boolean;
+  hideMobileHeader?: boolean;
+}) {
+  const tableChrome = { embeddedInMobileCard, hideMobileHeader };
   return (
-    <div className="space-y-6">
+    <div className={cn(embeddedInMobileCard ? "max-md:divide-y max-md:divide-solid max-md:divide-[#E4E4E7]" : "space-y-6")}>
       <div>
-        <div className="mb-3 h-5 w-36 rounded skeleton" />
-        <StocksTableSkeleton rows={rows} />
+        <div className="mb-3 hidden h-5 w-36 rounded skeleton md:block" />
+        <StocksTableSkeleton rows={rows} {...tableChrome} />
       </div>
       <div>
-        <div className="mb-3 h-5 w-36 rounded skeleton" />
-        <StocksTableSkeleton rows={rows} />
+        <div className="mb-3 hidden h-5 w-36 rounded skeleton md:block" />
+        <StocksTableSkeleton rows={rows} {...tableChrome} />
       </div>
     </div>
   );

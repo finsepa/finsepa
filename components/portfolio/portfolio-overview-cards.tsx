@@ -205,9 +205,11 @@ function weightedPortfolioReturn(
 function PortfolioOverviewCardsInner({
   holdings,
   transactions,
+  mobileToolbarActions,
 }: {
   holdings: PortfolioHolding[];
   transactions: PortfolioTransaction[];
+  mobileToolbarActions?: ReactNode;
 }) {
   const cash = useMemo(() => netCashUsd(transactions), [transactions]);
   const netWorth = useMemo(() => totalNetWorth(holdings, cash), [holdings, cash]);
@@ -501,22 +503,37 @@ function PortfolioOverviewCardsInner({
       <div className="sm:hidden">
         {showMetricSkeleton ? (
           <div className="space-y-3">
-            <div className="h-5 w-24 animate-pulse rounded bg-neutral-200" />
-            <div className="h-10 w-[min(100%,16rem)] animate-pulse rounded bg-neutral-200" />
-            <div className="h-5 w-40 animate-pulse rounded bg-neutral-100" />
-            <div className="mt-6 h-px w-full bg-[#E4E4E7]" />
-            <div className="h-5 w-full animate-pulse rounded bg-neutral-100" />
-            <div className="h-5 w-full animate-pulse rounded bg-neutral-100" />
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1 space-y-2">
+                <div className="h-3 w-10 animate-pulse rounded bg-neutral-200" />
+                <div className="h-8 w-[min(100%,14rem)] max-w-full animate-pulse rounded-md bg-neutral-200" />
+                <div className="h-4 w-36 animate-pulse rounded bg-neutral-100" />
+              </div>
+              {mobileToolbarActions ? (
+                <div className="flex shrink-0 items-center gap-2">{mobileToolbarActions}</div>
+              ) : null}
+            </div>
+            <div className="mt-1 space-y-0">
+              <div className="h-5 w-full animate-pulse rounded bg-neutral-100" />
+              <div className="h-5 w-full animate-pulse rounded bg-neutral-100" />
+            </div>
           </div>
         ) : (
           <div className="w-full min-w-0">
-            <p className="text-xs font-medium text-[#71717A]">Value</p>
-            <p className="mt-1 text-2xl font-semibold tabular-nums tracking-tight text-[#09090B]">
-              {usd.format(normalizeUsdForDisplay(netWorth))}
-            </p>
-            <p className="mt-1 text-sm font-normal tabular-nums text-[#16A34A]">
-              {mobileProfitLine}
-            </p>
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium text-[#71717A]">Value</p>
+                <p className="mt-1 text-2xl font-semibold tabular-nums tracking-tight text-[#09090B]">
+                  {usd.format(normalizeUsdForDisplay(netWorth))}
+                </p>
+                <p className="mt-1 text-sm font-normal tabular-nums text-[#16A34A]">
+                  {mobileProfitLine}
+                </p>
+              </div>
+              {mobileToolbarActions ? (
+                <div className="flex shrink-0 items-center gap-2">{mobileToolbarActions}</div>
+              ) : null}
+            </div>
 
             <div className="mt-4 space-y-0">
               <div className="flex items-center justify-between gap-4 py-3">

@@ -39,6 +39,11 @@ export async function establishAuthSessionFromCurrentUrl(): Promise<EstablishAut
 
   const supabase = getSupabaseBrowserClient();
 
+  const {
+    data: { session: existingSession },
+  } = await supabase.auth.getSession();
+  if (existingSession) return { status: "established" };
+
   const token_hash = params.token_hash;
   const typeRaw = params.type;
   if (token_hash && typeRaw) {

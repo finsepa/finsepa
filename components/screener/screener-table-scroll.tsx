@@ -39,6 +39,8 @@ export function ScreenerTableScroll({
   viewportScroll = false,
   /** When set, inner table keeps this width so extra columns scroll instead of squashing. */
   tableMinWidthPx,
+  /** Parent {@link ScreenerStocksSubTabMobileCard} already provides mobile card chrome. */
+  embeddedInMobileCard = false,
 }: {
   children: ReactNode;
   className?: string;
@@ -46,6 +48,7 @@ export function ScreenerTableScroll({
   mobileScroll?: boolean;
   viewportScroll?: boolean;
   tableMinWidthPx?: number;
+  embeddedInMobileCard?: boolean;
 }) {
   const scrollWide = mobileScroll || (tableMinWidthPx != null && tableMinWidthPx > 0);
   const useViewportScroll = viewportScroll && scrollWide;
@@ -56,8 +59,10 @@ export function ScreenerTableScroll({
     <div
       className={cn(
         "w-full min-w-0 max-w-full",
-        SCREENER_TABLE_OUTER_BORDER_CLASS,
-        SCREENER_TABLE_MOBILE_SURFACE_CLASS,
+        !embeddedInMobileCard && SCREENER_TABLE_OUTER_BORDER_CLASS,
+        !embeddedInMobileCard && SCREENER_TABLE_MOBILE_SURFACE_CLASS,
+        embeddedInMobileCard &&
+          "max-md:rounded-none max-md:border-0 max-md:bg-transparent max-md:shadow-none",
         useViewportScroll ?
           "max-h-[var(--financials-table-max-h)] overflow-auto overscroll-contain [-webkit-overflow-scrolling:touch]"
         : mobileHorizontalPan ?

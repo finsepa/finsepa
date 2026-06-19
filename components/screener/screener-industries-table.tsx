@@ -11,6 +11,7 @@ import {
   SCREENER_TABLE_ROW_BORDER_B_CLASS,
   ScreenerTableScroll,
 } from "@/components/screener/screener-table-scroll";
+import { cn } from "@/lib/utils";
 
 /** # | Industry | 1D | MCap — sector appears only in group headers; industry links drill in on the Industries tab. */
 const colLayoutMobile = "grid-cols-[28px_minmax(0,1fr)_72px] gap-x-2";
@@ -36,7 +37,15 @@ function PctCell({ value }: { value: number | null }) {
   );
 }
 
-export function ScreenerIndustriesTable({ rows }: { rows: ScreenerIndustryRow[] }) {
+export function ScreenerIndustriesTable({
+  rows,
+  hideMobileHeader = false,
+  embeddedInMobileCard = false,
+}: {
+  rows: ScreenerIndustryRow[];
+  hideMobileHeader?: boolean;
+  embeddedInMobileCard?: boolean;
+}) {
   const grouped = useMemo(() => {
     const bySector = new Map<string, ScreenerIndustryRow[]>();
     for (const r of rows) {
@@ -58,17 +67,26 @@ export function ScreenerIndustriesTable({ rows }: { rows: ScreenerIndustryRow[] 
 
   if (rows.length === 0) {
     return (
-      <div className="rounded-[12px] border border-[#E4E4E7] bg-white px-4 py-6 text-center text-[14px] leading-6 text-[#71717A]">
+      <div
+        className={cn(
+          "px-4 py-6 text-center text-[14px] leading-6 text-[#71717A]",
+          !embeddedInMobileCard && "rounded-[12px] border border-[#E4E4E7] bg-white",
+        )}
+      >
         No industry data is available for the current screener list.
       </div>
     );
   }
 
   return (
-    <ScreenerTableScroll minWidthClassName="min-w-0">
+    <ScreenerTableScroll minWidthClassName="min-w-0" embeddedInMobileCard={embeddedInMobileCard}>
       <div className="bg-white">
         <div
-          className={`grid ${colLayoutMobile} ${colLayoutDesktop} min-h-[44px] items-center px-4 py-0 text-[12px] font-medium leading-5 text-[#71717A] sm:text-[14px] ${SCREENER_TABLE_HEADER_STICKY_CLASS}`}
+          className={cn(
+            `grid ${colLayoutMobile} ${colLayoutDesktop} min-h-[44px] items-center px-4 py-0 text-[12px] font-medium leading-5 text-[#71717A] sm:text-[14px]`,
+            SCREENER_TABLE_HEADER_STICKY_CLASS,
+            hideMobileHeader && "max-md:hidden",
+          )}
         >
           <div className="text-center">#</div>
           <div className="text-left">Industry</div>

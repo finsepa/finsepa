@@ -13,6 +13,7 @@ import {
 } from "@/components/auth/auth-form-ui";
 import { AuthPasswordInput } from "@/components/auth/auth-password-input";
 import { TurnstileField } from "@/components/auth/turnstile-field";
+import { getAuthAppOriginForClient } from "@/lib/auth/app-origin";
 import { PATH_APP_ENTRY, PATH_AUTH_CALLBACK } from "@/lib/auth/routes";
 import { useTurnstileConfig } from "@/lib/auth/use-turnstile-config";
 import { friendlySupabaseAuthErrorMessage } from "@/lib/auth/supabase-error-message";
@@ -22,8 +23,11 @@ import { cn } from "@/lib/utils";
 const STORAGE_REMEMBER = "finsepa_remember_me";
 
 const CALLBACK_ERROR_MESSAGES: Record<string, string> = {
-  session: "That sign-in link is invalid or expired. Try resetting your password again.",
+  session:
+    "Google sign-in could not finish (session expired or was already used). Close other Finsepa tabs, try again from https://app.finsepa.com/login, or use email and password.",
   missing_code: "That sign-in link is incomplete. Open the link from your email again.",
+  oauth:
+    "Google sign-in was cancelled or blocked. Try again, or use email and password if the problem continues.",
   config: "Authentication isn’t configured correctly. Please try again later.",
 };
 
@@ -104,8 +108,8 @@ export function LoginClient({ resetSuccess, callbackError }: Props) {
         /* ignore */
       }
       const supabase = getSupabaseBrowserClient();
-      const origin = window.location.origin;
-      const redirectTo = `${origin}${PATH_AUTH_CALLBACK}?next=${encodeURIComponent(PATH_APP_ENTRY)}`;
+      const authOrigin = getAuthAppOriginForClient();
+      const redirectTo = `${authOrigin}${PATH_AUTH_CALLBACK}?next=${encodeURIComponent(PATH_APP_ENTRY)}`;
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: { redirectTo },

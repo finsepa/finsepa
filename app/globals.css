@@ -185,11 +185,20 @@ body {
     transition:
       left 280ms cubic-bezier(0.33, 1, 0.68, 1),
       right 280ms cubic-bezier(0.33, 1, 0.68, 1),
-      height 280ms cubic-bezier(0.33, 1, 0.68, 1);
+      height 280ms cubic-bezier(0.33, 1, 0.68, 1),
+      bottom 120ms ease-out;
   }
 
   .mobile-bottom-nav-bar--more-open {
     z-index: 44;
+  }
+
+  .mobile-bottom-nav-search-results-panel {
+    min-height: 0;
+  }
+
+  .mobile-bottom-nav-search-results-list {
+    max-height: 100%;
   }
 
   /** Anchor the nav pill to the bar bottom so height growth expands upward. */
@@ -199,6 +208,7 @@ body {
     left: 0;
     width: calc(100% - 10px - var(--mobile-bottom-nav-height));
     min-height: 0;
+    box-sizing: border-box;
     padding: 2px;
     border-radius: var(--mobile-bottom-nav-radius);
     transition:
@@ -248,6 +258,7 @@ body {
     flex: 1 1 auto;
     min-height: 0;
     width: 100%;
+    height: 100%;
   }
 
   .mobile-bottom-nav-tab-icon-slot {
@@ -257,6 +268,9 @@ body {
     justify-content: center;
     width: 1.5rem;
     height: 1.5rem;
+    transition:
+      width 280ms cubic-bezier(0.33, 1, 0.68, 1),
+      height 280ms cubic-bezier(0.33, 1, 0.68, 1);
   }
 
   .mobile-bottom-nav-search-pill {
@@ -300,8 +314,24 @@ body {
     height: 1.25rem;
   }
 
-  .mobile-bottom-nav-indicator {
-    will-change: left, width;
+  .mobile-bottom-nav-tabs::before {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    z-index: 0;
+    top: 2px;
+    bottom: 2px;
+    left: calc(
+      var(--mobile-bottom-nav-highlight-index, 0) *
+        (100% / var(--mobile-bottom-nav-highlight-count, 5)) + 2px
+    );
+    width: calc((100% / var(--mobile-bottom-nav-highlight-count, 5)) - 4px);
+    border-radius: 9999px;
+    background: rgba(9, 9, 11, 0.05);
+    transition-property: left;
+    transition-duration: 280ms;
+    transition-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
+    will-change: left;
   }
 
   .mobile-bottom-nav-tab-button {
@@ -331,6 +361,33 @@ body {
   html.mobile-bottom-nav-scroll-compact .mobile-bottom-nav-tab-icon {
     width: 1.25rem;
     height: 1.25rem;
+  }
+
+  html.mobile-bottom-nav-scroll-compact .mobile-bottom-nav-tab-icon-slot {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  /** Freeze tab-row chrome while the More sheet animates — only the list above moves. */
+  html.mobile-bottom-nav-more-active {
+    --mobile-bottom-nav-height: var(--mobile-bottom-nav-expanded-height);
+    --mobile-bottom-nav-inset-x: var(--mobile-bottom-nav-expanded-inset-x);
+  }
+
+  html.mobile-bottom-nav-more-active .mobile-bottom-nav-bar {
+    transition-property: left, right;
+  }
+
+  html.mobile-bottom-nav-more-active .mobile-bottom-nav-pill {
+    transition-property: box-shadow, border-color, width;
+  }
+
+  html.mobile-bottom-nav-more-active .mobile-bottom-nav-tab-button,
+  html.mobile-bottom-nav-more-active .mobile-bottom-nav-tab-button svg,
+  html.mobile-bottom-nav-more-active .mobile-bottom-nav-tab-icon,
+  html.mobile-bottom-nav-more-active .mobile-bottom-nav-tabs,
+  html.mobile-bottom-nav-more-active .mobile-bottom-nav-tabs::before {
+    transition: none !important;
   }
 
   /**
@@ -404,7 +461,8 @@ body {
     mask-image: linear-gradient(to bottom, transparent 0%, #000 48%, #000 100%);
     transition:
       transform 280ms cubic-bezier(0.33, 1, 0.68, 1),
-      opacity 200ms ease;
+      opacity 200ms ease,
+      height 320ms cubic-bezier(0.33, 1, 0.68, 1);
   }
 
   .mobile-bottom-nav-blur-fade.mobile-bottom-nav-blur-fade--hidden {
@@ -426,7 +484,7 @@ body {
   .mobile-bottom-nav-pill,
   .mobile-bottom-nav-search-morph,
   .mobile-bottom-nav-search-pill,
-  .mobile-bottom-nav-indicator,
+  .mobile-bottom-nav-tabs::before,
   .mobile-bottom-nav-blur-fade {
     transition: none;
   }

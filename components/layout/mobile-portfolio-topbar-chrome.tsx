@@ -1,18 +1,13 @@
 "use client";
 
-import {
-  PortfolioListLogo,
-  portfolioTopbarLogoClass,
-} from "@/components/portfolio/portfolio-brokerage-logo";
 import { TransactionPortfolioField } from "@/components/portfolio/transaction-portfolio-field";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
-import { cn } from "@/lib/utils";
 
 export function isPortfolioWorkspaceRoute(pathname: string): boolean {
   return pathname === "/portfolio" || pathname.startsWith("/portfolio/");
 }
 
-/** Mobile top bar: portfolio logo, name, and switcher (replaces section title on `/portfolio`). */
+/** Mobile top bar: portfolio name and switcher (replaces section title on `/portfolio`). */
 export function MobilePortfolioTopbarChrome() {
   const { portfolios, selectedPortfolioId, portfolioDisplayReady } = usePortfolioWorkspace();
   const selected =
@@ -21,11 +16,6 @@ export function MobilePortfolioTopbarChrome() {
 
   return (
     <div className="flex min-w-0 flex-1 items-center gap-2">
-      {portfolioDisplayReady && selected ? (
-        <PortfolioListLogo portfolio={selected} className={portfolioTopbarLogoClass} />
-      ) : (
-        <div className={cn(portfolioTopbarLogoClass, "animate-pulse bg-[#E4E4E7]")} aria-hidden />
-      )}
       <h1
         suppressHydrationWarning
         className="min-w-0 flex-1 truncate text-[22px] font-semibold leading-7 tracking-[-0.02em] text-[#09090B]"

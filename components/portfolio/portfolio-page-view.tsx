@@ -229,6 +229,35 @@ export function PortfolioPageView({
   const panelClass = (tab: PortfolioViewTab) =>
     cn(viewTab === tab ? "flex min-h-0 flex-1 flex-col" : "hidden");
 
+  const portfolioToolbarActions =
+    readOnly ? null : (
+      <>
+        {selectedPortfolioId != null && selectedPortfolio?.snaptrade ? (
+          <PortfolioSyncStatusIcon
+            portfolioId={selectedPortfolioId}
+            snaptrade={selectedPortfolio.snaptrade}
+            variant="toolbar"
+          />
+        ) : null}
+        <button
+          type="button"
+          aria-label="Edit portfolio"
+          disabled={selectedPortfolioId == null}
+          onClick={() => {
+            if (selectedPortfolioId != null) openEditPortfolio(selectedPortfolioId);
+          }}
+          className={cn(
+            "flex h-9 w-9 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100",
+            "hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2",
+            "disabled:pointer-events-none disabled:opacity-40",
+          )}
+        >
+          <Pencil className="h-5 w-5" strokeWidth={2} aria-hidden />
+        </button>
+        <PortfolioQuickAddMenu aria-label="Portfolio quick add" />
+      </>
+    );
+
   if (!portfolioDisplayReady) {
     return (
       <PortfolioPageLoadingShell
@@ -239,13 +268,13 @@ export function PortfolioPageView({
   }
 
   return (
-    <div className="relative flex min-h-full min-w-0 flex-col overflow-x-hidden bg-white">
+    <div className="relative flex min-h-full min-w-0 flex-col overflow-x-hidden">
       {showPortfoliosBreadcrumb ? <PortfoliosBreadcrumbs currentLabel={portfolioName} /> : null}
       <div className="relative flex min-h-full min-w-0 flex-1 flex-col overflow-x-hidden px-4 py-4 sm:px-9 sm:py-6">
       <AssetPageTopLoader />
-      <div className="mb-6 flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-        <div className="flex min-w-0 items-start justify-between gap-3 sm:flex-1 sm:items-center">
-          <div className="hidden min-w-0 flex-col gap-1 sm:flex">
+      <div className="mb-6 hidden shrink-0 flex-col gap-2 sm:flex sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <div className="flex min-w-0 flex-1 items-center">
+          <div className="min-w-0 flex-col gap-1">
             {showPortfoliosBreadcrumb ? (
               <h1 className="min-w-0 truncate text-2xl font-semibold tracking-tight text-[#09090B]">
                 {portfolioName}
@@ -260,67 +289,21 @@ export function PortfolioPageView({
               </div>
             )}
           </div>
-
-          {!readOnly ? (
-            <div className="flex w-full shrink-0 flex-nowrap items-center justify-end gap-2 sm:hidden">
-              {selectedPortfolioId != null && selectedPortfolio?.snaptrade ? (
-                <PortfolioSyncStatusIcon
-                  portfolioId={selectedPortfolioId}
-                  snaptrade={selectedPortfolio.snaptrade}
-                  variant="toolbar"
-                />
-              ) : null}
-              <button
-                type="button"
-                aria-label="Edit portfolio"
-                disabled={selectedPortfolioId == null}
-                onClick={() => {
-                  if (selectedPortfolioId != null) openEditPortfolio(selectedPortfolioId);
-                }}
-                className={cn(
-                  "flex h-9 w-9 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100",
-                  "hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2",
-                  "disabled:pointer-events-none disabled:opacity-40",
-                )}
-              >
-                <Pencil className="h-5 w-5" strokeWidth={2} aria-hidden />
-              </button>
-              <PortfolioQuickAddMenu aria-label="Portfolio quick add" />
-            </div>
-          ) : null}
         </div>
 
         {!readOnly ? (
-          <div className="hidden min-w-0 shrink-0 flex-nowrap items-center justify-end gap-2 sm:flex">
-            {selectedPortfolioId != null && selectedPortfolio?.snaptrade ? (
-              <PortfolioSyncStatusIcon
-                portfolioId={selectedPortfolioId}
-                snaptrade={selectedPortfolio.snaptrade}
-                variant="toolbar"
-              />
-            ) : null}
-            <button
-              type="button"
-              aria-label="Edit portfolio"
-              disabled={selectedPortfolioId == null}
-              onClick={() => {
-                if (selectedPortfolioId != null) openEditPortfolio(selectedPortfolioId);
-              }}
-              className={cn(
-                "flex h-9 w-9 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100",
-                "hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2",
-                "disabled:pointer-events-none disabled:opacity-40",
-              )}
-            >
-              <Pencil className="h-5 w-5" strokeWidth={2} aria-hidden />
-            </button>
-            <PortfolioQuickAddMenu aria-label="Portfolio quick add" />
+          <div className="flex min-w-0 shrink-0 flex-nowrap items-center justify-end gap-2">
+            {portfolioToolbarActions}
           </div>
         ) : null}
       </div>
 
       <PortfolioOverviewAthProvider>
-        <PortfolioOverviewCards holdings={holdings} transactions={transactions} />
+        <PortfolioOverviewCards
+          holdings={holdings}
+          transactions={transactions}
+          mobileToolbarActions={portfolioToolbarActions}
+        />
 
         <PortfolioPageTabs active={viewTab} onChange={onTabChange} publicView={readOnly} />
 

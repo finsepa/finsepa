@@ -3,6 +3,11 @@
 import { useMemo } from "react";
 
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
+import {
+  SCREENER_TABLE_BODY_DIVIDE_CLASS,
+  SCREENER_TABLE_MOBILE_SURFACE_CLASS,
+  SCREENER_TABLE_OUTER_BORDER_CLASS,
+} from "@/components/screener/screener-table-scroll";
 import { tradeSymbolsFromHistory } from "@/lib/portfolio/realized-pnl-from-trades";
 import { cn } from "@/lib/utils";
 
@@ -229,10 +234,23 @@ function MetricValueTooltip({
   );
 }
 
-function StatRow({ row, muted }: { row: PortfolioMetricRow; muted: boolean }) {
+function StatRow({
+  row,
+  muted,
+  className,
+}: {
+  row: PortfolioMetricRow;
+  muted: boolean;
+  className?: string;
+}) {
   return (
-    <div className="flex items-center justify-between gap-3 border-b border-[#E4E4E7] py-1.5 last:border-0">
-      <span className="min-w-0 shrink text-[14px] leading-5 text-[#09090B]">{row.label}</span>
+    <div
+      className={cn(
+        "flex items-center justify-between gap-3 px-4 min-h-[56px] sm:min-h-[60px] md:min-h-0 md:px-0 md:py-1.5",
+        className,
+      )}
+    >
+      <span className="min-w-0 shrink text-[14px] font-medium leading-5 text-[#09090B]">{row.label}</span>
       <MetricValueTooltip row={row} muted={muted} />
     </div>
   );
@@ -257,12 +275,34 @@ export function PortfolioOverviewMetrics({
   const columns = useMemo(() => splitMetricsIntoColumns(metrics), [metrics]);
 
   return (
-    <div className="mb-6 overflow-visible rounded-xl border border-[#E4E4E7] bg-white p-4">
-      <div className="grid grid-cols-1 gap-5 overflow-visible md:grid-cols-3 md:gap-6">
+    <div
+      className={cn(
+        "mb-6 w-full min-w-0 bg-white md:overflow-visible",
+        SCREENER_TABLE_OUTER_BORDER_CLASS,
+        SCREENER_TABLE_MOBILE_SURFACE_CLASS,
+        "max-md:overflow-hidden max-md:rounded-2xl md:rounded-xl md:border md:border-solid md:border-[#E4E4E7] md:p-4",
+      )}
+    >
+      <div className={cn("max-md:block md:hidden", SCREENER_TABLE_BODY_DIVIDE_CLASS)}>
+        {metrics.map((row) => (
+          <StatRow key={row.label} row={row} muted={isEmptyPortfolio} />
+        ))}
+      </div>
+
+      <div className="hidden overflow-visible md:grid md:grid-cols-3 md:gap-6">
         {columns.map((column, columnIndex) => (
           <div key={columnIndex} className="min-w-0 overflow-visible">
-            {column.map((row) => (
-              <StatRow key={row.label} row={row} muted={isEmptyPortfolio} />
+            {column.map((row, rowIndex) => (
+              <StatRow
+                key={row.label}
+                row={row}
+                muted={isEmptyPortfolio}
+                className={
+                  rowIndex < column.length - 1
+                    ? "border-b border-solid border-[#E4E4E7]"
+                    : undefined
+                }
+              />
             ))}
           </div>
         ))}

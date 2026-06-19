@@ -37,7 +37,9 @@ export function SuperinvestorsPageClient({ rows }: { rows: SuperinvestorsFundRow
   return (
     <div className="min-w-0 px-4 py-4 sm:px-9 sm:py-6">
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight text-[#09090B]">Superinvestors</h1>
+        <h1 className="hidden text-2xl font-semibold tracking-tight text-[#09090B] md:block">
+          Superinvestors
+        </h1>
         <TabSwitcher
           options={LIST_VIEW_OPTIONS}
           value={view}

@@ -542,6 +542,9 @@ export const PORTFOLIO_CHART_RANGE_LABELS: { id: PortfolioChartRange; label: str
   { id: "all", label: "ALL" },
 ];
 
+/** Mobile range strip omits YTD to fit the narrower control row. */
+const PORTFOLIO_CHART_MOBILE_RANGE_LABELS = PORTFOLIO_CHART_RANGE_LABELS.filter((r) => r.id !== "ytd");
+
 /** One-decimal truncation (e.g. 7616 → 7.6) so axis + last-price badge stay distinct. */
 function truncOneDecimalUnit(abs: number, unit: number): string {
   const u = abs / unit;
@@ -1575,14 +1578,30 @@ function PortfolioOverviewChartInner({
         </div>
       </div>
 
-      <div className="relative z-20 mb-3 w-full sm:hidden">
-        <FormListboxSelect
-          aria-label="Chart metric"
-          className="w-full"
-          options={PORTFOLIO_CHART_METRIC_OPTIONS}
-          value={metric}
-          onChange={(v) => setMetric(v as PortfolioChartMetricMode)}
-        />
+      <div className="relative z-20 mb-3 flex w-full min-w-0 items-start justify-between gap-2 sm:hidden">
+        <PortfolioChartSettingsButton {...chartSettingsProps} />
+
+        <div
+          className="flex w-full min-w-0 flex-nowrap justify-stretch gap-0.5 rounded-[10px] bg-[#F4F4F5] p-0.5"
+          role="group"
+          aria-label="Chart range"
+        >
+          {PORTFOLIO_CHART_MOBILE_RANGE_LABELS.map((r) => (
+            <button
+              key={r.id}
+              type="button"
+              onClick={() => setRange(r.id)}
+              className={cn(
+                "flex-1 rounded-[10px] px-2 py-1.5 text-center font-sans text-[14px] leading-5 tracking-normal",
+                range === r.id ?
+                  "bg-white font-medium text-[#09090B] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]"
+                : "font-normal text-[#71717A]",
+              )}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="w-full min-w-0">
@@ -1632,31 +1651,14 @@ function PortfolioOverviewChartInner({
         )}
       </div>
 
-      {/* Mobile range + gear below the chart (web uses the header row above). */}
-      <div className="mt-3 flex w-full min-w-0 items-start justify-between gap-2 sm:hidden">
-        <PortfolioChartSettingsButton {...chartSettingsProps} />
-
-        <div
-          className="flex w-full min-w-0 flex-nowrap justify-stretch gap-0.5 rounded-[10px] bg-[#F4F4F5] p-0.5"
-          role="group"
-          aria-label="Chart range"
-        >
-          {PORTFOLIO_CHART_RANGE_LABELS.map((r) => (
-            <button
-              key={r.id}
-              type="button"
-              onClick={() => setRange(r.id)}
-              className={cn(
-                "flex-1 rounded-[10px] px-2 py-1.5 text-center font-sans text-[14px] leading-5 tracking-normal",
-                range === r.id ?
-                  "bg-white font-medium text-[#09090B] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]"
-                : "font-normal text-[#71717A]",
-              )}
-            >
-              {r.label}
-            </button>
-          ))}
-        </div>
+      <div className="relative z-20 mt-3 w-full sm:hidden">
+        <FormListboxSelect
+          aria-label="Chart metric"
+          className="w-full"
+          options={PORTFOLIO_CHART_METRIC_OPTIONS}
+          value={metric}
+          onChange={(v) => setMetric(v as PortfolioChartMetricMode)}
+        />
       </div>
     </section>
   );

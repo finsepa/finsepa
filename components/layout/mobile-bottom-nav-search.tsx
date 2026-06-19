@@ -45,45 +45,53 @@ export function MobileBottomNavSearchField({
   );
 }
 
+/** Fixed results sheet anchored above the morphing search pill (tracks visual viewport + keyboard). */
 export function MobileBottomNavSearchResults({
   open,
   panel,
-  barRef,
   searchMorphRef,
 }: {
   open: boolean;
   panel: SearchPanel;
-  barRef: React.RefObject<HTMLElement | null>;
   searchMorphRef: React.RefObject<HTMLElement | null>;
 }) {
-  const [anchor, setAnchor] = useState({ left: 0, width: 0, bottom: 0 });
+  const [anchor, setAnchor] = useState({ left: 0, width: 0, bottom: 0, maxHeight: 420 });
 
   useLayoutEffect(() => {
     if (!open) return;
 
     const measure = () => {
-      const bar = barRef.current;
       const morph = searchMorphRef.current;
-      if (!bar) return;
-      const barRect = bar.getBoundingClientRect();
-      const morphRect = morph?.getBoundingClientRect();
+      if (!morph) return;
+      const morphRect = morph.getBoundingClientRect();
+      const vv = window.visualViewport;
+      const viewportTop = vv?.offsetTop ?? 0;
+      const gap = 8;
+      const topInset = 12;
       setAnchor({
-        left: morphRect?.left ?? barRect.left,
-        width: morphRect?.width ?? barRect.width,
-        bottom: window.innerHeight - barRect.top + 8,
+        left: morphRect.left,
+        width: morphRect.width,
+        bottom: window.innerHeight - morphRect.top + gap,
+        maxHeight: Math.max(160, morphRect.top - viewportTop - topInset),
       });
     };
 
     measure();
     const morph = searchMorphRef.current;
-    const ro = morph ? new ResizeObserver(measure) : null;
-    ro?.observe(morph!);
+    if (!morph) return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(morph);
+    const vv = window.visualViewport;
+    vv?.addEventListener("resize", measure);
+    vv?.addEventListener("scroll", measure);
     window.addEventListener("resize", measure);
     return () => {
-      ro?.disconnect();
+      ro.disconnect();
+      vv?.removeEventListener("resize", measure);
+      vv?.removeEventListener("scroll", measure);
       window.removeEventListener("resize", measure);
     };
-  }, [open, barRef, searchMorphRef, panel.query]);
+  }, [open, searchMorphRef, panel.query]);
 
   if (!open) return null;
 
@@ -91,13 +99,15 @@ export function MobileBottomNavSearchResults({
     <div
       id="mobile-bottom-search-results"
       className={cn(
-        dropdownMenuSurfaceClassName("fixed z-[42] overflow-hidden md:hidden"),
+        "mobile-bottom-nav-search-results-panel fixed z-[42] flex min-h-0 flex-col overflow-hidden md:hidden",
+        dropdownMenuSurfaceClassName(),
         dropdownMenuFloatingScrollbarClassName,
       )}
       style={{
         left: anchor.left,
         width: anchor.width,
         bottom: anchor.bottom,
+        maxHeight: anchor.maxHeight,
       }}
       role="listbox"
       aria-label="Search results"
@@ -118,7 +128,7 @@ export function MobileBottomNavSearchResults({
         isWatched={panel.isWatched}
         watchlistLoaded={panel.watchlistLoaded}
         toggleTicker={panel.toggleTicker}
-        listClassName="max-h-[min(420px,52dvh)] overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch]"
+        listClassName="mobile-bottom-nav-search-results-list min-h-0 flex-1 overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch]"
       />
     </div>
   );

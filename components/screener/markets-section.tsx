@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronLeft } from "@/lib/icons";
-import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition, type ReactNode } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import type { CryptoTop10Row } from "@/lib/market/crypto-top10";
@@ -46,6 +46,7 @@ import { UsMarketsSessionLabel } from "@/components/screener/us-markets-session-
 import { ScreenerIndustriesTable } from "@/components/screener/screener-industries-table";
 import { ScreenerSectorsTable } from "@/components/screener/screener-sectors-table";
 import { ScreenerTabs, type StocksSubTab } from "@/components/screener/screener-tabs";
+import { ScreenerStocksSubTabMobileCard } from "@/components/screener/screener-stocks-sub-tab-mobile-card";
 import { ScreenerCompaniesKeyStatToolbar } from "@/components/screener/screener-companies-key-stat-toolbar";
 import { ScreenerTable, type ScreenerTableKeyStatColumn } from "@/components/screener/screener-table";
 import {
@@ -115,6 +116,8 @@ function StocksTabBody({
   companiesSectorFilter,
   companiesIndustryFilter,
   onClearCompaniesSector,
+  onStocksSubTabChange,
+  useMobileStocksSubTabCard,
 }: {
   stocksTotalCount: number;
   companiesRows: ScreenerTableRow[];
@@ -132,6 +135,8 @@ function StocksTabBody({
   companiesSectorFilter: ScreenerCanonicalSector | null;
   companiesIndustryFilter: ScreenerIndustryDrill | null;
   onClearCompaniesSector: () => void;
+  onStocksSubTabChange: (tab: StocksSubTab) => void;
+  useMobileStocksSubTabCard: boolean;
 }) {
   const companiesPageSize = SCREENER_COMPANIES_PAGE_SIZE;
   const companiesTotal = stocksTotalCount;
@@ -143,94 +148,168 @@ function StocksTabBody({
 
   const isSectorsDrill = stocksSubTab === "Sectors" && companiesSectorFilter != null;
   const isIndustriesDrill = stocksSubTab === "Industries" && companiesIndustryFilter != null;
-  const showCompaniesList = stocksSubTab === "Companies" || isSectorsDrill || isIndustriesDrill;
+  const isDrill = isSectorsDrill || isIndustriesDrill;
+  const mobileTableChrome = useMobileStocksSubTabCard
+    ? ({ hideMobileHeader: true, embeddedInMobileCard: true } as const)
+    : ({ hideMobileHeader: false, embeddedInMobileCard: false } as const);
+
+  if (isDrill) {
+    return (
+      <div>
+        {companiesLoading && !companiesRows.length ? (
+          <StocksTableSkeleton rows={SCREENER_COMPANIES_PAGE_SIZE} />
+        ) : null}
+
+        {!companiesLoading && companiesError ? (
+          <div className="rounded-[12px] border border-[#E4E4E7] bg-white px-4 py-4 text-sm text-[#71717A]">
+            {companiesError}
+          </div>
+        ) : null}
+
+        {!companiesLoading && !companiesError && companiesRows.length === 0 ? (
+          <div className="rounded-[12px] border border-[#E4E4E7] bg-white px-4 py-6 text-center text-[14px] leading-6 text-[#71717A]">
+            {companiesIndustryFilter
+              ? `No companies from "${companiesIndustryFilter.industry}" (${companiesIndustryFilter.sector}) appear in the current screener universe.`
+              : companiesSectorFilter
+                ? `No companies from the "${companiesSectorFilter}" sector appear in the current screener universe.`
+                : "No companies to show."}
+          </div>
+        ) : null}
+
+        {companiesRows.length > 0 ? (
+          <ScreenerTable
+            rows={companiesRows}
+            rankOffset={(safeCompaniesPage - 1) * companiesPageSize}
+            keyStatColumns={companiesKeyStatColumns}
+          />
+        ) : null}
+
+        {companiesLoading && companiesRows.length > 0 ? (
+          <p className="mt-3 text-sm font-medium text-[#71717A]">Loading companies…</p>
+        ) : null}
+
+        <ScreenerPagination
+          page={safeCompaniesPage}
+          totalPages={totalPages}
+          onPageChange={(p) => setCompaniesPage(p)}
+          disabled={companiesLoading}
+          aria-label="Companies list pages"
+        />
+      </div>
+    );
+  }
+
+  let panel: ReactNode = null;
+  let pagination: ReactNode = null;
+
+  if (stocksSubTab === "Sectors") {
+    panel =
+      sectorsLoading && !sectorsRows?.length ? (
+        <StocksTableSkeleton rows={12} {...mobileTableChrome} />
+      ) : (
+        <ScreenerSectorsTable rows={sectorsRows ?? []} {...mobileTableChrome} />
+      );
+  } else if (stocksSubTab === "Industries") {
+    panel =
+      industriesLoading && !industriesRows?.length ? (
+        <StocksTableSkeleton rows={12} {...mobileTableChrome} />
+      ) : (
+        <ScreenerIndustriesTable rows={industriesRows ?? []} {...mobileTableChrome} />
+      );
+  } else if (stocksSubTab === "Companies") {
+    panel = (
+      <>
+        {companiesSectorFilter ? (
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-solid border-[#E4E4E7] bg-[#FAFAFA] px-4 py-2.5 max-md:border-b-[0.5px] md:mb-3 md:rounded-[10px] md:border md:px-3 md:py-2.5 sm:px-4">
+            <p className="text-[13px] leading-5 text-[#09090B] sm:text-[14px]">
+              Showing companies in{" "}
+              <span className="font-semibold tabular-nums text-[#09090B]">{companiesSectorFilter}</span>
+            </p>
+            <button
+              type="button"
+              onClick={onClearCompaniesSector}
+              className="shrink-0 rounded-lg border border-[#E4E4E7] bg-white px-3 py-1.5 text-[13px] font-medium leading-5 text-[#09090B] transition-colors hover:bg-[#F4F4F5]"
+            >
+              Show all companies
+            </button>
+          </div>
+        ) : null}
+
+        {companiesLoading && !companiesRows.length ? (
+          <StocksTableSkeleton rows={SCREENER_COMPANIES_PAGE_SIZE} {...mobileTableChrome} />
+        ) : null}
+
+        {!companiesLoading && companiesError ? (
+          <div className="px-4 py-4 text-sm text-[#71717A] md:rounded-[12px] md:border md:border-[#E4E4E7] md:bg-white">
+            {companiesError}
+          </div>
+        ) : null}
+
+        {!companiesLoading && !companiesError && companiesRows.length === 0 ? (
+          <div className="px-4 py-6 text-center text-[14px] leading-6 text-[#71717A] md:rounded-[12px] md:border md:border-[#E4E4E7] md:bg-white">
+            No companies to show.
+          </div>
+        ) : null}
+
+        {companiesRows.length > 0 ? (
+          <ScreenerTable
+            rows={companiesRows}
+            rankOffset={(safeCompaniesPage - 1) * companiesPageSize}
+            keyStatColumns={companiesKeyStatColumns}
+            {...mobileTableChrome}
+          />
+        ) : null}
+
+        {companiesLoading && companiesRows.length > 0 ? (
+          <p className="px-4 py-3 text-sm font-medium text-[#71717A] md:px-0">Loading companies…</p>
+        ) : null}
+      </>
+    );
+    pagination = (
+      <ScreenerPagination
+        page={safeCompaniesPage}
+        totalPages={totalPages}
+        onPageChange={(p) => setCompaniesPage(p)}
+        disabled={companiesLoading}
+        aria-label="Companies list pages"
+      />
+    );
+  } else if (gainersLosersLoading && !gainersLosers) {
+    panel = <StocksGainersLosersSkeleton rows={GAINERS_LOSERS_TOP_N} {...mobileTableChrome} />;
+  } else if (gainersLosers) {
+    panel = (
+      <div className={useMobileStocksSubTabCard ? "max-md:divide-y max-md:divide-solid max-md:divide-[#E4E4E7]" : "space-y-6"}>
+        <div>
+          <div className="mb-3 hidden text-[14px] font-semibold leading-5 text-[#71717A] md:block">
+            Top gainers (1D %)
+          </div>
+          <ScreenerTable rows={gainersLosers.gainers} {...mobileTableChrome} />
+        </div>
+        <div>
+          <div className="mb-3 hidden text-[14px] font-semibold leading-5 text-[#71717A] md:block">
+            Top losers (1D %)
+          </div>
+          <ScreenerTable rows={gainersLosers.losers} {...mobileTableChrome} />
+        </div>
+      </div>
+    );
+  }
+
+  if (useMobileStocksSubTabCard) {
+    return (
+      <>
+        <ScreenerStocksSubTabMobileCard active={stocksSubTab} onChange={onStocksSubTabChange}>
+          {panel}
+        </ScreenerStocksSubTabMobileCard>
+        {pagination}
+      </>
+    );
+  }
 
   return (
     <>
-      {stocksSubTab === "Sectors" && !companiesSectorFilter ? (
-        sectorsLoading && !sectorsRows?.length ? (
-          <StocksTableSkeleton rows={12} />
-        ) : (
-          <ScreenerSectorsTable rows={sectorsRows ?? []} />
-        )
-      ) : stocksSubTab === "Industries" && !companiesIndustryFilter ? (
-        industriesLoading && !industriesRows?.length ? (
-          <StocksTableSkeleton rows={12} />
-        ) : (
-          <ScreenerIndustriesTable rows={industriesRows ?? []} />
-        )
-      ) : showCompaniesList ? (
-        <div>
-          {stocksSubTab === "Companies" && companiesSectorFilter ? (
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-[10px] border border-[#E4E4E7] bg-[#FAFAFA] px-3 py-2.5 sm:px-4">
-              <p className="text-[13px] leading-5 text-[#09090B] sm:text-[14px]">
-                Showing companies in{" "}
-                <span className="font-semibold tabular-nums text-[#09090B]">{companiesSectorFilter}</span>
-              </p>
-              <button
-                type="button"
-                onClick={onClearCompaniesSector}
-                className="shrink-0 rounded-lg border border-[#E4E4E7] bg-white px-3 py-1.5 text-[13px] font-medium leading-5 text-[#09090B] transition-colors hover:bg-[#F4F4F5]"
-              >
-                Show all companies
-              </button>
-            </div>
-          ) : null}
-
-          {companiesLoading && !companiesRows.length ? (
-            <StocksTableSkeleton rows={SCREENER_COMPANIES_PAGE_SIZE} />
-          ) : null}
-
-          {!companiesLoading && companiesError ? (
-            <div className="rounded-[12px] border border-[#E4E4E7] bg-white px-4 py-4 text-sm text-[#71717A]">
-              {companiesError}
-            </div>
-          ) : null}
-
-          {!companiesLoading && !companiesError && companiesRows.length === 0 ? (
-            <div className="rounded-[12px] border border-[#E4E4E7] bg-white px-4 py-6 text-center text-[14px] leading-6 text-[#71717A]">
-              {companiesIndustryFilter
-                ? `No companies from "${companiesIndustryFilter.industry}" (${companiesIndustryFilter.sector}) appear in the current screener universe.`
-                : companiesSectorFilter
-                  ? `No companies from the "${companiesSectorFilter}" sector appear in the current screener universe.`
-                  : "No companies to show."}
-            </div>
-          ) : null}
-
-          {companiesRows.length > 0 ? (
-            <ScreenerTable
-              rows={companiesRows}
-              rankOffset={(safeCompaniesPage - 1) * companiesPageSize}
-              keyStatColumns={companiesKeyStatColumns}
-            />
-          ) : null}
-
-          {companiesLoading && companiesRows.length > 0 ? (
-            <p className="mt-3 text-sm font-medium text-[#71717A]">Loading companies…</p>
-          ) : null}
-
-          <ScreenerPagination
-            page={safeCompaniesPage}
-            totalPages={totalPages}
-            onPageChange={(p) => setCompaniesPage(p)}
-            disabled={companiesLoading}
-            aria-label="Companies list pages"
-          />
-        </div>
-      ) : gainersLosersLoading && !gainersLosers ? (
-        <StocksGainersLosersSkeleton rows={GAINERS_LOSERS_TOP_N} />
-      ) : gainersLosers ? (
-        <div className="space-y-6">
-          <div>
-            <div className="mb-3 text-[14px] font-semibold leading-5 text-[#71717A]">Top gainers (1D %)</div>
-            <ScreenerTable rows={gainersLosers.gainers} />
-          </div>
-          <div>
-            <div className="mb-3 text-[14px] font-semibold leading-5 text-[#71717A]">Top losers (1D %)</div>
-            <ScreenerTable rows={gainersLosers.losers} />
-          </div>
-        </div>
-      ) : null}
+      {panel}
+      {pagination}
     </>
   );
 }
@@ -926,6 +1005,8 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
   const showCompaniesKeyStatToolbar =
     displayStocksSubTab === "Companies" || isSectorsDrill || isIndustriesDrill;
 
+  const useMobileStocksSubTabCard = !isStocksDrill;
+
   return (
     <div className="min-w-0 w-full max-w-full">
       <MarketTabs
@@ -945,7 +1026,11 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
           />
           {!isStocksDrill ? (
             <div className="mb-5 flex min-w-0 w-full max-w-full max-md:mb-3 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-              <ScreenerTabs active={displayStocksSubTab} onChange={setStocksSubTabWithUrl} />
+              <ScreenerTabs
+                active={displayStocksSubTab}
+                onChange={setStocksSubTabWithUrl}
+                hideMobileDropdown={useMobileStocksSubTabCard}
+              />
               {showCompaniesKeyStatToolbar ? (
                 <ScreenerCompaniesKeyStatToolbar
                   selectedMetricIds={companiesKeyStatMetricIdSet}
@@ -999,6 +1084,8 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
             companiesSectorFilter={stocksSectorFilter}
             companiesIndustryFilter={stocksIndustryFilter}
             onClearCompaniesSector={clearCompaniesSectorFilter}
+            onStocksSubTabChange={setStocksSubTabWithUrl}
+            useMobileStocksSubTabCard={useMobileStocksSubTabCard}
           />
         </>
       ) : displayTab === "Crypto" && activePayload.market === "crypto" ? (

@@ -64,7 +64,7 @@ function AuthCallbackInner() {
         return;
       }
       if (result.status === "failed") {
-        goTo(`/login?error=session`);
+        goTo(result.reason === "oauth_error" ? `/login?error=oauth` : `/login?error=session`);
         return;
       }
       goTo(`/login?error=missing_code`);

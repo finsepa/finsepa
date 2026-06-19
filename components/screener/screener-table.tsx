@@ -288,10 +288,16 @@ export function ScreenerTable({
   rows,
   rankOffset = 0,
   keyStatColumns = [],
+  hideMobileHeader = false,
+  embeddedInMobileCard = false,
 }: {
   rows: ScreenerTableRow[];
   rankOffset?: number;
   keyStatColumns?: ScreenerTableKeyStatColumn[];
+  /** Hides # / Company / Price header row below `md`. */
+  hideMobileHeader?: boolean;
+  /** Renders without mobile card chrome when inside {@link ScreenerStocksSubTabMobileCard}. */
+  embeddedInMobileCard?: boolean;
 }) {
   const { watched, loaded, toggleTicker } = useWatchlist();
   const keyStatCount = keyStatColumns.length;
@@ -353,16 +359,24 @@ export function ScreenerTable({
     </div>
   );
 
+  const headerSection = (
+    <div className={cn(SCREENER_TABLE_HEADER_STICKY_CLASS, hideMobileHeader && "max-md:hidden")}>
+      {headerRow}
+    </div>
+  );
+
   if (tableMinWidthPx != null) {
     return (
       <div
         className={cn(
           "w-full min-w-0 max-w-full bg-white",
-          SCREENER_TABLE_OUTER_BORDER_CLASS,
-          SCREENER_TABLE_MOBILE_SURFACE_CLASS,
+          !embeddedInMobileCard && SCREENER_TABLE_OUTER_BORDER_CLASS,
+          !embeddedInMobileCard && SCREENER_TABLE_MOBILE_SURFACE_CLASS,
+          embeddedInMobileCard &&
+            "max-md:rounded-none max-md:border-0 max-md:bg-transparent max-md:shadow-none",
         )}
       >
-        <div className={SCREENER_TABLE_HEADER_STICKY_CLASS}>
+        <div className={cn(SCREENER_TABLE_HEADER_STICKY_CLASS, hideMobileHeader && "max-md:hidden")}>
           <div
             ref={headerRef}
             onScroll={onHeaderScroll}
@@ -379,9 +393,9 @@ export function ScreenerTable({
   }
 
   return (
-    <ScreenerTableScroll>
+    <ScreenerTableScroll embeddedInMobileCard={embeddedInMobileCard}>
       <div className="bg-white">
-        <div className={SCREENER_TABLE_HEADER_STICKY_CLASS}>{headerRow}</div>
+        {headerSection}
         {bodyRows}
       </div>
     </ScreenerTableScroll>

@@ -186,7 +186,9 @@ export function Topbar({
             </TopbarDelayedTooltip>
           ) : null}
 
-          <TopbarQuickAddMenu showDesktopLabel desktopLabel="Add" dwellTooltipLabel="Add" />
+          <div className="hidden md:contents">
+            <TopbarQuickAddMenu showDesktopLabel desktopLabel="Add" dwellTooltipLabel="Add" />
+          </div>
 
           <div className="hidden sm:flex sm:shrink-0">
             <TopbarPortfolioBlock />
