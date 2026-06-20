@@ -38,11 +38,15 @@ export async function establishAuthSessionFromCurrentUrl(): Promise<EstablishAut
   }
 
   const supabase = getSupabaseBrowserClient();
+  const code = params.code;
 
-  const {
-    data: { session: existingSession },
-  } = await supabase.auth.getSession();
-  if (existingSession) return { status: "established" };
+  // OAuth `code` must always be exchanged — a stale cookie session must not skip PKCE.
+  if (!code) {
+    const {
+      data: { session: existingSession },
+    } = await supabase.auth.getSession();
+    if (existingSession) return { status: "established" };
+  }
 
   const token_hash = params.token_hash;
   const typeRaw = params.type;
@@ -64,7 +68,6 @@ export async function establishAuthSessionFromCurrentUrl(): Promise<EstablishAut
     return { status: "failed", reason: "session_error" };
   }
 
-  const code = params.code;
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) return { status: "established" };
