@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { loginSignedOutUrl } from "@/lib/auth/routes";
+import { loginSignedOutUrl, PATH_FORGOT_PASSWORD } from "@/lib/auth/routes";
 import {
   EMPTY_BILLING_SUMMARY,
   subscriptionTitleFromBillingSummary,
@@ -448,6 +449,26 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
                   className={readOnlyFieldClass}
                   autoComplete="email"
                 />
+              </div>
+              <div className="sm:col-span-2">
+                <FieldLabel htmlFor="acct-password">Password</FieldLabel>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <input
+                    id="acct-password"
+                    type="password"
+                    value="********"
+                    readOnly
+                    aria-readonly="true"
+                    className={`${readOnlyFieldClass} sm:min-w-0 sm:flex-1`}
+                    autoComplete="off"
+                  />
+                  <Link
+                    href={PATH_FORGOT_PASSWORD}
+                    className="inline-flex h-10 shrink-0 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white px-4 text-sm font-semibold text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors hover:bg-[#F4F4F5] sm:w-auto"
+                  >
+                    Forgot password
+                  </Link>
+                </div>
               </div>
             </section>
 

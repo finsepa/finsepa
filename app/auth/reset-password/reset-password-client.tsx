@@ -9,64 +9,77 @@ import {
   establishAuthSessionFromCurrentUrl,
   replaceUrlPathOnly,
 } from "@/lib/auth/establish-session-from-url";
+import {
+  parseAuthCallbackParams,
+  urlHasAuthCallbackParams,
+} from "@/lib/auth/parse-auth-callback-url";
 import { PATH_APP_ENTRY, PATH_AUTH_RESET_PASSWORD } from "@/lib/auth/routes";
+import { Loader2 } from "@/lib/icons";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 const REDIRECT_TO_SCREENER_MS = 900;
-
 const MIN_PASSWORD_LEN = 8;
 
-export function ResetPasswordClient() {
+function recoveryLinkLooksValid(): boolean {
+  if (typeof window === "undefined") return false;
+  if (!urlHasAuthCallbackParams(window.location.href)) return false;
+  const params = parseAuthCallbackParams(window.location.href);
+  return params.type === "recovery";
+}
+
+type ResetPasswordClientProps = {
+  hasRecoveryToken?: boolean;
+};
+
+export function ResetPasswordClient({ hasRecoveryToken = false }: ResetPasswordClientProps) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [updated, setUpdated] = useState(false);
   const [sessionReady, setSessionReady] = useState(false);
-  const [checked, setChecked] = useState(false);
+  const [verifyDone, setVerifyDone] = useState(false);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
   const formCanSubmit =
-    password.length >= MIN_PASSWORD_LEN && confirmPassword.length >= MIN_PASSWORD_LEN && !loading;
+    sessionReady &&
+    password.length >= MIN_PASSWORD_LEN &&
+    confirmPassword.length >= MIN_PASSWORD_LEN &&
+    !loading;
+
+  const isVerifying = !verifyDone;
+  const expectsRecoveryLink = hasRecoveryToken || recoveryLinkLooksValid();
 
   useEffect(() => {
     let cancelled = false;
-    const supabase = getSupabaseBrowserClient();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      if (cancelled) return;
-      if (event === "PASSWORD_RECOVERY" || session) {
-        setSessionReady(!!session);
-      }
-      setChecked(true);
-    });
 
     void (async () => {
+      const supabase = getSupabaseBrowserClient();
       const result = await establishAuthSessionFromCurrentUrl();
       if (cancelled) return;
 
       if (result.status === "established") {
         replaceUrlPathOnly(PATH_AUTH_RESET_PASSWORD);
         setSessionReady(true);
-        setChecked(true);
-        return;
-      }
-      if (result.status === "failed") {
-        setSessionReady(false);
-        setChecked(true);
+        setVerifyDone(true);
         return;
       }
 
-      const { data: { session } } = await supabase.auth.getSession();
+      if (result.status === "failed") {
+        setSessionReady(false);
+        setVerifyDone(true);
+        return;
+      }
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (cancelled) return;
-      if (session) setSessionReady(true);
-      setChecked(true);
+      setSessionReady(!!session);
+      setVerifyDone(true);
     })();
 
     return () => {
       cancelled = true;
-      subscription.unsubscribe();
     };
   }, []);
 
@@ -81,6 +94,8 @@ export function ResetPasswordClient() {
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setErrorMessage(null);
+
+    if (!sessionReady) return;
 
     if (password.length < MIN_PASSWORD_LEN) {
       setErrorMessage("Password must be at least 8 characters.");
@@ -101,7 +116,6 @@ export function ResetPasswordClient() {
         return;
       }
 
-      // Keep the session so the user can land on /screener after redirect (same as post-recovery UX).
       setUpdated(true);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Something went wrong. Please try again.";
@@ -111,15 +125,15 @@ export function ResetPasswordClient() {
     }
   }
 
-  if (!checked) {
+  if (updated) {
     return (
-      <AuthCenteredLayout split={false} title="Reset your password" subtitle="Checking your reset link…">
-        <p className="text-sm text-[#71717A]">Loading…</p>
+      <AuthCenteredLayout split={false} compact title="You're in" subtitle="Taking you to Finsepa…">
+        {null}
       </AuthCenteredLayout>
     );
   }
 
-  if (!sessionReady) {
+  if (verifyDone && !sessionReady && expectsRecoveryLink) {
     return (
       <AuthCenteredLayout
         split={false}
@@ -144,17 +158,15 @@ export function ResetPasswordClient() {
     );
   }
 
-  if (updated) {
-    return (
-      <AuthCenteredLayout split={false} compact title="You're in" subtitle="Taking you to Finsepa…">
-        {null}
-      </AuthCenteredLayout>
-    );
-  }
-
   return (
     <AuthCenteredLayout split={false} title="Set a new password" subtitle="Choose a new password for your account.">
       <form className="space-y-4" onSubmit={handleSubmit} noValidate>
+        {isVerifying ? (
+          <div className="flex justify-center py-1" role="status" aria-label="Confirming your reset link">
+            <Loader2 className="h-6 w-6 animate-spin text-[#09090B]" strokeWidth={1.75} aria-hidden />
+          </div>
+        ) : null}
+
         {errorMessage ? (
           <div
             role="alert"
@@ -176,7 +188,7 @@ export function ResetPasswordClient() {
               if (errorMessage) setErrorMessage(null);
             }}
             minLength={MIN_PASSWORD_LEN}
-            disabled={loading}
+            disabled={loading || !sessionReady}
           />
         </div>
 
@@ -192,7 +204,7 @@ export function ResetPasswordClient() {
               if (errorMessage) setErrorMessage(null);
             }}
             minLength={MIN_PASSWORD_LEN}
-            disabled={loading}
+            disabled={loading || !sessionReady}
           />
         </div>
 

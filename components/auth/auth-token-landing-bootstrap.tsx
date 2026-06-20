@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useEffect } from "react";
+import { useLayoutEffect } from "react";
 
 import {
   parseAuthCallbackParams,
@@ -16,7 +16,7 @@ import { PATH_AUTH_CALLBACK, PATH_AUTH_RESET_PASSWORD } from "@/lib/auth/routes"
 export function AuthTokenLandingBootstrap() {
   const pathname = usePathname();
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (typeof window === "undefined") return;
     const href = window.location.href;
     if (!urlHasAuthCallbackParams(href)) return;
