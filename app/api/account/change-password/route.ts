@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { MIN_PASSWORD_LENGTH } from "@/lib/auth/password-rules";
+import { verifyCurrentPasswordForUser } from "@/lib/auth/verify-current-password";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -8,6 +9,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 type Body = {
+  currentPassword?: unknown;
   newPassword?: unknown;
 };
 
@@ -28,11 +30,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "invalid_json", message: "Invalid request." }, { status: 400 });
   }
 
+  const currentPassword = typeof body.currentPassword === "string" ? body.currentPassword : "";
   const newPassword = typeof body.newPassword === "string" ? body.newPassword : "";
 
-  if (!newPassword) {
+  if (!currentPassword || !newPassword) {
     return NextResponse.json(
-      { error: "missing_fields", message: "Enter a new password." },
+      { error: "missing_fields", message: "Enter your current and new password." },
       { status: 400 },
     );
   }
@@ -41,6 +44,33 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { error: "weak_password", message: "Password must be at least 8 characters." },
       { status: 400 },
+    );
+  }
+
+  if (currentPassword === newPassword) {
+    return NextResponse.json(
+      {
+        error: "same_password",
+        message: "New password must be different from your current password.",
+      },
+      { status: 400 },
+    );
+  }
+
+  const verified = await verifyCurrentPasswordForUser(user.id, currentPassword);
+  if (!verified.ok) {
+    if (verified.reason === "wrong_password") {
+      return NextResponse.json(
+        { error: "wrong_password", message: "Current password is incorrect." },
+        { status: 400 },
+      );
+    }
+    return NextResponse.json(
+      {
+        error: "verification_unavailable",
+        message: "Password verification is temporarily unavailable. Try again in a few minutes.",
+      },
+      { status: 503 },
     );
   }
 
