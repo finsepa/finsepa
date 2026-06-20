@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 export default function AuthCallbackPage() {
   return (
-    <AuthCenteredLayout split={false} compact title="Almost there" subtitle="Finishing your sign-in…">
+    <AuthCenteredLayout split={false} compact title="You're in" subtitle="Taking you to Finsepa…">
       <AuthCallbackClient />
     </AuthCenteredLayout>
   );

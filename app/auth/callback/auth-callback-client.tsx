@@ -10,15 +10,19 @@ import {
   persistOnboardingPendingOnUser,
   shouldMarkOnboardingAfterAuth,
 } from "@/lib/auth/onboarding";
-import { consumeOAuthRedirectState } from "@/lib/auth/oauth-redirect-state";
+import {
+  consumeOAuthRedirectState,
+  consumePostAuthDestination,
+  persistPostAuthDestination,
+} from "@/lib/auth/oauth-redirect-state";
 import { parseAuthCallbackParams } from "@/lib/auth/parse-auth-callback-url";
 import { PATH_APP_ENTRY } from "@/lib/auth/routes";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
-const REDIRECT_AFTER_SUCCESS_MS = 1500;
+const REDIRECT_AFTER_WELCOME_MS = 1500;
 const REDIRECT_AFTER_ERROR_MS = 2500;
 
-type CallbackPhase = "working" | "success" | "error";
+type CallbackPhase = "working" | "success" | "error" | "welcome";
 
 function safeNextPath(raw: string | null | undefined): string {
   if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return PATH_APP_ENTRY;
@@ -30,6 +34,8 @@ function goTo(path: string) {
 }
 
 function CallbackStatus({ phase, message }: { phase: CallbackPhase; message: string }) {
+  if (phase === "welcome") return null;
+
   if (phase === "success") {
     return (
       <div
@@ -71,6 +77,29 @@ function AuthCallbackInner() {
     let cancelled = false;
 
     async function run() {
+      const isWelcomeStep = searchParams.get("welcome") === "1";
+
+      if (isWelcomeStep) {
+        setPhase("welcome");
+        const supabase = getSupabaseBrowserClient();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (!session) {
+          setPhase("error");
+          setMessage("Your session expired. Redirecting to login…");
+          await new Promise((r) => setTimeout(r, REDIRECT_AFTER_ERROR_MS));
+          if (!cancelled) goTo("/login?error=session");
+          return;
+        }
+
+        const destination = safeNextPath(consumePostAuthDestination());
+        await new Promise((r) => setTimeout(r, REDIRECT_AFTER_WELCOME_MS));
+        if (!cancelled) goTo(destination);
+        return;
+      }
+
       const href = window.location.href;
       const params = parseAuthCallbackParams(href);
       const stored = consumeOAuthRedirectState();
@@ -103,9 +132,6 @@ function AuthCallbackInner() {
           return;
         }
 
-        setPhase("success");
-        setMessage("You're in! Redirecting to Finsepa…");
-
         let destination = safeNext;
         try {
           const user = session.user ?? null;
@@ -119,7 +145,15 @@ function AuthCallbackInner() {
           /* non-blocking */
         }
 
-        await new Promise((r) => setTimeout(r, REDIRECT_AFTER_SUCCESS_MS));
+        if (params.code) {
+          persistPostAuthDestination(destination);
+          if (!cancelled) goTo("/login?success=google");
+          return;
+        }
+
+        setPhase("success");
+        setMessage("You're in! Redirecting to Finsepa…");
+        await new Promise((r) => setTimeout(r, REDIRECT_AFTER_WELCOME_MS));
         if (!cancelled) goTo(destination);
         return;
       }

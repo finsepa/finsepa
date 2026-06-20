@@ -6,6 +6,7 @@ import { requestHasSupabaseAuthCookies } from "@/lib/auth/supabase-auth-cookies"
 export async function middleware(request: NextRequest) {
   // Keep middleware Edge-safe: do not import app modules or server-only utilities.
   const PATH_LOGIN = "/login";
+  const LOGIN_OAUTH_SUCCESS_VALUE = "google";
   const PATH_SIGNUP = "/signup";
   const PATH_FORGOT_PASSWORD = "/forgot-password";
   const PATH_APP_ENTRY = "/screener";
@@ -95,7 +96,12 @@ export async function middleware(request: NextRequest) {
   const user = validatedUser ?? session?.user ?? null;
 
   if (user && isAuthGatePagePath) {
-    return NextResponse.redirect(new URL(PATH_APP_ENTRY, request.url));
+    const oauthSuccessOnLogin =
+      path === PATH_LOGIN &&
+      request.nextUrl.searchParams.get("success") === LOGIN_OAUTH_SUCCESS_VALUE;
+    if (!oauthSuccessOnLogin) {
+      return NextResponse.redirect(new URL(PATH_APP_ENTRY, request.url));
+    }
   }
 
   if (!user && (isProtectedPath || isActivateSubscriptionPath)) {

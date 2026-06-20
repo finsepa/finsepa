@@ -2,6 +2,7 @@ import { PATH_APP_ENTRY } from "@/lib/auth/routes";
 
 const STORAGE_NEXT = "finsepa_oauth_next";
 const STORAGE_INTENT = "finsepa_oauth_intent";
+const STORAGE_POST_AUTH_DESTINATION = "finsepa_post_auth_destination";
 
 export function persistOAuthRedirectState(options?: {
   next?: string;
@@ -18,6 +19,27 @@ export function persistOAuthRedirectState(options?: {
     }
   } catch {
     /* ignore */
+  }
+}
+
+/** Saved after OAuth code exchange; consumed on the welcome callback step. */
+export function persistPostAuthDestination(destination: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(STORAGE_POST_AUTH_DESTINATION, destination);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function consumePostAuthDestination(): string {
+  if (typeof window === "undefined") return PATH_APP_ENTRY;
+  try {
+    const destination = sessionStorage.getItem(STORAGE_POST_AUTH_DESTINATION) || PATH_APP_ENTRY;
+    sessionStorage.removeItem(STORAGE_POST_AUTH_DESTINATION);
+    return destination;
+  } catch {
+    return PATH_APP_ENTRY;
   }
 }
 
