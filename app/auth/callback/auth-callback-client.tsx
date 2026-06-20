@@ -11,7 +11,10 @@ import {
   shouldMarkOnboardingAfterAuth,
 } from "@/lib/auth/onboarding";
 import { consumeOAuthRedirectState } from "@/lib/auth/oauth-redirect-state";
-import { parseAuthCallbackParams } from "@/lib/auth/parse-auth-callback-url";
+import {
+  parseAuthCallbackParams,
+  urlHasAuthCallbackParams,
+} from "@/lib/auth/parse-auth-callback-url";
 import { PATH_APP_ENTRY } from "@/lib/auth/routes";
 import { Loader2 } from "@/lib/icons";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
@@ -69,7 +72,7 @@ function AuthCallbackInner() {
         searchParams.get("next") ?? params.next ?? stored.next,
       );
 
-      if (!params.code && !params.token_hash) {
+      if (!urlHasAuthCallbackParams(href)) {
         const session = await waitForSession();
         if (session) {
           await finishSignIn(safeNext);
