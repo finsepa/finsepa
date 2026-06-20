@@ -691,7 +691,6 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
       <ChangePasswordModal
         open={changePasswordModalOpen}
         onClose={() => setChangePasswordModalOpen(false)}
-        email={displayEmail}
       />
     </div>
   );

@@ -27,11 +27,9 @@ const passwordFieldClass =
 export function ChangePasswordModal({
   open,
   onClose,
-  email,
 }: {
   open: boolean;
   onClose: () => void;
-  email: string;
 }) {
   const titleId = useId();
   const [currentPassword, setCurrentPassword] = useState("");
@@ -80,7 +78,6 @@ export function ChangePasswordModal({
     setLoading(true);
     try {
       const result = await changePasswordWithCurrent({
-        email,
         currentPassword,
         newPassword,
       });

@@ -1,18 +1,13 @@
-"use client";
+import { MIN_PASSWORD_LENGTH } from "@/lib/auth/password-rules";
 
-import { friendlySupabaseAuthErrorMessage } from "@/lib/auth/supabase-error-message";
-import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
-
-export const MIN_PASSWORD_LENGTH = 8;
+export { MIN_PASSWORD_LENGTH };
 
 export type ChangePasswordResult = { ok: true } | { ok: false; message: string };
 
 export async function changePasswordWithCurrent(args: {
-  email: string;
   currentPassword: string;
   newPassword: string;
 }): Promise<ChangePasswordResult> {
-  const email = args.email.trim();
   const currentPassword = args.currentPassword;
   const newPassword = args.newPassword;
 
@@ -24,24 +19,19 @@ export async function changePasswordWithCurrent(args: {
     return { ok: false, message: "New password must be different from your current password." };
   }
 
-  const supabase = getSupabaseBrowserClient();
-
-  const { error: signInError } = await supabase.auth.signInWithPassword({
-    email,
-    password: currentPassword,
+  const res = await fetch("/api/account/change-password", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ currentPassword, newPassword }),
   });
 
-  if (signInError) {
-    const lower = signInError.message.toLowerCase();
-    if (lower.includes("invalid login credentials") || lower.includes("invalid credentials")) {
-      return { ok: false, message: "Current password is incorrect." };
-    }
-    return { ok: false, message: friendlySupabaseAuthErrorMessage(signInError.message) };
-  }
+  const data = (await res.json().catch(() => ({}))) as { ok?: boolean; message?: string; error?: string };
 
-  const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
-  if (updateError) {
-    return { ok: false, message: friendlySupabaseAuthErrorMessage(updateError.message) };
+  if (!res.ok) {
+    return {
+      ok: false,
+      message: data.message?.trim() || "Something went wrong. Please try again.",
+    };
   }
 
   return { ok: true };
