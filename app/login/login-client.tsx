@@ -35,7 +35,6 @@ type Props = {
   resetSuccess?: boolean;
   callbackError?: string | null;
   authNext?: string | null;
-  oauthSuccess?: boolean;
 };
 
 function GoogleMark() {
@@ -54,7 +53,7 @@ const REDIRECT_AFTER_LOGIN_MS = 900;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD_LEN = 8;
 
-export function LoginClient({ resetSuccess, callbackError, authNext, oauthSuccess }: Props) {
+export function LoginClient({ resetSuccess, callbackError, authNext }: Props) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
@@ -103,14 +102,6 @@ export function LoginClient({ resetSuccess, callbackError, authNext, oauthSucces
       /* ignore */
     }
   }, []);
-
-  useEffect(() => {
-    if (!oauthSuccess) return;
-    const timer = window.setTimeout(() => {
-      window.location.replace("/auth/callback?welcome=1");
-    }, REDIRECT_AFTER_LOGIN_MS);
-    return () => window.clearTimeout(timer);
-  }, [oauthSuccess]);
 
   async function handleGoogle() {
     setErrorMessage(null);
@@ -186,7 +177,7 @@ export function LoginClient({ resetSuccess, callbackError, authNext, oauthSucces
 
   return (
     <div className="space-y-4">
-      {passwordLoginSuccess || oauthSuccess ? (
+      {passwordLoginSuccess ? (
         <div
           role="status"
           className="rounded-[10px] border border-[#BBF7D0] bg-[#F0FDF4] px-3 py-2.5 text-center text-sm font-medium leading-5 text-[#166534] shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
@@ -195,7 +186,7 @@ export function LoginClient({ resetSuccess, callbackError, authNext, oauthSucces
         </div>
       ) : null}
 
-      <AuthSecondaryButton onClick={handleGoogle} disabled={loading || oauthSuccess}>
+      <AuthSecondaryButton onClick={handleGoogle} disabled={loading}>
         <GoogleMark />
         {loading ? "Redirecting…" : "Continue with Google"}
       </AuthSecondaryButton>

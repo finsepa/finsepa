@@ -13,9 +13,6 @@ export const PATH_AUTH_RESET_PASSWORD = "/auth/reset-password";
 /** Default destination after sign-in (protected product entry) */
 export const PATH_APP_ENTRY = "/screener";
 
-/** Login query value after Google OAuth — middleware allows a brief success screen before welcome. */
-export const LOGIN_OAUTH_SUCCESS_VALUE = "google";
-
 /** Full-screen subscribe prompt when the platform trial (or paid grace) has ended */
 export const PATH_ACTIVATE_SUBSCRIPTION = "/activate-subscription";
 

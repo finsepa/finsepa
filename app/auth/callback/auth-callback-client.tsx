@@ -10,17 +10,13 @@ import {
   persistOnboardingPendingOnUser,
   shouldMarkOnboardingAfterAuth,
 } from "@/lib/auth/onboarding";
-import {
-  consumeOAuthRedirectState,
-  consumePostAuthDestination,
-  persistPostAuthDestination,
-} from "@/lib/auth/oauth-redirect-state";
+import { consumeOAuthRedirectState } from "@/lib/auth/oauth-redirect-state";
 import { parseAuthCallbackParams } from "@/lib/auth/parse-auth-callback-url";
 import { PATH_APP_ENTRY } from "@/lib/auth/routes";
 import { Loader2 } from "@/lib/icons";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
-const REDIRECT_AFTER_WELCOME_MS = 1500;
+const REDIRECT_AFTER_SUCCESS_MS = 1500;
 const REDIRECT_AFTER_ERROR_MS = 1500;
 const SESSION_RETRY_MS = 200;
 const SESSION_RETRY_COUNT = 8;
@@ -60,23 +56,12 @@ function AuthCallbackInner() {
   useEffect(() => {
     let cancelled = false;
 
+    async function finishSignIn(destination: string) {
+      await new Promise((r) => setTimeout(r, REDIRECT_AFTER_SUCCESS_MS));
+      if (!cancelled) goTo(destination);
+    }
+
     async function run() {
-      const isWelcomeStep = searchParams.get("welcome") === "1";
-
-      if (isWelcomeStep) {
-        const session = await waitForSession();
-        if (!session) {
-          await new Promise((r) => setTimeout(r, REDIRECT_AFTER_ERROR_MS));
-          if (!cancelled) goTo("/login?error=session");
-          return;
-        }
-
-        const destination = safeNextPath(consumePostAuthDestination());
-        await new Promise((r) => setTimeout(r, REDIRECT_AFTER_WELCOME_MS));
-        if (!cancelled) goTo(destination);
-        return;
-      }
-
       const href = window.location.href;
       const params = parseAuthCallbackParams(href);
       const stored = consumeOAuthRedirectState();
@@ -87,8 +72,7 @@ function AuthCallbackInner() {
       if (!params.code && !params.token_hash) {
         const session = await waitForSession();
         if (session) {
-          persistPostAuthDestination(safeNext);
-          if (!cancelled) goTo("/login?success=google");
+          await finishSignIn(safeNext);
           return;
         }
 
@@ -100,7 +84,7 @@ function AuthCallbackInner() {
       const result = await establishAuthSessionFromCurrentUrl();
       if (cancelled) return;
 
-      let session = await waitForSession();
+      const session = await waitForSession();
       const established = result.status === "established" || Boolean(session);
 
       if (established && session) {
@@ -118,14 +102,7 @@ function AuthCallbackInner() {
           /* non-blocking */
         }
 
-        if (params.code) {
-          persistPostAuthDestination(destination);
-          if (!cancelled) goTo("/login?success=google");
-          return;
-        }
-
-        await new Promise((r) => setTimeout(r, REDIRECT_AFTER_WELCOME_MS));
-        if (!cancelled) goTo(destination);
+        await finishSignIn(destination);
         return;
       }
 
