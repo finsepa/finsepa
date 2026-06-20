@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { loginSignedOutUrl, PATH_FORGOT_PASSWORD } from "@/lib/auth/routes";
+import { loginSignedOutUrl } from "@/lib/auth/routes";
 import {
   EMPTY_BILLING_SUMMARY,
   subscriptionTitleFromBillingSummary,
@@ -25,6 +24,7 @@ import {
 } from "@/components/ui/empty";
 import { CreditCard } from "@/lib/icons";
 import { BillingUpgradeModal } from "@/components/account/billing-upgrade-modal";
+import { ChangePasswordModal } from "@/components/account/change-password-modal";
 
 export type AccountPageInitial = {
   email: string | null;
@@ -65,6 +65,7 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
   const [saving, setSaving] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
+  const [changePasswordModalOpen, setChangePasswordModalOpen] = useState(false);
   const [billingSummary, setBillingSummary] = useState<BillingSummary>(EMPTY_BILLING_SUMMARY);
   const [billingLoading, setBillingLoading] = useState(false);
   const [billingHydrated, setBillingHydrated] = useState(false);
@@ -462,12 +463,13 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
                     className={`${readOnlyFieldClass} sm:min-w-0 sm:flex-1`}
                     autoComplete="off"
                   />
-                  <Link
-                    href={PATH_FORGOT_PASSWORD}
+                  <button
+                    type="button"
+                    onClick={() => setChangePasswordModalOpen(true)}
                     className="inline-flex h-10 shrink-0 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white px-4 text-sm font-semibold text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors hover:bg-[#F4F4F5] sm:w-auto"
                   >
-                    Forgot password
-                  </Link>
+                    Change Password
+                  </button>
                 </div>
               </div>
             </section>
@@ -682,6 +684,11 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
           setUpgradeModalOpen(false);
           void loadBillingSummary({ silent: true });
         }}
+      />
+      <ChangePasswordModal
+        open={changePasswordModalOpen}
+        onClose={() => setChangePasswordModalOpen(false)}
+        defaultEmail={displayEmail}
       />
     </div>
   );

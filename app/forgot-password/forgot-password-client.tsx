@@ -2,10 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { AuthInput, AuthLabel, AuthPrimaryButton } from "@/components/auth/auth-form-ui";
-import { getAuthAppOriginForClient } from "@/lib/auth/app-origin";
-import { PATH_AUTH_RESET_PASSWORD } from "@/lib/auth/routes";
-import { friendlySupabaseAuthErrorMessage } from "@/lib/auth/supabase-error-message";
-import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { requestPasswordResetEmail } from "@/lib/auth/request-password-reset";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -27,59 +24,12 @@ export function ForgotPasswordClient() {
 
     setLoading(true);
     try {
-      const apiOrigin = typeof window !== "undefined" ? window.location.origin : "";
-      const authOrigin = getAuthAppOriginForClient();
-
-      let loopsRes: Response | null = null;
-      try {
-        loopsRes = await fetch(`${apiOrigin}/api/auth/forgot-password-loops`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, appOrigin: authOrigin }),
-        });
-      } catch {
-        loopsRes = null;
-      }
-
-      const loopsJson = loopsRes
-        ? ((await loopsRes.json().catch(() => ({}))) as {
-            ok?: boolean;
-            error?: string;
-            message?: string;
-          })
-        : {};
-
-      if (loopsRes?.ok && loopsJson.ok === true) {
-        setSent(true);
+      const result = await requestPasswordResetEmail(email);
+      if (!result.ok) {
+        setErrorMessage(result.message);
         return;
       }
-
-      const useSupabaseFallback =
-        loopsRes === null ||
-        loopsJson.error === "loops_not_configured" ||
-        loopsJson.error === "admin_unavailable";
-
-      if (useSupabaseFallback) {
-        const supabase = getSupabaseBrowserClient();
-        const redirectTo = `${apiOrigin}${PATH_AUTH_RESET_PASSWORD}`;
-
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo,
-        });
-
-        if (error) {
-          setErrorMessage(friendlySupabaseAuthErrorMessage(error.message));
-          return;
-        }
-
-        setSent(true);
-        return;
-      }
-
-      setErrorMessage(
-        loopsJson.message?.trim() ||
-          "We could not send the reset email. Try again or contact support if this continues.",
-      );
+      setSent(true);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Something went wrong. Please try again.";
       setErrorMessage(message);
