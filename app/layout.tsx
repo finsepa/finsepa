@@ -4,6 +4,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
 import { SupabaseBrowserEnvProvider } from "@/components/supabase/supabase-browser-env-provider";
+import { AuthTokenLandingBootstrap } from "@/components/auth/auth-token-landing-bootstrap";
 import { ModalStackProvider } from "@/components/ui/modal-stack-provider";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -48,6 +49,7 @@ export default function RootLayout({
     <html lang="en" className={`${inter.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
         <SupabaseBrowserEnvProvider url={supabaseUrl} anonKey={supabaseAnonKey}>
+          <AuthTokenLandingBootstrap />
           <ModalStackProvider>{children}</ModalStackProvider>
         </SupabaseBrowserEnvProvider>
         <Toaster position="top-center" closeButton />

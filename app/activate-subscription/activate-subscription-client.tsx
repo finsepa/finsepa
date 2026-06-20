@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { BillingUpgradeModal } from "@/components/account/billing-upgrade-modal";
 import { AuthBrandMark } from "@/components/auth/auth-brand-mark";
-import { PATH_LOGIN } from "@/lib/auth/routes";
+import { loginSignedOutUrl } from "@/lib/auth/routes";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 export function ActivateSubscriptionClient() {
@@ -15,7 +15,7 @@ export function ActivateSubscriptionClient() {
     try {
       const supabase = getSupabaseBrowserClient();
       await supabase.auth.signOut();
-      window.location.replace(PATH_LOGIN);
+      window.location.replace(loginSignedOutUrl());
     } finally {
       setSigningOut(false);
     }

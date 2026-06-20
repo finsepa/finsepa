@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
+import type Stripe from "stripe";
 
 import { syncPaidInvoicesFromStripeForUser } from "@/lib/account/billing-db";
+import { resolveNextRecurringChargeUsd } from "@/lib/account/billing-stripe-amounts";
 import {
   effectivePlatformTrialEndsAtIso,
   isPlatformTrialPast,
@@ -119,6 +121,8 @@ export async function GET() {
     let stripeCurrentPeriodEndIso = subscription?.current_period_end ?? null;
     let stripeCollectionPaused = false;
     let billingResumeAt: string | null = null;
+    /** Stripe subscription object when retrieve succeeds (used for promo-aware billing). */
+    let stripeSubscription: Stripe.Subscription | null = null;
     /** Stripe subscription.cancel_at (unix seconds), when retrieve succeeds */
     let cancelAtSecFromStripe: number | null = null;
 
@@ -127,8 +131,9 @@ export async function GET() {
       if (stripe) {
         try {
           const s = await stripe.subscriptions.retrieve(subscription.stripe_subscription_id, {
-            expand: ["items.data.price"],
+            expand: ["items.data.price", "discounts.source.coupon"],
           });
+          stripeSubscription = s;
           stripeStatus = String(s.status ?? stripeStatus);
           stripeCollectionPaused = s.pause_collection != null;
 
@@ -301,6 +306,40 @@ export async function GET() {
 
     const cancelAtPeriodEndActive = isPro && stripeCancelAtPeriodEnd && !stripeCollectionPaused;
 
+    let recurringAmountUsd = plan === "pro" ? subscription?.recurring_amount_usd ?? 0 : 0;
+    if (
+      plan === "pro" &&
+      !cancelAtPeriodEndActive &&
+      !stripeCollectionPaused &&
+      subscription?.stripe_customer_id &&
+      subscription?.stripe_subscription_id
+    ) {
+      const stripe = getStripeClient(subscription.stripe_account_key);
+      if (stripe) {
+        const resolved = await resolveNextRecurringChargeUsd({
+          stripe,
+          customerId: subscription.stripe_customer_id,
+          subscriptionId: subscription.stripe_subscription_id,
+          subscription: stripeSubscription,
+          fallbackUsd: subscription.recurring_amount_usd ?? 0,
+        });
+        if (resolved != null) {
+          recurringAmountUsd = resolved;
+          if (resolved !== (subscription.recurring_amount_usd ?? 0)) {
+            try {
+              await supabase
+                .from("billing_subscriptions")
+                .update({ recurring_amount_usd: resolved })
+                .eq("user_id", user.id)
+                .throwOnError();
+            } catch {
+              /* ignore */
+            }
+          }
+        }
+      }
+    }
+
     let platformTrialDaysRemaining: number | null = null;
     if (
       !isPro &&
@@ -327,7 +366,7 @@ export async function GET() {
       cancelAtPeriodEnd: cancelAtPeriodEndActive,
       billingResumeAt: accessState === "paused" ? billingResumeAt : null,
       subscriptionMeta: subscriptionMetaOut,
-      recurringAmountUsd: plan === "pro" ? subscription?.recurring_amount_usd ?? 0 : 0,
+      recurringAmountUsd,
       // Cancel at period end: no renewal invoice — never send a "next payment" date for that case.
       recurringDueDate: plan === "pro" && !cancelAtPeriodEndActive ? recurringDueDate : null,
       platformTrialEndsAt: isPro ? null : platformTrialEndsAtIso,

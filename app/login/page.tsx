@@ -3,9 +3,11 @@ import Link from "next/link";
 import { AuthCenteredLayout } from "@/components/auth/auth-centered-layout";
 import { authAccentLinkClassName } from "@/components/auth/auth-form-ui";
 
+import { LOGIN_SIGNED_OUT_VALUE } from "@/lib/auth/routes";
+
 import { LoginClient } from "./login-client";
 
-type SearchParams = { reset?: string; error?: string; next?: string };
+type SearchParams = { reset?: string; error?: string; next?: string; signed_out?: string };
 
 export { authMetadata as metadata, authViewport as viewport } from "@/lib/auth/auth-viewport";
 
@@ -34,6 +36,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         resetSuccess={sp.reset === "success"}
         callbackError={sp.error ?? null}
         authNext={sp.next ?? null}
+        signedOut={sp.signed_out === LOGIN_SIGNED_OUT_VALUE}
       />
     </AuthCenteredLayout>
   );

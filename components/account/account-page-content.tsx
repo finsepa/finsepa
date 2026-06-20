@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { PATH_LOGIN } from "@/lib/auth/routes";
+import { loginSignedOutUrl } from "@/lib/auth/routes";
 import {
   EMPTY_BILLING_SUMMARY,
   subscriptionTitleFromBillingSummary,
@@ -211,7 +211,7 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
     try {
       const supabase = getSupabaseBrowserClient();
       await supabase.auth.signOut();
-      window.location.replace(PATH_LOGIN);
+      window.location.replace(loginSignedOutUrl());
     } finally {
       setSigningOut(false);
     }

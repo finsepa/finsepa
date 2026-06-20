@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { getAuthAppOriginFromEnv, resolveAuthAppOriginForServer } from "@/lib/auth/app-origin";
+import { buildBrandedSignupConfirmLink } from "@/lib/auth/branded-auth-link";
 import {
   clientIpFromRequest,
   detectSignupSpam,
@@ -169,7 +170,11 @@ export async function POST(request: Request) {
     (data?.properties as { action_link?: string } | undefined)?.action_link ??
     (data as { action_link?: string } | undefined)?.action_link;
 
-  if (!actionLink || typeof actionLink !== "string") {
+  const confirmationLink =
+    buildBrandedSignupConfirmLink(appOrigin, data?.properties as { hashed_token?: string; verification_type?: string; action_link?: string }) ??
+    actionLink;
+
+  if (!confirmationLink || typeof confirmationLink !== "string") {
     return NextResponse.json({ error: "missing_action_link" }, { status: 500 });
   }
 
@@ -177,7 +182,7 @@ export async function POST(request: Request) {
     apiKey: loopsKey,
     transactionalId: loopsTxId,
     to: email,
-    confirmationLink: actionLink,
+    confirmationLink,
     firstName,
   });
 

@@ -35,6 +35,7 @@ type Props = {
   resetSuccess?: boolean;
   callbackError?: string | null;
   authNext?: string | null;
+  signedOut?: boolean;
 };
 
 function GoogleMark() {
@@ -53,7 +54,7 @@ const REDIRECT_AFTER_LOGIN_MS = 900;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD_LEN = 8;
 
-export function LoginClient({ resetSuccess, callbackError, authNext }: Props) {
+export function LoginClient({ resetSuccess, callbackError, authNext, signedOut }: Props) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
@@ -89,8 +90,8 @@ export function LoginClient({ resetSuccess, callbackError, authNext }: Props) {
 
   const callbackHint = callbackError ? CALLBACK_ERROR_MESSAGES[callbackError] ?? "Something went wrong. Please try again." : null;
   const sessionExpiredHint =
-    !callbackHint && authNext ?
-      "Your session could not be restored. Sign in again to continue."
+    !callbackHint && !signedOut && authNext ?
+      "Please sign in to continue."
     : null;
   const bannerHint = callbackHint ?? sessionExpiredHint;
 
@@ -200,6 +201,15 @@ export function LoginClient({ resetSuccess, callbackError, authNext }: Props) {
           className="rounded-[10px] border border-[#BBF7D0] bg-[#F0FDF4] px-3 py-2 text-sm leading-5 text-[#166534]"
         >
           Your password was updated. You can log in with your new password.
+        </div>
+      ) : null}
+
+      {signedOut ? (
+        <div
+          role="status"
+          className="rounded-[10px] border border-[#E4E4E7] bg-[#FAFAFA] px-3 py-2 text-sm leading-5 text-[#52525B]"
+        >
+          You&apos;ve been logged out.
         </div>
       ) : null}
 

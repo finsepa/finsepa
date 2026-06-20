@@ -13,6 +13,13 @@ export const PATH_AUTH_RESET_PASSWORD = "/auth/reset-password";
 /** Default destination after sign-in (protected product entry) */
 export const PATH_APP_ENTRY = "/screener";
 
+/** Query flag on `/login` after an explicit sign-out. */
+export const LOGIN_SIGNED_OUT_VALUE = "1";
+
+export function loginSignedOutUrl(): string {
+  return `${PATH_LOGIN}?signed_out=${LOGIN_SIGNED_OUT_VALUE}`;
+}
+
 /** Full-screen subscribe prompt when the platform trial (or paid grace) has ended */
 export const PATH_ACTIVATE_SUBSCRIPTION = "/activate-subscription";
 

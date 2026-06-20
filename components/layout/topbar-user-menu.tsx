@@ -16,7 +16,7 @@ import { topbarSquircleActiveClass, topbarSquircleIconClass } from "@/components
 import { TopbarDelayedTooltip } from "@/components/layout/topbar-delayed-tooltip";
 import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
 import { UserAvatar } from "@/components/user/user-avatar";
-import { PATH_LOGIN } from "@/lib/auth/routes";
+import { PATH_APP_ENTRY, loginSignedOutUrl } from "@/lib/auth/routes";
 import {
   EMPTY_BILLING_SUMMARY,
   subscriptionTitleFromBillingSummary,
@@ -137,8 +137,7 @@ export function TopbarUserMenu({
     try {
       const supabase = getSupabaseBrowserClient();
       await supabase.auth.signOut();
-      router.refresh();
-      router.push(PATH_LOGIN);
+      window.location.replace(loginSignedOutUrl());
     } finally {
       setSigningOut(false);
       setOpen(false);

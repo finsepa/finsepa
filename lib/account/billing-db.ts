@@ -8,6 +8,7 @@ import {
   isPlatformTrialPast,
   platformTrialDaysRemaining as computePlatformTrialDaysRemaining,
 } from "@/lib/account/platform-trial";
+import { subscriptionUnitAmountUsdAfterDiscounts } from "@/lib/account/billing-stripe-amounts";
 import { getLoopsApiKey } from "@/lib/env/loops";
 import { sendLoopsProRenewedEmail } from "@/lib/loops/send-pro-renewed";
 import { getStripeClient } from "@/lib/stripe/server";
@@ -295,9 +296,7 @@ export async function upsertBillingSubscription(args: {
       stripe_customer_id: args.stripeCustomerId,
       stripe_subscription_id: args.subscription.id,
       stripe_price_id: priceId,
-      recurring_amount_usd: Number(
-        ((args.subscription.items.data[0]?.price?.unit_amount ?? 0) / 100).toFixed(2),
-      ),
+      recurring_amount_usd: subscriptionUnitAmountUsdAfterDiscounts(args.subscription),
       plan_code: planCode,
       status: args.subscription.status,
       current_period_end:

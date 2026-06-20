@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { resolveAuthAppOriginForServer } from "@/lib/auth/app-origin";
+import { buildBrandedRecoveryLink } from "@/lib/auth/branded-auth-link";
 import { PATH_AUTH_RESET_PASSWORD } from "@/lib/auth/routes";
 import { getLoopsApiKey } from "@/lib/env/loops";
 import { getLoopsTransactionalPasswordResetId } from "@/lib/env/server";
@@ -115,7 +116,11 @@ export async function POST(request: Request) {
     (data?.properties as { action_link?: string } | undefined)?.action_link ??
     (data as { action_link?: string } | undefined)?.action_link;
 
-  if (!actionLink || typeof actionLink !== "string") {
+  const confirmationLink =
+    buildBrandedRecoveryLink(appOrigin, data?.properties as { hashed_token?: string; verification_type?: string; action_link?: string }) ??
+    actionLink;
+
+  if (!confirmationLink || typeof confirmationLink !== "string") {
     return NextResponse.json({ error: "missing_action_link" }, { status: 500 });
   }
 
@@ -126,7 +131,7 @@ export async function POST(request: Request) {
     apiKey: loopsKey,
     transactionalId: loopsTxId,
     to: email,
-    confirmationLink: actionLink,
+    confirmationLink,
     firstName,
     errorHint:
       "Check LOOPS_API_KEY, LOOPS_TRANSACTIONAL_ID_PASSWORD_RESET, and template variables firstName + confirmationLink.",
