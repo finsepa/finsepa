@@ -27,6 +27,7 @@ import { getAuthAppOriginForClient } from "@/lib/auth/app-origin";
 import { TURNSTILE_ENABLED } from "@/lib/auth/turnstile-public";
 import { useTurnstileConfig } from "@/lib/auth/use-turnstile-config";
 import { appendOnboardingQuery, markOnboardingPending } from "@/lib/auth/onboarding";
+import { googleOAuthStartUrl } from "@/lib/auth/google-oauth-start";
 import { PATH_APP_ENTRY, PATH_AUTH_CALLBACK } from "@/lib/auth/routes";
 
 const SIGNUP_DISABLED =
@@ -155,23 +156,16 @@ export function SignupClient() {
   const showPasswordError =
     touched.password && (password.length === 0 || password.length < MIN_PASSWORD_LEN);
 
-  async function handleGoogle() {
+  function handleGoogle() {
     setErrorMessage(null);
     setIsDuplicateEmail(false);
     if (loading) return;
     setLoading(true);
     try {
       markOnboardingPending();
-      const supabase = getSupabaseBrowserClient();
-      const redirectTo = `${window.location.origin}${PATH_AUTH_CALLBACK}?next=${encodeURIComponent(PATH_APP_ENTRY)}&type=signup`;
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: { redirectTo },
-      });
-      if (error) {
-        setErrorMessage(friendlySupabaseAuthErrorMessage(error.message));
-        setLoading(false);
-      }
+      window.location.assign(
+        googleOAuthStartUrl({ next: PATH_APP_ENTRY, intent: "signup" }),
+      );
     } catch (err) {
       const message = err instanceof Error ? err.message : "Something went wrong. Please try again.";
       setErrorMessage(message);

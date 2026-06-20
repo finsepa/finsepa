@@ -13,7 +13,8 @@ import {
 } from "@/components/auth/auth-form-ui";
 import { AuthPasswordInput } from "@/components/auth/auth-password-input";
 import { TurnstileField } from "@/components/auth/turnstile-field";
-import { PATH_APP_ENTRY, PATH_AUTH_CALLBACK } from "@/lib/auth/routes";
+import { PATH_APP_ENTRY } from "@/lib/auth/routes";
+import { googleOAuthStartUrl } from "@/lib/auth/google-oauth-start";
 import { useTurnstileConfig } from "@/lib/auth/use-turnstile-config";
 import { friendlySupabaseAuthErrorMessage } from "@/lib/auth/supabase-error-message";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
@@ -102,7 +103,7 @@ export function LoginClient({ resetSuccess, callbackError, authNext }: Props) {
     }
   }, []);
 
-  async function handleGoogle() {
+  function handleGoogle() {
     setErrorMessage(null);
     if (loading) return;
     setLoading(true);
@@ -112,18 +113,7 @@ export function LoginClient({ resetSuccess, callbackError, authNext }: Props) {
       } catch {
         /* ignore */
       }
-      const supabase = getSupabaseBrowserClient();
-      // Always use the current origin so the PKCE verifier cookie matches the callback URL.
-      const redirectTo = `${window.location.origin}${PATH_AUTH_CALLBACK}?next=${encodeURIComponent(PATH_APP_ENTRY)}`;
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: { redirectTo },
-      });
-      if (error) {
-        setErrorMessage(friendlySupabaseAuthErrorMessage(error.message));
-        setLoading(false);
-      }
-      // On success, Supabase redirects away; no further action needed here.
+      window.location.assign(googleOAuthStartUrl({ next: PATH_APP_ENTRY, intent: "login" }));
     } catch (err) {
       const message = err instanceof Error ? err.message : "Something went wrong. Please try again.";
       setErrorMessage(message);
