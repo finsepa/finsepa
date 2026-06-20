@@ -14,7 +14,7 @@ import {
 import { AuthPasswordInput } from "@/components/auth/auth-password-input";
 import { TurnstileField } from "@/components/auth/turnstile-field";
 import { PATH_APP_ENTRY } from "@/lib/auth/routes";
-import { googleOAuthStartUrl } from "@/lib/auth/google-oauth-start";
+import { startGoogleOAuth } from "@/lib/auth/start-google-oauth";
 import { useTurnstileConfig } from "@/lib/auth/use-turnstile-config";
 import { friendlySupabaseAuthErrorMessage } from "@/lib/auth/supabase-error-message";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
@@ -103,7 +103,7 @@ export function LoginClient({ resetSuccess, callbackError, authNext }: Props) {
     }
   }, []);
 
-  function handleGoogle() {
+  async function handleGoogle() {
     setErrorMessage(null);
     if (loading) return;
     setLoading(true);
@@ -113,7 +113,8 @@ export function LoginClient({ resetSuccess, callbackError, authNext }: Props) {
       } catch {
         /* ignore */
       }
-      window.location.assign(googleOAuthStartUrl({ next: PATH_APP_ENTRY, intent: "login" }));
+      const supabase = getSupabaseBrowserClient();
+      await startGoogleOAuth(supabase, { next: PATH_APP_ENTRY, intent: "login" });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Something went wrong. Please try again.";
       setErrorMessage(message);
@@ -185,12 +186,12 @@ export function LoginClient({ resetSuccess, callbackError, authNext }: Props) {
         </div>
       ) : null}
 
-      <form className="space-y-4" onSubmit={handleSubmit} noValidate>
-        <AuthSecondaryButton onClick={handleGoogle} disabled={loading}>
+      <AuthSecondaryButton onClick={handleGoogle} disabled={loading}>
         <GoogleMark />
         {loading ? "Redirecting…" : "Continue with Google"}
       </AuthSecondaryButton>
 
+      <form className="space-y-4" onSubmit={handleSubmit} noValidate>
       <AuthDivider />
 
       {resetSuccess ? (

@@ -27,6 +27,9 @@ export function getSupabaseBrowserClient() {
     );
   }
   return createBrowserClient(url, key, {
+    cookieOptions: {
+      secure: typeof window !== "undefined" ? window.location.protocol === "https:" : true,
+    },
     auth: {
       // `/auth/callback` exchanges the OAuth `code` explicitly in establish-session-from-url.
       detectSessionInUrl: false,

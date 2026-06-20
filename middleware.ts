@@ -85,8 +85,14 @@ export async function middleware(request: NextRequest) {
   });
 
   const {
-    data: { user },
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  const {
+    data: { user: validatedUser },
   } = await supabase.auth.getUser();
+
+  const user = validatedUser ?? session?.user ?? null;
 
   if (user && isAuthGatePagePath) {
     return NextResponse.redirect(new URL(PATH_APP_ENTRY, request.url));

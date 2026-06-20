@@ -27,7 +27,7 @@ import { getAuthAppOriginForClient } from "@/lib/auth/app-origin";
 import { TURNSTILE_ENABLED } from "@/lib/auth/turnstile-public";
 import { useTurnstileConfig } from "@/lib/auth/use-turnstile-config";
 import { appendOnboardingQuery, markOnboardingPending } from "@/lib/auth/onboarding";
-import { googleOAuthStartUrl } from "@/lib/auth/google-oauth-start";
+import { startGoogleOAuth } from "@/lib/auth/start-google-oauth";
 import { PATH_APP_ENTRY, PATH_AUTH_CALLBACK } from "@/lib/auth/routes";
 
 const SIGNUP_DISABLED =
@@ -156,16 +156,15 @@ export function SignupClient() {
   const showPasswordError =
     touched.password && (password.length === 0 || password.length < MIN_PASSWORD_LEN);
 
-  function handleGoogle() {
+  async function handleGoogle() {
     setErrorMessage(null);
     setIsDuplicateEmail(false);
     if (loading) return;
     setLoading(true);
     try {
       markOnboardingPending();
-      window.location.assign(
-        googleOAuthStartUrl({ next: PATH_APP_ENTRY, intent: "signup" }),
-      );
+      const supabase = getSupabaseBrowserClient();
+      await startGoogleOAuth(supabase, { next: PATH_APP_ENTRY, intent: "signup" });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Something went wrong. Please try again.";
       setErrorMessage(message);

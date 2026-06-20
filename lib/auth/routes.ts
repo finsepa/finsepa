@@ -8,8 +8,6 @@ export const PATH_FORGOT_PASSWORD = "/forgot-password";
 
 /** Password recovery: Supabase `redirectTo` should list this URL; links land here and the client exchanges PKCE/hash tokens into the session. */
 export const PATH_AUTH_CALLBACK = "/auth/callback";
-/** Shown after server-side OAuth exchange sets session cookies. */
-export const PATH_AUTH_CALLBACK_COMPLETE = "/auth/callback/complete";
 export const PATH_AUTH_RESET_PASSWORD = "/auth/reset-password";
 
 /** Default destination after sign-in (protected product entry) */
