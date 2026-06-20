@@ -87,8 +87,10 @@ export function ChangePasswordModal({
         return;
       }
 
-      toast.success("Password updated.");
       onClose();
+      toast.success("Password changed successfully", {
+        description: "Your new password is now active.",
+      });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Something went wrong. Please try again.";
       setErrorMessage(message);

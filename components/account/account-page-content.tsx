@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/empty";
 import { CreditCard } from "@/lib/icons";
 import { BillingUpgradeModal } from "@/components/account/billing-upgrade-modal";
+import { AccountPasswordPlaceholder } from "@/components/account/account-password-placeholder";
 import { ChangePasswordModal } from "@/components/account/change-password-modal";
 
 export type AccountPageInitial = {
@@ -455,15 +456,7 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
               <div className="sm:col-span-2">
                 <FieldLabel htmlFor="acct-password">Password</FieldLabel>
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                  <input
-                    id="acct-password"
-                    type="password"
-                    value="********"
-                    readOnly
-                    aria-readonly="true"
-                    className={`${readOnlyFieldClass} sm:min-w-0 sm:flex-1`}
-                    autoComplete="off"
-                  />
+                  <AccountPasswordPlaceholder id="acct-password" />
                   {initial.canChangePassword ? (
                     <button
                       type="button"
