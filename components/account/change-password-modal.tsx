@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useId, useState, type FormEvent } from "react";
+import { useEffect, useId, useMemo, useState, type FormEvent } from "react";
+import { toast } from "sonner";
 
+import { AuthPasswordInput } from "@/components/auth/auth-password-input";
 import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
 import {
   AppModalFooter,
@@ -9,15 +11,7 @@ import {
   appModalCancelButtonClass,
   appModalPrimaryButtonClass,
 } from "@/components/ui/app-modal-shell";
-import { requestPasswordResetEmail } from "@/lib/auth/request-password-reset";
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-const fieldClass =
-  "h-10 w-full rounded-[10px] border border-[#E4E4E7] bg-[#F9FAFB] px-3 text-sm text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)] outline-none transition-all duration-100 placeholder:text-[#A1A1AA] focus:border-[#D4D4D8] focus:bg-white focus:shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06),0_0_0_4px_rgba(9,9,11,0.06)]";
-
-const readOnlyFieldClass =
-  "h-10 w-full cursor-default rounded-[10px] border border-[#E4E4E7] bg-[#F4F4F5] px-3 text-sm text-[#71717A] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)] outline-none";
+import { changePasswordWithCurrent, MIN_PASSWORD_LENGTH } from "@/lib/auth/change-password";
 
 function FieldLabel({ children, htmlFor }: { children: React.ReactNode; htmlFor?: string }) {
   return (
@@ -27,43 +21,77 @@ function FieldLabel({ children, htmlFor }: { children: React.ReactNode; htmlFor?
   );
 }
 
+const passwordFieldClass =
+  "h-10 max-h-10 rounded-[10px] border border-[#E4E4E7] bg-[#F9FAFB] py-2 pl-3 pr-[34px] text-sm text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)] outline-none transition-all duration-100 placeholder:text-[#A1A1AA] focus:border-[#D4D4D8] focus:bg-white focus:shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06),0_0_0_4px_rgba(9,9,11,0.06)] disabled:cursor-not-allowed disabled:opacity-60";
+
 export function ChangePasswordModal({
   open,
   onClose,
-  defaultEmail,
+  email,
 }: {
   open: boolean;
   onClose: () => void;
-  defaultEmail: string;
+  email: string;
 }) {
   const titleId = useId();
-  const [email, setEmail] = useState(defaultEmail);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [sent, setSent] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const emailReady = email.trim().length > 0 && EMAIL_RE.test(email.trim());
+  const samePasswordError = useMemo(() => {
+    if (!currentPassword || !newPassword) return null;
+    if (currentPassword === newPassword) {
+      return "New password must be different from your current password.";
+    }
+    return null;
+  }, [currentPassword, newPassword]);
+
+  const canSave = useMemo(() => {
+    if (loading) return false;
+    if (!currentPassword || !newPassword) return false;
+    if (newPassword.length < MIN_PASSWORD_LENGTH) return false;
+    if (currentPassword === newPassword) return false;
+    return true;
+  }, [currentPassword, loading, newPassword]);
 
   useEffect(() => {
     if (!open) return;
-    setEmail(defaultEmail);
+    setCurrentPassword("");
+    setNewPassword("");
     setLoading(false);
-    setSent(false);
     setErrorMessage(null);
-  }, [open, defaultEmail]);
+  }, [open]);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setErrorMessage(null);
-    setLoading(true);
 
+    if (currentPassword === newPassword) {
+      setErrorMessage("New password must be different from your current password.");
+      return;
+    }
+
+    if (newPassword.length < MIN_PASSWORD_LENGTH) {
+      setErrorMessage("Password must be at least 8 characters.");
+      return;
+    }
+
+    setLoading(true);
     try {
-      const result = await requestPasswordResetEmail(email);
+      const result = await changePasswordWithCurrent({
+        email,
+        currentPassword,
+        newPassword,
+      });
+
       if (!result.ok) {
         setErrorMessage(result.message);
         return;
       }
-      setSent(true);
+
+      toast.success("Password updated.");
+      onClose();
     } catch (err) {
       const message = err instanceof Error ? err.message : "Something went wrong. Please try again.";
       setErrorMessage(message);
@@ -74,6 +102,8 @@ export function ChangePasswordModal({
 
   if (!open) return null;
 
+  const displayError = errorMessage ?? samePasswordError;
+
   return (
     <AppModalOverlay open={open} onClose={onClose} zIndex={260}>
       <AppModalShell
@@ -82,70 +112,66 @@ export function ChangePasswordModal({
         onClose={onClose}
         bodyClassName="space-y-4 px-5 py-5"
         footer={
-          sent ? (
-            <AppModalFooter className="justify-end">
-              <button type="button" onClick={onClose} className={appModalPrimaryButtonClass(true)}>
-                Done
-              </button>
-            </AppModalFooter>
-          ) : (
-            <AppModalFooter className="justify-end gap-2">
-              <button type="button" onClick={onClose} disabled={loading} className={appModalCancelButtonClass}>
-                Cancel
-              </button>
-              <button
-                type="submit"
-                form="change-password-form"
-                disabled={loading || !emailReady}
-                className={appModalPrimaryButtonClass(!loading && emailReady)}
-              >
-                {loading ? "Sending…" : "Send reset link"}
-              </button>
-            </AppModalFooter>
-          )
+          <AppModalFooter className="justify-end gap-2">
+            <button type="button" onClick={onClose} disabled={loading} className={appModalCancelButtonClass}>
+              Cancel
+            </button>
+            <button
+              type="submit"
+              form="change-password-form"
+              disabled={!canSave}
+              className={appModalPrimaryButtonClass(canSave)}
+            >
+              {loading ? "Saving…" : "Save changes"}
+            </button>
+          </AppModalFooter>
         }
       >
-        {sent ? (
-          <div
-            role="status"
-            className="rounded-[10px] border border-[#BBF7D0] bg-[#F0FDF4] px-3 py-3 text-sm leading-6 text-[#166534]"
-          >
-            Check your email for reset instructions. When you open the link, you&apos;ll set a new password on the
-            same screen used from login.
-          </div>
-        ) : (
-          <form id="change-password-form" className="space-y-4" onSubmit={handleSubmit} noValidate>
-            <p className="text-sm leading-6 text-[#71717A]">
-              We&apos;ll email you a link to set a new password.
-            </p>
-
-            {errorMessage ? (
-              <div
-                role="alert"
-                className="rounded-[10px] border border-[#FECACA] bg-[#FEF2F2] px-3 py-2 text-sm leading-5 text-[#B91C1C]"
-              >
-                {errorMessage}
-              </div>
-            ) : null}
-
-            <div>
-              <FieldLabel htmlFor="change-password-email">Email</FieldLabel>
-              <input
-                id="change-password-email"
-                type="email"
-                name="email"
-                value={email}
-                readOnly={!!defaultEmail}
-                aria-readonly={!!defaultEmail}
-                onChange={(e) => setEmail(e.target.value)}
-                className={defaultEmail ? readOnlyFieldClass : fieldClass}
-                autoComplete="email"
-                required
-                disabled={loading}
-              />
+        <form id="change-password-form" className="space-y-4" onSubmit={handleSubmit} noValidate>
+          {displayError ? (
+            <div
+              role="alert"
+              className="rounded-[10px] border border-[#FECACA] bg-[#FEF2F2] px-3 py-2 text-sm leading-5 text-[#B91C1C]"
+            >
+              {displayError}
             </div>
-          </form>
-        )}
+          ) : null}
+
+          <div>
+            <FieldLabel htmlFor="change-password-current">Current password</FieldLabel>
+            <AuthPasswordInput
+              id="change-password-current"
+              name="currentPassword"
+              autoComplete="current-password"
+              placeholder="Enter your current password"
+              value={currentPassword}
+              onChange={(e) => {
+                setCurrentPassword(e.target.value);
+                if (errorMessage) setErrorMessage(null);
+              }}
+              className={passwordFieldClass}
+              disabled={loading}
+            />
+          </div>
+
+          <div>
+            <FieldLabel htmlFor="change-password-new">New password</FieldLabel>
+            <AuthPasswordInput
+              id="change-password-new"
+              name="newPassword"
+              autoComplete="new-password"
+              placeholder="Enter your new password"
+              value={newPassword}
+              onChange={(e) => {
+                setNewPassword(e.target.value);
+                if (errorMessage) setErrorMessage(null);
+              }}
+              minLength={MIN_PASSWORD_LENGTH}
+              className={passwordFieldClass}
+              disabled={loading}
+            />
+          </div>
+        </form>
       </AppModalShell>
     </AppModalOverlay>
   );

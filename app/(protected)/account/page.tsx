@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { AccountPageContent } from "@/components/account/account-page-content";
 import { PATH_LOGIN } from "@/lib/auth/routes";
+import { userHasPasswordIdentity } from "@/lib/auth/password-identity";
 import { avatarUrlFromUser, initialsFromUser } from "@/lib/auth/user-display";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -27,6 +28,7 @@ export default async function AccountPage() {
         lastName,
         avatarUrl,
         userInitials: initialsFromUser(user),
+        canChangePassword: userHasPasswordIdentity(user),
       }}
     />
   );

@@ -32,6 +32,7 @@ export type AccountPageInitial = {
   lastName: string;
   avatarUrl: string | null;
   userInitials: string;
+  canChangePassword: boolean;
 };
 
 const fieldClass =
@@ -463,13 +464,15 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
                     className={`${readOnlyFieldClass} sm:min-w-0 sm:flex-1`}
                     autoComplete="off"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setChangePasswordModalOpen(true)}
-                    className="inline-flex h-10 shrink-0 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white px-4 text-sm font-semibold text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors hover:bg-[#F4F4F5] sm:w-auto"
-                  >
-                    Change Password
-                  </button>
+                  {initial.canChangePassword ? (
+                    <button
+                      type="button"
+                      onClick={() => setChangePasswordModalOpen(true)}
+                      className="inline-flex h-10 shrink-0 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white px-4 text-sm font-semibold text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors hover:bg-[#F4F4F5] sm:w-auto"
+                    >
+                      Change Password
+                    </button>
+                  ) : null}
                 </div>
               </div>
             </section>
@@ -688,7 +691,7 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
       <ChangePasswordModal
         open={changePasswordModalOpen}
         onClose={() => setChangePasswordModalOpen(false)}
-        defaultEmail={displayEmail}
+        email={displayEmail}
       />
     </div>
   );
