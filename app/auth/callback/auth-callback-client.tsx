@@ -10,11 +10,12 @@ import {
   persistOnboardingPendingOnUser,
   shouldMarkOnboardingAfterAuth,
 } from "@/lib/auth/onboarding";
+import { consumeOAuthRedirectState } from "@/lib/auth/oauth-redirect-state";
 import { parseAuthCallbackParams } from "@/lib/auth/parse-auth-callback-url";
 import { PATH_APP_ENTRY } from "@/lib/auth/routes";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
-const REDIRECT_AFTER_SUCCESS_MS = 2000;
+const REDIRECT_AFTER_SUCCESS_MS = 1500;
 const REDIRECT_AFTER_ERROR_MS = 2500;
 
 type CallbackPhase = "working" | "success" | "error";
@@ -72,7 +73,18 @@ function AuthCallbackInner() {
     async function run() {
       const href = window.location.href;
       const params = parseAuthCallbackParams(href);
-      const safeNext = safeNextPath(searchParams.get("next") ?? params.next);
+      const stored = consumeOAuthRedirectState();
+      const safeNext = safeNextPath(
+        searchParams.get("next") ?? params.next ?? stored.next,
+      );
+
+      if (!params.code && !params.token_hash) {
+        setPhase("error");
+        setMessage("Sign-in did not include a verification code. Redirecting to login…");
+        await new Promise((r) => setTimeout(r, REDIRECT_AFTER_ERROR_MS));
+        if (!cancelled) goTo("/login?error=missing_code");
+        return;
+      }
 
       const result = await establishAuthSessionFromCurrentUrl();
       if (cancelled) return;
@@ -97,7 +109,7 @@ function AuthCallbackInner() {
         let destination = safeNext;
         try {
           const user = session.user ?? null;
-          const authType = params.type ?? searchParams.get("type");
+          const authType = params.type ?? searchParams.get("type") ?? stored.intent;
           if (shouldMarkOnboardingAfterAuth(user, authType)) {
             await persistOnboardingPendingOnUser(supabase);
             destination = appendOnboardingQuery(safeNext);

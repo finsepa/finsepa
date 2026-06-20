@@ -196,7 +196,8 @@ export function SignupClient() {
       const supabase = getSupabaseBrowserClient();
       const authOrigin = getAuthAppOriginForClient();
       const apiOrigin = typeof window !== "undefined" ? window.location.origin : "";
-      const emailRedirectTo = `${authOrigin}${PATH_AUTH_CALLBACK}?next=${encodeURIComponent(PATH_APP_ENTRY)}`;
+      // Supabase allow-list rejects query strings on redirect URLs — use exact callback path only.
+      const emailRedirectTo = `${authOrigin}${PATH_AUTH_CALLBACK}`;
 
       /** Sign out before leaving `/signup` so middleware does not treat the user as logged-in and redirect to `/screener`. */
       async function goToEmailConfirmation() {
