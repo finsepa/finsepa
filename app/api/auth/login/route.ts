@@ -13,6 +13,118 @@ type Body = {
   password?: unknown;
 };
 
+function getSupabasePublicConfig(): { url: string; anonKey: string } | null {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  const anonKey =
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim() ||
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim();
+  if (!url || !anonKey) return null;
+  return { url, anonKey };
+}
+
+async function createCookieSessionClient() {
+  const config = getSupabasePublicConfig();
+  if (!config) return null;
+
+  const cookieStore = await cookies();
+  let response = NextResponse.json({ ok: true as const });
+
+  const supabase = createServerClient(config.url, config.anonKey, {
+    cookies: {
+      getAll() {
+        return cookieStore.getAll();
+      },
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value, options }) => {
+          cookieStore.set(name, value, options);
+          response.cookies.set(name, value, options);
+        });
+      },
+    },
+  });
+
+  return { supabase, response };
+}
+
+async function loginWithPasswordGrant(email: string, password: string): Promise<NextResponse> {
+  const sessionClient = await createCookieSessionClient();
+  if (!sessionClient) {
+    return NextResponse.json({ error: "config", message: "Authentication is not configured." }, { status: 503 });
+  }
+
+  const { supabase, response } = sessionClient;
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+  if (error) {
+    const lower = error.message.toLowerCase();
+    if (lower.includes("invalid login credentials") || lower.includes("invalid credentials")) {
+      return NextResponse.json(
+        { error: "invalid_credentials", message: "Invalid email or password." },
+        { status: 401 },
+      );
+    }
+    if (lower.includes("captcha")) {
+      return NextResponse.json(
+        {
+          error: "login_unavailable",
+          message:
+            "Email sign-in is not configured on production yet. Add SUPABASE_POOLER_URL in Vercel (Supabase → Connect → Session pooler), redeploy, and try again.",
+        },
+        { status: 503 },
+      );
+    }
+    return NextResponse.json(
+      { error: "login_failed", message: "Could not sign in. Try again." },
+      { status: 400 },
+    );
+  }
+
+  return response;
+}
+
+async function loginWithVerifiedEmail(email: string): Promise<NextResponse> {
+  const admin = getSupabaseAdminClient();
+  if (!admin) {
+    return NextResponse.json(
+      { error: "config", message: "Authentication is not configured." },
+      { status: 503 },
+    );
+  }
+
+  const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
+    type: "magiclink",
+    email,
+  });
+
+  const tokenHash = linkData?.properties?.hashed_token;
+  if (linkError || !tokenHash) {
+    return NextResponse.json(
+      { error: "session_failed", message: "Could not start your session. Try again." },
+      { status: 500 },
+    );
+  }
+
+  const sessionClient = await createCookieSessionClient();
+  if (!sessionClient) {
+    return NextResponse.json({ error: "config", message: "Authentication is not configured." }, { status: 503 });
+  }
+
+  const { supabase, response } = sessionClient;
+  const { error: sessionError } = await supabase.auth.verifyOtp({
+    token_hash: tokenHash,
+    type: "magiclink",
+  });
+
+  if (sessionError) {
+    return NextResponse.json(
+      { error: "session_failed", message: "Could not start your session. Try again." },
+      { status: 500 },
+    );
+  }
+
+  return response;
+}
+
 export async function POST(request: Request) {
   let body: Body;
   try {
@@ -32,6 +144,7 @@ export async function POST(request: Request) {
   }
 
   const verified = await verifyPasswordForEmail(email, password);
+
   if (!verified.ok) {
     if (verified.reason === "google_only") {
       return NextResponse.json(
@@ -48,73 +161,10 @@ export async function POST(request: Request) {
         { status: 401 },
       );
     }
-    return NextResponse.json(
-      {
-        error: "login_unavailable",
-        message: "Email sign-in is temporarily unavailable. Try Google sign-in or try again later.",
-      },
-      { status: 503 },
-    );
+
+    // Local dev usually has SUPABASE_POOLER_URL; production may not — fall back to Supabase password grant.
+    return loginWithPasswordGrant(email, password);
   }
 
-  const admin = getSupabaseAdminClient();
-  if (!admin) {
-    return NextResponse.json(
-      { error: "config", message: "Authentication is not configured." },
-      { status: 503 },
-    );
-  }
-
-  const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
-    type: "magiclink",
-    email: verified.email,
-  });
-
-  const tokenHash = linkData?.properties?.hashed_token;
-  if (linkError || !tokenHash) {
-    return NextResponse.json(
-      { error: "session_failed", message: "Could not start your session. Try again." },
-      { status: 500 },
-    );
-  }
-
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-  const anonKey =
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim() ||
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim();
-
-  if (!url || !anonKey) {
-    return NextResponse.json({ error: "config", message: "Authentication is not configured." }, { status: 503 });
-  }
-
-  const cookieStore = await cookies();
-  let response = NextResponse.json({ ok: true as const });
-
-  const supabase = createServerClient(url, anonKey, {
-    cookies: {
-      getAll() {
-        return cookieStore.getAll();
-      },
-      setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value, options }) => {
-          cookieStore.set(name, value, options);
-          response.cookies.set(name, value, options);
-        });
-      },
-    },
-  });
-
-  const { error: sessionError } = await supabase.auth.verifyOtp({
-    token_hash: tokenHash,
-    type: "magiclink",
-  });
-
-  if (sessionError) {
-    return NextResponse.json(
-      { error: "session_failed", message: "Could not start your session. Try again." },
-      { status: 500 },
-    );
-  }
-
-  return response;
+  return loginWithVerifiedEmail(verified.email);
 }

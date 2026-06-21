@@ -14,10 +14,24 @@ export function resolveSupabaseDatabaseUrl(): string | null {
     "DATABASE_URL",
     "DIRECT_URL",
     "POSTGRES_URL",
+    "POSTGRES_URL_NON_POOLING",
+    "POSTGRES_PRISMA_URL",
     "SUPABASE_DATABASE_URL",
   ]) {
     const value = pickProcessEnv(key);
     if (value) return value;
+  }
+
+  const pgHost = pickProcessEnv("POSTGRES_HOST");
+  const pgPassword =
+    pickProcessEnv("POSTGRES_PASSWORD") ??
+    pickProcessEnv("SUPABASE_DB_PASSWORD") ??
+    pickProcessEnv("POSTGRES_PASSWORD_NON_POOLING");
+  const pgUser = pickProcessEnv("POSTGRES_USER") ?? "postgres";
+  const pgDatabase = pickProcessEnv("POSTGRES_DATABASE") ?? "postgres";
+  const pgPort = pickProcessEnv("POSTGRES_PORT") ?? "5432";
+  if (pgHost && pgPassword) {
+    return `postgresql://${encodeURIComponent(pgUser)}:${encodeURIComponent(pgPassword)}@${pgHost}:${pgPort}/${pgDatabase}`;
   }
 
   const ref = extractSupabaseProjectRef(pickProcessEnv("NEXT_PUBLIC_SUPABASE_URL"));
