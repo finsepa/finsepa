@@ -14,7 +14,6 @@ import {
 import { AuthPasswordInput } from "@/components/auth/auth-password-input";
 import { PATH_APP_ENTRY } from "@/lib/auth/routes";
 import { startGoogleOAuth } from "@/lib/auth/start-google-oauth";
-import { friendlySupabaseAuthErrorMessage } from "@/lib/auth/supabase-error-message";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { cn } from "@/lib/utils";
 
@@ -111,15 +110,16 @@ export function LoginClient({ resetSuccess, callbackError, authNext, signedOut }
 
     setLoading(true);
     try {
-      const supabase = getSupabaseBrowserClient();
-
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
       });
 
-      if (error) {
-        setErrorMessage(friendlySupabaseAuthErrorMessage(error.message));
+      const data = (await res.json().catch(() => ({}))) as { ok?: boolean; message?: string };
+
+      if (!res.ok) {
+        setErrorMessage(data.message?.trim() || "Invalid email or password.");
         return;
       }
 
