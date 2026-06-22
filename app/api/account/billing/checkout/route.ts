@@ -75,6 +75,7 @@ export async function POST(req: Request) {
       client_reference_id: user.id,
       success_url: successUrl,
       cancel_url: cancelUrl,
+      allow_promotion_codes: true,
       line_items: [{ price: priceId, quantity: 1 }],
       subscription_data: {
         metadata: { finsepa_user_id: user.id },

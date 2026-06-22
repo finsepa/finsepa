@@ -23,7 +23,6 @@ import {
   LineType,
   createChart,
   type IChartApi,
-  type IPriceLine,
   type ISeriesApi,
   type MouseEventParams,
   type Time,
@@ -32,6 +31,7 @@ import { LineChart, Settings } from "@/lib/icons";
 
 import { baselineRelativeGradientEnabled } from "@/lib/chart/baseline-relative-gradient";
 import { fitSeriesLogicalRangeToPlotWidth } from "@/lib/chart/mobile-plot-horizontal-gutter";
+import { FUNDAMENTALS_CHART_Y_AXIS_W_PX, FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS } from "@/lib/chart/fundamentals-chart-surface";
 
 import { horzTimeToUnixSeconds } from "@/components/chart/chart-selection-utils";
 import {
@@ -74,16 +74,11 @@ const Y_AXIS_LABEL_COUNT = 6;
 
 const HIDE_NATIVE_Y_AXIS_TICK_LABELS = (priceValue: readonly number[]) => priceValue.map(() => "");
 
-const Y_AXIS_LABEL_ONLY = {
-  color: "transparent",
-  lineWidth: 1,
-  lineStyle: LineStyle.Solid,
-  axisLabelVisible: true,
-  axisLabelColor: "#ffffff",
-  axisLabelTextColor: "#71717A",
-  lineVisible: false,
-  title: "",
-} as const;
+/** Matches `rightPriceScale.scaleMargins` on the overview LW chart. */
+const OVERVIEW_SCALE_MARGIN_TOP = 0.12;
+const OVERVIEW_SCALE_MARGIN_BOTTOM = 0.08;
+
+type OverviewYAxisLabel = { key: string; label: string; topPct: number };
 
 type OverviewMainSeries = ISeriesApi<"Area"> | ISeriesApi<"Baseline">;
 
@@ -553,121 +548,110 @@ function truncOneDecimalUnit(abs: number, unit: number): string {
   return t.toFixed(1);
 }
 
-function removeYAxisTickLabels(series: OverviewMainSeries | null, ticksRef: RefObject<IPriceLine[]>) {
-  if (!series) {
-    ticksRef.current = [];
-    return;
-  }
-  for (const line of ticksRef.current) {
-    try {
-      series.removePriceLine(line);
-    } catch {
-      /* ignore */
+function overviewSeriesValueExtents(series: OverviewMainSeries): { min: number; max: number } | null {
+  const data = series.data();
+  if (data.length === 0) return null;
+  let min = Infinity;
+  let max = -Infinity;
+  for (const pt of data) {
+    const v = (pt as { value?: number }).value;
+    if (typeof v === "number" && Number.isFinite(v)) {
+      if (v < min) min = v;
+      if (v > max) max = v;
     }
   }
-  ticksRef.current = [];
+  if (!Number.isFinite(min) || !Number.isFinite(max)) return null;
+  return { min, max };
 }
 
-/** Plot pane height when LW pane metrics are not ready (276px plot × scaleMargins 12%/8%). */
-const OVERVIEW_PANE_HEIGHT_FALLBACK_PX = Math.round((320 - 44) * 0.8);
-
-function overviewChartPaneHeight(chart: IChartApi): number | null {
-  try {
-    const size = chart.paneSize(0);
-    if (size && Number.isFinite(size.height) && size.height > 0) return size.height;
-  } catch {
-    /* chart removed or pane not laid out yet */
+function overviewYAxisPriceRange(min: number, max: number): { bottom: number; top: number } {
+  if (min === max) {
+    const pad = Math.max(1, Math.abs(max) * 0.1);
+    return { bottom: min - pad, top: max + pad };
   }
-  return OVERVIEW_PANE_HEIGHT_FALLBACK_PX > 0 ? OVERVIEW_PANE_HEIGHT_FALLBACK_PX : null;
+  const dataSpan = max - min;
+  const scaleSpan = dataSpan / (1 - OVERVIEW_SCALE_MARGIN_TOP - OVERVIEW_SCALE_MARGIN_BOTTOM);
+  return {
+    bottom: min - scaleSpan * OVERVIEW_SCALE_MARGIN_BOTTOM,
+    top: max + scaleSpan * OVERVIEW_SCALE_MARGIN_TOP,
+  };
 }
 
-function seriesPriceAtCoordinate(series: OverviewMainSeries, y: number): number | null {
-  try {
-    const p = series.coordinateToPrice(y);
-    if (p == null || !Number.isFinite(p as number)) return null;
-    return p as number;
-  } catch {
-    return null;
-  }
-}
-
-/** Six evenly spaced right-axis labels (no inner grid lines). */
-function syncYAxisTickLabels(
-  chart: IChartApi,
-  series: OverviewMainSeries,
-  ticksRef: RefObject<IPriceLine[]>,
-  tickCount: number = Y_AXIS_LABEL_COUNT,
-) {
-  const h = overviewChartPaneHeight(chart);
-  if (h == null || tickCount < 2) {
-    removeYAxisTickLabels(series, ticksRef);
-    return;
-  }
-
-  const topPrice = seriesPriceAtCoordinate(series, 0);
-  const bottomPrice = seriesPriceAtCoordinate(series, h);
-  if (topPrice == null || bottomPrice == null) {
-    removeYAxisTickLabels(series, ticksRef);
-    return;
-  }
-
-  let top = topPrice as number;
-  let bottom = bottomPrice as number;
-  if (!Number.isFinite(top) || !Number.isFinite(bottom)) {
-    removeYAxisTickLabels(series, ticksRef);
-    return;
-  }
-  if (top < bottom) {
-    const swap = top;
-    top = bottom;
-    bottom = swap;
-  }
-
+function overviewYAxisTopPercent(price: number, bottom: number, top: number): number {
   const span = top - bottom;
-  if (span <= 0) {
-    removeYAxisTickLabels(series, ticksRef);
-    return;
-  }
-
-  const prices: number[] = [];
-  for (let i = 0; i < tickCount; i++) {
-    prices.push(bottom + (span * i) / (tickCount - 1));
-  }
-
-  while (ticksRef.current.length > prices.length) {
-    const line = ticksRef.current.pop();
-    if (line) {
-      try {
-        series.removePriceLine(line);
-      } catch {
-        /* ignore */
-      }
-    }
-  }
-
-  for (let i = 0; i < prices.length; i++) {
-    const price = prices[i]!;
-    const existing = ticksRef.current[i];
-    if (existing) {
-      existing.applyOptions({ price, ...Y_AXIS_LABEL_ONLY });
-    } else {
-      ticksRef.current.push(series.createPriceLine({ price, ...Y_AXIS_LABEL_ONLY }));
-    }
-  }
+  if (span <= 0) return 50;
+  return ((top - price) / span) * 100;
 }
 
-function syncOverviewChartYAxis(
-  chart: IChartApi,
+/** HTML right-axis labels — avoids LW price-line axis labels stacking at $0. */
+function computeOverviewYAxisLabels(
   series: OverviewMainSeries,
-  yAxisTickLinesRef: RefObject<IPriceLine[]>,
-) {
-  if (series.data().length === 0) return;
-  try {
-    syncYAxisTickLabels(chart, series, yAxisTickLinesRef);
-  } catch {
-    /* pane/scale not ready or chart torn down */
+  metric: MetricMode,
+): OverviewYAxisLabel[] {
+  const extents = overviewSeriesValueExtents(series);
+  if (!extents) return [];
+
+  let { min, max } = extents;
+  if (metric !== "value") {
+    min = Math.min(min, 0);
+    max = Math.max(max, 0);
   }
+
+  const { bottom, top } = overviewYAxisPriceRange(min, max);
+  const span = top - bottom;
+  if (span <= 0) return [];
+
+  const labels: OverviewYAxisLabel[] = [];
+  for (let i = 0; i < Y_AXIS_LABEL_COUNT; i++) {
+    const price = bottom + (span * i) / (Y_AXIS_LABEL_COUNT - 1);
+    labels.push({
+      key: String(i),
+      label: metric === "return" ? formatReturnPctAxis(price) : formatAxisUsd(price),
+      topPct: overviewYAxisTopPercent(price, bottom, top),
+    });
+  }
+  return labels;
 }
+
+/** Hide axis ticks that would sit under the LW last-value badge on the right edge. */
+const OVERVIEW_Y_AXIS_BADGE_CLEARANCE_PCT = 10;
+
+function filterYAxisLabelsForLastValueBadge(
+  labels: OverviewYAxisLabel[],
+  series: OverviewMainSeries,
+  metric: MetricMode,
+): OverviewYAxisLabel[] {
+  const data = series.data();
+  if (data.length === 0) return labels;
+
+  const lastValue = (data[data.length - 1] as { value?: number }).value;
+  if (typeof lastValue !== "number" || !Number.isFinite(lastValue)) return labels;
+
+  const extents = overviewSeriesValueExtents(series);
+  if (!extents) return labels;
+
+  let { min, max } = extents;
+  if (metric !== "value") {
+    min = Math.min(min, 0);
+    max = Math.max(max, 0);
+  }
+
+  const { bottom, top } = overviewYAxisPriceRange(min, max);
+  const lastTopPct = overviewYAxisTopPercent(lastValue, bottom, top);
+
+  return labels.filter(
+    (lab) => Math.abs(lab.topPct - lastTopPct) >= OVERVIEW_Y_AXIS_BADGE_CLEARANCE_PCT,
+  );
+}
+
+function syncOverviewYAxisLabels(
+  series: OverviewMainSeries,
+  metric: MetricMode,
+): OverviewYAxisLabel[] {
+  return filterYAxisLabelsForLastValueBadge(computeOverviewYAxisLabels(series, metric), series, metric);
+}
+
+const OVERVIEW_CHART_PLOT_BACKDROP_INSET_CLASS = "top-[12%] bottom-[8%]";
 
 function formatAxisUsd(n: number): string {
   if (!Number.isFinite(n)) return "$0";
@@ -874,7 +858,7 @@ export function PortfolioValueHistoryChartPane({
     spy: ISeriesApi<"Line"> | null;
     nasdaq: ISeriesApi<"Line"> | null;
   }>({ spy: null, nasdaq: null });
-  const yAxisTickLinesRef = useRef<IPriceLine[]>([]);
+  const [yAxisLabels, setYAxisLabels] = useState<OverviewYAxisLabel[]>([]);
   const chartRangeRef = useRef<PortfolioChartRange>(range);
   const chartPointsRef = useRef<StockChartPoint[]>([]);
   const sessionYmdsRef = useRef<string[]>([]);
@@ -1169,7 +1153,7 @@ export function PortfolioValueHistoryChartPane({
       const s = seriesRef.current;
       if (s && s.data().length > 0) {
         snapOverviewTimeScale(chartRef.current, s);
-        syncOverviewChartYAxis(chartRef.current, s, yAxisTickLinesRef);
+        setYAxisLabels(syncOverviewYAxisLabels(s, metric));
       }
       requestAnimationFrame(() => {
         scheduleTradeDotsSyncRef.current?.();
@@ -1207,7 +1191,7 @@ export function PortfolioValueHistoryChartPane({
     return () => {
       chart.unsubscribeCrosshairMove(onCrosshairMove);
       ro.disconnect();
-      removeYAxisTickLabels(seriesRef.current, yAxisTickLinesRef);
+      setYAxisLabels([]);
       chart.remove();
       chartRef.current = null;
       seriesRef.current = null;
@@ -1219,6 +1203,7 @@ export function PortfolioValueHistoryChartPane({
       setTradeTooltip(null);
       setHoverAxisLabel(null);
       setPeriodAxisLabels([]);
+      setYAxisLabels([]);
     };
   }, [metric, compareSpy, compareNasdaq]);
 
@@ -1255,7 +1240,7 @@ export function PortfolioValueHistoryChartPane({
       scheduleTradeDotsSyncRef.current?.();
       compareSeriesRefs.current.spy?.setData([]);
       compareSeriesRefs.current.nasdaq?.setData([]);
-      removeYAxisTickLabels(series, yAxisTickLinesRef);
+      setYAxisLabels([]);
       setPeriodAxisLabels([]);
       return;
     }
@@ -1295,7 +1280,7 @@ export function PortfolioValueHistoryChartPane({
         const c = chartRef.current;
         const s = seriesRef.current;
         if (!c || !s || c !== chart || s !== series || s.data().length === 0) return;
-        syncOverviewChartYAxis(c, s, yAxisTickLinesRef);
+        setYAxisLabels(syncOverviewYAxisLabels(s, metric));
         scheduleTradeDotsSyncRef.current?.();
         const plotWidthPx = Math.max(0, wrapRef.current?.clientWidth ?? 0);
         const hoverTime = hoverTimeRef.current;
@@ -1359,6 +1344,26 @@ export function PortfolioValueHistoryChartPane({
           <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
         </div>
         <div ref={wrapRef} className="relative z-10 h-full w-full min-w-0" />
+        <div
+          className={cn(
+            "pointer-events-none absolute inset-y-0 right-0 z-[9] text-right font-['Inter'] text-[11px] tabular-nums leading-none text-[#71717A] sm:text-[12px]",
+            FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS,
+          )}
+          style={{ width: FUNDAMENTALS_CHART_Y_AXIS_W_PX }}
+          aria-hidden
+        >
+          <div className={cn("pointer-events-none absolute inset-x-0", OVERVIEW_CHART_PLOT_BACKDROP_INSET_CLASS)}>
+            {yAxisLabels.map((lab) => (
+              <span
+                key={lab.key}
+                className="absolute right-0 block -translate-y-1/2 rounded-sm bg-white/90 px-0.5 py-px"
+                style={{ top: `${lab.topPct}%` }}
+              >
+                {lab.label}
+              </span>
+            ))}
+          </div>
+        </div>
         <div ref={tradeOverlayRef} className="pointer-events-none absolute inset-0 z-[15]" />
         {tooltip ? (
           <div

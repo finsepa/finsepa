@@ -3,7 +3,7 @@
 import { memo, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, Briefcase, Star } from "@/lib/icons";
+import { Bell, Briefcase } from "@/lib/icons";
 import { TOPBAR_SHOW_NOTIFICATIONS } from "@/lib/features/topbar-flags";
 import { TransactionPortfolioField } from "@/components/portfolio/transaction-portfolio-field";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
@@ -173,20 +173,7 @@ export function Topbar({
             mobileAssetRoute ? "hidden md:flex" : "max-md:ml-auto",
           )}
         >
-          {!mobileAssetRoute ? (
-            <TopbarDelayedTooltip label="Watchlist" className="hidden shrink-0 md:inline-flex">
-              <Link
-                href="/watchlist"
-                prefetch={false}
-                aria-label="Watchlist"
-                className={cn(topbarSquircleIconClass, "inline-flex")}
-              >
-                <Star className="h-5 w-5" aria-hidden />
-              </Link>
-            </TopbarDelayedTooltip>
-          ) : null}
-
-          <div className="hidden md:contents">
+          <div className="hidden shrink-0 md:flex">
             <TopbarQuickAddMenu showDesktopLabel desktopLabel="Add" dwellTooltipLabel="Add" />
           </div>
 

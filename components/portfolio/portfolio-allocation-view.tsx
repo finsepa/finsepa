@@ -76,7 +76,7 @@ function AllocationColumn({ rows }: { rows: AllocationDonutRow[] }) {
   return (
     <ul className="flex flex-col gap-3">
       {rows.map((r) => (
-        <li key={r.id} className="flex min-w-0 items-center gap-3">
+        <li key={r.id} className="flex min-w-0 items-center gap-3 pr-1 sm:pr-0">
           <span
             className="h-2.5 w-2.5 shrink-0 rounded-full"
             style={{ backgroundColor: r.color }}
@@ -85,7 +85,7 @@ function AllocationColumn({ rows }: { rows: AllocationDonutRow[] }) {
           <span className="min-w-0 flex-1 truncate text-left text-[14px] leading-5 text-[#09090B]">
             {r.name}
           </span>
-          <span className="shrink-0 tabular-nums text-[14px] font-medium leading-5 text-[#09090B]">
+          <span className="w-12 shrink-0 text-right tabular-nums text-[14px] font-medium leading-5 text-[#09090B] sm:w-14">
             {pct1.format(r.weightPct)}%
           </span>
         </li>
@@ -116,15 +116,15 @@ function PortfolioAllocationViewInner({
   }
 
   return (
-    <div className="rounded-[12px] border border-[#E4E4E7] bg-white px-6 py-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
-      <div className="flex flex-col items-stretch gap-8 lg:flex-row lg:items-center lg:gap-10">
+    <div className="rounded-[12px] border border-[#E4E4E7] bg-white py-5 pl-6 pr-8 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)] sm:pr-10 lg:pr-12">
+      <div className="flex flex-col items-stretch gap-8 lg:flex-row lg:items-center lg:gap-6">
         <AllocationDonutChart
           rows={rows}
           center={<UserAvatar imageSrc={imageSrc} initials={initials} size="xl" />}
-          className="mx-auto"
+          className="mx-auto shrink-0 lg:mx-0 lg:-mr-2"
         />
 
-        <div className="mx-auto grid min-w-0 max-w-4xl flex-1 grid-cols-1 gap-8 sm:grid-cols-2 sm:gap-x-12">
+        <div className="mx-auto grid min-w-0 max-w-4xl flex-1 grid-cols-1 gap-8 sm:grid-cols-2 sm:gap-x-10 lg:gap-x-12">
           <AllocationColumn rows={left} />
           <AllocationColumn rows={right} />
         </div>

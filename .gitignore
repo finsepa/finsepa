@@ -44,6 +44,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# stripe scripts output (promo code lists)
+/scripts/output/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
