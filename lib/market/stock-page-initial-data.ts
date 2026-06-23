@@ -4,9 +4,10 @@ import { fetchEodhdEodDaily, type EodhdDailyBar } from "@/lib/market/eodhd-eod";
 import { sliceStockChartPointsForRange } from "@/lib/market/stock-chart-api";
 import {
   getStockSpotPriceUsd,
-  getStockChartPoints,
+  getStockChartPointsForApi,
   stockChartPointsFromDailyBars,
 } from "@/lib/market/stock-chart-data";
+import { getUsEquityMarketSession } from "@/lib/market/us-equity-market-session";
 import type { ChartingSeriesPoint } from "@/lib/market/charting-series-types";
 import type { StockDetailHeaderMeta } from "@/lib/market/stock-header-meta";
 import { getStockDetailHeaderMetaForPage } from "@/lib/market/stock-header-meta-server";
@@ -114,6 +115,7 @@ function resolveOverviewChartPoints(
   now: Date,
 ): StockChartPoint[] {
   if (Array.isArray(chartPoints) && chartPoints.length > 0) return chartPoints;
+  if (range === "1D" && getUsEquityMarketSession(now) === "regular") return [];
   if (!sortedDailyBars.length) return [];
   const fromDaily = sliceStockChartPointsForRange(stockChartPointsFromDailyBars(sortedDailyBars), range, now);
   if (fromDaily.length > 0) return fromDaily;
@@ -164,7 +166,7 @@ async function loadStockPageHotFields(
   now: Date,
 ): Promise<Pick<StockPageInitialData, "chart" | "headerLiveSpotUsd">> {
   const [chartPointsResult, spotResult] = await Promise.allSettled([
-    getStockChartPoints(ticker, range, "price"),
+    getStockChartPointsForApi(ticker, range, "price"),
     getStockSpotPriceUsd(ticker),
   ]);
   const chartPointsRaw = fromSettled(chartPointsResult, "chart1D");
@@ -236,7 +238,7 @@ export async function loadStockPageInitialDataUncached(routeTicker: string): Pro
     ] = await Promise.allSettled([
       getStockDetailHeaderMetaForPage(ticker),
       fetchEodhdEodDaily(ticker, from, to),
-      getStockChartPoints(ticker, range, "price"),
+      getStockChartPointsForApi(ticker, range, "price"),
       buildStockKeyStatsBundle(ticker),
       getStockNews(ticker),
       fetchEodhdStockProfile(ticker),

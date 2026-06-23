@@ -1,6 +1,7 @@
 "use client";
 
 import type { IChartApi, UTCTimestamp } from "lightweight-charts";
+import { resolveStock1DLiveSessionYmd, liveSessionTimeToPlotLeftPx, stock1DLiveSessionWallClockBounds } from "@/lib/chart/stock-1d-live-session-chart";
 import { shouldHideMobileYAxisLabels } from "@/lib/chart/mobile-plot-horizontal-gutter";
 import { usSessionWallClockUnix } from "@/lib/market/chart-timestamp-format";
 import type { StockChartRange, StockChartPoint } from "@/lib/market/stock-chart-types";
@@ -576,6 +577,35 @@ function countDistinctSessionHours(data: readonly StockChartPoint[], timeZone: s
 const MOBILE_ONE_D_AXIS_HOURS = [10, 11, 12, 13, 14, 15] as const;
 const MOBILE_ONE_D_AXIS_EDGE_PAD_PX = 8;
 
+/** Live 1D session (regular hours) — Yahoo-style ticks on a 9:30–16:00 axis. */
+const STOCK_1D_LIVE_SESSION_AXIS_SLOTS = [
+  { hour: 10, minute: 0 },
+  { hour: 12, minute: 0 },
+  { hour: 14, minute: 0 },
+  { hour: 16, minute: 0 },
+] as const;
+
+export function buildStock1DLiveSessionAxisLabels(
+  chart: IChartApi,
+  sessionYmd: string,
+  timeZone: string,
+  _plotWidthPx = 0,
+): OverviewAxisLabel[] {
+  const { open, close } = stock1DLiveSessionWallClockBounds(sessionYmd, timeZone);
+  const out: OverviewAxisLabel[] = [];
+  for (const slot of STOCK_1D_LIVE_SESSION_AXIS_SLOTS) {
+    const unix = usSessionWallClockUnix(sessionYmd, slot.hour, slot.minute, timeZone);
+    const leftPx = liveSessionTimeToPlotLeftPx(chart, unix, open, close);
+    if (leftPx == null || !Number.isFinite(leftPx)) continue;
+    out.push({
+      key: `live-1d-${slot.hour}-${slot.minute}`,
+      leftPx,
+      label: formatOverviewAxisHourTickLabel(unix, timeZone),
+    });
+  }
+  return out;
+}
+
 function buildMobile1DHourAxisLabels(
   chart: IChartApi,
   data: readonly StockChartPoint[],
@@ -771,16 +801,28 @@ export function usesTwoSlotDayCrosshairLabel(range: StockChartRange, axisMode: O
   return isTwoSlotDayOverviewRange(range) || axisMode === "triMonthly";
 }
 
+export type OverviewPeriodAxisSyncOptions = {
+  /** Pin 1D axis to full regular session while the US market is open. */
+  stock1DLiveSession?: boolean;
+};
+
 export function syncOverviewPeriodAxisLabels(
   chart: IChartApi,
   points: readonly StockChartPoint[],
   timeZone: string,
   axisMode: OverviewBottomAxisMode,
   plotWidthPx = 0,
+  options?: OverviewPeriodAxisSyncOptions,
 ): OverviewAxisLabel[] {
   const data = points.filter((p) => isFiniteNumber(p.time));
   const n = data.length;
   if (!n) return [];
+  if (options?.stock1DLiveSession) {
+    const sessionYmd =
+      resolveStock1DLiveSessionYmd(data, timeZone) ??
+      sessionDayKeyForPoint(data[data.length - 1]!, timeZone);
+    return buildStock1DLiveSessionAxisLabels(chart, sessionYmd, timeZone, plotWidthPx);
+  }
   const mobileOneDayAxis = axisMode === "hour" && shouldHideMobileYAxisLabels(plotWidthPx);
   if (mobileOneDayAxis) {
     return buildMobile1DHourAxisLabels(chart, data, timeZone, plotWidthPx);

@@ -7,7 +7,7 @@ import {
 } from "@/lib/data/cache-policy";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
-  getStockChartPoints,
+  getStockChartPointsForApi,
   getSuperinvestorHoldingStockChartPoints,
   pricePointsToReturnIndexPoints,
 } from "@/lib/market/stock-chart-data";
@@ -64,7 +64,7 @@ export async function GET(request: Request, { params }: Ctx) {
   }
 
   const cadenceDaily = url.searchParams.get("cadence") === "daily";
-  const loadChartPoints = cadenceDaily ? getSuperinvestorHoldingStockChartPoints : getStockChartPoints;
+  const loadChartPoints = cadenceDaily ? getSuperinvestorHoldingStockChartPoints : getStockChartPointsForApi;
   const rawPoints = await loadChartPoints(routeTicker, range, series);
   const points = sliceStockChartPointsForRange(rawPoints, range);
 

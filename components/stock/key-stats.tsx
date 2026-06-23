@@ -655,7 +655,6 @@ function KeyStatsInner({
         {mobileCard}
       </div>
 
-      <h2 className="mb-4 hidden text-[18px] font-semibold leading-7 text-[#09090B] md:block">Key Stats</h2>
       <div className="hidden grid-cols-2 gap-5 md:grid md:grid-cols-3">
         <div>
           <BasicCard rows={bundle?.basic ?? null} loading={loading} onMetricClick={onOpenMetricChart} />

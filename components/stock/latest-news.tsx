@@ -50,10 +50,6 @@ function NewsRowSkeleton() {
           <SkeletonBox className="h-3 w-24" />
         </div>
         <SkeletonBox className="h-4 w-full max-w-xl" />
-        <div className="flex gap-1.5 pt-1">
-          <SkeletonBox className="h-5 w-14 rounded-md" />
-          <SkeletonBox className="h-5 w-16 rounded-md" />
-        </div>
       </div>
     </div>
   );
@@ -242,19 +238,7 @@ function LatestNewsInner({
                 <span className="text-[#E4E4E7]">·</span>
                 <span className="text-[12px] font-medium text-[#09090B]">{item.source}</span>
               </div>
-              <h3 className="mb-2 line-clamp-2 text-[14px] font-semibold leading-5 text-[#09090B]">{item.title}</h3>
-              {item.tags.length > 0 ? (
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  {item.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="rounded-md bg-[#F4F4F5] px-2 py-0.5 text-[12px] font-medium text-[#09090B]"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              ) : null}
+              <h3 className="line-clamp-2 text-[14px] font-semibold leading-5 text-[#09090B]">{item.title}</h3>
             </a>
           ))}
 

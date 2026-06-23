@@ -1,24 +1,12 @@
 import { NextResponse } from "next/server";
 
-import { unstable_cache } from "next/cache";
-
 import { CACHE_CONTROL_PRIVATE_HOT } from "@/lib/data/cache-policy";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { getStockSpotPriceUsd } from "@/lib/market/stock-chart-data";
+import { getStockSpotPriceUsdForApi } from "@/lib/market/stock-chart-data";
 import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
 import { getNvdaChartPoints } from "@/lib/fixtures/nvda";
 
 type Ctx = { params: Promise<{ ticker: string }> };
-
-const getCachedLivePrice = unstable_cache(
-  async (ticker: string) => {
-    const price = await getStockSpotPriceUsd(ticker);
-    return price ?? null;
-  },
-  ["stock-live-price-v1"],
-  // Hot quote — keep short; enough to make tab-switching cheap.
-  { revalidate: 30 },
-);
 
 export async function GET(_request: Request, { params }: Ctx) {
   const supabase = await getSupabaseServerClient();
@@ -52,7 +40,7 @@ export async function GET(_request: Request, { params }: Ctx) {
     );
   }
 
-  const price = await getCachedLivePrice(routeTicker);
+  const price = await getStockSpotPriceUsdForApi(routeTicker);
   return NextResponse.json(
     { ticker: upper, price },
     { headers: { "Cache-Control": CACHE_CONTROL_PRIVATE_HOT } },

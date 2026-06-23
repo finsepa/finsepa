@@ -283,7 +283,7 @@ export function NotificationsPanelModal({
                   </EmptyMedia>
                   <EmptyTitle>No notifications yet</EmptyTitle>
                   <EmptyDescription className="max-w-[260px]">
-                    When companies in your watchlist or portfolio report earnings, alerts will show up here.
+                    Alerts for companies in your watchlist and portfolio will appear here.
                   </EmptyDescription>
                 </EmptyHeader>
               </Empty>

@@ -186,3 +186,29 @@ export function formatAssetChartTimestamp(
     return fallback ? `${fallback}, ${currency}` : currency;
   }
 }
+
+/** Overview header period badge during regular session (e.g. `Jun 23, 2026 at 11:59 AM`). */
+export function formatStockHeaderSessionPeriodLabel(
+  unixSeconds: number,
+  timeZone: string = STOCK_DISPLAY_TZ,
+): string {
+  const d = new Date(unixSeconds * 1000);
+  if (!Number.isFinite(d.getTime())) return "";
+  try {
+    const dateStr = new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      timeZone,
+    }).format(d);
+    const timeStr = new Intl.DateTimeFormat("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+      timeZone,
+    }).format(d);
+    return `${dateStr} at ${timeStr}`;
+  } catch {
+    return formatDateOnly(unixSeconds, timeZone);
+  }
+}

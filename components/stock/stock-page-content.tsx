@@ -44,7 +44,13 @@ import type { StockPageInitialData } from "@/lib/market/stock-page-initial-data"
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
 import type { StockChartRange, StockChartSeries } from "@/lib/market/stock-chart-types";
 import { mergeSessionHeaderWithPerformanceSpot } from "@/lib/chart/merge-session-header-with-performance-spot";
-import { formatAssetChartTimestamp } from "@/lib/market/chart-timestamp-format";
+import { getUsEquityMarketSession } from "@/lib/market/us-equity-market-session";
+import { STOCK_1D_LIVE_PRICE_POLL_MS } from "@/lib/chart/stock-1d-live-session-chart";
+import {
+  formatAssetChartTimestamp,
+  formatStockHeaderSessionPeriodLabel,
+  STOCK_DISPLAY_TZ,
+} from "@/lib/market/chart-timestamp-format";
 import { WATCHLIST_MUTATED_EVENT } from "@/lib/watchlist/constants";
 
 /** Client-only: avoids SSR/client HTML drift for this tab (charts + evolving layout). */
@@ -420,6 +426,8 @@ export function StockPageContent({
 
   useEffect(() => {
     let cancelled = false;
+    const pollMs =
+      getUsEquityMarketSession(new Date()) === "regular" ? STOCK_1D_LIVE_PRICE_POLL_MS : 90_000;
     const tick = async () => {
       try {
         const res = await fetch(`/api/stocks/${encodeURIComponent(ticker)}/live-price`, {
@@ -435,7 +443,7 @@ export function StockPageContent({
       }
     };
     void tick();
-    const id = window.setInterval(tick, 90_000);
+    const id = window.setInterval(tick, pollMs);
     return () => {
       cancelled = true;
       window.clearInterval(id);
@@ -517,9 +525,20 @@ export function StockPageContent({
     range,
   ]);
 
+  const overviewHeaderFallback = useMemo(
+    () =>
+      mergeSessionHeaderWithPerformanceSpot(
+        { ...EMPTY_CHART_DISPLAY, loading: true, empty: false },
+        performanceForHeaderFallback,
+        "price",
+        headerLiveSpotForMerge,
+      ),
+    [headerLiveSpotForMerge, performanceForHeaderFallback],
+  );
+
   const chartUi = useMemo((): ChartDisplayState => {
     const raw = overviewDrivesHeader
-      ? (overviewHeaderUiMerged ?? { ...EMPTY_CHART_DISPLAY, loading: true, empty: false })
+      ? (overviewHeaderUiMerged ?? overviewHeaderFallback)
       : sessionSpotHeaderUi;
 
     const settled =
@@ -547,6 +566,7 @@ export function StockPageContent({
   }, [
     overviewDrivesHeader,
     overviewHeaderUiMerged,
+    overviewHeaderFallback,
     sessionSpotHeaderUi,
     initialChartMemo,
     initialSessionChartMemo,
@@ -602,7 +622,24 @@ export function StockPageContent({
     chartUi.empty ||
     overviewDownloadFetching;
 
-  const headerPeriodLabel = overviewDrivesHeader ? (range === "1D" ? "Today" : range) : "Today";
+  const [regularSessionClock, setRegularSessionClock] = useState(0);
+  useEffect(() => {
+    const id = window.setInterval(() => setRegularSessionClock((n) => n + 1), 30_000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  const headerPeriodLabel = useMemo(() => {
+    const defaultLabel = overviewDrivesHeader ? (range === "1D" ? "Today" : range) : "Today";
+    const showLiveTimestamp =
+      getUsEquityMarketSession(new Date()) === "regular" &&
+      (overviewDrivesHeader ? range === "1D" : true);
+    if (!showLiveTimestamp) return defaultLabel;
+    const label = formatStockHeaderSessionPeriodLabel(
+      Math.floor(Date.now() / 1000),
+      STOCK_DISPLAY_TZ,
+    );
+    return label || defaultLabel;
+  }, [overviewDrivesHeader, range, regularSessionClock]);
 
   /** Hidden 1D chart keeps session/live spot for the header on every tab (including Holdings). */
   const stockChartDrivesHeader = true;
@@ -658,6 +695,7 @@ export function StockPageContent({
             series="price"
             height={320}
             initialChart={initialSessionChartMemo}
+            liveSpotUsd={headerLiveSpotForMerge}
             onDisplayChange={onSessionHeaderDisplay}
           />
         </div>
@@ -722,6 +760,7 @@ export function StockPageContent({
                 range={range}
                 series={chartSeries}
                 initialChart={initialChartMemo?.range === range ? initialChartMemo : null}
+                liveSpotUsd={range === "1D" ? headerLiveSpotForMerge : null}
                 onDisplayChange={onOverviewHeaderDisplay}
               />
             )}

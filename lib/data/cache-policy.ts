@@ -54,6 +54,12 @@ export const REVALIDATE_HOT_FAST = 30;
 /** ~60s — stock/crypto chart points, news tickers, performance */
 export const REVALIDATE_HOT = 60;
 
+/**
+ * ~60s — shared 1D live-session spot + intraday chart during US regular hours.
+ * Coalesces EODHD realtime/intraday across users on the same ticker; client polls align to this window.
+ */
+export const REVALIDATE_STOCK_1D_LIVE = REVALIDATE_HOT;
+
 /** ~90s — global search (merged local + remote EODHD); cuts repeat search API use */
 export const REVALIDATE_SEARCH = 90;
 
@@ -111,6 +117,9 @@ export const REVALIDATE_EARNINGS_CALENDAR = REVALIDATE_STATIC_DAY;
 
 /** Live / near-live coalescing: charts, performance, short news windows. */
 export const REVALIDATE_TIER_HOT = REVALIDATE_HOT;
+
+/** Stock overview 1D during regular session — {@link REVALIDATE_STOCK_1D_LIVE}. */
+export const REVALIDATE_TIER_STOCK_1D_LIVE = REVALIDATE_STOCK_1D_LIVE;
 
 /** Tighter hot window when a feature needs faster rotation than {@link REVALIDATE_TIER_HOT}. */
 export const REVALIDATE_TIER_HOT_FAST = REVALIDATE_HOT_FAST;

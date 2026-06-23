@@ -1,6 +1,7 @@
 import "server-only";
 
 import { trimPointsToLastNUsSessionDays } from "@/lib/market/stock-chart-data";
+import { getUsEquityMarketSession } from "@/lib/market/us-equity-market-session";
 import type { StockChartPoint } from "@/lib/market/stock-chart-types";
 import { STOCK_CHART_RANGES, type StockChartRange } from "@/lib/market/stock-chart-types";
 
@@ -59,7 +60,14 @@ export function sliceStockChartPointsForRange(
 ): StockChartPoint[] {
   const startSec = rangeStartUnixSeconds(range, now);
   let points = sliceFromNearestTradingPoint(rawPoints, startSec, range);
-  if ((range === "1D" || range === "5D") && points.length === 0 && rawPoints.length > 0) {
+  const skipDailyFallback =
+    range === "1D" && getUsEquityMarketSession(now) === "regular";
+  if (
+    !skipDailyFallback &&
+    (range === "1D" || range === "5D") &&
+    points.length === 0 &&
+    rawPoints.length > 0
+  ) {
     points = tailDailyFallback(rawPoints, range);
   }
   return points;

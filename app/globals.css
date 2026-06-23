@@ -503,6 +503,27 @@ body {
   }
 }
 
+/** Overview 1D live session — pulsing dot at the latest price (see PriceChart). */
+@keyframes chart-live-price-dot-bounce {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.32);
+  }
+}
+
+.chart-live-price-dot-bounce {
+  animation: chart-live-price-dot-bounce 1.15s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chart-live-price-dot-bounce {
+    animation: none;
+  }
+}
+
 .skeleton {
   position: relative;
   overflow: hidden;
