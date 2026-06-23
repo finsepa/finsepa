@@ -31,6 +31,10 @@ import { StockComparePicker } from "./stock-compare-picker";
 import { StockCompareReturnChart } from "./stock-compare-return-chart";
 import { KeyStats } from "./key-stats";
 import { KeyStatsMetricChartModal } from "./key-stats-metric-chart-modal";
+import { ChartScreenshotDownloadModal } from "@/components/chart/chart-screenshot-download-modal";
+import type { ChartScreenshotSnapshot } from "@/lib/chart/chart-screenshot-types";
+import { Download } from "@/lib/icons";
+import type { StockChartPoint } from "@/lib/market/stock-chart-types";
 import {
   revalidateChartingFundamentalsSeriesCached,
   seedChartingFundamentalsSeriesCache,
@@ -549,6 +553,55 @@ export function StockPageContent({
     range,
   ]);
 
+  const [overviewDownloadOpen, setOverviewDownloadOpen] = useState(false);
+  const [overviewDownloadSnapshot, setOverviewDownloadSnapshot] =
+    useState<ChartScreenshotSnapshot | null>(null);
+  const [overviewDownloadFetching, setOverviewDownloadFetching] = useState(false);
+
+  const handleOpenOverviewDownload = useCallback(async () => {
+    if (comparePicks.length > 0 || overviewDownloadFetching) return;
+    setOverviewDownloadFetching(true);
+    try {
+      const path = `/api/stocks/${encodeURIComponent(ticker)}/chart?range=${encodeURIComponent(range)}&series=${encodeURIComponent(chartSeries)}`;
+      const res = await fetch(path, { credentials: "include" });
+      if (!res.ok) return;
+      const json = (await res.json()) as { points?: StockChartPoint[] };
+      const points = Array.isArray(json.points) ? json.points : [];
+      if (points.length === 0) return;
+      setOverviewDownloadSnapshot({
+        variant: "stockOverview",
+        ticker,
+        companyName: headerMeta?.fullName ?? null,
+        logoUrl: headerMeta?.logoUrl ?? null,
+        periodMode: "annual",
+        timeRange: "all",
+        chartType: "bars",
+        selectedMetrics: [],
+        fullPoints: [],
+        stockOverview: { range, series: chartSeries, points },
+      });
+      setOverviewDownloadOpen(true);
+    } catch {
+      /* ignore */
+    } finally {
+      setOverviewDownloadFetching(false);
+    }
+  }, [
+    comparePicks.length,
+    overviewDownloadFetching,
+    ticker,
+    range,
+    chartSeries,
+    headerMeta?.fullName,
+    headerMeta?.logoUrl,
+  ]);
+
+  const overviewDownloadDisabled =
+    comparePicks.length > 0 ||
+    chartUi.loading ||
+    chartUi.empty ||
+    overviewDownloadFetching;
+
   const headerPeriodLabel = overviewDrivesHeader ? (range === "1D" ? "Today" : range) : "Today";
 
   /** Hidden 1D chart keeps session/live spot for the header on every tab (including Holdings). */
@@ -566,6 +619,11 @@ export function StockPageContent({
         initialAnnualPoints={fundamentalsModalAnnual}
         initialQuarterlyPoints={fundamentalsModalQuarterly}
         headerMeta={headerMeta}
+      />
+      <ChartScreenshotDownloadModal
+        open={overviewDownloadOpen}
+        onClose={() => setOverviewDownloadOpen(false)}
+        snapshot={overviewDownloadSnapshot}
       />
       <Suspense fallback={null}>
         <AssetPageTopLoader />
@@ -634,6 +692,19 @@ export function StockPageContent({
             seriesSelectDisabled={comparePicks.length > 0}
             compareSlot={
               <StockComparePicker baseTicker={ticker} values={comparePicks} onAdd={onAddComparePick} onRemove={onRemoveComparePick} />
+            }
+            downloadSlot={
+              comparePicks.length > 0 ? null : (
+                <button
+                  type="button"
+                  onClick={() => void handleOpenOverviewDownload()}
+                  disabled={overviewDownloadDisabled}
+                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#09090B] transition-colors hover:bg-[#FAFAFA] disabled:cursor-not-allowed disabled:opacity-40"
+                  aria-label="Download chart"
+                >
+                  <Download className="h-4 w-4" strokeWidth={2} aria-hidden />
+                </button>
+              )
             }
           >
             {comparePicks.length > 0 ? (

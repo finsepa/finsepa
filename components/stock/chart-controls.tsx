@@ -28,6 +28,7 @@ export function ChartControls({
   chartSeries,
   onChartSeriesChange,
   compareSlot,
+  downloadSlot,
   titleSlot,
   seriesSelectDisabled = false,
   children,
@@ -39,6 +40,8 @@ export function ChartControls({
   onChartSeriesChange?: (s: StockChartSeries) => void;
   /** Stock overview: “Compare” picker placed just left of the range control. */
   compareSlot?: ReactNode;
+  /** Stock overview: download button beside the range control. */
+  downloadSlot?: ReactNode;
   /** Holdings: replace the default "Price" title (e.g. with portfolio switcher). */
   titleSlot?: ReactNode;
   /** When comparing symbols, metric is fixed to return — disable toggle. */
@@ -63,15 +66,18 @@ export function ChartControls({
 
   const mobileRangeControl = (
     <div className="w-full min-w-0 pb-0.5 max-sm:mb-3 sm:hidden">
-      <SegmentedControl
-        options={MOBILE_CHART_RANGE_OPTIONS}
-        value={activeRange === "YTD" ? "6M" : activeRange}
-        onChange={onRangeChange}
-        size="sm"
-        fullWidth
-        aria-label="Chart time range"
-        className="w-full"
-      />
+      <div className="flex items-center gap-2">
+        <SegmentedControl
+          options={MOBILE_CHART_RANGE_OPTIONS}
+          value={activeRange === "YTD" ? "6M" : activeRange}
+          onChange={onRangeChange}
+          size="sm"
+          fullWidth
+          aria-label="Chart time range"
+          className="min-w-0 flex-1"
+        />
+        {downloadSlot ? <div className="shrink-0 sm:hidden">{downloadSlot}</div> : null}
+      </div>
     </div>
   );
 
@@ -133,6 +139,7 @@ export function ChartControls({
             {compareSlot}
           </div>
         ) : null}
+        {downloadSlot ? <div className="hidden shrink-0 sm:block">{downloadSlot}</div> : null}
         <div className="shrink-0 overflow-x-auto pb-0.5 sm:overflow-visible sm:pb-0">
           <SegmentedControl
             options={CHART_RANGE_OPTIONS}

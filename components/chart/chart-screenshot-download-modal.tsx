@@ -27,6 +27,7 @@ import {
   type ChartScreenshotExportOptions,
 } from "@/lib/chart/chart-screenshot-export-options";
 import type { ChartScreenshotSnapshot } from "@/lib/chart/chart-screenshot-types";
+import { stockOverviewExportMetricSlug } from "@/lib/chart/chart-screenshot-types";
 
 const CHART_DOWNLOAD_MODAL_WIDTH_CLASS = "w-full max-w-[min(1400px,calc(100vw-2rem))]";
 /** Fixed preview column height — keeps modal size stable when zoom changes. */
@@ -109,7 +110,12 @@ export function ChartScreenshotDownloadModal({
           snapshot.ticker,
           snapshot.variant === "keyStatsMetric"
             ? snapshot.keyStatsMetric?.metricId
-            : undefined,
+            : snapshot.variant === "stockOverview" && snapshot.stockOverview
+              ? stockOverviewExportMetricSlug(
+                  snapshot.stockOverview.series,
+                  snapshot.stockOverview.range,
+                )
+              : undefined,
         ),
       );
     } catch (err) {

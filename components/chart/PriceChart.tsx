@@ -13,6 +13,7 @@ import {
 import {
   overviewChartAxisRowPx,
   CHART_PLOT_DOTS_PATTERN_CLASS,
+  CHART_PLOT_DOTS_PATTERN_EXPORT_CLASS,
   buildOverviewCrosshairLabelByBarTime,
   chartPointDisplayUnix,
   overviewAxisLabelsEqual,
@@ -119,6 +120,21 @@ type RangeChartPriceBadge = {
 
 const RANGE_PRICE_BADGE_CLASS =
   "inline-block rounded-[6px] bg-[#E4E4E7] px-1.5 py-0.5 text-[11px] font-medium leading-4 tabular-nums text-[#09090B]";
+
+function periodAxisLabelStyle(
+  leftPx: number,
+  screenshotMode: boolean,
+  containerWidthPx: number,
+): { left: number | string; transform?: string } {
+  if (!screenshotMode) {
+    return { left: `clamp(8px, ${leftPx}px, calc(100% - 8px))` };
+  }
+  const plotW = Number.isFinite(containerWidthPx) && containerWidthPx > 0 ? containerWidthPx : 1164;
+  return {
+    left: Math.min(Math.max(8, leftPx), Math.max(8, plotW - 8)),
+    transform: "translateX(-50%)",
+  };
+}
 
 function findRangeHighPoint(pts: readonly StockChartPoint[]): StockChartPoint | null {
   if (!pts.length) return null;
@@ -232,6 +248,15 @@ type Props = {
    * `daily` — superinvestor holding charts only: server + client cache refresh at most once per UTC day.
    */
   chartDataCadence?: "default" | "daily";
+  /** JPEG export preview — fixed layout, no interaction. */
+  screenshotPreviewMode?: boolean;
+  screenshotChartBlockHeightPx?: number;
+  screenshotDisplayOptions?: {
+    showVerticalLegend?: boolean;
+    showHorizontalLegend?: boolean;
+    /** Range open / high price badges on the line. */
+    showRangeBadges?: boolean;
+  };
 };
 
 function isFiniteNumber(v: unknown): v is number {
@@ -691,12 +716,37 @@ export function PriceChart({
   tradeTooltipItems = [],
   costBasisPrice = null,
   chartDataCadence = "default",
+  screenshotPreviewMode = false,
+  screenshotChartBlockHeightPx,
+  screenshotDisplayOptions,
 }: Props) {
   const holdingsStyleRef = useRef(holdingsStyle);
   const chartMetricSeriesRef = useRef(series);
   const kindRef = useRef(kind);
   const rangeRef = useRef(range);
   const loadingRef = useRef(true);
+  const screenshotPreviewModeRef = useRef(screenshotPreviewMode);
+  const screenshotShowVerticalLegendRef = useRef(screenshotDisplayOptions?.showVerticalLegend ?? true);
+  const screenshotShowHorizontalLegendRef = useRef(screenshotDisplayOptions?.showHorizontalLegend ?? true);
+  const screenshotShowRangeBadgesRef = useRef(screenshotDisplayOptions?.showRangeBadges ?? true);
+
+  const screenshotShowVerticalLegend = screenshotDisplayOptions?.showVerticalLegend ?? true;
+  const screenshotShowHorizontalLegend = screenshotDisplayOptions?.showHorizontalLegend ?? true;
+  const screenshotShowRangeBadges = screenshotDisplayOptions?.showRangeBadges ?? true;
+  const chartHeight =
+    screenshotPreviewMode && screenshotChartBlockHeightPx != null
+      ? screenshotChartBlockHeightPx
+      : height;
+
+  useEffect(() => {
+    screenshotPreviewModeRef.current = screenshotPreviewMode;
+  }, [screenshotPreviewMode]);
+
+  useEffect(() => {
+    screenshotShowVerticalLegendRef.current = screenshotShowVerticalLegend;
+    screenshotShowHorizontalLegendRef.current = screenshotShowHorizontalLegend;
+    screenshotShowRangeBadgesRef.current = screenshotShowRangeBadges;
+  }, [screenshotShowVerticalLegend, screenshotShowHorizontalLegend, screenshotShowRangeBadges]);
 
   useEffect(() => {
     holdingsStyleRef.current = holdingsStyle;
@@ -851,9 +901,9 @@ export function PriceChart({
   // Portfolio (holdingsStyle) should behave like Overview: custom bottom axis + hover/badges.
   const useCustomBottomAxis = true;
   const axisRowPx = overviewChartAxisRowPx(containerWidth);
-  const plotHeight = useCustomBottomAxis ? Math.max(120, height - axisRowPx) : height;
+  const plotHeight = useCustomBottomAxis ? Math.max(120, chartHeight - axisRowPx) : chartHeight;
   const useMobileOverviewCrosshair =
-    useCustomBottomAxis && shouldHideMobileYAxisLabels(containerWidth);
+    !screenshotPreviewMode && useCustomBottomAxis && shouldHideMobileYAxisLabels(containerWidth);
 
   useEffect(() => {
     pointsRef.current = points;
@@ -956,8 +1006,10 @@ export function PriceChart({
       }
       if (hide) {
         removeYAxisTickLabels(series, yAxisTickLinesRef);
-      } else {
+      } else if (!screenshotPreviewModeRef.current || screenshotShowVerticalLegendRef.current) {
         syncYAxisTickLabels(chart, series, yAxisTickLinesRef);
+      } else {
+        removeYAxisTickLabels(series, yAxisTickLinesRef);
       }
       if (pointsRef.current.some((p) => isFiniteNumber(p.time) && isFiniteNumber(p.value))) {
         fitContentWithMobilePlotGutter(chart, containerWidth, pointsRef.current.length);
@@ -1168,7 +1220,7 @@ export function PriceChart({
       crosshair: {
         mode: holdingsStyleRef.current
           ? CrosshairMode.Normal
-          : hideMobileYAxisLabelsRef.current
+          : screenshotPreviewMode || hideMobileYAxisLabelsRef.current
             ? CrosshairMode.Normal
             : CrosshairMode.Magnet,
         vertLine: {
@@ -1176,6 +1228,7 @@ export function PriceChart({
           labelVisible: false,
           width: 1,
           style: LineStyle.Dashed,
+          visible: !screenshotPreviewMode,
         },
         horzLine: {
           visible: false,
@@ -1505,7 +1558,9 @@ export function PriceChart({
         if (wasHovered) resyncPeriodAxisLabels();
       }
     };
-    chart.subscribeCrosshairMove(onCrosshairMove);
+    if (!screenshotPreviewMode) {
+      chart.subscribeCrosshairMove(onCrosshairMove);
+    }
 
     rescaleOverviewInBarMarkersRef.current = () => {
       const c = chartRef.current;
@@ -1547,6 +1602,14 @@ export function PriceChart({
     };
     syncRangePriceBadgesRef.current = () => {
       if (hideMobileYAxisLabelsRef.current && crosshairHoveredRef.current) return;
+      if (
+        screenshotPreviewModeRef.current &&
+        !screenshotShowRangeBadgesRef.current
+      ) {
+        commitRangePriceBadge(setRangeOpenBadge, null);
+        commitRangePriceBadge(setRangeHighBadge, null);
+        return;
+      }
       if (holdingsStyleRef.current) {
         commitRangePriceBadge(setRangeOpenBadge, null);
         commitRangePriceBadge(setRangeHighBadge, null);
@@ -1609,7 +1672,10 @@ export function PriceChart({
         const s2 = seriesRef.current;
         if (!c2 || !s2) return;
         removeScaleBoundsPriceLines(s2, scaleTopPriceLineRef, scaleBottomPriceLineRef);
-        if (!hideMobileYAxisLabelsRef.current) {
+        const showYAxisLabels =
+          !hideMobileYAxisLabelsRef.current &&
+          (!screenshotPreviewModeRef.current || screenshotShowVerticalLegendRef.current);
+        if (showYAxisLabels) {
           syncYAxisTickLabels(c2, s2, yAxisTickLinesRef);
         } else {
           removeYAxisTickLabels(s2, yAxisTickLinesRef);
@@ -1689,7 +1755,9 @@ export function PriceChart({
       overviewInBarMarkersRef.current = null;
       commitRangePriceBadge(setRangeOpenBadge, null);
       commitRangePriceBadge(setRangeHighBadge, null);
-      chart.unsubscribeCrosshairMove(onCrosshairMove);
+      if (!screenshotPreviewMode) {
+        chart.unsubscribeCrosshairMove(onCrosshairMove);
+      }
       markersRef.current = null;
       const sUnmount = seriesRef.current;
       if (sUnmount) {
@@ -1712,6 +1780,27 @@ export function PriceChart({
     clearOverviewHover,
     scheduleOverviewHoverFlush,
     clearMobileOverviewCrosshairDom,
+    screenshotPreviewMode,
+  ]);
+
+  useEffect(() => {
+    if (!screenshotPreviewMode || !ready) return;
+    const chart = chartRef.current;
+    const series = seriesRef.current;
+    if (!chart || !series) return;
+    const hide = shouldHideMobileYAxisLabels(containerWidth);
+    if (!hide && screenshotShowVerticalLegend) {
+      syncYAxisTickLabels(chart, series, yAxisTickLinesRef);
+    } else {
+      removeYAxisTickLabels(series, yAxisTickLinesRef);
+    }
+    syncRangePriceBadgesRef.current?.();
+  }, [
+    screenshotPreviewMode,
+    screenshotShowVerticalLegend,
+    screenshotShowRangeBadges,
+    ready,
+    containerWidth,
   ]);
 
   useEffect(() => {
@@ -2112,6 +2201,13 @@ export function PriceChart({
     if (!Number.isFinite(containerWidth) || containerWidth <= 0) return periodAxisLabels;
     const clampLeft = (x: number) => Math.min(Math.max(8, x), Math.max(8, containerWidth - 8));
 
+    if (screenshotPreviewMode) {
+      return periodAxisLabels.map((lab) => ({
+        ...lab,
+        leftPx: clampLeft(lab.leftPx),
+      }));
+    }
+
     const out: OverviewAxisLabel[] = [];
     let last = -Infinity;
     // Avoid overlaps near the edges where multiple labels clamp to the same left position.
@@ -2122,7 +2218,7 @@ export function PriceChart({
       last = left;
     }
     return out;
-  }, [periodAxisLabels, containerWidth]);
+  }, [periodAxisLabels, containerWidth, screenshotPreviewMode]);
 
   return (
     <div
@@ -2132,9 +2228,9 @@ export function PriceChart({
         useCustomBottomAxis ? "flex flex-col" : "",
         useMobileOverviewCrosshair && "touch-pan-y",
       )}
-      style={{ height }}
+      style={{ height: chartHeight }}
       onMouseLeave={
-        useCustomBottomAxis
+        useCustomBottomAxis && !screenshotPreviewMode
           ? () => {
               crosshairHoveredRef.current = false;
               hoverTimeRef.current = null;
@@ -2159,7 +2255,13 @@ export function PriceChart({
     >
       <div className={cn("relative min-h-0", useCustomBottomAxis ? "min-w-0 flex-1" : "absolute inset-0")} style={useCustomBottomAxis ? { height: plotHeight } : undefined}>
       <div className="pointer-events-none absolute inset-0 z-0 max-md:bg-[#FAFAFA] bg-white" aria-hidden>
-        {!useMobileOverviewCrosshair ? <div className={CHART_PLOT_DOTS_PATTERN_CLASS} /> : null}
+        {!useMobileOverviewCrosshair ? (
+          <div
+            className={
+              screenshotPreviewMode ? CHART_PLOT_DOTS_PATTERN_EXPORT_CLASS : CHART_PLOT_DOTS_PATTERN_CLASS
+            }
+          />
+        ) : null}
       </div>
       {showHoldingsActivityOverlay ? (
         <HoldingsQuarterBandsOverlay
@@ -2202,23 +2304,24 @@ export function PriceChart({
           </div>
         </>
       ) : null}
-      {!holdingsStyle && !loading && ready
+      {!holdingsStyle && !loading && ready && (!screenshotPreviewMode || screenshotShowRangeBadges)
         ? [rangeOpenBadge, rangeHighBadge]
             .filter((b): b is RangeChartPriceBadge => b != null)
             .map((badge) => (
               <div
                 key={badge.anchor === "start" ? "open" : "high"}
-                className={`pointer-events-none absolute z-20 max-w-[min(100%,120px)] -translate-y-full pb-1 ${
-                  badge.anchor === "center" ? "-translate-x-1/2" : ""
-                }`}
+                className={`pointer-events-none absolute max-w-[min(100%,120px)] -translate-y-full pb-1 ${
+                  screenshotPreviewMode ? "z-50" : "z-20"
+                } ${badge.anchor === "center" ? "-translate-x-1/2" : ""}`}
                 style={{ left: badge.left, top: badge.top }}
-                aria-hidden
+                aria-hidden={screenshotPreviewMode ? undefined : true}
               >
                 <span className={RANGE_PRICE_BADGE_CLASS}>{badge.label}</span>
               </div>
             ))
         : null}
       {!holdingsStyle &&
+      !screenshotPreviewMode &&
       !useMobileOverviewCrosshair &&
       overviewHoverTooltip &&
       overviewHover &&
@@ -2252,9 +2355,12 @@ export function PriceChart({
         </div>
       ) : null}
       </div>
-      {useCustomBottomAxis && !loading ? (
+      {useCustomBottomAxis && !loading && (!screenshotPreviewMode || screenshotShowHorizontalLegend) ? (
         <div
-          className="relative w-full shrink-0 overflow-visible"
+          className={cn(
+            "relative w-full shrink-0 overflow-visible",
+            screenshotPreviewMode && "z-30",
+          )}
           style={{ height: axisRowPx }}
           aria-hidden={periodAxisLabels.length === 0 && !activeBottomAxisLabel}
         >
@@ -2265,7 +2371,7 @@ export function PriceChart({
                   <span
                     key={lab.key}
                     className="absolute bottom-1 inline-block max-w-[72px] -translate-x-1/2 truncate whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]"
-                    style={{ left: `clamp(8px, ${lab.leftPx}px, calc(100% - 8px))` }}
+                    style={periodAxisLabelStyle(lab.leftPx, screenshotPreviewMode, containerWidth)}
                   >
                     {lab.label}
                   </span>
@@ -2280,7 +2386,15 @@ export function PriceChart({
           ) : activeBottomAxisLabel ? (
             <span
               className="absolute bottom-1 inline-block max-w-[min(100%,calc(100%-16px))] -translate-x-1/2 whitespace-nowrap font-['Inter'] text-[11px] font-medium tabular-nums leading-none text-[#09090B] sm:text-[12px]"
-              style={{ left: `clamp(8px, ${activeBottomAxisLabel.leftPx}px, calc(100% - 8px))` }}
+              style={
+                activeBottomAxisLabel
+                  ? periodAxisLabelStyle(
+                      activeBottomAxisLabel.leftPx,
+                      screenshotPreviewMode,
+                      containerWidth,
+                    )
+                  : undefined
+              }
             >
               {activeBottomAxisLabel.label}
             </span>
@@ -2289,7 +2403,7 @@ export function PriceChart({
               <span
                 key={lab.key}
                 className="absolute bottom-1 inline-block max-w-[72px] -translate-x-1/2 truncate whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]"
-                style={{ left: `clamp(8px, ${lab.leftPx}px, calc(100% - 8px))` }}
+                style={periodAxisLabelStyle(lab.leftPx, screenshotPreviewMode, containerWidth)}
               >
                 {lab.label}
               </span>

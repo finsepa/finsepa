@@ -173,6 +173,35 @@ function scaleIdForKind(k: ChartingMetricKind): string {
   }
 }
 
+function isValuationMetricKind(kind: ChartingMetricKind): boolean {
+  return kind === "multiple" || kind === "ratio";
+}
+
+function chartingMetricUsesLineSeries(id: ChartingMetricId, chartType: ChartType): boolean {
+  if (chartType === "line") return true;
+  return isValuationMetricKind(CHARTING_METRIC_KIND[id]);
+}
+
+function chartingBarMetrics(selected: ChartingMetricId[], chartType: ChartType): ChartingMetricId[] {
+  if (chartType !== "bars") return selected;
+  return selected.filter((id) => !isValuationMetricKind(CHARTING_METRIC_KIND[id]));
+}
+
+function chartingValuationLineMetrics(selected: ChartingMetricId[], chartType: ChartType): ChartingMetricId[] {
+  if (chartType !== "bars") return [];
+  return selected.filter((id) => isValuationMetricKind(CHARTING_METRIC_KIND[id]));
+}
+
+function chartingHasValuationLineOverlays(chartType: ChartType, selected: ChartingMetricId[]): boolean {
+  return chartingValuationLineMetrics(selected, chartType).length > 0;
+}
+
+/** Bar metrics first (stack order), then valuation lines when mixed on a bar chart. */
+function chartingSeriesRenderOrder(selected: ChartingMetricId[], chartType: ChartType): ChartingMetricId[] {
+  if (chartType === "line") return selected;
+  return [...chartingBarMetrics(selected, chartType), ...chartingValuationLineMetrics(selected, chartType)];
+}
+
 /** Right axis for percent metrics when mixed with USD bars (0–50%, five ticks). */
 const CHARTING_PERCENT_Y_AXIS_MAX = 50;
 
@@ -330,24 +359,32 @@ function computeLineEndBadgeLayout(
   return staggerLineEndBadges(raw, chartHeightPx);
 }
 
+function chartingMetricSolidColor(
+  id: ChartingMetricId,
+  selected: ChartingMetricId[],
+  chartType: ChartType,
+): string {
+  const order = chartingSeriesRenderOrder(selected, chartType);
+  const idx = order.indexOf(id);
+  return fundamentalsBarSolidAtIndex(idx >= 0 ? idx : 0);
+}
+
 function computeLinePointMarkersLayout(
   chart: IChartApi,
   seriesByMetric: Map<ChartingMetricId, ISeriesApi<"Line"> | ISeriesApi<"Histogram">>,
   ordered: ChartingSeriesPoint[],
-  selected: ChartingMetricId[],
-  baseTimeByPeriodEnd: Map<string, number> | null = null,
+  metrics: ChartingMetricId[],
+  baseTimeByPeriodEnd: Map<string, number> | null,
+  colorSelected: ChartingMetricId[],
+  chartType: ChartType,
 ): LinePointMarker[] {
-  if (!ordered.length || !selected.length) return [];
+  if (!ordered.length || !metrics.length) return [];
   const ts = chart.timeScale();
   const markers: LinePointMarker[] = [];
-  let colorIdx = 0;
-  for (const id of selected) {
+  for (const id of metrics) {
     const series = seriesByMetric.get(id);
-    if (!series) {
-      colorIdx += 1;
-      continue;
-    }
-    const color = fundamentalsBarSolidAtIndex(colorIdx);
+    if (!series) continue;
+    const color = chartingMetricSolidColor(id, colorSelected, chartType);
     const data = baseTimeByPeriodEnd
       ? seriesDataUniformPeriodTimes(ordered, id, baseTimeByPeriodEnd, 0)
       : seriesData(ordered, id, 0);
@@ -362,7 +399,6 @@ function computeLinePointMarkersLayout(
         color,
       });
     }
-    colorIdx += 1;
   }
   return markers;
 }
@@ -378,7 +414,7 @@ function computePeriodAxisLabelsLayout(
 ): PeriodAxisLabel[] {
   if (!ordered.length) return [];
   const ts = chart.timeScale();
-  const seriesOrder = chartType === "bars" ? barMetricOrder(selected) : selected;
+  const seriesOrder = chartType === "bars" ? barMetricOrder(chartingBarMetrics(selected, chartType)) : selected;
   const labels: PeriodAxisLabel[] = [];
 
   for (let i = 0; i < ordered.length; i++) {
@@ -420,7 +456,7 @@ function computeBarValueLabelsLayout(
   stockFullWidthFixedBars: boolean,
 ): BarValueLabel[] {
   if (!ordered.length || !selected.length) return [];
-  const seriesOrder = barMetricOrder(selected);
+  const seriesOrder = barMetricOrder(chartingBarMetrics(selected, "bars"));
   const ts = chart.timeScale();
   const labels: BarValueLabel[] = [];
 
@@ -475,22 +511,20 @@ function computeLineValueLabelsLayout(
   chart: IChartApi,
   seriesByMetric: Map<ChartingMetricId, ISeriesApi<"Line"> | ISeriesApi<"Histogram">>,
   ordered: ChartingSeriesPoint[],
-  selected: ChartingMetricId[],
+  metrics: ChartingMetricId[],
   baseTimeByPeriodEnd: Map<string, number> | null,
+  colorSelected: ChartingMetricId[],
+  chartType: ChartType,
 ): BarValueLabel[] {
-  if (!ordered.length || !selected.length) return [];
+  if (!ordered.length || !metrics.length) return [];
   const ts = chart.timeScale();
   const labels: BarValueLabel[] = [];
   const labelAnchorMin = FUNDAMENTALS_CHART_BAR_VALUE_LABEL_HEIGHT_PX + 4;
   const dotClearance = CHARTING_LINE_POINT_MARKER_DIAMETER_PX / 2 + 4;
-  let colorIdx = 0;
 
-  for (const id of selected) {
+  for (const id of metrics) {
     const series = seriesByMetric.get(id);
-    if (!series) {
-      colorIdx += 1;
-      continue;
-    }
+    if (!series) continue;
     const kind = CHARTING_METRIC_KIND[id];
     const data = baseTimeByPeriodEnd
       ? seriesDataUniformPeriodTimes(ordered, id, baseTimeByPeriodEnd, 0)
@@ -509,11 +543,10 @@ function computeLineValueLabelsLayout(
         leftPx: x,
         topPx: Math.max(labelAnchorMin, y - dotClearance),
         text: formatBarChartDataLabel(id, pt.value),
-        color: fundamentalsBarSolidAtIndex(colorIdx),
+        color: chartingMetricSolidColor(id, colorSelected, chartType),
         periodIndex: pt.periodIndex ?? 0,
       });
     }
-    colorIdx += 1;
   }
 
   return labels;
@@ -1860,6 +1893,7 @@ export function ChartingWorkspace({
   const [periodAxisLabels, setPeriodAxisLabels] = useState<PeriodAxisLabel[]>([]);
   const [yGridTickTopsPx, setYGridTickTopsPx] = useState<number[] | null>(null);
   const [yPercentGridTickTopsPx, setYPercentGridTickTopsPx] = useState<number[] | null>(null);
+  const [yValuationGridTickTopsPx, setYValuationGridTickTopsPx] = useState<number[] | null>(null);
 
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerQuery, setPickerQuery] = useState("");
@@ -1887,6 +1921,24 @@ export function ChartingWorkspace({
     () => barValueLabels.filter((b) => isBarValuesVisible(b.metricId)),
     [barValueLabels, isBarValuesVisible],
   );
+
+  const visibleBarOnlyValueLabels = useMemo(
+    () =>
+      visibleBarValueLabels.filter(
+        (b) => !isValuationMetricKind(CHARTING_METRIC_KIND[b.metricId]),
+      ),
+    [visibleBarValueLabels],
+  );
+
+  const visibleValuationLineValueLabels = useMemo(
+    () =>
+      visibleBarValueLabels.filter((b) =>
+        isValuationMetricKind(CHARTING_METRIC_KIND[b.metricId]),
+      ),
+    [visibleBarValueLabels],
+  );
+
+  const hasValuationLineOverlays = chartingHasValuationLineOverlays(chartType, selected);
 
   const visibleLineEndBadges = useMemo(
     () => lineEndBadges.filter((b) => !isBarValuesVisible(b.id)),
@@ -2023,7 +2075,8 @@ export function ChartingWorkspace({
 
   const barTimeScaleLayoutOptions = useMemo((): ChartingTimeScaleLayoutOptions | undefined => {
     if (!stockUsesUniformPeriodTimes) return undefined;
-    const seriesOrderForLayout = chartType === "bars" ? barMetricOrder(selected) : selected;
+    const seriesOrderForLayout =
+      chartType === "bars" ? barMetricOrder(chartingBarMetrics(selected, chartType)) : selected;
     const singlePeriod =
       ordered.length === 1 && barBaseTimeByPeriodEnd
         ? {
@@ -2077,8 +2130,8 @@ export function ChartingWorkspace({
 
   // Grouped-bar mode: map each shifted bar time back to its original period row so tooltips work.
   const groupedTimeToRow = useMemo(() => {
-    if (chartType !== "bars" || selected.length <= 1) return timeToRow;
-    const ids = barMetricOrder(selected);
+    if (chartType !== "bars" || chartingBarMetrics(selected, chartType).length <= 1) return timeToRow;
+    const ids = barMetricOrder(chartingBarMetrics(selected, chartType));
     const m = new Map<number, ChartingSeriesPoint>();
     for (const row of ordered) {
       const base = barBaseTimeByPeriodEnd?.get(row.periodEnd);
@@ -2091,8 +2144,8 @@ export function ChartingWorkspace({
   }, [chartType, selected, ordered, timeToRow, barBaseTimeByPeriodEnd, stockFullWidthFixedBars]);
 
   const groupedTickLabelByTime = useMemo(() => {
-    if (chartType !== "bars" || selected.length <= 1) return null;
-    const ids = barMetricOrder(selected);
+    if (chartType !== "bars" || chartingBarMetrics(selected, chartType).length <= 1) return null;
+    const ids = barMetricOrder(chartingBarMetrics(selected, chartType));
     const m = new Map<number, string>();
     for (const row of ordered) {
       const base = barBaseTimeByPeriodEnd?.get(row.periodEnd);
@@ -2227,19 +2280,35 @@ export function ChartingWorkspace({
   );
 
   const chartAxes = useMemo(() => {
-    if (!ordered.length || !selected.length) return { primary: null as ChartingYAxisConfig | null, percent: null as ChartingYAxisConfig | null };
-    const seriesOrder = chartType === "bars" ? barMetricOrder(selected) : selected;
+    if (!ordered.length || !selected.length) {
+      return {
+        primary: null as ChartingYAxisConfig | null,
+        percent: null as ChartingYAxisConfig | null,
+        valuation: null as ChartingYAxisConfig | null,
+      };
+    }
+    const seriesOrder = chartingSeriesRenderOrder(selected, chartType);
     const selectedSet = new Set(selected);
 
-    const nonPercentIds = seriesOrder.filter((id) => selectedSet.has(id) && CHARTING_METRIC_KIND[id] !== "percent");
-    const percentIds = seriesOrder.filter((id) => selectedSet.has(id) && CHARTING_METRIC_KIND[id] === "percent");
+    const primaryIds = seriesOrder.filter(
+      (id) =>
+        selectedSet.has(id) &&
+        CHARTING_METRIC_KIND[id] !== "percent" &&
+        !isValuationMetricKind(CHARTING_METRIC_KIND[id]),
+    );
+    const percentIds = seriesOrder.filter(
+      (id) => selectedSet.has(id) && CHARTING_METRIC_KIND[id] === "percent",
+    );
+    const valuationIds = seriesOrder.filter(
+      (id) => selectedSet.has(id) && isValuationMetricKind(CHARTING_METRIC_KIND[id]),
+    );
 
     let primary: ChartingYAxisConfig | null = null;
-    if (nonPercentIds.length > 0) {
+    if (primaryIds.length > 0) {
       const primaryId =
-        nonPercentIds.find((id) => CHARTING_METRIC_KIND[id] === "usd") ?? nonPercentIds[0]!;
+        primaryIds.find((id) => CHARTING_METRIC_KIND[id] === "usd") ?? primaryIds[0]!;
       const kind = CHARTING_METRIC_KIND[primaryId];
-      const metricsOnAxis = nonPercentIds.filter((id) => CHARTING_METRIC_KIND[id] === kind);
+      const metricsOnAxis = primaryIds.filter((id) => CHARTING_METRIC_KIND[id] === kind);
       let rawMax = 0;
       for (const id of metricsOnAxis) {
         for (const row of ordered) {
@@ -2261,12 +2330,32 @@ export function ChartingWorkspace({
           }
         : null;
 
-    return { primary, percent };
+    const valuation: ChartingYAxisConfig | null =
+      valuationIds.length > 0
+        ? (() => {
+            let rawMax = 0;
+            for (const id of valuationIds) {
+              for (const row of ordered) {
+                const v = rowValue(row, id);
+                if (v != null && Number.isFinite(v)) rawMax = Math.max(rawMax, Math.abs(v));
+              }
+            }
+            const kind = CHARTING_METRIC_KIND[valuationIds[0]!]!;
+            return {
+              kind,
+              ticks: buildFundamentalsYAxisTicks(rawMax || 1, kind),
+            };
+          })()
+        : null;
+
+    return { primary, percent, valuation };
   }, [chartType, ordered, selected]);
 
   const primaryYAxis = chartAxes.primary;
   const percentYAxis = chartAxes.percent;
-  const yAxisColumnCount = (primaryYAxis ? 1 : 0) + (percentYAxis ? 1 : 0);
+  const valuationYAxis = chartAxes.valuation;
+  const yAxisColumnCount =
+    (primaryYAxis ? 1 : 0) + (percentYAxis ? 1 : 0) + (valuationYAxis ? 1 : 0);
   const yAxisColumnsWidthPx = yAxisColumnCount * FUNDAMENTALS_CHART_Y_AXIS_W_PX;
 
   /** Single primitive dep — avoids React "dependency array changed size" when lists/maps are in deps. */
@@ -2290,6 +2379,7 @@ export function ChartingWorkspace({
       screenshotPreviewMode,
       chartAxes.primary?.ticks.join(",") ?? "",
       chartAxes.percent?.ticks.join(",") ?? "",
+      chartAxes.valuation?.ticks.join(",") ?? "",
     ].join("::");
   }, [
     ordered,
@@ -2441,7 +2531,7 @@ export function ChartingWorkspace({
 
           const usedScales = new Set<string>();
 
-          const seriesOrder = chartType === "bars" ? barMetricOrder(selected) : selected;
+          const seriesOrder = chartingSeriesRenderOrder(selected, chartType);
           const fixedYAutoscaleForKind = (kind: ChartingMetricKind) => {
             if (kind === "percent" && chartAxes.percent) {
               return {
@@ -2450,8 +2540,18 @@ export function ChartingWorkspace({
                 }),
               };
             }
+            if (isValuationMetricKind(kind) && chartAxes.valuation) {
+              const top = chartAxes.valuation.ticks[0];
+              if (top != null && Number.isFinite(top) && top > 0) {
+                return {
+                  autoscaleInfoProvider: () => ({
+                    priceRange: { minValue: 0, maxValue: top },
+                  }),
+                };
+              }
+            }
             const top = chartAxes.primary?.ticks[0];
-            if (kind !== "percent" && top != null && Number.isFinite(top) && top > 0) {
+            if (kind !== "percent" && !isValuationMetricKind(kind) && top != null && Number.isFinite(top) && top > 0) {
               return {
                 autoscaleInfoProvider: () => ({
                   priceRange: { minValue: 0, maxValue: top },
@@ -2462,19 +2562,24 @@ export function ChartingWorkspace({
           };
           let seriesColorIdx = 0;
           for (const id of seriesOrder) {
+            const kind = CHARTING_METRIC_KIND[id];
+            const useLineSeries = chartingMetricUsesLineSeries(id, chartType);
+            const barOnlySelected = chartingBarMetrics(selected, chartType);
             const shiftSec =
-              chartType === "bars" && selected.length > 1
-                ? groupedBarShiftSeconds(id, seriesOrder, stockFullWidthFixedBars)
+              !useLineSeries && chartType === "bars" && barOnlySelected.length > 1
+                ? groupedBarShiftSeconds(id, barMetricOrder(barOnlySelected), stockFullWidthFixedBars)
                 : 0;
             const data =
-              chartType === "bars" && barBaseTimeByPeriodEnd
+              useLineSeries && barBaseTimeByPeriodEnd
+                ? seriesDataUniformPeriodTimes(ordered, id, barBaseTimeByPeriodEnd, shiftSec)
+                : !useLineSeries && chartType === "bars" && barBaseTimeByPeriodEnd
                 ? stockFullWidthFixedBars
                   ? seriesDataBarsStockFullWidth(
                       ordered,
                       id,
                       barBaseTimeByPeriodEnd,
                       shiftSec,
-                      seriesOrder,
+                      barMetricOrder(barOnlySelected),
                       stockInterGroupGapSlots,
                     )
                   : seriesDataBarsWithGapSlots(ordered, id, barBaseTimeByPeriodEnd, shiftSec)
@@ -2482,10 +2587,9 @@ export function ChartingWorkspace({
                   ? seriesDataUniformPeriodTimes(ordered, id, barBaseTimeByPeriodEnd, shiftSec)
                   : seriesData(ordered, id, shiftSec);
             if (!data.length) continue;
-            const kind = CHARTING_METRIC_KIND[id];
             const scaleId = scaleIdForKind(kind);
             usedScales.add(scaleId);
-            if (chartType === "bars") {
+            if (!useLineSeries) {
               const barColor = fundamentalsBarSolidAtIndex(seriesColorIdx);
               const barPoints = chartingPlotBarPointsForKind(data as ChartingBarSeriesPoint[], kind);
               barSeriesPointsRef.current.set(id, barPoints);
@@ -2590,7 +2694,7 @@ export function ChartingWorkspace({
                   : barPoints;
               displayedByMetric.set(metricId, displayed);
             }
-            const seriesOrderForBars = barMetricOrder(selected);
+            const seriesOrderForBars = barMetricOrder(chartingBarMetrics(selected, chartType));
             roundedBarsPrimitiveRef.current?.setBars(
               computeRoundedBarDrawLayout(
                 c,
@@ -2620,7 +2724,10 @@ export function ChartingWorkspace({
               ordered.length === 1 &&
               barBaseTimeByPeriodEnd
             ) {
-              const seriesOrderForCenter = chartType === "bars" ? barMetricOrder(selected) : selected;
+              const seriesOrderForCenter =
+                chartType === "bars"
+                  ? barMetricOrder(chartingBarMetrics(selected, chartType))
+                  : selected;
               centerChartingStockSinglePeriodPlot(c, () =>
                 chartingPeriodCenterXPx(
                   c,
@@ -2645,7 +2752,8 @@ export function ChartingWorkspace({
             );
             const yRefSeries = (() => {
               for (const id of seriesOrder) {
-                if (CHARTING_METRIC_KIND[id] !== "percent") {
+                const kind = CHARTING_METRIC_KIND[id];
+                if (kind !== "percent" && !isValuationMetricKind(kind)) {
                   return seriesByMetricRef.current.get(id);
                 }
               }
@@ -2664,6 +2772,14 @@ export function ChartingWorkspace({
               }
               return undefined;
             })();
+            const yValuationRefSeries = (() => {
+              for (const id of seriesOrder) {
+                if (isValuationMetricKind(CHARTING_METRIC_KIND[id])) {
+                  return seriesByMetricRef.current.get(id);
+                }
+              }
+              return undefined;
+            })();
             setYGridTickTopsPx(
               chartAxes.primary
                 ? computeYGridTickTopsPx(yRefSeries, chartAxes.primary.ticks)
@@ -2676,6 +2792,11 @@ export function ChartingWorkspace({
                 ? computeYGridTickTopsPx(yPercentRefSeries, chartAxes.percent.ticks)
                 : null,
             );
+            setYValuationGridTickTopsPx(
+              chartAxes.valuation
+                ? computeYGridTickTopsPx(yValuationRefSeries, chartAxes.valuation.ticks)
+                : null,
+            );
             if (chartType === "line") {
               roundedBarsPrimitiveRef.current?.setBars([], 0);
               setLinePointMarkers(
@@ -2685,6 +2806,8 @@ export function ChartingWorkspace({
                   ordered,
                   selected,
                   barBaseTimeByPeriodEnd,
+                  selected,
+                  chartType,
                 ),
               );
               setBarValueLabels(
@@ -2695,6 +2818,8 @@ export function ChartingWorkspace({
                       ordered,
                       selected,
                       barBaseTimeByPeriodEnd,
+                      selected,
+                      chartType,
                     )
                   : [],
               );
@@ -2712,13 +2837,13 @@ export function ChartingWorkspace({
             }
             if (chartType === "bars") {
               setLineEndBadges([]);
-              setLinePointMarkers([]);
               syncRoundedBarHoverPrimitive();
               const barValueLabelsReady =
                 !animateBars ||
                 prefersReducedFundamentalsBarMotion() ||
                 barEnterElapsedMs >= Number.POSITIVE_INFINITY;
-              setBarValueLabels(
+              const valuationLineMetrics = chartingValuationLineMetrics(selected, chartType);
+              const barLabels =
                 barValueLabelsReady
                   ? computeBarValueLabelsLayout(
                       c,
@@ -2727,6 +2852,31 @@ export function ChartingWorkspace({
                       selected,
                       barBaseTimeByPeriodEnd,
                       stockFullWidthFixedBars,
+                    )
+                  : [];
+              const valuationLineLabels =
+                barValueLabelsReady && valuationLineMetrics.length > 0
+                  ? computeLineValueLabelsLayout(
+                      c,
+                      seriesByMetricRef.current,
+                      ordered,
+                      valuationLineMetrics,
+                      barBaseTimeByPeriodEnd,
+                      selected,
+                      chartType,
+                    )
+                  : [];
+              setBarValueLabels([...barLabels, ...valuationLineLabels]);
+              setLinePointMarkers(
+                valuationLineMetrics.length > 0
+                  ? computeLinePointMarkersLayout(
+                      c,
+                      seriesByMetricRef.current,
+                      ordered,
+                      valuationLineMetrics,
+                      barBaseTimeByPeriodEnd,
+                      selected,
+                      chartType,
                     )
                   : [],
               );
@@ -2842,7 +2992,7 @@ export function ChartingWorkspace({
             const x = param.point.x;
             const pointerY = param.point.y ?? 0;
 
-            const seriesOrder = chartType === "bars" ? barMetricOrder(selected) : selected;
+            const seriesOrder = chartType === "bars" ? barMetricOrder(chartingBarMetrics(selected, chartType)) : selected;
 
             let row: ChartingSeriesPoint | null = null;
             let stockPeriodIndex = -1;
@@ -3020,14 +3170,15 @@ export function ChartingWorkspace({
                   ? Date.parse(row.periodEnd.includes("T") ? row.periodEnd : `${row.periodEnd}T12:00:00.000Z`)
                   : NaN;
               const baseSec = Number.isFinite(baseMs) ? Math.floor(baseMs / 1000) : null;
+              const barMetricCount = chartingBarMetrics(selected, chartType).length;
               const centerTime =
-                chartType === "bars" && selected.length > 1 && baseSec != null && row
+                chartType === "bars" && barMetricCount > 1 && baseSec != null && row
                   ? (baseSec as UTCTimestamp)
                   : null;
               const centerX = centerTime != null ? ts.timeToCoordinate(centerTime) : null;
               const bandCenterX = Number.isFinite(centerX ?? NaN) ? (centerX as number) : x;
               bandWidth =
-                chartType === "bars" && selected.length > 1
+                chartType === "bars" && barMetricCount > 1
                   ? Math.max(36, barSpacing * Math.max(1, idsForBars.length))
                   : Math.max(24, barSpacing);
               bandLeft = Math.max(0, bandCenterX - bandWidth / 2);
@@ -3131,6 +3282,7 @@ export function ChartingWorkspace({
         setPeriodAxisLabels([]);
         setYGridTickTopsPx(null);
         setYPercentGridTickTopsPx(null);
+        setYValuationGridTickTopsPx(null);
       };
     },
     [chartMountDepsKey],
@@ -3144,7 +3296,7 @@ export function ChartingWorkspace({
   const noMetricData = !loading && !empty && !canPlot;
 
   const metricChipColorById = useMemo(() => {
-    const seriesOrder = chartType === "bars" ? barMetricOrder(selected) : selected;
+    const seriesOrder = chartingSeriesRenderOrder(selected, chartType);
     const m = new Map<ChartingMetricId, string>();
     let idx = 0;
     for (const id of seriesOrder) {
@@ -3441,8 +3593,8 @@ export function ChartingWorkspace({
                         ))
                       : null}
                   </div>
-                  {chartType === "bars" && visibleBarValueLabels.length > 0
-                    ? visibleBarValueLabels.map((b) => (
+                  {chartType === "bars" && visibleBarOnlyValueLabels.length > 0
+                    ? visibleBarOnlyValueLabels.map((b) => (
                         <div
                           key={b.key}
                           className="pointer-events-none absolute z-[15] max-w-[5.5rem] -translate-x-1/2 -translate-y-full text-center"
@@ -3468,6 +3620,48 @@ export function ChartingWorkspace({
                             {b.text}
                           </span>
                         </div>
+                      ))
+                    : null}
+                  {hasValuationLineOverlays && visibleValuationLineValueLabels.length > 0
+                    ? visibleValuationLineValueLabels.map((b) => (
+                        <div
+                          key={b.key}
+                          className="pointer-events-none absolute z-[15] max-w-[5.5rem] -translate-x-1/2 -translate-y-full text-center"
+                          style={{
+                            left: b.leftPx,
+                            top: b.topPx,
+                          }}
+                          title={b.text}
+                        >
+                          <span
+                            className="truncate text-[11px] font-semibold leading-none tabular-nums text-[#09090B]"
+                            style={{
+                              textShadow:
+                                "0 0 3px rgba(255,255,255,0.95), 0 1px 2px rgba(255,255,255,0.8)",
+                            }}
+                          >
+                            {b.text}
+                          </span>
+                        </div>
+                      ))
+                    : null}
+                  {hasValuationLineOverlays && linePointMarkers.length > 0
+                    ? linePointMarkers.map((m) => (
+                        <div
+                          key={m.key}
+                          className="pointer-events-none absolute z-[12] rounded-full bg-white"
+                          style={{
+                            left: m.leftPx,
+                            top: m.topPx,
+                            width: CHARTING_LINE_POINT_MARKER_DIAMETER_PX,
+                            height: CHARTING_LINE_POINT_MARKER_DIAMETER_PX,
+                            borderWidth: CHARTING_LINE_POINT_MARKER_BORDER_PX,
+                            borderStyle: "solid",
+                            borderColor: m.color,
+                            transform: "translate(-50%, -50%)",
+                          }}
+                          aria-hidden
+                        />
                       ))
                     : null}
                   {hover ? (
@@ -3580,6 +3774,38 @@ export function ChartingWorkspace({
                                 }}
                               >
                                 {formatFundamentalsAxisTickLabel("percent", t)}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : null}
+                    {valuationYAxis ? (
+                      <div
+                        className={cn(
+                          "relative h-full text-left font-['Inter'] text-[12px] tabular-nums leading-none text-[#71717A]",
+                          FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS,
+                        )}
+                        style={{ width: FUNDAMENTALS_CHART_Y_AXIS_W_PX }}
+                      >
+                        <div className="pointer-events-none absolute inset-0">
+                          {valuationYAxis.ticks.map((t, i) => {
+                            const topPx = yValuationGridTickTopsPx?.[i];
+                            const nt = valuationYAxis.ticks.length;
+                            const pct = nt <= 1 ? 0 : i / (nt - 1);
+                            const insetSpan = chartType === "bars" ? 0.92 : 0.84;
+                            return (
+                              <span
+                                key={`y-tick-valuation-${i}`}
+                                className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-white px-1 py-px"
+                                style={{
+                                  top:
+                                    topPx != null && Number.isFinite(topPx)
+                                      ? topPx
+                                      : `${(0.08 + pct * insetSpan) * 100}%`,
+                                }}
+                              >
+                                {formatFundamentalsAxisTickLabel(valuationYAxis.kind, t)}
                               </span>
                             );
                           })}

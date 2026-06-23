@@ -29,5 +29,8 @@ export function chartScreenshotExportOptionsForSnapshot(
       showMinLine: display.showMinLine,
     };
   }
+  if (snapshot.variant === "stockOverview") {
+    return DEFAULT_CHART_SCREENSHOT_EXPORT_OPTIONS;
+  }
   return DEFAULT_CHART_SCREENSHOT_EXPORT_OPTIONS;
 }

@@ -4,6 +4,7 @@ import {
   CHART_SCREENSHOT_HEIGHT_PX,
   CHART_SCREENSHOT_WIDTH_PX,
 } from "@/lib/chart/chart-screenshot-constants";
+import { prepareChartScreenshotExportDom } from "@/lib/chart/prepare-chart-screenshot-export-dom";
 
 const EXPORT_CANVAS_SWAP_ATTR = "data-chart-export-canvas-swap";
 
@@ -143,9 +144,12 @@ export async function exportChartScreenshotJpeg(
 ): Promise<void> {
   const restoreScale = temporarilyNeutralizeScaleTransforms(element);
   const restoreCanvases = temporarilySwapCanvasesForImages(element);
+  let restoreExportDom: (() => void) | null = null;
 
   try {
     await waitForAnimationFrames(3);
+    await waitForSwappedCanvasImages(element);
+    restoreExportDom = await prepareChartScreenshotExportDom(element);
     await waitForSwappedCanvasImages(element);
 
     const dataUrl = await toJpeg(element, {
@@ -164,6 +168,7 @@ export async function exportChartScreenshotJpeg(
     link.click();
     link.remove();
   } finally {
+    restoreExportDom?.();
     restoreCanvases();
     restoreScale();
   }

@@ -5,8 +5,29 @@ import type { FundamentalsChartDisplayOptions } from "@/lib/chart/fundamentals-c
 import type { FundamentalsChartTimeRange } from "@/lib/market/fundamentals-chart-time-range";
 import type { MultichartVisual } from "@/components/stock/multichart-fundamentals-bar";
 import type { PeriodPlotEdgeMargin } from "@/components/stock/multichart-fundamentals-bar";
+import type { StockChartRange, StockChartPoint, StockChartSeries } from "@/lib/market/stock-chart-types";
 
-export type ChartScreenshotSnapshotVariant = "charting" | "keyStatsMetric";
+export type ChartScreenshotSnapshotVariant = "charting" | "keyStatsMetric" | "stockOverview";
+
+export type StockOverviewScreenshotConfig = {
+  range: StockChartRange;
+  series: StockChartSeries;
+  points: StockChartPoint[];
+};
+
+export function stockOverviewSeriesLabel(series: StockChartSeries): string {
+  if (series === "marketCap") return "Market cap";
+  if (series === "return") return "Return";
+  return "Price";
+}
+
+export function stockOverviewExportMetricSlug(
+  series: StockChartSeries,
+  range: StockChartRange,
+): string {
+  const seriesSlug = series === "marketCap" ? "market-cap" : series;
+  return `${seriesSlug}-${range.toLowerCase()}`;
+}
 
 export type KeyStatsMetricScreenshotConfig = {
   metricId: ChartingMetricId;
@@ -34,4 +55,6 @@ export type ChartScreenshotSnapshot = {
   fullPoints: ChartingSeriesPoint[];
   /** Key Stats metric modal — single-metric Multichart export. */
   keyStatsMetric?: KeyStatsMetricScreenshotConfig;
+  /** Stock overview — Price / market cap / return line chart export. */
+  stockOverview?: StockOverviewScreenshotConfig;
 };

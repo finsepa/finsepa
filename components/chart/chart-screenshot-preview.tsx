@@ -2,6 +2,7 @@
 
 import { forwardRef, useMemo } from "react";
 import { ChartingWorkspace } from "@/components/charting/charting-workspace";
+import { PriceChart } from "@/components/chart/PriceChart";
 import { ChartScreenshotAssetHeader } from "@/components/chart/chart-screenshot-asset-header";
 import {
   MultichartFundamentalsBar,
@@ -20,6 +21,7 @@ import {
 } from "@/lib/chart/chart-screenshot-constants";
 import type { ChartScreenshotExportOptions } from "@/lib/chart/chart-screenshot-export-options";
 import type { ChartScreenshotSnapshot } from "@/lib/chart/chart-screenshot-types";
+import { stockOverviewSeriesLabel } from "@/lib/chart/chart-screenshot-types";
 import { chartingMetricsToParam } from "@/lib/market/stock-charting-metrics";
 import { APP_MODAL_SHELL_SHADOW_CLASS } from "@/components/ui/app-modal-shell";
 import { cn } from "@/lib/utils";
@@ -41,6 +43,7 @@ export const ChartScreenshotPreview = forwardRef<HTMLDivElement, ChartScreenshot
     const chartBlockHeightPx = useMemo(() => chartScreenshotChartBlockHeightPx(), []);
     const contentLogicalWidth = chartArea.width / CHART_SCREENSHOT_CONTENT_SCALE;
     const isKeyStatsMetric = snapshot.variant === "keyStatsMetric" && snapshot.keyStatsMetric;
+    const isStockOverview = snapshot.variant === "stockOverview" && snapshot.stockOverview;
     const keyStatsPreviewDisplayOptions = useMemo(() => {
       if (!snapshot.keyStatsMetric) return null;
       return {
@@ -100,12 +103,20 @@ export const ChartScreenshotPreview = forwardRef<HTMLDivElement, ChartScreenshot
                 ticker={snapshot.ticker}
                 companyName={snapshot.companyName}
                 logoUrl={snapshot.logoUrl}
-                metricTitle={isKeyStatsMetric ? snapshot.keyStatsMetric!.metricLabel : null}
+                metricTitle={
+                  isKeyStatsMetric
+                    ? snapshot.keyStatsMetric!.metricLabel
+                    : isStockOverview
+                      ? stockOverviewSeriesLabel(snapshot.stockOverview!.series)
+                      : null
+                }
               />
               <div
                 className={cn(
                   "flex min-h-0 flex-1",
-                  isKeyStatsMetric ? "items-stretch overflow-visible" : "items-center justify-center overflow-hidden",
+                  isKeyStatsMetric || isStockOverview
+                    ? "items-stretch overflow-visible"
+                    : "items-center justify-center overflow-hidden",
                 )}
                 style={{
                   marginTop: CHART_SCREENSHOT_HEADER_CHART_GAP_PX,
@@ -116,7 +127,7 @@ export const ChartScreenshotPreview = forwardRef<HTMLDivElement, ChartScreenshot
                 <div
                   className="[&_*]:!animate-none [&_*]:!transition-none"
                   style={
-                    isKeyStatsMetric
+                    isKeyStatsMetric || isStockOverview
                       ? { width: "100%", minWidth: 0 }
                       : {
                           width: contentLogicalWidth,
@@ -140,6 +151,25 @@ export const ChartScreenshotPreview = forwardRef<HTMLDivElement, ChartScreenshot
                       horizontalPeriodAxisLabels={snapshot.keyStatsMetric!.horizontalPeriodAxisLabels}
                       periodPlotMargins={KEY_STATS_SCREENSHOT_PERIOD_MARGINS}
                       screenshotExportMode
+                    />
+                  ) : isStockOverview ? (
+                    <PriceChart
+                      kind="stock"
+                      symbol={snapshot.ticker}
+                      range={snapshot.stockOverview!.range}
+                      series={snapshot.stockOverview!.series}
+                      height={chartArea.height}
+                      initialChart={{
+                        range: snapshot.stockOverview!.range,
+                        points: snapshot.stockOverview!.points,
+                      }}
+                      screenshotPreviewMode
+                      screenshotChartBlockHeightPx={chartArea.height}
+                      screenshotDisplayOptions={{
+                        showVerticalLegend: exportOptions.showVerticalLegend,
+                        showHorizontalLegend: exportOptions.showHorizontalLegend,
+                        showRangeBadges: exportOptions.showValues,
+                      }}
                     />
                   ) : (
                   <ChartingWorkspace

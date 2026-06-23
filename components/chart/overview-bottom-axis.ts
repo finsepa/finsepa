@@ -23,6 +23,10 @@ export function overviewChartAxisRowPx(containerWidthPx: number): number {
 export const CHART_PLOT_DOTS_PATTERN_CLASS =
   "absolute inset-0 [background-image:radial-gradient(circle,rgba(228,228,231,0.42)_1px,transparent_1px)] [background-size:8px_8px] [mask-image:radial-gradient(ellipse_52%_72%_at_50%_50%,#000_0%,#000_38%,transparent_100%)] [-webkit-mask-image:radial-gradient(ellipse_52%_72%_at_50%_50%,#000_0%,#000_38%,transparent_100%)]";
 
+/** html-to-image safe — same dot grid with a white radial overlay instead of CSS mask. */
+export const CHART_PLOT_DOTS_PATTERN_EXPORT_CLASS =
+  "absolute inset-0 [background-image:radial-gradient(ellipse_52%_72%_at_50%_50%,transparent_0%,transparent_38%,rgba(255,255,255,0.95)_100%),radial-gradient(circle,rgba(228,228,231,0.42)_1px,transparent_1px)] [background-size:100%_100%,8px_8px]";
+
 export type OverviewAxisLabel = { key: string; leftPx: number; label: string };
 
 export function overviewAxisLabelsEqual(a: readonly OverviewAxisLabel[], b: readonly OverviewAxisLabel[]): boolean {
@@ -47,6 +51,29 @@ export type OverviewBottomAxisMode =
   | "calendar";
 
 const ALL_AXIS_YEAR_LABEL_GAP = 8;
+/** ~`2026` tick width for ALL idle axis thinning on narrow plots. */
+const ALL_AXIS_YEAR_LABEL_MIN_PX = 44;
+
+function countDistinctSessionYears(data: readonly StockChartPoint[], timeZone: string): number {
+  const years = new Set<string>();
+  for (const p of data) {
+    const y = sessionYearBucketKey(p.time, timeZone);
+    if (y) years.add(y);
+  }
+  return years.size;
+}
+
+/**
+ * ALL range: show every calendar year when they fit; otherwise keep ~8-year spacing
+ * (long histories like AAPL). Short IPO histories (e.g. PYPL) get all years on desktop.
+ */
+function resolveAllAxisYearLabelGap(distinctYears: number, plotWidthPx: number): number {
+  if (distinctYears <= 1) return 1;
+  const plotW = plotWidthPx > 0 ? plotWidthPx : 800;
+  const maxComfortable = Math.max(4, Math.floor(plotW / ALL_AXIS_YEAR_LABEL_MIN_PX));
+  if (distinctYears <= maxComfortable) return 1;
+  return ALL_AXIS_YEAR_LABEL_GAP;
+}
 
 function chartPointsHaveSubHourBars(points: readonly StockChartPoint[]): boolean {
   const sorted = points.filter((p) => isFiniteNumber(p.time)).sort((a, b) => a.time - b.time);
@@ -435,29 +462,54 @@ export function usesSessionDateMidnightCrosshairLabel(
   return range === "5Y" || range === "ALL" || axisMode === "yearly" || axisMode === "allYears";
 }
 
-/** First bar index for ALL idle axis — year labels every ~8 years. */
-function buildAllAxisYearLabelIndices(data: readonly StockChartPoint[], timeZone: string): Set<number> {
-  const out = new Set<number>();
+/** First bar index for ALL idle axis — year labels every N calendar years (adaptive). */
+function buildAllAxisYearLabelIndices(
+  data: readonly StockChartPoint[],
+  timeZone: string,
+  yearGap: number,
+): Set<number> {
   const n = data.length;
-  if (!n) return out;
-  out.add(0);
-  if (n > 1) out.add(n - 1);
+  if (!n) return new Set();
 
-  let lastLabeledYear: number | null = null;
+  const yearAt = (i: number) => sessionYearBucketKey(data[i]!.time, timeZone);
+  const labeledYears = new Set<string>();
+  const out = new Set<number>();
+
+  const tryAddYearBoundary = (i: number): boolean => {
+    const y = yearAt(i);
+    if (!y || labeledYears.has(y)) return false;
+    labeledYears.add(y);
+    out.add(i);
+    return true;
+  };
+
+  if (yearGap <= 1) {
+    tryAddYearBoundary(0);
+    for (let i = 1; i < n; i++) {
+      if (yearAt(i) !== yearAt(i - 1)) tryAddYearBoundary(i);
+    }
+    return out;
+  }
+
+  tryAddYearBoundary(0);
+
+  let lastLabeledYearNum: number | null = null;
   for (let i = 0; i < n; i++) {
-    const y = Number(sessionYearBucketKey(data[i]!.time, timeZone));
+    const y = Number(yearAt(i));
     if (!Number.isFinite(y)) continue;
-    if (i > 0 && y === Number(sessionYearBucketKey(data[i - 1]!.time, timeZone))) continue;
-    if (lastLabeledYear == null) {
-      out.add(i);
-      lastLabeledYear = y;
+    if (i > 0 && y === Number(yearAt(i - 1))) continue;
+    if (lastLabeledYearNum == null) {
+      tryAddYearBoundary(i);
+      lastLabeledYearNum = y;
       continue;
     }
-    if (y - lastLabeledYear >= ALL_AXIS_YEAR_LABEL_GAP) {
-      out.add(i);
-      lastLabeledYear = y;
+    if (y - lastLabeledYearNum >= yearGap) {
+      if (tryAddYearBoundary(i)) lastLabeledYearNum = y;
     }
   }
+
+  if (n > 1) tryAddYearBoundary(n - 1);
+
   return out;
 }
 
@@ -756,7 +808,13 @@ export function syncOverviewPeriodAxisLabels(
   const triMonthlyLabelIndices =
     axisMode === "triMonthly" ? buildTriMonthlyAxisLabelIndices(data, timeZone) : null;
   const allYearLabelIndices =
-    axisMode === "allYears" ? buildAllAxisYearLabelIndices(data, timeZone) : null;
+    axisMode === "allYears"
+      ? buildAllAxisYearLabelIndices(
+          data,
+          timeZone,
+          resolveAllAxisYearLabelGap(countDistinctSessionYears(data, timeZone), plotWidthPx),
+        )
+      : null;
   const out: OverviewAxisLabel[] = [];
   for (let i = 0; i < n; i++) {
     if (axisMode === "hour") {
