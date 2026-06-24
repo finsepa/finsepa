@@ -10,6 +10,7 @@ import {
   ensureSnapshotActiveId,
   getActiveWatchlistCollection,
   isPlaceholderWatchlistId,
+  unionWatchlistTickers,
   writeWatchlistCollections,
 } from "@/lib/watchlist/collections";
 import type { WatchlistServerSnapshot, WatchlistSyncCollectionInput } from "@/lib/watchlist/types";
@@ -197,7 +198,12 @@ export function mergeServerIdsWithLocalSnapshot(
     return {
       id: serverList?.id ?? localList.id,
       name: localList.name,
-      tickers: [...localList.tickers],
+      tickers:
+        localList.tickers.length > 0
+          ? [...localList.tickers]
+          : serverList
+            ? [...serverList.tickers]
+            : [],
       sections: [...layout.sections],
       tickerSections: { ...layout.tickerSections },
     };
@@ -269,20 +275,19 @@ export function mergeServerWithLocalSnapshot(
   if (localIsStaleSupersetOfServer(local, server)) {
     return applyServerSnapshotPreservingLocalNames(server, local);
   }
+  if (
+    localSnapshotHasNoTickers(local) &&
+    server.collections.some((collection) => collection.tickers.length > 0)
+  ) {
+    return applyServerSnapshotPreservingLocalNames(server, local);
+  }
   const activeName = getActiveWatchlistCollection(local).name;
   const merged = mergeServerIdsWithLocalSnapshot(server, local, activeName);
   return clearDuplicateWatchlistTickerCopies(ensureSnapshotActiveId(merged ?? local));
 }
 
-function localEmptyListHasServerTickers(
-  local: WatchlistCollectionsSnapshot,
-  server: WatchlistServerSnapshot,
-): boolean {
-  return local.lists.some((list) => {
-    if (list.tickers.length > 0) return false;
-    const serverList = findServerCollectionForLocalList(list, server);
-    return Boolean(serverList && serverList.tickers.length > 0);
-  });
+function localSnapshotHasNoTickers(local: WatchlistCollectionsSnapshot): boolean {
+  return unionWatchlistTickers(local).length === 0;
 }
 
 export function applyServerSnapshotMergingLocal(
@@ -321,10 +326,15 @@ export function localSnapshotNeedsServerUpload(
   server: WatchlistServerSnapshot,
 ): boolean {
   if (localIsStaleSupersetOfServer(local, server)) return false;
+  if (
+    localSnapshotHasNoTickers(local) &&
+    server.collections.some((collection) => collection.tickers.length > 0)
+  ) {
+    return false;
+  }
   if (serverListsHaveDuplicateTickerSets(server)) return true;
   if (local.lists.length !== server.collections.length) return true;
   if (hasClientOnlyWatchlistIds(local)) return true;
-  if (localEmptyListHasServerTickers(local, server)) return true;
   if (localHasTickersBehindServer(local, server)) return true;
   if (localHasSectionsAheadOfServer(local, server)) return true;
   if (localTickerOrderDiffersFromServer(local, server)) return true;
