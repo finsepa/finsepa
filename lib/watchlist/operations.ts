@@ -64,6 +64,24 @@ function pickCanonicalCollection(
   );
 }
 
+function findServerCollectionForSyncInput(
+  name: string,
+  refreshed: WatchlistCollectionRow[],
+  usedServerIds: Set<string>,
+): WatchlistCollectionRow | undefined {
+  const normalized = name.toLowerCase();
+  const exact = refreshed.find(
+    (collection) =>
+      !usedServerIds.has(collection.id) && collection.name.toLowerCase() === normalized,
+  );
+  if (exact) return exact;
+
+  return refreshed.find(
+    (collection) =>
+      !usedServerIds.has(collection.id) && collectionNamesMatch(name, collection.name),
+  );
+}
+
 async function deleteAliasDuplicateCollections(
   supabase: SupabaseClient,
   userId: string,
@@ -480,43 +498,54 @@ export async function syncWatchlistFromClient(
   let refreshed = await listCollectionsForUser(supabase, userId);
   await deleteAliasDuplicateCollections(supabase, userId, collections, refreshed);
   refreshed = await listCollectionsForUser(supabase, userId);
-  const byName = new Map(refreshed.map((c) => [c.name.toLowerCase(), c]));
   const resolved: WatchlistCollectionRow[] = [];
   const usedServerIds = new Set<string>();
 
   for (let i = 0; i < collections.length; i++) {
     const input = collections[i]!;
     const name = normalizeCollectionName(input.name);
-    const aliasMatch = refreshed.find(
-      (collection) =>
-        !usedServerIds.has(collection.id) && collectionNamesMatch(name, collection.name),
-    );
-    const exactMatch = byName.get(name.toLowerCase());
-    const found =
-      aliasMatch ??
-      (exactMatch && !usedServerIds.has(exactMatch.id) ? exactMatch : undefined);
+    const found = findServerCollectionForSyncInput(name, refreshed, usedServerIds);
     if (found) {
       const desiredName = normalizeCollectionName(input.name);
       let resolvedRow = found;
       if (found.name !== desiredName) {
-        try {
-          resolvedRow = await renameWatchlistCollectionOnServer(
-            supabase,
-            userId,
-            found.id,
-            desiredName,
-          );
-        } catch {
-          resolvedRow = found;
+        const existingTarget = refreshed.find(
+          (collection) => collection.name.toLowerCase() === desiredName.toLowerCase(),
+        );
+        if (existingTarget && existingTarget.id !== found.id) {
+          resolvedRow = existingTarget;
+        } else {
+          try {
+            resolvedRow = await renameWatchlistCollectionOnServer(
+              supabase,
+              userId,
+              found.id,
+              desiredName,
+            );
+          } catch (error) {
+            if (error instanceof WatchlistValidationError && existingTarget) {
+              resolvedRow = existingTarget;
+            }
+          }
         }
       }
       usedServerIds.add(resolvedRow.id);
       resolved.push(resolvedRow);
       continue;
     }
-    const created = await createWatchlistCollectionOnServer(supabase, userId, name, { activate: false });
+
+    let created: WatchlistCollectionRow;
+    try {
+      created = await createWatchlistCollectionOnServer(supabase, userId, name, { activate: false });
+    } catch (error) {
+      if (!(error instanceof WatchlistValidationError)) throw error;
+      const existing = refreshed.find(
+        (collection) => collection.name.toLowerCase() === name.toLowerCase(),
+      );
+      if (!existing) throw error;
+      created = existing;
+    }
     usedServerIds.add(created.id);
-    byName.set(name.toLowerCase(), created);
     resolved.push(created);
   }
 

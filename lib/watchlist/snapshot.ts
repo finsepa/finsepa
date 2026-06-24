@@ -77,15 +77,20 @@ function localTickerOrderDiffersFromServer(
 export function applyServerSnapshotPreservingLocalNames(
   server: WatchlistServerSnapshot,
   local: WatchlistCollectionsSnapshot,
+  options?: { preferServerNames?: boolean },
 ): WatchlistCollectionsSnapshot {
   const activeLocalName = getActiveWatchlistCollection(local).name;
   const lists: WatchlistCollection[] = server.collections.map((serverCollection) => {
     const localList = local.lists.find((list) =>
       collectionNamesMatch(list.name, serverCollection.name),
     );
+    const name =
+      options?.preferServerNames || !localList
+        ? serverCollection.name
+        : localList.name;
     return {
       id: serverCollection.id,
-      name: localList?.name ?? serverCollection.name,
+      name,
       tickers: [...serverCollection.tickers],
       sections: [...serverCollection.sections],
       tickerSections: { ...serverCollection.tickerSections },
@@ -109,8 +114,12 @@ export function applyServerSnapshotPreservingLocalNames(
     lists,
     pendingRemoval: [],
   };
-  const activeId = findCollectionIdByName(draft, activeLocalName) ?? lists[0]?.id ?? "";
-  return clearDuplicateWatchlistTickerCopies(ensureSnapshotActiveId(draft));
+  const activeName = options?.preferServerNames
+    ? (server.collections.find((collection) => collection.id === server.activeCollectionId)?.name ??
+      activeLocalName)
+    : activeLocalName;
+  const activeId = findCollectionIdByName(draft, activeName) ?? lists[0]?.id ?? "";
+  return clearDuplicateWatchlistTickerCopies(ensureSnapshotActiveId({ ...draft, activeId }));
 }
 
 function localHasTickersBehindServer(
@@ -273,13 +282,13 @@ export function mergeServerWithLocalSnapshot(
     return clearDuplicateWatchlistTickerCopies(serverSnapshotToCollections(server, null));
   }
   if (localIsStaleSupersetOfServer(local, server)) {
-    return applyServerSnapshotPreservingLocalNames(server, local);
+    return applyServerSnapshotPreservingLocalNames(server, local, { preferServerNames: true });
   }
   if (
     localSnapshotHasNoTickers(local) &&
     server.collections.some((collection) => collection.tickers.length > 0)
   ) {
-    return applyServerSnapshotPreservingLocalNames(server, local);
+    return applyServerSnapshotPreservingLocalNames(server, local, { preferServerNames: true });
   }
   const activeName = getActiveWatchlistCollection(local).name;
   const merged = mergeServerIdsWithLocalSnapshot(server, local, activeName);
