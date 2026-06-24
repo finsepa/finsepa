@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAuthUser, AuthRequiredError } from "@/lib/watchlist/api-auth";
+import { requireAuthUserFromRequest, AuthRequiredError } from "@/lib/watchlist/api-auth";
 import {
   deleteWatchlistCollectionOnServer,
   getWatchlistSnapshot,
@@ -12,8 +12,8 @@ type RouteContext = { params: Promise<{ id: string }> };
 
 export async function PATCH(request: Request, context: RouteContext) {
   try {
+    const user = await requireAuthUserFromRequest(request);
     const supabase = await getSupabaseServerClient();
-    const user = await requireAuthUser(supabase);
     const { id } = await context.params;
 
     let body: unknown;
@@ -47,10 +47,10 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 }
 
-export async function DELETE(_request: Request, context: RouteContext) {
+export async function DELETE(request: Request, context: RouteContext) {
   try {
+    const user = await requireAuthUserFromRequest(request);
     const supabase = await getSupabaseServerClient();
-    const user = await requireAuthUser(supabase);
     const { id } = await context.params;
 
     await deleteWatchlistCollectionOnServer(supabase, user.id, id);

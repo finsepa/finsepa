@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAuthUser, AuthRequiredError } from "@/lib/watchlist/api-auth";
+import { requireAuthUserFromRequest, AuthRequiredError } from "@/lib/watchlist/api-auth";
 import {
   addWatchlistTicker,
   getWatchlistSnapshot,
@@ -9,10 +9,10 @@ import {
 } from "@/lib/watchlist/operations";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const user = await requireAuthUserFromRequest(request);
     const supabase = await getSupabaseServerClient();
-    const user = await requireAuthUser(supabase);
     try {
       const snapshot = await getWatchlistSnapshot(supabase, user.id);
       return NextResponse.json(snapshot);
@@ -32,8 +32,8 @@ export async function GET() {
 export async function POST(request: Request) {
   let authenticatedUserId: string | undefined;
   try {
+    const user = await requireAuthUserFromRequest(request);
     const supabase = await getSupabaseServerClient();
-    const user = await requireAuthUser(supabase);
     authenticatedUserId = user.id;
 
     let body: unknown;
@@ -76,8 +76,8 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
+    const user = await requireAuthUserFromRequest(request);
     const supabase = await getSupabaseServerClient();
-    const user = await requireAuthUser(supabase);
 
     const params = new URL(request.url).searchParams;
     const tickerParam = params.get("ticker");

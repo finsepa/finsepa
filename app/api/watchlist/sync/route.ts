@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAuthUser, AuthRequiredError } from "@/lib/watchlist/api-auth";
+import { requireAuthUserFromRequest, AuthRequiredError } from "@/lib/watchlist/api-auth";
 import {
   syncWatchlistFromClient,
   WatchlistValidationError,
@@ -37,8 +37,8 @@ function parseSyncCollectionEntry(entry: unknown): WatchlistSyncCollectionInput 
 
 export async function POST(request: Request) {
   try {
+    const user = await requireAuthUserFromRequest(request);
     const supabase = await getSupabaseServerClient();
-    const user = await requireAuthUser(supabase);
 
     let body: unknown;
     try {

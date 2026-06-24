@@ -6,7 +6,7 @@ import {
 } from "@/lib/data/cache-policy";
 import { buildWatchlistEnrichedGroups } from "@/lib/market/watchlist-enrichment";
 import { runWithProviderTrace } from "@/lib/market/provider-trace";
-import { requireAuthUser, AuthRequiredError } from "@/lib/watchlist/api-auth";
+import { requireAuthUserFromRequest, AuthRequiredError } from "@/lib/watchlist/api-auth";
 import { getScreenerUsMarketCacheEpoch } from "@/lib/screener/screener-us-market-cache";
 import { syntheticWatchlistRows } from "@/lib/watchlist/synthetic";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
@@ -19,8 +19,8 @@ const DEBUG = process.env.NODE_ENV === "development" || process.env.DEBUG_WATCHL
  */
 export async function POST(request: Request) {
   try {
+    await requireAuthUserFromRequest(request);
     const supabase = await getSupabaseServerClient();
-    await requireAuthUser(supabase);
 
     let body: unknown;
     try {

@@ -1,17 +1,17 @@
 import { NextResponse } from "next/server";
 
 import { buildWatchlistEnrichedGroups } from "@/lib/market/watchlist-enrichment";
-import { requireAuthUser, AuthRequiredError } from "@/lib/watchlist/api-auth";
+import { requireAuthUserFromRequest, AuthRequiredError } from "@/lib/watchlist/api-auth";
 import { listWatchlistForUser } from "@/lib/watchlist/operations";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 const DEBUG = process.env.NODE_ENV === "development" || process.env.DEBUG_WATCHLIST === "1";
 
 /** Legacy GET: enriches DB-backed rows. Prefer POST /api/watchlist/enrich with client tickers. */
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const user = await requireAuthUserFromRequest(request);
     const supabase = await getSupabaseServerClient();
-    const user = await requireAuthUser(supabase);
     let items: Awaited<ReturnType<typeof listWatchlistForUser>> = [];
     try {
       items = await listWatchlistForUser(supabase, user.id);

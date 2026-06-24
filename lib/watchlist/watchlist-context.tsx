@@ -161,6 +161,8 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
 
   const persistSnapshotToServer = useCallback(
     async (snapshot: WatchlistCollectionsSnapshot): Promise<boolean> => {
+      if (!userIdRef.current) return false;
+
       const run = async (): Promise<boolean> => {
         const uploaded = await syncWatchlistSnapshotToServer(localSnapshotToSyncInput(snapshot));
         if (!uploaded) return false;
@@ -266,10 +268,10 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
 
     void (async () => {
       const {
-        data: { session },
-      } = await supabase.auth.getSession();
+        data: { user },
+      } = await supabase.auth.getUser();
       if (cancelled) return;
-      await bootstrap(session?.user?.id ?? null);
+      await bootstrap(user?.id ?? null);
     })();
 
     const {

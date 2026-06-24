@@ -2,13 +2,14 @@ import type { WatchlistCollectionsSnapshot } from "@/lib/watchlist/collections";
 import { collectionNamesMatch } from "@/lib/watchlist/collection-names";
 import type { WatchlistServerSnapshot, WatchlistSyncCollectionInput } from "@/lib/watchlist/types";
 import { localSnapshotToSyncInput } from "@/lib/watchlist/snapshot";
+import { watchlistApiFetch } from "@/lib/watchlist/watchlist-api-fetch";
 
 export async function fetchWatchlistSnapshot(): Promise<{
   snapshot: WatchlistServerSnapshot | null;
   warning: "db_unavailable" | null;
 }> {
   try {
-    const res = await fetch("/api/watchlist", { credentials: "include", cache: "no-store" });
+    const res = await watchlistApiFetch("/api/watchlist");
     if (!res.ok) return { snapshot: null, warning: null };
     const data = (await res.json()) as WatchlistServerSnapshot & { warning?: string };
     if (data.warning === "db_unavailable") {
@@ -36,16 +37,16 @@ export async function syncWatchlistSnapshotToServer(input: {
   activeName: string;
 }): Promise<WatchlistServerSnapshot | null> {
   try {
-    const res = await fetch("/api/watchlist/sync", {
+    const res = await watchlistApiFetch("/api/watchlist/sync", {
       method: "POST",
-      credentials: "include",
-      cache: "no-store",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(input),
     });
     if (!res.ok) {
-      const detail = await res.text().catch(() => "");
-      console.error("[watchlist sync] failed", res.status, detail);
+      if (res.status !== 401 && process.env.NODE_ENV === "development") {
+        const detail = await res.text().catch(() => "");
+        console.warn("[watchlist sync] failed", res.status, detail);
+      }
       return null;
     }
     return (await res.json()) as WatchlistServerSnapshot;
@@ -56,10 +57,8 @@ export async function syncWatchlistSnapshotToServer(input: {
 }
 
 export async function postWatchlistTicker(ticker: string, collectionId: string): Promise<boolean> {
-  const res = await fetch("/api/watchlist", {
+  const res = await watchlistApiFetch("/api/watchlist", {
     method: "POST",
-    credentials: "include",
-    cache: "no-store",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ ticker, collectionId }),
   });
@@ -74,19 +73,15 @@ export async function deleteWatchlistTicker(
   if (options?.collectionId) params.set("collectionId", options.collectionId);
   if (options?.scope === "all") params.set("scope", "all");
 
-  const res = await fetch(`/api/watchlist?${params.toString()}`, {
+  const res = await watchlistApiFetch(`/api/watchlist?${params.toString()}`, {
     method: "DELETE",
-    credentials: "include",
-    cache: "no-store",
   });
   return res.ok || res.status === 404 || res.status === 401;
 }
 
 export async function createWatchlistOnServer(name: string): Promise<boolean> {
-  const res = await fetch("/api/watchlist/collections", {
+  const res = await watchlistApiFetch("/api/watchlist/collections", {
     method: "POST",
-    credentials: "include",
-    cache: "no-store",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name }),
   });
@@ -94,10 +89,8 @@ export async function createWatchlistOnServer(name: string): Promise<boolean> {
 }
 
 export async function renameWatchlistOnServer(collectionId: string, name: string): Promise<boolean> {
-  const res = await fetch(`/api/watchlist/collections/${encodeURIComponent(collectionId)}`, {
+  const res = await watchlistApiFetch(`/api/watchlist/collections/${encodeURIComponent(collectionId)}`, {
     method: "PATCH",
-    credentials: "include",
-    cache: "no-store",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name }),
   });
@@ -108,10 +101,8 @@ export async function deleteWatchlistCollectionOnClient(
   collectionId: string,
 ): Promise<WatchlistServerSnapshot | null> {
   try {
-    const res = await fetch(`/api/watchlist/collections/${encodeURIComponent(collectionId)}`, {
+    const res = await watchlistApiFetch(`/api/watchlist/collections/${encodeURIComponent(collectionId)}`, {
       method: "DELETE",
-      credentials: "include",
-      cache: "no-store",
     });
     if (!res.ok) return null;
     return (await res.json()) as WatchlistServerSnapshot;
@@ -129,10 +120,8 @@ export async function setActiveWatchlistOnServer(
   collectionId: string,
 ): Promise<WatchlistServerSnapshot | null> {
   try {
-    const res = await fetch("/api/watchlist/active", {
+    const res = await watchlistApiFetch("/api/watchlist/active", {
       method: "PUT",
-      credentials: "include",
-      cache: "no-store",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ collectionId }),
     });
