@@ -95,11 +95,15 @@ function buildInitialSessionHeaderUi(
   if (data?.ticker !== routeTicker.trim().toUpperCase()) return EMPTY_CHART_DISPLAY;
   const headerLiveSpotUsd =
     getUsEquityMarketSession(new Date()) === "regular" ? data.headerLiveSpotUsd : null;
+  const headerPriorCloseUsd =
+    getUsEquityMarketSession(new Date()) === "regular" ? data.headerPriorCloseUsd : null;
   return mergeSessionHeaderWithPerformanceSpot(
     EMPTY_CHART_DISPLAY,
     data.performance,
     "price",
     headerLiveSpotUsd,
+    new Date(),
+    headerPriorCloseUsd,
   );
 }
 
@@ -428,9 +432,11 @@ export function StockPageContent({
 
   /** Phase 7: intraday-aligned spot; client poll refines SSR `headerLiveSpotUsd` for signed-in users. */
   const [headerLiveSpotClient, setHeaderLiveSpotClient] = useState<number | null>(null);
+  const [headerPriorCloseClient, setHeaderPriorCloseClient] = useState<number | null>(null);
 
   useEffect(() => {
     setHeaderLiveSpotClient(null);
+    setHeaderPriorCloseClient(null);
   }, [ticker]);
 
   useEffect(() => {
@@ -443,9 +449,15 @@ export function StockPageContent({
           cache: "no-store",
         });
         if (!res.ok || cancelled) return;
-        const json = (await res.json()) as { price?: unknown };
+        const json = (await res.json()) as { price?: unknown; previousClose?: unknown };
         const p = json.price;
-        if (typeof p === "number" && Number.isFinite(p) && p > 0 && !cancelled) setHeaderLiveSpotClient(p);
+        const prev = json.previousClose;
+        if (typeof p === "number" && Number.isFinite(p) && p > 0 && !cancelled) {
+          setHeaderLiveSpotClient(p);
+        }
+        if (typeof prev === "number" && Number.isFinite(prev) && prev > 0 && !cancelled) {
+          setHeaderPriorCloseClient(prev);
+        }
       } catch {
         /* ignore */
       }
@@ -490,6 +502,12 @@ export function StockPageContent({
           (initialPageData?.ticker === ticker ? (initialPageData.headerLiveSpotUsd ?? null) : null))
       : null;
 
+  const headerPriorCloseForMerge =
+    getUsEquityMarketSession(new Date()) === "regular"
+      ? (headerPriorCloseClient ??
+          (initialPageData?.ticker === ticker ? (initialPageData.headerPriorCloseUsd ?? null) : null))
+      : null;
+
   const sessionSpotHeaderUi = useMemo(
     () =>
       mergeSessionHeaderWithPerformanceSpot(
@@ -497,8 +515,10 @@ export function StockPageContent({
         performanceForHeaderFallback,
         "price",
         headerLiveSpotForMerge,
+        new Date(),
+        headerPriorCloseForMerge,
       ),
-    [headerLiveSpotForMerge, performanceForHeaderFallback, sessionHeaderUi],
+    [headerLiveSpotForMerge, headerPriorCloseForMerge, performanceForHeaderFallback, sessionHeaderUi],
   );
 
   const initialSessionChartMemo = useMemo(
@@ -527,6 +547,9 @@ export function StockPageContent({
         performanceForHeaderFallback,
         "price",
         headerLiveSpotForMerge,
+        new Date(),
+        headerPriorCloseForMerge,
+        true,
       );
     }
     if (closed) {
@@ -540,6 +563,7 @@ export function StockPageContent({
   }, [
     chartSeries,
     headerLiveSpotForMerge,
+    headerPriorCloseForMerge,
     overviewHeaderUi,
     performanceForHeaderFallback,
     range,
@@ -556,13 +580,16 @@ export function StockPageContent({
         performanceForHeaderFallback,
         "price",
         headerLiveSpotForMerge,
+        new Date(),
+        headerPriorCloseForMerge,
+        true,
       );
     }
     if (closed) {
       return mergeClosedMarketOverviewHeader(base, performanceForHeaderFallback, "price");
     }
     return base;
-  }, [chartSeries, headerLiveSpotForMerge, performanceForHeaderFallback, range, regularSessionClock]);
+  }, [chartSeries, headerLiveSpotForMerge, headerPriorCloseForMerge, performanceForHeaderFallback, range, regularSessionClock]);
 
   const chartUi = useMemo((): ChartDisplayState => {
     const raw = overviewDrivesHeader

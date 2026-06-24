@@ -3,7 +3,7 @@ import "server-only";
 import { fetchEodhdEodDaily, type EodhdDailyBar } from "@/lib/market/eodhd-eod";
 import { sliceStockChartPointsForRange } from "@/lib/market/stock-chart-api";
 import {
-  getStockSpotPriceUsd,
+  getStockSpotQuoteForApi,
   getStockChartPointsForApi,
   stockChartPointsFromDailyBars,
 } from "@/lib/market/stock-chart-data";
@@ -63,6 +63,8 @@ export type StockPageInitialData = {
    * Phase 7: fresher than mini-table EOD spot (`StockPerformance.price`) before the 1D chart publishes.
    */
   headerLiveSpotUsd: number | null;
+  /** Prior session close from the same realtime quote as `headerLiveSpotUsd` (regular session only). */
+  headerPriorCloseUsd: number | null;
   /**
    * Earnings tab loads client-side via GET `/api/stocks/[ticker]/earnings` (kept off SSR so stock pages
    * do not block on heavy earnings enrichment or calendar fetches).
@@ -137,6 +139,7 @@ function fallbackStockPageInitialData(ticker: string, now: Date): StockPageIniti
     fundamentalsTtmPoint: null,
     peersCompareRows: [],
     headerLiveSpotUsd: null,
+    headerPriorCloseUsd: null,
     earningsTabPayload: null,
   };
 }
@@ -159,25 +162,27 @@ function scheduleAssetSnapshotWrite(
   });
 }
 
+function positiveUsd(n: unknown): number | null {
+  return typeof n === "number" && Number.isFinite(n) && n > 0 ? n : null;
+}
+
 async function loadStockPageHotFields(
   ticker: string,
   range: StockChartRange,
   sortedDailyFallback: EodhdDailyBar[],
   now: Date,
-): Promise<Pick<StockPageInitialData, "chart" | "headerLiveSpotUsd">> {
+): Promise<Pick<StockPageInitialData, "chart" | "headerLiveSpotUsd" | "headerPriorCloseUsd">> {
   const [chartPointsResult, spotResult] = await Promise.allSettled([
     getStockChartPointsForApi(ticker, range, "price"),
-    getStockSpotPriceUsd(ticker),
+    getStockSpotQuoteForApi(ticker),
   ]);
   const chartPointsRaw = fromSettled(chartPointsResult, "chart1D");
-  const headerLiveSpotUsd = fromSettled(spotResult, "headerLiveSpot");
+  const spotQuote = fromSettled(spotResult, "headerLiveSpot");
   const points = resolveOverviewChartPoints(range, chartPointsRaw, sortedDailyFallback, now);
   return {
     chart: { range, points },
-    headerLiveSpotUsd:
-      typeof headerLiveSpotUsd === "number" && Number.isFinite(headerLiveSpotUsd) && headerLiveSpotUsd > 0
-        ? headerLiveSpotUsd
-        : null,
+    headerLiveSpotUsd: positiveUsd(spotQuote?.price),
+    headerPriorCloseUsd: positiveUsd(spotQuote?.previousClose),
   };
 }
 
@@ -219,6 +224,7 @@ export async function loadStockPageInitialDataUncached(routeTicker: string): Pro
       fundamentalsTtmPoint: null,
       peersCompareRows: [],
       headerLiveSpotUsd,
+      headerPriorCloseUsd: null,
       earningsTabPayload: null,
     };
   }
@@ -245,7 +251,7 @@ export async function loadStockPageInitialDataUncached(routeTicker: string): Pro
       fetchChartingSeries(ticker, "annual"),
       fetchChartingSeries(ticker, "quarterly"),
       getPeersCompareRowsCached(ticker),
-      getStockSpotPriceUsd(ticker),
+      getStockSpotQuoteForApi(ticker),
     ]);
 
     const headerMeta = fromSettled(headerMetaResult, "headerMeta") ?? headerMetaShell(ticker);
@@ -257,7 +263,7 @@ export async function loadStockPageInitialDataUncached(routeTicker: string): Pro
     const annualSeries = fromSettled(annualResult, "fundamentalsAnnual");
     const quarterlySeries = fromSettled(quarterlyResult, "fundamentalsQuarterly");
     const peersCompareRows = fromSettled(peersResult, "peers");
-    const headerLiveSpotUsd = fromSettled(spotResult, "headerLiveSpot");
+    const spotQuote = fromSettled(spotResult, "headerLiveSpot");
 
     const sorted = barsRaw?.length ? [...barsRaw].sort((a, b) => a.date.localeCompare(b.date)) : [];
     const performance = computeStockPerformanceFromSortedDailyBars(sorted, ticker, now);
@@ -276,10 +282,8 @@ export async function loadStockPageInitialDataUncached(routeTicker: string): Pro
       fundamentalsSeriesQuarterly: quarterlySeries?.points ?? [],
       fundamentalsTtmPoint: annualSeries?.ttmPoint ?? null,
       peersCompareRows: Array.isArray(peersCompareRows) ? peersCompareRows : [],
-      headerLiveSpotUsd:
-        typeof headerLiveSpotUsd === "number" && Number.isFinite(headerLiveSpotUsd) && headerLiveSpotUsd > 0
-          ? headerLiveSpotUsd
-          : null,
+      headerLiveSpotUsd: positiveUsd(spotQuote?.price),
+      headerPriorCloseUsd: positiveUsd(spotQuote?.previousClose),
       earningsTabPayload: null,
     };
   } catch (err) {

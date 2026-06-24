@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { CACHE_CONTROL_PRIVATE_HOT } from "@/lib/data/cache-policy";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { getStockSpotPriceUsdForApi } from "@/lib/market/stock-chart-data";
+import { getStockSpotQuoteForApi } from "@/lib/market/stock-chart-data";
 import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
 import { getNvdaChartPoints } from "@/lib/fixtures/nvda";
 
@@ -40,9 +40,9 @@ export async function GET(_request: Request, { params }: Ctx) {
     );
   }
 
-  const price = await getStockSpotPriceUsdForApi(routeTicker);
+  const quote = await getStockSpotQuoteForApi(routeTicker);
   return NextResponse.json(
-    { ticker: upper, price },
+    { ticker: upper, price: quote.price, previousClose: quote.previousClose },
     { headers: { "Cache-Control": CACHE_CONTROL_PRIVATE_HOT } },
   );
 }

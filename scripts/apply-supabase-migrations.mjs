@@ -93,6 +93,8 @@ async function main() {
         filename text PRIMARY KEY,
         applied_at timestamptz NOT NULL DEFAULT (now() AT TIME ZONE 'utc')
       );
+      ALTER TABLE public.schema_migrations ENABLE ROW LEVEL SECURITY;
+      REVOKE ALL ON TABLE public.schema_migrations FROM anon, authenticated;
     `);
 
     for (const name of files) {

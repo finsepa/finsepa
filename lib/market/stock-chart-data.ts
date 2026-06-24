@@ -884,39 +884,71 @@ export const getSuperinvestorHoldingStockChartPoints = unstable_cache(
   { revalidate: REVALIDATE_STATIC_DAY },
 );
 
-async function fetchStockSpotPriceUsdUncached(ticker: string): Promise<number | null> {
+export type StockSpotQuote = {
+  price: number | null;
+  /** Prior regular-session close — from realtime `previousClose` during live hours. */
+  previousClose: number | null;
+};
+
+function previousCloseFromRealtimePayload(
+  rt: Awaited<ReturnType<typeof fetchEodhdUsRealtime>>,
+): number | null {
+  if (!rt) return null;
+  const prev = rt.previousClose != null ? clampFinite(rt.previousClose) : null;
+  if (prev != null && prev > 0) return prev;
+  const close = rt.close != null ? clampFinite(rt.close) : null;
+  const change = rt.change != null ? clampFinite(rt.change) : null;
+  if (close != null && change != null && close > 0) {
+    const derived = close - change;
+    return Number.isFinite(derived) && derived > 0 ? derived : null;
+  }
+  return null;
+}
+
+async function fetchStockSpotQuoteUncached(ticker: string): Promise<StockSpotQuote> {
   const sym = ticker.trim();
   const now = new Date();
   if (getUsEquityMarketSession(now) === "regular") {
     const rt = await fetchEodhdUsRealtime(sym);
     const live = rt?.close != null ? clampFinite(rt.close) : null;
-    if (live != null && live > 0) return live;
+    const previousClose = previousCloseFromRealtimePayload(rt);
+    if (live != null && live > 0) {
+      return { price: live, previousClose };
+    }
   }
   const nowSec = Math.floor(now.getTime() / 1000);
   const pts = await load1DChartPoints(sym, now, nowSec);
-  if (!pts.length) return null;
+  if (!pts.length) return { price: null, previousClose: null };
   const last = pts[pts.length - 1]!.value;
-  return typeof last === "number" && Number.isFinite(last) && last > 0 ? last : null;
+  const price =
+    typeof last === "number" && Number.isFinite(last) && last > 0 ? last : null;
+  return { price, previousClose: null };
 }
 
-const getStockSpotPriceUsdLiveSessionCached = unstable_cache(
-  async (ticker: string) => fetchStockSpotPriceUsdUncached(ticker),
-  ["stock-spot-1d-live-v1"],
+const getStockSpotQuoteLiveSessionCached = unstable_cache(
+  async (ticker: string) => fetchStockSpotQuoteUncached(ticker),
+  ["stock-spot-quote-1d-live-v1"],
   { revalidate: REVALIDATE_STOCK_1D_LIVE },
 );
 
-const getStockSpotPriceUsdCached = unstable_cache(
-  async (ticker: string) => fetchStockSpotPriceUsdUncached(ticker),
-  ["stock-spot-v1"],
+const getStockSpotQuoteCached = unstable_cache(
+  async (ticker: string) => fetchStockSpotQuoteUncached(ticker),
+  ["stock-spot-quote-v1"],
   { revalidate: REVALIDATE_HOT },
 );
 
 /** Live-price API + SSR hot fields — shared cache during regular session. */
-export async function getStockSpotPriceUsdForApi(ticker: string): Promise<number | null> {
+export async function getStockSpotQuoteForApi(ticker: string): Promise<StockSpotQuote> {
   if (getUsEquityMarketSession(new Date()) === "regular") {
-    return getStockSpotPriceUsdLiveSessionCached(ticker);
+    return getStockSpotQuoteLiveSessionCached(ticker);
   }
-  return getStockSpotPriceUsdCached(ticker);
+  return getStockSpotQuoteCached(ticker);
+}
+
+/** Live-price API + SSR hot fields — shared cache during regular session. */
+export async function getStockSpotPriceUsdForApi(ticker: string): Promise<number | null> {
+  const quote = await getStockSpotQuoteForApi(ticker);
+  return quote.price;
 }
 
 /**

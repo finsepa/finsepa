@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSpringTriplet } from "@/components/chart/use-spring-numbers";
+import { isPositivePriceChange, reconcilePriceChangePair } from "@/lib/chart/reconcile-price-change";
 import { MobileAssetHeaderPrice } from "@/components/chart/mobile-asset-header-price";
 import { AssetPageHeaderActions } from "@/components/asset/asset-page-header-actions";
 import { useSetMobileAssetTopbarSubtitle } from "@/components/layout/mobile-asset-topbar-context";
@@ -108,37 +109,35 @@ export function StockHeader({
     if (chartLoading) {
       return { price: null, abs: null, pct: null };
     }
+    const reconciled = reconcilePriceChangePair(price, changeAbs, changePct);
+    const resolvedPrice = price;
+    const resolvedAbs = reconciled.abs;
+    const resolvedPct = reconciled.pct;
     const hasFull =
-      price != null &&
-      changeAbs != null &&
-      changePct != null &&
-      Number.isFinite(price) &&
-      Number.isFinite(changeAbs) &&
-      Number.isFinite(changePct);
+      resolvedPrice != null &&
+      resolvedAbs != null &&
+      resolvedPct != null &&
+      Number.isFinite(resolvedPrice) &&
+      Number.isFinite(resolvedAbs) &&
+      Number.isFinite(resolvedPct);
     if (hasFull) {
-      settledTripletRef.current = { price, abs: changeAbs, pct: changePct };
-      return { price, abs: changeAbs, pct: changePct };
+      settledTripletRef.current = { price: resolvedPrice, abs: resolvedAbs, pct: resolvedPct };
+      return { price: resolvedPrice, abs: resolvedAbs, pct: resolvedPct };
     }
-    return { price, abs: changeAbs, pct: changePct };
+    return { price: resolvedPrice, abs: resolvedAbs, pct: resolvedPct };
   }, [chartLoading, price, changeAbs, changePct]);
 
   const anim = useSpringTriplet(springTarget, { stiffness: 520, damping: 38, epsilon: 1e-4 });
 
   const hasChange = changePct != null && changeAbs != null && Number.isFinite(changePct) && Number.isFinite(changeAbs);
-  const isPositive = hasChange
-    ? Number.isFinite(changePct!)
-      ? changePct! >= 0
-      : changeAbs! >= 0
-    : true;
+  const isPositive = isPositivePriceChange(anim.abs, anim.pct);
   const hasSelectionSecondary =
     selectionChangeAbs != null &&
     selectionChangePct != null &&
     Number.isFinite(selectionChangeAbs) &&
     Number.isFinite(selectionChangePct);
   const isSelPositive = hasSelectionSecondary
-    ? Number.isFinite(selectionChangePct!)
-      ? selectionChangePct! >= 0
-      : selectionChangeAbs! >= 0
+    ? isPositivePriceChange(selectionChangeAbs, selectionChangePct)
     : true;
   const mainPriceClass =
     headerChartMetric === "return" && !chartLoading && anim.price != null && hasChange

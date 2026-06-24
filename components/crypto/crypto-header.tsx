@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { AssetPageHeaderActions } from "@/components/asset/asset-page-header-actions";
 import { useSetMobileAssetTopbarSubtitle } from "@/components/layout/mobile-asset-topbar-context";
 import { MobileAssetHeaderPrice } from "@/components/chart/mobile-asset-header-price";
 import { useSpringTriplet } from "@/components/chart/use-spring-numbers";
+import { isPositivePriceChange, reconcilePriceChangePair } from "@/lib/chart/reconcile-price-change";
 import { mergeLogoMemory, readLogoMemory } from "@/lib/logos/logo-memory";
 import { eodhdCryptoSpotTickerDisplay } from "@/lib/crypto/eodhd-crypto-ticker-display";
 import { cryptoWatchlistKey } from "@/lib/watchlist/constants";
@@ -78,19 +79,23 @@ export function CryptoHeader({
     if (serverLogo) mergeLogoMemory(sym, serverLogo);
   }, [sym, serverLogo]);
 
-  const anim = useSpringTriplet(
-    { price, abs: changeAbs, pct: changePct },
-    { stiffness: 520, damping: 38, epsilon: 1e-4 },
-  );
+  const springTarget = useMemo(() => {
+    const reconciled = reconcilePriceChangePair(price, changeAbs, changePct);
+    return { price, abs: reconciled.abs, pct: reconciled.pct };
+  }, [price, changeAbs, changePct]);
+
+  const anim = useSpringTriplet(springTarget, { stiffness: 520, damping: 38, epsilon: 1e-4 });
 
   const hasChange = changePct != null && changeAbs != null && Number.isFinite(changePct) && Number.isFinite(changeAbs);
-  const isPositive = hasChange ? changeAbs! >= 0 : true;
+  const isPositive = isPositivePriceChange(anim.abs, anim.pct);
   const hasSelectionSecondary =
     selectionChangeAbs != null &&
     selectionChangePct != null &&
     Number.isFinite(selectionChangeAbs) &&
     Number.isFinite(selectionChangePct);
-  const isSelPositive = hasSelectionSecondary ? selectionChangeAbs! >= 0 : true;
+  const isSelPositive = hasSelectionSecondary
+    ? isPositivePriceChange(selectionChangeAbs, selectionChangePct)
+    : true;
   const wlKey = cryptoWatchlistKey(sym);
 
   useSetMobileAssetTopbarSubtitle({
