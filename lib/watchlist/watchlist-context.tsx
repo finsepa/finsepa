@@ -225,6 +225,9 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
             applyCollections(applyMutationServerResponse(uploaded, working));
             return;
           }
+          setServerListWarning(
+            "Watchlist saved on this device only — could not sync sections to your account yet.",
+          );
         }
 
         setServerListWarning(null);
@@ -269,6 +272,32 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
       subscription.unsubscribe();
     };
   }, [applyCollections]);
+
+  useEffect(() => {
+    if (!loaded || !userId) return;
+
+    let cancelled = false;
+    void (async () => {
+      const local = collectionsRef.current;
+      const server = await refreshWatchlistSnapshotFromServer();
+      if (cancelled || !server) return;
+      if (!localSnapshotNeedsServerUpload(local, server)) return;
+
+      const synced = await persistSnapshotToServer(local);
+      if (cancelled) return;
+      if (!synced) {
+        setServerListWarning(
+          "Watchlist saved on this device only — could not sync sections to your account yet.",
+        );
+      } else {
+        setServerListWarning(null);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [loaded, userId, persistSnapshotToServer]);
 
   const addToWatchlist = useCallback(
     (storageKey: string, watchlistId: string) => {
@@ -486,11 +515,15 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
   const persistSectionLayout = useCallback(
     (optimistic: WatchlistCollectionsSnapshot) => {
       applyCollections(optimistic);
-      if (!userIdRef.current) return;
+      dispatchWatchlistMutated();
+      if (!userIdRef.current) {
+        toast.message("Sign in to sync sections across devices.");
+        return;
+      }
       void (async () => {
         const synced = await persistSnapshotToServer(optimistic);
         if (!synced) {
-          setServerListWarning("Section saved locally; server sync will retry.");
+          setServerListWarning("Section saved on this device only; server sync will retry.");
         } else {
           setServerListWarning(null);
         }
@@ -598,6 +631,13 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
 
         const ok = await renameWatchlistOnServer(serverId, trimmed);
         if (ok) {
+          const uploaded = await syncWatchlistSnapshotToServer(localSnapshotToSyncInput(optimistic));
+          if (uploaded) {
+            applyCollections(applyMutationServerResponse(uploaded, optimistic));
+            toast.success("Watchlist renamed.");
+            return;
+          }
+
           const snapshot = await refreshWatchlistSnapshotFromServer();
           if (snapshot) {
             applyCollections(applyMutationServerResponse(snapshot, optimistic));

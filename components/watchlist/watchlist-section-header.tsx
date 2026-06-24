@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type DragEvent } from "react";
 import { ChevronDown, ChevronRight, Pencil, Trash2 } from "@/lib/icons";
 
 import { ClearableInput } from "@/components/layout/clearable-input";
@@ -24,6 +24,7 @@ import { readWatchlistDragData } from "@/lib/watchlist/watchlist-drag";
 type ModalStep = "closed" | "rename" | "deleteConfirm";
 
 export function WatchlistSectionHeader({
+  variant = "table",
   sectionId,
   label,
   collapsed,
@@ -32,6 +33,7 @@ export function WatchlistSectionHeader({
   onDelete,
   onDropItem,
 }: {
+  variant?: "table" | "rail";
   sectionId: string;
   label: string;
   collapsed: boolean;
@@ -74,97 +76,111 @@ export function WatchlistSectionHeader({
   const closeModal = () => setStep("closed");
   const renameEnabled = renameValue.trim().length > 0;
 
-  return (
-    <>
-      <tr
-        className={cn(
-          "group border-b border-[#E4E4E7] transition-colors",
-          dragOver && "bg-[#E4E4E7]",
-        )}
-        onDragOver={(event) => {
-          event.preventDefault();
-          event.dataTransfer.dropEffect = "move";
-          setDragOver(true);
-        }}
-        onDragLeave={() => setDragOver(false)}
-        onDrop={(event) => {
-          event.preventDefault();
-          setDragOver(false);
-          const payload = readWatchlistDragData(event.dataTransfer);
-          if (!payload) return;
-          onDropItem(payload.globalIndex, { kind: "section", sectionId });
-        }}
-      >
-        <td colSpan={9} className="bg-white px-4 py-2">
-          <div className="flex min-w-0 items-center gap-1">
-            <button
-              type="button"
-              onClick={onToggleCollapsed}
-              className="flex min-w-0 flex-1 items-center gap-2 text-left text-[13px] font-medium text-[#71717A] transition-colors hover:text-[#09090B]"
-            >
-              {collapsed ? <ChevronRight className="h-4 w-4 shrink-0" /> : <ChevronDown className="h-4 w-4 shrink-0" />}
-              <span className="truncate">{label}</span>
-            </button>
+  const dragSurfaceClassName = cn(
+    "group transition-colors",
+    variant === "table" ? "border-b border-[#E4E4E7]" : "rounded-lg",
+    dragOver && (variant === "table" ? "bg-[#E4E4E7]" : "bg-[#F4F4F5]"),
+  );
 
-            <div ref={containerRef} className="relative shrink-0">
+  const dragHandlers = {
+    onDragOver: (event: DragEvent) => {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "move";
+      setDragOver(true);
+    },
+    onDragLeave: () => setDragOver(false),
+    onDrop: (event: DragEvent) => {
+      event.preventDefault();
+      setDragOver(false);
+      const payload = readWatchlistDragData(event.dataTransfer);
+      if (!payload) return;
+      onDropItem(payload.globalIndex, { kind: "section", sectionId });
+    },
+  };
+
+  const headerContent = (
+    <div className="flex min-w-0 items-center gap-1">
+      <button
+        type="button"
+        onClick={onToggleCollapsed}
+        className="flex min-w-0 flex-1 items-center gap-2 text-left text-[13px] font-medium text-[#71717A] transition-colors hover:text-[#09090B]"
+      >
+        {collapsed ? <ChevronRight className="h-4 w-4 shrink-0" /> : <ChevronDown className="h-4 w-4 shrink-0" />}
+        <span className="truncate">{label}</span>
+      </button>
+
+      <div ref={containerRef} className="relative shrink-0">
+        <button
+          type="button"
+          aria-label={`${label} section options`}
+          aria-expanded={menuOpen}
+          aria-haspopup="menu"
+          onClick={() => setMenuOpen((open) => !open)}
+          className={cn(
+            "flex h-7 w-7 items-center justify-center rounded-[8px] text-[#71717A] opacity-0 transition-opacity",
+            "hover:bg-[#F4F4F5] hover:text-[#09090B] group-hover:opacity-100 focus-visible:opacity-100",
+            menuOpen && "opacity-100 bg-[#F4F4F5] text-[#09090B]",
+          )}
+        >
+          <Pencil className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
+        </button>
+
+        {menuOpen ? (
+          <TopbarDropdownPortal
+            open={menuOpen}
+            anchorRef={containerRef}
+            ref={menuPortalRef}
+            align="trailing"
+            className="w-max min-w-[10rem]"
+          >
+            <div className={dropdownMenuPanelClassName()} role="menu">
               <button
                 type="button"
-                aria-label={`${label} section options`}
-                aria-expanded={menuOpen}
-                aria-haspopup="menu"
-                onClick={() => setMenuOpen((open) => !open)}
+                role="menuitem"
+                onClick={() => {
+                  setMenuOpen(false);
+                  setStep("rename");
+                }}
+                className={dropdownMenuPlainItemClassName()}
+              >
+                <Pencil className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
+                <span>Rename</span>
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setMenuOpen(false);
+                  setStep("deleteConfirm");
+                }}
                 className={cn(
-                  "flex h-7 w-7 items-center justify-center rounded-[8px] text-[#71717A] opacity-0 transition-opacity",
-                  "hover:bg-[#F4F4F5] hover:text-[#09090B] group-hover:opacity-100 focus-visible:opacity-100",
-                  menuOpen && "opacity-100 bg-[#F4F4F5] text-[#09090B]",
+                  dropdownMenuPlainItemClassName(),
+                  "text-[#DC2626] hover:bg-[#FEE2E2] hover:text-[#B91C1C]",
                 )}
               >
-                <Pencil className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
+                <Trash2 className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
+                <span>Delete</span>
               </button>
-
-              {menuOpen ? (
-                <TopbarDropdownPortal
-                  open={menuOpen}
-                  anchorRef={containerRef}
-                  ref={menuPortalRef}
-                  align="trailing"
-                  className="w-max min-w-[10rem]"
-                >
-                  <div className={dropdownMenuPanelClassName()} role="menu">
-                    <button
-                      type="button"
-                      role="menuitem"
-                      onClick={() => {
-                        setMenuOpen(false);
-                        setStep("rename");
-                      }}
-                      className={dropdownMenuPlainItemClassName()}
-                    >
-                      <Pencil className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
-                      <span>Rename</span>
-                    </button>
-                    <button
-                      type="button"
-                      role="menuitem"
-                      onClick={() => {
-                        setMenuOpen(false);
-                        setStep("deleteConfirm");
-                      }}
-                      className={cn(
-                        dropdownMenuPlainItemClassName(),
-                        "text-[#DC2626] hover:bg-[#FEE2E2] hover:text-[#B91C1C]",
-                      )}
-                    >
-                      <Trash2 className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
-                      <span>Delete</span>
-                    </button>
-                  </div>
-                </TopbarDropdownPortal>
-              ) : null}
             </div>
-          </div>
-        </td>
-      </tr>
+          </TopbarDropdownPortal>
+        ) : null}
+      </div>
+    </div>
+  );
+
+  return (
+    <>
+      {variant === "rail" ? (
+        <div className={dragSurfaceClassName} {...dragHandlers}>
+          <div className="px-2 py-1.5">{headerContent}</div>
+        </div>
+      ) : (
+        <tr className={dragSurfaceClassName} {...dragHandlers}>
+          <td colSpan={9} className="bg-white px-4 py-2">
+            {headerContent}
+          </td>
+        </tr>
+      )}
 
       <AppModalOverlay open={step === "rename"} onClose={closeModal} zIndex={120}>
         <AppModalShell

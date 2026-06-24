@@ -43,9 +43,14 @@ export async function syncWatchlistSnapshotToServer(input: {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(input),
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      const detail = await res.text().catch(() => "");
+      console.error("[watchlist sync] failed", res.status, detail);
+      return null;
+    }
     return (await res.json()) as WatchlistServerSnapshot;
-  } catch {
+  } catch (error) {
+    console.error("[watchlist sync] error", error);
     return null;
   }
 }

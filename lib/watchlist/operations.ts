@@ -405,9 +405,9 @@ export async function addWatchlistTicker(
         .update({ sort_order: options.sortOrder })
         .eq("id", existing.id)
         .select("id,user_id,collection_id,ticker,sort_order,created_at")
-        .single();
+        .maybeSingle();
       if (updateError) throw new Error(updateError.message);
-      return { row: updated as WatchlistRow, created: false };
+      if (updated) return { row: updated as WatchlistRow, created: false };
     }
     return { row: existing as WatchlistRow, created: false };
   }

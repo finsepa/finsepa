@@ -7,6 +7,7 @@ import { GripVertical, Maximize2, PanelLeftOpen, Star } from "@/lib/icons";
 
 import { WatchlistEmptyState } from "@/components/watchlist/watchlist-empty-state";
 import { WatchlistOptionsMenu } from "@/components/watchlist/watchlist-options-menu";
+import { WatchlistSectionHeader } from "@/components/watchlist/watchlist-section-header";
 import { CompanyLogo } from "@/components/screener/company-logo";
 import { dropdownMenuFloatingScrollbarClassName } from "@/components/design-system/dropdown-menu-styles";
 import {
@@ -18,10 +19,19 @@ import { TopbarDelayedTooltip } from "@/components/layout/topbar-delayed-tooltip
 import { shellChromeToggleButtonClass } from "@/components/layout/shell-chrome-toggle-button";
 import { eodhdCryptoSpotTickerDisplay } from "@/lib/crypto/eodhd-crypto-ticker-display";
 import type { WatchlistEnrichedItem } from "@/lib/watchlist/enriched-types";
+import { normalizeWatchlistStorageKey } from "@/lib/watchlist/normalize-storage-key";
+import { partitionEnrichedItemsBySections } from "@/lib/watchlist/sections";
+import type { WatchlistDropTarget } from "@/lib/watchlist/watchlist-drag";
+import { readWatchlistDragData, writeWatchlistDragData } from "@/lib/watchlist/watchlist-drag";
 import { resolveWatchlistRailHref } from "@/lib/watchlist/watchlist-rail-href";
 import { useWatchlistEnrichedItems } from "@/lib/watchlist/use-watchlist-enriched-items";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
 import { cn } from "@/lib/utils";
+
+function globalTickerIndex(watchedTickers: string[], storageKey: string): number {
+  const key = normalizeWatchlistStorageKey(storageKey);
+  return watchedTickers.findIndex((ticker) => normalizeWatchlistStorageKey(ticker) === key);
+}
 
 function hasRailQuote(row: WatchlistEnrichedItem): boolean {
   return (
@@ -71,20 +81,22 @@ function RailChange({ value }: { value: number | null }) {
 
 function WatchlistRailRow({
   row,
-  index,
+  globalIndex,
+  sectionId,
   pathname,
   tabParam,
   pricesLoading,
   loading,
-  onReorder,
+  onMoveItem,
 }: {
   row: WatchlistEnrichedItem;
-  index: number;
+  globalIndex: number;
+  sectionId: string | null;
   pathname: string;
   tabParam: string | null;
   pricesLoading: boolean;
   loading: boolean;
-  onReorder: (fromIndex: number, toIndex: number) => void;
+  onMoveItem: (fromIndex: number, target: WatchlistDropTarget) => void;
 }) {
   const [dragOver, setDragOver] = useState(false);
   const symbolLabel =
@@ -95,16 +107,20 @@ function WatchlistRailRow({
 
   return (
     <div
-      draggable
+      draggable={globalIndex >= 0}
       aria-label={`Reorder ${symbolLabel}`}
       onDragStart={(event) => {
-        event.dataTransfer.setData("text/plain", String(index));
-        event.dataTransfer.effectAllowed = "move";
+        if (globalIndex < 0) return;
+        writeWatchlistDragData(event.dataTransfer, {
+          globalIndex,
+          storageKey: row.storageKey,
+        });
       }}
       onDragEnd={() => {
         setDragOver(false);
       }}
       onDragOver={(event) => {
+        if (globalIndex < 0) return;
         event.preventDefault();
         event.dataTransfer.dropEffect = "move";
         setDragOver(true);
@@ -113,9 +129,11 @@ function WatchlistRailRow({
       onDrop={(event) => {
         event.preventDefault();
         setDragOver(false);
-        const fromIndex = Number(event.dataTransfer.getData("text/plain"));
-        if (!Number.isFinite(fromIndex) || fromIndex === index) return;
-        onReorder(fromIndex, index);
+        if (globalIndex < 0) return;
+        const payload = readWatchlistDragData(event.dataTransfer);
+        if (!payload) return;
+        if (payload.globalIndex === globalIndex) return;
+        onMoveItem(payload.globalIndex, { kind: "row", toIndex: globalIndex, sectionId });
       }}
       className={cn(
         "group flex min-w-0 items-center gap-2 rounded-lg px-2 py-1.5 transition-colors",
@@ -164,6 +182,64 @@ function WatchlistRailRow({
         </div>
       </Link>
     </div>
+  );
+}
+
+function WatchlistRailSectionGroup({
+  sectionId,
+  label,
+  rows,
+  watchedTickers,
+  pathname,
+  tabParam,
+  pricesLoading,
+  loading,
+  onMoveItem,
+  onRenameSection,
+  onDeleteSection,
+}: {
+  sectionId: string;
+  label: string;
+  rows: WatchlistEnrichedItem[];
+  watchedTickers: string[];
+  pathname: string;
+  tabParam: string | null;
+  pricesLoading: boolean;
+  loading: boolean;
+  onMoveItem: (fromIndex: number, target: WatchlistDropTarget) => void;
+  onRenameSection: (sectionId: string, name: string) => void;
+  onDeleteSection: (sectionId: string) => void;
+}) {
+  const [collapsed, setCollapsed] = useState(false);
+
+  return (
+    <>
+      <WatchlistSectionHeader
+        variant="rail"
+        sectionId={sectionId}
+        label={label}
+        collapsed={collapsed}
+        onToggleCollapsed={() => setCollapsed((value) => !value)}
+        onRename={(name) => onRenameSection(sectionId, name)}
+        onDelete={() => onDeleteSection(sectionId)}
+        onDropItem={onMoveItem}
+      />
+      {!collapsed
+        ? rows.map((row) => (
+            <WatchlistRailRow
+              key={row.entryId}
+              row={row}
+              globalIndex={globalTickerIndex(watchedTickers, row.storageKey)}
+              sectionId={sectionId}
+              pathname={pathname}
+              tabParam={tabParam}
+              pricesLoading={pricesLoading}
+              loading={loading}
+              onMoveItem={onMoveItem}
+            />
+          ))
+        : null}
+    </>
   );
 }
 
@@ -246,13 +322,26 @@ export function WatchlistRail() {
     watchlists,
     activeWatchlistId,
     activeWatchlistName,
+    watchedTickers,
+    activeSections,
+    activeTickerSections,
     createWatchlist,
+    createActiveSection,
     renameActiveWatchlist,
+    renameActiveSection,
     deleteActiveWatchlist,
+    deleteActiveSection,
     switchWatchlist,
-    reorderActiveWatchlist,
+    moveActiveWatchlistItem,
     storageHydrated,
   } = useWatchlist();
+
+  const railGroups = partitionEnrichedItemsBySections(
+    items,
+    watchedTickers,
+    activeSections,
+    activeTickerSections,
+  );
 
   if (isFullWatchlistPage(pathname)) {
     return null;
@@ -286,6 +375,7 @@ export function WatchlistRail() {
                   watchlists={watchlists}
                   activeWatchlistId={activeWatchlistId}
                   onCreate={createWatchlist}
+                  onCreateSection={createActiveSection}
                   onRename={renameActiveWatchlist}
                   onDelete={deleteActiveWatchlist}
                   onSwitch={switchWatchlist}
@@ -332,16 +422,33 @@ export function WatchlistRail() {
               ) : null}
               {!showSkeleton && !empty && !error ? (
                 <div className="flex flex-col">
-                  {items.map((row, index) => (
+                  {railGroups.unsectioned.map((row) => (
                     <WatchlistRailRow
                       key={row.entryId}
                       row={row}
-                      index={index}
+                      globalIndex={globalTickerIndex(watchedTickers, row.storageKey)}
+                      sectionId={null}
                       pathname={pathname}
                       tabParam={tabParam}
                       pricesLoading={pricesLoading}
                       loading={loading}
-                      onReorder={reorderActiveWatchlist}
+                      onMoveItem={moveActiveWatchlistItem}
+                    />
+                  ))}
+                  {railGroups.sections.map(({ section, rows }) => (
+                    <WatchlistRailSectionGroup
+                      key={section.id}
+                      sectionId={section.id}
+                      label={section.name}
+                      rows={rows}
+                      watchedTickers={watchedTickers}
+                      pathname={pathname}
+                      tabParam={tabParam}
+                      pricesLoading={pricesLoading}
+                      loading={loading}
+                      onMoveItem={moveActiveWatchlistItem}
+                      onRenameSection={renameActiveSection}
+                      onDeleteSection={deleteActiveSection}
                     />
                   ))}
                 </div>

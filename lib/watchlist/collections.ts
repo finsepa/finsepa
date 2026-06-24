@@ -10,6 +10,8 @@ import {
   normalizeTickerSections,
   normalizeWatchlistSections,
   sectionNamesMatch,
+  sectionsLayoutsEqual,
+  serverHasSectionsLayout,
   type WatchlistSection,
 } from "@/lib/watchlist/sections";
 
@@ -188,30 +190,60 @@ export function clearGuestWatchlistStorage(userId?: string | null): void {
 export function mergeGuestWatchlistOnSignIn(userId: string): WatchlistCollectionsSnapshot {
   const guest = readWatchlistCollections(null);
   const user = readWatchlistCollections(userId);
+  const guestActive = getActiveWatchlistCollection(guest);
+  const userActive = getActiveWatchlistCollection(user);
   const guestTickers = unionWatchlistTickers(guest);
+  const userTickers = unionWatchlistTickers(user);
+  const guestLayout = {
+    sections: guestActive.sections,
+    tickerSections: guestActive.tickerSections,
+  };
+  const userLayout = {
+    sections: userActive.sections,
+    tickerSections: userActive.tickerSections,
+  };
+  const guestHasSections = serverHasSectionsLayout(guestLayout);
 
   clearGuestWatchlistStorage(userId);
 
-  if (guestTickers.length === 0) return user;
-  if (unionWatchlistTickers(user).length > 0) return user;
+  if (guestTickers.length === 0 && !guestHasSections) return user;
 
-  const guestActive = getActiveWatchlistCollection(guest);
-  const mergedTickers = normalizeTickers([
-    ...getActiveWatchlistCollection(user).tickers,
-    ...guestActive.tickers,
-  ]);
-  const active = getActiveWatchlistCollection(user);
-  const lists = user.lists.map((list) =>
-    list.id === active.id ? { ...list, tickers: mergedTickers } : list,
-  );
-  const next: WatchlistCollectionsSnapshot = {
-    v: 2,
-    activeId: user.activeId,
-    lists,
-    pendingRemoval: [],
+  const mergeGuestActiveIntoUserList = (list: WatchlistCollection): WatchlistCollection => {
+    if (list.id !== userActive.id) return list;
+    return normalizeCollection({
+      id: list.id,
+      name: guestActive.name,
+      tickers: guestActive.tickers.length > 0 ? guestActive.tickers : list.tickers,
+      sections: guestActive.sections,
+      tickerSections: guestActive.tickerSections,
+    });
   };
-  writeWatchlistCollections(userId, next);
-  return next;
+
+  if (userTickers.length === 0) {
+    const lists = user.lists.map(mergeGuestActiveIntoUserList);
+    const next: WatchlistCollectionsSnapshot = {
+      v: 2,
+      activeId: user.activeId,
+      lists,
+      pendingRemoval: [],
+    };
+    writeWatchlistCollections(userId, next);
+    return next;
+  }
+
+  if (guestHasSections && !sectionsLayoutsEqual(guestLayout, userLayout)) {
+    const lists = user.lists.map(mergeGuestActiveIntoUserList);
+    const next: WatchlistCollectionsSnapshot = {
+      v: 2,
+      activeId: user.activeId,
+      lists,
+      pendingRemoval: user.pendingRemoval,
+    };
+    writeWatchlistCollections(userId, next);
+    return next;
+  }
+
+  return user;
 }
 
 /** Signed-in bootstrap: read the user's snapshot and discard stale guest copies. */

@@ -263,6 +263,7 @@ export function localSnapshotNeedsServerUpload(
   for (const ticker of localUnion) {
     if (!serverUnion.has(ticker)) return true;
   }
+  if (localHasSectionsAheadOfServer(local, server)) return true;
   return false;
 }
 
