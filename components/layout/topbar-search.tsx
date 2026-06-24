@@ -258,7 +258,11 @@ export function TopbarSearch() {
             onRemoveRecent={panel.handleRemoveRecent}
             isWatched={panel.isWatched}
             watchlistLoaded={panel.watchlistLoaded}
+            watchlistStorageHydrated={panel.watchlistStorageHydrated}
             toggleTicker={panel.toggleTicker}
+            watchlists={panel.watchlists}
+            activeWatchlistId={panel.activeWatchlistId}
+            watched={panel.watched}
           />
         </div>
       </TopbarDropdownPortal>

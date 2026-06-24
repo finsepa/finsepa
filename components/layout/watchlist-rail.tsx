@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { ChevronRight, PanelLeftOpen, Star } from "@/lib/icons";
+import { useState } from "react";
+import { GripVertical, Maximize2, PanelLeftOpen, Star } from "@/lib/icons";
 
 import { WatchlistEmptyState } from "@/components/watchlist/watchlist-empty-state";
+import { WatchlistOptionsMenu } from "@/components/watchlist/watchlist-options-menu";
 import { CompanyLogo } from "@/components/screener/company-logo";
 import { dropdownMenuFloatingScrollbarClassName } from "@/components/design-system/dropdown-menu-styles";
 import {
@@ -18,6 +20,7 @@ import { eodhdCryptoSpotTickerDisplay } from "@/lib/crypto/eodhd-crypto-ticker-d
 import type { WatchlistEnrichedItem } from "@/lib/watchlist/enriched-types";
 import { resolveWatchlistRailHref } from "@/lib/watchlist/watchlist-rail-href";
 import { useWatchlistEnrichedItems } from "@/lib/watchlist/use-watchlist-enriched-items";
+import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
 import { cn } from "@/lib/utils";
 
 function hasRailQuote(row: WatchlistEnrichedItem): boolean {
@@ -42,9 +45,9 @@ function formatRailPercent(value: number | null): string {
 
 function RailPriceSkeleton() {
   return (
-    <div className="flex items-center gap-2">
-      <div className="h-5 w-14 animate-pulse rounded bg-[#E4E4E7]" />
-      <div className="h-4 w-10 animate-pulse rounded bg-[#F4F4F5]" />
+    <div className="ml-auto flex shrink-0 items-center gap-2">
+      <div className="h-5 w-[4.5rem] animate-pulse rounded bg-[#E4E4E7]" />
+      <div className="h-4 w-11 animate-pulse rounded bg-[#F4F4F5]" />
     </div>
   );
 }
@@ -68,17 +71,22 @@ function RailChange({ value }: { value: number | null }) {
 
 function WatchlistRailRow({
   row,
+  index,
   pathname,
   tabParam,
   pricesLoading,
   loading,
+  onReorder,
 }: {
   row: WatchlistEnrichedItem;
+  index: number;
   pathname: string;
   tabParam: string | null;
   pricesLoading: boolean;
   loading: boolean;
+  onReorder: (fromIndex: number, toIndex: number) => void;
 }) {
+  const [dragOver, setDragOver] = useState(false);
   const symbolLabel =
     row.kind === "crypto" ? eodhdCryptoSpotTickerDisplay(row.symbol) : row.symbol;
   const href = resolveWatchlistRailHref(row, { pathname, tabParam });
@@ -86,32 +94,76 @@ function WatchlistRailRow({
   const priceText = formatRailPrice(row.price, row.kind);
 
   return (
-    <Link
-      href={href}
-      className="group flex min-w-0 items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-[#F4F4F5]"
+    <div
+      draggable
+      aria-label={`Reorder ${symbolLabel}`}
+      onDragStart={(event) => {
+        event.dataTransfer.setData("text/plain", String(index));
+        event.dataTransfer.effectAllowed = "move";
+      }}
+      onDragEnd={() => {
+        setDragOver(false);
+      }}
+      onDragOver={(event) => {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "move";
+        setDragOver(true);
+      }}
+      onDragLeave={() => setDragOver(false)}
+      onDrop={(event) => {
+        event.preventDefault();
+        setDragOver(false);
+        const fromIndex = Number(event.dataTransfer.getData("text/plain"));
+        if (!Number.isFinite(fromIndex) || fromIndex === index) return;
+        onReorder(fromIndex, index);
+      }}
+      className={cn(
+        "group flex min-w-0 items-center gap-2 rounded-lg px-2 py-1.5 transition-colors",
+        dragOver ? "bg-[#E4E4E7]" : "hover:bg-[#F4F4F5]",
+      )}
     >
-      <CompanyLogo
-        name={row.name}
-        logoUrl={row.logoUrl ?? ""}
-        symbol={row.symbol}
-        size="sm"
-      />
-      <span className="min-w-0 shrink truncate text-[14px] font-normal leading-5 text-[#09090B] underline-offset-2 decoration-[#71717A] group-hover:underline">
-        {symbolLabel}
-      </span>
-      <div className="ml-auto flex shrink-0 items-center gap-2 font-['Inter'] tabular-nums">
-        {showQuoteSkeleton ? (
-          <RailPriceSkeleton />
-        ) : (
-          <>
-            {priceText ? (
-              <span className="text-[14px] font-normal leading-5 text-[#09090B]">{priceText}</span>
-            ) : null}
-            <RailChange value={row.pct1d} />
-          </>
-        )}
-      </div>
-    </Link>
+      <Link
+        href={href}
+        className="flex min-w-0 flex-1 items-center gap-2 no-underline"
+        draggable={false}
+      >
+        <CompanyLogo
+          name={row.name}
+          logoUrl={row.logoUrl ?? ""}
+          symbol={row.symbol}
+          size="sm"
+        />
+        <span className="min-w-0 shrink truncate text-[14px] font-normal leading-5 text-[#09090B] underline-offset-2 decoration-[#71717A] group-hover:underline">
+          {symbolLabel}
+        </span>
+        <div className="ml-auto flex shrink-0 items-center gap-2 font-['Inter'] tabular-nums">
+          {showQuoteSkeleton ? (
+            <RailPriceSkeleton />
+          ) : (
+            <>
+              {priceText ? (
+                <span className="w-[4.5rem] shrink-0 text-right text-[14px] font-normal leading-5 text-[#09090B]">
+                  {priceText}
+                </span>
+              ) : (
+                <span className="w-[4.5rem] shrink-0" aria-hidden />
+              )}
+              <div className="relative h-5 w-11 shrink-0">
+                <span className="absolute inset-0 flex items-center justify-end group-hover:invisible">
+                  <RailChange value={row.pct1d} />
+                </span>
+                <span
+                  className="absolute inset-0 hidden cursor-grab items-center justify-end text-[#71717A] group-hover:flex active:cursor-grabbing"
+                  aria-hidden
+                >
+                  <GripVertical className="h-4 w-4" strokeWidth={2} />
+                </span>
+              </div>
+            </>
+          )}
+        </div>
+      </Link>
+    </div>
   );
 }
 
@@ -134,6 +186,21 @@ function WatchlistRailSkeleton() {
 
 const watchlistRailSurfaceClass =
   "flex h-full min-h-0 flex-col overflow-hidden bg-white md:rounded-none";
+
+function WatchlistRailFullPageLink() {
+  return (
+    <TopbarDelayedTooltip label="Open full watchlist" placement="left">
+      <Link
+        href="/watchlist"
+        prefetch={false}
+        aria-label="Open full watchlist"
+        className={shellChromeToggleButtonClass}
+      >
+        <Maximize2 className="h-5 w-5 shrink-0" strokeWidth={1.75} aria-hidden />
+      </Link>
+    </TopbarDelayedTooltip>
+  );
+}
 
 function WatchlistRailToggle({
   expanded,
@@ -175,6 +242,17 @@ export function WatchlistRail() {
   const { items, empty, showSkeleton, error, pricesLoading, loading } = useWatchlistEnrichedItems({
     enabled: expanded,
   });
+  const {
+    watchlists,
+    activeWatchlistId,
+    activeWatchlistName,
+    createWatchlist,
+    renameActiveWatchlist,
+    deleteActiveWatchlist,
+    switchWatchlist,
+    reorderActiveWatchlist,
+    storageHydrated,
+  } = useWatchlist();
 
   if (isFullWatchlistPage(pathname)) {
     return null;
@@ -201,18 +279,35 @@ export function WatchlistRail() {
           )}
         >
           {expanded ? (
-            <Link
-              href="/watchlist"
-              prefetch={false}
-              className="flex min-w-0 items-center gap-0.5 truncate pl-1 text-sm font-semibold leading-5 text-[#52525B] no-underline transition-colors hover:text-[#09090B] hover:underline"
-            >
-              Watchlist
-              <ChevronRight className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
-            </Link>
+            <>
+              {storageHydrated ? (
+                <WatchlistOptionsMenu
+                  name={activeWatchlistName}
+                  watchlists={watchlists}
+                  activeWatchlistId={activeWatchlistId}
+                  onCreate={createWatchlist}
+                  onRename={renameActiveWatchlist}
+                  onDelete={deleteActiveWatchlist}
+                  onSwitch={switchWatchlist}
+                  variant="rail-title"
+                  className="min-w-0 flex-1"
+                  ready={storageHydrated}
+                />
+              ) : (
+                <span
+                  className="flex min-w-0 flex-1 truncate pl-1 text-sm font-semibold leading-5 text-[#52525B]"
+                  suppressHydrationWarning
+                >
+                  Watchlist
+                </span>
+              )}
+              <WatchlistRailFullPageLink />
+              <WatchlistRailToggle expanded={expanded} onToggle={toggleCollapsed} />
+            </>
           ) : (
             <span className="sr-only">Watchlist</span>
           )}
-          <WatchlistRailToggle expanded={expanded} onToggle={toggleCollapsed} />
+          {!expanded ? <WatchlistRailToggle expanded={expanded} onToggle={toggleCollapsed} /> : null}
         </div>
 
         <div
@@ -230,21 +325,23 @@ export function WatchlistRail() {
             >
               {showSkeleton ? <WatchlistRailSkeleton /> : null}
               {!showSkeleton && empty ? (
-                <WatchlistEmptyState variant="plain" className="min-h-0 py-10" showLink={false} />
+                <WatchlistEmptyState variant="plain" className="min-h-0 py-10" />
               ) : null}
               {!showSkeleton && error ? (
                 <p className="px-3 py-4 text-[13px] leading-5 text-[#DC2626]">{error}</p>
               ) : null}
               {!showSkeleton && !empty && !error ? (
                 <div className="flex flex-col">
-                  {items.map((row) => (
+                  {items.map((row, index) => (
                     <WatchlistRailRow
                       key={row.entryId}
                       row={row}
+                      index={index}
                       pathname={pathname}
                       tabParam={tabParam}
                       pricesLoading={pricesLoading}
                       loading={loading}
+                      onReorder={reorderActiveWatchlist}
                     />
                   ))}
                 </div>

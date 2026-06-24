@@ -14,7 +14,7 @@ import {
   urlHasAuthCallbackParams,
 } from "@/lib/auth/parse-auth-callback-url";
 import { PATH_APP_ENTRY, PATH_AUTH_RESET_PASSWORD } from "@/lib/auth/routes";
-import { Loader2 } from "@/lib/icons";
+import { Spinner, SpinnerLabel } from "@/components/ui/spinner";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 const REDIRECT_TO_SCREENER_MS = 900;
@@ -163,7 +163,7 @@ export function ResetPasswordClient({ hasRecoveryToken = false }: ResetPasswordC
       <form className="space-y-4" onSubmit={handleSubmit} noValidate>
         {isVerifying ? (
           <div className="flex justify-center py-1" role="status" aria-label="Confirming your reset link">
-            <Loader2 className="h-6 w-6 animate-spin text-[#09090B]" strokeWidth={1.75} aria-hidden />
+            <Spinner className="size-6 text-[#09090B]" />
           </div>
         ) : null}
 
@@ -209,7 +209,7 @@ export function ResetPasswordClient({ hasRecoveryToken = false }: ResetPasswordC
         </div>
 
         <AuthPrimaryButton type="submit" disabled={!formCanSubmit}>
-          {loading ? "Updating…" : "Update password"}
+          {loading ? <SpinnerLabel>Updating…</SpinnerLabel> : "Update password"}
         </AuthPrimaryButton>
       </form>
     </AuthCenteredLayout>

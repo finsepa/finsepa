@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
-import { CircleCheck, Loader2, Upload, X } from "@/lib/icons";
+import { CircleCheck, Upload, X } from "@/lib/icons";
+import { SpinnerLabel } from "@/components/ui/spinner";
 
 import { ClearableInput } from "@/components/layout/clearable-input";
 import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
@@ -167,10 +168,7 @@ export function HelpFeedbackModal({
                   className={appModalPrimaryButtonClass(canSend && !submitting)}
                 >
                   {submitting ?
-                    <span className="inline-flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                      Sending…
-                    </span>
+                    <SpinnerLabel>Sending…</SpinnerLabel>
                   : "Send"}
                 </button>
               </>

@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { AuthInput, AuthLabel, AuthPrimaryButton } from "@/components/auth/auth-form-ui";
+import { SpinnerLabel } from "@/components/ui/spinner";
 import { requestPasswordResetEmail } from "@/lib/auth/request-password-reset";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -73,7 +74,7 @@ export function ForgotPasswordClient() {
           </div>
 
           <AuthPrimaryButton type="submit" disabled={loading || !emailReady}>
-            {loading ? "Sending…" : "Send reset link"}
+            {loading ? <SpinnerLabel>Sending…</SpinnerLabel> : "Send reset link"}
           </AuthPrimaryButton>
         </form>
       )}

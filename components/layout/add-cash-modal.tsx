@@ -21,6 +21,7 @@ import {
   appModalCancelButtonClass,
   appModalPrimaryButtonClass,
 } from "@/components/ui/app-modal-shell";
+import { SpinnerLabel } from "@/components/ui/spinner";
 import { FormListboxSelect, type ListboxOption } from "@/components/ui/form-listbox-select";
 import { toastTransactionAdded } from "@/lib/portfolio/transaction-added-toast";
 import { parseUsdStyleNumber } from "@/lib/portfolio/amount-input-format";
@@ -132,7 +133,7 @@ export function AddCashModal({ open, onClose }: Props) {
               onClick={() => void handleAdd()}
               className={appModalPrimaryButtonClass(canAdd && !submitting)}
             >
-              {submitting ? "Adding…" : "Add"}
+              {submitting ? <SpinnerLabel>Adding…</SpinnerLabel> : "Add"}
             </button>
           </AppModalFooter>
         }

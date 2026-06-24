@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useId, useState } from "react";
-import { Loader2 } from "@/lib/icons";
+import { SpinnerLabel } from "@/components/ui/spinner";
 
 import { ClearableInput } from "@/components/layout/clearable-input";
 import { PortfolioPrivacySelect, PortfolioPrivacyFieldLabel } from "@/components/portfolio/portfolio-privacy-select";
@@ -94,14 +94,7 @@ export function ConnectBrokerageFlow({
               }}
               className={appModalPrimaryButtonClass(canContinue)}
             >
-              {portalLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
-                  Opening…
-                </>
-              ) : (
-                "Continue"
-              )}
+              {portalLoading ? <SpinnerLabel>Opening…</SpinnerLabel> : "Continue"}
             </button>
           </AppModalFooter>
         }

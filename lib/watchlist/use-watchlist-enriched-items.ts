@@ -7,6 +7,7 @@ import { WATCHLIST_MUTATED_EVENT } from "@/lib/watchlist/constants";
 import type { WatchlistEnrichedItem } from "@/lib/watchlist/enriched-types";
 import { fetchWatchlistEnriched } from "@/lib/watchlist/fetch-watchlist-enriched";
 import { clearWatchlistEnrichedCache } from "@/lib/watchlist/watchlist-enriched-cache";
+import { sortEnrichedItemsByTickerOrder } from "@/lib/watchlist/sort-enriched-items";
 import { isWatchlistTickerWatched } from "@/lib/watchlist/normalize-storage-key";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
 
@@ -43,19 +44,23 @@ export type UseWatchlistEnrichedItemsOptions = {
 
 export function useWatchlistEnrichedItems(options: UseWatchlistEnrichedItemsOptions = {}) {
   const { enabled = true } = options;
-  const { watched, storageHydrated } = useWatchlist();
-  const watchedKey = useMemo(() => [...watched].sort().join("|"), [watched]);
+  const { watchedTickers, storageHydrated } = useWatchlist();
+  const watchedKey = useMemo(() => watchedTickers.join("|"), [watchedTickers]);
 
   const [items, setItems] = useState<WatchlistEnrichedItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const everHadRowsRef = useRef(false);
+  const watchedRef = useRef(watchedTickers);
+  watchedRef.current = watchedTickers;
+  const loadGenRef = useRef(0);
 
   const load = useCallback(async () => {
-    const tickers = [...watched];
+    const tickers = [...watchedTickers];
     if (tickers.length === 0) return;
 
+    const gen = ++loadGenRef.current;
     const hadItems = everHadRowsRef.current;
 
     if (hadItems) {
@@ -63,15 +68,27 @@ export function useWatchlistEnrichedItems(options: UseWatchlistEnrichedItemsOpti
     }
     setError(null);
     try {
-      const { stocks, crypto, indices } = await fetchWatchlistEnriched(watchedKey, tickers);
-      const merged = applyWatchlistScreenerIdentity(groupsToItems({ stocks, crypto, indices }));
+      const key = [...tickers].join("|");
+      const { stocks, crypto, indices } = await fetchWatchlistEnriched(key, tickers);
+      if (gen !== loadGenRef.current || watchedRef.current.length === 0) return;
+
+      const merged = sortEnrichedItemsByTickerOrder(
+        applyWatchlistScreenerIdentity(groupsToItems({ stocks, crypto, indices })),
+        watchedRef.current,
+      );
       setItems((prev) => {
-        const next = mergeWatchlistQuotes(prev, merged);
+        const next = sortEnrichedItemsByTickerOrder(
+          mergeWatchlistQuotes(prev, merged).filter((row) =>
+            itemStillWatched(row, new Set(watchedRef.current)),
+          ),
+          watchedRef.current,
+        );
         persistWatchlistStockIdentities(next);
         return next;
       });
       everHadRowsRef.current = merged.length > 0;
     } catch {
+      if (gen !== loadGenRef.current) return;
       setError("Could not load watchlist.");
       if (!hadItems) {
         setItems([]);
@@ -79,14 +96,17 @@ export function useWatchlistEnrichedItems(options: UseWatchlistEnrichedItemsOpti
         clearWatchlistEnrichedCache();
       }
     } finally {
-      setLoading(false);
-      setReady(true);
+      if (gen === loadGenRef.current) {
+        setLoading(false);
+        setReady(true);
+      }
     }
-  }, [watched, watchedKey]);
+  }, [watchedTickers]);
 
   useEffect(() => {
     if (!storageHydrated || !enabled) return;
-    if (watched.size === 0) {
+    if (watchedTickers.length === 0) {
+      loadGenRef.current += 1;
       everHadRowsRef.current = false;
       clearWatchlistEnrichedCache();
       setItems([]);
@@ -97,8 +117,15 @@ export function useWatchlistEnrichedItems(options: UseWatchlistEnrichedItemsOpti
     }
 
     setItems((prev) => {
-      const next = prev.filter((row) => itemStillWatched(row, watched));
-      if (next.length > 0) {
+      const watchedSet = new Set(watchedTickers);
+      const next = sortEnrichedItemsByTickerOrder(
+        prev.filter((row) => itemStillWatched(row, watchedSet)),
+        watchedTickers,
+      );
+      if (next.length === 0) {
+        everHadRowsRef.current = false;
+        setReady(false);
+      } else {
         setReady(true);
         everHadRowsRef.current = true;
       }
@@ -106,24 +133,33 @@ export function useWatchlistEnrichedItems(options: UseWatchlistEnrichedItemsOpti
     });
 
     void load();
-  }, [storageHydrated, watchedKey, load, watched, enabled]);
+  }, [storageHydrated, watchedKey, load, watchedTickers, enabled]);
 
   useEffect(() => {
     if (!enabled) return;
     const onMutated = () => {
-      if (watched.size > 0) void load();
+      if (watchedRef.current.length > 0) void load();
     };
     window.addEventListener(WATCHLIST_MUTATED_EVENT, onMutated);
     return () => window.removeEventListener(WATCHLIST_MUTATED_EVENT, onMutated);
-  }, [load, watched.size, enabled]);
+  }, [load, enabled]);
 
   const showSkeleton =
-    enabled && storageHydrated && watched.size > 0 && items.length === 0 && !ready && !error;
+    enabled && storageHydrated && watchedTickers.length > 0 && items.length === 0 && !ready && !error;
   const pricesLoading = enabled && loading && items.length > 0;
 
-  const stocks = useMemo(() => items.filter((r) => r.kind === "stock"), [items]);
-  const crypto = useMemo(() => items.filter((r) => r.kind === "crypto"), [items]);
-  const indices = useMemo(() => items.filter((r) => r.kind === "index"), [items]);
+  const stocks = useMemo(
+    () => sortEnrichedItemsByTickerOrder(items.filter((r) => r.kind === "stock"), watchedTickers),
+    [items, watchedTickers],
+  );
+  const crypto = useMemo(
+    () => sortEnrichedItemsByTickerOrder(items.filter((r) => r.kind === "crypto"), watchedTickers),
+    [items, watchedTickers],
+  );
+  const indices = useMemo(
+    () => sortEnrichedItemsByTickerOrder(items.filter((r) => r.kind === "index"), watchedTickers),
+    [items, watchedTickers],
+  );
 
   return {
     items,
@@ -134,8 +170,8 @@ export function useWatchlistEnrichedItems(options: UseWatchlistEnrichedItemsOpti
     pricesLoading,
     ready,
     error,
-    empty: storageHydrated && watched.size === 0,
+    empty: storageHydrated && watchedTickers.length === 0,
     showSkeleton,
-    watchedCount: watched.size,
+    watchedCount: watchedTickers.length,
   };
 }

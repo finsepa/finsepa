@@ -12,7 +12,7 @@ import {
   useState,
 } from "react";
 import { usePathname } from "next/navigation";
-import { Loader2 } from "@/lib/icons";
+import { SpinnerLabel } from "@/components/ui/spinner";
 import { toast } from "sonner";
 
 import { SegmentedControl } from "@/components/design-system/segmented-control";
@@ -278,14 +278,7 @@ function CreatePortfolioModal({
                 }}
                 className={appModalPrimaryButtonClass(canSubmit)}
               >
-                {portalLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
-                    Opening…
-                  </>
-                ) : (
-                  "Continue"
-                )}
+                {portalLoading ? <SpinnerLabel>Opening…</SpinnerLabel> : "Continue"}
               </button>
             ) : (
               <button

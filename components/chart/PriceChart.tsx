@@ -19,9 +19,14 @@ import {
   overviewAxisLabelsEqual,
   resolveOverviewBottomAxisMode,
   syncOverviewPeriodAxisLabels,
+  periodAxisLabelLayoutStyle,
+  periodAxisLabelMaxWidthClass,
+  periodAxisLabelTransformClass,
+  resolvePeriodAxisLabelAnchor,
   type OverviewPeriodAxisSyncOptions,
   type OverviewAxisLabel,
   type OverviewBottomAxisMode,
+  type PeriodAxisLabelAnchor,
 } from "@/components/chart/overview-bottom-axis";
 import {
   LineSeries,
@@ -68,7 +73,7 @@ import {
   prepareStock1DLiveSessionChartPoints,
   resolveStock1DLiveSessionYmd,
   shouldUseStock1DLiveSessionChart,
-  stock1DLiveSessionYmd,
+  stock1DLiveSessionPlotLeftPx,
   STOCK_1D_LIVE_SESSION_BAR_INTERVAL_SEC,
   STOCK_1D_LIVE_SESSION_CLOCK_TICK_MS,
   STOCK_1D_LIVE_SESSION_TZ,
@@ -145,21 +150,6 @@ type LivePriceDotLayout = {
 const RANGE_PRICE_BADGE_CLASS =
   "inline-block rounded-[6px] bg-[#E4E4E7] px-1.5 py-0.5 text-[11px] font-medium leading-4 tabular-nums text-[#09090B]";
 
-function periodAxisLabelStyle(
-  leftPx: number,
-  screenshotMode: boolean,
-  containerWidthPx: number,
-): { left: number | string; transform?: string } {
-  if (!screenshotMode) {
-    return { left: `clamp(8px, ${leftPx}px, calc(100% - 8px))` };
-  }
-  const plotW = Number.isFinite(containerWidthPx) && containerWidthPx > 0 ? containerWidthPx : 1164;
-  return {
-    left: Math.min(Math.max(8, leftPx), Math.max(8, plotW - 8)),
-    transform: "translateX(-50%)",
-  };
-}
-
 function findRangeHighPoint(pts: readonly StockChartPoint[]): StockChartPoint | null {
   if (!pts.length) return null;
   let best = pts[0]!;
@@ -179,17 +169,47 @@ function layoutRangePriceBadge(
   point: StockChartPoint,
   anchor: RangeChartPriceBadge["anchor"],
   plotWidth: number,
+  liveSessionPlot?: { sessionYmd: string; timeZone: string } | null,
 ): Pick<RangeChartPriceBadge, "left" | "top"> | null {
+  let x: number | null = chart.timeScale().timeToCoordinate(point.time as UTCTimestamp);
+  if (liveSessionPlot && isFiniteNumber(point.time)) {
+    const mapped = stock1DLiveSessionPlotLeftPx(
+      chart,
+      point.time,
+      liveSessionPlot.sessionYmd,
+      liveSessionPlot.timeZone,
+    );
+    if (mapped != null) x = mapped;
+  }
   const y = series.priceToCoordinate(point.value);
-  const x = chart.timeScale().timeToCoordinate(point.time as UTCTimestamp);
   if (y == null || x == null || !Number.isFinite(y) || !Number.isFinite(x)) return null;
   const paneH = chart.paneSize(0).height;
   if (y < 4 || y > paneH) return null;
   const left =
     anchor === "center"
       ? Math.max(44, Math.min(plotWidth - 44, x))
-      : Math.max(8, x);
+      : Math.max(0, x);
   return { left: Math.round(left), top: Math.round(y) };
+}
+
+function resolveOverviewCrosshairLeftPx(
+  chart: IChartApi,
+  barTime: number,
+  fallbackX: number,
+  stock1DLiveSession: boolean,
+  liveSessionMeta: { ymd: string; timeZone: string } | null,
+): number {
+  if (stock1DLiveSession && liveSessionMeta && isFiniteNumber(barTime)) {
+    const mapped = stock1DLiveSessionPlotLeftPx(
+      chart,
+      barTime,
+      liveSessionMeta.ymd,
+      liveSessionMeta.timeZone,
+    );
+    if (mapped != null) return mapped;
+  }
+  const xCoord = chart.timeScale().timeToCoordinate(barTime as UTCTimestamp);
+  return xCoord != null && Number.isFinite(xCoord) ? xCoord : fallbackX;
 }
 
 function rangeChartPriceBadgeEqual(
@@ -933,10 +953,12 @@ export function PriceChart({
     );
     if (!filtered.length) return [];
     const last = filtered[filtered.length - 1]!;
-    const tailValue =
-      liveSpotUsd != null && Number.isFinite(liveSpotUsd) && liveSpotUsd > 0
-        ? liveSpotUsd
-        : last.value;
+    const useLiveSpot =
+      getUsEquityMarketSession(now) === "regular" &&
+      liveSpotUsd != null &&
+      Number.isFinite(liveSpotUsd) &&
+      liveSpotUsd > 0;
+    const tailValue = useLiveSpot ? liveSpotUsd : last.value;
     return appendLiveSessionNowTail(filtered, tailValue, sessionYmd, STOCK_1D_LIVE_SESSION_TZ, now);
   }, [kind, range, holdingsStyle, points, liveSpotUsd, sessionNowMs]);
   const [hoverPrice, setHoverPrice] = useState<number | null>(null);
@@ -1242,10 +1264,12 @@ export function PriceChart({
         const sessionOpen = sessionOpenPriceRef.current;
         if (stock1DLiveSessionRef.current && sessionOpen != null && Number.isFinite(sessionOpen)) {
           const pts = pointsRef.current.filter((p) => isFiniteNumber(p.time) && isFiniteNumber(p.value));
+          const chartLiveSpot =
+            getUsEquityMarketSession(new Date()) === "regular" ? liveSpotUsdRef.current : null;
           applyLiveSessionSeriesPriceLineOptions(
             series,
             sessionOpen,
-            liveSpotUsdRef.current,
+            chartLiveSpot,
             pts.at(-1)?.value,
             hide,
           );
@@ -1681,7 +1705,14 @@ export function PriceChart({
       if (axis && axisLabel?.label) {
         if (holdingsPeriodAxisRowRef.current) holdingsPeriodAxisRowRef.current.style.visibility = "hidden";
         axis.textContent = axisLabel.label;
-        axis.style.left = `clamp(8px, ${axisLabel.leftPx}px, calc(100% - 8px))`;
+        const anchor = resolvePeriodAxisLabelAnchor(axisLabel.leftPx, {
+          isLeftmost: axisLabel.leftPx <= (periodAxisLabelsRef.current[0]?.leftPx ?? axisLabel.leftPx) + 4,
+        });
+        Object.assign(
+          axis.style,
+          periodAxisLabelLayoutStyle(axisLabel.leftPx, anchor, containerWidthRef.current),
+        );
+        axis.style.transform = anchor === "left" ? "none" : "translateX(-50%)";
         axis.style.display = "";
       }
     };
@@ -1716,7 +1747,13 @@ export function PriceChart({
       if (mobileHoverBarTimeRef.current !== nearBar.time) {
         mobileHoverBarTimeRef.current = nearBar.time;
         const xCoord = chart.timeScale().timeToCoordinate(nearBar.time as UTCTimestamp);
-        const leftPx = xCoord != null && Number.isFinite(xCoord) ? xCoord : point.x;
+        const leftPx = resolveOverviewCrosshairLeftPx(
+          chart,
+          nearBar.time,
+          xCoord != null && Number.isFinite(xCoord) ? xCoord : point.x,
+          stock1DLiveSessionRef.current,
+          liveSessionChartMetaRef.current,
+        );
         const label = periodLabel ?? "";
         setHoverAxisLabelGuarded({ leftPx, label });
       }
@@ -1763,7 +1800,13 @@ export function PriceChart({
             );
           } else {
             const xCoord = chart.timeScale().timeToCoordinate(nearBar.time as UTCTimestamp);
-            const leftPx = xCoord != null && Number.isFinite(xCoord) ? xCoord : param.point.x;
+            const leftPx = resolveOverviewCrosshairLeftPx(
+              chart,
+              nearBar.time,
+              xCoord != null && Number.isFinite(xCoord) ? xCoord : param.point.x,
+              stock1DLiveSessionRef.current,
+              liveSessionChartMetaRef.current,
+            );
             const label = overviewCrosshairLabelByBarTimeRef.current?.get(nearBar.time) ?? "";
             overviewHoverDraftRef.current = {
               point: { x: param.point.x, y: param.point.y },
@@ -1811,7 +1854,13 @@ export function PriceChart({
         crosshairHoveredRef.current = true;
         const barTime = nearBar && isFiniteNumber(nearBar.time) ? nearBar.time : tunix;
         const xCoord = chart.timeScale().timeToCoordinate(barTime as UTCTimestamp);
-        const leftPx = xCoord != null && Number.isFinite(xCoord) ? xCoord : nextPt.x;
+        const leftPx = resolveOverviewCrosshairLeftPx(
+          chart,
+          barTime,
+          xCoord != null && Number.isFinite(xCoord) ? xCoord : nextPt.x,
+          stock1DLiveSessionRef.current,
+          liveSessionChartMetaRef.current,
+        );
         const label = overviewCrosshairLabelByBarTimeRef.current?.get(barTime) ?? "";
         holdingsHoverDraftRef.current = {
           price: hoverValue,
@@ -1908,7 +1957,14 @@ export function PriceChart({
       }
       const plotWidth = containerRef.current?.clientWidth ?? chart.paneSize(0).width;
       const metric = chartMetricSeriesRef.current;
-      const openLayout = layoutRangePriceBadge(chart, s, first, "start", plotWidth);
+      const liveSessionPlot =
+        stock1DLiveSessionRef.current && liveSessionChartMetaRef.current
+          ? {
+              sessionYmd: liveSessionChartMetaRef.current.ymd,
+              timeZone: liveSessionChartMetaRef.current.timeZone,
+            }
+          : null;
+      const openLayout = layoutRangePriceBadge(chart, s, first, "start", plotWidth, liveSessionPlot);
       commitRangePriceBadge(
         setRangeOpenBadge,
         openLayout
@@ -1927,7 +1983,7 @@ export function PriceChart({
       ) {
         commitRangePriceBadge(setRangeHighBadge, null);
       } else {
-        const highLayout = layoutRangePriceBadge(chart, s, highPt, "center", plotWidth);
+        const highLayout = layoutRangePriceBadge(chart, s, highPt, "center", plotWidth, liveSessionPlot);
         commitRangePriceBadge(
           setRangeHighBadge,
           highLayout
@@ -1944,6 +2000,7 @@ export function PriceChart({
         screenshotPreviewModeRef.current ||
         holdingsStyleRef.current ||
         !stock1DLiveSessionRef.current ||
+        getUsEquityMarketSession(new Date()) !== "regular" ||
         crosshairHoveredRef.current
       ) {
         commitLivePriceDot(setLivePriceDot, null);
@@ -2509,10 +2566,12 @@ export function PriceChart({
     const last = [...data].reverse().find((p) => isFiniteNumber(p.value));
     if (useLiveSessionChart) {
       sessionOpenPriceRef.current = open;
+      const chartLiveSpot =
+        getUsEquityMarketSession(new Date()) === "regular" ? liveSpotUsd : null;
       applyLiveSessionSeriesPriceLineOptions(
         single,
         open,
-        liveSpotUsd,
+        chartLiveSpot,
         last?.value,
         hideMobileYAxisLabelsRef.current,
       );
@@ -2597,10 +2656,12 @@ export function PriceChart({
     const open = sessionOpenPriceRef.current;
     if (!s || open == null || !Number.isFinite(open)) return;
     const pts = pointsRef.current.filter((p) => isFiniteNumber(p.time) && isFiniteNumber(p.value));
+    const chartLiveSpot =
+      getUsEquityMarketSession(new Date()) === "regular" ? liveSpotUsd : null;
     applyLiveSessionSeriesPriceLineOptions(
       s,
       open,
-      liveSpotUsd,
+      chartLiveSpot,
       pts.at(-1)?.value,
       hideMobileYAxisLabelsRef.current,
     );
@@ -2651,7 +2712,8 @@ export function PriceChart({
   const visiblePeriodAxisLabels = useMemo(() => {
     if (periodAxisLabels.length === 0) return [];
     if (!Number.isFinite(containerWidth) || containerWidth <= 0) return periodAxisLabels;
-    const clampLeft = (x: number) => Math.min(Math.max(8, x), Math.max(8, containerWidth - 8));
+    const clampLeft = (x: number) =>
+      Math.min(Math.max(0, x), Math.max(0, containerWidth - 8));
 
     const isLive1DSessionAxis =
       periodAxisLabels.length > 0 &&
@@ -2675,6 +2737,21 @@ export function PriceChart({
     }
     return out;
   }, [periodAxisLabels, containerWidth, screenshotPreviewMode]);
+
+  const leftmostPeriodAxisLeftPx = useMemo(() => {
+    if (!periodAxisLabels.length) return null;
+    return periodAxisLabels.reduce((min, lab) => Math.min(min, lab.leftPx), periodAxisLabels[0]!.leftPx);
+  }, [periodAxisLabels]);
+
+  const activeBottomAxisAnchor = useMemo((): PeriodAxisLabelAnchor => {
+    if (!activeBottomAxisLabel) return "center";
+    const isLeftmostTick =
+      leftmostPeriodAxisLeftPx != null &&
+      activeBottomAxisLabel.leftPx <= leftmostPeriodAxisLeftPx + 4;
+    return resolvePeriodAxisLabelAnchor(activeBottomAxisLabel.leftPx, {
+      isLeftmost: isLeftmostTick || activeBottomAxisLabel.leftPx <= 24,
+    });
+  }, [activeBottomAxisLabel, leftmostPeriodAxisLeftPx]);
 
   return (
     <div
@@ -2783,6 +2860,7 @@ export function PriceChart({
         : null}
       {livePriceDot &&
       stock1DLiveSession &&
+      getUsEquityMarketSession(new Date()) === "regular" &&
       !holdingsStyle &&
       !loading &&
       ready &&
@@ -2848,15 +2926,26 @@ export function PriceChart({
           {holdingsStyle ? (
             <>
               <div ref={holdingsPeriodAxisRowRef} className="absolute inset-0">
-                {visiblePeriodAxisLabels.map((lab) => (
+                {visiblePeriodAxisLabels.map((lab, i) => {
+                  const anchor = resolvePeriodAxisLabelAnchor(lab.leftPx, { isLeftmost: i === 0 });
+                  return (
                   <span
                     key={lab.key}
-                    className="absolute bottom-1 inline-block max-w-[72px] -translate-x-1/2 truncate whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]"
-                    style={periodAxisLabelStyle(lab.leftPx, screenshotPreviewMode, containerWidth)}
+                    className={cn(
+                      "absolute bottom-1 inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]",
+                      periodAxisLabelMaxWidthClass(anchor),
+                      periodAxisLabelTransformClass(anchor),
+                    )}
+                    style={periodAxisLabelLayoutStyle(
+                      lab.leftPx,
+                      anchor,
+                      screenshotPreviewMode ? containerWidth : 0,
+                    )}
                   >
                     {lab.label}
                   </span>
-                ))}
+                  );
+                })}
               </div>
               <span
                 ref={holdingsHoverAxisLabelRef}
@@ -2866,29 +2955,43 @@ export function PriceChart({
             </>
           ) : activeBottomAxisLabel ? (
             <span
-              className="absolute bottom-1 inline-block max-w-[min(100%,calc(100%-16px))] -translate-x-1/2 whitespace-nowrap font-['Inter'] text-[11px] font-medium tabular-nums leading-none text-[#09090B] sm:text-[12px]"
-              style={
-                activeBottomAxisLabel
-                  ? periodAxisLabelStyle(
-                      activeBottomAxisLabel.leftPx,
-                      screenshotPreviewMode,
-                      containerWidth,
-                    )
-                  : undefined
-              }
+              className={cn(
+                "absolute bottom-1 inline-block whitespace-nowrap font-['Inter'] text-[11px] font-medium tabular-nums leading-none text-[#09090B] sm:text-[12px]",
+                periodAxisLabelMaxWidthClass(activeBottomAxisAnchor),
+                periodAxisLabelTransformClass(activeBottomAxisAnchor),
+              )}
+              style={periodAxisLabelLayoutStyle(
+                activeBottomAxisLabel.leftPx,
+                activeBottomAxisAnchor,
+                screenshotPreviewMode ? containerWidth : 0,
+              )}
             >
               {activeBottomAxisLabel.label}
             </span>
           ) : (
-            visiblePeriodAxisLabels.map((lab) => (
+            visiblePeriodAxisLabels.map((lab, i) => {
+              const isLive1DLabel = lab.key.startsWith("live-1d-");
+              const anchor = resolvePeriodAxisLabelAnchor(lab.leftPx, {
+                isLeftmost: !isLive1DLabel && i === 0,
+              });
+              return (
               <span
                 key={lab.key}
-                className="absolute top-1/2 inline-block max-w-[72px] -translate-x-1/2 -translate-y-1/2 truncate whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]"
-                style={periodAxisLabelStyle(lab.leftPx, screenshotPreviewMode, containerWidth)}
+                className={cn(
+                  "absolute top-1/2 inline-block -translate-y-1/2 whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]",
+                  periodAxisLabelMaxWidthClass(anchor),
+                  periodAxisLabelTransformClass(anchor),
+                )}
+                style={periodAxisLabelLayoutStyle(
+                  lab.leftPx,
+                  anchor,
+                  screenshotPreviewMode ? containerWidth : 0,
+                )}
               >
                 {lab.label}
               </span>
-            ))
+              );
+            })
           )}
         </div>
       ) : null}

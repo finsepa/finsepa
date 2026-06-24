@@ -17,12 +17,13 @@ export async function countWatchlistEntriesForStockTicker(ticker: string): Promi
 
   const admin = getSupabaseAdminClient();
   if (admin) {
-    const { count, error } = await admin.from("watchlist").select("*", { count: "exact", head: true }).eq("ticker", sym);
-
+    const { data, error } = await admin.rpc("count_watchlist_for_ticker", { p_ticker: sym });
     if (error) {
       console.error("[countWatchlistEntriesForStockTicker]", error.message);
-    } else if (typeof count === "number") {
-      return count;
+    } else if (typeof data === "number" && Number.isFinite(data)) {
+      return data;
+    } else if (typeof data === "bigint") {
+      return Number(data);
     }
   }
 

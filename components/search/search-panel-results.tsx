@@ -5,6 +5,7 @@ import { dropdownMenuPanelBodyClassName } from "@/components/design-system/dropd
 import { SearchLoadingIndicator } from "@/components/search/search-loading-indicator";
 import { SearchRecentEmpty } from "@/components/search/search-recent-empty";
 import { SearchResultRow } from "@/components/search/search-result-row";
+import type { WatchlistCollection } from "@/lib/watchlist/collections";
 import type { SearchAssetItem } from "@/lib/search/search-types";
 import { cn } from "@/lib/utils";
 
@@ -30,7 +31,11 @@ export function SearchPanelResults({
   onRemoveRecent,
   isWatched,
   watchlistLoaded,
+  watchlistStorageHydrated,
   toggleTicker,
+  watchlists,
+  activeWatchlistId,
+  watched,
   listClassName = defaultListClassName,
   sectionClassName = searchDropdownSectionClassName,
 }: {
@@ -48,7 +53,11 @@ export function SearchPanelResults({
   onRemoveRecent: (id: string) => void;
   isWatched: (item: SearchAssetItem) => boolean;
   watchlistLoaded: boolean;
-  toggleTicker: (ticker: string) => void;
+  watchlistStorageHydrated: boolean;
+  toggleTicker: (ticker: string, watchlistId?: string) => void;
+  watchlists: WatchlistCollection[];
+  activeWatchlistId: string;
+  watched: Set<string>;
   listClassName?: string;
   sectionClassName?: string;
 }) {
@@ -74,7 +83,11 @@ export function SearchPanelResults({
                     onRemoveRecent={() => onRemoveRecent(item.id)}
                     active={highlight >= 0 && highlight === i}
                     starred={isWatched(item)}
+                    watched={watched}
+                    watchlists={watchlists}
+                    activeWatchlistId={activeWatchlistId}
                     loaded={watchlistLoaded}
+                    storageHydrated={watchlistStorageHydrated}
                     toggleTicker={toggleTicker}
                   />
                 </li>
@@ -104,7 +117,11 @@ export function SearchPanelResults({
                   onNavigate={onNavigate}
                   active={highlight >= 0 && highlight === i}
                   starred={isWatched(item)}
+                  watched={watched}
+                  watchlists={watchlists}
+                  activeWatchlistId={activeWatchlistId}
                   loaded={watchlistLoaded}
+                  storageHydrated={watchlistStorageHydrated}
                   toggleTicker={toggleTicker}
                 />
               </li>

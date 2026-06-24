@@ -11,6 +11,7 @@ import {
   appModalCancelButtonClass,
   appModalPrimaryButtonClass,
 } from "@/components/ui/app-modal-shell";
+import { SpinnerLabel } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 import { ClearableInput } from "@/components/layout/clearable-input";
 import { UsdMoneyClearableInput } from "@/components/layout/usd-money-clearable-input";
@@ -567,9 +568,15 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
               className={appModalPrimaryButtonClass(canAdd && !submitting)}
             >
               {transactionTab === "Trades" ? (
-                submitting ? (operation === "Sell" ? "Selling..." : "Adding") : (operation === "Sell" ? "Sell" : "Add")
+                submitting ? (
+                  <SpinnerLabel>{operation === "Sell" ? "Selling..." : "Adding"}</SpinnerLabel>
+                ) : (
+                  operation === "Sell" ? "Sell" : "Add"
+                )
+              ) : submitting ? (
+                <SpinnerLabel>Adding</SpinnerLabel>
               ) : (
-                submitting ? "Adding" : "Add"
+                "Add"
               )}
             </button>
           </AppModalFooter>

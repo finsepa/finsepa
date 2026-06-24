@@ -47,7 +47,8 @@ export function SearchModal({
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const searchGenRef = useRef(0);
-  const { watched, loaded, toggleTicker } = useWatchlist();
+  const { watchedUnion, loaded, storageHydrated, toggleTicker, watchlists, activeWatchlistId } =
+    useWatchlist();
   const { readRecent, recordRecent, removeRecent, userId, authReady } = useSearchRecentStorage();
 
   const [query, setQuery] = useState("");
@@ -171,9 +172,13 @@ export function SearchModal({
       highlight={highlight}
       onNavigate={navigateTo}
       onRemoveRecent={handleRemoveRecent}
-      isWatched={(item) => isWatchedItem(item, watched)}
+      isWatched={(item) => isWatchedItem(item, watchedUnion)}
       watchlistLoaded={loaded}
+      watchlistStorageHydrated={storageHydrated}
       toggleTicker={toggleTicker}
+      watchlists={watchlists}
+      activeWatchlistId={activeWatchlistId}
+      watched={watchedUnion}
       listClassName={cn(
         fullscreen ? "min-h-0 flex-1" : "max-h-[min(420px,60dvh)]",
         "overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch]",

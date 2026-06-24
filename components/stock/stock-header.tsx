@@ -13,7 +13,7 @@ import {
   type StockDetailHeaderMeta,
 } from "@/lib/market/stock-header-meta";
 import type { StockChartSeries } from "@/lib/market/stock-chart-types";
-import { formatUsdAmountGrouped2dp, formatUsdCompact, formatUsdPrice } from "@/lib/market/key-stats-basic-format";
+import { formatUsdCompact, formatUsdPrice, formatSignedUsdAmountGrouped2dp, formatSignedPercent2dp } from "@/lib/market/key-stats-basic-format";
 
 type Props = {
   ticker: string;
@@ -44,6 +44,22 @@ type Props = {
   /** Overview chart metric — formats the large header number as price vs market cap. */
   headerChartMetric?: StockChartSeries;
 };
+
+function formatHeaderChangeAbs(abs: number, metric: StockChartSeries): string {
+  if (metric === "marketCap") {
+    const sign = abs > 0 ? "+" : abs < 0 ? "-" : "";
+    return `${sign}${formatUsdCompact(Math.abs(abs))}`;
+  }
+  if (metric === "return") {
+    if (abs > 0) return `+${abs.toFixed(2)}`;
+    return abs.toFixed(2);
+  }
+  return formatSignedUsdAmountGrouped2dp(abs);
+}
+
+function formatHeaderChangePair(abs: number, pct: number, metric: StockChartSeries): string {
+  return `${formatHeaderChangeAbs(abs, metric)} (${formatSignedPercent2dp(pct)})`;
+}
 
 export function StockHeader({
   ticker,
@@ -109,13 +125,21 @@ export function StockHeader({
   const anim = useSpringTriplet(springTarget, { stiffness: 520, damping: 38, epsilon: 1e-4 });
 
   const hasChange = changePct != null && changeAbs != null && Number.isFinite(changePct) && Number.isFinite(changeAbs);
-  const isPositive = hasChange ? changeAbs >= 0 : true;
+  const isPositive = hasChange
+    ? Number.isFinite(changePct!)
+      ? changePct! >= 0
+      : changeAbs! >= 0
+    : true;
   const hasSelectionSecondary =
     selectionChangeAbs != null &&
     selectionChangePct != null &&
     Number.isFinite(selectionChangeAbs) &&
     Number.isFinite(selectionChangePct);
-  const isSelPositive = hasSelectionSecondary ? selectionChangeAbs! >= 0 : true;
+  const isSelPositive = hasSelectionSecondary
+    ? Number.isFinite(selectionChangePct!)
+      ? selectionChangePct! >= 0
+      : selectionChangeAbs! >= 0
+    : true;
   const mainPriceClass =
     headerChartMetric === "return" && !chartLoading && anim.price != null && hasChange
       ? isPositive
@@ -181,73 +205,79 @@ export function StockHeader({
   const mobilePeriodLabel =
     chartHovering && scrubPeriodLabel?.trim() ? scrubPeriodLabel.trim() : desktopPeriodLabel;
 
-  const buildChangeRow = (periodText: string) =>
-    headerChartMetric === "return" && !hasSelectionSecondary ? null : (
-      <div className="flex flex-wrap items-baseline gap-2">
-        {hasSelectionSecondary ? (
-          <>
-            <span
-              className={`text-[15px] font-medium tabular-nums transition-colors duration-200 ease-out ${
-                hasChange ? (isPositive ? "text-[#16A34A]" : "text-[#DC2626]") : "text-[#71717A]"
-              }`}
-            >
-              {!hasChange || anim.abs == null || anim.pct == null
-                ? "—"
-                : headerChartMetric === "marketCap"
-                  ? `${isPositive ? "+" : ""}${formatUsdCompact(anim.abs)} (${isPositive ? "+" : ""}${anim.pct.toFixed(2)}%)`
-                  : headerChartMetric === "return"
-                    ? `${isPositive ? "+" : ""}${anim.abs.toFixed(2)} (${isPositive ? "+" : ""}${anim.pct.toFixed(2)}%)`
-                    : `${isPositive ? "+" : ""}${formatUsdAmountGrouped2dp(anim.abs)} (${isPositive ? "+" : ""}${anim.pct.toFixed(2)}%)`}
-            </span>
-            {chartRangeLabel ? <span className={periodLabelClass}>{chartRangeLabel}</span> : null}
-            <span className={periodLabelClass} aria-hidden>
-              ·
-            </span>
-            <span
-              className={`text-[15px] font-medium tabular-nums transition-colors duration-200 ease-out ${
-                isSelPositive ? "text-[#16A34A]" : "text-[#DC2626]"
-              }`}
-            >
-              {headerChartMetric === "marketCap"
-                ? `${isSelPositive ? "+" : ""}${formatUsdCompact(selectionChangeAbs!)} (${isSelPositive ? "+" : ""}${selectionChangePct!.toFixed(2)}%)`
-                : `${isSelPositive ? "+" : ""}${formatUsdAmountGrouped2dp(selectionChangeAbs!)} (${isSelPositive ? "+" : ""}${selectionChangePct!.toFixed(2)}%)`}
-            </span>
-            <span className={periodLabelClass}>Selected range</span>
-          </>
-        ) : (
-          <>
-            <span
-              className={`text-[15px] font-medium tabular-nums transition-colors duration-200 ease-out ${
-                hasChange ? (isPositive ? "text-[#16A34A]" : "text-[#DC2626]") : "text-[#71717A]"
-              }`}
-            >
-              {!hasChange || anim.abs == null || anim.pct == null
-                ? "—"
-                : headerChartMetric === "marketCap"
-                  ? `${isPositive ? "+" : ""}${formatUsdCompact(anim.abs)} (${isPositive ? "+" : ""}${anim.pct.toFixed(2)}%)`
-                  : `${isPositive ? "+" : ""}${formatUsdAmountGrouped2dp(anim.abs)} (${isPositive ? "+" : ""}${anim.pct.toFixed(2)}%)`}
-            </span>
-            <span className={periodLabelClass}>{periodText}</span>
-          </>
-        )}
-      </div>
-    );
+  const showPeriodChange = headerChartMetric !== "return" || hasSelectionSecondary;
 
-  const changeRow = buildChangeRow(desktopPeriodLabel);
-  const mobileChangeRow = buildChangeRow(mobilePeriodLabel);
+  /** Price may hydrate from SSR/performance before range P/L is ready — skeleton the change chip. */
+  const changePending =
+    showPeriodChange &&
+    !hasSelectionSecondary &&
+    !chartEmpty &&
+    (chartLoading || (price != null && Number.isFinite(price) && !hasChange));
+
+  const periodChangeValue =
+    !hasChange || anim.abs == null || anim.pct == null
+      ? "—"
+      : formatHeaderChangePair(anim.abs, anim.pct, headerChartMetric);
+
+  const periodChangeClass = `text-[15px] font-medium tabular-nums transition-colors duration-200 ease-out ${
+    hasChange ? (isPositive ? "text-[#16A34A]" : "text-[#DC2626]") : "text-[#71717A]"
+  }`;
+
+  const inlinePeriodChange = showPeriodChange ? (
+    changePending ? (
+      <div
+        className="h-5 w-[8rem] shrink-0 rounded-md bg-neutral-200/80 animate-pulse"
+        aria-busy="true"
+        aria-label="Loading price change"
+      />
+    ) : (
+      <span className={periodChangeClass}>{periodChangeValue}</span>
+    )
+  ) : null;
+
+  const buildPeriodMetaRow = (periodText: string) => {
+    if (!showPeriodChange) return null;
+    if (hasSelectionSecondary) {
+      return (
+        <div className="flex flex-wrap items-baseline gap-2">
+          {chartRangeLabel ? <span className={periodLabelClass}>{chartRangeLabel}</span> : null}
+          <span className={periodLabelClass} aria-hidden>
+            ·
+          </span>
+          <span
+            className={`text-[15px] font-medium tabular-nums transition-colors duration-200 ease-out ${
+              isSelPositive ? "text-[#16A34A]" : "text-[#DC2626]"
+            }`}
+          >
+            {formatHeaderChangePair(selectionChangeAbs!, selectionChangePct!, headerChartMetric)}
+          </span>
+          <span className={periodLabelClass}>Selected range</span>
+        </div>
+      );
+    }
+    return <p className={periodLabelClass}>{periodText}</p>;
+  };
+
+  const periodMetaRow = buildPeriodMetaRow(desktopPeriodLabel);
+  const mobilePeriodMetaRow = buildPeriodMetaRow(mobilePeriodLabel);
 
   const priceLoadingSkeleton = (
     <div className="space-y-1" aria-busy="true" aria-label="Loading chart value">
-      <div className="h-9 w-[7.5rem] rounded-md bg-neutral-200/80 animate-pulse" aria-hidden />
-      {headerChartMetric === "return" ? null : (
-        <div className="h-5 w-[10rem] rounded-md bg-neutral-200/80 animate-pulse" aria-hidden />
-      )}
+      <div className="flex flex-wrap items-baseline gap-3">
+        <div className="h-9 w-[7.5rem] rounded-md bg-neutral-200/80 animate-pulse" aria-hidden />
+        {showPeriodChange ? (
+          <div className="h-5 w-[8rem] rounded-md bg-neutral-200/80 animate-pulse" aria-hidden />
+        ) : null}
+      </div>
+      {showPeriodChange ? (
+        <div className="h-4 w-[14rem] rounded-md bg-neutral-200/80 animate-pulse" aria-hidden />
+      ) : null}
     </div>
   );
 
   const priceValue = (
     <span
-      className={`block text-[28px] font-semibold leading-9 tabular-nums transition-[transform] duration-200 ease-out ${mainPriceClass} ${
+      className={`text-[28px] font-semibold leading-9 tabular-nums transition-[transform] duration-200 ease-out ${mainPriceClass} ${
         chartHovering ? "scale-[1.01]" : "scale-100"
       }`}
     >
@@ -272,8 +302,11 @@ export function StockHeader({
           <h1 className="truncate text-[16px] font-medium leading-5 text-[#09090B]">{titleName}</h1>
           {chartLoading ? priceLoadingSkeleton : (
             <>
-              {mobilePriceValue}
-              {mobileChangeRow}
+              <div className={`flex flex-wrap items-baseline gap-x-3 gap-y-0.5 ${priceMotionClass}`}>
+                {mobilePriceValue}
+                {inlinePeriodChange}
+              </div>
+              {mobilePeriodMetaRow}
             </>
           )}
         </div>
@@ -318,8 +351,11 @@ export function StockHeader({
         <div className="min-w-0">
           {chartLoading ? priceLoadingSkeleton : (
             <div className={`space-y-1 ${priceMotionClass}`}>
-              {priceValue}
-              {changeRow}
+              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+                {priceValue}
+                {inlinePeriodChange}
+              </div>
+              {periodMetaRow}
             </div>
           )}
         </div>

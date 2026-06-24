@@ -10,7 +10,9 @@ export function syntheticWatchlistRows(rawTickers: string[]): WatchlistRow[] {
       out.push({
         id: `syn-${ticker}-${i}`,
         user_id: "",
+        collection_id: "",
         ticker,
+        sort_order: i,
         created_at: new Date(0).toISOString(),
       });
     } catch {

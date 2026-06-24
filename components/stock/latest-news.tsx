@@ -41,9 +41,13 @@ function formatPublishedLabel(iso: string): string {
   return "Just now";
 }
 
+const NEWS_CARD_SURFACE_CLASS =
+  "rounded-xl border border-[#E4E4E7] bg-white p-4 max-md:rounded-2xl";
+const NEWS_CARD_CLASS = `block ${NEWS_CARD_SURFACE_CLASS} transition-colors hover:bg-[#FAFAFA]`;
+
 function NewsRowSkeleton() {
   return (
-    <div className="border-b border-[#E4E4E7] py-4 px-3 sm:-mx-9 sm:px-9">
+    <div className={NEWS_CARD_SURFACE_CLASS} aria-hidden>
       <div className="space-y-2">
         <div className="flex items-center gap-2">
           <SkeletonBox className="h-3 w-20" />
@@ -216,24 +220,24 @@ function LatestNewsInner({
       <h2 className="mb-4 px-3 text-[18px] font-semibold leading-7 text-[#09090B] sm:px-0">Latest news</h2>
 
       {loading ? (
-        <div className="space-y-0">
+        <div className="space-y-3 px-3 sm:px-0">
           {Array.from({ length: skeletonCount }).map((_, i) => (
             <NewsRowSkeleton key={i} />
           ))}
         </div>
       ) : !loading && items.length === 0 ? (
-        <p className="text-[13px] leading-5 text-[#71717A] py-2">No recent news found for {sym}.</p>
+        <p className="px-3 text-[13px] leading-5 text-[#71717A] py-2 sm:px-0">No recent news found for {sym}.</p>
       ) : !loading ? (
-        <div className="space-y-0">
+        <div className="space-y-3 px-3 sm:px-0">
           {items.map((item) => (
             <a
               key={item.id}
               href={item.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="block border-b border-[#E4E4E7] py-4 px-3 cursor-pointer transition-colors hover:bg-[#FAFAFA] sm:-mx-9 sm:px-9"
+              className={`${NEWS_CARD_CLASS} cursor-pointer`}
             >
-              <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+              <div className="mb-1 flex flex-wrap items-center gap-1.5">
                 <span className="text-[12px] text-[#71717A]">{formatPublishedLabel(item.publishedAt)}</span>
                 <span className="text-[#E4E4E7]">·</span>
                 <span className="text-[12px] font-medium text-[#09090B]">{item.source}</span>
@@ -246,7 +250,7 @@ function LatestNewsInner({
             <>
               <div ref={sentinelRef} className="h-px w-full" aria-hidden />
               {loadingMore ? (
-                <div className="space-y-0 pt-2">
+                <div className="space-y-3">
                   {Array.from({ length: PAGE_SIZE }).map((_, i) => (
                     <NewsRowSkeleton key={`more-${i}`} />
                   ))}

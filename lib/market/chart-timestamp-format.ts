@@ -212,3 +212,37 @@ export function formatStockHeaderSessionPeriodLabel(
     return formatDateOnly(unixSeconds, timeZone);
   }
 }
+
+/** Header period badge when the regular session is over (e.g. `At close: Jun 23, 2026, 4:00 PM EDT`). */
+export function formatStockHeaderAtClosePeriodLabel(
+  unixSeconds: number,
+  timeZone: string = STOCK_DISPLAY_TZ,
+): string {
+  const d = new Date(unixSeconds * 1000);
+  if (!Number.isFinite(d.getTime())) return "At close";
+  try {
+    const dateStr = new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      timeZone,
+    }).format(d);
+    const timeStr = new Intl.DateTimeFormat("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+      timeZone,
+    }).format(d);
+    const tzName =
+      new Intl.DateTimeFormat("en-US", {
+        timeZone,
+        timeZoneName: "short",
+      })
+        .formatToParts(d)
+        .find((p) => p.type === "timeZoneName")?.value?.trim() ?? "";
+    const when = tzName ? `${dateStr}, ${timeStr} ${tzName}` : `${dateStr}, ${timeStr}`;
+    return `At close: ${when}`;
+  } catch {
+    return "At close";
+  }
+}

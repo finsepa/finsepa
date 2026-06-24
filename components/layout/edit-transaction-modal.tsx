@@ -11,6 +11,7 @@ import {
   appModalCancelButtonClass,
   appModalPrimaryButtonClass,
 } from "@/components/ui/app-modal-shell";
+import { SpinnerLabel } from "@/components/ui/spinner";
 import { displayLogoUrlForPortfolioSymbol } from "@/lib/portfolio/portfolio-asset-display-logo";
 import { cn } from "@/lib/utils";
 import {
@@ -261,7 +262,7 @@ export function EditTransactionModal({ open, onClose, transaction }: Props) {
                 }}
                 className={appModalPrimaryButtonClass(saveEnabled)}
               >
-                {submitting ? "Saving…" : "Save"}
+                {submitting ? <SpinnerLabel>Saving…</SpinnerLabel> : "Save"}
               </button>
             )}
           </AppModalFooter>

@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/app-modal-shell";
 import type { PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 import { defaultSnaptradeUpdateFromYmd } from "@/lib/snaptrade/sync-update-from";
-import { Loader2 } from "@/lib/icons";
+import { SpinnerLabel } from "@/components/ui/spinner";
 
 export function PortfolioSnaptradeSyncModal({
   open,
@@ -67,12 +67,7 @@ export function PortfolioSnaptradeSyncModal({
                 onClick={() => onUpdate(updateFromYmd)}
                 className={appModalPrimaryButtonClass(canUpdate)}
               >
-                {updating ?
-                  <span className="inline-flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                    Updating…
-                  </span>
-                : "Update"}
+                {updating ? <SpinnerLabel>Updating…</SpinnerLabel> : "Update"}
               </button>
             </div>
           </AppModalFooter>

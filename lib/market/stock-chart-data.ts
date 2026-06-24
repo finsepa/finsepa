@@ -8,7 +8,7 @@ import { resampleStock1DLiveSessionTo15Min } from "@/lib/chart/stock-1d-live-ses
 import { fetchEodhdIntraday, type EodhdIntradayBar } from "@/lib/market/eodhd-intraday";
 import { fetchEodhdEodDaily, type EodhdDailyBar } from "@/lib/market/eodhd-eod";
 import { fetchEodhdUsRealtime } from "@/lib/market/eodhd-realtime";
-import { getUsEquityMarketSession } from "@/lib/market/us-equity-market-session";
+import { getUsEquityMarketSession, usEquityTodayRegularSessionComplete } from "@/lib/market/us-equity-market-session";
 import { getCachedSharesOutstanding } from "@/lib/market/stock-shares-outstanding";
 import { STOCK_DISPLAY_TZ, usSessionWallClockUnix } from "@/lib/market/chart-timestamp-format";
 import {
@@ -227,6 +227,20 @@ function trimIntradayToLatestUsSessionDay<T extends { timestamp: number }>(bars:
   return bars.filter((b) => usSessionYmdFromUnixSeconds(b.timestamp) === lastYmd);
 }
 
+/** Last completed US regular session (9:30–16:00 ET) — skips pre/post bars on the latest calendar day. */
+function trimIntradayToLastUsRegularSessionDay<T extends { timestamp: number }>(bars: T[]): T[] {
+  if (bars.length === 0) return [];
+  const regular = bars.filter((b) => {
+    const ymd = usSessionYmdFromUnixSeconds(b.timestamp);
+    const open = usSessionWallClockUnix(ymd, 9, 30, STOCK_DISPLAY_TZ);
+    const close = usSessionWallClockUnix(ymd, 16, 0, STOCK_DISPLAY_TZ);
+    return b.timestamp >= open && b.timestamp <= close;
+  });
+  if (!regular.length) return trimIntradayToLatestUsSessionDay(bars);
+  const lastYmd = usSessionYmdFromUnixSeconds(regular[regular.length - 1]!.timestamp);
+  return regular.filter((b) => usSessionYmdFromUnixSeconds(b.timestamp) === lastYmd);
+}
+
 /** US session calendar day for an equity bar (aligns with EODHD daily `date` semantics). */
 export function usSessionYmdFromUnixSeconds(sec: number): string {
   return new Intl.DateTimeFormat("en-CA", {
@@ -315,6 +329,21 @@ function filterToUsRegularSessionPoints(points: StockChartPoint[]): StockChartPo
   });
 }
 
+/** Drop pre/post bars and today's incomplete session when the regular day has not finished. */
+function finalizeMultiDayChartPointsForSession(
+  points: StockChartPoint[],
+  now: Date = new Date(),
+): StockChartPoint[] {
+  const regular = filterToUsRegularSessionPoints(points);
+  const base = regular.length ? regular : points;
+  if (usEquityTodayRegularSessionComplete(now)) return base;
+  const todayYmd = usSessionYmdFromUnixSeconds(Math.floor(now.getTime() / 1000));
+  return base.filter((p) => {
+    const ymd = p.sessionDate?.trim() || usSessionYmdFromUnixSeconds(p.time);
+    return ymd !== todayYmd;
+  });
+}
+
 function finalize1DIntradayPoints(points: StockChartPoint[], now: Date = new Date()): StockChartPoint[] {
   if (!points.length) return points;
   const regular = filterToUsRegularSessionPoints(points);
@@ -345,7 +374,22 @@ function finalize1DIntradayPoints(points: StockChartPoint[], now: Date = new Dat
       now,
     );
   }
-  return trimPointsToLastNUsSessionDays(thinned, 1);
+
+  const lastSession = trimPointsToLastNUsSessionDays(thinned, 1);
+  if (!lastSession.length) return [];
+  const sessionYmd =
+    lastSession[0]!.sessionDate?.trim() || usSessionYmdFromUnixSeconds(lastSession[0]!.time);
+  const regularOnly = filterToUsRegularSessionPoints(lastSession);
+  const source = regularOnly.length ? regularOnly : lastSession;
+  const openValue = source[0]!.value;
+  if (!Number.isFinite(openValue)) return source;
+  return resampleStock1DLiveSessionTo15Min(
+    source,
+    sessionYmd,
+    STOCK_DISPLAY_TZ,
+    openValue,
+    now,
+  );
 }
 
 /**
@@ -472,7 +516,7 @@ async function load1DChartPoints(ticker: string, now: Date, nowSec: number): Pro
     }
     if (!bars?.length) continue;
     const trimmed = s.trimToLatestUtcDay ? trimIntradayToLatestUtcDay(bars) : bars;
-    const use = trimmed;
+    const use = trimIntradayToLastUsRegularSessionDay(trimmed);
     if (!use.length) continue;
     const pts = barsToChartPoints(use);
     const finalized = finalize1DIntradayPoints(pts, now);
@@ -516,6 +560,7 @@ async function load5DChartPoints(ticker: string, now: Date, nowSec: number): Pro
     }
     if (!bars?.length) continue;
     let pts = barsToChartPoints(bars);
+    pts = finalizeMultiDayChartPointsForSession(pts, now);
     pts = trimPointsToLastNUsSessionDays(pts, 5);
     if (!pts.length) continue;
     if (t.interval === "1h") {
@@ -763,32 +808,32 @@ async function loadStockPriceChartPointsUncached(ticker: string, range: StockCha
   const now = new Date();
   const nowSec = Math.floor(now.getTime() / 1000);
 
+  let pts: StockChartPoint[];
   if (range === "1D") {
     return load1DChartPoints(ticker, now, nowSec);
   }
   if (range === "5D") {
-    return load5DChartPoints(ticker, now, nowSec);
-  }
-  if (range === "1M") {
-    return load1MChartPoints(ticker, now, nowSec);
-  }
-  if (range === "6M") {
-    return load6MChartPoints(ticker, now, nowSec);
-  }
-  if (range === "YTD") {
-    return loadYTDChartPoints(ticker, now, nowSec);
-  }
-  if (range === "1Y") {
-    return load1YChartPoints(ticker, now, nowSec);
-  }
-  if (range === "5Y") {
-    return load5YChartPoints(ticker, now);
-  }
-  if (range === "ALL") {
-    return loadALLChartPoints(ticker, now);
+    pts = await load5DChartPoints(ticker, now, nowSec);
+  } else if (range === "1M") {
+    pts = await load1MChartPoints(ticker, now, nowSec);
+  } else if (range === "6M") {
+    pts = await load6MChartPoints(ticker, now, nowSec);
+  } else if (range === "YTD") {
+    pts = await loadYTDChartPoints(ticker, now, nowSec);
+  } else if (range === "1Y") {
+    pts = await load1YChartPoints(ticker, now, nowSec);
+  } else if (range === "5Y") {
+    pts = await load5YChartPoints(ticker, now);
+  } else if (range === "ALL") {
+    pts = await loadALLChartPoints(ticker, now);
+  } else {
+    return [];
   }
 
-  return [];
+  if (getUsEquityMarketSession(now) !== "regular") {
+    return finalizeMultiDayChartPointsForSession(pts, now);
+  }
+  return pts;
 }
 
 async function loadStockChartPointsUncached(
@@ -807,7 +852,7 @@ async function loadStockChartPointsUncached(
 export const getStockChartPoints = unstable_cache(
   async (ticker: string, range: StockChartRange, series: StockChartSeries) =>
     loadStockChartPointsUncached(ticker, range, series),
-  ["stock-chart-points-v21-all-monthly-8y-axis"],
+  ["stock-chart-points-v23-closed-multiday-header"],
   { revalidate: REVALIDATE_HOT },
 );
 

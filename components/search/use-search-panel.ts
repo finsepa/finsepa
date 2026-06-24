@@ -37,7 +37,8 @@ export function useSearchPanel({
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const searchGenRef = useRef(0);
-  const { watched, loaded, toggleTicker } = useWatchlist();
+  const { watchedUnion, loaded, storageHydrated, toggleTicker, watchlists, activeWatchlistId } =
+    useWatchlist();
   const { readRecent, recordRecent, removeRecent, userId, authReady } = useSearchRecentStorage();
 
   const [query, setQuery] = useState("");
@@ -155,7 +156,10 @@ export function useSearchPanel({
   });
   const noRecent = emptyQuery && recent.length === 0;
 
-  const isWatched = useCallback((item: SearchAssetItem) => isWatchedItem(item, watched), [watched]);
+  const isWatched = useCallback(
+    (item: SearchAssetItem) => isWatchedItem(item, watchedUnion),
+    [watchedUnion],
+  );
 
   return {
     inputRef,
@@ -175,6 +179,10 @@ export function useSearchPanel({
     noResults,
     isWatched,
     watchlistLoaded: loaded,
+    watchlistStorageHydrated: storageHydrated,
     toggleTicker,
+    watchlists,
+    activeWatchlistId,
+    watched: watchedUnion,
   };
 }

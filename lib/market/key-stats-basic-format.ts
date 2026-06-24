@@ -91,6 +91,22 @@ export function formatUsdAmountGrouped2dp(n: number): string {
   return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+/** Signed dollar change for headers — `+1,234.56` / `-1,234.56` / `0.00`. */
+export function formatSignedUsdAmountGrouped2dp(n: number): string {
+  if (!Number.isFinite(n)) return "—";
+  const body = formatUsdAmountGrouped2dp(Math.abs(n));
+  if (n > 0) return `+${body}`;
+  if (n < 0) return `-${body}`;
+  return body;
+}
+
+/** Signed percent for headers — `+1.23%` / `-1.23%`. */
+export function formatSignedPercent2dp(n: number): string {
+  if (!Number.isFinite(n)) return "—";
+  if (n > 0) return `+${n.toFixed(2)}%`;
+  return `${n.toFixed(2)}%`;
+}
+
 export function formatBeta(n: number): string {
   if (!Number.isFinite(n)) return "—";
   return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });

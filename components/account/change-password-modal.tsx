@@ -11,6 +11,7 @@ import {
   appModalCancelButtonClass,
   appModalPrimaryButtonClass,
 } from "@/components/ui/app-modal-shell";
+import { SpinnerLabel } from "@/components/ui/spinner";
 import { changePasswordWithCurrent, MIN_PASSWORD_LENGTH } from "@/lib/auth/change-password";
 
 function FieldLabel({ children, htmlFor }: { children: React.ReactNode; htmlFor?: string }) {
@@ -121,7 +122,7 @@ export function ChangePasswordModal({
               disabled={!canSave}
               className={appModalPrimaryButtonClass(canSave)}
             >
-              {loading ? "Saving…" : "Save changes"}
+              {loading ? <SpinnerLabel>Saving…</SpinnerLabel> : "Save changes"}
             </button>
           </AppModalFooter>
         }

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAuthUser, AuthRequiredError } from "@/lib/watchlist/api-auth";
 import {
   addWatchlistTicker,
-  listWatchlistForUser,
+  getWatchlistSnapshot,
   normalizeWatchlistTicker,
   removeWatchlistTicker,
   WatchlistValidationError,
@@ -14,11 +14,11 @@ export async function GET() {
     const supabase = await getSupabaseServerClient();
     const user = await requireAuthUser(supabase);
     try {
-      const items = await listWatchlistForUser(supabase, user.id);
-      return NextResponse.json({ items });
+      const snapshot = await getWatchlistSnapshot(supabase, user.id);
+      return NextResponse.json(snapshot);
     } catch (dbErr) {
-      console.error("[watchlist GET] listWatchlistForUser failed", dbErr);
-      return NextResponse.json({ items: [], warning: "db_unavailable" as const });
+      console.error("[watchlist GET] getWatchlistSnapshot failed", dbErr);
+      return NextResponse.json({ collections: [], activeCollectionId: "", warning: "db_unavailable" as const });
     }
   } catch (e) {
     if (e instanceof AuthRequiredError) {
@@ -43,23 +43,23 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
     }
 
-    if (!body || typeof body !== "object" || !("ticker" in body)) {
-      return NextResponse.json({ error: "Missing ticker." }, { status: 400 });
+    if (!body || typeof body !== "object" || !("ticker" in body) || !("collectionId" in body)) {
+      return NextResponse.json({ error: "Missing ticker or collectionId." }, { status: 400 });
     }
 
-    const raw = (body as { ticker: unknown }).ticker;
-    if (typeof raw !== "string") {
-      return NextResponse.json({ error: "ticker must be a string." }, { status: 400 });
+    const rawTicker = (body as { ticker: unknown }).ticker;
+    const rawCollectionId = (body as { collectionId: unknown }).collectionId;
+    if (typeof rawTicker !== "string" || typeof rawCollectionId !== "string") {
+      return NextResponse.json({ error: "ticker and collectionId must be strings." }, { status: 400 });
     }
 
-    const ticker = normalizeWatchlistTicker(raw);
-    const { row, created } = await addWatchlistTicker(supabase, user.id, ticker);
-    console.info("[watchlist POST] insert ok", {
-      userId: user.id,
-      ticker,
-      created,
-      rowId: row.id,
-    });
+    const ticker = normalizeWatchlistTicker(rawTicker);
+    const collectionId = rawCollectionId.trim();
+    if (!collectionId) {
+      return NextResponse.json({ error: "collectionId is required." }, { status: 400 });
+    }
+
+    const { row, created } = await addWatchlistTicker(supabase, user.id, collectionId, ticker);
     return NextResponse.json({ entry: row, created }, { status: 200 });
   } catch (e) {
     if (e instanceof AuthRequiredError) {
@@ -79,18 +79,24 @@ export async function DELETE(request: Request) {
     const supabase = await getSupabaseServerClient();
     const user = await requireAuthUser(supabase);
 
-    const tickerParam = new URL(request.url).searchParams.get("ticker");
+    const params = new URL(request.url).searchParams;
+    const tickerParam = params.get("ticker");
     if (tickerParam == null || tickerParam === "") {
       return NextResponse.json({ error: "Missing ticker query parameter." }, { status: 400 });
     }
 
     const ticker = normalizeWatchlistTicker(tickerParam);
-    console.info("DELETE ticker", ticker);
-    console.info("[watchlist DELETE] request", { userId: user.id, tickerParamRaw: tickerParam, tickerNormalized: ticker });
+    const scope = params.get("scope");
+    const collectionId = params.get("collectionId")?.trim() || undefined;
 
-    const { removed } = await removeWatchlistTicker(supabase, user.id, ticker);
+    const { removed } = await removeWatchlistTicker(
+      supabase,
+      user.id,
+      ticker,
+      scope === "all" ? undefined : collectionId,
+    );
+
     if (!removed) {
-      console.warn("[watchlist DELETE] no row deleted", { userId: user.id, ticker });
       return NextResponse.json(
         { error: "Watchlist entry not found for this ticker.", ticker, removed: false },
         { status: 404 },

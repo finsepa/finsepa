@@ -72,7 +72,7 @@ export function AuthPrimaryButton({
       type={type}
       disabled={disabled}
       onClick={onClick}
-      className="flex h-[44px] w-full items-center justify-center rounded-[10px] bg-[#2563EB] px-4 text-sm font-semibold text-white shadow-[0px_1px_2px_0px_rgba(37,99,235,0.25)] transition-colors duration-100 hover:bg-[#1D4ED8] disabled:cursor-not-allowed disabled:opacity-60"
+      className="flex h-[44px] w-full items-center justify-center gap-2 rounded-[10px] bg-[#2563EB] px-4 text-sm font-semibold text-white shadow-[0px_1px_2px_0px_rgba(37,99,235,0.25)] transition-colors duration-100 hover:bg-[#1D4ED8] disabled:cursor-not-allowed disabled:opacity-60"
     >
       {children}
     </button>

@@ -157,5 +157,5 @@ export function fitContentWithMobilePlotGutter(
   }
 
   ts.applyOptions(mobileTimeScaleOptions(containerWidthPx));
-  fitSeriesLogicalRangeToPlotWidth(chart, logicalPointCount, { fixEdges: false });
+  fitSeriesLogicalRangeToPlotWidth(chart, logicalPointCount, { fixEdges: true });
 }

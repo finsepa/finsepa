@@ -1,3 +1,5 @@
+import { STOCK_DISPLAY_TZ, usSessionWallClockUnix } from "@/lib/market/chart-timestamp-format";
+
 export type UsEquityMarketSession = "pre" | "regular" | "post" | "closed";
 
 /** Stock header / badge: explicit pre-market and “opens soon” overnight copy. */
@@ -96,4 +98,57 @@ export function getUsEquitySessionBadgeDisplay(now: Date): UsEquitySessionBadgeD
     return { kind: "pre_opens_soon", minutesUntilPre: preStart - dayMinutes };
   }
   return { kind: "closed" };
+}
+
+function nySessionYmdFromDate(date: Date): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
+function nyWeekdayShortFromDate(date: Date): string {
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    weekday: "short",
+  }).format(date);
+}
+
+/** Unix seconds for the most recent US regular-session close (4:00 PM ET). */
+export function lastUsRegularSessionCloseUnix(
+  now: Date = new Date(),
+  timeZone: string = STOCK_DISPLAY_TZ,
+): number {
+  const session = getUsEquityMarketSession(now);
+  const todayYmd = nySessionYmdFromDate(now);
+
+  if (session === "post") {
+    return usSessionWallClockUnix(todayYmd, 16, 0, timeZone);
+  }
+
+  const { weekdayShort, dayMinutes } = nyWeekdayAndMinutes(now);
+  if (session === "closed" && weekdayShort !== "Sat" && weekdayShort !== "Sun" && dayMinutes >= 20 * 60) {
+    return usSessionWallClockUnix(todayYmd, 16, 0, timeZone);
+  }
+
+  let cursor = new Date(now.getTime());
+  for (let i = 0; i < 10; i++) {
+    cursor = new Date(cursor.getTime() - 86_400_000);
+    const wd = nyWeekdayShortFromDate(cursor);
+    if (wd === "Sat" || wd === "Sun") continue;
+    return usSessionWallClockUnix(nySessionYmdFromDate(cursor), 16, 0, timeZone);
+  }
+
+  return usSessionWallClockUnix(todayYmd, 16, 0, timeZone);
+}
+
+/** Whether today's 9:30–16:00 ET regular session has finished (include today in multi-day charts). */
+export function usEquityTodayRegularSessionComplete(now: Date = new Date()): boolean {
+  const session = getUsEquityMarketSession(now);
+  if (session === "regular" || session === "post") return true;
+  if (session !== "closed") return false;
+  const { weekdayShort, dayMinutes } = nyWeekdayAndMinutes(now);
+  return weekdayShort !== "Sat" && weekdayShort !== "Sun" && dayMinutes >= 20 * 60;
 }

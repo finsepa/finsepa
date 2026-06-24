@@ -1,11 +1,12 @@
 "use client";
 
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import Link from "next/link";
 import { X } from "@/lib/icons";
 
 import { dropdownMenuRichItemClassName } from "@/components/design-system/dropdown-menu-styles";
 import { WatchlistStarToggle } from "@/components/watchlist/watchlist-star-button";
+import type { WatchlistCollection } from "@/lib/watchlist/collections";
 import { cn } from "@/lib/utils";
 import { mergeLogoMemory, readLogoMemory } from "@/lib/logos/logo-memory";
 import { eodhdCryptoSpotTickerDisplay } from "@/lib/crypto/eodhd-crypto-ticker-display";
@@ -72,10 +73,14 @@ type Props = {
   onNavigate: (item: SearchAssetItem) => void;
   onRemoveRecent?: () => void;
   active?: boolean;
-  /** Whether this asset is on the watchlist (avoids passing the full Set each render). */
+  /** Whether this asset is on any watchlist. */
   starred: boolean;
+  watched: Set<string>;
+  watchlists: WatchlistCollection[];
+  activeWatchlistId: string;
   loaded: boolean;
-  toggleTicker: (ticker: string) => void;
+  storageHydrated?: boolean;
+  toggleTicker: (ticker: string, watchlistId?: string) => void;
 };
 
 function SearchResultRowInner({
@@ -85,16 +90,15 @@ function SearchResultRowInner({
   onRemoveRecent,
   active,
   starred,
+  watched,
+  watchlists,
+  activeWatchlistId,
   loaded,
+  storageHydrated = false,
   toggleTicker,
 }: Props) {
   const wlKey = watchlistStorageKeyForSearchItem(item);
   const label = item.symbol;
-
-  const watchedSet = useMemo(() => {
-    const k = wlKey.trim().toUpperCase();
-    return starred ? new Set([k]) : new Set<string>();
-  }, [starred, wlKey]);
 
   const rowClass = cn(dropdownMenuRichItemClassName(), "group items-center", active && "bg-[#F4F4F5]");
 
@@ -124,9 +128,12 @@ function SearchResultRowInner({
           className="flex w-8 shrink-0 items-center justify-center"
           storageKey={wlKey}
           label={label}
-          watched={watchedSet}
+          watched={watched}
           loaded={loaded}
+          storageHydrated={storageHydrated}
           toggleTicker={toggleTicker}
+          watchlists={watchlists}
+          activeWatchlistId={activeWatchlistId}
         />
         {mainLink}
         <MetaRight item={item} />
@@ -140,9 +147,12 @@ function SearchResultRowInner({
         className="flex w-8 shrink-0 items-center justify-center"
         storageKey={wlKey}
         label={label}
-        watched={watchedSet}
+        watched={watched}
         loaded={loaded}
+        storageHydrated={storageHydrated}
         toggleTicker={toggleTicker}
+        watchlists={watchlists}
+        activeWatchlistId={activeWatchlistId}
       />
       {mainLink}
       <div className="flex shrink-0 items-center gap-2">

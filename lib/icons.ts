@@ -66,6 +66,7 @@ export {
   LineChartUp01 as LineChart,
   LinkExternal01 as ExternalLink,
   List as LayoutList,
+  /** Not for loading UI — use `@/components/ui/spinner` (`Spinner` / `SpinnerLabel`). */
   Loading01 as Loader2,
   Lock01 as Lock,
   LogOut01 as LogOut,

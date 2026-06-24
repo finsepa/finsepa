@@ -683,7 +683,7 @@ function CashInOutBarChartSectionInner({ rows }: { rows: PortfolioTransaction[] 
 
       {rows.length === 0 ? (
         <Empty variant="card" className="min-h-[200px]">
-          <EmptyHeader className="gap-2">
+          <EmptyHeader>
             <EmptyMedia variant="icon">
               <BarChart3 className="h-6 w-6" strokeWidth={1.75} aria-hidden />
             </EmptyMedia>

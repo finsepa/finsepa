@@ -43,11 +43,12 @@ import { LatestNews } from "./latest-news";
 import type { StockPageInitialData } from "@/lib/market/stock-page-initial-data";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
 import type { StockChartRange, StockChartSeries } from "@/lib/market/stock-chart-types";
-import { mergeSessionHeaderWithPerformanceSpot } from "@/lib/chart/merge-session-header-with-performance-spot";
-import { getUsEquityMarketSession } from "@/lib/market/us-equity-market-session";
+import { mergeClosedMarketOverviewHeader, mergeSessionHeaderWithPerformanceSpot } from "@/lib/chart/merge-session-header-with-performance-spot";
+import { getUsEquityMarketSession, lastUsRegularSessionCloseUnix } from "@/lib/market/us-equity-market-session";
 import { STOCK_1D_LIVE_PRICE_POLL_MS } from "@/lib/chart/stock-1d-live-session-chart";
 import {
   formatAssetChartTimestamp,
+  formatStockHeaderAtClosePeriodLabel,
   formatStockHeaderSessionPeriodLabel,
   STOCK_DISPLAY_TZ,
 } from "@/lib/market/chart-timestamp-format";
@@ -92,11 +93,13 @@ function buildInitialSessionHeaderUi(
   routeTicker: string,
 ): ChartDisplayState {
   if (data?.ticker !== routeTicker.trim().toUpperCase()) return EMPTY_CHART_DISPLAY;
+  const headerLiveSpotUsd =
+    getUsEquityMarketSession(new Date()) === "regular" ? data.headerLiveSpotUsd : null;
   return mergeSessionHeaderWithPerformanceSpot(
     EMPTY_CHART_DISPLAY,
     data.performance,
     "price",
-    data.headerLiveSpotUsd,
+    headerLiveSpotUsd,
   );
 }
 
@@ -417,6 +420,12 @@ export function StockPageContent({
 
   const [performanceClient, setPerformanceClient] = useState<StockPerformance | null>(null);
 
+  const [regularSessionClock, setRegularSessionClock] = useState(0);
+  useEffect(() => {
+    const id = window.setInterval(() => setRegularSessionClock((n) => n + 1), 30_000);
+    return () => window.clearInterval(id);
+  }, []);
+
   /** Phase 7: intraday-aligned spot; client poll refines SSR `headerLiveSpotUsd` for signed-in users. */
   const [headerLiveSpotClient, setHeaderLiveSpotClient] = useState<number | null>(null);
 
@@ -425,9 +434,8 @@ export function StockPageContent({
   }, [ticker]);
 
   useEffect(() => {
+    if (getUsEquityMarketSession(new Date()) !== "regular") return;
     let cancelled = false;
-    const pollMs =
-      getUsEquityMarketSession(new Date()) === "regular" ? STOCK_1D_LIVE_PRICE_POLL_MS : 90_000;
     const tick = async () => {
       try {
         const res = await fetch(`/api/stocks/${encodeURIComponent(ticker)}/live-price`, {
@@ -443,12 +451,12 @@ export function StockPageContent({
       }
     };
     void tick();
-    const id = window.setInterval(tick, pollMs);
+    const id = window.setInterval(tick, STOCK_1D_LIVE_PRICE_POLL_MS);
     return () => {
       cancelled = true;
       window.clearInterval(id);
     };
-  }, [ticker]);
+  }, [ticker, regularSessionClock]);
 
   useEffect(() => {
     setPerformanceClient(null);
@@ -477,8 +485,10 @@ export function StockPageContent({
   const performanceForHeaderFallback = performanceFromServer ?? performanceClient;
 
   const headerLiveSpotForMerge =
-    headerLiveSpotClient ??
-    (initialPageData?.ticker === ticker ? (initialPageData.headerLiveSpotUsd ?? null) : null);
+    getUsEquityMarketSession(new Date()) === "regular"
+      ? (headerLiveSpotClient ??
+          (initialPageData?.ticker === ticker ? (initialPageData.headerLiveSpotUsd ?? null) : null))
+      : null;
 
   const sessionSpotHeaderUi = useMemo(
     () =>
@@ -508,12 +518,22 @@ export function StockPageContent({
 
   const overviewHeaderUiMerged = useMemo(() => {
     if (!overviewHeaderUi) return null;
-    if (chartSeries === "price" && range === "1D") {
+    if (chartSeries !== "price") return overviewHeaderUi;
+
+    const closed = getUsEquityMarketSession(new Date()) !== "regular";
+    if (range === "1D") {
       return mergeSessionHeaderWithPerformanceSpot(
         overviewHeaderUi,
         performanceForHeaderFallback,
         "price",
         headerLiveSpotForMerge,
+      );
+    }
+    if (closed) {
+      return mergeClosedMarketOverviewHeader(
+        overviewHeaderUi,
+        performanceForHeaderFallback,
+        "price",
       );
     }
     return overviewHeaderUi;
@@ -523,18 +543,26 @@ export function StockPageContent({
     overviewHeaderUi,
     performanceForHeaderFallback,
     range,
+    regularSessionClock,
   ]);
 
-  const overviewHeaderFallback = useMemo(
-    () =>
-      mergeSessionHeaderWithPerformanceSpot(
-        { ...EMPTY_CHART_DISPLAY, loading: true, empty: false },
+  const overviewHeaderFallback = useMemo(() => {
+    const base = { ...EMPTY_CHART_DISPLAY, loading: true, empty: false };
+    if (chartSeries !== "price") return base;
+    const closed = getUsEquityMarketSession(new Date()) !== "regular";
+    if (range === "1D") {
+      return mergeSessionHeaderWithPerformanceSpot(
+        base,
         performanceForHeaderFallback,
         "price",
         headerLiveSpotForMerge,
-      ),
-    [headerLiveSpotForMerge, performanceForHeaderFallback],
-  );
+      );
+    }
+    if (closed) {
+      return mergeClosedMarketOverviewHeader(base, performanceForHeaderFallback, "price");
+    }
+    return base;
+  }, [chartSeries, headerLiveSpotForMerge, performanceForHeaderFallback, range, regularSessionClock]);
 
   const chartUi = useMemo((): ChartDisplayState => {
     const raw = overviewDrivesHeader
@@ -622,23 +650,23 @@ export function StockPageContent({
     chartUi.empty ||
     overviewDownloadFetching;
 
-  const [regularSessionClock, setRegularSessionClock] = useState(0);
-  useEffect(() => {
-    const id = window.setInterval(() => setRegularSessionClock((n) => n + 1), 30_000);
-    return () => window.clearInterval(id);
-  }, []);
-
   const headerPeriodLabel = useMemo(() => {
-    const defaultLabel = overviewDrivesHeader ? (range === "1D" ? "Today" : range) : "Today";
-    const showLiveTimestamp =
-      getUsEquityMarketSession(new Date()) === "regular" &&
-      (overviewDrivesHeader ? range === "1D" : true);
-    if (!showLiveTimestamp) return defaultLabel;
-    const label = formatStockHeaderSessionPeriodLabel(
-      Math.floor(Date.now() / 1000),
-      STOCK_DISPLAY_TZ,
-    );
-    return label || defaultLabel;
+    const session = getUsEquityMarketSession(new Date());
+
+    if (session === "regular") {
+      const showLiveTimestamp = overviewDrivesHeader ? range === "1D" : true;
+      if (showLiveTimestamp) {
+        const label = formatStockHeaderSessionPeriodLabel(
+          Math.floor(Date.now() / 1000),
+          STOCK_DISPLAY_TZ,
+        );
+        return label || "Today";
+      }
+      return overviewDrivesHeader ? (range === "1D" ? "Today" : range) : "Today";
+    }
+
+    const closeUnix = lastUsRegularSessionCloseUnix(new Date(), STOCK_DISPLAY_TZ);
+    return formatStockHeaderAtClosePeriodLabel(closeUnix, STOCK_DISPLAY_TZ);
   }, [overviewDrivesHeader, range, regularSessionClock]);
 
   /** Hidden 1D chart keeps session/live spot for the header on every tab (including Holdings). */

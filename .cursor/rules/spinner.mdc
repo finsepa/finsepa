@@ -1,0 +1,15 @@
+---
+description: Use the shared Spinner component for all loading indicators
+globs: **/*.{tsx,ts}
+alwaysApply: true
+---
+
+# Loading spinners
+
+Use `@/components/ui/spinner` for every loading indicator in the UI.
+
+- **Centered regions** (search, modals, charts): `<Spinner className="size-5 text-[#71717A]" />` or reuse `SearchLoadingIndicator` / `ChartLoadingIndicator`.
+- **Buttons**: wrap label with `<SpinnerLabel>Loading…</SpinnerLabel>` (or `<Spinner data-icon="inline-start" className="size-4" />` + text in `inline-flex gap-2`).
+- **Sizing**: `size-3` … `size-8` via `className`; default is `size-4`.
+
+Do **not** use `Loader2` / `Loading01` from `@/lib/icons` with `animate-spin`, custom CSS ring spinners, or lucide imports for loading. `Loader2` in `@/lib/icons` is not the app spinner.

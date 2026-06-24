@@ -333,7 +333,7 @@ export function PortfoliosDirectoryClient() {
           <PortfoliosViewToggle view={view} onChange={setView} />
         </div>
         <Empty variant="card" className="min-h-[min(50vh,420px)] w-full">
-        <EmptyHeader className="gap-3">
+        <EmptyHeader>
           <EmptyMedia variant="icon">
             <Wallet className="h-6 w-6" strokeWidth={1.75} aria-hidden />
           </EmptyMedia>

@@ -81,7 +81,8 @@ export function IndicesTable({
   rankOffset?: number;
 }) {
   const rows = Array.isArray(initialRows) ? initialRows : [];
-  const { watched, loaded, toggleTicker } = useWatchlist();
+  const { watchedUnion, loaded, storageHydrated, toggleTicker, watchlists, activeWatchlistId } =
+    useWatchlist();
 
   const safeRows = useMemo(() => rows, [rows]);
 
@@ -119,9 +120,12 @@ export function IndicesTable({
               className="hidden w-6 shrink-0 items-center justify-center px-1 sm:flex sm:w-10 sm:px-3"
               storageKey={wlKey}
               label={r.name}
-              watched={watched}
+              watched={watchedUnion}
               loaded={loaded}
+              storageHydrated={storageHydrated}
               toggleTicker={toggleTicker}
+              watchlists={watchlists}
+              activeWatchlistId={activeWatchlistId}
             />
             <div className="text-center text-[14px] font-semibold leading-5 tabular-nums text-[#71717A]">
               {rankOffset + i + 1}

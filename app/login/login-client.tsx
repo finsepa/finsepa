@@ -16,6 +16,7 @@ import { PATH_APP_ENTRY } from "@/lib/auth/routes";
 import { startGoogleOAuth } from "@/lib/auth/start-google-oauth";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { cn } from "@/lib/utils";
+import { SpinnerLabel } from "@/components/ui/spinner";
 
 const STORAGE_REMEMBER = "finsepa_remember_me";
 
@@ -154,7 +155,7 @@ export function LoginClient({ resetSuccess, callbackError, authNext, signedOut }
 
       <AuthSecondaryButton onClick={handleGoogle} disabled={loading}>
         <GoogleMark />
-        {loading ? "Redirecting…" : "Continue with Google"}
+        {loading ? <SpinnerLabel>Redirecting…</SpinnerLabel> : "Continue with Google"}
       </AuthSecondaryButton>
 
       <form className="space-y-4" onSubmit={handleSubmit} noValidate>
@@ -245,7 +246,7 @@ export function LoginClient({ resetSuccess, callbackError, authNext, signedOut }
           type="submit"
           disabled={loading || !formCanSubmit}
         >
-          {loading ? "Signing in…" : "Log in"}
+          {loading ? <SpinnerLabel>Signing in…</SpinnerLabel> : "Log in"}
         </AuthPrimaryButton>
       </div>
       </form>

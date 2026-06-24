@@ -30,6 +30,50 @@ export const CHART_PLOT_DOTS_PATTERN_EXPORT_CLASS =
 
 export type OverviewAxisLabel = { key: string; leftPx: number; label: string };
 
+export type PeriodAxisLabelAnchor = "left" | "center";
+
+const PERIOD_AXIS_LEFT_EDGE_PX = 0;
+const PERIOD_AXIS_RIGHT_EDGE_PX = 8;
+
+/** Left-align only the first tick so long labels are not clipped off-plot. */
+export function resolvePeriodAxisLabelAnchor(
+  leftPx: number,
+  options: { isLeftmost?: boolean },
+): PeriodAxisLabelAnchor {
+  if (options.isLeftmost) return "left";
+  if (leftPx <= PERIOD_AXIS_LEFT_EDGE_PX + 2) return "left";
+  return "center";
+}
+
+export function periodAxisLabelLayoutStyle(
+  leftPx: number,
+  anchor: PeriodAxisLabelAnchor,
+  plotWidthPx = 0,
+): { left: number | string } {
+  if (anchor === "left") {
+    return { left: PERIOD_AXIS_LEFT_EDGE_PX };
+  }
+  if (plotWidthPx > 0) {
+    return {
+      left: Math.min(
+        Math.max(PERIOD_AXIS_LEFT_EDGE_PX, leftPx),
+        Math.max(PERIOD_AXIS_RIGHT_EDGE_PX, plotWidthPx - PERIOD_AXIS_RIGHT_EDGE_PX),
+      ),
+    };
+  }
+  return {
+    left: `clamp(${PERIOD_AXIS_LEFT_EDGE_PX}px, ${leftPx}px, calc(100% - ${PERIOD_AXIS_RIGHT_EDGE_PX}px))`,
+  };
+}
+
+export function periodAxisLabelTransformClass(anchor: PeriodAxisLabelAnchor): string {
+  return anchor === "left" ? "" : "-translate-x-1/2";
+}
+
+export function periodAxisLabelMaxWidthClass(_anchor: PeriodAxisLabelAnchor): string {
+  return "";
+}
+
 export function overviewAxisLabelsEqual(a: readonly OverviewAxisLabel[], b: readonly OverviewAxisLabel[]): boolean {
   if (a === b) return true;
   if (a.length !== b.length) return false;
@@ -575,7 +619,7 @@ function countDistinctSessionHours(data: readonly StockChartPoint[], timeZone: s
 
 /** Mobile 1D idle axis: six labels (10AM–3PM) spaced across the full plot width. */
 const MOBILE_ONE_D_AXIS_HOURS = [10, 11, 12, 13, 14, 15] as const;
-const MOBILE_ONE_D_AXIS_EDGE_PAD_PX = 8;
+const MOBILE_ONE_D_AXIS_EDGE_PAD_PX = 0;
 
 /** Live 1D session (regular hours) — Yahoo-style ticks on a 9:30–16:00 axis. */
 const STOCK_1D_LIVE_SESSION_AXIS_SLOTS = [

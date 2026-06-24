@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { format, parseISO } from "date-fns";
-import { Check, Loader2, Pencil, Trash2, Upload } from "@/lib/icons";
+import { Check, Pencil, Trash2, Upload } from "@/lib/icons";
+import { Spinner, SpinnerLabel } from "@/components/ui/spinner";
 
 import {
   newTransactionRowId,
@@ -475,7 +476,7 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
                     onClick={() => void handleAdd()}
                     className={appModalPrimaryButtonClass(hasPortfolio && canImport && !submitting)}
                   >
-                    {submitting ? "Adding…" : "Add"}
+                    {submitting ? <SpinnerLabel>Adding…</SpinnerLabel> : "Add"}
                   </button>
                 </>
               )}
@@ -830,7 +831,7 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
           bodyClassName="px-8 py-10 text-center"
           bodyScroll={false}
         >
-          <Loader2 className="mx-auto h-10 w-10 animate-spin text-[#09090B]" strokeWidth={1.75} aria-hidden />
+          <Spinner className="mx-auto size-10 text-[#09090B]" />
           <p id={addingStatusId} className="mt-5 text-lg font-semibold tracking-tight text-[#09090B]">
             Adding
           </p>

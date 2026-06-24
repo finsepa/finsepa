@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { memo, useEffect, useMemo, useRef, useState, type UIEvent } from "react";
 import type { ScreenerTableRow } from "@/lib/screener/screener-static";
+import type { WatchlistCollection } from "@/lib/watchlist/collections";
 import { WatchlistStarToggle } from "@/components/watchlist/watchlist-star-button";
 import { CompanyLogo } from "./company-logo";
 import {
@@ -170,9 +171,12 @@ export type ScreenerTableKeyStatColumn = {
 type RowProps = {
   item: ScreenerTableRow;
   rank: number;
-  starred: boolean;
+  watched: Set<string>;
+  watchlists: WatchlistCollection[];
+  activeWatchlistId: string;
   loaded: boolean;
-  toggleTicker: (ticker: string) => void;
+  storageHydrated: boolean;
+  toggleTicker: (ticker: string, watchlistId?: string) => void;
   keyStatColumns: ScreenerTableKeyStatColumn[];
   gridTemplateColumns: string;
   desktopNumericCellClass: string;
@@ -181,18 +185,16 @@ type RowProps = {
 const ScreenerDataRow = memo(function ScreenerDataRow({
   item,
   rank,
-  starred,
+  watched,
+  watchlists,
+  activeWatchlistId,
   loaded,
+  storageHydrated,
   toggleTicker,
   keyStatColumns,
   gridTemplateColumns,
   desktopNumericCellClass,
 }: RowProps) {
-  const watchedSet = useMemo(() => {
-    const k = item.ticker.trim().toUpperCase();
-    return starred ? new Set([k]) : new Set<string>();
-  }, [item.ticker, starred]);
-
   const tickerKey = item.ticker.trim().toUpperCase();
   const keyStatDisplays = keyStatColumns.map((col) =>
     col.loading ? "…" : (col.valuesByTicker[tickerKey] ?? col.valuesByTicker[item.ticker] ?? "—"),
@@ -206,9 +208,12 @@ const ScreenerDataRow = memo(function ScreenerDataRow({
         className="hidden w-6 shrink-0 items-center justify-center px-1 sm:flex sm:w-10 sm:px-3"
         storageKey={item.ticker}
         label={item.ticker}
-        watched={watchedSet}
+        watched={watched}
         loaded={loaded}
+        storageHydrated={storageHydrated}
         toggleTicker={toggleTicker}
+        watchlists={watchlists}
+        activeWatchlistId={activeWatchlistId}
       />
 
       <Link
@@ -299,7 +304,8 @@ export function ScreenerTable({
   /** Renders without mobile card chrome when inside {@link ScreenerStocksSubTabMobileCard}. */
   embeddedInMobileCard?: boolean;
 }) {
-  const { watched, loaded, toggleTicker } = useWatchlist();
+  const { watchedUnion, loaded, storageHydrated, toggleTicker, watchlists, activeWatchlistId } =
+    useWatchlist();
   const keyStatCount = keyStatColumns.length;
   const useFluidDesktopColumns = keyStatCount === 0;
   const gridTemplateColumns = useScreenerTableGridTemplate(keyStatCount);
@@ -348,8 +354,11 @@ export function ScreenerTable({
           key={item.ticker}
           item={item}
           rank={rankOffset + index + 1}
-          starred={watched.has(item.ticker)}
+          watched={watchedUnion}
+          watchlists={watchlists}
+          activeWatchlistId={activeWatchlistId}
           loaded={loaded}
+          storageHydrated={storageHydrated}
           toggleTicker={toggleTicker}
           keyStatColumns={keyStatColumns}
           gridTemplateColumns={gridTemplateColumns}

@@ -39,7 +39,8 @@ export function NewsMobileSearchSheet({
 }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
-  const { watched, loaded, toggleTicker } = useWatchlist();
+  const { watchedUnion, loaded, storageHydrated, toggleTicker, watchlists, activeWatchlistId } =
+    useWatchlist();
   const { readRecent, removeRecent, userId, authReady } = useSearchRecentStorage();
 
   const [open, setOpen] = useState(false);
@@ -260,8 +261,12 @@ export function NewsMobileSearchSheet({
                             onNavigate={handleSelectItem}
                             onRemoveRecent={() => handleRemoveRecent(item.id)}
                             active={highlight === i}
-                            starred={isWatchedItem(item, watched)}
+                            starred={isWatchedItem(item, watchedUnion)}
+                            watched={watchedUnion}
+                            watchlists={watchlists}
+                            activeWatchlistId={activeWatchlistId}
                             loaded={loaded}
+                            storageHydrated={storageHydrated}
                             toggleTicker={toggleTicker}
                           />
                         ))
@@ -287,8 +292,12 @@ export function NewsMobileSearchSheet({
                           item={item}
                           onNavigate={handleSelectItem}
                           active={highlight === i}
-                          starred={isWatchedItem(item, watched)}
+                          starred={isWatchedItem(item, watchedUnion)}
+                          watched={watchedUnion}
+                          watchlists={watchlists}
+                          activeWatchlistId={activeWatchlistId}
                           loaded={loaded}
+                          storageHydrated={storageHydrated}
                           toggleTicker={toggleTicker}
                         />
                       ))}

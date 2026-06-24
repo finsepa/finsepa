@@ -49,7 +49,7 @@ export function WatchlistSavedList() {
     return (
       <div className="flex min-h-[200px] flex-col items-center justify-center rounded-xl border border-[#E4E4E7] bg-white px-6 py-12 text-center">
         <p className={emptyTitleClassName}>No saved symbols yet</p>
-        <p className={`mt-2 max-w-sm ${emptyDescriptionClassName}`}>
+        <p className={`mt-1 max-w-sm ${emptyDescriptionClassName}`}>
           Add stocks from the screener or a stock page with the star. They will show up here.
         </p>
         <Link

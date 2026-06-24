@@ -7,7 +7,7 @@ import { topbarSquircleTextButtonClass } from "@/components/design-system/topbar
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import type { PortfolioSnaptradeLink } from "@/components/portfolio/portfolio-types";
 import { formatPortfolioSyncTooltipLines } from "@/lib/snaptrade/sync-copy";
-import { Loader2, RefreshCw } from "@/lib/icons";
+import { RefreshCw } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 
 type PortfolioSyncStatusIconProps = {

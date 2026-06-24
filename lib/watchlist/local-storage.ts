@@ -19,6 +19,18 @@ function storageKeyForUser(userId: string | null): string {
   return `${STORAGE_KEY_LEGACY}.guest`;
 }
 
+function normalizeWatchlistTickerList(tickers: string[]): string[] {
+  const seen = new Set<string>();
+  const ordered: string[] = [];
+  for (const raw of tickers) {
+    const ticker = normalizeWatchlistStorageKey(String(raw));
+    if (!ticker || seen.has(ticker)) continue;
+    seen.add(ticker);
+    ordered.push(ticker);
+  }
+  return ordered;
+}
+
 /** Tickers on the list + removals in flight (do not let server merge resurrect). */
 export function readWatchlistLocalFull(userId: string | null = null): {
   tickers: string[];
@@ -54,18 +66,9 @@ function readWatchlistRaw(raw: string): { tickers: string[]; pendingRemoval: str
     if (!parsed || parsed.v !== 1 || !Array.isArray(parsed.tickers)) {
       return { tickers: [], pendingRemoval: [] };
     }
-    const list = parsed.tickers
-      .map((t) => normalizeWatchlistStorageKey(String(t)))
-      .filter((t) => t.length > 0);
-    const tickers = [...new Set(list)];
+    const tickers = normalizeWatchlistTickerList(parsed.tickers);
     const pr = Array.isArray(parsed.pendingRemoval)
-      ? [
-          ...new Set(
-            parsed.pendingRemoval
-              .map((t) => normalizeWatchlistStorageKey(String(t)))
-              .filter((t) => t.length > 0),
-          ),
-        ]
+      ? normalizeWatchlistTickerList(parsed.pendingRemoval)
       : [];
     return { tickers, pendingRemoval: pr };
   } catch {
@@ -80,12 +83,8 @@ export function writeWatchlistLocal(
 ): void {
   if (typeof window === "undefined") return;
   try {
-    const unique = [
-      ...new Set(tickers.map((t) => normalizeWatchlistStorageKey(t)).filter((t) => t.length > 0)),
-    ].sort();
-    const pr = [
-      ...new Set(pendingRemoval.map((t) => normalizeWatchlistStorageKey(t)).filter((t) => t.length > 0)),
-    ].sort();
+    const unique = normalizeWatchlistTickerList(tickers);
+    const pr = normalizeWatchlistTickerList(pendingRemoval);
     const payload: WatchlistLocalSnapshot = {
       v: 1,
       tickers: unique,

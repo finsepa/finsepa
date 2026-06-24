@@ -12,6 +12,7 @@ import {
   appModalCancelButtonClass,
   appModalPrimaryButtonClass,
 } from "@/components/ui/app-modal-shell";
+import { SpinnerLabel } from "@/components/ui/spinner";
 import { PRO_PLAN_FEATURES } from "@/lib/account/pro-plan-features";
 import { markOnboardingCompleteForUser } from "@/lib/auth/onboarding";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
@@ -83,7 +84,7 @@ export function OnboardingProPromoModal({
               disabled={startingCheckout}
               className={appModalPrimaryButtonClass(!startingCheckout)}
             >
-              {startingCheckout ? "Redirecting…" : "Get Started"}
+              {startingCheckout ? <SpinnerLabel>Redirecting…</SpinnerLabel> : "Get Started"}
             </button>
           </AppModalFooter>
         }

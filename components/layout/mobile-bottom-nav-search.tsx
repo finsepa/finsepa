@@ -127,7 +127,11 @@ export function MobileBottomNavSearchResults({
         onRemoveRecent={panel.handleRemoveRecent}
         isWatched={panel.isWatched}
         watchlistLoaded={panel.watchlistLoaded}
+        watchlistStorageHydrated={panel.watchlistStorageHydrated}
         toggleTicker={panel.toggleTicker}
+        watchlists={panel.watchlists}
+        activeWatchlistId={panel.activeWatchlistId}
+        watched={panel.watched}
         listClassName="mobile-bottom-nav-search-results-list min-h-0 flex-1 overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch]"
       />
     </div>

@@ -40,7 +40,9 @@ export function Empty({
 }
 
 export function EmptyHeader({ className, children }: { className?: string; children: ReactNode }) {
-  return <div className={cn("flex max-w-md flex-col items-center gap-2", className)}>{children}</div>;
+  return (
+    <div className={cn("flex max-w-md flex-col items-center gap-2 [&>p+p]:-mt-1", className)}>{children}</div>
+  );
 }
 
 export function EmptyMedia({

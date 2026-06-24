@@ -9,6 +9,7 @@ import {
 } from "@/components/auth/auth-form-ui";
 import { AuthPasswordInput } from "@/components/auth/auth-password-input";
 import type { HealthReport, HealthStatus } from "@/lib/admin-health/types";
+import { SpinnerLabel } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -94,7 +95,7 @@ function PasswordGate({ slug, onAuthenticated }: { slug: string; onAuthenticated
           </div>
           {error ? <p className="text-sm text-red-600">{error}</p> : null}
           <AuthPrimaryButton type="submit" disabled={loading || password.length === 0}>
-            {loading ? "Checking…" : "Continue"}
+            {loading ? <SpinnerLabel>Checking…</SpinnerLabel> : "Continue"}
           </AuthPrimaryButton>
         </form>
       </div>

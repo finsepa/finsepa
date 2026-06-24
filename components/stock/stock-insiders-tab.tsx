@@ -1,7 +1,8 @@
 "use client";
 
 import { format, parseISO, subMonths } from "date-fns";
-import { Loader2, UserRound } from "@/lib/icons";
+import { UserRound } from "@/lib/icons";
+import { Spinner } from "@/components/ui/spinner";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { HoldingsTradeMarker, HoldingsTradeTooltipItem } from "@/components/chart/PriceChart";
@@ -394,7 +395,7 @@ export function StockInsidersTab({ ticker }: { ticker: string }) {
         <div className="space-y-3">
           <InsidersTableSkeleton rows={8} />
           <div className="flex items-center justify-center gap-2 py-4 text-[14px] text-[#2563EB]">
-            <Loader2 className="size-4 animate-spin" aria-hidden />
+            <Spinner className="size-4 text-[#2563EB]" />
             <span>Loading…</span>
           </div>
         </div>

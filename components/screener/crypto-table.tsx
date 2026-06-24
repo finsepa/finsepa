@@ -93,7 +93,8 @@ export function CryptoTable({
   /** Global rank index for first row (e.g. `(page - 1) * pageSize`). */
   rankOffset?: number;
 }) {
-  const { watched, loaded, toggleTicker } = useWatchlist();
+  const { watchedUnion, loaded, storageHydrated, toggleTicker, watchlists, activeWatchlistId } =
+    useWatchlist();
 
   const safeRows = useMemo(
     () => (Array.isArray(initialRows) ? initialRows : []),
@@ -129,9 +130,12 @@ export function CryptoTable({
               className="hidden w-6 shrink-0 items-center justify-center px-1 sm:flex sm:w-10 sm:px-3"
               storageKey={wlKey}
               label={r.symbol}
-              watched={watched}
+              watched={watchedUnion}
               loaded={loaded}
+              storageHydrated={storageHydrated}
               toggleTicker={toggleTicker}
+              watchlists={watchlists}
+              activeWatchlistId={activeWatchlistId}
             />
             <Link
               href={`/crypto/${encodeURIComponent(r.symbol)}`}

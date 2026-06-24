@@ -11,6 +11,7 @@ import { ProtectedAppShellInner } from "@/components/layout/protected-app-shell-
 import { OnboardingAuthBootstrap } from "@/components/onboarding/onboarding-auth-bootstrap";
 import { ScreenerOnboardingHost } from "@/components/onboarding/screener-onboarding-host";
 import { PortfolioWorkspaceProvider } from "@/components/portfolio/portfolio-workspace-provider";
+import { WatchlistProvider } from "@/lib/watchlist/use-watchlist-client";
 import { userNeedsOnboarding } from "@/lib/auth/onboarding";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
@@ -75,7 +76,8 @@ export async function ProtectedAppShell({ children }: { children: ReactNode }) {
         listingOwnerDisplayName={listingOwnerDisplayName}
         listingOwnerAvatarUrl={avatarUrl}
       >
-        <ProtectedAppShellInner
+        <WatchlistProvider>
+          <ProtectedAppShellInner
           userId={user.id}
           userInitials={userInitials}
           avatarUrl={avatarUrl}
@@ -90,6 +92,7 @@ export async function ProtectedAppShell({ children }: { children: ReactNode }) {
           </Suspense>
           {children}
         </ProtectedAppShellInner>
+        </WatchlistProvider>
       </PortfolioWorkspaceProvider>
     );
   } catch {

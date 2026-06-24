@@ -16,7 +16,7 @@ import {
   urlHasAuthCallbackParams,
 } from "@/lib/auth/parse-auth-callback-url";
 import { PATH_APP_ENTRY } from "@/lib/auth/routes";
-import { Loader2 } from "@/lib/icons";
+import { Spinner } from "@/components/ui/spinner";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 const REDIRECT_AFTER_SUCCESS_MS = 1500;
@@ -48,7 +48,7 @@ async function waitForSession() {
 function AuthCallbackSpinner() {
   return (
     <div className="flex justify-center py-2" role="status" aria-label="Signing you in">
-      <Loader2 className="h-6 w-6 animate-spin text-[#09090B]" strokeWidth={1.75} aria-hidden />
+      <Spinner className="size-6 text-[#09090B]" />
     </div>
   );
 }

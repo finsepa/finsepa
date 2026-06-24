@@ -76,7 +76,7 @@ function PerformanceChartSection({
       <div className="w-full min-w-0">
         {!canLoad ? (
           <Empty variant="plain" className="h-[320px] justify-center py-0">
-            <EmptyHeader className="gap-2">
+            <EmptyHeader>
               <EmptyMedia variant="icon">
                 <LineChart className="h-6 w-6" strokeWidth={1.75} aria-hidden />
               </EmptyMedia>
@@ -94,7 +94,7 @@ function PerformanceChartSection({
           </div>
         ) : points.length === 0 ? (
           <Empty variant="plain" className="h-[320px] justify-center py-0">
-            <EmptyHeader className="gap-2">
+            <EmptyHeader>
               <EmptyMedia variant="icon">
                 <LineChart className="h-6 w-6" strokeWidth={1.75} aria-hidden />
               </EmptyMedia>

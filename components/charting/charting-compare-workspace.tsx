@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Plus, RefreshCw, X } from "@/lib/icons";
+import { Plus, RefreshCw, X } from "@/lib/icons";
+import { Spinner } from "@/components/ui/spinner";
 import {
   ColorType,
   CrosshairMode,
@@ -1599,7 +1600,7 @@ export function ChartingCompareWorkspace({
                       aria-live="polite"
                       aria-label={`Loading ${t}`}
                     >
-                      <Loader2 className="h-5 w-5 animate-spin" strokeWidth={2} aria-hidden />
+                      <Spinner className="size-5 text-[#71717A]" />
                     </span>
                   ) : (
                     <button

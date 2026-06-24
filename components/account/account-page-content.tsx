@@ -15,6 +15,7 @@ import {
 } from "@/lib/account/billing-summary-menu-cache";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { UserAvatar } from "@/components/user/user-avatar";
+import { SpinnerLabel } from "@/components/ui/spinner";
 import {
   Empty,
   EmptyDescription,
@@ -578,7 +579,7 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
                       disabled={portalLoading}
                       className="mt-4 h-10 rounded-[10px] bg-[#2563EB] px-4 text-sm font-semibold text-white shadow-[0px_1px_2px_0px_rgba(37,99,235,0.25)] transition-colors hover:bg-[#1D4ED8] disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      {portalLoading ? "Opening…" : actionLabel}
+                      {portalLoading ? <SpinnerLabel>Opening…</SpinnerLabel> : actionLabel}
                     </button>
                   </article>
 

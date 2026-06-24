@@ -5,6 +5,7 @@ import Link from "next/link";
 
 import { friendlySupabaseAuthErrorMessage } from "@/lib/auth/supabase-error-message";
 import { AuthPrimaryButton } from "@/components/auth/auth-form-ui";
+import { SpinnerLabel } from "@/components/ui/spinner";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 const COOLDOWN_SECONDS = 60;
@@ -64,7 +65,7 @@ export function CheckEmailClient({ email }: { email: string | null }) {
       ) : null}
 
       <AuthPrimaryButton type="button" disabled={!canResend} onClick={handleResend as unknown as () => void}>
-        {loading ? "Sending…" : buttonLabel}
+        {loading ? <SpinnerLabel>Sending…</SpinnerLabel> : buttonLabel}
       </AuthPrimaryButton>
 
       <div className="text-center">

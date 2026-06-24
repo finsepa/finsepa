@@ -67,8 +67,8 @@ type ButtonProps = Omit<ToggleProps, "watched" | "loaded" | "toggleTicker">;
 
 /** Self-contained watchlist bell toggle (toast alerts via {@link useWatchlist}). */
 export function WatchlistBellButton(props: ButtonProps) {
-  const { watched, loaded, toggleTicker } = useWatchlist();
+  const { watchedUnion, loaded, toggleTicker } = useWatchlist();
   return (
-    <WatchlistBellToggle {...props} watched={watched} loaded={loaded} toggleTicker={toggleTicker} />
+    <WatchlistBellToggle {...props} watched={watchedUnion} loaded={loaded} toggleTicker={toggleTicker} />
   );
 }

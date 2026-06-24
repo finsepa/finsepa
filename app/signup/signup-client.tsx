@@ -21,6 +21,7 @@ import {
 } from "@/lib/auth/supabase-error-message";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { AuthDivider, AuthInput, AuthLabel, AuthPrimaryButton, AuthSecondaryButton } from "@/components/auth/auth-form-ui";
+import { SpinnerLabel } from "@/components/ui/spinner";
 import { AuthPasswordInput } from "@/components/auth/auth-password-input";
 import { TurnstileField } from "@/components/auth/turnstile-field";
 import { getAuthAppOriginForClient } from "@/lib/auth/app-origin";
@@ -359,7 +360,7 @@ export function SignupClient() {
 
       <AuthSecondaryButton onClick={handleGoogle} disabled={loading || SIGNUP_DISABLED}>
         <GoogleMark />
-        {loading ? "Redirecting…" : "Continue with Google"}
+        {loading ? <SpinnerLabel>Redirecting…</SpinnerLabel> : "Continue with Google"}
       </AuthSecondaryButton>
 
       <AuthDivider />
@@ -487,7 +488,7 @@ export function SignupClient() {
       ) : null}
 
       <AuthPrimaryButton type="submit" disabled={loading || !formCanSubmit || SIGNUP_DISABLED}>
-        {loading ? "Creating account…" : "Get Started"}
+        {loading ? <SpinnerLabel>Creating account…</SpinnerLabel> : "Get Started"}
       </AuthPrimaryButton>
     </form>
   );

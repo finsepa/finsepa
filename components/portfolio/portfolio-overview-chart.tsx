@@ -39,6 +39,10 @@ import {
   formatOverviewCrosshairBottomDate,
   resolveOverviewBottomAxisMode,
   syncOverviewPeriodAxisLabels,
+  periodAxisLabelLayoutStyle,
+  periodAxisLabelMaxWidthClass,
+  periodAxisLabelTransformClass,
+  resolvePeriodAxisLabelAnchor,
   type OverviewAxisLabel,
 } from "@/components/chart/overview-bottom-axis";
 import {
@@ -1414,21 +1418,40 @@ export function PortfolioValueHistoryChartPane({
         aria-hidden={periodAxisLabels.length === 0 && !hoverAxisLabel}
       >
         {hoverAxisLabel ?
+          (() => {
+            const leftmost = periodAxisLabels[0]?.leftPx ?? null;
+            const anchor = resolvePeriodAxisLabelAnchor(hoverAxisLabel.leftPx, {
+              isLeftmost: leftmost != null && hoverAxisLabel.leftPx <= leftmost + 4,
+            });
+            return (
           <span
-            className="absolute bottom-1 inline-block max-w-[calc(100%-16px)] -translate-x-1/2 truncate whitespace-nowrap font-['Inter'] text-[11px] font-medium tabular-nums leading-none text-[#09090B] sm:text-[12px]"
-            style={{ left: `clamp(8px, ${hoverAxisLabel.leftPx}px, calc(100% - 8px))` }}
+            className={cn(
+              "absolute bottom-1 inline-block whitespace-nowrap font-['Inter'] text-[11px] font-medium tabular-nums leading-none text-[#09090B] sm:text-[12px]",
+              periodAxisLabelMaxWidthClass(anchor),
+              periodAxisLabelTransformClass(anchor),
+            )}
+            style={periodAxisLabelLayoutStyle(hoverAxisLabel.leftPx, anchor)}
           >
             {hoverAxisLabel.label}
           </span>
-        : periodAxisLabels.map((lab) => (
+            );
+          })()
+        : periodAxisLabels.map((lab, i) => {
+            const anchor = resolvePeriodAxisLabelAnchor(lab.leftPx, { isLeftmost: i === 0 });
+            return (
             <span
               key={lab.key}
-              className="absolute bottom-1 inline-block max-w-[72px] -translate-x-1/2 truncate whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]"
-              style={{ left: `clamp(8px, ${lab.leftPx}px, calc(100% - 8px))` }}
+              className={cn(
+                "absolute bottom-1 inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]",
+                periodAxisLabelMaxWidthClass(anchor),
+                periodAxisLabelTransformClass(anchor),
+              )}
+              style={periodAxisLabelLayoutStyle(lab.leftPx, anchor)}
             >
               {lab.label}
             </span>
-          ))
+            );
+          })
         }
       </div>
     </div>
@@ -1612,7 +1635,7 @@ function PortfolioOverviewChartInner({
       <div className="w-full min-w-0">
         {!canLoad ? (
           <Empty variant="plain" className="h-[320px] justify-center py-0">
-            <EmptyHeader className="gap-2">
+            <EmptyHeader>
               <EmptyMedia variant="icon">
                 <LineChart className="h-6 w-6" strokeWidth={1.75} aria-hidden />
               </EmptyMedia>
@@ -1630,7 +1653,7 @@ function PortfolioOverviewChartInner({
           </div>
         ) : points.length === 0 ? (
           <Empty variant="plain" className="h-[320px] justify-center py-0">
-            <EmptyHeader className="gap-2">
+            <EmptyHeader>
               <EmptyMedia variant="icon">
                 <LineChart className="h-6 w-6" strokeWidth={1.75} aria-hidden />
               </EmptyMedia>

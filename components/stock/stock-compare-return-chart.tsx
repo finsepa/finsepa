@@ -28,8 +28,13 @@ import {
   overviewAxisLabelsEqual,
   resolveOverviewBottomAxisMode,
   syncOverviewPeriodAxisLabels,
+  periodAxisLabelLayoutStyle,
+  periodAxisLabelMaxWidthClass,
+  periodAxisLabelTransformClass,
+  resolvePeriodAxisLabelAnchor,
   type OverviewAxisLabel,
   type OverviewBottomAxisMode,
+  type PeriodAxisLabelAnchor,
 } from "@/components/chart/overview-bottom-axis";
 import type { CompanyPick } from "@/components/charting/company-picker";
 import { isCryptoOverviewSymbol } from "@/lib/crypto/crypto-picker-universe";
@@ -651,22 +656,33 @@ export function StockCompareReturnChart({ primaryTicker, comparePicks, range, he
           aria-hidden={periodAxisLabels.length === 0 && !hoverAxisLabel}
         >
           {hoverAxisLabel ? (
+            (() => {
+              const leftmost = periodAxisLabels[0]?.leftPx ?? null;
+              const anchor = resolvePeriodAxisLabelAnchor(hoverAxisLabel.leftPx, {
+                isLeftmost: leftmost != null && hoverAxisLabel.leftPx <= leftmost + 4,
+              });
+              return (
             <span
-              className="absolute bottom-1 inline-block max-w-[min(100%,calc(100%-16px))] -translate-x-1/2 whitespace-nowrap font-['Inter'] text-[11px] font-medium tabular-nums leading-none text-[#09090B] sm:text-[12px]"
-              style={{ left: `clamp(8px, ${hoverAxisLabel.leftPx}px, calc(100% - 8px))` }}
+              className={`absolute bottom-1 inline-block whitespace-nowrap font-['Inter'] text-[11px] font-medium tabular-nums leading-none text-[#09090B] sm:text-[12px] ${periodAxisLabelMaxWidthClass(anchor)} ${periodAxisLabelTransformClass(anchor)}`}
+              style={periodAxisLabelLayoutStyle(hoverAxisLabel.leftPx, anchor)}
             >
               {hoverAxisLabel.label}
             </span>
+              );
+            })()
           ) : (
-            periodAxisLabels.map((lab) => (
+            periodAxisLabels.map((lab, i) => {
+              const anchor = resolvePeriodAxisLabelAnchor(lab.leftPx, { isLeftmost: i === 0 });
+              return (
               <span
                 key={lab.key}
-                className="absolute bottom-1 inline-block max-w-[72px] -translate-x-1/2 truncate whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]"
-                style={{ left: `clamp(8px, ${lab.leftPx}px, calc(100% - 8px))` }}
+                className={`absolute bottom-1 inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px] ${periodAxisLabelMaxWidthClass(anchor)} ${periodAxisLabelTransformClass(anchor)}`}
+                style={periodAxisLabelLayoutStyle(lab.leftPx, anchor)}
               >
                 {lab.label}
               </span>
-            ))
+              );
+            })
           )}
         </div>
       ) : null}
