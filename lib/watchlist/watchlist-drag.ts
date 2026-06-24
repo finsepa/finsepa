@@ -1,8 +1,14 @@
 export const WATCHLIST_DRAG_MIME = "application/x-finsepa-watchlist-item";
+export const WATCHLIST_SECTION_DRAG_MIME = "application/x-finsepa-watchlist-section";
 
 export type WatchlistDragPayload = {
   globalIndex: number;
   storageKey: string;
+};
+
+export type WatchlistSectionDragPayload = {
+  sectionIndex: number;
+  sectionId: string;
 };
 
 export type WatchlistDropTarget =
@@ -39,4 +45,32 @@ export function readWatchlistDragData(dataTransfer: DataTransfer): WatchlistDrag
   const fromIndex = Number(dataTransfer.getData("text/plain"));
   if (!Number.isFinite(fromIndex)) return null;
   return { globalIndex: fromIndex, storageKey: "" };
+}
+
+export function writeWatchlistSectionDragData(
+  dataTransfer: DataTransfer,
+  payload: WatchlistSectionDragPayload,
+): void {
+  dataTransfer.setData(WATCHLIST_SECTION_DRAG_MIME, JSON.stringify(payload));
+  dataTransfer.effectAllowed = "move";
+}
+
+export function readWatchlistSectionDragData(
+  dataTransfer: DataTransfer,
+): WatchlistSectionDragPayload | null {
+  const raw = dataTransfer.getData(WATCHLIST_SECTION_DRAG_MIME);
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as Partial<WatchlistSectionDragPayload>;
+    if (
+      typeof parsed.sectionIndex === "number" &&
+      Number.isFinite(parsed.sectionIndex) &&
+      typeof parsed.sectionId === "string"
+    ) {
+      return { sectionIndex: parsed.sectionIndex, sectionId: parsed.sectionId };
+    }
+  } catch {
+    return null;
+  }
+  return null;
 }

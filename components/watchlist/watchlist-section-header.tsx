@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState, type DragEvent } from "react";
-import { ChevronDown, ChevronRight, Pencil, Trash2 } from "@/lib/icons";
+import { ChevronDown, ChevronRight, GripVertical, Pencil, Trash2 } from "@/lib/icons";
 
 import { ClearableInput } from "@/components/layout/clearable-input";
 import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
@@ -19,28 +19,36 @@ import {
 } from "@/components/ui/app-modal-shell";
 import { cn } from "@/lib/utils";
 import type { WatchlistDropTarget } from "@/lib/watchlist/watchlist-drag";
-import { readWatchlistDragData } from "@/lib/watchlist/watchlist-drag";
+import {
+  readWatchlistDragData,
+  readWatchlistSectionDragData,
+  writeWatchlistSectionDragData,
+} from "@/lib/watchlist/watchlist-drag";
 
 type ModalStep = "closed" | "rename" | "deleteConfirm";
 
 export function WatchlistSectionHeader({
   variant = "table",
   sectionId,
+  sectionIndex,
   label,
   collapsed,
   onToggleCollapsed,
   onRename,
   onDelete,
   onDropItem,
+  onReorderSection,
 }: {
   variant?: "table" | "rail";
   sectionId: string;
+  sectionIndex: number;
   label: string;
   collapsed: boolean;
   onToggleCollapsed: () => void;
   onRename: (name: string) => void;
   onDelete: () => void;
   onDropItem: (fromIndex: number, target: WatchlistDropTarget) => void;
+  onReorderSection: (fromSectionIndex: number, toSectionIndex: number) => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [step, setStep] = useState<ModalStep>("closed");
@@ -92,11 +100,23 @@ export function WatchlistSectionHeader({
     onDrop: (event: DragEvent) => {
       event.preventDefault();
       setDragOver(false);
+      const sectionPayload = readWatchlistSectionDragData(event.dataTransfer);
+      if (sectionPayload) {
+        if (sectionPayload.sectionIndex !== sectionIndex) {
+          onReorderSection(sectionPayload.sectionIndex, sectionIndex);
+        }
+        return;
+      }
       const payload = readWatchlistDragData(event.dataTransfer);
       if (!payload) return;
       onDropItem(payload.globalIndex, { kind: "section", sectionId });
     },
   };
+
+  const actionButtonClassName = cn(
+    "flex h-7 w-7 items-center justify-center rounded-[8px] text-[#71717A] opacity-0 transition-opacity",
+    "hover:bg-[#F4F4F5] hover:text-[#09090B] group-hover:opacity-100 focus-visible:opacity-100",
+  );
 
   const headerContent = (
     <div className="flex min-w-0 items-center gap-1">
@@ -109,7 +129,7 @@ export function WatchlistSectionHeader({
         <span className="truncate">{label}</span>
       </button>
 
-      <div ref={containerRef} className="relative shrink-0">
+      <div ref={containerRef} className="flex shrink-0 items-center gap-0.5">
         <button
           type="button"
           aria-label={`${label} section options`}
@@ -117,12 +137,25 @@ export function WatchlistSectionHeader({
           aria-haspopup="menu"
           onClick={() => setMenuOpen((open) => !open)}
           className={cn(
-            "flex h-7 w-7 items-center justify-center rounded-[8px] text-[#71717A] opacity-0 transition-opacity",
-            "hover:bg-[#F4F4F5] hover:text-[#09090B] group-hover:opacity-100 focus-visible:opacity-100",
+            actionButtonClassName,
             menuOpen && "opacity-100 bg-[#F4F4F5] text-[#09090B]",
           )}
         >
           <Pencil className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
+        </button>
+
+        <button
+          type="button"
+          draggable
+          aria-label={`Reorder ${label} section`}
+          onDragStart={(event) => {
+            event.stopPropagation();
+            writeWatchlistSectionDragData(event.dataTransfer, { sectionIndex, sectionId });
+          }}
+          onDragEnd={() => setDragOver(false)}
+          className={cn(actionButtonClassName, "cursor-grab active:cursor-grabbing")}
+        >
+          <GripVertical className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
         </button>
 
         {menuOpen ? (

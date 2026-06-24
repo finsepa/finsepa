@@ -207,21 +207,25 @@ function WatchlistTableRow({
 function UserSectionGroup({
   label,
   sectionId,
+  sectionIndex,
   rows,
   watchedTickers,
   onRemove,
   onMoveItem,
   onRenameSection,
   onDeleteSection,
+  onReorderSection,
 }: {
   label: string;
   sectionId: string;
+  sectionIndex: number;
   rows: WatchlistEnrichedItem[];
   watchedTickers: string[];
   onRemove: (ticker: string) => void;
   onMoveItem: (fromIndex: number, target: WatchlistDropTarget) => void;
   onRenameSection: (sectionId: string, name: string) => void;
   onDeleteSection: (sectionId: string) => void;
+  onReorderSection: (fromSectionIndex: number, toSectionIndex: number) => void;
 }) {
   const [collapsed, setCollapsed] = useState(false);
 
@@ -229,12 +233,14 @@ function UserSectionGroup({
     <>
       <WatchlistSectionHeader
         sectionId={sectionId}
+        sectionIndex={sectionIndex}
         label={label}
         collapsed={collapsed}
         onToggleCollapsed={() => setCollapsed((value) => !value)}
         onRename={(name) => onRenameSection(sectionId, name)}
         onDelete={() => onDeleteSection(sectionId)}
         onDropItem={onMoveItem}
+        onReorderSection={onReorderSection}
       />
 
       {!collapsed &&
@@ -262,6 +268,7 @@ export function WatchlistTable() {
     createActiveSection,
     renameActiveSection,
     deleteActiveSection,
+    reorderActiveSection,
     renameActiveWatchlist,
     deleteActiveWatchlist,
     switchWatchlist,
@@ -353,10 +360,11 @@ export function WatchlistTable() {
                   onMoveItem={moveActiveWatchlistItem}
                 />
               ))}
-              {tableGroups.sections.map(({ section, rows }) => (
+              {tableGroups.sections.map(({ section, rows }, sectionIndex) => (
                 <UserSectionGroup
                   key={section.id}
                   sectionId={section.id}
+                  sectionIndex={sectionIndex}
                   label={section.name}
                   rows={rows}
                   watchedTickers={watchedTickers}
@@ -364,6 +372,7 @@ export function WatchlistTable() {
                   onMoveItem={moveActiveWatchlistItem}
                   onRenameSection={renameActiveSection}
                   onDeleteSection={deleteActiveSection}
+                  onReorderSection={reorderActiveSection}
                 />
               ))}
             </tbody>

@@ -187,6 +187,7 @@ function WatchlistRailRow({
 
 function WatchlistRailSectionGroup({
   sectionId,
+  sectionIndex,
   label,
   rows,
   watchedTickers,
@@ -197,8 +198,10 @@ function WatchlistRailSectionGroup({
   onMoveItem,
   onRenameSection,
   onDeleteSection,
+  onReorderSection,
 }: {
   sectionId: string;
+  sectionIndex: number;
   label: string;
   rows: WatchlistEnrichedItem[];
   watchedTickers: string[];
@@ -209,6 +212,7 @@ function WatchlistRailSectionGroup({
   onMoveItem: (fromIndex: number, target: WatchlistDropTarget) => void;
   onRenameSection: (sectionId: string, name: string) => void;
   onDeleteSection: (sectionId: string) => void;
+  onReorderSection: (fromSectionIndex: number, toSectionIndex: number) => void;
 }) {
   const [collapsed, setCollapsed] = useState(false);
 
@@ -217,12 +221,14 @@ function WatchlistRailSectionGroup({
       <WatchlistSectionHeader
         variant="rail"
         sectionId={sectionId}
+        sectionIndex={sectionIndex}
         label={label}
         collapsed={collapsed}
         onToggleCollapsed={() => setCollapsed((value) => !value)}
         onRename={(name) => onRenameSection(sectionId, name)}
         onDelete={() => onDeleteSection(sectionId)}
         onDropItem={onMoveItem}
+        onReorderSection={onReorderSection}
       />
       {!collapsed
         ? rows.map((row) => (
@@ -273,6 +279,7 @@ function WatchlistRailScrollContent({
   moveActiveWatchlistItem,
   renameActiveSection,
   deleteActiveSection,
+  reorderActiveSection,
 }: {
   showLoadingState: boolean;
   empty: boolean;
@@ -286,6 +293,7 @@ function WatchlistRailScrollContent({
   moveActiveWatchlistItem: (fromIndex: number, target: WatchlistDropTarget) => void;
   renameActiveSection: (sectionId: string, name: string) => void;
   deleteActiveSection: (sectionId: string) => void;
+  reorderActiveSection: (fromSectionIndex: number, toSectionIndex: number) => void;
 }) {
   if (showLoadingState) {
     return <WatchlistRailSkeleton />;
@@ -311,10 +319,11 @@ function WatchlistRailScrollContent({
           onMoveItem={moveActiveWatchlistItem}
         />
       ))}
-      {railGroups.sections.map(({ section, rows }) => (
+      {railGroups.sections.map(({ section, rows }, sectionIndex) => (
         <WatchlistRailSectionGroup
           key={section.id}
           sectionId={section.id}
+          sectionIndex={sectionIndex}
           label={section.name}
           rows={rows}
           watchedTickers={watchedTickers}
@@ -325,6 +334,7 @@ function WatchlistRailScrollContent({
           onMoveItem={moveActiveWatchlistItem}
           onRenameSection={renameActiveSection}
           onDeleteSection={deleteActiveSection}
+          onReorderSection={reorderActiveSection}
         />
       ))}
     </div>
@@ -404,6 +414,7 @@ export function WatchlistRail() {
     renameActiveSection,
     deleteActiveWatchlist,
     deleteActiveSection,
+    reorderActiveSection,
     switchWatchlist,
     moveActiveWatchlistItem,
     storageHydrated,
@@ -503,6 +514,7 @@ export function WatchlistRail() {
                   moveActiveWatchlistItem={moveActiveWatchlistItem}
                   renameActiveSection={renameActiveSection}
                   deleteActiveSection={deleteActiveSection}
+                  reorderActiveSection={reorderActiveSection}
                 />
               ) : (
                 <WatchlistRailSkeleton />

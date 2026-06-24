@@ -727,6 +727,58 @@ export function renameSectionInCollection(
   };
 }
 
+function reorderTickersForSectionOrder(
+  tickers: string[],
+  tickerSections: Record<string, string>,
+  sections: WatchlistSection[],
+): string[] {
+  const unsectioned: string[] = [];
+  const bySection = new Map(sections.map((section) => [section.id, [] as string[]]));
+
+  for (const ticker of tickers) {
+    const key = normalizeWatchlistStorageKey(ticker);
+    const sectionId = tickerSections[key];
+    if (sectionId && bySection.has(sectionId)) {
+      bySection.get(sectionId)!.push(ticker);
+      continue;
+    }
+    unsectioned.push(ticker);
+  }
+
+  const ordered: string[] = [...unsectioned];
+  for (const section of sections) {
+    ordered.push(...(bySection.get(section.id) ?? []));
+  }
+  return normalizeTickers(ordered);
+}
+
+export function moveSectionInCollection(
+  snapshot: WatchlistCollectionsSnapshot,
+  collectionId: string,
+  fromSectionIndex: number,
+  toSectionIndex: number,
+): WatchlistCollectionsSnapshot | null {
+  const list = snapshot.lists.find((entry) => entry.id === collectionId);
+  if (!list) return null;
+  if (fromSectionIndex < 0 || fromSectionIndex >= list.sections.length) return null;
+  if (toSectionIndex < 0 || toSectionIndex >= list.sections.length) return null;
+  if (fromSectionIndex === toSectionIndex) return snapshot;
+
+  const sections = [...list.sections];
+  const [moved] = sections.splice(fromSectionIndex, 1);
+  if (!moved) return null;
+  sections.splice(toSectionIndex, 0, moved);
+
+  const tickers = reorderTickersForSectionOrder(list.tickers, list.tickerSections, sections);
+
+  return {
+    ...snapshot,
+    lists: snapshot.lists.map((entry) =>
+      entry.id === collectionId ? { ...entry, sections, tickers } : entry,
+    ),
+  };
+}
+
 export function deleteSectionFromCollection(
   snapshot: WatchlistCollectionsSnapshot,
   collectionId: string,

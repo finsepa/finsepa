@@ -26,6 +26,7 @@ import {
   isServerWatchlistCollectionId,
   loadAuthenticatedWatchlistCollections,
   mergeGuestWatchlistOnSignIn,
+  moveSectionInCollection,
   moveTickerInCollection,
   newWatchlistCollectionId,
   clearGuestWatchlistStorage,
@@ -102,6 +103,7 @@ type WatchlistContextValue = {
   createActiveSection: (name: string) => void;
   renameActiveSection: (sectionId: string, name: string) => void;
   deleteActiveSection: (sectionId: string) => void;
+  reorderActiveSection: (fromSectionIndex: number, toSectionIndex: number) => void;
   renameActiveWatchlist: (name: string) => void;
   switchWatchlist: (id: string) => void;
   watchlists: WatchlistCollection[];
@@ -641,6 +643,25 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
     [persistSectionLayout],
   );
 
+  const reorderActiveSection = useCallback(
+    (fromSectionIndex: number, toSectionIndex: number) => {
+      if (!hydratedRef.current) return;
+
+      const previous = collectionsRef.current;
+      const active = getActiveWatchlistCollection(previous);
+      const optimistic = moveSectionInCollection(
+        previous,
+        active.id,
+        fromSectionIndex,
+        toSectionIndex,
+      );
+      if (!optimistic) return;
+
+      persistSectionLayout(optimistic);
+    },
+    [persistSectionLayout],
+  );
+
   const renameActiveWatchlist = useCallback(
     (name: string) => {
       const trimmed = name.trim();
@@ -820,6 +841,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
       createActiveSection,
       renameActiveSection,
       deleteActiveSection,
+      reorderActiveSection,
       renameActiveWatchlist,
       switchWatchlist,
       watchlists: collections.lists,
@@ -844,6 +866,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
       createActiveSection,
       renameActiveSection,
       deleteActiveSection,
+      reorderActiveSection,
       renameActiveWatchlist,
       switchWatchlist,
       collections.lists,
