@@ -23,6 +23,7 @@ import {
   ensureSnapshotActiveId,
   getActiveWatchlistCollection,
   isPlaceholderWatchlistId,
+  isServerWatchlistCollectionId,
   loadAuthenticatedWatchlistCollections,
   mergeGuestWatchlistOnSignIn,
   moveTickerInCollection,
@@ -49,6 +50,7 @@ import { WATCHLIST_MUTATED_EVENT } from "@/lib/watchlist/constants";
 import {
   deleteWatchlistCollectionOnClient,
   fetchWatchlistSnapshot,
+  postWatchlistTicker,
   refreshWatchlistSnapshotFromServer,
   renameWatchlistOnServer,
   resolveServerCollectionId,
@@ -350,9 +352,33 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
 
       void (async () => {
         const optimistic = collectionsRef.current;
+        const targetList =
+          optimistic.lists.find((list) => list.id === resolvedId) ??
+          getActiveWatchlistCollection(optimistic);
+
+        let serverCollectionId = isServerWatchlistCollectionId(resolvedId)
+          ? resolvedId
+          : await resolveServerCollectionId(optimistic, resolvedId, targetList.name);
+
+        if (serverCollectionId && isServerWatchlistCollectionId(serverCollectionId)) {
+          const posted = await postWatchlistTicker(ticker, serverCollectionId);
+          if (posted) {
+            const snapshot = await refreshWatchlistSnapshotFromServer();
+            if (snapshot) {
+              applyCollections(applyMutationServerResponse(snapshot, optimistic));
+            }
+            setServerListWarning(null);
+            toast.success(`${ticker} added to your watchlist.`);
+            dispatchWatchlistMutated(ticker);
+            return;
+          }
+        }
+
         const synced = await persistSnapshotToServer(optimistic);
         if (!synced) {
           setServerListWarning("Watchlist saved locally; server sync will retry.");
+          toast.error("Could not save to your account. Try again.");
+          return;
         }
         toast.success(`${ticker} added to your watchlist.`);
         dispatchWatchlistMutated(ticker);

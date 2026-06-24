@@ -49,6 +49,11 @@ export function isPlaceholderWatchlistId(id: string): boolean {
   return id === "pending";
 }
 
+/** True for Supabase UUID collection ids (not bootstrap placeholders or client-only wl_* ids). */
+export function isServerWatchlistCollectionId(id: string): boolean {
+  return id.length > 0 && !isPlaceholderWatchlistId(id) && !id.startsWith("wl_");
+}
+
 function normalizeCollection(list: {
   id: string;
   name: string;
