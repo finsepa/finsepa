@@ -55,9 +55,21 @@ function formatRailPercent(value: number | null): string {
 
 function RailPriceSkeleton() {
   return (
-    <div className="ml-auto flex shrink-0 items-center gap-2">
+    <div className="ml-auto flex shrink-0 items-center gap-4">
       <div className="h-5 w-[4.5rem] animate-pulse rounded bg-[#E4E4E7]" />
-      <div className="h-4 w-11 animate-pulse rounded bg-[#F4F4F5]" />
+      <div className="h-5 w-11 animate-pulse rounded bg-[#E4E4E7]" />
+    </div>
+  );
+}
+
+function WatchlistRailTitleSkeleton() {
+  return (
+    <div
+      className="flex min-w-0 flex-1 items-center gap-0.5 pl-1"
+      aria-hidden
+    >
+      <div className="h-4 w-[5.5rem] max-w-[45%] animate-pulse rounded bg-[#E4E4E7]" />
+      <div className="h-4 w-4 shrink-0 animate-pulse rounded bg-[#F4F4F5]" />
     </div>
   );
 }
@@ -70,7 +82,7 @@ function RailChange({ value }: { value: number | null }) {
   return (
     <span
       className={cn(
-        "text-[12px] font-normal leading-5 tabular-nums",
+        "text-[14px] font-normal leading-5 tabular-nums",
         positive ? "text-[#16A34A]" : "text-[#DC2626]",
       )}
     >
@@ -154,7 +166,7 @@ function WatchlistRailRow({
         <span className="min-w-0 shrink truncate text-[14px] font-normal leading-5 text-[#09090B] underline-offset-2 decoration-[#71717A] group-hover:underline">
           {symbolLabel}
         </span>
-        <div className="ml-auto flex shrink-0 items-center gap-2 font-['Inter'] tabular-nums">
+        <div className="ml-auto flex shrink-0 items-center gap-4 font-['Inter'] tabular-nums">
           {showQuoteSkeleton ? (
             <RailPriceSkeleton />
           ) : (
@@ -256,7 +268,7 @@ function WatchlistRailSkeleton() {
         <div key={i} className="flex items-center gap-2 rounded-lg px-2 py-1.5">
           <div className="h-6 w-6 shrink-0 animate-pulse rounded-[8px] bg-[#E4E4E7]" />
           <div className="h-4 w-12 animate-pulse rounded bg-[#E4E4E7]" />
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex items-center gap-4">
             <div className="h-5 w-14 animate-pulse rounded bg-[#E4E4E7]" />
             <div className="h-4 w-10 animate-pulse rounded bg-[#F4F4F5]" />
           </div>
@@ -470,12 +482,7 @@ export function WatchlistRail() {
                   ready={storageHydrated}
                 />
               ) : (
-                <span
-                  className="flex min-w-0 flex-1 truncate pl-1 text-sm font-semibold leading-5 text-[#52525B]"
-                  suppressHydrationWarning
-                >
-                  Watchlist
-                </span>
+                <WatchlistRailTitleSkeleton />
               )}
               <WatchlistRailFullPageLink />
               <WatchlistRailToggle expanded={expanded} onToggle={toggleCollapsed} />

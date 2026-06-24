@@ -65,6 +65,7 @@ import {
 } from "@/lib/watchlist/normalize-storage-key";
 import {
   applyMutationServerResponse,
+  applyServerIdsPreservingLocalLayout,
   applyServerSnapshotPreservingLocalNames,
   findCollectionIdByName,
   hasClientOnlyWatchlistIds,
@@ -73,6 +74,7 @@ import {
   mergeServerIdsWithLocalSnapshot,
   mergeServerWithLocalSnapshot,
   shouldAdoptServerSnapshot,
+  watchlistSyncPayloadsEqual,
 } from "@/lib/watchlist/snapshot";
 
 function normalizeTicker(t: string): string {
@@ -135,6 +137,8 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
   collectionsRef.current = collections;
 
   const serverSyncChainRef = useRef(Promise.resolve());
+  const syncDirtyRef = useRef(false);
+  const syncInFlightRef = useRef<Promise<boolean> | null>(null);
 
   const hydratedRef = useRef(hydrated);
   hydratedRef.current = hydrated;
@@ -160,18 +164,44 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const persistSnapshotToServer = useCallback(
-    async (snapshot: WatchlistCollectionsSnapshot): Promise<boolean> => {
+    async (_snapshot?: WatchlistCollectionsSnapshot): Promise<boolean> => {
+      void _snapshot;
       if (!userIdRef.current) return false;
 
-      const run = async (): Promise<boolean> => {
-        const uploaded = await syncWatchlistSnapshotToServer(localSnapshotToSyncInput(snapshot));
-        if (!uploaded) return false;
-        applyCollections(applyMutationServerResponse(uploaded, snapshot));
-        setServerListWarning(null);
-        return true;
-      };
+      syncDirtyRef.current = true;
+      const existing = syncInFlightRef.current;
+      if (existing) return existing;
 
-      const task = serverSyncChainRef.current.then(run, run);
+      const task = (async (): Promise<boolean> => {
+        await serverSyncChainRef.current;
+        let lastOk = false;
+        while (syncDirtyRef.current) {
+          syncDirtyRef.current = false;
+          const snapshotToSync = collectionsRef.current;
+          const uploaded = await syncWatchlistSnapshotToServer(
+            localSnapshotToSyncInput(snapshotToSync),
+          );
+          if (!uploaded) return false;
+
+          applyCollections(
+            applyServerIdsPreservingLocalLayout(uploaded, collectionsRef.current),
+          );
+          lastOk = true;
+
+          if (!watchlistSyncPayloadsEqual(collectionsRef.current, snapshotToSync)) {
+            syncDirtyRef.current = true;
+          }
+        }
+        setServerListWarning(null);
+        return lastOk;
+      })().finally(() => {
+        syncInFlightRef.current = null;
+        if (syncDirtyRef.current) {
+          void persistSnapshotToServer();
+        }
+      });
+
+      syncInFlightRef.current = task;
       serverSyncChainRef.current = task.then(
         () => undefined,
         () => undefined,

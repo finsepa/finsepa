@@ -1,6 +1,5 @@
 "use client";
 
-import { DEFAULT_WATCHLIST_DISPLAY_NAME } from "@/lib/watchlist/display-name";
 import { WatchlistOptionsMenu } from "@/components/watchlist/watchlist-options-menu";
 import type { WatchlistCollection } from "@/lib/watchlist/collections";
 
@@ -27,15 +26,19 @@ export function WatchlistHeaderActions({
   onSwitch,
   storageHydrated = false,
 }: Props) {
-  const displayName = storageHydrated ? name : DEFAULT_WATCHLIST_DISPLAY_NAME;
+  const showTitle = storageHydrated;
 
   return (
     <div className="flex min-w-0 items-center gap-2">
-      <h1 className="truncate text-[20px] font-semibold leading-7 text-[#09090B]" suppressHydrationWarning>
-        {displayName}
-      </h1>
+      {showTitle ? (
+        <h1 className="truncate text-[20px] font-semibold leading-7 text-[#09090B]" suppressHydrationWarning>
+          {name}
+        </h1>
+      ) : (
+        <div className="h-7 w-32 max-w-[50%] animate-pulse rounded bg-[#E4E4E7]" aria-hidden />
+      )}
       <WatchlistOptionsMenu
-        name={displayName}
+        name={showTitle ? name : ""}
         watchlists={watchlists}
         activeWatchlistId={activeWatchlistId}
         onCreate={onCreate}

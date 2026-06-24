@@ -4,7 +4,7 @@ export type UsEquityMarketSession = "pre" | "regular" | "post" | "closed";
 
 /** Stock header / badge: explicit pre-market and “opens soon” overnight copy. */
 export type UsEquitySessionBadgeDisplay =
-  | { kind: "pre" }
+  | { kind: "pre"; minutesUntilRegular: number }
   | { kind: "regular"; minutesUntilClose: number }
   | { kind: "post" }
   | { kind: "pre_opens_soon"; minutesUntilPre: number }
@@ -82,7 +82,11 @@ export function getUsEquityMarketSession(now: Date): UsEquityMarketSession {
  */
 export function getUsEquitySessionBadgeDisplay(now: Date): UsEquitySessionBadgeDisplay {
   const session = getUsEquityMarketSession(now);
-  if (session === "pre") return { kind: "pre" };
+  if (session === "pre") {
+    const regularOpen = 9 * 60 + 30;
+    const { dayMinutes } = nyWeekdayAndMinutes(now);
+    return { kind: "pre", minutesUntilRegular: Math.max(0, regularOpen - dayMinutes) };
+  }
   if (session === "regular") {
     const regularClose = 16 * 60;
     const { dayMinutes } = nyWeekdayAndMinutes(now);

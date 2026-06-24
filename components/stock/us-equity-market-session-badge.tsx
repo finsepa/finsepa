@@ -49,7 +49,7 @@ function BadgeRow({
       return (
         <>
           <PreMarketEarningsIcon size={iconSize} />
-          <span>Pre-market open</span>
+          <span>Pre-market, market open in {formatMinutesShort(display.minutesUntilRegular)}</span>
         </>
       );
     case "regular":

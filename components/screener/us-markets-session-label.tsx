@@ -28,7 +28,7 @@ export function UsMarketsSessionLabel({ className }: { className?: string }) {
         <>
           <PreMarketEarningsIcon size={20} />
           <span className="min-w-0">
-            Pre-market open · Regular session in {status.countdownText}
+            Pre-market, market open in {status.countdownText}
           </span>
         </>
       ) : null}

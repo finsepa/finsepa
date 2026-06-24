@@ -449,6 +449,25 @@ export function applyMutationServerResponse(
   return clearDuplicateWatchlistTickerCopies(ensureSnapshotActiveId(merged ?? local));
 }
 
+/** After a successful upload: keep the live local layout, only adopt server collection ids. */
+export function applyServerIdsPreservingLocalLayout(
+  server: WatchlistServerSnapshot,
+  local: WatchlistCollectionsSnapshot,
+): WatchlistCollectionsSnapshot {
+  const activeName = getActiveWatchlistCollection(local).name;
+  const merged = mergeServerIdsWithLocalSnapshot(server, local, activeName);
+  return clearDuplicateWatchlistTickerCopies(ensureSnapshotActiveId(merged ?? local));
+}
+
+export function watchlistSyncPayloadsEqual(
+  a: WatchlistCollectionsSnapshot,
+  b: WatchlistCollectionsSnapshot,
+): boolean {
+  return (
+    JSON.stringify(localSnapshotToSyncInput(a)) === JSON.stringify(localSnapshotToSyncInput(b))
+  );
+}
+
 export function localSnapshotToSyncInput(
   local: WatchlistCollectionsSnapshot,
 ): { collections: WatchlistSyncCollectionInput[]; activeName: string } {
