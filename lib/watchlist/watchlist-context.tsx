@@ -62,12 +62,14 @@ import {
 } from "@/lib/watchlist/normalize-storage-key";
 import {
   applyMutationServerResponse,
+  applyServerSnapshotPreservingLocalNames,
   findCollectionIdByName,
   hasClientOnlyWatchlistIds,
   localSnapshotNeedsServerUpload,
   localSnapshotToSyncInput,
   mergeServerIdsWithLocalSnapshot,
   mergeServerWithLocalSnapshot,
+  shouldAdoptServerSnapshot,
 } from "@/lib/watchlist/snapshot";
 
 function normalizeTicker(t: string): string {
@@ -196,6 +198,9 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
         return;
       }
 
+      setHydrated(false);
+      setLoaded(false);
+
       const local = options.mergeGuest
         ? mergeGuestWatchlistOnSignIn(uid)
         : loadAuthenticatedWatchlistCollections(uid);
@@ -218,6 +223,16 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
 
         let serverSnapshot = snapshot;
         const working = clearDuplicateWatchlistTickerCopies(local);
+
+        if (shouldAdoptServerSnapshot(working, serverSnapshot)) {
+          setServerListWarning(null);
+          applyCollections(
+            applyServerSnapshotPreservingLocalNames(serverSnapshot, working, {
+              preferServerNames: true,
+            }),
+          );
+          return;
+        }
 
         if (localSnapshotNeedsServerUpload(working, serverSnapshot)) {
           const uploaded = await syncWatchlistSnapshotToServer(localSnapshotToSyncInput(working));
@@ -281,6 +296,15 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
       const local = collectionsRef.current;
       const server = await refreshWatchlistSnapshotFromServer();
       if (cancelled || !server) return;
+
+      if (shouldAdoptServerSnapshot(local, server)) {
+        applyCollections(
+          applyServerSnapshotPreservingLocalNames(server, local, { preferServerNames: true }),
+        );
+        setServerListWarning(null);
+        return;
+      }
+
       if (!localSnapshotNeedsServerUpload(local, server)) return;
 
       const synced = await persistSnapshotToServer(local);

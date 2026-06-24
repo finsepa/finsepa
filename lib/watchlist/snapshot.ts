@@ -281,18 +281,54 @@ export function mergeServerWithLocalSnapshot(
   if (!localSnapshotIsReady(local)) {
     return clearDuplicateWatchlistTickerCopies(serverSnapshotToCollections(server, null));
   }
-  if (localIsStaleSupersetOfServer(local, server)) {
-    return applyServerSnapshotPreservingLocalNames(server, local, { preferServerNames: true });
-  }
-  if (
-    localSnapshotHasNoTickers(local) &&
-    server.collections.some((collection) => collection.tickers.length > 0)
-  ) {
+  if (shouldAdoptServerSnapshot(local, server)) {
     return applyServerSnapshotPreservingLocalNames(server, local, { preferServerNames: true });
   }
   const activeName = getActiveWatchlistCollection(local).name;
   const merged = mergeServerIdsWithLocalSnapshot(server, local, activeName);
   return clearDuplicateWatchlistTickerCopies(ensureSnapshotActiveId(merged ?? local));
+}
+
+/** Server has a curated layout this device has not received yet. */
+export function localIsMissingServerSections(
+  local: WatchlistCollectionsSnapshot,
+  server: WatchlistServerSnapshot,
+): boolean {
+  return server.collections.some((serverList) => {
+    const serverLayout = {
+      sections: serverList.sections,
+      tickerSections: serverList.tickerSections,
+    };
+    if (!serverHasSectionsLayout(serverLayout)) return false;
+
+    const localList = local.lists.find((list) =>
+      collectionNamesMatch(list.name, serverList.name),
+    );
+    if (!localList) return true;
+
+    const localLayout = {
+      sections: localList.sections,
+      tickerSections: localList.tickerSections,
+    };
+    return !serverHasSectionsLayout(localLayout);
+  });
+}
+
+/** Prefer the server snapshot instead of uploading stale browser cache. */
+export function shouldAdoptServerSnapshot(
+  local: WatchlistCollectionsSnapshot,
+  server: WatchlistServerSnapshot,
+): boolean {
+  if (localIsStaleSupersetOfServer(local, server)) return true;
+  if (localIsMissingServerSections(local, server)) return true;
+  if (
+    localSnapshotHasNoTickers(local) &&
+    server.collections.some((collection) => collection.tickers.length > 0)
+  ) {
+    return true;
+  }
+  if (local.lists.length < server.collections.length) return true;
+  return false;
 }
 
 function localSnapshotHasNoTickers(local: WatchlistCollectionsSnapshot): boolean {
@@ -334,13 +370,7 @@ export function localSnapshotNeedsServerUpload(
   local: WatchlistCollectionsSnapshot,
   server: WatchlistServerSnapshot,
 ): boolean {
-  if (localIsStaleSupersetOfServer(local, server)) return false;
-  if (
-    localSnapshotHasNoTickers(local) &&
-    server.collections.some((collection) => collection.tickers.length > 0)
-  ) {
-    return false;
-  }
+  if (shouldAdoptServerSnapshot(local, server)) return false;
   if (serverListsHaveDuplicateTickerSets(server)) return true;
   if (local.lists.length !== server.collections.length) return true;
   if (hasClientOnlyWatchlistIds(local)) return true;

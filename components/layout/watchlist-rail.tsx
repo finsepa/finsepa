@@ -413,14 +413,14 @@ export function WatchlistRail() {
                 dropdownMenuFloatingScrollbarClassName,
               )}
             >
-              {showSkeleton ? <WatchlistRailSkeleton /> : null}
-              {!showSkeleton && empty ? (
+              {!storageHydrated || showSkeleton ? <WatchlistRailSkeleton /> : null}
+              {storageHydrated && !showSkeleton && empty ? (
                 <WatchlistEmptyState variant="plain" className="min-h-0 py-10" />
               ) : null}
-              {!showSkeleton && error ? (
+              {storageHydrated && !showSkeleton && error ? (
                 <p className="px-3 py-4 text-[13px] leading-5 text-[#DC2626]">{error}</p>
               ) : null}
-              {!showSkeleton && !empty && !error ? (
+              {storageHydrated && !showSkeleton && !empty && !error ? (
                 <div className="flex flex-col">
                   {railGroups.unsectioned.map((row) => (
                     <WatchlistRailRow
