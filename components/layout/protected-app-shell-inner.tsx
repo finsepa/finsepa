@@ -124,7 +124,9 @@ function ProtectedAppChrome({
             >
               {children}
             </main>
-            <WatchlistRail />
+            <Suspense fallback={null}>
+              <WatchlistRail />
+            </Suspense>
           </div>
         </div>
       </div>

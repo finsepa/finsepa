@@ -1,7 +1,8 @@
-import { createServerClient } from "@supabase/ssr";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
+import { resolvePostLoginPath } from "@/lib/auth/post-login-redirect";
 import { verifyPasswordForEmail } from "@/lib/auth/verify-password-for-email";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 
@@ -11,6 +12,7 @@ export const dynamic = "force-dynamic";
 type Body = {
   email?: unknown;
   password?: unknown;
+  next?: unknown;
 };
 
 function getSupabasePublicConfig(): { url: string; anonKey: string } | null {
@@ -22,12 +24,14 @@ function getSupabasePublicConfig(): { url: string; anonKey: string } | null {
   return { url, anonKey };
 }
 
+type SessionCookie = { name: string; value: string; options?: CookieOptions };
+
 async function createCookieSessionClient() {
   const config = getSupabasePublicConfig();
   if (!config) return null;
 
   const cookieStore = await cookies();
-  let response = NextResponse.json({ ok: true as const });
+  const sessionCookies: SessionCookie[] = [];
 
   const supabase = createServerClient(config.url, config.anonKey, {
     cookies: {
@@ -37,22 +41,34 @@ async function createCookieSessionClient() {
       setAll(cookiesToSet) {
         cookiesToSet.forEach(({ name, value, options }) => {
           cookieStore.set(name, value, options);
-          response.cookies.set(name, value, options);
+          sessionCookies.push({ name, value, options });
         });
       },
     },
   });
 
-  return { supabase, response };
+  return { supabase, sessionCookies };
 }
 
-async function loginWithPasswordGrant(email: string, password: string): Promise<NextResponse> {
+function buildLoginSuccessResponse(redirectTo: string, sessionCookies: SessionCookie[]) {
+  const response = NextResponse.json({ ok: true as const, redirectTo });
+  sessionCookies.forEach(({ name, value, options }) => {
+    response.cookies.set(name, value, options);
+  });
+  return response;
+}
+
+async function loginWithPasswordGrant(
+  email: string,
+  password: string,
+  next?: string | null,
+): Promise<NextResponse> {
   const sessionClient = await createCookieSessionClient();
   if (!sessionClient) {
     return NextResponse.json({ error: "config", message: "Authentication is not configured." }, { status: 503 });
   }
 
-  const { supabase, response } = sessionClient;
+  const { supabase, sessionCookies } = sessionClient;
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
@@ -79,10 +95,11 @@ async function loginWithPasswordGrant(email: string, password: string): Promise<
     );
   }
 
-  return response;
+  const redirectTo = await resolvePostLoginPath(supabase, next);
+  return buildLoginSuccessResponse(redirectTo, sessionCookies);
 }
 
-async function loginWithVerifiedEmail(email: string): Promise<NextResponse> {
+async function loginWithVerifiedEmail(email: string, next?: string | null): Promise<NextResponse> {
   const admin = getSupabaseAdminClient();
   if (!admin) {
     return NextResponse.json(
@@ -109,7 +126,7 @@ async function loginWithVerifiedEmail(email: string): Promise<NextResponse> {
     return NextResponse.json({ error: "config", message: "Authentication is not configured." }, { status: 503 });
   }
 
-  const { supabase, response } = sessionClient;
+  const { supabase, sessionCookies } = sessionClient;
   const { error: sessionError } = await supabase.auth.verifyOtp({
     token_hash: tokenHash,
     type: "magiclink",
@@ -122,7 +139,8 @@ async function loginWithVerifiedEmail(email: string): Promise<NextResponse> {
     );
   }
 
-  return response;
+  const redirectTo = await resolvePostLoginPath(supabase, next);
+  return buildLoginSuccessResponse(redirectTo, sessionCookies);
 }
 
 export async function POST(request: Request) {
@@ -135,6 +153,7 @@ export async function POST(request: Request) {
 
   const email = typeof body.email === "string" ? body.email.trim() : "";
   const password = typeof body.password === "string" ? body.password : "";
+  const next = typeof body.next === "string" ? body.next : null;
 
   if (!email || !password) {
     return NextResponse.json(
@@ -163,8 +182,8 @@ export async function POST(request: Request) {
     }
 
     // Local dev usually has SUPABASE_POOLER_URL; production may not — fall back to Supabase password grant.
-    return loginWithPasswordGrant(email, password);
+    return loginWithPasswordGrant(email, password, next);
   }
 
-  return loginWithVerifiedEmail(verified.email);
+  return loginWithVerifiedEmail(verified.email, next);
 }

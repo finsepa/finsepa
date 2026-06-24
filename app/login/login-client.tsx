@@ -114,10 +114,14 @@ export function LoginClient({ resetSuccess, callbackError, authNext, signedOut }
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, next: authNext }),
       });
 
-      const data = (await res.json().catch(() => ({}))) as { ok?: boolean; message?: string };
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        message?: string;
+        redirectTo?: string;
+      };
 
       if (!res.ok) {
         setErrorMessage(data.message?.trim() || "Invalid email or password.");
@@ -133,7 +137,11 @@ export function LoginClient({ resetSuccess, callbackError, authNext, signedOut }
       setPasswordLoginSuccess(true);
       await new Promise((r) => setTimeout(r, REDIRECT_AFTER_LOGIN_MS));
       // Full navigation avoids Turbopack / dev RSC failures from router.refresh + router.push.
-      window.location.replace(PATH_APP_ENTRY);
+      window.location.replace(
+        typeof data.redirectTo === "string" && data.redirectTo.startsWith("/")
+          ? data.redirectTo
+          : PATH_APP_ENTRY,
+      );
     } catch (err) {
       const message = err instanceof Error ? err.message : "Something went wrong. Please try again.";
       setErrorMessage(message);

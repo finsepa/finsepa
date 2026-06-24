@@ -4,7 +4,7 @@ import {
   createContext,
   useCallback,
   useContext,
-  useLayoutEffect,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -25,7 +25,10 @@ export const WATCHLIST_RAIL_WIDTH_MOTION_CLASS =
   "transition-[width] duration-[280ms] ease-[cubic-bezier(0.33,1,0.68,1)] motion-reduce:transition-none";
 
 type WatchlistRailLayoutContextValue = {
+  /** Live preference (may update after hydration from localStorage). */
   collapsed: boolean;
+  /** Server cookie value — stable for the first client render to match SSR. */
+  initialCollapsed: boolean;
   setCollapsed: (value: boolean) => void;
   toggleCollapsed: () => void;
   outerWidthPx: number;
@@ -53,22 +56,25 @@ export function WatchlistRailLayoutProvider({
   initialCollapsed = true,
 }: {
   children: ReactNode;
+  /** From server cookie so SSR and the first client render agree (avoids hydration mismatch). */
   initialCollapsed?: boolean;
 }) {
   const [collapsed, setCollapsedState] = useState(initialCollapsed);
+  const [hasHydrated, setHasHydrated] = useState(false);
 
-  /** Prefer localStorage on mount so expanded state survives cross-layout navigations. */
-  useLayoutEffect(() => {
+  useEffect(() => {
+    setHasHydrated(true);
     try {
       const raw = localStorage.getItem(WATCHLIST_RAIL_COLLAPSED_PREFERENCE_KEY);
       if (raw !== null) {
-        const stored = readWatchlistRailCollapsedPreference(raw);
-        setCollapsedState(stored);
-        writeWatchlistRailCollapsedCookie(stored);
+        const fromStorage = readWatchlistRailCollapsedPreference(raw);
+        if (fromStorage !== initialCollapsed) {
+          setCollapsedState(fromStorage);
+          writeWatchlistRailCollapsedCookie(fromStorage);
+        }
         return;
       }
-      setCollapsedState(initialCollapsed);
-      persistWatchlistRailCollapsedPreference(initialCollapsed);
+      writeWatchlistRailCollapsedCookie(initialCollapsed);
     } catch {
       /* ignore */
     }
@@ -94,13 +100,21 @@ export function WatchlistRailLayoutProvider({
     });
   }, [persist]);
 
-  const outerWidthPx = collapsed
+  const layoutCollapsed = hasHydrated ? collapsed : initialCollapsed;
+
+  const outerWidthPx = layoutCollapsed
     ? WATCHLIST_RAIL_OUTER_COLLAPSED_PX
     : WATCHLIST_RAIL_OUTER_EXPANDED_PX;
 
   const value = useMemo(
-    () => ({ collapsed, setCollapsed, toggleCollapsed, outerWidthPx }),
-    [collapsed, setCollapsed, toggleCollapsed, outerWidthPx],
+    () => ({
+      collapsed: layoutCollapsed,
+      initialCollapsed,
+      setCollapsed,
+      toggleCollapsed,
+      outerWidthPx,
+    }),
+    [layoutCollapsed, initialCollapsed, setCollapsed, toggleCollapsed, outerWidthPx],
   );
 
   return (

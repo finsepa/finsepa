@@ -29,6 +29,19 @@ function safeNextPath(raw: string | null | undefined): string {
   return raw;
 }
 
+async function resolveSignInDestination(next: string): Promise<string> {
+  try {
+    const res = await fetch(`/api/auth/post-login-redirect?next=${encodeURIComponent(next)}`);
+    const data = (await res.json().catch(() => ({}))) as { redirectTo?: string };
+    if (typeof data.redirectTo === "string" && data.redirectTo.startsWith("/")) {
+      return data.redirectTo;
+    }
+  } catch {
+    /* non-blocking */
+  }
+  return next;
+}
+
 function goTo(path: string) {
   window.location.replace(path);
 }
@@ -75,7 +88,7 @@ function AuthCallbackInner() {
       if (!urlHasAuthCallbackParams(href)) {
         const session = await waitForSession();
         if (session) {
-          await finishSignIn(safeNext);
+          await finishSignIn(await resolveSignInDestination(safeNext));
           return;
         }
 
@@ -105,6 +118,7 @@ function AuthCallbackInner() {
           /* non-blocking */
         }
 
+        destination = await resolveSignInDestination(destination);
         await finishSignIn(destination);
         return;
       }

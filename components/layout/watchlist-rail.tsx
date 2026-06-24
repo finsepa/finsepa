@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { GripVertical, Maximize2, PanelLeftOpen, Star } from "@/lib/icons";
 
 import { WatchlistEmptyState } from "@/components/watchlist/watchlist-empty-state";
@@ -245,7 +245,7 @@ function WatchlistRailSectionGroup({
 
 function WatchlistRailSkeleton() {
   return (
-    <div className="flex flex-col gap-1 px-1 py-1">
+    <div className="flex flex-col">
       {[0, 1, 2].map((i) => (
         <div key={i} className="flex items-center gap-2 rounded-lg px-2 py-1.5">
           <div className="h-6 w-6 shrink-0 animate-pulse rounded-[8px] bg-[#E4E4E7]" />
@@ -255,6 +255,77 @@ function WatchlistRailSkeleton() {
             <div className="h-4 w-10 animate-pulse rounded bg-[#F4F4F5]" />
           </div>
         </div>
+      ))}
+    </div>
+  );
+}
+
+function WatchlistRailScrollContent({
+  showLoadingState,
+  empty,
+  error,
+  railGroups,
+  watchedTickers,
+  pathname,
+  tabParam,
+  pricesLoading,
+  loading,
+  moveActiveWatchlistItem,
+  renameActiveSection,
+  deleteActiveSection,
+}: {
+  showLoadingState: boolean;
+  empty: boolean;
+  error: string | null;
+  railGroups: ReturnType<typeof partitionEnrichedItemsBySections>;
+  watchedTickers: string[];
+  pathname: string;
+  tabParam: string | null;
+  pricesLoading: boolean;
+  loading: boolean;
+  moveActiveWatchlistItem: (fromIndex: number, target: WatchlistDropTarget) => void;
+  renameActiveSection: (sectionId: string, name: string) => void;
+  deleteActiveSection: (sectionId: string) => void;
+}) {
+  if (showLoadingState) {
+    return <WatchlistRailSkeleton />;
+  }
+  if (empty) {
+    return <WatchlistEmptyState variant="plain" className="min-h-0 py-10" />;
+  }
+  if (error) {
+    return <p className="px-3 py-4 text-[13px] leading-5 text-[#DC2626]">{error}</p>;
+  }
+  return (
+    <div className="flex flex-col">
+      {railGroups.unsectioned.map((row) => (
+        <WatchlistRailRow
+          key={row.entryId}
+          row={row}
+          globalIndex={globalTickerIndex(watchedTickers, row.storageKey)}
+          sectionId={null}
+          pathname={pathname}
+          tabParam={tabParam}
+          pricesLoading={pricesLoading}
+          loading={loading}
+          onMoveItem={moveActiveWatchlistItem}
+        />
+      ))}
+      {railGroups.sections.map(({ section, rows }) => (
+        <WatchlistRailSectionGroup
+          key={section.id}
+          sectionId={section.id}
+          label={section.name}
+          rows={rows}
+          watchedTickers={watchedTickers}
+          pathname={pathname}
+          tabParam={tabParam}
+          pricesLoading={pricesLoading}
+          loading={loading}
+          onMoveItem={moveActiveWatchlistItem}
+          onRenameSection={renameActiveSection}
+          onDeleteSection={deleteActiveSection}
+        />
       ))}
     </div>
   );
@@ -313,6 +384,8 @@ export function WatchlistRail() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const { collapsed, toggleCollapsed, outerWidthPx } = useWatchlistRailLayout();
   const expanded = !collapsed;
   const { items, empty, showSkeleton, error, pricesLoading, loading } = useWatchlistEnrichedItems({
@@ -342,6 +415,8 @@ export function WatchlistRail() {
     activeSections,
     activeTickerSections,
   );
+  const showLoadingState = !mounted || !storageHydrated || showSkeleton;
+  const showRailContent = mounted && storageHydrated;
 
   if (isFullWatchlistPage(pathname)) {
     return null;
@@ -369,7 +444,7 @@ export function WatchlistRail() {
         >
           {expanded ? (
             <>
-              {storageHydrated ? (
+              {mounted && storageHydrated ? (
                 <WatchlistOptionsMenu
                   name={activeWatchlistName}
                   watchlists={watchlists}
@@ -412,47 +487,26 @@ export function WatchlistRail() {
                 "min-h-0 overflow-y-auto overscroll-y-contain px-1 pb-2",
                 dropdownMenuFloatingScrollbarClassName,
               )}
+              suppressHydrationWarning
             >
-              {!storageHydrated || showSkeleton ? <WatchlistRailSkeleton /> : null}
-              {storageHydrated && !showSkeleton && empty ? (
-                <WatchlistEmptyState variant="plain" className="min-h-0 py-10" />
-              ) : null}
-              {storageHydrated && !showSkeleton && error ? (
-                <p className="px-3 py-4 text-[13px] leading-5 text-[#DC2626]">{error}</p>
-              ) : null}
-              {storageHydrated && !showSkeleton && !empty && !error ? (
-                <div className="flex flex-col">
-                  {railGroups.unsectioned.map((row) => (
-                    <WatchlistRailRow
-                      key={row.entryId}
-                      row={row}
-                      globalIndex={globalTickerIndex(watchedTickers, row.storageKey)}
-                      sectionId={null}
-                      pathname={pathname}
-                      tabParam={tabParam}
-                      pricesLoading={pricesLoading}
-                      loading={loading}
-                      onMoveItem={moveActiveWatchlistItem}
-                    />
-                  ))}
-                  {railGroups.sections.map(({ section, rows }) => (
-                    <WatchlistRailSectionGroup
-                      key={section.id}
-                      sectionId={section.id}
-                      label={section.name}
-                      rows={rows}
-                      watchedTickers={watchedTickers}
-                      pathname={pathname}
-                      tabParam={tabParam}
-                      pricesLoading={pricesLoading}
-                      loading={loading}
-                      onMoveItem={moveActiveWatchlistItem}
-                      onRenameSection={renameActiveSection}
-                      onDeleteSection={deleteActiveSection}
-                    />
-                  ))}
-                </div>
-              ) : null}
+              {showRailContent ? (
+                <WatchlistRailScrollContent
+                  showLoadingState={showLoadingState}
+                  empty={empty}
+                  error={error}
+                  railGroups={railGroups}
+                  watchedTickers={watchedTickers}
+                  pathname={pathname}
+                  tabParam={tabParam}
+                  pricesLoading={pricesLoading}
+                  loading={loading}
+                  moveActiveWatchlistItem={moveActiveWatchlistItem}
+                  renameActiveSection={renameActiveSection}
+                  deleteActiveSection={deleteActiveSection}
+                />
+              ) : (
+                <WatchlistRailSkeleton />
+              )}
             </div>
           </div>
         </div>
