@@ -23,6 +23,95 @@ function findServerCollectionForLocalList(
   );
 }
 
+function isTickerSuperset(superset: string[], subset: string[]): boolean {
+  if (subset.length === 0 || superset.length <= subset.length) return false;
+  const supersetKeys = new Set(superset);
+  return subset.every((ticker) => supersetKeys.has(ticker));
+}
+
+/** True when this browser has an old flat superset and the server already has a curated layout. */
+export function localIsStaleSupersetOfServer(
+  local: WatchlistCollectionsSnapshot,
+  server: WatchlistServerSnapshot,
+): boolean {
+  return local.lists.some((localList) => {
+    const serverList = findServerCollectionForLocalList(localList, server);
+    if (!serverList) return false;
+
+    const localLayout = {
+      sections: localList.sections,
+      tickerSections: localList.tickerSections,
+    };
+    const serverLayout = {
+      sections: serverList.sections,
+      tickerSections: serverList.tickerSections,
+    };
+
+    if (!serverHasSectionsLayout(serverLayout)) return false;
+    if (
+      serverHasSectionsLayout(localLayout) &&
+      sectionsLayoutsEqual(localLayout, serverLayout)
+    ) {
+      return false;
+    }
+    if (serverHasSectionsLayout(localLayout)) return false;
+
+    return isTickerSuperset(localList.tickers, serverList.tickers);
+  });
+}
+
+function localTickerOrderDiffersFromServer(
+  local: WatchlistCollectionsSnapshot,
+  server: WatchlistServerSnapshot,
+): boolean {
+  return local.lists.some((localList) => {
+    const serverList = findServerCollectionForLocalList(localList, server);
+    if (!serverList) return false;
+    if (localList.tickers.length !== serverList.tickers.length) return false;
+    return localList.tickers.some((ticker, index) => ticker !== serverList.tickers[index]);
+  });
+}
+
+/** Apply the server snapshot but keep local display names (e.g. Main vs Watchlist). */
+export function applyServerSnapshotPreservingLocalNames(
+  server: WatchlistServerSnapshot,
+  local: WatchlistCollectionsSnapshot,
+): WatchlistCollectionsSnapshot {
+  const activeLocalName = getActiveWatchlistCollection(local).name;
+  const lists: WatchlistCollection[] = server.collections.map((serverCollection) => {
+    const localList = local.lists.find((list) =>
+      collectionNamesMatch(list.name, serverCollection.name),
+    );
+    return {
+      id: serverCollection.id,
+      name: localList?.name ?? serverCollection.name,
+      tickers: [...serverCollection.tickers],
+      sections: [...serverCollection.sections],
+      tickerSections: { ...serverCollection.tickerSections },
+    };
+  });
+
+  for (const localList of local.lists) {
+    if (lists.some((list) => collectionNamesMatch(list.name, localList.name))) continue;
+    lists.push({
+      id: localList.id,
+      name: localList.name,
+      tickers: [...localList.tickers],
+      sections: [...localList.sections],
+      tickerSections: { ...localList.tickerSections },
+    });
+  }
+
+  const draft: WatchlistCollectionsSnapshot = {
+    v: 2,
+    activeId: "",
+    lists,
+    pendingRemoval: [],
+  };
+  const activeId = findCollectionIdByName(draft, activeLocalName) ?? lists[0]?.id ?? "";
+  return clearDuplicateWatchlistTickerCopies(ensureSnapshotActiveId(draft));
+}
+
 function localHasTickersBehindServer(
   local: WatchlistCollectionsSnapshot,
   server: WatchlistServerSnapshot,
@@ -177,6 +266,9 @@ export function mergeServerWithLocalSnapshot(
   if (!localSnapshotIsReady(local)) {
     return clearDuplicateWatchlistTickerCopies(serverSnapshotToCollections(server, null));
   }
+  if (localIsStaleSupersetOfServer(local, server)) {
+    return applyServerSnapshotPreservingLocalNames(server, local);
+  }
   const activeName = getActiveWatchlistCollection(local).name;
   const merged = mergeServerIdsWithLocalSnapshot(server, local, activeName);
   return clearDuplicateWatchlistTickerCopies(ensureSnapshotActiveId(merged ?? local));
@@ -228,12 +320,14 @@ export function localSnapshotNeedsServerUpload(
   local: WatchlistCollectionsSnapshot,
   server: WatchlistServerSnapshot,
 ): boolean {
+  if (localIsStaleSupersetOfServer(local, server)) return false;
   if (serverListsHaveDuplicateTickerSets(server)) return true;
   if (local.lists.length !== server.collections.length) return true;
   if (hasClientOnlyWatchlistIds(local)) return true;
   if (localEmptyListHasServerTickers(local, server)) return true;
   if (localHasTickersBehindServer(local, server)) return true;
   if (localHasSectionsAheadOfServer(local, server)) return true;
+  if (localTickerOrderDiffersFromServer(local, server)) return true;
   if (localListsHaveDistinctTickerSets(local) && serverListsHaveDuplicateTickerSets(server)) {
     return true;
   }

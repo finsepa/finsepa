@@ -189,9 +189,10 @@ export async function ensureDefaultWatchlistCollection(
       sections_layout: serializeSectionsLayout(emptyWatchlistSectionLayout()),
     })
     .select("id,user_id,name,sort_order,created_at,sections_layout")
-    .single();
+    .maybeSingle();
 
   if (error) throw new Error(error.message);
+  if (!data) throw new Error("Failed to create default watchlist collection.");
 
   const row = data as WatchlistCollectionRow;
   await setActiveCollectionId(supabase, userId, row.id);
@@ -248,7 +249,7 @@ export async function createWatchlistCollectionOnServer(
       sections_layout: serializeSectionsLayout(emptyWatchlistSectionLayout()),
     })
     .select("id,user_id,name,sort_order,created_at,sections_layout")
-    .single();
+    .maybeSingle();
 
   if (error) {
     if (error.code === "23505") {
@@ -256,6 +257,7 @@ export async function createWatchlistCollectionOnServer(
     }
     throw new Error(error.message);
   }
+  if (!data) throw new Error("Failed to create watchlist collection.");
 
   const row = data as WatchlistCollectionRow;
   if (options?.activate !== false) {
@@ -278,7 +280,7 @@ export async function renameWatchlistCollectionOnServer(
     .eq("id", collectionId)
     .eq("user_id", userId)
     .select("id,user_id,name,sort_order,created_at,sections_layout")
-    .single();
+    .maybeSingle();
 
   if (error) {
     if (error.code === "23505") {
@@ -383,7 +385,7 @@ export async function addWatchlistTicker(
     .from(ITEMS_TABLE)
     .insert({ user_id: userId, collection_id: collectionId, ticker, sort_order: sortOrder })
     .select("id,user_id,collection_id,ticker,sort_order,created_at")
-    .single();
+    .maybeSingle();
 
   if (!error && data) {
     return { row: data as WatchlistRow, created: true };
@@ -494,8 +496,22 @@ export async function syncWatchlistFromClient(
       aliasMatch ??
       (exactMatch && !usedServerIds.has(exactMatch.id) ? exactMatch : undefined);
     if (found) {
-      usedServerIds.add(found.id);
-      resolved.push(found);
+      const desiredName = normalizeCollectionName(input.name);
+      let resolvedRow = found;
+      if (found.name !== desiredName) {
+        try {
+          resolvedRow = await renameWatchlistCollectionOnServer(
+            supabase,
+            userId,
+            found.id,
+            desiredName,
+          );
+        } catch {
+          resolvedRow = found;
+        }
+      }
+      usedServerIds.add(resolvedRow.id);
+      resolved.push(resolvedRow);
       continue;
     }
     const created = await createWatchlistCollectionOnServer(supabase, userId, name, { activate: false });
