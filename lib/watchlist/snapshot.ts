@@ -320,6 +320,10 @@ export function localIsMissingServerSections(
   });
 }
 
+export function serverSnapshotHasNoTickers(server: WatchlistServerSnapshot): boolean {
+  return !server.collections.some((collection) => collection.tickers.length > 0);
+}
+
 /** Prefer the server snapshot instead of uploading stale browser cache. */
 export function shouldAdoptServerSnapshot(
   local: WatchlistCollectionsSnapshot,

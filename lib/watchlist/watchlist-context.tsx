@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from "react";
 import { toast } from "sonner";
+import type { User } from "@supabase/supabase-js";
 
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import {
@@ -54,10 +55,22 @@ import {
   postWatchlistTicker,
   refreshWatchlistSnapshotFromServer,
   renameWatchlistOnServer,
+  resetNewAccountWatchlistOnServer,
   resolveServerCollectionId,
   setActiveWatchlistOnServer,
   syncWatchlistSnapshotToServer,
 } from "@/lib/watchlist/fetch-watchlist-api";
+import {
+  clearGuestWatchlistPendingMerge,
+  consumeGuestWatchlistPendingMerge,
+  markGuestWatchlistPendingMerge,
+} from "@/lib/watchlist/guest-merge";
+import {
+  isNewAccountWatchlistResetDone,
+  isUserWithinWatchlistResetWindow,
+  markNewAccountWatchlistResetDone,
+  shouldRunNewAccountWatchlistReset,
+} from "@/lib/watchlist/new-account-reset";
 import { writeWatchlistLocal } from "@/lib/watchlist/local-storage";
 import {
   isWatchlistTickerWatched,
@@ -73,6 +86,8 @@ import {
   localSnapshotToSyncInput,
   mergeServerIdsWithLocalSnapshot,
   mergeServerWithLocalSnapshot,
+  serverSnapshotHasNoTickers,
+  serverSnapshotToCollections,
   shouldAdoptServerSnapshot,
   watchlistSyncPayloadsEqual,
 } from "@/lib/watchlist/snapshot";
@@ -157,6 +172,9 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
     setWatchedTickers(orderedTickers);
     setWatched(new Set(orderedTickers));
     writeWatchlistCollections(userIdRef.current, repaired);
+    if (!userIdRef.current && unionWatchlistTickers(repaired).length > 0) {
+      markGuestWatchlistPendingMerge();
+    }
     if (userIdRef.current) {
       clearGuestWatchlistStorage(userIdRef.current);
     }
@@ -224,7 +242,11 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
     const supabase = getSupabaseBrowserClient();
     let cancelled = false;
 
-    async function bootstrap(uid: string | null, options: BootstrapOptions = {}) {
+    async function bootstrap(
+      uid: string | null,
+      options: BootstrapOptions = {},
+      authUser?: User | null,
+    ) {
       setUserId(uid);
 
       if (!uid) {
@@ -259,6 +281,41 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
 
         let serverSnapshot = snapshot;
         const working = clearDuplicateWatchlistTickerCopies(local);
+
+        if (
+          authUser &&
+          isUserWithinWatchlistResetWindow(authUser) &&
+          !options.mergeGuest &&
+          !isNewAccountWatchlistResetDone(uid)
+        ) {
+          if (shouldRunNewAccountWatchlistReset(authUser, uid, options, working, serverSnapshot)) {
+            const cleared = await resetNewAccountWatchlistOnServer();
+            markNewAccountWatchlistResetDone(uid);
+            clearGuestWatchlistStorage(uid);
+            if (cleared) {
+              setServerListWarning(null);
+              applyCollections(serverSnapshotToCollections(cleared, uid));
+              return;
+            }
+          } else {
+            markNewAccountWatchlistResetDone(uid);
+          }
+        }
+
+        if (
+          !options.mergeGuest &&
+          serverSnapshotHasNoTickers(serverSnapshot) &&
+          unionWatchlistTickers(working).length > 0
+        ) {
+          setServerListWarning(null);
+          applyCollections(
+            applyServerSnapshotPreservingLocalNames(serverSnapshot, working, {
+              preferServerNames: true,
+            }),
+          );
+          clearGuestWatchlistStorage(uid);
+          return;
+        }
 
         if (shouldAdoptServerSnapshot(working, serverSnapshot)) {
           setServerListWarning(null);
@@ -301,7 +358,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
         data: { user },
       } = await supabase.auth.getUser();
       if (cancelled) return;
-      await bootstrap(user?.id ?? null);
+      await bootstrap(user?.id ?? null, {}, user);
     })();
 
     const {
@@ -309,8 +366,11 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
     } = supabase.auth.onAuthStateChange((event, nextSession) => {
       const uid = nextSession?.user?.id ?? null;
       if (event === "SIGNED_IN" && uid) {
-        void bootstrap(uid, { mergeGuest: true });
+        const mergeGuest = consumeGuestWatchlistPendingMerge();
+        void bootstrap(uid, { mergeGuest }, nextSession?.user ?? null);
       } else if (event === "SIGNED_OUT") {
+        clearGuestWatchlistPendingMerge();
+        clearGuestWatchlistStorage();
         setUserId(null);
         applyCollections(readWatchlistCollections(null));
         setHydrated(true);

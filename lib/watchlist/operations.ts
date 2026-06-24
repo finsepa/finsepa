@@ -240,6 +240,39 @@ export async function getWatchlistSnapshot(
   return snapshot;
 }
 
+/** Wipe polluted watchlist data for a brand-new account (one-time client recovery). */
+export async function resetWatchlistForNewAccount(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<WatchlistServerSnapshot> {
+  const { error: itemsError } = await supabase.from(ITEMS_TABLE).delete().eq("user_id", userId);
+  if (itemsError) throw new Error(itemsError.message);
+
+  const collections = await listCollectionsForUser(supabase, userId);
+  for (const collection of collections) {
+    const { error } = await supabase
+      .from(COLLECTIONS_TABLE)
+      .delete()
+      .eq("id", collection.id)
+      .eq("user_id", userId);
+    if (error) throw new Error(error.message);
+  }
+
+  const defaultCollection = await ensureDefaultWatchlistCollection(supabase, userId);
+  const { error: layoutError } = await supabase
+    .from(COLLECTIONS_TABLE)
+    .update({
+      name: DEFAULT_WATCHLIST_DISPLAY_NAME,
+      sections_layout: serializeSectionsLayout(emptyWatchlistSectionLayout()),
+    })
+    .eq("id", defaultCollection.id)
+    .eq("user_id", userId);
+  if (layoutError) throw new Error(layoutError.message);
+
+  await setActiveCollectionId(supabase, userId, defaultCollection.id);
+  return getWatchlistSnapshot(supabase, userId);
+}
+
 /** @deprecated Use getWatchlistSnapshot. Kept for callers expecting a flat list. */
 export async function listWatchlistForUser(
   supabase: SupabaseClient,

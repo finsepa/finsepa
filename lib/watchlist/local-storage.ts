@@ -41,13 +41,8 @@ export function readWatchlistLocalFull(userId: string | null = null): {
     const key = storageKeyForUser(userId);
     let raw = localStorage.getItem(key);
     if (!raw && userId && userId.length > 0) {
-      raw = localStorage.getItem(STORAGE_KEY_LEGACY);
-      if (raw) {
-        const migrated = readWatchlistRaw(raw);
-        writeWatchlistLocal(migrated.tickers, userId, migrated.pendingRemoval);
-        localStorage.removeItem(STORAGE_KEY_LEGACY);
-        return migrated;
-      }
+      // Never attach another account's pre-auth global legacy snapshot to a new user id.
+      return { tickers: [], pendingRemoval: [] };
     }
     if (!raw) return { tickers: [], pendingRemoval: [] };
     return readWatchlistRaw(raw);

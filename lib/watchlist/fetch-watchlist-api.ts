@@ -139,6 +139,16 @@ export async function refreshWatchlistSnapshotFromServer(): Promise<WatchlistSer
   return snapshot;
 }
 
+export async function resetNewAccountWatchlistOnServer(): Promise<WatchlistServerSnapshot | null> {
+  try {
+    const res = await watchlistApiFetch("/api/watchlist/reset", { method: "POST" });
+    if (!res.ok) return null;
+    return (await res.json()) as WatchlistServerSnapshot;
+  } catch {
+    return null;
+  }
+}
+
 /** Resolve a client-only wl_* id to a server collection UUID (syncs if needed). */
 export async function resolveServerCollectionId(
   local: WatchlistCollectionsSnapshot,

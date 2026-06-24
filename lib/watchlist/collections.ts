@@ -94,6 +94,25 @@ function normalizeTickers(tickers: string[]): string[] {
 
 function migrateLegacyCollections(userId: string | null): WatchlistCollectionsSnapshot {
   const legacy = readWatchlistLocalFull(userId);
+  if (
+    userId &&
+    legacy.tickers.length === 0 &&
+    legacy.pendingRemoval.length === 0
+  ) {
+    const id = newWatchlistCollectionId();
+    return {
+      v: 2,
+      activeId: id,
+      lists: [
+        withSectionLayout({
+          id,
+          name: DEFAULT_WATCHLIST_DISPLAY_NAME,
+          tickers: [],
+        }),
+      ],
+      pendingRemoval: [],
+    };
+  }
   const id = newWatchlistCollectionId();
   return {
     v: 2,
