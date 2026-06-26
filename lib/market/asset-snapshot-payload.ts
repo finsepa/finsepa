@@ -17,7 +17,12 @@ export function stripAssetSnapshotHotFields(
 ): AssetSnapshotPayload {
   const { headerLiveSpotUsd: _spot, headerPriorCloseUsd: _prior, ...rest } = data;
   if (mode === "frozen") {
-    return { ...rest, headerLiveSpotUsd: null, headerPriorCloseUsd: null };
+    return {
+      ...rest,
+      chart: data.chart,
+      headerLiveSpotUsd: null,
+      headerPriorCloseUsd: null,
+    };
   }
   return {
     ...rest,

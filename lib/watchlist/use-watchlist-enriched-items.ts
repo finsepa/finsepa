@@ -61,6 +61,7 @@ export function useWatchlistEnrichedItems(options: UseWatchlistEnrichedItemsOpti
     if (tickers.length === 0) return;
 
     const gen = ++loadGenRef.current;
+    const watchedKeyForLoad = tickers.join("|");
     const hadItems = everHadRowsRef.current;
 
     if (hadItems) {
@@ -68,9 +69,9 @@ export function useWatchlistEnrichedItems(options: UseWatchlistEnrichedItemsOpti
     }
     setError(null);
     try {
-      const key = [...tickers].join("|");
-      const { stocks, crypto, indices } = await fetchWatchlistEnriched(key, tickers);
-      if (gen !== loadGenRef.current || watchedRef.current.length === 0) return;
+      const { stocks, crypto, indices } = await fetchWatchlistEnriched(watchedKeyForLoad, tickers);
+      if (gen !== loadGenRef.current) return;
+      if (watchedRef.current.join("|") !== watchedKeyForLoad) return;
 
       const merged = sortEnrichedItemsByTickerOrder(
         applyWatchlistScreenerIdentity(groupsToItems({ stocks, crypto, indices })),
@@ -87,8 +88,10 @@ export function useWatchlistEnrichedItems(options: UseWatchlistEnrichedItemsOpti
         return next;
       });
       everHadRowsRef.current = merged.length > 0;
+      setError(null);
     } catch {
       if (gen !== loadGenRef.current) return;
+      if (watchedRef.current.join("|") !== watchedKeyForLoad) return;
       setError("Could not load watchlist.");
       if (!hadItems) {
         setItems([]);
@@ -115,6 +118,9 @@ export function useWatchlistEnrichedItems(options: UseWatchlistEnrichedItemsOpti
       setError(null);
       return;
     }
+
+    loadGenRef.current += 1;
+    setError(null);
 
     setItems((prev) => {
       const watchedSet = new Set(watchedTickers);

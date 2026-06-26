@@ -3,9 +3,9 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { SkeletonBox } from "@/components/markets/skeleton";
-import type { StockNewsArticle } from "@/lib/market/stock-news-types";
+import { STOCK_NEWS_PAGE_SIZE, type StockNewsArticle } from "@/lib/market/stock-news-types";
 
-const PAGE_SIZE = 5;
+const PAGE_SIZE = STOCK_NEWS_PAGE_SIZE;
 
 const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
 
@@ -41,19 +41,17 @@ function formatPublishedLabel(iso: string): string {
   return "Just now";
 }
 
-const NEWS_CARD_SURFACE_CLASS =
-  "rounded-xl border border-[#E4E4E7] bg-white p-4 max-md:rounded-2xl";
-const NEWS_CARD_CLASS = `block ${NEWS_CARD_SURFACE_CLASS} transition-colors hover:bg-[#FAFAFA]`;
+const NEWS_GRID_CLASS = "grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2";
 
 function NewsRowSkeleton() {
   return (
-    <div className={NEWS_CARD_SURFACE_CLASS} aria-hidden>
+    <div className="py-1" aria-hidden>
       <div className="space-y-2">
         <div className="flex items-center gap-2">
           <SkeletonBox className="h-3 w-20" />
           <SkeletonBox className="h-3 w-24" />
         </div>
-        <SkeletonBox className="h-4 w-full max-w-xl" />
+        <SkeletonBox className="h-4 w-full" />
       </div>
     </div>
   );
@@ -80,7 +78,7 @@ function LatestNewsInner({
   const [items, setItems] = useState<StockNewsArticle[]>(() => seed ?? []);
   const [loading, setLoading] = useState(() => seed == null);
   const [nextOffset, setNextOffset] = useState(() => (isStock ? (seed?.length ?? 0) : 0));
-  const [hasMore, setHasMore] = useState(() => (isStock ? (seed?.length === PAGE_SIZE) : false));
+  const [hasMore, setHasMore] = useState(() => (isStock ? (seed?.length ?? 0) > 0 : false));
   const [loadingMore, setLoadingMore] = useState(false);
 
   const nextOffsetRef = useRef(nextOffset);
@@ -95,8 +93,27 @@ function LatestNewsInner({
         if (seed) {
           setItems(seed);
           setNextOffset(seed.length);
-          setHasMore(seed.length === PAGE_SIZE);
+          setHasMore(seed.length > 0);
           setLoading(false);
+          if (seed.length < PAGE_SIZE) {
+            void (async () => {
+              try {
+                const res = await fetch(
+                  `/api/stocks/${encodeURIComponent(sym)}/news?offset=0&limit=${PAGE_SIZE}`,
+                  { credentials: "include" },
+                );
+                if (!mounted || !res.ok) return;
+                const json = (await res.json()) as { items?: StockNewsArticle[]; hasMore?: boolean };
+                const batch = Array.isArray(json.items) ? json.items : [];
+                if (!mounted || batch.length <= seed.length) return;
+                setItems(batch);
+                setNextOffset(batch.length);
+                setHasMore(json.hasMore ?? batch.length === PAGE_SIZE);
+              } catch {
+                /* keep SSR seed */
+              }
+            })();
+          }
           return;
         }
         setLoading(true);
@@ -201,7 +218,7 @@ function LatestNewsInner({
   useEffect(() => {
     if (!isStock) return;
     const el = sentinelRef.current;
-    if (!el || !hasMore || loading) return;
+    if (!el || !hasMore || loading || loadingMore) return;
 
     const obs = new IntersectionObserver(
       (entries) => {
@@ -211,7 +228,7 @@ function LatestNewsInner({
     );
     obs.observe(el);
     return () => obs.disconnect();
-  }, [isStock, hasMore, loading]);
+  }, [isStock, hasMore, loading, loadingMore, items.length]);
 
   const skeletonCount = isStock ? PAGE_SIZE : 10;
 
@@ -220,7 +237,7 @@ function LatestNewsInner({
       <h2 className="mb-4 px-3 text-[18px] font-semibold leading-7 text-[#09090B] sm:px-0">Latest news</h2>
 
       {loading ? (
-        <div className="space-y-3 px-3 sm:px-0">
+        <div className={`${NEWS_GRID_CLASS} px-3 sm:px-0`}>
           {Array.from({ length: skeletonCount }).map((_, i) => (
             <NewsRowSkeleton key={i} />
           ))}
@@ -228,34 +245,32 @@ function LatestNewsInner({
       ) : !loading && items.length === 0 ? (
         <p className="px-3 text-[13px] leading-5 text-[#71717A] py-2 sm:px-0">No recent news found for {sym}.</p>
       ) : !loading ? (
-        <div className="space-y-3 px-3 sm:px-0">
+        <div className={`${NEWS_GRID_CLASS} px-3 sm:px-0`}>
           {items.map((item) => (
             <a
               key={item.id}
               href={item.url}
               target="_blank"
               rel="noopener noreferrer"
-              className={`${NEWS_CARD_CLASS} cursor-pointer`}
+              className="group block py-1"
             >
               <div className="mb-1 flex flex-wrap items-center gap-1.5">
                 <span className="text-[12px] text-[#71717A]">{formatPublishedLabel(item.publishedAt)}</span>
                 <span className="text-[#E4E4E7]">·</span>
                 <span className="text-[12px] font-medium text-[#09090B]">{item.source}</span>
               </div>
-              <h3 className="line-clamp-2 text-[14px] font-semibold leading-5 text-[#09090B]">{item.title}</h3>
+              <h3 className="line-clamp-2 text-[14px] font-semibold leading-5 text-[#09090B] group-hover:underline">
+                {item.title}
+              </h3>
             </a>
           ))}
 
           {isStock ? (
             <>
-              <div ref={sentinelRef} className="h-px w-full" aria-hidden />
-              {loadingMore ? (
-                <div className="space-y-3">
-                  {Array.from({ length: PAGE_SIZE }).map((_, i) => (
-                    <NewsRowSkeleton key={`more-${i}`} />
-                  ))}
-                </div>
-              ) : null}
+              <div ref={sentinelRef} className="col-span-full h-px w-full" aria-hidden />
+              {loadingMore
+                ? Array.from({ length: PAGE_SIZE }).map((_, i) => <NewsRowSkeleton key={`more-${i}`} />)
+                : null}
             </>
           ) : null}
         </div>

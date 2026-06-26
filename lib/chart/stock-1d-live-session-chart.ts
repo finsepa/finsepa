@@ -2,14 +2,54 @@ import type { IChartApi, UTCTimestamp } from "lightweight-charts";
 
 import { fitContentWithMobilePlotGutter, mobileTimeScaleOptions } from "@/lib/chart/mobile-plot-horizontal-gutter";
 import { STOCK_DISPLAY_TZ, usSessionWallClockUnix, usSessionYmdFromUnixSeconds } from "@/lib/market/chart-timestamp-format";
-import { getUsEquityMarketSession } from "@/lib/market/us-equity-market-session";
+import {
+  getUsEquityMarketSession,
+  isUsEquityExtendedHoursHeaderEligible,
+} from "@/lib/market/us-equity-market-session";
 import type { StockChartPoint, StockChartRange } from "@/lib/market/stock-chart-types";
 
 /** US equities 1D live session is always anchored to the NYSE regular-hours clock. */
 export const STOCK_1D_LIVE_SESSION_TZ = STOCK_DISPLAY_TZ;
 
-/** Yahoo-style 1D live session: one point every 15 minutes from the 9:30 open. */
-export const STOCK_1D_LIVE_SESSION_BAR_INTERVAL_SEC = 15 * 60;
+/** 1D live session: one point per minute from the 9:30 open (matches ~60s spot refresh). */
+export const STOCK_1D_LIVE_SESSION_BAR_INTERVAL_SEC = 60;
+
+/** US post-market ends at 8:00 PM ET on the 1D sparkline. */
+export const STOCK_1D_EXTENDED_CLOSE_HOUR = 20;
+
+/** After-hours segment line color (no gradient fill). */
+export const STOCK_1D_EXTENDED_HOURS_LINE_COLOR = "#64748B";
+
+/** 1D sparkline stops at the regular close — after-hours price is header-only. */
+export function shouldUseStock1DExtendedHoursChart(_now: Date = new Date()): boolean {
+  return false;
+}
+
+export function stock1DLiveSessionExtendedWallClockBounds(
+  sessionYmd: string,
+  timeZone: string,
+): { open: number; regularClose: number; extendedClose: number } {
+  return {
+    open: usSessionWallClockUnix(sessionYmd, 9, 30, timeZone),
+    regularClose: usSessionWallClockUnix(sessionYmd, 16, 0, timeZone),
+    extendedClose: usSessionWallClockUnix(sessionYmd, STOCK_1D_EXTENDED_CLOSE_HOUR, 0, timeZone),
+  };
+}
+
+export function chartPointsIncludeExtendedHoursSegment(
+  points: readonly StockChartPoint[],
+  sessionYmd: string,
+  timeZone: string = STOCK_1D_LIVE_SESSION_TZ,
+): boolean {
+  const { regularClose } = stock1DLiveSessionExtendedWallClockBounds(sessionYmd, timeZone);
+  return points.some(
+    (p) =>
+      typeof p.time === "number" &&
+      Number.isFinite(p.time) &&
+      Number.isFinite(p.value) &&
+      p.time > regularClose,
+  );
+}
 export function chartPointsLookLikeIntradaySession(points: readonly StockChartPoint[]): boolean {
   const sorted = points
     .filter((p) => typeof p.time === "number" && Number.isFinite(p.time))
@@ -21,18 +61,15 @@ export function chartPointsLookLikeIntradaySession(points: readonly StockChartPo
   return false;
 }
 
-/** 1D stock overview — pin X-axis to 9:30–16:00 ET (grows live during regular session). */
+/** 1D stock overview — pin X-axis to 9:30–16:00 ET for every US equity ticker. */
 export function shouldUseStock1DLiveSessionChart(
   kind: "stock" | "crypto",
   range: StockChartRange,
-  points: readonly StockChartPoint[],
+  _points: readonly StockChartPoint[],
   holdingsStyle: boolean,
-  now: Date = new Date(),
+  _now: Date = new Date(),
 ): boolean {
-  if (holdingsStyle || kind !== "stock" || range !== "1D") return false;
-  if (getUsEquityMarketSession(now) === "regular") return true;
-  if (!points.length) return false;
-  return chartPointsLookLikeIntradaySession(points);
+  return !holdingsStyle && kind === "stock" && range === "1D";
 }
 
 export function stock1DLiveSessionYmd(
@@ -125,6 +162,189 @@ export function filterStock1DLiveSessionPointsByTimeWindow(
   });
 }
 
+function collectStock1DLiveSessionPostMarketSourcePoints(
+  points: readonly StockChartPoint[],
+  sessionYmd: string,
+  timeZone: string,
+  now: Date,
+): StockChartPoint[] {
+  const { regularClose, extendedClose } = stock1DLiveSessionExtendedWallClockBounds(sessionYmd, timeZone);
+  const nowSec = Math.floor(now.getTime() / 1000);
+  const endSec = getUsEquityMarketSession(now) === "post" ? Math.min(nowSec, extendedClose) : extendedClose;
+
+  return points
+    .filter((p) => {
+      if (typeof p.time !== "number" || !Number.isFinite(p.time) || !Number.isFinite(p.value)) return false;
+      const ymd = p.sessionDate?.trim() || usSessionYmdFromUnixSeconds(p.time);
+      return ymd === sessionYmd && p.time > regularClose && p.time <= endSec;
+    })
+    .sort((a, b) => a.time - b.time);
+}
+
+/** Resample post-market bars from the 16:00 close anchor through 20:00 ET (or now during post). */
+export function resampleStock1DLiveSessionExtendedSegment(
+  points: readonly StockChartPoint[],
+  sessionYmd: string,
+  timeZone: string,
+  anchorValue: number,
+  now: Date = new Date(),
+): StockChartPoint[] {
+  const { regularClose, extendedClose } = stock1DLiveSessionExtendedWallClockBounds(sessionYmd, timeZone);
+  const nowSec = Math.floor(now.getTime() / 1000);
+  const endSec = getUsEquityMarketSession(now) === "post" ? Math.min(nowSec, extendedClose) : extendedClose;
+  if (endSec <= regularClose || !Number.isFinite(anchorValue)) return [];
+
+  const interval = STOCK_1D_LIVE_SESSION_BAR_INTERVAL_SEC;
+  const sorted = points
+    .filter(
+      (p) =>
+        typeof p.time === "number" &&
+        Number.isFinite(p.time) &&
+        Number.isFinite(p.value) &&
+        p.time > regularClose &&
+        p.time <= endSec,
+    )
+    .sort((a, b) => a.time - b.time);
+
+  if (!sorted.length) return [];
+
+  const out: StockChartPoint[] = [];
+  for (let bucketTime = regularClose; bucketTime <= endSec; bucketTime += interval) {
+    let value = anchorValue;
+    for (const p of sorted) {
+      if (p.time <= bucketTime) value = p.value;
+      else break;
+    }
+    out.push({ time: bucketTime, value, sessionDate: sessionYmd, timeZone });
+  }
+
+  if (out.length && endSec > out[out.length - 1]!.time) {
+    let tailValue = out[out.length - 1]!.value;
+    for (const p of sorted) {
+      if (p.time <= endSec) tailValue = p.value;
+      else break;
+    }
+    out.push({ time: endSec, value: tailValue, sessionDate: sessionYmd, timeZone });
+  }
+
+  return out;
+}
+
+function buildMinimalExtendedSegmentFromSpot(
+  sessionYmd: string,
+  timeZone: string,
+  closeValue: number,
+  extendedSpotUsd: number,
+  now: Date,
+  tailTimeUnix?: number,
+): StockChartPoint[] {
+  const { regularClose, extendedClose } = stock1DLiveSessionExtendedWallClockBounds(sessionYmd, timeZone);
+  const nowSec = Math.floor(now.getTime() / 1000);
+  const endSec = Math.min(
+    tailTimeUnix != null && Number.isFinite(tailTimeUnix) ? tailTimeUnix : nowSec,
+    extendedClose,
+  );
+  if (endSec <= regularClose) return [];
+  return resampleStock1DLiveSessionExtendedSegment(
+    [
+      { time: endSec, value: extendedSpotUsd, sessionDate: sessionYmd, timeZone },
+    ],
+    sessionYmd,
+    timeZone,
+    closeValue,
+    now,
+  );
+}
+
+/** Pin extended-hours tail at a fixed provider timestamp (frozen post quote). */
+export function appendExtendedTailAtTime(
+  extendedPoints: StockChartPoint[],
+  tailValue: number,
+  sessionYmd: string,
+  timeZone: string,
+  tailTimeUnix: number,
+): StockChartPoint[] {
+  if (!Number.isFinite(tailValue) || !Number.isFinite(tailTimeUnix)) return extendedPoints;
+
+  const { regularClose, extendedClose } = stock1DLiveSessionExtendedWallClockBounds(sessionYmd, timeZone);
+  const tailTime = Math.min(Math.max(tailTimeUnix, regularClose), extendedClose);
+  if (tailTime <= regularClose) return extendedPoints;
+
+  const tailPoint: StockChartPoint = {
+    time: tailTime,
+    value: tailValue,
+    sessionDate: sessionYmd,
+    timeZone,
+  };
+
+  const sorted = [...extendedPoints]
+    .filter(
+      (p) =>
+        typeof p.time === "number" &&
+        Number.isFinite(p.time) &&
+        Number.isFinite(p.value) &&
+        p.time >= regularClose &&
+        p.time <= tailTime,
+    )
+    .sort((a, b) => a.time - b.time);
+
+  if (!sorted.length) return [tailPoint];
+
+  const last = sorted[sorted.length - 1]!;
+  if (last.time === tailTime) {
+    return [...sorted.slice(0, -1), { ...last, value: tailValue }];
+  }
+  if (last.time > tailTime) {
+    return [...sorted.filter((p) => p.time < tailTime), tailPoint];
+  }
+  return [...sorted, tailPoint];
+}
+
+/** Pin the after-hours tail to the current wall-clock time (never beyond 20:00 ET). */
+export function appendLiveSessionExtendedTail(
+  extendedPoints: StockChartPoint[],
+  tailValue: number,
+  sessionYmd: string,
+  timeZone: string,
+  now: Date,
+): StockChartPoint[] {
+  if (!Number.isFinite(tailValue)) return extendedPoints;
+
+  const nowSec = Math.floor(now.getTime() / 1000);
+  const { regularClose, extendedClose } = stock1DLiveSessionExtendedWallClockBounds(sessionYmd, timeZone);
+  const tailTime = Math.min(nowSec, extendedClose);
+  if (tailTime <= regularClose) return extendedPoints;
+
+  const tailPoint: StockChartPoint = {
+    time: tailTime,
+    value: tailValue,
+    sessionDate: sessionYmd,
+    timeZone,
+  };
+
+  const sorted = [...extendedPoints]
+    .filter(
+      (p) =>
+        typeof p.time === "number" &&
+        Number.isFinite(p.time) &&
+        Number.isFinite(p.value) &&
+        p.time >= regularClose &&
+        p.time <= tailTime,
+    )
+    .sort((a, b) => a.time - b.time);
+
+  if (!sorted.length) return [tailPoint];
+
+  const last = sorted[sorted.length - 1]!;
+  if (last.time === tailTime) {
+    return [...sorted.slice(0, -1), { ...last, value: tailValue }];
+  }
+  if (last.time > tailTime) {
+    return [...sorted.filter((p) => p.time < tailTime), tailPoint];
+  }
+  return [...sorted, tailPoint];
+}
+
 function collectStock1DLiveSessionSourcePoints(
   points: readonly StockChartPoint[],
   sessionYmd: string,
@@ -136,7 +356,7 @@ function collectStock1DLiveSessionSourcePoints(
   return filterStock1DLiveSessionPointsByTimeWindow(points, sessionYmd, timeZone, now);
 }
 
-export function resampleStock1DLiveSessionTo15Min(
+export function resampleStock1DLiveSession(
   points: readonly StockChartPoint[],
   sessionYmd: string,
   timeZone: string,
@@ -260,12 +480,14 @@ export const STOCK_1D_LIVE_SESSION_CLOCK_TICK_MS = 30_000;
 /** Client live-price poll during regular session — aligns with 60s server cache coalescing. */
 export const STOCK_1D_LIVE_PRICE_POLL_MS = 60_000;
 
-/** Filter to the session window, resample to 15m, and pin the tail (live spot or prior close). */
+/** Filter to the session window, resample to 1m, and pin the tail (live spot or prior close). */
 export function prepareStock1DLiveSessionChartPoints(
   points: readonly StockChartPoint[],
   liveSpotUsd: number | null | undefined,
   _timeZone?: string,
   now: Date = new Date(),
+  extendedSpotUsd?: number | null,
+  extendedSpotTimeUnix?: number | null,
 ): StockChartPoint[] {
   const timeZone = STOCK_1D_LIVE_SESSION_TZ;
   const session = getUsEquityMarketSession(now);
@@ -289,7 +511,7 @@ export function prepareStock1DLiveSessionChartPoints(
     return [];
   }
 
-  const sessionPoints = resampleStock1DLiveSessionTo15Min(
+  const sessionPoints = resampleStock1DLiveSession(
     sourcePoints,
     sessionYmd,
     timeZone,
@@ -307,20 +529,90 @@ export function prepareStock1DLiveSessionChartPoints(
       ? liveSpotUsd
       : lastResampled.value;
 
+  let regularPoints: StockChartPoint[];
   if (useLiveSpot) {
-    return appendLiveSessionNowTail(sessionPoints, tailValue, sessionYmd, timeZone, now);
+    regularPoints = appendLiveSessionNowTail(sessionPoints, tailValue, sessionYmd, timeZone, now);
+  } else {
+    const close = usSessionWallClockUnix(sessionYmd, 16, 0, timeZone);
+    const trimmed = sessionPoints.filter((p) => p.time <= close);
+    if (!trimmed.length) {
+      regularPoints = [{ time: close, value: tailValue, sessionDate: sessionYmd, timeZone }];
+    } else {
+      const last = trimmed[trimmed.length - 1]!;
+      regularPoints =
+        last.time === close
+          ? [...trimmed.slice(0, -1), { ...last, value: tailValue }]
+          : [...trimmed, { time: close, value: tailValue, sessionDate: sessionYmd, timeZone }];
+    }
   }
 
-  const close = usSessionWallClockUnix(sessionYmd, 16, 0, timeZone);
-  const trimmed = sessionPoints.filter((p) => p.time <= close);
-  if (!trimmed.length) {
-    return [{ time: close, value: tailValue, sessionDate: sessionYmd, timeZone }];
+  if (!shouldUseStock1DExtendedHoursChart(now)) {
+    return regularPoints;
   }
-  const last = trimmed[trimmed.length - 1]!;
-  if (last.time === close) {
-    return [...trimmed.slice(0, -1), { ...last, value: tailValue }];
+
+  const { regularClose } = stock1DLiveSessionExtendedWallClockBounds(sessionYmd, timeZone);
+  const closeValue =
+    regularPoints.find((p) => p.time === regularClose)?.value ??
+    regularPoints.filter((p) => p.time <= regularClose).at(-1)?.value;
+  if (closeValue == null || !Number.isFinite(closeValue)) {
+    return regularPoints;
   }
-  return [...trimmed, { time: close, value: tailValue, sessionDate: sessionYmd, timeZone }];
+
+  const postSource = collectStock1DLiveSessionPostMarketSourcePoints(points, sessionYmd, timeZone, now);
+  let extendedResampled = resampleStock1DLiveSessionExtendedSegment(
+    postSource,
+    sessionYmd,
+    timeZone,
+    closeValue,
+    now,
+  );
+
+  const ethSpot =
+    extendedSpotUsd != null && Number.isFinite(extendedSpotUsd) && extendedSpotUsd > 0
+      ? extendedSpotUsd
+      : null;
+  const ethTime =
+    extendedSpotTimeUnix != null && Number.isFinite(extendedSpotTimeUnix) && extendedSpotTimeUnix > 0
+      ? extendedSpotTimeUnix
+      : null;
+
+  if (!extendedResampled.length && ethSpot != null) {
+    const tailUnix = session === "post" ? Math.floor(now.getTime() / 1000) : ethTime;
+    extendedResampled = buildMinimalExtendedSegmentFromSpot(
+      sessionYmd,
+      timeZone,
+      closeValue,
+      ethSpot,
+      now,
+      tailUnix ?? undefined,
+    );
+  } else if (ethSpot != null) {
+    if (session === "post") {
+      extendedResampled = appendLiveSessionExtendedTail(
+        extendedResampled,
+        ethSpot,
+        sessionYmd,
+        timeZone,
+        now,
+      );
+    } else if (ethTime != null && ethTime > regularClose) {
+      extendedResampled = appendExtendedTailAtTime(
+        extendedResampled,
+        ethSpot,
+        sessionYmd,
+        timeZone,
+        ethTime,
+      );
+    }
+  }
+
+  const extendedOnly = extendedResampled.filter((p) => p.time > regularClose);
+  if (!extendedOnly.length) {
+    return regularPoints;
+  }
+
+  const regularTrimmed = regularPoints.filter((p) => p.time <= regularClose);
+  return [...regularTrimmed, ...extendedOnly];
 }
 
 export type Stock1DLiveSessionLinePoint = { time: UTCTimestamp; value?: number };
@@ -342,13 +634,16 @@ export function padStock1DLiveSessionBaselineData(
   return [{ time: open, value: openValue }, ...data];
 }
 
-/** Invisible helper series — full 15-min session grid through 16:00 for the time scale. */
+/** Invisible helper series — full 1-min grid through 16:00 (or 20:00 when extended) for the time scale. */
 export function liveSessionSpanWhitespaceData(
   sessionYmd: string,
   timeZone: string,
+  extended = false,
 ): Stock1DLiveSessionLinePoint[] {
   const openSec = usSessionWallClockUnix(sessionYmd, 9, 30, timeZone);
-  const closeSec = usSessionWallClockUnix(sessionYmd, 16, 0, timeZone);
+  const closeSec = extended
+    ? usSessionWallClockUnix(sessionYmd, STOCK_1D_EXTENDED_CLOSE_HOUR, 0, timeZone)
+    : usSessionWallClockUnix(sessionYmd, 16, 0, timeZone);
   const interval = STOCK_1D_LIVE_SESSION_BAR_INTERVAL_SEC;
   const out: Stock1DLiveSessionLinePoint[] = [];
   for (let t = openSec; t <= closeSec; t += interval) {
@@ -398,7 +693,12 @@ export function stock1DLiveSessionPlotLeftPx(
   unix: number,
   sessionYmd: string,
   timeZone: string,
+  extended = false,
 ): number | null {
+  if (extended) {
+    const { open, extendedClose } = stock1DLiveSessionExtendedWallClockBounds(sessionYmd, timeZone);
+    return liveSessionTimeToPlotLeftPx(chart, unix, open, extendedClose);
+  }
   const { open, close } = stock1DLiveSessionWallClockBounds(sessionYmd, timeZone);
   return liveSessionTimeToPlotLeftPx(chart, unix, open, close);
 }
@@ -409,8 +709,12 @@ export function applyStock1DLiveSessionTimeScale(
   timeZone: string,
   _logicalPointCount: number,
   onApplied?: () => void,
+  extended = false,
 ): void {
-  const { open: from, close: to } = stock1DLiveSessionWallClockBounds(sessionYmd, timeZone);
+  const { open: from, close: regularClose } = stock1DLiveSessionWallClockBounds(sessionYmd, timeZone);
+  const to = extended
+    ? stock1DLiveSessionExtendedWallClockBounds(sessionYmd, timeZone).extendedClose
+    : regularClose;
 
   const apply = (attempt = 0) => {
     const ts = chart.timeScale();
@@ -471,12 +775,14 @@ export function fitOverviewChartTimeScale(
   if (shouldUseStock1DLiveSessionChart(ctx.kind, ctx.range, ctx.points, ctx.holdingsStyle)) {
     const ymd = resolveStock1DLiveSessionYmd(ctx.points, ctx.timeZone);
     if (ymd) {
+      const extended = chartPointsIncludeExtendedHoursSegment(ctx.points, ymd, ctx.timeZone);
       applyStock1DLiveSessionTimeScale(
         chart,
         ymd,
         ctx.timeZone,
         logicalPointCount,
         onLiveSessionApplied,
+        extended,
       );
       return;
     }

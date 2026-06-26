@@ -1,22 +1,38 @@
 import "server-only";
 
-import { formatAssetChartTimestamp } from "@/lib/market/chart-timestamp-format";
-import { fetchEodhdIntraday, type EodhdIntradayBar } from "@/lib/market/eodhd-intraday";
-import { fetchEodhdEodDaily } from "@/lib/market/eodhd-eod";
-import { getStockSpotPriceUsd } from "@/lib/market/stock-chart-data";
+import {
+  formatStockExtendedHoursSessionLabel,
+  formatStockHeaderAtClosePeriodLabel,
+  STOCK_DISPLAY_TZ,
+} from "@/lib/market/chart-timestamp-format";
+import {
+  fetchEodhdUsQuoteDelayed,
+  type EodhdUsQuoteDelayedRow,
+} from "@/lib/market/eodhd-us-quote-delayed";
 import { isUsListedStockHeaderMeta, type StockDetailHeaderMeta } from "@/lib/market/stock-header-meta";
 import type { StockExtendedHoursHeader } from "@/lib/market/stock-extended-hours-header-types";
+import { getStockPerformance } from "@/lib/market/stock-performance";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
-import { getUsEquityMarketSession, type UsEquityMarketSession } from "@/lib/market/us-equity-market-session";
+import {
+  getUsEquityMarketSession,
+  isUsEquityExtendedHoursHeaderEligible,
+  lastUsRegularSessionCloseUnix,
+} from "@/lib/market/us-equity-market-session";
 
 export type { StockExtendedHoursHeader } from "@/lib/market/stock-extended-hours-header-types";
 
-const NY_TZ = "America/New_York";
-const REGULAR_CLOSE_MINUTES = 16 * 60;
+function clampFinite(n: unknown): number | null {
+  return typeof n === "number" && Number.isFinite(n) ? n : null;
+}
+
+function positiveUsd(n: unknown): number | null {
+  const v = clampFinite(n);
+  return v != null && v > 0 ? v : null;
+}
 
 function nyDayMinutesFromUnix(sec: number): number {
   const fmt = new Intl.DateTimeFormat("en-US", {
-    timeZone: NY_TZ,
+    timeZone: "America/New_York",
     hour: "numeric",
     minute: "numeric",
     hour12: false,
@@ -27,61 +43,145 @@ function nyDayMinutesFromUnix(sec: number): number {
   return hour * 60 + minute;
 }
 
-function nySessionYmdFromUnix(sec: number): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: NY_TZ,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date(sec * 1000));
+/** Label bucket from the extended quote timestamp (works when wall-clock session is `closed`). */
+function inferExtendedHoursSessionFromEthTime(
+  ethTsSec: number,
+  now: Date,
+): "pre" | "post" {
+  const dayMinutes = nyDayMinutesFromUnix(ethTsSec);
+  const preStart = 4 * 60;
+  const regularOpen = 9 * 60 + 30;
+  const regularClose = 16 * 60;
+
+  if (dayMinutes >= preStart && dayMinutes < regularOpen) return "pre";
+  if (dayMinutes >= regularClose) return "post";
+
+  const wall = getUsEquityMarketSession(now);
+  return wall === "pre" ? "pre" : "post";
 }
 
-function regularCloseBarForPost(bars: EodhdIntradayBar[]): EodhdIntradayBar | null {
-  if (!bars.length) return null;
-  const sessionYmd = nySessionYmdFromUnix(bars[bars.length - 1]!.timestamp);
-  let best: EodhdIntradayBar | null = null;
-  for (const b of bars) {
-    if (nySessionYmdFromUnix(b.timestamp) !== sessionYmd) continue;
-    if (nyDayMinutesFromUnix(b.timestamp) > REGULAR_CLOSE_MINUTES) continue;
-    if (!Number.isFinite(b.close) || b.close <= 0) continue;
-    if (!best || b.timestamp >= best.timestamp) best = b;
-  }
-  return best;
+/** EODHD timestamps: trade/bid/ask fields are Unix ms; `timestamp` is Unix seconds. */
+function parseProviderTimeSec(value: number | undefined): number | null {
+  if (value == null || !Number.isFinite(value)) return null;
+  if (value > 1e12) return Math.floor(value / 1000);
+  if (value > 1e9) return Math.floor(value);
+  return null;
 }
 
-function closeFromPerformance(perf: StockPerformance): {
-  price: number;
-  changeAbs: number | null;
-  changePct: number | null;
-  timestampUnix: number;
-} | null {
-  const price = perf.price;
-  if (price == null || !Number.isFinite(price) || price <= 0) return null;
-  const pct = perf.d1;
-  let changeAbs: number | null = null;
-  if (pct != null && Number.isFinite(pct) && Math.abs(100 + pct) > 1e-6) {
-    const prev = price / (1 + pct / 100);
-    if (Number.isFinite(prev) && Math.abs(prev) > 1e-12) changeAbs = price - prev;
-  }
-  const now = new Date();
-  const closeTs = Math.floor(
-    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 16, 0, 0) / 1000,
-  );
-  return { price, changeAbs, changePct: pct, timestampUnix: closeTs };
-}
-
-async function latestIntradayBars(ticker: string, now: Date): Promise<EodhdIntradayBar[]> {
-  const nowSec = Math.floor(now.getTime() / 1000);
-  const from = nowSec - 3 * 86400;
-  for (const interval of ["5m", "1m", "1h"] as const) {
-    const bars = await fetchEodhdIntraday(ticker, from, nowSec, interval);
-    if (bars?.length) return bars;
-  }
-  return [];
+function midBidAskUsd(row: EodhdUsQuoteDelayedRow): number | null {
+  const bid = positiveUsd(row.bidPrice);
+  const ask = positiveUsd(row.askPrice);
+  if (bid != null && ask != null) return (bid + ask) / 2;
+  return bid ?? ask;
 }
 
 /**
- * Dual-column header quote during US pre-market / after-hours (regular close + live extended).
+ * Freshest extended-hours price + event time from the Live v2 quote row.
+ * `ethTime` / `ethPrice` alone can lag hours behind bid/ask updates during post-market.
+ */
+export function resolveExtendedHoursLiveQuote(
+  row: EodhdUsQuoteDelayedRow,
+  regularCloseSec: number,
+  now: Date,
+): { price: number; timeSec: number; session: "pre" | "post" } | null {
+  const candidates: { price: number; timeSec: number }[] = [];
+
+  const add = (price: unknown, timeRaw: number | undefined) => {
+    const p = positiveUsd(price);
+    const t = parseProviderTimeSec(timeRaw);
+    if (p == null || t == null) return;
+    candidates.push({ price: p, timeSec: t });
+  };
+
+  add(row.ethPrice, row.ethTime);
+  add(row.lastTradePrice, row.lastTradeTime);
+
+  const bidTime = parseProviderTimeSec(row.bidTime);
+  const askTime = parseProviderTimeSec(row.askTime);
+  const quoteTime =
+    bidTime != null && askTime != null ? Math.max(bidTime, askTime) : bidTime ?? askTime ?? null;
+  const quotePrice = midBidAskUsd(row);
+  if (quotePrice != null && quoteTime != null) {
+    candidates.push({ price: quotePrice, timeSec: quoteTime });
+  }
+
+  const snapSec = parseProviderTimeSec(row.timestamp);
+  const eth = positiveUsd(row.ethPrice);
+  const ethSec = parseProviderTimeSec(row.ethTime);
+  if (snapSec != null && eth != null && (ethSec == null || snapSec > ethSec)) {
+    candidates.push({ price: eth, timeSec: snapSec });
+  }
+
+  const post = candidates.filter((c) => c.timeSec > regularCloseSec);
+  const pre = candidates.filter((c) => {
+    const m = nyDayMinutesFromUnix(c.timeSec);
+    return m >= 4 * 60 && m < 9 * 60 + 30;
+  });
+
+  const wall = getUsEquityMarketSession(now);
+  const pool =
+    wall === "pre" ? pre : wall === "post" ? post : post.length ? post : pre;
+  if (!pool.length) return null;
+
+  pool.sort((a, b) => b.timeSec - a.timeSec);
+  const best = pool[0]!;
+  return {
+    price: best.price,
+    timeSec: best.timeSec,
+    session: inferExtendedHoursSessionFromEthTime(best.timeSec, now),
+  };
+}
+
+/**
+ * Today's regular-session close — anchor for extended-hours move (vs prior close on the left column).
+ * Never use `previousClosePrice` alone; that is the prior trading day's close.
+ */
+export function resolveRegularSessionCloseUsd(
+  row: EodhdUsQuoteDelayedRow,
+  extendedPrice: number,
+  performance: StockPerformance | null,
+  sessionCloseUsd?: number | null,
+): number | null {
+  const fromOverride = positiveUsd(sessionCloseUsd);
+  if (fromOverride != null) return fromOverride;
+
+  const fromPerf = positiveUsd(performance?.price);
+  if (fromPerf != null) return fromPerf;
+
+  const previousClose = positiveUsd(row.previousClosePrice);
+  const lastTrade = positiveUsd(row.lastTradePrice);
+  const change = clampFinite(row.change);
+
+  if (lastTrade != null && Math.abs(lastTrade - extendedPrice) > 0.0001) {
+    return lastTrade;
+  }
+
+  if (previousClose != null && change != null) {
+    const fromChange = previousClose + change;
+    if (fromChange > 0) return fromChange;
+  }
+
+  if (lastTrade != null) return lastTrade;
+  return previousClose;
+}
+
+/** Prior regular-session close — anchor for the left column and pre-market move during pre-market. */
+function resolvePriorSessionCloseUsd(
+  performance: StockPerformance | null,
+  row: EodhdUsQuoteDelayedRow,
+  sessionCloseUsd?: number | null,
+): number | null {
+  const fromOverride = positiveUsd(sessionCloseUsd);
+  if (fromOverride != null) return fromOverride;
+
+  const fromPerf = positiveUsd(performance?.price);
+  if (fromPerf != null) return fromPerf;
+
+  return positiveUsd(row.previousClosePrice);
+}
+
+/**
+ * Dual-column header quote outside US regular session (regular close + live extended).
  * Returns null during regular session, weekends, or non-US listings.
  */
 export async function buildStockExtendedHoursHeaderQuote(
@@ -89,85 +189,72 @@ export async function buildStockExtendedHoursHeaderQuote(
   performance: StockPerformance | null,
   meta: Pick<StockDetailHeaderMeta, "exchange" | "countryIso"> | null,
   now: Date = new Date(),
+  sessionCloseUsd?: number | null,
 ): Promise<StockExtendedHoursHeader | null> {
   if (!isUsListedStockHeaderMeta(meta)) return null;
+  if (!isUsEquityExtendedHoursHeaderEligible(now)) return null;
 
-  const session: UsEquityMarketSession = getUsEquityMarketSession(now);
-  if (session !== "pre" && session !== "post") return null;
+  const row = await fetchEodhdUsQuoteDelayed(ticker);
+  if (!row) return null;
 
-  const extendedPrice = await getStockSpotPriceUsd(ticker);
-  if (extendedPrice == null || !Number.isFinite(extendedPrice) || extendedPrice <= 0) return null;
+  const closeTs = lastUsRegularSessionCloseUnix(now, STOCK_DISPLAY_TZ);
+  const live = resolveExtendedHoursLiveQuote(row, closeTs, now);
+  if (!live) return null;
 
-  const bars = await latestIntradayBars(ticker, now);
-  const lastBar = bars.length ? bars[bars.length - 1]! : null;
-  const extendedTs = lastBar?.timestamp ?? Math.floor(now.getTime() / 1000);
+  const extendedPrice = live.price;
+  const previousClose = positiveUsd(row.previousClosePrice);
+  const wallSession = getUsEquityMarketSession(now);
 
-  let closePrice: number | null = null;
+  const closePrice =
+    wallSession === "pre"
+      ? resolvePriorSessionCloseUsd(performance, row, sessionCloseUsd)
+      : resolveRegularSessionCloseUsd(row, extendedPrice, performance, sessionCloseUsd);
+  if (closePrice == null) return null;
+
+  // Skip when extended quote hasn't moved from the official close.
+  if (Math.abs(extendedPrice - closePrice) < 0.0001) return null;
+
   let closeChangeAbs: number | null = null;
   let closeChangePct: number | null = null;
-  let closeTs = 0;
-
-  if (session === "post") {
-    const regBar = regularCloseBarForPost(bars);
-    if (regBar) {
-      closePrice = regBar.close;
-      closeTs = regBar.timestamp;
-    } else if (performance) {
-      const fromPerf = closeFromPerformance(performance);
-      if (fromPerf) {
-        closePrice = fromPerf.price;
-        closeChangeAbs = fromPerf.changeAbs;
-        closeChangePct = fromPerf.changePct;
-        closeTs = fromPerf.timestampUnix;
-      }
+  if (performance?.d1 != null && Number.isFinite(performance.d1)) {
+    closeChangePct = performance.d1;
+    if (previousClose != null && previousClose > 0) {
+      closeChangeAbs = closePrice - previousClose;
     }
-  } else if (performance) {
-    const fromPerf = closeFromPerformance(performance);
-    if (fromPerf) {
-      closePrice = fromPerf.price;
-      closeChangeAbs = fromPerf.changeAbs;
-      closeChangePct = fromPerf.changePct;
-      closeTs = fromPerf.timestampUnix;
-    }
+  } else if (previousClose != null && previousClose > 0) {
+    closeChangeAbs = closePrice - previousClose;
+    closeChangePct = (closeChangeAbs / previousClose) * 100;
   }
-
-  if (closePrice == null || !Number.isFinite(closePrice) || closePrice <= 0) {
-    const to = now.toISOString().slice(0, 10);
-    const fromDate = new Date(now);
-    fromDate.setUTCDate(fromDate.getUTCDate() - 10);
-    const from = fromDate.toISOString().slice(0, 10);
-    const daily = await fetchEodhdEodDaily(ticker.trim(), from, to);
-    const sorted = daily?.length ? [...daily].sort((a, b) => a.date.localeCompare(b.date)) : [];
-    const last = sorted.length ? sorted[sorted.length - 1]! : null;
-    if (last?.close != null && Number.isFinite(last.close) && last.close > 0) {
-      closePrice = last.close;
-      const prev = sorted.length >= 2 ? sorted[sorted.length - 2]! : null;
-      if (prev?.close != null && Number.isFinite(prev.close) && prev.close > 0) {
-        closeChangeAbs = closePrice - prev.close;
-        closeChangePct = ((closePrice - prev.close) / prev.close) * 100;
-      }
-      closeTs = Math.floor(Date.parse(`${last.date}T20:00:00.000Z`) / 1000);
-    }
-  }
-
-  if (closePrice == null || !Number.isFinite(closePrice) || closePrice <= 0) return null;
 
   const extendedChangeAbs = extendedPrice - closePrice;
   const extendedChangePct = (extendedChangeAbs / closePrice) * 100;
 
-  const closeTimestampLabel = `At close: ${formatAssetChartTimestamp(closeTs, { kind: "stock" })}`;
-  const sessionPrefix = session === "pre" ? "Pre-market" : "After-hours";
-  const extendedTimestampLabel = `${sessionPrefix}: ${formatAssetChartTimestamp(extendedTs, { kind: "stock" })}`;
+  const extendedTs = live.timeSec;
+  const session = live.session;
 
   return {
     session,
     closePrice,
     closeChangeAbs,
     closeChangePct,
-    closeTimestampLabel,
+    closeTimestampLabel: formatStockHeaderAtClosePeriodLabel(closeTs, STOCK_DISPLAY_TZ),
     extendedPrice,
     extendedChangeAbs,
     extendedChangePct,
-    extendedTimestampLabel,
+    extendedTimeUnix: extendedTs,
+    extendedTimestampLabel: formatStockExtendedHoursSessionLabel(session, extendedTs, STOCK_DISPLAY_TZ),
   };
+}
+
+/** ~60s client poll — always fetch a fresh provider row (no cross-user quote cache). */
+export async function getStockExtendedHoursQuoteForApi(
+  ticker: string,
+  meta: Pick<StockDetailHeaderMeta, "exchange" | "countryIso"> | null,
+  sessionCloseUsd?: number | null,
+): Promise<StockExtendedHoursHeader | null> {
+  if (!isUsListedStockHeaderMeta(meta)) return null;
+  if (!isUsEquityExtendedHoursHeaderEligible(new Date())) return null;
+  const sym = ticker.trim().toUpperCase();
+  const performance = await getStockPerformance(sym);
+  return buildStockExtendedHoursHeaderQuote(sym, performance, meta, new Date(), sessionCloseUsd);
 }

@@ -14,7 +14,9 @@ import {
   type StockDetailHeaderMeta,
 } from "@/lib/market/stock-header-meta";
 import type { StockChartSeries } from "@/lib/market/stock-chart-types";
+import type { StockExtendedHoursHeader } from "@/lib/market/stock-extended-hours-header-types";
 import { formatUsdCompact, formatUsdPrice, formatSignedUsdAmountGrouped2dp, formatSignedPercent2dp } from "@/lib/market/key-stats-basic-format";
+import { StockExtendedHoursPrice } from "@/components/stock/stock-extended-hours-price";
 
 type Props = {
   ticker: string;
@@ -44,6 +46,10 @@ type Props = {
   headerMetaLoading: boolean;
   /** Overview chart metric — formats the large header number as price vs market cap. */
   headerChartMetric?: StockChartSeries;
+  /** US pre/post extended-hours quote (polled ~60s). */
+  extendedHours?: StockExtendedHoursHeader | null;
+  extendedHoursLoading?: boolean;
+  showExtendedHours?: boolean;
 };
 
 function formatHeaderChangeAbs(abs: number, metric: StockChartSeries): string {
@@ -80,6 +86,9 @@ export function StockHeader({
   headerMeta,
   headerMetaLoading,
   headerChartMetric = "price",
+  extendedHours = null,
+  extendedHoursLoading = false,
+  showExtendedHours = false,
 }: Props) {
   const meta = getStockDetailMetaFromTicker(ticker);
   const symbol = meta.ticker;
@@ -260,6 +269,9 @@ export function StockHeader({
   const periodMetaRow = buildPeriodMetaRow(desktopPeriodLabel);
   const mobilePeriodMetaRow = buildPeriodMetaRow(mobilePeriodLabel);
 
+  const showExtendedHoursColumn =
+    showExtendedHours && headerChartMetric === "price" && (extendedHoursLoading || extendedHours != null);
+
   const priceLoadingSkeleton = (
     <div className="space-y-1" aria-busy="true" aria-label="Loading chart value">
       <div className="flex flex-wrap items-baseline gap-3">
@@ -294,6 +306,26 @@ export function StockHeader({
     />
   );
 
+  const mainPriceBlock = (
+    <div className="min-w-0">
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+        {priceValue}
+        {inlinePeriodChange}
+      </div>
+      {periodMetaRow}
+    </div>
+  );
+
+  const mobileMainPriceBlock = (
+    <>
+      <div className={`flex flex-wrap items-baseline gap-x-3 gap-y-0.5 ${priceMotionClass}`}>
+        {mobilePriceValue}
+        {inlinePeriodChange}
+      </div>
+      {mobilePeriodMetaRow}
+    </>
+  );
+
   return (
     <>
       <div className="flex items-start justify-between gap-3 md:hidden">
@@ -301,11 +333,14 @@ export function StockHeader({
           <h1 className="truncate text-[16px] font-medium leading-5 text-[#09090B]">{titleName}</h1>
           {chartLoading ? priceLoadingSkeleton : (
             <>
-              <div className={`flex flex-wrap items-baseline gap-x-3 gap-y-0.5 ${priceMotionClass}`}>
-                {mobilePriceValue}
-                {inlinePeriodChange}
-              </div>
-              {mobilePeriodMetaRow}
+              {showExtendedHoursColumn ? (
+                <div className={`flex flex-wrap items-end gap-4 sm:gap-5 ${priceMotionClass}`}>
+                  {mobileMainPriceBlock}
+                  <StockExtendedHoursPrice quote={extendedHours} loading={extendedHoursLoading} />
+                </div>
+              ) : (
+                mobileMainPriceBlock
+              )}
             </>
           )}
         </div>
@@ -349,12 +384,11 @@ export function StockHeader({
 
         <div className="min-w-0">
           {chartLoading ? priceLoadingSkeleton : (
-            <div className={`space-y-1 ${priceMotionClass}`}>
-              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
-                {priceValue}
-                {inlinePeriodChange}
-              </div>
-              {periodMetaRow}
+            <div className={`flex flex-wrap items-end gap-5 ${priceMotionClass}`}>
+              {mainPriceBlock}
+              {showExtendedHoursColumn ? (
+                <StockExtendedHoursPrice quote={extendedHours} loading={extendedHoursLoading} />
+              ) : null}
             </div>
           )}
         </div>

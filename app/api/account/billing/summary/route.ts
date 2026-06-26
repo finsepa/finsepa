@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 
 import { syncPaidInvoicesFromStripeForUser } from "@/lib/account/billing-db";
+import { platformTrialEndsMetaLabel } from "@/lib/account/billing";
 import { resolveNextRecurringChargeUsd } from "@/lib/account/billing-stripe-amounts";
 import {
   effectivePlatformTrialEndsAtIso,
@@ -355,9 +356,11 @@ export async function GET() {
         ? "Free trial ended — subscribe to continue"
         : accessState === "expired"
           ? "No active subscription"
-          : subscription
-            ? subscriptionMeta(stripeStatus, stripeCancelAtPeriodEnd, stripeCollectionPaused)
-            : "Trial is active";
+          : accessState === "trial"
+            ? platformTrialEndsMetaLabel(platformTrialEndsAtIso) ?? "Trial is active"
+            : subscription
+              ? subscriptionMeta(stripeStatus, stripeCancelAtPeriodEnd, stripeCollectionPaused)
+              : platformTrialEndsMetaLabel(platformTrialEndsAtIso) ?? "Trial is active";
 
     return NextResponse.json({
       plan,

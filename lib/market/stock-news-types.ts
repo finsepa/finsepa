@@ -16,3 +16,6 @@ export type StockNewsResponse = {
   /** When `items.length === requested limit`, client may request the next `offset`. */
   hasMore?: boolean;
 };
+
+/** First-page size for stock overview news + infinite scroll batches. */
+export const STOCK_NEWS_PAGE_SIZE = 6;

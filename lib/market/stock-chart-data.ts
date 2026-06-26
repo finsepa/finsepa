@@ -4,11 +4,16 @@ import { unstable_cache } from "next/cache";
 
 import { REVALIDATE_HOT, REVALIDATE_STOCK_1D_LIVE, REVALIDATE_STATIC_DAY } from "@/lib/data/cache-policy";
 
-import { resampleStock1DLiveSessionTo15Min } from "@/lib/chart/stock-1d-live-session-chart";
+import {
+  resampleStock1DLiveSession,
+} from "@/lib/chart/stock-1d-live-session-chart";
 import { fetchEodhdIntraday, type EodhdIntradayBar } from "@/lib/market/eodhd-intraday";
 import { fetchEodhdEodDaily, type EodhdDailyBar } from "@/lib/market/eodhd-eod";
 import { fetchEodhdUsRealtime } from "@/lib/market/eodhd-realtime";
-import { getUsEquityMarketSession, usEquityTodayRegularSessionComplete } from "@/lib/market/us-equity-market-session";
+import {
+  getUsEquityMarketSession,
+  usEquityTodayRegularSessionComplete,
+} from "@/lib/market/us-equity-market-session";
 import { getCachedSharesOutstanding } from "@/lib/market/stock-shares-outstanding";
 import { STOCK_DISPLAY_TZ, usSessionWallClockUnix } from "@/lib/market/chart-timestamp-format";
 import {
@@ -227,6 +232,27 @@ function trimIntradayToLatestUsSessionDay<T extends { timestamp: number }>(bars:
   return bars.filter((b) => usSessionYmdFromUnixSeconds(b.timestamp) === lastYmd);
 }
 
+/** Last US session day including post-market bars (9:30–20:00 ET) when extended hours apply. */
+function trimIntradayToLastUsSessionDayWithExtended<T extends { timestamp: number }>(bars: T[]): T[] {
+  if (bars.length === 0) return [];
+  const inWindow = bars.filter((b) => {
+    const ymd = usSessionYmdFromUnixSeconds(b.timestamp);
+    const open = usSessionWallClockUnix(ymd, 9, 30, STOCK_DISPLAY_TZ);
+    const extendedClose = usSessionWallClockUnix(ymd, 20, 0, STOCK_DISPLAY_TZ);
+    return b.timestamp >= open && b.timestamp <= extendedClose;
+  });
+  if (!inWindow.length) return trimIntradayToLastUsRegularSessionDay(bars);
+  const regular = inWindow.filter((b) => {
+    const ymd = usSessionYmdFromUnixSeconds(b.timestamp);
+    const close = usSessionWallClockUnix(ymd, 16, 0, STOCK_DISPLAY_TZ);
+    return b.timestamp <= close;
+  });
+  const lastYmd = regular.length
+    ? usSessionYmdFromUnixSeconds(regular[regular.length - 1]!.timestamp)
+    : usSessionYmdFromUnixSeconds(inWindow[inWindow.length - 1]!.timestamp);
+  return inWindow.filter((b) => usSessionYmdFromUnixSeconds(b.timestamp) === lastYmd);
+}
+
 /** Last completed US regular session (9:30–16:00 ET) — skips pre/post bars on the latest calendar day. */
 function trimIntradayToLastUsRegularSessionDay<T extends { timestamp: number }>(bars: T[]): T[] {
   if (bars.length === 0) return [];
@@ -314,7 +340,7 @@ export function stockChartPointsFromDailyBars(bars: EodhdDailyBar[]): StockChart
   return dedupeAndSort(points);
 }
 
-/** Target bar spacing for Overview 1D intraday charts (finer source → client resamples to 15m live). */
+/** Target bar spacing for Overview 1D intraday charts (finer source → client resamples to 1m live). */
 const SESSION_1D_INTRADAY_CHART_BAR_GAP_SEC = 4 * 60;
 /** Target bar spacing for Overview 5D intraday charts (EODHD 1m → ~4m). */
 const SESSION_INTRADAY_CHART_BAR_GAP_SEC = 4 * 60;
@@ -326,6 +352,27 @@ function filterToUsRegularSessionPoints(points: StockChartPoint[]): StockChartPo
     const open = usSessionWallClockUnix(ymd, 9, 30, STOCK_DISPLAY_TZ);
     const close = usSessionWallClockUnix(ymd, 16, 0, STOCK_DISPLAY_TZ);
     return p.time >= open && p.time <= close;
+  });
+}
+
+/** Regular session plus post-market (9:30–20:00 ET) for 1D extended-hours sparkline. */
+function filterToUsSessionWithPostPoints(points: StockChartPoint[]): StockChartPoint[] {
+  return points.filter((p) => {
+    if (!Number.isFinite(p.time)) return false;
+    const ymd = usSessionYmdFromUnixSeconds(p.time);
+    const open = usSessionWallClockUnix(ymd, 9, 30, STOCK_DISPLAY_TZ);
+    const extendedClose = usSessionWallClockUnix(ymd, 20, 0, STOCK_DISPLAY_TZ);
+    return p.time >= open && p.time <= extendedClose;
+  });
+}
+
+function filterToUsPostMarketSessionPoints(points: StockChartPoint[]): StockChartPoint[] {
+  return points.filter((p) => {
+    if (!Number.isFinite(p.time)) return false;
+    const ymd = usSessionYmdFromUnixSeconds(p.time);
+    const regularClose = usSessionWallClockUnix(ymd, 16, 0, STOCK_DISPLAY_TZ);
+    const extendedClose = usSessionWallClockUnix(ymd, 20, 0, STOCK_DISPLAY_TZ);
+    return p.time > regularClose && p.time <= extendedClose;
   });
 }
 
@@ -366,7 +413,7 @@ function finalize1DIntradayPoints(points: StockChartPoint[], now: Date = new Dat
     if (!todayBars.length) return [];
     const openValue = todayBars[0]!.value;
     if (!Number.isFinite(openValue)) return todayBars;
-    return resampleStock1DLiveSessionTo15Min(
+    return resampleStock1DLiveSession(
       todayBars,
       todayYmd,
       STOCK_DISPLAY_TZ,
@@ -383,7 +430,7 @@ function finalize1DIntradayPoints(points: StockChartPoint[], now: Date = new Dat
   const source = regularOnly.length ? regularOnly : lastSession;
   const openValue = source[0]!.value;
   if (!Number.isFinite(openValue)) return source;
-  return resampleStock1DLiveSessionTo15Min(
+  return resampleStock1DLiveSession(
     source,
     sessionYmd,
     STOCK_DISPLAY_TZ,
@@ -394,7 +441,7 @@ function finalize1DIntradayPoints(points: StockChartPoint[], now: Date = new Dat
 
 /**
  * EODHD intraday REST is finalized ~2–3h after the close, so today's 1m bars are often
- * missing during the live session. Build a 15m series from the realtime session OHLC instead.
+ * missing during the live session. Build a 1m series from the realtime session OHLC instead.
  */
 async function load1DRegularSessionFromRealtime(ticker: string, now: Date): Promise<StockChartPoint[]> {
   const rt = await fetchEodhdUsRealtime(ticker);
@@ -445,7 +492,44 @@ async function load1DRegularSessionFromRealtime(ticker: string, now: Date): Prom
     anchors[anchors.length - 1] = { ...last, value: close };
   }
 
-  return resampleStock1DLiveSessionTo15Min(anchors, todayYmd, STOCK_DISPLAY_TZ, open, now);
+  return resampleStock1DLiveSession(anchors, todayYmd, STOCK_DISPLAY_TZ, open, now);
+}
+
+/**
+ * When intraday is unavailable, build a 1m session chart from daily EOD bars.
+ * Uses prior close as the 9:30 open proxy when the bar has no open field.
+ */
+export function synthesize1DSessionChartFromDailyBars(
+  bars: EodhdDailyBar[],
+  now: Date = new Date(),
+): StockChartPoint[] {
+  if (!bars.length) return [];
+  const sorted = [...bars].sort((a, b) => a.date.localeCompare(b.date));
+  let bar = sorted[sorted.length - 1]!;
+  const todayYmd = usSessionYmdFromUnixSeconds(Math.floor(now.getTime() / 1000));
+  if (bar.date === todayYmd && !usEquityTodayRegularSessionComplete(now) && sorted.length > 1) {
+    bar = sorted[sorted.length - 2]!;
+  }
+
+  const sessionYmd = bar.date.trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(sessionYmd)) return [];
+
+  const close = clampFinite(bar.close);
+  if (close == null || close <= 0) return [];
+
+  const barIdx = sorted.findIndex((b) => b.date === sessionYmd);
+  const prevBar = barIdx > 0 ? sorted[barIdx - 1] : null;
+  const prevClose = prevBar ? clampFinite(prevBar.close) : null;
+  const openValue = prevClose != null && prevClose > 0 ? prevClose : close;
+
+  const openSec = usSessionWallClockUnix(sessionYmd, 9, 30, STOCK_DISPLAY_TZ);
+  const closeSec = usSessionWallClockUnix(sessionYmd, 16, 0, STOCK_DISPLAY_TZ);
+  const anchors: StockChartPoint[] = [
+    { time: openSec, value: openValue, sessionDate: sessionYmd, timeZone: STOCK_DISPLAY_TZ },
+    { time: closeSec, value: close, sessionDate: sessionYmd, timeZone: STOCK_DISPLAY_TZ },
+  ];
+
+  return resampleStock1DLiveSession(anchors, sessionYmd, STOCK_DISPLAY_TZ, openValue, now);
 }
 
 /**
@@ -526,8 +610,11 @@ async function load1DChartPoints(ticker: string, now: Date, nowSec: number): Pro
   if (process.env.NODE_ENV === "development") {
     console.info("[stock chart] 1D: no intraday; last resort daily EOD", { ticker });
   }
-  const daily = await loadDailyLastNCloses(ticker, now, 5, 21);
-  return trimPointsToLastNUsSessionDays(daily, 1);
+  const fromDate = new Date(now);
+  fromDate.setUTCDate(fromDate.getUTCDate() - 21);
+  const dailyBars = await fetchEodhdEodDaily(ticker, ymdUtc(fromDate), ymdUtc(now));
+  if (!dailyBars?.length) return [];
+  return synthesize1DSessionChartFromDailyBars(dailyBars, now);
 }
 
 const ONE_MONTH_BAR_GAP_SEC = 30 * 60;
@@ -852,7 +939,7 @@ async function loadStockChartPointsUncached(
 export const getStockChartPoints = unstable_cache(
   async (ticker: string, range: StockChartRange, series: StockChartSeries) =>
     loadStockChartPointsUncached(ticker, range, series),
-  ["stock-chart-points-v23-closed-multiday-header"],
+  ["stock-chart-points-v26-regular-session-only"],
   { revalidate: REVALIDATE_HOT },
 );
 

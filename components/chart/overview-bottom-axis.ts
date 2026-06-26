@@ -1,7 +1,7 @@
 "use client";
 
 import type { IChartApi, UTCTimestamp } from "lightweight-charts";
-import { resolveStock1DLiveSessionYmd, liveSessionTimeToPlotLeftPx, stock1DLiveSessionWallClockBounds } from "@/lib/chart/stock-1d-live-session-chart";
+import { resolveStock1DLiveSessionYmd, liveSessionTimeToPlotLeftPx, stock1DLiveSessionExtendedWallClockBounds, stock1DLiveSessionWallClockBounds } from "@/lib/chart/stock-1d-live-session-chart";
 import { shouldHideMobileYAxisLabels } from "@/lib/chart/mobile-plot-horizontal-gutter";
 import { usSessionWallClockUnix } from "@/lib/market/chart-timestamp-format";
 import type { StockChartRange, StockChartPoint } from "@/lib/market/stock-chart-types";
@@ -629,6 +629,34 @@ const STOCK_1D_LIVE_SESSION_AXIS_SLOTS = [
   { hour: 16, minute: 0 },
 ] as const;
 
+/** Live 1D session with after-hours — Google Finance-style ticks on a 9:30–20:00 axis. */
+const STOCK_1D_LIVE_SESSION_EXTENDED_AXIS_SLOTS = [
+  { hour: 13, minute: 0 },
+  { hour: 16, minute: 0 },
+  { hour: 19, minute: 0 },
+] as const;
+
+export function buildStock1DLiveSessionExtendedAxisLabels(
+  chart: IChartApi,
+  sessionYmd: string,
+  timeZone: string,
+  _plotWidthPx = 0,
+): OverviewAxisLabel[] {
+  const { open, extendedClose } = stock1DLiveSessionExtendedWallClockBounds(sessionYmd, timeZone);
+  const out: OverviewAxisLabel[] = [];
+  for (const slot of STOCK_1D_LIVE_SESSION_EXTENDED_AXIS_SLOTS) {
+    const unix = usSessionWallClockUnix(sessionYmd, slot.hour, slot.minute, timeZone);
+    const leftPx = liveSessionTimeToPlotLeftPx(chart, unix, open, extendedClose);
+    if (leftPx == null || !Number.isFinite(leftPx)) continue;
+    out.push({
+      key: `live-1d-ext-${slot.hour}-${slot.minute}`,
+      leftPx,
+      label: formatOverviewAxisHourTickLabel(unix, timeZone),
+    });
+  }
+  return out;
+}
+
 export function buildStock1DLiveSessionAxisLabels(
   chart: IChartApi,
   sessionYmd: string,
@@ -848,6 +876,8 @@ export function usesTwoSlotDayCrosshairLabel(range: StockChartRange, axisMode: O
 export type OverviewPeriodAxisSyncOptions = {
   /** Pin 1D axis to full regular session while the US market is open. */
   stock1DLiveSession?: boolean;
+  /** Extend 1D axis through post-market (9:30–20:00 ET). */
+  stock1DLiveSessionExtended?: boolean;
 };
 
 export function syncOverviewPeriodAxisLabels(
@@ -861,6 +891,12 @@ export function syncOverviewPeriodAxisLabels(
   const data = points.filter((p) => isFiniteNumber(p.time));
   const n = data.length;
   if (!n) return [];
+  if (options?.stock1DLiveSessionExtended) {
+    const sessionYmd =
+      resolveStock1DLiveSessionYmd(data, timeZone) ??
+      sessionDayKeyForPoint(data[data.length - 1]!, timeZone);
+    return buildStock1DLiveSessionExtendedAxisLabels(chart, sessionYmd, timeZone, plotWidthPx);
+  }
   if (options?.stock1DLiveSession) {
     const sessionYmd =
       resolveStock1DLiveSessionYmd(data, timeZone) ??

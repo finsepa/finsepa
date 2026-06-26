@@ -91,6 +91,7 @@ import {
   shouldAdoptServerSnapshot,
   watchlistSyncPayloadsEqual,
 } from "@/lib/watchlist/snapshot";
+import { clearWatchlistEnrichedCache } from "@/lib/watchlist/watchlist-enriched-cache";
 
 function normalizeTicker(t: string): string {
   return normalizeWatchlistStorageKey(t);
@@ -354,11 +355,17 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
     }
 
     void (async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (cancelled) return;
-      await bootstrap(user?.id ?? null, {}, user);
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (cancelled) return;
+        await bootstrap(session?.user?.id ?? null, {}, session?.user ?? null);
+      } catch {
+        if (!cancelled) {
+          await bootstrap(null, {}, null);
+        }
+      }
     })();
 
     const {
@@ -886,6 +893,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
     };
 
     applyCollections(optimistic);
+    clearWatchlistEnrichedCache();
 
     if (!userIdRef.current) {
       toast.success("Watchlist deleted.");
@@ -897,7 +905,11 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
     if (serverId && !serverId.startsWith("wl_")) {
       const serverSnapshot = await deleteWatchlistCollectionOnClient(serverId);
       if (serverSnapshot) {
-        applyCollections(mergeServerWithLocalSnapshot(serverSnapshot, optimistic));
+        const fromServer = clearDuplicateWatchlistTickerCopies(
+          ensureSnapshotActiveId(serverSnapshotToCollections(serverSnapshot, userIdRef.current)),
+        );
+        applyCollections(fromServer);
+        clearWatchlistEnrichedCache();
         setServerListWarning(null);
         toast.success("Watchlist deleted.");
         dispatchWatchlistMutated();
@@ -911,9 +923,10 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    setServerListWarning("Watchlist deleted locally; server sync will retry.");
-    toast.success("Watchlist deleted.");
-    dispatchWatchlistMutated();
+    applyCollections(previous);
+    clearWatchlistEnrichedCache();
+    setServerListWarning("Could not delete watchlist on the server. Try again.");
+    toast.error("Could not delete watchlist. Try again.");
   }, [applyCollections, persistSnapshotToServer]);
 
   const active = getActiveWatchlistCollection(collections);

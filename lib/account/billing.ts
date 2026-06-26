@@ -43,6 +43,19 @@ export const EMPTY_BILLING_SUMMARY: BillingSummary = {
   platformTrialDaysRemaining: null,
 };
 
+/** e.g. "Trial ends on Jun 30, 2026" — null when the end date is unknown. */
+export function platformTrialEndsMetaLabel(platformTrialEndsAt: string | null | undefined): string | null {
+  if (!platformTrialEndsAt) return null;
+  const ms = Date.parse(platformTrialEndsAt);
+  if (!Number.isFinite(ms)) return null;
+  const label = new Date(ms).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+  return `Trial ends on ${label}`;
+}
+
 /** Same plan line as Account → Billing (e.g. “Free Trial”, “Pro”). */
 export function subscriptionTitleFromBillingSummary(summary: BillingSummary): string {
   const billingPlan = summary.plan;

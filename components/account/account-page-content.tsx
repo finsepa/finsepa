@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { loginSignedOutUrl } from "@/lib/auth/routes";
 import {
   EMPTY_BILLING_SUMMARY,
+  platformTrialEndsMetaLabel,
   subscriptionTitleFromBillingSummary,
   type BillingSummary,
 } from "@/lib/account/billing";
@@ -298,10 +299,13 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
           day: "numeric",
         })
       : null;
+  const trialEndsLabel = platformTrialEndsMetaLabel(billingSummary.platformTrialEndsAt);
   const subscriptionStatusBelowTitle =
     isProScheduledCancellation && activeUntilShortLabel
       ? `Active until ${activeUntilShortLabel}`
-      : subscriptionMeta;
+      : billingAccessState === "trial" && trialEndsLabel
+        ? trialEndsLabel
+        : subscriptionMeta;
   const actionLabel = billingPlan === "pro" ? "Manage Subscription" : "Upgrade to Pro";
   const recurringAmount =
     billingPlan === "pro"

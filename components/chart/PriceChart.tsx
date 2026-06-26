@@ -74,17 +74,18 @@ import {
   resolveStock1DLiveSessionYmd,
   shouldUseStock1DLiveSessionChart,
   stock1DLiveSessionPlotLeftPx,
-  STOCK_1D_LIVE_SESSION_BAR_INTERVAL_SEC,
   STOCK_1D_LIVE_SESSION_CLOCK_TICK_MS,
+  STOCK_1D_LIVE_PRICE_POLL_MS,
   STOCK_1D_LIVE_SESSION_TZ,
 } from "@/lib/chart/stock-1d-live-session-chart";
-import { getUsEquityMarketSession } from "@/lib/market/us-equity-market-session";
 import { attachMobilePriceChartHaptics } from "@/lib/chart/mobile-chart-haptic";
 import {
   chartBarTimeForYmd,
   formatAssetChartTimestamp,
   usSessionWallClockUnix,
+  usSessionYmdFromUnixSeconds,
 } from "@/lib/market/chart-timestamp-format";
+import { getUsEquityMarketSession } from "@/lib/market/us-equity-market-session";
 import { baselineRelativeGradientEnabled } from "@/lib/chart/baseline-relative-gradient";
 import {
   computeQuarterBandPixelLayouts,
@@ -145,6 +146,8 @@ type LivePriceDotLayout = {
   left: number;
   top: number;
   color: string;
+  /** Regular session pulses; after-hours stays static on the line tail. */
+  animated?: boolean;
 };
 
 const RANGE_PRICE_BADGE_CLASS =
@@ -231,7 +234,7 @@ function commitRangePriceBadge(
 function livePriceDotLayoutEqual(a: LivePriceDotLayout | null, b: LivePriceDotLayout | null): boolean {
   if (a === b) return true;
   if (a == null || b == null) return false;
-  return a.left === b.left && a.top === b.top && a.color === b.color;
+  return a.left === b.left && a.top === b.top && a.color === b.color && a.animated === b.animated;
 }
 
 function commitLivePriceDot(
@@ -362,6 +365,7 @@ function applyLiveSessionSeriesPriceLineOptions(
     priceLineColor: color,
   });
 }
+
 const VALUE_BLUE = "#2563EB";
 /** Holdings expand chart: opaque white underlay masks quarter bars; blue gradient draws on top. */
 const HOLDINGS_FILL_WHITE_TOP = "rgba(255, 255, 255, 0.97)";
@@ -396,7 +400,7 @@ const Y_AXIS_LABEL_ONLY = {
   title: "",
 } as const;
 
-type MainPriceSeries = ISeriesApi<"Baseline"> | ISeriesApi<"Area">;
+type MainPriceSeries = ISeriesApi<"Baseline"> | ISeriesApi<"Area"> | ISeriesApi<"Line">;
 
 function removeScaleBoundsPriceLines(
   series: MainPriceSeries | null,
@@ -923,6 +927,7 @@ export function PriceChart({
   useEffect(() => {
     if (kind !== "stock" || range !== "1D" || holdingsStyle) return;
     if (liveSpotUsd == null || !Number.isFinite(liveSpotUsd) || liveSpotUsd <= 0) return;
+    if (getUsEquityMarketSession(new Date()) !== "regular") return;
     setSessionNowMs(Date.now());
   }, [kind, range, holdingsStyle, liveSpotUsd]);
 
@@ -944,14 +949,14 @@ export function PriceChart({
     );
     if (prepared.length) return prepared;
     const sessionYmd = resolveStock1DLiveSessionYmd(points, STOCK_1D_LIVE_SESSION_TZ, now);
-    if (!sessionYmd) return [];
+    if (!sessionYmd) return points;
     const filtered = filterStock1DLiveSessionPointsByTimeWindow(
       points,
       sessionYmd,
       STOCK_1D_LIVE_SESSION_TZ,
       now,
     );
-    if (!filtered.length) return [];
+    if (!filtered.length) return points;
     const last = filtered[filtered.length - 1]!;
     const useLiveSpot =
       getUsEquityMarketSession(now) === "regular" &&
@@ -1034,7 +1039,9 @@ export function PriceChart({
   }, [liveSpotUsd]);
 
   const periodAxisSyncOptions = useMemo(
-    (): OverviewPeriodAxisSyncOptions => ({ stock1DLiveSession }),
+    (): OverviewPeriodAxisSyncOptions => ({
+      stock1DLiveSession,
+    }),
     [stock1DLiveSession],
   );
 
@@ -1380,7 +1387,7 @@ export function PriceChart({
     onDisplayChange({
       // Keep header stable during background refetch — still have prior bars to display.
       loading: loading && metrics.displayPrice == null,
-      empty: !loading && points.length === 0,
+      empty: !loading && chartPoints.length === 0,
       displayPrice: metrics.displayPrice,
       displayChangePct: metrics.displayChangePct,
       displayChangeAbs: metrics.displayChangeAbs,
@@ -1392,7 +1399,7 @@ export function PriceChart({
       priceTimestampLabel,
       scrubPeriodLabel: metrics.scrubPeriodLabel,
     });
-  }, [loading, points.length, metrics, onDisplayChange, kind, dataTimeZoneHint]);
+  }, [loading, chartPoints.length, metrics, onDisplayChange, kind, dataTimeZoneHint]);
 
   useEffect(() => {
     pushDisplay();
@@ -1996,11 +2003,13 @@ export function PriceChart({
         );
       }
 
+      const marketSession = getUsEquityMarketSession(new Date());
+      const showLiveSessionDot = marketSession === "regular";
       if (
         screenshotPreviewModeRef.current ||
         holdingsStyleRef.current ||
         !stock1DLiveSessionRef.current ||
-        getUsEquityMarketSession(new Date()) !== "regular" ||
+        !showLiveSessionDot ||
         crosshairHoveredRef.current
       ) {
         commitLivePriceDot(setLivePriceDot, null);
@@ -2011,7 +2020,14 @@ export function PriceChart({
         commitLivePriceDot(setLivePriceDot, null);
         return;
       }
-      const dotLayout = layoutRangePriceBadge(chart, s, lastPt, "center", plotWidth);
+      const dotLayout = layoutRangePriceBadge(
+        chart,
+        s,
+        lastPt,
+        "center",
+        plotWidth,
+        liveSessionPlot,
+      );
       commitLivePriceDot(
         setLivePriceDot,
         dotLayout
@@ -2019,6 +2035,7 @@ export function PriceChart({
               left: dotLayout.left,
               top: dotLayout.top,
               color: lastPointStrokeRef.current,
+              animated: true,
             }
           : null,
       );
@@ -2284,7 +2301,7 @@ export function PriceChart({
     };
   }, [kind, symbol, range, series, initialChart, chartDataCadence]);
 
-  // Refresh intraday history every 15m during regular session (header spot updates separately via liveSpotUsd).
+  // Refresh intraday history every minute during the regular session.
   useEffect(() => {
     if (holdingsStyle || kind !== "stock" || range !== "1D" || screenshotPreviewMode) return;
     if (getUsEquityMarketSession(new Date()) !== "regular") return;
@@ -2302,7 +2319,7 @@ export function PriceChart({
       }
     };
     void poll();
-    const id = window.setInterval(() => void poll(), STOCK_1D_LIVE_SESSION_BAR_INTERVAL_SEC * 1000);
+    const id = window.setInterval(() => void poll(), STOCK_1D_LIVE_PRICE_POLL_MS);
     return () => {
       cancelled = true;
       window.clearInterval(id);
@@ -2652,22 +2669,21 @@ export function PriceChart({
 
   useEffect(() => {
     if (!stock1DLiveSession || holdingsStyle) return;
+    if (getUsEquityMarketSession(new Date()) !== "regular") return;
     const s = seriesRef.current;
-    const open = sessionOpenPriceRef.current;
-    if (!s || open == null || !Number.isFinite(open)) return;
+    const openPrice = sessionOpenPriceRef.current;
+    if (!s || openPrice == null || !Number.isFinite(openPrice)) return;
     const pts = pointsRef.current.filter((p) => isFiniteNumber(p.time) && isFiniteNumber(p.value));
-    const chartLiveSpot =
-      getUsEquityMarketSession(new Date()) === "regular" ? liveSpotUsd : null;
     applyLiveSessionSeriesPriceLineOptions(
       s,
-      open,
-      chartLiveSpot,
+      openPrice,
+      liveSpotUsd,
       pts.at(-1)?.value,
       hideMobileYAxisLabelsRef.current,
     );
   }, [stock1DLiveSession, liveSpotUsd, holdingsStyle]);
 
-  const empty = !loading && points.length === 0;
+  const empty = !loading && chartPoints.length === 0;
 
   const overviewHoverTooltip = useMemo(() => {
     if (holdingsStyle || !overviewHover) return null;
@@ -2873,7 +2889,11 @@ export function PriceChart({
         >
           <span className="relative block h-2.5 w-2.5">
             <span
-              className="chart-live-price-dot-bounce absolute inset-0 rounded-full ring-2 ring-white"
+              className={
+                livePriceDot.animated !== false
+                  ? "chart-live-price-dot-bounce absolute inset-0 rounded-full ring-2 ring-white"
+                  : "absolute inset-0 rounded-full ring-2 ring-white"
+              }
               style={{ backgroundColor: livePriceDot.color }}
             />
           </span>

@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { PreMarketEarningsIcon } from "@/components/stock/pre-market-earnings-icon";
 import { PostMarketEarningsIcon } from "@/components/stock/post-market-earnings-icon";
 import {
-  formatMinutesShort,
+  formatUsEquitySessionBadgeLabel,
   getUsEquitySessionBadgeDisplay,
   type UsEquitySessionBadgeDisplay,
 } from "@/lib/market/us-equity-market-session";
@@ -49,37 +49,35 @@ function BadgeRow({
       return (
         <>
           <PreMarketEarningsIcon size={iconSize} />
-          <span>Pre-market, market open in {formatMinutesShort(display.minutesUntilRegular)}</span>
+          <span>{formatUsEquitySessionBadgeLabel(display)}</span>
         </>
       );
     case "regular":
       return (
         <>
           <MarketOpenStatusDot dotSizeClass={dotSizeClass} />
-          <span>
-            Market open · {formatMinutesShort(display.minutesUntilClose)} left
-          </span>
+          <span>{formatUsEquitySessionBadgeLabel(display)}</span>
         </>
       );
     case "post":
       return (
         <>
           <PostMarketEarningsIcon size={iconSize} />
-          <span>After-hours open</span>
+          <span>{formatUsEquitySessionBadgeLabel(display)}</span>
         </>
       );
     case "pre_opens_soon":
       return (
         <>
           <span className={cn(dotSizeClass, "shrink-0 rounded-full bg-[#71717A]")} aria-hidden />
-          <span>Pre-market opens in {formatMinutesShort(display.minutesUntilPre)}</span>
+          <span>{formatUsEquitySessionBadgeLabel(display)}</span>
         </>
       );
     default:
       return (
         <>
           <span className={cn(dotSizeClass, "shrink-0 rounded-full bg-[#71717A]")} aria-hidden />
-          <span>Market closed</span>
+          <span>{formatUsEquitySessionBadgeLabel(display)}</span>
         </>
       );
   }

@@ -5,7 +5,7 @@ import { unstable_cache } from "next/cache";
 import { REVALIDATE_HOT } from "@/lib/data/cache-policy";
 
 import { getEodhdApiKey } from "@/lib/env/server";
-import type { StockNewsArticle } from "@/lib/market/stock-news-types";
+import { STOCK_NEWS_PAGE_SIZE, type StockNewsArticle } from "@/lib/market/stock-news-types";
 import { extractImageUrlFromPlainText, pickBestImageUrl } from "@/lib/market/stock-news-images";
 import { fetchOgImageFromArticleUrl } from "@/lib/market/stock-news-og";
 import { toEodhdUsSymbol } from "@/lib/market/eodhd-symbol";
@@ -142,9 +142,9 @@ export async function loadStockNewsPage(ticker: string, offset: number, limit: n
   return out;
 }
 
-/** First page only (5 items) — matches asset overview initial paint + `/api/stocks/.../news?offset=0&limit=5`. */
+/** First page only — matches asset overview initial paint + `/api/stocks/.../news?offset=0&limit=6`. */
 export const getStockNews = unstable_cache(
-  async (ticker: string) => loadStockNewsPage(ticker, 0, 5),
-  ["stock-news-v6-page5"],
+  async (ticker: string) => loadStockNewsPage(ticker, 0, STOCK_NEWS_PAGE_SIZE),
+  ["stock-news-v7-page6"],
   { revalidate: REVALIDATE_HOT },
 );

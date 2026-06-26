@@ -8,5 +8,7 @@ export type StockExtendedHoursHeader = {
   extendedPrice: number;
   extendedChangeAbs: number;
   extendedChangePct: number;
+  /** Unix seconds — last extended-hours trade time from the provider. */
+  extendedTimeUnix: number;
   extendedTimestampLabel: string;
 };

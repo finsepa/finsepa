@@ -6,7 +6,7 @@ export type UsEquityMarketSession = "pre" | "regular" | "post" | "closed";
 export type UsEquitySessionBadgeDisplay =
   | { kind: "pre"; minutesUntilRegular: number }
   | { kind: "regular"; minutesUntilClose: number }
-  | { kind: "post" }
+  | { kind: "post"; minutesUntilPostEnd: number }
   | { kind: "pre_opens_soon"; minutesUntilPre: number }
   | { kind: "closed" };
 
@@ -40,6 +40,22 @@ export function formatMinutesShort(totalMinutes: number): string {
   if (h === 0) return `${m} min`;
   if (m === 0) return h === 1 ? "1 hr" : `${h} hr`;
   return `${h} hr ${m} min`;
+}
+
+/** Stock / Markets session badge copy — `State · Next phase in duration`. */
+export function formatUsEquitySessionBadgeLabel(display: UsEquitySessionBadgeDisplay): string {
+  switch (display.kind) {
+    case "pre_opens_soon":
+      return `Market closed · Pre-market in ${formatMinutesShort(display.minutesUntilPre)}`;
+    case "pre":
+      return `Pre-market · Main session in ${formatMinutesShort(display.minutesUntilRegular)}`;
+    case "regular":
+      return `Market open · After hours in ${formatMinutesShort(display.minutesUntilClose)}`;
+    case "post":
+      return `After hours · Market close in ${formatMinutesShort(display.minutesUntilPostEnd)}`;
+    case "closed":
+      return "Market closed";
+  }
 }
 
 /**
@@ -92,7 +108,11 @@ export function getUsEquitySessionBadgeDisplay(now: Date): UsEquitySessionBadgeD
     const { dayMinutes } = nyWeekdayAndMinutes(now);
     return { kind: "regular", minutesUntilClose: Math.max(0, regularClose - dayMinutes) };
   }
-  if (session === "post") return { kind: "post" };
+  if (session === "post") {
+    const postEnd = 20 * 60;
+    const { dayMinutes } = nyWeekdayAndMinutes(now);
+    return { kind: "post", minutesUntilPostEnd: Math.max(0, postEnd - dayMinutes) };
+  }
 
   const { weekdayShort, dayMinutes } = nyWeekdayAndMinutes(now);
   if (weekdayShort === "Sat" || weekdayShort === "Sun") return { kind: "closed" };
@@ -102,6 +122,15 @@ export function getUsEquitySessionBadgeDisplay(now: Date): UsEquitySessionBadgeD
     return { kind: "pre_opens_soon", minutesUntilPre: preStart - dayMinutes };
   }
   return { kind: "closed" };
+}
+
+/** True when the US equity header may show the pre/post price column — any time except live regular session. */
+export function isUsEquityExtendedHoursHeaderEligible(now: Date = new Date()): boolean {
+  const session = getUsEquityMarketSession(now);
+  if (session === "regular") return false;
+  const { weekdayShort } = nyWeekdayAndMinutes(now);
+  if (weekdayShort === "Sat" || weekdayShort === "Sun") return false;
+  return true;
 }
 
 function nySessionYmdFromDate(date: Date): string {

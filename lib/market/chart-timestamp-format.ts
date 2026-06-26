@@ -213,6 +213,42 @@ export function formatStockHeaderSessionPeriodLabel(
   }
 }
 
+/** Header label for extended-hours quote time (e.g. `After-hours: Jun 25, 2026, 7:59 PM EDT`). */
+export function formatStockExtendedHoursSessionLabel(
+  session: "pre" | "post",
+  unixSeconds: number,
+  timeZone: string = STOCK_DISPLAY_TZ,
+): string {
+  const prefix = session === "pre" ? "Pre-market" : "After-hours";
+  const d = new Date(unixSeconds * 1000);
+  if (!Number.isFinite(d.getTime())) return prefix;
+  try {
+    const dateStr = new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      timeZone,
+    }).format(d);
+    const timeStr = new Intl.DateTimeFormat("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+      timeZone,
+    }).format(d);
+    const tzName =
+      new Intl.DateTimeFormat("en-US", {
+        timeZone,
+        timeZoneName: "short",
+      })
+        .formatToParts(d)
+        .find((p) => p.type === "timeZoneName")?.value ?? "";
+    const when = tzName ? `${dateStr}, ${timeStr} ${tzName}` : `${dateStr}, ${timeStr}`;
+    return `${prefix}: ${when}`;
+  } catch {
+    return prefix;
+  }
+}
+
 /** Header period badge when the regular session is over (e.g. `At close: Jun 23, 2026, 4:00 PM EDT`). */
 export function formatStockHeaderAtClosePeriodLabel(
   unixSeconds: number,

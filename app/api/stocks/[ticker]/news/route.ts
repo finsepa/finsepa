@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { CACHE_CONTROL_PRIVATE_NEWS } from "@/lib/data/cache-policy";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getStockNews, loadStockNewsPage } from "@/lib/market/stock-news";
+import { STOCK_NEWS_PAGE_SIZE } from "@/lib/market/stock-news-types";
 import type { StockNewsResponse } from "@/lib/market/stock-news-types";
 import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
 import { getNvdaStockNews } from "@/lib/fixtures/nvda";
@@ -12,7 +13,7 @@ type Ctx = { params: Promise<{ ticker: string }> };
 function parseOffsetLimit(request: Request): { offset: number; limit: number } {
   const url = new URL(request.url);
   const offset = Math.max(0, Number(url.searchParams.get("offset") ?? 0) || 0);
-  const limitRaw = Number(url.searchParams.get("limit") ?? "5") || 5;
+  const limitRaw = Number(url.searchParams.get("limit") ?? String(STOCK_NEWS_PAGE_SIZE)) || STOCK_NEWS_PAGE_SIZE;
   const limit = Math.min(20, Math.max(1, limitRaw));
   return { offset, limit };
 }
@@ -56,7 +57,7 @@ export async function GET(request: Request, { params }: Ctx) {
   }
 
   const items =
-    offset === 0 && limit === 5
+    offset === 0 && limit === STOCK_NEWS_PAGE_SIZE
       ? await getStockNews(routeTicker)
       : await loadStockNewsPage(routeTicker, offset, limit);
 

@@ -1,5 +1,6 @@
 import "server-only";
 
+import { chartPointsLookLikeIntradaySession } from "@/lib/chart/stock-1d-live-session-chart";
 import { trimPointsToLastNUsSessionDays } from "@/lib/market/stock-chart-data";
 import { getUsEquityMarketSession } from "@/lib/market/us-equity-market-session";
 import type { StockChartPoint } from "@/lib/market/stock-chart-types";
@@ -58,6 +59,9 @@ export function sliceStockChartPointsForRange(
   range: StockChartRange,
   now: Date = new Date(),
 ): StockChartPoint[] {
+  if (range === "1D" && chartPointsLookLikeIntradaySession(rawPoints)) {
+    return rawPoints;
+  }
   const startSec = rangeStartUnixSeconds(range, now);
   let points = sliceFromNearestTradingPoint(rawPoints, startSec, range);
   const skipDailyFallback =

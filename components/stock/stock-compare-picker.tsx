@@ -4,6 +4,9 @@ import { CompanyPicker, type CompanyPick } from "@/components/charting/company-p
 import { IntersectCircle } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 
+const COMPARE_ICON_BUTTON_CLASS =
+  "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#09090B] transition-colors hover:bg-[#FAFAFA]";
+
 const MAX_OVERVIEW_COMPARE = 12;
 
 function IconChevronDown({ className }: { className?: string }) {
@@ -58,8 +61,7 @@ type Props = {
 };
 
 /**
- * Overview toolbar: icon trigger when empty; chips + chevron when symbols are selected.
- * Shell matches {@link FormListboxSelect} (gray fill, no border/shadow); chips stay lightly outlined.
+ * Overview toolbar: white icon trigger when empty; chips + chevron when symbols are selected.
  */
 export function StockComparePicker({ baseTicker, values, onAdd, onRemove }: Props) {
   const excludeSymbols = [baseTicker.trim().toUpperCase(), ...values.map((v) => v.symbol.trim().toUpperCase())];
@@ -102,8 +104,10 @@ export function StockComparePicker({ baseTicker, values, onAdd, onRemove }: Prop
               setOpen(true);
             }}
             className={cn(
-              "relative flex h-9 cursor-pointer items-center rounded-[10px] bg-[#F4F4F5] outline-none transition-colors hover:bg-[#EBEBEB] focus-visible:ring-2 focus-visible:ring-[#09090B]/10",
-              hasPicks ? "w-full py-2 pl-4 pr-10 text-left text-sm font-normal" : "w-9 justify-center",
+              "relative flex h-9 cursor-pointer items-center rounded-[10px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[#09090B]/10",
+              hasPicks
+                ? "w-full bg-[#F4F4F5] py-2 pl-4 pr-10 text-left text-sm font-normal hover:bg-[#EBEBEB]"
+                : cn(COMPARE_ICON_BUTTON_CLASS, "w-9 justify-center"),
               atCapacity && "cursor-not-allowed opacity-50",
             )}
           >
@@ -134,7 +138,7 @@ export function StockComparePicker({ baseTicker, values, onAdd, onRemove }: Prop
                 ))}
               </div>
             ) : (
-              <IntersectCircle className="h-5 w-5 shrink-0 text-[#09090B]" strokeWidth={1.75} aria-hidden />
+              <IntersectCircle className="h-4 w-4 shrink-0 text-[#09090B]" strokeWidth={2} aria-hidden />
             )}
           </div>
           {hasPicks ? (

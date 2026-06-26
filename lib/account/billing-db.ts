@@ -1,7 +1,7 @@
 import "server-only";
 
 import type Stripe from "stripe";
-import { EMPTY_BILLING_SUMMARY, type BillingSummary } from "@/lib/account/billing";
+import { EMPTY_BILLING_SUMMARY, platformTrialEndsMetaLabel, type BillingSummary } from "@/lib/account/billing";
 import { hasActivePaidProSubscription } from "@/lib/account/billing-guard";
 import {
   effectivePlatformTrialEndsAtIso,
@@ -116,7 +116,10 @@ export async function getBillingSummaryForUser(userId: string): Promise<BillingS
     subscriptionMeta:
       accessState === "trial_expired"
         ? "Free trial ended — subscribe to continue"
-        : subscriptionMeta(subscription.status, subscription.cancel_at_period_end, false),
+        : accessState === "trial"
+          ? platformTrialEndsMetaLabel(platformTrialEndsAtIso) ??
+            subscriptionMeta(subscription.status, subscription.cancel_at_period_end, false)
+          : subscriptionMeta(subscription.status, subscription.cancel_at_period_end, false),
     recurringAmountUsd: isPro ? recurringAmountUsd : 0,
     recurringDueDate: subscription.current_period_end,
     platformTrialEndsAt: isPro ? null : platformTrialEndsAtIso,

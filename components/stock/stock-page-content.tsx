@@ -7,6 +7,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AssetPageTopLoader } from "@/components/layout/asset-page-top-loader";
 import type { ChartDisplayState } from "@/components/chart/PriceChart";
 import { PriceChart } from "@/components/chart/PriceChart";
+import { AssetChartSkeleton } from "@/components/ui/chart-skeleton";
 import type { StockDetailHeaderMeta } from "@/lib/market/stock-header-meta";
 import type { ChartingMetricId } from "@/lib/market/stock-charting-metrics";
 import type { StockDetailTabId } from "@/lib/stock/stock-detail-tab";
@@ -42,9 +43,11 @@ import {
 import { LatestNews } from "./latest-news";
 import type { StockPageInitialData } from "@/lib/market/stock-page-initial-data";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
+import type { StockExtendedHoursHeader } from "@/lib/market/stock-extended-hours-header-types";
+import { isUsListedStockHeaderMeta } from "@/lib/market/stock-header-meta";
 import type { StockChartRange, StockChartSeries } from "@/lib/market/stock-chart-types";
 import { mergeClosedMarketOverviewHeader, mergeSessionHeaderWithPerformanceSpot } from "@/lib/chart/merge-session-header-with-performance-spot";
-import { getUsEquityMarketSession, lastUsRegularSessionCloseUnix } from "@/lib/market/us-equity-market-session";
+import { getUsEquityMarketSession, isUsEquityExtendedHoursHeaderEligible, lastUsRegularSessionCloseUnix } from "@/lib/market/us-equity-market-session";
 import { STOCK_1D_LIVE_PRICE_POLL_MS } from "@/lib/chart/stock-1d-live-session-chart";
 import {
   formatAssetChartTimestamp,
@@ -173,6 +176,7 @@ export function StockPageContent({
   const comparePicksRef = useRef<CompanyPick[]>([]);
   comparePicksRef.current = comparePicks;
   const ticker = (routeTicker?.trim() ? routeTicker.trim() : "AAPL").toUpperCase();
+  const pageDataReady = initialPageData?.ticker === ticker;
 
   /** URL tab from the client router — applied after mount so the first paint matches SSR (`initialActiveTab`). */
   const [searchSyncedTab, setSearchSyncedTab] = useState<StockDetailTabId | null>(null);
@@ -439,6 +443,23 @@ export function StockPageContent({
     setHeaderPriorCloseClient(null);
   }, [ticker]);
 
+  const showExtendedHoursHeader = useMemo(
+    () =>
+      comparePicks.length === 0 &&
+      chartSeries === "price" &&
+      isUsListedStockHeaderMeta(headerMeta) &&
+      isUsEquityExtendedHoursHeaderEligible(new Date()),
+    [comparePicks.length, chartSeries, headerMeta, regularSessionClock],
+  );
+
+  const [extendedHoursQuote, setExtendedHoursQuote] = useState<StockExtendedHoursHeader | null>(null);
+  const [extendedHoursLoading, setExtendedHoursLoading] = useState(false);
+
+  useEffect(() => {
+    setExtendedHoursQuote(null);
+    setExtendedHoursLoading(false);
+  }, [ticker]);
+
   useEffect(() => {
     if (getUsEquityMarketSession(new Date()) !== "regular") return;
     let cancelled = false;
@@ -628,6 +649,71 @@ export function StockPageContent({
     range,
   ]);
 
+  const sessionCloseForExtendedHours =
+    performanceForHeaderFallback?.price ?? chartUi.displayPrice ?? null;
+
+  useEffect(() => {
+    if (!showExtendedHoursHeader) {
+      setExtendedHoursQuote(null);
+      setExtendedHoursLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    const load = async () => {
+      const params = new URLSearchParams();
+      if (headerMeta?.exchange?.trim()) params.set("exchange", headerMeta.exchange.trim());
+      if (headerMeta?.countryIso?.trim()) params.set("country", headerMeta.countryIso.trim());
+      if (
+        sessionCloseForExtendedHours != null &&
+        Number.isFinite(sessionCloseForExtendedHours) &&
+        sessionCloseForExtendedHours > 0
+      ) {
+        params.set("close", String(sessionCloseForExtendedHours));
+      }
+      const qs = params.toString();
+
+      try {
+        const res = await fetch(
+          `/api/stocks/${encodeURIComponent(ticker)}/extended-hours${qs ? `?${qs}` : ""}`,
+          { credentials: "include", cache: "no-store" },
+        );
+        if (!res.ok || cancelled) return;
+        const json = (await res.json()) as { quote?: StockExtendedHoursHeader | null };
+        if (!cancelled) setExtendedHoursQuote(json.quote ?? null);
+      } catch {
+        if (!cancelled) setExtendedHoursQuote(null);
+      } finally {
+        if (!cancelled) setExtendedHoursLoading(false);
+      }
+    };
+
+    setExtendedHoursLoading(true);
+    void load();
+    const id = window.setInterval(() => void load(), STOCK_1D_LIVE_PRICE_POLL_MS);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [
+    ticker,
+    showExtendedHoursHeader,
+    headerMeta?.exchange,
+    headerMeta?.countryIso,
+    regularSessionClock,
+    sessionCloseForExtendedHours,
+  ]);
+
+  const extendedHoursHeaderLeft = useMemo(() => {
+    if (!showExtendedHoursHeader || !extendedHoursQuote || chartSeries !== "price") return null;
+    return {
+      price: extendedHoursQuote.closePrice,
+      changeAbs: extendedHoursQuote.closeChangeAbs,
+      changePct: extendedHoursQuote.closeChangePct,
+    };
+  }, [showExtendedHoursHeader, extendedHoursQuote, chartSeries]);
+
   const [overviewDownloadOpen, setOverviewDownloadOpen] = useState(false);
   const [overviewDownloadSnapshot, setOverviewDownloadSnapshot] =
     useState<ChartScreenshotSnapshot | null>(null);
@@ -725,9 +811,9 @@ export function StockPageContent({
         periodLabel={headerPeriodLabel}
         periodLabelOverride={chartUi.periodLabelOverride}
         chartRangeLabel={overviewDrivesHeader ? range : "1D"}
-        price={chartUi.displayPrice}
-        changePct={chartUi.displayChangePct}
-        changeAbs={chartUi.displayChangeAbs}
+        price={extendedHoursHeaderLeft?.price ?? chartUi.displayPrice}
+        changePct={extendedHoursHeaderLeft?.changePct ?? chartUi.displayChangePct}
+        changeAbs={extendedHoursHeaderLeft?.changeAbs ?? chartUi.displayChangeAbs}
         selectionChangeAbs={chartUi.selectionChangeAbs}
         selectionChangePct={chartUi.selectionChangePct}
         chartLoading={chartUi.loading}
@@ -738,6 +824,9 @@ export function StockPageContent({
         headerMeta={headerMeta}
         headerMetaLoading={headerMetaLoading}
         headerChartMetric={comparePicks.length > 0 ? "price" : chartSeries}
+        showExtendedHours={showExtendedHoursHeader}
+        extendedHours={extendedHoursQuote}
+        extendedHoursLoading={extendedHoursLoading}
       />
 
       {stockChartDrivesHeader ? (
@@ -808,16 +897,23 @@ export function StockPageContent({
                 range={range}
               />
             ) : (
-              <PriceChart
-                key={`stock-overview-${ticker}-${chartSeries}-${range}`}
-                kind="stock"
-                symbol={ticker}
-                range={range}
-                series={chartSeries}
-                initialChart={initialChartMemo?.range === range ? initialChartMemo : null}
-                liveSpotUsd={range === "1D" ? headerLiveSpotForMerge : null}
-                onDisplayChange={onOverviewHeaderDisplay}
-              />
+              <div className="relative min-h-[320px] w-full">
+                {!pageDataReady ? (
+                  <div className="absolute inset-0 z-10">
+                    <AssetChartSkeleton heightPx={320} className="h-full" />
+                  </div>
+                ) : null}
+                <PriceChart
+                  key={`stock-overview-${ticker}-${chartSeries}-${range}`}
+                  kind="stock"
+                  symbol={ticker}
+                  range={range}
+                  series={chartSeries}
+                  initialChart={initialChartMemo?.range === range ? initialChartMemo : null}
+                  liveSpotUsd={range === "1D" ? headerLiveSpotForMerge : null}
+                  onDisplayChange={onOverviewHeaderDisplay}
+                />
+              </div>
             )}
           </ChartControls>
         ) : null}

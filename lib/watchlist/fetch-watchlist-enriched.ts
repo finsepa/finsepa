@@ -9,6 +9,7 @@ import {
   readWatchlistEnrichedSessionCache,
   writeWatchlistEnrichedSessionCache,
 } from "@/lib/watchlist/watchlist-enriched-cache";
+import { watchlistApiFetch } from "@/lib/watchlist/watchlist-api-fetch";
 
 export type WatchlistEnrichedResponse = {
   stocks: WatchlistEnrichedItem[];
@@ -59,9 +60,8 @@ export async function fetchWatchlistEnriched(
   if (existing) return existing;
 
   const promise = (async () => {
-    const res = await fetch("/api/watchlist/enrich", {
+    const res = await watchlistApiFetch("/api/watchlist/enrich", {
       method: "POST",
-      credentials: "include",
       cache: "no-store",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ tickers }),

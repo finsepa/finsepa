@@ -6,6 +6,7 @@ import {
   getStockSpotQuoteForApi,
   getStockChartPointsForApi,
   stockChartPointsFromDailyBars,
+  synthesize1DSessionChartFromDailyBars,
 } from "@/lib/market/stock-chart-data";
 import { getUsEquityMarketSession } from "@/lib/market/us-equity-market-session";
 import type { ChartingSeriesPoint } from "@/lib/market/charting-series-types";
@@ -119,6 +120,10 @@ function resolveOverviewChartPoints(
   if (Array.isArray(chartPoints) && chartPoints.length > 0) return chartPoints;
   if (range === "1D" && getUsEquityMarketSession(now) === "regular") return [];
   if (!sortedDailyBars.length) return [];
+  if (range === "1D") {
+    const session = synthesize1DSessionChartFromDailyBars(sortedDailyBars, now);
+    if (session.length > 0) return session;
+  }
   const fromDaily = sliceStockChartPointsForRange(stockChartPointsFromDailyBars(sortedDailyBars), range, now);
   if (fromDaily.length > 0) return fromDaily;
   return [];
@@ -166,6 +171,17 @@ function positiveUsd(n: unknown): number | null {
   return typeof n === "number" && Number.isFinite(n) && n > 0 ? n : null;
 }
 
+async function fetchRecentDailyBarsForChartFallback(
+  ticker: string,
+  now: Date,
+): Promise<EodhdDailyBar[]> {
+  const fromDate = new Date(now);
+  fromDate.setUTCDate(fromDate.getUTCDate() - 21);
+  const bars = await fetchEodhdEodDaily(ticker, ymdUtc(fromDate), ymdUtc(now));
+  if (!bars?.length) return [];
+  return [...bars].sort((a, b) => a.date.localeCompare(b.date));
+}
+
 async function loadStockPageHotFields(
   ticker: string,
   range: StockChartRange,
@@ -178,7 +194,16 @@ async function loadStockPageHotFields(
   ]);
   const chartPointsRaw = fromSettled(chartPointsResult, "chart1D");
   const spotQuote = fromSettled(spotResult, "headerLiveSpot");
-  const points = resolveOverviewChartPoints(range, chartPointsRaw, sortedDailyFallback, now);
+
+  let dailyBars = sortedDailyFallback;
+  let points = resolveOverviewChartPoints(range, chartPointsRaw, dailyBars, now);
+  if (range === "1D" && points.length === 0) {
+    if (!dailyBars.length) {
+      dailyBars = await fetchRecentDailyBarsForChartFallback(ticker, now);
+    }
+    points = resolveOverviewChartPoints(range, chartPointsRaw, dailyBars, now);
+  }
+
   return {
     chart: { range, points },
     headerLiveSpotUsd: positiveUsd(spotQuote?.price),
@@ -309,11 +334,15 @@ export async function loadStockPageInitialData(routeTicker: string): Promise<Sto
 
   if (cached?.ticker === ticker) {
     const base = assetSnapshotPayloadToPageData(cached);
-    if (epoch.mode === "frozen") {
+    if (epoch.mode === "frozen" && base.chart.points.length > 0) {
       return base;
     }
     const hot = await loadStockPageHotFields(ticker, base.chart.range, [], new Date());
-    return { ...base, ...hot };
+    return {
+      ...base,
+      ...hot,
+      chart: hot.chart.points.length > 0 ? hot.chart : base.chart,
+    };
   }
 
   const fresh = await loadStockPageInitialDataUncached(ticker);
