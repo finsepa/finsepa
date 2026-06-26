@@ -5,6 +5,7 @@ import {
 } from "@/lib/chart/reconcile-price-change";
 import type { StockChartSeries } from "@/lib/market/stock-chart-types";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
+import { priorSessionDayChangeFromPerformance } from "@/lib/market/prior-session-day-change";
 import { getUsEquityMarketSession } from "@/lib/market/us-equity-market-session";
 
 function isPositiveUsd(n: unknown): n is number {
@@ -123,10 +124,32 @@ export function mergeSessionHeaderWithPerformanceSpot(
   if (base.isHovering) return base;
 
   const eodSpot = perf?.price;
-  const useLiveSpot = getUsEquityMarketSession(now) === "regular";
+  const session = getUsEquityMarketSession(now);
+  const useLiveSpot = session === "regular";
   const liveSpot = useLiveSpot && isPositiveUsd(sessionLiveSpotUsd) ? sessionLiveSpotUsd : null;
   const spotFromBase =
     base.displayPrice != null && Number.isFinite(base.displayPrice) ? base.displayPrice : null;
+
+  if (session !== "regular" && !base.selectionActive && !base.isHovering && chartSeries === "price") {
+    const priorSession = priorSessionDayChangeFromPerformance(
+      perf,
+      sessionPriorCloseUsd,
+    );
+    if (priorSession) {
+      return {
+        ...base,
+        loading: false,
+        empty: false,
+        displayPrice: priorSession.closePrice,
+        displayChangeAbs: priorSession.changeAbs,
+        displayChangePct: priorSession.changePct,
+        selectionChangeAbs: null,
+        selectionChangePct: null,
+        isHovering: false,
+      };
+    }
+  }
+
   const spot = useLiveSpot
     ? (liveSpot ?? spotFromBase ?? (isPositiveUsd(eodSpot) ? eodSpot : null))
     : isPositiveUsd(eodSpot)

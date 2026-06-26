@@ -47,6 +47,7 @@ import type { StockExtendedHoursHeader } from "@/lib/market/stock-extended-hours
 import { isUsListedStockHeaderMeta } from "@/lib/market/stock-header-meta";
 import type { StockChartRange, StockChartSeries } from "@/lib/market/stock-chart-types";
 import { mergeClosedMarketOverviewHeader, mergeSessionHeaderWithPerformanceSpot } from "@/lib/chart/merge-session-header-with-performance-spot";
+import { priorSessionDayChangeFromPerformance } from "@/lib/market/prior-session-day-change";
 import { getUsEquityMarketSession, isUsEquityExtendedHoursHeaderEligible, lastUsRegularSessionCloseUnix } from "@/lib/market/us-equity-market-session";
 import { STOCK_1D_LIVE_PRICE_POLL_MS } from "@/lib/chart/stock-1d-live-session-chart";
 import {
@@ -461,7 +462,8 @@ export function StockPageContent({
   }, [ticker]);
 
   useEffect(() => {
-    if (getUsEquityMarketSession(new Date()) !== "regular") return;
+    const session = getUsEquityMarketSession(new Date());
+    if (session === "closed") return;
     let cancelled = false;
     const tick = async () => {
       try {
@@ -473,7 +475,13 @@ export function StockPageContent({
         const json = (await res.json()) as { price?: unknown; previousClose?: unknown };
         const p = json.price;
         const prev = json.previousClose;
-        if (typeof p === "number" && Number.isFinite(p) && p > 0 && !cancelled) {
+        if (
+          getUsEquityMarketSession(new Date()) === "regular" &&
+          typeof p === "number" &&
+          Number.isFinite(p) &&
+          p > 0 &&
+          !cancelled
+        ) {
           setHeaderLiveSpotClient(p);
         }
         if (typeof prev === "number" && Number.isFinite(prev) && prev > 0 && !cancelled) {
@@ -524,10 +532,8 @@ export function StockPageContent({
       : null;
 
   const headerPriorCloseForMerge =
-    getUsEquityMarketSession(new Date()) === "regular"
-      ? (headerPriorCloseClient ??
-          (initialPageData?.ticker === ticker ? (initialPageData.headerPriorCloseUsd ?? null) : null))
-      : null;
+    headerPriorCloseClient ??
+    (initialPageData?.ticker === ticker ? (initialPageData.headerPriorCloseUsd ?? null) : null);
 
   const sessionSpotHeaderUi = useMemo(
     () =>
@@ -706,13 +712,39 @@ export function StockPageContent({
   ]);
 
   const extendedHoursHeaderLeft = useMemo(() => {
-    if (!showExtendedHoursHeader || !extendedHoursQuote || chartSeries !== "price") return null;
+    if (!showExtendedHoursHeader || chartSeries !== "price") return null;
+
+    const priorClose =
+      headerPriorCloseClient ??
+      (initialPageData?.ticker === ticker ? (initialPageData.headerPriorCloseUsd ?? null) : null);
+    const priorSessionDay = priorSessionDayChangeFromPerformance(
+      performanceForHeaderFallback,
+      priorClose,
+    );
+
+    if (extendedHoursQuote) {
+      return {
+        price: extendedHoursQuote.closePrice,
+        changeAbs: priorSessionDay?.changeAbs ?? extendedHoursQuote.closeChangeAbs,
+        changePct: priorSessionDay?.changePct ?? extendedHoursQuote.closeChangePct,
+      };
+    }
+
+    if (!priorSessionDay) return null;
     return {
-      price: extendedHoursQuote.closePrice,
-      changeAbs: extendedHoursQuote.closeChangeAbs,
-      changePct: extendedHoursQuote.closeChangePct,
+      price: priorSessionDay.closePrice,
+      changeAbs: priorSessionDay.changeAbs,
+      changePct: priorSessionDay.changePct,
     };
-  }, [showExtendedHoursHeader, extendedHoursQuote, chartSeries]);
+  }, [
+    showExtendedHoursHeader,
+    extendedHoursQuote,
+    chartSeries,
+    performanceForHeaderFallback,
+    headerPriorCloseClient,
+    initialPageData,
+    ticker,
+  ]);
 
   const [overviewDownloadOpen, setOverviewDownloadOpen] = useState(false);
   const [overviewDownloadSnapshot, setOverviewDownloadSnapshot] =
