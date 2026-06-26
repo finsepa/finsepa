@@ -180,16 +180,27 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
       options?: {
         /** Set after the snapshot matches what was persisted on the server. */
         fromServerSync?: boolean;
+        serverUpdatedAt?: string | null;
       },
     ) => {
       const now = Date.now();
       const normalized = ensureSnapshotActiveId(snapshot);
       const repaired = clearDuplicateWatchlistTickerCopies(normalized);
+      const syncedAt =
+        options?.fromServerSync ?
+          (() => {
+            const serverTime =
+              options.serverUpdatedAt ?
+                Date.parse(options.serverUpdatedAt)
+              : 0;
+            return !Number.isNaN(serverTime) && serverTime > 0 ? serverTime : now;
+          })()
+        : null;
       const withSyncMeta: WatchlistCollectionsSnapshot = options?.fromServerSync
         ? {
             ...repaired,
-            lastSyncedAt: now,
-            lastModifiedAt: repaired.lastModifiedAt ?? now,
+            lastSyncedAt: syncedAt ?? now,
+            lastModifiedAt: Math.max(repaired.lastModifiedAt ?? now, syncedAt ?? now),
           }
         : {
             ...repaired,
@@ -235,7 +246,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
 
           applyCollections(
             applyServerIdsPreservingLocalLayout(uploaded, collectionsRef.current),
-            { fromServerSync: true },
+            { fromServerSync: true, serverUpdatedAt: uploaded.updatedAt },
           );
           lastOk = true;
 
@@ -289,12 +300,13 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      setHydrated(false);
-      setLoaded(false);
-
       const local = options.mergeGuest
         ? mergeGuestWatchlistOnSignIn(uid)
         : loadAuthenticatedWatchlistCollections(uid);
+      const working = clearDuplicateWatchlistTickerCopies(local);
+      applyCollections(working);
+      setHydrated(true);
+      setLoaded(true);
 
       try {
         const { snapshot, warning } = await fetchWatchlistSnapshot();
@@ -302,18 +314,15 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
 
         if (warning === "db_unavailable") {
           setServerListWarning("Watchlist temporarily unavailable");
-          applyCollections(local);
           return;
         }
 
         if (!snapshot) {
           setServerListWarning(null);
-          applyCollections(local);
           return;
         }
 
         let serverSnapshot = snapshot;
-        const working = clearDuplicateWatchlistTickerCopies(local);
 
         if (
           authUser &&
@@ -355,6 +364,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
           if (uploaded) {
             applyCollections(applyMutationServerResponse(uploaded, working), {
               fromServerSync: true,
+              serverUpdatedAt: uploaded.updatedAt,
             });
             return;
           }
@@ -371,7 +381,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
             applyServerSnapshotPreservingLocalNames(serverSnapshot, working, {
               preferServerNames: true,
             }),
-            { fromServerSync: true },
+            { fromServerSync: true, serverUpdatedAt: serverSnapshot.updatedAt },
           );
           return;
         }
@@ -379,11 +389,11 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
         setServerListWarning(null);
         applyCollections(mergeServerWithLocalSnapshot(serverSnapshot, working), {
           fromServerSync: true,
+          serverUpdatedAt: serverSnapshot.updatedAt,
         });
       } catch {
         if (!cancelled) {
           setServerListWarning(null);
-          applyCollections(local);
         }
       } finally {
         if (!cancelled) {
@@ -455,7 +465,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
       if (shouldAdoptServerSnapshot(local, server)) {
         applyCollections(
           applyServerSnapshotPreservingLocalNames(server, local, { preferServerNames: true }),
-          { fromServerSync: true },
+          { fromServerSync: true, serverUpdatedAt: server.updatedAt },
         );
         setServerListWarning(null);
       }

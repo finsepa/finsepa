@@ -9,6 +9,7 @@ import { WATCHLIST_ENRICHED_LRU_MAX } from "@/lib/cache/screener-client-cache-li
 import type { WatchlistEnrichedItem } from "@/lib/watchlist/enriched-types";
 
 const STORAGE_KEY = "finsepa:watchlist:enriched:v2-lru";
+const LAST_SEGMENT_KEY = "finsepa:watchlist:enriched:last-segment";
 
 /** In-memory fallback when sessionStorage is unavailable. */
 let memoryFallback: { marketSegment: string; watchedKey: string; items: WatchlistEnrichedItem[] } | null =
@@ -24,6 +25,15 @@ export function resetWatchlistEnrichedCacheIfStale(marketSegment: string, watche
     return;
   }
   memoryFallback = null;
+}
+
+export function readLastWatchlistEnrichedMarketSegment(): string {
+  if (typeof window === "undefined") return "";
+  try {
+    return sessionStorage.getItem(LAST_SEGMENT_KEY) ?? "";
+  } catch {
+    return "";
+  }
 }
 
 export function readWatchlistEnrichedSessionCache(
@@ -58,6 +68,13 @@ export function writeWatchlistEnrichedSessionCache(
   }
   memoryFallback = { marketSegment, watchedKey, items };
   writeSegmentLruEntry(STORAGE_KEY, marketSegment, watchedKey, items, WATCHLIST_ENRICHED_LRU_MAX);
+  if (typeof window !== "undefined") {
+    try {
+      sessionStorage.setItem(LAST_SEGMENT_KEY, marketSegment);
+    } catch {
+      /* ignore */
+    }
+  }
 }
 
 export function clearWatchlistEnrichedCache(): void {

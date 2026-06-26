@@ -6,6 +6,7 @@ import {
 } from "@/lib/watchlist/apply-watchlist-identity";
 import type { WatchlistEnrichedItem } from "@/lib/watchlist/enriched-types";
 import {
+  readWatchlistEnrichedCache,
   readWatchlistEnrichedSessionCache,
   writeWatchlistEnrichedSessionCache,
 } from "@/lib/watchlist/watchlist-enriched-cache";
@@ -42,30 +43,41 @@ export async function fetchWatchlistEnriched(
   watchedKey: string,
   tickers: string[],
 ): Promise<WatchlistEnrichedResponse> {
-  const marketCacheSegment = await fetchUsMarketCacheSegment();
-  const cacheKey = `${marketCacheSegment}|${watchedKey}`;
-
-  const cached = marketCacheSegment
-    ? readWatchlistEnrichedSessionCache(marketCacheSegment, watchedKey)
-    : null;
-  if (cached) {
-    const withIdentity = applyWatchlistScreenerIdentity(cached);
+  const memoryCached = readWatchlistEnrichedCache(watchedKey);
+  if (memoryCached?.length) {
+    const withIdentity = applyWatchlistScreenerIdentity(memoryCached);
     const stocks = withIdentity.filter((r) => r.kind === "stock");
     const crypto = withIdentity.filter((r) => r.kind === "crypto");
     const indices = withIdentity.filter((r) => r.kind === "index");
-    return { stocks, crypto, indices, marketCacheSegment };
+    return { stocks, crypto, indices, marketCacheSegment: "" };
   }
 
-  const existing = inflight.get(cacheKey);
+  const inflightKey = watchedKey;
+  const existing = inflight.get(inflightKey);
   if (existing) return existing;
 
   const promise = (async () => {
+    const marketCacheSegment = await fetchUsMarketCacheSegment();
+    const sessionCached = marketCacheSegment
+      ? readWatchlistEnrichedSessionCache(marketCacheSegment, watchedKey)
+      : null;
+    if (sessionCached) {
+      const withIdentity = applyWatchlistScreenerIdentity(sessionCached);
+      return {
+        stocks: withIdentity.filter((r) => r.kind === "stock"),
+        crypto: withIdentity.filter((r) => r.kind === "crypto"),
+        indices: withIdentity.filter((r) => r.kind === "index"),
+        marketCacheSegment,
+      };
+    }
+
     const res = await watchlistApiFetch("/api/watchlist/enrich", {
       method: "POST",
       cache: "no-store",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ tickers }),
     });
+
     if (!res.ok) throw new Error("Watchlist enrich failed");
     const data = (await res.json()) as {
       stocks?: WatchlistEnrichedItem[];
@@ -91,10 +103,10 @@ export async function fetchWatchlistEnriched(
     };
   })();
 
-  inflight.set(cacheKey, promise);
+  inflight.set(inflightKey, promise);
   try {
     return await promise;
   } finally {
-    inflight.delete(cacheKey);
+    inflight.delete(inflightKey);
   }
 }

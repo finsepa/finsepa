@@ -6,7 +6,8 @@ import { applyWatchlistScreenerIdentity, persistWatchlistStockIdentities } from 
 import { WATCHLIST_MUTATED_EVENT } from "@/lib/watchlist/constants";
 import type { WatchlistEnrichedItem } from "@/lib/watchlist/enriched-types";
 import { fetchWatchlistEnriched } from "@/lib/watchlist/fetch-watchlist-enriched";
-import { clearWatchlistEnrichedCache } from "@/lib/watchlist/watchlist-enriched-cache";
+import { buildWatchlistShellItems } from "@/lib/watchlist/watchlist-shell-items";
+import { clearWatchlistEnrichedCache, readLastWatchlistEnrichedMarketSegment, readWatchlistEnrichedCache, readWatchlistEnrichedSessionCache } from "@/lib/watchlist/watchlist-enriched-cache";
 import { sortEnrichedItemsByTickerOrder } from "@/lib/watchlist/sort-enriched-items";
 import { isWatchlistTickerWatched } from "@/lib/watchlist/normalize-storage-key";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
@@ -41,6 +42,32 @@ export type UseWatchlistEnrichedItemsOptions = {
   /** When false, no enrich HTTP until the user opens the watchlist (e.g. expands the rail). */
   enabled?: boolean;
 };
+
+function primeItemsFromCacheOrShell(tickers: string[]): WatchlistEnrichedItem[] {
+  const watchedKey = tickers.join("|");
+  const watchedSet = new Set(tickers);
+
+  const memory = readWatchlistEnrichedCache(watchedKey);
+  if (memory?.length) {
+    return sortEnrichedItemsByTickerOrder(
+      applyWatchlistScreenerIdentity(memory).filter((row) => itemStillWatched(row, watchedSet)),
+      tickers,
+    );
+  }
+
+  const segment = readLastWatchlistEnrichedMarketSegment();
+  if (segment) {
+    const session = readWatchlistEnrichedSessionCache(segment, watchedKey);
+    if (session?.length) {
+      return sortEnrichedItemsByTickerOrder(
+        applyWatchlistScreenerIdentity(session).filter((row) => itemStillWatched(row, watchedSet)),
+        tickers,
+      );
+    }
+  }
+
+  return sortEnrichedItemsByTickerOrder(buildWatchlistShellItems(tickers), tickers);
+}
 
 export function useWatchlistEnrichedItems(options: UseWatchlistEnrichedItemsOptions = {}) {
   const { enabled = true } = options;
@@ -122,21 +149,10 @@ export function useWatchlistEnrichedItems(options: UseWatchlistEnrichedItemsOpti
     loadGenRef.current += 1;
     setError(null);
 
-    setItems((prev) => {
-      const watchedSet = new Set(watchedTickers);
-      const next = sortEnrichedItemsByTickerOrder(
-        prev.filter((row) => itemStillWatched(row, watchedSet)),
-        watchedTickers,
-      );
-      if (next.length === 0) {
-        everHadRowsRef.current = false;
-        setReady(false);
-      } else {
-        setReady(true);
-        everHadRowsRef.current = true;
-      }
-      return next;
-    });
+    const primed = primeItemsFromCacheOrShell(watchedTickers);
+    setItems(primed);
+    setReady(primed.length > 0);
+    everHadRowsRef.current = primed.length > 0;
 
     void load();
   }, [storageHydrated, watchedKey, load, watchedTickers, enabled]);

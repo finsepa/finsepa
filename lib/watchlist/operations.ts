@@ -17,6 +17,7 @@ import type {
   WatchlistServerCollection,
   WatchlistServerSnapshot,
   WatchlistSyncCollectionInput,
+  WatchlistUserStateRow,
 } from "@/lib/watchlist/types";
 
 const COLLECTIONS_TABLE = "watchlist_collections";
@@ -133,18 +134,42 @@ async function listItemsForUser(supabase: SupabaseClient, userId: string): Promi
   return (data ?? []) as WatchlistRow[];
 }
 
-async function getUserState(
+async function getUserStateRow(
   supabase: SupabaseClient,
   userId: string,
-): Promise<string | null> {
+): Promise<WatchlistUserStateRow | null> {
   const { data, error } = await supabase
     .from(STATE_TABLE)
-    .select("active_collection_id")
+    .select("user_id,active_collection_id,updated_at")
     .eq("user_id", userId)
     .maybeSingle();
 
   if (error) throw new Error(error.message);
-  return data?.active_collection_id ?? null;
+  return data ? (data as WatchlistUserStateRow) : null;
+}
+
+async function getUserState(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<string | null> {
+  const row = await getUserStateRow(supabase, userId);
+  return row?.active_collection_id ?? null;
+}
+
+async function touchWatchlistUserState(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<void> {
+  const row = await getUserStateRow(supabase, userId);
+  const { error } = await supabase.from(STATE_TABLE).upsert(
+    {
+      user_id: userId,
+      active_collection_id: row?.active_collection_id ?? null,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "user_id" },
+  );
+  if (error) throw new Error(error.message);
 }
 
 async function setActiveCollectionId(
@@ -188,7 +213,7 @@ function buildSnapshot(
       ? activeCollectionId
       : (collections[0]?.id ?? "");
 
-  return { collections: lists, activeCollectionId: activeId };
+  return { collections: lists, activeCollectionId: activeId, updatedAt: null };
 }
 
 export async function ensureDefaultWatchlistCollection(
@@ -227,12 +252,14 @@ export async function getWatchlistSnapshot(
     collections = await listCollectionsForUser(supabase, userId);
   }
 
-  const [items, activeCollectionId] = await Promise.all([
+  const [items, stateRow] = await Promise.all([
     listItemsForUser(supabase, userId),
-    getUserState(supabase, userId),
+    getUserStateRow(supabase, userId),
   ]);
 
+  const activeCollectionId = stateRow?.active_collection_id ?? null;
   const snapshot = buildSnapshot(collections, items, activeCollectionId);
+  snapshot.updatedAt = stateRow?.updated_at ?? null;
   if (!snapshot.activeCollectionId && snapshot.collections[0]) {
     await setActiveCollectionId(supabase, userId, snapshot.collections[0].id);
     snapshot.activeCollectionId = snapshot.collections[0].id;
@@ -439,6 +466,7 @@ export async function addWatchlistTicker(
     .maybeSingle();
 
   if (!error && data) {
+    await touchWatchlistUserState(supabase, userId);
     return { row: data as WatchlistRow, created: true };
   }
 
@@ -487,7 +515,10 @@ export async function removeWatchlistTicker(
         .select("id");
 
       if (error) throw new Error(error.message);
-      if ((deletedRows?.length ?? 0) > 0) return { removed: true };
+      if ((deletedRows?.length ?? 0) > 0) {
+        await touchWatchlistUserState(supabase, userId);
+        return { removed: true };
+      }
     }
     return { removed: false };
   }
@@ -501,7 +532,10 @@ export async function removeWatchlistTicker(
       .select("id");
 
     if (error) throw new Error(error.message);
-    if ((deletedRows?.length ?? 0) > 0) return { removed: true };
+    if ((deletedRows?.length ?? 0) > 0) {
+      await touchWatchlistUserState(supabase, userId);
+      return { removed: true };
+    }
   }
 
   return { removed: false };

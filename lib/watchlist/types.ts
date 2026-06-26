@@ -36,6 +36,8 @@ export type WatchlistServerCollection = {
 export type WatchlistServerSnapshot = {
   collections: WatchlistServerCollection[];
   activeCollectionId: string;
+  /** From `watchlist_user_state.updated_at` — used for cross-device conflict resolution. */
+  updatedAt?: string | null;
 };
 
 export type WatchlistSyncCollectionInput = {

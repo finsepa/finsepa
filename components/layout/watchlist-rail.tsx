@@ -435,7 +435,7 @@ export function WatchlistRail() {
   useEffect(() => setMounted(true), []);
   const { collapsed, toggleCollapsed, outerWidthPx } = useWatchlistRailLayout();
   const expanded = !collapsed;
-  const { items, empty, showSkeleton, error, pricesLoading, loading } = useWatchlistEnrichedItems({
+  const { items, empty, error, pricesLoading, loading } = useWatchlistEnrichedItems({
     enabled: expanded,
   });
   const {
@@ -464,7 +464,7 @@ export function WatchlistRail() {
     activeSections,
     activeTickerSections,
   );
-  const showLoadingState = !mounted || !storageHydrated || showSkeleton;
+  const showLoadingState = !mounted || !storageHydrated;
   const showRailContent = mounted && storageHydrated;
 
   if (isFullWatchlistPage(pathname)) {

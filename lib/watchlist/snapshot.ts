@@ -185,7 +185,13 @@ export function localSnapshotShouldUploadFirst(
   local: WatchlistCollectionsSnapshot,
   server: WatchlistServerSnapshot,
 ): boolean {
-  if (localHasUnsyncedChanges(local)) return true;
+  if (shouldAdoptServerSnapshot(local, server)) return false;
+  if (localHasUnsyncedChanges(local)) {
+    if (serverChangedSinceLocalSync(local, server) && !localIsNewerThanServer(local, server)) {
+      return false;
+    }
+    return true;
+  }
   if (localHasRemovalsPendingSync(local, server)) return true;
   return localSnapshotNeedsServerUpload(local, server);
 }
@@ -318,6 +324,45 @@ function tickerSetsEqual(a: string[], b: string[]): boolean {
   return true;
 }
 
+export function serverUpdatedAtMs(server: WatchlistServerSnapshot): number {
+  const raw = server.updatedAt;
+  if (typeof raw !== "string" || !raw) return 0;
+  const parsed = Date.parse(raw);
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
+
+export function localTickerMembershipMatchesServer(
+  local: WatchlistCollectionsSnapshot,
+  server: WatchlistServerSnapshot,
+): boolean {
+  if (local.lists.length !== server.collections.length) return false;
+  for (const localList of local.lists) {
+    const serverList = findServerCollectionForLocalList(localList, server);
+    if (!serverList) return false;
+    if (!tickerSetsEqual(localList.tickers, serverList.tickers)) return false;
+  }
+  return true;
+}
+
+function serverChangedSinceLocalSync(
+  local: WatchlistCollectionsSnapshot,
+  server: WatchlistServerSnapshot,
+): boolean {
+  const serverTime = serverUpdatedAtMs(server);
+  if (serverTime <= 0) return false;
+  return serverTime > (local.lastSyncedAt ?? 0);
+}
+
+function localIsNewerThanServer(
+  local: WatchlistCollectionsSnapshot,
+  server: WatchlistServerSnapshot,
+): boolean {
+  const serverTime = serverUpdatedAtMs(server);
+  const localTime = local.lastModifiedAt ?? 0;
+  if (serverTime <= 0) return localTime > 0;
+  return localTime > serverTime;
+}
+
 export function localListsHaveDistinctTickerSets(local: WatchlistCollectionsSnapshot): boolean {
   const signatures = local.lists.map((list) => [...list.tickers].sort().join("|"));
   return new Set(signatures).size > 1;
@@ -390,8 +435,24 @@ export function shouldAdoptServerSnapshot(
   local: WatchlistCollectionsSnapshot,
   server: WatchlistServerSnapshot,
 ): boolean {
-  if (localHasUnsyncedChanges(local)) return false;
   if (localHasRemovalsPendingSync(local, server)) return false;
+
+  if (
+    !localHasUnsyncedChanges(local) &&
+    !localTickerMembershipMatchesServer(local, server)
+  ) {
+    return true;
+  }
+
+  if (
+    localHasUnsyncedChanges(local) &&
+    serverChangedSinceLocalSync(local, server) &&
+    !localIsNewerThanServer(local, server)
+  ) {
+    return true;
+  }
+
+  if (localHasUnsyncedChanges(local)) return false;
   if (localIsStaleSupersetOfServer(local, server)) return true;
   if (localIsMissingServerSections(local, server)) return true;
   if (
@@ -473,6 +534,13 @@ export function localSnapshotNeedsServerUpload(
   }
 
   if (perListMismatch) {
+    if (
+      !localHasUnsyncedChanges(local) &&
+      localHasTickersAheadOfServer(local, server) &&
+      !localHasTickersBehindServer(local, server)
+    ) {
+      return false;
+    }
     return (
       localListsHaveDistinctTickerSets(local) ||
       localHasTickersAheadOfServer(local, server) ||
@@ -482,10 +550,10 @@ export function localSnapshotNeedsServerUpload(
 
   const serverUnion = new Set(server.collections.flatMap((c) => c.tickers));
   const localUnion = new Set(local.lists.flatMap((l) => l.tickers));
-  if (localUnion.size > serverUnion.size) return true;
+  if (localUnion.size > serverUnion.size) return localHasUnsyncedChanges(local);
 
   for (const ticker of localUnion) {
-    if (!serverUnion.has(ticker)) return true;
+    if (!serverUnion.has(ticker)) return localHasUnsyncedChanges(local);
   }
   if (localHasSectionsAheadOfServer(local, server)) return true;
   return false;
