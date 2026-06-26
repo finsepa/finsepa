@@ -593,7 +593,8 @@ export async function syncWatchlistFromClient(
 
     const current = items.filter((item) => item.collection_id === collection.id);
     for (const item of current) {
-      if (!desiredSet.has(item.ticker)) {
+      const stored = normalizeWatchlistTicker(item.ticker);
+      if (!desiredSet.has(stored)) {
         await supabase.from(ITEMS_TABLE).delete().eq("id", item.id);
       }
     }

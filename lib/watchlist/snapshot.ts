@@ -14,6 +14,7 @@ import {
   writeWatchlistCollections,
 } from "@/lib/watchlist/collections";
 import type { WatchlistServerSnapshot, WatchlistSyncCollectionInput } from "@/lib/watchlist/types";
+import { normalizeWatchlistStorageKey } from "@/lib/watchlist/normalize-storage-key";
 
 function findServerCollectionForLocalList(
   localList: WatchlistCollection,
@@ -133,6 +134,62 @@ export function applyServerSnapshotPreservingLocalNames(
   return clearDuplicateWatchlistTickerCopies(ensureSnapshotActiveId({ ...draft, activeId }));
 }
 
+function localHasRemovalsPendingSync(
+  local: WatchlistCollectionsSnapshot,
+  server: WatchlistServerSnapshot,
+): boolean {
+  let foundRemoval = false;
+
+  for (const localList of local.lists) {
+    const serverList = findServerCollectionForLocalList(localList, server);
+    if (!serverList) continue;
+
+    const localKeys = new Set(localList.tickers.map(normalizeWatchlistStorageKey));
+    const serverKeys = serverList.tickers.map(normalizeWatchlistStorageKey);
+    const serverKeySet = new Set(serverKeys);
+
+    if (localList.tickers.some((ticker) => !serverKeySet.has(normalizeWatchlistStorageKey(ticker)))) {
+      return false;
+    }
+
+    if (serverKeys.some((ticker) => !localKeys.has(ticker))) {
+      foundRemoval = true;
+    }
+
+    const localLayout = {
+      sections: localList.sections,
+      tickerSections: localList.tickerSections,
+    };
+    const serverLayout = {
+      sections: serverList.sections,
+      tickerSections: serverList.tickerSections,
+    };
+    if (
+      serverHasSectionsLayout(serverLayout) &&
+      serverHasSectionsLayout(localLayout) &&
+      !sectionsLayoutsEqual(localLayout, serverLayout)
+    ) {
+      return false;
+    }
+  }
+
+  return foundRemoval;
+}
+
+/** Local edits not yet confirmed by a successful server sync. */
+export function localHasUnsyncedChanges(local: WatchlistCollectionsSnapshot): boolean {
+  return (local.lastModifiedAt ?? 0) > (local.lastSyncedAt ?? 0);
+}
+
+export function localSnapshotShouldUploadFirst(
+  local: WatchlistCollectionsSnapshot,
+  server: WatchlistServerSnapshot,
+): boolean {
+  if (localHasUnsyncedChanges(local)) return true;
+  if (localHasRemovalsPendingSync(local, server)) return true;
+  return localSnapshotNeedsServerUpload(local, server);
+}
+
 function localHasTickersBehindServer(
   local: WatchlistCollectionsSnapshot,
   server: WatchlistServerSnapshot,
@@ -188,7 +245,7 @@ export function mergeServerIdsWithLocalSnapshot(
   server: WatchlistServerSnapshot,
   local: WatchlistCollectionsSnapshot,
   activeCollectionName: string,
-  options?: { preferServerSections?: boolean },
+  options?: { preferServerSections?: boolean; preferLocalTickers?: boolean },
 ): WatchlistCollectionsSnapshot | null {
   if (!local.lists.length) return null;
 
@@ -218,7 +275,9 @@ export function mergeServerIdsWithLocalSnapshot(
     return {
       id: serverList?.id ?? localList.id,
       name: localList.name,
-      tickers: mergeListTickers(localList.tickers, serverList?.tickers ?? []),
+      tickers: options?.preferLocalTickers
+        ? [...localList.tickers]
+        : mergeListTickers(localList.tickers, serverList?.tickers ?? []),
       sections: [...layout.sections],
       tickerSections: { ...layout.tickerSections },
     };
@@ -291,7 +350,9 @@ export function mergeServerWithLocalSnapshot(
     return applyServerSnapshotPreservingLocalNames(server, local, { preferServerNames: true });
   }
   const activeName = getActiveWatchlistCollection(local).name;
-  const merged = mergeServerIdsWithLocalSnapshot(server, local, activeName);
+  const merged = mergeServerIdsWithLocalSnapshot(server, local, activeName, {
+    preferLocalTickers: true,
+  });
   return clearDuplicateWatchlistTickerCopies(ensureSnapshotActiveId(merged ?? local));
 }
 
@@ -329,6 +390,8 @@ export function shouldAdoptServerSnapshot(
   local: WatchlistCollectionsSnapshot,
   server: WatchlistServerSnapshot,
 ): boolean {
+  if (localHasUnsyncedChanges(local)) return false;
+  if (localHasRemovalsPendingSync(local, server)) return false;
   if (localIsStaleSupersetOfServer(local, server)) return true;
   if (localIsMissingServerSections(local, server)) return true;
   if (
@@ -387,12 +450,8 @@ export function localSnapshotNeedsServerUpload(
   server: WatchlistServerSnapshot,
 ): boolean {
   if (shouldAdoptServerSnapshot(local, server)) return false;
-  if (
-    localHasTickersBehindServer(local, server) &&
-    !localHasTickersAheadOfServer(local, server)
-  ) {
-    return false;
-  }
+  if (localHasUnsyncedChanges(local)) return true;
+  if (localHasRemovalsPendingSync(local, server)) return true;
   if (serverListsHaveDuplicateTickerSets(server)) return true;
   if (local.lists.length !== server.collections.length) return true;
   if (hasClientOnlyWatchlistIds(local)) return true;
@@ -449,6 +508,7 @@ export function applyMutationServerResponse(
   const activeName = getActiveWatchlistCollection(local).name;
   const merged = mergeServerIdsWithLocalSnapshot(server, local, activeName, {
     preferServerSections: true,
+    preferLocalTickers: true,
   });
   return clearDuplicateWatchlistTickerCopies(ensureSnapshotActiveId(merged ?? local));
 }
@@ -459,7 +519,9 @@ export function applyServerIdsPreservingLocalLayout(
   local: WatchlistCollectionsSnapshot,
 ): WatchlistCollectionsSnapshot {
   const activeName = getActiveWatchlistCollection(local).name;
-  const merged = mergeServerIdsWithLocalSnapshot(server, local, activeName);
+  const merged = mergeServerIdsWithLocalSnapshot(server, local, activeName, {
+    preferLocalTickers: true,
+  });
   return clearDuplicateWatchlistTickerCopies(ensureSnapshotActiveId(merged ?? local));
 }
 

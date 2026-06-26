@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { GripVertical, Maximize2, PanelLeftOpen, Star } from "@/lib/icons";
+import { GripVertical, Maximize2, PanelLeftOpen, Star, X } from "@/lib/icons";
 
 import { WatchlistEmptyState } from "@/components/watchlist/watchlist-empty-state";
 import { WatchlistOptionsMenu } from "@/components/watchlist/watchlist-options-menu";
@@ -56,9 +56,9 @@ function formatRailPercent(value: number | null): string {
 
 function RailPriceSkeleton() {
   return (
-    <div className="ml-auto flex shrink-0 items-center gap-4">
+    <div className="ml-auto flex shrink-0 items-center gap-3">
       <div className="h-5 w-[4.5rem] animate-pulse rounded bg-[#E4E4E7]" />
-      <div className="h-5 w-11 animate-pulse rounded bg-[#E4E4E7]" />
+      <div className="h-5 w-12 animate-pulse rounded bg-[#E4E4E7]" />
     </div>
   );
 }
@@ -83,7 +83,7 @@ function RailChange({ value }: { value: number | null }) {
   return (
     <span
       className={cn(
-        "text-[14px] font-normal leading-5 tabular-nums",
+        "flex h-5 w-full items-center justify-end text-[14px] font-normal leading-5 tabular-nums",
         positive ? "text-[#16A34A]" : "text-[#DC2626]",
       )}
     >
@@ -101,6 +101,7 @@ function WatchlistRailRow({
   pricesLoading,
   loading,
   onMoveItem,
+  onRemove,
 }: {
   row: WatchlistEnrichedItem;
   globalIndex: number;
@@ -110,6 +111,7 @@ function WatchlistRailRow({
   pricesLoading: boolean;
   loading: boolean;
   onMoveItem: (fromIndex: number, target: WatchlistDropTarget) => void;
+  onRemove: (storageKey: string) => void;
 }) {
   const [dragOver, setDragOver] = useState(false);
   const symbolLabel =
@@ -149,7 +151,7 @@ function WatchlistRailRow({
         onMoveItem(payload.globalIndex, { kind: "row", toIndex: globalIndex, sectionId });
       }}
       className={cn(
-        "group flex min-w-0 items-center gap-2 rounded-lg px-2 py-1.5 transition-colors",
+        "group flex min-w-0 items-center gap-1 rounded-lg px-2 py-1.5 transition-colors",
         dragOver ? "bg-[#E4E4E7]" : "hover:bg-[#F4F4F5]",
       )}
     >
@@ -167,33 +169,43 @@ function WatchlistRailRow({
         <span className="min-w-0 shrink truncate text-[14px] font-normal leading-5 text-[#09090B] underline-offset-2 decoration-[#71717A] group-hover:underline">
           {symbolLabel}
         </span>
-        <div className="ml-auto flex shrink-0 items-center gap-4 font-['Inter'] tabular-nums">
-          {showQuoteSkeleton ? (
-            <RailPriceSkeleton />
-          ) : (
-            <>
-              {priceText ? (
-                <span className="w-[4.5rem] shrink-0 text-right text-[14px] font-normal leading-5 text-[#09090B]">
-                  {priceText}
-                </span>
-              ) : (
-                <span className="w-[4.5rem] shrink-0" aria-hidden />
-              )}
-              <div className="relative h-5 w-11 shrink-0">
-                <span className="absolute inset-0 flex items-center justify-end group-hover:invisible">
-                  <RailChange value={row.pct1d} />
-                </span>
-                <span
-                  className="absolute inset-0 hidden cursor-grab items-center justify-end text-[#71717A] group-hover:flex active:cursor-grabbing"
-                  aria-hidden
-                >
-                  <GripVertical className="h-4 w-4" strokeWidth={2} />
-                </span>
-              </div>
-            </>
-          )}
-        </div>
       </Link>
+      {showQuoteSkeleton ? (
+        <RailPriceSkeleton />
+      ) : (
+        <div className="ml-auto flex shrink-0 items-center gap-3 font-['Inter'] tabular-nums">
+          {priceText ? (
+            <span className="shrink-0 text-right text-[14px] font-normal leading-5 text-[#09090B]">
+              {priceText}
+            </span>
+          ) : null}
+          <div className="relative h-5 w-12 shrink-0">
+            <span className="absolute inset-0 flex items-center justify-end group-hover:invisible">
+              <RailChange value={row.pct1d} />
+            </span>
+            <div className="absolute inset-0 hidden items-center justify-end gap-0.5 group-hover:flex">
+              <button
+                type="button"
+                aria-label={`Remove ${symbolLabel} from watchlist`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onRemove(row.storageKey);
+                }}
+                className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-[#A1A1AA] outline-none hover:bg-[#EBEBEB] hover:text-[#71717A] focus-visible:ring-2 focus-visible:ring-[#09090B]/10"
+              >
+                <X className="h-3.5 w-3.5" strokeWidth={2} />
+              </button>
+              <span
+                className="flex h-5 w-5 shrink-0 cursor-grab items-center justify-center text-[#71717A] active:cursor-grabbing"
+                aria-hidden
+              >
+                <GripVertical className="h-4 w-4" strokeWidth={2} />
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -209,6 +221,7 @@ function WatchlistRailSectionGroup({
   pricesLoading,
   loading,
   onMoveItem,
+  onRemove,
   onRenameSection,
   onDeleteSection,
   onReorderSection,
@@ -223,6 +236,7 @@ function WatchlistRailSectionGroup({
   pricesLoading: boolean;
   loading: boolean;
   onMoveItem: (fromIndex: number, target: WatchlistDropTarget) => void;
+  onRemove: (storageKey: string) => void;
   onRenameSection: (sectionId: string, name: string) => void;
   onDeleteSection: (sectionId: string) => void;
   onReorderSection: (fromSectionIndex: number, toSectionIndex: number) => void;
@@ -255,6 +269,7 @@ function WatchlistRailSectionGroup({
               pricesLoading={pricesLoading}
               loading={loading}
               onMoveItem={onMoveItem}
+              onRemove={onRemove}
             />
           ))
         : null}
@@ -290,6 +305,7 @@ function WatchlistRailScrollContent({
   pricesLoading,
   loading,
   moveActiveWatchlistItem,
+  removeFromActiveWatchlist,
   renameActiveSection,
   deleteActiveSection,
   reorderActiveSection,
@@ -304,6 +320,7 @@ function WatchlistRailScrollContent({
   pricesLoading: boolean;
   loading: boolean;
   moveActiveWatchlistItem: (fromIndex: number, target: WatchlistDropTarget) => void;
+  removeFromActiveWatchlist: (storageKey: string) => void;
   renameActiveSection: (sectionId: string, name: string) => void;
   deleteActiveSection: (sectionId: string) => void;
   reorderActiveSection: (fromSectionIndex: number, toSectionIndex: number) => void;
@@ -335,6 +352,7 @@ function WatchlistRailScrollContent({
           pricesLoading={pricesLoading}
           loading={loading}
           onMoveItem={moveActiveWatchlistItem}
+          onRemove={removeFromActiveWatchlist}
         />
       ))}
       {railGroups.sections.map(({ section, rows }, sectionIndex) => (
@@ -350,6 +368,7 @@ function WatchlistRailScrollContent({
           pricesLoading={pricesLoading}
           loading={loading}
           onMoveItem={moveActiveWatchlistItem}
+          onRemove={removeFromActiveWatchlist}
           onRenameSection={renameActiveSection}
           onDeleteSection={deleteActiveSection}
           onReorderSection={reorderActiveSection}
@@ -435,6 +454,7 @@ export function WatchlistRail() {
     reorderActiveSection,
     switchWatchlist,
     moveActiveWatchlistItem,
+    removeFromActiveWatchlist,
     storageHydrated,
   } = useWatchlist();
 
@@ -527,6 +547,7 @@ export function WatchlistRail() {
                   pricesLoading={pricesLoading}
                   loading={loading}
                   moveActiveWatchlistItem={moveActiveWatchlistItem}
+                  removeFromActiveWatchlist={removeFromActiveWatchlist}
                   renameActiveSection={renameActiveSection}
                   deleteActiveSection={deleteActiveSection}
                   reorderActiveSection={reorderActiveSection}

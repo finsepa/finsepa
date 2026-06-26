@@ -13,6 +13,14 @@ import {
 import { toast } from "sonner";
 
 import { toastWatchlistCreated } from "@/lib/watchlist/watchlist-created-toast";
+import {
+  toastWatchlistAddFailed,
+  toastWatchlistAdded,
+  toastWatchlistNotReady,
+  toastWatchlistRemoveFailed,
+  toastWatchlistRemoved,
+  toastWatchlistSyncFailed,
+} from "@/lib/watchlist/watchlist-mutation-toast";
 import type { User } from "@supabase/supabase-js";
 
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
@@ -84,7 +92,7 @@ import {
   applyServerSnapshotPreservingLocalNames,
   findCollectionIdByName,
   hasClientOnlyWatchlistIds,
-  localSnapshotNeedsServerUpload,
+  localSnapshotShouldUploadFirst,
   localSnapshotToSyncInput,
   mergeServerIdsWithLocalSnapshot,
   mergeServerWithLocalSnapshot,
@@ -166,23 +174,44 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
     [collections],
   );
 
-  const applyCollections = useCallback((snapshot: WatchlistCollectionsSnapshot) => {
-    const normalized = ensureSnapshotActiveId(snapshot);
-    const repaired = clearDuplicateWatchlistTickerCopies(normalized);
-    const active = getActiveWatchlistCollection(repaired);
-    const orderedTickers = active.tickers.map(normalizeTicker);
-    setCollections(repaired);
-    setWatchedTickers(orderedTickers);
-    setWatched(new Set(orderedTickers));
-    writeWatchlistCollections(userIdRef.current, repaired);
-    if (!userIdRef.current && unionWatchlistTickers(repaired).length > 0) {
-      markGuestWatchlistPendingMerge();
-    }
-    if (userIdRef.current) {
-      clearGuestWatchlistStorage(userIdRef.current);
-    }
-    writeWatchlistLocal(active.tickers, userIdRef.current, []);
-  }, []);
+  const applyCollections = useCallback(
+    (
+      snapshot: WatchlistCollectionsSnapshot,
+      options?: {
+        /** Set after the snapshot matches what was persisted on the server. */
+        fromServerSync?: boolean;
+      },
+    ) => {
+      const now = Date.now();
+      const normalized = ensureSnapshotActiveId(snapshot);
+      const repaired = clearDuplicateWatchlistTickerCopies(normalized);
+      const withSyncMeta: WatchlistCollectionsSnapshot = options?.fromServerSync
+        ? {
+            ...repaired,
+            lastSyncedAt: now,
+            lastModifiedAt: repaired.lastModifiedAt ?? now,
+          }
+        : {
+            ...repaired,
+            lastModifiedAt: now,
+            lastSyncedAt: repaired.lastSyncedAt,
+          };
+      const active = getActiveWatchlistCollection(withSyncMeta);
+      const orderedTickers = active.tickers.map(normalizeTicker);
+      setCollections(withSyncMeta);
+      setWatchedTickers(orderedTickers);
+      setWatched(new Set(orderedTickers));
+      writeWatchlistCollections(userIdRef.current, withSyncMeta);
+      if (!userIdRef.current && unionWatchlistTickers(withSyncMeta).length > 0) {
+        markGuestWatchlistPendingMerge();
+      }
+      if (userIdRef.current) {
+        clearGuestWatchlistStorage(userIdRef.current);
+      }
+      writeWatchlistLocal(active.tickers, userIdRef.current, []);
+    },
+    [],
+  );
 
   const persistSnapshotToServer = useCallback(
     async (_snapshot?: WatchlistCollectionsSnapshot): Promise<boolean> => {
@@ -206,6 +235,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
 
           applyCollections(
             applyServerIdsPreservingLocalLayout(uploaded, collectionsRef.current),
+            { fromServerSync: true },
           );
           lastOk = true;
 
@@ -320,29 +350,36 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
           return;
         }
 
+        if (localSnapshotShouldUploadFirst(working, serverSnapshot)) {
+          const uploaded = await syncWatchlistSnapshotToServer(localSnapshotToSyncInput(working));
+          if (uploaded) {
+            applyCollections(applyMutationServerResponse(uploaded, working), {
+              fromServerSync: true,
+            });
+            return;
+          }
+          setServerListWarning(
+            "Watchlist saved on this device only — could not sync sections to your account yet.",
+          );
+          applyCollections(working);
+          return;
+        }
+
         if (shouldAdoptServerSnapshot(working, serverSnapshot)) {
           setServerListWarning(null);
           applyCollections(
             applyServerSnapshotPreservingLocalNames(serverSnapshot, working, {
               preferServerNames: true,
             }),
+            { fromServerSync: true },
           );
           return;
         }
 
-        if (localSnapshotNeedsServerUpload(working, serverSnapshot)) {
-          const uploaded = await syncWatchlistSnapshotToServer(localSnapshotToSyncInput(working));
-          if (uploaded) {
-            applyCollections(applyMutationServerResponse(uploaded, working));
-            return;
-          }
-          setServerListWarning(
-            "Watchlist saved on this device only — could not sync sections to your account yet.",
-          );
-        }
-
         setServerListWarning(null);
-        applyCollections(mergeServerWithLocalSnapshot(serverSnapshot, working));
+        applyCollections(mergeServerWithLocalSnapshot(serverSnapshot, working), {
+          fromServerSync: true,
+        });
       } catch {
         if (!cancelled) {
           setServerListWarning(null);
@@ -402,23 +439,24 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
       const server = await refreshWatchlistSnapshotFromServer();
       if (cancelled || !server) return;
 
-      if (shouldAdoptServerSnapshot(local, server)) {
-        applyCollections(
-          applyServerSnapshotPreservingLocalNames(server, local, { preferServerNames: true }),
-        );
-        setServerListWarning(null);
+      if (localSnapshotShouldUploadFirst(local, server)) {
+        const synced = await persistSnapshotToServer(local);
+        if (cancelled) return;
+        if (!synced) {
+          setServerListWarning(
+            "Watchlist saved on this device only — could not sync sections to your account yet.",
+          );
+        } else {
+          setServerListWarning(null);
+        }
         return;
       }
 
-      if (!localSnapshotNeedsServerUpload(local, server)) return;
-
-      const synced = await persistSnapshotToServer(local);
-      if (cancelled) return;
-      if (!synced) {
-        setServerListWarning(
-          "Watchlist saved on this device only — could not sync sections to your account yet.",
+      if (shouldAdoptServerSnapshot(local, server)) {
+        applyCollections(
+          applyServerSnapshotPreservingLocalNames(server, local, { preferServerNames: true }),
+          { fromServerSync: true },
         );
-      } else {
         setServerListWarning(null);
       }
     })();
@@ -430,34 +468,40 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
 
   const addToWatchlist = useCallback(
     (storageKey: string, watchlistId: string) => {
-      if (!hydratedRef.current || isPlaceholderWatchlistId(watchlistId)) return;
+      if (!hydratedRef.current) {
+        toastWatchlistNotReady();
+        return;
+      }
+      if (isPlaceholderWatchlistId(watchlistId)) {
+        toastWatchlistAddFailed();
+        return;
+      }
 
       const ticker = normalizeTicker(storageKey);
       const current = collectionsRef.current;
       const resolvedId = resolveWatchlistCollectionId(current, watchlistId);
       if (!resolvedId) {
-        toast.error("Could not add to watchlist.");
+        toastWatchlistAddFailed();
         return;
       }
+
+      const targetList =
+        current.lists.find((list) => list.id === resolvedId) ??
+        getActiveWatchlistCollection(current);
 
       const snapshot = addTickerToSnapshot(current, resolvedId, storageKey);
       if (!snapshot) {
-        toast.error("Could not add to watchlist.");
+        toastWatchlistAddFailed();
         return;
       }
       applyCollections(snapshot);
+      toastWatchlistAdded(storageKey, targetList.name);
+      dispatchWatchlistMutated(ticker);
 
-      if (!userIdRef.current) {
-        toast.success(`${ticker} added to your watchlist.`);
-        dispatchWatchlistMutated(ticker);
-        return;
-      }
+      if (!userIdRef.current) return;
 
       void (async () => {
         const optimistic = collectionsRef.current;
-        const targetList =
-          optimistic.lists.find((list) => list.id === resolvedId) ??
-          getActiveWatchlistCollection(optimistic);
 
         let serverCollectionId = isServerWatchlistCollectionId(resolvedId)
           ? resolvedId
@@ -471,7 +515,6 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
               applyCollections(applyMutationServerResponse(snapshot, optimistic));
             }
             setServerListWarning(null);
-            toast.success(`${ticker} added to your watchlist.`);
             dispatchWatchlistMutated(ticker);
             return;
           }
@@ -480,10 +523,10 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
         const synced = await persistSnapshotToServer(optimistic);
         if (!synced) {
           setServerListWarning("Watchlist saved locally; server sync will retry.");
-          toast.error("Could not save to your account. Try again.");
-          return;
+          toastWatchlistSyncFailed();
+        } else {
+          setServerListWarning(null);
         }
-        toast.success(`${ticker} added to your watchlist.`);
         dispatchWatchlistMutated(ticker);
       })();
     },
@@ -517,28 +560,34 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
 
   const removeFromWatchlist = useCallback(
     (storageKey: string, scope: "active" | "all") => {
-      if (!hydratedRef.current) return;
+      if (!hydratedRef.current) {
+        toastWatchlistNotReady();
+        return;
+      }
 
       const ticker = normalizeTicker(storageKey);
+      const activeName =
+        scope === "active" ? getActiveWatchlistCollection(collectionsRef.current).name : undefined;
 
       if (!applyOptimisticRemove(storageKey, scope)) {
-        toast.error("Could not remove from watchlist.");
+        toastWatchlistRemoveFailed();
         return;
       }
 
-      if (!userIdRef.current) {
-        toast.success(`${ticker} removed from your watchlist.`);
-        dispatchWatchlistMutated(ticker);
-        return;
-      }
+      toastWatchlistRemoved(storageKey, { scope, watchlistName: activeName });
+      dispatchWatchlistMutated(ticker);
+
+      if (!userIdRef.current) return;
 
       void (async () => {
         const optimistic = collectionsRef.current;
         const synced = await persistSnapshotToServer(optimistic);
         if (!synced) {
           setServerListWarning("Watchlist saved locally; server sync will retry.");
+          toastWatchlistSyncFailed();
+        } else {
+          setServerListWarning(null);
         }
-        toast.success(`${ticker} removed from your watchlist.`);
         dispatchWatchlistMutated(ticker);
       })();
     },
@@ -547,9 +596,15 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
 
   const toggleTicker = useCallback(
     (storageKey: string, watchlistId?: string) => {
-      if (!hydratedRef.current) return;
+      if (!hydratedRef.current) {
+        toastWatchlistNotReady();
+        return;
+      }
 
-      const removing = isWatchlistTickerWatched(watchedUnion, storageKey);
+      const currentUnion = new Set(
+        unionWatchlistTickers(collectionsRef.current).map(normalizeTicker),
+      );
+      const removing = isWatchlistTickerWatched(currentUnion, storageKey);
       if (removing) {
         removeFromWatchlist(storageKey, "all");
         return;
@@ -558,10 +613,13 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
       const targetId =
         resolveWatchlistCollectionId(collectionsRef.current, watchlistId ?? "") ??
         collectionsRef.current.activeId;
-      if (!targetId || isPlaceholderWatchlistId(targetId)) return;
+      if (!targetId || isPlaceholderWatchlistId(targetId)) {
+        toastWatchlistAddFailed();
+        return;
+      }
       addToWatchlist(storageKey, targetId);
     },
-    [watchedUnion, removeFromWatchlist, addToWatchlist],
+    [removeFromWatchlist, addToWatchlist],
   );
 
   const removeFromActiveWatchlist = useCallback(

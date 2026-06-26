@@ -140,18 +140,21 @@ function WatchlistStarToggleInteractive({
   const showListPicker = storageHydrated && !isWatched && watchlists.length > 1;
   const activeId =
     watchlists.find((list) => list.id === activeWatchlistId)?.id ?? watchlists[0]?.id;
-  const canMutate = loaded && storageHydrated && Boolean(activeId) && activeId !== "pending";
+  const canAdd =
+    loaded && storageHydrated && Boolean(activeId) && activeId !== "pending";
+  const canRemove = loaded && isWatched;
 
   const tooltipLabel = isWatched ? "Remove from Watchlist" : "Add to Watchlist";
 
   const handleStarClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!canMutate) return;
     if (isWatched) {
+      if (!canRemove) return;
       toggleTicker(storageKey);
       return;
     }
+    if (!canAdd) return;
     if (showListPicker) {
       setPickerOpen((prev) => !prev);
       return;

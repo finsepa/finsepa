@@ -4,6 +4,7 @@ import {
   isWatchlistTickerWatched,
   normalizeWatchlistStorageKey,
   removeWatchlistTickerFromSet,
+  watchlistRemovalCandidateKeys,
 } from "@/lib/watchlist/normalize-storage-key";
 import {
   newWatchlistSectionId,
@@ -30,6 +31,10 @@ export type WatchlistCollectionsSnapshot = {
   activeId: string;
   lists: WatchlistCollection[];
   pendingRemoval: string[];
+  /** Set when the user mutates local state (ms since epoch). */
+  lastModifiedAt?: number;
+  /** Set after a successful server sync (ms since epoch). */
+  lastSyncedAt?: number;
 };
 
 const STORAGE_KEY = "finsepa.watchlist.collections.v2";
@@ -166,7 +171,14 @@ export function readWatchlistCollections(userId: string | null = null): Watchlis
     const pendingRemoval = normalizeTickers(
       Array.isArray(parsed.pendingRemoval) ? parsed.pendingRemoval : [],
     );
-    return { v: 2, activeId, lists, pendingRemoval };
+    return {
+      v: 2,
+      activeId,
+      lists,
+      pendingRemoval,
+      ...(typeof parsed.lastModifiedAt === "number" ? { lastModifiedAt: parsed.lastModifiedAt } : {}),
+      ...(typeof parsed.lastSyncedAt === "number" ? { lastSyncedAt: parsed.lastSyncedAt } : {}),
+    };
   } catch {
     return migrateLegacyCollections(userId);
   }
@@ -185,6 +197,8 @@ export function writeWatchlistCollections(
       activeId,
       lists,
       pendingRemoval: normalizeTickers(snapshot.pendingRemoval),
+      ...(snapshot.lastModifiedAt != null ? { lastModifiedAt: snapshot.lastModifiedAt } : {}),
+      ...(snapshot.lastSyncedAt != null ? { lastSyncedAt: snapshot.lastSyncedAt } : {}),
     };
     localStorage.setItem(storageKeyForUser(userId), JSON.stringify(payload));
   } catch {
@@ -586,6 +600,22 @@ export function addTickerToSnapshot(
   return { ...snapshot, lists };
 }
 
+function withoutTickerSectionAssignments(
+  tickerSections: Record<string, string>,
+  storageKey: string,
+): Record<string, string> {
+  const drop = new Set(
+    watchlistRemovalCandidateKeys(storageKey).map(normalizeWatchlistStorageKey),
+  );
+  const next = { ...tickerSections };
+  for (const key of Object.keys(next)) {
+    if (drop.has(normalizeWatchlistStorageKey(key))) {
+      delete next[key];
+    }
+  }
+  return next;
+}
+
 export function removeTickerFromSnapshot(
   snapshot: WatchlistCollectionsSnapshot,
   collectionId: string,
@@ -597,6 +627,7 @@ export function removeTickerFromSnapshot(
     return {
       ...list,
       tickers: normalizeTickers([...removeWatchlistTickerFromSet(new Set(list.tickers), storageKey)]),
+      tickerSections: withoutTickerSectionAssignments(list.tickerSections, storageKey),
     };
   });
   return { ...snapshot, lists };
@@ -609,6 +640,7 @@ export function removeTickerFromAllInSnapshot(
   const lists = snapshot.lists.map((list) => ({
     ...list,
     tickers: normalizeTickers([...removeWatchlistTickerFromSet(new Set(list.tickers), storageKey)]),
+    tickerSections: withoutTickerSectionAssignments(list.tickerSections, storageKey),
   }));
   return { ...snapshot, lists };
 }

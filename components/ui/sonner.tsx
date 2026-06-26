@@ -18,7 +18,7 @@ export function Toaster({ ...props }: ToasterProps) {
   return (
     <Sonner
       theme="light"
-      className="toaster group"
+      className="toaster group [&_[data-sonner-toaster]]:z-[300]"
       icons={{ success: successToastIcon }}
       toastOptions={{
         classNames: {
