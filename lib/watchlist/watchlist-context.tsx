@@ -92,6 +92,7 @@ import {
   applyServerSnapshotPreservingLocalNames,
   findCollectionIdByName,
   hasClientOnlyWatchlistIds,
+  localHasUnsyncedChanges,
   localSnapshotShouldUploadFirst,
   localSnapshotToSyncInput,
   mergeServerIdsWithLocalSnapshot,
@@ -102,6 +103,7 @@ import {
   watchlistSyncPayloadsEqual,
 } from "@/lib/watchlist/snapshot";
 import { clearWatchlistEnrichedCache } from "@/lib/watchlist/watchlist-enriched-cache";
+import type { WatchlistServerSnapshot } from "@/lib/watchlist/types";
 
 function normalizeTicker(t: string): string {
   return normalizeWatchlistStorageKey(t);
@@ -222,6 +224,64 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
       writeWatchlistLocal(active.tickers, userIdRef.current, []);
     },
     [],
+  );
+
+  const reconcileCollectionsWithServer = useCallback(
+    async (serverSnapshot: WatchlistServerSnapshot): Promise<void> => {
+      const current = collectionsRef.current;
+
+      if (localHasUnsyncedChanges(current)) {
+        if (localSnapshotShouldUploadFirst(current, serverSnapshot)) {
+          const uploaded = await syncWatchlistSnapshotToServer(localSnapshotToSyncInput(current));
+          if (uploaded) {
+            applyCollections(
+              applyMutationServerResponse(uploaded, collectionsRef.current),
+              { fromServerSync: true, serverUpdatedAt: uploaded.updatedAt },
+            );
+            setServerListWarning(null);
+          } else {
+            setServerListWarning(
+              "Watchlist saved on this device only — could not sync sections to your account yet.",
+            );
+          }
+        }
+        return;
+      }
+
+      if (localSnapshotShouldUploadFirst(current, serverSnapshot)) {
+        const uploaded = await syncWatchlistSnapshotToServer(localSnapshotToSyncInput(current));
+        if (uploaded) {
+          applyCollections(
+            applyMutationServerResponse(uploaded, collectionsRef.current),
+            { fromServerSync: true, serverUpdatedAt: uploaded.updatedAt },
+          );
+          setServerListWarning(null);
+          return;
+        }
+        setServerListWarning(
+          "Watchlist saved on this device only — could not sync sections to your account yet.",
+        );
+        return;
+      }
+
+      if (shouldAdoptServerSnapshot(current, serverSnapshot)) {
+        setServerListWarning(null);
+        applyCollections(
+          applyServerSnapshotPreservingLocalNames(serverSnapshot, collectionsRef.current, {
+            preferServerNames: true,
+          }),
+          { fromServerSync: true, serverUpdatedAt: serverSnapshot.updatedAt },
+        );
+        return;
+      }
+
+      setServerListWarning(null);
+      applyCollections(mergeServerWithLocalSnapshot(serverSnapshot, collectionsRef.current), {
+        fromServerSync: true,
+        serverUpdatedAt: serverSnapshot.updatedAt,
+      });
+    },
+    [applyCollections],
   );
 
   const persistSnapshotToServer = useCallback(
@@ -347,50 +407,23 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
         if (
           !options.mergeGuest &&
           serverSnapshotHasNoTickers(serverSnapshot) &&
-          unionWatchlistTickers(working).length > 0
+          unionWatchlistTickers(collectionsRef.current).length > 0
         ) {
           setServerListWarning(null);
           applyCollections(
-            applyServerSnapshotPreservingLocalNames(serverSnapshot, working, {
-              preferServerNames: true,
-            }),
+            applyServerSnapshotPreservingLocalNames(
+              serverSnapshot,
+              collectionsRef.current,
+              {
+                preferServerNames: true,
+              },
+            ),
           );
           clearGuestWatchlistStorage(uid);
           return;
         }
 
-        if (localSnapshotShouldUploadFirst(working, serverSnapshot)) {
-          const uploaded = await syncWatchlistSnapshotToServer(localSnapshotToSyncInput(working));
-          if (uploaded) {
-            applyCollections(applyMutationServerResponse(uploaded, working), {
-              fromServerSync: true,
-              serverUpdatedAt: uploaded.updatedAt,
-            });
-            return;
-          }
-          setServerListWarning(
-            "Watchlist saved on this device only — could not sync sections to your account yet.",
-          );
-          applyCollections(working);
-          return;
-        }
-
-        if (shouldAdoptServerSnapshot(working, serverSnapshot)) {
-          setServerListWarning(null);
-          applyCollections(
-            applyServerSnapshotPreservingLocalNames(serverSnapshot, working, {
-              preferServerNames: true,
-            }),
-            { fromServerSync: true, serverUpdatedAt: serverSnapshot.updatedAt },
-          );
-          return;
-        }
-
-        setServerListWarning(null);
-        applyCollections(mergeServerWithLocalSnapshot(serverSnapshot, working), {
-          fromServerSync: true,
-          serverUpdatedAt: serverSnapshot.updatedAt,
-        });
+        await reconcileCollectionsWithServer(serverSnapshot);
       } catch {
         if (!cancelled) {
           setServerListWarning(null);
@@ -438,43 +471,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
       cancelled = true;
       subscription.unsubscribe();
     };
-  }, [applyCollections]);
-
-  useEffect(() => {
-    if (!loaded || !userId) return;
-
-    let cancelled = false;
-    void (async () => {
-      const local = collectionsRef.current;
-      const server = await refreshWatchlistSnapshotFromServer();
-      if (cancelled || !server) return;
-
-      if (localSnapshotShouldUploadFirst(local, server)) {
-        const synced = await persistSnapshotToServer(local);
-        if (cancelled) return;
-        if (!synced) {
-          setServerListWarning(
-            "Watchlist saved on this device only — could not sync sections to your account yet.",
-          );
-        } else {
-          setServerListWarning(null);
-        }
-        return;
-      }
-
-      if (shouldAdoptServerSnapshot(local, server)) {
-        applyCollections(
-          applyServerSnapshotPreservingLocalNames(server, local, { preferServerNames: true }),
-          { fromServerSync: true, serverUpdatedAt: server.updatedAt },
-        );
-        setServerListWarning(null);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [loaded, userId, persistSnapshotToServer]);
+  }, [applyCollections, reconcileCollectionsWithServer]);
 
   const addToWatchlist = useCallback(
     (storageKey: string, watchlistId: string) => {
@@ -522,7 +519,10 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
           if (posted) {
             const snapshot = await refreshWatchlistSnapshotFromServer();
             if (snapshot) {
-              applyCollections(applyMutationServerResponse(snapshot, optimistic));
+              applyCollections(applyMutationServerResponse(snapshot, collectionsRef.current), {
+                fromServerSync: true,
+                serverUpdatedAt: snapshot.updatedAt,
+              });
             }
             setServerListWarning(null);
             dispatchWatchlistMutated(ticker);

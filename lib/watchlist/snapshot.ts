@@ -187,7 +187,13 @@ export function localSnapshotShouldUploadFirst(
 ): boolean {
   if (shouldAdoptServerSnapshot(local, server)) return false;
   if (localHasUnsyncedChanges(local)) {
-    if (serverChangedSinceLocalSync(local, server) && !localIsNewerThanServer(local, server)) {
+    if (
+      localHasTickersAheadOfServer(local, server) &&
+      !localHasTickersBehindServer(local, server)
+    ) {
+      return true;
+    }
+    if (serverChangedSinceLocalSync(local, server) && serverIsStrictlyNewerThanLocal(local, server)) {
       return false;
     }
     return true;
@@ -363,6 +369,16 @@ function localIsNewerThanServer(
   return localTime > serverTime;
 }
 
+function serverIsStrictlyNewerThanLocal(
+  local: WatchlistCollectionsSnapshot,
+  server: WatchlistServerSnapshot,
+): boolean {
+  const serverTime = serverUpdatedAtMs(server);
+  const localTime = local.lastModifiedAt ?? 0;
+  if (serverTime <= 0) return false;
+  return serverTime > localTime;
+}
+
 export function localListsHaveDistinctTickerSets(local: WatchlistCollectionsSnapshot): boolean {
   const signatures = local.lists.map((list) => [...list.tickers].sort().join("|"));
   return new Set(signatures).size > 1;
@@ -444,15 +460,21 @@ export function shouldAdoptServerSnapshot(
     return true;
   }
 
-  if (
-    localHasUnsyncedChanges(local) &&
-    serverChangedSinceLocalSync(local, server) &&
-    !localIsNewerThanServer(local, server)
-  ) {
-    return true;
+  if (localHasUnsyncedChanges(local)) {
+    if (
+      localHasTickersAheadOfServer(local, server) &&
+      !localHasTickersBehindServer(local, server)
+    ) {
+      return false;
+    }
+    if (
+      serverChangedSinceLocalSync(local, server) &&
+      serverIsStrictlyNewerThanLocal(local, server)
+    ) {
+      return true;
+    }
+    return false;
   }
-
-  if (localHasUnsyncedChanges(local)) return false;
   if (localIsStaleSupersetOfServer(local, server)) return true;
   if (localIsMissingServerSections(local, server)) return true;
   if (
