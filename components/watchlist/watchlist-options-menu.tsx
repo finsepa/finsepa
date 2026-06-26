@@ -65,6 +65,7 @@ export function WatchlistOptionsMenu({
   const [createValue, setCreateValue] = useState("");
   const [createSectionValue, setCreateSectionValue] = useState("");
   const [clearing, setClearing] = useState(false);
+  const [pendingDeleteName, setPendingDeleteName] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const menuPortalRef = useRef<HTMLDivElement>(null);
   const chevronsRef = useRef<ChevronsUpDownIconHandle>(null);
@@ -102,7 +103,10 @@ export function WatchlistOptionsMenu({
     if (step === "createSection") setCreateSectionValue("");
   }, [step, name]);
 
-  const closeModal = () => setStep("closed");
+  const closeModal = () => {
+    setStep("closed");
+    setPendingDeleteName(null);
+  };
 
   const openCreate = () => {
     setMenuOpen(false);
@@ -121,6 +125,7 @@ export function WatchlistOptionsMenu({
 
   const openDeleteConfirm = () => {
     setMenuOpen(false);
+    setPendingDeleteName(name);
     setStep("deleteConfirm");
   };
 
@@ -414,7 +419,8 @@ export function WatchlistOptionsMenu({
         >
           <p className="text-sm leading-5 text-[#09090B]">Are you sure to delete?</p>
           <p className="mt-3 text-sm leading-5 text-[#71717A]">
-            <span className="font-semibold text-[#09090B]">{name}</span> and all of its symbols will be removed.
+            <span className="font-semibold text-[#09090B]">{pendingDeleteName ?? name}</span> and all of its
+            symbols will be removed.
           </p>
         </AppModalShell>
       </AppModalOverlay>
