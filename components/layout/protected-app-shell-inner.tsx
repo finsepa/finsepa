@@ -112,7 +112,7 @@ function ProtectedAppChrome({
           </div>
           <div
             suppressHydrationWarning
-            className="shell-desktop-panel__content flex min-h-0 min-w-0 flex-1 max-md:flex-col max-md:pt-[var(--mobile-topbar-offset)]"
+            className="shell-desktop-panel__content flex min-h-0 min-w-0 flex-1 max-md:flex-col max-md:pt-[var(--mobile-topbar-offset)] md:flex-row md:overflow-hidden"
           >
             <main
               ref={mainRef}

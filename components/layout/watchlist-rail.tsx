@@ -9,7 +9,8 @@ import { WatchlistEmptyState } from "@/components/watchlist/watchlist-empty-stat
 import { WatchlistOptionsMenu } from "@/components/watchlist/watchlist-options-menu";
 import { WatchlistSectionHeader } from "@/components/watchlist/watchlist-section-header";
 import { CompanyLogo } from "@/components/screener/company-logo";
-import { dropdownMenuFloatingScrollbarClassName } from "@/components/design-system/dropdown-menu-styles";
+import { DropdownScrollArea } from "@/components/design-system/dropdown-scroll-area";
+import { panelOverlayScrollGutterClassName } from "@/components/design-system/dropdown-menu-styles";
 import {
   WATCHLIST_PANEL_WIDTH_PX,
   WATCHLIST_RAIL_WIDTH_MOTION_CLASS,
@@ -311,7 +312,12 @@ function WatchlistRailScrollContent({
     return <WatchlistRailSkeleton />;
   }
   if (empty) {
-    return <WatchlistEmptyState variant="plain" className="min-h-0 py-10" />;
+    return (
+      <WatchlistEmptyState
+        variant="plain"
+        className="min-h-full flex-1 justify-center py-12"
+      />
+    );
   }
   if (error) {
     return <p className="px-3 py-4 text-[13px] leading-5 text-[#DC2626]">{error}</p>;
@@ -449,7 +455,7 @@ export function WatchlistRail() {
     <div
       suppressHydrationWarning
       className={cn(
-        "hidden h-full min-h-0 shrink-0 overflow-hidden md:flex md:border-l md:border-[#E4E4E7]",
+        "hidden h-full min-h-0 shrink-0 self-stretch overflow-hidden md:flex md:border-l md:border-[#E4E4E7]",
         WATCHLIST_RAIL_WIDTH_MOTION_CLASS,
       )}
       style={{ width: `${outerWidthPx}px` }}
@@ -499,12 +505,14 @@ export function WatchlistRail() {
             expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
           )}
         >
-          <div className="min-h-0 overflow-hidden">
-            <div
+          <div className="flex min-h-0 h-full flex-col overflow-hidden">
+            <DropdownScrollArea
               className={cn(
-                "min-h-0 overflow-y-auto overscroll-y-contain px-1 pb-2",
-                dropdownMenuFloatingScrollbarClassName,
+                "flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain overscroll-x-hidden px-1 pb-2",
+                panelOverlayScrollGutterClassName,
               )}
+              wheelIsolation
+              edgeFade={false}
               suppressHydrationWarning
             >
               {showRailContent ? (
@@ -526,7 +534,7 @@ export function WatchlistRail() {
               ) : (
                 <WatchlistRailSkeleton />
               )}
-            </div>
+            </DropdownScrollArea>
           </div>
         </div>
       </div>

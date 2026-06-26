@@ -35,12 +35,15 @@ export const dropdownMenuSearchInputClassName =
 export const dropdownMenuFloatingScrollbarClassName =
   "[scrollbar-width:thin] [scrollbar-color:rgba(161,161,170,0.65)_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:border-0 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-solid [&::-webkit-scrollbar-thumb]:border-transparent [&::-webkit-scrollbar-thumb]:bg-clip-padding [&::-webkit-scrollbar-thumb]:bg-[#A1A1AA]/60";
 
-/** Hidden overlay scrollbar — thumb appears only while actively scrolling. */
+/** Hidden overlay scrollbar — thin gutter always; thumb fades in while scrolling (no layout shift). */
 export const dropdownMenuOverlayScrollbarClassName =
-  "[scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar]:bg-transparent [&::-webkit-scrollbar-track]:border-0 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-solid [&::-webkit-scrollbar-thumb]:border-transparent [&::-webkit-scrollbar-thumb]:bg-clip-padding [&::-webkit-scrollbar-thumb]:bg-transparent";
+  "[scrollbar-width:thin] [scrollbar-color:transparent_transparent] [-ms-overflow-style:none] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar]:bg-transparent [&::-webkit-scrollbar-track]:border-0 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-solid [&::-webkit-scrollbar-thumb]:border-transparent [&::-webkit-scrollbar-thumb]:bg-clip-padding [&::-webkit-scrollbar-thumb]:bg-transparent [&::-webkit-scrollbar-thumb]:transition-[background-color] [&::-webkit-scrollbar-thumb]:duration-150";
 
 export const dropdownMenuOverlayScrollbarActiveClassName =
-  "[scrollbar-width:thin] [scrollbar-color:rgba(161,161,170,0.65)_transparent] [&::-webkit-scrollbar-thumb]:bg-[#A1A1AA]/60";
+  "[scrollbar-color:rgba(161,161,170,0.65)_transparent] [&::-webkit-scrollbar-thumb]:bg-[#A1A1AA]/60";
+
+/** Scrollport extends past the panel edge so the thumb draws over content, not beside it. */
+export const panelOverlayScrollGutterClassName = "-mr-1.5";
 
 /**
  * Scrollable dropdown lists — thin scrollbar only.

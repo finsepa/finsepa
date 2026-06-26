@@ -8,6 +8,7 @@ import {
   useState,
   type ComponentPropsWithoutRef,
   type UIEvent,
+  type WheelEvent,
 } from "react";
 
 import {
@@ -25,8 +26,10 @@ export function DropdownScrollArea({
   className,
   children,
   onScroll,
+  wheelIsolation = false,
+  edgeFade = true,
   ...rest
-}: ComponentPropsWithoutRef<"div">) {
+}: ComponentPropsWithoutRef<"div"> & { wheelIsolation?: boolean; edgeFade?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const scrollIdleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [fade, setFade] = useState(false);
@@ -67,17 +70,37 @@ export function DropdownScrollArea({
     onScroll?.(e);
   };
 
+  const handleWheelCapture = useCallback(
+    (e: WheelEvent<HTMLDivElement>) => {
+      if (!wheelIsolation) return;
+      const el = e.currentTarget;
+      if (el.scrollHeight <= el.clientHeight + 1) return;
+
+      e.stopPropagation();
+
+      const { scrollTop, scrollHeight, clientHeight } = el;
+      const delta = e.deltaY;
+      const atTop = scrollTop <= 0;
+      const atBottom = scrollTop + clientHeight >= scrollHeight - 1;
+      if ((delta < 0 && atTop) || (delta > 0 && atBottom)) {
+        e.preventDefault();
+      }
+    },
+    [wheelIsolation],
+  );
+
   return (
     <div
       ref={ref}
       {...rest}
       onScroll={handleScroll}
       onWheel={revealScrollbar}
+      onWheelCapture={handleWheelCapture}
       onTouchMove={revealScrollbar}
       className={cn(
         dropdownMenuOverlayScrollbarClassName,
         scrollbarVisible && dropdownMenuOverlayScrollbarActiveClassName,
-        fade && "scroll-fade-effect-y",
+        fade && edgeFade && "scroll-fade-effect-y",
         className,
       )}
     >

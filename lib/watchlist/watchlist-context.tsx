@@ -11,6 +11,8 @@ import {
   type ReactNode,
 } from "react";
 import { toast } from "sonner";
+
+import { toastWatchlistCreated } from "@/lib/watchlist/watchlist-created-toast";
 import type { User } from "@supabase/supabase-js";
 
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
@@ -643,9 +645,9 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
       };
       applyCollections(optimistic);
       dispatchWatchlistMutated();
+      toastWatchlistCreated(trimmed);
 
       if (!userIdRef.current) {
-        toast.success(`Created "${trimmed}".`);
         return;
       }
 
@@ -656,7 +658,6 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
         } else {
           setServerListWarning(null);
         }
-        toast.success(`Created "${trimmed}".`);
         dispatchWatchlistMutated();
       })();
     },
