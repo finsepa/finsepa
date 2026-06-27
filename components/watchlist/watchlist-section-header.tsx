@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useId, useRef, useState, type DragEvent } from "react";
-import { ChevronDown, ChevronRight, GripVertical, Pencil, Trash2 } from "@/lib/icons";
+import { ChevronDown, ChevronRight, GripVertical, Pencil } from "@/lib/icons";
+
+import { DropdownMenuLottieIcon } from "@/components/icons/dropdown-menu-lottie-icon";
 
 import { ClearableInput } from "@/components/layout/clearable-input";
 import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
@@ -18,6 +20,7 @@ import {
   appModalPrimaryButtonClass,
 } from "@/components/ui/app-modal-shell";
 import { cn } from "@/lib/utils";
+import { deleteMenuIconAnimation, renameMenuIconAnimation } from "@/lib/lottie/watchlist-menu-animations";
 import type { WatchlistDropTarget } from "@/lib/watchlist/watchlist-drag";
 import {
   readWatchlistDragData,
@@ -51,6 +54,8 @@ export function WatchlistSectionHeader({
   onReorderSection: (fromSectionIndex: number, toSectionIndex: number) => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [renameIconPlaying, setRenameIconPlaying] = useState(false);
+  const [deleteIconPlaying, setDeleteIconPlaying] = useState(false);
   const [step, setStep] = useState<ModalStep>("closed");
   const [renameValue, setRenameValue] = useState(label);
   const [dragOver, setDragOver] = useState(false);
@@ -62,6 +67,13 @@ export function WatchlistSectionHeader({
   useEffect(() => {
     if (step === "rename") setRenameValue(label);
   }, [step, label]);
+
+  useEffect(() => {
+    if (!menuOpen) {
+      setRenameIconPlaying(false);
+      setDeleteIconPlaying(false);
+    }
+  }, [menuOpen]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -170,18 +182,29 @@ export function WatchlistSectionHeader({
               <button
                 type="button"
                 role="menuitem"
+                onMouseEnter={() => setRenameIconPlaying(true)}
+                onMouseLeave={() => setRenameIconPlaying(false)}
+                onFocus={() => setRenameIconPlaying(true)}
+                onBlur={() => setRenameIconPlaying(false)}
                 onClick={() => {
                   setMenuOpen(false);
                   setStep("rename");
                 }}
                 className={dropdownMenuPlainItemClassName()}
               >
-                <Pencil className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
+                <DropdownMenuLottieIcon
+                  animationData={renameMenuIconAnimation}
+                  playing={renameIconPlaying}
+                />
                 <span>Rename</span>
               </button>
               <button
                 type="button"
                 role="menuitem"
+                onMouseEnter={() => setDeleteIconPlaying(true)}
+                onMouseLeave={() => setDeleteIconPlaying(false)}
+                onFocus={() => setDeleteIconPlaying(true)}
+                onBlur={() => setDeleteIconPlaying(false)}
                 onClick={() => {
                   setMenuOpen(false);
                   setStep("deleteConfirm");
@@ -191,7 +214,10 @@ export function WatchlistSectionHeader({
                   "text-[#DC2626] hover:bg-[#FEE2E2] hover:text-[#B91C1C]",
                 )}
               >
-                <Trash2 className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
+                <DropdownMenuLottieIcon
+                  animationData={deleteMenuIconAnimation}
+                  playing={deleteIconPlaying}
+                />
                 <span>Delete</span>
               </button>
             </div>

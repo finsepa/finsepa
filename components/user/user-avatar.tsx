@@ -6,7 +6,7 @@ type UserAvatarProps = {
   initials: string;
   /** `sm` = 28px, `md` = 32px, `menu` = 40px (topbar profile menu), `portfolios` = 56px, `lg` = 80px, `xl` = 60px donut. */
   size: UserAvatarSize;
-  /** Black circle + white crown at top-right (active Pro subscription). */
+  /** Black circle + white crown at bottom-right (active Pro subscription). */
   showProBadge?: boolean;
 };
 
@@ -28,12 +28,12 @@ const xlShell =
   "flex h-[60px] w-[60px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#F4F4F5] text-base font-semibold text-[#52525B] ring-[1px] ring-white shadow-[0px_1px_4px_0px_rgba(10,10,10,0.08)]";
 
 const proBadgeBySize: Record<UserAvatarSize, { shell: string; icon: string }> = {
-  sm: { shell: "h-3 w-3 -right-px -top-px", icon: "h-[7px] w-[7px]" },
-  md: { shell: "h-3.5 w-3.5 right-0 top-0", icon: "h-2 w-2" },
-  menu: { shell: "h-3.5 w-3.5 right-0 top-0", icon: "h-2 w-2" },
-  portfolios: { shell: "h-4 w-4 right-0.5 top-0.5", icon: "h-2.5 w-2.5" },
-  lg: { shell: "h-5 w-5 right-1 top-1", icon: "h-3 w-3" },
-  xl: { shell: "h-4 w-4 right-0.5 top-0.5", icon: "h-2.5 w-2.5" },
+  sm: { shell: "h-3.5 w-3.5 -bottom-0.5 -right-0.5", icon: "h-[10px] w-[10px]" },
+  md: { shell: "h-4 w-4 -bottom-px -right-px", icon: "h-[11px] w-[11px]" },
+  menu: { shell: "h-4 w-4 -bottom-px -right-px", icon: "h-[11px] w-[11px]" },
+  portfolios: { shell: "h-4 w-4 bottom-0 right-0", icon: "h-3 w-3" },
+  lg: { shell: "h-5 w-5 bottom-0.5 right-0.5", icon: "h-[14px] w-[14px]" },
+  xl: { shell: "h-4 w-4 bottom-0 right-0", icon: "h-3 w-3" },
 };
 
 function ProCrownIcon({ className }: { className?: string }) {

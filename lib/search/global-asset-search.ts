@@ -17,6 +17,12 @@ import { TOP10_TICKERS } from "@/lib/screener/top10-config";
 import { POPULAR_US_ETFS } from "@/lib/search/popular-us-etfs";
 import { SEARCH_MIN_QUERY_LENGTH } from "@/lib/search/search-policy";
 import { isCommonStockSearchItem, type SearchAssetItem, type SearchScope } from "@/lib/search/search-types";
+import { SUPERINVESTOR_REGISTRY } from "@/lib/superinvestors/superinvestor-registry";
+import {
+  scoreSuperinvestorMatch,
+  superinvestorMatchesQuery,
+  superinvestorSearchItem,
+} from "@/lib/superinvestors/superinvestor-search";
 
 type RankedSearch = { item: SearchAssetItem; score: number; marketCapUsd: number | null };
 
@@ -232,7 +238,20 @@ async function runGlobalAssetSearch(qNorm: string, scope: SearchScope): Promise<
     else if (nameHit) s = 550;
 
     if (type === "index") s += 10;
+    if (type === "superinvestor") s += 15;
     return s;
+  }
+
+  if (scope === "all") {
+    for (const entry of SUPERINVESTOR_REGISTRY) {
+      if (!superinvestorMatchesQuery(entry, n)) continue;
+      const item = superinvestorSearchItem(entry);
+      candidates.push({
+        item,
+        score: scoreSuperinvestorMatch(entry, n, scoreItem),
+        marketCapUsd: null,
+      });
+    }
   }
 
   if (scope === "all" || scope === "indices") {
@@ -340,7 +359,7 @@ async function runGlobalAssetSearch(qNorm: string, scope: SearchScope): Promise<
 
 const getCachedGlobalAssetSearch = unstable_cache(
   async (qNorm: string, scope: SearchScope) => runGlobalAssetSearch(qNorm, scope),
-  ["global-asset-search-v15-equities"],
+  ["global-asset-search-v16-superinvestors"],
   { revalidate: REVALIDATE_SEARCH },
 );
 

@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import { Check, ChevronDown, Pencil, Plus, Rows03, Trash2 } from "@/lib/icons";
+import { Check, ChevronDown } from "@/lib/icons";
+
+import { DropdownMenuLottieIcon } from "@/components/icons/dropdown-menu-lottie-icon";
 
 import {
   ChevronsUpDownIcon,
@@ -23,6 +25,12 @@ import {
   appModalPrimaryButtonClass,
 } from "@/components/ui/app-modal-shell";
 import type { WatchlistCollection } from "@/lib/watchlist/collections";
+import {
+  addSectionMenuIconAnimation,
+  addWatchlistMenuIconAnimation,
+  deleteMenuIconAnimation,
+  renameMenuIconAnimation,
+} from "@/lib/lottie/watchlist-menu-animations";
 import { cn } from "@/lib/utils";
 
 const titleGhostTriggerClass =
@@ -60,6 +68,10 @@ export function WatchlistOptionsMenu({
   ready = true,
 }: WatchlistOptionsMenuProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [addWatchlistIconPlaying, setAddWatchlistIconPlaying] = useState(false);
+  const [addSectionIconPlaying, setAddSectionIconPlaying] = useState(false);
+  const [renameIconPlaying, setRenameIconPlaying] = useState(false);
+  const [deleteIconPlaying, setDeleteIconPlaying] = useState(false);
   const [step, setStep] = useState<ModalStep>("closed");
   const [renameValue, setRenameValue] = useState(name);
   const [createValue, setCreateValue] = useState("");
@@ -78,6 +90,15 @@ export function WatchlistOptionsMenu({
     if (menuOpen && variant === "page-icon") chevronsRef.current?.startAnimation();
     else chevronsRef.current?.stopAnimation();
   }, [menuOpen, variant]);
+
+  useEffect(() => {
+    if (!menuOpen) {
+      setAddWatchlistIconPlaying(false);
+      setAddSectionIconPlaying(false);
+      setRenameIconPlaying(false);
+      setDeleteIconPlaying(false);
+    }
+  }, [menuOpen]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -247,42 +268,70 @@ export function WatchlistOptionsMenu({
               <button
                 type="button"
                 role="menuitem"
+                onMouseEnter={() => setAddWatchlistIconPlaying(true)}
+                onMouseLeave={() => setAddWatchlistIconPlaying(false)}
+                onFocus={() => setAddWatchlistIconPlaying(true)}
+                onBlur={() => setAddWatchlistIconPlaying(false)}
                 onClick={openCreate}
                 className={dropdownMenuPlainItemClassName()}
               >
-                <Plus className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
+                <DropdownMenuLottieIcon
+                  animationData={addWatchlistMenuIconAnimation}
+                  playing={addWatchlistIconPlaying}
+                />
                 <span>Add New Watchlist</span>
               </button>
               {onCreateSection ? (
                 <button
                   type="button"
                   role="menuitem"
+                  onMouseEnter={() => setAddSectionIconPlaying(true)}
+                  onMouseLeave={() => setAddSectionIconPlaying(false)}
+                  onFocus={() => setAddSectionIconPlaying(true)}
+                  onBlur={() => setAddSectionIconPlaying(false)}
                   onClick={openCreateSection}
                   className={dropdownMenuPlainItemClassName()}
                 >
-                  <Rows03 className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
+                  <DropdownMenuLottieIcon
+                    animationData={addSectionMenuIconAnimation}
+                    playing={addSectionIconPlaying}
+                  />
                   <span>Add New Section</span>
                 </button>
               ) : null}
               <button
                 type="button"
                 role="menuitem"
+                onMouseEnter={() => setRenameIconPlaying(true)}
+                onMouseLeave={() => setRenameIconPlaying(false)}
+                onFocus={() => setRenameIconPlaying(true)}
+                onBlur={() => setRenameIconPlaying(false)}
                 onClick={openRename}
                 className={dropdownMenuPlainItemClassName()}
               >
-                <Pencil className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
+                <DropdownMenuLottieIcon
+                  animationData={renameMenuIconAnimation}
+                  playing={renameIconPlaying}
+                />
                 <span>Rename</span>
               </button>
               <button
                 type="button"
                 role="menuitem"
+                onMouseEnter={() => setDeleteIconPlaying(true)}
+                onMouseLeave={() => setDeleteIconPlaying(false)}
+                onFocus={() => setDeleteIconPlaying(true)}
+                onBlur={() => setDeleteIconPlaying(false)}
                 onClick={openDeleteConfirm}
                 className={cn(
                   dropdownMenuPlainItemClassName(),
                   "text-[#DC2626] hover:bg-[#FEE2E2] hover:text-[#B91C1C]",
                 )}
               >
-                <Trash2 className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
+                <DropdownMenuLottieIcon
+                  animationData={deleteMenuIconAnimation}
+                  playing={deleteIconPlaying}
+                />
                 <span>Delete</span>
               </button>
             </div>

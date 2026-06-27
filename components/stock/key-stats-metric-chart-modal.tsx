@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { TabSwitcher } from "@/components/design-system";
 import type { TabSwitcherOption } from "@/components/design-system";
+import { topbarSquircleIconClass } from "@/components/design-system/topbar-control-classes";
 import { CompanyLogo } from "@/components/screener/company-logo";
 import {
   MultichartFundamentalsBar,
@@ -530,10 +531,13 @@ export function KeyStatsMetricChartModal({
             type="button"
             onClick={handleOpenDownload}
             disabled={loading || !hasSeries}
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#09090B] transition-colors hover:bg-[#FAFAFA] disabled:cursor-not-allowed disabled:opacity-40"
+            className={cn(
+              topbarSquircleIconClass,
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900/10 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40",
+            )}
             aria-label="Download chart"
           >
-            <Download className="h-4 w-4" strokeWidth={2} aria-hidden />
+            <Download className="h-5 w-5" strokeWidth={2} aria-hidden />
           </button>
         </div>
       </div>

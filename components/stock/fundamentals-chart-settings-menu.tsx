@@ -8,6 +8,7 @@ import {
   dropdownMenuPanelClassName,
   dropdownMenuPlainItemRowClassName,
 } from "@/components/design-system/dropdown-menu-styles";
+import { topbarSquircleActiveClass, topbarSquircleIconClass } from "@/components/design-system/topbar-control-classes";
 import type { FundamentalsChartDisplayOptions } from "@/lib/chart/fundamentals-chart-display-options";
 import { cn } from "@/lib/utils";
 
@@ -170,10 +171,9 @@ export function FundamentalsChartSettingsMenu({
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
           className={cn(
-            "inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#09090B]",
-            "shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100",
-            "hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900/10 focus-visible:ring-offset-2",
-            open && "bg-[#F4F4F5]",
+            topbarSquircleIconClass,
+            "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900/10 focus-visible:ring-offset-2",
+            open && topbarSquircleActiveClass,
           )}
         >
           <Settings className="h-5 w-5 shrink-0" strokeWidth={2} aria-hidden />

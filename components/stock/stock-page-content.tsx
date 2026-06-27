@@ -32,6 +32,7 @@ import { StockComparePicker } from "./stock-compare-picker";
 import { StockCompareReturnChart } from "./stock-compare-return-chart";
 import { KeyStats } from "./key-stats";
 import { KeyStatsMetricChartModal } from "./key-stats-metric-chart-modal";
+import { topbarSquircleIconClass } from "@/components/design-system/topbar-control-classes";
 import { ChartScreenshotDownloadModal } from "@/components/chart/chart-screenshot-download-modal";
 import type { ChartScreenshotSnapshot } from "@/lib/chart/chart-screenshot-types";
 import { Download } from "@/lib/icons";
@@ -47,6 +48,7 @@ import type { StockExtendedHoursHeader } from "@/lib/market/stock-extended-hours
 import { isUsListedStockHeaderMeta } from "@/lib/market/stock-header-meta";
 import type { StockChartRange, StockChartSeries } from "@/lib/market/stock-chart-types";
 import { mergeClosedMarketOverviewHeader, mergeSessionHeaderWithPerformanceSpot } from "@/lib/chart/merge-session-header-with-performance-spot";
+import { cn } from "@/lib/utils";
 import { priorSessionDayChangeFromPerformance } from "@/lib/market/prior-session-day-change";
 import { getUsEquityMarketSession, isUsEquityExtendedHoursHeaderEligible, lastUsRegularSessionCloseUnix } from "@/lib/market/us-equity-market-session";
 import { STOCK_1D_LIVE_PRICE_POLL_MS } from "@/lib/chart/stock-1d-live-session-chart";
@@ -913,10 +915,10 @@ export function StockPageContent({
                   type="button"
                   onClick={() => void handleOpenOverviewDownload()}
                   disabled={overviewDownloadDisabled}
-                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#09090B] transition-colors hover:bg-[#FAFAFA] disabled:cursor-not-allowed disabled:opacity-40"
+                  className={cn(topbarSquircleIconClass, "disabled:cursor-not-allowed disabled:opacity-40")}
                   aria-label="Download chart"
                 >
-                  <Download className="h-4 w-4" strokeWidth={2} aria-hidden />
+                  <Download className="h-5 w-5" strokeWidth={1.75} aria-hidden />
                 </button>
               )
             }

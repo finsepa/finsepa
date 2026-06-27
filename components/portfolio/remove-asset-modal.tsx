@@ -39,7 +39,7 @@ export function RemoveAssetModal({ holding, onClose, onConfirmRemove }: Props) {
     <AppModalOverlay open={open} onClose={onClose} zIndex={300}>
       <AppModalShell
         titleId={titleId}
-        title="Remove asset"
+        title="Remove Asset"
         onClose={onClose}
         bodyClassName="px-5 pb-2 pt-5"
         footer={

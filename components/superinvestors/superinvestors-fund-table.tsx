@@ -131,7 +131,6 @@ function SuperinvestorsFundTableInner({ rows }: { rows: SuperinvestorsFundRowMod
                   />
                   <Link
                     href={r.href}
-                    prefetch={false}
                     className="flex min-w-0 flex-1 items-start gap-3 text-[#09090B] no-underline visited:text-[#09090B]"
                     aria-label={`Open ${r.displayName}`}
                   >
@@ -166,7 +165,6 @@ function SuperinvestorsFundTableInner({ rows }: { rows: SuperinvestorsFundRowMod
                 />
                 <Link
                   href={r.href}
-                  prefetch={false}
                   className={`${rowLinkGrid} col-span-6 col-start-2 grid h-full min-w-0 items-center text-[#09090B] no-underline visited:text-[#09090B]`}
                   aria-label={`Open ${r.displayName}`}
                 >

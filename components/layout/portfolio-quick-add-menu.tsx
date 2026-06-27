@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { FileSpreadsheet, Plus, Wallet, X } from "@/lib/icons";
+import { Plus, X } from "@/lib/icons";
+
+import { DropdownMenuLottieIcon } from "@/components/icons/dropdown-menu-lottie-icon";
 
 import {
   dropdownMenuPanelClassName,
@@ -15,6 +17,11 @@ import {
 import { TopbarDelayedTooltip } from "@/components/layout/topbar-delayed-tooltip";
 import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
+import {
+  addCashMenuIconAnimation,
+  importTransactionsMenuIconAnimation,
+  newTradeMenuIconAnimation,
+} from "@/lib/lottie/quick-add-menu-animations";
 import { cn } from "@/lib/utils";
 
 /**
@@ -36,6 +43,9 @@ export function PortfolioQuickAddMenu({
   dwellTooltipLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const [tradeIconPlaying, setTradeIconPlaying] = useState(false);
+  const [cashIconPlaying, setCashIconPlaying] = useState(false);
+  const [importIconPlaying, setImportIconPlaying] = useState(false);
   const {
     openNewTransaction,
     openAddCash,
@@ -50,22 +60,27 @@ export function PortfolioQuickAddMenu({
     {
       id: "trade" as const,
       label: "New Trade / Holding",
-      Icon: Plus,
       disabled: selectedPortfolioReadOnly,
     },
     {
       id: "cash" as const,
       label: "Add Cash",
-      Icon: Wallet,
       disabled: selectedPortfolioReadOnly,
     },
     {
       id: "import" as const,
       label: "Import Transactions",
-      Icon: FileSpreadsheet,
       disabled: selectedPortfolioReadOnly || selectedPortfolioId == null,
     },
   ];
+
+  useEffect(() => {
+    if (!open) {
+      setTradeIconPlaying(false);
+      setCashIconPlaying(false);
+      setImportIconPlaying(false);
+    }
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -139,12 +154,32 @@ export function PortfolioQuickAddMenu({
             "origin-top-right [animation:quick-add-dropdown-in_220ms_ease-out_both] motion-reduce:[animation:none]",
           )}
         >
-          {items.map(({ id, label, Icon, disabled }) => (
+          {items.map(({ id, label, disabled }) => (
             <button
               key={id}
               type="button"
               role="menuitem"
               disabled={disabled}
+              onMouseEnter={() => {
+                if (id === "trade") setTradeIconPlaying(true);
+                if (id === "cash") setCashIconPlaying(true);
+                if (id === "import") setImportIconPlaying(true);
+              }}
+              onMouseLeave={() => {
+                if (id === "trade") setTradeIconPlaying(false);
+                if (id === "cash") setCashIconPlaying(false);
+                if (id === "import") setImportIconPlaying(false);
+              }}
+              onFocus={() => {
+                if (id === "trade") setTradeIconPlaying(true);
+                if (id === "cash") setCashIconPlaying(true);
+                if (id === "import") setImportIconPlaying(true);
+              }}
+              onBlur={() => {
+                if (id === "trade") setTradeIconPlaying(false);
+                if (id === "cash") setCashIconPlaying(false);
+                if (id === "import") setImportIconPlaying(false);
+              }}
               onClick={() => {
                 if (disabled) return;
                 setOpen(false);
@@ -160,7 +195,22 @@ export function PortfolioQuickAddMenu({
                   : "text-[#09090B]",
               )}
             >
-              <Icon className="h-4 w-4 shrink-0" strokeWidth={1.75} aria-hidden />
+              {id === "trade" ? (
+                <DropdownMenuLottieIcon
+                  animationData={newTradeMenuIconAnimation}
+                  playing={tradeIconPlaying}
+                />
+              ) : id === "cash" ? (
+                <DropdownMenuLottieIcon
+                  animationData={addCashMenuIconAnimation}
+                  playing={cashIconPlaying}
+                />
+              ) : (
+                <DropdownMenuLottieIcon
+                  animationData={importTransactionsMenuIconAnimation}
+                  playing={importIconPlaying}
+                />
+              )}
               <span className="min-w-0 flex-1 truncate text-left">{label}</span>
             </button>
           ))}

@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, GitMerge, Globe, Lock, Pencil, Plus } from "@/lib/icons";
+import { Check, Globe, Lock, Pencil } from "@/lib/icons";
+
+import { DropdownMenuLottieIcon } from "@/components/icons/dropdown-menu-lottie-icon";
 
 import {
   ChevronsUpDownIcon,
@@ -16,6 +18,10 @@ import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal
 import { PortfolioListLogo } from "@/components/portfolio/portfolio-brokerage-logo";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import { portfolioKindSubtext, type PortfolioPrivacy } from "@/components/portfolio/portfolio-types";
+import {
+  createCombinedPortfolioMenuIconAnimation,
+  createPortfolioMenuIconAnimation,
+} from "@/lib/lottie/portfolio-menu-animations";
 import { cn } from "@/lib/utils";
 
 function PrivacyGlyph({ privacy }: { privacy: PortfolioPrivacy }) {
@@ -61,6 +67,8 @@ export function TransactionPortfolioField({
   } = usePortfolioWorkspace();
 
   const [open, setOpen] = useState(false);
+  const [createPortfolioIconPlaying, setCreatePortfolioIconPlaying] = useState(false);
+  const [combinedPortfolioIconPlaying, setCombinedPortfolioIconPlaying] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const menuPortalRef = useRef<HTMLDivElement>(null);
   const chevronsRef = useRef<ChevronsUpDownIconHandle>(null);
@@ -69,6 +77,13 @@ export function TransactionPortfolioField({
   const hasPortfolio = selected != null;
   const canCreateCombinedPortfolio =
     portfolios.filter((p) => p.kind !== "combined").length >= 2;
+
+  useEffect(() => {
+    if (!open) {
+      setCreatePortfolioIconPlaying(false);
+      setCombinedPortfolioIconPlaying(false);
+    }
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -168,6 +183,10 @@ export function TransactionPortfolioField({
           />
           <button
             type="button"
+            onMouseEnter={() => setCreatePortfolioIconPlaying(true)}
+            onMouseLeave={() => setCreatePortfolioIconPlaying(false)}
+            onFocus={() => setCreatePortfolioIconPlaying(true)}
+            onBlur={() => setCreatePortfolioIconPlaying(false)}
             onClick={(e) => {
               e.stopPropagation();
               setOpen(false);
@@ -175,8 +194,11 @@ export function TransactionPortfolioField({
             }}
             className={dropdownMenuPlainItemClassName()}
           >
-            <Plus className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
-            <span>Create new portfolio</span>
+            <DropdownMenuLottieIcon
+              animationData={createPortfolioMenuIconAnimation}
+              playing={createPortfolioIconPlaying}
+            />
+            <span>Create New Portfolio</span>
           </button>
           <button
             type="button"
@@ -186,6 +208,10 @@ export function TransactionPortfolioField({
                 undefined
               : "Create at least two portfolios to combine them"
             }
+            onMouseEnter={() => setCombinedPortfolioIconPlaying(true)}
+            onMouseLeave={() => setCombinedPortfolioIconPlaying(false)}
+            onFocus={() => setCombinedPortfolioIconPlaying(true)}
+            onBlur={() => setCombinedPortfolioIconPlaying(false)}
             onClick={(e) => {
               e.stopPropagation();
               if (!canCreateCombinedPortfolio) return;
@@ -198,8 +224,11 @@ export function TransactionPortfolioField({
                 "cursor-not-allowed opacity-40 hover:bg-white disabled:pointer-events-none",
             )}
           >
-            <GitMerge className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
-            <span>Create combined portfolio</span>
+            <DropdownMenuLottieIcon
+              animationData={createCombinedPortfolioMenuIconAnimation}
+              playing={combinedPortfolioIconPlaying}
+            />
+            <span>Create Combined Portfolio</span>
           </button>
         </>
       ) : null}

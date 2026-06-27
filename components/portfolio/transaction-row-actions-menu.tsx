@@ -5,14 +5,19 @@ import { createPortal } from "react-dom";
 import { MoreHorizontal } from "@/lib/icons";
 
 import type { PortfolioTransaction } from "@/components/portfolio/portfolio-types";
+import { DropdownMenuLottieIcon } from "@/components/icons/dropdown-menu-lottie-icon";
 import {
   dropdownMenuPanelClassName,
   dropdownMenuPlainItemClassName,
 } from "@/components/design-system/dropdown-menu-styles";
+import { deleteMenuIconAnimation, renameMenuIconAnimation } from "@/lib/lottie/watchlist-menu-animations";
 import { cn } from "@/lib/utils";
 
 const ghostSquareBtn =
   "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] border border-transparent text-[#09090B] transition-colors hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2";
+
+/** Matches `min-w-[11.5rem]` — icon + label rows. */
+const MENU_WIDTH_PX = 184;
 
 export function TransactionRowActionsMenu({
   transaction,
@@ -33,6 +38,8 @@ export function TransactionRowActionsMenu({
   const btnRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
+  const [editIconPlaying, setEditIconPlaying] = useState(false);
+  const [deleteIconPlaying, setDeleteIconPlaying] = useState(false);
 
   useLayoutEffect(() => {
     if (!isOpen || !btnRef.current) {
@@ -42,12 +49,18 @@ export function TransactionRowActionsMenu({
       return;
     }
     const r = btnRef.current.getBoundingClientRect();
-    const menuWidth = 168;
     const left =
-      align === "end" ? Math.max(8, r.right - menuWidth) : Math.min(r.left, window.innerWidth - menuWidth - 8);
+      align === "end" ? Math.max(8, r.right - MENU_WIDTH_PX) : Math.min(r.left, window.innerWidth - MENU_WIDTH_PX - 8);
     // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional layout-phase sync for portal position
     setCoords({ top: r.bottom + 6, left });
   }, [isOpen, align]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setEditIconPlaying(false);
+      setDeleteIconPlaying(false);
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -79,30 +92,51 @@ export function TransactionRowActionsMenu({
           ref={menuRef}
           role="menu"
           aria-orientation="vertical"
-          className={cn(dropdownMenuPanelClassName(), "fixed z-[200] min-w-[10.5rem]")}
+          className={cn(dropdownMenuPanelClassName(), "fixed z-[200] min-w-[11.5rem]")}
           style={{ top: coords.top, left: coords.left }}
         >
           <button
             type="button"
             role="menuitem"
             className={dropdownMenuPlainItemClassName()}
+            onMouseEnter={() => setEditIconPlaying(true)}
+            onMouseLeave={() => setEditIconPlaying(false)}
+            onFocus={() => setEditIconPlaying(true)}
+            onBlur={() => setEditIconPlaying(false)}
             onClick={() => {
               onEdit(transaction);
               onOpenChange(false);
             }}
           >
-            Edit
+            <DropdownMenuLottieIcon
+              key={isOpen ? "edit-open" : "edit-closed"}
+              animationData={renameMenuIconAnimation}
+              playing={editIconPlaying}
+            />
+            <span className="min-w-0 flex-1 truncate text-left">Edit</span>
           </button>
           <button
             type="button"
             role="menuitem"
-            className={cn(dropdownMenuPlainItemClassName(), "text-[#DC2626]")}
+            className={cn(
+              dropdownMenuPlainItemClassName(),
+              "text-[#DC2626] hover:bg-[#FEE2E2] hover:text-[#B91C1C]",
+            )}
+            onMouseEnter={() => setDeleteIconPlaying(true)}
+            onMouseLeave={() => setDeleteIconPlaying(false)}
+            onFocus={() => setDeleteIconPlaying(true)}
+            onBlur={() => setDeleteIconPlaying(false)}
             onClick={() => {
               onRequestDelete(transaction);
               onOpenChange(false);
             }}
           >
-            Delete
+            <DropdownMenuLottieIcon
+              key={isOpen ? "delete-open" : "delete-closed"}
+              animationData={deleteMenuIconAnimation}
+              playing={deleteIconPlaying}
+            />
+            <span className="min-w-0 flex-1 truncate text-left">Delete</span>
           </button>
         </div>,
         document.body,

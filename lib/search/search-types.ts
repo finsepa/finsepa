@@ -1,7 +1,7 @@
 /** Normalized item for global search + recent searches. */
 export type SearchAssetItem = {
   id: string;
-  type: "stock" | "crypto" | "index";
+  type: "stock" | "crypto" | "index" | "superinvestor";
   symbol: string;
   name: string;
   /** Secondary line (e.g. exchange, pair). */

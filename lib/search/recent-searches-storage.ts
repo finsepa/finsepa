@@ -25,7 +25,7 @@ function isSearchAssetItem(x: unknown): x is SearchAssetItem {
   const o = x as Record<string, unknown>;
   return (
     typeof o.id === "string" &&
-    (o.type === "stock" || o.type === "crypto" || o.type === "index") &&
+    (o.type === "stock" || o.type === "crypto" || o.type === "index" || o.type === "superinvestor") &&
     typeof o.symbol === "string" &&
     typeof o.name === "string" &&
     typeof o.route === "string"

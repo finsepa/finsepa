@@ -281,7 +281,7 @@ function resolvePriorSessionCloseUsd(
 
 /**
  * Dual-column header quote outside US regular session (regular close + live extended).
- * Returns null during regular session, weekends, or non-US listings.
+ * Returns null during regular session or non-US listings.
  */
 export async function buildStockExtendedHoursHeaderQuote(
   ticker: string,
@@ -310,8 +310,14 @@ export async function buildStockExtendedHoursHeaderQuote(
       : resolveRegularSessionCloseUsd(row, extendedPrice, performance, sessionCloseUsd);
   if (closePrice == null) return null;
 
-  // Skip when extended quote hasn't moved from the official close (after-hours only).
-  if (wallSession !== "pre" && Math.abs(extendedPrice - closePrice) < 0.0001) return null;
+  // During live post, hide until extended quote moves off the official close.
+  // When fully closed (overnight/weekend), still show the last after-hours print.
+  if (
+    wallSession === "post" &&
+    Math.abs(extendedPrice - closePrice) < 0.0001
+  ) {
+    return null;
+  }
 
   const priorDay =
     priorSessionDayChangeFromPerformance(performance, previousClose) ??

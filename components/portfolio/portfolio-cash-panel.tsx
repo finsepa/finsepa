@@ -261,8 +261,8 @@ function PortfolioCashPanelInner() {
                         dropdownMenuPlainItemRowClassName({
                           selected: cashDirectionFilter === value,
                         }),
-                        cashDirectionFilter !== value && "font-normal text-[#71717A] hover:text-[#09090B]",
-                        cashDirectionFilter === value && "font-medium text-[#09090B]",
+                        "text-[#09090B]",
+                        cashDirectionFilter === value ? "font-medium" : "font-normal",
                       )}
                     >
                       <span className="min-w-0 flex-1 truncate text-left">{label}</span>

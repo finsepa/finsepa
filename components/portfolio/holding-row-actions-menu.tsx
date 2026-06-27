@@ -2,13 +2,16 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { MoreHorizontal, Plus, Trash2 } from "@/lib/icons";
+import { MoreHorizontal } from "@/lib/icons";
 
 import type { PortfolioHolding } from "@/components/portfolio/portfolio-types";
+import { DropdownMenuLottieIcon } from "@/components/icons/dropdown-menu-lottie-icon";
 import {
   dropdownMenuPanelClassName,
   dropdownMenuPlainItemRowClassName,
 } from "@/components/design-system/dropdown-menu-styles";
+import { newTradeMenuIconAnimation } from "@/lib/lottie/quick-add-menu-animations";
+import { deleteMenuIconAnimation } from "@/lib/lottie/watchlist-menu-animations";
 import { cn } from "@/lib/utils";
 
 const ghostSquareBtn =
@@ -32,6 +35,8 @@ export function HoldingRowActionsMenu({
   const btnRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
+  const [addTransactionsIconPlaying, setAddTransactionsIconPlaying] = useState(false);
+  const [removeIconPlaying, setRemoveIconPlaying] = useState(false);
 
   useLayoutEffect(() => {
     if (!isOpen || !btnRef.current) {
@@ -44,6 +49,13 @@ export function HoldingRowActionsMenu({
       align === "end" ? Math.max(8, r.right - menuWidth) : Math.min(r.left, window.innerWidth - menuWidth - 8);
     setCoords({ top: r.bottom + 6, left });
   }, [isOpen, align]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setAddTransactionsIconPlaying(false);
+      setRemoveIconPlaying(false);
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -82,25 +94,36 @@ export function HoldingRowActionsMenu({
             type="button"
             role="menuitem"
             className={cn(dropdownMenuPlainItemRowClassName(), "gap-2")}
+            onMouseEnter={() => setAddTransactionsIconPlaying(true)}
+            onMouseLeave={() => setAddTransactionsIconPlaying(false)}
+            onFocus={() => setAddTransactionsIconPlaying(true)}
+            onBlur={() => setAddTransactionsIconPlaying(false)}
             onClick={() => {
               onAddTransactions(holding);
               onOpenChange(false);
             }}
           >
-            <Plus className="h-4 w-4 shrink-0 text-[#09090B]" strokeWidth={2} aria-hidden />
+            <DropdownMenuLottieIcon animationData={newTradeMenuIconAnimation} playing={addTransactionsIconPlaying} />
             <span className="min-w-0 flex-1 truncate text-left">Add Transactions</span>
           </button>
           <button
             type="button"
             role="menuitem"
-            className={cn(dropdownMenuPlainItemRowClassName(), "gap-2 text-[#DC2626] hover:text-[#DC2626]")}
+            className={cn(
+              dropdownMenuPlainItemRowClassName(),
+              "gap-2 text-[#DC2626] hover:bg-[#FEE2E2] hover:text-[#B91C1C]",
+            )}
+            onMouseEnter={() => setRemoveIconPlaying(true)}
+            onMouseLeave={() => setRemoveIconPlaying(false)}
+            onFocus={() => setRemoveIconPlaying(true)}
+            onBlur={() => setRemoveIconPlaying(false)}
             onClick={() => {
               onRemoveAsset(holding);
               onOpenChange(false);
             }}
           >
-            <Trash2 className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
-            <span className="min-w-0 flex-1 truncate text-left">Remove asset</span>
+            <DropdownMenuLottieIcon animationData={deleteMenuIconAnimation} playing={removeIconPlaying} />
+            <span className="min-w-0 flex-1 truncate text-left">Remove Asset</span>
           </button>
         </div>,
         document.body,

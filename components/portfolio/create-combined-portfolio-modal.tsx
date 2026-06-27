@@ -58,7 +58,7 @@ export function CreateCombinedPortfolioModal({
     <AppModalOverlay open onClose={onClose} zIndex={110}>
       <AppModalShell
         titleId={titleId}
-        title="Create combined portfolio"
+        title="Create Combined Portfolio"
         onClose={onClose}
         maxHeightClass="max-h-[min(90vh,640px)]"
         bodyClassName="flex flex-col gap-4 px-5 pb-5 pt-5"

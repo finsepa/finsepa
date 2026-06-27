@@ -124,13 +124,9 @@ export function getUsEquitySessionBadgeDisplay(now: Date): UsEquitySessionBadgeD
   return { kind: "closed" };
 }
 
-/** True when the US equity header may show the pre/post price column — any time except live regular session. */
+/** True when the US equity header may show the pre/post price column — any time except live regular session (includes weekends and overnight “Market closed”). */
 export function isUsEquityExtendedHoursHeaderEligible(now: Date = new Date()): boolean {
-  const session = getUsEquityMarketSession(now);
-  if (session === "regular") return false;
-  const { weekdayShort } = nyWeekdayAndMinutes(now);
-  if (weekdayShort === "Sat" || weekdayShort === "Sun") return false;
-  return true;
+  return getUsEquityMarketSession(now) !== "regular";
 }
 
 function nySessionYmdFromDate(date: Date): string {

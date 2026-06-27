@@ -259,7 +259,7 @@ function CreatePortfolioModal({
     <AppModalOverlay open onClose={closeAll} zIndex={110}>
       <AppModalShell
         titleId={titleId}
-        title="Create new portfolio"
+        title="Create New Portfolio"
         onClose={closeAll}
         bodyClassName="flex flex-col gap-4 px-5 pb-5 pt-5"
         footer={
