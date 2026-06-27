@@ -43,6 +43,7 @@ import {
 import { IndexCards } from "@/components/screener/index-cards";
 import { MarketTabs, type MarketTab } from "@/components/screener/market-tabs";
 import { UsMarketsSessionLabel } from "@/components/screener/us-markets-session-label";
+import { cn } from "@/lib/utils";
 import { ScreenerIndustriesTable } from "@/components/screener/screener-industries-table";
 import { ScreenerSectorsTable } from "@/components/screener/screener-sectors-table";
 import { ScreenerTabs, type StocksSubTab } from "@/components/screener/screener-tabs";
@@ -278,7 +279,7 @@ function StocksTabBody({
     panel = <StocksGainersLosersSkeleton rows={GAINERS_LOSERS_TOP_N} {...mobileTableChrome} />;
   } else if (gainersLosers) {
     panel = (
-      <div className={useMobileStocksSubTabCard ? "max-md:divide-y max-md:divide-solid max-md:divide-[#E4E4E7]" : "space-y-6"}>
+      <div className={useMobileStocksSubTabCard ? "max-md:space-y-4 md:space-y-6" : "space-y-6"}>
         <div>
           <div className="mb-3 hidden text-[14px] font-semibold leading-5 text-[#71717A] md:block">
             Top gainers (1D %)
@@ -1025,7 +1026,12 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
             marketCacheSegment={activePayload.companiesMarketCacheSegment}
           />
           {!isStocksDrill ? (
-            <div className="mb-5 flex min-w-0 w-full max-w-full max-md:mb-3 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <div
+              className={cn(
+                "mb-5 flex min-w-0 w-full max-w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4",
+                useMobileStocksSubTabCard ? "max-md:hidden" : "max-md:mb-3",
+              )}
+            >
               <ScreenerTabs
                 active={displayStocksSubTab}
                 onChange={setStocksSubTabWithUrl}

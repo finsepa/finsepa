@@ -498,7 +498,7 @@ function PortfolioOverviewCardsInner({
   }, [showEmptyPortfolioMetrics, dividendWeightedYield, dividendAnnualUsd]);
 
   return (
-    <div className="mb-4 w-full min-w-0 sm:mb-6">
+    <div className="w-full min-w-0 max-md:mb-2 sm:mb-6">
       {/* Mobile: compact summary (matches design reference). */}
       <div className="sm:hidden">
         {showMetricSkeleton ? (
@@ -535,10 +535,21 @@ function PortfolioOverviewCardsInner({
               ) : null}
             </div>
 
-            <div className="mt-4 space-y-0">
-              <div className="flex items-center justify-between gap-4 py-3">
-                <span className="text-[14px] font-medium leading-5 text-[#71717A]">Benchmark</span>
-                <span className="text-[14px] font-medium leading-5 tabular-nums text-[#09090B]">
+            <div className="max-md:mt-2 sm:mt-4 space-y-0">
+              <div className="flex items-center justify-between gap-4 max-md:py-2 sm:py-3">
+                <span className="text-[14px] font-medium leading-5 text-[#71717A]">S&amp;P 500</span>
+                <span
+                  className={cn(
+                    "text-[14px] font-medium leading-5 tabular-nums",
+                    showEmptyPortfolioMetrics
+                      ? "text-[#16A34A]"
+                      : inceptionBenchmarkMetrics.rSpy == null
+                        ? "text-[#09090B]"
+                        : inceptionBenchmarkMetrics.rSpy >= 0
+                          ? "text-[#16A34A]"
+                          : "text-[#DC2626]",
+                  )}
+                >
                   {mobileBenchmarkPct}
                 </span>
               </div>

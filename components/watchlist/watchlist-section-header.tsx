@@ -42,7 +42,7 @@ export function WatchlistSectionHeader({
   onDropItem,
   onReorderSection,
 }: {
-  variant?: "table" | "rail";
+  variant?: "table" | "rail" | "card";
   sectionId: string;
   sectionIndex: number;
   label: string;
@@ -98,8 +98,9 @@ export function WatchlistSectionHeader({
 
   const dragSurfaceClassName = cn(
     "group transition-colors",
-    variant === "table" ? "border-b border-[#E4E4E7]" : "rounded-lg",
-    dragOver && (variant === "table" ? "bg-[#E4E4E7]" : "bg-[#F4F4F5]"),
+    variant === "table" ? "border-b border-[#E4E4E7]" : variant === "rail" ? "rounded-lg" : "bg-white",
+    dragOver &&
+      (variant === "table" || variant === "card" ? "bg-[#E4E4E7]" : "bg-[#F4F4F5]"),
   );
 
   const dragHandlers = {
@@ -165,7 +166,10 @@ export function WatchlistSectionHeader({
             writeWatchlistSectionDragData(event.dataTransfer, { sectionIndex, sectionId });
           }}
           onDragEnd={() => setDragOver(false)}
-          className={cn(actionButtonClassName, "cursor-grab active:cursor-grabbing")}
+          className={cn(
+            actionButtonClassName,
+            "max-md:hidden cursor-grab active:cursor-grabbing",
+          )}
         >
           <GripVertical className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
         </button>
@@ -232,6 +236,10 @@ export function WatchlistSectionHeader({
       {variant === "rail" ? (
         <div className={dragSurfaceClassName} {...dragHandlers}>
           <div className="px-2 py-1.5">{headerContent}</div>
+        </div>
+      ) : variant === "card" ? (
+        <div className={dragSurfaceClassName} {...dragHandlers}>
+          <div className="px-4 py-2">{headerContent}</div>
         </div>
       ) : (
         <tr className={dragSurfaceClassName} {...dragHandlers}>

@@ -18,7 +18,7 @@ const SCREENER_STOCKS_SUB_TAB_OPTIONS = SCREENER_STOCKS_SUB_TAB_ITEMS.map(({ id,
   label,
 }));
 
-/** Mobile Companies table: segmented control (active grey pill, inactive white). */
+/** Mobile stocks table: pill tabs (active grey fill, inactive transparent) — matches portfolio holdings tabs. */
 export function ScreenerStocksSubTabMobileToggle({
   active,
   onChange,
@@ -28,7 +28,7 @@ export function ScreenerStocksSubTabMobileToggle({
 }) {
   return (
     <div
-      className="flex flex-nowrap items-center gap-1 overflow-x-auto [-webkit-overflow-scrolling:touch]"
+      className="mobile-scroll-x flex flex-nowrap items-center gap-1"
       role="tablist"
       aria-label="Stocks view"
     >
@@ -42,9 +42,9 @@ export function ScreenerStocksSubTabMobileToggle({
             aria-selected={isActive}
             onClick={() => onChange(item.id)}
             className={cn(
-              "shrink-0 whitespace-nowrap rounded-[10px] px-3 py-2 text-[13px] font-medium leading-5 transition-colors duration-100",
+              "shrink-0 whitespace-nowrap rounded-lg px-3 py-1.5 text-[14px] font-medium leading-5 transition-colors duration-100",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2",
-              isActive ? "bg-[#F4F4F5] text-[#09090B]" : "bg-white text-[#71717A]",
+              isActive ? "bg-[#F4F4F5] text-[#09090B]" : "bg-transparent text-[#71717A]",
             )}
           >
             {item.label}

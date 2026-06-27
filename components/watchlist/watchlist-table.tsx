@@ -2,10 +2,14 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { GripVertical } from "@/lib/icons";
 
 import { eodhdCryptoSpotTickerDisplay } from "@/lib/crypto/eodhd-crypto-ticker-display";
 import { CompanyLogo } from "@/components/screener/company-logo";
+import {
+  SCREENER_TABLE_BODY_DIVIDE_CLASS,
+  SCREENER_TABLE_HEADER_STICKY_CLASS,
+  ScreenerTableScroll,
+} from "@/components/screener/screener-table-scroll";
 import { WatchlistEmptyState } from "@/components/watchlist/watchlist-empty-state";
 import { WatchlistHeaderActions } from "@/components/watchlist/watchlist-header-actions";
 import { WatchlistRowRemoveButton } from "@/components/watchlist/watchlist-star-button";
@@ -18,6 +22,13 @@ import { readWatchlistDragData, writeWatchlistDragData } from "@/lib/watchlist/w
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
 import { useWatchlistEnrichedItems } from "@/lib/watchlist/use-watchlist-enriched-items";
 import { cn } from "@/lib/utils";
+
+/** Mobile: asset + price/1D + remove (row drag reorders). Desktop adds metric columns. */
+const watchlistRowGridClass =
+  "grid-cols-[minmax(0,1fr)_minmax(4.5rem,5.5rem)_40px] gap-x-1.5 sm:grid-cols-[minmax(0,2fr)_repeat(6,minmax(0,1fr))_40px] sm:gap-x-2";
+
+const watchlistRowLinkGridClass =
+  "grid-cols-[minmax(0,1fr)_minmax(4.5rem,5.5rem)] gap-x-1.5 sm:grid-cols-[minmax(0,2fr)_repeat(6,minmax(0,1fr))] sm:gap-x-2";
 
 function globalTickerIndex(watchedTickers: string[], storageKey: string): number {
   const key = normalizeWatchlistStorageKey(storageKey);
@@ -32,66 +43,119 @@ function formatPrice(n: number | null, kind: "stock" | "crypto" | "index"): stri
   return `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
+function formatPercentValue(value: number | null) {
+  if (value == null || !Number.isFinite(value)) return "-";
+  return `${value > 0 ? "+" : ""}${value.toFixed(2)}%`;
+}
+
 function ChangeCell({ value }: { value: number | null }) {
-  if (value == null || !Number.isFinite(value)) {
-    return <td className="px-4 text-right text-[14px] leading-5 tabular-nums text-[#71717A]">-</td>;
-  }
-  const positive = value >= 0;
+  const isMissing = value == null || !Number.isFinite(value);
+  const positive = !isMissing && value! >= 0;
   return (
-    <td
-      className={`px-4 text-right text-[14px] leading-5 tabular-nums font-medium ${
-        positive ? "text-[#16A34A]" : "text-[#DC2626]"
+    <div
+      className={`min-w-0 w-full text-right tabular-nums text-[14px] leading-5 font-medium ${
+        isMissing ? "text-[#71717A]" : positive ? "text-[#16A34A]" : "text-[#DC2626]"
       }`}
     >
-      {positive ? "+" : ""}
-      {value.toFixed(2)}%
-    </td>
+      {formatPercentValue(value)}
+    </div>
   );
 }
 
+function PriceAndChangeCell({
+  price,
+  change1D,
+  kind,
+}: {
+  price: number | null;
+  change1D: number | null;
+  kind: "stock" | "crypto" | "index";
+}) {
+  const hasPrice = price != null && Number.isFinite(price);
+  const hasChange = change1D != null && Number.isFinite(change1D);
+  const positive = (change1D ?? 0) >= 0;
+  return (
+    <div className="min-w-0 w-full text-right">
+      <div
+        className={`min-w-0 w-full font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums ${
+          hasPrice ? "text-[#09090B]" : "text-[#71717A]"
+        }`}
+      >
+        {hasPrice ? formatPrice(price, kind) : "-"}
+      </div>
+      <div
+        className={`mt-0.5 min-w-0 w-full text-[12px] font-medium leading-4 tabular-nums ${
+          !hasChange ? "text-[#71717A]" : positive ? "text-[#16A34A]" : "text-[#DC2626]"
+        }`}
+      >
+        {formatPercentValue(change1D)}
+      </div>
+    </div>
+  );
+}
+
+function WatchlistTableHeader() {
+  return (
+    <div
+      className={cn(
+        "grid min-h-[44px] items-center px-4 py-0 text-[12px] font-medium leading-5 text-[#71717A] max-md:hidden sm:text-[14px]",
+        watchlistRowGridClass,
+        SCREENER_TABLE_HEADER_STICKY_CLASS,
+      )}
+    >
+      <div className="text-left">Asset</div>
+      <div className="min-w-0 w-full text-right">
+        <span className="sm:hidden">Price</span>
+        <span className="hidden sm:inline">Price</span>
+      </div>
+      <div className="hidden min-w-0 w-full text-right sm:block">1D %</div>
+      <div className="hidden min-w-0 w-full text-right sm:block">1M %</div>
+      <div className="hidden min-w-0 w-full text-right sm:block">YTD %</div>
+      <div className="hidden min-w-0 w-full text-right sm:block">M.Cap</div>
+      <div className="hidden min-w-0 w-full text-right sm:block">PE</div>
+      <div aria-label="Remove from watchlist" />
+    </div>
+  );
+}
+
+function WatchlistTableSkeletonRow() {
+  return (
+    <div className={cn("grid min-h-[60px] items-center bg-white px-4", watchlistRowGridClass)}>
+      <div className="flex min-w-0 items-center gap-3 pr-4 max-md:gap-2">
+        <div className="h-8 w-8 shrink-0 animate-pulse rounded-lg bg-neutral-200" />
+        <div className="min-w-0 flex-1 space-y-2">
+          <div className="h-4 w-32 animate-pulse rounded bg-neutral-200" />
+          <div className="h-3 w-14 animate-pulse rounded bg-neutral-100" />
+        </div>
+      </div>
+      <div className="space-y-1.5 text-right sm:space-y-0">
+        <div className="ml-auto h-4 w-14 animate-pulse rounded bg-neutral-100 sm:mx-0 sm:ml-auto sm:w-12" />
+        <div className="ml-auto h-3 w-10 animate-pulse rounded bg-neutral-100 sm:hidden" />
+      </div>
+      {Array.from({ length: 5 }).map((_, j) => (
+        <div key={j} className="hidden text-right sm:block">
+          <div className="ml-auto h-4 w-12 animate-pulse rounded bg-neutral-100" />
+        </div>
+      ))}
+      <div className="flex justify-center">
+        <div className="h-5 w-5 max-w-[1.25rem] animate-pulse rounded bg-neutral-100" />
+      </div>
+    </div>
+  );
+}
 
 function WatchlistTableSkeleton() {
   return (
-    <div className="min-w-0 -mx-4 overflow-x-auto pb-1 sm:mx-0">
-      <table className="w-full min-w-[720px] border-collapse">
-        <thead>
-          <tr className="border-t border-b border-[#E4E4E7] bg-white">
-            <th className="w-8 px-1 py-3" aria-hidden />
-            <th className="py-3 pr-4 text-left text-[14px] font-semibold leading-5 text-[#71717A]">Asset</th>
-            {["Price", "1D %", "1M %", "YTD %", "M.Cap", "PE"].map((h) => (
-              <th key={h} className="px-4 py-3 text-right text-[14px] font-semibold leading-5 text-[#71717A]">
-                {h}
-              </th>
-            ))}
-            <th className="w-10 px-4 py-3 text-center" aria-label="Remove from watchlist" />
-          </tr>
-        </thead>
-        <tbody>
+    <ScreenerTableScroll>
+      <div className="bg-white">
+        <WatchlistTableHeader />
+        <div className={SCREENER_TABLE_BODY_DIVIDE_CLASS}>
           {[0, 1, 2].map((i) => (
-            <tr key={i} className="h-[60px] border-b border-[#E4E4E7]">
-              <td className="w-8 px-1" aria-hidden />
-              <td className="py-2 pr-4">
-                <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 shrink-0 animate-pulse rounded-lg bg-neutral-200" />
-                  <div className="min-w-0 flex-1 space-y-2">
-                    <div className="h-4 w-32 animate-pulse rounded bg-neutral-200" />
-                    <div className="h-3 w-14 animate-pulse rounded bg-neutral-100" />
-                  </div>
-                </div>
-              </td>
-              {Array.from({ length: 6 }).map((_, j) => (
-                <td key={j} className="px-4 text-right">
-                  <div className="ml-auto h-4 w-12 animate-pulse rounded bg-neutral-100" />
-                </td>
-              ))}
-              <td className="w-10 px-4 text-center">
-                <div className="mx-auto h-5 w-5 max-w-[1.25rem] animate-pulse rounded bg-neutral-100" />
-              </td>
-            </tr>
+            <WatchlistTableSkeletonRow key={i} />
           ))}
-        </tbody>
-      </table>
-    </div>
+        </div>
+      </div>
+    </ScreenerTableScroll>
   );
 }
 
@@ -111,7 +175,7 @@ function WatchlistTableRow({
   const [dragOver, setDragOver] = useState(false);
 
   return (
-    <tr
+    <div
       draggable={globalIndex >= 0}
       aria-label={`Reorder ${row.symbol}`}
       onDragStart={(event) => {
@@ -141,66 +205,71 @@ function WatchlistTableRow({
         onMoveItem(payload.globalIndex, { kind: "row", toIndex: globalIndex, sectionId });
       }}
       className={cn(
-        "group h-[60px] max-h-[60px] cursor-pointer border-b border-[#E4E4E7] transition-colors duration-75 last:border-b-0",
+        "group grid min-h-[60px] cursor-grab items-center bg-white px-4 transition-colors duration-75 active:cursor-grabbing max-md:touch-manipulation",
+        watchlistRowGridClass,
+        globalIndex < 0 && "cursor-default",
         dragOver ? "bg-[#E4E4E7]" : "hover:bg-neutral-50",
       )}
     >
-      <td className="w-8 px-1 align-middle">
-        <div
-          className={cn(
-            "flex h-5 w-5 items-center justify-center text-[#71717A] opacity-0 transition-opacity group-hover:opacity-100",
-            globalIndex >= 0 ? "cursor-grab active:cursor-grabbing" : "invisible",
-          )}
-          aria-hidden
-        >
-          <GripVertical className="h-4 w-4" strokeWidth={2} />
-        </div>
-      </td>
-
-      <td className="py-0 pr-4 text-left align-middle">
-        <Link
-          href={row.href}
-          draggable={false}
-          className="flex items-center gap-3 text-left text-[#09090B] no-underline visited:text-[#09090B]"
-        >
+      <Link
+        href={row.href}
+        draggable={false}
+        className={cn(
+          "col-span-2 col-start-1 grid min-h-[56px] min-w-0 w-full items-center justify-items-stretch no-underline text-[#09090B] visited:text-[#09090B] sm:col-span-7 sm:col-start-1 sm:min-h-[60px]",
+          watchlistRowLinkGridClass,
+        )}
+        aria-label={`Open ${row.name} (${row.symbol})`}
+      >
+        <div className="flex min-w-0 items-center justify-start gap-3 pr-4 text-left max-md:gap-2">
           <CompanyLogo name={row.name} logoUrl={row.logoUrl ?? ""} symbol={row.symbol} />
           <div className="min-w-0">
-            <div className="truncate text-[14px] font-semibold leading-5 underline-offset-2 decoration-[#71717A] group-hover:underline">
+            <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B] underline-offset-2 decoration-[#71717A] group-hover:underline">
               {row.name}
             </div>
             <div className="text-[12px] font-normal leading-4 text-[#71717A] underline-offset-2 decoration-[#71717A] group-hover:underline">
               {row.kind === "crypto" ? eodhdCryptoSpotTickerDisplay(row.symbol) : row.symbol}
             </div>
           </div>
-        </Link>
-      </td>
-
-      <td className="px-4 text-right text-[14px] font-normal tabular-nums leading-5 text-[#09090B]">
-        {formatPrice(row.price, row.kind)}
-      </td>
-
-      <ChangeCell value={row.pct1d} />
-      <ChangeCell value={row.pct1m} />
-      <ChangeCell value={row.ytd} />
-
-      <td className="px-4 text-right text-[14px] font-normal tabular-nums leading-5 text-[#09090B]">
-        {row.mcapDisplay}
-      </td>
-      <td className="px-4 text-right text-[14px] font-normal tabular-nums leading-5 text-[#09090B]">
-        {row.peDisplay}
-      </td>
-
-      <td className="w-10 px-4 align-middle">
-        <div className="flex justify-center">
-          <WatchlistRowRemoveButton
-            className="flex items-center justify-center"
-            storageKey={row.storageKey}
-            label={row.symbol}
-            onRemove={onRemove}
-          />
         </div>
-      </td>
-    </tr>
+
+        <div className="block sm:hidden">
+          <PriceAndChangeCell price={row.price} change1D={row.pct1d} kind={row.kind} />
+        </div>
+
+        <div
+          className={`hidden min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums sm:block ${
+            row.price == null || !Number.isFinite(row.price) ? "text-[#71717A]" : "text-[#09090B]"
+          }`}
+        >
+          {formatPrice(row.price, row.kind)}
+        </div>
+
+        <div className="hidden min-w-0 w-full sm:block">
+          <ChangeCell value={row.pct1d} />
+        </div>
+        <div className="hidden min-w-0 w-full sm:block">
+          <ChangeCell value={row.pct1m} />
+        </div>
+        <div className="hidden min-w-0 w-full sm:block">
+          <ChangeCell value={row.ytd} />
+        </div>
+        <div className="hidden min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B] sm:block">
+          {row.mcapDisplay}
+        </div>
+        <div className="hidden min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B] sm:block">
+          {row.peDisplay}
+        </div>
+      </Link>
+
+      <div className="flex justify-center">
+        <WatchlistRowRemoveButton
+          className="flex items-center justify-center"
+          storageKey={row.storageKey}
+          label={row.symbol}
+          onRemove={onRemove}
+        />
+      </div>
+    </div>
   );
 }
 
@@ -232,6 +301,7 @@ function UserSectionGroup({
   return (
     <>
       <WatchlistSectionHeader
+        variant="card"
         sectionId={sectionId}
         sectionIndex={sectionIndex}
         label={label}
@@ -295,8 +365,8 @@ export function WatchlistTable() {
   const refreshing = loading && hasUsableRows;
 
   return (
-    <div className="flex min-w-0 flex-col gap-5">
-      <div className="flex min-w-0 items-center justify-between gap-3">
+    <div className="flex min-w-0 flex-col gap-5 max-md:gap-0 sm:gap-5">
+      <div className="hidden min-w-0 items-center gap-3 sm:flex sm:justify-between">
         <WatchlistHeaderActions
           name={activeWatchlistName}
           watchlists={watchlists}
@@ -335,21 +405,10 @@ export function WatchlistTable() {
       {storageHydrated && !showBlockingSkeleton && empty ? <WatchlistEmptyState /> : null}
 
       {storageHydrated && watched.size > 0 && hasUsableRows ? (
-        <div className="min-w-0 -mx-4 overflow-x-auto pb-1 sm:mx-0">
-          <table className="w-full min-w-[720px] border-collapse">
-            <thead>
-              <tr className="border-t border-b border-[#E4E4E7] bg-white">
-                <th className="w-8 px-1 py-3" aria-hidden />
-                <th className="py-3 pr-4 text-left text-[14px] font-semibold leading-5 text-[#71717A]">Asset</th>
-                {["Price", "1D %", "1M %", "YTD %", "M.Cap", "PE"].map((h) => (
-                  <th key={h} className="px-4 py-3 text-right text-[14px] font-semibold leading-5 text-[#71717A]">
-                    {h}
-                  </th>
-                ))}
-                <th className="w-10 px-4 py-3 text-center" aria-label="Remove from watchlist" />
-              </tr>
-            </thead>
-            <tbody>
+        <ScreenerTableScroll>
+          <div className="bg-white">
+            <WatchlistTableHeader />
+            <div className={SCREENER_TABLE_BODY_DIVIDE_CLASS}>
               {tableGroups.unsectioned.map((row) => (
                 <WatchlistTableRow
                   key={row.entryId}
@@ -375,10 +434,19 @@ export function WatchlistTable() {
                   onReorderSection={reorderActiveSection}
                 />
               ))}
-            </tbody>
-          </table>
-        </div>
+            </div>
+          </div>
+        </ScreenerTableScroll>
       ) : null}
+    </div>
+  );
+}
+
+/** Route segment loading — shows immediately on navigation to /watchlist. */
+export function WatchlistPageLoadingShell() {
+  return (
+    <div className="min-w-0 px-4 py-4 sm:px-9 sm:py-6">
+      <WatchlistTableSkeleton />
     </div>
   );
 }

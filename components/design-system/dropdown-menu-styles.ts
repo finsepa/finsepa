@@ -58,6 +58,16 @@ export function dropdownMenuPanelClassName(...extra: (string | undefined | null 
   return cn(dropdownMenuSurfaceClassName(), dropdownMenuPanelBodyClassName, ...extra.filter(Boolean));
 }
 
+/** Body padding when a dropdown panel is rendered inside a mobile bottom sheet. */
+export const dropdownMenuMobileSheetBodyClassName = "flex flex-col gap-1 p-2";
+
+/**
+ * Strip floating-menu chrome when nesting `dropdownMenuPanelClassName()` inside a mobile sheet.
+ * Apply on the sheet body wrapper around the menu panel.
+ */
+export const dropdownMenuMobileSheetStripPanelClassName =
+  "[&>*]:!rounded-none [&>*]:!border-0 [&>*]:!bg-transparent [&>*]:!p-0 [&>*]:!shadow-none";
+
 const plainItemBase =
   "flex w-full shrink-0 cursor-pointer items-center gap-2 rounded-lg bg-white px-4 py-2 text-left text-sm font-normal leading-5 text-[#09090B] transition-colors hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/10";
 
@@ -72,9 +82,14 @@ export function dropdownMenuPlainItemClassName(_opts?: { selected?: boolean }) {
 /**
  * Same row affordances with space for a trailing check (active) or spacer.
  * Selected row uses `#F4F4F5` (same as hover) per design spec.
+ * Grid keeps label + trailing controls aligned across rows in modal sheets.
  */
 export function dropdownMenuPlainItemRowClassName(opts?: { selected?: boolean }) {
-  return cn(plainItemBase, "h-10 min-h-10 justify-between", opts?.selected && "bg-[#F4F4F5]");
+  return cn(
+    plainItemBase,
+    "!grid h-10 min-h-10 grid-cols-[minmax(0,1fr)_auto] items-center",
+    opts?.selected && "bg-[#F4F4F5]",
+  );
 }
 
 /**

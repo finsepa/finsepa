@@ -130,6 +130,8 @@ export function PortfolioPrivacySelect({
           ref={menuPortalRef}
           align="leading"
           matchAnchorWidth
+          sheetTitle={ariaLabel}
+          onRequestClose={() => setOpen(false)}
         >
           <div className={dropdownMenuPanelClassName()} role="listbox" aria-label={ariaLabel}>
             {OPTIONS.map((opt) => {
@@ -152,7 +154,10 @@ export function PortfolioPrivacySelect({
                     {opt.label}
                   </span>
                   <span className="flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden>
-                    {selected ? <Check className="h-4 w-4 text-[#09090B]" strokeWidth={2} /> : null}
+                    <Check
+                      className={cn("h-4 w-4 text-[#09090B]", !selected && "invisible")}
+                      strokeWidth={2}
+                    />
                   </span>
                 </button>
               );

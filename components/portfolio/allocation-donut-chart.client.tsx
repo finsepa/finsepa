@@ -40,6 +40,8 @@ export type AllocationDonutChartProps = {
   className?: string;
   /** Rendered chart edge length — drives inner hole so center avatar leaves a 1px white gap. */
   chartSizePx?: number;
+  /** Space reserved around the plot for external slice labels (defaults to 36px). */
+  badgeOverflowPadPx?: number;
 };
 
 type DonutGeometry = { rOut: number; rIn: number; strokeWidth: number };
@@ -255,6 +257,7 @@ export function AllocationDonutChart({
   rows,
   center,
   chartSizePx = 300,
+  badgeOverflowPadPx = BADGE_OVERFLOW_PAD_PX,
 }: AllocationDonutChartProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const geometry = useMemo(() => resolveDonutGeometry(chartSizePx), [chartSizePx]);
@@ -268,8 +271,8 @@ export function AllocationDonutChart({
     <div
       className="absolute overflow-visible"
       style={{
-        left: BADGE_OVERFLOW_PAD_PX,
-        top: BADGE_OVERFLOW_PAD_PX,
+        left: badgeOverflowPadPx,
+        top: badgeOverflowPadPx,
         width: chartSizePx,
         height: chartSizePx,
       }}

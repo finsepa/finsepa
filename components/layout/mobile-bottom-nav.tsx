@@ -8,7 +8,6 @@ import {
   useMemo,
   useRef,
   useState,
-  useTransition,
 } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { ChartPieSlice, Globe, Star } from "@phosphor-icons/react";
@@ -19,6 +18,7 @@ import {
   MobileBottomNavSearchResults,
 } from "@/components/layout/mobile-bottom-nav-search";
 import { MobileMoreNavList } from "@/components/layout/mobile-more-nav-menu";
+import { useMobilePrimaryNav } from "@/components/layout/mobile-primary-nav-context";
 import {
   mobilePrimaryNavTabFromPathname,
   protectedMobileMoreNavItems,
@@ -122,12 +122,11 @@ export function MobileBottomNav() {
   const pathname = usePathname();
   const router = useRouter();
   const urlTab = useMemo(() => mobilePrimaryNavTabFromPathname(pathname), [pathname]);
-  const [displayTab, setDisplayTab] = useState<MobilePrimaryNavTab>(urlTab);
+  const { displayTab, setDisplayTab } = useMobilePrimaryNav();
   const [moreOpen, setMoreOpen] = useState(false);
   const [moreMenuAnimating, setMoreMenuAnimating] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchMorphComplete, setSearchMorphComplete] = useState(false);
-  const [, startTransition] = useTransition();
   const navFrozen = moreOpen || moreMenuAnimating;
   useMobileBottomNavScrollHide(!searchOpen && !navFrozen);
 
@@ -147,10 +146,6 @@ export function MobileBottomNav() {
   const highlightTab = moreOpen ? urlTab : displayTab;
   const highlightIndex = mobileBottomNavHighlightIndex(highlightTab);
   const highlightTabCount = MOBILE_BOTTOM_NAV_TAB_ORDER.length;
-
-  useEffect(() => {
-    if (!moreOpen) setDisplayTab(urlTab);
-  }, [urlTab, moreOpen]);
 
   useLayoutEffect(() => {
     syncMobileBottomNavMoreActiveClass(navFrozen);
@@ -205,9 +200,12 @@ export function MobileBottomNav() {
     return () => window.removeEventListener(OPEN_SEARCH_EVENT, onOpenSearch);
   }, [openSearch]);
 
-  const selectTab = useCallback((tab: MobilePrimaryNavTab) => {
-    setDisplayTab(tab);
-  }, []);
+  const selectTab = useCallback(
+    (tab: MobilePrimaryNavTab) => {
+      setDisplayTab(tab);
+    },
+    [setDisplayTab],
+  );
 
   const closeMore = useCallback(() => {
     if (!moreOpenRef.current) return;
@@ -236,9 +234,7 @@ export function MobileBottomNav() {
       if (searchOpen) closeSearch();
       if (displayTab === tab && urlTab === tab) return;
       selectTab(tab);
-      startTransition(() => {
-        router.push(href);
-      });
+      router.push(href);
     },
     [moreOpen, searchOpen, closeMore, closeSearch, displayTab, urlTab, router, selectTab],
   );
@@ -312,7 +308,7 @@ export function MobileBottomNav() {
               key="nav-pill"
               ref={navRef}
               className={cn(
-                "mobile-bottom-nav-pill relative z-[1] flex min-w-0 flex-col overflow-hidden",
+                "mobile-bottom-nav-pill relative z-[1] flex min-w-0 origin-bottom flex-col overflow-hidden",
                 pillSurfaceClass,
                 navFrozen && "mobile-bottom-nav-pill--expanded z-[44]",
               )}
@@ -325,7 +321,6 @@ export function MobileBottomNav() {
               }}
               exit={{ opacity: 0, scale: 0.96, filter: "blur(4px)" }}
               transition={moreOpen ? MORPH_SPRING : MORE_CLOSE_TRANSITION}
-              style={{ transformOrigin: "bottom center" }}
               onAnimationComplete={() => {
                 if (moreOpen) {
                   setMoreMenuAnimating(false);

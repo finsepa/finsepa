@@ -21,6 +21,7 @@ import {
 } from "@/components/portfolio/portfolio-page-loading";
 import {
   PortfolioPageTabs,
+  PORTFOLIO_HOLDINGS_SUB_TAB_ITEMS,
   type OverviewHoldingsSubTab,
   type PortfolioViewTab,
   overviewHoldingsSubTabFromSearchParam,
@@ -28,6 +29,7 @@ import {
   searchParamFromOverviewHoldingsSubTab,
   searchParamFromPortfolioViewTab,
 } from "@/components/portfolio/portfolio-page-tabs";
+import { PortfolioHoldingsSubTabMobileCard } from "@/components/portfolio/portfolio-holdings-sub-tab-mobile-card";
 import { PortfolioListLogo } from "@/components/portfolio/portfolio-brokerage-logo";
 import { PortfolioSyncStatusIcon } from "@/components/portfolio/portfolio-sync-status-icon";
 import { TransactionPortfolioField } from "@/components/portfolio/transaction-portfolio-field";
@@ -51,8 +53,8 @@ const PortfolioOverviewChart = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="mb-6 w-full">
-        <AssetChartSkeleton />
+      <div className="relative mb-6 h-[240px] w-full sm:h-[320px]">
+        <AssetChartSkeleton fill />
       </div>
     ),
   },
@@ -116,11 +118,8 @@ function initialTabsVisited(active: PortfolioViewTab): Record<PortfolioViewTab, 
   };
 }
 
-const OVERVIEW_HOLDINGS_TAB_ITEMS = [
-  { id: "assets" as const, label: "Assets" },
-  { id: "allocation" as const, label: "Allocation" },
-  { id: "slices" as const, label: "Slices" },
-] as const;
+const OVERVIEW_HOLDINGS_EMBEDDED_EMPTY_CLASS =
+  "max-md:min-h-[min(40vh,320px)] max-md:rounded-none max-md:border-0 max-md:shadow-none";
 
 export function PortfolioPageView({
   portfolioName,
@@ -268,9 +267,9 @@ export function PortfolioPageView({
   }
 
   return (
-    <div className="relative flex min-h-full min-w-0 flex-col overflow-x-hidden">
+    <div className="relative flex min-h-full min-w-0 flex-col md:overflow-x-hidden">
       {showPortfoliosBreadcrumb ? <PortfoliosBreadcrumbs currentLabel={portfolioName} /> : null}
-      <div className="relative flex min-h-full min-w-0 flex-1 flex-col overflow-x-hidden px-4 py-4 sm:px-9 sm:py-6">
+      <div className="relative flex min-h-full min-w-0 flex-1 flex-col px-4 pb-4 pt-2 max-md:overflow-visible md:overflow-x-hidden sm:px-9 sm:py-6">
       <AssetPageTopLoader />
       <div className="mb-6 hidden shrink-0 flex-col gap-2 sm:flex sm:flex-row sm:items-center sm:justify-between sm:gap-4">
         <div className="flex min-w-0 flex-1 items-center">
@@ -320,28 +319,42 @@ export function PortfolioPageView({
                 benchmarkInvestedUsd={benchmarkInvestedUsd}
               />
               <PortfolioOverviewMetrics holdings={holdings} transactions={transactions} />
-              <div className="pt-6">
+              <div className="max-md:pt-0 pt-6">
                 <SecondaryTabs
-                  className="mb-4"
+                  className="mb-4 hidden md:block"
                   aria-label="Holdings view"
-                  items={OVERVIEW_HOLDINGS_TAB_ITEMS}
+                  items={PORTFOLIO_HOLDINGS_SUB_TAB_ITEMS}
                   value={overviewHoldingsSubTab}
                   onValueChange={onOverviewHoldingsSubTabChange}
                 />
-                {!showOverviewHoldingsBlock ? (
-                  <PortfolioHoldingsEmptyState readOnly={readOnly} />
-                ) : overviewHoldingsSubTab === "slices" ? (
-                  <PortfolioSlicesView holdings={holdings} transactions={transactions} readOnly={readOnly} />
-                ) : overviewHoldingsSubTab === "assets" ? (
-                  <PortfolioHoldingsTable
-                    holdings={holdings}
-                    transactions={transactions}
-                    className="border-t-0"
-                    assetLinkTab={readOnly ? "overview" : "holdings"}
-                  />
-                ) : (
-                  <PortfolioAllocationView holdings={holdings} transactions={transactions} readOnly={readOnly} />
-                )}
+                <PortfolioHoldingsSubTabMobileCard
+                  active={overviewHoldingsSubTab}
+                  onChange={onOverviewHoldingsSubTabChange}
+                >
+                  {!showOverviewHoldingsBlock ? (
+                    <PortfolioHoldingsEmptyState
+                      readOnly={readOnly}
+                      className={OVERVIEW_HOLDINGS_EMBEDDED_EMPTY_CLASS}
+                    />
+                  ) : overviewHoldingsSubTab === "slices" ? (
+                    <div className="max-md:p-4 md:contents">
+                      <PortfolioSlicesView holdings={holdings} transactions={transactions} readOnly={readOnly} />
+                    </div>
+                  ) : overviewHoldingsSubTab === "assets" ? (
+                    <PortfolioHoldingsTable
+                      holdings={holdings}
+                      transactions={transactions}
+                      className="border-t-0"
+                      assetLinkTab={readOnly ? "overview" : "holdings"}
+                    />
+                  ) : (
+                    <PortfolioAllocationView
+                      holdings={holdings}
+                      transactions={transactions}
+                      readOnly={readOnly}
+                    />
+                  )}
+                </PortfolioHoldingsSubTabMobileCard>
               </div>
             </div>
           ) : null}

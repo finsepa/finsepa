@@ -1,11 +1,18 @@
 "use client";
 
 import { UnderlineTabs } from "@/components/screener/market-tabs";
+import type { SecondaryTabItem } from "@/components/ui/secondary-tabs";
 
 const tabs = ["Overview", "Performance", "Dividends", "Cash", "Transactions"] as const;
 export type PortfolioViewTab = (typeof tabs)[number];
 
 export type OverviewHoldingsSubTab = "assets" | "allocation" | "slices";
+
+export const PORTFOLIO_HOLDINGS_SUB_TAB_ITEMS = [
+  { id: "assets", label: "Assets" },
+  { id: "allocation", label: "Allocation" },
+  { id: "slices", label: "Slices" },
+] as const satisfies readonly SecondaryTabItem<OverviewHoldingsSubTab>[];
 
 /** Community `/portfolios/[id]` read-only view — no Cash tab. */
 export const publicPortfolioViewTabs = [
@@ -84,5 +91,13 @@ export function PortfolioPageTabs({
   publicView?: boolean;
 }) {
   const tabList = publicView ? publicPortfolioViewTabs : tabs;
-  return <UnderlineTabs tabs={tabList} active={active} onChange={onChange} ariaLabel="Portfolio" />;
+  return (
+    <UnderlineTabs
+      tabs={tabList}
+      active={active}
+      onChange={onChange}
+      ariaLabel="Portfolio"
+      className="max-md:sticky max-md:top-[var(--mobile-topbar-offset)] max-md:z-40 max-md:-mx-4 max-md:mb-2 max-md:bg-[#FAFAFA] max-md:px-4 max-md:pt-1"
+    />
+  );
 }

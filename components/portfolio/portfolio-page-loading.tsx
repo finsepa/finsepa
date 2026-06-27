@@ -1,6 +1,9 @@
 "use client";
 
-import { publicPortfolioViewTabs } from "@/components/portfolio/portfolio-page-tabs";
+import {
+  SCREENER_TABLE_MOBILE_SURFACE_CLASS,
+  SCREENER_TABLE_OUTER_BORDER_CLASS,
+} from "@/components/screener/screener-table-scroll";
 import { AssetChartSkeleton } from "@/components/ui/chart-skeleton";
 import { cn } from "@/lib/utils";
 
@@ -23,7 +26,7 @@ function OverviewMetricCardSkeleton() {
 
 function PortfolioOverviewCardsSkeleton() {
   return (
-    <div className="mb-4 w-full min-w-0 sm:mb-6">
+    <div className="w-full min-w-0 max-md:mb-2 sm:mb-6">
       <div className="sm:hidden">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1 space-y-2">
@@ -36,8 +39,8 @@ function PortfolioOverviewCardsSkeleton() {
             <Pulse className="h-9 w-9 rounded-[10px] bg-neutral-100" />
           </div>
         </div>
-        <div className="mt-4 space-y-0">
-          <div className="flex items-center justify-between gap-4 py-3">
+        <div className="max-md:mt-2 sm:mt-4 space-y-0">
+          <div className="flex items-center justify-between gap-4 max-md:py-2 sm:py-3">
             <Pulse className="h-4 w-20 bg-neutral-100" />
             <Pulse className="h-4 w-16 bg-neutral-100" />
           </div>
@@ -93,20 +96,20 @@ function PortfolioChartControlsSkeleton() {
           <Pulse className="h-9 w-[min(100%,20rem)] rounded-[10px] bg-[#F4F4F5]" />
         </div>
       </div>
-      <div className="mb-3 w-full sm:hidden" aria-hidden>
+      <div className="mb-3 mt-2 w-full sm:hidden" aria-hidden>
         <Pulse className="h-10 w-full rounded-[10px] bg-[#F4F4F5]" />
       </div>
     </>
   );
 }
 
-function PortfolioHoldingsSubTabsSkeleton() {
+function PortfolioHoldingsSubTabsSkeleton({ className }: { className?: string }) {
   return (
-    <div className="mb-4 flex gap-2" aria-hidden>
+    <div className={cn("flex gap-1", className)} aria-hidden>
       {["Assets", "Allocation", "Slices"].map((label, i) => (
         <Pulse
           key={label}
-          className={cn("h-8 rounded-lg", i === 0 ? "w-16 bg-neutral-200" : "w-20 bg-neutral-100")}
+          className={cn("h-8 rounded-lg", i === 0 ? "w-[4.25rem] bg-neutral-200" : "w-[4.75rem] bg-neutral-100")}
         />
       ))}
     </div>
@@ -122,11 +125,11 @@ function PortfolioHoldingsTableSkeleton() {
         ))}
       </div>
 
-      <div className="divide-y divide-[#E4E4E7] sm:divide-none">
+      <div>
         {[1, 2, 3, 4, 5, 6].map((row) => (
           <div
             key={row}
-            className="flex items-center justify-between gap-3 py-3 sm:grid sm:grid-cols-[minmax(0,2fr)_repeat(5,minmax(0,1fr))] sm:items-center sm:gap-4 sm:py-4"
+            className="flex min-h-[60px] items-center justify-between gap-3 px-4 py-3 sm:grid sm:grid-cols-[minmax(0,2fr)_repeat(5,minmax(0,1fr))] sm:items-center sm:gap-4 sm:px-0 sm:py-4"
           >
             <div className="flex min-w-0 items-center gap-3">
               <div className="h-9 w-9 shrink-0 animate-pulse rounded-full bg-neutral-100" />
@@ -204,7 +207,7 @@ export function PortfolioPageLoadingShell({
 } = {}) {
   return (
     <div
-      className="relative flex min-h-full min-w-0 flex-col overflow-x-hidden"
+      className="relative flex min-h-full min-w-0 flex-col md:overflow-x-hidden"
       aria-busy="true"
       aria-label="Loading portfolio"
     >
@@ -220,19 +223,33 @@ export function PortfolioPageLoadingShell({
           </div>
         </nav>
       ) : null}
-      <div className="relative flex min-h-full min-w-0 flex-1 flex-col overflow-x-hidden px-4 py-4 sm:px-9 sm:py-6">
+      <div className="relative flex min-h-full min-w-0 flex-1 flex-col px-4 pb-4 pt-2 max-md:overflow-visible md:overflow-x-hidden sm:px-9 sm:py-6">
       <PortfolioPageHeaderSkeleton showPortfoliosBreadcrumb={showPortfoliosBreadcrumb} />
       <PortfolioOverviewCardsSkeleton />
       <PortfolioPageTabsSkeleton publicView={publicView} />
 
       <section className="mb-6 w-full min-w-0" aria-hidden>
         <PortfolioChartControlsSkeleton />
-        <AssetChartSkeleton />
+        <div className="relative h-[240px] sm:h-[320px]">
+          <AssetChartSkeleton fill />
+        </div>
       </section>
 
       <div className="pt-6" aria-hidden>
-        <PortfolioHoldingsSubTabsSkeleton />
-        <PortfolioHoldingsTableSkeleton />
+        <PortfolioHoldingsSubTabsSkeleton className="hidden md:flex" />
+        <div
+          className={cn(
+            "w-full min-w-0 max-w-full bg-white",
+            SCREENER_TABLE_OUTER_BORDER_CLASS,
+            SCREENER_TABLE_MOBILE_SURFACE_CLASS,
+            "max-md:overflow-hidden max-md:rounded-2xl md:contents",
+          )}
+        >
+          <div className="px-4 py-2 md:hidden">
+            <PortfolioHoldingsSubTabsSkeleton className="mb-0" />
+          </div>
+          <PortfolioHoldingsTableSkeleton />
+        </div>
       </div>
       </div>
     </div>

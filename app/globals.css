@@ -173,6 +173,25 @@ body {
     background: #fafafa;
   }
 
+  /** Horizontal pan without a visible scrollbar (tab rows, index cards, etc.). */
+  .mobile-scroll-x {
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+    margin-bottom: -16px;
+    padding-bottom: 16px;
+  }
+
+  .mobile-scroll-x::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+    background: transparent;
+  }
+
   /** Fixed bottom bar — main pill + search; `env()` avoids Tailwind SSR/client mismatch. */
   .mobile-bottom-nav-bar {
     position: fixed;

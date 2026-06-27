@@ -13,6 +13,7 @@ import {
 } from "@/lib/portfolio/allocation-donut-rows";
 import { netCashUsd } from "@/lib/portfolio/overview-metrics";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { cn } from "@/lib/utils";
 
 const pct1 = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 1,
@@ -72,11 +73,17 @@ function useAllocationCenterAvatar() {
   return { imageSrc, initials };
 }
 
-function AllocationColumn({ rows }: { rows: AllocationDonutRow[] }) {
+function AllocationColumn({
+  rows,
+  className,
+}: {
+  rows: AllocationDonutRow[];
+  className?: string;
+}) {
   return (
-    <ul className="flex flex-col gap-3">
+    <ul className={cn("flex w-full min-w-0 flex-col gap-3", className)}>
       {rows.map((r) => (
-        <li key={r.id} className="flex min-w-0 items-center gap-3 pr-1 sm:pr-0">
+        <li key={r.id} className="flex min-w-0 items-center gap-3">
           <span
             className="h-2.5 w-2.5 shrink-0 rounded-full"
             style={{ backgroundColor: r.color }}
@@ -85,7 +92,7 @@ function AllocationColumn({ rows }: { rows: AllocationDonutRow[] }) {
           <span className="min-w-0 flex-1 truncate text-left text-[14px] leading-5 text-[#09090B]">
             {r.name}
           </span>
-          <span className="w-12 shrink-0 text-right tabular-nums text-[14px] font-medium leading-5 text-[#09090B] sm:w-14">
+          <span className="shrink-0 text-right tabular-nums text-[14px] font-medium leading-5 text-[#09090B]">
             {pct1.format(r.weightPct)}%
           </span>
         </li>
@@ -116,8 +123,22 @@ function PortfolioAllocationViewInner({
   }
 
   return (
-    <div className="rounded-[12px] border border-[#E4E4E7] bg-white py-5 pl-6 pr-8 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)] sm:pr-10 lg:pr-12">
-      <div className="flex flex-col items-stretch gap-8 lg:flex-row lg:items-center lg:gap-6">
+    <div className="rounded-[12px] border border-[#E4E4E7] bg-white py-5 pl-6 pr-8 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)] max-md:rounded-none max-md:border-0 max-md:p-0 max-md:shadow-none sm:pr-10 lg:pr-12">
+      <div className="flex flex-col md:hidden">
+        <div className="flex justify-center overflow-visible px-4 -mt-1 pt-0">
+          <AllocationDonutChart
+            rows={rows}
+            center={<UserAvatar imageSrc={imageSrc} initials={initials} size="xl" />}
+            badgeOverflowPadPx={18}
+            className="mx-auto shrink-0"
+          />
+        </div>
+        <div className="px-4 pb-4 pt-0">
+          <AllocationColumn rows={rows} />
+        </div>
+      </div>
+
+      <div className="hidden flex-col items-stretch gap-8 md:flex lg:flex-row lg:items-center lg:gap-6">
         <AllocationDonutChart
           rows={rows}
           center={<UserAvatar imageSrc={imageSrc} initials={initials} size="xl" />}

@@ -4,9 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import { Check, ChevronDown } from "@/lib/icons";
 
 import {
+  dropdownMenuMobileSheetBodyClassName,
   dropdownMenuPanelClassName,
   dropdownMenuPlainItemRowClassName,
 } from "@/components/design-system/dropdown-menu-styles";
+import { MobileBottomSheet } from "@/components/ui/mobile-bottom-sheet";
+import { useMobileSheet } from "@/lib/layout/use-mobile-sheet";
 import { cn } from "@/lib/utils";
 
 const OPERATIONS = ["Buy", "Sell"] as const;
@@ -24,9 +27,10 @@ export function TransactionOperationField({
   const operation = controlledValue ?? internalOp;
   const setOperation = onChange ?? setInternalOp;
   const wrapRef = useRef<HTMLDivElement>(null);
+  const isMobileSheet = useMobileSheet();
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || isMobileSheet) return;
     function onDocMouseDown(e: MouseEvent) {
       const el = wrapRef.current;
       if (!el || !(e.target instanceof Node) || el.contains(e.target)) return;
@@ -34,7 +38,36 @@ export function TransactionOperationField({
     }
     document.addEventListener("mousedown", onDocMouseDown);
     return () => document.removeEventListener("mousedown", onDocMouseDown);
-  }, [open]);
+  }, [open, isMobileSheet]);
+
+  const optionList = (
+    <>
+      {OPERATIONS.map((op) => {
+        const selected = op === operation;
+        return (
+          <button
+            key={op}
+            type="button"
+            role="option"
+            aria-selected={selected}
+            onClick={() => {
+              setOperation(op);
+              setOpen(false);
+            }}
+            className={cn(dropdownMenuPlainItemRowClassName({ selected }), "font-medium")}
+          >
+            <span className="min-w-0 flex-1 text-left">{op}</span>
+            <span className="flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden>
+              <Check
+                className={cn("h-4 w-4 text-[#09090B]", !selected && "invisible")}
+                strokeWidth={2}
+              />
+            </span>
+          </button>
+        );
+      })}
+    </>
+  );
 
   return (
     <div className="relative w-full" ref={wrapRef}>
@@ -48,7 +81,14 @@ export function TransactionOperationField({
         <span>{operation}</span>
         <ChevronDown className="h-5 w-5 shrink-0 text-[#09090B]" aria-hidden />
       </button>
-      {open ? (
+      {open && isMobileSheet ? (
+        <MobileBottomSheet open={open} onClose={() => setOpen(false)} title="Operation">
+          <div className={dropdownMenuMobileSheetBodyClassName} role="listbox">
+            {optionList}
+          </div>
+        </MobileBottomSheet>
+      ) : null}
+      {open && !isMobileSheet ? (
         <div
           role="listbox"
           className={cn(
@@ -56,25 +96,7 @@ export function TransactionOperationField({
             "absolute left-0 right-0 top-full z-[110] mt-1",
           )}
         >
-          {OPERATIONS.map((op) => {
-            const selected = op === operation;
-            return (
-              <button
-                key={op}
-                type="button"
-                role="option"
-                aria-selected={selected}
-                onClick={() => {
-                  setOperation(op);
-                  setOpen(false);
-                }}
-                className={cn(dropdownMenuPlainItemRowClassName({ selected }), "font-medium")}
-              >
-                <span>{op}</span>
-                {selected ? <Check className="h-4 w-4 shrink-0 text-[#09090B]" strokeWidth={2} aria-hidden /> : null}
-              </button>
-            );
-          })}
+          {optionList}
         </div>
       ) : null}
     </div>

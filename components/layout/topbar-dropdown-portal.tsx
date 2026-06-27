@@ -11,6 +11,12 @@ import {
   type RefObject,
 } from "react";
 
+import {
+  dropdownMenuMobileSheetBodyClassName,
+  dropdownMenuMobileSheetStripPanelClassName,
+} from "@/components/design-system/dropdown-menu-styles";
+import { MobileBottomSheet } from "@/components/ui/mobile-bottom-sheet";
+import { useMobileSheet } from "@/lib/layout/use-mobile-sheet";
 import { cn } from "@/lib/utils";
 
 /** Above topbar (`z-30`), bottom nav (`z-[43]`), and sheet backdrop (`z-[41]`). */
@@ -29,6 +35,10 @@ type TopbarDropdownPortalProps = {
   align?: "trailing" | "leading" | "center";
   /** Match the anchor element width (full-width form dropdowns). */
   matchAnchorWidth?: boolean;
+  /** Mobile modal sheet title (omit for menus without a heading). */
+  sheetTitle?: ReactNode;
+  /** Called when the mobile modal sheet backdrop is tapped or Escape is pressed. */
+  onRequestClose?: () => void;
 };
 
 type PortalPos = { top: number; width?: number } & (
@@ -43,11 +53,12 @@ type PortalPos = { top: number; width?: number } & (
  */
 export const TopbarDropdownPortal = forwardRef<HTMLDivElement, TopbarDropdownPortalProps>(
   function TopbarDropdownPortal(
-    { open, anchorRef, children, className, align = "trailing", matchAnchorWidth = false },
+    { open, anchorRef, children, className, align = "trailing", matchAnchorWidth = false, sheetTitle, onRequestClose },
     ref,
   ) {
     const [mounted, setMounted] = useState(false);
     const [pos, setPos] = useState<PortalPos>({ top: 0, right: 0 });
+    const isMobileSheet = useMobileSheet();
 
     useEffect(() => {
       setMounted(true);
@@ -90,6 +101,31 @@ export const TopbarDropdownPortal = forwardRef<HTMLDivElement, TopbarDropdownPor
     }, [open, update]);
 
     if (!open || !mounted) return null;
+
+    if (isMobileSheet) {
+      return createPortal(
+        <MobileBottomSheet
+          open={open}
+          onClose={() => onRequestClose?.()}
+          title={sheetTitle}
+          zIndex={TOPBAR_DROPDOWN_PORTAL_Z}
+        >
+          <div
+            ref={ref}
+            className={cn(
+              dropdownMenuMobileSheetBodyClassName,
+              dropdownMenuMobileSheetStripPanelClassName,
+              "!rounded-none !border-0 !bg-transparent !shadow-none",
+              className,
+              "w-full min-w-0 max-w-none",
+            )}
+          >
+            {children}
+          </div>
+        </MobileBottomSheet>,
+        document.body,
+      );
+    }
 
     const horizontal =
       "centerX" in pos && pos.centerX != null

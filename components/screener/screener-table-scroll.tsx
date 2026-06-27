@@ -5,15 +5,15 @@ import { cn } from "@/lib/utils";
 
 /** Column label row — sticky in desktop `<main>`; static on mobile (avoids topbar-offset gap in card). */
 export const SCREENER_TABLE_HEADER_STICKY_CLASS =
-  "z-20 border-b border-solid border-[#E4E4E7] bg-white max-md:static max-md:border-b-[0.5px] md:sticky md:top-0";
+  "z-20 bg-white max-md:static md:sticky md:top-0 md:border-b md:border-solid md:border-[#E4E4E7]";
 
 /** Row separators (keep header outside this so the header/rule line is exactly 1px on desktop). */
 export const SCREENER_TABLE_BODY_DIVIDE_CLASS =
-  "divide-y divide-solid divide-[#E4E4E7] max-md:divide-y-[0.5px]";
+  "md:divide-y md:divide-solid md:divide-[#E4E4E7]";
 
 /** Bottom rule on individual rows (e.g. industries drill). */
 export const SCREENER_TABLE_ROW_BORDER_B_CLASS =
-  "border-b border-solid border-[#E4E4E7] max-md:border-b-[0.5px]";
+  "md:border-b md:border-solid md:border-[#E4E4E7]";
 
 /** Top/bottom frame on desktop; borderless on mobile (card shadow instead). */
 export const SCREENER_TABLE_OUTER_BORDER_CLASS =
@@ -66,7 +66,7 @@ export function ScreenerTableScroll({
         useViewportScroll ?
           "max-h-[var(--financials-table-max-h)] overflow-auto overscroll-contain [-webkit-overflow-scrolling:touch]"
         : mobileHorizontalPan ?
-          "max-md:overflow-x-auto max-md:overscroll-x-contain max-md:[-webkit-overflow-scrolling:touch]"
+          "mobile-scroll-x"
         : undefined,
         className,
       )}

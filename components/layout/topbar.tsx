@@ -15,10 +15,15 @@ import { useNotificationsClient } from "@/lib/notifications/use-notifications-cl
 import { TopbarQuickAddMenu } from "./topbar-quick-add-menu";
 import { TopbarUserMenu } from "./topbar-user-menu";
 import { MobileAssetTopbarChrome } from "./mobile-asset-topbar-chrome";
+import { useMobilePrimaryNav } from "@/components/layout/mobile-primary-nav-context";
 import {
   isPortfolioWorkspaceRoute,
   MobilePortfolioTopbarChrome,
 } from "./mobile-portfolio-topbar-chrome";
+import {
+  isWatchlistRoute,
+  MobileWatchlistTopbarChrome,
+} from "./mobile-watchlist-topbar-chrome";
 import {
   mobileTopbarTitleFromPathname,
 } from "@/components/layout/protected-nav-config";
@@ -130,7 +135,13 @@ export function Topbar({
   const pathname = usePathname() ?? "";
   const mobileAssetRoute = parseMobileAssetTopbarRoute(pathname);
   const mobilePortfolioRoute = isPortfolioWorkspaceRoute(pathname);
-  const mobileTopbarTitle = useMemo(() => mobileTopbarTitleFromPathname(pathname), [pathname]);
+  const mobileWatchlistRoute = isWatchlistRoute(pathname);
+  const { mobileTopbarTitle } = useMobilePrimaryNav();
+  const pathnameMobileTitle = useMemo(() => mobileTopbarTitleFromPathname(pathname), [pathname]);
+  const resolvedMobileTitle =
+    mobilePortfolioRoute || mobileWatchlistRoute || mobileAssetRoute ?
+      pathnameMobileTitle
+    : mobileTopbarTitle;
 
   return (
     <>
@@ -150,13 +161,17 @@ export function Topbar({
           <div className="flex min-w-0 flex-1 items-center md:hidden">
             <MobilePortfolioTopbarChrome />
           </div>
+        ) : mobileWatchlistRoute ? (
+          <div className="flex min-w-0 flex-1 items-center md:hidden">
+            <MobileWatchlistTopbarChrome />
+          </div>
         ) : (
           <div className="min-w-0 flex-1 md:hidden">
             <h1
               suppressHydrationWarning
               className="truncate text-[22px] font-semibold leading-7 tracking-[-0.02em] text-[#09090B]"
             >
-              {mobileTopbarTitle}
+              {resolvedMobileTitle}
             </h1>
           </div>
         )}

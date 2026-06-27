@@ -347,12 +347,12 @@ function PortfolioHoldingsTableInner({
       />
       <div
         className={cn(
-          "w-full overflow-x-visible pb-8 sm:overflow-x-auto sm:border-t sm:border-[#E4E4E7]",
+          "w-full overflow-x-visible max-md:pb-4 sm:overflow-x-auto sm:border-t sm:border-[#E4E4E7] sm:pb-8",
           className,
         )}
       >
       <div className="sm:hidden">
-        <div className="bg-white">
+        <div>
           {sorted.map(({ holding: h, retUsd }) => {
             const cryptoKey = cryptoRouteBase(h.symbol);
             const assetKind: "stock" | "crypto" =
@@ -397,7 +397,7 @@ function PortfolioHoldingsTableInner({
             return (
               <div
                 key={h.id}
-                className="group relative flex min-w-0 items-center justify-between gap-3 py-3 transition-colors duration-75 hover:bg-neutral-50 sm:py-4"
+                className="group relative flex min-h-[60px] min-w-0 items-center justify-between gap-3 bg-white px-4 py-3 transition-colors duration-75 hover:bg-neutral-50 sm:py-4"
               >
                 {assetHref ? (
                   <Link
@@ -412,7 +412,7 @@ function PortfolioHoldingsTableInner({
             );
           })}
 
-          <div className="flex min-w-0 items-center justify-between gap-3 py-3 sm:py-4">
+          <div className="flex min-h-[60px] min-w-0 items-center justify-between gap-3 bg-white px-4 py-3 sm:py-4">
             <div className="flex min-w-0 items-center gap-3">
               <CompanyLogo name="US Dollar" logoUrl="" symbol="USD" />
               <div className="min-w-0">

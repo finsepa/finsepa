@@ -4,13 +4,11 @@ import {
   memo,
   useCallback,
   useEffect,
-  useLayoutEffect,
   useRef,
   useState,
   type MutableRefObject,
   type RefObject,
 } from "react";
-import { createPortal } from "react-dom";
 import { format, parseISO, subDays } from "date-fns";
 import {
   AreaSeries,
@@ -49,6 +47,7 @@ import {
   dropdownMenuPanelClassName,
   dropdownMenuPlainItemRowClassName,
 } from "@/components/design-system/dropdown-menu-styles";
+import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
 import type { PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 import { AssetChartSkeleton } from "@/components/ui/chart-skeleton";
 import { FormListboxSelect } from "@/components/ui/form-listbox-select";
@@ -74,7 +73,8 @@ const RED = "#DC2626";
 const BENCHMARK_SPY_LINE = "#EA580C";
 const BENCHMARK_NASDAQ_LINE = "#9333EA";
 const PORTFOLIO_CHART_TIME_ZONE = "America/New_York";
-const Y_AXIS_LABEL_COUNT = 6;
+const PORTFOLIO_Y_AXIS_LABEL_COUNT_DESKTOP = 6;
+const PORTFOLIO_Y_AXIS_LABEL_COUNT_MOBILE = 4;
 
 const HIDE_NATIVE_Y_AXIS_TICK_LABELS = (priceValue: readonly number[]) => priceValue.map(() => "");
 
@@ -361,8 +361,6 @@ function PillSwitch({
   );
 }
 
-const PORTFOLIO_CHART_SETTINGS_MENU_Z = 120;
-
 const PORTFOLIO_CHART_SETTINGS_ROWS = [
   { key: "showTrades", label: "Show trades", ariaLabel: "Show trades on chart" },
   { key: "compareSpy", label: "Compare to S&P 500", ariaLabel: "Compare portfolio to S&P 500" },
@@ -389,10 +387,8 @@ function PortfolioChartSettingsButton({
   benchmarkCompareDisabled: boolean;
 }) {
   const [open, setOpen] = useState(false);
-  const [portalMounted, setPortalMounted] = useState(false);
-  const [menuAnchor, setMenuAnchor] = useState<{ top: number; left: number; width: number } | null>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const menuPortalRef = useRef<HTMLDivElement>(null);
 
   const values: Record<PortfolioChartSettingsRowKey, boolean> = {
     showTrades,
@@ -407,109 +403,69 @@ function PortfolioChartSettingsButton({
   };
 
   useEffect(() => {
-    setPortalMounted(true);
-  }, []);
-
-  useLayoutEffect(() => {
-    if (!open || !triggerRef.current) {
-      setMenuAnchor(null);
-      return;
-    }
-    const update = () => {
-      const rect = triggerRef.current!.getBoundingClientRect();
-      setMenuAnchor({
-        top: rect.bottom + 4,
-        left: rect.left,
-        width: Math.min(window.innerWidth - 32, 280),
-      });
-    };
-    update();
-    window.addEventListener("resize", update);
-    window.addEventListener("scroll", update, true);
-    return () => {
-      window.removeEventListener("resize", update);
-      window.removeEventListener("scroll", update, true);
-    };
-  }, [open]);
-
-  useEffect(() => {
     if (!open) return;
+    function onDocMouseDown(e: MouseEvent) {
+      const t = e.target as Node;
+      if (containerRef.current?.contains(t) || menuPortalRef.current?.contains(t)) return;
+      setOpen(false);
+    }
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") setOpen(false);
     }
+    document.addEventListener("mousedown", onDocMouseDown);
     document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-    const onPointerDown = (e: PointerEvent) => {
-      const target = e.target as Node;
-      if (triggerRef.current?.contains(target) || menuRef.current?.contains(target)) return;
-      e.preventDefault();
-      setOpen(false);
+    return () => {
+      document.removeEventListener("mousedown", onDocMouseDown);
+      document.removeEventListener("keydown", onKey);
     };
-    document.addEventListener("pointerdown", onPointerDown, true);
-    return () => document.removeEventListener("pointerdown", onPointerDown, true);
   }, [open]);
-
-  const menuPanel =
-    open && menuAnchor && portalMounted ?
-      createPortal(
-        <div
-          ref={menuRef}
-          className={dropdownMenuPanelClassName("fixed")}
-          style={{
-            top: menuAnchor.top,
-            left: menuAnchor.left,
-            width: menuAnchor.width,
-            zIndex: PORTFOLIO_CHART_SETTINGS_MENU_Z,
-          }}
-          role="menu"
-          aria-label="Chart settings"
-        >
-          {PORTFOLIO_CHART_SETTINGS_ROWS.map(({ key, label, ariaLabel }) => {
-            const benchmarkRow = key === "compareSpy" || key === "compareNasdaq";
-            return (
-              <div key={key} role="menuitem" className={dropdownMenuPlainItemRowClassName()}>
-                <span className="min-w-0 flex-1 text-sm font-medium leading-5 text-[#09090B]">{label}</span>
-                <PillSwitch
-                  pressed={values[key]}
-                  onPressedChange={(next) => onChangeForKey(key, next)}
-                  disabled={benchmarkRow && benchmarkCompareDisabled}
-                  title={benchmarkRow && benchmarkCompareDisabled ? BENCHMARK_COMPARE_DISABLED_HINT : undefined}
-                  aria-label={ariaLabel}
-                />
-              </div>
-            );
-          })}
-        </div>,
-        document.body,
-      )
-    : null;
 
   return (
-    <>
-      {menuPanel}
-      <div className="relative z-20 shrink-0">
-        <button
-          ref={triggerRef}
-          type="button"
-          aria-label="Chart settings"
-          aria-haspopup="menu"
-          aria-expanded={open}
-          onClick={() => setOpen((v) => !v)}
-          className={cn(
-            "inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#09090B]",
-            "shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100",
-            "hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2",
-            open && "bg-[#F4F4F5]",
-          )}
+    <div ref={containerRef} className="relative z-20 shrink-0">
+      <button
+        type="button"
+        aria-label="Chart settings"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        className={cn(
+          "inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#09090B]",
+          "shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100",
+          "hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2",
+          open && "bg-[#F4F4F5]",
+        )}
+      >
+        <Settings className="h-5 w-5 shrink-0" strokeWidth={2} aria-hidden />
+      </button>
+      {open ? (
+        <TopbarDropdownPortal
+          open={open}
+          anchorRef={containerRef}
+          ref={menuPortalRef}
+          align="trailing"
+          onRequestClose={() => setOpen(false)}
+          className="w-[min(280px,calc(100vw-2rem))]"
         >
-          <Settings className="h-5 w-5 shrink-0" strokeWidth={2} aria-hidden />
-        </button>
-      </div>
-    </>
+          <div className={dropdownMenuPanelClassName("max-md:w-full max-md:!border-0")} role="menu" aria-label="Chart settings">
+            {PORTFOLIO_CHART_SETTINGS_ROWS.map(({ key, label, ariaLabel }) => {
+              const benchmarkRow = key === "compareSpy" || key === "compareNasdaq";
+              return (
+                <div key={key} role="menuitem" className={dropdownMenuPlainItemRowClassName()}>
+                  <span className="min-w-0 flex-1 text-sm font-medium leading-5 text-[#09090B]">{label}</span>
+                  <PillSwitch
+                    pressed={values[key]}
+                    onPressedChange={(next) => onChangeForKey(key, next)}
+                    disabled={benchmarkRow && benchmarkCompareDisabled}
+                    title={benchmarkRow && benchmarkCompareDisabled ? BENCHMARK_COMPARE_DISABLED_HINT : undefined}
+                    aria-label={ariaLabel}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </TopbarDropdownPortal>
+      ) : null}
+    </div>
   );
 }
 
@@ -543,6 +499,9 @@ export const PORTFOLIO_CHART_RANGE_LABELS: { id: PortfolioChartRange; label: str
 
 /** Mobile range strip omits YTD to fit the narrower control row. */
 const PORTFOLIO_CHART_MOBILE_RANGE_LABELS = PORTFOLIO_CHART_RANGE_LABELS.filter((r) => r.id !== "ytd");
+
+const PORTFOLIO_CHART_MOBILE_METRIC_TRIGGER_CLASS =
+  "w-auto border border-[#E4E4E7] bg-white font-medium shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] hover:bg-[#FAFAFA]";
 
 /** One-decimal truncation (e.g. 7616 → 7.6) so axis + last-price badge stay distinct. */
 function truncOneDecimalUnit(abs: number, unit: number): string {
@@ -591,6 +550,7 @@ function overviewYAxisTopPercent(price: number, bottom: number, top: number): nu
 function computeOverviewYAxisLabels(
   series: OverviewMainSeries,
   metric: MetricMode,
+  tickCount: number,
 ): OverviewYAxisLabel[] {
   const extents = overviewSeriesValueExtents(series);
   if (!extents) return [];
@@ -603,11 +563,11 @@ function computeOverviewYAxisLabels(
 
   const { bottom, top } = overviewYAxisPriceRange(min, max);
   const span = top - bottom;
-  if (span <= 0) return [];
+  if (span <= 0 || tickCount < 2) return [];
 
   const labels: OverviewYAxisLabel[] = [];
-  for (let i = 0; i < Y_AXIS_LABEL_COUNT; i++) {
-    const price = bottom + (span * i) / (Y_AXIS_LABEL_COUNT - 1);
+  for (let i = 0; i < tickCount; i++) {
+    const price = bottom + (span * i) / (tickCount - 1);
     labels.push({
       key: String(i),
       label: metric === "return" ? formatReturnPctAxis(price) : formatAxisUsd(price),
@@ -618,21 +578,32 @@ function computeOverviewYAxisLabels(
 }
 
 /** Hide axis ticks that would sit under the LW last-value badge on the right edge. */
-const OVERVIEW_Y_AXIS_BADGE_CLEARANCE_PCT = 10;
+const OVERVIEW_Y_AXIS_BADGE_CLEARANCE_PCT = 5.5;
+const OVERVIEW_Y_AXIS_LABEL_MIN_GAP_PCT = 3.5;
 
-function filterYAxisLabelsForLastValueBadge(
-  labels: OverviewYAxisLabel[],
+function overviewYAxisPriceAtTopPct(topPct: number, bottom: number, top: number): number {
+  return top - (topPct / 100) * (top - bottom);
+}
+
+function overviewYAxisLabelTooClose(
+  candidateTopPct: number,
+  labels: readonly OverviewYAxisLabel[],
+): boolean {
+  return labels.some((lab) => Math.abs(lab.topPct - candidateTopPct) < OVERVIEW_Y_AXIS_LABEL_MIN_GAP_PCT);
+}
+
+function resolveOverviewYAxisBadgeContext(
   series: OverviewMainSeries,
   metric: MetricMode,
-): OverviewYAxisLabel[] {
+): { bottom: number; top: number; lastTopPct: number } | null {
   const data = series.data();
-  if (data.length === 0) return labels;
+  if (data.length === 0) return null;
 
   const lastValue = (data[data.length - 1] as { value?: number }).value;
-  if (typeof lastValue !== "number" || !Number.isFinite(lastValue)) return labels;
+  if (typeof lastValue !== "number" || !Number.isFinite(lastValue)) return null;
 
   const extents = overviewSeriesValueExtents(series);
-  if (!extents) return labels;
+  if (!extents) return null;
 
   let { min, max } = extents;
   if (metric !== "value") {
@@ -641,18 +612,75 @@ function filterYAxisLabelsForLastValueBadge(
   }
 
   const { bottom, top } = overviewYAxisPriceRange(min, max);
-  const lastTopPct = overviewYAxisTopPercent(lastValue, bottom, top);
+  return { bottom, top, lastTopPct: overviewYAxisTopPercent(lastValue, bottom, top) };
+}
 
+function filterYAxisLabelsForLastValueBadge(
+  labels: OverviewYAxisLabel[],
+  lastTopPct: number,
+): OverviewYAxisLabel[] {
   return labels.filter(
     (lab) => Math.abs(lab.topPct - lastTopPct) >= OVERVIEW_Y_AXIS_BADGE_CLEARANCE_PCT,
   );
 }
 
+/** When the badge hides a grid tick, add one just below the badge so the axis stays evenly spaced. */
+function supplementOverviewYAxisLabelForBadgeGap(
+  labels: OverviewYAxisLabel[],
+  removedCount: number,
+  lastTopPct: number,
+  bottom: number,
+  top: number,
+  metric: MetricMode,
+): OverviewYAxisLabel[] {
+  if (removedCount === 0) return labels;
+
+  const sorted = [...labels].sort((a, b) => a.topPct - b.topPct);
+  if (sorted.length < 2) return labels;
+
+  const gaps = sorted.slice(0, -1).map((lab, i) => sorted[i + 1]!.topPct - lab.topPct);
+  const maxGap = Math.max(...gaps);
+  const medianGap = gaps.reduce((sum, gap) => sum + gap, 0) / gaps.length;
+  if (maxGap <= medianGap * 1.25) return labels;
+
+  const candidateTopPct = lastTopPct + OVERVIEW_Y_AXIS_BADGE_CLEARANCE_PCT + 1.5;
+  if (
+    candidateTopPct <= sorted[0]!.topPct ||
+    candidateTopPct >= sorted[sorted.length - 1]!.topPct ||
+    overviewYAxisLabelTooClose(candidateTopPct, labels)
+  ) {
+    return labels;
+  }
+
+  const price = overviewYAxisPriceAtTopPct(candidateTopPct, bottom, top);
+  return [
+    ...labels,
+    {
+      key: "badge-gap",
+      label: metric === "return" ? formatReturnPctAxis(price) : formatAxisUsd(price),
+      topPct: candidateTopPct,
+    },
+  ];
+}
+
 function syncOverviewYAxisLabels(
   series: OverviewMainSeries,
   metric: MetricMode,
+  tickCount: number,
 ): OverviewYAxisLabel[] {
-  return filterYAxisLabelsForLastValueBadge(computeOverviewYAxisLabels(series, metric), series, metric);
+  const labels = computeOverviewYAxisLabels(series, metric, tickCount);
+  const badgeContext = resolveOverviewYAxisBadgeContext(series, metric);
+  if (!badgeContext) return labels;
+
+  const filtered = filterYAxisLabelsForLastValueBadge(labels, badgeContext.lastTopPct);
+  return supplementOverviewYAxisLabelForBadgeGap(
+    filtered,
+    labels.length - filtered.length,
+    badgeContext.lastTopPct,
+    badgeContext.bottom,
+    badgeContext.top,
+    metric,
+  );
 }
 
 const OVERVIEW_CHART_PLOT_BACKDROP_INSET_CLASS = "top-[12%] bottom-[8%]";
@@ -771,10 +799,46 @@ function isFiniteNumber(v: unknown): v is number {
   return typeof v === "number" && Number.isFinite(v);
 }
 
-const CHART_HEIGHT = 320;
-/** Plot height; dates render in a custom row below (hidden while crosshair hover). */
-const PORTFOLIO_CHART_AXIS_ROW_PX = 44;
-const PORTFOLIO_CHART_PLOT_HEIGHT_PX = CHART_HEIGHT - PORTFOLIO_CHART_AXIS_ROW_PX;
+const PORTFOLIO_CHART_HEIGHT_DESKTOP_PX = 320;
+const PORTFOLIO_CHART_HEIGHT_MOBILE_PX = 240;
+const PORTFOLIO_CHART_AXIS_ROW_DESKTOP_PX = 44;
+const PORTFOLIO_CHART_AXIS_ROW_MOBILE_PX = 26;
+
+type PortfolioOverviewChartLayout = {
+  chartHeightPx: number;
+  axisRowPx: number;
+  plotHeightPx: number;
+  yAxisLabelCount: number;
+};
+
+function resolvePortfolioOverviewChartLayout(viewportWidthPx: number): PortfolioOverviewChartLayout {
+  const compact = viewportWidthPx < 640;
+  const chartHeightPx = compact ? PORTFOLIO_CHART_HEIGHT_MOBILE_PX : PORTFOLIO_CHART_HEIGHT_DESKTOP_PX;
+  const axisRowPx = compact ? PORTFOLIO_CHART_AXIS_ROW_MOBILE_PX : PORTFOLIO_CHART_AXIS_ROW_DESKTOP_PX;
+  return {
+    chartHeightPx,
+    axisRowPx,
+    plotHeightPx: chartHeightPx - axisRowPx,
+    yAxisLabelCount: compact ? PORTFOLIO_Y_AXIS_LABEL_COUNT_MOBILE : PORTFOLIO_Y_AXIS_LABEL_COUNT_DESKTOP,
+  };
+}
+
+function usePortfolioOverviewChartLayout(): PortfolioOverviewChartLayout {
+  const [layout, setLayout] = useState<PortfolioOverviewChartLayout>(() =>
+    typeof window !== "undefined"
+      ? resolvePortfolioOverviewChartLayout(window.innerWidth)
+      : resolvePortfolioOverviewChartLayout(1024),
+  );
+
+  useEffect(() => {
+    const update = () => setLayout(resolvePortfolioOverviewChartLayout(window.innerWidth));
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
+  return layout;
+}
 
 function portfolioChartTime(p: PortfolioValueHistoryPoint): number {
   if (p.time != null && Number.isFinite(p.time)) return p.time;
@@ -853,6 +917,10 @@ export function PortfolioValueHistoryChartPane({
   /** Open equity cost basis; scales benchmark $ path like “$X invested” on the overview Value card. */
   benchmarkInvestedUsd?: number | null;
 }) {
+  const chartLayout = usePortfolioOverviewChartLayout();
+  const chartLayoutRef = useRef(chartLayout);
+  chartLayoutRef.current = chartLayout;
+
   const containerRef = useRef<HTMLDivElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const tradeOverlayRef = useRef<HTMLDivElement | null>(null);
@@ -910,8 +978,8 @@ export function PortfolioValueHistoryChartPane({
       if (x + tw > box.clientWidth - pad) x = Math.max(pad, box.clientWidth - tw - pad);
       if (x < pad) x = pad;
       if (y < pad) y = pad;
-      if (y + th > PORTFOLIO_CHART_PLOT_HEIGHT_PX - pad) {
-        y = Math.min(PORTFOLIO_CHART_PLOT_HEIGHT_PX - th - pad, py + pad);
+      if (y + th > chartLayoutRef.current.plotHeightPx - pad) {
+        y = Math.min(chartLayoutRef.current.plotHeightPx - th - pad, py + pad);
       }
       setTradeTooltip({
         x,
@@ -938,7 +1006,7 @@ export function PortfolioValueHistoryChartPane({
 
     const chart = createChart(el, {
       width: Math.max(2, el.clientWidth),
-      height: PORTFOLIO_CHART_PLOT_HEIGHT_PX,
+      height: chartLayout.plotHeightPx,
       autoSize: false,
       layout: {
         background: { type: ColorType.Solid, color: "#00000000" },
@@ -1138,8 +1206,8 @@ export function PortfolioValueHistoryChartPane({
       if (x + tw > box.clientWidth - pad) x = box.clientWidth - tw - pad;
       if (x < pad) x = pad;
       if (y < pad) y = pad;
-      if (y + th > PORTFOLIO_CHART_PLOT_HEIGHT_PX - pad) {
-        y = Math.min(PORTFOLIO_CHART_PLOT_HEIGHT_PX - th - pad, param.point.y + pad);
+      if (y + th > chartLayoutRef.current.plotHeightPx - pad) {
+        y = Math.min(chartLayoutRef.current.plotHeightPx - th - pad, param.point.y + pad);
       }
 
       setTooltip({
@@ -1157,7 +1225,7 @@ export function PortfolioValueHistoryChartPane({
       const s = seriesRef.current;
       if (s && s.data().length > 0) {
         snapOverviewTimeScale(chartRef.current, s);
-        setYAxisLabels(syncOverviewYAxisLabels(s, metric));
+        setYAxisLabels(syncOverviewYAxisLabels(s, metric, chartLayoutRef.current.yAxisLabelCount));
       }
       requestAnimationFrame(() => {
         scheduleTradeDotsSyncRef.current?.();
@@ -1209,7 +1277,7 @@ export function PortfolioValueHistoryChartPane({
       setPeriodAxisLabels([]);
       setYAxisLabels([]);
     };
-  }, [metric, compareSpy, compareNasdaq]);
+  }, [metric, compareSpy, compareNasdaq, chartLayout.plotHeightPx]);
 
   useEffect(() => {
     const chart = chartRef.current;
@@ -1284,7 +1352,7 @@ export function PortfolioValueHistoryChartPane({
         const c = chartRef.current;
         const s = seriesRef.current;
         if (!c || !s || c !== chart || s !== series || s.data().length === 0) return;
-        setYAxisLabels(syncOverviewYAxisLabels(s, metric));
+        setYAxisLabels(syncOverviewYAxisLabels(s, metric, chartLayoutRef.current.yAxisLabelCount));
         scheduleTradeDotsSyncRef.current?.();
         const plotWidthPx = Math.max(0, wrapRef.current?.clientWidth ?? 0);
         const hoverTime = hoverTimeRef.current;
@@ -1323,7 +1391,8 @@ export function PortfolioValueHistoryChartPane({
   return (
     <div
       ref={containerRef}
-      className="relative flex h-[320px] w-full min-w-0 flex-col"
+      className="relative flex w-full min-w-0 flex-col"
+      style={{ height: chartLayout.chartHeightPx }}
       onMouseLeave={() => {
         hoverTimeRef.current = null;
         setTooltip(null);
@@ -1344,7 +1413,7 @@ export function PortfolioValueHistoryChartPane({
       }}
     >
       <div className="relative min-h-0 min-w-0 flex-1">
-        <div className="pointer-events-none absolute inset-0 z-0 bg-white" aria-hidden>
+        <div className="pointer-events-none absolute inset-0 z-0 max-md:bg-[#FAFAFA] bg-white" aria-hidden>
           <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
         </div>
         <div ref={wrapRef} className="relative z-10 h-full w-full min-w-0" />
@@ -1360,7 +1429,7 @@ export function PortfolioValueHistoryChartPane({
             {yAxisLabels.map((lab) => (
               <span
                 key={lab.key}
-                className="absolute right-0 block -translate-y-1/2 rounded-sm bg-white/90 px-0.5 py-px"
+                className="absolute right-0 block -translate-y-1/2 rounded-sm max-md:bg-[#FAFAFA]/90 bg-white/90 px-0.5 py-px"
                 style={{ top: `${lab.topPct}%` }}
               >
                 {lab.label}
@@ -1414,7 +1483,7 @@ export function PortfolioValueHistoryChartPane({
       </div>
       <div
         className="relative w-full shrink-0 overflow-visible"
-        style={{ height: PORTFOLIO_CHART_AXIS_ROW_PX }}
+        style={{ height: chartLayout.axisRowPx }}
         aria-hidden={periodAxisLabels.length === 0 && !hoverAxisLabel}
       >
         {hoverAxisLabel ?
@@ -1552,7 +1621,7 @@ function PortfolioOverviewChartInner({
   }, [fetchNasdaq, range, canLoad]);
 
   return (
-    <section className="mb-6 w-full min-w-0">
+    <section className="mb-6 w-full min-w-0 max-md:mb-4">
       {/* Web/desktop controls row. */}
       <div className="relative z-20 mb-4 hidden w-full min-w-0 flex-wrap items-center justify-between gap-3 sm:flex">
         <div className="flex min-w-0 items-center gap-3">
@@ -1606,35 +1675,23 @@ function PortfolioOverviewChartInner({
         </div>
       </div>
 
-      <div className="relative z-20 mb-3 flex w-full min-w-0 items-start justify-between gap-2 sm:hidden">
+      <div className="relative z-20 mb-3 mt-2 flex w-full min-w-0 items-center justify-between gap-2 sm:hidden">
+        <FormListboxSelect
+          compact
+          truncateLabel={false}
+          aria-label="Chart metric"
+          className="w-auto shrink-0"
+          triggerClassName={PORTFOLIO_CHART_MOBILE_METRIC_TRIGGER_CLASS}
+          options={PORTFOLIO_CHART_METRIC_OPTIONS}
+          value={metric}
+          onChange={(v) => setMetric(v as PortfolioChartMetricMode)}
+        />
         <PortfolioChartSettingsButton {...chartSettingsProps} />
-
-        <div
-          className="flex w-full min-w-0 flex-nowrap justify-stretch gap-0.5 rounded-[10px] bg-[#F4F4F5] p-0.5"
-          role="group"
-          aria-label="Chart range"
-        >
-          {PORTFOLIO_CHART_MOBILE_RANGE_LABELS.map((r) => (
-            <button
-              key={r.id}
-              type="button"
-              onClick={() => setRange(r.id)}
-              className={cn(
-                "flex-1 rounded-[10px] px-2 py-1.5 text-center font-sans text-[14px] leading-5 tracking-normal",
-                range === r.id ?
-                  "bg-white font-medium text-[#09090B] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]"
-                : "font-normal text-[#71717A]",
-              )}
-            >
-              {r.label}
-            </button>
-          ))}
-        </div>
       </div>
 
       <div className="w-full min-w-0">
         {!canLoad ? (
-          <Empty variant="plain" className="h-[320px] justify-center py-0">
+          <Empty variant="plain" className="h-[240px] justify-center py-0 sm:h-[320px]">
             <EmptyHeader>
               <EmptyMedia variant="icon">
                 <LineChart className="h-6 w-6" strokeWidth={1.75} aria-hidden />
@@ -1646,13 +1703,15 @@ function PortfolioOverviewChartInner({
             </EmptyHeader>
           </Empty>
         ) : loading ? (
-          <AssetChartSkeleton />
+          <div className="relative h-[240px] sm:h-[320px]">
+            <AssetChartSkeleton fill />
+          </div>
         ) : error ? (
-          <div className="flex h-[320px] flex-col items-center justify-center px-6">
+          <div className="flex h-[240px] flex-col items-center justify-center px-6 sm:h-[320px]">
             <p className="text-sm text-[#71717A]">{error}</p>
           </div>
         ) : points.length === 0 ? (
-          <Empty variant="plain" className="h-[320px] justify-center py-0">
+          <Empty variant="plain" className="h-[240px] justify-center py-0 sm:h-[320px]">
             <EmptyHeader>
               <EmptyMedia variant="icon">
                 <LineChart className="h-6 w-6" strokeWidth={1.75} aria-hidden />
@@ -1680,13 +1739,27 @@ function PortfolioOverviewChartInner({
       </div>
 
       <div className="relative z-20 mt-3 w-full sm:hidden">
-        <FormListboxSelect
-          aria-label="Chart metric"
-          className="w-full"
-          options={PORTFOLIO_CHART_METRIC_OPTIONS}
-          value={metric}
-          onChange={(v) => setMetric(v as PortfolioChartMetricMode)}
-        />
+        <div
+          className="flex w-full min-w-0 flex-nowrap justify-stretch gap-0.5 rounded-[10px] bg-[#F4F4F5] p-0.5"
+          role="group"
+          aria-label="Chart range"
+        >
+          {PORTFOLIO_CHART_MOBILE_RANGE_LABELS.map((r) => (
+            <button
+              key={r.id}
+              type="button"
+              onClick={() => setRange(r.id)}
+              className={cn(
+                "flex-1 rounded-[10px] px-2 py-1.5 text-center font-sans text-[14px] leading-5 tracking-normal",
+                range === r.id ?
+                  "bg-white font-medium text-[#09090B] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]"
+                : "font-normal text-[#71717A]",
+              )}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
       </div>
     </section>
   );

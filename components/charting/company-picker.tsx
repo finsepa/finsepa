@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DropdownScrollArea } from "@/components/design-system/dropdown-scroll-area";
 import { CompanyLogo } from "@/components/screener/company-logo";
 import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
+import { useMobileSheet } from "@/lib/layout/use-mobile-sheet";
 import { PeerSearchDropdownRow } from "@/components/comparison/peer-search-dropdown-row";
 import { SearchInlineInputShell } from "@/components/search/search-inline-input-shell";
 import { SearchLoadingIndicator } from "@/components/search/search-loading-indicator";
@@ -117,6 +118,8 @@ export function CompanyPicker({
   const pickerWrapRef = useRef<HTMLDivElement>(null);
   const pickerInputRef = useRef<HTMLInputElement>(null);
   const menuPortalRef = useRef<HTMLDivElement>(null);
+  const isMobileSheet = useMobileSheet();
+  const useMenuPortal = menuPortal || isMobileSheet;
 
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerQuery, setPickerQuery] = useState("");
@@ -453,18 +456,20 @@ export function CompanyPicker({
         children?.({ open: pickerOpen, setOpen: setPickerOpen, atCapacity })
       )}
 
-      {pickerOpen && variant === "button" && menuPortal ? (
+      {pickerOpen && variant === "button" && useMenuPortal ? (
         <TopbarDropdownPortal
           open={pickerOpen}
           anchorRef={pickerWrapRef}
           align={portalAlign}
           ref={menuPortalRef}
+          sheetTitle={listboxAriaLabel}
+          onRequestClose={closePicker}
         >
           {pickerDropdownPanel}
         </TopbarDropdownPortal>
       ) : null}
 
-      {pickerOpen && variant === "button" && !menuPortal ? (
+      {pickerOpen && variant === "button" && !useMenuPortal ? (
         <div
           className={cn(
             "absolute top-full z-[200] mt-1",
@@ -475,18 +480,20 @@ export function CompanyPicker({
         </div>
       ) : null}
 
-      {pickerOpen && variant === "inline-search" && menuPortal ? (
+      {pickerOpen && variant === "inline-search" && useMenuPortal ? (
         <TopbarDropdownPortal
           open={pickerOpen}
           anchorRef={pickerWrapRef}
           align={portalAlign}
           ref={menuPortalRef}
+          sheetTitle={listboxAriaLabel}
+          onRequestClose={closePicker}
         >
           {pickerDropdownPanel}
         </TopbarDropdownPortal>
       ) : null}
 
-      {pickerOpen && variant === "inline-search" && !menuPortal ? (
+      {pickerOpen && variant === "inline-search" && !useMenuPortal ? (
         <div
           className={cn(
             "absolute top-full z-[200] mt-1",

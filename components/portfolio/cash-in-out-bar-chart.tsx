@@ -5,9 +5,10 @@ import { BarChart3, Check, ChevronDown } from "@/lib/icons";
 
 import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
 import {
-  dropdownMenuPanelClassName,
+  dropdownMenuMobileSheetBodyClassName,
   dropdownMenuPlainItemRowClassName,
 } from "@/components/design-system/dropdown-menu-styles";
+import { MobileBottomSheet } from "@/components/ui/mobile-bottom-sheet";
 import {
   FUNDAMENTALS_CHART_AXIS_LABEL_ROTATE_DEG,
   FUNDAMENTALS_CHART_AXIS_ROW_PX,
@@ -639,35 +640,38 @@ function CashInOutBarChartSectionInner({ rows }: { rows: PortfolioTransaction[] 
               <ChevronDown className="h-5 w-5 shrink-0 text-[#09090B]" aria-hidden />
             </button>
             {rangeOpen ? (
-              <div
-                role="listbox"
-                className={cn(
-                  dropdownMenuPanelClassName(),
-                  "absolute left-0 right-0 top-full z-[110] mt-1",
-                )}
+              <MobileBottomSheet
+                open={rangeOpen}
+                onClose={() => setRangeOpen(false)}
+                title="Cash chart time range"
               >
-                {RANGE_OPTIONS.map((o) => {
-                  const selected = o.value === range;
-                  return (
-                    <button
-                      key={o.value}
-                      type="button"
-                      role="option"
-                      aria-selected={selected}
-                      onClick={() => {
-                        setRange(o.value);
-                        setRangeOpen(false);
-                      }}
-                      className={cn(dropdownMenuPlainItemRowClassName({ selected }), "font-medium")}
-                    >
-                      <span>{o.label}</span>
-                      {selected ? (
-                        <Check className="h-4 w-4 shrink-0 text-[#09090B]" strokeWidth={2} aria-hidden />
-                      ) : null}
-                    </button>
-                  );
-                })}
-              </div>
+                <div className={dropdownMenuMobileSheetBodyClassName} role="listbox">
+                  {RANGE_OPTIONS.map((o) => {
+                    const selected = o.value === range;
+                    return (
+                      <button
+                        key={o.value}
+                        type="button"
+                        role="option"
+                        aria-selected={selected}
+                        onClick={() => {
+                          setRange(o.value);
+                          setRangeOpen(false);
+                        }}
+                        className={cn(dropdownMenuPlainItemRowClassName({ selected }), "font-medium")}
+                      >
+                        <span className="min-w-0 flex-1 text-left">{o.label}</span>
+                        <span className="flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden>
+                          <Check
+                            className={cn("h-4 w-4 text-[#09090B]", !selected && "invisible")}
+                            strokeWidth={2}
+                          />
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </MobileBottomSheet>
             ) : null}
           </div>
 

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Menu, Sparkles } from "@/lib/icons";
+import { Menu, Sparkles, User } from "@/lib/icons";
 
 import { BillingUpgradeModal } from "@/components/account/billing-upgrade-modal";
 import { DropdownMenuLottieIcon } from "@/components/icons/dropdown-menu-lottie-icon";
@@ -194,12 +194,13 @@ export function TopbarUserMenu({
           className={cn(
             triggerClassName ?? topbarSquircleIconClass,
             open && topbarSquircleActiveClass,
-            // md+: keep the existing combined trigger (menu + avatar + trial text).
+            // md+: menu icon + avatar + trial text; mobile: user icon in squircle.
             !triggerClassName &&
               "md:h-9 md:w-auto md:max-w-[min(100vw-10rem,280px)] md:min-w-0 md:justify-start md:gap-2 md:px-2",
           )}
         >
-          <Menu className="h-5 w-5 shrink-0" aria-hidden />
+          <Menu className="hidden h-5 w-5 shrink-0 md:block" aria-hidden />
+          <User className="h-5 w-5 shrink-0 md:hidden" strokeWidth={1.75} aria-hidden />
           <span className="hidden md:inline-flex">
             <UserAvatar imageSrc={avatarUrl} initials={userInitials} size="sm" showProBadge={isPro} />
           </span>
@@ -215,10 +216,11 @@ export function TopbarUserMenu({
         open={open}
         anchorRef={rootRef}
         ref={menuPortalRef}
-        className={cn(dropdownMenuSurfaceClassName(), "min-w-[240px] overflow-hidden")}
+        onRequestClose={() => setOpen(false)}
+        className={cn(dropdownMenuSurfaceClassName(), "min-w-[240px] overflow-hidden max-md:!border-0 max-md:!shadow-none")}
       >
         <div role="menu">
-          <div className="flex gap-3 border-b border-[#E4E4E7] px-3 py-3">
+          <div className="flex gap-3 border-b border-[#E4E4E7] px-3 py-3 max-md:border-b-0">
             <UserAvatar imageSrc={avatarUrl} initials={userInitials} size="menu" showProBadge={isPro} />
             <div className="min-w-0 flex-1 pt-0.5">
               <div className="truncate text-sm font-semibold leading-5 text-[#09090B]">{userDisplayName}</div>

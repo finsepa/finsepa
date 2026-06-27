@@ -47,7 +47,7 @@ export type WatchlistOptionsMenuProps = {
   onRename: (name: string) => void;
   onDelete: () => void | Promise<void>;
   onSwitch: (id: string) => void;
-  /** `page-icon` = chevrons button beside page title; `rail-title` = rail header label + chevron down. */
+  /** `page-icon` = options button beside page title (chevrons toggle, same as portfolio switcher). */
   variant: "page-icon" | "rail-title";
   className?: string;
   /** When false, menu toggle is ignored (avoids SSR/localStorage races without `disabled` on the button). */

@@ -5,6 +5,7 @@ import { Suspense, useRef } from "react";
 
 import { MainScrollToTop } from "@/components/layout/main-scroll-to-top";
 import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav";
+import { MobilePrimaryNavProvider } from "@/components/layout/mobile-primary-nav-context";
 import { NavigationTopLoader } from "@/components/layout/navigation-top-loader";
 import { Sidebar } from "@/components/layout/sidebar";
 import {
@@ -51,6 +52,7 @@ function ProtectedAppChrome({
 
   return (
     <MobileAssetTopbarProvider>
+    <MobilePrimaryNavProvider>
     <div
       id="app-shell-root"
       suppressHydrationWarning
@@ -134,6 +136,7 @@ function ProtectedAppChrome({
       <MainScrollToTop scrollRootRef={mainRef} />
       <MobileBottomNav />
     </div>
+    </MobilePrimaryNavProvider>
     </MobileAssetTopbarProvider>
   );
 }

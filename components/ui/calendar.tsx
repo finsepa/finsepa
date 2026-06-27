@@ -6,9 +6,12 @@ import { DayButton, DayPicker, Dropdown as DayPickerDropdown, getDefaultClassNam
 
 import { DropdownScrollArea } from "@/components/design-system/dropdown-scroll-area";
 import {
+  dropdownMenuMobileSheetBodyClassName,
   dropdownMenuPanelClassName,
   dropdownMenuPlainItemRowClassName,
 } from "@/components/design-system/dropdown-menu-styles";
+import { MobileBottomSheet } from "@/components/ui/mobile-bottom-sheet";
+import { useMobileSheet } from "@/lib/layout/use-mobile-sheet";
 import { cn } from "@/lib/utils";
 
 import "react-day-picker/style.css";
@@ -93,27 +96,28 @@ function FinsepaCalendarDropdown({
 
   const [open, setOpen] = React.useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
+  const isMobileSheet = useMobileSheet();
 
   const opts = options ?? [];
   const active = opts.find((o) => String(o.value) === String(value)) ?? opts[0];
 
   React.useEffect(() => {
-    if (!open) return;
+    if (!open || isMobileSheet) return;
     function onDocMouseDown(e: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) setOpen(false);
     }
     document.addEventListener("mousedown", onDocMouseDown);
     return () => document.removeEventListener("mousedown", onDocMouseDown);
-  }, [open]);
+  }, [open, isMobileSheet]);
 
   React.useEffect(() => {
-    if (!open) return;
+    if (!open || isMobileSheet) return;
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") setOpen(false);
     }
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [open]);
+  }, [open, isMobileSheet]);
 
   if (!active) {
     return <div className={cn(rootClass, className)} style={style} aria-hidden />;
@@ -125,6 +129,37 @@ function FinsepaCalendarDropdown({
       currentTarget: { value: nextValue },
     } as React.ChangeEvent<HTMLSelectElement>);
   }
+
+  const optionList = (
+    <>
+      {opts.map((opt) => {
+        const selected = String(opt.value) === String(value);
+        return (
+          <button
+            key={opt.value}
+            type="button"
+            role="option"
+            aria-selected={selected}
+            disabled={opt.disabled}
+            onClick={() => {
+              if (opt.disabled) return;
+              emitChange(String(opt.value));
+              setOpen(false);
+            }}
+            className={dropdownMenuPlainItemRowClassName({ selected })}
+          >
+            <span className="min-w-0 flex-1 truncate text-left">{opt.label}</span>
+            <span className="flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden>
+              <Check
+                className={cn("h-4 w-4 text-[#2563EB]", !selected && "invisible")}
+                strokeWidth={2}
+              />
+            </span>
+          </button>
+        );
+      })}
+    </>
+  );
 
   return (
     <div
@@ -163,7 +198,18 @@ function FinsepaCalendarDropdown({
           aria-hidden
         />
       ) : null}
-      {open ? (
+      {open && isMobileSheet ? (
+        <MobileBottomSheet
+          open={open}
+          onClose={() => setOpen(false)}
+          title={ariaLabel ?? "Choose option"}
+        >
+          <div className={dropdownMenuMobileSheetBodyClassName} role="listbox" aria-label={ariaLabel}>
+            {optionList}
+          </div>
+        </MobileBottomSheet>
+      ) : null}
+      {open && !isMobileSheet ? (
         <DropdownScrollArea
           className={cn(
             dropdownMenuPanelClassName(),
@@ -172,29 +218,7 @@ function FinsepaCalendarDropdown({
           role="listbox"
           aria-label={ariaLabel}
         >
-          {opts.map((opt) => {
-            const selected = String(opt.value) === String(value);
-            return (
-              <button
-                key={opt.value}
-                type="button"
-                role="option"
-                aria-selected={selected}
-                disabled={opt.disabled}
-                onClick={() => {
-                  if (opt.disabled) return;
-                  emitChange(String(opt.value));
-                  setOpen(false);
-                }}
-                className={dropdownMenuPlainItemRowClassName({ selected })}
-              >
-                <span className="min-w-0 flex-1 truncate text-left">{opt.label}</span>
-                <span className="flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden>
-                  {selected ? <Check className="h-4 w-4 text-[#2563EB]" strokeWidth={2} /> : null}
-                </span>
-              </button>
-            );
-          })}
+          {optionList}
         </DropdownScrollArea>
       ) : null}
     </div>

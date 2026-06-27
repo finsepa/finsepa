@@ -5,9 +5,12 @@ import { useEffect, useRef, useState } from "react";
 import { Check, ChevronDown } from "@/lib/icons";
 
 import {
+  dropdownMenuMobileSheetBodyClassName,
   dropdownMenuPanelClassName,
   dropdownMenuPlainItemRowClassName,
 } from "@/components/design-system/dropdown-menu-styles";
+import { MobileBottomSheet } from "@/components/ui/mobile-bottom-sheet";
+import { useMobileSheet } from "@/lib/layout/use-mobile-sheet";
 import { cn } from "@/lib/utils";
 
 export type ListboxOption<V extends string = string> = { value: V; label: string };
@@ -59,25 +62,62 @@ export function FormListboxSelect<V extends string>({
 }) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const isMobileSheet = useMobileSheet();
   const active = options.find((o) => o.value === value) ?? options[0];
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || isMobileSheet) return;
     function onDocMouseDown(e: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) setOpen(false);
     }
     document.addEventListener("mousedown", onDocMouseDown);
     return () => document.removeEventListener("mousedown", onDocMouseDown);
-  }, [open]);
+  }, [open, isMobileSheet]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || isMobileSheet) return;
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") setOpen(false);
     }
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [open]);
+  }, [open, isMobileSheet]);
+
+  const optionList = (
+    <>
+      {options.map((opt) => {
+        const selected = value === opt.value;
+        return (
+          <button
+            key={opt.value}
+            type="button"
+            role="option"
+            aria-selected={selected}
+            onClick={() => {
+              onChange(opt.value);
+              setOpen(false);
+            }}
+            className={dropdownMenuPlainItemRowClassName({ selected })}
+          >
+            <span
+              className={cn(
+                "min-w-0 flex-1 text-left",
+                truncateOptions ? "truncate" : "whitespace-nowrap",
+              )}
+            >
+              {opt.label}
+            </span>
+            <span className="flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden>
+              <Check
+                className={cn("h-4 w-4 text-[#09090B]", !selected && "invisible")}
+                strokeWidth={2}
+              />
+            </span>
+          </button>
+        );
+      })}
+    </>
+  );
 
   if (!active) return null;
 
@@ -136,7 +176,18 @@ export function FormListboxSelect<V extends string>({
         strokeWidth={2}
         aria-hidden
       />
-      {open ? (
+      {open && isMobileSheet ? (
+        <MobileBottomSheet open={open} onClose={() => setOpen(false)}>
+          <div
+            className={dropdownMenuMobileSheetBodyClassName}
+            role="listbox"
+            aria-label={ariaLabel}
+          >
+            {optionList}
+          </div>
+        </MobileBottomSheet>
+      ) : null}
+      {open && !isMobileSheet ? (
         <div
           className={cn(
             dropdownMenuPanelClassName(),
@@ -148,34 +199,7 @@ export function FormListboxSelect<V extends string>({
           role="listbox"
           aria-label={ariaLabel}
         >
-          {options.map((opt) => {
-            const selected = value === opt.value;
-            return (
-              <button
-                key={opt.value}
-                type="button"
-                role="option"
-                aria-selected={selected}
-                onClick={() => {
-                  onChange(opt.value);
-                  setOpen(false);
-                }}
-                className={dropdownMenuPlainItemRowClassName({ selected })}
-              >
-                <span
-                  className={cn(
-                    "min-w-0 flex-1 text-left",
-                    truncateOptions ? "truncate" : "whitespace-nowrap",
-                  )}
-                >
-                  {opt.label}
-                </span>
-                <span className="flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden>
-                  {selected ? <Check className="h-4 w-4 text-[#09090B]" strokeWidth={2} /> : null}
-                </span>
-              </button>
-            );
-          })}
+          {optionList}
         </div>
       ) : null}
     </div>

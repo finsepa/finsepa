@@ -56,12 +56,15 @@ function entriesFromCards(cards: IndexCardData[]): IndexEntry[] {
 export const INDEX_CARDS_GRID_CLASS =
   "flex w-max flex-nowrap gap-3 md:grid md:w-full md:max-w-full md:grid-cols-3 md:gap-4 lg:grid-cols-4 xl:grid-cols-5";
 
-/** Horizontal scroll shell — padding on mobile leaves room for card shadows inside the scrollport. */
+/** Outer shell — keeps vertical overflow visible so card shadows are not clipped. */
+export const INDEX_CARDS_SCROLL_OUTER_CLASS = "mb-4 overflow-visible sm:mb-5 md:mb-6";
+
+/** Horizontal scroll track — `mobile-scroll-x` reserves bottom space for shadows on small screens. */
 export const INDEX_CARDS_SCROLL_CLASS =
-  "mb-5 max-md:mb-2 -mx-4 overflow-x-auto overscroll-x-contain px-4 pb-3 max-md:pb-1 pt-1 [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mb-6 md:mx-0 md:overflow-visible md:px-0 md:pb-0 md:pt-0";
+  "-mx-4 px-4 pt-1 mobile-scroll-x md:mx-0 md:overflow-visible md:px-0 md:pb-0 md:pt-0 md:mb-0";
 
 export const INDEX_CARD_SURFACE_CLASS =
-  `flex w-[8.0625rem] shrink-0 flex-col items-start gap-1 max-md:overflow-visible overflow-hidden rounded-2xl border border-[#E4E4E7] bg-white px-3 py-3 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition md:hover:shadow-[0px_2px_6px_0px_rgba(10,10,10,0.08)] sm:px-4 sm:py-4 md:w-auto md:min-w-0 md:shrink ${MOBILE_CARD_SURFACE_CLASS}`;
+  `flex w-[7.25625rem] shrink-0 flex-col items-start gap-0.5 max-md:py-2.5 overflow-hidden rounded-2xl border border-[#E4E4E7] bg-white px-3 py-3 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition max-md:overflow-visible md:gap-1 md:hover:shadow-[0px_2px_6px_0px_rgba(10,10,10,0.08)] sm:px-4 sm:py-4 md:w-auto md:min-w-0 md:shrink ${MOBILE_CARD_SURFACE_CLASS}`;
 
 function seedIndexCards(initialCards?: IndexCardData[]): IndexCardData[] {
   if (Array.isArray(initialCards) && initialCards.length > 0) return initialCards;
@@ -119,18 +122,19 @@ export function IndexCards({
   const fadeIn = true;
 
   return (
-    <div className={INDEX_CARDS_SCROLL_CLASS} aria-label="Market indices">
-      <div className={INDEX_CARDS_GRID_CLASS}>
+    <div className={INDEX_CARDS_SCROLL_OUTER_CLASS}>
+      <div className={INDEX_CARDS_SCROLL_CLASS} aria-label="Market indices">
+        <div className={INDEX_CARDS_GRID_CLASS}>
         {entries.map(({ name, value, change, positive, neutral }) => {
           const TrendIcon = neutral ? null : positive ? ArrowUp : ArrowDown;
           return (
             <div key={name} className={INDEX_CARD_SURFACE_CLASS}>
-              <p className="w-full truncate text-left text-[13px] font-medium leading-5 text-[#09090B] sm:text-[14px]">
+              <p className="w-full truncate text-left text-[13px] font-medium leading-4 text-[#09090B] sm:text-[14px] sm:leading-5">
                 {name}
               </p>
               <FadeIn show={fadeIn}>
                 <p
-                  className="w-full truncate text-left text-[15px] font-bold leading-6 tabular-nums text-[#09090B] sm:text-base"
+                  className="w-full truncate text-left text-[15px] font-bold leading-5 tabular-nums text-[#09090B] sm:text-base sm:leading-6"
                   suppressHydrationWarning
                 >
                   {value}
@@ -138,7 +142,7 @@ export function IndexCards({
               </FadeIn>
               <FadeIn show={fadeIn}>
                 <div
-                  className={`flex w-full items-center gap-1 text-left text-[13px] font-medium leading-5 tabular-nums sm:text-[14px] ${
+                  className={`flex w-full items-center gap-1 text-left text-[13px] font-medium leading-4 tabular-nums sm:text-[14px] sm:leading-5 ${
                     neutral ? "text-[#71717A]" : positive ? "text-[#16A34A]" : "text-[#DC2626]"
                   }`}
                   suppressHydrationWarning
@@ -150,6 +154,7 @@ export function IndexCards({
             </div>
           );
         })}
+        </div>
       </div>
     </div>
   );

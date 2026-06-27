@@ -1,7 +1,7 @@
 "use client";
 
 import { LogoSkeleton, SkeletonBox, TextSkeleton } from "@/components/markets/skeleton";
-import { INDEX_CARD_SURFACE_CLASS, INDEX_CARDS_GRID_CLASS, INDEX_CARDS_SCROLL_CLASS } from "@/components/screener/index-cards";
+import { INDEX_CARD_SURFACE_CLASS, INDEX_CARDS_GRID_CLASS, INDEX_CARDS_SCROLL_CLASS, INDEX_CARDS_SCROLL_OUTER_CLASS } from "@/components/screener/index-cards";
 import {
   SCREENER_TABLE_HEADER_STICKY_CLASS,
   ScreenerTableScroll,
@@ -313,11 +313,13 @@ export function ScreenerMarketTabSkeleton({ tab }: { tab: ScreenerMarketTabSkele
 
   return (
     <div className="min-w-0 w-full max-w-full">
-      <div className={INDEX_CARDS_SCROLL_CLASS}>
-        <div className={INDEX_CARDS_GRID_CLASS}>
-          {["S&P 500", "Nasdaq 100", "Dow Jones", "Russell 2000", "VIX"].map((name) => (
-            <IndexCardSkeleton key={name} name={name} />
-          ))}
+      <div className={INDEX_CARDS_SCROLL_OUTER_CLASS}>
+        <div className={INDEX_CARDS_SCROLL_CLASS}>
+          <div className={INDEX_CARDS_GRID_CLASS}>
+            {["S&P 500", "Nasdaq 100", "Dow Jones", "Russell 2000", "VIX"].map((name) => (
+              <IndexCardSkeleton key={name} name={name} />
+            ))}
+          </div>
         </div>
       </div>
       <div className="mb-5 h-9 w-full rounded-[10px] skeleton md:w-48" />

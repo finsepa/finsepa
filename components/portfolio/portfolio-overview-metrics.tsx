@@ -2,12 +2,8 @@
 
 import { useMemo } from "react";
 
+import { MOBILE_CARD_SURFACE_CLASS } from "@/components/design-system/card-surface-styles";
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
-import {
-  SCREENER_TABLE_BODY_DIVIDE_CLASS,
-  SCREENER_TABLE_MOBILE_SURFACE_CLASS,
-  SCREENER_TABLE_OUTER_BORDER_CLASS,
-} from "@/components/screener/screener-table-scroll";
 import { tradeSymbolsFromHistory } from "@/lib/portfolio/realized-pnl-from-trades";
 import { cn } from "@/lib/utils";
 
@@ -172,6 +168,14 @@ function splitMetricsIntoColumns(metrics: PortfolioMetricRow[]): PortfolioMetric
   return columns;
 }
 
+/** Mobile matches asset Key Stats card — 16px radius, stacked shadow, inset padding. */
+const PORTFOLIO_METRICS_MOBILE_CARD_CLASS = cn(
+  "max-md:overflow-hidden max-md:rounded-2xl max-md:p-4",
+  MOBILE_CARD_SURFACE_CLASS,
+);
+
+const DESKTOP_STAT_ROW_BORDER_CLASS = "border-b border-solid border-[#E4E4E7]";
+
 function formatDelta(deltaPct: number): string {
   const sign = deltaPct > 0 ? "+" : "";
   return `${sign}${deltaPct.toFixed(1)}%`;
@@ -183,53 +187,92 @@ function valueToneClass(deltaPct: number | null, muted: boolean): string {
   return deltaPct > 0 ? "text-[#16A34A]" : "text-[#DC2626]";
 }
 
-function MetricValueTooltip({
+function MetricValueDisplay({
   row,
   muted,
+  align = "right",
 }: {
   row: PortfolioMetricRow;
   muted: boolean;
+  align?: "left" | "right";
 }) {
   const comparable = row.benchmark != null && row.deltaPct != null && !muted;
   const toneClass = valueToneClass(row.deltaPct, muted);
+  const plainValueClass = cn(
+    "text-[14px] font-medium tabular-nums",
+    align === "left" ? "leading-4" : "leading-5",
+    align === "right" ? "shrink-0 text-right" : "min-w-0 text-left",
+    muted ? "text-[#71717A]" : "text-[#09090B]",
+  );
 
   if (!comparable) {
-    return (
-      <span className={cn("shrink-0 text-right text-[14px] font-medium leading-5 tabular-nums", toneClass)}>
-        {row.portfolio}
-      </span>
-    );
+    return <span className={plainValueClass}>{row.portfolio}</span>;
   }
 
   const deltaLabel = formatDelta(row.deltaPct!);
   const deltaTone = row.deltaPct! > 0 ? "text-[#16A34A]" : "text-[#DC2626]";
 
   return (
-    <div className="group/value relative shrink-0">
-      <span
-        className={cn(
-          "cursor-default text-right text-[14px] font-medium leading-5 tabular-nums underline decoration-dotted decoration-[#D4D4D8] underline-offset-2",
-          toneClass,
-        )}
-        tabIndex={0}
-        aria-describedby={`portfolio-metric-tip-${row.label.replace(/\s+/g, "-").toLowerCase()}`}
-      >
-        {row.portfolio}
-      </span>
-      <div
-        id={`portfolio-metric-tip-${row.label.replace(/\s+/g, "-").toLowerCase()}`}
-        role="tooltip"
-        className={cn(
-          "pointer-events-none absolute bottom-[calc(100%+6px)] right-0 z-30 w-max max-w-[min(calc(100vw-2rem),15rem)]",
-          "rounded-lg border border-[#E4E4E7] bg-white px-3 py-2.5 opacity-0 shadow-[0px_4px_12px_rgba(10,10,10,0.08)]",
-          "transition-opacity duration-100 group-hover/value:opacity-100 group-focus-within/value:opacity-100",
-        )}
-      >
-        <p className="text-[12px] font-semibold leading-4 text-[#09090B]">{row.tooltipTitle}</p>
-        <p className="mt-2 text-[12px] leading-4 text-[#71717A]">S&amp;P 500 - {row.benchmark}</p>
-        <p className="text-[12px] leading-4 text-[#71717A]">Portfolio - {row.portfolio}</p>
-        <p className={cn("mt-2 text-[12px] font-semibold leading-4 tabular-nums", deltaTone)}>{deltaLabel}</p>
+    <>
+      <span className={cn(plainValueClass, "md:hidden")}>{row.portfolio}</span>
+      <div className={cn("group/value relative hidden shrink-0 md:block", align === "right" && "ml-auto")}>
+        <span
+          className={cn(
+            "cursor-default text-[14px] font-medium leading-5 tabular-nums underline decoration-dotted decoration-[#D4D4D8] underline-offset-2",
+            align === "right" ? "text-right" : "text-left",
+            toneClass,
+          )}
+          tabIndex={0}
+          aria-describedby={`portfolio-metric-tip-${row.label.replace(/\s+/g, "-").toLowerCase()}`}
+        >
+          {row.portfolio}
+        </span>
+        <div
+          id={`portfolio-metric-tip-${row.label.replace(/\s+/g, "-").toLowerCase()}`}
+          role="tooltip"
+          className={cn(
+            "pointer-events-none absolute bottom-[calc(100%+6px)] z-30 w-max max-w-[min(calc(100vw-2rem),15rem)]",
+            align === "right" ? "right-0" : "left-0",
+            "rounded-lg border border-[#E4E4E7] bg-white px-3 py-2.5 opacity-0 shadow-[0px_4px_12px_rgba(10,10,10,0.08)]",
+            "transition-opacity duration-100 group-hover/value:opacity-100 group-focus-within/value:opacity-100",
+          )}
+        >
+          <p className="text-[12px] font-semibold leading-4 text-[#09090B]">{row.tooltipTitle}</p>
+          <p className="mt-2 text-[12px] leading-4 text-[#71717A]">S&amp;P 500 - {row.benchmark}</p>
+          <p className="text-[12px] leading-4 text-[#71717A]">Portfolio - {row.portfolio}</p>
+          <p className={cn("mt-2 text-[12px] font-semibold leading-4 tabular-nums", deltaTone)}>{deltaLabel}</p>
+        </div>
       </div>
+    </>
+  );
+}
+
+function chunkMetricRows<T>(items: readonly T[]): T[][] {
+  const rows: T[][] = [];
+  for (let i = 0; i < items.length; i += 2) {
+    rows.push(items.slice(i, i + 2));
+  }
+  return rows;
+}
+
+function MobileStatCell({
+  row,
+  muted,
+  showBorderBottom,
+}: {
+  row: PortfolioMetricRow;
+  muted: boolean;
+  showBorderBottom?: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex min-w-0 flex-col gap-1",
+        showBorderBottom && "border-b border-dashed border-[#E4E4E7] pb-3",
+      )}
+    >
+      <span className="text-[14px] leading-4 text-[#71717A]">{row.label}</span>
+      <MetricValueDisplay row={row} muted={muted} align="left" />
     </div>
   );
 }
@@ -244,14 +287,9 @@ function StatRow({
   className?: string;
 }) {
   return (
-    <div
-      className={cn(
-        "flex items-center justify-between gap-3 px-4 min-h-[56px] sm:min-h-[60px] md:min-h-0 md:px-0 md:py-1.5",
-        className,
-      )}
-    >
+    <div className={cn("flex items-center justify-between gap-3 md:px-0 md:py-1.5", className)}>
       <span className="min-w-0 shrink text-[14px] font-medium leading-5 text-[#09090B]">{row.label}</span>
-      <MetricValueTooltip row={row} muted={muted} />
+      <MetricValueDisplay row={row} muted={muted} align="right" />
     </div>
   );
 }
@@ -277,16 +315,33 @@ export function PortfolioOverviewMetrics({
   return (
     <div
       className={cn(
-        "mb-6 w-full min-w-0 bg-white md:overflow-visible",
-        SCREENER_TABLE_OUTER_BORDER_CLASS,
-        SCREENER_TABLE_MOBILE_SURFACE_CLASS,
-        "max-md:overflow-hidden max-md:rounded-2xl md:rounded-xl md:border md:border-solid md:border-[#E4E4E7] md:p-4",
+        "mb-6 max-md:mb-4 w-full min-w-0 bg-white md:overflow-visible md:rounded-xl md:border md:border-solid md:border-[#E4E4E7] md:p-4",
+        PORTFOLIO_METRICS_MOBILE_CARD_CLASS,
       )}
     >
-      <div className={cn("max-md:block md:hidden", SCREENER_TABLE_BODY_DIVIDE_CLASS)}>
-        {metrics.map((row) => (
-          <StatRow key={row.label} row={row} muted={isEmptyPortfolio} />
-        ))}
+      <div className="md:hidden">
+        <h3 className="mb-4 text-[14px] font-medium leading-5 text-[#71717A]">Key Stats</h3>
+        <div className="flex flex-col">
+          {chunkMetricRows(metrics).map((pair, rowIndex, rows) => {
+            const showBorderBottom = rowIndex < rows.length - 1;
+
+            return (
+              <div
+                key={pair.map((row) => row.label).join("-")}
+                className={cn("grid grid-cols-2 gap-x-4", rowIndex > 0 && "pt-3")}
+              >
+                {pair.map((row) => (
+                  <MobileStatCell
+                    key={row.label}
+                    row={row}
+                    muted={isEmptyPortfolio}
+                    showBorderBottom={showBorderBottom}
+                  />
+                ))}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       <div className="hidden overflow-visible md:grid md:grid-cols-3 md:gap-6">
@@ -297,11 +352,7 @@ export function PortfolioOverviewMetrics({
                 key={row.label}
                 row={row}
                 muted={isEmptyPortfolio}
-                className={
-                  rowIndex < column.length - 1
-                    ? "border-b border-solid border-[#E4E4E7]"
-                    : undefined
-                }
+                className={rowIndex < column.length - 1 ? DESKTOP_STAT_ROW_BORDER_CLASS : undefined}
               />
             ))}
           </div>
