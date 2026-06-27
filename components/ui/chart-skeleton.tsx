@@ -25,14 +25,20 @@ type ChartSkeletonProps = {
 export function AssetChartSkeleton({
   className,
   heightPx = 320,
+  fill,
 }: {
   className?: string;
   heightPx?: number;
+  fill?: boolean;
 }) {
   return (
     <div
-      className={cn("relative w-full min-w-0 overflow-hidden px-1 py-1", className)}
-      style={{ height: heightPx }}
+      className={cn(
+        "relative w-full min-w-0 overflow-hidden px-1 py-1",
+        fill && "h-full min-h-0",
+        className,
+      )}
+      style={fill ? undefined : { height: heightPx }}
       aria-hidden
       role="presentation"
     >

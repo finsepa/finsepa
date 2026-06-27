@@ -5,6 +5,7 @@ import {
   SCREENER_TABLE_OUTER_BORDER_CLASS,
 } from "@/components/screener/screener-table-scroll";
 import { AssetChartSkeleton } from "@/components/ui/chart-skeleton";
+import { publicPortfolioViewTabs } from "@/components/portfolio/portfolio-page-tabs";
 import { cn } from "@/lib/utils";
 
 const METRIC_CARD_CLASS =
