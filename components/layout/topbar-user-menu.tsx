@@ -3,9 +3,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CircleQuestionMark, CreditCard, LogOut, Menu, Sparkles, User } from "@/lib/icons";
+import { Menu, Sparkles } from "@/lib/icons";
 
 import { BillingUpgradeModal } from "@/components/account/billing-upgrade-modal";
+import { DropdownMenuLottieIcon } from "@/components/icons/dropdown-menu-lottie-icon";
 import { HelpFeedbackModal } from "@/components/layout/help-feedback-modal";
 import {
   dropdownMenuPanelBodyClassName,
@@ -16,6 +17,12 @@ import { topbarSquircleActiveClass, topbarSquircleIconClass } from "@/components
 import { TopbarDelayedTooltip } from "@/components/layout/topbar-delayed-tooltip";
 import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
 import { UserAvatar } from "@/components/user/user-avatar";
+import {
+  billingMenuIconAnimation,
+  helpMenuIconAnimation,
+  logoutMenuIconAnimation,
+  profileMenuIconAnimation,
+} from "@/lib/lottie/menu-icon-animations";
 import { PATH_APP_ENTRY, loginSignedOutUrl } from "@/lib/auth/routes";
 import {
   EMPTY_BILLING_SUMMARY,
@@ -58,15 +65,19 @@ export function TopbarUserMenu({
   const [planLabel, setPlanLabel] = useState<string>(() =>
     subscriptionTitleFromBillingSummary(EMPTY_BILLING_SUMMARY),
   );
+  const [isPro, setIsPro] = useState(false);
+  const [profileIconPlaying, setProfileIconPlaying] = useState(false);
+  const [billingIconPlaying, setBillingIconPlaying] = useState(false);
+  const [helpIconPlaying, setHelpIconPlaying] = useState(false);
+  const [logoutIconPlaying, setLogoutIconPlaying] = useState(false);
   const [planLoading, setPlanLoading] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const menuPortalRef = useRef<HTMLDivElement>(null);
 
-  /** Warm label from local cache so the menu rarely flashes a skeleton on open. */
-  useEffect(() => {
-    const hit = readBillingSummaryMenuCache(userId);
-    if (hit) setPlanLabel(subscriptionTitleFromBillingSummary(hit.summary));
-  }, [userId]);
+  const applyBillingSummary = useCallback((summary: BillingSummary) => {
+    setPlanLabel(subscriptionTitleFromBillingSummary(summary));
+    setIsPro(summary.plan === "pro");
+  }, []);
 
   const fetchBillingSummaryForMenu = useCallback(
     async (opts: { showSkeleton: boolean }) => {
@@ -76,15 +87,31 @@ export function TopbarUserMenu({
         if (!res.ok) return;
         const data = (await res.json()) as BillingSummary;
         writeBillingSummaryMenuCache(userId, data);
-        setPlanLabel(subscriptionTitleFromBillingSummary(data));
+        applyBillingSummary(data);
       } catch {
         // ignore
       } finally {
         if (opts.showSkeleton) setPlanLoading(false);
       }
     },
-    [userId],
+    [userId, applyBillingSummary],
   );
+
+  /** Warm label + Pro badge from local cache so the menu rarely flashes a skeleton on open. */
+  useEffect(() => {
+    const hit = readBillingSummaryMenuCache(userId);
+    if (hit) applyBillingSummary(hit.summary);
+  }, [userId, applyBillingSummary]);
+
+  useEffect(() => {
+    const cached = readBillingSummaryMenuCache(userId);
+    if (cached && isBillingSummaryMenuCacheFresh(cached.fetchedAt)) return;
+    if (cached) {
+      void fetchBillingSummaryForMenu({ showSkeleton: false });
+      return;
+    }
+    void fetchBillingSummaryForMenu({ showSkeleton: false });
+  }, [userId, fetchBillingSummaryForMenu]);
 
   useEffect(() => {
     if (!open) return;
@@ -92,18 +119,27 @@ export function TopbarUserMenu({
     const cached = readBillingSummaryMenuCache(userId);
 
     if (cached && isBillingSummaryMenuCacheFresh(cached.fetchedAt)) {
-      setPlanLabel(subscriptionTitleFromBillingSummary(cached.summary));
+      applyBillingSummary(cached.summary);
       return;
     }
 
     if (cached) {
-      setPlanLabel(subscriptionTitleFromBillingSummary(cached.summary));
+      applyBillingSummary(cached.summary);
       void fetchBillingSummaryForMenu({ showSkeleton: false });
       return;
     }
 
     void fetchBillingSummaryForMenu({ showSkeleton: true });
-  }, [open, userId, fetchBillingSummaryForMenu]);
+  }, [open, userId, fetchBillingSummaryForMenu, applyBillingSummary]);
+
+  useEffect(() => {
+    if (!open) {
+      setProfileIconPlaying(false);
+      setBillingIconPlaying(false);
+      setHelpIconPlaying(false);
+      setLogoutIconPlaying(false);
+    }
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -165,7 +201,7 @@ export function TopbarUserMenu({
         >
           <Menu className="h-5 w-5 shrink-0" aria-hidden />
           <span className="hidden md:inline-flex">
-            <UserAvatar imageSrc={avatarUrl} initials={userInitials} size="sm" />
+            <UserAvatar imageSrc={avatarUrl} initials={userInitials} size="sm" showProBadge={isPro} />
           </span>
           {showTrialCountdown ? (
             <span className="hidden min-w-0 shrink truncate text-xs font-semibold tabular-nums md:inline md:text-sm">
@@ -183,7 +219,7 @@ export function TopbarUserMenu({
       >
         <div role="menu">
           <div className="flex gap-3 border-b border-[#E4E4E7] px-3 py-3">
-            <UserAvatar imageSrc={avatarUrl} initials={userInitials} size="menu" />
+            <UserAvatar imageSrc={avatarUrl} initials={userInitials} size="menu" showProBadge={isPro} />
             <div className="min-w-0 flex-1 pt-0.5">
               <div className="truncate text-sm font-semibold leading-5 text-[#09090B]">{userDisplayName}</div>
               <div className="mt-0.5 text-xs font-normal leading-4 text-[#52525B]">
@@ -202,8 +238,15 @@ export function TopbarUserMenu({
               role="menuitem"
               className={itemClass}
               onClick={() => setOpen(false)}
+              onMouseEnter={() => setProfileIconPlaying(true)}
+              onMouseLeave={() => setProfileIconPlaying(false)}
+              onFocus={() => setProfileIconPlaying(true)}
+              onBlur={() => setProfileIconPlaying(false)}
             >
-              <User className="h-4 w-4 shrink-0 text-[#09090B]" strokeWidth={1.75} aria-hidden />
+              <DropdownMenuLottieIcon
+                animationData={profileMenuIconAnimation}
+                playing={profileIconPlaying}
+              />
               <span className="min-w-0 flex-1 truncate text-left">Profile</span>
             </Link>
             <Link
@@ -211,30 +254,48 @@ export function TopbarUserMenu({
               role="menuitem"
               className={itemClass}
               onClick={() => setOpen(false)}
+              onMouseEnter={() => setBillingIconPlaying(true)}
+              onMouseLeave={() => setBillingIconPlaying(false)}
+              onFocus={() => setBillingIconPlaying(true)}
+              onBlur={() => setBillingIconPlaying(false)}
             >
-              <CreditCard className="h-4 w-4 shrink-0 text-[#09090B]" strokeWidth={1.75} aria-hidden />
+              <DropdownMenuLottieIcon
+                animationData={billingMenuIconAnimation}
+                playing={billingIconPlaying}
+              />
               <span className="min-w-0 flex-1 truncate text-left">Billing</span>
             </Link>
             <button
               type="button"
               role="menuitem"
               className={itemClass}
+              onMouseEnter={() => setHelpIconPlaying(true)}
+              onMouseLeave={() => setHelpIconPlaying(false)}
+              onFocus={() => setHelpIconPlaying(true)}
+              onBlur={() => setHelpIconPlaying(false)}
               onClick={() => {
                 setOpen(false);
                 setHelpModalOpen(true);
               }}
             >
-              <CircleQuestionMark className="h-4 w-4 shrink-0 text-[#09090B]" strokeWidth={1.75} aria-hidden />
+              <DropdownMenuLottieIcon animationData={helpMenuIconAnimation} playing={helpIconPlaying} />
               <span className="min-w-0 flex-1 truncate text-left">Help</span>
             </button>
             <button
               type="button"
               role="menuitem"
               disabled={signingOut}
+              onMouseEnter={() => setLogoutIconPlaying(true)}
+              onMouseLeave={() => setLogoutIconPlaying(false)}
+              onFocus={() => setLogoutIconPlaying(true)}
+              onBlur={() => setLogoutIconPlaying(false)}
               onClick={() => void handleSignOut()}
               className={cn(itemClass, "disabled:cursor-not-allowed disabled:opacity-60")}
             >
-              <LogOut className="h-4 w-4 shrink-0 text-[#09090B]" strokeWidth={1.75} aria-hidden />
+              <DropdownMenuLottieIcon
+                animationData={logoutMenuIconAnimation}
+                playing={logoutIconPlaying}
+              />
               <span className="min-w-0 flex-1 truncate text-left">
                 {signingOut ? "Signing out…" : "Log out"}
               </span>

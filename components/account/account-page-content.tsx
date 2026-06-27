@@ -398,7 +398,12 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
             <section>
               <FieldLabel>Profile picture</FieldLabel>
               <div className="mt-2 flex flex-wrap items-center gap-4">
-                <UserAvatar imageSrc={avatarPreview} initials={initial.userInitials} size="lg" />
+                <UserAvatar
+                  imageSrc={avatarPreview}
+                  initials={initial.userInitials}
+                  size="lg"
+                  showProBadge={billingPlan === "pro"}
+                />
                 <input
                   ref={fileRef}
                   type="file"
