@@ -344,6 +344,18 @@ function mergeIncomeRow(p: ChartingSeriesPoint, row: Record<string, unknown>): v
     "incomeTax",
     "IncomeTax",
   ]);
+  p.interestExpense = numFromRow(row, [
+    "interestExpense",
+    "InterestExpense",
+    "interestAndDebtExpense",
+    "InterestAndDebtExpense",
+    "interestExpenseNet",
+    "InterestExpenseNet",
+    "netInterestExpense",
+    "NetInterestExpense",
+    "interestPaid",
+    "InterestPaid",
+  ]);
   p.effectiveTaxRate = normalizeRateDecimal(
     numFromRow(row, ["effectiveTaxRate", "EffectiveTaxRate", "TaxRate", "taxRate", "effectiveTax", "EffectiveTax"]),
   );
@@ -1070,6 +1082,17 @@ function computeDerivedMarginsAndReturns(p: ChartingSeriesPoint): void {
     p.payoutRatio = Math.abs(dp) / Math.abs(ni);
   }
 
+  const ocf = p.operatingCashFlow;
+  if (ocf != null && ni != null && Math.abs(ni) > 1e-9) {
+    p.cashConversion = ocf / ni;
+  }
+
+  const ebitForCover = p.ebit ?? p.operatingIncome;
+  const interest = p.interestExpense;
+  if (ebitForCover != null && interest != null && Math.abs(interest) > 1e-9) {
+    p.interestCover = ebitForCover / Math.abs(interest);
+  }
+
   const cash = p.cashAndShortTermInvestments ?? p.cashOnHand;
   const td = p.totalDebt;
   if (cash != null && td != null && td > 1e-9) p.cashDebt = cash / td;
@@ -1410,7 +1433,8 @@ function fillDerivedRatioTableFields(p: ChartingSeriesPoint): void {
 
 function computeGrowthSeries(points: ChartingSeriesPoint[], mode: FundamentalsSeriesMode): void {
   const yoyLag = mode === "annual" ? 1 : 4;
-  const cagrLag = mode === "annual" ? 3 : 12;
+  const cagr3Lag = mode === "annual" ? 3 : 12;
+  const cagr5Lag = mode === "annual" ? 5 : 20;
 
   for (let i = 0; i < points.length; i++) {
     const p = points[i]!;
@@ -1418,6 +1442,9 @@ function computeGrowthSeries(points: ChartingSeriesPoint[], mode: FundamentalsSe
       const prev = points[i - yoyLag]!;
       if (p.revenue != null && prev.revenue != null && Math.abs(prev.revenue) > 1e-9) {
         p.revenueYoy = (p.revenue - prev.revenue) / Math.abs(prev.revenue);
+      }
+      if (p.grossProfit != null && prev.grossProfit != null && Math.abs(prev.grossProfit) > 1e-9) {
+        p.grossProfitYoy = (p.grossProfit - prev.grossProfit) / Math.abs(prev.grossProfit);
       }
       if (p.eps != null && prev.eps != null && Math.abs(prev.eps) > 1e-9) {
         p.epsYoy = (p.eps - prev.eps) / Math.abs(prev.eps);
@@ -1456,14 +1483,21 @@ function computeGrowthSeries(points: ChartingSeriesPoint[], mode: FundamentalsSe
         p.freeCashFlowYoy = (p.freeCashFlow - prev.freeCashFlow) / Math.abs(prev.freeCashFlow);
       }
     }
-    if (i >= cagrLag) {
-      const prev = points[i - cagrLag]!;
+    if (i >= cagr3Lag) {
+      const prev = points[i - cagr3Lag]!;
       if (p.revenue != null && prev.revenue != null && prev.revenue > 0 && p.revenue > 0) {
         p.revenue3yCagr = Math.pow(p.revenue / prev.revenue, 1 / 3) - 1;
       }
       if (p.eps != null && prev.eps != null && Math.abs(prev.eps) > 1e-9 && p.eps !== 0) {
         p.eps3yCagr = Math.pow(Math.abs(p.eps / prev.eps), 1 / 3) - 1;
         if ((p.eps < 0) !== (prev.eps < 0)) p.eps3yCagr = null;
+      }
+    }
+    if (i >= cagr5Lag) {
+      const prev = points[i - cagr5Lag]!;
+      if (p.eps != null && prev.eps != null && Math.abs(prev.eps) > 1e-9 && p.eps !== 0) {
+        p.eps5yCagr = Math.pow(Math.abs(p.eps / prev.eps), 1 / 5) - 1;
+        if ((p.eps < 0) !== (prev.eps < 0)) p.eps5yCagr = null;
       }
     }
   }
@@ -1487,6 +1521,7 @@ function emptyPoint(periodEnd: string): ChartingSeriesPoint {
     epsBasic: z,
     incomeBeforeTax: z,
     incomeTaxExpense: z,
+    interestExpense: z,
     effectiveTaxRate: z,
     freeCashFlow: z,
     dividendsPaid: z,
@@ -1564,8 +1599,10 @@ function emptyPoint(periodEnd: string): ChartingSeriesPoint {
     fcfMargin: z,
     revenueYoy: z,
     revenue3yCagr: z,
+    grossProfitYoy: z,
     epsYoy: z,
     eps3yCagr: z,
+    eps5yCagr: z,
     dividendsPerShareYoy: z,
     netIncomeYoy: z,
     sharesOutstandingYoy: z,
@@ -1603,6 +1640,8 @@ function emptyPoint(periodEnd: string): ChartingSeriesPoint {
     returnOnInvestedCapital: z,
     earningsYield: z,
     fcfYield: z,
+    cashConversion: z,
+    interestCover: z,
   };
 }
 

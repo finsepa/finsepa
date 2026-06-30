@@ -379,6 +379,7 @@ export function getNvdaChartingSeriesPoints(mode: "annual" | "quarterly"): Chart
       epsBasic,
       incomeBeforeTax: revenue * 0.3,
       incomeTaxExpense: revenue * 0.05,
+      interestExpense: revenue * 0.01,
       effectiveTaxRate: 0.05 / 0.3,
       freeCashFlow: revenue * 0.25,
       dividendsPaid: -(revenue * 0.02),
@@ -456,8 +457,10 @@ export function getNvdaChartingSeriesPoints(mode: "annual" | "quarterly"): Chart
       fcfMargin: 0.25,
       revenueYoy: null,
       revenue3yCagr: null,
+      grossProfitYoy: null,
       epsYoy: null,
       eps3yCagr: null,
+      eps5yCagr: null,
       dividendsPerShareYoy: null,
       netIncomeYoy: null,
       sharesOutstandingYoy: null,
@@ -495,6 +498,8 @@ export function getNvdaChartingSeriesPoints(mode: "annual" | "quarterly"): Chart
       returnOnInvestedCapital: null,
       earningsYield: null,
       fcfYield: null,
+      cashConversion: null,
+      interestCover: null,
     });
   }
   return points;

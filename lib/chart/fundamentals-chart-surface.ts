@@ -252,6 +252,26 @@ export function buildFixedFundamentalsYAxisTicks(max: number): number[] {
   return Array.from({ length: tickCount }, (_, i) => (top * (tickCount - 1 - i)) / (tickCount - 1));
 }
 
+/** Values stored as decimal ratios (0.13) or percent points (13) — normalize to percent points. */
+export function chartingPercentPlotValue(raw: number): number {
+  if (!Number.isFinite(raw)) return raw;
+  return Math.abs(raw) <= 1 && raw !== 0 ? raw * 100 : raw;
+}
+
+function axisMaxForChartingPercentPoints(rawMaxPlot: number): number {
+  const max = Number.isFinite(rawMaxPlot) && rawMaxPlot > 0 ? rawMaxPlot : 1;
+  const padded = max * 1.08;
+  const step = padded <= 30 ? 5 : padded <= 60 ? 10 : padded <= 150 ? 25 : 50;
+  const tickSpan = (FUNDAMENTALS_CHART_AXIS_TICK_COUNT - 1) * step;
+  const fromData = Math.ceil(padded / step) * step;
+  return Math.max(tickSpan, fromData);
+}
+
+/** Charting percent metrics plotted as percent points — tight 5% / 10% steps when max is small. */
+export function buildChartingPercentYAxisTicks(rawMaxPlot: number): number[] {
+  return buildFixedFundamentalsYAxisTicks(axisMaxForChartingPercentPoints(rawMaxPlot));
+}
+
 /** Right-axis tick text — Multicharts-style compact units. */
 export function formatFundamentalsAxisTickLabel(kind: ChartingMetricKind, p: number): string {
   if (!Number.isFinite(p)) return "";

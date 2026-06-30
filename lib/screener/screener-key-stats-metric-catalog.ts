@@ -90,6 +90,7 @@ const RETURNS_METRICS: ScreenerKeyStatMetricDef[] = [
   m("ret-roa", "Return on Assets (ROA)", "returns"),
   m("ret-roce", "Return on Capital Employed (ROCE)", "returns"),
   m("ret-roi", "Return on Investments (ROI)", "returns"),
+  m("ret-cash-conv", "Cash Conversion", "returns"),
 ];
 
 const DIVIDENDS_METRICS: ScreenerKeyStatMetricDef[] = [

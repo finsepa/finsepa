@@ -35,7 +35,6 @@ import {
 import {
   CHARTING_DEFAULT_METRICS,
   CHARTING_DROPDOWN_GROUPS,
-  CHARTING_METRIC_FIELD,
   CHARTING_METRIC_IDS,
   CHARTING_METRIC_KIND,
   CHARTING_METRIC_LABEL,
@@ -43,6 +42,7 @@ import {
   type ChartingMetricKind,
   buildStandaloneChartPath,
   parseChartingMetricsParam,
+  readChartingMetricValue,
   type StandaloneChartRoute,
 } from "@/lib/market/stock-charting-metrics";
 import {
@@ -68,8 +68,9 @@ import {
   fundamentalsBarSolidAtIndex,
 } from "@/lib/colors/fundamentals-multi-bar-colors";
 import {
-  buildFixedFundamentalsYAxisTicks,
+  buildChartingPercentYAxisTicks,
   buildFundamentalsYAxisTicks,
+  chartingPercentPlotValue,
   chartingFundamentalsSeriesNoReferenceLines,
   chartingFundamentalsLineSeriesOptions,
   CHARTING_LINE_HOVER_HALO_BG,
@@ -200,15 +201,6 @@ function chartingHasValuationLineOverlays(chartType: ChartType, selected: Charti
 function chartingSeriesRenderOrder(selected: ChartingMetricId[], chartType: ChartType): ChartingMetricId[] {
   if (chartType === "line") return selected;
   return [...chartingBarMetrics(selected, chartType), ...chartingValuationLineMetrics(selected, chartType)];
-}
-
-/** Right axis for percent metrics when mixed with USD bars (0–50%, five ticks). */
-const CHARTING_PERCENT_Y_AXIS_MAX = 50;
-
-/** Plot scale for percent metrics on the dedicated 0–50% axis. */
-function chartingPercentPlotValue(raw: number): number {
-  if (!Number.isFinite(raw)) return raw;
-  return Math.abs(raw) <= 1 && raw !== 0 ? raw * 100 : raw;
 }
 
 function chartingPlotValueForKind(kind: ChartingMetricKind, raw: number): number {
@@ -628,9 +620,7 @@ export function applyTimeRange(
 }
 
 function rowValue(row: ChartingSeriesPoint, id: ChartingMetricId): number | null {
-  const k = CHARTING_METRIC_FIELD[id];
-  const v = row[k];
-  return typeof v === "number" && Number.isFinite(v) ? v : null;
+  return readChartingMetricValue(row, id);
 }
 
 const CHARTING_BAR_TRANSPARENT = "rgba(0,0,0,0)";
@@ -2324,10 +2314,21 @@ export function ChartingWorkspace({
 
     const percent: ChartingYAxisConfig | null =
       percentIds.length > 0
-        ? {
-            kind: "percent",
-            ticks: buildFixedFundamentalsYAxisTicks(CHARTING_PERCENT_Y_AXIS_MAX),
-          }
+        ? (() => {
+            let rawMax = 0;
+            for (const id of percentIds) {
+              for (const row of ordered) {
+                const v = rowValue(row, id);
+                if (v != null && Number.isFinite(v)) {
+                  rawMax = Math.max(rawMax, Math.abs(chartingPercentPlotValue(v)));
+                }
+              }
+            }
+            return {
+              kind: "percent",
+              ticks: buildChartingPercentYAxisTicks(rawMax || 1),
+            };
+          })()
         : null;
 
     const valuation: ChartingYAxisConfig | null =
@@ -2534,11 +2535,14 @@ export function ChartingWorkspace({
           const seriesOrder = chartingSeriesRenderOrder(selected, chartType);
           const fixedYAutoscaleForKind = (kind: ChartingMetricKind) => {
             if (kind === "percent" && chartAxes.percent) {
-              return {
-                autoscaleInfoProvider: () => ({
-                  priceRange: { minValue: 0, maxValue: CHARTING_PERCENT_Y_AXIS_MAX },
-                }),
-              };
+              const top = chartAxes.percent.ticks[0];
+              if (top != null && Number.isFinite(top) && top > 0) {
+                return {
+                  autoscaleInfoProvider: () => ({
+                    priceRange: { minValue: 0, maxValue: top },
+                  }),
+                };
+              }
             }
             if (isValuationMetricKind(kind) && chartAxes.valuation) {
               const top = chartAxes.valuation.ticks[0];
@@ -3331,6 +3335,7 @@ export function ChartingWorkspace({
           anchorRef={pickerButtonRef}
           ref={pickerMenuPortalRef}
           align="leading"
+          placement="auto"
           className="w-[min(calc(100vw-2rem),300px)]"
         >
           <div className={cn(dropdownMenuSurfaceClassName(), "overflow-hidden")} role="listbox">

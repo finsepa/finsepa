@@ -5,6 +5,7 @@ import {
   FINANCIALS_EXTRA_CHARTING_METRIC_KIND,
   FINANCIALS_EXTRA_CHARTING_METRIC_LABEL,
   isFinancialsExtraChartingMetricId,
+  readFinancialsExtraChartingMetricValue,
 } from "@/lib/market/stock-charting-metrics-financials-ext";
 
 const CORE_CHARTING_METRIC_IDS = [
@@ -229,6 +230,7 @@ export const CHARTING_DROPDOWN_GROUPS: { id: ChartingDropdownGroupId; label: str
         "gross_margin",
         "operating_margin",
         "ebitda_margin",
+        "profit_margin",
         "net_margin",
         "pre_tax_margin",
         "fcf_margin",
@@ -237,7 +239,16 @@ export const CHARTING_DROPDOWN_GROUPS: { id: ChartingDropdownGroupId; label: str
     {
       id: "growth",
       label: "Growth",
-      metricIds: ["revenue_yoy", "revenue_3y_cagr", "eps_yoy", "eps_3y_cagr"],
+      metricIds: [
+        "revenue_yoy",
+        "revenue_3y_cagr",
+        "gross_profit_yoy",
+        "eps_yoy",
+        "eps_3y_cagr",
+        "eps_5y_cagr",
+        "net_income_yoy",
+        "free_cash_flow_yoy",
+      ],
     },
     {
       id: "returns",
@@ -247,12 +258,19 @@ export const CHARTING_DROPDOWN_GROUPS: { id: ChartingDropdownGroupId; label: str
         "return_on_assets",
         "return_on_capital_employed",
         "return_on_investment",
+        "return_on_invested_capital",
+        "fcf_yield",
+        "earnings_yield",
+        "buyback_yield",
+        "cash_conversion",
+        "interest_cover",
       ],
     },
     {
       id: "valuation",
       label: "Valuation",
       metricIds: [
+        "current_pe",
         "pe_ratio",
         "trailing_pe",
         "forward_pe",
@@ -274,6 +292,21 @@ export const CHARTING_DROPDOWN_GROUPS: { id: ChartingDropdownGroupId; label: str
 export function isChartingMetricId(s: string | null | undefined): s is ChartingMetricId {
   if (s == null) return false;
   return (CHARTING_METRIC_IDS as readonly string[]).includes(s) || isFinancialsExtraChartingMetricId(s);
+}
+
+/** Read a metric value from a charting row (handles computed financials extras). */
+export function readChartingMetricValue(row: ChartingSeriesPoint, id: ChartingMetricId): number | null {
+  if (isFinancialsExtraChartingMetricId(id)) {
+    return readFinancialsExtraChartingMetricValue(row, id);
+  }
+  const k = CHARTING_METRIC_FIELD[id];
+  const v = row[k];
+  return typeof v === "number" && Number.isFinite(v) ? v : null;
+}
+
+/** Growth / change percents use +/- prefix and green/red; level percents (margins, yields) stay neutral black. */
+export function isChartingSignedPercentMetric(id: ChartingMetricId): boolean {
+  return id.includes("_yoy") || id.includes("_cagr") || id === "buyback_yield";
 }
 
 /** URL query value (underscore) */

@@ -1,6 +1,10 @@
 import type { ChartingSeriesPoint } from "@/lib/market/charting-series-types";
 import type { StockKeyStatsBundle } from "@/lib/market/stock-key-stats-bundle-types";
 import type { ChartingMetricId } from "@/lib/market/stock-charting-metrics";
+import {
+  CHARTING_DROPDOWN_GROUPS,
+  readChartingMetricValue,
+} from "@/lib/market/stock-charting-metrics";
 import { ChartingWorkspace } from "@/components/charting/charting-workspace";
 
 type Props = {
@@ -39,19 +43,30 @@ const LABEL_TO_METRIC: Partial<Record<string, ChartingMetricId>> = {
   "EBITDA Margin": "ebitda_margin",
   "Pre-Tax Margin": "pre_tax_margin",
   "Net Margin": "net_margin",
-  // Note: Key Stats "Margins" section has a "Free Cash Flow" row that maps to charting metric `fcf_margin`.
+  "Profit Margin": "profit_margin",
+  // Key Stats "Margins" → "Free Cash Flow" maps to `fcf_margin` in buildAllowedMetricsFromKeyStats.
 
   "Quarterly Revenue (YoY)": "revenue_yoy",
+  "Revenue Growth": "revenue_yoy",
   "Revenue (3Y)": "revenue_3y_cagr",
   "Quarterly EPS (YoY)": "eps_yoy",
   "EPS (3Y)": "eps_3y_cagr",
+  "EPS Growth (5Y)": "eps_5y_cagr",
+  "EPS Growth 5 Years": "eps_5y_cagr",
+  "Gross Profit Growth": "gross_profit_yoy",
+  "Earnings Growth": "net_income_yoy",
 
   "Return on Equity (ROE)": "return_on_equity",
   "Return on Assets (ROA)": "return_on_assets",
   "Return on Capital Employed (ROCE)": "return_on_capital_employed",
   "Return on Investments (ROI)": "return_on_investment",
+  "FCF Yield": "fcf_yield",
+  "Cash Conversion": "cash_conversion",
+  "Interest Cover": "interest_cover",
+  "Buyback Yield": "buyback_yield",
 
   "P/E Ratio": "pe_ratio",
+  "Current P/E": "current_pe",
   "Trailing P/E": "trailing_pe",
   "Forward P/E": "forward_pe",
   "P/S Ratio": "ps_ratio",
@@ -65,34 +80,52 @@ const LABEL_TO_METRIC: Partial<Record<string, ChartingMetricId>> = {
   Payout: "payout_ratio",
 };
 
-function buildAllowedMetricsFromKeyStats(bundle: StockKeyStatsBundle | null | undefined): ChartingMetricId[] | undefined {
-  if (!bundle) return undefined;
+function buildAllowedMetrics(
+  bundle: StockKeyStatsBundle | null | undefined,
+  annualPoints?: ChartingSeriesPoint[],
+  quarterlyPoints?: ChartingSeriesPoint[],
+): ChartingMetricId[] | undefined {
   const out = new Set<ChartingMetricId>();
-  const sections = [
-    { id: "basic", rows: bundle.basic },
-    { id: "valuation", rows: bundle.valuation },
-    { id: "revenueProfit", rows: bundle.revenueProfit },
-    { id: "margins", rows: bundle.margins },
-    { id: "growth", rows: bundle.growth },
-    { id: "assetsLiabilities", rows: bundle.assetsLiabilities },
-    { id: "returns", rows: bundle.returns },
-    { id: "dividends", rows: bundle.dividends },
-    { id: "risk", rows: bundle.risk },
-  ] as const;
 
-  for (const { id: sectionId, rows } of sections) {
-    if (!rows) continue;
-    for (const r of rows) {
-      const label = r.label?.trim();
-      const value = r.value?.trim();
-      if (!label || !value || value === "—") continue;
-      const mid =
-        sectionId === "margins" && label === "Free Cash Flow"
-          ? ("fcf_margin" satisfies ChartingMetricId)
-          : LABEL_TO_METRIC[label];
-      if (mid) out.add(mid);
+  if (bundle) {
+    const sections = [
+      { id: "basic", rows: bundle.basic },
+      { id: "valuation", rows: bundle.valuation },
+      { id: "revenueProfit", rows: bundle.revenueProfit },
+      { id: "margins", rows: bundle.margins },
+      { id: "growth", rows: bundle.growth },
+      { id: "assetsLiabilities", rows: bundle.assetsLiabilities },
+      { id: "returns", rows: bundle.returns },
+      { id: "dividends", rows: bundle.dividends },
+      { id: "risk", rows: bundle.risk },
+    ] as const;
+
+    for (const { id: sectionId, rows } of sections) {
+      if (!rows) continue;
+      for (const r of rows) {
+        const label = r.label?.trim();
+        const value = r.value?.trim();
+        if (!label || !value || value === "—") continue;
+        const mid =
+          sectionId === "margins" && label === "Free Cash Flow"
+            ? ("fcf_margin" satisfies ChartingMetricId)
+            : LABEL_TO_METRIC[label];
+        if (mid) out.add(mid);
+      }
     }
   }
+
+  const seriesPoints = [...(annualPoints ?? []), ...(quarterlyPoints ?? [])];
+  if (seriesPoints.length > 0) {
+    for (const group of CHARTING_DROPDOWN_GROUPS) {
+      for (const id of group.metricIds) {
+        if (seriesPoints.some((row) => readChartingMetricValue(row, id) != null)) {
+          out.add(id);
+        }
+      }
+    }
+  }
+
   return out.size ? [...out] : undefined;
 }
 
@@ -113,7 +146,11 @@ export function StockChartingTab({
       initialAnnualPoints={initialAnnualPoints}
       initialQuarterlyPoints={initialQuarterlyPoints}
       initialTtmPoint={initialTtmPoint}
-      allowedMetricIds={buildAllowedMetricsFromKeyStats(initialKeyStatsBundle)}
+      allowedMetricIds={buildAllowedMetrics(
+        initialKeyStatsBundle,
+        initialAnnualPoints,
+        initialQuarterlyPoints,
+      )}
       metricControlsPlacement="legend"
       omitTickerInLegend
       histogramLayout="stockFullWidthFixedBars"

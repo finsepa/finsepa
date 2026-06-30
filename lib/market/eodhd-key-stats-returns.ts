@@ -4,7 +4,7 @@ import { pickLatestBalanceSheetRow } from "@/lib/market/eodhd-balance-sheet";
 import { fetchEodhdFundamentalsJson } from "@/lib/market/eodhd-fundamentals";
 import { pickLatestIncomeStatementRow } from "@/lib/market/eodhd-income-statement";
 import { pickLatestFinancialSubTable } from "@/lib/market/eodhd-pick-financial-block";
-import { formatPercentMetric } from "@/lib/market/key-stats-basic-format";
+import { formatPercentMetric, formatRatio } from "@/lib/market/key-stats-basic-format";
 
 function num(v: unknown): number | null {
   if (typeof v === "number" && Number.isFinite(v)) return v;
@@ -139,11 +139,39 @@ export async function fetchEodhdKeyStatsReturns(
     ]);
   }
 
+  const cfRow = pickLatestFinancialSubTable(root, [["Cash_Flow", "CashFlow"]]);
+  let cashConversion = firstNumFromSections([hl, val, ratiosRow], [
+    "CashConversion",
+    "CashConversionRatio",
+    "CashConversionTTM",
+    "OperatingCashFlowToNetIncome",
+  ]);
+  if (cashConversion == null) {
+    const ocf = numFromRow(cfRow, [
+      "totalCashFromOperatingActivities",
+      "TotalCashFromOperatingActivities",
+      "operatingCashFlow",
+      "OperatingCashFlow",
+      "netCashProvidedByOperatingActivities",
+      "NetCashProvidedByOperatingActivities",
+    ]);
+    const netIncome = numFromRow(incRow, [
+      "netIncome",
+      "NetIncome",
+      "netIncomeApplicableToCommonShares",
+      "NetIncomeApplicableToCommonShares",
+    ]);
+    if (ocf != null && netIncome != null && Math.abs(netIncome) > 1e-9) {
+      cashConversion = ocf / netIncome;
+    }
+  }
+
   const rows: KeyStatsReturnsRow[] = [
     { label: "Return on Equity (ROE)", value: roe != null ? formatPercentMetric(roe) : "—" },
     { label: "Return on Assets (ROA)", value: roa != null ? formatPercentMetric(roa) : "—" },
     { label: "Return on Capital Employed (ROCE)", value: roce != null ? formatPercentMetric(roce) : "—" },
     { label: "Return on Investments (ROI)", value: roi != null ? formatPercentMetric(roi) : "—" },
+    { label: "Cash Conversion", value: cashConversion != null ? formatRatio(cashConversion) : "—" },
   ];
 
   return { rows };

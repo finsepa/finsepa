@@ -10,9 +10,10 @@ import {
   formatUsdPrice,
 } from "@/lib/market/key-stats-basic-format";
 import {
-  CHARTING_METRIC_FIELD,
   CHARTING_METRIC_KIND,
   CHARTING_METRIC_LABEL,
+  isChartingSignedPercentMetric,
+  readChartingMetricValue,
   type ChartingMetricId,
   type ChartingMetricKind,
 } from "@/lib/market/stock-charting-metrics";
@@ -21,9 +22,7 @@ import { fundamentalsBarSolidAtIndex } from "@/lib/colors/fundamentals-multi-bar
 import { cn } from "@/lib/utils";
 
 function chartingRowValue(row: ChartingSeriesPoint, id: ChartingMetricId): number | null {
-  const k = CHARTING_METRIC_FIELD[id];
-  const v = row[k];
-  return typeof v === "number" && Number.isFinite(v) ? v : null;
+  return readChartingMetricValue(row, id);
 }
 
 export function formatChartingTableCell(kind: ChartingMetricKind, v: number | null): string {
@@ -48,7 +47,7 @@ export function formatChartingTableCell(kind: ChartingMetricKind, v: number | nu
 export function formatChartingTableCellDisplay(id: ChartingMetricId, v: number | null): string {
   const kind = CHARTING_METRIC_KIND[id];
   const text = formatChartingTableCell(kind, v);
-  if (text === "—" || kind !== "percent" || v == null) return text;
+  if (text === "—" || kind !== "percent" || v == null || !isChartingSignedPercentMetric(id)) return text;
   if (v > 0 && !text.startsWith("+")) return `+${text}`;
   return text;
 }
@@ -60,7 +59,12 @@ export function formatBarChartDataLabel(id: ChartingMetricId, v: number): string
 }
 
 function cellTone(id: ChartingMetricId, v: number | null): string {
-  if (CHARTING_METRIC_KIND[id] !== "percent" || v == null || !Number.isFinite(v)) {
+  if (
+    CHARTING_METRIC_KIND[id] !== "percent" ||
+    !isChartingSignedPercentMetric(id) ||
+    v == null ||
+    !Number.isFinite(v)
+  ) {
     return "text-[#09090B]";
   }
   if (v > 0) return "text-[#16A34A]";

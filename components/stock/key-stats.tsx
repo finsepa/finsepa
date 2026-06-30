@@ -159,6 +159,7 @@ const RETURNS_LABELS = [
   "Return on Assets (ROA)",
   "Return on Capital Employed (ROCE)",
   "Return on Investments (ROI)",
+  "Cash Conversion",
 ];
 
 const RETURNS_LABEL_TO_METRIC: Partial<Record<string, ChartingMetricId>> = {
@@ -166,6 +167,7 @@ const RETURNS_LABEL_TO_METRIC: Partial<Record<string, ChartingMetricId>> = {
   "Return on Assets (ROA)": "return_on_assets",
   "Return on Capital Employed (ROCE)": "return_on_capital_employed",
   "Return on Investments (ROI)": "return_on_investment",
+  "Cash Conversion": "cash_conversion",
 };
 
 const MARGINS_LABELS = [

@@ -15,16 +15,12 @@ import {
 
 import type { ChartingSeriesPoint, FundamentalsSeriesMode } from "@/lib/market/charting-series-types";
 import {
-  CHARTING_METRIC_FIELD,
   CHARTING_METRIC_KIND,
   CHARTING_METRIC_LABEL,
+  readChartingMetricValue,
   type ChartingMetricId,
   type ChartingMetricKind,
 } from "@/lib/market/stock-charting-metrics";
-import {
-  isFinancialsExtraChartingMetricId,
-  readFinancialsExtraChartingMetricValue,
-} from "@/lib/market/stock-charting-metrics-financials-ext";
 import { formatBarChartDataLabel, formatChartingTableCell } from "@/components/charting/charting-individual-company-table";
 import type { FundamentalsChartDisplayOptions } from "@/lib/chart/fundamentals-chart-display-options";
 import { DEFAULT_FUNDAMENTALS_CHART_DISPLAY_OPTIONS } from "@/lib/chart/fundamentals-chart-display-options";
@@ -225,14 +221,7 @@ const CHART_ZERO_BASELINE_BORDER = "rgba(228, 228, 231, 0.85)";
 
 const NEGATIVE_BAR_COLOR = "#DC2626";
 
-export function readChartingMetricValue(row: ChartingSeriesPoint, id: ChartingMetricId): number | null {
-  if (isFinancialsExtraChartingMetricId(id)) {
-    return readFinancialsExtraChartingMetricValue(row, id);
-  }
-  const k = CHARTING_METRIC_FIELD[id];
-  const v = row[k];
-  return typeof v === "number" && Number.isFinite(v) ? v : null;
-}
+export { readChartingMetricValue };
 
 /** Last `n` annual rows with a value for `metricId`, oldest → newest. */
 export function sliceLastAnnualWithMetric(

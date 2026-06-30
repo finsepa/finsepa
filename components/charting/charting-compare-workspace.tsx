@@ -48,8 +48,9 @@ import {
   dropdownMenuSurfaceClassName,
 } from "@/components/design-system/dropdown-menu-styles";
 import {
-  buildFixedFundamentalsYAxisTicks,
+  buildChartingPercentYAxisTicks,
   buildFundamentalsYAxisTicks,
+  chartingPercentPlotValue,
   chartingFundamentalsSeriesNoReferenceLines,
   chartingFundamentalsLineSeriesOptions,
   computeFundamentalsChartTooltipPlacement,
@@ -82,7 +83,6 @@ import type { StockPageInitialData } from "@/lib/market/stock-page-initial-data"
 import {
   CHARTING_DROPDOWN_GROUPS,
   CHARTING_MAX_COMPARE_TICKERS,
-  CHARTING_METRIC_FIELD,
   CHARTING_METRIC_IDS,
   CHARTING_METRIC_KIND,
   CHARTING_METRIC_LABEL,
@@ -90,6 +90,7 @@ import {
   type ChartingMetricKind,
   buildStandaloneChartPath,
   parseChartingMetricsParam,
+  readChartingMetricValue,
   type StandaloneChartRoute,
 } from "@/lib/market/stock-charting-metrics";
 import { fetchChartingFundamentalsSeriesCached } from "@/lib/charting/charting-fundamentals-client-cache";
@@ -158,13 +159,6 @@ function priceFormatForKind(kind: ChartingMetricKind) {
     default:
       return { type: "price" as const, precision: 2, minMove: 0.01 };
   }
-}
-
-const CHARTING_PERCENT_Y_AXIS_MAX = 50;
-
-function chartingPercentPlotValue(raw: number): number {
-  if (!Number.isFinite(raw)) return raw;
-  return Math.abs(raw) <= 1 && raw !== 0 ? raw * 100 : raw;
 }
 
 function chartingPlotValueForKind(kind: ChartingMetricKind, raw: number): number {
@@ -439,9 +433,7 @@ function applyTimeRange(
 }
 
 function rowValue(row: ChartingSeriesPoint, id: ChartingMetricId): number | null {
-  const k = CHARTING_METRIC_FIELD[id];
-  const v = row[k];
-  return typeof v === "number" && Number.isFinite(v) ? v : null;
+  return readChartingMetricValue(row, id);
 }
 
 function compareSeriesHasData(
@@ -835,10 +827,25 @@ export function ChartingCompareWorkspace({
 
     const percent: ChartingYAxisConfig | null =
       percentSeries.length > 0
-        ? {
-            kind: "percent",
-            ticks: buildFixedFundamentalsYAxisTicks(CHARTING_PERCENT_Y_AXIS_MAX),
-          }
+        ? (() => {
+            let rawMax = 0;
+            for (const s of percentSeries) {
+              for (const label of tableColumnLabels) {
+                const row = (orderedByTicker[s.ticker] ?? []).find(
+                  (r) => Boolean(r.periodEnd) && formatChartingPeriodLabel(r.periodEnd, periodMode) === label,
+                );
+                if (!row) continue;
+                const v = rowValue(row, s.metricId);
+                if (v != null && Number.isFinite(v)) {
+                  rawMax = Math.max(rawMax, Math.abs(chartingPercentPlotValue(v)));
+                }
+              }
+            }
+            return {
+              kind: "percent",
+              ticks: buildChartingPercentYAxisTicks(rawMax || 1),
+            };
+          })()
         : null;
 
     return { primary, percent };
@@ -1052,11 +1059,14 @@ export function ChartingCompareWorkspace({
 
           const fixedYAutoscaleForKind = (kind: ChartingMetricKind) => {
             if (kind === "percent" && chartAxes.percent) {
-              return {
-                autoscaleInfoProvider: () => ({
-                  priceRange: { minValue: 0, maxValue: CHARTING_PERCENT_Y_AXIS_MAX },
-                }),
-              };
+              const top = chartAxes.percent.ticks[0];
+              if (top != null && Number.isFinite(top) && top > 0) {
+                return {
+                  autoscaleInfoProvider: () => ({
+                    priceRange: { minValue: 0, maxValue: top },
+                  }),
+                };
+              }
             }
             const top = chartAxes.primary?.ticks[0];
             if (kind !== "percent" && top != null && Number.isFinite(top) && top > 0) {
@@ -1537,6 +1547,7 @@ export function ChartingCompareWorkspace({
                   anchorRef={pickerButtonRef}
                   ref={pickerMenuPortalRef}
                   align="leading"
+                  placement="auto"
                   className="w-[min(calc(100vw-2rem),300px)]"
                 >
                   <div className={cn(dropdownMenuSurfaceClassName(), "overflow-hidden")} role="listbox">

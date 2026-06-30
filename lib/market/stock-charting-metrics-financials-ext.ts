@@ -90,6 +90,13 @@ export const FINANCIALS_EXTRA_CHARTING_METRIC_IDS = [
   "return_on_invested_capital",
   "earnings_yield",
   "fcf_yield",
+  "profit_margin",
+  "current_pe",
+  "gross_profit_yoy",
+  "eps_5y_cagr",
+  "cash_conversion",
+  "interest_cover",
+  "buyback_yield",
 ] as const;
 
 export type FinancialsExtraChartingMetricId = (typeof FINANCIALS_EXTRA_CHARTING_METRIC_IDS)[number];
@@ -184,6 +191,13 @@ export const FINANCIALS_EXTRA_CHARTING_METRIC_FIELD: Record<
   return_on_invested_capital: "returnOnInvestedCapital",
   earnings_yield: "earningsYield",
   fcf_yield: "fcfYield",
+  profit_margin: "netMargin",
+  current_pe: "peRatio",
+  gross_profit_yoy: "grossProfitYoy",
+  eps_5y_cagr: "eps5yCagr",
+  cash_conversion: "cashConversion",
+  interest_cover: "interestCover",
+  buyback_yield: "sharesOutstandingYoy",
 };
 
 export const FINANCIALS_EXTRA_CHARTING_METRIC_LABEL: Record<FinancialsExtraChartingMetricId, string> = {
@@ -193,7 +207,7 @@ export const FINANCIALS_EXTRA_CHARTING_METRIC_LABEL: Record<FinancialsExtraChart
   other_operating_expense: "Other Operating Expenses",
   total_operating_expenses: "Total Operating Expenses",
   pretax_income: "Pretax Income",
-  net_income_yoy: "Net Income Growth",
+  net_income_yoy: "Earnings Growth",
   shares_outstanding_yoy: "Shares Change",
   eps_basic: "EPS (Basic)",
   fcf_per_share: "Free Cash Flow Per Share",
@@ -273,6 +287,13 @@ export const FINANCIALS_EXTRA_CHARTING_METRIC_LABEL: Record<FinancialsExtraChart
   return_on_invested_capital: "Return on Invested Capital (ROIC)",
   earnings_yield: "Earnings Yield",
   fcf_yield: "FCF Yield",
+  profit_margin: "Profit Margin",
+  current_pe: "Current P/E",
+  gross_profit_yoy: "Gross Profit Growth",
+  eps_5y_cagr: "EPS Growth (5Y)",
+  cash_conversion: "Cash Conversion",
+  interest_cover: "Interest Cover",
+  buyback_yield: "Buyback Yield",
 };
 
 export const FINANCIALS_EXTRA_CHARTING_METRIC_KIND: Record<FinancialsExtraChartingMetricId, FinancialsMetricKind> = {
@@ -362,6 +383,13 @@ export const FINANCIALS_EXTRA_CHARTING_METRIC_KIND: Record<FinancialsExtraCharti
   return_on_invested_capital: "percent",
   earnings_yield: "percent",
   fcf_yield: "percent",
+  profit_margin: "percent",
+  current_pe: "multiple",
+  gross_profit_yoy: "percent",
+  eps_5y_cagr: "percent",
+  cash_conversion: "ratio",
+  interest_cover: "multiple",
+  buyback_yield: "percent",
 };
 
 /** Computed readers for metrics that are not a single stored field (or need sign flip). */
@@ -382,6 +410,19 @@ export function readFinancialsExtraChartingMetricValue(
     const debt = row.totalDebt;
     if (cash == null && debt == null) return null;
     return (cash ?? 0) - (debt ?? 0);
+  }
+  if (id === "profit_margin") {
+    const v = row.netMargin;
+    return typeof v === "number" && Number.isFinite(v) ? v : null;
+  }
+  if (id === "current_pe") {
+    const v = row.peRatio ?? row.trailingPe;
+    return typeof v === "number" && Number.isFinite(v) ? v : null;
+  }
+  if (id === "buyback_yield") {
+    const yoy = row.sharesOutstandingYoy;
+    if (yoy == null || !Number.isFinite(yoy)) return null;
+    return -yoy;
   }
   const k = FINANCIALS_EXTRA_CHARTING_METRIC_FIELD[id];
   const v = row[k];

@@ -526,6 +526,8 @@ function ratiosTtmValue(rowId: string, ttm: ChartingSeriesPoint, prior: Charting
       return decimalToDisplayPercentSingle(ttm.returnOnInvestedCapital);
     case "r_roce":
       return decimalToDisplayPercentSingle(ttm.returnOnCapitalEmployed);
+    case "r_cash_conv":
+      return ttm.cashConversion;
     case "r_earn_y":
       return decimalToDisplayPercentSingle(ttm.earningsYield);
     case "r_fcf_y":
@@ -588,6 +590,7 @@ export function buildRatiosTableModel(
   const payout = decimalToDisplayPercent(pick(slice, (p) => p.payoutRatio));
   const buyback = buybackYieldPct(slice);
   const tsr = totalShareholderReturnPct(slice);
+  const cashConv = pick(slice, (p) => p.cashConversion);
 
   const rows: IncomeStatementRowModel[] = [
     {
@@ -637,11 +640,19 @@ export function buildRatiosTableModel(
       values: roce,
       chartingMetricId: "return_on_capital_employed",
     },
+    {
+      id: "r_cash_conv",
+      label: "Cash Conversion",
+      emphasize: false,
+      format: "ratio",
+      values: cashConv,
+      chartingMetricId: "cash_conversion",
+    },
     { id: "r_earn_y", label: "Earnings Yield", emphasize: false, format: "pctMargin", values: earnY },
-    { id: "r_fcf_y", label: "FCF Yield", emphasize: false, format: "pctMargin", values: fcfY },
+    { id: "r_fcf_y", label: "FCF Yield", emphasize: false, format: "pctMargin", values: fcfY, chartingMetricId: "fcf_yield" },
     { id: "r_div_y", label: "Dividend Yield", emphasize: false, format: "pctMargin", values: divY, chartingMetricId: "dividend_yield" },
     { id: "r_payout", label: "Payout Ratio", emphasize: false, format: "pctMargin", values: payout, chartingMetricId: "payout_ratio" },
-    { id: "r_buyback", label: "Buyback Yield / Dilution", emphasize: false, format: "pctGrowth", values: buyback },
+    { id: "r_buyback", label: "Buyback Yield / Dilution", emphasize: false, format: "pctGrowth", values: buyback, chartingMetricId: "buyback_yield" },
     { id: "r_tsr", label: "Total Shareholder Return", emphasize: true, format: "pctGrowth", values: tsr },
   ];
 

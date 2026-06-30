@@ -35,17 +35,39 @@ type TopbarDropdownPortalProps = {
   align?: "trailing" | "leading" | "center";
   /** Match the anchor element width (full-width form dropdowns). */
   matchAnchorWidth?: boolean;
+  /**
+   * `below` — opens under the anchor (default).
+   * `above` — opens above the anchor.
+   * `auto` — opens above when there is not enough room below.
+   */
+  placement?: "below" | "above" | "auto";
   /** Mobile modal sheet title (omit for menus without a heading). */
   sheetTitle?: ReactNode;
   /** Called when the mobile modal sheet backdrop is tapped or Escape is pressed. */
   onRequestClose?: () => void;
 };
 
-type PortalPos = { top: number; width?: number } & (
+type PortalPos = { width?: number; top?: number; bottom?: number } & (
   | { right: number; left?: undefined; centerX?: undefined }
   | { left: number; right?: undefined; centerX?: undefined }
   | { centerX: number; left?: undefined; right?: undefined }
 );
+
+const DROPDOWN_ANCHOR_GAP_PX = 4;
+/** Matches tall searchable metric menus (`max-h-[min(400px,…)]`). */
+const DROPDOWN_AUTO_FLIP_ESTIMATE_PX = 320;
+
+function resolveDropdownOpensAbove(
+  placement: "below" | "above" | "auto",
+  anchorRect: DOMRect,
+  viewportHeight: number,
+): boolean {
+  if (placement === "above") return true;
+  if (placement === "below") return false;
+  const spaceBelow = viewportHeight - anchorRect.bottom - DROPDOWN_ANCHOR_GAP_PX;
+  const spaceAbove = anchorRect.top - DROPDOWN_ANCHOR_GAP_PX;
+  return spaceBelow < DROPDOWN_AUTO_FLIP_ESTIMATE_PX && spaceAbove >= spaceBelow;
+}
 
 /**
  * Renders a fixed-position layer in `document.body` aligned under the anchor,
@@ -53,7 +75,7 @@ type PortalPos = { top: number; width?: number } & (
  */
 export const TopbarDropdownPortal = forwardRef<HTMLDivElement, TopbarDropdownPortalProps>(
   function TopbarDropdownPortal(
-    { open, anchorRef, children, className, align = "trailing", matchAnchorWidth = false, sheetTitle, onRequestClose },
+    { open, anchorRef, children, className, align = "trailing", matchAnchorWidth = false, placement = "below", sheetTitle, onRequestClose },
     ref,
   ) {
     const [mounted, setMounted] = useState(false);
@@ -69,15 +91,20 @@ export const TopbarDropdownPortal = forwardRef<HTMLDivElement, TopbarDropdownPor
       if (!el) return;
       const r = el.getBoundingClientRect();
       const vw = window.visualViewport?.width ?? window.innerWidth;
+      const vh = window.visualViewport?.height ?? window.innerHeight;
       const width = matchAnchorWidth ? r.width : undefined;
+      const opensAbove = resolveDropdownOpensAbove(placement, r, vh);
+      const vertical = opensAbove
+        ? { bottom: vh - r.top + DROPDOWN_ANCHOR_GAP_PX, top: undefined }
+        : { top: r.bottom + DROPDOWN_ANCHOR_GAP_PX, bottom: undefined };
       if (align === "leading") {
-        setPos({ top: r.bottom + 4, left: r.left, width });
+        setPos({ ...vertical, left: r.left, width });
       } else if (align === "center") {
-        setPos({ top: r.bottom + 4, centerX: r.left + r.width / 2, width });
+        setPos({ ...vertical, centerX: r.left + r.width / 2, width });
       } else {
-        setPos({ top: r.bottom + 4, right: vw - r.right, width });
+        setPos({ ...vertical, right: vw - r.right, width });
       }
-    }, [anchorRef, align, matchAnchorWidth]);
+    }, [anchorRef, align, matchAnchorWidth, placement]);
 
     useLayoutEffect(() => {
       if (!open) return;
@@ -140,6 +167,7 @@ export const TopbarDropdownPortal = forwardRef<HTMLDivElement, TopbarDropdownPor
         style={{
           position: "fixed",
           top: pos.top,
+          bottom: pos.bottom,
           zIndex: TOPBAR_DROPDOWN_PORTAL_Z,
           width: pos.width,
           ...horizontal,

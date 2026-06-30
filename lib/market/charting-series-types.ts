@@ -25,6 +25,8 @@ export type ChartingSeriesPoint = {
   epsBasic: number | null;
   incomeBeforeTax: number | null;
   incomeTaxExpense: number | null;
+  /** Interest expense (income statement) — used for interest cover. */
+  interestExpense: number | null;
   /** Effective tax rate as a decimal (e.g. 0.2813 = 28.13%). */
   effectiveTaxRate: number | null;
 
@@ -114,8 +116,10 @@ export type ChartingSeriesPoint = {
 
   revenueYoy: number | null;
   revenue3yCagr: number | null;
+  grossProfitYoy: number | null;
   epsYoy: number | null;
   eps3yCagr: number | null;
+  eps5yCagr: number | null;
   dividendsPerShareYoy: number | null;
   netIncomeYoy: number | null;
   sharesOutstandingYoy: number | null;
@@ -162,6 +166,10 @@ export type ChartingSeriesPoint = {
   returnOnInvestedCapital: number | null;
   earningsYield: number | null;
   fcfYield: number | null;
+  /** Operating cash flow ÷ net income. */
+  cashConversion: number | null;
+  /** EBIT ÷ interest expense. */
+  interestCover: number | null;
 };
 
 /** @deprecated Use ChartingSeriesPoint — kept for imports that expect the old name. */
