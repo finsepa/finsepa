@@ -11,6 +11,7 @@ import {
 import type { StockDetailHeaderMeta } from "@/lib/market/stock-header-meta";
 import { resolveEquityLogoUrlFromTicker } from "@/lib/screener/resolve-equity-logo-url";
 import { countWatchlistEntriesForStockTicker } from "@/lib/watchlist/stock-watchlist-count";
+import { getScreenerRankForTicker } from "@/lib/screener/screener-rank";
 
 type HeaderIdentityFields = Pick<
   StockDetailHeaderMeta,
@@ -91,14 +92,16 @@ export async function getStockHeaderIdentityForTicker(ticker: string): Promise<H
  * Header meta for stock detail: fundamentals-backed slices (Phase 5 split) + live watchlist count.
  */
 export async function getStockDetailHeaderMetaForPage(ticker: string): Promise<StockDetailHeaderMeta> {
-  const [identity, earningsLine, watchlistCount] = await Promise.all([
+  const [identity, earningsLine, watchlistCount, screenerRank] = await Promise.all([
     getCachedStockHeaderIdentity(ticker),
     getCachedStockHeaderEarningsLine(ticker),
     countWatchlistEntriesForStockTicker(ticker),
+    getScreenerRankForTicker(ticker),
   ]);
   return {
     ...identity,
     earningsDateDisplay: earningsLine.earningsDateDisplay,
     watchlistCount,
+    screenerRank,
   };
 }

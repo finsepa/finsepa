@@ -1,0 +1,21 @@
+app = "finsepa-stock-minute-ingest"
+
+[build]
+  dockerfile = "workers/stock-minute-ingest/Dockerfile"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    path = "/health"
+
+[env]
+  STOCK_WS_WATCHLIST = "1"
+  STOCK_WS_SCREENER = "1"
+  STOCK_WS_MAX_SYMBOLS = "50"

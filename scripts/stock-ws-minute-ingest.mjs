@@ -1,26 +1,20 @@
 #!/usr/bin/env node
 /**
- * Phase 2 — EODHD US WebSocket → 1m close bars in Supabase (0 REST API credits).
+ * Always-on EODHD WebSocket → Supabase 1m bars (0 REST API credits).
  *
- * Required env:
- *   EODHD_API_KEY
- *   NEXT_PUBLIC_SUPABASE_URL
- *   SUPABASE_SERVICE_ROLE_KEY (or SUPABASE_SERVICE_KEY)
+ * Required: EODHD_API_KEY, NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+ * Optional: PORT (health server), STOCK_WS_SCREENER=1, STOCK_WS_WATCHLIST=1
  *
- * Optional:
- *   STOCK_WS_TICKERS=NVDA,AAPL        — always subscribed
- *   STOCK_WS_WATCH_MAX_AGE_MS=300000    — chart-view watch window (default 5m)
- *   STOCK_WS_WATCHLIST=1                — include distinct watchlist tickers (default on)
- *   STOCK_WS_MAX_SYMBOLS=250            — cap concurrent subscriptions
- *   STOCK_WS_WATCH_POLL_MS=30000
- *   STOCK_WS_VERBOSE=1
- *
- * Run locally: npm run stock:minute-ingest
- * Deploy: workers/stock-minute-ingest/Dockerfile (Railway / Fly)
+ * Deploy: npm run ops:setup-stock-minute-ingest
  */
 
+import http from "node:http";
 import WebSocket from "ws";
 import { createClient } from "@supabase/supabase-js";
+import {
+  loadCuratedUsPriorityTickers,
+  stockWsCuratedMode,
+} from "./lib/stock-ws-priority-universe.mjs";
 
 const EODHD_KEY = process.env.EODHD_API_KEY?.trim();
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
@@ -29,14 +23,30 @@ const SUPABASE_KEY =
 
 const WATCH_MAX_AGE_MS = Number(process.env.STOCK_WS_WATCH_MAX_AGE_MS ?? 5 * 60 * 1000);
 const WATCH_POLL_MS = Number(process.env.STOCK_WS_WATCH_POLL_MS ?? 30 * 1000);
-const MAX_SYMBOLS = Number(process.env.STOCK_WS_MAX_SYMBOLS ?? 250);
-const INCLUDE_WATCHLIST = process.env.STOCK_WS_WATCHLIST !== "0";
+const HEARTBEAT_MS = Number(process.env.STOCK_WS_HEARTBEAT_MS ?? 5 * 60 * 1000);
+const MAX_SYMBOLS = Number(process.env.STOCK_WS_MAX_SYMBOLS ?? 50);
+const INCLUDE_WATCHLIST = !stockWsCuratedMode() && process.env.STOCK_WS_WATCHLIST !== "0";
+const INCLUDE_SCREENER = !stockWsCuratedMode() && process.env.STOCK_WS_SCREENER !== "0";
+const INCLUDE_CHART_WATCH = !stockWsCuratedMode() && process.env.STOCK_WS_CHART_WATCH !== "0";
+const HEALTH_PORT = Number(process.env.PORT ?? process.env.STOCK_WS_HEALTH_PORT ?? 8080);
 const STATIC_TICKERS = (process.env.STOCK_WS_TICKERS ?? "")
   .split(",")
   .map((s) => normalizeStockTicker(s))
   .filter(Boolean);
 
 const DISPLAY_TZ = "America/New_York";
+const SCREENER_SNAPSHOT_KEYS = ["top500_market", "stocks_all_pages"];
+
+/** @type {{ ok: boolean, authorized: boolean, subscribed: number, pendingUpserts: number, lastTradeAt: string | null, session: string, startedAt: string }} */
+const health = {
+  ok: true,
+  authorized: false,
+  subscribed: 0,
+  pendingUpserts: 0,
+  lastTradeAt: null,
+  session: getUsEquityMarketSession(),
+  startedAt: new Date().toISOString(),
+};
 
 function log(...args) {
   console.log(new Date().toISOString(), ...args);
@@ -57,6 +67,8 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
 /** @type {Map<string, { ticker: string, session_ymd: string, bucket_unix: number, close: number, updated_at: string }>} */
 const pendingUpserts = new Map();
 let flushTimer = null;
+/** @type {Set<string>} */
+let subscribedSymbols = new Set();
 
 function normalizeStockTicker(raw) {
   const t = String(raw ?? "").trim().toUpperCase();
@@ -149,6 +161,8 @@ function queueMinuteClose(ticker, tradeSec, price) {
     close: price,
     updated_at: new Date().toISOString(),
   });
+  health.lastTradeAt = new Date().toISOString();
+  health.pendingUpserts = pendingUpserts.size;
   scheduleFlush();
 }
 
@@ -164,6 +178,7 @@ async function flushPendingUpserts() {
   if (!pendingUpserts.size) return;
   const rows = Array.from(pendingUpserts.values());
   pendingUpserts.clear();
+  health.pendingUpserts = pendingUpserts.size;
   const { error } = await supabase.from("stock_session_minute_bar").upsert(rows, {
     onConflict: "ticker,bucket_unix",
   });
@@ -172,6 +187,7 @@ async function flushPendingUpserts() {
     for (const row of rows) {
       pendingUpserts.set(`${row.ticker}:${row.bucket_unix}`, row);
     }
+    health.pendingUpserts = pendingUpserts.size;
   } else if (process.env.STOCK_WS_VERBOSE === "1") {
     log("upserted", rows.length, "minute bars");
   }
@@ -189,9 +205,7 @@ async function loadChartWatchTickers() {
     log("watch poll error", error.message);
     return [];
   }
-  return (data ?? [])
-    .map((row) => normalizeStockTicker(row.ticker))
-    .filter(Boolean);
+  return (data ?? []).map((row) => normalizeStockTicker(row.ticker)).filter(Boolean);
 }
 
 async function loadWatchlistTickers() {
@@ -209,16 +223,91 @@ async function loadWatchlistTickers() {
   return Array.from(set);
 }
 
+function tickersFromMarketSnapshotPayload(data) {
+  if (!data || typeof data !== "object") return [];
+  const rec = /** @type {Record<string, unknown>} */ (data);
+  const out = [];
+  const stocks = rec.stocks;
+  if (stocks && typeof stocks === "object") {
+    for (const key of Object.keys(stocks)) {
+      const sym = normalizeStockTicker(key);
+      if (sym) out.push(sym);
+    }
+  }
+  const extra = rec.extraScreenerStocks;
+  if (extra && typeof extra === "object") {
+    for (const key of Object.keys(extra)) {
+      const sym = normalizeStockTicker(key);
+      if (sym) out.push(sym);
+    }
+  }
+  return out;
+}
+
+async function loadScreenerSnapshotTickers() {
+  if (!INCLUDE_SCREENER) return [];
+  for (const key of SCREENER_SNAPSHOT_KEYS) {
+    const { data, error } = await supabase.from("market_snapshot").select("data").eq("key", key).maybeSingle();
+    if (error) {
+      log("screener snapshot error", key, error.message);
+      continue;
+    }
+    const tickers = tickersFromMarketSnapshotPayload(data?.data);
+    if (tickers.length) return tickers;
+  }
+  return [];
+}
+
 async function loadWatchTickers() {
-  const set = new Set(STATIC_TICKERS);
-  for (const t of await loadChartWatchTickers()) set.add(t);
-  for (const t of await loadWatchlistTickers()) set.add(t);
-  const ordered = Array.from(set);
+  if (stockWsCuratedMode()) {
+    const curated = await loadCuratedUsPriorityTickers(supabase);
+    if (curated.length > MAX_SYMBOLS) {
+      log("capping curated subscriptions", curated.length, "→", MAX_SYMBOLS);
+      return curated.slice(0, MAX_SYMBOLS);
+    }
+    return curated;
+  }
+
+  const [chart, watchlist, screener] = await Promise.all([
+    INCLUDE_CHART_WATCH ? loadChartWatchTickers() : Promise.resolve([]),
+    loadWatchlistTickers(),
+    loadScreenerSnapshotTickers(),
+  ]);
+
+  const ordered = [];
+  const seen = new Set();
+  const push = (t) => {
+    if (!t || seen.has(t)) return;
+    seen.add(t);
+    ordered.push(t);
+  };
+
+  for (const t of chart) push(t);
+  for (const t of watchlist) push(t);
+  for (const t of STATIC_TICKERS) push(t);
+  for (const t of screener) push(t);
+
   if (ordered.length > MAX_SYMBOLS) {
     log("capping subscriptions", ordered.length, "→", MAX_SYMBOLS);
     return ordered.slice(0, MAX_SYMBOLS);
   }
   return ordered;
+}
+
+function startHealthServer() {
+  const server = http.createServer((req, res) => {
+    health.session = getUsEquityMarketSession();
+    health.subscribed = subscribedSymbols.size;
+    health.pendingUpserts = pendingUpserts.size;
+    if (req.url === "/health" || req.url === "/") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(health));
+      return;
+    }
+    res.writeHead(404);
+    res.end();
+  });
+  server.listen(HEALTH_PORT, "0.0.0.0", () => log("health server listening", HEALTH_PORT));
 }
 
 function connectWs() {
@@ -257,6 +346,8 @@ function connectWs() {
       for (const t of toRemove) subscribed.delete(t);
       log("unsubscribed", toRemove.length);
     }
+    subscribedSymbols = subscribed;
+    health.subscribed = subscribed.size;
   };
 
   ws.on("open", () => log("websocket connecting…"));
@@ -269,6 +360,7 @@ function connectWs() {
     } catch {
       if (text.includes("Authorized") || text.includes("status_code")) {
         authorized = true;
+        health.authorized = true;
         log("authorized", text.slice(0, 120));
         void syncSubscriptions();
         startWatchPoll();
@@ -278,6 +370,7 @@ function connectWs() {
 
     if (msg.status_code != null) {
       authorized = msg.status_code === 200;
+      health.authorized = authorized;
       log("auth status", msg.status_code, msg.message ?? "");
       if (authorized) {
         void syncSubscriptions();
@@ -300,7 +393,10 @@ function connectWs() {
     log("websocket closed", code);
     stopWatchPoll();
     subscribed = new Set();
+    subscribedSymbols = subscribed;
     authorized = false;
+    health.authorized = false;
+    health.subscribed = 0;
     setTimeout(connectWs, 5000);
   });
 
@@ -318,10 +414,29 @@ process.on("SIGTERM", async () => {
   process.exit(0);
 });
 
-log("starting stock minute ingest (phase 2)", {
+setInterval(() => {
+  health.session = getUsEquityMarketSession();
+  health.subscribed = subscribedSymbols.size;
+  health.pendingUpserts = pendingUpserts.size;
+  log("heartbeat", {
+    session: health.session,
+    authorized: health.authorized,
+    subscribed: health.subscribed,
+    pendingUpserts: health.pendingUpserts,
+    lastTradeAt: health.lastTradeAt,
+  });
+}, HEARTBEAT_MS);
+
+log("starting stock minute ingest (always-on)", {
+  curatedMode: stockWsCuratedMode(),
   staticTickers: STATIC_TICKERS.length,
   includeWatchlist: INCLUDE_WATCHLIST,
+  includeScreener: INCLUDE_SCREENER,
+  includeChartWatch: INCLUDE_CHART_WATCH,
   maxSymbols: MAX_SYMBOLS,
+  healthPort: HEALTH_PORT,
   session: getUsEquityMarketSession(),
 });
+
+startHealthServer();
 connectWs();

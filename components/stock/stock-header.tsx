@@ -17,6 +17,7 @@ import type { StockChartSeries } from "@/lib/market/stock-chart-types";
 import type { StockExtendedHoursHeader } from "@/lib/market/stock-extended-hours-header-types";
 import { formatUsdCompact, formatUsdPrice, formatSignedUsdAmountGrouped2dp, formatSignedPercent2dp } from "@/lib/market/key-stats-basic-format";
 import { StockExtendedHoursPrice } from "@/components/stock/stock-extended-hours-price";
+import { ScreenerRankBadge } from "@/components/earnings/screener-rank-badge";
 
 type Props = {
   ticker: string;
@@ -94,6 +95,7 @@ export function StockHeader({
   const symbol = meta.ticker;
   const exchange = headerMeta?.exchange?.trim() ?? "";
   const titleName = headerMeta?.fullName?.trim() ? headerMeta.fullName : meta.name;
+  const screenerRank = headerMeta?.screenerRank ?? null;
 
   const serverLogo = headerMeta?.logoUrl?.trim() || meta.logoUrl?.trim() || "";
   const memLogo = readLogoMemory(symbol)?.trim() || "";
@@ -330,7 +332,12 @@ export function StockHeader({
     <>
       <div className="flex items-start justify-between gap-3 md:hidden">
         <div className={`min-w-0 flex-1 space-y-0.5 ${priceMotionClass}`}>
-          <h1 className="truncate text-[16px] font-medium leading-5 text-[#09090B]">{titleName}</h1>
+          <h1 className="truncate text-[16px] font-medium leading-5 text-[#09090B]">
+            <span className="inline-flex min-w-0 max-w-full items-center gap-2">
+              <span className="truncate">{titleName}</span>
+              {screenerRank != null ? <ScreenerRankBadge rank={screenerRank} size="sm" /> : null}
+            </span>
+          </h1>
           {chartLoading ? priceLoadingSkeleton : (
             <>
               {showExtendedHoursColumn ? (
@@ -352,8 +359,13 @@ export function StockHeader({
           <div className="flex min-w-0 flex-1 items-center gap-4">
             {logoMark}
             <div className="min-w-0">
-              <h1 className="text-[20px] font-semibold leading-7 text-[#09090B] [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical] overflow-hidden break-words">
-                {titleName}
+              <h1 className="text-[20px] font-semibold leading-7 text-[#09090B]">
+                <span className="inline-flex min-w-0 max-w-full flex-wrap items-center gap-2">
+                  <span className="[display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical] overflow-hidden break-words">
+                    {titleName}
+                  </span>
+                  {screenerRank != null ? <ScreenerRankBadge rank={screenerRank} /> : null}
+                </span>
               </h1>
               {headerMetaLoading ? (
                 <div className="mt-0.5 h-4 w-24 rounded bg-neutral-200/80 animate-pulse" aria-hidden />

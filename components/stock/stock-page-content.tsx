@@ -142,6 +142,7 @@ function parseStockHeaderMetaPayload(json: {
   industry?: unknown;
   earningsDateDisplay?: unknown;
   watchlistCount?: unknown;
+  screenerRank?: unknown;
 }): StockDetailHeaderMeta {
   return {
     fullName: typeof json.fullName === "string" ? json.fullName : null,
@@ -152,6 +153,7 @@ function parseStockHeaderMetaPayload(json: {
     industry: typeof json.industry === "string" ? json.industry : null,
     earningsDateDisplay: typeof json.earningsDateDisplay === "string" ? json.earningsDateDisplay : null,
     watchlistCount: typeof json.watchlistCount === "number" ? json.watchlistCount : null,
+    screenerRank: typeof json.screenerRank === "number" && Number.isFinite(json.screenerRank) ? json.screenerRank : null,
   };
 }
 

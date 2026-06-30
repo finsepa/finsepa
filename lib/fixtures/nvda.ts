@@ -50,6 +50,7 @@ export function getNvdaHeaderMeta(): StockDetailHeaderMeta {
     industry: "Semiconductors",
     earningsDateDisplay: "—",
     watchlistCount: null,
+    screenerRank: 1,
   };
 }
 

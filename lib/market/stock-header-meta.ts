@@ -15,6 +15,8 @@ export type StockDetailHeaderMeta = {
   earningsDateDisplay: string | null;
   /** Global count of watchlist rows for this plain ticker; null if unavailable. */
   watchlistCount: number | null;
+  /** Market-cap rank in the Top-500 screener universe (1 = largest); null when not in universe. */
+  screenerRank: number | null;
 };
 
 const US_LISTING_EXCHANGES = new Set([

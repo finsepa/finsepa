@@ -12,8 +12,8 @@ export type StockSessionMinuteBarRow = {
   updated_at: string;
 };
 
-/** One stored minute bar is enough to serve live 1D from Supabase (open anchor added when missing). */
-export const MIN_STOCK_SESSION_MINUTE_BARS_FOR_LIVE_CHART = 1;
+/** WS-priority tickers need fewer stored bars; polled tickers need real coverage. */
+export const MIN_STOCK_SESSION_MINUTE_BARS_FOR_LIVE_CHART = 3;
 
 export function stockSessionMinuteBarReadEnabled(): boolean {
   return process.env.FINSEPA_STOCK_MINUTE_BAR_READ !== "0";

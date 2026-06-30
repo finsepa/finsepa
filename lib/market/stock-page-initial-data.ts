@@ -98,6 +98,7 @@ function headerMetaShell(ticker: string): StockDetailHeaderMeta {
     industry: null,
     earningsDateDisplay: null,
     watchlistCount: null,
+    screenerRank: null,
   };
 }
 

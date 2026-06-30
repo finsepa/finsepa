@@ -32,6 +32,7 @@ export async function GET(_request: Request, { params }: Ctx) {
         industry: null,
         earningsDateDisplay: null,
         watchlistCount: null,
+        screenerRank: null,
       },
       { headers: { "Cache-Control": CACHE_CONTROL_PRIVATE_WARM_CHART } },
     );
@@ -49,6 +50,7 @@ export async function GET(_request: Request, { params }: Ctx) {
       industry: meta.industry,
       earningsDateDisplay: meta.earningsDateDisplay,
       watchlistCount: meta.watchlistCount,
+      screenerRank: meta.screenerRank,
     },
     {
       headers: {

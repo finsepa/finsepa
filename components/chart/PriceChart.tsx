@@ -2932,12 +2932,12 @@ export function PriceChart({
           style={{ left: livePriceDot.left, top: livePriceDot.top }}
           aria-hidden
         >
-          <span className="relative block h-3.5 w-3.5">
+          <span className="relative block h-2.5 w-2.5">
             <span
               className={
                 livePriceDot.animated !== false
-                  ? "chart-live-price-dot-bounce absolute inset-0 rounded-full ring-[2.5px] ring-white"
-                  : "absolute inset-0 rounded-full ring-[2.5px] ring-white"
+                  ? "chart-live-price-dot-bounce absolute inset-0 rounded-full ring-[1.5px] ring-white"
+                  : "absolute inset-0 rounded-full ring-[1.5px] ring-white"
               }
               style={{ backgroundColor: livePriceDot.color }}
             />
