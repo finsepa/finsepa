@@ -14,6 +14,10 @@
     {
       "path": "/api/cron/earnings-notifications",
       "schedule": "7,22,37,52 * * * *"
+    },
+    {
+      "path": "/api/cron/stock-minute-bar-backfill",
+      "schedule": "0 3 * * 1-5"
     }
   ]
 }

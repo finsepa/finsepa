@@ -24,24 +24,28 @@ export async function watchlistApiFetch(
   input: string,
   init: RequestInit = {},
 ): Promise<Response> {
-  const supabase = getSupabaseBrowserClient();
-  const authHeaders = await watchlistAuthHeaders();
-  let res = await fetch(input, {
-    ...init,
-    credentials: "include",
-    cache: "no-store",
-    headers: mergeHeaders(authHeaders, init.headers),
-  });
+  try {
+    const supabase = getSupabaseBrowserClient();
+    const authHeaders = await watchlistAuthHeaders();
+    let res = await fetch(input, {
+      ...init,
+      credentials: "include",
+      cache: "no-store",
+      headers: mergeHeaders(authHeaders, init.headers),
+    });
 
-  if (res.status !== 401) return res;
+    if (res.status !== 401) return res;
 
-  const token = await resolveSupabaseAccessToken(supabase, { forceRefresh: true });
-  if (!token) return res;
+    const token = await resolveSupabaseAccessToken(supabase, { forceRefresh: true });
+    if (!token) return res;
 
-  return fetch(input, {
-    ...init,
-    credentials: "include",
-    cache: "no-store",
-    headers: mergeHeaders({ Authorization: `Bearer ${token}` }, init.headers),
-  });
+    return fetch(input, {
+      ...init,
+      credentials: "include",
+      cache: "no-store",
+      headers: mergeHeaders({ Authorization: `Bearer ${token}` }, init.headers),
+    });
+  } catch {
+    return new Response(null, { status: 503, statusText: "Network Error" });
+  }
 }

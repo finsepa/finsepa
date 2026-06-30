@@ -33,10 +33,14 @@ function mergeGroups(data: {
 }
 
 async function fetchUsMarketCacheSegment(): Promise<string> {
-  const res = await fetch("/api/market/us-cache-epoch", { credentials: "include" });
-  if (!res.ok) return "";
-  const body = (await res.json()) as { segment?: unknown };
-  return typeof body.segment === "string" ? body.segment : "";
+  try {
+    const res = await fetch("/api/market/us-cache-epoch", { credentials: "include" });
+    if (!res.ok) return "";
+    const body = (await res.json()) as { segment?: unknown };
+    return typeof body.segment === "string" ? body.segment : "";
+  } catch {
+    return "";
+  }
 }
 
 export async function fetchWatchlistEnriched(

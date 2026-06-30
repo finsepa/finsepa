@@ -14,15 +14,19 @@ import {
   MULTICHART_BAR_WIDTH_WIDE_PX,
   MULTICHART_MAX_ANNUAL_BARS,
   MULTICHART_MAX_QUARTERLY_BARS,
+  readChartingMetricValue,
   sliceLastAnnualWithMetric,
   type MultichartVisual,
 } from "@/components/stock/multichart-fundamentals-bar";
 import { FundamentalsChartSettingsMenu } from "@/components/stock/fundamentals-chart-settings-menu";
+import type { FundamentalsChartSettingsLineBadges } from "@/components/stock/fundamentals-chart-settings-menu";
 import { MultichartVisualSwitcher } from "@/components/stock/multichart-visual-switcher";
+import { formatBarChartDataLabel } from "@/components/charting/charting-individual-company-table";
 import {
   DEFAULT_FUNDAMENTALS_CHART_DISPLAY_OPTIONS,
   type FundamentalsChartDisplayOptions,
 } from "@/lib/chart/fundamentals-chart-display-options";
+import { filterPointsForFundamentalsLineChart } from "@/lib/chart/fundamentals-line-chart-series";
 import type { ChartingSeriesPoint, FundamentalsSeriesMode } from "@/lib/market/charting-series-types";
 import type { StockDetailHeaderMeta } from "@/lib/market/stock-header-meta";
 import {
@@ -252,7 +256,7 @@ export function KeyStatsMetricChartModal({
   const [downloadOpen, setDownloadOpen] = useState(false);
   const [downloadSnapshot, setDownloadSnapshot] = useState<ChartScreenshotSnapshot | null>(null);
 
-  const [points, setPoints] = useState<ChartingSeriesPoint[]>(() => {
+  const [annualPoints, setAnnualPoints] = useState<ChartingSeriesPoint[]>(() => {
     if (metricId == null) return [];
     const mobile = isKeyStatsModalMobileViewport();
     return resolveFundamentalsPointsForModal(
@@ -265,10 +269,23 @@ export function KeyStatsMetricChartModal({
       initialQuarterlyPoints,
     ).points;
   });
-  const [loading, setLoading] = useState(() => {
-    if (metricId == null) return false;
+  const [quarterlyPoints, setQuarterlyPoints] = useState<ChartingSeriesPoint[]>(() => {
+    if (metricId == null) return [];
     const mobile = isKeyStatsModalMobileViewport();
     return resolveFundamentalsPointsForModal(
+      ticker,
+      metricId,
+      "quarterly",
+      "all",
+      mobile,
+      initialAnnualPoints,
+      initialQuarterlyPoints,
+    ).points;
+  });
+  const [seriesLoading, setSeriesLoading] = useState(() => {
+    if (metricId == null) return { annual: false, quarterly: false };
+    const mobile = isKeyStatsModalMobileViewport();
+    const annual = resolveFundamentalsPointsForModal(
       ticker,
       metricId,
       "annual",
@@ -276,41 +293,61 @@ export function KeyStatsMetricChartModal({
       mobile,
       initialAnnualPoints,
       initialQuarterlyPoints,
-    ).loading;
+    );
+    const quarterly = resolveFundamentalsPointsForModal(
+      ticker,
+      metricId,
+      "quarterly",
+      "all",
+      mobile,
+      initialAnnualPoints,
+      initialQuarterlyPoints,
+    );
+    return { annual: annual.loading, quarterly: quarterly.loading };
   });
 
   useEffect(() => {
     if (metricId == null) return;
     const activeMetric: ChartingMetricId = metricId;
     let cancelled = false;
-    async function load() {
-      const resolved = resolveFundamentalsPointsForModal(
-        ticker,
-        activeMetric,
-        periodMode,
-        timeRange,
-        isMobile,
-        initialAnnualPoints,
-        initialQuarterlyPoints,
-      );
-      if (!resolved.loading) {
-        if (!cancelled) {
-          setPoints(resolved.points);
-          setLoading(false);
+
+    async function loadSeries(mode: FundamentalsSeriesMode) {
+      try {
+        const resolved = resolveFundamentalsPointsForModal(
+          ticker,
+          activeMetric,
+          mode,
+          "all",
+          isMobile,
+          initialAnnualPoints,
+          initialQuarterlyPoints,
+        );
+        if (!resolved.loading) {
+          if (!cancelled) {
+            if (mode === "annual") setAnnualPoints(resolved.points);
+            else setQuarterlyPoints(resolved.points);
+            setSeriesLoading((prev) => ({ ...prev, [mode]: false }));
+          }
+          return;
         }
-        return;
+        if (!cancelled) setSeriesLoading((prev) => ({ ...prev, [mode]: true }));
+        const period = mode === "quarterly" ? "quarterly" : "annual";
+        const fetched = await fetchChartingFundamentalsSeriesCached(ticker, period);
+        if (!cancelled) {
+          if (mode === "annual") setAnnualPoints(fetched?.points ?? []);
+          else setQuarterlyPoints(fetched?.points ?? []);
+          setSeriesLoading((prev) => ({ ...prev, [mode]: false }));
+        }
+      } catch {
+        if (!cancelled) setSeriesLoading((prev) => ({ ...prev, [mode]: false }));
       }
-      setLoading(true);
-      const period = periodMode === "quarterly" ? "quarterly" : "annual";
-      const fetched = await fetchChartingFundamentalsSeriesCached(ticker, period);
-      if (!cancelled) setPoints(fetched?.points ?? []);
-      if (!cancelled) setLoading(false);
     }
-    void load();
+
+    void Promise.all([loadSeries("annual"), loadSeries("quarterly")]);
     return () => {
       cancelled = true;
     };
-  }, [ticker, periodMode, timeRange, metricId, initialAnnualPoints, initialQuarterlyPoints, isMobile]);
+  }, [ticker, metricId, initialAnnualPoints, initialQuarterlyPoints, isMobile]);
 
   const onKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -318,6 +355,16 @@ export function KeyStatsMetricChartModal({
     },
     [onClose],
   );
+
+  const handleChartVisualChange = useCallback((next: MultichartVisual) => {
+    setChartVisual(next);
+    if (next === "line") {
+      setDisplayOptions((prev) => {
+        if (!prev.showAvgLine && !prev.showBarValues) return prev;
+        return { ...prev, showAvgLine: false, showBarValues: false };
+      });
+    }
+  }, []);
 
   useEffect(() => {
     if (!metricId) return;
@@ -335,14 +382,31 @@ export function KeyStatsMetricChartModal({
     setDisplayOptions({ ...DEFAULT_FUNDAMENTALS_CHART_DISPLAY_OPTIONS });
   }, [metricId]);
 
-  if (!metricId) return null;
+  const effectivePeriodMode: FundamentalsSeriesMode =
+    chartVisual === "line" ? "quarterly" : periodMode;
+  const rawPoints = effectivePeriodMode === "quarterly" ? quarterlyPoints : annualPoints;
+  const loading =
+    effectivePeriodMode === "quarterly" ? seriesLoading.quarterly : seriesLoading.annual;
 
-  const maxBars = maxBarsForMode(periodMode, isMobile, timeRange);
+  const chartPoints = useMemo(() => {
+    if (metricId == null) return [];
+    if (chartVisual === "line") {
+      return filterPointsForFundamentalsLineChart(
+        rawPoints,
+        metricId,
+        effectivePeriodMode,
+        timeRange,
+      );
+    }
+    return rawPoints;
+  }, [rawPoints, chartVisual, metricId, effectivePeriodMode, timeRange]);
+
+  const maxBars = maxBarsForMode(effectivePeriodMode, isMobile, timeRange);
   const denseQuarterlyBars =
-    periodMode === "quarterly" && (timeRange === "5Y" || timeRange === "10Y");
+    effectivePeriodMode === "quarterly" && (timeRange === "5Y" || timeRange === "10Y");
   const barWidthPx =
     timeRange === "all"
-      ? periodMode === "quarterly"
+      ? effectivePeriodMode === "quarterly"
         ? MULTICHART_BAR_WIDTH_ALL_QUARTERLY_PX
         : MULTICHART_BAR_WIDTH_PX
       : denseQuarterlyBars
@@ -350,47 +414,52 @@ export function KeyStatsMetricChartModal({
         : timeRange === "10Y"
           ? MULTICHART_BAR_WIDTH_WIDE_PX
           : MULTICHART_BAR_WIDTH_EXTRA_WIDE_PX;
-  const hasSeries = sliceLastAnnualWithMetric(points, metricId, maxBars).length > 0;
-  const metricTitle = CHARTING_METRIC_LABEL[metricId];
-  const companyLine = headerMeta?.fullName?.trim() || null;
-  const logoName = companyLine ?? ticker;
-  const mobileSubtitle = companyLine ? `${ticker} · ${companyLine}` : ticker;
+  const hasSeries = useMemo(() => {
+    if (metricId == null) return false;
+    if (chartVisual === "line") {
+      return chartPoints.length > 0;
+    }
+    return sliceLastAnnualWithMetric(rawPoints, metricId, maxBars).length > 0;
+  }, [chartVisual, chartPoints, rawPoints, metricId, maxBars]);
   const horizontalPeriodAxisLabels =
-    periodMode === "annual" && (timeRange === "5Y" || timeRange === "10Y");
-  const periodPlotMargins = timeRange === "all" ? { left: 0.012, right: 0.018 } : undefined;
+    chartVisual === "line" ||
+    (effectivePeriodMode === "annual" && (timeRange === "5Y" || timeRange === "10Y"));
+  const periodPlotMargins =
+    chartVisual === "line"
+      ? { left: 0, right: 0 }
+      : timeRange === "all"
+        ? { left: 0.012, right: 0.018 }
+        : undefined;
+  const lineTimeRange = chartVisual === "line" ? timeRange : undefined;
+  const chartHeight = isMobile ? MOBILE_KEY_STATS_CHART_HEIGHT_PX : 400;
 
-  const handleOpenDownload = () => {
-    const chartType: ChartType = chartVisual === "line" ? "line" : "bars";
-    setDownloadSnapshot({
-      variant: "keyStatsMetric",
-      ticker,
-      companyName: companyLine,
-      logoUrl: headerMeta?.logoUrl ?? null,
-      periodMode,
-      timeRange,
-      chartType,
-      selectedMetrics: [metricId],
-      fullPoints: points,
-      keyStatsMetric: {
-        metricId,
-        metricLabel: metricTitle,
-        chartVisual,
-        timeRange,
-        displayOptions,
-        maxBars,
-        barWidthPx,
-        denseQuarterlyBars,
-        horizontalPeriodAxisLabels,
-        periodPlotMargins,
-      },
-    });
-    setDownloadOpen(true);
+  const lineSettingsBadges = useMemo((): FundamentalsChartSettingsLineBadges | undefined => {
+    if (metricId == null || chartVisual !== "line") return undefined;
+    const values: number[] = [];
+    const sorted = [...chartPoints].sort((a, b) => a.periodEnd.localeCompare(b.periodEnd));
+    for (const row of sorted) {
+      const v = readChartingMetricValue(row, metricId);
+      if (v != null) values.push(v);
+    }
+    if (!values.length) return undefined;
+    const max = Math.max(...values);
+    const min = Math.min(...values);
+    return {
+      max: formatBarChartDataLabel(metricId, max),
+      min: formatBarChartDataLabel(metricId, min),
+    };
+  }, [chartPoints, chartVisual, metricId]);
+
+  const settingsMenuProps = {
+    options: displayOptions,
+    onChange: setDisplayOptions,
+    ...(chartVisual === "line"
+      ? { variant: "line" as const, lineBadges: lineSettingsBadges }
+      : { variant: "bar" as const }),
   };
 
-  const chartHeight = isMobile ? MOBILE_KEY_STATS_CHART_HEIGHT_PX : 400;
-  const periodTabOptions = isMobile ? MOBILE_PERIOD_TAB_OPTIONS : DESKTOP_PERIOD_TAB_OPTIONS;
-
   const chartBody = useMemo(() => {
+    if (metricId == null) return null;
     if (loading) {
       return <AssetChartSkeleton heightPx={chartHeight} className="w-full min-w-0" />;
     }
@@ -400,11 +469,11 @@ export function KeyStatsMetricChartModal({
     return (
       <div className="min-w-0">
         <MultichartFundamentalsBar
-          key={`${metricId}-${periodMode}-${timeRange}-${chartVisual}`}
+          key={`${metricId}-${effectivePeriodMode}-${timeRange}-${chartVisual}`}
           metricId={metricId}
-          points={points}
+          points={chartPoints}
           height={chartHeight}
-          periodMode={periodMode}
+          periodMode={effectivePeriodMode}
           visual={chartVisual}
           maxBars={maxBars}
           barWidthPx={barWidthPx}
@@ -412,6 +481,7 @@ export function KeyStatsMetricChartModal({
           displayOptions={displayOptions}
           animateBarsOnAppear
           horizontalPeriodAxisLabels={horizontalPeriodAxisLabels}
+          lineTimeRange={lineTimeRange}
           periodPlotMargins={periodPlotMargins}
         />
         {!isMobile && metricId === "forward_pe" ? (
@@ -424,19 +494,60 @@ export function KeyStatsMetricChartModal({
       </div>
     );
   }, [
+    metricId,
     loading,
     hasSeries,
-    metricId,
-    points,
+    chartPoints,
     chartHeight,
-    periodMode,
+    effectivePeriodMode,
     chartVisual,
     maxBars,
     barWidthPx,
     isMobile,
     timeRange,
     displayOptions,
+    horizontalPeriodAxisLabels,
+    lineTimeRange,
+    periodPlotMargins,
   ]);
+
+  if (!metricId) return null;
+
+  const metricTitle = CHARTING_METRIC_LABEL[metricId];
+  const companyLine = headerMeta?.fullName?.trim() || null;
+  const logoName = companyLine ?? ticker;
+  const mobileSubtitle = companyLine ? `${ticker} · ${companyLine}` : ticker;
+
+  const handleOpenDownload = () => {
+    const chartType: ChartType = chartVisual === "line" ? "line" : "bars";
+    setDownloadSnapshot({
+      variant: "keyStatsMetric",
+      ticker,
+      companyName: companyLine,
+      logoUrl: headerMeta?.logoUrl ?? null,
+      periodMode: effectivePeriodMode,
+      timeRange,
+      chartType,
+      selectedMetrics: [metricId],
+      fullPoints: chartPoints,
+      keyStatsMetric: {
+        metricId,
+        metricLabel: metricTitle,
+        chartVisual,
+        timeRange,
+        displayOptions,
+        maxBars,
+        barWidthPx,
+        denseQuarterlyBars,
+        horizontalPeriodAxisLabels,
+        periodPlotMargins,
+        lineTimeRange,
+      },
+    });
+    setDownloadOpen(true);
+  };
+
+  const periodTabOptions = isMobile ? MOBILE_PERIOD_TAB_OPTIONS : DESKTOP_PERIOD_TAB_OPTIONS;
 
   const shell = isMobile ? (
     <AppModalShell
@@ -467,17 +578,19 @@ export function KeyStatsMetricChartModal({
         {chartBody}
       </div>
       <div className="flex shrink-0 items-center gap-2 px-4 pb-3 pt-1">
-        <TabSwitcher
-          size="sm"
-          fullWidth
-          options={periodTabOptions}
-          value={periodMode}
-          onChange={setPeriodMode}
-          aria-label="Reporting period"
-          className="min-w-0 flex-1"
-        />
-        <FundamentalsChartSettingsMenu options={displayOptions} onChange={setDisplayOptions} />
-        <MultichartVisualSwitcher variant="icon" value={chartVisual} onChange={setChartVisual} />
+        {chartVisual !== "line" ? (
+          <TabSwitcher
+            size="sm"
+            fullWidth
+            options={periodTabOptions}
+            value={periodMode}
+            onChange={setPeriodMode}
+            aria-label="Reporting period"
+            className="min-w-0 flex-1"
+          />
+        ) : null}
+        <FundamentalsChartSettingsMenu {...settingsMenuProps} />
+        <MultichartVisualSwitcher variant="icon" value={chartVisual} onChange={handleChartVisualChange} />
       </div>
     </AppModalShell>
   ) : (
@@ -511,15 +624,17 @@ export function KeyStatsMetricChartModal({
           </span>
         </div>
         <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
-          <TabSwitcher
-            size="sm"
-            options={periodTabOptions}
-            value={periodMode}
-            onChange={setPeriodMode}
-            aria-label="Reporting period"
-          />
-          <FundamentalsChartSettingsMenu options={displayOptions} onChange={setDisplayOptions} />
-          <MultichartVisualSwitcher variant="icon" value={chartVisual} onChange={setChartVisual} />
+          {chartVisual !== "line" ? (
+            <TabSwitcher
+              size="sm"
+              options={periodTabOptions}
+              value={periodMode}
+              onChange={setPeriodMode}
+              aria-label="Reporting period"
+            />
+          ) : null}
+          <FundamentalsChartSettingsMenu {...settingsMenuProps} />
+          <MultichartVisualSwitcher variant="icon" value={chartVisual} onChange={handleChartVisualChange} />
           <TabSwitcher
             size="sm"
             options={KEY_STATS_TIME_RANGE_TAB_OPTIONS}

@@ -57,40 +57,44 @@ export function ScreenerOnboardingHost({
     let cancelled = false;
 
     async function resolve() {
-      if (hasCompletedOnboardingForUser(userId)) return;
+      try {
+        if (hasCompletedOnboardingForUser(userId)) return;
 
-      if (serverShouldShow) {
-        if (!cancelled) openWelcome();
-        return;
-      }
+        if (serverShouldShow) {
+          if (!cancelled) openWelcome();
+          return;
+        }
 
-      const fromQuery =
-        hasOnboardingQueryFlag(searchParams.toString()) ||
-        (typeof window !== "undefined" && hasOnboardingQueryFlag(window.location.search));
+        const fromQuery =
+          hasOnboardingQueryFlag(searchParams.toString()) ||
+          (typeof window !== "undefined" && hasOnboardingQueryFlag(window.location.search));
 
-      if (fromQuery) {
-        stripOnboardingQueryFromUrl();
+        if (fromQuery) {
+          stripOnboardingQueryFromUrl();
+          const supabase = getSupabaseBrowserClient();
+          await persistOnboardingPendingOnUser(supabase);
+          if (!cancelled) openWelcome();
+          return;
+        }
+
+        if (shouldShowWelcomeOnboarding()) {
+          stripOnboardingQueryFromUrl();
+          if (!cancelled) openWelcome();
+          return;
+        }
+
         const supabase = getSupabaseBrowserClient();
-        await persistOnboardingPendingOnUser(supabase);
-        if (!cancelled) openWelcome();
-        return;
-      }
+        const user = await waitForSessionUser(supabase);
+        if (cancelled || !user) return;
 
-      if (shouldShowWelcomeOnboarding()) {
-        stripOnboardingQueryFromUrl();
-        if (!cancelled) openWelcome();
-        return;
-      }
+        if (user.id !== userId) return;
 
-      const supabase = getSupabaseBrowserClient();
-      const user = await waitForSessionUser(supabase);
-      if (cancelled || !user) return;
-
-      if (user.id !== userId) return;
-
-      if (shouldShowWelcomeOnboarding(user) || userNeedsOnboarding(user)) {
-        await persistOnboardingPendingOnUser(supabase);
-        if (!cancelled) openWelcome();
+        if (shouldShowWelcomeOnboarding(user) || userNeedsOnboarding(user)) {
+          await persistOnboardingPendingOnUser(supabase);
+          if (!cancelled) openWelcome();
+        }
+      } catch {
+        /* Supabase offline — skip onboarding auto-open */
       }
     }
 

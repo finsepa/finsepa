@@ -33,6 +33,22 @@ function resolveSupabaseBrowserEnv(): { url: string; key: string } {
   return { url, key };
 }
 
+/** Prevent Supabase token refresh / auth `fetch` failures from surfacing as Next.js runtime overlays. */
+async function supabaseSafeFetch(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+): Promise<Response> {
+  try {
+    return await fetch(input, init);
+  } catch {
+    return new Response(JSON.stringify({ message: "Network Error" }), {
+      status: 503,
+      statusText: "Network Error",
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+}
+
 export function getSupabaseBrowserClient(): SupabaseClient {
   const { url, key } = resolveSupabaseBrowserEnv();
   const cacheKey = `${url}\0${key}`;
@@ -43,6 +59,9 @@ export function getSupabaseBrowserClient(): SupabaseClient {
   browserClient = createBrowserClient(url, key, {
     auth: {
       detectSessionInUrl: false,
+    },
+    global: {
+      fetch: supabaseSafeFetch,
     },
   });
   browserClientCacheKey = cacheKey;

@@ -477,8 +477,56 @@ export function appendLiveSessionNowTail(
 /** Client tick interval — advances the live 1D tail when price is unchanged (no API). */
 export const STOCK_1D_LIVE_SESSION_CLOCK_TICK_MS = 30_000;
 
+/** Merge polled live spot minute closes into provider bars (live wins on the same minute). */
+export function mergeLiveSpotMinuteBarsIntoPoints(
+  points: readonly StockChartPoint[],
+  liveMinuteBars: readonly StockChartPoint[],
+): StockChartPoint[] {
+  if (!liveMinuteBars.length) return [...points];
+  const byTime = new Map<number, StockChartPoint>();
+  for (const p of points) {
+    if (typeof p.time === "number" && Number.isFinite(p.time) && Number.isFinite(p.value)) {
+      byTime.set(p.time, p);
+    }
+  }
+  for (const p of liveMinuteBars) {
+    if (typeof p.time === "number" && Number.isFinite(p.time) && Number.isFinite(p.value)) {
+      byTime.set(p.time, p);
+    }
+  }
+  return Array.from(byTime.values()).sort((a, b) => a.time - b.time);
+}
+
 /** Client live-price poll during regular session — aligns with 60s server cache coalescing. */
 export const STOCK_1D_LIVE_PRICE_POLL_MS = 60_000;
+
+/** Snap wall-clock time to the 9:30-anchored 60s bucket used by {@link resampleStock1DLiveSession}. */
+export function stock1DLiveSessionMinuteBucketUnix(
+  sessionYmd: string,
+  nowSec: number,
+  timeZone: string = STOCK_1D_LIVE_SESSION_TZ,
+): number {
+  const open = usSessionWallClockUnix(sessionYmd, 9, 30, timeZone);
+  const close = usSessionWallClockUnix(sessionYmd, 16, 0, timeZone);
+  if (nowSec <= open) return open;
+  const capped = Math.min(nowSec, close);
+  const elapsed = capped - open;
+  const bucketIndex = Math.floor(elapsed / STOCK_1D_LIVE_SESSION_BAR_INTERVAL_SEC);
+  return open + bucketIndex * STOCK_1D_LIVE_SESSION_BAR_INTERVAL_SEC;
+}
+
+/** One minute close from the latest live spot poll. */
+export function liveSpotToMinuteBar(
+  liveSpotUsd: number,
+  sessionYmd: string,
+  now: Date = new Date(),
+  timeZone: string = STOCK_1D_LIVE_SESSION_TZ,
+): StockChartPoint | null {
+  if (!Number.isFinite(liveSpotUsd) || liveSpotUsd <= 0) return null;
+  const nowSec = Math.floor(now.getTime() / 1000);
+  const bucketTime = stock1DLiveSessionMinuteBucketUnix(sessionYmd, nowSec, timeZone);
+  return { time: bucketTime, value: liveSpotUsd, sessionDate: sessionYmd, timeZone };
+}
 
 /** Filter to the session window, resample to 1m, and pin the tail (live spot or prior close). */
 export function prepareStock1DLiveSessionChartPoints(

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { readSupabaseSession } from "@/lib/supabase/safe-auth";
 import type { SearchAssetItem } from "@/lib/search/search-types";
 import {
   readRecentSearches,
@@ -17,10 +18,16 @@ export function useSearchRecentStorage() {
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
-    void supabase.auth.getSession().then(({ data: { session } }) => {
-      setUserId(session?.user?.id ?? null);
-      setAuthReady(true);
-    });
+    void (async () => {
+      try {
+        const session = await readSupabaseSession(supabase);
+        setUserId(session?.user?.id ?? null);
+        setAuthReady(true);
+      } catch {
+        setUserId(null);
+        setAuthReady(true);
+      }
+    })();
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {

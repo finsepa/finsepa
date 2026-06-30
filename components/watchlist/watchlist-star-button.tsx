@@ -71,7 +71,7 @@ function WatchlistPickerDropdown({
   }, [open, anchorRef, onClose]);
 
   return (
-    <TopbarDropdownPortal open={open} anchorRef={anchorRef} align="leading">
+    <TopbarDropdownPortal open={open} anchorRef={anchorRef} align="trailing">
       <div ref={menuRef} className={dropdownMenuPanelClassName("w-[200px]")} role="menu">
         <p className="px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-[#A1A1AA]">
           Add to watchlist

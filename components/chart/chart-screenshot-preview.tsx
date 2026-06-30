@@ -149,6 +149,7 @@ export const ChartScreenshotPreview = forwardRef<HTMLDivElement, ChartScreenshot
                       displayOptions={keyStatsPreviewDisplayOptions}
                       animateBarsOnAppear={false}
                       horizontalPeriodAxisLabels={snapshot.keyStatsMetric!.horizontalPeriodAxisLabels}
+                      lineTimeRange={snapshot.keyStatsMetric!.lineTimeRange}
                       periodPlotMargins={KEY_STATS_SCREENSHOT_PERIOD_MARGINS}
                       screenshotExportMode
                     />

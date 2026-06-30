@@ -24,6 +24,7 @@ import {
 import type { User } from "@supabase/supabase-js";
 
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { readSupabaseSession } from "@/lib/supabase/safe-auth";
 import {
   addTickerToSnapshot,
   clearDuplicateWatchlistTickerCopies,
@@ -438,9 +439,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
 
     void (async () => {
       try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
+        const session = await readSupabaseSession(supabase);
         if (cancelled) return;
         await bootstrap(session?.user?.id ?? null, {}, session?.user ?? null);
       } catch {

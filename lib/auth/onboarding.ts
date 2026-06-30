@@ -1,5 +1,7 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 
+import { readSupabaseSession } from "@/lib/supabase/safe-auth";
+
 /** Session flag set during signup / auth callback. */
 export const ONBOARDING_PENDING_KEY = "finsepa_onboarding_pending";
 
@@ -242,9 +244,7 @@ export async function waitForSessionUser(supabase: SupabaseClient): Promise<User
     if (delay > 0) {
       await new Promise((r) => setTimeout(r, delay));
     }
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
+    const session = await readSupabaseSession(supabase);
     if (session?.user) return session.user;
   }
 
@@ -264,12 +264,12 @@ export async function waitForSessionUser(supabase: SupabaseClient): Promise<User
 
     const timeout = window.setTimeout(() => {
       subscription.unsubscribe();
-      void supabase.auth.getSession().then(({ data: { session } }) => {
+      void readSupabaseSession(supabase).then((session) => {
         finish(session?.user ?? null);
       });
     }, 6000);
 
-    void supabase.auth.getSession().then(({ data: { session } }) => {
+    void readSupabaseSession(supabase).then((session) => {
       if (session?.user) {
         window.clearTimeout(timeout);
         subscription.unsubscribe();

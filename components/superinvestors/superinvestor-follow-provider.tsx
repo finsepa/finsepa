@@ -14,6 +14,7 @@ import {
 import { toast } from "sonner";
 
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { readSupabaseSession } from "@/lib/supabase/safe-auth";
 import { superinvestorDisplayNameFromProfilePath } from "@/lib/superinvestors/superinvestor-display-names";
 import {
   normalizeSuperinvestorFollowHref,
@@ -68,18 +69,21 @@ export function SuperinvestorFollowProvider({ children }: { children: ReactNode 
     const supabase = getSupabaseBrowserClient();
 
     void (async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      const uid = session?.user?.id ?? null;
-      setUserId(uid);
-      if (uid) {
-        const paths = mergeGuestFollowsIntoUser(uid);
-        setFollowed(new Set(paths));
-      } else {
+      try {
+        const session = await readSupabaseSession(supabase);
+        const uid = session?.user?.id ?? null;
+        setUserId(uid);
+        if (uid) {
+          const paths = mergeGuestFollowsIntoUser(uid);
+          setFollowed(new Set(paths));
+        } else {
+          setFollowed(new Set(readSuperinvestorFollowLocal(null)));
+        }
+        setHydrated(true);
+      } catch {
         setFollowed(new Set(readSuperinvestorFollowLocal(null)));
+        setHydrated(true);
       }
-      setHydrated(true);
     })();
 
     const {

@@ -40,6 +40,7 @@ export type KeyStatsMetricScreenshotConfig = {
   denseQuarterlyBars: boolean;
   horizontalPeriodAxisLabels: boolean;
   periodPlotMargins?: PeriodPlotEdgeMargin;
+  lineTimeRange?: FundamentalsChartTimeRange;
 };
 
 export type ChartScreenshotSnapshot = {

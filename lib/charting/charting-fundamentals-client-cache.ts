@@ -46,15 +46,19 @@ async function fetchChartingFundamentalsSeriesPayload(
   ticker: string,
   period: "annual" | "quarterly",
 ): Promise<ChartingFundamentalsSeriesPayload | null> {
-  const res = await fetch(
-    `/api/stocks/${encodeURIComponent(ticker.trim().toUpperCase())}/fundamentals-series?period=${period}`,
-    { credentials: "include" },
-  );
-  if (!res.ok) return null;
-  const json = (await res.json()) as { points?: ChartingSeriesPoint[]; ttmPoint?: unknown };
-  const points = Array.isArray(json.points) ? json.points : [];
-  const ttmPoint = period === "annual" ? parseChartingTtmPoint(json.ttmPoint) : null;
-  return { points, ttmPoint };
+  try {
+    const res = await fetch(
+      `/api/stocks/${encodeURIComponent(ticker.trim().toUpperCase())}/fundamentals-series?period=${period}`,
+      { credentials: "include" },
+    );
+    if (!res.ok) return null;
+    const json = (await res.json()) as { points?: ChartingSeriesPoint[]; ttmPoint?: unknown };
+    const points = Array.isArray(json.points) ? json.points : [];
+    const ttmPoint = period === "annual" ? parseChartingTtmPoint(json.ttmPoint) : null;
+    return { points, ttmPoint };
+  } catch {
+    return null;
+  }
 }
 
 /** Dedupe fundamentals-series fetches when switching metrics or remounting charting UI in one tab. */

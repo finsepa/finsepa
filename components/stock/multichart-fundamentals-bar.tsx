@@ -64,6 +64,10 @@ import {
   FUNDAMENTALS_HISTORY_MAX_ANNUAL_PERIODS,
   FUNDAMENTALS_HISTORY_MAX_QUARTERLY_PERIODS,
 } from "@/lib/market/fundamentals-history-limit";
+import {
+  formatFundamentalsLineChartAxisLabel,
+} from "@/lib/chart/fundamentals-line-chart-series";
+import type { FundamentalsChartTimeRange } from "@/lib/market/fundamentals-chart-time-range";
 import { cn } from "@/lib/utils";
 
 /** Default bar width (px); extra horizontal space becomes even gaps between columns. */
@@ -84,6 +88,8 @@ export const MULTICHART_BAR_WIDTH_ALL_QUARTERLY_PX = 10;
 /** Right column for Y-axis tick labels; `pl-*` gaps tick text from the plot / grid strokes. */
 const MULTICHART_Y_AXIS_W_PX = 50;
 const MULTICHART_Y_AXIS_W_COMPACT_PX = 42;
+/** Line chart — room for $8B-style ticks after the plot→axis gap. */
+const MULTICHART_Y_AXIS_W_LINE_PX = 46;
 /** Screenshot export — room for wide tick labels (e.g. 500.00) without clipping. */
 const MULTICHART_Y_AXIS_W_SCREENSHOT_PX = 52;
 
@@ -95,10 +101,16 @@ export const KEY_STATS_SCREENSHOT_PERIOD_MARGINS: PeriodPlotEdgeMargin = {
   right: 0.028,
 };
 
-/** Key Stats 5Y/10Y line — pull first/last points toward plot edges (bars keep column inset). */
+/** Key Stats line — plot spans full plot width (yCharts-style edge-to-edge). */
 const KEY_STATS_COMPACT_LINE_PERIOD_MARGINS: PeriodPlotEdgeMargin = {
-  left: 0.012,
-  right: 0.018,
+  left: 0,
+  right: 0,
+};
+
+/** Key Stats line x-axis year labels — inset from plot edges (line data stays full width). */
+const KEY_STATS_LINE_AXIS_LABEL_MARGINS: PeriodPlotEdgeMargin = {
+  left: 0.022,
+  right: 0.022,
 };
 
 /** Center of period `i` in `n` equal columns (`inset` = half-column fraction; 0.5 = default). */
@@ -299,6 +311,8 @@ type Props = {
   animateBarsOnAppear?: boolean;
   /** Level period labels (e.g. Key Stats annual 10Y) instead of the default slant. */
   horizontalPeriodAxisLabels?: boolean;
+  /** Key Stats line chart — year-only x-axis ticks by time range (5Y / 10Y / All). */
+  lineTimeRange?: FundamentalsChartTimeRange;
   /** Wide export frame — side padding, wider y-axis, and plot insets for labels. */
   screenshotExportMode?: boolean;
 };
@@ -434,22 +448,31 @@ export function MultichartFundamentalsBar({
   displayOptions: displayOptionsProp,
   animateBarsOnAppear = false,
   horizontalPeriodAxisLabels = false,
+  lineTimeRange,
   screenshotExportMode = false,
 }: Props) {
+  const lineAxisMode = visual === "line" && lineTimeRange != null;
+  const effectiveHorizontalPeriodAxisLabels = horizontalPeriodAxisLabels || lineAxisMode;
   const display = displayOptionsProp ?? DEFAULT_FUNDAMENTALS_CHART_DISPLAY_OPTIONS;
   const tightYAxis = compactHorizontalLayout || periodPlotMargins != null;
   const yAxisWidthPx = screenshotExportMode
     ? MULTICHART_Y_AXIS_W_SCREENSHOT_PX
-    : tightYAxis
-      ? MULTICHART_Y_AXIS_W_COMPACT_PX
-      : MULTICHART_Y_AXIS_W_PX;
-  const yAxisPlClass = screenshotExportMode
-    ? "pl-0 pr-1"
-    : periodPlotMargins
-      ? "pl-0 pr-3"
-      : compactHorizontalLayout
-        ? "pl-1.5"
-        : "pl-3";
+    : lineAxisMode
+      ? MULTICHART_Y_AXIS_W_LINE_PX
+      : tightYAxis
+        ? MULTICHART_Y_AXIS_W_COMPACT_PX
+        : MULTICHART_Y_AXIS_W_PX;
+  /** Visible whitespace between the plot edge and y-axis tick labels (line charts only). */
+  const lineYAxisGapClass = lineAxisMode ? "gap-3" : "";
+  const yAxisPlClass = lineAxisMode
+    ? "pl-0 pr-0"
+    : screenshotExportMode
+      ? "pl-0 pr-1"
+      : periodPlotMargins
+        ? "pl-0 pr-3"
+        : compactHorizontalLayout
+          ? "pl-1.5"
+          : "pl-3";
   const chartSidePadClass = screenshotExportMode ? "px-2.5" : "";
   const yAxisLabelPadClass = compactHorizontalLayout ? "px-0.5" : "px-1";
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -462,10 +485,13 @@ export function MultichartFundamentalsBar({
   const maxBars =
     maxBarsProp ??
     (periodMode === "quarterly" ? MULTICHART_MAX_QUARTERLY_BARS : MULTICHART_MAX_ANNUAL_BARS);
-  const rows = useMemo(
-    () => sliceLastAnnualWithMetric(points, metricId, maxBars),
-    [points, metricId, maxBars],
-  );
+  const rows = useMemo(() => {
+    if (lineAxisMode) {
+      const sorted = [...points].sort((a, b) => a.periodEnd.localeCompare(b.periodEnd));
+      return sorted.filter((r) => readChartingMetricValue(r, metricId) != null);
+    }
+    return sliceLastAnnualWithMetric(points, metricId, maxBars);
+  }, [points, metricId, maxBars, lineAxisMode]);
 
   const plotHeight = height - MULTICHART_AXIS_ROW_PX - MULTICHART_AXIS_BOTTOM_PAD_PX;
 
@@ -473,18 +499,26 @@ export function MultichartFundamentalsBar({
     const vals: number[] = [];
     const labs: string[] = [];
     const axisLabs: string[] = [];
-    for (const r of rows) {
+    const periodEnds = rows.map((r) => r.periodEnd);
+    for (let i = 0; i < rows.length; i += 1) {
+      const r = rows[i]!;
       const v = readChartingMetricValue(r, metricId);
       if (v == null) continue;
       vals.push(v);
       labs.push(formatChartingPeriodLabel(r.periodEnd, periodMode));
-      axisLabs.push(formatChartingPeriodAxisLabel(r.periodEnd, periodMode));
+      if (lineAxisMode && lineTimeRange) {
+        axisLabs.push(
+          formatFundamentalsLineChartAxisLabel(r.periodEnd, i, periodEnds, lineTimeRange),
+        );
+      } else {
+        axisLabs.push(formatChartingPeriodAxisLabel(r.periodEnd, periodMode));
+      }
     }
     const rawMax = vals.length ? Math.max(...vals) : 0;
     const rawMin = vals.length ? Math.min(...vals) : 0;
     const domain = buildFundamentalsYAxisDomain(rawMin, rawMax, kind);
     return { values: vals, labels: labs, axisLabels: axisLabs, yDomain: domain };
-  }, [rows, metricId, periodMode, kind]);
+  }, [rows, metricId, periodMode, kind, lineAxisMode, lineTimeRange]);
 
   const yMin = yDomain.min;
   const yMax = yDomain.max;
@@ -509,12 +543,14 @@ export function MultichartFundamentalsBar({
   const lineAreaGradientId = useId();
   const lineEnterClipId = useId();
 
-  const linePeriodPlotMargins = useMemo(
-    (): PeriodPlotEdgeMargin | undefined =>
-      periodPlotMargins ??
-      (visual === "line" && compactHorizontalLayout ? KEY_STATS_COMPACT_LINE_PERIOD_MARGINS : undefined),
-    [periodPlotMargins, visual, compactHorizontalLayout],
-  );
+  const linePeriodPlotMargins = useMemo((): PeriodPlotEdgeMargin | undefined => {
+    if (visual !== "line") return periodPlotMargins;
+    return KEY_STATS_COMPACT_LINE_PERIOD_MARGINS;
+  }, [periodPlotMargins, visual]);
+  const lineAxisLabelMargins = useMemo((): PeriodPlotEdgeMargin | undefined => {
+    if (!lineAxisMode) return undefined;
+    return KEY_STATS_LINE_AXIS_LABEL_MARGINS;
+  }, [lineAxisMode]);
   const lineAreaGradientTop = fundamentalsBarColorAtIndex(0, LINE_AREA_GRADIENT_TOP_OPACITY);
   const lineAreaGradientBottom = fundamentalsBarColorAtIndex(0, LINE_AREA_GRADIENT_BOTTOM_OPACITY);
 
@@ -562,6 +598,16 @@ export function MultichartFundamentalsBar({
     const areaD = smoothAreaPathD(curvePts, areaFloorY);
     return { d, areaD, gradY0: padT, gradY1: areaFloorY, pts };
   }, [linePlotPx.h, linePlotPx.w, values, yMin, yMax, periodCenterInset, linePeriodPlotMargins]);
+
+  const lineMaxValuePoint = useMemo(() => {
+    if (!lineSvg.pts.length) return null;
+    let best = lineSvg.pts[0]!;
+    for (const pt of lineSvg.pts) {
+      if (pt.v == null || !Number.isFinite(pt.v)) continue;
+      if (pt.v > best.v || (pt.v === best.v && pt.i > best.i)) best = pt;
+    }
+    return best.v != null && Number.isFinite(best.v) && best.v !== 0 ? best : null;
+  }, [lineSvg.pts]);
 
   const n = values.length;
   const shouldAnimateBars = animateBarsOnAppear && visual === "bar" && n > 0;
@@ -668,7 +714,7 @@ export function MultichartFundamentalsBar({
     >
       <div className="relative flex w-full min-w-0 max-w-full flex-col overflow-visible" style={{ height }}>
         <div
-          className={cn("flex min-h-0 w-full min-w-0 flex-1", chartSidePadClass)}
+          className={cn("flex min-h-0 w-full min-w-0 flex-1", lineYAxisGapClass, chartSidePadClass)}
           style={{ height: plotHeight }}
         >
           <div
@@ -782,16 +828,26 @@ export function MultichartFundamentalsBar({
                         strokeLinejoin="round"
                       />
                       {hoveredIndex != null && lineSvg.pts[hoveredIndex] ? (
-                        <circle
-                          cx={lineSvg.pts[hoveredIndex]!.x}
-                          cy={lineSvg.pts[hoveredIndex]!.y}
-                          r={HOVER_DOT_HALO_RADIUS_PX}
-                          fill={CHARTING_LINE_HOVER_HALO_BG}
-                          className="pointer-events-none"
-                        />
+                        <>
+                          <circle
+                            cx={lineSvg.pts[hoveredIndex]!.x}
+                            cy={lineSvg.pts[hoveredIndex]!.y}
+                            r={HOVER_DOT_HALO_RADIUS_PX}
+                            fill={CHARTING_LINE_HOVER_HALO_BG}
+                            className="pointer-events-none"
+                          />
+                          <circle
+                            cx={lineSvg.pts[hoveredIndex]!.x}
+                            cy={lineSvg.pts[hoveredIndex]!.y}
+                            r={4.5}
+                            fill="white"
+                            stroke={seriesBarColor}
+                            strokeWidth={2}
+                            className="pointer-events-none"
+                          />
+                        </>
                       ) : null}
                       {lineSvg.pts.map(({ x, y, v, i }) => {
-                      const ptColor = seriesBarColor;
                       return (
                         <g key={`pt-${labels[i]}-${i}`}>
                           <circle
@@ -839,30 +895,21 @@ export function MultichartFundamentalsBar({
                               );
                             }}
                           />
-                          <circle
-                            cx={x}
-                            cy={y}
-                            r={4.5}
-                            fill="white"
-                            stroke={ptColor}
-                            strokeWidth={2}
-                            className="pointer-events-none"
-                          />
                         </g>
                       );
                     })}
                     </g>
                   </svg>
                 ) : null}
-                {display.showBarValues && lineValueLabelsVisible && lineSvg.pts.length > 0
-                  ? lineSvg.pts.map(({ x, y, v, i }) => {
-                      if (v == null || !Number.isFinite(v) || v === 0) return null;
+                {lineValueLabelsVisible && lineMaxValuePoint && !display.showMaxLine
+                  ? (() => {
+                      const { x, y, v, i } = lineMaxValuePoint;
                       const text = formatBarChartDataLabel(metricId, v);
                       const dotClearance = CHARTING_LINE_POINT_MARKER_DIAMETER_PX / 2 + 4;
                       const minTop = FUNDAMENTALS_CHART_BAR_VALUE_LABEL_HEIGHT_PX + 4;
                       return (
                         <div
-                          key={`line-val-${labels[i]}-${i}`}
+                          key={`line-val-max-${labels[i]}-${i}`}
                           className={cn(BAR_VALUE_LABEL_ANCHOR_CLASS, "-translate-y-full")}
                           style={{
                             left: x,
@@ -886,7 +933,7 @@ export function MultichartFundamentalsBar({
                           </span>
                         </div>
                       );
-                    })
+                    })()
                   : null}
               </div>
             ) : (
@@ -1108,26 +1155,31 @@ export function MultichartFundamentalsBar({
         </div>
 
         <div
-          className={cn("flex w-full min-w-0 overflow-visible", chartSidePadClass)}
+          className={cn("flex w-full min-w-0 overflow-visible", lineYAxisGapClass, chartSidePadClass)}
           style={{ height: MULTICHART_AXIS_ROW_PX }}
         >
-          <div className="relative mb-1 min-w-0 flex-1 px-0" style={{ height: MULTICHART_AXIS_ROW_PX }}>
+          <div
+            className="relative mb-1 min-w-0 flex-1 px-0"
+            style={{ height: MULTICHART_AXIS_ROW_PX }}
+          >
             {axisLabels.map((axisLab, i) => {
-              const showAxisText = fundamentalsPeriodAxisShowsLabel(i, axisLabels.length, periodMode);
+              const showAxisText = lineAxisMode
+                ? axisLab.length > 0
+                : fundamentalsPeriodAxisShowsLabel(i, axisLabels.length, periodMode);
               if (!showAxisText) return null;
               const leftPct = resolvePeriodCenterLeftPercent(
                 i,
                 n,
                 periodCenterInset,
-                visual === "line" ? linePeriodPlotMargins : periodPlotMargins,
+                lineAxisMode ? lineAxisLabelMargins : periodPlotMargins,
               );
-              const axisLabelRotateDeg = horizontalPeriodAxisLabels ? 0 : AXIS_LABEL_ROTATE_DEG;
+              const axisLabelRotateDeg = effectiveHorizontalPeriodAxisLabels ? 0 : AXIS_LABEL_ROTATE_DEG;
               return (
                 <div
                   key={`${labels[i]}-${i}`}
                   className={cn(
                     "absolute flex max-w-[min(100%,4.5rem)] -translate-x-1/2 justify-center overflow-visible",
-                    horizontalPeriodAxisLabels ? "top-1.5" : "bottom-0.5",
+                    effectiveHorizontalPeriodAxisLabels ? "top-1.5" : "bottom-0.5",
                   )}
                   style={{ left: `${leftPct}%` }}
                   title={labels[i]}
@@ -1136,7 +1188,7 @@ export function MultichartFundamentalsBar({
                     className="inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]"
                     style={{
                       transform: axisLabelRotateDeg === 0 ? undefined : `rotate(${axisLabelRotateDeg}deg)`,
-                      transformOrigin: horizontalPeriodAxisLabels ? undefined : "center bottom",
+                      transformOrigin: effectiveHorizontalPeriodAxisLabels ? undefined : "center bottom",
                     }}
                   >
                     {axisLab}

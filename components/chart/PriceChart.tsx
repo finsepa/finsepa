@@ -69,6 +69,8 @@ import {
   fitOverviewChartTimeScale,
   filterStock1DLiveSessionPointsByTimeWindow,
   liveSessionSpanWhitespaceData,
+  liveSpotToMinuteBar,
+  mergeLiveSpotMinuteBarsIntoPoints,
   padStock1DLiveSessionBaselineData,
   prepareStock1DLiveSessionChartPoints,
   resolveStock1DLiveSessionYmd,
@@ -101,6 +103,7 @@ import {
   writeSuperinvestorHoldingChartCache,
 } from "@/lib/superinvestors/superinvestor-holding-chart-client-cache";
 import { cn } from "@/lib/utils";
+import { formatSignedPercent2dp } from "@/lib/market/key-stats-basic-format";
 import type { StockChartRange, StockChartPoint, StockChartSeries } from "@/lib/market/stock-chart-types";
 
 function formatStockPriceAxis(p: number): string {
@@ -906,15 +909,12 @@ export function PriceChart({
 
   const [loading, setLoading] = useState(true);
   const [points, setPoints] = useState<StockChartPoint[]>([]);
-
-  const dataTimeZoneHint = useMemo(
-    () =>
-      points.find((p) => typeof p.timeZone === "string" && p.timeZone.length > 0)?.timeZone ??
-      (kind === "stock" ? "America/New_York" : "UTC"),
-    [points, kind],
-  );
-
   const [sessionNowMs, setSessionNowMs] = useState(() => Date.now());
+  const [liveMinuteBars, setLiveMinuteBars] = useState<StockChartPoint[]>([]);
+
+  useEffect(() => {
+    setLiveMinuteBars([]);
+  }, [kind, symbol, range, holdingsStyle]);
 
   useEffect(() => {
     if (kind !== "stock" || range !== "1D" || holdingsStyle) return;
@@ -931,6 +931,34 @@ export function PriceChart({
     setSessionNowMs(Date.now());
   }, [kind, range, holdingsStyle, liveSpotUsd]);
 
+  useEffect(() => {
+    if (kind !== "stock" || range !== "1D" || holdingsStyle) return;
+    if (getUsEquityMarketSession(new Date()) !== "regular") return;
+    if (liveSpotUsd == null || !Number.isFinite(liveSpotUsd) || liveSpotUsd <= 0) return;
+    const now = new Date(sessionNowMs);
+    const sessionYmd = resolveStock1DLiveSessionYmd([], STOCK_1D_LIVE_SESSION_TZ, now);
+    if (!sessionYmd) return;
+    const bar = liveSpotToMinuteBar(liveSpotUsd, sessionYmd, now);
+    if (!bar) return;
+    setLiveMinuteBars((prev) => {
+      const idx = prev.findIndex((p) => p.time === bar.time);
+      if (idx >= 0) {
+        if (prev[idx]!.value === bar.value) return prev;
+        const next = [...prev];
+        next[idx] = bar;
+        return next;
+      }
+      return [...prev, bar].sort((a, b) => a.time - b.time);
+    });
+  }, [kind, range, holdingsStyle, liveSpotUsd, sessionNowMs]);
+
+  const dataTimeZoneHint = useMemo(
+    () =>
+      points.find((p) => typeof p.timeZone === "string" && p.timeZone.length > 0)?.timeZone ??
+      (kind === "stock" ? "America/New_York" : "UTC"),
+    [points, kind],
+  );
+
   const chartPoints = useMemo(() => {
     if (
       kind !== "stock" ||
@@ -941,17 +969,18 @@ export function PriceChart({
       return points;
     }
     const now = new Date(sessionNowMs);
+    const mergedSource = mergeLiveSpotMinuteBarsIntoPoints(points, liveMinuteBars);
     const prepared = prepareStock1DLiveSessionChartPoints(
-      points,
+      mergedSource,
       liveSpotUsd,
       STOCK_1D_LIVE_SESSION_TZ,
       now,
     );
     if (prepared.length) return prepared;
-    const sessionYmd = resolveStock1DLiveSessionYmd(points, STOCK_1D_LIVE_SESSION_TZ, now);
+    const sessionYmd = resolveStock1DLiveSessionYmd(mergedSource, STOCK_1D_LIVE_SESSION_TZ, now);
     if (!sessionYmd) return points;
     const filtered = filterStock1DLiveSessionPointsByTimeWindow(
-      points,
+      mergedSource,
       sessionYmd,
       STOCK_1D_LIVE_SESSION_TZ,
       now,
@@ -965,7 +994,7 @@ export function PriceChart({
       liveSpotUsd > 0;
     const tailValue = useLiveSpot ? liveSpotUsd : last.value;
     return appendLiveSessionNowTail(filtered, tailValue, sessionYmd, STOCK_1D_LIVE_SESSION_TZ, now);
-  }, [kind, range, holdingsStyle, points, liveSpotUsd, sessionNowMs]);
+  }, [kind, range, holdingsStyle, points, liveMinuteBars, liveSpotUsd, sessionNowMs]);
   const [hoverPrice, setHoverPrice] = useState<number | null>(null);
   const [hoverTimeUnix, setHoverTimeUnix] = useState<number | null>(null);
   const [hoverPoint, setHoverPoint] = useState<{ x: number; y: number } | null>(null);
@@ -2695,8 +2724,24 @@ export function PriceChart({
         : kind === "stock" && series === "return"
           ? formatReturnAxis(hoverPrice)
           : `$${formatStockPriceAxis(hoverPrice)}`;
-    return { valueLabel };
-  }, [holdingsStyle, overviewHover, kind, series]);
+
+    if (series === "return") {
+      return { valueLabel, changeLabel: null as string | null, changePct: null as number | null };
+    }
+
+    const openPoint = chartPoints.find((p) => isFiniteNumber(p.value));
+    const open = openPoint?.value;
+    if (open == null || !Number.isFinite(open) || open === 0) {
+      return { valueLabel, changeLabel: null, changePct: null };
+    }
+
+    const changePct = ((hoverPrice - open) / open) * 100;
+    return {
+      valueLabel,
+      changeLabel: formatSignedPercent2dp(changePct),
+      changePct,
+    };
+  }, [holdingsStyle, overviewHover, kind, series, chartPoints]);
 
   const overviewMetricTitle =
     series === "marketCap" ? "Market cap" : series === "return" ? "Return" : "Price";
@@ -2887,12 +2932,12 @@ export function PriceChart({
           style={{ left: livePriceDot.left, top: livePriceDot.top }}
           aria-hidden
         >
-          <span className="relative block h-2.5 w-2.5">
+          <span className="relative block h-3.5 w-3.5">
             <span
               className={
                 livePriceDot.animated !== false
-                  ? "chart-live-price-dot-bounce absolute inset-0 rounded-full ring-2 ring-white"
-                  : "absolute inset-0 rounded-full ring-2 ring-white"
+                  ? "chart-live-price-dot-bounce absolute inset-0 rounded-full ring-[2.5px] ring-white"
+                  : "absolute inset-0 rounded-full ring-[2.5px] ring-white"
               }
               style={{ backgroundColor: livePriceDot.color }}
             />
@@ -2917,6 +2962,20 @@ export function PriceChart({
           <p className="text-xs font-semibold tabular-nums text-[#09090B]">
             {overviewMetricTitle}: {overviewHoverTooltip.valueLabel}
           </p>
+          {overviewHoverTooltip.changeLabel != null ? (
+            <p
+              className={cn(
+                "text-xs font-semibold tabular-nums",
+                overviewHoverTooltip.changePct != null && overviewHoverTooltip.changePct > 0
+                  ? "text-[#16A34A]"
+                  : overviewHoverTooltip.changePct != null && overviewHoverTooltip.changePct < 0
+                    ? "text-[#DC2626]"
+                    : "text-[#71717A]",
+              )}
+            >
+              {overviewHoverTooltip.changeLabel}
+            </p>
+          ) : null}
         </div>
       ) : null}
       {loading ? (

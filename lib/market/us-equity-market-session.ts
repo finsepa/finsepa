@@ -1,4 +1,4 @@
-import { STOCK_DISPLAY_TZ, usSessionWallClockUnix } from "@/lib/market/chart-timestamp-format";
+import { STOCK_DISPLAY_TZ, usSessionWallClockUnix, usSessionYmdFromUnixSeconds } from "@/lib/market/chart-timestamp-format";
 
 export type UsEquityMarketSession = "pre" | "regular" | "post" | "closed";
 
@@ -180,4 +180,13 @@ export function usEquityTodayRegularSessionComplete(now: Date = new Date()): boo
   if (session !== "closed") return false;
   const { weekdayShort, dayMinutes } = nyWeekdayAndMinutes(now);
   return weekdayShort !== "Sat" && weekdayShort !== "Sun" && dayMinutes >= 20 * 60;
+}
+
+/** YYYY-MM-DD for the most recently completed US regular session (1D chart anchor). */
+export function lastCompletedUsRegularSessionYmd(
+  now: Date = new Date(),
+  timeZone: string = STOCK_DISPLAY_TZ,
+): string {
+  const closeSec = lastUsRegularSessionCloseUnix(now, timeZone);
+  return usSessionYmdFromUnixSeconds(closeSec);
 }
