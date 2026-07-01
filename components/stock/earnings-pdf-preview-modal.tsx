@@ -5,19 +5,30 @@ import { ExternalLink } from "@/lib/icons";
 
 import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
 import { AppModalCloseButton, AppModalShell } from "@/components/ui/app-modal-shell";
+import {
+  earningsDocumentPreviewKind,
+  type EarningsDocumentPreviewKind,
+} from "@/lib/market/earnings-document-url";
 import { isIrPdfProxyUrlAllowed } from "@/lib/market/ir-pdf-proxy-allowlist";
+import { isSecExhibitProxyUrlAllowed } from "@/lib/market/sec-exhibit-proxy-allowlist";
 
 type Props = {
   open: boolean;
   title: string;
-  /** Public HTTPS URL of the PDF */
+  /** Public HTTPS URL of the document */
   sourceUrl: string | null;
   onClose: () => void;
 };
 
-function toProxySrc(absolute: string | null): string | null {
-  if (!absolute || !isIrPdfProxyUrlAllowed(absolute)) return null;
-  return `/api/ir-pdf?u=${encodeURIComponent(absolute)}`;
+function toProxySrc(absolute: string | null, kind: EarningsDocumentPreviewKind): string | null {
+  if (!absolute) return null;
+  if (kind === "pdf" && isIrPdfProxyUrlAllowed(absolute)) {
+    return `/api/ir-pdf?u=${encodeURIComponent(absolute)}`;
+  }
+  if (kind === "sec-html" && isSecExhibitProxyUrlAllowed(absolute)) {
+    return `/api/sec-exhibit?u=${encodeURIComponent(absolute)}`;
+  }
+  return null;
 }
 
 export function EarningsPdfPreviewModal({ open, title, sourceUrl, onClose }: Props) {
@@ -38,7 +49,8 @@ export function EarningsPdfPreviewModal({ open, title, sourceUrl, onClose }: Pro
 
   if (!open || !sourceUrl) return null;
 
-  const iframeSrc = toProxySrc(sourceUrl);
+  const kind = earningsDocumentPreviewKind(sourceUrl);
+  const iframeSrc = kind ? toProxySrc(sourceUrl, kind) : null;
 
   return (
     <AppModalOverlay open={open} onClose={onClose} zIndex={300}>

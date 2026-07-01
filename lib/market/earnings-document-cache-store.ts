@@ -3,7 +3,10 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
-import { isDirectEarningsPdfUrl } from "@/lib/market/earnings-pdf-url";
+import {
+  isDirectEarningsPdfUrl,
+  isSecEdgarExhibitHtmlUrl,
+} from "@/lib/market/earnings-document-url";
 import type { StockEarningsHistoryRow } from "@/lib/market/stock-earnings-types";
 
 export type EarningsDocumentResolutionSource =
@@ -19,6 +22,7 @@ export type EarningsDocumentCacheRow = {
   fiscal_period_end: string;
   presentation_pdf_url: string | null;
   quarterly_report_pdf_url: string | null;
+  quarterly_report_html_url: string | null;
   resolution_source: EarningsDocumentResolutionSource;
   report_date: string | null;
   verified_at: string;
@@ -64,7 +68,7 @@ export async function loadEarningsDocumentCacheForHistory(
   const { data, error } = await admin
     .from("earnings_document_cache")
     .select(
-      "ticker,fiscal_period_end,presentation_pdf_url,quarterly_report_pdf_url,resolution_source,report_date,verified_at,updated_at",
+      "ticker,fiscal_period_end,presentation_pdf_url,quarterly_report_pdf_url,quarterly_report_html_url,resolution_source,report_date,verified_at,updated_at",
     )
     .eq("ticker", sym)
     .in("fiscal_period_end", fiscalEnds);
@@ -101,10 +105,13 @@ export function applyEarningsDocumentCacheToHistory(
 
     const slides =
       isDirectEarningsPdfUrl(hit.presentation_pdf_url) ? hit.presentation_pdf_url : row.secSlidesUrl;
-    const filings =
-      isDirectEarningsPdfUrl(hit.quarterly_report_pdf_url)
-        ? hit.quarterly_report_pdf_url
-        : row.secFilingsUrl;
+    const filingsFromPdf = isDirectEarningsPdfUrl(hit.quarterly_report_pdf_url)
+      ? hit.quarterly_report_pdf_url
+      : null;
+    const filingsFromHtml = isSecEdgarExhibitHtmlUrl(hit.quarterly_report_html_url)
+      ? hit.quarterly_report_html_url
+      : null;
+    const filings = filingsFromPdf ?? filingsFromHtml ?? row.secFilingsUrl;
 
     if (slides === row.secSlidesUrl && filings === row.secFilingsUrl) return row;
     return { ...row, secSlidesUrl: slides, secFilingsUrl: filings };
@@ -138,7 +145,8 @@ function inferResolutionSource(
     const slidesNew =
       isDirectEarningsPdfUrl(curr.slides) && curr.slides !== baseline.slides;
     const filingsNew =
-      isDirectEarningsPdfUrl(curr.filings) && curr.filings !== baseline.filings;
+      (isDirectEarningsPdfUrl(curr.filings) || isSecEdgarExhibitHtmlUrl(curr.filings)) &&
+      curr.filings !== baseline.filings;
     if (slidesNew || filingsNew) return step;
   }
   return "unknown";
@@ -164,6 +172,7 @@ export async function persistResolvedEarningsDocuments(
     fiscal_period_end: string;
     presentation_pdf_url: string | null;
     quarterly_report_pdf_url: string | null;
+    quarterly_report_html_url: string | null;
     resolution_source: EarningsDocumentResolutionSource;
     report_date: string | null;
     verified_at: string;
@@ -176,19 +185,29 @@ export async function persistResolvedEarningsDocuments(
     if (!fiscal) continue;
 
     const slides = isDirectEarningsPdfUrl(row.secSlidesUrl) ? row.secSlidesUrl : null;
-    const filings = isDirectEarningsPdfUrl(row.secFilingsUrl) ? row.secFilingsUrl : null;
-    if (!slides && !filings) continue;
+    const filingsPdf = isDirectEarningsPdfUrl(row.secFilingsUrl) ? row.secFilingsUrl : null;
+    const filingsHtml =
+      !filingsPdf && isSecEdgarExhibitHtmlUrl(row.secFilingsUrl) ? row.secFilingsUrl : null;
+    if (!slides && !filingsPdf && !filingsHtml) continue;
 
     const prior = priorCache.get(cacheKey(sym, fiscal));
     const priorSlides = prior?.presentation_pdf_url ?? null;
-    const priorFilings = prior?.quarterly_report_pdf_url ?? null;
-    if (slides === priorSlides && filings === priorFilings) continue;
+    const priorFilingsPdf = prior?.quarterly_report_pdf_url ?? null;
+    const priorFilingsHtml = prior?.quarterly_report_html_url ?? null;
+    if (
+      slides === priorSlides &&
+      filingsPdf === priorFilingsPdf &&
+      filingsHtml === priorFilingsHtml
+    ) {
+      continue;
+    }
 
     payload.push({
       ticker: sym,
       fiscal_period_end: fiscal,
       presentation_pdf_url: slides,
-      quarterly_report_pdf_url: filings,
+      quarterly_report_pdf_url: filingsPdf,
+      quarterly_report_html_url: filingsHtml,
       resolution_source: inferResolutionSource(i, [...baselineAfterCache], steps),
       report_date: row.reportDateYmd,
       verified_at: now,
@@ -214,6 +233,7 @@ export async function upsertEarningsDocumentCache(
     fiscalPeriodEndYmd: string;
     presentationPdfUrl: string | null;
     quarterlyReportPdfUrl: string | null;
+    quarterlyReportHtmlUrl?: string | null;
     resolutionSource: EarningsDocumentResolutionSource;
     reportDateYmd: string | null;
   }[],
@@ -223,15 +243,20 @@ export async function upsertEarningsDocumentCache(
   const payload = rows
     .map((row) => {
       const slides = isDirectEarningsPdfUrl(row.presentationPdfUrl) ? row.presentationPdfUrl : null;
-      const filings = isDirectEarningsPdfUrl(row.quarterlyReportPdfUrl)
+      const filingsPdf = isDirectEarningsPdfUrl(row.quarterlyReportPdfUrl)
         ? row.quarterlyReportPdfUrl
         : null;
-      if (!slides && !filings) return null;
+      const filingsHtml =
+        !filingsPdf && isSecEdgarExhibitHtmlUrl(row.quarterlyReportHtmlUrl)
+          ? row.quarterlyReportHtmlUrl
+          : null;
+      if (!slides && !filingsPdf && !filingsHtml) return null;
       return {
         ticker: normalizeTicker(row.ticker),
         fiscal_period_end: row.fiscalPeriodEndYmd,
         presentation_pdf_url: slides,
-        quarterly_report_pdf_url: filings,
+        quarterly_report_pdf_url: filingsPdf,
+        quarterly_report_html_url: filingsHtml,
         resolution_source: row.resolutionSource,
         report_date: row.reportDateYmd,
         verified_at: now,

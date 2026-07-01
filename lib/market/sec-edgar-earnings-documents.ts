@@ -7,7 +7,11 @@ import {
   extractTotalRevenueUsdFromPressReleaseHtml,
   pickExhibit99PressReleaseHtmlUrl,
 } from "@/lib/market/sec-earnings-press-release-revenue";
-import { isDirectEarningsPdfUrl } from "@/lib/market/earnings-pdf-url";
+import {
+  isDirectEarningsPdfUrl,
+  isEarningsFilingsPreviewUrl,
+  isSecEdgarExhibitHtmlUrl,
+} from "@/lib/market/earnings-document-url";
 import type { StockEarningsHistoryRow } from "@/lib/market/stock-earnings-types";
 
 const SEC_ORIGIN = "https://www.sec.gov";
@@ -271,7 +275,7 @@ export async function enrichEarningsHistoryWithSecDocuments(
     if (!row.reported || !row.reportDateYmd) continue;
     if (
       isDirectEarningsPdfUrl(row.secSlidesUrl) &&
-      isDirectEarningsPdfUrl(row.secFilingsUrl)
+      isEarningsFilingsPreviewUrl(row.secFilingsUrl)
     ) {
       continue;
     }
@@ -324,10 +328,18 @@ export async function enrichEarningsHistoryWithSecDocuments(
     }
     const { slides, filings } = pickEarningsSlideAndFilingPdfs(pdfs);
     if (slides) row.secSlidesUrl = slides;
-    if (filings) row.secFilingsUrl = filings;
+    if (filings) {
+      row.secFilingsUrl = filings;
+    } else {
+      const exhibitHtml = pickExhibit99PressReleaseHtmlUrl(html, cikNum, flat);
+      if (exhibitHtml) row.secFilingsUrl = exhibitHtml;
+    }
 
     if (row.reported && row.revenueActualUsd == null) {
-      const exhibitUrl = pickExhibit99PressReleaseHtmlUrl(html, cikNum, flat);
+      const exhibitUrl =
+        isSecEdgarExhibitHtmlUrl(row.secFilingsUrl)
+          ? row.secFilingsUrl
+          : pickExhibit99PressReleaseHtmlUrl(html, cikNum, flat);
       if (exhibitUrl) revenueExhibits.push({ idx: m.idx, url: exhibitUrl });
     }
   }

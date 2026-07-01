@@ -1,5 +1,5 @@
 /** True when `href` is a direct PDF suitable for inline preview (Slides / Filings). */
-export function isDirectEarningsPdfUrl(href: string | null | undefined): href is string {
+export function isDirectEarningsPdfUrl(href: string | null | undefined): boolean {
   if (!href || typeof href !== "string") return false;
   const t = href.trim();
   if (!t) return false;

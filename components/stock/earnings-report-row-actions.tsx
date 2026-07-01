@@ -5,6 +5,11 @@ import { FileSearch, Presentation } from "@/lib/icons";
 
 import { EarningsPdfPreviewModal } from "@/components/stock/earnings-pdf-preview-modal";
 import { getCuratedIrEarningsRowUrls } from "@/lib/market/earnings-ir-curated-lookup";
+import {
+  earningsDocumentPreviewKind,
+  isDirectEarningsPdfUrl,
+  isEarningsFilingsPreviewUrl,
+} from "@/lib/market/earnings-document-url";
 import type { StockEarningsHistoryRow } from "@/lib/market/stock-earnings-types";
 import { cn } from "@/lib/utils";
 
@@ -15,10 +20,10 @@ function isEdgarBrowseHtmlUrl(href: string): boolean {
   return href.includes("sec.gov") && (href.includes("/cgi-bin/browse-edgar") || href.includes("edgar/searchedgar/"));
 }
 
-function isDirectPdfUrl(href: string | null | undefined): href is string {
-  if (!href || !href.startsWith("https://")) return false;
+function isDirectPdfUrl(href: string): boolean {
   if (isEdgarBrowseHtmlUrl(href)) return false;
-  return /\.pdf(\?|#|$)/i.test(href) || href.includes("sec.gov/Archives/edgar/");
+  if (isDirectEarningsPdfUrl(href)) return true;
+  return href.includes("sec.gov/Archives/edgar/") && /\.pdf/i.test(href);
 }
 
 function firstPartyEarningsDocumentUrls(
@@ -32,8 +37,8 @@ function firstPartyEarningsDocumentUrls(
   const s = row.secSlidesUrl;
   const f = row.secFilingsUrl;
   return {
-    slidesUrl: isDirectPdfUrl(s) ? s : null,
-    filingsUrl: isDirectPdfUrl(f) ? f : null,
+    slidesUrl: s && s.startsWith("https://") && isDirectPdfUrl(s) ? s : null,
+    filingsUrl: isEarningsFilingsPreviewUrl(f) ? f : null,
   };
 }
 
@@ -73,8 +78,8 @@ type Props = {
 };
 
 /**
- * Slides / Filings — in-app PDF preview via `/api/ir-pdf` when a direct PDF URL is known.
- * No SEC browse-edgar fallbacks; buttons stay disabled until IR/SEC PDF resolution succeeds.
+ * Slides / Filings — in-app preview when a direct PDF or SEC Exhibit 99.1 HTML URL is known.
+ * PDFs use `/api/ir-pdf`; SEC HTML exhibits use `/api/sec-exhibit`.
  */
 export function EarningsReportRowActions({ row, listingTicker }: Props) {
   const released = row.reported;
@@ -85,8 +90,10 @@ export function EarningsReportRowActions({ row, listingTicker }: Props) {
     ? "No presentation PDF for this report yet"
     : "Presentation not available until this report is released";
   const filingsDisabledLabel = released
-    ? "No quarterly report PDF for this report yet"
+    ? "No quarterly report for this report yet"
     : "Filings not available until this report is released";
+
+  const canPreview = (url: string | null) => url != null && earningsDocumentPreviewKind(url) != null;
 
   return (
     <>
@@ -97,10 +104,10 @@ export function EarningsReportRowActions({ row, listingTicker }: Props) {
         onClose={() => setPreview(null)}
       />
       <div className="flex w-max max-w-full shrink-0 flex-nowrap items-center justify-end gap-2">
-        {released && slidesUrl ? (
+        {released && canPreview(slidesUrl) ? (
           <ActionButton
             label="Open earnings presentation preview"
-            onClick={() => setPreview({ url: slidesUrl, title: "Earnings presentation" })}
+            onClick={() => setPreview({ url: slidesUrl!, title: "Earnings presentation" })}
           >
             <Presentation className="h-4 w-4 shrink-0 text-[#52525B]" aria-hidden />
             <span>Slides</span>
@@ -111,10 +118,10 @@ export function EarningsReportRowActions({ row, listingTicker }: Props) {
             <span>Slides</span>
           </ActionDisabled>
         )}
-        {released && filingsUrl ? (
+        {released && canPreview(filingsUrl) ? (
           <ActionButton
             label="Open quarterly report preview"
-            onClick={() => setPreview({ url: filingsUrl, title: "Quarterly report" })}
+            onClick={() => setPreview({ url: filingsUrl!, title: "Quarterly report" })}
           >
             <FileSearch className="h-4 w-4 shrink-0 text-[#52525B]" aria-hidden />
             <span>Filings</span>

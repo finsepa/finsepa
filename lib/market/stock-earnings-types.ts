@@ -41,9 +41,9 @@ export type StockEarningsHistoryRow = {
   revenueActualUsd: number | null;
   epsEstimateRaw: number | null;
   epsActualRaw: number | null;
-  /** Resolved SEC document URL (often `.pdf` → native browser preview) when enrichment succeeds */
+  /** Resolved SEC / IR document URL — direct PDF or SEC Exhibit 99.1 HTML when enrichment succeeds */
   secSlidesUrl: string | null;
-  /** SEC filing index page for the matched Form 8-K (all exhibits) */
+  /** SEC filing PDF, IR quarterly report PDF, or SEC Exhibit 99.1 HTML press release */
   secFilingsUrl: string | null;
 };
 

@@ -1783,7 +1783,7 @@ async function fetchStockEarningsTabPayloadUncached(
 
 const fetchStockEarningsTabPayloadCached = unstable_cache(
   fetchStockEarningsTabPayloadUncached,
-  ["stock-earnings-tab-payload-v19-earnings-doc-cache"],
+  ["stock-earnings-tab-payload-v20-sec-html-exhibits"],
   { revalidate: REVALIDATE_WARM_LONG },
 );
 
