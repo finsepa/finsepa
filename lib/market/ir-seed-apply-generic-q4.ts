@@ -1,6 +1,19 @@
 import "server-only";
 
-import { parseNvidiaFiscalQuarterFromLabel } from "@/lib/market/ir-seed-apply-nvidia-q4";
+import {
+  isDirectEarningsPdfUrl,
+  isEarningsFilingsPreviewUrl,
+} from "@/lib/market/earnings-document-url";
+import {
+  fiscalQuarterFromLabel,
+  fiscalQuarterFromPeriodEndYmd,
+} from "@/lib/market/fiscal-quarter-label";
+import {
+  buildQ4CdnFilingsCandidates,
+  buildQ4CdnSlidesCandidates,
+  filterQ4CdnPdfLinksForQuarter,
+  q4CdnQuarterDir,
+} from "@/lib/market/q4cdn-earnings-pdf-patterns";
 import type { StockEarningsDocumentHub, StockEarningsHistoryRow } from "@/lib/market/stock-earnings-types";
 
 const HEAD_MS = 2500;
@@ -10,14 +23,16 @@ const UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36";
 
 type Q4CdnBase = {
-  /** `https://sXX.q4cdn.com/NNNNNNNNN/files` */
   filesBase: string;
-  /** `https://sXX.q4cdn.com/NNNNNNNNN/files/doc_financials` */
   financialsBase: string;
 };
 
+export type GenericQ4DocumentOptions = {
+  preview?: boolean;
+  fyEndMonthDay?: string | null;
+};
+
 function extractQ4CdnBaseFromHtml(html: string): Q4CdnBase | null {
-  // Prefer explicit `/files/` hits.
   const re = /https?:\/\/s\d+\.q4cdn\.com\/\d+\/files\b/gi;
   const m = html.match(re);
   const hit = m?.[0] ?? null;
@@ -103,7 +118,6 @@ async function headResolvePdfUrl(url: string): Promise<string | null> {
     });
     if (!res.ok) return null;
     const ct = (res.headers.get("content-type") ?? "").toLowerCase();
-    // Some issuers return HTML error pages with 200; avoid those.
     if (ct.includes("text/html")) return null;
     const final = res.url || url;
     if (!/\.pdf(\?|$)/i.test(final)) return null;
@@ -120,7 +134,6 @@ function domainFromCompanyWebsite(url: string | null): string | null {
     const host = u.hostname.toLowerCase();
     const parts = host.split(".").filter(Boolean);
     if (parts.length < 2) return null;
-    // naive eTLD+1 fallback (good enough for most US issuer domains)
     return parts.slice(-2).join(".");
   } catch {
     return null;
@@ -143,7 +156,7 @@ function buildIrSeedUrls(hub: StockEarningsDocumentHub): string[] {
   return [...new Set(out)];
 }
 
-function buildCommonQuarterlyEarningsPages(seed: string): string[] {
+function buildCommonQuarterlyEarningsPages(seed: string, preview: boolean): string[] {
   let u: URL | null = null;
   try {
     u = new URL(seed);
@@ -151,6 +164,7 @@ function buildCommonQuarterlyEarningsPages(seed: string): string[] {
     return [];
   }
   const origin = u.origin;
+  if (preview) return [seed];
   return [
     seed,
     `${origin}/financial-information/quarterly-earnings/`,
@@ -160,86 +174,109 @@ function buildCommonQuarterlyEarningsPages(seed: string): string[] {
   ];
 }
 
-function genericSlidesCandidates(base: Q4CdnBase, fy: number, fq: number): string[] {
-  const qDir = `${base.financialsBase}/${fy}/q${fq}`;
-  return [
-    `${qDir}/Earnings-Presentation-Q${fq}-${fy}.pdf`,
-    `${qDir}/Earnings-Presentation-Q${fq}-${fy}-FINAL.pdf`,
-    `${qDir}/Earnings-Presentation-Q${fq}-${fy}-Final.pdf`,
-    `${qDir}/Webslides_Q${fq}${String(fy % 100).padStart(2, "0")}.pdf`,
-    `${qDir}/Webslides_Q${fq}${String(fy % 100).padStart(2, "0")}-FINAL.pdf`,
-    `${qDir}/Webslides_Q${fq}${String(fy % 100).padStart(2, "0")}_Final.pdf`,
-  ];
+function parseRowFiscalQuarter(
+  row: StockEarningsHistoryRow,
+  fyEndMonthDay: string | null,
+): { fq: number; fy: number } | null {
+  const fromYmd = fiscalQuarterFromPeriodEndYmd(row.fiscalPeriodEndYmd, fyEndMonthDay);
+  if (fromYmd) return fromYmd;
+  return fiscalQuarterFromLabel(row.fiscalPeriodLabel);
 }
 
-function genericFilingsCandidates(base: Q4CdnBase, sym: string, fy: number, fq: number): string[] {
-  const qDir = `${base.financialsBase}/${fy}/q${fq}`;
-  const s = sym.trim().toUpperCase();
-  return [
-    `${qDir}/${s}-Q${fq}-${fy}-Earnings-Release.pdf`,
-    `${qDir}/${s}-Q${fq}-${fy}-Earnings-Release-FINAL.pdf`,
-    `${qDir}/${s}-Q${fq}-${fy}-Earnings-Release-Final.pdf`,
-    `${qDir}/${s}-Q${fq}-${fy}-Earnings-Release_FINAL.pdf`,
-    `${qDir}/${s}-Q${fq}-${fy}-Earnings-Release_Final.pdf`,
-    // Exhibit 99.1 / press release style
-    `${qDir}/${s}-Exhibit-99-1.pdf`,
-  ];
+function rowNeedsSlides(row: StockEarningsHistoryRow): boolean {
+  return row.reported && !isDirectEarningsPdfUrl(row.secSlidesUrl);
+}
+
+function rowNeedsFilings(row: StockEarningsHistoryRow): boolean {
+  return row.reported && !isEarningsFilingsPreviewUrl(row.secFilingsUrl);
+}
+
+function rowNeedsDocuments(row: StockEarningsHistoryRow): boolean {
+  return rowNeedsSlides(row) || rowNeedsFilings(row);
 }
 
 /**
- * Best-effort for any Q4 Inc. investor site:
- * - Discover `sXX.q4cdn.com/NNNNNNNNN/files` from IR HTML.
- * - Probe common slide/release filename patterns for the fiscal quarter label (e.g. `Q3 2025`).
+ * Default universe path for Q4 Inc. investor sites:
+ * discover CDN from IR HTML → scrape quarter PDF links → HEAD-probe known patterns.
  */
 export async function applyIrSeedGenericQ4DocumentUrls(
   listingTicker: string,
   rows: StockEarningsHistoryRow[],
   hub: StockEarningsDocumentHub,
+  options?: GenericQ4DocumentOptions,
 ): Promise<StockEarningsHistoryRow[]> {
+  const preview = options?.preview === true;
+  const fyEndMonthDay = options?.fyEndMonthDay ?? null;
+  const maxRows = preview ? 2 : 8;
+  const maxHeadProbes = preview ? 36 : 140;
+
   const seeds = buildIrSeedUrls(hub).filter((u) => /^https?:\/\//i.test(u));
   if (seeds.length === 0) return rows;
 
+  const rowsNeedingIdx = rows
+    .map((row, idx) => ({ row, idx }))
+    .filter(({ row }) => rowNeedsDocuments(row))
+    .sort((a, b) =>
+      (b.row.reportDateYmd ?? "").localeCompare(a.row.reportDateYmd ?? ""),
+    )
+    .slice(0, maxRows)
+    .map((x) => x.idx);
+
+  if (rowsNeedingIdx.length === 0) return rows;
+
   let base: Q4CdnBase | null = null;
-  const pdfLinksBySeed = new Map<string, string[]>();
-  for (const seed of seeds) {
-    // Try the seed plus a few common “quarterly earnings” landing pages.
-    for (const page of buildCommonQuarterlyEarningsPages(seed)) {
+  const pdfLinks: string[] = [];
+  const seedLimit = preview ? 2 : seeds.length;
+
+  for (const seed of seeds.slice(0, seedLimit)) {
+    for (const page of buildCommonQuarterlyEarningsPages(seed, preview)) {
       const html = await fetchHtml(page);
       if (!html) continue;
-      const pdfs = extractAbsolutePdfLinks(html, page);
-      if (pdfs.length > 0) {
-        const prev = pdfLinksBySeed.get(seed) ?? [];
-        pdfLinksBySeed.set(seed, [...new Set([...prev, ...pdfs])]);
-      }
-      if (!base) {
-        base = extractQ4CdnBaseFromHtml(html);
-      }
-      if (base) break;
+      pdfLinks.push(...extractAbsolutePdfLinks(html, page));
+      if (!base) base = extractQ4CdnBaseFromHtml(html);
+      if (base && preview) break;
     }
     if (base) break;
   }
+
   if (!base) return rows;
 
-  const pdfLinks = [...new Set(Array.from(pdfLinksBySeed.values()).flat())];
+  const uniquePdfLinks = [...new Set(pdfLinks)];
+  const byRow = rows.map((row, idx) => {
+    if (!rowsNeedingIdx.includes(idx)) {
+      return { slides: [] as string[], filings: [] as string[] };
+    }
 
-  const byRow = rows.map((row) => {
-    const p = parseNvidiaFiscalQuarterFromLabel(row.fiscalPeriodLabel);
+    const p = parseRowFiscalQuarter(row, fyEndMonthDay);
     if (!p) return { slides: [] as string[], filings: [] as string[] };
-    const slides = genericSlidesCandidates(base!, p.fy, p.fq);
-    const filings = genericFilingsCandidates(base!, listingTicker, p.fy, p.fq);
 
-    // If the IR page already exposed PDFs in the right `doc_financials/{fy}/q{fq}` folder, prefer them.
-    const qDir = `${base!.financialsBase}/${p.fy}/q${p.fq}/`;
-    const inQuarterDir = pdfLinks.filter((u) => u.startsWith(qDir));
-    const slideFromIr = pickBestPdfFromList(inQuarterDir, scoreSlidePdfName);
-    const filingFromIr = pickBestPdfFromList(inQuarterDir, scoreFilingPdfName);
+    const needsSlides = rowNeedsSlides(row);
+    const needsFilings = rowNeedsFilings(row);
 
-    const slidesAll = slideFromIr ? [slideFromIr, ...slides] : slides;
-    const filingsAll = filingFromIr ? [filingFromIr, ...filings] : filings;
-    return { slides: slidesAll, filings: filingsAll };
+    const qDir = q4CdnQuarterDir(base.financialsBase, p.fy, p.fq);
+    const inQuarterDir = uniquePdfLinks.filter((u) => u.startsWith(`${qDir}/`));
+    const fuzzyQuarter = filterQ4CdnPdfLinksForQuarter(uniquePdfLinks, p.fq, p.fy);
+    const scraped = [...new Set([...inQuarterDir, ...fuzzyQuarter])];
+
+    const slideFromIr = needsSlides ? pickBestPdfFromList(scraped, scoreSlidePdfName) : null;
+    const filingFromIr = needsFilings ? pickBestPdfFromList(scraped, scoreFilingPdfName) : null;
+
+    const slides = needsSlides
+      ? slideFromIr
+        ? [slideFromIr, ...buildQ4CdnSlidesCandidates(base.financialsBase, p.fq, p.fy)]
+        : buildQ4CdnSlidesCandidates(base.financialsBase, p.fq, p.fy)
+      : [];
+
+    const filings = needsFilings
+      ? filingFromIr
+        ? [filingFromIr, ...buildQ4CdnFilingsCandidates(base.financialsBase, listingTicker, p.fq, p.fy)]
+        : buildQ4CdnFilingsCandidates(base.financialsBase, listingTicker, p.fq, p.fy)
+      : [];
+
+    return { slides, filings };
   });
 
-  const unique = [...new Set(byRow.flatMap((x) => [...x.slides, ...x.filings]))].slice(0, 180);
+  const unique = [...new Set(byRow.flatMap((x) => [...x.slides, ...x.filings]))].slice(0, maxHeadProbes);
   const resolved = new Map<string, string | null>();
   await Promise.all(unique.map(async (u) => resolved.set(u, await headResolvePdfUrl(u))));
 
@@ -253,4 +290,3 @@ export async function applyIrSeedGenericQ4DocumentUrls(
     return { ...row, secSlidesUrl: nextSlides, secFilingsUrl: nextFilings };
   });
 }
-

@@ -1709,16 +1709,19 @@ async function fetchStockEarningsTabPayloadUncached(
   historyParsed = applyCuratedIrEarningsDocumentUrls(ticker, historyParsed);
   const afterCurated = historyParsed;
   try {
-    historyParsed = await applyIrSeedDocumentUrls(ticker, historyParsed, documentHub, { preview });
+    historyParsed = await applyIrSeedDocumentUrls(ticker, historyParsed, documentHub, {
+      preview,
+      fyEndMonthDay,
+    });
   } catch {
     /* Best-effort */
   }
   const afterIrSeed = historyParsed;
-  const irSeedSource = earningsIrSeedResolutionSource(ticker, { preview });
+  const irSeedSource = earningsIrSeedResolutionSource(ticker);
   void persistResolvedEarningsDocuments(ticker, historyParsed, afterCacheApply, docCache, [
     { step: "sec", rows: afterSec },
     { step: "curated", rows: afterCurated },
-    ...(irSeedSource ? [{ step: irSeedSource, rows: afterIrSeed }] : []),
+    { step: irSeedSource, rows: afterIrSeed },
   ]);
 
   try {
@@ -1783,7 +1786,7 @@ async function fetchStockEarningsTabPayloadUncached(
 
 const fetchStockEarningsTabPayloadCached = unstable_cache(
   fetchStockEarningsTabPayloadUncached,
-  ["stock-earnings-tab-payload-v20-sec-html-exhibits"],
+  ["stock-earnings-tab-payload-v21-full-universe-docs"],
   { revalidate: REVALIDATE_WARM_LONG },
 );
 

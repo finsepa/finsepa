@@ -27,13 +27,9 @@ const DEDICATED_IR_SEED_TICKERS = new Set([
 
 export function earningsIrSeedResolutionSource(
   listingTicker: string,
-  options?: { preview?: boolean },
-): "ir_seed" | "generic_q4" | null {
+): "ir_seed" | "generic_q4" {
   const t = listingTicker.trim().toUpperCase();
-  if (options?.preview && !DEDICATED_IR_SEED_TICKERS.has(t)) return null;
-  if (DEDICATED_IR_SEED_TICKERS.has(t)) return "ir_seed";
-  if (options?.preview) return null;
-  return "generic_q4";
+  return DEDICATED_IR_SEED_TICKERS.has(t) ? "ir_seed" : "generic_q4";
 }
 
 /** IR seed resolution after SEC enrichment, before curated overrides. */
@@ -41,7 +37,7 @@ export async function applyIrSeedDocumentUrls(
   listingTicker: string,
   rows: StockEarningsHistoryRow[],
   hub: StockEarningsDocumentHub,
-  options?: { preview?: boolean },
+  options?: { preview?: boolean; fyEndMonthDay?: string | null },
 ): Promise<StockEarningsHistoryRow[]> {
   const t = listingTicker.trim().toUpperCase();
   if (t === "NKE") return applyIrSeedNikeDocumentUrls(rows);
@@ -53,7 +49,8 @@ export async function applyIrSeedDocumentUrls(
   if (t === "META") return applyIrSeedMetaDocumentUrls(rows, hub);
   if (t === "TSM") return applyIrSeedTsmcDocumentUrls(rows, hub);
   if (t === "V") return applyIrSeedVisaDocumentUrls(rows, hub);
-  if (options?.preview) return rows;
-  // Generic best-effort for Q4 Inc. investor sites across the screener universe.
-  return applyIrSeedGenericQ4DocumentUrls(t, rows, hub);
+  return applyIrSeedGenericQ4DocumentUrls(t, rows, hub, {
+    preview: options?.preview,
+    fyEndMonthDay: options?.fyEndMonthDay,
+  });
 }
