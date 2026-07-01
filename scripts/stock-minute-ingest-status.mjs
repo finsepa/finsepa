@@ -110,4 +110,13 @@ console.log(
   ),
 );
 
-if (!ws.ok) process.exit(1);
+const workerHealthy =
+  remoteHealth &&
+  typeof remoteHealth === "object" &&
+  !("error" in remoteHealth) &&
+  remoteHealth.authorized === true &&
+  (remoteHealth.subscribed ?? 0) >= 2;
+
+const dataHealthy = (bars.count ?? 0) >= 10;
+
+if (!ws.ok && !workerHealthy && !dataHealthy) process.exit(1);

@@ -71,6 +71,7 @@ import {
   liveSessionSpanWhitespaceData,
   liveSpotToMinuteBar,
   mergeLiveSpotMinuteBarsIntoPoints,
+  insertLiveSessionGapWhitespace,
   padStock1DLiveSessionBaselineData,
   prepareStock1DLiveSessionChartPoints,
   resolveStock1DLiveSessionYmd,
@@ -2458,7 +2459,7 @@ export function PriceChart({
       .filter((p) => isFiniteNumber(p.time) && isFiniteNumber(p.value))
       .map((p) => ({ time: p.time as UTCTimestamp, value: p.value }));
 
-    const open = data.find((p) => isFiniteNumber(p.value))?.value;
+    const open = sessionChartPoints.find((p) => isFiniteNumber(p.value))?.value;
     if (!isFiniteNumber(open)) {
       removeSplitBundle();
       overviewInBarMarkersRef.current = null;
@@ -2576,7 +2577,9 @@ export function PriceChart({
 
     const baselineData =
       useLiveSessionChart && liveSessionYmd
-        ? padStock1DLiveSessionBaselineData(data, liveSessionYmd, open, timeZone)
+        ? insertLiveSessionGapWhitespace(
+            padStock1DLiveSessionBaselineData(data, liveSessionYmd, open, timeZone),
+          )
         : data;
 
     chart.timeScale().applyOptions({

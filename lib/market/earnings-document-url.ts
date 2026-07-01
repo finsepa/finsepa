@@ -8,10 +8,12 @@ export function isLowQualitySecEarningsExhibitHtml(href: string): boolean {
   return /prcov|bbcov|tranchebb|postagm|renewalcl/i.test(file);
 }
 
-/** SEC Exhibit 99.1 earnings press release HTML (no separate slide deck), e.g. Marriott `*earningsrel.htm`. */
-export function isSecEdgarEarningsReleaseExhibitHtml(href: string | null | undefined): href is string {
-  if (!isSecEdgarExhibitHtmlUrl(href)) return false;
-  const file = decodeURIComponent(href.split("/").pop()?.split("?")[0] ?? "").toLowerCase();
+function secEdgarExhibitHtmlFileName(href: string): string {
+  return decodeURIComponent(href.split("/").pop()?.split("?")[0] ?? "").toLowerCase();
+}
+
+function looksLikeSecEdgarEarningsReleaseExhibit(href: string): boolean {
+  const file = secEdgarExhibitHtmlFileName(href);
   if (/shareholder\s*letter|shareholderletter/i.test(file)) return false;
   if (/slide|slides|slidesfin|presentation|deck|992|ex[-_.]?99[-_.]?2/i.test(file)) return false;
   return /earningsrel|earningsrelease|earningsreleaseex|earnings[-_.]?release|ex99.*earn|ex-\d+.*earn|ex991pressrelease|ex991earningsrelease|q[1-4]\d{2,3}ex991(?:press|earnings)release/i.test(
@@ -19,11 +21,17 @@ export function isSecEdgarEarningsReleaseExhibitHtml(href: string | null | undef
   );
 }
 
+/** SEC Exhibit 99.1 earnings press release HTML (no separate slide deck), e.g. Marriott `*earningsrel.htm`. */
+export function isSecEdgarEarningsReleaseExhibitHtml(href: string | null | undefined): href is string {
+  if (!isSecEdgarExhibitHtmlUrl(href)) return false;
+  return looksLikeSecEdgarEarningsReleaseExhibit(href);
+}
+
 /** SEC exhibit HTML that looks like an earnings slide deck (Exhibit 99.2), not the press release. */
 export function isSecEdgarPresentationExhibitHtml(href: string | null | undefined): href is string {
   if (!isSecEdgarExhibitHtmlUrl(href)) return false;
-  if (isSecEdgarEarningsReleaseExhibitHtml(href)) return false;
-  const file = decodeURIComponent(href.split("/").pop()?.split("?")[0] ?? "").toLowerCase();
+  if (looksLikeSecEdgarEarningsReleaseExhibit(href)) return false;
+  const file = secEdgarExhibitHtmlFileName(href);
   if (/slide|slides|slidesfin|presentation|deck|992|ex[-_.]?99[-_.]?2/i.test(file)) return true;
   if (/shareholder\s*letter|shareholderletter/i.test(file)) return true;
   return false;

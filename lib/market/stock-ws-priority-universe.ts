@@ -80,6 +80,46 @@ export function sessionMinuteBarsAdequateForLiveChart(
   return spanSec >= 10 * 60;
 }
 
+/** Largest gap between consecutive in-session minute bars (seconds). */
+export function sessionMinuteBarsMaxGapSec(
+  bars: readonly StockChartPoint[],
+  sessionYmd: string,
+  timeZone: string,
+  now: Date = new Date(),
+): number {
+  if (bars.length < 2) return 0;
+  const openSec = usSessionWallClockUnix(sessionYmd, 9, 30, timeZone);
+  const closeSec = usSessionWallClockUnix(sessionYmd, 16, 0, timeZone);
+  const nowSec = Math.floor(now.getTime() / 1000);
+  const endSec = getUsEquityMarketSession(now) === "regular" ? Math.min(nowSec, closeSec) : closeSec;
+  const inSession = bars
+    .filter(
+      (p) =>
+        typeof p.time === "number" &&
+        Number.isFinite(p.time) &&
+        p.time >= openSec &&
+        p.time <= endSec,
+    )
+    .sort((a, b) => a.time - b.time);
+  if (inSession.length < 2) return 0;
+  let maxGap = 0;
+  for (let i = 1; i < inSession.length; i++) {
+    maxGap = Math.max(maxGap, inSession[i]!.time - inSession[i - 1]!.time);
+  }
+  return maxGap;
+}
+
+/** True when WS store has holes large enough to create misleading flat chart segments. */
+export function sessionMinuteBarsHasLargeGaps(
+  bars: readonly StockChartPoint[],
+  sessionYmd: string,
+  timeZone: string,
+  now: Date = new Date(),
+  maxGapSec = 5 * 60,
+): boolean {
+  return sessionMinuteBarsMaxGapSec(bars, sessionYmd, timeZone, now) > maxGapSec;
+}
+
 /** Flat polled closes (same price every bucket) are not a tick chart — fall back to intraday / OHLC. */
 export function sessionMinuteBarsHavePriceVariation(
   bars: readonly StockChartPoint[],

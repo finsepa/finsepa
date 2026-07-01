@@ -25,6 +25,7 @@ import {
 import {
   isStockWsPriorityTicker,
   sessionMinuteBarsAdequateForLiveChart,
+  sessionMinuteBarsHasLargeGaps,
   sessionMinuteBarsHavePriceVariation,
 } from "@/lib/market/stock-ws-priority-universe";
 import {
@@ -597,9 +598,9 @@ async function enrich1DLiveSessionPoints(
 
   const openSec = usSessionWallClockUnix(sessionYmd, 9, 30, STOCK_DISPLAY_TZ);
   const rtOpen = rtAnchors.find((p) => p.time === openSec);
-  const merged = mergeStockChartPointsByTime([rtAnchors, withOpen]);
-  if (!rtOpen) return merged;
-  return pinStockSessionOpenAnchor(merged, rtOpen);
+  if (!rtOpen) return withOpen;
+  // Open anchor only — live tail is merged client-side from polled spot (never bridge gaps).
+  return pinStockSessionOpenAnchor(withOpen, rtOpen);
 }
 
 async function load1DLiveSessionFromMinuteStore(
@@ -674,11 +675,12 @@ async function load1DChartPoints(ticker: string, now: Date, nowSec: number): Pro
     // Curated WS universe (~50): minute store from always-on ingest is the best 1D source when healthy.
     if (await isStockWsPriorityTicker(ticker)) {
       const fromStore = await load1DLiveSessionFromMinuteStore(ticker, todayYmd, { wsPriority: true }, now);
-      if (
+      const storeComplete =
         fromStore?.length &&
         sessionMinuteBarsHavePriceVariation(fromStore, todayYmd, STOCK_DISPLAY_TZ, now) &&
-        sessionMinuteBarsAdequateForLiveChart(fromStore, todayYmd, STOCK_DISPLAY_TZ, now)
-      ) {
+        sessionMinuteBarsAdequateForLiveChart(fromStore, todayYmd, STOCK_DISPLAY_TZ, now) &&
+        !sessionMinuteBarsHasLargeGaps(fromStore, todayYmd, STOCK_DISPLAY_TZ, now);
+      if (storeComplete) {
         if (process.env.NODE_ENV === "development") {
           console.info("[stock chart] 1D: WS minute store (priority ticker)", {
             ticker,
@@ -1153,7 +1155,7 @@ export const getStockChartPoints = unstable_cache(
 const getStockChartPoints1DLiveSession = unstable_cache(
   async (ticker: string, series: StockChartSeries) =>
     loadStockChartPointsUncached(ticker, "1D", series),
-  ["stock-chart-1d-live-session-v11-no-synthetic-ohlc"],
+  ["stock-chart-1d-live-session-v14-segment-resample"],
   { revalidate: REVALIDATE_STOCK_1D_LIVE },
 );
 

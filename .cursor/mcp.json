@@ -5,6 +5,10 @@
     },
     "railway": {
       "url": "https://mcp.railway.com"
+    },
+    "eodhd": {
+      "url": "https://mcp.eodhd.com/v1/mcp?apikey=${env:EODHD_API_KEY}",
+      "envFile": "${workspaceFolder}/.env.local"
     }
   }
 }
