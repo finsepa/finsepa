@@ -13,6 +13,7 @@ export function isIrPdfProxyUrlAllowed(url: string): boolean {
   const h = parsed.hostname.toLowerCase();
   if (h === "q4cdn.com" || h.endsWith(".q4cdn.com")) return true;
   if (h === "nvidia.com" || h.endsWith(".nvidia.com")) return true;
+  if (h === "nike.com" || h.endsWith(".nike.com")) return true;
   if (h === "apple.com" || h.endsWith(".apple.com")) return true;
   if (h === "www.sec.gov" || h === "sec.gov") {
     const p = parsed.pathname.toLowerCase();

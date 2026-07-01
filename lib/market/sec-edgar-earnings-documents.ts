@@ -7,6 +7,7 @@ import {
   extractTotalRevenueUsdFromPressReleaseHtml,
   pickExhibit99PressReleaseHtmlUrl,
 } from "@/lib/market/sec-earnings-press-release-revenue";
+import { isDirectEarningsPdfUrl } from "@/lib/market/earnings-pdf-url";
 import type { StockEarningsHistoryRow } from "@/lib/market/stock-earnings-types";
 
 const SEC_ORIGIN = "https://www.sec.gov";
@@ -244,6 +245,7 @@ function sleep(ms: number): Promise<void> {
 export async function enrichEarningsHistoryWithSecDocuments(
   rows: StockEarningsHistoryRow[],
   cikRaw: string | null,
+  options?: { maxRows?: number; maxIndexFetches?: number },
 ): Promise<StockEarningsHistoryRow[]> {
   const cik10 = normalizeSecCik(cikRaw);
   if (!cik10) return rows;
@@ -267,13 +269,33 @@ export async function enrichEarningsHistoryWithSecDocuments(
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i]!;
     if (!row.reported || !row.reportDateYmd) continue;
+    if (
+      isDirectEarningsPdfUrl(row.secSlidesUrl) &&
+      isDirectEarningsPdfUrl(row.secFilingsUrl)
+    ) {
+      continue;
+    }
     const hit = findBestIssuer8kNearReportDate(recent, cik10, row.reportDateYmd);
     if (!hit) continue;
     matches.push({ idx: i, accession: hit.accessionNumber, primaryDocument: hit.primaryDocument });
   }
 
-  const uniqueAccessions = [...new Set(matches.map((m) => m.accession))];
-  const toFetch = uniqueAccessions.slice(0, MAX_INDEX_FETCHES);
+  let activeMatches = matches;
+  if (options?.maxRows != null && options.maxRows > 0) {
+    const keep = new Set(
+      [...matches]
+        .sort((a, b) =>
+          (rows[b.idx]!.reportDateYmd ?? "").localeCompare(rows[a.idx]!.reportDateYmd ?? ""),
+        )
+        .slice(0, options.maxRows)
+        .map((m) => m.idx),
+    );
+    activeMatches = matches.filter((m) => keep.has(m.idx));
+  }
+
+  const uniqueAccessions = [...new Set(activeMatches.map((m) => m.accession))];
+  const maxFetches = options?.maxIndexFetches ?? MAX_INDEX_FETCHES;
+  const toFetch = uniqueAccessions.slice(0, maxFetches);
   const cache = new Map<string, { html: string | null }>();
 
   for (const acc of toFetch) {
@@ -286,7 +308,7 @@ export async function enrichEarningsHistoryWithSecDocuments(
   const next = rows.map((r) => ({ ...r }));
   const revenueExhibits: { idx: number; url: string }[] = [];
 
-  for (const m of matches) {
+  for (const m of activeMatches) {
     const row = next[m.idx]!;
     const cached = cache.get(m.accession);
     const html = cached?.html;

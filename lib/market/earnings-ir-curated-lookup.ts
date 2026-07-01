@@ -28,6 +28,15 @@ const CURATED_BY_TICKER: Record<string, CuratedEntry[]> = {
         "https://s201.q4cdn.com/141608511/files/doc_financials/2026/q1/b6df1c5c-5cb6-4a41-9d28-dd1bcd34cc26.pdf",
     },
   ],
+  NKE: [
+    {
+      when: (row) => row.fiscalPeriodEndYmd === "2025-11-30",
+      presentationPdfUrl:
+        "https://s1.q4cdn.com/806093406/files/doc_financials/2026/q2/Q2-FY26-Quarterly-Presentation-FINAL.pdf",
+      quarterlyReportPdfUrl:
+        "https://s1.q4cdn.com/806093406/files/doc_financials/2026/q2/Q2-FY26-Exhibit-99-1ER-FINAL-33-97.pdf",
+    },
+  ],
 };
 
 export function getCuratedIrEarningsRowUrls(

@@ -5,7 +5,7 @@ import type {
 import { quarterLabelFromPeriodEndYmd } from "@/lib/notifications/earnings-notification-model";
 
 export const MAX_REPORT_AGE_DAYS = 14;
-export const FIRST_SEEN_MAX_AGE_DAYS = 3;
+export const FIRST_SEEN_MAX_AGE_DAYS = 7;
 /** Calendar `symbols=` returns full history — only process recent rows in cron. */
 export const EARNINGS_NOTIFY_LOOKBACK_DAYS = 21;
 

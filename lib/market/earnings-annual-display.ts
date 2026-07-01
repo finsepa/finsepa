@@ -92,14 +92,15 @@ export function isAnnualForecastPoint(
   p: StockEarningsEstimatesPoint,
   todayYmd = todayYmdUtc(),
 ): boolean {
-  if (/^\d{4}-\d{2}-\d{2}$/.test(p.sortKey) && p.sortKey > todayYmd) return true;
   if (p.reported) return false;
-  const hasRevEst = p.revenueEstimateUsd != null && Number.isFinite(p.revenueEstimateUsd);
-  const hasEpsEst = p.epsEstimate != null && Number.isFinite(p.epsEstimate);
   const hasActual =
     (p.revenueActualUsd != null && Number.isFinite(p.revenueActualUsd)) ||
     (p.epsActual != null && Number.isFinite(p.epsActual));
-  return !hasActual && (hasRevEst || hasEpsEst);
+  if (hasActual) return false;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(p.sortKey) && p.sortKey > todayYmd) return true;
+  const hasRevEst = p.revenueEstimateUsd != null && Number.isFinite(p.revenueEstimateUsd);
+  const hasEpsEst = p.epsEstimate != null && Number.isFinite(p.epsEstimate);
+  return hasRevEst || hasEpsEst;
 }
 
 /** Last `EARNINGS_ANNUAL_HISTORY_MAX` reported/historical years, then any forward trend years. */
@@ -317,11 +318,11 @@ function nearestAnnualEpsTrendForYmd(ymd: string, annualEpsTrend: Map<string, nu
   return best;
 }
 
-/** Reject single-quarter EPS (~$1–2) mistaken for diluted FY EPS (~$4+). */
+/** Reject single-quarter EPS mistaken for diluted FY EPS when no actual is available. */
 export function isPlausibleAnnualEpsEstimate(estimate: number, actual: number | null): boolean {
   if (!Number.isFinite(estimate) || estimate <= 0) return false;
   if (actual == null || !Number.isFinite(actual) || actual <= 0) {
-    return estimate >= 2.5;
+    return estimate >= 0.5;
   }
   const ratio = estimate / actual;
   return ratio >= 0.4 && ratio <= 1.6;

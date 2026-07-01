@@ -27,7 +27,16 @@ import {
 import { formatUsdCompact } from "@/lib/market/key-stats-basic-format";
 import { parseEarningsDocumentHubFromFundamentalsRoot } from "@/lib/market/earnings-report-external-links";
 import { applyCuratedIrEarningsDocumentUrls } from "@/lib/market/earnings-ir-curated-lookup";
-import { applyIrSeedDocumentUrls } from "@/lib/market/ir-seed-apply";
+import {
+  applyEarningsDocumentCacheToHistory,
+  loadEarningsDocumentCacheForHistory,
+  persistResolvedEarningsDocuments,
+} from "@/lib/market/earnings-document-cache-store";
+import {
+  fiscalQuarterLabelFromPeriodEndYmd,
+  inferDominantFiscalYearEndMonthDay,
+} from "@/lib/market/fiscal-quarter-label";
+import { applyIrSeedDocumentUrls, earningsIrSeedResolutionSource } from "@/lib/market/ir-seed-apply";
 import {
   enrichEarningsHistoryWithSecDocuments,
   enrichReportedHistoryRevenueFromSec8k,
@@ -381,6 +390,32 @@ const ANNUAL_INCOME_STATEMENT_EPS_KEYS = [
   "BasicEps",
 ];
 
+const INCOME_STATEMENT_NET_INCOME_KEYS = [
+  "netIncome",
+  "NetIncome",
+  "netIncomeApplicableToCommonShares",
+  "NetIncomeApplicableToCommonShares",
+];
+
+const INCOME_STATEMENT_SHARES_KEYS = [
+  "weightedAverageShsOutDil",
+  "weightedAverageShsOutDiluted",
+  "WeightedAverageShsOutDil",
+  "weightedAverageShsOut",
+  "WeightedAverageShsOut",
+  "weightedAverageShares",
+  "WeightedAverageShares",
+  "commonStockSharesOutstanding",
+  "CommonStockSharesOutstanding",
+];
+
+const BALANCE_SHEET_SHARES_KEYS = [
+  "commonStockSharesOutstanding",
+  "CommonStockSharesOutstanding",
+  "commonStockTotalSharesOutstanding",
+  "CommonStockTotalSharesOutstanding",
+];
+
 /** When yearly income uses `YYYY-MM-DD` but `Earnings.Trend` uses a nearby fiscal end, pick closest trend EPS in the same calendar year (within ~4 months). */
 function nearestEpsTrendForAnnualYmd(ymd: string, epsTrend: Map<string, number>): number | null {
   const direct = epsTrend.get(ymd);
@@ -409,8 +444,110 @@ export type EpsEstimateTrendMaps = {
   annual: Map<string, number>;
 };
 
+function yearlyIncomePeriodEndYmds(root: Record<string, unknown>): Set<string> {
+  const block = getYearlyIncomeBlock(root);
+  if (!block) return new Set();
+  const ymds = new Set<string>();
+  for (const periodKey of Object.keys(block)) {
+    const ymd = toYmdUtcFromUnknown(periodKey);
+    if (ymd) ymds.add(ymd);
+  }
+  return ymds;
+}
+
+function isAnnualFiscalYearEndTrendYmd(
+  ymd: string,
+  yearlyPeriodEnds: Set<string>,
+  dominantFyEndMonthDay: string | null,
+): boolean {
+  if (yearlyPeriodEnds.has(ymd)) return true;
+  if (dominantFyEndMonthDay && ymd.slice(5) === dominantFyEndMonthDay) return true;
+  const targetMs = parseUnknownDateToUtcMs(ymd);
+  if (targetMs == null) return false;
+  const yPrefix = ymd.slice(0, 4);
+  const maxMs = 125 * 24 * 60 * 60 * 1000;
+  for (const k of yearlyPeriodEnds) {
+    if (!k.startsWith(yPrefix)) continue;
+    const km = parseUnknownDateToUtcMs(k);
+    if (km == null) continue;
+    if (Math.abs(km - targetMs) <= maxMs) return true;
+  }
+  return false;
+}
+
+function roundAnnualEpsDerived(v: number): number {
+  return Math.round(v * 100) / 100;
+}
+
+function quarterlyPointHasReportedActuals(p: StockEarningsEstimatesPoint): boolean {
+  return (
+    p.reported ||
+    (p.epsActual != null && Number.isFinite(p.epsActual)) ||
+    (p.revenueActualUsd != null && Number.isFinite(p.revenueActualUsd))
+  );
+}
+
+function deriveAnnualEpsFromNetIncomeAndShares(
+  incomeRow: Record<string, unknown>,
+  balanceSheetRow: Record<string, unknown> | null,
+): number | null {
+  const ni = numFromRow(incomeRow, INCOME_STATEMENT_NET_INCOME_KEYS);
+  if (ni == null || !Number.isFinite(ni)) return null;
+  const sh =
+    numFromRow(incomeRow, INCOME_STATEMENT_SHARES_KEYS) ??
+    (balanceSheetRow ? numFromRow(balanceSheetRow, BALANCE_SHEET_SHARES_KEYS) : null);
+  if (sh == null || !Number.isFinite(sh) || Math.abs(sh) < 1e-6) return null;
+  const eps = ni / sh;
+  if (!Number.isFinite(eps)) return null;
+  return roundAnnualEpsDerived(eps);
+}
+
+function historyRowsInFiscalYearEnding(
+  fyEndYmd: string,
+  history: StockEarningsHistoryRow[],
+): StockEarningsHistoryRow[] {
+  const endMs = parseUnknownDateToUtcMs(fyEndYmd);
+  if (endMs == null) return [];
+  const startMs = endMs - 366 * 24 * 60 * 60 * 1000;
+  return history.filter((r) => {
+    if (!r.reported) return false;
+    const ymd = r.fiscalPeriodEndYmd;
+    if (!ymd) return false;
+    const ms = parseUnknownDateToUtcMs(ymd);
+    if (ms == null) return false;
+    return ms > startMs && ms <= endMs;
+  });
+}
+
+function sumReportedEpsForFiscalYear(
+  fyEndYmd: string,
+  history: StockEarningsHistoryRow[],
+): number | null {
+  const rows = historyRowsInFiscalYearEnding(fyEndYmd, history);
+  const epsVals = rows
+    .map((r) => r.epsActualRaw)
+    .filter((n): n is number => n != null && Number.isFinite(n));
+  if (epsVals.length < 2) return null;
+  const sum = epsVals.reduce((a, b) => a + b, 0);
+  if (!Number.isFinite(sum) || sum <= 0) return null;
+  return roundAnnualEpsDerived(sum);
+}
+
+function enrichAnnualEpsActualFromHistory(
+  annual: StockEarningsEstimatesPoint[],
+  history: StockEarningsHistoryRow[],
+): StockEarningsEstimatesPoint[] {
+  return annual.map((p) => {
+    if (p.epsActual != null && Number.isFinite(p.epsActual)) return p;
+    if (!p.reported || !/^\d{4}-\d{2}-\d{2}$/.test(p.sortKey)) return p;
+    const summed = sumReportedEpsForFiscalYear(p.sortKey, history);
+    if (summed == null) return p;
+    return { ...p, epsActual: summed };
+  });
+}
+
 /**
- * `Earnings.Trend` mixes quarterly and FY EPS — split by magnitude (same approach as revenue trend).
+ * `Earnings.Trend` mixes quarterly and FY EPS — split by fiscal year-end alignment first, then magnitude.
  * Fiscal period-end keys only (no report dates).
  */
 function buildEpsEstimateTrendMaps(root: Record<string, unknown>): EpsEstimateTrendMaps {
@@ -420,6 +557,8 @@ function buildEpsEstimateTrendMaps(root: Record<string, unknown>): EpsEstimateTr
   if (!earn || typeof earn !== "object") return { quarterly, annual };
   const trend = (earn as Record<string, unknown>).Trend;
   const rows = collectEarningsTrendRows(trend);
+  const yearlyPeriodEnds = yearlyIncomePeriodEndYmds(root);
+  const dominantFyEndMonthDay = inferDominantFiscalYearEndMonthDay(yearlyPeriodEnds);
 
   const parsed: { ymds: string[]; est: number }[] = [];
   for (const r of rows) {
@@ -432,10 +571,13 @@ function buildEpsEstimateTrendMaps(root: Record<string, unknown>): EpsEstimateTr
   }
 
   const median = medianPositive(parsed.map((p) => p.est));
-  const annualThreshold = Math.max(median * 2.25, 4);
+  const annualThreshold = Math.max(median * 2.25, 1);
 
   for (const { ymds, est } of parsed) {
-    const target = est >= annualThreshold ? annual : quarterly;
+    const anyAnnualEnd = ymds.some((ymd) =>
+      isAnnualFiscalYearEndTrendYmd(ymd, yearlyPeriodEnds, dominantFyEndMonthDay),
+    );
+    const target = anyAnnualEnd || est >= annualThreshold ? annual : quarterly;
     for (const ymd of ymds) {
       if (!target.has(ymd)) target.set(ymd, est);
     }
@@ -535,14 +677,11 @@ function toYmdUtcFromUnknown(raw: unknown): string | null {
   return toYmdUtc(new Date(ms));
 }
 
-function quarterLabelFromPeriodEndYmd(ymd: string | null): string | null {
-  if (!ymd || !/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return null;
-  const [ys, ms] = ymd.split("-");
-  const y = Number(ys);
-  const m = Number(ms);
-  if (!Number.isFinite(y) || !Number.isFinite(m)) return null;
-  const q = Math.ceil(m / 3);
-  return `Q${q} ${y}`;
+function quarterLabelFromPeriodEndYmd(
+  ymd: string | null,
+  fyEndMonthDay: string | null = null,
+): string | null {
+  return fiscalQuarterLabelFromPeriodEndYmd(ymd, fyEndMonthDay);
 }
 
 /** Report / announcement date for the row (same field order as `historyRowFromRaw`). */
@@ -655,6 +794,7 @@ function historyRowFromRaw(
   quarterlyEpsEstimateFromTrend: Map<string, number>,
   quarterlyRevenueEstimateByLabel: Map<string, number>,
   quarterlyEpsEstimateByLabel: Map<string, number>,
+  fyEndMonthDay: string | null = null,
 ): StockEarningsHistoryRow {
   const explicitPeriodEndYmd = toYmdUtcFromUnknown(
     r.periodEnd ?? r.PeriodEnd ?? r.endDate ?? r.EndDate ?? r.fiscalDate ?? r.FiscalDate,
@@ -670,7 +810,8 @@ function historyRowFromRaw(
     formatEarningsDateEnUS(r.date ?? r.Date);
 
   const fiscalPeriodLabel =
-    quarterLabelFromPeriodEndYmd(fiscalPeriodEndYmd) ?? quarterLabelFromPeriodEndYmd(rawRowDateYmd);
+    quarterLabelFromPeriodEndYmd(fiscalPeriodEndYmd, fyEndMonthDay) ??
+    quarterLabelFromPeriodEndYmd(rawRowDateYmd, fyEndMonthDay);
 
   let epsEst = numFromRow(r, [
     "epsEstimate",
@@ -771,6 +912,18 @@ function getYearlyIncomeBlock(root: Record<string, unknown>): Record<string, unk
   return block as Record<string, unknown>;
 }
 
+function getYearlyBalanceSheetBlock(root: Record<string, unknown>): Record<string, unknown> | null {
+  const fin = root.Financials;
+  if (!fin || typeof fin !== "object") return null;
+  const f = fin as Record<string, unknown>;
+  const bs = (f.Balance_Sheet ?? f.BalanceSheet) as unknown;
+  if (!bs || typeof bs !== "object") return null;
+  const sheet = bs as Record<string, unknown>;
+  const block = sheet.yearly ?? sheet.Yearly;
+  if (!block || typeof block !== "object" || Array.isArray(block)) return null;
+  return block as Record<string, unknown>;
+}
+
 function mergeQuarterlyEstimatePoint(
   prev: StockEarningsEstimatesPoint,
   next: StockEarningsEstimatesPoint,
@@ -804,6 +957,39 @@ function buildQuarterlyEstimatesFromHistory(history: StockEarningsHistoryRow[]):
     byKey.set(sortKey, prev ? mergeQuarterlyEstimatePoint(prev, next) : next);
   }
   return [...byKey.values()].sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+}
+
+/** Copy reported EPS / revenue actuals (+ missing estimates) from history into quarterly chart points. */
+function backfillQuarterlyActualsFromHistory(
+  quarterly: StockEarningsEstimatesPoint[],
+  history: StockEarningsHistoryRow[],
+): StockEarningsEstimatesPoint[] {
+  const historyByYmd = new Map<string, StockEarningsHistoryRow>();
+  const historyByLabel = new Map<string, StockEarningsHistoryRow>();
+  for (const row of history) {
+    if (row.fiscalPeriodEndYmd) historyByYmd.set(row.fiscalPeriodEndYmd, row);
+    if (row.fiscalPeriodLabel) historyByLabel.set(row.fiscalPeriodLabel, row);
+  }
+
+  return quarterly.map((point) => {
+    const hist = historyByYmd.get(point.sortKey) ?? historyByLabel.get(point.label);
+    if (!hist?.reported) return point;
+
+    let next = point;
+    if (next.epsActual == null && hist.epsActualRaw != null && Number.isFinite(hist.epsActualRaw)) {
+      next = { ...next, epsActual: hist.epsActualRaw, reported: true };
+    }
+    if (next.revenueActualUsd == null && hist.revenueActualUsd != null && Number.isFinite(hist.revenueActualUsd)) {
+      next = { ...next, revenueActualUsd: hist.revenueActualUsd, reported: true };
+    }
+    if (next.epsEstimate == null && hist.epsEstimateRaw != null && Number.isFinite(hist.epsEstimateRaw)) {
+      next = { ...next, epsEstimate: hist.epsEstimateRaw };
+    }
+    if (next.revenueEstimateUsd == null && hist.revenueEstimateUsd != null && Number.isFinite(hist.revenueEstimateUsd)) {
+      next = { ...next, revenueEstimateUsd: hist.revenueEstimateUsd };
+    }
+    return next;
+  });
 }
 
 /** Restore consensus revenue on reported quarters so Estimates beat/miss lines can render. */
@@ -858,6 +1044,7 @@ function buildAnnualEstimatesSeries(
 ): StockEarningsEstimatesPoint[] {
   const block = getYearlyIncomeBlock(root);
   if (!block) return [];
+  const balanceSheetYearly = getYearlyBalanceSheetBlock(root);
   const todayYmd = toYmdUtc(new Date());
   const points: StockEarningsEstimatesPoint[] = [];
 
@@ -867,7 +1054,17 @@ function buildAnnualEstimatesSeries(
     const ymd = toYmdUtcFromUnknown(periodKey);
     if (!ymd) continue;
     const revAct = numFromRow(row, INCOME_STATEMENT_REVENUE_KEYS);
-    const epsAct = numFromRow(row, ANNUAL_INCOME_STATEMENT_EPS_KEYS);
+    let epsAct = numFromRow(row, ANNUAL_INCOME_STATEMENT_EPS_KEYS);
+    if (epsAct == null) {
+      const bsRow = balanceSheetYearly?.[periodKey];
+      const bsRec =
+        bsRow && typeof bsRow === "object" && !Array.isArray(bsRow)
+          ? (bsRow as Record<string, unknown>)
+          : balanceSheetYearly?.[ymd] && typeof balanceSheetYearly[ymd] === "object"
+            ? (balanceSheetYearly[ymd] as Record<string, unknown>)
+            : null;
+      epsAct = deriveAnnualEpsFromNetIncomeAndShares(row, bsRec);
+    }
     let revEst = annualRevenueEstimateFromTrend.get(ymd) ?? null;
     const epsEst =
       annualEpsEstimateFromTrend.get(ymd) ?? nearestEpsTrendForAnnualYmd(ymd, annualEpsEstimateFromTrend);
@@ -931,9 +1128,9 @@ function extendAnnualEstimatesWithForwardTrend(
         sortKey: existing.sortKey.localeCompare(ymd) >= 0 ? existing.sortKey : ymd,
         revenueEstimateUsd: nextEstimate,
         epsEstimate: nextEps,
-        reported: periodEnded ? existing.reported : false,
-        revenueActualUsd: periodEnded ? existing.revenueActualUsd : null,
-        epsActual: periodEnded ? existing.epsActual : null,
+        reported: existing.reported || periodEnded,
+        revenueActualUsd: existing.revenueActualUsd,
+        epsActual: existing.epsActual,
       });
       continue;
     }
@@ -987,6 +1184,7 @@ function extendQuarterlyEstimatesWithForwardTrend(
   quarterlyRevenueEstimateFromTrend: Map<string, number>,
   quarterlyEpsEstimateFromTrend: Map<string, number>,
   revenueByFiscalPeriodEnd: Map<string, number>,
+  fyEndMonthDay: string | null = null,
 ): StockEarningsEstimatesPoint[] {
   const todayYmd = toYmdUtc(new Date());
   const maxForwardYmd = maxQuarterlyForwardPeriodEndYmd();
@@ -1045,7 +1243,7 @@ function extendQuarterlyEstimatesWithForwardTrend(
 
     bySortKey.set(ymd, {
       sortKey: ymd,
-      label: quarterLabelFromPeriodEndYmd(ymd) ?? ymd,
+      label: quarterLabelFromPeriodEndYmd(ymd, fyEndMonthDay) ?? ymd,
       revenueEstimateUsd: revEst,
       revenueActualUsd: revAct,
       epsEstimate: epsEst,
@@ -1076,6 +1274,7 @@ function fillForwardQuartersFromAnnualEstimates(
   annual: StockEarningsEstimatesPoint[],
   quarterlyRevenueEstimateFromTrend: Map<string, number>,
   quarterlyEpsEstimateFromTrend: Map<string, number>,
+  fyEndMonthDay: string | null = null,
 ): StockEarningsEstimatesPoint[] {
   const todayYmd = toYmdUtc(new Date());
   const maxForwardYmd = maxQuarterlyForwardPeriodEndYmd();
@@ -1104,9 +1303,9 @@ function fillForwardQuartersFromAnnualEstimates(
         ...existing,
         revenueEstimateUsd: nextRev,
         epsEstimate: nextEps,
-        reported: periodEnded ? existing.reported : false,
-        revenueActualUsd: periodEnded ? existing.revenueActualUsd : null,
-        epsActual: periodEnded ? existing.epsActual : null,
+        reported: existing.reported || quarterlyPointHasReportedActuals(existing) || periodEnded,
+        revenueActualUsd: existing.revenueActualUsd,
+        epsActual: existing.epsActual,
       });
       return;
     }
@@ -1115,7 +1314,7 @@ function fillForwardQuartersFromAnnualEstimates(
 
     bySortKey.set(ymd, {
       sortKey: ymd,
-      label: quarterLabelFromPeriodEndYmd(ymd) ?? ymd,
+      label: quarterLabelFromPeriodEndYmd(ymd, fyEndMonthDay) ?? ymd,
       revenueEstimateUsd: revEst,
       revenueActualUsd: null,
       epsEstimate: epsEst,
@@ -1153,9 +1352,10 @@ function buildEstimatesChart(
   history: StockEarningsHistoryRow[],
   revenueTrendMaps: RevenueEstimateTrendMaps,
   epsTrendMaps: EpsEstimateTrendMaps,
+  fyEndMonthDay: string | null = null,
 ): StockEarningsEstimatesChart | null {
   const revenueByFiscalPeriodEnd = buildRevenueByFiscalPeriodEndYmd(root);
-  let quarterly = buildQuarterlyEstimatesFromHistory(history);
+  let quarterly = backfillQuarterlyActualsFromHistory(buildQuarterlyEstimatesFromHistory(history), history);
   let annual = buildAnnualEstimatesSeries(root, revenueTrendMaps.annual, epsTrendMaps.annual);
   annual = extendAnnualEstimatesWithForwardTrend(annual, revenueTrendMaps.annual, epsTrendMaps.annual);
   annual = applyDerivedEpsToForwardEstimates(annual);
@@ -1164,14 +1364,17 @@ function buildEstimatesChart(
     revenueTrendMaps.quarterly,
     epsTrendMaps.quarterly,
     revenueByFiscalPeriodEnd,
+    fyEndMonthDay,
   );
   quarterly = fillForwardQuartersFromAnnualEstimates(
     quarterly,
     annual,
     revenueTrendMaps.quarterly,
     epsTrendMaps.quarterly,
+    fyEndMonthDay,
   );
   quarterly = applyDerivedEpsToForwardEstimates(quarterly, annual);
+  annual = enrichAnnualEpsActualFromHistory(annual, history);
   annual = backfillAnnualEpsEstimates(annual, history, epsTrendMaps.annual);
   quarterly = backfillQuarterlyRevenueEstimates(
     quarterly,
@@ -1180,8 +1383,51 @@ function buildEstimatesChart(
     revenueTrendMaps.annual,
     annual,
   );
+  quarterly = backfillQuarterlyActualsFromHistory(quarterly, history);
   if (quarterly.length === 0 && annual.length === 0) return null;
   return { quarterly, annual };
+}
+
+async function enrichEstimatesChartWithFundamentals(
+  ticker: string,
+  estimatesChart: StockEarningsEstimatesChart,
+  revenueTrendMaps: RevenueEstimateTrendMaps,
+  epsTrendMaps: EpsEstimateTrendMaps,
+  historyParsed: StockEarningsHistoryRow[],
+): Promise<StockEarningsEstimatesChart> {
+  const annualSeries = await fetchChartingSeries(ticker, "annual");
+  const fundamentalsPoints = annualSeries?.points ?? [];
+  let annual = estimatesChart.annual;
+  if (fundamentalsPoints.length > 0) {
+    annual = mergeFundamentalsIntoAnnualEstimates(annual, fundamentalsPoints);
+  }
+  annual = enrichAnnualEpsActualFromHistory(annual, historyParsed);
+  const annualExtended = extendAnnualEstimatesWithForwardTrend(
+    annual,
+    revenueTrendMaps.annual,
+    epsTrendMaps.annual,
+  );
+  const quarterlyDerived = applyDerivedEpsToForwardEstimates(estimatesChart.quarterly, annualExtended);
+  const annualBackfilled = backfillAnnualEpsEstimates(
+    applyDerivedEpsToForwardEstimates(annualExtended),
+    historyParsed,
+    epsTrendMaps.annual,
+  );
+  const quarterlyBackfilled = backfillQuarterlyActualsFromHistory(
+    backfillQuarterlyRevenueEstimates(
+      quarterlyDerived,
+      historyParsed,
+      revenueTrendMaps.quarterly,
+      revenueTrendMaps.annual,
+      annualBackfilled,
+    ),
+    historyParsed,
+  );
+  return {
+    ...estimatesChart,
+    annual: annualBackfilled,
+    quarterly: quarterlyBackfilled,
+  };
 }
 
 function sortHistoryRows(rows: StockEarningsHistoryRow[]): StockEarningsHistoryRow[] {
@@ -1391,8 +1637,8 @@ export type StockEarningsTabFetchMode = "full" | "preview";
  * Earnings tab: `Earnings.History` from fundamentals plus optional calendar timing (BMO/AMC).
  * Cached per ticker so the first viewer pays EODHD/SEC cost and others reuse the payload.
  *
- * `preview` skips SEC index crawls, IR seed HTTP, charting-series merge, and earnings-calendar timing
- * — used by the earnings calendar modal for a fast first paint.
+ * `preview` skips SEC index crawls, IR seed HTTP, and earnings-calendar timing — used by the
+ * earnings calendar modal for a fast first paint. Lightweight SEC/IR PDF resolution still runs (cached).
  */
 async function fetchStockEarningsTabPayloadUncached(
   listingTicker: string,
@@ -1420,13 +1666,15 @@ async function fetchStockEarningsTabPayloadUncached(
   const revenueByFiscalPeriodEnd = buildRevenueByFiscalPeriodEndYmd(root);
   const revenueTrendMaps = buildRevenueEstimateTrendMaps(root);
   const epsTrendMaps = buildEpsEstimateTrendMaps(root);
+  const fyEndMonthDay = inferDominantFiscalYearEndMonthDay(yearlyIncomePeriodEndYmds(rootRec));
+  const periodEndLabel = (ymd: string | null) => quarterLabelFromPeriodEndYmd(ymd, fyEndMonthDay);
   const quarterlyRevenueByLabel = quarterlyEstimateMapsByQuarterLabel(
     revenueTrendMaps.quarterly,
-    quarterLabelFromPeriodEndYmd,
+    periodEndLabel,
   );
   const quarterlyEpsByLabel = quarterlyEstimateMapsByQuarterLabel(
     epsTrendMaps.quarterly,
-    quarterLabelFromPeriodEndYmd,
+    periodEndLabel,
   );
   let historyParsed = sliceEarningsHistoryForReports(
     sortHistoryRows(
@@ -1438,66 +1686,65 @@ async function fetchStockEarningsTabPayloadUncached(
           epsTrendMaps.quarterly,
           quarterlyRevenueByLabel,
           quarterlyEpsByLabel,
+          fyEndMonthDay,
         ),
       ),
     ),
   );
 
-  if (!preview) {
-    try {
-      historyParsed = await enrichEarningsHistoryWithSecDocuments(historyParsed, documentHub.cik);
-    } catch {
-      /* Best-effort; table still loads */
-    }
-    try {
-      historyParsed = await applyIrSeedDocumentUrls(ticker, historyParsed, documentHub);
-    } catch {
-      /* Best-effort */
-    }
-  } else {
-    try {
-      historyParsed = await enrichReportedHistoryRevenueFromSec8k(historyParsed, documentHub.cik, {
-        maxRows: 1,
-      });
-    } catch {
-      /* Best-effort */
-    }
-  }
-  historyParsed = applyCuratedIrEarningsDocumentUrls(ticker, historyParsed);
+  const docCache = await loadEarningsDocumentCacheForHistory(ticker, historyParsed);
+  historyParsed = applyEarningsDocumentCacheToHistory(ticker, historyParsed, docCache);
+  const afterCacheApply = historyParsed;
 
-  let estimatesChart = buildEstimatesChart(root, historyParsed, revenueTrendMaps, epsTrendMaps);
-
-  if (!preview && estimatesChart && estimatesChart.annual.length > 0) {
-    const annualSeries = await fetchChartingSeries(ticker, "annual");
-    const fundamentalsPoints = annualSeries?.points ?? [];
-    if (fundamentalsPoints.length > 0) {
-      estimatesChart = {
-        ...estimatesChart,
-        annual: mergeFundamentalsIntoAnnualEstimates(estimatesChart.annual, fundamentalsPoints),
-      };
-    }
-    const annualExtended = extendAnnualEstimatesWithForwardTrend(
-      estimatesChart.annual,
-      revenueTrendMaps.annual,
-      epsTrendMaps.annual,
-    );
-    const quarterlyDerived = applyDerivedEpsToForwardEstimates(estimatesChart.quarterly, annualExtended);
-    const annualBackfilled = backfillAnnualEpsEstimates(
-      applyDerivedEpsToForwardEstimates(annualExtended),
+  try {
+    historyParsed = await enrichEarningsHistoryWithSecDocuments(
       historyParsed,
-      epsTrendMaps.annual,
+      documentHub.cik,
+      preview ? { maxRows: 3, maxIndexFetches: 6 } : undefined,
     );
-    estimatesChart = {
-      ...estimatesChart,
-      annual: annualBackfilled,
-      quarterly: backfillQuarterlyRevenueEstimates(
-        quarterlyDerived,
-        historyParsed,
-        revenueTrendMaps.quarterly,
-        revenueTrendMaps.annual,
-        annualBackfilled,
-      ),
-    };
+  } catch {
+    /* Best-effort */
+  }
+  const afterSec = historyParsed;
+  historyParsed = applyCuratedIrEarningsDocumentUrls(ticker, historyParsed);
+  const afterCurated = historyParsed;
+  try {
+    historyParsed = await applyIrSeedDocumentUrls(ticker, historyParsed, documentHub, { preview });
+  } catch {
+    /* Best-effort */
+  }
+  const afterIrSeed = historyParsed;
+  const irSeedSource = earningsIrSeedResolutionSource(ticker, { preview });
+  void persistResolvedEarningsDocuments(ticker, historyParsed, afterCacheApply, docCache, [
+    { step: "sec", rows: afterSec },
+    { step: "curated", rows: afterCurated },
+    ...(irSeedSource ? [{ step: irSeedSource, rows: afterIrSeed }] : []),
+  ]);
+
+  try {
+    historyParsed = await enrichReportedHistoryRevenueFromSec8k(historyParsed, documentHub.cik, {
+      maxRows: preview ? 2 : 8,
+    });
+  } catch {
+    /* Best-effort — fills revenue when EODHD lags same-day reports */
+  }
+
+  let estimatesChart = buildEstimatesChart(
+    root,
+    historyParsed,
+    revenueTrendMaps,
+    epsTrendMaps,
+    fyEndMonthDay,
+  );
+
+  if (estimatesChart && estimatesChart.annual.length > 0) {
+    estimatesChart = await enrichEstimatesChartWithFundamentals(
+      ticker,
+      estimatesChart,
+      revenueTrendMaps,
+      epsTrendMaps,
+      historyParsed,
+    );
   }
 
   let upcoming = pickUpcomingFromHistory(
@@ -1536,7 +1783,7 @@ async function fetchStockEarningsTabPayloadUncached(
 
 const fetchStockEarningsTabPayloadCached = unstable_cache(
   fetchStockEarningsTabPayloadUncached,
-  ["stock-earnings-tab-payload-v17-trend-eps-estimates"],
+  ["stock-earnings-tab-payload-v19-earnings-doc-cache"],
   { revalidate: REVALIDATE_WARM_LONG },
 );
 

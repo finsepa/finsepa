@@ -7,6 +7,18 @@ import {
   canonicalNotifyTicker,
   eodhdCalendarCodeFromTicker,
 } from "@/lib/notifications/ticker-notify-eligibility";
+import { EARNINGS_NOTIFY_LOOKBACK_DAYS } from "@/lib/notifications/earnings-release-detect";
+
+function earningsCalendarReportDateWindow(
+  lookbackDays = EARNINGS_NOTIFY_LOOKBACK_DAYS,
+): { from: string; to: string } {
+  const to = new Date();
+  const from = new Date();
+  from.setUTCDate(from.getUTCDate() - lookbackDays);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const fmt = (d: Date) => `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+  return { from: fmt(from), to: fmt(to) };
+}
 
 export const EARNINGS_NOTIFY_CALENDAR_BATCH_SIZE = 80;
 
@@ -63,9 +75,12 @@ export async function fetchEarningsCalendarBatch(
   if (!key || canonicalTickers.length === 0) return { rows: [], requests: 0 };
 
   const symbols = canonicalTickers.map(eodhdCalendarCodeFromTicker).join(",");
+  const { from, to } = earningsCalendarReportDateWindow();
 
   const params = new URLSearchParams({
     symbols,
+    from,
+    to,
     api_token: key,
     fmt: "json",
   });
