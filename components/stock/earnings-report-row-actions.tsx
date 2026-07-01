@@ -7,8 +7,8 @@ import { EarningsPdfPreviewModal } from "@/components/stock/earnings-pdf-preview
 import { getCuratedIrEarningsRowUrls } from "@/lib/market/earnings-ir-curated-lookup";
 import {
   earningsDocumentPreviewKind,
-  isDirectEarningsPdfUrl,
   isEarningsFilingsPreviewUrl,
+  isEarningsSlidesPreviewUrl,
 } from "@/lib/market/earnings-document-url";
 import type { StockEarningsHistoryRow } from "@/lib/market/stock-earnings-types";
 import { cn } from "@/lib/utils";
@@ -16,28 +16,21 @@ import { cn } from "@/lib/utils";
 const outlineButtonClass =
   "inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-[10px] border border-[#E4E4E7] bg-white px-3 font-['Inter'] text-[14px] font-normal leading-5 text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors duration-100 hover:bg-[#F4F4F5] active:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900/10 focus-visible:ring-offset-2";
 
-function isEdgarBrowseHtmlUrl(href: string): boolean {
-  return href.includes("sec.gov") && (href.includes("/cgi-bin/browse-edgar") || href.includes("edgar/searchedgar/"));
-}
-
-function isDirectPdfUrl(href: string): boolean {
-  if (isEdgarBrowseHtmlUrl(href)) return false;
-  if (isDirectEarningsPdfUrl(href)) return true;
-  return href.includes("sec.gov/Archives/edgar/") && /\.pdf/i.test(href);
-}
-
 function firstPartyEarningsDocumentUrls(
   listingTicker: string,
   row: StockEarningsHistoryRow,
 ): { slidesUrl: string | null; filingsUrl: string | null } {
   const curated = getCuratedIrEarningsRowUrls(listingTicker, row);
   if (curated) {
-    return { slidesUrl: curated.presentationPdfUrl, filingsUrl: curated.quarterlyReportPdfUrl };
+    return {
+      slidesUrl: curated.presentationPdfUrl ?? null,
+      filingsUrl: curated.quarterlyReportPdfUrl ?? null,
+    };
   }
   const s = row.secSlidesUrl;
   const f = row.secFilingsUrl;
   return {
-    slidesUrl: s && s.startsWith("https://") && isDirectPdfUrl(s) ? s : null,
+    slidesUrl: s && s.startsWith("https://") && isEarningsSlidesPreviewUrl(s) ? s : null,
     filingsUrl: isEarningsFilingsPreviewUrl(f) ? f : null,
   };
 }
@@ -107,7 +100,14 @@ export function EarningsReportRowActions({ row, listingTicker }: Props) {
         {released && canPreview(slidesUrl) ? (
           <ActionButton
             label="Open earnings presentation preview"
-            onClick={() => setPreview({ url: slidesUrl!, title: "Earnings presentation" })}
+            onClick={() => {
+              const kind = earningsDocumentPreviewKind(slidesUrl!);
+              if (kind === "external") {
+                window.open(slidesUrl!, "_blank", "noopener,noreferrer");
+                return;
+              }
+              setPreview({ url: slidesUrl!, title: "Earnings presentation" });
+            }}
           >
             <Presentation className="h-4 w-4 shrink-0 text-[#52525B]" aria-hidden />
             <span>Slides</span>

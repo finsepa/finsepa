@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { loadStockPageInitialData } from "@/lib/market/stock-page-initial-data";
+import { fetchStockEarningsTabPayload } from "@/lib/market/stock-earnings-tab-data";
 import { StockPageClient } from "./stock-page-client";
 import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
 import { parseStockDetailTabQuery, type StockDetailTabId } from "@/lib/stock/stock-detail-tab";
@@ -34,6 +35,7 @@ export default async function StockTickerPage({ params, searchParams }: PageProp
     notFound();
   }
   const sp = searchParams ? await searchParams : {};
+  const tabFromUrl = tabFromSearchParams(sp);
 
   if (isSingleAssetMode() && !isSupportedAsset(routeTicker)) {
     return (
@@ -41,12 +43,18 @@ export default async function StockTickerPage({ params, searchParams }: PageProp
     );
   }
 
-  const initialPageData = await loadStockPageInitialData(routeTicker);
+  const [initialPageData, earningsTabPayload] = await Promise.all([
+    loadStockPageInitialData(routeTicker),
+    tabFromUrl === "earnings" ? fetchStockEarningsTabPayload(routeTicker) : Promise.resolve(null),
+  ]);
   if (!initialPageData) {
     notFound();
   }
+  if (earningsTabPayload) {
+    initialPageData.earningsTabPayload = earningsTabPayload;
+  }
 
-  const initialActiveTab = normalizeStockDetailTab(tabFromSearchParams(sp), initialPageData.isEtf);
+  const initialActiveTab = normalizeStockDetailTab(tabFromUrl, initialPageData.isEtf);
 
   return (
     <StockPageClient

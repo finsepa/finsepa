@@ -18,7 +18,11 @@ export async function GET(request: Request) {
   try {
     res = await fetch(u, {
       method: "GET",
-      headers: { Accept: "application/pdf,*/*" },
+      headers: {
+        Accept: "application/pdf,*/*",
+        "User-Agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+      },
       cache: "no-store",
     });
   } catch {
@@ -28,9 +32,8 @@ export async function GET(request: Request) {
     return new Response("Upstream not OK", { status: 502, statusText: res.statusText });
   }
 
-  const type = res.headers.get("content-type");
-  const ct = type?.toLowerCase() ?? "";
-  if (ct && (ct.includes("text/html") || ct.startsWith("text/html"))) {
+  const ct = (res.headers.get("content-type") ?? "").toLowerCase();
+  if (ct && ct.includes("text/html")) {
     return new Response("Not a PDF", { status: 502 });
   }
 

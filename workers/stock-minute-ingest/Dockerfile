@@ -10,5 +10,6 @@ COPY scripts/stock-ws-minute-ingest.mjs ./scripts/
 COPY scripts/lib/ ./scripts/lib/
 
 ENV NODE_ENV=production
+EXPOSE 8080
 
 CMD ["node", "scripts/stock-ws-minute-ingest.mjs"]

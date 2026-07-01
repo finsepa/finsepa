@@ -10,10 +10,20 @@ export function q4CdnQuarterDir(financialsBase: string, fy: number, fq: number):
   return `${financialsBase.replace(/\/+$/, "")}/${fy}/q${fq}`;
 }
 
-export function buildQ4CdnSlidesCandidates(financialsBase: string, fq: number, fy: number): string[] {
+export function buildQ4CdnSlidesCandidates(
+  financialsBase: string,
+  ticker: string,
+  fq: number,
+  fy: number,
+): string[] {
   const yy = fySuffix(fy);
+  const sym = ticker.trim().toUpperCase();
   const qDir = q4CdnQuarterDir(financialsBase, fy, fq);
   return [
+    `${qDir}/${sym}-${fq}Q-${yy}-Earnings-Presentation.pdf`,
+    `${qDir}/${sym}-${fq}Q-${yy}-Earnings-Presentation-FINAL.pdf`,
+    `${qDir}/${sym}-Q${fq}-${fy}-Earnings-Presentation.pdf`,
+    `${qDir}/${sym}-Q${fq}-${fy}-Earnings-Presentation-FINAL.pdf`,
     `${qDir}/Earnings-Presentation-Q${fq}-${fy}.pdf`,
     `${qDir}/Earnings-Presentation-Q${fq}-${fy}-FINAL.pdf`,
     `${qDir}/Earnings-Presentation-Q${fq}-${fy}-Final.pdf`,
@@ -55,7 +65,7 @@ export function filterQ4CdnPdfLinksForQuarter(
   const yy = fySuffix(fy);
   const qPath = `/${fy}/q${fq}/`.toLowerCase();
   const re = new RegExp(
-    `(?:^|[/_-])q${fq}(?:[^0-9]|$)|(?:^|[/_-])fy${yy}(?:[^0-9]|$)|f${fq}q${yy}|q${fq}[-_ ]${fy}\\b`,
+    `(?:^|[/_-])q${fq}(?:[^0-9]|$)|(?:^|[/_-])${fq}q-?${yy}(?:[^0-9]|$)|(?:^|[/_-])${fq}q(?:[^0-9]|$)|(?:^|[/_-])fy${yy}(?:[^0-9]|$)|f${fq}q${yy}|q${fq}[-_ ]${fy}\\b`,
     "i",
   );
   return urls.filter((u) => {

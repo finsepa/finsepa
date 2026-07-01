@@ -28,6 +28,18 @@ import { formatUsdCompact } from "@/lib/market/key-stats-basic-format";
 import { parseEarningsDocumentHubFromFundamentalsRoot } from "@/lib/market/earnings-report-external-links";
 import { applyCuratedIrEarningsDocumentUrls } from "@/lib/market/earnings-ir-curated-lookup";
 import {
+  SEC_ENRICHMENT_INDEX_FETCHES_FULL,
+  SEC_ENRICHMENT_ROWS_FULL,
+} from "@/lib/market/ir-seed-limits";
+import {
+  reportedRowMissingEarningsDocuments,
+  reportedRowNeedsIrDocumentSeed,
+} from "@/lib/market/earnings-document-url";
+import {
+  classifyEarningsDocumentWarmResult,
+  type EarningsDocumentWarmFailureClass,
+} from "@/lib/market/earnings-document-warm-taxonomy";
+import {
   applyEarningsDocumentCacheToHistory,
   loadEarningsDocumentCacheForHistory,
   persistResolvedEarningsDocuments,
@@ -1696,41 +1708,68 @@ async function fetchStockEarningsTabPayloadUncached(
   historyParsed = applyEarningsDocumentCacheToHistory(ticker, historyParsed, docCache);
   const afterCacheApply = historyParsed;
 
-  try {
-    historyParsed = await enrichEarningsHistoryWithSecDocuments(
-      historyParsed,
-      documentHub.cik,
-      preview ? { maxRows: 3, maxIndexFetches: 6 } : undefined,
-    );
-  } catch {
-    /* Best-effort */
+  const needsDocumentEnrichment = historyParsed.some(reportedRowMissingEarningsDocuments);
+
+  if (needsDocumentEnrichment) {
+    try {
+      historyParsed = await enrichEarningsHistoryWithSecDocuments(
+        historyParsed,
+        documentHub.cik,
+        preview
+          ? { maxRows: 3, maxIndexFetches: 6 }
+          : { maxRows: SEC_ENRICHMENT_ROWS_FULL, maxIndexFetches: SEC_ENRICHMENT_INDEX_FETCHES_FULL },
+      );
+    } catch {
+      /* Best-effort */
+    }
   }
   const afterSec = historyParsed;
   historyParsed = applyCuratedIrEarningsDocumentUrls(ticker, historyParsed);
   const afterCurated = historyParsed;
-  try {
-    historyParsed = await applyIrSeedDocumentUrls(ticker, historyParsed, documentHub, {
-      preview,
-      fyEndMonthDay,
-    });
-  } catch {
-    /* Best-effort */
+
+  const needsIrSeed = historyParsed.some(reportedRowNeedsIrDocumentSeed);
+  let afterIrSeed = historyParsed;
+  if (needsIrSeed) {
+    try {
+      const [irRows, revenueRows] = await Promise.all([
+        applyIrSeedDocumentUrls(ticker, historyParsed, documentHub, {
+          preview,
+          fyEndMonthDay,
+        }),
+        enrichReportedHistoryRevenueFromSec8k(historyParsed, documentHub.cik, {
+          maxRows: preview ? 2 : SEC_ENRICHMENT_ROWS_FULL,
+        }),
+      ]);
+      afterIrSeed = irRows;
+      historyParsed = irRows.map((row, i) => {
+        const rev = revenueRows[i]!;
+        if (rev.revenueActualUsd == null || row.revenueActualUsd != null) return row;
+        return {
+          ...row,
+          revenueActualUsd: rev.revenueActualUsd,
+          revenueActualDisplay: rev.revenueActualDisplay,
+        };
+      });
+      afterIrSeed = historyParsed;
+    } catch {
+      /* Best-effort */
+    }
+  } else {
+    try {
+      historyParsed = await enrichReportedHistoryRevenueFromSec8k(historyParsed, documentHub.cik, {
+        maxRows: preview ? 2 : SEC_ENRICHMENT_ROWS_FULL,
+      });
+    } catch {
+      /* Best-effort — fills revenue when EODHD lags same-day reports */
+    }
   }
-  const afterIrSeed = historyParsed;
+
   const irSeedSource = earningsIrSeedResolutionSource(ticker);
   void persistResolvedEarningsDocuments(ticker, historyParsed, afterCacheApply, docCache, [
     { step: "sec", rows: afterSec },
     { step: "curated", rows: afterCurated },
     { step: irSeedSource, rows: afterIrSeed },
   ]);
-
-  try {
-    historyParsed = await enrichReportedHistoryRevenueFromSec8k(historyParsed, documentHub.cik, {
-      maxRows: preview ? 2 : 8,
-    });
-  } catch {
-    /* Best-effort — fills revenue when EODHD lags same-day reports */
-  }
 
   let estimatesChart = buildEstimatesChart(
     root,
@@ -1741,13 +1780,58 @@ async function fetchStockEarningsTabPayloadUncached(
   );
 
   if (estimatesChart && estimatesChart.annual.length > 0) {
-    estimatesChart = await enrichEstimatesChartWithFundamentals(
-      ticker,
-      estimatesChart,
-      revenueTrendMaps,
-      epsTrendMaps,
-      historyParsed,
+    const upcomingForCalendar = pickUpcomingFromHistory(
+      rawRows,
+      null,
+      revenueByFiscalPeriodEnd,
+      revenueTrendMaps.quarterly,
+      quarterlyRevenueByLabel,
+      epsTrendMaps.quarterly,
+      quarterlyEpsByLabel,
     );
+    const [enrichedChart, calendarTiming] = await Promise.all([
+      enrichEstimatesChartWithFundamentals(
+        ticker,
+        estimatesChart,
+        revenueTrendMaps,
+        epsTrendMaps,
+        historyParsed,
+      ),
+      !preview && upcomingForCalendar?.reportDateYmd
+        ? fetchEodhdEarningsCalendarForSymbol(eodhdListingCode(ticker)).then((cal) =>
+            pickCalendarTimingForReport(cal, eodhdListingCode(ticker), upcomingForCalendar.reportDateYmd!),
+          )
+        : Promise.resolve(null),
+    ]);
+    estimatesChart = enrichedChart;
+
+    let upcoming = upcomingForCalendar;
+    if (estimatesChart) {
+      historyParsed = enrichReportedHistoryRevenueFromEstimatesChart(
+        historyParsed,
+        estimatesChart.quarterly,
+      );
+      upcoming = resolveUpcomingFromEstimates(upcoming, historyParsed, estimatesChart.quarterly);
+      historyParsed = buildReportsTableRows(historyParsed, estimatesChart.quarterly, upcoming);
+    } else if (upcoming) {
+      upcoming = resolveUpcomingFromEstimates(upcoming, historyParsed, []);
+    }
+    if (calendarTiming && upcoming?.reportDateYmd) {
+      const t = timingFromCalendar(calendarTiming);
+      return {
+        ticker,
+        upcoming: {
+          ...upcoming,
+          timing: t.timing,
+          timingShortLabel: t.timingShortLabel,
+          timingPhrase: t.timingPhrase,
+        },
+        history: historyParsed,
+        estimatesChart,
+        documentHub,
+      };
+    }
+    return { ticker, upcoming, history: historyParsed, estimatesChart, documentHub };
   }
 
   let upcoming = pickUpcomingFromHistory(
@@ -1786,7 +1870,7 @@ async function fetchStockEarningsTabPayloadUncached(
 
 const fetchStockEarningsTabPayloadCached = unstable_cache(
   fetchStockEarningsTabPayloadUncached,
-  ["stock-earnings-tab-payload-v21-full-universe-docs"],
+  ["stock-earnings-tab-payload-v43-pltr-cdn-head-ua"],
   { revalidate: REVALIDATE_WARM_LONG },
 );
 
@@ -1797,4 +1881,25 @@ export async function fetchStockEarningsTabPayload(
   const ticker = listingTicker.trim().toUpperCase();
   const mode: StockEarningsTabFetchMode = options?.preview ? "preview" : "full";
   return fetchStockEarningsTabPayloadCached(ticker, mode);
+}
+
+export type EarningsDocumentWarmStats = {
+  ticker: string;
+  failureClass: EarningsDocumentWarmFailureClass;
+  reportedRows: number;
+  recentReportedRows: number;
+  withSlides: number;
+  withFilings: number;
+  missingSlides: number;
+  missingFilings: number;
+  slideFormats: Record<string, number>;
+};
+
+/** Bypass Next cache — runs full SEC + IR pipeline and persists document cache rows. */
+export async function warmStockEarningsDocumentCache(
+  listingTicker: string,
+): Promise<EarningsDocumentWarmStats> {
+  const ticker = listingTicker.trim().toUpperCase();
+  const payload = await fetchStockEarningsTabPayloadUncached(ticker, "full");
+  return classifyEarningsDocumentWarmResult(ticker, payload?.history ?? null);
 }

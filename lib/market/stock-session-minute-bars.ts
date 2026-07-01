@@ -6,6 +6,7 @@ import {
   fetchStockSessionMinuteBarsFromDb,
   upsertStockSessionMinuteBarToDb,
 } from "@/lib/market/stock-session-minute-bar-store";
+import { sessionMinuteBarsHavePriceVariation } from "@/lib/market/stock-ws-priority-universe";
 import { getUsEquityMarketSession } from "@/lib/market/us-equity-market-session";
 import type { StockChartPoint } from "@/lib/market/stock-chart-types";
 
@@ -90,7 +91,7 @@ export function getStockSessionMinuteBars(ticker: string, sessionYmd: string): S
   return store().get(storeKey(ticker, sessionYmd)) ?? [];
 }
 
-function mergeChartPointsByTime(
+export function mergeStockChartPointsByTime(
   sources: readonly (readonly StockChartPoint[])[],
 ): StockChartPoint[] {
   const byTime = new Map<number, StockChartPoint>();
@@ -112,7 +113,7 @@ export function mergeStockSessionMinuteBars(
 ): StockChartPoint[] {
   const bars = getStockSessionMinuteBars(ticker, sessionYmd);
   if (!bars.length) return [...points];
-  return mergeChartPointsByTime([points, bars]);
+  return mergeStockChartPointsByTime([points, bars]);
 }
 
 /** Async merge: Supabase minute store + warm-instance memory over fallback chart points. */
@@ -120,13 +121,34 @@ export async function mergeStockSessionMinuteBarsFromDb(
   ticker: string,
   sessionYmd: string,
   points: readonly StockChartPoint[],
+  now: Date = new Date(),
 ): Promise<StockChartPoint[]> {
-  const [dbBars, memBars] = await Promise.all([
+  const [dbBarsRaw, memBarsRaw] = await Promise.all([
     fetchStockSessionMinuteBarsFromDb(ticker, sessionYmd),
     Promise.resolve(getStockSessionMinuteBars(ticker, sessionYmd)),
   ]);
+
+  let dbBars = dbBarsRaw;
+  let memBars = memBarsRaw;
+  if (getUsEquityMarketSession(now) === "regular") {
+    if (
+      dbBars.length > 0 &&
+      !sessionMinuteBarsHavePriceVariation(dbBars, sessionYmd, STOCK_DISPLAY_TZ, now)
+    ) {
+      const latest = dbBars[dbBars.length - 1];
+      dbBars = latest ? [latest] : [];
+    }
+    if (
+      memBars.length > 0 &&
+      !sessionMinuteBarsHavePriceVariation(memBars, sessionYmd, STOCK_DISPLAY_TZ, now)
+    ) {
+      const latest = memBars[memBars.length - 1];
+      memBars = latest ? [latest] : [];
+    }
+  }
+
   if (!dbBars.length && !memBars.length) return [...points];
-  return mergeChartPointsByTime([points, dbBars, memBars]);
+  return mergeStockChartPointsByTime([points, dbBars, memBars]);
 }
 
 export { fetchStockSessionMinuteBarsFromDb } from "@/lib/market/stock-session-minute-bar-store";

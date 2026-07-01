@@ -11,6 +11,7 @@ import { AssetChartSkeleton } from "@/components/ui/chart-skeleton";
 import type { StockDetailHeaderMeta } from "@/lib/market/stock-header-meta";
 import type { ChartingMetricId } from "@/lib/market/stock-charting-metrics";
 import type { StockDetailTabId } from "@/lib/stock/stock-detail-tab";
+import { prefetchStockEarningsTabPayload } from "@/lib/market/stock-earnings-tab-client";
 import { parseStockDetailTabQuery } from "@/lib/stock/stock-detail-tab";
 import { coerceStockDetailTabForEtf, isStockDetailEtf, normalizeStockDetailTab } from "@/lib/stock/stock-etf";
 import { AssetPortfolioHoldingsTab } from "@/components/portfolio/asset-portfolio-holdings-tab";
@@ -353,12 +354,31 @@ export function StockPageContent({
     (tab: StockDetailTabId) => {
       const next = isEtf ? coerceStockDetailTabForEtf(tab) : tab;
       if (next === displayTab) return;
+      if (next === "earnings") prefetchStockEarningsTabPayload(ticker, false);
       setDisplayTab(next);
       setTabsMounted((m) => ({ ...m, [next]: true }));
       startTabTransition(() => setTabInUrl(next));
     },
-    [displayTab, isEtf, setTabInUrl],
+    [displayTab, isEtf, setTabInUrl, ticker],
   );
+
+  const handleTabIntent = useCallback(
+    (tab: StockDetailTabId) => {
+      if (tab === "earnings") prefetchStockEarningsTabPayload(ticker, false);
+    },
+    [ticker],
+  );
+
+  useEffect(() => {
+    if (displayTab === "earnings" || isEtf) return;
+    const run = () => prefetchStockEarningsTabPayload(ticker, false);
+    if (typeof requestIdleCallback === "function") {
+      const id = requestIdleCallback(run, { timeout: 4000 });
+      return () => cancelIdleCallback(id);
+    }
+    const id = window.setTimeout(run, 2000);
+    return () => window.clearTimeout(id);
+  }, [ticker, displayTab, isEtf]);
 
   const [revenueProfitModalMetric, setRevenueProfitModalMetric] = useState<ChartingMetricId | null>(null);
   const openRevenueProfitMetricModal = useCallback((metricId: ChartingMetricId) => {
@@ -884,6 +904,7 @@ export function StockPageContent({
       <StockDetailTabNav
         activeTab={displayTab}
         onTabChange={handleTabChange}
+        onTabIntent={handleTabIntent}
         isEtf={isEtf}
         sticky={displayTab !== "financials"}
       />

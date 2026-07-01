@@ -79,3 +79,29 @@ export function sessionMinuteBarsAdequateForLiveChart(
   const spanSec = inSession[inSession.length - 1]!.time - inSession[0]!.time;
   return spanSec >= 10 * 60;
 }
+
+/** Flat polled closes (same price every bucket) are not a tick chart — fall back to intraday / OHLC. */
+export function sessionMinuteBarsHavePriceVariation(
+  bars: readonly StockChartPoint[],
+  sessionYmd: string,
+  timeZone: string,
+  now: Date = new Date(),
+  minDistinctCents = 2,
+): boolean {
+  if (bars.length < 2) return false;
+  const openSec = usSessionWallClockUnix(sessionYmd, 9, 30, timeZone);
+  const closeSec = usSessionWallClockUnix(sessionYmd, 16, 0, timeZone);
+  const nowSec = Math.floor(now.getTime() / 1000);
+  const endSec = getUsEquityMarketSession(now) === "regular" ? Math.min(nowSec, closeSec) : closeSec;
+  const inSession = bars.filter(
+    (p) =>
+      typeof p.time === "number" &&
+      Number.isFinite(p.time) &&
+      Number.isFinite(p.value) &&
+      p.time >= openSec &&
+      p.time <= endSec,
+  );
+  if (inSession.length < 2) return false;
+  const cents = new Set(inSession.map((p) => Math.round(p.value * 100)));
+  return cents.size >= minDistinctCents;
+}

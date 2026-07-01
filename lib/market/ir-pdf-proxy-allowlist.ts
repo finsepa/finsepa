@@ -15,6 +15,13 @@ export function isIrPdfProxyUrlAllowed(url: string): boolean {
   if (h === "nvidia.com" || h.endsWith(".nvidia.com")) return true;
   if (h === "nike.com" || h.endsWith(".nike.com")) return true;
   if (h === "apple.com" || h.endsWith(".apple.com")) return true;
+  if (h === "cdn.ferrari.com") return true;
+  if (h === "cmcsa.com" || h.endsWith(".cmcsa.com")) return true;
+  if (h === "micron.com" || h.endsWith(".micron.com")) return true;
+  if (h === "media.eulerpool.com" && parsed.pathname.startsWith("/presentation/")) return true;
+  if (h === "d1io3yog0oux5.cloudfront.net" && parsed.pathname.includes("/presentation/")) return true;
+  if (h === "coca-colacompany.com" || h.endsWith(".coca-colacompany.com")) return true;
+  if (h === "palantir.com" || h.endsWith(".palantir.com")) return true;
   if (h === "www.sec.gov" || h === "sec.gov") {
     const p = parsed.pathname.toLowerCase();
     return p.includes("/archives/edgar/") && p.endsWith(".pdf");

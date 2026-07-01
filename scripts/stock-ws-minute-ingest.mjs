@@ -179,18 +179,39 @@ async function flushPendingUpserts() {
   const rows = Array.from(pendingUpserts.values());
   pendingUpserts.clear();
   health.pendingUpserts = pendingUpserts.size;
-  const { error } = await supabase.from("stock_session_minute_bar").upsert(rows, {
-    onConflict: "ticker,bucket_unix",
-  });
-  if (error) {
-    log("upsert error", error.message, "rows", rows.length);
-    for (const row of rows) {
-      pendingUpserts.set(`${row.ticker}:${row.bucket_unix}`, row);
+
+  const chunkSize = 500;
+  for (let i = 0; i < rows.length; i += chunkSize) {
+    const chunk = rows.slice(i, i + chunkSize);
+    let saved = false;
+    for (let attempt = 0; attempt < 3 && !saved; attempt++) {
+      try {
+        const { error } = await supabase.from("stock_session_minute_bar").upsert(chunk, {
+          onConflict: "ticker,bucket_unix",
+        });
+        if (error) {
+          log("upsert error", error.message, "rows", chunk.length, "attempt", attempt + 1);
+          if (attempt < 2) await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
+          continue;
+        }
+        saved = true;
+        if (process.env.STOCK_WS_VERBOSE === "1") {
+          log("upserted", chunk.length, "minute bars");
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        log("upsert error", msg, "rows", chunk.length, "attempt", attempt + 1);
+        if (attempt < 2) await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
+      }
     }
-    health.pendingUpserts = pendingUpserts.size;
-  } else if (process.env.STOCK_WS_VERBOSE === "1") {
-    log("upserted", rows.length, "minute bars");
+    if (!saved) {
+      for (const row of chunk) {
+        pendingUpserts.set(`${row.ticker}:${row.bucket_unix}`, row);
+      }
+    }
   }
+
+  health.pendingUpserts = pendingUpserts.size;
 }
 
 async function loadChartWatchTickers() {

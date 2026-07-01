@@ -162,11 +162,23 @@ export function mergeSessionHeaderWithPerformanceSpot(
     const priceForChange = useLiveSpot ? spot : isPositiveUsd(eodSpot) ? eodSpot : spot;
     const chartAnchor =
       useLiveSpot && alignChangeWithChartAnchor ? periodStartPriceFromHeader(base) : null;
-    const priorClose = useLiveSpot
+    let priorClose = useLiveSpot
       ? isPositiveUsd(chartAnchor)
         ? chartAnchor
         : resolveLiveSessionPriorClose(sessionPriorCloseUsd, eodSpot)
       : priorCloseFromD1(priceForChange, d1Eod ?? NaN, eodSpot);
+    if (
+      useLiveSpot &&
+      alignChangeWithChartAnchor &&
+      chartAnchor != null &&
+      Number.isFinite(chartAnchor) &&
+      Math.abs(priceForChange - chartAnchor) < 0.005
+    ) {
+      const sessionPrior = resolveLiveSessionPriorClose(sessionPriorCloseUsd, eodSpot);
+      if (sessionPrior != null && Math.abs(priceForChange - sessionPrior) >= 0.005) {
+        priorClose = sessionPrior;
+      }
+    }
     const { abs, pct } = computeTodayChange(
       priceForChange,
       priorClose != null && Number.isFinite(priorClose) ? priorClose : null,

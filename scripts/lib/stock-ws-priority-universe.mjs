@@ -2,6 +2,58 @@
 
 export const PRIORITY_ETFS = ["SPY", "QQQ"];
 
+/** Used when Supabase `top500_market` snapshot is unreachable from the worker. */
+export const FALLBACK_CURATED_TOP_STOCKS = [
+  "AAPL",
+  "MSFT",
+  "NVDA",
+  "GOOGL",
+  "AMZN",
+  "META",
+  "BRK-B",
+  "TSLA",
+  "LLY",
+  "AVGO",
+  "JPM",
+  "V",
+  "UNH",
+  "XOM",
+  "MA",
+  "PG",
+  "JNJ",
+  "HD",
+  "COST",
+  "ABBV",
+  "NFLX",
+  "CRM",
+  "BAC",
+  "KO",
+  "AMD",
+  "MRK",
+  "ORCL",
+  "PEP",
+  "CVX",
+  "TMO",
+  "ACN",
+  "CSCO",
+  "WMT",
+  "MCD",
+  "ADBE",
+  "LIN",
+  "DIS",
+  "INTU",
+  "QCOM",
+  "TXN",
+  "AMGN",
+  "HON",
+  "AMAT",
+  "IBM",
+  "GE",
+  "CAT",
+  "PANW",
+  "SBUX",
+];
+
 export function stockWsTopStocksCount() {
   const n = Number(process.env.STOCK_WS_TOP_STOCKS ?? 48);
   return Number.isFinite(n) && n > 0 ? Math.floor(n) : 48;
@@ -54,6 +106,21 @@ export async function loadCuratedUsPriorityTickers(supabase) {
       if (!sym) continue;
       push(sym);
       stockCount += 1;
+    }
+  }
+
+  let stockSlots = ordered.filter((t) => !PRIORITY_ETFS.includes(t)).length;
+  if (stockSlots < topN) {
+    console.warn(
+      "top500_market snapshot missing or short; using fallback curated list",
+      { have: stockSlots, need: topN },
+    );
+    for (const t of FALLBACK_CURATED_TOP_STOCKS) {
+      if (stockSlots >= topN) break;
+      const sym = normalizeStockTicker(t);
+      if (!sym || seen.has(sym)) continue;
+      push(sym);
+      stockSlots += 1;
     }
   }
 

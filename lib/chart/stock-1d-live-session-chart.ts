@@ -419,6 +419,8 @@ function resolveSessionOpenAnchorValue(
     .filter((p) => typeof p.time === "number" && Number.isFinite(p.time) && Number.isFinite(p.value))
     .sort((a, b) => a.time - b.time);
   const inSession = sorted.filter((p) => p.time >= open && p.time <= endSec);
+  const atOpen = inSession.find((p) => p.time === open);
+  if (atOpen != null) return atOpen.value;
   if (inSession.length) return inSession[0]!.value;
   const beforeOpen = sorted.filter((p) => p.time < open);
   const lastBefore = beforeOpen[beforeOpen.length - 1];

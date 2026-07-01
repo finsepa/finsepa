@@ -22,6 +22,7 @@ import type {
   StockEarningsHistoryRow,
   StockEarningsTabPayload,
 } from "@/lib/market/stock-earnings-types";
+import { reportedRowMissingEarningsDocuments } from "@/lib/market/earnings-document-url";
 import { buildReportsTableRows } from "@/lib/market/enrich-earnings-history-estimates";
 import { fetchStockEarningsTabPayloadClient } from "@/lib/market/stock-earnings-tab-client";
 import { SCREENER_TABLE_HEADER_STICKY_CLASS, ScreenerTableScroll } from "@/components/screener/screener-table-scroll";
@@ -468,6 +469,12 @@ function isEarningsTabPayload(v: unknown): v is StockEarningsTabPayload {
   );
 }
 
+/** SSR seed may predate IR slide resolution — refresh when any released row still lacks docs. */
+function seedNeedsDocumentRefresh(payload: StockEarningsTabPayload | null): boolean {
+  if (!payload?.history?.length) return true;
+  return payload.history.some(reportedRowMissingEarningsDocuments);
+}
+
 export type StockEarningsTabContentProps = {
   ticker: string;
   /** SSR / stock page initial load — same JSON as GET `/api/stocks/[ticker]/earnings`. */
@@ -490,8 +497,8 @@ export function StockEarningsTabContent({
     initialPayload?.ticker.trim().toUpperCase() === sym && isEarningsTabPayload(initialPayload)
       ? initialPayload
       : null;
-  /** Defer interactive tree until after mount so SSR HTML matches first paint on the stock page tab. */
-  const [clientReady, setClientReady] = useState(previewMode);
+  /** SSR seed or preview: paint immediately; otherwise defer one frame for hydration parity. */
+  const [clientReady, setClientReady] = useState(() => previewMode || !!seedPayload);
   const [loading, setLoading] = useState(() => !seedPayload);
   const [loadError, setLoadError] = useState(false);
   const [data, setData] = useState<StockEarningsTabPayload | null>(() => seedPayload);
@@ -500,33 +507,42 @@ export function StockEarningsTabContent({
   const earningsHistorySentinelRef = useRef<HTMLTableRowElement | null>(null);
 
   useEffect(() => {
-    if (!previewMode) setClientReady(true);
-  }, [previewMode]);
+    if (!previewMode && !seedPayload) setClientReady(true);
+  }, [previewMode, seedPayload]);
 
   useEffect(() => {
+    const controller = new AbortController();
+    let cancelled = false;
+
     if (seedPayload) {
       setData(seedPayload);
       setLoading(false);
       setLoadError(false);
       setEarningsHistoryVisible(EARNINGS_HISTORY_PAGE_SIZE);
-      return;
+      if (!seedNeedsDocumentRefresh(seedPayload)) {
+        return () => controller.abort();
+      }
     }
-    const controller = new AbortController();
-    let cancelled = false;
+
     async function load() {
-      setLoading(true);
-      setLoadError(false);
-      setEarningsHistoryVisible(EARNINGS_HISTORY_PAGE_SIZE);
+      if (!seedPayload) {
+        setLoading(true);
+        setLoadError(false);
+        setEarningsHistoryVisible(EARNINGS_HISTORY_PAGE_SIZE);
+      }
       const json = await fetchStockEarningsTabPayloadClient(sym, {
         preview: previewMode,
         signal: controller.signal,
       });
       if (cancelled) return;
       if (!json) {
-        setData(null);
-        setLoadError(true);
+        if (!seedPayload) {
+          setData(null);
+          setLoadError(true);
+        }
       } else {
         setData(json);
+        setLoadError(false);
       }
       setLoading(false);
     }

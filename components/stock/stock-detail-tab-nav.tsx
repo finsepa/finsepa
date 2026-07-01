@@ -29,11 +29,14 @@ const TABS: { id: StockDetailTabId; label: string }[] = [
 export function StockDetailTabNav({
   activeTab,
   onTabChange,
+  onTabIntent,
   isEtf = false,
   sticky = true,
 }: {
   activeTab: StockDetailTabId;
   onTabChange: (tab: StockDetailTabId) => void;
+  /** Hover/focus prefetch before the tab panel mounts (e.g. earnings API). */
+  onTabIntent?: (tab: StockDetailTabId) => void;
   /** When true, only Overview and Portfolio tabs are shown. */
   isEtf?: boolean;
   /** Off on Financials so the statement year row can stick to the top of the scroll area. */
@@ -105,6 +108,8 @@ export function StockDetailTabNav({
                 }}
                 type="button"
                 onClick={() => onTabChange(id)}
+                onPointerEnter={() => onTabIntent?.(id)}
+                onFocus={() => onTabIntent?.(id)}
                 className={`-mb-px shrink-0 cursor-pointer border-b-2 border-solid border-transparent py-2 text-left text-[14px] font-medium leading-6 text-[#09090B] transition-[color,opacity] duration-100 focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2 hover:opacity-80 ${
                   isActive ? "font-semibold opacity-100" : "opacity-70"
                 }`}

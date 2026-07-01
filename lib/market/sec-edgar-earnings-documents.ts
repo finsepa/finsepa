@@ -6,11 +6,15 @@ import {
   applyRevenueUsdToHistoryRow,
   extractTotalRevenueUsdFromPressReleaseHtml,
   pickExhibit99PressReleaseHtmlUrl,
+  pickExhibit99PresentationHtmlUrl,
 } from "@/lib/market/sec-earnings-press-release-revenue";
 import {
   isDirectEarningsPdfUrl,
   isEarningsFilingsPreviewUrl,
+  isEarningsSlidesPreviewUrl,
   isSecEdgarExhibitHtmlUrl,
+  isSecEdgarEarningsReleaseExhibitHtml,
+  isSecEdgarPresentationExhibitHtml,
 } from "@/lib/market/earnings-document-url";
 import type { StockEarningsHistoryRow } from "@/lib/market/stock-earnings-types";
 
@@ -64,7 +68,16 @@ function parseSubmissionsRecent(root: unknown): SubmissionsRecent | null {
   };
 }
 
-/** Best issuer-filed 8-K near the earnings report date (±45 filing days). */
+function scoreEarningsFilingPrimaryDocument(file: string): number {
+  const n = file.toLowerCase();
+  if (/results\.htm|interimreport|earnings|fnvq\d|fnvfy\d/i.test(n)) return 120;
+  if (/ex[-_.]?99|exhibit[-_.]?99/i.test(n)) return 100;
+  if (/press|result/i.test(n)) return 60;
+  if (/prcov|bb\d{6,}pr/i.test(n)) return -80;
+  return 0;
+}
+
+/** Best issuer-filed 8-K / 6-K near the earnings report date (±45 filing days). */
 export function findBestIssuer8kNearReportDate(
   recent: SubmissionsRecent,
   cik10: string,
@@ -73,26 +86,28 @@ export function findBestIssuer8kNearReportDate(
   const targetDay = ymdToUtcDayNumber(reportYmd);
   if (!Number.isFinite(targetDay)) return null;
 
-  let best: { accessionNumber: string; primaryDocument: string; filingDate: string; delta: number } | null = null;
+  let best: {
+    accessionNumber: string;
+    primaryDocument: string;
+    filingDate: string;
+    rank: number;
+  } | null = null;
 
   for (let i = 0; i < recent.form.length; i++) {
     const form = recent.form[i]!.toUpperCase();
-    if (form !== "8-K" && form !== "8-K/A") continue;
+    if (form !== "8-K" && form !== "8-K/A" && form !== "6-K" && form !== "6-K/A") continue;
     const acc = recent.accessionNumber[i]!;
-    if (!acc || !acc.startsWith(cik10)) continue;
+    if (!acc) continue;
     const fd = recent.filingDate[i]!;
     if (!/^\d{4}-\d{2}-\d{2}$/.test(fd)) continue;
     const d = ymdToUtcDayNumber(fd);
     if (!Number.isFinite(d)) continue;
     const delta = Math.abs(d - targetDay);
     if (delta > 45) continue;
-    if (!best || delta < best.delta) {
-      best = {
-        accessionNumber: acc,
-        primaryDocument: recent.primaryDocument[i] ?? "",
-        filingDate: fd,
-        delta,
-      };
+    const primaryDocument = recent.primaryDocument[i] ?? "";
+    const rank = scoreEarningsFilingPrimaryDocument(primaryDocument) * 20 - delta;
+    if (!best || rank > best.rank) {
+      best = { accessionNumber: acc, primaryDocument, filingDate: fd, rank };
     }
   }
   if (!best) return null;
@@ -234,6 +249,18 @@ function filingIndexHtmUrl(cikNumeric: string, accessionDashed: string): string 
   return `${SEC_ORIGIN}/Archives/edgar/data/${cikNumeric}/${flat}/${accessionDashed}-index.htm`;
 }
 
+/** Issuer-filed Form 8-K body HTML (e.g. Coinbase `coin-20260507.htm`) when no Exhibit 99.1 press release exists. */
+function issuerPrimary8kBodyHtmlUrl(
+  primaryDocument: string,
+  cikNumeric: string,
+  accessionFlat: string,
+): string | null {
+  const file = primaryDocument.trim();
+  if (!file || !/\.htm$/i.test(file) || /index\.htm$/i.test(file)) return null;
+  if (/^R\d+\.htm$/i.test(file)) return null;
+  return `${filingDirectoryBase(cikNumeric, accessionFlat)}${file}`;
+}
+
 const MAX_INDEX_FETCHES = 24;
 const INDEX_FETCH_DELAY_MS = 120;
 
@@ -274,7 +301,7 @@ export async function enrichEarningsHistoryWithSecDocuments(
     const row = rows[i]!;
     if (!row.reported || !row.reportDateYmd) continue;
     if (
-      isDirectEarningsPdfUrl(row.secSlidesUrl) &&
+      isEarningsSlidesPreviewUrl(row.secSlidesUrl) &&
       isEarningsFilingsPreviewUrl(row.secFilingsUrl)
     ) {
       continue;
@@ -328,11 +355,28 @@ export async function enrichEarningsHistoryWithSecDocuments(
     }
     const { slides, filings } = pickEarningsSlideAndFilingPdfs(pdfs);
     if (slides) row.secSlidesUrl = slides;
+    if (!isEarningsSlidesPreviewUrl(row.secSlidesUrl)) {
+      const slidesHtml = pickExhibit99PresentationHtmlUrl(html, cikNum, flat);
+      if (slidesHtml) row.secSlidesUrl = slidesHtml;
+      else {
+        const releaseHtml = pickExhibit99PressReleaseHtmlUrl(html, cikNum, flat);
+        if (releaseHtml && isSecEdgarEarningsReleaseExhibitHtml(releaseHtml)) {
+          row.secSlidesUrl = releaseHtml;
+        }
+      }
+    }
     if (filings) {
       row.secFilingsUrl = filings;
-    } else {
+    } else if (
+      !isEarningsFilingsPreviewUrl(row.secFilingsUrl) ||
+      isSecEdgarPresentationExhibitHtml(row.secFilingsUrl)
+    ) {
       const exhibitHtml = pickExhibit99PressReleaseHtmlUrl(html, cikNum, flat);
       if (exhibitHtml) row.secFilingsUrl = exhibitHtml;
+      else {
+        const primary8k = issuerPrimary8kBodyHtmlUrl(m.primaryDocument, cikNum, flat);
+        if (primary8k) row.secFilingsUrl = primary8k;
+      }
     }
 
     if (row.reported && row.revenueActualUsd == null) {
