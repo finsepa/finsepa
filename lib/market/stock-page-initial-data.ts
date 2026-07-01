@@ -5,6 +5,7 @@ import { sliceStockChartPointsForRange } from "@/lib/market/stock-chart-api";
 import {
   getStockSpotQuoteForApi,
   getStockChartPointsForApi,
+  isStock1DLiveSessionMinuteChart,
   stockChartPointsFromDailyBars,
   synthesize1DSessionChartFromDailyBars,
 } from "@/lib/market/stock-chart-data";
@@ -41,6 +42,8 @@ import { getScreenerUsMarketCacheEpoch } from "@/lib/screener/screener-us-market
 export type StockPageInitialChart = {
   range: StockChartRange;
   points: StockChartPoint[];
+  /** WS top-50 1D regular session uses 60s minute store; others use EODHD 5m historical. */
+  liveSessionMinute?: boolean;
 };
 
 export type StockPageInitialData = {
@@ -205,8 +208,13 @@ async function loadStockPageHotFields(
     points = resolveOverviewChartPoints(range, chartPointsRaw, dailyBars, now);
   }
 
+  const liveSessionMinute =
+    range === "1D" && getUsEquityMarketSession(now) === "regular"
+      ? await isStock1DLiveSessionMinuteChart(ticker, now)
+      : undefined;
+
   return {
-    chart: { range, points },
+    chart: { range, points, liveSessionMinute },
     headerLiveSpotUsd: positiveUsd(spotQuote?.price),
     headerPriorCloseUsd: positiveUsd(spotQuote?.previousClose),
   };

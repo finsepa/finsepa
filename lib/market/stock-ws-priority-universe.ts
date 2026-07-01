@@ -20,36 +20,61 @@ export function stockWsTopStocksCount(): number {
 }
 
 /** Curated US tickers for WebSocket minute ingest (ETFs + top N by market cap). */
-export const getStockWsPriorityTickerSet = unstable_cache(
-  async (): Promise<ReadonlySet<string>> => {
-    const out = new Set<string>();
-    for (const t of STOCK_WS_PRIORITY_ETFS) out.add(t.toUpperCase());
-    for (const t of (process.env.STOCK_WS_TICKERS ?? "").split(",")) {
-      const sym = t.trim().toUpperCase();
-      if (sym) out.add(sym);
-    }
+async function loadStockWsPriorityTickersUncached(): Promise<string[]> {
+  const out = new Set<string>();
+  for (const t of STOCK_WS_PRIORITY_ETFS) out.add(t.toUpperCase());
+  for (const t of (process.env.STOCK_WS_TICKERS ?? "").split(",")) {
+    const sym = t.trim().toUpperCase();
+    if (sym) out.add(sym);
+  }
 
-    const snapshot = await readMarketSnapshot<TopCompanyUniverseRow[]>(MARKET_SNAPSHOT_KEY.top500Market);
-    const topN = stockWsTopStocksCount();
-    let stockCount = 0;
-    for (const row of snapshot ?? []) {
-      if (stockCount >= topN) break;
-      const t = row.ticker.trim().toUpperCase();
-      if (!t || out.has(t)) continue;
-      out.add(t);
-      stockCount += 1;
+  const snapshot = await readMarketSnapshot<TopCompanyUniverseRow[]>(MARKET_SNAPSHOT_KEY.top500Market);
+  const topN = stockWsTopStocksCount();
+  let stockCount = 0;
+  for (const row of snapshot ?? []) {
+    if (stockCount >= topN) break;
+    const t = row.ticker.trim().toUpperCase();
+    if (!t || out.has(t)) continue;
+    out.add(t);
+    stockCount += 1;
+  }
+  return [...out];
+}
+
+function parseStockWsPriorityTickers(raw: unknown): string[] | null {
+  if (typeof raw === "string") {
+    try {
+      return parseStockWsPriorityTickers(JSON.parse(raw));
+    } catch {
+      return null;
     }
-    return out;
-  },
-  ["stock-ws-priority-universe-v1"],
+  }
+  if (!Array.isArray(raw)) return null;
+  const tickers = raw.filter((x): x is string => typeof x === "string" && x.length > 0);
+  return tickers.length > 0 ? tickers : null;
+}
+
+/** JSON string only — `unstable_cache` cannot round-trip `Set` or reliably preserve arrays. */
+const getStockWsPriorityTickersJson = unstable_cache(
+  async (): Promise<string> => JSON.stringify(await loadStockWsPriorityTickersUncached()),
+  ["stock-ws-priority-universe-v3"],
   { revalidate: 900 },
 );
+
+async function getStockWsPriorityTickers(): Promise<string[]> {
+  const cached = parseStockWsPriorityTickers(await getStockWsPriorityTickersJson());
+  return cached ?? loadStockWsPriorityTickersUncached();
+}
+
+export async function getStockWsPriorityTickerSet(): Promise<ReadonlySet<string>> {
+  return new Set(await getStockWsPriorityTickers());
+}
 
 export async function isStockWsPriorityTicker(ticker: string): Promise<boolean> {
   const sym = ticker.trim().toUpperCase();
   if (!sym) return false;
-  const set = await getStockWsPriorityTickerSet();
-  return set.has(sym);
+  const tickers = await getStockWsPriorityTickers();
+  return tickers.includes(sym);
 }
 
 /**

@@ -9,6 +9,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
   getStockChartPointsForApi,
   getSuperinvestorHoldingStockChartPoints,
+  isStock1DLiveSessionMinuteChart,
   pricePointsToReturnIndexPoints,
 } from "@/lib/market/stock-chart-data";
 import { isStockChartRange, sliceStockChartPointsForRange } from "@/lib/market/stock-chart-api";
@@ -74,6 +75,10 @@ export async function GET(request: Request, { params }: Ctx) {
       range,
       series,
       points,
+      liveSessionMinute:
+        range === "1D" && !cadenceDaily
+          ? await isStock1DLiveSessionMinuteChart(routeTicker)
+          : undefined,
     },
     {
       headers: {

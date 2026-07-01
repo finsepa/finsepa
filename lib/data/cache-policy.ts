@@ -78,6 +78,11 @@ export const REVALIDATE_SCREENER_MARKET = 300;
  */
 export const REVALIDATE_SCREENER_MARKET_LIVE = 900;
 
+/**
+ * ~15m — non–top-50 US equities 1D chart (EODHD 5m intraday, same spirit as 5D/1M).
+ */
+export const REVALIDATE_STOCK_1D_INTRADAY = REVALIDATE_SCREENER_MARKET_LIVE;
+
 /** ~15m — full fundamentals JSON, stock header earnings line, heavy aggregates (not bulk earnings calendar). */
 export const REVALIDATE_WARM_LONG = 900;
 

@@ -17,8 +17,11 @@ export const STOCK_1D_LIVE_SESSION_BAR_INTERVAL_SEC = 60;
 /** Forward-fill minute buckets only when the last bar is this recent (dense tick-by-tick look). */
 export const STOCK_1D_LIVE_SESSION_MAX_FORWARD_FILL_SEC = 120;
 
-/** Break the price line when consecutive plotted points are farther apart than this. */
-export const STOCK_1D_LIVE_SESSION_MAX_CONNECT_GAP_SEC = 180;
+/** 5m buckets for sparse intraday (BAC, RACE, etc.) — smooth like pre–1m rollout charts. */
+export const STOCK_1D_LIVE_SESSION_SPARSE_BAR_INTERVAL_SEC = 300;
+
+/** 15m buckets when very few source points exist. */
+export const STOCK_1D_LIVE_SESSION_VERY_SPARSE_BAR_INTERVAL_SEC = 900;
 
 /** US post-market ends at 8:00 PM ET on the 1D sparkline. */
 export const STOCK_1D_EXTENDED_CLOSE_HOUR = 20;
@@ -366,7 +369,7 @@ function dropIsolatedLiveTailAnchors(
   const prev = sorted[sorted.length - 2]!;
   if (
     last.time >= endSec - STOCK_1D_LIVE_SESSION_MAX_FORWARD_FILL_SEC &&
-    last.time - prev.time > STOCK_1D_LIVE_SESSION_MAX_CONNECT_GAP_SEC
+    last.time - prev.time > STOCK_1D_LIVE_SESSION_SPARSE_BAR_INTERVAL_SEC
   ) {
     return sorted.slice(0, -1);
   }
@@ -389,96 +392,83 @@ function collectStock1DLiveSessionSourcePoints(
   );
 }
 
-function lastStockChartPointAtOrBefore(
+function sessionSourceStats(
   sorted: readonly StockChartPoint[],
-  unix: number,
-): StockChartPoint | null {
-  if (!sorted.length || unix < sorted[0]!.time) return null;
-  let lo = 0;
-  let hi = sorted.length - 1;
-  let best: StockChartPoint | null = null;
-  while (lo <= hi) {
-    const mid = (lo + hi) >> 1;
-    const p = sorted[mid]!;
-    if (p.time <= unix) {
-      best = p;
-      lo = mid + 1;
-    } else {
-      hi = mid - 1;
-    }
+  open: number,
+  endSec: number,
+): { coverage: number; maxGapSec: number; pointCount: number } {
+  if (!sorted.length) {
+    return { coverage: 0, maxGapSec: Number.POSITIVE_INFINITY, pointCount: 0 };
   }
-  return best;
-}
-
-function splitStockChartPointsByTimeGap(
-  sorted: readonly StockChartPoint[],
-  maxGapSec: number,
-): StockChartPoint[][] {
-  if (!sorted.length) return [];
-  const runs: StockChartPoint[][] = [];
-  let current: StockChartPoint[] = [sorted[0]!];
+  let maxGap = Math.max(0, sorted[0]!.time - open);
   for (let i = 1; i < sorted.length; i++) {
-    const p = sorted[i]!;
-    const prev = current[current.length - 1]!;
-    if (p.time - prev.time > maxGapSec) {
-      runs.push(current);
-      current = [p];
-    } else {
-      current.push(p);
-    }
+    maxGap = Math.max(maxGap, sorted[i]!.time - sorted[i - 1]!.time);
   }
-  runs.push(current);
-  return runs;
+  const expected = Math.max(
+    1,
+    Math.floor((endSec - open) / STOCK_1D_LIVE_SESSION_BAR_INTERVAL_SEC) + 1,
+  );
+  return {
+    coverage: sorted.length / expected,
+    maxGapSec: maxGap,
+    pointCount: sorted.length,
+  };
 }
 
-function resampleStock1DLiveSessionRun(
-  run: readonly StockChartPoint[],
-  bucketStartSec: number,
-  bucketEndSec: number,
-  anchorValue: number,
-  sessionYmd: string,
-  timeZone: string,
-): StockChartPoint[] {
-  if (!run.length || bucketEndSec < bucketStartSec) return [];
-
-  const interval = STOCK_1D_LIVE_SESSION_BAR_INTERVAL_SEC;
-  const maxFill = STOCK_1D_LIVE_SESSION_MAX_FORWARD_FILL_SEC;
-  const sourceBarTimes = new Set(run.map((p) => p.time));
-
-  const valueAtBucket = (bucketTime: number): number | null => {
-    if (sourceBarTimes.has(bucketTime)) {
-      return lastStockChartPointAtOrBefore(run, bucketTime)!.value;
-    }
-    if (bucketTime < run[0]!.time) {
-      if (bucketTime === bucketStartSec) return anchorValue;
-      if (run[0]!.time - bucketTime <= maxFill) return anchorValue;
-      return null;
-    }
-    const bar = lastStockChartPointAtOrBefore(run, bucketTime);
-    if (!bar) return null;
-    if (bucketTime - bar.time > maxFill) return null;
-    return bar.value;
-  };
-
-  const seen = new Set<number>();
-  const out: StockChartPoint[] = [];
-  const push = (time: number, value: number) => {
-    if (seen.has(time)) return;
-    seen.add(time);
-    out.push({ time, value, sessionDate: sessionYmd, timeZone });
-  };
-
-  for (let bucketTime = bucketStartSec; bucketTime <= bucketEndSec; bucketTime += interval) {
-    const value = valueAtBucket(bucketTime);
-    if (value == null) continue;
-    push(bucketTime, value);
+function typicalSourceGapSec(sorted: readonly StockChartPoint[]): number {
+  if (sorted.length < 2) return Number.POSITIVE_INFINITY;
+  const gaps: number[] = [];
+  for (let i = 1; i < sorted.length; i++) {
+    gaps.push(sorted[i]!.time - sorted[i - 1]!.time);
   }
+  gaps.sort((a, b) => a - b);
+  return gaps[Math.floor(gaps.length / 2)]!;
+}
 
-  for (const p of run) {
-    if (p.time >= bucketStartSec && p.time <= bucketEndSec) push(p.time, p.value);
+/** Open + live tail only (no intraday) — forward-fill flatlines until a cliff at the close. */
+function isUltraSparseSessionFallback(
+  sorted: readonly StockChartPoint[],
+  open: number,
+  endSec: number,
+): boolean {
+  if (sorted.length > 8) return false;
+  const inSession = sorted.filter((p) => p.time >= open && p.time <= endSec);
+  if (inSession.length <= 3) {
+    const span = inSession[inSession.length - 1]!.time - inSession[0]!.time;
+    return span >= 20 * 60;
   }
+  return false;
+}
 
-  return out.sort((a, b) => a.time - b.time);
+function pickLiveSessionResampleIntervalSec(
+  sorted: readonly StockChartPoint[],
+  open: number,
+  endSec: number,
+  stats: {
+    coverage: number;
+    maxGapSec: number;
+    pointCount: number;
+  },
+): number {
+  if (isUltraSparseSessionFallback(sorted, open, endSec)) {
+    return STOCK_1D_LIVE_SESSION_SPARSE_BAR_INTERVAL_SEC;
+  }
+  // Native 5m (or slower) EODHD bars → keep 5m buckets.
+  if (typicalSourceGapSec(sorted) >= 240) {
+    return STOCK_1D_LIVE_SESSION_SPARSE_BAR_INTERVAL_SEC;
+  }
+  // WS minute store (~30+ bars/session) → 1m tick-by-tick when bars exist.
+  if (stats.pointCount >= 30) {
+    return STOCK_1D_LIVE_SESSION_BAR_INTERVAL_SEC;
+  }
+  if (stats.coverage >= 0.35 && stats.maxGapSec <= 180) {
+    return STOCK_1D_LIVE_SESSION_BAR_INTERVAL_SEC;
+  }
+  // Non-WS with some intraday or accumulated 60s polls → 5m smooth steps.
+  if (stats.pointCount >= 8 || stats.coverage >= 0.04) {
+    return STOCK_1D_LIVE_SESSION_SPARSE_BAR_INTERVAL_SEC;
+  }
+  return STOCK_1D_LIVE_SESSION_VERY_SPARSE_BAR_INTERVAL_SEC;
 }
 
 export function resampleStock1DLiveSession(
@@ -493,7 +483,6 @@ export function resampleStock1DLiveSession(
   const nowSec = Math.floor(now.getTime() / 1000);
   const endSec =
     getUsEquityMarketSession(now) === "regular" ? Math.min(nowSec, close) : close;
-  const maxFill = STOCK_1D_LIVE_SESSION_MAX_FORWARD_FILL_SEC;
 
   const sorted = points
     .filter(
@@ -507,40 +496,48 @@ export function resampleStock1DLiveSession(
 
   if (!sorted.length) return [];
 
-  const runs = splitStockChartPointsByTimeGap(sorted, maxFill);
-  const seen = new Set<number>();
-  const out: StockChartPoint[] = [];
-  const pushPoint = (p: StockChartPoint) => {
-    if (seen.has(p.time)) return;
-    seen.add(p.time);
-    out.push(p);
-  };
+  const stats = sessionSourceStats(sorted, open, endSec);
+  const ultraSparse = isUltraSparseSessionFallback(sorted, open, endSec);
+  const interval = pickLiveSessionResampleIntervalSec(sorted, open, endSec, stats);
+  const first = sorted[0]!;
+  const last = sorted[sorted.length - 1]!;
 
-  for (let i = 0; i < runs.length; i++) {
-    const run = runs[i]!;
-    const lastBar = run[run.length - 1]!;
-    const runBucketEnd =
-      i === runs.length - 1
-        ? endSec
-        : Math.min(lastBar.time + maxFill, endSec);
-    const runBucketStart = i === 0 ? open : run[0]!.time;
-    const runAnchor = i === 0 ? openValue : run[0]!.value;
-    for (const p of resampleStock1DLiveSessionRun(
-      run,
-      runBucketStart,
-      runBucketEnd,
-      runAnchor,
-      sessionYmd,
-      timeZone,
-    )) {
-      pushPoint(p);
+  const out: StockChartPoint[] = [];
+  for (let bucketTime = open; bucketTime <= endSec; bucketTime += interval) {
+    let value = openValue;
+    if (ultraSparse) {
+      if (bucketTime <= first.time) {
+        value = first.value;
+      } else if (bucketTime >= last.time) {
+        value = last.value;
+      } else if (last.time > first.time) {
+        const frac = (bucketTime - first.time) / (last.time - first.time);
+        value = first.value + frac * (last.value - first.value);
+      } else {
+        value = last.value;
+      }
+    } else {
+      for (const p of sorted) {
+        if (p.time <= bucketTime) value = p.value;
+        else break;
+      }
     }
+    out.push({ time: bucketTime, value, sessionDate: sessionYmd, timeZone });
   }
 
-  return out.sort((a, b) => a.time - b.time);
+  if (out.length && endSec > out[out.length - 1]!.time) {
+    let tailValue = out[out.length - 1]!.value;
+    for (const p of sorted) {
+      if (p.time <= endSec) tailValue = p.value;
+      else break;
+    }
+    out.push({ time: endSec, value: tailValue, sessionDate: sessionYmd, timeZone });
+  }
+
+  return out;
 }
 
-function resolveSessionOpenAnchorValue(
+export function resolveSessionOpenAnchorValue(
   points: readonly StockChartPoint[],
   sessionYmd: string,
   timeZone: string,
@@ -603,9 +600,6 @@ export function appendLiveSessionNowTail(
   if (!sorted.length) return [tailPoint];
 
   const last = sorted[sorted.length - 1]!;
-  if (tailTime - last.time > STOCK_1D_LIVE_SESSION_MAX_CONNECT_GAP_SEC) {
-    return sorted;
-  }
   if (last.time === tailTime) {
     return [...sorted.slice(0, -1), { ...last, value: tailValue }];
   }
@@ -640,6 +634,9 @@ export function mergeLiveSpotMinuteBarsIntoPoints(
 
 /** Client live-price poll during regular session — aligns with 60s server cache coalescing. */
 export const STOCK_1D_LIVE_PRICE_POLL_MS = 60_000;
+
+/** Client poll for non–top-50 1D historical intraday (matches ~15m server cache). */
+export const STOCK_1D_INTRADAY_HISTORICAL_POLL_MS = 900_000;
 
 /** Snap wall-clock time to the 9:30-anchored 60s bucket used by {@link resampleStock1DLiveSession}. */
 export function stock1DLiveSessionMinuteBucketUnix(
@@ -821,34 +818,6 @@ export function padStock1DLiveSessionBaselineData(
   const open = usSessionWallClockUnix(sessionYmd, 9, 30, timeZone) as UTCTimestamp;
   if (data[0]!.time <= open) return data;
   return [{ time: open, value: openValue }, ...data];
-}
-
-/** Insert whitespace so lightweight-charts does not draw across missing minute-bar gaps. */
-export function insertLiveSessionGapWhitespace(
-  data: readonly Stock1DLiveSessionBaselinePoint[],
-  maxConnectGapSec: number = STOCK_1D_LIVE_SESSION_MAX_CONNECT_GAP_SEC,
-): Stock1DLiveSessionBaselinePoint[] {
-  if (data.length < 2) return [...data];
-
-  const valued = data.filter(
-    (p): p is { time: UTCTimestamp; value: number } =>
-      "value" in p && typeof p.value === "number" && Number.isFinite(p.value),
-  );
-  if (valued.length < 2) return [...data];
-
-  const out: Stock1DLiveSessionBaselinePoint[] = [];
-  for (let i = 0; i < valued.length; i++) {
-    const p = valued[i]!;
-    if (i > 0) {
-      const prev = valued[i - 1]!;
-      if (p.time - prev.time > maxConnectGapSec) {
-        const ws = (prev.time + STOCK_1D_LIVE_SESSION_BAR_INTERVAL_SEC) as UTCTimestamp;
-        if (ws < p.time) out.push({ time: ws });
-      }
-    }
-    out.push(p);
-  }
-  return out;
 }
 
 /** Invisible helper series — full 1-min grid through 16:00 (or 20:00 when extended) for the time scale. */
