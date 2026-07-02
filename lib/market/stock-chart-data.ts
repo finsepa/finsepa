@@ -11,6 +11,15 @@ import { fetchEodhdIntraday, type EodhdIntradayBar } from "@/lib/market/eodhd-in
 import { fetchEodhdEodDaily, type EodhdDailyBar } from "@/lib/market/eodhd-eod";
 import { fetchEodhdUsRealtime } from "@/lib/market/eodhd-realtime";
 import {
+  isEodhdUsQuoteDelayedAcceptableForDisplay,
+  isEodhdUsQuoteDelayedFresh,
+  isEodhdUsQuoteDelayedFromTodaySession,
+  isEodhdUsRealtimeAcceptableForDisplay,
+  isEodhdUsRealtimeFresh,
+  isEodhdUsRealtimeFromTodaySession,
+} from "@/lib/market/eodhd-live-quote-freshness";
+import { fetchEodhdUsQuoteDelayed } from "@/lib/market/eodhd-us-quote-delayed";
+import {
   fetchStockSessionMinuteBarsFromDb,
   getStockSessionMinuteBars,
   mergeStockChartPointsByTime,
@@ -452,7 +461,7 @@ async function build1DRealtimeSessionAnchorPoints(
   now: Date,
 ): Promise<StockChartPoint[]> {
   const rt = await fetchEodhdUsRealtime(ticker);
-  if (!rt) return [];
+  if (!rt || !isEodhdUsRealtimeFromTodaySession(rt, now)) return [];
 
   const open = rt.open != null ? clampFinite(rt.open) : clampFinite(rt.previousClose ?? NaN);
   const close = rt.close != null ? clampFinite(rt.close) : null;
@@ -485,11 +494,11 @@ async function load1DRegularSessionFromRealtime(ticker: string, now: Date): Prom
   const anchors = await build1DRealtimeSessionAnchorPoints(ticker, now);
   if (!anchors.length) return [];
 
-  const close = anchors[anchors.length - 1]!.value;
-  recordStockSessionMinuteBar(ticker, close, now);
-
   const todayYmd = usSessionYmdFromUnixSeconds(Math.floor(now.getTime() / 1000));
-  return mergeStockSessionMinuteBars(ticker, todayYmd, anchors);
+  const merged = mergeStockSessionMinuteBars(ticker, todayYmd, anchors);
+  const openVal = anchors[0]?.value;
+  if (openVal == null || !Number.isFinite(openVal)) return merged;
+  return resampleStock1DLiveSession(merged, todayYmd, STOCK_DISPLAY_TZ, openVal, now);
 }
 
 /**
@@ -599,8 +608,22 @@ async function enrich1DLiveSessionPoints(
   const openSec = usSessionWallClockUnix(sessionYmd, 9, 30, STOCK_DISPLAY_TZ);
   const rtOpen = rtAnchors.find((p) => p.time === openSec);
   if (!rtOpen) return withOpen;
-  // Open anchor only — live tail is merged client-side from polled spot (never bridge gaps).
-  return pinStockSessionOpenAnchor(withOpen, rtOpen);
+
+  const pinned = pinStockSessionOpenAnchor(withOpen, rtOpen);
+  const hasVariation = sessionMinuteBarsHavePriceVariation(
+    pinned,
+    sessionYmd,
+    STOCK_DISPLAY_TZ,
+    now,
+  );
+  if (hasVariation) return pinned;
+
+  const rtTail = rtAnchors[rtAnchors.length - 1];
+  if (!rtTail || rtTail.time <= openSec) return pinned;
+
+  const merged = mergeStockChartPointsByTime([pinned, [rtTail]]);
+  const openVal = rtOpen.value;
+  return resampleStock1DLiveSession(merged, sessionYmd, STOCK_DISPLAY_TZ, openVal, now);
 }
 
 async function load1DLiveSessionFromMinuteStore(
@@ -816,6 +839,9 @@ async function load1DChartPoints(ticker: string, now: Date, nowSec: number): Pro
       const merged = await mergeLiveSessionMinuteStoreOverlay(ticker, todayYmd, base, now);
       return enrich1DLiveSessionPoints(ticker, merged, todayYmd, now);
     }
+
+    const lastResort = await load1DRegularSessionFromRealtime(ticker, now);
+    if (lastResort.length) return lastResort;
 
     if (process.env.NODE_ENV === "development") {
       console.info("[stock chart] 1D: no today intraday during regular session", { ticker });
@@ -1262,6 +1288,8 @@ export type StockSpotQuote = {
   price: number | null;
   /** Prior regular-session close — from realtime `previousClose` during live hours. */
   previousClose: number | null;
+  /** When true, polled spot may be written to the minute-bar store (fresh REST only). */
+  recordMinuteBar?: boolean;
 };
 
 function previousCloseFromRealtimePayload(
@@ -1279,15 +1307,90 @@ function previousCloseFromRealtimePayload(
   return null;
 }
 
+function previousCloseFromDelayedQuote(
+  row: Awaited<ReturnType<typeof fetchEodhdUsQuoteDelayed>>,
+): number | null {
+  const prev = row?.previousClosePrice;
+  return prev != null && Number.isFinite(prev) && prev > 0 ? prev : null;
+}
+
+async function spotQuoteFromMinuteStore(ticker: string, now: Date): Promise<StockSpotQuote | null> {
+  const nowSec = Math.floor(now.getTime() / 1000);
+  const todayYmd = usSessionYmdFromUnixSeconds(nowSec);
+  const bars = await fetchStockSessionMinuteBarsFromDb(ticker, todayYmd);
+  if (!bars.length) return null;
+  if (!sessionMinuteBarsHavePriceVariation(bars, todayYmd, STOCK_DISPLAY_TZ, now)) return null;
+
+  const last = bars[bars.length - 1]!.value;
+  if (!Number.isFinite(last) || last <= 0) return null;
+
+  const delayed = await fetchEodhdUsQuoteDelayed(ticker);
+  return {
+    price: last,
+    previousClose: previousCloseFromDelayedQuote(delayed),
+  };
+}
+
 async function fetchStockSpotQuoteUncached(ticker: string): Promise<StockSpotQuote> {
   const sym = ticker.trim();
   const now = new Date();
   if (getUsEquityMarketSession(now) === "regular") {
     const rt = await fetchEodhdUsRealtime(sym);
-    const live = rt?.close != null ? clampFinite(rt.close) : null;
-    const previousClose = previousCloseFromRealtimePayload(rt);
-    if (live != null && live > 0) {
-      return { price: live, previousClose };
+    if (isEodhdUsRealtimeFresh(rt, now)) {
+      const live = rt?.close != null ? clampFinite(rt.close) : null;
+      const previousClose = previousCloseFromRealtimePayload(rt);
+      if (live != null && live > 0) {
+        return { price: live, previousClose, recordMinuteBar: true };
+      }
+    }
+
+    const delayed = await fetchEodhdUsQuoteDelayed(sym);
+    if (isEodhdUsQuoteDelayedFresh(delayed, now)) {
+      const live =
+        delayed?.lastTradePrice != null ? clampFinite(delayed.lastTradePrice) : null;
+      const previousClose = previousCloseFromDelayedQuote(delayed);
+      if (live != null && live > 0) {
+        return { price: live, previousClose, recordMinuteBar: true };
+      }
+    }
+
+    const fromStore = await spotQuoteFromMinuteStore(sym, now);
+    if (fromStore?.price != null && fromStore.price > 0) {
+      return { ...fromStore, recordMinuteBar: false };
+    }
+
+    if (isEodhdUsRealtimeAcceptableForDisplay(rt, now)) {
+      const live = rt?.close != null ? clampFinite(rt.close) : null;
+      const previousClose = previousCloseFromRealtimePayload(rt);
+      if (live != null && live > 0) {
+        return { price: live, previousClose, recordMinuteBar: false };
+      }
+    }
+
+    if (isEodhdUsQuoteDelayedAcceptableForDisplay(delayed, now)) {
+      const live =
+        delayed?.lastTradePrice != null ? clampFinite(delayed.lastTradePrice) : null;
+      const previousClose = previousCloseFromDelayedQuote(delayed);
+      if (live != null && live > 0) {
+        return { price: live, previousClose, recordMinuteBar: false };
+      }
+    }
+
+    if (isEodhdUsRealtimeFromTodaySession(rt, now)) {
+      const live = rt?.close != null ? clampFinite(rt.close) : null;
+      const previousClose = previousCloseFromDelayedQuote(delayed) ?? previousCloseFromRealtimePayload(rt);
+      if (live != null && live > 0) {
+        return { price: live, previousClose, recordMinuteBar: false };
+      }
+    }
+
+    if (isEodhdUsQuoteDelayedFromTodaySession(delayed, now)) {
+      const live =
+        delayed?.lastTradePrice != null ? clampFinite(delayed.lastTradePrice) : null;
+      const previousClose = previousCloseFromDelayedQuote(delayed);
+      if (live != null && live > 0) {
+        return { price: live, previousClose, recordMinuteBar: false };
+      }
     }
   }
   const nowSec = Math.floor(now.getTime() / 1000);
@@ -1301,7 +1404,7 @@ async function fetchStockSpotQuoteUncached(ticker: string): Promise<StockSpotQuo
 
 const getStockSpotQuoteLiveSessionCached = unstable_cache(
   async (ticker: string) => fetchStockSpotQuoteUncached(ticker),
-  ["stock-spot-quote-1d-live-v1"],
+  ["stock-spot-quote-1d-live-v4"],
   { revalidate: REVALIDATE_STOCK_1D_LIVE },
 );
 
@@ -1318,7 +1421,12 @@ export async function getStockSpotQuoteForApi(ticker: string): Promise<StockSpot
     getUsEquityMarketSession(now) === "regular"
       ? await getStockSpotQuoteLiveSessionCached(ticker)
       : await getStockSpotQuoteCached(ticker);
-  if (getUsEquityMarketSession(now) === "regular" && quote.price != null && quote.price > 0) {
+  if (
+    getUsEquityMarketSession(now) === "regular" &&
+    quote.price != null &&
+    quote.price > 0 &&
+    quote.recordMinuteBar
+  ) {
     recordStockSessionMinuteBar(ticker, quote.price, now);
     void touchStockSessionMinuteBarWatch(ticker);
   }

@@ -1,13 +1,9 @@
 #!/usr/bin/env node
 /**
  * Always-on EODHD WebSocket → Supabase 1m bars (0 REST API credits).
- *
- * Required: EODHD_API_KEY, NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
- * Optional: PORT (health server), STOCK_WS_SCREENER=1, STOCK_WS_WATCHLIST=1
- *
- * Deploy: npm run ops:setup-stock-minute-ingest
  */
 
+import dns from "node:dns";
 import http from "node:http";
 import WebSocket from "ws";
 import { createClient } from "@supabase/supabase-js";
@@ -15,6 +11,9 @@ import {
   loadCuratedUsPriorityTickers,
   stockWsCuratedMode,
 } from "./lib/stock-ws-priority-universe.mjs";
+
+// Railway/containers: prefer IPv4 for Supabase REST (avoids intermittent `fetch failed`).
+dns.setDefaultResultOrder("ipv4first");
 
 const EODHD_KEY = process.env.EODHD_API_KEY?.trim();
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
