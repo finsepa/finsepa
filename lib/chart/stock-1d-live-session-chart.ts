@@ -450,25 +450,11 @@ function pickLiveSessionResampleIntervalSec(
     pointCount: number;
   },
 ): number {
-  if (isUltraSparseSessionFallback(sorted, open, endSec)) {
-    return STOCK_1D_LIVE_SESSION_SPARSE_BAR_INTERVAL_SEC;
-  }
-  // Native 5m (or slower) EODHD bars → keep 5m buckets.
   if (typicalSourceGapSec(sorted) >= 240) {
     return STOCK_1D_LIVE_SESSION_SPARSE_BAR_INTERVAL_SEC;
   }
-  // WS minute store (~30+ bars/session) → 1m tick-by-tick when bars exist.
-  if (stats.pointCount >= 30) {
-    return STOCK_1D_LIVE_SESSION_BAR_INTERVAL_SEC;
-  }
-  if (stats.coverage >= 0.35 && stats.maxGapSec <= 180) {
-    return STOCK_1D_LIVE_SESSION_BAR_INTERVAL_SEC;
-  }
-  // Non-WS with some intraday or accumulated 60s polls → 5m smooth steps.
-  if (stats.pointCount >= 8 || stats.coverage >= 0.04) {
-    return STOCK_1D_LIVE_SESSION_SPARSE_BAR_INTERVAL_SEC;
-  }
-  return STOCK_1D_LIVE_SESSION_VERY_SPARSE_BAR_INTERVAL_SEC;
+  // WS minute store + live spot polls: always 60s tick-by-tick buckets during the session.
+  return STOCK_1D_LIVE_SESSION_BAR_INTERVAL_SEC;
 }
 
 export function resampleStock1DLiveSession(
@@ -497,30 +483,16 @@ export function resampleStock1DLiveSession(
   if (!sorted.length) return [];
 
   const stats = sessionSourceStats(sorted, open, endSec);
-  const ultraSparse = isUltraSparseSessionFallback(sorted, open, endSec);
   const interval = pickLiveSessionResampleIntervalSec(sorted, open, endSec, stats);
-  const first = sorted[0]!;
   const last = sorted[sorted.length - 1]!;
 
   const out: StockChartPoint[] = [];
   for (let bucketTime = open; bucketTime <= endSec; bucketTime += interval) {
     let value = openValue;
-    if (ultraSparse) {
-      if (bucketTime <= first.time) {
-        value = first.value;
-      } else if (bucketTime >= last.time) {
-        value = last.value;
-      } else if (last.time > first.time) {
-        const frac = (bucketTime - first.time) / (last.time - first.time);
-        value = first.value + frac * (last.value - first.value);
-      } else {
-        value = last.value;
-      }
-    } else {
-      for (const p of sorted) {
-        if (p.time <= bucketTime) value = p.value;
-        else break;
-      }
+    // Step-forward at each bucket — never synthesize a diagonal between sparse anchors.
+    for (const p of sorted) {
+      if (p.time <= bucketTime) value = p.value;
+      else break;
     }
     out.push({ time: bucketTime, value, sessionDate: sessionYmd, timeZone });
   }

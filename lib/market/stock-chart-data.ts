@@ -452,6 +452,23 @@ function finalize1DIntradayPoints(points: StockChartPoint[], now: Date = new Dat
   return source;
 }
 
+/** True when at least one bar falls in today's 9:30–now regular window. */
+function chartPointsCoverTodayRegularSession(
+  points: readonly StockChartPoint[],
+  now: Date = new Date(),
+): boolean {
+  if (!points.length || getUsEquityMarketSession(now) !== "regular") return points.length > 0;
+  const todayYmd = usSessionYmdFromUnixSeconds(Math.floor(now.getTime() / 1000));
+  const openSec = usSessionWallClockUnix(todayYmd, 9, 30, STOCK_DISPLAY_TZ);
+  const closeSec = usSessionWallClockUnix(todayYmd, 16, 0, STOCK_DISPLAY_TZ);
+  const nowSec = Math.floor(now.getTime() / 1000);
+  const endSec = Math.min(nowSec, closeSec);
+  return points.some((p) => {
+    if (typeof p.time !== "number" || !Number.isFinite(p.value)) return false;
+    return p.time >= openSec && p.time <= endSec;
+  });
+}
+
 /**
  * EODHD intraday REST is finalized ~2–3h after the close, so today's 1m bars are often
  * missing during the live session. Build open + live tail anchors from the realtime quote.
@@ -495,7 +512,29 @@ async function load1DRegularSessionFromRealtime(ticker: string, now: Date): Prom
   if (!anchors.length) return [];
 
   const todayYmd = usSessionYmdFromUnixSeconds(Math.floor(now.getTime() / 1000));
-  const merged = mergeStockSessionMinuteBars(ticker, todayYmd, anchors);
+  const [dbBarsRaw, memBarsRaw] = await Promise.all([
+    fetchStockSessionMinuteBarsFromDb(ticker, todayYmd),
+    Promise.resolve(getStockSessionMinuteBars(ticker, todayYmd)),
+  ]);
+
+  let dbBars = dbBarsRaw;
+  let memBars = memBarsRaw;
+  if (getUsEquityMarketSession(now) === "regular") {
+    if (
+      dbBars.length > 0 &&
+      !sessionMinuteBarsHavePriceVariation(dbBars, todayYmd, STOCK_DISPLAY_TZ, now)
+    ) {
+      dbBars = [];
+    }
+    if (
+      memBars.length > 0 &&
+      !sessionMinuteBarsHavePriceVariation(memBars, todayYmd, STOCK_DISPLAY_TZ, now)
+    ) {
+      memBars = [];
+    }
+  }
+
+  const merged = mergeStockChartPointsByTime([anchors, dbBars, memBars]);
   const openVal = anchors[0]?.value;
   if (openVal == null || !Number.isFinite(openVal)) return merged;
   return resampleStock1DLiveSession(merged, todayYmd, STOCK_DISPLAY_TZ, openVal, now);
@@ -616,7 +655,10 @@ async function enrich1DLiveSessionPoints(
     STOCK_DISPLAY_TZ,
     now,
   );
-  if (hasVariation) return pinned;
+  if (hasVariation) {
+    const openVal = rtOpen.value;
+    return resampleStock1DLiveSession(pinned, sessionYmd, STOCK_DISPLAY_TZ, openVal, now);
+  }
 
   const rtTail = rtAnchors[rtAnchors.length - 1];
   if (!rtTail || rtTail.time <= openSec) return pinned;
@@ -671,15 +713,13 @@ async function mergeLiveSessionMinuteStoreOverlay(
       overlayDb.length > 0 &&
       !sessionMinuteBarsHavePriceVariation(overlayDb, sessionYmd, STOCK_DISPLAY_TZ, now)
     ) {
-      const latest = overlayDb[overlayDb.length - 1];
-      overlayDb = latest ? [latest] : [];
+      overlayDb = [];
     }
     if (
       overlayMem.length > 0 &&
       !sessionMinuteBarsHavePriceVariation(overlayMem, sessionYmd, STOCK_DISPLAY_TZ, now)
     ) {
-      const latest = overlayMem[overlayMem.length - 1];
-      overlayMem = latest ? [latest] : [];
+      overlayMem = [];
     }
   }
 
@@ -1235,7 +1275,7 @@ export const getStockChartPoints = unstable_cache(
 const getStockChartPoints1DLiveSession = unstable_cache(
   async (ticker: string, series: StockChartSeries) =>
     loadStockChartPointsUncached(ticker, "1D", series),
-  ["stock-chart-1d-live-session-v16-ws-minute"],
+  ["stock-chart-1d-live-session-v20-ws-minute"],
   { revalidate: REVALIDATE_STOCK_1D_LIVE },
 );
 
@@ -1256,14 +1296,22 @@ export async function getStockChartPointsForApi(
   const now = new Date();
   if (range === "1D" && getUsEquityMarketSession(now) === "regular") {
     const wsMinute = await isStock1DLiveSessionMinuteChart(ticker, now);
+    let points: StockChartPoint[];
     if (wsMinute) {
       void touchStockSessionMinuteBarWatch(ticker);
       const sessionYmd = usSessionYmdFromUnixSeconds(Math.floor(now.getTime() / 1000));
       const pts = await getStockChartPoints1DLiveSession(ticker, series);
       const merged = await mergeStockSessionMinuteBarsFromDb(ticker, sessionYmd, pts, now);
-      return enrich1DLiveSessionPoints(ticker, merged, sessionYmd, now);
+      const enriched = await enrich1DLiveSessionPoints(ticker, merged, sessionYmd, now);
+      points = enriched.length > 0 ? enriched : await load1DRegularSessionFromRealtime(ticker, now);
+    } else {
+      points = await getStockChartPoints1DIntradayHistorical(ticker, series);
     }
-    return getStockChartPoints1DIntradayHistorical(ticker, series);
+    if (!chartPointsCoverTodayRegularSession(points, now)) {
+      const fromRealtime = await load1DRegularSessionFromRealtime(ticker, now);
+      if (fromRealtime.length) return fromRealtime;
+    }
+    return points;
   }
   if (range === "1D") {
     const sessionYmd = lastCompletedUsRegularSessionYmd(now);
@@ -1354,16 +1402,11 @@ async function fetchStockSpotQuoteUncached(ticker: string): Promise<StockSpotQuo
       }
     }
 
-    const fromStore = await spotQuoteFromMinuteStore(sym, now);
-    if (fromStore?.price != null && fromStore.price > 0) {
-      return { ...fromStore, recordMinuteBar: false };
-    }
-
     if (isEodhdUsRealtimeAcceptableForDisplay(rt, now)) {
       const live = rt?.close != null ? clampFinite(rt.close) : null;
       const previousClose = previousCloseFromRealtimePayload(rt);
       if (live != null && live > 0) {
-        return { price: live, previousClose, recordMinuteBar: false };
+        return { price: live, previousClose, recordMinuteBar: true };
       }
     }
 
@@ -1372,7 +1415,7 @@ async function fetchStockSpotQuoteUncached(ticker: string): Promise<StockSpotQuo
         delayed?.lastTradePrice != null ? clampFinite(delayed.lastTradePrice) : null;
       const previousClose = previousCloseFromDelayedQuote(delayed);
       if (live != null && live > 0) {
-        return { price: live, previousClose, recordMinuteBar: false };
+        return { price: live, previousClose, recordMinuteBar: true };
       }
     }
 
@@ -1380,7 +1423,7 @@ async function fetchStockSpotQuoteUncached(ticker: string): Promise<StockSpotQuo
       const live = rt?.close != null ? clampFinite(rt.close) : null;
       const previousClose = previousCloseFromDelayedQuote(delayed) ?? previousCloseFromRealtimePayload(rt);
       if (live != null && live > 0) {
-        return { price: live, previousClose, recordMinuteBar: false };
+        return { price: live, previousClose, recordMinuteBar: true };
       }
     }
 
@@ -1389,8 +1432,13 @@ async function fetchStockSpotQuoteUncached(ticker: string): Promise<StockSpotQuo
         delayed?.lastTradePrice != null ? clampFinite(delayed.lastTradePrice) : null;
       const previousClose = previousCloseFromDelayedQuote(delayed);
       if (live != null && live > 0) {
-        return { price: live, previousClose, recordMinuteBar: false };
+        return { price: live, previousClose, recordMinuteBar: true };
       }
+    }
+
+    const fromStore = await spotQuoteFromMinuteStore(sym, now);
+    if (fromStore?.price != null && fromStore.price > 0) {
+      return { ...fromStore, recordMinuteBar: false };
     }
   }
   const nowSec = Math.floor(now.getTime() / 1000);
@@ -1404,7 +1452,7 @@ async function fetchStockSpotQuoteUncached(ticker: string): Promise<StockSpotQuo
 
 const getStockSpotQuoteLiveSessionCached = unstable_cache(
   async (ticker: string) => fetchStockSpotQuoteUncached(ticker),
-  ["stock-spot-quote-1d-live-v4"],
+  ["stock-spot-quote-1d-live-v6"],
   { revalidate: REVALIDATE_STOCK_1D_LIVE },
 );
 

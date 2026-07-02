@@ -110,8 +110,16 @@ export function mergeStockSessionMinuteBars(
   ticker: string,
   sessionYmd: string,
   points: readonly StockChartPoint[],
+  now: Date = new Date(),
 ): StockChartPoint[] {
-  const bars = getStockSessionMinuteBars(ticker, sessionYmd);
+  let bars = getStockSessionMinuteBars(ticker, sessionYmd);
+  if (
+    getUsEquityMarketSession(now) === "regular" &&
+    bars.length > 0 &&
+    !sessionMinuteBarsHavePriceVariation(bars, sessionYmd, STOCK_DISPLAY_TZ, now)
+  ) {
+    bars = [];
+  }
   if (!bars.length) return [...points];
   return mergeStockChartPointsByTime([points, bars]);
 }
@@ -135,15 +143,13 @@ export async function mergeStockSessionMinuteBarsFromDb(
       dbBars.length > 0 &&
       !sessionMinuteBarsHavePriceVariation(dbBars, sessionYmd, STOCK_DISPLAY_TZ, now)
     ) {
-      const latest = dbBars[dbBars.length - 1];
-      dbBars = latest ? [latest] : [];
+      dbBars = [];
     }
     if (
       memBars.length > 0 &&
       !sessionMinuteBarsHavePriceVariation(memBars, sessionYmd, STOCK_DISPLAY_TZ, now)
     ) {
-      const latest = memBars[memBars.length - 1];
-      memBars = latest ? [latest] : [];
+      memBars = [];
     }
   }
 

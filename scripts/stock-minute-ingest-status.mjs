@@ -82,7 +82,7 @@ const healthUrl = process.env.STOCK_MINUTE_INGEST_HEALTH_URL?.trim();
 let remoteHealth = null;
 if (healthUrl) {
   try {
-    const res = await fetch(healthUrl);
+    const res = await fetch(healthUrl, { signal: AbortSignal.timeout(12_000) });
     remoteHealth = await res.json();
   } catch (e) {
     remoteHealth = { error: e instanceof Error ? e.message : "fetch_failed" };

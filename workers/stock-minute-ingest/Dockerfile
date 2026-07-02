@@ -3,6 +3,9 @@
 FROM node:22-alpine
 WORKDIR /app
 
+# Required for HTTPS fetch to Supabase/EODHD from Alpine (without this: `TypeError: fetch failed`).
+RUN apk add --no-cache ca-certificates
+
 COPY workers/stock-minute-ingest/package.json workers/stock-minute-ingest/package-lock.json ./
 RUN npm ci --omit=dev
 

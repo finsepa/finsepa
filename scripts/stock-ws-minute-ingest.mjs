@@ -59,8 +59,24 @@ function fail(msg) {
 if (!EODHD_KEY) fail("Missing EODHD_API_KEY");
 if (!SUPABASE_URL || !SUPABASE_KEY) fail("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
 
+function supabaseFetch(url, options = {}) {
+  const timeoutMs = Number(process.env.SUPABASE_FETCH_TIMEOUT_MS ?? 15_000);
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), timeoutMs);
+  return fetch(url, { ...options, signal: ac.signal })
+    .catch((err) => {
+      const cause = err instanceof Error && "cause" in err ? err.cause : null;
+      if (cause) {
+        throw new Error(`${err.message} (${String(cause)})`, { cause: err });
+      }
+      throw err;
+    })
+    .finally(() => clearTimeout(timer));
+}
+
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
+  global: { fetch: supabaseFetch },
 });
 
 /** @type {Map<string, { ticker: string, session_ymd: string, bucket_unix: number, close: number, updated_at: string }>} */
@@ -68,6 +84,11 @@ const pendingUpserts = new Map();
 let flushTimer = null;
 /** @type {Set<string>} */
 let subscribedSymbols = new Set();
+let tradeMsgCount = 0;
+let tradeDrainScheduled = false;
+/** @type {Map<string, { sym: string, tradeSec: number, price: number }>} */
+const tradeCoalesce = new Map();
+const PENDING_UPSERTS_CAP = Number(process.env.STOCK_WS_PENDING_CAP ?? 600);
 
 function normalizeStockTicker(raw) {
   const t = String(raw ?? "").trim().toUpperCase();
@@ -153,6 +174,9 @@ function queueMinuteClose(ticker, tradeSec, price) {
   if (!sym) return;
   const sessionYmd = usSessionYmdFromDate(new Date(tradeSec * 1000));
   const bucketUnix = minuteBucketUnix(sessionYmd, tradeSec);
+  if (pendingUpserts.size >= PENDING_UPSERTS_CAP && !pendingUpserts.has(`${sym}:${bucketUnix}`)) {
+    return;
+  }
   pendingUpserts.set(`${sym}:${bucketUnix}`, {
     ticker: sym,
     session_ymd: sessionYmd,
@@ -165,52 +189,86 @@ function queueMinuteClose(ticker, tradeSec, price) {
   scheduleFlush();
 }
 
+function ingestTradeMessage(sym, tradeSec, price) {
+  if (!sym || !Number.isFinite(price) || price <= 0 || tradeSec == null) return;
+  const sessionYmd = usSessionYmdFromDate(new Date(tradeSec * 1000));
+  const bucketUnix = minuteBucketUnix(sessionYmd, tradeSec);
+  tradeCoalesce.set(`${sym}:${bucketUnix}`, { sym, tradeSec, price });
+  tradeMsgCount += 1;
+  if (!tradeDrainScheduled) {
+    tradeDrainScheduled = true;
+    setImmediate(drainTradeCoalesce);
+  }
+}
+
+function drainTradeCoalesce() {
+  tradeDrainScheduled = false;
+  const batch = Array.from(tradeCoalesce.values());
+  tradeCoalesce.clear();
+  for (const { sym, tradeSec, price } of batch) {
+    queueMinuteClose(sym, tradeSec, price);
+  }
+  if (tradeCoalesce.size > 0) {
+    tradeDrainScheduled = true;
+    setImmediate(drainTradeCoalesce);
+  }
+}
+
 function scheduleFlush() {
   if (flushTimer) return;
   flushTimer = setTimeout(() => {
     flushTimer = null;
-    void flushPendingUpserts();
-  }, 1000);
+    setImmediate(() => void flushPendingUpserts());
+  }, 750);
 }
 
+let flushInProgress = false;
+const FLUSH_MAX_ROWS_PER_CYCLE = Number(process.env.STOCK_WS_FLUSH_MAX_ROWS ?? 80);
+const FLUSH_CHUNK_SIZE = Number(process.env.STOCK_WS_FLUSH_CHUNK_SIZE ?? 25);
+
 async function flushPendingUpserts() {
-  if (!pendingUpserts.size) return;
-  const rows = Array.from(pendingUpserts.values());
-  pendingUpserts.clear();
-  health.pendingUpserts = pendingUpserts.size;
-
-  const chunkSize = 500;
-  for (let i = 0; i < rows.length; i += chunkSize) {
-    const chunk = rows.slice(i, i + chunkSize);
-    let saved = false;
-    for (let attempt = 0; attempt < 3 && !saved; attempt++) {
-      try {
-        const { error } = await supabase.from("stock_session_minute_bar").upsert(chunk, {
-          onConflict: "ticker,bucket_unix",
-        });
-        if (error) {
-          log("upsert error", error.message, "rows", chunk.length, "attempt", attempt + 1);
-          if (attempt < 2) await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
-          continue;
-        }
-        saved = true;
-        if (process.env.STOCK_WS_VERBOSE === "1") {
-          log("upserted", chunk.length, "minute bars");
-        }
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        log("upsert error", msg, "rows", chunk.length, "attempt", attempt + 1);
-        if (attempt < 2) await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
-      }
-    }
-    if (!saved) {
-      for (const row of chunk) {
-        pendingUpserts.set(`${row.ticker}:${row.bucket_unix}`, row);
-      }
-    }
+  if (!pendingUpserts.size || flushInProgress) return;
+  flushInProgress = true;
+  const rows = Array.from(pendingUpserts.values()).slice(0, FLUSH_MAX_ROWS_PER_CYCLE);
+  for (const row of rows) {
+    pendingUpserts.delete(`${row.ticker}:${row.bucket_unix}`);
   }
-
   health.pendingUpserts = pendingUpserts.size;
+
+  const chunkSize = Math.max(1, FLUSH_CHUNK_SIZE);
+  try {
+    for (let i = 0; i < rows.length; i += chunkSize) {
+      const chunk = rows.slice(i, i + chunkSize);
+      let saved = false;
+      for (let attempt = 0; attempt < 3 && !saved; attempt++) {
+        try {
+          const { error } = await supabase.from("stock_session_minute_bar").upsert(chunk, {
+            onConflict: "ticker,bucket_unix",
+          });
+          if (error) {
+            log("upsert error", error.message, "rows", chunk.length, "attempt", attempt + 1);
+            if (attempt < 2) await new Promise((r) => setTimeout(r, 600 * (attempt + 1)));
+            continue;
+          }
+          saved = true;
+          log("upserted", chunk.length, "minute bars");
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          log("upsert error", msg, "rows", chunk.length, "attempt", attempt + 1);
+          if (attempt < 2) await new Promise((r) => setTimeout(r, 600 * (attempt + 1)));
+        }
+      }
+      if (!saved) {
+        for (const row of chunk) {
+          pendingUpserts.set(`${row.ticker}:${row.bucket_unix}`, row);
+        }
+      }
+    }
+  } finally {
+    flushInProgress = false;
+    health.pendingUpserts = pendingUpserts.size;
+    if (pendingUpserts.size > 0) scheduleFlush();
+  }
 }
 
 async function loadChartWatchTickers() {
@@ -320,13 +378,19 @@ function startHealthServer() {
     health.subscribed = subscribedSymbols.size;
     health.pendingUpserts = pendingUpserts.size;
     if (req.url === "/health" || req.url === "/") {
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify(health));
+      res.writeHead(200, {
+        "Content-Type": "application/json",
+        Connection: "close",
+        "Cache-Control": "no-store",
+      });
+      res.end(JSON.stringify({ ...health, tradeMsgCount }));
       return;
     }
-    res.writeHead(404);
+    res.writeHead(404, { Connection: "close" });
     res.end();
   });
+  server.keepAliveTimeout = 1000;
+  server.headersTimeout = 5000;
   server.listen(HEALTH_PORT, "0.0.0.0", () => log("health server listening", HEALTH_PORT));
 }
 
@@ -372,8 +436,11 @@ function connectWs() {
 
   ws.on("open", () => log("websocket connecting…"));
 
-  ws.on("message", (raw) => {
-    const text = raw.toString();
+  /** @type {Buffer[]} */
+  const rawWsQueue = [];
+  let rawWsDrainScheduled = false;
+
+  const processWsText = (text) => {
     let msg;
     try {
       msg = JSON.parse(text);
@@ -389,12 +456,14 @@ function connectWs() {
     }
 
     if (msg.status_code != null) {
-      authorized = msg.status_code === 200;
-      health.authorized = authorized;
       log("auth status", msg.status_code, msg.message ?? "");
-      if (authorized) {
+      if (msg.status_code === 200) {
+        authorized = true;
+        health.authorized = true;
         void syncSubscriptions();
         startWatchPoll();
+      } else if (!authorized) {
+        health.authorized = false;
       }
       return;
     }
@@ -406,7 +475,27 @@ function connectWs() {
       tradeSec = msg.t > 1e12 ? Math.floor(msg.t / 1000) : Math.floor(msg.t);
     }
     if (!sym || !Number.isFinite(price) || price <= 0 || tradeSec == null) return;
-    queueMinuteClose(sym, tradeSec, price);
+    ingestTradeMessage(sym, tradeSec, price);
+  };
+
+  const drainRawWsQueue = () => {
+    rawWsDrainScheduled = false;
+    const batch = rawWsQueue.splice(0, 250);
+    for (const raw of batch) {
+      processWsText(raw.toString());
+    }
+    if (rawWsQueue.length > 0) {
+      rawWsDrainScheduled = true;
+      setImmediate(drainRawWsQueue);
+    }
+  };
+
+  ws.on("message", (raw) => {
+    rawWsQueue.push(Buffer.isBuffer(raw) ? raw : Buffer.from(String(raw)));
+    if (!rawWsDrainScheduled) {
+      rawWsDrainScheduled = true;
+      setImmediate(drainRawWsQueue);
+    }
   });
 
   ws.on("close", (code) => {
@@ -443,6 +532,7 @@ setInterval(() => {
     authorized: health.authorized,
     subscribed: health.subscribed,
     pendingUpserts: health.pendingUpserts,
+    tradeMsgCount,
     lastTradeAt: health.lastTradeAt,
   });
 }, HEARTBEAT_MS);

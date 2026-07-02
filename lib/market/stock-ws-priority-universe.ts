@@ -12,11 +12,79 @@ import type { TopCompanyUniverseRow } from "@/lib/screener/top500-companies";
 /** Always-on WebSocket ETFs (count toward the EODHD symbol cap). */
 export const STOCK_WS_PRIORITY_ETFS = ["SPY", "QQQ"] as const;
 
+/** Mirrors scripts/lib/stock-ws-priority-universe.mjs — used when top500 snapshot is missing. */
+export const STOCK_WS_FALLBACK_CURATED_TOP_STOCKS = [
+  "AAPL",
+  "MSFT",
+  "NVDA",
+  "GOOGL",
+  "AMZN",
+  "META",
+  "BRK-B",
+  "TSLA",
+  "LLY",
+  "AVGO",
+  "JPM",
+  "V",
+  "UNH",
+  "XOM",
+  "MA",
+  "PG",
+  "JNJ",
+  "HD",
+  "COST",
+  "ABBV",
+  "NFLX",
+  "CRM",
+  "BAC",
+  "KO",
+  "AMD",
+  "MRK",
+  "ORCL",
+  "PEP",
+  "CVX",
+  "TMO",
+  "ACN",
+  "CSCO",
+  "WMT",
+  "MCD",
+  "ADBE",
+  "LIN",
+  "DIS",
+  "INTU",
+  "QCOM",
+  "TXN",
+  "AMGN",
+  "HON",
+  "AMAT",
+  "IBM",
+  "GE",
+  "CAT",
+  "PANW",
+  "SBUX",
+] as const;
+
 const DEFAULT_TOP_STOCKS = 48;
 
 export function stockWsTopStocksCount(): number {
   const n = Number(process.env.STOCK_WS_TOP_STOCKS ?? DEFAULT_TOP_STOCKS);
   return Number.isFinite(n) && n > 0 ? Math.floor(n) : DEFAULT_TOP_STOCKS;
+}
+
+function normalizeTop500SnapshotRows(snapshot: unknown): TopCompanyUniverseRow[] {
+  if (Array.isArray(snapshot)) {
+    return snapshot.filter(
+      (row): row is TopCompanyUniverseRow =>
+        row != null && typeof row === "object" && typeof (row as TopCompanyUniverseRow).ticker === "string",
+    );
+  }
+  if (snapshot && typeof snapshot === "object") {
+    return Object.values(snapshot).filter(
+      (row): row is TopCompanyUniverseRow =>
+        row != null && typeof row === "object" && typeof (row as TopCompanyUniverseRow).ticker === "string",
+    );
+  }
+  return [];
 }
 
 /** Curated US tickers for WebSocket minute ingest (ETFs + top N by market cap). */
@@ -29,15 +97,27 @@ async function loadStockWsPriorityTickersUncached(): Promise<string[]> {
   }
 
   const snapshot = await readMarketSnapshot<TopCompanyUniverseRow[]>(MARKET_SNAPSHOT_KEY.top500Market);
+  const rows = normalizeTop500SnapshotRows(snapshot);
   const topN = stockWsTopStocksCount();
   let stockCount = 0;
-  for (const row of snapshot ?? []) {
+  for (const row of rows) {
     if (stockCount >= topN) break;
     const t = row.ticker.trim().toUpperCase();
     if (!t || out.has(t)) continue;
     out.add(t);
     stockCount += 1;
   }
+
+  if (stockCount < topN) {
+    for (const t of STOCK_WS_FALLBACK_CURATED_TOP_STOCKS) {
+      if (stockCount >= topN) break;
+      const sym = t.toUpperCase();
+      if (!sym || out.has(sym)) continue;
+      out.add(sym);
+      stockCount += 1;
+    }
+  }
+
   return [...out];
 }
 
@@ -57,7 +137,7 @@ function parseStockWsPriorityTickers(raw: unknown): string[] | null {
 /** JSON string only — `unstable_cache` cannot round-trip `Set` or reliably preserve arrays. */
 const getStockWsPriorityTickersJson = unstable_cache(
   async (): Promise<string> => JSON.stringify(await loadStockWsPriorityTickersUncached()),
-  ["stock-ws-priority-universe-v3"],
+  ["stock-ws-priority-universe-v4"],
   { revalidate: 900 },
 );
 
@@ -145,6 +225,9 @@ export function sessionMinuteBarsHasLargeGaps(
   return sessionMinuteBarsMaxGapSec(bars, sessionYmd, timeZone, now) > maxGapSec;
 }
 
+/** Min $ move across session bars before we treat the WS minute store as a real tick chart. */
+export const STOCK_SESSION_MINUTE_BAR_MIN_SPREAD_USD = 0.5;
+
 /** Flat polled closes (same price every bucket) are not a tick chart — fall back to intraday / OHLC. */
 export function sessionMinuteBarsHavePriceVariation(
   bars: readonly StockChartPoint[],
@@ -152,6 +235,7 @@ export function sessionMinuteBarsHavePriceVariation(
   timeZone: string,
   now: Date = new Date(),
   minDistinctCents = 2,
+  minSpreadUsd = STOCK_SESSION_MINUTE_BAR_MIN_SPREAD_USD,
 ): boolean {
   if (bars.length < 2) return false;
   const openSec = usSessionWallClockUnix(sessionYmd, 9, 30, timeZone);
@@ -168,5 +252,12 @@ export function sessionMinuteBarsHavePriceVariation(
   );
   if (inSession.length < 2) return false;
   const cents = new Set(inSession.map((p) => Math.round(p.value * 100)));
-  return cents.size >= minDistinctCents;
+  if (cents.size < minDistinctCents) return false;
+  let minVal = Number.POSITIVE_INFINITY;
+  let maxVal = Number.NEGATIVE_INFINITY;
+  for (const p of inSession) {
+    minVal = Math.min(minVal, p.value);
+    maxVal = Math.max(maxVal, p.value);
+  }
+  return maxVal - minVal >= minSpreadUsd;
 }

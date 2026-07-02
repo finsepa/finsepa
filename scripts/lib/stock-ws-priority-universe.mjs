@@ -90,6 +90,15 @@ export async function loadCuratedUsPriorityTickers(supabase) {
 
   const topN = stockWsTopStocksCount();
 
+  // Curated worker: static fallback only — snapshot reads compete with minute-bar upserts.
+  if (stockWsCuratedMode()) {
+    for (const t of FALLBACK_CURATED_TOP_STOCKS) {
+      if (ordered.filter((sym) => !PRIORITY_ETFS.includes(sym)).length >= topN) break;
+      push(normalizeStockTicker(t));
+    }
+    return ordered;
+  }
+
   const { data, error } = await supabase
     .from("market_snapshot")
     .select("data")
