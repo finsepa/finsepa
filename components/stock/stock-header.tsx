@@ -327,13 +327,13 @@ export function StockHeader({
   );
 
   const mobileMainPriceBlock = (
-    <>
+    <div className="min-w-0">
       <div className={`flex flex-wrap items-baseline gap-x-3 gap-y-0.5 ${priceMotionClass}`}>
         {mobilePriceValue}
         {inlinePeriodChange}
       </div>
       {mobilePeriodMetaRow}
-    </>
+    </div>
   );
 
   return (
@@ -349,7 +349,7 @@ export function StockHeader({
           {chartLoading ? priceLoadingSkeleton : (
             <>
               {showExtendedHoursColumn ? (
-                <div className={`flex flex-wrap items-end gap-4 sm:gap-5 ${priceMotionClass}`}>
+                <div className={`flex flex-col gap-2 ${priceMotionClass}`}>
                   {mobileMainPriceBlock}
                   <StockExtendedHoursPrice quote={extendedHours} loading={extendedHoursLoading} />
                 </div>

@@ -13,12 +13,15 @@ type Props = {
   loading?: boolean;
 };
 
+const extendedHoursShellClass =
+  "min-w-0 max-md:border-0 max-md:pl-0 sm:min-w-[9rem] sm:border-l sm:border-[#E4E4E7] sm:pl-6";
+
 export function StockExtendedHoursPrice({ quote, loading = false }: Props) {
   if (!quote && !loading) return null;
 
   if (loading && !quote) {
     return (
-      <div className="min-w-[9rem] border-l border-[#E4E4E7] pl-5 sm:pl-6" aria-busy aria-label="Loading extended session price">
+      <div className={extendedHoursShellClass} aria-busy aria-label="Loading extended session price">
         <div className="space-y-1.5">
           <div className="flex items-baseline gap-2.5">
             <div className="h-7 w-[5.5rem] animate-pulse rounded-md bg-neutral-200/80" />
@@ -37,7 +40,7 @@ export function StockExtendedHoursPrice({ quote, loading = false }: Props) {
   const changeText = `${formatSignedUsdAmountGrouped2dp(quote.extendedChangeAbs)} (${formatSignedPercent2dp(quote.extendedChangePct)})`;
 
   return (
-    <div className="min-w-[9rem] border-l border-[#E4E4E7] pl-5 sm:pl-6">
+    <div className={extendedHoursShellClass}>
       <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
         <span className="text-[22px] font-semibold leading-8 tabular-nums text-[#09090B] sm:text-[24px] sm:leading-8">
           {formatUsdPrice(quote.extendedPrice)}
