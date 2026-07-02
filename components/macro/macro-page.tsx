@@ -31,7 +31,9 @@ export function MacroPage({ initialItems }: { initialItems: MacroCardModel[] }) 
   return (
     <div className="min-w-0 space-y-6 px-4 pt-1 pb-4 sm:px-9 sm:pb-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-        <h1 className="text-[20px] font-semibold leading-8 tracking-tight text-[#09090B]">Macro charts</h1>
+        <h1 className="hidden text-[20px] font-semibold leading-8 tracking-tight text-[#09090B] md:block">
+          Macro charts
+        </h1>
 
         <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
           <div className="flex shrink-0 flex-nowrap items-center gap-2">

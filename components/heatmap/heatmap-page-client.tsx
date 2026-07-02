@@ -1,13 +1,11 @@
 "use client";
 
-import { Maximize2, Minimize2 } from "@/lib/icons";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 
 import type { HeatmapMarket, HeatmapMetric, HeatmapPagePayload } from "@/lib/heatmap/heatmap-types";
 import { MarketHeatmap } from "@/components/heatmap/market-heatmap";
 import { TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
-import { cn } from "@/lib/utils";
 
 const METRIC_OPTIONS_STOCKS: { value: HeatmapMetric; label: string }[] = [
   { value: "1d", label: "1D" },
@@ -75,8 +73,6 @@ function MetricTabs({
 export function HeatmapPageClient({ initial }: { initial: HeatmapPagePayload }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [fs, setFs] = useState(false);
   const [payload, setPayload] = useState(initial);
   const [displayMarket, setDisplayMarket] = useState(initial.market);
   const [displayMetric, setDisplayMetric] = useState(initial.metric);
@@ -89,28 +85,6 @@ export function HeatmapPageClient({ initial }: { initial: HeatmapPagePayload }) 
     setDisplayMarket(initial.market);
     setDisplayMetric(initial.metric);
   }, [initial.market, initial.metric]);
-
-  useEffect(() => {
-    const onFs = () => setFs(!!document.fullscreenElement);
-    document.addEventListener("fullscreenchange", onFs);
-    return () => document.removeEventListener("fullscreenchange", onFs);
-  }, []);
-
-  const toggleFs = useCallback(async () => {
-    const el = containerRef.current;
-    if (!el) return;
-    try {
-      if (!document.fullscreenElement) {
-        await el.requestFullscreen();
-        setFs(true);
-      } else {
-        await document.exitFullscreen();
-        setFs(false);
-      }
-    } catch {
-      setFs(!!document.fullscreenElement);
-    }
-  }, []);
 
   const setMarket = useCallback(
     (next: HeatmapMarket) => {
@@ -137,24 +111,12 @@ export function HeatmapPageClient({ initial }: { initial: HeatmapPagePayload }) 
   const { leaves } = payload;
 
   return (
-    <div
-      ref={containerRef}
-      className={cn("flex min-w-0 flex-col gap-5", fs && "rounded-xl bg-[#FAFAFA] p-4")}
-    >
-      {/* Figma: single toolbar — tabs | fullscreen + metric toggle (rightmost) */}
+    <div className="flex min-w-0 flex-col gap-5">
       <div className="flex w-full min-w-0 items-center gap-2">
         <div className="flex min-h-9 min-w-0 items-center">
           <MarketClassTabs market={displayMarket} onChange={setMarket} />
         </div>
-        <div className="ml-auto flex min-w-0 flex-nowrap items-center justify-end gap-2">
-          <button
-            type="button"
-            onClick={() => void toggleFs()}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-solid border-[#E4E4E7] bg-white text-[#09090B] shadow-[0px_1px_1px_0px_rgba(10,10,10,0.06)] transition-colors hover:bg-[#F4F4F5]"
-            aria-label={fs ? "Exit full screen" : "Full screen"}
-          >
-            {fs ? <Minimize2 className="h-5 w-5" strokeWidth={1.75} /> : <Maximize2 className="h-5 w-5" strokeWidth={1.75} />}
-          </button>
+        <div className="ml-auto flex min-w-0 flex-nowrap items-center justify-end">
           <MetricTabs market={displayMarket} metric={displayMetric} onChange={setMetric} />
         </div>
       </div>

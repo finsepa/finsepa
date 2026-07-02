@@ -134,8 +134,12 @@ export function MobileBottomNav() {
 
   const searchMorphRef = useRef<HTMLDivElement>(null);
   const closeSearch = useCallback(() => setSearchOpen(false), []);
-  const searchPanel = useSearchPanel({ open: searchOpen, onClose: closeSearch });
-  const visualViewport = useMobileVisualViewport(searchOpen);
+  const searchPanel = useSearchPanel({
+    open: searchOpen,
+    focusWhen: searchMorphComplete,
+    onClose: closeSearch,
+  });
+  const visualViewport = useMobileVisualViewport(searchOpen && searchMorphComplete);
 
   const barRef = useRef<HTMLDivElement>(null);
   const navRef = useRef<HTMLElement>(null);
@@ -415,13 +419,17 @@ export function MobileBottomNav() {
                 <motion.div
                   key="search-field"
                   className="min-w-0 flex-1"
-                  initial={{ opacity: 0, x: 10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 8 }}
-                  transition={{ duration: 0.18, delay: 0.04, ease: [0.33, 1, 0.68, 1] }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{
+                    duration: searchMorphComplete ? 0.16 : 0.12,
+                    ease: [0.33, 1, 0.68, 1],
+                  }}
                 >
                   <MobileBottomNavSearchField
                     panel={searchPanel}
+                    interactive={searchMorphComplete}
                     resultsVisible={searchOpen && searchMorphComplete}
                   />
                 </motion.div>

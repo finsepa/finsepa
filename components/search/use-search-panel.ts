@@ -27,10 +27,13 @@ function isWatchedItem(item: SearchAssetItem, watched: Set<string>): boolean {
 
 export function useSearchPanel({
   open,
+  focusWhen,
   onClose,
   onSelectItem,
 }: {
   open: boolean;
+  /** When set, focus + recent hydration wait for this (e.g. after a morph animation). Defaults to `open`. */
+  focusWhen?: boolean;
   onClose: () => void;
   onSelectItem?: (item: SearchAssetItem) => void;
 }) {
@@ -51,12 +54,13 @@ export function useSearchPanel({
 
   const debouncedTrim = debounced.trim();
   const queryTrim = query.trim();
+  const readyForInput = open && (focusWhen ?? open);
 
   useLayoutEffect(() => {
-    if (!open) return;
+    if (!readyForInput) return;
     inputRef.current?.focus({ preventScroll: true });
     setRecent(readRecent());
-  }, [open, readRecent, userId, authReady]);
+  }, [readyForInput, readRecent, userId, authReady]);
 
   useEffect(() => {
     if (!open) {
@@ -122,7 +126,7 @@ export function useSearchPanel({
   }, [readRecent, removeRecent]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || !readyForInput) return;
     function onK(e: KeyboardEvent) {
       if (e.key === "Escape") {
         onClose();
@@ -146,7 +150,7 @@ export function useSearchPanel({
     }
     window.addEventListener("keydown", onK);
     return () => window.removeEventListener("keydown", onK);
-  }, [open, queryTrim, items, recent, highlight, navigateTo, onClose]);
+  }, [open, readyForInput, queryTrim, items, recent, highlight, navigateTo, onClose]);
 
   const { emptyQuery, searchPending, showStaleList, noResults } = getSearchPanelViewState({
     queryTrim,

@@ -15,10 +15,13 @@ type SearchPanel = ReturnType<typeof useSearchPanel>;
 export function MobileBottomNavSearchField({
   panel,
   className,
+  interactive = true,
   resultsVisible = false,
 }: {
   panel: SearchPanel;
   className?: string;
+  /** False while the search pill is morphing — keeps placeholder visible without keyboard focus. */
+  interactive?: boolean;
   resultsVisible?: boolean;
 }) {
   return (
@@ -28,10 +31,15 @@ export function MobileBottomNavSearchField({
         data-mobile-bottom-search-input
         type="text"
         inputMode="search"
+        readOnly={!interactive}
+        tabIndex={interactive ? 0 : -1}
         value={panel.query}
         onChange={(e) => panel.setQuery(e.target.value)}
         placeholder="Search..."
-        className="h-full w-full min-w-0 bg-transparent text-sm leading-5 text-[#09090B] outline-none placeholder:text-[#A1A1AA] caret-[#09090B]"
+        className={cn(
+          "h-full w-full min-w-0 bg-transparent text-sm leading-5 text-[#09090B] outline-none placeholder:text-[#A1A1AA]",
+          interactive ? "caret-[#09090B]" : "caret-transparent",
+        )}
         autoComplete="off"
         autoCorrect="off"
         enterKeyHint="search"
@@ -99,7 +107,7 @@ export function MobileBottomNavSearchResults({
     <div
       id="mobile-bottom-search-results"
       className={cn(
-        "mobile-bottom-nav-search-results-panel fixed z-[42] flex min-h-0 flex-col overflow-hidden md:hidden",
+        "mobile-bottom-nav-search-results-panel mobile-bottom-nav-sheet-enter fixed z-[42] flex min-h-0 flex-col overflow-hidden md:hidden",
         dropdownMenuSurfaceClassName(),
         dropdownMenuFloatingScrollbarClassName,
       )}
