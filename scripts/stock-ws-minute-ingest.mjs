@@ -60,7 +60,7 @@ if (!EODHD_KEY) fail("Missing EODHD_API_KEY");
 if (!SUPABASE_URL || !SUPABASE_KEY) fail("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
 
 function supabaseFetch(url, options = {}) {
-  const timeoutMs = Number(process.env.SUPABASE_FETCH_TIMEOUT_MS ?? 15_000);
+  const timeoutMs = Number(process.env.SUPABASE_FETCH_TIMEOUT_MS ?? 10_000);
   const ac = new AbortController();
   const timer = setTimeout(() => ac.abort(), timeoutMs);
   return fetch(url, { ...options, signal: ac.signal })
@@ -223,8 +223,12 @@ function scheduleFlush() {
 }
 
 let flushInProgress = false;
-const FLUSH_MAX_ROWS_PER_CYCLE = Number(process.env.STOCK_WS_FLUSH_MAX_ROWS ?? 80);
-const FLUSH_CHUNK_SIZE = Number(process.env.STOCK_WS_FLUSH_CHUNK_SIZE ?? 25);
+const FLUSH_MAX_ROWS_PER_CYCLE = Number(process.env.STOCK_WS_FLUSH_MAX_ROWS ?? 50);
+const FLUSH_CHUNK_SIZE = Number(process.env.STOCK_WS_FLUSH_CHUNK_SIZE ?? 10);
+
+function yieldEventLoop() {
+  return new Promise((resolve) => setImmediate(resolve));
+}
 
 async function flushPendingUpserts() {
   if (!pendingUpserts.size || flushInProgress) return;
@@ -263,6 +267,7 @@ async function flushPendingUpserts() {
           pendingUpserts.set(`${row.ticker}:${row.bucket_unix}`, row);
         }
       }
+      await yieldEventLoop();
     }
   } finally {
     flushInProgress = false;

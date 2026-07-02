@@ -860,20 +860,16 @@ export function StockPageContent({
     const session = getUsEquityMarketSession(new Date());
 
     if (session === "regular") {
-      const showLiveTimestamp = overviewDrivesHeader ? range === "1D" : true;
-      if (showLiveTimestamp) {
-        const label = formatStockHeaderSessionPeriodLabel(
-          Math.floor(Date.now() / 1000),
-          STOCK_DISPLAY_TZ,
-        );
-        return label || "Today";
-      }
-      return overviewDrivesHeader ? (range === "1D" ? "Today" : range) : "Today";
+      const label = formatStockHeaderSessionPeriodLabel(
+        Math.floor(Date.now() / 1000),
+        STOCK_DISPLAY_TZ,
+      );
+      return label || "Today";
     }
 
     const closeUnix = lastUsRegularSessionCloseUnix(new Date(), STOCK_DISPLAY_TZ);
     return formatStockHeaderAtClosePeriodLabel(closeUnix, STOCK_DISPLAY_TZ);
-  }, [overviewDrivesHeader, range, regularSessionClock]);
+  }, [regularSessionClock]);
 
   const headerMovementRangeBadge = useMemo(() => {
     if (!overviewDrivesHeader || chartSeries !== "price") return null;

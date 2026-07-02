@@ -78,7 +78,6 @@ import {
   shouldUseStock1DLiveSessionChart,
   stock1DLiveSessionPlotLeftPx,
   STOCK_1D_LIVE_SESSION_CLOCK_TICK_MS,
-  STOCK_1D_INTRADAY_HISTORICAL_POLL_MS,
   STOCK_1D_LIVE_PRICE_POLL_MS,
   STOCK_1D_LIVE_SESSION_TZ,
   stock1DLiveSessionMinuteBucketUnix,
@@ -299,7 +298,7 @@ type Props = {
     points: StockChartPoint[];
     liveSessionMinute?: boolean;
   } | null;
-  /** WS top-50: 60s minute-store 1D. Others: EODHD 5m historical (refreshed ~15m). */
+  /** 1D during US regular session — EODHD intraday + live OHLCV (~60s chart refresh). */
   liveSessionMinute?: boolean;
   /** Latest spot — during 1D regular session, extends the line to the current wall-clock time. */
   liveSpotUsd?: number | null;
@@ -375,7 +374,7 @@ function applyLiveSessionSeriesPriceLineOptions(
     priceLineVisible: true,
     priceLineStyle: LineStyle.Dashed,
     priceLineColor: color,
-    lineType: LineType.WithSteps,
+    lineType: LineType.Curved,
   });
 }
 
@@ -1363,7 +1362,7 @@ export function PriceChart({
           lineType: hide
             ? LineType.Simple
             : stock1DLiveSessionRef.current
-              ? LineType.WithSteps
+              ? LineType.Curved
               : LineType.Curved,
           lastPriceAnimation: hide
             ? LastPriceAnimationMode.Disabled
@@ -2418,14 +2417,12 @@ export function PriceChart({
     };
   }, [kind, symbol, range, series, initialChart, chartDataCadence]);
 
-  // Refresh 1D during regular session — 60s for WS top-50, ~15m for EODHD historical.
+  // Refresh 1D during regular session — ~60s (EODHD intraday + live OHLCV tail).
   useEffect(() => {
     if (holdingsStyle || kind !== "stock" || range !== "1D" || screenshotPreviewMode) return;
     if (getUsEquityMarketSession(new Date()) !== "regular") return;
     let cancelled = false;
-    const pollMs = liveSessionMinuteRef.current
-      ? STOCK_1D_LIVE_PRICE_POLL_MS
-      : STOCK_1D_INTRADAY_HISTORICAL_POLL_MS;
+    const pollMs = STOCK_1D_LIVE_PRICE_POLL_MS;
     const poll = async () => {
       const path = `/api/stocks/${encodeURIComponent(symbol)}/chart?range=1D&series=${encodeURIComponent(series)}`;
       try {

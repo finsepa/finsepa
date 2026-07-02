@@ -34,7 +34,7 @@ export type StockChartResponse = {
   range: StockChartRange;
   series?: StockChartSeries;
   points: StockChartPoint[];
-  /** True for WS top-50 during regular session (60s minute store). False = EODHD 5m historical 1D. */
+  /** True during US regular session — 1D uses EODHD intraday + live OHLCV (~60s). */
   liveSessionMinute?: boolean;
 };
 

@@ -426,7 +426,7 @@ function typicalSourceGapSec(sorted: readonly StockChartPoint[]): number {
 }
 
 /** Open + live tail only (no intraday) — forward-fill flatlines until a cliff at the close. */
-function isUltraSparseSessionFallback(
+export function isUltraSparseLiveSessionSource(
   sorted: readonly StockChartPoint[],
   open: number,
   endSec: number,
@@ -438,6 +438,31 @@ function isUltraSparseSessionFallback(
     return span >= 20 * 60;
   }
   return false;
+}
+
+/** EODHD 5m/1m intraday — plot as-is (smooth curved line), no 60s forward-fill grid. */
+export function liveSessionSourceIsDenseIntraday(
+  sorted: readonly StockChartPoint[],
+  open: number,
+  endSec: number,
+): boolean {
+  const inSession = sorted.filter(
+    (p) => p.time >= open && p.time <= endSec && Number.isFinite(p.value),
+  );
+  if (inSession.length < 6) return false;
+  return typicalSourceGapSec(inSession) <= STOCK_1D_LIVE_SESSION_SPARSE_BAR_INTERVAL_SEC;
+}
+
+function filterLiveSessionWindow(
+  sorted: readonly StockChartPoint[],
+  sessionYmd: string,
+  timeZone: string,
+  open: number,
+  endSec: number,
+): StockChartPoint[] {
+  return sorted
+    .filter((p) => p.time >= open && p.time <= endSec)
+    .map((p) => ({ ...p, sessionDate: sessionYmd, timeZone }));
 }
 
 function pickLiveSessionResampleIntervalSec(
@@ -482,9 +507,15 @@ export function resampleStock1DLiveSession(
 
   if (!sorted.length) return [];
 
+  if (
+    isUltraSparseLiveSessionSource(sorted, open, endSec) ||
+    liveSessionSourceIsDenseIntraday(sorted, open, endSec)
+  ) {
+    return filterLiveSessionWindow(sorted, sessionYmd, timeZone, open, endSec);
+  }
+
   const stats = sessionSourceStats(sorted, open, endSec);
   const interval = pickLiveSessionResampleIntervalSec(sorted, open, endSec, stats);
-  const last = sorted[sorted.length - 1]!;
 
   const out: StockChartPoint[] = [];
   for (let bucketTime = open; bucketTime <= endSec; bucketTime += interval) {
@@ -669,13 +700,18 @@ export function prepareStock1DLiveSessionChartPoints(
     return [];
   }
 
-  const sessionPoints = resampleStock1DLiveSession(
-    sourcePoints,
-    sessionYmd,
-    timeZone,
-    openValue,
-    now,
-  );
+  const open = usSessionWallClockUnix(sessionYmd, 9, 30, timeZone);
+  const close = usSessionWallClockUnix(sessionYmd, 16, 0, timeZone);
+  const nowSec = Math.floor(now.getTime() / 1000);
+  const endSec =
+    getUsEquityMarketSession(now) === "regular" ? Math.min(nowSec, close) : close;
+  const sortedSource = [...sourcePoints].sort((a, b) => a.time - b.time);
+
+  const sessionPoints =
+    isUltraSparseLiveSessionSource(sortedSource, open, endSec) ||
+    liveSessionSourceIsDenseIntraday(sortedSource, open, endSec)
+      ? filterLiveSessionWindow(sortedSource, sessionYmd, timeZone, open, endSec)
+      : resampleStock1DLiveSession(sourcePoints, sessionYmd, timeZone, openValue, now);
 
   if (!sessionPoints.length) {
     return [];

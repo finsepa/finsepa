@@ -28,7 +28,6 @@ import {
 import { OPEN_SEARCH_EVENT } from "@/components/search/search-modal";
 import { useSearchPanel } from "@/components/search/use-search-panel";
 import { HapticButton } from "@/components/haptic-button";
-import { useMobileBottomNavScrollHide } from "@/lib/layout/use-mobile-bottom-nav-scroll-hide";
 import { useMobileBottomNavSearchIsolation } from "@/lib/layout/use-mobile-bottom-nav-search-isolation";
 import { Search } from "@/lib/icons";
 import { cn } from "@/lib/utils";
@@ -42,7 +41,7 @@ const MORE_MENU_ROW_GAP_PX = 2;
 const MORE_MENU_LIST_PADDING_PX = 12;
 const MORE_MENU_PILL_PADDING_PX = 4;
 /** Sync with `--mobile-bottom-nav-expanded-height`. */
-const MORE_MENU_TAB_ROW_PX = 52;
+const MORE_MENU_TAB_ROW_PX = 64;
 
 /** Fallback when `window` is unavailable (SSR / first paint). */
 const FALLBACK_VIEWPORT_HEIGHT_PX = 844;
@@ -98,7 +97,7 @@ type LinkTabConfig = {
 };
 
 const LINK_TABS: LinkTabConfig[] = [
-  { id: "markets", label: "Markets", href: "/screener", Icon: Globe },
+  { id: "markets", label: "Market", href: "/screener", Icon: Globe },
   { id: "portfolio", label: "Portfolio", href: "/portfolio", Icon: ChartPieSlice },
   { id: "watchlist", label: "Watchlist", href: "/watchlist", Icon: Star },
 ];
@@ -126,7 +125,6 @@ export function MobileBottomNav() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchInteractive, setSearchInteractive] = useState(false);
   const navFrozen = moreOpen || moreMenuAnimating;
-  useMobileBottomNavScrollHide(!searchOpen && !navFrozen);
   useMobileBottomNavSearchIsolation(searchOpen);
 
   const closeSearch = useCallback(() => setSearchOpen(false), []);
@@ -340,7 +338,7 @@ export function MobileBottomNav() {
                         >
                           <HapticButton
                             className={cn(
-                              "mobile-bottom-nav-tab-button flex h-full w-full items-center justify-center rounded-full",
+                              "mobile-bottom-nav-tab-button flex h-full w-full flex-col items-center justify-center gap-1 rounded-full py-0.5",
                               visuallyActive ? "text-[#09090B] opacity-100" : "text-[#A1A1AA] opacity-80 active:opacity-100",
                             )}
                             aria-label={tab.label}
@@ -349,6 +347,7 @@ export function MobileBottomNav() {
                             <span className="mobile-bottom-nav-tab-icon-slot" aria-hidden>
                               <Icon className="mobile-bottom-nav-tab-icon" weight={visuallyActive ? "fill" : "regular"} />
                             </span>
+                            <span className="mobile-bottom-nav-tab-label">{tab.label}</span>
                           </HapticButton>
                         </div>
                       );
@@ -360,12 +359,12 @@ export function MobileBottomNav() {
                       ) : null}
                       <HapticButton
                         className={cn(
-                          "mobile-bottom-nav-tab-button flex h-full w-full items-center justify-center rounded-full",
+                          "mobile-bottom-nav-tab-button flex h-full w-full flex-col items-center justify-center gap-1 rounded-full py-0.5",
                           moreOpen || urlTab === "more"
                             ? "text-[#09090B] opacity-100"
                             : "text-[#A1A1AA] opacity-80 active:opacity-100",
                         )}
-                        aria-label="More"
+                        aria-label="Menu"
                         aria-expanded={moreOpen}
                         aria-haspopup="dialog"
                         onClick={toggleMore}
@@ -373,6 +372,7 @@ export function MobileBottomNav() {
                         <span className="mobile-bottom-nav-tab-icon-slot" aria-hidden>
                           <ChevronsUpDownIcon className="mobile-bottom-nav-tab-icon shrink-0" />
                         </span>
+                        <span className="mobile-bottom-nav-tab-label">Menu</span>
                       </HapticButton>
                     </div>
               </div>
