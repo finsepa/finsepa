@@ -26,7 +26,7 @@ export function MobileBottomNavSearchField({
       <input
         ref={panel.inputRef}
         data-mobile-bottom-search-input
-        type="search"
+        type="text"
         inputMode="search"
         value={panel.query}
         onChange={(e) => panel.setQuery(e.target.value)}

@@ -26,7 +26,9 @@ export function MobilePortfolioTopbarChrome() {
           <span className="inline-block h-7 w-[min(100%,10rem)] max-w-full animate-pulse rounded-md bg-[#E4E4E7]" />
         )}
       </h1>
-      <TransactionPortfolioField variant="titleGhost" compactMenuAlign="leading" />
+      {portfolioDisplayReady ? (
+        <TransactionPortfolioField variant="titleGhost" compactMenuAlign="leading" />
+      ) : null}
     </div>
   );
 }

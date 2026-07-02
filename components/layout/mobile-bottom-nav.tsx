@@ -28,6 +28,7 @@ import { OPEN_SEARCH_EVENT } from "@/components/search/search-modal";
 import { useSearchPanel } from "@/components/search/use-search-panel";
 import { HapticButton } from "@/components/haptic-button";
 import { useMobileBottomNavScrollHide } from "@/lib/layout/use-mobile-bottom-nav-scroll-hide";
+import { useMobileBottomNavSearchIsolation } from "@/lib/layout/use-mobile-bottom-nav-search-isolation";
 import { useMobileVisualViewport } from "@/lib/layout/use-mobile-visual-viewport";
 import { Search, X } from "@/lib/icons";
 import { cn } from "@/lib/utils";
@@ -129,6 +130,7 @@ export function MobileBottomNav() {
   const [searchMorphComplete, setSearchMorphComplete] = useState(false);
   const navFrozen = moreOpen || moreMenuAnimating;
   useMobileBottomNavScrollHide(!searchOpen && !navFrozen);
+  useMobileBottomNavSearchIsolation(searchOpen);
 
   const searchMorphRef = useRef<HTMLDivElement>(null);
   const closeSearch = useCallback(() => setSearchOpen(false), []);
@@ -278,13 +280,6 @@ export function MobileBottomNav() {
           "mobile-bottom-nav-blur-fade md:hidden",
           searchOpen && "mobile-bottom-nav-blur-fade--hidden",
         )}
-        style={
-          navFrozen ?
-            {
-              height: `calc(var(--mobile-bottom-nav-blur-extension) + ${expandedHeightPx}px + var(--mobile-bottom-nav-inset-bottom) + env(safe-area-inset-bottom, 0px))`,
-            }
-          : undefined
-        }
       />
 
       <div
@@ -433,17 +428,17 @@ export function MobileBottomNav() {
               ) : null}
             </AnimatePresence>
 
-            <HapticButton
-              type="button"
-              className={cn(
-                "mobile-bottom-nav-search-pill flex shrink-0 items-center justify-center rounded-full text-[#09090B]",
-                searchOpen ? "mobile-bottom-nav-search-pill--close" : "h-full w-full",
-              )}
-              aria-label={searchOpen ? "Close search" : "Search"}
-              onClick={() => (searchOpen ? closeSearch() : openSearch())}
-            >
-              <AnimatePresence mode="popLayout" initial={false}>
-                {searchOpen ? (
+            {searchOpen ? (
+              <button
+                type="button"
+                className={cn(
+                  "mobile-bottom-nav-search-pill flex shrink-0 items-center justify-center rounded-full text-[#09090B]",
+                  "mobile-bottom-nav-search-pill--close",
+                )}
+                aria-label="Close search"
+                onClick={closeSearch}
+              >
+                <AnimatePresence mode="popLayout" initial={false}>
                   <motion.span
                     key="close-icon"
                     className="flex items-center justify-center"
@@ -454,7 +449,16 @@ export function MobileBottomNav() {
                   >
                     <X className="mobile-bottom-nav-search-icon" strokeWidth={2} aria-hidden />
                   </motion.span>
-                ) : (
+                </AnimatePresence>
+              </button>
+            ) : (
+              <HapticButton
+                type="button"
+                className="mobile-bottom-nav-search-pill flex h-full w-full shrink-0 items-center justify-center rounded-full text-[#09090B]"
+                aria-label="Search"
+                onClick={openSearch}
+              >
+                <AnimatePresence mode="popLayout" initial={false}>
                   <motion.span
                     key="search-icon"
                     className="flex items-center justify-center"
@@ -465,9 +469,9 @@ export function MobileBottomNav() {
                   >
                     <Search className="mobile-bottom-nav-search-icon" strokeWidth={2} aria-hidden />
                   </motion.span>
-                )}
-              </AnimatePresence>
-            </HapticButton>
+                </AnimatePresence>
+              </HapticButton>
+            )}
           </div>
         </div>
       </div>
