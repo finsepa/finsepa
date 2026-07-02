@@ -109,7 +109,7 @@ export function attachPassThroughIosHapticOverlay(host: HTMLElement): () => void
   overlay.setAttribute("aria-hidden", "true");
   overlay.tabIndex = -1;
   overlay.style.cssText =
-    "position:absolute;inset:0;width:100%;height:100%;margin:0;padding:0;border:0;" +
+    "position:absolute;inset:0;width:100%;height:100%;margin:0;padding:0;border:0;outline:none;" +
     "-webkit-appearance:switch;appearance:auto;opacity:0;cursor:inherit;pointer-events:auto;z-index:2;";
 
   const forward = (event: PointerEvent) => {
@@ -138,10 +138,15 @@ export function attachPassThroughIosHapticOverlay(host: HTMLElement): () => void
     forward(event);
   };
 
+  const onOverlayFocus = () => {
+    overlay.blur();
+  };
+
   overlay.addEventListener("pointerdown", onPointerDown);
   overlay.addEventListener("pointermove", forward);
   overlay.addEventListener("pointerup", onPointerUp);
   overlay.addEventListener("pointercancel", onPointerUp);
+  overlay.addEventListener("focus", onOverlayFocus);
 
   host.appendChild(overlay);
 
@@ -150,6 +155,7 @@ export function attachPassThroughIosHapticOverlay(host: HTMLElement): () => void
     overlay.removeEventListener("pointermove", forward);
     overlay.removeEventListener("pointerup", onPointerUp);
     overlay.removeEventListener("pointercancel", onPointerUp);
+    overlay.removeEventListener("focus", onOverlayFocus);
     overlay.remove();
   };
 }
@@ -175,19 +181,28 @@ export function attachIosHapticOverlay(host: HTMLElement): () => void {
   overlay.setAttribute("aria-hidden", "true");
   overlay.tabIndex = -1;
   overlay.style.cssText =
-    "position:absolute;inset:0;width:100%;height:100%;margin:0;padding:0;border:0;" +
+    "position:absolute;inset:0;width:100%;height:100%;margin:0;padding:0;border:0;outline:none;" +
     "-webkit-appearance:switch;appearance:auto;opacity:0;cursor:inherit;pointer-events:auto;";
+
+  const onOverlayFocus = () => {
+    overlay.blur();
+  };
 
   const onOverlayClick = (event: Event) => {
     event.stopPropagation();
-    host.focus({ preventScroll: true });
     host.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    overlay.blur();
+    if (host instanceof HTMLElement) {
+      host.blur();
+    }
   };
 
+  overlay.addEventListener("focus", onOverlayFocus);
   overlay.addEventListener("click", onOverlayClick);
   host.appendChild(overlay);
 
   return () => {
+    overlay.removeEventListener("focus", onOverlayFocus);
     overlay.removeEventListener("click", onOverlayClick);
     overlay.remove();
   };

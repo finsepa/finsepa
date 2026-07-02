@@ -298,6 +298,8 @@ body {
     height: 100%;
     border-radius: 9999px;
     flex-shrink: 0;
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
   }
 
   .mobile-bottom-nav-search-pill--close {
@@ -355,10 +357,17 @@ body {
 
   .mobile-bottom-nav-tab-button {
     padding: 0;
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
     transition:
       color 100ms ease,
       opacity 100ms ease,
       background-color 100ms ease;
+  }
+
+  [data-haptic-overlay] {
+    outline: none !important;
+    -webkit-tap-highlight-color: transparent;
   }
 
   html.mobile-bottom-nav-scroll-compact .mobile-bottom-nav-tab-button {

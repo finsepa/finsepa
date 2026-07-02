@@ -3,6 +3,7 @@
 import { type ComponentPropsWithoutRef, useEffect, useRef } from "react";
 
 import { attachIosHapticOverlay, canUseVibrationApi, isAppleMobileDevice } from "@/lib/haptic";
+import { cn } from "@/lib/utils";
 
 type HapticButtonProps = ComponentPropsWithoutRef<"button">;
 
@@ -11,7 +12,7 @@ type HapticButtonProps = ComponentPropsWithoutRef<"button">;
  * iOS 26.5+: invisible switch overlay (user must tap the switch directly).
  * Android: Vibration API on click.
  */
-export function HapticButton({ ...props }: HapticButtonProps) {
+export function HapticButton({ className, ...props }: HapticButtonProps) {
   const ref = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -29,5 +30,12 @@ export function HapticButton({ ...props }: HapticButtonProps) {
     }
   }, []);
 
-  return <button ref={ref} type="button" {...props} />;
+  return (
+    <button
+      ref={ref}
+      type="button"
+      className={cn("outline-none focus:outline-none focus-visible:outline-none", className)}
+      {...props}
+    />
+  );
 }
