@@ -64,9 +64,11 @@ async function readMarketSnapshotWithStaleFallback<T>(
   key: MarketSnapshotKey,
   expectedSegment: string,
   maxStaleMs: number,
+  allowStaleFallback = true,
 ): Promise<T | null> {
   const exact = await readMarketSnapshotForSegment<T>(key, expectedSegment);
   if (exact) return exact;
+  if (!allowStaleFallback) return null;
 
   const row = await readMarketSnapshotRow(key);
   if (!row?.data) return null;
@@ -85,6 +87,7 @@ export async function readMarketSnapshot<T>(key: MarketSnapshotKey): Promise<T |
     key,
     marketSnapshotHotSegment(epoch),
     MARKET_SNAPSHOT_HOT_STALE_MS,
+    epoch.mode !== "frozen",
   );
 }
 

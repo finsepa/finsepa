@@ -27,6 +27,8 @@ type Props = {
   periodLabelOverride?: string | null;
   /** Badge for period move when a range selection is active (e.g. chart `1Y`). */
   chartRangeLabel?: string;
+  /** Grey label after inline move (e.g. `Today`, `5D`) — overview chart range. */
+  movementRangeBadge?: string | null;
   /** Latest close from chart series for the active range (not crosshair hover). */
   price: number | null;
   changePct: number | null;
@@ -74,6 +76,7 @@ export function StockHeader({
   periodLabel,
   periodLabelOverride = null,
   chartRangeLabel,
+  movementRangeBadge = null,
   price,
   changePct,
   changeAbs,
@@ -241,7 +244,12 @@ export function StockHeader({
         aria-label="Loading price change"
       />
     ) : (
-      <span className={periodChangeClass}>{periodChangeValue}</span>
+      <span className="inline-flex flex-wrap items-baseline gap-x-2 gap-y-0">
+        <span className={periodChangeClass}>{periodChangeValue}</span>
+        {movementRangeBadge && !hasSelectionSecondary ? (
+          <span className={periodLabelClass}>{movementRangeBadge}</span>
+        ) : null}
+      </span>
     )
   ) : null;
 

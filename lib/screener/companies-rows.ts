@@ -9,6 +9,7 @@ import type { TopCompanyUniverseRow } from "@/lib/screener/top500-companies";
 import type { ScreenerTableRow } from "@/lib/screener/screener-static";
 import type { EodhdRealtimePayload } from "@/lib/market/eodhd-realtime";
 import type { SimpleScreenerStockDerived } from "@/lib/market/simple-market-layer";
+import { isScreenerUsMarketLiveSession } from "@/lib/screener/screener-us-market-cache";
 
 function pickScreenerPct(snapshot: number | null | undefined, fromBars: number | null | undefined): number | null {
   if (snapshot != null && Number.isFinite(snapshot)) return snapshot;
@@ -33,6 +34,24 @@ function lastCloseFromDerived(derived: SimpleScreenerStockDerived | null | undef
   return typeof last === "number" && Number.isFinite(last) && last > 0 ? last : null;
 }
 
+function change1DFromDerived(derived: SimpleScreenerStockDerived | null | undefined): number | null {
+  const s = derived?.last5DailyCloses;
+  if (!s || s.length < 2) return null;
+  const last = s[s.length - 1];
+  const prev = s[s.length - 2];
+  if (
+    typeof last !== "number" ||
+    typeof prev !== "number" ||
+    !Number.isFinite(last) ||
+    !Number.isFinite(prev) ||
+    last <= 0 ||
+    prev <= 0
+  ) {
+    return null;
+  }
+  return ((last - prev) / prev) * 100;
+}
+
 /**
  * P/E in Key Stats (Highlights) format — matches stock Valuation "P/E Ratio" when fundamentals load.
  * Falls back to screener implied (price/earnings_share) if fundamentals are missing.
@@ -50,6 +69,46 @@ export async function resolveScreenerPeToMatchKeyStats(
   return "—";
 }
 
+export function screenerAtClosePriceAndChange1D(
+  quotePrice: number | null | undefined,
+  quoteChange1D: number | null | undefined,
+  universeRow: TopCompanyUniverseRow | null | undefined,
+  barDerived?: SimpleScreenerStockDerived | null,
+): { price: number | null; change1D: number | null } {
+  const rtClose = quotePrice != null && Number.isFinite(quotePrice) && quotePrice > 0 ? quotePrice : null;
+  const snapClose =
+    universeRow?.adjustedClose != null &&
+    Number.isFinite(universeRow.adjustedClose) &&
+    universeRow.adjustedClose > 0
+      ? universeRow.adjustedClose
+      : null;
+  const derivedClose = lastCloseFromDerived(barDerived);
+  const derivedChange1D = change1DFromDerived(barDerived);
+  const atCloseSession = !isScreenerUsMarketLiveSession();
+
+  const price: number | null = atCloseSession
+    ? (derivedClose ?? snapClose ?? rtClose)
+    : (rtClose ?? snapClose ?? derivedClose);
+
+  let change1D: number | null = null;
+  if (atCloseSession) {
+    change1D =
+      derivedChange1D ??
+      (universeRow?.refund1dP != null && Number.isFinite(universeRow.refund1dP)
+        ? universeRow.refund1dP
+        : null) ??
+      (quoteChange1D != null && Number.isFinite(quoteChange1D) ? quoteChange1D : null);
+  } else {
+    change1D =
+      (quoteChange1D != null && Number.isFinite(quoteChange1D) ? quoteChange1D : null) ??
+      (universeRow?.refund1dP != null && Number.isFinite(universeRow.refund1dP)
+        ? universeRow.refund1dP
+        : null);
+  }
+
+  return { price, change1D };
+}
+
 /** Shared by Companies table and Top-10 strip — merges universe + quote + logo URL string. */
 export function buildScreenerCompanyRowFromUniverse(
   u: TopCompanyUniverseRow,
@@ -61,24 +120,12 @@ export function buildScreenerCompanyRowFromUniverse(
   /** When set, Key Stats "P/E Ratio" string (from fundamentals); else implied from the universe row. */
   peKeyStatsDisplay?: string,
 ): ScreenerTableRow {
-  const rtClose = quote && typeof quote.close === "number" && Number.isFinite(quote.close) ? quote.close : null;
-  const prevClose =
-    quote && typeof quote.previousClose === "number" && Number.isFinite(quote.previousClose) ? quote.previousClose : null;
-
-  const snapClose = u.adjustedClose;
-  const derivedClose = lastCloseFromDerived(barDerived);
-  const price: number | null =
-    rtClose ??
-    (snapClose != null && Number.isFinite(snapClose) && snapClose > 0 ? snapClose : null) ??
-    derivedClose;
-
-  let change1D: number | null = null;
-  if (rtClose != null) {
-    if (typeof quote?.change_p === "number" && Number.isFinite(quote.change_p)) change1D = quote.change_p;
-    else if (prevClose != null && prevClose !== 0) change1D = ((rtClose - prevClose) / prevClose) * 100;
-  } else if (u.refund1dP != null && Number.isFinite(u.refund1dP)) {
-    change1D = u.refund1dP;
-  }
+  const { price, change1D } = screenerAtClosePriceAndChange1D(
+    quote?.close,
+    quote?.change_p,
+    u,
+    barDerived,
+  );
 
   const change1M = pickScreenerPct(u.refund1mP, barDerived?.changePercent1M);
   const changeYTD = pickScreenerPct(u.refundYtdP, barDerived?.changePercentYTD);

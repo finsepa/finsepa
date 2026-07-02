@@ -9,6 +9,7 @@ import type { TopCompanyUniverseRow } from "@/lib/screener/top500-companies";
 
 import {
   buildScreenerCompanyRowFromUniverse,
+  screenerAtClosePriceAndChange1D,
   screenerPeDisplayFromUniverse,
 } from "@/lib/screener/companies-rows";
 import { companyLogoUrlForTicker } from "@/lib/screener/company-logo-url";
@@ -113,6 +114,7 @@ export async function buildStockScreenerTablePages(
     const meta = TOP10_META[ticker];
     const u = byTicker.get(ticker);
     const bar = derived.top10[ticker];
+    const atClose = screenerAtClosePriceAndChange1D(q?.price, q?.changePercent1D, u, bar);
     const mcapFromUniverse = u?.marketCapUsd;
     const mcapUsd =
       mcapFromUniverse != null && Number.isFinite(mcapFromUniverse) && mcapFromUniverse > 0
@@ -124,8 +126,8 @@ export async function buildStockScreenerTablePages(
         ticker,
         name: meta.name,
         logoUrl: companyLogoUrlForTicker(ticker, meta.domain),
-        price: q?.price ?? null,
-        change1D: q?.changePercent1D ?? null,
+        price: atClose.price,
+        change1D: atClose.change1D,
         change1M: pickScreenerPct(u?.refund1mP, bar?.changePercent1M),
         changeYTD: pickScreenerPct(u?.refundYtdP, bar?.changePercentYTD),
         marketCap: formatUsdCompact(mcapUsd),

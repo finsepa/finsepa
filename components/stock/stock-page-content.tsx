@@ -592,6 +592,34 @@ export function StockPageContent({
     if (chartSeries !== "price") return overviewHeaderUi;
 
     const closed = getUsEquityMarketSession(new Date()) !== "regular";
+
+    if (closed) {
+      if (range === "1D") {
+        const priorSession = priorSessionDayChangeFromPerformance(
+          performanceForHeaderFallback,
+          headerPriorCloseForMerge,
+        );
+        if (priorSession) {
+          return {
+            ...overviewHeaderUi,
+            loading: false,
+            empty: false,
+            displayPrice: priorSession.closePrice,
+            displayChangeAbs: priorSession.changeAbs,
+            displayChangePct: priorSession.changePct,
+            selectionChangeAbs: null,
+            selectionChangePct: null,
+            isHovering: false,
+          };
+        }
+      }
+      return mergeClosedMarketOverviewHeader(
+        overviewHeaderUi,
+        performanceForHeaderFallback,
+        "price",
+      );
+    }
+
     if (range === "1D") {
       return mergeSessionHeaderWithPerformanceSpot(
         overviewHeaderUi,
@@ -601,13 +629,6 @@ export function StockPageContent({
         new Date(),
         headerPriorCloseForMerge,
         true,
-      );
-    }
-    if (closed) {
-      return mergeClosedMarketOverviewHeader(
-        overviewHeaderUi,
-        performanceForHeaderFallback,
-        "price",
       );
     }
     return overviewHeaderUi;
@@ -625,6 +646,25 @@ export function StockPageContent({
     const base = { ...EMPTY_CHART_DISPLAY, loading: true, empty: false };
     if (chartSeries !== "price") return base;
     const closed = getUsEquityMarketSession(new Date()) !== "regular";
+    if (closed) {
+      if (range === "1D") {
+        const priorSession = priorSessionDayChangeFromPerformance(
+          performanceForHeaderFallback,
+          headerPriorCloseForMerge,
+        );
+        if (priorSession) {
+          return {
+            ...base,
+            loading: false,
+            empty: false,
+            displayPrice: priorSession.closePrice,
+            displayChangeAbs: priorSession.changeAbs,
+            displayChangePct: priorSession.changePct,
+          };
+        }
+      }
+      return mergeClosedMarketOverviewHeader(base, performanceForHeaderFallback, "price");
+    }
     if (range === "1D") {
       return mergeSessionHeaderWithPerformanceSpot(
         base,
@@ -635,9 +675,6 @@ export function StockPageContent({
         headerPriorCloseForMerge,
         true,
       );
-    }
-    if (closed) {
-      return mergeClosedMarketOverviewHeader(base, performanceForHeaderFallback, "price");
     }
     return base;
   }, [chartSeries, headerLiveSpotForMerge, headerPriorCloseForMerge, performanceForHeaderFallback, range, regularSessionClock]);
@@ -838,6 +875,22 @@ export function StockPageContent({
     return formatStockHeaderAtClosePeriodLabel(closeUnix, STOCK_DISPLAY_TZ);
   }, [overviewDrivesHeader, range, regularSessionClock]);
 
+  const headerMovementRangeBadge = useMemo(() => {
+    if (!overviewDrivesHeader || chartSeries !== "price") return null;
+    if (chartUi.selectionActive || chartUi.isHovering) return null;
+    return range === "1D" ? "Today" : range;
+  }, [overviewDrivesHeader, chartSeries, chartUi.isHovering, chartUi.selectionActive, range]);
+
+  const headerDisplayPrice = extendedHoursHeaderLeft?.price ?? chartUi.displayPrice;
+  const headerDisplayChangeAbs =
+    overviewDrivesHeader && range !== "1D" && extendedHoursHeaderLeft
+      ? chartUi.displayChangeAbs
+      : (extendedHoursHeaderLeft?.changeAbs ?? chartUi.displayChangeAbs);
+  const headerDisplayChangePct =
+    overviewDrivesHeader && range !== "1D" && extendedHoursHeaderLeft
+      ? chartUi.displayChangePct
+      : (extendedHoursHeaderLeft?.changePct ?? chartUi.displayChangePct);
+
   /** Hidden 1D chart keeps session/live spot for the header on every tab (including Holdings). */
   const stockChartDrivesHeader = true;
 
@@ -867,9 +920,10 @@ export function StockPageContent({
         periodLabel={headerPeriodLabel}
         periodLabelOverride={chartUi.periodLabelOverride}
         chartRangeLabel={overviewDrivesHeader ? range : "1D"}
-        price={extendedHoursHeaderLeft?.price ?? chartUi.displayPrice}
-        changePct={extendedHoursHeaderLeft?.changePct ?? chartUi.displayChangePct}
-        changeAbs={extendedHoursHeaderLeft?.changeAbs ?? chartUi.displayChangeAbs}
+        movementRangeBadge={headerMovementRangeBadge}
+        price={headerDisplayPrice}
+        changePct={headerDisplayChangePct}
+        changeAbs={headerDisplayChangeAbs}
         selectionChangeAbs={chartUi.selectionChangeAbs}
         selectionChangePct={chartUi.selectionChangePct}
         chartLoading={chartUi.loading}
