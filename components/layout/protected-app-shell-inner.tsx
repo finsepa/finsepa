@@ -21,6 +21,7 @@ import { Topbar } from "@/components/layout/topbar";
 import { WatchlistRail } from "@/components/layout/watchlist-rail";
 import { WatchlistRailLayoutProvider } from "@/components/layout/watchlist-rail-layout-context";
 import { dropdownMenuFloatingScrollbarClassName } from "@/components/design-system/dropdown-menu-styles";
+import { MOBILE_PAGE_BACKGROUND_CLASS } from "@/components/design-system/card-surface-styles";
 import { useMobileTopbarScrollBlur } from "@/lib/layout/use-mobile-topbar-scroll-blur";
 import { cn } from "@/lib/utils";
 
@@ -58,7 +59,7 @@ function ProtectedAppChrome({
     <div
       id="app-shell-root"
       suppressHydrationWarning
-      className="mobile-document-scroll-shell relative flex min-h-[var(--app-vh)] w-full flex-1 flex-col bg-[#FAFAFA] max-md:overflow-visible md:block md:h-dvh md:max-h-dvh md:flex-none md:overflow-hidden md:bg-[#F4F4F5]"
+      className={cn("mobile-document-scroll-shell relative flex min-h-[var(--app-vh)] w-full flex-1 flex-col max-md:overflow-visible md:block md:h-dvh md:max-h-dvh md:flex-none md:overflow-hidden md:bg-[#F4F4F5]", MOBILE_PAGE_BACKGROUND_CLASS)}
     >
       <Suspense fallback={null}>
         <NavigationTopLoader />
@@ -121,7 +122,8 @@ function ProtectedAppChrome({
               ref={mainRef}
               suppressHydrationWarning
               className={cn(
-                "relative z-0 min-h-0 min-w-0 w-full max-w-full flex-1 bg-[#FAFAFA] max-md:overflow-visible max-md:pb-[var(--mobile-bottom-nav-main-clearance)] md:overflow-x-hidden md:overflow-y-auto md:overscroll-y-contain md:bg-white",
+                "relative z-0 min-h-0 min-w-0 w-full max-w-full flex-1 max-md:overflow-visible max-md:pb-[var(--mobile-bottom-nav-main-clearance)] md:overflow-x-hidden md:overflow-y-auto md:overscroll-y-contain md:bg-white",
+                MOBILE_PAGE_BACKGROUND_CLASS,
                 dropdownMenuFloatingScrollbarClassName,
               )}
             >

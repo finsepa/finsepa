@@ -15,6 +15,7 @@ import { createPortal } from "react-dom";
 import { usePortfolioOverviewAthPublisher } from "@/components/portfolio/portfolio-overview-ath-context";
 import { ChevronDown } from "@/lib/icons";
 
+import { MOBILE_ELEVATED_CARD_CLASS } from "@/components/design-system/card-surface-styles";
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 import { earliestStockBuyYmd } from "@/lib/portfolio/benchmark-inception";
 import {
@@ -60,8 +61,10 @@ const PERIOD_OPTIONS: { id: OverviewProfitPeriod; label: string }[] = [
 ];
 
 /** Matches {@link IndexCards} screener index tile chrome. */
-const OVERVIEW_METRIC_CARD_CLASS =
-  "flex flex-col items-start gap-1 overflow-hidden rounded-2xl border border-[#E4E4E7] bg-white px-3 py-3 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] sm:px-4 sm:py-4";
+const OVERVIEW_METRIC_CARD_CLASS = cn(
+  "flex flex-col items-start gap-1 overflow-hidden px-3 py-3 sm:px-4 sm:py-4",
+  MOBILE_ELEVATED_CARD_CLASS,
+);
 
 function OverviewMetricCardSkeleton() {
   return (

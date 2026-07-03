@@ -12,6 +12,15 @@ import { cn } from "@/lib/utils";
 
 type SearchPanel = ReturnType<typeof useSearchPanel>;
 
+function mobileBottomSearchResultsGapPx(): number {
+  if (typeof document === "undefined") return 16;
+  const raw = getComputedStyle(document.documentElement).getPropertyValue(
+    "--mobile-bottom-nav-search-results-gap",
+  );
+  const parsed = Number.parseFloat(raw);
+  return Number.isFinite(parsed) ? parsed : 16;
+}
+
 export function MobileBottomNavSearchField({
   panel,
   className,
@@ -31,7 +40,7 @@ export function MobileBottomNavSearchField({
         value={panel.query}
         onChange={(e) => panel.setQuery(e.target.value)}
         placeholder="Search..."
-        className="h-full w-full min-w-0 bg-transparent text-sm leading-5 text-[#09090B] outline-none placeholder:text-[#A1A1AA] caret-[#09090B]"
+        className="h-full w-full min-w-0 bg-transparent text-base leading-5 text-[#09090B] outline-none placeholder:text-[#A1A1AA] caret-[#09090B]"
         autoComplete="off"
         autoCorrect="off"
         enterKeyHint="search"
@@ -66,13 +75,14 @@ export function MobileBottomNavSearchResults({
       const morphRect = morph.getBoundingClientRect();
       const vv = window.visualViewport;
       const viewportTop = vv?.offsetTop ?? 0;
-      const gap = 8;
+      const viewportBottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
       const topInset = 12;
+      const resultsGapPx = mobileBottomSearchResultsGapPx();
       setAnchor({
         left: morphRect.left,
         width: morphRect.width,
-        bottom: window.innerHeight - morphRect.top + gap,
-        maxHeight: Math.max(160, morphRect.top - viewportTop - topInset),
+        bottom: Math.max(0, viewportBottom - morphRect.top + resultsGapPx),
+        maxHeight: Math.max(160, morphRect.top - viewportTop - topInset - resultsGapPx),
       });
     };
 
@@ -99,7 +109,7 @@ export function MobileBottomNavSearchResults({
     <div
       id="mobile-bottom-search-results"
       className={cn(
-        "mobile-bottom-nav-search-results-panel fixed z-[42] flex min-h-0 flex-col overflow-hidden md:hidden",
+        "mobile-bottom-nav-search-results-panel fixed z-[42] flex min-h-0 flex-col overflow-hidden rounded-b-none md:hidden",
         dropdownMenuSurfaceClassName(),
         dropdownMenuFloatingScrollbarClassName,
       )}

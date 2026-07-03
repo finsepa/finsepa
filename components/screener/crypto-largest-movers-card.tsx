@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 
 import { cn } from "@/lib/utils";
-import { MOBILE_CARD_SURFACE_CLASS } from "@/components/design-system/card-surface-styles";
+import { MOBILE_PANEL_CARD_CLASS } from "@/components/design-system/card-surface-styles";
 import type { CryptoTop10Row } from "@/lib/market/crypto-top10";
 import { CompanyLogo } from "@/components/screener/company-logo";
 
@@ -31,8 +31,8 @@ export function CryptoLargestMoversCard({
   return (
     <div
       className={cn(
-        "flex min-h-[188px] min-w-0 flex-col gap-[12px] rounded-[12px] border border-[#E4E4E7] bg-white px-4 py-3 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] sm:px-5 sm:py-3",
-        MOBILE_CARD_SURFACE_CLASS,
+        "flex min-h-[188px] min-w-0 flex-col gap-[12px] px-4 py-3 sm:px-5 sm:py-3",
+        MOBILE_PANEL_CARD_CLASS,
         className,
       )}
     >

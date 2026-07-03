@@ -9,17 +9,14 @@ import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useStat
 import { CalendarDays } from "@/lib/icons";
 
 import { cn } from "@/lib/utils";
-import { MOBILE_CARD_SURFACE_CLASS } from "@/components/design-system/card-surface-styles";
+import { MOBILE_INSET_CARD_CLASS } from "@/components/design-system/card-surface-styles";
 import { consensusLabelTextClass } from "@/lib/market/analyst-consensus-tone";
 
 const KEY_STATS_TAB_MOTION_MS = 280;
 const KEY_STATS_TAB_MOTION_EASE = "cubic-bezier(0.33, 1, 0.68, 1)";
 
 /** Mobile matches screener home table card — 16px radius, stacked shadow, no outer border. */
-const KEY_STATS_CARD_CLASS = cn(
-  "mb-5 rounded-xl border border-[#E4E4E7] bg-white p-4 max-md:mb-0 max-md:rounded-2xl",
-  MOBILE_CARD_SURFACE_CLASS,
-);
+const KEY_STATS_CARD_CLASS = cn("mb-5 p-4 max-md:mb-0", MOBILE_INSET_CARD_CLASS);
 
 const KEY_STATS_ROW_BORDER_CLASS = "border-b border-[#E4E4E7] max-md:border-b-[0.5px]";
 

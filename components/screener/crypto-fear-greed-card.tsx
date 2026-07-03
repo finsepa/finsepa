@@ -4,7 +4,7 @@ import { ChevronRight } from "@/lib/icons";
 import { useMemo } from "react";
 
 import { cn } from "@/lib/utils";
-import { MOBILE_CARD_SURFACE_CLASS } from "@/components/design-system/card-surface-styles";
+import { MOBILE_PANEL_CARD_CLASS } from "@/components/design-system/card-surface-styles";
 import type { CryptoFearGreedIndex } from "@/lib/market/alternative-fear-greed";
 
 function colorForValue(v: number): string {
@@ -58,8 +58,8 @@ export function CryptoFearGreedCard({
   return (
     <div
       className={cn(
-        "flex h-[188px] flex-col gap-[12px] rounded-[12px] border border-[#E4E4E7] bg-white px-[20px] py-[12px] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]",
-        MOBILE_CARD_SURFACE_CLASS,
+        "flex h-[188px] flex-col gap-[12px] px-[20px] py-[12px]",
+        MOBILE_PANEL_CARD_CLASS,
         className,
       )}
     >

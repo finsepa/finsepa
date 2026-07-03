@@ -133,12 +133,14 @@ export function MobileBottomNav() {
   useMobileBottomNavSearchIsolation(searchOpen);
 
   const searchMorphRef = useRef<HTMLDivElement>(null);
+  const searchWasOpenOnPointerDownRef = useRef(false);
   const closeSearch = useCallback(() => setSearchOpen(false), []);
   const searchPanel = useSearchPanel({
     open: searchOpen,
-    focusWhen: searchMorphComplete,
+    focusWhen: searchOpen,
     onClose: closeSearch,
   });
+  const focusSearchInput = searchPanel.focusInput;
   const visualViewport = useMobileVisualViewport(searchOpen);
 
   const barRef = useRef<HTMLDivElement>(null);
@@ -191,6 +193,11 @@ export function MobileBottomNav() {
   }, [searchOpen]);
 
   useEffect(() => {
+    if (!searchMorphComplete) return;
+    focusSearchInput();
+  }, [searchMorphComplete, focusSearchInput]);
+
+  useEffect(() => {
     setMoreOpen(false);
     setSearchOpen(false);
   }, [pathname]);
@@ -200,11 +207,16 @@ export function MobileBottomNav() {
     setSearchOpen(true);
   }, []);
 
+  const openSearchFromGesture = useCallback(() => {
+    openSearch();
+    requestAnimationFrame(() => focusSearchInput());
+  }, [openSearch, focusSearchInput]);
+
   useEffect(() => {
-    const onOpenSearch = () => openSearch();
+    const onOpenSearch = () => openSearchFromGesture();
     window.addEventListener(OPEN_SEARCH_EVENT, onOpenSearch);
     return () => window.removeEventListener(OPEN_SEARCH_EVENT, onOpenSearch);
-  }, [openSearch]);
+  }, [openSearchFromGesture]);
 
   const selectTab = useCallback(
     (tab: MobilePrimaryNavTab) => {
@@ -282,15 +294,8 @@ export function MobileBottomNav() {
         aria-hidden
         className={cn(
           "mobile-bottom-nav-blur-fade md:hidden",
-          searchOpen && "mobile-bottom-nav-blur-fade--hidden",
+          (searchOpen || navFrozen) && "mobile-bottom-nav-blur-fade--hidden",
         )}
-        style={
-          navFrozen ?
-            {
-              height: `calc(var(--mobile-bottom-nav-blur-extension) + ${expandedHeightPx}px + var(--mobile-bottom-nav-inset-bottom) + env(safe-area-inset-bottom, 0px))`,
-            }
-          : undefined
-        }
       />
 
       <div
@@ -446,7 +451,16 @@ export function MobileBottomNav() {
                 searchOpen ? "mobile-bottom-nav-search-pill--close" : "h-full w-full",
               )}
               aria-label={searchOpen ? "Close search" : "Search"}
-              onClick={() => (searchOpen ? closeSearch() : openSearch())}
+              onPointerDown={(e) => {
+                if (e.button !== 0) return;
+                searchWasOpenOnPointerDownRef.current = searchOpen;
+                if (searchOpen) return;
+                e.preventDefault();
+                openSearchFromGesture();
+              }}
+              onClick={() => {
+                if (searchWasOpenOnPointerDownRef.current) closeSearch();
+              }}
             >
               <AnimatePresence mode="popLayout" initial={false}>
                 {searchOpen ? (

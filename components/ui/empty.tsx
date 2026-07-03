@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { MOBILE_CARD_SURFACE_CLASS } from "@/components/design-system/card-surface-styles";
+import { MOBILE_PANEL_CARD_CLASS } from "@/components/design-system/card-surface-styles";
 import { cn } from "@/lib/utils";
 
 /** Default copy when {@link EmptyTitle} / {@link EmptyDescription} omit children. */
@@ -26,9 +26,8 @@ export function Empty({
         "flex w-full flex-col items-center justify-center text-center",
         variant === "card" &&
           cn(
-            "min-h-[min(40vh,360px)] rounded-[12px] border border-solid border-[#E4E4E7] bg-white px-6 py-16",
-            "max-md:overflow-hidden max-md:rounded-2xl max-md:border-0",
-            MOBILE_CARD_SURFACE_CLASS,
+            "min-h-[min(40vh,360px)] px-6 py-16",
+            MOBILE_PANEL_CARD_CLASS,
           ),
         variant === "plain" && "px-6 py-8",
         className,

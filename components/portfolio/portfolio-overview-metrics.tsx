@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 
-import { MOBILE_CARD_SURFACE_CLASS } from "@/components/design-system/card-surface-styles";
+import { MOBILE_INSET_CARD_CLASS } from "@/components/design-system/card-surface-styles";
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 import { tradeSymbolsFromHistory } from "@/lib/portfolio/realized-pnl-from-trades";
 import { cn } from "@/lib/utils";
@@ -169,10 +169,7 @@ function splitMetricsIntoColumns(metrics: PortfolioMetricRow[]): PortfolioMetric
 }
 
 /** Mobile matches asset Key Stats card — 16px radius, stacked shadow, inset padding. */
-const PORTFOLIO_METRICS_MOBILE_CARD_CLASS = cn(
-  "max-md:overflow-hidden max-md:rounded-2xl max-md:p-4",
-  MOBILE_CARD_SURFACE_CLASS,
-);
+const PORTFOLIO_METRICS_MOBILE_CARD_CLASS = "max-md:overflow-hidden max-md:p-4";
 
 const DESKTOP_STAT_ROW_BORDER_CLASS = "border-b border-solid border-[#E4E4E7]";
 
@@ -315,7 +312,8 @@ export function PortfolioOverviewMetrics({
   return (
     <div
       className={cn(
-        "mb-6 max-md:mb-4 w-full min-w-0 bg-white md:overflow-visible md:rounded-xl md:border md:border-solid md:border-[#E4E4E7] md:p-4",
+        "mb-6 max-md:mb-4 w-full min-w-0 md:overflow-visible md:p-4",
+        MOBILE_INSET_CARD_CLASS,
         PORTFOLIO_METRICS_MOBILE_CARD_CLASS,
       )}
     >

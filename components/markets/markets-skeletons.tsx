@@ -1,6 +1,7 @@
 "use client";
 
 import { LogoSkeleton, SkeletonBox, TextSkeleton } from "@/components/markets/skeleton";
+import { MOBILE_ELEVATED_CARD_CLASS } from "@/components/design-system/card-surface-styles";
 import { INDEX_CARD_SURFACE_CLASS, INDEX_CARDS_GRID_CLASS, INDEX_CARDS_SCROLL_CLASS, INDEX_CARDS_SCROLL_OUTER_CLASS } from "@/components/screener/index-cards";
 import {
   SCREENER_TABLE_HEADER_STICKY_CLASS,
@@ -200,7 +201,7 @@ function IndicesRowSkeleton() {
 
 function CryptoMoverCardSkeleton({ title }: { title: string }) {
   return (
-    <div className="flex min-h-[220px] flex-col rounded-2xl border border-[#E4E4E7] bg-white p-4 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
+    <div className={cn("flex min-h-[220px] flex-col p-4", MOBILE_ELEVATED_CARD_CLASS)}>
       <span className="mb-3 text-[14px] font-medium leading-5 text-[#A1A1AA]">{title}</span>
       <div className="flex flex-1 flex-col gap-3">
         {Array.from({ length: 4 }).map((_, i) => (
@@ -220,7 +221,7 @@ function CryptoMoverCardSkeleton({ title }: { title: string }) {
 
 function FearGreedCardSkeleton() {
   return (
-    <div className="flex min-h-[220px] flex-col items-center justify-center rounded-2xl border border-[#E4E4E7] bg-white p-4 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
+    <div className={cn("flex min-h-[220px] flex-col items-center justify-center p-4", MOBILE_ELEVATED_CARD_CLASS)}>
       <SkeletonBox className="mb-3 h-4 w-32 rounded" />
       <SkeletonBox className="h-[120px] w-[120px] rounded-full" />
       <div className="mt-3">

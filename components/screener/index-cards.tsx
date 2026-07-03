@@ -4,8 +4,9 @@ import { ArrowDown, ArrowUp } from "@/lib/icons";
 import { useEffect, useMemo, useState } from "react";
 
 import { FadeIn } from "@/components/markets/skeleton";
-import { MOBILE_CARD_SURFACE_CLASS } from "@/components/design-system/card-surface-styles";
+import { MOBILE_ELEVATED_CARD_CLASS } from "@/components/design-system/card-surface-styles";
 import type { IndexCardData } from "@/lib/screener/indices-today";
+import { cn } from "@/lib/utils";
 import {
   fetchScreenerIndexCardsCached,
   readScreenerIndexCardsCache,
@@ -63,8 +64,10 @@ export const INDEX_CARDS_SCROLL_OUTER_CLASS = "mb-4 overflow-visible sm:mb-5 md:
 export const INDEX_CARDS_SCROLL_CLASS =
   "-mr-4 pl-1 pr-4 pt-1 mobile-scroll-x md:mx-0 md:overflow-visible md:pl-0 md:pr-0 md:pb-0 md:pt-0 md:mb-0";
 
-export const INDEX_CARD_SURFACE_CLASS =
-  `flex w-[7.25625rem] shrink-0 flex-col items-start gap-0.5 max-md:py-3.5 overflow-hidden rounded-2xl border border-[#E4E4E7] bg-white px-3 py-3 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition max-md:overflow-visible md:gap-1 md:hover:shadow-[0px_2px_6px_0px_rgba(10,10,10,0.08)] sm:px-4 sm:py-4 md:w-auto md:min-w-0 md:shrink ${MOBILE_CARD_SURFACE_CLASS}`;
+export const INDEX_CARD_SURFACE_CLASS = cn(
+  "flex w-[7.25625rem] shrink-0 flex-col items-start gap-0.5 max-md:py-3.5 overflow-hidden px-3 py-3 transition max-md:overflow-visible md:gap-1 md:hover:shadow-[0px_2px_6px_0px_rgba(10,10,10,0.08)] sm:px-4 sm:py-4 md:w-auto md:min-w-0 md:shrink",
+  MOBILE_ELEVATED_CARD_CLASS,
+);
 
 function seedIndexCards(initialCards?: IndexCardData[]): IndexCardData[] {
   if (Array.isArray(initialCards) && initialCards.length > 0) return initialCards;

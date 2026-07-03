@@ -56,11 +56,28 @@ export function useSearchPanel({
   const queryTrim = query.trim();
   const readyForInput = open && (focusWhen ?? open);
 
+  const focusInput = useCallback(() => {
+    const input = inputRef.current;
+    if (!input) return;
+    input.focus({ preventScroll: true });
+  }, []);
+
   useLayoutEffect(() => {
     if (!readyForInput) return;
-    inputRef.current?.focus({ preventScroll: true });
+    focusInput();
     setRecent(readRecent());
-  }, [readyForInput, readRecent, userId, authReady]);
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => {
+      focusInput();
+      raf2 = requestAnimationFrame(focusInput);
+    });
+    const retry = window.setTimeout(focusInput, 320);
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+      window.clearTimeout(retry);
+    };
+  }, [readyForInput, readRecent, userId, authReady, focusInput]);
 
   useEffect(() => {
     if (!open) {
@@ -167,6 +184,7 @@ export function useSearchPanel({
 
   return {
     inputRef,
+    focusInput,
     query,
     setQuery,
     queryTrim,

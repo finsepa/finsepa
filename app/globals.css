@@ -21,6 +21,8 @@
   --mobile-bottom-nav-compact-inset-x: 2.75rem;
   --mobile-bottom-nav-inset-x: var(--mobile-bottom-nav-expanded-inset-x);
   --mobile-bottom-nav-radius: 32px;
+  /** Vertical gap between mobile bottom search input and results dropdown. */
+  --mobile-bottom-nav-search-results-gap: 16px;
   /**
    * Space reserved for the floating bottom nav pill over `<main>` (padding-bottom on mobile).
    * Uses expanded height so compacting the pill does not shift scroll layout.
@@ -310,6 +312,10 @@ body {
   }
 
   /** Hide WebKit’s native clear control; close is the morph pill X. */
+  [data-mobile-bottom-search-input] {
+    font-size: 16px;
+  }
+
   [data-mobile-bottom-search-input]::-webkit-search-cancel-button {
     -webkit-appearance: none;
     appearance: none;
