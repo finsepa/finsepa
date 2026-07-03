@@ -96,7 +96,7 @@ function PriceAndChangeCell({ price, change1D }: { price: number | null; change1
  * when an extra Key Stat column was added.
  */
 const rowLinkGridBase =
-  "grid w-full min-w-0 flex-1 grid-cols-[20px_minmax(0,1fr)_minmax(4.5rem,5.5rem)] gap-x-1.5 max-md:gap-x-1.5 sm:gap-x-2";
+  "grid w-full min-w-0 flex-1 grid-cols-[22px_minmax(0,1fr)_minmax(4.5rem,5.5rem)] gap-x-1.5 max-md:gap-x-1.5 sm:gap-x-2";
 
 /** Base desktop width before custom key-stat columns (rank + company + 6 core metrics). */
 const SCREENER_TABLE_DESKTOP_BASE_MIN_WIDTH_PX = 688;
@@ -107,7 +107,9 @@ export function screenerTableMinWidthPx(keyStatCount: number): number | undefine
   return SCREENER_TABLE_DESKTOP_BASE_MIN_WIDTH_PX + keyStatCount * SCREENER_TABLE_KEY_STAT_COL_MIN_WIDTH_PX;
 }
 
-const MOBILE_GRID_TEMPLATE = "20px minmax(0, 1fr) minmax(4.5rem, 5.5rem)";
+const MOBILE_GRID_TEMPLATE = "22px minmax(0, 1fr) minmax(4.5rem, 5.5rem)";
+
+const mobileRankCellClass = "max-md:-ml-0.5 text-center text-[14px] font-semibold leading-5 tabular-nums text-[#71717A]";
 
 /** Default: fluid columns that fit the viewport. With custom metrics: fixed mins + horizontal scroll. */
 function buildDesktopGridTemplate(keyStatCount: number): string {
@@ -223,7 +225,7 @@ const ScreenerDataRow = memo(function ScreenerDataRow({
         style={{ gridTemplateColumns }}
         aria-label={`Open ${item.name} (${item.ticker})`}
       >
-        <div className="text-center text-[14px] font-semibold leading-5 tabular-nums text-[#71717A]">{rank}</div>
+        <div className={mobileRankCellClass}>{rank}</div>
 
         <div className="flex min-w-0 items-center justify-start gap-2 pr-0 text-left max-md:gap-2 sm:gap-3 sm:pr-4">
           <CompanyLogo name={item.name} logoUrl={item.logoUrl} symbol={item.ticker} />
@@ -322,7 +324,7 @@ export function ScreenerTable({
         className={`${rowLinkGridBase} min-h-[44px] max-md:min-h-0 items-center text-[12px] font-medium leading-5 text-[#71717A] sm:text-[14px]`}
         style={{ gridTemplateColumns }}
       >
-        <div className="text-center">#</div>
+        <div className={cn(mobileRankCellClass, "max-md:text-[12px] max-md:font-medium sm:text-[14px]")}>#</div>
         <div className="text-left">Company</div>
         <div className={cn("min-w-0 w-full text-right", !useFluidDesktopColumns && "sm:shrink-0 sm:max-w-[8rem] sm:min-w-[5.25rem]")}>
           <span className="sm:hidden">Price</span>

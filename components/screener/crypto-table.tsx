@@ -80,10 +80,13 @@ function PriceAndChangeCell({
 
 /** Mobile: # + coin + price + 1D % (no star). `sm+`: star + # + coin + … (matches {@link ScreenerTable}). */
 const colLayout =
-  "grid-cols-[20px_minmax(0,1fr)_minmax(4.5rem,5.5rem)] gap-x-1.5 sm:grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr_1fr] sm:gap-x-2";
+  "grid-cols-[22px_minmax(0,1fr)_minmax(4.5rem,5.5rem)] gap-x-1.5 sm:grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr_1fr] sm:gap-x-2";
 /** Columns inside `Link` — same counts as `colLayout` after the star column. */
 const rowLinkGrid =
-  "grid-cols-[20px_minmax(0,1fr)_minmax(4.5rem,5.5rem)] gap-x-1.5 sm:grid-cols-[48px_2fr_1fr_1fr_1fr_1fr_1fr] sm:gap-x-2";
+  "grid-cols-[22px_minmax(0,1fr)_minmax(4.5rem,5.5rem)] gap-x-1.5 sm:grid-cols-[48px_2fr_1fr_1fr_1fr_1fr_1fr] sm:gap-x-2";
+
+const mobileRankCellClass =
+  "max-md:-ml-0.5 text-center text-[14px] font-semibold leading-5 tabular-nums text-[#71717A]";
 
 export function CryptoTable({
   initialRows,
@@ -109,7 +112,7 @@ export function CryptoTable({
         className={`grid ${colLayout} min-h-[44px] items-center px-4 py-0 text-[12px] font-medium leading-5 text-[#71717A] sm:text-[14px] ${SCREENER_TABLE_HEADER_STICKY_CLASS}`}
       >
         <div className="hidden sm:block" aria-hidden />
-        <div className="text-center">#</div>
+        <div className={mobileRankCellClass}>#</div>
         <div className="text-left">Coin</div>
         <div className="min-w-0 w-full text-right">Price</div>
         <div className="hidden min-w-0 w-full text-right sm:block">1D %</div>
@@ -143,7 +146,7 @@ export function CryptoTable({
               className={`${rowLinkGrid} col-span-3 col-start-1 grid min-h-[56px] min-w-0 w-full items-center justify-items-stretch no-underline text-[#09090B] visited:text-[#09090B] sm:col-span-7 sm:col-start-2 sm:min-h-[60px]`}
               aria-label={`Open ${r.name} (${eodhdCryptoSpotTickerDisplay(r.symbol)})`}
             >
-              <div className="text-center text-[14px] font-semibold leading-5 tabular-nums text-[#71717A]">
+              <div className={mobileRankCellClass}>
                 {rankOffset + i + 1}
               </div>
 

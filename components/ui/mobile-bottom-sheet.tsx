@@ -11,9 +11,17 @@ export const MOBILE_BOTTOM_SHEET_ENTER_CLASS = "mobile-bottom-nav-sheet-enter";
 export const MOBILE_BOTTOM_SHEET_PANEL_CLASS =
   "flex w-full max-h-[min(70vh,560px)] flex-col overflow-y-auto overscroll-contain bg-white shadow-[0px_10px_16px_-3px_rgba(10,10,10,0.10),0px_4px_6px_0px_rgba(10,10,10,0.04)]";
 
-/** 12px horizontal + bottom inset on the overlay so the dimmed backdrop shows around the modal sheet. */
+/** 8px horizontal + bottom inset on the overlay so the dimmed backdrop shows around the modal sheet. */
+export const MOBILE_MODAL_SHEET_OVERLAY_BACKDROP_CLASS = "!bg-black/20 !backdrop-blur-none";
+
 export const MOBILE_MODAL_SHEET_OVERLAY_INSET_CLASS =
-  "!px-3 !pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]";
+  "!px-2 !pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))]";
+
+export const MOBILE_MODAL_SHEET_OVERLAY_CLASS = cn(
+  "!pt-0",
+  MOBILE_MODAL_SHEET_OVERLAY_BACKDROP_CLASS,
+  MOBILE_MODAL_SHEET_OVERLAY_INSET_CLASS,
+);
 
 type MobileBottomSheetProps = {
   open: boolean;
@@ -27,7 +35,7 @@ type MobileBottomSheetProps = {
   showDragHandle?: boolean;
 };
 
-/** Mobile modal sheet — dropdown/action surface with 12px inset and dimmed overlay. */
+/** Mobile modal sheet — dropdown/action surface with 8px inset and dimmed overlay. */
 export function MobileBottomSheet({
   open,
   onClose,
@@ -65,7 +73,7 @@ export function MobileBottomSheet({
       align="bottom"
       zIndex={zIndex}
       shellEffect={false}
-      className={cn("!pt-0", MOBILE_MODAL_SHEET_OVERLAY_INSET_CLASS)}
+      className={MOBILE_MODAL_SHEET_OVERLAY_CLASS}
       closeOnBackdropClick
     >
       <div
@@ -89,7 +97,7 @@ export function MobileBottomSheet({
           <h2
             id={titleId}
             className={cn(
-              "shrink-0 px-4 text-base font-semibold leading-6 text-[#09090B]",
+              "shrink-0 px-4 text-center text-base font-semibold leading-6 text-[#09090B]",
               showDragHandle ? "pb-2 pt-0" : "pb-2 pt-4",
             )}
           >

@@ -8,8 +8,9 @@ import { getAuthAppOriginFromEnv } from "@/lib/auth/app-origin";
 import { isSignupDisabled, getTurnstileSecretKey } from "@/lib/auth/signup-guard";
 import { getLoopsApiKey, getLoopsTransactionalSignupId } from "@/lib/env/server";
 import { getSnapTradeClientId, getSnapTradeConsumerKey } from "@/lib/env/server";
-import { getSupabaseAdminClient } from "@/lib/supabase/admin";
+import { checkStockMinuteIngestPipeline } from "@/lib/market/stock-minute-ingest-health";
 import { pickProcessEnv } from "@/lib/env/pick-process-env";
+import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 import { resolveSupabaseDatabaseUrl } from "@/lib/supabase/postgres-url";
 import { getStripeAccounts, getStripeClient } from "@/lib/stripe/server";
 
@@ -327,6 +328,58 @@ export async function runAdminHealthChecks(): Promise<HealthReport> {
         label: "SnapTrade connections (DB)",
         status: "error",
         summary: "Could not read snaptrade_users.",
+        error: e instanceof Error ? e.message : String(e),
+      });
+    }
+  }
+
+  if (admin) {
+    try {
+      const { latencyMs, result } = await timed(() => checkStockMinuteIngestPipeline("NVDA"));
+      const session = result.marketSession;
+      const workerOk = result.worker?.ok === true;
+      const barsOk = result.minuteBarsToday >= 10;
+      const regular = session === "regular";
+
+      let status: HealthCheck["status"] = "ok";
+      let summary = "Minute-bar pipeline healthy.";
+
+      if (!result.configured) {
+        status = regular ? "warn" : "ok";
+        summary = "STOCK_MINUTE_INGEST_HEALTH_URL not set — worker health not probed.";
+      } else if (regular && !workerOk && !barsOk) {
+        status = "error";
+        summary = "WS minute ingest down and few NVDA bars today.";
+      } else if (regular && !workerOk) {
+        status = "warn";
+        summary = "Railway worker unhealthy during regular session.";
+      } else if (regular && !barsOk) {
+        status = "warn";
+        summary = "Few NVDA minute bars in Supabase today.";
+      }
+
+      checks.push({
+        id: "stock-minute-ingest",
+        label: "Stock 1D minute ingest",
+        status,
+        summary,
+        latencyMs,
+        details: {
+          healthUrlConfigured: result.configured,
+          marketSession: session,
+          nvdaMinuteBarsToday: result.minuteBarsToday,
+          workerAuthorized: result.worker?.authorized ?? null,
+          workerSubscribed: result.worker?.subscribed ?? null,
+          workerLastTradeAt: result.worker?.lastTradeAt ?? null,
+        },
+        error: result.worker?.error,
+      });
+    } catch (e) {
+      checks.push({
+        id: "stock-minute-ingest",
+        label: "Stock 1D minute ingest",
+        status: "error",
+        summary: "Minute-bar pipeline check failed.",
         error: e instanceof Error ? e.message : String(e),
       });
     }

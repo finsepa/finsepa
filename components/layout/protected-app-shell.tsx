@@ -28,7 +28,14 @@ export const dynamic = "force-dynamic";
 
 const getSubscriptionGateContextCached = cache(getSubscriptionGateContext);
 
-export async function ProtectedAppShell({ children }: { children: ReactNode }) {
+export async function ProtectedAppShell({
+  children,
+  mobileTopbarVariant,
+}: {
+  children: ReactNode;
+  /** Stock asset pages include section tabs in the fixed mobile top bar. */
+  mobileTopbarVariant?: "stock";
+}) {
   const [supabase, cookieStore, requestHeaders] = await Promise.all([
     getSupabaseServerClient(),
     cookies(),
@@ -80,6 +87,7 @@ export async function ProtectedAppShell({ children }: { children: ReactNode }) {
           platformTrialDaysLeft={gate.topbarTrialDaysLeft}
           initialSidebarCollapsed={initialSidebarCollapsed}
           initialWatchlistRailCollapsed={initialWatchlistRailCollapsed}
+          mobileTopbarVariant={mobileTopbarVariant}
         >
           <OnboardingAuthBootstrap />
           <Suspense fallback={null}>

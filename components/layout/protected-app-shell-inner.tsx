@@ -6,6 +6,7 @@ import { Suspense, useRef } from "react";
 import { MainScrollToTop } from "@/components/layout/main-scroll-to-top";
 import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav";
 import { MarketsTabHostProvider } from "@/components/screener/markets-tab-host-context";
+import { StockDetailTabHostProvider } from "@/components/stock/stock-detail-tab-host-context";
 import { MobilePrimaryNavProvider } from "@/components/layout/mobile-primary-nav-context";
 import { NavigationTopLoader } from "@/components/layout/navigation-top-loader";
 import { Sidebar } from "@/components/layout/sidebar";
@@ -22,6 +23,7 @@ import { WatchlistRail } from "@/components/layout/watchlist-rail";
 import { WatchlistRailLayoutProvider } from "@/components/layout/watchlist-rail-layout-context";
 import { dropdownMenuFloatingScrollbarClassName } from "@/components/design-system/dropdown-menu-styles";
 import { MOBILE_PAGE_BACKGROUND_CLASS } from "@/components/design-system/card-surface-styles";
+import { MOBILE_STOCK_TOPBAR_OFFSET_CLASS } from "@/lib/layout/use-mobile-stock-topbar-layout";
 import { useMobileTopbarScrollBlur } from "@/lib/layout/use-mobile-topbar-scroll-blur";
 import { cn } from "@/lib/utils";
 
@@ -32,6 +34,7 @@ function ProtectedAppChrome({
   avatarUrl,
   userDisplayName,
   platformTrialDaysLeft,
+  mobileTopbarVariant,
 }: {
   children: ReactNode;
   userId: string;
@@ -39,6 +42,7 @@ function ProtectedAppChrome({
   avatarUrl: string | null;
   userDisplayName: string;
   platformTrialDaysLeft: number | null;
+  mobileTopbarVariant?: "stock";
 }) {
   const { collapsed } = useSidebarLayout();
   const outerPx = collapsed ? SIDEBAR_OUTER_COLLAPSED_PX : SIDEBAR_OUTER_EXPANDED_PX;
@@ -56,6 +60,7 @@ function ProtectedAppChrome({
     <MobileAssetTopbarProvider>
     <MobilePrimaryNavProvider>
     <MarketsTabHostProvider>
+    <StockDetailTabHostProvider>
     <div
       id="app-shell-root"
       suppressHydrationWarning
@@ -116,7 +121,10 @@ function ProtectedAppChrome({
           </div>
           <div
             suppressHydrationWarning
-            className="shell-desktop-panel__content flex min-h-0 min-w-0 flex-1 max-md:flex-col max-md:pt-[var(--mobile-topbar-offset)] md:flex-row md:overflow-hidden"
+            className={cn(
+              "shell-desktop-panel__content flex min-h-0 min-w-0 flex-1 max-md:flex-col md:flex-row md:overflow-hidden",
+              mobileTopbarVariant === "stock" ? "max-md:pt-0" : "max-md:pt-[var(--mobile-topbar-offset)]",
+            )}
           >
             <main
               ref={mainRef}
@@ -125,6 +133,8 @@ function ProtectedAppChrome({
                 "relative z-0 min-h-0 min-w-0 w-full max-w-full flex-1 max-md:overflow-visible max-md:pb-[var(--mobile-bottom-nav-main-clearance)] md:overflow-x-hidden md:overflow-y-auto md:overscroll-y-contain md:bg-white",
                 MOBILE_PAGE_BACKGROUND_CLASS,
                 dropdownMenuFloatingScrollbarClassName,
+                mobileTopbarVariant === "stock" && MOBILE_STOCK_TOPBAR_OFFSET_CLASS,
+                mobileTopbarVariant === "stock" && "max-md:pt-[var(--mobile-topbar-offset)]",
               )}
             >
               {children}
@@ -139,6 +149,7 @@ function ProtectedAppChrome({
       <MainScrollToTop scrollRootRef={mainRef} />
       <MobileBottomNav />
     </div>
+    </StockDetailTabHostProvider>
     </MarketsTabHostProvider>
     </MobilePrimaryNavProvider>
     </MobileAssetTopbarProvider>
@@ -154,6 +165,7 @@ export function ProtectedAppShellInner({
   platformTrialDaysLeft = null,
   initialSidebarCollapsed = false,
   initialWatchlistRailCollapsed = true,
+  mobileTopbarVariant,
 }: {
   children: ReactNode;
   userId: string;
@@ -166,6 +178,7 @@ export function ProtectedAppShellInner({
   initialSidebarCollapsed?: boolean;
   /** Server-read cookie for desktop watchlist rail (collapsed = star strip only). */
   initialWatchlistRailCollapsed?: boolean;
+  mobileTopbarVariant?: "stock";
 }) {
   return (
     <SidebarLayoutProvider initialCollapsed={initialSidebarCollapsed}>
@@ -176,6 +189,7 @@ export function ProtectedAppShellInner({
           avatarUrl={avatarUrl}
           userDisplayName={userDisplayName}
           platformTrialDaysLeft={platformTrialDaysLeft ?? null}
+          mobileTopbarVariant={mobileTopbarVariant}
         >
           {children}
         </ProtectedAppChrome>

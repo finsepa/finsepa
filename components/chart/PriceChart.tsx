@@ -69,24 +69,17 @@ import {
   fitOverviewChartTimeScale,
   filterStock1DLiveSessionPointsByTimeWindow,
   liveSessionSpanWhitespaceData,
-  liveSpotToMinuteBar,
-  mergeLiveSpotMinuteBarsIntoPoints,
   padStock1DLiveSessionBaselineData,
   prepareStock1DLiveSessionChartPoints,
   resolveSessionOpenAnchorValue,
   resolveStock1DLiveSessionYmd,
   shouldUseStock1DLiveSessionChart,
   stock1DLiveSessionPlotLeftPx,
+  STOCK_1D_LIVE_CHART_POLL_MS,
   STOCK_1D_LIVE_SESSION_CLOCK_TICK_MS,
   STOCK_1D_LIVE_PRICE_POLL_MS,
   STOCK_1D_LIVE_SESSION_TZ,
-  stock1DLiveSessionMinuteBucketUnix,
 } from "@/lib/chart/stock-1d-live-session-chart";
-import {
-  mergeStock1DSessionBarInStorage,
-  readStock1DSessionBarsFromStorage,
-  writeStock1DSessionBarsToStorage,
-} from "@/lib/chart/stock-1d-session-bars-storage";
 import { attachMobilePriceChartHaptics } from "@/lib/chart/mobile-chart-haptic";
 import {
   chartBarTimeForYmd,
@@ -915,7 +908,6 @@ export function PriceChart({
   } | null>(null);
   const containerWidthRef = useRef(0);
   const hideMobileYAxisLabelsRef = useRef(false);
-  const mobileHoverBarTimeRef = useRef<number | null>(null);
   const mobileHoverPointRef = useRef<{ x: number; y: number } | null>(null);
   const mobileScrubApplyRef = useRef<
     ((point: { x: number; y: number }, bar: StockChartPoint) => void) | null
@@ -930,62 +922,10 @@ export function PriceChart({
   const liveSessionMinuteRef = useRef(liveSessionMinute);
   liveSessionMinuteRef.current = liveSessionMinute;
   const [sessionNowMs, setSessionNowMs] = useState(() => Date.now());
-  const [liveMinuteBars, setLiveMinuteBars] = useState<StockChartPoint[]>([]);
 
   useEffect(() => {
-    setLiveMinuteBars([]);
     setLiveSessionMinute(liveSessionMinuteProp ?? initialChart?.liveSessionMinute ?? true);
   }, [kind, symbol, range, holdingsStyle, liveSessionMinuteProp, initialChart?.liveSessionMinute]);
-
-  // Restore today's 60s poll history from this browser (survives reloads).
-  useEffect(() => {
-    if (kind !== "stock" || range !== "1D" || holdingsStyle) return;
-    if (getUsEquityMarketSession(new Date()) !== "regular") return;
-    const sessionYmd = resolveStock1DLiveSessionYmd([], STOCK_1D_LIVE_SESSION_TZ, new Date());
-    if (!sessionYmd) return;
-    const stored = readStock1DSessionBarsFromStorage(symbol, sessionYmd);
-    if (!stored.length) return;
-    setLiveMinuteBars((prev) => mergeLiveSpotMinuteBarsIntoPoints(stored, prev));
-  }, [kind, symbol, range, holdingsStyle]);
-
-  useEffect(() => {
-    if (!liveMinuteBars.length) return;
-    const sessionYmd =
-      liveMinuteBars.find((p) => p.sessionDate?.trim())?.sessionDate?.trim() ??
-      resolveStock1DLiveSessionYmd(liveMinuteBars, STOCK_1D_LIVE_SESSION_TZ, new Date());
-    if (!sessionYmd) return;
-    writeStock1DSessionBarsToStorage(symbol, sessionYmd, liveMinuteBars);
-  }, [symbol, liveMinuteBars]);
-
-  // Seed the client minute accumulator from server poll bars (60s sparkline history).
-  useEffect(() => {
-    if (kind !== "stock" || range !== "1D" || holdingsStyle) return;
-    if (!points.length) return;
-    const now = new Date();
-    if (getUsEquityMarketSession(now) !== "regular") return;
-    const sessionYmd = resolveStock1DLiveSessionYmd(points, STOCK_1D_LIVE_SESSION_TZ, now);
-    if (!sessionYmd) return;
-    const open = usSessionWallClockUnix(sessionYmd, 9, 30, STOCK_1D_LIVE_SESSION_TZ);
-    const windowed = filterStock1DLiveSessionPointsByTimeWindow(
-      points,
-      sessionYmd,
-      STOCK_1D_LIVE_SESSION_TZ,
-      now,
-    );
-    if (windowed.length < 2) return;
-    const byBucket = new Map<number, StockChartPoint>();
-    for (const p of windowed) {
-      if (p.time < open) continue;
-      const bucket = stock1DLiveSessionMinuteBucketUnix(sessionYmd, p.time, STOCK_1D_LIVE_SESSION_TZ);
-      const prev = byBucket.get(bucket);
-      if (!prev || p.time >= prev.time) {
-        byBucket.set(bucket, { ...p, time: bucket, sessionDate: sessionYmd, timeZone: STOCK_1D_LIVE_SESSION_TZ });
-      }
-    }
-    const seeds = Array.from(byBucket.values()).sort((a, b) => a.time - b.time);
-    if (!seeds.length) return;
-    setLiveMinuteBars((prev) => mergeLiveSpotMinuteBarsIntoPoints(seeds, prev));
-  }, [kind, range, holdingsStyle, points]);
 
   useEffect(() => {
     if (kind !== "stock" || range !== "1D" || holdingsStyle) return;
@@ -1001,30 +941,6 @@ export function PriceChart({
     if (liveSpotUsd == null || !Number.isFinite(liveSpotUsd) || liveSpotUsd <= 0) return;
     setSessionNowMs(Date.now());
   }, [kind, range, holdingsStyle, liveSpotUsd]);
-
-  useEffect(() => {
-    if (kind !== "stock" || range !== "1D" || holdingsStyle) return;
-    if (getUsEquityMarketSession(new Date()) !== "regular") return;
-    if (liveSpotUsd == null || !Number.isFinite(liveSpotUsd) || liveSpotUsd <= 0) return;
-    const now = new Date(sessionNowMs);
-    const sessionYmd = resolveStock1DLiveSessionYmd([], STOCK_1D_LIVE_SESSION_TZ, now);
-    if (!sessionYmd) return;
-    const bar = liveSpotToMinuteBar(liveSpotUsd, sessionYmd, now);
-    if (!bar) return;
-    setLiveMinuteBars((prev) => {
-      const idx = prev.findIndex((p) => p.time === bar.time);
-      let next: StockChartPoint[];
-      if (idx >= 0) {
-        if (prev[idx]!.value === bar.value) return prev;
-        next = [...prev];
-        next[idx] = bar;
-      } else {
-        next = [...prev, bar].sort((a, b) => a.time - b.time);
-      }
-      mergeStock1DSessionBarInStorage(symbol, sessionYmd, bar);
-      return next;
-    });
-  }, [kind, range, holdingsStyle, liveSpotUsd, sessionNowMs, symbol]);
 
   const dataTimeZoneHint = useMemo(
     () =>
@@ -1043,18 +959,17 @@ export function PriceChart({
       return points;
     }
     const now = new Date(sessionNowMs);
-    const mergedSource = mergeLiveSpotMinuteBarsIntoPoints(points, liveMinuteBars);
     const prepared = prepareStock1DLiveSessionChartPoints(
-      mergedSource,
+      points,
       liveSpotUsd,
       STOCK_1D_LIVE_SESSION_TZ,
       now,
     );
     if (prepared.length) return prepared;
-    const sessionYmd = resolveStock1DLiveSessionYmd(mergedSource, STOCK_1D_LIVE_SESSION_TZ, now);
+    const sessionYmd = resolveStock1DLiveSessionYmd(points, STOCK_1D_LIVE_SESSION_TZ, now);
     if (!sessionYmd) return points;
     const filtered = filterStock1DLiveSessionPointsByTimeWindow(
-      mergedSource,
+      points,
       sessionYmd,
       STOCK_1D_LIVE_SESSION_TZ,
       now,
@@ -1068,7 +983,7 @@ export function PriceChart({
       liveSpotUsd > 0;
     const tailValue = useLiveSpot ? liveSpotUsd : last.value;
     return appendLiveSessionNowTail(filtered, tailValue, sessionYmd, STOCK_1D_LIVE_SESSION_TZ, now);
-  }, [kind, range, holdingsStyle, points, liveMinuteBars, liveSpotUsd, sessionNowMs]);
+  }, [kind, range, holdingsStyle, points, liveSpotUsd, sessionNowMs]);
   const [hoverPrice, setHoverPrice] = useState<number | null>(null);
   const [hoverTimeUnix, setHoverTimeUnix] = useState<number | null>(null);
   const [hoverPoint, setHoverPoint] = useState<{ x: number; y: number } | null>(null);
@@ -1431,7 +1346,9 @@ export function PriceChart({
   }, [overviewBottomAxisMode, useCustomBottomAxis, holdingsStyle, points, containerWidth, loading, periodAxisSyncOptions]);
 
   // Holdings charts never drive the page header. Mobile overview scrub updates the header price.
-  const crosshairForHeader = useMemo((): { price: number; timeUnix: number } | null => {
+  const crosshairForHeader = useMemo(():
+    | { price: number; timeUnix: number; periodLabel?: string | null }
+    | null => {
     if (holdingsStyle || !useMobileOverviewCrosshair) return null;
     return mobileOverviewHeaderCrosshair;
   }, [holdingsStyle, useMobileOverviewCrosshair, mobileOverviewHeaderCrosshair]);
@@ -1530,7 +1447,6 @@ export function PriceChart({
 
   /** Reset hover + bottom axis when series/range/etc. change (avoid stale label smear while loading). */
   const clearMobileOverviewCrosshairDom = useCallback(() => {
-    mobileHoverBarTimeRef.current = null;
     mobileHoverPointRef.current = null;
     setMobileOverviewHeaderCrosshairRef.current(null);
     setHoverAxisLabelGuarded(null);
@@ -1857,19 +1773,6 @@ export function PriceChart({
           timeUnix,
           periodLabel,
         });
-      }
-      if (mobileHoverBarTimeRef.current !== nearBar.time) {
-        mobileHoverBarTimeRef.current = nearBar.time;
-        const xCoord = chart.timeScale().timeToCoordinate(nearBar.time as UTCTimestamp);
-        const leftPx = resolveOverviewCrosshairLeftPx(
-          chart,
-          nearBar.time,
-          xCoord != null && Number.isFinite(xCoord) ? xCoord : point.x,
-          stock1DLiveSessionRef.current,
-          liveSessionChartMetaRef.current,
-        );
-        const label = periodLabel ?? "";
-        setHoverAxisLabelGuarded({ leftPx, label });
       }
     };
 
@@ -2423,12 +2326,12 @@ export function PriceChart({
     };
   }, [kind, symbol, range, series, initialChart, chartDataCadence]);
 
-  // Refresh 1D during regular session — ~60s (EODHD intraday + live OHLCV tail).
+  // Refresh 1D during regular session — ~30s (minute store + live OHLCV tail).
   useEffect(() => {
     if (holdingsStyle || kind !== "stock" || range !== "1D" || screenshotPreviewMode) return;
     if (getUsEquityMarketSession(new Date()) !== "regular") return;
     let cancelled = false;
-    const pollMs = STOCK_1D_LIVE_PRICE_POLL_MS;
+    const pollMs = STOCK_1D_LIVE_CHART_POLL_MS;
     const poll = async () => {
       const path = `/api/stocks/${encodeURIComponent(symbol)}/chart?range=1D&series=${encodeURIComponent(series)}`;
       try {
@@ -2874,7 +2777,7 @@ export function PriceChart({
     holdingsStyle && (quarterBandLayouts.length > 0 || holdingsEarlierSummary != null);
 
   const activeBottomAxisLabel = useMobileOverviewCrosshair
-    ? hoverAxisLabel
+    ? null
     : holdingsStyle
       ? null
       : (overviewHover?.axisLabel ?? null);

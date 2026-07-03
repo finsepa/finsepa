@@ -16,6 +16,7 @@ import { TopbarQuickAddMenu } from "./topbar-quick-add-menu";
 import { TopbarUserMenu } from "./topbar-user-menu";
 import { MobileAssetTopbarChrome } from "./mobile-asset-topbar-chrome";
 import { MobileMarketsTopbarTabs } from "./mobile-markets-topbar-tabs";
+import { MobileStockTopbarTabs } from "./mobile-stock-topbar-tabs";
 import { useMobilePrimaryNav } from "@/components/layout/mobile-primary-nav-context";
 import {
   isPortfolioWorkspaceRoute,
@@ -37,6 +38,7 @@ import {
 import { parseMobileAssetTopbarRoute } from "@/lib/layout/mobile-asset-topbar-route";
 import { isScreenerRoute } from "@/lib/layout/is-screener-route";
 import { useMobileMarketsTopbarLayout } from "@/lib/layout/use-mobile-markets-topbar-layout";
+import { useMobileStockTopbarLayout } from "@/lib/layout/use-mobile-stock-topbar-layout";
 import { cn } from "@/lib/utils";
 
 const usdTopbar = new Intl.NumberFormat("en-US", {
@@ -140,7 +142,9 @@ export function Topbar({
   const mobilePortfolioRoute = isPortfolioWorkspaceRoute(pathname);
   const mobileWatchlistRoute = isWatchlistRoute(pathname);
   const mobileScreenerRoute = isScreenerRoute(pathname);
+  const mobileStockRoute = mobileAssetRoute?.kind === "stock";
   useMobileMarketsTopbarLayout(mobileScreenerRoute);
+  useMobileStockTopbarLayout(mobileStockRoute);
   const { mobileTopbarTitle } = useMobilePrimaryNav();
   const pathnameMobileTitle = useMemo(() => mobileTopbarTitleFromPathname(pathname), [pathname]);
   const resolvedMobileTitle =
@@ -156,6 +160,8 @@ export function Topbar({
             "flex min-w-0 flex-nowrap items-center gap-2 overflow-hidden max-md:bg-transparent max-md:px-4 md:min-h-[var(--shell-chrome-header-height)] md:h-auto md:gap-3 md:px-4 md:py-3",
             mobileAssetRoute
               ? "max-md:min-h-[var(--mobile-topbar-height)] max-md:h-auto max-md:py-1.5"
+              : mobileScreenerRoute
+                ? "max-md:h-[var(--mobile-markets-title-row-height)] max-md:min-h-[var(--mobile-markets-title-row-height)] max-md:items-end max-md:py-0"
               : "max-md:min-h-[var(--mobile-topbar-height)] max-md:h-auto max-md:py-2 md:h-14",
           )}
         >
@@ -243,6 +249,11 @@ export function Topbar({
         {mobileScreenerRoute ? (
           <Suspense fallback={null}>
             <MobileMarketsTopbarTabs />
+          </Suspense>
+        ) : null}
+        {mobileStockRoute ? (
+          <Suspense fallback={null}>
+            <MobileStockTopbarTabs />
           </Suspense>
         ) : null}
       </div>

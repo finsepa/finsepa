@@ -29,10 +29,10 @@ function MobileAssetTopbarTitle({
   const hasPlainLine2 = Boolean(line2?.trim());
 
   return (
-    <div className="min-w-0 flex-1 overflow-hidden px-1">
+    <div className="mx-auto min-w-0 max-w-[11rem] overflow-hidden px-1 text-center">
       <p className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">{line1}</p>
       {line2Loading ? (
-        <div className="mt-0.5 h-3.5 w-[5.5rem] max-w-full animate-pulse rounded bg-[#E4E4E7]" aria-hidden />
+        <div className="mx-auto mt-0.5 h-3.5 w-[5.5rem] max-w-full animate-pulse rounded bg-[#E4E4E7]" aria-hidden />
       ) : hasStructuredLine2 ? (
         <p className="mt-0.5 truncate text-[11px] leading-4 text-[#71717A]">
           {line2Exchange?.trim() ? <span>{line2Exchange.trim()}</span> : null}
@@ -82,24 +82,27 @@ export function MobileAssetTopbarChrome() {
   const line2Loading = subtitle?.line2Loading ?? false;
 
   return (
-    <div className="flex w-full min-w-0 items-center gap-2">
+    <div className="relative flex w-full min-w-0 items-center justify-between gap-2">
       <button
         type="button"
         onClick={handleBack}
         aria-label="Go back"
-        className={topbarSquircleIconClass}
+        className={`${topbarSquircleIconClass} relative z-[1] shrink-0`}
       >
         <ChevronLeft className="h-5 w-5 shrink-0" strokeWidth={1.75} aria-hidden />
       </button>
-      <MobileAssetTopbarTitle
-        line1={line1}
-        line2={line2}
-        line2Exchange={line2Exchange}
-        line2CountryFlag={line2CountryFlag}
-        line2Loading={line2Loading}
-      />
+      <div className="pointer-events-none absolute inset-x-0 flex justify-center px-[5.25rem]">
+        <MobileAssetTopbarTitle
+          line1={line1}
+          line2={line2}
+          line2Exchange={line2Exchange}
+          line2CountryFlag={line2CountryFlag}
+          line2Loading={line2Loading}
+        />
+      </div>
       {route.kind === "stock" ? (
         <AssetPageHeaderActions
+          className="relative z-[1]"
           watchlistStorageKey={route.ticker}
           watchlistLabel={route.ticker}
           transactionSymbol={route.ticker}
@@ -107,12 +110,15 @@ export function MobileAssetTopbarChrome() {
         />
       ) : route.kind === "crypto" ? (
         <AssetPageHeaderActions
+          className="relative z-[1]"
           watchlistStorageKey={cryptoWatchlistKey(route.symbol)}
           watchlistLabel={route.symbol}
           transactionSymbol={route.symbol}
           transactionName={route.symbol}
         />
-      ) : null}
+      ) : (
+        <div className="w-9 shrink-0" aria-hidden />
+      )}
     </div>
   );
 }

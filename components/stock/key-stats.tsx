@@ -18,7 +18,14 @@ const KEY_STATS_TAB_MOTION_EASE = "cubic-bezier(0.33, 1, 0.68, 1)";
 /** Mobile matches screener home table card — 16px radius, stacked shadow, no outer border. */
 const KEY_STATS_CARD_CLASS = cn("mb-5 p-4 max-md:mb-0", MOBILE_INSET_CARD_CLASS);
 
+/** Mobile shell: tabs + body share one inset card (tabs bleed edge-to-edge). */
+const KEY_STATS_MOBILE_SHELL_CLASS = cn(
+  "mb-5 overflow-hidden p-0 max-md:mb-0",
+  MOBILE_INSET_CARD_CLASS,
+);
+
 const KEY_STATS_ROW_BORDER_CLASS = "border-b border-[#E4E4E7] max-md:border-b-[0.5px]";
+const KEY_STATS_ROW_PY_CLASS = "py-2.5";
 
 type KeyStatsTabId =
   | "basic"
@@ -46,9 +53,12 @@ const KEY_STATS_TABS: { id: KeyStatsTabId; label: string }[] = [
 function KeyStatsSectionTabNav({
   activeTab,
   onTabChange,
+  embedded = false,
 }: {
   activeTab: KeyStatsTabId;
   onTabChange: (tab: KeyStatsTabId) => void;
+  /** Inside the mobile Key Stats card — full-width border, horizontal inset on tab row only. */
+  embedded?: boolean;
 }) {
   const navRef = useRef<HTMLElement>(null);
   const tabRefs = useRef(new Map<KeyStatsTabId, HTMLButtonElement>());
@@ -87,10 +97,13 @@ function KeyStatsSectionTabNav({
   }, [measureIndicator]);
 
   return (
-    <div className="mb-4 border-b border-solid border-[#E4E4E7]">
+    <div className={cn("w-full border-b border-solid border-[#E4E4E7]", embedded ? "mb-0" : "mb-4")}>
       <nav
         ref={navRef}
-        className="relative flex flex-nowrap items-start gap-4 overflow-x-auto overflow-y-hidden pb-px [-webkit-overflow-scrolling:touch] max-md:[-ms-overflow-style:none] max-md:[scrollbar-width:none] max-md:[&::-webkit-scrollbar]:hidden"
+        className={cn(
+          "relative flex w-full flex-nowrap items-start gap-4 overflow-x-auto overflow-y-hidden pb-px [-webkit-overflow-scrolling:touch] max-md:[-ms-overflow-style:none] max-md:[scrollbar-width:none] max-md:[&::-webkit-scrollbar]:hidden",
+          embedded ? "px-4" : undefined,
+        )}
         aria-label="Key stats sections"
       >
         {KEY_STATS_TABS.map(({ id, label }) => {
@@ -315,7 +328,8 @@ function KeyStatMetricRow({
       type="button"
       onClick={() => metricId && onMetricClick?.(metricId)}
       className={cn(
-        "group flex w-full min-w-0 cursor-pointer items-center justify-between gap-3 py-1.5 text-left last:border-0 hover:bg-[#FAFAFA]",
+        "group flex w-full min-w-0 cursor-pointer items-center justify-between gap-3 text-left last:border-0 hover:bg-[#FAFAFA]",
+        KEY_STATS_ROW_PY_CLASS,
         KEY_STATS_ROW_BORDER_CLASS,
       )}
     >
@@ -337,7 +351,7 @@ function StatRow({
   valueClassName?: string;
 }) {
   return (
-    <div className={cn("flex items-center justify-between gap-3 py-1.5 last:border-0", KEY_STATS_ROW_BORDER_CLASS)}>
+    <div className={cn("flex items-center justify-between gap-3 last:border-0", KEY_STATS_ROW_BORDER_CLASS, KEY_STATS_ROW_PY_CLASS)}>
       <span className="min-w-0 shrink text-[14px] leading-5 text-[#09090B]">{label}</span>
       <BasicValueDisplay label={label} value={value} valueClassName={valueClassName} />
     </div>
@@ -348,7 +362,7 @@ function CardSkeleton({ rowLabels }: { rowLabels: string[] }) {
   return (
     <div className="space-y-2 pt-0.5" aria-hidden>
       {rowLabels.map((label) => (
-        <div key={label} className={cn("flex justify-between gap-3 py-1.5 last:border-0", KEY_STATS_ROW_BORDER_CLASS)}>
+        <div key={label} className={cn("flex justify-between gap-3 last:border-0", KEY_STATS_ROW_BORDER_CLASS, KEY_STATS_ROW_PY_CLASS)}>
           <div className="h-4 w-28 rounded bg-neutral-100" />
           <div className="h-4 w-20 rounded bg-neutral-100" />
         </div>
@@ -365,6 +379,7 @@ const DynamicCard = memo(function DynamicCard({
   labelToMetric,
   onMetricClick,
   hideTitle = false,
+  embedded = false,
 }: {
   title: string;
   rowLabels: string[];
@@ -375,6 +390,7 @@ const DynamicCard = memo(function DynamicCard({
   onMetricClick?: (metricId: ChartingMetricId) => void;
   /** Mobile tab layout supplies the section title in the tab bar. */
   hideTitle?: boolean;
+  embedded?: boolean;
 }) {
   const fallback = useMemo(() => rowLabels.map((label) => ({ label, value: "—" as const })), [rowLabels]);
   const displayRows = rows ?? fallback;
@@ -382,7 +398,7 @@ const DynamicCard = memo(function DynamicCard({
   const clickable = map != null && typeof onMetricClick === "function";
 
   return (
-    <div className={KEY_STATS_CARD_CLASS}>
+    <div className={embedded ? "min-w-0" : KEY_STATS_CARD_CLASS}>
       {hideTitle ? null : (
         <h3 className="mb-2 text-[14px] font-semibold leading-5 text-[#09090B]">{title}</h3>
       )}
@@ -410,17 +426,19 @@ const BasicCard = memo(function BasicCard({
   loading,
   onMetricClick,
   hideTitle = false,
+  embedded = false,
 }: {
   rows: Row[] | null;
   loading: boolean;
   onMetricClick?: (metricId: ChartingMetricId) => void;
   hideTitle?: boolean;
+  embedded?: boolean;
 }) {
   const displayRows = rows ?? BASIC_FALLBACK;
   const clickable = typeof onMetricClick === "function";
 
   return (
-    <div className={KEY_STATS_CARD_CLASS}>
+    <div className={embedded ? "min-w-0" : KEY_STATS_CARD_CLASS}>
       {hideTitle ? null : (
         <h3 className="mb-2 text-[14px] font-semibold leading-5 text-[#09090B]">Basic</h3>
       )}
@@ -456,11 +474,13 @@ const RevenueProfitCard = memo(function RevenueProfitCard({
   loading,
   onMetricClick,
   hideTitle = false,
+  embedded = false,
 }: {
   rows: Row[] | null;
   loading: boolean;
   onMetricClick?: (metricId: ChartingMetricId) => void;
   hideTitle?: boolean;
+  embedded?: boolean;
 }) {
   const placeholder = useMemo(
     () =>
@@ -478,7 +498,7 @@ const RevenueProfitCard = memo(function RevenueProfitCard({
   const displayRows = rows ?? placeholder;
 
   return (
-    <div className={KEY_STATS_CARD_CLASS}>
+    <div className={embedded ? "min-w-0" : KEY_STATS_CARD_CLASS}>
       {hideTitle ? null : (
         <h3 className="mb-2 text-[14px] font-semibold leading-5 text-[#09090B]">Revenue &amp; Profit</h3>
       )}
@@ -516,9 +536,18 @@ function KeyStatsInner({
 
   const mobileCard = useMemo(() => {
     const hideTitle = true;
+    const embedded = true;
     switch (mobileTab) {
       case "basic":
-        return <BasicCard rows={bundle?.basic ?? null} loading={loading} onMetricClick={onOpenMetricChart} hideTitle={hideTitle} />;
+        return (
+          <BasicCard
+            rows={bundle?.basic ?? null}
+            loading={loading}
+            onMetricClick={onOpenMetricChart}
+            hideTitle={hideTitle}
+            embedded={embedded}
+          />
+        );
       case "revenue_profit":
         return (
           <RevenueProfitCard
@@ -526,6 +555,7 @@ function KeyStatsInner({
             loading={loading}
             onMetricClick={onOpenMetricChart}
             hideTitle={hideTitle}
+            embedded={embedded}
           />
         );
       case "valuation":
@@ -538,6 +568,7 @@ function KeyStatsInner({
             labelToMetric={VALUATION_LABEL_TO_METRIC}
             onMetricClick={onOpenMetricChart}
             hideTitle={hideTitle}
+            embedded={embedded}
           />
         );
       case "margins":
@@ -550,6 +581,7 @@ function KeyStatsInner({
             labelToMetric={MARGINS_LABEL_TO_METRIC}
             onMetricClick={onOpenMetricChart}
             hideTitle={hideTitle}
+            embedded={embedded}
           />
         );
       case "growth":
@@ -562,6 +594,7 @@ function KeyStatsInner({
             labelToMetric={GROWTH_LABEL_TO_METRIC}
             onMetricClick={onOpenMetricChart}
             hideTitle={hideTitle}
+            embedded={embedded}
           />
         );
       case "assets_liabilities":
@@ -574,6 +607,7 @@ function KeyStatsInner({
             labelToMetric={ASSETS_LABEL_TO_METRIC}
             onMetricClick={onOpenMetricChart}
             hideTitle={hideTitle}
+            embedded={embedded}
           />
         );
       case "returns":
@@ -586,6 +620,7 @@ function KeyStatsInner({
             labelToMetric={RETURNS_LABEL_TO_METRIC}
             onMetricClick={onOpenMetricChart}
             hideTitle={hideTitle}
+            embedded={embedded}
           />
         );
       case "dividends":
@@ -598,11 +633,19 @@ function KeyStatsInner({
             labelToMetric={DIVIDENDS_LABEL_TO_METRIC}
             onMetricClick={onOpenMetricChart}
             hideTitle={hideTitle}
+            embedded={embedded}
           />
         );
       case "risk":
         return (
-          <DynamicCard title="Risk" rowLabels={RISK_LABELS} rows={bundle?.risk ?? null} loading={loading} hideTitle={hideTitle} />
+          <DynamicCard
+            title="Risk"
+            rowLabels={RISK_LABELS}
+            rows={bundle?.risk ?? null}
+            loading={loading}
+            hideTitle={hideTitle}
+            embedded={embedded}
+          />
         );
       default:
         return null;
@@ -650,8 +693,10 @@ function KeyStatsInner({
   return (
     <div>
       <div className="md:hidden">
-        <KeyStatsSectionTabNav activeTab={mobileTab} onTabChange={setMobileTab} />
-        {mobileCard}
+        <div className={KEY_STATS_MOBILE_SHELL_CLASS}>
+          <KeyStatsSectionTabNav activeTab={mobileTab} onTabChange={setMobileTab} embedded />
+          <div className="px-4 pb-3">{mobileCard}</div>
+        </div>
       </div>
 
       <div className="hidden grid-cols-2 gap-5 md:grid md:grid-cols-3">

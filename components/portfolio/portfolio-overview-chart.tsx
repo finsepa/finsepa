@@ -1678,6 +1678,7 @@ function PortfolioOverviewChartInner({
       <div className="relative z-20 mb-3 mt-2 flex w-full min-w-0 items-center justify-between gap-2 sm:hidden">
         <FormListboxSelect
           compact
+          fitTrigger
           truncateLabel={false}
           aria-label="Chart metric"
           className="w-auto shrink-0"

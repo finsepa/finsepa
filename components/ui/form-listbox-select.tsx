@@ -34,6 +34,8 @@ export function FormListboxSelect<V extends string>({
   disabled = false,
   leadingIcon,
   compact = false,
+  /** Shrink-wrap trigger: label left, chevron inline with `gap-2` (8px), no absolute chevron reserve. */
+  fitTrigger = false,
   menuAlign = "leading",
 }: {
   id?: string;
@@ -57,6 +59,7 @@ export function FormListboxSelect<V extends string>({
   disabled?: boolean;
   /** When true, uses tighter horizontal padding; trigger still fills its container (chevron stays inside the fill). */
   compact?: boolean;
+  fitTrigger?: boolean;
   /** `trailing` anchors the menu to the trigger’s right edge (opens toward the left). */
   menuAlign?: "leading" | "trailing";
 }) {
@@ -140,7 +143,7 @@ export function FormListboxSelect<V extends string>({
         className={cn(
           cn(
             "relative flex h-9 cursor-pointer items-center rounded-[10px] bg-[#F4F4F5] py-2 text-left text-sm font-normal text-[#09090B] outline-none transition-colors hover:bg-[#EBEBEB] focus-visible:ring-2 focus-visible:ring-[#09090B]/10",
-            "w-full",
+            fitTrigger ? "w-auto gap-2 px-3" : "w-full",
           ),
           disabled && "cursor-not-allowed opacity-60 hover:bg-[#F4F4F5]",
           triggerClassName,
@@ -148,7 +151,10 @@ export function FormListboxSelect<V extends string>({
       >
         {leadingIcon ? (
           <span
-            className="pointer-events-none absolute left-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center text-[#71717A]"
+            className={cn(
+              "pointer-events-none flex h-5 w-5 shrink-0 items-center justify-center text-[#71717A]",
+              !fitTrigger && "absolute left-3 top-1/2 -translate-y-1/2",
+            )}
             aria-hidden
           >
             {leadingIcon}
@@ -157,25 +163,41 @@ export function FormListboxSelect<V extends string>({
         {/* Horizontal padding lives here so `triggerClassName` can use `px-*` without hiding the chevron reserve. */}
         <span
           className={cn(
-            compact ? "min-w-0 flex-1 pr-8 text-left" : "min-w-0 flex-1 pr-11 text-left",
-            compact ? (leadingIcon ? "pl-9" : "pl-3") : leadingIcon ? "pl-10" : "pl-4",
-            truncateLabel ? "truncate" : "whitespace-nowrap",
+            fitTrigger
+              ? cn("shrink-0 text-left", truncateLabel ? "truncate" : "whitespace-nowrap")
+              : cn(
+                  compact ? "min-w-0 flex-1 pr-8 text-left" : "min-w-0 flex-1 pr-11 text-left",
+                  compact ? (leadingIcon ? "pl-9" : "pl-3") : leadingIcon ? "pl-10" : "pl-4",
+                  truncateLabel ? "truncate" : "whitespace-nowrap",
+                ),
           )}
         >
           {active.label}
         </span>
+        {fitTrigger ? (
+          <ChevronDown
+            className={cn(
+              "h-5 w-5 shrink-0 text-[#09090B] transition-transform",
+              open && "rotate-180",
+            )}
+            strokeWidth={2}
+            aria-hidden
+          />
+        ) : null}
       </button>
-      <ChevronDown
-        className={cn(
-          cn(
-            "pointer-events-none absolute top-1/2 h-5 w-5 shrink-0 -translate-y-1/2 text-[#09090B] transition-transform",
-            compact ? "right-2.5" : "right-3",
-          ),
-          open && "rotate-180",
-        )}
-        strokeWidth={2}
-        aria-hidden
-      />
+      {!fitTrigger ? (
+        <ChevronDown
+          className={cn(
+            cn(
+              "pointer-events-none absolute top-1/2 h-5 w-5 shrink-0 -translate-y-1/2 text-[#09090B] transition-transform",
+              compact ? "right-2.5" : "right-3",
+            ),
+            open && "rotate-180",
+          )}
+          strokeWidth={2}
+          aria-hidden
+        />
+      ) : null}
       {open && isMobileSheet ? (
         <MobileBottomSheet open={open} onClose={() => setOpen(false)}>
           <div

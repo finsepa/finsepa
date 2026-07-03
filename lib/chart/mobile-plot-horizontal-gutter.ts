@@ -28,7 +28,7 @@ export function mobileRightPriceScaleOptions(containerWidthPx: number) {
       visible: false,
       borderVisible: false,
       /** Tighter plot bottom on mobile (custom axis row sits below the pane). */
-      scaleMargins: { top: 0.12, bottom: 0.048 },
+      scaleMargins: { top: 0.1, bottom: 0.036 },
     };
   }
   return {
@@ -49,7 +49,7 @@ export function mobileLeftPriceScaleOptions(containerWidthPx: number) {
 /** Match `scaleMargins` on the right price scale — DOM overlays should use the same inset. */
 export function chartSeriesPlotInsetPct(containerWidthPx: number): { top: number; bottom: number } {
   const hideYAxisLabels = shouldHideMobileYAxisLabels(containerWidthPx);
-  return { top: 12, bottom: hideYAxisLabels ? 4.8 : 8 };
+  return { top: 10, bottom: hideYAxisLabels ? 3.6 : 8 };
 }
 
 /** Apply both price scales for overview / compare charts (call from createChart + applyOptions). */

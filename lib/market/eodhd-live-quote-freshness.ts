@@ -33,6 +33,27 @@ function isTradeFreshForRegularSession(tradeSec: number, now: Date): boolean {
   return isTradeFromTodayRegularSession(tradeSec, now, EODHD_LIVE_QUOTE_MAX_AGE_SEC);
 }
 
+/**
+ * EODHD `/api/real-time` sometimes returns valid session OHLCV with a bogus trade timestamp
+ * (e.g. midnight UTC). During regular hours, trust open+close when both are present.
+ */
+export function isEodhdUsRealtimeOhlcvUsableDuringRegularSession(
+  rt: EodhdRealtimePayload | null | undefined,
+  now: Date = new Date(),
+): boolean {
+  if (!rt || getUsEquityMarketSession(now) !== "regular") return false;
+  const close = rt.close;
+  const open = rt.open ?? rt.previousClose;
+  return (
+    typeof close === "number" &&
+    Number.isFinite(close) &&
+    close > 0 &&
+    typeof open === "number" &&
+    Number.isFinite(open) &&
+    open > 0
+  );
+}
+
 /** True when REST/delayed trade time is any time during today's regular session (screener parity). */
 export function isEodhdUsRealtimeFromTodaySession(
   rt: EodhdRealtimePayload | null | undefined,

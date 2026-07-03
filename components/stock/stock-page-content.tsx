@@ -16,6 +16,7 @@ import { parseStockDetailTabQuery } from "@/lib/stock/stock-detail-tab";
 import { coerceStockDetailTabForEtf, isStockDetailEtf, normalizeStockDetailTab } from "@/lib/stock/stock-etf";
 import { AssetPortfolioHoldingsTab } from "@/components/portfolio/asset-portfolio-holdings-tab";
 import { StockDetailTabNav } from "./stock-detail-tab-nav";
+import { useRegisterStockDetailTabHost } from "./stock-detail-tab-host-context";
 import { MultichartsTabSkeleton } from "@/components/stock/stock-multicharts-tab-skeleton";
 import { StockFinancialsTabSkeleton } from "@/components/stock/stock-financials-tab-skeleton";
 import { StockChartingTab } from "./stock-charting-tab";
@@ -49,6 +50,7 @@ import type { StockExtendedHoursHeader } from "@/lib/market/stock-extended-hours
 import { isUsListedStockHeaderMeta } from "@/lib/market/stock-header-meta";
 import type { StockChartRange, StockChartSeries } from "@/lib/market/stock-chart-types";
 import { mergeClosedMarketOverviewHeader, mergeSessionHeaderWithPerformanceSpot } from "@/lib/chart/merge-session-header-with-performance-spot";
+import { useMobileSheet } from "@/lib/layout/use-mobile-sheet";
 import { cn } from "@/lib/utils";
 import { priorSessionDayChangeFromPerformance } from "@/lib/market/prior-session-day-change";
 import { getUsEquityMarketSession, isUsEquityExtendedHoursHeaderEligible, lastUsRegularSessionCloseUnix } from "@/lib/market/us-equity-market-session";
@@ -369,6 +371,8 @@ export function StockPageContent({
     [ticker],
   );
 
+  useRegisterStockDetailTabHost(displayTab, handleTabChange, isEtf);
+
   useEffect(() => {
     if (displayTab === "earnings" || isEtf) return;
     const run = () => prefetchStockEarningsTabPayload(ticker, false);
@@ -433,7 +437,19 @@ export function StockPageContent({
   /** Visible overview chart — drives header metric + range on Overview (price / market cap / return). */
   const [overviewHeaderUi, setOverviewHeaderUi] = useState<ChartDisplayState | null>(null);
   const onOverviewHeaderDisplay = useCallback((s: ChartDisplayState) => {
-    setOverviewHeaderUi(s);
+    setOverviewHeaderUi((prev) => {
+      const next: ChartDisplayState = { ...s };
+      if (s.loading && prev?.displayPrice != null && !s.selectionActive) {
+        next.loading = false;
+        next.displayPrice = s.displayPrice ?? prev.displayPrice;
+        next.displayChangeAbs = s.displayChangeAbs ?? prev.displayChangeAbs;
+        next.displayChangePct = s.displayChangePct ?? prev.displayChangePct;
+      }
+      if (next.priceTimestampLabel == null && prev?.priceTimestampLabel != null) {
+        next.priceTimestampLabel = prev.priceTimestampLabel;
+      }
+      return next;
+    });
   }, []);
 
   useEffect(() => {
@@ -590,6 +606,7 @@ export function StockPageContent({
   const overviewHeaderUiMerged = useMemo(() => {
     if (!overviewHeaderUi) return null;
     if (chartSeries !== "price") return overviewHeaderUi;
+    if (overviewHeaderUi.isHovering) return overviewHeaderUi;
 
     const closed = getUsEquityMarketSession(new Date()) !== "regular";
 
@@ -685,9 +702,7 @@ export function StockPageContent({
       : sessionSpotHeaderUi;
 
     const settled =
-      raw.displayPrice != null && raw.loading && !overviewDrivesHeader
-        ? { ...raw, loading: false }
-        : raw;
+      raw.displayPrice != null && raw.loading ? { ...raw, loading: false } : raw;
     if (settled.priceTimestampLabel != null) return settled;
 
     const pts = overviewDrivesHeader
@@ -871,19 +886,27 @@ export function StockPageContent({
     return formatStockHeaderAtClosePeriodLabel(closeUnix, STOCK_DISPLAY_TZ);
   }, [regularSessionClock]);
 
+  const isMobileViewport = useMobileSheet();
+  const mobileChartScrubActive =
+    isMobileViewport && overviewDrivesHeader && chartUi.isHovering && !chartUi.selectionActive;
+
   const headerMovementRangeBadge = useMemo(() => {
     if (!overviewDrivesHeader || chartSeries !== "price") return null;
     if (chartUi.selectionActive || chartUi.isHovering) return null;
     return range === "1D" ? "Today" : range;
   }, [overviewDrivesHeader, chartSeries, chartUi.isHovering, chartUi.selectionActive, range]);
 
-  const headerDisplayPrice = extendedHoursHeaderLeft?.price ?? chartUi.displayPrice;
-  const headerDisplayChangeAbs =
-    overviewDrivesHeader && range !== "1D" && extendedHoursHeaderLeft
+  const headerDisplayPrice = mobileChartScrubActive
+    ? chartUi.displayPrice
+    : (extendedHoursHeaderLeft?.price ?? chartUi.displayPrice);
+  const headerDisplayChangeAbs = mobileChartScrubActive
+    ? chartUi.displayChangeAbs
+    : overviewDrivesHeader && range !== "1D" && extendedHoursHeaderLeft
       ? chartUi.displayChangeAbs
       : (extendedHoursHeaderLeft?.changeAbs ?? chartUi.displayChangeAbs);
-  const headerDisplayChangePct =
-    overviewDrivesHeader && range !== "1D" && extendedHoursHeaderLeft
+  const headerDisplayChangePct = mobileChartScrubActive
+    ? chartUi.displayChangePct
+    : overviewDrivesHeader && range !== "1D" && extendedHoursHeaderLeft
       ? chartUi.displayChangePct
       : (extendedHoursHeaderLeft?.changePct ?? chartUi.displayChangePct);
 
@@ -893,7 +916,7 @@ export function StockPageContent({
   return (
     <div className="relative min-w-0">
       <StockBreadcrumbs ticker={ticker} headerMeta={headerMeta} isEtf={isEtf} />
-      <div className="space-y-5 px-4 py-0 max-md:pt-4 sm:space-y-5 sm:px-9 sm:py-6">
+      <div className="space-y-5 px-4 py-0 max-md:pt-0 sm:space-y-5 sm:px-9 sm:py-6">
       <KeyStatsMetricChartModal
         key={revenueProfitModalMetric ?? "closed"}
         ticker={ticker}
@@ -951,13 +974,15 @@ export function StockPageContent({
         </div>
       ) : null}
 
-      <StockDetailTabNav
-        activeTab={displayTab}
-        onTabChange={handleTabChange}
-        onTabIntent={handleTabIntent}
-        isEtf={isEtf}
-        sticky={displayTab !== "financials"}
-      />
+      <div className="max-md:hidden">
+        <StockDetailTabNav
+          activeTab={displayTab}
+          onTabChange={handleTabChange}
+          onTabIntent={handleTabIntent}
+          isEtf={isEtf}
+          sticky={displayTab !== "financials"}
+        />
+      </div>
 
       {/*
         Overview price chart must stay mounted when other tabs are open — `hidden` on the tabpanel

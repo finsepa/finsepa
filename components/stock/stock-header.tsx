@@ -308,7 +308,7 @@ export function StockHeader({
 
   const mobilePriceValue = (
     <MobileAssetHeaderPrice
-      value={price}
+      value={anim.price}
       loading={chartLoading}
       chartMetric={headerChartMetric}
       className={mainPriceClass}
@@ -348,7 +348,7 @@ export function StockHeader({
           </h1>
           {chartLoading ? priceLoadingSkeleton : (
             <>
-              {showExtendedHoursColumn ? (
+              {showExtendedHoursColumn && !chartHovering ? (
                 <div className={`flex flex-col gap-2 ${priceMotionClass}`}>
                   {mobileMainPriceBlock}
                   <StockExtendedHoursPrice quote={extendedHours} loading={extendedHoursLoading} />

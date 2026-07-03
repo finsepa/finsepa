@@ -13,7 +13,7 @@
   /** Extra space below `<main>` above the floating nav; 0 when the shell is flush (white edge-to-edge). */
   --mobile-main-bottom-gap: 0px;
   /** Sync with `MobileBottomNav`: inset above home indicator + icon tab row. */
-  --mobile-bottom-nav-inset-bottom: 16px;
+  --mobile-bottom-nav-inset-bottom: 24px;
   --mobile-bottom-nav-expanded-height: 52px;
   --mobile-bottom-nav-height: var(--mobile-bottom-nav-expanded-height);
   --mobile-bottom-nav-compact-height: 44px;
@@ -45,6 +45,8 @@
   /** Empty chrome below fixed Markets tabs — scroll gradient fades through this band. */
   --mobile-markets-tabs-gap: 16px;
   --mobile-markets-tabs-height: calc(var(--mobile-markets-tabs-row-height) + var(--mobile-markets-tabs-gap));
+  /** Compact title row when market tabs sit in the fixed top bar (below “Markets”). */
+  --mobile-markets-title-row-height: 44px;
   --mobile-topbar-height: 4rem;
   --mobile-topbar-offset: calc(env(safe-area-inset-top, 0px) + var(--mobile-topbar-height));
   --mobile-topbar-blur-extension: 40px;
@@ -472,7 +474,32 @@ body {
 
   html.mobile-markets-topbar {
     --mobile-topbar-offset: calc(
-      env(safe-area-inset-top, 0px) + var(--mobile-topbar-height) + var(--mobile-markets-tabs-height)
+      env(safe-area-inset-top, 0px) + var(--mobile-markets-title-row-height) + var(--mobile-markets-tabs-height)
+    );
+    --mobile-topbar-blur-extension-current: var(--mobile-topbar-blur-extension);
+  }
+
+  html.mobile-markets-topbar .mobile-topbar-blur-fade {
+    opacity: 1;
+    background: linear-gradient(
+      to bottom,
+      rgba(250, 250, 250, 0.98) 0%,
+      rgba(250, 250, 250, 0.94) 28%,
+      rgba(250, 250, 250, 0.72) 58%,
+      rgba(250, 250, 250, 0.2) 82%,
+      rgba(250, 250, 250, 0) 100%
+    );
+  }
+
+  :root {
+    --mobile-stock-topbar-content-gap: 4px;
+  }
+
+  html.mobile-stock-topbar,
+  .mobile-stock-topbar-offset {
+    --mobile-topbar-offset: calc(
+      env(safe-area-inset-top, 0px) + var(--mobile-topbar-height) + var(--mobile-markets-tabs-row-height) +
+        var(--mobile-markets-tabs-gap) + var(--mobile-stock-topbar-content-gap)
     );
   }
 

@@ -26,7 +26,7 @@ const HEARTBEAT_MS = Number(process.env.STOCK_WS_HEARTBEAT_MS ?? 5 * 60 * 1000);
 const MAX_SYMBOLS = Number(process.env.STOCK_WS_MAX_SYMBOLS ?? 50);
 const INCLUDE_WATCHLIST = !stockWsCuratedMode() && process.env.STOCK_WS_WATCHLIST !== "0";
 const INCLUDE_SCREENER = !stockWsCuratedMode() && process.env.STOCK_WS_SCREENER !== "0";
-const INCLUDE_CHART_WATCH = !stockWsCuratedMode() && process.env.STOCK_WS_CHART_WATCH !== "0";
+const INCLUDE_CHART_WATCH = process.env.STOCK_WS_CHART_WATCH !== "0";
 const HEALTH_PORT = Number(process.env.PORT ?? process.env.STOCK_WS_HEALTH_PORT ?? 8080);
 const STATIC_TICKERS = (process.env.STOCK_WS_TICKERS ?? "")
   .split(",")
@@ -342,17 +342,29 @@ async function loadScreenerSnapshotTickers() {
 }
 
 async function loadWatchTickers() {
+  const chartWatch = INCLUDE_CHART_WATCH ? await loadChartWatchTickers() : [];
+
   if (stockWsCuratedMode()) {
     const curated = await loadCuratedUsPriorityTickers(supabase);
-    if (curated.length > MAX_SYMBOLS) {
-      log("capping curated subscriptions", curated.length, "→", MAX_SYMBOLS);
-      return curated.slice(0, MAX_SYMBOLS);
+    const ordered = [];
+    const seen = new Set();
+    const push = (t) => {
+      if (!t || seen.has(t)) return;
+      seen.add(t);
+      ordered.push(t);
+    };
+
+    for (const t of chartWatch) push(t);
+    for (const t of curated) push(t);
+
+    if (ordered.length > MAX_SYMBOLS) {
+      log("capping curated+watch subscriptions", ordered.length, "→", MAX_SYMBOLS);
+      return ordered.slice(0, MAX_SYMBOLS);
     }
-    return curated;
+    return ordered;
   }
 
-  const [chart, watchlist, screener] = await Promise.all([
-    INCLUDE_CHART_WATCH ? loadChartWatchTickers() : Promise.resolve([]),
+  const [watchlist, screener] = await Promise.all([
     loadWatchlistTickers(),
     loadScreenerSnapshotTickers(),
   ]);
@@ -365,7 +377,7 @@ async function loadWatchTickers() {
     ordered.push(t);
   };
 
-  for (const t of chart) push(t);
+  for (const t of chartWatch) push(t);
   for (const t of watchlist) push(t);
   for (const t of STATIC_TICKERS) push(t);
   for (const t of screener) push(t);

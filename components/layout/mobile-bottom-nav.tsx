@@ -294,7 +294,7 @@ export function MobileBottomNav() {
         aria-hidden
         className={cn(
           "mobile-bottom-nav-blur-fade md:hidden",
-          (searchOpen || navFrozen) && "mobile-bottom-nav-blur-fade--hidden",
+          searchOpen && "mobile-bottom-nav-blur-fade--hidden",
         )}
       />
 

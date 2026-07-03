@@ -12,11 +12,11 @@ import { cn } from "@/lib/utils";
 
 /** Matches {@link ScreenerTable}: mobile hides star + 1M / YTD / M Cap / PE. */
 const stocksColLayout =
-  "grid-cols-[20px_minmax(0,1fr)_minmax(4.5rem,5.5rem)] gap-x-1.5 sm:grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr_1fr_96px] sm:gap-x-2";
+  "grid-cols-[22px_minmax(0,1fr)_minmax(4.5rem,5.5rem)] gap-x-1.5 sm:grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr_1fr_96px] sm:gap-x-2";
 const cryptoColLayout =
-  "grid-cols-[20px_minmax(0,1fr)_minmax(4.5rem,5.5rem)] gap-x-1.5 sm:grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr_1fr] sm:gap-x-2";
+  "grid-cols-[22px_minmax(0,1fr)_minmax(4.5rem,5.5rem)] gap-x-1.5 sm:grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr_1fr] sm:gap-x-2";
 const indicesColLayout =
-  "grid-cols-[20px_minmax(0,1fr)_minmax(4.5rem,5.5rem)] gap-x-1.5 sm:grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr] sm:gap-x-2";
+  "grid-cols-[22px_minmax(0,1fr)_minmax(4.5rem,5.5rem)] gap-x-1.5 sm:grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr] sm:gap-x-2";
 
 /** Matches {@link IndexCards} — stacked label / value / change, no sparkline. */
 export function IndexCardSkeleton({ name }: { name: string }) {
@@ -35,7 +35,7 @@ function StocksRowSkeleton() {
       <div className="hidden w-10 shrink-0 items-center justify-center px-3 sm:flex">
         <SkeletonBox className="h-4 w-4 rounded" />
       </div>
-      <div className="flex justify-center">
+      <div className="flex max-md:-ml-0.5 justify-center">
         <TextSkeleton wClass="w-4" hClass="h-3.5" />
       </div>
       <div className="flex min-w-0 items-center justify-start gap-3 pr-4">

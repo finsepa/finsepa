@@ -25,7 +25,7 @@ const MOBILE_CHART_RANGE_OPTIONS = CHART_RANGE_OPTIONS.filter((option) => option
 
 const MOBILE_CHART_METRIC_TRIGGER_CLASS = cn(
   topbarSquircleTextButtonClass,
-  "w-auto min-w-[5.75rem] bg-white font-medium hover:bg-[#F4F4F5]",
+  "w-auto bg-white font-semibold hover:bg-[#F4F4F5]",
 );
 
 export function ChartControls({
@@ -101,7 +101,7 @@ export function ChartControls({
       <div
         className={cn(
           "flex w-full min-w-0 items-center gap-2 sm:hidden",
-          chartBodyLayout && "mb-3",
+          chartBodyLayout && "mb-2",
           (compareSlot || downloadSlot) && !(showSeriesToggle || titleSlot) ?
             "justify-end"
           : "justify-between",
@@ -110,6 +110,7 @@ export function ChartControls({
         {showSeriesToggle ?
           <FormListboxSelect
             compact
+            fitTrigger
             className="w-auto shrink-0"
             listboxClassName="w-auto"
             triggerClassName={MOBILE_CHART_METRIC_TRIGGER_CLASS}

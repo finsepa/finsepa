@@ -3,6 +3,7 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import type { StockDetailTabId } from "@/lib/stock/stock-detail-tab";
+import { STOCK_DETAIL_TAB_ITEMS } from "@/lib/stock/stock-detail-tab-items";
 import { ETF_STOCK_DETAIL_TAB_IDS } from "@/lib/stock/stock-etf";
 
 export type { StockDetailTabId };
@@ -10,22 +11,7 @@ export type { StockDetailTabId };
 const TAB_MOTION_MS = 280;
 const TAB_MOTION_EASE = "cubic-bezier(0.33, 1, 0.68, 1)";
 
-/** Order matches stock Web App Design. */
-const TABS: { id: StockDetailTabId; label: string }[] = [
-  { id: "overview", label: "Overview" },
-  { id: "financials", label: "Financials" },
-  { id: "earnings", label: "Earnings" },
-  { id: "multicharts", label: "Multicharts" },
-  { id: "target-price", label: "Target Price" },
-  { id: "insiders", label: "Insiders" },
-  { id: "superinvestors", label: "Superinvestors" },
-  { id: "charting", label: "Charting" },
-  { id: "peers", label: "Peers" },
-  { id: "holdings", label: "Portfolio" },
-  { id: "profile", label: "Profile" },
-];
-
-/** Underline tabs with sliding indicator — below header / price on stock asset page. */
+/** Underline tabs with sliding indicator — desktop stock asset page (mobile uses fixed top bar). */
 export function StockDetailTabNav({
   activeTab,
   onTabChange,
@@ -45,8 +31,8 @@ export function StockDetailTabNav({
   const tabs = useMemo(
     () =>
       isEtf
-        ? TABS.filter((t) => (ETF_STOCK_DETAIL_TAB_IDS as readonly string[]).includes(t.id))
-        : TABS,
+        ? STOCK_DETAIL_TAB_ITEMS.filter((t) => (ETF_STOCK_DETAIL_TAB_IDS as readonly string[]).includes(t.id))
+        : STOCK_DETAIL_TAB_ITEMS,
     [isEtf],
   );
 

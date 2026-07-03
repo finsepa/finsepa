@@ -28,7 +28,7 @@ export function ScreenerStocksSubTabMobileCard({
         "max-md:overflow-hidden max-md:rounded-2xl md:contents",
       )}
     >
-      <div className="overflow-hidden px-4 py-2 md:hidden">
+      <div className="overflow-hidden border-b border-solid border-[#E4E4E7] px-4 py-2 max-md:border-b-[0.5px] md:hidden">
         <ScreenerStocksSubTabMobileToggle active={active} onChange={onChange} />
       </div>
       {children}

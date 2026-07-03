@@ -635,8 +635,11 @@ export function mergeLiveSpotMinuteBarsIntoPoints(
   return Array.from(byTime.values()).sort((a, b) => a.time - b.time);
 }
 
-/** Client live-price poll during regular session — aligns with 60s server cache coalescing. */
-export const STOCK_1D_LIVE_PRICE_POLL_MS = 60_000;
+/** Client live-price poll during regular session — aligns with ~20s server spot cache. */
+export const STOCK_1D_LIVE_PRICE_POLL_MS = 20_000;
+
+/** Client 1D chart poll during regular session — aligns with ~30s server chart cache. */
+export const STOCK_1D_LIVE_CHART_POLL_MS = 30_000;
 
 /** Client poll for non–top-50 1D historical intraday (matches ~15m server cache). */
 export const STOCK_1D_INTRADAY_HISTORICAL_POLL_MS = 900_000;

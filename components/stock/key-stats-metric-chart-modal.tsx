@@ -42,6 +42,7 @@ import {
 import { ChartScreenshotDownloadModal } from "@/components/chart/chart-screenshot-download-modal";
 import type { ChartType } from "@/components/charting/charting-workspace";
 import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
+import { MOBILE_MODAL_SHEET_OVERLAY_CLASS } from "@/components/ui/mobile-bottom-sheet";
 import { AppModalShell } from "@/components/ui/app-modal-shell";
 import { AssetChartSkeleton } from "@/components/ui/chart-skeleton";
 import {
@@ -667,7 +668,7 @@ export function KeyStatsMetricChartModal({
         onClose={onClose}
         zIndex={300}
         align={isMobile ? "bottom" : "center"}
-        className={isMobile ? "!px-4 !pb-4 !pt-0" : undefined}
+        className={isMobile ? MOBILE_MODAL_SHEET_OVERLAY_CLASS : undefined}
       >
         <div
           className={cn(isMobile ? "w-full min-w-0" : KEY_STATS_DESKTOP_MODAL_WIDTH_CLASS)}

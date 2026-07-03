@@ -13,8 +13,8 @@ function isFiniteNumber(n: unknown): n is number {
 /** Custom x-axis row below plot (overview charts — matches portfolio overview). */
 export const CHART_AXIS_ROW_PX = 44;
 
-/** Mobile: ~40% shorter gap between plot and period labels. */
-export const CHART_AXIS_ROW_MOBILE_PX = 26;
+/** Mobile: tighter gap between plot and period labels. */
+export const CHART_AXIS_ROW_MOBILE_PX = 22;
 
 export function overviewChartAxisRowPx(containerWidthPx: number): number {
   return shouldHideMobileYAxisLabels(containerWidthPx) ? CHART_AXIS_ROW_MOBILE_PX : CHART_AXIS_ROW_PX;

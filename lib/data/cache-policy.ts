@@ -55,10 +55,19 @@ export const REVALIDATE_HOT_FAST = 30;
 export const REVALIDATE_HOT = 60;
 
 /**
- * ~60s — shared 1D live-session spot + intraday chart during US regular hours.
- * Coalesces EODHD realtime/intraday across users on the same ticker; client polls align to this window.
+ * ~20s — live spot quote during US regular session (header price).
+ * Faster than chart cache; still coalesces EODHD realtime across users on the same ticker.
  */
-export const REVALIDATE_STOCK_1D_LIVE = REVALIDATE_HOT;
+export const REVALIDATE_STOCK_1D_LIVE_SPOT = 20;
+
+/**
+ * ~30s — 1D chart during US regular session (minute store + live tail).
+ * Client chart poll aligns to this window.
+ */
+export const REVALIDATE_STOCK_1D_LIVE_CHART = REVALIDATE_HOT_FAST;
+
+/** @deprecated Use {@link REVALIDATE_STOCK_1D_LIVE_CHART} for chart and {@link REVALIDATE_STOCK_1D_LIVE_SPOT} for spot. */
+export const REVALIDATE_STOCK_1D_LIVE = REVALIDATE_STOCK_1D_LIVE_CHART;
 
 /** ~90s — global search (merged local + remote EODHD); cuts repeat search API use */
 export const REVALIDATE_SEARCH = 90;
