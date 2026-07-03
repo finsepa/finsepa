@@ -64,7 +64,7 @@ export function MobileBottomNavSearchResults({
   panel: SearchPanel;
   searchMorphRef: React.RefObject<HTMLElement | null>;
 }) {
-  const [anchor, setAnchor] = useState({ left: 0, width: 0, bottom: 0, maxHeight: 420 });
+  const [anchor, setAnchor] = useState({ left: 0, width: 0, top: 12, bottom: 0 });
 
   useLayoutEffect(() => {
     if (!open) return;
@@ -74,15 +74,16 @@ export function MobileBottomNavSearchResults({
       if (!morph) return;
       const morphRect = morph.getBoundingClientRect();
       const vv = window.visualViewport;
-      const viewportTop = vv?.offsetTop ?? 0;
-      const viewportBottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
+      const layoutHeight = window.innerHeight;
       const topInset = 12;
+      const visibleTop = (vv?.offsetTop ?? 0) + topInset;
       const resultsGapPx = mobileBottomSearchResultsGapPx();
+      // `position: fixed` + `bottom` are relative to the layout viewport — not visualViewport.
       setAnchor({
         left: morphRect.left,
         width: morphRect.width,
-        bottom: Math.max(0, viewportBottom - morphRect.top + resultsGapPx),
-        maxHeight: Math.max(160, morphRect.top - viewportTop - topInset - resultsGapPx),
+        top: visibleTop,
+        bottom: Math.max(0, layoutHeight - morphRect.top + resultsGapPx),
       });
     };
 
@@ -109,15 +110,15 @@ export function MobileBottomNavSearchResults({
     <div
       id="mobile-bottom-search-results"
       className={cn(
-        "mobile-bottom-nav-search-results-panel fixed z-[42] flex min-h-0 flex-col overflow-hidden rounded-b-none md:hidden",
+        "mobile-bottom-nav-search-results-panel fixed z-[42] flex min-h-0 flex-col overflow-hidden rounded-b-none rounded-t-2xl md:hidden",
         dropdownMenuSurfaceClassName(),
         dropdownMenuFloatingScrollbarClassName,
       )}
       style={{
         left: anchor.left,
         width: anchor.width,
+        top: anchor.top,
         bottom: anchor.bottom,
-        maxHeight: anchor.maxHeight,
       }}
       role="listbox"
       aria-label="Search results"
