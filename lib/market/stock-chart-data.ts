@@ -554,6 +554,45 @@ const LIVE_1D_INTRADAY_STRATEGIES: {
   { lookbackSec: 7 * 86400, interval: "1h", trimToLatestUtcDay: true },
 ];
 
+async function load1DIntradayForSessionYmd(
+  ticker: string,
+  sessionYmd: string,
+  now: Date,
+): Promise<StockChartPoint[]> {
+  const openSec = usSessionWallClockUnix(sessionYmd, 9, 30, STOCK_DISPLAY_TZ);
+  const closeSec = usSessionWallClockUnix(sessionYmd, 16, 0, STOCK_DISPLAY_TZ);
+  for (const interval of ["1m", "5m", "1h"] as const) {
+    const bars = await fetchEodhdIntraday(ticker, openSec, closeSec, interval);
+    if (!bars?.length) continue;
+    const points = barsToChartPoints(bars);
+    const regular = filterToUsRegularSessionPoints(points);
+    const source = regular.length ? regular : points;
+    const sessionOnly = source.filter((p) => {
+      const ymd = p.sessionDate?.trim() || usSessionYmdFromUnixSeconds(p.time);
+      return ymd === sessionYmd;
+    });
+    const finalized = minGapDownsampleChartPoints(
+      sessionOnly.length ? sessionOnly : source,
+      STOCK_1D_CLOSED_SESSION_BAR_GAP_SEC,
+    );
+    if (finalized.length >= 2) return finalized;
+  }
+  return [];
+}
+
+/** No finalized 1m bars for today after the open — typical on US market holidays. */
+async function isTodayUsSessionIntradayAbsent(
+  ticker: string,
+  todayYmd: string,
+  nowSec: number,
+  minMinutesSinceOpen = 15,
+): Promise<boolean> {
+  const openSec = usSessionWallClockUnix(todayYmd, 9, 30, STOCK_DISPLAY_TZ);
+  if (nowSec < openSec + minMinutesSinceOpen * 60) return false;
+  const bars = await fetchEodhdIntraday(ticker, openSec, nowSec, "1m");
+  return !bars?.length;
+}
+
 async function load1DIntradayChartPoints(
   ticker: string,
   now: Date,
@@ -607,6 +646,14 @@ async function load1DChartPoints(ticker: string, now: Date, nowSec: number): Pro
       sessionMinuteBarsHavePriceVariation(pollBars, todayYmd, STOCK_DISPLAY_TZ, now)
     ) {
       return append1DRealtimeTail(ticker, pollBars, now);
+    }
+
+    if (await isTodayUsSessionIntradayAbsent(ticker, todayYmd, nowSec)) {
+      const lastSessionYmd = lastCompletedUsRegularSessionYmd(now, STOCK_DISPLAY_TZ);
+      if (lastSessionYmd !== todayYmd) {
+        const priorSession = await load1DIntradayForSessionYmd(ticker, lastSessionYmd, now);
+        if (priorSession.length) return priorSession;
+      }
     }
 
     if (pollBars.length) {
@@ -1013,7 +1060,7 @@ export const getStockChartPoints = unstable_cache(
 const getStockChartPoints1DLiveSession = unstable_cache(
   async (ticker: string, series: StockChartSeries) =>
     loadStockChartPointsUncached(ticker, "1D", series),
-  ["stock-chart-1d-live-session-v26-minute-store"],
+  ["stock-chart-1d-live-session-v28-minute-store"],
   { revalidate: REVALIDATE_STOCK_1D_LIVE_CHART },
 );
 
