@@ -878,6 +878,8 @@ export type OverviewPeriodAxisSyncOptions = {
   stock1DLiveSession?: boolean;
   /** Extend 1D axis through post-market (9:30–20:00 ET). */
   stock1DLiveSessionExtended?: boolean;
+  /** False on US holidays — axis pins to the last completed session in the payload. */
+  liveSessionMinute?: boolean;
 };
 
 export function syncOverviewPeriodAxisLabels(
@@ -893,13 +895,17 @@ export function syncOverviewPeriodAxisLabels(
   if (!n) return [];
   if (options?.stock1DLiveSessionExtended) {
     const sessionYmd =
-      resolveStock1DLiveSessionYmd(data, timeZone) ??
+      resolveStock1DLiveSessionYmd(data, timeZone, new Date(), {
+        liveSessionMinute: options.liveSessionMinute,
+      }) ??
       sessionDayKeyForPoint(data[data.length - 1]!, timeZone);
     return buildStock1DLiveSessionExtendedAxisLabels(chart, sessionYmd, timeZone, plotWidthPx);
   }
   if (options?.stock1DLiveSession) {
     const sessionYmd =
-      resolveStock1DLiveSessionYmd(data, timeZone) ??
+      resolveStock1DLiveSessionYmd(data, timeZone, new Date(), {
+        liveSessionMinute: options.liveSessionMinute,
+      }) ??
       sessionDayKeyForPoint(data[data.length - 1]!, timeZone);
     return buildStock1DLiveSessionAxisLabels(chart, sessionYmd, timeZone, plotWidthPx);
   }

@@ -20,6 +20,7 @@ import {
   isUsEquityExtendedHoursHeaderEligible,
   lastUsRegularSessionCloseUnix,
 } from "@/lib/market/us-equity-market-session";
+import { resolveUsEquityLiveRegularSessionActive } from "@/lib/market/us-equity-live-session-server";
 
 export type { StockExtendedHoursHeader } from "@/lib/market/stock-extended-hours-header-types";
 
@@ -289,9 +290,10 @@ export async function buildStockExtendedHoursHeaderQuote(
   meta: Pick<StockDetailHeaderMeta, "exchange" | "countryIso"> | null,
   now: Date = new Date(),
   sessionCloseUsd?: number | null,
+  liveRegularSessionActive: boolean | null = null,
 ): Promise<StockExtendedHoursHeader | null> {
   if (!isUsListedStockHeaderMeta(meta)) return null;
-  if (!isUsEquityExtendedHoursHeaderEligible(now)) return null;
+  if (!isUsEquityExtendedHoursHeaderEligible(now, liveRegularSessionActive)) return null;
 
   const row = await fetchEodhdUsQuoteDelayed(ticker);
   if (!row) return null;
@@ -311,11 +313,9 @@ export async function buildStockExtendedHoursHeaderQuote(
   if (closePrice == null) return null;
 
   // During live post, hide until extended quote moves off the official close.
-  // When fully closed (overnight/weekend), still show the last after-hours print.
-  if (
-    wallSession === "post" &&
-    Math.abs(extendedPrice - closePrice) < 0.0001
-  ) {
+  // When fully closed (overnight/weekend/holiday), still show the last after-hours print.
+  const wallTreatsAsLivePost = wallSession === "post" && liveRegularSessionActive !== false;
+  if (wallTreatsAsLivePost && Math.abs(extendedPrice - closePrice) < 0.0001) {
     return null;
   }
 
@@ -354,8 +354,17 @@ export async function getStockExtendedHoursQuoteForApi(
   sessionCloseUsd?: number | null,
 ): Promise<StockExtendedHoursHeader | null> {
   if (!isUsListedStockHeaderMeta(meta)) return null;
-  if (!isUsEquityExtendedHoursHeaderEligible(new Date())) return null;
+  const now = new Date();
   const sym = ticker.trim().toUpperCase();
+  const liveRegularSessionActive = await resolveUsEquityLiveRegularSessionActive(sym, now);
+  if (!isUsEquityExtendedHoursHeaderEligible(now, liveRegularSessionActive)) return null;
   const performance = await getStockPerformance(sym);
-  return buildStockExtendedHoursHeaderQuote(sym, performance, meta, new Date(), sessionCloseUsd);
+  return buildStockExtendedHoursHeaderQuote(
+    sym,
+    performance,
+    meta,
+    now,
+    sessionCloseUsd,
+    liveRegularSessionActive,
+  );
 }

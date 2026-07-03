@@ -74,6 +74,7 @@ import {
   resolveSessionOpenAnchorValue,
   resolveStock1DLiveSessionYmd,
   shouldUseStock1DLiveSessionChart,
+  stock1DUsesLiveSessionClock,
   stock1DLiveSessionPlotLeftPx,
   STOCK_1D_LIVE_CHART_POLL_MS,
   STOCK_1D_LIVE_SESSION_CLOCK_TICK_MS,
@@ -949,6 +950,11 @@ export function PriceChart({
     [points, kind],
   );
 
+  const liveSessionChartOptions = useMemo(
+    () => ({ liveSessionMinute }),
+    [liveSessionMinute],
+  );
+
   const chartPoints = useMemo(() => {
     if (
       kind !== "stock" ||
@@ -964,26 +970,42 @@ export function PriceChart({
       liveSpotUsd,
       STOCK_1D_LIVE_SESSION_TZ,
       now,
+      undefined,
+      undefined,
+      liveSessionChartOptions,
     );
     if (prepared.length) return prepared;
-    const sessionYmd = resolveStock1DLiveSessionYmd(points, STOCK_1D_LIVE_SESSION_TZ, now);
+    const sessionYmd = resolveStock1DLiveSessionYmd(
+      points,
+      STOCK_1D_LIVE_SESSION_TZ,
+      now,
+      liveSessionChartOptions,
+    );
     if (!sessionYmd) return points;
     const filtered = filterStock1DLiveSessionPointsByTimeWindow(
       points,
       sessionYmd,
       STOCK_1D_LIVE_SESSION_TZ,
       now,
+      liveSessionChartOptions,
     );
     if (!filtered.length) return points;
     const last = filtered[filtered.length - 1]!;
     const useLiveSpot =
-      getUsEquityMarketSession(now) === "regular" &&
+      stock1DUsesLiveSessionClock(now, liveSessionChartOptions) &&
       liveSpotUsd != null &&
       Number.isFinite(liveSpotUsd) &&
       liveSpotUsd > 0;
     const tailValue = useLiveSpot ? liveSpotUsd : last.value;
-    return appendLiveSessionNowTail(filtered, tailValue, sessionYmd, STOCK_1D_LIVE_SESSION_TZ, now);
-  }, [kind, range, holdingsStyle, points, liveSpotUsd, sessionNowMs]);
+    return appendLiveSessionNowTail(
+      filtered,
+      tailValue,
+      sessionYmd,
+      STOCK_1D_LIVE_SESSION_TZ,
+      now,
+      liveSessionChartOptions,
+    );
+  }, [kind, range, holdingsStyle, points, liveSpotUsd, sessionNowMs, liveSessionChartOptions]);
   const [hoverPrice, setHoverPrice] = useState<number | null>(null);
   const [hoverTimeUnix, setHoverTimeUnix] = useState<number | null>(null);
   const [hoverPoint, setHoverPoint] = useState<{ x: number; y: number } | null>(null);
@@ -1059,8 +1081,9 @@ export function PriceChart({
   const periodAxisSyncOptions = useMemo(
     (): OverviewPeriodAxisSyncOptions => ({
       stock1DLiveSession,
+      liveSessionMinute,
     }),
-    [stock1DLiveSession],
+    [stock1DLiveSession, liveSessionMinute],
   );
 
   const syncLiveSessionAxisLabels = useCallback(() => {
@@ -1076,7 +1099,7 @@ export function PriceChart({
         meta.timeZone,
         "hour",
         containerWidthRef.current,
-        { stock1DLiveSession: true },
+        { stock1DLiveSession: true, liveSessionMinute: liveSessionMinuteRef.current },
       ),
     );
     syncRangePriceBadgesRef.current?.();
@@ -1106,7 +1129,10 @@ export function PriceChart({
     if (stock1DLiveSessionRef.current) {
       const meta = liveSessionChartMetaRef.current;
       const ymd =
-        meta?.ymd ?? resolveStock1DLiveSessionYmd(pointsRef.current, dataTimeZoneRef.current);
+        meta?.ymd ??
+        resolveStock1DLiveSessionYmd(pointsRef.current, dataTimeZoneRef.current, new Date(), {
+          liveSessionMinute: liveSessionMinuteRef.current,
+        });
       if (ymd) {
         applyStock1DLiveSessionTimeScale(
           chart,
@@ -1128,6 +1154,7 @@ export function PriceChart({
         points: pointsRef.current,
         timeZone: dataTimeZoneRef.current,
         holdingsStyle: holdingsStyleRef.current,
+        liveSessionMinute: liveSessionMinuteRef.current,
       },
     );
   }, [pinLiveSessionTimeScaleAndSyncAxis]);
@@ -1285,16 +1312,23 @@ export function PriceChart({
             : stock1DLiveSessionRef.current
               ? LineType.Curved
               : LineType.Curved,
-          lastPriceAnimation: hide
-            ? LastPriceAnimationMode.Disabled
-            : LastPriceAnimationMode.OnDataUpdate,
+          lastPriceAnimation:
+            hide ||
+            !stock1DUsesLiveSessionClock(new Date(), {
+              liveSessionMinute: liveSessionMinuteRef.current,
+            })
+              ? LastPriceAnimationMode.Disabled
+              : LastPriceAnimationMode.OnDataUpdate,
           crosshairMarkerVisible: !hide,
         });
         const sessionOpen = sessionOpenPriceRef.current;
         if (stock1DLiveSessionRef.current && sessionOpen != null && Number.isFinite(sessionOpen)) {
           const pts = pointsRef.current.filter((p) => isFiniteNumber(p.time) && isFiniteNumber(p.value));
-          const chartLiveSpot =
-            getUsEquityMarketSession(new Date()) === "regular" ? liveSpotUsdRef.current : null;
+          const chartLiveSpot = stock1DUsesLiveSessionClock(new Date(), {
+            liveSessionMinute: liveSessionMinuteRef.current,
+          })
+            ? liveSpotUsdRef.current
+            : null;
           applyLiveSessionSeriesPriceLineOptions(
             series,
             sessionOpen,
@@ -1318,6 +1352,18 @@ export function PriceChart({
       }
     }
   }, [containerWidth, plotHeight, holdingsStyle, useCustomBottomAxis]);
+
+  useEffect(() => {
+    const series = seriesRef.current;
+    if (!series || holdingsStyle || !stock1DLiveSession) return;
+    const live = stock1DUsesLiveSessionClock(new Date(), { liveSessionMinute });
+    series.applyOptions({
+      lastPriceAnimation: live
+        ? LastPriceAnimationMode.OnDataUpdate
+        : LastPriceAnimationMode.Disabled,
+    });
+    syncRangePriceBadgesRef.current?.();
+  }, [liveSessionMinute, stock1DLiveSession, holdingsStyle]);
 
   useEffect(() => {
     dataTimeZoneRef.current =
@@ -2013,8 +2059,9 @@ export function PriceChart({
         );
       }
 
-      const marketSession = getUsEquityMarketSession(new Date());
-      const showLiveSessionDot = marketSession === "regular";
+      const showLiveSessionDot = stock1DUsesLiveSessionClock(new Date(), {
+        liveSessionMinute: liveSessionMinuteRef.current,
+      });
       if (
         screenshotPreviewModeRef.current ||
         holdingsStyleRef.current ||
@@ -2326,10 +2373,10 @@ export function PriceChart({
     };
   }, [kind, symbol, range, series, initialChart, chartDataCadence]);
 
-  // Refresh 1D during regular session — ~30s (minute store + live OHLCV tail).
+  // Refresh 1D during live regular session — ~30s (minute store + live OHLCV tail).
   useEffect(() => {
     if (holdingsStyle || kind !== "stock" || range !== "1D" || screenshotPreviewMode) return;
-    if (getUsEquityMarketSession(new Date()) !== "regular") return;
+    if (!liveSessionMinute || getUsEquityMarketSession(new Date()) !== "regular") return;
     let cancelled = false;
     const pollMs = STOCK_1D_LIVE_CHART_POLL_MS;
     const poll = async () => {
@@ -2454,7 +2501,9 @@ export function PriceChart({
     const useLiveSessionChart = stock1DLiveSession;
     const timeZone = useLiveSessionChart ? STOCK_1D_LIVE_SESSION_TZ : dataTimeZoneRef.current;
     const liveSessionYmd = useLiveSessionChart
-      ? resolveStock1DLiveSessionYmd(chartPoints, timeZone)
+      ? resolveStock1DLiveSessionYmd(chartPoints, timeZone, new Date(), {
+          liveSessionMinute: liveSessionMinuteRef.current,
+        })
       : null;
     const sessionChartPoints = chartPoints;
     const data = sessionChartPoints
@@ -2469,6 +2518,7 @@ export function PriceChart({
             timeZone,
             liveSpotUsd,
             new Date(),
+            { liveSessionMinute: liveSessionMinuteRef.current },
           ) ?? sessionChartPoints.find((p) => isFiniteNumber(p.value))?.value)
         : sessionChartPoints.find((p) => isFiniteNumber(p.value))?.value;
     if (!isFiniteNumber(open)) {
@@ -2565,6 +2615,12 @@ export function PriceChart({
     if (!markers) return;
 
     single.applyOptions(overviewBaselineOptions(open, "bright", isTouchLikeChartDevice(), relGrad));
+    if (
+      useLiveSessionChart &&
+      !stock1DUsesLiveSessionClock(new Date(), { liveSessionMinute: liveSessionMinuteRef.current })
+    ) {
+      single.applyOptions({ lastPriceAnimation: LastPriceAnimationMode.Disabled });
+    }
 
     if (useLiveSessionChart && liveSessionYmd) {
       let span = liveSessionSpanSeriesRef.current;
@@ -2624,8 +2680,11 @@ export function PriceChart({
     const last = [...data].reverse().find((p) => isFiniteNumber(p.value));
     if (useLiveSessionChart) {
       sessionOpenPriceRef.current = open;
-      const chartLiveSpot =
-        getUsEquityMarketSession(new Date()) === "regular" ? liveSpotUsd : null;
+      const chartLiveSpot = stock1DUsesLiveSessionClock(new Date(), {
+        liveSessionMinute: liveSessionMinuteRef.current,
+      })
+        ? liveSpotUsd
+        : null;
       applyLiveSessionSeriesPriceLineOptions(
         single,
         open,
@@ -2706,11 +2765,11 @@ export function PriceChart({
         });
       });
     }
-  }, [chartPoints, liveSpotUsd, lastPointStroke, holdingsStyle, tradeMarkers, holdingsQuarterBands, costBasisPrice, kind, series, loading, periodAxisSyncOptions, range, fitChartTimeScale, stock1DLiveSession]);
+  }, [chartPoints, liveSpotUsd, lastPointStroke, holdingsStyle, tradeMarkers, holdingsQuarterBands, costBasisPrice, kind, series, loading, periodAxisSyncOptions, range, fitChartTimeScale, stock1DLiveSession, liveSessionMinute]);
 
   useEffect(() => {
     if (!stock1DLiveSession || holdingsStyle) return;
-    if (getUsEquityMarketSession(new Date()) !== "regular") return;
+    if (!stock1DUsesLiveSessionClock(new Date(), { liveSessionMinute })) return;
     const s = seriesRef.current;
     const openPrice = sessionOpenPriceRef.current;
     if (!s || openPrice == null || !Number.isFinite(openPrice)) return;
@@ -2722,7 +2781,7 @@ export function PriceChart({
       pts.at(-1)?.value,
       hideMobileYAxisLabelsRef.current,
     );
-  }, [stock1DLiveSession, liveSpotUsd, holdingsStyle]);
+  }, [stock1DLiveSession, liveSpotUsd, holdingsStyle, liveSessionMinute]);
 
   const empty = !loading && chartPoints.length === 0;
 
@@ -2933,7 +2992,7 @@ export function PriceChart({
         : null}
       {livePriceDot &&
       stock1DLiveSession &&
-      getUsEquityMarketSession(new Date()) === "regular" &&
+      stock1DUsesLiveSessionClock(new Date(), { liveSessionMinute }) &&
       !holdingsStyle &&
       !loading &&
       ready &&

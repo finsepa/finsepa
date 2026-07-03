@@ -31,6 +31,10 @@ import {
   lastCompletedUsRegularSessionYmd,
   usEquityTodayRegularSessionComplete,
 } from "@/lib/market/us-equity-market-session";
+import {
+  isTodayUsSessionIntradayAbsent,
+  resolveUsEquityLiveRegularSessionActive,
+} from "@/lib/market/us-equity-live-session-server";
 import { getCachedSharesOutstanding } from "@/lib/market/stock-shares-outstanding";
 import { STOCK_DISPLAY_TZ, usSessionWallClockUnix } from "@/lib/market/chart-timestamp-format";
 import {
@@ -580,19 +584,6 @@ async function load1DIntradayForSessionYmd(
   return [];
 }
 
-/** No finalized 1m bars for today after the open — typical on US market holidays. */
-async function isTodayUsSessionIntradayAbsent(
-  ticker: string,
-  todayYmd: string,
-  nowSec: number,
-  minMinutesSinceOpen = 15,
-): Promise<boolean> {
-  const openSec = usSessionWallClockUnix(todayYmd, 9, 30, STOCK_DISPLAY_TZ);
-  if (nowSec < openSec + minMinutesSinceOpen * 60) return false;
-  const bars = await fetchEodhdIntraday(ticker, openSec, nowSec, "1m");
-  return !bars?.length;
-}
-
 async function load1DIntradayChartPoints(
   ticker: string,
   now: Date,
@@ -628,8 +619,11 @@ async function load1DIntradayChartPoints(
 }
 
 /** True when 1D should poll minute store + live OHLCV during US regular session. */
-export function isStock1DLiveSessionMinuteChart(_ticker: string, now: Date = new Date()): boolean {
-  return getUsEquityMarketSession(now) === "regular";
+export async function isStock1DLiveSessionMinuteChart(
+  ticker: string,
+  now: Date = new Date(),
+): Promise<boolean> {
+  return resolveUsEquityLiveRegularSessionActive(ticker, now);
 }
 
 /**
@@ -1052,7 +1046,7 @@ async function loadStockChartPointsUncached(
 export const getStockChartPoints = unstable_cache(
   async (ticker: string, range: StockChartRange, series: StockChartSeries) =>
     loadStockChartPointsUncached(ticker, range, series),
-  ["stock-chart-points-v29-closed-1d-2m"],
+  ["stock-chart-points-v30-holiday-1d-session"],
   { revalidate: REVALIDATE_HOT },
 );
 
@@ -1075,7 +1069,7 @@ export async function getStockChartPointsForApi(
   series: StockChartSeries,
 ): Promise<StockChartPoint[]> {
   const now = new Date();
-  if (range === "1D" && getUsEquityMarketSession(now) === "regular") {
+  if (range === "1D" && (await resolveUsEquityLiveRegularSessionActive(ticker, now))) {
     requestStockMinuteBarWatch(ticker);
     return getStockChartPoints1DLiveSession(ticker, series);
   }

@@ -8,6 +8,29 @@ import {
 } from "@/lib/market/us-equity-market-session";
 import type { StockChartPoint, StockChartRange } from "@/lib/market/stock-chart-types";
 
+export type Stock1DLiveSessionChartOptions = {
+  /** False on US holidays — plot the last completed session instead of today's clock window. */
+  liveSessionMinute?: boolean;
+};
+
+function stock1DUsesLiveSessionClock(now: Date, options?: Stock1DLiveSessionChartOptions): boolean {
+  return options?.liveSessionMinute !== false && getUsEquityMarketSession(now) === "regular";
+}
+
+export { stock1DUsesLiveSessionClock };
+
+function stock1DSessionEndSec(
+  sessionYmd: string,
+  timeZone: string,
+  now: Date,
+  options?: Stock1DLiveSessionChartOptions,
+): number {
+  const close = usSessionWallClockUnix(sessionYmd, 16, 0, timeZone);
+  if (!stock1DUsesLiveSessionClock(now, options)) return close;
+  const nowSec = Math.floor(now.getTime() / 1000);
+  return Math.min(nowSec, close);
+}
+
 /** US equities 1D live session is always anchored to the NYSE regular-hours clock. */
 export const STOCK_1D_LIVE_SESSION_TZ = STOCK_DISPLAY_TZ;
 
@@ -118,13 +141,14 @@ function lastUsRegularSessionYmdFromPoints(
   return usSessionYmdFromUnixSeconds(last.time);
 }
 
-/** During regular hours, pin to today's US session even if stale bars remain in the payload. */
+/** During live regular session, pin to today's US session; otherwise use the payload session. */
 export function resolveStock1DLiveSessionYmd(
   points: readonly StockChartPoint[],
   timeZone: string,
   now: Date = new Date(),
+  options?: Stock1DLiveSessionChartOptions,
 ): string | null {
-  if (getUsEquityMarketSession(now) === "regular") {
+  if (stock1DUsesLiveSessionClock(now, options)) {
     return new Intl.DateTimeFormat("en-CA", {
       timeZone,
       year: "numeric",
@@ -140,11 +164,10 @@ export function filterStock1DLiveSessionPoints(
   sessionYmd: string,
   timeZone: string,
   now: Date = new Date(),
+  options?: Stock1DLiveSessionChartOptions,
 ): StockChartPoint[] {
   const open = usSessionWallClockUnix(sessionYmd, 9, 30, timeZone);
-  const close = usSessionWallClockUnix(sessionYmd, 16, 0, timeZone);
-  const nowSec = Math.floor(now.getTime() / 1000);
-  const endSec = getUsEquityMarketSession(now) === "regular" ? Math.min(nowSec, close) : close;
+  const endSec = stock1DSessionEndSec(sessionYmd, timeZone, now, options);
 
   return points.filter((p) => {
     if (typeof p.time !== "number" || !Number.isFinite(p.time)) return false;
@@ -159,11 +182,10 @@ export function filterStock1DLiveSessionPointsByTimeWindow(
   sessionYmd: string,
   timeZone: string = STOCK_1D_LIVE_SESSION_TZ,
   now: Date = new Date(),
+  options?: Stock1DLiveSessionChartOptions,
 ): StockChartPoint[] {
   const open = usSessionWallClockUnix(sessionYmd, 9, 30, timeZone);
-  const close = usSessionWallClockUnix(sessionYmd, 16, 0, timeZone);
-  const nowSec = Math.floor(now.getTime() / 1000);
-  const endSec = getUsEquityMarketSession(now) === "regular" ? Math.min(nowSec, close) : close;
+  const endSec = stock1DSessionEndSec(sessionYmd, timeZone, now, options);
 
   return points.filter((p) => {
     if (typeof p.time !== "number" || !Number.isFinite(p.time) || !Number.isFinite(p.value)) return false;
@@ -381,11 +403,12 @@ function collectStock1DLiveSessionSourcePoints(
   sessionYmd: string,
   timeZone: string,
   now: Date,
+  options?: Stock1DLiveSessionChartOptions,
 ): StockChartPoint[] {
-  const byYmd = filterStock1DLiveSessionPoints(points, sessionYmd, timeZone, now);
+  const byYmd = filterStock1DLiveSessionPoints(points, sessionYmd, timeZone, now, options);
   if (byYmd.length) return dropIsolatedLiveTailAnchors(byYmd, sessionYmd, timeZone, now);
   return dropIsolatedLiveTailAnchors(
-    filterStock1DLiveSessionPointsByTimeWindow(points, sessionYmd, timeZone, now),
+    filterStock1DLiveSessionPointsByTimeWindow(points, sessionYmd, timeZone, now, options),
     sessionYmd,
     timeZone,
     now,
@@ -488,12 +511,10 @@ export function resampleStock1DLiveSession(
   timeZone: string,
   openValue: number,
   now: Date = new Date(),
+  options?: Stock1DLiveSessionChartOptions,
 ): StockChartPoint[] {
   const open = usSessionWallClockUnix(sessionYmd, 9, 30, timeZone);
-  const close = usSessionWallClockUnix(sessionYmd, 16, 0, timeZone);
-  const nowSec = Math.floor(now.getTime() / 1000);
-  const endSec =
-    getUsEquityMarketSession(now) === "regular" ? Math.min(nowSec, close) : close;
+  const endSec = stock1DSessionEndSec(sessionYmd, timeZone, now, options);
 
   const sorted = points
     .filter(
@@ -546,11 +567,10 @@ export function resolveSessionOpenAnchorValue(
   timeZone: string,
   liveSpotUsd: number | null | undefined,
   now: Date = new Date(),
+  options?: Stock1DLiveSessionChartOptions,
 ): number | null {
   const open = usSessionWallClockUnix(sessionYmd, 9, 30, timeZone);
-  const close = usSessionWallClockUnix(sessionYmd, 16, 0, timeZone);
-  const nowSec = Math.floor(now.getTime() / 1000);
-  const endSec = getUsEquityMarketSession(now) === "regular" ? Math.min(nowSec, close) : close;
+  const endSec = stock1DSessionEndSec(sessionYmd, timeZone, now, options);
   const sorted = points
     .filter((p) => typeof p.time === "number" && Number.isFinite(p.time) && Number.isFinite(p.value))
     .sort((a, b) => a.time - b.time);
@@ -562,7 +582,7 @@ export function resolveSessionOpenAnchorValue(
   const lastBefore = beforeOpen[beforeOpen.length - 1];
   if (lastBefore != null) {
     const sameSessionDay = usSessionYmdFromUnixSeconds(lastBefore.time) === sessionYmd;
-    if (getUsEquityMarketSession(now) !== "regular" || sameSessionDay) {
+    if (!stock1DUsesLiveSessionClock(now, options) || sameSessionDay) {
       return lastBefore.value;
     }
   }
@@ -570,19 +590,20 @@ export function resolveSessionOpenAnchorValue(
   return sorted.find((p) => Number.isFinite(p.value))?.value ?? null;
 }
 
-/** Pin the visible line end to the current wall-clock time (never beyond `now`). */
+/** Pin the visible line end to the current wall-clock time (never beyond `now`) during live session. */
 export function appendLiveSessionNowTail(
   sessionPoints: StockChartPoint[],
   tailValue: number,
   sessionYmd: string,
   timeZone: string,
   now: Date,
+  options?: Stock1DLiveSessionChartOptions,
 ): StockChartPoint[] {
   if (!Number.isFinite(tailValue)) return sessionPoints;
 
   const nowSec = Math.floor(now.getTime() / 1000);
   const close = usSessionWallClockUnix(sessionYmd, 16, 0, timeZone);
-  const tailTime = Math.min(nowSec, close);
+  const tailTime = stock1DUsesLiveSessionClock(now, options) ? Math.min(nowSec, close) : close;
   const tailPoint: StockChartPoint = {
     time: tailTime,
     value: tailValue,
@@ -680,20 +701,22 @@ export function prepareStock1DLiveSessionChartPoints(
   now: Date = new Date(),
   extendedSpotUsd?: number | null,
   extendedSpotTimeUnix?: number | null,
+  options?: Stock1DLiveSessionChartOptions,
 ): StockChartPoint[] {
   const timeZone = STOCK_1D_LIVE_SESSION_TZ;
   const session = getUsEquityMarketSession(now);
-  const useLiveSpot = session === "regular";
-  const sessionYmd = resolveStock1DLiveSessionYmd(points, timeZone, now);
+  const useLiveSpot = stock1DUsesLiveSessionClock(now, options);
+  const sessionYmd = resolveStock1DLiveSessionYmd(points, timeZone, now, options);
   if (!sessionYmd) return [...points];
 
-  const sourcePoints = collectStock1DLiveSessionSourcePoints(points, sessionYmd, timeZone, now);
+  const sourcePoints = collectStock1DLiveSessionSourcePoints(points, sessionYmd, timeZone, now, options);
   const openValue = resolveSessionOpenAnchorValue(
     points,
     sessionYmd,
     timeZone,
     useLiveSpot ? liveSpotUsd : null,
     now,
+    options,
   );
   if (openValue == null || !Number.isFinite(openValue)) {
     return sourcePoints.length ? sourcePoints : [];
@@ -704,17 +727,14 @@ export function prepareStock1DLiveSessionChartPoints(
   }
 
   const open = usSessionWallClockUnix(sessionYmd, 9, 30, timeZone);
-  const close = usSessionWallClockUnix(sessionYmd, 16, 0, timeZone);
-  const nowSec = Math.floor(now.getTime() / 1000);
-  const endSec =
-    getUsEquityMarketSession(now) === "regular" ? Math.min(nowSec, close) : close;
+  const endSec = stock1DSessionEndSec(sessionYmd, timeZone, now, options);
   const sortedSource = [...sourcePoints].sort((a, b) => a.time - b.time);
 
   const sessionPoints =
     isUltraSparseLiveSessionSource(sortedSource, open, endSec) ||
     liveSessionSourceIsDenseIntraday(sortedSource, open, endSec)
       ? filterLiveSessionWindow(sortedSource, sessionYmd, timeZone, open, endSec)
-      : resampleStock1DLiveSession(sourcePoints, sessionYmd, timeZone, openValue, now);
+      : resampleStock1DLiveSession(sourcePoints, sessionYmd, timeZone, openValue, now, options);
 
   if (!sessionPoints.length) {
     return [];
@@ -728,7 +748,7 @@ export function prepareStock1DLiveSessionChartPoints(
 
   let regularPoints: StockChartPoint[];
   if (useLiveSpot) {
-    regularPoints = appendLiveSessionNowTail(sessionPoints, tailValue, sessionYmd, timeZone, now);
+    regularPoints = appendLiveSessionNowTail(sessionPoints, tailValue, sessionYmd, timeZone, now, options);
   } else {
     const close = usSessionWallClockUnix(sessionYmd, 16, 0, timeZone);
     const trimmed = sessionPoints.filter((p) => p.time <= close);
@@ -966,11 +986,14 @@ export function fitOverviewChartTimeScale(
     points: readonly StockChartPoint[];
     timeZone: string;
     holdingsStyle: boolean;
+    liveSessionMinute?: boolean;
   },
   onLiveSessionApplied?: () => void,
 ): void {
   if (shouldUseStock1DLiveSessionChart(ctx.kind, ctx.range, ctx.points, ctx.holdingsStyle)) {
-    const ymd = resolveStock1DLiveSessionYmd(ctx.points, ctx.timeZone);
+    const ymd = resolveStock1DLiveSessionYmd(ctx.points, ctx.timeZone, new Date(), {
+      liveSessionMinute: ctx.liveSessionMinute,
+    });
     if (ymd) {
       const extended = chartPointsIncludeExtendedHoursSegment(ctx.points, ymd, ctx.timeZone);
       applyStock1DLiveSessionTimeScale(

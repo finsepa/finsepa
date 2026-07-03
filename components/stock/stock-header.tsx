@@ -347,16 +347,14 @@ export function StockHeader({
             </span>
           </h1>
           {chartLoading ? priceLoadingSkeleton : (
-            <>
-              {showExtendedHoursColumn && !chartHovering ? (
-                <div className={`flex flex-col gap-2 ${priceMotionClass}`}>
-                  {mobileMainPriceBlock}
-                  <StockExtendedHoursPrice quote={extendedHours} loading={extendedHoursLoading} />
-                </div>
-              ) : (
-                mobileMainPriceBlock
-              )}
-            </>
+            showExtendedHoursColumn ? (
+              <div className={`flex flex-col gap-2 ${priceMotionClass}`}>
+                {mobileMainPriceBlock}
+                <StockExtendedHoursPrice quote={extendedHours} loading={extendedHoursLoading} />
+              </div>
+            ) : (
+              mobileMainPriceBlock
+            )
           )}
         </div>
         {logoMark}

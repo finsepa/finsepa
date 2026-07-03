@@ -9,6 +9,7 @@ import {
   synthesize1DSessionChartFromDailyBars,
 } from "@/lib/market/stock-chart-data";
 import { getUsEquityMarketSession } from "@/lib/market/us-equity-market-session";
+import { resolveUsEquityLiveRegularSessionActive } from "@/lib/market/us-equity-live-session-server";
 import type { ChartingSeriesPoint } from "@/lib/market/charting-series-types";
 import type { StockDetailHeaderMeta } from "@/lib/market/stock-header-meta";
 import { getStockDetailHeaderMetaForPage } from "@/lib/market/stock-header-meta-server";
@@ -68,6 +69,11 @@ export type StockPageInitialData = {
   headerLiveSpotUsd: number | null;
   /** Prior session close from the same realtime quote as `headerLiveSpotUsd` (regular session only). */
   headerPriorCloseUsd: number | null;
+  /**
+   * False on US holidays during the 9:30–16:00 ET window (no live intraday) — header shows
+   * last session at-close + after-hours instead of live "Today".
+   */
+  liveRegularSessionActive: boolean;
   /**
    * Earnings tab loads client-side via GET `/api/stocks/[ticker]/earnings` (kept off SSR so stock pages
    * do not block on heavy earnings enrichment or calendar fetches).
@@ -148,6 +154,7 @@ function fallbackStockPageInitialData(ticker: string, now: Date): StockPageIniti
     peersCompareRows: [],
     headerLiveSpotUsd: null,
     headerPriorCloseUsd: null,
+    liveRegularSessionActive: false,
     earningsTabPayload: null,
   };
 }
@@ -190,7 +197,12 @@ async function loadStockPageHotFields(
   range: StockChartRange,
   sortedDailyFallback: EodhdDailyBar[],
   now: Date,
-): Promise<Pick<StockPageInitialData, "chart" | "headerLiveSpotUsd" | "headerPriorCloseUsd">> {
+): Promise<
+  Pick<
+    StockPageInitialData,
+    "chart" | "headerLiveSpotUsd" | "headerPriorCloseUsd" | "liveRegularSessionActive"
+  >
+> {
   const [chartPointsResult, spotResult] = await Promise.allSettled([
     getStockChartPointsForApi(ticker, range, "price"),
     getStockSpotQuoteForApi(ticker),
@@ -207,13 +219,13 @@ async function loadStockPageHotFields(
     points = resolveOverviewChartPoints(range, chartPointsRaw, dailyBars, now);
   }
 
-  const liveSessionMinute =
-    range === "1D" && getUsEquityMarketSession(now) === "regular";
+  const liveRegularSessionActive = await resolveUsEquityLiveRegularSessionActive(ticker, now);
 
   return {
-    chart: { range, points, liveSessionMinute },
+    chart: { range, points, liveSessionMinute: range === "1D" && liveRegularSessionActive },
     headerLiveSpotUsd: positiveUsd(spotQuote?.price),
     headerPriorCloseUsd: positiveUsd(spotQuote?.previousClose),
+    liveRegularSessionActive,
   };
 }
 
@@ -256,6 +268,7 @@ export async function loadStockPageInitialDataUncached(routeTicker: string): Pro
       peersCompareRows: [],
       headerLiveSpotUsd,
       headerPriorCloseUsd: null,
+      liveRegularSessionActive: true,
       earningsTabPayload: null,
     };
   }
@@ -272,6 +285,7 @@ export async function loadStockPageInitialDataUncached(routeTicker: string): Pro
       quarterlyResult,
       peersResult,
       spotResult,
+      liveSessionResult,
     ] = await Promise.allSettled([
       getStockDetailHeaderMetaForPage(ticker),
       fetchEodhdEodDaily(ticker, from, to),
@@ -283,6 +297,7 @@ export async function loadStockPageInitialDataUncached(routeTicker: string): Pro
       fetchChartingSeries(ticker, "quarterly"),
       getPeersCompareRowsCached(ticker),
       getStockSpotQuoteForApi(ticker),
+      resolveUsEquityLiveRegularSessionActive(ticker, now),
     ]);
 
     const headerMeta = fromSettled(headerMetaResult, "headerMeta") ?? headerMetaShell(ticker);
@@ -295,6 +310,7 @@ export async function loadStockPageInitialDataUncached(routeTicker: string): Pro
     const quarterlySeries = fromSettled(quarterlyResult, "fundamentalsQuarterly");
     const peersCompareRows = fromSettled(peersResult, "peers");
     const spotQuote = fromSettled(spotResult, "headerLiveSpot");
+    const liveRegularSessionActive = fromSettled(liveSessionResult, "liveSession") ?? false;
 
     const sorted = barsRaw?.length ? [...barsRaw].sort((a, b) => a.date.localeCompare(b.date)) : [];
     const performance = computeStockPerformanceFromSortedDailyBars(sorted, ticker, now);
@@ -304,7 +320,11 @@ export async function loadStockPageInitialDataUncached(routeTicker: string): Pro
       ticker,
       isEtf: isStockDetailEtf(ticker, headerMeta),
       headerMeta,
-      chart: { range, points },
+      chart: {
+        range,
+        points,
+        liveSessionMinute: range === "1D" && liveRegularSessionActive,
+      },
       performance,
       keyStatsBundle,
       news: Array.isArray(news) ? news : [],
@@ -315,6 +335,7 @@ export async function loadStockPageInitialDataUncached(routeTicker: string): Pro
       peersCompareRows: Array.isArray(peersCompareRows) ? peersCompareRows : [],
       headerLiveSpotUsd: positiveUsd(spotQuote?.price),
       headerPriorCloseUsd: positiveUsd(spotQuote?.previousClose),
+      liveRegularSessionActive,
       earningsTabPayload: null,
     };
   } catch (err) {
@@ -348,6 +369,7 @@ export async function loadStockPageInitialData(routeTicker: string): Promise<Sto
       ...base,
       ...hot,
       chart: hot.chart.points.length > 0 ? hot.chart : base.chart,
+      liveRegularSessionActive: hot.liveRegularSessionActive,
     };
   }
 

@@ -37,5 +37,6 @@ export function assetSnapshotPayloadToPageData(payload: AssetSnapshotPayload): S
     ...payload,
     headerLiveSpotUsd: null,
     headerPriorCloseUsd: null,
+    liveRegularSessionActive: payload.liveRegularSessionActive ?? true,
   };
 }
