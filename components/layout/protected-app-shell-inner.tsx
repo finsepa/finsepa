@@ -5,6 +5,7 @@ import { Suspense, useRef } from "react";
 
 import { MainScrollToTop } from "@/components/layout/main-scroll-to-top";
 import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav";
+import { MarketsTabHostProvider } from "@/components/screener/markets-tab-host-context";
 import { MobilePrimaryNavProvider } from "@/components/layout/mobile-primary-nav-context";
 import { NavigationTopLoader } from "@/components/layout/navigation-top-loader";
 import { Sidebar } from "@/components/layout/sidebar";
@@ -53,6 +54,7 @@ function ProtectedAppChrome({
   return (
     <MobileAssetTopbarProvider>
     <MobilePrimaryNavProvider>
+    <MarketsTabHostProvider>
     <div
       id="app-shell-root"
       suppressHydrationWarning
@@ -94,23 +96,22 @@ function ProtectedAppChrome({
           )}
         >
           <div
-            aria-hidden
-            className="mobile-topbar-blur-fade md:hidden"
-          />
-          <div
             suppressHydrationWarning
             className={cn(
               "shell-desktop-panel__header mobile-topbar-shell z-30 min-w-0 w-full max-w-full shrink-0 max-md:bg-transparent max-md:shadow-none md:border-b md:border-[#E4E4E7] md:bg-white",
               SIDEBAR_WIDTH_MOTION_CLASS,
             )}
           >
-            <Topbar
-              userId={userId}
-              userInitials={userInitials}
-              avatarUrl={avatarUrl}
-              userDisplayName={userDisplayName}
-              platformTrialDaysLeft={platformTrialDaysLeft}
-            />
+            <div aria-hidden className="mobile-topbar-blur-fade md:hidden" />
+            <div className="relative z-[1] min-w-0 w-full">
+              <Topbar
+                userId={userId}
+                userInitials={userInitials}
+                avatarUrl={avatarUrl}
+                userDisplayName={userDisplayName}
+                platformTrialDaysLeft={platformTrialDaysLeft}
+              />
+            </div>
           </div>
           <div
             suppressHydrationWarning
@@ -136,6 +137,7 @@ function ProtectedAppChrome({
       <MainScrollToTop scrollRootRef={mainRef} />
       <MobileBottomNav />
     </div>
+    </MarketsTabHostProvider>
     </MobilePrimaryNavProvider>
     </MobileAssetTopbarProvider>
   );

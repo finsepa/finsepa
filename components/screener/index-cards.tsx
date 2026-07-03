@@ -59,9 +59,9 @@ export const INDEX_CARDS_GRID_CLASS =
 /** Outer shell — keeps vertical overflow visible so card shadows are not clipped. */
 export const INDEX_CARDS_SCROLL_OUTER_CLASS = "mb-4 overflow-visible sm:mb-5 md:mb-6";
 
-/** Horizontal scroll track — `mobile-scroll-x` reserves bottom space for shadows on small screens. */
+/** Horizontal scroll track — bleed right for peek; keep left inset with page gutter. */
 export const INDEX_CARDS_SCROLL_CLASS =
-  "-mx-4 px-4 pt-1 mobile-scroll-x md:mx-0 md:overflow-visible md:px-0 md:pb-0 md:pt-0 md:mb-0";
+  "-mr-4 pl-1 pr-4 pt-1 mobile-scroll-x md:mx-0 md:overflow-visible md:pl-0 md:pr-0 md:pb-0 md:pt-0 md:mb-0";
 
 export const INDEX_CARD_SURFACE_CLASS =
   `flex w-[7.25625rem] shrink-0 flex-col items-start gap-0.5 max-md:py-3.5 overflow-hidden rounded-2xl border border-[#E4E4E7] bg-white px-3 py-3 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition max-md:overflow-visible md:gap-1 md:hover:shadow-[0px_2px_6px_0px_rgba(10,10,10,0.08)] sm:px-4 sm:py-4 md:w-auto md:min-w-0 md:shrink ${MOBILE_CARD_SURFACE_CLASS}`;

@@ -82,6 +82,11 @@ import {
   STOCK_1D_LIVE_SESSION_TZ,
   stock1DLiveSessionMinuteBucketUnix,
 } from "@/lib/chart/stock-1d-live-session-chart";
+import {
+  mergeStock1DSessionBarInStorage,
+  readStock1DSessionBarsFromStorage,
+  writeStock1DSessionBarsToStorage,
+} from "@/lib/chart/stock-1d-session-bars-storage";
 import { attachMobilePriceChartHaptics } from "@/lib/chart/mobile-chart-haptic";
 import {
   chartBarTimeForYmd,
@@ -932,9 +937,29 @@ export function PriceChart({
     setLiveSessionMinute(liveSessionMinuteProp ?? initialChart?.liveSessionMinute ?? true);
   }, [kind, symbol, range, holdingsStyle, liveSessionMinuteProp, initialChart?.liveSessionMinute]);
 
-  // Seed the client minute accumulator from server WS / poll bars (true 60s sparkline).
+  // Restore today's 60s poll history from this browser (survives reloads).
   useEffect(() => {
-    if (kind !== "stock" || range !== "1D" || holdingsStyle || !liveSessionMinute) return;
+    if (kind !== "stock" || range !== "1D" || holdingsStyle) return;
+    if (getUsEquityMarketSession(new Date()) !== "regular") return;
+    const sessionYmd = resolveStock1DLiveSessionYmd([], STOCK_1D_LIVE_SESSION_TZ, new Date());
+    if (!sessionYmd) return;
+    const stored = readStock1DSessionBarsFromStorage(symbol, sessionYmd);
+    if (!stored.length) return;
+    setLiveMinuteBars((prev) => mergeLiveSpotMinuteBarsIntoPoints(stored, prev));
+  }, [kind, symbol, range, holdingsStyle]);
+
+  useEffect(() => {
+    if (!liveMinuteBars.length) return;
+    const sessionYmd =
+      liveMinuteBars.find((p) => p.sessionDate?.trim())?.sessionDate?.trim() ??
+      resolveStock1DLiveSessionYmd(liveMinuteBars, STOCK_1D_LIVE_SESSION_TZ, new Date());
+    if (!sessionYmd) return;
+    writeStock1DSessionBarsToStorage(symbol, sessionYmd, liveMinuteBars);
+  }, [symbol, liveMinuteBars]);
+
+  // Seed the client minute accumulator from server poll bars (60s sparkline history).
+  useEffect(() => {
+    if (kind !== "stock" || range !== "1D" || holdingsStyle) return;
     if (!points.length) return;
     const now = new Date();
     if (getUsEquityMarketSession(now) !== "regular") return;
@@ -958,27 +983,27 @@ export function PriceChart({
       }
     }
     const seeds = Array.from(byBucket.values()).sort((a, b) => a.time - b.time);
-    if (seeds.length < 2) return;
+    if (!seeds.length) return;
     setLiveMinuteBars((prev) => mergeLiveSpotMinuteBarsIntoPoints(seeds, prev));
-  }, [kind, range, holdingsStyle, liveSessionMinute, points]);
+  }, [kind, range, holdingsStyle, points]);
 
   useEffect(() => {
-    if (kind !== "stock" || range !== "1D" || holdingsStyle || !liveSessionMinute) return;
+    if (kind !== "stock" || range !== "1D" || holdingsStyle) return;
     if (getUsEquityMarketSession(new Date()) !== "regular") return;
     setSessionNowMs(Date.now());
     const id = window.setInterval(() => setSessionNowMs(Date.now()), STOCK_1D_LIVE_SESSION_CLOCK_TICK_MS);
     return () => window.clearInterval(id);
-  }, [kind, range, holdingsStyle, liveSessionMinute]);
+  }, [kind, range, holdingsStyle]);
 
   useEffect(() => {
-    if (kind !== "stock" || range !== "1D" || holdingsStyle || !liveSessionMinute) return;
-    if (liveSpotUsd == null || !Number.isFinite(liveSpotUsd) || liveSpotUsd <= 0) return;
+    if (kind !== "stock" || range !== "1D" || holdingsStyle) return;
     if (getUsEquityMarketSession(new Date()) !== "regular") return;
+    if (liveSpotUsd == null || !Number.isFinite(liveSpotUsd) || liveSpotUsd <= 0) return;
     setSessionNowMs(Date.now());
-  }, [kind, range, holdingsStyle, liveSpotUsd, liveSessionMinute]);
+  }, [kind, range, holdingsStyle, liveSpotUsd]);
 
   useEffect(() => {
-    if (kind !== "stock" || range !== "1D" || holdingsStyle || !liveSessionMinute) return;
+    if (kind !== "stock" || range !== "1D" || holdingsStyle) return;
     if (getUsEquityMarketSession(new Date()) !== "regular") return;
     if (liveSpotUsd == null || !Number.isFinite(liveSpotUsd) || liveSpotUsd <= 0) return;
     const now = new Date(sessionNowMs);
@@ -988,15 +1013,18 @@ export function PriceChart({
     if (!bar) return;
     setLiveMinuteBars((prev) => {
       const idx = prev.findIndex((p) => p.time === bar.time);
+      let next: StockChartPoint[];
       if (idx >= 0) {
         if (prev[idx]!.value === bar.value) return prev;
-        const next = [...prev];
+        next = [...prev];
         next[idx] = bar;
-        return next;
+      } else {
+        next = [...prev, bar].sort((a, b) => a.time - b.time);
       }
-      return [...prev, bar].sort((a, b) => a.time - b.time);
+      mergeStock1DSessionBarInStorage(symbol, sessionYmd, bar);
+      return next;
     });
-  }, [kind, range, holdingsStyle, liveSpotUsd, sessionNowMs, liveSessionMinute]);
+  }, [kind, range, holdingsStyle, liveSpotUsd, sessionNowMs, symbol]);
 
   const dataTimeZoneHint = useMemo(
     () =>
@@ -1015,28 +1043,6 @@ export function PriceChart({
       return points;
     }
     const now = new Date(sessionNowMs);
-    if (!liveSessionMinute) {
-      const sessionYmd = resolveStock1DLiveSessionYmd(points, STOCK_1D_LIVE_SESSION_TZ, now);
-      if (!sessionYmd) return points;
-      const filtered = filterStock1DLiveSessionPointsByTimeWindow(
-        points,
-        sessionYmd,
-        STOCK_1D_LIVE_SESSION_TZ,
-        now,
-      );
-      if (filtered.length) return filtered;
-      if (getUsEquityMarketSession(now) === "regular" && liveSpotUsd != null && liveSpotUsd > 0) {
-        const mergedSource = mergeLiveSpotMinuteBarsIntoPoints(points, liveMinuteBars);
-        const prepared = prepareStock1DLiveSessionChartPoints(
-          mergedSource,
-          liveSpotUsd,
-          STOCK_1D_LIVE_SESSION_TZ,
-          now,
-        );
-        if (prepared.length) return prepared;
-      }
-      return filtered;
-    }
     const mergedSource = mergeLiveSpotMinuteBarsIntoPoints(points, liveMinuteBars);
     const prepared = prepareStock1DLiveSessionChartPoints(
       mergedSource,
@@ -1062,7 +1068,7 @@ export function PriceChart({
       liveSpotUsd > 0;
     const tailValue = useLiveSpot ? liveSpotUsd : last.value;
     return appendLiveSessionNowTail(filtered, tailValue, sessionYmd, STOCK_1D_LIVE_SESSION_TZ, now);
-  }, [kind, range, holdingsStyle, points, liveMinuteBars, liveSpotUsd, sessionNowMs, liveSessionMinute]);
+  }, [kind, range, holdingsStyle, points, liveMinuteBars, liveSpotUsd, sessionNowMs]);
   const [hoverPrice, setHoverPrice] = useState<number | null>(null);
   const [hoverTimeUnix, setHoverTimeUnix] = useState<number | null>(null);
   const [hoverPoint, setHoverPoint] = useState<{ x: number; y: number } | null>(null);

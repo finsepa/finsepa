@@ -14,9 +14,8 @@ import { ChartPieSlice, Globe, Star } from "@phosphor-icons/react";
 
 import { ChevronsUpDownIcon } from "@/components/chevrons-up-down-icon";
 import {
-  MOBILE_SEARCH_KEYBOARD_DELAY_MS,
-  MOBILE_SEARCH_SHEET_ENTER_MS,
-  MobileBottomNavSearchSheet,
+  MobileBottomNavSearchField,
+  MobileBottomNavSearchResults,
 } from "@/components/layout/mobile-bottom-nav-search";
 import { MobileMoreNavList } from "@/components/layout/mobile-more-nav-menu";
 import { useMobilePrimaryNav } from "@/components/layout/mobile-primary-nav-context";
@@ -28,20 +27,24 @@ import {
 import { OPEN_SEARCH_EVENT } from "@/components/search/search-modal";
 import { useSearchPanel } from "@/components/search/use-search-panel";
 import { HapticButton } from "@/components/haptic-button";
+import { useMobileBottomNavScrollHide } from "@/lib/layout/use-mobile-bottom-nav-scroll-hide";
 import { useMobileBottomNavSearchIsolation } from "@/lib/layout/use-mobile-bottom-nav-search-isolation";
-import { Search } from "@/lib/icons";
+import { useMobileVisualViewport } from "@/lib/layout/use-mobile-visual-viewport";
+import { Search, X } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 
 const TAB_MOTION_MS = 280;
 const TAB_MOTION_DURATION = TAB_MOTION_MS / 1000;
 const TAB_MOTION_EASE = [0.33, 1, 0.68, 1] as const;
+/** Synced with `.mobile-bottom-nav-search-morph` width transition in `globals.css`. */
+const SEARCH_MORPH_MS = 280;
 /** Matches `MobileMoreNavList` row, gap, and padding geometry. */
 const MORE_MENU_ROW_HEIGHT_PX = 44;
 const MORE_MENU_ROW_GAP_PX = 2;
 const MORE_MENU_LIST_PADDING_PX = 12;
 const MORE_MENU_PILL_PADDING_PX = 4;
 /** Sync with `--mobile-bottom-nav-expanded-height`. */
-const MORE_MENU_TAB_ROW_PX = 64;
+const MORE_MENU_TAB_ROW_PX = 52;
 
 /** Fallback when `window` is unavailable (SSR / first paint). */
 const FALLBACK_VIEWPORT_HEIGHT_PX = 844;
@@ -82,6 +85,7 @@ function syncMobileBottomNavMoreActiveClass(active: boolean) {
 
 const MORPH_SPRING = { type: "spring" as const, stiffness: 360, damping: 32, mass: 0.9 };
 const MORE_CLOSE_TRANSITION = { duration: TAB_MOTION_DURATION, ease: TAB_MOTION_EASE };
+const SEARCH_ICON_MORPH = { duration: 0.2, ease: [0.33, 1, 0.68, 1] as const };
 
 const pillSurfaceClass =
   "border border-[rgba(9,9,11,0.06)] bg-white/90 shadow-sm backdrop-blur-xl backdrop-saturate-150 supports-[backdrop-filter]:bg-white/78";
@@ -123,16 +127,19 @@ export function MobileBottomNav() {
   const [moreOpen, setMoreOpen] = useState(false);
   const [moreMenuAnimating, setMoreMenuAnimating] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [searchInteractive, setSearchInteractive] = useState(false);
+  const [searchMorphComplete, setSearchMorphComplete] = useState(false);
   const navFrozen = moreOpen || moreMenuAnimating;
+  useMobileBottomNavScrollHide(!searchOpen && !navFrozen);
   useMobileBottomNavSearchIsolation(searchOpen);
 
+  const searchMorphRef = useRef<HTMLDivElement>(null);
   const closeSearch = useCallback(() => setSearchOpen(false), []);
   const searchPanel = useSearchPanel({
     open: searchOpen,
-    focusWhen: searchInteractive,
+    focusWhen: searchMorphComplete,
     onClose: closeSearch,
   });
+  const visualViewport = useMobileVisualViewport(searchOpen);
 
   const barRef = useRef<HTMLDivElement>(null);
   const navRef = useRef<HTMLElement>(null);
@@ -162,15 +169,25 @@ export function MobileBottomNav() {
 
   useEffect(() => {
     if (!searchOpen) {
-      setSearchInteractive(false);
+      setSearchMorphComplete(false);
       return;
     }
 
-    const timer = window.setTimeout(
-      () => setSearchInteractive(true),
-      MOBILE_SEARCH_SHEET_ENTER_MS + MOBILE_SEARCH_KEYBOARD_DELAY_MS,
-    );
-    return () => window.clearTimeout(timer);
+    const morph = searchMorphRef.current;
+    const markComplete = () => setSearchMorphComplete(true);
+
+    const onTransitionEnd = (e: TransitionEvent) => {
+      if (e.target !== morph || e.propertyName !== "width") return;
+      markComplete();
+    };
+
+    morph?.addEventListener("transitionend", onTransitionEnd);
+    const fallback = window.setTimeout(markComplete, SEARCH_MORPH_MS + 48);
+
+    return () => {
+      morph?.removeEventListener("transitionend", onTransitionEnd);
+      window.clearTimeout(fallback);
+    };
   }, [searchOpen]);
 
   useEffect(() => {
@@ -239,11 +256,10 @@ export function MobileBottomNav() {
 
   return (
     <>
-      <MobileBottomNavSearchSheet
-        open={searchOpen}
-        interactive={searchInteractive}
+      <MobileBottomNavSearchResults
+        open={searchOpen && searchMorphComplete}
         panel={searchPanel}
-        onClose={closeSearch}
+        searchMorphRef={searchMorphRef}
       />
 
       <AnimatePresence>
@@ -268,6 +284,13 @@ export function MobileBottomNav() {
           "mobile-bottom-nav-blur-fade md:hidden",
           searchOpen && "mobile-bottom-nav-blur-fade--hidden",
         )}
+        style={
+          navFrozen ?
+            {
+              height: `calc(var(--mobile-bottom-nav-blur-extension) + ${expandedHeightPx}px + var(--mobile-bottom-nav-inset-bottom) + env(safe-area-inset-bottom, 0px))`,
+            }
+          : undefined
+        }
       />
 
       <div
@@ -276,31 +299,42 @@ export function MobileBottomNav() {
           "mobile-bottom-nav-bar md:hidden",
           (navFrozen || searchOpen) && "mobile-bottom-nav-bar--more-open",
         )}
+        style={
+          searchOpen ?
+            {
+              bottom: `calc(${visualViewport.keyboardInsetPx}px + var(--mobile-bottom-nav-inset-bottom) + env(safe-area-inset-bottom, 0px))`,
+            }
+          : undefined
+        }
         aria-label="Primary navigation"
       >
-        <motion.nav
-          ref={navRef}
-          className={cn(
-            "mobile-bottom-nav-pill relative z-[1] flex min-w-0 origin-bottom flex-col overflow-hidden",
-            pillSurfaceClass,
-            navFrozen && "mobile-bottom-nav-pill--expanded z-[44]",
-          )}
-          aria-label={moreOpen ? "More" : "Primary"}
-          role={moreOpen ? "dialog" : undefined}
-          aria-modal={moreOpen || undefined}
-          initial={false}
-          animate={{
-            height: moreOpen ? expandedHeightPx : "var(--mobile-bottom-nav-height)",
-          }}
-          transition={moreOpen ? MORPH_SPRING : MORE_CLOSE_TRANSITION}
-          onAnimationComplete={() => {
-            if (moreOpen) {
-              setMoreMenuAnimating(false);
-              return;
-            }
-            setMoreMenuAnimating(false);
-          }}
-        >
+        <AnimatePresence initial={false}>
+          {!searchOpen ? (
+            <motion.nav
+              key="nav-pill"
+              ref={navRef}
+              className={cn(
+                "mobile-bottom-nav-pill relative z-[1] flex min-w-0 origin-bottom flex-col overflow-hidden",
+                pillSurfaceClass,
+                navFrozen && "mobile-bottom-nav-pill--expanded z-[44]",
+              )}
+              aria-label={moreOpen ? "More" : "Primary"}
+              role={moreOpen ? "dialog" : undefined}
+              aria-modal={moreOpen || undefined}
+              initial={false}
+              animate={{
+                height: moreOpen ? expandedHeightPx : "var(--mobile-bottom-nav-height)",
+              }}
+              exit={{ opacity: 0, scale: 0.96, filter: "blur(4px)" }}
+              transition={moreOpen ? MORPH_SPRING : MORE_CLOSE_TRANSITION}
+              onAnimationComplete={() => {
+                if (moreOpen) {
+                  setMoreMenuAnimating(false);
+                  return;
+                }
+                setMoreMenuAnimating(false);
+              }}
+            >
               <AnimatePresence initial={false}>
                 {moreOpen ? (
                   <motion.div
@@ -328,71 +362,119 @@ export function MobileBottomNav() {
                   } as React.CSSProperties
                 }
               >
-                    {LINK_TABS.map((tab) => {
-                      const visuallyActive = moreOpen ? urlTab === tab.id : displayTab === tab.id;
-                      const Icon = tab.Icon;
-                      return (
-                        <div
-                          key={tab.id}
-                          className="relative z-[1] flex min-w-0 flex-1 flex-col items-stretch self-stretch"
-                        >
-                          <HapticButton
-                            className={cn(
-                              "mobile-bottom-nav-tab-button flex h-full w-full flex-col items-center justify-center gap-1 rounded-full py-0.5",
-                              visuallyActive ? "text-[#09090B] opacity-100" : "text-[#A1A1AA] opacity-80 active:opacity-100",
-                            )}
-                            aria-label={tab.label}
-                            onClick={() => goToTab(tab.id, tab.href)}
-                          >
-                            <span className="mobile-bottom-nav-tab-icon-slot" aria-hidden>
-                              <Icon className="mobile-bottom-nav-tab-icon" weight={visuallyActive ? "fill" : "regular"} />
-                            </span>
-                            <span className="mobile-bottom-nav-tab-label">{tab.label}</span>
-                          </HapticButton>
-                        </div>
-                      );
-                    })}
-
-                    <div className="relative z-[1] flex min-w-0 flex-1 flex-col items-stretch self-stretch">
-                      {moreOpen && urlTab !== "more" ? (
-                        <span className={tabHighlightClass} aria-hidden />
-                      ) : null}
+                {LINK_TABS.map((tab) => {
+                  const visuallyActive = moreOpen ? urlTab === tab.id : displayTab === tab.id;
+                  const Icon = tab.Icon;
+                  return (
+                    <div
+                      key={tab.id}
+                      className="relative z-[1] flex min-w-0 flex-1 flex-col items-stretch self-stretch"
+                    >
                       <HapticButton
                         className={cn(
-                          "mobile-bottom-nav-tab-button flex h-full w-full flex-col items-center justify-center gap-1 rounded-full py-0.5",
-                          moreOpen || urlTab === "more"
-                            ? "text-[#09090B] opacity-100"
-                            : "text-[#A1A1AA] opacity-80 active:opacity-100",
+                          "mobile-bottom-nav-tab-button flex h-full w-full items-center justify-center rounded-full",
+                          visuallyActive ? "text-[#09090B] opacity-100" : "text-[#A1A1AA] opacity-80 active:opacity-100",
                         )}
-                        aria-label="Menu"
-                        aria-expanded={moreOpen}
-                        aria-haspopup="dialog"
-                        onClick={toggleMore}
+                        aria-label={tab.label}
+                        onClick={() => goToTab(tab.id, tab.href)}
                       >
                         <span className="mobile-bottom-nav-tab-icon-slot" aria-hidden>
-                          <ChevronsUpDownIcon className="mobile-bottom-nav-tab-icon shrink-0" />
+                          <Icon className="mobile-bottom-nav-tab-icon" weight={visuallyActive ? "fill" : "regular"} />
                         </span>
-                        <span className="mobile-bottom-nav-tab-label">Menu</span>
                       </HapticButton>
                     </div>
+                  );
+                })}
+
+                <div className="relative z-[1] flex min-w-0 flex-1 flex-col items-stretch self-stretch">
+                  {moreOpen && urlTab !== "more" ? (
+                    <span className={tabHighlightClass} aria-hidden />
+                  ) : null}
+                  <HapticButton
+                    className={cn(
+                      "mobile-bottom-nav-tab-button flex h-full w-full items-center justify-center rounded-full",
+                      moreOpen || urlTab === "more"
+                        ? "text-[#09090B] opacity-100"
+                        : "text-[#A1A1AA] opacity-80 active:opacity-100",
+                    )}
+                    aria-label="More"
+                    aria-expanded={moreOpen}
+                    aria-haspopup="dialog"
+                    onClick={toggleMore}
+                  >
+                    <span className="mobile-bottom-nav-tab-icon-slot" aria-hidden>
+                      <ChevronsUpDownIcon className="mobile-bottom-nav-tab-icon shrink-0" />
+                    </span>
+                  </HapticButton>
+                </div>
               </div>
-        </motion.nav>
+            </motion.nav>
+          ) : null}
+        </AnimatePresence>
 
         <div
+          ref={searchMorphRef}
           className={cn(
             "mobile-bottom-nav-search-morph z-[2] overflow-hidden",
+            searchOpen && "mobile-bottom-nav-search-morph--open",
             pillSurfaceClass,
           )}
         >
-          <HapticButton
-            type="button"
-            className="mobile-bottom-nav-search-pill flex h-full w-full shrink-0 items-center justify-center rounded-full text-[#09090B]"
-            aria-label="Search"
-            aria-expanded={searchOpen}
-            onClick={openSearch}
-          >
-            <Search className="mobile-bottom-nav-search-icon" strokeWidth={2} aria-hidden />
-          </HapticButton>
+          <div className="flex h-full w-full min-w-0 items-center">
+            <AnimatePresence initial={false}>
+              {searchOpen ? (
+                <motion.div
+                  key="search-field"
+                  className="min-w-0 flex-1"
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 8 }}
+                  transition={{ duration: 0.18, delay: 0.04, ease: [0.33, 1, 0.68, 1] }}
+                >
+                  <MobileBottomNavSearchField
+                    panel={searchPanel}
+                    resultsVisible={searchOpen && searchMorphComplete}
+                  />
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
+
+            <HapticButton
+              type="button"
+              className={cn(
+                "mobile-bottom-nav-search-pill flex shrink-0 items-center justify-center rounded-full text-[#09090B]",
+                searchOpen ? "mobile-bottom-nav-search-pill--close" : "h-full w-full",
+              )}
+              aria-label={searchOpen ? "Close search" : "Search"}
+              onClick={() => (searchOpen ? closeSearch() : openSearch())}
+            >
+              <AnimatePresence mode="popLayout" initial={false}>
+                {searchOpen ? (
+                  <motion.span
+                    key="close-icon"
+                    className="flex items-center justify-center"
+                    initial={{ rotate: -90, scale: 0.45, opacity: 0 }}
+                    animate={{ rotate: 0, scale: 1, opacity: 1 }}
+                    exit={{ rotate: 90, scale: 0.45, opacity: 0 }}
+                    transition={SEARCH_ICON_MORPH}
+                  >
+                    <X className="mobile-bottom-nav-search-icon" strokeWidth={2} aria-hidden />
+                  </motion.span>
+                ) : (
+                  <motion.span
+                    key="search-icon"
+                    className="flex items-center justify-center"
+                    initial={{ rotate: 90, scale: 0.45, opacity: 0 }}
+                    animate={{ rotate: 0, scale: 1, opacity: 1 }}
+                    exit={{ rotate: -90, scale: 0.45, opacity: 0 }}
+                    transition={SEARCH_ICON_MORPH}
+                  >
+                    <Search className="mobile-bottom-nav-search-icon" strokeWidth={2} aria-hidden />
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </HapticButton>
+          </div>
         </div>
       </div>
     </>

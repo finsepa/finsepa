@@ -262,7 +262,7 @@ export function MarketTabsSkeleton() {
   const tabWidths = ["w-12", "w-14", "w-14", "w-11"] as const;
 
   return (
-    <div className="mb-4 border-b border-solid border-[#E4E4E7] md:mb-6">
+    <div className="mb-4 hidden border-b border-solid border-[#E4E4E7] md:mb-6 md:block">
       <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 md:gap-x-3">
         <nav
           className="flex min-w-0 flex-1 flex-nowrap items-start gap-4 pb-px md:gap-5"

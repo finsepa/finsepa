@@ -7,6 +7,8 @@ import { cn } from "@/lib/utils";
 const tabs = ["Stocks", "Crypto", "Indices", "ETF's"] as const;
 export type MarketTab = (typeof tabs)[number];
 
+export const MARKET_TAB_ITEMS = tabs;
+
 const TAB_MOTION_MS = 280;
 const TAB_MOTION_EASE = "cubic-bezier(0.33, 1, 0.68, 1)";
 
@@ -145,12 +147,21 @@ export function MarketTabs({
   active,
   onChange,
   trailing,
+  className,
 }: {
   active: MarketTab;
   onChange: (tab: MarketTab) => void;
   trailing?: ReactNode;
+  className?: string;
 }) {
   return (
-    <UnderlineTabs tabs={tabs} active={active} onChange={onChange} ariaLabel="Markets" trailing={trailing} />
+    <UnderlineTabs
+      tabs={tabs}
+      active={active}
+      onChange={onChange}
+      ariaLabel="Markets"
+      trailing={trailing}
+      className={cn("max-md:hidden", className)}
+    />
   );
 }

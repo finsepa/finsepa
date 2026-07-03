@@ -22,6 +22,7 @@ import {
   screenerMarketTabParamFromLabel,
   type ScreenerMarketTabParam,
 } from "@/lib/screener/screener-market-url";
+import { screenerMarketTabFromSearchParams } from "@/lib/screener/screener-market-tab-url-state";
 import type { ScreenerCanonicalSector } from "@/lib/screener/screener-gics-sectors";
 import {
   parseScreenerIndustryDrill,
@@ -42,6 +43,7 @@ import {
 } from "@/lib/screener/screener-markets-page-size";
 import { IndexCards } from "@/components/screener/index-cards";
 import { MarketTabs, type MarketTab } from "@/components/screener/market-tabs";
+import { useRegisterMarketsTabHost } from "@/components/screener/markets-tab-host-context";
 import { UsMarketsSessionLabel } from "@/components/screener/us-markets-session-label";
 import { cn } from "@/lib/utils";
 import { ScreenerIndustriesTable } from "@/components/screener/screener-industries-table";
@@ -95,10 +97,6 @@ import type { ScreenerSectorRow } from "@/lib/screener/screener-sectors-types";
 
 /** Rows per list on the Stocks → Gainers & Losers sub-tab. */
 const GAINERS_LOSERS_TOP_N = 10;
-
-function marketTabFromUrl(searchParams: URLSearchParams): MarketTab {
-  return screenerMarketTabLabelFromParam(parseScreenerMarketTab(searchParams.get(SCREENER_MARKET_QUERY)));
-}
 
 function StocksTabBody({
   stocksTotalCount,
@@ -436,7 +434,7 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const urlTab = useMemo(() => marketTabFromUrl(searchParams), [searchParams]);
+  const urlTab = useMemo(() => screenerMarketTabFromSearchParams(searchParams), [searchParams]);
   const tabFromPayload = screenerMarketTabLabelFromParam(payload.market);
   const [displayTab, setDisplayTab] = useState<MarketTab>(tabFromPayload);
   const [activePayload, setActivePayload] = useState<ScreenerPagePayload>(payload);
@@ -525,10 +523,12 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
     [displayTab, pathname, searchParams, ensureMarketTabPayload],
   );
 
+  useRegisterMarketsTabHost(displayTab, setMarketTab);
+
   useEffect(() => {
     const onPopState = () => {
       const params = new URLSearchParams(window.location.search);
-      const tab = marketTabFromUrl(params);
+      const tab = screenerMarketTabFromSearchParams(params);
       setDisplayTab(tab);
       void ensureMarketTabPayload(screenerMarketTabParamFromLabel(tab), params);
     };
