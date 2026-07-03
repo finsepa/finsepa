@@ -371,6 +371,10 @@ export async function runAdminHealthChecks(): Promise<HealthReport> {
           workerAuthorized: result.worker?.authorized ?? null,
           workerSubscribed: result.worker?.subscribed ?? null,
           workerLastTradeAt: result.worker?.lastTradeAt ?? null,
+          workerTradeMsgCount: result.worker?.tradeMsgCount ?? null,
+          workerQuoteMsgCount: result.worker?.quoteMsgCount ?? null,
+          workerRestPollCount: result.worker?.restPollCount ?? null,
+          workerLastRestPollAt: result.worker?.lastRestPollAt ?? null,
         },
         error: result.worker?.error,
       });

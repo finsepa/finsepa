@@ -11,6 +11,7 @@ import {
   loadCuratedUsPriorityTickers,
   stockWsCuratedMode,
 } from "./lib/stock-ws-priority-universe.mjs";
+import { normalizeStockTicker, parseEodhdUsWsMessage } from "./lib/eodhd-ws-parse.mjs";
 
 // Railway/containers: prefer IPv4 for Supabase REST (avoids intermittent `fetch failed`).
 dns.setDefaultResultOrder("ipv4first");
@@ -28,6 +29,11 @@ const INCLUDE_WATCHLIST = !stockWsCuratedMode() && process.env.STOCK_WS_WATCHLIS
 const INCLUDE_SCREENER = !stockWsCuratedMode() && process.env.STOCK_WS_SCREENER !== "0";
 const INCLUDE_CHART_WATCH = process.env.STOCK_WS_CHART_WATCH !== "0";
 const HEALTH_PORT = Number(process.env.PORT ?? process.env.STOCK_WS_HEALTH_PORT ?? 8080);
+const SUBSCRIBE_CHUNK_SIZE = Number(process.env.STOCK_WS_SUBSCRIBE_CHUNK ?? 10);
+const INCLUDE_US_QUOTE = process.env.STOCK_WS_US_QUOTE !== "0";
+const REST_POLL_MS = Number(process.env.STOCK_WS_REST_POLL_MS ?? 20_000);
+const REST_POLL_BATCH = Number(process.env.STOCK_WS_REST_POLL_BATCH ?? 4);
+const WS_STALE_MS = Number(process.env.STOCK_WS_STALE_MS ?? 90_000);
 const STATIC_TICKERS = (process.env.STOCK_WS_TICKERS ?? "")
   .split(",")
   .map((s) => normalizeStockTicker(s))
@@ -36,13 +42,16 @@ const STATIC_TICKERS = (process.env.STOCK_WS_TICKERS ?? "")
 const DISPLAY_TZ = "America/New_York";
 const SCREENER_SNAPSHOT_KEYS = ["top500_market", "stocks_all_pages"];
 
-/** @type {{ ok: boolean, authorized: boolean, subscribed: number, pendingUpserts: number, lastTradeAt: string | null, session: string, startedAt: string }} */
+/** @type {{ ok: boolean, authorized: boolean, authorizedQuote: boolean, subscribed: number, pendingUpserts: number, lastTradeAt: string | null, lastWsActivityAt: string | null, lastRestPollAt: string | null, session: string, startedAt: string }} */
 const health = {
   ok: true,
   authorized: false,
+  authorizedQuote: false,
   subscribed: 0,
   pendingUpserts: 0,
   lastTradeAt: null,
+  lastWsActivityAt: null,
+  lastRestPollAt: null,
   session: getUsEquityMarketSession(),
   startedAt: new Date().toISOString(),
 };
@@ -85,18 +94,18 @@ let flushTimer = null;
 /** @type {Set<string>} */
 let subscribedSymbols = new Set();
 let tradeMsgCount = 0;
+let quoteMsgCount = 0;
+let restPollCount = 0;
+let lastWsActivityMs = 0;
+let restPollOffset = 0;
 let tradeDrainScheduled = false;
+/** @type {WebSocket | null} */
+let tradesWs = null;
+/** @type {WebSocket | null} */
+let quoteWs = null;
 /** @type {Map<string, { sym: string, tradeSec: number, price: number }>} */
 const tradeCoalesce = new Map();
 const PENDING_UPSERTS_CAP = Number(process.env.STOCK_WS_PENDING_CAP ?? 600);
-
-function normalizeStockTicker(raw) {
-  const t = String(raw ?? "").trim().toUpperCase();
-  if (!t || t.includes(":") || t.includes("/") || t.startsWith("$")) return null;
-  const base = t.replace(/\.US$/i, "").split(".")[0];
-  if (!base || !/^[A-Z0-9-]{1,8}$/.test(base)) return null;
-  return base;
-}
 
 function usSessionYmdFromDate(date) {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -168,7 +177,7 @@ function minuteBucketUnix(sessionYmd, tradeSec) {
 }
 
 function queueMinuteClose(ticker, tradeSec, price) {
-  if (getUsEquityMarketSession() !== "regular") return;
+  if (getUsEquityMarketSession() === "closed") return;
   if (!Number.isFinite(price) || price <= 0) return;
   const sym = normalizeStockTicker(ticker);
   if (!sym) return;
@@ -189,12 +198,18 @@ function queueMinuteClose(ticker, tradeSec, price) {
   scheduleFlush();
 }
 
-function ingestTradeMessage(sym, tradeSec, price) {
+function ingestTradeMessage(sym, tradeSec, price, source = "ws") {
   if (!sym || !Number.isFinite(price) || price <= 0 || tradeSec == null) return;
   const sessionYmd = usSessionYmdFromDate(new Date(tradeSec * 1000));
   const bucketUnix = minuteBucketUnix(sessionYmd, tradeSec);
   tradeCoalesce.set(`${sym}:${bucketUnix}`, { sym, tradeSec, price });
-  tradeMsgCount += 1;
+  if (source === "ws-trade") tradeMsgCount += 1;
+  if (source === "ws-quote") quoteMsgCount += 1;
+  if (source === "rest") restPollCount += 1;
+  if (source === "ws-trade" || source === "ws-quote") {
+    lastWsActivityMs = Date.now();
+    health.lastWsActivityAt = new Date().toISOString();
+  }
   if (!tradeDrainScheduled) {
     tradeDrainScheduled = true;
     setImmediate(drainTradeCoalesce);
@@ -400,7 +415,15 @@ function startHealthServer() {
         Connection: "close",
         "Cache-Control": "no-store",
       });
-      res.end(JSON.stringify({ ...health, tradeMsgCount }));
+      res.end(
+        JSON.stringify({
+          ...health,
+          tradeMsgCount,
+          quoteMsgCount,
+          restPollCount,
+          wsStaleMs: lastWsActivityMs > 0 ? Date.now() - lastWsActivityMs : null,
+        }),
+      );
       return;
     }
     res.writeHead(404, { Connection: "close" });
@@ -411,95 +434,49 @@ function startHealthServer() {
   server.listen(HEALTH_PORT, "0.0.0.0", () => log("health server listening", HEALTH_PORT));
 }
 
-function connectWs() {
-  const url = `wss://ws.eodhistoricaldata.com/ws/us?api_token=${encodeURIComponent(EODHD_KEY)}`;
-  const ws = new WebSocket(url);
-  /** @type {Set<string>} */
-  let subscribed = new Set();
-  let watchPoll = null;
-  let authorized = false;
+function sendWsCommand(ws, action, symbols) {
+  if (!ws || ws.readyState !== WebSocket.OPEN || !symbols.length) return;
+  const chunkSize = Math.max(1, SUBSCRIBE_CHUNK_SIZE);
+  for (let i = 0; i < symbols.length; i += chunkSize) {
+    const chunk = symbols.slice(i, i + chunkSize);
+    ws.send(JSON.stringify({ action, symbols: chunk.join(",") }));
+  }
+}
 
-  const stopWatchPoll = () => {
-    if (watchPoll) {
-      clearInterval(watchPoll);
-      watchPoll = null;
+function processWsText(text, source) {
+  let msg;
+  try {
+    msg = JSON.parse(text);
+  } catch {
+    if (text.includes("Authorized") || text.includes("status_code")) {
+      log("authorized", source, text.slice(0, 120));
+      return "authorized";
     }
-  };
+    return null;
+  }
 
-  const startWatchPoll = () => {
-    stopWatchPoll();
-    watchPoll = setInterval(() => void syncSubscriptions(), WATCH_POLL_MS);
-  };
+  if (msg.status_code != null) {
+    log("auth status", source, msg.status_code, msg.message ?? "");
+    return msg.status_code === 200 ? "authorized" : "auth-failed";
+  }
 
-  const syncSubscriptions = async () => {
-    if (!authorized || ws.readyState !== WebSocket.OPEN) return;
-    const targetList = await loadWatchTickers();
-    const target = new Set(targetList);
-    const toAdd = targetList.filter((t) => !subscribed.has(t));
-    const toRemove = [...subscribed].filter((t) => !target.has(t));
-    if (toAdd.length) {
-      ws.send(JSON.stringify({ action: "subscribe", symbols: toAdd.join(",") }));
-      for (const t of toAdd) subscribed.add(t);
-      log("subscribed", toAdd.length, toAdd.slice(0, 8).join(","), toAdd.length > 8 ? "…" : "");
-    }
-    if (toRemove.length) {
-      ws.send(JSON.stringify({ action: "unsubscribe", symbols: toRemove.join(",") }));
-      for (const t of toRemove) subscribed.delete(t);
-      log("unsubscribed", toRemove.length);
-    }
-    subscribedSymbols = subscribed;
-    health.subscribed = subscribed.size;
-  };
+  const parsed = parseEodhdUsWsMessage(msg);
+  if (!parsed) return null;
+  ingestTradeMessage(parsed.sym, parsed.tradeSec, parsed.price, source);
+  return "trade";
+}
 
-  ws.on("open", () => log("websocket connecting…"));
-
+function attachWsHandlers(ws, source, onAuthorized) {
   /** @type {Buffer[]} */
   const rawWsQueue = [];
   let rawWsDrainScheduled = false;
-
-  const processWsText = (text) => {
-    let msg;
-    try {
-      msg = JSON.parse(text);
-    } catch {
-      if (text.includes("Authorized") || text.includes("status_code")) {
-        authorized = true;
-        health.authorized = true;
-        log("authorized", text.slice(0, 120));
-        void syncSubscriptions();
-        startWatchPoll();
-      }
-      return;
-    }
-
-    if (msg.status_code != null) {
-      log("auth status", msg.status_code, msg.message ?? "");
-      if (msg.status_code === 200) {
-        authorized = true;
-        health.authorized = true;
-        void syncSubscriptions();
-        startWatchPoll();
-      } else if (!authorized) {
-        health.authorized = false;
-      }
-      return;
-    }
-
-    const sym = typeof msg.s === "string" ? normalizeStockTicker(msg.s) : null;
-    const price = Number(msg.p);
-    let tradeSec = null;
-    if (typeof msg.t === "number" && Number.isFinite(msg.t)) {
-      tradeSec = msg.t > 1e12 ? Math.floor(msg.t / 1000) : Math.floor(msg.t);
-    }
-    if (!sym || !Number.isFinite(price) || price <= 0 || tradeSec == null) return;
-    ingestTradeMessage(sym, tradeSec, price);
-  };
 
   const drainRawWsQueue = () => {
     rawWsDrainScheduled = false;
     const batch = rawWsQueue.splice(0, 250);
     for (const raw of batch) {
-      processWsText(raw.toString());
+      const result = processWsText(raw.toString(), source);
+      if (result === "authorized") onAuthorized();
     }
     if (rawWsQueue.length > 0) {
       rawWsDrainScheduled = true;
@@ -514,19 +491,165 @@ function connectWs() {
       setImmediate(drainRawWsQueue);
     }
   });
+}
 
-  ws.on("close", (code) => {
-    log("websocket closed", code);
-    stopWatchPoll();
-    subscribed = new Set();
-    subscribedSymbols = subscribed;
-    authorized = false;
-    health.authorized = false;
-    health.subscribed = 0;
-    setTimeout(connectWs, 5000);
+/** @type {Set<string>} */
+let localSubscribed = new Set();
+let watchPoll = null;
+let tradesAuthorized = false;
+let quoteAuthorized = false;
+
+const stopWatchPoll = () => {
+  if (watchPoll) {
+    clearInterval(watchPoll);
+    watchPoll = null;
+  }
+};
+
+const startWatchPoll = () => {
+  stopWatchPoll();
+  watchPoll = setInterval(() => void syncSubscriptions(), WATCH_POLL_MS);
+};
+
+async function syncSubscriptions() {
+  const tradesReady = tradesAuthorized && tradesWs?.readyState === WebSocket.OPEN;
+  const quoteReady = quoteAuthorized && quoteWs?.readyState === WebSocket.OPEN;
+  if (!tradesReady && !quoteReady) return;
+
+  const targetList = await loadWatchTickers();
+  const target = new Set(targetList);
+  const toAdd = targetList.filter((t) => !localSubscribed.has(t));
+  const toRemove = [...localSubscribed].filter((t) => !target.has(t));
+
+  if (toAdd.length) {
+    if (tradesReady) sendWsCommand(tradesWs, "subscribe", toAdd);
+    if (quoteReady) sendWsCommand(quoteWs, "subscribe", toAdd);
+    for (const t of toAdd) localSubscribed.add(t);
+    log("subscribed", toAdd.length, toAdd.slice(0, 8).join(","), toAdd.length > 8 ? "…" : "");
+  }
+  if (toRemove.length) {
+    if (tradesReady) sendWsCommand(tradesWs, "unsubscribe", toRemove);
+    if (quoteReady) sendWsCommand(quoteWs, "unsubscribe", toRemove);
+    for (const t of toRemove) localSubscribed.delete(t);
+    log("unsubscribed", toRemove.length);
+  }
+
+  subscribedSymbols = localSubscribed;
+  health.subscribed = subscribedSymbols.size;
+}
+
+function connectMarketWs(path, source, onAuthorized, onClose) {
+  const url = `wss://ws.eodhistoricaldata.com/ws/${path}?api_token=${encodeURIComponent(EODHD_KEY)}`;
+  const ws = new WebSocket(url);
+
+  ws.on("open", () => log("websocket connecting…", path));
+
+  attachWsHandlers(ws, source, () => {
+    onAuthorized();
+    health.authorized = tradesAuthorized;
+    health.authorizedQuote = quoteAuthorized;
+    const existing = [...localSubscribed];
+    if (existing.length) sendWsCommand(ws, "subscribe", existing);
+    void syncSubscriptions();
+    startWatchPoll();
   });
 
-  ws.on("error", (err) => log("websocket error", err.message));
+  ws.on("close", (code) => {
+    log("websocket closed", path, code);
+    onClose();
+    setTimeout(() => connectMarketWs(path, source, onAuthorized, onClose), 5000);
+  });
+
+  ws.on("error", (err) => log("websocket error", path, err.message));
+  return ws;
+}
+
+function connectWs() {
+  tradesAuthorized = false;
+  quoteAuthorized = false;
+  localSubscribed = new Set();
+  subscribedSymbols = localSubscribed;
+  health.authorized = false;
+  health.authorizedQuote = false;
+  health.subscribed = 0;
+
+  tradesWs = connectMarketWs(
+    "us",
+    "ws-trade",
+    () => {
+      tradesAuthorized = true;
+    },
+    () => {
+      tradesAuthorized = false;
+      tradesWs = null;
+      if (!quoteAuthorized) stopWatchPoll();
+    },
+  );
+
+  if (INCLUDE_US_QUOTE) {
+    quoteWs = connectMarketWs(
+      "us-quote",
+      "ws-quote",
+      () => {
+        quoteAuthorized = true;
+      },
+      () => {
+        quoteAuthorized = false;
+        quoteWs = null;
+        if (!tradesAuthorized) stopWatchPoll();
+      },
+    );
+  }
+}
+
+async function pollRealtimeMinuteBar(sym) {
+  const url = `https://eodhd.com/api/real-time/${encodeURIComponent(sym)}.US?api_token=${encodeURIComponent(EODHD_KEY)}&fmt=json`;
+  const res = await fetch(url, { signal: AbortSignal.timeout(8_000) });
+  if (!res.ok) return false;
+  const rt = await res.json();
+  const open = rt.open ?? rt.previousClose;
+  const close = rt.close;
+  if (
+    typeof close !== "number" ||
+    !Number.isFinite(close) ||
+    close <= 0 ||
+    typeof open !== "number" ||
+    !Number.isFinite(open) ||
+    open <= 0
+  ) {
+    return false;
+  }
+  const nowSec = Math.floor(Date.now() / 1000);
+  ingestTradeMessage(sym, nowSec, close, "rest");
+  health.lastRestPollAt = new Date().toISOString();
+  return true;
+}
+
+async function restPollTick() {
+  const session = getUsEquityMarketSession();
+  if (session === "closed") return;
+
+  const symbols = [...subscribedSymbols];
+  if (!symbols.length) return;
+
+  const wsStale = lastWsActivityMs === 0 || Date.now() - lastWsActivityMs > WS_STALE_MS;
+  if (!wsStale) return;
+
+  const batchSize = Math.max(1, REST_POLL_BATCH);
+  const batch = [];
+  for (let i = 0; i < batchSize && i < symbols.length; i += 1) {
+    const idx = (restPollOffset + i) % symbols.length;
+    batch.push(symbols[idx]);
+  }
+  restPollOffset = (restPollOffset + batchSize) % symbols.length;
+
+  for (const sym of batch) {
+    try {
+      await pollRealtimeMinuteBar(sym);
+    } catch (err) {
+      log("rest poll error", sym, err instanceof Error ? err.message : String(err));
+    }
+  }
 }
 
 process.on("SIGINT", async () => {
@@ -547,12 +670,21 @@ setInterval(() => {
   log("heartbeat", {
     session: health.session,
     authorized: health.authorized,
+    authorizedQuote: health.authorizedQuote,
     subscribed: health.subscribed,
     pendingUpserts: health.pendingUpserts,
     tradeMsgCount,
+    quoteMsgCount,
+    restPollCount,
     lastTradeAt: health.lastTradeAt,
+    lastWsActivityAt: health.lastWsActivityAt,
+    lastRestPollAt: health.lastRestPollAt,
   });
 }, HEARTBEAT_MS);
+
+setInterval(() => {
+  void restPollTick();
+}, REST_POLL_MS);
 
 log("starting stock minute ingest (always-on)", {
   curatedMode: stockWsCuratedMode(),
@@ -560,7 +692,10 @@ log("starting stock minute ingest (always-on)", {
   includeWatchlist: INCLUDE_WATCHLIST,
   includeScreener: INCLUDE_SCREENER,
   includeChartWatch: INCLUDE_CHART_WATCH,
+  includeUsQuote: INCLUDE_US_QUOTE,
   maxSymbols: MAX_SYMBOLS,
+  subscribeChunkSize: SUBSCRIBE_CHUNK_SIZE,
+  restPollMs: REST_POLL_MS,
   healthPort: HEALTH_PORT,
   session: getUsEquityMarketSession(),
 });
