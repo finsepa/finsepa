@@ -42,6 +42,13 @@ export const dropdownMenuOverlayScrollbarClassName =
 export const dropdownMenuOverlayScrollbarActiveClassName =
   "[scrollbar-color:rgba(161,161,170,0.65)_transparent] [&::-webkit-scrollbar-thumb]:bg-[#A1A1AA]/60";
 
+/** Horizontal variant for tab rows — thumb appears only while scrolling. */
+export const horizontalOverlayScrollbarClassName =
+  "[scrollbar-width:thin] [scrollbar-color:transparent_transparent] [-ms-overflow-style:none] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar]:bg-transparent [&::-webkit-scrollbar-track]:border-0 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-solid [&::-webkit-scrollbar-thumb]:border-transparent [&::-webkit-scrollbar-thumb]:bg-clip-padding [&::-webkit-scrollbar-thumb]:bg-transparent [&::-webkit-scrollbar-thumb]:transition-[background-color] [&::-webkit-scrollbar-thumb]:duration-150";
+
+export const horizontalOverlayScrollbarActiveClassName =
+  "[scrollbar-color:rgba(161,161,170,0.65)_transparent] [&::-webkit-scrollbar-thumb]:bg-[#A1A1AA]/60";
+
 /** Scrollport extends past the panel edge so the thumb draws over content, not beside it. */
 export const panelOverlayScrollGutterClassName = "-mr-1.5";
 

@@ -154,6 +154,15 @@ type LivePriceDotLayout = {
   animated?: boolean;
 };
 
+function resolveInitialLiveSessionMinute(
+  prop: boolean | undefined,
+  initialChart: { liveSessionMinute?: boolean } | null | undefined,
+): boolean {
+  if (prop != null) return prop;
+  if (initialChart?.liveSessionMinute != null) return initialChart.liveSessionMinute;
+  return getUsEquityMarketSession(new Date()) === "regular";
+}
+
 const RANGE_PRICE_BADGE_CLASS =
   "inline-block rounded-[6px] bg-[#E4E4E7] px-1.5 py-0.5 text-[11px] font-medium leading-4 tabular-nums text-[#09090B]";
 
@@ -917,15 +926,15 @@ export function PriceChart({
 
   const [loading, setLoading] = useState(true);
   const [points, setPoints] = useState<StockChartPoint[]>([]);
-  const [liveSessionMinute, setLiveSessionMinute] = useState(
-    () => liveSessionMinuteProp ?? initialChart?.liveSessionMinute ?? true,
+  const [liveSessionMinute, setLiveSessionMinute] = useState(() =>
+    resolveInitialLiveSessionMinute(liveSessionMinuteProp, initialChart),
   );
   const liveSessionMinuteRef = useRef(liveSessionMinute);
   liveSessionMinuteRef.current = liveSessionMinute;
   const [sessionNowMs, setSessionNowMs] = useState(() => Date.now());
 
   useEffect(() => {
-    setLiveSessionMinute(liveSessionMinuteProp ?? initialChart?.liveSessionMinute ?? true);
+    setLiveSessionMinute(resolveInitialLiveSessionMinute(liveSessionMinuteProp, initialChart));
   }, [kind, symbol, range, holdingsStyle, liveSessionMinuteProp, initialChart?.liveSessionMinute]);
 
   useEffect(() => {
@@ -2264,13 +2273,6 @@ export function PriceChart({
   useEffect(() => {
     let mounted = true;
     async function load() {
-      const live1DRegular =
-        kind === "stock" &&
-        range === "1D" &&
-        series === "price" &&
-        !holdingsStyle &&
-        getUsEquityMarketSession(new Date()) === "regular";
-
       if (
         series === "price" &&
         initialChart &&
@@ -2291,7 +2293,19 @@ export function PriceChart({
         setLoading(false);
         requestAnimationFrame(() => setReady(true));
 
-        if (live1DRegular) {
+        // Live 1D: poll effect below fetches on mount — skip duplicate immediate request.
+        // Off-hours: trust SSR when session flag + points are already resolved.
+        if (
+          kind === "stock" &&
+          range === "1D" &&
+          series === "price" &&
+          !holdingsStyle &&
+          getUsEquityMarketSession(new Date()) !== "regular" &&
+          !(
+            initialChart.liveSessionMinute === false &&
+            initialChart.points.length > 0
+          )
+        ) {
           try {
             const path = `/api/stocks/${encodeURIComponent(symbol)}/chart?range=1D&series=${encodeURIComponent(series)}`;
             const res = await fetch(path, { credentials: "include", cache: "no-store" });
@@ -2307,7 +2321,7 @@ export function PriceChart({
               }
             }
           } catch {
-            /* keep SSR placeholder until poll */
+            /* keep SSR chart */
           }
         }
         return;
@@ -2357,7 +2371,11 @@ export function PriceChart({
           setLiveSessionMinute(json.liveSessionMinute);
         }
         if (cacheKey && nextPoints.length) writeSuperinvestorHoldingChartCache(cacheKey, nextPoints);
-        setPoints(nextPoints);
+        if (nextPoints.length) {
+          setPoints(nextPoints);
+        } else {
+          setPoints((prev) => (prev.length ? prev : nextPoints));
+        }
         setLoading(false);
         requestAnimationFrame(() => setReady(true));
       } catch {

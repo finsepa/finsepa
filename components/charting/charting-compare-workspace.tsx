@@ -480,7 +480,7 @@ type Props = {
   initialByTicker: Record<string, StockPageInitialData>;
   pathRoute?: StandaloneChartRoute;
   workspaceTitle?: string;
-  /** Defaults to {@link DEFAULT_CHART_TIME_RANGE_ORDER}; standalone `/charting` passes a shorter list (no 2Y). */
+  /** Defaults to {@link DEFAULT_CHART_TIME_RANGE_ORDER}; standalone `/charting` passes {@link STANDALONE_CHARTING_TIME_RANGE_ORDER}. */
   timeRangeOrder?: ChartTimeRange[];
 };
 
@@ -565,7 +565,7 @@ export function ChartingCompareWorkspace({
 
   useEffect(() => {
     if (timeRangeOrder.includes(timeRange)) return;
-    setTimeRange("all");
+    setTimeRange(timeRangeOrder[0] ?? "3Y");
   }, [timeRange, timeRangeOrder]);
 
   useEffect(() => {

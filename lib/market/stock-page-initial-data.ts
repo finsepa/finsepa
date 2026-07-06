@@ -127,7 +127,6 @@ function resolveOverviewChartPoints(
   now: Date,
 ): StockChartPoint[] {
   if (Array.isArray(chartPoints) && chartPoints.length > 0) return chartPoints;
-  if (range === "1D" && getUsEquityMarketSession(now) === "regular") return [];
   if (!sortedDailyBars.length) return [];
   if (range === "1D") {
     const session = synthesize1DSessionChartFromDailyBars(sortedDailyBars, now);

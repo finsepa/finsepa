@@ -311,8 +311,8 @@ type Props = {
   animateBarsOnAppear?: boolean;
   /** Level period labels (e.g. Key Stats annual 10Y) instead of the default slant. */
   horizontalPeriodAxisLabels?: boolean;
-  /** Key Stats line chart — year-only x-axis ticks by time range (5Y / 10Y / All). */
-  lineTimeRange?: FundamentalsChartTimeRange;
+  /** Key Stats line chart — year-only x-axis ticks by time range (5Y / 10Y / All). Charting 3Y uses 5Y-style ticks. */
+  lineTimeRange?: FundamentalsChartTimeRange | "3Y";
   /** Wide export frame — side padding, wider y-axis, and plot insets for labels. */
   screenshotExportMode?: boolean;
 };

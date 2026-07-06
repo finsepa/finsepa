@@ -141,6 +141,28 @@ function inferExtendedHoursSessionFromEthTime(
   return wall === "pre" ? "pre" : "post";
 }
 
+function isExtendedHoursQuoteTimeSec(sec: number): boolean {
+  const dayMinutes = nyDayMinutesFromUnix(sec);
+  const preStart = 4 * 60;
+  const regularOpen = 9 * 60 + 30;
+  const regularClose = 16 * 60;
+  return (dayMinutes >= preStart && dayMinutes < regularOpen) || dayMinutes >= regularClose;
+}
+
+/** Regular close immediately before an after-hours print (handles holiday/weekend calendar drift). */
+function resolveAtCloseUnixForExtendedQuote(
+  live: { timeSec: number; session: "pre" | "post" },
+  calendarCloseSec: number,
+  timeZone: string = STOCK_DISPLAY_TZ,
+): number {
+  const dayMinutes = nyDayMinutesFromUnix(live.timeSec);
+  const ymd = nyYmdFromUnix(live.timeSec);
+  if (live.session === "post" && dayMinutes >= 16 * 60) {
+    return usSessionWallClockUnix(ymd, 16, 0, timeZone);
+  }
+  return calendarCloseSec;
+}
+
 /** EODHD timestamps: trade/bid/ask fields are Unix ms; `timestamp` is Unix seconds. */
 function parseProviderTimeSec(value: number | undefined): number | null {
   if (value == null || !Number.isFinite(value)) return null;
@@ -218,8 +240,23 @@ export function resolveExtendedHoursLiveQuote(
     pool = post;
   } else {
     pool = post.length ? post : pre.length ? pre : preSpan;
+    if (!pool.length && wall === "closed") {
+      const extended = candidates.filter((c) => isExtendedHoursQuoteTimeSec(c.timeSec));
+      if (extended.length) pool = extended;
+    }
   }
-  if (!pool.length) return null;
+  if (!pool.length) {
+    const eth = positiveUsd(row.ethPrice);
+    const ethSec = parseProviderTimeSec(row.ethTime);
+    if (eth != null && ethSec != null && isExtendedHoursQuoteTimeSec(ethSec)) {
+      return {
+        price: eth,
+        timeSec: ethSec,
+        session: inferExtendedHoursSessionFromEthTime(ethSec, now),
+      };
+    }
+    return null;
+  }
 
   pool.sort((a, b) => b.timeSec - a.timeSec);
   const best = pool[0]!;
@@ -298,9 +335,11 @@ export async function buildStockExtendedHoursHeaderQuote(
   const row = await fetchEodhdUsQuoteDelayed(ticker);
   if (!row) return null;
 
-  const closeTs = lastUsRegularSessionCloseUnix(now, STOCK_DISPLAY_TZ);
-  const live = resolveExtendedHoursLiveQuote(row, closeTs, now);
+  const calendarCloseTs = lastUsRegularSessionCloseUnix(now, STOCK_DISPLAY_TZ);
+  const live = resolveExtendedHoursLiveQuote(row, calendarCloseTs, now);
   if (!live) return null;
+
+  const closeTs = resolveAtCloseUnixForExtendedQuote(live, calendarCloseTs, STOCK_DISPLAY_TZ);
 
   const extendedPrice = live.price;
   const previousClose = positiveUsd(row.previousClosePrice);

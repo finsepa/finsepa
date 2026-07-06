@@ -107,6 +107,20 @@ import {
   fetchChartingFundamentalsSeriesCached,
   revalidateChartingFundamentalsSeriesCached,
 } from "@/lib/charting/charting-fundamentals-client-cache";
+import {
+  ChartingFundamentalsLineChart,
+  chartingMetricsShareLineChartKind,
+} from "@/components/charting/charting-fundamentals-line-chart";
+import {
+  FundamentalsChartSettingsMenu,
+  type FundamentalsChartSettingsLineBadges,
+} from "@/components/stock/fundamentals-chart-settings-menu";
+import {
+  DEFAULT_FUNDAMENTALS_CHART_DISPLAY_OPTIONS,
+  type FundamentalsChartDisplayOptions,
+} from "@/lib/chart/fundamentals-chart-display-options";
+import { filterPointsForChartingFundamentalsLineChart } from "@/lib/chart/fundamentals-line-chart-series";
+import { chartingFundamentalsLineTimeRange } from "@/lib/chart/fundamentals-line-chart-config";
 
 /** Y-axis tick labels — match reference (e.g. "30 B", "15 B", "0"). */
 function formatChartAxisPrice(p: number): string {
@@ -584,11 +598,11 @@ function chartingHoverBandVerticalRangePx(
   return { y0: yTop, y1: yBottom };
 }
 
-/** Stock page Charting tab — full range including 2Y. */
-export const DEFAULT_CHART_TIME_RANGE_ORDER: ChartTimeRange[] = ["1Y", "2Y", "3Y", "5Y", "10Y", "all"];
+/** Stock page Charting tab — 3Y through All (no 1Y/2Y). */
+export const DEFAULT_CHART_TIME_RANGE_ORDER: ChartTimeRange[] = ["3Y", "5Y", "10Y", "all"];
 
 /** Standalone `/charting` page only (not symbol tab). */
-export const STANDALONE_CHARTING_TIME_RANGE_ORDER: ChartTimeRange[] = ["1Y", "3Y", "5Y", "10Y", "all"];
+export const STANDALONE_CHARTING_TIME_RANGE_ORDER: ChartTimeRange[] = ["3Y", "5Y", "10Y", "all"];
 
 const TIME_RANGE_LABELS: Record<ChartTimeRange, string> = {
   "1Y": "1Y",
@@ -1845,6 +1859,9 @@ export function ChartingWorkspace({
   const [chartType, setChartType] = useState<ChartType>(
     screenshotPreviewMode && previewLockedState ? previewLockedState.chartType : "bars",
   );
+  const [lineDisplayOptions, setLineDisplayOptions] = useState<FundamentalsChartDisplayOptions>(
+    () => ({ ...DEFAULT_FUNDAMENTALS_CHART_DISPLAY_OPTIONS }),
+  );
   const unitScale: ChartingUnitScale = isFigmaToolbar ? "billions" : "auto";
   const chartHeight =
     screenshotPreviewMode && screenshotChartBlockHeightPx != null
@@ -1907,6 +1924,20 @@ export function ChartingWorkspace({
     setShowBarValuesByMetric((prev) => ({ ...prev, [id]: next }));
   }, []);
 
+  const handleChartTypeChange = useCallback(
+    (next: ChartType) => {
+      setChartType(next);
+      if (next === "line") {
+        setPeriodMode("quarterly");
+        setLineDisplayOptions((prev) => {
+          if (!prev.showAvgLine && !prev.showBarValues) return prev;
+          return { ...prev, showAvgLine: false, showBarValues: false };
+        });
+      }
+    },
+    [timeRange],
+  );
+
   const visibleBarValueLabels = useMemo(
     () => barValueLabels.filter((b) => isBarValuesVisible(b.metricId)),
     [barValueLabels, isBarValuesVisible],
@@ -1949,7 +1980,7 @@ export function ChartingWorkspace({
 
   useEffect(() => {
     if (timeRangeOrder.includes(timeRange)) return;
-    setTimeRange("all");
+    setTimeRange(timeRangeOrder[0] ?? "3Y");
   }, [timeRange, timeRangeOrder]);
 
   useEffect(() => {
@@ -2035,6 +2066,38 @@ export function ChartingWorkspace({
   }, [pickerOpen]);
 
   const fullSeries = useMemo(() => points ?? [], [points]);
+  const lineChartPoints = useMemo(() => {
+    if (periodMode === "quarterly") return fullSeries;
+    const src = initialQuarterlyPoints;
+    return Array.isArray(src) && src.length > 0 ? src : fullSeries;
+  }, [periodMode, fullSeries, initialQuarterlyPoints]);
+  const useFundamentalsLineChart =
+    chartType === "line" && chartingMetricsShareLineChartKind(selected);
+  const fundamentalsLineTimeRange = useMemo(
+    () => chartingFundamentalsLineTimeRange(timeRange),
+    [timeRange],
+  );
+
+  const lineSettingsBadges = useMemo((): FundamentalsChartSettingsLineBadges | undefined => {
+    if (!useFundamentalsLineChart || selected.length !== 1) return undefined;
+    const metricId = selected[0]!;
+    const chartPoints = filterPointsForChartingFundamentalsLineChart(
+      lineChartPoints,
+      metricId,
+      fundamentalsLineTimeRange,
+    );
+    const values: number[] = [];
+    for (const row of chartPoints) {
+      const v = readChartingMetricValue(row, metricId);
+      if (v != null) values.push(v);
+    }
+    if (!values.length) return undefined;
+    return {
+      max: formatBarChartDataLabel(metricId, Math.max(...values)),
+      min: formatBarChartDataLabel(metricId, Math.min(...values)),
+    };
+  }, [useFundamentalsLineChart, selected, lineChartPoints, fundamentalsLineTimeRange]);
+
   const ordered = useMemo(() => {
     const ranged = applyTimeRange(fullSeries, periodMode, timeRange);
     if (periodMode !== "annual") return ranged;
@@ -2378,6 +2441,7 @@ export function ChartingWorkspace({
       isFullPageCharting,
       animateBars,
       screenshotPreviewMode,
+      useFundamentalsLineChart,
       chartAxes.primary?.ticks.join(",") ?? "",
       chartAxes.percent?.ticks.join(",") ?? "",
       chartAxes.valuation?.ticks.join(",") ?? "",
@@ -2395,6 +2459,7 @@ export function ChartingWorkspace({
     isFullPageCharting,
     animateBars,
     screenshotPreviewMode,
+    useFundamentalsLineChart,
     chartAxes,
   ]);
 
@@ -2405,6 +2470,14 @@ export function ChartingWorkspace({
       if (!el) return;
 
       if (!ordered.length || !selected.length || !canPlot) {
+      setLineEndBadges([]);
+      setBarValueLabels([]);
+      setLinePointMarkers([]);
+      setPeriodAxisLabels([]);
+      return;
+    }
+
+    if (useFundamentalsLineChart) {
       setLineEndBadges([]);
       setBarValueLabels([]);
       setLinePointMarkers([]);
@@ -3395,18 +3468,29 @@ export function ChartingWorkspace({
           </h2>
           <div className="flex min-w-0 flex-wrap items-center gap-3 sm:flex-nowrap sm:justify-end sm:overflow-x-auto sm:pb-0.5">
             <div className="flex shrink-0 flex-nowrap items-center gap-2">
-              <TabSwitcher
-                size="sm"
-                options={PERIOD_TAB_OPTIONS}
-                value={periodMode}
-                onChange={setPeriodMode}
-                aria-label="Reporting period"
-              />
-              <ChartingVisualSwitcher value={chartType} onChange={setChartType} />
+              {chartType !== "line" ? (
+                <TabSwitcher
+                  size="sm"
+                  options={PERIOD_TAB_OPTIONS}
+                  value={periodMode}
+                  onChange={setPeriodMode}
+                  aria-label="Reporting period"
+                />
+              ) : null}
+              {useFundamentalsLineChart ? (
+                <FundamentalsChartSettingsMenu
+                  variant="line"
+                  options={lineDisplayOptions}
+                  onChange={setLineDisplayOptions}
+                  lineBadges={lineSettingsBadges}
+                />
+              ) : null}
+              <ChartingVisualSwitcher value={chartType} onChange={handleChartTypeChange} />
             </div>
             <div className="shrink-0">
               <TabSwitcher
                 className="inline-flex w-max min-w-0 flex-nowrap"
+                size={useFundamentalsLineChart ? "sm" : undefined}
                 options={timeRangeTabOptions}
                 value={timeRange}
                 onChange={(next) => {
@@ -3487,6 +3571,16 @@ export function ChartingWorkspace({
             <p className="max-w-md text-[14px] leading-6 text-[#71717A]">
               No series data for the selected metrics on this symbol.
             </p>
+          ) : useFundamentalsLineChart ? (
+            <ChartingFundamentalsLineChart
+              metricIds={selected}
+              points={lineChartPoints}
+              lineTimeRange={fundamentalsLineTimeRange}
+              displayOptions={lineDisplayOptions}
+              height={chartHeight}
+              animateBarsOnAppear={animateBars}
+              metricColors={metricChipColorById}
+            />
           ) : (
             <div className="w-full min-w-0 overflow-visible" style={{ height: chartHeight }}>
               <div className="flex min-h-0 w-full overflow-visible" style={{ height: chartPlotHeight }}>

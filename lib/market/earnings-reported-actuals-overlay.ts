@@ -1,5 +1,7 @@
 import "server-only";
 
+import { cache } from "react";
+
 import {
   fetchEodhdFundamentalsJson,
   fetchEodhdFundamentalsJsonFresh,
@@ -410,12 +412,22 @@ export async function resolveReportedEarningsActuals(
   listingTicker: string,
   options?: { secBackfill?: boolean },
 ): Promise<EarningsActualByPeriod> {
-  let actuals = collectReportedEarningsActualsSync(root);
-  if (options?.secBackfill !== false) {
-    actuals = await backfillEarningsRevenueGapsFromSec(actuals, root, listingTicker);
+  if (options?.secBackfill === false) {
+    return collectReportedEarningsActualsSync(root);
   }
-  return actuals;
+  return resolveReportedEarningsActualsWithSecBackfill(listingTicker);
 }
+
+/** One fundamentals + SEC backfill per ticker per SSR request (key stats + charting share this). */
+const resolveReportedEarningsActualsWithSecBackfill = cache(
+  async (listingTicker: string): Promise<EarningsActualByPeriod> => {
+    const root = await fetchFundamentalsRootForMetrics(listingTicker);
+    if (!root) return new Map();
+    let actuals = collectReportedEarningsActualsSync(root);
+    actuals = await backfillEarningsRevenueGapsFromSec(actuals, root, listingTicker);
+    return actuals;
+  },
+);
 
 export async function fetchFundamentalsRootForMetrics(ticker: string): Promise<Record<string, unknown> | null> {
   let root = await fetchEodhdFundamentalsJson(ticker);

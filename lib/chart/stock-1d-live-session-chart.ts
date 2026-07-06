@@ -149,12 +149,28 @@ export function resolveStock1DLiveSessionYmd(
   options?: Stock1DLiveSessionChartOptions,
 ): string | null {
   if (stock1DUsesLiveSessionClock(now, options)) {
-    return new Intl.DateTimeFormat("en-CA", {
+    const todayYmd = new Intl.DateTimeFormat("en-CA", {
       timeZone,
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
     }).format(now);
+    const todayBars = filterStock1DLiveSessionPointsByTimeWindow(
+      points,
+      todayYmd,
+      timeZone,
+      now,
+      { liveSessionMinute: false },
+    );
+    // Holiday / stale payload: clock says live but bars are from the prior session.
+    if (points.length >= 2 && todayBars.length < 2) {
+      return (
+        lastUsRegularSessionYmdFromPoints(points, timeZone) ??
+        stock1DLiveSessionYmd(points, timeZone) ??
+        todayYmd
+      );
+    }
+    return todayYmd;
   }
   return lastUsRegularSessionYmdFromPoints(points, timeZone) ?? stock1DLiveSessionYmd(points, timeZone);
 }
@@ -719,11 +735,23 @@ export function prepareStock1DLiveSessionChartPoints(
     options,
   );
   if (openValue == null || !Number.isFinite(openValue)) {
-    return sourcePoints.length ? sourcePoints : [];
+    return sourcePoints.length ? sourcePoints : [...points];
   }
 
   if (!sourcePoints.length) {
-    return [];
+    const fallbackYmd =
+      lastUsRegularSessionYmdFromPoints(points, timeZone) ?? stock1DLiveSessionYmd(points, timeZone);
+    if (fallbackYmd) {
+      const windowed = filterStock1DLiveSessionPointsByTimeWindow(
+        points,
+        fallbackYmd,
+        timeZone,
+        now,
+        { liveSessionMinute: false },
+      );
+      if (windowed.length) return windowed;
+    }
+    return points.length ? [...points] : [];
   }
 
   const open = usSessionWallClockUnix(sessionYmd, 9, 30, timeZone);

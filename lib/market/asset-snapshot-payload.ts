@@ -1,6 +1,7 @@
 import type { ScreenerUsMarketCacheMode } from "@/lib/screener/screener-us-market-cache";
 
 import type { StockPageInitialData } from "@/lib/market/stock-page-initial-data";
+import { getUsEquityMarketSession } from "@/lib/market/us-equity-market-session";
 
 /** JSON stored in `market_snapshot` — hot fields omitted in live mode. */
 export type AssetSnapshotPayload = Omit<
@@ -37,6 +38,10 @@ export function assetSnapshotPayloadToPageData(payload: AssetSnapshotPayload): S
     ...payload,
     headerLiveSpotUsd: null,
     headerPriorCloseUsd: null,
-    liveRegularSessionActive: payload.liveRegularSessionActive ?? true,
+    liveRegularSessionActive:
+      payload.liveRegularSessionActive ??
+      (payload.chart.liveSessionMinute != null
+        ? payload.chart.liveSessionMinute
+        : getUsEquityMarketSession(new Date()) === "regular"),
   };
 }

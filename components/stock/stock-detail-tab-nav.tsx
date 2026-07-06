@@ -1,15 +1,21 @@
 "use client";
 
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
+import {
+  horizontalOverlayScrollbarActiveClassName,
+  horizontalOverlayScrollbarClassName,
+} from "@/components/design-system/dropdown-menu-styles";
 import type { StockDetailTabId } from "@/lib/stock/stock-detail-tab";
 import { STOCK_DETAIL_TAB_ITEMS } from "@/lib/stock/stock-detail-tab-items";
 import { ETF_STOCK_DETAIL_TAB_IDS } from "@/lib/stock/stock-etf";
+import { cn } from "@/lib/utils";
 
 export type { StockDetailTabId };
 
 const TAB_MOTION_MS = 280;
 const TAB_MOTION_EASE = "cubic-bezier(0.33, 1, 0.68, 1)";
+const SCROLLBAR_IDLE_MS = 900;
 
 /** Underline tabs with sliding indicator — desktop stock asset page (mobile uses fixed top bar). */
 export function StockDetailTabNav({
@@ -38,7 +44,22 @@ export function StockDetailTabNav({
 
   const navRef = useRef<HTMLElement>(null);
   const tabRefs = useRef(new Map<StockDetailTabId, HTMLButtonElement>());
+  const scrollIdleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [indicator, setIndicator] = useState({ left: 0, width: 0 });
+  const [scrollbarVisible, setScrollbarVisible] = useState(false);
+
+  const revealScrollbar = useCallback(() => {
+    setScrollbarVisible(true);
+    if (scrollIdleTimerRef.current) clearTimeout(scrollIdleTimerRef.current);
+    scrollIdleTimerRef.current = setTimeout(() => setScrollbarVisible(false), SCROLLBAR_IDLE_MS);
+  }, []);
+
+  useEffect(
+    () => () => {
+      if (scrollIdleTimerRef.current) clearTimeout(scrollIdleTimerRef.current);
+    },
+    [],
+  );
 
   const measureIndicator = useCallback(() => {
     const nav = navRef.current;
@@ -59,29 +80,46 @@ export function StockDetailTabNav({
   }, [measureIndicator, isEtf, activeTab]);
 
   useLayoutEffect(() => {
+    const btn = tabRefs.current.get(activeTab);
+    btn?.scrollIntoView({ block: "nearest", inline: "nearest" });
+    measureIndicator();
+  }, [activeTab, measureIndicator]);
+
+  useLayoutEffect(() => {
     const nav = navRef.current;
     if (!nav) return;
     const ro = new ResizeObserver(measureIndicator);
     ro.observe(nav);
-    nav.addEventListener("scroll", measureIndicator, { passive: true });
+    const onScroll = () => {
+      revealScrollbar();
+      measureIndicator();
+    };
+    nav.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", measureIndicator);
     return () => {
       ro.disconnect();
-      nav.removeEventListener("scroll", measureIndicator);
+      nav.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", measureIndicator);
     };
-  }, [measureIndicator]);
+  }, [measureIndicator, revealScrollbar]);
 
   const shellClassName =
     "max-md:bg-[#FAFAFA] bg-white max-md:mx-0 max-md:-mt-2 max-md:pt-0 max-md:pb-1 sm:-mx-9 sm:-mt-5 sm:px-9 sm:pt-2 sm:pb-2";
 
   return (
     <div className={sticky ? `sticky top-0 z-40 max-md:top-[var(--mobile-topbar-offset)] ${shellClassName}` : shellClassName}>
-      <div className="border-b border-solid border-[#E4E4E7]">
+      <div className="min-w-0 border-b border-solid border-[#E4E4E7]">
         <nav
           ref={navRef}
-          className="relative -mx-1 flex flex-nowrap items-start gap-4 overflow-x-auto overflow-y-hidden pb-px [-webkit-overflow-scrolling:touch] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:flex-wrap sm:gap-5 sm:overflow-visible"
+          className={cn(
+            "relative -mx-1 flex min-w-0 flex-nowrap items-start gap-4 overflow-x-auto overflow-y-hidden overscroll-x-contain pb-px sm:mx-0 sm:gap-5",
+            "[-webkit-overflow-scrolling:touch]",
+            horizontalOverlayScrollbarClassName,
+            scrollbarVisible && horizontalOverlayScrollbarActiveClassName,
+          )}
           aria-label="Stock sections"
+          onWheel={revealScrollbar}
+          onTouchMove={revealScrollbar}
         >
           {tabs.map(({ id, label }) => {
             const isActive = id === activeTab;
@@ -96,7 +134,7 @@ export function StockDetailTabNav({
                 onClick={() => onTabChange(id)}
                 onPointerEnter={() => onTabIntent?.(id)}
                 onFocus={() => onTabIntent?.(id)}
-                className={`-mb-px shrink-0 cursor-pointer border-b-2 border-solid border-transparent py-2 text-left text-[14px] font-medium leading-6 text-[#09090B] transition-[color,opacity] duration-100 focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2 hover:opacity-80 ${
+                className={`-mb-px shrink-0 cursor-pointer whitespace-nowrap border-b-2 border-solid border-transparent py-2 text-left text-[14px] font-medium leading-6 text-[#09090B] transition-[color,opacity] duration-100 focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2 hover:opacity-80 ${
                   isActive ? "font-semibold opacity-100" : "opacity-70"
                 }`}
               >

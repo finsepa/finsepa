@@ -6,6 +6,7 @@ import {
 } from "@/lib/market/charting-period-display";
 import { applyFundamentalsChartTimeRange } from "@/lib/market/fundamentals-chart-time-range";
 import type { FundamentalsChartTimeRange } from "@/lib/market/fundamentals-chart-time-range";
+import { FUNDAMENTALS_HISTORY_MAX_QUARTERLY_PERIODS } from "@/lib/market/fundamentals-history-limit";
 import type { FundamentalsSeriesMode } from "@/lib/market/charting-series-types";
 import type { ChartingMetricId } from "@/lib/market/stock-charting-metrics";
 import { readChartingMetricValue } from "@/lib/market/stock-charting-metrics";
@@ -65,6 +66,33 @@ function lineChartDataTimeRange(timeRange: FundamentalsChartTimeRange): Fundamen
   return timeRange;
 }
 
+/** Charting tab line mode — 3Y / 5Y / 10Y / All (matches bar range toggles). */
+export type ChartingFundamentalsLineTimeRange = "3Y" | "5Y" | "10Y" | "all";
+
+const CHARTING_LINE_QUARTERLY_PERIODS: Record<ChartingFundamentalsLineTimeRange, number> = {
+  "3Y": 12,
+  "5Y": 20,
+  "10Y": 40,
+  all: FUNDAMENTALS_HISTORY_MAX_QUARTERLY_PERIODS,
+};
+
+/** Line charts on Charting tab — same ranges as bar mode toggles. */
+export function filterPointsForChartingFundamentalsLineChart(
+  points: ChartingSeriesPoint[],
+  metricId: ChartingMetricId,
+  timeRange: ChartingFundamentalsLineTimeRange,
+): ChartingSeriesPoint[] {
+  if (timeRange === "3Y") {
+    const sliced = points.slice(-CHARTING_LINE_QUARTERLY_PERIODS["3Y"]);
+    const withMetric = sliced.filter((p) => {
+      if (isChartingTtmPeriodEnd(p.periodEnd)) return false;
+      return readChartingMetricValue(p, metricId) != null;
+    });
+    return expandQuarterlyPointsToMonthlyRows(withMetric);
+  }
+  return filterPointsForFundamentalsLineChart(points, metricId, "quarterly", timeRange);
+}
+
 /** Line charts on Key Stats modal — subsample fiscal rows (bars unchanged). */
 export function filterPointsForFundamentalsLineChart(
   points: ChartingSeriesPoint[],
@@ -102,8 +130,9 @@ export function formatFundamentalsLineChartAxisLabel(
   periodEnd: string,
   index: number,
   periodEnds: readonly string[],
-  timeRange: FundamentalsChartTimeRange,
+  timeRange: FundamentalsChartTimeRange | "3Y",
 ): string {
+  const axisRange: FundamentalsChartTimeRange = timeRange === "3Y" ? "5Y" : timeRange;
   if (isChartingTtmPeriodEnd(periodEnd)) return "";
   const year = chartingPeriodSortYear(periodEnd);
   if (!year) return "";
@@ -123,10 +152,10 @@ export function formatFundamentalsLineChartAxisLabel(
   const firstYear = Number(firstYearRaw);
   if (!Number.isFinite(firstYear)) return year;
 
-  const step = yearLabelStep(timeRange);
+  const step = yearLabelStep(axisRange);
   if ((y - firstYear) % step !== 0) return "";
 
-  if (timeRange === "5Y") {
+  if (axisRange === "5Y") {
     const earliest = lineChartEarliestCalendarYear(periodEnds);
     if (earliest != null && y === earliest) return "";
   }

@@ -411,14 +411,17 @@ export function StockPageContent({
 
   /** Same fundamentals-series cache as Charting — Key Stats modals (Yield, Revenue, …) read without a loading flash. */
   useEffect(() => {
-    if (fundamentalsModalAnnual?.length) {
-      seedChartingFundamentalsSeriesCache(ticker, "annual", fundamentalsModalAnnual, fundamentalsModalTtm);
+    const hasAnnualSeed = (fundamentalsModalAnnual?.length ?? 0) > 0;
+    const hasQuarterlySeed = (fundamentalsModalQuarterly?.length ?? 0) > 0;
+    if (hasAnnualSeed) {
+      seedChartingFundamentalsSeriesCache(ticker, "annual", fundamentalsModalAnnual!, fundamentalsModalTtm);
     }
-    if (fundamentalsModalQuarterly?.length) {
-      seedChartingFundamentalsSeriesCache(ticker, "quarterly", fundamentalsModalQuarterly);
+    if (hasQuarterlySeed) {
+      seedChartingFundamentalsSeriesCache(ticker, "quarterly", fundamentalsModalQuarterly!);
     }
-    void revalidateChartingFundamentalsSeriesCached(ticker, "annual");
-    void revalidateChartingFundamentalsSeriesCached(ticker, "quarterly");
+    // SSR already fetched these — avoid immediate revalidate (2 API round-trips + SEC backfill per visit).
+    if (!hasAnnualSeed) void revalidateChartingFundamentalsSeriesCached(ticker, "annual");
+    if (!hasQuarterlySeed) void revalidateChartingFundamentalsSeriesCached(ticker, "quarterly");
   }, [ticker, fundamentalsModalAnnual, fundamentalsModalQuarterly, fundamentalsModalTtm]);
 
   /** Hidden 1D price chart — drives header on non-overview tabs (today / live spot). */
@@ -492,9 +495,12 @@ export function StockPageContent({
   }, [ticker]);
 
   const liveRegularSessionActive = useMemo(() => {
-    if (initialPageData?.ticker !== ticker) return true;
-    return initialPageData.liveRegularSessionActive ?? true;
-  }, [initialPageData, ticker]);
+    const clockLive = getUsEquityMarketSession(new Date()) === "regular";
+    if (initialPageData?.ticker !== ticker) return clockLive;
+    return initialPageData.liveRegularSessionActive ?? clockLive;
+  }, [initialPageData, ticker, regularSessionClock]);
+
+  const chartLiveSessionMinute = range === "1D" && liveRegularSessionActive;
 
   const atCloseHeaderMode = useMemo(
     () => isUsEquityHeaderAtCloseMode(new Date(), liveRegularSessionActive),
@@ -905,9 +911,13 @@ export function StockPageContent({
       return label || "Today";
     }
 
+    if (extendedHoursQuote?.closeTimestampLabel) {
+      return extendedHoursQuote.closeTimestampLabel;
+    }
+
     const closeUnix = lastUsRegularSessionCloseUnix(new Date(), STOCK_DISPLAY_TZ);
     return formatStockHeaderAtClosePeriodLabel(closeUnix, STOCK_DISPLAY_TZ);
-  }, [liveRegularSessionActive, regularSessionClock]);
+  }, [extendedHoursQuote?.closeTimestampLabel, liveRegularSessionActive, regularSessionClock]);
 
   const isMobileViewport = useMobileSheet();
   const mobileChartScrubActive =
@@ -1000,6 +1010,7 @@ export function StockPageContent({
             series="price"
             height={320}
             initialChart={initialSessionChartMemo}
+            liveSessionMinute={chartLiveSessionMinute}
             liveSpotUsd={headerLiveSpotForMerge}
             onDisplayChange={onSessionHeaderDisplay}
           />
@@ -1074,6 +1085,7 @@ export function StockPageContent({
                   range={range}
                   series={chartSeries}
                   initialChart={initialChartMemo?.range === range ? initialChartMemo : null}
+                  liveSessionMinute={chartLiveSessionMinute}
                   liveSpotUsd={range === "1D" ? headerLiveSpotForMerge : null}
                   onDisplayChange={onOverviewHeaderDisplay}
                 />
