@@ -20,6 +20,16 @@ function tabFromSearchParams(sp: Record<string, string | string[] | undefined> |
   return parseStockDetailTabQuery(s ?? null) ?? "overview";
 }
 
+function chartingMetricFromSearchParams(
+  sp: Record<string, string | string[] | undefined> | undefined,
+): string | null {
+  const raw = sp?.metric;
+  const s = Array.isArray(raw) ? raw[0] : raw;
+  if (typeof s !== "string") return null;
+  const trimmed = s.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
 export default async function StockTickerPage({ params, searchParams }: PageProps) {
   const { ticker: tickerParam } = await params;
   if (typeof tickerParam !== "string" || !tickerParam.trim()) {
@@ -61,6 +71,7 @@ export default async function StockTickerPage({ params, searchParams }: PageProp
       routeTicker={routeTicker}
       initialPageData={initialPageData}
       initialActiveTab={initialActiveTab}
+      initialChartingMetric={chartingMetricFromSearchParams(sp)}
     />
   );
 }

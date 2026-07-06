@@ -171,11 +171,14 @@ export function StockPageContent({
   routeTicker,
   initialPageData,
   initialActiveTab = "overview",
+  initialChartingMetric = null,
 }: {
   routeTicker?: string;
   initialPageData?: StockPageInitialData | null;
   /** From server `searchParams.tab` — `useSearchParams()` is often empty during SSR; this keeps the first paint aligned. */
   initialActiveTab?: StockDetailTabId;
+  /** From server `searchParams.metric` — avoids hydration drift on Charting deep links. */
+  initialChartingMetric?: string | null;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -233,7 +236,10 @@ export function StockPageContent({
     setTabsMounted((m) => ({ ...m, [urlTab]: true }));
   }, [urlTab]);
 
-  const chartingMetricParam = searchParams.get("metric");
+  const [chartingMetricParam, setChartingMetricParam] = useState<string | null>(initialChartingMetric);
+  useEffect(() => {
+    setChartingMetricParam(searchParams.get("metric"));
+  }, [searchParams]);
 
   const refetchHeaderMeta = useCallback(async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) setHeaderMetaLoading(true);
