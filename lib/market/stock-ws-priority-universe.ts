@@ -327,6 +327,38 @@ export function sessionMinuteBarsCoverSessionOpen(
   return inSession[0]!.time <= openSec + maxLateSec;
 }
 
+/**
+ * True only when WS minute data is too sparse to draw a session — missing the open or almost no bars.
+ * Do not use session-wide OHLC synthesis when we already have credible tick coverage (avoids sawtooth).
+ */
+export function liveMinuteChartNeedsOhlcShapeFallback(
+  bars: readonly StockChartPoint[],
+  sessionYmd: string,
+  timeZone: string,
+  now: Date = new Date(),
+): boolean {
+  if (getUsEquityMarketSession(now) !== "regular") return false;
+  if (!sessionMinuteBarsCoverSessionOpen(bars, sessionYmd, timeZone, now)) return true;
+
+  const openSec = usSessionWallClockUnix(sessionYmd, 9, 30, timeZone);
+  const closeSec = usSessionWallClockUnix(sessionYmd, 16, 0, timeZone);
+  const nowSec = Math.floor(now.getTime() / 1000);
+  const endSec = Math.min(nowSec, closeSec);
+  const elapsedMin = Math.max(0, Math.floor((endSec - openSec) / 60));
+  if (elapsedMin < 5) return false;
+
+  const inSession = bars.filter(
+    (p) =>
+      typeof p.time === "number" &&
+      Number.isFinite(p.time) &&
+      Number.isFinite(p.value) &&
+      p.time >= openSec &&
+      p.time <= endSec,
+  );
+  const minBars = Math.max(8, Math.floor(elapsedMin * 0.08));
+  return inSession.length < minBars;
+}
+
 /** Min $ move across session bars before we treat the WS minute store as a real tick chart. */
 export const STOCK_SESSION_MINUTE_BAR_MIN_SPREAD_USD = 0.5;
 

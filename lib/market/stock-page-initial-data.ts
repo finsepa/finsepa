@@ -7,10 +7,9 @@ import {
   getStockChartPointsForApi,
   isStock1DLiveSessionMinuteChart,
   stockChartPointsFromDailyBars,
-  synthesize1DSessionChartFromDailyBars,
 } from "@/lib/market/stock-chart-data";
+import { usesStock1DLiveWsMinutePipeline } from "@/lib/market/stock-1d-live-minute-chart-tickers";
 import { getUsEquityMarketSession } from "@/lib/market/us-equity-market-session";
-import { resolveUsEquityLiveRegularSessionActive } from "@/lib/market/us-equity-live-session-server";
 import type { ChartingSeriesPoint } from "@/lib/market/charting-series-types";
 import type { StockDetailHeaderMeta } from "@/lib/market/stock-header-meta";
 import { getStockDetailHeaderMetaForPage } from "@/lib/market/stock-header-meta-server";
@@ -130,8 +129,8 @@ function resolveOverviewChartPoints(
   if (Array.isArray(chartPoints) && chartPoints.length > 0) return chartPoints;
   if (!sortedDailyBars.length) return [];
   if (range === "1D") {
-    const session = synthesize1DSessionChartFromDailyBars(sortedDailyBars, now);
-    if (session.length > 0) return session;
+    // 1D overview uses EODHD intraday only — daily open/close synthesis is a flat line.
+    return [];
   }
   const fromDaily = sliceStockChartPointsForRange(stockChartPointsFromDailyBars(sortedDailyBars), range, now);
   if (fromDaily.length > 0) return fromDaily;
@@ -181,17 +180,6 @@ function positiveUsd(n: unknown): number | null {
   return typeof n === "number" && Number.isFinite(n) && n > 0 ? n : null;
 }
 
-async function fetchRecentDailyBarsForChartFallback(
-  ticker: string,
-  now: Date,
-): Promise<EodhdDailyBar[]> {
-  const fromDate = new Date(now);
-  fromDate.setUTCDate(fromDate.getUTCDate() - 21);
-  const bars = await fetchEodhdEodDaily(ticker, ymdUtc(fromDate), ymdUtc(now));
-  if (!bars?.length) return [];
-  return [...bars].sort((a, b) => a.date.localeCompare(b.date));
-}
-
 async function loadStockPageHotFields(
   ticker: string,
   range: StockChartRange,
@@ -210,18 +198,11 @@ async function loadStockPageHotFields(
   const chartPointsRaw = fromSettled(chartPointsResult, "chart1D");
   const spotQuote = fromSettled(spotResult, "headerLiveSpot");
 
-  let dailyBars = sortedDailyFallback;
-  let points = resolveOverviewChartPoints(range, chartPointsRaw, dailyBars, now);
-  if (range === "1D" && points.length === 0) {
-    if (!dailyBars.length) {
-      dailyBars = await fetchRecentDailyBarsForChartFallback(ticker, now);
-    }
-    points = resolveOverviewChartPoints(range, chartPointsRaw, dailyBars, now);
-  }
+  const points = resolveOverviewChartPoints(range, chartPointsRaw, sortedDailyFallback, now);
 
-  const liveRegularSessionActive = await resolveUsEquityLiveRegularSessionActive(ticker, now);
-  const liveSessionMinute =
-    range === "1D" && (await isStock1DLiveSessionMinuteChart(ticker, now));
+  const liveSessionMinute = range === "1D" && isStock1DLiveSessionMinuteChart(ticker, now);
+  const liveRegularSessionActive =
+    usesStock1DLiveWsMinutePipeline(ticker, now) || getUsEquityMarketSession(now) === "regular";
 
   return {
     chart: { range, points, liveSessionMinute },
@@ -287,8 +268,6 @@ export async function loadStockPageInitialDataUncached(routeTicker: string): Pro
       quarterlyResult,
       peersResult,
       spotResult,
-      liveSessionResult,
-      liveChartMinuteResult,
     ] = await Promise.allSettled([
       getStockDetailHeaderMetaForPage(ticker),
       fetchEodhdEodDaily(ticker, from, to),
@@ -300,8 +279,6 @@ export async function loadStockPageInitialDataUncached(routeTicker: string): Pro
       fetchChartingSeries(ticker, "quarterly"),
       getPeersCompareRowsCached(ticker),
       getStockSpotQuoteForApi(ticker),
-      resolveUsEquityLiveRegularSessionActive(ticker, now),
-      isStock1DLiveSessionMinuteChart(ticker, now),
     ]);
 
     const headerMeta = fromSettled(headerMetaResult, "headerMeta") ?? headerMetaShell(ticker);
@@ -314,9 +291,10 @@ export async function loadStockPageInitialDataUncached(routeTicker: string): Pro
     const quarterlySeries = fromSettled(quarterlyResult, "fundamentalsQuarterly");
     const peersCompareRows = fromSettled(peersResult, "peers");
     const spotQuote = fromSettled(spotResult, "headerLiveSpot");
-    const liveRegularSessionActive = fromSettled(liveSessionResult, "liveSession") ?? false;
+    const liveRegularSessionActive =
+      usesStock1DLiveWsMinutePipeline(ticker, now) || getUsEquityMarketSession(now) === "regular";
     const liveSessionMinute =
-      range === "1D" ? (fromSettled(liveChartMinuteResult, "liveChartMinute") ?? false) : false;
+      range === "1D" ? isStock1DLiveSessionMinuteChart(ticker, now) : false;
 
     const sorted = barsRaw?.length ? [...barsRaw].sort((a, b) => a.date.localeCompare(b.date)) : [];
     const performance = computeStockPerformanceFromSortedDailyBars(sorted, ticker, now);
@@ -371,12 +349,22 @@ export async function loadStockPageInitialData(routeTicker: string): Promise<Sto
       return base;
     }
     const hot = await loadStockPageHotFields(ticker, base.chart.range, [], new Date());
-    return {
+    const chart =
+      base.chart.range === "1D"
+        ? hot.chart
+        : hot.chart.points.length > 0
+          ? hot.chart
+          : base.chart;
+    const merged = {
       ...base,
       ...hot,
-      chart: hot.chart.points.length > 0 ? hot.chart : base.chart,
+      chart,
       liveRegularSessionActive: hot.liveRegularSessionActive,
     };
+    if (base.chart.range === "1D" && chart.points.length >= 2) {
+      scheduleAssetSnapshotWrite(ticker, epoch.segment, merged, epoch.mode);
+    }
+    return merged;
   }
 
   const fresh = await loadStockPageInitialDataUncached(ticker);

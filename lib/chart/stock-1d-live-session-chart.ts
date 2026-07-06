@@ -695,8 +695,8 @@ export function mergeLiveSpotMinuteBarsIntoPoints(
 /** Client live-price poll during regular session — aligns with ~15s server spot cache. */
 export const STOCK_1D_LIVE_PRICE_POLL_MS = 15_000;
 
-/** Client 1D chart poll during regular session — aligns with ~30s server chart cache. */
-export const STOCK_1D_LIVE_CHART_POLL_MS = 30_000;
+/** Client 1D chart poll during regular session — ~60s, matches 1m bar cadence. */
+export const STOCK_1D_LIVE_CHART_POLL_MS = 60_000;
 
 /** Client poll for non–top-50 1D historical intraday (matches ~15m server cache). */
 export const STOCK_1D_INTRADAY_HISTORICAL_POLL_MS = 900_000;
@@ -716,6 +716,20 @@ export function stock1DLiveSessionMinuteBucketUnix(
   return open + bucketIndex * STOCK_1D_LIVE_SESSION_BAR_INTERVAL_SEC;
 }
 
+/** 1m bucket after the 16:00 regular close through 20:00 ET. */
+export function stock1DLiveSessionPostMarketMinuteBucketUnix(
+  sessionYmd: string,
+  nowSec: number,
+  timeZone: string = STOCK_1D_LIVE_SESSION_TZ,
+): number {
+  const { regularClose, extendedClose } = stock1DLiveSessionExtendedWallClockBounds(sessionYmd, timeZone);
+  if (nowSec <= regularClose) return regularClose;
+  const capped = Math.min(nowSec, extendedClose);
+  const elapsed = capped - regularClose;
+  const bucketIndex = Math.ceil(elapsed / STOCK_1D_LIVE_SESSION_BAR_INTERVAL_SEC);
+  return regularClose + bucketIndex * STOCK_1D_LIVE_SESSION_BAR_INTERVAL_SEC;
+}
+
 /** One minute close from the latest live spot poll. */
 export function liveSpotToMinuteBar(
   liveSpotUsd: number,
@@ -727,6 +741,108 @@ export function liveSpotToMinuteBar(
   const nowSec = Math.floor(now.getTime() / 1000);
   const bucketTime = stock1DLiveSessionMinuteBucketUnix(sessionYmd, nowSec, timeZone);
   return { time: bucketTime, value: liveSpotUsd, sessionDate: sessionYmd, timeZone };
+}
+
+/**
+ * Option B tail pin: adjust only the final minute bucket from the header live spot.
+ * Server-normalized WS history is unchanged except the last point (replace or extend one bucket).
+ */
+export function pinLiveWsMinuteChartTail(
+  points: readonly StockChartPoint[],
+  liveSpotUsd: number | null | undefined,
+  now: Date = new Date(),
+  timeZone: string = STOCK_1D_LIVE_SESSION_TZ,
+): StockChartPoint[] {
+  if (!points.length) return [...points];
+  if (liveSpotUsd == null || !Number.isFinite(liveSpotUsd) || liveSpotUsd <= 0) {
+    return [...points];
+  }
+  if (getUsEquityMarketSession(now) !== "regular") return [...points];
+
+  const nowSec = Math.floor(now.getTime() / 1000);
+  const sessionYmd = usSessionYmdFromUnixSeconds(nowSec);
+  const openSec = usSessionWallClockUnix(sessionYmd, 9, 30, timeZone);
+  const closeSec = usSessionWallClockUnix(sessionYmd, 16, 0, timeZone);
+  if (nowSec < openSec || nowSec > closeSec) return [...points];
+
+  const bucketTime = stock1DLiveSessionMinuteBucketUnix(sessionYmd, nowSec, timeZone);
+  const last = points[points.length - 1]!;
+  if (bucketTime < last.time) return [...points];
+
+  const tail: StockChartPoint = {
+    time: bucketTime,
+    value: liveSpotUsd,
+    sessionDate: sessionYmd,
+    timeZone,
+  };
+
+  if (last.time === bucketTime) {
+    return [...points.slice(0, -1), tail];
+  }
+  return [...points, tail];
+}
+
+/**
+ * Post-market tail pin for live WS allowlist tickers.
+ * Regular session (≤16:00 ET) is immutable; only append/replace AH minute buckets after the close.
+ */
+export function pinLiveWsPostMarketChartTail(
+  points: readonly StockChartPoint[],
+  extendedPrice: number | null | undefined,
+  now: Date = new Date(),
+  timeZone: string = STOCK_1D_LIVE_SESSION_TZ,
+  frozenTailTimeUnix?: number | null,
+): StockChartPoint[] {
+  if (!points.length) return [...points];
+  if (extendedPrice == null || !Number.isFinite(extendedPrice) || extendedPrice <= 0) {
+    return [...points];
+  }
+
+  const session = getUsEquityMarketSession(now);
+  const nowSec = Math.floor(now.getTime() / 1000);
+  const sessionYmd = usSessionYmdFromUnixSeconds(nowSec);
+  const { regularClose, extendedClose } = stock1DLiveSessionExtendedWallClockBounds(sessionYmd, timeZone);
+
+  const regularOnly = points.filter((p) => p.time <= regularClose);
+  if (!regularOnly.length) return [...points];
+
+  let tailTime: number;
+  if (session === "post") {
+    tailTime = stock1DLiveSessionPostMarketMinuteBucketUnix(sessionYmd, nowSec, timeZone);
+  } else if (
+    session === "closed" &&
+    frozenTailTimeUnix != null &&
+    Number.isFinite(frozenTailTimeUnix) &&
+    frozenTailTimeUnix > regularClose
+  ) {
+    tailTime = Math.min(
+      stock1DLiveSessionPostMarketMinuteBucketUnix(sessionYmd, frozenTailTimeUnix, timeZone),
+      extendedClose,
+    );
+  } else {
+    return [...regularOnly];
+  }
+
+  tailTime = Math.min(tailTime, extendedClose);
+  if (tailTime <= regularClose) return [...regularOnly];
+
+  const tail: StockChartPoint = {
+    time: tailTime,
+    value: extendedPrice,
+    sessionDate: sessionYmd,
+    timeZone,
+  };
+
+  const ahPoints = points.filter((p) => p.time > regularClose).sort((a, b) => a.time - b.time);
+  const lastAh = ahPoints.at(-1);
+
+  if (lastAh?.time === tailTime) {
+    return [...regularOnly, ...ahPoints.slice(0, -1), tail];
+  }
+  if (!lastAh || lastAh.time < tailTime) {
+    return [...regularOnly, ...ahPoints, tail];
+  }
+  return [...regularOnly, ...ahPoints.filter((p) => p.time < tailTime), tail];
 }
 
 /** Merge chart sources by UNIX bucket (later sources win). Client-safe for live minute accumulation. */

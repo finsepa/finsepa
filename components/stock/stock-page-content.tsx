@@ -60,7 +60,7 @@ import {
   isUsEquityLiveRegularSession,
 } from "@/lib/market/us-equity-live-session";
 import { STOCK_1D_LIVE_PRICE_POLL_MS } from "@/lib/chart/stock-1d-live-session-chart";
-import { isStock1DLiveMinuteChartTicker } from "@/lib/market/stock-1d-live-minute-chart-tickers";
+import { usesStock1DLiveWsMinutePipeline, usesStock1DLiveWsPostMarketChart } from "@/lib/market/stock-1d-live-minute-chart-tickers";
 import {
   formatAssetChartTimestamp,
   formatStockHeaderAtClosePeriodLabel,
@@ -516,11 +516,14 @@ export function StockPageContent({
 
   const chartLiveSessionMinute = useMemo(() => {
     if (range !== "1D") return false;
+    const now = new Date();
+    if (usesStock1DLiveWsMinutePipeline(ticker, now)) return true;
+    if (usesStock1DLiveWsPostMarketChart(ticker, now)) return true;
     if (initialPageData?.chart?.liveSessionMinute != null) {
       return initialPageData.chart.liveSessionMinute;
     }
-    return liveRegularSessionActive && isStock1DLiveMinuteChartTicker(ticker);
-  }, [range, ticker, initialPageData?.chart?.liveSessionMinute, liveRegularSessionActive]);
+    return false;
+  }, [range, ticker, initialPageData?.chart?.liveSessionMinute, regularSessionClock]);
 
   const atCloseHeaderMode = useMemo(
     () => isUsEquityHeaderAtCloseMode(new Date(), liveRegularSessionActive),
@@ -556,9 +559,24 @@ export function StockPageContent({
           cache: "no-store",
         });
         if (!res.ok || cancelled) return;
-        const json = (await res.json()) as { price?: unknown; previousClose?: unknown };
+        const json = (await res.json()) as {
+          price?: unknown;
+          previousClose?: unknown;
+          quotedAtSec?: unknown;
+        };
         const p = json.price;
         const prev = json.previousClose;
+        const quotedAtSec =
+          typeof json.quotedAtSec === "number" && Number.isFinite(json.quotedAtSec)
+            ? json.quotedAtSec
+            : Math.floor(Date.now() / 1000);
+        if (process.env.NODE_ENV === "development") {
+          console.log("[header-live-spot]", ticker, {
+            price: p,
+            quotedAtSec,
+            ok: res.ok,
+          });
+        }
         if (
           isUsEquityLiveRegularSession(new Date(), liveRegularSessionActive) &&
           typeof p === "number" &&
@@ -567,7 +585,7 @@ export function StockPageContent({
           !cancelled
         ) {
           setHeaderLiveSpotClient(p);
-          setHeaderQuoteAtSec(Math.floor(Date.now() / 1000));
+          setHeaderQuoteAtSec(quotedAtSec);
         }
         if (typeof prev === "number" && Number.isFinite(prev) && prev > 0 && !cancelled) {
           setHeaderPriorCloseClient(prev);
@@ -633,6 +651,34 @@ export function StockPageContent({
   const headerPriorCloseForMerge =
     headerPriorCloseClient ??
     (initialPageData?.ticker === ticker ? (initialPageData.headerPriorCloseUsd ?? null) : null);
+
+  /** Live WS reference tickers: regular spot or post-market extended price for chart tail pin only. */
+  const chartLiveSpotUsd = useMemo(() => {
+    if (!chartLiveSessionMinute || range !== "1D") return null;
+    const now = new Date();
+    if (usesStock1DLiveWsMinutePipeline(ticker, now)) {
+      return headerLiveSpotForMerge;
+    }
+    if (usesStock1DLiveWsPostMarketChart(ticker, now)) {
+      const p = extendedHoursQuote?.extendedPrice;
+      return typeof p === "number" && Number.isFinite(p) && p > 0 ? p : null;
+    }
+    return null;
+  }, [
+    chartLiveSessionMinute,
+    range,
+    ticker,
+    headerLiveSpotForMerge,
+    extendedHoursQuote?.extendedPrice,
+    regularSessionClock,
+  ]);
+
+  const chartLivePostMarketTailTimeUnix = useMemo(() => {
+    if (!chartLiveSessionMinute || range !== "1D") return null;
+    if (!usesStock1DLiveWsPostMarketChart(ticker, new Date())) return null;
+    const t = extendedHoursQuote?.extendedTimeUnix;
+    return typeof t === "number" && Number.isFinite(t) && t > 0 ? t : null;
+  }, [chartLiveSessionMinute, range, ticker, extendedHoursQuote?.extendedTimeUnix, regularSessionClock]);
 
   const sessionSpotHeaderUi = useMemo(
     () =>
@@ -1094,7 +1140,8 @@ export function StockPageContent({
             height={320}
             initialChart={initialSessionChartMemo}
             liveSessionMinute={chartLiveSessionMinute}
-            liveSpotUsd={headerLiveSpotForMerge}
+            liveSpotUsd={chartLiveSpotUsd}
+            livePostMarketTailTimeUnix={chartLivePostMarketTailTimeUnix}
             onDisplayChange={onSessionHeaderDisplay}
           />
         </div>
@@ -1169,7 +1216,8 @@ export function StockPageContent({
                   series={chartSeries}
                   initialChart={initialChartMemo?.range === range ? initialChartMemo : null}
                   liveSessionMinute={chartLiveSessionMinute}
-                  liveSpotUsd={range === "1D" ? headerLiveSpotForMerge : null}
+                  liveSpotUsd={chartLiveSpotUsd}
+                  livePostMarketTailTimeUnix={chartLivePostMarketTailTimeUnix}
                   onDisplayChange={onOverviewHeaderDisplay}
                 />
               </div>
@@ -1185,7 +1233,8 @@ export function StockPageContent({
               series={chartSeries}
               initialChart={initialChartMemo?.range === range ? initialChartMemo : null}
               liveSessionMinute={chartLiveSessionMinute}
-              liveSpotUsd={range === "1D" ? headerLiveSpotForMerge : null}
+              liveSpotUsd={chartLiveSpotUsd}
+              livePostMarketTailTimeUnix={chartLivePostMarketTailTimeUnix}
               onDisplayChange={onOverviewHeaderDisplay}
             />
           </div>

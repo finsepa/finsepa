@@ -119,6 +119,17 @@ export function StockHeader({
     settledTripletRef.current = null;
   }, [ticker, headerChartMetric]);
 
+  useEffect(() => {
+    if (process.env.NODE_ENV !== "development") return;
+    if (price == null || !Number.isFinite(price)) return;
+    console.log("[header-display-price]", ticker, {
+      price,
+      changeAbs,
+      changePct,
+      chartLoading,
+    });
+  }, [ticker, price, changeAbs, changePct, chartLoading]);
+
   const springTarget = useMemo(() => {
     if (chartLoading) {
       return { price: null, abs: null, pct: null };

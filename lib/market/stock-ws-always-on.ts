@@ -1,7 +1,9 @@
 import "server-only";
 
+import { STOCK_1D_LIVE_MINUTE_CHART_DEFAULT_TICKERS } from "@/lib/market/stock-1d-live-minute-chart-tickers";
+
 /** Tick-perfect 1D: worker streams these from the 9:30 open (never dropped from WS cap). */
-export const STOCK_WS_ALWAYS_ON_DEFAULT_TICKERS = ["NVDA", "AAPL"] as const;
+export const STOCK_WS_ALWAYS_ON_DEFAULT_TICKERS = STOCK_1D_LIVE_MINUTE_CHART_DEFAULT_TICKERS;
 
 function parseAlwaysOnEnv(raw: string | undefined): string[] {
   if (!raw?.trim()) return [];

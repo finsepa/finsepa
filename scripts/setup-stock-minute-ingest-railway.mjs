@@ -23,17 +23,24 @@ const REQUIRED = [
 
 const RECOMMENDED = {
   STOCK_WS_CURATED: "1",
-  /** Tick-perfect test: only NVDA+AAPL (+ SPY/QQQ). Use 48 for full curated universe. */
+  /** Tick-perfect: only NVDA, AAPL, QQQ, SPY on WebSocket. Use 48 for full curated universe. */
   STOCK_WS_TOP_STOCKS: "0",
-  STOCK_WS_ALWAYS_ON: "NVDA,AAPL",
+  STOCK_WS_ALWAYS_ON: "NVDA,AAPL,QQQ,SPY",
+  STOCK_1D_LIVE_MINUTE_CHART: "NVDA,AAPL,QQQ,SPY",
   STOCK_WS_WATCHLIST: "0",
   STOCK_WS_SCREENER: "0",
-  STOCK_WS_CHART_WATCH: "1",
-  STOCK_WS_MAX_SYMBOLS: "50",
+  /** Must be 0 — otherwise every stock page view adds WS slots (was causing subscribed: 8). */
+  STOCK_WS_CHART_WATCH: "0",
+  STOCK_WS_MAX_SYMBOLS: "4",
   FINSEPA_STOCK_MINUTE_BAR_READ: "1",
   FINSEPA_STOCK_MINUTE_BAR_WRITE: "1",
   FINSEPA_STOCK_TICK_BACKFILL: "1",
   SUPABASE_UPSERT_TIMEOUT_MS: "30000",
+  STOCK_WS_FLUSH_DEBOUNCE_MS: "200",
+  STOCK_WS_FLUSH_URGENT_THRESHOLD: "8",
+  STOCK_WS_FLUSH_MAX_ROWS: "100",
+  STOCK_WS_FLUSH_CHUNK_SIZE: "15",
+  STOCK_WS_FLUSH_PERIODIC_MS: "1000",
 };
 
 function requireEnv(name) {

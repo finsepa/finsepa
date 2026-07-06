@@ -2,13 +2,35 @@
 
 export const PRIORITY_ETFS = ["SPY", "QQQ"];
 
-/** Default tick-perfect test pair when STOCK_WS_ALWAYS_ON is unset (mirrors stock-ws-always-on.ts). */
-export const DEFAULT_ALWAYS_ON_TICKERS = ["NVDA", "AAPL"];
+/** Default live 1m chart + WS tickers (mirrors stock-1d-live-minute-chart-tickers.ts). */
+export const DEFAULT_LIVE_MINUTE_CHART_TICKERS = ["NVDA", "AAPL", "QQQ", "SPY"];
+
+export function loadStock1DLiveMinuteChartTickers() {
+  const raw = process.env.STOCK_1D_LIVE_MINUTE_CHART?.trim() ?? process.env.STOCK_WS_ALWAYS_ON?.trim();
+  if (raw === "") return [];
+  const list = raw ? raw.split(",") : DEFAULT_LIVE_MINUTE_CHART_TICKERS;
+  const out = [];
+  const seen = new Set();
+  for (const part of list) {
+    const sym = normalizeStockTicker(part);
+    if (!sym || seen.has(sym)) continue;
+    seen.add(sym);
+    out.push(sym);
+  }
+  return out;
+}
+
+/** When true, worker only streams the pinned live-minute list (no chart-watch / top-N extras). */
+export function stockWsPinnedOnlyMode() {
+  if (process.env.STOCK_WS_PINNED_ONLY === "1") return true;
+  if (process.env.STOCK_WS_PINNED_ONLY === "0") return false;
+  return stockWsTopStocksCount() === 0 && process.env.STOCK_WS_CHART_WATCH === "0";
+}
 
 export function loadStockWsAlwaysOnTickers() {
   if (process.env.STOCK_WS_ALWAYS_ON === "") return [];
   const raw = process.env.STOCK_WS_ALWAYS_ON?.trim();
-  const list = raw ? raw.split(",") : DEFAULT_ALWAYS_ON_TICKERS;
+  const list = raw ? raw.split(",") : DEFAULT_LIVE_MINUTE_CHART_TICKERS;
   const out = [];
   const seen = new Set();
   for (const part of list) {

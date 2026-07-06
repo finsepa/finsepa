@@ -198,3 +198,24 @@ export function lastCompletedUsRegularSessionYmd(
   const closeSec = lastUsRegularSessionCloseUnix(now, timeZone);
   return usSessionYmdFromUnixSeconds(closeSec);
 }
+
+/** Prior US trading session before `ymd` (skips Sat/Sun; does not know exchange holidays). */
+export function previousUsTradingSessionYmd(
+  ymd: string,
+  timeZone: string = STOCK_DISPLAY_TZ,
+): string {
+  const [y, m, d] = ymd.split("-").map((x) => Number(x));
+  let cursor = new Date(Date.UTC(y!, m! - 1, d!, 12, 0, 0));
+  for (let i = 0; i < 12; i++) {
+    cursor = new Date(cursor.getTime() - 86_400_000);
+    const wd = new Intl.DateTimeFormat("en-US", { timeZone, weekday: "short" }).format(cursor);
+    if (wd === "Sat" || wd === "Sun") continue;
+    return new Intl.DateTimeFormat("en-CA", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(cursor);
+  }
+  return ymd;
+}

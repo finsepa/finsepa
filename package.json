@@ -28,6 +28,7 @@
     "eodhd:estimate": "node scripts/eodhd-load-estimate.mjs",
     "eodhd:probe": "node scripts/eodhd-traffic-probe.mjs",
     "stock:verify-live": "node --env-file=.env.local scripts/verify-stock-live-pipeline.mjs",
+    "stock:validate-1d-session": "node --env-file=.env.local scripts/validate-live-1d-session.mjs",
     "stock:minute-ingest:status": "node --env-file=.env.local scripts/stock-minute-ingest-status.mjs",
     "install:local": "node scripts/npm-install.mjs",
     "lint": "eslint",

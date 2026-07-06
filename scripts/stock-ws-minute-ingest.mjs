@@ -10,8 +10,10 @@ import { createClient } from "@supabase/supabase-js";
 import {
   capWatchTickerList,
   loadCuratedUsPriorityTickers,
+  loadStock1DLiveMinuteChartTickers,
   loadStockWsAlwaysOnTickers,
   stockWsCuratedMode,
+  stockWsPinnedOnlyMode,
 } from "./lib/stock-ws-priority-universe.mjs";
 import { normalizeStockTicker, parseEodhdUsWsMessage } from "./lib/eodhd-ws-parse.mjs";
 
@@ -196,6 +198,9 @@ function minuteBucketUnix(sessionYmd, tradeSec) {
   return openSec + Math.floor(offset / 60) * 60;
 }
 
+/** @type {Map<string, number>} */
+const lastPriceBySymbol = new Map();
+
 function queueMinuteClose(ticker, tradeSec, price) {
   if (getUsEquityMarketSession() === "closed") return;
   if (!Number.isFinite(price) || price <= 0) return;
@@ -221,6 +226,7 @@ function queueMinuteClose(ticker, tradeSec, price) {
 
 function ingestTradeMessage(sym, tradeSec, price, source = "ws") {
   if (!sym || !Number.isFinite(price) || price <= 0 || tradeSec == null) return;
+  lastPriceBySymbol.set(sym, price);
   const sessionYmd = usSessionYmdFromDate(new Date(tradeSec * 1000));
   const bucketUnix = minuteBucketUnix(sessionYmd, tradeSec);
   tradeCoalesce.set(`${sym}:${bucketUnix}`, { sym, tradeSec, price });
@@ -251,19 +257,30 @@ function drainTradeCoalesce() {
 }
 
 function scheduleFlush() {
+  if (flushInProgress) return;
+  if (pendingUpserts.size >= FLUSH_URGENT_THRESHOLD) {
+    if (flushTimer) {
+      clearTimeout(flushTimer);
+      flushTimer = null;
+    }
+    setImmediate(() => void flushPendingUpserts());
+    return;
+  }
   if (flushTimer) return;
   flushTimer = setTimeout(() => {
     flushTimer = null;
     setImmediate(() => void flushPendingUpserts());
-  }, 750);
+  }, FLUSH_DEBOUNCE_MS);
 }
 
 let flushInProgress = false;
 let watchPollDeferred = false;
-const FLUSH_MAX_ROWS_PER_CYCLE = Number(process.env.STOCK_WS_FLUSH_MAX_ROWS ?? 50);
-const FLUSH_CHUNK_SIZE = Number(process.env.STOCK_WS_FLUSH_CHUNK_SIZE ?? 5);
+const FLUSH_DEBOUNCE_MS = Number(process.env.STOCK_WS_FLUSH_DEBOUNCE_MS ?? 200);
+const FLUSH_URGENT_THRESHOLD = Number(process.env.STOCK_WS_FLUSH_URGENT_THRESHOLD ?? 8);
+const FLUSH_MAX_ROWS_PER_CYCLE = Number(process.env.STOCK_WS_FLUSH_MAX_ROWS ?? 100);
+const FLUSH_CHUNK_SIZE = Number(process.env.STOCK_WS_FLUSH_CHUNK_SIZE ?? 15);
 const FLUSH_MAX_ATTEMPTS = Number(process.env.STOCK_WS_FLUSH_MAX_ATTEMPTS ?? 5);
-const FLUSH_PERIODIC_MS = Number(process.env.STOCK_WS_FLUSH_PERIODIC_MS ?? 3_000);
+const FLUSH_PERIODIC_MS = Number(process.env.STOCK_WS_FLUSH_PERIODIC_MS ?? 1_000);
 
 function flushBackoffMs(attempt) {
   return Math.min(8_000, 400 * 2 ** attempt);
@@ -429,6 +446,10 @@ async function loadScreenerSnapshotTickers() {
 }
 
 async function loadWatchTickers() {
+  if (stockWsPinnedOnlyMode()) {
+    return loadStock1DLiveMinuteChartTickers();
+  }
+
   const alwaysOn = loadStockWsAlwaysOnTickers();
   const chartWatch = INCLUDE_CHART_WATCH ? await loadChartWatchTickers() : [];
 
@@ -615,6 +636,7 @@ async function syncSubscriptions() {
 
   subscribedSymbols = localSubscribed;
   health.subscribed = subscribedSymbols.size;
+  void preMarketBootstrap();
 }
 
 function connectMarketWs(path, source, onAuthorized, onClose) {
@@ -731,6 +753,56 @@ async function restPollTick() {
   }
 }
 
+/** One close per symbol per minute wall-clock bucket (pre + regular). */
+async function minuteHeartbeatTick() {
+  const session = getUsEquityMarketSession();
+  if (session === "closed" || session === "post") return;
+
+  const symbols = [...subscribedSymbols];
+  if (!symbols.length) return;
+
+  const nowSec = Math.floor(Date.now() / 1000);
+  for (const sym of symbols) {
+    const price = lastPriceBySymbol.get(sym);
+    if (price != null) {
+      ingestTradeMessage(sym, nowSec, price, "heartbeat");
+      continue;
+    }
+    try {
+      await pollRealtimeMinuteBar(sym);
+    } catch (err) {
+      log("minute heartbeat rest poll error", sym, err instanceof Error ? err.message : String(err));
+    }
+  }
+}
+
+function startMinuteHeartbeat() {
+  const alignMs = 60_000 - (Date.now() % 60_000);
+  setTimeout(() => {
+    void minuteHeartbeatTick();
+    setInterval(() => void minuteHeartbeatTick(), 60_000);
+  }, alignMs);
+  log("minute heartbeat aligned", { firstInMs: alignMs });
+}
+
+/** Seed last prices and open bucket during pre-market before 9:30 ET. */
+let preMarketBootstrapped = false;
+async function preMarketBootstrap() {
+  if (preMarketBootstrapped) return;
+  if (getUsEquityMarketSession() !== "pre") return;
+  const symbols = [...subscribedSymbols];
+  if (!symbols.length) return;
+  preMarketBootstrapped = true;
+  log("pre-market bootstrap", symbols.join(","));
+  for (const sym of symbols) {
+    try {
+      await pollRealtimeMinuteBar(sym);
+    } catch (err) {
+      log("pre-market bootstrap error", sym, err instanceof Error ? err.message : String(err));
+    }
+  }
+}
+
 process.on("SIGINT", async () => {
   log("shutting down…");
   await flushPendingUpserts();
@@ -780,9 +852,12 @@ log("starting stock minute ingest (always-on)", {
   maxSymbols: MAX_SYMBOLS,
   subscribeChunkSize: SUBSCRIBE_CHUNK_SIZE,
   restPollMs: REST_POLL_MS,
+  flushDebounceMs: FLUSH_DEBOUNCE_MS,
+  flushPeriodicMs: FLUSH_PERIODIC_MS,
   healthPort: HEALTH_PORT,
   session: getUsEquityMarketSession(),
 });
 
 startHealthServer();
 connectWs();
+startMinuteHeartbeat();

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import {
   CACHE_CONTROL_PRIVATE_CHART_STREAM,
+  CACHE_CONTROL_PRIVATE_NO_STORE,
   CACHE_CONTROL_PRIVATE_SUPERINVESTOR_HOLDING_CHART,
   CACHE_CONTROL_PRIVATE_WARM_CHART,
 } from "@/lib/data/cache-policy";
@@ -12,6 +13,7 @@ import {
   isStock1DLiveSessionMinuteChart,
   pricePointsToReturnIndexPoints,
 } from "@/lib/market/stock-chart-data";
+import { usesStock1DLiveWsMinutePipeline, usesStock1DLiveWsPostMarketChart } from "@/lib/market/stock-1d-live-minute-chart-tickers";
 import { isStockChartRange, sliceStockChartPointsForRange } from "@/lib/market/stock-chart-api";
 import { isStockChartSeries, type StockChartRange, type StockChartSeries } from "@/lib/market/stock-chart-types";
 import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
@@ -68,6 +70,22 @@ export async function GET(request: Request, { params }: Ctx) {
   const loadChartPoints = cadenceDaily ? getSuperinvestorHoldingStockChartPoints : getStockChartPointsForApi;
   const rawPoints = await loadChartPoints(routeTicker, range, series);
   const points = sliceStockChartPointsForRange(rawPoints, range);
+  const now = new Date();
+  const liveSessionMinute = range === "1D" && !cadenceDaily && isStock1DLiveSessionMinuteChart(routeTicker, now);
+  const livePostMarketChart = usesStock1DLiveWsPostMarketChart(routeTicker, now);
+  const priorSession1D =
+    range === "1D" &&
+    !cadenceDaily &&
+    !usesStock1DLiveWsMinutePipeline(routeTicker, now) &&
+    !livePostMarketChart;
+  const cacheControl =
+    (usesStock1DLiveWsMinutePipeline(routeTicker, now) || livePostMarketChart) && liveSessionMinute
+      ? CACHE_CONTROL_PRIVATE_NO_STORE
+    : priorSession1D
+      ? CACHE_CONTROL_PRIVATE_SUPERINVESTOR_HOLDING_CHART
+      : cadenceDaily
+        ? CACHE_CONTROL_PRIVATE_SUPERINVESTOR_HOLDING_CHART
+        : CACHE_CONTROL_PRIVATE_CHART_STREAM;
 
   return NextResponse.json(
     {
@@ -75,16 +93,11 @@ export async function GET(request: Request, { params }: Ctx) {
       range,
       series,
       points,
-      liveSessionMinute:
-        range === "1D" && !cadenceDaily
-          ? await isStock1DLiveSessionMinuteChart(routeTicker)
-          : undefined,
+      liveSessionMinute,
     },
     {
       headers: {
-        "Cache-Control": cadenceDaily
-          ? CACHE_CONTROL_PRIVATE_SUPERINVESTOR_HOLDING_CHART
-          : CACHE_CONTROL_PRIVATE_CHART_STREAM,
+        "Cache-Control": cacheControl,
       },
     },
   );
