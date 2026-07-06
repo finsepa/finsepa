@@ -105,21 +105,41 @@ export function mergeStockChartPointsByTime(
   return Array.from(byTime.values()).sort((a, b) => a.time - b.time);
 }
 
+export type MergeStockSessionMinuteBarsOptions = {
+  /** Keep flat minute bars during the live session (chart time grid, not WS quality gate). */
+  includeFlatBars?: boolean;
+};
+
+function filterSessionMinuteBarsForMerge(
+  bars: readonly StockChartPoint[],
+  sessionYmd: string,
+  now: Date,
+  options?: MergeStockSessionMinuteBarsOptions,
+): StockChartPoint[] {
+  if (!bars.length) return [];
+  if (options?.includeFlatBars || getUsEquityMarketSession(now) !== "regular") {
+    return [...bars];
+  }
+  if (!sessionMinuteBarsHavePriceVariation(bars, sessionYmd, STOCK_DISPLAY_TZ, now)) {
+    return [];
+  }
+  return [...bars];
+}
+
 /** Merge polled minute closes into chart source bars (later sources win on the same bucket). */
 export function mergeStockSessionMinuteBars(
   ticker: string,
   sessionYmd: string,
   points: readonly StockChartPoint[],
   now: Date = new Date(),
+  options?: MergeStockSessionMinuteBarsOptions,
 ): StockChartPoint[] {
-  let bars = getStockSessionMinuteBars(ticker, sessionYmd);
-  if (
-    getUsEquityMarketSession(now) === "regular" &&
-    bars.length > 0 &&
-    !sessionMinuteBarsHavePriceVariation(bars, sessionYmd, STOCK_DISPLAY_TZ, now)
-  ) {
-    bars = [];
-  }
+  const bars = filterSessionMinuteBarsForMerge(
+    getStockSessionMinuteBars(ticker, sessionYmd),
+    sessionYmd,
+    now,
+    options,
+  );
   if (!bars.length) return [...points];
   return mergeStockChartPointsByTime([points, bars]);
 }
@@ -130,28 +150,15 @@ export async function mergeStockSessionMinuteBarsFromDb(
   sessionYmd: string,
   points: readonly StockChartPoint[],
   now: Date = new Date(),
+  options?: MergeStockSessionMinuteBarsOptions,
 ): Promise<StockChartPoint[]> {
   const [dbBarsRaw, memBarsRaw] = await Promise.all([
     fetchStockSessionMinuteBarsFromDb(ticker, sessionYmd),
     Promise.resolve(getStockSessionMinuteBars(ticker, sessionYmd)),
   ]);
 
-  let dbBars = dbBarsRaw;
-  let memBars = memBarsRaw;
-  if (getUsEquityMarketSession(now) === "regular") {
-    if (
-      dbBars.length > 0 &&
-      !sessionMinuteBarsHavePriceVariation(dbBars, sessionYmd, STOCK_DISPLAY_TZ, now)
-    ) {
-      dbBars = [];
-    }
-    if (
-      memBars.length > 0 &&
-      !sessionMinuteBarsHavePriceVariation(memBars, sessionYmd, STOCK_DISPLAY_TZ, now)
-    ) {
-      memBars = [];
-    }
-  }
+  const dbBars = filterSessionMinuteBarsForMerge(dbBarsRaw, sessionYmd, now, options);
+  const memBars = filterSessionMinuteBarsForMerge(memBarsRaw, sessionYmd, now, options);
 
   if (!dbBars.length && !memBars.length) return [...points];
   return mergeStockChartPointsByTime([points, dbBars, memBars]);

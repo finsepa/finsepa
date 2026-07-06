@@ -23,7 +23,9 @@ const REQUIRED = [
 
 const RECOMMENDED = {
   STOCK_WS_CURATED: "1",
-  STOCK_WS_TOP_STOCKS: "48",
+  /** Tick-perfect test: only NVDA+AAPL (+ SPY/QQQ). Use 48 for full curated universe. */
+  STOCK_WS_TOP_STOCKS: "0",
+  STOCK_WS_ALWAYS_ON: "NVDA,AAPL",
   STOCK_WS_WATCHLIST: "0",
   STOCK_WS_SCREENER: "0",
   STOCK_WS_CHART_WATCH: "1",
@@ -31,6 +33,7 @@ const RECOMMENDED = {
   FINSEPA_STOCK_MINUTE_BAR_READ: "1",
   FINSEPA_STOCK_MINUTE_BAR_WRITE: "1",
   FINSEPA_STOCK_TICK_BACKFILL: "1",
+  SUPABASE_UPSERT_TIMEOUT_MS: "30000",
 };
 
 function requireEnv(name) {

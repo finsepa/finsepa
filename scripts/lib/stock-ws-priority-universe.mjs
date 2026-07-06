@@ -2,6 +2,38 @@
 
 export const PRIORITY_ETFS = ["SPY", "QQQ"];
 
+/** Default tick-perfect test pair when STOCK_WS_ALWAYS_ON is unset (mirrors stock-ws-always-on.ts). */
+export const DEFAULT_ALWAYS_ON_TICKERS = ["NVDA", "AAPL"];
+
+export function loadStockWsAlwaysOnTickers() {
+  if (process.env.STOCK_WS_ALWAYS_ON === "") return [];
+  const raw = process.env.STOCK_WS_ALWAYS_ON?.trim();
+  const list = raw ? raw.split(",") : DEFAULT_ALWAYS_ON_TICKERS;
+  const out = [];
+  const seen = new Set();
+  for (const part of list) {
+    const sym = normalizeStockTicker(part);
+    if (!sym || seen.has(sym)) continue;
+    seen.add(sym);
+    out.push(sym);
+  }
+  return out;
+}
+
+/** Keep pinned tickers when capping EODHD symbol slots. */
+export function capWatchTickerList(ordered, maxSymbols, pinnedTickers) {
+  if (ordered.length <= maxSymbols) return ordered;
+  const pinned = new Set(pinnedTickers);
+  const kept = [];
+  const rest = [];
+  for (const t of ordered) {
+    if (pinned.has(t)) kept.push(t);
+    else rest.push(t);
+  }
+  const slots = Math.max(0, maxSymbols - kept.length);
+  return [...kept, ...rest.slice(0, slots)];
+}
+
 /** Used when Supabase `top500_market` snapshot is unreachable from the worker. */
 export const FALLBACK_CURATED_TOP_STOCKS = [
   "AAPL",
@@ -55,8 +87,12 @@ export const FALLBACK_CURATED_TOP_STOCKS = [
 ];
 
 export function stockWsTopStocksCount() {
-  const n = Number(process.env.STOCK_WS_TOP_STOCKS ?? 48);
-  return Number.isFinite(n) && n > 0 ? Math.floor(n) : 48;
+  const raw = process.env.STOCK_WS_TOP_STOCKS;
+  if (raw !== undefined && raw.trim() !== "") {
+    const n = Number(raw);
+    if (Number.isFinite(n) && n >= 0) return Math.floor(n);
+  }
+  return 48;
 }
 
 export function stockWsCuratedMode() {

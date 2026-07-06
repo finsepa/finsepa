@@ -5,6 +5,7 @@ import { sliceStockChartPointsForRange } from "@/lib/market/stock-chart-api";
 import {
   getStockSpotQuoteForApi,
   getStockChartPointsForApi,
+  isStock1DLiveSessionMinuteChart,
   stockChartPointsFromDailyBars,
   synthesize1DSessionChartFromDailyBars,
 } from "@/lib/market/stock-chart-data";
@@ -219,9 +220,11 @@ async function loadStockPageHotFields(
   }
 
   const liveRegularSessionActive = await resolveUsEquityLiveRegularSessionActive(ticker, now);
+  const liveSessionMinute =
+    range === "1D" && (await isStock1DLiveSessionMinuteChart(ticker, now));
 
   return {
-    chart: { range, points, liveSessionMinute: range === "1D" && liveRegularSessionActive },
+    chart: { range, points, liveSessionMinute },
     headerLiveSpotUsd: positiveUsd(spotQuote?.price),
     headerPriorCloseUsd: positiveUsd(spotQuote?.previousClose),
     liveRegularSessionActive,
@@ -285,6 +288,7 @@ export async function loadStockPageInitialDataUncached(routeTicker: string): Pro
       peersResult,
       spotResult,
       liveSessionResult,
+      liveChartMinuteResult,
     ] = await Promise.allSettled([
       getStockDetailHeaderMetaForPage(ticker),
       fetchEodhdEodDaily(ticker, from, to),
@@ -297,6 +301,7 @@ export async function loadStockPageInitialDataUncached(routeTicker: string): Pro
       getPeersCompareRowsCached(ticker),
       getStockSpotQuoteForApi(ticker),
       resolveUsEquityLiveRegularSessionActive(ticker, now),
+      isStock1DLiveSessionMinuteChart(ticker, now),
     ]);
 
     const headerMeta = fromSettled(headerMetaResult, "headerMeta") ?? headerMetaShell(ticker);
@@ -310,6 +315,8 @@ export async function loadStockPageInitialDataUncached(routeTicker: string): Pro
     const peersCompareRows = fromSettled(peersResult, "peers");
     const spotQuote = fromSettled(spotResult, "headerLiveSpot");
     const liveRegularSessionActive = fromSettled(liveSessionResult, "liveSession") ?? false;
+    const liveSessionMinute =
+      range === "1D" ? (fromSettled(liveChartMinuteResult, "liveChartMinute") ?? false) : false;
 
     const sorted = barsRaw?.length ? [...barsRaw].sort((a, b) => a.date.localeCompare(b.date)) : [];
     const performance = computeStockPerformanceFromSortedDailyBars(sorted, ticker, now);
@@ -322,7 +329,7 @@ export async function loadStockPageInitialDataUncached(routeTicker: string): Pro
       chart: {
         range,
         points,
-        liveSessionMinute: range === "1D" && liveRegularSessionActive,
+        liveSessionMinute,
       },
       performance,
       keyStatsBundle,

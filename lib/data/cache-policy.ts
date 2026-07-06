@@ -58,7 +58,7 @@ export const REVALIDATE_HOT = 60;
  * ~20s — live spot quote during US regular session (header price).
  * Faster than chart cache; still coalesces EODHD realtime across users on the same ticker.
  */
-export const REVALIDATE_STOCK_1D_LIVE_SPOT = 20;
+export const REVALIDATE_STOCK_1D_LIVE_SPOT = 15;
 
 /**
  * ~30s — 1D chart during US regular session (minute store + live tail).

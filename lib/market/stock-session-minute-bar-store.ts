@@ -109,6 +109,43 @@ export async function upsertStockSessionMinuteBarsBatchToDb(
   }
 }
 
+export type LatestStockSessionMinuteBar = {
+  bucket_unix: number;
+  close: number;
+  updated_at: string;
+};
+
+/** Newest 1m bucket for a ticker/session — used to prefer WS store over stale REST. */
+export async function fetchLatestStockSessionMinuteBarFromDb(
+  ticker: string,
+  sessionYmd: string,
+): Promise<LatestStockSessionMinuteBar | null> {
+  if (!stockSessionMinuteBarReadEnabled()) return null;
+
+  const admin = getSupabaseAdminClient();
+  if (!admin) return null;
+
+  const sym = normalizeTicker(ticker);
+  const { data, error } = await admin
+    .from("stock_session_minute_bar")
+    .select("bucket_unix, close, updated_at")
+    .eq("ticker", sym)
+    .eq("session_ymd", sessionYmd)
+    .order("bucket_unix", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !data) return null;
+
+  const bucket_unix = Number(data.bucket_unix);
+  const close = Number(data.close);
+  const updated_at = typeof data.updated_at === "string" ? data.updated_at : "";
+  if (!Number.isFinite(bucket_unix) || !Number.isFinite(close) || close <= 0 || !updated_at) {
+    return null;
+  }
+  return { bucket_unix, close, updated_at };
+}
+
 export async function countStockSessionMinuteBarsInDb(
   ticker: string,
   sessionYmd: string,

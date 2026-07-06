@@ -8,7 +8,9 @@ import http from "node:http";
 import WebSocket from "ws";
 import { createClient } from "@supabase/supabase-js";
 import {
+  capWatchTickerList,
   loadCuratedUsPriorityTickers,
+  loadStockWsAlwaysOnTickers,
   stockWsCuratedMode,
 } from "./lib/stock-ws-priority-universe.mjs";
 import { normalizeStockTicker, parseEodhdUsWsMessage } from "./lib/eodhd-ws-parse.mjs";
@@ -68,24 +70,42 @@ function fail(msg) {
 if (!EODHD_KEY) fail("Missing EODHD_API_KEY");
 if (!SUPABASE_URL || !SUPABASE_KEY) fail("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
 
-function supabaseFetch(url, options = {}) {
-  const timeoutMs = Number(process.env.SUPABASE_FETCH_TIMEOUT_MS ?? 10_000);
-  const ac = new AbortController();
-  const timer = setTimeout(() => ac.abort(), timeoutMs);
-  return fetch(url, { ...options, signal: ac.signal })
-    .catch((err) => {
-      const cause = err instanceof Error && "cause" in err ? err.cause : null;
-      if (cause) {
-        throw new Error(`${err.message} (${String(cause)})`, { cause: err });
-      }
-      throw err;
-    })
-    .finally(() => clearTimeout(timer));
+function makeSupabaseFetch(timeoutMs) {
+  return function supabaseFetch(url, options = {}) {
+    const ac = new AbortController();
+    const timer = setTimeout(() => ac.abort(), timeoutMs);
+    const outerSignal = options.signal;
+    if (outerSignal) {
+      if (outerSignal.aborted) ac.abort();
+      else outerSignal.addEventListener("abort", () => ac.abort(), { once: true });
+    }
+    const { signal: _ignored, ...rest } = options;
+    return fetch(url, { ...rest, signal: ac.signal })
+      .catch((err) => {
+        const cause = err instanceof Error && "cause" in err ? err.cause : null;
+        if (cause) {
+          throw new Error(`${err.message} (${String(cause)})`, { cause: err });
+        }
+        throw err;
+      })
+      .finally(() => clearTimeout(timer));
+  };
 }
+
+const SUPABASE_READ_TIMEOUT_MS = Number(process.env.SUPABASE_FETCH_TIMEOUT_MS ?? 20_000);
+const SUPABASE_WRITE_TIMEOUT_MS = Number(
+  process.env.SUPABASE_UPSERT_TIMEOUT_MS ?? process.env.SUPABASE_FETCH_TIMEOUT_MS ?? 30_000,
+);
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
-  global: { fetch: supabaseFetch },
+  global: { fetch: makeSupabaseFetch(SUPABASE_READ_TIMEOUT_MS) },
+});
+
+/** Longer timeout for minute-bar upserts — avoids AbortError under load. */
+const supabaseWrite = createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: { persistSession: false, autoRefreshToken: false },
+  global: { fetch: makeSupabaseFetch(SUPABASE_WRITE_TIMEOUT_MS) },
 });
 
 /** @type {Map<string, { ticker: string, session_ymd: string, bucket_unix: number, close: number, updated_at: string }>} */
@@ -184,7 +204,8 @@ function queueMinuteClose(ticker, tradeSec, price) {
   const sessionYmd = usSessionYmdFromDate(new Date(tradeSec * 1000));
   const bucketUnix = minuteBucketUnix(sessionYmd, tradeSec);
   if (pendingUpserts.size >= PENDING_UPSERTS_CAP && !pendingUpserts.has(`${sym}:${bucketUnix}`)) {
-    return;
+    void flushPendingUpserts();
+    if (pendingUpserts.size >= PENDING_UPSERTS_CAP) return;
   }
   pendingUpserts.set(`${sym}:${bucketUnix}`, {
     ticker: sym,
@@ -238,8 +259,71 @@ function scheduleFlush() {
 }
 
 let flushInProgress = false;
+let watchPollDeferred = false;
 const FLUSH_MAX_ROWS_PER_CYCLE = Number(process.env.STOCK_WS_FLUSH_MAX_ROWS ?? 50);
-const FLUSH_CHUNK_SIZE = Number(process.env.STOCK_WS_FLUSH_CHUNK_SIZE ?? 10);
+const FLUSH_CHUNK_SIZE = Number(process.env.STOCK_WS_FLUSH_CHUNK_SIZE ?? 5);
+const FLUSH_MAX_ATTEMPTS = Number(process.env.STOCK_WS_FLUSH_MAX_ATTEMPTS ?? 5);
+const FLUSH_PERIODIC_MS = Number(process.env.STOCK_WS_FLUSH_PERIODIC_MS ?? 3_000);
+
+function flushBackoffMs(attempt) {
+  return Math.min(8_000, 400 * 2 ** attempt);
+}
+
+async function upsertMinuteBarChunk(chunk) {
+  const { error } = await supabaseWrite.from("stock_session_minute_bar").upsert(chunk, {
+    onConflict: "ticker,bucket_unix",
+  });
+  if (error) throw new Error(error.message);
+}
+
+async function saveMinuteBarRows(rows) {
+  const chunkSize = Math.max(1, FLUSH_CHUNK_SIZE);
+  const unsaved = [];
+
+  for (let i = 0; i < rows.length; i += chunkSize) {
+    const chunk = rows.slice(i, i + chunkSize);
+    let saved = false;
+    for (let attempt = 0; attempt < FLUSH_MAX_ATTEMPTS && !saved; attempt++) {
+      try {
+        await upsertMinuteBarChunk(chunk);
+        saved = true;
+        log("upserted", chunk.length, "minute bars");
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        log("upsert error", msg, "rows", chunk.length, "attempt", attempt + 1);
+        if (attempt < FLUSH_MAX_ATTEMPTS - 1) {
+          await new Promise((r) => setTimeout(r, flushBackoffMs(attempt)));
+        }
+      }
+    }
+
+    if (!saved && chunk.length > 1) {
+      for (const row of chunk) {
+        let rowSaved = false;
+        for (let attempt = 0; attempt < FLUSH_MAX_ATTEMPTS && !rowSaved; attempt++) {
+          try {
+            await upsertMinuteBarChunk([row]);
+            rowSaved = true;
+            log("upserted", 1, "minute bar (single-row fallback)");
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            log("upsert error", msg, "rows", 1, "attempt", attempt + 1, "fallback");
+            if (attempt < FLUSH_MAX_ATTEMPTS - 1) {
+              await new Promise((r) => setTimeout(r, flushBackoffMs(attempt)));
+            }
+          }
+        }
+        if (!rowSaved) unsaved.push(row);
+      }
+    } else if (!saved) {
+      unsaved.push(...chunk);
+    }
+
+    await yieldEventLoop();
+  }
+
+  return unsaved;
+}
 
 function yieldEventLoop() {
   return new Promise((resolve) => setImmediate(resolve));
@@ -254,45 +338,33 @@ async function flushPendingUpserts() {
   }
   health.pendingUpserts = pendingUpserts.size;
 
-  const chunkSize = Math.max(1, FLUSH_CHUNK_SIZE);
   try {
-    for (let i = 0; i < rows.length; i += chunkSize) {
-      const chunk = rows.slice(i, i + chunkSize);
-      let saved = false;
-      for (let attempt = 0; attempt < 3 && !saved; attempt++) {
-        try {
-          const { error } = await supabase.from("stock_session_minute_bar").upsert(chunk, {
-            onConflict: "ticker,bucket_unix",
-          });
-          if (error) {
-            log("upsert error", error.message, "rows", chunk.length, "attempt", attempt + 1);
-            if (attempt < 2) await new Promise((r) => setTimeout(r, 600 * (attempt + 1)));
-            continue;
-          }
-          saved = true;
-          log("upserted", chunk.length, "minute bars");
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : String(err);
-          log("upsert error", msg, "rows", chunk.length, "attempt", attempt + 1);
-          if (attempt < 2) await new Promise((r) => setTimeout(r, 600 * (attempt + 1)));
-        }
-      }
-      if (!saved) {
-        for (const row of chunk) {
-          pendingUpserts.set(`${row.ticker}:${row.bucket_unix}`, row);
-        }
-      }
-      await yieldEventLoop();
+    const unsaved = await saveMinuteBarRows(rows);
+    for (const row of unsaved) {
+      pendingUpserts.set(`${row.ticker}:${row.bucket_unix}`, row);
     }
   } finally {
     flushInProgress = false;
     health.pendingUpserts = pendingUpserts.size;
     if (pendingUpserts.size > 0) scheduleFlush();
+    if (watchPollDeferred) {
+      watchPollDeferred = false;
+      setImmediate(() => void syncSubscriptions());
+    }
   }
 }
 
+function chartWatchRequestedSinceIso() {
+  const session = getUsEquityMarketSession();
+  if (session === "regular" || session === "post") {
+    const todayYmd = usSessionYmdFromDate(new Date());
+    return new Date(usSessionWallClockUnix(todayYmd, 9, 30) * 1000).toISOString();
+  }
+  return new Date(Date.now() - WATCH_MAX_AGE_MS).toISOString();
+}
+
 async function loadChartWatchTickers() {
-  const cutoff = new Date(Date.now() - WATCH_MAX_AGE_MS).toISOString();
+  const cutoff = chartWatchRequestedSinceIso();
   const { data, error } = await supabase
     .from("stock_session_minute_bar_watch")
     .select("ticker, last_requested_at")
@@ -357,6 +429,7 @@ async function loadScreenerSnapshotTickers() {
 }
 
 async function loadWatchTickers() {
+  const alwaysOn = loadStockWsAlwaysOnTickers();
   const chartWatch = INCLUDE_CHART_WATCH ? await loadChartWatchTickers() : [];
 
   if (stockWsCuratedMode()) {
@@ -369,12 +442,13 @@ async function loadWatchTickers() {
       ordered.push(t);
     };
 
+    for (const t of alwaysOn) push(t);
     for (const t of chartWatch) push(t);
     for (const t of curated) push(t);
 
     if (ordered.length > MAX_SYMBOLS) {
       log("capping curated+watch subscriptions", ordered.length, "→", MAX_SYMBOLS);
-      return ordered.slice(0, MAX_SYMBOLS);
+      return capWatchTickerList(ordered, MAX_SYMBOLS, alwaysOn);
     }
     return ordered;
   }
@@ -392,6 +466,7 @@ async function loadWatchTickers() {
     ordered.push(t);
   };
 
+  for (const t of alwaysOn) push(t);
   for (const t of chartWatch) push(t);
   for (const t of watchlist) push(t);
   for (const t of STATIC_TICKERS) push(t);
@@ -399,7 +474,7 @@ async function loadWatchTickers() {
 
   if (ordered.length > MAX_SYMBOLS) {
     log("capping subscriptions", ordered.length, "→", MAX_SYMBOLS);
-    return ordered.slice(0, MAX_SYMBOLS);
+    return capWatchTickerList(ordered, MAX_SYMBOLS, alwaysOn);
   }
   return ordered;
 }
@@ -512,6 +587,10 @@ const startWatchPoll = () => {
 };
 
 async function syncSubscriptions() {
+  if (flushInProgress) {
+    watchPollDeferred = true;
+    return;
+  }
   const tradesReady = tradesAuthorized && tradesWs?.readyState === WebSocket.OPEN;
   const quoteReady = quoteAuthorized && quoteWs?.readyState === WebSocket.OPEN;
   if (!tradesReady && !quoteReady) return;
@@ -686,8 +765,13 @@ setInterval(() => {
   void restPollTick();
 }, REST_POLL_MS);
 
+setInterval(() => {
+  if (pendingUpserts.size > 0) scheduleFlush();
+}, FLUSH_PERIODIC_MS);
+
 log("starting stock minute ingest (always-on)", {
   curatedMode: stockWsCuratedMode(),
+  alwaysOn: loadStockWsAlwaysOnTickers(),
   staticTickers: STATIC_TICKERS.length,
   includeWatchlist: INCLUDE_WATCHLIST,
   includeScreener: INCLUDE_SCREENER,

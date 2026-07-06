@@ -50,6 +50,7 @@ import type { StockExtendedHoursHeader } from "@/lib/market/stock-extended-hours
 import { isUsListedStockHeaderMeta } from "@/lib/market/stock-header-meta";
 import type { StockChartRange, StockChartSeries } from "@/lib/market/stock-chart-types";
 import { mergeClosedMarketOverviewHeader, mergeSessionHeaderWithPerformanceSpot } from "@/lib/chart/merge-session-header-with-performance-spot";
+import { changePctFromPrior, reconcilePriceChangePair } from "@/lib/chart/reconcile-price-change";
 import { useMobileSheet } from "@/lib/layout/use-mobile-sheet";
 import { cn } from "@/lib/utils";
 import { priorSessionDayChangeFromPerformance } from "@/lib/market/prior-session-day-change";
@@ -59,6 +60,7 @@ import {
   isUsEquityLiveRegularSession,
 } from "@/lib/market/us-equity-live-session";
 import { STOCK_1D_LIVE_PRICE_POLL_MS } from "@/lib/chart/stock-1d-live-session-chart";
+import { isStock1DLiveMinuteChartTicker } from "@/lib/market/stock-1d-live-minute-chart-tickers";
 import {
   formatAssetChartTimestamp,
   formatStockHeaderAtClosePeriodLabel,
@@ -106,7 +108,8 @@ function buildInitialSessionHeaderUi(
   routeTicker: string,
 ): ChartDisplayState {
   if (data?.ticker !== routeTicker.trim().toUpperCase()) return EMPTY_CHART_DISPLAY;
-  const liveRegularSessionActive = data.liveRegularSessionActive ?? true;
+  const clockLive = getUsEquityMarketSession(new Date()) === "regular";
+  const liveRegularSessionActive = clockLive || (data.liveRegularSessionActive ?? false);
   const headerLiveSpotUsd = isUsEquityLiveRegularSession(new Date(), liveRegularSessionActive)
     ? data.headerLiveSpotUsd
     : null;
@@ -487,26 +490,37 @@ export function StockPageContent({
 
   const [regularSessionClock, setRegularSessionClock] = useState(0);
   useEffect(() => {
-    const id = window.setInterval(() => setRegularSessionClock((n) => n + 1), 30_000);
+    const tick = () => setRegularSessionClock((n) => n + 1);
+    if (getUsEquityMarketSession(new Date()) !== "regular") return;
+    tick();
+    const id = window.setInterval(tick, 1_000);
     return () => window.clearInterval(id);
-  }, []);
+  }, [ticker]);
 
   /** Phase 7: intraday-aligned spot; client poll refines SSR `headerLiveSpotUsd` for signed-in users. */
   const [headerLiveSpotClient, setHeaderLiveSpotClient] = useState<number | null>(null);
   const [headerPriorCloseClient, setHeaderPriorCloseClient] = useState<number | null>(null);
+  const [headerQuoteAtSec, setHeaderQuoteAtSec] = useState(() => Math.floor(Date.now() / 1000));
 
   useEffect(() => {
     setHeaderLiveSpotClient(null);
     setHeaderPriorCloseClient(null);
+    setHeaderQuoteAtSec(Math.floor(Date.now() / 1000));
   }, [ticker]);
 
   const liveRegularSessionActive = useMemo(() => {
-    const clockLive = getUsEquityMarketSession(new Date()) === "regular";
-    if (initialPageData?.ticker !== ticker) return clockLive;
-    return initialPageData.liveRegularSessionActive ?? clockLive;
-  }, [initialPageData, ticker, regularSessionClock]);
+    // Trust the regular-hours clock on the client — SSR may have cached a false holiday flag
+    // from missing EODHD 1m intraday during the live session.
+    return getUsEquityMarketSession(new Date()) === "regular";
+  }, [regularSessionClock]);
 
-  const chartLiveSessionMinute = range === "1D" && liveRegularSessionActive;
+  const chartLiveSessionMinute = useMemo(() => {
+    if (range !== "1D") return false;
+    if (initialPageData?.chart?.liveSessionMinute != null) {
+      return initialPageData.chart.liveSessionMinute;
+    }
+    return liveRegularSessionActive && isStock1DLiveMinuteChartTicker(ticker);
+  }, [range, ticker, initialPageData?.chart?.liveSessionMinute, liveRegularSessionActive]);
 
   const atCloseHeaderMode = useMemo(
     () => isUsEquityHeaderAtCloseMode(new Date(), liveRegularSessionActive),
@@ -553,6 +567,7 @@ export function StockPageContent({
           !cancelled
         ) {
           setHeaderLiveSpotClient(p);
+          setHeaderQuoteAtSec(Math.floor(Date.now() / 1000));
         }
         if (typeof prev === "number" && Number.isFinite(prev) && prev > 0 && !cancelled) {
           setHeaderPriorCloseClient(prev);
@@ -568,6 +583,21 @@ export function StockPageContent({
       window.clearInterval(id);
     };
   }, [ticker, liveRegularSessionActive, regularSessionClock]);
+
+  // Prime minute-bar worker watch + live chart path as soon as the page opens in regular session.
+  useEffect(() => {
+    if (!liveRegularSessionActive) return;
+    void Promise.all([
+      fetch(`/api/stocks/${encodeURIComponent(ticker)}/live-price`, {
+        credentials: "include",
+        cache: "no-store",
+      }),
+      fetch(`/api/stocks/${encodeURIComponent(ticker)}/chart?range=1D&series=price`, {
+        credentials: "include",
+        cache: "no-store",
+      }),
+    ]).catch(() => {});
+  }, [ticker, liveRegularSessionActive]);
 
   useEffect(() => {
     setPerformanceClient(null);
@@ -674,7 +704,7 @@ export function StockPageContent({
         headerLiveSpotForMerge,
         new Date(),
         headerPriorCloseForMerge,
-        true,
+        false,
       );
     }
     return overviewHeaderUi;
@@ -719,7 +749,7 @@ export function StockPageContent({
         headerLiveSpotForMerge,
         new Date(),
         headerPriorCloseForMerge,
-        true,
+        false,
       );
     }
     return base;
@@ -740,6 +770,24 @@ export function StockPageContent({
 
     const settled =
       raw.displayPrice != null && raw.loading ? { ...raw, loading: false } : raw;
+
+    const liveRegularHeader = isUsEquityLiveRegularSession(new Date(), liveRegularSessionActive);
+    if (
+      liveRegularHeader &&
+      headerLiveSpotForMerge != null &&
+      Number.isFinite(headerLiveSpotForMerge) &&
+      !settled.isHovering
+    ) {
+      return {
+        ...settled,
+        displayPrice: headerLiveSpotForMerge,
+        priceTimestampLabel: formatAssetChartTimestamp(headerQuoteAtSec, {
+          kind: "stock",
+          timeZone: STOCK_DISPLAY_TZ,
+        }),
+      };
+    }
+
     if (settled.priceTimestampLabel != null) return settled;
 
     const pts = overviewDrivesHeader
@@ -766,6 +814,10 @@ export function StockPageContent({
     initialChartMemo,
     initialSessionChartMemo,
     range,
+    liveRegularSessionActive,
+    headerLiveSpotForMerge,
+    headerQuoteAtSec,
+    regularSessionClock,
   ]);
 
   const sessionCloseForExtendedHours =
@@ -944,19 +996,44 @@ export function StockPageContent({
     regularSessionClock,
   ]);
 
+  const liveRegularHeader = isUsEquityLiveRegularSession(new Date(), liveRegularSessionActive);
+
+  const liveHeaderChange = useMemo(() => {
+    if (!liveRegularHeader || mobileChartScrubActive) return null;
+    const spot = headerLiveSpotForMerge;
+    if (spot == null || !Number.isFinite(spot) || spot <= 0) return null;
+    const prior = headerPriorCloseForMerge;
+    if (prior == null || !Number.isFinite(prior) || prior <= 0) return null;
+    const abs = spot - prior;
+    const pct = changePctFromPrior(abs, prior);
+    return reconcilePriceChangePair(spot, abs, pct);
+  }, [
+    liveRegularHeader,
+    mobileChartScrubActive,
+    headerLiveSpotForMerge,
+    headerPriorCloseForMerge,
+    regularSessionClock,
+  ]);
+
   const headerDisplayPrice = mobileChartScrubActive
     ? chartUi.displayPrice
-    : (extendedHoursHeaderLeft?.price ?? chartUi.displayPrice);
+    : liveRegularHeader
+      ? (headerLiveSpotForMerge ?? chartUi.displayPrice)
+      : (extendedHoursHeaderLeft?.price ?? chartUi.displayPrice);
   const headerDisplayChangeAbs = mobileChartScrubActive
     ? chartUi.displayChangeAbs
-    : overviewDrivesHeader && range !== "1D" && extendedHoursHeaderLeft
-      ? chartUi.displayChangeAbs
-      : (extendedHoursHeaderLeft?.changeAbs ?? chartUi.displayChangeAbs);
+    : liveHeaderChange?.abs != null
+      ? liveHeaderChange.abs
+      : liveRegularHeader || (overviewDrivesHeader && range !== "1D" && extendedHoursHeaderLeft)
+        ? chartUi.displayChangeAbs
+        : (extendedHoursHeaderLeft?.changeAbs ?? chartUi.displayChangeAbs);
   const headerDisplayChangePct = mobileChartScrubActive
     ? chartUi.displayChangePct
-    : overviewDrivesHeader && range !== "1D" && extendedHoursHeaderLeft
-      ? chartUi.displayChangePct
-      : (extendedHoursHeaderLeft?.changePct ?? chartUi.displayChangePct);
+    : liveHeaderChange?.pct != null
+      ? liveHeaderChange.pct
+      : liveRegularHeader || (overviewDrivesHeader && range !== "1D" && extendedHoursHeaderLeft)
+        ? chartUi.displayChangePct
+        : (extendedHoursHeaderLeft?.changePct ?? chartUi.displayChangePct);
 
   /** Hidden 1D chart keeps session/live spot for the header on every tab (including Holdings). */
   const stockChartDrivesHeader = true;
@@ -1098,6 +1175,20 @@ export function StockPageContent({
               </div>
             )}
           </ChartControls>
+        ) : tabsMounted.overview && comparePicks.length === 0 && pageDataReady ? (
+          <div className="relative min-h-[320px] w-full">
+            <PriceChart
+              key={`stock-overview-${ticker}-${chartSeries}-${range}`}
+              kind="stock"
+              symbol={ticker}
+              range={range}
+              series={chartSeries}
+              initialChart={initialChartMemo?.range === range ? initialChartMemo : null}
+              liveSessionMinute={chartLiveSessionMinute}
+              liveSpotUsd={range === "1D" ? headerLiveSpotForMerge : null}
+              onDisplayChange={onOverviewHeaderDisplay}
+            />
+          </div>
         ) : null}
       </div>
 

@@ -67,8 +67,12 @@ export const STOCK_WS_FALLBACK_CURATED_TOP_STOCKS = [
 const DEFAULT_TOP_STOCKS = 48;
 
 export function stockWsTopStocksCount(): number {
-  const n = Number(process.env.STOCK_WS_TOP_STOCKS ?? DEFAULT_TOP_STOCKS);
-  return Number.isFinite(n) && n > 0 ? Math.floor(n) : DEFAULT_TOP_STOCKS;
+  const raw = process.env.STOCK_WS_TOP_STOCKS;
+  if (raw !== undefined && raw.trim() !== "") {
+    const n = Number(raw);
+    if (Number.isFinite(n) && n >= 0) return Math.floor(n);
+  }
+  return DEFAULT_TOP_STOCKS;
 }
 
 function normalizeTop500SnapshotRows(snapshot: unknown): TopCompanyUniverseRow[] {
@@ -214,6 +218,35 @@ export function sessionMinuteBarsMaxGapSec(
   return maxGap;
 }
 
+/** Largest gap between the last in-session bar and wall-clock `now` (seconds). */
+export function sessionMinuteBarsTrailingGapSec(
+  bars: readonly StockChartPoint[],
+  sessionYmd: string,
+  timeZone: string,
+  now: Date = new Date(),
+): number {
+  if (getUsEquityMarketSession(now) !== "regular") return 0;
+
+  const closeSec = usSessionWallClockUnix(sessionYmd, 16, 0, timeZone);
+  const nowSec = Math.floor(now.getTime() / 1000);
+  const endSec = Math.min(nowSec, closeSec);
+  const openSec = usSessionWallClockUnix(sessionYmd, 9, 30, timeZone);
+
+  const inSession = bars
+    .filter(
+      (p) =>
+        typeof p.time === "number" &&
+        Number.isFinite(p.time) &&
+        Number.isFinite(p.value) &&
+        p.time >= openSec &&
+        p.time <= endSec,
+    )
+    .sort((a, b) => a.time - b.time);
+
+  if (!inSession.length) return endSec - openSec;
+  return Math.max(0, endSec - inSession[inSession.length - 1]!.time);
+}
+
 /** True when WS store has holes large enough to create misleading flat chart segments. */
 export function sessionMinuteBarsHasLargeGaps(
   bars: readonly StockChartPoint[],
@@ -223,6 +256,75 @@ export function sessionMinuteBarsHasLargeGaps(
   maxGapSec = 5 * 60,
 ): boolean {
   return sessionMinuteBarsMaxGapSec(bars, sessionYmd, timeZone, now) > maxGapSec;
+}
+
+/** True when today's minute store missed the open or is too sparse for a credible 1D chart. */
+export function sessionMinuteBarsNeedsGapFill(
+  bars: readonly StockChartPoint[],
+  sessionYmd: string,
+  timeZone: string,
+  now: Date = new Date(),
+): boolean {
+  if (getUsEquityMarketSession(now) !== "regular") return false;
+
+  const openSec = usSessionWallClockUnix(sessionYmd, 9, 30, timeZone);
+  const closeSec = usSessionWallClockUnix(sessionYmd, 16, 0, timeZone);
+  const nowSec = Math.floor(now.getTime() / 1000);
+  const endSec = Math.min(nowSec, closeSec);
+  const elapsedSec = endSec - openSec;
+  if (elapsedSec < 3 * 60) return false;
+
+  const inSession = bars
+    .filter(
+      (p) =>
+        typeof p.time === "number" &&
+        Number.isFinite(p.time) &&
+        Number.isFinite(p.value) &&
+        p.time >= openSec &&
+        p.time <= endSec,
+    )
+    .sort((a, b) => a.time - b.time);
+
+  if (!inSession.length) return true;
+  if (inSession[0]!.time > openSec + 5 * 60) return true;
+
+  const elapsedMinutes = Math.floor(elapsedSec / 60);
+  const minBars = Math.max(3, Math.floor(elapsedMinutes * 0.2));
+  if (inSession.length < minBars) return true;
+
+  if (sessionMinuteBarsTrailingGapSec(bars, sessionYmd, timeZone, now) > 2 * 60) return true;
+
+  return sessionMinuteBarsHasLargeGaps(bars, sessionYmd, timeZone, now, 5 * 60);
+}
+
+/** True when the first in-session bar is near the 9:30 open (tick-perfect WS coverage). */
+export function sessionMinuteBarsCoverSessionOpen(
+  bars: readonly StockChartPoint[],
+  sessionYmd: string,
+  timeZone: string,
+  now: Date = new Date(),
+  maxLateSec = 10 * 60,
+): boolean {
+  if (getUsEquityMarketSession(now) !== "regular") return false;
+
+  const openSec = usSessionWallClockUnix(sessionYmd, 9, 30, timeZone);
+  const closeSec = usSessionWallClockUnix(sessionYmd, 16, 0, timeZone);
+  const nowSec = Math.floor(now.getTime() / 1000);
+  const endSec = Math.min(nowSec, closeSec);
+
+  const inSession = bars
+    .filter(
+      (p) =>
+        typeof p.time === "number" &&
+        Number.isFinite(p.time) &&
+        Number.isFinite(p.value) &&
+        p.time >= openSec &&
+        p.time <= endSec,
+    )
+    .sort((a, b) => a.time - b.time);
+
+  if (!inSession.length) return false;
+  return inSession[0]!.time <= openSec + maxLateSec;
 }
 
 /** Min $ move across session bars before we treat the WS minute store as a real tick chart. */

@@ -397,7 +397,11 @@ function dropIsolatedLiveTailAnchors(
   sessionYmd: string,
   timeZone: string,
   now: Date,
+  options?: Stock1DLiveSessionChartOptions,
 ): StockChartPoint[] {
+  if (options?.liveSessionMinute !== false && stock1DUsesLiveSessionClock(now, options)) {
+    return [...points];
+  }
   if (points.length < 2) return [...points];
   const close = usSessionWallClockUnix(sessionYmd, 16, 0, timeZone);
   const nowSec = Math.floor(now.getTime() / 1000);
@@ -422,12 +426,13 @@ function collectStock1DLiveSessionSourcePoints(
   options?: Stock1DLiveSessionChartOptions,
 ): StockChartPoint[] {
   const byYmd = filterStock1DLiveSessionPoints(points, sessionYmd, timeZone, now, options);
-  if (byYmd.length) return dropIsolatedLiveTailAnchors(byYmd, sessionYmd, timeZone, now);
+  if (byYmd.length) return dropIsolatedLiveTailAnchors(byYmd, sessionYmd, timeZone, now, options);
   return dropIsolatedLiveTailAnchors(
     filterStock1DLiveSessionPointsByTimeWindow(points, sessionYmd, timeZone, now, options),
     sessionYmd,
     timeZone,
     now,
+    options,
   );
 }
 
@@ -544,15 +549,24 @@ export function resampleStock1DLiveSession(
 
   if (!sorted.length) return [];
 
+  const useLiveMinuteGrid =
+    options?.liveSessionMinute !== false && stock1DUsesLiveSessionClock(now, options);
+
+  // Live 1m charts must resample to the 60s grid so trailing DB holes step-forward
+  // instead of drawing a diagonal between the last bar and the live tail.
   if (
-    isUltraSparseLiveSessionSource(sorted, open, endSec) ||
-    liveSessionSourceIsDenseIntraday(sorted, open, endSec)
+    !useLiveMinuteGrid &&
+    (isUltraSparseLiveSessionSource(sorted, open, endSec) ||
+      liveSessionSourceIsDenseIntraday(sorted, open, endSec))
   ) {
     return filterLiveSessionWindow(sorted, sessionYmd, timeZone, open, endSec);
   }
 
   const stats = sessionSourceStats(sorted, open, endSec);
-  const interval = pickLiveSessionResampleIntervalSec(sorted, open, endSec, stats);
+  const interval =
+    options?.liveSessionMinute !== false && stock1DUsesLiveSessionClock(now, options)
+      ? STOCK_1D_LIVE_SESSION_BAR_INTERVAL_SEC
+      : pickLiveSessionResampleIntervalSec(sorted, open, endSec, stats);
 
   const out: StockChartPoint[] = [];
   for (let bucketTime = open; bucketTime <= endSec; bucketTime += interval) {
@@ -619,7 +633,13 @@ export function appendLiveSessionNowTail(
 
   const nowSec = Math.floor(now.getTime() / 1000);
   const close = usSessionWallClockUnix(sessionYmd, 16, 0, timeZone);
-  const tailTime = stock1DUsesLiveSessionClock(now, options) ? Math.min(nowSec, close) : close;
+  const useMinuteTail =
+    stock1DUsesLiveSessionClock(now, options) && options?.liveSessionMinute !== false;
+  const tailTime = useMinuteTail
+    ? Math.min(stock1DLiveSessionMinuteBucketUnix(sessionYmd, nowSec, timeZone), close)
+    : stock1DUsesLiveSessionClock(now, options)
+      ? Math.min(nowSec, close)
+      : close;
   const tailPoint: StockChartPoint = {
     time: tailTime,
     value: tailValue,
@@ -649,8 +669,8 @@ export function appendLiveSessionNowTail(
   return [...sorted, tailPoint];
 }
 
-/** Client tick interval — advances the live 1D tail when price is unchanged (no API). */
-export const STOCK_1D_LIVE_SESSION_CLOCK_TICK_MS = 30_000;
+/** Client tick interval — advances the live 1D tail across minute buckets without an API call. */
+export const STOCK_1D_LIVE_SESSION_CLOCK_TICK_MS = 1_000;
 
 /** Merge polled live spot minute closes into provider bars (live wins on the same minute). */
 export function mergeLiveSpotMinuteBarsIntoPoints(
@@ -672,8 +692,8 @@ export function mergeLiveSpotMinuteBarsIntoPoints(
   return Array.from(byTime.values()).sort((a, b) => a.time - b.time);
 }
 
-/** Client live-price poll during regular session — aligns with ~20s server spot cache. */
-export const STOCK_1D_LIVE_PRICE_POLL_MS = 20_000;
+/** Client live-price poll during regular session — aligns with ~15s server spot cache. */
+export const STOCK_1D_LIVE_PRICE_POLL_MS = 15_000;
 
 /** Client 1D chart poll during regular session — aligns with ~30s server chart cache. */
 export const STOCK_1D_LIVE_CHART_POLL_MS = 30_000;
@@ -707,6 +727,88 @@ export function liveSpotToMinuteBar(
   const nowSec = Math.floor(now.getTime() / 1000);
   const bucketTime = stock1DLiveSessionMinuteBucketUnix(sessionYmd, nowSec, timeZone);
   return { time: bucketTime, value: liveSpotUsd, sessionDate: sessionYmd, timeZone };
+}
+
+/** Merge chart sources by UNIX bucket (later sources win). Client-safe for live minute accumulation. */
+export function mergeStockChartPointsByTime(
+  sources: readonly (readonly StockChartPoint[])[],
+): StockChartPoint[] {
+  const byTime = new Map<number, StockChartPoint>();
+  for (const points of sources) {
+    for (const p of points) {
+      if (typeof p.time === "number" && Number.isFinite(p.time) && Number.isFinite(p.value)) {
+        byTime.set(p.time, p);
+      }
+    }
+  }
+  return Array.from(byTime.values()).sort((a, b) => a.time - b.time);
+}
+
+/** Pin the current minute bucket (and series tail) to the latest live spot. */
+export function pinLiveSessionChartPointsToSpot(
+  points: readonly StockChartPoint[],
+  liveSpotUsd: number | null | undefined,
+  now: Date = new Date(),
+  options?: Stock1DLiveSessionChartOptions,
+): StockChartPoint[] {
+  if (
+    !stock1DUsesLiveSessionClock(now, options) ||
+    options?.liveSessionMinute === false ||
+    liveSpotUsd == null ||
+    !Number.isFinite(liveSpotUsd) ||
+    liveSpotUsd <= 0 ||
+    !points.length
+  ) {
+    return [...points];
+  }
+
+  const timeZone = STOCK_1D_LIVE_SESSION_TZ;
+  const sessionYmd = resolveStock1DLiveSessionYmd(points, timeZone, now, options);
+  if (!sessionYmd) return [...points];
+
+  const nowSec = Math.floor(now.getTime() / 1000);
+  const bucketTime = stock1DLiveSessionMinuteBucketUnix(sessionYmd, nowSec, timeZone);
+  const out = points.map((p) => ({ ...p }));
+  let pinned = false;
+  for (let i = out.length - 1; i >= 0; i--) {
+    if (out[i]!.time === bucketTime) {
+      out[i] = { ...out[i]!, value: liveSpotUsd };
+      pinned = true;
+      break;
+    }
+  }
+  const lastIdx = out.length - 1;
+  const last = out[lastIdx]!;
+  if (!pinned) {
+    out.push({
+      time: bucketTime,
+      value: liveSpotUsd,
+      sessionDate: sessionYmd,
+      timeZone,
+    });
+  } else if (last.time === bucketTime) {
+    out[lastIdx] = { ...last, value: liveSpotUsd };
+  } else if (last.time < bucketTime) {
+    out.push({
+      time: bucketTime,
+      value: liveSpotUsd,
+      sessionDate: sessionYmd,
+      timeZone,
+    });
+  }
+  return out.sort((a, b) => a.time - b.time);
+}
+
+/** Append or update the current 60s bucket from a live spot poll. */
+export function appendLiveSpotMinuteBar(
+  points: readonly StockChartPoint[],
+  liveSpotUsd: number,
+  sessionYmd: string,
+  now: Date = new Date(),
+): StockChartPoint[] {
+  const bar = liveSpotToMinuteBar(liveSpotUsd, sessionYmd, now);
+  if (!bar) return [...points];
+  return mergeStockChartPointsByTime([points, [bar]]);
 }
 
 /** Filter to the session window, resample to 1m, and pin the tail (live spot or prior close). */
@@ -757,12 +859,26 @@ export function prepareStock1DLiveSessionChartPoints(
   const open = usSessionWallClockUnix(sessionYmd, 9, 30, timeZone);
   const endSec = stock1DSessionEndSec(sessionYmd, timeZone, now, options);
   const sortedSource = [...sourcePoints].sort((a, b) => a.time - b.time);
+  const useLiveMinuteGrid = useLiveSpot && options?.liveSessionMinute !== false;
+
+  let resampleInput = sourcePoints;
+  if (useLiveMinuteGrid) {
+    const openSec = usSessionWallClockUnix(sessionYmd, 9, 30, timeZone);
+    const hasOpenBucket = sortedSource.some((p) => p.time === openSec);
+    if (!hasOpenBucket) {
+      resampleInput = [
+        { time: openSec, value: openValue, sessionDate: sessionYmd, timeZone },
+        ...sourcePoints,
+      ];
+    }
+  }
 
   const sessionPoints =
-    isUltraSparseLiveSessionSource(sortedSource, open, endSec) ||
-    liveSessionSourceIsDenseIntraday(sortedSource, open, endSec)
+    !useLiveMinuteGrid &&
+    (isUltraSparseLiveSessionSource(sortedSource, open, endSec) ||
+      liveSessionSourceIsDenseIntraday(sortedSource, open, endSec))
       ? filterLiveSessionWindow(sortedSource, sessionYmd, timeZone, open, endSec)
-      : resampleStock1DLiveSession(sourcePoints, sessionYmd, timeZone, openValue, now, options);
+      : resampleStock1DLiveSession(resampleInput, sessionYmd, timeZone, openValue, now, options);
 
   if (!sessionPoints.length) {
     return [];
@@ -792,7 +908,7 @@ export function prepareStock1DLiveSessionChartPoints(
   }
 
   if (!shouldUseStock1DExtendedHoursChart(now)) {
-    return regularPoints;
+    return pinLiveSessionChartPointsToSpot(regularPoints, liveSpotUsd, now, options);
   }
 
   const { regularClose } = stock1DLiveSessionExtendedWallClockBounds(sessionYmd, timeZone);
