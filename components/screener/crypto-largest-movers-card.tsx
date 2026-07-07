@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import Link from "next/link";
 
 import { cn } from "@/lib/utils";
 import { MOBILE_PANEL_CARD_CLASS } from "@/components/design-system/card-surface-styles";
@@ -40,7 +41,13 @@ export function CryptoLargestMoversCard({
 
       <div className="flex w-full flex-col gap-[12px]">
         {slice.map((r, i) => (
-          <div key={`${title}-${r.symbol}`} className="flex w-full items-center justify-center">
+          <Link
+            key={`${title}-${r.symbol}`}
+            href={`/crypto/${encodeURIComponent(r.symbol)}`}
+            prefetch={false}
+            aria-label={`Open ${r.name} (${r.symbol})`}
+            className="group flex w-full items-center justify-center rounded-md outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/20"
+          >
             <div className="flex w-[24px] items-center justify-center">
               <p className="text-[14px] font-semibold leading-5 text-[#71717A]">{i + 1}</p>
             </div>
@@ -50,10 +57,12 @@ export function CryptoLargestMoversCard({
                 <CompanyLogo name={r.symbol} logoUrl={r.logoUrl} symbol={r.symbol} size="sm" />
                 <div className="flex flex-col items-start">
                   <div className="flex items-center gap-[4px] whitespace-nowrap">
-                    <p className="text-[14px] font-medium leading-5 text-[#09090B]">
+                    <p className="text-[14px] font-medium leading-5 text-[#09090B] group-hover:underline">
                       {r.symbol}
                     </p>
-                    <p className="text-[12px] font-normal leading-4 text-[#71717A]">{r.name}</p>
+                    <p className="text-[12px] font-normal leading-4 text-[#71717A] group-hover:underline">
+                      {r.name}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -64,7 +73,7 @@ export function CryptoLargestMoversCard({
                 {formatPct(r.changePercent1D)}
               </p>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
     </div>
