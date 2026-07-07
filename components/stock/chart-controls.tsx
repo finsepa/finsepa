@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 
 import { SegmentedControl, type SegmentedControlOption } from "@/components/design-system";
 import { topbarSquircleTextButtonClass } from "@/components/design-system/topbar-control-classes";
@@ -20,9 +20,6 @@ const CHART_RANGE_OPTIONS: readonly SegmentedControlOption<StockChartRange>[] = 
   label: r,
 }));
 
-/** Mobile range row omits YTD to save horizontal space. */
-const MOBILE_CHART_RANGE_OPTIONS = CHART_RANGE_OPTIONS.filter((option) => option.value !== "YTD");
-
 const MOBILE_CHART_METRIC_TRIGGER_CLASS = cn(
   topbarSquircleTextButtonClass,
   "w-auto bg-white font-semibold hover:bg-[#F4F4F5]",
@@ -37,10 +34,13 @@ export function ChartControls({
   downloadSlot,
   titleSlot,
   seriesSelectDisabled = false,
+  rangeLabels,
   children,
 }: {
   activeRange: StockChartRange;
   onRangeChange: (range: StockChartRange) => void;
+  /** Per-range display label overrides (e.g. crypto shows `24H` instead of `1D`). */
+  rangeLabels?: Partial<Record<StockChartRange, string>>;
   /** When set (stock overview), show metric toggle instead of a static title. */
   chartSeries?: StockChartSeries;
   onChartSeriesChange?: (s: StockChartSeries) => void;
@@ -58,6 +58,23 @@ export function ChartControls({
   const showSeriesToggle = chartSeries != null && onChartSeriesChange != null;
   const chartSeriesSegmentOptions = CHART_SERIES_OPTIONS;
   const chartBodyLayout = children != null;
+
+  const rangeOptions = useMemo<readonly SegmentedControlOption<StockChartRange>[]>(
+    () =>
+      rangeLabels
+        ? CHART_RANGE_OPTIONS.map((option) => ({
+            ...option,
+            label: rangeLabels[option.value] ?? option.label,
+          }))
+        : CHART_RANGE_OPTIONS,
+    [rangeLabels],
+  );
+
+  /** Mobile range row omits YTD to save horizontal space. */
+  const mobileRangeOptions = useMemo(
+    () => rangeOptions.filter((option) => option.value !== "YTD"),
+    [rangeOptions],
+  );
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 639px)");
@@ -80,7 +97,7 @@ export function ChartControls({
     >
       <div className="flex items-center gap-2">
         <SegmentedControl
-          options={MOBILE_CHART_RANGE_OPTIONS}
+          options={mobileRangeOptions}
           value={activeRange === "YTD" ? "6M" : activeRange}
           onChange={onRangeChange}
           size="sm"
@@ -165,7 +182,7 @@ export function ChartControls({
         {downloadSlot ? <div className="hidden shrink-0 sm:block">{downloadSlot}</div> : null}
         <div className="shrink-0 overflow-x-auto pb-0.5 sm:overflow-visible sm:pb-0">
           <SegmentedControl
-            options={CHART_RANGE_OPTIONS}
+            options={rangeOptions}
             value={activeRange}
             onChange={onRangeChange}
             size="sm"

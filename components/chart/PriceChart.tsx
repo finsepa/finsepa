@@ -67,7 +67,8 @@ import {
   readStock1DSessionBarsFromStorage,
   writeStock1DSessionBarsToStorage,
 } from "@/lib/chart/stock-1d-session-bars-storage";
-import { usesStock1DLiveWsMinutePipeline, usesStock1DLiveWsPostMarketChart } from "@/lib/market/stock-1d-live-minute-chart-tickers";
+import { isStock1DLiveMinuteChartTicker, usesStock1DLiveWsMinutePipeline, usesStock1DLiveWsPostMarketChart } from "@/lib/market/stock-1d-live-minute-chart-tickers";
+import { isCryptoLive1DSymbol } from "@/lib/market/crypto-live-1d-tickers";
 import {
   appendLiveSessionNowTail,
   applyStock1DLiveSessionTimeScale,
@@ -2348,6 +2349,10 @@ export function PriceChart({
 
         const now = new Date();
         const regularSession = getUsEquityMarketSession(now) === "regular";
+        // Live reference tickers (AAPL/NVDA/SPY/QQQ) always refetch 1D when not in the regular
+        // WS session — the no-store API is authoritative and replaces any stale SSR/RSC payload
+        // (post + closed + pre-market). Non-allowlist keep the prior-session SSR when present.
+        const referenceTicker = kind === "stock" && isStock1DLiveMinuteChartTicker(symbol);
         const shouldRefresh1DChart =
           kind === "stock" &&
           range === "1D" &&
@@ -2355,7 +2360,8 @@ export function PriceChart({
           !holdingsStyle &&
           (regularSession
             ? usesStock1DLiveWsMinutePipeline(symbol, now)
-            : usesStock1DLiveWsPostMarketChart(symbol, now) ||
+            : referenceTicker ||
+              usesStock1DLiveWsPostMarketChart(symbol, now) ||
               !(
                 initialChart.liveSessionMinute === false &&
                 initialChart.points.length > 0
@@ -2371,10 +2377,26 @@ export function PriceChart({
                 liveSessionMinute?: boolean;
               };
               const nextPoints = Array.isArray(json.points) ? json.points : [];
+              if (process.env.NODE_ENV === "development" && referenceTicker) {
+                const first = nextPoints[0];
+                const last = nextPoints[nextPoints.length - 1];
+                const iso = (t: number | undefined) =>
+                  typeof t === "number" && Number.isFinite(t)
+                    ? new Date(t * 1000).toISOString()
+                    : null;
+                console.info("[price-chart 1D refetch]", symbol, {
+                  session: getUsEquityMarketSession(now),
+                  receivedCount: nextPoints.length,
+                  firstPointTime: iso(first?.time),
+                  lastPointTime: iso(last?.time),
+                  sessionDate: first?.sessionDate ?? null,
+                });
+              }
               if (nextPoints.length) {
-                setPoints((prev) =>
+                // Full replace — never merge API 1D points with prior/SSR state.
+                setPoints(() =>
                   applyStockChartApiPoints(
-                    prev,
+                    [],
                     nextPoints,
                     kind === "stock" &&
                       range === "1D" &&
@@ -2499,6 +2521,43 @@ export function PriceChart({
       window.clearInterval(id);
     };
   }, [holdingsStyle, kind, range, series, symbol, screenshotPreviewMode, liveSessionMinute]);
+
+  // Live crypto 1D (BTC only) — rolling last 24h, refresh ~60s. Separate from stock session logic:
+  // crypto is 24/7, so no market-session gating. Full-replace the series each poll.
+  useEffect(() => {
+    if (holdingsStyle || kind !== "crypto" || range !== "1D" || screenshotPreviewMode) return;
+    if (!isCryptoLive1DSymbol(symbol)) return;
+    let cancelled = false;
+    const poll = async () => {
+      const path = `/api/crypto/${encodeURIComponent(symbol)}/chart?range=1D`;
+      try {
+        const res = await fetch(path, { credentials: "include", cache: "no-store" });
+        if (!res.ok || cancelled) return;
+        const json = (await res.json()) as { points?: StockChartPoint[] };
+        const next = Array.isArray(json.points) ? json.points : [];
+        if (next.length && !cancelled) {
+          if (process.env.NODE_ENV === "development") {
+            const first = next[0];
+            const last = next[next.length - 1];
+            console.info("[crypto-chart 1D poll]", symbol, {
+              pointCount: next.length,
+              firstPointTime: first ? new Date(first.time * 1000).toISOString() : null,
+              lastPointTime: last ? new Date(last.time * 1000).toISOString() : null,
+            });
+          }
+          setPoints(() => applyStockChartApiPoints([], next, false));
+        }
+      } catch {
+        /* ignore */
+      }
+    };
+    void poll();
+    const id = window.setInterval(() => void poll(), 60_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [holdingsStyle, kind, range, symbol, screenshotPreviewMode]);
 
   // Series data, price lines, markers
   useLayoutEffect(() => {

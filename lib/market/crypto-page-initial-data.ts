@@ -3,6 +3,8 @@ import "server-only";
 import type { CryptoAssetRow } from "@/lib/market/crypto-asset";
 import { buildCryptoAssetRowFromDailyBars } from "@/lib/market/crypto-asset";
 import { fetchCryptoChartPointsUncached, stockChartPointsFromDailyBars } from "@/lib/market/crypto-chart-data";
+import { loadCryptoLive1DMinuteChartPoints } from "@/lib/market/crypto-1d-live-minute-chart";
+import { isCryptoLive1DSymbol } from "@/lib/market/crypto-live-1d-tickers";
 import { getCryptoNews } from "@/lib/market/crypto-news";
 import { getCryptoLiveSpotPriceUsd } from "@/lib/market/crypto-live-price";
 import { fetchEodhdCryptoDailyBarsForMeta } from "@/lib/market/eodhd-crypto";
@@ -96,7 +98,9 @@ export async function loadCryptoPageInitialData(routeSymbol: string): Promise<Cr
 
   const [dailyBars, sessionPoints, news, headerLiveSpotUsd] = await Promise.all([
     fetchEodhdCryptoDailyBarsForMeta(meta, from, to),
-    fetchCryptoChartPointsUncached(raw, SESSION_RANGE),
+    isCryptoLive1DSymbol(raw)
+      ? loadCryptoLive1DMinuteChartPoints(raw, now)
+      : fetchCryptoChartPointsUncached(raw, SESSION_RANGE),
     getCryptoNews(raw),
     getCryptoLiveSpotPriceUsd(raw),
   ]);

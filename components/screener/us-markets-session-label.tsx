@@ -49,7 +49,9 @@ export function UsMarketsSessionLabel({ className }: { className?: string }) {
       aria-live="polite"
     >
       <MarketsSessionStatusIcon display={display} />
-      <span className="min-w-0">{formatUsEquitySessionBadgeLabel(display)}</span>
+      <span className="min-w-0" suppressHydrationWarning>
+        {formatUsEquitySessionBadgeLabel(display)}
+      </span>
     </div>
   );
 }

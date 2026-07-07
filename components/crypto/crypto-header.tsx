@@ -44,6 +44,11 @@ type Props = {
   scrubPeriodLabel?: string | null;
   chartHovering?: boolean;
   headerLoading: boolean;
+  /**
+   * Stock-style header: change sits inline to the right of the price and the date/time timestamp
+   * shows below (matches the equity header). Used for the live 24H crypto view (BTC).
+   */
+  stockStyleLayout?: boolean;
 };
 
 export function CryptoHeader({
@@ -65,6 +70,7 @@ export function CryptoHeader({
   scrubPeriodLabel = null,
   chartHovering = false,
   headerLoading,
+  stockStyleLayout = false,
 }: Props) {
   const sym = symbol.trim().toUpperCase();
   const pairLabel = eodhdCryptoSpotTickerDisplay(sym);
@@ -182,6 +188,58 @@ export function CryptoHeader({
   const changeRow = buildChangeRow(desktopPeriodLabel);
   const mobileChangeRow = buildChangeRow(mobilePeriodLabel);
 
+  // Stock-style pieces: inline change chip (sits right of the price) + date/time row (below).
+  const stockStyleChangeText =
+    chartLoading || !hasChange || anim.abs == null || anim.pct == null
+      ? "—"
+      : `${isPositive ? "+" : ""}${formatCryptoChangeAbs(anim.abs, anim.price)} (${isPositive ? "+" : ""}${anim.pct.toFixed(2)}%)`;
+
+  const stockStyleChangeClass = `text-[15px] font-medium tabular-nums transition-colors duration-200 ease-out ${
+    hasChange ? (isPositive ? "text-[#16A34A]" : "text-[#DC2626]") : "text-[#71717A]"
+  }`;
+
+  const buildStockStyleChangeChip = (periodText: string) => (
+    <span className="inline-flex flex-wrap items-baseline gap-x-2 gap-y-0">
+      <span suppressHydrationWarning className={stockStyleChangeClass}>
+        {stockStyleChangeText}
+      </span>
+      {!hasSelectionSecondary ? <span className={periodLabelClass}>{periodText}</span> : null}
+    </span>
+  );
+
+  const stockStyleMetaRow = hasSelectionSecondary ? (
+    <div className="flex flex-wrap items-baseline gap-2">
+      {chartRangeLabel ? <span className={periodLabelClass}>{chartRangeLabel}</span> : null}
+      <span className={periodLabelClass} aria-hidden>
+        ·
+      </span>
+      <span
+        suppressHydrationWarning
+        className={`text-[15px] font-medium tabular-nums transition-colors duration-200 ease-out ${
+          isSelPositive ? "text-[#16A34A]" : "text-[#DC2626]"
+        }`}
+      >
+        {`${isSelPositive ? "+" : ""}${formatCryptoChangeAbs(selectionChangeAbs!, anim.price)} (${isSelPositive ? "+" : ""}${selectionChangePct!.toFixed(2)}%)`}
+      </span>
+      <span className={periodLabelClass}>Selected range</span>
+    </div>
+  ) : priceTimestampLabel && !chartEmpty ? (
+    <p className={periodLabelClass} suppressHydrationWarning>
+      {priceTimestampLabel}
+    </p>
+  ) : null;
+
+  const stockStylePriceValue = (
+    <span
+      suppressHydrationWarning
+      className={`text-[28px] font-semibold leading-9 tabular-nums text-[#09090B] transition-[transform] duration-200 ease-out ${
+        chartHovering ? "scale-[1.01]" : "scale-100"
+      }`}
+    >
+      {chartLoading || anim.price == null ? "—" : formatCryptoUsd(anim.price)}
+    </span>
+  );
+
   const priceValue = (
     <span
       suppressHydrationWarning
@@ -207,8 +265,20 @@ export function CryptoHeader({
       <div className="flex items-start justify-between gap-3 md:hidden">
         <div className={`min-w-0 flex-1 space-y-1 ${priceMotionClass}`}>
           <h1 className="truncate text-[17px] font-semibold leading-6 text-[#09090B]">{displayName}</h1>
-          {mobilePriceValue}
-          {mobileChangeRow}
+          {stockStyleLayout ? (
+            <>
+              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+                {mobilePriceValue}
+                {buildStockStyleChangeChip(mobilePeriodLabel)}
+              </div>
+              {stockStyleMetaRow}
+            </>
+          ) : (
+            <>
+              {mobilePriceValue}
+              {mobileChangeRow}
+            </>
+          )}
         </div>
         {logoMark}
       </div>
@@ -240,8 +310,20 @@ export function CryptoHeader({
         </div>
 
         <div className={`space-y-1 ${priceMotionClass}`}>
-          {priceValue}
-          {changeRow}
+          {stockStyleLayout ? (
+            <>
+              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+                {stockStylePriceValue}
+                {buildStockStyleChangeChip(desktopPeriodLabel)}
+              </div>
+              {stockStyleMetaRow}
+            </>
+          ) : (
+            <>
+              {priceValue}
+              {changeRow}
+            </>
+          )}
         </div>
       </div>
     </>

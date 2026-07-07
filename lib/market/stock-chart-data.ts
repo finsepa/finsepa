@@ -532,7 +532,7 @@ async function fillTodaySessionChartGaps(
   }
 
   if (!liveMinuteChart) {
-    const intraday = await load1DIntradayForSessionYmd(ticker, todayYmd, now);
+    const { points: intraday } = await load1DIntradayForSessionYmdWithMeta(ticker, todayYmd);
     if (intraday.length >= 2) {
       return mergeStockChartPointsByTime([intraday, pollBars]);
     }
@@ -708,44 +708,16 @@ async function append1DRealtimeTail(
   return mergeStockChartPointsByTime([points, [tail]]);
 }
 
-async function load1DTodaySessionPollBars(
+async function load1DIntradayForSessionYmdWithMeta(
   ticker: string,
   sessionYmd: string,
-): Promise<StockChartPoint[]> {
-  const [dbBars, memBars] = await Promise.all([
-    fetchStockSessionMinuteBarsFromDb(ticker, sessionYmd),
-    Promise.resolve(getStockSessionMinuteBars(ticker, sessionYmd)),
-  ]);
-  return mergeStockChartPointsByTime([dbBars, memBars]);
-}
-
-const LIVE_1D_INTRADAY_STRATEGIES: {
-  fromSessionOpen?: boolean;
-  lookbackSec?: number;
-  interval: "1m" | "5m" | "1h";
-  trimToLatestUtcDay: boolean;
-}[] = [
-  { fromSessionOpen: true, interval: "1m", trimToLatestUtcDay: false },
-  { fromSessionOpen: true, interval: "5m", trimToLatestUtcDay: false },
-  { lookbackSec: 86400, interval: "1m", trimToLatestUtcDay: false },
-  { lookbackSec: 86400, interval: "5m", trimToLatestUtcDay: false },
-  { lookbackSec: 3 * 86400, interval: "1m", trimToLatestUtcDay: true },
-  { lookbackSec: 3 * 86400, interval: "5m", trimToLatestUtcDay: true },
-  { lookbackSec: 2 * 86400, interval: "1h", trimToLatestUtcDay: true },
-  { lookbackSec: 7 * 86400, interval: "1h", trimToLatestUtcDay: true },
-];
-
-async function load1DIntradayForSessionYmd(
-  ticker: string,
-  sessionYmd: string,
-  now: Date,
-): Promise<StockChartPoint[]> {
+): Promise<{ points: StockChartPoint[]; interval: "1m" | "5m" | "1h" | null }> {
   for (const interval of ["1m", "5m", "1h"] as const) {
     const bars = await getHistoricalSessionIntradayBars(ticker, sessionYmd, interval);
     const points = historicalSessionIntradayToChartPoints(bars, sessionYmd);
-    if (points.length >= 2) return points;
+    if (points.length >= 2) return { points, interval };
   }
-  return [];
+  return { points: [], interval: null };
 }
 
 /** EODHD 1m/5m for one completed session — cached ~12h so repeat views do not burn budget. */
@@ -783,7 +755,7 @@ function filterIntradayBarsToSessionYmd(
 const getHistoricalSessionIntradayBars = unstable_cache(
   async (ticker: string, sessionYmd: string, interval: "1m" | "5m" | "1h") =>
     fetchHistoricalSessionIntradayUncached(ticker, sessionYmd, interval),
-  ["eodhd-historical-session-intraday-v3"],
+  ["eodhd-historical-session-intraday-v4"],
   { revalidate: REVALIDATE_STATIC_DAY },
 );
 
@@ -804,40 +776,6 @@ function historicalSessionIntradayToChartPoints(
   return dedupeAndSort(regular);
 }
 
-async function load1DIntradayChartPoints(
-  ticker: string,
-  now: Date,
-  nowSec: number,
-): Promise<StockChartPoint[]> {
-  const todayYmd = usSessionYmdFromUnixSeconds(nowSec);
-  const openSec = usSessionWallClockUnix(todayYmd, 9, 30, STOCK_DISPLAY_TZ);
-  const regular = getUsEquityMarketSession(now) === "regular";
-
-  for (const s of LIVE_1D_INTRADAY_STRATEGIES) {
-    const from = s.fromSessionOpen ? openSec : nowSec - (s.lookbackSec ?? 86400);
-    const bars = await fetchEodhdIntraday(ticker, from, nowSec, s.interval);
-    if (process.env.NODE_ENV === "development") {
-      console.info("[stock chart] 1D intraday attempt", {
-        ticker,
-        interval: s.interval,
-        fromUnix: from,
-        toUnix: nowSec,
-        trimToLatestUtcDay: s.trimToLatestUtcDay,
-        barCount: bars?.length ?? 0,
-      });
-    }
-    if (!bars?.length) continue;
-    const trimmed = s.trimToLatestUtcDay ? trimIntradayToLatestUtcDay(bars) : bars;
-    const use = regular
-      ? trimIntradayToLatestUsSessionDay(trimmed)
-      : trimIntradayToLastUsRegularSessionDay(trimmed);
-    if (!use.length) continue;
-    const finalized = finalize1DIntradayPoints(barsToChartPoints(use), now);
-    if (finalized.length) return finalized;
-  }
-  return [];
-}
-
 /** True when 1D uses the live WS minute pipeline (regular) or frozen post-market chart. */
 export function isStock1DLiveSessionMinuteChart(
   ticker: string,
@@ -846,12 +784,56 @@ export function isStock1DLiveSessionMinuteChart(
   return usesStock1DLiveWsMinutePipeline(ticker, now) || usesStock1DLiveWsPostMarketChart(ticker, now);
 }
 
+/** AAPL/NVDA closed-market 1D diagnostics — session/source/interval/coverage. */
+const CLOSED_1D_DEBUG_TICKERS = new Set(["AAPL", "NVDA"]);
+
+function logClosed1DChartDebug(args: {
+  ticker: string;
+  now: Date;
+  sessionYmd: string;
+  source: "ws-regular-frozen" | "eodhd-prior-session";
+  interval: "1m" | "5m" | "1h" | null;
+  points: readonly StockChartPoint[];
+}): void {
+  const sym = args.ticker.trim().toUpperCase();
+  if (!CLOSED_1D_DEBUG_TICKERS.has(sym)) return;
+  const first = args.points[0]?.time ?? null;
+  const last = args.points.at(-1)?.time ?? null;
+  const iso = (t: number | null) =>
+    t == null ? null : new Date(t * 1000).toISOString();
+  console.info("[closed-1d]", sym, {
+    session: getUsEquityMarketSession(args.now),
+    sessionYmd: args.sessionYmd,
+    source: args.source,
+    interval: args.interval,
+    firstPointTime: iso(first),
+    lastPointTime: iso(last),
+    pointCount: args.points.length,
+  });
+}
+
 /** Last completed US session — EODHD intraday at native interval (1m/5m/1h). */
-async function loadLatestTradingDay1DChartPoints(ticker: string, now: Date): Promise<StockChartPoint[]> {
+async function loadLatestTradingDay1DChartPoints(
+  ticker: string,
+  now: Date,
+  debug = false,
+): Promise<StockChartPoint[]> {
   let sessionYmd = lastCompletedUsRegularSessionYmd(now, STOCK_DISPLAY_TZ);
   for (let attempt = 0; attempt < 8; attempt++) {
-    const points = await load1DIntradayForSessionYmd(ticker, sessionYmd, now);
-    if (points.length >= 2) return points;
+    const { points, interval } = await load1DIntradayForSessionYmdWithMeta(ticker, sessionYmd);
+    if (points.length >= 2) {
+      if (debug) {
+        logClosed1DChartDebug({
+          ticker,
+          now,
+          sessionYmd,
+          source: "eodhd-prior-session",
+          interval,
+          points,
+        });
+      }
+      return points;
+    }
     sessionYmd = previousUsTradingSessionYmd(sessionYmd, STOCK_DISPLAY_TZ);
   }
   return [];
@@ -866,28 +848,27 @@ async function load1DChartPoints(ticker: string, now: Date, nowSec: number): Pro
     return loadLatestTradingDay1DChartPoints(ticker, now);
   }
 
-  if (getUsEquityMarketSession(now) === "regular" || usesStock1DLiveWsPostMarketChart(ticker, now)) {
-    return loadStock1DLiveWsMinuteChartPoints(ticker, now);
+  const session = getUsEquityMarketSession(now);
+  const postMarketChart = usesStock1DLiveWsPostMarketChart(ticker, now);
+
+  if (session === "regular" || postMarketChart) {
+    const points = await loadStock1DLiveWsMinuteChartPoints(ticker, now);
+    if (postMarketChart) {
+      logClosed1DChartDebug({
+        ticker,
+        now,
+        sessionYmd: usSessionYmdFromUnixSeconds(nowSec),
+        source: "ws-regular-frozen",
+        interval: "1m",
+        points,
+      });
+    }
+    return points;
   }
 
-  const intraday = await load1DIntradayChartPoints(ticker, now, nowSec);
-  if (intraday.length) return intraday;
-
-  const sessionYmd = lastCompletedUsRegularSessionYmd(now, STOCK_DISPLAY_TZ);
-  const pollBars = await load1DTodaySessionPollBars(ticker, sessionYmd);
-  if (pollBars.length >= 2) {
-    return finalize1DIntradayPoints(pollBars, now);
-  }
-  if (pollBars.length) return pollBars;
-
-  if (process.env.NODE_ENV === "development") {
-    console.info("[stock chart] 1D: no intraday; last resort daily EOD", { ticker });
-  }
-  const fromDate = new Date(now);
-  fromDate.setUTCDate(fromDate.getUTCDate() - 21);
-  const dailyBars = await fetchEodhdEodDaily(ticker, ymdUtc(fromDate), ymdUtc(now));
-  if (!dailyBars?.length) return [];
-  return synthesize1DSessionChartFromDailyBars(dailyBars, now);
+  // Closed and pre-market (allowlist): show the last completed regular session at native 1m,
+  // pinned to the actual latest session — identical to non-allowlist tickers.
+  return loadLatestTradingDay1DChartPoints(ticker, now, true);
 }
 
 /**
@@ -1257,7 +1238,7 @@ export const getStockChartPoints = unstable_cache(
 const getStockChartPoints1DPriorSession = unstable_cache(
   async (ticker: string, series: StockChartSeries) =>
     loadStockChartPointsUncached(ticker, "1D", series),
-  ["stock-chart-1d-prior-session-v7-static-day"],
+  ["stock-chart-1d-prior-session-v8-static-day"],
   { revalidate: REVALIDATE_STATIC_DAY },
 );
 
@@ -1275,16 +1256,34 @@ export async function getStockChartPointsForApi(
   if (range === "1D") {
     if (usesStock1DLiveWsMinutePipeline(ticker, now)) {
       requestStockMinuteBarWatch(ticker);
+      logApi1DBranchDebug(ticker, now, "ws-regular-uncached");
       return loadStockChartPointsUncached(ticker, "1D", series);
     }
     if (usesStock1DLiveWsPostMarketChart(ticker, now)) {
+      logApi1DBranchDebug(ticker, now, "ws-postmarket-uncached");
       return loadStockChartPointsUncached(ticker, "1D", series);
     }
-    if (!isStock1DLiveMinuteChartTicker(ticker)) {
-      return getStockChartPoints1DPriorSession(ticker, series);
-    }
+    // Non-live 1D (closed / pre-market): allowlist and non-allowlist share the immutable
+    // prior-session cache so all four reference tickers select the same last completed session.
+    logApi1DBranchDebug(ticker, now, "prior-session-cache");
+    return getStockChartPoints1DPriorSession(ticker, series);
   }
   return getStockChartPoints(ticker, range, series);
+}
+
+/** AAPL/NVDA API-entry diagnostics — session, allowlist flag, selected cache branch. */
+function logApi1DBranchDebug(
+  ticker: string,
+  now: Date,
+  branch: "ws-regular-uncached" | "ws-postmarket-uncached" | "prior-session-cache",
+): void {
+  const sym = ticker.trim().toUpperCase();
+  if (!CLOSED_1D_DEBUG_TICKERS.has(sym)) return;
+  console.info("[closed-1d api]", sym, {
+    session: getUsEquityMarketSession(now),
+    isLiveMinuteTicker: isStock1DLiveMinuteChartTicker(ticker),
+    branch,
+  });
 }
 
 /** Superinvestor holding panel only — same series as {@link getStockChartPoints}, refreshed ~once per day. */

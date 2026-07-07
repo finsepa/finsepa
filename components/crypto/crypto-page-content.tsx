@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CompanyPick } from "@/components/charting/company-picker";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
@@ -24,6 +24,8 @@ import { mergeSessionHeaderWithPerformanceSpot } from "@/lib/chart/merge-session
 import { mergeLogoMemory, readLogoMemory } from "@/lib/logos/logo-memory";
 import type { CryptoAssetRow } from "@/lib/market/crypto-asset";
 import type { CryptoPageInitialData } from "@/lib/market/crypto-page-initial-data";
+import { isCryptoLive1DSymbol } from "@/lib/market/crypto-live-1d-tickers";
+import { formatAssetChartTimestamp } from "@/lib/market/chart-timestamp-format";
 import type { StockChartRange } from "@/lib/market/stock-chart-types";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
 
@@ -70,11 +72,20 @@ export function CryptoPageContent({
 
   const [loading, setLoading] = useState(!serverMatch);
   const [row, setRow] = useState<CryptoAssetRow | null>(serverMatch?.asset ?? null);
-  const [range, setRange] = useState<StockChartRange>("1Y");
+  // BTC (live 24/7) defaults to the rolling 24H view; other crypto keeps the 1Y default.
+  const [range, setRange] = useState<StockChartRange>(() =>
+    isCryptoLive1DSymbol(routeSymbol.trim().toUpperCase()) ? "1D" : "1Y",
+  );
   const [comparePicks, setComparePicks] = useState<CompanyPick[]>([]);
   const [sessionHeaderUi, setSessionHeaderUi] = useState<ChartDisplayState>(EMPTY_CHART_DISPLAY);
   const [holdingsHeaderUi, setHoldingsHeaderUi] = useState<ChartDisplayState | null>(null);
   const symUpper = routeSymbol.trim().toUpperCase();
+
+  /**
+   * Live 24/7 crypto (BTC): the header is always driven by the rolling last-24h (1D) feed, so it uses
+   * the stock-style layout (change inline + date/time below) and a `24H` range label — for any selected range.
+   */
+  const isLiveCrypto = isCryptoLive1DSymbol(symUpper);
 
   /** URL tab from the client router — applied after mount so the first paint matches SSR (`initialActiveTab`). */
   const [searchSyncedTab, setSearchSyncedTab] = useState<CryptoDetailTabId | null>(null);
@@ -140,28 +151,85 @@ export function CryptoPageContent({
   const [performanceClient, setPerformanceClient] = useState<StockPerformance | null>(null);
 
   const [headerLiveSpotClient, setHeaderLiveSpotClient] = useState<number | null>(null);
+  /** Data timestamp + source for the live spot (BTC live-price API). Drives the header timestamp. */
+  const [headerLiveQuote, setHeaderLiveQuote] = useState<{
+    quotedAtSec: number | null;
+    source: string | null;
+  } | null>(null);
+  /** Latest value we pushed to `headerLiveSpotClient` — lets the poll compare without effect deps. */
+  const liveSpotRef = useRef<number | null>(null);
+  /** Latest timestamp label rendered under the header price. */
+  const renderedTimestampRef = useRef<string | null>(null);
+  /** Latest price actually rendered in the header (post-override). */
+  const renderedPriceRef = useRef<number | null>(null);
 
   useEffect(() => {
+    liveSpotRef.current = null;
     setHeaderLiveSpotClient(null);
+    setHeaderLiveQuote(null);
   }, [symUpper]);
 
   useEffect(() => {
     let cancelled = false;
+    const debug = process.env.NODE_ENV === "development" && isCryptoLive1DSymbol(symUpper);
     const tick = async () => {
       try {
         const res = await fetch(`/api/crypto/${encodeURIComponent(symUpper)}/live-price`, {
           credentials: "include",
+          cache: "no-store",
         });
         if (!res.ok || cancelled) return;
-        const json = (await res.json()) as { price?: unknown };
+        const fetchedTimestamp = res.headers.get("date");
+        const cacheControl = res.headers.get("cache-control");
+        const json = (await res.json()) as {
+          price?: unknown;
+          quotedAtSec?: unknown;
+          source?: unknown;
+        };
         const p = json.price;
-        if (typeof p === "number" && Number.isFinite(p) && p > 0 && !cancelled) setHeaderLiveSpotClient(p);
+        const quotedAtSec =
+          typeof json.quotedAtSec === "number" && Number.isFinite(json.quotedAtSec)
+            ? json.quotedAtSec
+            : null;
+        const source = typeof json.source === "string" ? json.source : null;
+        if (typeof p === "number" && Number.isFinite(p) && p > 0 && !cancelled) {
+          const previousPrice = liveSpotRef.current;
+          const stateChanged = previousPrice !== p;
+          liveSpotRef.current = p;
+          setHeaderLiveSpotClient(p);
+          setHeaderLiveQuote({ quotedAtSec, source });
+          if (debug) {
+            console.info("[crypto-live-price poll]", symUpper, {
+              source, // ws | realtime | intraday | performance
+              price: p,
+              quotedAtSec, // data timestamp of the quote (not render time)
+              quotedAt: quotedAtSec != null ? new Date(quotedAtSec * 1000).toISOString() : null,
+              previousPrice,
+              renderedPrice: renderedPriceRef.current, // price currently shown in the header
+              stateChanged, // false ⇒ React bails out, no header re-render
+              fetchedTimestamp, // server `Date` header for this response
+              renderedTimestamp: renderedTimestampRef.current, // date/time shown under the price
+              cacheControl, // expect "private, no-store"
+              polledAt: new Date().toISOString(),
+            });
+          }
+        } else if (debug) {
+          console.info("[crypto-live-price poll]", symUpper, {
+            source,
+            price: p,
+            note: "ignored (non-positive / not a finite number)",
+            cacheControl,
+            polledAt: new Date().toISOString(),
+          });
+        }
       } catch {
         /* ignore */
       }
     };
     void tick();
-    const id = window.setInterval(tick, 90_000);
+    // BTC (live 1D) polls faster so the header keeps pace with the ~60s chart.
+    const pollMs = isCryptoLive1DSymbol(symUpper) ? 30_000 : 90_000;
+    const id = window.setInterval(tick, pollMs);
     return () => {
       cancelled = true;
       window.clearInterval(id);
@@ -209,6 +277,54 @@ export function CryptoPageContent({
 
   // Header should always show the live “Today” price + change + timestamp (even on Holdings).
   const chartUi = spotUi;
+
+  /**
+   * BTC (live 24/7): the shared merge freezes the header to the prior daily close outside US market
+   * hours (it applies US-equity session logic). Override the headline with the freshest live spot from
+   * the live-price API, recompute change vs the same implied prior close, and stamp the data timestamp.
+   * Skipped while the user is scrubbing/selecting the chart (crosshair drives the header then).
+   */
+  const headerUi = useMemo<ChartDisplayState>(() => {
+    if (!isLiveCrypto) return chartUi;
+    if (chartUi.isHovering || chartUi.selectionActive) return chartUi;
+    const live = headerLiveSpotClient;
+    if (!(typeof live === "number" && Number.isFinite(live) && live > 0)) return chartUi;
+
+    const priorClose =
+      chartUi.displayPrice != null &&
+      chartUi.displayChangeAbs != null &&
+      Number.isFinite(chartUi.displayPrice) &&
+      Number.isFinite(chartUi.displayChangeAbs)
+        ? chartUi.displayPrice - chartUi.displayChangeAbs
+        : null;
+    const abs = priorClose != null ? live - priorClose : chartUi.displayChangeAbs;
+    const pct =
+      priorClose != null && Math.abs(priorClose) > 1e-9 && abs != null
+        ? (abs / priorClose) * 100
+        : chartUi.displayChangePct;
+
+    const quotedAtSec = headerLiveQuote?.quotedAtSec ?? null;
+    const priceTimestampLabel =
+      quotedAtSec != null
+        ? formatAssetChartTimestamp(quotedAtSec, { kind: "crypto" })
+        : chartUi.priceTimestampLabel;
+
+    return {
+      ...chartUi,
+      loading: false,
+      empty: false,
+      displayPrice: live,
+      displayChangeAbs: abs,
+      displayChangePct: pct,
+      priceTimestampLabel,
+    };
+  }, [isLiveCrypto, chartUi, headerLiveSpotClient, headerLiveQuote]);
+
+  // Mirror what the header actually renders into refs so the live-price poll can log it.
+  useEffect(() => {
+    renderedTimestampRef.current = headerUi.priceTimestampLabel;
+    renderedPriceRef.current = headerUi.displayPrice;
+  }, [headerUi.priceTimestampLabel, headerUi.displayPrice]);
 
   const initialChartMemo = useMemo(() => (serverMatch ? serverMatch.chart : null), [serverMatch]);
 
@@ -319,19 +435,20 @@ export function CryptoPageContent({
           displayName={displayName}
           logoUrl={headerLogoUrl}
           logoLetter={safeRow.symbol}
-          periodLabel="Today"
-          periodLabelOverride={chartUi.periodLabelOverride}
-          chartRangeLabel={range}
-          price={chartUi.displayPrice}
-          changePct={chartUi.displayChangePct}
-          changeAbs={chartUi.displayChangeAbs}
-          selectionChangeAbs={chartUi.selectionChangeAbs}
-          selectionChangePct={chartUi.selectionChangePct}
-          chartLoading={chartUi.loading}
-          chartEmpty={chartUi.empty}
-          priceTimestampLabel={chartUi.priceTimestampLabel}
-          scrubPeriodLabel={chartUi.scrubPeriodLabel}
-          chartHovering={chartUi.isHovering && !chartUi.selectionActive}
+          periodLabel={isLiveCrypto ? "Past 24 Hours" : "Today"}
+          periodLabelOverride={headerUi.periodLabelOverride}
+          chartRangeLabel={isLiveCrypto ? "24H" : range}
+          stockStyleLayout={isLiveCrypto}
+          price={headerUi.displayPrice}
+          changePct={headerUi.displayChangePct}
+          changeAbs={headerUi.displayChangeAbs}
+          selectionChangeAbs={headerUi.selectionChangeAbs}
+          selectionChangePct={headerUi.selectionChangePct}
+          chartLoading={headerUi.loading}
+          chartEmpty={headerUi.empty}
+          priceTimestampLabel={headerUi.priceTimestampLabel}
+          scrubPeriodLabel={headerUi.scrubPeriodLabel}
+          chartHovering={headerUi.isHovering && !headerUi.selectionActive}
           headerLoading={false}
         />
       )}
@@ -350,6 +467,7 @@ export function CryptoPageContent({
               <ChartControls
                 activeRange={range}
                 onRangeChange={setRange}
+                rangeLabels={isLiveCrypto ? { "1D": "24H" } : undefined}
                 compareSlot={
                   <CryptoComparePicker
                     baseSymbol={symUpper}
@@ -371,7 +489,7 @@ export function CryptoPageContent({
                     kind="crypto"
                     symbol={symUpper}
                     range={range}
-                    initialChart={initialChartMemo}
+                    initialChart={isLiveCrypto ? initialSessionChartMemo : initialChartMemo}
                   />
                 )}
               </ChartControls>

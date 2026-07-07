@@ -22,6 +22,9 @@ import { getNvdaChartPoints } from "@/lib/fixtures/nvda";
 /** Portfolio overview benchmark fetch must still work in single-asset demo mode. */
 const BENCHMARK_CHART_TICKERS = new Set(["SPY", "QQQ", "DIA", "IWM", "VTI"]);
 
+/** TEMP: raw 1D chart API diagnostics for AAPL/NVDA (remove after debugging). */
+const CHART_API_DEBUG_TICKERS = new Set(["AAPL", "NVDA"]);
+
 type Ctx = { params: Promise<{ ticker: string }> };
 
 export async function GET(request: Request, { params }: Ctx) {
@@ -78,7 +81,7 @@ export async function GET(request: Request, { params }: Ctx) {
     !cadenceDaily &&
     !usesStock1DLiveWsMinutePipeline(routeTicker, now) &&
     !livePostMarketChart;
-  const cacheControl =
+  let cacheControl =
     (usesStock1DLiveWsMinutePipeline(routeTicker, now) || livePostMarketChart) && liveSessionMinute
       ? CACHE_CONTROL_PRIVATE_NO_STORE
     : priorSession1D
@@ -87,6 +90,42 @@ export async function GET(request: Request, { params }: Ctx) {
         ? CACHE_CONTROL_PRIVATE_SUPERINVESTOR_HOLDING_CHART
         : CACHE_CONTROL_PRIVATE_CHART_STREAM;
 
+  // TEMP DEBUG: AAPL/NVDA 1D during closed/pre-market — force no-store + surface raw API state
+  // to isolate HTTP/browser/CDN cache from server session-selection. Remove after debugging.
+  const debugTicker =
+    CHART_API_DEBUG_TICKERS.has(routeUpper) && range === "1D" && !cadenceDaily;
+  const closedOrPreMarket =
+    !usesStock1DLiveWsMinutePipeline(routeTicker, now) && !livePostMarketChart;
+
+  if (debugTicker && closedOrPreMarket) {
+    cacheControl = CACHE_CONTROL_PRIVATE_NO_STORE;
+  }
+
+  let debug: Record<string, unknown> | undefined;
+  if (debugTicker) {
+    const first = points[0];
+    const last = points[points.length - 1];
+    const iso = (t: number | undefined) =>
+      typeof t === "number" && Number.isFinite(t) ? new Date(t * 1000).toISOString() : null;
+    const branch = usesStock1DLiveWsMinutePipeline(routeTicker, now)
+      ? "ws-regular-uncached"
+      : livePostMarketChart
+        ? "ws-postmarket-uncached"
+        : "prior-session-cache";
+    debug = {
+      session: closedOrPreMarket ? "closed-or-pre" : "live",
+      branch,
+      sessionYmd: first?.sessionDate ?? null,
+      firstPointTime: iso(first?.time),
+      lastPointTime: iso(last?.time),
+      pointCount: points.length,
+      cacheControl,
+      note:
+        "source/interval/unstable_cache hit-miss printed server-side: a '[closed-1d]' log = cache MISS (fresh compute); only '[closed-1d api]' = cache HIT.",
+    };
+    console.info("[chart-api-raw]", routeUpper, debug);
+  }
+
   return NextResponse.json(
     {
       ticker: routeTicker,
@@ -94,6 +133,7 @@ export async function GET(request: Request, { params }: Ctx) {
       series,
       points,
       liveSessionMinute,
+      ...(debug ? { debug } : {}),
     },
     {
       headers: {
