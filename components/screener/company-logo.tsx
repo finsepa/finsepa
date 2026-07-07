@@ -12,6 +12,11 @@ const LOGO_INSET_TICKERS = new Set(["AAPL", "GOOGL", "GOOG", "MSFT", "MU"]);
 const LOGO_SCALE_BOOST: Partial<Record<string, number>> = {
   INTC: 1.16,
   HD: 1.28,
+  // Crypto marks carry padding — bump so they fill the frame.
+  BTC: 1.32,
+  DOGE: 1.3,
+  LTC: 1.28,
+  BCH: 1.3,
 };
 
 function logoScaleBoost(symbol: string | undefined): number | null {

@@ -733,6 +733,64 @@ function overviewAxisShows1DHourLabel(
   return hour % hourStep === 0;
 }
 
+/**
+ * Live 24/7 crypto 1D (BTC): Google-Finance-style rolling-24h hour axis.
+ *
+ * Ticks land on real clock hours inside the visible range (never forced to midnight) at a
+ * "nice" interval (1/2/3/4/6/12h) chosen from the plot width, so labels stay evenly spaced,
+ * responsive, and never crowd — e.g. `2PM 4PM 6PM … 12AM … 8AM`.
+ */
+const CRYPTO_1D_AXIS_STEPS_HOURS = [1, 2, 3, 4, 6, 12] as const;
+
+/** Min gap between adjacent compact hour ticks (e.g. `12AM`) so they never overlap. */
+const CRYPTO_1D_AXIS_MIN_LABEL_PX = 88;
+
+function cryptoLive1DAxisHourStep(plotWidthPx: number, spanHours: number): number {
+  const plotW = plotWidthPx > 0 ? plotWidthPx : 800;
+  const maxComfortable = Math.max(2, Math.floor(plotW / CRYPTO_1D_AXIS_MIN_LABEL_PX));
+  for (const step of CRYPTO_1D_AXIS_STEPS_HOURS) {
+    if (Math.ceil(spanHours / step) <= maxComfortable) return step;
+  }
+  return 12;
+}
+
+export function buildCryptoLive1DAxisLabels(
+  chart: IChartApi,
+  data: readonly StockChartPoint[],
+  timeZone: string,
+  plotWidthPx = 0,
+): OverviewAxisLabel[] {
+  const pts = data.filter((p) => isFiniteNumber(p.time)).sort((a, b) => a.time - b.time);
+  const n = pts.length;
+  if (!n) return [];
+  const spanHours = Math.max(1, (pts[n - 1]!.time - pts[0]!.time) / 3600);
+  const plotW = plotWidthPx > 0 ? plotWidthPx : chart.paneSize(0).width;
+  const step = cryptoLive1DAxisHourStep(plotW, spanHours);
+
+  const out: OverviewAxisLabel[] = [];
+  let lastHourKey: string | null = null;
+  for (let i = 0; i < n; i++) {
+    const p = pts[i]!;
+    const hourKey = sessionHourBucketKey(p.time, timeZone);
+    if (hourKey === lastHourKey) continue; // one tick per clock hour — first bar inside it
+    lastHourKey = hourKey;
+    const hour = hourFromSessionBucketKey(hourKey);
+    if (hour % step !== 0) continue;
+    const x = chart.timeScale().timeToCoordinate(p.time as UTCTimestamp);
+    if (x == null || !Number.isFinite(x)) continue;
+    out.push({
+      key: `crypto-1d-${hourKey}`,
+      leftPx: x,
+      // Day boundary (midnight) is labelled with the date (e.g. `Jul 7`) instead of `12AM`.
+      label:
+        hour === 0
+          ? formatOverviewAxisWeeklyLabel(p.time, timeZone)
+          : formatOverviewAxisHourTickLabel(p.time, timeZone),
+    });
+  }
+  return out;
+}
+
 /** Idle 1D axis: compact hour ticks like `10AM`, `12PM` (position = first bar in that hour). */
 function formatOverviewAxisHourTickLabel(unix: number, timeZone: string): string {
   const parts = new Intl.DateTimeFormat("en-US", {
@@ -880,6 +938,8 @@ export type OverviewPeriodAxisSyncOptions = {
   stock1DLiveSessionExtended?: boolean;
   /** False on US holidays — axis pins to the last completed session in the payload. */
   liveSessionMinute?: boolean;
+  /** Live 24/7 crypto 1D (BTC): rolling-24h nice-interval hour axis (Google-Finance style). */
+  cryptoLive1D?: boolean;
 };
 
 export function syncOverviewPeriodAxisLabels(
@@ -893,6 +953,9 @@ export function syncOverviewPeriodAxisLabels(
   const data = points.filter((p) => isFiniteNumber(p.time));
   const n = data.length;
   if (!n) return [];
+  if (options?.cryptoLive1D) {
+    return buildCryptoLive1DAxisLabels(chart, data, timeZone, plotWidthPx);
+  }
   if (options?.stock1DLiveSessionExtended) {
     const sessionYmd =
       resolveStock1DLiveSessionYmd(data, timeZone, new Date(), {

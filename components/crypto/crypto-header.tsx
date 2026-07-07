@@ -23,6 +23,18 @@ function formatCryptoChangeAbs(value: number | null, refPrice: number | null) {
   return value.toLocaleString("en-US", { maximumFractionDigits: max, minimumFractionDigits: 2 });
 }
 
+/** Per-symbol zoom inside the fixed 48×48 header frame (crypto marks carry baked-in padding). */
+const CRYPTO_HEADER_LOGO_SCALE: Partial<Record<string, number>> = {
+  BTC: 1.36,
+  DOGE: 1.34,
+  LTC: 1.32,
+  BCH: 1.34,
+};
+
+function cryptoHeaderLogoScale(symbol: string): number {
+  return CRYPTO_HEADER_LOGO_SCALE[symbol.trim().toUpperCase()] ?? 1.26;
+}
+
 type Props = {
   symbol: string;
   displayName: string;
@@ -114,18 +126,21 @@ export function CryptoHeader({
     headerLoading ?
       <div className="h-12 w-12 shrink-0 animate-pulse rounded-xl border border-[#E4E4E7] bg-[#F4F4F5]" aria-hidden />
     : logoSrc ?
-      // eslint-disable-next-line @next/next/no-img-element -- remote logo
-      <img
-        src={logoSrc}
-        alt=""
-        width={48}
-        height={48}
-        className="h-12 w-12 shrink-0 rounded-xl border border-neutral-200 bg-white object-contain shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]"
-        onError={() => {
-          setImgFailedForKey(logoFailureKey);
-          mergeLogoMemory(sym, null);
-        }}
-      />
+      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
+        {/* eslint-disable-next-line @next/next/no-img-element -- remote logo */}
+        <img
+          src={logoSrc}
+          alt=""
+          width={48}
+          height={48}
+          className="absolute inset-0 h-full w-full object-contain"
+          style={{ transform: `scale(${cryptoHeaderLogoScale(sym)})` }}
+          onError={() => {
+            setImgFailedForKey(logoFailureKey);
+            mergeLogoMemory(sym, null);
+          }}
+        />
+      </div>
     : <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-[#E4E4E7] bg-[#F4F4F5] text-[18px] font-bold text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
         {logoLetter.slice(0, 1)}
       </div>;

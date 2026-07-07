@@ -1267,11 +1267,21 @@ export function fitOverviewChartTimeScale(
       return;
     }
   }
+  // Dense ranges (e.g. crypto/stock ALL with thousands of daily bars) can't fit in the plot
+  // width at the default 0.5px min bar spacing, which silently scrolls the earliest history off
+  // the left edge. Lower the floor just enough to fit every bar when needed; normal ranges are
+  // unaffected because they already need > 0.5px per bar.
+  const plotWidthPx = chart.timeScale().width() || containerWidthPx;
+  // Divide by point count (not count − 1) so the floor is a hair below what fitContent needs,
+  // guaranteeing every bar fits with no clamp-induced left-edge clipping.
+  const neededBarSpacing =
+    logicalPointCount > 1 && plotWidthPx > 0 ? plotWidthPx / logicalPointCount : 6;
+  const minBarSpacing = Math.min(0.5, Math.max(0.02, neededBarSpacing));
   chart.timeScale().applyOptions({
     ...mobileTimeScaleOptions(containerWidthPx),
     lockVisibleTimeRangeOnResize: false,
     barSpacing: 6,
-    minBarSpacing: 0.5,
+    minBarSpacing,
   });
   fitContentWithMobilePlotGutter(chart, containerWidthPx, logicalPointCount);
 }

@@ -126,12 +126,15 @@ export function fitSeriesLogicalRangeToPlotWidth(
       // Visible range is logical indices 0…lastIdx (n−1 bars apart). Spacing must be
       // plotW / lastIdx, not plotW / n, or the last point stops one bar short of the edge.
       const spacing = lastIdx > 0 ? plotW / lastIdx : plotW;
+      // Allow sub-0.5px spacing for dense ranges (e.g. ALL) so every bar fits instead of
+      // scrolling the earliest history off-screen; a 0.02px floor keeps huge ranges sane.
+      const barSpacing = Math.max(0.02, spacing);
       ts.applyOptions({
         ...(fixEdges ?
           { fixLeftEdge: true, fixRightEdge: true, rightOffset: 0 }
         : {}),
-        barSpacing: Math.max(0.5, spacing),
-        minBarSpacing: 0.5,
+        barSpacing,
+        minBarSpacing: Math.min(0.5, barSpacing),
       });
       ts.setVisibleLogicalRange({ from: 0, to: lastIdx });
 

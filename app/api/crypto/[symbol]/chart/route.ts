@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { getCryptoChartPoints } from "@/lib/market/crypto-chart-data";
+import { cryptoMarketCapPointsFromPricePoints, getCryptoChartPoints } from "@/lib/market/crypto-chart-data";
 import { loadCryptoLive1DMinuteChartPoints } from "@/lib/market/crypto-1d-live-minute-chart";
 import { isCryptoLive1DSymbol, normalizeCryptoBaseSymbol } from "@/lib/market/crypto-live-1d-tickers";
 import { pricePointsToReturnIndexPoints } from "@/lib/market/stock-chart-data";
@@ -43,6 +43,8 @@ export async function GET(request: Request, { params }: Ctx) {
     : await getCryptoChartPoints(routeSymbol, range);
   if (series === "return") {
     points = pricePointsToReturnIndexPoints(points);
+  } else if (series === "marketCap") {
+    points = await cryptoMarketCapPointsFromPricePoints(routeSymbol, points);
   }
 
   if (liveCrypto1D && process.env.NODE_ENV === "development") {

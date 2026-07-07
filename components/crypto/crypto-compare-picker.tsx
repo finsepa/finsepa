@@ -1,6 +1,7 @@
 "use client";
 
 import { CompanyPicker, type CompanyPick } from "@/components/charting/company-picker";
+import { topbarSquircleIconClass } from "@/components/design-system/topbar-control-classes";
 import { IntersectCircle } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 
@@ -99,8 +100,10 @@ export function CryptoComparePicker({ baseSymbol, values, onAdd, onRemove }: Pro
               setOpen(true);
             }}
             className={cn(
-              "relative flex h-9 cursor-pointer items-center rounded-[10px] bg-[#F4F4F5] outline-none transition-colors hover:bg-[#EBEBEB] focus-visible:ring-2 focus-visible:ring-[#09090B]/10",
-              hasPicks ? "w-full py-2 pl-4 pr-10 text-left text-sm font-normal" : "w-9 justify-center",
+              "relative cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/10",
+              hasPicks
+                ? "flex h-9 w-full items-center rounded-[10px] bg-[#F4F4F5] py-2 pl-4 pr-10 text-left text-sm font-normal transition-colors hover:bg-[#EBEBEB]"
+                : cn(topbarSquircleIconClass, "cursor-pointer"),
               atCapacity && "cursor-not-allowed opacity-50",
             )}
           >

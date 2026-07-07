@@ -42,3 +42,15 @@ export function isCryptoLive1DSymbol(symbol: string): boolean {
   if (!base) return false;
   return cryptoLive1DTickers().includes(base);
 }
+
+/**
+ * Long-range crypto charts (5Y / ALL) span many orders of magnitude (BTC: $0.06 → $150k),
+ * which collapses years of early history into a flat line on a linear axis. Use a logarithmic
+ * price axis for those ranges so the full history reads clearly — like most crypto platforms.
+ *
+ * Scope: BTC only for now (reuses the live-1D allowlist), price/marketCap series only.
+ */
+export function usesCryptoLogPriceScale(symbol: string, range: string): boolean {
+  if (range !== "5Y" && range !== "ALL") return false;
+  return isCryptoLive1DSymbol(symbol);
+}

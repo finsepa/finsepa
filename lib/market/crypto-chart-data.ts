@@ -4,7 +4,7 @@ import { unstable_cache } from "next/cache";
 
 import { REVALIDATE_HOT } from "@/lib/data/cache-policy";
 import type { EodhdDailyBar } from "@/lib/market/eodhd-eod";
-import { fetchEodhdCryptoDailyBars } from "@/lib/market/eodhd-crypto";
+import { fetchCryptoMarketCapUsdForMeta, fetchEodhdCryptoDailyBars } from "@/lib/market/eodhd-crypto";
 import { resolveCryptoMetaForProvider } from "@/lib/market/crypto-meta-resolver";
 import { fetchEodhdIntraday } from "@/lib/market/eodhd-intraday";
 import { rangeStartUnixSeconds } from "@/lib/market/stock-chart-api";
@@ -229,6 +229,39 @@ export async function fetchCryptoChartPointsUncached(symbol: string, range: Stoc
   if (!bars?.length) return [];
 
   return stockChartPointsFromDailyBars(bars, range, now);
+}
+
+/**
+ * Scale price points into an approximate market-cap series using the latest known
+ * circulating-supply multiplier (marketCapUsd / latestPrice). Historical per-bar supply isn't
+ * available, so this follows the common "market-cap chart = price × current circulating supply"
+ * approach — the shape matches price, only the magnitude/axis changes.
+ */
+export async function cryptoMarketCapPointsFromPricePoints(
+  symbol: string,
+  points: StockChartPoint[],
+): Promise<StockChartPoint[]> {
+  if (!points.length) return points;
+  const meta = await resolveCryptoMetaForProvider(symbol);
+  if (!meta) return points;
+
+  let lastClose: number | null = null;
+  for (let i = points.length - 1; i >= 0; i--) {
+    const v = points[i]!.value;
+    if (Number.isFinite(v) && v > 0) {
+      lastClose = v;
+      break;
+    }
+  }
+  if (lastClose == null) return points;
+
+  const marketCapUsd = await fetchCryptoMarketCapUsdForMeta(meta, lastClose);
+  if (marketCapUsd == null || !Number.isFinite(marketCapUsd) || marketCapUsd <= 0) return points;
+
+  const supply = marketCapUsd / lastClose;
+  if (!Number.isFinite(supply) || supply <= 0) return points;
+
+  return points.map((p) => ({ time: p.time, value: p.value * supply }));
 }
 
 export const getCryptoChartPoints = unstable_cache(

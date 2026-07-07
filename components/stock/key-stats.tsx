@@ -25,7 +25,8 @@ const KEY_STATS_MOBILE_SHELL_CLASS = cn(
 );
 
 const KEY_STATS_ROW_BORDER_CLASS = "border-b border-[#E4E4E7] max-md:border-b-[0.5px]";
-const KEY_STATS_ROW_PY_CLASS = "py-2.5";
+/** Mobile keeps the taller row; web reverts to the original compact height (matches crypto key stats). */
+const KEY_STATS_ROW_PY_CLASS = "py-2.5 md:py-1.5";
 
 type KeyStatsTabId =
   | "basic"

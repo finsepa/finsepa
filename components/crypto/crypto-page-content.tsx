@@ -16,6 +16,8 @@ import { MiniTable } from "@/components/stock/mini-table";
 import { StockCompareReturnChart } from "@/components/stock/stock-compare-return-chart";
 import { LogoSkeleton, SkeletonBox } from "@/components/markets/skeleton";
 import { ChartControls } from "@/components/stock/chart-controls";
+import { ChartScreenshotDownloadModal } from "@/components/chart/chart-screenshot-download-modal";
+import { topbarSquircleIconClass } from "@/components/design-system/topbar-control-classes";
 import { LatestNews } from "@/components/stock/latest-news";
 import { CryptoDetailTabNav } from "@/components/crypto/crypto-detail-tab-nav";
 import { AssetPortfolioHoldingsTab } from "@/components/portfolio/asset-portfolio-holdings-tab";
@@ -26,8 +28,11 @@ import type { CryptoAssetRow } from "@/lib/market/crypto-asset";
 import type { CryptoPageInitialData } from "@/lib/market/crypto-page-initial-data";
 import { isCryptoLive1DSymbol } from "@/lib/market/crypto-live-1d-tickers";
 import { formatAssetChartTimestamp } from "@/lib/market/chart-timestamp-format";
-import type { StockChartRange } from "@/lib/market/stock-chart-types";
+import type { ChartScreenshotSnapshot } from "@/lib/chart/chart-screenshot-types";
+import type { StockChartPoint, StockChartRange, StockChartSeries } from "@/lib/market/stock-chart-types";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
+import { Download } from "@/lib/icons";
+import { cn } from "@/lib/utils";
 
 const EMPTY_CHART_DISPLAY: ChartDisplayState = {
   loading: true,
@@ -77,6 +82,7 @@ export function CryptoPageContent({
     isCryptoLive1DSymbol(routeSymbol.trim().toUpperCase()) ? "1D" : "1Y",
   );
   const [comparePicks, setComparePicks] = useState<CompanyPick[]>([]);
+  const [chartSeries, setChartSeries] = useState<StockChartSeries>("price");
   const [sessionHeaderUi, setSessionHeaderUi] = useState<ChartDisplayState>(EMPTY_CHART_DISPLAY);
   const [holdingsHeaderUi, setHoldingsHeaderUi] = useState<ChartDisplayState | null>(null);
   const symUpper = routeSymbol.trim().toUpperCase();
@@ -119,6 +125,12 @@ export function CryptoPageContent({
 
   const onSessionHeaderDisplay = useCallback((s: ChartDisplayState) => {
     setSessionHeaderUi(s);
+  }, []);
+
+  /** BTC live 24/7: visible overview chart display (drives the header movement for 5D/1M/… ranges). */
+  const [rangeHeaderUi, setRangeHeaderUi] = useState<ChartDisplayState | null>(null);
+  const onRangeChartDisplay = useCallback((s: ChartDisplayState) => {
+    setRangeHeaderUi(s);
   }, []);
 
   const onHoldingsChartDisplay = useCallback((s: ChartDisplayState) => {
@@ -275,14 +287,25 @@ export function CryptoPageContent({
     [headerLiveSpotForMerge, performanceForHeaderFallback, sessionHeaderUi],
   );
 
-  // Header should always show the live “Today” price + change + timestamp (even on Holdings).
-  const chartUi = spotUi;
+  // BTC live 24H: headline comes from the hidden 1D chart (first → last bar), not US-equity session merge.
+  // For non-1D price ranges (5D/1M/…), the visible overview chart drives the movement instead.
+  const btcRangeHeader =
+    isLiveCrypto &&
+    range !== "1D" &&
+    chartSeries === "price" &&
+    activeTab === "overview" &&
+    comparePicks.length === 0;
+
+  const chartUi = !isLiveCrypto
+    ? spotUi
+    : btcRangeHeader
+      ? (rangeHeaderUi ?? sessionHeaderUi)
+      : sessionHeaderUi;
 
   /**
-   * BTC (live 24/7): the shared merge freezes the header to the prior daily close outside US market
-   * hours (it applies US-equity session logic). Override the headline with the freshest live spot from
-   * the live-price API, recompute change vs the same implied prior close, and stamp the data timestamp.
-   * Skipped while the user is scrubbing/selecting the chart (crosshair drives the header then).
+   * BTC (live 24/7): pin the headline to the freshest live spot, but keep the move vs the active
+   * chart's first bar (24H for the default view, or the selected 5D/1M/… range). Skipped while
+   * scrubbing/hovering (crosshair drives the header then).
    */
   const headerUi = useMemo<ChartDisplayState>(() => {
     if (!isLiveCrypto) return chartUi;
@@ -290,17 +313,17 @@ export function CryptoPageContent({
     const live = headerLiveSpotClient;
     if (!(typeof live === "number" && Number.isFinite(live) && live > 0)) return chartUi;
 
-    const priorClose =
+    const periodStart =
       chartUi.displayPrice != null &&
       chartUi.displayChangeAbs != null &&
       Number.isFinite(chartUi.displayPrice) &&
       Number.isFinite(chartUi.displayChangeAbs)
         ? chartUi.displayPrice - chartUi.displayChangeAbs
         : null;
-    const abs = priorClose != null ? live - priorClose : chartUi.displayChangeAbs;
+    const abs = periodStart != null ? live - periodStart : chartUi.displayChangeAbs;
     const pct =
-      priorClose != null && Math.abs(priorClose) > 1e-9 && abs != null
-        ? (abs / priorClose) * 100
+      periodStart != null && Math.abs(periodStart) > 1e-9 && abs != null
+        ? (abs / periodStart) * 100
         : chartUi.displayChangePct;
 
     const quotedAtSec = headerLiveQuote?.quotedAtSec ?? null;
@@ -408,8 +431,60 @@ export function CryptoPageContent({
   const displayName = safeRow?.name ?? symUpper;
   const headerLogoUrl = loading ? null : cryptoLogoSrc || null;
 
+  const [overviewDownloadOpen, setOverviewDownloadOpen] = useState(false);
+  const [overviewDownloadSnapshot, setOverviewDownloadSnapshot] =
+    useState<ChartScreenshotSnapshot | null>(null);
+  const [overviewDownloadFetching, setOverviewDownloadFetching] = useState(false);
+
+  const handleOpenCryptoDownload = useCallback(async () => {
+    if (comparePicks.length > 0 || overviewDownloadFetching) return;
+    setOverviewDownloadFetching(true);
+    try {
+      const path = `/api/crypto/${encodeURIComponent(symUpper)}/chart?range=${encodeURIComponent(range)}&series=${encodeURIComponent(chartSeries)}`;
+      const res = await fetch(path, { credentials: "include" });
+      if (!res.ok) return;
+      const json = (await res.json()) as { points?: StockChartPoint[] };
+      const points = Array.isArray(json.points) ? json.points : [];
+      if (points.length === 0) return;
+      setOverviewDownloadSnapshot({
+        variant: "stockOverview",
+        ticker: symUpper,
+        companyName: safeRow?.name ?? null,
+        logoUrl: cryptoLogoSrc || serverCryptoLogo || null,
+        periodMode: "annual",
+        timeRange: "all",
+        chartType: "bars",
+        selectedMetrics: [],
+        fullPoints: [],
+        stockOverview: { range, series: chartSeries, points },
+      });
+      setOverviewDownloadOpen(true);
+    } catch {
+      /* ignore */
+    } finally {
+      setOverviewDownloadFetching(false);
+    }
+  }, [
+    comparePicks.length,
+    overviewDownloadFetching,
+    symUpper,
+    range,
+    chartSeries,
+    safeRow?.name,
+    cryptoLogoSrc,
+    serverCryptoLogo,
+  ]);
+
+  const cryptoDownloadDisabled =
+    comparePicks.length > 0 || chartUi.loading || chartUi.empty || overviewDownloadFetching;
+
   return (
     <div className="relative min-w-0">
+      <ChartScreenshotDownloadModal
+        open={overviewDownloadOpen}
+        onClose={() => setOverviewDownloadOpen(false)}
+        snapshot={overviewDownloadSnapshot}
+      />
       <CryptoBreadcrumbs symbol={symUpper} />
       <div className="space-y-5 px-4 py-0 max-md:pt-4 sm:space-y-5 sm:px-9 sm:py-6">
       <Suspense fallback={null}>
@@ -435,10 +510,10 @@ export function CryptoPageContent({
           displayName={displayName}
           logoUrl={headerLogoUrl}
           logoLetter={safeRow.symbol}
-          periodLabel={isLiveCrypto ? "Past 24 Hours" : "Today"}
+          periodLabel={isLiveCrypto ? (btcRangeHeader ? range : "Past 24 Hours") : "Past 24 Hours"}
           periodLabelOverride={headerUi.periodLabelOverride}
-          chartRangeLabel={isLiveCrypto ? "24H" : range}
-          stockStyleLayout={isLiveCrypto}
+          chartRangeLabel={isLiveCrypto ? (btcRangeHeader ? range : "24H") : range}
+          stockStyleLayout
           price={headerUi.displayPrice}
           changePct={headerUi.displayChangePct}
           changeAbs={headerUi.displayChangeAbs}
@@ -468,6 +543,9 @@ export function CryptoPageContent({
                 activeRange={range}
                 onRangeChange={setRange}
                 rangeLabels={isLiveCrypto ? { "1D": "24H" } : undefined}
+                chartSeries={chartSeries}
+                onChartSeriesChange={setChartSeries}
+                seriesSelectDisabled={comparePicks.length > 0}
                 compareSlot={
                   <CryptoComparePicker
                     baseSymbol={symUpper}
@@ -475,6 +553,19 @@ export function CryptoPageContent({
                     onAdd={onAddComparePick}
                     onRemove={onRemoveComparePick}
                   />
+                }
+                downloadSlot={
+                  comparePicks.length > 0 ? null : (
+                    <button
+                      type="button"
+                      onClick={() => void handleOpenCryptoDownload()}
+                      disabled={cryptoDownloadDisabled}
+                      className={cn(topbarSquircleIconClass, "disabled:cursor-not-allowed disabled:opacity-40")}
+                      aria-label="Download chart"
+                    >
+                      <Download className="h-5 w-5" strokeWidth={1.75} aria-hidden />
+                    </button>
+                  )
                 }
               >
                 {comparePicks.length > 0 ? (
@@ -489,7 +580,9 @@ export function CryptoPageContent({
                     kind="crypto"
                     symbol={symUpper}
                     range={range}
+                    series={chartSeries}
                     initialChart={isLiveCrypto ? initialSessionChartMemo : initialChartMemo}
+                    onDisplayChange={isLiveCrypto ? onRangeChartDisplay : undefined}
                   />
                 )}
               </ChartControls>

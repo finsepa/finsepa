@@ -37,6 +37,7 @@ import {
   LastPriceAnimationMode,
   LineStyle,
   LineType,
+  PriceScaleMode,
   createChart,
   createSeriesMarkers,
   type IChartApi,
@@ -68,7 +69,7 @@ import {
   writeStock1DSessionBarsToStorage,
 } from "@/lib/chart/stock-1d-session-bars-storage";
 import { isStock1DLiveMinuteChartTicker, usesStock1DLiveWsMinutePipeline, usesStock1DLiveWsPostMarketChart } from "@/lib/market/stock-1d-live-minute-chart-tickers";
-import { isCryptoLive1DSymbol } from "@/lib/market/crypto-live-1d-tickers";
+import { isCryptoLive1DSymbol, usesCryptoLogPriceScale } from "@/lib/market/crypto-live-1d-tickers";
 import {
   appendLiveSessionNowTail,
   applyStock1DLiveSessionTimeScale,
@@ -156,6 +157,13 @@ type RangeChartPriceBadge = {
   label: string;
   anchor: "start" | "center";
 };
+
+/**
+ * Tickers whose stale SSR 1D seed should be hidden behind a skeleton until the authoritative
+ * no-store refetch resolves — avoids a ~1s flash of the smoothed prior-session chart on open.
+ * Intentionally scoped to AAPL/NVDA only (not the full live-minute allowlist).
+ */
+const SKELETON_ON_1D_REFRESH_TICKERS = new Set(["AAPL", "NVDA"]);
 
 function resolveInitialLiveSessionMinute(
   prop: boolean | undefined,
@@ -535,9 +543,21 @@ function syncYAxisTickLabels(
     return;
   }
 
+  // On a logarithmic scale, evenly-spaced-in-price ticks bunch near the top of the pane.
+  // Space them geometrically so the labels stay evenly distributed in pixels.
+  const isLog =
+    chart.priceScale("right").options().mode === PriceScaleMode.Logarithmic && bottom > 0;
+
   const prices: number[] = [];
-  for (let i = 0; i < tickCount; i++) {
-    prices.push(bottom + (span * i) / (tickCount - 1));
+  if (isLog) {
+    const ratio = top / bottom;
+    for (let i = 0; i < tickCount; i++) {
+      prices.push(bottom * Math.pow(ratio, i / (tickCount - 1)));
+    }
+  } else {
+    for (let i = 0; i < tickCount; i++) {
+      prices.push(bottom + (span * i) / (tickCount - 1));
+    }
   }
 
   while (ticksRef.current.length > prices.length) {
@@ -1167,6 +1187,29 @@ export function PriceChart({
     [kind, range, points, holdingsStyle],
   );
 
+  /** Live 24/7 crypto 1D (BTC): Google-Finance-style rolling-24h hour axis + subtle gridlines. */
+  const cryptoLive1DAxis = useMemo(
+    () => kind === "crypto" && range === "1D" && !holdingsStyle && isCryptoLive1DSymbol(symbol),
+    [kind, range, holdingsStyle, symbol],
+  );
+
+  /**
+   * Log price axis for long crypto ranges (BTC 5Y/ALL): $0.06 → $150k spans ~6 orders of
+   * magnitude, so a linear axis flattens years of early history. Price/marketCap only —
+   * the return series is already normalized to a 100-based index.
+   */
+  const logPriceScale = useMemo(
+    () =>
+      !holdingsStyle &&
+      (series === "price" || series === "marketCap") &&
+      usesCryptoLogPriceScale(symbol, range),
+    [holdingsStyle, series, symbol, range],
+  );
+  const logPriceScaleRef = useRef(logPriceScale);
+  useEffect(() => {
+    logPriceScaleRef.current = logPriceScale;
+  }, [logPriceScale]);
+
   const overviewBottomAxisMode = useMemo(() => {
     if (stock1DLiveSession) return "hour" as const;
     return resolveOverviewBottomAxisMode(range, chartPoints);
@@ -1186,8 +1229,9 @@ export function PriceChart({
     (): OverviewPeriodAxisSyncOptions => ({
       stock1DLiveSession,
       liveSessionMinute,
+      cryptoLive1D: cryptoLive1DAxis,
     }),
-    [stock1DLiveSession, liveSessionMinute],
+    [stock1DLiveSession, liveSessionMinute, cryptoLive1DAxis],
   );
 
   const syncLiveSessionAxisLabels = useCallback(() => {
@@ -1456,6 +1500,24 @@ export function PriceChart({
       }
     }
   }, [containerWidth, plotHeight, holdingsStyle, useCustomBottomAxis]);
+
+  // Long-range crypto (BTC 5Y/ALL): switch the price axis to logarithmic so early history is
+  // legible. Re-place the Y-axis tick ladder since geometric vs. linear spacing differs.
+  useEffect(() => {
+    const chart = chartRef.current;
+    const series = seriesRef.current;
+    if (!chart) return;
+    chart.priceScale("right").applyOptions({
+      mode: logPriceScale ? PriceScaleMode.Logarithmic : PriceScaleMode.Normal,
+    });
+    if (
+      series &&
+      !shouldHideMobileYAxisLabels(containerWidthRef.current) &&
+      (!screenshotPreviewModeRef.current || screenshotShowVerticalLegendRef.current)
+    ) {
+      syncYAxisTickLabels(chart, series, yAxisTickLinesRef);
+    }
+  }, [logPriceScale]);
 
   useEffect(() => {
     const series = seriesRef.current;
@@ -1768,6 +1830,13 @@ export function PriceChart({
 
     chartRef.current = chart;
     seriesRef.current = series;
+
+    // Apply log/linear price axis immediately on (re)creation so a rebuilt chart keeps the
+    // correct scale even when `logPriceScale` itself did not change (the dedicated effect below
+    // only fires on flag changes).
+    chart.priceScale("right").applyOptions({
+      mode: logPriceScaleRef.current ? PriceScaleMode.Logarithmic : PriceScaleMode.Normal,
+    });
 
     const resyncPeriodAxisLabels = () => {
       if (!useCustomBottomAxis || loadingRef.current) return;
@@ -2335,17 +2404,9 @@ export function PriceChart({
         !initialConsumedRef.current
       ) {
         initialConsumedRef.current = true;
-        setLoading(true);
         setPeriodAxisLabelsGuarded([]);
         setHoverPriceGuarded(null);
         setHoverTimeUnixGuarded(null);
-        setReady(false);
-        setPoints(initialChart.points);
-        if (initialChart.liveSessionMinute != null) {
-          setLiveSessionMinute(initialChart.liveSessionMinute);
-        }
-        setLoading(false);
-        requestAnimationFrame(() => setReady(true));
 
         const now = new Date();
         const regularSession = getUsEquityMarketSession(now) === "regular";
@@ -2367,7 +2428,32 @@ export function PriceChart({
                 initialChart.points.length > 0
               ));
 
+        // AAPL/NVDA outside the regular session: the SSR seed is a smoothed prior-session payload that
+        // gets replaced ~1s later by the authoritative no-store refetch. Skip painting that seed and
+        // keep the skeleton until the refetch resolves so the old chart never flashes.
+        const deferSeedForSkeleton =
+          shouldRefresh1DChart &&
+          !regularSession &&
+          SKELETON_ON_1D_REFRESH_TICKERS.has(symbol.trim().toUpperCase());
+
+        if (initialChart.liveSessionMinute != null) {
+          setLiveSessionMinute(initialChart.liveSessionMinute);
+        }
+
+        if (deferSeedForSkeleton) {
+          // Hold the skeleton (loading, not ready) — do not paint the stale SSR seed.
+          setLoading(true);
+          setReady(false);
+        } else {
+          setLoading(true);
+          setReady(false);
+          setPoints(initialChart.points);
+          setLoading(false);
+          requestAnimationFrame(() => setReady(true));
+        }
+
         if (shouldRefresh1DChart) {
+          let gotFreshPoints = false;
           try {
             const path = `/api/stocks/${encodeURIComponent(symbol)}/chart?range=1D&series=${encodeURIComponent(series)}`;
             const res = await fetch(path, { credentials: "include", cache: "no-store" });
@@ -2393,6 +2479,7 @@ export function PriceChart({
                 });
               }
               if (nextPoints.length) {
+                gotFreshPoints = true;
                 // Full replace — never merge API 1D points with prior/SSR state.
                 setPoints(() =>
                   applyStockChartApiPoints(
@@ -2411,6 +2498,14 @@ export function PriceChart({
             }
           } catch {
             /* keep SSR chart */
+          } finally {
+            if (deferSeedForSkeleton && mounted) {
+              // Reveal the chart once the refetch settles. If it produced nothing (error/empty),
+              // fall back to the SSR seed so we never leave an empty chart behind the skeleton.
+              if (!gotFreshPoints) setPoints(initialChart.points);
+              setLoading(false);
+              requestAnimationFrame(() => setReady(true));
+            }
           }
         }
         return;
@@ -2440,7 +2535,7 @@ export function PriceChart({
       const path =
         kind === "stock"
           ? `/api/stocks/${encodeURIComponent(symbol)}/chart?range=${encodeURIComponent(range)}&series=${encodeURIComponent(series)}${cadenceQ}`
-          : `/api/crypto/${encodeURIComponent(symbol)}/chart?range=${encodeURIComponent(range)}`;
+          : `/api/crypto/${encodeURIComponent(symbol)}/chart?range=${encodeURIComponent(range)}&series=${encodeURIComponent(series)}`;
       try {
         const res = await fetch(path, { credentials: "include" });
         if (!res.ok) {
@@ -2529,7 +2624,7 @@ export function PriceChart({
     if (!isCryptoLive1DSymbol(symbol)) return;
     let cancelled = false;
     const poll = async () => {
-      const path = `/api/crypto/${encodeURIComponent(symbol)}/chart?range=1D`;
+      const path = `/api/crypto/${encodeURIComponent(symbol)}/chart?range=1D&series=${encodeURIComponent(series)}`;
       try {
         const res = await fetch(path, { credentials: "include", cache: "no-store" });
         if (!res.ok || cancelled) return;
@@ -2557,7 +2652,7 @@ export function PriceChart({
       cancelled = true;
       window.clearInterval(id);
     };
-  }, [holdingsStyle, kind, range, symbol, screenshotPreviewMode]);
+  }, [holdingsStyle, kind, range, symbol, series, screenshotPreviewMode]);
 
   // Series data, price lines, markers
   useLayoutEffect(() => {
@@ -3261,7 +3356,10 @@ export function PriceChart({
               <span
                 key={lab.key}
                 className={cn(
-                  "absolute top-1/2 inline-block -translate-y-1/2 whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]",
+                  "absolute top-1/2 inline-block -translate-y-1/2 whitespace-nowrap font-['Inter'] tabular-nums leading-none",
+                  cryptoLive1DAxis
+                    ? "text-[12px] font-medium text-[#8A8A8A]"
+                    : "text-[11px] font-normal text-[#71717A] sm:text-[12px]",
                   periodAxisLabelMaxWidthClass(anchor),
                   periodAxisLabelTransformClass(anchor),
                 )}
