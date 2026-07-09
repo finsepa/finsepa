@@ -595,6 +595,52 @@ body {
   animation: chart-live-price-dot-bounce 1.15s ease-in-out infinite;
 }
 
+/** Stock header — brief mint/red background when live price ticks (Yahoo/Google-style). */
+@keyframes live-price-flash-up {
+  0% {
+    background-color: transparent;
+  }
+  12% {
+    background-color: #d1fae5;
+  }
+  38% {
+    background-color: #d1fae5;
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+@keyframes live-price-flash-down {
+  0% {
+    background-color: transparent;
+  }
+  12% {
+    background-color: #fecaca;
+  }
+  38% {
+    background-color: #fecaca;
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.animate-live-price-flash-up {
+  animation: live-price-flash-up 0.35s ease-out both;
+}
+
+.animate-live-price-flash-down {
+  animation: live-price-flash-down 0.35s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-live-price-flash-up,
+  .animate-live-price-flash-down {
+    animation: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .chart-live-price-dot-bounce {
     animation: none;

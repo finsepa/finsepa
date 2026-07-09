@@ -311,23 +311,29 @@ function KeyStatMetricRow({
   value,
   labelToMetric,
   onMetricClick,
+  onRowClick,
   valueClassName,
 }: {
   label: string;
   value: string;
   labelToMetric: Partial<Record<string, ChartingMetricId>>;
   onMetricClick?: (metricId: ChartingMetricId) => void;
+  onRowClick?: () => void;
   valueClassName?: string;
 }) {
   const metricId = labelToMetric[label];
-  const interactive = typeof onMetricClick === "function" && metricId != null;
+  const interactive =
+    typeof onRowClick === "function" || (typeof onMetricClick === "function" && metricId != null);
   if (!interactive) {
     return <StatRow label={label} value={value} valueClassName={valueClassName} />;
   }
   return (
     <button
       type="button"
-      onClick={() => metricId && onMetricClick?.(metricId)}
+      onClick={() => {
+        if (onRowClick) onRowClick();
+        else if (metricId) onMetricClick?.(metricId);
+      }}
       className={cn(
         "group flex w-full min-w-0 cursor-pointer items-center justify-between gap-3 text-left last:border-0 hover:bg-[#FAFAFA]",
         KEY_STATS_ROW_PY_CLASS,
@@ -379,6 +385,7 @@ const DynamicCard = memo(function DynamicCard({
   loading,
   labelToMetric,
   onMetricClick,
+  onRowClick,
   hideTitle = false,
   embedded = false,
 }: {
@@ -389,14 +396,16 @@ const DynamicCard = memo(function DynamicCard({
   /** When set with `onMetricClick`, matching rows open the fundamentals chart modal (label + value clickable). */
   labelToMetric?: Partial<Record<string, ChartingMetricId>>;
   onMetricClick?: (metricId: ChartingMetricId) => void;
+  /** Per-row click handlers (e.g. Max Drawdown opens price drawdown chart). */
+  onRowClick?: Partial<Record<string, () => void>>;
   /** Mobile tab layout supplies the section title in the tab bar. */
   hideTitle?: boolean;
   embedded?: boolean;
 }) {
   const fallback = useMemo(() => rowLabels.map((label) => ({ label, value: "—" as const })), [rowLabels]);
   const displayRows = rows ?? fallback;
-  const map = labelToMetric ?? null;
-  const clickable = map != null && typeof onMetricClick === "function";
+  const map = labelToMetric ?? {};
+  const rowClickMap = onRowClick ?? {};
 
   return (
     <div className={embedded ? "min-w-0" : KEY_STATS_CARD_CLASS}>
@@ -405,18 +414,27 @@ const DynamicCard = memo(function DynamicCard({
       )}
       {loading ? (
         <CardSkeleton rowLabels={rowLabels} />
-      ) : clickable ? (
-        displayRows.map((row) => (
-          <KeyStatMetricRow
-            key={row.label}
-            label={row.label}
-            value={row.value}
-            labelToMetric={map}
-            onMetricClick={onMetricClick}
-          />
-        ))
       ) : (
-        displayRows.map((row) => <StatRow key={row.label} label={row.label} value={row.value} />)
+        displayRows.map((row) => {
+          const rowClick = rowClickMap[row.label];
+          const metricId = map[row.label];
+          const interactive =
+            typeof rowClick === "function" ||
+            (typeof onMetricClick === "function" && metricId != null);
+          if (!interactive) {
+            return <StatRow key={row.label} label={row.label} value={row.value} />;
+          }
+          return (
+            <KeyStatMetricRow
+              key={row.label}
+              label={row.label}
+              value={row.value}
+              labelToMetric={map}
+              onMetricClick={onMetricClick}
+              onRowClick={rowClick}
+            />
+          );
+        })
       )}
     </div>
   );
@@ -524,16 +542,26 @@ function KeyStatsInner({
   ticker,
   initialBundle,
   onOpenMetricChart,
+  onOpenDrawdownChart,
 }: {
   ticker: string;
   initialBundle?: StockKeyStatsBundle | null;
   /** Dividends (Yield / Payout) and all other listed Key Stats rows with a charting metric open the fundamentals modal. Risk rows have no fiscal series. */
   onOpenMetricChart?: (metricId: ChartingMetricId) => void;
+  onOpenDrawdownChart?: () => void;
 }) {
   const seededBundle = stockKeyStatsBundleHasContent(initialBundle) ? initialBundle! : null;
   const [loading, setLoading] = useState(() => !seededBundle);
   const [bundle, setBundle] = useState<StockKeyStatsBundle | null>(() => seededBundle);
   const [mobileTab, setMobileTab] = useState<KeyStatsTabId>("basic");
+
+  const riskRowClick = useMemo(
+    () =>
+      typeof onOpenDrawdownChart === "function"
+        ? ({ "Max Drawdown (5Y)": onOpenDrawdownChart } satisfies Partial<Record<string, () => void>>)
+        : undefined,
+    [onOpenDrawdownChart],
+  );
 
   const mobileCard = useMemo(() => {
     const hideTitle = true;
@@ -644,6 +672,7 @@ function KeyStatsInner({
             rowLabels={RISK_LABELS}
             rows={bundle?.risk ?? null}
             loading={loading}
+            onRowClick={riskRowClick}
             hideTitle={hideTitle}
             embedded={embedded}
           />
@@ -651,7 +680,7 @@ function KeyStatsInner({
       default:
         return null;
     }
-  }, [bundle, loading, mobileTab, onOpenMetricChart]);
+  }, [bundle, loading, mobileTab, onOpenMetricChart, riskRowClick]);
 
   useEffect(() => {
     if (stockKeyStatsBundleHasContent(initialBundle)) {
@@ -762,7 +791,13 @@ function KeyStatsInner({
             labelToMetric={DIVIDENDS_LABEL_TO_METRIC}
             onMetricClick={onOpenMetricChart}
           />
-          <DynamicCard title="Risk" rowLabels={RISK_LABELS} rows={bundle?.risk ?? null} loading={loading} />
+          <DynamicCard
+            title="Risk"
+            rowLabels={RISK_LABELS}
+            rows={bundle?.risk ?? null}
+            loading={loading}
+            onRowClick={riskRowClick}
+          />
         </div>
       </div>
     </div>

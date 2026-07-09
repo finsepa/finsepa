@@ -459,41 +459,28 @@ export async function addWatchlistTicker(
     sortOrder = (lastRow?.sort_order ?? -1) + 1;
   }
 
+  const { data: existingBefore, error: existingError } = await supabase
+    .from(ITEMS_TABLE)
+    .select("id")
+    .eq("collection_id", collectionId)
+    .eq("ticker", ticker)
+    .maybeSingle();
+  if (existingError) throw new Error(existingError.message);
+
   const { data, error } = await supabase
     .from(ITEMS_TABLE)
-    .insert({ user_id: userId, collection_id: collectionId, ticker, sort_order: sortOrder })
+    .upsert(
+      { user_id: userId, collection_id: collectionId, ticker, sort_order: sortOrder },
+      { onConflict: "collection_id,ticker" },
+    )
     .select("id,user_id,collection_id,ticker,sort_order,created_at")
     .maybeSingle();
 
-  if (!error && data) {
-    await touchWatchlistUserState(supabase, userId);
-    return { row: data as WatchlistRow, created: true };
-  }
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("Upsert failed.");
 
-  if (error?.code === "23505") {
-    const { data: existing, error: fetchError } = await supabase
-      .from(ITEMS_TABLE)
-      .select("id,user_id,collection_id,ticker,sort_order,created_at")
-      .eq("collection_id", collectionId)
-      .eq("ticker", ticker)
-      .maybeSingle();
-
-    if (fetchError) throw new Error(fetchError.message);
-    if (!existing) throw new Error("Duplicate ticker but row not found.");
-    if (options?.sortOrder != null && existing.sort_order !== options.sortOrder) {
-      const { data: updated, error: updateError } = await supabase
-        .from(ITEMS_TABLE)
-        .update({ sort_order: options.sortOrder })
-        .eq("id", existing.id)
-        .select("id,user_id,collection_id,ticker,sort_order,created_at")
-        .maybeSingle();
-      if (updateError) throw new Error(updateError.message);
-      if (updated) return { row: updated as WatchlistRow, created: false };
-    }
-    return { row: existing as WatchlistRow, created: false };
-  }
-
-  throw new Error(error?.message ?? "Insert failed.");
+  await touchWatchlistUserState(supabase, userId);
+  return { row: data as WatchlistRow, created: !existingBefore };
 }
 
 export async function removeWatchlistTicker(

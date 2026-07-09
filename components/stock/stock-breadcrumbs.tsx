@@ -95,7 +95,7 @@ export function StockBreadcrumbs({ ticker, headerMeta, isEtf = false }: Props) {
         {breadcrumbSymbol}
       </span>
       </div>
-      {!isEtf ? <UsEquityMarketSessionBadge className="shrink-0" /> : null}
+      <UsEquityMarketSessionBadge className="shrink-0" />
     </nav>
   );
 }

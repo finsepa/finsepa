@@ -716,6 +716,16 @@ async function load1DIntradayForSessionYmdWithMeta(
     const bars = await getHistoricalSessionIntradayBars(ticker, sessionYmd, interval);
     const points = historicalSessionIntradayToChartPoints(bars, sessionYmd);
     if (points.length >= 2) return { points, interval };
+
+    // NVDA: EODHD 1m is empty for some completed sessions while 5m exists — use frozen WS bars.
+    if (interval === "1m" && ticker.trim().toUpperCase() === "NVDA") {
+      const wsPoints = filterToUsRegularSessionPoints(
+        await fetchStockSessionMinuteBarsFromDb("NVDA", sessionYmd),
+      );
+      if (wsPoints.length >= 2) {
+        return { points: dedupeAndSort(wsPoints), interval: "1m" };
+      }
+    }
   }
   return { points: [], interval: null };
 }
@@ -1238,7 +1248,7 @@ export const getStockChartPoints = unstable_cache(
 const getStockChartPoints1DPriorSession = unstable_cache(
   async (ticker: string, series: StockChartSeries) =>
     loadStockChartPointsUncached(ticker, "1D", series),
-  ["stock-chart-1d-prior-session-v8-static-day"],
+  ["stock-chart-1d-prior-session-v9-static-day"],
   { revalidate: REVALIDATE_STATIC_DAY },
 );
 

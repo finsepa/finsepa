@@ -75,6 +75,7 @@ const TRANSACTION_PICKER_RESULTS_ID = "transaction-company-picker-results";
 /**
  * Screener top-10 stocks (from `/api/charting/picker-stocks`) + `/api/search` when typing.
  * @param includeCrypto When false (e.g. Charting), hides crypto and searches common stocks only (no ETFs).
+ * @param includeEtfs When true with {@link includeCrypto} false, search includes US ETFs (e.g. stock overview compare).
  */
 export function CompanyPicker({
   onPick,
@@ -82,6 +83,7 @@ export function CompanyPicker({
   maxExtraCompanies,
   excludeSymbols = [],
   includeCrypto = true,
+  includeEtfs = false,
   menuAlign = "leading",
   alwaysAllowOpen = false,
   variant = "button",
@@ -99,6 +101,8 @@ export function CompanyPicker({
   excludeSymbols?: string[];
   /** Default true — set false on Charting so only stocks appear (transaction modal keeps crypto). */
   includeCrypto?: boolean;
+  /** With {@link includeCrypto} false — include US ETFs (SPY, QQQ, …) in search results. */
+  includeEtfs?: boolean;
   /** `trailing` anchors the panel to the trigger’s right edge (menu grows left). */
   menuAlign?: "leading" | "trailing";
   /** Breadcrumb ticker switcher: always open menu even when {@link maxExtraCompanies} is 0. */
@@ -178,8 +182,9 @@ export function CompanyPicker({
 
   const searchItemsForDisplay = useMemo(() => {
     if (includeCrypto) return searchItems;
+    if (includeEtfs) return searchItems.filter((item) => item.type === "stock");
     return searchItems.filter(isCommonStockSearchItem);
-  }, [includeCrypto, searchItems]);
+  }, [includeCrypto, includeEtfs, searchItems]);
 
   const closePicker = useCallback(() => {
     setPickerOpen(false);
@@ -240,7 +245,7 @@ export function CompanyPicker({
 
     void (async () => {
       try {
-        const searchScope = includeCrypto ? "all" : "equities";
+        const searchScope = includeCrypto ? "all" : includeEtfs ? "stocks" : "equities";
         const res = await fetch(
           `/api/search?q=${encodeURIComponent(debouncedTrim)}&scope=${searchScope}`,
           {
@@ -264,7 +269,7 @@ export function CompanyPicker({
       cancelled = true;
       ac.abort();
     };
-  }, [debouncedTrim, pickerOpen, includeCrypto]);
+  }, [debouncedTrim, pickerOpen, includeCrypto, includeEtfs]);
 
   const queryTrim = pickerQuery.trim();
   const showSearchPanel = queryTrim.length > 0;
@@ -278,8 +283,8 @@ export function CompanyPicker({
 
   const searchPlaceholder =
     placeholderProp ??
-    (includeCrypto ? "Search stocks, crypto, indices…" : "Search stocks…");
-  const listboxAriaLabel = includeCrypto ? "Stocks, crypto, and search" : "Stocks and search";
+    (includeCrypto ? "Search stocks, crypto, indices…" : includeEtfs ? "Search stocks and ETFs…" : "Search stocks…");
+  const listboxAriaLabel = includeCrypto ? "Stocks, crypto, and search" : includeEtfs ? "Stocks, ETFs, and search" : "Stocks and search";
   const inlinePlaceholder =
     placeholderProp ??
     "Start entering in the ticker or company name";

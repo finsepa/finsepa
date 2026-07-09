@@ -34,6 +34,7 @@ import { StockComparePicker } from "./stock-compare-picker";
 import { StockCompareReturnChart } from "./stock-compare-return-chart";
 import { KeyStats } from "./key-stats";
 import { KeyStatsMetricChartModal } from "./key-stats-metric-chart-modal";
+import { StockDrawdownChartModal } from "./stock-drawdown-chart-modal";
 import { topbarSquircleIconClass } from "@/components/design-system/topbar-control-classes";
 import { ChartScreenshotDownloadModal } from "@/components/chart/chart-screenshot-download-modal";
 import type { ChartScreenshotSnapshot } from "@/lib/chart/chart-screenshot-types";
@@ -403,6 +404,10 @@ export function StockPageContent({
   const [revenueProfitModalMetric, setRevenueProfitModalMetric] = useState<ChartingMetricId | null>(null);
   const openRevenueProfitMetricModal = useCallback((metricId: ChartingMetricId) => {
     setRevenueProfitModalMetric(metricId);
+  }, []);
+  const [drawdownChartOpen, setDrawdownChartOpen] = useState(false);
+  const openDrawdownChart = useCallback(() => {
+    setDrawdownChartOpen(true);
   }, []);
 
   const fundamentalsModalAnnual = useMemo(
@@ -1097,6 +1102,12 @@ export function StockPageContent({
         initialQuarterlyPoints={fundamentalsModalQuarterly}
         headerMeta={headerMeta}
       />
+      <StockDrawdownChartModal
+        open={drawdownChartOpen}
+        onClose={() => setDrawdownChartOpen(false)}
+        ticker={ticker}
+        headerMeta={headerMeta}
+      />
       <ChartScreenshotDownloadModal
         open={overviewDownloadOpen}
         onClose={() => setOverviewDownloadOpen(false)}
@@ -1127,6 +1138,13 @@ export function StockPageContent({
         showExtendedHours={showExtendedHoursHeader}
         extendedHours={extendedHoursQuote}
         extendedHoursLoading={extendedHoursLoading}
+        livePriceFlash={
+          liveRegularHeader &&
+          !mobileChartScrubActive &&
+          !chartUi.selectionActive &&
+          chartSeries === "price" &&
+          comparePicks.length === 0
+        }
       />
 
       {stockChartDrivesHeader ? (
@@ -1264,6 +1282,7 @@ export function StockPageContent({
                 ticker={ticker}
                 initialBundle={initialPageData?.ticker === ticker ? initialPageData.keyStatsBundle : null}
                 onOpenMetricChart={openRevenueProfitMetricModal}
+                onOpenDrawdownChart={openDrawdownChart}
               />
             </div>
           ) : null}

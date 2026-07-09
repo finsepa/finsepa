@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { ChartScreenshotDownloadModal } from "@/components/chart/chart-screenshot-download-modal";
-import { Plus, Download, RefreshCw, X } from "@/lib/icons";
+import { Plus, Download, RefreshCw, X, LineChart } from "@/lib/icons";
 import type { ChartScreenshotSnapshot } from "@/lib/chart/chart-screenshot-types";
 import type { CanvasRenderingTarget2D } from "fancy-canvas";
 import {
@@ -53,8 +53,9 @@ import {
 import { DataFetchTopLoader } from "@/components/layout/data-fetch-top-loader";
 import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
 import { ChartLoadingIndicator } from "@/components/ui/chart-loading-indicator";
+import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { ChartingVisualSwitcher } from "@/components/stock/multichart-visual-switcher";
-import { secondaryFillButtonClassName, TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
+import { secondaryFillButtonClassName, secondaryOutlineButtonClassName, TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
 import { DropdownScrollArea } from "@/components/design-system/dropdown-scroll-area";
 import {
   dropdownMenuRichItemClassName,
@@ -1842,6 +1843,9 @@ export function ChartingWorkspace({
 
   const isFigmaToolbar = toolbarLayout === "figma70857";
   const metricControlsInLegend = metricControlsPlacement === "legend";
+  /** Stock asset Charting tab — metrics start empty; picker lives in the legend / empty state. */
+  const stockTabStartsEmptyMetrics =
+    metricControlsInLegend && !fullPageCompanyChipSlot && !screenshotPreviewMode;
   const stockFullWidthFixedBars = histogramLayout === "stockFullWidthFixedBars";
   const isFullPageCharting = fullPageCompanyChipSlot != null;
   const animateBars = animateBarsOnAppear && !screenshotPreviewMode;
@@ -1886,11 +1890,12 @@ export function ChartingWorkspace({
   const [points, setPoints] = useState<ChartingSeriesPoint[] | null>(seedPoints);
   const [ttmPoint, setTtmPoint] = useState<ChartingSeriesPoint | null>(seedTtmPoint);
   const [loading, setLoading] = useState(seedPoints == null);
-  const [selected, setSelected] = useState<ChartingMetricId[]>(
-    screenshotPreviewMode && previewLockedState
-      ? previewLockedState.selectedMetrics
-      : CHARTING_DEFAULT_METRICS,
-  );
+  const [selected, setSelected] = useState<ChartingMetricId[]>(() => {
+    if (screenshotPreviewMode && previewLockedState) return previewLockedState.selectedMetrics;
+    const parsed = parseChartingMetricsParam(metricParam);
+    if (stockTabStartsEmptyMetrics) return parsed;
+    return parsed.length ? parsed : [...CHARTING_DEFAULT_METRICS];
+  });
   const [downloadOpen, setDownloadOpen] = useState(false);
   const [downloadSnapshot, setDownloadSnapshot] = useState<ChartScreenshotSnapshot | null>(null);
   const [hover, setHover] = useState<HoverState>(null);
@@ -1991,9 +1996,13 @@ export function ChartingWorkspace({
       else setSelected([...CHARTING_DEFAULT_METRICS]);
       return;
     }
+    if (stockTabStartsEmptyMetrics) {
+      setSelected(parsed);
+      return;
+    }
     if (parsed.length) setSelected(parsed);
     else setSelected([...CHARTING_DEFAULT_METRICS]);
-  }, [metricParam, fullPageCompanyChipSlot, screenshotPreviewMode]);
+  }, [metricParam, fullPageCompanyChipSlot, screenshotPreviewMode, stockTabStartsEmptyMetrics]);
 
   useEffect(() => {
     let cancelled = false;
@@ -2232,6 +2241,14 @@ export function ChartingWorkspace({
     if (fullPageCompanyChipSlot) return;
     if (loading || !ordered.length) return;
     setSelected((prev) => {
+      if (stockTabStartsEmptyMetrics) {
+        if (prev.length === 0) return prev;
+        const next = prev.filter(
+          (id) => (!allowedMetricSet || allowedMetricSet.has(id)) && seriesData(ordered, id).length > 0,
+        );
+        if (next.length === prev.length && next.every((id, i) => id === prev[i])) return prev;
+        return next;
+      }
       const next = prev.filter((id) => (!allowedMetricSet || allowedMetricSet.has(id)) && seriesData(ordered, id).length > 0);
       if (next.length === prev.length && next.length > 0) return prev;
       if (next.length >= 1) return next;
@@ -2246,7 +2263,15 @@ export function ChartingWorkspace({
       const first = CHARTING_METRIC_IDS.find((id) => seriesData(ordered, id).length > 0);
       return first ? [first] : [];
     });
-  }, [loading, ordered, metricParam, fullPageCompanyChipSlot, allowedMetricSet, screenshotPreviewMode]);
+  }, [
+    loading,
+    ordered,
+    metricParam,
+    fullPageCompanyChipSlot,
+    allowedMetricSet,
+    screenshotPreviewMode,
+    stockTabStartsEmptyMetrics,
+  ]);
 
   const handleOpenDownload = useCallback(() => {
     const stockMeta = getStockDetailMetaFromTicker(ticker);
@@ -2269,6 +2294,7 @@ export function ChartingWorkspace({
       let deferred: Deferred | null = null;
       setSelected((prev) => {
         const next = prev.filter((x) => x !== id);
+        if (stockTabStartsEmptyMetrics) return next;
         if (!fullPageCompanyChipSlot) {
           if (next.length === 0) return prev;
           return next;
@@ -2290,7 +2316,7 @@ export function ChartingWorkspace({
         });
       }
     },
-    [fullPageCompanyChipSlot, pathRoute, router, ticker],
+    [fullPageCompanyChipSlot, pathRoute, router, stockTabStartsEmptyMetrics, ticker],
   );
 
   const addMetric = useCallback(
@@ -3371,6 +3397,8 @@ export function ChartingWorkspace({
 
   const empty = !loading && (!points || points.length === 0);
   const noMetricData = !loading && !empty && !canPlot;
+  const hasMetricSelection = selected.length > 0;
+  const showStockTabMetricEmptyState = stockTabStartsEmptyMetrics && !hasMetricSelection;
 
   const metricChipColorById = useMemo(() => {
     const seriesOrder = chartingSeriesRenderOrder(selected, chartType);
@@ -3395,8 +3423,12 @@ export function ChartingWorkspace({
           });
         }}
         className={cn(
-          secondaryFillButtonClassName,
-          metricControlsInLegend && "h-6 gap-1.5 rounded-[8px] px-3 text-[12px] font-medium leading-none",
+          showStockTabMetricEmptyState
+            ? secondaryOutlineButtonClassName
+            : secondaryFillButtonClassName,
+          !showStockTabMetricEmptyState &&
+            metricControlsInLegend &&
+            "h-6 gap-1.5 rounded-[8px] px-3 text-[12px] font-medium leading-none",
         )}
       >
         <Plus className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
@@ -3466,6 +3498,7 @@ export function ChartingWorkspace({
           <h2 className="min-w-0 shrink-0 text-2xl font-semibold leading-9 tracking-tight text-[#09090B] sm:flex-1">
             {workspaceTitle}
           </h2>
+          {!showStockTabMetricEmptyState ? (
           <div className="flex min-w-0 flex-wrap items-center gap-3 sm:flex-nowrap sm:justify-end sm:overflow-x-auto sm:pb-0.5">
             <div className="flex shrink-0 flex-nowrap items-center gap-2">
               {chartType !== "line" ? (
@@ -3503,7 +3536,7 @@ export function ChartingWorkspace({
               <button
                 type="button"
                 onClick={handleOpenDownload}
-                disabled={loading || empty || noMetricData}
+                disabled={loading || empty || noMetricData || showStockTabMetricEmptyState}
                 className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#09090B] transition-colors hover:bg-[#FAFAFA] disabled:cursor-not-allowed disabled:opacity-40"
                 aria-label="Download chart"
               >
@@ -3521,6 +3554,7 @@ export function ChartingWorkspace({
               </button>
             ) : null}
           </div>
+          ) : null}
         </div>
 
         {!metricControlsInLegend || fullPageCompanyChipSlot ? (
@@ -3556,7 +3590,20 @@ export function ChartingWorkspace({
       </div>
       ) : null}
 
-      {loading ? (
+      {showStockTabMetricEmptyState ? (
+        <Empty variant="card" className="min-h-[min(50vh,420px)] w-full">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <LineChart className="h-6 w-6" strokeWidth={1.75} aria-hidden />
+            </EmptyMedia>
+            <EmptyTitle>Add a metric to begin charting</EmptyTitle>
+            <EmptyDescription className="max-w-md">
+              Choose revenue, net income, or another fundamental to display on the chart.
+            </EmptyDescription>
+          </EmptyHeader>
+          <EmptyContent>{addMetricPicker}</EmptyContent>
+        </Empty>
+      ) : loading ? (
         <ChartLoadingIndicator
           minHeightPx={chartHeight}
           className="min-h-[min(50vh,420px)]"
@@ -3971,7 +4018,7 @@ export function ChartingWorkspace({
               </div>
             </div>
           )}
-          {(!screenshotPreviewMode || screenshotShowHorizontalLegend) ? (
+          {hasMetricSelection && (!screenshotPreviewMode || screenshotShowHorizontalLegend) ? (
           <div className={cn("flex justify-center pt-0", screenshotPreviewMode ? "-mt-1" : "-mt-0.5")}>
             <div className="flex flex-wrap items-center justify-center gap-2">
               {selected.map((id) =>
@@ -3993,7 +4040,7 @@ export function ChartingWorkspace({
                     <button
                       type="button"
                       onClick={() => removeMetric(id)}
-                      disabled={selected.length <= 1}
+                      disabled={!stockTabStartsEmptyMetrics && selected.length <= 1}
                       className="flex w-6 shrink-0 items-center justify-center border-l border-[#E4E4E7] text-[#09090B] transition-colors hover:bg-[#FAFAFA] disabled:pointer-events-none disabled:opacity-30"
                       aria-label={`Remove ${CHARTING_METRIC_LABEL[id]}`}
                     >

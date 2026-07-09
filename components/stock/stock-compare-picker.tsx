@@ -76,6 +76,7 @@ export function StockComparePicker({ baseTicker, values, onAdd, onRemove }: Prop
       maxExtraCompanies={maxExtra}
       excludeSymbols={excludeSymbols}
       includeCrypto={false}
+      includeEtfs
       menuAlign="trailing"
       placeholder="Compare to..."
       wrapClassName="relative min-w-0 w-full sm:w-auto"
@@ -91,7 +92,7 @@ export function StockComparePicker({ baseTicker, values, onAdd, onRemove }: Prop
         >
           <div
             tabIndex={0}
-            aria-label="Compare stocks, open picker to add companies"
+            aria-label="Compare stocks and ETFs, open picker to add companies"
             aria-expanded={open}
             onKeyDown={(e) => {
               if (atCapacity) return;
