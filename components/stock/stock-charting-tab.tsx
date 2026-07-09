@@ -78,6 +78,9 @@ const LABEL_TO_METRIC: Partial<Record<string, ChartingMetricId>> = {
 
   Yield: "dividend_yield",
   Payout: "payout_ratio",
+
+  "Max Drawdown (5Y)": "drawdown",
+  Drawdown: "drawdown",
 };
 
 function buildAllowedMetrics(
@@ -125,6 +128,8 @@ function buildAllowedMetrics(
       }
     }
   }
+
+  out.add("drawdown");
 
   return out.size ? [...out] : undefined;
 }

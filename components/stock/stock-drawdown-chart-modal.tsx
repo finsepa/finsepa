@@ -682,6 +682,99 @@ function DrawdownHistoryChart({
   );
 }
 
+export function StockDrawdownChartPanel({
+  ticker,
+  height = 400,
+  className,
+}: {
+  ticker: string;
+  height?: number;
+  className?: string;
+}) {
+  const [timeRange, setTimeRange] = useState<FundamentalsChartTimeRange>("all");
+  const [displayOptions, setDisplayOptions] = useState<FundamentalsChartDisplayOptions>(
+    () => ({ ...DEFAULT_FUNDAMENTALS_CHART_DISPLAY_OPTIONS }),
+  );
+  const [points, setPoints] = useState<DrawdownSeriesPoint[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setPoints([]);
+    fetch(`/api/stocks/${encodeURIComponent(ticker)}/drawdown-series`, { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("Request failed"))))
+      .then((data: { points?: DrawdownSeriesPoint[] | null }) => {
+        if (cancelled) return;
+        setPoints(Array.isArray(data.points) ? data.points : []);
+      })
+      .catch(() => {
+        if (!cancelled) setPoints([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [ticker]);
+
+  const windowedPoints = useMemo(
+    () => filterDrawdownPoints(points, timeRange),
+    [points, timeRange],
+  );
+
+  const lineSettingsBadges = useMemo((): FundamentalsChartSettingsLineBadges | undefined => {
+    const values = windowedPoints.map((p) => p.drawdown).filter((v) => Number.isFinite(v));
+    if (!values.length) return undefined;
+    return {
+      max: formatDrawdownDepth(Math.max(...values, 0)),
+      min: formatDrawdownDepth(Math.min(...values)),
+    };
+  }, [windowedPoints]);
+
+  const hasSeries = windowedPoints.length >= 2;
+
+  return (
+    <div className={cn("flex flex-col gap-4", className)}>
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        <FundamentalsChartSettingsMenu
+          variant="line"
+          options={displayOptions}
+          onChange={setDisplayOptions}
+          lineBadges={lineSettingsBadges}
+        />
+        <TabSwitcher
+          size="sm"
+          options={TIME_RANGE_TAB_OPTIONS}
+          value={timeRange}
+          onChange={setTimeRange}
+          aria-label="Date range"
+        />
+        <button
+          type="button"
+          disabled={loading || !hasSeries}
+          className={cn(
+            topbarSquircleIconClass,
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900/10 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40",
+          )}
+          aria-label="Download chart"
+        >
+          <Download className="h-5 w-5" strokeWidth={2} aria-hidden />
+        </button>
+      </div>
+      <DrawdownHistoryChart
+        key={`drawdown-${timeRange}`}
+        points={windowedPoints}
+        loading={loading}
+        timeRange={timeRange}
+        displayOptions={displayOptions}
+        height={height}
+      />
+    </div>
+  );
+}
+
 export function StockDrawdownChartModal({
   open,
   onClose,

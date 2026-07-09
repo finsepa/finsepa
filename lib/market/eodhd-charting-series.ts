@@ -1642,6 +1642,7 @@ function emptyPoint(periodEnd: string): ChartingSeriesPoint {
     fcfYield: z,
     cashConversion: z,
     interestCover: z,
+    drawdown: z,
   };
 }
 

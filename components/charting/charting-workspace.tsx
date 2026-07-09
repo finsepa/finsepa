@@ -43,8 +43,11 @@ import {
   buildStandaloneChartPath,
   parseChartingMetricsParam,
   readChartingMetricValue,
+  isPriceSeriesChartingMetric,
+  PRICE_SERIES_CHARTING_METRIC_IDS,
   type StandaloneChartRoute,
 } from "@/lib/market/stock-charting-metrics";
+import { StockDrawdownChartPanel } from "@/components/stock/stock-drawdown-chart-modal";
 import {
   ChartingIndividualCompanyTable,
   formatBarChartDataLabel,
@@ -2233,6 +2236,15 @@ export function ChartingWorkspace({
         if (v != null && Number.isFinite(v)) seen.add(id);
       }
     }
+    if (allowedMetricSet) {
+      for (const id of PRICE_SERIES_CHARTING_METRIC_IDS) {
+        if (allowedMetricSet.has(id)) seen.add(id);
+      }
+    } else {
+      for (const id of PRICE_SERIES_CHARTING_METRIC_IDS) {
+        seen.add(id);
+      }
+    }
     return CHARTING_METRIC_IDS.filter((id) => seen.has(id));
   }, [ordered, allowedMetricSet]);
 
@@ -2244,23 +2256,31 @@ export function ChartingWorkspace({
       if (stockTabStartsEmptyMetrics) {
         if (prev.length === 0) return prev;
         const next = prev.filter(
-          (id) => (!allowedMetricSet || allowedMetricSet.has(id)) && seriesData(ordered, id).length > 0,
+          (id) =>
+            (!allowedMetricSet || allowedMetricSet.has(id)) &&
+            (isPriceSeriesChartingMetric(id) || seriesData(ordered, id).length > 0),
         );
         if (next.length === prev.length && next.every((id, i) => id === prev[i])) return prev;
         return next;
       }
-      const next = prev.filter((id) => (!allowedMetricSet || allowedMetricSet.has(id)) && seriesData(ordered, id).length > 0);
+      const next = prev.filter(
+        (id) =>
+          (!allowedMetricSet || allowedMetricSet.has(id)) &&
+          (isPriceSeriesChartingMetric(id) || seriesData(ordered, id).length > 0),
+      );
       if (next.length === prev.length && next.length > 0) return prev;
       if (next.length >= 1) return next;
       for (const m of parseChartingMetricsParam(metricParam)) {
         if (allowedMetricSet && !allowedMetricSet.has(m)) continue;
-        if (seriesData(ordered, m).length > 0) return [m];
+        if (isPriceSeriesChartingMetric(m) || seriesData(ordered, m).length > 0) return [m];
       }
       for (const id of CHARTING_DEFAULT_METRICS) {
         if (allowedMetricSet && !allowedMetricSet.has(id)) continue;
-        if (seriesData(ordered, id).length > 0) return [id];
+        if (isPriceSeriesChartingMetric(id) || seriesData(ordered, id).length > 0) return [id];
       }
-      const first = CHARTING_METRIC_IDS.find((id) => seriesData(ordered, id).length > 0);
+      const first = CHARTING_METRIC_IDS.find(
+        (id) => isPriceSeriesChartingMetric(id) || seriesData(ordered, id).length > 0,
+      );
       return first ? [first] : [];
     });
   }, [
@@ -2353,10 +2373,12 @@ export function ChartingWorkspace({
 
   const totalAddable = useMemo(() => groupedAddable.reduce((n, g) => n + g.ids.length, 0), [groupedAddable]);
 
-  const canPlot = useMemo(
-    () => selected.some((id) => seriesData(ordered, id).length > 0),
-    [ordered, selected],
-  );
+  const canPlot = useMemo(() => {
+    if (selected.length === 1 && selected[0] === "drawdown") return true;
+    return selected.some((id) => seriesData(ordered, id).length > 0);
+  }, [ordered, selected]);
+
+  const drawdownOnly = selected.length === 1 && selected[0] === "drawdown";
 
   const chartAxes = useMemo(() => {
     if (!ordered.length || !selected.length) {
@@ -3395,8 +3417,8 @@ export function ChartingWorkspace({
     return () => chartPlotCleanupRef.current?.();
   }, []);
 
-  const empty = !loading && (!points || points.length === 0);
-  const noMetricData = !loading && !empty && !canPlot;
+  const empty = !loading && !drawdownOnly && (!points || points.length === 0);
+  const noMetricData = !loading && !empty && !canPlot && !drawdownOnly;
   const hasMetricSelection = selected.length > 0;
   const showStockTabMetricEmptyState = stockTabStartsEmptyMetrics && !hasMetricSelection;
 
@@ -3603,6 +3625,8 @@ export function ChartingWorkspace({
           </EmptyHeader>
           <EmptyContent>{addMetricPicker}</EmptyContent>
         </Empty>
+      ) : drawdownOnly ? (
+        <StockDrawdownChartPanel ticker={ticker} height={chartHeight} />
       ) : loading ? (
         <ChartLoadingIndicator
           minHeightPx={chartHeight}

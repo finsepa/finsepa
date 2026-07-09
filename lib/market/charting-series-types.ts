@@ -170,6 +170,9 @@ export type ChartingSeriesPoint = {
   cashConversion: number | null;
   /** EBIT ÷ interest expense. */
   interestCover: number | null;
+
+  /** Price drawdown (peak-to-trough) — populated only for price-series charting metrics. */
+  drawdown: number | null;
 };
 
 /** @deprecated Use ChartingSeriesPoint — kept for imports that expect the old name. */

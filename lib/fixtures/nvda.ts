@@ -501,6 +501,7 @@ export function getNvdaChartingSeriesPoints(mode: "annual" | "quarterly"): Chart
       fcfYield: null,
       cashConversion: null,
       interestCover: null,
+      drawdown: null,
     });
   }
   return points;

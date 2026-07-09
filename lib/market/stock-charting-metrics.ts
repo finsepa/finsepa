@@ -50,7 +50,15 @@ const CORE_CHARTING_METRIC_IDS = [
   "cash_debt",
   "dividend_yield",
   "payout_ratio",
+  "drawdown",
 ] as const;
+
+/** Daily price-series metrics (not fiscal fundamentals rows). */
+export const PRICE_SERIES_CHARTING_METRIC_IDS = ["drawdown"] as const;
+
+export function isPriceSeriesChartingMetric(id: ChartingMetricId): boolean {
+  return (PRICE_SERIES_CHARTING_METRIC_IDS as readonly string[]).includes(id);
+}
 
 export const CHARTING_METRIC_IDS = [
   ...CORE_CHARTING_METRIC_IDS,
@@ -104,6 +112,7 @@ export const CHARTING_METRIC_FIELD: Record<ChartingMetricId, keyof ChartingSerie
   cash_debt: "cashDebt",
   dividend_yield: "dividendYield",
   payout_ratio: "payoutRatio",
+  drawdown: "drawdown",
   ...FINANCIALS_EXTRA_CHARTING_METRIC_FIELD,
 };
 
@@ -149,6 +158,7 @@ export const CHARTING_METRIC_LABEL: Record<ChartingMetricId, string> = {
   cash_debt: "Cash/Debt",
   dividend_yield: "Dividend Yield",
   payout_ratio: "Payout Ratio",
+  drawdown: "Drawdown",
   ...FINANCIALS_EXTRA_CHARTING_METRIC_LABEL,
 };
 
@@ -194,10 +204,18 @@ export const CHARTING_METRIC_KIND: Record<ChartingMetricId, ChartingMetricKind> 
   cash_debt: "multiple",
   dividend_yield: "percent",
   payout_ratio: "percent",
+  drawdown: "percent",
   ...FINANCIALS_EXTRA_CHARTING_METRIC_KIND,
 };
 
-export type ChartingDropdownGroupId = "financials" | "margins" | "growth" | "returns" | "valuation" | "dividends";
+export type ChartingDropdownGroupId =
+  | "financials"
+  | "margins"
+  | "growth"
+  | "returns"
+  | "valuation"
+  | "dividends"
+  | "risk";
 
 export const CHARTING_DROPDOWN_GROUPS: { id: ChartingDropdownGroupId; label: string; metricIds: ChartingMetricId[] }[] =
   [
@@ -287,6 +305,11 @@ export const CHARTING_DROPDOWN_GROUPS: { id: ChartingDropdownGroupId; label: str
       label: "Dividends",
       metricIds: ["dividend_yield", "payout_ratio"],
     },
+    {
+      id: "risk",
+      label: "Risk",
+      metricIds: ["drawdown"],
+    },
   ];
 
 export function isChartingMetricId(s: string | null | undefined): s is ChartingMetricId {
@@ -306,7 +329,7 @@ export function readChartingMetricValue(row: ChartingSeriesPoint, id: ChartingMe
 
 /** Growth / change percents use +/- prefix and green/red; level percents (margins, yields) stay neutral black. */
 export function isChartingSignedPercentMetric(id: ChartingMetricId): boolean {
-  return id.includes("_yoy") || id.includes("_cagr") || id === "buyback_yield";
+  return id.includes("_yoy") || id.includes("_cagr") || id === "buyback_yield" || id === "drawdown";
 }
 
 /** URL query value (underscore) */
