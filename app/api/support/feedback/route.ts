@@ -12,11 +12,15 @@ import {
   SUPPORT_FEEDBACK_MAX_TOTAL_BYTES,
   SUPPORT_FEEDBACK_MESSAGE_MAX_LENGTH,
 } from "@/lib/support/feedback-constants";
+import { parseFeedbackFormFiles } from "@/lib/support/feedback-form-files";
 import { uploadFeedbackAttachments } from "@/lib/support/upload-feedback-attachments";
 import { AuthRequiredError, requireAuthUser } from "@/lib/watchlist/api-auth";
 
+export const runtime = "nodejs";
+export const maxDuration = 30;
+
 function sanitizeFileName(name: string): string {
-  return name.replace(/[^\w.\-()+\s]/g, "_").slice(0, 120) || "file";
+  return name.replace(/[^\w.\-()+]/g, "_").replace(/_+/g, "_").slice(0, 120) || "file";
 }
 
 function isValidEmail(email: string): boolean {
@@ -47,7 +51,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Message is too long." }, { status: 400 });
     }
 
-    const fileEntries = form.getAll("files").filter((f): f is File => f instanceof File && f.size > 0);
+    const fileEntries = parseFeedbackFormFiles(form);
     if (fileEntries.length > SUPPORT_FEEDBACK_MAX_FILES) {
       return NextResponse.json({ error: `You can attach up to ${SUPPORT_FEEDBACK_MAX_FILES} files.` }, { status: 400 });
     }
@@ -69,24 +73,20 @@ export async function POST(request: Request) {
 
     if (fileEntries.length > 0) {
       if (!admin) {
-        return NextResponse.json(
-          { error: "File uploads are not available on this environment yet." },
-          { status: 503 },
-        );
+        attachmentLinks = fileEntries.map((file) => `${file.name} (storage unavailable)`).join("\n");
+      } else {
+        const uploaded = await uploadFeedbackAttachments({
+          admin,
+          userId: user.id,
+          files: fileEntries,
+          sanitizeFileName,
+        });
+        attachmentLinks = uploaded.attachmentLinks;
+        imageUrl = uploaded.imageUrl;
+        if (uploaded.failures.length > 0) {
+          console.warn("[support/feedback] attachment failures:", uploaded.failures.join("; "));
+        }
       }
-
-      const uploaded = await uploadFeedbackAttachments({
-        admin,
-        userId: user.id,
-        files: fileEntries,
-        sanitizeFileName,
-      });
-      if (!uploaded.ok) {
-        return NextResponse.json({ error: uploaded.message }, { status: 502 });
-      }
-
-      attachmentLinks = uploaded.attachmentLinks;
-      imageUrl = uploaded.imageUrl;
     }
 
     const loopsKey = getLoopsApiKey();
@@ -112,7 +112,7 @@ export async function POST(request: Request) {
 
     if (!sent.ok) {
       console.error("[support/feedback]", sent.message);
-      return NextResponse.json({ error: "Could not send your message. Try again in a moment." }, { status: 502 });
+      return NextResponse.json({ error: sent.message }, { status: 502 });
     }
 
     console.info("[support/feedback] delivered via Loops to", sent.to);

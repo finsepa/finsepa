@@ -100,6 +100,7 @@ const LOOPS_TRANSACTIONAL_ID_WELCOME_TRIAL_START_DEFAULT = "cmpqlacpq1dux0j155z7
 /**
  * Loops “Welcome Trial Start” (Google sign-up or after email confirm).
  * Template data variables: firstName, platformLink, trialDays, trialEndsAt, proInfoLine.
+ * Button link in Loops editor: `{data.platformLink}` (same as `{data.confirmationLink}` on other templates).
  */
 export function getLoopsTransactionalWelcomeTrialStartId(): string {
   const welcome = pickProcessEnv(

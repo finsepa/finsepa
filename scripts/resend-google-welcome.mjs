@@ -62,6 +62,7 @@ const body = {
   dataVariables: {
     firstName,
     platformLink: `${appOrigin}/screener`,
+    confirmationLink: `${appOrigin}/screener`,
     trialDays: 7,
     trialEndsAt,
     proInfoLine:
@@ -80,6 +81,14 @@ const res = await fetch("https://app.loops.so/api/v1/transactional", {
 
 const text = await res.text();
 console.log("Loops", res.status, text);
+
+console.log(`
+If the "Go to Finsepa" button opens a broken URL (e.g. {https://app.finsepa.com/...):
+  Loops → Transactional → Welcome to Finsepa → button → Link field
+  Change:  {{data.platformLink}  or  {platformLink}
+  To:      {data.platformLink}
+  Publish the template, then resend this script.
+`);
 
 if (res.ok) {
   const { data: u } = await admin.auth.admin.getUserById(row.id);

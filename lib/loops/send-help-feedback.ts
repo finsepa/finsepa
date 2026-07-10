@@ -49,15 +49,34 @@ export async function sendHelpFeedbackEmail(params: {
     dataVariables.imageUrl = imageUrl;
   }
 
+  const errorHint =
+    "Check LOOPS_API_KEY, LOOPS_TRANSACTIONAL_ID_HELP_FEEDBACK, and template: publish it, From = hello@mail.finsepa.com, Reply-To = {data.userEmail}, LMX tags {data.userName}, optional {data.imageUrl}.";
+
   const result = await sendLoopsTransactionalEmail({
     apiKey: params.apiKey,
     transactionalId: params.transactionalId,
     to: SUPPORT_FEEDBACK_TO_EMAIL,
     addContact: false,
     dataVariables,
-    errorHint:
-      "Check LOOPS_API_KEY, LOOPS_TRANSACTIONAL_ID_HELP_FEEDBACK, and template: publish it, From = hello@mail.finsepa.com, Reply-To = {data.userEmail}, LMX tags {data.userName}, optional {data.imageUrl}.",
+    errorHint,
   });
+
+  if (!result.ok && imageUrl) {
+    console.warn("[loops/help-feedback] retrying without inline image:", result.message);
+    const withoutImage: Record<string, string> = { ...dataVariables };
+    delete withoutImage.imageUrl;
+    const retry = await sendLoopsTransactionalEmail({
+      apiKey: params.apiKey,
+      transactionalId: params.transactionalId,
+      to: SUPPORT_FEEDBACK_TO_EMAIL,
+      addContact: false,
+      dataVariables: withoutImage,
+      errorHint,
+    });
+    if (retry.ok) return { ok: true, to: SUPPORT_FEEDBACK_TO_EMAIL };
+    return retry;
+  }
+
   if (!result.ok) return result;
   return { ok: true, to: SUPPORT_FEEDBACK_TO_EMAIL };
 }

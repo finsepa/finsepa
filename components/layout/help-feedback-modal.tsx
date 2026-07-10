@@ -121,9 +121,21 @@ export function HelpFeedbackModal({
       }
 
       const res = await fetch("/api/support/feedback", { method: "POST", body: form });
-      const data = (await res.json().catch(() => ({}))) as { error?: string; ok?: boolean };
+      const raw = await res.text();
+      let data: { error?: string; ok?: boolean } = {};
+      if (raw) {
+        try {
+          data = JSON.parse(raw) as { error?: string; ok?: boolean };
+        } catch {
+          data = {};
+        }
+      }
       if (!res.ok || data.ok !== true) {
-        throw new Error(data.error ?? "Could not send your message.");
+        const detail =
+          data.error?.trim() ||
+          (raw && !raw.startsWith("{") ? raw.slice(0, 200) : null) ||
+          (res.status ? `Could not send your message (${res.status}).` : null);
+        throw new Error(detail ?? "Could not send your message.");
       }
 
       setPhase("success");
