@@ -106,3 +106,5 @@ export {
   Wallet01 as Wallet,
   XClose as X,
 } from "@untitledui-pro/icons/line";
+
+export { CheckVerified02 as VerifiedBadge } from "@untitledui-pro/icons/solid";

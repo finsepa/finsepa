@@ -3,6 +3,7 @@
 import Link from "next/link";
 
 import { CompanyLogo } from "@/components/screener/company-logo";
+import { PortfolioOwnerName } from "@/components/portfolios/portfolio-owner-name";
 import { UserAvatar } from "@/components/user/user-avatar";
 import type { PublicListingRow } from "@/components/portfolios/portfolios-directory-client";
 import { displayLogoUrlForPortfolioSymbol } from "@/lib/portfolio/portfolio-asset-display-logo";
@@ -131,7 +132,9 @@ export function PortfoliosDirectoryTable({ listings }: { listings: PublicListing
                       <div className="truncate text-[14px] font-semibold leading-5 underline-offset-2 group-hover:underline">
                         {listing.name}
                       </div>
-                      <div className="truncate text-[12px] font-normal leading-4 text-[#71717A]">{ownerName}</div>
+                      <div className="truncate text-[12px] font-normal leading-4 text-[#71717A]">
+                        <PortfolioOwnerName name={ownerName} />
+                      </div>
                       <div className="mt-0.5 text-[12px] font-normal leading-4 tabular-nums text-[#71717A]">
                         {value != null ? formatUsdCompact(value) : "—"}
                         {holdingCount != null ? ` · ${Math.round(holdingCount)} holdings` : null}
@@ -168,7 +171,9 @@ export function PortfoliosDirectoryTable({ listings }: { listings: PublicListing
                       <div className="truncate text-[14px] font-semibold leading-5 underline-offset-2 group-hover:underline">
                         {listing.name}
                       </div>
-                      <div className="truncate text-[12px] font-normal leading-4 text-[#71717A]">{ownerName}</div>
+                      <div className="truncate text-[12px] font-normal leading-4 text-[#71717A]">
+                        <PortfolioOwnerName name={ownerName} />
+                      </div>
                     </div>
                   </div>
 

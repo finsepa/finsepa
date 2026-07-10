@@ -17,7 +17,13 @@ import {
 } from "lightweight-charts";
 
 import { ChartingCompanyAddDropdown } from "@/components/charting/charting-company-add-dropdown";
+import {
+  useChartingRailPickerAnchors,
+  useRegisterChartingCompanyRail,
+} from "@/components/charting/charting-company-rail-context";
+import type { CompanyPickerOpenControls } from "@/components/charting/company-picker";
 import { formatChartingTableCell } from "@/components/charting/charting-individual-company-table";
+import { ChartingCompareCompanyTable } from "@/components/charting/charting-compare-company-table";
 import {
   DEFAULT_CHART_TIME_RANGE,
   DEFAULT_CHART_TIME_RANGE_ORDER,
@@ -65,6 +71,11 @@ import {
   fundamentalsChartScaleMarginTop,
   HIDE_NATIVE_Y_AXIS_TICK_LABELS,
 } from "@/lib/chart/fundamentals-chart-surface";
+import {
+  prefersReducedFundamentalsBarMotion,
+  runFundamentalsBarEnterAnimation,
+  scaleBarPointsForEnter,
+} from "@/lib/chart/fundamentals-bar-enter-animation";
 import {
   fundamentalsBarColorAtIndex,
   fundamentalsBarSolidAtIndex,
@@ -264,6 +275,45 @@ function comparePeriodCenterTimeSec(
   if (seriesCount <= 1) return base;
   const centerIdx = Math.floor((seriesCount - 1) / 2);
   return base + compareSeriesShiftSec(centerIdx, seriesCount);
+}
+
+/** Full period-column hover band — matches Key Stats / stock charting column width. */
+function comparePeriodColumnBoundsPx(
+  chart: IChartApi,
+  labelIndex: number,
+  tableColumnLabels: string[],
+  baseTimeByLabel: Map<string, number>,
+  seriesCount: number,
+): { x0: number; x1: number } | null {
+  const ts = chart.timeScale();
+  const n = tableColumnLabels.length;
+  if (n <= 0 || labelIndex < 0 || labelIndex >= n) return null;
+
+  const centerAt = (li: number): number | null => {
+    const label = tableColumnLabels[li];
+    if (!label) return null;
+    const centerTime = comparePeriodCenterTimeSec(li, seriesCount, baseTimeByLabel, label);
+    if (centerTime == null) return null;
+    const x = ts.timeToCoordinate(centerTime as UTCTimestamp);
+    return x != null && Number.isFinite(x) ? x : null;
+  };
+
+  const centerX = centerAt(labelIndex);
+  if (centerX == null) return null;
+
+  const prevX = labelIndex > 0 ? centerAt(labelIndex - 1) : null;
+  const nextX = labelIndex < n - 1 ? centerAt(labelIndex + 1) : null;
+
+  const halfSpan =
+    prevX != null && nextX != null
+      ? Math.min(centerX - prevX, nextX - centerX) / 2
+      : prevX != null
+        ? (centerX - prevX) / 2
+        : nextX != null
+          ? (nextX - centerX) / 2
+          : Math.max(24, ts.options().barSpacing / 2);
+
+  return { x0: centerX - halfSpan, x1: centerX + halfSpan };
 }
 
 function compareSeriesDataBarsWithGapSlots(
@@ -482,6 +532,7 @@ type Props = {
   workspaceTitle?: string;
   /** Defaults to {@link DEFAULT_CHART_TIME_RANGE_ORDER}; standalone `/charting` passes {@link STANDALONE_CHARTING_TIME_RANGE_ORDER}. */
   timeRangeOrder?: ChartTimeRange[];
+  animateBarsOnAppear?: boolean;
 };
 
 export function ChartingCompareWorkspace({
@@ -491,11 +542,15 @@ export function ChartingCompareWorkspace({
   pathRoute = "/charting",
   workspaceTitle = "Charting",
   timeRangeOrder = DEFAULT_CHART_TIME_RANGE_ORDER,
+  animateBarsOnAppear = false,
 }: Props) {
   const router = useRouter();
   const wrapRef = useRef<HTMLDivElement>(null);
   const pickerWrapRef = useRef<HTMLDivElement>(null);
   const pickerButtonRef = useRef<HTMLButtonElement>(null);
+  const companyPickerControlsRef = useRef<CompanyPickerOpenControls | null>(null);
+  const { useRailPickers, metricAddAnchorRef, companyAddAnchorRef } = useChartingRailPickerAnchors();
+  const useRailMetricPicker = pathRoute === "/charting" && useRailPickers;
   const pickerMenuPortalRef = useRef<HTMLDivElement>(null);
   const pickerInputRef = useRef<HTMLInputElement>(null);
 
@@ -557,6 +612,8 @@ export function ChartingCompareWorkspace({
   const hoverBandPrimitiveRef = useRef<ChartingHoverBandPrimitive | null>(null);
   const hoverRafRef = useRef<number>(0);
   const tickersSeenRef = useRef<string[]>([]);
+  const animateBarsOnAppearRef = useRef(animateBarsOnAppear);
+  animateBarsOnAppearRef.current = animateBarsOnAppear;
 
   useEffect(() => {
     const parsed = parseChartingMetricsParam(metricParam);
@@ -939,7 +996,14 @@ export function ChartingCompareWorkspace({
     function onDocMouseDown(e: MouseEvent) {
       const t = e.target;
       if (!(t instanceof Node)) return;
-      if (pickerWrapRef.current?.contains(t) || pickerMenuPortalRef.current?.contains(t)) return;
+      const anchor = useRailMetricPicker ? metricAddAnchorRef.current : pickerButtonRef.current;
+      if (
+        pickerWrapRef.current?.contains(t) ||
+        pickerMenuPortalRef.current?.contains(t) ||
+        anchor?.contains(t)
+      ) {
+        return;
+      }
       setPickerOpen(false);
       setPickerQuery("");
     }
@@ -955,7 +1019,7 @@ export function ChartingCompareWorkspace({
       document.removeEventListener("mousedown", onDocMouseDown);
       document.removeEventListener("keydown", onKey);
     };
-  }, [pickerOpen]);
+  }, [pickerOpen, useRailMetricPicker, metricAddAnchorRef]);
 
   useEffect(() => {
     const el = wrapRef.current;
@@ -971,6 +1035,13 @@ export function ChartingCompareWorkspace({
     let lastPlotWidthPx = el.clientWidth;
     let resizeObserver: ResizeObserver | null = null;
     let onVisibleRangeChange: (() => void) | null = null;
+    let barEnterElapsedMs = Number.POSITIVE_INFINITY;
+    let cancelBarEnterAnim: (() => void) | null = null;
+
+    const barTimeScaleLayoutOptions =
+      chartType === "bars" && tableColumnLabels.length > 0
+        ? { fixedBarSpacingPx: HISTO_BAR_SPACING_MAX_PX, periodCount: tableColumnLabels.length }
+        : undefined;
 
     const mountChart = () => {
       if (cancelled) return;
@@ -1056,6 +1127,11 @@ export function ChartingCompareWorkspace({
 
           const usedScales = new Set<string>();
           const baseTimeByLabel = chartType === "bars" ? barBaseTimeByLabel : lineBaseTimeByLabel;
+          const shouldAnimateBars =
+            chartType === "bars" &&
+            animateBarsOnAppearRef.current &&
+            !prefersReducedFundamentalsBarMotion() &&
+            tableColumnLabels.length > 0;
 
           const fixedYAutoscaleForKind = (kind: ChartingMetricKind) => {
             if (kind === "percent" && chartAxes.percent) {
@@ -1122,7 +1198,15 @@ export function ChartingCompareWorkspace({
                 priceFormat: priceFormatForKind(kind),
                 title: `${s.ticker} ${CHARTING_METRIC_LABEL[s.metricId]}`,
               });
-              series.setData(chartingBarPointsToHistogramData(barPoints, s.colorIdx, null));
+              const initialBarPoints = shouldAnimateBars
+                ? scaleBarPointsForEnter(
+                    barPoints,
+                    tableColumnLabels.length,
+                    0,
+                    isTransparentChartingBarPoint,
+                  )
+                : barPoints;
+              series.setData(chartingBarPointsToHistogramData(initialBarPoints, s.colorIdx, null));
               seriesByKeyRef.current.set(s.key, series);
             } else {
               const series = chart.addSeries(LineSeries, {
@@ -1154,9 +1238,49 @@ export function ChartingCompareWorkspace({
           }
 
           if (chartType === "bars") {
-            layoutChartingTimeScale(chart, el.clientWidth, 0);
+            layoutChartingTimeScale(chart, el.clientWidth, 0, barTimeScaleLayoutOptions);
           } else {
             chart.timeScale().fitContent();
+          }
+
+          const willAnimateBars =
+            shouldAnimateBars && barSeriesPointsRef.current.size > 0;
+          if (willAnimateBars) {
+            barEnterElapsedMs = 0;
+          }
+
+          const syncAnimatedHistogramBars = (elapsedMs: number) => {
+            if (chartType !== "bars") return;
+            barEnterElapsedMs = elapsedMs;
+            const hovered = hoveredBarPeriodRef.current;
+            for (const s of seriesDefs) {
+              const barPoints = barSeriesPointsRef.current.get(s.key);
+              const series = seriesByKeyRef.current.get(s.key);
+              if (!barPoints || !series) continue;
+              const displayed = scaleBarPointsForEnter(
+                barPoints,
+                tableColumnLabels.length,
+                elapsedMs,
+                isTransparentChartingBarPoint,
+              );
+              series.setData(chartingBarPointsToHistogramData(displayed, s.colorIdx, hovered));
+            }
+          };
+
+          if (willAnimateBars) {
+            cancelBarEnterAnim = runFundamentalsBarEnterAnimation({
+              periodCount: tableColumnLabels.length,
+              onFrame: (elapsedMs) => {
+                if (cancelled) return;
+                syncAnimatedHistogramBars(elapsedMs);
+              },
+              onComplete: () => {
+                if (cancelled) return;
+                barEnterElapsedMs = Number.POSITIVE_INFINITY;
+                applyBarHoverDimming(hoveredBarPeriodRef.current);
+                syncChartOverlays();
+              },
+            });
           }
 
           const syncChartOverlays = () => {
@@ -1223,7 +1347,16 @@ export function ChartingCompareWorkspace({
               const barPoints = barSeriesPointsRef.current.get(s.key);
               const series = seriesByKeyRef.current.get(s.key);
               if (!barPoints || !series) continue;
-              series.setData(chartingBarPointsToHistogramData(barPoints, s.colorIdx, periodIndex));
+              const displayed =
+                Number.isFinite(barEnterElapsedMs) && barEnterElapsedMs < Number.POSITIVE_INFINITY
+                  ? scaleBarPointsForEnter(
+                      barPoints,
+                      tableColumnLabels.length,
+                      barEnterElapsedMs,
+                      isTransparentChartingBarPoint,
+                    )
+                  : barPoints;
+              series.setData(chartingBarPointsToHistogramData(displayed, s.colorIdx, periodIndex));
             }
           };
 
@@ -1336,23 +1469,20 @@ export function ChartingCompareWorkspace({
             if (chartType === "line") {
               hoverBandPrimitiveRef.current?.setBand(null, null);
             } else if (chartType === "bars" && baseTimeByLabel && focusPeriodIndex >= 0) {
-              const label = tableColumnLabels[focusPeriodIndex]!;
-              const ts = chart.timeScale();
-              const barSpacingPx = ts.options().barSpacing;
-              const centerTime = comparePeriodCenterTimeSec(
+              const columnBand = comparePeriodColumnBoundsPx(
+                chart,
                 focusPeriodIndex,
-                seriesDefs.length,
+                tableColumnLabels,
                 baseTimeByLabel,
-                label,
+                seriesDefs.length,
               );
-              const centerX = centerTime != null ? ts.timeToCoordinate(centerTime as UTCTimestamp) : null;
-              const bandCenterX = Number.isFinite(centerX ?? NaN) ? (centerX as number) : x;
-              bandWidth =
-                seriesDefs.length > 1
-                  ? Math.max(36, barSpacingPx * Math.max(1, seriesDefs.length))
-                  : Math.max(24, barSpacingPx);
-              bandLeft = Math.max(0, bandCenterX - bandWidth / 2);
-              applyHoverBand(bandLeft, bandLeft + bandWidth);
+              if (columnBand) {
+                bandLeft = columnBand.x0;
+                bandWidth = columnBand.x1 - columnBand.x0;
+                applyHoverBand(columnBand.x0, columnBand.x1);
+              } else {
+                hoverBandPrimitiveRef.current?.setBand(null, null);
+              }
             }
 
             const plotW = Math.max(1, el.clientWidth);
@@ -1385,7 +1515,7 @@ export function ChartingCompareWorkspace({
             chartRef.current.resize(rw, chartPlotHeight);
             const c = chartRef.current;
             if (chartType === "bars") {
-              layoutChartingTimeScale(c, rw, 0);
+              layoutChartingTimeScale(c, rw, 0, barTimeScaleLayoutOptions);
               applyCompareSparseHistogramVisiblePadding(
                 c,
                 tableColumnLabels.length,
@@ -1400,7 +1530,7 @@ export function ChartingCompareWorkspace({
           resizeObserver.observe(el);
           chart.resize(el.clientWidth, chartPlotHeight);
           if (chartType === "bars") {
-            layoutChartingTimeScale(chart, el.clientWidth, 0);
+            layoutChartingTimeScale(chart, el.clientWidth, 0, barTimeScaleLayoutOptions);
             applyCompareSparseHistogramVisiblePadding(
               chart,
               tableColumnLabels.length,
@@ -1418,6 +1548,7 @@ export function ChartingCompareWorkspace({
 
     return () => {
       cancelled = true;
+      cancelBarEnterAnim?.();
       resizeObserver?.disconnect();
       resizeObserver = null;
       if (chartRef.current) {
@@ -1463,6 +1594,48 @@ export function ChartingCompareWorkspace({
 
   const atCompanyCap = tickers.length >= CHARTING_MAX_COMPARE_TICKERS;
 
+  const openMetricPicker = useCallback(() => {
+    setPickerOpen(true);
+    setPickerQuery("");
+  }, []);
+
+  const openCompanyPicker = useCallback(() => {
+    companyPickerControlsRef.current?.open();
+  }, []);
+
+  const railMetricRows = useMemo(
+    () =>
+      selected.map((id) => {
+        const def = seriesDefs.find((s) => s.metricId === id);
+        return {
+          id,
+          label: CHARTING_METRIC_LABEL[id],
+          color: fundamentalsBarSolidAtIndex(def?.colorIdx ?? 0),
+          removeDisabled: selected.length <= 1,
+        };
+      }),
+    [selected, seriesDefs],
+  );
+
+  useRegisterChartingCompanyRail(
+    {
+      openMetricPicker,
+      openCompanyPicker,
+      metricAddDisabled: false,
+      companyAddDisabled: selected.length === 0 || atCompanyCap,
+      companies: useRailMetricPicker
+        ? tickers.map((ticker) => ({
+            ticker,
+            removeDisabled: tickers.length <= 1,
+          }))
+        : undefined,
+      metrics: useRailMetricPicker ? railMetricRows : undefined,
+      onRemoveCompany: useRailMetricPicker ? removeTicker : undefined,
+      onRemoveMetric: useRailMetricPicker ? removeMetric : undefined,
+    },
+    pathRoute === "/charting",
+  );
+
   return (
     <>
       <DataFetchTopLoader active={loading} />
@@ -1504,6 +1677,87 @@ export function ChartingCompareWorkspace({
           </div>
         </div>
 
+        {useRailMetricPicker ? (
+          <div className="sr-only">
+            <div ref={pickerWrapRef}>
+              {pickerOpen ? (
+                <TopbarDropdownPortal
+                  open={pickerOpen}
+                  anchorRef={metricAddAnchorRef}
+                  ref={pickerMenuPortalRef}
+                  align="trailing"
+                  placement="below"
+                  className="w-[min(calc(100vw-2rem),300px)]"
+                  onRequestClose={() => {
+                    setPickerOpen(false);
+                    setPickerQuery("");
+                  }}
+                >
+                  <div className={cn(dropdownMenuSurfaceClassName(), "overflow-hidden")} role="listbox">
+                    <div className={dropdownMenuSearchHeaderClassName}>
+                      <input
+                        ref={pickerInputRef}
+                        value={pickerQuery}
+                        onChange={(e) => setPickerQuery(e.target.value)}
+                        placeholder="Search metrics…"
+                        className={dropdownMenuSearchInputClassName}
+                        aria-label="Search metrics"
+                      />
+                    </div>
+                    <DropdownScrollArea className="flex max-h-[min(400px,calc(100vh-12rem))] flex-col gap-1 overflow-y-auto px-1 py-2">
+                      {groupedAddable.map((group) => (
+                        <div key={group.id} className="pb-2 last:pb-0">
+                          <div className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wide text-[#A1A1AA]">
+                            {group.label}
+                          </div>
+                          <ul className="flex flex-col gap-1">
+                            {group.ids.map((mid) => (
+                              <li key={mid}>
+                                <button
+                                  type="button"
+                                  role="option"
+                                  className={dropdownMenuRichItemClassName()}
+                                  onClick={() => addMetric(mid)}
+                                >
+                                  {CHARTING_METRIC_LABEL[mid]}
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </DropdownScrollArea>
+                    {totalAddable === 0 ? (
+                      <p className="px-3 py-2 text-[12px] text-[#71717A]">
+                        {qLower ? "No metrics match" : "No additional metrics for this range"}
+                      </p>
+                    ) : null}
+                  </div>
+                </TopbarDropdownPortal>
+              ) : null}
+            </div>
+            {selected.length > 0 ? (
+              <ChartingCompanyAddDropdown
+                hideTrigger
+                anchorRef={companyAddAnchorRef}
+                menuPortal
+                menuAlign="trailing"
+                registerOpenControl={(controls) => {
+                  companyPickerControlsRef.current = controls;
+                  return () => {
+                    if (companyPickerControlsRef.current === controls) {
+                      companyPickerControlsRef.current = null;
+                    }
+                  };
+                }}
+                onPickStock={addTickerFromPicker}
+                disabled={atCompanyCap}
+                maxExtraCompanies={Math.max(0, CHARTING_MAX_COMPARE_TICKERS - tickers.length)}
+                excludeSymbols={tickers}
+              />
+            ) : null}
+          </div>
+        ) : (
         <div className="pb-4">
           <div className="flex flex-wrap items-center gap-4">
             {selected.map((id) => (
@@ -1526,7 +1780,7 @@ export function ChartingCompareWorkspace({
               </div>
             ))}
 
-            <div className="order-2" ref={pickerWrapRef}>
+            <div className="relative order-2" ref={pickerWrapRef}>
               <button
                 ref={pickerButtonRef}
                 type="button"
@@ -1549,6 +1803,10 @@ export function ChartingCompareWorkspace({
                   align="leading"
                   placement="auto"
                   className="w-[min(calc(100vw-2rem),300px)]"
+                  onRequestClose={() => {
+                    setPickerOpen(false);
+                    setPickerQuery("");
+                  }}
                 >
                   <div className={cn(dropdownMenuSurfaceClassName(), "overflow-hidden")} role="listbox">
                     <div className={dropdownMenuSearchHeaderClassName}>
@@ -1640,6 +1898,7 @@ export function ChartingCompareWorkspace({
             ) : null}
           </div>
         </div>
+        )}
       </div>
 
       {loading ? (
@@ -1858,6 +2117,7 @@ export function ChartingCompareWorkspace({
                 </div>
               </div>
 
+              {!useRailMetricPicker ? (
               <div className="flex flex-wrap justify-center gap-2 px-0.5 pt-2">
                 {seriesDefs.map((s) => (
                   <div
@@ -1875,65 +2135,16 @@ export function ChartingCompareWorkspace({
                   </div>
                 ))}
               </div>
+              ) : null}
 
-              <div className="overflow-x-auto pt-4">
-                  <table className="w-full min-w-[560px] border-collapse bg-white">
-                    <thead>
-                      <tr className="border-t border-b border-[#E4E4E7] bg-white">
-                        <th className="min-w-[200px] px-3 py-2.5 text-left text-[14px] font-semibold leading-5 text-[#71717A]">
-                          Data
-                        </th>
-                        {[...tableColumnLabels].reverse().map((label) => (
-                          <th
-                            key={label}
-                            className="min-w-[100px] px-3 py-2.5 text-right text-[14px] font-semibold leading-5 text-[#71717A]"
-                          >
-                            {label}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {seriesDefs.map((s) => (
-                        <tr
-                          key={s.key}
-                          className="h-[52px] border-b border-[#E4E4E7] transition-colors duration-75 hover:bg-neutral-50"
-                        >
-                          <td className="px-3 align-middle">
-                            <div className="flex items-center gap-2">
-                              <span
-                                className="h-4 w-1 shrink-0 self-center rounded-full"
-                                style={{
-                                  background: fundamentalsBarSolidAtIndex(s.colorIdx),
-                                }}
-                                aria-hidden
-                              />
-                              <span className="text-[14px] font-medium leading-5 text-[#09090B]">
-                                {s.ticker} {CHARTING_METRIC_LABEL[s.metricId]}
-                              </span>
-                            </div>
-                          </td>
-                          {[...tableColumnLabels].reverse().map((label) => {
-                            const row = (orderedByTicker[s.ticker] ?? []).find(
-                              (r) =>
-                                Boolean(r.periodEnd) &&
-                                formatChartingPeriodLabel(r.periodEnd, periodMode) === label,
-                            );
-                            const v = row ? rowValue(row, s.metricId) : null;
-                            return (
-                              <td
-                                key={label}
-                                className="px-3 align-middle text-right text-[14px] font-normal leading-5 tabular-nums text-[#09090B]"
-                              >
-                                {formatChartingTableCell(CHARTING_METRIC_KIND[s.metricId], v)}
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-              </div>
+              <ChartingCompareCompanyTable
+                tableColumnLabels={tableColumnLabels}
+                seriesDefs={seriesDefs}
+                orderedByTicker={orderedByTicker}
+                periodMode={periodMode}
+                timeRange={timeRange}
+                className="pt-1"
+              />
             </>
           )}
         </>

@@ -6,7 +6,7 @@ import {
   dropdownMenuPlainItemRowClassName,
   dropdownMenuSurfaceClassName,
 } from "@/components/design-system/dropdown-menu-styles";
-import { secondaryOutlineButtonClassName } from "@/components/design-system";
+import { secondaryOutlineButtonClassName, whiteSurfaceButtonChromeClass } from "@/components/design-system";
 import {
   CHART_SCREENSHOT_PREVIEW_ZOOM_MAX_PERCENT,
   CHART_SCREENSHOT_PREVIEW_ZOOM_MIN_PERCENT,
@@ -17,8 +17,10 @@ import {
 import { Check, ChevronDown, Minus, Plus } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 
-const zoomIconButtonClass =
-  "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors hover:bg-[#F4F4F5] disabled:cursor-not-allowed disabled:opacity-40";
+const zoomIconButtonClass = cn(
+  "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-[#09090B] transition-colors hover:bg-[#F4F4F5] disabled:cursor-not-allowed disabled:opacity-40",
+  whiteSurfaceButtonChromeClass,
+);
 
 export function ChartScreenshotPreviewZoomControls({
   value,

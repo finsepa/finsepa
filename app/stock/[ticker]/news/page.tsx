@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 
 import { AssetNewsPageContent } from "@/components/stock/asset-news-page-content";
-import { getStockNews } from "@/lib/market/stock-news";
+import { loadStockNewsPage } from "@/lib/market/stock-news";
+import { STOCK_NEWS_PAGE_SIZE } from "@/lib/market/stock-news-types";
 import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
 
 export const dynamic = "force-dynamic";
@@ -31,7 +32,9 @@ export default async function StockNewsPage({ params }: PageProps) {
     );
   }
 
-  const initialItems = await getStockNews(routeTicker);
+  const initialItems = await loadStockNewsPage(routeTicker, 0, STOCK_NEWS_PAGE_SIZE, {
+    resolveOgImages: true,
+  });
 
   return (
     <AssetNewsPageContent ticker={routeTicker} variant="stock" initialItems={initialItems} />

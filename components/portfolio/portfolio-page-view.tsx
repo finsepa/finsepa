@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { startTransition, useCallback, useEffect, useState, type ComponentType } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Pencil } from "@/lib/icons";
+import { topbarSquircleIconClass } from "@/components/design-system/topbar-control-classes";
 
 import { AssetPageTopLoader } from "@/components/layout/asset-page-top-loader";
 import { PortfolioQuickAddMenu } from "@/components/layout/portfolio-quick-add-menu";
@@ -246,7 +247,7 @@ export function PortfolioPageView({
             if (selectedPortfolioId != null) openEditPortfolio(selectedPortfolioId);
           }}
           className={cn(
-            "flex h-9 w-9 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100",
+            topbarSquircleIconClass,
             "hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2",
             "disabled:pointer-events-none disabled:opacity-40",
           )}

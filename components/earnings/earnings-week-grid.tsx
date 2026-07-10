@@ -45,6 +45,7 @@ import {
 import { formatEconomyLongDateUtc } from "@/lib/market/economy-format-display";
 import { prefetchStockEarningsTabPayload } from "@/lib/market/stock-earnings-tab-client";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
+import { whiteSurfaceButtonChromeClass } from "@/components/design-system";
 import { cn } from "@/lib/utils";
 
 /** Icon size inside 24px timing bars. */
@@ -466,8 +467,10 @@ function EarningsCard({
 }
 
 /** Week nav — bordered controls (arrows + Today), aligned with toolbar squircles. */
-const weekNavBtnClass =
-  "inline-flex h-9 shrink-0 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5]";
+const weekNavBtnClass = cn(
+  "inline-flex h-9 shrink-0 items-center justify-center rounded-[10px] text-[#09090B] transition-all duration-100 hover:bg-[#F4F4F5]",
+  whiteSurfaceButtonChromeClass,
+);
 
 const weekNavArrowClass = cn(weekNavBtnClass, "w-9");
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { useRouter } from "next/navigation";
 import { ChartScreenshotDownloadModal } from "@/components/chart/chart-screenshot-download-modal";
 import { Plus, Download, RefreshCw, X, LineChart } from "@/lib/icons";
@@ -48,6 +48,8 @@ import {
   type StandaloneChartRoute,
 } from "@/lib/market/stock-charting-metrics";
 import { StockDrawdownChartPanel } from "@/components/stock/stock-drawdown-chart-modal";
+import { useRegisterChartingCompanyRail, useChartingRailPickerAnchors } from "@/components/charting/charting-company-rail-context";
+import type { CompanyPickerOpenControls } from "@/components/charting/company-picker";
 import {
   ChartingIndividualCompanyTable,
   formatBarChartDataLabel,
@@ -1274,6 +1276,8 @@ type Props = {
   fullPageCompanyChipSlot?: ReactNode;
   /** Full-page Charting only: + Add Company (shown when ≥1 metric selected). */
   fullPageCompanyAddSlot?: ReactNode;
+  /** Full-page Charting: imperative open for company rail + button. */
+  companyPickerControlsRef?: RefObject<CompanyPickerOpenControls | null>;
   /** Asset-page tab: remove/add metrics in the chart legend instead of the toolbar. */
   metricControlsPlacement?: "toolbar" | "legend";
   /** Asset Charting tab: legend chips show metric name only (Data table keeps ticker). */
@@ -1822,6 +1826,7 @@ export function ChartingWorkspace({
   toolbarLayout = "default",
   fullPageCompanyChipSlot,
   fullPageCompanyAddSlot,
+  companyPickerControlsRef,
   metricControlsPlacement = "toolbar",
   omitTickerInLegend = false,
   pathRoute = "/charting",
@@ -1851,6 +1856,8 @@ export function ChartingWorkspace({
     metricControlsInLegend && !fullPageCompanyChipSlot && !screenshotPreviewMode;
   const stockFullWidthFixedBars = histogramLayout === "stockFullWidthFixedBars";
   const isFullPageCharting = fullPageCompanyChipSlot != null;
+  const { useRailPickers, metricAddAnchorRef } = useChartingRailPickerAnchors();
+  const useRailMetricPicker = isFullPageCharting && pathRoute === "/charting" && useRailPickers;
   const animateBars = animateBarsOnAppear && !screenshotPreviewMode;
   const timeRangeTabOptions = useMemo(
     () => timeRangeTabOptionsFor(timeRangeOrder),
@@ -1915,6 +1922,15 @@ export function ChartingWorkspace({
   const [showBarValuesByMetric, setShowBarValuesByMetric] = useState<
     Partial<Record<ChartingMetricId, boolean>>
   >({});
+
+  const openMetricPicker = useCallback(() => {
+    setPickerOpen(true);
+    setPickerQuery("");
+  }, []);
+
+  const openCompanyPicker = useCallback(() => {
+    companyPickerControlsRef?.current?.open();
+  }, [companyPickerControlsRef]);
 
   const screenshotShowValues = screenshotDisplayOptions?.showValues ?? true;
   const screenshotShowVerticalLegend = screenshotDisplayOptions?.showVerticalLegend ?? true;
@@ -2059,7 +2075,14 @@ export function ChartingWorkspace({
     function onDocMouseDown(e: MouseEvent) {
       const t = e.target;
       if (!(t instanceof Node)) return;
-      if (pickerWrapRef.current?.contains(t) || pickerMenuPortalRef.current?.contains(t)) return;
+      const anchor = useRailMetricPicker ? metricAddAnchorRef.current : pickerButtonRef.current;
+      if (
+        pickerWrapRef.current?.contains(t) ||
+        pickerMenuPortalRef.current?.contains(t) ||
+        anchor?.contains(t)
+      ) {
+        return;
+      }
       setPickerOpen(false);
       setPickerQuery("");
     }
@@ -2075,7 +2098,7 @@ export function ChartingWorkspace({
       document.removeEventListener("mousedown", onDocMouseDown);
       document.removeEventListener("keydown", onKey);
     };
-  }, [pickerOpen]);
+  }, [pickerOpen, useRailMetricPicker, metricAddAnchorRef]);
 
   const fullSeries = useMemo(() => points ?? [], [points]);
   const lineChartPoints = useMemo(() => {
@@ -3433,37 +3456,70 @@ export function ChartingWorkspace({
     return m;
   }, [chartType, selected]);
 
+  const removeCompanyFromRail = useCallback(() => {
+    router.push(buildStandaloneChartPath(pathRoute, [], selected));
+  }, [router, pathRoute, selected]);
+
+  useRegisterChartingCompanyRail(
+    {
+      openMetricPicker,
+      openCompanyPicker,
+      metricAddDisabled: false,
+      companyAddDisabled: selected.length === 0,
+      companies: useRailMetricPicker ? [{ ticker }] : undefined,
+      metrics: useRailMetricPicker
+        ? selected.map((id) => ({
+            id,
+            label: CHARTING_METRIC_LABEL[id],
+            color: metricChipColorById.get(id) ?? "#2563EB",
+            removeDisabled: selected.length <= 1,
+            showBarValues: isBarValuesVisible(id),
+          }))
+        : undefined,
+      onRemoveCompany: useRailMetricPicker ? removeCompanyFromRail : undefined,
+      onRemoveMetric: useRailMetricPicker ? removeMetric : undefined,
+      onShowBarValuesChange: useRailMetricPicker ? setBarValuesVisibleForMetric : undefined,
+    },
+    isFullPageCharting && pathRoute === "/charting",
+  );
+
   const addMetricPicker = (
-    <div ref={pickerWrapRef}>
-      <button
-        ref={pickerButtonRef}
-        type="button"
-        onClick={() => {
-          setPickerOpen((o) => {
-            if (o) setPickerQuery("");
-            return !o;
-          });
-        }}
-        className={cn(
-          showStockTabMetricEmptyState
-            ? secondaryOutlineButtonClassName
-            : secondaryFillButtonClassName,
-          !showStockTabMetricEmptyState &&
-            metricControlsInLegend &&
-            "h-6 gap-1.5 rounded-[8px] px-3 text-[12px] font-medium leading-none",
-        )}
-      >
-        <Plus className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
-        Add Metric
-      </button>
+    <div ref={pickerWrapRef} className={useRailMetricPicker ? "sr-only" : undefined}>
+      {!useRailMetricPicker ? (
+        <button
+          ref={pickerButtonRef}
+          type="button"
+          onClick={() => {
+            setPickerOpen((o) => {
+              if (o) setPickerQuery("");
+              return !o;
+            });
+          }}
+          className={cn(
+            showStockTabMetricEmptyState
+              ? secondaryOutlineButtonClassName
+              : secondaryFillButtonClassName,
+            !showStockTabMetricEmptyState &&
+              metricControlsInLegend &&
+              "h-6 gap-1.5 rounded-[8px] px-3 text-[12px] font-medium leading-none",
+          )}
+        >
+          <Plus className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
+          Add Metric
+        </button>
+      ) : null}
       {pickerOpen ? (
         <TopbarDropdownPortal
           open={pickerOpen}
-          anchorRef={pickerButtonRef}
+          anchorRef={useRailMetricPicker ? metricAddAnchorRef : pickerButtonRef}
           ref={pickerMenuPortalRef}
-          align="leading"
-          placement="auto"
+          align={useRailMetricPicker ? "trailing" : "leading"}
+          placement={useRailMetricPicker ? "below" : "auto"}
           className="w-[min(calc(100vw-2rem),300px)]"
+          onRequestClose={() => {
+            setPickerOpen(false);
+            setPickerQuery("");
+          }}
         >
           <div className={cn(dropdownMenuSurfaceClassName(), "overflow-hidden")} role="listbox">
             <div className={dropdownMenuSearchHeaderClassName}>
@@ -3579,7 +3635,12 @@ export function ChartingWorkspace({
           ) : null}
         </div>
 
-        {!metricControlsInLegend || fullPageCompanyChipSlot ? (
+        {useRailMetricPicker ? (
+          <div className="sr-only">
+            {addMetricPicker}
+            {selected.length > 0 && fullPageCompanyAddSlot ? fullPageCompanyAddSlot : null}
+          </div>
+        ) : !metricControlsInLegend || fullPageCompanyChipSlot ? (
           <div className={metricControlsInLegend ? "pb-0" : "pb-4"}>
             <div className="flex flex-wrap items-center gap-4">
               {!metricControlsInLegend
@@ -3605,7 +3666,9 @@ export function ChartingWorkspace({
                 : null}
               {!metricControlsInLegend ? <div className="order-2">{addMetricPicker}</div> : null}
               {fullPageCompanyChipSlot ? <div className="order-3">{fullPageCompanyChipSlot}</div> : null}
-              {selected.length > 0 ? <div className="order-4">{fullPageCompanyAddSlot}</div> : null}
+              {selected.length > 0 && fullPageCompanyAddSlot ? (
+                <div className="order-4">{fullPageCompanyAddSlot}</div>
+              ) : null}
             </div>
           </div>
         ) : null}
@@ -4042,7 +4105,7 @@ export function ChartingWorkspace({
               </div>
             </div>
           )}
-          {hasMetricSelection && (!screenshotPreviewMode || screenshotShowHorizontalLegend) ? (
+          {hasMetricSelection && !useRailMetricPicker && (!screenshotPreviewMode || screenshotShowHorizontalLegend) ? (
           <div className={cn("flex justify-center pt-0", screenshotPreviewMode ? "-mt-1" : "-mt-0.5")}>
             <div className="flex flex-wrap items-center justify-center gap-2">
               {selected.map((id) =>
@@ -4101,6 +4164,7 @@ export function ChartingWorkspace({
               metricColors={metricChipColorById}
               isBarValuesVisible={isBarValuesVisible}
               onShowBarValuesChange={setBarValuesVisibleForMetric}
+              hideMetricSettings={useRailMetricPicker}
             />
           ) : null}
         </>

@@ -2,13 +2,16 @@
 
 import { ChevronLeft, ChevronRight } from "@/lib/icons";
 
+import { whiteSurfaceButtonChromeClass } from "@/components/design-system";
 import { cn } from "@/lib/utils";
 
 export const TABLE_PAGE_SIZE = 20;
 
 /** Square prev/next icon buttons (Screener + portfolio tables). */
-export const SCREENER_TABLE_PAGINATION_BTN =
-  "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2";
+export const SCREENER_TABLE_PAGINATION_BTN = cn(
+  "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-[#09090B] transition-all duration-100 hover:bg-[#F4F4F5] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2",
+  whiteSurfaceButtonChromeClass,
+);
 
 export function tablePageCount(total: number): number {
   if (total <= 0) return 1;
@@ -46,8 +49,10 @@ const PAGE_NUM_INACTIVE =
   "inline-flex h-9 min-w-9 max-w-12 shrink-0 items-center justify-center rounded-[10px] px-2 text-sm font-medium text-[#09090B] transition-colors hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2";
 
 /** Active page: bordered tile (same family as `SCREENER_TABLE_PAGINATION_BTN`, no fill). */
-const PAGE_NUM_ACTIVE =
-  "inline-flex h-9 min-w-9 max-w-12 shrink-0 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white px-2 text-sm font-semibold tabular-nums text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2";
+const PAGE_NUM_ACTIVE = cn(
+  "inline-flex h-9 min-w-9 max-w-12 shrink-0 items-center justify-center rounded-[10px] px-2 text-sm font-semibold tabular-nums text-[#09090B] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2",
+  whiteSurfaceButtonChromeClass,
+);
 
 /**
  * Screener: prev/next icon buttons (left/right) · page numbers (centered).

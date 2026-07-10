@@ -5,6 +5,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Plus, RefreshCw, X } from "@/lib/icons";
 
 import { ChartingCompanyAddDropdown } from "@/components/charting/charting-company-add-dropdown";
+import {
+  useChartingRailPickerAnchors,
+  useRegisterChartingCompanyRail,
+} from "@/components/charting/charting-company-rail-context";
+import type { CompanyPickerOpenControls } from "@/components/charting/company-picker";
+import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
 import { DropdownScrollArea } from "@/components/design-system/dropdown-scroll-area";
 import {
   DEFAULT_CHART_TIME_RANGE,
@@ -21,6 +27,7 @@ import {
 } from "@/components/design-system/dropdown-menu-styles";
 import { cn } from "@/lib/utils";
 import { filterChartingUrlTickersForSession } from "@/lib/charting/charting-allowed-tickers";
+import { fundamentalsBarSolidAtIndex } from "@/lib/colors/fundamentals-multi-bar-colors";
 import {
   CHARTING_DROPDOWN_GROUPS,
   CHARTING_MAX_COMPARE_TICKERS,
@@ -74,7 +81,7 @@ type Props = {
 };
 
 /**
- * Empty-state toolbar: title, switchers (visual), metric chips then + Add Metric; + Add Company only after ≥1 metric.
+ * Empty-state toolbar: title, switchers (visual), metric chips then + Add Metric; + Add Company anytime (chart loads once both are set).
  */
 export function ChartingEmptyToolbar({
   metricParam,
@@ -86,6 +93,10 @@ export function ChartingEmptyToolbar({
   const searchParams = useSearchParams();
   const pickerWrapRef = useRef<HTMLDivElement>(null);
   const pickerInputRef = useRef<HTMLInputElement>(null);
+  const pickerButtonRef = useRef<HTMLButtonElement>(null);
+  const pickerMenuPortalRef = useRef<HTMLDivElement>(null);
+  const companyPickerControlsRef = useRef<CompanyPickerOpenControls | null>(null);
+  const { useRailPickers, metricAddAnchorRef, companyAddAnchorRef } = useChartingRailPickerAnchors();
 
   const chartingAllowSet = useMemo(
     () =>
@@ -186,8 +197,16 @@ export function ChartingEmptyToolbar({
   useEffect(() => {
     if (!pickerOpen) return;
     function onDocMouseDown(e: MouseEvent) {
-      const el = pickerWrapRef.current;
-      if (!el || !(e.target instanceof Node) || el.contains(e.target)) return;
+      const t = e.target;
+      if (!(t instanceof Node)) return;
+      const anchor = useRailPickers ? metricAddAnchorRef.current : pickerButtonRef.current;
+      if (
+        pickerWrapRef.current?.contains(t) ||
+        pickerMenuPortalRef.current?.contains(t) ||
+        anchor?.contains(t)
+      ) {
+        return;
+      }
       setPickerOpen(false);
       setPickerQuery("");
     }
@@ -203,7 +222,7 @@ export function ChartingEmptyToolbar({
       document.removeEventListener("mousedown", onDocMouseDown);
       document.removeEventListener("keydown", onKey);
     };
-  }, [pickerOpen]);
+  }, [pickerOpen, useRailPickers, metricAddAnchorRef]);
 
   pendingMetricsRef.current = pendingMetrics;
   displayTickersRef.current = displayTickers;
@@ -221,6 +240,53 @@ export function ChartingEmptyToolbar({
   }, [pendingMetrics, qLower]);
 
   const totalAddable = useMemo(() => groupedAddable.reduce((n, g) => n + g.ids.length, 0), [groupedAddable]);
+
+  const openMetricPicker = useCallback(() => {
+    setPickerOpen(true);
+  }, []);
+
+  const openCompanyPicker = useCallback(() => {
+    companyPickerControlsRef.current?.open();
+  }, []);
+
+  const addCompany = useCallback(
+    (sym: string) => {
+      const u = normalizePickerEquitySymbol(sym);
+      if (!u) return;
+      const dt = displayTickersRef.current;
+      if (dt.includes(u)) return;
+      if (dt.length >= CHARTING_MAX_COMPARE_TICKERS) return;
+      const metrics = pendingMetricsRef.current;
+      const nextTickers = [...dt, u];
+      if (metrics.length > 0) {
+        onBeginChartSessionNavigation?.();
+      }
+      syncUrl(nextTickers, metrics);
+    },
+    [syncUrl, onBeginChartSessionNavigation],
+  );
+
+  useRegisterChartingCompanyRail(
+    {
+      openMetricPicker,
+      openCompanyPicker,
+      metricAddDisabled: false,
+      companyAddDisabled: displayTickers.length >= CHARTING_MAX_COMPARE_TICKERS,
+      companies: useRailPickers
+        ? displayTickers.map((ticker) => ({ ticker }))
+        : undefined,
+      metrics: useRailPickers
+        ? pendingMetrics.map((id, index) => ({
+            id,
+            label: CHARTING_METRIC_LABEL[id],
+            color: fundamentalsBarSolidAtIndex(index),
+          }))
+        : undefined,
+      onRemoveCompany: useRailPickers ? removeTicker : undefined,
+      onRemoveMetric: useRailPickers ? removeMetric : undefined,
+    },
+    useRailPickers,
+  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -259,6 +325,85 @@ export function ChartingEmptyToolbar({
         </div>
       </div>
 
+      {useRailPickers ? (
+        <div className="sr-only">
+          <div className="relative" ref={pickerWrapRef}>
+            {pickerOpen ? (
+            <TopbarDropdownPortal
+              open={pickerOpen}
+              anchorRef={metricAddAnchorRef}
+              ref={pickerMenuPortalRef}
+              align="trailing"
+              placement="below"
+              className="w-[min(calc(100vw-2rem),300px)]"
+              onRequestClose={() => {
+                setPickerOpen(false);
+                setPickerQuery("");
+              }}
+            >
+              <div className={cn(dropdownMenuSurfaceClassName(), "overflow-hidden")} role="listbox">
+                <div className={dropdownMenuSearchHeaderClassName}>
+                  <input
+                    ref={pickerInputRef}
+                    value={pickerQuery}
+                    onChange={(e) => setPickerQuery(e.target.value)}
+                    placeholder="Search metrics…"
+                    className={dropdownMenuSearchInputClassName}
+                    aria-label="Search metrics"
+                  />
+                </div>
+                <DropdownScrollArea className="flex max-h-[min(400px,calc(100vh-12rem))] flex-col gap-1 overflow-y-auto px-1 py-2">
+                  {groupedAddable.map((group) => (
+                    <div key={group.id} className="pb-2 last:pb-0">
+                      <div className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wide text-[#A1A1AA]">
+                        {group.label}
+                      </div>
+                      <ul className="flex flex-col gap-1">
+                        {group.ids.map((mid) => (
+                          <li key={mid}>
+                            <button
+                              type="button"
+                              role="option"
+                              className={dropdownMenuRichItemClassName()}
+                              onClick={() => addMetric(mid)}
+                            >
+                              {CHARTING_METRIC_LABEL[mid]}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </DropdownScrollArea>
+                {totalAddable === 0 ? (
+                  <p className="px-3 py-2 text-[12px] text-[#71717A]">
+                    {qLower ? "No metrics match" : "All available metrics are selected"}
+                  </p>
+                ) : null}
+              </div>
+            </TopbarDropdownPortal>
+          ) : null}
+          <ChartingCompanyAddDropdown
+            hideTrigger
+            anchorRef={companyAddAnchorRef}
+            menuPortal
+            menuAlign="trailing"
+            registerOpenControl={(controls) => {
+              companyPickerControlsRef.current = controls;
+              return () => {
+                if (companyPickerControlsRef.current === controls) {
+                  companyPickerControlsRef.current = null;
+                }
+              };
+            }}
+            onPickStock={addCompany}
+            disabled={displayTickers.length >= CHARTING_MAX_COMPARE_TICKERS}
+            maxExtraCompanies={Math.max(0, CHARTING_MAX_COMPARE_TICKERS - displayTickers.length)}
+            excludeSymbols={displayTickers}
+          />
+          </div>
+        </div>
+      ) : (
       <div className="pb-3">
         <div className="flex flex-wrap items-center gap-4">
           {pendingMetrics.map((id) => (
@@ -282,6 +427,7 @@ export function ChartingEmptyToolbar({
 
           <div className="relative order-2" ref={pickerWrapRef}>
             <button
+              ref={pickerButtonRef}
               type="button"
               onClick={() => {
                 setPickerOpen((o) => {
@@ -294,7 +440,7 @@ export function ChartingEmptyToolbar({
               <Plus className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
               Add Metric
             </button>
-            {pickerOpen && (
+            {pickerOpen ? (
               <div
                 className={cn(
                   dropdownMenuSurfaceClassName(),
@@ -341,7 +487,7 @@ export function ChartingEmptyToolbar({
                   </p>
                 ) : null}
               </div>
-            )}
+            ) : null}
           </div>
 
           {displayTickers.map((sym) => (
@@ -363,30 +509,17 @@ export function ChartingEmptyToolbar({
             </div>
           ))}
 
-          {pendingMetrics.length > 0 ? (
-            <div className="order-4">
-              <ChartingCompanyAddDropdown
-                onPickStock={(sym) => {
-                  const u = normalizePickerEquitySymbol(sym);
-                  if (!u) return;
-                  const dt = displayTickersRef.current;
-                  if (dt.includes(u)) return;
-                  if (dt.length >= CHARTING_MAX_COMPARE_TICKERS) return;
-                  const fromState = pendingMetricsRef.current;
-                  const fromUrl = parseChartingMetricsParam(metricParam);
-                  const metrics = fromState.length > 0 ? fromState : fromUrl;
-                  if (metrics.length === 0) return;
-                  onBeginChartSessionNavigation?.();
-                  router.push(buildChartingPath([...dt, u], metrics));
-                }}
-                disabled={displayTickers.length >= CHARTING_MAX_COMPARE_TICKERS}
-                maxExtraCompanies={Math.max(0, CHARTING_MAX_COMPARE_TICKERS - displayTickers.length)}
-                excludeSymbols={displayTickers}
-              />
-            </div>
-          ) : null}
+          <div className="order-4">
+            <ChartingCompanyAddDropdown
+              onPickStock={addCompany}
+              disabled={displayTickers.length >= CHARTING_MAX_COMPARE_TICKERS}
+              maxExtraCompanies={Math.max(0, CHARTING_MAX_COMPARE_TICKERS - displayTickers.length)}
+              excludeSymbols={displayTickers}
+            />
+          </div>
         </div>
       </div>
+      )}
     </div>
   );
 }

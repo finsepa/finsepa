@@ -1,5 +1,7 @@
 import "server-only";
 
+import { cache } from "react";
+
 import { traceEodhdHttp } from "@/lib/market/provider-trace";
 import { getEodhdApiKey } from "@/lib/env/server";
 import { toEodhdUsSymbol } from "@/lib/market/eodhd-symbol";
@@ -20,15 +22,20 @@ export type EodhdRealtimePayload = {
 /** EODHD multi-ticker realtime `s=` param — provider recommends ~15–20 symbols per request. */
 export const EODHD_REALTIME_SYMBOLS_PER_REQUEST = 15;
 
+function realtimeSymbolKey(ticker: string): string | null {
+  const t = ticker.trim();
+  if (!t) return null;
+  return toEodhdUsSymbol(t).toUpperCase();
+}
+
 /**
  * US exchange real-time quote. One HTTP request per symbol (batched at call site).
  * @see https://eodhd.com/financial-apis/live-realtime-stocks-api/
  */
-export async function fetchEodhdUsRealtime(ticker: string): Promise<EodhdRealtimePayload | null> {
+async function fetchEodhdUsRealtimeHttp(symbol: string): Promise<EodhdRealtimePayload | null> {
   const key = getEodhdApiKey();
   if (!key) return null;
 
-  const symbol = toEodhdUsSymbol(ticker);
   const url = `https://eodhd.com/api/real-time/${encodeURIComponent(symbol)}?api_token=${encodeURIComponent(key)}&fmt=json`;
 
   try {
@@ -41,6 +48,15 @@ export async function fetchEodhdUsRealtime(ticker: string): Promise<EodhdRealtim
   } catch {
     return null;
   }
+}
+
+/** Coalesces parallel realtime loads (e.g. stock 1D chart + header spot) in one RSC request. */
+const fetchEodhdUsRealtimePerRequest = cache(fetchEodhdUsRealtimeHttp);
+
+export async function fetchEodhdUsRealtime(ticker: string): Promise<EodhdRealtimePayload | null> {
+  const symbol = realtimeSymbolKey(ticker);
+  if (!symbol) return null;
+  return fetchEodhdUsRealtimePerRequest(symbol);
 }
 
 function parseRealtimeMultiJson(raw: unknown): Map<string, EodhdRealtimePayload> {

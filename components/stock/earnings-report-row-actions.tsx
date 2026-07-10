@@ -11,10 +11,13 @@ import {
   isEarningsSlidesPreviewUrl,
 } from "@/lib/market/earnings-document-url";
 import type { StockEarningsHistoryRow } from "@/lib/market/stock-earnings-types";
+import { secondaryOutlineButtonClassName } from "@/components/design-system";
 import { cn } from "@/lib/utils";
 
-const outlineButtonClass =
-  "inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-[10px] border border-[#E4E4E7] bg-white px-3 font-['Inter'] text-[14px] font-normal leading-5 text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors duration-100 hover:bg-[#F4F4F5] active:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900/10 focus-visible:ring-offset-2";
+const outlineButtonClass = cn(
+  secondaryOutlineButtonClassName,
+  "font-['Inter'] text-[14px] font-normal leading-5 active:bg-white focus-visible:ring-neutral-900/10",
+);
 
 function firstPartyEarningsDocumentUrls(
   listingTicker: string,

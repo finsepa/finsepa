@@ -120,9 +120,9 @@ export function ChartingPage({
               <EmptyMedia variant="icon">
                 <LineChart className="h-6 w-6" strokeWidth={1.75} aria-hidden />
               </EmptyMedia>
-              <EmptyTitle>Select a metric and add a company to begin charting</EmptyTitle>
+              <EmptyTitle>No Data to Display</EmptyTitle>
               <EmptyDescription className="max-w-md">
-                Add at least one metric and one company using the controls above.
+                Choose at least one company and one metric to generate your chart.
               </EmptyDescription>
             </EmptyHeader>
           </Empty>

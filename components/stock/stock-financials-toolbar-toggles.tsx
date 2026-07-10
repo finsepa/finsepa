@@ -3,6 +3,8 @@
 import {
   SegmentedControl,
   type SegmentedControlOption,
+  whiteSurfaceButtonBorderClass,
+  whiteSurfaceButtonShadowClass,
 } from "@/components/design-system";
 import { FinancialsColumnOrderToggle } from "@/components/stock/financials-column-order-toggle";
 import { FormListboxSelect } from "@/components/ui/form-listbox-select";
@@ -47,8 +49,7 @@ export function StockFinancialsPeriodToggle({
   );
 }
 
-const FINANCIALS_MOBILE_LISTBOX_TRIGGER_CLASS =
-  "border border-[#E4E4E7] bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] hover:bg-[#FAFAFA]";
+const FINANCIALS_MOBILE_LISTBOX_TRIGGER_CLASS = `${whiteSurfaceButtonBorderClass} bg-white ${whiteSurfaceButtonShadowClass} hover:bg-[#FAFAFA]`;
 
 /** Mobile: statement, range, period, and column-order on one row (compact listboxes). */
 export function StockFinancialsMobileToolbar({

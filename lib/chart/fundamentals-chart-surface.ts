@@ -72,8 +72,8 @@ export const FUNDAMENTALS_CHART_AXIS_TICK_COUNT = 5;
 
 /** Line charts — modest top margin for end badges / hover. */
 export const FUNDAMENTALS_CHART_SCALE_MARGIN_TOP = 0.08;
-/** Bar charts — extra headroom so value labels above bars are not clipped. */
-export const FUNDAMENTALS_CHART_SCALE_MARGIN_TOP_BARS = 0.15;
+/** Bar charts — matches Key Stats / Multicharts plot band (`top-[8%]`). */
+export const FUNDAMENTALS_CHART_SCALE_MARGIN_TOP_BARS = 0.08;
 export const FUNDAMENTALS_CHART_SCALE_MARGIN_BOTTOM_BARS = 0;
 export const FUNDAMENTALS_CHART_SCALE_MARGIN_BOTTOM_LINE = 0.08;
 
@@ -101,7 +101,7 @@ export function fundamentalsChartScaleMarginTop(mode: "bars" | "line"): number {
 
 /** Overlay grid / Y-axis labels aligned to the price scale (Multicharts). */
 export function fundamentalsChartPlotInsetClassName(mode: "bars" | "line"): string {
-  return mode === "bars" ? "top-[15%] bottom-0" : "top-[8%] bottom-[8%]";
+  return mode === "bars" ? "top-[8%] bottom-0" : "top-[8%] bottom-[8%]";
 }
 
 const NICE_STEP_FACTORS = [1, 1.25, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10] as const;

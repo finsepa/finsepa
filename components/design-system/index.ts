@@ -9,6 +9,9 @@ export {
 export {
   secondaryFillButtonClassName,
   secondaryOutlineButtonClassName,
+  whiteSurfaceButtonBorderClass,
+  whiteSurfaceButtonChromeClass,
+  whiteSurfaceButtonShadowClass,
 } from "./secondary-button-styles";
 export { SegmentedControl, type SegmentedControlOption, type SegmentedControlSize } from "./segmented-control";
 export { TabSwitcher, type TabSwitcherOption } from "./tab-switcher";

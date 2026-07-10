@@ -14,6 +14,7 @@ import {
   dropdownMenuPanelClassName,
   dropdownMenuPlainItemClassName,
 } from "@/components/design-system/dropdown-menu-styles";
+import { whiteSurfaceButtonChromeClass } from "@/components/design-system";
 import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
 import { PortfolioListLogo } from "@/components/portfolio/portfolio-brokerage-logo";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
@@ -31,8 +32,10 @@ function PrivacyGlyph({ privacy }: { privacy: PortfolioPrivacy }) {
 
 type Variant = "field" | "compact" | "toolbar" | "titleGhost";
 
-const toolbarTriggerClass =
-  "inline-flex h-9 max-w-[min(52vw,220px)] shrink-0 cursor-pointer items-center gap-2 rounded-[10px] border border-[#E4E4E7] bg-white px-3 text-left text-sm font-medium text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40";
+const toolbarTriggerClass = cn(
+  "inline-flex h-9 max-w-[min(52vw,220px)] shrink-0 cursor-pointer items-center gap-2 rounded-[10px] px-3 text-left text-sm font-medium text-[#09090B] transition-all duration-100 hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40",
+  whiteSurfaceButtonChromeClass,
+);
 
 const titleGhostTriggerClass =
   "flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-[10px] text-[#71717A] transition-colors hover:bg-[#F4F4F5] hover:text-[#09090B] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";

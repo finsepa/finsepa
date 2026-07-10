@@ -14,6 +14,7 @@ import {
 import { dividendYieldRatioFromFundamentalsRoot } from "@/lib/market/eodhd-key-stats-dividends";
 import { livePeRatioPartsFromFundamentalsRoot } from "@/lib/market/eodhd-key-stats-valuation";
 import { fetchEodhdFundamentalsJson } from "@/lib/market/eodhd-fundamentals";
+import type { EodhdDailyBar } from "@/lib/market/eodhd-eod";
 import {
   type EarningsActualByPeriod,
   fetchFundamentalsRootForMetrics,
@@ -1895,6 +1896,7 @@ export type ChartingSeriesBundle = {
 async function fetchChartingSeriesUncached(
   ticker: string,
   mode: FundamentalsSeriesMode,
+  sortedDailyBars?: readonly EodhdDailyBar[] | null,
 ): Promise<ChartingSeriesBundle | null> {
   const root = await fetchFundamentalsRootForMetrics(ticker);
   if (!root) return null;
@@ -1905,7 +1907,7 @@ async function fetchChartingSeriesUncached(
   if (!points?.length) return null;
   points = finalizeChartingPointsWithEarningsOverlay(points, rootRec, mode, earningsActuals);
 
-  await enrichChartingPointsWithPriceImpliedMarketCap(ticker, points);
+  await enrichChartingPointsWithPriceImpliedMarketCap(ticker, points, { dailyBars: sortedDailyBars });
   enrichChartingPointsWithTrailingPeFromImpliedMarketCap(points);
   enrichChartingPointsWithImpliedValuationMultiplesFromMarketCap(points);
   for (const p of points) fillDerivedRatioTableFields(p);
@@ -1919,7 +1921,16 @@ async function fetchChartingSeriesUncached(
 }
 
 export const fetchChartingSeries = unstable_cache(
-  fetchChartingSeriesUncached,
+  async (ticker: string, mode: FundamentalsSeriesMode) => fetchChartingSeriesUncached(ticker, mode),
   ["eodhd-charting-series-v26-statement-enrich"],
   { revalidate: REVALIDATE_WARM },
 );
+
+/** Stock page cold load — reuse 100y EOD bars already fetched for performance/chart. */
+export async function fetchChartingSeriesWithDailyBars(
+  ticker: string,
+  mode: FundamentalsSeriesMode,
+  sortedDailyBars: readonly EodhdDailyBar[],
+): Promise<ChartingSeriesBundle | null> {
+  return fetchChartingSeriesUncached(ticker, mode, sortedDailyBars);
+}

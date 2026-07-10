@@ -219,15 +219,27 @@ export function enrichChartingPointsWithImpliedValuationMultiplesFromMarketCap(
  * Sets `marketCap` = (last EOD **adjusted** close on or before fiscal period end) × `sharesOutstanding`
  * when both are available. Pair with {@link enrichChartingPointsWithTrailingPeFromImpliedMarketCap} for P/E charts.
  */
+function sliceSortedEodDailyBars(
+  sortedDailyBars: readonly EodhdDailyBar[],
+  from: string,
+  to: string,
+): EodhdDailyBar[] {
+  return sortedDailyBars.filter((bar) => bar.date >= from && bar.date <= to);
+}
+
 export async function enrichChartingPointsWithPriceImpliedMarketCap(
   ticker: string,
   points: ChartingSeriesPoint[],
+  opts?: { dailyBars?: readonly EodhdDailyBar[] | null },
 ): Promise<void> {
   if (points.length === 0) return;
   const win = eodFetchWindow(points);
   if (!win) return;
 
-  const bars = await fetchEodhdEodDaily(ticker.trim(), win.from, win.to);
+  const prefetched =
+    opts?.dailyBars?.length ? sliceSortedEodDailyBars(opts.dailyBars, win.from, win.to) : [];
+  const bars =
+    prefetched.length > 0 ? prefetched : await fetchEodhdEodDaily(ticker.trim(), win.from, win.to);
   if (!bars?.length) return;
 
   for (const p of points) {

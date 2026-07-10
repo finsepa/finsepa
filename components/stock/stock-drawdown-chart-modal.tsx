@@ -15,31 +15,25 @@ import { TabSwitcher, type TabSwitcherOption } from "@/components/design-system"
 import { topbarSquircleIconClass } from "@/components/design-system/topbar-control-classes";
 import { CompanyLogo } from "@/components/screener/company-logo";
 import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
-import { FundamentalsChartSettingsMenu } from "@/components/stock/fundamentals-chart-settings-menu";
-import type { FundamentalsChartSettingsLineBadges } from "@/components/stock/fundamentals-chart-settings-menu";
 import { MULTICHART_LINE_STROKE_WIDTH_PX } from "@/components/stock/multichart-fundamentals-bar";
 import {
   fundamentalsBarEnterProgress,
   runFundamentalsBarEnterAnimation,
+  FUNDAMENTALS_BAR_VALUE_LABEL_STAGGER_MS,
 } from "@/lib/chart/fundamentals-bar-enter-animation";
-import {
-  DEFAULT_FUNDAMENTALS_CHART_DISPLAY_OPTIONS,
-  type FundamentalsChartDisplayOptions,
-} from "@/lib/chart/fundamentals-chart-display-options";
 import {
   CHARTING_LINE_HOVER_HALO_BG,
   CHARTING_LINE_POINT_MARKER_BORDER_PX,
+  CHARTING_LINE_POINT_MARKER_DIAMETER_PX,
   CHARTING_LINE_POINT_MARKER_RADIUS_PX,
   computeFundamentalsChartTooltipPlacement,
   FUNDAMENTALS_CHART_AXIS_ROW_PX,
+  FUNDAMENTALS_CHART_BAR_VALUE_LABEL_HEIGHT_PX,
   FUNDAMENTALS_CHART_PLOT_INSET_BOTTOM_FRAC,
   FUNDAMENTALS_CHART_PLOT_INSET_TOP_FRAC,
-  FUNDAMENTALS_CHART_REFERENCE_BADGE_CLASS,
   FUNDAMENTALS_CHART_TOOLTIP_CLASS,
-  FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS,
   FUNDAMENTALS_CHART_Y_AXIS_W_PX,
   valueToPlotBandTopPercent,
-  type FundamentalsChartReferenceKind,
 } from "@/lib/chart/fundamentals-chart-surface";
 import { smoothAreaPathD, smoothLinePathD } from "@/lib/chart/smooth-line-path";
 import type { DrawdownSeriesPoint } from "@/lib/market/drawdown-series-types";
@@ -67,6 +61,16 @@ const DRAWDOWN_LINE_COLOR = "#DC2626";
 const DRAWDOWN_Y_MIN = -1;
 const DRAWDOWN_Y_MAX = 0;
 const DRAWDOWN_Y_TICKS = [0, -0.25, -0.5, -0.75, -1] as const;
+
+/** Matches revenue / fundamentals line value labels ({@link multichart-fundamentals-bar.tsx}). */
+const DRAWDOWN_VALUE_LABEL_ANCHOR_CLASS =
+  "pointer-events-none absolute z-[15] max-w-[5.5rem] -translate-x-1/2 text-center";
+
+const DRAWDOWN_VALUE_LABEL_TEXT_CLASS =
+  "block truncate text-[11px] font-semibold leading-none tabular-nums text-[#09090B]";
+
+const DRAWDOWN_VALUE_LABEL_TEXT_SHADOW =
+  "0 0 3px rgba(255,255,255,0.95), 0 1px 2px rgba(255,255,255,0.8)";
 
 const TIME_RANGE_TAB_OPTIONS: TabSwitcherOption<FundamentalsChartTimeRange>[] =
   FUNDAMENTALS_CHART_TIME_RANGE_ORDER.map((value) => ({
@@ -242,33 +246,6 @@ function useMobileSheetDragDismiss(onClose: () => void, enabled: boolean) {
   return { sheetStyle, sheetPointerHandlers };
 }
 
-function DrawdownReferenceLine({
-  topPercent,
-  kind,
-  badgeLabel,
-}: {
-  topPercent: number;
-  kind: FundamentalsChartReferenceKind;
-  badgeLabel: string;
-}) {
-  return (
-    <>
-      <div
-        className="pointer-events-none absolute inset-x-0 z-[4] border-t border-dashed border-[#A1A1AA]"
-        style={{ top: `${topPercent}%` }}
-        aria-hidden
-      />
-      <div
-        className="pointer-events-none absolute left-2 z-[5] max-w-[min(55%,12rem)] -translate-y-1/2"
-        style={{ top: `${topPercent}%` }}
-        title={badgeLabel}
-      >
-        <span className={FUNDAMENTALS_CHART_REFERENCE_BADGE_CLASS[kind]}>{badgeLabel}</span>
-      </div>
-    </>
-  );
-}
-
 type TipState = {
   anchorX: number;
   y: number;
@@ -281,13 +258,11 @@ function DrawdownHistoryChart({
   points,
   loading,
   timeRange,
-  displayOptions,
   height,
 }: {
   points: DrawdownSeriesPoint[];
   loading: boolean;
   timeRange: FundamentalsChartTimeRange;
-  displayOptions: FundamentalsChartDisplayOptions;
   height: number;
 }) {
   const areaGradientId = useId();
@@ -310,12 +285,6 @@ function DrawdownHistoryChart({
   }, [points]);
 
   const yDomain = useMemo(() => drawdownYDomain(), []);
-
-  const referenceLevels = useMemo(() => {
-    const values = points.map((p) => p.drawdown).filter((v) => Number.isFinite(v));
-    if (!values.length) return null;
-    return { max: Math.max(...values, 0), min: Math.min(...values) };
-  }, [points]);
 
   const lineSvg = useMemo(() => {
     const w = plotPx.w;
@@ -359,6 +328,16 @@ function DrawdownHistoryChart({
       lastPt: last ? { x: last.x, y: last.y } : null,
     };
   }, [plotPx.h, plotPx.w, points, xDomain.max, xDomain.min, yDomain.max, yDomain.min]);
+
+  const lineMinValuePoint = useMemo(() => {
+    if (!lineSvg.pts.length) return null;
+    let best = lineSvg.pts[0]!;
+    for (const pt of lineSvg.pts) {
+      if (pt.v == null || !Number.isFinite(pt.v)) continue;
+      if (pt.v < best.v) best = pt;
+    }
+    return best.v != null && Number.isFinite(best.v) && best.v < 0 ? best : null;
+  }, [lineSvg.pts]);
 
   const xTicks = useMemo(() => {
     if (points.length < 2) return [];
@@ -413,6 +392,7 @@ function DrawdownHistoryChart({
   }, [loading, points, timeRange, plotPx.w]);
 
   const shouldAnimateLine = !loading && points.length >= 2 && plotPx.w > 0;
+  const lineValueLabelsVisible = !shouldAnimateLine || lineRevealProgress >= 1;
   const hoveredPt = hoveredIndex != null ? lineSvg.pts[hoveredIndex] : undefined;
 
   const clearHover = useCallback(() => {
@@ -474,20 +454,7 @@ function DrawdownHistoryChart({
         className="relative flex w-full min-w-0 max-w-full flex-col overflow-visible"
         style={{ height }}
       >
-        <div className="flex min-h-0 w-full min-w-0 flex-1" style={{ height: plotHeight }}>
-          <div
-            className={cn(
-              "flex shrink-0 flex-col justify-between text-right text-[11px] leading-4 text-[#71717A] tabular-nums",
-              FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS,
-            )}
-            style={{ width: FUNDAMENTALS_CHART_Y_AXIS_W_PX }}
-            aria-hidden
-          >
-            {yDomain.ticks.map((tick) => (
-              <span key={tick}>{formatDrawdownAxisTick(tick)}</span>
-            ))}
-          </div>
-
+        <div className="flex min-h-0 w-full min-w-0 flex-1 gap-3" style={{ height: plotHeight }}>
           <div
             ref={plotAreaRef}
             className="relative min-h-0 min-w-0 flex-1"
@@ -506,21 +473,6 @@ function DrawdownHistoryChart({
               style={{ top: `${zeroBaselineTopPct}%` }}
               aria-hidden
             />
-
-            {displayOptions.showMaxLine && referenceLevels ? (
-              <DrawdownReferenceLine
-                kind="max"
-                topPercent={plotValueTopPercent(referenceLevels.max)}
-                badgeLabel={`Max ${formatDrawdownDepth(referenceLevels.max)}`}
-              />
-            ) : null}
-            {displayOptions.showMinLine && referenceLevels ? (
-              <DrawdownReferenceLine
-                kind="min"
-                topPercent={plotValueTopPercent(referenceLevels.min)}
-                badgeLabel={`Min ${formatDrawdownDepth(referenceLevels.min)}`}
-              />
-            ) : null}
 
             {hoveredPt ? (
               <div
@@ -638,6 +590,40 @@ function DrawdownHistoryChart({
                   ) : null}
                 </svg>
               ) : null}
+              {lineValueLabelsVisible && lineMinValuePoint
+                ? (() => {
+                    const { x, y, v, i } = lineMinValuePoint;
+                    const text = formatDrawdownDepth(v);
+                    const dotClearance = CHARTING_LINE_POINT_MARKER_DIAMETER_PX / 2 + 4;
+                    const minTop = FUNDAMENTALS_CHART_BAR_VALUE_LABEL_HEIGHT_PX + 4;
+                    return (
+                      <div
+                        key={`drawdown-min-${i}`}
+                        className={cn(DRAWDOWN_VALUE_LABEL_ANCHOR_CLASS, "-translate-y-full")}
+                        style={{
+                          left: x,
+                          top: Math.max(minTop, y - dotClearance),
+                        }}
+                        title={text}
+                      >
+                        <span
+                          className={cn(
+                            DRAWDOWN_VALUE_LABEL_TEXT_CLASS,
+                            shouldAnimateLine && "fundamentals-bar-value-label-in",
+                          )}
+                          style={{
+                            animationDelay: shouldAnimateLine
+                              ? `${i * FUNDAMENTALS_BAR_VALUE_LABEL_STAGGER_MS}ms`
+                              : undefined,
+                            textShadow: DRAWDOWN_VALUE_LABEL_TEXT_SHADOW,
+                          }}
+                        >
+                          {text}
+                        </span>
+                      </div>
+                    );
+                  })()
+                : null}
             </div>
 
             {tip ? (
@@ -661,12 +647,28 @@ function DrawdownHistoryChart({
               </div>
             ) : null}
           </div>
+
+          <div
+            className="relative h-full shrink-0 pl-0 pr-2 text-left text-[11px] leading-4 text-[#71717A] tabular-nums"
+            style={{ width: FUNDAMENTALS_CHART_Y_AXIS_W_PX }}
+            aria-hidden
+          >
+            <div className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%]">
+              {yDomain.ticks.map((tick) => (
+                <span
+                  key={tick}
+                  className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-white px-1 py-px"
+                  style={{ top: `${valueToPlotBandTopPercent(tick, yDomain.min, yDomain.max)}%` }}
+                >
+                  {formatDrawdownAxisTick(tick)}
+                </span>
+              ))}
+            </div>
+          </div>
         </div>
 
-        <div
-          className="relative shrink-0"
-          style={{ height: FUNDAMENTALS_CHART_AXIS_ROW_PX, paddingLeft: FUNDAMENTALS_CHART_Y_AXIS_W_PX }}
-        >
+        <div className="flex w-full min-w-0 gap-3" style={{ height: FUNDAMENTALS_CHART_AXIS_ROW_PX }}>
+          <div className="relative min-w-0 flex-1">
           {xTicks.map(({ ts, leftPct, label }) => (
             <span
               key={ts}
@@ -676,6 +678,12 @@ function DrawdownHistoryChart({
               {label}
             </span>
           ))}
+          </div>
+          <div
+            style={{ width: FUNDAMENTALS_CHART_Y_AXIS_W_PX }}
+            className="shrink-0 pr-2"
+            aria-hidden
+          />
         </div>
       </div>
     </div>
@@ -692,9 +700,6 @@ export function StockDrawdownChartPanel({
   className?: string;
 }) {
   const [timeRange, setTimeRange] = useState<FundamentalsChartTimeRange>("all");
-  const [displayOptions, setDisplayOptions] = useState<FundamentalsChartDisplayOptions>(
-    () => ({ ...DEFAULT_FUNDAMENTALS_CHART_DISPLAY_OPTIONS }),
-  );
   const [points, setPoints] = useState<DrawdownSeriesPoint[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -724,26 +729,11 @@ export function StockDrawdownChartPanel({
     [points, timeRange],
   );
 
-  const lineSettingsBadges = useMemo((): FundamentalsChartSettingsLineBadges | undefined => {
-    const values = windowedPoints.map((p) => p.drawdown).filter((v) => Number.isFinite(v));
-    if (!values.length) return undefined;
-    return {
-      max: formatDrawdownDepth(Math.max(...values, 0)),
-      min: formatDrawdownDepth(Math.min(...values)),
-    };
-  }, [windowedPoints]);
-
   const hasSeries = windowedPoints.length >= 2;
 
   return (
     <div className={cn("flex flex-col gap-4", className)}>
       <div className="flex flex-wrap items-center justify-end gap-2">
-        <FundamentalsChartSettingsMenu
-          variant="line"
-          options={displayOptions}
-          onChange={setDisplayOptions}
-          lineBadges={lineSettingsBadges}
-        />
         <TabSwitcher
           size="sm"
           options={TIME_RANGE_TAB_OPTIONS}
@@ -768,7 +758,6 @@ export function StockDrawdownChartPanel({
         points={windowedPoints}
         loading={loading}
         timeRange={timeRange}
-        displayOptions={displayOptions}
         height={height}
       />
     </div>
@@ -789,9 +778,6 @@ export function StockDrawdownChartModal({
   const isMobile = useKeyStatsModalMobile();
   const { sheetStyle, sheetPointerHandlers } = useMobileSheetDragDismiss(onClose, isMobile);
   const [timeRange, setTimeRange] = useState<FundamentalsChartTimeRange>("all");
-  const [displayOptions, setDisplayOptions] = useState<FundamentalsChartDisplayOptions>(
-    () => ({ ...DEFAULT_FUNDAMENTALS_CHART_DISPLAY_OPTIONS }),
-  );
   const [points, setPoints] = useState<DrawdownSeriesPoint[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -837,15 +823,6 @@ export function StockDrawdownChartModal({
     [points, timeRange],
   );
 
-  const lineSettingsBadges = useMemo((): FundamentalsChartSettingsLineBadges | undefined => {
-    const values = windowedPoints.map((p) => p.drawdown).filter((v) => Number.isFinite(v));
-    if (!values.length) return undefined;
-    return {
-      max: formatDrawdownDepth(Math.max(...values, 0)),
-      min: formatDrawdownDepth(Math.min(...values)),
-    };
-  }, [windowedPoints]);
-
   const chartHeight = isMobile ? MOBILE_KEY_STATS_CHART_HEIGHT_PX : 400;
   const hasSeries = windowedPoints.length >= 2;
 
@@ -859,19 +836,12 @@ export function StockDrawdownChartModal({
       points={windowedPoints}
       loading={loading}
       timeRange={timeRange}
-      displayOptions={displayOptions}
       height={chartHeight}
     />
   );
 
   const toolbarControls = (
     <>
-      <FundamentalsChartSettingsMenu
-        variant="line"
-        options={displayOptions}
-        onChange={setDisplayOptions}
-        lineBadges={lineSettingsBadges}
-      />
       <TabSwitcher
         size="sm"
         options={TIME_RANGE_TAB_OPTIONS}

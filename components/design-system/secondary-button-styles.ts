@@ -1,9 +1,16 @@
+/** White-surface button chrome: 1px border + single drop shadow. */
+export const whiteSurfaceButtonBorderClass = "border border-[#E4E4E7]";
+
+export const whiteSurfaceButtonShadowClass =
+  "shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]";
+
+export const whiteSurfaceButtonChromeClass = `${whiteSurfaceButtonBorderClass} bg-white ${whiteSurfaceButtonShadowClass}`;
+
 /**
  * White surface secondary / outline action button (border, light shadow, zinc hover).
  * Matches earnings row actions, pagination, and toolbar “Add …” controls.
  */
-export const secondaryOutlineButtonClassName =
-  "inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-[10px] border border-[#E4E4E7] bg-white px-3 text-[13px] font-semibold leading-none text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors duration-100 hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15";
+export const secondaryOutlineButtonClassName = `inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-[10px] ${whiteSurfaceButtonChromeClass} px-3 text-[13px] font-semibold leading-none text-[#09090B] transition-colors duration-100 hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15`;
 
 /** Grey fill toolbar action — Charting + Add Company / + Add Metric. */
 export const secondaryFillButtonClassName =

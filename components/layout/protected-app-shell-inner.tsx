@@ -19,8 +19,10 @@ import {
 } from "@/components/layout/sidebar-layout-context";
 import { MobileAssetTopbarProvider } from "@/components/layout/mobile-asset-topbar-context";
 import { Topbar } from "@/components/layout/topbar";
+import { CompanyRail } from "@/components/layout/company-rail";
 import { WatchlistRail } from "@/components/layout/watchlist-rail";
 import { WatchlistRailLayoutProvider } from "@/components/layout/watchlist-rail-layout-context";
+import { ChartingCompanyRailProvider } from "@/components/charting/charting-company-rail-context";
 import { dropdownMenuFloatingScrollbarClassName } from "@/components/design-system/dropdown-menu-styles";
 import { MOBILE_PAGE_BACKGROUND_CLASS } from "@/components/design-system/card-surface-styles";
 import { MOBILE_STOCK_TOPBAR_OFFSET_CLASS } from "@/lib/layout/use-mobile-stock-topbar-layout";
@@ -126,6 +128,9 @@ function ProtectedAppChrome({
               mobileTopbarVariant === "stock" ? "max-md:pt-0" : "max-md:pt-[var(--mobile-topbar-offset)]",
             )}
           >
+            <Suspense fallback={null}>
+              <CompanyRail />
+            </Suspense>
             <main
               ref={mainRef}
               suppressHydrationWarning
@@ -183,16 +188,18 @@ export function ProtectedAppShellInner({
   return (
     <SidebarLayoutProvider initialCollapsed={initialSidebarCollapsed}>
       <WatchlistRailLayoutProvider initialCollapsed={initialWatchlistRailCollapsed}>
-        <ProtectedAppChrome
-          userId={userId}
-          userInitials={userInitials}
-          avatarUrl={avatarUrl}
-          userDisplayName={userDisplayName}
-          platformTrialDaysLeft={platformTrialDaysLeft ?? null}
-          mobileTopbarVariant={mobileTopbarVariant}
-        >
-          {children}
-        </ProtectedAppChrome>
+        <ChartingCompanyRailProvider>
+          <ProtectedAppChrome
+            userId={userId}
+            userInitials={userInitials}
+            avatarUrl={avatarUrl}
+            userDisplayName={userDisplayName}
+            platformTrialDaysLeft={platformTrialDaysLeft ?? null}
+            mobileTopbarVariant={mobileTopbarVariant}
+          >
+            {children}
+          </ProtectedAppChrome>
+        </ChartingCompanyRailProvider>
       </WatchlistRailLayoutProvider>
     </SidebarLayoutProvider>
   );

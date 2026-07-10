@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { ReactNode, RefObject } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { DropdownScrollArea } from "@/components/design-system/dropdown-scroll-area";
@@ -70,6 +70,11 @@ export type CompanyPickerRenderProps = {
   atCapacity: boolean;
 };
 
+export type CompanyPickerOpenControls = {
+  open: () => void;
+  isDisabled: () => boolean;
+};
+
 const TRANSACTION_PICKER_RESULTS_ID = "transaction-company-picker-results";
 
 /**
@@ -93,6 +98,9 @@ export function CompanyPicker({
   shellClassName,
   wrapClassName,
   menuPortal = false,
+  anchorRef,
+  hideTrigger = false,
+  registerOpenControl,
   children,
 }: {
   onPick: (pick: CompanyPick) => void;
@@ -117,13 +125,20 @@ export function CompanyPicker({
   wrapClassName?: string;
   /** Portal dropdown to `document.body` (avoids modal overflow clipping). */
   menuPortal?: boolean;
+  /** Anchor portaled menus to an external trigger (Charting company rail +). */
+  anchorRef?: RefObject<HTMLElement | null>;
+  /** Hide the default trigger button; pair with {@link anchorRef}. */
+  hideTrigger?: boolean;
+  /** Optional imperative open hook (e.g. Charting company rail + button). */
+  registerOpenControl?: (controls: CompanyPickerOpenControls) => () => void;
   children?: (ctx: CompanyPickerRenderProps) => ReactNode;
 }) {
   const pickerWrapRef = useRef<HTMLDivElement>(null);
   const pickerInputRef = useRef<HTMLInputElement>(null);
   const menuPortalRef = useRef<HTMLDivElement>(null);
   const isMobileSheet = useMobileSheet();
-  const useMenuPortal = menuPortal || isMobileSheet;
+  const useMenuPortal = menuPortal || isMobileSheet || hideTrigger;
+  const portalAnchorRef = anchorRef ?? pickerWrapRef;
 
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerQuery, setPickerQuery] = useState("");
@@ -216,7 +231,7 @@ export function CompanyPicker({
     function onDocMouseDown(e: MouseEvent) {
       const t = e.target;
       if (!(t instanceof Node)) return;
-      if (pickerWrapRef.current?.contains(t) || menuPortalRef.current?.contains(t)) return;
+      if (portalAnchorRef.current?.contains(t) || pickerWrapRef.current?.contains(t) || menuPortalRef.current?.contains(t)) return;
       closePicker();
     }
     function onKey(e: KeyboardEvent) {
@@ -230,7 +245,7 @@ export function CompanyPicker({
       document.removeEventListener("mousedown", onDocMouseDown);
       document.removeEventListener("keydown", onKey, true);
     };
-  }, [pickerOpen, closePicker]);
+  }, [pickerOpen, closePicker, portalAnchorRef]);
 
   useEffect(() => {
     if (!pickerOpen || debouncedTrim.length < 1) {
@@ -280,6 +295,17 @@ export function CompanyPicker({
     resultCount: searchItemsForDisplay.length,
   });
   const atCapacity = disabled || (!alwaysAllowOpen && maxExtraCompanies <= 0);
+
+  useEffect(() => {
+    if (!registerOpenControl) return;
+    return registerOpenControl({
+      open: () => {
+        if (atCapacity) return;
+        setPickerOpen(true);
+      },
+      isDisabled: () => atCapacity,
+    });
+  }, [registerOpenControl, atCapacity]);
 
   const searchPlaceholder =
     placeholderProp ??
@@ -457,14 +483,14 @@ export function CompanyPicker({
           ariaLabel="Ticker or company"
           ariaControls={TRANSACTION_PICKER_RESULTS_ID}
         />
-      ) : (
+      ) : hideTrigger ? null : (
         children?.({ open: pickerOpen, setOpen: setPickerOpen, atCapacity })
       )}
 
       {pickerOpen && variant === "button" && useMenuPortal ? (
         <TopbarDropdownPortal
           open={pickerOpen}
-          anchorRef={pickerWrapRef}
+          anchorRef={portalAnchorRef}
           align={portalAlign}
           ref={menuPortalRef}
           sheetTitle={listboxAriaLabel}

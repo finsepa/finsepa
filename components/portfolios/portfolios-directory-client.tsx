@@ -22,8 +22,10 @@ import {
   PortfoliosDirectoryTableSkeleton,
   PublicPortfolioCardSkeleton,
 } from "@/components/portfolios/portfolios-directory-skeleton";
+import { PortfolioOwnerName } from "@/components/portfolios/portfolio-owner-name";
 import { PortfoliosDirectoryTable } from "@/components/portfolios/portfolios-directory-table";
 import { PUBLIC_LISTINGS_CHANGED_EVENT } from "@/lib/portfolio/sync-public-listing-client";
+import { whiteSurfaceButtonChromeClass } from "@/components/design-system";
 import { cn } from "@/lib/utils";
 
 type PortfoliosDirectoryView = "cards" | "list";
@@ -140,7 +142,10 @@ function PublicPortfolioBlock({ listing }: { listing: PublicListingRow }) {
             >
               {listing.name}
             </h2>
-            <p className="truncate text-sm font-normal leading-6 tracking-normal text-[#71717A]">{ownerName}</p>
+            <PortfolioOwnerName
+              name={ownerName}
+              className="text-sm font-normal leading-6 tracking-normal text-[#71717A]"
+            />
           </div>
         </div>
 
@@ -201,7 +206,10 @@ function PublicPortfolioBlock({ listing }: { listing: PublicListingRow }) {
 
         <div className="flex shrink-0 justify-end md:justify-center">
           <div
-            className="flex h-8 w-8 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors group-hover:bg-[#F4F4F5]"
+            className={cn(
+              "flex h-8 w-8 items-center justify-center rounded-[10px] text-[#09090B] transition-colors group-hover:bg-[#F4F4F5]",
+              whiteSurfaceButtonChromeClass,
+            )}
             aria-hidden
           >
             <ChevronRight className="h-4 w-4" strokeWidth={2} />

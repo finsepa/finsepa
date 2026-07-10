@@ -61,6 +61,7 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { netCashUsdUpTo, normalizeUsdForDisplay } from "@/lib/portfolio/overview-metrics";
+import { whiteSurfaceButtonBorderClass, whiteSurfaceButtonShadowClass } from "@/components/design-system";
 import { cn } from "@/lib/utils";
 import type {
   PortfolioChartRange,
@@ -500,8 +501,7 @@ export const PORTFOLIO_CHART_RANGE_LABELS: { id: PortfolioChartRange; label: str
 /** Mobile range strip omits YTD to fit the narrower control row. */
 const PORTFOLIO_CHART_MOBILE_RANGE_LABELS = PORTFOLIO_CHART_RANGE_LABELS.filter((r) => r.id !== "ytd");
 
-const PORTFOLIO_CHART_MOBILE_METRIC_TRIGGER_CLASS =
-  "w-auto border border-[#E4E4E7] bg-white font-medium shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] hover:bg-[#FAFAFA]";
+const PORTFOLIO_CHART_MOBILE_METRIC_TRIGGER_CLASS = `w-auto ${whiteSurfaceButtonBorderClass} bg-white font-medium ${whiteSurfaceButtonShadowClass} hover:bg-[#FAFAFA]`;
 
 /** One-decimal truncation (e.g. 7616 → 7.6) so axis + last-price badge stay distinct. */
 function truncOneDecimalUnit(abs: number, unit: number): string {

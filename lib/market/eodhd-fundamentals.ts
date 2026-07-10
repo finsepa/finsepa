@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import { unstable_cache } from "next/cache";
 
 import { REVALIDATE_WARM_LONG } from "@/lib/data/cache-policy";
@@ -343,9 +344,12 @@ export async function fetchEodhdFundamentalsJsonFresh(ticker: string): Promise<R
   return fetchEodhdFundamentalsJsonUncached(ticker);
 }
 
+/** Coalesces parallel fundamentals loads in one RSC request before `unstable_cache` fills. */
+const fetchEodhdFundamentalsJsonPerRequest = cache(fetchEodhdFundamentalsJsonUncached);
+
 export const fetchEodhdFundamentalsJson = unstable_cache(
-  fetchEodhdFundamentalsJsonUncached,
-  ["eodhd-fundamentals-json-v8-statement-gap"],
+  fetchEodhdFundamentalsJsonPerRequest,
+  ["eodhd-fundamentals-json-v9-inflight-dedupe"],
   { revalidate: REVALIDATE_WARM_LONG },
 );
 

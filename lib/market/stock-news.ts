@@ -55,7 +55,12 @@ function normalizeNewsArray(data: unknown): Record<string, unknown>[] {
 }
 
 /** Fetch one page of news (EODHD `offset` / `limit`). IDs are stable across pages via `offset + rowIndex`. */
-export async function loadStockNewsPage(ticker: string, offset: number, limit: number): Promise<StockNewsArticle[]> {
+export async function loadStockNewsPage(
+  ticker: string,
+  offset: number,
+  limit: number,
+  opts?: { resolveOgImages?: boolean },
+): Promise<StockNewsArticle[]> {
   const key = getEodhdApiKey();
   if (!key) return [];
 
@@ -131,20 +136,25 @@ export async function loadStockNewsPage(ticker: string, offset: number, limit: n
     });
   }
 
-  await Promise.all(
-    out.map(async (row) => {
-      if (row.imageUrl) return;
-      const og = await fetchOgImageFromArticleUrl(row.url);
-      if (og) row.imageUrl = og;
-    }),
-  );
+  const resolveOgImages = opts?.resolveOgImages ?? true;
+
+  if (resolveOgImages) {
+    await Promise.all(
+      out.map(async (row) => {
+        if (row.imageUrl) return;
+        const og = await fetchOgImageFromArticleUrl(row.url);
+        if (og) row.imageUrl = og;
+      }),
+    );
+  }
 
   return out;
 }
 
-/** First page only — matches asset overview initial paint + `/api/stocks/.../news?offset=0&limit=6`. */
+/** First page for stock overview SSR — EODHD only; OG thumbnails load on news tab / paginated API. */
 export const getStockNews = unstable_cache(
-  async (ticker: string) => loadStockNewsPage(ticker, 0, STOCK_NEWS_PAGE_SIZE),
-  ["stock-news-v7-page6"],
+  async (ticker: string) =>
+    loadStockNewsPage(ticker, 0, STOCK_NEWS_PAGE_SIZE, { resolveOgImages: false }),
+  ["stock-news-v8-overview-no-og"],
   { revalidate: REVALIDATE_HOT },
 );

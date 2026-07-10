@@ -22,6 +22,7 @@ import {
   formatWeekMonthYearLabelFromYmds,
   toYmdUtc,
 } from "@/lib/market/utc-calendar-dates";
+import { whiteSurfaceButtonChromeClass } from "@/components/design-system";
 import { cn } from "@/lib/utils";
 
 const ECONOMY_COUNTRY_OPTIONS: ListboxOption[] = [
@@ -199,8 +200,10 @@ function EconomyListRow({
   );
 }
 
-const weekNavBtnClass =
-  "inline-flex h-9 shrink-0 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5]";
+const weekNavBtnClass = cn(
+  "inline-flex h-9 shrink-0 items-center justify-center rounded-[10px] text-[#09090B] transition-all duration-100 hover:bg-[#F4F4F5]",
+  whiteSurfaceButtonChromeClass,
+);
 
 const weekNavArrowClass = cn(weekNavBtnClass, "w-9");
 

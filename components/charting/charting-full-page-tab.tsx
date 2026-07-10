@@ -1,10 +1,13 @@
 "use client";
 
+import { useRef } from "react";
 import { useRouter } from "next/navigation";
 import { X } from "@/lib/icons";
 
 import { ChartingCompareWorkspace } from "@/components/charting/charting-compare-workspace";
 import { ChartingCompanyAddDropdown } from "@/components/charting/charting-company-add-dropdown";
+import { useChartingRailPickerAnchors } from "@/components/charting/charting-company-rail-context";
+import type { CompanyPickerOpenControls } from "@/components/charting/company-picker";
 import { ChartingWorkspace, STANDALONE_CHARTING_TIME_RANGE_ORDER } from "@/components/charting/charting-workspace";
 import type { StockPageInitialData } from "@/lib/market/stock-page-initial-data";
 import {
@@ -34,6 +37,8 @@ export function ChartingFullPageTab({
   workspaceTitle = "Charting",
 }: Props) {
   const router = useRouter();
+  const companyPickerControlsRef = useRef<CompanyPickerOpenControls | null>(null);
+  const { useRailPickers, companyAddAnchorRef } = useChartingRailPickerAnchors();
 
   if (tickers.length >= 2) {
     return (
@@ -44,6 +49,7 @@ export function ChartingFullPageTab({
         pathRoute={pathRoute}
         workspaceTitle={workspaceTitle}
         timeRangeOrder={STANDALONE_CHARTING_TIME_RANGE_ORDER}
+        animateBarsOnAppear
       />
     );
   }
@@ -63,7 +69,9 @@ export function ChartingFullPageTab({
       workspaceTitle={workspaceTitle}
       timeRangeOrder={STANDALONE_CHARTING_TIME_RANGE_ORDER}
       metricControlsPlacement="toolbar"
-      histogramLayout="default"
+      histogramLayout="stockFullWidthFixedBars"
+      animateBarsOnAppear
+      companyPickerControlsRef={companyPickerControlsRef}
       fullPageCompanyChipSlot={
         <div className="inline-flex max-w-full min-w-0 items-stretch overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white">
           <span className="flex min-h-[36px] min-w-0 items-center border-r border-[#E4E4E7] px-4 py-2 text-[14px] font-medium leading-5 text-[#09090B]">
@@ -83,6 +91,18 @@ export function ChartingFullPageTab({
       }
       fullPageCompanyAddSlot={
         <ChartingCompanyAddDropdown
+          hideTrigger={useRailPickers}
+          anchorRef={useRailPickers ? companyAddAnchorRef : undefined}
+          menuPortal={useRailPickers}
+          menuAlign="trailing"
+          registerOpenControl={(controls) => {
+            companyPickerControlsRef.current = controls;
+            return () => {
+              if (companyPickerControlsRef.current === controls) {
+                companyPickerControlsRef.current = null;
+              }
+            };
+          }}
           onPickStock={(sym) => {
             router.push(buildStandaloneChartPath(pathRoute, [t, sym], metricsInUrl));
           }}

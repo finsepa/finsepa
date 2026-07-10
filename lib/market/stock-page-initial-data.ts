@@ -22,7 +22,7 @@ import { STOCK_CHART_ALL_LOOKBACK_YEARS, type StockChartRange } from "@/lib/mark
 import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
 import type { StockNewsArticle } from "@/lib/market/stock-news-types";
 import { getStockNews } from "@/lib/market/stock-news";
-import { fetchChartingSeries } from "@/lib/market/eodhd-charting-series";
+import { fetchChartingSeriesWithDailyBars } from "@/lib/market/eodhd-charting-series";
 import type { StockProfilePayload } from "@/lib/market/stock-profile-types";
 import { fetchEodhdStockProfile } from "@/lib/market/eodhd-stock-profile";
 import type { PeersCompareRow } from "@/lib/market/peers-compare-payload";
@@ -112,18 +112,6 @@ function headerMetaShell(ticker: string): StockDetailHeaderMeta {
 
 function warnSettledFailure(label: string, reason: unknown) {
   console.warn(`[loadStockPageInitialData] ${label} failed`, reason);
-}
-
-const STOCK_PAGE_TIMING = process.env.FINSEPA_STOCK_PAGE_TIMING === "1";
-
-async function timedStockPageTask<T>(label: string, fn: () => Promise<T>): Promise<T> {
-  if (!STOCK_PAGE_TIMING) return fn();
-  const t0 = performance.now();
-  try {
-    return await fn();
-  } finally {
-    console.info(`[FINSEPA_STOCK_PAGE_TIMING] ${label} ${Math.round(performance.now() - t0)}ms`);
-  }
 }
 
 function fromSettled<T>(result: PromiseSettledResult<T>, label: string): T | null {
@@ -269,6 +257,17 @@ export async function loadStockPageInitialDataUncached(routeTicker: string): Pro
   }
 
   try {
+    const barsPromise = fetchEodhdEodDaily(ticker, from, to);
+    const sortedBarsPromise = barsPromise.then((barsRaw) =>
+      barsRaw?.length ? [...barsRaw].sort((a, b) => a.date.localeCompare(b.date)) : [],
+    );
+    const annualFromBars = sortedBarsPromise.then((sorted) =>
+      fetchChartingSeriesWithDailyBars(ticker, "annual", sorted),
+    );
+    const quarterlyFromBars = sortedBarsPromise.then((sorted) =>
+      fetchChartingSeriesWithDailyBars(ticker, "quarterly", sorted),
+    );
+
     const [
       headerMetaResult,
       barsResult,
@@ -281,16 +280,16 @@ export async function loadStockPageInitialDataUncached(routeTicker: string): Pro
       peersResult,
       spotResult,
     ] = await Promise.allSettled([
-      timedStockPageTask("headerMeta", () => getStockDetailHeaderMetaForPage(ticker)),
-      timedStockPageTask("eodDaily100y", () => fetchEodhdEodDaily(ticker, from, to)),
-      timedStockPageTask("chart1D", () => getStockChartPointsForApi(ticker, range, "price")),
-      timedStockPageTask("keyStatsBundle", () => buildStockKeyStatsBundle(ticker)),
-      timedStockPageTask("news", () => getStockNews(ticker)),
-      timedStockPageTask("profile", () => fetchEodhdStockProfile(ticker)),
-      timedStockPageTask("fundamentalsAnnual", () => fetchChartingSeries(ticker, "annual")),
-      timedStockPageTask("fundamentalsQuarterly", () => fetchChartingSeries(ticker, "quarterly")),
-      timedStockPageTask("peersCompare", () => getPeersCompareRowsCached(ticker)),
-      timedStockPageTask("headerLiveSpot", () => getStockSpotQuoteForApi(ticker)),
+      getStockDetailHeaderMetaForPage(ticker),
+      barsPromise,
+      getStockChartPointsForApi(ticker, range, "price"),
+      buildStockKeyStatsBundle(ticker),
+      getStockNews(ticker),
+      fetchEodhdStockProfile(ticker),
+      annualFromBars,
+      quarterlyFromBars,
+      getPeersCompareRowsCached(ticker),
+      getStockSpotQuoteForApi(ticker),
     ]);
 
     const headerMeta = fromSettled(headerMetaResult, "headerMeta") ?? headerMetaShell(ticker);
@@ -353,16 +352,14 @@ export async function loadStockPageInitialData(routeTicker: string): Promise<Sto
   }
 
   const epoch = getScreenerUsMarketCacheEpoch();
-  const cached = await timedStockPageTask("readAssetSnapshot", () => readAssetSnapshot(ticker, epoch.segment));
+  const cached = await readAssetSnapshot(ticker, epoch.segment);
 
   if (cached?.ticker === ticker) {
     const base = assetSnapshotPayloadToPageData(cached);
     if (epoch.mode === "frozen" && base.chart.points.length > 0) {
       return base;
     }
-    const hot = await timedStockPageTask("loadStockPageHotFields", () =>
-      loadStockPageHotFields(ticker, base.chart.range, [], new Date()),
-    );
+    const hot = await loadStockPageHotFields(ticker, base.chart.range, [], new Date());
     const chart =
       base.chart.range === "1D"
         ? hot.chart

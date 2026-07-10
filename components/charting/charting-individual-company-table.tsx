@@ -58,7 +58,7 @@ export function formatBarChartDataLabel(id: ChartingMetricId, v: number): string
   return formatChartingTableCellDisplay(id, v);
 }
 
-function cellTone(id: ChartingMetricId, v: number | null): string {
+export function chartingTableCellTone(id: ChartingMetricId, v: number | null): string {
   if (
     CHARTING_METRIC_KIND[id] !== "percent" ||
     !isChartingSignedPercentMetric(id) ||
@@ -86,31 +86,30 @@ function metricColor(
   return metricColors?.get(id) ?? fundamentalsBarSolidAtIndex(metricIndex);
 }
 
-/** Sticky metric column — fixed cap when few period columns; All stays content-sized. */
-const CHARTING_TABLE_FIRST_COL_ALL_CLASS = "min-w-[11rem]";
-const CHARTING_TABLE_FIRST_COL_CAPPED_CLASS = "w-[12.5rem] min-w-[12.5rem] max-w-[12.5rem]";
-
-function chartingTableFirstColClass(timeRange: Props["timeRange"]): string {
-  return timeRange === "all" ? CHARTING_TABLE_FIRST_COL_ALL_CLASS : CHARTING_TABLE_FIRST_COL_CAPPED_CLASS;
-}
+import {
+  CHARTING_TABLE_STICKY_FIRST_COL_BODY_CLASS,
+  CHARTING_TABLE_STICKY_FIRST_COL_HEAD_CLASS,
+  chartingTableFirstColClass,
+} from "@/components/charting/charting-table-styles";
 
 type Props = {
   ordered: ChartingSeriesPoint[];
   selected: ChartingMetricId[];
   periodMode: "annual" | "quarterly";
-  /** When not `all`, caps sticky metric column width so it does not stretch on sparse ranges (e.g. 1Y). */
+  /** When not `all`, caps sticky period column width so it does not stretch on sparse ranges (e.g. 1Y). */
   timeRange?: "1Y" | "2Y" | "3Y" | "5Y" | "10Y" | "all";
   /** Matches chart legend, e.g. `RACE Revenue`. */
   ticker?: string;
   metricColors?: Map<ChartingMetricId, string>;
   isBarValuesVisible?: (id: ChartingMetricId) => boolean;
   onShowBarValuesChange?: (id: ChartingMetricId, next: boolean) => void;
+  hideMetricSettings?: boolean;
   className?: string;
 };
 
 /**
- * Single-company charting table — metrics as rows, fiscal periods as columns (oldest → newest).
- * Reference: Figma charting data grid (PYPL Revenue / Net Income across years).
+ * Single-company charting table — fiscal periods as rows (newest first), metrics as columns.
+ * Reference: Figma charting data grid (Year × PYPL Revenue / Net Income).
  */
 export function ChartingIndividualCompanyTable({
   ordered,
@@ -121,11 +120,14 @@ export function ChartingIndividualCompanyTable({
   metricColors,
   isBarValuesVisible,
   onShowBarValuesChange,
+  hideMetricSettings = false,
   className,
 }: Props) {
   if (!ordered.length || !selected.length) return null;
 
   const firstColClass = chartingTableFirstColClass(timeRange);
+  const periodHeaderLabel = periodMode === "quarterly" ? "Period" : "Year";
+  const periodsNewestFirst = [...ordered].reverse();
 
   return (
     <div
@@ -134,54 +136,35 @@ export function ChartingIndividualCompanyTable({
         className,
       )}
     >
-      <table className="w-full min-w-max border-collapse bg-white">
+      <table className="w-full min-w-max border-separate border-spacing-0 bg-white">
         <thead>
-          <tr className="border-t border-b border-[#E4E4E7] bg-white">
+          <tr className="bg-white">
             <th
               scope="col"
               className={cn(
-                "sticky left-0 z-[1] bg-white px-3 py-2.5 text-left align-middle text-[14px] font-semibold leading-5 text-[#71717A] relative after:pointer-events-none after:absolute after:top-0 after:right-0 after:h-full after:w-px after:bg-[#E4E4E7]",
+                CHARTING_TABLE_STICKY_FIRST_COL_HEAD_CLASS,
+                "border-t border-b border-[#E4E4E7] px-3 py-2.5 text-left align-middle text-[14px] font-semibold leading-5 text-[#71717A]",
                 firstColClass,
               )}
             >
-              Data
+              {periodHeaderLabel}
             </th>
-            {ordered.map((row) => (
-              <th
-                key={row.periodEnd}
-                scope="col"
-                className="min-w-[4.5rem] whitespace-nowrap px-3 py-2.5 text-right align-middle text-[14px] font-semibold leading-5 tabular-nums text-[#71717A]"
-              >
-                {formatChartingPeriodLabel(row.periodEnd, periodMode)}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {selected.map((id, metricIndex) => {
-            const color = metricColor(id, metricIndex, metricColors);
-            const kind = CHARTING_METRIC_KIND[id];
-            return (
-              <tr
-                key={id}
-                className="h-[60px] max-h-[60px] border-b border-[#E4E4E7] transition-colors duration-75 hover:bg-neutral-50"
-              >
-                <td
-                  className={cn(
-                    "relative sticky left-0 z-[1] bg-white px-3 align-middle after:pointer-events-none after:absolute after:top-0 after:right-0 after:h-full after:w-px after:bg-[#E4E4E7]",
-                    firstColClass,
-                  )}
+            {selected.map((id, metricIndex) => {
+              const color = metricColor(id, metricIndex, metricColors);
+              return (
+                <th
+                  key={id}
+                  scope="col"
+                  className="min-w-[9rem] whitespace-nowrap border-t border-b border-[#E4E4E7] px-3 py-2.5 text-right align-middle text-[14px] font-semibold leading-5 text-[#71717A]"
                 >
-                  <div className="flex min-w-0 items-center gap-2.5 py-0.5 pr-0.5">
+                  <div className="flex min-w-0 items-center justify-end gap-2 py-0.5">
                     <span
-                      className="h-4 w-1 shrink-0 rounded-full"
+                      className="h-2 w-2 shrink-0 rounded-full"
                       style={{ backgroundColor: color }}
                       aria-hidden
                     />
-                    <span className="min-w-0 flex-1 truncate text-[14px] font-semibold leading-5 text-[#09090B]">
-                      {metricRowLabel(ticker, id)}
-                    </span>
-                    {onShowBarValuesChange && isBarValuesVisible ? (
+                    <span className="min-w-0 truncate">{metricRowLabel(ticker, id)}</span>
+                    {onShowBarValuesChange && isBarValuesVisible && !hideMetricSettings ? (
                       <ChartingDataTableSettingsMenu
                         showBarValues={isBarValuesVisible(id)}
                         onShowBarValuesChange={(next) => onShowBarValuesChange(id, next)}
@@ -189,25 +172,44 @@ export function ChartingIndividualCompanyTable({
                       />
                     ) : null}
                   </div>
-                </td>
-                {ordered.map((row) => {
-                  const v = chartingRowValue(row, id);
-                  return (
-                    <td
-                      key={`${id}-${row.periodEnd}`}
-                      className={cn(
-                        "px-3 align-middle text-right text-[14px] font-normal leading-5 tabular-nums",
-                        kind === "percent" ? "font-medium" : "",
-                        cellTone(id, v),
-                      )}
-                    >
-                      {formatChartingTableCellDisplay(id, v)}
-                    </td>
-                  );
-                })}
-              </tr>
-            );
-          })}
+                </th>
+              );
+            })}
+          </tr>
+        </thead>
+        <tbody>
+          {periodsNewestFirst.map((periodRow) => (
+            <tr
+              key={periodRow.periodEnd}
+              className="group h-[52px] max-h-[52px] transition-colors duration-75 hover:bg-neutral-50"
+            >
+              <td
+                className={cn(
+                  CHARTING_TABLE_STICKY_FIRST_COL_BODY_CLASS,
+                  "border-b border-[#E4E4E7] px-3 align-middle text-[14px] font-semibold leading-5 text-[#09090B] group-hover:bg-white",
+                  firstColClass,
+                )}
+              >
+                {formatChartingPeriodLabel(periodRow.periodEnd, periodMode)}
+              </td>
+              {selected.map((id) => {
+                const kind = CHARTING_METRIC_KIND[id];
+                const v = chartingRowValue(periodRow, id);
+                return (
+                  <td
+                    key={`${periodRow.periodEnd}-${id}`}
+                    className={cn(
+                      "border-b border-[#E4E4E7] px-3 align-middle text-right text-[14px] font-normal leading-5 tabular-nums",
+                      kind === "percent" ? "font-medium" : "",
+                      chartingTableCellTone(id, v),
+                    )}
+                  >
+                    {formatChartingTableCellDisplay(id, v)}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
         </tbody>
       </table>
     </div>

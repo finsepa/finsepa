@@ -1,14 +1,17 @@
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "@/lib/icons";
 
+import { whiteSurfaceButtonChromeClass } from "@/components/design-system";
 import { cn } from "@/lib/utils";
 import { SCREENER_TABLE_PAGINATION_BTN } from "@/components/ui/table-pagination";
 
 const PAGE_NUM_INACTIVE =
   "inline-flex h-9 min-w-9 max-w-12 shrink-0 items-center justify-center rounded-[10px] px-2 text-sm font-medium text-[#09090B] transition-colors hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2";
 
-const PAGE_NUM_ACTIVE =
-  "inline-flex h-9 min-w-9 max-w-12 shrink-0 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white px-2 text-sm font-semibold tabular-nums text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2";
+const PAGE_NUM_ACTIVE = cn(
+  "inline-flex h-9 min-w-9 max-w-12 shrink-0 items-center justify-center rounded-[10px] px-2 text-sm font-semibold tabular-nums text-[#09090B] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2",
+  whiteSurfaceButtonChromeClass,
+);
 
 /** 1-based page list with at most one ellipsis on each side when `last` is large. */
 function buildPageItems(current: number, last: number): (number | "ellipsis")[] {
