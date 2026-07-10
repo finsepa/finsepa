@@ -19,10 +19,10 @@ function loopsApiKey() {
 
 function warnIdTypo(id, label) {
   if (!id || typeof id !== "string") return;
-  // Common mistake: typing letter O instead of digit 0 after "cm"
-  if (/^cm[oO]{2}/.test(id)) {
+  // Common mistake: digit 0 instead of letter o after "cm" (Loops Pro templates use "cmoo…").
+  if (/^cm0o/i.test(id)) {
     console.warn(
-      `\n⚠ ${label} id starts with "cmoo" — IDs are usually "cm0o…" (digit zero). Compare character-by-character with Loops → Transactional → API details.\n`,
+      `\n⚠ ${label} id starts with "cm0o" (digit zero) — Finsepa Pro templates in Loops use "cmoo…" (letter o). Compare with Loops → Transactional → API details.\n`,
     );
   }
 }
@@ -53,8 +53,8 @@ async function postTransactional(apiKey, transactionalId, email) {
 const email = process.argv[2]?.trim();
 const apiKey = loopsApiKey();
 
-const DEFAULT_ACTIVATED = "cm0o8ezzr0qrb0i2mhrw29zlx";
-const DEFAULT_RENEWED = "cm0o8r6n40k7y0izkctvh3nvq";
+const DEFAULT_ACTIVATED = "cmoo8ezzr0qrb0i2mhrw29zlx";
+const DEFAULT_RENEWED = "cmoo8r6n40k7y0izkctvh3nvq";
 
 const activatedId = process.env.LOOPS_TRANSACTIONAL_ID_PRO_ACTIVATED?.trim() || DEFAULT_ACTIVATED;
 const renewedId = process.env.LOOPS_TRANSACTIONAL_ID_PRO_RENEWED?.trim() || DEFAULT_RENEWED;

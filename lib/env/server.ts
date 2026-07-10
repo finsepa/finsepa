@@ -69,7 +69,7 @@ export function getLoopsTransactionalPasswordResetId(): string {
 }
 
 /** Default “Finsepa Pro is now active” transactional in Loops (override with `LOOPS_TRANSACTIONAL_ID_PRO_ACTIVATED`). */
-const LOOPS_TRANSACTIONAL_ID_PRO_ACTIVATED_DEFAULT = "cm0o8ezzr0qrb0i2mhrw29zlx";
+const LOOPS_TRANSACTIONAL_ID_PRO_ACTIVATED_DEFAULT = "cmoo8ezzr0qrb0i2mhrw29zlx";
 
 /**
  * Loops transactional ID for first paid Pro subscription invoice (`invoice.paid`, `billing_reason` = subscription_create).
@@ -82,7 +82,7 @@ export function getLoopsTransactionalProActivatedId(): string {
 }
 
 /** Default “Finsepa Pro has been renewed” transactional in Loops (override with `LOOPS_TRANSACTIONAL_ID_PRO_RENEWED`). */
-const LOOPS_TRANSACTIONAL_ID_PRO_RENEWED_DEFAULT = "cm0o8r6n40k7y0izkctvh3nvq";
+const LOOPS_TRANSACTIONAL_ID_PRO_RENEWED_DEFAULT = "cmoo8r6n40k7y0izkctvh3nvq";
 
 /**
  * Loops transactional ID for recurring Pro renewal (`invoice.paid`, `billing_reason` = subscription_cycle).

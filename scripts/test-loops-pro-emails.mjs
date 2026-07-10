@@ -15,8 +15,8 @@
 const LOOPS_URL = "https://app.loops.so/api/v1/transactional";
 
 /** Keep in sync with defaults in `lib/env/server.ts`. */
-const DEFAULT_ACTIVATED = "cm0o8ezzr0qrb0i2mhrw29zlx";
-const DEFAULT_RENEWED = "cm0o8r6n40k7y0izkctvh3nvq";
+const DEFAULT_ACTIVATED = "cmoo8ezzr0qrb0i2mhrw29zlx";
+const DEFAULT_RENEWED = "cmoo8r6n40k7y0izkctvh3nvq";
 
 function loopsApiKey() {
   const a = process.env.LOOPS_API_KEY?.trim();
