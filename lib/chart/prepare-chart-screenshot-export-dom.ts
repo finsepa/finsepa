@@ -111,6 +111,98 @@ function temporarilyFlattenClampPositions(root: HTMLElement): () => void {
   };
 }
 
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+}
+
+function waitForImageElement(img: HTMLImageElement): Promise<void> {
+  if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+  return new Promise((resolve) => {
+    const done = () => resolve();
+    img.addEventListener("load", done, { once: true });
+    img.addEventListener("error", done, { once: true });
+  });
+}
+
+async function fetchSameOriginImageDataUrl(src: string): Promise<string | null> {
+  if (src.startsWith("data:")) return null;
+  let absolute: string;
+  try {
+    absolute = new URL(src, window.location.origin).href;
+  } catch {
+    return null;
+  }
+  if (!absolute.startsWith(window.location.origin)) return null;
+  try {
+    const res = await fetch(absolute, { credentials: "same-origin" });
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    if (!blob.type.startsWith("image/")) return null;
+    return await blobToDataUrl(blob);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * html-to-image often captures blank logos (lazy load + cross-origin redirects).
+ * Inline same-origin images as data URLs before JPEG export.
+ */
+async function temporarilyInlineExportImages(root: HTMLElement): Promise<() => void> {
+  const restores: Array<{ img: HTMLImageElement; src: string; loading: string }> = [];
+  const imgs = [...root.querySelectorAll("img")].filter(
+    (node): node is HTMLImageElement => node instanceof HTMLImageElement,
+  );
+
+  await Promise.all(
+    imgs.map(async (img) => {
+      const prevLoading = img.loading;
+      img.loading = "eager";
+
+      await waitForImageElement(img);
+
+      const fetchSrc = img.currentSrc || img.src;
+      let dataUrl = await fetchSameOriginImageDataUrl(fetchSrc);
+
+      if (!dataUrl && img.naturalWidth > 0) {
+        try {
+          const canvas = document.createElement("canvas");
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
+          const ctx = canvas.getContext("2d");
+          if (ctx) {
+            ctx.drawImage(img, 0, 0);
+            dataUrl = canvas.toDataURL("image/png");
+          }
+        } catch {
+          // Tainted canvas — keep original src.
+        }
+      }
+
+      if (dataUrl) {
+        restores.push({ img, src: img.src, loading: prevLoading });
+        img.src = dataUrl;
+      } else {
+        img.loading = prevLoading;
+      }
+    }),
+  );
+
+  await waitForAnimationFrames(1);
+
+  return () => {
+    for (const { img, src, loading } of restores) {
+      img.src = src;
+      img.loading = loading as HTMLImageElement["loading"];
+    }
+  };
+}
+
 /** Lightweight Charts resize handlers are debounced — flush before capture. */
 async function flushChartLayout(root: HTMLElement): Promise<void> {
   window.dispatchEvent(new Event("resize"));
@@ -131,8 +223,10 @@ export async function prepareChartScreenshotExportDom(root: HTMLElement): Promis
 
   const restoreClamp = temporarilyFlattenClampPositions(root);
   await waitForAnimationFrames(2);
+  const restoreImages = await temporarilyInlineExportImages(root);
 
   return () => {
+    restoreImages();
     restoreClamp();
     restoreOverflow();
     restoreDots();

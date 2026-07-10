@@ -125,6 +125,7 @@ export function CompanyLogo({
   symbol,
   size = "md",
   fill = false,
+  eagerLoad = false,
   className,
 }: {
   name: string;
@@ -135,6 +136,8 @@ export function CompanyLogo({
   size?: "xs" | "sm" | "28" | "md" | "40" | "lg";
   /** Zoom logo to fill the square (earnings grid, etc.). Inset brands keep their padding. */
   fill?: boolean;
+  /** Screenshot export — load immediately (no lazy) so html-to-image captures the bitmap. */
+  eagerLoad?: boolean;
   className?: string;
 }) {
   const [failed, setFailed] = useState(false);
@@ -189,6 +192,8 @@ export function CompanyLogo({
     if (symbol) mergeLogoMemory(symbol, null);
   };
 
+  const imgLoading = eagerLoad ? "eager" : "lazy";
+
   if (useFillFrame) {
     return (
       <div
@@ -204,8 +209,9 @@ export function CompanyLogo({
           alt=""
           width={px}
           height={px}
-          loading="lazy"
+          loading={imgLoading}
           decoding="async"
+          fetchPriority={eagerLoad ? "high" : undefined}
           className="absolute inset-0 h-full w-full object-contain"
           style={{ transform: `scale(${fillScale})` }}
           onError={onLogoError}
@@ -221,8 +227,9 @@ export function CompanyLogo({
       alt=""
       width={px}
       height={px}
-      loading="lazy"
+      loading={imgLoading}
       decoding="async"
+      fetchPriority={eagerLoad ? "high" : undefined}
       className={cn(
         imgBox,
         "shrink-0 border border-neutral-200 bg-white object-contain",

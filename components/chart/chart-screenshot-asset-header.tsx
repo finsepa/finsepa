@@ -35,7 +35,13 @@ export function ChartScreenshotAssetHeader({
         marginTop: CHART_SCREENSHOT_ASSET_HEADER_TOP_OFFSET_PX,
       }}
     >
-      <CompanyLogo name={titleName} logoUrl={resolvedLogo} symbol={symbol} size="40" />
+      <CompanyLogo
+        name={titleName}
+        logoUrl={resolvedLogo}
+        symbol={symbol}
+        size="40"
+        eagerLoad
+      />
       {metricLine ? (
         <div className="flex min-w-0 items-center gap-2">
           <span className="truncate text-[18px] font-semibold leading-6 text-[#09090B]">{metricLine}</span>

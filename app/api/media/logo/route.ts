@@ -13,6 +13,12 @@ const LOGO_PROXY_CACHE_CONTROL = `public, max-age=${LOGO_PROXY_CACHE_MAX_AGE_SEC
 export const runtime = "nodejs";
 
 const TICKER_RE = /^[A-Z0-9][A-Z0-9.-]{0,11}$/i;
+
+/** When `${ticker}.com` is not the brand host (e.g. NFLX → netflix.com). */
+const STOCK_FAVICON_DOMAIN: Partial<Record<string, string>> = {
+  NFLX: "netflix.com",
+};
+
 function isReasonableHost(h: string): boolean {
   if (h.length < 3 || h.length > 200) return false;
   if (!/^[a-z0-9][a-z0-9.-]*[a-z0-9]$/i.test(h)) return false;
@@ -31,7 +37,9 @@ function googleFaviconFallback(kind: LogoProxyKind, raw: string): string {
     return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=128`;
   }
   if (kind === "stock" && t) {
-    return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(`${t.toLowerCase()}.com`)}&sz=128`;
+    const sym = t.toUpperCase();
+    const host = STOCK_FAVICON_DOMAIN[sym] ?? `${t.toLowerCase()}.com`;
+    return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=128`;
   }
   return "https://www.google.com/s2/favicons?domain=example.com&sz=128";
 }
@@ -71,7 +79,29 @@ export async function GET(req: Request) {
   const normId = parsed.kind === "stock" || parsed.kind === "crypto" ? parsed.id : parsed.id.toLowerCase();
   const row = await getCachedLogoFromUpstream(parsed.kind, normId);
   if (!row) {
-    return NextResponse.redirect(googleFaviconFallback(parsed.kind, parsed.id), 302);
+    const fallbackUrl = googleFaviconFallback(parsed.kind, parsed.id);
+    try {
+      const fallbackRes = await fetch(fallbackUrl, { cache: "force-cache" });
+      if (fallbackRes.ok) {
+        const contentType =
+          fallbackRes.headers.get("content-type")?.split(";")[0]?.trim() || "image/png";
+        if (contentType.startsWith("image/")) {
+          const bytes = Buffer.from(await fallbackRes.arrayBuffer());
+          if (bytes.length >= 32 && bytes.length <= 2_000_000) {
+            return new NextResponse(bytes, {
+              status: 200,
+              headers: {
+                "Content-Type": contentType,
+                "Cache-Control": LOGO_PROXY_CACHE_CONTROL,
+              },
+            });
+          }
+        }
+      }
+    } catch {
+      // fall through to redirect
+    }
+    return NextResponse.redirect(fallbackUrl, 302);
   }
 
   const bytes = Buffer.from(row.base64, "base64");
