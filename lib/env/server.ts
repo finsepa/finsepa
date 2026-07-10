@@ -130,6 +130,24 @@ export function getLoopsTransactionalHelpFeedbackId(): string {
   return v?.trim() || LOOPS_TRANSACTIONAL_ID_HELP_FEEDBACK_DEFAULT;
 }
 
+/** “Trial ends tomorrow” — sent one day before platform trial ends (non-Pro users). */
+const LOOPS_TRANSACTIONAL_ID_TRIAL_ENDS_TOMORROW_DEFAULT = "cmreiej710iox0jywmmqplp54";
+
+export function getLoopsTransactionalTrialEndsTomorrowId(): string {
+  const v = pickProcessEnv(
+    "LOOPS" + "_" + "TRANSACTIONAL" + "_" + "ID" + "_" + "TRIAL" + "_" + "ENDS" + "_" + "TOMORROW",
+  );
+  return v?.trim() || LOOPS_TRANSACTIONAL_ID_TRIAL_ENDS_TOMORROW_DEFAULT;
+}
+
+/** “Trial expired” — sent when platform trial ends and access is locked (non-Pro users). */
+const LOOPS_TRANSACTIONAL_ID_TRIAL_EXPIRED_DEFAULT = "cmreiek1w03lx0j3gmtbz8cps";
+
+export function getLoopsTransactionalTrialExpiredId(): string {
+  const v = pickProcessEnv("LOOPS" + "_" + "TRANSACTIONAL" + "_" + "ID" + "_" + "TRIAL" + "_" + "EXPIRED");
+  return v?.trim() || LOOPS_TRANSACTIONAL_ID_TRIAL_EXPIRED_DEFAULT;
+}
+
 /** SnapTrade partner client ID (server-only). */
 export function getSnapTradeClientId(): string | undefined {
   const v = pickProcessEnv("SNAPTRADE" + "_" + "CLIENT" + "_" + "ID");

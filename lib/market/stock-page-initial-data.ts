@@ -114,6 +114,18 @@ function warnSettledFailure(label: string, reason: unknown) {
   console.warn(`[loadStockPageInitialData] ${label} failed`, reason);
 }
 
+const STOCK_PAGE_TIMING = process.env.FINSEPA_STOCK_PAGE_TIMING === "1";
+
+async function timedStockPageTask<T>(label: string, fn: () => Promise<T>): Promise<T> {
+  if (!STOCK_PAGE_TIMING) return fn();
+  const t0 = performance.now();
+  try {
+    return await fn();
+  } finally {
+    console.info(`[FINSEPA_STOCK_PAGE_TIMING] ${label} ${Math.round(performance.now() - t0)}ms`);
+  }
+}
+
 function fromSettled<T>(result: PromiseSettledResult<T>, label: string): T | null {
   if (result.status === "fulfilled") return result.value;
   warnSettledFailure(label, result.reason);
@@ -269,16 +281,16 @@ export async function loadStockPageInitialDataUncached(routeTicker: string): Pro
       peersResult,
       spotResult,
     ] = await Promise.allSettled([
-      getStockDetailHeaderMetaForPage(ticker),
-      fetchEodhdEodDaily(ticker, from, to),
-      getStockChartPointsForApi(ticker, range, "price"),
-      buildStockKeyStatsBundle(ticker),
-      getStockNews(ticker),
-      fetchEodhdStockProfile(ticker),
-      fetchChartingSeries(ticker, "annual"),
-      fetchChartingSeries(ticker, "quarterly"),
-      getPeersCompareRowsCached(ticker),
-      getStockSpotQuoteForApi(ticker),
+      timedStockPageTask("headerMeta", () => getStockDetailHeaderMetaForPage(ticker)),
+      timedStockPageTask("eodDaily100y", () => fetchEodhdEodDaily(ticker, from, to)),
+      timedStockPageTask("chart1D", () => getStockChartPointsForApi(ticker, range, "price")),
+      timedStockPageTask("keyStatsBundle", () => buildStockKeyStatsBundle(ticker)),
+      timedStockPageTask("news", () => getStockNews(ticker)),
+      timedStockPageTask("profile", () => fetchEodhdStockProfile(ticker)),
+      timedStockPageTask("fundamentalsAnnual", () => fetchChartingSeries(ticker, "annual")),
+      timedStockPageTask("fundamentalsQuarterly", () => fetchChartingSeries(ticker, "quarterly")),
+      timedStockPageTask("peersCompare", () => getPeersCompareRowsCached(ticker)),
+      timedStockPageTask("headerLiveSpot", () => getStockSpotQuoteForApi(ticker)),
     ]);
 
     const headerMeta = fromSettled(headerMetaResult, "headerMeta") ?? headerMetaShell(ticker);
@@ -341,14 +353,16 @@ export async function loadStockPageInitialData(routeTicker: string): Promise<Sto
   }
 
   const epoch = getScreenerUsMarketCacheEpoch();
-  const cached = await readAssetSnapshot(ticker, epoch.segment);
+  const cached = await timedStockPageTask("readAssetSnapshot", () => readAssetSnapshot(ticker, epoch.segment));
 
   if (cached?.ticker === ticker) {
     const base = assetSnapshotPayloadToPageData(cached);
     if (epoch.mode === "frozen" && base.chart.points.length > 0) {
       return base;
     }
-    const hot = await loadStockPageHotFields(ticker, base.chart.range, [], new Date());
+    const hot = await timedStockPageTask("loadStockPageHotFields", () =>
+      loadStockPageHotFields(ticker, base.chart.range, [], new Date()),
+    );
     const chart =
       base.chart.range === "1D"
         ? hot.chart
