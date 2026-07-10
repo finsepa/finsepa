@@ -305,8 +305,8 @@ export function TopbarUserMenu({
           </div>
           {showUpgradeMenuItem && (
             <>
-              <div className="border-t border-[#E4E4E7]" />
-              <div className="px-3 py-3">
+              <div className="border-t border-[#E4E4E7] md:hidden" />
+              <div className="px-3 py-3 md:hidden">
                 <button
                   type="button"
                   role="menuitem"
@@ -317,7 +317,7 @@ export function TopbarUserMenu({
                   className="flex h-9 w-full items-center justify-center gap-1.5 rounded-[10px] bg-[#2563EB] px-3.5 text-[13px] font-semibold text-white shadow-[0px_1px_2px_0px_rgba(37,99,235,0.2)] transition-colors hover:bg-[#1D4ED8]"
                 >
                   <Sparkles className="h-4 w-4 shrink-0" strokeWidth={1.75} aria-hidden />
-                  Upgrade to Pro
+                  Upgrade
                 </button>
               </div>
             </>

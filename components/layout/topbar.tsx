@@ -13,6 +13,7 @@ import { TopbarSearch } from "./topbar-search";
 import { NotificationsPanelModal } from "./notifications-panel-modal";
 import { useNotificationsClient } from "@/lib/notifications/use-notifications-client";
 import { TopbarQuickAddMenu } from "./topbar-quick-add-menu";
+import { TopbarUpgradeButton } from "./topbar-upgrade-button";
 import { TopbarUserMenu } from "./topbar-user-menu";
 import { MobileAssetTopbarChrome } from "./mobile-asset-topbar-chrome";
 import { MobileMarketsTopbarTabs } from "./mobile-markets-topbar-tabs";
@@ -129,7 +130,7 @@ export function Topbar({
   userInitials: string;
   avatarUrl: string | null;
   userDisplayName: string;
-  /** Passed into the user menu: trial countdown after avatar + Upgrade to Pro in the dropdown. */
+  /** Passed into the user menu: trial countdown after avatar; Upgrade CTA lives in the top bar on md+. */
   platformTrialDaysLeft?: number | null;
 }) {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -236,6 +237,8 @@ export function Topbar({
               </button>
             </TopbarDelayedTooltip>
           ) : null}
+
+          <TopbarUpgradeButton userId={userId} platformTrialDaysLeft={platformTrialDaysLeft} />
 
           <TopbarUserMenu
             userId={userId}

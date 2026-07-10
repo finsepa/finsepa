@@ -4,7 +4,6 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
 import { CircleCheck, Upload, X } from "@/lib/icons";
 import { SpinnerLabel } from "@/components/ui/spinner";
 
-import { ClearableInput } from "@/components/layout/clearable-input";
 import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
 import {
   AppModalFooter,
@@ -202,20 +201,6 @@ export function HelpFeedbackModal({
           </div>
         ) : (
           <>
-            <div className="flex flex-col gap-2">
-              <label htmlFor={`${titleId}-email`} className="text-sm font-medium leading-5 text-[#09090B]">
-                Email for feedback
-              </label>
-              <ClearableInput
-                id={`${titleId}-email`}
-                type="text"
-                value={email}
-                onChange={setEmail}
-                placeholder="you@example.com"
-                clearLabel="Clear email"
-              />
-            </div>
-
             <div className="flex flex-col gap-2">
               <label htmlFor={`${titleId}-message`} className="text-sm font-medium leading-5 text-[#09090B]">
                 Message <span className="text-[#DC2626]">*</span>
