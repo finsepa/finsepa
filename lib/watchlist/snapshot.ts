@@ -186,6 +186,9 @@ export function localSnapshotShouldUploadFirst(
   server: WatchlistServerSnapshot,
 ): boolean {
   if (shouldAdoptServerSnapshot(local, server)) return false;
+  if (unionWatchlistTickers(local).length > 0 && serverSnapshotHasNoTickers(server)) {
+    return true;
+  }
   if (localHasUnsyncedChanges(local)) {
     if (
       localHasTickersAheadOfServer(local, server) &&
@@ -453,6 +456,11 @@ export function shouldAdoptServerSnapshot(
 ): boolean {
   if (localHasRemovalsPendingSync(local, server)) return false;
 
+  // Never replace a populated local watchlist with an empty server snapshot.
+  if (unionWatchlistTickers(local).length > 0 && serverSnapshotHasNoTickers(server)) {
+    return false;
+  }
+
   if (
     !localHasUnsyncedChanges(local) &&
     !localTickerMembershipMatchesServer(local, server)
@@ -533,6 +541,9 @@ export function localSnapshotNeedsServerUpload(
   server: WatchlistServerSnapshot,
 ): boolean {
   if (shouldAdoptServerSnapshot(local, server)) return false;
+  if (unionWatchlistTickers(local).length > 0 && serverSnapshotHasNoTickers(server)) {
+    return true;
+  }
   if (localHasUnsyncedChanges(local)) return true;
   if (localHasRemovalsPendingSync(local, server)) return true;
   if (serverListsHaveDuplicateTickerSets(server)) return true;
@@ -559,7 +570,8 @@ export function localSnapshotNeedsServerUpload(
     if (
       !localHasUnsyncedChanges(local) &&
       localHasTickersAheadOfServer(local, server) &&
-      !localHasTickersBehindServer(local, server)
+      !localHasTickersBehindServer(local, server) &&
+      !serverSnapshotHasNoTickers(server)
     ) {
       return false;
     }

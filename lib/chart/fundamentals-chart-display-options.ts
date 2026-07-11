@@ -3,7 +3,7 @@ export type FundamentalsChartDisplayOptions = {
   showAvgLine: boolean;
   showMaxLine: boolean;
   showMinLine: boolean;
-  /** Value labels above bars (Charting bar mode). */
+  /** Value labels on bars and line charts (Key Stats modal, Multicharts, Charting). */
   showBarValues: boolean;
 };
 

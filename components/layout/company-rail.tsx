@@ -11,6 +11,7 @@ import {
 import {
   useChartingCompanyRail,
   useChartingCompanyRailDesktopShell,
+  isCompanyRailPage,
 } from "@/components/charting/charting-company-rail-context";
 import { TopbarDelayedTooltip } from "@/components/layout/topbar-delayed-tooltip";
 import { WATCHLIST_PANEL_WIDTH_PX } from "@/components/layout/watchlist-rail-layout-context";
@@ -29,10 +30,6 @@ const companyRailDividerClass = "mx-3 my-3 h-px shrink-0 bg-[#E4E4E7]";
 const companyRailRowClass = "flex shrink-0 items-center justify-between gap-2 px-2 pl-3 pr-2";
 
 const companyRailListClass = "flex flex-col px-1";
-
-function isChartingPage(pathname: string): boolean {
-  return pathname === "/charting";
-}
 
 const CompanyRailAddButton = forwardRef<
   HTMLButtonElement,
@@ -95,9 +92,11 @@ export function CompanyRail() {
   const isDesktop = useChartingCompanyRailDesktopShell();
   const { registration, metricAddAnchorRef, companyAddAnchorRef } = useChartingCompanyRail();
 
-  if (!isChartingPage(pathname) || !isDesktop) {
+  if (!isCompanyRailPage(pathname) || !isDesktop) {
     return null;
   }
+
+  const showMetrics = isCompanyRailPage(pathname);
 
   const metricDisabled = !registration || registration.metricAddDisabled;
   const companyDisabled = !registration || registration.companyAddDisabled;
@@ -135,32 +134,36 @@ export function CompanyRail() {
               ))}
             </div>
           ) : null}
-          <div className={companyRailDividerClass} aria-hidden />
-          <CompanyRailLabelRow
-            title="Metric"
-            addLabel="Add metric"
-            addDisabled={metricDisabled}
-            onAdd={() => registration?.openMetricPicker()}
-            addButtonRef={metricAddAnchorRef}
-          />
-          {metrics.length > 0 ? (
-            <div className={companyRailListClass}>
-              {metrics.map(({ id, label, color, removeDisabled, showBarValues }) => (
-                <ChartingRailMetricRow
-                  key={id}
-                  label={label}
-                  color={color}
-                  showBarValues={showBarValues}
-                  onShowBarValuesChange={
-                    registration?.onShowBarValuesChange
-                      ? (next) => registration.onShowBarValuesChange!(id, next)
-                      : undefined
-                  }
-                  onRemove={() => registration?.onRemoveMetric?.(id)}
-                  removeDisabled={removeDisabled || !registration?.onRemoveMetric}
-                />
-              ))}
-            </div>
+          {showMetrics ? (
+            <>
+              <div className={companyRailDividerClass} aria-hidden />
+              <CompanyRailLabelRow
+                title="Metric"
+                addLabel="Add metric"
+                addDisabled={metricDisabled}
+                onAdd={() => registration?.openMetricPicker()}
+                addButtonRef={metricAddAnchorRef}
+              />
+              {metrics.length > 0 ? (
+                <div className={companyRailListClass}>
+                  {metrics.map(({ id, label, color, removeDisabled, showBarValues }) => (
+                    <ChartingRailMetricRow
+                      key={id}
+                      label={label}
+                      color={color}
+                      showBarValues={showBarValues}
+                      onShowBarValuesChange={
+                        registration?.onShowBarValuesChange
+                          ? (next) => registration.onShowBarValuesChange!(id, next)
+                          : undefined
+                      }
+                      onRemove={() => registration?.onRemoveMetric?.(id)}
+                      removeDisabled={removeDisabled || !registration?.onRemoveMetric}
+                    />
+                  ))}
+                </div>
+              ) : null}
+            </>
           ) : null}
         </div>
       </div>

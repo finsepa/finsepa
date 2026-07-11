@@ -17,13 +17,17 @@ import type { ChartingMetricId } from "@/lib/market/stock-charting-metrics";
 
 const DESKTOP_SHELL_MQ = "(min-width: 768px)";
 
+export function isCompanyRailPage(pathname: string): boolean {
+  return pathname === "/charting" || pathname === "/comparison";
+}
+
 export type ChartingRailCompanyRow = {
   ticker: string;
   removeDisabled?: boolean;
 };
 
 export type ChartingRailMetricRow = {
-  id: ChartingMetricId;
+  id: string;
   label: string;
   color: string;
   removeDisabled?: boolean;
@@ -38,7 +42,7 @@ export type ChartingCompanyRailControls = {
   companies?: ChartingRailCompanyRow[];
   metrics?: ChartingRailMetricRow[];
   onRemoveCompany?: (ticker: string) => void;
-  onRemoveMetric?: (metricId: ChartingMetricId) => void;
+  onRemoveMetric?: (metricId: string) => void;
   onShowBarValuesChange?: (metricId: ChartingMetricId, next: boolean) => void;
 };
 
@@ -115,7 +119,7 @@ export function useChartingCompanyRail(): ChartingCompanyRailContextValue {
   return ctx;
 }
 
-/** Desktop `/charting` — metric/company pickers anchor to the left rail + buttons. */
+/** Desktop `/charting` and `/comparison` — company picker anchors to the left rail + button. */
 export function useChartingRailPickerAnchors(): {
   useRailPickers: boolean;
   metricAddAnchorRef: RefObject<HTMLButtonElement | null>;
@@ -124,7 +128,7 @@ export function useChartingRailPickerAnchors(): {
   const pathname = usePathname();
   const isDesktop = useIsDesktopShell();
   const { metricAddAnchorRef, companyAddAnchorRef } = useChartingCompanyRail();
-  const useRailPickers = isDesktop && pathname === "/charting";
+  const useRailPickers = isDesktop && isCompanyRailPage(pathname);
 
   return { useRailPickers, metricAddAnchorRef, companyAddAnchorRef };
 }

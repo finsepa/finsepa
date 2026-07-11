@@ -583,6 +583,7 @@ export function ChartingFundamentalsLineChart({
         horizontalPeriodAxisLabels
         lineTimeRange={lineTimeRange}
         periodPlotMargins={{ left: 0, right: 0 }}
+        showLinePointMarkers={false}
       />
     );
   }

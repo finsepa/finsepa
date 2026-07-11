@@ -410,16 +410,20 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
           serverSnapshotHasNoTickers(serverSnapshot) &&
           unionWatchlistTickers(collectionsRef.current).length > 0
         ) {
-          setServerListWarning(null);
-          applyCollections(
-            applyServerSnapshotPreservingLocalNames(
-              serverSnapshot,
-              collectionsRef.current,
-              {
-                preferServerNames: true,
-              },
-            ),
+          const uploaded = await syncWatchlistSnapshotToServer(
+            localSnapshotToSyncInput(collectionsRef.current),
           );
+          if (uploaded) {
+            setServerListWarning(null);
+            applyCollections(
+              applyMutationServerResponse(uploaded, collectionsRef.current),
+              { fromServerSync: true, serverUpdatedAt: uploaded.updatedAt },
+            );
+          } else {
+            setServerListWarning(
+              "Watchlist saved on this device only — could not sync to your account yet.",
+            );
+          }
           clearGuestWatchlistStorage(uid);
           return;
         }

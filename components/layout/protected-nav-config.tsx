@@ -3,10 +3,10 @@ import {
   BookOpen01,
   Briefcase01,
   Calendar,
+  Flag01,
   Globe01,
   Globe04,
   Grid01,
-  IntersectCircle,
   Rows01,
   Users01,
   type AppIcon,
@@ -46,13 +46,13 @@ export const protectedMarketItems: ProtectedNavItem[] = [
 export const protectedCalendarItems: ProtectedNavItem[] = [
   {
     label: "Earnings",
-    icon: IntersectCircle,
+    icon: Calendar,
     href: "/earnings",
     available: NAV_EARNINGS_ENABLED,
   },
   {
     label: "Economy",
-    icon: Calendar,
+    icon: Flag01,
     href: "/economy",
     available: NAV_ECONOMY_ENABLED,
   },

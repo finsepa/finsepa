@@ -1,20 +1,26 @@
 "use client";
 
-import { GripVertical, Maximize2, Plus, Search, Trash2, TrendingDown, TrendingUp } from "@/lib/icons";
+import { GripVertical, Maximize2, Plus, Trash2, TrendingDown, TrendingUp } from "@/lib/icons";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   MultichartFundamentalsBar,
   MULTICHART_BAR_WIDTH_ALL_QUARTERLY_PX,
-  MULTICHART_MAX_ANNUAL_BARS,
-  MULTICHART_MAX_QUARTERLY_BARS,
   readChartingMetricValue,
   sliceLastAnnualWithMetric,
   type MultichartVisual,
 } from "@/components/stock/multichart-fundamentals-bar";
-import type { ChartingSeriesPoint } from "@/lib/market/charting-series-types";
+import type { ChartingSeriesPoint, FundamentalsSeriesMode } from "@/lib/market/charting-series-types";
 import {
-  CHARTING_DROPDOWN_GROUPS,
+  appendChartingTtmPeriod,
+  parseChartingTtmPoint,
+} from "@/lib/market/charting-period-display";
+import {
+  applyFundamentalsChartTimeRange,
+  maxPeriodsForFundamentalsChartTimeRange,
+  type FundamentalsChartTimeRange,
+} from "@/lib/market/fundamentals-chart-time-range";
+import {
   CHARTING_METRIC_IDS,
   CHARTING_METRIC_LABEL,
   type ChartingMetricId,
@@ -24,13 +30,8 @@ import {
   multichartComparisonFromLastTwo,
   multichartPriorPeriodComparisonLabel,
 } from "@/lib/market/multichart-period-comparison";
-import { DropdownScrollArea } from "@/components/design-system/dropdown-scroll-area";
+import { ChartingMetricPickerMenu } from "@/components/charting/charting-metric-picker-menu";
 import { MultichartsTabSkeletonGrid } from "@/components/stock/stock-multicharts-tab-skeleton";
-import {
-  dropdownMenuPanelBodyClassName,
-  dropdownMenuSearchHeaderClassName,
-  dropdownMenuSurfaceClassName,
-} from "@/components/design-system/dropdown-menu-styles";
 import {
   EARNINGS_CARD_LABEL_CLASS,
   EARNINGS_CARD_VALUE_CLASS,
@@ -39,8 +40,21 @@ import {
 } from "@/components/stock/earnings-card-styles";
 import { secondaryOutlineButtonClassName, TabSwitcher } from "@/components/design-system";
 import { MultichartVisualSwitcher } from "@/components/stock/multichart-visual-switcher";
-import type { FundamentalsSeriesMode } from "@/lib/market/charting-series-types";
 import { cn } from "@/lib/utils";
+
+/** Multicharts annual cards — last 10 fiscal years plus trailing LTM. */
+const MULTICHART_ANNUAL_TIME_RANGE: FundamentalsChartTimeRange = "10Y";
+const MULTICHART_ANNUAL_MAX_BARS = maxPeriodsForFundamentalsChartTimeRange(
+  "annual",
+  MULTICHART_ANNUAL_TIME_RANGE,
+);
+
+/** Multicharts quarterly cards — last 5 years (20 quarters). */
+const MULTICHART_QUARTERLY_TIME_RANGE: FundamentalsChartTimeRange = "5Y";
+const MULTICHART_QUARTERLY_MAX_BARS = maxPeriodsForFundamentalsChartTimeRange(
+  "quarterly",
+  MULTICHART_QUARTERLY_TIME_RANGE,
+);
 
 /** Previous shipped default — used to migrate stored layouts that were never customized. */
 const LEGACY_DEFAULT_MULTICHART_METRICS = [
@@ -75,6 +89,7 @@ type Props = {
   ticker: string;
   initialAnnualPoints?: ChartingSeriesPoint[];
   initialQuarterlyPoints?: ChartingSeriesPoint[];
+  initialTtmPoint?: ChartingSeriesPoint | null;
   /** Page heading (default “Multicharts”). */
   title?: string;
   /** Which fundamentals metrics to render as cards (defaults to the standard Multicharts set). */
@@ -87,6 +102,7 @@ export function StockMultichartsTab({
   ticker,
   initialAnnualPoints,
   initialQuarterlyPoints,
+  initialTtmPoint,
   title = "Multicharts",
   metricIds,
   onOpenMetricChart,
@@ -168,34 +184,55 @@ export function StockMultichartsTab({
   const [points, setPoints] = useState<ChartingSeriesPoint[]>(() =>
     Array.isArray(initialAnnualPoints) && initialAnnualPoints.length > 0 ? initialAnnualPoints : [],
   );
+  const [ttmPoint, setTtmPoint] = useState<ChartingSeriesPoint | null>(() =>
+    parseChartingTtmPoint(initialTtmPoint),
+  );
   const [loading, setLoading] = useState(
     !(Array.isArray(initialAnnualPoints) && initialAnnualPoints.length > 0),
   );
+
+  useEffect(() => {
+    const seeded = parseChartingTtmPoint(initialTtmPoint);
+    if (seeded) setTtmPoint(seeded);
+  }, [initialTtmPoint, ticker]);
 
   useEffect(() => {
     let cancelled = false;
     async function load() {
       if (seedPoints) {
         setPoints(seedPoints);
+        if (periodMode === "annual") {
+          setTtmPoint(parseChartingTtmPoint(initialTtmPoint));
+        }
         setLoading(false);
         return;
       }
       setLoading(true);
       try {
+        const period = periodMode === "quarterly" ? "quarterly" : "annual";
         const res = await fetch(
-          `/api/stocks/${encodeURIComponent(ticker)}/fundamentals-series?period=${
-            periodMode === "quarterly" ? "quarterly" : "annual"
-          }`,
+          `/api/stocks/${encodeURIComponent(ticker)}/fundamentals-series?period=${period}`,
           { credentials: "include" },
         );
         if (!res.ok) {
-          if (!cancelled) setPoints([]);
+          if (!cancelled) {
+            setPoints([]);
+            if (periodMode === "annual") setTtmPoint(null);
+          }
           return;
         }
-        const json = (await res.json()) as { points?: ChartingSeriesPoint[] };
-        if (!cancelled) setPoints(Array.isArray(json.points) ? json.points : []);
+        const json = (await res.json()) as { points?: ChartingSeriesPoint[]; ttmPoint?: unknown };
+        if (!cancelled) {
+          setPoints(Array.isArray(json.points) ? json.points : []);
+          if (periodMode === "annual") {
+            setTtmPoint(parseChartingTtmPoint(json.ttmPoint));
+          }
+        }
       } catch {
-        if (!cancelled) setPoints([]);
+        if (!cancelled) {
+          setPoints([]);
+          if (periodMode === "annual") setTtmPoint(null);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -204,12 +241,21 @@ export function StockMultichartsTab({
     return () => {
       cancelled = true;
     };
-  }, [ticker, periodMode, seedPoints]);
+  }, [ticker, periodMode, seedPoints, initialTtmPoint]);
 
-  const maxBars = periodMode === "quarterly" ? MULTICHART_MAX_QUARTERLY_BARS : MULTICHART_MAX_ANNUAL_BARS;
+  const displayPoints = useMemo(() => {
+    if (periodMode === "quarterly") {
+      return applyFundamentalsChartTimeRange(points, "quarterly", MULTICHART_QUARTERLY_TIME_RANGE);
+    }
+    const ranged = applyFundamentalsChartTimeRange(points, "annual", MULTICHART_ANNUAL_TIME_RANGE);
+    return appendChartingTtmPeriod(ranged, ttmPoint);
+  }, [points, periodMode, ttmPoint]);
+
+  const maxBars =
+    periodMode === "quarterly" ? MULTICHART_QUARTERLY_MAX_BARS : MULTICHART_ANNUAL_MAX_BARS;
   const hasAny = useMemo(
-    () => metrics.some((id) => sliceLastAnnualWithMetric(points, id, maxBars).length > 0),
-    [points, maxBars, metrics],
+    () => metrics.some((id) => sliceLastAnnualWithMetric(displayPoints, id, maxBars).length > 0),
+    [displayPoints, maxBars, metrics],
   );
 
   const addMetric = useCallback((id: ChartingMetricId) => {
@@ -251,18 +297,6 @@ export function StockMultichartsTab({
     [moveMetric],
   );
 
-  const qLower = pickerQuery.trim().toLowerCase();
-  const addableGroups = useMemo(() => {
-    return CHARTING_DROPDOWN_GROUPS.map((g) => {
-      const ids = g.metricIds.filter(
-        (id) => !metrics.includes(id) && (!qLower || CHARTING_METRIC_LABEL[id].toLowerCase().includes(qLower)),
-      );
-      return { ...g, ids };
-    }).filter((g) => g.ids.length > 0);
-  }, [metrics, qLower]);
-
-  const totalAddable = useMemo(() => addableGroups.reduce((n, g) => n + g.ids.length, 0), [addableGroups]);
-
   return (
     <div className="space-y-6 pt-1">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
@@ -290,52 +324,13 @@ export function StockMultichartsTab({
               Add Metric
             </button>
             {pickerOpen ? (
-              <div
-                className={dropdownMenuSurfaceClassName(
-                  "absolute right-0 z-[60] mt-2 w-[min(360px,calc(100vw-2rem))] overflow-hidden",
-                )}
-              >
-                <div className={cn(dropdownMenuSearchHeaderClassName, "flex h-11 items-center gap-2")}>
-                  <Search className="h-4 w-4 shrink-0 text-[#71717A]" aria-hidden />
-                  <input
-                    value={pickerQuery}
-                    onChange={(e) => setPickerQuery(e.target.value)}
-                    placeholder="Search metrics…"
-                    className="w-full bg-transparent text-[13px] text-[#09090B] placeholder:text-[#A1A1AA] focus:outline-none"
-                    autoFocus
-                  />
-                  <span className="text-[12px] font-medium text-[#71717A]">{totalAddable}</span>
-                </div>
-                <DropdownScrollArea
-                  className={cn(dropdownMenuPanelBodyClassName, "max-h-[320px] overflow-y-auto")}
-                >
-                  {addableGroups.map((g) => (
-                    <div key={g.id} className="py-1">
-                      <div className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#71717A]">
-                        {g.label}
-                      </div>
-                      <div className="space-y-0.5">
-                        {g.ids.map((id) => (
-                          <button
-                            key={id}
-                            type="button"
-                            onClick={() => addMetric(id)}
-                            className="flex w-full items-center justify-between gap-2 rounded-lg px-2 py-2 text-left text-[13px] text-[#09090B] hover:bg-[#F4F4F5]"
-                          >
-                            <span className="truncate">{CHARTING_METRIC_LABEL[id]}</span>
-                            <Plus className="h-4 w-4 shrink-0 text-[#71717A]" aria-hidden />
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                  {addableGroups.length === 0 ? (
-                    <div className="px-3 py-6 text-center text-[13px] text-[#71717A]">
-                      {qLower ? "No matching metrics." : "All metrics already added."}
-                    </div>
-                  ) : null}
-                </DropdownScrollArea>
-              </div>
+              <ChartingMetricPickerMenu
+                className="absolute right-0 z-[60] mt-2 w-[min(520px,calc(100vw-2rem))]"
+                excludeMetricIds={metrics}
+                query={pickerQuery}
+                onQueryChange={setPickerQuery}
+                onPick={addMetric}
+              />
             ) : null}
           </div>
         </div>
@@ -351,9 +346,10 @@ export function StockMultichartsTab({
             <MultichartCard
               key={metricId}
               metricId={metricId}
-              points={points}
+              points={displayPoints}
               periodMode={periodMode}
               chartVisual={chartVisual}
+              maxBars={maxBars}
               onOpenMetricChart={onOpenMetricChart}
               onRemove={() => removeMetric(metricId)}
               dragIndex={idx}
@@ -373,6 +369,7 @@ function MultichartCard({
   points,
   periodMode,
   chartVisual,
+  maxBars,
   onOpenMetricChart,
   onRemove,
   dragIndex,
@@ -384,6 +381,7 @@ function MultichartCard({
   points: ChartingSeriesPoint[];
   periodMode: FundamentalsSeriesMode;
   chartVisual: MultichartVisual;
+  maxBars: number;
   onOpenMetricChart?: (metricId: ChartingMetricId) => void;
   onRemove: () => void;
   dragIndex: number;
@@ -391,7 +389,6 @@ function MultichartCard({
   onDragEnd: () => void;
   onDropOnIndex: (idx: number) => void;
 }) {
-  const maxBars = periodMode === "quarterly" ? MULTICHART_MAX_QUARTERLY_BARS : MULTICHART_MAX_ANNUAL_BARS;
   const rows = useMemo(() => sliceLastAnnualWithMetric(points, metricId, maxBars), [points, metricId, maxBars]);
   const last = rows.length ? readChartingMetricValue(rows[rows.length - 1]!, metricId) : null;
   const comparison = multichartComparisonFromLastTwo(rows, metricId);
@@ -426,7 +423,7 @@ function MultichartCard({
 
   return (
     <div
-      className={MULTICHART_CARD_CLASS}
+      className={cn(MULTICHART_CARD_CLASS, "group")}
       draggable
       onDragStart={onDragStart}
       onDragOver={onDragOver}
@@ -457,32 +454,34 @@ function MultichartCard({
             </div>
           ) : null}
         </div>
-        {onOpenMetricChart ? (
+        <div className="flex shrink-0 items-center opacity-100 transition-opacity duration-150 md:opacity-0 md:group-hover:opacity-100 md:has-[:focus-visible]:opacity-100">
+          {onOpenMetricChart ? (
+            <button
+              type="button"
+              onClick={() => onOpenMetricChart(metricId)}
+              className="shrink-0 rounded-lg p-1.5 text-[#71717A] outline-none transition-colors hover:bg-black/5 hover:text-[#09090B] focus-visible:ring-2 focus-visible:ring-[#09090B]/10"
+              aria-label={`Open ${metricLabel} in full view`}
+            >
+              <Maximize2 className="h-4 w-4" strokeWidth={2} aria-hidden />
+            </button>
+          ) : null}
           <button
             type="button"
-            onClick={() => onOpenMetricChart(metricId)}
+            onClick={onRemove}
             className="shrink-0 rounded-lg p-1.5 text-[#71717A] outline-none transition-colors hover:bg-black/5 hover:text-[#09090B] focus-visible:ring-2 focus-visible:ring-[#09090B]/10"
-            aria-label={`Open ${metricLabel} in full view`}
+            aria-label={`Remove ${metricLabel}`}
+            title="Remove"
           >
-            <Maximize2 className="h-4 w-4" strokeWidth={2} aria-hidden />
+            <Trash2 className="h-4 w-4" strokeWidth={2} aria-hidden />
           </button>
-        ) : null}
-        <button
-          type="button"
-          onClick={onRemove}
-          className="shrink-0 rounded-lg p-1.5 text-[#71717A] outline-none transition-colors hover:bg-black/5 hover:text-[#09090B] focus-visible:ring-2 focus-visible:ring-[#09090B]/10"
-          aria-label={`Remove ${metricLabel}`}
-          title="Remove"
-        >
-          <Trash2 className="h-4 w-4" strokeWidth={2} aria-hidden />
-        </button>
-        <span
-          className="shrink-0 cursor-grab rounded-lg p-1.5 text-[#71717A]"
-          title="Drag to reorder"
-          aria-label="Drag to reorder"
-        >
-          <GripVertical className="h-4 w-4" strokeWidth={2} aria-hidden />
-        </span>
+          <span
+            className="shrink-0 cursor-grab rounded-lg p-1.5 text-[#71717A]"
+            title="Drag to reorder"
+            aria-label="Drag to reorder"
+          >
+            <GripVertical className="h-4 w-4" strokeWidth={2} aria-hidden />
+          </span>
+        </div>
       </div>
       <MultichartFundamentalsBar
         metricId={metricId}
@@ -494,6 +493,7 @@ function MultichartCard({
         barWidthPx={
           periodMode === "quarterly" ? MULTICHART_BAR_WIDTH_ALL_QUARTERLY_PX : undefined
         }
+        showLinePointMarkers={chartVisual !== "line"}
       />
     </div>
   );

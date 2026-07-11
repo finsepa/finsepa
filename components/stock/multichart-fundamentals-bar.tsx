@@ -47,6 +47,7 @@ import {
   formatChartingPeriodAxisLabel,
   formatChartingPeriodLabel,
   fundamentalsPeriodAxisShowsLabel,
+  isChartingTtmPeriodEnd,
 } from "@/lib/market/charting-period-display";
 import {
   formatPercentMetric,
@@ -235,15 +236,21 @@ const NEGATIVE_BAR_COLOR = "#DC2626";
 
 export { readChartingMetricValue };
 
-/** Last `n` annual rows with a value for `metricId`, oldest → newest. */
+/** Last `n` annual rows with a value for `metricId`, oldest → newest. LTM/TTM stays trailing when present. */
 export function sliceLastAnnualWithMetric(
   points: ChartingSeriesPoint[],
   metricId: ChartingMetricId,
   n: number,
 ): ChartingSeriesPoint[] {
   const sorted = [...points].sort((a, b) => a.periodEnd.localeCompare(b.periodEnd));
-  const withVal = sorted.filter((r) => readChartingMetricValue(r, metricId) != null);
-  return withVal.slice(-n);
+  const ttmRows = sorted.filter(
+    (r) => isChartingTtmPeriodEnd(r.periodEnd) && readChartingMetricValue(r, metricId) != null,
+  );
+  const annualRows = sorted.filter((r) => !isChartingTtmPeriodEnd(r.periodEnd));
+  const withVal = annualRows.filter((r) => readChartingMetricValue(r, metricId) != null);
+  const annualCap = ttmRows.length > 0 ? Math.max(0, n - ttmRows.length) : n;
+  const sliced = withVal.slice(-annualCap);
+  return ttmRows.length ? [...sliced, ...ttmRows] : sliced;
 }
 
 /** Tooltip values — two decimal places in K/M/B/T (e.g. `$258.24B`). */
@@ -315,6 +322,10 @@ type Props = {
   lineTimeRange?: FundamentalsChartTimeRange | "3Y";
   /** Wide export frame — side padding, wider y-axis, and plot insets for labels. */
   screenshotExportMode?: boolean;
+  /** Hollow point markers on the line (default on; off in Key Stats metric modal). */
+  showLinePointMarkers?: boolean;
+  /** Value labels above line points when Values is on (default on; off in Key Stats metric modal). */
+  enableLineValueLabels?: boolean;
 };
 
 function plotValueTopPercent(
@@ -450,6 +461,8 @@ export function MultichartFundamentalsBar({
   horizontalPeriodAxisLabels = false,
   lineTimeRange,
   screenshotExportMode = false,
+  showLinePointMarkers = true,
+  enableLineValueLabels = true,
 }: Props) {
   const lineAxisMode = visual === "line" && lineTimeRange != null;
   const effectiveHorizontalPeriodAxisLabels = horizontalPeriodAxisLabels || lineAxisMode;
@@ -598,16 +611,6 @@ export function MultichartFundamentalsBar({
     const areaD = smoothAreaPathD(curvePts, areaFloorY);
     return { d, areaD, gradY0: padT, gradY1: areaFloorY, pts };
   }, [linePlotPx.h, linePlotPx.w, values, yMin, yMax, periodCenterInset, linePeriodPlotMargins]);
-
-  const lineMaxValuePoint = useMemo(() => {
-    if (!lineSvg.pts.length) return null;
-    let best = lineSvg.pts[0]!;
-    for (const pt of lineSvg.pts) {
-      if (pt.v == null || !Number.isFinite(pt.v)) continue;
-      if (pt.v > best.v || (pt.v === best.v && pt.i > best.i)) best = pt;
-    }
-    return best.v != null && Number.isFinite(best.v) && best.v !== 0 ? best : null;
-  }, [lineSvg.pts]);
 
   const n = values.length;
   const shouldAnimateBars = animateBarsOnAppear && visual === "bar" && n > 0;
@@ -827,6 +830,20 @@ export function MultichartFundamentalsBar({
                         strokeLinecap="round"
                         strokeLinejoin="round"
                       />
+                      {showLinePointMarkers
+                        ? lineSvg.pts.map(({ x, y, i }) => (
+                            <circle
+                              key={`line-dot-${labels[i]}-${i}`}
+                              cx={x}
+                              cy={y}
+                              r={4.5}
+                              fill="white"
+                              stroke={seriesBarColor}
+                              strokeWidth={2}
+                              className="pointer-events-none"
+                            />
+                          ))
+                        : null}
                       {hoveredIndex != null && lineSvg.pts[hoveredIndex] ? (
                         <>
                           <circle
@@ -901,19 +918,28 @@ export function MultichartFundamentalsBar({
                     </g>
                   </svg>
                 ) : null}
-                {lineValueLabelsVisible && lineMaxValuePoint && !display.showMaxLine
-                  ? (() => {
-                      const { x, y, v, i } = lineMaxValuePoint;
+                {display.showBarValues &&
+                enableLineValueLabels &&
+                visual === "line" &&
+                lineValueLabelsVisible
+                  ? lineSvg.pts.map(({ x, y, v, i }) => {
+                      if (v == null || !Number.isFinite(v) || v === 0) return null;
                       const text = formatBarChartDataLabel(metricId, v);
                       const dotClearance = CHARTING_LINE_POINT_MARKER_DIAMETER_PX / 2 + 4;
                       const minTop = FUNDAMENTALS_CHART_BAR_VALUE_LABEL_HEIGHT_PX + 4;
+                      const labelOnPositive = v >= 0;
                       return (
                         <div
-                          key={`line-val-max-${labels[i]}-${i}`}
-                          className={cn(BAR_VALUE_LABEL_ANCHOR_CLASS, "-translate-y-full")}
+                          key={`line-val-${labels[i]}-${i}`}
+                          className={cn(
+                            BAR_VALUE_LABEL_ANCHOR_CLASS,
+                            labelOnPositive ? "-translate-y-full" : "",
+                          )}
                           style={{
                             left: x,
-                            top: Math.max(minTop, y - dotClearance),
+                            top: labelOnPositive
+                              ? Math.max(minTop, y - dotClearance)
+                              : y + dotClearance,
                           }}
                           title={text}
                         >
@@ -933,7 +959,7 @@ export function MultichartFundamentalsBar({
                           </span>
                         </div>
                       );
-                    })()
+                    })
                   : null}
               </div>
             ) : (

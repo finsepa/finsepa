@@ -34,7 +34,6 @@ import {
 } from "@/lib/market/charting-period-display";
 import {
   CHARTING_DEFAULT_METRICS,
-  CHARTING_DROPDOWN_GROUPS,
   CHARTING_METRIC_IDS,
   CHARTING_METRIC_KIND,
   CHARTING_METRIC_LABEL,
@@ -61,13 +60,7 @@ import { ChartLoadingIndicator } from "@/components/ui/chart-loading-indicator";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { ChartingVisualSwitcher } from "@/components/stock/multichart-visual-switcher";
 import { secondaryFillButtonClassName, secondaryOutlineButtonClassName, TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
-import { DropdownScrollArea } from "@/components/design-system/dropdown-scroll-area";
-import {
-  dropdownMenuRichItemClassName,
-  dropdownMenuSearchHeaderClassName,
-  dropdownMenuSearchInputClassName,
-  dropdownMenuSurfaceClassName,
-} from "@/components/design-system/dropdown-menu-styles";
+import { ChartingMetricPickerMenu } from "@/components/charting/charting-metric-picker-menu";
 import { cn } from "@/lib/utils";
 import {
   fundamentalsBarColorAtIndex,
@@ -117,10 +110,7 @@ import {
   ChartingFundamentalsLineChart,
   chartingMetricsShareLineChartKind,
 } from "@/components/charting/charting-fundamentals-line-chart";
-import {
-  FundamentalsChartSettingsMenu,
-  type FundamentalsChartSettingsLineBadges,
-} from "@/components/stock/fundamentals-chart-settings-menu";
+import { FundamentalsChartSettingsMenu } from "@/components/stock/fundamentals-chart-settings-menu";
 import {
   DEFAULT_FUNDAMENTALS_CHART_DISPLAY_OPTIONS,
   type FundamentalsChartDisplayOptions,
@@ -1954,8 +1944,8 @@ export function ChartingWorkspace({
       if (next === "line") {
         setPeriodMode("quarterly");
         setLineDisplayOptions((prev) => {
-          if (!prev.showAvgLine && !prev.showBarValues) return prev;
-          return { ...prev, showAvgLine: false, showBarValues: false };
+          if (!prev.showAvgLine) return prev;
+          return { ...prev, showAvgLine: false };
         });
       }
     },
@@ -2112,26 +2102,6 @@ export function ChartingWorkspace({
     () => chartingFundamentalsLineTimeRange(timeRange),
     [timeRange],
   );
-
-  const lineSettingsBadges = useMemo((): FundamentalsChartSettingsLineBadges | undefined => {
-    if (!useFundamentalsLineChart || selected.length !== 1) return undefined;
-    const metricId = selected[0]!;
-    const chartPoints = filterPointsForChartingFundamentalsLineChart(
-      lineChartPoints,
-      metricId,
-      fundamentalsLineTimeRange,
-    );
-    const values: number[] = [];
-    for (const row of chartPoints) {
-      const v = readChartingMetricValue(row, metricId);
-      if (v != null) values.push(v);
-    }
-    if (!values.length) return undefined;
-    return {
-      max: formatBarChartDataLabel(metricId, Math.max(...values)),
-      min: formatBarChartDataLabel(metricId, Math.min(...values)),
-    };
-  }, [useFundamentalsLineChart, selected, lineChartPoints, fundamentalsLineTimeRange]);
 
   const ordered = useMemo(() => {
     const ranged = applyTimeRange(fullSeries, periodMode, timeRange);
@@ -2379,22 +2349,6 @@ export function ChartingWorkspace({
     },
     [fullPageCompanyChipSlot, pathRoute, router, ticker],
   );
-
-  const qLower = pickerQuery.trim().toLowerCase();
-
-  const groupedAddable = useMemo(() => {
-    return CHARTING_DROPDOWN_GROUPS.map((g) => {
-      const ids = g.metricIds.filter(
-        (id) =>
-          !selected.includes(id) &&
-          availableInRange.includes(id) &&
-          (!qLower || CHARTING_METRIC_LABEL[id].toLowerCase().includes(qLower)),
-      );
-      return { ...g, ids };
-    }).filter((g) => g.ids.length > 0);
-  }, [selected, availableInRange, qLower]);
-
-  const totalAddable = useMemo(() => groupedAddable.reduce((n, g) => n + g.ids.length, 0), [groupedAddable]);
 
   const canPlot = useMemo(() => {
     if (selected.length === 1 && selected[0] === "drawdown") return true;
@@ -3513,54 +3467,24 @@ export function ChartingWorkspace({
           open={pickerOpen}
           anchorRef={useRailMetricPicker ? metricAddAnchorRef : pickerButtonRef}
           ref={pickerMenuPortalRef}
-          align={useRailMetricPicker ? "trailing" : "leading"}
+          align="leading"
           placement={useRailMetricPicker ? "below" : "auto"}
-          className="w-[min(calc(100vw-2rem),300px)]"
+          className="w-[min(calc(100vw-2rem),520px)]"
           onRequestClose={() => {
             setPickerOpen(false);
             setPickerQuery("");
           }}
         >
-          <div className={cn(dropdownMenuSurfaceClassName(), "overflow-hidden")} role="listbox">
-            <div className={dropdownMenuSearchHeaderClassName}>
-              <input
-                ref={pickerInputRef}
-                value={pickerQuery}
-                onChange={(e) => setPickerQuery(e.target.value)}
-                placeholder="Search metrics…"
-                className={dropdownMenuSearchInputClassName}
-                aria-label="Search metrics"
-              />
-            </div>
-            <DropdownScrollArea className="flex max-h-[min(400px,calc(100vh-12rem))] flex-col gap-1 overflow-y-auto px-1 py-2">
-              {groupedAddable.map((group) => (
-                <div key={group.id} className="pb-2 last:pb-0">
-                  <div className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wide text-[#A1A1AA]">
-                    {group.label}
-                  </div>
-                  <ul className="flex flex-col gap-1">
-                    {group.ids.map((id) => (
-                      <li key={id}>
-                        <button
-                          type="button"
-                          role="option"
-                          className={dropdownMenuRichItemClassName()}
-                          onClick={() => addMetric(id)}
-                        >
-                          {CHARTING_METRIC_LABEL[id]}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </DropdownScrollArea>
-            {totalAddable === 0 ? (
-              <p className="px-3 py-2 text-[12px] text-[#71717A]">
-                {qLower ? "No metrics match" : "No additional metrics for this range"}
-              </p>
-            ) : null}
-          </div>
+          <ChartingMetricPickerMenu
+            excludeMetricIds={selected}
+            allowedMetricIds={availableInRange}
+            query={pickerQuery}
+            onQueryChange={setPickerQuery}
+            onPick={addMetric}
+            searchInputRef={pickerInputRef}
+            emptySearchMessage="No metrics match"
+            emptyDefaultMessage="No additional metrics for this range"
+          />
         </TopbarDropdownPortal>
       ) : null}
     </div>
@@ -3593,7 +3517,6 @@ export function ChartingWorkspace({
                   variant="line"
                   options={lineDisplayOptions}
                   onChange={setLineDisplayOptions}
-                  lineBadges={lineSettingsBadges}
                 />
               ) : null}
               <ChartingVisualSwitcher value={chartType} onChange={handleChartTypeChange} />
@@ -3776,25 +3699,6 @@ export function ChartingWorkspace({
                           </div>
                         ))
                       : null}
-                    {chartType === "line" && linePointMarkers.length > 0
-                      ? linePointMarkers.map((m) => (
-                          <div
-                            key={m.key}
-                            className="pointer-events-none absolute z-[12] rounded-full bg-white"
-                            style={{
-                              left: m.leftPx,
-                              top: m.topPx,
-                              width: CHARTING_LINE_POINT_MARKER_DIAMETER_PX,
-                              height: CHARTING_LINE_POINT_MARKER_DIAMETER_PX,
-                              borderWidth: CHARTING_LINE_POINT_MARKER_BORDER_PX,
-                              borderStyle: "solid",
-                              borderColor: m.color,
-                              transform: "translate(-50%, -50%)",
-                            }}
-                            aria-hidden
-                          />
-                        ))
-                      : null}
                     {chartType === "line" && hover?.lineHoverDot ? (
                       <div
                         className="pointer-events-none absolute z-[11] rounded-full"
@@ -3876,25 +3780,6 @@ export function ChartingWorkspace({
                             {b.text}
                           </span>
                         </div>
-                      ))
-                    : null}
-                  {hasValuationLineOverlays && linePointMarkers.length > 0
-                    ? linePointMarkers.map((m) => (
-                        <div
-                          key={m.key}
-                          className="pointer-events-none absolute z-[12] rounded-full bg-white"
-                          style={{
-                            left: m.leftPx,
-                            top: m.topPx,
-                            width: CHARTING_LINE_POINT_MARKER_DIAMETER_PX,
-                            height: CHARTING_LINE_POINT_MARKER_DIAMETER_PX,
-                            borderWidth: CHARTING_LINE_POINT_MARKER_BORDER_PX,
-                            borderStyle: "solid",
-                            borderColor: m.color,
-                            transform: "translate(-50%, -50%)",
-                          }}
-                          aria-hidden
-                        />
                       ))
                     : null}
                   {hover ? (

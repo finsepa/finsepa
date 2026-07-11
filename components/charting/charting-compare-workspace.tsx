@@ -1685,7 +1685,7 @@ export function ChartingCompareWorkspace({
                   open={pickerOpen}
                   anchorRef={metricAddAnchorRef}
                   ref={pickerMenuPortalRef}
-                  align="trailing"
+                  align="leading"
                   placement="below"
                   className="w-[min(calc(100vw-2rem),300px)]"
                   onRequestClose={() => {

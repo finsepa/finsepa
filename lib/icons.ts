@@ -1,4 +1,4 @@
-import type { FC, SVGProps } from "react";
+import { createElement, type FC, type SVGProps } from "react";
 
 export type AppIcon = FC<SVGProps<SVGSVGElement> & { size?: number; color?: string }>;
 
@@ -17,6 +17,33 @@ export {
   Users01,
   UsersPlus,
 } from "@untitledui-pro/icons/line";
+
+/** Inline — Turbopack can fail to load `@untitledui-pro/icons/line/Flag01` in dev. */
+export const Flag01: AppIcon = ({
+  size = 24,
+  color = "currentColor",
+  strokeWidth = 2,
+  ...props
+}) =>
+  createElement(
+    "svg",
+    {
+      viewBox: "0 0 24 24",
+      fill: "none",
+      width: size,
+      height: size,
+      color,
+      "aria-hidden": true,
+      ...props,
+    },
+    createElement("path", {
+      d: "M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1v19",
+      stroke: "currentColor",
+      strokeWidth,
+      strokeLinecap: "round",
+      strokeLinejoin: "round",
+    }),
+  );
 
 /**
  * App-wide icons with Lucide-compatible aliases for incremental migration.

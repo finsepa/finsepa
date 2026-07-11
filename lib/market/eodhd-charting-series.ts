@@ -23,6 +23,10 @@ import {
 } from "@/lib/market/earnings-reported-actuals-overlay";
 import { limitFundamentalsHistoryPoints } from "@/lib/market/fundamentals-history-limit";
 import {
+  patchChartingTtmFromHighlights,
+  rollupChartingPointsToTtm,
+} from "@/lib/market/charting-ttm-rollup";
+import {
   CHARTING_METRIC_FIELD,
   CHARTING_METRIC_IDS,
   type ChartingMetricId,
@@ -1707,10 +1711,23 @@ function periodEndKeyFromTtmRow(row: Record<string, unknown>, root: Record<strin
 }
 
 /**
- * Single merged fundamentals point from EODHD `Financials.*.ttm` blocks (income, balance, cash flow, ratios).
- * Used for the trailing TTM column on stock Financials tables.
+ * Single merged fundamentals point from EODHD `Financials.*.ttm` blocks (income, balance, cash flow, ratios),
+ * or — when the provider omits `.ttm` — a rollup of the last four quarterly periods.
  */
 export function buildTtmChartingPointFromFundamentalsRoot(
+  root: Record<string, unknown>,
+): ChartingSeriesPoint | null {
+  const fromProvider = buildTtmChartingPointFromProviderBlocks(root);
+  if (fromProvider) return finalizeTtmChartingPoint(fromProvider, root);
+
+  const quarterly = buildMergedPoints(root, "quarterly");
+  if (!quarterly?.length) return null;
+  const rolled = rollupChartingPointsToTtm(quarterly);
+  if (!rolled) return null;
+  return finalizeTtmChartingPoint(rolled, root);
+}
+
+function buildTtmChartingPointFromProviderBlocks(
   root: Record<string, unknown>,
 ): ChartingSeriesPoint | null {
   const isRoot = getFinancialStatementRoot(root, "Income_Statement");
@@ -1733,15 +1750,27 @@ export function buildTtmChartingPointFromFundamentalsRoot(
   const ratiosTtm = ratiosRoot ? pickTtmSubRow(ratiosRoot) : null;
   if (ratiosTtm) mergeRatiosRow(p, ratiosTtm);
 
+  fillDerivedEpsBasicIfMissing(p, isTtm);
+
+  const hasData = Object.values(p).some((v) => typeof v === "number" && Number.isFinite(v));
+  return hasData ? p : null;
+}
+
+function finalizeTtmChartingPoint(
+  p: ChartingSeriesPoint,
+  root: Record<string, unknown>,
+): ChartingSeriesPoint | null {
+  patchChartingTtmFromHighlights(p, root);
   fillDerivedMarketCap(p);
   computeDerivedMarginsAndReturns(p);
-  fillDerivedEpsBasicIfMissing(p, isTtm);
   fillDerivedEpsIfMissing(p);
   fillDerivedDividendsPerShare(p);
   fillDerivedValuationMultiples(p);
   fillDerivedRatioTableFields(p);
   fillDerivedEnterpriseValue(p);
   fillDerivedForwardPe(p);
+  patchLatestChartingPointLiveTrailingPe([p], livePeRatioPartsFromFundamentalsRoot(root));
+  patchLatestChartingPointLiveDividendYield([p], dividendYieldRatioFromFundamentalsRoot(root));
 
   const hasData = Object.values(p).some((v) => typeof v === "number" && Number.isFinite(v));
   return hasData ? p : null;
@@ -1922,7 +1951,7 @@ async function fetchChartingSeriesUncached(
 
 export const fetchChartingSeries = unstable_cache(
   async (ticker: string, mode: FundamentalsSeriesMode) => fetchChartingSeriesUncached(ticker, mode),
-  ["eodhd-charting-series-v26-statement-enrich"],
+  ["eodhd-charting-series-v27-ttm-rollup"],
   { revalidate: REVALIDATE_WARM },
 );
 

@@ -75,9 +75,9 @@ export function ComparisonPage({
             <EmptyMedia variant="icon">
               <LineChart className="h-6 w-6" strokeWidth={1.75} aria-hidden />
             </EmptyMedia>
-            <EmptyTitle>Add at least one company to begin comparing</EmptyTitle>
+            <EmptyTitle>No Data to Display</EmptyTitle>
             <EmptyDescription className="max-w-md">
-              Add companies using the controls above.
+              Choose at least one company to generate your comparison.
             </EmptyDescription>
           </EmptyHeader>
         </Empty>

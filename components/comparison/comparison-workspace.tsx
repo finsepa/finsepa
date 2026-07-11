@@ -4,9 +4,26 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { RefreshCw, X } from "@/lib/icons";
+import { RefreshCw, X, Plus } from "@/lib/icons";
 
 import { ChartingCompanyAddDropdown } from "@/components/charting/charting-company-add-dropdown";
+import type { CompanyPickerOpenControls } from "@/components/charting/company-picker";
+import {
+  useChartingRailPickerAnchors,
+  useRegisterChartingCompanyRail,
+} from "@/components/charting/charting-company-rail-context";
+import { ComparisonMetricPickerMenu } from "@/components/comparison/comparison-metric-picker-menu";
+import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
+import { secondaryFillButtonClassName } from "@/components/design-system";
+import {
+  buildComparisonPagePath,
+  COMPARISON_DEFAULT_TABLE_METRIC_IDS,
+  getComparisonTableMetric,
+  normalizeComparisonTableMetricIds,
+  parseComparisonTableMetricsParam,
+  resolveComparisonTableMetrics,
+  type ComparisonTableMetricId,
+} from "@/lib/comparison/comparison-table-metrics";
 import {
   ComparisonFundamentalsTableSkeleton,
   ComparisonPerformanceTableSkeleton,
@@ -32,7 +49,7 @@ import {
   buildStockPeersComparePath,
   writeComparisonSessionTickers,
 } from "@/lib/comparison/comparison-session";
-import { buildComparisonPath, parseChartingTickerList } from "@/lib/market/stock-charting-metrics";
+import { parseChartingTickerList } from "@/lib/market/stock-charting-metrics";
 
 /** Client-only chart avoids SSR/client HTML drift (e.g. after HMR). */
 const ComparisonReturnChart = dynamic(
@@ -42,6 +59,8 @@ const ComparisonReturnChart = dynamic(
     loading: () => <ComparisonReturnChartSkeleton />,
   },
 );
+
+const COMPARISON_RAIL_METRIC_DOT_COLOR = "#A1A1AA";
 
 const SERIES_COLORS = [
   "#2563EB",
@@ -62,16 +81,6 @@ const RETURN_WINDOWS = [
   { key: "all" as const, label: "Max" },
 ] as const;
 
-const TOP_FUNDAMENTAL_COLUMNS: { header: string; labels: string[] }[] = [
-  { header: "Rev Growth", labels: ["Quarterly Revenue (YoY)", "Revenue (3Y)"] },
-  { header: "Gross Profit", labels: ["Gross Profit"] },
-  { header: "Oper Income", labels: ["Operating Income"] },
-  { header: "Net Income", labels: ["Net Income"] },
-  { header: "EPS", labels: ["EPS"] },
-  { header: "EPS Growth", labels: ["Quarterly EPS (YoY)", "EPS (3Y)"] },
-  { header: "Revenue", labels: ["Revenue"] },
-];
-
 function perfCellClass(v: number | null): string {
   if (v == null || !Number.isFinite(v)) return "text-[#71717A]";
   return v >= 0 ? "text-[#16A34A]" : "text-[#DC2626]";
@@ -84,8 +93,8 @@ function formatPerfCell(v: number | null): string {
 }
 
 /** Matches `screener-table` column rhythm: `gap-x-2`, `px-4`, horizontal rules via `divide-y`. */
-function comparisonFundamentalGridColumns(): string {
-  return `minmax(220px,1.4fr) repeat(${TOP_FUNDAMENTAL_COLUMNS.length}, minmax(88px, 1fr))`;
+function comparisonFundamentalGridColumns(metricCount: number): string {
+  return `minmax(220px,1.4fr) repeat(${metricCount}, minmax(88px, 1fr))`;
 }
 
 function comparisonPerformanceGridColumns(): string {
@@ -175,7 +184,37 @@ export function ComparisonWorkspace({
     return capComparisonTickers(list);
   }, [tickersFromUrl, tickers, anchor]);
 
+  const columnsFromUrl = useMemo(() => {
+    if (isStockTab) return [];
+    return parseComparisonTableMetricsParam(searchParams.get("col"));
+  }, [searchParams, isStockTab]);
+
+  const [selectedColumnIds, setSelectedColumnIds] = useState<ComparisonTableMetricId[]>(() =>
+    normalizeComparisonTableMetricIds(
+      columnsFromUrl.length > 0 ? columnsFromUrl : COMPARISON_DEFAULT_TABLE_METRIC_IDS,
+    ),
+  );
+
+  useEffect(() => {
+    if (isStockTab) return;
+    const parsed = parseComparisonTableMetricsParam(searchParams.get("col"));
+    setSelectedColumnIds(
+      normalizeComparisonTableMetricIds(
+        parsed.length > 0 ? parsed : COMPARISON_DEFAULT_TABLE_METRIC_IDS,
+      ),
+    );
+  }, [searchParams, isStockTab]);
+
+  const selectedColumns = useMemo(
+    () => resolveComparisonTableMetrics(selectedColumnIds),
+    [selectedColumnIds],
+  );
+
   const [limitModalOpen, setLimitModalOpen] = useState(false);
+  const [metricPickerOpen, setMetricPickerOpen] = useState(false);
+  const [metricPickerQuery, setMetricPickerQuery] = useState("");
+  const metricPickerMenuRef = useRef<HTMLDivElement>(null);
+  const metricPickerInputRef = useRef<HTMLInputElement>(null);
 
   const [sliceByTicker, setSliceByTicker] = useState<Record<string, ComparisonTickerSlice>>(() => {
     const out: Record<string, ComparisonTickerSlice> = {};
@@ -243,7 +282,7 @@ export function ComparisonWorkspace({
   }, [displayTickers]);
 
   const pushUrl = useCallback(
-    (next: string[]) => {
+    (next: string[], columns: ComparisonTableMetricId[] = selectedColumnIds) => {
       let normalized = capComparisonTickers(
         parseChartingTickerList(
           next
@@ -258,9 +297,38 @@ export function ComparisonWorkspace({
         router.replace(buildStockPeersComparePath(anchor, normalized), { scroll: false });
         return;
       }
-      router.replace(buildComparisonPath(normalized, []), { scroll: false });
+      router.replace(buildComparisonPagePath(normalized, columns), { scroll: false });
     },
-    [router, anchor, isStockTab],
+    [router, anchor, isStockTab, selectedColumnIds],
+  );
+
+  const syncColumns = useCallback(
+    (next: ComparisonTableMetricId[]) => {
+      const normalized = normalizeComparisonTableMetricIds(next);
+      setSelectedColumnIds(normalized);
+      if (!isStockTab) {
+        pushUrl(displayTickers, normalized);
+      }
+    },
+    [displayTickers, isStockTab, pushUrl],
+  );
+
+  const addColumn = useCallback(
+    (id: ComparisonTableMetricId) => {
+      if (selectedColumnIds.includes(id)) return;
+      syncColumns([...selectedColumnIds, id]);
+      setMetricPickerQuery("");
+      setMetricPickerOpen(false);
+    },
+    [selectedColumnIds, syncColumns],
+  );
+
+  const removeColumn = useCallback(
+    (id: ComparisonTableMetricId) => {
+      if (selectedColumnIds.length <= 1) return;
+      syncColumns(selectedColumnIds.filter((x) => x !== id));
+    },
+    [selectedColumnIds, syncColumns],
   );
 
   const removeTicker = useCallback(
@@ -293,6 +361,44 @@ export function ComparisonWorkspace({
     [displayTickers, pushUrl],
   );
 
+  const companyPickerControlsRef = useRef<CompanyPickerOpenControls | null>(null);
+  const { useRailPickers, companyAddAnchorRef, metricAddAnchorRef } = useChartingRailPickerAnchors();
+  const useCompanyRail = urlMode === "standalone" && useRailPickers;
+
+  const openCompanyPicker = useCallback(() => {
+    companyPickerControlsRef.current?.open();
+  }, []);
+
+  const openMetricPicker = useCallback(() => {
+    setMetricPickerOpen(true);
+  }, []);
+
+  useRegisterChartingCompanyRail(
+    {
+      openMetricPicker,
+      openCompanyPicker,
+      metricAddDisabled: false,
+      companyAddDisabled: displayTickers.length >= COMPARISON_MAX_COMPANIES,
+      companies: useCompanyRail
+        ? displayTickers.map((ticker) => ({
+            ticker,
+            removeDisabled: anchor != null && ticker.toUpperCase() === anchor,
+          }))
+        : undefined,
+      metrics: useCompanyRail
+        ? selectedColumnIds.map((id) => ({
+            id,
+            label: getComparisonTableMetric(id)?.header ?? id,
+            color: COMPARISON_RAIL_METRIC_DOT_COLOR,
+            removeDisabled: selectedColumnIds.length <= 1,
+          }))
+        : undefined,
+      onRemoveCompany: useCompanyRail ? removeTicker : undefined,
+      onRemoveMetric: useCompanyRail ? removeColumn : undefined,
+    },
+    useCompanyRail,
+  );
+
   const TitleTag = titleAs;
 
   const rows = useMemo(() => {
@@ -303,12 +409,12 @@ export function ComparisonWorkspace({
       const bundle = slice?.keyStatsBundle ?? null;
       const perf = slice?.performance ?? null;
       const color = SERIES_COLORS[idx % SERIES_COLORS.length];
-      const fundamentals = TOP_FUNDAMENTAL_COLUMNS.map((col) => findKeyStatValue(bundle, col.labels));
+      const fundamentals = selectedColumns.map((col) => findKeyStatValue(bundle, col.labels));
       const returns = RETURN_WINDOWS.map((w) => perf?.[w.key] ?? null);
       const isLoading = loadingTickers.has(key);
       return { t: key, meta, bundle, perf, color, fundamentals, returns, isLoading };
     });
-  }, [displayTickers, sliceByTicker, loadingTickers]);
+  }, [displayTickers, sliceByTicker, loadingTickers, selectedColumns]);
 
   const performances = useMemo(() => {
     const o: Record<string, StockPerformance | null> = {};
@@ -323,8 +429,21 @@ export function ComparisonWorkspace({
     [displayTickers, loadingTickers],
   );
 
-  const fundamentalsGrid = comparisonFundamentalGridColumns();
+  const fundamentalsGrid = comparisonFundamentalGridColumns(selectedColumns.length);
   const performanceGrid = comparisonPerformanceGridColumns();
+
+  useEffect(() => {
+    if (!metricPickerOpen || useCompanyRail) return;
+    function onDocMouseDown(e: MouseEvent) {
+      const t = e.target;
+      if (!(t instanceof Node)) return;
+      if (metricPickerMenuRef.current?.contains(t)) return;
+      setMetricPickerOpen(false);
+      setMetricPickerQuery("");
+    }
+    document.addEventListener("mousedown", onDocMouseDown);
+    return () => document.removeEventListener("mousedown", onDocMouseDown);
+  }, [metricPickerOpen, useCompanyRail]);
 
   return (
     <div className="relative space-y-6">
@@ -357,42 +476,140 @@ export function ComparisonWorkspace({
         </button>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
-        {displayTickers.map((sym) => {
-          const isAnchor = anchor != null && sym.toUpperCase() === anchor;
-          return (
-            <div
-              key={sym}
-              className="inline-flex max-w-full min-w-0 items-stretch overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]"
-            >
-              <span
-                className={cn(
-                  "flex min-h-[36px] min-w-0 items-center px-4 py-2 text-[14px] font-medium leading-5 text-[#09090B]",
-                  !isAnchor && "border-r border-[#E4E4E7]",
-                )}
+      {useCompanyRail ? (
+        <div className="sr-only">
+          <ChartingCompanyAddDropdown
+            hideTrigger
+            anchorRef={companyAddAnchorRef}
+            menuPortal
+            menuAlign="trailing"
+            registerOpenControl={(controls) => {
+              companyPickerControlsRef.current = controls;
+              return () => {
+                if (companyPickerControlsRef.current === controls) {
+                  companyPickerControlsRef.current = null;
+                }
+              };
+            }}
+            onPickStock={tryAddTicker}
+            maxExtraCompanies={Math.max(0, COMPARISON_MAX_COMPANIES - displayTickers.length)}
+            excludeSymbols={displayTickers}
+            alwaysAllowOpen
+          />
+          <div ref={metricPickerMenuRef}>
+            {metricPickerOpen ? (
+              <TopbarDropdownPortal
+                open={metricPickerOpen}
+                anchorRef={metricAddAnchorRef}
+                ref={metricPickerMenuRef}
+                align="leading"
+                placement="below"
+                className="w-[min(calc(100vw-2rem),520px)]"
+                onRequestClose={() => {
+                  setMetricPickerOpen(false);
+                  setMetricPickerQuery("");
+                }}
               >
-                <span className="truncate tabular-nums">{sym}</span>
-              </span>
-              {isAnchor ? null : (
-                <button
-                  type="button"
-                  onClick={() => removeTicker(sym)}
-                  className="flex w-9 shrink-0 items-center justify-center text-[#09090B] transition-colors hover:bg-[#FAFAFA]"
-                  aria-label={`Remove ${sym}`}
+                <ComparisonMetricPickerMenu
+                  excludeMetricIds={selectedColumnIds}
+                  query={metricPickerQuery}
+                  onQueryChange={setMetricPickerQuery}
+                  onPick={addColumn}
+                  searchInputRef={metricPickerInputRef}
+                />
+              </TopbarDropdownPortal>
+            ) : null}
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-wrap items-center gap-3">
+          {displayTickers.map((sym) => {
+            const isAnchor = anchor != null && sym.toUpperCase() === anchor;
+            return (
+              <div
+                key={sym}
+                className="inline-flex max-w-full min-w-0 items-stretch overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]"
+              >
+                <span
+                  className={cn(
+                    "flex min-h-[36px] min-w-0 items-center px-4 py-2 text-[14px] font-medium leading-5 text-[#09090B]",
+                    !isAnchor && "border-r border-[#E4E4E7]",
+                  )}
                 >
-                  <X className="h-5 w-5" strokeWidth={1.5} aria-hidden />
-                </button>
-              )}
-            </div>
-          );
-        })}
-        <ChartingCompanyAddDropdown
-          onPickStock={tryAddTicker}
-          maxExtraCompanies={Math.max(0, COMPARISON_MAX_COMPANIES - displayTickers.length)}
-          excludeSymbols={displayTickers}
-          alwaysAllowOpen
-        />
-      </div>
+                  <span className="truncate tabular-nums">{sym}</span>
+                </span>
+                {isAnchor ? null : (
+                  <button
+                    type="button"
+                    onClick={() => removeTicker(sym)}
+                    className="flex w-9 shrink-0 items-center justify-center text-[#09090B] transition-colors hover:bg-[#FAFAFA]"
+                    aria-label={`Remove ${sym}`}
+                  >
+                    <X className="h-5 w-5" strokeWidth={1.5} aria-hidden />
+                  </button>
+                )}
+              </div>
+            );
+          })}
+          <ChartingCompanyAddDropdown
+            onPickStock={tryAddTicker}
+            maxExtraCompanies={Math.max(0, COMPARISON_MAX_COMPANIES - displayTickers.length)}
+            excludeSymbols={displayTickers}
+            alwaysAllowOpen
+          />
+        </div>
+      )}
+
+      {!useCompanyRail ? (
+        <div className="flex flex-wrap items-center gap-3">
+          {selectedColumnIds.map((id) => {
+            const label = getComparisonTableMetric(id)?.header ?? id;
+            return (
+              <div
+                key={id}
+                className="inline-flex max-w-full min-w-0 items-stretch overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]"
+              >
+                <span className="flex min-h-[36px] min-w-0 items-center border-r border-[#E4E4E7] px-4 py-2 text-[14px] font-medium leading-5 text-[#09090B]">
+                  <span className="truncate">{label}</span>
+                </span>
+                {selectedColumnIds.length > 1 ? (
+                  <button
+                    type="button"
+                    onClick={() => removeColumn(id)}
+                    className="flex w-9 shrink-0 items-center justify-center text-[#09090B] transition-colors hover:bg-[#FAFAFA]"
+                    aria-label={`Remove ${label}`}
+                  >
+                    <X className="h-5 w-5" strokeWidth={1.5} aria-hidden />
+                  </button>
+                ) : null}
+              </div>
+            );
+          })}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setMetricPickerOpen((o) => !o)}
+              className={secondaryFillButtonClassName}
+              aria-expanded={metricPickerOpen}
+              aria-haspopup="listbox"
+            >
+              <Plus className="h-5 w-5 shrink-0" strokeWidth={1.75} aria-hidden />
+              Add Metric
+            </button>
+            {metricPickerOpen ? (
+              <div ref={metricPickerMenuRef} className="absolute left-0 top-full z-[60] mt-2">
+                <ComparisonMetricPickerMenu
+                  excludeMetricIds={selectedColumnIds}
+                  query={metricPickerQuery}
+                  onQueryChange={setMetricPickerQuery}
+                  onPick={addColumn}
+                  className="w-[min(calc(100vw-2rem),520px)]"
+                />
+              </div>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
 
       <ComparisonCompanyLimitModal open={limitModalOpen} onClose={() => setLimitModalOpen(false)} />
 
@@ -407,9 +624,9 @@ export function ComparisonWorkspace({
               style={{ gridTemplateColumns: fundamentalsGrid }}
             >
               <div className="text-left">Company</div>
-              {TOP_FUNDAMENTAL_COLUMNS.map((c) => (
-                <div key={c.header} className="min-w-0 w-full text-right">
-                  {c.header}
+              {selectedColumns.map((col) => (
+                <div key={col.id} className="min-w-0 w-full truncate text-right">
+                  {col.header}
                 </div>
               ))}
             </div>
@@ -419,6 +636,7 @@ export function ComparisonWorkspace({
                   key={`sk-fund-${r.t}`}
                   rowCount={1}
                   gridTemplateColumns={fundamentalsGrid}
+                  metricCount={selectedColumns.length}
                 />
               ) : (
                 <Link
@@ -437,7 +655,7 @@ export function ComparisonWorkspace({
                   />
                   {r.fundamentals.map((cell, i) => (
                     <div
-                      key={TOP_FUNDAMENTAL_COLUMNS[i]!.header}
+                      key={selectedColumns[i]!.id}
                       className="min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]"
                     >
                       {cell === "—" ? "-" : cell}

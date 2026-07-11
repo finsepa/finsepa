@@ -37,11 +37,15 @@ function ComparisonTableRowSkeleton({
 export function ComparisonFundamentalsTableSkeleton({
   rowCount = 1,
   gridTemplateColumns,
+  metricCount = 7,
 }: {
   rowCount?: number;
   gridTemplateColumns: string;
+  metricCount?: number;
 }) {
-  const cellWidths = ["w-14", "w-16", "w-16", "w-16", "w-10", "w-14", "w-16"];
+  const cellWidths = Array.from({ length: metricCount }, (_, i) =>
+    ["w-14", "w-16", "w-16", "w-16", "w-10", "w-14", "w-16"][i % 7]!,
+  );
   return (
     <>
       {Array.from({ length: rowCount }).map((_, i) => (

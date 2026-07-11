@@ -1100,6 +1100,7 @@ export function StockPageContent({
         onClose={() => setRevenueProfitModalMetric(null)}
         initialAnnualPoints={fundamentalsModalAnnual}
         initialQuarterlyPoints={fundamentalsModalQuarterly}
+        initialTtmPoint={fundamentalsModalTtm}
         headerMeta={headerMeta}
       />
       <StockDrawdownChartModal
@@ -1345,6 +1346,7 @@ export function StockPageContent({
             initialQuarterlyPoints={
               initialPageData?.ticker === ticker ? initialPageData.fundamentalsSeriesQuarterly : undefined
             }
+            initialTtmPoint={initialPageData?.ticker === ticker ? initialPageData.fundamentalsTtmPoint : undefined}
             onOpenMetricChart={openRevenueProfitMetricModal}
           />
         </div>

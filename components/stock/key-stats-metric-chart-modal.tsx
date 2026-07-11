@@ -14,20 +14,21 @@ import {
   MULTICHART_BAR_WIDTH_WIDE_PX,
   MULTICHART_MAX_ANNUAL_BARS,
   MULTICHART_MAX_QUARTERLY_BARS,
-  readChartingMetricValue,
   sliceLastAnnualWithMetric,
   type MultichartVisual,
 } from "@/components/stock/multichart-fundamentals-bar";
-import { FundamentalsChartSettingsMenu } from "@/components/stock/fundamentals-chart-settings-menu";
-import type { FundamentalsChartSettingsLineBadges } from "@/components/stock/fundamentals-chart-settings-menu";
+import { FundamentalsChartSettingsMenu, KEY_STATS_METRIC_LINE_TOGGLE_ROWS } from "@/components/stock/fundamentals-chart-settings-menu";
 import { MultichartVisualSwitcher } from "@/components/stock/multichart-visual-switcher";
-import { formatBarChartDataLabel } from "@/components/charting/charting-individual-company-table";
 import {
   DEFAULT_FUNDAMENTALS_CHART_DISPLAY_OPTIONS,
   type FundamentalsChartDisplayOptions,
 } from "@/lib/chart/fundamentals-chart-display-options";
 import { filterPointsForFundamentalsLineChart } from "@/lib/chart/fundamentals-line-chart-series";
 import type { ChartingSeriesPoint, FundamentalsSeriesMode } from "@/lib/market/charting-series-types";
+import {
+  appendChartingTtmPeriod,
+  parseChartingTtmPoint,
+} from "@/lib/market/charting-period-display";
 import type { StockDetailHeaderMeta } from "@/lib/market/stock-header-meta";
 import {
   CHARTING_METRIC_LABEL,
@@ -36,6 +37,7 @@ import {
 import {
   FUNDAMENTALS_CHART_TIME_RANGE_LABELS,
   FUNDAMENTALS_CHART_TIME_RANGE_ORDER,
+  applyFundamentalsChartTimeRange,
   maxPeriodsForFundamentalsChartTimeRange,
   type FundamentalsChartTimeRange,
 } from "@/lib/market/fundamentals-chart-time-range";
@@ -235,6 +237,7 @@ type Props = {
   onClose: () => void;
   initialAnnualPoints?: ChartingSeriesPoint[];
   initialQuarterlyPoints?: ChartingSeriesPoint[];
+  initialTtmPoint?: ChartingSeriesPoint | null;
   headerMeta: StockDetailHeaderMeta | null;
 };
 
@@ -244,13 +247,14 @@ export function KeyStatsMetricChartModal({
   onClose,
   initialAnnualPoints,
   initialQuarterlyPoints,
+  initialTtmPoint,
   headerMeta,
 }: Props) {
   const isMobile = useKeyStatsModalMobile();
   const { sheetStyle, sheetPointerHandlers } = useMobileSheetDragDismiss(onClose, isMobile);
   const [periodMode, setPeriodMode] = useState<FundamentalsSeriesMode>("annual");
   const [chartVisual, setChartVisual] = useState<MultichartVisual>("bar");
-  const [timeRange, setTimeRange] = useState<FundamentalsChartTimeRange>("all");
+  const [timeRange, setTimeRange] = useState<FundamentalsChartTimeRange>("10Y");
   const [displayOptions, setDisplayOptions] = useState<FundamentalsChartDisplayOptions>(
     () => ({ ...DEFAULT_FUNDAMENTALS_CHART_DISPLAY_OPTIONS }),
   );
@@ -282,6 +286,12 @@ export function KeyStatsMetricChartModal({
       initialAnnualPoints,
       initialQuarterlyPoints,
     ).points;
+  });
+  const [ttmPoint, setTtmPoint] = useState<ChartingSeriesPoint | null>(() => {
+    const seeded = parseChartingTtmPoint(initialTtmPoint);
+    if (seeded) return seeded;
+    const cached = readChartingFundamentalsSeriesCache(ticker, "annual");
+    return cached?.ttmPoint ?? null;
   });
   const [seriesLoading, setSeriesLoading] = useState(() => {
     if (metricId == null) return { annual: false, quarterly: false };
@@ -325,8 +335,13 @@ export function KeyStatsMetricChartModal({
         );
         if (!resolved.loading) {
           if (!cancelled) {
-            if (mode === "annual") setAnnualPoints(resolved.points);
-            else setQuarterlyPoints(resolved.points);
+            if (mode === "annual") {
+              setAnnualPoints(resolved.points);
+              const cached = readChartingFundamentalsSeriesCache(ticker, "annual");
+              setTtmPoint(cached?.ttmPoint ?? parseChartingTtmPoint(initialTtmPoint));
+            } else {
+              setQuarterlyPoints(resolved.points);
+            }
             setSeriesLoading((prev) => ({ ...prev, [mode]: false }));
           }
           return;
@@ -335,8 +350,12 @@ export function KeyStatsMetricChartModal({
         const period = mode === "quarterly" ? "quarterly" : "annual";
         const fetched = await fetchChartingFundamentalsSeriesCached(ticker, period);
         if (!cancelled) {
-          if (mode === "annual") setAnnualPoints(fetched?.points ?? []);
-          else setQuarterlyPoints(fetched?.points ?? []);
+          if (mode === "annual") {
+            setAnnualPoints(fetched?.points ?? []);
+            setTtmPoint(fetched?.ttmPoint ?? null);
+          } else {
+            setQuarterlyPoints(fetched?.points ?? []);
+          }
           setSeriesLoading((prev) => ({ ...prev, [mode]: false }));
         }
       } catch {
@@ -349,6 +368,11 @@ export function KeyStatsMetricChartModal({
       cancelled = true;
     };
   }, [ticker, metricId, initialAnnualPoints, initialQuarterlyPoints, isMobile]);
+
+  useEffect(() => {
+    const seeded = parseChartingTtmPoint(initialTtmPoint);
+    if (seeded) setTtmPoint(seeded);
+  }, [initialTtmPoint, ticker]);
 
   const onKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -379,7 +403,7 @@ export function KeyStatsMetricChartModal({
     if (!metricId) return;
     setPeriodMode("annual");
     setChartVisual("bar");
-    setTimeRange("all");
+    setTimeRange("10Y");
     setDisplayOptions({ ...DEFAULT_FUNDAMENTALS_CHART_DISPLAY_OPTIONS });
   }, [metricId]);
 
@@ -399,8 +423,12 @@ export function KeyStatsMetricChartModal({
         timeRange,
       );
     }
-    return rawPoints;
-  }, [rawPoints, chartVisual, metricId, effectivePeriodMode, timeRange]);
+    const ranged = applyFundamentalsChartTimeRange(rawPoints, effectivePeriodMode, timeRange);
+    if (effectivePeriodMode === "annual") {
+      return appendChartingTtmPeriod(ranged, ttmPoint);
+    }
+    return ranged;
+  }, [rawPoints, chartVisual, metricId, effectivePeriodMode, timeRange, ttmPoint]);
 
   const maxBars = maxBarsForMode(effectivePeriodMode, isMobile, timeRange);
   const denseQuarterlyBars =
@@ -420,8 +448,8 @@ export function KeyStatsMetricChartModal({
     if (chartVisual === "line") {
       return chartPoints.length > 0;
     }
-    return sliceLastAnnualWithMetric(rawPoints, metricId, maxBars).length > 0;
-  }, [chartVisual, chartPoints, rawPoints, metricId, maxBars]);
+    return sliceLastAnnualWithMetric(chartPoints, metricId, maxBars).length > 0;
+  }, [chartVisual, chartPoints, metricId, maxBars]);
   const horizontalPeriodAxisLabels =
     chartVisual === "line" ||
     (effectivePeriodMode === "annual" && (timeRange === "5Y" || timeRange === "10Y"));
@@ -434,29 +462,11 @@ export function KeyStatsMetricChartModal({
   const lineTimeRange = chartVisual === "line" ? timeRange : undefined;
   const chartHeight = isMobile ? MOBILE_KEY_STATS_CHART_HEIGHT_PX : 400;
 
-  const lineSettingsBadges = useMemo((): FundamentalsChartSettingsLineBadges | undefined => {
-    if (metricId == null || chartVisual !== "line") return undefined;
-    const values: number[] = [];
-    const sorted = [...chartPoints].sort((a, b) => a.periodEnd.localeCompare(b.periodEnd));
-    for (const row of sorted) {
-      const v = readChartingMetricValue(row, metricId);
-      if (v != null) values.push(v);
-    }
-    if (!values.length) return undefined;
-    const max = Math.max(...values);
-    const min = Math.min(...values);
-    return {
-      max: formatBarChartDataLabel(metricId, max),
-      min: formatBarChartDataLabel(metricId, min),
-    };
-  }, [chartPoints, chartVisual, metricId]);
-
   const settingsMenuProps = {
     options: displayOptions,
     onChange: setDisplayOptions,
-    ...(chartVisual === "line"
-      ? { variant: "line" as const, lineBadges: lineSettingsBadges }
-      : { variant: "bar" as const }),
+    variant: (chartVisual === "line" ? "line" : "bar") as "line" | "bar",
+    ...(chartVisual === "line" ? { lineToggleRows: KEY_STATS_METRIC_LINE_TOGGLE_ROWS } : {}),
   };
 
   const chartBody = useMemo(() => {
@@ -484,6 +494,8 @@ export function KeyStatsMetricChartModal({
           horizontalPeriodAxisLabels={horizontalPeriodAxisLabels}
           lineTimeRange={lineTimeRange}
           periodPlotMargins={periodPlotMargins}
+          showLinePointMarkers={chartVisual !== "line"}
+          enableLineValueLabels={chartVisual !== "line"}
         />
         {!isMobile && metricId === "forward_pe" ? (
           <p className="mt-3 text-[12px] leading-5 text-[#71717A]">
