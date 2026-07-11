@@ -283,7 +283,9 @@ export function ChartingEmptyToolbar({
           }))
         : undefined,
       onRemoveCompany: useRailPickers ? removeTicker : undefined,
-      onRemoveMetric: useRailPickers ? removeMetric : undefined,
+      onRemoveMetric: useRailPickers
+        ? (metricId: string) => removeMetric(metricId as ChartingMetricId)
+        : undefined,
     },
     useRailPickers,
   );

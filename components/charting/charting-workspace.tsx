@@ -3431,8 +3431,12 @@ export function ChartingWorkspace({
           }))
         : undefined,
       onRemoveCompany: useRailMetricPicker ? removeCompanyFromRail : undefined,
-      onRemoveMetric: useRailMetricPicker ? removeMetric : undefined,
-      onShowBarValuesChange: useRailMetricPicker ? setBarValuesVisibleForMetric : undefined,
+      onRemoveMetric: useRailMetricPicker
+        ? (metricId: string) => removeMetric(metricId as ChartingMetricId)
+        : undefined,
+      onShowBarValuesChange: useRailMetricPicker
+        ? (metricId, next) => setBarValuesVisibleForMetric(metricId as ChartingMetricId, next)
+        : undefined,
     },
     isFullPageCharting && pathRoute === "/charting",
   );

@@ -13,8 +13,6 @@ import {
   type RefObject,
 } from "react";
 
-import type { ChartingMetricId } from "@/lib/market/stock-charting-metrics";
-
 const DESKTOP_SHELL_MQ = "(min-width: 768px)";
 
 export function isCompanyRailPage(pathname: string): boolean {
@@ -43,7 +41,7 @@ export type ChartingCompanyRailControls = {
   metrics?: ChartingRailMetricRow[];
   onRemoveCompany?: (ticker: string) => void;
   onRemoveMetric?: (metricId: string) => void;
-  onShowBarValuesChange?: (metricId: ChartingMetricId, next: boolean) => void;
+  onShowBarValuesChange?: (metricId: string, next: boolean) => void;
 };
 
 type ChartingCompanyRailContextValue = {

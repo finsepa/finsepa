@@ -1631,7 +1631,9 @@ export function ChartingCompareWorkspace({
         : undefined,
       metrics: useRailMetricPicker ? railMetricRows : undefined,
       onRemoveCompany: useRailMetricPicker ? removeTicker : undefined,
-      onRemoveMetric: useRailMetricPicker ? removeMetric : undefined,
+      onRemoveMetric: useRailMetricPicker
+        ? (metricId: string) => removeMetric(metricId as ChartingMetricId)
+        : undefined,
     },
     pathRoute === "/charting",
   );
