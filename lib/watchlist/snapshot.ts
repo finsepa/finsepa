@@ -103,7 +103,10 @@ export function applyServerSnapshotPreservingLocalNames(
     return {
       id: serverCollection.id,
       name,
-      tickers: [...serverCollection.tickers],
+      tickers:
+        localList
+          ? mergeListTickers(localList.tickers, serverCollection.tickers)
+          : [...serverCollection.tickers],
       sections: [...serverCollection.sections],
       tickerSections: { ...serverCollection.tickerSections },
     };
@@ -330,9 +333,19 @@ function localHasTickersAheadOfServer(
   return local.lists.some((localList) => {
     const serverList = findServerCollectionForLocalList(localList, server);
     if (!serverList) return localList.tickers.length > 0;
-    const serverTickers = new Set(serverList.tickers);
-    return localList.tickers.some((ticker) => !serverTickers.has(ticker));
+    const serverTickers = new Set(serverList.tickers.map(normalizeWatchlistStorageKey));
+    return localList.tickers.some(
+      (ticker) => !serverTickers.has(normalizeWatchlistStorageKey(ticker)),
+    );
   });
+}
+
+/** True when local still has tickers that have not reached the server yet. */
+export function localSnapshotHasTickersAheadOfServer(
+  local: WatchlistCollectionsSnapshot,
+  server: WatchlistServerSnapshot,
+): boolean {
+  return localHasTickersAheadOfServer(local, server);
 }
 
 function tickerSetsEqual(a: string[], b: string[]): boolean {
@@ -628,6 +641,32 @@ export function applyMutationServerResponse(
     preferLocalTickers: true,
   });
   return clearDuplicateWatchlistTickerCopies(ensureSnapshotActiveId(merged ?? local));
+}
+
+/** Like applyMutationServerResponse but keeps local marked unsynced when server is still behind. */
+export function applyMutationServerResponseWithSyncMeta(
+  server: WatchlistServerSnapshot,
+  local: WatchlistCollectionsSnapshot,
+): WatchlistCollectionsSnapshot {
+  const merged = applyMutationServerResponse(server, local);
+  const now = Date.now();
+  const serverTime = serverUpdatedAtMs(server);
+  const syncedAt = serverTime > 0 ? serverTime : now;
+
+  if (localSnapshotHasTickersAheadOfServer(merged, server)) {
+    const priorSynced = merged.lastSyncedAt ?? 0;
+    return {
+      ...merged,
+      lastModifiedAt: Math.max(merged.lastModifiedAt ?? 0, now),
+      lastSyncedAt: priorSynced,
+    };
+  }
+
+  return {
+    ...merged,
+    lastSyncedAt: syncedAt,
+    lastModifiedAt: Math.max(merged.lastModifiedAt ?? 0, syncedAt),
+  };
 }
 
 /** After a successful upload: keep the live local layout, only adopt server collection ids. */

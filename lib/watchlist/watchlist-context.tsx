@@ -91,11 +91,13 @@ import {
 } from "@/lib/watchlist/normalize-storage-key";
 import {
   applyMutationServerResponse,
+  applyMutationServerResponseWithSyncMeta,
   applyServerIdsPreservingLocalLayout,
   applyServerSnapshotPreservingLocalNames,
   findCollectionIdByName,
   hasClientOnlyWatchlistIds,
   localHasUnsyncedChanges,
+  localSnapshotHasTickersAheadOfServer,
   localSnapshotShouldUploadFirst,
   mergeServerIdsWithLocalSnapshot,
   mergeServerWithLocalSnapshot,
@@ -167,6 +169,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
   collectionsRef.current = collections;
 
   const serverSyncChainRef = useRef(Promise.resolve());
+  const bootstrapChainRef = useRef(Promise.resolve());
   const syncDirtyRef = useRef(false);
   const syncInFlightRef = useRef<Promise<boolean> | null>(null);
   const syncErrorToastedRef = useRef(false);
@@ -192,14 +195,18 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
         /** Set after the snapshot matches what was persisted on the server. */
         fromServerSync?: boolean;
         serverUpdatedAt?: string | null;
+        /** Login/bootstrap only: show a populated list when server active is empty. */
+        preferPopulatedActive?: boolean;
       },
     ) => {
       const now = Date.now();
       const aligned = ensureSnapshotActiveId(snapshot);
       const repaired = clearDuplicateWatchlistTickerCopies(aligned);
       const beforeActiveId = repaired.activeId;
-      const withActive = preferPopulatedActiveWatchlist(repaired);
+      const withActive =
+        options?.preferPopulatedActive ? preferPopulatedActiveWatchlist(repaired) : repaired;
       const activeRepointed =
+        options?.preferPopulatedActive &&
         withActive.activeId !== beforeActiveId &&
         withActive.lists.some((list) => list.id === withActive.activeId);
       const syncedAt =
@@ -296,7 +303,11 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
           applyServerSnapshotPreservingLocalNames(serverSnapshot, collectionsRef.current, {
             preferServerNames: true,
           }),
-          { fromServerSync: true, serverUpdatedAt: serverSnapshot.updatedAt },
+          {
+            fromServerSync: true,
+            serverUpdatedAt: serverSnapshot.updatedAt,
+            preferPopulatedActive: true,
+          },
         );
         return;
       }
@@ -396,7 +407,10 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
         ? mergeGuestWatchlistOnSignIn(uid)
         : loadAuthenticatedWatchlistCollections(uid);
       const working = clearDuplicateWatchlistTickerCopies(local);
-      applyCollections(working);
+      const activeEmptyButHasTickers =
+        unionWatchlistTickers(working).length > 0 &&
+        getActiveWatchlistCollection(working).tickers.length === 0;
+      applyCollections(working, { preferPopulatedActive: activeEmptyButHasTickers });
       setHydrated(true);
       setLoaded(true);
 
@@ -422,7 +436,11 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
             applyServerSnapshotPreservingLocalNames(snapshot, collectionsRef.current, {
               preferServerNames: true,
             }),
-            { fromServerSync: true, serverUpdatedAt: snapshot.updatedAt },
+            {
+              fromServerSync: true,
+              serverUpdatedAt: snapshot.updatedAt,
+              preferPopulatedActive: true,
+            },
           );
           setServerListWarning(null);
           clearGuestWatchlistStorage(uid);
@@ -463,7 +481,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
           if (uploaded) {
             setServerListWarning(null);
             applyCollections(
-              applyMutationServerResponse(uploaded, collectionsRef.current),
+              applyMutationServerResponseWithSyncMeta(uploaded, collectionsRef.current),
               { fromServerSync: true, serverUpdatedAt: uploaded.updatedAt },
             );
           } else {
@@ -474,6 +492,22 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
           }
           clearGuestWatchlistStorage(uid);
           return;
+        }
+
+        if (localSnapshotHasTickersAheadOfServer(collectionsRef.current, serverSnapshot)) {
+          const uploaded = await syncWatchlistCollectionsToServer(
+            collectionsRef.current,
+            serverSnapshot,
+          );
+          if (uploaded) {
+            setServerListWarning(null);
+            applyCollections(
+              applyMutationServerResponseWithSyncMeta(uploaded, collectionsRef.current),
+              { fromServerSync: true, serverUpdatedAt: uploaded.updatedAt },
+            );
+            clearGuestWatchlistStorage(uid);
+            return;
+          }
         }
 
         await reconcileCollectionsWithServer(serverSnapshot);
@@ -493,10 +527,17 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
       try {
         const session = await readSupabaseSession(supabase);
         if (cancelled) return;
-        await bootstrap(session?.user?.id ?? null, {}, session?.user ?? null);
+        const uid = session?.user?.id ?? null;
+        bootstrapChainRef.current = bootstrapChainRef.current
+          .then(() => bootstrap(uid, {}, session?.user ?? null))
+          .catch(() => undefined);
+        await bootstrapChainRef.current;
       } catch {
         if (!cancelled) {
-          await bootstrap(null, {}, null);
+          bootstrapChainRef.current = bootstrapChainRef.current
+            .then(() => bootstrap(null, {}, null))
+            .catch(() => undefined);
+          await bootstrapChainRef.current;
         }
       }
     })();
@@ -507,7 +548,10 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
       const uid = nextSession?.user?.id ?? null;
       if (event === "SIGNED_IN" && uid) {
         const mergeGuest = consumeGuestWatchlistPendingMerge();
-        void bootstrap(uid, { mergeGuest }, nextSession?.user ?? null);
+        bootstrapChainRef.current = bootstrapChainRef.current
+          .then(() => bootstrap(uid, { mergeGuest }, nextSession?.user ?? null))
+          .catch(() => undefined);
+        void bootstrapChainRef.current;
       } else if (event === "SIGNED_OUT") {
         clearGuestWatchlistPendingMerge();
         clearGuestWatchlistStorage();
@@ -552,7 +596,9 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
         toastWatchlistAddFailed();
         return;
       }
-      applyCollections(snapshot);
+      const withActiveTarget =
+        snapshot.activeId === resolvedId ? snapshot : { ...snapshot, activeId: resolvedId };
+      applyCollections(withActiveTarget);
       toastWatchlistAdded(storageKey, targetList.name);
       dispatchWatchlistMutated(ticker);
 
@@ -574,12 +620,21 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
         if (serverCollectionId && isServerWatchlistCollectionId(serverCollectionId)) {
           const posted = await postWatchlistTicker(ticker, serverCollectionId);
           if (posted) {
+            if (
+              withActiveTarget.activeId === resolvedId &&
+              isServerWatchlistCollectionId(serverCollectionId)
+            ) {
+              await setActiveWatchlistOnServer(serverCollectionId);
+            }
             const snapshot = await refreshWatchlistSnapshotFromServer();
             if (snapshot) {
-              applyCollections(applyMutationServerResponse(snapshot, collectionsRef.current), {
-                fromServerSync: true,
-                serverUpdatedAt: snapshot.updatedAt,
-              });
+              applyCollections(
+                applyMutationServerResponseWithSyncMeta(snapshot, collectionsRef.current),
+                {
+                  fromServerSync: true,
+                  serverUpdatedAt: snapshot.updatedAt,
+                },
+              );
             }
             setServerListWarning(null);
             dispatchWatchlistMutated(ticker);
