@@ -546,6 +546,8 @@ export async function syncWatchlistFromClient(
   collections: WatchlistSyncCollectionInput[],
   activeName?: string,
 ): Promise<WatchlistServerSnapshot> {
+  // Replacement semantics: deletes any server ticker omitted from `collections` payload.
+  // Not for login/bootstrap — explicit POST/DELETE/collection endpoints only in normal flows.
   if (!collections.length) {
     return getWatchlistSnapshot(supabase, userId);
   }

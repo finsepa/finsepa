@@ -36,6 +36,10 @@ function parseSyncCollectionEntry(entry: unknown): WatchlistSyncCollectionInput 
   };
 }
 
+/**
+ * Full replacement sync — NOT for login/bootstrap/logout.
+ * Deletes any server ticker omitted from the client payload (deletes by omission).
+ */
 export async function POST(request: Request) {
   try {
     const user = await requireAuthUserFromRequest(request);

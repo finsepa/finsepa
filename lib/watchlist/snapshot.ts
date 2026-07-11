@@ -10,6 +10,7 @@ import {
   ensureSnapshotActiveId,
   getActiveWatchlistCollection,
   isPlaceholderWatchlistId,
+  preferPopulatedActiveWatchlist,
   unionWatchlistTickers,
   writeWatchlistCollections,
 } from "@/lib/watchlist/collections";
@@ -137,6 +138,58 @@ export function applyServerSnapshotPreservingLocalNames(
   return clearDuplicateWatchlistTickerCopies(ensureSnapshotActiveId({ ...draft, activeId }));
 }
 
+/**
+ * Download-only bootstrap: server tickers/lists are authoritative.
+ * Local names may be preserved for display; local-only lists/tickers are not merged in.
+ */
+export function adoptCanonicalServerSnapshot(
+  server: WatchlistServerSnapshot,
+  local: WatchlistCollectionsSnapshot,
+  options?: { preferServerNames?: boolean; preferPopulatedActive?: boolean },
+): WatchlistCollectionsSnapshot {
+  const activeLocalName = getActiveWatchlistCollection(local).name;
+  const lists: WatchlistCollection[] = server.collections.map((serverCollection) => {
+    const localList = local.lists.find((list) =>
+      collectionNamesMatch(list.name, serverCollection.name),
+    );
+    const name =
+      options?.preferServerNames || !localList
+        ? serverCollection.name
+        : localList.name;
+    return {
+      id: serverCollection.id,
+      name,
+      tickers: [...serverCollection.tickers],
+      sections: [...serverCollection.sections],
+      tickerSections: { ...serverCollection.tickerSections },
+    };
+  });
+
+  const draft: WatchlistCollectionsSnapshot = {
+    v: 2,
+    activeId: "",
+    lists,
+    pendingRemoval: [],
+  };
+  const activeName = options?.preferServerNames
+    ? (server.collections.find((collection) => collection.id === server.activeCollectionId)?.name ??
+      activeLocalName)
+    : activeLocalName;
+  const activeId =
+    findCollectionIdByName(draft, activeName) ??
+    server.activeCollectionId ??
+    lists[0]?.id ??
+    "";
+
+  let snapshot = clearDuplicateWatchlistTickerCopies(
+    ensureSnapshotActiveId({ ...draft, activeId }),
+  );
+  if (options?.preferPopulatedActive) {
+    snapshot = preferPopulatedActiveWatchlist(snapshot);
+  }
+  return snapshot;
+}
+
 function localHasRemovalsPendingSync(
   local: WatchlistCollectionsSnapshot,
   server: WatchlistServerSnapshot,
@@ -177,6 +230,14 @@ function localHasRemovalsPendingSync(
   }
 
   return foundRemoval;
+}
+
+/** True when local removed tickers that still exist on the server. */
+export function localSnapshotHasRemovalsPendingSync(
+  local: WatchlistCollectionsSnapshot,
+  server: WatchlistServerSnapshot,
+): boolean {
+  return localHasRemovalsPendingSync(local, server);
 }
 
 /** Local edits not yet confirmed by a successful server sync. */
@@ -294,7 +355,7 @@ export function mergeServerIdsWithLocalSnapshot(
       id: serverList?.id ?? localList.id,
       name: localList.name,
       tickers:
-        options?.preferLocalTickers && localList.tickers.length > 0
+        options?.preferLocalTickers
           ? [...localList.tickers]
           : mergeListTickers(localList.tickers, serverList?.tickers ?? []),
       sections: [...layout.sections],
@@ -472,6 +533,16 @@ export function localIsMissingServerSections(
 
 export function serverSnapshotHasNoTickers(server: WatchlistServerSnapshot): boolean {
   return !server.collections.some((collection) => collection.tickers.length > 0);
+}
+
+export function serverSnapshotContainsTicker(
+  server: WatchlistServerSnapshot,
+  ticker: string,
+): boolean {
+  const key = normalizeWatchlistStorageKey(ticker);
+  return server.collections.some((collection) =>
+    collection.tickers.some((entry) => normalizeWatchlistStorageKey(entry) === key),
+  );
 }
 
 /** Prefer the server snapshot instead of uploading stale browser cache. */
@@ -654,6 +725,15 @@ export function applyMutationServerResponseWithSyncMeta(
   const syncedAt = serverTime > 0 ? serverTime : now;
 
   if (localSnapshotHasTickersAheadOfServer(merged, server)) {
+    const priorSynced = merged.lastSyncedAt ?? 0;
+    return {
+      ...merged,
+      lastModifiedAt: Math.max(merged.lastModifiedAt ?? 0, now),
+      lastSyncedAt: priorSynced,
+    };
+  }
+
+  if (localSnapshotHasRemovalsPendingSync(merged, server)) {
     const priorSynced = merged.lastSyncedAt ?? 0;
     return {
       ...merged,

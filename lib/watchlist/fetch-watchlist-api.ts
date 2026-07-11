@@ -2,6 +2,7 @@ import type { WatchlistCollectionsSnapshot } from "@/lib/watchlist/collections";
 import { collectionNamesMatch } from "@/lib/watchlist/collection-names";
 import type { WatchlistServerSnapshot, WatchlistSyncCollectionInput } from "@/lib/watchlist/types";
 import { localSnapshotToSyncInput, localSnapshotToSyncInputWithServer } from "@/lib/watchlist/snapshot";
+import { logWatchlistSync } from "@/lib/watchlist/sync-debug";
 import { watchlistApiFetch } from "@/lib/watchlist/watchlist-api-fetch";
 
 export async function fetchWatchlistSnapshot(): Promise<{
@@ -33,11 +34,13 @@ export async function fetchWatchlistSnapshot(): Promise<{
   }
 }
 
+/** @deprecated Normal client flows must not call full sync. Replacement semantics — deletes by omission. */
 export async function syncWatchlistSnapshotToServer(input: {
   collections: WatchlistSyncCollectionInput[];
   activeName: string;
 }): Promise<WatchlistServerSnapshot | null> {
   try {
+    logWatchlistSync("full_sync_post");
     const res = await watchlistApiFetch("/api/watchlist/sync", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -75,7 +78,7 @@ export function findServerCollectionIdByName(
   );
 }
 
-/** Sync local state without dropping server-only lists or tickers. */
+/** @deprecated Normal client flows must not call full sync. Replacement semantics — deletes by omission. */
 export async function syncWatchlistCollectionsToServer(
   local: WatchlistCollectionsSnapshot,
   server?: WatchlistServerSnapshot | null,
@@ -104,7 +107,9 @@ export async function deleteWatchlistTicker(
   const res = await watchlistApiFetch(`/api/watchlist?${params.toString()}`, {
     method: "DELETE",
   });
-  return res.ok || res.status === 404 || res.status === 401;
+  if (res.ok) return true;
+  if (res.status === 401) return false;
+  return false;
 }
 
 export async function createWatchlistOnServer(name: string): Promise<boolean> {
