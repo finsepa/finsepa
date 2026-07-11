@@ -43,6 +43,18 @@ export class WatchlistValidationError extends Error {
   }
 }
 
+/** Client sync would wipe saved server tickers or delete populated lists. */
+export class WatchlistDestructiveSyncError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "WatchlistDestructiveSyncError";
+  }
+}
+
+function countIncomingTickers(collections: WatchlistSyncCollectionInput[]): number {
+  return collections.reduce((sum, collection) => sum + collection.tickers.length, 0);
+}
+
 function normalizeCollectionName(name: string): string {
   const trimmed = name.trim();
   if (!trimmed) {
@@ -539,12 +551,26 @@ export async function syncWatchlistFromClient(
   }
 
   const existing = await listCollectionsForUser(supabase, userId);
+  const existingItems = await listItemsForUser(supabase, userId);
+  const incomingTickerCount = countIncomingTickers(collections);
+
+  if (existingItems.length > 0 && incomingTickerCount === 0) {
+    throw new WatchlistDestructiveSyncError(
+      "Refusing to replace saved watchlist tickers with an empty client sync.",
+    );
+  }
 
   for (const orphan of existing) {
     const hasLocalMatch = collections.some((input) =>
       collectionNamesMatch(input.name, orphan.name),
     );
     if (!hasLocalMatch) {
+      const orphanItemCount = existingItems.filter((item) => item.collection_id === orphan.id).length;
+      if (orphanItemCount > 0) {
+        throw new WatchlistDestructiveSyncError(
+          `Refusing to delete watchlist "${orphan.name}" with ${orphanItemCount} saved tickers.`,
+        );
+      }
       await deleteWatchlistCollectionOnServer(supabase, userId, orphan.id);
     }
   }
@@ -603,7 +629,7 @@ export async function syncWatchlistFromClient(
     resolved.push(created);
   }
 
-  const items = await listItemsForUser(supabase, userId);
+  const items = existingItems.length > 0 ? existingItems : await listItemsForUser(supabase, userId);
 
   for (const collection of resolved) {
     const input = collections.find((entry) =>

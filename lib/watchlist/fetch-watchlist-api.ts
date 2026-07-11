@@ -43,6 +43,13 @@ export async function syncWatchlistSnapshotToServer(input: {
       body: JSON.stringify(input),
     });
     if (!res.ok) {
+      if (res.status === 409) {
+        if (process.env.NODE_ENV === "development") {
+          const detail = await res.text().catch(() => "");
+          console.warn("[watchlist sync] destructive sync blocked", detail);
+        }
+        return null;
+      }
       if (res.status !== 401 && process.env.NODE_ENV === "development") {
         const detail = await res.text().catch(() => "");
         console.warn("[watchlist sync] failed", res.status, detail);

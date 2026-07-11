@@ -303,7 +303,14 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
           const uploaded = await syncWatchlistSnapshotToServer(
             localSnapshotToSyncInput(snapshotToSync),
           );
-          if (!uploaded) return false;
+          if (!uploaded) {
+            if (unionWatchlistTickers(collectionsRef.current).length > 0) {
+              setServerListWarning(
+                "Watchlist saved on this device only — server refused a sync that would erase saved tickers.",
+              );
+            }
+            return false;
+          }
 
           applyCollections(
             applyServerIdsPreservingLocalLayout(uploaded, collectionsRef.current),

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAuthUserFromRequest, AuthRequiredError } from "@/lib/watchlist/api-auth";
 import {
   syncWatchlistFromClient,
+  WatchlistDestructiveSyncError,
   WatchlistValidationError,
 } from "@/lib/watchlist/operations";
 import {
@@ -76,6 +77,12 @@ export async function POST(request: Request) {
     }
     if (e instanceof WatchlistValidationError) {
       return NextResponse.json({ error: e.message }, { status: 400 });
+    }
+    if (e instanceof WatchlistDestructiveSyncError) {
+      return NextResponse.json(
+        { error: e.message, code: "destructive_sync_blocked" as const },
+        { status: 409 },
+      );
     }
     const message = e instanceof Error ? e.message : "Server error";
     return NextResponse.json({ error: message }, { status: 500 });
