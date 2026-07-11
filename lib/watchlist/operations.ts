@@ -388,16 +388,35 @@ async function updateCollectionSectionsLayout(
   collectionId: string,
   input: WatchlistSyncCollectionInput,
 ): Promise<void> {
-  const layout = parseSectionsLayout({
+  await updateWatchlistCollectionSectionsLayoutOnServer(supabase, userId, collectionId, {
     sections: input.sections ?? [],
     tickerSections: input.tickerSections ?? {},
   });
+}
+
+/** Updates only `sections_layout` — never adds, removes, or moves ticker rows. */
+export async function updateWatchlistCollectionSectionsLayoutOnServer(
+  supabase: SupabaseClient,
+  userId: string,
+  collectionId: string,
+  layout: { sections: WatchlistSyncCollectionInput["sections"]; tickerSections: Record<string, string> },
+): Promise<void> {
+  const collections = await listCollectionsForUser(supabase, userId);
+  if (!collections.some((c) => c.id === collectionId)) {
+    throw new WatchlistValidationError("Watchlist not found.");
+  }
+
+  const normalized = parseSectionsLayout({
+    sections: layout.sections ?? [],
+    tickerSections: layout.tickerSections ?? {},
+  });
   const { error } = await supabase
     .from(COLLECTIONS_TABLE)
-    .update({ sections_layout: serializeSectionsLayout(layout) })
+    .update({ sections_layout: serializeSectionsLayout(normalized) })
     .eq("id", collectionId)
     .eq("user_id", userId);
   if (error) throw new Error(error.message);
+  await touchWatchlistUserState(supabase, userId);
 }
 
 export async function deleteWatchlistCollectionOnServer(

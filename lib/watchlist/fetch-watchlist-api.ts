@@ -1,5 +1,6 @@
 import type { WatchlistCollectionsSnapshot } from "@/lib/watchlist/collections";
 import { collectionNamesMatch } from "@/lib/watchlist/collection-names";
+import type { WatchlistSection } from "@/lib/watchlist/sections";
 import type { WatchlistServerSnapshot, WatchlistSyncCollectionInput } from "@/lib/watchlist/types";
 import { localSnapshotToSyncInput, localSnapshotToSyncInputWithServer } from "@/lib/watchlist/snapshot";
 import { logWatchlistSync } from "@/lib/watchlist/sync-debug";
@@ -127,6 +128,22 @@ export async function renameWatchlistOnServer(collectionId: string, name: string
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name }),
   });
+  return res.ok;
+}
+
+export async function patchWatchlistCollectionSections(
+  collectionId: string,
+  sections: WatchlistSection[],
+  tickerSections: Record<string, string>,
+): Promise<boolean> {
+  const res = await watchlistApiFetch(
+    `/api/watchlist/collections/${encodeURIComponent(collectionId)}/sections`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sections, tickerSections }),
+    },
+  );
   return res.ok;
 }
 

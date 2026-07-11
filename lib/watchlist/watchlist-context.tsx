@@ -67,6 +67,7 @@ import {
   deleteWatchlistTicker,
   fetchWatchlistSnapshot,
   findServerCollectionIdByName,
+  patchWatchlistCollectionSections,
   postWatchlistTicker,
   refreshWatchlistSnapshotFromServer,
   renameWatchlistOnServer,
@@ -855,22 +856,48 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
 
   const persistSectionLayout = useCallback(
     (optimistic: WatchlistCollectionsSnapshot) => {
+      const previous = cloneWatchlistCollectionsSnapshot(collectionsRef.current);
+      const active = getActiveWatchlistCollection(optimistic);
+
       applyCollections(optimistic);
       dispatchWatchlistMutated();
       if (!userIdRef.current) {
         toast.message("Sign in to sync sections across devices.");
         return;
       }
-      void (async () => {
-        const synced = await persistSnapshotToServer(optimistic);
-        if (!synced) {
+
+      void enqueueWatchlistMutation(async () => {
+        logWatchlistSync("mutation_start", "sections");
+        const serverId = await resolveServerCollectionIdForList(
+          optimistic,
+          active.id,
+          active.name,
+        );
+        if (!serverId) {
+          logWatchlistSync("mutation_failure", "sections");
+          applyCollections(previous);
           setServerListWarning("Section saved on this device only; server sync will retry.");
-        } else {
-          setServerListWarning(null);
+          return false;
         }
-      })();
+
+        const ok = await patchWatchlistCollectionSections(
+          serverId,
+          active.sections,
+          active.tickerSections,
+        );
+        if (!ok) {
+          logWatchlistSync("mutation_failure", "sections");
+          applyCollections(previous);
+          setServerListWarning("Section saved on this device only; server sync will retry.");
+          return false;
+        }
+
+        logWatchlistSync("mutation_success", "sections");
+        setServerListWarning(null);
+        return true;
+      });
     },
-    [applyCollections, persistSnapshotToServer],
+    [applyCollections, enqueueWatchlistMutation, resolveServerCollectionIdForList],
   );
 
   const createActiveSection = useCallback(
