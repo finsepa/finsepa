@@ -91,7 +91,10 @@ assert(
   "bootstrap removed removals-pending upload branch",
   !ctx.includes("localSnapshotHasRemovalsPendingSync"),
 );
-assert("logout removed persist flush", !ctx.includes("localHasUnsyncedChanges(collectionsRef.current)"));
+assert(
+  "context has no normal full sync calls",
+  !ctx.includes("syncWatchlistCollectionsToServer") && !ctx.includes("persistSnapshotToServer"),
+);
 const bootstrapMatch = ctx.match(/async function bootstrap\([\s\S]*?\n    \}/);
 const bootstrapBody = bootstrapMatch?.[0] ?? "";
 assert(
