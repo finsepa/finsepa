@@ -305,6 +305,26 @@ export function ensureSnapshotActiveId(
   return { ...snapshot, activeId: snapshot.lists[0]!.id };
 }
 
+/** When the active list is empty but another list has tickers, show the populated list. */
+export function preferPopulatedActiveWatchlist(
+  snapshot: WatchlistCollectionsSnapshot,
+): WatchlistCollectionsSnapshot {
+  const aligned = ensureSnapshotActiveId(snapshot);
+  if (!aligned.lists.length) return aligned;
+
+  const active = getActiveWatchlistCollection(aligned);
+  if (active.tickers.length > 0) return aligned;
+
+  const populated = aligned.lists.filter((list) => list.tickers.length > 0);
+  if (!populated.length) return aligned;
+
+  const best = populated.reduce((current, candidate) =>
+    candidate.tickers.length > current.tickers.length ? candidate : current,
+  );
+  if (best.id === aligned.activeId) return aligned;
+  return { ...aligned, activeId: best.id };
+}
+
 /** Resolve a collection id after server/local id drift; falls back to the active list. */
 export function resolveWatchlistCollectionId(
   snapshot: WatchlistCollectionsSnapshot,

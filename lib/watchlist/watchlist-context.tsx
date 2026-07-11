@@ -43,6 +43,7 @@ import {
   newWatchlistCollectionId,
   clearGuestWatchlistStorage,
   persistActiveListTickers,
+  preferPopulatedActiveWatchlist,
   prepareWatchlistSwitch,
   readWatchlistCollections,
   renameCollectionInSnapshot,
@@ -168,6 +169,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
   const serverSyncChainRef = useRef(Promise.resolve());
   const syncDirtyRef = useRef(false);
   const syncInFlightRef = useRef<Promise<boolean> | null>(null);
+  const syncErrorToastedRef = useRef(false);
 
   const hydratedRef = useRef(hydrated);
   hydratedRef.current = hydrated;
@@ -176,6 +178,12 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
     () => new Set(unionWatchlistTickers(collections).map(normalizeTicker)),
     [collections],
   );
+
+  const notifyWatchlistSyncFailed = useCallback(() => {
+    if (syncErrorToastedRef.current) return;
+    syncErrorToastedRef.current = true;
+    toastWatchlistSyncFailed();
+  }, []);
 
   const applyCollections = useCallback(
     (
@@ -187,8 +195,13 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
       },
     ) => {
       const now = Date.now();
-      const normalized = ensureSnapshotActiveId(snapshot);
-      const repaired = clearDuplicateWatchlistTickerCopies(normalized);
+      const aligned = ensureSnapshotActiveId(snapshot);
+      const repaired = clearDuplicateWatchlistTickerCopies(aligned);
+      const beforeActiveId = repaired.activeId;
+      const withActive = preferPopulatedActiveWatchlist(repaired);
+      const activeRepointed =
+        withActive.activeId !== beforeActiveId &&
+        withActive.lists.some((list) => list.id === withActive.activeId);
       const syncedAt =
         options?.fromServerSync ?
           (() => {
@@ -201,14 +214,14 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
         : null;
       const withSyncMeta: WatchlistCollectionsSnapshot = options?.fromServerSync
         ? {
-            ...repaired,
+            ...withActive,
             lastSyncedAt: syncedAt ?? now,
-            lastModifiedAt: Math.max(repaired.lastModifiedAt ?? now, syncedAt ?? now),
+            lastModifiedAt: Math.max(withActive.lastModifiedAt ?? now, syncedAt ?? now),
           }
         : {
-            ...repaired,
+            ...withActive,
             lastModifiedAt: now,
-            lastSyncedAt: repaired.lastSyncedAt,
+            lastSyncedAt: withActive.lastSyncedAt,
           };
       const active = getActiveWatchlistCollection(withSyncMeta);
       const orderedTickers = active.tickers.map(normalizeTicker);
@@ -216,6 +229,13 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
       setWatchedTickers(orderedTickers);
       setWatched(new Set(orderedTickers));
       writeWatchlistCollections(userIdRef.current, withSyncMeta);
+      if (
+        activeRepointed &&
+        userIdRef.current &&
+        isServerWatchlistCollectionId(withActive.activeId)
+      ) {
+        void setActiveWatchlistOnServer(withActive.activeId);
+      }
       if (!userIdRef.current && unionWatchlistTickers(withSyncMeta).length > 0) {
         markGuestWatchlistPendingMerge();
       }
@@ -244,6 +264,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
             setServerListWarning(
               "Watchlist saved on this device only — could not sync sections to your account yet.",
             );
+            notifyWatchlistSyncFailed();
             applyCollections(mergeServerWithLocalSnapshot(serverSnapshot, collectionsRef.current));
           }
         } else {
@@ -265,6 +286,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
         setServerListWarning(
           "Watchlist saved on this device only — could not sync sections to your account yet.",
         );
+        notifyWatchlistSyncFailed();
         return;
       }
 
@@ -309,6 +331,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
               setServerListWarning(
                 "Watchlist saved on this device only — server refused a sync that would erase saved tickers.",
               );
+              notifyWatchlistSyncFailed();
             }
             return false;
           }
@@ -339,7 +362,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
       );
       return task;
     },
-    [applyCollections],
+    [applyCollections, notifyWatchlistSyncFailed],
   );
 
   const refreshFromServer = useCallback(async () => {
@@ -447,6 +470,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
             setServerListWarning(
               "Watchlist saved on this device only — could not sync to your account yet.",
             );
+            notifyWatchlistSyncFailed();
           }
           clearGuestWatchlistStorage(uid);
           return;
@@ -498,7 +522,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
       cancelled = true;
       subscription.unsubscribe();
     };
-  }, [applyCollections, reconcileCollectionsWithServer]);
+  }, [applyCollections, notifyWatchlistSyncFailed, reconcileCollectionsWithServer]);
 
   const addToWatchlist = useCallback(
     (storageKey: string, watchlistId: string) => {

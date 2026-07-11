@@ -286,3 +286,13 @@ export function savePersistedPortfolioState(state: PersistedPortfolioState): voi
     /* quota or private mode */
   }
 }
+
+/** True when any portfolio has saved trades or holdings (not an empty seed workspace). */
+export function portfolioStateHasLedgerData(state: PersistedPortfolioState): boolean {
+  for (const portfolio of state.portfolios) {
+    const txs = state.transactionsByPortfolioId[portfolio.id] ?? [];
+    const holdings = state.holdingsByPortfolioId[portfolio.id] ?? [];
+    if (txs.length > 0 || holdings.length > 0) return true;
+  }
+  return false;
+}

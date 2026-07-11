@@ -37,7 +37,8 @@ import { TransactionPortfolioField } from "@/components/portfolio/transaction-po
 import { PortfoliosBreadcrumbs } from "@/components/portfolios/portfolios-breadcrumbs";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
-import { netCashUsd, totalCostBasisInvested, totalNetWorth } from "@/lib/portfolio/overview-metrics";
+import { totalCostBasisInvested } from "@/lib/portfolio/overview-metrics";
+import { tradeSymbolsFromHistory } from "@/lib/portfolio/realized-pnl-from-trades";
 import { AssetChartSkeleton } from "@/components/ui/chart-skeleton";
 import { cn } from "@/lib/utils";
 
@@ -222,8 +223,9 @@ export function PortfolioPageView({
     [router, tabBasePath],
   );
 
-  const overviewNetWorth = totalNetWorth(holdings, netCashUsd(transactions));
-  const showOverviewHoldingsBlock = overviewNetWorth > 0;
+  const hasPortfolioLedger =
+    holdings.length > 0 || tradeSymbolsFromHistory(transactions).length > 0;
+  const showOverviewHoldingsBlock = hasPortfolioLedger;
   const benchmarkInvestedUsd = totalCostBasisInvested(holdings);
 
   const panelClass = (tab: PortfolioViewTab) =>

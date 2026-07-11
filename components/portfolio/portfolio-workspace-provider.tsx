@@ -63,6 +63,7 @@ import {
   loadLastSelectedPortfolioId,
   loadPersistedPortfolioStateForUser,
   parsePersistedPortfolioUnknown,
+  portfolioStateHasLedgerData,
   saveLastSelectedPortfolioId,
   savePersistedPortfolioStateForUser,
   type PersistedPortfolioState,
@@ -693,15 +694,29 @@ export function PortfolioWorkspaceProvider({
             if (remote && remote.portfolios.length > 0) {
               const localIsNewer =
                 local && local.portfolios.length > 0 && localTime > remoteTime;
-              if (localIsNewer) {
+              const remoteHasLedger = portfolioStateHasLedgerData(remote);
+              const localHasLedger = local ? portfolioStateHasLedgerData(local) : false;
+
+              if (localIsNewer && remoteHasLedger && !localHasLedger) {
+                applyWorkspaceState(remote);
+                savePersistedPortfolioStateForUser(userId, {
+                  ...remote,
+                  savedAt: remoteTime > 0 ? remoteTime : Date.now(),
+                });
+            } else if (localIsNewer) {
                 applyWorkspaceState(local);
                 savePersistedPortfolioStateForUser(userId, local);
-                await fetch("/api/portfolio/workspace", {
+                const putRes = await fetch("/api/portfolio/workspace", {
                   method: "PUT",
                   credentials: "include",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({ state: local }),
                 });
+                if (!putRes.ok) {
+                  toast.error("Portfolio not synced", {
+                    description: "Saved on this device — we could not update your account yet.",
+                  });
+                }
               } else {
                 applyWorkspaceState(remote);
                 savePersistedPortfolioStateForUser(userId, {
@@ -709,14 +724,21 @@ export function PortfolioWorkspaceProvider({
                   savedAt: remoteTime > 0 ? remoteTime : Date.now(),
                 });
               }
-            } else if (local) {
+            } else if (local && portfolioStateHasLedgerData(local)) {
               applyWorkspaceState(local);
-              await fetch("/api/portfolio/workspace", {
+              const putRes = await fetch("/api/portfolio/workspace", {
                 method: "PUT",
                 credentials: "include",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ state: local }),
               });
+              if (!putRes.ok) {
+                toast.error("Portfolio not synced", {
+                  description: "Saved on this device — we could not update your account yet.",
+                });
+              }
+            } else if (local) {
+              applyWorkspaceState(local);
             }
           } else if (local) {
             applyWorkspaceState(local);
@@ -738,6 +760,7 @@ export function PortfolioWorkspaceProvider({
   /** Immediate localStorage write so data survives fast sign-out / navigation (debounce cancel). */
   useEffect(() => {
     if (!workspaceHydrated) return;
+    if (appliedLedgerFingerprintRef.current === null) return;
     const snapshot: PersistedPortfolioState = {
       v: 1,
       savedAt: Date.now(),
@@ -759,6 +782,7 @@ export function PortfolioWorkspaceProvider({
   /** Debounced cloud sync (local is already up to date via effect above). */
   useEffect(() => {
     if (!workspaceHydrated) return;
+    if (appliedLedgerFingerprintRef.current === null) return;
     const id = window.setTimeout(() => {
       const snapshot: PersistedPortfolioState = {
         v: 1,
@@ -773,6 +797,12 @@ export function PortfolioWorkspaceProvider({
         credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ state: snapshot }),
+      }).then((res) => {
+        if (!res.ok) {
+          toast.error("Portfolio not synced", {
+            description: "Saved on this device — we could not update your account yet.",
+          });
+        }
       });
     }, 500);
     return () => window.clearTimeout(id);

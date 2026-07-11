@@ -349,6 +349,7 @@ export function WatchlistTable() {
     activeTickerSections,
     serverListWarning,
     storageHydrated,
+    watchedUnion,
   } = useWatchlist();
   const { items, loading, ready, error } = useWatchlistEnrichedItems({ enabled: true });
 
@@ -387,12 +388,7 @@ export function WatchlistTable() {
 
       {!storageHydrated ? <WatchlistTableSkeleton /> : null}
 
-      {storageHydrated &&
-      serverListWarning &&
-      watched.size > 0 &&
-      ready &&
-      !error &&
-      !hasUsableRows ? (
+      {storageHydrated && serverListWarning && (watched.size > 0 || watchedUnion.size > 0) ? (
         <p className="text-[13px] leading-5 text-[#A16207]" role="status">
           {serverListWarning}
         </p>
