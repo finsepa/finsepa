@@ -146,6 +146,12 @@ export function createDefaultWatchlistCollectionsSnapshot(): WatchlistCollection
   };
 }
 
+export function cloneWatchlistCollectionsSnapshot(
+  snapshot: WatchlistCollectionsSnapshot,
+): WatchlistCollectionsSnapshot {
+  return JSON.parse(JSON.stringify(snapshot)) as WatchlistCollectionsSnapshot;
+}
+
 export function readWatchlistCollections(userId: string | null = null): WatchlistCollectionsSnapshot {
   if (typeof window === "undefined") return migrateLegacyCollections(userId);
   try {
