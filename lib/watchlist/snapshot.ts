@@ -290,13 +290,25 @@ export function mergeServerIdsWithLocalSnapshot(
     return {
       id: serverList?.id ?? localList.id,
       name: localList.name,
-      tickers: options?.preferLocalTickers
-        ? [...localList.tickers]
-        : mergeListTickers(localList.tickers, serverList?.tickers ?? []),
+      tickers:
+        options?.preferLocalTickers && localList.tickers.length > 0
+          ? [...localList.tickers]
+          : mergeListTickers(localList.tickers, serverList?.tickers ?? []),
       sections: [...layout.sections],
       tickerSections: { ...layout.tickerSections },
     };
   });
+
+  for (const serverList of server.collections) {
+    if (lists.some((list) => collectionNamesMatch(list.name, serverList.name))) continue;
+    lists.push({
+      id: serverList.id,
+      name: serverList.name,
+      tickers: [...serverList.tickers],
+      sections: [...serverList.sections],
+      tickerSections: { ...serverList.tickerSections },
+    });
+  }
 
   const draft: WatchlistCollectionsSnapshot = {
     v: 2,
@@ -455,6 +467,9 @@ export function shouldAdoptServerSnapshot(
   server: WatchlistServerSnapshot,
 ): boolean {
   if (localHasRemovalsPendingSync(local, server)) return false;
+
+  // Never stomp local additions that have not reached the server yet.
+  if (localHasTickersAheadOfServer(local, server)) return false;
 
   // Never replace a populated local watchlist with an empty server snapshot.
   if (unionWatchlistTickers(local).length > 0 && serverSnapshotHasNoTickers(server)) {
@@ -649,4 +664,42 @@ export function localSnapshotToSyncInput(
     })),
     activeName: active?.name ?? "Watchlist",
   };
+}
+
+/** Include server-only collections so sync does not try to delete saved lists. */
+export function localSnapshotToSyncInputWithServer(
+  local: WatchlistCollectionsSnapshot,
+  server?: WatchlistServerSnapshot | null,
+): { collections: WatchlistSyncCollectionInput[]; activeName: string } {
+  const base = localSnapshotToSyncInput(local);
+  if (!server?.collections.length) return base;
+
+  const collections = base.collections.map((entry) => ({
+    ...entry,
+    tickers: [...entry.tickers],
+    sections: [...(entry.sections ?? [])],
+    tickerSections: { ...(entry.tickerSections ?? {}) },
+  }));
+
+  for (const serverCollection of server.collections) {
+    const existing = collections.find((entry) =>
+      collectionNamesMatch(entry.name, serverCollection.name),
+    );
+    if (!existing) {
+      collections.push({
+        name: serverCollection.name,
+        tickers: [...serverCollection.tickers],
+        sections: [...serverCollection.sections],
+        tickerSections: { ...serverCollection.tickerSections },
+      });
+      continue;
+    }
+
+    const localTickers = new Set(existing.tickers);
+    for (const ticker of serverCollection.tickers) {
+      if (!localTickers.has(ticker)) existing.tickers.push(ticker);
+    }
+  }
+
+  return { collections, activeName: base.activeName };
 }

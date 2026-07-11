@@ -1,7 +1,7 @@
 import type { WatchlistCollectionsSnapshot } from "@/lib/watchlist/collections";
 import { collectionNamesMatch } from "@/lib/watchlist/collection-names";
 import type { WatchlistServerSnapshot, WatchlistSyncCollectionInput } from "@/lib/watchlist/types";
-import { localSnapshotToSyncInput } from "@/lib/watchlist/snapshot";
+import { localSnapshotToSyncInput, localSnapshotToSyncInputWithServer } from "@/lib/watchlist/snapshot";
 import { watchlistApiFetch } from "@/lib/watchlist/watchlist-api-fetch";
 
 export async function fetchWatchlistSnapshot(): Promise<{
@@ -24,6 +24,7 @@ export async function fetchWatchlistSnapshot(): Promise<{
       snapshot: {
         collections: data.collections,
         activeCollectionId,
+        updatedAt: data.updatedAt ?? null,
       },
       warning: null,
     };
@@ -61,6 +62,26 @@ export async function syncWatchlistSnapshotToServer(input: {
     console.error("[watchlist sync] error", error);
     return null;
   }
+}
+
+export function findServerCollectionIdByName(
+  server: WatchlistServerSnapshot | null | undefined,
+  collectionName: string,
+): string | null {
+  if (!server) return null;
+  return (
+    server.collections.find((collection) => collectionNamesMatch(collection.name, collectionName))
+      ?.id ?? null
+  );
+}
+
+/** Sync local state without dropping server-only lists or tickers. */
+export async function syncWatchlistCollectionsToServer(
+  local: WatchlistCollectionsSnapshot,
+  server?: WatchlistServerSnapshot | null,
+): Promise<WatchlistServerSnapshot | null> {
+  const knownServer = server ?? (await refreshWatchlistSnapshotFromServer());
+  return syncWatchlistSnapshotToServer(localSnapshotToSyncInputWithServer(local, knownServer));
 }
 
 export async function postWatchlistTicker(ticker: string, collectionId: string): Promise<boolean> {
@@ -172,7 +193,7 @@ export async function resolveServerCollectionId(
     if (byName) return byName.id;
   }
 
-  const uploaded = await syncWatchlistSnapshotToServer(localSnapshotToSyncInput(local));
+  const uploaded = await syncWatchlistCollectionsToServer(local, server);
   if (!uploaded) return null;
 
   const match = uploaded.collections.find((collection) =>

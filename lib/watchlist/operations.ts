@@ -566,11 +566,8 @@ export async function syncWatchlistFromClient(
     );
     if (!hasLocalMatch) {
       const orphanItemCount = existingItems.filter((item) => item.collection_id === orphan.id).length;
-      if (orphanItemCount > 0) {
-        throw new WatchlistDestructiveSyncError(
-          `Refusing to delete watchlist "${orphan.name}" with ${orphanItemCount} saved tickers.`,
-        );
-      }
+      // Keep populated server lists that are missing from a partial client snapshot.
+      if (orphanItemCount > 0) continue;
       await deleteWatchlistCollectionOnServer(supabase, userId, orphan.id);
     }
   }

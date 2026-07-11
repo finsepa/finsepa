@@ -63,13 +63,14 @@ import { WATCHLIST_MUTATED_EVENT } from "@/lib/watchlist/constants";
 import {
   deleteWatchlistCollectionOnClient,
   fetchWatchlistSnapshot,
+  findServerCollectionIdByName,
   postWatchlistTicker,
   refreshWatchlistSnapshotFromServer,
   renameWatchlistOnServer,
   resetNewAccountWatchlistOnServer,
   resolveServerCollectionId,
   setActiveWatchlistOnServer,
-  syncWatchlistSnapshotToServer,
+  syncWatchlistCollectionsToServer,
 } from "@/lib/watchlist/fetch-watchlist-api";
 import {
   clearGuestWatchlistPendingMerge,
@@ -95,7 +96,6 @@ import {
   hasClientOnlyWatchlistIds,
   localHasUnsyncedChanges,
   localSnapshotShouldUploadFirst,
-  localSnapshotToSyncInput,
   mergeServerIdsWithLocalSnapshot,
   mergeServerWithLocalSnapshot,
   serverSnapshotHasNoTickers,
@@ -233,7 +233,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
 
       if (localHasUnsyncedChanges(current)) {
         if (localSnapshotShouldUploadFirst(current, serverSnapshot)) {
-          const uploaded = await syncWatchlistSnapshotToServer(localSnapshotToSyncInput(current));
+          const uploaded = await syncWatchlistCollectionsToServer(current, serverSnapshot);
           if (uploaded) {
             applyCollections(
               applyMutationServerResponse(uploaded, collectionsRef.current),
@@ -244,13 +244,16 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
             setServerListWarning(
               "Watchlist saved on this device only — could not sync sections to your account yet.",
             );
+            applyCollections(mergeServerWithLocalSnapshot(serverSnapshot, collectionsRef.current));
           }
+        } else {
+          applyCollections(mergeServerWithLocalSnapshot(serverSnapshot, collectionsRef.current));
         }
         return;
       }
 
       if (localSnapshotShouldUploadFirst(current, serverSnapshot)) {
-        const uploaded = await syncWatchlistSnapshotToServer(localSnapshotToSyncInput(current));
+        const uploaded = await syncWatchlistCollectionsToServer(current, serverSnapshot);
         if (uploaded) {
           applyCollections(
             applyMutationServerResponse(uploaded, collectionsRef.current),
@@ -300,9 +303,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
         while (syncDirtyRef.current) {
           syncDirtyRef.current = false;
           const snapshotToSync = collectionsRef.current;
-          const uploaded = await syncWatchlistSnapshotToServer(
-            localSnapshotToSyncInput(snapshotToSync),
-          );
+          const uploaded = await syncWatchlistCollectionsToServer(snapshotToSync);
           if (!uploaded) {
             if (unionWatchlistTickers(collectionsRef.current).length > 0) {
               setServerListWarning(
@@ -390,6 +391,21 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
           return;
         }
 
+        if (
+          unionWatchlistTickers(collectionsRef.current).length === 0 &&
+          !serverSnapshotHasNoTickers(snapshot)
+        ) {
+          applyCollections(
+            applyServerSnapshotPreservingLocalNames(snapshot, collectionsRef.current, {
+              preferServerNames: true,
+            }),
+            { fromServerSync: true, serverUpdatedAt: snapshot.updatedAt },
+          );
+          setServerListWarning(null);
+          clearGuestWatchlistStorage(uid);
+          return;
+        }
+
         let serverSnapshot = snapshot;
 
         if (
@@ -417,8 +433,9 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
           serverSnapshotHasNoTickers(serverSnapshot) &&
           unionWatchlistTickers(collectionsRef.current).length > 0
         ) {
-          const uploaded = await syncWatchlistSnapshotToServer(
-            localSnapshotToSyncInput(collectionsRef.current),
+          const uploaded = await syncWatchlistCollectionsToServer(
+            collectionsRef.current,
+            serverSnapshot,
           );
           if (uploaded) {
             setServerListWarning(null);
@@ -520,9 +537,15 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
       void (async () => {
         const optimistic = collectionsRef.current;
 
+        const serverSnapshot = await refreshWatchlistSnapshotFromServer();
+
         let serverCollectionId = isServerWatchlistCollectionId(resolvedId)
           ? resolvedId
-          : await resolveServerCollectionId(optimistic, resolvedId, targetList.name);
+          : findServerCollectionIdByName(serverSnapshot, targetList.name);
+
+        if (!serverCollectionId) {
+          serverCollectionId = await resolveServerCollectionId(optimistic, resolvedId, targetList.name);
+        }
 
         if (serverCollectionId && isServerWatchlistCollectionId(serverCollectionId)) {
           const posted = await postWatchlistTicker(ticker, serverCollectionId);
@@ -861,7 +884,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
       void (async () => {
         const serverId = await resolveServerCollectionId(previous, previous.activeId, previousName);
         if (!serverId) {
-          const uploaded = await syncWatchlistSnapshotToServer(localSnapshotToSyncInput(optimistic));
+          const uploaded = await syncWatchlistCollectionsToServer(optimistic);
           if (uploaded) {
             applyCollections(applyMutationServerResponse(uploaded, optimistic));
             toast.success("Watchlist renamed.");
@@ -870,7 +893,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
         }
 
         if (serverId.startsWith("wl_")) {
-          const uploaded = await syncWatchlistSnapshotToServer(localSnapshotToSyncInput(optimistic));
+          const uploaded = await syncWatchlistCollectionsToServer(optimistic);
           if (uploaded) {
             applyCollections(applyMutationServerResponse(uploaded, optimistic));
             toast.success("Watchlist renamed.");
@@ -880,7 +903,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
 
         const ok = await renameWatchlistOnServer(serverId, trimmed);
         if (ok) {
-          const uploaded = await syncWatchlistSnapshotToServer(localSnapshotToSyncInput(optimistic));
+          const uploaded = await syncWatchlistCollectionsToServer(optimistic);
           if (uploaded) {
             applyCollections(applyMutationServerResponse(uploaded, optimistic));
             toast.success("Watchlist renamed.");
@@ -895,7 +918,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        const uploaded = await syncWatchlistSnapshotToServer(localSnapshotToSyncInput(optimistic));
+        const uploaded = await syncWatchlistCollectionsToServer(optimistic);
         if (uploaded) {
           applyCollections(applyMutationServerResponse(uploaded, optimistic));
           toast.success("Watchlist renamed.");
@@ -926,7 +949,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
         let working = next;
 
         if (hasClientOnlyWatchlistIds(working)) {
-          const uploaded = await syncWatchlistSnapshotToServer(localSnapshotToSyncInput(working));
+          const uploaded = await syncWatchlistCollectionsToServer(working);
           if (uploaded) {
             const remapped = mergeServerIdsWithLocalSnapshot(uploaded, working, targetList.name);
             if (remapped) {

@@ -17,7 +17,7 @@ const successToastIcon = (
 export function Toaster({ ...props }: ToasterProps) {
   return (
     <Sonner
-      theme="dark"
+      theme="light"
       className={[
         "toaster group",
         "[&_[data-sonner-toaster]]:z-[300]",
@@ -29,17 +29,16 @@ export function Toaster({ ...props }: ToasterProps) {
       toastOptions={{
         classNames: {
           toast:
-            "group-[.toaster]:relative group-[.toaster]:justify-center group-[.toaster]:text-center group-[.toaster]:rounded-xl group-[.toaster]:border group-[.toaster]:border-[#27272A] group-[.toaster]:bg-[#09090B] group-[.toaster]:px-5 group-[.toaster]:py-3.5 group-[.toaster]:pt-9 group-[.toaster]:pr-11 group-[.toaster]:text-white group-[.toaster]:shadow-[0px_10px_16px_-3px_rgba(0,0,0,0.35),0px_4px_6px_0px_rgba(0,0,0,0.2)]",
+            "group-[.toaster]:relative group-[.toaster]:justify-center group-[.toaster]:text-center group-[.toaster]:rounded-xl group-[.toaster]:border group-[.toaster]:border-[#E4E4E7] group-[.toaster]:bg-white group-[.toaster]:px-5 group-[.toaster]:py-3.5 group-[.toaster]:pt-9 group-[.toaster]:pr-11 group-[.toaster]:text-[#09090B] group-[.toaster]:shadow-[0px_10px_16px_-3px_rgba(10,10,10,0.1),0px_4px_6px_0px_rgba(10,10,10,0.04)]",
           content: "group-[.toast]:items-center group-[.toast]:text-center",
-          title: "group-[.toast]:text-white group-[.toast]:text-sm group-[.toast]:font-semibold",
-          description: "group-[.toast]:!text-[#A1A1AA] group-[.toast]:text-sm",
+          title: "group-[.toast]:text-[#09090B] group-[.toast]:text-sm group-[.toast]:font-semibold",
+          description: "group-[.toast]:text-[#71717A] group-[.toast]:text-sm",
           icon: "group-[.toast]:!mx-0 group-[.toast]:!mr-2",
           closeButton:
-            "group-[.toast]:!left-auto group-[.toast]:!right-3 group-[.toast]:!top-3 group-[.toast]:!translate-y-0 group-[.toast]:!border-[#3F3F46] group-[.toast]:!bg-[#18181B] group-[.toast]:!text-[#A1A1AA] group-[.toast]:hover:!border-[#52525B] group-[.toast]:hover:!bg-[#27272A] group-[.toast]:hover:!text-white",
+            "group-[.toast]:!left-auto group-[.toast]:!right-3 group-[.toast]:!top-3 group-[.toast]:!translate-y-0 group-[.toast]:!border-[#E4E4E7] group-[.toast]:!bg-white group-[.toast]:!text-[#71717A] group-[.toast]:hover:!border-[#D4D4D8] group-[.toast]:hover:!bg-[#F4F4F5] group-[.toast]:hover:!text-[#09090B]",
           actionButton:
-            "group-[.toast]:!rounded-lg group-[.toast]:!bg-white group-[.toast]:!px-3 group-[.toast]:!py-1.5 group-[.toast]:!text-sm group-[.toast]:!font-medium group-[.toast]:!text-[#09090B]",
-          cancelButton:
-            "group-[.toast]:!rounded-lg group-[.toast]:!border group-[.toast]:!border-[#3F3F46] group-[.toast]:!bg-transparent group-[.toast]:!text-sm group-[.toast]:!text-[#A1A1AA]",
+            "group-[.toast]:!rounded-lg group-[.toast]:!bg-[#09090B] group-[.toast]:!px-3 group-[.toast]:!py-1.5 group-[.toast]:!text-sm group-[.toast]:!font-medium group-[.toast]:!text-white",
+          cancelButton: "group-[.toast]:!rounded-lg group-[.toast]:!text-sm group-[.toast]:!text-[#71717A]",
         },
       }}
       {...props}
