@@ -1,5 +1,4 @@
 import type { WatchlistCollectionsSnapshot } from "@/lib/watchlist/collections";
-import type { WatchlistSection } from "@/lib/watchlist/sections";
 import { collectionNamesMatch } from "@/lib/watchlist/collection-names";
 import type { WatchlistServerSnapshot, WatchlistSyncCollectionInput } from "@/lib/watchlist/types";
 import { localSnapshotToSyncInput, localSnapshotToSyncInputWithServer } from "@/lib/watchlist/snapshot";
@@ -113,63 +112,11 @@ export async function deleteWatchlistTicker(
   return false;
 }
 
-export async function createWatchlistCollectionOnClient(
-  name: string,
-): Promise<WatchlistServerSnapshot | null> {
-  try {
-    const res = await watchlistApiFetch("/api/watchlist/collections", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name }),
-    });
-    if (!res.ok) return null;
-    return (await res.json()) as WatchlistServerSnapshot;
-  } catch {
-    return null;
-  }
-}
-
-/** @deprecated Use createWatchlistCollectionOnClient when the response snapshot is needed. */
 export async function createWatchlistOnServer(name: string): Promise<boolean> {
-  return (await createWatchlistCollectionOnClient(name)) != null;
-}
-
-export async function patchWatchlistCollectionSections(
-  collectionId: string,
-  sections: WatchlistSection[],
-  tickerSections: Record<string, string>,
-): Promise<boolean> {
-  const res = await watchlistApiFetch(
-    `/api/watchlist/collections/${encodeURIComponent(collectionId)}/sections`,
-    {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sections, tickerSections }),
-    },
-  );
-  return res.ok;
-}
-
-export async function reorderWatchlistCollectionItems(
-  collectionId: string,
-  tickers: string[],
-): Promise<boolean> {
-  const res = await watchlistApiFetch(
-    `/api/watchlist/collections/${encodeURIComponent(collectionId)}/items/reorder`,
-    {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tickers }),
-    },
-  );
-  return res.ok;
-}
-
-export async function reorderWatchlistCollections(collectionIds: string[]): Promise<boolean> {
-  const res = await watchlistApiFetch("/api/watchlist/collections/reorder", {
-    method: "PATCH",
+  const res = await watchlistApiFetch("/api/watchlist/collections", {
+    method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ collectionIds }),
+    body: JSON.stringify({ name }),
   });
   return res.ok;
 }
@@ -235,9 +182,9 @@ export async function resetNewAccountWatchlistOnServer(): Promise<WatchlistServe
   }
 }
 
-/** Resolve a client-only wl_* id to a server collection UUID without full sync. */
+/** Resolve a client-only wl_* id to a server collection UUID (syncs if needed). */
 export async function resolveServerCollectionId(
-  _local: WatchlistCollectionsSnapshot,
+  local: WatchlistCollectionsSnapshot,
   collectionId: string,
   collectionName: string,
 ): Promise<string | null> {
@@ -245,10 +192,17 @@ export async function resolveServerCollectionId(
 
   const server = await refreshWatchlistSnapshotFromServer();
   if (server) {
-    const byName = findServerCollectionIdByName(server, collectionName);
-    if (byName) return byName;
+    const byName = server.collections.find((collection) =>
+      collectionNamesMatch(collection.name, collectionName),
+    );
+    if (byName) return byName.id;
   }
 
-  const created = await createWatchlistCollectionOnClient(collectionName.trim());
-  return created ? findServerCollectionIdByName(created, collectionName) : null;
+  const uploaded = await syncWatchlistCollectionsToServer(local, server);
+  if (!uploaded) return null;
+
+  const match = uploaded.collections.find((collection) =>
+    collectionNamesMatch(collection.name, collectionName),
+  );
+  return match?.id ?? null;
 }

@@ -10,7 +10,6 @@ import {
   emptyWatchlistSectionLayout,
   parseSectionsLayout,
   serializeSectionsLayout,
-  type WatchlistSection,
 } from "@/lib/watchlist/sections";
 import type {
   WatchlistCollectionRow,
@@ -389,117 +388,16 @@ async function updateCollectionSectionsLayout(
   collectionId: string,
   input: WatchlistSyncCollectionInput,
 ): Promise<void> {
-  await updateWatchlistCollectionSectionsLayoutOnServer(supabase, userId, collectionId, {
+  const layout = parseSectionsLayout({
     sections: input.sections ?? [],
     tickerSections: input.tickerSections ?? {},
   });
-}
-
-/** Updates only `sections_layout` — never adds or removes ticker rows. */
-export async function updateWatchlistCollectionSectionsLayoutOnServer(
-  supabase: SupabaseClient,
-  userId: string,
-  collectionId: string,
-  layout: { sections: WatchlistSection[]; tickerSections: Record<string, string> },
-): Promise<WatchlistCollectionRow> {
-  const collections = await listCollectionsForUser(supabase, userId);
-  if (!collections.some((c) => c.id === collectionId)) {
-    throw new WatchlistValidationError("Watchlist not found.");
-  }
-
-  const normalized = parseSectionsLayout({
-    sections: layout.sections,
-    tickerSections: layout.tickerSections,
-  });
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from(COLLECTIONS_TABLE)
-    .update({ sections_layout: serializeSectionsLayout(normalized) })
+    .update({ sections_layout: serializeSectionsLayout(layout) })
     .eq("id", collectionId)
-    .eq("user_id", userId)
-    .select("id,user_id,name,sort_order,created_at,sections_layout")
-    .maybeSingle();
-
+    .eq("user_id", userId);
   if (error) throw new Error(error.message);
-  if (!data) throw new WatchlistValidationError("Watchlist not found.");
-  await touchWatchlistUserState(supabase, userId);
-  return data as WatchlistCollectionRow;
-}
-
-/**
- * Reorders existing ticker rows only. Tickers in the payload that are not on the server are
- * ignored (never inserted). Server tickers omitted from the payload keep their relative order at
- * the end — never deleted.
- */
-export async function reorderWatchlistCollectionItemsOnServer(
-  supabase: SupabaseClient,
-  userId: string,
-  collectionId: string,
-  orderedTickers: string[],
-): Promise<void> {
-  const collections = await listCollectionsForUser(supabase, userId);
-  if (!collections.some((c) => c.id === collectionId)) {
-    throw new WatchlistValidationError("Watchlist not found.");
-  }
-
-  const items = (await listItemsForUser(supabase, userId)).filter(
-    (item) => item.collection_id === collectionId,
-  );
-  if (!items.length) return;
-
-  const itemByTicker = new Map(
-    items.map((item) => [normalizeWatchlistTicker(item.ticker), item] as const),
-  );
-  const serverTickers = items.map((item) => normalizeWatchlistTicker(item.ticker));
-  const serverSet = new Set(serverTickers);
-
-  const clientOrder = orderedTickers
-    .map(normalizeWatchlistTicker)
-    .filter((ticker, index, all) => serverSet.has(ticker) && all.indexOf(ticker) === index);
-  const remaining = serverTickers.filter((ticker) => !clientOrder.includes(ticker));
-  const finalOrder = [...clientOrder, ...remaining];
-
-  for (let index = 0; index < finalOrder.length; index++) {
-    const ticker = finalOrder[index]!;
-    const row = itemByTicker.get(ticker);
-    if (!row || row.sort_order === index) continue;
-    const { error } = await supabase
-      .from(ITEMS_TABLE)
-      .update({ sort_order: index })
-      .eq("id", row.id)
-      .eq("user_id", userId);
-    if (error) throw new Error(error.message);
-  }
-
-  await touchWatchlistUserState(supabase, userId);
-}
-
-/** Updates only `sort_order` on existing collections — never touches ticker rows. */
-export async function reorderWatchlistCollectionsOnServer(
-  supabase: SupabaseClient,
-  userId: string,
-  collectionIds: string[],
-): Promise<void> {
-  const collections = await listCollectionsForUser(supabase, userId);
-  const knownIds = new Set(collections.map((collection) => collection.id));
-  const ordered = collectionIds.filter((id, index, all) => knownIds.has(id) && all.indexOf(id) === index);
-  const remaining = collections
-    .map((collection) => collection.id)
-    .filter((id) => !ordered.includes(id));
-  const finalOrder = [...ordered, ...remaining];
-
-  for (let index = 0; index < finalOrder.length; index++) {
-    const collectionId = finalOrder[index]!;
-    const row = collections.find((collection) => collection.id === collectionId);
-    if (!row || row.sort_order === index) continue;
-    const { error } = await supabase
-      .from(COLLECTIONS_TABLE)
-      .update({ sort_order: index })
-      .eq("id", collectionId)
-      .eq("user_id", userId);
-    if (error) throw new Error(error.message);
-  }
-
-  await touchWatchlistUserState(supabase, userId);
 }
 
 export async function deleteWatchlistCollectionOnServer(

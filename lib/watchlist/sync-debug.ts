@@ -8,7 +8,6 @@ export type WatchlistSyncDebugEvent =
   | "mutation_start"
   | "mutation_success"
   | "mutation_failure"
-  | "mutation_stale"
   | "full_sync_post";
 
 function enabled(): boolean {
