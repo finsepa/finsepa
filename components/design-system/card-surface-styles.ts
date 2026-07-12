@@ -24,6 +24,9 @@ export const MOBILE_INSET_CARD_CLASS = cn(
   MOBILE_CARD_SURFACE_CLASS,
 );
 
+/** Stock overview card section titles (Key Indicators, Key Stats) — watchlist rail grey label. */
+export const STOCK_OVERVIEW_SECTION_TITLE_CLASS = "text-[14px] font-medium leading-5 text-[#71717A]";
+
 /** Panel cards (crypto movers, empty states) — 12px desktop, 16px mobile. */
 export const MOBILE_PANEL_CARD_CLASS = cn(
   "rounded-[12px] border border-[#E4E4E7] bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] max-md:rounded-2xl",

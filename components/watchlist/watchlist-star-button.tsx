@@ -15,7 +15,7 @@ import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
 import { cn } from "@/lib/utils";
 
 const watchlistRowRemoveButtonClass =
-  "flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] text-[#71717A] transition-colors hover:bg-[#F4F4F5] hover:text-[#DC2626] group-hover:bg-[#F4F4F5] group-hover:text-[#DC2626] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2";
+  "flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] text-[#71717A] transition-colors hover:bg-[#F4F4F5] hover:text-[#DC2626] focus-visible:bg-[#F4F4F5] focus-visible:text-[#DC2626] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2";
 
 type ToggleProps = {
   /** Stored watchlist key (plain ticker, CRYPTO:BTC, INDEX:GSPC.INDX, …). */

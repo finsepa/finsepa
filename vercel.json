@@ -46,6 +46,22 @@
     {
       "path": "/api/cron/stock-minute-bar-backfill",
       "schedule": "0 3 * * 1-5"
+    },
+    {
+      "path": "/api/cron/key-indicators-warm?shard=0",
+      "schedule": "30 6 * * 0"
+    },
+    {
+      "path": "/api/cron/key-indicators-warm?shard=1",
+      "schedule": "30 6 * * 1"
+    },
+    {
+      "path": "/api/cron/key-indicators-warm?shard=2",
+      "schedule": "30 6 * * 2"
+    },
+    {
+      "path": "/api/cron/key-indicators-warm?shard=3",
+      "schedule": "30 6 * * 3"
     }
   ]
 }

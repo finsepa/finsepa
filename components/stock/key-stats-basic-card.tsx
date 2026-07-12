@@ -3,6 +3,7 @@
 import { CalendarDays } from "@/lib/icons";
 import { useEffect, useState } from "react";
 
+import { STOCK_OVERVIEW_SECTION_TITLE_CLASS } from "@/components/design-system/card-surface-styles";
 import { consensusLabelTextClass } from "@/lib/market/analyst-consensus-tone";
 import { cn } from "@/lib/utils";
 
@@ -73,7 +74,7 @@ export function KeyStatsBasicCard({ ticker }: { ticker: string }) {
 
   return (
     <div className="mb-5 rounded-xl border border-[#E4E4E7] bg-white p-4">
-      <h3 className="mb-2 text-[14px] font-semibold leading-5 text-[#09090B]">Basic</h3>
+      <h3 className={cn("mb-2", STOCK_OVERVIEW_SECTION_TITLE_CLASS)}>Basic</h3>
       {loading ? (
         <div className="space-y-2 pt-0.5" aria-hidden>
           {displayRows.map((r) => (

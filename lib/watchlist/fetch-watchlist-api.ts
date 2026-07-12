@@ -4,24 +4,36 @@ import type { WatchlistSection } from "@/lib/watchlist/sections";
 import type { WatchlistServerSnapshot, WatchlistSyncCollectionInput } from "@/lib/watchlist/types";
 import { localSnapshotToSyncInput, localSnapshotToSyncInputWithServer } from "@/lib/watchlist/snapshot";
 import { logWatchlistSync } from "@/lib/watchlist/sync-debug";
+import { logWatchlistPatchRequest, logWatchlistRefetch, logWatchlistSyncRequest } from "@/lib/watchlist/state-audit";
 import { watchlistApiFetch } from "@/lib/watchlist/watchlist-api-fetch";
 
 export async function fetchWatchlistSnapshot(): Promise<{
   snapshot: WatchlistServerSnapshot | null;
   warning: "db_unavailable" | null;
 }> {
+  logWatchlistRefetch("start", "GET /api/watchlist");
   try {
     const res = await watchlistApiFetch("/api/watchlist");
-    if (!res.ok) return { snapshot: null, warning: null };
+    if (!res.ok) {
+      logWatchlistRefetch("response", "GET /api/watchlist", { ok: false, status: res.status });
+      return { snapshot: null, warning: null };
+    }
     const data = (await res.json()) as WatchlistServerSnapshot & { warning?: string };
     if (data.warning === "db_unavailable") {
+      logWatchlistRefetch("response", "GET /api/watchlist", { ok: false, warning: "db_unavailable" });
       return { snapshot: null, warning: "db_unavailable" };
     }
     if (!Array.isArray(data.collections) || data.collections.length === 0) {
+      logWatchlistRefetch("response", "GET /api/watchlist", { ok: false, empty: true });
       return { snapshot: null, warning: null };
     }
     const activeCollectionId =
       data.activeCollectionId || data.collections[0]?.id || "";
+    logWatchlistRefetch("response", "GET /api/watchlist", {
+      ok: true,
+      collectionCount: data.collections.length,
+      itemCount: data.collections.reduce((sum, c) => sum + c.tickers.length, 0),
+    });
     return {
       snapshot: {
         collections: data.collections,
@@ -31,6 +43,7 @@ export async function fetchWatchlistSnapshot(): Promise<{
       warning: null,
     };
   } catch {
+    logWatchlistRefetch("response", "GET /api/watchlist", { ok: false, error: true });
     return { snapshot: null, warning: null };
   }
 }
@@ -41,6 +54,10 @@ export async function syncWatchlistSnapshotToServer(input: {
   activeName: string;
 }): Promise<WatchlistServerSnapshot | null> {
   try {
+    logWatchlistSyncRequest("start", "POST /api/watchlist/sync", {
+      collectionCount: input.collections.length,
+      itemCount: input.collections.reduce((sum, c) => sum + c.tickers.length, 0),
+    });
     logWatchlistSync("full_sync_post");
     const res = await watchlistApiFetch("/api/watchlist/sync", {
       method: "POST",
@@ -61,8 +78,10 @@ export async function syncWatchlistSnapshotToServer(input: {
       }
       return null;
     }
+    logWatchlistSyncRequest("response", "POST /api/watchlist/sync", { ok: true });
     return (await res.json()) as WatchlistServerSnapshot;
   } catch (error) {
+    logWatchlistSyncRequest("response", "POST /api/watchlist/sync", { ok: false, error: true });
     console.error("[watchlist sync] error", error);
     return null;
   }
@@ -136,6 +155,7 @@ export async function patchWatchlistCollectionSections(
   sections: WatchlistSection[],
   tickerSections: Record<string, string>,
 ): Promise<boolean> {
+  logWatchlistPatchRequest("start", "PATCH /api/watchlist/collections/.../sections");
   const res = await watchlistApiFetch(
     `/api/watchlist/collections/${encodeURIComponent(collectionId)}/sections`,
     {
@@ -144,6 +164,26 @@ export async function patchWatchlistCollectionSections(
       body: JSON.stringify({ sections, tickerSections }),
     },
   );
+  logWatchlistPatchRequest("response", "PATCH /api/watchlist/collections/.../sections", { ok: res.ok });
+  return res.ok;
+}
+
+export async function patchWatchlistCollectionItemsReorder(
+  collectionId: string,
+  tickers: string[],
+): Promise<boolean> {
+  logWatchlistPatchRequest("start", "PATCH /api/watchlist/collections/.../items/reorder");
+  const res = await watchlistApiFetch(
+    `/api/watchlist/collections/${encodeURIComponent(collectionId)}/items/reorder`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tickers }),
+    },
+  );
+  logWatchlistPatchRequest("response", "PATCH /api/watchlist/collections/.../items/reorder", {
+    ok: res.ok,
+  });
   return res.ok;
 }
 

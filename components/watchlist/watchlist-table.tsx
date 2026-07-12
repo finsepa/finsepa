@@ -19,6 +19,7 @@ import { partitionEnrichedItemsBySections } from "@/lib/watchlist/sections";
 import { normalizeWatchlistStorageKey } from "@/lib/watchlist/normalize-storage-key";
 import type { WatchlistDropTarget } from "@/lib/watchlist/watchlist-drag";
 import { readWatchlistDragData, writeWatchlistDragData } from "@/lib/watchlist/watchlist-drag";
+import { logWatchlistDragEnd, logWatchlistDragStart } from "@/lib/watchlist/state-audit";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
 import { useWatchlistEnrichedItems } from "@/lib/watchlist/use-watchlist-enriched-items";
 import { cn } from "@/lib/utils";
@@ -180,6 +181,7 @@ function WatchlistTableRow({
       aria-label={`Reorder ${row.symbol}`}
       onDragStart={(event) => {
         if (globalIndex < 0) return;
+        logWatchlistDragStart(row.storageKey, globalIndex, sectionId);
         writeWatchlistDragData(event.dataTransfer, {
           globalIndex,
           storageKey: row.storageKey,
@@ -202,6 +204,7 @@ function WatchlistTableRow({
         const payload = readWatchlistDragData(event.dataTransfer);
         if (!payload) return;
         if (payload.globalIndex === globalIndex) return;
+        logWatchlistDragEnd(payload.storageKey, { kind: "row", toIndex: globalIndex, sectionId });
         onMoveItem(payload.globalIndex, { kind: "row", toIndex: globalIndex, sectionId });
       }}
       className={cn(
@@ -261,7 +264,7 @@ function WatchlistTableRow({
         </div>
       </Link>
 
-      <div className="flex justify-center">
+      <div className="flex justify-center opacity-100 transition-opacity duration-150 md:opacity-0 md:group-hover:opacity-100 md:has-[:focus-visible]:opacity-100">
         <WatchlistRowRemoveButton
           className="flex items-center justify-center"
           storageKey={row.storageKey}

@@ -31,5 +31,5 @@ export function EarningsEstimatesSummaryTable({
   }, [data, period]);
 
   if (!model) return null;
-  return <StockIncomeStatementTable model={model} onMetricClick={onMetricClick} />;
+  return <StockIncomeStatementTable model={model} onMetricClick={onMetricClick} showPeriodEndingRow={false} />;
 }

@@ -80,18 +80,32 @@ function passesImpact(e: EconomyCalendarEvent, filter: ImpactFilter): boolean {
   return e.importance <= 1;
 }
 
+function importanceBarColor(importance: EconomyCalendarEvent["importance"]): string {
+  if (importance >= 3) return "#DC2626";
+  if (importance === 2) return "#EA580C";
+  return "#16A34A";
+}
+
+function importanceCircleBgColor(importance: EconomyCalendarEvent["importance"]): string {
+  if (importance >= 3) return "#FEF2F2";
+  if (importance === 2) return "#FFF7ED";
+  return "#F0FDF4";
+}
+
 function ImportanceBars({ importance }: { importance: EconomyCalendarEvent["importance"] }) {
   const bars: readonly number[] =
     importance >= 3 ? [7, 9, 11] : importance === 2 ? [7, 10] : [7];
+  const color = importanceBarColor(importance);
   return (
     <div
-      className="flex h-5 w-5 shrink-0 items-center justify-center rounded-[10px] bg-[#F4F4F5]"
+      className="flex h-5 w-5 shrink-0 items-center justify-center rounded-[10px]"
+      style={{ backgroundColor: importanceCircleBgColor(importance) }}
       title="Impact"
       aria-hidden
     >
       <div className="flex h-[11px] items-end justify-center gap-0.5">
         {bars.map((h, i) => (
-          <span key={i} className="w-0.5 rounded-[10px] bg-[#2563EB]" style={{ height: `${h}px` }} />
+          <span key={i} className="w-0.5 rounded-[10px]" style={{ height: `${h}px`, backgroundColor: color }} />
         ))}
       </div>
     </div>
@@ -102,10 +116,16 @@ function ImportanceBars({ importance }: { importance: EconomyCalendarEvent["impo
 function ImportanceBarsRow({ importance }: { importance: EconomyCalendarEvent["importance"] }) {
   const bars: readonly number[] =
     importance >= 3 ? [12, 16, 20] : importance === 2 ? [12, 17] : [12];
+  const color = importanceBarColor(importance);
   return (
-    <div className="flex h-8 w-7 shrink-0 items-end justify-center gap-1 pb-0.5 pt-1" title="Impact" aria-hidden>
+    <div
+      className="flex h-8 w-7 shrink-0 items-end justify-center gap-1 rounded-[10px] pb-0.5 pt-1"
+      style={{ backgroundColor: importanceCircleBgColor(importance) }}
+      title="Impact"
+      aria-hidden
+    >
       {bars.map((h, i) => (
-        <span key={i} className="w-1 rounded-[10px] bg-[#2563EB]" style={{ height: `${h}px` }} />
+        <span key={i} className="w-1 rounded-[10px]" style={{ height: `${h}px`, backgroundColor: color }} />
       ))}
     </div>
   );

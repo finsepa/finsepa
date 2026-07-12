@@ -116,3 +116,17 @@ Key Stats **history charts** (modal, Multicharts, Charting, Financials) all read
 **Dividend Yield** (`dividend_yield`) is on this path: derived in charting series (`fillDerivedDividendYield`, live patch from `dividendYieldRatioFromFundamentalsRoot`), cached as `eodhd-charting-series-v23-derived-dividend-yield`. The Key Stats “Yield” row uses the dividends bundle section (`stock-key-stats-bundle-v1`).
 
 When asking an agent to add a feature, include: *“Wire backend data + caching like other Key Stats charts — charting series + bump unstable_cache key if needed; screener snapshot if it’s a screener column.”*
+
+## Key Indicators rollout
+
+Stock overview card (`key_indicators_{TICKER}` in `market_snapshot`). Rule-based from EODHD fundamentals + daily YTD vs `GSPC.INDX`. US equities only; ETFs/crypto/indices skipped.
+
+1. **Env (local + Vercel)** — both required; redeploy after changing the public flag:
+   - `FINSEPA_KEY_INDICATORS=1` — server API + cron warm
+   - `NEXT_PUBLIC_FINSEPA_KEY_INDICATORS=1` — client render/fetch
+   - Existing: `EODHD_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `FINSEPA_MARKET_SNAPSHOT_READ` (default on)
+2. **Preflight:** `npm run key-indicators:check`
+3. **Local test:** restart dev server → sign in → `/stock/NVDA` → card above Key Stats (hidden when &lt;2 lines).
+4. **Cron (optional warm):** `vercel.json` runs `/api/cron/key-indicators-warm?shard=0..3` daily (~125 fundamentals/day/shard). Manual: `curl -H "Authorization: Bearer $CRON_SECRET" https://<host>/api/cron/key-indicators-warm?shard=0`
+5. **Budget:** lazy first-view pays ~1 fundamentals (+ shared performance cache for YTD); cron adds ~125–500 fundamentals/day when enabled — within 80k target.
+6. **Spike (read-only):** `npm run key-indicators:spike`

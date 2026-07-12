@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from "react";
 
+import { STOCK_OVERVIEW_SECTION_TITLE_CLASS } from "@/components/design-system/card-surface-styles";
+import { cn } from "@/lib/utils";
+
 type Row = { label: string; value: string };
 
 function StatRow({ label, value }: { label: string; value: string }) {
@@ -60,7 +63,7 @@ export function KeyStatsDynamicCard({ ticker, title, apiPath, rowLabels }: Props
 
   return (
     <div className="mb-5 rounded-xl border border-[#E4E4E7] bg-white p-4">
-      <h3 className="mb-2 text-[14px] font-semibold leading-5 text-[#09090B]">{title}</h3>
+      <h3 className={cn("mb-2", STOCK_OVERVIEW_SECTION_TITLE_CLASS)}>{title}</h3>
       {loading ? (
         <div className="space-y-2 pt-0.5" aria-hidden>
           {rowLabels.map((label) => (

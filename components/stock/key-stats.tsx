@@ -9,7 +9,7 @@ import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useStat
 import { CalendarDays } from "@/lib/icons";
 
 import { cn } from "@/lib/utils";
-import { MOBILE_INSET_CARD_CLASS } from "@/components/design-system/card-surface-styles";
+import { MOBILE_INSET_CARD_CLASS, STOCK_OVERVIEW_SECTION_TITLE_CLASS } from "@/components/design-system/card-surface-styles";
 import { consensusLabelTextClass } from "@/lib/market/analyst-consensus-tone";
 
 const KEY_STATS_TAB_MOTION_MS = 280;
@@ -410,7 +410,7 @@ const DynamicCard = memo(function DynamicCard({
   return (
     <div className={embedded ? "min-w-0" : KEY_STATS_CARD_CLASS}>
       {hideTitle ? null : (
-        <h3 className="mb-2 text-[14px] font-semibold leading-5 text-[#09090B]">{title}</h3>
+        <h3 className={cn("mb-2", STOCK_OVERVIEW_SECTION_TITLE_CLASS)}>{title}</h3>
       )}
       {loading ? (
         <CardSkeleton rowLabels={rowLabels} />
@@ -459,7 +459,7 @@ const BasicCard = memo(function BasicCard({
   return (
     <div className={embedded ? "min-w-0" : KEY_STATS_CARD_CLASS}>
       {hideTitle ? null : (
-        <h3 className="mb-2 text-[14px] font-semibold leading-5 text-[#09090B]">Basic</h3>
+        <h3 className={cn("mb-2", STOCK_OVERVIEW_SECTION_TITLE_CLASS)}>Basic</h3>
       )}
       {loading ? (
         <CardSkeleton rowLabels={displayRows.map((r) => r.label)} />
@@ -519,7 +519,7 @@ const RevenueProfitCard = memo(function RevenueProfitCard({
   return (
     <div className={embedded ? "min-w-0" : KEY_STATS_CARD_CLASS}>
       {hideTitle ? null : (
-        <h3 className="mb-2 text-[14px] font-semibold leading-5 text-[#09090B]">Revenue &amp; Profit</h3>
+        <h3 className={cn("mb-2", STOCK_OVERVIEW_SECTION_TITLE_CLASS)}>Revenue &amp; Profit</h3>
       )}
       {loading ? (
         <CardSkeleton rowLabels={displayRows.map((r) => r.label)} />

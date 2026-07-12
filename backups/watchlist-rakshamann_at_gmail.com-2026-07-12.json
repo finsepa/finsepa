@@ -1,0 +1,227 @@
+{
+  "exportedAt": "2026-07-12T08:39:02.240Z",
+  "accountEmail": "rakshamann@gmail.com",
+  "userId": "52373158-0eff-48de-80ba-f9206ee0e52a",
+  "source": "supabase-readonly",
+  "watchlist_user_state": {
+    "user_id": "52373158-0eff-48de-80ba-f9206ee0e52a",
+    "active_collection_id": "dd38a66d-7ac3-4147-a1ba-50670cb641ec",
+    "updated_at": "2026-07-12T08:35:44.002Z"
+  },
+  "watchlist_collections": [
+    {
+      "id": "dd38a66d-7ac3-4147-a1ba-50670cb641ec",
+      "user_id": "52373158-0eff-48de-80ba-f9206ee0e52a",
+      "name": "Wishlist",
+      "sort_order": 2,
+      "sections_layout": {
+        "sections": [],
+        "tickerSections": {}
+      },
+      "created_at": "2026-07-11T10:07:39.734Z"
+    },
+    {
+      "id": "04089f12-07b2-4421-a340-cd5143f1dd5d",
+      "user_id": "52373158-0eff-48de-80ba-f9206ee0e52a",
+      "name": "Core",
+      "sort_order": 3,
+      "sections_layout": {
+        "sections": [
+          {
+            "id": "wls_mrgblo9u_bxgl9w",
+            "name": "COMMUNICATION"
+          },
+          {
+            "id": "wls_mrgbng53_n474qf",
+            "name": "CONSUMER CYCLICAL"
+          },
+          {
+            "id": "wls_mrgbo0qp_x58375",
+            "name": "CONSUMER DEFENSIVE"
+          },
+          {
+            "id": "wls_mrgbocsc_mqmjjk",
+            "name": "HEALTHCARE"
+          },
+          {
+            "id": "wls_mrgboj3c_hlxq35",
+            "name": "FINANCE"
+          },
+          {
+            "id": "wls_mrgbon20_fv4mk3",
+            "name": "TECH"
+          },
+          {
+            "id": "wls_mrgborj9_8hx3ph",
+            "name": "CRYPTO"
+          },
+          {
+            "id": "wls_mrgbp1hf_wimek3",
+            "name": "INDICES"
+          }
+        ],
+        "tickerSections": {
+          "V": "wls_mrgboj3c_hlxq35",
+          "MAR": "wls_mrgbng53_n474qf",
+          "SYK": "wls_mrgbocsc_mqmjjk",
+          "AAPL": "wls_mrgbon20_fv4mk3",
+          "ADBE": "wls_mrgbon20_fv4mk3",
+          "AMZN": "wls_mrgbng53_n474qf",
+          "IDXX": "wls_mrgbocsc_mqmjjk",
+          "META": "wls_mrgblo9u_bxgl9w",
+          "NFLX": "wls_mrgbng53_n474qf",
+          "RACE": "wls_mrgbng53_n474qf",
+          "SPGI": "wls_mrgboj3c_hlxq35",
+          "SPOT": "wls_mrgbon20_fv4mk3",
+          "GOOGL": "wls_mrgblo9u_bxgl9w",
+          "CRYPTO:BTC": "wls_mrgborj9_8hx3ph",
+          "CRYPTO:ETH": "wls_mrgborj9_8hx3ph"
+        }
+      },
+      "created_at": "2026-07-11T10:07:40.026Z"
+    }
+  ],
+  "watchlist_items": [
+    {
+      "id": "f983fa8b-0832-44c7-847d-17fdfdc76f73",
+      "user_id": "52373158-0eff-48de-80ba-f9206ee0e52a",
+      "collection_id": "04089f12-07b2-4421-a340-cd5143f1dd5d",
+      "ticker": "META",
+      "sort_order": 0,
+      "created_at": "2026-07-11T12:10:45.730Z"
+    },
+    {
+      "id": "dbf1b93d-0d57-4635-9993-3bbe2901260f",
+      "user_id": "52373158-0eff-48de-80ba-f9206ee0e52a",
+      "collection_id": "04089f12-07b2-4421-a340-cd5143f1dd5d",
+      "ticker": "GOOGL",
+      "sort_order": 1,
+      "created_at": "2026-07-11T12:10:53.442Z"
+    },
+    {
+      "id": "00969fbe-0362-4a07-a3bf-e8f09cf8058d",
+      "user_id": "52373158-0eff-48de-80ba-f9206ee0e52a",
+      "collection_id": "04089f12-07b2-4421-a340-cd5143f1dd5d",
+      "ticker": "NFLX",
+      "sort_order": 2,
+      "created_at": "2026-07-12T07:56:09.125Z"
+    },
+    {
+      "id": "5c1777f7-7139-4f44-83c4-3ddfa816f74f",
+      "user_id": "52373158-0eff-48de-80ba-f9206ee0e52a",
+      "collection_id": "04089f12-07b2-4421-a340-cd5143f1dd5d",
+      "ticker": "RACE",
+      "sort_order": 3,
+      "created_at": "2026-07-12T07:56:18.747Z"
+    },
+    {
+      "id": "0b876092-0f89-4351-9d40-736434e14279",
+      "user_id": "52373158-0eff-48de-80ba-f9206ee0e52a",
+      "collection_id": "04089f12-07b2-4421-a340-cd5143f1dd5d",
+      "ticker": "AMZN",
+      "sort_order": 4,
+      "created_at": "2026-07-12T08:15:41.781Z"
+    },
+    {
+      "id": "192070cf-86c4-4098-8c72-184b4bcc3c9a",
+      "user_id": "52373158-0eff-48de-80ba-f9206ee0e52a",
+      "collection_id": "04089f12-07b2-4421-a340-cd5143f1dd5d",
+      "ticker": "MAR",
+      "sort_order": 5,
+      "created_at": "2026-07-12T08:16:13.532Z"
+    },
+    {
+      "id": "0918c8bb-46ff-43fb-a594-f561ada236e3",
+      "user_id": "52373158-0eff-48de-80ba-f9206ee0e52a",
+      "collection_id": "04089f12-07b2-4421-a340-cd5143f1dd5d",
+      "ticker": "SYK",
+      "sort_order": 6,
+      "created_at": "2026-07-12T08:18:25.932Z"
+    },
+    {
+      "id": "99a20de5-94fc-402a-9d63-c1760750a61f",
+      "user_id": "52373158-0eff-48de-80ba-f9206ee0e52a",
+      "collection_id": "04089f12-07b2-4421-a340-cd5143f1dd5d",
+      "ticker": "IDXX",
+      "sort_order": 7,
+      "created_at": "2026-07-12T08:16:58.160Z"
+    },
+    {
+      "id": "36faabd7-aaba-4e3f-ad6a-c981a33eff19",
+      "user_id": "52373158-0eff-48de-80ba-f9206ee0e52a",
+      "collection_id": "04089f12-07b2-4421-a340-cd5143f1dd5d",
+      "ticker": "V",
+      "sort_order": 8,
+      "created_at": "2026-07-12T08:25:42.028Z"
+    },
+    {
+      "id": "dfc22ed6-ec7b-4857-811f-7a9c09f9707a",
+      "user_id": "52373158-0eff-48de-80ba-f9206ee0e52a",
+      "collection_id": "04089f12-07b2-4421-a340-cd5143f1dd5d",
+      "ticker": "SPGI",
+      "sort_order": 9,
+      "created_at": "2026-07-12T08:25:57.174Z"
+    },
+    {
+      "id": "b9bd7992-3010-444d-bf16-19be85f21a2e",
+      "user_id": "52373158-0eff-48de-80ba-f9206ee0e52a",
+      "collection_id": "04089f12-07b2-4421-a340-cd5143f1dd5d",
+      "ticker": "SPOT",
+      "sort_order": 10,
+      "created_at": "2026-07-12T08:33:29.899Z"
+    },
+    {
+      "id": "29517625-34b8-4b4d-9582-cd98cffd3c17",
+      "user_id": "52373158-0eff-48de-80ba-f9206ee0e52a",
+      "collection_id": "04089f12-07b2-4421-a340-cd5143f1dd5d",
+      "ticker": "AAPL",
+      "sort_order": 11,
+      "created_at": "2026-07-12T08:32:59.925Z"
+    },
+    {
+      "id": "db8c3100-b842-4320-8dc9-18f5299ccc87",
+      "user_id": "52373158-0eff-48de-80ba-f9206ee0e52a",
+      "collection_id": "04089f12-07b2-4421-a340-cd5143f1dd5d",
+      "ticker": "ADBE",
+      "sort_order": 12,
+      "created_at": "2026-07-12T08:33:38.145Z"
+    },
+    {
+      "id": "25cd35f1-6de5-412d-ab19-e2febfacbac7",
+      "user_id": "52373158-0eff-48de-80ba-f9206ee0e52a",
+      "collection_id": "04089f12-07b2-4421-a340-cd5143f1dd5d",
+      "ticker": "CRYPTO:BTC",
+      "sort_order": 13,
+      "created_at": "2026-07-12T08:34:02.636Z"
+    },
+    {
+      "id": "9ebc921d-f20c-4f10-8893-985bc2887f34",
+      "user_id": "52373158-0eff-48de-80ba-f9206ee0e52a",
+      "collection_id": "04089f12-07b2-4421-a340-cd5143f1dd5d",
+      "ticker": "CRYPTO:ETH",
+      "sort_order": 14,
+      "created_at": "2026-07-12T08:34:13.951Z"
+    }
+  ],
+  "summary": {
+    "collectionCount": 2,
+    "itemCount": 15,
+    "tickers": [
+      "AAPL",
+      "ADBE",
+      "AMZN",
+      "CRYPTO:BTC",
+      "CRYPTO:ETH",
+      "GOOGL",
+      "IDXX",
+      "MAR",
+      "META",
+      "NFLX",
+      "RACE",
+      "SPGI",
+      "SPOT",
+      "SYK",
+      "V"
+    ]
+  }
+}

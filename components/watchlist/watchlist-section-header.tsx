@@ -27,6 +27,7 @@ import {
   readWatchlistSectionDragData,
   writeWatchlistSectionDragData,
 } from "@/lib/watchlist/watchlist-drag";
+import { logWatchlistDragEnd } from "@/lib/watchlist/state-audit";
 
 type ModalStep = "closed" | "rename" | "deleteConfirm";
 
@@ -122,6 +123,7 @@ export function WatchlistSectionHeader({
       }
       const payload = readWatchlistDragData(event.dataTransfer);
       if (!payload) return;
+      logWatchlistDragEnd(payload.storageKey, { kind: "section", sectionId });
       onDropItem(payload.globalIndex, { kind: "section", sectionId });
     },
   };

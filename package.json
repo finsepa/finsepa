@@ -27,6 +27,8 @@
     "loops:diagnose": "node --env-file=.env.local scripts/diagnose-loops-transactional.mjs",
     "eodhd:estimate": "node scripts/eodhd-load-estimate.mjs",
     "eodhd:probe": "node scripts/eodhd-traffic-probe.mjs",
+    "key-indicators:check": "node --env-file=.env.local scripts/key-indicators-rollout-check.mjs",
+    "key-indicators:spike": "node --env-file=.env.local scripts/key-indicators-sample-spike.mjs",
     "stock:verify-live": "node --env-file=.env.local scripts/verify-stock-live-pipeline.mjs",
     "stock:validate-1d-session": "node --env-file=.env.local scripts/validate-live-1d-session.mjs",
     "stock:minute-ingest:status": "node --env-file=.env.local scripts/stock-minute-ingest-status.mjs",

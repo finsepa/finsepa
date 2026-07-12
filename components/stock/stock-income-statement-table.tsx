@@ -120,10 +120,12 @@ const incomeRowDividerClass = "border-b border-[#E4E4E7]";
 export function StockIncomeStatementTable({
   model,
   onMetricClick,
+  showPeriodEndingRow = true,
 }: {
   model: IncomeStatementTableModel;
   /** Opens the same fundamentals chart modal as Overview Key Stats when the row maps to a charting metric. */
   onMetricClick?: (metricId: ChartingMetricId) => void;
+  showPeriodEndingRow?: boolean;
 }) {
   const { columns, columnPeriodEnds, columnIsForecast, rows, ttm, periodColumnHeader } = model;
   const periodHeaderLabel = periodColumnHeader ?? "Fiscal Year";
@@ -155,6 +157,7 @@ export function StockIncomeStatementTable({
               <div className={cn(headerYearClass, headerValueCellClass)}>{ttm.columnLabel}</div>
             ) : null}
           </div>
+          {showPeriodEndingRow ? (
           <div
             className={`grid items-stretch gap-x-2 border-b border-[#E4E4E7] px-2 py-0 sm:px-4 ${incomeHeaderRowClass}`}
             style={{ gridTemplateColumns }}
@@ -176,6 +179,7 @@ export function StockIncomeStatementTable({
               <div className={cn(headerPeriodEndClass, headerValueCellClass)}>{ttm.periodEnd}</div>
             ) : null}
           </div>
+          ) : null}
         </div>
 
         {rows.map((row) => (

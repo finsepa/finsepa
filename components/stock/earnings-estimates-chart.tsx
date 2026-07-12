@@ -27,7 +27,7 @@ import {
 } from "@/lib/market/earnings-annual-display";
 import {
   EARNINGS_FORECAST_OPACITY_CLASS,
-  earningsForecastBarFillStyle,
+  earningsForecastDotFillStyle,
 } from "@/components/stock/earnings-card-styles";
 import { cn } from "@/lib/utils";
 import {
@@ -44,22 +44,22 @@ const ESTIMATE_BAR = fundamentalsBarSolidAtIndex(0);
 const BEAT_COLOR = "#16A34A";
 const MISS_COLOR = "#DC2626";
 
-const BAR_WIDTH_QUARTERLY_PX = 11;
-const BAR_HOVER_PAD_QUARTERLY_PX = 6;
-const BAR_WIDTH_ANNUAL_PX = 22;
-const BAR_HOVER_PAD_ANNUAL_PX = 8;
-/** Actual indicator line extends past the estimate bar on each side. */
-const ACTUAL_LINE_OVERSCAN_PX = 4;
+const DOT_SIZE_QUARTERLY_PX = 16;
+const DOT_SIZE_ANNUAL_PX = 18;
+const BEAT_MISS_ARROW_BORDER_X_PX = 8;
+const BEAT_MISS_ARROW_BORDER_TOP_PX = 9;
+const COLUMN_HOVER_PAD_QUARTERLY_PX = 6;
+const COLUMN_HOVER_PAD_ANNUAL_PX = 8;
 
-function estimatesBarLayout(periodMode: FundamentalsSeriesMode): {
-  barWidthPx: number;
-  barHoverPadPx: number;
-  barHitWidthPx: number;
+function estimatesColumnLayout(periodMode: FundamentalsSeriesMode): {
+  dotSizePx: number;
+  columnHoverPadPx: number;
+  columnHitWidthPx: number;
 } {
-  const barWidthPx = periodMode === "annual" ? BAR_WIDTH_ANNUAL_PX : BAR_WIDTH_QUARTERLY_PX;
-  const barHoverPadPx = periodMode === "annual" ? BAR_HOVER_PAD_ANNUAL_PX : BAR_HOVER_PAD_QUARTERLY_PX;
-  const barHitWidthPx = barWidthPx + barHoverPadPx * 2;
-  return { barWidthPx, barHoverPadPx, barHitWidthPx };
+  const dotSizePx = periodMode === "annual" ? DOT_SIZE_ANNUAL_PX : DOT_SIZE_QUARTERLY_PX;
+  const columnHoverPadPx = periodMode === "annual" ? COLUMN_HOVER_PAD_ANNUAL_PX : COLUMN_HOVER_PAD_QUARTERLY_PX;
+  const columnHitWidthPx = dotSizePx + columnHoverPadPx * 2 + 12;
+  return { dotSizePx, columnHoverPadPx, columnHitWidthPx };
 }
 
 function earningsBeatMiss(
@@ -95,36 +95,73 @@ function valueHeightPct(v: number | null, maxV: number): number {
   return (Math.max(0, v) / maxV) * 100;
 }
 
-function EarningsActualBeatMissIndicator({
-  estimate,
-  actual,
-  maxV,
-  barWidthPx,
-}: {
-  estimate: number;
-  actual: number;
-  maxV: number;
-  barWidthPx: number;
-}) {
-  const outcome = earningsBeatMiss(estimate, actual);
-  if (outcome == null) return null;
-
+function EarningsBeatMissTopIndicator({ outcome }: { outcome: "beat" | "miss" }) {
   const color = outcome === "beat" ? BEAT_COLOR : MISS_COLOR;
-  const bottomPct = valueHeightPct(actual, maxV);
-  const lineWidthPx = barWidthPx + ACTUAL_LINE_OVERSCAN_PX * 2;
   return (
-    <div
-      className="pointer-events-none absolute left-1/2 z-20 -translate-x-1/2"
-      style={{ bottom: `${bottomPct}%`, width: lineWidthPx }}
-    >
+    <div className="pointer-events-none absolute top-0 left-1/2 z-20 flex -translate-x-1/2 flex-col items-center">
       <span
-        className="absolute bottom-full left-1/2 mb-1 -translate-x-1/2 whitespace-nowrap font-['Inter'] text-[11px] font-semibold leading-none sm:text-[12px]"
+        className="font-['Inter'] text-[13px] font-medium leading-none lowercase sm:text-[14px]"
         style={{ color }}
       >
-        {outcome === "beat" ? "Beat" : "Miss"}
+        {outcome === "beat" ? "beat" : "missed"}
       </span>
-      <div className="h-[2px] w-full rounded-full" style={{ backgroundColor: color }} aria-hidden />
+      <span
+        className="mt-1 block size-0"
+        style={{
+          borderLeft: `${BEAT_MISS_ARROW_BORDER_X_PX}px solid transparent`,
+          borderRight: `${BEAT_MISS_ARROW_BORDER_X_PX}px solid transparent`,
+          borderTop: `${BEAT_MISS_ARROW_BORDER_TOP_PX}px solid ${color}`,
+        }}
+        aria-hidden
+      />
     </div>
+  );
+}
+
+function EarningsValueDot({
+  value,
+  maxV,
+  enterProgress,
+  dotSizePx,
+  variant,
+  barColor,
+}: {
+  value: number;
+  maxV: number;
+  enterProgress: number;
+  dotSizePx: number;
+  variant: "actual" | "forecast";
+  barColor: string;
+}) {
+  const bottomPct = valueHeightPct(value, maxV) * enterProgress;
+  if (bottomPct <= 0) return null;
+
+  const sharedStyle = {
+    bottom: `${bottomPct}%`,
+    width: dotSizePx,
+    height: dotSizePx,
+    marginBottom: -dotSizePx / 2,
+  } as const;
+
+  if (variant === "actual") {
+    return (
+      <div
+        className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2 rounded-full"
+        style={{ ...sharedStyle, backgroundColor: barColor }}
+        aria-hidden
+      />
+    );
+  }
+
+  return (
+    <div
+      className="pointer-events-none absolute left-1/2 z-[9] -translate-x-1/2 overflow-hidden rounded-full"
+      style={{
+        ...sharedStyle,
+        ...earningsForecastDotFillStyle(barColor),
+      }}
+      aria-hidden
+    />
   );
 }
 
@@ -302,8 +339,8 @@ type Props = {
 };
 
 /**
- * Revenue / EPS estimate bar chart — same DOM layout as Key Stats {@link MultichartFundamentalsBar},
- * with a light estimate bar per period and a beat/miss line at the reported actual level.
+ * Revenue / EPS estimate chart — dot plot with forecast (dashed) and actual (filled) markers,
+ * plus beat/miss arrows pinned to the top of the plot.
  */
 export function EarningsEstimatesChart({ data, period, metric }: Props) {
   const plotAreaRef = useRef<HTMLDivElement>(null);
@@ -318,7 +355,7 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
     [data, period, metric],
   );
 
-  const barLayout = useMemo(() => estimatesBarLayout(period), [period]);
+  const columnLayout = useMemo(() => estimatesColumnLayout(period), [period]);
 
   const plotHeight = CHART_HEIGHT_PX - MULTICHART_AXIS_ROW_PX - MULTICHART_AXIS_BOTTOM_PAD_PX;
 
@@ -382,7 +419,7 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
                   />
                 </div>
 
-                {/* Bars live in the same inset band as the $0 baseline (Multicharts). */}
+                {/* Dots + top beat/miss markers share the same inset band as the $0 baseline. */}
                 <div
                   key={`${period}-${metric}-${n}`}
                   className="absolute inset-x-0 top-[8%] bottom-[4%] min-h-0 w-full min-w-0 overflow-visible"
@@ -391,13 +428,9 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
                 >
                 {periods.map((p, i) => {
                   const leftPct = periodCenterLeftPercent(i, n);
-                  /** Estimate bar height — fall back to reported actual when consensus is missing (common on Q1). */
-                  const barPlotValue = p.estimate ?? p.actual;
-                  const estH = valueHeightPct(barPlotValue, maxV);
                   const enterProgress = shouldAnimateBars
                     ? fundamentalsBarEnterProgress(i, n, barEnterElapsedMs)
                     : 1;
-                  const animatedEstH = estH * enterProgress;
                   const beatMiss =
                     !p.isForecast && p.estimate != null && p.actual != null
                       ? earningsBeatMiss(p.estimate, p.actual)
@@ -426,7 +459,7 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
                     <div
                       key={p.key}
                       className="absolute bottom-0 z-0 flex h-full min-h-0 -translate-x-1/2 flex-col items-center justify-end"
-                      style={{ left: `${leftPct}%`, width: barLayout.barHitWidthPx }}
+                      style={{ left: `${leftPct}%`, width: columnLayout.columnHitWidthPx }}
                       onMouseEnter={(e) => {
                         const plot = plotAreaRef.current;
                         if (!plot) return;
@@ -444,7 +477,7 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
                         <div
                           className="pointer-events-none absolute bottom-0 left-1/2 z-0 h-full -translate-x-1/2"
                           style={{
-                            width: Math.max(barLayout.barHitWidthPx, MULTICHART_BAR_WIDTH_WIDE_PX),
+                            width: Math.max(columnLayout.columnHitWidthPx, MULTICHART_BAR_WIDTH_WIDE_PX),
                             backgroundColor: FUNDAMENTALS_CHART_HOVER_BAND_BG,
                           }}
                           aria-hidden
@@ -452,30 +485,29 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
                       ) : null}
                       <div
                         className="relative z-10 h-full min-h-0 overflow-visible"
-                        style={{ width: barLayout.barWidthPx }}
+                        style={{ width: columnLayout.dotSizePx }}
                       >
-                        {barPlotValue != null && estH > 0 ? (
-                          <div
-                            className="absolute bottom-0 left-1/2 shrink-0 -translate-x-1/2 overflow-hidden rounded-t-[4px] rounded-b-none"
-                            style={{
-                              width: barLayout.barWidthPx,
-                              height: `${animatedEstH}%`,
-                              minHeight: animatedEstH > 0 ? 2 : 0,
-                              ...(p.isForecast
-                                ? earningsForecastBarFillStyle(ESTIMATE_BAR)
-                                : { backgroundColor: ESTIMATE_BAR }),
-                            }}
+                        {barsEnterComplete && beatMiss ? (
+                          <EarningsBeatMissTopIndicator outcome={beatMiss} />
+                        ) : null}
+                        {p.estimate != null ? (
+                          <EarningsValueDot
+                            value={p.estimate}
+                            maxV={maxV}
+                            enterProgress={enterProgress}
+                            dotSizePx={columnLayout.dotSizePx}
+                            variant="forecast"
+                            barColor={ESTIMATE_BAR}
                           />
                         ) : null}
-                        {barsEnterComplete &&
-                        !p.isForecast &&
-                        p.estimate != null &&
-                        p.actual != null ? (
-                          <EarningsActualBeatMissIndicator
-                            estimate={p.estimate}
-                            actual={p.actual}
+                        {p.actual != null ? (
+                          <EarningsValueDot
+                            value={p.actual}
                             maxV={maxV}
-                            barWidthPx={barLayout.barWidthPx}
+                            enterProgress={enterProgress}
+                            dotSizePx={columnLayout.dotSizePx}
+                            variant="actual"
+                            barColor={ESTIMATE_BAR}
                           />
                         ) : null}
                       </div>

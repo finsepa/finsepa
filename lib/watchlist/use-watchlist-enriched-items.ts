@@ -4,10 +4,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { applyWatchlistScreenerIdentity, persistWatchlistStockIdentities } from "@/lib/watchlist/apply-watchlist-identity";
 import { WATCHLIST_MUTATED_EVENT } from "@/lib/watchlist/constants";
+import { logWatchlistEnrich } from "@/lib/watchlist/enrich-debug";
 import type { WatchlistEnrichedItem } from "@/lib/watchlist/enriched-types";
 import { fetchWatchlistEnriched } from "@/lib/watchlist/fetch-watchlist-enriched";
 import { buildWatchlistShellItems } from "@/lib/watchlist/watchlist-shell-items";
 import { clearWatchlistEnrichedCache, readLastWatchlistEnrichedMarketSegment, readWatchlistEnrichedCache, readWatchlistEnrichedSessionCache } from "@/lib/watchlist/watchlist-enriched-cache";
+import { buildWatchlistMembershipKey } from "@/lib/watchlist/watchlist-membership-key";
 import { sortEnrichedItemsByTickerOrder } from "@/lib/watchlist/sort-enriched-items";
 import { isWatchlistTickerWatched } from "@/lib/watchlist/normalize-storage-key";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
@@ -43,11 +45,10 @@ export type UseWatchlistEnrichedItemsOptions = {
   enabled?: boolean;
 };
 
-function primeItemsFromCacheOrShell(tickers: string[]): WatchlistEnrichedItem[] {
-  const watchedKey = tickers.join("|");
+function primeItemsFromCacheOrShell(tickers: string[], membershipKey: string): WatchlistEnrichedItem[] {
   const watchedSet = new Set(tickers);
 
-  const memory = readWatchlistEnrichedCache(watchedKey);
+  const memory = readWatchlistEnrichedCache(membershipKey);
   if (memory?.length) {
     return sortEnrichedItemsByTickerOrder(
       applyWatchlistScreenerIdentity(memory).filter((row) => itemStillWatched(row, watchedSet)),
@@ -57,7 +58,7 @@ function primeItemsFromCacheOrShell(tickers: string[]): WatchlistEnrichedItem[] 
 
   const segment = readLastWatchlistEnrichedMarketSegment();
   if (segment) {
-    const session = readWatchlistEnrichedSessionCache(segment, watchedKey);
+    const session = readWatchlistEnrichedSessionCache(segment, membershipKey);
     if (session?.length) {
       return sortEnrichedItemsByTickerOrder(
         applyWatchlistScreenerIdentity(session).filter((row) => itemStillWatched(row, watchedSet)),
@@ -72,7 +73,7 @@ function primeItemsFromCacheOrShell(tickers: string[]): WatchlistEnrichedItem[] 
 export function useWatchlistEnrichedItems(options: UseWatchlistEnrichedItemsOptions = {}) {
   const { enabled = true } = options;
   const { watchedTickers, storageHydrated } = useWatchlist();
-  const watchedKey = useMemo(() => watchedTickers.join("|"), [watchedTickers]);
+  const membershipKey = useMemo(() => buildWatchlistMembershipKey(watchedTickers), [watchedTickers]);
 
   const [items, setItems] = useState<WatchlistEnrichedItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -82,13 +83,16 @@ export function useWatchlistEnrichedItems(options: UseWatchlistEnrichedItemsOpti
   const watchedRef = useRef(watchedTickers);
   watchedRef.current = watchedTickers;
   const loadGenRef = useRef(0);
+  const lastLoadedMembershipKeyRef = useRef("");
 
   const load = useCallback(async () => {
-    const tickers = [...watchedTickers];
+    const tickers = [...watchedRef.current];
     if (tickers.length === 0) return;
 
+    const keyForLoad = buildWatchlistMembershipKey(tickers);
+    logWatchlistEnrich("enrichment_load_trigger");
+
     const gen = ++loadGenRef.current;
-    const watchedKeyForLoad = tickers.join("|");
     const hadItems = everHadRowsRef.current;
 
     if (hadItems) {
@@ -96,9 +100,9 @@ export function useWatchlistEnrichedItems(options: UseWatchlistEnrichedItemsOpti
     }
     setError(null);
     try {
-      const { stocks, crypto, indices } = await fetchWatchlistEnriched(watchedKeyForLoad, tickers);
+      const { stocks, crypto, indices } = await fetchWatchlistEnriched(keyForLoad, tickers);
       if (gen !== loadGenRef.current) return;
-      if (watchedRef.current.join("|") !== watchedKeyForLoad) return;
+      if (buildWatchlistMembershipKey(watchedRef.current) !== keyForLoad) return;
 
       const merged = sortEnrichedItemsByTickerOrder(
         applyWatchlistScreenerIdentity(groupsToItems({ stocks, crypto, indices })),
@@ -115,10 +119,11 @@ export function useWatchlistEnrichedItems(options: UseWatchlistEnrichedItemsOpti
         return next;
       });
       everHadRowsRef.current = merged.length > 0;
+      lastLoadedMembershipKeyRef.current = keyForLoad;
       setError(null);
     } catch {
       if (gen !== loadGenRef.current) return;
-      if (watchedRef.current.join("|") !== watchedKeyForLoad) return;
+      if (buildWatchlistMembershipKey(watchedRef.current) !== keyForLoad) return;
       setError("Could not load watchlist.");
       if (!hadItems) {
         setItems([]);
@@ -131,13 +136,14 @@ export function useWatchlistEnrichedItems(options: UseWatchlistEnrichedItemsOpti
         setReady(true);
       }
     }
-  }, [watchedTickers]);
+  }, []);
 
   useEffect(() => {
     if (!storageHydrated || !enabled) return;
-    if (watchedTickers.length === 0) {
+    if (!membershipKey) {
       loadGenRef.current += 1;
       everHadRowsRef.current = false;
+      lastLoadedMembershipKeyRef.current = "";
       clearWatchlistEnrichedCache();
       setItems([]);
       setLoading(false);
@@ -149,18 +155,24 @@ export function useWatchlistEnrichedItems(options: UseWatchlistEnrichedItemsOpti
     loadGenRef.current += 1;
     setError(null);
 
-    const primed = primeItemsFromCacheOrShell(watchedTickers);
+    const primed = primeItemsFromCacheOrShell(watchedRef.current, membershipKey);
     setItems(primed);
     setReady(primed.length > 0);
     everHadRowsRef.current = primed.length > 0;
 
     void load();
-  }, [storageHydrated, watchedKey, load, watchedTickers, enabled]);
+  }, [storageHydrated, membershipKey, load, enabled]);
 
   useEffect(() => {
     if (!enabled) return;
     const onMutated = () => {
-      if (watchedRef.current.length > 0) void load();
+      if (watchedRef.current.length === 0) return;
+      const key = buildWatchlistMembershipKey(watchedRef.current);
+      if (key === lastLoadedMembershipKeyRef.current) {
+        logWatchlistEnrich("enrichment_skipped_layout_only");
+        return;
+      }
+      void load();
     };
     window.addEventListener(WATCHLIST_MUTATED_EVENT, onMutated);
     return () => window.removeEventListener(WATCHLIST_MUTATED_EVENT, onMutated);

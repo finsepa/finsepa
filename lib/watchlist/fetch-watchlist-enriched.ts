@@ -5,6 +5,7 @@ import {
   persistWatchlistStockIdentities,
 } from "@/lib/watchlist/apply-watchlist-identity";
 import type { WatchlistEnrichedItem } from "@/lib/watchlist/enriched-types";
+import { logWatchlistEnrich } from "@/lib/watchlist/enrich-debug";
 import {
   readWatchlistEnrichedCache,
   readWatchlistEnrichedSessionCache,
@@ -49,6 +50,7 @@ export async function fetchWatchlistEnriched(
 ): Promise<WatchlistEnrichedResponse> {
   const memoryCached = readWatchlistEnrichedCache(watchedKey);
   if (memoryCached?.length) {
+    logWatchlistEnrich("enrichment_cache_hit", "memory");
     const withIdentity = applyWatchlistScreenerIdentity(memoryCached);
     const stocks = withIdentity.filter((r) => r.kind === "stock");
     const crypto = withIdentity.filter((r) => r.kind === "crypto");
@@ -66,6 +68,7 @@ export async function fetchWatchlistEnriched(
       ? readWatchlistEnrichedSessionCache(marketCacheSegment, watchedKey)
       : null;
     if (sessionCached) {
+      logWatchlistEnrich("enrichment_cache_hit", "session");
       const withIdentity = applyWatchlistScreenerIdentity(sessionCached);
       return {
         stocks: withIdentity.filter((r) => r.kind === "stock"),
@@ -75,6 +78,7 @@ export async function fetchWatchlistEnriched(
       };
     }
 
+    logWatchlistEnrich("enrichment_http_post");
     const res = await watchlistApiFetch("/api/watchlist/enrich", {
       method: "POST",
       cache: "no-store",

@@ -32,6 +32,7 @@ import { ChartControls } from "./chart-controls";
 import { MiniTable } from "./mini-table";
 import { StockComparePicker } from "./stock-compare-picker";
 import { StockCompareReturnChart } from "./stock-compare-return-chart";
+import { KeyIndicators } from "./key-indicators";
 import { KeyStats } from "./key-stats";
 import { KeyStatsMetricChartModal } from "./key-stats-metric-chart-modal";
 import { StockDrawdownChartModal } from "./stock-drawdown-chart-modal";
@@ -1279,6 +1280,7 @@ export function StockPageContent({
           ) : null}
           {!isEtf ? (
             <div className="max-md:pt-0 md:pt-2">
+              <KeyIndicators ticker={ticker} />
               <KeyStats
                 ticker={ticker}
                 initialBundle={initialPageData?.ticker === ticker ? initialPageData.keyStatsBundle : null}

@@ -20,6 +20,27 @@ export const EARNINGS_FORECAST_OPACITY_CLASS = "opacity-60";
 
 /** Diagonal hatch fill for forward estimate bars in the Estimates chart. */
 export function earningsForecastBarFillStyle(barColor: string): CSSProperties {
+  const { fill, line, border } = earningsForecastHatchColors(barColor);
+  return {
+    backgroundColor: fill,
+    backgroundImage: `repeating-linear-gradient(45deg, ${line} 0, ${line} 1.5px, transparent 1.5px, transparent 7px)`,
+    border: `1px solid ${border}`,
+    boxSizing: "border-box",
+  };
+}
+
+/** Same hatch language as forecast bars, tuned for small estimate dots. */
+export function earningsForecastDotFillStyle(barColor: string): CSSProperties {
+  const { fill, line, border } = earningsForecastHatchColors(barColor);
+  return {
+    backgroundColor: fill,
+    backgroundImage: `repeating-linear-gradient(45deg, ${line} 0, ${line} 1px, transparent 1px, transparent 3.5px)`,
+    border: `1.5px solid ${border}`,
+    boxSizing: "border-box",
+  };
+}
+
+function earningsForecastHatchColors(barColor: string): { fill: string; line: string; border: string } {
   const hex = barColor.match(/^#([0-9a-f]{6})$/i);
   let fill = "rgba(37, 99, 235, 0.16)";
   let line = "rgba(37, 99, 235, 0.72)";
@@ -33,12 +54,7 @@ export function earningsForecastBarFillStyle(barColor: string): CSSProperties {
     line = `rgba(${r},${g},${b},0.72)`;
     border = `rgba(${r},${g},${b},0.45)`;
   }
-  return {
-    backgroundColor: fill,
-    backgroundImage: `repeating-linear-gradient(45deg, ${line} 0, ${line} 1.5px, transparent 1.5px, transparent 7px)`,
-    border: `1px solid ${border}`,
-    boxSizing: "border-box",
-  };
+  return { fill, line, border };
 }
 
 /** Multicharts / macro metric cards — Figma desktop: 20px padding, 12px radius, 1px stroke; mobile matches home screener table card. */

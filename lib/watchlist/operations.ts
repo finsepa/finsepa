@@ -406,16 +406,79 @@ export async function updateWatchlistCollectionSectionsLayoutOnServer(
     throw new WatchlistValidationError("Watchlist not found.");
   }
 
-  const normalized = parseSectionsLayout({
+  const items = await listItemsForUser(supabase, userId);
+  const collectionTickerKeys = new Set(
+    items
+      .filter((item) => item.collection_id === collectionId)
+      .map((item) => normalizeWatchlistStorageKey(item.ticker)),
+  );
+
+  const parsed = parseSectionsLayout({
     sections: layout.sections ?? [],
     tickerSections: layout.tickerSections ?? {},
   });
+  const tickerSections: Record<string, string> = {};
+  for (const [key, sectionId] of Object.entries(parsed.tickerSections)) {
+    const tickerKey = normalizeWatchlistStorageKey(key);
+    if (collectionTickerKeys.has(tickerKey)) {
+      tickerSections[tickerKey] = sectionId;
+    }
+  }
+
+  const normalized = { sections: parsed.sections, tickerSections };
   const { error } = await supabase
     .from(COLLECTIONS_TABLE)
     .update({ sections_layout: serializeSectionsLayout(normalized) })
     .eq("id", collectionId)
     .eq("user_id", userId);
   if (error) throw new Error(error.message);
+  await touchWatchlistUserState(supabase, userId);
+}
+
+/** Updates `sort_order` for existing rows only — never inserts or deletes watchlist items. */
+export async function reorderWatchlistCollectionItemsOnServer(
+  supabase: SupabaseClient,
+  userId: string,
+  collectionId: string,
+  orderedTickers: string[],
+): Promise<void> {
+  const collections = await listCollectionsForUser(supabase, userId);
+  if (!collections.some((c) => c.id === collectionId)) {
+    throw new WatchlistValidationError("Watchlist not found.");
+  }
+
+  const items = await listItemsForUser(supabase, userId);
+  const collectionItems = items.filter((item) => item.collection_id === collectionId);
+  const existingByTicker = new Map(
+    collectionItems.map((item) => [normalizeWatchlistTicker(item.ticker), item]),
+  );
+
+  const seen = new Set<string>();
+  let sortOrder = 0;
+  for (const raw of orderedTickers) {
+    let ticker: string;
+    try {
+      ticker = normalizeWatchlistTicker(raw);
+    } catch {
+      continue;
+    }
+    if (seen.has(ticker)) continue;
+    seen.add(ticker);
+
+    const row = existingByTicker.get(ticker);
+    if (!row) continue;
+
+    if (row.sort_order !== sortOrder) {
+      const { error } = await supabase
+        .from(ITEMS_TABLE)
+        .update({ sort_order: sortOrder })
+        .eq("id", row.id)
+        .eq("user_id", userId);
+      if (error) throw new Error(error.message);
+    }
+    sortOrder += 1;
+  }
+
   await touchWatchlistUserState(supabase, userId);
 }
 

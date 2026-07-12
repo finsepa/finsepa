@@ -31,7 +31,7 @@ import {
 } from "@/components/comparison/comparison-skeletons";
 import { CompanyLogo } from "@/components/screener/company-logo";
 import { cn } from "@/lib/utils";
-import { findKeyStatValue } from "@/lib/comparison/comparison-key-stats";
+import { findKeyStatValue, comparisonGrowthCellClassName } from "@/lib/comparison/comparison-key-stats";
 import {
   comparisonSliceIsReady,
   fetchComparisonTickerSlices,
@@ -656,7 +656,7 @@ export function ComparisonWorkspace({
                   {r.fundamentals.map((cell, i) => (
                     <div
                       key={selectedColumns[i]!.id}
-                      className="min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]"
+                      className={comparisonGrowthCellClassName(selectedColumns[i]!.id, cell)}
                     >
                       {cell === "—" ? "-" : cell}
                     </div>

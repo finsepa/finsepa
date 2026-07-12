@@ -50,6 +50,11 @@ export const Flag01: AppIcon = ({
  * Import from `@/lib/icons` instead of `lucide-react`.
  */
 export {
+  ArrowBlockUp,
+  ArrowCircleBrokenDownLeft,
+  ArrowCircleBrokenDownRight,
+  ArrowCircleBrokenUpLeft,
+  ArrowCircleBrokenUpRight,
   ArrowDown,
   ArrowUp,
   Bank as Landmark,
