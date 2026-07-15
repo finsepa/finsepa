@@ -1,13 +1,18 @@
 import "server-only";
 
+import { unstable_cache } from "next/cache";
+
+import { REVALIDATE_HOT } from "@/lib/data/cache-policy";
 import type { CryptoAssetRow } from "@/lib/market/crypto-asset";
 import { buildCryptoAssetRowFromDailyBars } from "@/lib/market/crypto-asset";
-import { fetchCryptoChartPointsUncached, stockChartPointsFromDailyBars } from "@/lib/market/crypto-chart-data";
+import { stockChartPointsFromDailyBars } from "@/lib/market/crypto-chart-data";
 import { loadCryptoLive1DMinuteChartPoints } from "@/lib/market/crypto-1d-live-minute-chart";
 import { isCryptoLive1DSymbol } from "@/lib/market/crypto-live-1d-tickers";
 import { getCryptoNews } from "@/lib/market/crypto-news";
-import { getCryptoLiveSpotPriceUsd } from "@/lib/market/crypto-live-price";
-import { fetchEodhdCryptoDailyBarsForMeta } from "@/lib/market/eodhd-crypto";
+import {
+  fetchEodhdCryptoDailyBarsForMeta,
+  lastPositiveCloseFromCryptoBars,
+} from "@/lib/market/eodhd-crypto";
 import { resolveCryptoMetaForProvider } from "@/lib/market/crypto-meta-resolver";
 import { emptyAnnualReturns } from "@/lib/market/stock-annual-returns";
 import { computeStockPerformanceFromSortedDailyBars } from "@/lib/market/stock-performance";
@@ -43,51 +48,45 @@ function emptyPerformance(routeSymbol: string): StockPerformance {
   };
 }
 
+function emptyPayload(routeSymbol: string): CryptoPageInitialData {
+  return {
+    routeSymbol,
+    asset: null,
+    chart: { range: DEFAULT_RANGE, points: [] },
+    sessionChart: { range: SESSION_RANGE, points: [] },
+    performance: emptyPerformance(routeSymbol),
+    news: [],
+    headerLiveSpotUsd: null,
+  };
+}
+
 export type CryptoPageInitialData = {
   routeSymbol: string;
   asset: CryptoAssetRow | null;
   chart: { range: StockChartRange; points: StockChartPoint[] };
-  /** Preloaded 1D series for the offscreen header chart (avoids a heavy client fetch on first paint). */
+  /** Preloaded 1D series for the offscreen header chart (BTC live only). */
   sessionChart: { range: StockChartRange; points: StockChartPoint[] };
   performance: StockPerformance;
   news: StockNewsArticle[];
-  /** Phase 7: best-effort live USD spot for header fallback (see `getCryptoLiveSpotPriceUsd`). */
+  /** Best-effort USD spot for header fallback (daily close; client live-price poll refreshes). */
   headerLiveSpotUsd: number | null;
 };
 
 /**
- * Server pass for crypto detail: one daily-bars fetch for asset + 1Y chart + performance;
- * intraday 1D for header is loaded in parallel.
+ * Server pass for crypto detail: one daily-bars fetch for asset + 1Y chart + performance.
+ * Session 1D preload is BTC-only (live header chart); other symbols skip the extra intraday EODHD call.
  */
-export async function loadCryptoPageInitialData(routeSymbol: string): Promise<CryptoPageInitialData | null> {
+async function loadCryptoPageInitialDataUncached(routeSymbol: string): Promise<CryptoPageInitialData> {
   const raw = routeSymbol.trim();
-  if (!raw) return null;
-
-  const range = DEFAULT_RANGE;
+  if (!raw) return emptyPayload("");
 
   if (isSingleAssetMode()) {
-    return {
-      routeSymbol: raw,
-      asset: null,
-      chart: { range, points: [] },
-      sessionChart: { range: SESSION_RANGE, points: [] },
-      performance: emptyPerformance(raw),
-      news: [],
-      headerLiveSpotUsd: null,
-    };
+    return emptyPayload(raw);
   }
 
   const meta = await resolveCryptoMetaForProvider(raw);
   if (!meta) {
-    return {
-      routeSymbol: raw,
-      asset: null,
-      chart: { range, points: [] },
-      sessionChart: { range: SESSION_RANGE, points: [] },
-      performance: emptyPerformance(raw),
-      news: [],
-      headerLiveSpotUsd: null,
-    };
+    return emptyPayload(raw);
   }
 
   const now = new Date();
@@ -95,14 +94,14 @@ export async function loadCryptoPageInitialData(routeSymbol: string): Promise<Cr
   const fromDate = new Date(now);
   fromDate.setUTCFullYear(fromDate.getUTCFullYear() - 6);
   const from = ymdUtc(fromDate);
+  const live1d = isCryptoLive1DSymbol(raw);
 
-  const [dailyBars, sessionPoints, news, headerLiveSpotUsd] = await Promise.all([
+  const [dailyBars, sessionPoints, news] = await Promise.all([
     fetchEodhdCryptoDailyBarsForMeta(meta, from, to),
-    isCryptoLive1DSymbol(raw)
-      ? loadCryptoLive1DMinuteChartPoints(raw, now)
-      : fetchCryptoChartPointsUncached(raw, SESSION_RANGE),
+    // BTC: preload minute/live 1D for the offscreen header chart.
+    // Others: skip uncached intraday here — header uses daily close + client `/live-price`.
+    live1d ? loadCryptoLive1DMinuteChartPoints(raw, now) : Promise.resolve([] as StockChartPoint[]),
     getCryptoNews(raw),
-    getCryptoLiveSpotPriceUsd(raw),
   ]);
 
   const sorted = dailyBars?.length ? [...dailyBars].sort((a, b) => a.date.localeCompare(b.date)) : [];
@@ -112,18 +111,34 @@ export async function loadCryptoPageInitialData(routeSymbol: string): Promise<Cr
     Promise.resolve(computeStockPerformanceFromSortedDailyBars(sorted, meta.symbol, now)),
   ]);
 
-  const chartPoints = stockChartPointsFromDailyBars(sorted, range, now);
+  const chartPoints = stockChartPointsFromDailyBars(sorted, DEFAULT_RANGE, now);
+  const closeSpot = lastPositiveCloseFromCryptoBars(sorted);
 
   return {
     routeSymbol: raw,
     asset,
-    chart: { range, points: chartPoints },
+    chart: { range: DEFAULT_RANGE, points: chartPoints },
     sessionChart: { range: SESSION_RANGE, points: sessionPoints },
     performance,
     news: Array.isArray(news) ? news : [],
     headerLiveSpotUsd:
-      typeof headerLiveSpotUsd === "number" && Number.isFinite(headerLiveSpotUsd) && headerLiveSpotUsd > 0
-        ? headerLiveSpotUsd
-        : null,
+      typeof closeSpot === "number" && Number.isFinite(closeSpot) && closeSpot > 0 ? closeSpot : null,
   };
+}
+
+const getCryptoPageInitialDataCached = unstable_cache(
+  async (routeSymbol: string) => loadCryptoPageInitialDataUncached(routeSymbol),
+  ["crypto-page-initial-v2-lean-session"],
+  { revalidate: REVALIDATE_HOT },
+);
+
+export async function loadCryptoPageInitialData(routeSymbol: string): Promise<CryptoPageInitialData | null> {
+  const raw = routeSymbol.trim();
+  if (!raw) return null;
+
+  if (isSingleAssetMode()) {
+    return emptyPayload(raw);
+  }
+
+  return getCryptoPageInitialDataCached(raw.toUpperCase());
 }

@@ -52,13 +52,6 @@ const EMPTY_CHART_DISPLAY: ChartDisplayState = {
 const OFFSCREEN_PRICE_CHART =
   "pointer-events-none fixed left-0 top-0 -z-10 h-[320px] w-[min(1200px,calc(100vw-4.5rem))] -translate-x-[120vw] opacity-0";
 
-function initialCryptoTabsMounted(tab: CryptoDetailTabId): Record<CryptoDetailTabId, boolean> {
-  return {
-    overview: tab === "overview",
-    holdings: tab === "holdings",
-  };
-}
-
 export function CryptoPageContent({
   routeSymbol,
   initialData,
@@ -95,15 +88,11 @@ export function CryptoPageContent({
 
   /** URL tab from the client router — applied after mount so the first paint matches SSR (`initialActiveTab`). */
   const [searchSyncedTab, setSearchSyncedTab] = useState<CryptoDetailTabId | null>(null);
-  const [tabsMounted, setTabsMounted] = useState<Record<CryptoDetailTabId, boolean>>(() =>
-    initialCryptoTabsMounted(initialActiveTab),
-  );
 
   useEffect(() => {
     const next = parseCryptoDetailTabQuery(searchParams.get("tab")) ?? initialActiveTab;
     queueMicrotask(() => {
       setSearchSyncedTab(next);
-      setTabsMounted((m) => ({ ...m, [next]: true }));
     });
   }, [searchParams, initialActiveTab]);
 
@@ -151,8 +140,9 @@ export function CryptoPageContent({
     setComparePicks((cur) => cur.filter((p) => p.symbol.trim().toUpperCase() !== sym));
   }, []);
 
-  // Keep a live spot/session header feed even on Holdings so the header always shows current price.
-  const cryptoChartDrivesHeader = true;
+  // BTC only: hidden 1D chart feeds the header. Other crypto uses performance + live-price poll
+  // (avoids a second lightweight-charts instance + extra intraday fetch on SOL/ETH/…).
+  const cryptoChartDrivesHeader = isLiveCrypto;
 
   const performanceFromServer = useMemo(
     (): StockPerformance | null =>
@@ -359,7 +349,10 @@ export function CryptoPageContent({
   const [mountHeaderChart, setMountHeaderChart] = useState(false);
 
   useEffect(() => {
-    if (!cryptoChartDrivesHeader) return;
+    if (!cryptoChartDrivesHeader) {
+      setMountHeaderChart(false);
+      return;
+    }
     const enable = () => setMountHeaderChart(true);
     if (typeof requestIdleCallback === "function") {
       const id = requestIdleCallback(enable, { timeout: 2_000 });
@@ -532,12 +525,27 @@ export function CryptoPageContent({
         <>
           <CryptoDetailTabNav activeTab={activeTab} onTabChange={setTabInUrl} />
 
-          {tabsMounted.overview ? (
+          {/* BTC header 1D chart lives outside tabs so Overview can unmount without freezing the header. */}
+          {cryptoChartDrivesHeader && mountHeaderChart ? (
+            <div className={OFFSCREEN_PRICE_CHART} aria-hidden>
+              <PriceChart
+                key={`${symUpper}-header-1d`}
+                kind="crypto"
+                symbol={symUpper}
+                range="1D"
+                height={320}
+                initialChart={initialSessionChartMemo}
+                onDisplayChange={onSessionHeaderDisplay}
+              />
+            </div>
+          ) : null}
+
+          {/* Active-tab only: keep-alive + hidden left multiple live charts (overview + portfolio) and froze the UI. */}
+          {activeTab === "overview" ? (
             <div
               role="tabpanel"
               id="crypto-tab-overview"
-              aria-hidden={activeTab !== "overview"}
-              className={activeTab === "overview" ? "space-y-5 max-md:space-y-3" : "hidden"}
+              className="space-y-5 max-md:space-y-3"
             >
               <ChartControls
                 activeRange={range}
@@ -586,19 +594,6 @@ export function CryptoPageContent({
                   />
                 )}
               </ChartControls>
-              {cryptoChartDrivesHeader && mountHeaderChart ? (
-                <div className={OFFSCREEN_PRICE_CHART} aria-hidden>
-                  <PriceChart
-                    key={`${symUpper}-header-1d`}
-                    kind="crypto"
-                    symbol={symUpper}
-                    range="1D"
-                    height={320}
-                    initialChart={initialSessionChartMemo}
-                    onDisplayChange={onSessionHeaderDisplay}
-                  />
-                </div>
-              ) : null}
               {comparePicks.length > 0 ? (
                 <MiniTable
                   ticker={symUpper}
@@ -621,13 +616,8 @@ export function CryptoPageContent({
             </div>
           ) : null}
 
-          {tabsMounted.holdings ? (
-            <div
-              role="tabpanel"
-              id="crypto-tab-holdings"
-              aria-hidden={activeTab !== "holdings"}
-              className={activeTab === "holdings" ? "block pt-1" : "hidden"}
-            >
+          {activeTab === "holdings" ? (
+            <div role="tabpanel" id="crypto-tab-holdings" className="block pt-1">
               <AssetPortfolioHoldingsTab
                 assetKind="crypto"
                 routeKey={symUpper}
