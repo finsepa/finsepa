@@ -136,6 +136,11 @@ export async function upsertMarketSnapshot(
   segment: string,
   payload: unknown,
 ): Promise<{ ok: true } | { ok: false; reason: string }> {
+  // `data` is jsonb NOT NULL — bare null/undefined becomes a Postgres 23502.
+  if (payload === null || payload === undefined) {
+    return { ok: false, reason: "empty_payload" };
+  }
+
   const admin = getSupabaseAdminClient();
   if (!admin) return { ok: false, reason: "no_supabase_admin" };
 

@@ -48,6 +48,10 @@ export async function upsertHubSnapshot(
   segment: string,
   payload: unknown,
 ): Promise<{ ok: true } | { ok: false; reason: string }> {
+  if (payload === null || payload === undefined) {
+    return { ok: false, reason: "empty_payload" };
+  }
+
   const admin = getSupabaseAdminClient();
   if (!admin) return { ok: false, reason: "no_supabase_admin" };
 
