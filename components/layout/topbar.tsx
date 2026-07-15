@@ -125,6 +125,7 @@ export function Topbar({
   avatarUrl,
   userDisplayName,
   platformTrialDaysLeft = null,
+  isPro = false,
 }: {
   userId: string;
   userInitials: string;
@@ -132,6 +133,8 @@ export function Topbar({
   userDisplayName: string;
   /** Passed into the user menu: trial countdown after avatar; Upgrade CTA lives in the top bar on md+. */
   platformTrialDaysLeft?: number | null;
+  /** Server-known paid Pro — hides Upgrade on first paint. */
+  isPro?: boolean;
 }) {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const notificationsClient = useNotificationsClient({
@@ -238,7 +241,7 @@ export function Topbar({
             </TopbarDelayedTooltip>
           ) : null}
 
-          <TopbarUpgradeButton userId={userId} platformTrialDaysLeft={platformTrialDaysLeft} />
+          <TopbarUpgradeButton userId={userId} platformTrialDaysLeft={platformTrialDaysLeft} isPro={isPro} />
 
           <TopbarUserMenu
             userId={userId}
@@ -246,6 +249,7 @@ export function Topbar({
             avatarUrl={avatarUrl}
             userDisplayName={userDisplayName}
             platformTrialDaysLeft={platformTrialDaysLeft}
+            isPro={isPro}
           />
         </div>
         </header>

@@ -16,6 +16,7 @@ import {
 } from "@/components/stock/stock-financials-toolbar-toggles";
 import type { ChartingSeriesPoint, FundamentalsSeriesMode } from "@/lib/market/charting-series-types";
 import type { ChartingMetricId } from "@/lib/market/stock-charting-metrics";
+import { parseChartingTtmPoint } from "@/lib/market/charting-period-display";
 import {
   buildIncomeStatementTableModel,
   reverseIncomeStatementTableColumns,
@@ -54,11 +55,6 @@ const EMPTY_COPY: Record<FinancialsStatementView, Record<FundamentalsSeriesMode,
   },
 };
 
-function parseTtmPoint(raw: unknown): ChartingSeriesPoint | null {
-  if (!raw || typeof raw !== "object" || !("periodEnd" in raw)) return null;
-  return raw as ChartingSeriesPoint;
-}
-
 function buildModelForView(
   view: FinancialsStatementView,
   points: ChartingSeriesPoint[],
@@ -94,7 +90,7 @@ export function StockFinancialsTab({
   const [view, setView] = useState<FinancialsStatementView>("income");
   const [periodMode, setPeriodMode] = useState<FundamentalsSeriesMode>("annual");
   const [timeRange, setTimeRange] = useState<FinancialsTableTimeRange>("10Y");
-  const [columnsNewestFirst, setColumnsNewestFirst] = useState(false);
+  const [columnsNewestFirst, setColumnsNewestFirst] = useState(true);
   const [annualPoints, setAnnualPoints] = useState<ChartingSeriesPoint[]>(() =>
     isChartingPointArray(initialAnnualPoints) ? initialAnnualPoints : [],
   );
@@ -102,9 +98,7 @@ export function StockFinancialsTab({
     isChartingPointArray(initialQuarterlyPoints) ? initialQuarterlyPoints : [],
   );
   const [ttmPoint, setTtmPoint] = useState<ChartingSeriesPoint | null>(() =>
-    initialTtmPoint && typeof initialTtmPoint === "object" && "periodEnd" in initialTtmPoint
-      ? initialTtmPoint
-      : null,
+    parseChartingTtmPoint(initialTtmPoint),
   );
   const [loading, setLoading] = useState(
     () => !isChartingPointArray(initialAnnualPoints) && !isChartingPointArray(initialQuarterlyPoints),
@@ -131,7 +125,7 @@ export function StockFinancialsTab({
           setQuarterlyPoints(parsed);
         } else {
           setAnnualPoints(parsed);
-          setTtmPoint(parseTtmPoint(json.ttmPoint));
+          setTtmPoint(parseChartingTtmPoint(json.ttmPoint));
         }
       } catch {
         if (mode === "quarterly") setQuarterlyPoints([]);
@@ -147,7 +141,7 @@ export function StockFinancialsTab({
   );
 
   useEffect(() => {
-    setColumnsNewestFirst(false);
+    setColumnsNewestFirst(true);
     setPeriodMode("annual");
     setTimeRange("10Y");
   }, [ticker]);
@@ -155,7 +149,7 @@ export function StockFinancialsTab({
   useEffect(() => {
     if (isChartingPointArray(initialAnnualPoints)) {
       setAnnualPoints(initialAnnualPoints);
-      const seededTtm = parseTtmPoint(initialTtmPoint);
+      const seededTtm = parseChartingTtmPoint(initialTtmPoint);
       setTtmPoint(seededTtm);
       setLoading(false);
       if (!seededTtm) {
@@ -167,7 +161,7 @@ export function StockFinancialsTab({
             );
             if (!res.ok) return;
             const json = (await res.json()) as { ttmPoint?: unknown };
-            setTtmPoint(parseTtmPoint(json.ttmPoint));
+            setTtmPoint(parseChartingTtmPoint(json.ttmPoint));
           } catch {
             /* ignore */
           }

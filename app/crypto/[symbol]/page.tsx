@@ -1,7 +1,9 @@
-import { CryptoPageContent } from "@/components/crypto/crypto-page-content";
+import { CryptoPageClient } from "./crypto-page-client";
 import { loadCryptoPageInitialData } from "@/lib/market/crypto-page-initial-data";
 import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
 import { parseCryptoDetailTabQuery, type CryptoDetailTabId } from "@/lib/crypto/crypto-detail-tab";
+
+export const dynamic = "force-dynamic";
 
 type PageProps = {
   params: Promise<{ symbol: string }>;
@@ -26,11 +28,10 @@ export default async function CryptoSymbolPage({ params, searchParams }: PagePro
 
   const initialData = await loadCryptoPageInitialData(routeSymbol);
   return (
-    <CryptoPageContent
+    <CryptoPageClient
       routeSymbol={routeSymbol}
       initialData={initialData}
       initialActiveTab={initialActiveTab}
     />
   );
 }
-

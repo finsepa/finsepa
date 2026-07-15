@@ -127,6 +127,7 @@ export function formatChartingPeriodLabel(periodEnd: string, periodMode: "annual
 
 /** Secondary line under quarter/year — e.g. `Apr 29` (Figma-style fiscal period end). */
 export function formatChartingPeriodEndShortMd(periodEnd: string): string {
+  if (isChartingTtmPeriodEnd(periodEnd)) return CHARTING_TTM_PERIOD_END;
   const d = parseChartingPeriodEndUtc(periodEnd);
   if (!d) return "";
   return new Intl.DateTimeFormat("en-US", {
@@ -140,6 +141,7 @@ export function formatChartingPeriodEndShortMd(periodEnd: string): string {
 export function formatFinancialsPeriodEndDisplay(periodEnd: string | null | undefined): string {
   const raw = periodEnd?.trim();
   if (!raw) return "—";
+  if (isChartingTtmPeriodEnd(raw)) return "—";
   const label = formatChartingPeriodEndShortMd(raw);
   return label || "—";
 }

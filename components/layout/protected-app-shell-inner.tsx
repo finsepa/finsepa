@@ -36,6 +36,7 @@ function ProtectedAppChrome({
   avatarUrl,
   userDisplayName,
   platformTrialDaysLeft,
+  isPro,
   mobileTopbarVariant,
 }: {
   children: ReactNode;
@@ -44,6 +45,7 @@ function ProtectedAppChrome({
   avatarUrl: string | null;
   userDisplayName: string;
   platformTrialDaysLeft: number | null;
+  isPro: boolean;
   mobileTopbarVariant?: "stock";
 }) {
   const { collapsed } = useSidebarLayout();
@@ -118,6 +120,7 @@ function ProtectedAppChrome({
                 avatarUrl={avatarUrl}
                 userDisplayName={userDisplayName}
                 platformTrialDaysLeft={platformTrialDaysLeft}
+                isPro={isPro}
               />
             </div>
           </div>
@@ -168,6 +171,7 @@ export function ProtectedAppShellInner({
   avatarUrl,
   userDisplayName,
   platformTrialDaysLeft = null,
+  isPro = false,
   initialSidebarCollapsed = false,
   initialWatchlistRailCollapsed = true,
   mobileTopbarVariant,
@@ -179,6 +183,8 @@ export function ProtectedAppShellInner({
   userDisplayName: string;
   /** Days remaining in the platform free trial; shown in the top bar until the user subscribes. */
   platformTrialDaysLeft?: number | null;
+  /** Server-known paid Pro — avoids flashing Upgrade / Free Trial chrome before client billing loads. */
+  isPro?: boolean;
   /** Server-read cookie so sidebar width matches on SSR and hydration. */
   initialSidebarCollapsed?: boolean;
   /** Server-read cookie for desktop watchlist rail (collapsed = star strip only). */
@@ -195,6 +201,7 @@ export function ProtectedAppShellInner({
             avatarUrl={avatarUrl}
             userDisplayName={userDisplayName}
             platformTrialDaysLeft={platformTrialDaysLeft ?? null}
+            isPro={isPro}
             mobileTopbarVariant={mobileTopbarVariant}
           >
             {children}

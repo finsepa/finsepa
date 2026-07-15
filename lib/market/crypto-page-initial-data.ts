@@ -8,7 +8,14 @@ import { buildCryptoAssetRowFromDailyBars } from "@/lib/market/crypto-asset";
 import { stockChartPointsFromDailyBars } from "@/lib/market/crypto-chart-data";
 import { loadCryptoLive1DMinuteChartPoints } from "@/lib/market/crypto-1d-live-minute-chart";
 import { isCryptoLive1DSymbol } from "@/lib/market/crypto-live-1d-tickers";
-import { getCryptoNews } from "@/lib/market/crypto-news";
+import { getCryptoNewsForPage } from "@/lib/market/crypto-news";
+import {
+  cryptoPageSnapshotToPageData,
+  getCryptoPageCacheSegment,
+  readCryptoPageSnapshot,
+  stripCryptoPageSnapshotHotFields,
+  upsertCryptoPageSnapshot,
+} from "@/lib/market/crypto-page-snapshot-store";
 import {
   fetchEodhdCryptoDailyBarsForMeta,
   lastPositiveCloseFromCryptoBars,
@@ -72,11 +79,57 @@ export type CryptoPageInitialData = {
   headerLiveSpotUsd: number | null;
 };
 
+function scheduleCryptoPageSnapshotWrite(
+  symbol: string,
+  segment: string,
+  data: CryptoPageInitialData,
+) {
+  const payload = stripCryptoPageSnapshotHotFields(data);
+  void upsertCryptoPageSnapshot(symbol, segment, payload).then((res) => {
+    if (!res.ok && process.env.NODE_ENV === "development") {
+      console.warn("[crypto-page-snapshot] upsert failed", { symbol, reason: res.reason });
+    }
+  });
+}
+
+/** BTC: refresh minute/live 1D for header. Others: keep session empty (client live-price). */
+async function loadCryptoPageHotFields(
+  routeSymbol: string,
+  closeSpotUsd: number | null,
+): Promise<Pick<CryptoPageInitialData, "sessionChart" | "headerLiveSpotUsd">> {
+  const live1d = isCryptoLive1DSymbol(routeSymbol);
+  if (!live1d) {
+    return {
+      sessionChart: { range: SESSION_RANGE, points: [] },
+      headerLiveSpotUsd:
+        typeof closeSpotUsd === "number" && Number.isFinite(closeSpotUsd) && closeSpotUsd > 0
+          ? closeSpotUsd
+          : null,
+    };
+  }
+
+  const now = new Date();
+  const sessionPoints = await loadCryptoLive1DMinuteChartPoints(routeSymbol, now);
+  const last =
+    sessionPoints.length > 0 ? sessionPoints[sessionPoints.length - 1]?.value : null;
+  const spot =
+    typeof last === "number" && Number.isFinite(last) && last > 0
+      ? last
+      : typeof closeSpotUsd === "number" && Number.isFinite(closeSpotUsd) && closeSpotUsd > 0
+        ? closeSpotUsd
+        : null;
+
+  return {
+    sessionChart: { range: SESSION_RANGE, points: sessionPoints },
+    headerLiveSpotUsd: spot,
+  };
+}
+
 /**
  * Server pass for crypto detail: one daily-bars fetch for asset + 1Y chart + performance.
  * Session 1D preload is BTC-only (live header chart); other symbols skip the extra intraday EODHD call.
  */
-async function loadCryptoPageInitialDataUncached(routeSymbol: string): Promise<CryptoPageInitialData> {
+export async function loadCryptoPageInitialDataUncached(routeSymbol: string): Promise<CryptoPageInitialData> {
   const raw = routeSymbol.trim();
   if (!raw) return emptyPayload("");
 
@@ -101,7 +154,7 @@ async function loadCryptoPageInitialDataUncached(routeSymbol: string): Promise<C
     // BTC: preload minute/live 1D for the offscreen header chart.
     // Others: skip uncached intraday here — header uses daily close + client `/live-price`.
     live1d ? loadCryptoLive1DMinuteChartPoints(raw, now) : Promise.resolve([] as StockChartPoint[]),
-    getCryptoNews(raw),
+    getCryptoNewsForPage(raw),
   ]);
 
   const sorted = dailyBars?.length ? [...dailyBars].sort((a, b) => a.date.localeCompare(b.date)) : [];
@@ -113,6 +166,14 @@ async function loadCryptoPageInitialDataUncached(routeSymbol: string): Promise<C
 
   const chartPoints = stockChartPointsFromDailyBars(sorted, DEFAULT_RANGE, now);
   const closeSpot = lastPositiveCloseFromCryptoBars(sorted);
+  const lastSession =
+    sessionPoints.length > 0 ? sessionPoints[sessionPoints.length - 1]?.value : null;
+  const headerSpot =
+    typeof lastSession === "number" && Number.isFinite(lastSession) && lastSession > 0
+      ? lastSession
+      : typeof closeSpot === "number" && Number.isFinite(closeSpot) && closeSpot > 0
+        ? closeSpot
+        : null;
 
   return {
     routeSymbol: raw,
@@ -121,17 +182,20 @@ async function loadCryptoPageInitialDataUncached(routeSymbol: string): Promise<C
     sessionChart: { range: SESSION_RANGE, points: sessionPoints },
     performance,
     news: Array.isArray(news) ? news : [],
-    headerLiveSpotUsd:
-      typeof closeSpot === "number" && Number.isFinite(closeSpot) && closeSpot > 0 ? closeSpot : null,
+    headerLiveSpotUsd: headerSpot,
   };
 }
 
 const getCryptoPageInitialDataCached = unstable_cache(
   async (routeSymbol: string) => loadCryptoPageInitialDataUncached(routeSymbol),
-  ["crypto-page-initial-v2-lean-session"],
+  ["crypto-page-initial-v3-snapshot"],
   { revalidate: REVALIDATE_HOT },
 );
 
+/**
+ * Prefer Supabase `asset_crypto_{SYM}` (stale OK up to 6h) so mid-traffic coins skip a cold
+ * EODHD fan-out every 15m — same pattern as equity `asset_{TICKER}` for NVDA.
+ */
 export async function loadCryptoPageInitialData(routeSymbol: string): Promise<CryptoPageInitialData | null> {
   const raw = routeSymbol.trim();
   if (!raw) return null;
@@ -140,5 +204,47 @@ export async function loadCryptoPageInitialData(routeSymbol: string): Promise<Cr
     return emptyPayload(raw);
   }
 
-  return getCryptoPageInitialDataCached(raw.toUpperCase());
+  const sym = raw.toUpperCase();
+  const segment = getCryptoPageCacheSegment();
+  const cachedHit = await readCryptoPageSnapshot(sym, segment, { allowStale: true });
+
+  if (cachedHit?.payload?.routeSymbol?.trim().toUpperCase() === sym) {
+    const base = cryptoPageSnapshotToPageData(cachedHit.payload);
+    const closeFromPerf =
+      typeof base.performance?.price === "number" &&
+      Number.isFinite(base.performance.price) &&
+      base.performance.price > 0
+        ? base.performance.price
+        : null;
+
+    const needsHot =
+      isCryptoLive1DSymbol(sym) ||
+      !cachedHit.exactSegment ||
+      base.headerLiveSpotUsd == null;
+
+    if (!needsHot && base.chart.points.length > 0) {
+      if (!cachedHit.exactSegment) {
+        scheduleCryptoPageSnapshotWrite(sym, segment, base);
+      }
+      return base;
+    }
+
+    const hot = await loadCryptoPageHotFields(sym, closeFromPerf ?? base.headerLiveSpotUsd);
+    const merged: CryptoPageInitialData = {
+      ...base,
+      ...hot,
+      sessionChart:
+        hot.sessionChart.points.length > 0 ? hot.sessionChart : base.sessionChart,
+    };
+    if (!cachedHit.exactSegment || hot.sessionChart.points.length > 0) {
+      scheduleCryptoPageSnapshotWrite(sym, segment, merged);
+    }
+    return merged;
+  }
+
+  const fresh = await getCryptoPageInitialDataCached(sym);
+  if (fresh?.asset || fresh?.chart.points.length) {
+    scheduleCryptoPageSnapshotWrite(sym, segment, fresh);
+  }
+  return fresh;
 }

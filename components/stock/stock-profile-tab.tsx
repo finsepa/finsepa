@@ -1,11 +1,53 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
 import { getStockDetailMetaFromTicker } from "@/lib/market/stock-detail-meta";
 import type { StockProfilePayload } from "@/lib/market/stock-profile-types";
+import { mapProviderSectorToCanonical } from "@/lib/screener/screener-gics-sectors";
+import { screenerIndustryDrillHref } from "@/lib/screener/screener-industry-url";
+import { screenerSectorCompaniesHref } from "@/lib/screener/screener-sector-url";
 
 function dash(v: string | null | undefined): string {
   return v != null && String(v).trim() !== "" ? String(v).trim() : "—";
+}
+
+/** Same screener destinations + hover underline as stock breadcrumbs. */
+const PROFILE_SCREENER_LINK_CLASS =
+  "text-[14px] font-normal leading-5 text-[#09090B] transition-colors hover:underline";
+
+function ProfileSectorValue({ sector }: { sector: string | null | undefined }) {
+  const label = sector?.trim() || null;
+  if (!label) return <span>—</span>;
+  const canonical = mapProviderSectorToCanonical(label);
+  if (!canonical) return <span>{label}</span>;
+  return (
+    <Link href={screenerSectorCompaniesHref(canonical)} className={PROFILE_SCREENER_LINK_CLASS} title={label}>
+      {label}
+    </Link>
+  );
+}
+
+function ProfileIndustryValue({
+  sector,
+  industry,
+}: {
+  sector: string | null | undefined;
+  industry: string | null | undefined;
+}) {
+  const industryLabel = industry?.trim() || null;
+  if (!industryLabel) return <span>—</span>;
+  const canonical = sector?.trim() ? mapProviderSectorToCanonical(sector.trim()) : null;
+  if (!canonical) return <span>{industryLabel}</span>;
+  return (
+    <Link
+      href={screenerIndustryDrillHref(canonical, industryLabel)}
+      className={PROFILE_SCREENER_LINK_CLASS}
+      title={industryLabel}
+    >
+      {industryLabel}
+    </Link>
+  );
 }
 
 /** Figma Market — Profile: label 12px semibold zinc-500, value 14px regular zinc-950, gap 4px */
@@ -182,7 +224,7 @@ export function StockProfileTab({ ticker, initialProfile }: { ticker: string; in
               }
               right={
                 <ProfileCell label="Sector">
-                  {dash(p?.sector)}
+                  <ProfileSectorValue sector={p?.sector} />
                 </ProfileCell>
               }
             />
@@ -194,7 +236,7 @@ export function StockProfileTab({ ticker, initialProfile }: { ticker: string; in
               }
               right={
                 <ProfileCell label="Industry">
-                  {dash(p?.industry)}
+                  <ProfileIndustryValue sector={p?.sector} industry={p?.industry} />
                 </ProfileCell>
               }
             />

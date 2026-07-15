@@ -38,20 +38,29 @@ export type IncomeStatementTableModel = {
   /** When set, aligned with `columns` — true = consensus forecast (Earnings tab annual summary). */
   columnIsForecast?: boolean[];
   rows: IncomeStatementRowModel[];
-  /** Optional trailing TTM column (stays at the trailing edge when columns are reversed). */
+  /**
+   * Optional TTM column (annual only). Trailing = chronological end (`… | 2025 | TTM`);
+   * leading = newest-first edge (`TTM | 2025 | …`), matching Key Stats “latest” placement.
+   */
   ttm?: {
     columnLabel: string;
     periodEnd: string;
+    placement?: "trailing" | "leading";
   };
 };
 
-/** Flip year columns and row values (e.g. `2018…2025` ↔ `2025…2018`). */
+/** Flip year columns and row values (e.g. `2018…2025` ↔ `2025…2018`). Keeps TTM on the newest edge. */
 export function reverseIncomeStatementTableColumns(
   model: IncomeStatementTableModel,
 ): IncomeStatementTableModel {
   const order = model.columns.map((_, i) => i).reverse();
   const hasTtm = model.ttm != null;
-  const ttmValueIndex = hasTtm ? model.rows[0]?.values.length - 1 : -1;
+  const placement = model.ttm?.placement ?? "trailing";
+  const ttmValueIndex = !hasTtm
+    ? -1
+    : placement === "leading"
+      ? 0
+      : (model.rows[0]?.values.length ?? 0) - 1;
 
   return {
     columns: order.map((i) => model.columns[i]!),
@@ -59,13 +68,23 @@ export function reverseIncomeStatementTableColumns(
     columnIsForecast: model.columnIsForecast?.length
       ? order.map((i) => model.columnIsForecast![i] ?? false)
       : undefined,
-    ttm: model.ttm,
+    ttm: model.ttm
+      ? {
+          ...model.ttm,
+          // Newest-first view: pin TTM left (next to 2025), same “latest” slot as Key Stats charts.
+          placement: "leading",
+        }
+      : undefined,
     rows: model.rows.map((row) => {
-      const annualValues = order.map((i) => row.values[i] ?? null);
-      const ttmValue = hasTtm && ttmValueIndex >= 0 ? (row.values[ttmValueIndex] ?? null) : null;
+      const annualBase =
+        hasTtm && placement === "leading" ? row.values.slice(1) : row.values;
+      const annualValues = order.map((i) => annualBase[i] ?? null);
+      const ttmValue =
+        hasTtm && ttmValueIndex >= 0 ? (row.values[ttmValueIndex] ?? null) : null;
       return {
         ...row,
-        values: hasTtm ? [...annualValues, ttmValue] : annualValues,
+        // Leading TTM so values align with header order TTM → years.
+        values: hasTtm ? [ttmValue, ...annualValues] : annualValues,
       };
     }),
   };

@@ -53,7 +53,10 @@ function normalizeNewsArray(data: unknown): Record<string, unknown>[] {
   return [];
 }
 
-async function loadCryptoNewsUncached(routeSymbol: string): Promise<StockNewsArticle[]> {
+async function loadCryptoNewsUncached(
+  routeSymbol: string,
+  opts?: { enrichOg?: boolean },
+): Promise<StockNewsArticle[]> {
   const key = getEodhdApiKey();
   if (!key) return [];
 
@@ -114,19 +117,29 @@ async function loadCryptoNewsUncached(routeSymbol: string): Promise<StockNewsArt
     if (out.length >= 10) break;
   }
 
-  await Promise.all(
-    out.map(async (row) => {
-      if (row.imageUrl) return;
-      const og = await fetchOgImageFromArticleUrl(row.url);
-      if (og) row.imageUrl = og;
-    }),
-  );
+  // Detail-page SSR skips OG scrapes (serial network per miss); news tab still enriches.
+  if (opts?.enrichOg !== false) {
+    await Promise.all(
+      out.map(async (row) => {
+        if (row.imageUrl) return;
+        const og = await fetchOgImageFromArticleUrl(row.url);
+        if (og) row.imageUrl = og;
+      }),
+    );
+  }
 
   return out;
 }
 
 export const getCryptoNews = unstable_cache(
-  async (routeSymbol: string) => loadCryptoNewsUncached(routeSymbol),
+  async (routeSymbol: string) => loadCryptoNewsUncached(routeSymbol, { enrichOg: true }),
   ["crypto-news-v1"],
+  { revalidate: REVALIDATE_HOT },
+);
+
+/** Page SSR: same articles, no per-URL OG fetch on the critical path. */
+export const getCryptoNewsForPage = unstable_cache(
+  async (routeSymbol: string) => loadCryptoNewsUncached(routeSymbol, { enrichOg: false }),
+  ["crypto-news-page-lean-v1"],
   { revalidate: REVALIDATE_HOT },
 );

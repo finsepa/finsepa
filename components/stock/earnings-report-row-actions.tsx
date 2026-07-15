@@ -74,8 +74,8 @@ type Props = {
 };
 
 /**
- * Slides / Filings — in-app preview when a direct PDF or SEC Exhibit 99.1 HTML URL is known.
- * PDFs use `/api/ir-pdf`; SEC HTML exhibits use `/api/sec-exhibit`.
+ * Slides / Filings — in-app preview when a PDF, SEC HTML exhibit, or known PPTX deck URL is known.
+ * PDFs use `/api/ir-pdf`; SEC HTML uses `/api/sec-exhibit`; PPTX decks use Office Online embed.
  */
 export function EarningsReportRowActions({ row, listingTicker }: Props) {
   const released = row.reported;
@@ -103,14 +103,7 @@ export function EarningsReportRowActions({ row, listingTicker }: Props) {
         {released && canPreview(slidesUrl) ? (
           <ActionButton
             label="Open earnings presentation preview"
-            onClick={() => {
-              const kind = earningsDocumentPreviewKind(slidesUrl!);
-              if (kind === "external") {
-                window.open(slidesUrl!, "_blank", "noopener,noreferrer");
-                return;
-              }
-              setPreview({ url: slidesUrl!, title: "Earnings presentation" });
-            }}
+            onClick={() => setPreview({ url: slidesUrl!, title: "Earnings presentation" })}
           >
             <Presentation className="h-4 w-4 shrink-0 text-[#52525B]" aria-hidden />
             <span>Slides</span>

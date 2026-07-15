@@ -2,8 +2,11 @@
 
 import { memo, useEffect, useMemo, useState } from "react";
 
-import { Spinner } from "@/components/ui/spinner";
-import { MOBILE_INSET_CARD_CLASS, STOCK_OVERVIEW_SECTION_TITLE_CLASS } from "@/components/design-system/card-surface-styles";
+import {
+  MOBILE_INSET_CARD_CLASS,
+  STOCK_OVERVIEW_SECTION_TITLE_CLASS,
+} from "@/components/design-system/card-surface-styles";
+import { KeyIndicatorsSkeleton } from "@/components/stock/key-indicators-skeleton";
 import { stockKeyIndicatorsClientEnabled } from "@/lib/features/key-indicators";
 import { ArrowCircleBrokenDownRight, ArrowCircleBrokenUpRight, CalendarDays } from "@/lib/icons";
 import type {
@@ -39,6 +42,10 @@ function splitIndicators(indicators: StockKeyIndicator[]): { pros: StockKeyIndic
     else cons.push(indicator);
   }
   return { pros, cons };
+}
+
+function isRenderable(payload: StockKeyIndicatorsResponse | null | undefined): boolean {
+  return (payload?.indicators?.length ?? 0) >= 2;
 }
 
 function IndicatorIcon({ indicator }: { indicator: StockKeyIndicator }) {
@@ -91,13 +98,28 @@ function IndicatorColumn({ items }: { items: StockKeyIndicator[] }) {
   );
 }
 
-function KeyIndicatorsInner({ ticker }: { ticker: string }) {
+function KeyIndicatorsInner({
+  ticker,
+  initial = null,
+}: {
+  ticker: string;
+  initial?: StockKeyIndicatorsResponse | null;
+}) {
   const enabled = stockKeyIndicatorsClientEnabled();
-  const [loading, setLoading] = useState(enabled);
-  const [payload, setPayload] = useState<StockKeyIndicatorsResponse | null>(null);
+  const initialForTicker = initial?.ticker === ticker && isRenderable(initial) ? initial : null;
+  const [payload, setPayload] = useState<StockKeyIndicatorsResponse | null>(initialForTicker);
+  const [loading, setLoading] = useState(enabled && !initialForTicker);
 
   useEffect(() => {
     if (!enabled) return;
+
+    const seeded = initial?.ticker === ticker && isRenderable(initial) ? initial : null;
+    if (seeded) {
+      setPayload(seeded);
+      setLoading(false);
+      return;
+    }
+
     let cancelled = false;
     async function load() {
       setLoading(true);
@@ -122,7 +144,7 @@ function KeyIndicatorsInner({ ticker }: { ticker: string }) {
     return () => {
       cancelled = true;
     };
-  }, [enabled, ticker]);
+  }, [enabled, ticker, initial]);
 
   const indicators = payload?.indicators ?? [];
   const { pros, cons } = useMemo(() => splitIndicators(indicators), [indicators]);
@@ -130,15 +152,7 @@ function KeyIndicatorsInner({ ticker }: { ticker: string }) {
   if (!enabled) return null;
 
   if (loading) {
-    return (
-      <div
-        className={cn(KEY_INDICATORS_CARD_CLASS, "flex min-h-[120px] items-center justify-center")}
-        aria-busy="true"
-        aria-label="Loading key indicators"
-      >
-        <Spinner className="size-5 text-[#71717A]" />
-      </div>
-    );
+    return <KeyIndicatorsSkeleton />;
   }
 
   if (indicators.length < 2) return null;

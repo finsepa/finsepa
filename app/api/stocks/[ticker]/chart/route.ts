@@ -74,21 +74,29 @@ export async function GET(request: Request, { params }: Ctx) {
   const rawPoints = await loadChartPoints(routeTicker, range, series);
   const points = sliceStockChartPointsForRange(rawPoints, range);
   const now = new Date();
-  const liveSessionMinute = range === "1D" && !cadenceDaily && isStock1DLiveSessionMinuteChart(routeTicker, now);
-  const livePostMarketChart = usesStock1DLiveWsPostMarketChart(routeTicker, now);
+  // Live minute / spot only applies to the price series — market cap & return use last session.
+  const liveSessionMinute =
+    series === "price" &&
+    range === "1D" &&
+    !cadenceDaily &&
+    isStock1DLiveSessionMinuteChart(routeTicker, now);
+  const livePostMarketChart =
+    series === "price" && usesStock1DLiveWsPostMarketChart(routeTicker, now);
   const priorSession1D =
     range === "1D" &&
     !cadenceDaily &&
-    !usesStock1DLiveWsMinutePipeline(routeTicker, now) &&
-    !livePostMarketChart;
+    (series !== "price" ||
+      (!usesStock1DLiveWsMinutePipeline(routeTicker, now) && !livePostMarketChart));
   let cacheControl =
-    (usesStock1DLiveWsMinutePipeline(routeTicker, now) || livePostMarketChart) && liveSessionMinute
+    series === "price" &&
+    (usesStock1DLiveWsMinutePipeline(routeTicker, now) || livePostMarketChart) &&
+    liveSessionMinute
       ? CACHE_CONTROL_PRIVATE_NO_STORE
-    : priorSession1D
-      ? CACHE_CONTROL_PRIVATE_SUPERINVESTOR_HOLDING_CHART
-      : cadenceDaily
+      : priorSession1D
         ? CACHE_CONTROL_PRIVATE_SUPERINVESTOR_HOLDING_CHART
-        : CACHE_CONTROL_PRIVATE_CHART_STREAM;
+        : cadenceDaily
+          ? CACHE_CONTROL_PRIVATE_SUPERINVESTOR_HOLDING_CHART
+          : CACHE_CONTROL_PRIVATE_CHART_STREAM;
 
   // TEMP DEBUG: AAPL/NVDA 1D during closed/pre-market — force no-store + surface raw API state
   // to isolate HTTP/browser/CDN cache from server session-selection. Remove after debugging.

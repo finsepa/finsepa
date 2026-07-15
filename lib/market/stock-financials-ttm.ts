@@ -20,6 +20,7 @@ export function financialsTableTtmMeta(
   return {
     columnLabel: "TTM",
     periodEnd: formatFinancialsPeriodEndDisplay(ttm.periodEnd),
+    placement: "trailing",
   };
 }
 

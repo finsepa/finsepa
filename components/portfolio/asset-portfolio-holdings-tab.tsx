@@ -278,13 +278,14 @@ export function AssetPortfolioHoldingsTab({
               title={selectedPortfolioReadOnly ? "Trades are not available for combined portfolios." : undefined}
               onClick={() => openNewTransactionWithPreset({ symbol: route, name: assetDisplayName })}
               className={cn(
-                "inline-flex h-10 items-center justify-center rounded-[10px] bg-[#09090B] px-4 text-sm font-semibold text-white",
+                "inline-flex h-10 items-center justify-center gap-1.5 rounded-[10px] bg-[#09090B] px-4 text-sm font-semibold text-white",
                 "shadow-[0px_1px_2px_0px_rgba(10,10,10,0.12)] transition-colors hover:bg-[#18181B]",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/20 focus-visible:ring-offset-2",
                 "disabled:pointer-events-none disabled:opacity-40",
               )}
             >
-              + Add Transaction
+              <Plus className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
+              Add Transaction
             </button>
           </EmptyContent>
         </Empty>

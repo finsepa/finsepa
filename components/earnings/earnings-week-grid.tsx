@@ -183,6 +183,8 @@ function EarningsListRow({
     <div
       className={cn(earningsListTableRowClass, "group cursor-pointer text-[14px] leading-5 text-[#09090B]")}
       onClick={() => onOpen(item)}
+      onPointerEnter={() => prefetchStockEarningsTabPayload(item.ticker, true)}
+      onFocus={() => prefetchStockEarningsTabPayload(item.ticker, true)}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {

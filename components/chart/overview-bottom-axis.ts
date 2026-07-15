@@ -49,17 +49,16 @@ export function periodAxisLabelLayoutStyle(
   leftPx: number,
   anchor: PeriodAxisLabelAnchor,
   plotWidthPx = 0,
-): { left: number | string } {
+): { left: string } {
   if (anchor === "left") {
-    return { left: PERIOD_AXIS_LEFT_EDGE_PX };
+    return { left: `${PERIOD_AXIS_LEFT_EDGE_PX}px` };
   }
   if (plotWidthPx > 0) {
-    return {
-      left: Math.min(
-        Math.max(PERIOD_AXIS_LEFT_EDGE_PX, leftPx),
-        Math.max(PERIOD_AXIS_RIGHT_EDGE_PX, plotWidthPx - PERIOD_AXIS_RIGHT_EDGE_PX),
-      ),
-    };
+    const clamped = Math.min(
+      Math.max(PERIOD_AXIS_LEFT_EDGE_PX, leftPx),
+      Math.max(PERIOD_AXIS_RIGHT_EDGE_PX, plotWidthPx - PERIOD_AXIS_RIGHT_EDGE_PX),
+    );
+    return { left: `${clamped}px` };
   }
   return {
     left: `clamp(${PERIOD_AXIS_LEFT_EDGE_PX}px, ${leftPx}px, calc(100% - ${PERIOD_AXIS_RIGHT_EDGE_PX}px))`,

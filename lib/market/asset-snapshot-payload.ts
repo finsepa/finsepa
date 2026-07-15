@@ -3,10 +3,10 @@ import type { ScreenerUsMarketCacheMode } from "@/lib/screener/screener-us-marke
 import type { StockPageInitialData } from "@/lib/market/stock-page-initial-data";
 import { getUsEquityMarketSession } from "@/lib/market/us-equity-market-session";
 
-/** JSON stored in `market_snapshot` — hot fields omitted in live mode. */
+/** JSON stored in `market_snapshot` — hot fields + Key Indicators omitted (separate snapshot TTL). */
 export type AssetSnapshotPayload = Omit<
   StockPageInitialData,
-  "headerLiveSpotUsd" | "headerPriorCloseUsd"
+  "headerLiveSpotUsd" | "headerPriorCloseUsd" | "keyIndicators"
 > & {
   headerLiveSpotUsd?: null;
   headerPriorCloseUsd?: null;
@@ -16,7 +16,12 @@ export function stripAssetSnapshotHotFields(
   data: StockPageInitialData,
   mode: ScreenerUsMarketCacheMode,
 ): AssetSnapshotPayload {
-  const { headerLiveSpotUsd: _spot, headerPriorCloseUsd: _prior, ...rest } = data;
+  const {
+    headerLiveSpotUsd: _spot,
+    headerPriorCloseUsd: _prior,
+    keyIndicators: _ki,
+    ...rest
+  } = data;
   if (mode === "frozen") {
     return {
       ...rest,
@@ -38,6 +43,7 @@ export function assetSnapshotPayloadToPageData(payload: AssetSnapshotPayload): S
     ...payload,
     headerLiveSpotUsd: null,
     headerPriorCloseUsd: null,
+    keyIndicators: null,
     liveRegularSessionActive:
       payload.liveRegularSessionActive ??
       (payload.chart.liveSessionMinute != null

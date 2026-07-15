@@ -129,8 +129,48 @@ export function StockIncomeStatementTable({
 }) {
   const { columns, columnPeriodEnds, columnIsForecast, rows, ttm, periodColumnHeader } = model;
   const periodHeaderLabel = periodColumnHeader ?? "Fiscal Year";
+  const ttmLeading = ttm?.placement === "leading";
   const dataColumnCount = columns.length + (ttm ? 1 : 0);
   const gridTemplateColumns = `minmax(11rem, 2fr) repeat(${dataColumnCount}, minmax(5.25rem, 1fr))`;
+
+  /** Align forecast opacity with annual value indices when TTM is leading or trailing. */
+  const forecastByValueIndex = (() => {
+    if (!columnIsForecast?.length) return undefined;
+    if (!ttm) return columnIsForecast;
+    if (ttmLeading) return [false, ...columnIsForecast];
+    return [...columnIsForecast, false];
+  })();
+
+  const yearHeaders = columns.map((y, i) => (
+    <div
+      key={`col-${i}`}
+      className={cn(
+        headerYearClass,
+        headerValueCellClass,
+        columnIsForecast?.[i] && EARNINGS_FORECAST_OPACITY_CLASS,
+      )}
+    >
+      {y}
+    </div>
+  ));
+  const periodHeaders = columnPeriodEnds.map((label, i) => (
+    <div
+      key={`period-end-${i}`}
+      className={cn(
+        headerPeriodEndClass,
+        headerValueCellClass,
+        columnIsForecast?.[i] && EARNINGS_FORECAST_OPACITY_CLASS,
+      )}
+    >
+      {label}
+    </div>
+  ));
+  const ttmYearHeader = ttm ? (
+    <div className={cn(headerYearClass, headerValueCellClass)}>{ttm.columnLabel}</div>
+  ) : null;
+  const ttmPeriodHeader = ttm ? (
+    <div className={cn(headerPeriodEndClass, headerValueCellClass)}>{ttm.periodEnd}</div>
+  ) : null;
 
   return (
     <ScreenerTableScroll mobileScroll viewportScroll>
@@ -141,44 +181,20 @@ export function StockIncomeStatementTable({
             style={{ gridTemplateColumns }}
           >
             <div className={headerLabelCellClass}>{periodHeaderLabel}</div>
-            {columns.map((y, i) => (
-              <div
-                key={`col-${i}`}
-                className={cn(
-                  headerYearClass,
-                  headerValueCellClass,
-                  columnIsForecast?.[i] && EARNINGS_FORECAST_OPACITY_CLASS,
-                )}
-              >
-                {y}
-              </div>
-            ))}
-            {ttm ? (
-              <div className={cn(headerYearClass, headerValueCellClass)}>{ttm.columnLabel}</div>
-            ) : null}
+            {ttmLeading ? ttmYearHeader : null}
+            {yearHeaders}
+            {!ttmLeading ? ttmYearHeader : null}
           </div>
           {showPeriodEndingRow ? (
-          <div
-            className={`grid items-stretch gap-x-2 border-b border-[#E4E4E7] px-2 py-0 sm:px-4 ${incomeHeaderRowClass}`}
-            style={{ gridTemplateColumns }}
-          >
-            <div className={headerLabelCellClass}>Period Ending</div>
-            {columnPeriodEnds.map((label, i) => (
-              <div
-                key={`period-end-${i}`}
-                className={cn(
-                  headerPeriodEndClass,
-                  headerValueCellClass,
-                  columnIsForecast?.[i] && EARNINGS_FORECAST_OPACITY_CLASS,
-                )}
-              >
-                {label}
-              </div>
-            ))}
-            {ttm ? (
-              <div className={cn(headerPeriodEndClass, headerValueCellClass)}>{ttm.periodEnd}</div>
-            ) : null}
-          </div>
+            <div
+              className={`grid items-stretch gap-x-2 border-b border-[#E4E4E7] px-2 py-0 sm:px-4 ${incomeHeaderRowClass}`}
+              style={{ gridTemplateColumns }}
+            >
+              <div className={headerLabelCellClass}>Period Ending</div>
+              {ttmLeading ? ttmPeriodHeader : null}
+              {periodHeaders}
+              {!ttmLeading ? ttmPeriodHeader : null}
+            </div>
           ) : null}
         </div>
 
@@ -187,7 +203,7 @@ export function StockIncomeStatementTable({
             key={row.id}
             row={row}
             gridTemplateColumns={gridTemplateColumns}
-            columnIsForecast={columnIsForecast}
+            columnIsForecast={forecastByValueIndex}
             onMetricClick={onMetricClick}
           />
         ))}

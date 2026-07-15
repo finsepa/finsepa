@@ -46,6 +46,8 @@ type TopbarUserMenuProps = {
   userDisplayName: string;
   /** Days left in platform trial; shown after avatar on the menu trigger when &gt; 0. */
   platformTrialDaysLeft?: number | null;
+  /** Server-known paid Pro — correct badge / plan label on first paint. */
+  isPro?: boolean;
   triggerClassName?: string;
 };
 
@@ -55,6 +57,7 @@ export function TopbarUserMenu({
   avatarUrl,
   userDisplayName,
   platformTrialDaysLeft = null,
+  isPro: isProFromServer = false,
   triggerClassName,
 }: TopbarUserMenuProps) {
   const router = useRouter();
@@ -63,9 +66,9 @@ export function TopbarUserMenu({
   const [helpModalOpen, setHelpModalOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [planLabel, setPlanLabel] = useState<string>(() =>
-    subscriptionTitleFromBillingSummary(EMPTY_BILLING_SUMMARY),
+    isProFromServer ? "Pro" : subscriptionTitleFromBillingSummary(EMPTY_BILLING_SUMMARY),
   );
-  const [isPro, setIsPro] = useState(false);
+  const [isPro, setIsPro] = useState(isProFromServer);
   const [profileIconPlaying, setProfileIconPlaying] = useState(false);
   const [billingIconPlaying, setBillingIconPlaying] = useState(false);
   const [helpIconPlaying, setHelpIconPlaying] = useState(false);
@@ -76,8 +79,10 @@ export function TopbarUserMenu({
 
   const applyBillingSummary = useCallback((summary: BillingSummary) => {
     setPlanLabel(subscriptionTitleFromBillingSummary(summary));
-    setIsPro(summary.plan === "pro");
-  }, []);
+    // Never let a stale "trial" cache clear a server-known Pro badge.
+    setIsPro((prev) => isProFromServer || prev || summary.plan === "pro");
+    if (summary.plan === "pro") setPlanLabel("Pro");
+  }, [isProFromServer]);
 
   const fetchBillingSummaryForMenu = useCallback(
     async (opts: { showSkeleton: boolean }) => {
@@ -98,6 +103,11 @@ export function TopbarUserMenu({
   );
 
   /** Warm label + Pro badge from local cache so the menu rarely flashes a skeleton on open. */
+  useEffect(() => {
+    setIsPro(isProFromServer);
+    if (isProFromServer) setPlanLabel("Pro");
+  }, [isProFromServer]);
+
   useEffect(() => {
     const hit = readBillingSummaryMenuCache(userId);
     if (hit) applyBillingSummary(hit.summary);
@@ -160,11 +170,16 @@ export function TopbarUserMenu({
   }, [open]);
 
   const showTrialCountdown =
-    typeof platformTrialDaysLeft === "number" && platformTrialDaysLeft > 0;
+    !isProFromServer &&
+    !isPro &&
+    typeof platformTrialDaysLeft === "number" &&
+    platformTrialDaysLeft > 0;
 
   const showUpgradeMenuItem =
-    showTrialCountdown ||
-    (open && !planLoading && planLabel !== "Pro");
+    !isProFromServer &&
+    !isPro &&
+    planLabel !== "Pro" &&
+    (showTrialCountdown || (open && !planLoading));
 
   const menuTriggerLabel = "Profile";
 
@@ -202,7 +217,12 @@ export function TopbarUserMenu({
           <Menu className="hidden h-5 w-5 shrink-0 md:block" aria-hidden />
           <User className="h-5 w-5 shrink-0 md:hidden" strokeWidth={1.75} aria-hidden />
           <span className="hidden md:inline-flex">
-            <UserAvatar imageSrc={avatarUrl} initials={userInitials} size="sm" showProBadge={isPro} />
+            <UserAvatar
+              imageSrc={avatarUrl}
+              initials={userInitials}
+              size="sm"
+              showProBadge={isProFromServer || isPro}
+            />
           </span>
           {showTrialCountdown ? (
             <span className="hidden min-w-0 shrink truncate text-xs font-semibold tabular-nums md:inline md:text-sm">
@@ -221,14 +241,19 @@ export function TopbarUserMenu({
       >
         <div role="menu">
           <div className="flex gap-3 border-b border-[#E4E4E7] px-3 py-3 max-md:border-b-0">
-            <UserAvatar imageSrc={avatarUrl} initials={userInitials} size="menu" showProBadge={isPro} />
+            <UserAvatar
+              imageSrc={avatarUrl}
+              initials={userInitials}
+              size="menu"
+              showProBadge={isProFromServer || isPro}
+            />
             <div className="min-w-0 flex-1 pt-0.5">
               <div className="truncate text-sm font-semibold leading-5 text-[#09090B]">{userDisplayName}</div>
               <div className="mt-0.5 text-xs font-normal leading-4 text-[#52525B]">
-                {planLoading ? (
+                {planLoading && !(isProFromServer || isPro) ? (
                   <div className="h-3 w-20 animate-pulse rounded bg-[#E4E4E7]" />
                 ) : (
-                  planLabel
+                  isProFromServer || isPro ? "Pro" : planLabel
                 )}
               </div>
             </div>

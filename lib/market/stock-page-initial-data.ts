@@ -15,6 +15,9 @@ import type { StockDetailHeaderMeta } from "@/lib/market/stock-header-meta";
 import { getStockDetailHeaderMetaForPage } from "@/lib/market/stock-header-meta-server";
 import { buildStockKeyStatsBundle } from "@/lib/market/stock-key-stats-bundle";
 import type { StockKeyStatsBundle } from "@/lib/market/stock-key-stats-bundle-types";
+import { stockKeyIndicatorsServerEnabled } from "@/lib/features/key-indicators";
+import { getStockKeyIndicators } from "@/lib/market/stock-key-indicators-service";
+import type { StockKeyIndicatorsResponse } from "@/lib/market/stock-key-indicators-types";
 import { computeStockPerformanceFromSortedDailyBars } from "@/lib/market/stock-performance";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
 import type { StockChartPoint } from "@/lib/market/stock-chart-types";
@@ -36,7 +39,7 @@ import {
   assetSnapshotPayloadToPageData,
   stripAssetSnapshotHotFields,
 } from "@/lib/market/asset-snapshot-payload";
-import { readAssetSnapshot, upsertAssetSnapshot } from "@/lib/market/asset-snapshot-store";
+import { readAssetSnapshotForPage, upsertAssetSnapshot } from "@/lib/market/asset-snapshot-store";
 import { getScreenerUsMarketCacheEpoch } from "@/lib/screener/screener-us-market-cache";
 
 export type StockPageInitialChart = {
@@ -54,6 +57,11 @@ export type StockPageInitialData = {
   chart: StockPageInitialChart;
   performance: StockPerformance;
   keyStatsBundle: StockKeyStatsBundle;
+  /**
+   * Overview Key Indicators — loaded from `key_indicators_*` snapshot (or computed) in parallel with
+   * the rest of the page so the card is not a post-paint client waterfall.
+   */
+  keyIndicators: StockKeyIndicatorsResponse | null;
   news: StockNewsArticle[];
   profile: StockProfilePayload | null;
   fundamentalsSeriesAnnual: ChartingSeriesPoint[];
@@ -145,6 +153,7 @@ function fallbackStockPageInitialData(ticker: string, now: Date): StockPageIniti
     chart: { range: DEFAULT_OVERVIEW_RANGE, points: [] },
     performance: computeStockPerformanceFromSortedDailyBars([], ticker, now),
     keyStatsBundle: { ...EMPTY_KEY_STATS },
+    keyIndicators: null,
     news: [],
     profile: null,
     fundamentalsSeriesAnnual: [],
@@ -156,6 +165,16 @@ function fallbackStockPageInitialData(ticker: string, now: Date): StockPageIniti
     liveRegularSessionActive: false,
     earningsTabPayload: null,
   };
+}
+
+async function loadKeyIndicatorsForPage(ticker: string): Promise<StockKeyIndicatorsResponse | null> {
+  if (!stockKeyIndicatorsServerEnabled()) return null;
+  try {
+    return await getStockKeyIndicators(ticker);
+  } catch (err) {
+    warnSettledFailure("keyIndicators", err);
+    return null;
+  }
 }
 
 function ymdUtc(d: Date): string {
@@ -243,6 +262,7 @@ export async function loadStockPageInitialDataUncached(routeTicker: string): Pro
       chart: { range, points: getNvdaChartPoints(range) },
       performance: getNvdaPerformance(),
       keyStatsBundle: getNvdaKeyStatsBundle(),
+      keyIndicators: null,
       news: getNvdaStockNews(),
       profile: getNvdaProfile(),
       fundamentalsSeriesAnnual: getNvdaChartingSeriesPoints("annual"),
@@ -273,6 +293,7 @@ export async function loadStockPageInitialDataUncached(routeTicker: string): Pro
       barsResult,
       chartPointsResult,
       keyStatsResult,
+      keyIndicatorsResult,
       newsResult,
       profileResult,
       annualResult,
@@ -284,6 +305,7 @@ export async function loadStockPageInitialDataUncached(routeTicker: string): Pro
       barsPromise,
       getStockChartPointsForApi(ticker, range, "price"),
       buildStockKeyStatsBundle(ticker),
+      loadKeyIndicatorsForPage(ticker),
       getStockNews(ticker),
       fetchEodhdStockProfile(ticker),
       annualFromBars,
@@ -296,6 +318,7 @@ export async function loadStockPageInitialDataUncached(routeTicker: string): Pro
     const barsRaw = fromSettled(barsResult, "eodDaily");
     const chartPointsRaw = fromSettled(chartPointsResult, "chart1D");
     const keyStatsBundle = fromSettled(keyStatsResult, "keyStats") ?? { ...EMPTY_KEY_STATS };
+    const keyIndicators = fromSettled(keyIndicatorsResult, "keyIndicators");
     const news = fromSettled(newsResult, "news");
     const profile = fromSettled(profileResult, "profile");
     const annualSeries = fromSettled(annualResult, "fundamentalsAnnual");
@@ -322,6 +345,7 @@ export async function loadStockPageInitialDataUncached(routeTicker: string): Pro
       },
       performance,
       keyStatsBundle,
+      keyIndicators,
       news: Array.isArray(news) ? news : [],
       profile: profile ?? null,
       fundamentalsSeriesAnnual: annualSeries?.points ?? [],
@@ -352,14 +376,24 @@ export async function loadStockPageInitialData(routeTicker: string): Promise<Sto
   }
 
   const epoch = getScreenerUsMarketCacheEpoch();
-  const cached = await readAssetSnapshot(ticker, epoch.segment);
+  // Prefer exact segment; fall back to a fresh-enough prior segment so sparse-traffic tickers
+  // (NFLX, screener page 3+) skip a full EODHD fan-out on every 15m roll.
+  const cachedHit = await readAssetSnapshotForPage(ticker, epoch.segment, { allowStale: true });
 
-  if (cached?.ticker === ticker) {
-    const base = assetSnapshotPayloadToPageData(cached);
+  if (cachedHit?.payload?.ticker === ticker) {
+    const base = assetSnapshotPayloadToPageData(cachedHit.payload);
     if (epoch.mode === "frozen" && base.chart.points.length > 0) {
-      return base;
+      const keyIndicators = await loadKeyIndicatorsForPage(ticker);
+      const out = { ...base, keyIndicators };
+      if (!cachedHit.exactSegment) {
+        scheduleAssetSnapshotWrite(ticker, epoch.segment, out, epoch.mode);
+      }
+      return out;
     }
-    const hot = await loadStockPageHotFields(ticker, base.chart.range, [], new Date());
+    const [hot, keyIndicators] = await Promise.all([
+      loadStockPageHotFields(ticker, base.chart.range, [], new Date()),
+      loadKeyIndicatorsForPage(ticker),
+    ]);
     const chart =
       base.chart.range === "1D"
         ? hot.chart
@@ -370,9 +404,10 @@ export async function loadStockPageInitialData(routeTicker: string): Promise<Sto
       ...base,
       ...hot,
       chart,
+      keyIndicators,
       liveRegularSessionActive: hot.liveRegularSessionActive,
     };
-    if (base.chart.range === "1D" && chart.points.length >= 2) {
+    if (!cachedHit.exactSegment || (base.chart.range === "1D" && chart.points.length >= 2)) {
       scheduleAssetSnapshotWrite(ticker, epoch.segment, merged, epoch.mode);
     }
     return merged;

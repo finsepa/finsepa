@@ -22,7 +22,7 @@ type BillingGateRow = {
 export async function getSubscriptionGateContext(
   supabase: SupabaseClient,
   userId: string,
-): Promise<{ needsPaywall: boolean; topbarTrialDaysLeft: number | null }> {
+): Promise<{ needsPaywall: boolean; topbarTrialDaysLeft: number | null; isPro: boolean }> {
   const { data: row } = await supabase
     .from("billing_subscriptions")
     .select("plan_code,status,platform_trial_ends_at,created_at,updated_at")
@@ -30,26 +30,27 @@ export async function getSubscriptionGateContext(
     .maybeSingle<BillingGateRow>();
 
   if (hasActivePaidProSubscription(row)) {
-    return { needsPaywall: false, topbarTrialDaysLeft: null };
+    return { needsPaywall: false, topbarTrialDaysLeft: null, isPro: true };
   }
 
   const planCode = row?.plan_code ?? "";
   const isStaleProRow = planCode.startsWith("pro_") && !hasActivePaidProSubscription(row);
   if (isStaleProRow) {
-    return { needsPaywall: true, topbarTrialDaysLeft: null };
+    return { needsPaywall: true, topbarTrialDaysLeft: null, isPro: false };
   }
 
   const platformEnd = effectivePlatformTrialEndsAtIso(row);
   if (!platformEnd) {
-    return { needsPaywall: false, topbarTrialDaysLeft: null };
+    return { needsPaywall: false, topbarTrialDaysLeft: null, isPro: false };
   }
 
   if (isPlatformTrialPast(platformEnd)) {
-    return { needsPaywall: true, topbarTrialDaysLeft: null };
+    return { needsPaywall: true, topbarTrialDaysLeft: null, isPro: false };
   }
 
   return {
     needsPaywall: false,
     topbarTrialDaysLeft: platformTrialDaysRemaining(platformEnd),
+    isPro: false,
   };
 }

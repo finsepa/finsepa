@@ -54,6 +54,7 @@ import {
   formatBarChartDataLabel,
   formatChartingTableCell,
 } from "@/components/charting/charting-individual-company-table";
+import { ChartingDataTableSettingsMenu } from "@/components/charting/charting-data-table-settings-menu";
 import { DataFetchTopLoader } from "@/components/layout/data-fetch-top-loader";
 import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
 import { ChartLoadingIndicator } from "@/components/ui/chart-loading-indicator";
@@ -3471,7 +3472,7 @@ export function ChartingWorkspace({
           open={pickerOpen}
           anchorRef={useRailMetricPicker ? metricAddAnchorRef : pickerButtonRef}
           ref={pickerMenuPortalRef}
-          align="leading"
+          align="auto"
           placement={useRailMetricPicker ? "below" : "auto"}
           className="w-[min(calc(100vw-2rem),520px)]"
           onRequestClose={() => {
@@ -4003,7 +4004,7 @@ export function ChartingWorkspace({
                     key={`chart-legend-${id}`}
                     className="inline-flex h-6 max-w-full min-w-0 items-stretch overflow-hidden rounded-[8px] border border-[#E4E4E7] bg-white text-[12px] font-medium leading-none text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]"
                   >
-                    <span className="flex min-w-0 items-center gap-2 px-3 py-0">
+                    <span className="flex min-w-0 items-center gap-2 pl-3 pr-1 py-0">
                       <span
                         className="h-2.5 w-2.5 shrink-0 rounded-full"
                         style={{ backgroundColor: metricChipColorById.get(id) ?? "#2563EB" }}
@@ -4012,6 +4013,12 @@ export function ChartingWorkspace({
                       <span className="min-w-0 truncate">
                         {chartLegendMetricLabel(ticker, id, omitTickerInLegend)}
                       </span>
+                      <ChartingDataTableSettingsMenu
+                        variant="badge"
+                        showBarValues={isBarValuesVisible(id)}
+                        onShowBarValuesChange={(next) => setBarValuesVisibleForMetric(id, next)}
+                        metricLabel={CHARTING_METRIC_LABEL[id]}
+                      />
                     </span>
                     <button
                       type="button"
@@ -4053,7 +4060,7 @@ export function ChartingWorkspace({
               metricColors={metricChipColorById}
               isBarValuesVisible={isBarValuesVisible}
               onShowBarValuesChange={setBarValuesVisibleForMetric}
-              hideMetricSettings={useRailMetricPicker}
+              hideMetricSettings={useRailMetricPicker || metricControlsInLegend}
             />
           ) : null}
         </>

@@ -1229,7 +1229,12 @@ async function loadStockChartPointsUncached(
   range: StockChartRange,
   series: StockChartSeries,
 ): Promise<StockChartPoint[]> {
-  const pricePoints = await loadStockPriceChartPointsUncached(ticker, range);
+  // Market cap / return: always last completed session for 1D — never live WS minute bars.
+  // Live spot is share-price USD and would unit-mismatch a scaled mcap / return index series.
+  const pricePoints =
+    range === "1D" && series !== "price"
+      ? await loadLatestTradingDay1DChartPoints(ticker, new Date())
+      : await loadStockPriceChartPointsUncached(ticker, range);
   if (series === "return") return pricePointsToReturnIndexPoints(pricePoints);
   if (series !== "marketCap") return pricePoints;
   const shares = await getCachedSharesOutstanding(ticker);
@@ -1264,6 +1269,11 @@ export async function getStockChartPointsForApi(
 ): Promise<StockChartPoint[]> {
   const now = new Date();
   if (range === "1D") {
+    // Market cap / return never use the live WS pipeline — same prior-session path as MSFT.
+    if (series !== "price") {
+      logApi1DBranchDebug(ticker, now, "prior-session-cache");
+      return getStockChartPoints1DPriorSession(ticker, series);
+    }
     if (usesStock1DLiveWsMinutePipeline(ticker, now)) {
       requestStockMinuteBarWatch(ticker);
       logApi1DBranchDebug(ticker, now, "ws-regular-uncached");

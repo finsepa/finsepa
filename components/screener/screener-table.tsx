@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { memo, useEffect, useMemo, useRef, useState, type UIEvent } from "react";
+import { memo, useRef, type UIEvent } from "react";
 import type { ScreenerTableRow } from "@/lib/screener/screener-static";
 import type { WatchlistCollection } from "@/lib/watchlist/collections";
 import { WatchlistStarToggle } from "@/components/watchlist/watchlist-star-button";
@@ -91,12 +91,30 @@ function PriceAndChangeCell({ price, change1D }: { price: number | null; change1
 }
 
 /**
- * `#` … metrics … trailing cell. Star is a flex sibling (see row wrapper), not column 1 of this grid.
- * `minmax(0,1fr)` / `minmax(0,2fr)` avoids min-content blowout that wrapped the inner grid to multiple rows
- * when an extra Key Stat column was added.
+ * Static Tailwind strings only (no matchMedia / no conditional inline styles on hydrate).
+ * Star sits outside this grid. Mobile = 3 cols; `sm+` = rank + company + 6 metrics.
+ * Extra key-stat columns use a pre-baked `sm:grid-cols` class from {@link rowLinkGridClass}.
  */
-const rowLinkGridBase =
+const ROW_LINK_GRID_MOBILE =
   "grid w-full min-w-0 flex-1 grid-cols-[22px_minmax(0,1fr)_minmax(4.5rem,5.5rem)] gap-x-1.5 max-md:gap-x-1.5 sm:gap-x-2";
+
+/** Pre-baked desktop track lists so Tailwind JIT always sees full class strings. */
+const DESKTOP_SM_GRID_BY_KEY_STAT_COUNT = [
+  "sm:grid-cols-[48px_2fr_1fr_1fr_1fr_1fr_1fr_1fr]",
+  "sm:grid-cols-[48px_2fr_1fr_1fr_1fr_1fr_1fr_1fr_96px]",
+  "sm:grid-cols-[48px_2fr_1fr_1fr_1fr_1fr_1fr_1fr_96px_96px]",
+  "sm:grid-cols-[48px_2fr_1fr_1fr_1fr_1fr_1fr_1fr_96px_96px_96px]",
+  "sm:grid-cols-[48px_2fr_1fr_1fr_1fr_1fr_1fr_1fr_96px_96px_96px_96px]",
+  "sm:grid-cols-[48px_2fr_1fr_1fr_1fr_1fr_1fr_1fr_96px_96px_96px_96px_96px]",
+  "sm:grid-cols-[48px_2fr_1fr_1fr_1fr_1fr_1fr_1fr_96px_96px_96px_96px_96px_96px]",
+  "sm:grid-cols-[48px_2fr_1fr_1fr_1fr_1fr_1fr_1fr_96px_96px_96px_96px_96px_96px_96px]",
+  "sm:grid-cols-[48px_2fr_1fr_1fr_1fr_1fr_1fr_1fr_96px_96px_96px_96px_96px_96px_96px_96px]",
+] as const;
+
+function rowLinkGridClass(keyStatCount: number): string {
+  const capped = Math.max(0, Math.min(keyStatCount, DESKTOP_SM_GRID_BY_KEY_STAT_COUNT.length - 1));
+  return cn(ROW_LINK_GRID_MOBILE, DESKTOP_SM_GRID_BY_KEY_STAT_COUNT[capped]);
+}
 
 /** Base desktop width before custom key-stat columns (rank + company + 6 core metrics). */
 const SCREENER_TABLE_DESKTOP_BASE_MIN_WIDTH_PX = 688;
@@ -107,52 +125,7 @@ export function screenerTableMinWidthPx(keyStatCount: number): number | undefine
   return SCREENER_TABLE_DESKTOP_BASE_MIN_WIDTH_PX + keyStatCount * SCREENER_TABLE_KEY_STAT_COL_MIN_WIDTH_PX;
 }
 
-const MOBILE_GRID_TEMPLATE = "22px minmax(0, 1fr) minmax(4.5rem, 5.5rem)";
-
 const mobileRankCellClass = "max-md:-ml-0.5 text-center text-[14px] font-semibold leading-5 tabular-nums text-[#71717A]";
-
-/** Default: fluid columns that fit the viewport. With custom metrics: fixed mins + horizontal scroll. */
-function buildDesktopGridTemplate(keyStatCount: number): string {
-  if (keyStatCount === 0) {
-    return [
-      "48px",
-      "minmax(0, 2fr)",
-      "minmax(0, 1fr)",
-      "minmax(0, 1fr)",
-      "minmax(0, 1fr)",
-      "minmax(0, 1fr)",
-      "minmax(0, 1fr)",
-      "minmax(0, 1fr)",
-    ].join(" ");
-  }
-  return [
-    "48px",
-    "minmax(11rem, 1.35fr)",
-    "minmax(5.25rem, max-content)",
-    "minmax(4.75rem, max-content)",
-    "minmax(4.75rem, max-content)",
-    "minmax(4.75rem, max-content)",
-    "minmax(5.5rem, max-content)",
-    "minmax(4.5rem, max-content)",
-    ...Array.from({ length: keyStatCount }, () => "minmax(5.5rem, 8rem)"),
-  ].join(" ");
-}
-
-function useScreenerTableGridTemplate(keyStatCount: number): string {
-  const [template, setTemplate] = useState(MOBILE_GRID_TEMPLATE);
-
-  useEffect(() => {
-    const mq = window.matchMedia("(min-width: 640px)");
-    const update = () => {
-      setTemplate(mq.matches ? buildDesktopGridTemplate(keyStatCount) : MOBILE_GRID_TEMPLATE);
-    };
-    update();
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
-  }, [keyStatCount]);
-
-  return template;
-}
 
 const desktopNumericCellFluidClass = "hidden min-w-0 w-full text-right sm:block";
 const desktopNumericCellFixedClass =
@@ -180,7 +153,7 @@ type RowProps = {
   storageHydrated: boolean;
   toggleTicker: (ticker: string, watchlistId?: string) => void;
   keyStatColumns: ScreenerTableKeyStatColumn[];
-  gridTemplateColumns: string;
+  gridClassName: string;
   desktopNumericCellClass: string;
 };
 
@@ -194,7 +167,7 @@ const ScreenerDataRow = memo(function ScreenerDataRow({
   storageHydrated,
   toggleTicker,
   keyStatColumns,
-  gridTemplateColumns,
+  gridClassName,
   desktopNumericCellClass,
 }: RowProps) {
   const tickerKey = item.ticker.trim().toUpperCase();
@@ -221,8 +194,10 @@ const ScreenerDataRow = memo(function ScreenerDataRow({
       <Link
         href={`/stock/${encodeURIComponent(item.ticker)}`}
         prefetch={false}
-        className={`${rowLinkGridBase} min-h-[56px] cursor-pointer items-center justify-items-stretch no-underline text-[#09090B] visited:text-[#09090B] sm:min-h-[60px]`}
-        style={{ gridTemplateColumns }}
+        className={cn(
+          gridClassName,
+          "min-h-[56px] cursor-pointer items-center justify-items-stretch no-underline text-[#09090B] visited:text-[#09090B] sm:min-h-[60px]",
+        )}
         aria-label={`Open ${item.name} (${item.ticker})`}
       >
         <div className={mobileRankCellClass}>{rank}</div>
@@ -310,7 +285,7 @@ export function ScreenerTable({
     useWatchlist();
   const keyStatCount = keyStatColumns.length;
   const useFluidDesktopColumns = keyStatCount === 0;
-  const gridTemplateColumns = useScreenerTableGridTemplate(keyStatCount);
+  const gridClassName = rowLinkGridClass(keyStatCount);
   const tableMinWidthPx = screenerTableMinWidthPx(keyStatCount);
   const desktopNumericCellClass = screenerDesktopNumericCellClass(useFluidDesktopColumns);
   const { headerRef, bodyRef, onHeaderScroll, onBodyScroll } = useSyncedHorizontalScroll();
@@ -321,8 +296,10 @@ export function ScreenerTable({
     >
       <div className="hidden w-6 shrink-0 sm:block sm:w-10" aria-hidden />
       <div
-        className={`${rowLinkGridBase} min-h-[44px] max-md:min-h-0 items-center text-[12px] font-medium leading-5 text-[#71717A] sm:text-[14px]`}
-        style={{ gridTemplateColumns }}
+        className={cn(
+          gridClassName,
+          "min-h-[44px] max-md:min-h-0 items-center text-[12px] font-medium leading-5 text-[#71717A] sm:text-[14px]",
+        )}
       >
         <div className={cn(mobileRankCellClass, "max-md:text-[12px] max-md:font-medium sm:text-[14px]")}>#</div>
         <div className="text-left">Company</div>
@@ -363,7 +340,7 @@ export function ScreenerTable({
           storageHydrated={storageHydrated}
           toggleTicker={toggleTicker}
           keyStatColumns={keyStatColumns}
-          gridTemplateColumns={gridTemplateColumns}
+          gridClassName={gridClassName}
           desktopNumericCellClass={desktopNumericCellClass}
         />
       ))}

@@ -49,6 +49,21 @@ const EMPTY_CHART_DISPLAY: ChartDisplayState = {
   scrubPeriodLabel: null,
 };
 
+function buildInitialSessionHeaderUi(
+  data: CryptoPageInitialData | null | undefined,
+  routeSymbol: string,
+): ChartDisplayState {
+  if (!data || data.routeSymbol.trim().toUpperCase() !== routeSymbol.trim().toUpperCase()) {
+    return EMPTY_CHART_DISPLAY;
+  }
+  return mergeSessionHeaderWithPerformanceSpot(
+    EMPTY_CHART_DISPLAY,
+    data.performance,
+    "price",
+    data.headerLiveSpotUsd,
+  );
+}
+
 const OFFSCREEN_PRICE_CHART =
   "pointer-events-none fixed left-0 top-0 -z-10 h-[320px] w-[min(1200px,calc(100vw-4.5rem))] -translate-x-[120vw] opacity-0";
 
@@ -76,8 +91,9 @@ export function CryptoPageContent({
   );
   const [comparePicks, setComparePicks] = useState<CompanyPick[]>([]);
   const [chartSeries, setChartSeries] = useState<StockChartSeries>("price");
-  const [sessionHeaderUi, setSessionHeaderUi] = useState<ChartDisplayState>(EMPTY_CHART_DISPLAY);
-  const [holdingsHeaderUi, setHoldingsHeaderUi] = useState<ChartDisplayState | null>(null);
+  const [sessionHeaderUi, setSessionHeaderUi] = useState<ChartDisplayState>(() =>
+    buildInitialSessionHeaderUi(serverMatch, symKey),
+  );
   const symUpper = routeSymbol.trim().toUpperCase();
 
   /**
@@ -120,10 +136,6 @@ export function CryptoPageContent({
   const [rangeHeaderUi, setRangeHeaderUi] = useState<ChartDisplayState | null>(null);
   const onRangeChartDisplay = useCallback((s: ChartDisplayState) => {
     setRangeHeaderUi(s);
-  }, []);
-
-  const onHoldingsChartDisplay = useCallback((s: ChartDisplayState) => {
-    setHoldingsHeaderUi(s);
   }, []);
 
   const onAddComparePick = useCallback((pick: CompanyPick) => {
@@ -169,6 +181,7 @@ export function CryptoPageContent({
     liveSpotRef.current = null;
     setHeaderLiveSpotClient(null);
     setHeaderLiveQuote(null);
+    setSessionHeaderUi(buildInitialSessionHeaderUi(serverMatch, symUpper));
   }, [symUpper]);
 
   useEffect(() => {
@@ -622,7 +635,6 @@ export function CryptoPageContent({
                 assetKind="crypto"
                 routeKey={symUpper}
                 assetDisplayName={safeRow.name}
-                onChartDisplayChange={onHoldingsChartDisplay}
               />
             </div>
           ) : null}

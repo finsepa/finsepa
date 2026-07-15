@@ -85,6 +85,7 @@ export async function ProtectedAppShell({
           avatarUrl={avatarUrl}
           userDisplayName={userDisplayName}
           platformTrialDaysLeft={gate.topbarTrialDaysLeft}
+          isPro={gate.isPro}
           initialSidebarCollapsed={initialSidebarCollapsed}
           initialWatchlistRailCollapsed={initialWatchlistRailCollapsed}
           mobileTopbarVariant={mobileTopbarVariant}

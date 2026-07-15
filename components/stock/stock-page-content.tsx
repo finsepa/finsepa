@@ -483,8 +483,9 @@ export function StockPageContent({
   }, [ticker, initialPageData]);
 
   useEffect(() => {
+    // Keep price header when toggling Price / Market Cap / Return — only range changes reset it.
     setOverviewHeaderUi(null);
-  }, [chartSeries, range]);
+  }, [range]);
 
   const performanceFromServer = useMemo(
     (): StockPerformance | null =>
@@ -539,10 +540,9 @@ export function StockPageContent({
   const showExtendedHoursHeader = useMemo(
     () =>
       comparePicks.length === 0 &&
-      chartSeries === "price" &&
       isUsListedStockHeaderMeta(headerMeta) &&
       isUsEquityExtendedHoursHeaderEligible(new Date(), liveRegularSessionActive),
-    [comparePicks.length, chartSeries, headerMeta, liveRegularSessionActive, regularSessionClock],
+    [comparePicks.length, headerMeta, liveRegularSessionActive, regularSessionClock],
   );
 
   const [extendedHoursQuote, setExtendedHoursQuote] = useState<StockExtendedHoursHeader | null>(null);
@@ -686,6 +686,12 @@ export function StockPageContent({
     return typeof t === "number" && Number.isFinite(t) && t > 0 ? t : null;
   }, [chartLiveSessionMinute, range, ticker, extendedHoursQuote?.extendedTimeUnix, regularSessionClock]);
 
+  /** Overview Market Cap / Return never pin live share-price onto scaled series (MSFT-style prior session). */
+  const overviewLiveSessionMinute = chartSeries === "price" ? chartLiveSessionMinute : false;
+  const overviewLiveSpotUsd = chartSeries === "price" ? chartLiveSpotUsd : null;
+  const overviewLivePostMarketTailTimeUnix =
+    chartSeries === "price" ? chartLivePostMarketTailTimeUnix : null;
+
   const sessionSpotHeaderUi = useMemo(
     () =>
       mergeSessionHeaderWithPerformanceSpot(
@@ -716,7 +722,6 @@ export function StockPageContent({
 
   const overviewHeaderUiMerged = useMemo(() => {
     if (!overviewHeaderUi) return null;
-    if (chartSeries !== "price") return overviewHeaderUi;
     if (overviewHeaderUi.isHovering) return overviewHeaderUi;
 
     const closed = atCloseHeaderMode;
@@ -761,7 +766,6 @@ export function StockPageContent({
     }
     return overviewHeaderUi;
   }, [
-    chartSeries,
     headerLiveSpotForMerge,
     headerPriorCloseForMerge,
     overviewHeaderUi,
@@ -773,7 +777,6 @@ export function StockPageContent({
 
   const overviewHeaderFallback = useMemo(() => {
     const base = { ...EMPTY_CHART_DISPLAY, loading: true, empty: false };
-    if (chartSeries !== "price") return base;
     if (atCloseHeaderMode) {
       if (range === "1D") {
         const priorSession = priorSessionDayChangeFromPerformance(
@@ -807,7 +810,6 @@ export function StockPageContent({
     return base;
   }, [
     atCloseHeaderMode,
-    chartSeries,
     headerLiveSpotForMerge,
     headerPriorCloseForMerge,
     performanceForHeaderFallback,
@@ -929,7 +931,7 @@ export function StockPageContent({
   ]);
 
   const extendedHoursHeaderLeft = useMemo(() => {
-    if (!showExtendedHoursHeader || chartSeries !== "price") return null;
+    if (!showExtendedHoursHeader) return null;
 
     const priorClose =
       headerPriorCloseClient ??
@@ -956,7 +958,6 @@ export function StockPageContent({
   }, [
     showExtendedHoursHeader,
     extendedHoursQuote,
-    chartSeries,
     performanceForHeaderFallback,
     headerPriorCloseClient,
     initialPageData,
@@ -1034,13 +1035,12 @@ export function StockPageContent({
     isMobileViewport && overviewDrivesHeader && chartUi.isHovering && !chartUi.selectionActive;
 
   const headerMovementRangeBadge = useMemo(() => {
-    if (!overviewDrivesHeader || chartSeries !== "price") return null;
+    if (!overviewDrivesHeader) return null;
     if (chartUi.selectionActive || chartUi.isHovering) return null;
     if (range !== "1D") return range;
     return isUsEquityLiveRegularSession(new Date(), liveRegularSessionActive) ? "Today" : "At close";
   }, [
     overviewDrivesHeader,
-    chartSeries,
     chartUi.isHovering,
     chartUi.selectionActive,
     liveRegularSessionActive,
@@ -1136,7 +1136,7 @@ export function StockPageContent({
         chartHovering={chartUi.isHovering && !chartUi.selectionActive}
         headerMeta={headerMeta}
         headerMetaLoading={headerMetaLoading}
-        headerChartMetric={comparePicks.length > 0 ? "price" : chartSeries}
+        headerChartMetric="price"
         showExtendedHours={showExtendedHoursHeader}
         extendedHours={extendedHoursQuote}
         extendedHoursLoading={extendedHoursLoading}
@@ -1144,7 +1144,6 @@ export function StockPageContent({
           liveRegularHeader &&
           !mobileChartScrubActive &&
           !chartUi.selectionActive &&
-          chartSeries === "price" &&
           comparePicks.length === 0
         }
       />
@@ -1163,6 +1162,25 @@ export function StockPageContent({
             liveSpotUsd={chartLiveSpotUsd}
             livePostMarketTailTimeUnix={chartLivePostMarketTailTimeUnix}
             onDisplayChange={onSessionHeaderDisplay}
+          />
+        </div>
+      ) : null}
+
+      {/* Overview Market Cap / Return: keep header on Price for the selected range. */}
+      {overviewDrivesHeader && chartSeries !== "price" ? (
+        <div className={OFFSCREEN_PRICE_CHART} aria-hidden>
+          <PriceChart
+            key={`${ticker}-price-header-overview-${range}`}
+            kind="stock"
+            symbol={ticker}
+            range={range}
+            series="price"
+            height={320}
+            initialChart={range === "1D" && initialChartMemo?.range === "1D" ? initialChartMemo : null}
+            liveSessionMinute={chartLiveSessionMinute}
+            liveSpotUsd={chartLiveSpotUsd}
+            livePostMarketTailTimeUnix={chartLivePostMarketTailTimeUnix}
+            onDisplayChange={onOverviewHeaderDisplay}
           />
         </div>
       ) : null}
@@ -1235,10 +1253,12 @@ export function StockPageContent({
                   range={range}
                   series={chartSeries}
                   initialChart={initialChartMemo?.range === range ? initialChartMemo : null}
-                  liveSessionMinute={chartLiveSessionMinute}
-                  liveSpotUsd={chartLiveSpotUsd}
-                  livePostMarketTailTimeUnix={chartLivePostMarketTailTimeUnix}
-                  onDisplayChange={onOverviewHeaderDisplay}
+                  liveSessionMinute={overviewLiveSessionMinute}
+                  liveSpotUsd={overviewLiveSpotUsd}
+                  livePostMarketTailTimeUnix={overviewLivePostMarketTailTimeUnix}
+                  onDisplayChange={
+                    chartSeries === "price" ? onOverviewHeaderDisplay : undefined
+                  }
                 />
               </div>
             )}
@@ -1252,10 +1272,12 @@ export function StockPageContent({
               range={range}
               series={chartSeries}
               initialChart={initialChartMemo?.range === range ? initialChartMemo : null}
-              liveSessionMinute={chartLiveSessionMinute}
-              liveSpotUsd={chartLiveSpotUsd}
-              livePostMarketTailTimeUnix={chartLivePostMarketTailTimeUnix}
-              onDisplayChange={onOverviewHeaderDisplay}
+              liveSessionMinute={overviewLiveSessionMinute}
+              liveSpotUsd={overviewLiveSpotUsd}
+              livePostMarketTailTimeUnix={overviewLivePostMarketTailTimeUnix}
+              onDisplayChange={
+                chartSeries === "price" ? onOverviewHeaderDisplay : undefined
+              }
             />
           </div>
         ) : null}
@@ -1280,7 +1302,10 @@ export function StockPageContent({
           ) : null}
           {!isEtf ? (
             <div className="max-md:pt-0 md:pt-2">
-              <KeyIndicators ticker={ticker} />
+              <KeyIndicators
+                ticker={ticker}
+                initial={initialPageData?.ticker === ticker ? initialPageData.keyIndicators : null}
+              />
               <KeyStats
                 ticker={ticker}
                 initialBundle={initialPageData?.ticker === ticker ? initialPageData.keyStatsBundle : null}

@@ -214,6 +214,7 @@ export function ComparisonWorkspace({
   const [metricPickerOpen, setMetricPickerOpen] = useState(false);
   const [metricPickerQuery, setMetricPickerQuery] = useState("");
   const metricPickerMenuRef = useRef<HTMLDivElement>(null);
+  const metricPickerButtonRef = useRef<HTMLButtonElement>(null);
   const metricPickerInputRef = useRef<HTMLInputElement>(null);
 
   const [sliceByTicker, setSliceByTicker] = useState<Record<string, ComparisonTickerSlice>>(() => {
@@ -437,6 +438,7 @@ export function ComparisonWorkspace({
     function onDocMouseDown(e: MouseEvent) {
       const t = e.target;
       if (!(t instanceof Node)) return;
+      if (metricPickerButtonRef.current?.contains(t)) return;
       if (metricPickerMenuRef.current?.contains(t)) return;
       setMetricPickerOpen(false);
       setMetricPickerQuery("");
@@ -502,7 +504,7 @@ export function ComparisonWorkspace({
                 open={metricPickerOpen}
                 anchorRef={metricAddAnchorRef}
                 ref={metricPickerMenuRef}
-                align="leading"
+                align="auto"
                 placement="below"
                 className="w-[min(calc(100vw-2rem),520px)]"
                 onRequestClose={() => {
@@ -587,6 +589,7 @@ export function ComparisonWorkspace({
           })}
           <div className="relative">
             <button
+              ref={metricPickerButtonRef}
               type="button"
               onClick={() => setMetricPickerOpen((o) => !o)}
               className={secondaryFillButtonClassName}
@@ -597,15 +600,26 @@ export function ComparisonWorkspace({
               Add Metric
             </button>
             {metricPickerOpen ? (
-              <div ref={metricPickerMenuRef} className="absolute left-0 top-full z-[60] mt-2">
+              <TopbarDropdownPortal
+                open={metricPickerOpen}
+                anchorRef={metricPickerButtonRef}
+                ref={metricPickerMenuRef}
+                align="auto"
+                placement="below"
+                className="w-[min(calc(100vw-2rem),520px)]"
+                onRequestClose={() => {
+                  setMetricPickerOpen(false);
+                  setMetricPickerQuery("");
+                }}
+              >
                 <ComparisonMetricPickerMenu
                   excludeMetricIds={selectedColumnIds}
                   query={metricPickerQuery}
                   onQueryChange={setMetricPickerQuery}
                   onPick={addColumn}
-                  className="w-[min(calc(100vw-2rem),520px)]"
+                  searchInputRef={metricPickerInputRef}
                 />
-              </div>
+              </TopbarDropdownPortal>
             ) : null}
           </div>
         </div>

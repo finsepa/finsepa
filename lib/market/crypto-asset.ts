@@ -5,11 +5,14 @@ import { unstable_cache } from "next/cache";
 import { REVALIDATE_HOT } from "@/lib/data/cache-policy";
 import { eodhdSymbolsForMeta, type CryptoMeta } from "@/lib/market/crypto-meta";
 import {
-  fetchCryptoMarketCapUsdForMeta,
   fetchEodhdCryptoDailyBarsForMeta,
   lastPositiveCloseFromCryptoBars,
   type SupportedCryptoTicker,
 } from "@/lib/market/eodhd-crypto";
+import {
+  readCryptoMarketCapSnapshot,
+  upsertCryptoMarketCapSnapshot,
+} from "@/lib/market/crypto-market-cap-snapshot";
 import { resolveCryptoMetaForProvider } from "@/lib/market/crypto-meta-resolver";
 import type { CryptoFundamentalsMeta } from "@/lib/market/eodhd-crypto-fundamentals-meta";
 import { fetchEodhdCryptoFundamentalsMeta } from "@/lib/market/eodhd-crypto-fundamentals-meta";
@@ -139,8 +142,9 @@ export async function buildCryptoAssetRowFromDailyBars(
 
   if (currentPrice == null || !Number.isFinite(currentPrice)) return null;
 
-  const [marketCapUsd, fund] = await Promise.all([
-    fetchCryptoMarketCapUsdForMeta(meta, lastPositiveCloseFromCryptoBars(sorted)),
+  // One fundamentals fetch powers caps + supply/links (avoids duplicate EODHD calls via market-cap helper).
+  const [capSnap, fund] = await Promise.all([
+    readCryptoMarketCapSnapshot(meta.symbol),
     (async () => {
       for (const sym of eodhdSymbolsForMeta(meta)) {
         const f = await fetchEodhdCryptoFundamentalsMeta(sym);
@@ -149,6 +153,30 @@ export async function buildCryptoAssetRowFromDailyBars(
       return null;
     })(),
   ]);
+
+  const lastClose = lastPositiveCloseFromCryptoBars(sorted);
+  let marketCapUsd: number | null =
+    typeof capSnap === "number" && Number.isFinite(capSnap) && capSnap > 0 ? capSnap : null;
+
+  if (marketCapUsd == null && fund) {
+    if (fund.marketCapUsd != null && Number.isFinite(fund.marketCapUsd) && fund.marketCapUsd > 0) {
+      marketCapUsd = fund.marketCapUsd;
+    } else if (
+      fund.fullyDilutedMarketCapUsd != null &&
+      Number.isFinite(fund.fullyDilutedMarketCapUsd) &&
+      fund.fullyDilutedMarketCapUsd > 0
+    ) {
+      marketCapUsd = fund.fullyDilutedMarketCapUsd;
+    } else {
+      const sup = fund.circulatingSupply ?? fund.totalSupply;
+      if (lastClose != null && lastClose > 0 && sup != null && Number.isFinite(sup) && sup > 0) {
+        marketCapUsd = lastClose * sup;
+      }
+    }
+    if (marketCapUsd != null) {
+      void upsertCryptoMarketCapSnapshot(meta.symbol, marketCapUsd);
+    }
+  }
 
   const marketCapRaw = formatMarketCapDisplay(marketCapUsd);
   const marketCap = marketCapRaw.startsWith("$") ? marketCapRaw.slice(1) : marketCapRaw;

@@ -71,13 +71,14 @@ export function isEarningsFilingsPreviewUrl(href: string | null | undefined): hr
   return isSecEdgarExhibitHtmlUrl(href);
 }
 
-export type EarningsDocumentPreviewKind = "pdf" | "sec-html" | "external";
+export type EarningsDocumentPreviewKind = "pdf" | "sec-html" | "office";
 
 export function earningsDocumentPreviewKind(
   url: string,
 ): EarningsDocumentPreviewKind | null {
   if (isDirectEarningsPdfUrl(url)) return "pdf";
-  if (isKnownEarningsSlideDeckUrl(url)) return "external";
+  // PPTX / known issuer decks (e.g. MSFT dynmedia) — embed via Office Online in the preview modal.
+  if (isKnownEarningsSlideDeckUrl(url)) return "office";
   if (isSecEdgarExhibitHtmlUrl(url)) return "sec-html";
   return null;
 }

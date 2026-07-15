@@ -28,6 +28,10 @@ function toProxySrc(absolute: string | null, kind: EarningsDocumentPreviewKind):
   if (kind === "sec-html" && isSecExhibitProxyUrlAllowed(absolute)) {
     return `/api/sec-exhibit?u=${encodeURIComponent(absolute)}`;
   }
+  if (kind === "office") {
+    // Microsoft Office Online embeds PPTX (and similar) decks that can't render in a raw iframe.
+    return `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(absolute)}`;
+  }
   return null;
 }
 

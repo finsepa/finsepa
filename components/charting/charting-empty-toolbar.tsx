@@ -335,7 +335,7 @@ export function ChartingEmptyToolbar({
               open={pickerOpen}
               anchorRef={metricAddAnchorRef}
               ref={pickerMenuPortalRef}
-              align="leading"
+              align="auto"
               placement="below"
               className="w-[min(calc(100vw-2rem),300px)]"
               onRequestClose={() => {

@@ -47,7 +47,8 @@ type Props = {
   showBarValues: boolean;
   onShowBarValuesChange: (next: boolean) => void;
   metricLabel?: string;
-  variant?: "table" | "rail";
+  /** `table` = data header; `rail` = company rail; `badge` = chart legend chip. */
+  variant?: "table" | "rail" | "badge";
 };
 
 export function ChartingDataTableSettingsMenu({
@@ -87,20 +88,33 @@ export function ChartingDataTableSettingsMenu({
         aria-label={metricLabel ? `${metricLabel} settings` : "Metric settings"}
         aria-haspopup="menu"
         aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen((v) => !v);
+        }}
         className={cn(
           variant === "rail"
             ? cn(chartingRailRowActionButtonClass, open && "opacity-100")
-            : cn(
-                "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] border border-transparent text-[#71717A]",
-                "transition-colors hover:bg-[#F4F4F5] hover:text-[#09090B]",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15",
-                open && "bg-[#F4F4F5] text-[#09090B]",
-              ),
+            : variant === "badge"
+              ? cn(
+                  "inline-flex h-full shrink-0 items-center justify-center px-1.5 text-[#71717A]",
+                  "transition-colors hover:bg-[#FAFAFA] hover:text-[#09090B]",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#09090B]/15",
+                  open && "bg-[#F4F4F5] text-[#09090B]",
+                )
+              : cn(
+                  "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] border border-transparent text-[#71717A]",
+                  "transition-colors hover:bg-[#F4F4F5] hover:text-[#09090B]",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15",
+                  open && "bg-[#F4F4F5] text-[#09090B]",
+                ),
         )}
       >
         <Settings
-          className={cn("shrink-0", variant === "rail" ? "h-3.5 w-3.5" : "h-4 w-4")}
+          className={cn(
+            "shrink-0",
+            variant === "rail" || variant === "badge" ? "h-3.5 w-3.5" : "h-4 w-4",
+          )}
           strokeWidth={2}
           aria-hidden
         />
@@ -110,8 +124,8 @@ export function ChartingDataTableSettingsMenu({
           open={open}
           anchorRef={triggerRef}
           ref={menuPortalRef}
-          align={variant === "rail" ? "leading" : "trailing"}
-          placement={variant === "rail" ? "below" : "auto"}
+          align={variant === "rail" || variant === "badge" ? "leading" : "trailing"}
+          placement={variant === "rail" || variant === "badge" ? "below" : "auto"}
           className="w-[min(calc(100vw-2rem),240px)]"
         >
           <div

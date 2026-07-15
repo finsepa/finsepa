@@ -1042,11 +1042,13 @@ export function PriceChart({
 
   const chartPoints = useMemo(() => {
     const now = new Date(sessionNowMs);
+    // Live share-price pin only for Price series — market cap / return stay last-session EODHD.
     if (
       kind === "stock" &&
       range === "1D" &&
       !holdingsStyle &&
-      liveSessionMinute
+      liveSessionMinute &&
+      series === "price"
     ) {
       if (usesStock1DLiveWsMinutePipeline(symbol, now)) {
         return pinLiveWsMinuteChartTail(chartSourcePoints, liveSpotUsd, now);
@@ -1130,7 +1132,7 @@ export function PriceChart({
       now,
       liveSessionChartOptions,
     );
-  }, [kind, range, holdingsStyle, liveSessionMinute, symbol, chartSourcePoints, liveSpotUsd, livePostMarketTailTimeUnix, sessionNowMs, liveSessionChartOptions]);
+  }, [kind, range, holdingsStyle, liveSessionMinute, series, symbol, chartSourcePoints, liveSpotUsd, livePostMarketTailTimeUnix, sessionNowMs, liveSessionChartOptions]);
   const [hoverPrice, setHoverPrice] = useState<number | null>(null);
   const [hoverTimeUnix, setHoverTimeUnix] = useState<number | null>(null);
   const [hoverPoint, setHoverPoint] = useState<{ x: number; y: number } | null>(null);
@@ -1570,6 +1572,7 @@ export function PriceChart({
     const liveRegular =
       kind === "stock" &&
       range === "1D" &&
+      series === "price" &&
       !holdingsStyle &&
       getUsEquityMarketSession(new Date()) === "regular" &&
       liveSessionMinute;
@@ -1583,7 +1586,7 @@ export function PriceChart({
       return { ...fromChart, displayPrice: liveSpotUsd };
     }
     return fromChart;
-  }, [kind, range, holdingsStyle, chartPoints, crosshairForHeader, liveSpotUsd, liveSessionMinute]);
+  }, [kind, range, series, holdingsStyle, chartPoints, crosshairForHeader, liveSpotUsd, liveSessionMinute]);
 
   const tooltipByDate = useMemo(() => {
     const m = new Map<string, string[]>();
@@ -1956,13 +1959,18 @@ export function PriceChart({
       if (axis && axisLabel?.label) {
         if (holdingsPeriodAxisRowRef.current) holdingsPeriodAxisRowRef.current.style.visibility = "hidden";
         axis.textContent = axisLabel.label;
-        const anchor = resolvePeriodAxisLabelAnchor(axisLabel.leftPx, {
-          isLeftmost: axisLabel.leftPx <= (periodAxisLabelsRef.current[0]?.leftPx ?? axisLabel.leftPx) + 4,
-        });
-        Object.assign(
-          axis.style,
-          periodAxisLabelLayoutStyle(axisLabel.leftPx, anchor, containerWidthRef.current),
+        // Prefer geometric left edge only — empty idle labels must not force every hover to left:0.
+        const firstIdleLeft = periodAxisLabelsRef.current[0]?.leftPx;
+        const isLeftmost =
+          axisLabel.leftPx <= 24 ||
+          (firstIdleLeft != null && axisLabel.leftPx <= firstIdleLeft + 4);
+        const anchor = resolvePeriodAxisLabelAnchor(axisLabel.leftPx, { isLeftmost });
+        const layout = periodAxisLabelLayoutStyle(
+          axisLabel.leftPx,
+          anchor,
+          containerWidthRef.current,
         );
+        axis.style.left = layout.left;
         axis.style.transform = anchor === "left" ? "none" : "translateX(-50%)";
         axis.style.display = "";
       }
@@ -2581,9 +2589,10 @@ export function PriceChart({
     };
   }, [kind, symbol, range, series, initialChart, chartDataCadence]);
 
-  // Refresh 1D during live regular session — ~60s (Supabase WS minute bars).
+  // Refresh 1D during live regular session — ~60s (Supabase WS minute bars). Price only.
   useEffect(() => {
     if (holdingsStyle || kind !== "stock" || range !== "1D" || screenshotPreviewMode) return;
+    if (series !== "price") return;
     if (!liveSessionMinute || getUsEquityMarketSession(new Date()) !== "regular") return;
     let cancelled = false;
     const pollMs = STOCK_1D_LIVE_CHART_POLL_MS;
@@ -3327,7 +3336,7 @@ export function PriceChart({
               </div>
               <span
                 ref={holdingsHoverAxisLabelRef}
-                className="absolute bottom-1 max-w-[min(100%,calc(100%-16px))] -translate-x-1/2 whitespace-nowrap font-['Inter'] text-[11px] font-medium tabular-nums leading-none text-[#09090B] sm:text-[12px]"
+                className="absolute bottom-1 max-w-[min(100%,calc(100%-16px))] whitespace-nowrap font-['Inter'] text-[11px] font-medium tabular-nums leading-none text-[#09090B] sm:text-[12px]"
                 style={{ display: "none" }}
               />
             </>

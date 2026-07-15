@@ -1650,7 +1650,8 @@ export type StockEarningsTabFetchMode = "full" | "preview";
  * Cached per ticker so the first viewer pays EODHD/SEC cost and others reuse the payload.
  *
  * `preview` skips SEC index crawls, IR seed HTTP, and earnings-calendar timing — used by the
- * earnings calendar modal for a fast first paint. Lightweight SEC/IR PDF resolution still runs (cached).
+ * earnings calendar modal for a fast first paint. Documents come from DB cache + curated URLs only;
+ * full SEC/IR resolution still runs on the stock earnings tab (`full` mode).
  */
 async function fetchStockEarningsTabPayloadUncached(
   listingTicker: string,
@@ -1708,16 +1709,15 @@ async function fetchStockEarningsTabPayloadUncached(
   historyParsed = applyEarningsDocumentCacheToHistory(ticker, historyParsed, docCache);
   const afterCacheApply = historyParsed;
 
-  const needsDocumentEnrichment = historyParsed.some(reportedRowMissingEarningsDocuments);
+  const needsDocumentEnrichment =
+    !preview && historyParsed.some(reportedRowMissingEarningsDocuments);
 
   if (needsDocumentEnrichment) {
     try {
       historyParsed = await enrichEarningsHistoryWithSecDocuments(
         historyParsed,
         documentHub.cik,
-        preview
-          ? { maxRows: 3, maxIndexFetches: 6 }
-          : { maxRows: SEC_ENRICHMENT_ROWS_FULL, maxIndexFetches: SEC_ENRICHMENT_INDEX_FETCHES_FULL },
+        { maxRows: SEC_ENRICHMENT_ROWS_FULL, maxIndexFetches: SEC_ENRICHMENT_INDEX_FETCHES_FULL },
       );
     } catch {
       /* Best-effort */
@@ -1727,17 +1727,17 @@ async function fetchStockEarningsTabPayloadUncached(
   historyParsed = applyCuratedIrEarningsDocumentUrls(ticker, historyParsed);
   const afterCurated = historyParsed;
 
-  const needsIrSeed = historyParsed.some(reportedRowNeedsIrDocumentSeed);
+  const needsIrSeed = !preview && historyParsed.some(reportedRowNeedsIrDocumentSeed);
   let afterIrSeed = historyParsed;
   if (needsIrSeed) {
     try {
       const [irRows, revenueRows] = await Promise.all([
         applyIrSeedDocumentUrls(ticker, historyParsed, documentHub, {
-          preview,
+          preview: false,
           fyEndMonthDay,
         }),
         enrichReportedHistoryRevenueFromSec8k(historyParsed, documentHub.cik, {
-          maxRows: preview ? 2 : SEC_ENRICHMENT_ROWS_FULL,
+          maxRows: SEC_ENRICHMENT_ROWS_FULL,
         }),
       ]);
       afterIrSeed = irRows;
@@ -1754,10 +1754,10 @@ async function fetchStockEarningsTabPayloadUncached(
     } catch {
       /* Best-effort */
     }
-  } else {
+  } else if (!preview) {
     try {
       historyParsed = await enrichReportedHistoryRevenueFromSec8k(historyParsed, documentHub.cik, {
-        maxRows: preview ? 2 : SEC_ENRICHMENT_ROWS_FULL,
+        maxRows: SEC_ENRICHMENT_ROWS_FULL,
       });
     } catch {
       /* Best-effort — fills revenue when EODHD lags same-day reports */
@@ -1765,11 +1765,13 @@ async function fetchStockEarningsTabPayloadUncached(
   }
 
   const irSeedSource = earningsIrSeedResolutionSource(ticker);
-  void persistResolvedEarningsDocuments(ticker, historyParsed, afterCacheApply, docCache, [
-    { step: "sec", rows: afterSec },
-    { step: "curated", rows: afterCurated },
-    { step: irSeedSource, rows: afterIrSeed },
-  ]);
+  if (!preview) {
+    void persistResolvedEarningsDocuments(ticker, historyParsed, afterCacheApply, docCache, [
+      { step: "sec", rows: afterSec },
+      { step: "curated", rows: afterCurated },
+      { step: irSeedSource, rows: afterIrSeed },
+    ]);
+  }
 
   let estimatesChart = buildEstimatesChart(
     root,
@@ -1870,7 +1872,7 @@ async function fetchStockEarningsTabPayloadUncached(
 
 const fetchStockEarningsTabPayloadCached = unstable_cache(
   fetchStockEarningsTabPayloadUncached,
-  ["stock-earnings-tab-payload-v43-pltr-cdn-head-ua"],
+  ["stock-earnings-tab-payload-v44-preview-lean-docs"],
   { revalidate: REVALIDATE_WARM_LONG },
 );
 
