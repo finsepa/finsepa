@@ -136,6 +136,15 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
     return 0;
   }, [holdingsByPortfolioId, selectedCompany?.symbol, selectedPortfolioId, tradeAssetSource]);
 
+  /** Mark-to-market of owned shares using the Price field (Sell tip). */
+  const selectedHoldingWorthUsd = useMemo(() => {
+    if (selectedHoldingShares == null) return null;
+    if (!price.trim()) return null;
+    const px = parseUsdStyleNumber(price);
+    if (!(px >= 0) || !Number.isFinite(selectedHoldingShares)) return null;
+    return roundUsdForDisplay(selectedHoldingShares * px);
+  }, [price, selectedHoldingShares]);
+
   const transactionTotal = useMemo(() => {
     const line = parseUsdStyleNumber(shares) * parseUsdStyleNumber(price);
     const fee = parseUsdStyleNumber(fees);
@@ -649,6 +658,15 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
                         <span className="font-medium text-[#09090B]">
                           {formatSharesHint(selectedHoldingShares, selectedCompany?.symbol ?? "")}
                         </span>
+                        {selectedHoldingWorthUsd != null ? (
+                          <>
+                            {" "}
+                            worth of{" "}
+                            <span className="font-medium tabular-nums text-[#09090B]">
+                              {usdBalance.format(selectedHoldingWorthUsd)}
+                            </span>
+                          </>
+                        ) : null}
                       </div>
                     ) : null}
                   </Field>

@@ -8,7 +8,7 @@ import type { PortfolioHolding } from "@/components/portfolio/portfolio-types";
 import { DropdownMenuLottieIcon } from "@/components/icons/dropdown-menu-lottie-icon";
 import {
   dropdownMenuPanelClassName,
-  dropdownMenuPlainItemRowClassName,
+  dropdownMenuPlainItemClassName,
 } from "@/components/design-system/dropdown-menu-styles";
 import { newTradeMenuIconAnimation } from "@/lib/lottie/quick-add-menu-animations";
 import { deleteMenuIconAnimation } from "@/lib/lottie/watchlist-menu-animations";
@@ -89,16 +89,19 @@ export function HoldingRowActionsMenu({
           aria-orientation="vertical"
           className={cn(dropdownMenuPanelClassName(), "fixed z-[200] min-w-[12.25rem]")}
           style={{ top: coords.top, left: coords.left }}
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
         >
           <button
             type="button"
             role="menuitem"
-            className={cn(dropdownMenuPlainItemRowClassName(), "gap-2")}
+            className={cn(dropdownMenuPlainItemClassName(), "justify-start gap-2")}
             onMouseEnter={() => setAddTransactionsIconPlaying(true)}
             onMouseLeave={() => setAddTransactionsIconPlaying(false)}
             onFocus={() => setAddTransactionsIconPlaying(true)}
             onBlur={() => setAddTransactionsIconPlaying(false)}
-            onClick={() => {
+            onClick={(e) => {
+              e.stopPropagation();
               onAddTransactions(holding);
               onOpenChange(false);
             }}
@@ -110,14 +113,15 @@ export function HoldingRowActionsMenu({
             type="button"
             role="menuitem"
             className={cn(
-              dropdownMenuPlainItemRowClassName(),
-              "gap-2 text-[#DC2626] hover:bg-[#FEE2E2] hover:text-[#B91C1C]",
+              dropdownMenuPlainItemClassName(),
+              "justify-start gap-2 text-[#DC2626] hover:bg-[#FEE2E2] hover:text-[#B91C1C]",
             )}
             onMouseEnter={() => setRemoveIconPlaying(true)}
             onMouseLeave={() => setRemoveIconPlaying(false)}
             onFocus={() => setRemoveIconPlaying(true)}
             onBlur={() => setRemoveIconPlaying(false)}
-            onClick={() => {
+            onClick={(e) => {
+              e.stopPropagation();
               onRemoveAsset(holding);
               onOpenChange(false);
             }}
@@ -139,7 +143,10 @@ export function HoldingRowActionsMenu({
         aria-label={`Actions for ${holding.name}`}
         aria-expanded={isOpen}
         aria-haspopup="menu"
-        onClick={() => onOpenChange(!isOpen)}
+        onClick={(e) => {
+          e.stopPropagation();
+          onOpenChange(!isOpen);
+        }}
       >
         <MoreHorizontal className="h-4 w-4" aria-hidden strokeWidth={2} />
       </button>

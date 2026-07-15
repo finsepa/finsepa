@@ -17,6 +17,8 @@ type PortfolioMetricDef = {
   benchmark?: string;
   benchmarkNum?: number;
   compareDirection?: CompareDirection;
+  /** No S&P comparison — always neutral (black), e.g. No. of assets. */
+  neutral?: boolean;
 };
 
 type PortfolioMetricRow = PortfolioMetricDef & {
@@ -96,12 +98,15 @@ const PLACEHOLDER_METRICS: PortfolioMetricDef[] = [
     benchmarkNum: 16.8,
     compareDirection: "lower",
   },
-  { label: "No. of assets", tooltipTitle: "No. of Assets", portfolio: "28", portfolioNum: 28 },
+  { label: "No. of assets", tooltipTitle: "No. of Assets", portfolio: "28", portfolioNum: 28, neutral: true },
   {
     label: "Portfolio turnover",
     tooltipTitle: "Portfolio Turnover",
     portfolio: "24%",
     portfolioNum: 24,
+    benchmark: "32%",
+    benchmarkNum: 32,
+    compareDirection: "lower",
   },
   {
     label: "Beta",
@@ -123,7 +128,7 @@ const EMPTY_METRICS: PortfolioMetricDef[] = [
   { label: "Operating margin", tooltipTitle: "Operating Margin", portfolio: "0%", portfolioNum: 0 },
   { label: "ROCE", tooltipTitle: "ROCE", portfolio: "0%", portfolioNum: 0 },
   { label: "Volatility", tooltipTitle: "Volatility", portfolio: "0%", portfolioNum: 0 },
-  { label: "No. of assets", tooltipTitle: "No. of Assets", portfolio: "0", portfolioNum: 0 },
+  { label: "No. of assets", tooltipTitle: "No. of Assets", portfolio: "0", portfolioNum: 0, neutral: true },
   { label: "Portfolio turnover", tooltipTitle: "Portfolio Turnover", portfolio: "0%", portfolioNum: 0 },
   { label: "Beta", tooltipTitle: "Beta", portfolio: "0", portfolioNum: 0 },
 ];
@@ -143,7 +148,11 @@ function portfolioAheadDeltaPct(
 
 function enrichMetricRows(metrics: PortfolioMetricDef[]): PortfolioMetricRow[] {
   return metrics.map((metric) => {
-    if (metric.benchmarkNum == null || metric.compareDirection == null) {
+    if (
+      metric.neutral ||
+      metric.benchmarkNum == null ||
+      metric.compareDirection == null
+    ) {
       return { ...metric, deltaPct: null };
     }
     return {
@@ -180,7 +189,10 @@ function formatDelta(deltaPct: number): string {
 
 function valueToneClass(deltaPct: number | null, muted: boolean): string {
   if (muted) return "text-[#71717A]";
-  if (deltaPct == null || deltaPct === 0) return "text-[#09090B]";
+  // Neutral metrics (no S&P compare) stay black.
+  if (deltaPct == null) return "text-[#09090B]";
+  if (deltaPct === 0) return "text-[#09090B]";
+  // Positive delta = better vs S&P per compareDirection (higher / lower).
   return deltaPct > 0 ? "text-[#16A34A]" : "text-[#DC2626]";
 }
 
@@ -193,17 +205,17 @@ function MetricValueDisplay({
   muted: boolean;
   align?: "left" | "right";
 }) {
-  const comparable = row.benchmark != null && row.deltaPct != null && !muted;
-  const toneClass = valueToneClass(row.deltaPct, muted);
-  const plainValueClass = cn(
+  const comparable = !row.neutral && row.benchmark != null && row.deltaPct != null && !muted;
+  const toneClass = valueToneClass(comparable ? row.deltaPct : null, muted);
+  const valueClass = cn(
     "text-[14px] font-medium tabular-nums",
     align === "left" ? "leading-4" : "leading-5",
     align === "right" ? "shrink-0 text-right" : "min-w-0 text-left",
-    muted ? "text-[#71717A]" : "text-[#09090B]",
+    toneClass,
   );
 
   if (!comparable) {
-    return <span className={plainValueClass}>{row.portfolio}</span>;
+    return <span className={valueClass}>{row.portfolio}</span>;
   }
 
   const deltaLabel = formatDelta(row.deltaPct!);
@@ -211,13 +223,12 @@ function MetricValueDisplay({
 
   return (
     <>
-      <span className={cn(plainValueClass, "md:hidden")}>{row.portfolio}</span>
+      <span className={cn(valueClass, "md:hidden")}>{row.portfolio}</span>
       <div className={cn("group/value relative hidden shrink-0 md:block", align === "right" && "ml-auto")}>
         <span
           className={cn(
-            "cursor-default text-[14px] font-medium leading-5 tabular-nums underline decoration-dotted decoration-[#D4D4D8] underline-offset-2",
-            align === "right" ? "text-right" : "text-left",
-            toneClass,
+            "cursor-default underline decoration-dotted decoration-[#D4D4D8] underline-offset-2",
+            valueClass,
           )}
           tabIndex={0}
           aria-describedby={`portfolio-metric-tip-${row.label.replace(/\s+/g, "-").toLowerCase()}`}

@@ -56,6 +56,7 @@ import {
   formatUsdPrice,
 } from "@/lib/market/key-stats-basic-format";
 import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
+import { ChartBrandWatermark } from "@/components/chart/chart-brand-watermark";
 import { smoothAreaPathD, smoothLinePathD } from "@/lib/chart/smooth-line-path";
 import {
   fundamentalsBarColorAtIndex,
@@ -326,6 +327,8 @@ type Props = {
   showLinePointMarkers?: boolean;
   /** Value labels above line points when Values is on (default on; off in Key Stats metric modal). */
   enableLineValueLabels?: boolean;
+  /** Centered Finsepa mark behind the series (Key Stats modal + screenshot export). */
+  showBrandWatermark?: boolean;
 };
 
 function plotValueTopPercent(
@@ -463,7 +466,9 @@ export function MultichartFundamentalsBar({
   screenshotExportMode = false,
   showLinePointMarkers = true,
   enableLineValueLabels = true,
+  showBrandWatermark = false,
 }: Props) {
+  const brandWatermark = showBrandWatermark || screenshotExportMode;
   const lineAxisMode = visual === "line" && lineTimeRange != null;
   const effectiveHorizontalPeriodAxisLabels = horizontalPeriodAxisLabels || lineAxisMode;
   const display = displayOptionsProp ?? DEFAULT_FUNDAMENTALS_CHART_DISPLAY_OPTIONS;
@@ -743,6 +748,9 @@ export function MultichartFundamentalsBar({
                 }}
               />
             </div>
+            {brandWatermark ? (
+              <ChartBrandWatermark size={screenshotExportMode ? "compact" : "default"} />
+            ) : null}
             {lineHoverCrosshair ? (
               <div
                 aria-hidden
@@ -778,7 +786,7 @@ export function MultichartFundamentalsBar({
             {visual === "line" ? (
               <div
                 ref={linePlotRef}
-                className="absolute inset-x-0 top-[8%] bottom-[4%] z-0 min-h-0 w-full min-w-0"
+                className="absolute inset-x-0 top-[8%] bottom-[4%] z-[2] min-h-0 w-full min-w-0"
                 role="img"
                 aria-label={`${metricLabel} line chart`}
               >
@@ -964,7 +972,7 @@ export function MultichartFundamentalsBar({
               </div>
             ) : (
               <div
-                className="absolute inset-x-0 top-[8%] bottom-[4%] min-h-0 w-full min-w-0 px-0"
+                className="absolute inset-x-0 top-[8%] bottom-[4%] z-[2] min-h-0 w-full min-w-0 px-0"
                 role="img"
                 aria-label={`${metricLabel} bar chart`}
               >

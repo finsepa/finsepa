@@ -103,6 +103,7 @@ import {
   type FundamentalsRoundedBarItem,
 } from "@/lib/chart/fundamentals-rounded-bar-primitive";
 import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
+import { ChartBrandWatermark } from "@/components/chart/chart-brand-watermark";
 import {
   fetchChartingFundamentalsSeriesCached,
   revalidateChartingFundamentalsSeriesCached,
@@ -3673,7 +3674,8 @@ export function ChartingWorkspace({
                       );
                     })()}
                   </div>
-                  <div ref={lineChartRevealRef} className="absolute inset-0 z-[1]">
+                  <ChartBrandWatermark size={screenshotPreviewMode ? "compact" : "default"} />
+                  <div ref={lineChartRevealRef} className="absolute inset-0 z-[2]">
                     <div ref={chartPlotRef} className="h-full w-full" />
                     {chartType === "line" && visibleBarValueLabels.length > 0
                       ? visibleBarValueLabels.map((b) => (

@@ -88,6 +88,7 @@ import { CryptoFearGreedCard } from "@/components/screener/crypto-fear-greed-car
 import { CryptoLargestMoversCard } from "@/components/screener/crypto-largest-movers-card";
 import {
   cryptoMoverFallbackRows,
+  splitCryptoLargestMovers,
   withCryptoMoverLocalFallbacks,
 } from "@/lib/screener/screener-crypto-mover-fallbacks";
 import { CryptoFearGreedModal } from "@/components/screener/crypto-fear-greed-modal";
@@ -333,19 +334,20 @@ function CryptoTabBody({
   const safeCryptoPage = Math.min(totalPages, Math.max(1, cryptoPage));
 
   const [fearGreedModalOpen, setFearGreedModalOpen] = useState(false);
-  const [cryptoTop10Rows, setCryptoTop10Rows] = useState<CryptoTop10Row[]>([]);
+  const [cryptoMoverRows, setCryptoMoverRows] = useState<CryptoTop10Row[]>([]);
 
   useEffect(() => {
     let cancelled = false;
-    void fetch("/api/screener/crypto-top10", { credentials: "include" })
+    // Full screener crypto universe (~50) so gainers/losers aren't limited to page-1 tops.
+    void fetch("/api/screener/crypto-rows?page=1&pageSize=50", { credentials: "include" })
       .then((res) => (res.ok ? res.json() : null))
       .then((json: { rows?: CryptoTop10Row[] } | null) => {
         if (cancelled) return;
         const rows = Array.isArray(json?.rows) ? json.rows : [];
-        setCryptoTop10Rows(rows.length > 0 ? rows : cryptoMoverFallbackRows());
+        setCryptoMoverRows(rows.length > 0 ? rows : cryptoMoverFallbackRows());
       })
       .catch(() => {
-        if (!cancelled) setCryptoTop10Rows(cryptoMoverFallbackRows());
+        if (!cancelled) setCryptoMoverRows(cryptoMoverFallbackRows());
       });
     return () => {
       cancelled = true;
@@ -354,16 +356,13 @@ function CryptoTabBody({
 
   const movers = useMemo(() => {
     const source =
-      cryptoTop10Rows.length > 0
-        ? withCryptoMoverLocalFallbacks(cryptoTop10Rows)
+      cryptoMoverRows.length > 0
+        ? withCryptoMoverLocalFallbacks(cryptoMoverRows)
         : withCryptoMoverLocalFallbacks(
             cryptoRowsResolved.length > 0 ? cryptoRowsResolved : cryptoMoverFallbackRows(),
           );
-    const valid = source.filter((r) => r.changePercent1D != null && Number.isFinite(r.changePercent1D));
-    const gainers = [...valid].sort((a, b) => (b.changePercent1D ?? 0) - (a.changePercent1D ?? 0));
-    const losers = [...valid].sort((a, b) => (a.changePercent1D ?? 0) - (b.changePercent1D ?? 0));
-    return { gainers, losers };
-  }, [cryptoTop10Rows, cryptoRowsResolved]);
+    return splitCryptoLargestMovers(source);
+  }, [cryptoMoverRows, cryptoRowsResolved]);
 
   return (
     <div>

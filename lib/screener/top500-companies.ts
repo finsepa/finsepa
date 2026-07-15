@@ -13,6 +13,18 @@ import { filterIssuerLineDuplicatesInUniverse } from "@/lib/screener/universe-is
 
 export type TopCompanyUniverseRow = EodhdTopUniverseRow;
 
+/**
+ * Hide from screener top-500 only (search / stock routes still work via EODHD search).
+ * GOOG — Alphabet Class C (list GOOGL). SKHY / SKHYY — OTC ADRs for SK hynix.
+ */
+const SCREENER_TOP500_EXCLUDED_TICKERS = new Set(["GOOG", "SKHY", "SKHYY"]);
+
+export function filterScreenerTop500ExcludedTickers<T extends { ticker: string }>(
+  rows: readonly T[],
+): T[] {
+  return rows.filter((r) => !SCREENER_TOP500_EXCLUDED_TICKERS.has(r.ticker.trim().toUpperCase()));
+}
+
 function mergeUniversePages(pages: readonly EodhdTopUniverseRow[][]): TopCompanyUniverseRow[] {
   const combined = pages.flat();
   const byTicker = new Map<string, TopCompanyUniverseRow>();
@@ -23,8 +35,7 @@ function mergeUniversePages(pages: readonly EodhdTopUniverseRow[][]): TopCompany
   const out = Array.from(byTicker.values());
   out.sort((a, b) => b.marketCapUsd - a.marketCapUsd || a.ticker.localeCompare(b.ticker));
   const cleaned = filterIssuerLineDuplicatesInUniverse(filterUniverseRowsRemovingOtcDuplicates(out));
-  // Hide Alphabet Class C (GOOG) from Screener list.
-  return cleaned.filter((r) => r.ticker.trim().toUpperCase() !== "GOOG");
+  return filterScreenerTop500ExcludedTickers(cleaned);
 }
 
 async function fetchScreenerPageGroup(offsets: readonly number[]): Promise<EodhdTopUniverseRow[][]> {
@@ -54,7 +65,7 @@ export async function buildTop500MarketSnapshotForIngest(): Promise<TopCompanyUn
 
 const getTop500UniverseData = unstable_cache(
   buildTop500UniverseUncached,
-  ["screener-top500-universe-v13-identity-7d"],
+  ["screener-top500-universe-v14-exclude-skhy"],
   { revalidate: REVALIDATE_SCREENER_IDENTITY },
 );
 
@@ -68,6 +79,8 @@ export const getTop500Universe = cache(async () => getTop500UniverseData());
  */
 export async function getTop500UniverseMarketSnapshot(): Promise<TopCompanyUniverseRow[]> {
   const fromSnapshot = await readMarketSnapshot<TopCompanyUniverseRow[]>(MARKET_SNAPSHOT_KEY.top500Market);
-  if (fromSnapshot?.length) return fromSnapshot;
-  return withScreenerUsMarketCache("screener-top500-market-snapshot-v1", buildTop500UniverseUncached);
+  if (fromSnapshot?.length) {
+    return filterScreenerTop500ExcludedTickers(fromSnapshot);
+  }
+  return withScreenerUsMarketCache("screener-top500-market-snapshot-v2-exclude-skhy", buildTop500UniverseUncached);
 }

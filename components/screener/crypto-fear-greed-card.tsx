@@ -6,13 +6,7 @@ import { useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { MOBILE_PANEL_CARD_CLASS } from "@/components/design-system/card-surface-styles";
 import type { CryptoFearGreedIndex } from "@/lib/market/alternative-fear-greed";
-
-function colorForValue(v: number): string {
-  if (v <= 24) return "#DC2626"; // red
-  if (v <= 49) return "#F59E0B"; // amber
-  if (v <= 74) return "#22C55E"; // green
-  return "#16A34A"; // deep green
-}
+import { FEAR_GREED_BANDS } from "@/lib/screener/fear-greed-color";
 
 function labelForClassification(raw: string): string {
   const v = raw.trim();
@@ -31,6 +25,14 @@ function arcPath(cx: number, cy: number, r: number, startDeg: number, endDeg: nu
   return `M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArc} 0 ${end.x} ${end.y}`;
 }
 
+/** Map 0..100 onto the gauge’s −120..120° sweep. */
+function valueToGaugeAngle(v: number): number {
+  return -120 + (Math.max(0, Math.min(100, v)) / 100) * 240;
+}
+
+/** Visual gap between colored arcs (degrees). */
+const GAUGE_SEGMENT_GAP_DEG = 8;
+
 export function CryptoFearGreedCard({
   data,
   className,
@@ -45,20 +47,34 @@ export function CryptoFearGreedCard({
 
   const gauge = useMemo(() => {
     const v = value == null ? 50 : Math.max(0, Math.min(100, value));
-    // Map 0..100 onto -120..120 degrees (240° sweep)
-    const angle = -120 + (v / 100) * 240;
+    const angle = valueToGaugeAngle(v);
     // Tune geometry so the arc fills the card height (matches Figma proportions)
     const cx = 160;
     const cy = 102;
     const r = 92;
     const dot = polarToCartesian(cx, cy, r, angle);
-    return { angle, cx, cy, r, dot };
+
+    const segments = FEAR_GREED_BANDS.map((band, i) => {
+      const rawStart = valueToGaugeAngle(band.from);
+      const rawEnd = valueToGaugeAngle(band.to);
+      // Leave a gap after the previous band; keep this band’s high edge so e.g. 25
+      // (Extreme Fear) still sits on the red arc tip rather than in the orange gap.
+      const startDeg = i === 0 ? rawStart : rawStart + GAUGE_SEGMENT_GAP_DEG;
+      const endDeg = rawEnd;
+      return {
+        color: band.color,
+        startDeg,
+        endDeg: Math.max(startDeg + 1, endDeg),
+      };
+    });
+
+    return { angle, cx, cy, r, dot, segments };
   }, [value]);
 
   return (
     <div
       className={cn(
-        "flex h-[188px] flex-col gap-[12px] px-[20px] py-[12px]",
+        "flex h-[188px] flex-col gap-[8px] px-[20px] pt-[8px] pb-[12px]",
         MOBILE_PANEL_CARD_CLASS,
         className,
       )}
@@ -88,45 +104,18 @@ export function CryptoFearGreedCard({
       </div>
 
       <div className="relative h-[132px] w-full">
-        <div className="absolute left-1/2 top-0 w-[224px] -translate-x-1/2">
+        <div className="absolute left-1/2 -top-1 w-[224px] -translate-x-1/2">
           <svg viewBox="0 0 320 170" className="h-[132px] w-full">
-            {/* segments */}
-            {/* Add angular gaps to match the design */}
-            <path
-              d={arcPath(gauge.cx, gauge.cy, gauge.r, -120, -86)}
-              stroke="#DC2626"
-              strokeWidth="18"
-              fill="none"
-              strokeLinecap="round"
-            />
-            <path
-              d={arcPath(gauge.cx, gauge.cy, gauge.r, -70, -38)}
-              stroke="#A16207"
-              strokeWidth="18"
-              fill="none"
-              strokeLinecap="round"
-            />
-            <path
-              d={arcPath(gauge.cx, gauge.cy, gauge.r, -22, 22)}
-              stroke="#EAB308"
-              strokeWidth="18"
-              fill="none"
-              strokeLinecap="round"
-            />
-            <path
-              d={arcPath(gauge.cx, gauge.cy, gauge.r, 38, 70)}
-              stroke="#22C55E"
-              strokeWidth="18"
-              fill="none"
-              strokeLinecap="round"
-            />
-            <path
-              d={arcPath(gauge.cx, gauge.cy, gauge.r, 86, 120)}
-              stroke="#16A34A"
-              strokeWidth="18"
-              fill="none"
-              strokeLinecap="round"
-            />
+            {gauge.segments.map((seg) => (
+              <path
+                key={seg.color}
+                d={arcPath(gauge.cx, gauge.cy, gauge.r, seg.startDeg, seg.endDeg)}
+                stroke={seg.color}
+                strokeWidth="12"
+                fill="none"
+                strokeLinecap="round"
+              />
+            ))}
 
             {/* knob */}
             <circle cx={gauge.dot.x} cy={gauge.dot.y} r="12" fill="#09090B" stroke="#FFFFFF" strokeWidth="4" />
@@ -134,7 +123,7 @@ export function CryptoFearGreedCard({
             {/* value */}
             <text
               x={gauge.cx}
-              y="104"
+              y="94"
               textAnchor="middle"
               className="fill-[#09090B]"
               style={{ fontFamily: "Inter", fontSize: 30, fontWeight: 900, lineHeight: "32px" }}
@@ -143,10 +132,10 @@ export function CryptoFearGreedCard({
             </text>
             <text
               x={gauge.cx}
-              y="126"
+              y="118"
               textAnchor="middle"
               className="fill-[#71717A]"
-              style={{ fontFamily: "Inter", fontSize: 14, fontWeight: 400, lineHeight: "20px" }}
+              style={{ fontFamily: "Inter", fontSize: 16, fontWeight: 400, lineHeight: "22px" }}
             >
               {classification}
             </text>
@@ -160,4 +149,3 @@ export function CryptoFearGreedCard({
     </div>
   );
 }
-

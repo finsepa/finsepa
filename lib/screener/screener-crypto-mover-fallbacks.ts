@@ -71,3 +71,18 @@ export function cryptoMoverFallbackRows(): CryptoTop10Row[] {
     logoUrl: "",
   }));
 }
+
+/** Gainers = 1D > 0 (desc); losers = 1D < 0 (asc). Flat/unset 1D never fills the opposite list. */
+export function splitCryptoLargestMovers(rows: readonly CryptoTop10Row[]): {
+  gainers: CryptoTop10Row[];
+  losers: CryptoTop10Row[];
+} {
+  const valid = rows.filter((r) => r.changePercent1D != null && Number.isFinite(r.changePercent1D));
+  const gainers = valid
+    .filter((r) => (r.changePercent1D as number) > 0)
+    .sort((a, b) => (b.changePercent1D as number) - (a.changePercent1D as number));
+  const losers = valid
+    .filter((r) => (r.changePercent1D as number) < 0)
+    .sort((a, b) => (a.changePercent1D as number) - (b.changePercent1D as number));
+  return { gainers, losers };
+}

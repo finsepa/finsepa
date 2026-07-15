@@ -46,6 +46,7 @@ import {
 } from "@/lib/chart/fundamentals-chart-surface";
 import { formatChartingTableCell } from "@/components/charting/charting-individual-company-table";
 import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
+import { ChartBrandWatermark } from "@/components/chart/chart-brand-watermark";
 import { smoothLinePathD } from "@/lib/chart/smooth-line-path";
 import {
   fundamentalsBarEnterProgress,
@@ -367,6 +368,7 @@ function ChartingMultiMetricFundamentalsLineChart({
                 style={{ borderColor: FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER }}
               />
             </div>
+            <ChartBrandWatermark />
             {lineHoverCrosshair ? (
               <div
                 aria-hidden
@@ -584,6 +586,7 @@ export function ChartingFundamentalsLineChart({
         lineTimeRange={lineTimeRange}
         periodPlotMargins={{ left: 0, right: 0 }}
         showLinePointMarkers={false}
+        showBrandWatermark
       />
     );
   }

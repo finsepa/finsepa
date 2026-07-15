@@ -41,8 +41,8 @@ const ROW_HEIGHT_PX = 36;
 const BAR_HEIGHT_PX = 22;
 const X_AXIS_TICK_COUNT = 6;
 const TOOLTIP_OFFSET_PX = 12;
-const TOOLTIP_EST_W_PX = 280;
-const TOOLTIP_EST_H_PX = 56;
+const TOOLTIP_EST_W_PX = 240;
+const TOOLTIP_EST_H_PX = 112;
 
 const CHART_SEGMENT_TRACK_CLASS =
   "flex w-auto min-w-0 flex-nowrap gap-0.5 rounded-[10px] bg-[#F4F4F5] p-0.5";
@@ -56,6 +56,8 @@ type MetricMode = "usd" | "pct";
 
 type PerfRow = {
   h: PortfolioHolding;
+  unrealizedUsd: number;
+  realizedUsd: number;
   totalProfitUsd: number;
   totalProfitPct: number | null;
   symbol: string;
@@ -226,18 +228,41 @@ function HoldingsPerformanceBarChart({
       createPortal(
         <div
           role="tooltip"
-          className={cn(FUNDAMENTALS_CHART_TOOLTIP_CLASS, "!fixed z-[200]")}
+          className={cn(FUNDAMENTALS_CHART_TOOLTIP_CLASS, "!fixed z-[200] w-[240px]")}
           style={{ left: tooltipPos.left, top: tooltipPos.top }}
         >
           <div className="text-[12px] font-semibold leading-4 text-[#09090B]">{hovered.companyName}</div>
-          <div
-            className="mt-0.5 text-[12px] tabular-nums"
-            style={{ color: hoveredValue >= 0 ? PROFIT_TEXT : LOSS_TEXT }}
-          >
-            {formatSignedUsd(hovered.totalProfitUsd)}
-            {hovered.totalProfitPct != null ? (
-              <span className="text-[#71717A]"> · {formatSignedPct(hovered.totalProfitPct)}</span>
-            ) : null}
+          <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-[12px] leading-4">
+            <div className="text-[#71717A]">Unrealized</div>
+            <div
+              className={cn(
+                "text-right tabular-nums",
+                hovered.unrealizedUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
+              )}
+            >
+              {formatSignedUsd(hovered.unrealizedUsd)}
+            </div>
+            <div className="text-[#71717A]">Realized</div>
+            <div
+              className={cn(
+                "text-right tabular-nums",
+                hovered.realizedUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
+              )}
+            >
+              {formatSignedUsd(hovered.realizedUsd)}
+            </div>
+            <div className="text-[#71717A]">Total</div>
+            <div
+              className={cn(
+                "text-right font-semibold tabular-nums",
+                hovered.totalProfitUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
+              )}
+            >
+              {formatSignedUsd(hovered.totalProfitUsd)}
+              {hovered.totalProfitPct != null ? (
+                <span className="font-normal text-[#71717A]"> · {formatSignedPct(hovered.totalProfitPct)}</span>
+              ) : null}
+            </div>
           </div>
         </div>,
         document.body,
@@ -417,14 +442,16 @@ function PortfolioHoldingsPerformanceChartInner({
 
   const sortedRows = useMemo(() => {
     const rows: PerfRow[] = holdings.map((h) => {
-      const retUsd = h.currentValue - h.costBasis;
+      const unrealizedUsd = h.currentValue - h.costBasis;
       const routeKey = cryptoRouteBase(h.symbol);
       const assetKind: "stock" | "crypto" = isSupportedCryptoAssetSymbol(routeKey) ? "crypto" : "stock";
       const realizedUsd = cumulativeRealizedGainUsdForAsset(transactions, routeKey, assetKind);
-      const totalProfitUsd = retUsd + realizedUsd;
+      const totalProfitUsd = unrealizedUsd + realizedUsd;
       const totalProfitPct = h.costBasis > 0 ? (totalProfitUsd / h.costBasis) * 100 : null;
       return {
         h,
+        unrealizedUsd,
+        realizedUsd,
         totalProfitUsd,
         totalProfitPct,
         symbol: h.symbol.trim().toUpperCase() || h.name.trim(),

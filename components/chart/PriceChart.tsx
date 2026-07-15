@@ -28,6 +28,7 @@ import {
   type OverviewBottomAxisMode,
   type PeriodAxisLabelAnchor,
 } from "@/components/chart/overview-bottom-axis";
+import { ChartBrandWatermark } from "@/components/chart/chart-brand-watermark";
 import {
   LineSeries,
   AreaSeries,
@@ -3195,6 +3196,12 @@ export function PriceChart({
           />
         ) : null}
       </div>
+      {!holdingsStyle && !loading && ready ? (
+        <ChartBrandWatermark
+          cover="full"
+          size={screenshotPreviewMode ? "compact" : "default"}
+        />
+      ) : null}
       {showHoldingsActivityOverlay ? (
         <HoldingsQuarterBandsOverlay
           layouts={quarterBandLayouts}
