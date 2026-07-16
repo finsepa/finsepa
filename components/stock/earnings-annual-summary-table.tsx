@@ -20,5 +20,12 @@ export function EarningsAnnualSummaryTable({
 }) {
   const model = useMemo(() => buildEarningsAnnualSummaryTableModel(annual), [annual]);
   if (!model) return null;
-  return <StockIncomeStatementTable model={model} onMetricClick={onMetricClick} showPeriodEndingRow={false} />;
+  return (
+    <StockIncomeStatementTable
+      model={model}
+      onMetricClick={onMetricClick}
+      showPeriodEndingRow={false}
+      viewportScroll={false}
+    />
+  );
 }

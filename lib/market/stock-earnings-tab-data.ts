@@ -1107,7 +1107,7 @@ function extendAnnualEstimatesWithForwardTrend(
   annualEpsEstimateFromTrend: Map<string, number>,
 ): StockEarningsEstimatesPoint[] {
   const todayYmd = toYmdUtc(new Date());
-  const maxLabelYear = new Date().getUTCFullYear() + 2;
+  const maxLabelYear = new Date().getUTCFullYear() + 1;
   const byLabel = new Map<string, StockEarningsEstimatesPoint>();
   for (const p of annual) {
     const prev = byLabel.get(p.label);
@@ -1163,9 +1163,9 @@ function extendAnnualEstimatesWithForwardTrend(
   return [...byLabel.values()].sort((a, b) => a.sortKey.localeCompare(b.sortKey));
 }
 
-/** Match annual forward cap — include all of calendar years through UTC year + 2 (e.g. 2026–2027). */
+/** Match annual forward cap — include calendar years through UTC year + 1 (2 years of forecast). */
 function maxQuarterlyForwardPeriodEndYmd(): string {
-  const maxYear = new Date().getUTCFullYear() + 2;
+  const maxYear = new Date().getUTCFullYear() + 1;
   return `${maxYear}-12-31`;
 }
 
@@ -1189,7 +1189,7 @@ function fiscalQuarterEndYmdsFromFyEnd(fyEndYmd: string): string[] {
 }
 
 /**
- * Add upcoming quarters from `Earnings.Trend` quarterly revenue through year + 2.
+ * Add upcoming quarters from `Earnings.Trend` quarterly revenue through year + 1.
  */
 function extendQuarterlyEstimatesWithForwardTrend(
   quarterly: StockEarningsEstimatesPoint[],

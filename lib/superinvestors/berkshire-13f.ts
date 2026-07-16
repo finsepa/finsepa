@@ -84,6 +84,11 @@ function devMemoAsync<T>(key: string, fn: () => Promise<T>, ttlMs = DEV_SEC_CACH
   if (hit && hit.exp > now) return hit.v as Promise<T>;
   const v = fn();
   g.__finsepaDevMemo.set(key, { exp: now + ttlMs, v });
+  /** Don't pin a rejected/hung-then-failed promise for the full TTL. */
+  void v.catch(() => {
+    const cur = g.__finsepaDevMemo?.get(key);
+    if (cur?.v === v) g.__finsepaDevMemo?.delete(key);
+  });
   return v;
 }
 
@@ -92,7 +97,11 @@ async function secFetch(url: string, init: RequestInit & { headers: HeadersInit 
   let backoffMs = 400;
   // Retry a few times on SEC throttling (429).
   for (;;) {
-    const res = await fetch(url, init);
+    const res = await fetch(url, {
+      ...init,
+      // Bound each SEC hop so profile SSR can't sit on skeleton forever.
+      signal: init.signal ?? AbortSignal.timeout(20_000),
+    });
     if (res.status !== 429 || attempt >= 4) return res;
     const ra = res.headers.get("retry-after");
     const retryAfterMs = ra && /^\d+$/.test(ra) ? Number(ra) * 1000 : null;
@@ -1770,6 +1779,15 @@ function createSuperinvestorProfilePageLoader(
 ): () => Promise<Superinvestor13fProfilePageData> {
   const paddedCik = cikPad10(cik);
   const uncached = async (): Promise<Superinvestor13fProfilePageData> => {
+    const head = await getLatest13fFilingHeadCached(paddedCik);
+    const accKey = thirteenFilingHeadCacheKey(head);
+
+    /** Same path as Berkshire — avoid re-pulling ~20 SEC infotables on every cold visit. */
+    const profileCached = await readSuperinvestor13fProfileSnapshot(paddedCik, accKey);
+    if (profileCached && filingHeadMatchesComparison(head, profileCached.comparison)) {
+      return profileCached;
+    }
+
     const got = await fetchInstitutional13fSnapshotsUncached(paddedCik, superinvestorStandardFilingCount());
     if (!got) {
       return {
@@ -1791,12 +1809,16 @@ function createSuperinvestorProfilePageLoader(
           )
         : fallbacks.transactionsFallback();
 
-    return { comparison, transactions };
+    const page = { comparison, transactions };
+    if (comparison.source === "edgar" && accKey !== "none") {
+      void upsertSuperinvestor13fProfileSnapshot(paddedCik, accKey, page);
+    }
+    return page;
   };
 
   return () =>
-    devMemoAsync(`13f:profile-page:${paddedCik}`, () =>
-      withAccessionKeyed13fCache("superinvestor-13f-profile-page-v9-standard", paddedCik, uncached),
+    devMemoAsync(`13f:profile-page-v2:${paddedCik}`, () =>
+      withAccessionKeyed13fCache("superinvestor-13f-profile-page-v10-snapshot", paddedCik, uncached),
     );
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from "react";
 
 import { formatChartingTableCell } from "@/components/charting/charting-individual-company-table";
 import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
@@ -95,15 +95,40 @@ function valueHeightPct(v: number | null, maxV: number): number {
   return (Math.max(0, v) / maxV) * 100;
 }
 
-function EarningsBeatMissTopIndicator({ outcome }: { outcome: "beat" | "miss" }) {
+function EarningsBeatMissIndicator({
+  outcome,
+  value,
+  maxV,
+  enterProgress,
+  dotSizePx,
+}: {
+  outcome: "beat" | "miss";
+  value: number;
+  maxV: number;
+  enterProgress: number;
+  dotSizePx: number;
+}) {
+  const bottomPct = valueHeightPct(value, maxV) * enterProgress;
+  if (bottomPct <= 0) return null;
+
   const color = outcome === "beat" ? BEAT_COLOR : MISS_COLOR;
+  /** Gap from the top of the filled circle to the arrow tip. */
+  const gapAboveDotPx = 12;
+  const liftPx = dotSizePx / 2 + gapAboveDotPx;
+
   return (
-    <div className="pointer-events-none absolute top-0 left-1/2 z-20 flex -translate-x-1/2 flex-col items-center">
+    <div
+      className="pointer-events-none absolute left-1/2 z-20 flex flex-col items-center"
+      style={{
+        bottom: `${bottomPct}%`,
+        transform: `translateX(-50%) translateY(calc(-100% - ${liftPx}px))`,
+      }}
+    >
       <span
         className="font-['Inter'] text-[13px] font-medium leading-none lowercase sm:text-[14px]"
         style={{ color }}
       >
-        {outcome === "beat" ? "beat" : "missed"}
+        {outcome === "beat" ? "beat" : "miss"}
       </span>
       <span
         className="mt-1 block size-0"
@@ -125,8 +150,6 @@ function EarningsValueDot({
   dotSizePx,
   variant,
   barColor,
-  /** Horizontal shift from column center so estimate + actual both stay visible when close. */
-  offsetXPx = 0,
 }: {
   value: number;
   maxV: number;
@@ -134,7 +157,6 @@ function EarningsValueDot({
   dotSizePx: number;
   variant: "actual" | "forecast";
   barColor: string;
-  offsetXPx?: number;
 }) {
   const bottomPct = valueHeightPct(value, maxV) * enterProgress;
   if (bottomPct <= 0) return null;
@@ -145,7 +167,7 @@ function EarningsValueDot({
     height: dotSizePx,
     marginBottom: -dotSizePx / 2,
     left: "50%",
-    transform: `translateX(calc(-50% + ${offsetXPx}px))`,
+    transform: "translateX(-50%)",
   } as const;
 
   if (variant === "actual") {
@@ -287,8 +309,8 @@ type EstimatesHeaderProps = {
   onPeriodChange: (period: FundamentalsSeriesMode) => void;
   metric: EstimatesMetric;
   onMetricChange: (metric: EstimatesMetric) => void;
-  /** e.g. "Upcoming Earnings on Q2 Jul 30, 2026" */
-  upcomingEarningsSubtitle?: string | null;
+  /** Replaces the "Estimates" title when set (e.g. Next earnings / Days left stats). */
+  leading?: ReactNode;
 };
 
 export function EarningsEstimatesHeader({
@@ -296,22 +318,14 @@ export function EarningsEstimatesHeader({
   onPeriodChange,
   metric,
   onMetricChange,
-  upcomingEarningsSubtitle,
+  leading,
 }: EstimatesHeaderProps) {
-  const subtitle =
-    upcomingEarningsSubtitle != null && String(upcomingEarningsSubtitle).trim() !== ""
-      ? String(upcomingEarningsSubtitle).trim()
-      : null;
-
   return (
     <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex min-w-0 flex-col gap-0.5">
-        <h2 className="text-[20px] font-semibold leading-8 tracking-tight text-[#09090B]">Estimates</h2>
-        {subtitle ? (
-          <p className="font-['Inter'] text-[14px] font-normal leading-5 tracking-normal text-[#71717A]">
-            {subtitle}
-          </p>
-        ) : null}
+      <div className="min-w-0">
+        {leading ?? (
+          <h2 className="text-[20px] font-semibold leading-8 tracking-tight text-[#09090B]">Estimates</h2>
+        )}
       </div>
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         <SegmentedControl
@@ -407,7 +421,7 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
   };
 
   return (
-    <section className="w-full min-w-0 max-w-full overflow-x-hidden">
+    <section className="w-full min-w-0 max-w-full overflow-x-clip overflow-y-visible">
       {showChart ? (
         <div className="w-full min-w-0">
           <div className="relative flex w-full min-w-0 flex-col overflow-visible" style={{ height: CHART_HEIGHT_PX }}>
@@ -424,7 +438,7 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
                   />
                 </div>
 
-                {/* Dots + top beat/miss markers share the same inset band as the $0 baseline. */}
+                {/* Dots + beat/miss markers (anchored just above the filled actual circle). */}
                 <div
                   key={`${period}-${metric}-${n}`}
                   className="absolute inset-x-0 top-[8%] bottom-[4%] min-h-0 w-full min-w-0 overflow-visible"
@@ -492,8 +506,14 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
                         className="relative z-10 h-full min-h-0 overflow-visible"
                         style={{ width: columnLayout.dotSizePx }}
                       >
-                        {barsEnterComplete && beatMiss ? (
-                          <EarningsBeatMissTopIndicator outcome={beatMiss} />
+                        {barsEnterComplete && beatMiss && p.actual != null ? (
+                          <EarningsBeatMissIndicator
+                            outcome={beatMiss}
+                            value={p.actual}
+                            maxV={maxV}
+                            enterProgress={enterProgress}
+                            dotSizePx={columnLayout.dotSizePx}
+                          />
                         ) : null}
                         {p.estimate != null ? (
                           <EarningsValueDot
@@ -503,9 +523,6 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
                             dotSizePx={columnLayout.dotSizePx}
                             variant="forecast"
                             barColor={ESTIMATE_BAR}
-                            offsetXPx={
-                              p.actual != null ? -Math.round(columnLayout.dotSizePx * 0.4) : 0
-                            }
                           />
                         ) : null}
                         {p.actual != null ? (
@@ -516,9 +533,6 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
                             dotSizePx={columnLayout.dotSizePx}
                             variant="actual"
                             barColor={ESTIMATE_BAR}
-                            offsetXPx={
-                              p.estimate != null ? Math.round(columnLayout.dotSizePx * 0.4) : 0
-                            }
                           />
                         ) : null}
                       </div>

@@ -8,6 +8,7 @@ import type {
 import type { ChartingMetricId } from "@/lib/market/stock-charting-metrics";
 import { resolveFinancialsRowChartMetric } from "@/lib/market/stock-financials-row-chart";
 import {
+  SCREENER_TABLE_HEADER_STICKY_CLASS,
   SCREENER_TABLE_HEADER_STICKY_SCROLLPORT_CLASS,
   ScreenerTableScroll,
 } from "@/components/screener/screener-table-scroll";
@@ -142,6 +143,7 @@ export function StockIncomeStatementTable({
   onMetricClick,
   showPeriodEndingRow = true,
   showLabelColumnRule = false,
+  viewportScroll = true,
 }: {
   model: IncomeStatementTableModel;
   /** Opens the same fundamentals chart modal as Overview Key Stats when the row maps to a charting metric. */
@@ -149,6 +151,11 @@ export function StockIncomeStatementTable({
   showPeriodEndingRow?: boolean;
   /** Vertical divider after the sticky label column (Financials). Off for Earnings tables. */
   showLabelColumnRule?: boolean;
+  /**
+   * Cap height to the viewport with nested overflow (Financials). Off for short Earnings
+   * summary tables — nested scrollports flash a scrollbar while the page scrolls.
+   */
+  viewportScroll?: boolean;
 }) {
   const { columns, columnPeriodEnds, columnIsForecast, rows, ttm, periodColumnHeader } = model;
   const periodHeaderLabel = periodColumnHeader ?? "Fiscal Year";
@@ -197,9 +204,15 @@ export function StockIncomeStatementTable({
   ) : null;
 
   return (
-    <ScreenerTableScroll mobileScroll viewportScroll>
+    <ScreenerTableScroll mobileScroll viewportScroll={viewportScroll}>
       <div className="bg-white">
-        <div className={SCREENER_TABLE_HEADER_STICKY_SCROLLPORT_CLASS}>
+        <div
+          className={
+            viewportScroll
+              ? SCREENER_TABLE_HEADER_STICKY_SCROLLPORT_CLASS
+              : SCREENER_TABLE_HEADER_STICKY_CLASS
+          }
+        >
           <div
             className={`grid items-stretch gap-x-2 border-b border-[#E4E4E7] bg-white py-0 pr-2 sm:pr-4 ${incomeHeaderRowClass}`}
             style={{ gridTemplateColumns }}

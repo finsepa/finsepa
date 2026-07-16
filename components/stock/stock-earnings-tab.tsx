@@ -34,10 +34,6 @@ import {
   EARNINGS_CARD_VALUE_CLASS,
 } from "@/components/stock/earnings-card-styles";
 
-function dash(v: string | null | undefined): string {
-  return v != null && String(v).trim() !== "" ? String(v).trim() : "—";
-}
-
 function formatEpsEstimate(n: number): string {
   return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
@@ -191,28 +187,134 @@ function reportDayLineFromDisplay(reportDateDisplay: string | null | undefined):
   return noYear || raw;
 }
 
-function quarterPrefixForEarningsDateLabel(fiscalPeriodLabel: string | null | undefined): string {
-  if (!fiscalPeriodLabel?.trim()) return "Next";
-  const m = fiscalPeriodLabel.trim().match(/^(Q[1-4])/i);
-  if (m) return m[1]!.toUpperCase();
-  const first = fiscalPeriodLabel.trim().split(/\s+/)[0];
-  return first || "Next";
-}
-
-function upcomingEarningsSubtitle(
-  reportDateDisplay: string | null | undefined,
-  fiscalPeriodLabel: string | null | undefined,
-): string | null {
-  const date = dash(reportDateDisplay);
-  if (date === "—") return null;
-  const quarter = quarterPrefixForEarningsDateLabel(fiscalPeriodLabel);
-  if (quarter === "Next") return `Upcoming Earnings on ${date}`;
-  return `Upcoming Earnings on ${quarter} ${date}`;
-}
-
 /** Matches `components/screener/index-cards.tsx` card chrome. */
 const SCREENER_INDEX_CARD_CLASS =
   "overflow-hidden rounded-xl border border-[#E4E4E7] bg-white px-4 py-4 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition hover:shadow-[0px_2px_4px_0px_rgba(10,10,10,0.08)]";
+
+const EARNINGS_MONTH_ABBREV = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+] as const;
+
+/** Total meter bars — 12 bars, 1 bar ≈ 1 week (~one quarter). */
+const EARNINGS_COUNTDOWN_BARS = 12;
+
+type EarningsCountdownInfo = {
+  /** e.g. "Q3: Aug 26". */
+  nextEarningsLabel: string;
+  daysLeft: number;
+};
+
+/** Parse a `YYYY-MM-DD` report date into calendar parts (no time-of-day, no locale). */
+function parseEarningsReportYmd(ymd: string | null | undefined): { utcMs: number; monthIdx: number; day: string } | null {
+  const raw = ymd?.trim() ?? "";
+  const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return null;
+  const year = Number(m[1]);
+  const monthIdx = Number(m[2]) - 1;
+  const day = Number(m[3]);
+  if (monthIdx < 0 || monthIdx > 11 || day < 1 || day > 31) return null;
+  return {
+    day: String(day),
+    monthIdx,
+    utcMs: Date.UTC(year, monthIdx, day),
+  };
+}
+
+/** `Q1`–`Q4` from a fiscal label like "Q3 2026"; null when unknown. */
+function quarterFromFiscalPeriodLabel(fiscalPeriodLabel: string | null | undefined): string | null {
+  if (!fiscalPeriodLabel?.trim()) return null;
+  const m = fiscalPeriodLabel.trim().match(/\b(Q[1-4])\b/i);
+  return m ? m[1]!.toUpperCase() : null;
+}
+
+/** e.g. "Q3: Aug 26" — quarter when known, otherwise just "Aug 26". */
+function formatNextEarningsLabel(
+  monthIdx: number,
+  day: string,
+  fiscalPeriodLabel: string | null | undefined,
+): string {
+  const datePart = `${EARNINGS_MONTH_ABBREV[monthIdx]!} ${day}`;
+  const quarter = quarterFromFiscalPeriodLabel(fiscalPeriodLabel);
+  return quarter ? `${quarter}: ${datePart}` : datePart;
+}
+
+/** Filled meter bars = whole weeks remaining, clamped to the fixed bar count. */
+function earningsCountdownFilledBars(daysLeft: number): number {
+  if (!Number.isFinite(daysLeft) || daysLeft <= 0) return 0;
+  return Math.min(EARNINGS_COUNTDOWN_BARS, Math.max(0, Math.ceil(daysLeft / 7)));
+}
+
+const earningsHeaderStatLabelClass = "text-[13px] font-normal leading-5 text-[#71717A]";
+const earningsHeaderStatValueClass =
+  "text-[16px] font-semibold leading-6 tabular-nums text-[#09090B] sm:text-[20px] sm:leading-7";
+
+/** Flat stats row — matches superinvestor Size / No. of stocks header (no cards). */
+function EarningsCountdownStats({
+  reportDateYmd,
+  fiscalPeriodLabel,
+}: {
+  reportDateYmd: string | null | undefined;
+  fiscalPeriodLabel?: string | null;
+}) {
+  /** Compute "today" on the client only so the SSR seed can't disagree on the day boundary. */
+  const [nowUtcMs, setNowUtcMs] = useState<number | null>(null);
+  useEffect(() => {
+    const now = new Date();
+    setNowUtcMs(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+  }, []);
+
+  const info = useMemo<EarningsCountdownInfo | null>(() => {
+    const parsed = parseEarningsReportYmd(reportDateYmd);
+    if (!parsed || nowUtcMs == null) return null;
+    const daysLeft = Math.round((parsed.utcMs - nowUtcMs) / 86_400_000);
+    if (daysLeft < 0) return null;
+    return {
+      nextEarningsLabel: formatNextEarningsLabel(parsed.monthIdx, parsed.day, fiscalPeriodLabel),
+      daysLeft,
+    };
+  }, [reportDateYmd, fiscalPeriodLabel, nowUtcMs]);
+
+  const filledBars = info ? earningsCountdownFilledBars(info.daysLeft) : 0;
+
+  return (
+    <dl className="flex flex-row flex-wrap items-stretch gap-x-6 gap-y-4" suppressHydrationWarning>
+      <div className="flex flex-col gap-1 border-r border-[#E4E4E7] pr-6">
+        <dt className={earningsHeaderStatLabelClass}>Next earnings</dt>
+        <dd className={earningsHeaderStatValueClass}>{info ? info.nextEarningsLabel : "—"}</dd>
+      </div>
+      <div className="flex flex-col gap-1">
+        <dt className={earningsHeaderStatLabelClass}>Days left</dt>
+        <dd className="flex items-center gap-3">
+          <span className={earningsHeaderStatValueClass}>{info ? info.daysLeft : "—"}</span>
+          {info ? (
+            <div className="flex shrink-0 items-center gap-1" aria-hidden>
+              {Array.from({ length: EARNINGS_COUNTDOWN_BARS }).map((_, i) => (
+                <span
+                  key={i}
+                  className={cn(
+                    "h-3 w-[3px] max-w-[3px] shrink-0 rounded-[1px]",
+                    i < filledBars ? "bg-[#16A34A]" : "bg-[#E4E4E7]",
+                  )}
+                />
+              ))}
+            </div>
+          ) : null}
+        </dd>
+      </div>
+    </dl>
+  );
+}
 
 function EarningsSummaryCards({
   period,
@@ -377,9 +479,15 @@ function SummaryCardsSkeleton() {
 function EstimatesHeaderSkeleton() {
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex flex-col gap-1.5">
-        <SkeletonBox className="h-7 w-28 rounded" />
-        <SkeletonBox className="h-5 w-64 max-w-full rounded" />
+      <div className="flex items-stretch gap-6">
+        <div className="flex flex-col gap-1.5 border-r border-[#E4E4E7] pr-6">
+          <SkeletonBox className="h-4 w-24 rounded" />
+          <SkeletonBox className="h-7 w-20 rounded" />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <SkeletonBox className="h-4 w-16 rounded" />
+          <SkeletonBox className="h-7 w-28 rounded" />
+        </div>
       </div>
       <div className="flex flex-wrap gap-3">
         <SkeletonBox className="h-10 w-[200px] rounded-[10px]" />
@@ -639,7 +747,7 @@ export function StockEarningsTabContent({
     const rows = data.history ?? [];
     if (data.upcoming) {
       return {
-        reportDateDisplay: data.upcoming.reportDateDisplay,
+        reportDateYmd: data.upcoming.reportDateYmd,
         fiscalPeriodLabel: data.upcoming.fiscalPeriodLabel,
         upcomingRevenueFallback,
         upcomingEpsFallback,
@@ -648,7 +756,7 @@ export function StockEarningsTabContent({
     const nextUnreported = rows.find((r) => !r.reported);
     if (nextUnreported) {
       return {
-        reportDateDisplay: nextUnreported.reportDateDisplay,
+        reportDateYmd: nextUnreported.reportDateYmd,
         fiscalPeriodLabel: nextUnreported.fiscalPeriodLabel,
         upcomingRevenueFallback: nextUnreported.revenueEstimateDisplay ?? null,
         upcomingEpsFallback: nextUnreported.epsEstimateDisplay ?? null,
@@ -658,7 +766,7 @@ export function StockEarningsTabContent({
     const latest = rows[0];
     if (!latest) return null;
     return {
-      reportDateDisplay: latest.reportDateDisplay,
+      reportDateYmd: latest.reportDateYmd,
       fiscalPeriodLabel: latest.fiscalPeriodLabel,
       upcomingRevenueFallback: latest.revenueEstimateDisplay ?? null,
       upcomingEpsFallback: latest.epsEstimateDisplay ?? null,
@@ -703,13 +811,13 @@ export function StockEarningsTabContent({
       {!loading && data?.estimatesChart ? (
         <EarningsEstimatesSection
           data={data.estimatesChart}
-          upcomingEarningsSubtitle={
-            summaryForCards
-              ? upcomingEarningsSubtitle(
-                  summaryForCards.reportDateDisplay,
-                  summaryForCards.fiscalPeriodLabel,
-                )
-              : null
+          headerLeading={
+            summaryForCards ? (
+              <EarningsCountdownStats
+                reportDateYmd={summaryForCards.reportDateYmd}
+                fiscalPeriodLabel={summaryForCards.fiscalPeriodLabel}
+              />
+            ) : null
           }
           belowHeader={(period, metric) =>
             summaryForCards ? (
@@ -726,13 +834,19 @@ export function StockEarningsTabContent({
       ) : null}
 
       {!loading && !data?.estimatesChart && summaryForCards ? (
-        <EarningsSummaryCards
-          period="annual"
-          metric="revenue"
-          estimatesChart={null}
-          upcomingRevenueFallback={summaryForCards.upcomingRevenueFallback}
-          upcomingEpsFallback={summaryForCards.upcomingEpsFallback}
-        />
+        <div className="min-w-0 space-y-6">
+          <EarningsCountdownStats
+            reportDateYmd={summaryForCards.reportDateYmd}
+            fiscalPeriodLabel={summaryForCards.fiscalPeriodLabel}
+          />
+          <EarningsSummaryCards
+            period="annual"
+            metric="revenue"
+            estimatesChart={null}
+            upcomingRevenueFallback={summaryForCards.upcomingRevenueFallback}
+            upcomingEpsFallback={summaryForCards.upcomingEpsFallback}
+          />
+        </div>
       ) : null}
 
       {!loading && data && historyRows.length > 0 ? (

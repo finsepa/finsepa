@@ -19,13 +19,17 @@ function devMemoProfilePage<T>(slug: string, fn: () => Promise<T>): Promise<T> {
     __finsepaDevMemo?: Map<string, { exp: number; v: Promise<unknown> }>;
   };
   if (!g.__finsepaDevMemo) g.__finsepaDevMemo = new Map();
-  const key = `13f:profile-page:${slug}`;
+  const key = `13f:profile-page-v2:${slug}`;
   const now = Date.now();
   const ttlMs = 5 * 60 * 1000;
   const hit = g.__finsepaDevMemo.get(key);
   if (hit && hit.exp > now) return hit.v as Promise<T>;
   const v = fn();
   g.__finsepaDevMemo.set(key, { exp: now + ttlMs, v });
+  void v.catch(() => {
+    const cur = g.__finsepaDevMemo?.get(key);
+    if (cur?.v === v) g.__finsepaDevMemo?.delete(key);
+  });
   return v;
 }
 
@@ -39,6 +43,12 @@ async function loadProfilePageMatchingLatestFilingHead(
   let page = await load();
   const cikPadded = cikPad10(page.comparison.cik);
   if (!cikPadded) return page;
+
+  /**
+   * If SEC already failed (unavailable / fixture), don't wipe snapshots and re-hit EDGAR —
+   * that doubles hang time and keeps the skeleton up.
+   */
+  if (page.comparison.source !== "edgar") return page;
 
   const head = await getLatest13fFilingHeadCached(cikPadded);
   if (filingHeadMatchesComparison(head, page.comparison)) return page;

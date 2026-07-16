@@ -75,7 +75,11 @@ export function cikPad10(cik: string): string {
 }
 
 async function secFetch(url: string, init: RequestInit & { headers: HeadersInit }): Promise<Response> {
-  return fetch(url, { ...init, cache: "no-store" });
+  return fetch(url, {
+    ...init,
+    cache: "no-store",
+    signal: init.signal ?? AbortSignal.timeout(20_000),
+  });
 }
 
 async function loadLatest13fFilingHeadUncached(cikPadded: string): Promise<Superinvestor13fFilingHead | null> {

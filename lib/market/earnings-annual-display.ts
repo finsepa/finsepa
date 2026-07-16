@@ -16,8 +16,14 @@ export const EARNINGS_ANNUAL_HISTORY_MAX = 5;
 /** Forecast period labels (chart x-axis + table fiscal year row). */
 export const EARNINGS_FORECAST_LABEL_COLOR = fundamentalsBarSolidAtIndex(0);
 
-/** 5 years × 4 quarters — Estimates quarterly chart cap (+ forward quarters). */
-export const EARNINGS_QUARTERLY_HISTORY_MAX = EARNINGS_ANNUAL_HISTORY_MAX * 4;
+/** 4 years × 4 quarters — Estimates quarterly chart history cap. */
+export const EARNINGS_QUARTERLY_HISTORY_MAX = 16;
+
+/** Forward consensus quarters on the Estimates chart (2 years). */
+export const EARNINGS_QUARTERLY_FORWARD_MAX = 8;
+
+/** Forward consensus fiscal years on the Estimates chart. */
+export const EARNINGS_ANNUAL_FORWARD_MAX = 2;
 
 /** Last `EARNINGS_QUARTERLY_HISTORY_MAX` reported/historical quarters, then forward consensus quarters. */
 export function sliceLatestQuarterlyEstimates(
@@ -34,7 +40,9 @@ export function sliceLatestQuarterlyEstimates(
       : historical.slice(-EARNINGS_QUARTERLY_HISTORY_MAX);
 
   const historyKeys = new Set(historySlice.map((p) => p.sortKey));
-  const forwardExtra = forward.filter((p) => !historyKeys.has(p.sortKey));
+  const forwardExtra = forward
+    .filter((p) => !historyKeys.has(p.sortKey))
+    .slice(0, EARNINGS_QUARTERLY_FORWARD_MAX);
 
   return [...historySlice, ...forwardExtra];
 }
@@ -103,7 +111,7 @@ export function isAnnualForecastPoint(
   return hasRevEst || hasEpsEst;
 }
 
-/** Last `EARNINGS_ANNUAL_HISTORY_MAX` reported/historical years, then any forward trend years. */
+/** Last `EARNINGS_ANNUAL_HISTORY_MAX` reported/historical years, then forward trend years. */
 export function sliceLatestAnnualEstimates(
   points: StockEarningsEstimatesPoint[],
 ): StockEarningsEstimatesPoint[] {
@@ -118,7 +126,9 @@ export function sliceLatestAnnualEstimates(
       : historical.slice(-EARNINGS_ANNUAL_HISTORY_MAX);
 
   const historyLabels = new Set(historySlice.map((p) => p.label));
-  const forwardExtra = forward.filter((p) => !historyLabels.has(p.label));
+  const forwardExtra = forward
+    .filter((p) => !historyLabels.has(p.label))
+    .slice(0, EARNINGS_ANNUAL_FORWARD_MAX);
 
   return [...historySlice, ...forwardExtra];
 }
