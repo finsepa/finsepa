@@ -253,7 +253,11 @@ export function StockFinancialsTab({
       ) : !displayTableModel ? (
         <p className="text-[14px] leading-6 text-[#71717A]">{EMPTY_COPY[view][periodMode]}</p>
       ) : (
-        <StockIncomeStatementTable model={displayTableModel} onMetricClick={onOpenMetricChart} />
+        <StockIncomeStatementTable
+          model={displayTableModel}
+          onMetricClick={onOpenMetricChart}
+          showLabelColumnRule
+        />
       )}
     </div>
   );

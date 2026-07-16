@@ -1,6 +1,9 @@
+import { Suspense } from "react";
+
 import { MacroPage } from "@/components/macro/macro-page";
 import { isSingleAssetMode } from "@/lib/features/single-asset";
 import { getMacroDashboardPayloadCached } from "@/lib/market/macro-dashboard-payload";
+import MacroLoading from "./loading";
 
 export default async function Page() {
   if (isSingleAssetMode()) {
@@ -9,5 +12,9 @@ export default async function Page() {
 
   const { items } = await getMacroDashboardPayloadCached();
 
-  return <MacroPage initialItems={items} />;
+  return (
+    <Suspense fallback={<MacroLoading />}>
+      <MacroPage initialItems={items} />
+    </Suspense>
+  );
 }

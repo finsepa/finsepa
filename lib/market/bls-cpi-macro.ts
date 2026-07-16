@@ -32,12 +32,14 @@ function parseNum(raw: string): number | null {
  * Monthly US CPI index rebased to 2010 = 100 (matches EODHD / World Bank macro card scale).
  *
  * Source: BLS public time-series export (no API key). Requires a descriptive User-Agent.
+ * Index series is derived from {@link fetchBlsCpiURawSeriesCached} so Macro CPI + YoY inflation
+ * share one BLS download.
  *
  * @see https://www.bls.gov/cpi/
  */
-function parseBlsCpiIndexText(text: string): BlsCpiMacroPoint[] {
+function parseBlsCpiRawText(text: string): BlsCpiMacroPoint[] {
   const lines = text.split(/\r?\n/);
-  const raw: { time: string; value: number }[] = [];
+  const raw: BlsCpiMacroPoint[] = [];
 
   for (const line of lines) {
     if (!line.startsWith(BLS_SERIES_ID)) continue;
@@ -52,9 +54,27 @@ function parseBlsCpiIndexText(text: string): BlsCpiMacroPoint[] {
     raw.push({ time: ymd, value });
   }
 
-  if (!raw.length) return [];
-
   raw.sort((a, b) => a.time.localeCompare(b.time));
+  return raw;
+}
+
+async function fetchBlsCpiText(): Promise<string | null> {
+  try {
+    const res = await fetch(BLS_CPI_ALL_ITEMS_URL, {
+      headers: { "User-Agent": blsUserAgent() },
+      next: { revalidate: REVALIDATE_STATIC_DAY },
+    });
+    if (!res.ok) return null;
+    return await res.text();
+  } catch {
+    return null;
+  }
+}
+
+async function fetchBlsCpiIndexUncached(): Promise<BlsCpiMacroPoint[]> {
+  // Reuse the shared raw series so Macro CPI + inflation YoY + CAPE don’t each download BLS.
+  const raw = await fetchBlsCpiURawSeriesCached();
+  if (!raw.length) return [];
 
   const baseRow = raw.find((p) => p.time === `${BASE_YEAR}-01-01`);
   const baseValue = baseRow?.value ?? raw.find((p) => p.time.startsWith(`${BASE_YEAR}-`))?.value;
@@ -66,20 +86,17 @@ function parseBlsCpiIndexText(text: string): BlsCpiMacroPoint[] {
   }));
 }
 
-async function fetchBlsCpiIndexUncached(): Promise<BlsCpiMacroPoint[]> {
-  try {
-    const res = await fetch(BLS_CPI_ALL_ITEMS_URL, {
-      headers: { "User-Agent": blsUserAgent() },
-      next: { revalidate: REVALIDATE_STATIC_DAY },
-    });
-    if (!res.ok) return [];
-    const text = await res.text();
-    return parseBlsCpiIndexText(text);
-  } catch {
-    return [];
-  }
+/** CPI-U All Items SA, native BLS scale (1982–84 = 100) — same units as Shiller `ie_data.xls`. */
+async function fetchBlsCpiURawUncached(): Promise<BlsCpiMacroPoint[]> {
+  const text = await fetchBlsCpiText();
+  if (!text) return [];
+  return parseBlsCpiRawText(text);
 }
 
-export const fetchBlsCpiIndexSeriesCached = unstable_cache(fetchBlsCpiIndexUncached, ["bls-cpi-index-v1"], {
+export const fetchBlsCpiURawSeriesCached = unstable_cache(fetchBlsCpiURawUncached, ["bls-cpi-u-raw-v1"], {
+  revalidate: REVALIDATE_STATIC_DAY,
+});
+
+export const fetchBlsCpiIndexSeriesCached = unstable_cache(fetchBlsCpiIndexUncached, ["bls-cpi-index-v2-from-raw"], {
   revalidate: REVALIDATE_STATIC_DAY,
 });

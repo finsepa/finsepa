@@ -1,15 +1,16 @@
 import type { MacroCardModel } from "@/components/macro/macro-card";
 
-/** Matches {@link FUNDAMENTALS_CHART_TIME_RANGE_ORDER} on stock Multicharts. */
-export type MacroRangeId = "5y" | "10y" | "all";
+/** Matches stock Multicharts range chips, plus 20Y for long macro history. */
+export type MacroRangeId = "5y" | "10y" | "20y" | "all";
 
-export const MACRO_RANGE_IDS: MacroRangeId[] = ["5y", "10y", "all"];
+export const MACRO_RANGE_IDS: MacroRangeId[] = ["5y", "10y", "20y", "all"];
 
-export const DEFAULT_MACRO_RANGE: MacroRangeId = "5y";
+export const DEFAULT_MACRO_RANGE: MacroRangeId = "20y";
 
 export const MACRO_RANGE_LABELS: Record<MacroRangeId, string> = {
   "5y": "5Y",
   "10y": "10Y",
+  "20y": "20Y",
   all: "All",
 };
 
@@ -17,6 +18,7 @@ export {
   downsampleMacroPointsMonthly,
   formatMacroAxisLabel,
   macroAxisLabelIndices,
+  macroAxisLabelIndicesForTimes,
   macroChartAxisGranularity,
   macroChartTimeAxisLabels,
   macroRangeUsesMonthlyAxisLabels,

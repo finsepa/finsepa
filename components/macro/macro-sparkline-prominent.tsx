@@ -12,6 +12,7 @@ import {
 } from "react";
 
 import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
+import { ChartBrandWatermark } from "@/components/chart/chart-brand-watermark";
 import type { MacroChartVariant } from "@/components/macro/macro-sparkline";
 import { MacroSparklineBars } from "@/components/macro/macro-sparkline-bars";
 import type { MacroRangeId } from "@/components/macro/macro-range";
@@ -26,10 +27,7 @@ import {
   CHARTING_LINE_POINT_MARKER_BORDER_PX,
   CHARTING_LINE_POINT_MARKER_RADIUS_PX,
   computeFundamentalsChartTooltipPlacement,
-  FUNDAMENTALS_CHART_AXIS_LABEL_ROTATE_DEG,
   FUNDAMENTALS_CHART_TOOLTIP_CLASS,
-  FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS,
-  FUNDAMENTALS_CHART_Y_AXIS_W_PX,
   FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER,
   valueToPlotBandTopPercent,
 } from "@/lib/chart/fundamentals-chart-surface";
@@ -39,7 +37,7 @@ import {
 } from "@/lib/macro/macro-chart-axis-kind";
 import {
   formatMacroAxisLabel,
-  macroAxisLabelIndices,
+  macroAxisLabelIndicesForTimes,
   macroChartAxisGranularity,
 } from "@/lib/macro/macro-chart-points";
 import { smoothAreaPathD, smoothLinePathD } from "@/lib/chart/smooth-line-path";
@@ -49,17 +47,45 @@ import {
 } from "@/lib/colors/fundamentals-multi-bar-colors";
 import { cn } from "@/lib/utils";
 
+/** Gutter between plot edge and Y-axis tick labels (px). Absolute ticks ignore parent padding. */
+const MACRO_Y_AXIS_W_PX = 72;
+const MACRO_Y_AXIS_TICK_LEFT_PX = 16;
+const MACRO_Y_AXIS_COMPACT_W_PX = 56;
+const MACRO_Y_AXIS_COMPACT_TICK_LEFT_PX = 10;
+const MACRO_Y_AXIS_COLUMN_GAP_PX = 0;
+
 const AXIS_ROW_PX = 32;
 const AXIS_BOTTOM_PAD_PX = 10;
 const PLOT_INSET_TOP_FRAC = 0.08;
 const PLOT_INSET_BOTTOM_FRAC = 0.04;
+/** Flush left/right — series meets the Y-axis column. */
+const PLOT_INSET_LEFT_FRAC = 0;
+const PLOT_INSET_RIGHT_FRAC = 0;
+/** Year labels: slight left inset to avoid clipping. */
+const AXIS_LABEL_INSET_LEFT_FRAC = 0.028;
+const AXIS_LABEL_INSET_RIGHT_FRAC = 0;
 const LINE_AREA_GRADIENT_TOP_OPACITY = 0.22;
 const LINE_AREA_GRADIENT_BOTTOM_OPACITY = 0.02;
 const LINE_HOVER_CROSSHAIR_CLASS = "border-l border-dashed border-[#2563EB]";
 const SERIES_COLOR = fundamentalsBarSolidAtIndex(0);
+/** Fixed SVG user space — identical on server + client (avoids hydration mismatch). */
+const SVG_PLOT_W = 1000;
+const SVG_PLOT_H = 360;
 
 function clamp(n: number, lo: number, hi: number) {
   return Math.max(lo, Math.min(hi, n));
+}
+
+function periodCenterLeftPercent(
+  i: number,
+  n: number,
+  leftFrac = PLOT_INSET_LEFT_FRAC,
+  rightFrac = PLOT_INSET_RIGHT_FRAC,
+): number {
+  if (n <= 0) return 50;
+  const inner = Math.max(0, 1 - leftFrac - rightFrac);
+  if (n === 1) return (leftFrac + inner / 2) * 100;
+  return (leftFrac + (i / (n - 1)) * inner) * 100;
 }
 
 function formatMacroTooltipTime(ymd: string): string {
@@ -106,7 +132,7 @@ function MacroProminentLineChart({
   const [plotPx, setPlotPx] = useState({ w: 0, h: 0 });
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [tip, setTip] = useState<TipState | null>(null);
-  const [lineRevealProgress, setLineRevealProgress] = useState(0);
+  const [lineRevealProgress, setLineRevealProgress] = useState(1);
 
   const cleaned = useMemo(() => {
     const out = points
@@ -125,13 +151,16 @@ function MacroProminentLineChart({
   const yBipolar = yDomain.bipolar;
 
   const plotHeight = height - AXIS_ROW_PX - AXIS_BOTTOM_PAD_PX;
-  const yAxisWidthPx = prominent ? FUNDAMENTALS_CHART_Y_AXIS_W_PX : 50;
+  const yAxisWidthPx = prominent ? MACRO_Y_AXIS_W_PX : MACRO_Y_AXIS_COMPACT_W_PX;
   const n = cleaned.length;
 
+  /** Stable identity for enter animation — avoid restarting when parent passes a new array ref. */
+  const pointsAnimKey = `${n}:${cleaned[0]?.time ?? ""}:${cleaned[n - 1]?.time ?? ""}`;
+
   const lineSvg = useMemo(() => {
-    const w = plotPx.w;
-    const h = plotPx.h;
-    if (n < 2 || w <= 0 || h <= 0) {
+    const w = SVG_PLOT_W;
+    const h = SVG_PLOT_H;
+    if (n < 2) {
       return {
         d: "",
         areaD: "",
@@ -144,11 +173,14 @@ function MacroProminentLineChart({
 
     const padT = h * PLOT_INSET_TOP_FRAC;
     const padB = h * PLOT_INSET_BOTTOM_FRAC;
+    const padL = w * PLOT_INSET_LEFT_FRAC;
+    const padR = w * PLOT_INSET_RIGHT_FRAC;
     const innerH = Math.max(1, h - padT - padB);
+    const innerW = Math.max(1, w - padL - padR);
     const areaFloorY = h;
 
     const pts = cleaned.map((p, i) => {
-      const x = n <= 1 ? w / 2 : (i / (n - 1)) * w;
+      const x = n <= 1 ? padL + innerW / 2 : padL + (i / (n - 1)) * innerW;
       const bandTop = valueToPlotBandTopPercent(p.value, yMin, yMax);
       const y = padT + innerH * (bandTop / 100);
       return { x, y, v: p.value, i };
@@ -165,13 +197,17 @@ function MacroProminentLineChart({
       pts,
       lastPt: last ? { x: last.x, y: last.y } : null,
     };
-  }, [cleaned, n, plotPx.h, plotPx.w, yMax, yMin]);
+  }, [cleaned, n, yMax, yMin]);
 
-  const axisLabelIndexSet = useMemo(() => new Set(macroAxisLabelIndices(n, 8)), [n]);
   const axisGranularity = useMemo(() => {
     if (!n) return "year" as const;
     return macroChartAxisGranularity(rangeId, cleaned[0]!.time, cleaned[n - 1]!.time);
   }, [cleaned, n, rangeId]);
+
+  const axisLabelIndexSet = useMemo(
+    () => new Set(macroAxisLabelIndicesForTimes(cleaned.map((p) => p.time), 8, axisGranularity)),
+    [cleaned, axisGranularity],
+  );
 
   useLayoutEffect(() => {
     const el = linePlotRef.current;
@@ -186,7 +222,7 @@ function MacroProminentLineChart({
     return () => ro.disconnect();
   }, [n, plotHeight]);
 
-  const shouldAnimateLine = animateOnAppear && n >= 2 && plotPx.w > 0;
+  const shouldAnimateLine = animateOnAppear && n >= 2 && n <= 120;
 
   useEffect(() => {
     if (!shouldAnimateLine) {
@@ -201,13 +237,13 @@ function MacroProminentLineChart({
       },
       onComplete: () => setLineRevealProgress(1),
     });
-  }, [shouldAnimateLine, animateOnAppear, n, points, plotPx.w]);
+  }, [shouldAnimateLine, animateOnAppear, pointsAnimKey]);
 
   const hoveredPt = hoveredIndex != null ? lineSvg.pts[hoveredIndex] : undefined;
   const lineHoverCrosshair =
-    hoveredPt != null
+    hoveredPt != null && plotPx.w > 0
       ? {
-          left: hoveredPt.x,
+          left: (hoveredPt.x / SVG_PLOT_W) * plotPx.w,
           top: plotHeight * PLOT_INSET_TOP_FRAC,
           height: plotHeight * (1 - PLOT_INSET_TOP_FRAC - PLOT_INSET_BOTTOM_FRAC),
         }
@@ -226,12 +262,15 @@ function MacroProminentLineChart({
 
       const plotR = plot.getBoundingClientRect();
       const lineR = lineEl.getBoundingClientRect();
-      const x = clamp(e.clientX - lineR.left, 0, plotPx.w);
-      const idx = clamp(Math.round((x / Math.max(1, plotPx.w)) * (n - 1)), 0, n - 1);
+      const padL = plotPx.w * PLOT_INSET_LEFT_FRAC;
+      const padR = plotPx.w * PLOT_INSET_RIGHT_FRAC;
+      const innerW = Math.max(1, plotPx.w - padL - padR);
+      const x = clamp(e.clientX - lineR.left, padL, padL + innerW);
+      const idx = clamp(Math.round(((x - padL) / innerW) * (n - 1)), 0, n - 1);
       const svgPt = lineSvg.pts[idx];
       if (!svgPt) return;
 
-      const focusX = svgPt.x + (lineR.left - plotR.left);
+      const focusX = (svgPt.x / SVG_PLOT_W) * plotPx.w + (lineR.left - plotR.left);
       const { anchorX, side } = computeFundamentalsChartTooltipPlacement(
         focusX,
         Math.max(1, Math.floor(plotR.width)),
@@ -290,6 +329,8 @@ function MacroProminentLineChart({
               />
             </div>
 
+            <ChartBrandWatermark />
+
             {lineHoverCrosshair ? (
               <div
                 aria-hidden
@@ -304,15 +345,15 @@ function MacroProminentLineChart({
 
             <div
               ref={linePlotRef}
-              className="absolute inset-x-0 top-[8%] bottom-[4%] z-0 min-h-0 w-full min-w-0"
+              className="absolute inset-x-0 top-[8%] bottom-[4%] z-[2] min-h-0 w-full min-w-0"
               role="img"
               aria-label={`${title} line chart`}
             >
               {lineSvg.d ? (
                 <svg
-                  width={plotPx.w}
-                  height={plotPx.h}
-                  className="relative z-[2] block overflow-visible"
+                  viewBox={`0 0 ${SVG_PLOT_W} ${SVG_PLOT_H}`}
+                  preserveAspectRatio="none"
+                  className="relative z-[2] block h-full w-full overflow-visible"
                   aria-hidden
                 >
                   <defs>
@@ -338,8 +379,8 @@ function MacroProminentLineChart({
                         <rect
                           x={0}
                           y={0}
-                          width={Math.max(0, plotPx.w * lineRevealProgress)}
-                          height={plotPx.h}
+                          width={Math.max(0, SVG_PLOT_W * lineRevealProgress)}
+                          height={SVG_PLOT_H}
                         />
                       </clipPath>
                     ) : null}
@@ -357,42 +398,55 @@ function MacroProminentLineChart({
                       fill="none"
                       stroke={SERIES_COLOR}
                       strokeWidth={MULTICHART_LINE_STROKE_WIDTH_PX}
+                      vectorEffect="non-scaling-stroke"
                       strokeLinecap="round"
                       strokeLinejoin="round"
                     />
                   </g>
-                  {hoveredIndex != null && lineSvg.pts[hoveredIndex] ? (
-                    <>
-                      <circle
-                        cx={lineSvg.pts[hoveredIndex]!.x}
-                        cy={lineSvg.pts[hoveredIndex]!.y}
-                        r={14}
-                        fill={CHARTING_LINE_HOVER_HALO_BG}
-                        className="pointer-events-none"
-                      />
-                      <circle
-                        cx={lineSvg.pts[hoveredIndex]!.x}
-                        cy={lineSvg.pts[hoveredIndex]!.y}
-                        r={CHARTING_LINE_POINT_MARKER_RADIUS_PX}
-                        fill="white"
-                        stroke={SERIES_COLOR}
-                        strokeWidth={CHARTING_LINE_POINT_MARKER_BORDER_PX}
-                        className="pointer-events-none"
-                      />
-                    </>
-                  ) : null}
-                  {hoveredIndex == null && lineSvg.lastPt ? (
-                    <circle
-                      cx={lineSvg.lastPt.x}
-                      cy={lineSvg.lastPt.y}
-                      r={CHARTING_LINE_POINT_MARKER_RADIUS_PX}
-                      fill="white"
-                      stroke={SERIES_COLOR}
-                      strokeWidth={CHARTING_LINE_POINT_MARKER_BORDER_PX}
-                      className="pointer-events-none"
-                    />
-                  ) : null}
                 </svg>
+              ) : null}
+              {hoveredPt ? (
+                <>
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute z-[3] -translate-x-1/2 -translate-y-1/2 rounded-full"
+                    style={{
+                      left: `${(hoveredPt.x / SVG_PLOT_W) * 100}%`,
+                      top: `${(hoveredPt.y / SVG_PLOT_H) * 100}%`,
+                      width: 28,
+                      height: 28,
+                      backgroundColor: CHARTING_LINE_HOVER_HALO_BG,
+                    }}
+                  />
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute z-[4] -translate-x-1/2 -translate-y-1/2 rounded-full border-white bg-white"
+                    style={{
+                      left: `${(hoveredPt.x / SVG_PLOT_W) * 100}%`,
+                      top: `${(hoveredPt.y / SVG_PLOT_H) * 100}%`,
+                      width: CHARTING_LINE_POINT_MARKER_RADIUS_PX * 2,
+                      height: CHARTING_LINE_POINT_MARKER_RADIUS_PX * 2,
+                      borderWidth: CHARTING_LINE_POINT_MARKER_BORDER_PX,
+                      borderStyle: "solid",
+                      borderColor: SERIES_COLOR,
+                    }}
+                  />
+                </>
+              ) : null}
+              {hoveredIndex == null && lineSvg.lastPt && lineRevealProgress >= 1 ? (
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute z-[3] -translate-x-1/2 -translate-y-1/2 rounded-full border-white bg-white"
+                  style={{
+                    left: `${(lineSvg.lastPt.x / SVG_PLOT_W) * 100}%`,
+                    top: `${(lineSvg.lastPt.y / SVG_PLOT_H) * 100}%`,
+                    width: CHARTING_LINE_POINT_MARKER_RADIUS_PX * 2,
+                    height: CHARTING_LINE_POINT_MARKER_RADIUS_PX * 2,
+                    borderWidth: CHARTING_LINE_POINT_MARKER_BORDER_PX,
+                    borderStyle: "solid",
+                    borderColor: SERIES_COLOR,
+                  }}
+                />
               ) : null}
             </div>
 
@@ -444,14 +498,19 @@ function MacroProminentLineChart({
           </div>
 
           <div
-            className={cn(
-              "relative h-full shrink-0 text-left font-['Inter'] text-[12px] tabular-nums leading-none text-[#71717A]",
-              prominent ? FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS : "pl-3",
-            )}
-            style={{ width: yAxisWidthPx }}
+            className="relative h-full shrink-0 pr-2 text-left font-['Inter'] text-[12px] tabular-nums leading-none text-[#71717A]"
+            style={{
+              width: yAxisWidthPx,
+              marginLeft: MACRO_Y_AXIS_COLUMN_GAP_PX,
+            }}
             aria-hidden
           >
-            <div className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%]">
+            <div
+              className="pointer-events-none absolute top-[8%] bottom-[4%] right-2"
+              style={{
+                left: prominent ? MACRO_Y_AXIS_TICK_LEFT_PX : MACRO_Y_AXIS_COMPACT_TICK_LEFT_PX,
+              }}
+            >
               {yTicks.map((t, i) => (
                 <span
                   key={i}
@@ -469,22 +528,21 @@ function MacroProminentLineChart({
           <div className="relative mb-1 min-w-0 flex-1 px-0" style={{ height: AXIS_ROW_PX }}>
             {cleaned.map((pt, i) => {
               const show = axisLabelIndexSet.has(i);
-              const leftPct = n <= 1 ? 50 : (i / (n - 1)) * 100;
+              const leftPct = periodCenterLeftPercent(
+                i,
+                n,
+                AXIS_LABEL_INSET_LEFT_FRAC,
+                AXIS_LABEL_INSET_RIGHT_FRAC,
+              );
               return (
                 <div
                   key={`axis-${pt.time}-${i}`}
-                  className="absolute bottom-0 flex min-h-0 -translate-x-1/2 items-end justify-center overflow-visible px-0.5 pb-0.5"
-                  style={{ left: `${leftPct}%`, maxWidth: "4.5rem" }}
+                  className="absolute top-1.5 flex max-w-[min(100%,4.5rem)] -translate-x-1/2 justify-center overflow-visible"
+                  style={{ left: `${leftPct}%` }}
                   title={formatMacroTooltipTime(pt.time)}
                 >
                   {show ? (
-                    <span
-                      className="inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]"
-                      style={{
-                        transform: `rotate(${FUNDAMENTALS_CHART_AXIS_LABEL_ROTATE_DEG}deg)`,
-                        transformOrigin: "center bottom",
-                      }}
-                    >
+                    <span className="inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]">
                       {formatMacroAxisLabel(pt.time, axisGranularity)}
                     </span>
                   ) : null}
@@ -493,8 +551,8 @@ function MacroProminentLineChart({
             })}
           </div>
           <div
-            className={cn("shrink-0", prominent && FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS)}
-            style={{ width: yAxisWidthPx }}
+            className="shrink-0"
+            style={{ width: yAxisWidthPx, marginLeft: MACRO_Y_AXIS_COLUMN_GAP_PX }}
             aria-hidden
           />
         </div>

@@ -15,6 +15,24 @@ export function formatMacroPeriodCaption(ymd: string): string {
   return new Date(Date.UTC(y, mo - 1, 1)).toLocaleDateString("en-US", { month: "short", year: "numeric" });
 }
 
+/** Full latest observation date (e.g. `Jul 15, 2026`). */
+export function formatMacroLatestDate(ymd: string): string {
+  const t = ymd.trim().slice(0, 10);
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(t);
+  if (!m) return ymd;
+  const y = Number(m[1]);
+  const mo = Number(m[2]) - 1;
+  const day = Number(m[3]);
+  const d = new Date(Date.UTC(y, mo, day));
+  if (!Number.isFinite(d.getTime())) return ymd;
+  return d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
 export function formatMacroValue(kind: MacroValueKind, v: number): string {
   if (!Number.isFinite(v)) return "—";
   if (kind === "percent") return formatPercentMetric(v);

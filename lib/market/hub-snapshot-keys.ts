@@ -28,7 +28,8 @@ export function hubNewsKey(tab: NewsTab): HubSnapshotFixedKey {
 }
 
 export function macroHubSegment(now: Date = new Date()): string {
-  return `macro-day-${nyCalendarYmd(now)}`;
+  // v19: Unemployment from FRED UNRATE (monthly) instead of annual EODHD macro indicator.
+  return `macro-day-v19-${nyCalendarYmd(now)}`;
 }
 
 export function newsHubSegment(tab: NewsTab, now: Date = new Date()): string {

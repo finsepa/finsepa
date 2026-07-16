@@ -2,7 +2,6 @@ import "server-only";
 
 import { unstable_cache } from "next/cache";
 
-import { REVALIDATE_STATIC_DAY } from "@/lib/data/cache-policy";
 import { fetchMacroSeriesAll, MACRO_SERIES, type MacroSeriesDef } from "@/lib/market/eodhd-macro";
 import { HUB_SNAPSHOT_KEY, macroHubSegment } from "@/lib/market/hub-snapshot-keys";
 import { readHubSnapshot } from "@/lib/market/hub-snapshot-store";
@@ -19,6 +18,67 @@ export type MacroDashboardCard = {
 function latest(points: Array<{ time: string; value: number }>): { time: string; value: number } | null {
   if (!points.length) return null;
   return points[points.length - 1] ?? null;
+}
+
+/** Reject hub rows that predate live CAPE / trailing-P/E / earnings extensions. */
+function hubMacroSnapshotHasFreshShiller(snap: { items?: MacroDashboardCard[] }): boolean {
+  const ids = ["shiller_pe", "sp500_trailing_pe", "sp500_earnings"] as const;
+  for (const id of ids) {
+    const series = snap.items?.find((i) => i.id === id);
+    const t = series?.latest?.time?.trim().slice(0, 10);
+    if (!t || !/^\d{4}-\d{2}-\d{2}$/.test(t)) return false;
+    const ageMs = Date.now() - Date.parse(`${t}T12:00:00.000Z`);
+    // Workbook alone often lags; extensions keep the tip within ~2 months.
+    if (!(Number.isFinite(ageMs) && ageMs >= 0 && ageMs < 60 * 24 * 60 * 60 * 1000)) return false;
+  }
+  return true;
+}
+
+/** Hub must include multi-year UST + Fed funds history. */
+function hubMacroSnapshotHasLongTreasuryHistory(snap: { items?: MacroDashboardCard[] }): boolean {
+  const tenY = snap.items?.find((i) => i.id === "ust_par_yield_10y");
+  const twentyY = snap.items?.find((i) => i.id === "ust_par_yield_20y");
+  const fed = snap.items?.find((i) => i.id === "fed_interest_rate");
+  const tenFirst = tenY?.points?.[0]?.time?.trim().slice(0, 10);
+  const twentyFirst = twentyY?.points?.[0]?.time?.trim().slice(0, 10);
+  const fedFirst = fed?.points?.[0]?.time?.trim().slice(0, 10);
+  if (!tenFirst || !/^\d{4}-\d{2}-\d{2}$/.test(tenFirst) || tenFirst > "2005-01-01") return false;
+  if (!twentyFirst || !/^\d{4}-\d{2}-\d{2}$/.test(twentyFirst) || twentyFirst > "2010-01-01") return false;
+  // FOMC economic-events history is short; FRED FEDFUNDS reaches back decades.
+  if (!fedFirst || !/^\d{4}-\d{2}-\d{2}$/.test(fedFirst) || fedFirst > "2010-01-01") return false;
+  return true;
+}
+
+/**
+ * Reject annual World Bank / EODHD tips (year-end only) once FRED quarterly series are live.
+ * CPI YoY + GDP + GDP deflator should all reach into the current year.
+ */
+function hubMacroSnapshotHasFreshCpiGdp(snap: { items?: MacroDashboardCard[] }): boolean {
+  const ids = [
+    "inflation_consumer_prices_annual",
+    "inflation_gdp_deflator_annual",
+    "gdp_current_usd",
+    "gdp_growth_annual",
+    "gdp_per_capita_usd",
+    "debt_percent_gdp",
+    "unemployment_total_percent",
+  ] as const;
+  const year = new Date().getUTCFullYear();
+  const minTip = `${year}-01-01`;
+  for (const id of ids) {
+    const series = snap.items?.find((i) => i.id === id);
+    const t = series?.latest?.time?.trim().slice(0, 10);
+    if (!t || !/^\d{4}-\d{2}-\d{2}$/.test(t) || t < minTip) return false;
+  }
+  return true;
+}
+
+function hubMacroSnapshotIsUsable(snap: { items?: MacroDashboardCard[] }): boolean {
+  return (
+    hubMacroSnapshotHasFreshShiller(snap) &&
+    hubMacroSnapshotHasLongTreasuryHistory(snap) &&
+    hubMacroSnapshotHasFreshCpiGdp(snap)
+  );
 }
 
 async function buildMacroDashboardPayloadUncached(): Promise<{ country: string; items: MacroDashboardCard[] }> {
@@ -63,8 +123,8 @@ export async function buildMacroDashboardPayloadForIngest(): Promise<{
 async function getMacroDashboardPayloadCachedInner(): Promise<{ country: string; items: MacroDashboardCard[] }> {
   return unstable_cache(
     buildMacroDashboardPayloadUncached,
-    ["macro-dashboard-payload-v19"],
-    { revalidate: REVALIDATE_STATIC_DAY },
+    ["macro-dashboard-payload-v45-shared-bls-shiller"],
+    { revalidate: 300 },
   )();
 }
 
@@ -77,6 +137,12 @@ export async function getMacroDashboardPayloadCached(): Promise<{ country: strin
     HUB_SNAPSHOT_KEY.macroDashboard,
     segment,
   );
-  if (snap) return snap;
+  if (snap && hubMacroSnapshotIsUsable(snap)) {
+    const allowed = new Set(MACRO_SERIES.map((d) => d.id));
+    return {
+      country: snap.country ?? "USA",
+      items: (snap.items ?? []).filter((i) => allowed.has(i.id)),
+    };
+  }
   return getMacroDashboardPayloadCachedInner();
 }

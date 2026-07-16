@@ -8,11 +8,20 @@ import type {
 import type { ChartingMetricId } from "@/lib/market/stock-charting-metrics";
 import { resolveFinancialsRowChartMetric } from "@/lib/market/stock-financials-row-chart";
 import {
-  SCREENER_TABLE_HEADER_STICKY_CLASS,
+  SCREENER_TABLE_HEADER_STICKY_SCROLLPORT_CLASS,
   ScreenerTableScroll,
 } from "@/components/screener/screener-table-scroll";
-import { EARNINGS_FORECAST_OPACITY_CLASS } from "@/components/stock/earnings-card-styles";
 import { cn } from "@/lib/utils";
+
+/**
+ * Shared label-column width for Financials / Earnings summary grids and Reports tables
+ * so sibling tables on Earnings align on the first column.
+ */
+export const STOCK_TABLE_LABEL_COL_WIDTH = "14rem";
+
+export function stockTableGridTemplateColumns(dataColumnCount: number): string {
+  return `${STOCK_TABLE_LABEL_COL_WIDTH} repeat(${dataColumnCount}, minmax(5.25rem, 1fr))`;
+}
 
 const pct2 = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 2,
@@ -98,15 +107,26 @@ const numCellClass =
   "min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]";
 
 const headerYearClass =
-  "min-w-0 w-full truncate text-right font-['Inter'] text-[12px] font-medium leading-5 tabular-nums text-[#71717A] sm:text-[14px]";
+  "relative z-[1] min-w-0 w-full truncate bg-white text-right font-['Inter'] text-[12px] font-medium leading-5 tabular-nums text-[#71717A] sm:text-[14px]";
 
 const headerPeriodEndClass =
-  "min-w-0 w-full truncate text-right font-['Inter'] text-[12px] font-medium leading-5 tabular-nums text-[#71717A] sm:text-[14px]";
+  "relative z-[1] min-w-0 w-full truncate bg-white text-right font-['Inter'] text-[12px] font-medium leading-5 tabular-nums text-[#71717A] sm:text-[14px]";
 
-const headerLabelCellClass =
-  "flex min-h-full min-w-0 items-center self-stretch border-r border-[#E4E4E7] pr-4 text-left font-['Inter'] text-[12px] font-medium leading-5 text-[#71717A] sm:text-[14px]";
+/** Sticky label column — stays put on horizontal scroll inside the financials scroller. */
+const stickyLabelHeadClass =
+  "sticky left-0 z-40 flex min-h-full min-w-0 items-center self-stretch bg-white pl-2 pr-4 text-left font-['Inter'] text-[12px] font-medium leading-5 text-[#71717A] sm:pl-4 sm:text-[14px]";
 
-const headerValueCellClass = "flex min-h-full min-w-0 items-center justify-end self-stretch";
+const stickyLabelBodyClass =
+  "sticky left-0 z-20 flex min-h-full min-w-0 items-center self-stretch bg-white pl-2 pr-4 text-left group-hover:bg-neutral-50 sm:pl-4";
+
+/** Vertical rule between sticky labels and year columns — Financials only. */
+const stickyLabelColumnRuleClass =
+  "border-r border-[#E4E4E7] shadow-[1px_0_0_0_#E4E4E7]";
+
+const headerValueCellClass = "relative z-[1] flex min-h-full min-w-0 items-center justify-end self-stretch bg-white";
+
+/** Forecast columns — mute via color (not opacity) so sticky headers stay above body paint. */
+const forecastMuteClass = "text-[#A1A1AA]";
 
 /** Matches {@link ScreenerTable} / {@link CryptoTable} header band. */
 const incomeHeaderRowClass = "min-h-[44px]";
@@ -121,17 +141,21 @@ export function StockIncomeStatementTable({
   model,
   onMetricClick,
   showPeriodEndingRow = true,
+  showLabelColumnRule = false,
 }: {
   model: IncomeStatementTableModel;
   /** Opens the same fundamentals chart modal as Overview Key Stats when the row maps to a charting metric. */
   onMetricClick?: (metricId: ChartingMetricId) => void;
   showPeriodEndingRow?: boolean;
+  /** Vertical divider after the sticky label column (Financials). Off for Earnings tables. */
+  showLabelColumnRule?: boolean;
 }) {
   const { columns, columnPeriodEnds, columnIsForecast, rows, ttm, periodColumnHeader } = model;
   const periodHeaderLabel = periodColumnHeader ?? "Fiscal Year";
   const ttmLeading = ttm?.placement === "leading";
   const dataColumnCount = columns.length + (ttm ? 1 : 0);
-  const gridTemplateColumns = `minmax(11rem, 2fr) repeat(${dataColumnCount}, minmax(5.25rem, 1fr))`;
+  const gridTemplateColumns = stockTableGridTemplateColumns(dataColumnCount);
+  const labelRule = showLabelColumnRule ? stickyLabelColumnRuleClass : undefined;
 
   /** Align forecast opacity with annual value indices when TTM is leading or trailing. */
   const forecastByValueIndex = (() => {
@@ -147,7 +171,7 @@ export function StockIncomeStatementTable({
       className={cn(
         headerYearClass,
         headerValueCellClass,
-        columnIsForecast?.[i] && EARNINGS_FORECAST_OPACITY_CLASS,
+        columnIsForecast?.[i] && forecastMuteClass,
       )}
     >
       {y}
@@ -159,7 +183,7 @@ export function StockIncomeStatementTable({
       className={cn(
         headerPeriodEndClass,
         headerValueCellClass,
-        columnIsForecast?.[i] && EARNINGS_FORECAST_OPACITY_CLASS,
+        columnIsForecast?.[i] && forecastMuteClass,
       )}
     >
       {label}
@@ -175,22 +199,22 @@ export function StockIncomeStatementTable({
   return (
     <ScreenerTableScroll mobileScroll viewportScroll>
       <div className="bg-white">
-        <div className={SCREENER_TABLE_HEADER_STICKY_CLASS}>
+        <div className={SCREENER_TABLE_HEADER_STICKY_SCROLLPORT_CLASS}>
           <div
-            className={`grid items-stretch gap-x-2 border-b border-[#E4E4E7] px-2 py-0 sm:px-4 ${incomeHeaderRowClass}`}
+            className={`grid items-stretch gap-x-2 border-b border-[#E4E4E7] bg-white py-0 pr-2 sm:pr-4 ${incomeHeaderRowClass}`}
             style={{ gridTemplateColumns }}
           >
-            <div className={headerLabelCellClass}>{periodHeaderLabel}</div>
+            <div className={cn(stickyLabelHeadClass, labelRule)}>{periodHeaderLabel}</div>
             {ttmLeading ? ttmYearHeader : null}
             {yearHeaders}
             {!ttmLeading ? ttmYearHeader : null}
           </div>
           {showPeriodEndingRow ? (
             <div
-              className={`grid items-stretch gap-x-2 border-b border-[#E4E4E7] px-2 py-0 sm:px-4 ${incomeHeaderRowClass}`}
+              className={`grid items-stretch gap-x-2 border-b border-[#E4E4E7] bg-white py-0 pr-2 sm:pr-4 ${incomeHeaderRowClass}`}
               style={{ gridTemplateColumns }}
             >
-              <div className={headerLabelCellClass}>Period Ending</div>
+              <div className={cn(stickyLabelHeadClass, labelRule)}>Period Ending</div>
               {ttmLeading ? ttmPeriodHeader : null}
               {periodHeaders}
               {!ttmLeading ? ttmPeriodHeader : null}
@@ -198,15 +222,18 @@ export function StockIncomeStatementTable({
           ) : null}
         </div>
 
-        {rows.map((row) => (
-          <IncomeRow
-            key={row.id}
-            row={row}
-            gridTemplateColumns={gridTemplateColumns}
-            columnIsForecast={forecastByValueIndex}
-            onMetricClick={onMetricClick}
-          />
-        ))}
+        <div className="relative z-0">
+          {rows.map((row) => (
+            <IncomeRow
+              key={row.id}
+              row={row}
+              gridTemplateColumns={gridTemplateColumns}
+              columnIsForecast={forecastByValueIndex}
+              onMetricClick={onMetricClick}
+              showLabelColumnRule={showLabelColumnRule}
+            />
+          ))}
+        </div>
       </div>
     </ScreenerTableScroll>
   );
@@ -217,11 +244,13 @@ function IncomeRow({
   gridTemplateColumns,
   columnIsForecast,
   onMetricClick,
+  showLabelColumnRule,
 }: {
   row: IncomeStatementRowModel;
   gridTemplateColumns: string;
   columnIsForecast?: boolean[];
   onMetricClick?: (metricId: ChartingMetricId) => void;
+  showLabelColumnRule?: boolean;
 }) {
   const labelClass = row.emphasize
     ? "text-[14px] font-semibold leading-5 text-[#09090B]"
@@ -236,7 +265,8 @@ function IncomeRow({
   const labelCell = (
     <div
       className={cn(
-        "flex min-h-full min-w-0 items-center self-stretch border-r border-[#E4E4E7] pr-4 text-left",
+        stickyLabelBodyClass,
+        showLabelColumnRule && stickyLabelColumnRuleClass,
         nestedLabelPad,
         labelClass,
         rowInteractive && "group-hover:underline",
@@ -258,7 +288,7 @@ function IncomeRow({
           "flex min-h-full items-center justify-end truncate self-stretch",
           isGrowth && "font-medium",
           isGrowth && (growthMissing ? "text-[#71717A]" : toneClass(tone)),
-          columnIsForecast?.[i] && EARNINGS_FORECAST_OPACITY_CLASS,
+          columnIsForecast?.[i] && forecastMuteClass,
         )}
       >
         {text}
@@ -271,7 +301,7 @@ function IncomeRow({
       <button
         type="button"
         className={cn(
-          "group grid w-full cursor-pointer items-stretch gap-x-2 border-x-0 border-t-0 bg-white px-2 text-left font-inherit transition-colors duration-75 hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-zinc-300 sm:px-4",
+          "group relative z-0 grid w-full cursor-pointer items-stretch gap-x-2 border-x-0 border-t-0 bg-white py-0 pr-2 text-left font-inherit transition-colors duration-75 hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-zinc-300 sm:pr-4",
           incomeRowDividerClass,
           incomeDataRowClass,
         )}
@@ -286,7 +316,7 @@ function IncomeRow({
 
   return (
     <div
-      className={`group grid items-stretch gap-x-2 bg-white px-2 transition-colors duration-75 hover:bg-neutral-50 sm:px-4 ${incomeRowDividerClass} ${incomeDataRowClass}`}
+      className={`group relative z-0 grid items-stretch gap-x-2 bg-white py-0 pr-2 transition-colors duration-75 hover:bg-neutral-50 sm:pr-4 ${incomeRowDividerClass} ${incomeDataRowClass}`}
       style={{ gridTemplateColumns }}
     >
       {labelCell}

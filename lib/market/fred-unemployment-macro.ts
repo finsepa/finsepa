@@ -4,26 +4,25 @@ import { unstable_cache } from "next/cache";
 
 import { REVALIDATE_STATIC_DAY } from "@/lib/data/cache-policy";
 
-/** Same shape as {@link MacroPoint} in `eodhd-macro` — avoids importing that module here. */
-export type FedFundsMacroPoint = { time: string; value: number };
+/** Same shape as {@link MacroPoint} in `eodhd-macro` — kept local to avoid import cycles. */
+export type FredUnemploymentMacroPoint = { time: string; value: number };
 
 /**
- * FRED monthly Effective Federal Funds Rate (FEDFUNDS).
- * EODHD economic-events “Fed Interest Rate Decision” only covers ~2020+, so FOMC
- * targets alone cannot fill Macro 20Y / All windows.
+ * FRED monthly Civilian Unemployment Rate (UNRATE).
+ * Fresher than annual World Bank / EODHD `unemployment_total_percent`.
  *
- * @see https://fred.stlouisfed.org/series/FEDFUNDS
+ * @see https://fred.stlouisfed.org/series/UNRATE
  */
-const FRED_FEDFUNDS_CSV_URL = "https://fred.stlouisfed.org/graph/fredgraph.csv?id=FEDFUNDS";
+const FRED_UNRATE_CSV_URL = "https://fred.stlouisfed.org/graph/fredgraph.csv?id=UNRATE";
 
 function fredUserAgent(): string {
   const fromEnv = process.env.SEC_EDGAR_USER_AGENT?.trim();
   return fromEnv || "FinsepaMacro/1.0 (+https://finsepa.com)";
 }
 
-function parseFredFedFundsCsv(text: string): FedFundsMacroPoint[] {
+function parseFredUnrateCsv(text: string): FredUnemploymentMacroPoint[] {
   const lines = text.split(/\r?\n/);
-  const out: FedFundsMacroPoint[] = [];
+  const out: FredUnemploymentMacroPoint[] = [];
   for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith("observation_date") || trimmed.startsWith("DATE")) continue;
@@ -38,23 +37,21 @@ function parseFredFedFundsCsv(text: string): FedFundsMacroPoint[] {
   return out;
 }
 
-async function fetchFedFundsTargetUncached(): Promise<FedFundsMacroPoint[]> {
+async function fetchFredUnrateUncached(): Promise<FredUnemploymentMacroPoint[]> {
   try {
-    const res = await fetch(FRED_FEDFUNDS_CSV_URL, {
+    const res = await fetch(FRED_UNRATE_CSV_URL, {
       headers: { "User-Agent": fredUserAgent(), Accept: "text/csv,*/*" },
       next: { revalidate: REVALIDATE_STATIC_DAY },
     });
     if (!res.ok) return [];
     const text = await res.text();
     if (!text.trim() || text.trimStart().startsWith("<!")) return [];
-    return parseFredFedFundsCsv(text);
+    return parseFredUnrateCsv(text);
   } catch {
     return [];
   }
 }
 
-export const fetchFedFundsTargetSeriesCached = unstable_cache(
-  fetchFedFundsTargetUncached,
-  ["fred-fedfunds-monthly-v1"],
-  { revalidate: REVALIDATE_STATIC_DAY },
-);
+export const fetchFredUnrateSeriesCached = unstable_cache(fetchFredUnrateUncached, ["fred-unrate-v1"], {
+  revalidate: REVALIDATE_STATIC_DAY,
+});

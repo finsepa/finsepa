@@ -3,13 +3,12 @@
 import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent } from "react";
 
 import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
+import { ChartBrandWatermark } from "@/components/chart/chart-brand-watermark";
 import { MULTICHART_BAR_WIDTH_PX } from "@/components/stock/multichart-fundamentals-bar";
 import {
   computeFundamentalsChartTooltipPlacement,
   FUNDAMENTALS_CHART_HOVER_BAND_BG,
   FUNDAMENTALS_CHART_TOOLTIP_CLASS,
-  FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS,
-  FUNDAMENTALS_CHART_Y_AXIS_W_PX,
   FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER,
   valueToPlotBandTopPercent,
 } from "@/lib/chart/fundamentals-chart-surface";
@@ -27,7 +26,7 @@ import {
 import { cn } from "@/lib/utils";
 import {
   formatMacroAxisLabel,
-  macroAxisLabelIndices,
+  macroAxisLabelIndicesForTimes,
   macroChartAxisGranularity,
 } from "@/lib/macro/macro-chart-points";
 
@@ -41,6 +40,18 @@ const AXIS_ROW_PX = 32;
 const AXIS_BOTTOM_PAD_PX = 10;
 const PLOT_INSET_TOP_FRAC = 0.08;
 const PLOT_INSET_BOTTOM_FRAC = 0.04;
+/** Flush left/right — series meets the Y-axis column. */
+const PLOT_INSET_LEFT_FRAC = 0;
+const PLOT_INSET_RIGHT_FRAC = 0;
+/** Year labels: slight left inset to avoid clipping. */
+const AXIS_LABEL_INSET_LEFT_FRAC = 0.028;
+const AXIS_LABEL_INSET_RIGHT_FRAC = 0;
+/** Gutter between plot edge and Y-axis tick labels (px). Absolute ticks ignore parent padding. */
+const MACRO_Y_AXIS_W_PX = 72;
+const MACRO_Y_AXIS_TICK_LEFT_PX = 16;
+const MACRO_Y_AXIS_COMPACT_W_PX = 56;
+const MACRO_Y_AXIS_COMPACT_TICK_LEFT_PX = 10;
+const MACRO_Y_AXIS_COLUMN_GAP_PX = 0;
 
 type BarPoint = { time: string; value: number; axisLabel: string };
 
@@ -60,22 +71,38 @@ function resolveBarFillColor(baseColor: string, dimmed: boolean): string {
   return fundamentalsBarColorAtIndex(0, BAR_HOVER_DIM_OPACITY);
 }
 
-function periodCenterLeftPercent(i: number, n: number): number {
+function periodCenterLeftPercent(
+  i: number,
+  n: number,
+  leftFrac = PLOT_INSET_LEFT_FRAC,
+  rightFrac = PLOT_INSET_RIGHT_FRAC,
+): number {
   if (n <= 0) return 50;
-  if (n === 1) return 50;
-  return ((i + 0.5) / n) * 100;
+  const inner = Math.max(0, 1 - leftFrac - rightFrac);
+  if (n === 1) return (leftFrac + inner / 2) * 100;
+  return (leftFrac + ((i + 0.5) / n) * inner) * 100;
 }
 
-function macroColumnWidthPercent(n: number): number {
-  if (n <= 1) return 100;
-  return 100 / n;
+function macroColumnWidthPercent(
+  n: number,
+  leftFrac = PLOT_INSET_LEFT_FRAC,
+  rightFrac = PLOT_INSET_RIGHT_FRAC,
+): number {
+  if (n <= 1) return Math.max(0, 1 - leftFrac - rightFrac) * 100;
+  return (Math.max(0, 1 - leftFrac - rightFrac) / n) * 100;
 }
 
 /** Scale bar width to the available period slot so dense macro series do not overlap. */
-function macroBarWidthPx(plotWidthPx: number, n: number): number {
+function macroBarWidthPx(
+  plotWidthPx: number,
+  n: number,
+  leftFrac = PLOT_INSET_LEFT_FRAC,
+  rightFrac = PLOT_INSET_RIGHT_FRAC,
+): number {
   if (n <= 0 || plotWidthPx <= 0) return BAR_WIDTH_MAX_PX;
-  if (n === 1) return Math.min(BAR_WIDTH_MAX_PX, Math.max(8, plotWidthPx * 0.12));
-  const slot = plotWidthPx / n;
+  const usable = plotWidthPx * Math.max(0, 1 - leftFrac - rightFrac);
+  if (n === 1) return Math.min(BAR_WIDTH_MAX_PX, Math.max(8, usable * 0.12));
+  const slot = usable / n;
   if (n > 48) return Math.max(2, Math.min(BAR_WIDTH_VERY_DENSE_MAX_PX, slot * 0.5));
   if (n > 24) return Math.max(2, Math.min(BAR_WIDTH_DENSE_MAX_PX, slot * 0.55));
   return Math.max(2, Math.min(BAR_WIDTH_MAX_PX, slot * 0.62));
@@ -157,7 +184,19 @@ export function MacroSparklineBars({
     }));
   }, [cleaned, rangeId]);
 
-  const axisLabelIndexSet = useMemo(() => new Set(macroAxisLabelIndices(barPoints.length, 8)), [barPoints.length]);
+  const axisLabelIndexSet = useMemo(() => {
+    const granularity =
+      barPoints.length > 0
+        ? macroChartAxisGranularity(rangeId, barPoints[0]!.time, barPoints[barPoints.length - 1]!.time)
+        : "year";
+    return new Set(
+      macroAxisLabelIndicesForTimes(
+        barPoints.map((p) => p.time),
+        8,
+        granularity,
+      ),
+    );
+  }, [barPoints, rangeId]);
 
   const values = useMemo(() => barPoints.map((p) => p.value), [barPoints]);
 
@@ -231,8 +270,10 @@ export function MacroSparklineBars({
             />
           </div>
 
+          <ChartBrandWatermark />
+
           <div
-            className="absolute inset-x-0 top-[8%] bottom-[4%] z-[1] min-h-0 w-full min-w-0"
+            className="absolute inset-x-0 top-[8%] bottom-[4%] z-[2] min-h-0 w-full min-w-0"
             role="img"
             aria-label={`${title} bar chart`}
           >
@@ -358,18 +399,19 @@ export function MacroSparklineBars({
         </div>
 
         <div
-          className={cn(
-            "relative h-full shrink-0 text-left font-['Inter'] text-[12px] tabular-nums leading-none text-[#71717A]",
-            prominent ? FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS : "pl-3",
-          )}
-          style={{ width: prominent ? FUNDAMENTALS_CHART_Y_AXIS_W_PX : 50 }}
+          className="relative h-full shrink-0 pr-2 text-left font-['Inter'] text-[12px] tabular-nums leading-none text-[#71717A]"
+          style={{
+            width: prominent ? MACRO_Y_AXIS_W_PX : MACRO_Y_AXIS_COMPACT_W_PX,
+            marginLeft: MACRO_Y_AXIS_COLUMN_GAP_PX,
+          }}
           aria-hidden
         >
           <div
-            className="pointer-events-none absolute inset-x-0"
+            className="pointer-events-none absolute right-2"
             style={{
               top: `${PLOT_INSET_TOP_FRAC * 100}%`,
               bottom: `${PLOT_INSET_BOTTOM_FRAC * 100}%`,
+              left: prominent ? MACRO_Y_AXIS_TICK_LEFT_PX : MACRO_Y_AXIS_COMPACT_TICK_LEFT_PX,
             }}
           >
             {yTicks.map((t, i) => (
@@ -392,18 +434,15 @@ export function MacroSparklineBars({
             return (
               <div
                 key={`axis-${pt.time}-${i}`}
-                className="absolute bottom-0 flex min-h-0 -translate-x-1/2 items-end justify-center overflow-visible px-0.5"
-                style={{ left: `${periodCenterLeftPercent(i, n)}%`, width: `${columnWidthPct}%` }}
+                className="absolute top-1.5 flex -translate-x-1/2 justify-center overflow-visible"
+                style={{
+                  left: `${periodCenterLeftPercent(i, n, AXIS_LABEL_INSET_LEFT_FRAC, AXIS_LABEL_INSET_RIGHT_FRAC)}%`,
+                  width: `${macroColumnWidthPercent(n, AXIS_LABEL_INSET_LEFT_FRAC, AXIS_LABEL_INSET_RIGHT_FRAC)}%`,
+                }}
                 title={formatMacroTooltipTime(pt.time)}
               >
                 {show ? (
-                  <span
-                    className="inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]"
-                    style={{
-                      transform: "rotate(-42deg)",
-                      transformOrigin: "center bottom",
-                    }}
-                  >
+                  <span className="inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]">
                     {pt.axisLabel}
                   </span>
                 ) : null}
@@ -412,8 +451,11 @@ export function MacroSparklineBars({
           })}
         </div>
         <div
-          className={cn("shrink-0", prominent && FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS)}
-          style={{ width: prominent ? FUNDAMENTALS_CHART_Y_AXIS_W_PX : 50 }}
+          className="shrink-0"
+          style={{
+            width: prominent ? MACRO_Y_AXIS_W_PX : MACRO_Y_AXIS_COMPACT_W_PX,
+            marginLeft: MACRO_Y_AXIS_COLUMN_GAP_PX,
+          }}
           aria-hidden
         />
       </div>

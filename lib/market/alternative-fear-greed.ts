@@ -124,3 +124,22 @@ export async function getCryptoFearGreedHistory(limit = 180): Promise<CryptoFear
   )();
 }
 
+function unixSecondsToYmdUtc(ts: number): string | null {
+  if (!Number.isFinite(ts) || ts <= 0) return null;
+  const d = new Date(ts * 1000);
+  if (!Number.isFinite(d.getTime())) return null;
+  return d.toISOString().slice(0, 10);
+}
+
+/** Full history as macro chart points (`YYYY-MM-DD`). */
+export async function fetchCryptoFearGreedMacroSeriesCached(): Promise<Array<{ time: string; value: number }>> {
+  const hist = await getCryptoFearGreedHistory(0);
+  const out: Array<{ time: string; value: number }> = [];
+  for (const p of hist) {
+    const time = unixSecondsToYmdUtc(p.timestamp);
+    if (!time) continue;
+    out.push({ time, value: p.value });
+  }
+  return out;
+}
+

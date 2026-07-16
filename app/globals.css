@@ -548,6 +548,30 @@ body {
   }
 }
 
+/**
+ * Financials table: classic always-visible scrollbars (avoids macOS overlay auto-hide).
+ * Both axes sit on the measured viewport scrollport — horizontal at the bottom, vertical on the right.
+ */
+.financials-table-viewport-scroll::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.financials-table-viewport-scroll::-webkit-scrollbar-track {
+  background: #f4f4f5;
+}
+
+.financials-table-viewport-scroll::-webkit-scrollbar-thumb {
+  background-color: #a1a1aa;
+  border-radius: 9999px;
+  border: 2px solid #f4f4f5;
+  background-clip: padding-box;
+}
+
+.financials-table-viewport-scroll::-webkit-scrollbar-corner {
+  background: #f4f4f5;
+}
+
 @media (min-width: 768px) {
   .mobile-topbar-shell {
     position: static;

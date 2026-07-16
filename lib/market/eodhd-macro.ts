@@ -6,6 +6,11 @@ import { REVALIDATE_STATIC_DAY } from "@/lib/data/cache-policy";
 
 import { getEodhdApiKey } from "@/lib/env/server";
 import { fetchBlsCpiIndexSeriesCached } from "@/lib/market/bls-cpi-macro";
+import { fetchCpiYoyInflationSeriesCached } from "@/lib/market/cpi-inflation-macro";
+import { fetchGdpDeflatorYoySeriesCached } from "@/lib/market/gdp-deflator-macro";
+import { fetchFredDebtPctGdpSeriesCached, fetchFredGdpSeriesCached, fetchFredGdpGrowthYoySeriesCached, fetchFredGdpPerCapitaSeriesCached } from "@/lib/market/fred-gdp-macro";
+import { fetchFredUnrateSeriesCached } from "@/lib/market/fred-unemployment-macro";
+import { fetchCryptoFearGreedMacroSeriesCached } from "@/lib/market/alternative-fear-greed";
 import { fetchShillerIeMacroSeriesCached, type ShillerIeMacroMetric } from "@/lib/market/shiller-ie-macro";
 import { fetchFedFundsTargetSeriesCached } from "@/lib/market/eodhd-fed-funds-macro";
 import { fetchUstParYieldTenorCached } from "@/lib/market/eodhd-ust-par-yield";
@@ -20,15 +25,11 @@ export type MacroIndicatorCode =
   | "inflation_consumer_prices_annual"
   | "consumer_price_index"
   | "unemployment_total_percent"
-  | "real_interest_rate"
   | "gdp_current_usd"
   | "gdp_growth_annual"
   | "gdp_per_capita_usd"
   | "inflation_gdp_deflator_annual"
-  | "population_growth_annual"
-  | "debt_percent_gdp"
-  | "market_cap_domestic_companies_percent_gdp"
-  | "internet_users_per_hundred";
+  | "debt_percent_gdp";
 
 export type MacroSeriesDef =
   | {
@@ -53,8 +54,57 @@ export type MacroSeriesDef =
       id: string;
       title: string;
       kind: MacroSeriesKind;
-      /** FOMC `actual` → federal funds target (not World Bank annual policy rate). */
+      /** FRED monthly Effective Federal Funds Rate (`FEDFUNDS`). Type id kept for compatibility. */
       provider: { type: "fed_funds_fomc" };
+    }
+  | {
+      id: string;
+      title: string;
+      kind: MacroSeriesKind;
+      /** Quarterly nominal US GDP (FRED GDP, SAAR). */
+      provider: { type: "fred_gdp" };
+    }
+  | {
+      id: string;
+      title: string;
+      kind: MacroSeriesKind;
+      /** Quarterly real US GDP growth — YoY % from FRED GDPC1. */
+      provider: { type: "fred_gdp_growth_yoy" };
+    }
+  | {
+      id: string;
+      title: string;
+      kind: MacroSeriesKind;
+      /** Quarterly nominal US GDP per capita (FRED A939RC0Q052SBEA). */
+      provider: { type: "fred_gdp_per_capita" };
+    }
+  | {
+      id: string;
+      title: string;
+      kind: MacroSeriesKind;
+      /** Quarterly US federal debt as % of GDP (FRED GFDEGDQ188S). */
+      provider: { type: "fred_debt_pct_gdp" };
+    }
+  | {
+      id: string;
+      title: string;
+      kind: MacroSeriesKind;
+      /** Monthly US unemployment rate (FRED UNRATE). */
+      provider: { type: "fred_unrate" };
+    }
+  | {
+      id: string;
+      title: string;
+      kind: MacroSeriesKind;
+      /** Quarterly US GDP deflator inflation — YoY % from FRED GDPDEF index. */
+      provider: { type: "gdp_deflator_yoy" };
+    }
+  | {
+      id: string;
+      title: string;
+      kind: MacroSeriesKind;
+      /** Monthly US inflation — 12-month CPI change (Shiller history + BLS CPI-U). */
+      provider: { type: "cpi_yoy_inflation" };
     }
   | {
       id: string;
@@ -62,35 +112,48 @@ export type MacroSeriesDef =
       kind: MacroSeriesKind;
       /** Monthly BLS CPI-U rebased to 2010 = 100 (World Bank macro card scale). */
       provider: { type: "bls_cpi_index" };
+    }
+  | {
+      id: string;
+      title: string;
+      kind: MacroSeriesKind;
+      /** Alternative.me Crypto Fear & Greed Index (0–100). */
+      provider: { type: "crypto_fear_greed" };
     };
 
 /**
- * Macro dashboard series — EODHD macro indicators + Treasury par yields (`ust/yield-rates`)
- * + Shiller `ie_data.xls` valuation metrics (long-history S&P 500 P/E and Shiller P/E).
+ * Macro dashboard series — EODHD macro indicators + Treasury yields
+ * (`US10Y.GBOND` EOD; 20Y from `/ust/yield-rates` year filters)
+ * + Shiller `ie_data.xls` valuation metrics (classic CAPE extended with live SPX + BLS CPI)
+ * + monthly US inflation (12-month CPI change — Shiller + BLS, Multpl-style)
+ * + quarterly GDP deflator inflation (YoY from FRED GDPDEF)
+ * + quarterly nominal GDP (FRED GDP)
+ * + quarterly real GDP growth (YoY from FRED GDPC1)
+ * + quarterly GDP per capita (FRED A939RC0Q052SBEA)
+ * + quarterly federal debt as % of GDP (FRED GFDEGDQ188S)
+ * + monthly unemployment rate (FRED UNRATE)
+ * + Alternative.me Crypto Fear & Greed Index.
  *
  * @see https://eodhd.com/financial-apis/macroeconomics-data-and-macro-indicators-api
  * @see https://eodhd.com/financial-apis/us-treasury-ust-interest-rates-api-beta
  * @see http://www.econ.yale.edu/~shiller/data.htm
  */
 export const MACRO_SERIES: MacroSeriesDef[] = [
-  { id: "shiller_pe", title: "Shiller P/E", kind: "number", provider: { type: "shiller_ie", metric: "shiller_tr_cape" } },
+  { id: "shiller_pe", title: "Shiller P/E", kind: "number", provider: { type: "shiller_ie", metric: "shiller_cape" } },
   { id: "sp500_earnings", title: "S&P 500 Earnings", kind: "number", provider: { type: "shiller_ie", metric: "sp500_earnings" } },
   { id: "sp500_trailing_pe", title: "S&P 500 P/E", kind: "number", provider: { type: "shiller_ie", metric: "sp500_pe" } },
   { id: "ust_par_yield_10y", title: "10-Year Treasury", kind: "percent", provider: { type: "ust_par_yield", tenor: "10Y" } },
   { id: "ust_par_yield_20y", title: "20-Year Treasury", kind: "percent", provider: { type: "ust_par_yield", tenor: "20Y" } },
   { id: "fed_interest_rate", title: "Fed funds rate", kind: "percent", provider: { type: "fed_funds_fomc" } },
-  { id: "inflation_consumer_prices_annual", title: "Inflation", kind: "percent", provider: { type: "macro_indicator", indicator: "inflation_consumer_prices_annual" } },
-  { id: "inflation_gdp_deflator_annual", title: "GDP deflator", kind: "percent", provider: { type: "macro_indicator", indicator: "inflation_gdp_deflator_annual" } },
+  { id: "inflation_consumer_prices_annual", title: "Inflation", kind: "percent", provider: { type: "cpi_yoy_inflation" } },
+  { id: "inflation_gdp_deflator_annual", title: "GDP deflator", kind: "percent", provider: { type: "gdp_deflator_yoy" } },
   { id: "consumer_price_index", title: "Consumer Price Index", kind: "index", provider: { type: "bls_cpi_index" } },
-  { id: "gdp_growth_annual", title: "GDP Growth", kind: "percent", provider: { type: "macro_indicator", indicator: "gdp_growth_annual" } },
-  { id: "gdp_current_usd", title: "GDP", kind: "usd", provider: { type: "macro_indicator", indicator: "gdp_current_usd" } },
-  { id: "gdp_per_capita_usd", title: "GDP per capita", kind: "usd", provider: { type: "macro_indicator", indicator: "gdp_per_capita_usd" } },
-  { id: "unemployment_total_percent", title: "Unemployment Rate", kind: "percent", provider: { type: "macro_indicator", indicator: "unemployment_total_percent" } },
-  { id: "real_interest_rate", title: "Real Interest Rate", kind: "percent", provider: { type: "macro_indicator", indicator: "real_interest_rate" } },
-  { id: "debt_percent_gdp", title: "Debt", kind: "percent", provider: { type: "macro_indicator", indicator: "debt_percent_gdp" } },
-  { id: "market_cap_domestic_companies_percent_gdp", title: "Market Cap", kind: "percent", provider: { type: "macro_indicator", indicator: "market_cap_domestic_companies_percent_gdp" } },
-  { id: "population_growth_annual", title: "Population growth", kind: "percent", provider: { type: "macro_indicator", indicator: "population_growth_annual" } },
-  { id: "internet_users_per_hundred", title: "Internet Users", kind: "number", provider: { type: "macro_indicator", indicator: "internet_users_per_hundred" } },
+  { id: "gdp_growth_annual", title: "GDP Growth", kind: "percent", provider: { type: "fred_gdp_growth_yoy" } },
+  { id: "gdp_current_usd", title: "GDP", kind: "usd", provider: { type: "fred_gdp" } },
+  { id: "gdp_per_capita_usd", title: "GDP per capita", kind: "usd", provider: { type: "fred_gdp_per_capita" } },
+  { id: "unemployment_total_percent", title: "Unemployment Rate", kind: "percent", provider: { type: "fred_unrate" } },
+  { id: "debt_percent_gdp", title: "Debt", kind: "percent", provider: { type: "fred_debt_pct_gdp" } },
+  { id: "crypto_fear_greed", title: "Crypto Fear & Greed", kind: "number", provider: { type: "crypto_fear_greed" } },
 ];
 
 function num(v: unknown): number | null {
@@ -159,6 +222,30 @@ export async function fetchMacroSeriesAll(country: string, def: MacroSeriesDef):
   }
   if (def.provider.type === "bls_cpi_index") {
     return fetchBlsCpiIndexSeriesCached();
+  }
+  if (def.provider.type === "cpi_yoy_inflation") {
+    return fetchCpiYoyInflationSeriesCached();
+  }
+  if (def.provider.type === "gdp_deflator_yoy") {
+    return fetchGdpDeflatorYoySeriesCached();
+  }
+  if (def.provider.type === "fred_gdp") {
+    return fetchFredGdpSeriesCached();
+  }
+  if (def.provider.type === "fred_gdp_growth_yoy") {
+    return fetchFredGdpGrowthYoySeriesCached();
+  }
+  if (def.provider.type === "fred_gdp_per_capita") {
+    return fetchFredGdpPerCapitaSeriesCached();
+  }
+  if (def.provider.type === "fred_debt_pct_gdp") {
+    return fetchFredDebtPctGdpSeriesCached();
+  }
+  if (def.provider.type === "fred_unrate") {
+    return fetchFredUnrateSeriesCached();
+  }
+  if (def.provider.type === "crypto_fear_greed") {
+    return fetchCryptoFearGreedMacroSeriesCached();
   }
   return fetchMacroIndicatorCached({ country, indicator: def.provider.indicator });
 }

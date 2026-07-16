@@ -24,7 +24,7 @@ export function ChartingRailCompanyRow({
   return (
     <div className={chartingRailRowClass}>
       <CompanyLogo name={ticker} logoUrl="" symbol={ticker} size="sm" />
-      <span className="min-w-0 flex-1 truncate text-[14px] font-normal leading-5 text-[#09090B]">
+      <span className="min-w-0 flex-1 truncate font-normal">
         {ticker}
       </span>
       {!removeDisabled ? (
@@ -69,7 +69,7 @@ export function ChartingRailMetricRow({
           style={{ backgroundColor: color }}
         />
       </span>
-      <span className="min-w-0 flex-1 truncate text-[14px] font-normal leading-5 text-[#09090B]">
+      <span className="min-w-0 flex-1 truncate font-normal">
         {label}
       </span>
       {settingsEnabled ? (

@@ -9,6 +9,9 @@ import { traceEodhdHttp } from "@/lib/market/provider-trace";
 /** Same shape as {@link MacroPoint} — avoids import cycle with `eodhd-macro`. */
 export type UstYieldPoint = { time: string; value: number };
 
+/** 20Y CMT on the par yield curve resumes in EODHD around Oct 1993. */
+const UST_20Y_YIELD_START_YEAR = 1993;
+
 function num(v: unknown): number | null {
   if (typeof v === "number" && Number.isFinite(v)) return v;
   if (typeof v === "string" && v.trim()) {
@@ -18,103 +21,137 @@ function num(v: unknown): number | null {
   return null;
 }
 
-/** One HTTP round-trip for the full par yield curve; filtered per tenor in-process. */
-async function fetchUstParYieldRatesRawUncached(): Promise<Array<{ date: string; tenor: string; rate: number }>> {
-  const key = getEodhdApiKey();
-  if (!key) return [];
-  const apiToken: string = key;
-
-  async function fetchWindow(from: string, to: string): Promise<Array<{ date: string; tenor: string; rate: number }>> {
-    const params = new URLSearchParams({
-      api_token: apiToken,
-      fmt: "json",
-      from,
-      to,
-    });
-    const url = `https://eodhd.com/api/ust/yield-rates?${params.toString()}`;
-
-    try {
-      if (!traceEodhdHttp("fetchUstParYieldRatesRawUncached", { from, to })) return [];
-      const res = await fetch(url, { next: { revalidate: REVALIDATE_STATIC_DAY } });
-      if (!res.ok) return [];
-      const json = (await res.json()) as unknown;
-      let data: unknown[] = [];
-      if (Array.isArray(json)) data = json;
-      else if (json && typeof json === "object" && Array.isArray((json as { data?: unknown }).data)) {
-        data = (json as { data: unknown[] }).data;
-      }
-      const out: Array<{ date: string; tenor: string; rate: number }> = [];
-      for (const row of data) {
-        if (!row || typeof row !== "object") continue;
-        const o = row as { date?: unknown; tenor?: unknown; rate?: unknown };
-        const rawDate = typeof o.date === "string" ? o.date : "";
-        const date = rawDate.trim().slice(0, 10);
-        const tenor = typeof o.tenor === "string" ? o.tenor : "";
-        const rate = num(o.rate);
-        if (!date || !tenor || rate == null) continue;
-        out.push({ date, tenor, rate });
-      }
-      return out;
-    } catch {
-      return [];
+async function mapPool<T, R>(items: T[], concurrency: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let next = 0;
+  async function worker() {
+    while (next < items.length) {
+      const i = next++;
+      results[i] = await fn(items[i]!);
     }
   }
-
-  const to = new Date().toISOString().slice(0, 10);
-  const from = "1980-01-01";
-
-  // Try a single wide request first. Some providers silently cap results; if we detect that,
-  // fall back to chunked window fetching to ensure "All" has a long history.
-  const wide = await fetchWindow(from, to);
-  const wideFirst = wide.length ? wide.reduce((min, r) => (r.date < min ? r.date : min), wide[0]!.date) : null;
-  const wideLast = wide.length ? wide.reduce((max, r) => (r.date > max ? r.date : max), wide[0]!.date) : null;
-  const spanYears =
-    wideFirst && wideLast
-      ? (Date.parse(`${wideLast}T00:00:00Z`) - Date.parse(`${wideFirst}T00:00:00Z`)) /
-        (365.25 * 86_400_000)
-      : 0;
-  /** Wide request often returns only recent rows — chunk when history is short or starts after 2000. */
-  const needsChunked =
-    wide.length === 0 || spanYears < 8 || (wideFirst != null && wideFirst > "2000-01-01");
-  if (!needsChunked) return wide;
-
-  const out: Array<{ date: string; tenor: string; rate: number }> = [];
-  const startYear = 1980;
-  const endYear = new Date().getUTCFullYear();
-  const stepYears = 2;
-  for (let y = startYear; y <= endYear; y += stepYears) {
-    const wFrom = `${y.toString().padStart(4, "0")}-01-01`;
-    const wToYear = Math.min(endYear, y + stepYears - 1);
-    const wTo = `${wToYear.toString().padStart(4, "0")}-12-31`;
-    const chunk = await fetchWindow(wFrom, y === endYear ? to : wTo);
-    if (chunk.length) out.push(...chunk);
-  }
-
-  // De-dupe just in case windows overlap or provider repeats rows.
-  const byKey = new Map<string, { date: string; tenor: string; rate: number }>();
-  for (const r of out) byKey.set(`${r.date}|${r.tenor}`, r);
-  return Array.from(byKey.values());
+  const n = Math.max(1, Math.min(concurrency, items.length));
+  await Promise.all(Array.from({ length: n }, () => worker()));
+  return results;
 }
 
-const fetchUstParYieldRatesRawCached = unstable_cache(fetchUstParYieldRatesRawUncached, ["eodhd-ust-yield-rates-raw-v3"], {
-  revalidate: REVALIDATE_STATIC_DAY,
-});
+/**
+ * Long 10Y history via government-bond EOD (`US10Y.GBOND`).
+ * Prefer this over `/ust/yield-rates` (defaults to current year without `filter[year]`).
+ */
+async function fetchUst10YGbondUncached(): Promise<UstYieldPoint[]> {
+  const key = getEodhdApiKey();
+  if (!key) return [];
 
-function rowsToTenorSeries(rows: Array<{ date: string; tenor: string; rate: number }>, tenor: "10Y" | "20Y"): UstYieldPoint[] {
-  const tmp: UstYieldPoint[] = [];
-  for (const r of rows) {
-    if (r.tenor !== tenor) continue;
-    tmp.push({ time: r.date, value: r.rate });
+  const params = new URLSearchParams({
+    api_token: key,
+    fmt: "json",
+    period: "d",
+    order: "a",
+    from: "1990-01-01",
+  });
+  const url = `https://eodhd.com/api/eod/US10Y.GBOND?${params.toString()}`;
+
+  try {
+    if (!traceEodhdHttp("fetchUst10YGbondUncached", { symbol: "US10Y.GBOND" })) return [];
+    const res = await fetch(url, { next: { revalidate: REVALIDATE_STATIC_DAY } });
+    if (!res.ok) return [];
+    const json = (await res.json()) as unknown;
+    if (!Array.isArray(json)) return [];
+
+    const byDay = new Map<string, UstYieldPoint>();
+    for (const row of json) {
+      if (!row || typeof row !== "object") continue;
+      const o = row as { date?: unknown; close?: unknown; adjusted_close?: unknown };
+      const date = typeof o.date === "string" ? o.date.trim().slice(0, 10) : "";
+      const value = num(o.adjusted_close) ?? num(o.close);
+      if (!date || value == null) continue;
+      byDay.set(date, { time: date, value });
+    }
+    return Array.from(byDay.values()).sort((a, b) => a.time.localeCompare(b.time));
+  } catch {
+    return [];
   }
-  tmp.sort((a, b) => a.time.localeCompare(b.time));
+}
+
+function parseYieldRows(json: unknown): Array<{ date: string; tenor: string; rate: number }> {
+  let data: unknown[] = [];
+  if (Array.isArray(json)) data = json;
+  else if (json && typeof json === "object" && Array.isArray((json as { data?: unknown }).data)) {
+    data = (json as { data: unknown[] }).data;
+  }
+  const out: Array<{ date: string; tenor: string; rate: number }> = [];
+  for (const row of data) {
+    if (!row || typeof row !== "object") continue;
+    const o = row as { date?: unknown; tenor?: unknown; rate?: unknown };
+    const rawDate = typeof o.date === "string" ? o.date : "";
+    const date = rawDate.trim().slice(0, 10);
+    const tenor = typeof o.tenor === "string" ? o.tenor : "";
+    const rate = num(o.rate);
+    if (!date || !tenor || rate == null) continue;
+    out.push({ date, tenor, rate });
+  }
+  return out;
+}
+
+/**
+ * One year of par yield curve. Must use `filter[year]` — omitting it returns the current year only.
+ */
+async function fetchUstYieldYear20Y(apiToken: string, year: number): Promise<UstYieldPoint[]> {
+  const params = new URLSearchParams({
+    api_token: apiToken,
+    fmt: "json",
+    "filter[year]": String(year),
+    "page[limit]": "5000",
+  });
+  const url = `https://eodhd.com/api/ust/yield-rates?${params.toString()}`;
+
+  try {
+    if (!traceEodhdHttp("fetchUstYieldYear20Y", { year })) return [];
+    const res = await fetch(url, { next: { revalidate: REVALIDATE_STATIC_DAY } });
+    if (!res.ok) return [];
+    const rows = parseYieldRows(await res.json());
+    const out: UstYieldPoint[] = [];
+    for (const r of rows) {
+      if (r.tenor !== "20Y") continue;
+      out.push({ time: r.date, value: r.rate });
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * `US20Y.GBOND` only starts ~2020. Pull 20Y CMT from `/ust/yield-rates` year-by-year
+ * so Macro 20Y / All windows have real multi-decade history (gaps where Treasury omitted the tenor).
+ */
+async function fetchUst20YYieldRatesUncached(): Promise<UstYieldPoint[]> {
+  const key = getEodhdApiKey();
+  if (!key) return [];
+
+  const endYear = new Date().getUTCFullYear();
+  const years: number[] = [];
+  for (let y = UST_20Y_YIELD_START_YEAR; y <= endYear; y++) years.push(y);
+
+  const chunks = await mapPool(years, 4, (year) => fetchUstYieldYear20Y(key, year));
   const byDay = new Map<string, UstYieldPoint>();
-  for (const p of tmp) {
-    byDay.set(p.time, p);
+  for (const chunk of chunks) {
+    for (const p of chunk) byDay.set(p.time, p);
   }
   return Array.from(byDay.values()).sort((a, b) => a.time.localeCompare(b.time));
 }
 
+const fetchUst10YGbondCached = unstable_cache(fetchUst10YGbondUncached, ["eodhd-ust-gbond-10y-v2"], {
+  revalidate: REVALIDATE_STATIC_DAY,
+});
+
+const fetchUst20YYieldRatesCached = unstable_cache(
+  fetchUst20YYieldRatesUncached,
+  ["eodhd-ust-yield-rates-20y-v1"],
+  { revalidate: REVALIDATE_STATIC_DAY },
+);
+
 export async function fetchUstParYieldTenorCached(tenor: "10Y" | "20Y"): Promise<UstYieldPoint[]> {
-  const raw = await fetchUstParYieldRatesRawCached();
-  return rowsToTenorSeries(raw, tenor);
+  return tenor === "10Y" ? fetchUst10YGbondCached() : fetchUst20YYieldRatesCached();
 }

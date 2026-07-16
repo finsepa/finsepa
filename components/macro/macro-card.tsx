@@ -30,7 +30,7 @@ export type MacroCardModel = {
 
 export function MacroCard({
   model,
-  chartVariant = "bar",
+  chartVariant = "area",
   rangeId,
 }: {
   model: MacroCardModel;

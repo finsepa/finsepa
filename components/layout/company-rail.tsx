@@ -9,28 +9,25 @@ import {
   ChartingRailMetricRow,
 } from "@/components/charting/charting-company-rail-list";
 import {
+  companyRailListClass,
+  companyRailRowClass,
+  companyRailScrollClass,
+  companyRailTitleClass,
+} from "@/components/charting/charting-rail-row-styles";
+import {
   useChartingCompanyRail,
   useChartingCompanyRailDesktopShell,
   isCompanyRailPage,
 } from "@/components/charting/charting-company-rail-context";
 import { TopbarDelayedTooltip } from "@/components/layout/topbar-delayed-tooltip";
-import { WATCHLIST_PANEL_WIDTH_PX } from "@/components/layout/watchlist-rail-layout-context";
+import { SIDEBAR_OUTER_EXPANDED_PX } from "@/components/layout/sidebar-layout-context";
 import { shellChromeToggleButtonClass } from "@/components/layout/shell-chrome-toggle-button";
 import { cn } from "@/lib/utils";
 
 const companyRailSurfaceClass =
   "flex h-full min-h-0 flex-col overflow-hidden bg-white md:rounded-none";
 
-/** Matches {@link WatchlistOptionsMenu} `variant="rail-title"` label row. */
-const companyRailTitleClass =
-  "flex min-w-0 flex-1 items-center gap-0.5 truncate pl-1 text-sm font-semibold leading-5 text-[#52525B]";
-
-const companyRailDividerClass = "mx-3 my-3 h-px shrink-0 bg-[#E4E4E7]";
-
-const companyRailRowClass = "flex shrink-0 items-center justify-between gap-2 px-2 pl-3 pr-2";
-
-const companyRailListClass = "flex flex-col px-1";
-
+const companyRailDividerClass = "mx-3 my-2 h-px shrink-0 bg-[#E4E4E7]";
 const CompanyRailAddButton = forwardRef<
   HTMLButtonElement,
   {
@@ -109,18 +106,18 @@ export function CompanyRail() {
       className={cn(
         "flex h-full min-h-0 shrink-0 self-stretch overflow-hidden border-r border-[#E4E4E7]",
       )}
-      style={{ width: `${WATCHLIST_PANEL_WIDTH_PX}px` }}
+      style={{ width: `${SIDEBAR_OUTER_EXPANDED_PX}px` }}
       aria-label="Company panel"
     >
-      <div className={companyRailSurfaceClass} style={{ width: `${WATCHLIST_PANEL_WIDTH_PX}px` }}>
-        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain pb-2">
+      <div className={companyRailSurfaceClass} style={{ width: `${SIDEBAR_OUTER_EXPANDED_PX}px` }}>
+        <div className={companyRailScrollClass}>
           <CompanyRailLabelRow
             title="Company"
             addLabel="Add company"
             addDisabled={companyDisabled}
             onAdd={() => registration?.openCompanyPicker()}
             addButtonRef={companyAddAnchorRef}
-            className="pt-2"
+            className="pt-3"
           />
           {companies.length > 0 ? (
             <div className={companyRailListClass}>

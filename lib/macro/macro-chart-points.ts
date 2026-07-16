@@ -5,6 +5,7 @@ export type MacroChartPoint = { time: string; value: number };
 const RANGE_YEARS: Record<Exclude<MacroRangeId, "all">, number> = {
   "5y": 5,
   "10y": 10,
+  "20y": 20,
 };
 
 /** Calendar slice: last observation minus N years (inclusive). */
@@ -44,13 +45,13 @@ export function downsampleMacroPointsMonthly(points: readonly MacroChartPoint[])
   return Array.from(byMonth.values()).sort((a, b) => a.time.localeCompare(b.time));
 }
 
-/** 5Y–10Y charts use one point per calendar month (when source data allows). */
+/** Fixed ranges use one point per calendar month (when source data allows). */
 export function macroRangeUsesMonthlyPoints(rangeId: MacroRangeId): boolean {
-  return rangeId === "5y" || rangeId === "10y";
+  return rangeId === "5y" || rangeId === "10y" || rangeId === "20y";
 }
 
-export function macroRangeUsesMonthlyAxisLabels(rangeId: MacroRangeId): boolean {
-  return macroRangeUsesMonthlyPoints(rangeId);
+export function macroRangeUsesMonthlyAxisLabels(_rangeId: MacroRangeId): boolean {
+  return false;
 }
 
 function shouldDownsampleForRange(pointCount: number, rangeId: MacroRangeId): boolean {
@@ -61,6 +62,23 @@ function shouldDownsampleForRange(pointCount: number, rangeId: MacroRangeId): bo
   return pointCount > years * 40;
 }
 
+/** Drop a leading calendar year that isn’t a full 12 months (keeps year bands evenly spaced). */
+export function dropLeadingPartialCalendarYear(
+  points: readonly MacroChartPoint[],
+): MacroChartPoint[] {
+  if (points.length < 2) return [...points];
+  const sorted = [...points].sort((a, b) => a.time.localeCompare(b.time));
+  const firstYear = sorted[0]!.time.trim().slice(0, 4);
+  const lastYear = sorted[sorted.length - 1]!.time.trim().slice(0, 4);
+  if (!/^\d{4}$/.test(firstYear) || firstYear === lastYear) return sorted;
+
+  const leading = sorted.filter((p) => p.time.trim().slice(0, 4) === firstYear);
+  const startsInJanuary = sorted[0]!.time.trim().slice(5, 7) === "01";
+  if (leading.length >= 12 && startsInJanuary) return sorted;
+
+  return sorted.filter((p) => p.time.trim().slice(0, 4) !== firstYear);
+}
+
 /** Slice to the selected range, then thin dense daily series for chart readability. */
 export function prepareMacroPointsForRange(
   points: readonly MacroChartPoint[],
@@ -69,24 +87,21 @@ export function prepareMacroPointsForRange(
   const sliced = sliceMacroPointsByRange(points, rangeId);
   if (macroRangeUsesMonthlyPoints(rangeId)) {
     const monthly = downsampleMacroPointsMonthly(sliced);
-    return monthly.length > 0 ? monthly : sliced;
+    const base = monthly.length > 0 ? monthly : sliced;
+    return dropLeadingPartialCalendarYear(base);
   }
   if (shouldDownsampleForRange(sliced.length, rangeId)) {
-    return downsampleMacroPointsMonthly(sliced);
+    return dropLeadingPartialCalendarYear(downsampleMacroPointsMonthly(sliced));
   }
   return sliced;
 }
 
-/** X-axis label granularity for macro bar / line cards. */
+/** X-axis label granularity for macro bar / line charts — years only. */
 export function macroChartAxisGranularity(
-  rangeId: MacroRangeId,
-  firstTime: string,
-  lastTime: string,
+  _rangeId: MacroRangeId,
+  _firstTime: string,
+  _lastTime: string,
 ): "month" | "year" {
-  if (macroRangeUsesMonthlyAxisLabels(rangeId)) return "month";
-  const y0 = parseInt(firstTime.slice(0, 4), 10);
-  const y1 = parseInt(lastTime.slice(0, 4), 10);
-  if (Number.isFinite(y0) && Number.isFinite(y1) && y1 - y0 <= 0) return "month";
   return "year";
 }
 
@@ -116,6 +131,35 @@ export function macroAxisLabelIndices(pointCount: number, maxLabels = 8): number
   return out;
 }
 
+/**
+ * Label indices for the macro time axis. Year mode uses one tick per calendar year
+ * (mid point in that year), thinned to `maxLabels`.
+ */
+export function macroAxisLabelIndicesForTimes(
+  times: readonly string[],
+  maxLabels = 8,
+  granularity: "month" | "year" = "year",
+): number[] {
+  if (times.length === 0) return [];
+  if (granularity === "month") return macroAxisLabelIndices(times.length, maxLabels);
+
+  const indicesByYear = new Map<string, number[]>();
+  for (let i = 0; i < times.length; i++) {
+    const y = times[i]!.trim().slice(0, 4);
+    if (!/^\d{4}$/.test(y)) continue;
+    const list = indicesByYear.get(y);
+    if (list) list.push(i);
+    else indicesByYear.set(y, [i]);
+  }
+  const yearIndices = [...indicesByYear.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([, idxs]) => idxs[Math.floor((idxs.length - 1) / 2)]!);
+
+  if (yearIndices.length === 0) return macroAxisLabelIndices(times.length, maxLabels);
+  if (yearIndices.length <= maxLabels) return yearIndices;
+  return macroAxisLabelIndices(yearIndices.length, maxLabels).map((i) => yearIndices[i]!);
+}
+
 /** Bottom time-axis strip labels (area / line card footer). */
 export function macroChartTimeAxisLabels(
   points: readonly { time: string }[],
@@ -127,7 +171,8 @@ export function macroChartTimeAxisLabels(
   const granularity = macroChartAxisGranularity(rangeId, points[0]!.time, points[n - 1]!.time);
   if (n === 1) return [formatMacroAxisLabel(points[0]!.time, granularity)];
 
-  const indices = macroAxisLabelIndices(n, slotCount);
+  const times = points.map((p) => p.time);
+  const indices = macroAxisLabelIndicesForTimes(times, slotCount, granularity);
   const labels = indices.map((idx) => formatMacroAxisLabel(points[idx]!.time, granularity));
 
   const out: string[] = [];

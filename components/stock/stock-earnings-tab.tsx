@@ -26,6 +26,7 @@ import { reportedRowMissingEarningsDocuments } from "@/lib/market/earnings-docum
 import { buildReportsTableRows } from "@/lib/market/enrich-earnings-history-estimates";
 import { fetchStockEarningsTabPayloadClient } from "@/lib/market/stock-earnings-tab-client";
 import { SCREENER_TABLE_HEADER_STICKY_CLASS, ScreenerTableScroll } from "@/components/screener/screener-table-scroll";
+import { STOCK_TABLE_LABEL_COL_WIDTH } from "@/components/stock/stock-income-statement-table";
 import { cn } from "@/lib/utils";
 import {
   EARNINGS_CARD_LABEL_CLASS,
@@ -121,19 +122,26 @@ function buildEarningsMetricSummarySlots(
   }
 
   const cols = sliceLatestAnnualEstimates(chart?.annual ?? []);
-  const slotForYear = (year: string, idx: number): EarningsMetricSummarySlot => {
-    const colIndex = cols.findIndex((p) => p.label === year);
-    const pt = colIndex >= 0 ? cols[colIndex] : undefined;
-    const value = pt ? formatMetricSummaryValue(metricSummaryValueFromPoint(pt, metric), metric) : null;
-    const prior = colIndex >= 0 ? summaryPriorPeriod(cols, colIndex, metric) : { changePct: null, priorValueDisplay: null };
+  const forward = cols.filter((p) => isAnnualForecastPoint(p)).slice(0, 2);
+  const slotForPoint = (
+    p: StockEarningsEstimatesPoint | undefined,
+    idx: number,
+  ): EarningsMetricSummarySlot => {
+    if (!p) {
+      return { label: metricTitle, value: null, changePct: null, priorValueDisplay: null };
+    }
+    const colIndex = cols.findIndex((row) => row.sortKey === p.sortKey);
+    const value = formatMetricSummaryValue(metricSummaryValueFromPoint(p, metric), metric);
+    const prior =
+      colIndex >= 0 ? summaryPriorPeriod(cols, colIndex, metric) : { changePct: null, priorValueDisplay: null };
     return {
-      label: `${metricTitle} ${year}`,
+      label: `${metricTitle} ${p.label}`,
       value: value ?? (idx === 0 ? upcomingFallback : null),
       ...prior,
     };
   };
 
-  return [slotForYear("2026", 0), slotForYear("2027", 1)];
+  return [slotForPoint(forward[0], 0), slotForPoint(forward[1], 1)];
 }
 
 function EarningsMetricSummaryCard({ slot }: { slot: EarningsMetricSummarySlot }) {
@@ -258,12 +266,12 @@ function nearestVerticalScrollParent(start: HTMLElement | null): HTMLElement | n
 }
 
 /** Reports table chrome — aligned with {@link StockIncomeStatementTable} / Financials. */
-const reportsTableClass = "w-full min-w-0 table-auto border-collapse bg-white text-[14px]";
+const reportsTableClass = "w-full min-w-0 table-fixed border-collapse bg-white text-[14px]";
 
 const reportsHeaderTh =
   "min-h-[44px] px-2 py-2 align-middle font-['Inter'] text-[12px] font-medium leading-5 text-[#71717A] sm:px-4 sm:text-[14px]";
 
-const reportsHeaderThLabel = cn(reportsHeaderTh, "border-r border-[#E4E4E7] text-left");
+const reportsHeaderThLabel = cn(reportsHeaderTh, "text-left");
 
 const reportsHeaderThNum = cn(reportsHeaderTh, "text-right");
 
@@ -271,15 +279,29 @@ const reportsDataRowClass =
   "min-h-[60px] border-b border-[#E4E4E7] bg-white transition-colors duration-75 hover:bg-neutral-50";
 
 const reportsYearRowClass =
-  "border-b border-[#E4E4E7] bg-white font-['Inter'] text-[14px] font-semibold leading-5 text-[#09090B]";
+  "min-h-[44px] border-b border-[#E4E4E7] bg-[#FAFAFA] font-['Inter'] text-[12px] font-medium leading-5 text-[#71717A] sm:text-[14px]";
 
 const reportsLabelTd =
-  "min-w-0 border-r border-[#E4E4E7] px-2 py-3 align-middle text-left sm:px-4";
+  "min-w-0 px-2 py-3 align-middle text-left sm:px-4";
 
 const reportsNumTd =
   "px-2 py-3 text-right align-middle font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B] sm:px-4";
 
 const reportsActionsTd = "min-w-0 max-w-[min(100%,20rem)] px-2 py-3 text-right align-middle sm:px-4";
+
+function ReportsColGroup() {
+  return (
+    <colgroup>
+      <col style={{ width: STOCK_TABLE_LABEL_COL_WIDTH }} />
+      <col />
+      <col />
+      <col />
+      <col />
+      <col />
+      <col />
+    </colgroup>
+  );
+}
 
 function calendarYearFromEarningsHistoryRow(r: StockEarningsHistoryRow): string | null {
   const ymd = r.fiscalPeriodEndYmd;
@@ -390,6 +412,7 @@ function TableSkeleton() {
   return (
     <ScreenerTableScroll mobileScroll>
       <table className={reportsTableClass}>
+        <ReportsColGroup />
         <thead className={SCREENER_TABLE_HEADER_STICKY_CLASS}>
           <tr className="border-b border-[#E4E4E7]">
             {[
@@ -717,6 +740,7 @@ export function StockEarningsTabContent({
           <h3 className="text-[18px] font-semibold leading-7 tracking-tight text-[#09090B]">Reports</h3>
           <ScreenerTableScroll mobileScroll>
             <table className={reportsTableClass}>
+              <ReportsColGroup />
               <thead className={SCREENER_TABLE_HEADER_STICKY_CLASS}>
                 <tr className="border-b border-[#E4E4E7]">
                   <th scope="col" className={reportsHeaderThLabel}>
@@ -746,7 +770,7 @@ export function StockEarningsTabContent({
                 {earningsHistoryRendered.map((entry, idx) =>
                   entry.kind === "year" ? (
                     <tr key={`reports-year-${entry.year}-${idx}`} className={reportsYearRowClass}>
-                      <td colSpan={7} className="px-2 py-3 sm:px-4">
+                      <td colSpan={7} className="px-2 py-2 sm:px-4">
                         {entry.year}
                       </td>
                     </tr>

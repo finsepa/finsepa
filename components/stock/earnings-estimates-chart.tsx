@@ -125,6 +125,8 @@ function EarningsValueDot({
   dotSizePx,
   variant,
   barColor,
+  /** Horizontal shift from column center so estimate + actual both stay visible when close. */
+  offsetXPx = 0,
 }: {
   value: number;
   maxV: number;
@@ -132,6 +134,7 @@ function EarningsValueDot({
   dotSizePx: number;
   variant: "actual" | "forecast";
   barColor: string;
+  offsetXPx?: number;
 }) {
   const bottomPct = valueHeightPct(value, maxV) * enterProgress;
   if (bottomPct <= 0) return null;
@@ -141,12 +144,14 @@ function EarningsValueDot({
     width: dotSizePx,
     height: dotSizePx,
     marginBottom: -dotSizePx / 2,
+    left: "50%",
+    transform: `translateX(calc(-50% + ${offsetXPx}px))`,
   } as const;
 
   if (variant === "actual") {
     return (
       <div
-        className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2 rounded-full"
+        className="pointer-events-none absolute z-10 rounded-full"
         style={{ ...sharedStyle, backgroundColor: barColor }}
         aria-hidden
       />
@@ -155,7 +160,7 @@ function EarningsValueDot({
 
   return (
     <div
-      className="pointer-events-none absolute left-1/2 z-[9] -translate-x-1/2 overflow-hidden rounded-full"
+      className="pointer-events-none absolute z-[9] overflow-hidden rounded-full"
       style={{
         ...sharedStyle,
         ...earningsForecastDotFillStyle(barColor),
@@ -498,6 +503,9 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
                             dotSizePx={columnLayout.dotSizePx}
                             variant="forecast"
                             barColor={ESTIMATE_BAR}
+                            offsetXPx={
+                              p.actual != null ? -Math.round(columnLayout.dotSizePx * 0.4) : 0
+                            }
                           />
                         ) : null}
                         {p.actual != null ? (
@@ -508,6 +516,9 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
                             dotSizePx={columnLayout.dotSizePx}
                             variant="actual"
                             barColor={ESTIMATE_BAR}
+                            offsetXPx={
+                              p.estimate != null ? Math.round(columnLayout.dotSizePx * 0.4) : 0
+                            }
                           />
                         ) : null}
                       </div>

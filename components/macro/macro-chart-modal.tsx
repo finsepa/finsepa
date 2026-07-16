@@ -13,6 +13,7 @@ import {
   prepareMacroPointsForRange,
   type MacroRangeId,
 } from "@/components/macro/macro-range";
+import { MacroFearGreedChart } from "@/components/macro/macro-fear-greed-chart";
 import { MacroSparkline, type MacroChartVariant } from "@/components/macro/macro-sparkline";
 import { MultichartVisualSwitcher } from "@/components/stock/multichart-visual-switcher";
 
@@ -117,11 +118,13 @@ export function MacroChartModal({
             ) : null}
           </div>
           <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
-            <MultichartVisualSwitcher
-              variant="icon"
-              value={chartVariant === "bar" ? "bar" : "line"}
-              onChange={(next) => setChartVariant(next === "bar" ? "bar" : "area")}
-            />
+            {model.id !== "crypto_fear_greed" ? (
+              <MultichartVisualSwitcher
+                variant="icon"
+                value={chartVariant === "bar" ? "bar" : "line"}
+                onChange={(next) => setChartVariant(next === "bar" ? "bar" : "area")}
+              />
+            ) : null}
             <TabSwitcher
               size="sm"
               options={RANGE_OPTIONS}
@@ -133,16 +136,20 @@ export function MacroChartModal({
         </div>
         <div className="min-h-0 flex-1 overflow-hidden px-5 py-4">
           <div className="min-w-0">
-            <MacroSparkline
-              title={model.title}
-              kind={model.kind}
-              points={windowedModel.points}
-              rangeId={rangeId}
-              height={MACRO_MODAL_CHART_HEIGHT_PX}
-              variant={chartVariant}
-              visualWeight="prominent"
-              heightMode="total"
-            />
+            {model.id === "crypto_fear_greed" ? (
+              <MacroFearGreedChart rangeId={rangeId} height={MACRO_MODAL_CHART_HEIGHT_PX} />
+            ) : (
+              <MacroSparkline
+                title={model.title}
+                kind={model.kind}
+                points={windowedModel.points}
+                rangeId={rangeId}
+                height={MACRO_MODAL_CHART_HEIGHT_PX}
+                variant={chartVariant}
+                visualWeight="prominent"
+                heightMode="total"
+              />
+            )}
           </div>
         </div>
       </AppModalShell>
