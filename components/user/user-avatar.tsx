@@ -55,12 +55,11 @@ export function UserAvatar({ imageSrc, initials, size, showProBadge = false }: U
     : lgShell;
 
   const avatar = (
-    <div className={shell}>
+    <div className={`${shell} relative`}>
+      <span aria-hidden>{initials}</span>
       {imageSrc ? (
-        <img src={imageSrc} alt="" className="h-full w-full object-cover" />
-      ) : (
-        initials
-      )}
+        <img src={imageSrc} alt="" className="absolute inset-0 h-full w-full object-cover" />
+      ) : null}
     </div>
   );
 

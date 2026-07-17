@@ -15,6 +15,7 @@ import {
   CHART_SCREENSHOT_PREVIEW_PANE_PADDING_PX,
   CHART_SCREENSHOT_PREVIEW_SIDE_GREY_PX,
   CHART_SCREENSHOT_PREVIEW_ZOOM_DEFAULT_PERCENT,
+  chartScreenshotFrameSize,
   chartScreenshotPreviewScale,
 } from "@/lib/chart/chart-screenshot-constants";
 import {
@@ -89,7 +90,10 @@ export function ChartScreenshotDownloadModal({
         Number.parseFloat(styles.paddingTop) + Number.parseFloat(styles.paddingBottom);
       const contentWidth = Math.max(0, pane.clientWidth - paddingX);
       const contentHeight = Math.max(0, pane.clientHeight - paddingY);
-      setFitScale(chartScreenshotPreviewScale(contentWidth, contentHeight));
+      const frame = chartScreenshotFrameSize(snapshot?.variant);
+      setFitScale(
+        chartScreenshotPreviewScale(contentWidth, contentHeight, frame.width, frame.height),
+      );
     };
 
     updateScale();
@@ -108,14 +112,16 @@ export function ChartScreenshotDownloadModal({
         root,
         chartScreenshotExportFilename(
           snapshot.ticker,
-          snapshot.variant === "keyStatsMetric"
-            ? snapshot.keyStatsMetric?.metricId
-            : snapshot.variant === "stockOverview" && snapshot.stockOverview
-              ? stockOverviewExportMetricSlug(
-                  snapshot.stockOverview.series,
-                  snapshot.stockOverview.range,
-                )
-              : undefined,
+          snapshot.variant === "portfolioAllocation"
+            ? "allocation"
+            : snapshot.variant === "keyStatsMetric"
+              ? snapshot.keyStatsMetric?.metricId
+              : snapshot.variant === "stockOverview" && snapshot.stockOverview
+                ? stockOverviewExportMetricSlug(
+                    snapshot.stockOverview.series,
+                    snapshot.stockOverview.range,
+                  )
+                : undefined,
         ),
       );
     } catch (err) {

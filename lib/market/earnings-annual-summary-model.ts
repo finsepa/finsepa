@@ -17,7 +17,35 @@ import type {
 } from "@/lib/market/stock-financials-income-table";
 import type { StockEarningsEstimatesPoint } from "@/lib/market/stock-earnings-types";
 
-/** Same four-row annual summary as the legacy table, using Financials table chrome. */
+function earningsSummaryRows(
+  revenueVals: (number | null)[],
+  revGrowth: (number | null)[],
+  epsVals: (number | null)[],
+  epsGrowth: (number | null)[],
+): IncomeStatementRowModel[] {
+  return [
+    {
+      id: "revenue",
+      label: "Revenue",
+      emphasize: true,
+      format: "usd",
+      values: revenueVals,
+      subValues: revGrowth,
+      chartingMetricId: "revenue",
+    },
+    {
+      id: "eps",
+      label: "EPS",
+      emphasize: true,
+      format: "perShare",
+      values: epsVals,
+      subValues: epsGrowth,
+      chartingMetricId: "eps",
+    },
+  ];
+}
+
+/** Annual revenue / EPS summary — growth shown under each primary value. */
 export function buildEarningsAnnualSummaryTableModel(
   annual: StockEarningsEstimatesPoint[],
 ): IncomeStatementTableModel | null {
@@ -37,45 +65,12 @@ export function buildEarningsAnnualSummaryTableModel(
   const epsVals = cols.map(displayEps);
   const epsGrowth = annualEpsGrowthSeries(cols);
 
-  const rows: IncomeStatementRowModel[] = [
-    {
-      id: "revenue",
-      label: "Revenue",
-      emphasize: true,
-      format: "usd",
-      values: revenueVals,
-      chartingMetricId: "revenue",
-    },
-    {
-      id: "revenue_growth",
-      label: "Revenue growth",
-      emphasize: false,
-      format: "pctGrowth",
-      values: revGrowth,
-    },
-    {
-      id: "eps",
-      label: "EPS",
-      emphasize: true,
-      format: "perShare",
-      values: epsVals,
-      chartingMetricId: "eps",
-    },
-    {
-      id: "eps_growth",
-      label: "EPS growth",
-      emphasize: false,
-      format: "pctGrowth",
-      values: epsGrowth,
-    },
-  ];
-
   return {
-    periodColumnHeader: "Fiscal Year",
+    periodColumnHeader: "",
     columns,
     columnPeriodEnds,
     columnIsForecast,
-    rows,
+    rows: earningsSummaryRows(revenueVals, revGrowth, epsVals, epsGrowth),
   };
 }
 
@@ -103,44 +98,11 @@ export function buildEarningsQuarterlySummaryTableModel(
   const epsVals = cols.map(displayEps);
   const epsGrowth = annualEpsGrowthSeries(cols);
 
-  const rows: IncomeStatementRowModel[] = [
-    {
-      id: "revenue",
-      label: "Revenue",
-      emphasize: true,
-      format: "usd",
-      values: revenueVals,
-      chartingMetricId: "revenue",
-    },
-    {
-      id: "revenue_growth",
-      label: "Revenue growth",
-      emphasize: false,
-      format: "pctGrowth",
-      values: revGrowth,
-    },
-    {
-      id: "eps",
-      label: "EPS",
-      emphasize: true,
-      format: "perShare",
-      values: epsVals,
-      chartingMetricId: "eps",
-    },
-    {
-      id: "eps_growth",
-      label: "EPS growth",
-      emphasize: false,
-      format: "pctGrowth",
-      values: epsGrowth,
-    },
-  ];
-
   return {
-    periodColumnHeader: "Fiscal Quarter",
+    periodColumnHeader: "",
     columns,
     columnPeriodEnds,
     columnIsForecast,
-    rows,
+    rows: earningsSummaryRows(revenueVals, revGrowth, epsVals, epsGrowth),
   };
 }

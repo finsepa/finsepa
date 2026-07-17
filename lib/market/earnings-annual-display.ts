@@ -16,14 +16,14 @@ export const EARNINGS_ANNUAL_HISTORY_MAX = 5;
 /** Forecast period labels (chart x-axis + table fiscal year row). */
 export const EARNINGS_FORECAST_LABEL_COLOR = fundamentalsBarSolidAtIndex(0);
 
-/** 4 years × 4 quarters — Estimates quarterly chart history cap. */
-export const EARNINGS_QUARTERLY_HISTORY_MAX = 16;
+/** 3 years × 4 quarters — Estimates quarterly chart history cap. */
+export const EARNINGS_QUARTERLY_HISTORY_MAX = 12;
 
-/** Forward consensus quarters on the Estimates chart (2 years). */
-export const EARNINGS_QUARTERLY_FORWARD_MAX = 8;
+/** Forward consensus quarters on the Estimates chart (1 year). */
+export const EARNINGS_QUARTERLY_FORWARD_MAX = 4;
 
-/** Forward consensus fiscal years on the Estimates chart. */
-export const EARNINGS_ANNUAL_FORWARD_MAX = 2;
+/** Forward consensus fiscal years on the Estimates chart (1 year). */
+export const EARNINGS_ANNUAL_FORWARD_MAX = 1;
 
 /** Last `EARNINGS_QUARTERLY_HISTORY_MAX` reported/historical quarters, then forward consensus quarters. */
 export function sliceLatestQuarterlyEstimates(

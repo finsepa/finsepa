@@ -1,6 +1,8 @@
 /** Logical screenshot frame (CSS px). */
 export const CHART_SCREENSHOT_WIDTH_PX = 1200;
 export const CHART_SCREENSHOT_HEIGHT_PX = 675;
+/** Allocation export — shorter so the bordered card sits closer to the title without large empty bottom. */
+export const PORTFOLIO_ALLOCATION_SCREENSHOT_HEIGHT_PX = 440;
 
 /** Export at 2× pixel density (2400×1350 file). */
 export const CHART_SCREENSHOT_EXPORT_PIXEL_RATIO = 2;
@@ -18,6 +20,16 @@ export const CHART_SCREENSHOT_HEADER_CHART_GAP_PX = 12;
 
 const CHART_SCREENSHOT_LEGEND_ROW_PX = 28;
 const CHART_SCREENSHOT_CONTENT_GAP_PX = 6;
+
+export function chartScreenshotFrameSize(variant?: string | null): {
+  width: number;
+  height: number;
+} {
+  if (variant === "portfolioAllocation") {
+    return { width: CHART_SCREENSHOT_WIDTH_PX, height: PORTFOLIO_ALLOCATION_SCREENSHOT_HEIGHT_PX };
+  }
+  return { width: CHART_SCREENSHOT_WIDTH_PX, height: CHART_SCREENSHOT_HEIGHT_PX };
+}
 
 /** Padded content area below the asset header. */
 export function chartScreenshotChartAreaSize(): { width: number; height: number } {
@@ -71,21 +83,26 @@ export function chartScreenshotPreviewDisplayScale(
 
 export const CHART_SCREENSHOT_ASPECT_RATIO = CHART_SCREENSHOT_WIDTH_PX / CHART_SCREENSHOT_HEIGHT_PX;
 
-export function chartScreenshotContentBoxSize(): { width: number; height: number } {
+export function chartScreenshotContentBoxSize(frameHeightPx = CHART_SCREENSHOT_HEIGHT_PX): {
+  width: number;
+  height: number;
+} {
   const inset = 2 * CHART_SCREENSHOT_FRAME_PADDING_PX;
   return {
     width: CHART_SCREENSHOT_WIDTH_PX - inset,
-    height: CHART_SCREENSHOT_HEIGHT_PX - inset,
+    height: frameHeightPx - inset,
   };
 }
 
 /**
- * Fit the 1200×675 export frame inside the preview pane content box.
+ * Fit the export frame inside the preview pane content box.
  * `contentWidthPx` / `contentHeightPx` should exclude the pane's own padding.
  */
 export function chartScreenshotPreviewScale(
   contentWidthPx: number,
   contentHeightPx: number,
+  frameWidthPx = CHART_SCREENSHOT_WIDTH_PX,
+  frameHeightPx = CHART_SCREENSHOT_HEIGHT_PX,
 ): number {
   const availableWidth = Math.max(
     0,
@@ -98,9 +115,9 @@ export function chartScreenshotPreviewScale(
 
   if (availableWidth <= 0) return 0.5;
 
-  const scaleByWidth = availableWidth / CHART_SCREENSHOT_WIDTH_PX;
+  const scaleByWidth = availableWidth / frameWidthPx;
   if (availableHeight <= 0) return scaleByWidth;
 
-  const scaleByHeight = availableHeight / CHART_SCREENSHOT_HEIGHT_PX;
+  const scaleByHeight = availableHeight / frameHeightPx;
   return Math.min(scaleByWidth, scaleByHeight);
 }

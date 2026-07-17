@@ -78,6 +78,7 @@ const LABEL_TO_METRIC: Partial<Record<string, ChartingMetricId>> = {
 
   Yield: "dividend_yield",
   Payout: "payout_ratio",
+  Buybacks: "buyback_yield",
 
   "Max Drawdown (5Y)": "drawdown",
   Drawdown: "drawdown",

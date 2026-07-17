@@ -36,7 +36,9 @@ export function EarningsEstimatesSummaryTable({
       model={model}
       onMetricClick={onMetricClick}
       showPeriodEndingRow={false}
+      showLabelColumnRule
       viewportScroll={false}
+      scrollAlignEnd
     />
   );
 }

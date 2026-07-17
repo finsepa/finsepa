@@ -53,10 +53,12 @@ export function PortfolioHoldingsSubTabMobileToggle({
 export function PortfolioHoldingsSubTabMobileCard({
   active,
   onChange,
+  trailing,
   children,
 }: {
   active: OverviewHoldingsSubTab;
   onChange: (tab: OverviewHoldingsSubTab) => void;
+  trailing?: ReactNode;
   children: ReactNode;
 }) {
   return (
@@ -69,7 +71,10 @@ export function PortfolioHoldingsSubTabMobileCard({
       )}
     >
       <div className="overflow-hidden px-4 py-2 md:hidden">
-        <PortfolioHoldingsSubTabMobileToggle active={active} onChange={onChange} />
+        <div className="flex items-center justify-between gap-2">
+          <PortfolioHoldingsSubTabMobileToggle active={active} onChange={onChange} />
+          {trailing}
+        </div>
       </div>
       {children}
     </div>

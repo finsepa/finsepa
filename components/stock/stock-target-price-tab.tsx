@@ -6,6 +6,10 @@ import { formatUsdPrice } from "@/lib/market/key-stats-basic-format";
 import { normalizeAnalystLabel, toneForConsensusLabel } from "@/lib/market/analyst-consensus-tone";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
 import type { StockAnalystDistributionBucket, StockTargetPricePayload } from "@/lib/market/stock-target-price-types";
+import {
+  fetchStockTargetPricePayloadClient,
+  peekStockTargetPricePayloadClient,
+} from "@/lib/market/stock-target-price-client";
 
 const DISTRIBUTION_FILLS = ["#16A34A", "#84CC16", "#CA8A04", "#FB923C", "#DC2626"] as const;
 
@@ -198,23 +202,41 @@ function normalizePayload(json: StockTargetPricePayload | null): StockTargetPric
   return { ...json, analystDistribution };
 }
 
-export function StockTargetPriceTab({ ticker }: { ticker: string }) {
+export function StockTargetPriceTab({
+  ticker,
+  initialPerformance = null,
+}: {
+  ticker: string;
+  initialPerformance?: StockPerformance | null;
+}) {
   const sym = ticker.trim().toUpperCase();
-  const [loading, setLoading] = useState(true);
-  const [targets, setTargets] = useState<StockTargetPricePayload | null>(null);
-  const [perf, setPerf] = useState<StockPerformance | null>(null);
+  const cachedTargets = peekStockTargetPricePayloadClient(sym);
+  const [loading, setLoading] = useState(() => !cachedTargets);
+  const [targets, setTargets] = useState<StockTargetPricePayload | null>(() => normalizePayload(cachedTargets));
+  const [perf, setPerf] = useState<StockPerformance | null>(() => initialPerformance);
 
   useEffect(() => {
+    const controller = new AbortController();
     let cancelled = false;
     async function load() {
+      if (initialPerformance) setPerf(initialPerformance);
+      const cached = peekStockTargetPricePayloadClient(sym);
+      if (cached) {
+        setTargets(normalizePayload(cached));
+        setLoading(false);
+        return;
+      }
       setLoading(true);
       try {
-        const [tpRes, perfRes] = await Promise.all([
-          fetch(`/api/stocks/${encodeURIComponent(sym)}/target-price`, { credentials: "include" }),
-          fetch(`/api/stocks/${encodeURIComponent(sym)}/performance`, { credentials: "include" }),
+        const [raw, perfJson] = await Promise.all([
+          fetchStockTargetPricePayloadClient(sym, controller.signal),
+          initialPerformance
+            ? Promise.resolve(initialPerformance)
+            : fetch(`/api/stocks/${encodeURIComponent(sym)}/performance`, {
+                credentials: "include",
+                signal: controller.signal,
+              }).then(async (res) => (res.ok ? ((await res.json()) as StockPerformance) : null)),
         ]);
-        const raw = tpRes.ok ? ((await tpRes.json()) as StockTargetPricePayload) : null;
-        const perfJson = perfRes.ok ? ((await perfRes.json()) as StockPerformance) : null;
         if (!cancelled) {
           setTargets(normalizePayload(raw));
           setPerf(perfJson);
@@ -231,8 +253,9 @@ export function StockTargetPriceTab({ ticker }: { ticker: string }) {
     void load();
     return () => {
       cancelled = true;
+      controller.abort();
     };
-  }, [sym]);
+  }, [sym, initialPerformance]);
 
   const lastPrice = perf?.price != null && Number.isFinite(perf.price) ? perf.price : null;
   const consensus = targets?.consensusTarget ?? null;

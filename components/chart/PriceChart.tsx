@@ -66,6 +66,11 @@ import {
   shouldHideMobileYAxisLabels,
 } from "@/lib/chart/mobile-plot-horizontal-gutter";
 import {
+  fundamentalsBarEnterProgress,
+  prefersReducedFundamentalsBarMotion,
+  runFundamentalsBarEnterAnimation,
+} from "@/lib/chart/fundamentals-bar-enter-animation";
+import {
   readStock1DSessionBarsFromStorage,
   writeStock1DSessionBarsToStorage,
 } from "@/lib/chart/stock-1d-session-bars-storage";
@@ -682,6 +687,17 @@ function ymdToBarTime(ymd: string, data: readonly { time: UTCTimestamp }[]): UTC
   return t == null ? null : (t as UTCTimestamp);
 }
 
+/** Left-to-right reveal clip — matches Metrics / Multichart line enter animation. */
+function applyHoldingsLineRevealClip(el: HTMLElement | null, progress: number): void {
+  if (!el) return;
+  if (progress >= 1) {
+    el.style.clipPath = "";
+    return;
+  }
+  const rightInset = (1 - progress) * 100;
+  el.style.clipPath = `inset(0 ${rightInset}% 0 0)`;
+}
+
 function tradeMarkersForChart(
   tradeMarkers: readonly HoldingsTradeMarker[],
   data: readonly { time: UTCTimestamp }[],
@@ -1183,6 +1199,10 @@ export function PriceChart({
   const holdingsHoverAxisLabelRef = useRef<HTMLSpanElement>(null);
   const holdingsPeriodAxisRowRef = useRef<HTMLDivElement>(null);
   const holdingsClearHoverDomRef = useRef<(() => void) | null>(null);
+  const holdingsLineEnterCancelRef = useRef<(() => void) | null>(null);
+  const holdingsLineEnterDoneRef = useRef(true);
+  const holdingsLineAnimKeyRef = useRef("");
+  const holdingsDeferredMarkersRef = useRef<SeriesMarker<UTCTimestamp>[]>([]);
   const tooltipByDateRef = useRef<Map<string, string[]>>(new Map());
   const dimOverlayRef = useRef<HTMLDivElement>(null);
   const stock1DLiveSession = useMemo(
@@ -2334,6 +2354,10 @@ export function PriceChart({
         chart.unsubscribeCrosshairMove(onCrosshairMove);
       }
       markersRef.current = null;
+      holdingsLineEnterCancelRef.current?.();
+      holdingsLineEnterCancelRef.current = null;
+      holdingsLineEnterDoneRef.current = true;
+      applyHoldingsLineRevealClip(wrapRef.current, 1);
       const sUnmount = seriesRef.current;
       if (sUnmount) {
         removeScaleBoundsPriceLines(sUnmount, scaleTopPriceLineRef, scaleBottomPriceLineRef);
@@ -2847,9 +2871,52 @@ export function PriceChart({
       }
 
       if (holdingsQuarterBands.length > 0) {
+        holdingsLineEnterCancelRef.current?.();
+        holdingsLineEnterCancelRef.current = null;
+        holdingsLineEnterDoneRef.current = true;
+        applyHoldingsLineRevealClip(wrapRef.current, 1);
         markersRef.current?.setMarkers([]);
       } else {
-        markersRef.current?.setMarkers(tradeMarkersForChart(tradeMarkers, data));
+        const chartMarkers = tradeMarkersForChart(tradeMarkers, data);
+        holdingsDeferredMarkersRef.current = chartMarkers;
+        const lineAnimKey = `${symbol}:${range}:${data.length}:${data[0]?.time ?? ""}:${data.at(-1)?.time ?? ""}`;
+        const shouldAnimateHoldingsLine =
+          ready &&
+          !loading &&
+          !screenshotPreviewMode &&
+          data.length >= 2 &&
+          !prefersReducedFundamentalsBarMotion();
+
+        if (shouldAnimateHoldingsLine && lineAnimKey !== holdingsLineAnimKeyRef.current) {
+          holdingsLineAnimKeyRef.current = lineAnimKey;
+          holdingsLineEnterCancelRef.current?.();
+          holdingsLineEnterDoneRef.current = false;
+          markersRef.current?.setMarkers([]);
+          applyHoldingsLineRevealClip(wrapRef.current, 0);
+          holdingsLineEnterCancelRef.current = runFundamentalsBarEnterAnimation({
+            periodCount: 1,
+            onFrame: (elapsedMs) => {
+              applyHoldingsLineRevealClip(
+                wrapRef.current,
+                fundamentalsBarEnterProgress(0, 1, elapsedMs),
+              );
+            },
+            onComplete: () => {
+              holdingsLineEnterDoneRef.current = true;
+              applyHoldingsLineRevealClip(wrapRef.current, 1);
+              markersRef.current?.setMarkers(holdingsDeferredMarkersRef.current);
+              holdingsLineEnterCancelRef.current = null;
+            },
+          });
+        } else if (shouldAnimateHoldingsLine && !holdingsLineEnterDoneRef.current) {
+          // Trade markers may arrive while the line is still revealing — defer until complete.
+        } else {
+          holdingsLineEnterCancelRef.current?.();
+          holdingsLineEnterCancelRef.current = null;
+          holdingsLineEnterDoneRef.current = true;
+          applyHoldingsLineRevealClip(wrapRef.current, 1);
+          markersRef.current?.setMarkers(chartMarkers);
+        }
       }
       requestAnimationFrame(() => syncQuarterBandLayoutsRef.current?.());
       // Portfolio chart: hide top/bottom plot border lines (keep right-axis numbers).
@@ -3027,7 +3094,7 @@ export function PriceChart({
         });
       });
     }
-  }, [chartPoints, liveSpotUsd, lastPointStroke, holdingsStyle, tradeMarkers, holdingsQuarterBands, costBasisPrice, kind, series, loading, periodAxisSyncOptions, range, fitChartTimeScale, stock1DLiveSession, liveSessionMinute]);
+  }, [chartPoints, liveSpotUsd, lastPointStroke, holdingsStyle, tradeMarkers, holdingsQuarterBands, costBasisPrice, kind, series, loading, ready, periodAxisSyncOptions, range, fitChartTimeScale, stock1DLiveSession, liveSessionMinute, symbol, screenshotPreviewMode]);
 
   useEffect(() => {
     if (!stock1DLiveSession || holdingsStyle) return;

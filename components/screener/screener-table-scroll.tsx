@@ -6,6 +6,7 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  type CSSProperties,
   type ReactNode,
 } from "react";
 
@@ -127,14 +128,18 @@ function FinancialsViewportScrollFrame({
         FINANCIALS_TABLE_VIEWPORT_SCROLLBAR_CLASS,
         // Match sticky label col (`STOCK_TABLE_LABEL_COL_WIDTH`) so the left fade starts at TTM, not over labels.
         canScrollX &&
-          "scroll-fade-effect-x [--mask-width:2.5rem] [--mask-offset-left:14rem] [--scroll-buffer:1.5rem]",
+          "scroll-fade-effect-x [--mask-width:2.5rem] [--scroll-buffer:1.5rem]",
         !embeddedInMobileCard && SCREENER_TABLE_OUTER_BORDER_CLASS,
         !embeddedInMobileCard && SCREENER_TABLE_MOBILE_SURFACE_CLASS,
         embeddedInMobileCard &&
           "max-md:rounded-none max-md:border-0 max-md:bg-transparent max-md:shadow-none",
         className,
       )}
-      style={{ maxHeight: maxHeightPx ?? "var(--financials-table-max-h)" }}
+      style={{
+        maxHeight: maxHeightPx ?? "var(--financials-table-max-h)",
+        // Match sticky label col (`STOCK_TABLE_LABEL_COL_WIDTH`) so the left fade starts after labels.
+        ...(canScrollX ? ({ ["--mask-offset-left" as string]: "14rem" } as CSSProperties) : null),
+      }}
     >
       {children}
     </div>
@@ -157,6 +162,12 @@ export function ScreenerTableScroll({
   tableMinWidthPx,
   /** Parent {@link ScreenerStocksSubTabMobileCard} already provides mobile card chrome. */
   embeddedInMobileCard = false,
+  /** Pin horizontal scroll to the end (latest / forecast columns) on mount and content change. */
+  scrollAlignEnd = false,
+  /** Remount/pin key — e.g. period mode or column count. */
+  scrollAlignKey,
+  /** Min inner width on small screens only — keeps columns from squashing when `scrollAlignEnd`. */
+  mobileTableMinWidthPx,
 }: {
   children: ReactNode;
   className?: string;
@@ -165,21 +176,81 @@ export function ScreenerTableScroll({
   viewportScroll?: boolean;
   tableMinWidthPx?: number;
   embeddedInMobileCard?: boolean;
+  scrollAlignEnd?: boolean;
+  scrollAlignKey?: string | number;
+  mobileTableMinWidthPx?: number;
 }) {
   const scrollWide = mobileScroll || (tableMinWidthPx != null && tableMinWidthPx > 0);
   const useViewportScroll = viewportScroll && scrollWide;
   /** Horizontal pan on small screens only — avoid `overflow-x` on desktop so sticky headers work in `<main>`. */
   const mobileHorizontalPan = mobileScroll && tableMinWidthPx == null;
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const pinScrollEnd = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollLeft = Math.max(0, el.scrollWidth - el.clientWidth);
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!scrollAlignEnd || useViewportScroll) return;
+    pinScrollEnd();
+    const raf1 = requestAnimationFrame(() => {
+      pinScrollEnd();
+      requestAnimationFrame(pinScrollEnd);
+    });
+    return () => cancelAnimationFrame(raf1);
+  }, [scrollAlignEnd, scrollAlignKey, useViewportScroll, pinScrollEnd, children]);
+
+  useEffect(() => {
+    if (!scrollAlignEnd || useViewportScroll) return;
+    const el = scrollRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      // Keep the end pinned while the table is still at (or beyond) the previous end —
+      // avoids fighting the user after they scroll left to older columns.
+      const max = Math.max(0, el.scrollWidth - el.clientWidth);
+      if (el.scrollLeft >= max - 2) pinScrollEnd();
+    });
+    ro.observe(el);
+    const first = el.firstElementChild;
+    if (first) ro.observe(first);
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) pinScrollEnd();
+      },
+      { threshold: 0 },
+    );
+    io.observe(el);
+    return () => {
+      ro.disconnect();
+      io.disconnect();
+    };
+  }, [scrollAlignEnd, scrollAlignKey, useViewportScroll, pinScrollEnd, children]);
+
+  const innerStyle =
+    tableMinWidthPx != null || mobileTableMinWidthPx != null
+      ? ({
+          ...(tableMinWidthPx != null ? { minWidth: tableMinWidthPx } : undefined),
+          ...(mobileTableMinWidthPx != null
+            ? { "--stock-table-mobile-min-w": `${mobileTableMinWidthPx}px` }
+            : undefined),
+        } as CSSProperties)
+      : undefined;
 
   const inner = (
     <div
       className={cn(
         "w-full",
-        tableMinWidthPx == null && "min-w-0 max-w-full",
-        mobileScroll && tableMinWidthPx == null && "max-md:min-w-[720px]",
+        tableMinWidthPx == null && mobileTableMinWidthPx == null && "min-w-0 max-w-full",
+        mobileScroll &&
+          tableMinWidthPx == null &&
+          mobileTableMinWidthPx == null &&
+          "max-md:min-w-[720px]",
+        mobileTableMinWidthPx != null && "max-md:min-w-[var(--stock-table-mobile-min-w)]",
         minWidthClassName,
       )}
-      style={tableMinWidthPx != null ? { minWidth: tableMinWidthPx } : undefined}
+      style={innerStyle}
     >
       {children}
     </div>
@@ -195,13 +266,24 @@ export function ScreenerTableScroll({
 
   return (
     <div
+      ref={scrollRef}
       className={cn(
         "w-full min-w-0 max-w-full",
         !embeddedInMobileCard && SCREENER_TABLE_OUTER_BORDER_CLASS,
-        !embeddedInMobileCard && SCREENER_TABLE_MOBILE_SURFACE_CLASS,
+        !embeddedInMobileCard &&
+          cn(
+            "max-md:rounded-2xl max-md:bg-white",
+            MOBILE_CARD_SURFACE_CLASS,
+            !scrollAlignEnd && "max-md:overflow-hidden",
+          ),
         embeddedInMobileCard &&
           "max-md:rounded-none max-md:border-0 max-md:bg-transparent max-md:shadow-none",
-        mobileHorizontalPan ? "mobile-scroll-x" : undefined,
+        // `mobile-scroll-x` is mobile-only in CSS; earnings summary needs pan on all breakpoints.
+        scrollAlignEnd
+          ? "overflow-x-auto overflow-y-hidden overscroll-x-contain [-webkit-overflow-scrolling:touch] [scrollbar-width:thin] [scrollbar-color:#A1A1AA_transparent] max-md:[-ms-overflow-style:none] max-md:[scrollbar-width:none]"
+          : mobileHorizontalPan
+            ? "mobile-scroll-x"
+            : undefined,
         className,
       )}
     >

@@ -42,6 +42,10 @@ export type AllocationDonutChartProps = {
   chartSizePx?: number;
   /** Space reserved around the plot for external slice labels (defaults to 36px). */
   badgeOverflowPadPx?: number;
+  /** Inner hole radius (screen px). Defaults to the avatar-center sizing. */
+  centerHoleRadiusPx?: number;
+  /** External slice label pills (defaults to true). */
+  showExternalLabels?: boolean;
 };
 
 type DonutGeometry = { rOut: number; rIn: number; strokeWidth: number };
@@ -60,8 +64,9 @@ function snapSvg(n: number): number {
   return Math.round(n * 1000) / 1000;
 }
 
-function resolveDonutGeometry(chartSizePx: number): DonutGeometry {
+function resolveDonutGeometry(chartSizePx: number, centerHoleRadiusPx?: number): DonutGeometry {
   const innerEdgeRadiusPx =
+    centerHoleRadiusPx ??
     DONUT_CENTER_AVATAR_PX / 2 + DONUT_CENTER_RING_PX + DONUT_INNER_WHITESPACE_PX;
   const rIn = snapSvg((innerEdgeRadiusPx * 100) / chartSizePx);
   const strokeWidth = RING_THICKNESS_VB;
@@ -104,7 +109,7 @@ function donutSlicePath(cx: number, cy: number, rOuter: number, rInner: number, 
 function formatBadgeTicker(symbol: string): string {
   const s = symbol.trim();
   if (!s || s.toLowerCase() === "other") return "Other";
-  return s.length > 8 ? `${s.slice(0, 7)}…` : s;
+  return s.length > 14 ? `${s.slice(0, 13)}…` : s;
 }
 
 function SliceExternalLabel({
@@ -258,9 +263,14 @@ export function AllocationDonutChart({
   center,
   chartSizePx = 300,
   badgeOverflowPadPx = BADGE_OVERFLOW_PAD_PX,
+  centerHoleRadiusPx,
+  showExternalLabels = true,
 }: AllocationDonutChartProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
-  const geometry = useMemo(() => resolveDonutGeometry(chartSizePx), [chartSizePx]);
+  const geometry = useMemo(
+    () => resolveDonutGeometry(chartSizePx, centerHoleRadiusPx),
+    [chartSizePx, centerHoleRadiusPx],
+  );
   const labelRadiusVb = geometry.rOut + LABEL_RADIUS_OFFSET_VB;
 
   const labelSlices = useMemo(() => buildSliceGeometries(rows), [rows]);
@@ -286,22 +296,24 @@ export function AllocationDonutChart({
             onHoverIndexChange={setHoveredIndex}
           />
         </div>
-        {labelSlices.map(({ row, i, midA, showLabel }) => {
-          const visible = showLabel || hoveredIndex === i;
-          if (!visible) return null;
-          const isHovered = hoveredIndex === i;
-          const isDimmed = hoveredIndex !== null && !isHovered;
-          return (
-            <SliceExternalLabel
-              key={`label-${row.id}-${i}`}
-              row={row}
-              midA={midA}
-              labelRadiusVb={labelRadiusVb}
-              isHovered={isHovered}
-              isDimmed={isDimmed}
-            />
-          );
-        })}
+        {showExternalLabels
+          ? labelSlices.map(({ row, i, midA, showLabel }) => {
+              const visible = showLabel || hoveredIndex === i;
+              if (!visible) return null;
+              const isHovered = hoveredIndex === i;
+              const isDimmed = hoveredIndex !== null && !isHovered;
+              return (
+                <SliceExternalLabel
+                  key={`label-${row.id}-${i}`}
+                  row={row}
+                  midA={midA}
+                  labelRadiusVb={labelRadiusVb}
+                  isHovered={isHovered}
+                  isDimmed={isDimmed}
+                />
+              );
+            })
+          : null}
         {center ? (
           <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
             {center}

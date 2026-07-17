@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 
 const outlineButtonClass = cn(
   secondaryOutlineButtonClassName,
-  "font-['Inter'] text-[14px] font-normal leading-5 active:bg-white focus-visible:ring-neutral-900/10",
+  "min-w-[76px] gap-1.5 overflow-hidden whitespace-nowrap px-3 font-['Inter'] text-[14px] font-normal leading-5 active:bg-white focus-visible:ring-neutral-900/10",
 );
 
 function firstPartyEarningsDocumentUrls(
@@ -106,12 +106,12 @@ export function EarningsReportRowActions({ row, listingTicker }: Props) {
             onClick={() => setPreview({ url: slidesUrl!, title: "Earnings presentation" })}
           >
             <Presentation className="h-4 w-4 shrink-0 text-[#52525B]" aria-hidden />
-            <span>Slides</span>
+            <span className="shrink-0">Slides</span>
           </ActionButton>
         ) : (
           <ActionDisabled label={slidesDisabledLabel}>
             <Presentation className="h-4 w-4 shrink-0" aria-hidden />
-            <span>Slides</span>
+            <span className="shrink-0">Slides</span>
           </ActionDisabled>
         )}
         {released && canPreview(filingsUrl) ? (
@@ -120,12 +120,12 @@ export function EarningsReportRowActions({ row, listingTicker }: Props) {
             onClick={() => setPreview({ url: filingsUrl!, title: "Quarterly report" })}
           >
             <FileSearch className="h-4 w-4 shrink-0 text-[#52525B]" aria-hidden />
-            <span>Filings</span>
+            <span className="shrink-0">Filings</span>
           </ActionButton>
         ) : (
           <ActionDisabled label={filingsDisabledLabel}>
             <FileSearch className="h-4 w-4 shrink-0" aria-hidden />
-            <span>Filings</span>
+            <span className="shrink-0">Filings</span>
           </ActionDisabled>
         )}
       </div>

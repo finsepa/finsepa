@@ -24,6 +24,11 @@ export type IncomeStatementRowModel = {
   emphasize: boolean;
   format: IncomeStatementValueFormat;
   values: (number | null)[];
+  /**
+   * Optional secondary values shown under the primary cell (e.g. YoY growth under Revenue / EPS
+   * on the Earnings estimates summary). Same length as `values`; rendered as `pctGrowth`.
+   */
+  subValues?: (number | null)[];
   /** When set, Financials label opens the same fundamentals chart modal as Overview Key Stats. */
   chartingMetricId?: ChartingMetricId;
 };
@@ -81,10 +86,28 @@ export function reverseIncomeStatementTableColumns(
       const annualValues = order.map((i) => annualBase[i] ?? null);
       const ttmValue =
         hasTtm && ttmValueIndex >= 0 ? (row.values[ttmValueIndex] ?? null) : null;
+      const subAnnualBase =
+        row.subValues == null
+          ? null
+          : hasTtm && placement === "leading"
+            ? row.subValues.slice(1)
+            : row.subValues;
+      const subAnnualValues =
+        subAnnualBase == null ? null : order.map((i) => subAnnualBase[i] ?? null);
+      const subTtmValue =
+        row.subValues != null && hasTtm && ttmValueIndex >= 0
+          ? (row.subValues[ttmValueIndex] ?? null)
+          : null;
       return {
         ...row,
         // Leading TTM so values align with header order TTM → years.
         values: hasTtm ? [ttmValue, ...annualValues] : annualValues,
+        subValues:
+          subAnnualValues == null
+            ? undefined
+            : hasTtm
+              ? [subTtmValue, ...subAnnualValues]
+              : subAnnualValues,
       };
     }),
   };

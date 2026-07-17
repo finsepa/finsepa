@@ -55,7 +55,10 @@ export default async function StockTickerPage({ params, searchParams }: PageProp
 
   const [initialPageData, earningsTabPayload] = await Promise.all([
     loadStockPageInitialData(routeTicker),
-    tabFromUrl === "earnings" ? fetchStockEarningsTabPayload(routeTicker) : Promise.resolve(null),
+    // Preview seed for fast first paint — client upgrades to full (SEC/IR docs + BMO/AMC) after.
+    tabFromUrl === "earnings"
+      ? fetchStockEarningsTabPayload(routeTicker, { preview: true })
+      : Promise.resolve(null),
   ]);
   if (!initialPageData) {
     notFound();

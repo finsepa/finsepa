@@ -121,7 +121,7 @@ function MobileNewsCard({
     >
       <p className="flex shrink-0 items-center gap-1.5 truncate text-[12px] leading-4 text-[#71717A]">
         <span className="font-medium text-[#09090B]">{item.source}</span>
-        <span className="inline-block size-2 shrink-0 rounded-full bg-[#E4E4E7]" aria-hidden />
+        <span className="inline-block size-1 shrink-0 rounded-full bg-[#E4E4E7]" aria-hidden />
         {formatPublishedLabel(item.publishedAt)}
       </p>
       <h3 className={cn("mt-2 shrink-0 group-hover:underline", MOBILE_NEWS_TITLE_CLASS)}>
@@ -398,7 +398,7 @@ function LatestNewsInner({
               >
                 <div className="mb-1 flex flex-wrap items-center gap-1.5">
                   <span className="text-[12px] text-[#71717A]">{formatPublishedLabel(item.publishedAt)}</span>
-                  <span className="inline-block size-2 shrink-0 rounded-full bg-[#E4E4E7]" aria-hidden />
+                  <span className="inline-block size-1 shrink-0 rounded-full bg-[#E4E4E7]" aria-hidden />
                   <span className="text-[12px] font-medium text-[#09090B]">{item.source}</span>
                 </div>
                 <h3 className="line-clamp-2 text-[14px] font-semibold leading-5 text-[#09090B] group-hover:underline">

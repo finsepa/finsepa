@@ -18,6 +18,22 @@ export const EARNINGS_CARD_PRIOR_LINE_CLASS =
 /** Forward / consensus-only periods in Estimates (chart bars, table columns, summary cards). */
 export const EARNINGS_FORECAST_OPACITY_CLASS = "opacity-60";
 
+/** Soft diagonal hatch behind forecast chart band and table columns. */
+export const EARNINGS_FORECAST_BAND_BG_STYLE: CSSProperties = {
+  backgroundColor: "rgba(113, 113, 122, 0.025)",
+  backgroundImage:
+    "repeating-linear-gradient(45deg, rgba(113, 113, 122, 0.055) 0, rgba(113, 113, 122, 0.055) 1px, transparent 1px, transparent 9px)",
+};
+
+/** Left edge of the forecast band (chart + first forecast table column). */
+export const EARNINGS_FORECAST_BAND_EDGE_STYLE: CSSProperties = {
+  borderLeft: "1px dashed rgba(161, 161, 170, 0.35)",
+};
+
+/** Opaque Forecast pill — chart band + table overlay. */
+export const EARNINGS_FORECAST_BADGE_CLASS =
+  "pointer-events-none whitespace-nowrap rounded-md border border-[#E4E4E7] bg-white px-2 py-0.5 font-['Inter'] text-[10px] font-semibold uppercase tracking-wider text-[#A1A1AA] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]";
+
 /** Diagonal hatch fill for forward estimate bars in the Estimates chart. */
 export function earningsForecastBarFillStyle(barColor: string): CSSProperties {
   const { fill, line, border } = earningsForecastHatchColors(barColor);

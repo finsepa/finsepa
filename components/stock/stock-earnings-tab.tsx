@@ -10,12 +10,9 @@ import {
   displayEps,
   displayRevenueUsd,
   isAnnualForecastPoint,
-  sliceLatestAnnualEstimates,
   sliceLatestQuarterlyEstimates,
 } from "@/lib/market/earnings-annual-display";
-import type { FundamentalsSeriesMode } from "@/lib/market/charting-series-types";
 import { pctChange } from "@/lib/market/stock-financials-annual-slice";
-import { formatUsdCompact } from "@/lib/market/key-stats-basic-format";
 import type {
   StockEarningsEstimatesChart,
   StockEarningsEstimatesPoint,
@@ -24,153 +21,44 @@ import type {
 } from "@/lib/market/stock-earnings-types";
 import { reportedRowMissingEarningsDocuments } from "@/lib/market/earnings-document-url";
 import { buildReportsTableRows } from "@/lib/market/enrich-earnings-history-estimates";
-import { fetchStockEarningsTabPayloadClient } from "@/lib/market/stock-earnings-tab-client";
+import { fetchStockEarningsTabPayloadClient, peekStockEarningsTabPayloadClient } from "@/lib/market/stock-earnings-tab-client";
+import { StockEarningsTabLoading } from "@/components/stock/stock-earnings-tab-loading";
 import { SCREENER_TABLE_HEADER_STICKY_CLASS, ScreenerTableScroll } from "@/components/screener/screener-table-scroll";
 import { STOCK_TABLE_LABEL_COL_WIDTH } from "@/components/stock/stock-income-statement-table";
 import { cn } from "@/lib/utils";
-import {
-  EARNINGS_CARD_LABEL_CLASS,
-  EARNINGS_CARD_PRIOR_LINE_CLASS,
-  EARNINGS_CARD_VALUE_CLASS,
-} from "@/components/stock/earnings-card-styles";
-
-function formatEpsEstimate(n: number): string {
-  return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-function formatMetricSummaryValue(raw: number | null, metric: EstimatesMetric): string | null {
-  if (raw == null || !Number.isFinite(raw)) return null;
-  return metric === "revenue" ? formatUsdCompact(raw) : formatEpsEstimate(raw);
-}
 
 function metricSummaryValueFromPoint(p: StockEarningsEstimatesPoint, metric: EstimatesMetric): number | null {
   return metric === "revenue" ? displayRevenueUsd(p) : displayEps(p);
 }
 
-type EarningsMetricSummarySlot = {
-  label: string;
-  value: string | null;
-  changePct: number | null;
-  priorValueDisplay: string | null;
-};
-
 function formatSummaryChangePct(pct: number): string {
   return `${pct > 0 ? "+" : ""}${pct.toFixed(2)}%`;
 }
 
-function summaryPriorPeriod(
+function summaryPriorChangePct(
   cols: StockEarningsEstimatesPoint[],
   index: number,
   metric: EstimatesMetric,
-): Pick<EarningsMetricSummarySlot, "changePct" | "priorValueDisplay"> {
-  if (index <= 0 || index >= cols.length) {
-    return { changePct: null, priorValueDisplay: null };
-  }
+): number | null {
+  if (index <= 0 || index >= cols.length) return null;
   const cur = metricSummaryValueFromPoint(cols[index]!, metric);
   const prev = metricSummaryValueFromPoint(cols[index - 1]!, metric);
-  if (cur == null || prev == null) {
-    return { changePct: null, priorValueDisplay: null };
-  }
-  return {
-    changePct: pctChange(cur, prev),
-    priorValueDisplay: formatMetricSummaryValue(prev, metric),
-  };
+  if (cur == null || prev == null) return null;
+  return pctChange(cur, prev);
 }
 
-/** Middle + right summary cards — same slice + display helpers as Estimates summary table / chart. */
-function buildEarningsMetricSummarySlots(
+/** QoQ change for the next forward consensus period vs prior column. */
+function upcomingEstimateChangePct(
   chart: StockEarningsEstimatesChart | null | undefined,
-  period: FundamentalsSeriesMode,
   metric: EstimatesMetric,
-  upcomingRevenueFallback: string | null,
-  upcomingEpsFallback: string | null,
-): [EarningsMetricSummarySlot, EarningsMetricSummarySlot] {
-  const metricTitle = metric === "revenue" ? "Revenue" : "EPS";
-  const upcomingFallback = metric === "revenue" ? upcomingRevenueFallback : upcomingEpsFallback;
-
-  if (period === "quarterly" && chart?.quarterly?.length) {
-    const seenForwardLabels = new Set<string>();
-    const forward = sliceLatestQuarterlyEstimates(chart.quarterly)
-      .filter((p) => isAnnualForecastPoint(p))
-      .filter((p) => {
-        const key = p.label?.trim() || p.sortKey;
-        if (seenForwardLabels.has(key)) return false;
-        seenForwardLabels.add(key);
-        return true;
-      })
-      .slice(0, 2);
-    const sliced = sliceLatestQuarterlyEstimates(chart.quarterly);
-    const slot = (p: (typeof forward)[number] | undefined, idx: number): EarningsMetricSummarySlot => {
-      if (!p) return { label: metricTitle, value: null, changePct: null, priorValueDisplay: null };
-      const periodLabel = p.label?.trim();
-      const label = periodLabel ? `${metricTitle} ${periodLabel}` : metricTitle;
-      const colIndex = sliced.findIndex((row) => row.sortKey === p.sortKey);
-      const prior = colIndex >= 0 ? summaryPriorPeriod(sliced, colIndex, metric) : { changePct: null, priorValueDisplay: null };
-      return {
-        label,
-        value:
-          formatMetricSummaryValue(metricSummaryValueFromPoint(p, metric), metric) ??
-          (idx === 0 ? upcomingFallback : null),
-        ...prior,
-      };
-    };
-    return [slot(forward[0], 0), slot(forward[1], 1)];
-  }
-
-  const cols = sliceLatestAnnualEstimates(chart?.annual ?? []);
-  const forward = cols.filter((p) => isAnnualForecastPoint(p)).slice(0, 2);
-  const slotForPoint = (
-    p: StockEarningsEstimatesPoint | undefined,
-    idx: number,
-  ): EarningsMetricSummarySlot => {
-    if (!p) {
-      return { label: metricTitle, value: null, changePct: null, priorValueDisplay: null };
-    }
-    const colIndex = cols.findIndex((row) => row.sortKey === p.sortKey);
-    const value = formatMetricSummaryValue(metricSummaryValueFromPoint(p, metric), metric);
-    const prior =
-      colIndex >= 0 ? summaryPriorPeriod(cols, colIndex, metric) : { changePct: null, priorValueDisplay: null };
-    return {
-      label: `${metricTitle} ${p.label}`,
-      value: value ?? (idx === 0 ? upcomingFallback : null),
-      ...prior,
-    };
-  };
-
-  return [slotForPoint(forward[0], 0), slotForPoint(forward[1], 1)];
-}
-
-function EarningsMetricSummaryCard({ slot }: { slot: EarningsMetricSummarySlot }) {
-  const main = slot.value != null && String(slot.value).trim() !== "" ? String(slot.value).trim() : null;
-  const changePct =
-    slot.changePct != null && Number.isFinite(slot.changePct) ? slot.changePct : null;
-  const prior =
-    slot.priorValueDisplay != null && String(slot.priorValueDisplay).trim() !== ""
-      ? String(slot.priorValueDisplay).trim()
-      : null;
-
-  if (!main) {
-    return <p className={`${EARNINGS_CARD_VALUE_CLASS} tabular-nums`}>—</p>;
-  }
-
-  return (
-    <div className="mt-0.5 flex min-w-0 flex-col items-start gap-0.5">
-      <p className={`${EARNINGS_CARD_VALUE_CLASS} tabular-nums`}>
-        {main}
-        {changePct != null ? (
-          <span
-            className={cn(
-              "ml-1.5 text-[18px] font-semibold leading-7",
-              changePct > 0 ? "text-[#16A34A]" : changePct < 0 ? "text-[#DC2626]" : "text-[#71717A]",
-            )}
-          >
-            ({formatSummaryChangePct(changePct)})
-          </span>
-        ) : null}
-      </p>
-      {prior ? <p className={EARNINGS_CARD_PRIOR_LINE_CLASS}>from {prior}</p> : null}
-    </div>
-  );
+): number | null {
+  const sliced = sliceLatestQuarterlyEstimates(chart?.quarterly ?? []);
+  if (!sliced.length) return null;
+  const forward = sliced.filter((p) => isAnnualForecastPoint(p));
+  const upcoming = forward[0];
+  if (!upcoming) return null;
+  const colIndex = sliced.findIndex((row) => row.sortKey === upcoming.sortKey);
+  return summaryPriorChangePct(sliced, colIndex, metric);
 }
 
 /** Screener-style empty cell (hyphen, not em dash). */
@@ -187,10 +75,6 @@ function reportDayLineFromDisplay(reportDateDisplay: string | null | undefined):
   return noYear || raw;
 }
 
-/** Matches `components/screener/index-cards.tsx` card chrome. */
-const SCREENER_INDEX_CARD_CLASS =
-  "overflow-hidden rounded-xl border border-[#E4E4E7] bg-white px-4 py-4 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition hover:shadow-[0px_2px_4px_0px_rgba(10,10,10,0.08)]";
-
 const EARNINGS_MONTH_ABBREV = [
   "Jan",
   "Feb",
@@ -206,11 +90,11 @@ const EARNINGS_MONTH_ABBREV = [
   "Dec",
 ] as const;
 
-/** Total meter bars — 12 bars, 1 bar ≈ 1 week (~one quarter). */
+/** Total meter bars — 12 bars, 1 bar ≈ 1 week (~one quarter window). */
 const EARNINGS_COUNTDOWN_BARS = 12;
 
 type EarningsCountdownInfo = {
-  /** e.g. "Q3: Aug 26". */
+  /** e.g. "Q3, Aug 26". */
   nextEarningsLabel: string;
   daysLeft: number;
 };
@@ -238,7 +122,7 @@ function quarterFromFiscalPeriodLabel(fiscalPeriodLabel: string | null | undefin
   return m ? m[1]!.toUpperCase() : null;
 }
 
-/** e.g. "Q3: Aug 26" — quarter when known, otherwise just "Aug 26". */
+/** e.g. "Q3, Aug 26" — quarter when known, otherwise just "Aug 26". */
 function formatNextEarningsLabel(
   monthIdx: number,
   day: string,
@@ -246,26 +130,53 @@ function formatNextEarningsLabel(
 ): string {
   const datePart = `${EARNINGS_MONTH_ABBREV[monthIdx]!} ${day}`;
   const quarter = quarterFromFiscalPeriodLabel(fiscalPeriodLabel);
-  return quarter ? `${quarter}: ${datePart}` : datePart;
+  return quarter ? `${quarter}, ${datePart}` : datePart;
 }
 
-/** Filled meter bars = whole weeks remaining, clamped to the fixed bar count. */
+/**
+ * Green bars fill as earnings approaches (empty/grey when far, full green when due).
+ * 1 bar ≈ 1 week remaining emptied from the meter; clamp to the 12-bar window.
+ */
 function earningsCountdownFilledBars(daysLeft: number): number {
-  if (!Number.isFinite(daysLeft) || daysLeft <= 0) return 0;
-  return Math.min(EARNINGS_COUNTDOWN_BARS, Math.max(0, Math.ceil(daysLeft / 7)));
+  if (!Number.isFinite(daysLeft) || daysLeft <= 0) return EARNINGS_COUNTDOWN_BARS;
+  const weeksLeft = Math.min(EARNINGS_COUNTDOWN_BARS, Math.max(0, Math.ceil(daysLeft / 7)));
+  return EARNINGS_COUNTDOWN_BARS - weeksLeft;
 }
 
 const earningsHeaderStatLabelClass = "text-[13px] font-normal leading-5 text-[#71717A]";
 const earningsHeaderStatValueClass =
   "text-[16px] font-semibold leading-6 tabular-nums text-[#09090B] sm:text-[20px] sm:leading-7";
 
+function EarningsHeaderChangePct({ changePct }: { changePct: number | null | undefined }) {
+  if (changePct == null || !Number.isFinite(changePct)) return null;
+  return (
+    <span
+      className={cn(
+        earningsHeaderStatLabelClass,
+        "font-semibold",
+        changePct > 0 ? "text-[#16A34A]" : changePct < 0 ? "text-[#DC2626]" : "text-[#71717A]",
+      )}
+    >
+      ({formatSummaryChangePct(changePct)})
+    </span>
+  );
+}
+
 /** Flat stats row — matches superinvestor Size / No. of stocks header (no cards). */
 function EarningsCountdownStats({
   reportDateYmd,
   fiscalPeriodLabel,
+  revenueEstimateDisplay,
+  epsEstimateDisplay,
+  revenueEstimateChangePct,
+  epsEstimateChangePct,
 }: {
   reportDateYmd: string | null | undefined;
   fiscalPeriodLabel?: string | null;
+  revenueEstimateDisplay?: string | null;
+  epsEstimateDisplay?: string | null;
+  revenueEstimateChangePct?: number | null;
+  epsEstimateChangePct?: number | null;
 }) {
   /** Compute "today" on the client only so the SSR seed can't disagree on the day boundary. */
   const [nowUtcMs, setNowUtcMs] = useState<number | null>(null);
@@ -286,17 +197,25 @@ function EarningsCountdownStats({
   }, [reportDateYmd, fiscalPeriodLabel, nowUtcMs]);
 
   const filledBars = info ? earningsCountdownFilledBars(info.daysLeft) : 0;
+  const revenueEstimate =
+    revenueEstimateDisplay != null && String(revenueEstimateDisplay).trim() !== ""
+      ? String(revenueEstimateDisplay).trim()
+      : null;
+  const epsEstimate =
+    epsEstimateDisplay != null && String(epsEstimateDisplay).trim() !== ""
+      ? String(epsEstimateDisplay).trim()
+      : null;
 
   return (
     <dl className="flex flex-row flex-wrap items-stretch gap-x-6 gap-y-4" suppressHydrationWarning>
       <div className="flex flex-col gap-1 border-r border-[#E4E4E7] pr-6">
         <dt className={earningsHeaderStatLabelClass}>Next earnings</dt>
-        <dd className={earningsHeaderStatValueClass}>{info ? info.nextEarningsLabel : "—"}</dd>
+        <dd className={earningsHeaderStatValueClass}>{info ? info.nextEarningsLabel : "TBA"}</dd>
       </div>
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1 border-r border-[#E4E4E7] pr-6">
         <dt className={earningsHeaderStatLabelClass}>Days left</dt>
         <dd className="flex items-center gap-3">
-          <span className={earningsHeaderStatValueClass}>{info ? info.daysLeft : "—"}</span>
+          <span className={earningsHeaderStatValueClass}>{info ? info.daysLeft : "TBA"}</span>
           {info ? (
             <div className="flex shrink-0 items-center gap-1" aria-hidden>
               {Array.from({ length: EARNINGS_COUNTDOWN_BARS }).map((_, i) => (
@@ -304,7 +223,7 @@ function EarningsCountdownStats({
                   key={i}
                   className={cn(
                     "h-3 w-[3px] max-w-[3px] shrink-0 rounded-[1px]",
-                    i < filledBars ? "bg-[#16A34A]" : "bg-[#E4E4E7]",
+                    i < filledBars ? "bg-[#2563EB]" : "bg-[#E4E4E7]",
                   )}
                 />
               ))}
@@ -312,45 +231,21 @@ function EarningsCountdownStats({
           ) : null}
         </dd>
       </div>
+      <div className="flex flex-col gap-1 border-r border-[#E4E4E7] pr-6">
+        <dt className={earningsHeaderStatLabelClass}>Revenue estimate</dt>
+        <dd className="inline-flex flex-wrap items-baseline gap-x-1.5">
+          <span className={earningsHeaderStatValueClass}>{revenueEstimate ?? "—"}</span>
+          {revenueEstimate ? <EarningsHeaderChangePct changePct={revenueEstimateChangePct} /> : null}
+        </dd>
+      </div>
+      <div className="flex flex-col gap-1">
+        <dt className={earningsHeaderStatLabelClass}>EPS estimate</dt>
+        <dd className="inline-flex flex-wrap items-baseline gap-x-1.5">
+          <span className={earningsHeaderStatValueClass}>{epsEstimate ?? "—"}</span>
+          {epsEstimate ? <EarningsHeaderChangePct changePct={epsEstimateChangePct} /> : null}
+        </dd>
+      </div>
     </dl>
-  );
-}
-
-function EarningsSummaryCards({
-  period,
-  metric,
-  estimatesChart,
-  upcomingRevenueFallback,
-  upcomingEpsFallback,
-}: {
-  period: FundamentalsSeriesMode;
-  metric: EstimatesMetric;
-  estimatesChart: StockEarningsEstimatesChart | null | undefined;
-  upcomingRevenueFallback: string | null;
-  upcomingEpsFallback: string | null;
-}) {
-  const [metricSlot1, metricSlot2] = useMemo(
-    () =>
-      buildEarningsMetricSummarySlots(
-        estimatesChart,
-        period,
-        metric,
-        upcomingRevenueFallback,
-        upcomingEpsFallback,
-      ),
-    [estimatesChart, period, metric, upcomingRevenueFallback, upcomingEpsFallback],
-  );
-  return (
-    <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-2">
-      <div className={`flex h-fit flex-col gap-0.5 text-left ${SCREENER_INDEX_CARD_CLASS}`}>
-        <p className={EARNINGS_CARD_LABEL_CLASS}>{metricSlot1.label}</p>
-        <EarningsMetricSummaryCard slot={metricSlot1} />
-      </div>
-      <div className={`flex h-fit flex-col gap-0.5 text-left ${SCREENER_INDEX_CARD_CLASS}`}>
-        <p className={EARNINGS_CARD_LABEL_CLASS}>{metricSlot2.label}</p>
-        <EarningsMetricSummaryCard slot={metricSlot2} />
-      </div>
-    </div>
   );
 }
 
@@ -389,7 +284,7 @@ const reportsLabelTd =
 const reportsNumTd =
   "px-2 py-3 text-right align-middle font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B] sm:px-4";
 
-const reportsActionsTd = "min-w-0 max-w-[min(100%,20rem)] px-2 py-3 text-right align-middle sm:px-4";
+const reportsActionsTd = "w-[180px] min-w-[180px] px-2 py-3 text-right align-middle sm:px-4";
 
 function ReportsColGroup() {
   return (
@@ -400,7 +295,7 @@ function ReportsColGroup() {
       <col />
       <col />
       <col />
-      <col />
+      <col style={{ width: 180 }} />
     </colgroup>
   );
 }
@@ -461,37 +356,29 @@ function SurpriseCell({ value, pct }: { value: string | null; pct: number | null
   );
 }
 
-function SummaryCardsSkeleton() {
-  return (
-    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-      {Array.from({ length: 2 }).map((_, i) => (
-        <div key={i} className={cn("flex h-fit flex-col gap-2", SCREENER_INDEX_CARD_CLASS)}>
-          <div className="min-w-0 flex-1 space-y-2">
-            <SkeletonBox className="h-5 w-32 rounded" />
-            <SkeletonBox className="h-9 w-36 rounded" />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 function EstimatesHeaderSkeleton() {
   return (
-    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex items-stretch gap-6">
-        <div className="flex flex-col gap-1.5 border-r border-[#E4E4E7] pr-6">
-          <SkeletonBox className="h-4 w-24 rounded" />
-          <SkeletonBox className="h-7 w-20 rounded" />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <SkeletonBox className="h-4 w-16 rounded" />
-          <SkeletonBox className="h-7 w-28 rounded" />
-        </div>
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-stretch gap-x-6 gap-y-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div
+            key={i}
+            className={cn(
+              "flex flex-col gap-1.5",
+              i < 3 && "border-r border-[#E4E4E7] pr-6",
+            )}
+          >
+            <SkeletonBox className="h-4 w-24 rounded" />
+            <SkeletonBox className="h-7 w-20 rounded" />
+          </div>
+        ))}
       </div>
-      <div className="flex flex-wrap gap-3">
-        <SkeletonBox className="h-10 w-[200px] rounded-[10px]" />
-        <SkeletonBox className="h-10 w-[200px] rounded-[10px]" />
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <SkeletonBox className="h-7 w-28 rounded" />
+        <div className="flex flex-wrap gap-3">
+          <SkeletonBox className="h-10 w-[200px] rounded-[10px]" />
+          <SkeletonBox className="h-10 w-[200px] rounded-[10px]" />
+        </div>
       </div>
     </div>
   );
@@ -578,18 +465,8 @@ function TableSkeleton() {
   );
 }
 
-/** SSR-safe shell for `next/dynamic` while the client bundle loads (matches tab skeletons). */
-export function StockEarningsTabLoading() {
-  return (
-    <div className="min-w-0 space-y-6 pt-1">
-      <EstimatesHeaderSkeleton />
-      <SummaryCardsSkeleton />
-      <EstimatesChartSkeleton />
-      <h3 className="text-[18px] font-semibold leading-7 tracking-tight text-[#09090B]">Reports</h3>
-      <TableSkeleton />
-    </div>
-  );
-}
+/** Re-export loading shell for callers that imported it from this module. */
+export { StockEarningsTabLoading };
 
 function isEarningsTabPayload(v: unknown): v is StockEarningsTabPayload {
   return (
@@ -628,35 +505,50 @@ export function StockEarningsTabContent({
     initialPayload?.ticker.trim().toUpperCase() === sym && isEarningsTabPayload(initialPayload)
       ? initialPayload
       : null;
-  /** SSR seed or preview: paint immediately; otherwise defer one frame for hydration parity. */
-  const [clientReady, setClientReady] = useState(() => previewMode || !!seedPayload);
-  const [loading, setLoading] = useState(() => !seedPayload);
+  /** Prefetch / prior visit may already have preview or full in memory — paint without waiting. */
+  const memoryPaint =
+    seedPayload ??
+    peekStockEarningsTabPayloadClient(sym, previewMode) ??
+    (!previewMode ? peekStockEarningsTabPayloadClient(sym, true) : null);
+  /** SSR seed, preview modal, or warm memory: paint immediately; otherwise defer one frame for hydration parity. */
+  const [clientReady, setClientReady] = useState(() => previewMode || !!memoryPaint);
+  const [loading, setLoading] = useState(() => !memoryPaint);
   const [loadError, setLoadError] = useState(false);
-  const [data, setData] = useState<StockEarningsTabPayload | null>(() => seedPayload);
+  const [data, setData] = useState<StockEarningsTabPayload | null>(() => memoryPaint);
   const [reloadNonce, setReloadNonce] = useState(0);
   const [earningsHistoryVisible, setEarningsHistoryVisible] = useState(EARNINGS_HISTORY_PAGE_SIZE);
   const earningsHistorySentinelRef = useRef<HTMLTableRowElement | null>(null);
 
   useEffect(() => {
-    if (!previewMode && !seedPayload) setClientReady(true);
-  }, [previewMode, seedPayload]);
+    if (!previewMode && !memoryPaint) setClientReady(true);
+  }, [previewMode, memoryPaint]);
 
   useEffect(() => {
     const controller = new AbortController();
     let cancelled = false;
 
-    if (seedPayload) {
-      setData(seedPayload);
+    const painted =
+      seedPayload ??
+      peekStockEarningsTabPayloadClient(sym, previewMode) ??
+      (!previewMode ? peekStockEarningsTabPayloadClient(sym, true) : null);
+    const fullCached = !previewMode ? peekStockEarningsTabPayloadClient(sym, false) : null;
+    const canSkipFetch = previewMode
+      ? !!painted && !seedNeedsDocumentRefresh(painted)
+      : !!fullCached && !seedNeedsDocumentRefresh(fullCached);
+
+    if (painted) {
+      setData(painted);
       setLoading(false);
       setLoadError(false);
       setEarningsHistoryVisible(EARNINGS_HISTORY_PAGE_SIZE);
-      if (!seedNeedsDocumentRefresh(seedPayload)) {
+      if (canSkipFetch) {
         return () => controller.abort();
       }
     }
 
     async function load() {
-      if (!seedPayload) {
+      // Keep existing paint while upgrading preview → full / filling documents.
+      if (!painted) {
         setLoading(true);
         setLoadError(false);
         setEarningsHistoryVisible(EARNINGS_HISTORY_PAGE_SIZE);
@@ -667,7 +559,7 @@ export function StockEarningsTabContent({
       });
       if (cancelled) return;
       if (!json) {
-        if (!seedPayload) {
+        if (!painted) {
           setData(null);
           setLoadError(true);
         }
@@ -744,6 +636,8 @@ export function StockEarningsTabContent({
     if (!data) return null;
     const upcomingRevenueFallback = data.upcoming?.revenueEstimateDisplay ?? null;
     const upcomingEpsFallback = data.upcoming?.epsEstimateDisplay ?? null;
+    const revenueEstimateChangePct = upcomingEstimateChangePct(data.estimatesChart, "revenue");
+    const epsEstimateChangePct = upcomingEstimateChangePct(data.estimatesChart, "eps");
     const rows = data.history ?? [];
     if (data.upcoming) {
       return {
@@ -751,6 +645,8 @@ export function StockEarningsTabContent({
         fiscalPeriodLabel: data.upcoming.fiscalPeriodLabel,
         upcomingRevenueFallback,
         upcomingEpsFallback,
+        revenueEstimateChangePct,
+        epsEstimateChangePct,
       };
     }
     const nextUnreported = rows.find((r) => !r.reported);
@@ -760,6 +656,8 @@ export function StockEarningsTabContent({
         fiscalPeriodLabel: nextUnreported.fiscalPeriodLabel,
         upcomingRevenueFallback: nextUnreported.revenueEstimateDisplay ?? null,
         upcomingEpsFallback: nextUnreported.epsEstimateDisplay ?? null,
+        revenueEstimateChangePct,
+        epsEstimateChangePct,
       };
     }
     /** All rows reported — still show summary cards from the latest quarter (first row). */
@@ -770,6 +668,8 @@ export function StockEarningsTabContent({
       fiscalPeriodLabel: latest.fiscalPeriodLabel,
       upcomingRevenueFallback: latest.revenueEstimateDisplay ?? null,
       upcomingEpsFallback: latest.epsEstimateDisplay ?? null,
+      revenueEstimateChangePct,
+      epsEstimateChangePct,
     };
   }, [data]);
 
@@ -782,7 +682,6 @@ export function StockEarningsTabContent({
       {loading ? (
         <>
           <EstimatesHeaderSkeleton />
-          <SummaryCardsSkeleton />
           <EstimatesChartSkeleton />
           <h3 className="text-[18px] font-semibold leading-7 tracking-tight text-[#09090B]">Reports</h3>
           <TableSkeleton />
@@ -811,22 +710,15 @@ export function StockEarningsTabContent({
       {!loading && data?.estimatesChart ? (
         <EarningsEstimatesSection
           data={data.estimatesChart}
-          headerLeading={
+          aboveHeader={
             summaryForCards ? (
               <EarningsCountdownStats
                 reportDateYmd={summaryForCards.reportDateYmd}
                 fiscalPeriodLabel={summaryForCards.fiscalPeriodLabel}
-              />
-            ) : null
-          }
-          belowHeader={(period, metric) =>
-            summaryForCards ? (
-              <EarningsSummaryCards
-                period={period}
-                metric={metric}
-                estimatesChart={data.estimatesChart}
-                upcomingRevenueFallback={summaryForCards.upcomingRevenueFallback}
-                upcomingEpsFallback={summaryForCards.upcomingEpsFallback}
+                revenueEstimateDisplay={summaryForCards.upcomingRevenueFallback}
+                epsEstimateDisplay={summaryForCards.upcomingEpsFallback}
+                revenueEstimateChangePct={summaryForCards.revenueEstimateChangePct}
+                epsEstimateChangePct={summaryForCards.epsEstimateChangePct}
               />
             ) : null
           }
@@ -834,19 +726,14 @@ export function StockEarningsTabContent({
       ) : null}
 
       {!loading && !data?.estimatesChart && summaryForCards ? (
-        <div className="min-w-0 space-y-6">
-          <EarningsCountdownStats
-            reportDateYmd={summaryForCards.reportDateYmd}
-            fiscalPeriodLabel={summaryForCards.fiscalPeriodLabel}
-          />
-          <EarningsSummaryCards
-            period="annual"
-            metric="revenue"
-            estimatesChart={null}
-            upcomingRevenueFallback={summaryForCards.upcomingRevenueFallback}
-            upcomingEpsFallback={summaryForCards.upcomingEpsFallback}
-          />
-        </div>
+        <EarningsCountdownStats
+          reportDateYmd={summaryForCards.reportDateYmd}
+          fiscalPeriodLabel={summaryForCards.fiscalPeriodLabel}
+          revenueEstimateDisplay={summaryForCards.upcomingRevenueFallback}
+          epsEstimateDisplay={summaryForCards.upcomingEpsFallback}
+          revenueEstimateChangePct={summaryForCards.revenueEstimateChangePct}
+          epsEstimateChangePct={summaryForCards.epsEstimateChangePct}
+        />
       ) : null}
 
       {!loading && data && historyRows.length > 0 ? (

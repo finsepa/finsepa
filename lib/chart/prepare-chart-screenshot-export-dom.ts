@@ -1,6 +1,8 @@
 import { CHART_PLOT_DOTS_PATTERN_EXPORT_CLASS } from "@/components/chart/overview-bottom-axis";
 
 const EXPORT_PREP_DOTS_SWAP_ATTR = "data-chart-export-dots-swapped";
+const TRANSPARENT_PIXEL_DATA_URL =
+  "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=";
 
 function waitForAnimationFrames(count: number): Promise<void> {
   return new Promise((resolve) => {
@@ -29,27 +31,38 @@ function hasMaskImage(el: Element): boolean {
   return Boolean(mask && mask !== "none");
 }
 
+/** SVG nodes expose `className` as SVGAnimatedString — normalize to a plain string. */
+function elementClassName(el: Element): string {
+  const raw = (el as HTMLElement).className;
+  if (typeof raw === "string") return raw;
+  if (raw && typeof raw === "object" && "baseVal" in raw) {
+    return String((raw as SVGAnimatedString).baseVal ?? "");
+  }
+  return el.getAttribute("class") ?? "";
+}
+
 /** Masked dot grids break html-to-image — swap to an overlay-based export variant. */
 function temporarilyReplaceMaskedDotPatterns(root: HTMLElement): () => void {
   const restores: Array<{ el: HTMLElement; className: string }> = [];
 
   for (const el of root.querySelectorAll<HTMLElement>("*")) {
+    const className = elementClassName(el);
     const usesPlotDots =
-      el.className.includes("background-size:8px_8px") ||
+      className.includes("background-size:8px_8px") ||
       (hasMaskImage(el) &&
         window.getComputedStyle(el).backgroundImage.includes("radial-gradient"));
     if (!usesPlotDots) continue;
 
-    restores.push({ el, className: el.className });
+    restores.push({ el, className });
     el.setAttribute(EXPORT_PREP_DOTS_SWAP_ATTR, "");
-    el.className = CHART_PLOT_DOTS_PATTERN_EXPORT_CLASS;
+    el.setAttribute("class", CHART_PLOT_DOTS_PATTERN_EXPORT_CLASS);
     el.style.visibility = "";
   }
 
   return () => {
     for (const { el, className } of restores) {
       el.removeAttribute(EXPORT_PREP_DOTS_SWAP_ATTR);
-      el.className = className;
+      el.setAttribute("class", className);
     }
   };
 }
@@ -137,7 +150,10 @@ async function fetchSameOriginImageDataUrl(src: string): Promise<string | null> 
   } catch {
     return null;
   }
-  if (!absolute.startsWith(window.location.origin)) return null;
+  if (!absolute.startsWith(window.location.origin)) {
+    // Cross-origin (e.g. Google avatar) — try same-origin proxy first.
+    absolute = `${window.location.origin}/api/media/remote-image?u=${encodeURIComponent(absolute)}`;
+  }
   try {
     const res = await fetch(absolute, { credentials: "same-origin" });
     if (!res.ok) return null;
@@ -189,6 +205,16 @@ async function temporarilyInlineExportImages(root: HTMLElement): Promise<() => v
         img.src = dataUrl;
       } else {
         img.loading = prevLoading;
+        try {
+          const url = new URL(fetchSrc, window.location.origin);
+          if (url.origin !== window.location.origin) {
+            restores.push({ img, src: img.src, loading: prevLoading });
+            img.src = TRANSPARENT_PIXEL_DATA_URL;
+            await waitForImageElement(img);
+          }
+        } catch {
+          // Invalid source — leave the image unchanged.
+        }
       }
     }),
   );

@@ -1047,8 +1047,6 @@ body {
 
 .scroll-fade-effect-y {
   --mask-height: 64px;
-  --mask-offset-top: 0px;
-  --mask-offset-bottom: 0px;
   --scroll-buffer: 2rem;
   mask-image:
     linear-gradient(to top, transparent, black 90%),
@@ -1060,8 +1058,8 @@ body {
     100% 100%;
   mask-repeat: no-repeat, no-repeat, no-repeat;
   mask-position:
-    0 var(--mask-offset-top),
-    0 calc(100% - var(--mask-offset-bottom)),
+    0 var(--mask-offset-top, 0px),
+    0 calc(100% - var(--mask-offset-bottom, 0px)),
     0 0;
   mask-composite: exclude;
   animation-name: show-top-mask, hide-bottom-mask;
@@ -1074,8 +1072,6 @@ body {
 
 .scroll-fade-effect-x {
   --mask-width: 64px;
-  --mask-offset-left: 0px;
-  --mask-offset-right: 0px;
   --scroll-buffer: 2rem;
   mask-image:
     linear-gradient(to left, transparent, black 90%),
@@ -1087,8 +1083,8 @@ body {
     100% 100%;
   mask-repeat: no-repeat, no-repeat, no-repeat;
   mask-position:
-    var(--mask-offset-left) 0,
-    calc(100% - var(--mask-offset-right)) 0,
+    var(--mask-offset-left, 0px) 0,
+    calc(100% - var(--mask-offset-right, 0px)) 0,
     0 0;
   mask-composite: exclude;
   animation-name: show-left-mask, hide-right-mask;

@@ -1,3 +1,4 @@
+import type { AllocationDonutRow } from "@/lib/portfolio/allocation-donut-rows";
 import type { ChartTimeRange, ChartType } from "@/components/charting/charting-workspace";
 import type { ChartingSeriesPoint } from "@/lib/market/charting-series-types";
 import type { ChartingMetricId } from "@/lib/market/stock-charting-metrics";
@@ -7,7 +8,11 @@ import type { MultichartVisual } from "@/components/stock/multichart-fundamental
 import type { PeriodPlotEdgeMargin } from "@/components/stock/multichart-fundamentals-bar";
 import type { StockChartRange, StockChartPoint, StockChartSeries } from "@/lib/market/stock-chart-types";
 
-export type ChartScreenshotSnapshotVariant = "charting" | "keyStatsMetric" | "stockOverview";
+export type ChartScreenshotSnapshotVariant =
+  | "charting"
+  | "keyStatsMetric"
+  | "stockOverview"
+  | "portfolioAllocation";
 
 export type StockOverviewScreenshotConfig = {
   range: StockChartRange;
@@ -43,6 +48,14 @@ export type KeyStatsMetricScreenshotConfig = {
   lineTimeRange?: FundamentalsChartTimeRange;
 };
 
+export type PortfolioAllocationScreenshotConfig = {
+  portfolioName: string;
+  portfolioLogoUrl?: string | null;
+  rows: AllocationDonutRow[];
+  avatarImageSrc: string | null;
+  avatarInitials: string;
+};
+
 export type ChartScreenshotSnapshot = {
   variant?: ChartScreenshotSnapshotVariant;
   ticker: string;
@@ -58,4 +71,6 @@ export type ChartScreenshotSnapshot = {
   keyStatsMetric?: KeyStatsMetricScreenshotConfig;
   /** Stock overview — Price / market cap / return line chart export. */
   stockOverview?: StockOverviewScreenshotConfig;
+  /** Portfolio overview — allocation donut + legend export. */
+  portfolioAllocation?: PortfolioAllocationScreenshotConfig;
 };

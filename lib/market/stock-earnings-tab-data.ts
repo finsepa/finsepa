@@ -1163,10 +1163,12 @@ function extendAnnualEstimatesWithForwardTrend(
   return [...byLabel.values()].sort((a, b) => a.sortKey.localeCompare(b.sortKey));
 }
 
-/** Match annual forward cap — include calendar years through UTC year + 1 (2 years of forecast). */
+/** Match annual forward cap — include period ends through ~1 year ahead. */
 function maxQuarterlyForwardPeriodEndYmd(): string {
-  const maxYear = new Date().getUTCFullYear() + 1;
-  return `${maxYear}-12-31`;
+  const now = new Date();
+  return toYmdUtc(
+    new Date(Date.UTC(now.getUTCFullYear() + 1, now.getUTCMonth(), now.getUTCDate())),
+  );
 }
 
 function addMonthsToPeriodEndYmd(ymd: string, monthDelta: number): string | null {
@@ -1189,7 +1191,7 @@ function fiscalQuarterEndYmdsFromFyEnd(fyEndYmd: string): string[] {
 }
 
 /**
- * Add upcoming quarters from `Earnings.Trend` quarterly revenue through year + 1.
+ * Add upcoming quarters from `Earnings.Trend` quarterly revenue (~1 year ahead).
  */
 function extendQuarterlyEstimatesWithForwardTrend(
   quarterly: StockEarningsEstimatesPoint[],

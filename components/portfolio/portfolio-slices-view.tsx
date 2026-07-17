@@ -1,24 +1,19 @@
 "use client";
 
-import {
-  memo,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-  type MouseEvent,
-} from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 
+import { AllocationDonutChart } from "@/components/portfolio/allocation-donut-chart";
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 import { PortfolioHoldingsEmptyState } from "@/components/portfolio/portfolio-holdings-empty-state";
 import { isSupportedCryptoAssetSymbol } from "@/lib/crypto/crypto-logo-url";
+import type { AllocationDonutRow } from "@/lib/portfolio/allocation-donut-rows";
 import {
+  lifetimeEquityProfitPct,
   netCashUsd,
   normalizeUsdForDisplay,
   totalNetWorth,
-  unrealizedProfitPct,
-  unrealizedProfitUsd,
 } from "@/lib/portfolio/overview-metrics";
+import { lifetimeEquityProfitUsd } from "@/lib/portfolio/realized-pnl-from-trades";
 import { CompanyLogo } from "@/components/screener/company-logo";
 import { displayLogoUrlForPortfolioSymbol } from "@/lib/portfolio/portfolio-asset-display-logo";
 import { cn } from "@/lib/utils";
@@ -52,15 +47,15 @@ const PALETTE = [
   "#65A30D",
 ] as const;
 
-const VB = 100;
-const CX = 50;
-const CY = 50;
-const R_OUT = 48;
-const R_IN = 42.5;
-
 const pct1 = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
+});
+
+/** Matches the overview cards' percent formatter. */
+const pct2 = new Intl.NumberFormat("en-US", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
 });
 
 const usd2 = new Intl.NumberFormat("en-US", {
@@ -83,134 +78,16 @@ function formatSignedPct1(n: number): string {
   return n >= 0 ? `+${s}%` : `-${s}%`;
 }
 
-type SliceRow = { id: string; name: string; weightPct: number; color: string };
-
-function polar(cx: number, cy: number, r: number, angleRad: number) {
-  return {
-    x: cx + r * Math.cos(angleRad),
-    y: cy + r * Math.sin(angleRad),
-  };
+function formatSignedPct2(n: number): string {
+  const s = pct2.format(Math.abs(n));
+  return n >= 0 ? `+${s}%` : `-${s}%`;
 }
 
-function donutSlicePath(cx: number, cy: number, rOuter: number, rInner: number, a0: number, a1: number) {
-  const p0o = polar(cx, cy, rOuter, a0);
-  const p1o = polar(cx, cy, rOuter, a1);
-  const p1i = polar(cx, cy, rInner, a1);
-  const p0i = polar(cx, cy, rInner, a0);
-  const sweep = a1 - a0;
-  const largeArc = sweep > Math.PI ? 1 : 0;
-  return [
-    `M ${p0o.x} ${p0o.y}`,
-    `A ${rOuter} ${rOuter} 0 ${largeArc} 1 ${p1o.x} ${p1o.y}`,
-    `L ${p1i.x} ${p1i.y}`,
-    `A ${rInner} ${rInner} 0 ${largeArc} 0 ${p0i.x} ${p0i.y}`,
-    "Z",
-  ].join(" ");
-}
-
-function FullRing({ color }: { color: string }) {
-  const mid = (R_OUT + R_IN) / 2;
-  const sw = R_OUT - R_IN;
-  return <circle cx={CX} cy={CY} r={mid} fill="none" stroke={color} strokeWidth={sw} />;
-}
-
-type TooltipState = { name: string; pctLabel: string; x: number; y: number } | null;
-
-function SliceDonut({
-  rows,
-  onTooltipChange,
-}: {
-  rows: SliceRow[];
-  onTooltipChange: (t: TooltipState) => void;
-}) {
-  const [dimIndex, setDimIndex] = useState<number | null>(null);
-
-  const slices = useMemo(() => {
-    const prefix: number[] = [];
-    let cum = 0;
-    for (const row of rows) {
-      prefix.push(cum);
-      cum += row.weightPct;
-    }
-    return rows.map((row, i) => {
-      const start = prefix[i] ?? 0;
-      const end = start + row.weightPct;
-      const a0 = -Math.PI / 2 + (start / 100) * 2 * Math.PI;
-      const a1 = -Math.PI / 2 + (end / 100) * 2 * Math.PI;
-      return { row, i, a0, a1 };
-    });
-  }, [rows]);
-
-  const moveTip = useCallback(
-    (e: MouseEvent, row: SliceRow) => {
-      onTooltipChange({
-        name: row.name,
-        pctLabel: `${pct1.format(row.weightPct)}%`,
-        x: e.clientX,
-        y: e.clientY,
-      });
-    },
-    [onTooltipChange],
-  );
-
-  const leave = useCallback(() => {
-    setDimIndex(null);
-    onTooltipChange(null);
-  }, [onTooltipChange]);
-
-  if (rows.length === 0) {
-    return (
-      <div className="flex h-full w-full items-center justify-center text-[12px] text-[#71717A]">—</div>
-    );
-  }
-
-  if (rows.length === 1) {
-    const row = rows[0]!;
-    return (
-      <svg viewBox={`0 0 ${VB} ${VB}`} className="h-full w-full touch-none" onMouseLeave={leave}>
-        <g
-          onMouseEnter={(e) => {
-            setDimIndex(0);
-            moveTip(e, row);
-          }}
-          onMouseMove={(e) => moveTip(e, row)}
-          onMouseLeave={leave}
-          className="cursor-pointer"
-        >
-          <FullRing color={row.color} />
-          <title>
-            {row.name} {pct1.format(row.weightPct)}%
-          </title>
-        </g>
-      </svg>
-    );
-  }
-
-  return (
-    <svg viewBox={`0 0 ${VB} ${VB}`} className="h-full w-full touch-none" onMouseLeave={leave}>
-      {slices.map(({ row, i, a0, a1 }) => (
-        <path
-          key={row.id}
-          d={donutSlicePath(CX, CY, R_OUT, R_IN, a0, a1)}
-          fill={row.color}
-          stroke="none"
-          className="cursor-pointer transition-[opacity] duration-150"
-          style={{ opacity: dimIndex !== null && dimIndex !== i ? 0.45 : 1 }}
-          onMouseEnter={(e) => {
-            setDimIndex(i);
-            moveTip(e, row);
-          }}
-          onMouseMove={(e) => moveTip(e, row)}
-          onMouseLeave={leave}
-        >
-          <title>
-            {row.name} {pct1.format(row.weightPct)}%
-          </title>
-        </path>
-      ))}
-    </svg>
-  );
-}
+/** Chart edge length — sized so the donut plus label pills fit the 320px card column. */
+const SLICES_CHART_SIZE_PX = 232;
+const SLICES_BADGE_PAD_PX = 28;
+/** Inner hole radius — larger than the avatar default so the center numbers fit. */
+const SLICES_CENTER_HOLE_RADIUS_PX = 78;
 
 function holdingIsCrypto(symbol: string): boolean {
   return isSupportedCryptoAssetSymbol(symbol);
@@ -415,7 +292,6 @@ function PortfolioSlicesViewInner({
     };
   }, [stockSymbolsKey]);
   const sectorBySymbol = useMemo(() => new Map(Object.entries(stockSectorBySymbol)), [stockSectorBySymbol]);
-  const [tooltip, setTooltip] = useState<TooltipState>(null);
   const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>({
     key: "allocation",
     dir: "desc",
@@ -485,12 +361,14 @@ function PortfolioSlicesViewInner({
   );
 
   const donutRows = useMemo(
-    (): SliceRow[] =>
+    (): AllocationDonutRow[] =>
       sectorRows.map((r) => ({
         id: r.key,
         name: r.label,
+        symbol: r.kind === "cash" ? "USD" : r.label,
         weightPct: r.allocationPct,
         color: r.color,
+        logoUrl: null,
       })),
     [sectorRows],
   );
@@ -516,10 +394,11 @@ function PortfolioSlicesViewInner({
     return i >= 0 ? sectorRows[i]!.color : PALETTE[0]!;
   }, [effectiveDrillKey, sectorRows]);
 
+  // Same figures as the overview cards up top: net worth + lifetime (realized + unrealized) profit.
   const cashUsd = netCashUsd(transactions);
   const totalValue = totalNetWorth(holdings, cashUsd);
-  const totalGainUsd = unrealizedProfitUsd(holdings);
-  const totalGainPct = unrealizedProfitPct(holdings);
+  const totalGainUsd = lifetimeEquityProfitUsd(holdings, transactions);
+  const totalGainPct = lifetimeEquityProfitPct(holdings, transactions);
 
   const onSort = useCallback((key: SortKey) => {
     setSort((s) =>
@@ -580,49 +459,43 @@ function PortfolioSlicesViewInner({
 
   return (
     <div className="relative">
-      {tooltip ? (
-        <div
-          className="pointer-events-none fixed z-[200] max-w-[min(calc(100vw-1rem),280px)] rounded-lg border border-[#E4E4E7] bg-white px-3 py-2 text-left shadow-[0px_4px_12px_0px_rgba(10,10,10,0.08)]"
-          style={{ left: tooltip.x + 12, top: tooltip.y + 12 }}
-        >
-          <div className="text-[13px] font-semibold leading-5 text-[#09090B]">{tooltip.name}</div>
-          <div className="text-[12px] tabular-nums leading-4 text-[#71717A]">{tooltip.pctLabel}</div>
-        </div>
-      ) : null}
-
       <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch lg:gap-4">
         <div className="flex w-full shrink-0 flex-col items-center justify-center rounded-[12px] border border-[#E4E4E7] bg-white px-4 py-5 sm:py-8 lg:max-w-[320px]">
           <div className="flex min-h-[240px] w-full flex-col items-center justify-center sm:min-h-[280px]">
-            <div className="relative mx-auto h-[220px] w-[220px] shrink-0">
-              <div className="absolute inset-0" aria-hidden>
-                <SliceDonut rows={donutRows} onTooltipChange={setTooltip} />
-              </div>
-              <div className="pointer-events-none relative z-10 flex h-full w-full flex-col items-center justify-center gap-1 px-4 text-center">
-                <div className="text-[22px] font-semibold leading-tight tabular-nums text-[#09090B]">
-                  {usd2.format(totalValue)}
-                </div>
-                <div
-                  className={cn(
-                    "text-[14px] font-semibold tabular-nums",
-                    totalGainUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
-                  )}
-                >
-                  {formatSignedUsd2(totalGainUsd)}
-                </div>
-                {totalGainPct !== null ? (
+            <AllocationDonutChart
+              rows={donutRows}
+              chartSizePx={SLICES_CHART_SIZE_PX}
+              badgeOverflowPadPx={SLICES_BADGE_PAD_PX}
+              centerHoleRadiusPx={SLICES_CENTER_HOLE_RADIUS_PX}
+              className="mx-auto shrink-0"
+              center={
+                <div className="flex flex-col items-center gap-0.5 px-4 text-center">
+                  <div className="text-[18px] font-semibold leading-tight tabular-nums text-[#09090B]">
+                    {usd2.format(normalizeUsdForDisplay(totalValue))}
+                  </div>
                   <div
                     className={cn(
-                      "text-[13px] font-medium tabular-nums",
+                      "text-[13px] font-semibold tabular-nums",
                       totalGainUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
                     )}
                   >
-                    {formatSignedPct1(totalGainPct)}
+                    {formatSignedUsd2(totalGainUsd)}
                   </div>
-                ) : (
-                  <div className="text-[13px] tabular-nums text-[#71717A]">{EM_DASH}</div>
-                )}
-              </div>
-            </div>
+                  {totalGainPct !== null ? (
+                    <div
+                      className={cn(
+                        "text-[12px] font-medium tabular-nums",
+                        totalGainPct >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
+                      )}
+                    >
+                      {formatSignedPct2(totalGainPct)}
+                    </div>
+                  ) : (
+                    <div className="text-[12px] tabular-nums text-[#71717A]">{EM_DASH}</div>
+                  )}
+                </div>
+              }
+            />
           </div>
         </div>
 

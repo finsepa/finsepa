@@ -1,77 +1,20 @@
 "use client";
 
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useMemo } from "react";
 
 import { AllocationDonutChart } from "@/components/portfolio/allocation-donut-chart";
 import { PortfolioHoldingsEmptyState } from "@/components/portfolio/portfolio-holdings-empty-state";
+import { useAllocationCenterAvatar } from "@/components/portfolio/use-allocation-center-avatar";
 import { UserAvatar } from "@/components/user/user-avatar";
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
-import { avatarUrlFromUser, initialsFromUser } from "@/lib/auth/user-display";
-import {
-  buildTopNAllocationRows,
-  type AllocationDonutRow,
-} from "@/lib/portfolio/allocation-donut-rows";
-import { netCashUsd } from "@/lib/portfolio/overview-metrics";
-import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
+import type { AllocationDonutRow } from "@/lib/portfolio/allocation-donut-rows";
+import { buildPortfolioAllocationRows } from "@/lib/portfolio/portfolio-allocation-rows";
 import { cn } from "@/lib/utils";
 
 const pct1 = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
 });
-
-function buildRows(holdings: PortfolioHolding[], transactions: PortfolioTransaction[]): AllocationDonutRow[] {
-  const cashUsd = netCashUsd(transactions);
-  const equity = holdings.reduce((s, h) => s + h.currentValue, 0);
-  const allocationDenomUsd = equity + Math.max(0, cashUsd);
-  if (allocationDenomUsd <= 0) return [];
-
-  const raw = holdings.map((h) => ({
-    id: h.id,
-    name: h.name.trim() || h.symbol,
-    symbol: h.symbol.trim().toUpperCase() || h.name.trim(),
-    weightPct: (h.currentValue / allocationDenomUsd) * 100,
-    logoUrl: h.logoUrl,
-  }));
-
-  if (cashUsd > 0) {
-    raw.push({
-      id: "cash-usd",
-      name: "US Dollar",
-      symbol: "USD",
-      weightPct: (cashUsd / allocationDenomUsd) * 100,
-      logoUrl: null,
-    });
-  }
-
-  return buildTopNAllocationRows(raw);
-}
-
-function useAllocationCenterAvatar() {
-  const [imageSrc, setImageSrc] = useState<string | null>(null);
-  const [initials, setInitials] = useState("?");
-
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      try {
-        const supabase = getSupabaseBrowserClient();
-        const { data } = await supabase.auth.getUser();
-        const u = data.user;
-        if (cancelled || !u) return;
-        setImageSrc(avatarUrlFromUser(u));
-        setInitials(initialsFromUser(u));
-      } catch {
-        if (!cancelled) setImageSrc(null);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  return { imageSrc, initials };
-}
 
 function AllocationColumn({
   rows,
@@ -110,7 +53,7 @@ function PortfolioAllocationViewInner({
   transactions: PortfolioTransaction[];
   readOnly?: boolean;
 }) {
-  const rows = useMemo(() => buildRows(holdings, transactions), [holdings, transactions]);
+  const rows = useMemo(() => buildPortfolioAllocationRows(holdings, transactions), [holdings, transactions]);
   const { imageSrc, initials } = useAllocationCenterAvatar();
 
   const { left, right } = useMemo(() => {

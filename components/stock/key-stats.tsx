@@ -228,11 +228,12 @@ const VALUATION_LABEL_TO_METRIC: Partial<Record<string, ChartingMetricId>> = {
   "Cash/Debt": "cash_debt",
 };
 
-const DIVIDENDS_LABELS = ["Yield", "Payout"];
+const DIVIDENDS_LABELS = ["Yield", "Payout", "Buybacks"];
 
 const DIVIDENDS_LABEL_TO_METRIC: Partial<Record<string, ChartingMetricId>> = {
   Yield: "dividend_yield",
   Payout: "payout_ratio",
+  Buybacks: "buyback_yield",
 };
 
 const RISK_LABELS = ["Beta (5Y)", "Max Drawdown (5Y)"];
@@ -403,7 +404,12 @@ const DynamicCard = memo(function DynamicCard({
   embedded?: boolean;
 }) {
   const fallback = useMemo(() => rowLabels.map((label) => ({ label, value: "—" as const })), [rowLabels]);
-  const displayRows = rows ?? fallback;
+  /** Prefer `rowLabels` order so new metrics (e.g. Buybacks) still appear if a cached bundle is missing them. */
+  const displayRows = useMemo(() => {
+    if (!rows?.length) return fallback;
+    const byLabel = new Map(rows.map((r) => [r.label, r] as const));
+    return rowLabels.map((label) => byLabel.get(label) ?? { label, value: "—" as const });
+  }, [rows, rowLabels, fallback]);
   const map = labelToMetric ?? {};
   const rowClickMap = onRowClick ?? {};
 
@@ -683,15 +689,26 @@ function KeyStatsInner({
   }, [bundle, loading, mobileTab, onOpenMetricChart, riskRowClick]);
 
   useEffect(() => {
-    if (stockKeyStatsBundleHasContent(initialBundle)) {
+    let cancelled = false;
+    const initialHasContent = stockKeyStatsBundleHasContent(initialBundle);
+    const initialHasBuybacks = Boolean(
+      initialBundle?.dividends?.some((r) => r.label === "Buybacks"),
+    );
+
+    if (initialHasContent) {
       setBundle(initialBundle!);
       setLoading(false);
-      return;
+      // Stale SSR/API cache can omit newly added rows — soft-refresh once.
+      if (initialHasBuybacks) return () => {
+        cancelled = true;
+      };
     }
-    let cancelled = false;
+
     async function load() {
-      setLoading(true);
-      setBundle(null);
+      if (!initialHasContent) {
+        setLoading(true);
+        setBundle(null);
+      }
       for (let attempt = 0; attempt < 2 && !cancelled; attempt++) {
         try {
           const res = await fetch(`/api/stocks/${encodeURIComponent(ticker)}/key-stats-bundle`, {

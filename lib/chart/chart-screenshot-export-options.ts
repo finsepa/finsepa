@@ -7,6 +7,10 @@ export type ChartScreenshotExportOptions = {
   showAvgLine?: boolean;
   showMaxLine?: boolean;
   showMinLine?: boolean;
+  /** Portfolio allocation — external slice label pills. */
+  showAllocationSliceLabels?: boolean;
+  /** Portfolio allocation — holdings legend columns. */
+  showAllocationLegend?: boolean;
 };
 
 export const DEFAULT_CHART_SCREENSHOT_EXPORT_OPTIONS: ChartScreenshotExportOptions = {
@@ -31,6 +35,15 @@ export function chartScreenshotExportOptionsForSnapshot(
   }
   if (snapshot.variant === "stockOverview") {
     return DEFAULT_CHART_SCREENSHOT_EXPORT_OPTIONS;
+  }
+  if (snapshot.variant === "portfolioAllocation") {
+    return {
+      showValues: true,
+      showVerticalLegend: true,
+      showHorizontalLegend: false,
+      showAllocationSliceLabels: true,
+      showAllocationLegend: true,
+    };
   }
   return DEFAULT_CHART_SCREENSHOT_EXPORT_OPTIONS;
 }

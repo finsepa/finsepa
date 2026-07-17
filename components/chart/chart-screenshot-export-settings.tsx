@@ -106,6 +106,31 @@ export function ChartScreenshotExportSettings({
     );
   }
 
+  if (variant === "portfolioAllocation") {
+    return (
+      <div className="flex h-full flex-col px-5 py-4">
+        <SettingRow
+          label="Show slice labels"
+          pressed={value.showAllocationSliceLabels ?? true}
+          onPressedChange={(showAllocationSliceLabels) => patch({ showAllocationSliceLabels })}
+          disabled={disabled}
+        />
+        <SettingRow
+          label="Show legend"
+          pressed={value.showAllocationLegend ?? true}
+          onPressedChange={(showAllocationLegend) => patch({ showAllocationLegend })}
+          disabled={disabled}
+        />
+        <SettingRow
+          label="Show values"
+          pressed={value.showValues}
+          onPressedChange={(showValues) => patch({ showValues })}
+          disabled={disabled || !(value.showAllocationLegend ?? true)}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-full flex-col px-5 py-4">
       <SettingRow

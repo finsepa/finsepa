@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 
 import { formatChartingTableCell } from "@/components/charting/charting-individual-company-table";
 import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
 import { SegmentedControl } from "@/components/design-system";
 import { MULTICHART_BAR_WIDTH_WIDE_PX } from "@/components/stock/multichart-fundamentals-bar";
-import { fundamentalsBarSolidAtIndex } from "@/lib/colors/fundamentals-multi-bar-colors";
 import {
   fundamentalsBarEnterProgress,
   prefersReducedFundamentalsBarMotion,
@@ -26,8 +25,11 @@ import {
   sliceLatestQuarterlyEstimates,
 } from "@/lib/market/earnings-annual-display";
 import {
+  EARNINGS_FORECAST_BADGE_CLASS,
+  EARNINGS_FORECAST_BAND_BG_STYLE,
+  EARNINGS_FORECAST_BAND_EDGE_STYLE,
   EARNINGS_FORECAST_OPACITY_CLASS,
-  earningsForecastDotFillStyle,
+  earningsForecastBarFillStyle,
 } from "@/components/stock/earnings-card-styles";
 import { cn } from "@/lib/utils";
 import {
@@ -39,27 +41,36 @@ import type { FundamentalsSeriesMode } from "@/lib/market/charting-series-types"
 import { formatUsdCompact } from "@/lib/market/key-stats-basic-format";
 import type { StockEarningsEstimatesChart, StockEarningsEstimatesPoint } from "@/lib/market/stock-earnings-types";
 
-const ESTIMATE_BAR = fundamentalsBarSolidAtIndex(0);
+/** Reported bars are blue; estimates are grey; forecast keeps the grey hatch. */
+const ACTUAL_BAR = "#2563EB";
+const ESTIMATE_BAR = "#D4D4D8";
+const FORECAST_BAR = "#A1A1AA";
+const FORECAST_BAR_FILL = earningsForecastBarFillStyle(FORECAST_BAR);
 
 const BEAT_COLOR = "#16A34A";
 const MISS_COLOR = "#DC2626";
 
-const DOT_SIZE_QUARTERLY_PX = 16;
-const DOT_SIZE_ANNUAL_PX = 18;
-const BEAT_MISS_ARROW_BORDER_X_PX = 8;
-const BEAT_MISS_ARROW_BORDER_TOP_PX = 9;
-const COLUMN_HOVER_PAD_QUARTERLY_PX = 6;
-const COLUMN_HOVER_PAD_ANNUAL_PX = 8;
+const BAR_WIDTH_QUARTERLY_PX = 11;
+const BAR_WIDTH_ANNUAL_PX = 18;
+const BAR_WIDTH_PAIR_QUARTERLY_PX = 9;
+const BAR_WIDTH_PAIR_ANNUAL_PX = 14;
+const BAR_GAP_PX = 3;
+const BAR_HOVER_PAD_QUARTERLY_PX = 6;
+const BAR_HOVER_PAD_ANNUAL_PX = 8;
+const BEAT_MISS_ARROW_BORDER_X_PX = 5;
+const BEAT_MISS_ARROW_BORDER_TOP_PX = 6;
 
-function estimatesColumnLayout(periodMode: FundamentalsSeriesMode): {
-  dotSizePx: number;
-  columnHoverPadPx: number;
-  columnHitWidthPx: number;
+function estimatesBarLayout(periodMode: FundamentalsSeriesMode): {
+  barWidthPx: number;
+  pairBarWidthPx: number;
+  barHoverPadPx: number;
 } {
-  const dotSizePx = periodMode === "annual" ? DOT_SIZE_ANNUAL_PX : DOT_SIZE_QUARTERLY_PX;
-  const columnHoverPadPx = periodMode === "annual" ? COLUMN_HOVER_PAD_ANNUAL_PX : COLUMN_HOVER_PAD_QUARTERLY_PX;
-  const columnHitWidthPx = dotSizePx + columnHoverPadPx * 2 + 12;
-  return { dotSizePx, columnHoverPadPx, columnHitWidthPx };
+  const annual = periodMode === "annual";
+  return {
+    barWidthPx: annual ? BAR_WIDTH_ANNUAL_PX : BAR_WIDTH_QUARTERLY_PX,
+    pairBarWidthPx: annual ? BAR_WIDTH_PAIR_ANNUAL_PX : BAR_WIDTH_PAIR_QUARTERLY_PX,
+    barHoverPadPx: annual ? BAR_HOVER_PAD_ANNUAL_PX : BAR_HOVER_PAD_QUARTERLY_PX,
+  };
 }
 
 function earningsBeatMiss(
@@ -100,28 +111,24 @@ function EarningsBeatMissIndicator({
   value,
   maxV,
   enterProgress,
-  dotSizePx,
 }: {
   outcome: "beat" | "miss";
   value: number;
   maxV: number;
   enterProgress: number;
-  dotSizePx: number;
 }) {
   const bottomPct = valueHeightPct(value, maxV) * enterProgress;
   if (bottomPct <= 0) return null;
 
   const color = outcome === "beat" ? BEAT_COLOR : MISS_COLOR;
-  /** Gap from the top of the filled circle to the arrow tip. */
-  const gapAboveDotPx = 12;
-  const liftPx = dotSizePx / 2 + gapAboveDotPx;
+  const gapAboveBarPx = 4;
 
   return (
     <div
       className="pointer-events-none absolute left-1/2 z-20 flex flex-col items-center"
       style={{
         bottom: `${bottomPct}%`,
-        transform: `translateX(-50%) translateY(calc(-100% - ${liftPx}px))`,
+        transform: `translateX(-50%) translateY(calc(-100% - ${gapAboveBarPx}px))`,
       }}
     >
       <span
@@ -143,52 +150,60 @@ function EarningsBeatMissIndicator({
   );
 }
 
-function EarningsValueDot({
-  value,
+function EarningsPeriodBars({
+  estimate,
+  actual,
+  isForecast,
   maxV,
   enterProgress,
-  dotSizePx,
-  variant,
-  barColor,
+  barWidthPx,
+  pairBarWidthPx,
 }: {
-  value: number;
+  estimate: number | null;
+  actual: number | null;
+  isForecast: boolean;
   maxV: number;
   enterProgress: number;
-  dotSizePx: number;
-  variant: "actual" | "forecast";
-  barColor: string;
+  barWidthPx: number;
+  pairBarWidthPx: number;
 }) {
-  const bottomPct = valueHeightPct(value, maxV) * enterProgress;
-  if (bottomPct <= 0) return null;
+  const showActual = !isForecast && actual != null && valueHeightPct(actual, maxV) > 0;
+  const showEstimate = estimate != null && valueHeightPct(estimate, maxV) > 0;
+  const pair = showActual && showEstimate;
+  const widthPx = pair ? pairBarWidthPx : barWidthPx;
 
-  const sharedStyle = {
-    bottom: `${bottomPct}%`,
-    width: dotSizePx,
-    height: dotSizePx,
-    marginBottom: -dotSizePx / 2,
-    left: "50%",
-    transform: "translateX(-50%)",
-  } as const;
-
-  if (variant === "actual") {
-    return (
-      <div
-        className="pointer-events-none absolute z-10 rounded-full"
-        style={{ ...sharedStyle, backgroundColor: barColor }}
-        aria-hidden
-      />
-    );
-  }
+  if (!showActual && !showEstimate) return null;
 
   return (
     <div
-      className="pointer-events-none absolute z-[9] overflow-hidden rounded-full"
-      style={{
-        ...sharedStyle,
-        ...earningsForecastDotFillStyle(barColor),
-      }}
-      aria-hidden
-    />
+      className="relative z-10 flex h-full min-h-0 items-end justify-center"
+      style={{ gap: pair ? BAR_GAP_PX : 0, width: pair ? pairBarWidthPx * 2 + BAR_GAP_PX : barWidthPx }}
+    >
+      {showActual ? (
+        <div
+          className="mt-auto shrink-0 rounded-t-[4px] rounded-b-none"
+          style={{
+            width: widthPx,
+            height: `${valueHeightPct(actual, maxV) * enterProgress}%`,
+            minHeight: 2,
+            backgroundColor: ACTUAL_BAR,
+          }}
+          aria-hidden
+        />
+      ) : null}
+      {showEstimate ? (
+        <div
+          className="mt-auto shrink-0 overflow-hidden rounded-t-[4px] rounded-b-none"
+          style={{
+            width: widthPx,
+            height: `${valueHeightPct(estimate, maxV) * enterProgress}%`,
+            minHeight: 2,
+            ...(isForecast ? FORECAST_BAR_FILL : { backgroundColor: ESTIMATE_BAR }),
+          }}
+          aria-hidden
+        />
+      ) : null}
+    </div>
   );
 }
 
@@ -309,8 +324,6 @@ type EstimatesHeaderProps = {
   onPeriodChange: (period: FundamentalsSeriesMode) => void;
   metric: EstimatesMetric;
   onMetricChange: (metric: EstimatesMetric) => void;
-  /** Replaces the "Estimates" title when set (e.g. Next earnings / Days left stats). */
-  leading?: ReactNode;
 };
 
 export function EarningsEstimatesHeader({
@@ -318,35 +331,27 @@ export function EarningsEstimatesHeader({
   onPeriodChange,
   metric,
   onMetricChange,
-  leading,
 }: EstimatesHeaderProps) {
   return (
     <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <div className="min-w-0">
-        {leading ?? (
-          <h2 className="text-[20px] font-semibold leading-8 tracking-tight text-[#09090B]">Estimates</h2>
-        )}
-      </div>
-      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-        <SegmentedControl
-          aria-label="Statement period"
-          options={[
-            { value: "annual", label: "Annual" },
-            { value: "quarterly", label: "Quarterly" },
-          ]}
-          value={period}
-          onChange={onPeriodChange}
-        />
-        <SegmentedControl
-          aria-label="Estimate metric"
-          options={[
-            { value: "revenue", label: "Revenue" },
-            { value: "eps", label: "EPS" },
-          ]}
-          value={metric}
-          onChange={onMetricChange}
-        />
-      </div>
+      <SegmentedControl
+        aria-label="Estimate metric"
+        options={[
+          { value: "revenue", label: "Revenue" },
+          { value: "eps", label: "EPS" },
+        ]}
+        value={metric}
+        onChange={onMetricChange}
+      />
+      <SegmentedControl
+        aria-label="Statement period"
+        options={[
+          { value: "annual", label: "Annual" },
+          { value: "quarterly", label: "Quarterly" },
+        ]}
+        value={period}
+        onChange={onPeriodChange}
+      />
     </div>
   );
 }
@@ -358,8 +363,8 @@ type Props = {
 };
 
 /**
- * Revenue / EPS estimate chart — dot plot with forecast (dashed) and actual (filled) markers,
- * plus beat/miss arrows pinned to the top of the plot.
+ * Revenue / EPS estimate bar chart — grey reported + estimate bars, hatched forecast bars,
+ * plus beat/miss markers above the reported bar.
  */
 export function EarningsEstimatesChart({ data, period, metric }: Props) {
   const plotAreaRef = useRef<HTMLDivElement>(null);
@@ -374,7 +379,7 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
     [data, period, metric],
   );
 
-  const columnLayout = useMemo(() => estimatesColumnLayout(period), [period]);
+  const barLayout = useMemo(() => estimatesBarLayout(period), [period]);
 
   const plotHeight = CHART_HEIGHT_PX - MULTICHART_AXIS_ROW_PX - MULTICHART_AXIS_BOTTOM_PAD_PX;
 
@@ -390,6 +395,12 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
   }, [periods, metricConfig.axisKind]);
 
   const n = periods.length;
+  /** Left edge (%) of the forecast band — from the first forecast column to the plot's right edge. */
+  const forecastBandLeftPct = useMemo(() => {
+    const firstForecast = periods.findIndex((p) => p.isForecast);
+    if (firstForecast < 0 || n <= 0) return null;
+    return (firstForecast / n) * 100;
+  }, [periods, n]);
   const showChart = n > 0;
   const shouldAnimateBars = showChart && !prefersReducedFundamentalsBarMotion();
   const [barEnterElapsedMs, setBarEnterElapsedMs] = useState(() =>
@@ -432,13 +443,30 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
                   aria-hidden
                 >
                   <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
+                  {forecastBandLeftPct != null ? (
+                    <div
+                      className="absolute inset-y-0 overflow-hidden"
+                      style={{ left: `${forecastBandLeftPct}%`, right: 0 }}
+                    >
+                      <div
+                        className="absolute inset-0"
+                        style={{
+                          ...EARNINGS_FORECAST_BAND_BG_STYLE,
+                          ...EARNINGS_FORECAST_BAND_EDGE_STYLE,
+                        }}
+                      />
+                      <span className={cn("absolute bottom-2 left-1/2 z-[1] -translate-x-1/2", EARNINGS_FORECAST_BADGE_CLASS)}>
+                        Forecast
+                      </span>
+                    </div>
+                  ) : null}
                   <div
                     className="absolute inset-x-0 bottom-0 border-t"
                     style={{ borderColor: CHART_ZERO_BASELINE_BORDER }}
                   />
                 </div>
 
-                {/* Dots + beat/miss markers (anchored just above the filled actual circle). */}
+                {/* Bars + beat/miss markers (anchored just above the reported bar). */}
                 <div
                   key={`${period}-${metric}-${n}`}
                   className="absolute inset-x-0 top-[8%] bottom-[4%] min-h-0 w-full min-w-0 overflow-visible"
@@ -454,6 +482,13 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
                     !p.isForecast && p.estimate != null && p.actual != null
                       ? earningsBeatMiss(p.estimate, p.actual)
                       : null;
+                  const showActual = !p.isForecast && p.actual != null;
+                  const showEstimate = p.estimate != null;
+                  const pair = showActual && showEstimate;
+                  const groupWidthPx = pair
+                    ? barLayout.pairBarWidthPx * 2 + BAR_GAP_PX
+                    : barLayout.barWidthPx;
+                  const hitWidthPx = groupWidthPx + barLayout.barHoverPadPx * 2;
                   const tooltipLines: BarTooltipLine[] = [];
                   if (p.estimate != null) {
                     tooltipLines.push({
@@ -478,7 +513,7 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
                     <div
                       key={p.key}
                       className="absolute bottom-0 z-0 flex h-full min-h-0 -translate-x-1/2 flex-col items-center justify-end"
-                      style={{ left: `${leftPct}%`, width: columnLayout.columnHitWidthPx }}
+                      style={{ left: `${leftPct}%`, width: hitWidthPx }}
                       onMouseEnter={(e) => {
                         const plot = plotAreaRef.current;
                         if (!plot) return;
@@ -496,45 +531,30 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
                         <div
                           className="pointer-events-none absolute bottom-0 left-1/2 z-0 h-full -translate-x-1/2"
                           style={{
-                            width: Math.max(columnLayout.columnHitWidthPx, MULTICHART_BAR_WIDTH_WIDE_PX),
+                            width: Math.max(hitWidthPx, MULTICHART_BAR_WIDTH_WIDE_PX),
                             backgroundColor: FUNDAMENTALS_CHART_HOVER_BAND_BG,
                           }}
                           aria-hidden
                         />
                       ) : null}
-                      <div
-                        className="relative z-10 h-full min-h-0 overflow-visible"
-                        style={{ width: columnLayout.dotSizePx }}
-                      >
+                      <div className="relative z-10 h-full min-h-0 overflow-visible" style={{ width: groupWidthPx }}>
                         {barsEnterComplete && beatMiss && p.actual != null ? (
                           <EarningsBeatMissIndicator
                             outcome={beatMiss}
                             value={p.actual}
                             maxV={maxV}
                             enterProgress={enterProgress}
-                            dotSizePx={columnLayout.dotSizePx}
                           />
                         ) : null}
-                        {p.estimate != null ? (
-                          <EarningsValueDot
-                            value={p.estimate}
-                            maxV={maxV}
-                            enterProgress={enterProgress}
-                            dotSizePx={columnLayout.dotSizePx}
-                            variant="forecast"
-                            barColor={ESTIMATE_BAR}
-                          />
-                        ) : null}
-                        {p.actual != null ? (
-                          <EarningsValueDot
-                            value={p.actual}
-                            maxV={maxV}
-                            enterProgress={enterProgress}
-                            dotSizePx={columnLayout.dotSizePx}
-                            variant="actual"
-                            barColor={ESTIMATE_BAR}
-                          />
-                        ) : null}
+                        <EarningsPeriodBars
+                          estimate={p.estimate}
+                          actual={p.actual}
+                          isForecast={p.isForecast}
+                          maxV={maxV}
+                          enterProgress={enterProgress}
+                          barWidthPx={barLayout.barWidthPx}
+                          pairBarWidthPx={barLayout.pairBarWidthPx}
+                        />
                       </div>
                     </div>
                   );

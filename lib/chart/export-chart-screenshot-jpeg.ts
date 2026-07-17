@@ -152,12 +152,25 @@ export async function exportChartScreenshotJpeg(
     restoreExportDom = await prepareChartScreenshotExportDom(element);
     await waitForSwappedCanvasImages(element);
 
+    const widthAttr = Number.parseInt(element.getAttribute("data-chart-screenshot-width") ?? "", 10);
+    const heightAttr = Number.parseInt(element.getAttribute("data-chart-screenshot-height") ?? "", 10);
+    const exportWidth =
+      Number.isFinite(widthAttr) && widthAttr > 0 ? widthAttr : CHART_SCREENSHOT_WIDTH_PX;
+    const exportHeight =
+      Number.isFinite(heightAttr) && heightAttr > 0 ? heightAttr : CHART_SCREENSHOT_HEIGHT_PX;
+
+    const exportBg =
+      element.classList.contains("bg-[#FAFAFA]") ||
+      window.getComputedStyle(element).backgroundColor === "rgb(250, 250, 250)"
+        ? "#FAFAFA"
+        : "#ffffff";
+
     const dataUrl = await toJpeg(element, {
-      width: CHART_SCREENSHOT_WIDTH_PX,
-      height: CHART_SCREENSHOT_HEIGHT_PX,
+      width: exportWidth,
+      height: exportHeight,
       pixelRatio: CHART_SCREENSHOT_EXPORT_PIXEL_RATIO,
       quality: 0.92,
-      backgroundColor: "#ffffff",
+      backgroundColor: exportBg,
       cacheBust: true,
     });
 

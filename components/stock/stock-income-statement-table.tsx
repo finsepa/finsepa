@@ -12,7 +12,13 @@ import {
   SCREENER_TABLE_HEADER_STICKY_SCROLLPORT_CLASS,
   ScreenerTableScroll,
 } from "@/components/screener/screener-table-scroll";
+import {
+  EARNINGS_FORECAST_BADGE_CLASS,
+  EARNINGS_FORECAST_BAND_BG_STYLE,
+  EARNINGS_FORECAST_BAND_EDGE_STYLE,
+} from "@/components/stock/earnings-card-styles";
 import { cn } from "@/lib/utils";
+import type { CSSProperties } from "react";
 
 /**
  * Shared label-column width for Financials / Earnings summary grids and Reports tables
@@ -22,6 +28,15 @@ export const STOCK_TABLE_LABEL_COL_WIDTH = "14rem";
 
 export function stockTableGridTemplateColumns(dataColumnCount: number): string {
   return `${STOCK_TABLE_LABEL_COL_WIDTH} repeat(${dataColumnCount}, minmax(5.25rem, 1fr))`;
+}
+
+/** Min width (px) so quarterly columns don't squash when panning on small screens. */
+export function stockTableScrollMinWidthPx(dataColumnCount: number): number {
+  const labelPx = 14 * 16;
+  const columnPx = 5.25 * 16;
+  const gapPx = 8;
+  const padPx = 16;
+  return Math.ceil(labelPx + dataColumnCount * columnPx + dataColumnCount * gapPx + padPx);
 }
 
 const pct2 = new Intl.NumberFormat("en-US", {
@@ -129,6 +144,18 @@ const headerValueCellClass = "relative z-[1] flex min-h-full min-w-0 items-cente
 /** Forecast columns — mute via color (not opacity) so sticky headers stay above body paint. */
 const forecastMuteClass = "text-[#A1A1AA]";
 
+function forecastColumnStyle(isForecast: boolean | undefined, isFirstForecast: boolean): CSSProperties | undefined {
+  if (!isForecast) return undefined;
+  return {
+    ...EARNINGS_FORECAST_BAND_BG_STYLE,
+    ...(isFirstForecast ? EARNINGS_FORECAST_BAND_EDGE_STYLE : undefined),
+    // Extend through the grid's 8px column gap, while keeping breathing room after each value.
+    width: "calc(100% + 8px)",
+    paddingRight: 8,
+    boxSizing: "border-box",
+  };
+}
+
 /** Matches {@link ScreenerTable} / {@link CryptoTable} header band. */
 const incomeHeaderRowClass = "min-h-[44px]";
 
@@ -144,6 +171,7 @@ export function StockIncomeStatementTable({
   showPeriodEndingRow = true,
   showLabelColumnRule = false,
   viewportScroll = true,
+  scrollAlignEnd = false,
 }: {
   model: IncomeStatementTableModel;
   /** Opens the same fundamentals chart modal as Overview Key Stats when the row maps to a charting metric. */
@@ -156,6 +184,8 @@ export function StockIncomeStatementTable({
    * summary tables — nested scrollports flash a scrollbar while the page scrolls.
    */
   viewportScroll?: boolean;
+  /** Pin horizontal scroll to the latest / forecast columns (Earnings estimates summary). */
+  scrollAlignEnd?: boolean;
 }) {
   const { columns, columnPeriodEnds, columnIsForecast, rows, ttm, periodColumnHeader } = model;
   const periodHeaderLabel = periodColumnHeader ?? "Fiscal Year";
@@ -163,6 +193,7 @@ export function StockIncomeStatementTable({
   const dataColumnCount = columns.length + (ttm ? 1 : 0);
   const gridTemplateColumns = stockTableGridTemplateColumns(dataColumnCount);
   const labelRule = showLabelColumnRule ? stickyLabelColumnRuleClass : undefined;
+  const scrollAlignKey = `${periodHeaderLabel}:${columns.join("|")}`;
 
   /** Align forecast opacity with annual value indices when TTM is leading or trailing. */
   const forecastByValueIndex = (() => {
@@ -171,31 +202,48 @@ export function StockIncomeStatementTable({
     if (ttmLeading) return [false, ...columnIsForecast];
     return [...columnIsForecast, false];
   })();
+  const firstForecastValueIndex = forecastByValueIndex?.findIndex(Boolean) ?? -1;
+  const forecastColumnCount =
+    firstForecastValueIndex >= 0 && forecastByValueIndex
+      ? forecastByValueIndex.length - firstForecastValueIndex
+      : 0;
 
-  const yearHeaders = columns.map((y, i) => (
-    <div
-      key={`col-${i}`}
-      className={cn(
-        headerYearClass,
-        headerValueCellClass,
-        columnIsForecast?.[i] && forecastMuteClass,
-      )}
-    >
-      {y}
-    </div>
-  ));
-  const periodHeaders = columnPeriodEnds.map((label, i) => (
-    <div
-      key={`period-end-${i}`}
-      className={cn(
-        headerPeriodEndClass,
-        headerValueCellClass,
-        columnIsForecast?.[i] && forecastMuteClass,
-      )}
-    >
-      {label}
-    </div>
-  ));
+  const yearHeaders = columns.map((y, i) => {
+    const isForecast = Boolean(columnIsForecast?.[i]);
+    const valueIndex = ttmLeading && ttm ? i + 1 : i;
+    return (
+      <div
+        key={`col-${i}`}
+        className={cn(
+          headerYearClass,
+          headerValueCellClass,
+          isForecast && "bg-transparent",
+          isForecast && forecastMuteClass,
+        )}
+        style={forecastColumnStyle(isForecast, valueIndex === firstForecastValueIndex)}
+      >
+        {y}
+      </div>
+    );
+  });
+  const periodHeaders = columnPeriodEnds.map((label, i) => {
+    const isForecast = Boolean(columnIsForecast?.[i]);
+    const valueIndex = ttmLeading && ttm ? i + 1 : i;
+    return (
+      <div
+        key={`period-end-${i}`}
+        className={cn(
+          headerPeriodEndClass,
+          headerValueCellClass,
+          isForecast && "bg-transparent",
+          isForecast && forecastMuteClass,
+        )}
+        style={forecastColumnStyle(isForecast, valueIndex === firstForecastValueIndex)}
+      >
+        {label}
+      </div>
+    );
+  });
   const ttmYearHeader = ttm ? (
     <div className={cn(headerYearClass, headerValueCellClass)}>{ttm.columnLabel}</div>
   ) : null;
@@ -204,7 +252,15 @@ export function StockIncomeStatementTable({
   ) : null;
 
   return (
-    <ScreenerTableScroll mobileScroll viewportScroll={viewportScroll}>
+    <ScreenerTableScroll
+      mobileScroll
+      viewportScroll={viewportScroll}
+      scrollAlignEnd={scrollAlignEnd}
+      scrollAlignKey={scrollAlignKey}
+      tableMinWidthPx={
+        scrollAlignEnd ? stockTableScrollMinWidthPx(dataColumnCount) : undefined
+      }
+    >
       <div className="bg-white">
         <div
           className={
@@ -242,10 +298,23 @@ export function StockIncomeStatementTable({
               row={row}
               gridTemplateColumns={gridTemplateColumns}
               columnIsForecast={forecastByValueIndex}
+              firstForecastIndex={firstForecastValueIndex}
               onMetricClick={onMetricClick}
               showLabelColumnRule={showLabelColumnRule}
             />
           ))}
+          {firstForecastValueIndex >= 0 && forecastColumnCount > 0 ? (
+            <div
+              className="pointer-events-none absolute inset-y-0 z-30 flex items-center justify-center"
+              style={{
+                left: `calc(${STOCK_TABLE_LABEL_COL_WIDTH} + ((100% - ${STOCK_TABLE_LABEL_COL_WIDTH}) * ${firstForecastValueIndex} / ${dataColumnCount}))`,
+                width: `calc((100% - ${STOCK_TABLE_LABEL_COL_WIDTH}) * ${forecastColumnCount} / ${dataColumnCount})`,
+              }}
+              aria-hidden
+            >
+              <span className={EARNINGS_FORECAST_BADGE_CLASS}>Forecast</span>
+            </div>
+          ) : null}
         </div>
       </div>
     </ScreenerTableScroll>
@@ -256,12 +325,14 @@ function IncomeRow({
   row,
   gridTemplateColumns,
   columnIsForecast,
+  firstForecastIndex,
   onMetricClick,
   showLabelColumnRule,
 }: {
   row: IncomeStatementRowModel;
   gridTemplateColumns: string;
   columnIsForecast?: boolean[];
+  firstForecastIndex: number;
   onMetricClick?: (metricId: ChartingMetricId) => void;
   showLabelColumnRule?: boolean;
 }) {
@@ -293,18 +364,42 @@ function IncomeRow({
     const { text, tone } = formatCell(row.format, v, row.id);
     const isGrowth = row.format === "pctGrowth";
     const growthMissing = isGrowth && (v == null || !Number.isFinite(v));
+    const isForecast = Boolean(columnIsForecast?.[i]);
+    const hasSub = row.subValues != null;
+    const subRaw = hasSub ? (row.subValues![i] ?? null) : null;
+    const sub =
+      hasSub
+        ? formatCell("pctGrowth", subRaw, `${row.id}_growth`)
+        : null;
+    const subMissing = subRaw == null || !Number.isFinite(subRaw);
     return (
       <div
         key={i}
         className={cn(
           numCellClass,
-          "flex min-h-full items-center justify-end truncate self-stretch",
+          "flex min-h-full justify-end self-stretch",
+          hasSub ? "flex-col items-end justify-center gap-0.5 py-2" : "items-center truncate",
           isGrowth && "font-medium",
           isGrowth && (growthMissing ? "text-[#71717A]" : toneClass(tone)),
-          columnIsForecast?.[i] && forecastMuteClass,
+          isForecast && forecastMuteClass,
         )}
+        style={forecastColumnStyle(isForecast, i === firstForecastIndex)}
       >
-        {text}
+        <span className={cn(hasSub && "leading-5")}>{text}</span>
+        {sub ? (
+          <span
+            className={cn(
+              "text-[12px] font-medium leading-4 tabular-nums",
+              isForecast
+                ? forecastMuteClass
+                : subMissing
+                  ? "text-[#71717A]"
+                  : toneClass(sub.tone),
+            )}
+          >
+            {sub.text}
+          </span>
+        ) : null}
       </div>
     );
   });

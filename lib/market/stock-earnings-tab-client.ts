@@ -26,6 +26,14 @@ function writeMemory(url: string, payload: StockEarningsTabPayload | null): void
   memory.set(url, { at: Date.now(), payload });
 }
 
+/** Sync read of the in-memory cache (no network) — used to paint prefetched data immediately. */
+export function peekStockEarningsTabPayloadClient(
+  ticker: string,
+  preview = false,
+): StockEarningsTabPayload | null {
+  return readMemory(stockEarningsTabApiUrl(ticker, preview));
+}
+
 function fetchEarningsJson(url: string, signal?: AbortSignal): Promise<StockEarningsTabPayload | null> {
   return fetch(url, signal ? { signal } : undefined).then(async (res) => {
     if (!res.ok) return null;

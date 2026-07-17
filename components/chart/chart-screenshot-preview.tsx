@@ -3,22 +3,22 @@
 import { forwardRef, useMemo } from "react";
 import { ChartingWorkspace } from "@/components/charting/charting-workspace";
 import { PriceChart } from "@/components/chart/PriceChart";
-import { ChartScreenshotAssetHeader } from "@/components/chart/chart-screenshot-asset-header";
-import {
-  MultichartFundamentalsBar,
-  KEY_STATS_SCREENSHOT_PERIOD_MARGINS,
-} from "@/components/stock/multichart-fundamentals-bar";
 import {
   CHART_SCREENSHOT_CONTENT_SCALE,
   CHART_SCREENSHOT_FRAME_PADDING_PX,
   CHART_SCREENSHOT_HEADER_CHART_GAP_PX,
-  CHART_SCREENSHOT_HEIGHT_PX,
-  CHART_SCREENSHOT_WIDTH_PX,
   chartScreenshotChartAreaSize,
   chartScreenshotChartBlockHeightPx,
   chartScreenshotContentBoxSize,
+  chartScreenshotFrameSize,
   chartScreenshotPreviewDisplayScale,
 } from "@/lib/chart/chart-screenshot-constants";
+import { ChartScreenshotAssetHeader } from "@/components/chart/chart-screenshot-asset-header";
+import { PortfolioAllocationScreenshotContent } from "@/components/portfolio/portfolio-allocation-screenshot-content";
+import {
+  MultichartFundamentalsBar,
+  KEY_STATS_SCREENSHOT_PERIOD_MARGINS,
+} from "@/components/stock/multichart-fundamentals-bar";
 import type { ChartScreenshotExportOptions } from "@/lib/chart/chart-screenshot-export-options";
 import type { ChartScreenshotSnapshot } from "@/lib/chart/chart-screenshot-types";
 import { stockOverviewSeriesLabel } from "@/lib/chart/chart-screenshot-types";
@@ -38,12 +38,21 @@ type ChartScreenshotPreviewProps = {
 export const ChartScreenshotPreview = forwardRef<HTMLDivElement, ChartScreenshotPreviewProps>(
   function ChartScreenshotPreview({ snapshot, fitScale, previewZoomPercent, exportOptions }, ref) {
     const previewScale = chartScreenshotPreviewDisplayScale(fitScale, previewZoomPercent);
-    const contentBox = useMemo(() => chartScreenshotContentBoxSize(), []);
+    const isKeyStatsMetric = snapshot.variant === "keyStatsMetric" && snapshot.keyStatsMetric;
+    const isStockOverview = snapshot.variant === "stockOverview" && snapshot.stockOverview;
+    const isPortfolioAllocation =
+      snapshot.variant === "portfolioAllocation" && snapshot.portfolioAllocation;
+    const frameSize = useMemo(
+      () => chartScreenshotFrameSize(snapshot.variant),
+      [snapshot.variant],
+    );
+    const contentBox = useMemo(
+      () => chartScreenshotContentBoxSize(frameSize.height),
+      [frameSize.height],
+    );
     const chartArea = useMemo(() => chartScreenshotChartAreaSize(), []);
     const chartBlockHeightPx = useMemo(() => chartScreenshotChartBlockHeightPx(), []);
     const contentLogicalWidth = chartArea.width / CHART_SCREENSHOT_CONTENT_SCALE;
-    const isKeyStatsMetric = snapshot.variant === "keyStatsMetric" && snapshot.keyStatsMetric;
-    const isStockOverview = snapshot.variant === "stockOverview" && snapshot.stockOverview;
     const keyStatsPreviewDisplayOptions = useMemo(() => {
       if (!snapshot.keyStatsMetric) return null;
       return {
@@ -62,8 +71,8 @@ export const ChartScreenshotPreview = forwardRef<HTMLDivElement, ChartScreenshot
     ]);
 
     /** Preview card grows/shrinks with zoom — 100% = fit-to-pane size. */
-    const frameWidth = CHART_SCREENSHOT_WIDTH_PX * previewScale;
-    const frameHeight = CHART_SCREENSHOT_HEIGHT_PX * previewScale;
+    const frameWidth = frameSize.width * previewScale;
+    const frameHeight = frameSize.height * previewScale;
 
     return (
       <div
@@ -72,7 +81,8 @@ export const ChartScreenshotPreview = forwardRef<HTMLDivElement, ChartScreenshot
       >
         <div
           className={cn(
-            "relative shrink-0 overflow-hidden rounded-2xl border border-[#E4E4E7] bg-white",
+            "relative shrink-0 overflow-hidden rounded-2xl border border-[#E4E4E7]",
+            isPortfolioAllocation ? "bg-[#FAFAFA]" : "bg-white",
             APP_MODAL_SHELL_SHADOW_CLASS,
           )}
           style={{
@@ -83,8 +93,8 @@ export const ChartScreenshotPreview = forwardRef<HTMLDivElement, ChartScreenshot
           <div
             className="absolute left-0 top-0"
             style={{
-              width: CHART_SCREENSHOT_WIDTH_PX,
-              height: CHART_SCREENSHOT_HEIGHT_PX,
+              width: frameSize.width,
+              height: frameSize.height,
               transform: `scale(${previewScale})`,
               transformOrigin: "top left",
             }}
@@ -92,48 +102,61 @@ export const ChartScreenshotPreview = forwardRef<HTMLDivElement, ChartScreenshot
             <div
               ref={ref}
               data-chart-screenshot-export-root
-              className="pointer-events-none box-border flex select-none flex-col overflow-hidden bg-white"
+              data-chart-screenshot-width={frameSize.width}
+              data-chart-screenshot-height={frameSize.height}
+              className={cn(
+                "pointer-events-none box-border flex select-none flex-col overflow-hidden",
+                isPortfolioAllocation ? "bg-[#FAFAFA]" : "bg-white",
+              )}
               style={{
-                width: CHART_SCREENSHOT_WIDTH_PX,
-                height: CHART_SCREENSHOT_HEIGHT_PX,
-                padding: CHART_SCREENSHOT_FRAME_PADDING_PX,
+                width: frameSize.width,
+                height: frameSize.height,
+                padding: isPortfolioAllocation ? 16 : CHART_SCREENSHOT_FRAME_PADDING_PX,
               }}
             >
-              <ChartScreenshotAssetHeader
-                ticker={snapshot.ticker}
-                companyName={snapshot.companyName}
-                logoUrl={snapshot.logoUrl}
-                metricTitle={
-                  isKeyStatsMetric
-                    ? snapshot.keyStatsMetric!.metricLabel
-                    : isStockOverview
-                      ? stockOverviewSeriesLabel(snapshot.stockOverview!.series)
-                      : null
-                }
-              />
+              {isPortfolioAllocation ? null : (
+                <ChartScreenshotAssetHeader
+                  ticker={snapshot.ticker}
+                  companyName={snapshot.companyName}
+                  logoUrl={snapshot.logoUrl}
+                  metricTitle={
+                    isKeyStatsMetric
+                      ? snapshot.keyStatsMetric!.metricLabel
+                      : isStockOverview
+                        ? stockOverviewSeriesLabel(snapshot.stockOverview!.series)
+                        : null
+                  }
+                />
+              )}
               <div
                 className={cn(
-                  "flex min-h-0 flex-1",
-                  isKeyStatsMetric || isStockOverview
-                    ? "items-stretch overflow-visible"
-                    : "items-center justify-center overflow-hidden",
+                  "flex min-h-0",
+                  isPortfolioAllocation
+                    ? "flex-1 items-center justify-center overflow-visible"
+                    : isKeyStatsMetric || isStockOverview
+                      ? "min-h-0 flex-1 items-stretch overflow-visible"
+                      : "min-h-0 flex-1 items-center justify-center overflow-hidden",
                 )}
                 style={{
-                  marginTop: CHART_SCREENSHOT_HEADER_CHART_GAP_PX,
-                  width: contentBox.width,
-                  height: chartArea.height,
+                  marginTop: isPortfolioAllocation ? 0 : CHART_SCREENSHOT_HEADER_CHART_GAP_PX,
+                  width: isPortfolioAllocation
+                    ? frameSize.width - 32
+                    : contentBox.width,
+                  height: isPortfolioAllocation ? undefined : chartArea.height,
                 }}
               >
                 <div
                   className="[&_*]:!animate-none [&_*]:!transition-none"
                   style={
-                    isKeyStatsMetric || isStockOverview
-                      ? { width: "100%", minWidth: 0 }
-                      : {
-                          width: contentLogicalWidth,
-                          transform: `scale(${CHART_SCREENSHOT_CONTENT_SCALE})`,
-                          transformOrigin: "center center",
-                        }
+                    isPortfolioAllocation
+                      ? { width: "100%", minWidth: 0, alignSelf: "stretch" }
+                      : isKeyStatsMetric || isStockOverview
+                        ? { width: "100%", minWidth: 0 }
+                        : {
+                            width: contentLogicalWidth,
+                            transform: `scale(${CHART_SCREENSHOT_CONTENT_SCALE})`,
+                            transformOrigin: "center center",
+                          }
                   }
                 >
                   {isKeyStatsMetric && keyStatsPreviewDisplayOptions ? (
@@ -172,6 +195,17 @@ export const ChartScreenshotPreview = forwardRef<HTMLDivElement, ChartScreenshot
                         showHorizontalLegend: exportOptions.showHorizontalLegend,
                         showRangeBadges: exportOptions.showValues,
                       }}
+                    />
+                  ) : isPortfolioAllocation ? (
+                    <PortfolioAllocationScreenshotContent
+                      rows={snapshot.portfolioAllocation!.rows}
+                      portfolioName={snapshot.portfolioAllocation!.portfolioName}
+                      portfolioLogoUrl={snapshot.portfolioAllocation!.portfolioLogoUrl}
+                      avatarImageSrc={snapshot.portfolioAllocation!.avatarImageSrc}
+                      avatarInitials={snapshot.portfolioAllocation!.avatarInitials}
+                      showSliceLabels={exportOptions.showAllocationSliceLabels ?? true}
+                      showLegend={exportOptions.showAllocationLegend ?? true}
+                      showLegendValues={exportOptions.showValues}
                     />
                   ) : (
                   <ChartingWorkspace

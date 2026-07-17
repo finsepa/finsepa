@@ -16,7 +16,7 @@ type Ctx = { params: Promise<{ ticker: string }> };
 
 const getCachedKeyStatsBundle = unstable_cache(
   async (ticker: string) => buildStockKeyStatsBundle(ticker, { refreshFundamentals: false }),
-  ["stock-key-stats-bundle-v2-earnings-actuals-overlay"],
+  ["stock-key-stats-bundle-v3-buybacks"],
   // Key stats are fundamentals-backed; cache long to avoid repeat tab burns.
   { revalidate: 12 * 60 * 60 },
 );

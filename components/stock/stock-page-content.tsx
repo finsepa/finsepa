@@ -12,6 +12,7 @@ import type { StockDetailHeaderMeta } from "@/lib/market/stock-header-meta";
 import type { ChartingMetricId } from "@/lib/market/stock-charting-metrics";
 import type { StockDetailTabId } from "@/lib/stock/stock-detail-tab";
 import { prefetchStockEarningsTabPayload } from "@/lib/market/stock-earnings-tab-client";
+import { prefetchStockTargetPricePayload } from "@/lib/market/stock-target-price-client";
 import { parseStockDetailTabQuery } from "@/lib/stock/stock-detail-tab";
 import { coerceStockDetailTabForEtf, isStockDetailEtf, normalizeStockDetailTab } from "@/lib/stock/stock-etf";
 import { AssetPortfolioHoldingsTab } from "@/components/portfolio/asset-portfolio-holdings-tab";
@@ -19,13 +20,12 @@ import { StockDetailTabNav } from "./stock-detail-tab-nav";
 import { useRegisterStockDetailTabHost } from "./stock-detail-tab-host-context";
 import { MultichartsTabSkeleton } from "@/components/stock/stock-multicharts-tab-skeleton";
 import { StockFinancialsTabSkeleton } from "@/components/stock/stock-financials-tab-skeleton";
+import { StockEarningsTabLoading } from "@/components/stock/stock-earnings-tab-loading";
 import { StockChartingTab } from "./stock-charting-tab";
-import { StockEarningsTab } from "./stock-earnings-tab";
 import { StockInsidersTab } from "./stock-insiders-tab";
 import { StockPeersTab } from "./stock-peers-tab";
 import { StockProfileTab } from "./stock-profile-tab";
 import { StockSuperinvestorsTab } from "./stock-superinvestors-tab";
-import { StockTargetPriceTab } from "./stock-target-price-tab";
 import { StockBreadcrumbs } from "./stock-breadcrumbs";
 import { StockHeader } from "./stock-header";
 import { ChartControls } from "./chart-controls";
@@ -82,6 +82,23 @@ const StockFinancialsTab = dynamic(
   {
     ssr: false,
     loading: () => <StockFinancialsTabSkeleton />,
+  },
+);
+
+const StockEarningsTab = dynamic(
+  () => import("./stock-earnings-tab").then((m) => m.StockEarningsTab),
+  { loading: () => <StockEarningsTabLoading /> },
+);
+
+const StockTargetPriceTab = dynamic(
+  () => import("./stock-target-price-tab").then((m) => m.StockTargetPriceTab),
+  {
+    loading: () => (
+      <div className="w-full min-w-0 space-y-4 pt-1">
+        <div className="h-40 w-full animate-pulse rounded-[12px] bg-[#F4F4F5]" />
+        <div className="h-32 w-full animate-pulse rounded-[12px] bg-[#F4F4F5]" />
+      </div>
+    ),
   },
 );
 
@@ -374,7 +391,9 @@ export function StockPageContent({
     (tab: StockDetailTabId) => {
       const next = isEtf ? coerceStockDetailTabForEtf(tab) : tab;
       if (next === displayTab) return;
-      if (next === "earnings") prefetchStockEarningsTabPayload(ticker, false);
+      // Warm data before mounting heavy tabs so the skeleton is usually skipped.
+      if (next === "earnings") prefetchStockEarningsTabPayload(ticker, true);
+      if (next === "target-price") prefetchStockTargetPricePayload(ticker);
       setDisplayTab(next);
       setTabsMounted((m) => ({ ...m, [next]: true }));
       startTabTransition(() => setTabInUrl(next));
@@ -384,7 +403,8 @@ export function StockPageContent({
 
   const handleTabIntent = useCallback(
     (tab: StockDetailTabId) => {
-      if (tab === "earnings") prefetchStockEarningsTabPayload(ticker, false);
+      if (tab === "earnings") prefetchStockEarningsTabPayload(ticker, true);
+      if (tab === "target-price") prefetchStockTargetPricePayload(ticker);
     },
     [ticker],
   );
@@ -393,7 +413,11 @@ export function StockPageContent({
 
   useEffect(() => {
     if (displayTab === "earnings" || isEtf) return;
-    const run = () => prefetchStockEarningsTabPayload(ticker, false);
+    // Idle warm: Earnings preview only (no SEC/IR), plus cheap cached Target Price.
+    const run = () => {
+      prefetchStockEarningsTabPayload(ticker, true);
+      prefetchStockTargetPricePayload(ticker);
+    };
     if (typeof requestIdleCallback === "function") {
       const id = requestIdleCallback(run, { timeout: 4000 });
       return () => cancelIdleCallback(id);
@@ -1387,7 +1411,10 @@ export function StockPageContent({
           className={displayTab === "target-price" ? "block" : "hidden"}
         >
           <div className="w-full min-w-0">
-            <StockTargetPriceTab ticker={ticker} />
+            <StockTargetPriceTab
+              ticker={ticker}
+              initialPerformance={initialPageData?.ticker === ticker ? initialPageData.performance : null}
+            />
           </div>
         </div>
       ) : null}

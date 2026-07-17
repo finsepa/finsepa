@@ -1,12 +1,13 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { startTransition, useCallback, useEffect, useState, type ComponentType } from "react";
+import { startTransition, useCallback, useEffect, useMemo, useState, type ComponentType } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Pencil } from "@/lib/icons";
+import { Download, Pencil } from "@/lib/icons";
 import { topbarSquircleIconClass } from "@/components/design-system/topbar-control-classes";
 
 import { AssetPageTopLoader } from "@/components/layout/asset-page-top-loader";
+import { ChartScreenshotDownloadModal } from "@/components/chart/chart-screenshot-download-modal";
 import { PortfolioQuickAddMenu } from "@/components/layout/portfolio-quick-add-menu";
 import { PortfolioAllocationView } from "@/components/portfolio/portfolio-allocation-view";
 import { PortfolioHoldingsEmptyState } from "@/components/portfolio/portfolio-holdings-empty-state";
@@ -31,6 +32,7 @@ import {
   searchParamFromPortfolioViewTab,
 } from "@/components/portfolio/portfolio-page-tabs";
 import { PortfolioHoldingsSubTabMobileCard } from "@/components/portfolio/portfolio-holdings-sub-tab-mobile-card";
+import { useAllocationCenterAvatar } from "@/components/portfolio/use-allocation-center-avatar";
 import { PortfolioListLogo } from "@/components/portfolio/portfolio-brokerage-logo";
 import { PortfolioSyncStatusIcon } from "@/components/portfolio/portfolio-sync-status-icon";
 import { TransactionPortfolioField } from "@/components/portfolio/transaction-portfolio-field";
@@ -38,7 +40,10 @@ import { PortfoliosBreadcrumbs } from "@/components/portfolios/portfolios-breadc
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 import { totalCostBasisInvested } from "@/lib/portfolio/overview-metrics";
+import { buildPortfolioAllocationRows } from "@/lib/portfolio/portfolio-allocation-rows";
 import { tradeSymbolsFromHistory } from "@/lib/portfolio/realized-pnl-from-trades";
+import type { ChartScreenshotSnapshot } from "@/lib/chart/chart-screenshot-types";
+import { imageSrcToDataUrl } from "@/lib/media/same-origin-remote-image";
 import { AssetChartSkeleton } from "@/components/ui/chart-skeleton";
 import { cn } from "@/lib/utils";
 
@@ -227,6 +232,58 @@ export function PortfolioPageView({
     holdings.length > 0 || tradeSymbolsFromHistory(transactions).length > 0;
   const showOverviewHoldingsBlock = hasPortfolioLedger;
   const benchmarkInvestedUsd = totalCostBasisInvested(holdings);
+  const allocationRows = useMemo(
+    () => buildPortfolioAllocationRows(holdings, transactions),
+    [holdings, transactions],
+  );
+  const { imageSrc: allocationAvatarImageSrc, initials: allocationAvatarInitials } =
+    useAllocationCenterAvatar();
+  const [allocationDownloadOpen, setAllocationDownloadOpen] = useState(false);
+  const [allocationDownloadSnapshot, setAllocationDownloadSnapshot] =
+    useState<ChartScreenshotSnapshot | null>(null);
+
+  const showAllocationDownload =
+    showOverviewHoldingsBlock && overviewHoldingsSubTab === "allocation" && allocationRows.length > 0;
+
+  const handleOpenAllocationDownload = useCallback(async () => {
+    if (allocationRows.length === 0) return;
+    const avatarDataUrl = await imageSrcToDataUrl(allocationAvatarImageSrc);
+    setAllocationDownloadSnapshot({
+      variant: "portfolioAllocation",
+      ticker: portfolioName,
+      companyName: portfolioName,
+      periodMode: "annual",
+      timeRange: "all",
+      chartType: "bars",
+      selectedMetrics: [],
+      fullPoints: [],
+      portfolioAllocation: {
+        portfolioName,
+        portfolioLogoUrl: selectedPortfolio?.snaptrade?.brokerageLogoUrl ?? null,
+        rows: allocationRows,
+        avatarImageSrc: avatarDataUrl ?? allocationAvatarImageSrc,
+        avatarInitials: allocationAvatarInitials,
+      },
+    });
+    setAllocationDownloadOpen(true);
+  }, [
+    allocationRows,
+    portfolioName,
+    selectedPortfolio?.snaptrade?.brokerageLogoUrl,
+    allocationAvatarImageSrc,
+    allocationAvatarInitials,
+  ]);
+
+  const allocationDownloadButton = showAllocationDownload ? (
+    <button
+      type="button"
+      onClick={() => void handleOpenAllocationDownload()}
+      className={cn(topbarSquircleIconClass, "shrink-0")}
+      aria-label="Download allocation"
+    >
+      <Download className="h-5 w-5" strokeWidth={1.75} aria-hidden />
+    </button>
+  ) : null;
 
   const panelClass = (tab: PortfolioViewTab) =>
     cn(viewTab === tab ? "flex min-h-0 flex-1 flex-col" : "hidden");
@@ -301,6 +358,11 @@ export function PortfolioPageView({
       </div>
 
       <PortfolioOverviewAthProvider>
+        <ChartScreenshotDownloadModal
+          open={allocationDownloadOpen}
+          onClose={() => setAllocationDownloadOpen(false)}
+          snapshot={allocationDownloadSnapshot}
+        />
         <PortfolioOverviewCards
           holdings={holdings}
           transactions={transactions}
@@ -323,16 +385,20 @@ export function PortfolioPageView({
               />
               <PortfolioOverviewMetrics holdings={holdings} transactions={transactions} />
               <div className="max-md:pt-0 pt-6">
-                <SecondaryTabs
-                  className="mb-4 hidden md:block"
-                  aria-label="Holdings view"
-                  items={PORTFOLIO_HOLDINGS_SUB_TAB_ITEMS}
-                  value={overviewHoldingsSubTab}
-                  onValueChange={onOverviewHoldingsSubTabChange}
-                />
+                <div className="mb-4 hidden items-center justify-between gap-3 md:flex">
+                  <SecondaryTabs
+                    className="min-w-0 flex-1"
+                    aria-label="Holdings view"
+                    items={PORTFOLIO_HOLDINGS_SUB_TAB_ITEMS}
+                    value={overviewHoldingsSubTab}
+                    onValueChange={onOverviewHoldingsSubTabChange}
+                  />
+                  {allocationDownloadButton}
+                </div>
                 <PortfolioHoldingsSubTabMobileCard
                   active={overviewHoldingsSubTab}
                   onChange={onOverviewHoldingsSubTabChange}
+                  trailing={allocationDownloadButton}
                 >
                   {!showOverviewHoldingsBlock ? (
                     <PortfolioHoldingsEmptyState

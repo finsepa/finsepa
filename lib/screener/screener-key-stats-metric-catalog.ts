@@ -96,6 +96,7 @@ const RETURNS_METRICS: ScreenerKeyStatMetricDef[] = [
 const DIVIDENDS_METRICS: ScreenerKeyStatMetricDef[] = [
   m("div-yield", "Yield", "dividends"),
   m("div-payout", "Payout", "dividends"),
+  m("div-buybacks", "Buybacks", "dividends"),
 ];
 
 const RISK_METRICS: ScreenerKeyStatMetricDef[] = [

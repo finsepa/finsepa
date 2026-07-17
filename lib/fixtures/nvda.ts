@@ -183,6 +183,7 @@ export function getNvdaKeyStatsBundle(): StockKeyStatsBundle {
     dividends: [
       { label: "Yield", value: "—" },
       { label: "Payout", value: "—" },
+      { label: "Buybacks", value: "—" },
     ],
     risk: [
       { label: "Beta (5Y)", value: "—" },
