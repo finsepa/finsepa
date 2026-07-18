@@ -76,6 +76,7 @@ import {
 } from "@/lib/chart/stock-1d-session-bars-storage";
 import { isStock1DLiveMinuteChartTicker, usesStock1DLiveWsMinutePipeline, usesStock1DLiveWsPostMarketChart } from "@/lib/market/stock-1d-live-minute-chart-tickers";
 import { isCryptoLive1DSymbol, usesCryptoLogPriceScale } from "@/lib/market/crypto-live-1d-tickers";
+import { pinCryptoLive1DChartTip } from "@/lib/chart/crypto-live-1d-chart-tip";
 import {
   appendLiveSessionNowTail,
   applyStock1DLiveSessionTimeScale,
@@ -332,6 +333,11 @@ type Props = {
   liveSessionMinute?: boolean;
   /** Latest spot — during 1D regular session, extends the line to the current wall-clock time. */
   liveSpotUsd?: number | null;
+  /**
+   * Crypto 24H only: data timestamp (UNIX sec) of `liveSpotUsd` from the header live-price poll.
+   * When set with a valid WS spot, only the chart tip is pinned to match the header.
+   */
+  liveQuotedAtSec?: number | null;
   /** Frozen AH quote timestamp (20:00 ET cap) — post-market allowlist chart tail only. */
   livePostMarketTailTimeUnix?: number | null;
   /**
@@ -876,6 +882,7 @@ export function PriceChart({
   initialChart,
   liveSessionMinute: liveSessionMinuteProp,
   liveSpotUsd = null,
+  liveQuotedAtSec = null,
   livePostMarketTailTimeUnix = null,
   holdingsStyle = false,
   tradeMarkers = EMPTY_TRADE_MARKERS,
@@ -1059,6 +1066,16 @@ export function PriceChart({
 
   const chartPoints = useMemo(() => {
     const now = new Date(sessionNowMs);
+    // Crypto 24H: keep 2m history; pin only the tip to the header's live WS price + timestamp.
+    if (
+      kind === "crypto" &&
+      range === "1D" &&
+      !holdingsStyle &&
+      series === "price" &&
+      isCryptoLive1DSymbol(symbol)
+    ) {
+      return pinCryptoLive1DChartTip(chartSourcePoints, liveSpotUsd, liveQuotedAtSec);
+    }
     // Live share-price pin only for Price series — market cap / return stay last-session EODHD.
     if (
       kind === "stock" &&
@@ -1149,7 +1166,7 @@ export function PriceChart({
       now,
       liveSessionChartOptions,
     );
-  }, [kind, range, holdingsStyle, liveSessionMinute, series, symbol, chartSourcePoints, liveSpotUsd, livePostMarketTailTimeUnix, sessionNowMs, liveSessionChartOptions]);
+  }, [kind, range, holdingsStyle, liveSessionMinute, series, symbol, chartSourcePoints, liveSpotUsd, liveQuotedAtSec, livePostMarketTailTimeUnix, sessionNowMs, liveSessionChartOptions]);
   const [hoverPrice, setHoverPrice] = useState<number | null>(null);
   const [hoverTimeUnix, setHoverTimeUnix] = useState<number | null>(null);
   const [hoverPoint, setHoverPoint] = useState<{ x: number; y: number } | null>(null);

@@ -2,6 +2,9 @@
   "name": "finsepa-crypto-minute-ingest",
   "private": true,
   "type": "module",
+  "scripts": {
+    "test": "node --test"
+  },
   "dependencies": {
     "@supabase/supabase-js": "2.105.1",
     "ws": "^8.21.0"

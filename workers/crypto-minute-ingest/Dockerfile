@@ -10,7 +10,7 @@ RUN apk add --no-cache ca-certificates
 COPY package.json ./
 RUN npm install --omit=dev
 
-COPY crypto-ws-minute-ingest.mjs ./
+COPY crypto-ws-minute-ingest.mjs crypto-minute-ingest-core.mjs ./
 
 ENV NODE_ENV=production
 EXPOSE 8080

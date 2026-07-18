@@ -18,6 +18,10 @@ import dns from "node:dns";
 import http from "node:http";
 import WebSocket from "ws";
 import { createClient } from "@supabase/supabase-js";
+import {
+  resolveFlushDebounceMs,
+  setPendingMinuteClose,
+} from "./crypto-minute-ingest-core.mjs";
 
 dns.setDefaultResultOrder("ipv4first");
 
@@ -32,8 +36,11 @@ const WS_PAIRS = (process.env.CRYPTO_WS_PAIRS ?? "BTC-USD")
   .map((s) => s.trim().toUpperCase())
   .filter(Boolean);
 const HEARTBEAT_MS = Number(process.env.CRYPTO_WS_HEARTBEAT_MS ?? 60_000);
-/** Default 2s — avoids hammering PostgREST when Auth/DB is degraded. */
-const FLUSH_DEBOUNCE_MS = Number(process.env.CRYPTO_WS_FLUSH_DEBOUNCE_MS ?? 2_000);
+/** Default 6s, clamped to at least 5s, to limit same-minute PostgREST rewrites. */
+const FLUSH_DEBOUNCE_MS = resolveFlushDebounceMs(
+  process.env.CRYPTO_WS_FLUSH_DEBOUNCE_MS,
+  (message) => console.warn(new Date().toISOString(), "[crypto-ws]", message),
+);
 const FLUSH_MAX_ATTEMPTS = Number(process.env.CRYPTO_WS_FLUSH_MAX_ATTEMPTS ?? 5);
 const SUPABASE_UPSERT_TIMEOUT_MS = Number(process.env.SUPABASE_UPSERT_TIMEOUT_MS ?? 15_000);
 const HEALTH_PORT = Number(process.env.PORT ?? process.env.CRYPTO_WS_HEALTH_PORT ?? 8080);
@@ -97,10 +104,6 @@ function baseSymbolFromPair(pair) {
   return base && /^[A-Z0-9]{1,12}$/.test(base) ? base : null;
 }
 
-function minuteBucketUnix(tradeSec) {
-  return Math.floor(tradeSec / 60) * 60;
-}
-
 function resolveTradeSec(rawTs) {
   const nowSec = Math.floor(Date.now() / 1000);
   let t = rawTs;
@@ -143,14 +146,8 @@ let consecutiveFlushFailures = 0;
 
 function queueMinuteClose(base, tradeSec, price) {
   if (!base || !Number.isFinite(price) || price <= 0) return;
-  const bucketUnix = minuteBucketUnix(tradeSec);
   lastPriceBySymbol.set(base, price);
-  pendingUpserts.set(`${base}:${bucketUnix}`, {
-    ticker: base,
-    bucket_unix: bucketUnix,
-    close: price,
-    updated_at: new Date().toISOString(),
-  });
+  setPendingMinuteClose(pendingUpserts, base, tradeSec, price, new Date().toISOString());
   health.lastTradeAt = new Date().toISOString();
   health.lastPrice = price;
   health.pendingUpserts = pendingUpserts.size;

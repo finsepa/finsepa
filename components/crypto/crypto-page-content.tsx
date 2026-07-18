@@ -279,6 +279,12 @@ export function CryptoPageContent({
   const headerLiveSpotForMerge =
     headerLiveSpotClient ?? (serverMatch?.headerLiveSpotUsd != null ? serverMatch.headerLiveSpotUsd : null);
 
+  /** Crypto 24H chart tip only — same WS price/time as the header; null falls back to series tip. */
+  const cryptoLiveWsTipSpot =
+    isLiveCrypto && headerLiveQuote?.source === "ws" ? headerLiveSpotClient : null;
+  const cryptoLiveWsTipQuotedAtSec =
+    isLiveCrypto && headerLiveQuote?.source === "ws" ? headerLiveQuote.quotedAtSec : null;
+
   const spotUi = useMemo(
     () =>
       mergeSessionHeaderWithPerformanceSpot(
@@ -549,6 +555,8 @@ export function CryptoPageContent({
                 height={320}
                 initialChart={initialSessionChartMemo}
                 onDisplayChange={onSessionHeaderDisplay}
+                liveSpotUsd={cryptoLiveWsTipSpot}
+                liveQuotedAtSec={cryptoLiveWsTipQuotedAtSec}
               />
             </div>
           ) : null}
@@ -604,6 +612,8 @@ export function CryptoPageContent({
                     series={chartSeries}
                     initialChart={isLiveCrypto ? initialSessionChartMemo : initialChartMemo}
                     onDisplayChange={isLiveCrypto ? onRangeChartDisplay : undefined}
+                    liveSpotUsd={range === "1D" ? cryptoLiveWsTipSpot : null}
+                    liveQuotedAtSec={range === "1D" ? cryptoLiveWsTipQuotedAtSec : null}
                   />
                 )}
               </ChartControls>
