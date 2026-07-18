@@ -97,7 +97,7 @@ export function MobileBottomSheet({
           <h2
             id={titleId}
             className={cn(
-              "shrink-0 px-4 text-center text-base font-semibold leading-6 text-[#09090B]",
+              "shrink-0 px-4 text-center text-base font-semibold leading-6 text-[#0F0F0F]",
               showDragHandle ? "pb-2 pt-0" : "pb-2 pt-4",
             )}
           >

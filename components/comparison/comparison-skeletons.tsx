@@ -85,7 +85,7 @@ export function ComparisonReturnChartSkeleton() {
   const plotH = 288;
   return (
     <section className="w-full min-w-0 max-w-full overflow-x-hidden bg-white" aria-busy="true" aria-label="Loading return chart">
-      <h3 className="mb-4 text-[18px] font-semibold leading-7 tracking-tight text-[#09090B]">Return</h3>
+      <h3 className="mb-4 text-[18px] font-semibold leading-7 tracking-tight text-[#0F0F0F]">Return</h3>
       <div className="px-2 sm:px-3" style={{ height: totalH }}>
         <SkeletonBox className="w-full rounded-md" style={{ height: plotH }} />
         <div className="mt-0 flex justify-between gap-2 pt-2">

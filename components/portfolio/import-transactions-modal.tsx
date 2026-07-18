@@ -485,7 +485,7 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
         >
           {phase === "success" ? (
             <div className="py-2">
-              <p className="text-sm leading-relaxed text-[#09090B]">
+              <p className="text-sm leading-relaxed text-[#0F0F0F]">
                 You successfully imported <strong>{importedCount}</strong>{" "}
                 {importedCount === 1 ? "transaction" : "transactions"}.
               </p>
@@ -497,7 +497,7 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
           ) : (
             <>
               <div className="mb-4 flex flex-col gap-2">
-                <span className="text-sm font-medium leading-5 text-[#09090B]">Portfolio</span>
+                <span className="text-sm font-medium leading-5 text-[#0F0F0F]">Portfolio</span>
                 <TransactionPortfolioField portfoliosOnly />
               </div>
 
@@ -517,12 +517,12 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
                   onDrop={onDrop}
                   className={cn(
                     "flex min-h-[200px] cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed px-6 py-12 transition-colors",
-                    dragOver ? "border-[#09090B] bg-[#F4F4F5]" : "border-[#D4D4D8] bg-[#FAFAFA] hover:border-[#A1A1AA]",
+                    dragOver ? "border-[#0F0F0F] bg-[#F4F4F5]" : "border-[#D4D4D8] bg-[#FAFAFA] hover:border-[#A1A1AA]",
                   )}
                 >
                   <label className="flex cursor-pointer flex-col items-center gap-2 text-center">
                     <Upload className="h-8 w-8 text-[#71717A]" aria-hidden />
-                    <span className="text-sm font-medium text-[#09090B]">Drop your spreadsheet here</span>
+                    <span className="text-sm font-medium text-[#0F0F0F]">Drop your spreadsheet here</span>
                     <span className="text-xs text-[#71717A]">or click to choose · .csv, .xls, .xlsx</span>
                     <input
                       type="file"
@@ -553,14 +553,14 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
                     </div>
                   ) : null}
                   <p className="mb-2 text-xs text-[#71717A]">
-                    USD is treated as cash. Red cells need a value—click <strong className="text-[#09090B]">Edit</strong>,
-                    fix the row, then <strong className="text-[#09090B]">Confirm</strong> (check).{" "}
-                    <strong className="text-[#09090B]">Add</strong> imports when every row is valid and you are not
+                    USD is treated as cash. Red cells need a value—click <strong className="text-[#0F0F0F]">Edit</strong>,
+                    fix the row, then <strong className="text-[#0F0F0F]">Confirm</strong> (check).{" "}
+                    <strong className="text-[#0F0F0F]">Add</strong> imports when every row is valid and you are not
                     editing a row.
                   </p>
               <div className="max-h-[min(52vh,420px)] overflow-auto rounded-lg border border-[#E4E4E7]">
                 <table className="w-full min-w-[720px] border-collapse text-left text-xs">
-                  <thead className="sticky top-0 z-[1] bg-[#F4F4F5] text-[#71717A]">
+                  <thead className="sticky top-0 z-[1] bg-[#F4F4F5] text-[14px] text-[#71717A]">
                     <tr>
                       <th className="border-b border-[#E4E4E7] px-2 py-2 font-medium">Asset</th>
                       <th className="border-b border-[#E4E4E7] px-2 py-2 font-medium">Operation</th>
@@ -588,7 +588,7 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
                               <button
                                 type="button"
                                 onClick={() => setEditingId(r.id)}
-                                className={cn("w-full text-left font-medium text-[#09090B]", r.missing.includes("asset") && "min-h-[28px]")}
+                                className={cn("w-full text-left font-medium text-[#0F0F0F]", r.missing.includes("asset") && "min-h-[28px]")}
                               >
                                 {r.asset || "—"}
                               </button>
@@ -721,7 +721,7 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
                                   <span
                                     className={cn(
                                       "tabular-nums font-medium",
-                                      r.sum > 0 ? "text-emerald-700" : r.sum < 0 ? "text-red-700" : "text-[#09090B]",
+                                      r.sum > 0 ? "text-emerald-700" : r.sum < 0 ? "text-red-700" : "text-[#0F0F0F]",
                                     )}
                                   >
                                     {r.sum > 0 ? "+" : ""}
@@ -739,7 +739,7 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
                                 <button
                                   type="button"
                                   onClick={() => setEditingId(null)}
-                                  className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-[#09090B] text-white hover:bg-[#27272A]"
+                                  className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-[#0F0F0F] text-white hover:bg-[#27272A]"
                                   aria-label="Confirm changes"
                                 >
                                   <Check className="h-4 w-4" strokeWidth={2.5} aria-hidden />
@@ -775,7 +775,7 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
 
               <div className="mt-4 rounded-[10px] border border-[#E4E4E7] bg-[#FAFAFA] px-4 py-3">
                 <p className="text-xs font-semibold uppercase tracking-wide text-[#71717A]">Ready to import</p>
-                <ul className="mt-2 space-y-1.5 text-sm text-[#09090B]">
+                <ul className="mt-2 space-y-1.5 text-sm text-[#0F0F0F]">
                   <li className="flex items-center justify-between gap-4">
                     <span>Trades</span>
                     <span className="tabular-nums font-medium">{importBreakdown.trades}</span>
@@ -831,8 +831,8 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
           bodyClassName="px-8 py-10 text-center"
           bodyScroll={false}
         >
-          <Spinner className="mx-auto size-10 text-[#09090B]" />
-          <p id={addingStatusId} className="mt-5 text-lg font-semibold tracking-tight text-[#09090B]">
+          <Spinner className="mx-auto size-10 text-[#0F0F0F]" />
+          <p id={addingStatusId} className="mt-5 text-lg font-semibold tracking-tight text-[#0F0F0F]">
             Adding
           </p>
           <p id={`${addingStatusId}-desc`} className="mt-2 text-sm leading-relaxed text-[#71717A]">

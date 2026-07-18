@@ -150,7 +150,7 @@ export function CryptoFearGreedModal({
         onClick={toggleIndex}
         aria-pressed={showIndex}
         className={cn(
-          "inline-flex h-6 max-w-full min-w-0 items-center gap-2 overflow-hidden rounded-[8px] border border-[#E4E4E7] bg-white px-3 py-0 text-[12px] font-medium leading-none text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)] transition-opacity",
+          "inline-flex h-6 max-w-full min-w-0 items-center gap-2 overflow-hidden rounded-[8px] border border-[#E4E4E7] bg-white px-3 py-0 text-[12px] font-medium leading-none text-[#0F0F0F] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)] transition-opacity",
           !showIndex && "opacity-40",
         )}
       >
@@ -166,7 +166,7 @@ export function CryptoFearGreedModal({
         onClick={toggleBtc}
         aria-pressed={showBtc}
         className={cn(
-          "inline-flex h-6 max-w-full min-w-0 items-center gap-2 overflow-hidden rounded-[8px] border border-[#E4E4E7] bg-white px-3 py-0 text-[12px] font-medium leading-none text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)] transition-opacity",
+          "inline-flex h-6 max-w-full min-w-0 items-center gap-2 overflow-hidden rounded-[8px] border border-[#E4E4E7] bg-white px-3 py-0 text-[12px] font-medium leading-none text-[#0F0F0F] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)] transition-opacity",
           !showBtc && "opacity-40",
         )}
       >
@@ -189,7 +189,7 @@ export function CryptoFearGreedModal({
         bodyScroll={false}
         header={
           <div className="flex w-full min-w-0 items-center gap-3">
-            <h2 id={titleId} className="min-w-0 flex-1 truncate text-[18px] font-semibold leading-7 text-[#09090B]">
+            <h2 id={titleId} className="min-w-0 flex-1 truncate text-[18px] font-semibold leading-7 text-[#0F0F0F]">
               Fear &amp; Greed Index
             </h2>
             <div className="flex shrink-0 items-center gap-3">

@@ -67,7 +67,7 @@ export function EarningsPdfPreviewModal({ open, title, sourceUrl, onClose }: Pro
           <div className="flex w-full items-center justify-between gap-3">
             <h2
               id="earnings-pdf-preview-title"
-              className="min-w-0 text-[16px] font-semibold leading-6 text-[#09090B] sm:text-[17px]"
+              className="min-w-0 text-[16px] font-semibold leading-6 text-[#0F0F0F] sm:text-[17px]"
             >
               {title}
             </h2>
@@ -76,7 +76,7 @@ export function EarningsPdfPreviewModal({ open, title, sourceUrl, onClose }: Pro
                 href={sourceUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-[#E4E4E7] bg-white px-2.5 text-[12px] font-semibold text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors hover:bg-[#F4F4F5] sm:px-3"
+                className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-[#E4E4E7] bg-white px-2.5 text-[12px] font-semibold text-[#0F0F0F] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors hover:bg-[#F4F4F5] sm:px-3"
                 title="Open document in a new tab"
               >
                 <ExternalLink className="h-3.5 w-3.5" aria-hidden />
@@ -95,7 +95,7 @@ export function EarningsPdfPreviewModal({ open, title, sourceUrl, onClose }: Pro
         ) : (
           <div className="flex h-full min-h-[240px] flex-col items-center justify-center gap-2 px-4 text-center text-[14px] text-[#71717A]">
             <p>Preview is not available for this host.</p>
-            <a href={sourceUrl} className="font-semibold text-[#09090B] underline" target="_blank" rel="noopener noreferrer">
+            <a href={sourceUrl} className="font-semibold text-[#0F0F0F] underline" target="_blank" rel="noopener noreferrer">
               Open in new tab
             </a>
           </div>

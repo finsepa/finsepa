@@ -119,8 +119,8 @@ function KeyStatsSectionTabNav({
               type="button"
               onClick={() => onTabChange(id)}
               className={cn(
-                "-mb-px shrink-0 cursor-pointer border-b-2 border-solid border-transparent py-2 text-left text-[14px] font-medium leading-6 text-[#09090B] transition-[color,opacity] duration-100",
-                "focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2",
+                "-mb-px shrink-0 cursor-pointer border-b-2 border-solid border-transparent py-2 text-left text-[14px] font-medium leading-6 text-[#0F0F0F] transition-[color,opacity] duration-100",
+                "focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15 focus-visible:ring-offset-2",
                 "hover:opacity-80",
                 isActive ? "font-semibold opacity-100" : "opacity-70",
               )}
@@ -130,7 +130,7 @@ function KeyStatsSectionTabNav({
           );
         })}
         <span
-          className="pointer-events-none absolute bottom-0 z-[1] h-0.5 rounded-full bg-[#09090B] motion-reduce:transition-none"
+          className="pointer-events-none absolute bottom-0 z-[1] h-0.5 rounded-full bg-[#0F0F0F] motion-reduce:transition-none"
           style={{
             left: indicator.left,
             width: indicator.width,
@@ -292,7 +292,7 @@ function BasicValueDisplay({
 }) {
   const textClass = cn(
     "text-[14px] font-medium leading-5 tabular-nums",
-    valueClassName ?? "text-[#09090B]",
+    valueClassName ?? "text-[#0F0F0F]",
   );
 
   if (label === "Earnings Date" && value !== "—") {
@@ -341,7 +341,7 @@ function KeyStatMetricRow({
         KEY_STATS_ROW_BORDER_CLASS,
       )}
     >
-      <span className="min-w-0 shrink text-[14px] leading-5 text-[#09090B] underline-offset-2 decoration-[#71717A] group-hover:underline">
+      <span className="min-w-0 shrink text-[14px] leading-5 text-[#0F0F0F] underline-offset-2 decoration-[#71717A] group-hover:underline">
         {label}
       </span>
       <BasicValueDisplay label={label} value={value} valueClassName={valueClassName} />
@@ -360,7 +360,7 @@ function StatRow({
 }) {
   return (
     <div className={cn("flex items-center justify-between gap-3 last:border-0", KEY_STATS_ROW_BORDER_CLASS, KEY_STATS_ROW_PY_CLASS)}>
-      <span className="min-w-0 shrink text-[14px] leading-5 text-[#09090B]">{label}</span>
+      <span className="min-w-0 shrink text-[14px] leading-5 text-[#0F0F0F]">{label}</span>
       <BasicValueDisplay label={label} value={value} valueClassName={valueClassName} />
     </div>
   );

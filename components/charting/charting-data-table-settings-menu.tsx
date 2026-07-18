@@ -28,7 +28,7 @@ function PillSwitch({
       aria-label={ariaLabel}
       onClick={() => onPressedChange(!pressed)}
       className={cn(
-        "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15",
+        "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15",
         pressed ? "bg-[#2563EB]" : "bg-[#E4E4E7]",
       )}
     >
@@ -98,15 +98,15 @@ export function ChartingDataTableSettingsMenu({
             : variant === "badge"
               ? cn(
                   "inline-flex h-full shrink-0 items-center justify-center px-1.5 text-[#71717A]",
-                  "transition-colors hover:bg-[#FAFAFA] hover:text-[#09090B]",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#09090B]/15",
-                  open && "bg-[#F4F4F5] text-[#09090B]",
+                  "transition-colors hover:bg-[#FAFAFA] hover:text-[#0F0F0F]",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#0F0F0F]/15",
+                  open && "bg-[#F4F4F5] text-[#0F0F0F]",
                 )
               : cn(
                   "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] border border-transparent text-[#71717A]",
-                  "transition-colors hover:bg-[#F4F4F5] hover:text-[#09090B]",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15",
-                  open && "bg-[#F4F4F5] text-[#09090B]",
+                  "transition-colors hover:bg-[#F4F4F5] hover:text-[#0F0F0F]",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15",
+                  open && "bg-[#F4F4F5] text-[#0F0F0F]",
                 ),
         )}
       >
@@ -134,7 +134,7 @@ export function ChartingDataTableSettingsMenu({
             aria-label={metricLabel ? `${metricLabel} settings` : "Metric settings"}
           >
             <div role="menuitem" className={dropdownMenuPlainItemRowClassName()}>
-              <span className="min-w-0 flex-1 text-sm font-medium leading-5 text-[#09090B]">Show values</span>
+              <span className="min-w-0 flex-1 text-sm font-medium leading-5 text-[#0F0F0F]">Show values</span>
               <PillSwitch
                 pressed={showBarValues}
                 onPressedChange={onShowBarValuesChange}

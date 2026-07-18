@@ -9,7 +9,7 @@ export const TABLE_PAGE_SIZE = 20;
 
 /** Square prev/next icon buttons (Screener + portfolio tables). */
 export const SCREENER_TABLE_PAGINATION_BTN = cn(
-  "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-[#09090B] transition-all duration-100 hover:bg-[#F4F4F5] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2",
+  "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-[#0F0F0F] transition-all duration-100 hover:bg-[#F4F4F5] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15 focus-visible:ring-offset-2",
   whiteSurfaceButtonChromeClass,
 );
 
@@ -46,11 +46,11 @@ function buildScreenerPageItems(current: number, last: number): (number | "ellip
 }
 
 const PAGE_NUM_INACTIVE =
-  "inline-flex h-9 min-w-9 max-w-12 shrink-0 items-center justify-center rounded-[10px] px-2 text-sm font-medium text-[#09090B] transition-colors hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2";
+  "inline-flex h-9 min-w-9 max-w-12 shrink-0 items-center justify-center rounded-[10px] px-2 text-sm font-medium text-[#0F0F0F] transition-colors hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15 focus-visible:ring-offset-2";
 
 /** Active page: bordered tile (same family as `SCREENER_TABLE_PAGINATION_BTN`, no fill). */
 const PAGE_NUM_ACTIVE = cn(
-  "inline-flex h-9 min-w-9 max-w-12 shrink-0 items-center justify-center rounded-[10px] px-2 text-sm font-semibold tabular-nums text-[#09090B] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2",
+  "inline-flex h-9 min-w-9 max-w-12 shrink-0 items-center justify-center rounded-[10px] px-2 text-sm font-semibold tabular-nums text-[#0F0F0F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15 focus-visible:ring-offset-2",
   whiteSurfaceButtonChromeClass,
 );
 
@@ -116,7 +116,7 @@ export function ScreenerPagination({
             it === "ellipsis" ? (
               <span
                 key={`e-${i}`}
-                className="inline-flex h-9 min-w-6 select-none items-center justify-center text-sm font-medium text-[#09090B] tabular-nums"
+                className="inline-flex h-9 min-w-6 select-none items-center justify-center text-sm font-medium text-[#0F0F0F] tabular-nums"
                 aria-hidden
               >
                 ...

@@ -3,7 +3,7 @@
 import Link from "next/link";
 
 const breadcrumbLinkClass =
-  "min-w-0 truncate transition-colors hover:text-[#09090B] hover:underline";
+  "min-w-0 truncate transition-colors hover:text-[#0F0F0F] hover:underline";
 
 const breadcrumbSep = (
   <span className="shrink-0 select-none" aria-hidden>
@@ -25,7 +25,7 @@ export function PortfoliosBreadcrumbs({ currentLabel }: { currentLabel?: string 
         {currentLabel ? (
           <>
             {breadcrumbSep}
-            <span className="min-w-0 truncate font-medium text-[#09090B]" aria-current="page">
+            <span className="min-w-0 truncate font-medium text-[#0F0F0F]" aria-current="page">
               {currentLabel}
             </span>
           </>

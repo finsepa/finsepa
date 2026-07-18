@@ -37,7 +37,7 @@ function LinkPill({ href, label }: { href: string; label: string }) {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex max-w-full items-center gap-2 rounded-full bg-[#F4F4F5] px-3 py-2 text-[13px] font-medium text-[#09090B] transition-colors hover:bg-[#ECECEE]"
+      className="inline-flex max-w-full items-center gap-2 rounded-full bg-[#F4F4F5] px-3 py-2 text-[13px] font-medium text-[#0F0F0F] transition-colors hover:bg-[#ECECEE]"
     >
       {createElement(Icon, {
         className: "h-3.5 w-3.5 shrink-0 text-[#52525B]",
@@ -52,7 +52,7 @@ function Column({ title, items }: { title: string; items: { label: string; href:
   if (items.length === 0) return null;
   return (
     <div className="min-w-0">
-      <h3 className="mb-3 text-[15px] font-semibold leading-6 text-[#09090B]">{title}</h3>
+      <h3 className="mb-3 text-[15px] font-semibold leading-6 text-[#0F0F0F]">{title}</h3>
       <div className="flex flex-wrap gap-2">
         {items.map((item) => (
           <LinkPill key={item.href + item.label} href={item.href} label={item.label} />
@@ -97,7 +97,7 @@ export function CryptoLinksSection({ links }: { links: CryptoAssetLinks }) {
 
   return (
     <div className="border-t border-[#E4E4E7] pt-8">
-      <h2 className="mb-6 text-[18px] font-semibold leading-7 tracking-tight text-[#09090B]">Links</h2>
+      <h2 className="mb-6 text-[18px] font-semibold leading-7 tracking-tight text-[#0F0F0F]">Links</h2>
       <div className="grid grid-cols-1 gap-8 md:grid-cols-3 md:gap-10">
         <Column title="Official Links" items={official} />
         <Column title="Network information" items={network} />

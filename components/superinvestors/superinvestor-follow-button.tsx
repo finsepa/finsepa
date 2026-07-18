@@ -45,13 +45,13 @@ export function SuperinvestorFollowButton({
       onBlur={() => setHovered(false)}
       className={cn(
         "inline-flex h-9 shrink-0 items-center justify-center rounded-[10px] border px-4 text-sm font-semibold transition-colors",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15 focus-visible:ring-offset-2",
         "disabled:cursor-wait disabled:opacity-60",
         showRemoving
           ? "border-[#E4E4E7] bg-white text-[#DC2626] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] hover:bg-[#F4F4F5]"
           : showFollowing
-            ? "border-[#E4E4E7] bg-white text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] hover:bg-[#F4F4F5]"
-            : "border-[#09090B] bg-[#09090B] text-white hover:bg-[#18181B]",
+            ? "border-[#E4E4E7] bg-white text-[#0F0F0F] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] hover:bg-[#F4F4F5]"
+            : "border-[#0F0F0F] bg-[#0F0F0F] text-white hover:bg-[#18181B]",
         className,
       )}
       {...(mounted && hydrated ? { "aria-pressed": following } : {})}

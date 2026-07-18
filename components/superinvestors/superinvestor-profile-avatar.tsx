@@ -52,7 +52,7 @@ export function SuperinvestorProfileAvatar({
 
   return (
     <span
-      className={cn(shell, darkTile ? "bg-[#09090B]" : "bg-[#F4F4F5]")}
+      className={cn(shell, darkTile ? "bg-[#0F0F0F]" : "bg-[#F4F4F5]")}
     >
       {/* eslint-disable-next-line @next/next/no-img-element -- public /superinvestors avatars */}
       <img

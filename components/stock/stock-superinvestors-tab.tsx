@@ -127,7 +127,7 @@ export function StockSuperinvestorsTab({ ticker }: { ticker: string }) {
   if (loading) {
     return (
       <div className="space-y-6 pt-1">
-        <h2 className="text-[20px] font-semibold leading-8 tracking-tight text-[#09090B]">Superinvestors</h2>
+        <h2 className="text-[20px] font-semibold leading-8 tracking-tight text-[#0F0F0F]">Superinvestors</h2>
         <SuperinvestorsTableSkeleton rows={3} />
       </div>
     );
@@ -136,7 +136,7 @@ export function StockSuperinvestorsTab({ ticker }: { ticker: string }) {
   if (sorted.length === 0) {
     return (
       <div className="space-y-6 pt-1">
-        <h2 className="text-[20px] font-semibold leading-8 tracking-tight text-[#09090B]">Superinvestors</h2>
+        <h2 className="text-[20px] font-semibold leading-8 tracking-tight text-[#0F0F0F]">Superinvestors</h2>
         <Empty variant="card" className="min-h-[min(40vh,360px)]">
           <EmptyHeader>
             <EmptyMedia variant="icon">
@@ -154,7 +154,7 @@ export function StockSuperinvestorsTab({ ticker }: { ticker: string }) {
 
   return (
     <div className="space-y-6 pt-1">
-      <h2 className="text-[20px] font-semibold leading-8 tracking-tight text-[#09090B]">Superinvestors</h2>
+      <h2 className="text-[20px] font-semibold leading-8 tracking-tight text-[#0F0F0F]">Superinvestors</h2>
 
       <div className="-mx-1 overflow-x-auto overscroll-x-contain rounded-lg border border-[#E4E4E7] [-webkit-overflow-scrolling:touch] sm:-mx-0 sm:rounded-none sm:border-x-0 sm:border-t sm:border-b">
         <div className="min-w-[760px] lg:min-w-0">
@@ -185,14 +185,14 @@ export function StockSuperinvestorsTab({ ticker }: { ticker: string }) {
                     </span>
                   )}
                   <div className="min-w-0">
-                    <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B] underline-offset-[3px] decoration-[#09090B] group-hover:underline">
+                    <div className="truncate text-[14px] font-semibold leading-5 text-[#0F0F0F] underline-offset-[3px] decoration-[#0F0F0F] group-hover:underline">
                       {p.managerName}
                     </div>
                     <div className="truncate text-[12px] font-normal leading-4 text-[#71717A]">{p.fundName}</div>
                   </div>
                 </div>
 
-                <div className="text-right font-['Inter'] text-[14px] font-medium tabular-nums text-[#09090B]">
+                <div className="text-right font-['Inter'] text-[14px] font-medium tabular-nums text-[#0F0F0F]">
                   {pct.format(p.weightPct)}%
                 </div>
 
@@ -200,11 +200,11 @@ export function StockSuperinvestorsTab({ ticker }: { ticker: string }) {
                   <ActivityCell label={p.statusLabel} />
                 </div>
 
-                <div className="text-right font-['Inter'] text-[14px] font-normal tabular-nums text-[#09090B]">
+                <div className="text-right font-['Inter'] text-[14px] font-normal tabular-nums text-[#0F0F0F]">
                   {p.shares != null ? formatSharesCompact(p.shares) : "—"}
                 </div>
 
-                <div className="text-right font-['Inter'] text-[14px] font-normal tabular-nums text-[#09090B]">
+                <div className="text-right font-['Inter'] text-[14px] font-normal tabular-nums text-[#0F0F0F]">
                   {formatUsdCompactSigDigits(p.valueUsd, 4)}
                 </div>
               </Link>

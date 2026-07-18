@@ -256,7 +256,7 @@ function tooltipLineClass(tone: BarTooltipLineTone, isFirst: boolean): string {
     : "mt-0.5 max-w-[min(100vw-2rem,14rem)] truncate text-[12px] leading-4";
   if (tone === "beat") return `${base} font-semibold text-[#16A34A]`;
   if (tone === "miss") return `${base} font-semibold text-[#DC2626]`;
-  return `${base} font-normal text-[#09090B]`;
+  return `${base} font-normal text-[#0F0F0F]`;
 }
 
 type PeriodBar = {
@@ -584,7 +584,7 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
                         <span className="absolute top-1/2 right-px -translate-y-1/2 border-y-[6px] border-y-transparent border-r-[7px] border-r-white" />
                       </span>
                     )}
-                    <p className="text-[12px] font-semibold leading-4 text-[#09090B]">{tip.periodLabel}</p>
+                    <p className="text-[12px] font-semibold leading-4 text-[#0F0F0F]">{tip.periodLabel}</p>
                     {tip.lines.map((line, i) => (
                       <p key={`${line.tone}-${line.text}`} className={tooltipLineClass(line.tone, i === 0)} title={line.text}>
                         {line.text}

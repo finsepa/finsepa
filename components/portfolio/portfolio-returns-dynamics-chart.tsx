@@ -4,20 +4,14 @@ import {
   memo,
   useCallback,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
   type ReactNode,
 } from "react";
-import { createPortal } from "react-dom";
-import { LineChart, Settings } from "@/lib/icons";
+import { LineChart } from "@/lib/icons";
 
 import { TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
-import {
-  dropdownMenuPanelClassName,
-  dropdownMenuPlainItemRowClassName,
-} from "@/components/design-system/dropdown-menu-styles";
 import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
 import {
   FUNDAMENTALS_CHART_AXIS_LABEL_ROTATE_DEG,
@@ -175,153 +169,31 @@ function niceYRange(
   return { yMin, yMax, ticks };
 }
 
-function PillSwitch({
+/** Clickable legend badge — same pattern as the Fear & Greed index chart legend. */
+function ReturnsLegendBadge({
+  label,
+  swatch,
   pressed,
-  onPressedChange,
-  "aria-label": ariaLabel,
+  onToggle,
 }: {
+  label: string;
+  swatch: string;
   pressed: boolean;
-  onPressedChange: (next: boolean) => void;
-  "aria-label": string;
+  onToggle: () => void;
 }) {
   return (
     <button
       type="button"
-      role="switch"
-      aria-checked={pressed}
-      aria-label={ariaLabel}
-      onClick={() => onPressedChange(!pressed)}
+      onClick={onToggle}
+      aria-pressed={pressed}
       className={cn(
-        "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15",
-        pressed ? "bg-[#2563EB]" : "bg-[#E4E4E7]",
+        "inline-flex h-6 max-w-full min-w-0 items-center gap-2 overflow-hidden rounded-[8px] border border-[#E4E4E7] bg-white px-3 py-0 text-[12px] font-medium leading-none text-[#0F0F0F] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)] transition-opacity",
+        !pressed && "opacity-40",
       )}
     >
-      <span
-        className={cn(
-          "pointer-events-none absolute left-0.5 top-1/2 h-4 w-4 -translate-y-1/2 rounded-full bg-white shadow-sm transition-transform",
-          pressed ? "translate-x-4" : "translate-x-0",
-        )}
-      />
+      <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: swatch }} aria-hidden />
+      <span className="min-w-0 truncate">{label}</span>
     </button>
-  );
-}
-
-const RETURNS_DYNAMICS_SETTINGS_MENU_Z = 120;
-
-function ReturnsDynamicsSettingsButton({
-  compareSpy,
-  onCompareSpyChange,
-}: {
-  compareSpy: boolean;
-  onCompareSpyChange: (next: boolean) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [portalMounted, setPortalMounted] = useState(false);
-  const [menuAnchor, setMenuAnchor] = useState<{ top: number; left: number; width: number } | null>(
-    null,
-  );
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    setPortalMounted(true);
-  }, []);
-
-  useLayoutEffect(() => {
-    if (!open || !triggerRef.current) {
-      setMenuAnchor(null);
-      return;
-    }
-    const update = () => {
-      const rect = triggerRef.current!.getBoundingClientRect();
-      setMenuAnchor({
-        top: rect.bottom + 4,
-        left: rect.left,
-        width: Math.min(window.innerWidth - 32, 280),
-      });
-    };
-    update();
-    window.addEventListener("resize", update);
-    window.addEventListener("scroll", update, true);
-    return () => {
-      window.removeEventListener("resize", update);
-      window.removeEventListener("scroll", update, true);
-    };
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpen(false);
-    }
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-    const onPointerDown = (e: PointerEvent) => {
-      const target = e.target as Node;
-      if (triggerRef.current?.contains(target) || menuRef.current?.contains(target)) return;
-      e.preventDefault();
-      setOpen(false);
-    };
-    document.addEventListener("pointerdown", onPointerDown, true);
-    return () => document.removeEventListener("pointerdown", onPointerDown, true);
-  }, [open]);
-
-  const menuPanel =
-    open && menuAnchor && portalMounted ?
-      createPortal(
-        <div
-          ref={menuRef}
-          className={dropdownMenuPanelClassName("fixed")}
-          style={{
-            top: menuAnchor.top,
-            left: menuAnchor.left,
-            width: menuAnchor.width,
-            zIndex: RETURNS_DYNAMICS_SETTINGS_MENU_Z,
-          }}
-          role="menu"
-          aria-label="Return dynamics settings"
-        >
-          <div role="menuitem" className={dropdownMenuPlainItemRowClassName()}>
-            <span className="min-w-0 flex-1 text-sm font-medium leading-5 text-[#09090B]">
-              Compare to S&amp;P 500
-            </span>
-            <PillSwitch
-              pressed={compareSpy}
-              onPressedChange={onCompareSpyChange}
-              aria-label="Compare portfolio returns to S&P 500"
-            />
-          </div>
-        </div>,
-        document.body,
-      )
-    : null;
-
-  return (
-    <>
-      {menuPanel}
-      <div className="relative z-20 shrink-0">
-        <button
-          ref={triggerRef}
-          type="button"
-          aria-label="Return dynamics settings"
-          aria-haspopup="menu"
-          aria-expanded={open}
-          onClick={() => setOpen((v) => !v)}
-          className={cn(
-            "inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#09090B]",
-            "shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100",
-            "hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2",
-            open && "bg-[#F4F4F5]",
-          )}
-        >
-          <Settings className="h-5 w-5 shrink-0" strokeWidth={2} aria-hidden />
-        </button>
-      </div>
-    </>
   );
 }
 
@@ -410,12 +282,18 @@ function ReturnsDynamicsChartSkeleton() {
 
 function DynamicsSvg({
   bars,
+  showPortfolio,
   showBenchmark,
   benchmarkLabel,
+  onTogglePortfolio,
+  onToggleBenchmark,
 }: {
   bars: PortfolioPeriodReturnBar[];
+  showPortfolio: boolean;
   showBenchmark: boolean;
   benchmarkLabel: string;
+  onTogglePortfolio: () => void;
+  onToggleBenchmark: () => void;
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const plotRef = useRef<HTMLDivElement>(null);
@@ -446,13 +324,15 @@ function DynamicsSvg({
   const values = useMemo(() => {
     const v: number[] = [];
     for (const b of bars) {
-      if (b.portfolioPct != null && Number.isFinite(b.portfolioPct)) v.push(b.portfolioPct);
+      if (showPortfolio && b.portfolioPct != null && Number.isFinite(b.portfolioPct)) {
+        v.push(b.portfolioPct);
+      }
       if (showBenchmark && b.benchmarkPct != null && Number.isFinite(b.benchmarkPct)) {
         v.push(b.benchmarkPct);
       }
     }
     return v;
-  }, [bars, showBenchmark]);
+  }, [bars, showPortfolio, showBenchmark]);
 
   const { yMin, yMax, ticks } = niceYRange(values);
 
@@ -464,8 +344,9 @@ function DynamicsSvg({
   const y0 = yFor(0);
   const n = Math.max(1, bars.length);
   const groupW = innerW / n;
-  const barW = showBenchmark ? Math.min(28, groupW * 0.32) : Math.min(40, groupW * 0.55);
-  const gap = showBenchmark ? groupW * 0.08 : groupW * 0.2;
+  const bothSeries = showPortfolio && showBenchmark;
+  const barW = bothSeries ? Math.min(28, groupW * 0.32) : Math.min(40, groupW * 0.55);
+  const gap = bothSeries ? groupW * 0.08 : groupW * 0.2;
 
   const barValueLabels = useMemo(() => {
     const labels: { key: string; leftPx: number; topPx: number; text: string }[] = [];
@@ -474,9 +355,9 @@ function DynamicsSvg({
       const gx = padL + i * groupW + groupW / 2;
       const p = b.portfolioPct;
       const bench = b.benchmarkPct;
-      const hasP = p != null && Number.isFinite(p);
+      const hasP = showPortfolio && p != null && Number.isFinite(p);
       const hasB = showBenchmark && bench != null && Number.isFinite(bench);
-      const pairW = hasB ? barW * 2 + gap : barW;
+      const pairW = hasP && hasB ? barW * 2 + gap : barW;
       const startX = gx - pairW / 2;
 
       if (hasP && p! >= 0) {
@@ -490,14 +371,14 @@ function DynamicsSvg({
       if (hasB && bench! >= 0) {
         labels.push({
           key: `b-${i}`,
-          leftPx: startX + barW + gap + barW / 2,
+          leftPx: (hasP ? startX + barW + gap : startX) + barW / 2,
           topPx: yFor(bench!) - 4,
           text: formatPctAxis(bench!),
         });
       }
     }
     return labels;
-  }, [bars, showBenchmark, padL, groupW, barW, gap, yFor]);
+  }, [bars, showPortfolio, showBenchmark, padL, groupW, barW, gap, yFor]);
 
   const updateHoverFromEvent = useCallback((i: number, clientX: number, clientY: number) => {
     const el = wrapRef.current;
@@ -564,9 +445,9 @@ function DynamicsSvg({
                 const gx = padL + i * groupW + groupW / 2;
                 const p = b.portfolioPct;
                 const bench = b.benchmarkPct;
-                const hasP = p != null && Number.isFinite(p);
+                const hasP = showPortfolio && p != null && Number.isFinite(p);
                 const hasB = showBenchmark && bench != null && Number.isFinite(bench);
-                const pairW = hasB ? barW * 2 + gap : barW;
+                const pairW = hasP && hasB ? barW * 2 + gap : barW;
                 const startX = gx - pairW / 2;
 
                 const els: ReactNode[] = [];
@@ -596,7 +477,7 @@ function DynamicsSvg({
                   els.push(
                     <rect
                       key="b"
-                      x={startX + barW + gap}
+                      x={hasP ? startX + barW + gap : startX}
                       y={yTopB}
                       width={barW}
                       height={hPixB}
@@ -633,7 +514,7 @@ function DynamicsSvg({
             {barValueLabels.map((b) => (
               <div
                 key={b.key}
-                className="pointer-events-none absolute z-[15] max-w-[5.5rem] truncate text-center text-[11px] font-semibold leading-none tabular-nums text-[#09090B]"
+                className="pointer-events-none absolute z-[15] max-w-[5.5rem] truncate text-center text-[11px] font-semibold leading-none tabular-nums text-[#0F0F0F]"
                 style={{
                   left: b.leftPx,
                   top: b.topPx,
@@ -656,22 +537,24 @@ function DynamicsSvg({
                   transform: "translate(-50%, calc(-100% - 10px))",
                 }}
               >
-                <p className="text-[12px] font-semibold leading-4 text-[#09090B]">{hoveredBar.label}</p>
-                <p className="mt-1.5 text-[12px] leading-4 text-[#71717A]">
-                  <span className="font-semibold" style={{ color: PORTFOLIO_BAR }}>
-                    Portfolio
-                  </span>
-                  <span className="tabular-nums text-[#09090B]">
-                    {" "}
-                    {formatTooltipPct(hoveredBar.portfolioPct)}
-                  </span>
-                </p>
+                <p className="text-[12px] font-semibold leading-4 text-[#0F0F0F]">{hoveredBar.label}</p>
+                {showPortfolio ? (
+                  <p className="mt-1.5 text-[12px] leading-4 text-[#71717A]">
+                    <span className="font-semibold" style={{ color: PORTFOLIO_BAR }}>
+                      Portfolio
+                    </span>
+                    <span className="tabular-nums text-[#0F0F0F]">
+                      {" "}
+                      {formatTooltipPct(hoveredBar.portfolioPct)}
+                    </span>
+                  </p>
+                ) : null}
                 {showBenchmark ? (
-                  <p className="mt-0.5 text-[12px] leading-4 text-[#71717A]">
+                  <p className={cn("text-[12px] leading-4 text-[#71717A]", showPortfolio ? "mt-0.5" : "mt-1.5")}>
                     <span className="font-semibold" style={{ color: BENCHMARK_BAR }}>
                       {benchmarkLabel}
                     </span>
-                    <span className="tabular-nums text-[#09090B]">
+                    <span className="tabular-nums text-[#0F0F0F]">
                       {" "}
                       {formatTooltipPct(hoveredBar.benchmarkPct)}
                     </span>
@@ -741,17 +624,19 @@ function DynamicsSvg({
         </div>
       </div>
 
-      <div className="mt-3 hidden flex-wrap items-center justify-center gap-6 text-xs font-medium text-[#71717A] sm:flex">
-        <span className="inline-flex items-center gap-2">
-          <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: PORTFOLIO_BAR }} />
-          Portfolio
-        </span>
-        {showBenchmark ? (
-          <span className="inline-flex items-center gap-2">
-            <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: BENCHMARK_BAR }} />
-            {benchmarkLabel}
-          </span>
-        ) : null}
+      <div className="mt-3 hidden flex-wrap items-center justify-center gap-2 sm:flex">
+        <ReturnsLegendBadge
+          label="Portfolio"
+          swatch={PORTFOLIO_BAR}
+          pressed={showPortfolio}
+          onToggle={onTogglePortfolio}
+        />
+        <ReturnsLegendBadge
+          label={benchmarkLabel}
+          swatch={BENCHMARK_BAR}
+          pressed={showBenchmark}
+          onToggle={onToggleBenchmark}
+        />
       </div>
     </div>
   );
@@ -765,15 +650,26 @@ function PortfolioReturnsDynamicsChartInner({
   canLoad: boolean;
 }) {
   const [granularity, setGranularity] = useState<PeriodReturnGranularity>("annually");
+  const [showPortfolio, setShowPortfolio] = useState(true);
   const [compareSpy, setCompareSpy] = useState(true);
   const [bars, setBars] = useState<PortfolioPeriodReturnBar[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const settingsProps = {
-    compareSpy,
-    onCompareSpyChange: setCompareSpy,
-  };
+  // At least one series stays visible (same guard as the Fear & Greed legend badges).
+  const togglePortfolio = useCallback(() => {
+    setShowPortfolio((cur) => {
+      if (cur && !compareSpy) return cur;
+      return !cur;
+    });
+  }, [compareSpy]);
+
+  const toggleSpy = useCallback(() => {
+    setCompareSpy((cur) => {
+      if (cur && !showPortfolio) return cur;
+      return !cur;
+    });
+  }, [showPortfolio]);
 
   const load = useCallback(async () => {
     if (!canLoad) {
@@ -818,18 +714,13 @@ function PortfolioReturnsDynamicsChartInner({
     <section className="mb-10 w-full min-w-0">
       <div className="mb-4 flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div className="flex min-w-0 items-start justify-between gap-3">
-          <h2 className="min-w-0 shrink text-2xl font-semibold leading-9 tracking-tight text-[#09090B]">
+          <h2 className="min-w-0 shrink text-2xl font-semibold leading-9 tracking-tight text-[#0F0F0F]">
             Dynamics of portfolio returns
           </h2>
-          {/* Mobile: settings on the title line. */}
-          <div className="flex shrink-0 items-center sm:hidden">
-            <ReturnsDynamicsSettingsButton {...settingsProps} />
-          </div>
         </div>
 
         <div className="flex min-w-0 flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
           <div className="hidden min-w-0 items-center gap-3 sm:flex">
-            <ReturnsDynamicsSettingsButton {...settingsProps} />
             <div className="max-w-full min-w-0 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <TabSwitcher
                 aria-label="Return period"
@@ -877,8 +768,11 @@ function PortfolioReturnsDynamicsChartInner({
         ) : (
           <DynamicsSvg
             bars={bars}
+            showPortfolio={showPortfolio}
             showBenchmark={compareSpy}
             benchmarkLabel={BENCHMARK_SPY_LABEL}
+            onTogglePortfolio={togglePortfolio}
+            onToggleBenchmark={toggleSpy}
           />
         )}
       </div>
@@ -897,17 +791,19 @@ function PortfolioReturnsDynamicsChartInner({
 
       {/* Mobile: legend below tabs (tabs should be above legend). */}
       {canLoad && !loading && !error && hasRenderable ? (
-        <div className="mt-3 flex flex-wrap items-center justify-center gap-6 text-xs font-medium text-[#71717A] sm:hidden">
-          <span className="inline-flex items-center gap-2">
-            <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: PORTFOLIO_BAR }} />
-            Portfolio
-          </span>
-          {compareSpy ? (
-            <span className="inline-flex items-center gap-2">
-              <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: BENCHMARK_BAR }} />
-              {BENCHMARK_SPY_LABEL}
-            </span>
-          ) : null}
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-2 sm:hidden">
+          <ReturnsLegendBadge
+            label="Portfolio"
+            swatch={PORTFOLIO_BAR}
+            pressed={showPortfolio}
+            onToggle={togglePortfolio}
+          />
+          <ReturnsLegendBadge
+            label={BENCHMARK_SPY_LABEL}
+            swatch={BENCHMARK_BAR}
+            pressed={compareSpy}
+            onToggle={toggleSpy}
+          />
         </div>
       ) : null}
     </section>

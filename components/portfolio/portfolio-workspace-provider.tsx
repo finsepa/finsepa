@@ -94,7 +94,7 @@ function ModalField({ label, children }: { label: ReactNode; children: ReactNode
   return (
     <div className="flex w-full flex-col gap-2">
       {typeof label === "string" ? (
-        <span className="text-sm font-medium leading-5 text-[#09090B]">{label}</span>
+        <span className="text-sm font-medium leading-5 text-[#0F0F0F]">{label}</span>
       ) : (
         label
       )}

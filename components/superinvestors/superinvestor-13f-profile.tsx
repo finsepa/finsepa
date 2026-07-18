@@ -65,19 +65,19 @@ function ProfileHeaderStats({
     <dl className="mt-4 flex w-full max-w-3xl flex-row items-stretch gap-0 sm:mt-5">
       <div className="flex min-w-0 flex-1 flex-col gap-1 border-r border-[#E4E4E7] pr-4 sm:pr-8">
         <dt className="text-[13px] font-normal leading-5 text-[#71717A]">Size</dt>
-        <dd className="text-[16px] font-semibold leading-6 tabular-nums text-[#09090B] sm:text-[20px] sm:leading-7">
+        <dd className="text-[16px] font-semibold leading-6 tabular-nums text-[#0F0F0F] sm:text-[20px] sm:leading-7">
           {sizeLabel}
         </dd>
       </div>
       <div className="flex min-w-0 flex-1 flex-col gap-1 border-r border-[#E4E4E7] px-4 sm:px-8">
         <dt className="text-[13px] font-normal leading-5 text-[#71717A]">No. of stocks</dt>
-        <dd className="text-[16px] font-semibold leading-6 tabular-nums text-[#09090B] sm:text-[20px] sm:leading-7">
+        <dd className="text-[16px] font-semibold leading-6 tabular-nums text-[#0F0F0F] sm:text-[20px] sm:leading-7">
           {stocksLabel}
         </dd>
       </div>
       <div className="flex min-w-0 flex-1 flex-col gap-1 pl-4 sm:pl-8">
         <dt className="text-[13px] font-normal leading-5 text-[#71717A]">Last update</dt>
-        <dd className="text-[16px] font-semibold leading-6 text-[#09090B] sm:text-[20px] sm:leading-7">
+        <dd className="text-[16px] font-semibold leading-6 text-[#0F0F0F] sm:text-[20px] sm:leading-7">
           {lastUpdateLabel}
         </dd>
       </div>
@@ -100,7 +100,7 @@ export function Superinvestor13fProfile({
   const showAllocationDonut = data.source !== "unavailable" && data.rows.length > 0;
 
   const breadcrumbLinkClass =
-    "min-w-0 truncate transition-colors hover:text-[#09090B] hover:underline";
+    "min-w-0 truncate transition-colors hover:text-[#0F0F0F] hover:underline";
 
   return (
     <div className="relative min-w-0">
@@ -115,7 +115,7 @@ export function Superinvestor13fProfile({
           <span className="shrink-0 select-none" aria-hidden>
             /
           </span>
-          <span className="min-w-0 truncate font-medium text-[#09090B]" aria-current="page">
+          <span className="min-w-0 truncate font-medium text-[#0F0F0F]" aria-current="page">
             {breadcrumbCurrentLabel}
           </span>
         </div>
@@ -128,7 +128,7 @@ export function Superinvestor13fProfile({
           <div className="flex items-center gap-4">
             <SuperinvestorProfileAvatar src={avatarSrc?.trim() ?? ""} name={profileName} />
             <div className="min-w-0">
-              <h1 className="text-[24px] font-semibold leading-8 tracking-tight text-[#09090B]">{profileName}</h1>
+              <h1 className="text-[24px] font-semibold leading-8 tracking-tight text-[#0F0F0F]">{profileName}</h1>
               <p className="mt-0.5 text-[14px] font-normal leading-5 text-[#71717A]">
                 {filerSubtitle(data.filerDisplayName)}
               </p>
@@ -146,7 +146,7 @@ export function Superinvestor13fProfile({
         {/* Desktop — name + stats left, donut right */}
         <div className="hidden items-center justify-between gap-6 sm:flex">
           <div className="min-w-0 flex-1">
-            <h1 className="text-[24px] font-semibold leading-8 tracking-tight text-[#09090B]">{profileName}</h1>
+            <h1 className="text-[24px] font-semibold leading-8 tracking-tight text-[#0F0F0F]">{profileName}</h1>
             <p className="mt-0.5 text-[14px] font-normal leading-5 text-[#71717A]">
               {filerSubtitle(data.filerDisplayName)}
             </p>

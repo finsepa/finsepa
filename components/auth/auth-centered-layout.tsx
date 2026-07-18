@@ -21,7 +21,7 @@ function AuthHeaderBlock({
       <div className="flex w-full flex-col gap-2 text-center">
         <h1
           className={cn(
-            "text-[26px] font-semibold leading-8 tracking-tight text-[#09090B]",
+            "text-[26px] font-semibold leading-8 tracking-tight text-[#0F0F0F]",
             titleClassName,
           )}
         >

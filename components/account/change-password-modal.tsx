@@ -16,14 +16,14 @@ import { changePasswordWithCurrent, MIN_PASSWORD_LENGTH } from "@/lib/auth/chang
 
 function FieldLabel({ children, htmlFor }: { children: React.ReactNode; htmlFor?: string }) {
   return (
-    <label htmlFor={htmlFor} className="mb-1.5 block text-sm font-medium text-[#09090B]">
+    <label htmlFor={htmlFor} className="mb-1.5 block text-sm font-medium text-[#0F0F0F]">
       {children}
     </label>
   );
 }
 
 const passwordFieldClass =
-  "h-10 max-h-10 rounded-[10px] border border-[#E4E4E7] bg-[#F9FAFB] py-2 pl-3 pr-[34px] text-sm text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)] outline-none transition-all duration-100 placeholder:text-[#A1A1AA] focus:border-[#D4D4D8] focus:bg-white focus:shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06),0_0_0_4px_rgba(9,9,11,0.06)] disabled:cursor-not-allowed disabled:opacity-60";
+  "h-10 max-h-10 rounded-[10px] border border-[#E4E4E7] bg-[#F9FAFB] py-2 pl-3 pr-[34px] text-sm text-[#0F0F0F] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)] outline-none transition-all duration-100 placeholder:text-[#A1A1AA] focus:border-[#D4D4D8] focus:bg-white focus:shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06),0_0_0_4px_rgba(15,15,15,0.06)] disabled:cursor-not-allowed disabled:opacity-60";
 
 export function ChangePasswordModal({
   open,

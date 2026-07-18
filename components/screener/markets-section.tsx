@@ -221,14 +221,14 @@ function StocksTabBody({
       <>
         {companiesSectorFilter ? (
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-solid border-[#E4E4E7] bg-[#FAFAFA] px-4 py-2.5 max-md:border-b-[0.5px] md:mb-3 md:rounded-[10px] md:border md:px-3 md:py-2.5 sm:px-4">
-            <p className="text-[13px] leading-5 text-[#09090B] sm:text-[14px]">
+            <p className="text-[13px] leading-5 text-[#0F0F0F] sm:text-[14px]">
               Showing companies in{" "}
-              <span className="font-semibold tabular-nums text-[#09090B]">{companiesSectorFilter}</span>
+              <span className="font-semibold tabular-nums text-[#0F0F0F]">{companiesSectorFilter}</span>
             </p>
             <button
               type="button"
               onClick={onClearCompaniesSector}
-              className="shrink-0 rounded-lg border border-[#E4E4E7] bg-white px-3 py-1.5 text-[13px] font-medium leading-5 text-[#09090B] transition-colors hover:bg-[#F4F4F5]"
+              className="shrink-0 rounded-lg border border-[#E4E4E7] bg-white px-3 py-1.5 text-[13px] font-medium leading-5 text-[#0F0F0F] transition-colors hover:bg-[#F4F4F5]"
             >
               Show all companies
             </button>
@@ -1058,7 +1058,7 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
                 >
                   <ChevronLeft className="h-5 w-5 shrink-0" aria-hidden />
                 </button>
-                <h2 className="truncate text-[18px] font-semibold leading-6 text-[#09090B]">
+                <h2 className="truncate text-[18px] font-semibold leading-6 text-[#0F0F0F]">
                   {isIndustriesDrill && stocksIndustryFilter
                     ? stocksIndustryFilter.industry
                     : stocksSectorFilter}

@@ -68,8 +68,8 @@ export async function MarketNewsPage({
                 href={`/news?${p.toString()}`}
                 className={`relative py-2 text-[14px] font-medium leading-6 transition-colors duration-100 ${
                   active
-                    ? "text-[#09090B] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-[#09090B] after:content-['']"
-                    : "text-[#71717A] hover:text-[#09090B]"
+                    ? "text-[#0F0F0F] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-[#0F0F0F] after:content-['']"
+                    : "text-[#71717A] hover:text-[#0F0F0F]"
                 }`}
               >
                 {t.label}
@@ -80,7 +80,7 @@ export async function MarketNewsPage({
       </div>
 
       <div className="mb-4 flex min-w-0 items-center justify-between gap-4">
-        <h1 className="min-w-0 shrink-0 text-[22px] font-semibold leading-8 tracking-tight text-[#09090B]">
+        <h1 className="min-w-0 shrink-0 text-[22px] font-semibold leading-8 tracking-tight text-[#0F0F0F]">
           {title}
         </h1>
 
@@ -89,7 +89,7 @@ export async function MarketNewsPage({
           <input type="hidden" name="tab" value={tab} />
           <div className="relative block w-full max-w-full">
             <Search
-              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#09090B]"
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#0F0F0F]"
               aria-hidden
             />
             <input
@@ -97,7 +97,7 @@ export async function MarketNewsPage({
               name="q"
               defaultValue={q}
               placeholder="Search..."
-              className="h-9 w-full min-w-0 rounded-lg bg-[#F4F4F5] py-2 pl-9 pr-3 text-sm text-[#09090B] placeholder:text-[#A1A1AA] outline-none transition-all duration-100 hover:bg-[#EBEBEB] focus:ring-2 focus:ring-[#09090B]/10"
+              className="h-9 w-full min-w-0 rounded-lg bg-[#F4F4F5] py-2 pl-9 pr-3 text-sm text-[#0F0F0F] placeholder:text-[#A1A1AA] outline-none transition-all duration-100 hover:bg-[#EBEBEB] focus:ring-2 focus:ring-[#0F0F0F]/10"
               aria-label="Search news"
             />
           </div>

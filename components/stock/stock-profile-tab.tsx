@@ -14,7 +14,7 @@ function dash(v: string | null | undefined): string {
 
 /** Same screener destinations + hover underline as stock breadcrumbs. */
 const PROFILE_SCREENER_LINK_CLASS =
-  "text-[14px] font-normal leading-5 text-[#09090B] transition-colors hover:underline";
+  "text-[14px] font-normal leading-5 text-[#0F0F0F] transition-colors hover:underline";
 
 function ProfileSectorValue({ sector }: { sector: string | null | undefined }) {
   const label = sector?.trim() || null;
@@ -55,7 +55,7 @@ function ProfileCell({ label, children }: { label: string; children: ReactNode }
   return (
     <div className="flex flex-col gap-1">
       <p className="w-full text-[12px] font-semibold leading-5 text-[#71717A]">{label}</p>
-      <div className="min-h-[1.25rem] text-[14px] font-normal leading-5 text-[#09090B]">{children}</div>
+      <div className="min-h-[1.25rem] text-[14px] font-normal leading-5 text-[#0F0F0F]">{children}</div>
     </div>
   );
 }
@@ -79,7 +79,7 @@ function LinkValue({ url }: { url: string | null }) {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="break-all text-[14px] font-normal text-[#09090B] underline decoration-solid [text-decoration-skip-ink:none] transition-colors hover:text-[#09090B]"
+      className="break-all text-[14px] font-normal text-[#0F0F0F] underline decoration-solid [text-decoration-skip-ink:none] transition-colors hover:text-[#0F0F0F]"
     >
       {display}
     </a>
@@ -110,12 +110,12 @@ function ProfileDescription({ text }: { text: string | null }) {
         }`}
         id={contentId}
       >
-        <p className="w-full whitespace-pre-wrap text-[14px] font-normal leading-5 text-[#09090B]">{text}</p>
+        <p className="w-full whitespace-pre-wrap text-[14px] font-normal leading-5 text-[#0F0F0F]">{text}</p>
       </div>
       {needsMore ? (
         <button
           type="button"
-          className="w-full text-left text-[14px] font-normal text-[#09090B] underline decoration-solid [text-decoration-skip-ink:none] transition-opacity hover:opacity-80"
+          className="w-full text-left text-[14px] font-normal text-[#0F0F0F] underline decoration-solid [text-decoration-skip-ink:none] transition-opacity hover:opacity-80"
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
           aria-controls={contentId}

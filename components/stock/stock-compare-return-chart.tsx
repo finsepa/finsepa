@@ -364,7 +364,7 @@ export function StockCompareReturnChart({ primaryTicker, comparePicks, range, he
       crosshair: {
         mode: CrosshairMode.Magnet,
         vertLine: {
-          color: "rgba(9, 9, 11, 0.28)",
+          color: "rgba(15, 15, 15, 0.28)",
           labelVisible: false,
           width: 1,
           style: LineStyle.Dashed,
@@ -663,7 +663,7 @@ export function StockCompareReturnChart({ primaryTicker, comparePicks, range, he
               });
               return (
             <span
-              className={`absolute bottom-1 inline-block whitespace-nowrap font-['Inter'] text-[11px] font-medium tabular-nums leading-none text-[#09090B] sm:text-[12px] ${periodAxisLabelMaxWidthClass(anchor)} ${periodAxisLabelTransformClass(anchor)}`}
+              className={`absolute bottom-1 inline-block whitespace-nowrap font-['Inter'] text-[11px] font-medium tabular-nums leading-none text-[#0F0F0F] sm:text-[12px] ${periodAxisLabelMaxWidthClass(anchor)} ${periodAxisLabelTransformClass(anchor)}`}
               style={periodAxisLabelLayoutStyle(hoverAxisLabel.leftPx, anchor)}
             >
               {hoverAxisLabel.label}

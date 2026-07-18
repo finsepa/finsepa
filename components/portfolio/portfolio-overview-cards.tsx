@@ -526,7 +526,7 @@ function PortfolioOverviewCardsInner({
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-medium text-[#71717A]">Value</p>
-                <p className="mt-1 text-2xl font-semibold tabular-nums tracking-tight text-[#09090B]">
+                <p className="mt-1 text-2xl font-semibold tabular-nums tracking-tight text-[#0F0F0F]">
                   {usd.format(normalizeUsdForDisplay(netWorth))}
                 </p>
                 <p className="mt-1 text-sm font-normal tabular-nums text-[#16A34A]">
@@ -547,7 +547,7 @@ function PortfolioOverviewCardsInner({
                     showEmptyPortfolioMetrics
                       ? "text-[#16A34A]"
                       : inceptionBenchmarkMetrics.rSpy == null
-                        ? "text-[#09090B]"
+                        ? "text-[#0F0F0F]"
                         : inceptionBenchmarkMetrics.rSpy >= 0
                           ? "text-[#16A34A]"
                           : "text-[#DC2626]",
@@ -558,7 +558,7 @@ function PortfolioOverviewCardsInner({
               </div>
               <div className="flex items-center justify-between gap-4 pb-0.5">
                 <span className="text-[14px] font-medium leading-5 text-[#71717A]">Dividends</span>
-                <span className="text-[14px] font-medium leading-5 tabular-nums text-[#09090B]">
+                <span className="text-[14px] font-medium leading-5 tabular-nums text-[#0F0F0F]">
                   {mobileDividendsRight}
                 </span>
               </div>
@@ -580,7 +580,7 @@ function PortfolioOverviewCardsInner({
         <>
           <div className={OVERVIEW_METRIC_CARD_CLASS}>
             <p className="text-xs font-medium text-[#71717A]">Value</p>
-            <p className="text-2xl font-semibold tabular-nums tracking-tight text-[#09090B]">
+            <p className="text-2xl font-semibold tabular-nums tracking-tight text-[#0F0F0F]">
               {usd.format(normalizeUsdForDisplay(netWorth))}
             </p>
             <p className="text-sm text-[#71717A]">{usd.format(invested)} invested</p>
@@ -645,7 +645,7 @@ function PortfolioOverviewCardsInner({
                         aria-label="Profit period"
                         value={period}
                         onChange={(e) => setPeriod(e.target.value as OverviewProfitPeriod)}
-                        className="cursor-pointer bg-transparent pr-5 text-xs font-medium text-[#09090B] outline-none"
+                        className="cursor-pointer bg-transparent pr-5 text-xs font-medium text-[#0F0F0F] outline-none"
                       >
                         {PERIOD_OPTIONS.map((o) => (
                           <option key={o.id} value={o.id}>
@@ -677,7 +677,7 @@ function PortfolioOverviewCardsInner({
                   className={cn(
                     "text-2xl font-semibold tabular-nums tracking-tight",
                     inceptionBenchmarkMetrics.rSpy == null
-                      ? "text-[#09090B]"
+                      ? "text-[#0F0F0F]"
                       : inceptionBenchmarkMetrics.rSpy >= 0
                         ? "text-[#16A34A]"
                         : "text-[#DC2626]",
@@ -707,14 +707,14 @@ function PortfolioOverviewCardsInner({
             <p className="text-xs font-medium text-[#71717A]">Dividends</p>
             {showEmptyPortfolioMetrics ? (
               <>
-                <p className="text-2xl font-semibold tabular-nums tracking-tight text-[#09090B]">
+                <p className="text-2xl font-semibold tabular-nums tracking-tight text-[#0F0F0F]">
                   {pctFmt.format(0)}%
                 </p>
                 <p className="text-sm text-[#71717A]">{usd.format(0)} annually</p>
               </>
             ) : (
               <>
-                <p className="text-2xl font-semibold tabular-nums tracking-tight text-[#09090B]">
+                <p className="text-2xl font-semibold tabular-nums tracking-tight text-[#0F0F0F]">
                   {dividendWeightedYield != null ? `${pctFmt.format(dividendWeightedYield)}%` : "—"}
                 </p>
                 <p className="text-sm text-[#71717A]">

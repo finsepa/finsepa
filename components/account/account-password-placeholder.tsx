@@ -33,7 +33,7 @@ export function AccountPasswordPlaceholder({
       <button
         type="button"
         onClick={() => setVisible((value) => !value)}
-        className="absolute inset-y-0 right-0 flex items-center pr-3 text-[#09090B] transition-opacity hover:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/30"
+        className="absolute inset-y-0 right-0 flex items-center pr-3 text-[#0F0F0F] transition-opacity hover:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/30"
         aria-label={visible ? "Hide password" : "Show password"}
         aria-pressed={visible}
       >

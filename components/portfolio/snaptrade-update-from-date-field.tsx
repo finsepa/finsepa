@@ -77,7 +77,7 @@ export function SnaptradeUpdateFromDateField({
           type="button"
           className="flex h-9 w-full items-center justify-between gap-2 rounded-[10px] border border-[#E4E4E7] bg-white px-3 text-left text-sm font-normal transition-colors hover:bg-[#FAFAFA]"
         >
-          <span className={cn("min-w-0 truncate", valueYmd ? "text-[#09090B]" : "text-[#71717A]")}>
+          <span className={cn("min-w-0 truncate", valueYmd ? "text-[#0F0F0F]" : "text-[#71717A]")}>
             {valueYmd ? format(ymdToLocalDate(valueYmd), "MM/dd/yyyy") : "first transaction"}
           </span>
           <CalendarIcon className="h-5 w-5 shrink-0 text-[#71717A]" aria-hidden />
@@ -92,7 +92,7 @@ export function SnaptradeUpdateFromDateField({
           {valueYmd ?
             <button
               type="button"
-              className="rounded-md px-2 py-1.5 text-left text-xs font-medium text-[#71717A] transition-colors hover:bg-[#F4F4F5] hover:text-[#09090B]"
+              className="rounded-md px-2 py-1.5 text-left text-xs font-medium text-[#71717A] transition-colors hover:bg-[#F4F4F5] hover:text-[#0F0F0F]"
               onClick={() => {
                 onChangeYmd(null);
                 setOpen(false);

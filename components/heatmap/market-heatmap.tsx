@@ -578,7 +578,7 @@ function renderSectorGroup(
           textAnchor="middle"
           fontSize={12}
           fontWeight={500}
-          style={{ fontFamily: "inherit", fill: "#09090B" }}
+          style={{ fontFamily: "inherit", fill: "#0F0F0F" }}
           className="uppercase"
         >
           {sec.name}
@@ -918,7 +918,7 @@ export function MarketHeatmap({ leaves, market }: { leaves: HeatmapLeaf[]; marke
                   }}
                   className={cn(
                     "h-1.5 w-1.5 rounded-full transition-colors",
-                    idx === activeSectorIdx ? "bg-[#09090B]" : "bg-[#D4D4D8]",
+                    idx === activeSectorIdx ? "bg-[#0F0F0F]" : "bg-[#D4D4D8]",
                   )}
                 />
               ))}

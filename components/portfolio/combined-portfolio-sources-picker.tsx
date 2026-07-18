@@ -25,7 +25,7 @@ export function CombinedPortfolioSourcesPicker({
           <li key={p.id}>
             <label
               className={cn(
-                "flex cursor-pointer items-center gap-3 px-4 py-3 text-sm text-[#09090B] transition-colors",
+                "flex cursor-pointer items-center gap-3 px-4 py-3 text-sm text-[#0F0F0F] transition-colors",
                 on ? "bg-white" : "hover:bg-[#F4F4F5]",
               )}
             >

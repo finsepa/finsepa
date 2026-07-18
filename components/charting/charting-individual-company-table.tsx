@@ -65,7 +65,7 @@ export function chartingTableCellTone(id: ChartingMetricId, v: number | null): s
     v == null ||
     !Number.isFinite(v)
   ) {
-    return "text-[#09090B]";
+    return "text-[#0F0F0F]";
   }
   if (v > 0) return "text-[#16A34A]";
   if (v < 0) return "text-[#DC2626]";
@@ -143,7 +143,7 @@ export function ChartingIndividualCompanyTable({
               scope="col"
               className={cn(
                 CHARTING_TABLE_STICKY_FIRST_COL_HEAD_CLASS,
-                "border-t border-b border-[#E4E4E7] px-3 py-2.5 text-left align-middle text-[14px] font-semibold leading-5 text-[#71717A]",
+                "border-t border-b border-[#E4E4E7] px-3 py-2.5 text-left align-middle text-[14px] font-medium leading-5 text-[#71717A]",
                 firstColClass,
               )}
             >
@@ -155,7 +155,7 @@ export function ChartingIndividualCompanyTable({
                 <th
                   key={id}
                   scope="col"
-                  className="min-w-[9rem] whitespace-nowrap border-t border-b border-[#E4E4E7] px-3 py-2.5 text-right align-middle text-[14px] font-semibold leading-5 text-[#71717A]"
+                  className="min-w-[9rem] whitespace-nowrap border-t border-b border-[#E4E4E7] px-3 py-2.5 text-right align-middle text-[14px] font-medium leading-5 text-[#71717A]"
                 >
                   <div className="flex min-w-0 items-center justify-end gap-2 py-0.5">
                     <span
@@ -186,7 +186,7 @@ export function ChartingIndividualCompanyTable({
               <td
                 className={cn(
                   CHARTING_TABLE_STICKY_FIRST_COL_BODY_CLASS,
-                  "border-b border-[#E4E4E7] px-3 align-middle text-[14px] font-semibold leading-5 text-[#09090B] group-hover:bg-white",
+                  "border-b border-[#E4E4E7] px-3 align-middle text-[14px] font-semibold leading-5 text-[#0F0F0F] group-hover:bg-white",
                   firstColClass,
                 )}
               >

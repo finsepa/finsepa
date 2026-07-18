@@ -79,7 +79,7 @@ function PriceAndChangeCell({
     <div className="min-w-0 w-full text-right">
       <div
         className={`min-w-0 w-full font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums ${
-          hasPrice ? "text-[#09090B]" : "text-[#71717A]"
+          hasPrice ? "text-[#0F0F0F]" : "text-[#71717A]"
         }`}
       >
         {hasPrice ? formatPrice(price, kind) : "-"}
@@ -99,7 +99,7 @@ function WatchlistTableHeader() {
   return (
     <div
       className={cn(
-        "grid min-h-[44px] items-center px-4 py-0 text-[12px] font-medium leading-5 text-[#71717A] max-md:hidden sm:text-[14px]",
+        "grid min-h-[44px] items-center px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A] max-md:hidden",
         watchlistRowGridClass,
         SCREENER_TABLE_HEADER_STICKY_CLASS,
       )}
@@ -218,7 +218,7 @@ function WatchlistTableRow({
         href={row.href}
         draggable={false}
         className={cn(
-          "col-span-2 col-start-1 grid min-h-[56px] min-w-0 w-full items-center justify-items-stretch no-underline text-[#09090B] visited:text-[#09090B] sm:col-span-7 sm:col-start-1 sm:min-h-[60px]",
+          "col-span-2 col-start-1 grid min-h-[56px] min-w-0 w-full items-center justify-items-stretch no-underline text-[#0F0F0F] visited:text-[#0F0F0F] sm:col-span-7 sm:col-start-1 sm:min-h-[60px]",
           watchlistRowLinkGridClass,
         )}
         aria-label={`Open ${row.name} (${row.symbol})`}
@@ -226,7 +226,7 @@ function WatchlistTableRow({
         <div className="flex min-w-0 items-center justify-start gap-3 pr-4 text-left max-md:gap-2">
           <CompanyLogo name={row.name} logoUrl={row.logoUrl ?? ""} symbol={row.symbol} />
           <div className="min-w-0">
-            <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B] underline-offset-2 decoration-[#71717A] group-hover:underline">
+            <div className="truncate text-[14px] font-semibold leading-5 text-[#0F0F0F] underline-offset-2 decoration-[#71717A] group-hover:underline">
               {row.name}
             </div>
             <div className="text-[12px] font-normal leading-4 text-[#71717A] underline-offset-2 decoration-[#71717A] group-hover:underline">
@@ -241,7 +241,7 @@ function WatchlistTableRow({
 
         <div
           className={`hidden min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums sm:block ${
-            row.price == null || !Number.isFinite(row.price) ? "text-[#71717A]" : "text-[#09090B]"
+            row.price == null || !Number.isFinite(row.price) ? "text-[#71717A]" : "text-[#0F0F0F]"
           }`}
         >
           {formatPrice(row.price, row.kind)}
@@ -256,10 +256,10 @@ function WatchlistTableRow({
         <div className="hidden min-w-0 w-full sm:block">
           <ChangeCell value={row.ytd} />
         </div>
-        <div className="hidden min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B] sm:block">
+        <div className="hidden min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#0F0F0F] sm:block">
           {row.mcapDisplay}
         </div>
-        <div className="hidden min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B] sm:block">
+        <div className="hidden min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#0F0F0F] sm:block">
           {row.peDisplay}
         </div>
       </Link>

@@ -6,7 +6,7 @@ import { X } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 
 const baseInputClass =
-  "h-9 w-full rounded-[10px] border-0 bg-[#F4F4F5] text-sm text-[#09090B] placeholder:text-[#71717A] outline-none focus:ring-2 focus:ring-[#09090B]/10";
+  "h-9 w-full rounded-[10px] border-0 bg-[#F4F4F5] text-sm text-[#0F0F0F] placeholder:text-[#71717A] outline-none focus:ring-2 focus:ring-[#0F0F0F]/10";
 
 type ClearableInputProps = {
   id?: string;
@@ -64,7 +64,7 @@ export function ClearableInput({
         <button
           type="button"
           onClick={() => onChange("")}
-          className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-[#71717A] transition-colors hover:bg-black/5 hover:text-[#09090B]"
+          className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-[#71717A] transition-colors hover:bg-black/5 hover:text-[#0F0F0F]"
           aria-label={clearLabel}
         >
           <X className="h-4 w-4" strokeWidth={2} />

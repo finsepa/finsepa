@@ -46,7 +46,7 @@ const tdCompany = "min-w-0 py-1 text-left text-[14px] leading-5 whitespace-norma
 const tdActivity =
   "flex min-w-0 flex-col items-end justify-center py-1 text-right text-[14px] leading-5 whitespace-normal";
 const tdNum =
-  "whitespace-nowrap py-0 text-right align-middle font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]";
+  "whitespace-nowrap py-0 text-right align-middle font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#0F0F0F]";
 
 /** Company | Recent activity | Avg closing price | % of change to portfolio. */
 const rowGridFour =
@@ -168,7 +168,7 @@ function CompanyTickerCell({ companyName, ticker }: { companyName: string; ticke
     <div className="flex min-w-0 items-center gap-3 pr-2 text-left">
       <CompanyLogo name={displayName} logoUrl={logoUrl} symbol={sym ?? undefined} size="md" />
       <div className="flex min-w-0 max-w-[min(280px,45vw)] flex-col gap-0.5 py-0.5">
-        <span className="line-clamp-1 text-[14px] font-semibold leading-5 text-[#09090B] underline-offset-[3px] decoration-[#09090B] group-hover:underline sm:line-clamp-2">
+        <span className="line-clamp-1 text-[14px] font-semibold leading-5 text-[#0F0F0F] underline-offset-[3px] decoration-[#0F0F0F] group-hover:underline sm:line-clamp-2">
           {displayName}
         </span>
         <span className="text-[12px] font-normal leading-4 text-[#71717A]">{sym ?? "—"}</span>
@@ -201,7 +201,7 @@ function ActivityTableToolbar({
 }) {
   return (
     <div className="mb-4 flex flex-col gap-3 px-4 sm:flex-row sm:items-center sm:justify-between sm:px-0">
-      <h2 className="text-[20px] font-semibold leading-7 tracking-tight text-[#09090B]">Activity</h2>
+      <h2 className="text-[20px] font-semibold leading-7 tracking-tight text-[#0F0F0F]">Activity</h2>
       <div className="flex min-w-0 flex-wrap items-center justify-end gap-3 sm:ml-auto">
         <SegmentedControl
           options={ACTIVITY_SIDE_FILTER_OPTIONS}
@@ -221,7 +221,7 @@ function ActivityTableToolbar({
 function QuarterDividerRow({ quarterLabel }: { quarterLabel: string }) {
   return (
     <div className="flex h-11 min-h-[44px] items-center bg-[#F4F4F5] px-4">
-      <span className="text-[14px] font-semibold leading-5 text-[#09090B]">{quarterLabel}</span>
+      <span className="text-[14px] font-semibold leading-5 text-[#0F0F0F]">{quarterLabel}</span>
     </div>
   );
 }

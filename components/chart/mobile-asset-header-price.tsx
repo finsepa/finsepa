@@ -70,12 +70,12 @@ export function MobileAssetHeaderPrice({
 
   if (loading || value == null || !Number.isFinite(value)) {
     return (
-      <span className={cn(MOBILE_PRICE_CLASS, "text-[#09090B]", motionClass, className)}>—</span>
+      <span className={cn(MOBILE_PRICE_CLASS, "text-[#0F0F0F]", motionClass, className)}>—</span>
     );
   }
 
   const cfg = resolveFlowConfig(value, variant, chartMetric);
-  const colorClass = cfg.colored ? "" : "text-[#09090B]";
+  const colorClass = cfg.colored ? "" : "text-[#0F0F0F]";
 
   if (!mounted) {
     const formatted = `${cfg.prefix ?? ""}${cfg.value.toLocaleString("en-US", cfg.format)}${cfg.suffix ?? ""}`;

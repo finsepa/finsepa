@@ -248,7 +248,7 @@ export function TopbarUserMenu({
               showProBadge={isProFromServer || isPro}
             />
             <div className="min-w-0 flex-1 pt-0.5">
-              <div className="truncate text-sm font-semibold leading-5 text-[#09090B]">{userDisplayName}</div>
+              <div className="truncate text-sm font-semibold leading-5 text-[#0F0F0F]">{userDisplayName}</div>
               <div className="mt-0.5 text-xs font-normal leading-4 text-[#52525B]">
                 {planLoading && !(isProFromServer || isPro) ? (
                   <div className="h-3 w-20 animate-pulse rounded bg-[#E4E4E7]" />

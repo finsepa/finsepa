@@ -182,13 +182,53 @@ export function findFundamentalsAnnouncementYmdInWeek(
   return candidates[0]!.ymd;
 }
 
+export type EarningsDateMeta = {
+  /** Short display e.g. "Jul 22, 2026". */
+  earningsDateDisplay: string | null;
+  /** Fiscal quarter short label e.g. "Q2", when known from period end. */
+  fiscalQuarter: string | null;
+};
+
+function ymdFromUnknownDate(v: unknown): string | null {
+  const ms = parseUnknownDateToUtcMs(v);
+  if (ms == null) return null;
+  const d = new Date(ms);
+  const dayStart = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0, 0);
+  return ymdUtcFromMs(dayStart);
+}
+
+/**
+ * Fiscal period end for a history row.
+ * When both `reportDate` and `date` exist, `date` is typically the period end.
+ */
+function fiscalPeriodEndYmdFromHistoryRow(r: Record<string, unknown>): string | null {
+  const explicit = ymdFromUnknownDate(
+    r.periodEnd ?? r.PeriodEnd ?? r.endDate ?? r.EndDate ?? r.fiscalDate ?? r.FiscalDate,
+  );
+  if (explicit) return explicit;
+  const hasReport =
+    typeof (r.reportDate ?? r.ReportDate ?? r.report_date) === "string" &&
+    String(r.reportDate ?? r.ReportDate ?? r.report_date).trim().length > 0;
+  if (hasReport) return ymdFromUnknownDate(r.date ?? r.Date);
+  return null;
+}
+
+function fiscalQuarterFromPeriodEndYmdLocal(ymd: string | null): string | null {
+  if (!ymd || !/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return null;
+  const month = Number(ymd.slice(5, 7));
+  if (!Number.isFinite(month) || month < 1 || month > 12) return null;
+  return `Q${Math.ceil(month / 3)}`;
+}
+
+type ResolvedEarningsPick = { reportMs: number; fiscalQuarter: string | null };
+
 /**
  * Prefer `Earnings.History` (per-ticker report dates) before Highlights — Highlights/General
  * sometimes carry generic or stale `NextEarningsDate` values that make many symbols look identical.
  *
  * `reportDate` is the announcement date; `date` is fiscal period end — we prefer reportDate when available.
  */
-function resolveFromEarningsObject(e: Record<string, unknown>): string | null {
+function resolveFromEarningsObject(e: Record<string, unknown>): ResolvedEarningsPick | null {
   const history = e.History;
   if (history && typeof history === "object") {
     const h = history as Record<string, unknown>;
@@ -214,8 +254,8 @@ function resolveFromEarningsObject(e: Record<string, unknown>): string | null {
       }
     }
 
-    let bestUpcomingMs: number | null = null;
-    let bestPastMs: number | null = null;
+    let bestUpcoming: ResolvedEarningsPick | null = null;
+    let bestPast: ResolvedEarningsPick | null = null;
 
     for (const r of rows) {
       const rawReport = r.reportDate ?? r.ReportDate ?? r.report_date;
@@ -225,27 +265,33 @@ function resolveFromEarningsObject(e: Record<string, unknown>): string | null {
       if (ms == null) continue;
       const d = new Date(ms);
       const dayStart = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0, 0);
+      const fiscalQuarter = fiscalQuarterFromPeriodEndYmdLocal(fiscalPeriodEndYmdFromHistoryRow(r));
+      const pick = { reportMs: dayStart, fiscalQuarter };
 
       if (dayStart >= startToday) {
         if (earningsRowIsReported(r)) continue;
         if (anyFutureWithReport && !earningsRowHasReportDate(r)) continue;
-        if (bestUpcomingMs == null || dayStart < bestUpcomingMs) bestUpcomingMs = dayStart;
-      } else {
-        if (bestPastMs == null || dayStart > bestPastMs) bestPastMs = dayStart;
+        if (bestUpcoming == null || dayStart < bestUpcoming.reportMs) bestUpcoming = pick;
+      } else if (bestPast == null || dayStart > bestPast.reportMs) {
+        bestPast = pick;
       }
     }
 
-    if (bestUpcomingMs != null) return formatEarningsDateEnUS(bestUpcomingMs);
-    if (bestPastMs != null) return formatEarningsDateEnUS(bestPastMs);
+    if (bestUpcoming != null) return bestUpcoming;
+    if (bestPast != null) return bestPast;
   }
 
   const dates = e.Dates ?? e.Upcoming;
   if (dates && typeof dates === "object") {
     const d = dates as Record<string, unknown>;
-    const nested =
-      formatEarningsDateEnUS(d.NextDate ?? d.nextEarningsDate ?? d.Date ?? d.date ?? d.ReportDate ?? d.reportDate) ??
-      formatEarningsDateEnUS(d.next);
-    if (nested) return nested;
+    const nestedMs =
+      parseUnknownDateToUtcMs(d.NextDate ?? d.nextEarningsDate ?? d.Date ?? d.date ?? d.ReportDate ?? d.reportDate) ??
+      parseUnknownDateToUtcMs(d.next);
+    if (nestedMs != null) {
+      const day = new Date(nestedMs);
+      const reportMs = Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate(), 0, 0, 0, 0);
+      return { reportMs, fiscalQuarter: null };
+    }
   }
 
   const trend = e.Trend;
@@ -263,7 +309,9 @@ function resolveFromEarningsObject(e: Record<string, unknown>): string | null {
       const todayMs = Date.now();
       const future = candidates.filter((ms) => ms >= todayMs).sort((a, b) => a - b);
       const pick = future.length ? future[0]! : candidates.sort((a, b) => b - a)[0]!;
-      return formatEarningsDateEnUS(pick);
+      const day = new Date(pick);
+      const reportMs = Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate(), 0, 0, 0, 0);
+      return { reportMs, fiscalQuarter: null };
     }
   }
 
@@ -271,16 +319,24 @@ function resolveFromEarningsObject(e: Record<string, unknown>): string | null {
 }
 
 /**
- * EODHD fundamentals: next/last earnings for UI (watchlist, stock header).
+ * EODHD fundamentals: next/last earnings date + fiscal quarter when available.
  * History is evaluated before Highlights so values are ticker-specific.
  */
-export function resolveEarningsDateDisplay(highlights: Record<string, unknown> | null, root: Record<string, unknown>): string | null {
+export function resolveEarningsDateMeta(
+  highlights: Record<string, unknown> | null,
+  root: Record<string, unknown>,
+): EarningsDateMeta {
   const general = root.General && typeof root.General === "object" ? (root.General as Record<string, unknown>) : null;
 
   const earn = root.Earnings;
   if (earn && typeof earn === "object") {
     const fromEarn = resolveFromEarningsObject(earn as Record<string, unknown>);
-    if (fromEarn) return fromEarn;
+    if (fromEarn) {
+      return {
+        earningsDateDisplay: formatEarningsDateEnUS(fromEarn.reportMs),
+        fiscalQuarter: fromEarn.fiscalQuarter,
+      };
+    }
   }
 
   const explicitKeys = [
@@ -297,7 +353,7 @@ export function resolveEarningsDateDisplay(highlights: Record<string, unknown> |
     if (!src) continue;
     for (const k of explicitKeys) {
       const f = formatEarningsDateEnUS(src[k]);
-      if (f) return f;
+      if (f) return { earningsDateDisplay: f, fiscalQuarter: null };
     }
   }
 
@@ -305,11 +361,24 @@ export function resolveEarningsDateDisplay(highlights: Record<string, unknown> |
     const mrq = highlights.MostRecentQuarter;
     if (typeof mrq === "string" && mrq.trim()) {
       const f = formatEarningsDateEnUS(mrq);
-      if (f) return f;
+      if (f) {
+        return {
+          earningsDateDisplay: f,
+          fiscalQuarter: fiscalQuarterFromPeriodEndYmdLocal(ymdFromUnknownDate(mrq)),
+        };
+      }
     }
   }
 
-  return null;
+  return { earningsDateDisplay: null, fiscalQuarter: null };
+}
+
+/**
+ * EODHD fundamentals: next/last earnings for UI (watchlist, stock header).
+ * History is evaluated before Highlights so values are ticker-specific.
+ */
+export function resolveEarningsDateDisplay(highlights: Record<string, unknown> | null, root: Record<string, unknown>): string | null {
+  return resolveEarningsDateMeta(highlights, root).earningsDateDisplay;
 }
 
 /**

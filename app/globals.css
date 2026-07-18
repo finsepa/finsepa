@@ -357,7 +357,7 @@ body {
     );
     width: calc((100% / var(--mobile-bottom-nav-highlight-count, 5)) - 4px);
     border-radius: 9999px;
-    background: rgba(9, 9, 11, 0.05);
+    background: rgba(15, 15, 15, 0.05);
     transition-property: left;
     transition-duration: 280ms;
     transition-timing-function: cubic-bezier(0.33, 1, 0.68, 1);

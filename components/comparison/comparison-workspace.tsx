@@ -123,7 +123,7 @@ function ComparisonCompanyBlock({
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <CompanyLogo name={displayName} logoUrl={logoUrl} symbol={ticker} />
         <div className="min-w-0">
-          <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">{displayName}</div>
+          <div className="truncate text-[14px] font-semibold leading-5 text-[#0F0F0F]">{displayName}</div>
           <div className="text-[12px] font-normal leading-4 text-[#71717A]">{ticker}</div>
         </div>
       </div>
@@ -450,7 +450,7 @@ export function ComparisonWorkspace({
   return (
     <div className="relative space-y-6">
       <div className="flex min-w-0 items-center justify-between gap-4">
-        <TitleTag className="min-w-0 text-2xl font-semibold leading-9 tracking-tight text-[#09090B]">
+        <TitleTag className="min-w-0 text-2xl font-semibold leading-9 tracking-tight text-[#0F0F0F]">
           Comparison
         </TitleTag>
         <button
@@ -458,7 +458,7 @@ export function ComparisonWorkspace({
           onClick={clearAllTickers}
           disabled={anchor ? displayTickers.length <= 1 : displayTickers.length === 0}
           className={cn(
-            "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#E4E4E7] bg-white text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15",
+            "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#E4E4E7] bg-white text-[#0F0F0F] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15",
             anchor
               ? displayTickers.length <= 1
                 ? "cursor-not-allowed opacity-40"
@@ -534,7 +534,7 @@ export function ComparisonWorkspace({
               >
                 <span
                   className={cn(
-                    "flex min-h-[36px] min-w-0 items-center px-4 py-2 text-[14px] font-medium leading-5 text-[#09090B]",
+                    "flex min-h-[36px] min-w-0 items-center px-4 py-2 text-[14px] font-medium leading-5 text-[#0F0F0F]",
                     !isAnchor && "border-r border-[#E4E4E7]",
                   )}
                 >
@@ -544,7 +544,7 @@ export function ComparisonWorkspace({
                   <button
                     type="button"
                     onClick={() => removeTicker(sym)}
-                    className="flex w-9 shrink-0 items-center justify-center text-[#09090B] transition-colors hover:bg-[#FAFAFA]"
+                    className="flex w-9 shrink-0 items-center justify-center text-[#0F0F0F] transition-colors hover:bg-[#FAFAFA]"
                     aria-label={`Remove ${sym}`}
                   >
                     <X className="h-5 w-5" strokeWidth={1.5} aria-hidden />
@@ -571,14 +571,14 @@ export function ComparisonWorkspace({
                 key={id}
                 className="inline-flex max-w-full min-w-0 items-stretch overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]"
               >
-                <span className="flex min-h-[36px] min-w-0 items-center border-r border-[#E4E4E7] px-4 py-2 text-[14px] font-medium leading-5 text-[#09090B]">
+                <span className="flex min-h-[36px] min-w-0 items-center border-r border-[#E4E4E7] px-4 py-2 text-[14px] font-medium leading-5 text-[#0F0F0F]">
                   <span className="truncate">{label}</span>
                 </span>
                 {selectedColumnIds.length > 1 ? (
                   <button
                     type="button"
                     onClick={() => removeColumn(id)}
-                    className="flex w-9 shrink-0 items-center justify-center text-[#09090B] transition-colors hover:bg-[#FAFAFA]"
+                    className="flex w-9 shrink-0 items-center justify-center text-[#0F0F0F] transition-colors hover:bg-[#FAFAFA]"
                     aria-label={`Remove ${label}`}
                   >
                     <X className="h-5 w-5" strokeWidth={1.5} aria-hidden />
@@ -658,7 +658,7 @@ export function ComparisonWorkspace({
                   href={`/stock/${encodeURIComponent(r.t)}`}
                   prefetch={false}
                   aria-label={`Open ${r.meta?.fullName?.trim() || r.t} (${r.t})`}
-                  className="grid h-[60px] max-h-[60px] cursor-pointer items-center gap-x-2 bg-white px-4 no-underline transition-colors duration-75 hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#09090B]/15"
+                  className="grid h-[60px] max-h-[60px] cursor-pointer items-center gap-x-2 bg-white px-4 no-underline transition-colors duration-75 hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#0F0F0F]/15"
                   style={{ gridTemplateColumns: fundamentalsGrid }}
                 >
                   <ComparisonCompanyBlock
@@ -719,7 +719,7 @@ export function ComparisonWorkspace({
                   href={`/stock/${encodeURIComponent(r.t)}`}
                   prefetch={false}
                   aria-label={`Open ${r.meta?.fullName?.trim() || r.t} (${r.t})`}
-                  className="grid h-[60px] max-h-[60px] cursor-pointer items-center gap-x-2 bg-white px-4 no-underline transition-colors duration-75 hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#09090B]/15"
+                  className="grid h-[60px] max-h-[60px] cursor-pointer items-center gap-x-2 bg-white px-4 no-underline transition-colors duration-75 hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#0F0F0F]/15"
                   style={{ gridTemplateColumns: performanceGrid }}
                 >
                   <ComparisonCompanyBlock

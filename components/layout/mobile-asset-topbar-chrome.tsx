@@ -30,7 +30,7 @@ function MobileAssetTopbarTitle({
 
   return (
     <div className="mx-auto min-w-0 max-w-[11rem] overflow-hidden px-1 text-center">
-      <p className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">{line1}</p>
+      <p className="truncate text-[14px] font-semibold leading-5 text-[#0F0F0F]">{line1}</p>
       {line2Loading ? (
         <div className="mx-auto mt-0.5 h-3.5 w-[5.5rem] max-w-full animate-pulse rounded bg-[#E4E4E7]" aria-hidden />
       ) : hasStructuredLine2 ? (

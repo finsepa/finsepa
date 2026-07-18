@@ -3,7 +3,7 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 
 import { REVALIDATE_IDENTITY, REVALIDATE_WARM_LONG } from "@/lib/data/cache-policy";
-import { fetchEodhdFundamentalsJson, resolveEarningsDateDisplay } from "@/lib/market/eodhd-fundamentals";
+import { fetchEodhdFundamentalsJson, resolveEarningsDateMeta } from "@/lib/market/eodhd-fundamentals";
 import {
   readStockHeaderIdentitySnapshot,
   upsertStockHeaderIdentitySnapshot,
@@ -65,12 +65,14 @@ async function buildHeaderIdentityUncached(ticker: string): Promise<HeaderIdenti
 }
 
 /** Next-earnings display string — follows fundamentals warm-long cadence. */
-async function buildHeaderEarningsLineUncached(ticker: string): Promise<{ earningsDateDisplay: string | null }> {
+async function buildHeaderEarningsLineUncached(
+  ticker: string,
+): Promise<{ earningsDateDisplay: string | null; fiscalQuarter: string | null }> {
   const root = await fetchEodhdFundamentalsJson(ticker);
   const r = root && typeof root === "object" ? (root as Record<string, unknown>) : null;
-  if (!r) return { earningsDateDisplay: null };
+  if (!r) return { earningsDateDisplay: null, fiscalQuarter: null };
   const highlights = parseHighlights(r);
-  return { earningsDateDisplay: resolveEarningsDateDisplay(highlights, r) };
+  return resolveEarningsDateMeta(highlights, r);
 }
 
 const getCachedStockHeaderIdentity = unstable_cache(buildHeaderIdentityUncached, ["stock-header-identity-v3-country"], {
@@ -79,13 +81,20 @@ const getCachedStockHeaderIdentity = unstable_cache(buildHeaderIdentityUncached,
 
 const getCachedStockHeaderEarningsLine = unstable_cache(
   buildHeaderEarningsLineUncached,
-  ["stock-header-earnings-line-v1-phase5"],
+  ["stock-header-earnings-line-v2-fiscal-quarter"],
   { revalidate: REVALIDATE_WARM_LONG },
 );
 
 /** Identity fields only — no watchlist count. Safe for batch portfolio slices. */
 export async function getStockHeaderIdentityForTicker(ticker: string): Promise<HeaderIdentityFields> {
   return getCachedStockHeaderIdentity(ticker);
+}
+
+/** Next-earnings display + fiscal quarter — shared warm-long cache with stock header. */
+export async function getStockHeaderEarningsLineForTicker(
+  ticker: string,
+): Promise<{ earningsDateDisplay: string | null; fiscalQuarter: string | null }> {
+  return getCachedStockHeaderEarningsLine(ticker);
 }
 
 /**

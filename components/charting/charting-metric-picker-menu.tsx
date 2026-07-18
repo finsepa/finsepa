@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils";
 
 /** Matches {@link WatchlistSectionHeader} section title typography. */
 const metricPickerSectionLabelClass =
-  "px-2 pb-1 pt-2 text-[13px] font-medium text-[#09090B]";
+  "px-2 pb-1 pt-2 text-[13px] font-medium text-[#0F0F0F]";
 
 function MetricPickerSectionLabel({ label }: { label: string }) {
   return <p className={metricPickerSectionLabelClass}>{label}</p>;
@@ -32,8 +32,8 @@ function metricPickerCategoryButtonClass(active: boolean) {
   return cn(
     "w-full rounded-lg px-2 py-2 text-left text-[13px] font-medium transition-colors",
     active
-      ? "bg-[#F4F4F5] text-[#09090B]"
-      : "text-[#09090B] hover:bg-[#F4F4F5]",
+      ? "bg-[#F4F4F5] text-[#0F0F0F]"
+      : "text-[#0F0F0F] hover:bg-[#F4F4F5]",
   );
 }
 
@@ -153,7 +153,7 @@ export function ChartingMetricPickerMenu({
       </div>
 
       {emptyMessage ? (
-        <div className="px-3 py-6 text-center text-[13px] text-[#09090B]">{emptyMessage}</div>
+        <div className="px-3 py-6 text-center text-[13px] text-[#0F0F0F]">{emptyMessage}</div>
       ) : isSearching ? (
         <DropdownScrollArea
           className={cn(dropdownMenuPanelBodyClassName, "max-h-[min(400px,calc(100vh-12rem))] overflow-y-auto")}

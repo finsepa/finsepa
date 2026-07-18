@@ -88,10 +88,10 @@ const MORE_CLOSE_TRANSITION = { duration: TAB_MOTION_DURATION, ease: TAB_MOTION_
 const SEARCH_ICON_MORPH = { duration: 0.2, ease: [0.33, 1, 0.68, 1] as const };
 
 const pillSurfaceClass =
-  "border border-[rgba(9,9,11,0.06)] bg-white/90 shadow-sm backdrop-blur-xl backdrop-saturate-150 supports-[backdrop-filter]:bg-white/78";
+  "border border-[rgba(15,15,15,0.06)] bg-white/90 shadow-sm backdrop-blur-xl backdrop-saturate-150 supports-[backdrop-filter]:bg-white/78";
 
 const tabHighlightClass =
-  "mobile-bottom-nav-tab-highlight pointer-events-none absolute inset-[2px] z-0 rounded-full bg-[#09090B]/[0.05]";
+  "mobile-bottom-nav-tab-highlight pointer-events-none absolute inset-[2px] z-0 rounded-full bg-[#0F0F0F]/[0.05]";
 
 type LinkTabConfig = {
   id: Exclude<MobilePrimaryNavTab, "more">;
@@ -378,7 +378,7 @@ export function MobileBottomNav() {
                       <HapticButton
                         className={cn(
                           "mobile-bottom-nav-tab-button flex h-full w-full items-center justify-center rounded-full",
-                          visuallyActive ? "text-[#09090B] opacity-100" : "text-[#A1A1AA] opacity-80 active:opacity-100",
+                          visuallyActive ? "text-[#0F0F0F] opacity-100" : "text-[#A1A1AA] opacity-80 active:opacity-100",
                         )}
                         aria-label={tab.label}
                         onClick={() => goToTab(tab.id, tab.href)}
@@ -399,7 +399,7 @@ export function MobileBottomNav() {
                     className={cn(
                       "mobile-bottom-nav-tab-button flex h-full w-full items-center justify-center rounded-full",
                       moreOpen || urlTab === "more"
-                        ? "text-[#09090B] opacity-100"
+                        ? "text-[#0F0F0F] opacity-100"
                         : "text-[#A1A1AA] opacity-80 active:opacity-100",
                     )}
                     aria-label="More"
@@ -447,7 +447,7 @@ export function MobileBottomNav() {
             <HapticButton
               type="button"
               className={cn(
-                "mobile-bottom-nav-search-pill flex shrink-0 items-center justify-center rounded-full text-[#09090B]",
+                "mobile-bottom-nav-search-pill flex shrink-0 items-center justify-center rounded-full text-[#0F0F0F]",
                 searchOpen ? "mobile-bottom-nav-search-pill--close" : "h-full w-full",
               )}
               aria-label={searchOpen ? "Close search" : "Search"}

@@ -23,8 +23,10 @@ import { reportedRowMissingEarningsDocuments } from "@/lib/market/earnings-docum
 import { buildReportsTableRows } from "@/lib/market/enrich-earnings-history-estimates";
 import { fetchStockEarningsTabPayloadClient, peekStockEarningsTabPayloadClient } from "@/lib/market/stock-earnings-tab-client";
 import { StockEarningsTabLoading } from "@/components/stock/stock-earnings-tab-loading";
+import { EarningsCountdownBars } from "@/components/stock/earnings-countdown-bars";
 import { SCREENER_TABLE_HEADER_STICKY_CLASS, ScreenerTableScroll } from "@/components/screener/screener-table-scroll";
 import { STOCK_TABLE_LABEL_COL_WIDTH } from "@/components/stock/stock-income-statement-table";
+import { parseEarningsReportYmd } from "@/lib/market/earnings-countdown";
 import { cn } from "@/lib/utils";
 
 function metricSummaryValueFromPoint(p: StockEarningsEstimatesPoint, metric: EstimatesMetric): number | null {
@@ -90,30 +92,11 @@ const EARNINGS_MONTH_ABBREV = [
   "Dec",
 ] as const;
 
-/** Total meter bars — 12 bars, 1 bar ≈ 1 week (~one quarter window). */
-const EARNINGS_COUNTDOWN_BARS = 12;
-
 type EarningsCountdownInfo = {
   /** e.g. "Q3, Aug 26". */
   nextEarningsLabel: string;
   daysLeft: number;
 };
-
-/** Parse a `YYYY-MM-DD` report date into calendar parts (no time-of-day, no locale). */
-function parseEarningsReportYmd(ymd: string | null | undefined): { utcMs: number; monthIdx: number; day: string } | null {
-  const raw = ymd?.trim() ?? "";
-  const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (!m) return null;
-  const year = Number(m[1]);
-  const monthIdx = Number(m[2]) - 1;
-  const day = Number(m[3]);
-  if (monthIdx < 0 || monthIdx > 11 || day < 1 || day > 31) return null;
-  return {
-    day: String(day),
-    monthIdx,
-    utcMs: Date.UTC(year, monthIdx, day),
-  };
-}
 
 /** `Q1`–`Q4` from a fiscal label like "Q3 2026"; null when unknown. */
 function quarterFromFiscalPeriodLabel(fiscalPeriodLabel: string | null | undefined): string | null {
@@ -133,19 +116,9 @@ function formatNextEarningsLabel(
   return quarter ? `${quarter}, ${datePart}` : datePart;
 }
 
-/**
- * Green bars fill as earnings approaches (empty/grey when far, full green when due).
- * 1 bar ≈ 1 week remaining emptied from the meter; clamp to the 12-bar window.
- */
-function earningsCountdownFilledBars(daysLeft: number): number {
-  if (!Number.isFinite(daysLeft) || daysLeft <= 0) return EARNINGS_COUNTDOWN_BARS;
-  const weeksLeft = Math.min(EARNINGS_COUNTDOWN_BARS, Math.max(0, Math.ceil(daysLeft / 7)));
-  return EARNINGS_COUNTDOWN_BARS - weeksLeft;
-}
-
 const earningsHeaderStatLabelClass = "text-[13px] font-normal leading-5 text-[#71717A]";
 const earningsHeaderStatValueClass =
-  "text-[16px] font-semibold leading-6 tabular-nums text-[#09090B] sm:text-[20px] sm:leading-7";
+  "text-[16px] font-semibold leading-6 tabular-nums text-[#0F0F0F] sm:text-[20px] sm:leading-7";
 
 function EarningsHeaderChangePct({ changePct }: { changePct: number | null | undefined }) {
   if (changePct == null || !Number.isFinite(changePct)) return null;
@@ -196,7 +169,6 @@ function EarningsCountdownStats({
     };
   }, [reportDateYmd, fiscalPeriodLabel, nowUtcMs]);
 
-  const filledBars = info ? earningsCountdownFilledBars(info.daysLeft) : 0;
   const revenueEstimate =
     revenueEstimateDisplay != null && String(revenueEstimateDisplay).trim() !== ""
       ? String(revenueEstimateDisplay).trim()
@@ -216,19 +188,7 @@ function EarningsCountdownStats({
         <dt className={earningsHeaderStatLabelClass}>Days left</dt>
         <dd className="flex items-center gap-3">
           <span className={earningsHeaderStatValueClass}>{info ? info.daysLeft : "TBA"}</span>
-          {info ? (
-            <div className="flex shrink-0 items-center gap-1" aria-hidden>
-              {Array.from({ length: EARNINGS_COUNTDOWN_BARS }).map((_, i) => (
-                <span
-                  key={i}
-                  className={cn(
-                    "h-3 w-[3px] max-w-[3px] shrink-0 rounded-[1px]",
-                    i < filledBars ? "bg-[#2563EB]" : "bg-[#E4E4E7]",
-                  )}
-                />
-              ))}
-            </div>
-          ) : null}
+          {info ? <EarningsCountdownBars daysLeft={info.daysLeft} /> : null}
         </dd>
       </div>
       <div className="flex flex-col gap-1 border-r border-[#E4E4E7] pr-6">
@@ -266,7 +226,7 @@ function nearestVerticalScrollParent(start: HTMLElement | null): HTMLElement | n
 const reportsTableClass = "w-full min-w-0 table-fixed border-collapse bg-white text-[14px]";
 
 const reportsHeaderTh =
-  "min-h-[44px] px-2 py-2 align-middle font-['Inter'] text-[12px] font-medium leading-5 text-[#71717A] sm:px-4 sm:text-[14px]";
+  "min-h-[44px] px-2 py-2 align-middle font-['Inter'] text-[14px] font-medium leading-5 text-[#71717A] sm:px-4";
 
 const reportsHeaderThLabel = cn(reportsHeaderTh, "text-left");
 
@@ -276,13 +236,13 @@ const reportsDataRowClass =
   "min-h-[60px] border-b border-[#E4E4E7] bg-white transition-colors duration-75 hover:bg-neutral-50";
 
 const reportsYearRowClass =
-  "min-h-[44px] border-b border-[#E4E4E7] bg-[#FAFAFA] font-['Inter'] text-[12px] font-medium leading-5 text-[#71717A] sm:text-[14px]";
+  "min-h-[44px] border-b border-[#E4E4E7] bg-[#FAFAFA] font-['Inter'] text-[14px] font-medium leading-5 text-[#71717A]";
 
 const reportsLabelTd =
   "min-w-0 px-2 py-3 align-middle text-left sm:px-4";
 
 const reportsNumTd =
-  "px-2 py-3 text-right align-middle font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B] sm:px-4";
+  "px-2 py-3 text-right align-middle font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#0F0F0F] sm:px-4";
 
 const reportsActionsTd = "w-[180px] min-w-[180px] px-2 py-3 text-right align-middle sm:px-4";
 
@@ -683,7 +643,7 @@ export function StockEarningsTabContent({
         <>
           <EstimatesHeaderSkeleton />
           <EstimatesChartSkeleton />
-          <h3 className="text-[18px] font-semibold leading-7 tracking-tight text-[#09090B]">Reports</h3>
+          <h3 className="text-[18px] font-semibold leading-7 tracking-tight text-[#0F0F0F]">Reports</h3>
           <TableSkeleton />
         </>
       ) : null}
@@ -696,7 +656,7 @@ export function StockEarningsTabContent({
           <button
             type="button"
             onClick={() => setReloadNonce((n) => n + 1)}
-            className="inline-flex h-9 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white px-3 text-[14px] font-medium text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] hover:bg-[#F4F4F5]"
+            className="inline-flex h-9 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white px-3 text-[14px] font-medium text-[#0F0F0F] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] hover:bg-[#F4F4F5]"
           >
             Retry
           </button>
@@ -738,7 +698,7 @@ export function StockEarningsTabContent({
 
       {!loading && data && historyRows.length > 0 ? (
         <div className="min-w-0 space-y-6">
-          <h3 className="text-[18px] font-semibold leading-7 tracking-tight text-[#09090B]">Reports</h3>
+          <h3 className="text-[18px] font-semibold leading-7 tracking-tight text-[#0F0F0F]">Reports</h3>
           <ScreenerTableScroll mobileScroll>
             <table className={reportsTableClass}>
               <ReportsColGroup />
@@ -781,10 +741,10 @@ export function StockEarningsTabContent({
                       className={cn(reportsDataRowClass, "last:border-b-0")}
                     >
                       <td className={reportsLabelTd}>
-                        <div className="truncate font-semibold leading-5 text-[#09090B]">
+                        <div className="truncate font-semibold leading-5 text-[#0F0F0F]">
                           {tableCell(entry.row.fiscalPeriodLabel)}
                         </div>
-                        <div className="truncate font-['Inter'] text-[12px] font-medium leading-5 text-[#71717A] sm:text-[14px]">
+                        <div className="truncate font-['Inter'] text-[14px] font-medium leading-5 text-[#71717A]">
                           {reportDayLineFromDisplay(entry.row.reportDateDisplay)}
                         </div>
                       </td>

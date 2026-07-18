@@ -54,7 +54,7 @@ export function WatchlistSavedList() {
         </p>
         <Link
           href="/screener"
-          className="mt-6 text-sm font-semibold text-[#09090B] underline decoration-[#E4E4E7] underline-offset-4 transition-colors hover:decoration-[#A1A1AA]"
+          className="mt-6 text-sm font-semibold text-[#0F0F0F] underline decoration-[#E4E4E7] underline-offset-4 transition-colors hover:decoration-[#A1A1AA]"
         >
           Go to screener
         </Link>
@@ -81,7 +81,7 @@ export function WatchlistSavedList() {
                   {meta.initials}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">{meta.displayName}</div>
+                  <div className="truncate text-[14px] font-semibold leading-5 text-[#0F0F0F]">{meta.displayName}</div>
                   <div className="text-[12px] font-normal leading-4 text-[#71717A]">{ticker}</div>
                 </div>
               </Link>

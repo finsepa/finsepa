@@ -72,10 +72,10 @@ function IndicatorLine({ indicator }: { indicator: StockKeyIndicator }) {
       <span className="mt-0.5">
         <IndicatorIcon indicator={indicator} />
       </span>
-      <p className="min-w-0 pt-0.5 text-[14px] leading-5 text-[#09090B]">
+      <p className="min-w-0 pt-0.5 text-[14px] leading-5 text-[#0F0F0F]">
         {indicator.parts.map((part, i) =>
           part.kind === "emphasis" ? (
-            <span key={i} className="font-semibold text-[#09090B]">
+            <span key={i} className="font-semibold text-[#0F0F0F]">
               {part.value}
             </span>
           ) : (

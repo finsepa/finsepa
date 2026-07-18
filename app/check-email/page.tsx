@@ -16,7 +16,7 @@ export default async function CheckEmailPage({ searchParams }: { searchParams: P
       subtitle={
         email ? (
           <>
-            We sent a confirmation email to <span className="font-medium text-[#09090B]">{email}</span>. Please verify your
+            We sent a confirmation email to <span className="font-medium text-[#0F0F0F]">{email}</span>. Please verify your
             account before logging in.
           </>
         ) : (

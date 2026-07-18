@@ -108,7 +108,7 @@ export function BillingUpgradeModal({
                 className="h-5 w-5 shrink-0"
                 aria-hidden
               />
-              <span className="text-[14px] leading-5 text-[#09090B]">{item}</span>
+              <span className="text-[14px] leading-5 text-[#0F0F0F]">{item}</span>
             </li>
           ))}
         </ul>

@@ -45,14 +45,14 @@ export function WelcomeOnboardingModal({
         bodyScroll={false}
       >
         <div className="flex flex-col items-center">
-          <div className="flex items-center justify-center rounded-[20px] bg-[#09090B] p-3">
+          <div className="flex items-center justify-center rounded-[20px] bg-[#0F0F0F] p-3">
             <AuthBrandMark size={49} className="h-[49px] w-[49px]" />
           </div>
 
           <div className="mt-4 flex max-w-[400px] flex-col items-center gap-2 text-center">
             <h2
               id={titleId}
-              className="text-[30px] font-bold leading-9 tracking-tight text-[#09090B]"
+              className="text-[30px] font-bold leading-9 tracking-tight text-[#0F0F0F]"
             >
               Welcome to Finsepa
             </h2>
@@ -64,7 +64,7 @@ export function WelcomeOnboardingModal({
           <button
             type="button"
             onClick={onContinue}
-            className="mt-4 inline-flex h-9 items-center justify-center rounded-[10px] bg-[#09090B] px-4 text-sm font-medium leading-5 text-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors hover:bg-[#27272A]"
+            className="mt-4 inline-flex h-9 items-center justify-center rounded-[10px] bg-[#0F0F0F] px-4 text-sm font-medium leading-5 text-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors hover:bg-[#27272A]"
           >
             Continue
           </button>

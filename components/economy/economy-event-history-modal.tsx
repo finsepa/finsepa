@@ -48,13 +48,13 @@ const POSITIVE_BAR_COLOR = fundamentalsBarSolidAtIndex(0);
 const historyTableGrid =
   "grid grid-cols-[minmax(11rem,2fr)_repeat(3,minmax(5.25rem,1fr))] gap-x-2";
 const historyLabelHeaderClass =
-  "flex min-h-full min-w-0 items-center self-stretch border-r border-[#E4E4E7] pr-4 text-left font-['Inter'] text-[12px] font-medium leading-5 text-[#71717A] sm:text-[14px]";
+  "flex min-h-full min-w-0 items-center self-stretch border-r border-[#E4E4E7] pr-4 text-left font-['Inter'] text-[14px] font-medium leading-5 text-[#71717A]";
 const historyValueHeaderClass =
-  "flex min-h-full min-w-0 items-center justify-end self-stretch font-['Inter'] text-[12px] font-medium leading-5 text-[#71717A] sm:text-[14px]";
+  "flex min-h-full min-w-0 items-center justify-end self-stretch font-['Inter'] text-[14px] font-medium leading-5 text-[#71717A]";
 const historyNumCellClass =
-  "min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]";
+  "min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#0F0F0F]";
 const historyLabelCellClass =
-  "flex min-h-full min-w-0 items-center self-stretch border-r border-[#E4E4E7] pr-4 text-left font-['Inter'] text-[14px] font-normal leading-5 text-[#09090B]";
+  "flex min-h-full min-w-0 items-center self-stretch border-r border-[#E4E4E7] pr-4 text-left font-['Inter'] text-[14px] font-normal leading-5 text-[#0F0F0F]";
 
 function formatPeriodLabel(dateStr: string, period: string | null): string {
   const d = new Date(dateStr.includes("T") ? dateStr : `${dateStr.split(" ")[0]}T12:00:00Z`);
@@ -302,7 +302,7 @@ function EconomyHistoryBarChart({
                     <span className="absolute top-1/2 right-px -translate-y-1/2 border-y-[6px] border-y-transparent border-r-[7px] border-r-white" />
                   </span>
                 )}
-                <p className="text-[12px] font-semibold leading-4 text-[#09090B]">{tip.periodLabel}</p>
+                <p className="text-[12px] font-semibold leading-4 text-[#0F0F0F]">{tip.periodLabel}</p>
                 <p className="mt-1.5 flex items-center gap-2 whitespace-nowrap text-[12px] font-normal leading-4 text-[#71717A]">
                   <span
                     className="h-2.5 w-2.5 shrink-0 rounded-full"
@@ -476,7 +476,7 @@ export function EconomyEventHistoryModal({
                 {latestActual.actual != null && (
                   <span>
                     Actual:{" "}
-                    <span className="font-medium text-[#09090B]">
+                    <span className="font-medium text-[#0F0F0F]">
                       {formatEconomyMetric(latestActual.actual)}
                     </span>
                   </span>
@@ -484,7 +484,7 @@ export function EconomyEventHistoryModal({
                 {latestActual.estimate != null && (
                   <span>
                     Forecast:{" "}
-                    <span className="font-medium text-[#09090B]">
+                    <span className="font-medium text-[#0F0F0F]">
                       {formatEconomyMetric(latestActual.estimate)}
                     </span>
                   </span>
@@ -492,7 +492,7 @@ export function EconomyEventHistoryModal({
                 {latestActual.previous != null && (
                   <span>
                     Prior:{" "}
-                    <span className="font-medium text-[#09090B]">
+                    <span className="font-medium text-[#0F0F0F]">
                       {formatEconomyMetric(latestActual.previous)}
                     </span>
                   </span>

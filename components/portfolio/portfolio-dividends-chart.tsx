@@ -41,7 +41,7 @@ const BAR_GAP_PX = 4;
 const BAR_HOVER_PAD_PX = 6;
 
 const BAR_VALUE_LABEL_CLASS =
-  "pointer-events-none absolute z-[15] max-w-[5.5rem] truncate text-center text-[11px] font-semibold leading-none tabular-nums text-[#09090B]";
+  "pointer-events-none absolute z-[15] max-w-[5.5rem] truncate text-center text-[11px] font-semibold leading-none tabular-nums text-[#0F0F0F]";
 
 const BAR_VALUE_LABEL_TEXT_SHADOW =
   "0 0 3px rgba(255,255,255,0.95), 0 1px 2px rgba(255,255,255,0.8)";
@@ -279,15 +279,15 @@ function PortfolioDividendsChartInner({ months }: { months: PortfolioDividendSch
                     <span className="absolute top-1/2 right-px -translate-y-1/2 border-y-[6px] border-y-transparent border-r-[7px] border-r-white" />
                   </span>
                 )}
-                <p className="text-[12px] font-semibold leading-4 text-[#09090B]">{tip.periodLabel}</p>
+                <p className="text-[12px] font-semibold leading-4 text-[#0F0F0F]">{tip.periodLabel}</p>
                 {tip.declaredUsd > 0 ? (
-                  <p className="mt-1 text-[12px] leading-4 text-[#09090B]">
+                  <p className="mt-1 text-[12px] leading-4 text-[#0F0F0F]">
                     <span className="inline-block h-2 w-2 rounded-sm align-middle" style={{ background: DECLARED_BAR }} />{" "}
                     Declared: {formatUsdCompact(tip.declaredUsd)}
                   </p>
                 ) : null}
                 {tip.estimatedUsd > 0 ? (
-                  <p className="mt-0.5 text-[12px] leading-4 text-[#09090B]">
+                  <p className="mt-0.5 text-[12px] leading-4 text-[#0F0F0F]">
                     <span
                       className="inline-block h-2 w-2 overflow-hidden rounded-sm align-middle"
                       style={ESTIMATED_BAR_FILL}

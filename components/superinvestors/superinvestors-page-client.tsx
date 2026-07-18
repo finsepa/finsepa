@@ -45,7 +45,7 @@ export function SuperinvestorsPageShell({ children }: { children: ReactNode }) {
     <SuperinvestorsListViewContext.Provider value={{ view, setView }}>
       <div className="min-w-0 px-4 py-4 sm:px-9 sm:py-6">
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <h1 className="hidden text-2xl font-semibold tracking-tight text-[#09090B] md:block">
+          <h1 className="hidden text-2xl font-semibold tracking-tight text-[#0F0F0F] md:block">
             Superinvestors
           </h1>
           <TabSwitcher

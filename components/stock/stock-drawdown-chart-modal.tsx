@@ -67,7 +67,7 @@ const DRAWDOWN_VALUE_LABEL_ANCHOR_CLASS =
   "pointer-events-none absolute z-[15] max-w-[5.5rem] -translate-x-1/2 text-center";
 
 const DRAWDOWN_VALUE_LABEL_TEXT_CLASS =
-  "block truncate text-[11px] font-semibold leading-none tabular-nums text-[#09090B]";
+  "block truncate text-[11px] font-semibold leading-none tabular-nums text-[#0F0F0F]";
 
 const DRAWDOWN_VALUE_LABEL_TEXT_SHADOW =
   "0 0 3px rgba(255,255,255,0.95), 0 1px 2px rgba(255,255,255,0.8)";
@@ -641,7 +641,7 @@ function DrawdownHistoryChart({
                 aria-label="Chart tooltip"
               >
                 <p className="text-[11px] leading-4 text-[#71717A]">{tip.periodLabel}</p>
-                <p className="text-[13px] font-semibold leading-5 text-[#09090B] tabular-nums">
+                <p className="text-[13px] font-semibold leading-5 text-[#0F0F0F] tabular-nums">
                   {tip.value}
                 </p>
               </div>
@@ -881,7 +881,7 @@ export function StockDrawdownChartModal({
       >
         <div className="h-1 w-10 shrink-0 rounded-full bg-[#D9D9D9]" aria-hidden />
         <div className="flex w-full flex-col items-center gap-1 text-center">
-          <h2 id="drawdown-chart-title" className="text-[16px] font-semibold leading-6 text-[#09090B]">
+          <h2 id="drawdown-chart-title" className="text-[16px] font-semibold leading-6 text-[#0F0F0F]">
             Drawdown
           </h2>
           <p className="text-[11px] leading-4 text-[#71717A]">{mobileSubtitle}</p>
@@ -912,7 +912,7 @@ export function StockDrawdownChartModal({
             className="!rounded-xl"
           />
           <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <span className="shrink-0 text-[18px] font-semibold leading-7 text-[#09090B]">Drawdown</span>
+            <span className="shrink-0 text-[18px] font-semibold leading-7 text-[#0F0F0F]">Drawdown</span>
             {companyLine ? (
               <span className="min-w-0 truncate text-[14px] leading-5 text-[#71717A]">{companyLine}</span>
             ) : (

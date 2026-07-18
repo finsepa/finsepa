@@ -76,7 +76,7 @@ function PriceAndChangeCell({ price, change1D }: { price: number | null; change1
   const positive = (change1D ?? 0) >= 0;
   return (
     <div className="min-w-0 w-full text-right">
-      <div className="min-w-0 w-full font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#09090B]">
+      <div className="min-w-0 w-full font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#0F0F0F]">
         {hasPrice ? `$${price!.toFixed(2)}` : "-"}
       </div>
       <div
@@ -196,7 +196,7 @@ const ScreenerDataRow = memo(function ScreenerDataRow({
         prefetch={false}
         className={cn(
           gridClassName,
-          "min-h-[56px] cursor-pointer items-center justify-items-stretch no-underline text-[#09090B] visited:text-[#09090B] sm:min-h-[60px]",
+          "min-h-[56px] cursor-pointer items-center justify-items-stretch no-underline text-[#0F0F0F] visited:text-[#0F0F0F] sm:min-h-[60px]",
         )}
         aria-label={`Open ${item.name} (${item.ticker})`}
       >
@@ -205,7 +205,7 @@ const ScreenerDataRow = memo(function ScreenerDataRow({
         <div className="flex min-w-0 items-center justify-start gap-2 pr-0 text-left max-md:gap-2 sm:gap-3 sm:pr-4">
           <CompanyLogo name={item.name} logoUrl={item.logoUrl} symbol={item.ticker} />
           <div className="min-w-0">
-            <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B] underline-offset-2 decoration-[#71717A] group-hover:underline">
+            <div className="truncate text-[14px] font-semibold leading-5 text-[#0F0F0F] underline-offset-2 decoration-[#71717A] group-hover:underline">
               {item.name}
             </div>
             <div className="text-[12px] font-normal leading-4 !text-[#71717A]">
@@ -223,7 +223,7 @@ const ScreenerDataRow = memo(function ScreenerDataRow({
           <PriceAndChangeCell price={item.price} change1D={item.change1D} />
         </div>
         <div
-          className={`${desktopNumericCellClass} font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]`}
+          className={`${desktopNumericCellClass} font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#0F0F0F]`}
         >
           {item.price != null && Number.isFinite(item.price) ? `$${item.price.toFixed(2)}` : "-"}
         </div>
@@ -239,13 +239,13 @@ const ScreenerDataRow = memo(function ScreenerDataRow({
         </div>
 
         <div
-          className={`${desktopNumericCellClass} font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]`}
+          className={`${desktopNumericCellClass} font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#0F0F0F]`}
         >
           {item.marketCap}
         </div>
 
         <div
-          className={`${desktopNumericCellClass} font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]`}
+          className={`${desktopNumericCellClass} font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#0F0F0F]`}
         >
           {item.pe}
         </div>
@@ -254,7 +254,7 @@ const ScreenerDataRow = memo(function ScreenerDataRow({
           <div
             key={col.header}
             className={`${desktopKeyStatCellClass} font-['Inter'] text-[14px] font-normal leading-5 tabular-nums ${
-              col.loading ? "text-[#71717A]" : "text-[#09090B]"
+              col.loading ? "text-[#71717A]" : "text-[#0F0F0F]"
             }`}
             title={keyStatDisplays[i]}
           >
@@ -292,16 +292,16 @@ export function ScreenerTable({
 
   const headerRow = (
     <div
-      className={`flex min-h-[44px] max-md:min-h-10 min-w-0 w-full items-center gap-x-1.5 px-4 py-0 max-md:py-2 text-[12px] font-medium leading-5 text-[#71717A] max-md:gap-x-1.5 sm:gap-x-2 sm:text-[14px]`}
+      className={`flex min-h-[44px] max-md:min-h-10 min-w-0 w-full items-center gap-x-1.5 px-4 py-0 max-md:py-2 text-[14px] font-medium leading-5 text-[#71717A] max-md:gap-x-1.5 sm:gap-x-2`}
     >
       <div className="hidden w-6 shrink-0 sm:block sm:w-10" aria-hidden />
       <div
         className={cn(
           gridClassName,
-          "min-h-[44px] max-md:min-h-0 items-center text-[12px] font-medium leading-5 text-[#71717A] sm:text-[14px]",
+          "min-h-[44px] max-md:min-h-0 items-center text-[14px] font-medium leading-5 text-[#71717A]",
         )}
       >
-        <div className={cn(mobileRankCellClass, "max-md:text-[12px] max-md:font-medium sm:text-[14px]")}>#</div>
+        <div className={cn(mobileRankCellClass, "text-[14px] font-medium")}>#</div>
         <div className="text-left">Company</div>
         <div className={cn("min-w-0 w-full text-right", !useFluidDesktopColumns && "sm:shrink-0 sm:max-w-[8rem] sm:min-w-[5.25rem]")}>
           <span className="sm:hidden">Price</span>

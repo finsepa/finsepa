@@ -166,7 +166,7 @@ function WatchlistRailRow({
           symbol={row.symbol}
           size="sm"
         />
-        <span className="min-w-0 shrink truncate text-[14px] font-normal leading-5 text-[#09090B] underline-offset-2 decoration-[#71717A] group-hover:underline">
+        <span className="min-w-0 shrink truncate text-[14px] font-normal leading-5 text-[#0F0F0F] underline-offset-2 decoration-[#71717A] group-hover:underline">
           {symbolLabel}
         </span>
       </Link>
@@ -175,7 +175,7 @@ function WatchlistRailRow({
       ) : (
         <div className="ml-auto flex shrink-0 items-center gap-3 font-['Inter'] tabular-nums">
           {priceText ? (
-            <span className="shrink-0 text-right text-[14px] font-normal leading-5 text-[#09090B]">
+            <span className="shrink-0 text-right text-[14px] font-normal leading-5 text-[#0F0F0F]">
               {priceText}
             </span>
           ) : null}
@@ -192,7 +192,7 @@ function WatchlistRailRow({
                   e.stopPropagation();
                   onRemove(row.storageKey);
                 }}
-                className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-[#A1A1AA] outline-none hover:bg-[#EBEBEB] hover:text-[#71717A] focus-visible:ring-2 focus-visible:ring-[#09090B]/10"
+                className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-[#A1A1AA] outline-none hover:bg-[#EBEBEB] hover:text-[#71717A] focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/10"
               >
                 <X className="h-3.5 w-3.5" strokeWidth={2} />
               </button>

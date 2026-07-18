@@ -39,7 +39,7 @@ const thRight =
   "whitespace-nowrap py-0 text-right align-middle text-[14px] font-medium leading-5 text-[#71717A]";
 const tdCompany = "min-w-0 py-1 text-left text-[14px] leading-5 whitespace-normal";
 const tdNum =
-  "whitespace-nowrap py-0 text-right align-middle font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]";
+  "whitespace-nowrap py-0 text-right align-middle font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#0F0F0F]";
 
 const HOLDINGS_TABLE_HEADER_CLASS =
   "sticky top-0 z-20 border-b border-solid border-[#E4E4E7] bg-white";
@@ -56,7 +56,7 @@ const mobileRowGrid =
   "grid grid-cols-[minmax(0,1fr)_minmax(5.5rem,auto)] gap-x-3 items-center";
 
 const HOLDING_COMPANY_NAME_CLASS =
-  "line-clamp-1 text-[14px] font-semibold leading-5 text-[#09090B] underline-offset-[3px] decoration-[#09090B] group-hover/company:underline sm:line-clamp-2";
+  "line-clamp-1 text-[14px] font-semibold leading-5 text-[#0F0F0F] underline-offset-[3px] decoration-[#0F0F0F] group-hover/company:underline sm:line-clamp-2";
 
 const rowShellBase = "min-h-[60px] items-center transition-colors duration-75";
 
@@ -142,7 +142,7 @@ function MobilePortfolioCell({
 }) {
   return (
     <div className="flex flex-col items-end justify-center gap-0.5 text-right">
-      <span className="text-[14px] font-medium leading-5 tabular-nums text-[#09090B]">
+      <span className="text-[14px] font-medium leading-5 tabular-nums text-[#0F0F0F]">
         {pct.format(weight)}%
       </span>
       {activity ?

@@ -213,7 +213,7 @@ export function HeatmapHoverTooltip({
                     <div className="truncate text-[12px] text-[#71717A]">{row.ticker}</div>
                   </div>
                   <div className="flex shrink-0 flex-col items-end text-right tabular-nums">
-                    <span className="text-[14px] font-medium leading-5 text-[#09090B]">
+                    <span className="text-[14px] font-medium leading-5 text-[#0F0F0F]">
                       {formatPrice(row.price, market)}
                     </span>
                     <span className="text-[12px] font-normal leading-4" style={{ color: changeColor }}>

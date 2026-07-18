@@ -38,12 +38,12 @@ function InstitutionalHoldingsTableInner({
         <tbody>
           {holdings.map((h, i) => (
             <tr key={`${h.issuer}-${i}`} className="border-b border-[#E4E4E7]">
-              <td className="py-3 pr-4 align-middle font-medium text-[#09090B]">{h.issuer}</td>
+              <td className="py-3 pr-4 align-middle font-medium text-[#0F0F0F]">{h.issuer}</td>
               <td className="py-3 pr-4 align-middle text-[#71717A]">{h.titleOfClass ?? "—"}</td>
-              <td className="whitespace-nowrap py-3 pr-4 text-right align-middle tabular-nums text-[#09090B]">
+              <td className="whitespace-nowrap py-3 pr-4 text-right align-middle tabular-nums text-[#0F0F0F]">
                 {usd.format(h.valueUsd)}
               </td>
-              <td className="whitespace-nowrap py-3 pr-0 text-right align-middle tabular-nums text-[#09090B]">
+              <td className="whitespace-nowrap py-3 pr-0 text-right align-middle tabular-nums text-[#0F0F0F]">
                 {pct.format(h.pct)}%
               </td>
             </tr>

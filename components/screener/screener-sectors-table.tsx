@@ -67,7 +67,7 @@ export function ScreenerSectorsTable({
       <div className="bg-white">
         <div
           className={cn(
-            `grid ${colLayoutMobile} ${colLayoutDesktop} min-h-[44px] items-center px-4 py-0 text-[12px] font-medium leading-5 text-[#71717A] sm:text-[14px]`,
+            `grid ${colLayoutMobile} ${colLayoutDesktop} min-h-[44px] items-center px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A]`,
             SCREENER_TABLE_HEADER_STICKY_CLASS,
             hideMobileHeader && "max-md:hidden",
           )}
@@ -85,11 +85,11 @@ export function ScreenerSectorsTable({
             key={row.sector}
             href={screenerSectorDrillHref(row.sector as ScreenerCanonicalSector)}
             prefetch={false}
-            className={`group grid ${colLayoutMobile} ${colLayoutDesktop} min-h-[56px] cursor-pointer items-center bg-white px-4 no-underline transition-colors duration-75 visited:text-inherit hover:bg-neutral-50 focus-visible:z-[1] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#09090B]/25 sm:min-h-[60px]`}
+            className={`group grid ${colLayoutMobile} ${colLayoutDesktop} min-h-[56px] cursor-pointer items-center bg-white px-4 no-underline transition-colors duration-75 visited:text-inherit hover:bg-neutral-50 focus-visible:z-[1] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#0F0F0F]/25 sm:min-h-[60px]`}
           >
             <div className="text-center text-[14px] font-semibold leading-5 tabular-nums text-[#71717A]">{row.rank}</div>
             <div className="min-w-0">
-              <span className="block truncate text-left text-[14px] font-semibold leading-5 text-[#09090B] underline-offset-2 decoration-[#71717A] group-hover:underline">
+              <span className="block truncate text-left text-[14px] font-semibold leading-5 text-[#0F0F0F] underline-offset-2 decoration-[#71717A] group-hover:underline">
                 {row.sector}
               </span>
               <span className="mt-0.5 block truncate text-left text-[12px] font-normal leading-4 text-[#71717A] sm:hidden">
@@ -100,7 +100,7 @@ export function ScreenerSectorsTable({
             <div className="hidden sm:contents">
               <PctCell value={row.changeYTD} />
             </div>
-            <div className="hidden min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B] sm:block">
+            <div className="hidden min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#0F0F0F] sm:block">
               {row.marketCapDisplay}
             </div>
           </Link>

@@ -28,7 +28,7 @@ export function AuthPasswordInput({
         type="button"
         onClick={() => setVisible((v) => !v)}
         disabled={props.disabled}
-        className="pointer-events-auto absolute inset-y-0 right-0 flex items-center pr-4 text-[#09090B] transition-opacity hover:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/30 disabled:cursor-not-allowed disabled:opacity-60"
+        className="pointer-events-auto absolute inset-y-0 right-0 flex items-center pr-4 text-[#0F0F0F] transition-opacity hover:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/30 disabled:cursor-not-allowed disabled:opacity-60"
         aria-label={visible ? "Hide password" : "Show password"}
         aria-pressed={visible}
       >

@@ -69,7 +69,7 @@ export function EmptyMedia({
 }
 
 /** Shared empty-state typography (16/24 title, 14/20 description). */
-export const emptyTitleClassName = "text-[16px] font-semibold leading-[24px] text-[#09090B]";
+export const emptyTitleClassName = "text-[16px] font-semibold leading-[24px] text-[#0F0F0F]";
 export const emptyDescriptionClassName = "text-[14px] font-normal leading-[20px] text-[#71717A]";
 
 export function EmptyTitle({ className, children }: { className?: string; children?: ReactNode }) {

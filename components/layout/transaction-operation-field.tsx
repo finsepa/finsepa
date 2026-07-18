@@ -59,7 +59,7 @@ export function TransactionOperationField({
             <span className="min-w-0 flex-1 text-left">{op}</span>
             <span className="flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden>
               <Check
-                className={cn("h-4 w-4 text-[#09090B]", !selected && "invisible")}
+                className={cn("h-4 w-4 text-[#0F0F0F]", !selected && "invisible")}
                 strokeWidth={2}
               />
             </span>
@@ -76,10 +76,10 @@ export function TransactionOperationField({
         aria-expanded={open}
         aria-haspopup="listbox"
         onClick={() => setOpen((o) => !o)}
-        className="flex h-9 w-full items-center justify-between gap-2 rounded-[10px] bg-[#F4F4F5] px-4 text-left text-sm font-normal text-[#09090B] transition-colors hover:bg-[#EBEBEB]"
+        className="flex h-9 w-full items-center justify-between gap-2 rounded-[10px] bg-[#F4F4F5] px-4 text-left text-sm font-normal text-[#0F0F0F] transition-colors hover:bg-[#EBEBEB]"
       >
         <span>{operation}</span>
-        <ChevronDown className="h-5 w-5 shrink-0 text-[#09090B]" aria-hidden />
+        <ChevronDown className="h-5 w-5 shrink-0 text-[#0F0F0F]" aria-hidden />
       </button>
       {open && isMobileSheet ? (
         <MobileBottomSheet open={open} onClose={() => setOpen(false)} title="Operation">

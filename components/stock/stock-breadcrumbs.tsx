@@ -25,7 +25,7 @@ export function StockBreadcrumbs({ ticker, headerMeta, isEtf = false }: Props) {
   const canonicalSector = sectorLabel ? mapProviderSectorToCanonical(sectorLabel) : null;
 
   const breadcrumbCrumbClass = "min-w-0 truncate";
-  const breadcrumbLinkClass = `${breadcrumbCrumbClass} transition-colors hover:text-[#09090B] hover:underline`;
+  const breadcrumbLinkClass = `${breadcrumbCrumbClass} transition-colors hover:text-[#0F0F0F] hover:underline`;
   const breadcrumbSep = (
     <span className="shrink-0 select-none" aria-hidden>
       /
@@ -88,7 +88,7 @@ export function StockBreadcrumbs({ ticker, headerMeta, isEtf = false }: Props) {
       ) : null}
       {breadcrumbSep}
       <span
-        className={`${breadcrumbCrumbClass} shrink-0 font-medium text-[#09090B]`}
+        className={`${breadcrumbCrumbClass} shrink-0 font-medium text-[#0F0F0F]`}
         title={breadcrumbSymbol}
         aria-current="page"
       >

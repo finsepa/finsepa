@@ -46,14 +46,14 @@ export function NewsCards({ items }: { items: NewsItem[] }) {
                   logoUrl={logoUrl}
                   size="xs"
                 />
-                <span className="inline-flex h-6 max-w-[140px] items-center rounded-md border border-[#E4E4E7] bg-white px-2 text-[12px] font-semibold leading-4 text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
+                <span className="inline-flex h-6 max-w-[140px] items-center rounded-md border border-[#E4E4E7] bg-white px-2 text-[12px] font-semibold leading-4 text-[#0F0F0F] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
                   <span className="truncate">{n.assetSymbol}</span>
                 </span>
               </span>
               <span aria-hidden>·</span>
               <span className="min-w-0 truncate">{n.source}</span>
             </div>
-            <div className="mt-2 line-clamp-2 text-[16px] font-semibold leading-6 text-[#09090B]">
+            <div className="mt-2 line-clamp-2 text-[16px] font-semibold leading-6 text-[#0F0F0F]">
               {n.title}
             </div>
           </div>

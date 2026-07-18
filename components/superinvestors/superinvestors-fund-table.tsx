@@ -36,7 +36,7 @@ function FundRowAvatar({ src, displayName }: { src: string | null | undefined; d
     <span
       className={cn(
         "relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full border border-[#E4E4E7] ring-1 ring-white",
-        darkTile ? "bg-[#09090B]" : "bg-[#F4F4F5]",
+        darkTile ? "bg-[#0F0F0F]" : "bg-[#F4F4F5]",
       )}
     >
       {/* eslint-disable-next-line @next/next/no-img-element -- public /superinvestors avatars */}
@@ -131,14 +131,14 @@ function SuperinvestorsFundTableInner({ rows }: { rows: SuperinvestorsFundRowMod
                   />
                   <Link
                     href={r.href}
-                    className="flex min-w-0 flex-1 items-start gap-3 text-[#09090B] no-underline visited:text-[#09090B]"
+                    className="flex min-w-0 flex-1 items-start gap-3 text-[#0F0F0F] no-underline visited:text-[#0F0F0F]"
                     aria-label={`Open ${r.displayName}`}
                   >
                     <div className="flex shrink-0 justify-center pt-0.5">
                       <FundRowAvatar src={r.avatarSrc} displayName={r.displayName} />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B] underline-offset-[3px] decoration-[#09090B] group-hover:underline">
+                      <div className="truncate text-[14px] font-semibold leading-5 text-[#0F0F0F] underline-offset-[3px] decoration-[#0F0F0F] group-hover:underline">
                         {r.displayName}
                       </div>
                       <div className={screenerTickerSublineClass}>
@@ -149,7 +149,7 @@ function SuperinvestorsFundTableInner({ rows }: { rows: SuperinvestorsFundRowMod
                     </div>
                   </Link>
                 </div>
-                <div className="min-w-0 self-start pt-0.5 text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
+                <div className="min-w-0 self-start pt-0.5 text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#0F0F0F]">
                   {formatFilingDate(r.filingDate)}
                 </div>
               </div>
@@ -165,7 +165,7 @@ function SuperinvestorsFundTableInner({ rows }: { rows: SuperinvestorsFundRowMod
                 />
                 <Link
                   href={r.href}
-                  className={`${rowLinkGrid} col-span-6 col-start-2 grid h-full min-w-0 items-center text-[#09090B] no-underline visited:text-[#09090B]`}
+                  className={`${rowLinkGrid} col-span-6 col-start-2 grid h-full min-w-0 items-center text-[#0F0F0F] no-underline visited:text-[#0F0F0F]`}
                   aria-label={`Open ${r.displayName}`}
                 >
                   <div className="flex justify-center">
@@ -173,20 +173,20 @@ function SuperinvestorsFundTableInner({ rows }: { rows: SuperinvestorsFundRowMod
                   </div>
 
                   <div className="min-w-0 text-left">
-                    <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B] underline-offset-[3px] decoration-[#09090B] group-hover:underline">
+                    <div className="truncate text-[14px] font-semibold leading-5 text-[#0F0F0F] underline-offset-[3px] decoration-[#0F0F0F] group-hover:underline">
                       {r.displayName}
                     </div>
                   </div>
 
-                  <div className="min-w-0 text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
+                  <div className="min-w-0 text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#0F0F0F]">
                     {formatUsdCompact(r.totalValueUsd)}
                   </div>
 
-                  <div className="min-w-0 text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
+                  <div className="min-w-0 text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#0F0F0F]">
                     {r.positionCount.toLocaleString("en-US")} {r.positionCount === 1 ? "Stock" : "Stocks"}
                   </div>
 
-                  <div className="min-w-0 text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
+                  <div className="min-w-0 text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#0F0F0F]">
                     {formatFilingDate(r.filingDate)}
                   </div>
 

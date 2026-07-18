@@ -33,12 +33,12 @@ type PanelView = "list" | "settings";
 const PANEL_TRANSITION_MS = 400;
 
 const panelHeaderActionButtonClass =
-  "inline-flex h-7 shrink-0 items-center justify-center rounded-[10px] bg-[#F4F4F5] text-[#09090B] transition-colors hover:bg-[#EBEBEB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 disabled:cursor-not-allowed disabled:opacity-40";
+  "inline-flex h-7 shrink-0 items-center justify-center rounded-[10px] bg-[#F4F4F5] text-[#0F0F0F] transition-colors hover:bg-[#EBEBEB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15 disabled:cursor-not-allowed disabled:opacity-40";
 
 const NOTIFICATION_UNREAD_DOT_CLASS = "h-2 w-2 rounded-full bg-[#DC2626]";
 
 const notificationDismissButtonClass =
-  "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[10px] text-[#71717A] transition-colors hover:bg-[#EBEBEB] hover:text-[#09090B] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15";
+  "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[10px] text-[#71717A] transition-colors hover:bg-[#EBEBEB] hover:text-[#0F0F0F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15";
 
 function notificationToEarningsPreviewItem(item: NotificationItem): EarningsCalendarItem {
   const payload = parseEarningsNotificationPayload(item.payload);
@@ -77,7 +77,7 @@ function NotificationPillSwitch({
       disabled={disabled}
       onClick={() => onPressedChange(!pressed)}
       className={cn(
-        "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15",
+        "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15",
         pressed ? "bg-[#2563EB]" : "bg-[#E4E4E7]",
         disabled && "cursor-not-allowed opacity-50",
       )}
@@ -251,7 +251,7 @@ export function NotificationsPanelModal({
                 <div className="flex min-h-0 flex-1 flex-col">
                   <div className="flex items-center justify-between gap-4 py-1">
                     <div className="min-w-0">
-                      <p className="text-[14px] font-medium leading-5 text-[#09090B]">Earning results</p>
+                      <p className="text-[14px] font-medium leading-5 text-[#0F0F0F]">Earning results</p>
                       <p className="mt-0.5 text-[13px] leading-5 text-[#71717A]">
                         Earnings result for companies you follow
                       </p>
@@ -295,7 +295,7 @@ export function NotificationsPanelModal({
                       <button
                         type="button"
                         onClick={() => openEarningsPreview(item)}
-                        className="w-full min-w-0 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2"
+                        className="w-full min-w-0 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15 focus-visible:ring-offset-2"
                       >
                         <EarningsNotificationCard item={item} />
                       </button>

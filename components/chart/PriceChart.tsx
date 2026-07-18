@@ -199,7 +199,7 @@ function applyStockChartApiPoints(
 }
 
 const RANGE_PRICE_BADGE_CLASS =
-  "inline-block rounded-[6px] bg-[#E4E4E7] px-1.5 py-0.5 text-[11px] font-medium leading-4 tabular-nums text-[#09090B]";
+  "inline-block rounded-[6px] bg-[#E4E4E7] px-1.5 py-0.5 text-[11px] font-medium leading-4 tabular-nums text-[#0F0F0F]";
 
 function findRangeHighPoint(pts: readonly StockChartPoint[]): StockChartPoint | null {
   if (!pts.length) return null;
@@ -1781,7 +1781,7 @@ export function PriceChart({
             ? CrosshairMode.Normal
             : CrosshairMode.Magnet,
         vertLine: {
-          color: "rgba(9, 9, 11, 0.28)",
+          color: "rgba(15, 15, 15, 0.28)",
           labelVisible: false,
           width: 1,
           style: LineStyle.Dashed,
@@ -1935,7 +1935,7 @@ export function PriceChart({
           if (body) {
             body.replaceChildren();
             const titleEl = document.createElement("div");
-            titleEl.className = "font-semibold tabular-nums text-[#09090B]";
+            titleEl.className = "font-semibold tabular-nums text-[#0F0F0F]";
             titleEl.textContent = title;
             body.appendChild(titleEl);
             const list = document.createElement("div");
@@ -3298,11 +3298,11 @@ export function PriceChart({
             style={{ display: "none" }}
             role="tooltip"
           >
-            <p ref={holdingsPriceTooltipTextRef} className="text-xs font-semibold tabular-nums text-[#09090B]" />
+            <p ref={holdingsPriceTooltipTextRef} className="text-xs font-semibold tabular-nums text-[#0F0F0F]" />
           </div>
           <div
             ref={holdingsTradeTooltipRef}
-            className="pointer-events-none absolute z-30 min-w-[220px] max-w-[280px] rounded-[10px] border border-[#E4E4E7] bg-white px-3 py-2 text-[12px] leading-4 text-[#09090B] shadow-[0px_8px_20px_0px_rgba(10,10,10,0.10)] will-change-[left,top]"
+            className="pointer-events-none absolute z-30 min-w-[220px] max-w-[280px] rounded-[10px] border border-[#E4E4E7] bg-white px-3 py-2 text-[12px] leading-4 text-[#0F0F0F] shadow-[0px_8px_20px_0px_rgba(10,10,10,0.10)] will-change-[left,top]"
             style={{ display: "none" }}
             role="status"
           >
@@ -3341,7 +3341,7 @@ export function PriceChart({
           }}
           role="tooltip"
         >
-          <p className="text-xs font-semibold tabular-nums text-[#09090B]">
+          <p className="text-xs font-semibold tabular-nums text-[#0F0F0F]">
             {overviewMetricTitle}: {overviewHoverTooltip.valueLabel}
           </p>
           {overviewHoverTooltip.changeLabel != null ? (
@@ -3410,14 +3410,14 @@ export function PriceChart({
               </div>
               <span
                 ref={holdingsHoverAxisLabelRef}
-                className="absolute bottom-1 max-w-[min(100%,calc(100%-16px))] whitespace-nowrap font-['Inter'] text-[11px] font-medium tabular-nums leading-none text-[#09090B] sm:text-[12px]"
+                className="absolute bottom-1 max-w-[min(100%,calc(100%-16px))] whitespace-nowrap font-['Inter'] text-[11px] font-medium tabular-nums leading-none text-[#0F0F0F] sm:text-[12px]"
                 style={{ display: "none" }}
               />
             </>
           ) : activeBottomAxisLabel ? (
             <span
               className={cn(
-                "absolute bottom-1 inline-block whitespace-nowrap font-['Inter'] text-[11px] font-medium tabular-nums leading-none text-[#09090B] sm:text-[12px]",
+                "absolute bottom-1 inline-block whitespace-nowrap font-['Inter'] text-[11px] font-medium tabular-nums leading-none text-[#0F0F0F] sm:text-[12px]",
                 periodAxisLabelMaxWidthClass(activeBottomAxisAnchor),
                 periodAxisLabelTransformClass(activeBottomAxisAnchor),
               )}

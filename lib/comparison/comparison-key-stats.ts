@@ -75,11 +75,11 @@ export function comparisonGrowthCellClassName(
   baseClass = "min-w-0 w-full text-right font-['Inter'] text-[14px] leading-5 tabular-nums",
 ): string {
   if (!isComparisonGrowthMetricId(metricId)) {
-    return `${baseClass} font-normal text-[#09090B]`;
+    return `${baseClass} font-normal text-[#0F0F0F]`;
   }
   const tone = comparisonGrowthCellTone(cell);
   if (tone === "positive") return `${baseClass} font-medium text-[#16A34A]`;
   if (tone === "negative") return `${baseClass} font-medium text-[#DC2626]`;
   if (tone === "missing") return `${baseClass} font-normal text-[#71717A]`;
-  return `${baseClass} font-normal text-[#09090B]`;
+  return `${baseClass} font-normal text-[#0F0F0F]`;
 }

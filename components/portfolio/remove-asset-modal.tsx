@@ -53,7 +53,7 @@ export function RemoveAssetModal({ holding, onClose, onConfirmRemove }: Props) {
           </AppModalFooter>
         }
       >
-        <p className="text-sm leading-5 text-[#09090B]">
+        <p className="text-sm leading-5 text-[#0F0F0F]">
           Are you sure you want to delete{" "}
           <span className="font-semibold">
             {holding.name} ({holding.symbol})

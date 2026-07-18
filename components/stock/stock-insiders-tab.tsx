@@ -104,7 +104,7 @@ function InsiderPeriodCard({
           </>
         )}
       </div>
-      <div className="mb-2 flex items-center justify-between text-[14px] font-medium leading-5 text-[#09090B]">
+      <div className="mb-2 flex items-center justify-between text-[14px] font-medium leading-5 text-[#0F0F0F]">
         <span>
           {agg.sellCount} {agg.sellCount === 1 ? "Sell" : "Sells"}
         </span>
@@ -234,7 +234,7 @@ function InsiderRow({ row }: { row: InsiderTransactionRow }) {
   const isBuy = row.kind === "purchase";
   const isSellSide = row.kind === "sale" || row.kind === "planned_sale";
   const shareColor =
-    row.shares == null ? "text-[#71717A]" : isBuy ? "text-[#16A34A]" : isSellSide ? "text-[#DC2626]" : "text-[#09090B]";
+    row.shares == null ? "text-[#71717A]" : isBuy ? "text-[#16A34A]" : isSellSide ? "text-[#DC2626]" : "text-[#0F0F0F]";
   const pctColor = shareColor;
 
   const sharesText =
@@ -250,11 +250,11 @@ function InsiderRow({ row }: { row: InsiderTransactionRow }) {
     <div
       className={`${INSIDER_GRID} h-[60px] max-h-[60px] items-center bg-white text-[14px] font-normal leading-5 transition-colors duration-75 hover:bg-neutral-50`}
     >
-      <div className="text-left tabular-nums text-[#09090B]">{formatDisplayDate(row.transactionDate)}</div>
-      <div className="min-w-0 truncate text-right text-[#09090B]" title={row.ownerName}>
+      <div className="text-left tabular-nums text-[#0F0F0F]">{formatDisplayDate(row.transactionDate)}</div>
+      <div className="min-w-0 truncate text-right text-[#0F0F0F]" title={row.ownerName}>
         {row.ownerName}
       </div>
-      <div className="min-w-0 truncate text-right text-[#09090B]" title={row.ownerTitle ?? undefined}>
+      <div className="min-w-0 truncate text-right text-[#0F0F0F]" title={row.ownerTitle ?? undefined}>
         {row.ownerTitle?.trim() ? row.ownerTitle : "-"}
       </div>
       <div className="flex min-w-0 justify-end">
@@ -264,10 +264,10 @@ function InsiderRow({ row }: { row: InsiderTransactionRow }) {
         <span>{sharesText}</span>
         {pctText ? <span className={`ml-2 ${pctColor}`}>{pctText}</span> : null}
       </div>
-      <div className="min-w-0 w-full text-right font-['Inter'] tabular-nums text-[#09090B]">
+      <div className="min-w-0 w-full text-right font-['Inter'] tabular-nums text-[#0F0F0F]">
         {row.price != null && Number.isFinite(row.price) ? `$${row.price.toFixed(2)}` : "-"}
       </div>
-      <div className="min-w-0 w-full text-right font-['Inter'] tabular-nums text-[#09090B]">
+      <div className="min-w-0 w-full text-right font-['Inter'] tabular-nums text-[#0F0F0F]">
         {row.value != null && Number.isFinite(row.value) ? formatCompactUsd(row.value) : "-"}
       </div>
     </div>
@@ -357,7 +357,7 @@ export function StockInsidersTab({ ticker }: { ticker: string }) {
       <div className="mb-8 space-y-6">
         <section className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-[18px] font-semibold leading-7 tracking-tight text-[#09090B]">Insiders</h2>
+            <h2 className="text-[18px] font-semibold leading-7 tracking-tight text-[#0F0F0F]">Insiders</h2>
             <SegmentedControl
               className="shrink-0"
               options={INSIDERS_CHART_RANGES.map((r) => ({ value: r, label: r }))}
@@ -388,7 +388,7 @@ export function StockInsidersTab({ ticker }: { ticker: string }) {
             <InsiderPeriodCard title="Last 12 Months" agg={summary.m12} />
           </div>
         )}
-        <h2 className="text-[18px] font-semibold leading-7 tracking-tight text-[#09090B]">Latest transactions</h2>
+        <h2 className="text-[18px] font-semibold leading-7 tracking-tight text-[#0F0F0F]">Latest transactions</h2>
       </div>
 
       {loading ? (

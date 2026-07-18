@@ -35,6 +35,7 @@ import { horzTimeToUnixSeconds } from "@/components/chart/chart-selection-utils"
 import {
   CHART_PLOT_DOTS_PATTERN_CLASS,
   formatOverviewCrosshairBottomDate,
+  overviewAxisLabelsEqual,
   resolveOverviewBottomAxisMode,
   syncOverviewPeriodAxisLabels,
   periodAxisLabelLayoutStyle,
@@ -104,6 +105,14 @@ async function fetchBenchmarkChartPoints(
   return Array.isArray(json.points) ? json.points : null;
 }
 
+/** Fetch S&P 500 (SPY) price history for portfolio compare overlays. */
+export async function fetchSpyBenchmarkChartPoints(
+  range: PortfolioChartRange,
+  signal: AbortSignal,
+): Promise<StockChartPoint[] | null> {
+  return fetchBenchmarkChartPoints("SPY", range, signal);
+}
+
 function portfolioRangeToStockRange(r: PortfolioChartRange): StockChartRange {
   switch (r) {
     case "1d":
@@ -168,14 +177,17 @@ function spyCloseOnOrBefore(sorted: readonly StockChartPoint[], ymd: string): nu
 }
 
 /**
- * Dollar path if starting capital had tracked the benchmark (Value metric only).
- * Uses {@link equityCostBasisInvestedUsd} when set (same basis as “$X invested” under Total value);
- * otherwise falls back to portfolio value at the first in-range point with positive net worth.
+ * Dollar path if starting capital had tracked the benchmark.
+ * - `value`: absolute $ path (same basis as “$X invested” under Total value)
+ * - `profit`: $ P&L vs that notional (for Portfolio return charts)
+ * Uses {@link equityCostBasisInvestedUsd} when set; otherwise falls back to portfolio
+ * value at the first in-range point with positive net worth.
  */
-function buildBenchmarkValueLineData(
+function buildBenchmarkCompareLineData(
   filtered: readonly PortfolioValueHistoryPoint[],
   rawSpy: readonly StockChartPoint[] | null | undefined,
   equityCostBasisInvestedUsd: number | null | undefined,
+  mode: "value" | "profit" = "value",
 ): { time: Time; value: number }[] {
   if (!rawSpy?.length || filtered.length === 0) return [];
   const spy = spySortedByTime(rawSpy);
@@ -200,9 +212,10 @@ function buildBenchmarkValueLineData(
   for (const p of filtered) {
     const s = spyCloseOnOrBefore(spy, p.t);
     if (s == null || !Number.isFinite(s) || s <= 0) continue;
+    const scaled = s * (notional0 / spy0);
     out.push({
       time: p.time != null && Number.isFinite(p.time) ? (p.time as Time) : (p.t as Time),
-      value: s * (notional0 / spy0),
+      value: mode === "profit" ? scaled - notional0 : scaled,
     });
   }
   return out;
@@ -347,7 +360,7 @@ function PillSwitch({
         onPressedChange(!pressed);
       }}
       className={cn(
-        "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15",
+        "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15",
         pressed ? "bg-[#2563EB]" : "bg-[#E4E4E7]",
         disabled && "cursor-not-allowed opacity-50",
       )}
@@ -430,9 +443,9 @@ function PortfolioChartSettingsButton({
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#09090B]",
+          "inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#0F0F0F]",
           "shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100",
-          "hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2",
+          "hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15 focus-visible:ring-offset-2",
           open && "bg-[#F4F4F5]",
         )}
       >
@@ -452,7 +465,7 @@ function PortfolioChartSettingsButton({
               const benchmarkRow = key === "compareSpy" || key === "compareNasdaq";
               return (
                 <div key={key} role="menuitem" className={dropdownMenuPlainItemRowClassName()}>
-                  <span className="min-w-0 flex-1 text-sm font-medium leading-5 text-[#09090B]">{label}</span>
+                  <span className="min-w-0 flex-1 text-sm font-medium leading-5 text-[#0F0F0F]">{label}</span>
                   <PillSwitch
                     pressed={values[key]}
                     onPressedChange={(next) => onChangeForKey(key, next)}
@@ -470,7 +483,7 @@ function PortfolioChartSettingsButton({
   );
 }
 
-export type PortfolioChartMetricMode = "value" | "profit" | "return";
+export type PortfolioChartMetricMode = "value" | "profit" | "return" | "drawdown";
 
 type MetricMode = PortfolioChartMetricMode;
 
@@ -478,7 +491,13 @@ const PORTFOLIO_CHART_METRIC_OPTIONS: readonly ListboxOption<PortfolioChartMetri
   { value: "value", label: "Value" },
   { value: "profit", label: "Total profit" },
   { value: "return", label: "Return" },
+  { value: "drawdown", label: "Drawdowns" },
 ];
+
+/** Metrics plotted in % (Return, Drawdowns) share the percent axis/tooltip format. */
+function isPercentMetric(m: MetricMode): boolean {
+  return m === "return" || m === "drawdown";
+}
 
 /** Equity return % (same units as overview “Total profit” ATH line). */
 function formatReturnPctAxis(n: number): string {
@@ -570,7 +589,7 @@ function computeOverviewYAxisLabels(
     const price = bottom + (span * i) / (tickCount - 1);
     labels.push({
       key: String(i),
-      label: metric === "return" ? formatReturnPctAxis(price) : formatAxisUsd(price),
+      label: isPercentMetric(metric) ? formatReturnPctAxis(price) : formatAxisUsd(price),
       topPct: overviewYAxisTopPercent(price, bottom, top),
     });
   }
@@ -657,7 +676,7 @@ function supplementOverviewYAxisLabelForBadgeGap(
     ...labels,
     {
       key: "badge-gap",
-      label: metric === "return" ? formatReturnPctAxis(price) : formatAxisUsd(price),
+      label: isPercentMetric(metric) ? formatReturnPctAxis(price) : formatAxisUsd(price),
       topPct: candidateTopPct,
     },
   ];
@@ -856,6 +875,21 @@ function portfolioHistoryToStockChartPoints(
   }));
 }
 
+/**
+ * Drawdown % from the running peak within the selected period.
+ * 0% at every new high; ≤ 0 elsewhere, so the line hangs from the top of the pane.
+ */
+function buildDrawdownData(
+  filtered: readonly PortfolioValueHistoryPoint[],
+): { time: Time; value: number }[] {
+  let peak = -Infinity;
+  return filtered.map((p) => {
+    if (Number.isFinite(p.value) && p.value > peak) peak = p.value;
+    const dd = peak > 1e-9 ? (p.value / peak - 1) * 100 : 0;
+    return { time: portfolioChartTime(p) as Time, value: Math.min(0, dd) };
+  });
+}
+
 /** Bottom axis — same rules as stock overview / asset portfolio (`overview-bottom-axis`). */
 function syncPortfolioPeriodAxisLabels(
   chart: IChartApi,
@@ -864,15 +898,42 @@ function syncPortfolioPeriodAxisLabels(
   plotWidthPx: number,
 ): OverviewAxisLabel[] {
   if (!chartPoints.length) return [];
+  // Before the pane has a real width, coordinates are unreliable — skip rather than
+  // paint a stacked right-edge pile (intermittent on first load).
+  if (!(plotWidthPx > 0)) return [];
   const stockRange = portfolioRangeToStockRange(range);
   const axisMode = resolveOverviewBottomAxisMode(stockRange, chartPoints);
-  return syncOverviewPeriodAxisLabels(
+  const raw = syncOverviewPeriodAxisLabels(
     chart,
     chartPoints,
     PORTFOLIO_CHART_TIME_ZONE,
     axisMode,
     plotWidthPx,
   );
+  return thinOverlappingPeriodAxisLabels(raw, plotWidthPx);
+}
+
+/**
+ * Drop labels that collapse onto the same clamped x (common while the chart is
+ * still fitting on first paint — right-edge pile-ups like "JulJul").
+ */
+function thinOverlappingPeriodAxisLabels(
+  labels: readonly OverviewAxisLabel[],
+  plotWidthPx: number,
+): OverviewAxisLabel[] {
+  if (labels.length === 0) return [];
+  if (!(plotWidthPx > 0)) return [...labels];
+  const clampLeft = (x: number) =>
+    Math.min(Math.max(0, x), Math.max(0, plotWidthPx - 8));
+  const out: OverviewAxisLabel[] = [];
+  let last = -Infinity;
+  for (const lab of labels) {
+    const left = clampLeft(lab.leftPx);
+    if (left - last < 24) continue;
+    out.push({ ...lab, leftPx: left });
+    last = left;
+  }
+  return out;
 }
 
 /** Figma: 10×10, white fill, 2px inside stroke (buy green / sell red). */
@@ -897,6 +958,7 @@ export function PortfolioValueHistoryChartPane({
   points,
   transactions = [],
   showTrades = false,
+  showPortfolio = true,
   compareSpy = false,
   compareNasdaq = false,
   spyPricePoints = null,
@@ -908,7 +970,9 @@ export function PortfolioValueHistoryChartPane({
   points: PortfolioValueHistoryPoint[];
   transactions?: readonly PortfolioTransaction[];
   showTrades?: boolean;
-  /** When true with {@link spyPricePoints}, draws S&P 500 comparison for the Value metric (same $ scale). */
+  /** When false, hides the main portfolio series (legend badge off). */
+  showPortfolio?: boolean;
+  /** When true with {@link spyPricePoints}, draws S&P 500 comparison (value or profit). */
   compareSpy?: boolean;
   /** When true with {@link nasdaqPricePoints}, draws Nasdaq comparison for the Value metric (same $ scale). */
   compareNasdaq?: boolean;
@@ -948,10 +1012,19 @@ export function PortfolioValueHistoryChartPane({
     valueLabel: string;
   } | null>(null);
   const [periodAxisLabels, setPeriodAxisLabels] = useState<OverviewAxisLabel[]>([]);
+  const periodAxisLabelsRef = useRef<OverviewAxisLabel[]>([]);
+  const [axisPlotWidthPx, setAxisPlotWidthPx] = useState(0);
   const [hoverAxisLabel, setHoverAxisLabel] = useState<{ leftPx: number; label: string } | null>(
     null,
   );
   const hoverTimeRef = useRef<Time | null>(null);
+
+  const setPeriodAxisLabelsGuarded = useCallback((next: OverviewAxisLabel[], plotWidthPx: number) => {
+    setAxisPlotWidthPx(plotWidthPx);
+    if (overviewAxisLabelsEqual(periodAxisLabelsRef.current, next)) return;
+    periodAxisLabelsRef.current = next;
+    setPeriodAxisLabels(next);
+  }, []);
   const [tradeTooltip, setTradeTooltip] = useState<{
     x: number;
     y: number;
@@ -993,7 +1066,7 @@ export function PortfolioValueHistoryChartPane({
     },
   };
 
-  const drawCompareSpy = compareSpy && metric === "value";
+  const drawCompareSpy = compareSpy && (metric === "value" || metric === "profit");
   const drawCompareNasdaq = compareNasdaq && metric === "value";
 
   chartRangeRef.current = range;
@@ -1040,7 +1113,7 @@ export function PortfolioValueHistoryChartPane({
       crosshair: {
         mode: CrosshairMode.Magnet,
         vertLine: {
-          color: "rgba(9, 9, 11, 0.28)",
+          color: "rgba(15, 15, 15, 0.28)",
           labelVisible: false,
           width: 1,
           style: LineStyle.Dashed,
@@ -1057,7 +1130,7 @@ export function PortfolioValueHistoryChartPane({
           { locale: "en-US" }
         : {}),
         priceFormatter: (p: number) =>
-          metric === "return" ? formatReturnPctAxis(p) : formatAxisUsd(p),
+          isPercentMetric(metric) ? formatReturnPctAxis(p) : formatAxisUsd(p),
       },
       handleScroll: false,
       handleScale: false,
@@ -1100,6 +1173,14 @@ export function PortfolioValueHistoryChartPane({
         })
       : chart.addSeries(BaselineSeries, {
           ...baselineOpts,
+          // Drawdowns are always ≤ 0: force red even for the flat 0% stretches at peaks.
+          ...(metric === "drawdown" ?
+            {
+              topLineColor: RED,
+              topFillColor1: "rgba(220, 38, 38, 0)",
+              topFillColor2: "rgba(220, 38, 38, 0)",
+            }
+          : {}),
           baseValue: { type: "price" as const, price: 0 },
         });
 
@@ -1192,7 +1273,7 @@ export function PortfolioValueHistoryChartPane({
 
       const raw = (data as { value: number }).value;
       const valueLabel =
-        metric === "return" ?
+        isPercentMetric(metric) ?
           formatReturnPctAxis(raw)
         : metric === "profit" ?
           `${raw >= 0 ? "+" : "−"}${TOOLTIP_USD.format(Math.abs(raw))}`
@@ -1243,13 +1324,14 @@ export function PortfolioValueHistoryChartPane({
             });
           }
         } else {
-          setPeriodAxisLabels(
+          setPeriodAxisLabelsGuarded(
             syncPortfolioPeriodAxisLabels(
               c,
               chartPointsRef.current,
               chartRangeRef.current,
               plotWidthPx,
             ),
+            plotWidthPx,
           );
         }
       });
@@ -1274,10 +1356,12 @@ export function PortfolioValueHistoryChartPane({
       setTooltip(null);
       setTradeTooltip(null);
       setHoverAxisLabel(null);
+      periodAxisLabelsRef.current = [];
       setPeriodAxisLabels([]);
+      setAxisPlotWidthPx(0);
       setYAxisLabels([]);
     };
-  }, [metric, compareSpy, compareNasdaq, chartLayout.plotHeightPx]);
+  }, [metric, compareSpy, compareNasdaq, chartLayout.plotHeightPx, setPeriodAxisLabelsGuarded]);
 
   useEffect(() => {
     const chart = chartRef.current;
@@ -1296,13 +1380,16 @@ export function PortfolioValueHistoryChartPane({
     sessionYmdsRef.current = sessionYmds;
     chartPointsRef.current = portfolioHistoryToStockChartPoints(filtered);
 
-    const data = filtered.map((p) => {
-      let y: number;
-      if (metric === "value") y = p.value;
-      else if (metric === "profit") y = p.profit;
-      else y = p.returnPct!;
-      return { time: portfolioChartTime(p) as Time, value: y };
-    });
+    const data =
+      metric === "drawdown" ?
+        buildDrawdownData(filtered)
+      : filtered.map((p) => {
+          let y: number;
+          if (metric === "value") y = p.value;
+          else if (metric === "profit") y = p.profit;
+          else y = p.returnPct!;
+          return { time: portfolioChartTime(p) as Time, value: y };
+        });
 
     if (data.length === 0) {
       series.setData([]);
@@ -1313,7 +1400,9 @@ export function PortfolioValueHistoryChartPane({
       compareSeriesRefs.current.spy?.setData([]);
       compareSeriesRefs.current.nasdaq?.setData([]);
       setYAxisLabels([]);
+      periodAxisLabelsRef.current = [];
       setPeriodAxisLabels([]);
+      setAxisPlotWidthPx(0);
       return;
     }
 
@@ -1334,7 +1423,12 @@ export function PortfolioValueHistoryChartPane({
     ) => {
       if (series && enabled) {
         series.setData(
-          buildBenchmarkValueLineData(filtered, rawPoints ?? undefined, benchmarkInvestedUsd),
+          buildBenchmarkCompareLineData(
+            filtered,
+            rawPoints ?? undefined,
+            benchmarkInvestedUsd,
+            metric === "profit" ? "profit" : "value",
+          ),
         );
       } else if (series) {
         series.setData([]);
@@ -1343,6 +1437,10 @@ export function PortfolioValueHistoryChartPane({
 
     applyBenchmarkSeries(compareSeriesRefs.current.spy, drawCompareSpy, spyPricePoints);
     applyBenchmarkSeries(compareSeriesRefs.current.nasdaq, drawCompareNasdaq, nasdaqPricePoints);
+
+    series.applyOptions({ visible: showPortfolio });
+    compareSeriesRefs.current.spy?.applyOptions({ visible: drawCompareSpy });
+    compareSeriesRefs.current.nasdaq?.applyOptions({ visible: drawCompareNasdaq });
 
     snapOverviewTimeScale(chart, series);
     let axisSyncCancelled = false;
@@ -1365,7 +1463,10 @@ export function PortfolioValueHistoryChartPane({
             });
           }
         } else {
-          setPeriodAxisLabels(syncPortfolioPeriodAxisLabels(c, chartPointsRef.current, range, plotWidthPx));
+          setPeriodAxisLabelsGuarded(
+            syncPortfolioPeriodAxisLabels(c, chartPointsRef.current, range, plotWidthPx),
+            plotWidthPx,
+          );
         }
       });
     });
@@ -1383,10 +1484,15 @@ export function PortfolioValueHistoryChartPane({
     spyPricePoints,
     nasdaqPricePoints,
     benchmarkInvestedUsd,
+    showPortfolio,
+    setPeriodAxisLabelsGuarded,
   ]);
 
   const metricTitle =
-    metric === "value" ? "Value" : metric === "profit" ? "Total profit" : "Return";
+    metric === "value" ? "Value"
+    : metric === "profit" ? "Total profit"
+    : metric === "drawdown" ? "Drawdown"
+    : "Return";
 
   return (
     <div
@@ -1401,13 +1507,15 @@ export function PortfolioValueHistoryChartPane({
         const c = chartRef.current;
         const s = seriesRef.current;
         if (c && s && s.data().length > 0) {
-          setPeriodAxisLabels(
+          const plotWidthPx = Math.max(0, wrapRef.current?.clientWidth ?? 0);
+          setPeriodAxisLabelsGuarded(
             syncPortfolioPeriodAxisLabels(
               c,
               chartPointsRef.current,
               chartRangeRef.current,
-              Math.max(0, wrapRef.current?.clientWidth ?? 0),
+              plotWidthPx,
             ),
+            plotWidthPx,
           );
         }
       }}
@@ -1444,7 +1552,7 @@ export function PortfolioValueHistoryChartPane({
             style={{ left: tooltip.x, top: tooltip.y }}
             role="status"
           >
-            <p className="text-xs font-semibold tabular-nums text-[#09090B]">
+            <p className="text-xs font-semibold tabular-nums text-[#0F0F0F]">
               {metricTitle}: {tooltip.valueLabel}
             </p>
           </div>
@@ -1456,7 +1564,7 @@ export function PortfolioValueHistoryChartPane({
             role="tooltip"
           >
             <p className="text-[11px] leading-4 text-[#71717A]">{tradeTooltip.dateLabel}</p>
-            <div className="mt-1.5 space-y-0.5 text-xs leading-snug text-[#09090B]">
+            <div className="mt-1.5 space-y-0.5 text-xs leading-snug text-[#0F0F0F]">
               {tradeTooltip.lines.map((line, i) => {
                 const isTxDate =
                   /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{1,2}, \d{4}$/.test(line) &&
@@ -1467,7 +1575,7 @@ export function PortfolioValueHistoryChartPane({
                     className={cn(
                       "tabular-nums",
                       line.startsWith("Cash before:") || line.startsWith("Total cash:") ?
-                        "font-semibold text-[#09090B]"
+                        "font-semibold text-[#0F0F0F]"
                       : isTxDate ?
                         "pt-1.5 text-[11px] font-medium text-[#71717A]"
                       : "font-medium",
@@ -1495,11 +1603,11 @@ export function PortfolioValueHistoryChartPane({
             return (
           <span
             className={cn(
-              "absolute bottom-1 inline-block whitespace-nowrap font-['Inter'] text-[11px] font-medium tabular-nums leading-none text-[#09090B] sm:text-[12px]",
+              "absolute bottom-1 inline-block whitespace-nowrap font-['Inter'] text-[11px] font-medium tabular-nums leading-none text-[#0F0F0F] sm:text-[12px]",
               periodAxisLabelMaxWidthClass(anchor),
               periodAxisLabelTransformClass(anchor),
             )}
-            style={periodAxisLabelLayoutStyle(hoverAxisLabel.leftPx, anchor)}
+            style={periodAxisLabelLayoutStyle(hoverAxisLabel.leftPx, anchor, axisPlotWidthPx)}
           >
             {hoverAxisLabel.label}
           </span>
@@ -1515,7 +1623,7 @@ export function PortfolioValueHistoryChartPane({
                 periodAxisLabelMaxWidthClass(anchor),
                 periodAxisLabelTransformClass(anchor),
               )}
-              style={periodAxisLabelLayoutStyle(lab.leftPx, anchor)}
+              style={periodAxisLabelLayoutStyle(lab.leftPx, anchor, axisPlotWidthPx)}
             >
               {lab.label}
             </span>
@@ -1536,7 +1644,7 @@ function PortfolioOverviewChartInner({
   benchmarkInvestedUsd?: number | null;
 }) {
   const [metric, setMetric] = useState<PortfolioChartMetricMode>("value");
-  const [range, setRange] = useState<PortfolioChartRange>("all");
+  const [range, setRange] = useState<PortfolioChartRange>("ytd");
   const [points, setPoints] = useState<PortfolioValueHistoryPoint[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -1638,7 +1746,7 @@ function PortfolioOverviewChartInner({
                 className={cn(
                   "flex-none rounded-[10px] px-3 py-1.5 text-center font-sans text-[13px] leading-5 tracking-normal",
                   metric === opt.value ?
-                    "bg-white font-medium text-[#09090B] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]"
+                    "bg-white font-medium text-[#0F0F0F] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]"
                   : "font-normal text-[#71717A]",
                 )}
               >
@@ -1664,7 +1772,7 @@ function PortfolioOverviewChartInner({
                 className={cn(
                   "flex-none rounded-[10px] px-3 py-1.5 text-center font-sans text-[13px] leading-5 tracking-normal",
                   range === r.id ?
-                    "bg-white font-medium text-[#09090B] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]"
+                    "bg-white font-medium text-[#0F0F0F] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]"
                   : "font-normal text-[#71717A]",
                 )}
               >
@@ -1753,7 +1861,7 @@ function PortfolioOverviewChartInner({
               className={cn(
                 "flex-1 rounded-[10px] px-2 py-1.5 text-center font-sans text-[14px] leading-5 tracking-normal",
                 range === r.id ?
-                  "bg-white font-medium text-[#09090B] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]"
+                  "bg-white font-medium text-[#0F0F0F] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]"
                 : "font-normal text-[#71717A]",
               )}
             >

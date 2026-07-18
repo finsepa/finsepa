@@ -71,7 +71,7 @@ export function CheckEmailClient({ email }: { email: string | null }) {
       <div className="text-center">
         <Link
           href="/login"
-          className="text-sm font-semibold text-[#09090B] underline decoration-[#E4E4E7] underline-offset-4 transition-colors hover:decoration-[#A1A1AA]"
+          className="text-sm font-semibold text-[#0F0F0F] underline decoration-[#E4E4E7] underline-offset-4 transition-colors hover:decoration-[#A1A1AA]"
         >
           Back to Log In
         </Link>

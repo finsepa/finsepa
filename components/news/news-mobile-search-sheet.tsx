@@ -182,7 +182,7 @@ export function NewsMobileSearchSheet({
         className="flex h-9 w-full min-w-0 items-center gap-2 rounded-lg bg-[#F4F4F5] px-4 text-left transition-all duration-100 hover:bg-[#EBEBEB]"
         aria-label="Search news"
       >
-        <Search className="h-5 w-5 shrink-0 text-[#09090B]" aria-hidden />
+        <Search className="h-5 w-5 shrink-0 text-[#0F0F0F]" aria-hidden />
         <span className="min-w-0 flex-1 truncate text-sm leading-5 text-[#A1A1AA]">{triggerLabel}</span>
       </button>
 
@@ -197,13 +197,13 @@ export function NewsMobileSearchSheet({
               />
               <div className="absolute inset-x-0 bottom-0 rounded-t-2xl bg-white shadow-[0_-8px_30px_rgba(10,10,10,0.18)]">
                 <div className="flex items-center justify-between px-4 pb-3 pt-4">
-                  <div className="flex-1 text-center text-[16px] font-semibold leading-6 text-[#09090B]">
+                  <div className="flex-1 text-center text-[16px] font-semibold leading-6 text-[#0F0F0F]">
                     Search
                   </div>
                   <button
                     type="button"
                     onClick={handleDone}
-                    className="ml-3 shrink-0 text-[15px] font-semibold text-[#09090B]"
+                    className="ml-3 shrink-0 text-[15px] font-semibold text-[#0F0F0F]"
                   >
                     Done
                   </button>
@@ -221,7 +221,7 @@ export function NewsMobileSearchSheet({
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
                       placeholder={placeholder}
-                      className="h-11 w-full rounded-[14px] bg-[#F4F4F5] py-2 pl-9 pr-3 text-[15px] text-[#09090B] placeholder:text-[#A1A1AA] outline-none focus:ring-2 focus:ring-[#09090B]/10"
+                      className="h-11 w-full rounded-[14px] bg-[#F4F4F5] py-2 pl-9 pr-3 text-[15px] text-[#0F0F0F] placeholder:text-[#A1A1AA] outline-none focus:ring-2 focus:ring-[#0F0F0F]/10"
                       autoComplete="off"
                       autoCorrect="off"
                     />
@@ -231,7 +231,7 @@ export function NewsMobileSearchSheet({
                 <div className="max-h-[min(58vh,520px)] overflow-y-auto pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
                   {emptyQuery ? (
                     <>
-                      <div className="px-4 pb-2 pt-1 text-[12px] font-semibold text-[#09090B]">
+                      <div className="px-4 pb-2 pt-1 text-[12px] font-semibold text-[#0F0F0F]">
                         Recent
                         {!noRecent ? (
                           <button

@@ -160,7 +160,7 @@ export function MacroPage({ initialItems }: { initialItems: MacroCardModel[] }) 
       <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-y-contain">
         <div className="min-w-0 space-y-5 px-4 py-4 sm:px-9 sm:py-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-            <h1 className="text-[20px] font-semibold leading-8 tracking-tight text-[#09090B]">
+            <h1 className="text-[20px] font-semibold leading-8 tracking-tight text-[#0F0F0F]">
               {selected?.title ?? "Macro"}
             </h1>
             <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
@@ -185,7 +185,7 @@ export function MacroPage({ initialItems }: { initialItems: MacroCardModel[] }) 
             <label className="flex flex-col gap-1.5 md:hidden">
               <span className="text-[12px] font-medium leading-4 text-[#71717A]">Chart</span>
               <select
-                className="h-10 w-full rounded-[10px] border border-[#E4E4E7] bg-white px-3 text-[14px] font-medium text-[#09090B] outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/10"
+                className="h-10 w-full rounded-[10px] border border-[#E4E4E7] bg-white px-3 text-[14px] font-medium text-[#0F0F0F] outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/10"
                 value={selectedId ?? ""}
                 onChange={(e) => selectChart(e.target.value)}
                 aria-label="Select macro chart"

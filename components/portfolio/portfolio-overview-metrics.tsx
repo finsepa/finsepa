@@ -17,7 +17,7 @@ type PortfolioMetricDef = {
   benchmark?: string;
   benchmarkNum?: number;
   compareDirection?: CompareDirection;
-  /** No S&P comparison — always neutral (black), e.g. No. of assets. */
+  /** No S&P comparison — always neutral (black). */
   neutral?: boolean;
 };
 
@@ -98,7 +98,6 @@ const PLACEHOLDER_METRICS: PortfolioMetricDef[] = [
     benchmarkNum: 16.8,
     compareDirection: "lower",
   },
-  { label: "No. of assets", tooltipTitle: "No. of Assets", portfolio: "28", portfolioNum: 28, neutral: true },
   {
     label: "Portfolio turnover",
     tooltipTitle: "Portfolio Turnover",
@@ -128,13 +127,12 @@ const EMPTY_METRICS: PortfolioMetricDef[] = [
   { label: "Operating margin", tooltipTitle: "Operating Margin", portfolio: "0%", portfolioNum: 0 },
   { label: "ROCE", tooltipTitle: "ROCE", portfolio: "0%", portfolioNum: 0 },
   { label: "Volatility", tooltipTitle: "Volatility", portfolio: "0%", portfolioNum: 0 },
-  { label: "No. of assets", tooltipTitle: "No. of Assets", portfolio: "0", portfolioNum: 0, neutral: true },
   { label: "Portfolio turnover", tooltipTitle: "Portfolio Turnover", portfolio: "0%", portfolioNum: 0 },
   { label: "Beta", tooltipTitle: "Beta", portfolio: "0", portfolioNum: 0 },
 ];
 
 /** Three columns — matches portfolio overview reference layout. */
-const METRIC_COLUMN_SPLITS = [4, 4, 3] as const;
+const METRIC_COLUMN_SPLITS = [4, 4, 2] as const;
 
 function portfolioAheadDeltaPct(
   portfolio: number,
@@ -190,8 +188,8 @@ function formatDelta(deltaPct: number): string {
 function valueToneClass(deltaPct: number | null, muted: boolean): string {
   if (muted) return "text-[#71717A]";
   // Neutral metrics (no S&P compare) stay black.
-  if (deltaPct == null) return "text-[#09090B]";
-  if (deltaPct === 0) return "text-[#09090B]";
+  if (deltaPct == null) return "text-[#0F0F0F]";
+  if (deltaPct === 0) return "text-[#0F0F0F]";
   // Positive delta = better vs S&P per compareDirection (higher / lower).
   return deltaPct > 0 ? "text-[#16A34A]" : "text-[#DC2626]";
 }
@@ -245,7 +243,7 @@ function MetricValueDisplay({
             "transition-opacity duration-100 group-hover/value:opacity-100 group-focus-within/value:opacity-100",
           )}
         >
-          <p className="text-[12px] font-semibold leading-4 text-[#09090B]">{row.tooltipTitle}</p>
+          <p className="text-[12px] font-semibold leading-4 text-[#0F0F0F]">{row.tooltipTitle}</p>
           <p className="mt-2 text-[12px] leading-4 text-[#71717A]">S&amp;P 500 - {row.benchmark}</p>
           <p className="text-[12px] leading-4 text-[#71717A]">Portfolio - {row.portfolio}</p>
           <p className={cn("mt-2 text-[12px] font-semibold leading-4 tabular-nums", deltaTone)}>{deltaLabel}</p>
@@ -296,7 +294,7 @@ function StatRow({
 }) {
   return (
     <div className={cn("flex items-center justify-between gap-3 md:px-0 md:py-1.5", className)}>
-      <span className="min-w-0 shrink text-[14px] font-medium leading-5 text-[#09090B]">{row.label}</span>
+      <span className="min-w-0 shrink text-[14px] font-medium leading-5 text-[#0F0F0F]">{row.label}</span>
       <MetricValueDisplay row={row} muted={muted} align="right" />
     </div>
   );

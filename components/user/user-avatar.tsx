@@ -11,7 +11,7 @@ type UserAvatarProps = {
 };
 
 const smShell =
-  "flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#09090B] text-[11px] font-semibold text-white";
+  "flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#0F0F0F] text-[11px] font-semibold text-white";
 /** Public portfolio cards — matches Figma avatar component (32×32). */
 const mdShell =
   "flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#F4F4F5] text-[11px] font-semibold text-[#52525B]";
@@ -71,7 +71,7 @@ export function UserAvatar({ imageSrc, initials, size, showProBadge = false }: U
     <span className="relative inline-flex shrink-0">
       {avatar}
       <span
-        className={`absolute flex items-center justify-center rounded-full bg-[#09090B] text-white ring-2 ring-white ${badge.shell}`}
+        className={`absolute flex items-center justify-center rounded-full bg-[#0F0F0F] text-white ring-2 ring-white ${badge.shell}`}
         title="Pro"
         aria-label="Pro"
       >

@@ -1644,7 +1644,7 @@ export function ChartingCompareWorkspace({
       <div className="space-y-4 pt-1">
       <div className="flex flex-col gap-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-3">
-          <h2 className="min-w-0 shrink-0 text-2xl font-semibold leading-9 tracking-tight text-[#09090B] sm:flex-1">
+          <h2 className="min-w-0 shrink-0 text-2xl font-semibold leading-9 tracking-tight text-[#0F0F0F] sm:flex-1">
             {workspaceTitle}
           </h2>
           {/* Web: keep controls on one line with range switcher (no stretch). */}
@@ -1671,7 +1671,7 @@ export function ChartingCompareWorkspace({
             <button
               type="button"
               onClick={() => router.replace(buildStandaloneChartPath(pathRoute, [], []), { scroll: false })}
-              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#09090B] transition-colors hover:bg-[#FAFAFA]"
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#0F0F0F] transition-colors hover:bg-[#FAFAFA]"
               aria-label="Clear companies and metrics"
             >
               <RefreshCw className="h-4 w-4" strokeWidth={2} aria-hidden />
@@ -1767,14 +1767,14 @@ export function ChartingCompareWorkspace({
                 key={id}
                 className="order-1 inline-flex max-w-full min-w-0 items-stretch overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white"
               >
-                <span className="flex min-h-[36px] min-w-0 items-center border-r border-[#E4E4E7] px-4 py-2 text-[14px] font-medium leading-5 text-[#09090B]">
+                <span className="flex min-h-[36px] min-w-0 items-center border-r border-[#E4E4E7] px-4 py-2 text-[14px] font-medium leading-5 text-[#0F0F0F]">
                   <span className="truncate">{CHARTING_METRIC_LABEL[id]}</span>
                 </span>
                 <button
                   type="button"
                   onClick={() => removeMetric(id)}
                   disabled={selected.length <= 1}
-                  className="flex w-9 shrink-0 items-center justify-center text-[#09090B] transition-colors hover:bg-[#FAFAFA] disabled:pointer-events-none disabled:opacity-30"
+                  className="flex w-9 shrink-0 items-center justify-center text-[#0F0F0F] transition-colors hover:bg-[#FAFAFA] disabled:pointer-events-none disabled:opacity-30"
                   aria-label={`Remove ${CHARTING_METRIC_LABEL[id]}`}
                 >
                   <X className="h-5 w-5" strokeWidth={1.5} aria-hidden />
@@ -1861,7 +1861,7 @@ export function ChartingCompareWorkspace({
                   key={t}
                   className="order-3 inline-flex max-w-full min-w-0 items-stretch overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white"
                 >
-                  <span className="flex min-h-[36px] min-w-0 items-center border-r border-[#E4E4E7] px-4 py-2 text-[14px] font-medium leading-5 text-[#09090B]">
+                  <span className="flex min-h-[36px] min-w-0 items-center border-r border-[#E4E4E7] px-4 py-2 text-[14px] font-medium leading-5 text-[#0F0F0F]">
                     <span className="truncate">{t}</span>
                   </span>
                   {chipLoading ? (
@@ -1878,7 +1878,7 @@ export function ChartingCompareWorkspace({
                       type="button"
                       onClick={() => removeTicker(t)}
                       disabled={tickers.length <= 1}
-                      className="flex w-9 shrink-0 items-center justify-center text-[#09090B] transition-colors hover:bg-[#FAFAFA] disabled:pointer-events-none disabled:opacity-30"
+                      className="flex w-9 shrink-0 items-center justify-center text-[#0F0F0F] transition-colors hover:bg-[#FAFAFA] disabled:pointer-events-none disabled:opacity-30"
                       aria-label={`Remove ${t}`}
                     >
                       <X className="h-5 w-5" strokeWidth={1.5} aria-hidden />
@@ -1975,7 +1975,7 @@ export function ChartingCompareWorkspace({
                             <span className="absolute top-1/2 right-px -translate-y-1/2 border-y-[6px] border-y-transparent border-r-[7px] border-r-white" />
                           </span>
                         )}
-                        <p className="text-[12px] font-semibold leading-4 text-[#09090B]">{hover.periodLabel}</p>
+                        <p className="text-[12px] font-semibold leading-4 text-[#0F0F0F]">{hover.periodLabel}</p>
                         <div className="mt-1.5 max-h-[min(240px,40vh)] space-y-1 overflow-y-auto">
                           {hover.rows.map((r) => (
                             <div key={r.key} className="flex items-baseline justify-between gap-3">
@@ -1989,7 +1989,7 @@ export function ChartingCompareWorkspace({
                                   {r.label}
                                 </span>
                               </span>
-                              <span className="shrink-0 text-[12px] font-semibold leading-4 tabular-nums text-[#09090B]">
+                              <span className="shrink-0 text-[12px] font-semibold leading-4 tabular-nums text-[#0F0F0F]">
                                 {r.value}
                               </span>
                             </div>
@@ -2124,7 +2124,7 @@ export function ChartingCompareWorkspace({
                 {seriesDefs.map((s) => (
                   <div
                     key={s.key}
-                    className="inline-flex h-6 min-w-0 items-center gap-2 overflow-hidden rounded-[8px] border border-[#E4E4E7] bg-white px-2.5 py-0 text-[12px] font-medium leading-none text-[#09090B]"
+                    className="inline-flex h-6 min-w-0 items-center gap-2 overflow-hidden rounded-[8px] border border-[#E4E4E7] bg-white px-2.5 py-0 text-[12px] font-medium leading-none text-[#0F0F0F]"
                   >
                     <span
                       className="h-2 w-2 shrink-0 rounded-full"

@@ -140,7 +140,7 @@ export function useSnapTradeConnectPortal({
         onSuccess={onPortalSuccess}
         onError={onPortalError}
         onExit={onPortalExit}
-        style={{ overlay: { backgroundColor: "rgba(9, 9, 11, 0.45)", zIndex: 120 } }}
+        style={{ overlay: { backgroundColor: "rgba(15, 15, 15, 0.45)", zIndex: 120 } }}
       />
     ) : null;
 

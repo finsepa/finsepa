@@ -14,6 +14,8 @@ const TAB_MOTION_EASE = "cubic-bezier(0.33, 1, 0.68, 1)";
 export type SecondaryTabItem<T extends string = string> = {
   id: T;
   label: string;
+  /** Optional count/chip rendered after the label (e.g. asset count). */
+  badge?: string | number;
 };
 
 export function SecondaryTabs<T extends string>({
@@ -126,12 +128,24 @@ export function SecondaryTabs<T extends string>({
               aria-selected={active}
               onClick={() => onValueChange(item.id)}
               className={cn(
-                "relative z-[1] shrink-0 whitespace-nowrap rounded-[10px] px-3 py-2 text-[13px] font-medium leading-5 text-[#09090B] transition-[color,opacity] duration-100 sm:px-5 sm:text-[14px]",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2",
+                "relative z-[1] shrink-0 whitespace-nowrap rounded-[10px] px-3 py-2 text-[13px] font-medium leading-5 text-[#0F0F0F] transition-[color,opacity] duration-100 sm:px-5 sm:text-[14px]",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15 focus-visible:ring-offset-2",
                 active ? "opacity-100" : "opacity-80 hover:opacity-100",
               )}
             >
-              {item.label}
+              <span className="inline-flex items-center gap-1.5">
+                {item.label}
+                {item.badge != null && item.badge !== "" ? (
+                  <span
+                    className={cn(
+                      "inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-[6px] text-[11px] font-medium tabular-nums leading-none text-[#0F0F0F] transition-colors duration-100",
+                      active ? "bg-white" : "bg-[#E4E4E7]",
+                    )}
+                  >
+                    {item.badge}
+                  </span>
+                ) : null}
+              </span>
             </button>
           );
         })}

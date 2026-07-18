@@ -87,7 +87,7 @@ export function CryptoFearGreedCard({
           className={cn(
             "group inline-flex min-w-0 items-center gap-1.5 truncate rounded-[10px] text-left text-[14px] font-semibold leading-5 text-[#71717A] outline-none transition-colors",
             onOpenFullscreen
-              ? "hover:text-[#09090B] focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2"
+              ? "hover:text-[#0F0F0F] focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15 focus-visible:ring-offset-2"
               : "cursor-default",
           )}
           aria-label={onOpenFullscreen ? "Open Fear & Greed history" : undefined}
@@ -118,14 +118,14 @@ export function CryptoFearGreedCard({
             ))}
 
             {/* knob */}
-            <circle cx={gauge.dot.x} cy={gauge.dot.y} r="12" fill="#09090B" stroke="#FFFFFF" strokeWidth="4" />
+            <circle cx={gauge.dot.x} cy={gauge.dot.y} r="12" fill="#0F0F0F" stroke="#FFFFFF" strokeWidth="4" />
 
             {/* value */}
             <text
               x={gauge.cx}
               y="94"
               textAnchor="middle"
-              className="fill-[#09090B]"
+              className="fill-[#0F0F0F]"
               style={{ fontFamily: "Inter", fontSize: 30, fontWeight: 900, lineHeight: "32px" }}
             >
               {value == null ? "—" : String(value)}

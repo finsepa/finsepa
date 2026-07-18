@@ -40,7 +40,7 @@ export function MobileBottomNavSearchField({
         value={panel.query}
         onChange={(e) => panel.setQuery(e.target.value)}
         placeholder="Search..."
-        className="h-full w-full min-w-0 bg-transparent text-base leading-5 text-[#09090B] outline-none placeholder:text-[#A1A1AA] caret-[#09090B]"
+        className="h-full w-full min-w-0 bg-transparent text-base leading-5 text-[#0F0F0F] outline-none placeholder:text-[#A1A1AA] caret-[#0F0F0F]"
         autoComplete="off"
         autoCorrect="off"
         enterKeyHint="search"

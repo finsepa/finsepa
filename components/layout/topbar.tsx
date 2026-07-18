@@ -72,7 +72,7 @@ const TopbarPortfolioBlock = memo(function TopbarPortfolioBlock() {
   }, [selectedPortfolioId, holdingsByPortfolioId, transactionsByPortfolioId]);
 
   const displayTotal = normalizeUsdForDisplay(total);
-  const amountClass = displayTotal < 0 ? "text-red-600" : "text-[#09090B]";
+  const amountClass = displayTotal < 0 ? "text-red-600" : "text-[#0F0F0F]";
 
   const ready = mounted && portfolioDisplayReady;
   const balanceLabel = ready ? `Portfolio, ${usdTopbar.format(displayTotal)}` : "Portfolio, loading";
@@ -103,7 +103,7 @@ const TopbarPortfolioBlock = memo(function TopbarPortfolioBlock() {
           aria-label={balanceLabel}
           className="flex min-w-0 max-w-none items-center gap-2 border-r border-[#E4E4E7] px-3 text-sm font-medium tabular-nums transition-colors hover:bg-[#F4F4F5]"
         >
-          <Briefcase className="h-5 w-5 shrink-0 text-[#09090B]" aria-hidden />
+          <Briefcase className="h-5 w-5 shrink-0 text-[#0F0F0F]" aria-hidden />
           {ready ? (
             <span className={`min-w-0 truncate ${amountClass}`}>{usdTopbar.format(displayTotal)}</span>
           ) : (
@@ -185,7 +185,7 @@ export function Topbar({
           <div className="min-w-0 flex-1 md:hidden">
             <h1
               suppressHydrationWarning
-              className="truncate text-[22px] font-semibold leading-7 tracking-[-0.02em] text-[#09090B]"
+              className="truncate text-[22px] font-semibold leading-7 tracking-[-0.02em] text-[#0F0F0F]"
             >
               {resolvedMobileTitle}
             </h1>

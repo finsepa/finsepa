@@ -41,7 +41,7 @@ export function MultichartsTabSkeletonGrid() {
 export function MultichartsTabSkeleton() {
   return (
     <div className="space-y-6 pt-1">
-      <h2 className="text-[20px] font-semibold leading-8 tracking-tight text-[#09090B]">Multicharts</h2>
+      <h2 className="text-[20px] font-semibold leading-8 tracking-tight text-[#0F0F0F]">Multicharts</h2>
       <SkeletonGrid />
     </div>
   );

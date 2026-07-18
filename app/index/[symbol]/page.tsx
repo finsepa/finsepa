@@ -27,17 +27,17 @@ export default async function IndexSymbolPage({ params }: PageProps) {
   return (
     <div className="min-w-0 px-4 py-5 sm:px-9 sm:py-8">
       <div className="mb-6 flex items-center gap-1 text-[14px] text-[#71717A]">
-        <Link href={SCREENER_INDICES_HREF} className="transition-colors hover:text-[#09090B]">
+        <Link href={SCREENER_INDICES_HREF} className="transition-colors hover:text-[#0F0F0F]">
           Markets
         </Link>
         <span>/</span>
-        <span className="font-medium text-[#09090B]">Indices</span>
+        <span className="font-medium text-[#0F0F0F]">Indices</span>
       </div>
 
       <div className="space-y-2">
-        <h1 className="text-[22px] font-semibold leading-8 text-[#09090B]">{title}</h1>
+        <h1 className="text-[22px] font-semibold leading-8 text-[#0F0F0F]">{title}</h1>
         <p className="text-[14px] font-medium text-[#71717A]">{symbol}</p>
-        <p className="pt-2 text-[28px] font-semibold tabular-nums text-[#09090B]">{displayValue}</p>
+        <p className="pt-2 text-[28px] font-semibold tabular-nums text-[#0F0F0F]">{displayValue}</p>
         <p className="text-[12px] text-[#71717A]">Last update from markets data</p>
       </div>
 
@@ -45,7 +45,7 @@ export default async function IndexSymbolPage({ params }: PageProps) {
         Index detail view uses the same benchmark list as the markets screener. For full context, open the{" "}
         <Link
           href={SCREENER_INDICES_HREF}
-          className="font-medium text-[#09090B] underline decoration-[#E4E4E7] underline-offset-4"
+          className="font-medium text-[#0F0F0F] underline decoration-[#E4E4E7] underline-offset-4"
         >
           screener
         </Link>

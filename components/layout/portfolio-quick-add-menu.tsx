@@ -192,7 +192,7 @@ export function PortfolioQuickAddMenu({
                 "font-medium whitespace-nowrap",
                 disabled
                   ? "cursor-not-allowed text-[#A1A1AA] hover:bg-white"
-                  : "text-[#09090B]",
+                  : "text-[#0F0F0F]",
               )}
             >
               {id === "trade" ? (

@@ -36,7 +36,7 @@ export function SearchResultLogo({ item }: { item: SearchAssetItem }) {
         className={cn(
           "h-8 w-8 shrink-0 border border-neutral-200 bg-white object-contain",
           item.type === "superinvestor" ? "rounded-full object-cover" : "rounded-lg",
-          item.type === "superinvestor" && src.includes("blackrock") && "bg-[#09090B] p-1",
+          item.type === "superinvestor" && src.includes("blackrock") && "bg-[#0F0F0F] p-1",
         )}
         onError={() => {
           setImgErr(true);
@@ -56,7 +56,7 @@ export function SearchResultLogo({ item }: { item: SearchAssetItem }) {
           .toUpperCase()
       : item.symbol.slice(0, 2).toUpperCase();
   return (
-    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#E4E4E7] bg-[#F4F4F5] text-[10px] font-bold text-[#09090B]">
+    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#E4E4E7] bg-[#F4F4F5] text-[10px] font-bold text-[#0F0F0F]">
       {initials}
     </div>
   );
@@ -88,7 +88,7 @@ function MetaRight({ item, className }: { item: SearchAssetItem; className?: str
 }
 
 const recentRemoveButtonClass =
-  "flex h-6 w-6 shrink-0 items-center justify-center self-center rounded-md text-[#09090B] outline-none transition-[opacity,background-color,color] duration-100 focus-visible:ring-2 focus-visible:ring-[#09090B]/10";
+  "flex h-6 w-6 shrink-0 items-center justify-center self-center rounded-md text-[#0F0F0F] outline-none transition-[opacity,background-color,color] duration-100 focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/10";
 
 function RecentRowTrailing({
   item,
@@ -234,7 +234,7 @@ function SearchResultRowInner({
     >
       <SearchResultLogo item={item} />
       <div className="min-w-0 flex-1">
-        <div className="truncate font-medium underline-offset-2 decoration-[#09090B] group-hover:underline group-data-[active=true]:underline">
+        <div className="truncate font-medium underline-offset-2 decoration-[#0F0F0F] group-hover:underline group-data-[active=true]:underline">
           {item.name}
         </div>
         <div className="truncate text-[12px] text-[#71717A]">

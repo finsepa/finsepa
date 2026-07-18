@@ -74,7 +74,7 @@ export function ChartingFullPageTab({
       companyPickerControlsRef={companyPickerControlsRef}
       fullPageCompanyChipSlot={
         <div className="inline-flex max-w-full min-w-0 items-stretch overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white">
-          <span className="flex min-h-[36px] min-w-0 items-center border-r border-[#E4E4E7] px-4 py-2 text-[14px] font-medium leading-5 text-[#09090B]">
+          <span className="flex min-h-[36px] min-w-0 items-center border-r border-[#E4E4E7] px-4 py-2 text-[14px] font-medium leading-5 text-[#0F0F0F]">
             <span className="truncate">{t}</span>
           </span>
           <button
@@ -82,7 +82,7 @@ export function ChartingFullPageTab({
             onClick={() => {
               router.push(buildStandaloneChartPath(pathRoute, [], metricsInUrl));
             }}
-            className="flex w-9 shrink-0 items-center justify-center text-[#09090B] transition-colors hover:bg-[#FAFAFA]"
+            className="flex w-9 shrink-0 items-center justify-center text-[#0F0F0F] transition-colors hover:bg-[#FAFAFA]"
             aria-label={`Remove ${t}`}
           >
             <X className="h-5 w-5" strokeWidth={1.5} aria-hidden />

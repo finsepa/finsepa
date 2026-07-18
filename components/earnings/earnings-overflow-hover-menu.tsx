@@ -199,7 +199,7 @@ export function EarningsOverflowHoverMenu({
                           symbol={item.ticker}
                           size="sm"
                         />
-                        <span className="min-w-0 flex-1 truncate text-[13px] font-semibold tabular-nums leading-5 text-[#09090B]">
+                        <span className="min-w-0 flex-1 truncate text-[13px] font-semibold tabular-nums leading-5 text-[#0F0F0F]">
                           {item.ticker}
                         </span>
                       </button>

@@ -176,9 +176,9 @@ export function ProductTourModal({
               <div className="flex items-center gap-2">
                 <span className="relative flex h-5 w-5 shrink-0 items-center justify-center">
                   <span className="absolute left-1.5 top-1 h-4 w-4 rounded-full bg-[#E4E4E7]" aria-hidden />
-                  <Icon className="relative h-5 w-5 text-[#09090B]" aria-hidden />
+                  <Icon className="relative h-5 w-5 text-[#0F0F0F]" aria-hidden />
                 </span>
-                <p id={titleId} className="text-base font-semibold leading-6 text-[#09090B]">
+                <p id={titleId} className="text-base font-semibold leading-6 text-[#0F0F0F]">
                   {step.title}
                 </p>
               </div>
@@ -210,7 +210,7 @@ export function ProductTourModal({
                     key={s.id}
                     className={cn(
                       "h-1.5 w-1.5 rounded-full transition-colors",
-                      i === stepIndex ? "bg-[#09090B]" : "bg-[#E4E4E7]",
+                      i === stepIndex ? "bg-[#0F0F0F]" : "bg-[#E4E4E7]",
                     )}
                     aria-hidden
                   />

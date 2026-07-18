@@ -120,7 +120,7 @@ function CheckCard({
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <span className={cn("h-2.5 w-2.5 shrink-0 rounded-full", styles.dot)} aria-hidden />
-            <h2 className="text-sm font-semibold text-[#09090B]">{label}</h2>
+            <h2 className="text-sm font-semibold text-[#0F0F0F]">{label}</h2>
           </div>
           <p className="mt-1 text-sm text-[#52525B]">{summary}</p>
           {error ? <p className="mt-1 text-xs text-red-600">{error}</p> : null}
@@ -183,7 +183,7 @@ function Dashboard({
     <main className="mx-auto max-w-3xl px-4 py-10">
       <header className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-[#09090B]">System status</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-[#0F0F0F]">System status</h1>
           <p className="mt-1 text-sm text-[#52525B]">
             Last checked {formatWhen(report.checkedAt)}
             {report.vercelEnv ? ` · ${report.vercelEnv}` : null}
@@ -197,7 +197,7 @@ function Dashboard({
             type="button"
             onClick={onRefresh}
             disabled={refreshing}
-            className="rounded-lg bg-[#09090B] px-3 py-2 text-sm font-medium text-white transition hover:bg-[#27272A] disabled:opacity-60"
+            className="rounded-lg bg-[#0F0F0F] px-3 py-2 text-sm font-medium text-white transition hover:bg-[#27272A] disabled:opacity-60"
           >
             {refreshing ? "Refreshing…" : "Run checks"}
           </button>

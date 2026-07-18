@@ -31,8 +31,8 @@ function StatRow({
   if (!interactive) {
     return (
       <div className="flex items-center justify-between gap-3 border-b border-[#E4E4E7] py-1.5 last:border-0">
-        <span className="min-w-0 shrink text-[14px] leading-5 text-[#09090B]">{label}</span>
-        <span className="shrink-0 text-right text-[14px] font-medium leading-5 text-[#09090B] tabular-nums">{value}</span>
+        <span className="min-w-0 shrink text-[14px] leading-5 text-[#0F0F0F]">{label}</span>
+        <span className="shrink-0 text-right text-[14px] font-medium leading-5 text-[#0F0F0F] tabular-nums">{value}</span>
       </div>
     );
   }
@@ -42,10 +42,10 @@ function StatRow({
       onClick={onLabelClick}
       className="group flex w-full min-w-0 cursor-pointer items-center justify-between gap-3 border-b border-[#E4E4E7] py-1.5 text-left last:border-0 hover:bg-[#FAFAFA]"
     >
-      <span className="min-w-0 shrink text-[14px] leading-5 text-[#09090B] underline-offset-2 decoration-[#71717A] group-hover:underline">
+      <span className="min-w-0 shrink text-[14px] leading-5 text-[#0F0F0F] underline-offset-2 decoration-[#71717A] group-hover:underline">
         {label}
       </span>
-      <span className="shrink-0 text-right text-[14px] font-medium leading-5 text-[#09090B] tabular-nums">{value}</span>
+      <span className="shrink-0 text-right text-[14px] font-medium leading-5 text-[#0F0F0F] tabular-nums">{value}</span>
     </button>
   );
 }

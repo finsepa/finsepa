@@ -141,7 +141,7 @@ export function TopbarSearch() {
         onPointerDown={handleSearchShellPointerDown}
       >
         <span
-          className="pointer-events-none absolute top-1/2 z-10 flex h-5 w-5 items-center justify-center text-[#09090B] motion-reduce:transition-none"
+          className="pointer-events-none absolute top-1/2 z-10 flex h-5 w-5 items-center justify-center text-[#0F0F0F] motion-reduce:transition-none"
           style={{
             left: SEARCH_ICON_INSET_PX,
             ...motionStyle,
@@ -166,7 +166,7 @@ export function TopbarSearch() {
           onChange={(e) => panel.setQuery(e.target.value)}
           placeholder="Search..."
           className={cn(
-            "absolute inset-0 z-[1] h-full w-full min-w-0 cursor-text bg-transparent text-sm leading-5 text-[#09090B] outline-none placeholder:text-[#A1A1AA] caret-[#09090B] read-only:cursor-text transition-[padding] motion-reduce:transition-none",
+            "absolute inset-0 z-[1] h-full w-full min-w-0 cursor-text bg-transparent text-sm leading-5 text-[#0F0F0F] outline-none placeholder:text-[#A1A1AA] caret-[#0F0F0F] read-only:cursor-text transition-[padding] motion-reduce:transition-none",
             !open && "pointer-events-none",
           )}
           style={{
@@ -212,7 +212,7 @@ export function TopbarSearch() {
             className={cn(
               "pointer-events-auto absolute inset-0 flex items-center justify-center rounded-md text-[#71717A]",
               "transition-opacity motion-reduce:transition-none",
-              "hover:bg-[#EBEBEB] hover:text-[#09090B] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/10",
+              "hover:bg-[#EBEBEB] hover:text-[#0F0F0F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/10",
               open ? "opacity-100" : "opacity-0",
             )}
             style={motionStyle}

@@ -202,7 +202,7 @@ export function HelpFeedbackModal({
         ) : (
           <>
             <div className="flex flex-col gap-2">
-              <label htmlFor={`${titleId}-message`} className="text-sm font-medium leading-5 text-[#09090B]">
+              <label htmlFor={`${titleId}-message`} className="text-sm font-medium leading-5 text-[#0F0F0F]">
                 Message <span className="text-[#DC2626]">*</span>
               </label>
               <textarea
@@ -212,7 +212,7 @@ export function HelpFeedbackModal({
                 rows={5}
                 maxLength={SUPPORT_FEEDBACK_MESSAGE_MAX_LENGTH}
                 placeholder="Is there an issue, a question or a suggestion you'd like to share with us?"
-                className="min-h-[120px] w-full resize-y rounded-[10px] border border-[#E4E4E7] bg-white px-3 py-2.5 text-sm text-[#09090B] placeholder:text-[#71717A] outline-none focus:ring-2 focus:ring-[#09090B]/10"
+                className="min-h-[120px] w-full resize-y rounded-[10px] border border-[#E4E4E7] bg-white px-3 py-2.5 text-sm text-[#0F0F0F] placeholder:text-[#71717A] outline-none focus:ring-2 focus:ring-[#0F0F0F]/10"
               />
             </div>
 
@@ -240,7 +240,7 @@ export function HelpFeedbackModal({
                 onClick={() => fileInputRef.current?.click()}
                 className={cn(
                   "flex min-h-[88px] cursor-pointer flex-col items-center justify-center rounded-[10px] border border-dashed px-4 py-5 text-center transition-colors",
-                  dragOver ? "border-[#09090B] bg-[#F4F4F5]" : "border-[#D4D4D8] bg-[#FAFAFA] hover:border-[#A1A1AA]",
+                  dragOver ? "border-[#0F0F0F] bg-[#F4F4F5]" : "border-[#D4D4D8] bg-[#FAFAFA] hover:border-[#A1A1AA]",
                 )}
               >
                 <Upload className="mb-2 h-5 w-5 text-[#71717A]" aria-hidden />
@@ -266,14 +266,14 @@ export function HelpFeedbackModal({
                 <ul className="flex flex-col gap-1.5 rounded-[10px] border border-[#E4E4E7] bg-[#FAFAFA] px-3 py-2">
                   {files.map((file, index) => (
                     <li key={`${file.name}-${file.size}-${index}`} className="flex items-center gap-2 text-sm">
-                      <span className="min-w-0 flex-1 truncate text-[#09090B]">{file.name}</span>
+                      <span className="min-w-0 flex-1 truncate text-[#0F0F0F]">{file.name}</span>
                       <span className="shrink-0 tabular-nums text-xs text-[#71717A]">
                         {formatFileSize(file.size)}
                       </span>
                       <button
                         type="button"
                         onClick={() => removeFile(index)}
-                        className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[#71717A] hover:bg-[#F4F4F5] hover:text-[#09090B]"
+                        className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[#71717A] hover:bg-[#F4F4F5] hover:text-[#0F0F0F]"
                         aria-label={`Remove ${file.name}`}
                       >
                         <X className="h-4 w-4" strokeWidth={2} aria-hidden />

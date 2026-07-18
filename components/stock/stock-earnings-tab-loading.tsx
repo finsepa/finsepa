@@ -35,7 +35,7 @@ export function StockEarningsTabLoading() {
         ))}
       </div>
       <SkeletonBox className="h-[320px] w-full rounded" />
-      <h3 className="text-[18px] font-semibold leading-7 tracking-tight text-[#09090B]">Reports</h3>
+      <h3 className="text-[18px] font-semibold leading-7 tracking-tight text-[#0F0F0F]">Reports</h3>
       <div className="space-y-2">
         {Array.from({ length: 4 }).map((_, i) => (
           <SkeletonBox key={i} className="h-12 w-full rounded" />

@@ -24,7 +24,7 @@ export function NewsTable({ items }: { items: NewsItem[] }) {
   return (
     <div className="overflow-hidden">
       <div
-        className={`grid ${colLayoutMobile} ${colLayoutDesktop} items-center border-t border-b border-[#E4E4E7] bg-white px-4 py-3 text-[14px] font-semibold leading-5 text-[#71717A] [&>div]:text-left`}
+        className={`grid ${colLayoutMobile} ${colLayoutDesktop} items-center border-t border-b border-[#E4E4E7] bg-white px-4 py-3 text-[14px] font-medium leading-5 text-[#71717A] [&>div]:text-left`}
       >
         <div className="hidden sm:block">Time</div>
         <div>Headline</div>
@@ -46,7 +46,7 @@ export function NewsTable({ items }: { items: NewsItem[] }) {
               <div className="text-[12px] leading-4 text-[#71717A] tabular-nums sm:hidden">
                 {formatTime(n.publishedAt)}
               </div>
-              <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">{n.title}</div>
+              <div className="truncate text-[14px] font-semibold leading-5 text-[#0F0F0F]">{n.title}</div>
             </div>
             <div className="min-w-0 pr-3">
               <div className="flex min-w-0 items-center gap-2">
@@ -62,7 +62,7 @@ export function NewsTable({ items }: { items: NewsItem[] }) {
                     size="xs"
                   />
                 </span>
-                <span className="inline-flex h-6 max-w-full items-center rounded-md border border-[#E4E4E7] bg-white px-2 text-[12px] font-semibold leading-4 text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
+                <span className="inline-flex h-6 max-w-full items-center rounded-md border border-[#E4E4E7] bg-white px-2 text-[12px] font-semibold leading-4 text-[#0F0F0F] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
                   <span className="truncate">{n.assetSymbol}</span>
                 </span>
               </div>

@@ -43,8 +43,8 @@ function fmtPct(n: number | null): string {
 }
 
 function athReturnClass(n: number | null): string {
-  if (n == null || !Number.isFinite(n)) return "text-[#09090B]";
-  if (Math.abs(n) < 0.0005) return "text-[#09090B]";
+  if (n == null || !Number.isFinite(n)) return "text-[#0F0F0F]";
+  if (Math.abs(n) < 0.0005) return "text-[#0F0F0F]";
   return n >= 0 ? "text-[#16A34A]" : "text-[#DC2626]";
 }
 
@@ -117,7 +117,7 @@ export function PortfoliosDirectoryTable({ listings }: { listings: PublicListing
                   <Link
                     href={`/portfolios/${listing.id}`}
                     prefetch={false}
-                    className="flex min-w-0 items-center gap-3 text-[#09090B] no-underline visited:text-[#09090B]"
+                    className="flex min-w-0 items-center gap-3 text-[#0F0F0F] no-underline visited:text-[#0F0F0F]"
                   >
                     <UserAvatar
                       imageSrc={
@@ -154,7 +154,7 @@ export function PortfoliosDirectoryTable({ listings }: { listings: PublicListing
                 <Link
                   href={`/portfolios/${listing.id}`}
                   prefetch={false}
-                  className={`hidden ${rowLinkGrid} h-[60px] max-h-[60px] items-center px-4 text-[#09090B] no-underline visited:text-[#09090B] sm:grid`}
+                  className={`hidden ${rowLinkGrid} h-[60px] max-h-[60px] items-center px-4 text-[#0F0F0F] no-underline visited:text-[#0F0F0F] sm:grid`}
                   aria-label={`View portfolio ${listing.name} by ${ownerName}`}
                 >
                   <div className="flex min-w-0 items-center gap-3 text-left">
@@ -177,11 +177,11 @@ export function PortfoliosDirectoryTable({ listings }: { listings: PublicListing
                     </div>
                   </div>
 
-                  <div className="min-w-0 text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
+                  <div className="min-w-0 text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#0F0F0F]">
                     {value != null ? formatUsdCompact(value) : "—"}
                   </div>
 
-                  <div className="min-w-0 text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]">
+                  <div className="min-w-0 text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#0F0F0F]">
                     {holdingCount != null ? Math.round(holdingCount).toLocaleString("en-US") : "—"}
                   </div>
 

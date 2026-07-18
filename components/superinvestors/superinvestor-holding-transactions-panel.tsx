@@ -83,7 +83,7 @@ function SuperinvestorHoldingTransactionsPanelInner({
         />
       : null}
 
-      <h3 className="mb-3 text-[20px] font-semibold leading-7 tracking-tight text-[#09090B]">Activity</h3>
+      <h3 className="mb-3 text-[20px] font-semibold leading-7 tracking-tight text-[#0F0F0F]">Activity</h3>
 
       {panelTransactions.length === 0 ? (
         <p className={cn("py-6 text-center", emptyDescriptionClassName)}>
@@ -106,7 +106,7 @@ function SuperinvestorHoldingTransactionsPanelInner({
                   "min-h-[60px] items-center border-t border-[#E4E4E7] bg-white px-4",
                 )}
               >
-                <div className="py-1 text-left text-[14px] font-semibold leading-5 text-[#09090B]">
+                <div className="py-1 text-left text-[14px] font-semibold leading-5 text-[#0F0F0F]">
                   {tx.quarterLabel}
                 </div>
                 <div className={superinvestorTxTdActivity}>
@@ -125,8 +125,8 @@ function SuperinvestorHoldingTransactionsPanelInner({
           onClick={() => onViewAllTransactions(searchQuery)}
           className={cn(
             "mt-4 flex h-10 w-full items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white",
-            "text-[14px] font-medium leading-5 text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]",
-            "transition-colors hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2",
+            "text-[14px] font-medium leading-5 text-[#0F0F0F] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]",
+            "transition-colors hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15 focus-visible:ring-offset-2",
           )}
         >
           Show all activity

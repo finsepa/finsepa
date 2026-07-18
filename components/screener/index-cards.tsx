@@ -132,12 +132,12 @@ export function IndexCards({
           const TrendIcon = neutral ? null : positive ? ArrowUp : ArrowDown;
           return (
             <div key={name} className={INDEX_CARD_SURFACE_CLASS}>
-              <p className="w-full truncate text-left text-[13px] font-medium leading-4 text-[#09090B] sm:text-[14px] sm:leading-5">
+              <p className="w-full truncate text-left text-[13px] font-medium leading-4 text-[#0F0F0F] sm:text-[14px] sm:leading-5">
                 {name}
               </p>
               <FadeIn show={fadeIn}>
                 <p
-                  className="w-full truncate text-left text-[15px] font-bold leading-5 tabular-nums text-[#09090B] sm:text-base sm:leading-6"
+                  className="w-full truncate text-left text-[15px] font-bold leading-5 tabular-nums text-[#0F0F0F] sm:text-base sm:leading-6"
                   suppressHydrationWarning
                 >
                   {value}

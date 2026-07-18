@@ -141,7 +141,7 @@ export function ChartControls({
           <div className="min-w-0 shrink overflow-hidden">{titleSlot}</div>
         : compareSlot || downloadSlot ?
           null
-        : <h2 className="shrink-0 text-[14px] font-semibold leading-5 text-[#09090B]">Price</h2>}
+        : <h2 className="shrink-0 text-[14px] font-semibold leading-5 text-[#0F0F0F]">Price</h2>}
         {compareSlot || downloadSlot ?
           <div className="flex shrink-0 items-center gap-2">
             {compareSlot ? <div className="shrink-0">{compareSlot}</div> : null}
@@ -170,7 +170,7 @@ export function ChartControls({
       ) : titleSlot ? (
         <div className="min-w-0 w-full max-w-full shrink-0 sm:w-auto">{titleSlot}</div>
       ) : (
-        <h2 className="text-[18px] font-semibold leading-7 text-[#09090B]">Price</h2>
+        <h2 className="text-[18px] font-semibold leading-7 text-[#0F0F0F]">Price</h2>
       )}
 
       <div className="flex w-full min-w-0 flex-col gap-2 sm:w-auto sm:flex-row sm:flex-nowrap sm:items-center sm:justify-end sm:gap-2">

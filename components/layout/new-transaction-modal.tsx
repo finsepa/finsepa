@@ -655,14 +655,14 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
                     {operation === "Sell" && selectedHoldingShares != null ? (
                       <div className="mt-1 text-[12px] leading-4 text-[#71717A]">
                         You have{" "}
-                        <span className="font-medium text-[#09090B]">
+                        <span className="font-medium text-[#0F0F0F]">
                           {formatSharesHint(selectedHoldingShares, selectedCompany?.symbol ?? "")}
                         </span>
                         {selectedHoldingWorthUsd != null ? (
                           <>
                             {" "}
                             worth of{" "}
-                            <span className="font-medium tabular-nums text-[#09090B]">
+                            <span className="font-medium tabular-nums text-[#0F0F0F]">
                               {usdBalance.format(selectedHoldingWorthUsd)}
                             </span>
                           </>
@@ -774,7 +774,7 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
                       ? "text-[#DC2626]"
                       : currentCashBalanceDisplayUsd > 0
                         ? "text-[#16A34A]"
-                        : "text-[#09090B]",
+                        : "text-[#0F0F0F]",
                   )}
                 >
                   {usdBalance.format(currentCashBalanceDisplayUsd)}
@@ -783,7 +783,7 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
               {transactionTab === "Trades" ? (
                 <div className="flex items-center gap-1 py-2.5 text-sm">
                   <span className="flex-1 font-medium text-[#71717A]">Total</span>
-                  <span className="shrink-0 font-semibold tabular-nums text-[#09090B]">
+                  <span className="shrink-0 font-semibold tabular-nums text-[#0F0F0F]">
                     {usdFormatter.format(transactionTotal)}
                   </span>
                 </div>
@@ -805,7 +805,7 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
                           ? "text-[#DC2626]"
                           : balanceAfterIncomeUsd > 0
                             ? "text-[#16A34A]"
-                            : "text-[#09090B]",
+                            : "text-[#0F0F0F]",
                       )}
                     >
                       {usdBalance.format(balanceAfterIncomeUsd)}
@@ -830,7 +830,7 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
                           ? "text-[#DC2626]"
                           : balanceAfterExpenseUsd > 0
                             ? "text-[#16A34A]"
-                            : "text-[#09090B]",
+                            : "text-[#0F0F0F]",
                       )}
                     >
                       {usdBalance.format(balanceAfterExpenseUsd)}
@@ -848,7 +848,7 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex w-full flex-col gap-2">
-      <span className="text-sm font-medium leading-5 text-[#09090B]">{label}</span>
+      <span className="text-sm font-medium leading-5 text-[#0F0F0F]">{label}</span>
       {children}
     </div>
   );
@@ -933,7 +933,7 @@ function TransactionTypeTabs({
               onClick={() => onChange(tab)}
               className={cn(
                 "-mb-px shrink-0 cursor-pointer border-b-2 border-transparent py-2 text-sm font-medium leading-6 transition-[color,opacity] duration-100 hover:opacity-100",
-                isOn ? "font-semibold text-[#09090B] opacity-100" : "text-[#09090B] opacity-80",
+                isOn ? "font-semibold text-[#0F0F0F] opacity-100" : "text-[#0F0F0F] opacity-80",
               )}
             >
               {tab}
@@ -941,7 +941,7 @@ function TransactionTypeTabs({
           );
         })}
         <span
-          className="pointer-events-none absolute bottom-0 z-[1] h-0.5 rounded-full bg-[#09090B] motion-reduce:transition-none"
+          className="pointer-events-none absolute bottom-0 z-[1] h-0.5 rounded-full bg-[#0F0F0F] motion-reduce:transition-none"
           style={{
             left: indicator.left,
             width: indicator.width,

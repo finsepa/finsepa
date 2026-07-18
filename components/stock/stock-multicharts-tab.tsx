@@ -300,7 +300,7 @@ export function StockMultichartsTab({
   return (
     <div className="space-y-6 pt-1">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-        <h2 className="text-[20px] font-semibold leading-8 tracking-tight text-[#09090B]">{title}</h2>
+        <h2 className="text-[20px] font-semibold leading-8 tracking-tight text-[#0F0F0F]">{title}</h2>
         <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
           <div className="flex shrink-0 flex-nowrap items-center gap-2">
             <TabSwitcher
@@ -459,7 +459,7 @@ function MultichartCard({
             <button
               type="button"
               onClick={() => onOpenMetricChart(metricId)}
-              className="shrink-0 rounded-lg p-1.5 text-[#71717A] outline-none transition-colors hover:bg-black/5 hover:text-[#09090B] focus-visible:ring-2 focus-visible:ring-[#09090B]/10"
+              className="shrink-0 rounded-lg p-1.5 text-[#71717A] outline-none transition-colors hover:bg-black/5 hover:text-[#0F0F0F] focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/10"
               aria-label={`Open ${metricLabel} in full view`}
             >
               <Maximize2 className="h-4 w-4" strokeWidth={2} aria-hidden />
@@ -468,7 +468,7 @@ function MultichartCard({
           <button
             type="button"
             onClick={onRemove}
-            className="shrink-0 rounded-lg p-1.5 text-[#71717A] outline-none transition-colors hover:bg-black/5 hover:text-[#09090B] focus-visible:ring-2 focus-visible:ring-[#09090B]/10"
+            className="shrink-0 rounded-lg p-1.5 text-[#71717A] outline-none transition-colors hover:bg-black/5 hover:text-[#0F0F0F] focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/10"
             aria-label={`Remove ${metricLabel}`}
             title="Remove"
           >

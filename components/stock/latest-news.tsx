@@ -98,7 +98,7 @@ function decodeNewsTitle(title: string): string {
 
 /** Mobile news card title: 3 lines at `text-[14px]` / `leading-5` (20px). */
 const MOBILE_NEWS_TITLE_CLASS =
-  "overflow-hidden text-[14px] font-semibold leading-5 text-[#09090B] [display:-webkit-box] [-webkit-line-clamp:3] [-webkit-box-orient:vertical] max-h-[3.75rem] break-words";
+  "overflow-hidden text-[14px] font-semibold leading-5 text-[#0F0F0F] [display:-webkit-box] [-webkit-line-clamp:3] [-webkit-box-orient:vertical] max-h-[3.75rem] break-words";
 
 function MobileNewsCard({
   item,
@@ -120,7 +120,7 @@ function MobileNewsCard({
       )}
     >
       <p className="flex shrink-0 items-center gap-1.5 truncate text-[12px] leading-4 text-[#71717A]">
-        <span className="font-medium text-[#09090B]">{item.source}</span>
+        <span className="font-medium text-[#0F0F0F]">{item.source}</span>
         <span className="inline-block size-1 shrink-0 rounded-full bg-[#E4E4E7]" aria-hidden />
         {formatPublishedLabel(item.publishedAt)}
       </p>
@@ -129,7 +129,7 @@ function MobileNewsCard({
       </h3>
       <div className="mt-2 flex shrink-0 items-center gap-1.5">
         <CompanyLogo name={symbol} symbol={symbol} logoUrl={logoUrl} size="xs" />
-        <span className="inline-flex h-6 max-w-[8rem] items-center rounded-md border border-[#E4E4E7] bg-white px-2 text-[12px] font-semibold leading-4 text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
+        <span className="inline-flex h-6 max-w-[8rem] items-center rounded-md border border-[#E4E4E7] bg-white px-2 text-[12px] font-semibold leading-4 text-[#0F0F0F] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
           <span className="truncate">{symbol}</span>
         </span>
       </div>
@@ -148,7 +148,7 @@ function LatestNewsHeader({
 }) {
   return (
     <div className="mb-3 flex items-center justify-between max-md:px-0 sm:mb-4">
-      <h2 className="text-[18px] font-semibold leading-7 text-[#09090B]">{title}</h2>
+      <h2 className="text-[18px] font-semibold leading-7 text-[#0F0F0F]">{title}</h2>
       {showSeeAll && seeAllHref ? (
         <Link
           href={seeAllHref}
@@ -399,9 +399,9 @@ function LatestNewsInner({
                 <div className="mb-1 flex flex-wrap items-center gap-1.5">
                   <span className="text-[12px] text-[#71717A]">{formatPublishedLabel(item.publishedAt)}</span>
                   <span className="inline-block size-1 shrink-0 rounded-full bg-[#E4E4E7]" aria-hidden />
-                  <span className="text-[12px] font-medium text-[#09090B]">{item.source}</span>
+                  <span className="text-[12px] font-medium text-[#0F0F0F]">{item.source}</span>
                 </div>
-                <h3 className="line-clamp-2 text-[14px] font-semibold leading-5 text-[#09090B] group-hover:underline">
+                <h3 className="line-clamp-2 text-[14px] font-semibold leading-5 text-[#0F0F0F] group-hover:underline">
                   {item.title}
                 </h3>
               </a>

@@ -79,7 +79,7 @@ function fixLmx(lmx) {
 
   // Draft sometimes loses href entirely — inject on the welcome button.
   const buttonNoHref =
-    /<Button(?![^>]*\bhref=)([^>]*bgColor="#09090B"[^>]*)>/;
+    /<Button(?![^>]*\bhref=)([^>]*bgColor="#0F0F0F"[^>]*)>/;
   if (buttonNoHref.test(next) && !next.includes(FIXED_HREF)) {
     next = next.replace(buttonNoHref, `<Button href="${FIXED_HREF}"$1>`);
     changed = true;

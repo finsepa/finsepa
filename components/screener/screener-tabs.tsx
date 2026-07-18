@@ -43,8 +43,8 @@ export function ScreenerStocksSubTabMobileToggle({
             onClick={() => onChange(item.id)}
             className={cn(
               "shrink-0 whitespace-nowrap rounded-lg px-3 py-1.5 text-[14px] font-medium leading-5 transition-colors duration-100",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2",
-              isActive ? "bg-[#F4F4F5] text-[#09090B]" : "bg-transparent text-[#71717A]",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15 focus-visible:ring-offset-2",
+              isActive ? "bg-[#F4F4F5] text-[#0F0F0F]" : "bg-transparent text-[#71717A]",
             )}
           >
             {item.label}

@@ -24,7 +24,7 @@ function PillSwitch({
       disabled={disabled}
       onClick={() => onPressedChange(!pressed)}
       className={cn(
-        "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 disabled:cursor-not-allowed disabled:opacity-40",
+        "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15 disabled:cursor-not-allowed disabled:opacity-40",
         pressed ? "bg-[#2563EB]" : "bg-[#E4E4E7]",
       )}
     >
@@ -49,7 +49,7 @@ type SettingRowProps = {
 function SettingRow({ label, pressed, onPressedChange, disabled }: SettingRowProps) {
   return (
     <div className="flex items-center justify-between gap-3 py-2.5">
-      <span className="text-sm font-medium leading-5 text-[#09090B]">{label}</span>
+      <span className="text-sm font-medium leading-5 text-[#0F0F0F]">{label}</span>
       <PillSwitch
         pressed={pressed}
         onPressedChange={onPressedChange}

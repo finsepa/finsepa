@@ -47,5 +47,5 @@ export function fearGreedColorForClassification(
   if (c.includes("greed")) return FEAR_GREED_COLORS.greed;
   if (c.includes("neutral")) return FEAR_GREED_COLORS.neutral;
   if (value != null && Number.isFinite(value)) return fearGreedColorForValue(value);
-  return "#09090B";
+  return "#0F0F0F";
 }

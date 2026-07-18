@@ -51,8 +51,8 @@ export function ChartScreenshotPortfolioHeader({
         <span
           className={
             compact
-              ? "truncate text-[16px] font-semibold leading-5 text-[#09090B]"
-              : "truncate text-[18px] font-semibold leading-6 text-[#09090B]"
+              ? "truncate text-[16px] font-semibold leading-5 text-[#0F0F0F]"
+              : "truncate text-[18px] font-semibold leading-6 text-[#0F0F0F]"
           }
         >
           {title}

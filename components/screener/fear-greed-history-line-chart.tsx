@@ -658,7 +658,7 @@ export function FearGreedHistoryLineChart({
                     <span className="absolute top-1/2 right-px -translate-y-1/2 border-y-[6px] border-y-transparent border-r-[7px] border-r-white" />
                   </span>
                 )}
-                <p className="text-[12px] font-semibold leading-4 text-[#09090B]">{tip.periodLabel}</p>
+                <p className="text-[12px] font-semibold leading-4 text-[#0F0F0F]">{tip.periodLabel}</p>
                 <div className="mt-1.5 space-y-1">
                   {tip.rows.map((row) => (
                     <div key={row.label} className="flex items-baseline justify-between gap-3">
@@ -672,7 +672,7 @@ export function FearGreedHistoryLineChart({
                           {row.label}
                         </span>
                       </span>
-                      <span className="shrink-0 text-[12px] font-semibold leading-4 tabular-nums text-[#09090B]">
+                      <span className="shrink-0 text-[12px] font-semibold leading-4 tabular-nums text-[#0F0F0F]">
                         {row.value}
                       </span>
                     </div>

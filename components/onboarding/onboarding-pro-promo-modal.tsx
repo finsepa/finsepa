@@ -112,9 +112,9 @@ export function OnboardingProPromoModal({
                 className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#BFDBFE]"
                 aria-hidden
               >
-                <Check className="h-3 w-3 text-[#09090B]" strokeWidth={3} />
+                <Check className="h-3 w-3 text-[#0F0F0F]" strokeWidth={3} />
               </span>
-              <span className="text-sm leading-5 text-[#09090B]">{item}</span>
+              <span className="text-sm leading-5 text-[#0F0F0F]">{item}</span>
             </li>
           ))}
         </ul>

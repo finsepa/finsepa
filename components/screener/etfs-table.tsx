@@ -51,7 +51,7 @@ function ValueAndChangeCell({ value, change1D }: { value: number; change1D: numb
   const positive = (change1D ?? 0) >= 0;
   return (
     <div className="min-w-0 w-full text-right">
-      <div className="min-w-0 w-full font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#09090B]">
+      <div className="min-w-0 w-full font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#0F0F0F]">
         {hasValue ? formatValue(value) : "-"}
       </div>
       <div
@@ -90,7 +90,7 @@ export function EtfsTable({
     >
       <div className="bg-white">
       <div
-        className={`grid ${colLayout} min-h-[44px] items-center px-4 py-0 text-[12px] font-medium leading-5 text-[#71717A] sm:text-[14px] ${SCREENER_TABLE_HEADER_STICKY_CLASS}`}
+        className={`grid ${colLayout} min-h-[44px] items-center px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A] ${SCREENER_TABLE_HEADER_STICKY_CLASS}`}
       >
         <div className="hidden sm:block" aria-hidden />
         <div className="text-center">#</div>
@@ -126,12 +126,12 @@ export function EtfsTable({
             <Link
               href={`/stock/${encodeURIComponent(wlKey)}`}
               prefetch={false}
-              className="flex min-w-0 items-center justify-start gap-2 pr-0 text-left no-underline text-[#09090B] visited:text-[#09090B] max-md:gap-2 sm:gap-3 sm:pr-4"
+              className="flex min-w-0 items-center justify-start gap-2 pr-0 text-left no-underline text-[#0F0F0F] visited:text-[#0F0F0F] max-md:gap-2 sm:gap-3 sm:pr-4"
               aria-label={`Open ${r.name} (${wlKey})`}
             >
               <CompanyLogo name={r.name} logoUrl="" symbol={wlKey} />
               <div className="min-w-0">
-                <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B] underline-offset-2 decoration-[#71717A] group-hover:underline">
+                <div className="truncate text-[14px] font-semibold leading-5 text-[#0F0F0F] underline-offset-2 decoration-[#71717A] group-hover:underline">
                   {r.name}
                 </div>
                 <div className="text-[12px] font-normal leading-4 !text-[#71717A]">
@@ -142,7 +142,7 @@ export function EtfsTable({
             <div className="block sm:hidden">
               <ValueAndChangeCell value={r.value} change1D={r.change1D} />
             </div>
-            <div className="hidden min-w-0 w-full text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B] sm:block">
+            <div className="hidden min-w-0 w-full text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#0F0F0F] sm:block">
               {formatValue(r.value)}
             </div>
             <div className="hidden min-w-0 w-full sm:block">

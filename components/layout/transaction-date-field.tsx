@@ -77,11 +77,11 @@ export function TransactionDateField({
         <button
           type="button"
           className={cn(
-            "flex h-9 w-full items-center justify-between gap-2 rounded-[10px] bg-[#F4F4F5] px-4 text-left text-sm font-normal text-[#09090B] transition-colors hover:bg-[#EBEBEB]",
+            "flex h-9 w-full items-center justify-between gap-2 rounded-[10px] bg-[#F4F4F5] px-4 text-left text-sm font-normal text-[#0F0F0F] transition-colors hover:bg-[#EBEBEB]",
           )}
         >
           <span className="tabular-nums">{format(date, "MM/dd/yyyy")}</span>
-          <CalendarIcon className="h-5 w-5 shrink-0 text-[#09090B]" aria-hidden />
+          <CalendarIcon className="h-5 w-5 shrink-0 text-[#0F0F0F]" aria-hidden />
         </button>
       </PopoverTrigger>
       <PopoverContent

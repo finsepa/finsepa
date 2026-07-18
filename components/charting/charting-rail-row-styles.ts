@@ -3,10 +3,10 @@
  * row chrome: `h-9`, `px-4`, hover `#F4F4F5`. No color transition (keeps hover/active snappy).
  */
 export const chartingRailRowClass =
-  "group flex h-9 min-w-0 w-full shrink-0 items-center gap-2 overflow-hidden rounded-lg px-4 py-2 text-sm font-medium leading-5 text-[#09090B] hover:bg-[#F4F4F5]";
+  "group flex h-9 min-w-0 w-full shrink-0 items-center gap-2 overflow-hidden rounded-lg px-4 py-2 text-sm font-medium leading-5 text-[#0F0F0F] hover:bg-[#F4F4F5]";
 
 export const chartingRailRowActionButtonClass =
-  "flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-[#A1A1AA] opacity-0 outline-none transition-opacity hover:bg-[#EBEBEB] hover:text-[#71717A] group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-[#09090B]/10";
+  "flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-[#A1A1AA] opacity-0 outline-none transition-opacity hover:bg-[#EBEBEB] hover:text-[#71717A] group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/10";
 
 /**
  * Title / add-button row — Charting, Comparison, and Macro section headers.

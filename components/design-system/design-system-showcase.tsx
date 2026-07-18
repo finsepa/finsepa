@@ -20,7 +20,7 @@ function Section({
   return (
     <section className="space-y-4 border-b border-[#E4E4E7] pb-10 last:border-b-0 last:pb-0">
       <div>
-        <h2 className="text-[18px] font-semibold leading-7 text-[#09090B]">{title}</h2>
+        <h2 className="text-[18px] font-semibold leading-7 text-[#0F0F0F]">{title}</h2>
         {description ? <p className="mt-1 max-w-2xl text-[14px] leading-6 text-[#71717A]">{description}</p> : null}
       </div>
       <div className="rounded-[12px] border border-[#E4E4E7] bg-white p-6 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
@@ -42,10 +42,10 @@ export function DesignSystemShowcase() {
     <div className="mx-auto max-w-4xl space-y-10 px-4 py-8 sm:px-6 lg:px-8">
       <header className="space-y-2">
         <p className="text-[13px] font-medium uppercase tracking-wide text-[#71717A]">Finsepa</p>
-        <h1 className="text-[28px] font-semibold leading-9 tracking-tight text-[#09090B]">Component design system</h1>
+        <h1 className="text-[28px] font-semibold leading-9 tracking-tight text-[#0F0F0F]">Component design system</h1>
         <p className="max-w-2xl text-[15px] leading-7 text-[#52525B]">
           Reference implementations for reusable controls. Import from{" "}
-          <code className="rounded bg-[#F4F4F5] px-1.5 py-0.5 font-mono text-[13px] text-[#09090B]">
+          <code className="rounded bg-[#F4F4F5] px-1.5 py-0.5 font-mono text-[13px] text-[#0F0F0F]">
             @/components/design-system
           </code>
           . Product pages are unchanged; use this page when matching Figma specs.
@@ -54,7 +54,7 @@ export function DesignSystemShowcase() {
 
       <Section
         title="SegmentedControl (Figma Button Group)"
-        description="Track and segments use 10px corner radius. Active label: Inter Medium 14px / 20px / #09090B, white surface, elevation shadow. Inactive: regular, zinc-500."
+        description="Track and segments use 10px corner radius. Active label: Inter Medium 14px / 20px / #0F0F0F, white surface, elevation shadow. Inactive: regular, zinc-500."
       >
         <div className="space-y-8">
           <div>

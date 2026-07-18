@@ -58,7 +58,7 @@ function ValueAndChangeCell({ value, change1D }: { value: number; change1D: numb
   const positive = (change1D ?? 0) >= 0;
   return (
     <div className="min-w-0 w-full text-right">
-      <div className="min-w-0 w-full font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#09090B]">
+      <div className="min-w-0 w-full font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#0F0F0F]">
         {hasValue ? formatValue(value) : "-"}
       </div>
       <div
@@ -97,7 +97,7 @@ export function IndicesTable({
     >
       <div className="bg-white">
       <div
-        className={`grid ${colLayout} min-h-[44px] items-center px-4 py-0 text-[12px] font-medium leading-5 text-[#71717A] sm:text-[14px] ${SCREENER_TABLE_HEADER_STICKY_CLASS}`}
+        className={`grid ${colLayout} min-h-[44px] items-center px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A] ${SCREENER_TABLE_HEADER_STICKY_CLASS}`}
       >
         <div className="hidden sm:block" aria-hidden />
         <div className="text-center">#</div>
@@ -130,13 +130,13 @@ export function IndicesTable({
             <div className="text-center text-[14px] font-semibold leading-5 tabular-nums text-[#71717A]">
               {rankOffset + i + 1}
             </div>
-            <div className="min-w-0 w-full px-2 text-left text-[14px] font-semibold leading-5 text-[#09090B] sm:px-4">
+            <div className="min-w-0 w-full px-2 text-left text-[14px] font-semibold leading-5 text-[#0F0F0F] sm:px-4">
               {r.name}
             </div>
             <div className="block sm:hidden">
               <ValueAndChangeCell value={r.value} change1D={r.change1D} />
             </div>
-            <div className="hidden min-w-0 w-full text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B] sm:block">
+            <div className="hidden min-w-0 w-full text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#0F0F0F] sm:block">
               {formatValue(r.value)}
             </div>
             <div className="hidden min-w-0 w-full sm:block">

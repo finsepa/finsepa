@@ -14,7 +14,7 @@ export function CryptoBreadcrumbs({ symbol }: Props) {
   const pairLabel = eodhdCryptoSpotTickerDisplay(sym);
 
   const breadcrumbLinkClass =
-    "min-w-0 truncate transition-colors hover:text-[#09090B] hover:underline";
+    "min-w-0 truncate transition-colors hover:text-[#0F0F0F] hover:underline";
   const breadcrumbSep = (
     <span className="shrink-0 select-none" aria-hidden>
       /
@@ -32,7 +32,7 @@ export function CryptoBreadcrumbs({ symbol }: Props) {
         </Link>
         {breadcrumbSep}
         <span
-          className="min-w-0 shrink-0 truncate font-medium text-[#09090B]"
+          className="min-w-0 shrink-0 truncate font-medium text-[#0F0F0F]"
           title={pairLabel}
           aria-current="page"
         >

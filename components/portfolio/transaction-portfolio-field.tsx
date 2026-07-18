@@ -27,18 +27,18 @@ import { cn } from "@/lib/utils";
 
 function PrivacyGlyph({ privacy }: { privacy: PortfolioPrivacy }) {
   const Icon = privacy === "public" ? Globe : Lock;
-  return <Icon className="h-4 w-4 shrink-0 text-[#09090B]" strokeWidth={2} aria-hidden />;
+  return <Icon className="h-4 w-4 shrink-0 text-[#0F0F0F]" strokeWidth={2} aria-hidden />;
 }
 
 type Variant = "field" | "compact" | "toolbar" | "titleGhost";
 
 const toolbarTriggerClass = cn(
-  "inline-flex h-9 max-w-[min(52vw,220px)] shrink-0 cursor-pointer items-center gap-2 rounded-[10px] px-3 text-left text-sm font-medium text-[#09090B] transition-all duration-100 hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40",
+  "inline-flex h-9 max-w-[min(52vw,220px)] shrink-0 cursor-pointer items-center gap-2 rounded-[10px] px-3 text-left text-sm font-medium text-[#0F0F0F] transition-all duration-100 hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40",
   whiteSurfaceButtonChromeClass,
 );
 
 const titleGhostTriggerClass =
-  "flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-[10px] text-[#71717A] transition-colors hover:bg-[#F4F4F5] hover:text-[#09090B] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
+  "flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-[10px] text-[#71717A] transition-colors hover:bg-[#F4F4F5] hover:text-[#0F0F0F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
 
 /** `leading`: menu grows right (portfolio title). `trailing`: menu aligns to trigger’s right edge (top bar). */
 export type CompactMenuAlign = "leading" | "trailing";
@@ -113,8 +113,8 @@ export function TransactionPortfolioField({
 
   const chevronClass = cn(
     "shrink-0",
-    variant === "toolbar" ? "h-4 w-4 text-[#09090B]" : "h-5 w-5",
-    variant !== "titleGhost" && "text-[#09090B]",
+    variant === "toolbar" ? "h-4 w-4 text-[#0F0F0F]" : "h-5 w-5",
+    variant !== "titleGhost" && "text-[#0F0F0F]",
   );
 
   const menuPanel = (
@@ -142,21 +142,21 @@ export function TransactionPortfolioField({
           >
             <PortfolioListLogo portfolio={p} />
             <span className="flex min-w-0 flex-1 flex-col items-start gap-0">
-              <span className="w-full truncate text-sm font-medium leading-5 text-[#09090B]">{p.name}</span>
+              <span className="w-full truncate text-sm font-medium leading-5 text-[#0F0F0F]">{p.name}</span>
               <span className="text-xs leading-4 text-[#71717A]">{portfolioKindSubtext(p)}</span>
             </span>
           </button>
           {portfoliosOnly ? (
             <span className="flex h-4 w-4 shrink-0 items-center justify-center self-center" aria-hidden>
               {p.id === selectedPortfolioId ? (
-                <Check className="h-4 w-4 text-[#09090B]" strokeWidth={2} />
+                <Check className="h-4 w-4 text-[#0F0F0F]" strokeWidth={2} />
               ) : null}
             </span>
           ) : (
             <span className="relative mr-1 flex h-9 w-9 shrink-0 items-center justify-center self-center">
               {p.id === selectedPortfolioId ? (
                 <Check
-                  className="h-4 w-4 text-[#09090B] group-hover:invisible group-focus-within:invisible"
+                  className="h-4 w-4 text-[#0F0F0F] group-hover:invisible group-focus-within:invisible"
                   strokeWidth={2}
                   aria-hidden
                 />
@@ -168,7 +168,7 @@ export function TransactionPortfolioField({
                   setOpen(false);
                   openEditPortfolio(p.id);
                 }}
-                className="absolute inset-0 flex items-center justify-center rounded-lg text-[#09090B] opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 hover:bg-[#EBEBEB] focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/10"
+                className="absolute inset-0 flex items-center justify-center rounded-lg text-[#0F0F0F] opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 hover:bg-[#EBEBEB] focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/10"
                 aria-label={`Edit ${p.name}`}
               >
                 <Pencil className="h-4 w-4" strokeWidth={2} aria-hidden />
@@ -260,14 +260,14 @@ export function TransactionPortfolioField({
           : variant === "titleGhost" ?
             titleGhostTriggerClass
           : variant === "compact" ?
-            "flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-[10px] text-[#09090B] transition-colors hover:bg-[#F4F4F5] disabled:cursor-not-allowed disabled:opacity-50"
+            "flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-[10px] text-[#0F0F0F] transition-colors hover:bg-[#F4F4F5] disabled:cursor-not-allowed disabled:opacity-50"
           : "flex h-9 w-full items-center justify-between gap-2 rounded-[10px] bg-[#F4F4F5] px-4 text-left text-sm transition-colors hover:bg-[#EBEBEB]"
         }
       >
         {variant === "field" ? (
           <>
             <span
-              className={cn("min-w-0 truncate", hasPortfolio ? "text-[#09090B]" : "text-[#71717A]")}
+              className={cn("min-w-0 truncate", hasPortfolio ? "text-[#0F0F0F]" : "text-[#71717A]")}
             >
               {hasPortfolio ? selected.name : "No portfolio"}
             </span>
@@ -276,7 +276,7 @@ export function TransactionPortfolioField({
         ) : variant === "toolbar" ? (
           <>
             {hasPortfolio && selected ? <PrivacyGlyph privacy={selected.privacy} /> : null}
-            <span className={cn("min-w-0 flex-1 truncate", hasPortfolio ? "text-[#09090B]" : "text-[#71717A]")}>
+            <span className={cn("min-w-0 flex-1 truncate", hasPortfolio ? "text-[#0F0F0F]" : "text-[#71717A]")}>
               {hasPortfolio ? selected.name : "No portfolio"}
             </span>
             <ChevronsUpDownIcon ref={chevronsRef} className={chevronClass} />

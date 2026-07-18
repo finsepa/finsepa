@@ -55,14 +55,14 @@ export function EarningsPreviewModal({
             <Link
               href={stockEarningsHref}
               onClick={() => onClose()}
-              className="group flex min-w-0 flex-1 cursor-pointer items-start gap-3 rounded-[10px] outline-none ring-offset-2 transition-colors hover:bg-[#F4F4F5] focus-visible:ring-2 focus-visible:ring-[#09090B]/15"
+              className="group flex min-w-0 flex-1 cursor-pointer items-start gap-3 rounded-[10px] outline-none ring-offset-2 transition-colors hover:bg-[#F4F4F5] focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15"
               id="earnings-preview-title"
               title={`Open ${item.ticker.trim()} — Earnings`}
             >
               <CompanyLogo name={item.companyName || item.ticker} logoUrl={item.logoUrl} symbol={item.ticker} size="lg" />
               <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                 <span className="flex min-w-0 flex-wrap items-center gap-2">
-                  <span className="shrink-0 text-[18px] font-semibold leading-7 text-[#09090B] underline-offset-2 decoration-[#09090B] group-hover:underline">
+                  <span className="shrink-0 text-[18px] font-semibold leading-7 text-[#0F0F0F] underline-offset-2 decoration-[#0F0F0F] group-hover:underline">
                     {item.ticker}
                   </span>
                   {item.screenerRank != null ? <ScreenerRankBadge rank={item.screenerRank} /> : null}

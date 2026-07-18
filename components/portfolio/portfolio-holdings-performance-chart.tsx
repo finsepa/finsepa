@@ -49,7 +49,7 @@ const CHART_SEGMENT_TRACK_CLASS =
 const CHART_SEGMENT_BTN_CLASS =
   "flex-none rounded-[10px] px-3 py-1.5 text-center font-sans text-[13px] leading-5 tracking-normal";
 const CHART_SEGMENT_ACTIVE_CLASS =
-  "bg-white font-medium text-[#09090B] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]";
+  "bg-white font-medium text-[#0F0F0F] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]";
 const CHART_SEGMENT_INACTIVE_CLASS = "font-normal text-[#71717A]";
 
 type MetricMode = "usd" | "pct";
@@ -231,7 +231,7 @@ function HoldingsPerformanceBarChart({
           className={cn(FUNDAMENTALS_CHART_TOOLTIP_CLASS, "!fixed z-[200] w-[240px]")}
           style={{ left: tooltipPos.left, top: tooltipPos.top }}
         >
-          <div className="text-[12px] font-semibold leading-4 text-[#09090B]">{hovered.companyName}</div>
+          <div className="text-[12px] font-semibold leading-4 text-[#0F0F0F]">{hovered.companyName}</div>
           <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-[12px] leading-4">
             <div className="text-[#71717A]">Unrealized</div>
             <div
@@ -283,7 +283,7 @@ function HoldingsPerformanceBarChart({
               {rows.map((row, i) => (
                 <div
                   key={row.h.id}
-                  className="flex items-center justify-end pr-2 text-[13px] font-medium leading-5 text-[#09090B]"
+                  className="flex items-center justify-end pr-2 text-[13px] font-medium leading-5 text-[#0F0F0F]"
                   style={{ height: ROW_HEIGHT_PX }}
                   onPointerEnter={(e) => updateHover(i, e.clientX, e.clientY)}
                   onPointerMove={(e) => updateHover(i, e.clientX, e.clientY)}
@@ -493,7 +493,7 @@ function PortfolioHoldingsPerformanceChartInner({
         <button
           type="button"
           onClick={() => setSortDesc((v) => !v)}
-          className="inline-flex items-center gap-1 rounded-md text-[13px] font-medium leading-5 text-[#71717A] transition-colors hover:text-[#09090B] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15"
+          className="inline-flex items-center gap-1 rounded-md text-[13px] font-medium leading-5 text-[#71717A] transition-colors hover:text-[#0F0F0F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15"
           aria-label={
             sortDesc ?
               "Sort: lowest first"

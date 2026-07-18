@@ -19,7 +19,7 @@ import type { PortfolioEntry } from "@/components/portfolio/portfolio-types";
 function ModalField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex w-full flex-col gap-2">
-      <span className="text-sm font-medium leading-5 text-[#09090B]">{label}</span>
+      <span className="text-sm font-medium leading-5 text-[#0F0F0F]">{label}</span>
       {children}
     </div>
   );

@@ -114,8 +114,8 @@ export function UnderlineTabs<T extends string>({
                 }}
                 type="button"
                 onClick={() => onChange(value)}
-                className={`-mb-px shrink-0 cursor-pointer border-b-2 border-solid border-transparent py-2 text-left text-[14px] font-medium leading-6 transition-[color,opacity] duration-100 focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2 hover:opacity-80 ${
-                  isActive ? "font-semibold text-[#09090B] opacity-100" : "text-[#71717A] opacity-100"
+                className={`-mb-px shrink-0 cursor-pointer border-b-2 border-solid border-transparent py-2 text-left text-[14px] font-medium leading-6 transition-[color,opacity] duration-100 focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15 focus-visible:ring-offset-2 hover:opacity-80 ${
+                  isActive ? "font-semibold text-[#0F0F0F] opacity-100" : "text-[#71717A] opacity-100"
                 }`}
               >
                 {label}
@@ -123,7 +123,7 @@ export function UnderlineTabs<T extends string>({
             );
           })}
           <span
-            className="pointer-events-none absolute bottom-0 z-[1] h-0.5 rounded-full bg-[#09090B] motion-reduce:transition-none"
+            className="pointer-events-none absolute bottom-0 z-[1] h-0.5 rounded-full bg-[#0F0F0F] motion-reduce:transition-none"
             style={{
               left: indicator.left,
               width: indicator.width,

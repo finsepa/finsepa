@@ -19,7 +19,7 @@ const SHARED_STYLE = `<Style backgroundColor="" backgroundXPadding="0" backgroun
 const DISCLAIMER = `<Paragraph fontSize="12"><Text textColor="#A1A1AA">Finsepa provides tools for research and portfolio tracking. We do not provide investment advice.</Text></Paragraph>`;
 
 const BUTTON = (href, label) =>
-  `<Button href="${href}" bgColor="#09090B" borderRadius="10" innerYPadding="10" paddingTop="0" paddingBottom="0">${label}</Button>`;
+  `<Button href="${href}" bgColor="#0F0F0F" borderRadius="10" innerYPadding="10" paddingTop="0" paddingBottom="0">${label}</Button>`;
 
 const TEMPLATES = [
   {

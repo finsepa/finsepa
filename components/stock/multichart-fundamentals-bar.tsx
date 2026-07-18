@@ -392,7 +392,7 @@ const BAR_VALUE_LABEL_ANCHOR_CLASS =
   "pointer-events-none absolute z-[15] max-w-[5.5rem] -translate-x-1/2 text-center";
 
 const BAR_VALUE_LABEL_TEXT_CLASS =
-  "block truncate text-[11px] font-semibold leading-none tabular-nums text-[#09090B]";
+  "block truncate text-[11px] font-semibold leading-none tabular-nums text-[#0F0F0F]";
 
 const BAR_VALUE_LABEL_TEXT_SHADOW =
   "0 0 3px rgba(255,255,255,0.95), 0 1px 2px rgba(255,255,255,0.8)";
@@ -1147,7 +1147,7 @@ export function MultichartFundamentalsBar({
                     <span className="absolute top-1/2 right-px -translate-y-1/2 border-y-[6px] border-y-transparent border-r-[7px] border-r-white" />
                   </span>
                 )}
-                <p className="text-[12px] font-semibold leading-4 text-[#09090B]">{tip.periodLabel}</p>
+                <p className="text-[12px] font-semibold leading-4 text-[#0F0F0F]">{tip.periodLabel}</p>
                 <div className="mt-1.5 space-y-1">
                   <div className="flex items-baseline justify-between gap-3">
                     <span className="flex min-w-0 items-baseline gap-2">
@@ -1160,7 +1160,7 @@ export function MultichartFundamentalsBar({
                         {tip.metricLabel}
                       </span>
                     </span>
-                    <span className="shrink-0 text-[12px] font-semibold leading-4 tabular-nums text-[#09090B]">
+                    <span className="shrink-0 text-[12px] font-semibold leading-4 tabular-nums text-[#0F0F0F]">
                       {tip.value}
                     </span>
                   </div>

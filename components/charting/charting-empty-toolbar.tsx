@@ -293,7 +293,7 @@ export function ChartingEmptyToolbar({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-3">
-        <h1 className="min-w-0 shrink-0 text-2xl font-semibold leading-9 tracking-tight text-[#09090B] sm:flex-1">
+        <h1 className="min-w-0 shrink-0 text-2xl font-semibold leading-9 tracking-tight text-[#0F0F0F] sm:flex-1">
           Charting
         </h1>
         <div className="flex min-w-0 flex-wrap items-center gap-3 sm:flex-nowrap sm:justify-end sm:overflow-x-auto sm:pb-0.5">
@@ -319,7 +319,7 @@ export function ChartingEmptyToolbar({
           <button
             type="button"
             disabled
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#09090B] opacity-40"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#0F0F0F] opacity-40"
             aria-label="Refresh (add a company first)"
           >
             <RefreshCw className="h-4 w-4" strokeWidth={2} aria-hidden />
@@ -413,13 +413,13 @@ export function ChartingEmptyToolbar({
               key={id}
               className="order-1 inline-flex max-w-full min-w-0 items-stretch overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white"
             >
-              <span className="flex min-h-[36px] min-w-0 items-center border-r border-[#E4E4E7] px-4 py-2 text-[14px] font-medium leading-5 text-[#09090B]">
+              <span className="flex min-h-[36px] min-w-0 items-center border-r border-[#E4E4E7] px-4 py-2 text-[14px] font-medium leading-5 text-[#0F0F0F]">
                 <span className="truncate">{CHARTING_METRIC_LABEL[id]}</span>
               </span>
               <button
                 type="button"
                 onClick={() => removeMetric(id)}
-                className="flex w-9 shrink-0 items-center justify-center text-[#09090B] transition-colors hover:bg-[#FAFAFA]"
+                className="flex w-9 shrink-0 items-center justify-center text-[#0F0F0F] transition-colors hover:bg-[#FAFAFA]"
                 aria-label={`Remove ${CHARTING_METRIC_LABEL[id]}`}
               >
                 <X className="h-5 w-5" strokeWidth={1.5} aria-hidden />
@@ -497,13 +497,13 @@ export function ChartingEmptyToolbar({
               key={sym}
               className="order-3 inline-flex max-w-full min-w-0 items-stretch overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white"
             >
-              <span className="flex min-h-[36px] min-w-0 items-center border-r border-[#E4E4E7] px-4 py-2 text-[14px] font-medium leading-5 text-[#09090B]">
+              <span className="flex min-h-[36px] min-w-0 items-center border-r border-[#E4E4E7] px-4 py-2 text-[14px] font-medium leading-5 text-[#0F0F0F]">
                 <span className="truncate">{sym}</span>
               </span>
               <button
                 type="button"
                 onClick={() => removeTicker(sym)}
-                className="flex w-9 shrink-0 items-center justify-center text-[#09090B] transition-colors hover:bg-[#FAFAFA]"
+                className="flex w-9 shrink-0 items-center justify-center text-[#0F0F0F] transition-colors hover:bg-[#FAFAFA]"
                 aria-label={`Remove ${sym}`}
               >
                 <X className="h-5 w-5" strokeWidth={1.5} aria-hidden />

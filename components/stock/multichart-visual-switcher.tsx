@@ -12,7 +12,7 @@ const CHART_VISUAL_OPTIONS = [
 ] as const;
 
 const ICON_ACTIVE_SHADOW =
-  "bg-white text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.12),0px_1px_1px_0px_rgba(10,10,10,0.07)]";
+  "bg-white text-[#0F0F0F] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.12),0px_1px_1px_0px_rgba(10,10,10,0.07)]";
 
 /** Stock Charting tab uses `bars` | `line`; multicharts use `bar` | `line`. */
 export type ChartingChartType = "bars" | "line";
@@ -64,7 +64,7 @@ export function MultichartVisualSwitcher({
           onClick={() => onChange("bar")}
           className={cn(
             "flex h-8 w-8 items-center justify-center rounded-[10px] transition-colors",
-            value === "bar" ? ICON_ACTIVE_SHADOW : "text-[#71717A] hover:text-[#09090B]",
+            value === "bar" ? ICON_ACTIVE_SHADOW : "text-[#71717A] hover:text-[#0F0F0F]",
           )}
           aria-pressed={value === "bar"}
           aria-label="Bar chart"
@@ -76,7 +76,7 @@ export function MultichartVisualSwitcher({
           onClick={() => onChange("line")}
           className={cn(
             "flex h-8 w-8 items-center justify-center rounded-[10px] transition-colors",
-            value === "line" ? ICON_ACTIVE_SHADOW : "text-[#71717A] hover:text-[#09090B]",
+            value === "line" ? ICON_ACTIVE_SHADOW : "text-[#71717A] hover:text-[#0F0F0F]",
           )}
           aria-pressed={value === "line"}
           aria-label="Line chart"

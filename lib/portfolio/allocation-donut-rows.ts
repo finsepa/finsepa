@@ -1,3 +1,5 @@
+import type { AppIcon } from "@/lib/icons";
+
 import {
   FUNDAMENTALS_MULTI_BAR_COLORS,
   fundamentalsBarSolidAtIndex,
@@ -17,6 +19,8 @@ export type AllocationDonutRow = {
   weightPct: number;
   color: string;
   logoUrl?: string | null;
+  /** When set, the external label shows this icon on a `color` tile instead of a company logo. */
+  badgeIcon?: AppIcon | null;
 };
 
 export type AllocationDonutWeightInput = {

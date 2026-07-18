@@ -88,7 +88,7 @@ const earningsListColLayout = "grid grid-cols-[minmax(0,2fr)_minmax(5.5rem,max-c
 
 const earningsListTableHeaderClass = cn(
   earningsListColLayout,
-  "min-h-[44px] items-center bg-white px-2 py-0 text-[12px] font-medium leading-5 text-[#71717A] sm:px-4 sm:text-[14px]",
+  "min-h-[44px] items-center bg-white px-2 py-0 text-[14px] font-medium leading-5 text-[#71717A] sm:px-4",
 );
 
 const earningsListTableRowClass = cn(
@@ -101,7 +101,7 @@ const earningsListTimeHeaderClass = "min-w-0 w-full text-right";
 const earningsListTimeCellClass = "flex min-w-0 w-full items-center justify-end";
 
 const earningsListNumericCellClass =
-  "min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]";
+  "min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#0F0F0F]";
 
 function EarningsListDayHeader({ dateYmd, isToday }: { dateYmd: string; isToday: boolean }) {
   return (
@@ -113,7 +113,7 @@ function EarningsListDayHeader({ dateYmd, isToday }: { dateYmd: string; isToday:
       <div
         className={cn(
           "min-w-0 text-left text-[14px] font-semibold leading-5",
-          isToday ? "text-[#DC2626]" : "text-[#09090B]",
+          isToday ? "text-[#DC2626]" : "text-[#0F0F0F]",
         )}
       >
         {formatEconomyLongDateUtc(dateYmd)}
@@ -181,7 +181,7 @@ function EarningsListRow({
 }) {
   return (
     <div
-      className={cn(earningsListTableRowClass, "group cursor-pointer text-[14px] leading-5 text-[#09090B]")}
+      className={cn(earningsListTableRowClass, "group cursor-pointer text-[14px] leading-5 text-[#0F0F0F]")}
       onClick={() => onOpen(item)}
       onPointerEnter={() => prefetchStockEarningsTabPayload(item.ticker, true)}
       onFocus={() => prefetchStockEarningsTabPayload(item.ticker, true)}
@@ -201,7 +201,7 @@ function EarningsListRow({
           symbol={item.ticker}
         />
         <div className="min-w-0">
-          <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B] underline-offset-2 group-hover:underline">
+          <div className="truncate text-[14px] font-semibold leading-5 text-[#0F0F0F] underline-offset-2 group-hover:underline">
             {item.companyName}
           </div>
           <div className="text-[12px] font-normal leading-4 text-[#71717A] tabular-nums">{item.ticker}</div>
@@ -461,7 +461,7 @@ function EarningsCard({
       className="flex w-full flex-col items-center justify-center gap-1.5 rounded-xl px-1 py-1.5 text-center transition-colors hover:bg-[#F4F4F5]"
     >
       <CompanyLogo name={companyName || ticker} logoUrl={logoUrl} symbol={ticker} size="md" fill />
-      <span className="w-full min-w-0 truncate text-[13px] font-semibold leading-5 tabular-nums text-[#09090B]">
+      <span className="w-full min-w-0 truncate text-[13px] font-semibold leading-5 tabular-nums text-[#0F0F0F]">
         {ticker}
       </span>
     </button>
@@ -470,7 +470,7 @@ function EarningsCard({
 
 /** Week nav — bordered controls (arrows + Today), aligned with toolbar squircles. */
 const weekNavBtnClass = cn(
-  "inline-flex h-9 shrink-0 items-center justify-center rounded-[10px] text-[#09090B] transition-all duration-100 hover:bg-[#F4F4F5]",
+  "inline-flex h-9 shrink-0 items-center justify-center rounded-[10px] text-[#0F0F0F] transition-all duration-100 hover:bg-[#F4F4F5]",
   whiteSurfaceButtonChromeClass,
 );
 
@@ -495,7 +495,7 @@ function EarningsHoldingsWatchlistSwitch({
       aria-label={ariaLabel}
       onClick={() => onPressedChange(!pressed)}
       className={cn(
-        "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15",
+        "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15",
         pressed ? "bg-[#2563EB]" : "bg-[#E4E4E7]",
       )}
     >
@@ -585,7 +585,7 @@ function EarningsWeekGridSkeleton({
                     </div>
                     <div
                       className={`text-[15px] font-semibold tabular-nums ${
-                        isToday ? "text-[#DC2626]" : "text-[#09090B]"
+                        isToday ? "text-[#DC2626]" : "text-[#0F0F0F]"
                       }`}
                     >
                       {day.dayNumber}
@@ -599,7 +599,7 @@ function EarningsWeekGridSkeleton({
                   >
                     <div
                       className={`flex flex-wrap items-center justify-center gap-1 py-0.5 text-center text-[18px] leading-6 ${
-                        isToday ? "text-[#DC2626]" : "text-[#09090B]"
+                        isToday ? "text-[#DC2626]" : "text-[#0F0F0F]"
                       }`}
                     >
                       <span className="font-normal">{day.weekdayLabel}</span>
@@ -790,7 +790,7 @@ export function EarningsWeekGrid({
   return (
     <div className="flex min-w-0 flex-col gap-6">
       <div className="relative z-30 flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-2">
-        <h1 className="min-w-0 text-[24px] font-semibold leading-9 tracking-tight text-[#09090B]">
+        <h1 className="min-w-0 text-[24px] font-semibold leading-9 tracking-tight text-[#0F0F0F]">
           {displayWeekLabel}
         </h1>
         <div className="flex shrink-0 flex-wrap items-center gap-3">
@@ -835,7 +835,7 @@ export function EarningsWeekGrid({
                 "flex h-8 w-9 items-center justify-center rounded-[10px] transition-colors",
                 view === "grid"
                   ? "bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.12),0px_1px_1px_0px_rgba(10,10,10,0.07)]"
-                  : "text-[#52525B] hover:text-[#09090B]",
+                  : "text-[#52525B] hover:text-[#0F0F0F]",
               )}
               aria-pressed={view === "grid"}
               aria-label="Week grid view"
@@ -849,7 +849,7 @@ export function EarningsWeekGrid({
                 "flex h-8 w-9 items-center justify-center rounded-[10px] transition-colors",
                 view === "list"
                   ? "bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.12),0px_1px_1px_0px_rgba(10,10,10,0.07)]"
-                  : "text-[#52525B] hover:text-[#09090B]",
+                  : "text-[#52525B] hover:text-[#0F0F0F]",
               )}
               aria-pressed={view === "list"}
               aria-label="List view"
@@ -886,7 +886,7 @@ export function EarningsWeekGrid({
                     </div>
                     <div
                       className={`text-[15px] font-semibold tabular-nums ${
-                        isToday ? "text-[#DC2626]" : "text-[#09090B]"
+                        isToday ? "text-[#DC2626]" : "text-[#0F0F0F]"
                       }`}
                     >
                       {day.dayNumber}
@@ -900,7 +900,7 @@ export function EarningsWeekGrid({
                   >
                     <div
                       className={`flex flex-wrap items-center justify-center gap-1 py-0.5 text-center text-[18px] leading-6 ${
-                        isToday ? "text-[#DC2626]" : "text-[#09090B]"
+                        isToday ? "text-[#DC2626]" : "text-[#0F0F0F]"
                       }`}
                     >
                       <span className="font-normal">{day.weekdayLabel}</span>

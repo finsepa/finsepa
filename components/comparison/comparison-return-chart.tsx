@@ -354,7 +354,7 @@ export function ComparisonReturnChart({
 
   return (
     <section className="w-full min-w-0 max-w-full overflow-hidden bg-white">
-      <h3 className="mb-4 text-[18px] font-semibold leading-7 tracking-tight text-[#09090B]">Return</h3>
+      <h3 className="mb-4 text-[18px] font-semibold leading-7 tracking-tight text-[#0F0F0F]">Return</h3>
 
       <div>
         {tickers.length === 0 ? (
@@ -490,12 +490,12 @@ export function ComparisonReturnChart({
                           <span className="absolute top-1/2 right-px -translate-y-1/2 border-y-[6px] border-y-transparent border-r-[7px] border-r-white" />
                         </span>
                       )}
-                      <p className="text-[12px] font-semibold leading-4 text-[#09090B]">{tip.periodLabel}</p>
+                      <p className="text-[12px] font-semibold leading-4 text-[#0F0F0F]">{tip.periodLabel}</p>
                       <div className="mt-1.5 space-y-0.5">
                         {tip.lines.map((line) => (
                           <p
                             key={line.ticker}
-                            className="flex items-center gap-2 whitespace-nowrap text-[12px] font-normal leading-4 text-[#09090B]"
+                            className="flex items-center gap-2 whitespace-nowrap text-[12px] font-normal leading-4 text-[#0F0F0F]"
                           >
                             <span
                               className="h-2 w-2 shrink-0 rounded-full"

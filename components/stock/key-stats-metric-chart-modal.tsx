@@ -581,7 +581,7 @@ export function KeyStatsMetricChartModal({
         <div className="flex w-full flex-col items-center gap-1 text-center">
           <h2
             id="key-stats-metric-chart-title"
-            className="text-[16px] font-semibold leading-6 text-[#09090B]"
+            className="text-[16px] font-semibold leading-6 text-[#0F0F0F]"
           >
             {metricTitle}
           </h2>
@@ -627,7 +627,7 @@ export function KeyStatsMetricChartModal({
             className="!rounded-xl"
           />
           <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <span className="shrink-0 text-[18px] font-semibold leading-7 text-[#09090B]">
+            <span className="shrink-0 text-[18px] font-semibold leading-7 text-[#0F0F0F]">
               {metricTitle}
             </span>
             {companyLine ? (

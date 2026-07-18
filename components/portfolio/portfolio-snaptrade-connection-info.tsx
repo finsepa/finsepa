@@ -55,12 +55,12 @@ export function PortfolioSnaptradeConnectionInfo({
 
   return (
     <div className="flex w-full flex-col gap-2">
-      <span className="text-sm font-medium leading-5 text-[#09090B]">Brokerage connection</span>
+      <span className="text-sm font-medium leading-5 text-[#0F0F0F]">Brokerage connection</span>
       <div className="rounded-[10px] border border-[#E4E4E7] bg-[#FAFAFA] px-3 py-3">
         <div className="flex items-start gap-3">
           <PortfolioBrokerageLogo snaptrade={snaptrade} className="mt-0.5" />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-[#09090B]">{brokerageName}</p>
+            <p className="truncate text-sm font-medium text-[#0F0F0F]">{brokerageName}</p>
             <p className="mt-0.5 text-xs text-[#71717A]">
               SnapTrade · {accountLine}
             </p>

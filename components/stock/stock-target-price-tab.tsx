@@ -160,15 +160,15 @@ function AnalystDistributionCard({ buckets }: { buckets: StockAnalystDistributio
 
   return (
     <div className="w-full min-w-0 rounded-[12px] border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
-      <h3 className="mb-4 text-[14px] font-semibold leading-5 text-[#09090B]">Analyst distribution</h3>
+      <h3 className="mb-4 text-[14px] font-semibold leading-5 text-[#0F0F0F]">Analyst distribution</h3>
       <div className="space-y-3.5">
         {buckets.map((row, i) => {
           const pct = maxCount > 0 ? Math.min(100, (row.count / maxCount) * 100) : 0;
           const fill = DISTRIBUTION_FILLS[i] ?? "#71717A";
           return (
             <div key={row.label} className="flex items-center gap-3 sm:gap-4">
-              <span className="w-[92px] shrink-0 text-[14px] leading-5 text-[#09090B] sm:w-[100px]">{row.label}</span>
-              <span className="w-8 shrink-0 text-right text-[14px] tabular-nums leading-5 text-[#09090B]">{row.count}</span>
+              <span className="w-[92px] shrink-0 text-[14px] leading-5 text-[#0F0F0F] sm:w-[100px]">{row.label}</span>
+              <span className="w-8 shrink-0 text-right text-[14px] tabular-nums leading-5 text-[#0F0F0F]">{row.count}</span>
               <div className="min-w-0 flex-1">
                 <div className="h-2.5 overflow-hidden rounded-full bg-[#F4F4F5]">
                   {row.count > 0 ? (
@@ -301,7 +301,7 @@ export function StockTargetPriceTab({
       {hasAnyTarget ? (
         <div className="w-full min-w-0 rounded-[12px] border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
           <p className="text-[12px] font-semibold uppercase tracking-wide text-[#71717A]">Target price</p>
-          <p className="mt-1 text-[28px] font-semibold tabular-nums leading-8 tracking-tight text-[#09090B]">
+          <p className="mt-1 text-[28px] font-semibold tabular-nums leading-8 tracking-tight text-[#0F0F0F]">
             {dashPrice(consensus)}
           </p>
           <p className="mt-1 text-[13px] leading-5">

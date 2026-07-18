@@ -75,7 +75,7 @@ export function DeleteTransactionConfirmModal({ transaction, onClose, onConfirmD
           </AppModalFooter>
         }
       >
-        <p className="text-sm leading-5 text-[#09090B]">
+        <p className="text-sm leading-5 text-[#0F0F0F]">
           Remove this{" "}
           <span className="font-semibold">
             {transaction.operation}
@@ -156,7 +156,7 @@ export function BulkDeleteTransactionsConfirmModal({ count, onClose, onConfirmDe
           </AppModalFooter>
         }
       >
-        <p className="text-sm leading-5 text-[#09090B]">
+        <p className="text-sm leading-5 text-[#0F0F0F]">
           Permanently remove <span className="font-semibold">{label}</span> from this portfolio?
         </p>
         <p className="mt-3 text-sm leading-5 text-[#71717A]">

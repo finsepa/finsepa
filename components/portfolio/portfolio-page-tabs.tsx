@@ -6,10 +6,11 @@ import type { SecondaryTabItem } from "@/components/ui/secondary-tabs";
 const tabs = ["Overview", "Performance", "Dividends", "Cash", "Transactions"] as const;
 export type PortfolioViewTab = (typeof tabs)[number];
 
-export type OverviewHoldingsSubTab = "assets" | "allocation" | "slices";
+export type OverviewHoldingsSubTab = "assets" | "allocation" | "slices" | "earnings";
 
 export const PORTFOLIO_HOLDINGS_SUB_TAB_ITEMS = [
   { id: "assets", label: "Assets" },
+  { id: "earnings", label: "Earnings" },
   { id: "allocation", label: "Allocation" },
   { id: "slices", label: "Slices" },
 ] as const satisfies readonly SecondaryTabItem<OverviewHoldingsSubTab>[];
@@ -54,6 +55,8 @@ export function overviewHoldingsSubTabFromSearchParam(
       return "allocation";
     case "slices":
       return "slices";
+    case "earnings":
+      return "earnings";
     default:
       return "assets";
   }

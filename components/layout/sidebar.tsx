@@ -127,10 +127,10 @@ function CollapsedRailTooltip({
         role="tooltip"
       >
         <span
-          className="h-0 w-0 shrink-0 self-center border-y-[5px] border-r-[6px] border-y-transparent border-r-[#09090B]"
+          className="h-0 w-0 shrink-0 self-center border-y-[5px] border-r-[6px] border-y-transparent border-r-[#0F0F0F]"
           aria-hidden
         />
-        <span className="whitespace-nowrap rounded-md bg-[#09090B] px-2.5 py-1.5 text-xs font-medium leading-4 text-white">
+        <span className="whitespace-nowrap rounded-md bg-[#0F0F0F] px-2.5 py-1.5 text-xs font-medium leading-4 text-white">
           {label}
         </span>
       </div>
@@ -161,7 +161,7 @@ function SidebarRow({ item, pathname, collapsed }: { item: NavItem; pathname: st
     "flex h-9 shrink-0 items-center gap-2 overflow-hidden rounded-lg py-2 text-sm font-medium leading-5",
     SIDEBAR_CONTENT_MOTION_CLASS,
     collapsed ? "w-[calc(100%+5px)] -mr-[5px] pl-4 pr-[11px]" : "w-full px-4",
-    item.available ? "text-[#09090B]" : "cursor-not-allowed text-[#A1A1AA] select-none",
+    item.available ? "text-[#0F0F0F]" : "cursor-not-allowed text-[#A1A1AA] select-none",
     item.available &&
       (isActive ? "bg-white" : "opacity-70 hover:bg-[#EBEBEB]"),
   );
@@ -172,7 +172,7 @@ function SidebarRow({ item, pathname, collapsed }: { item: NavItem; pathname: st
     collapsed ? "max-w-0 flex-none opacity-0" : "max-w-[12rem] flex-1 opacity-100",
   );
 
-  const iconClass = cn("h-5 w-5 shrink-0", item.available ? "text-[#09090B]" : "text-[#A1A1AA]");
+  const iconClass = cn("h-5 w-5 shrink-0", item.available ? "text-[#0F0F0F]" : "text-[#A1A1AA]");
 
   const content =
     item.available ? (

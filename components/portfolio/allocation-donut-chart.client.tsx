@@ -129,6 +129,7 @@ function SliceExternalLabel({
   const leftPct = snapSvg((x / VB) * 100);
   const topPct = snapSvg((y / VB) * 100);
   const ticker = formatBadgeTicker(row.symbol);
+  const BadgeIcon = row.badgeIcon ?? null;
 
   return (
     <div
@@ -152,25 +153,42 @@ function SliceExternalLabel({
         )}
       >
         <div className="shrink-0 transition-transform duration-200 ease-out">
-          <CompanyLogo
-            name={row.name}
-            logoUrl={row.logoUrl ?? ""}
-            symbol={row.symbol}
-            size={isHovered ? "md" : "xs"}
-            fill
-          />
+          {BadgeIcon ? (
+            <span
+              className={cn(
+                "flex shrink-0 items-center justify-center",
+                isHovered ? "h-8 w-8 rounded-[10px]" : "h-5 w-5 rounded-md",
+              )}
+              style={{ backgroundColor: row.color }}
+              aria-hidden
+            >
+              <BadgeIcon
+                className={cn("text-white", isHovered ? "h-4 w-4" : "h-3 w-3")}
+                strokeWidth={2}
+                aria-hidden
+              />
+            </span>
+          ) : (
+            <CompanyLogo
+              name={row.name}
+              logoUrl={row.logoUrl ?? ""}
+              symbol={row.symbol}
+              size={isHovered ? "md" : "xs"}
+              fill
+            />
+          )}
         </div>
         {isHovered ? (
           <div className="flex shrink-0 flex-col gap-0.5">
-            <span className="whitespace-nowrap text-[13px] font-semibold leading-4 text-[#09090B]">
+            <span className="whitespace-nowrap text-[13px] font-semibold leading-4 text-[#0F0F0F]">
               {ticker}
             </span>
-            <span className="whitespace-nowrap text-[12px] font-medium tabular-nums leading-4 text-[#09090B]">
+            <span className="whitespace-nowrap text-[12px] font-medium tabular-nums leading-4 text-[#0F0F0F]">
               {pct1.format(row.weightPct)}%
             </span>
           </div>
         ) : (
-          <span className="whitespace-nowrap text-[12px] font-medium tabular-nums leading-4 text-[#09090B]">
+          <span className="whitespace-nowrap text-[12px] font-medium tabular-nums leading-4 text-[#0F0F0F]">
             {pct1.format(row.weightPct)}%
           </span>
         )}

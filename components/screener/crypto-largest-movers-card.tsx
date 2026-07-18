@@ -46,7 +46,7 @@ export function CryptoLargestMoversCard({
             href={`/crypto/${encodeURIComponent(r.symbol)}`}
             prefetch={false}
             aria-label={`Open ${r.name} (${r.symbol})`}
-            className="group flex w-full items-center justify-center rounded-md outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/20"
+            className="group flex w-full items-center justify-center rounded-md outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/20"
           >
             <div className="flex w-[24px] items-center justify-center">
               <p className="text-[14px] font-semibold leading-5 text-[#71717A]">{i + 1}</p>
@@ -57,7 +57,7 @@ export function CryptoLargestMoversCard({
                 <CompanyLogo name={r.symbol} logoUrl={r.logoUrl} symbol={r.symbol} size="sm" />
                 <div className="flex flex-col items-start">
                   <div className="flex items-center gap-[4px] whitespace-nowrap">
-                    <p className="text-[14px] font-medium leading-5 text-[#09090B] group-hover:underline">
+                    <p className="text-[14px] font-medium leading-5 text-[#0F0F0F] group-hover:underline">
                       {r.symbol}
                     </p>
                     <p className="text-[12px] font-normal leading-4 text-[#71717A] group-hover:underline">

@@ -457,7 +457,7 @@ function ChartingMultiMetricFundamentalsLineChart({
                         title={text}
                       >
                         <span
-                          className="block truncate text-[11px] font-semibold leading-none tabular-nums text-[#09090B]"
+                          className="block truncate text-[11px] font-semibold leading-none tabular-nums text-[#0F0F0F]"
                           style={{
                             textShadow:
                               "0 0 3px rgba(255,255,255,0.95), 0 1px 2px rgba(255,255,255,0.8)",
@@ -483,7 +483,7 @@ function ChartingMultiMetricFundamentalsLineChart({
                 }}
                 role="tooltip"
               >
-                <p className="text-[12px] font-semibold leading-4 text-[#09090B]">{tip.periodLabel}</p>
+                <p className="text-[12px] font-semibold leading-4 text-[#0F0F0F]">{tip.periodLabel}</p>
                 <div className="mt-1.5 space-y-1">
                   {tip.rows.map((r) => (
                     <div key={r.id} className="flex items-baseline justify-between gap-3">
@@ -497,7 +497,7 @@ function ChartingMultiMetricFundamentalsLineChart({
                           {r.label}
                         </span>
                       </span>
-                      <span className="shrink-0 text-[12px] font-semibold leading-4 tabular-nums text-[#09090B]">
+                      <span className="shrink-0 text-[12px] font-semibold leading-4 tabular-nums text-[#0F0F0F]">
                         {r.value}
                       </span>
                     </div>

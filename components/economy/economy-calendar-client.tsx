@@ -160,7 +160,7 @@ function EconomyEventCard({
     >
       <div className="flex items-center gap-2">
         <ImportanceBars importance={event.importance} />
-        <p className="min-w-0 flex-1 truncate text-left text-xs leading-4 text-[#09090B]">
+        <p className="min-w-0 flex-1 truncate text-left text-xs leading-4 text-[#0F0F0F]">
           {formatEconomyClockUtc(event.instantMs, offsetMinutes)}
         </p>
         <span className="flex h-4 w-4 shrink-0 items-center justify-center text-[14px] leading-none" aria-hidden>
@@ -168,16 +168,16 @@ function EconomyEventCard({
         </span>
       </div>
       <h3 className={cn(
-        "mt-1 text-left text-sm font-semibold leading-5 text-[#09090B]",
+        "mt-1 text-left text-sm font-semibold leading-5 text-[#0F0F0F]",
         clickable && "underline-offset-2 decoration-[#71717A] group-hover:underline",
       )}>{eventTitle(event)}</h3>
       <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs leading-4">
         <dt className="text-[#71717A]">Forecast</dt>
-        <dd className="text-right font-medium tabular-nums text-[#09090B]">{formatEconomyMetric(event.estimate)}</dd>
+        <dd className="text-right font-medium tabular-nums text-[#0F0F0F]">{formatEconomyMetric(event.estimate)}</dd>
         <dt className="text-[#71717A]">Actual</dt>
-        <dd className="text-right font-medium tabular-nums text-[#09090B]">{formatEconomyMetric(event.actual)}</dd>
+        <dd className="text-right font-medium tabular-nums text-[#0F0F0F]">{formatEconomyMetric(event.actual)}</dd>
         <dt className="text-[#71717A]">Prior</dt>
-        <dd className="text-right font-medium tabular-nums text-[#09090B]">{formatEconomyMetric(event.previous)}</dd>
+        <dd className="text-right font-medium tabular-nums text-[#0F0F0F]">{formatEconomyMetric(event.previous)}</dd>
       </dl>
     </article>
   );
@@ -197,7 +197,7 @@ function EconomyListRow({
     <div
       className={cn(
         listTableRowClass,
-        "group text-[14px] leading-5 text-[#09090B]",
+        "group text-[14px] leading-5 text-[#0F0F0F]",
         clickable && "cursor-pointer",
       )}
       onClick={clickable ? () => onEventClick(event) : undefined}
@@ -221,7 +221,7 @@ function EconomyListRow({
 }
 
 const weekNavBtnClass = cn(
-  "inline-flex h-9 shrink-0 items-center justify-center rounded-[10px] text-[#09090B] transition-all duration-100 hover:bg-[#F4F4F5]",
+  "inline-flex h-9 shrink-0 items-center justify-center rounded-[10px] text-[#0F0F0F] transition-all duration-100 hover:bg-[#F4F4F5]",
   whiteSurfaceButtonChromeClass,
 );
 
@@ -307,7 +307,7 @@ function EconomyWeekGridSkeleton({
                     <div
                       className={cn(
                         "text-[15px] font-semibold tabular-nums",
-                        isToday ? "text-[#DC2626]" : "text-[#09090B]",
+                        isToday ? "text-[#DC2626]" : "text-[#0F0F0F]",
                       )}
                     >
                       {day.dayNumber}
@@ -322,7 +322,7 @@ function EconomyWeekGridSkeleton({
                     <div
                       className={cn(
                         "flex flex-wrap items-center justify-center gap-1 py-0.5 text-center text-[18px] leading-6",
-                        isToday ? "text-[#DC2626]" : "text-[#09090B]",
+                        isToday ? "text-[#DC2626]" : "text-[#0F0F0F]",
                       )}
                     >
                       <span className="font-normal">{day.weekdayLabel}</span>
@@ -375,7 +375,7 @@ const economyListColLayout =
 
 const listTableHeaderClass = cn(
   economyListColLayout,
-  "min-h-[44px] items-center bg-white px-2 py-0 text-[12px] font-medium leading-5 text-[#71717A] sm:px-4 sm:text-[14px]",
+  "min-h-[44px] items-center bg-white px-2 py-0 text-[14px] font-medium leading-5 text-[#71717A] sm:px-4",
 );
 
 const listTableRowClass = cn(
@@ -385,7 +385,7 @@ const listTableRowClass = cn(
 
 /** Same numeric styling as screener value cells (e.g. M Cap / PE). */
 const listNumericCellClass =
-  "min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]";
+  "min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#0F0F0F]";
 
 export function EconomyCalendarClient({
   data,
@@ -487,7 +487,7 @@ export function EconomyCalendarClient({
   return (
     <div className="space-y-6">
       <div className="relative z-30 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h1 className="min-w-0 text-2xl font-semibold leading-9 tracking-tight text-[#09090B]">
+          <h1 className="min-w-0 text-2xl font-semibold leading-9 tracking-tight text-[#0F0F0F]">
             {displayWeekLabel}
           </h1>
 
@@ -497,7 +497,7 @@ export function EconomyCalendarClient({
               type="button"
               onClick={() => setMobileSettingsOpen((v) => !v)}
               className={cn(
-                "flex h-9 items-center gap-1.5 rounded-[10px] border border-[#E4E4E7] bg-white px-3 text-sm font-medium text-[#09090B] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors hover:bg-[#F4F4F5] sm:hidden",
+                "flex h-9 items-center gap-1.5 rounded-[10px] border border-[#E4E4E7] bg-white px-3 text-sm font-medium text-[#0F0F0F] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors hover:bg-[#F4F4F5] sm:hidden",
                 mobileSettingsOpen && "bg-[#F4F4F5]",
               )}
               aria-expanded={mobileSettingsOpen}
@@ -517,7 +517,7 @@ export function EconomyCalendarClient({
                     "flex h-8 w-9 items-center justify-center rounded-[10px] transition-colors",
                     view === "grid"
                       ? "bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.12),0px_1px_1px_0px_rgba(10,10,10,0.07)]"
-                      : "text-[#52525B] hover:text-[#09090B]",
+                      : "text-[#52525B] hover:text-[#0F0F0F]",
                   )}
                   aria-pressed={view === "grid"}
                   aria-label="Week grid view"
@@ -531,7 +531,7 @@ export function EconomyCalendarClient({
                     "flex h-8 w-9 items-center justify-center rounded-[10px] transition-colors",
                     view === "list"
                       ? "bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.12),0px_1px_1px_0px_rgba(10,10,10,0.07)]"
-                      : "text-[#52525B] hover:text-[#09090B]",
+                      : "text-[#52525B] hover:text-[#0F0F0F]",
                   )}
                   aria-pressed={view === "list"}
                   aria-label="List view"
@@ -617,7 +617,7 @@ export function EconomyCalendarClient({
                   "flex h-8 w-9 items-center justify-center rounded-[10px] transition-colors",
                   view === "grid"
                     ? "bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.12),0px_1px_1px_0px_rgba(10,10,10,0.07)]"
-                    : "text-[#52525B] hover:text-[#09090B]",
+                    : "text-[#52525B] hover:text-[#0F0F0F]",
                 )}
                 aria-pressed={view === "grid"}
                 aria-label="Week grid view"
@@ -631,7 +631,7 @@ export function EconomyCalendarClient({
                   "flex h-8 w-9 items-center justify-center rounded-[10px] transition-colors",
                   view === "list"
                     ? "bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.12),0px_1px_1px_0px_rgba(10,10,10,0.07)]"
-                    : "text-[#52525B] hover:text-[#09090B]",
+                    : "text-[#52525B] hover:text-[#0F0F0F]",
                 )}
                 aria-pressed={view === "list"}
                 aria-label="List view"
@@ -703,7 +703,7 @@ export function EconomyCalendarClient({
                     <div
                       className={cn(
                         "text-[15px] font-semibold tabular-nums",
-                        isToday ? "text-[#DC2626]" : "text-[#09090B]",
+                        isToday ? "text-[#DC2626]" : "text-[#0F0F0F]",
                       )}
                     >
                       {day.dayNumber}
@@ -718,7 +718,7 @@ export function EconomyCalendarClient({
                     <div
                       className={cn(
                         "flex flex-wrap items-center justify-center gap-1 py-0.5 text-center text-[18px] leading-6",
-                        isToday ? "text-[#DC2626]" : "text-[#09090B]",
+                        isToday ? "text-[#DC2626]" : "text-[#0F0F0F]",
                       )}
                     >
                       <span className="font-normal">{day.weekdayLabel}</span>
@@ -731,7 +731,7 @@ export function EconomyCalendarClient({
                   <div className="flex min-h-[120px] flex-col gap-2 px-2 pt-2 pb-4 md:overflow-visible">
                     {day.events.length === 0 ? (
                       <div className="flex flex-1 flex-col items-center justify-center rounded-lg bg-white px-3 py-6 text-center">
-                        <p className="text-sm leading-5 text-[#09090B]">No scheduled Reports</p>
+                        <p className="text-sm leading-5 text-[#0F0F0F]">No scheduled Reports</p>
                       </div>
                     ) : (
                       day.events.map((ev) => (
@@ -762,7 +762,7 @@ export function EconomyCalendarClient({
                   <section key={day.date} id={`economy-list-${day.date}`} className="divide-y divide-[#E4E4E7]">
                     <div
                       className={cn(
-                        "px-2 py-2 text-[14px] font-semibold leading-5 text-[#09090B] sm:px-4 sm:py-3",
+                        "px-2 py-2 text-[14px] font-semibold leading-5 text-[#0F0F0F] sm:px-4 sm:py-3",
                         day.date === todayKey && "border-b-2 border-[#DC2626]",
                       )}
                     >

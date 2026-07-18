@@ -29,7 +29,7 @@ function PillSwitch({
       aria-label={ariaLabel}
       onClick={() => onPressedChange(!pressed)}
       className={cn(
-        "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15",
+        "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15",
         pressed ? "bg-[#2563EB]" : "bg-[#E4E4E7]",
       )}
     >
@@ -170,7 +170,7 @@ export function FundamentalsChartSettingsMenu({
           >
             {toggleRows.map(({ key, label, ariaLabel }) => (
               <div key={key} role="menuitem" className={dropdownMenuPlainItemRowClassName()}>
-                <span className="min-w-0 flex-1 text-sm font-medium leading-5 text-[#09090B]">{label}</span>
+                <span className="min-w-0 flex-1 text-sm font-medium leading-5 text-[#0F0F0F]">{label}</span>
                 <PillSwitch
                   pressed={options[key]}
                   onPressedChange={(next) => onChange({ ...options, [key]: next })}

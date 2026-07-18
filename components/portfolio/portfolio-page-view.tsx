@@ -10,6 +10,7 @@ import { AssetPageTopLoader } from "@/components/layout/asset-page-top-loader";
 import { ChartScreenshotDownloadModal } from "@/components/chart/chart-screenshot-download-modal";
 import { PortfolioQuickAddMenu } from "@/components/layout/portfolio-quick-add-menu";
 import { PortfolioAllocationView } from "@/components/portfolio/portfolio-allocation-view";
+import { PortfolioEarningsTable } from "@/components/portfolio/portfolio-earnings-table";
 import { PortfolioHoldingsEmptyState } from "@/components/portfolio/portfolio-holdings-empty-state";
 import { PortfolioHoldingsTable } from "@/components/portfolio/portfolio-holdings-table";
 import { PortfolioSlicesView } from "@/components/portfolio/portfolio-slices-view";
@@ -236,6 +237,15 @@ export function PortfolioPageView({
     () => buildPortfolioAllocationRows(holdings, transactions),
     [holdings, transactions],
   );
+
+  const assetCount = holdings.length;
+  const holdingsSubTabItems = useMemo(
+    () =>
+      PORTFOLIO_HOLDINGS_SUB_TAB_ITEMS.map((item) =>
+        item.id === "assets" ? { ...item, badge: assetCount } : item,
+      ),
+    [assetCount],
+  );
   const { imageSrc: allocationAvatarImageSrc, initials: allocationAvatarInitials } =
     useAllocationCenterAvatar();
   const [allocationDownloadOpen, setAllocationDownloadOpen] = useState(false);
@@ -307,7 +317,7 @@ export function PortfolioPageView({
           }}
           className={cn(
             topbarSquircleIconClass,
-            "hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2",
+            "hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15 focus-visible:ring-offset-2",
             "disabled:pointer-events-none disabled:opacity-40",
           )}
         >
@@ -335,13 +345,13 @@ export function PortfolioPageView({
         <div className="flex min-w-0 flex-1 items-center">
           <div className="min-w-0 flex-col gap-1">
             {showPortfoliosBreadcrumb ? (
-              <h1 className="min-w-0 truncate text-2xl font-semibold tracking-tight text-[#09090B]">
+              <h1 className="min-w-0 truncate text-2xl font-semibold tracking-tight text-[#0F0F0F]">
                 {portfolioName}
               </h1>
             ) : (
               <div className="flex min-w-0 max-w-full items-center gap-2">
                 {selectedPortfolio ? <PortfolioListLogo portfolio={selectedPortfolio} /> : null}
-                <h1 className="min-w-0 truncate text-2xl font-semibold tracking-tight text-[#09090B]">
+                <h1 className="min-w-0 truncate text-2xl font-semibold tracking-tight text-[#0F0F0F]">
                   {portfolioName}
                 </h1>
                 <TransactionPortfolioField variant="titleGhost" compactMenuAlign="leading" />
@@ -389,7 +399,7 @@ export function PortfolioPageView({
                   <SecondaryTabs
                     className="min-w-0 flex-1"
                     aria-label="Holdings view"
-                    items={PORTFOLIO_HOLDINGS_SUB_TAB_ITEMS}
+                    items={holdingsSubTabItems}
                     value={overviewHoldingsSubTab}
                     onValueChange={onOverviewHoldingsSubTabChange}
                   />
@@ -399,6 +409,7 @@ export function PortfolioPageView({
                   active={overviewHoldingsSubTab}
                   onChange={onOverviewHoldingsSubTabChange}
                   trailing={allocationDownloadButton}
+                  assetCount={assetCount}
                 >
                   {!showOverviewHoldingsBlock ? (
                     <PortfolioHoldingsEmptyState
@@ -409,11 +420,17 @@ export function PortfolioPageView({
                     <div className="max-md:p-4 md:contents">
                       <PortfolioSlicesView holdings={holdings} transactions={transactions} readOnly={readOnly} />
                     </div>
+                  ) : overviewHoldingsSubTab === "earnings" ? (
+                    <PortfolioEarningsTable
+                      holdings={holdings}
+                      className="sm:border-t-0"
+                      assetLinkTab={readOnly ? "overview" : "holdings"}
+                    />
                   ) : overviewHoldingsSubTab === "assets" ? (
                     <PortfolioHoldingsTable
                       holdings={holdings}
                       transactions={transactions}
-                      className="border-t-0"
+                      className="sm:border-t-0"
                       assetLinkTab={readOnly ? "overview" : "holdings"}
                     />
                   ) : (

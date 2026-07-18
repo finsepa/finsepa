@@ -11,10 +11,10 @@ type Row = { label: string; value: string };
 
 function StatRow({ label, value }: { label: string; value: string }) {
   const valueClass =
-    label === "Analyst Consensus" && value !== "—" ? consensusLabelTextClass(value) : "text-[#09090B]";
+    label === "Analyst Consensus" && value !== "—" ? consensusLabelTextClass(value) : "text-[#0F0F0F]";
   return (
     <div className="flex items-center justify-between gap-3 border-b border-[#E4E4E7] py-1.5 last:border-0">
-      <span className="min-w-0 shrink cursor-pointer text-[14px] leading-5 text-[#09090B] underline decoration-[#E4E4E7] underline-offset-2">
+      <span className="min-w-0 shrink cursor-pointer text-[14px] leading-5 text-[#0F0F0F] underline decoration-[#E4E4E7] underline-offset-2">
         {label}
       </span>
       {label === "Earnings Date" && value !== "—" ? (

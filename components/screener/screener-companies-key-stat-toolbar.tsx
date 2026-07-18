@@ -125,7 +125,7 @@ export function ScreenerCompaniesKeyStatToolbar({
             disabled && "pointer-events-none opacity-50",
           )}
         >
-          <SlidersHorizontal className="h-5 w-5 shrink-0 text-[#09090B]" aria-hidden />
+          <SlidersHorizontal className="h-5 w-5 shrink-0 text-[#0F0F0F]" aria-hidden />
           Customize
         </button>
 
@@ -152,7 +152,7 @@ export function ScreenerCompaniesKeyStatToolbar({
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Search metrics…"
-                    className="h-9 w-full rounded-lg border border-[#E4E4E7] bg-[#FAFAFA] py-1.5 pl-9 pr-3 text-[13px] leading-5 text-[#09090B] placeholder:text-[#71717A] focus:border-[#09090B]/20 focus:outline-none focus:ring-2 focus:ring-[#09090B]/10"
+                    className="h-9 w-full rounded-lg border border-[#E4E4E7] bg-[#FAFAFA] py-1.5 pl-9 pr-3 text-[13px] leading-5 text-[#0F0F0F] placeholder:text-[#71717A] focus:border-[#0F0F0F]/20 focus:outline-none focus:ring-2 focus:ring-[#0F0F0F]/10"
                   />
                 </div>
               </div>
@@ -179,7 +179,7 @@ export function ScreenerCompaniesKeyStatToolbar({
                         )}
                       >
                         <MetricCheckbox checked={checked} />
-                        <span className="min-w-0 flex-1 text-[13px] leading-5 text-[#09090B]">
+                        <span className="min-w-0 flex-1 text-[13px] leading-5 text-[#0F0F0F]">
                           {metric.label}
                         </span>
                       </button>

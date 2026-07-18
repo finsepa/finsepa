@@ -116,21 +116,21 @@ function formatCell(
 function toneClass(tone: "neutral" | "positive" | "negative"): string {
   if (tone === "positive") return "text-[#16A34A]";
   if (tone === "negative") return "text-[#DC2626]";
-  return "text-[#09090B]";
+  return "text-[#0F0F0F]";
 }
 
 const numCellClass =
-  "min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#09090B]";
+  "min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#0F0F0F]";
 
 const headerYearClass =
-  "relative z-[1] min-w-0 w-full truncate bg-white text-right font-['Inter'] text-[12px] font-medium leading-5 tabular-nums text-[#71717A] sm:text-[14px]";
+  "relative z-[1] min-w-0 w-full truncate bg-white text-right font-['Inter'] text-[14px] font-medium leading-5 tabular-nums text-[#71717A]";
 
 const headerPeriodEndClass =
-  "relative z-[1] min-w-0 w-full truncate bg-white text-right font-['Inter'] text-[12px] font-medium leading-5 tabular-nums text-[#71717A] sm:text-[14px]";
+  "relative z-[1] min-w-0 w-full truncate bg-white text-right font-['Inter'] text-[14px] font-medium leading-5 tabular-nums text-[#71717A]";
 
 /** Sticky label column — stays put on horizontal scroll inside the financials scroller. */
 const stickyLabelHeadClass =
-  "sticky left-0 z-40 flex min-h-full min-w-0 items-center self-stretch bg-white pl-2 pr-4 text-left font-['Inter'] text-[12px] font-medium leading-5 text-[#71717A] sm:pl-4 sm:text-[14px]";
+  "sticky left-0 z-40 flex min-h-full min-w-0 items-center self-stretch bg-white pl-2 pr-4 text-left font-['Inter'] text-[14px] font-medium leading-5 text-[#71717A] sm:pl-4";
 
 const stickyLabelBodyClass =
   "sticky left-0 z-20 flex min-h-full min-w-0 items-center self-stretch bg-white pl-2 pr-4 text-left group-hover:bg-neutral-50 sm:pl-4";
@@ -337,8 +337,8 @@ function IncomeRow({
   showLabelColumnRule?: boolean;
 }) {
   const labelClass = row.emphasize
-    ? "text-[14px] font-semibold leading-5 text-[#09090B]"
-    : "text-[14px] font-normal leading-5 text-[#09090B]";
+    ? "text-[14px] font-semibold leading-5 text-[#0F0F0F]"
+    : "text-[14px] font-normal leading-5 text-[#0F0F0F]";
 
   const nestedLabelPad =
     row.id === "fcf_ps" || row.id === "fcf_margin" ? "pl-3 sm:pl-6" : "";

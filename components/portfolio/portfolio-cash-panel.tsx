@@ -42,7 +42,7 @@ function netCashUsd(transactions: { sum: number }[]): number {
 
 function balanceClassName(n: number): string {
   if (n < 0) return "text-[#DC2626]";
-  return "text-[#09090B]";
+  return "text-[#0F0F0F]";
 }
 
 /** Summ column: green for cash / income inflows; red for outflows; black otherwise. */
@@ -52,7 +52,7 @@ function cashSummClassName(operation: string, sum: number): string {
     const u = operation.toLowerCase();
     if (u.includes("cash in") || u.includes("other income")) return "text-[#16A34A]";
   }
-  return "text-[#09090B]";
+  return "text-[#0F0F0F]";
 }
 
 function formatSignedUsd(n: number): string {
@@ -64,7 +64,7 @@ function operationClassName(operation: string): string {
   const u = operation.toLowerCase();
   if (u.includes("cash in") || u.includes("other income")) return "text-[#16A34A]";
   if (u.includes("cash out") || u.includes("other expense")) return "text-[#DC2626]";
-  return "text-[#09090B]";
+  return "text-[#0F0F0F]";
 }
 
 type CashDirectionFilter = "all" | "in" | "out";
@@ -193,7 +193,7 @@ function PortfolioCashPanelInner() {
             <div className="flex min-w-0 items-center gap-3 px-3 pr-4">
               <CompanyLogo name="US Dollar" logoUrl="" symbol="USD" />
               <div className="min-w-0">
-                <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">US Dollar</div>
+                <div className="truncate text-[14px] font-semibold leading-5 text-[#0F0F0F]">US Dollar</div>
                 <div className="text-[12px] font-normal leading-4 text-[#71717A]">USD</div>
               </div>
             </div>
@@ -211,7 +211,7 @@ function PortfolioCashPanelInner() {
 
       <section className="mt-8" aria-labelledby="cash-tx-heading">
         <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-          <h3 id="cash-tx-heading" className="text-lg font-semibold leading-7 text-[#09090B]">
+          <h3 id="cash-tx-heading" className="text-lg font-semibold leading-7 text-[#0F0F0F]">
             Cash Transactions
           </h3>
           <div className="flex flex-wrap items-center gap-2">
@@ -225,7 +225,7 @@ function PortfolioCashPanelInner() {
                 value={cashSearch}
                 onChange={(e) => setCashSearch(e.target.value)}
                 placeholder="Type to search..."
-                className="h-9 w-full rounded-[10px] border-0 bg-[#F4F4F5] py-2 pl-9 pr-3 text-sm text-[#09090B] placeholder:text-[#71717A] outline-none focus:ring-2 focus:ring-[#09090B]/10"
+                className="h-9 w-full rounded-[10px] border-0 bg-[#F4F4F5] py-2 pl-9 pr-3 text-sm text-[#0F0F0F] placeholder:text-[#71717A] outline-none focus:ring-2 focus:ring-[#0F0F0F]/10"
                 aria-label="Search cash transactions"
               />
             </div>
@@ -233,7 +233,7 @@ function PortfolioCashPanelInner() {
               <PopoverTrigger asChild>
                 <button
                   type="button"
-                  className="inline-flex h-9 shrink-0 items-center gap-2 rounded-[10px] bg-[#F4F4F5] px-4 text-[14px] font-medium leading-5 text-[#09090B] transition-colors duration-100 hover:bg-[#E4E4E7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2"
+                  className="inline-flex h-9 shrink-0 items-center gap-2 rounded-[10px] bg-[#F4F4F5] px-4 text-[14px] font-medium leading-5 text-[#0F0F0F] transition-colors duration-100 hover:bg-[#E4E4E7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15 focus-visible:ring-offset-2"
                 >
                   <Filter className="h-4 w-4 opacity-90" aria-hidden />
                   Filter
@@ -261,14 +261,14 @@ function PortfolioCashPanelInner() {
                         dropdownMenuPlainItemRowClassName({
                           selected: cashDirectionFilter === value,
                         }),
-                        "text-[#09090B]",
+                        "text-[#0F0F0F]",
                         cashDirectionFilter === value ? "font-medium" : "font-normal",
                       )}
                     >
                       <span className="min-w-0 flex-1 truncate text-left">{label}</span>
                       <span className="flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden>
                         {cashDirectionFilter === value ? (
-                          <Check className="h-4 w-4 text-[#09090B]" strokeWidth={2} />
+                          <Check className="h-4 w-4 text-[#0F0F0F]" strokeWidth={2} />
                         ) : null}
                       </span>
                     </button>
@@ -303,7 +303,7 @@ function PortfolioCashPanelInner() {
                   <button
                     type="button"
                     onClick={() => setCashDateAsc((v) => !v)}
-                    className="inline-flex items-center gap-1 rounded-md transition-colors hover:text-[#09090B] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15"
+                    className="inline-flex items-center gap-1 rounded-md transition-colors hover:text-[#0F0F0F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15"
                   >
                     Date
                     {cashDateAsc ? (
@@ -334,7 +334,7 @@ function PortfolioCashPanelInner() {
                     </div>
 
                     <div className="min-w-0 shrink-0 text-right">
-                      <div className="font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B]">
+                      <div className="font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#0F0F0F]">
                         {format(parseISO(t.date), "MM/dd/yyyy")}
                       </div>
                       <div
@@ -366,7 +366,7 @@ function PortfolioCashPanelInner() {
                     <button
                       type="button"
                       onClick={() => setCashDateAsc((v) => !v)}
-                      className="ml-auto inline-flex items-center gap-1 rounded-md transition-colors hover:text-[#09090B] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15"
+                      className="ml-auto inline-flex items-center gap-1 rounded-md transition-colors hover:text-[#0F0F0F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15"
                     >
                       Date
                       {cashDateAsc ? (
@@ -407,17 +407,17 @@ function PortfolioCashPanelInner() {
                           symbol={t.symbol}
                         />
                         <div className="min-w-0">
-                          <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">{t.name}</div>
+                          <div className="truncate text-[14px] font-semibold leading-5 text-[#0F0F0F]">{t.name}</div>
                           <div className="text-[12px] font-normal leading-4 text-[#71717A]">
                             {portfolioAssetSymbolCaption(t.symbol)}
                           </div>
                         </div>
                       </div>
                     </div>
-                    <div className="min-w-0 w-full text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B]">
+                    <div className="min-w-0 w-full text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#0F0F0F]">
                       {format(parseISO(t.date), "MM/dd/yyyy")}
                     </div>
-                    <div className="min-w-0 w-full text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B]">
+                    <div className="min-w-0 w-full text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#0F0F0F]">
                       {t.fee > 0 ? usd0.format(t.fee) : usd0.format(0)}
                     </div>
                     <div

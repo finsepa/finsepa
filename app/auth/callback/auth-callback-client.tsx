@@ -61,7 +61,7 @@ async function waitForSession() {
 function AuthCallbackSpinner() {
   return (
     <div className="flex justify-center py-2" role="status" aria-label="Signing you in">
-      <Spinner className="size-6 text-[#09090B]" />
+      <Spinner className="size-6 text-[#0F0F0F]" />
     </div>
   );
 }

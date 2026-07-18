@@ -216,7 +216,7 @@ export function SearchModal({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search Apple, NVIDIA, Bitcoin, Ethereum, S&P 500…"
-              className="flex-1 bg-transparent text-[15px] leading-6 text-[#09090B] outline-none placeholder:text-[#A1A1AA]"
+              className="flex-1 bg-transparent text-[15px] leading-6 text-[#0F0F0F] outline-none placeholder:text-[#A1A1AA]"
               autoComplete="off"
               autoCorrect="off"
             />

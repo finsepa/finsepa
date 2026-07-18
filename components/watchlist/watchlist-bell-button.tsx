@@ -53,8 +53,8 @@ export function WatchlistBellToggle({
         }}
         className={
           isDetail
-            ? `flex h-7 w-7 shrink-0 items-center justify-center rounded-[10px] bg-[#F4F4F5] text-[#09090B] outline-none transition-colors hover:bg-[#EBEBEB] focus-visible:ring-2 focus-visible:ring-[#09090B]/15 ${buttonClassName}`
-            : `flex items-center justify-center rounded-md p-0.5 text-[#09090B] outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/20 ${buttonClassName}`
+            ? `flex h-7 w-7 shrink-0 items-center justify-center rounded-[10px] bg-[#F4F4F5] text-[#0F0F0F] outline-none transition-colors hover:bg-[#EBEBEB] focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15 ${buttonClassName}`
+            : `flex items-center justify-center rounded-md p-0.5 text-[#0F0F0F] outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/20 ${buttonClassName}`
         }
       >
         <Icon className={isDetail ? "h-5 w-5 shrink-0" : "h-4 w-4 shrink-0"} strokeWidth={2} aria-hidden />

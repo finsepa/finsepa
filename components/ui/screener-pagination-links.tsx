@@ -6,10 +6,10 @@ import { cn } from "@/lib/utils";
 import { SCREENER_TABLE_PAGINATION_BTN } from "@/components/ui/table-pagination";
 
 const PAGE_NUM_INACTIVE =
-  "inline-flex h-9 min-w-9 max-w-12 shrink-0 items-center justify-center rounded-[10px] px-2 text-sm font-medium text-[#09090B] transition-colors hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2";
+  "inline-flex h-9 min-w-9 max-w-12 shrink-0 items-center justify-center rounded-[10px] px-2 text-sm font-medium text-[#0F0F0F] transition-colors hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15 focus-visible:ring-offset-2";
 
 const PAGE_NUM_ACTIVE = cn(
-  "inline-flex h-9 min-w-9 max-w-12 shrink-0 items-center justify-center rounded-[10px] px-2 text-sm font-semibold tabular-nums text-[#09090B] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2",
+  "inline-flex h-9 min-w-9 max-w-12 shrink-0 items-center justify-center rounded-[10px] px-2 text-sm font-semibold tabular-nums text-[#0F0F0F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15 focus-visible:ring-offset-2",
   whiteSurfaceButtonChromeClass,
 );
 
@@ -99,7 +99,7 @@ export function ScreenerPaginationLinks({
             it === "ellipsis" ? (
               <span
                 key={`e-${i}`}
-                className="inline-flex h-9 min-w-6 select-none items-center justify-center text-sm font-medium text-[#09090B] tabular-nums"
+                className="inline-flex h-9 min-w-6 select-none items-center justify-center text-sm font-medium text-[#0F0F0F] tabular-nums"
                 aria-hidden
               >
                 ...

@@ -14,7 +14,7 @@ import { deleteMenuIconAnimation, renameMenuIconAnimation } from "@/lib/lottie/w
 import { cn } from "@/lib/utils";
 
 const ghostSquareBtn =
-  "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] border border-transparent text-[#09090B] transition-colors hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2";
+  "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] border border-transparent text-[#0F0F0F] transition-colors hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15 focus-visible:ring-offset-2";
 
 /** Matches `min-w-[11.5rem]` — icon + label rows. */
 const MENU_WIDTH_PX = 184;

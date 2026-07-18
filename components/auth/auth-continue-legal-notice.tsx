@@ -2,7 +2,7 @@ const TERMS_OF_SERVICE_URL = "https://www.finsepa.com/terms-of-service";
 const PRIVACY_POLICY_URL = "https://www.finsepa.com/privacy-policy";
 
 const linkClassName =
-  "font-medium text-[#71717A] underline decoration-[#D4D4D8] underline-offset-4 transition-colors hover:text-[#09090B] hover:decoration-[#A1A1AA]";
+  "font-medium text-[#71717A] underline decoration-[#D4D4D8] underline-offset-4 transition-colors hover:text-[#0F0F0F] hover:decoration-[#A1A1AA]";
 
 export function AuthContinueLegalNotice() {
   return (

@@ -62,7 +62,7 @@ function PriceAndChangeCell({
     <div className="min-w-0 w-full text-right">
       <div
         className={`min-w-0 w-full font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums ${
-          hasPrice ? "text-[#09090B]" : "text-[#71717A]"
+          hasPrice ? "text-[#0F0F0F]" : "text-[#71717A]"
         }`}
       >
         {hasPrice ? formatCryptoScreenerUsdPrice(price!) : "-"}
@@ -109,7 +109,7 @@ export function CryptoTable({
     <ScreenerTableScroll>
       <div className="bg-white">
       <div
-        className={`grid ${colLayout} min-h-[44px] items-center px-4 py-0 text-[12px] font-medium leading-5 text-[#71717A] sm:text-[14px] ${SCREENER_TABLE_HEADER_STICKY_CLASS}`}
+        className={`grid ${colLayout} min-h-[44px] items-center px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A] ${SCREENER_TABLE_HEADER_STICKY_CLASS}`}
       >
         <div className="hidden sm:block" aria-hidden />
         <div className={mobileRankCellClass}>#</div>
@@ -143,7 +143,7 @@ export function CryptoTable({
             <Link
               href={`/crypto/${encodeURIComponent(r.symbol)}`}
               prefetch={false}
-              className={`${rowLinkGrid} col-span-3 col-start-1 grid min-h-[56px] min-w-0 w-full items-center justify-items-stretch no-underline text-[#09090B] visited:text-[#09090B] sm:col-span-7 sm:col-start-2 sm:min-h-[60px]`}
+              className={`${rowLinkGrid} col-span-3 col-start-1 grid min-h-[56px] min-w-0 w-full items-center justify-items-stretch no-underline text-[#0F0F0F] visited:text-[#0F0F0F] sm:col-span-7 sm:col-start-2 sm:min-h-[60px]`}
               aria-label={`Open ${r.name} (${eodhdCryptoSpotTickerDisplay(r.symbol)})`}
             >
               <div className={mobileRankCellClass}>
@@ -153,7 +153,7 @@ export function CryptoTable({
               <div className="flex min-w-0 items-center justify-start gap-3 pr-4 text-left">
                 <CompanyLogo name={r.symbol} logoUrl={r.logoUrl} symbol={r.symbol} />
                 <div className="min-w-0">
-                  <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B] underline-offset-2 decoration-[#71717A] group-hover:underline">
+                  <div className="truncate text-[14px] font-semibold leading-5 text-[#0F0F0F] underline-offset-2 decoration-[#71717A] group-hover:underline">
                     {r.name}
                   </div>
                   <div className="text-[12px] font-normal leading-4 !text-[#71717A]">
@@ -167,7 +167,7 @@ export function CryptoTable({
               </div>
               <div
                 className={`hidden min-w-0 w-full text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums sm:block ${
-                  r.price == null || !Number.isFinite(r.price) ? "text-[#71717A]" : "text-[#09090B]"
+                  r.price == null || !Number.isFinite(r.price) ? "text-[#71717A]" : "text-[#0F0F0F]"
                 }`}
               >
                 {r.price == null || !Number.isFinite(r.price) ? "-" : formatCryptoScreenerUsdPrice(r.price)}
@@ -185,7 +185,7 @@ export function CryptoTable({
                 <ChangeCell value={r.changePercentYTD} />
               </div>
 
-              <div className="hidden min-w-0 w-full text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#09090B] sm:block">
+              <div className="hidden min-w-0 w-full text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#0F0F0F] sm:block">
                 {r.marketCap === "-" ? "-" : r.marketCap}
               </div>
             </Link>

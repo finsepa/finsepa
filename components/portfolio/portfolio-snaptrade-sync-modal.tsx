@@ -74,11 +74,11 @@ export function PortfolioSnaptradeSyncModal({
         }
       >
         <div className="flex flex-col gap-2">
-          <span className="text-sm font-medium leading-5 text-[#09090B]">Update from</span>
+          <span className="text-sm font-medium leading-5 text-[#0F0F0F]">Update from</span>
           <SnaptradeUpdateFromDateField valueYmd={updateFromYmd} onChangeYmd={setUpdateFromYmd} />
         </div>
         <p className="text-xs leading-5 text-[#71717A]">
-          Syncing <span className="font-medium text-[#09090B]">{portfolioName}</span> with your
+          Syncing <span className="font-medium text-[#0F0F0F]">{portfolioName}</span> with your
           brokerage. Holdings and cash always refresh; transaction import starts from the date above.
         </p>
       </AppModalShell>

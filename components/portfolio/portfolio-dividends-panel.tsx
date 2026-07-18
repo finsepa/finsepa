@@ -41,7 +41,7 @@ const pctFmt = new Intl.NumberFormat("en-US", {
 
 /** Matches `portfolio-holdings-table.tsx` company column. */
 const HOLDING_COMPANY_NAME_CLASS =
-  "truncate text-[14px] font-semibold leading-5 text-[#09090B]";
+  "truncate text-[14px] font-semibold leading-5 text-[#0F0F0F]";
 
 const TD_BORDER = "border-b border-[#E4E4E7]";
 
@@ -129,7 +129,7 @@ function DividendRowMobile({
         </div>
       </div>
       <div className="relative z-[1] min-w-0 shrink-0 text-right">
-        <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#09090B]">
+        <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#0F0F0F]">
           {usd0.format(row.totalUsd)}
         </div>
         <div className="mt-0.5 text-[12px] font-normal leading-4 tabular-nums text-[#71717A]">
@@ -163,7 +163,7 @@ function DividendDesktopRow({
         </div>
       </td>
       <td className={TD_NUMERIC}>
-        <div className="inline-flex w-full items-center justify-end gap-1 font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
+        <div className="inline-flex w-full items-center justify-end gap-1 font-['Inter'] text-[14px] leading-5 tabular-nums text-[#0F0F0F]">
           {formatShortDate(row.paymentDate)}
           <Clock className="h-3.5 w-3.5 shrink-0 text-[#A1A1AA]" strokeWidth={1.75} aria-hidden />
         </div>
@@ -172,13 +172,13 @@ function DividendDesktopRow({
         </div>
       </td>
       <td className={TD_NUMERIC}>
-        <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#09090B]">
+        <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#0F0F0F]">
           {usd0.format(row.totalUsd)}
         </div>
         <div className="text-[12px] font-normal leading-4 tabular-nums text-[#71717A]">{breakdown}</div>
       </td>
       <td className={TD_NUMERIC}>
-        <div className="font-['Inter'] text-[14px] font-medium leading-5 text-[#09090B]">
+        <div className="font-['Inter'] text-[14px] font-medium leading-5 text-[#0F0F0F]">
           {row.frequencyLabel ?? "—"}
         </div>
         {row.growthPct != null && Number.isFinite(row.growthPct) ? (
@@ -195,13 +195,13 @@ function DividendDesktopRow({
         )}
       </td>
       <td className={TD_NUMERIC}>
-        <div className="font-['Inter'] text-[14px] font-medium leading-5 tabular-nums text-[#09090B]">
+        <div className="font-['Inter'] text-[14px] font-medium leading-5 tabular-nums text-[#0F0F0F]">
           {row.yieldPct != null ? `${pctFmt.format(row.yieldPct)}%` : "—"}
         </div>
         <div className="text-[12px] font-normal leading-4 text-[#71717A]">yield</div>
       </td>
       <td className={TD_NUMERIC}>
-        <div className="font-['Inter'] text-[14px] font-medium leading-5 tabular-nums text-[#09090B]">
+        <div className="font-['Inter'] text-[14px] font-medium leading-5 tabular-nums text-[#0F0F0F]">
           {row.exDividendDate ? formatShortDate(row.exDividendDate) : "—"}
         </div>
         <div className="text-[12px] font-normal leading-4 text-[#71717A]">Ex-dividend date</div>
@@ -223,7 +223,7 @@ function DividendsScheduleTables({
         {months.map((month) => (
           <section key={month.monthKey} className="mb-10 last:mb-0">
             <div className="mb-4 flex flex-wrap items-center gap-3">
-              <h3 className="text-xl font-semibold tracking-tight text-[#09090B]">{month.label}</h3>
+              <h3 className="text-xl font-semibold tracking-tight text-[#0F0F0F]">{month.label}</h3>
               {month.totalUsd > 0 ? (
                 <span className="rounded-md bg-[#DCFCE7] px-2 py-0.5 text-[13px] font-semibold tabular-nums leading-5 text-[#16A34A]">
                   {formatSignedUsd(month.totalUsd)}
@@ -256,7 +256,7 @@ function DividendsScheduleTables({
                       monthIndex === 0 ? "pt-0" : "pt-10",
                     )}
                   >
-                    <h3 className="text-xl font-semibold tracking-tight text-[#09090B]">{month.label}</h3>
+                    <h3 className="text-xl font-semibold tracking-tight text-[#0F0F0F]">{month.label}</h3>
                     {month.totalUsd > 0 ? (
                       <span className="rounded-md bg-[#DCFCE7] px-2 py-0.5 text-[13px] font-semibold tabular-nums leading-5 text-[#16A34A]">
                         {formatSignedUsd(month.totalUsd)}

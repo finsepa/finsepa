@@ -59,7 +59,7 @@ const CHART_SEGMENT_TRACK_CLASS =
 const CHART_SEGMENT_BTN_CLASS =
   "flex-none rounded-[10px] px-3 py-1.5 text-center font-sans text-[13px] leading-5 tracking-normal";
 const CHART_SEGMENT_ACTIVE_CLASS =
-  "bg-white font-medium text-[#09090B] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]";
+  "bg-white font-medium text-[#0F0F0F] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]";
 const CHART_SEGMENT_INACTIVE_CLASS = "font-normal text-[#71717A]";
 
 type CashChartRange = "all" | "ytd" | "1y" | "3y";
@@ -195,10 +195,10 @@ const RANGE_OPTIONS: { value: CashChartRange; label: string }[] = [
 ];
 
 const RANGE_TOGGLE_OPTIONS: { value: CashChartRange; label: string }[] = [
-  { value: "all", label: "ALL" },
   { value: "ytd", label: "YTD" },
   { value: "1y", label: "1Y" },
   { value: "3y", label: "3Y" },
+  { value: "all", label: "ALL" },
 ];
 
 const GRANULARITY_OPTIONS: { value: Granularity; label: string }[] = [
@@ -473,7 +473,7 @@ function CashInOutBarChartSvg({ buckets, granularity }: { buckets: Bucket[]; gra
             {barValueLabels.map((b) => (
               <div
                 key={b.key}
-                className="pointer-events-none absolute z-[15] max-w-[5.5rem] truncate text-center text-[11px] font-semibold leading-none tabular-nums text-[#09090B]"
+                className="pointer-events-none absolute z-[15] max-w-[5.5rem] truncate text-center text-[11px] font-semibold leading-none tabular-nums text-[#0F0F0F]"
                 style={{
                   left: b.leftPx,
                   top: b.topPx,
@@ -496,13 +496,13 @@ function CashInOutBarChartSvg({ buckets, granularity }: { buckets: Bucket[]; gra
                   transform: "translate(-50%, calc(-100% - 10px))",
                 }}
               >
-                <p className="text-[12px] font-semibold leading-4 text-[#09090B]">{hoveredBucket.label}</p>
+                <p className="text-[12px] font-semibold leading-4 text-[#0F0F0F]">{hoveredBucket.label}</p>
                 <div className="mt-1.5 space-y-0.5">
                   <p className="text-[12px] leading-4 text-[#71717A]">
                     <span className="font-semibold" style={{ color: DEPOSIT }}>
                       Deposits
                     </span>
-                    <span className="tabular-nums text-[#09090B]">
+                    <span className="tabular-nums text-[#0F0F0F]">
                       {" "}
                       {TOOLTIP_USD.format(hoveredBucket.inAmount)}
                     </span>
@@ -511,7 +511,7 @@ function CashInOutBarChartSvg({ buckets, granularity }: { buckets: Bucket[]; gra
                     <span className="font-semibold" style={{ color: WITHDRAWAL }}>
                       Withdrawals
                     </span>
-                    <span className="tabular-nums text-[#09090B]">
+                    <span className="tabular-nums text-[#0F0F0F]">
                       {" "}
                       {TOOLTIP_USD.format(hoveredBucket.outAmount)}
                     </span>
@@ -615,7 +615,7 @@ function CashInOutBarChartSectionInner({ rows }: { rows: PortfolioTransaction[] 
   return (
     <div className="mb-6">
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="hidden text-2xl font-semibold leading-9 tracking-tight text-[#09090B] sm:block">Cash</h2>
+        <h2 className="hidden text-2xl font-semibold leading-9 tracking-tight text-[#0F0F0F] sm:block">Cash</h2>
         <div className="flex w-full min-w-0 flex-nowrap items-center gap-2 sm:w-auto sm:flex-wrap sm:justify-end sm:gap-3 md:flex-nowrap">
           {/* Web: compact range toggle (matches portfolio overview / charting). */}
           <ChartSegmentToggle
@@ -634,10 +634,10 @@ function CashInOutBarChartSectionInner({ rows }: { rows: PortfolioTransaction[] 
               aria-haspopup="listbox"
               aria-label="Cash chart time range"
               onClick={() => setRangeOpen((o) => !o)}
-              className="flex h-9 w-full cursor-pointer items-center justify-between gap-2 rounded-[10px] bg-[#F4F4F5] px-4 text-left text-sm font-normal leading-5 text-[#09090B] transition-colors hover:bg-[#EBEBEB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/10"
+              className="flex h-9 w-full cursor-pointer items-center justify-between gap-2 rounded-[10px] bg-[#F4F4F5] px-4 text-left text-sm font-normal leading-5 text-[#0F0F0F] transition-colors hover:bg-[#EBEBEB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/10"
             >
               <span className="min-w-0 truncate">{rangeLabel}</span>
-              <ChevronDown className="h-5 w-5 shrink-0 text-[#09090B]" aria-hidden />
+              <ChevronDown className="h-5 w-5 shrink-0 text-[#0F0F0F]" aria-hidden />
             </button>
             {rangeOpen ? (
               <MobileBottomSheet
@@ -663,7 +663,7 @@ function CashInOutBarChartSectionInner({ rows }: { rows: PortfolioTransaction[] 
                         <span className="min-w-0 flex-1 text-left">{o.label}</span>
                         <span className="flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden>
                           <Check
-                            className={cn("h-4 w-4 text-[#09090B]", !selected && "invisible")}
+                            className={cn("h-4 w-4 text-[#0F0F0F]", !selected && "invisible")}
                             strokeWidth={2}
                           />
                         </span>

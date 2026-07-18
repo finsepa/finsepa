@@ -12,7 +12,7 @@ const SEGMENT_MOTION_EASE = "cubic-bezier(0.33, 1, 0.68, 1)";
  * @see https://www.figma.com/design/YSUI0cOq1fIhZsGu1VuIOK/Web-App-Design?node-id=374-24183
  *
  * Track and segments use **10px** corner radius (not fully rounded). Active segment: white fill,
- * soft shadow; label **Inter Medium 14px / 20px / #09090B** (Figma). Inactive: zinc-500, regular weight.
+ * soft shadow; label **Inter Medium 14px / 20px / #0F0F0F** (Figma). Inactive: zinc-500, regular weight.
  * Set {@link fullWidth} for a single joined row that spans the container (equal-width segments).
  */
 export type SegmentedControlOption<T extends string = string> = {
@@ -161,8 +161,8 @@ export function SegmentedControl<T extends string>({
               RADIUS,
               padClasses,
               labelTypography,
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2",
-              active ? "font-medium text-[#09090B]" : "font-normal text-[#71717A] hover:text-[#09090B]",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15 focus-visible:ring-offset-2",
+              active ? "font-medium text-[#0F0F0F]" : "font-normal text-[#71717A] hover:text-[#0F0F0F]",
               opt.disabled && "cursor-not-allowed opacity-50 hover:text-[#71717A]",
             )}
           >

@@ -238,7 +238,7 @@ export function LoginClient({ resetSuccess, callbackError, authNext, signedOut }
               disabled={loading}
               aria-label="Remember me on this device"
             />
-            <span className="text-[14px] font-normal leading-5 text-[#09090B]">Remember me</span>
+            <span className="text-[14px] font-normal leading-5 text-[#0F0F0F]">Remember me</span>
           </label>
           <Link
             href="/forgot-password"

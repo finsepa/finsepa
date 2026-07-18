@@ -67,7 +67,7 @@ export function MainScrollToTop({ scrollRootRef }: MainScrollToTopProps) {
       tabIndex={visible ? 0 : -1}
       onClick={scrollToTop}
       className={cn(
-        "main-scroll-to-top-fab fixed z-[35] hidden h-12 w-12 items-center justify-center rounded-full border border-[#E4E4E7] bg-white text-[#09090B] shadow-sm md:flex",
+        "main-scroll-to-top-fab fixed z-[35] hidden h-12 w-12 items-center justify-center rounded-full border border-[#E4E4E7] bg-white text-[#0F0F0F] shadow-sm md:flex",
         "md:bottom-6 md:right-6",
         visible ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0",
       )}

@@ -104,7 +104,7 @@ export function MacroChartModal({
         <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-[#E4E4E7] px-5 pt-5 pb-3">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0">
-              <span className="text-[18px] font-semibold leading-6 tracking-tight text-[#09090B] tabular-nums">
+              <span className="text-[18px] font-semibold leading-6 tracking-tight text-[#0F0F0F] tabular-nums">
                 {latestText}
               </span>
               {changeText ? (

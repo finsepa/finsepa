@@ -112,7 +112,7 @@ export function FormListboxSelect<V extends string>({
             </span>
             <span className="flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden>
               <Check
-                className={cn("h-4 w-4 text-[#09090B]", !selected && "invisible")}
+                className={cn("h-4 w-4 text-[#0F0F0F]", !selected && "invisible")}
                 strokeWidth={2}
               />
             </span>
@@ -142,7 +142,7 @@ export function FormListboxSelect<V extends string>({
         }}
         className={cn(
           cn(
-            "relative flex h-9 cursor-pointer items-center rounded-[10px] bg-[#F4F4F5] py-2 text-left text-sm font-normal text-[#09090B] outline-none transition-colors hover:bg-[#EBEBEB] focus-visible:ring-2 focus-visible:ring-[#09090B]/10",
+            "relative flex h-9 cursor-pointer items-center rounded-[10px] bg-[#F4F4F5] py-2 text-left text-sm font-normal text-[#0F0F0F] outline-none transition-colors hover:bg-[#EBEBEB] focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/10",
             fitTrigger ? "w-auto gap-2 px-3" : "w-full",
           ),
           disabled && "cursor-not-allowed opacity-60 hover:bg-[#F4F4F5]",
@@ -177,7 +177,7 @@ export function FormListboxSelect<V extends string>({
         {fitTrigger ? (
           <ChevronDown
             className={cn(
-              "h-5 w-5 shrink-0 text-[#09090B] transition-transform",
+              "h-5 w-5 shrink-0 text-[#0F0F0F] transition-transform",
               open && "rotate-180",
             )}
             strokeWidth={2}
@@ -189,7 +189,7 @@ export function FormListboxSelect<V extends string>({
         <ChevronDown
           className={cn(
             cn(
-              "pointer-events-none absolute top-1/2 h-5 w-5 shrink-0 -translate-y-1/2 text-[#09090B] transition-transform",
+              "pointer-events-none absolute top-1/2 h-5 w-5 shrink-0 -translate-y-1/2 text-[#0F0F0F] transition-transform",
               compact ? "right-2.5" : "right-3",
             ),
             open && "rotate-180",

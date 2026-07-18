@@ -28,7 +28,7 @@ export const PORTFOLIO_PRIVACY_TOOLTIP =
 export function PortfolioPrivacyFieldLabel() {
   return (
     <div className="flex items-center gap-1">
-      <span className="text-sm font-medium leading-5 text-[#09090B]">Privacy</span>
+      <span className="text-sm font-medium leading-5 text-[#0F0F0F]">Privacy</span>
       <TopbarDelayedTooltip
         label={PORTFOLIO_PRIVACY_TOOLTIP}
         multiline
@@ -109,7 +109,7 @@ export function PortfolioPrivacySelect({
         aria-haspopup="listbox"
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "relative flex h-9 w-full cursor-pointer items-center gap-2 rounded-[10px] bg-[#F4F4F5] py-2 pl-4 pr-10 text-left text-sm font-normal text-[#09090B] outline-none transition-colors hover:bg-[#EBEBEB] focus-visible:ring-2 focus-visible:ring-[#09090B]/10",
+          "relative flex h-9 w-full cursor-pointer items-center gap-2 rounded-[10px] bg-[#F4F4F5] py-2 pl-4 pr-10 text-left text-sm font-normal text-[#0F0F0F] outline-none transition-colors hover:bg-[#EBEBEB] focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/10",
         )}
       >
         <ActiveIcon className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
@@ -117,7 +117,7 @@ export function PortfolioPrivacySelect({
       </button>
       <ChevronDown
         className={cn(
-          "pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[#09090B] transition-transform",
+          "pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[#0F0F0F] transition-transform",
           open && "rotate-180",
         )}
         strokeWidth={2}
@@ -155,7 +155,7 @@ export function PortfolioPrivacySelect({
                   </span>
                   <span className="flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden>
                     <Check
-                      className={cn("h-4 w-4 text-[#09090B]", !selected && "invisible")}
+                      className={cn("h-4 w-4 text-[#0F0F0F]", !selected && "invisible")}
                       strokeWidth={2}
                     />
                   </span>

@@ -149,7 +149,7 @@ export function ResetPasswordClient({ hasRecoveryToken = false }: ResetPasswordC
         <div className="mt-6 text-center">
           <Link
             href="/forgot-password"
-            className="text-sm font-semibold text-[#09090B] underline decoration-[#E4E4E7] underline-offset-4 transition-colors hover:decoration-[#A1A1AA]"
+            className="text-sm font-semibold text-[#0F0F0F] underline decoration-[#E4E4E7] underline-offset-4 transition-colors hover:decoration-[#A1A1AA]"
           >
             Back to forgot password
           </Link>
@@ -163,7 +163,7 @@ export function ResetPasswordClient({ hasRecoveryToken = false }: ResetPasswordC
       <form className="space-y-4" onSubmit={handleSubmit} noValidate>
         {isVerifying ? (
           <div className="flex justify-center py-1" role="status" aria-label="Confirming your reset link">
-            <Spinner className="size-6 text-[#09090B]" />
+            <Spinner className="size-6 text-[#0F0F0F]" />
           </div>
         ) : null}
 

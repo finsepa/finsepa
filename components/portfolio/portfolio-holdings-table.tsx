@@ -1,7 +1,7 @@
 "use client";
 
-import { ChevronDown, ChevronUp } from "@/lib/icons";
-import { Fragment, memo, startTransition, useCallback, useEffect, useRef, useState } from "react";
+import { ArrowDown, ArrowUp, ChevronDown, ChevronUp } from "@/lib/icons";
+import { Fragment, memo, startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -38,7 +38,7 @@ const EM_DASH = "\u2014";
 
 /** Matches screener company column (`screener-table.tsx`). */
 const HOLDING_COMPANY_NAME_CLASS =
-  "truncate text-[14px] font-semibold leading-5 text-[#09090B] underline-offset-2 decoration-[#71717A] group-hover:underline";
+  "truncate text-[14px] font-semibold leading-5 text-[#0F0F0F] underline-offset-2 decoration-[#71717A] group-hover:underline";
 
 /** Expand/collapse control for inline transaction history. */
 function PortfolioHoldingExpandButton({
@@ -59,8 +59,8 @@ function PortfolioHoldingExpandButton({
         onToggle();
       }}
       className={cn(
-        "inline-flex h-7 w-7 items-center justify-center rounded-full border border-transparent bg-transparent text-[#09090B]",
-        "transition-colors hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15",
+        "inline-flex h-7 w-7 items-center justify-center rounded-full border border-transparent bg-transparent text-[#0F0F0F]",
+        "transition-colors hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15",
         expanded && "bg-[#F4F4F5]",
       )}
     >
@@ -160,11 +160,11 @@ function PortfolioPnlBreakdownTooltip({
   const tooltip =
     open && mounted ? (
       <div
-        className="pointer-events-none fixed z-[200] w-[240px] rounded-[10px] border border-[#E4E4E7] bg-white px-3 py-2 text-left text-[12px] leading-4 text-[#09090B] shadow-[0px_8px_20px_0px_rgba(10,10,10,0.10)]"
+        className="pointer-events-none fixed z-[200] w-[240px] rounded-[10px] border border-[#E4E4E7] bg-white px-3 py-2 text-left text-[12px] leading-4 text-[#0F0F0F] shadow-[0px_8px_20px_0px_rgba(10,10,10,0.10)]"
         style={{ left: pos.left, top: pos.top }}
         role="tooltip"
       >
-        <div className="font-semibold text-[#09090B]">Profit/Loss</div>
+        <div className="font-semibold text-[#0F0F0F]">Profit/Loss</div>
         <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1">
           <div className="text-[#71717A]">Unrealized</div>
           <div className={cn("text-right tabular-nums", unrealizedUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]")}>
@@ -254,6 +254,54 @@ function formatSignedPct(n: number): string {
   return n >= 0 ? `+${s}%` : `-${s}%`;
 }
 
+type HoldingsSortKey = "holdings" | "pnl" | "weight";
+
+type HoldingTableRow = {
+  holding: PortfolioHolding;
+  retUsd: number;
+  totalPnlUsd: number;
+  weightPct: number;
+};
+
+function compareHoldingTableRows(a: HoldingTableRow, b: HoldingTableRow, key: HoldingsSortKey, dir: number): number {
+  if (key === "holdings") return (a.holding.currentValue - b.holding.currentValue) * dir;
+  if (key === "pnl") return (a.totalPnlUsd - b.totalPnlUsd) * dir;
+  return (a.weightPct - b.weightPct) * dir;
+}
+
+function HoldingsSortHeader({
+  label,
+  sortKey,
+  activeKey,
+  dir,
+  onSort,
+}: {
+  label: string;
+  sortKey: HoldingsSortKey;
+  activeKey: HoldingsSortKey;
+  dir: "asc" | "desc";
+  onSort: (key: HoldingsSortKey) => void;
+}) {
+  const active = activeKey === sortKey;
+  return (
+    <th className="whitespace-nowrap border-b border-[#E4E4E7] px-4 py-[10px] text-right">
+      <button
+        type="button"
+        className="inline-flex w-full items-center justify-end gap-1 rounded hover:text-[#0F0F0F]"
+        onClick={() => onSort(sortKey)}
+        aria-label={`Sort by ${label}`}
+      >
+        {label}
+        {active ?
+          dir === "desc" ?
+            <ArrowDown className="h-3.5 w-3.5 shrink-0" aria-hidden />
+          : <ArrowUp className="h-3.5 w-3.5 shrink-0" aria-hidden />
+        : null}
+      </button>
+    </th>
+  );
+}
+
 function PortfolioHoldingsTableInner({
   holdings,
   transactions,
@@ -280,11 +328,21 @@ function PortfolioHoldingsTableInner({
   const [removeTarget, setRemoveTarget] = useState<PortfolioHolding | null>(null);
   const [openActionsHoldingId, setOpenActionsHoldingId] = useState<string | null>(null);
   const [expandedHoldingId, setExpandedHoldingId] = useState<string | null>(null);
+  const [sort, setSort] = useState<{ key: HoldingsSortKey; dir: "asc" | "desc" }>({
+    key: "weight",
+    dir: "desc",
+  });
   const resolvedCompanyNames = usePortfolioHoldingDisplayNames(holdings);
   const router = useRouter();
 
   const toggleExpandedHolding = useCallback((holdingId: string) => {
     setExpandedHoldingId((cur) => (cur === holdingId ? null : holdingId));
+  }, []);
+
+  const onSort = useCallback((key: HoldingsSortKey) => {
+    setSort((s) =>
+      s.key === key ? { key, dir: s.dir === "desc" ? "asc" : "desc" } : { key, dir: "desc" },
+    );
   }, []);
 
   const tableColSpan = selectedPortfolioReadOnly ? 7 : 8;
@@ -329,14 +387,23 @@ function PortfolioHoldingsTableInner({
   const allocationDenomUsd = equityValue + Math.max(0, cashUsd);
   const cashWeightPct = allocationDenomUsd > 0 && cashUsd > 0 ? (cashUsd / allocationDenomUsd) * 100 : 0;
 
-  const rows = holdings.map((h) => {
-    const retUsd = h.currentValue - h.costBasis;
-    const weightRaw = allocationDenomUsd > 0 ? (h.currentValue / allocationDenomUsd) * 100 : 0;
-    const weightPct = Math.min(100, Math.max(0, weightRaw));
-    return { holding: h, retUsd, weightPct };
-  });
+  const rows = useMemo((): HoldingTableRow[] => {
+    return holdings.map((h) => {
+      const retUsd = h.currentValue - h.costBasis;
+      const cryptoKey = cryptoRouteBase(h.symbol);
+      const assetKind: "stock" | "crypto" =
+        isSupportedCryptoAssetSymbol(cryptoKey) ? "crypto" : "stock";
+      const realizedUsd = cumulativeRealizedGainUsdForAsset(transactions, cryptoKey, assetKind);
+      const weightRaw = allocationDenomUsd > 0 ? (h.currentValue / allocationDenomUsd) * 100 : 0;
+      const weightPct = Math.min(100, Math.max(0, weightRaw));
+      return { holding: h, retUsd, totalPnlUsd: retUsd + realizedUsd, weightPct };
+    });
+  }, [holdings, transactions, allocationDenomUsd]);
 
-  const sorted = [...rows].sort((a, b) => b.weightPct - a.weightPct);
+  const sorted = useMemo(() => {
+    const dir = sort.dir === "desc" ? -1 : 1;
+    return [...rows].sort((a, b) => compareHoldingTableRows(a, b, sort.key, dir));
+  }, [rows, sort]);
 
   return (
     <>
@@ -380,7 +447,7 @@ function PortfolioHoldingsTableInner({
 
             const right = (
               <div className="min-w-0 text-right">
-                <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#09090B]">
+                <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#0F0F0F]">
                   {usd0.format(h.currentValue)}
                 </div>
                 <div
@@ -402,7 +469,7 @@ function PortfolioHoldingsTableInner({
                 {assetHref ? (
                   <Link
                     href={assetHref}
-                    className="absolute inset-0 z-0 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-[#09090B]/15 focus-visible:ring-offset-2"
+                    className="absolute inset-0 z-0 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15 focus-visible:ring-offset-2"
                     aria-label={`Open ${companyName}`}
                   />
                 ) : null}
@@ -416,14 +483,14 @@ function PortfolioHoldingsTableInner({
             <div className="flex min-w-0 items-center gap-3">
               <CompanyLogo name="US Dollar" logoUrl="" symbol="USD" />
               <div className="min-w-0">
-                <div className="truncate text-[14px] font-semibold leading-5 text-[#09090B]">US Dollar</div>
+                <div className="truncate text-[14px] font-semibold leading-5 text-[#0F0F0F]">US Dollar</div>
                 <div className="truncate text-[12px] font-normal leading-4 text-[#71717A]">
                   USD · {formatSharesDisplay(cashUsd)} USD
                 </div>
               </div>
             </div>
             <div className="min-w-0 text-right">
-              <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#09090B]">
+              <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#0F0F0F]">
                 {usd0.format(cashUsd)}
               </div>
               <div className="mt-0.5 truncate text-[12px] font-medium leading-4 tabular-nums text-[#71717A]">
@@ -436,16 +503,34 @@ function PortfolioHoldingsTableInner({
 
       <table className="hidden w-full min-w-[960px] border-separate border-spacing-0 sm:table">
         <thead>
-          <tr className="min-h-[44px] bg-white text-[14px] font-medium leading-5 text-[#71717A]">
-            <th className="w-11 border-b border-[#E4E4E7] px-2 py-3" aria-hidden />
-            <th className="whitespace-nowrap border-b border-[#E4E4E7] px-4 py-3 text-left">Asset</th>
-            <th className="whitespace-nowrap border-b border-[#E4E4E7] px-4 py-3 text-right">Price</th>
-            <th className="whitespace-nowrap border-b border-[#E4E4E7] px-4 py-3 text-right">Holdings</th>
-            <th className="whitespace-nowrap border-b border-[#E4E4E7] px-4 py-3 text-right">Avg. Buy Price</th>
-            <th className="whitespace-nowrap border-b border-[#E4E4E7] px-4 py-3 text-right">Profit/Loss</th>
-            <th className="whitespace-nowrap border-b border-[#E4E4E7] px-4 py-3 text-right">Weight</th>
+          <tr className="min-h-[40px] bg-white text-[14px] font-medium leading-5 text-[#71717A]">
+            <th className="w-11 border-b border-[#E4E4E7] px-2 py-[10px]" aria-hidden />
+            <th className="whitespace-nowrap border-b border-[#E4E4E7] px-4 py-[10px] text-left">Asset</th>
+            <th className="whitespace-nowrap border-b border-[#E4E4E7] px-4 py-[10px] text-right">Price</th>
+            <HoldingsSortHeader
+              label="Holdings"
+              sortKey="holdings"
+              activeKey={sort.key}
+              dir={sort.dir}
+              onSort={onSort}
+            />
+            <th className="whitespace-nowrap border-b border-[#E4E4E7] px-4 py-[10px] text-right">Avg. Buy Price</th>
+            <HoldingsSortHeader
+              label="Profit/Loss"
+              sortKey="pnl"
+              activeKey={sort.key}
+              dir={sort.dir}
+              onSort={onSort}
+            />
+            <HoldingsSortHeader
+              label="Weight"
+              sortKey="weight"
+              activeKey={sort.key}
+              dir={sort.dir}
+              onSort={onSort}
+            />
             {!selectedPortfolioReadOnly ? (
-              <th className="w-12 border-b border-[#E4E4E7] px-4 py-3 text-right" aria-label="Actions" />
+              <th className="w-12 border-b border-[#E4E4E7] px-4 py-[10px] text-right" aria-label="Actions" />
             ) : null}
           </tr>
         </thead>
@@ -476,7 +561,7 @@ function PortfolioHoldingsTableInner({
             <Fragment key={h.id}>
             <tr
               className={cn(
-                "group relative h-[60px] max-h-[60px] transition-colors duration-75 hover:bg-neutral-50",
+                "group relative h-[56px] max-h-[56px] transition-colors duration-75 hover:bg-neutral-50",
                 assetHref && !expanded && "cursor-pointer",
               )}
               onClick={
@@ -522,7 +607,7 @@ function PortfolioHoldingsTableInner({
               </td>
               <td
                 className={cn(
-                  "relative z-[1] align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]",
+                  "relative z-[1] align-middle whitespace-nowrap px-4 py-[10px] text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#0F0F0F]",
                   holdingRowTdBorder(expanded),
                 )}
               >
@@ -530,11 +615,11 @@ function PortfolioHoldingsTableInner({
               </td>
               <td
                 className={cn(
-                  "relative z-[1] align-middle whitespace-nowrap px-4 py-3 text-right",
+                  "relative z-[1] align-middle whitespace-nowrap px-4 py-[10px] text-right",
                   holdingRowTdBorder(expanded),
                 )}
               >
-                <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#09090B]">
+                <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#0F0F0F]">
                   {usd0.format(h.currentValue)}
                 </div>
                 <div className="text-[12px] font-normal leading-4 tabular-nums text-[#71717A]">
@@ -543,7 +628,7 @@ function PortfolioHoldingsTableInner({
               </td>
               <td
                 className={cn(
-                  "relative z-[1] align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]",
+                  "relative z-[1] align-middle whitespace-nowrap px-4 py-[10px] text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#0F0F0F]",
                   holdingRowTdBorder(expanded),
                 )}
               >
@@ -551,7 +636,7 @@ function PortfolioHoldingsTableInner({
               </td>
               <td
                 className={cn(
-                  "relative z-[1] align-middle whitespace-nowrap px-4 py-3 text-right",
+                  "relative z-[1] align-middle whitespace-nowrap px-4 py-[10px] text-right",
                   holdingRowTdBorder(expanded),
                 )}
               >
@@ -564,7 +649,7 @@ function PortfolioHoldingsTableInner({
               </td>
               <td
                 className={cn(
-                  "relative z-[1] align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]",
+                  "relative z-[1] align-middle whitespace-nowrap px-4 py-[10px] text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#0F0F0F]",
                   holdingRowTdBorder(expanded),
                 )}
               >
@@ -573,7 +658,7 @@ function PortfolioHoldingsTableInner({
               {!selectedPortfolioReadOnly ? (
                 <td
                   className={cn(
-                    "relative z-[2] align-middle px-4 py-3 text-right",
+                    "relative z-[2] align-middle px-4 py-[10px] text-right",
                     holdingRowTdBorder(expanded),
                   )}
                   data-holding-actions
@@ -629,28 +714,28 @@ function PortfolioHoldingsTableInner({
                 </div>
               </div>
             </td>
-            <td className="relative z-[1] border-b border-[#E4E4E7] align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
+            <td className="relative z-[1] border-b border-[#E4E4E7] align-middle whitespace-nowrap px-4 py-[10px] text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#0F0F0F]">
               {formatPortfolioUsdPerUnit(1)}
             </td>
-            <td className="relative z-[1] border-b border-[#E4E4E7] align-middle whitespace-nowrap px-4 py-3 text-right">
-              <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#09090B]">
+            <td className="relative z-[1] border-b border-[#E4E4E7] align-middle whitespace-nowrap px-4 py-[10px] text-right">
+              <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#0F0F0F]">
                 {usd0.format(cashUsd)}
               </div>
               <div className="text-[12px] font-normal leading-4 tabular-nums text-[#71717A]">
                 {formatSharesDisplay(cashUsd)} USD
               </div>
             </td>
-            <td className="relative z-[1] border-b border-[#E4E4E7] align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
+            <td className="relative z-[1] border-b border-[#E4E4E7] align-middle whitespace-nowrap px-4 py-[10px] text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#0F0F0F]">
               {formatPortfolioUsdPerUnit(1)}
             </td>
-            <td className="relative z-[1] border-b border-[#E4E4E7] align-middle whitespace-nowrap px-4 py-3 text-right">
+            <td className="relative z-[1] border-b border-[#E4E4E7] align-middle whitespace-nowrap px-4 py-[10px] text-right">
               <div className="text-[14px] font-medium tabular-nums text-[#71717A]">{EM_DASH}</div>
               <div className="text-[12px] font-medium tabular-nums text-[#71717A]">{EM_DASH}</div>
             </td>
-            <td className="relative z-[1] border-b border-[#E4E4E7] align-middle whitespace-nowrap px-4 py-3 text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#09090B]">
+            <td className="relative z-[1] border-b border-[#E4E4E7] align-middle whitespace-nowrap px-4 py-[10px] text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#0F0F0F]">
               {pct.format(cashWeightPct)}%
             </td>
-            <td className="relative z-[1] border-b border-[#E4E4E7] align-middle px-4 py-3 text-right" aria-hidden />
+            <td className="relative z-[1] border-b border-[#E4E4E7] align-middle px-4 py-[10px] text-right" aria-hidden />
           </tr>
         </tbody>
       </table>
