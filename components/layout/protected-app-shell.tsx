@@ -42,9 +42,13 @@ export async function ProtectedAppShell({
     headers(),
   ]);
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let user: Awaited<ReturnType<typeof supabase.auth.getUser>>["data"]["user"] = null;
+  try {
+    const result = await supabase.auth.getUser();
+    user = result.data.user;
+  } catch {
+    redirect(PATH_LOGIN);
+  }
 
   if (!user) {
     redirect(PATH_LOGIN);

@@ -1,6 +1,8 @@
 import { createBrowserClient } from "@supabase/ssr";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { supabaseAuthTimedFetch, SUPABASE_AUTH_BROWSER_FETCH_TIMEOUT_MS } from "@/lib/supabase/auth-fetch-timeout";
+
 let injected: { url: string; anonKey: string } | null = null;
 
 let browserClient: SupabaseClient | null = null;
@@ -39,7 +41,7 @@ async function supabaseSafeFetch(
   init?: RequestInit,
 ): Promise<Response> {
   try {
-    return await fetch(input, init);
+    return await supabaseAuthTimedFetch(input, init, SUPABASE_AUTH_BROWSER_FETCH_TIMEOUT_MS);
   } catch {
     return new Response(JSON.stringify({ message: "Network Error" }), {
       status: 503,

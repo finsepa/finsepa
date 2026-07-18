@@ -22,7 +22,7 @@ async function getMiddlewareUser(
     ]);
     return result.data.user ?? null;
   } catch {
-    // Auth outage / timeout: treat as logged out so auth pages still render.
+    // Auth outage / timeout: treat as logged out so pages still render.
     return null;
   }
 }
@@ -32,7 +32,6 @@ export async function middleware(request: NextRequest) {
   const PATH_LOGIN = "/login";
   const PATH_SIGNUP = "/signup";
   const PATH_FORGOT_PASSWORD = "/forgot-password";
-  const PATH_APP_ENTRY = "/screener";
   const PATH_ACTIVATE_SUBSCRIPTION = "/activate-subscription";
 
   const path = request.nextUrl.pathname;
@@ -76,8 +75,12 @@ export async function middleware(request: NextRequest) {
 
   const isAuthGatePagePath = path === PATH_LOGIN || path === PATH_SIGNUP || path === PATH_FORGOT_PASSWORD;
 
-  // Logged-out visitors on auth pages: skip Supabase round-trip (major TTFB win on /login).
-  if (isAuthGatePagePath && !requestHasSupabaseAuthCookies(request.cookies.getAll())) {
+  /**
+   * Never call remote Auth on login/signup/forgot-password.
+   * During Supabase 522s, even a "fail-fast" getUser abort still delays the page and
+   * floods logs with TimeoutError — and logged-in redirect is not worth that risk.
+   */
+  if (isAuthGatePagePath) {
     return NextResponse.next();
   }
 
@@ -89,6 +92,13 @@ export async function middleware(request: NextRequest) {
   if (!url || !key) {
     if (isProtectedPath) return NextResponse.redirect(new URL(PATH_LOGIN, request.url));
     return NextResponse.next();
+  }
+
+  // No session cookies → skip remote Auth on protected routes (redirect immediately).
+  if ((isProtectedPath || isActivateSubscriptionPath) && !requestHasSupabaseAuthCookies(request.cookies.getAll())) {
+    const loginUrl = new URL(PATH_LOGIN, request.url);
+    loginUrl.searchParams.set("next", path);
+    return NextResponse.redirect(loginUrl);
   }
 
   // Minimal, Edge-safe Supabase client that reads/writes cookies.
@@ -112,10 +122,6 @@ export async function middleware(request: NextRequest) {
   });
 
   const user = await getMiddlewareUser(supabase);
-
-  if (user && isAuthGatePagePath) {
-    return NextResponse.redirect(new URL(PATH_APP_ENTRY, request.url));
-  }
 
   if (!user && (isProtectedPath || isActivateSubscriptionPath)) {
     // Preserve where the user was trying to go (optional).
