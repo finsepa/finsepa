@@ -26,7 +26,8 @@ const SUPABASE_KEY =
   process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() ?? process.env.SUPABASE_SERVICE_KEY?.trim();
 
 const WATCH_MAX_AGE_MS = Number(process.env.STOCK_WS_WATCH_MAX_AGE_MS ?? 5 * 60 * 1000);
-const WATCH_POLL_MS = Number(process.env.STOCK_WS_WATCH_POLL_MS ?? 30 * 1000);
+/** Default 60s — watchlist polls were contributing load during Supabase 522 incidents. */
+const WATCH_POLL_MS = Number(process.env.STOCK_WS_WATCH_POLL_MS ?? 60 * 1000);
 const HEARTBEAT_MS = Number(process.env.STOCK_WS_HEARTBEAT_MS ?? 5 * 60 * 1000);
 const MAX_SYMBOLS = Number(process.env.STOCK_WS_MAX_SYMBOLS ?? 50);
 const INCLUDE_WATCHLIST = !stockWsCuratedMode() && process.env.STOCK_WS_WATCHLIST !== "0";
@@ -275,15 +276,34 @@ function scheduleFlush() {
 
 let flushInProgress = false;
 let watchPollDeferred = false;
-const FLUSH_DEBOUNCE_MS = Number(process.env.STOCK_WS_FLUSH_DEBOUNCE_MS ?? 200);
-const FLUSH_URGENT_THRESHOLD = Number(process.env.STOCK_WS_FLUSH_URGENT_THRESHOLD ?? 8);
+/** Softer defaults reduce PostgREST QPS when the origin is under load / returning 522. */
+const FLUSH_DEBOUNCE_MS = Number(process.env.STOCK_WS_FLUSH_DEBOUNCE_MS ?? 1_500);
+const FLUSH_URGENT_THRESHOLD = Number(process.env.STOCK_WS_FLUSH_URGENT_THRESHOLD ?? 40);
 const FLUSH_MAX_ROWS_PER_CYCLE = Number(process.env.STOCK_WS_FLUSH_MAX_ROWS ?? 100);
 const FLUSH_CHUNK_SIZE = Number(process.env.STOCK_WS_FLUSH_CHUNK_SIZE ?? 15);
 const FLUSH_MAX_ATTEMPTS = Number(process.env.STOCK_WS_FLUSH_MAX_ATTEMPTS ?? 5);
-const FLUSH_PERIODIC_MS = Number(process.env.STOCK_WS_FLUSH_PERIODIC_MS ?? 1_000);
+const FLUSH_PERIODIC_MS = Number(process.env.STOCK_WS_FLUSH_PERIODIC_MS ?? 3_000);
 
-function flushBackoffMs(attempt) {
-  return Math.min(8_000, 400 * 2 ** attempt);
+function isTransientUpsertFailure(message) {
+  const m = String(message ?? "").toLowerCase();
+  return (
+    m.includes("522") ||
+    m.includes("timeout") ||
+    m.includes("timed out") ||
+    m.includes("abort") ||
+    m.includes("fetch failed") ||
+    m.includes("econnreset") ||
+    m.includes("503") ||
+    m.includes("502") ||
+    m.includes("504")
+  );
+}
+
+function flushBackoffMs(attempt, message = "") {
+  const base = isTransientUpsertFailure(message)
+    ? Math.min(60_000, 1_000 * 2 ** attempt)
+    : Math.min(8_000, 400 * 2 ** attempt);
+  return base;
 }
 
 async function upsertMinuteBarChunk(chunk) {
@@ -309,7 +329,7 @@ async function saveMinuteBarRows(rows) {
         const msg = err instanceof Error ? err.message : String(err);
         log("upsert error", msg, "rows", chunk.length, "attempt", attempt + 1);
         if (attempt < FLUSH_MAX_ATTEMPTS - 1) {
-          await new Promise((r) => setTimeout(r, flushBackoffMs(attempt)));
+          await new Promise((r) => setTimeout(r, flushBackoffMs(attempt, msg)));
         }
       }
     }
@@ -326,7 +346,7 @@ async function saveMinuteBarRows(rows) {
             const msg = err instanceof Error ? err.message : String(err);
             log("upsert error", msg, "rows", 1, "attempt", attempt + 1, "fallback");
             if (attempt < FLUSH_MAX_ATTEMPTS - 1) {
-              await new Promise((r) => setTimeout(r, flushBackoffMs(attempt)));
+              await new Promise((r) => setTimeout(r, flushBackoffMs(attempt, msg)));
             }
           }
         }

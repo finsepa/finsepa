@@ -10,6 +10,8 @@
  * - Emits a heartbeat bucket every ~60s from the last seen price so the line stays continuous
  *   even during quiet trade minutes.
  * - Exposes /health for Railway.
+ *
+ * Under Supabase 522 / timeouts: exponential backoff before retry (no immediate re-flush storm).
  */
 
 import dns from "node:dns";
@@ -30,7 +32,10 @@ const WS_PAIRS = (process.env.CRYPTO_WS_PAIRS ?? "BTC-USD")
   .map((s) => s.trim().toUpperCase())
   .filter(Boolean);
 const HEARTBEAT_MS = Number(process.env.CRYPTO_WS_HEARTBEAT_MS ?? 60_000);
-const FLUSH_DEBOUNCE_MS = Number(process.env.CRYPTO_WS_FLUSH_DEBOUNCE_MS ?? 500);
+/** Default 2s — avoids hammering PostgREST when Auth/DB is degraded. */
+const FLUSH_DEBOUNCE_MS = Number(process.env.CRYPTO_WS_FLUSH_DEBOUNCE_MS ?? 2_000);
+const FLUSH_MAX_ATTEMPTS = Number(process.env.CRYPTO_WS_FLUSH_MAX_ATTEMPTS ?? 5);
+const SUPABASE_UPSERT_TIMEOUT_MS = Number(process.env.SUPABASE_UPSERT_TIMEOUT_MS ?? 15_000);
 const HEALTH_PORT = Number(process.env.PORT ?? process.env.CRYPTO_WS_HEALTH_PORT ?? 8080);
 
 const health = {
@@ -42,6 +47,7 @@ const health = {
   lastPrice: null,
   lastFlushAt: null,
   pendingUpserts: 0,
+  flushBackoffMs: 0,
   startedAt: new Date().toISOString(),
 };
 
@@ -56,8 +62,31 @@ function fail(msg) {
 if (!EODHD_KEY) fail("Missing EODHD_API_KEY");
 if (!SUPABASE_URL || !SUPABASE_KEY) fail("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
 
+function makeSupabaseFetch(timeoutMs) {
+  return function supabaseFetch(url, options = {}) {
+    const ac = new AbortController();
+    const timer = setTimeout(() => ac.abort(), timeoutMs);
+    const outerSignal = options.signal;
+    if (outerSignal) {
+      if (outerSignal.aborted) ac.abort();
+      else outerSignal.addEventListener("abort", () => ac.abort(), { once: true });
+    }
+    const { signal: _ignored, ...rest } = options;
+    return fetch(url, { ...rest, signal: ac.signal })
+      .catch((err) => {
+        const cause = err instanceof Error && "cause" in err ? err.cause : null;
+        if (cause) {
+          throw new Error(`${err.message} (${String(cause)})`, { cause: err });
+        }
+        throw err;
+      })
+      .finally(() => clearTimeout(timer));
+  };
+}
+
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
+  global: { fetch: makeSupabaseFetch(SUPABASE_UPSERT_TIMEOUT_MS) },
 });
 
 /** `BTC-USD` | `BTC-USD.CC` → `BTC` (base symbol we store). */
@@ -83,12 +112,34 @@ function resolveTradeSec(rawTs) {
   return sec;
 }
 
+function isTransientUpsertFailure(message) {
+  const m = String(message ?? "").toLowerCase();
+  return (
+    m.includes("522") ||
+    m.includes("timeout") ||
+    m.includes("timed out") ||
+    m.includes("abort") ||
+    m.includes("fetch failed") ||
+    m.includes("econnreset") ||
+    m.includes("socket hang up") ||
+    m.includes("503") ||
+    m.includes("502") ||
+    m.includes("504")
+  );
+}
+
+function flushBackoffMs(attempt) {
+  // Cap high so a Supabase outage cannot spin PostgREST.
+  return Math.min(60_000, 1_000 * 2 ** attempt);
+}
+
 /** @type {Map<string, { ticker: string, bucket_unix: number, close: number, updated_at: string }>} */
 const pendingUpserts = new Map();
 /** @type {Map<string, number>} last price per base symbol (for heartbeat). */
 const lastPriceBySymbol = new Map();
 let flushTimer = null;
 let flushInProgress = false;
+let consecutiveFlushFailures = 0;
 
 function queueMinuteClose(base, tradeSec, price) {
   if (!base || !Number.isFinite(price) || price <= 0) return;
@@ -106,12 +157,13 @@ function queueMinuteClose(base, tradeSec, price) {
   scheduleFlush();
 }
 
-function scheduleFlush() {
+function scheduleFlush(delayMs = FLUSH_DEBOUNCE_MS) {
   if (flushTimer || flushInProgress) return;
+  const wait = Math.max(delayMs, health.flushBackoffMs || 0);
   flushTimer = setTimeout(() => {
     flushTimer = null;
     void flushPendingUpserts();
-  }, FLUSH_DEBOUNCE_MS);
+  }, wait);
 }
 
 async function flushPendingUpserts() {
@@ -120,24 +172,51 @@ async function flushPendingUpserts() {
   const rows = Array.from(pendingUpserts.values());
   pendingUpserts.clear();
   health.pendingUpserts = 0;
-  try {
-    const { error } = await supabase
-      .from("crypto_session_minute_bar")
-      .upsert(rows, { onConflict: "ticker,bucket_unix" });
-    if (error) {
-      log("upsert error", error.message, "rows", rows.length);
-      for (const row of rows) pendingUpserts.set(`${row.ticker}:${row.bucket_unix}`, row);
-    } else {
+  let saved = false;
+  let lastError = null;
+
+  for (let attempt = 0; attempt < FLUSH_MAX_ATTEMPTS && !saved; attempt++) {
+    try {
+      const { error } = await supabase
+        .from("crypto_session_minute_bar")
+        .upsert(rows, { onConflict: "ticker,bucket_unix" });
+      if (error) throw new Error(error.message);
+      saved = true;
+      consecutiveFlushFailures = 0;
+      health.flushBackoffMs = 0;
       health.lastFlushAt = new Date().toISOString();
       log("upserted", rows.length, "minute bars");
+    } catch (err) {
+      lastError = err instanceof Error ? err.message : String(err);
+      log("upsert error", lastError, "rows", rows.length, "attempt", attempt + 1);
+      if (attempt < FLUSH_MAX_ATTEMPTS - 1) {
+        const wait = flushBackoffMs(attempt);
+        health.flushBackoffMs = wait;
+        await new Promise((r) => setTimeout(r, wait));
+      }
     }
-  } catch (err) {
-    log("upsert threw", err instanceof Error ? err.message : String(err));
+  }
+
+  if (!saved) {
+    consecutiveFlushFailures += 1;
     for (const row of rows) pendingUpserts.set(`${row.ticker}:${row.bucket_unix}`, row);
-  } finally {
-    flushInProgress = false;
-    health.pendingUpserts = pendingUpserts.size;
-    if (pendingUpserts.size > 0) scheduleFlush();
+    const wait = flushBackoffMs(Math.min(consecutiveFlushFailures + 2, 8));
+    health.flushBackoffMs = wait;
+    log(
+      "upsert deferred",
+      "failures",
+      consecutiveFlushFailures,
+      "backoffMs",
+      wait,
+      "transient",
+      isTransientUpsertFailure(lastError),
+    );
+  }
+
+  flushInProgress = false;
+  health.pendingUpserts = pendingUpserts.size;
+  if (pendingUpserts.size > 0) {
+    scheduleFlush(saved ? FLUSH_DEBOUNCE_MS : health.flushBackoffMs || FLUSH_DEBOUNCE_MS);
   }
 }
 
@@ -219,7 +298,9 @@ startHealthServer();
 connectWs();
 setInterval(heartbeatTick, HEARTBEAT_MS);
 
-process.on("SIGTERM", () => {
-  log("SIGTERM — flushing and exiting");
-  void flushPendingUpserts().finally(() => process.exit(0));
+log("crypto WS minute ingest starting", {
+  pairs: WS_PAIRS,
+  heartbeatMs: HEARTBEAT_MS,
+  flushDebounceMs: FLUSH_DEBOUNCE_MS,
+  upsertTimeoutMs: SUPABASE_UPSERT_TIMEOUT_MS,
 });
