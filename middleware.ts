@@ -2,6 +2,30 @@ import { type NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
 import { requestHasSupabaseAuthCookies } from "@/lib/auth/supabase-auth-cookies";
+import { supabaseAuthTimedFetch } from "@/lib/supabase/auth-fetch-timeout";
+
+/**
+ * Cap Auth round-trips so a Supabase Cloudflare 522 / hang cannot burn the full
+ * Vercel Edge 25s budget (which surfaces as Cloudflare 504 on /login).
+ */
+const AUTH_GET_USER_BUDGET_MS = 5_000;
+
+async function getMiddlewareUser(
+  supabase: ReturnType<typeof createServerClient>,
+): Promise<{ id: string } | null> {
+  try {
+    const result = await Promise.race([
+      supabase.auth.getUser(),
+      new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error("supabase_auth_timeout")), AUTH_GET_USER_BUDGET_MS);
+      }),
+    ]);
+    return result.data.user ?? null;
+  } catch {
+    // Auth outage / timeout: treat as logged out so auth pages still render.
+    return null;
+  }
+}
 
 export async function middleware(request: NextRequest) {
   // Keep middleware Edge-safe: do not import app modules or server-only utilities.
@@ -82,11 +106,12 @@ export async function middleware(request: NextRequest) {
         });
       },
     },
+    global: {
+      fetch: supabaseAuthTimedFetch,
+    },
   });
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getMiddlewareUser(supabase);
 
   if (user && isAuthGatePagePath) {
     return NextResponse.redirect(new URL(PATH_APP_ENTRY, request.url));

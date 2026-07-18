@@ -3,6 +3,7 @@ import "server-only";
 import { createClient, type User } from "@supabase/supabase-js";
 
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { supabaseAuthTimedFetch } from "@/lib/supabase/auth-fetch-timeout";
 
 /**
  * Resolve the signed-in user from `Authorization: Bearer <access_token>` or session cookies.
@@ -18,14 +19,23 @@ export async function resolveAuthUserFromRequest(request: Request): Promise<User
   if (bearer && url && anonKey) {
     const jwtClient = createClient(url, anonKey, {
       auth: { persistSession: false, autoRefreshToken: false },
+      global: { fetch: supabaseAuthTimedFetch },
     });
-    const { data, error } = await jwtClient.auth.getUser(bearer);
-    if (!error && data.user) return data.user;
+    try {
+      const { data, error } = await jwtClient.auth.getUser(bearer);
+      if (!error && data.user) return data.user;
+    } catch {
+      /* Auth outage — fall through to cookie session */
+    }
   }
 
-  const supabase = await getSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  return user;
+  try {
+    const supabase = await getSupabaseServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    return user;
+  } catch {
+    return null;
+  }
 }

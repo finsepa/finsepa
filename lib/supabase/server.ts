@@ -1,6 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
+import { supabaseAuthTimedFetch } from "@/lib/supabase/auth-fetch-timeout";
+
 export async function getSupabaseServerClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key =
@@ -26,6 +28,9 @@ export async function getSupabaseServerClient() {
           /* ignore when called from a Server Component that cannot mutate cookies */
         }
       },
+    },
+    global: {
+      fetch: supabaseAuthTimedFetch,
     },
   });
 }
