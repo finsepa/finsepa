@@ -250,7 +250,8 @@ export function buildSlowKeyIndicators(input: BuildSlowKeyIndicatorsInput): Stoc
   const target = targetPayload.consensusTarget ?? targetPayload.wallStreetTarget;
   if (price != null && target != null && target > 0) {
     const pctVsTarget = ((price - target) / target) * 100;
-    const direction: StockKeyIndicatorDirection = pctVsTarget >= 0 ? "up" : "down";
+    // Above target = rich / overpriced (con); below target = discount to consensus (pro).
+    const direction: StockKeyIndicatorDirection = pctVsTarget >= 0 ? "down" : "up";
     const pct = fmtPct(pctVsTarget);
     out.push(
       indicator("vs_analyst_target", direction, [
@@ -339,6 +340,16 @@ export function mergeKeyIndicatorsForDisplay(
   for (const ind of withoutYtd) {
     if (merged.length >= KEY_INDICATORS_MAX_LINES) break;
     if (ind.id === "earnings_countdown") continue;
+    if (ind.id === "vs_analyst_target") {
+      const text = ind.parts.map((part) => part.value).join("");
+      const direction: StockKeyIndicatorDirection = text.includes(" above analyst target")
+        ? "down"
+        : text.includes(" below estimates")
+          ? "up"
+          : ind.direction;
+      merged.push(direction === ind.direction ? ind : { ...ind, direction });
+      continue;
+    }
     merged.push(ind);
   }
 

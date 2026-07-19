@@ -9,11 +9,15 @@ import { cn } from "@/lib/utils";
 
 type Row = { label: string; value: string };
 
+/** 4px dash / 4px gap divider (CSS `border-dashed` at 1px looks solid) — #E4E4E7 at 100%. */
+const DASHED_ROW_DIVIDER_CLASS =
+  "relative after:absolute after:inset-x-0 after:bottom-0 after:h-px after:[background-image:repeating-linear-gradient(90deg,#E4E4E7_0,#E4E4E7_4px,transparent_4px,transparent_8px)] last:after:hidden";
+
 function StatRow({ label, value }: { label: string; value: string }) {
   const valueClass =
     label === "Analyst Consensus" && value !== "—" ? consensusLabelTextClass(value) : "text-[#0F0F0F]";
   return (
-    <div className="flex items-center justify-between gap-3 border-b border-[#E4E4E7] py-1.5 last:border-0">
+    <div className={cn("flex items-center justify-between gap-3 py-1.5", DASHED_ROW_DIVIDER_CLASS)}>
       <span className="min-w-0 shrink cursor-pointer text-[14px] leading-5 text-[#0F0F0F] underline decoration-[#E4E4E7] underline-offset-2">
         {label}
       </span>
@@ -78,7 +82,7 @@ export function KeyStatsBasicCard({ ticker }: { ticker: string }) {
       {loading ? (
         <div className="space-y-2 pt-0.5" aria-hidden>
           {displayRows.map((r) => (
-            <div key={r.label} className="flex justify-between gap-3 border-b border-[#E4E4E7] py-1.5 last:border-0">
+            <div key={r.label} className={cn("flex justify-between gap-3 py-1.5", DASHED_ROW_DIVIDER_CLASS)}>
               <div className="h-4 w-28 rounded bg-neutral-100" />
               <div className="h-4 w-20 rounded bg-neutral-100" />
             </div>

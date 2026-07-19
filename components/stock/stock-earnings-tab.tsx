@@ -244,7 +244,8 @@ const reportsLabelTd =
 const reportsNumTd =
   "px-2 py-3 text-right align-middle font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#0F0F0F] sm:px-4";
 
-const reportsActionsTd = "w-[180px] min-w-[180px] px-2 py-3 text-right align-middle sm:px-4";
+/** Wide enough for Slides + Filings buttons plus sm:px-4 cell padding — content overflows over Rev. actual otherwise. */
+const reportsActionsTd = "w-[224px] min-w-[224px] px-2 py-3 text-right align-middle sm:px-4";
 
 function ReportsColGroup() {
   return (
@@ -255,7 +256,7 @@ function ReportsColGroup() {
       <col />
       <col />
       <col />
-      <col style={{ width: 180 }} />
+      <col style={{ width: 224 }} />
     </colgroup>
   );
 }

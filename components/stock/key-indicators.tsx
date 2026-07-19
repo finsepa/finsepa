@@ -98,6 +98,16 @@ function IndicatorColumn({ items }: { items: StockKeyIndicator[] }) {
   );
 }
 
+function SingleToneIndicatorGrid({ items }: { items: StockKeyIndicator[] }) {
+  return (
+    <ul className="grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-3">
+      {items.map((indicator) => (
+        <IndicatorLine key={indicator.id} indicator={indicator} />
+      ))}
+    </ul>
+  );
+}
+
 function KeyIndicatorsInner({
   ticker,
   initial = null,
@@ -164,10 +174,14 @@ function KeyIndicatorsInner({
     <section className={KEY_INDICATORS_CARD_CLASS} aria-label="Key indicators">
       <h3 className={cn("mb-3", STOCK_OVERVIEW_SECTION_TITLE_CLASS)}>Key Indicators</h3>
 
-      <div className={cn("grid gap-4", singleColumn ? "grid-cols-1" : "md:grid-cols-2")}>
-        {pros.length > 0 ? <IndicatorColumn items={pros} /> : null}
-        {cons.length > 0 ? <IndicatorColumn items={cons} /> : null}
-      </div>
+      {singleColumn ? (
+        <SingleToneIndicatorGrid items={pros.length > 0 ? pros : cons} />
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2">
+          <IndicatorColumn items={pros} />
+          <IndicatorColumn items={cons} />
+        </div>
+      )}
 
       {analyzedLabel ? (
         <p className="mt-4 text-[12px] leading-4 text-[#71717A]">Metrics analyzed at {analyzedLabel}</p>

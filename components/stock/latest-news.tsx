@@ -3,7 +3,10 @@
 import Link from "next/link";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { MOBILE_ELEVATED_CARD_CLASS } from "@/components/design-system/card-surface-styles";
+import {
+  MOBILE_ELEVATED_CARD_CLASS,
+  STOCK_OVERVIEW_SECTION_HEADING_CLASS,
+} from "@/components/design-system/card-surface-styles";
 import { SkeletonBox } from "@/components/markets/skeleton";
 import { CompanyLogo } from "@/components/screener/company-logo";
 import { getCryptoLogoUrl } from "@/lib/crypto/crypto-logo-url";
@@ -46,7 +49,7 @@ function formatPublishedLabel(iso: string): string {
   return "Just now";
 }
 
-const NEWS_GRID_CLASS = "grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2";
+const NEWS_GRID_CLASS = "grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-3";
 
 function assetNewsSeeAllHref(sym: string, variant: "stock" | "crypto"): string {
   const encoded = encodeURIComponent(sym);
@@ -148,7 +151,7 @@ function LatestNewsHeader({
 }) {
   return (
     <div className="mb-3 flex items-center justify-between max-md:px-0 sm:mb-4">
-      <h2 className="text-[18px] font-semibold leading-7 text-[#0F0F0F]">{title}</h2>
+      <h2 className={cn("max-md:text-[18px] max-md:leading-7", STOCK_OVERVIEW_SECTION_HEADING_CLASS)}>{title}</h2>
       {showSeeAll && seeAllHref ? (
         <Link
           href={seeAllHref}
@@ -402,7 +405,7 @@ function LatestNewsInner({
                   <span className="text-[12px] font-medium text-[#0F0F0F]">{item.source}</span>
                 </div>
                 <h3 className="line-clamp-2 text-[14px] font-semibold leading-5 text-[#0F0F0F] group-hover:underline">
-                  {item.title}
+                  {decodeNewsTitle(item.title)}
                 </h3>
               </a>
             ))}

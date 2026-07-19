@@ -129,7 +129,8 @@ function buildIndicators(ticker, root, price, benchYtd, stockYtd) {
     firstNum(hl, ["WallStreetTargetPrice", "TargetPrice"]);
   if (price != null && target != null && target > 0) {
     const pctVsTarget = ((price - target) / target) * 100;
-    const dir = pctVsTarget >= 0 ? "up" : "down";
+    // Above target = rich / overpriced (con); below target = discount to consensus (pro).
+    const dir = pctVsTarget >= 0 ? "down" : "up";
     indicators.push({
       id: "vs_analyst_target",
       direction: dir,

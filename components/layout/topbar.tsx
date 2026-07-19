@@ -204,14 +204,6 @@ export function Topbar({
             mobileAssetRoute ? "hidden md:flex" : "max-md:ml-auto",
           )}
         >
-          <div className="hidden shrink-0 md:flex">
-            <TopbarQuickAddMenu showDesktopLabel desktopLabel="Add" dwellTooltipLabel="Add" />
-          </div>
-
-          <div className="hidden sm:flex sm:shrink-0">
-            <TopbarPortfolioBlock />
-          </div>
-
           {TOPBAR_SHOW_NOTIFICATIONS ? (
             <TopbarDelayedTooltip label="Notifications" className="shrink-0" enabled={!notificationsOpen}>
               <button
@@ -240,6 +232,14 @@ export function Topbar({
               </button>
             </TopbarDelayedTooltip>
           ) : null}
+
+          <div className="hidden shrink-0 md:flex">
+            <TopbarQuickAddMenu dwellTooltipLabel="Add" />
+          </div>
+
+          <div className="hidden sm:flex sm:shrink-0">
+            <TopbarPortfolioBlock />
+          </div>
 
           <TopbarUpgradeButton userId={userId} platformTrialDaysLeft={platformTrialDaysLeft} isPro={isPro} />
 

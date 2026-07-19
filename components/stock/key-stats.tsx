@@ -9,14 +9,17 @@ import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useStat
 import { CalendarDays } from "@/lib/icons";
 
 import { cn } from "@/lib/utils";
-import { MOBILE_INSET_CARD_CLASS, STOCK_OVERVIEW_SECTION_TITLE_CLASS } from "@/components/design-system/card-surface-styles";
+import {
+  MOBILE_INSET_CARD_CLASS,
+  STOCK_OVERVIEW_SECTION_TITLE_CLASS,
+} from "@/components/design-system/card-surface-styles";
 import { consensusLabelTextClass } from "@/lib/market/analyst-consensus-tone";
 
 const KEY_STATS_TAB_MOTION_MS = 280;
 const KEY_STATS_TAB_MOTION_EASE = "cubic-bezier(0.33, 1, 0.68, 1)";
 
 /** Mobile matches screener home table card — 16px radius, stacked shadow, no outer border. */
-const KEY_STATS_CARD_CLASS = cn("mb-5 p-4 max-md:mb-0", MOBILE_INSET_CARD_CLASS);
+const KEY_STATS_CARD_CLASS = cn("min-w-0 p-4", MOBILE_INSET_CARD_CLASS);
 
 /** Mobile shell: tabs + body share one inset card (tabs bleed edge-to-edge). */
 const KEY_STATS_MOBILE_SHELL_CLASS = cn(
@@ -24,7 +27,9 @@ const KEY_STATS_MOBILE_SHELL_CLASS = cn(
   MOBILE_INSET_CARD_CLASS,
 );
 
-const KEY_STATS_ROW_BORDER_CLASS = "border-b border-[#E4E4E7] max-md:border-b-[0.5px]";
+/** 4px dash / 4px gap (CSS `border-dashed` at 1px looks solid) — #E4E4E7 at 100%. */
+const KEY_STATS_ROW_BORDER_CLASS =
+  "relative after:absolute after:inset-x-0 after:bottom-0 after:h-px after:[background-image:repeating-linear-gradient(90deg,#E4E4E7_0,#E4E4E7_4px,transparent_4px,transparent_8px)] last:after:hidden";
 /** Mobile keeps the taller row; web reverts to the original compact height (matches crypto key stats). */
 const KEY_STATS_ROW_PY_CLASS = "py-2.5 md:py-1.5";
 
@@ -746,76 +751,70 @@ function KeyStatsInner({
         </div>
       </div>
 
-      <div className="hidden grid-cols-2 gap-5 md:grid md:grid-cols-3">
-        <div>
-          <BasicCard rows={bundle?.basic ?? null} loading={loading} onMetricClick={onOpenMetricChart} />
-          <DynamicCard
-            title="Valuation"
-            rowLabels={VALUATION_LABELS}
-            rows={bundle?.valuation ?? null}
-            loading={loading}
-            labelToMetric={VALUATION_LABEL_TO_METRIC}
-            onMetricClick={onOpenMetricChart}
-          />
-        </div>
-
-        <div>
-          <RevenueProfitCard
-            rows={bundle?.revenueProfit ?? null}
-            loading={loading}
-            onMetricClick={onOpenMetricChart}
-          />
-          <DynamicCard
-            title="Margins"
-            rowLabels={MARGINS_LABELS}
-            rows={bundle?.margins ?? null}
-            loading={loading}
-            labelToMetric={MARGINS_LABEL_TO_METRIC}
-            onMetricClick={onOpenMetricChart}
-          />
-          <DynamicCard
-            title="Growth"
-            rowLabels={GROWTH_LABELS}
-            rows={bundle?.growth ?? null}
-            loading={loading}
-            labelToMetric={GROWTH_LABEL_TO_METRIC}
-            onMetricClick={onOpenMetricChart}
-          />
-        </div>
-
-        <div className="max-md:col-span-2">
-          <DynamicCard
-            title="Assets & Liabilities"
-            rowLabels={ASSETS_LABELS}
-            rows={bundle?.assetsLiabilities ?? null}
-            loading={loading}
-            labelToMetric={ASSETS_LABEL_TO_METRIC}
-            onMetricClick={onOpenMetricChart}
-          />
-          <DynamicCard
-            title="Returns"
-            rowLabels={RETURNS_LABELS}
-            rows={bundle?.returns ?? null}
-            loading={loading}
-            labelToMetric={RETURNS_LABEL_TO_METRIC}
-            onMetricClick={onOpenMetricChart}
-          />
-          <DynamicCard
-            title="Dividends"
-            rowLabels={DIVIDENDS_LABELS}
-            rows={bundle?.dividends ?? null}
-            loading={loading}
-            labelToMetric={DIVIDENDS_LABEL_TO_METRIC}
-            onMetricClick={onOpenMetricChart}
-          />
-          <DynamicCard
-            title="Risk"
-            rowLabels={RISK_LABELS}
-            rows={bundle?.risk ?? null}
-            loading={loading}
-            onRowClick={riskRowClick}
-          />
-        </div>
+      {/* 3×3 grid — row 1: Basic / Revenue & Profit / Assets & Liabilities; row 2: Valuation / Margins / Returns; row 3: Growth / Dividends / Risk. */}
+      {/* Default grid stretch: shorter cards in a row extend to the tallest card's height. */}
+      <div className="hidden gap-5 md:grid md:grid-cols-3">
+        <BasicCard rows={bundle?.basic ?? null} loading={loading} onMetricClick={onOpenMetricChart} />
+        <RevenueProfitCard
+          rows={bundle?.revenueProfit ?? null}
+          loading={loading}
+          onMetricClick={onOpenMetricChart}
+        />
+        <DynamicCard
+          title="Assets & Liabilities"
+          rowLabels={ASSETS_LABELS}
+          rows={bundle?.assetsLiabilities ?? null}
+          loading={loading}
+          labelToMetric={ASSETS_LABEL_TO_METRIC}
+          onMetricClick={onOpenMetricChart}
+        />
+        <DynamicCard
+          title="Valuation"
+          rowLabels={VALUATION_LABELS}
+          rows={bundle?.valuation ?? null}
+          loading={loading}
+          labelToMetric={VALUATION_LABEL_TO_METRIC}
+          onMetricClick={onOpenMetricChart}
+        />
+        <DynamicCard
+          title="Margins"
+          rowLabels={MARGINS_LABELS}
+          rows={bundle?.margins ?? null}
+          loading={loading}
+          labelToMetric={MARGINS_LABEL_TO_METRIC}
+          onMetricClick={onOpenMetricChart}
+        />
+        <DynamicCard
+          title="Returns"
+          rowLabels={RETURNS_LABELS}
+          rows={bundle?.returns ?? null}
+          loading={loading}
+          labelToMetric={RETURNS_LABEL_TO_METRIC}
+          onMetricClick={onOpenMetricChart}
+        />
+        <DynamicCard
+          title="Growth"
+          rowLabels={GROWTH_LABELS}
+          rows={bundle?.growth ?? null}
+          loading={loading}
+          labelToMetric={GROWTH_LABEL_TO_METRIC}
+          onMetricClick={onOpenMetricChart}
+        />
+        <DynamicCard
+          title="Dividends"
+          rowLabels={DIVIDENDS_LABELS}
+          rows={bundle?.dividends ?? null}
+          loading={loading}
+          labelToMetric={DIVIDENDS_LABEL_TO_METRIC}
+          onMetricClick={onOpenMetricChart}
+        />
+        <DynamicCard
+          title="Risk"
+          rowLabels={RISK_LABELS}
+          rows={bundle?.risk ?? null}
+          loading={loading}
+          onRowClick={riskRowClick}
+        />
       </div>
     </div>
   );
