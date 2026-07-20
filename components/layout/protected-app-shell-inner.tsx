@@ -1,7 +1,7 @@
 "use client";
 
 import type { CSSProperties, ReactNode } from "react";
-import { Suspense, useRef } from "react";
+import { Suspense, useRef, useState } from "react";
 
 import { MainScrollToTop } from "@/components/layout/main-scroll-to-top";
 import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav";
@@ -10,6 +10,7 @@ import { StockDetailTabHostProvider } from "@/components/stock/stock-detail-tab-
 import { MobilePrimaryNavProvider } from "@/components/layout/mobile-primary-nav-context";
 import { NavigationTopLoader } from "@/components/layout/navigation-top-loader";
 import { Sidebar } from "@/components/layout/sidebar";
+import { SidebarEdgeCollapseHandle } from "@/components/layout/sidebar-edge-collapse-handle";
 import {
   SIDEBAR_OUTER_COLLAPSED_PX,
   SIDEBAR_OUTER_EXPANDED_PX,
@@ -51,6 +52,7 @@ function ProtectedAppChrome({
   const { collapsed } = useSidebarLayout();
   const outerPx = collapsed ? SIDEBAR_OUTER_COLLAPSED_PX : SIDEBAR_OUTER_EXPANDED_PX;
   const leftOffset = `${outerPx}px`;
+  const [edgeHandleActive, setEdgeHandleActive] = useState(false);
 
   const mainRef = useRef<HTMLElement>(null);
 
@@ -92,8 +94,12 @@ function ProtectedAppChrome({
       <div
         suppressHydrationWarning
         className={cn(
-          "shell-desktop-chrome-column flex min-h-0 min-w-0 flex-1 flex-col max-md:min-h-[var(--app-vh)] md:fixed md:inset-y-0 md:right-0 md:z-0 md:overflow-hidden md:bg-[#F4F4F5] md:pt-[var(--shell-desktop-padding-top)] md:pr-[var(--shell-desktop-padding-right)] md:pb-[var(--shell-desktop-padding-bottom)]",
+          "shell-desktop-chrome-column relative flex min-h-0 min-w-0 flex-1 flex-col max-md:min-h-[var(--app-vh)] md:fixed md:inset-y-0 md:right-0 md:bg-[#F4F4F5] md:pt-[var(--shell-desktop-padding-top)] md:pr-[var(--shell-desktop-padding-right)] md:pb-[var(--shell-desktop-padding-bottom)]",
           "md:pl-[var(--shell-desktop-padding-left)]",
+          // Hover grow extends left past the chrome box — keep overflow visible and above the sidebar so the panel/topbar aren’t clipped.
+          edgeHandleActive
+            ? "md:z-30 md:overflow-visible"
+            : "md:z-0 md:overflow-y-hidden md:overflow-x-visible",
           SIDEBAR_WIDTH_MOTION_CLASS,
         )}
         style={chromeColumnStyle}
@@ -101,15 +107,23 @@ function ProtectedAppChrome({
         <div
           suppressHydrationWarning
           className={cn(
-            "shell-desktop-panel flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden max-md:min-h-[var(--app-vh)] max-md:overflow-visible max-md:rounded-none max-md:border-0 max-md:bg-transparent max-md:shadow-none",
-            SIDEBAR_WIDTH_MOTION_CLASS,
+            "shell-desktop-panel relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden max-md:min-h-[var(--app-vh)] max-md:overflow-visible max-md:rounded-none max-md:border-0 max-md:bg-transparent max-md:shadow-none",
+            // Hover nudge: right edge stays pinned.
+            // Expanded → grow 12px left; collapsed → shrink 12px from the left.
+            "transition-[margin,width] duration-150 ease-out motion-reduce:transition-none",
+            "md:ml-0 md:w-full",
+            edgeHandleActive &&
+              (collapsed
+                ? "md:ml-3 md:w-[calc(100%-12px)]"
+                : "md:-ml-3 md:w-[calc(100%+12px)]"),
           )}
         >
+          {/* On the main panel (absolute), not the sidebar — stays clickable and tracks hover nudge. */}
+          <SidebarEdgeCollapseHandle onActiveChange={setEdgeHandleActive} />
           <div
             suppressHydrationWarning
             className={cn(
               "shell-desktop-panel__header mobile-topbar-shell z-30 min-w-0 w-full max-w-full shrink-0 max-md:bg-transparent max-md:shadow-none md:border-b md:border-[#E4E4E7] md:bg-white",
-              SIDEBAR_WIDTH_MOTION_CLASS,
             )}
           >
             <div aria-hidden className="mobile-topbar-blur-fade md:hidden" />

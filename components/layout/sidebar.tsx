@@ -4,9 +4,8 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { PanelLeft, PanelLeftOpen } from "@/lib/icons";
 
-import { DWELL_TOOLTIP_DELAY_MS, TopbarDelayedTooltip } from "@/components/layout/topbar-delayed-tooltip";
+import { DWELL_TOOLTIP_DELAY_MS } from "@/components/layout/topbar-delayed-tooltip";
 import {
   protectedCalendarItems,
   protectedCommunityItems,
@@ -22,7 +21,6 @@ import {
   SIDEBAR_WIDTH_MOTION_CLASS,
   useSidebarLayout,
 } from "@/components/layout/sidebar-layout-context";
-import { shellChromeToggleButtonClass } from "@/components/layout/shell-chrome-toggle-button";
 import { cn } from "@/lib/utils";
 
 const soonBadgeClass =
@@ -299,25 +297,13 @@ function SidebarSection({
   );
 }
 
-const LOGO_WIDTH_PX = 32;
-/** Header width where the logo begins fading out during collapse. */
-const LOGO_HIDE_START_PX = 148;
-/** Header width where the logo is fully hidden. */
-const LOGO_HIDE_END_PX = 104;
+const LOGO_SIZE_PX = 32;
+/** Expanded header: `pl-7` (28px). Collapsed: centered in the 72px rail. */
+const LOGO_LEFT_EXPANDED_PX = 28;
+const LOGO_LEFT_COLLAPSED_PX = (SIDEBAR_OUTER_COLLAPSED_PX - LOGO_SIZE_PX) / 2;
 
-function sidebarLogoHideBlend(widthPx: number): number {
-  if (widthPx >= LOGO_HIDE_START_PX) return 0;
-  if (widthPx <= LOGO_HIDE_END_PX) return 1;
-  return (LOGO_HIDE_START_PX - widthPx) / (LOGO_HIDE_START_PX - LOGO_HIDE_END_PX);
-}
-
-function SidebarChromeHeader({
-  collapsed,
-  toggleCollapsed,
-}: {
-  collapsed: boolean;
-  toggleCollapsed: () => void;
-}) {
+function SidebarChromeHeader() {
+  const { collapsed } = useSidebarLayout();
   const headerRef = useRef<HTMLDivElement>(null);
   const [headerWidth, setHeaderWidth] = useState<number | null>(null);
 
@@ -333,54 +319,33 @@ function SidebarChromeHeader({
     return () => ro.disconnect();
   }, []);
 
-  const w = headerWidth ?? SIDEBAR_OUTER_EXPANDED_PX;
-  const logoHideBlend = sidebarLogoHideBlend(w);
-  const logoVisible = 1 - logoHideBlend;
-  const collapsedHeaderLayout = logoHideBlend > 0.98;
+  const w = headerWidth ?? (collapsed ? SIDEBAR_OUTER_COLLAPSED_PX : SIDEBAR_OUTER_EXPANDED_PX);
+  const span = SIDEBAR_OUTER_EXPANDED_PX - SIDEBAR_OUTER_COLLAPSED_PX;
+  const t = Math.min(1, Math.max(0, (SIDEBAR_OUTER_EXPANDED_PX - w) / span));
+  // Tracks rail width: collapsed → centered; expanded → slight right (pl-7). No justify snap = no bounce.
+  const leftPx = LOGO_LEFT_EXPANDED_PX + t * (LOGO_LEFT_COLLAPSED_PX - LOGO_LEFT_EXPANDED_PX);
 
   return (
     <div
       ref={headerRef}
       suppressHydrationWarning
-      className={cn(
-        "mb-3 flex shrink-0 items-center md:mb-3 md:h-[var(--shell-chrome-header-height)] md:py-3",
-        SIDEBAR_CONTENT_MOTION_CLASS,
-        collapsedHeaderLayout ? "justify-center px-3" : "justify-between gap-2 pl-7 pr-3",
-      )}
+      className="relative mb-3 shrink-0 md:mb-3 md:h-[var(--shell-chrome-header-height)] md:py-3"
     >
-      <div
-        className="shrink-0 overflow-hidden transition-[opacity,max-width,margin] duration-75 ease-[cubic-bezier(0.33,1,0.68,1)] motion-reduce:transition-none"
-        style={{
-          maxWidth: `${logoVisible * LOGO_WIDTH_PX}px`,
-          opacity: logoVisible,
-          marginRight: logoVisible > 0.02 ? undefined : 0,
-        }}
-        aria-hidden={logoHideBlend > 0.92}
-      >
-        <img src="/logo.svg" alt="Finsepa" width={32} height={32} className="h-8 w-8 shrink-0" />
-      </div>
-      <TopbarDelayedTooltip label={collapsed ? "Expand Menu" : "Collapse Menu"} placement="right">
-        <button
-          type="button"
-          className={cn(shellChromeToggleButtonClass, "hover:bg-[#EBEBEB]")}
-          onClick={toggleCollapsed}
-          aria-expanded={!collapsed}
-          aria-label={collapsed ? "Expand Menu" : "Collapse Menu"}
-        >
-          {collapsed ? (
-            <PanelLeftOpen className="h-5 w-5" strokeWidth={1.75} />
-          ) : (
-            <PanelLeft className="h-5 w-5" strokeWidth={1.75} />
-          )}
-        </button>
-      </TopbarDelayedTooltip>
+      <img
+        src="/logo.svg"
+        alt="Finsepa"
+        width={LOGO_SIZE_PX}
+        height={LOGO_SIZE_PX}
+        className="absolute top-1/2 h-8 w-8 shrink-0 -translate-y-1/2"
+        style={{ left: leftPx }}
+      />
     </div>
   );
 }
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { collapsed, toggleCollapsed } = useSidebarLayout();
+  const { collapsed } = useSidebarLayout();
 
   return (
     <aside
@@ -390,7 +355,7 @@ export function Sidebar() {
         collapsed ? "w-full overflow-visible" : "w-[240px] overflow-y-auto overflow-x-hidden",
       )}
     >
-      <SidebarChromeHeader collapsed={collapsed} toggleCollapsed={toggleCollapsed} />
+      <SidebarChromeHeader />
 
       <div
         role="navigation"
