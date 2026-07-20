@@ -3,15 +3,16 @@
 import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import {
-  AuthCheckbox,
   AuthDivider,
-  AuthInput,
-  AuthLabel,
   AuthPrimaryButton,
   AuthSecondaryButton,
+  authEntryCtaClassName,
   authAccentLinkClassName,
 } from "@/components/auth/auth-form-ui";
-import { AuthPasswordInput } from "@/components/auth/auth-password-input";
+import {
+  AuthFloatingInput,
+  AuthFloatingPasswordInput,
+} from "@/components/auth/auth-floating-field";
 import { PATH_APP_ENTRY } from "@/lib/auth/routes";
 import { startGoogleOAuth } from "@/lib/auth/start-google-oauth";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
@@ -36,6 +37,14 @@ type Props = {
   signedOut?: boolean;
 };
 
+type EmailLookupStatus =
+  | "idle"
+  | "checking"
+  | "found"
+  | "not_found"
+  | "google_only"
+  | "unavailable";
+
 function GoogleMark() {
   return (
     <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4">
@@ -49,21 +58,24 @@ function GoogleMark() {
 }
 
 const REDIRECT_AFTER_LOGIN_MS = 900;
+const EMAIL_LOOKUP_DEBOUNCE_MS = 400;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD_LEN = 8;
 
 export function LoginClient({ resetSuccess, callbackError, authNext, signedOut }: Props) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true);
   const [passwordLoginSuccess, setPasswordLoginSuccess] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [emailLookup, setEmailLookup] = useState<EmailLookupStatus>("idle");
+  const [emailHint, setEmailHint] = useState<string | null>(null);
 
   const emailNorm = email.trim().toLowerCase();
   const emailReady = emailNorm.length > 0 && EMAIL_RE.test(emailNorm);
   const passwordReady = password.length >= MIN_PASSWORD_LEN;
-  const formCanSubmit = emailReady && passwordReady;
+  const showPasswordStep = emailLookup === "found" || emailLookup === "unavailable";
+  const formCanSubmit = emailReady && showPasswordStep && passwordReady;
 
   const callbackHint = callbackError ? CALLBACK_ERROR_MESSAGES[callbackError] ?? "Something went wrong. Please try again." : null;
   const sessionExpiredHint =
@@ -73,24 +85,91 @@ export function LoginClient({ resetSuccess, callbackError, authNext, signedOut }
   const bannerHint = callbackHint ?? sessionExpiredHint;
 
   useEffect(() => {
+    if (!emailReady) {
+      setEmailLookup("idle");
+      setEmailHint(null);
+      setPassword("");
+      return;
+    }
+
+    const emailAtRequest = emailNorm;
+    const controller = new AbortController();
+    setEmailLookup("checking");
+    setEmailHint(null);
+    setPassword("");
+
+    const timer = window.setTimeout(async () => {
+      try {
+        const res = await fetch("/api/auth/check-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: emailAtRequest }),
+          signal: controller.signal,
+        });
+        const data = (await res.json().catch(() => ({}))) as {
+          exists?: boolean;
+          googleOnly?: boolean;
+          message?: string;
+          error?: string;
+        };
+
+        if (controller.signal.aborted) return;
+
+        if (res.status === 429) {
+          setEmailLookup("idle");
+          setEmailHint(data.message?.trim() || "Too many checks. Wait a moment and try again.");
+          return;
+        }
+
+        if (!res.ok) {
+          // Degrade: still allow password entry if lookup is down.
+          setEmailLookup("unavailable");
+          setEmailHint(null);
+          return;
+        }
+
+        if (data.exists && data.googleOnly) {
+          setEmailLookup("google_only");
+          setEmailHint("This account uses Google sign-in. Continue with Google instead.");
+          return;
+        }
+
+        if (data.exists) {
+          setEmailLookup("found");
+          setEmailHint(null);
+          return;
+        }
+
+        setEmailLookup("not_found");
+        setEmailHint("No account found for this email.");
+      } catch (err) {
+        if (controller.signal.aborted) return;
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        setEmailLookup("unavailable");
+        setEmailHint(null);
+      }
+    }, EMAIL_LOOKUP_DEBOUNCE_MS);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [emailNorm, emailReady]);
+
+  function persistRememberMe() {
     try {
-      const r = localStorage.getItem(STORAGE_REMEMBER);
-      if (r === "0") setRememberMe(false);
+      localStorage.setItem(STORAGE_REMEMBER, "1");
     } catch {
       /* ignore */
     }
-  }, []);
+  }
 
   async function handleGoogle() {
     setErrorMessage(null);
     if (loading) return;
     setLoading(true);
     try {
-      try {
-        localStorage.setItem(STORAGE_REMEMBER, rememberMe ? "1" : "0");
-      } catch {
-        /* ignore */
-      }
+      persistRememberMe();
       const supabase = getSupabaseBrowserClient();
       await startGoogleOAuth(supabase, { next: PATH_APP_ENTRY, intent: "login" });
     } catch (err) {
@@ -103,6 +182,7 @@ export function LoginClient({ resetSuccess, callbackError, authNext, signedOut }
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setErrorMessage(null);
+    if (!showPasswordStep) return;
 
     const form = e.currentTarget;
     const fd = new FormData(form);
@@ -128,11 +208,7 @@ export function LoginClient({ resetSuccess, callbackError, authNext, signedOut }
         return;
       }
 
-      try {
-        localStorage.setItem(STORAGE_REMEMBER, rememberMe ? "1" : "0");
-      } catch {
-        /* ignore */
-      }
+      persistRememberMe();
 
       setPasswordLoginSuccess(true);
       await new Promise((r) => setTimeout(r, REDIRECT_AFTER_LOGIN_MS));
@@ -161,7 +237,11 @@ export function LoginClient({ resetSuccess, callbackError, authNext, signedOut }
         </div>
       ) : null}
 
-      <AuthSecondaryButton onClick={handleGoogle} disabled={loading}>
+      <AuthSecondaryButton
+        className={authEntryCtaClassName}
+        onClick={handleGoogle}
+        disabled={loading}
+      >
         <GoogleMark />
         {loading ? <SpinnerLabel>Redirecting…</SpinnerLabel> : "Continue with Google"}
       </AuthSecondaryButton>
@@ -206,56 +286,62 @@ export function LoginClient({ resetSuccess, callbackError, authNext, signedOut }
       ) : null}
 
       <div>
-        <AuthLabel>Email</AuthLabel>
-        <AuthInput
+        <AuthFloatingInput
           type="email"
           name="email"
+          label="Email"
           autoComplete="email"
-          placeholder="Enter your email"
           required
           disabled={loading}
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          trailingLoading={emailLookup === "checking"}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            setErrorMessage(null);
+          }}
         />
-      </div>
-
-      <div>
-        <AuthLabel>Password</AuthLabel>
-        <AuthPasswordInput
-          name="password"
-          autoComplete="current-password"
-          placeholder="Enter your password"
-          required
-          disabled={loading}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <div className="mt-6 flex items-center justify-between gap-4">
-          <label className="flex cursor-pointer items-center gap-2 select-none">
-            <AuthCheckbox
-              checked={rememberMe}
-              onCheckedChange={setRememberMe}
-              disabled={loading}
-              aria-label="Remember me on this device"
-            />
-            <span className="text-[14px] font-normal leading-5 text-[#0F0F0F]">Remember me</span>
-          </label>
-          <Link
-            href="/forgot-password"
-            className={cn("shrink-0", authAccentLinkClassName)}
+        {emailHint ? (
+          <p
+            role="status"
+            className={cn(
+              "mt-1.5 text-sm leading-5",
+              emailLookup === "not_found" || emailLookup === "google_only"
+                ? "text-[#B91C1C]"
+                : "text-[#52525B]",
+            )}
           >
-            Forgot password?
-          </Link>
-        </div>
+            {emailHint}
+          </p>
+        ) : null}
       </div>
 
-      <div className="!mt-6">
+      {showPasswordStep ? (
+        <div>
+          <AuthFloatingPasswordInput
+            name="password"
+            label="Password"
+            autoComplete="current-password"
+            required
+            disabled={loading}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </div>
+      ) : null}
+
+      <div className="!mt-6 space-y-3">
         <AuthPrimaryButton
           type="submit"
+          className={authEntryCtaClassName}
           disabled={loading || !formCanSubmit}
         >
           {loading ? <SpinnerLabel>Signing in…</SpinnerLabel> : "Log in"}
         </AuthPrimaryButton>
+        <div className="text-center">
+          <Link href="/forgot-password" className={cn(authAccentLinkClassName)}>
+            Forgot password?
+          </Link>
+        </div>
       </div>
       </form>
     </div>

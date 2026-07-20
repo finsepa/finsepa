@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { AuthCenteredLayout } from "@/components/auth/auth-centered-layout";
-import { AuthContinueLegalNotice } from "@/components/auth/auth-continue-legal-notice";
+import { AuthLegalFooterLinks } from "@/components/auth/auth-continue-legal-notice";
 import { authAccentLinkClassName } from "@/components/auth/auth-form-ui";
 import { SignupClientDynamic } from "./signup-client-dynamic";
 
@@ -19,7 +19,7 @@ export default function SignupPage() {
           </Link>
         </>
       }
-      footer={<AuthContinueLegalNotice />}
+      footer={<AuthLegalFooterLinks />}
     >
       <SignupClientDynamic />
     </AuthCenteredLayout>

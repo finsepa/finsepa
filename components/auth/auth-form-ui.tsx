@@ -57,23 +57,31 @@ export function AuthInput({
   );
 }
 
+/** 48px CTA height — login / signup / forgot-password only (not reset-password, check-email, ops). */
+export const authEntryCtaClassName = "h-12";
+
 export function AuthPrimaryButton({
   children,
   type = "submit",
   disabled,
   onClick,
+  className,
 }: {
   children: ReactNode;
   type?: "button" | "submit" | "reset";
   disabled?: boolean;
   onClick?: () => void;
+  className?: string;
 }) {
   return (
     <button
       type={type}
       disabled={disabled}
       onClick={onClick}
-      className="flex h-[44px] w-full items-center justify-center gap-2 rounded-[10px] bg-[#2563EB] px-4 text-sm font-semibold text-white shadow-[0px_1px_2px_0px_rgba(37,99,235,0.25)] transition-colors duration-100 hover:bg-[#1D4ED8] disabled:cursor-not-allowed disabled:opacity-60"
+      className={cn(
+        "flex h-[44px] w-full items-center justify-center gap-2 rounded-[10px] bg-[#2563EB] px-4 text-sm font-semibold text-white shadow-[0px_1px_2px_0px_rgba(37,99,235,0.25)] transition-colors duration-100 hover:bg-[#1D4ED8] disabled:cursor-not-allowed disabled:opacity-60",
+        className,
+      )}
     >
       {children}
     </button>
@@ -85,11 +93,13 @@ export function AuthSecondaryButton({
   type = "button",
   disabled,
   onClick,
+  className,
 }: {
   children: ReactNode;
   type?: "button" | "submit" | "reset";
   disabled?: boolean;
   onClick?: () => void;
+  className?: string;
 }) {
   return (
     <button
@@ -99,6 +109,7 @@ export function AuthSecondaryButton({
       className={cn(
         secondaryOutlineButtonClassName,
         "h-10 w-full px-4 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60",
+        className,
       )}
     >
       {children}

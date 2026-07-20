@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { AuthCenteredLayout } from "@/components/auth/auth-centered-layout";
+import { AuthLegalFooterLinks } from "@/components/auth/auth-continue-legal-notice";
 import { authAccentLinkClassName } from "@/components/auth/auth-form-ui";
 
 import { LOGIN_SIGNED_OUT_VALUE } from "@/lib/auth/routes";
@@ -26,11 +27,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           </Link>
         </>
       }
-      footer={
-        <p className="text-[12px] leading-4 text-[#71717A]">
-          Finsepa provides tools for research and portfolio tracking. We do not provide investment advice.
-        </p>
-      }
+      footer={<AuthLegalFooterLinks />}
     >
       <LoginClient
         resetSuccess={sp.reset === "success"}

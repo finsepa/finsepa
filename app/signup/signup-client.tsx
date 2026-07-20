@@ -1,17 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-
-const MIN_PASSWORD_LEN = 8;
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-function RequiredAsterisk() {
-  return (
-    <span className="text-[#DC2626]" aria-hidden="true">
-      *
-    </span>
-  );
-}
 import Link from "next/link";
 import {
   friendlyNetworkErrorMessage,
@@ -20,9 +9,17 @@ import {
   shouldAttemptLoopsSignupFallback,
 } from "@/lib/auth/supabase-error-message";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
-import { AuthDivider, AuthInput, AuthLabel, AuthPrimaryButton, AuthSecondaryButton } from "@/components/auth/auth-form-ui";
+import {
+  AuthDivider,
+  AuthPrimaryButton,
+  AuthSecondaryButton,
+  authEntryCtaClassName,
+} from "@/components/auth/auth-form-ui";
+import {
+  AuthFloatingInput,
+  AuthFloatingPasswordInput,
+} from "@/components/auth/auth-floating-field";
 import { SpinnerLabel } from "@/components/ui/spinner";
-import { AuthPasswordInput } from "@/components/auth/auth-password-input";
 import { TurnstileField } from "@/components/auth/turnstile-field";
 import { getAuthAppOriginForClient } from "@/lib/auth/app-origin";
 import { TURNSTILE_ENABLED } from "@/lib/auth/turnstile-public";
@@ -31,6 +28,8 @@ import { appendOnboardingQuery, markOnboardingPending } from "@/lib/auth/onboard
 import { startGoogleOAuth } from "@/lib/auth/start-google-oauth";
 import { PATH_APP_ENTRY, PATH_AUTH_CALLBACK } from "@/lib/auth/routes";
 
+const MIN_PASSWORD_LEN = 8;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const SIGNUP_DISABLED =
   process.env.NEXT_PUBLIC_AUTH_SIGNUP_DISABLED === "1" ||
   process.env.NEXT_PUBLIC_AUTH_SIGNUP_DISABLED?.toLowerCase() === "true";
@@ -358,7 +357,11 @@ export function SignupClient() {
         </div>
       ) : null}
 
-      <AuthSecondaryButton onClick={handleGoogle} disabled={loading || SIGNUP_DISABLED}>
+      <AuthSecondaryButton
+        className={authEntryCtaClassName}
+        onClick={handleGoogle}
+        disabled={loading || SIGNUP_DISABLED}
+      >
         <GoogleMark />
         {loading ? <SpinnerLabel>Redirecting…</SpinnerLabel> : "Continue with Google"}
       </AuthSecondaryButton>
@@ -395,14 +398,10 @@ export function SignupClient() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
-          <AuthLabel>
-            First name
-            <RequiredAsterisk />
-          </AuthLabel>
-          <AuthInput
+          <AuthFloatingInput
             name="firstName"
+            label="First name"
             autoComplete="given-name"
-            placeholder="Ava"
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
             onBlur={() => setTouched((t) => ({ ...t, firstName: true }))}
@@ -415,11 +414,10 @@ export function SignupClient() {
           ) : null}
         </div>
         <div>
-          <AuthLabel>Last name</AuthLabel>
-          <AuthInput
+          <AuthFloatingInput
             name="lastName"
+            label="Last name"
             autoComplete="family-name"
-            placeholder="Johnson"
             value={lastName}
             onChange={(e) => setLastName(e.target.value)}
             disabled={loading}
@@ -428,15 +426,11 @@ export function SignupClient() {
       </div>
 
       <div>
-        <AuthLabel>
-          Email
-          <RequiredAsterisk />
-        </AuthLabel>
-        <AuthInput
+        <AuthFloatingInput
           type="email"
           name="email"
+          label="Email"
           autoComplete="email"
-          placeholder="Enter your email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           onBlur={() => setTouched((t) => ({ ...t, email: true }))}
@@ -452,14 +446,10 @@ export function SignupClient() {
       </div>
 
       <div>
-        <AuthLabel>
-          Password
-          <RequiredAsterisk />
-        </AuthLabel>
-        <AuthPasswordInput
+        <AuthFloatingPasswordInput
           name="password"
+          label="Password"
           autoComplete="new-password"
-          placeholder="Create a password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           onBlur={() => setTouched((t) => ({ ...t, password: true }))}
@@ -473,8 +463,10 @@ export function SignupClient() {
               ? "Password is required."
               : `Password must be at least ${MIN_PASSWORD_LEN} characters.`}
           </p>
-        ) : !passOk ? (
-          <p className="mt-1 text-xs leading-4 text-[#71717A]">At least {MIN_PASSWORD_LEN} characters.</p>
+        ) : password.length > 0 && !passOk ? (
+          <p className="mt-1 text-xs leading-4 text-[#DC2626]">
+            At least {MIN_PASSWORD_LEN} characters.
+          </p>
         ) : null}
       </div>
 
@@ -487,7 +479,11 @@ export function SignupClient() {
         />
       ) : null}
 
-      <AuthPrimaryButton type="submit" disabled={loading || !formCanSubmit || SIGNUP_DISABLED}>
+      <AuthPrimaryButton
+        type="submit"
+        className={authEntryCtaClassName}
+        disabled={loading || !formCanSubmit || SIGNUP_DISABLED}
+      >
         {loading ? <SpinnerLabel>Creating account…</SpinnerLabel> : "Get Started"}
       </AuthPrimaryButton>
     </form>

@@ -139,4 +139,4 @@ export {
   XClose as X,
 } from "@untitledui-pro/icons/line";
 
-export { CheckVerified02 as VerifiedBadge } from "@untitledui-pro/icons/solid";
+export { CheckVerified02 as VerifiedBadge, XCircle } from "@untitledui-pro/icons/solid";

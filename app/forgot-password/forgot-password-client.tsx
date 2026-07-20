@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { AuthInput, AuthLabel, AuthPrimaryButton } from "@/components/auth/auth-form-ui";
+import { AuthPrimaryButton, authEntryCtaClassName } from "@/components/auth/auth-form-ui";
+import { AuthFloatingInput } from "@/components/auth/auth-floating-field";
 import { SpinnerLabel } from "@/components/ui/spinner";
 import { requestPasswordResetEmail } from "@/lib/auth/request-password-reset";
 
@@ -60,12 +61,11 @@ export function ForgotPasswordClient() {
           ) : null}
 
           <div>
-            <AuthLabel>Email</AuthLabel>
-            <AuthInput
+            <AuthFloatingInput
               type="email"
               name="email"
+              label="Email"
               autoComplete="email"
-              placeholder="Enter your email"
               required
               disabled={loading}
               value={email}
@@ -73,7 +73,11 @@ export function ForgotPasswordClient() {
             />
           </div>
 
-          <AuthPrimaryButton type="submit" disabled={loading || !emailReady}>
+          <AuthPrimaryButton
+            type="submit"
+            className={authEntryCtaClassName}
+            disabled={loading || !emailReady}
+          >
             {loading ? <SpinnerLabel>Sending…</SpinnerLabel> : "Send reset link"}
           </AuthPrimaryButton>
         </form>
