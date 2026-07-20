@@ -362,7 +362,7 @@ export function Sidebar() {
         aria-label="Main"
         suppressHydrationWarning
         className={cn(
-          "flex min-h-0 flex-1 flex-col space-y-3 px-3 pb-1 pt-0",
+          "flex min-h-0 flex-1 flex-col space-y-4 px-3 pb-1 pt-0",
           collapsed ? "overflow-y-auto overflow-x-visible" : "",
         )}
       >

@@ -17,6 +17,7 @@ import {
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { UserAvatar } from "@/components/user/user-avatar";
 import { SpinnerLabel } from "@/components/ui/spinner";
+import { ScreenerPagination } from "@/components/ui/table-pagination";
 import {
   Empty,
   EmptyDescription,
@@ -46,7 +47,8 @@ const readOnlyFieldClass =
 
 type AccountTabId = "profile" | "billing";
 
-const billingHistoryColLayout = "grid-cols-[120px_96px_minmax(0,2fr)] gap-x-2";
+const billingHistoryColLayout = "grid-cols-[120px_minmax(0,1fr)_auto] gap-x-2";
+const PAYMENT_HISTORY_PAGE_SIZE = 10;
 
 function FieldLabel({ children, htmlFor }: { children: React.ReactNode; htmlFor?: string }) {
   return (
@@ -74,6 +76,7 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
   const [billingLoading, setBillingLoading] = useState(false);
   const [billingHydrated, setBillingHydrated] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
+  const [paymentHistoryPage, setPaymentHistoryPage] = useState(1);
   const stripeCheckoutSuccessToastRef = useRef(false);
 
   useEffect(() => {
@@ -274,6 +277,15 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
   const billingPlan = billingSummary.plan;
   const billingAccessState = billingSummary.accessState;
   const paymentHistory = billingSummary.paymentHistory;
+  const paymentHistoryTotalPages = Math.max(
+    1,
+    Math.ceil(paymentHistory.length / PAYMENT_HISTORY_PAGE_SIZE),
+  );
+  const safePaymentHistoryPage = Math.min(Math.max(1, paymentHistoryPage), paymentHistoryTotalPages);
+  const pagedPaymentHistory = paymentHistory.slice(
+    (safePaymentHistoryPage - 1) * PAYMENT_HISTORY_PAGE_SIZE,
+    safePaymentHistoryPage * PAYMENT_HISTORY_PAGE_SIZE,
+  );
   const subscriptionTitle = subscriptionTitleFromBillingSummary(billingSummary);
   const subscriptionMeta = billingSummary.subscriptionMeta;
   const isProScheduledCancellation =
@@ -613,7 +625,7 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
                       >
                         <div className="text-left">Date</div>
                         <div className="min-w-0 w-full text-right">Amount</div>
-                        <div className="text-left">Description</div>
+                        <div className="pl-6 text-right">Description</div>
                       </div>
 
                       {Array.from({ length: 5 }).map((_, i) => (
@@ -627,7 +639,7 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
                           <div className="flex justify-end animate-pulse">
                             <div className="h-4 w-16 rounded bg-[#E4E4E7]" />
                           </div>
-                          <div className="animate-pulse">
+                          <div className="flex justify-end pl-6 animate-pulse">
                             <div className="h-4 w-40 rounded bg-[#E4E4E7]" />
                           </div>
                         </div>
@@ -656,27 +668,37 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
                       >
                         <div className="text-left">Date</div>
                         <div className="min-w-0 w-full text-right">Amount</div>
-                        <div className="text-left">Description</div>
+                        <div className="pl-6 text-right">Description</div>
                       </div>
 
-                      {paymentHistory.map((row) => (
+                      {pagedPaymentHistory.map((row) => (
                         <div
                           key={row.id}
                           className={`group grid ${billingHistoryColLayout} min-h-[56px] items-center bg-white px-2 transition-colors duration-75 hover:bg-neutral-50 sm:min-h-[60px] sm:px-4`}
                         >
                           <div className="whitespace-nowrap text-[14px] font-normal leading-5 text-[#0F0F0F]">
-                            {new Date(row.date).toLocaleDateString()}
+                            {new Date(row.date).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })}
                           </div>
                           <div className="min-w-0 w-full whitespace-nowrap text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#0F0F0F]">
                             ${row.amountUsd.toFixed(2)}
                           </div>
-                          <div className="min-w-0 truncate text-[14px] font-normal leading-5 text-[#0F0F0F]">
-                            {row.description}
+                          <div className="min-w-0 truncate pl-6 text-right text-[14px] font-normal leading-5 text-[#0F0F0F]">
+                            Finsepa Pro
                           </div>
                         </div>
                       ))}
                     </div>
                   </div>
+                  <ScreenerPagination
+                    page={safePaymentHistoryPage}
+                    totalPages={paymentHistoryTotalPages}
+                    onPageChange={setPaymentHistoryPage}
+                    aria-label="Payment history page navigation"
+                  />
                 </div>
               )}
             </section>

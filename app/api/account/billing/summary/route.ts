@@ -378,7 +378,7 @@ export async function GET() {
         id: row.id,
         date: row.paid_at,
         amountUsd: row.amount_usd,
-        description: row.description || "Pro plan",
+        description: row.description || "Finsepa Pro",
       })),
     });
   } catch (error) {

@@ -284,10 +284,10 @@ function HoldingsSortHeader({
 }) {
   const active = activeKey === sortKey;
   return (
-    <th className="whitespace-nowrap border-b border-[#E4E4E7] px-4 py-[10px] text-right">
+    <th className="whitespace-nowrap border-b border-[#E4E4E7] px-4 py-[10px] text-right text-[14px] font-medium leading-5 text-[#71717A]">
       <button
         type="button"
-        className="inline-flex w-full items-center justify-end gap-1 rounded hover:text-[#0F0F0F]"
+        className="inline-flex w-full items-center justify-end gap-1 rounded text-[14px] font-medium leading-5 text-[#71717A] hover:text-[#0F0F0F]"
         onClick={() => onSort(sortKey)}
         aria-label={`Sort by ${label}`}
       >
@@ -504,9 +504,13 @@ function PortfolioHoldingsTableInner({
       <table className="hidden w-full min-w-[960px] border-separate border-spacing-0 sm:table">
         <thead>
           <tr className="min-h-[40px] bg-white text-[14px] font-medium leading-5 text-[#71717A]">
-            <th className="w-11 border-b border-[#E4E4E7] px-2 py-[10px]" aria-hidden />
-            <th className="whitespace-nowrap border-b border-[#E4E4E7] px-4 py-[10px] text-left">Asset</th>
-            <th className="whitespace-nowrap border-b border-[#E4E4E7] px-4 py-[10px] text-right">Price</th>
+            <th className="w-11 border-b border-[#E4E4E7] px-2 py-[10px] font-medium" aria-hidden />
+            <th className="whitespace-nowrap border-b border-[#E4E4E7] px-4 py-[10px] text-left text-[14px] font-medium leading-5 text-[#71717A]">
+              Asset
+            </th>
+            <th className="whitespace-nowrap border-b border-[#E4E4E7] px-4 py-[10px] text-right text-[14px] font-medium leading-5 text-[#71717A]">
+              Price
+            </th>
             <HoldingsSortHeader
               label="Holdings"
               sortKey="holdings"
@@ -514,7 +518,9 @@ function PortfolioHoldingsTableInner({
               dir={sort.dir}
               onSort={onSort}
             />
-            <th className="whitespace-nowrap border-b border-[#E4E4E7] px-4 py-[10px] text-right">Avg. Buy Price</th>
+            <th className="whitespace-nowrap border-b border-[#E4E4E7] px-4 py-[10px] text-right text-[14px] font-medium leading-5 text-[#71717A]">
+              Avg. Buy Price
+            </th>
             <HoldingsSortHeader
               label="Profit/Loss"
               sortKey="pnl"

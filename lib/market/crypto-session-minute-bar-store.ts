@@ -1,8 +1,21 @@
 import "server-only";
 
 import { normalizeCryptoBaseSymbol } from "@/lib/market/crypto-live-1d-tickers";
+import {
+  accumulateCryptoMinuteBarPages,
+  CRYPTO_MINUTE_BAR_READ_LIMIT,
+  CRYPTO_MINUTE_BAR_READ_PAGE_SIZE,
+  mapCryptoMinuteBarRows,
+  type CryptoMinuteBarRow,
+} from "@/lib/market/crypto-session-minute-bar-rows";
 import type { StockChartPoint } from "@/lib/market/stock-chart-types";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
+
+export {
+  CRYPTO_MINUTE_BAR_READ_LIMIT,
+  CRYPTO_MINUTE_BAR_READ_PAGE_SIZE,
+  mapCryptoMinuteBarRows,
+} from "@/lib/market/crypto-session-minute-bar-rows";
 
 export function cryptoMinuteBarReadEnabled(): boolean {
   return process.env.FINSEPA_CRYPTO_MINUTE_BAR_READ !== "0";
@@ -21,23 +34,29 @@ export async function fetchCryptoMinuteBarsFromDb(
   const base = normalizeCryptoBaseSymbol(symbol);
   if (!base) return [];
 
-  const { data, error } = await admin
-    .from("crypto_session_minute_bar")
-    .select("bucket_unix, close")
-    .eq("ticker", base)
-    .gte("bucket_unix", fromUnix)
-    .order("bucket_unix", { ascending: true });
+  const acc: CryptoMinuteBarRow[] = [];
+  let offset = 0;
 
-  if (error || !data?.length) return [];
+  // PostgREST/`db-max-rows` caps each response (~1000). Page until the 24h window is complete.
+  while (offset < CRYPTO_MINUTE_BAR_READ_LIMIT) {
+    const end = Math.min(offset + CRYPTO_MINUTE_BAR_READ_PAGE_SIZE - 1, CRYPTO_MINUTE_BAR_READ_LIMIT - 1);
+    const { data, error } = await admin
+      .from("crypto_session_minute_bar")
+      .select("bucket_unix, close")
+      .eq("ticker", base)
+      .gte("bucket_unix", fromUnix)
+      .order("bucket_unix", { ascending: true })
+      .range(offset, end);
 
-  const points: StockChartPoint[] = [];
-  for (const row of data) {
-    const time = Number(row.bucket_unix);
-    const value = Number(row.close);
-    if (!Number.isFinite(time) || !Number.isFinite(value) || value <= 0) continue;
-    points.push({ time, value, timeZone: "UTC" });
+    if (error) return [];
+    const page = (data ?? []) as CryptoMinuteBarRow[];
+    const { done } = accumulateCryptoMinuteBarPages(acc, page);
+    if (done) break;
+    offset += CRYPTO_MINUTE_BAR_READ_PAGE_SIZE;
   }
-  return points;
+
+  if (!acc.length) return [];
+  return mapCryptoMinuteBarRows(acc);
 }
 
 export type LatestCryptoMinuteBar = { bucket_unix: number; close: number };

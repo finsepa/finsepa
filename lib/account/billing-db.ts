@@ -75,7 +75,7 @@ export async function getBillingSummaryForUser(userId: string): Promise<BillingS
         id: row.id,
         date: row.paid_at,
         amountUsd: row.amount_usd,
-        description: row.description || "Pro plan",
+        description: row.description || "Finsepa Pro",
       })),
     };
   }
@@ -128,7 +128,7 @@ export async function getBillingSummaryForUser(userId: string): Promise<BillingS
       id: row.id,
       date: row.paid_at,
       amountUsd: row.amount_usd,
-      description: row.description || "Pro plan",
+      description: row.description || "Finsepa Pro",
     })),
   };
 }
@@ -356,17 +356,9 @@ export async function setSubscriptionTrial(args: { userId: string }) {
   );
 }
 
-/** Best-effort label for billing UI / webhooks (matches Stripe line + price interval). */
-export function stripeInvoiceUiDescription(invoice: Stripe.Invoice): string {
-  const line = invoice.lines?.data?.[0];
-  const typedLine = line as Stripe.InvoiceLineItem & {
-    price?: Stripe.Price | null;
-    plan?: { interval?: string | null } | null;
-  };
-  const interval = typedLine?.price?.recurring?.interval ?? typedLine?.plan?.interval ?? null;
-  if (interval === "year") return "Pro annually";
-  if (interval === "month") return "Pro monthly";
-  return line?.description || invoice.description || "Pro plan";
+/** Best-effort label for billing UI / webhooks. */
+export function stripeInvoiceUiDescription(_invoice: Stripe.Invoice): string {
+  return "Finsepa Pro";
 }
 
 export async function upsertPaidInvoice(args: {
