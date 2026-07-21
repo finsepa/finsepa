@@ -505,6 +505,8 @@ type ParsedInfoRow = {
   valueThousands: number;
   cusip: string | null;
   shares: number | null;
+  /** SEC `<putCall>` when present — Put/Call options are excluded from equity holdings. */
+  putCall: "put" | "call" | null;
 };
 
 /**
@@ -529,7 +531,16 @@ type RawInfoTableRow = {
   rawValue: number;
   cusip: string | null;
   shares: number | null;
+  putCall: "put" | "call" | null;
 };
+
+function extractPutCallFromInfoTableBlock(block: string): "put" | "call" | null {
+  const raw = extractTagContent(block, "putCall");
+  if (!raw) return null;
+  const v = raw.trim().toLowerCase();
+  if (v === "put" || v === "call") return v;
+  return null;
+}
 
 /**
  * SEC Form 13F says `<value>` is thousands of USD, but some filers (notably Berkshire-style
@@ -578,15 +589,22 @@ function rawInfoRowsFromXml(xml: string): RawInfoTableRow[] {
     if (!Number.isFinite(rawValue) || rawValue < 0) continue;
     const cusip = cusipRaw?.trim() || null;
     const shares = extractSharesFromInfoTableBlock(block);
-    out.push({ issuer, title: title || null, rawValue, cusip, shares });
+    const putCall = extractPutCallFromInfoTableBlock(block);
+    out.push({ issuer, title: title || null, rawValue, cusip, shares, putCall });
   }
   return out;
 }
 
+/**
+ * Parse 13F infoTable rows into equity holdings.
+ * Put/Call option lines are excluded so CUSIP aggregation does not mix option notionals into stock positions
+ * (matches SEC equity portfolio summaries and Dataroma-style holdings tables).
+ */
 function parseInfoTableRows(xml: string): ParsedInfoRow[] {
   const rawRows = rawInfoRowsFromXml(xml);
-  const unit = inferSec13fValueFieldUnit(rawRows);
-  return rawRows.map((r) => {
+  const equityRaw = rawRows.filter((r) => r.putCall == null);
+  const unit = inferSec13fValueFieldUnit(equityRaw.length > 0 ? equityRaw : rawRows);
+  return equityRaw.map((r) => {
     const valueThousands =
       unit === "dollars" ? Math.round(r.rawValue / 1000) : normalizeSec13fValueThousands(r.rawValue);
     return {
@@ -595,6 +613,7 @@ function parseInfoTableRows(xml: string): ParsedInfoRow[] {
       valueThousands,
       cusip: r.cusip,
       shares: r.shares,
+      putCall: null,
     };
   });
 }
@@ -1907,6 +1926,7 @@ function loadFixturePayload(): InstitutionalHoldingsPayload {
     valueThousands: Math.round(h.valueUsd / 1000),
     cusip: null,
     shares: inferSharesPlaceholder(h.valueUsd),
+    putCall: null,
   }));
   const merged = aggregateInfoRowsByCusip(rows);
   return rowsToPayload(merged, {
@@ -1941,6 +1961,7 @@ function fixtureCurrentAggregated(): AggregatedHolding[] {
     valueThousands: Math.round(h.valueUsd / 1000),
     cusip: syntheticFixtureCusip(h.issuer, idx),
     shares: inferSharesPlaceholder(h.valueUsd),
+    putCall: null,
   }));
   return aggregateInfoRowsByCusip(parsed);
 }
@@ -1955,6 +1976,7 @@ function fundsmithFixtureCurrentAggregated(): AggregatedHolding[] {
     valueThousands: Math.round(h.valueUsd / 1000),
     cusip: syntheticFixtureCusip(h.issuer, idx),
     shares: inferSharesPlaceholder(h.valueUsd),
+    putCall: null,
   }));
   return aggregateInfoRowsByCusip(parsed);
 }
@@ -2084,6 +2106,7 @@ function loadFundsmithFixtureHoldingsPayload(): InstitutionalHoldingsPayload {
     valueThousands: Math.round(h.valueUsd / 1000),
     cusip: null,
     shares: inferSharesPlaceholder(h.valueUsd),
+    putCall: null,
   }));
   const merged = aggregateInfoRowsByCusip(rows);
   return rowsToPayload(merged, {
@@ -2112,6 +2135,7 @@ function pershingFixtureCurrentAggregated(): AggregatedHolding[] {
     valueThousands: Math.round(h.valueUsd / 1000),
     cusip: syntheticFixtureCusip(h.issuer, idx),
     shares: inferSharesPlaceholder(h.valueUsd),
+    putCall: null,
   }));
   return aggregateInfoRowsByCusip(parsed);
 }
@@ -2156,6 +2180,7 @@ function loadPershingFixtureHoldingsPayload(): InstitutionalHoldingsPayload {
     valueThousands: Math.round(h.valueUsd / 1000),
     cusip: null,
     shares: inferSharesPlaceholder(h.valueUsd),
+    putCall: null,
   }));
   const merged = aggregateInfoRowsByCusip(rows);
   return rowsToPayload(merged, {

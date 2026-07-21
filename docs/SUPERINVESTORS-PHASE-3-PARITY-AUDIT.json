@@ -1,0 +1,3420 @@
+{
+  "at": "2026-07-21T10:23:37.008Z",
+  "pass": 13,
+  "watch": 0,
+  "fail": 5,
+  "results": [
+    {
+      "slug": "berkshire-hathaway",
+      "name": "Warren Buffett",
+      "cik": "0001067983",
+      "elapsedMs": 4466,
+      "verdict": "PASS",
+      "finsepa": {
+        "segment": "000119312526226661",
+        "updatedAt": "2026-07-21T08:48:55.705+00:00",
+        "filingDate": "2026-05-15",
+        "reportDate": "2026-03-31",
+        "accession": "0001193125-26-226661",
+        "positionCount": 29,
+        "totalValueUsd": 263095705000,
+        "source": "edgar",
+        "unresolvedTickers": 0,
+        "top5": [
+          {
+            "ticker": "AAPL",
+            "name": "APPLE INC",
+            "weight": 21.98563484721273,
+            "valueUsd": 57843261000,
+            "shares": 227917808,
+            "status": "unchanged"
+          },
+          {
+            "ticker": "AXP",
+            "name": "AMERICAN EXPRESS CO",
+            "weight": 17.4306167407788,
+            "valueUsd": 45859204000,
+            "shares": 151610700,
+            "status": "unchanged"
+          },
+          {
+            "ticker": "KO",
+            "name": "COCA COLA CO",
+            "weight": 11.56233242196029,
+            "valueUsd": 30420000000,
+            "shares": 400000000,
+            "status": "unchanged"
+          },
+          {
+            "ticker": "BAC",
+            "name": "BANK AMERICA CORP",
+            "weight": 9.517136739271361,
+            "valueUsd": 25039178000,
+            "shares": 513624165,
+            "status": "reduce"
+          },
+          {
+            "ticker": "CVX",
+            "name": "CHEVRON CORPORATION",
+            "weight": 6.635366776511992,
+            "valueUsd": 17457365000,
+            "shares": 84375856,
+            "status": "reduce"
+          }
+        ]
+      },
+      "sec": {
+        "accession": "0001193125-26-226661",
+        "form": "13F-HR",
+        "filingDate": "2026-05-15",
+        "reportDate": "2026-03-31",
+        "xmlUrl": "https://www.sec.gov/Archives/edgar/data/1067983/000119312526226661/53405.xml",
+        "equityCount": 29,
+        "equityValue": 263095705000,
+        "withOptionsCount": 29,
+        "optionRows": 0,
+        "unit": "dollars",
+        "top5": [
+          {
+            "name": "APPLE INC",
+            "cusip": "037833100",
+            "valueUsd": 57843261000,
+            "shares": 227917808
+          },
+          {
+            "name": "AMERICAN EXPRESS CO",
+            "cusip": "025816109",
+            "valueUsd": 45859204000,
+            "shares": 151610700
+          },
+          {
+            "name": "COCA COLA CO",
+            "cusip": "191216100",
+            "valueUsd": 30420000000,
+            "shares": 400000000
+          },
+          {
+            "name": "BANK AMERICA CORP",
+            "cusip": "060505104",
+            "valueUsd": 25039178000,
+            "shares": 513624165
+          },
+          {
+            "name": "CHEVRON CORPORATION",
+            "cusip": "166764100",
+            "valueUsd": 17457365000,
+            "shares": 84375856
+          }
+        ]
+      },
+      "dataroma": {
+        "code": "BRK",
+        "period": "Q1 2026",
+        "portfolioDate": "31 Mar 2026",
+        "stockCount": 29,
+        "portfolioValue": 263095705000,
+        "top5": [
+          {
+            "ticker": "AAPL",
+            "weight": 21.99,
+            "valueUsd": 57843261000,
+            "shares": 227917808,
+            "activity": null
+          },
+          {
+            "ticker": "AXP",
+            "weight": 17.43,
+            "valueUsd": 45859204000,
+            "shares": 151610700,
+            "activity": null
+          },
+          {
+            "ticker": "KO",
+            "weight": 11.56,
+            "valueUsd": 30420000000,
+            "shares": 400000000,
+            "activity": null
+          },
+          {
+            "ticker": "BAC",
+            "weight": 9.52,
+            "valueUsd": 25039178000,
+            "shares": 513624165,
+            "activity": "Reduce 0.71%"
+          },
+          {
+            "ticker": "CVX",
+            "weight": 6.64,
+            "valueUsd": 17457365000,
+            "shares": 84375856,
+            "activity": "Reduce 35.17%"
+          }
+        ]
+      },
+      "checks": [
+        {
+          "id": "filing_freshness",
+          "pass": true,
+          "detail": "segment 000119312526226661 matches SEC latest"
+        },
+        {
+          "id": "filing_date",
+          "pass": true,
+          "detail": "2026-05-15"
+        },
+        {
+          "id": "report_date",
+          "pass": true,
+          "detail": "2026-03-31"
+        },
+        {
+          "id": "holdings_count",
+          "pass": true,
+          "detail": "29"
+        },
+        {
+          "id": "portfolio_value",
+          "pass": true,
+          "detail": "finsepa=263095705000 sec=263095705000 delta%=0.000"
+        },
+        {
+          "id": "weights_sum",
+          "pass": true,
+          "detail": "100.0000"
+        },
+        {
+          "id": "top_holdings_order",
+          "pass": true,
+          "detail": "10/10 aligned"
+        },
+        {
+          "id": "shares_values_spot",
+          "pass": true,
+          "detail": "29 CUSIPs matched"
+        },
+        {
+          "id": "duplicate_rows",
+          "pass": true,
+          "detail": "none"
+        },
+        {
+          "id": "ticker_resolution",
+          "pass": true,
+          "detail": "100.0% (0 unresolved)"
+        },
+        {
+          "id": "activity_counts",
+          "pass": true,
+          "detail": "new=3 inc=0 red=0 sold=16"
+        }
+      ],
+      "dataromaNotes": [
+        {
+          "level": "ok",
+          "msg": "Dataroma period matches reportDate 2026-03-31"
+        },
+        {
+          "level": "ok",
+          "msg": "Holdings count matches Dataroma (29)"
+        },
+        {
+          "level": "ok",
+          "msg": "Portfolio value within 1% of Dataroma (delta 0.000%)"
+        },
+        {
+          "level": "ok",
+          "msg": "Top-15 ticker overlap vs Dataroma: 15/15"
+        }
+      ]
+    },
+    {
+      "slug": "bill-ackman",
+      "name": "Bill Ackman",
+      "cik": "0001336528",
+      "elapsedMs": 1464,
+      "verdict": "PASS",
+      "finsepa": {
+        "segment": "000117266126002336",
+        "updatedAt": "2026-07-21T07:36:47.284+00:00",
+        "filingDate": "2026-05-15",
+        "reportDate": "2026-03-31",
+        "accession": "0001172661-26-002336",
+        "positionCount": 11,
+        "totalValueUsd": 13714300000,
+        "source": "edgar",
+        "unresolvedTickers": 0,
+        "top5": [
+          {
+            "ticker": "BN",
+            "name": "BROOKFIELD CORP",
+            "weight": 17.616254566401494,
+            "valueUsd": 2415946000,
+            "shares": 59697208,
+            "status": "reduce"
+          },
+          {
+            "ticker": "AMZN",
+            "name": "AMAZON COM INC",
+            "weight": 17.3913652173279,
+            "valueUsd": 2385104000,
+            "shares": 11451981,
+            "status": "add"
+          },
+          {
+            "ticker": "UBER",
+            "name": "UBER TECHNOLOGIES INC",
+            "weight": 15.713044048912451,
+            "valueUsd": 2154934000,
+            "shares": 29958771,
+            "status": "reduce"
+          },
+          {
+            "ticker": "MSFT",
+            "name": "MICROSOFT CORP",
+            "weight": 15.261223686225328,
+            "valueUsd": 2092970000,
+            "shares": 5654078,
+            "status": "new"
+          },
+          {
+            "ticker": "QSR",
+            "name": "RESTAURANT BRANDS INTL INC",
+            "weight": 12.20259874729297,
+            "valueUsd": 1673501000,
+            "shares": 22645483,
+            "status": "reduce"
+          }
+        ]
+      },
+      "sec": {
+        "accession": "0001172661-26-002336",
+        "form": "13F-HR",
+        "filingDate": "2026-05-15",
+        "reportDate": "2026-03-31",
+        "xmlUrl": "https://www.sec.gov/Archives/edgar/data/1336528/000117266126002336/infotable.xml",
+        "equityCount": 11,
+        "equityValue": 13714300000,
+        "withOptionsCount": 11,
+        "optionRows": 0,
+        "unit": "dollars",
+        "top5": [
+          {
+            "name": "BROOKFIELD CORP",
+            "cusip": "11271J107",
+            "valueUsd": 2415946000,
+            "shares": 59697208
+          },
+          {
+            "name": "AMAZON COM INC",
+            "cusip": "023135106",
+            "valueUsd": 2385104000,
+            "shares": 11451981
+          },
+          {
+            "name": "UBER TECHNOLOGIES INC",
+            "cusip": "90353T100",
+            "valueUsd": 2154934000,
+            "shares": 29958771
+          },
+          {
+            "name": "MICROSOFT CORP",
+            "cusip": "594918104",
+            "valueUsd": 2092970000,
+            "shares": 5654078
+          },
+          {
+            "name": "RESTAURANT BRANDS INTL INC",
+            "cusip": "76131D103",
+            "valueUsd": 1673501000,
+            "shares": 22645483
+          }
+        ]
+      },
+      "dataroma": {
+        "code": "psc",
+        "period": "Q1 2026",
+        "portfolioDate": "31 Mar 2026",
+        "stockCount": 11,
+        "portfolioValue": 13714300000,
+        "top5": [
+          {
+            "ticker": "BN",
+            "weight": 17.62,
+            "valueUsd": 2415946000,
+            "shares": 59697208,
+            "activity": "Reduce 2.78%"
+          },
+          {
+            "ticker": "AMZN",
+            "weight": 17.39,
+            "valueUsd": 2385104000,
+            "shares": 11451981,
+            "activity": "Add 19.19%"
+          },
+          {
+            "ticker": "UBER",
+            "weight": 15.71,
+            "valueUsd": 2154934000,
+            "shares": 29958771,
+            "activity": "Reduce 0.82%"
+          },
+          {
+            "ticker": "MSFT",
+            "weight": 15.26,
+            "valueUsd": 2092970000,
+            "shares": 5654078,
+            "activity": "Buy"
+          },
+          {
+            "ticker": "QSR",
+            "weight": 12.2,
+            "valueUsd": 1673501000,
+            "shares": 22645483,
+            "activity": "Reduce 0.97%"
+          }
+        ]
+      },
+      "checks": [
+        {
+          "id": "filing_freshness",
+          "pass": true,
+          "detail": "segment 000117266126002336 matches SEC latest"
+        },
+        {
+          "id": "filing_date",
+          "pass": true,
+          "detail": "2026-05-15"
+        },
+        {
+          "id": "report_date",
+          "pass": true,
+          "detail": "2026-03-31"
+        },
+        {
+          "id": "holdings_count",
+          "pass": true,
+          "detail": "11"
+        },
+        {
+          "id": "portfolio_value",
+          "pass": true,
+          "detail": "finsepa=13714300000 sec=13714300000 delta%=0.000"
+        },
+        {
+          "id": "weights_sum",
+          "pass": true,
+          "detail": "100.0000"
+        },
+        {
+          "id": "top_holdings_order",
+          "pass": true,
+          "detail": "10/10 aligned"
+        },
+        {
+          "id": "shares_values_spot",
+          "pass": true,
+          "detail": "11 CUSIPs matched"
+        },
+        {
+          "id": "duplicate_rows",
+          "pass": true,
+          "detail": "none"
+        },
+        {
+          "id": "ticker_resolution",
+          "pass": true,
+          "detail": "100.0% (0 unresolved)"
+        },
+        {
+          "id": "activity_counts",
+          "pass": true,
+          "detail": "new=1 inc=0 red=0 sold=1"
+        }
+      ],
+      "dataromaNotes": [
+        {
+          "level": "ok",
+          "msg": "Dataroma period matches reportDate 2026-03-31"
+        },
+        {
+          "level": "ok",
+          "msg": "Holdings count matches Dataroma (11)"
+        },
+        {
+          "level": "ok",
+          "msg": "Portfolio value within 1% of Dataroma (delta 0.000%)"
+        },
+        {
+          "level": "ok",
+          "msg": "Top-15 ticker overlap vs Dataroma: 11/11"
+        }
+      ]
+    },
+    {
+      "slug": "terry-smith",
+      "name": "Terry Smith",
+      "cik": "0001569205",
+      "elapsedMs": 2516,
+      "verdict": "PASS",
+      "finsepa": {
+        "segment": "000156920526000005",
+        "updatedAt": "2026-07-21T07:38:03.904+00:00",
+        "filingDate": "2026-05-15",
+        "reportDate": "2026-03-31",
+        "accession": "0001569205-26-000005",
+        "positionCount": 34,
+        "totalValueUsd": 12827766000,
+        "source": "edgar",
+        "unresolvedTickers": 0,
+        "top5": [
+          {
+            "ticker": "MAR",
+            "name": "MARRIOTT INTL INC NEW",
+            "weight": 8.594723352452796,
+            "valueUsd": 1102511000,
+            "shares": 3370872,
+            "status": "reduce"
+          },
+          {
+            "ticker": "SYK",
+            "name": "STRYKER CORPORATION",
+            "weight": 7.841981214811683,
+            "valueUsd": 1005951000,
+            "shares": 3061416,
+            "status": "reduce"
+          },
+          {
+            "ticker": "WAT",
+            "name": "WATERS CORP",
+            "weight": 7.4569180635193995,
+            "valueUsd": 956556000,
+            "shares": 3212075,
+            "status": "reduce"
+          },
+          {
+            "ticker": "V",
+            "name": "VISA INC",
+            "weight": 7.31366630791363,
+            "valueUsd": 938180000,
+            "shares": 3104090,
+            "status": "reduce"
+          },
+          {
+            "ticker": "GOOGL",
+            "name": "ALPHABET INC",
+            "weight": 6.626906041161025,
+            "valueUsd": 850084000,
+            "shares": 2956198,
+            "status": "reduce"
+          }
+        ]
+      },
+      "sec": {
+        "accession": "0001569205-26-000005",
+        "form": "13F-HR",
+        "filingDate": "2026-05-15",
+        "reportDate": "2026-03-31",
+        "xmlUrl": "https://www.sec.gov/Archives/edgar/data/1569205/000156920526000005/FLLPq12026.xml",
+        "equityCount": 34,
+        "equityValue": 12827766000,
+        "withOptionsCount": 34,
+        "optionRows": 0,
+        "unit": "dollars",
+        "top5": [
+          {
+            "name": "MARRIOTT INTL INC NEW",
+            "cusip": "571903202",
+            "valueUsd": 1102511000,
+            "shares": 3370872
+          },
+          {
+            "name": "STRYKER CORPORATION",
+            "cusip": "863667101",
+            "valueUsd": 1005951000,
+            "shares": 3061416
+          },
+          {
+            "name": "WATERS CORP",
+            "cusip": "941848103",
+            "valueUsd": 956556000,
+            "shares": 3212075
+          },
+          {
+            "name": "VISA INC",
+            "cusip": "92826C839",
+            "valueUsd": 938180000,
+            "shares": 3104090
+          },
+          {
+            "name": "ALPHABET INC",
+            "cusip": "02079K305",
+            "valueUsd": 850084000,
+            "shares": 2956198
+          }
+        ]
+      },
+      "dataroma": {
+        "code": "FS",
+        "period": "Q1 2026",
+        "portfolioDate": "31 Mar 2026",
+        "stockCount": 34,
+        "portfolioValue": 12827766000,
+        "top5": [
+          {
+            "ticker": "MAR",
+            "weight": 8.59,
+            "valueUsd": 1102511000,
+            "shares": 3370872,
+            "activity": "Reduce 15.30%"
+          },
+          {
+            "ticker": "SYK",
+            "weight": 7.84,
+            "valueUsd": 1005951000,
+            "shares": 3061416,
+            "activity": "Reduce 16.98%"
+          },
+          {
+            "ticker": "WAT",
+            "weight": 7.46,
+            "valueUsd": 956556000,
+            "shares": 3212075,
+            "activity": "Reduce 9.72%"
+          },
+          {
+            "ticker": "V",
+            "weight": 7.31,
+            "valueUsd": 938180000,
+            "shares": 3104090,
+            "activity": "Reduce 12.18%"
+          },
+          {
+            "ticker": "GOOGL",
+            "weight": 6.63,
+            "valueUsd": 850084000,
+            "shares": 2956198,
+            "activity": "Reduce 15.50%"
+          }
+        ]
+      },
+      "checks": [
+        {
+          "id": "filing_freshness",
+          "pass": true,
+          "detail": "segment 000156920526000005 matches SEC latest"
+        },
+        {
+          "id": "filing_date",
+          "pass": true,
+          "detail": "2026-05-15"
+        },
+        {
+          "id": "report_date",
+          "pass": true,
+          "detail": "2026-03-31"
+        },
+        {
+          "id": "holdings_count",
+          "pass": true,
+          "detail": "34"
+        },
+        {
+          "id": "portfolio_value",
+          "pass": true,
+          "detail": "finsepa=12827766000 sec=12827766000 delta%=0.000"
+        },
+        {
+          "id": "weights_sum",
+          "pass": true,
+          "detail": "100.0000"
+        },
+        {
+          "id": "top_holdings_order",
+          "pass": true,
+          "detail": "10/10 aligned"
+        },
+        {
+          "id": "shares_values_spot",
+          "pass": true,
+          "detail": "34 CUSIPs matched"
+        },
+        {
+          "id": "duplicate_rows",
+          "pass": true,
+          "detail": "none"
+        },
+        {
+          "id": "ticker_resolution",
+          "pass": true,
+          "detail": "100.0% (0 unresolved)"
+        },
+        {
+          "id": "activity_counts",
+          "pass": true,
+          "detail": "new=1 inc=0 red=0 sold=4"
+        }
+      ],
+      "dataromaNotes": [
+        {
+          "level": "ok",
+          "msg": "Dataroma period matches reportDate 2026-03-31"
+        },
+        {
+          "level": "ok",
+          "msg": "Holdings count matches Dataroma (34)"
+        },
+        {
+          "level": "ok",
+          "msg": "Portfolio value within 1% of Dataroma (delta 0.000%)"
+        },
+        {
+          "level": "ok",
+          "msg": "Top-15 ticker overlap vs Dataroma: 15/15"
+        }
+      ]
+    },
+    {
+      "slug": "michael-burry",
+      "name": "Michael Burry",
+      "cik": "0001649339",
+      "elapsedMs": 1486,
+      "verdict": "FAIL",
+      "finsepa": {
+        "segment": "000164933925000007",
+        "updatedAt": "2026-07-21T08:48:52.547+00:00",
+        "filingDate": "2025-11-03",
+        "reportDate": "2025-09-30",
+        "accession": "0001649339-25-000007",
+        "positionCount": 8,
+        "totalValueUsd": 1381198000,
+        "source": "edgar",
+        "unresolvedTickers": 0,
+        "top5": [
+          {
+            "ticker": "PLTR",
+            "name": "PALANTIR TECHNOLOGIES INC",
+            "weight": 66.03687523439797,
+            "valueUsd": 912100000,
+            "shares": 5000000,
+            "status": "new"
+          },
+          {
+            "ticker": "NVDA",
+            "name": "NVIDIA CORPORATION",
+            "weight": 13.508562856303005,
+            "valueUsd": 186580000,
+            "shares": 1000000,
+            "status": "new"
+          },
+          {
+            "ticker": "PFE",
+            "name": "PFIZER INC",
+            "weight": 11.06865199631045,
+            "valueUsd": 152880000,
+            "shares": 6000000,
+            "status": "new"
+          },
+          {
+            "ticker": "HAL",
+            "name": "HALLIBURTON CO",
+            "weight": 4.4526563171971,
+            "valueUsd": 61500000,
+            "shares": 2500000,
+            "status": "new"
+          },
+          {
+            "ticker": "MOH",
+            "name": "MOLINA HEALTHCARE INC",
+            "weight": 1.7318299041846281,
+            "valueUsd": 23920000,
+            "shares": 125000,
+            "status": "new"
+          }
+        ]
+      },
+      "sec": {
+        "accession": "0001649339-25-000007",
+        "form": "13F-HR",
+        "filingDate": "2025-11-03",
+        "reportDate": "2025-09-30",
+        "xmlUrl": "https://www.sec.gov/Archives/edgar/data/1649339/000164933925000007/infotable.xml",
+        "equityCount": 4,
+        "equityValue": 68138000,
+        "withOptionsCount": 8,
+        "optionRows": 4,
+        "unit": "dollars",
+        "top5": [
+          {
+            "name": "MOLINA HEALTHCARE INC",
+            "cusip": "60855R100",
+            "valueUsd": 23920000,
+            "shares": 125000
+          },
+          {
+            "name": "LULULEMON ATHLETICA INC",
+            "cusip": "550021109",
+            "valueUsd": 17793000,
+            "shares": 100000
+          },
+          {
+            "name": "SLM CORP",
+            "cusip": "78442P106",
+            "valueUsd": 13288000,
+            "shares": 480054
+          },
+          {
+            "name": "BRUKER CORP",
+            "cusip": "116794207",
+            "valueUsd": 13137000,
+            "shares": 48334
+          }
+        ]
+      },
+      "dataroma": {
+        "code": "SAM",
+        "period": "Q3 2025",
+        "portfolioDate": "30 Sep 2025",
+        "stockCount": 3,
+        "portfolioValue": 55001000,
+        "top5": [
+          {
+            "ticker": "MOH",
+            "weight": 43.49,
+            "valueUsd": 23920000,
+            "shares": 125000,
+            "activity": "Buy"
+          },
+          {
+            "ticker": "LULU",
+            "weight": 32.35,
+            "valueUsd": 17793000,
+            "shares": 100000,
+            "activity": "Add 100.00%"
+          },
+          {
+            "ticker": "SLM",
+            "weight": 24.16,
+            "valueUsd": 13288000,
+            "shares": 480054,
+            "activity": "Buy"
+          }
+        ]
+      },
+      "checks": [
+        {
+          "id": "filing_freshness",
+          "pass": true,
+          "detail": "segment 000164933925000007 matches SEC latest"
+        },
+        {
+          "id": "filing_date",
+          "pass": true,
+          "detail": "2025-11-03"
+        },
+        {
+          "id": "report_date",
+          "pass": true,
+          "detail": "2025-09-30"
+        },
+        {
+          "id": "holdings_count",
+          "pass": false,
+          "detail": "finsepa=8 sec_equity=4 sec_with_opts=8 options=4"
+        },
+        {
+          "id": "portfolio_value",
+          "pass": false,
+          "detail": "finsepa=1381198000 sec=68138000 delta%=1927.060"
+        },
+        {
+          "id": "weights_sum",
+          "pass": true,
+          "detail": "100.0000"
+        },
+        {
+          "id": "top_holdings_order",
+          "pass": false,
+          "detail": "0 aligned; finsepa=[PLTR, NVDA, PFE, HAL, MOH] sec=[MOLINA HEALTHCARE INC, LULULEMON ATHLETICA INC, SLM CORP, BRUKER CORP]"
+        },
+        {
+          "id": "shares_values_spot",
+          "pass": true,
+          "detail": "4 CUSIPs matched"
+        },
+        {
+          "id": "duplicate_rows",
+          "pass": true,
+          "detail": "none"
+        },
+        {
+          "id": "ticker_resolution",
+          "pass": true,
+          "detail": "100.0% (0 unresolved)"
+        },
+        {
+          "id": "activity_counts",
+          "pass": true,
+          "detail": "new=7 inc=0 red=0 sold=10"
+        }
+      ],
+      "dataromaNotes": [
+        {
+          "level": "ok",
+          "msg": "Dataroma period matches reportDate 2025-09-30"
+        },
+        {
+          "level": "diff",
+          "msg": "Holdings count Finsepa=8 Dataroma=3 SEC=4",
+          "cause": "investigate_finsepa_vs_sec"
+        },
+        {
+          "level": "diff",
+          "msg": "Value Finsepa=1381198000 Dataroma=55001000 delta%=2411.22 SEC_delta%=1927.060",
+          "cause": "finsepa_vs_sec_value"
+        },
+        {
+          "level": "ok",
+          "msg": "Top-15 ticker overlap vs Dataroma: 3/3",
+          "cause": "ticker_resolution_or_aggregation"
+        }
+      ]
+    },
+    {
+      "slug": "cathie-wood",
+      "name": "Cathie Wood",
+      "cik": "0001697748",
+      "elapsedMs": 1633,
+      "verdict": "PASS",
+      "finsepa": {
+        "segment": "000110465926059240",
+        "updatedAt": "2026-07-21T07:40:35.478+00:00",
+        "filingDate": "2026-05-12",
+        "reportDate": "2026-03-31",
+        "accession": "0001104659-26-059240",
+        "positionCount": 181,
+        "totalValueUsd": 12859486000,
+        "source": "edgar",
+        "unresolvedTickers": 5,
+        "top5": [
+          {
+            "ticker": "TSLA",
+            "name": "Tesla Inc",
+            "weight": 8.184984998622806,
+            "valueUsd": 1052547000,
+            "shares": 2831329,
+            "status": "reduce"
+          },
+          {
+            "ticker": "AMD",
+            "name": "Advanced Micro Devices Inc",
+            "weight": 4.291586771042015,
+            "valueUsd": 551876000,
+            "shares": 2712854,
+            "status": "add"
+          },
+          {
+            "ticker": "CRSP",
+            "name": "CRISPR Therapeutics AG",
+            "weight": 4.185151723793626,
+            "valueUsd": 538189000,
+            "shares": 11313623,
+            "status": "add"
+          },
+          {
+            "ticker": "SHOP",
+            "name": "Shopify Inc",
+            "weight": 3.8535988141361175,
+            "valueUsd": 495553000,
+            "shares": 4177652,
+            "status": "add"
+          },
+          {
+            "ticker": "PLTR",
+            "name": "Palantir Technologies Inc",
+            "weight": 3.53756752019482,
+            "valueUsd": 454913000,
+            "shares": 3109881,
+            "status": "reduce"
+          }
+        ]
+      },
+      "sec": {
+        "accession": "0001104659-26-059240",
+        "form": "13F-HR",
+        "filingDate": "2026-05-12",
+        "reportDate": "2026-03-31",
+        "xmlUrl": "https://www.sec.gov/Archives/edgar/data/1697748/000110465926059240/infotable.xml",
+        "equityCount": 181,
+        "equityValue": 12858878000,
+        "withOptionsCount": 181,
+        "optionRows": 1,
+        "unit": "dollars",
+        "top5": [
+          {
+            "name": "Tesla Inc",
+            "cusip": "88160R101",
+            "valueUsd": 1052547000,
+            "shares": 2831329
+          },
+          {
+            "name": "Advanced Micro Devices Inc",
+            "cusip": "007903107",
+            "valueUsd": 551876000,
+            "shares": 2712854
+          },
+          {
+            "name": "CRISPR Therapeutics AG",
+            "cusip": "H17182108",
+            "valueUsd": 538189000,
+            "shares": 11313623
+          },
+          {
+            "name": "Shopify Inc",
+            "cusip": "82509L107",
+            "valueUsd": 495553000,
+            "shares": 4177652
+          },
+          {
+            "name": "Palantir Technologies Inc",
+            "cusip": "69608A108",
+            "valueUsd": 454913000,
+            "shares": 3109881
+          }
+        ]
+      },
+      "dataroma": {
+        "code": null,
+        "note": "not_tracked_on_dataroma"
+      },
+      "checks": [
+        {
+          "id": "filing_freshness",
+          "pass": true,
+          "detail": "segment 000110465926059240 matches SEC latest"
+        },
+        {
+          "id": "filing_date",
+          "pass": true,
+          "detail": "2026-05-12"
+        },
+        {
+          "id": "report_date",
+          "pass": true,
+          "detail": "2026-03-31"
+        },
+        {
+          "id": "holdings_count",
+          "pass": true,
+          "detail": "181"
+        },
+        {
+          "id": "portfolio_value",
+          "pass": true,
+          "detail": "finsepa=12859486000 sec=12858878000 delta%=0.005"
+        },
+        {
+          "id": "weights_sum",
+          "pass": true,
+          "detail": "100.0000"
+        },
+        {
+          "id": "top_holdings_order",
+          "pass": true,
+          "detail": "10/10 aligned"
+        },
+        {
+          "id": "shares_values_spot",
+          "pass": true,
+          "detail": "50 CUSIPs matched"
+        },
+        {
+          "id": "duplicate_rows",
+          "pass": true,
+          "detail": "none"
+        },
+        {
+          "id": "ticker_resolution",
+          "pass": true,
+          "detail": "97.2% (5 unresolved)"
+        },
+        {
+          "id": "activity_counts",
+          "pass": true,
+          "detail": "new=13 inc=0 red=0 sold=28"
+        }
+      ],
+      "dataromaNotes": [
+        {
+          "level": "info",
+          "msg": "Dataroma not available for this manager"
+        }
+      ]
+    },
+    {
+      "slug": "li-lu",
+      "name": "Li Lu",
+      "cik": "0001709323",
+      "elapsedMs": 2991,
+      "verdict": "PASS",
+      "finsepa": {
+        "segment": "000204358526000013",
+        "updatedAt": "2026-07-21T07:42:17.615+00:00",
+        "filingDate": "2026-05-15",
+        "reportDate": "2026-03-31",
+        "accession": "0002043585-26-000013",
+        "positionCount": 14,
+        "totalValueUsd": 3201225000,
+        "source": "edgar",
+        "unresolvedTickers": 0,
+        "top5": [
+          {
+            "ticker": "GOOGL",
+            "name": "ALPHABET INC",
+            "weight": 22.845973025951004,
+            "valueUsd": 731351000,
+            "shares": 2543300,
+            "status": "unchanged"
+          },
+          {
+            "ticker": "GOOG",
+            "name": "ALPHABET INC",
+            "weight": 21.96596615358183,
+            "valueUsd": 703180000,
+            "shares": 2451300,
+            "status": "unchanged"
+          },
+          {
+            "ticker": "PDD",
+            "name": "PDD HOLDINGS INC",
+            "weight": 14.708275738193974,
+            "valueUsd": 470845000,
+            "shares": 4608000,
+            "status": "unchanged"
+          },
+          {
+            "ticker": "BRK.B",
+            "name": "BERKSHIRE HATHAWAY INC DEL",
+            "weight": 13.438636771860772,
+            "valueUsd": 430201000,
+            "shares": 897749,
+            "status": "unchanged"
+          },
+          {
+            "ticker": "EWBC",
+            "name": "EAST WEST BANCORP INC",
+            "weight": 9.25904927020125,
+            "valueUsd": 296403000,
+            "shares": 2776351,
+            "status": "unchanged"
+          }
+        ]
+      },
+      "sec": {
+        "accession": "0002043585-26-000013",
+        "form": "13F-HR",
+        "filingDate": "2026-05-15",
+        "reportDate": "2026-03-31",
+        "xmlUrl": "https://www.sec.gov/Archives/edgar/data/1709323/000204358526000013/13fhciq126.xml",
+        "equityCount": 14,
+        "equityValue": 3201225000,
+        "withOptionsCount": 14,
+        "optionRows": 0,
+        "unit": "dollars",
+        "top5": [
+          {
+            "name": "ALPHABET INC",
+            "cusip": "02079K305",
+            "valueUsd": 731351000,
+            "shares": 2543300
+          },
+          {
+            "name": "ALPHABET INC",
+            "cusip": "02079K107",
+            "valueUsd": 703180000,
+            "shares": 2451300
+          },
+          {
+            "name": "PDD HOLDINGS INC",
+            "cusip": "722304102",
+            "valueUsd": 470845000,
+            "shares": 4608000
+          },
+          {
+            "name": "BERKSHIRE HATHAWAY INC DEL",
+            "cusip": "084670702",
+            "valueUsd": 430201000,
+            "shares": 897749
+          },
+          {
+            "name": "EAST WEST BANCORP INC",
+            "cusip": "27579R104",
+            "valueUsd": 296403000,
+            "shares": 2776351
+          }
+        ]
+      },
+      "dataroma": {
+        "code": "HC",
+        "period": "Q1 2026",
+        "portfolioDate": "31 Mar 2026",
+        "stockCount": 14,
+        "portfolioValue": 3201225000,
+        "top5": [
+          {
+            "ticker": "GOOGL",
+            "weight": 22.85,
+            "valueUsd": 731351000,
+            "shares": 2543300,
+            "activity": null
+          },
+          {
+            "ticker": "GOOG",
+            "weight": 21.97,
+            "valueUsd": 703180000,
+            "shares": 2451300,
+            "activity": null
+          },
+          {
+            "ticker": "PDD",
+            "weight": 14.71,
+            "valueUsd": 470845000,
+            "shares": 4608000,
+            "activity": null
+          },
+          {
+            "ticker": "BRK.B",
+            "weight": 13.44,
+            "valueUsd": 430201000,
+            "shares": 897749,
+            "activity": null
+          },
+          {
+            "ticker": "EWBC",
+            "weight": 9.26,
+            "valueUsd": 296403000,
+            "shares": 2776351,
+            "activity": null
+          }
+        ]
+      },
+      "checks": [
+        {
+          "id": "filing_freshness",
+          "pass": true,
+          "detail": "segment 000204358526000013 matches SEC latest"
+        },
+        {
+          "id": "filing_date",
+          "pass": true,
+          "detail": "2026-05-15"
+        },
+        {
+          "id": "report_date",
+          "pass": true,
+          "detail": "2026-03-31"
+        },
+        {
+          "id": "holdings_count",
+          "pass": true,
+          "detail": "14"
+        },
+        {
+          "id": "portfolio_value",
+          "pass": true,
+          "detail": "finsepa=3201225000 sec=3201225000 delta%=0.000"
+        },
+        {
+          "id": "weights_sum",
+          "pass": true,
+          "detail": "100.0000"
+        },
+        {
+          "id": "top_holdings_order",
+          "pass": true,
+          "detail": "10/10 aligned"
+        },
+        {
+          "id": "shares_values_spot",
+          "pass": true,
+          "detail": "14 CUSIPs matched"
+        },
+        {
+          "id": "duplicate_rows",
+          "pass": true,
+          "detail": "none"
+        },
+        {
+          "id": "ticker_resolution",
+          "pass": true,
+          "detail": "100.0% (0 unresolved)"
+        },
+        {
+          "id": "activity_counts",
+          "pass": true,
+          "detail": "new=5 inc=0 red=0 sold=0"
+        }
+      ],
+      "dataromaNotes": [
+        {
+          "level": "ok",
+          "msg": "Dataroma period matches reportDate 2026-03-31"
+        },
+        {
+          "level": "ok",
+          "msg": "Holdings count matches Dataroma (14)"
+        },
+        {
+          "level": "ok",
+          "msg": "Portfolio value within 1% of Dataroma (delta 0.000%)"
+        },
+        {
+          "level": "ok",
+          "msg": "Top-15 ticker overlap vs Dataroma: 14/14"
+        }
+      ]
+    },
+    {
+      "slug": "ray-dalio",
+      "name": "Ray Dalio",
+      "cik": "0001350694",
+      "elapsedMs": 1376,
+      "verdict": "PASS",
+      "finsepa": {
+        "segment": "000135069426000002",
+        "updatedAt": "2026-07-21T08:20:18.23+00:00",
+        "filingDate": "2026-05-15",
+        "reportDate": "2026-03-31",
+        "accession": "0001350694-26-000002",
+        "positionCount": 993,
+        "totalValueUsd": 22404552000,
+        "source": "edgar",
+        "unresolvedTickers": 15,
+        "top5": [
+          {
+            "ticker": "SPY",
+            "name": "STATE STR SPDR S&P 500 ETF T",
+            "weight": 12.669943143696871,
+            "valueUsd": 2838644000,
+            "shares": 4364862,
+            "status": "reduce"
+          },
+          {
+            "ticker": "IVV",
+            "name": "ISHARES TR",
+            "weight": 7.8109305644674345,
+            "valueUsd": 1750004000,
+            "shares": 2679084,
+            "status": "reduce"
+          },
+          {
+            "ticker": "AMZN",
+            "name": "AMAZON COM INC",
+            "weight": 4.079693269474881,
+            "valueUsd": 914037000,
+            "shares": 4388711,
+            "status": "add"
+          },
+          {
+            "ticker": "NVDA",
+            "name": "NVIDIA CORPORATION",
+            "weight": 3.6530969242321825,
+            "valueUsd": 818460000,
+            "shares": 4693003,
+            "status": "add"
+          },
+          {
+            "ticker": "GOOGL",
+            "name": "ALPHABET INC",
+            "weight": 2.5639923529825546,
+            "valueUsd": 574451000,
+            "shares": 1997674,
+            "status": "add"
+          }
+        ]
+      },
+      "sec": {
+        "accession": "0001350694-26-000002",
+        "form": "13F-HR",
+        "filingDate": "2026-05-15",
+        "reportDate": "2026-03-31",
+        "xmlUrl": "https://www.sec.gov/Archives/edgar/data/1350694/000135069426000002/infotable.xml",
+        "equityCount": 993,
+        "equityValue": 22404552000,
+        "withOptionsCount": 993,
+        "optionRows": 0,
+        "unit": "dollars",
+        "top5": [
+          {
+            "name": "STATE STR SPDR S&P 500 ETF T",
+            "cusip": "78462F103",
+            "valueUsd": 2838644000,
+            "shares": 4364862
+          },
+          {
+            "name": "ISHARES TR",
+            "cusip": "464287200",
+            "valueUsd": 1750004000,
+            "shares": 2679084
+          },
+          {
+            "name": "AMAZON COM INC",
+            "cusip": "023135106",
+            "valueUsd": 914037000,
+            "shares": 4388711
+          },
+          {
+            "name": "NVIDIA CORPORATION",
+            "cusip": "67066G104",
+            "valueUsd": 818460000,
+            "shares": 4693003
+          },
+          {
+            "name": "ALPHABET INC",
+            "cusip": "02079K305",
+            "valueUsd": 574451000,
+            "shares": 1997674
+          }
+        ]
+      },
+      "dataroma": {
+        "code": null,
+        "note": "not_tracked_on_dataroma"
+      },
+      "checks": [
+        {
+          "id": "filing_freshness",
+          "pass": true,
+          "detail": "segment 000135069426000002 matches SEC latest"
+        },
+        {
+          "id": "filing_date",
+          "pass": true,
+          "detail": "2026-05-15"
+        },
+        {
+          "id": "report_date",
+          "pass": true,
+          "detail": "2026-03-31"
+        },
+        {
+          "id": "holdings_count",
+          "pass": true,
+          "detail": "993"
+        },
+        {
+          "id": "portfolio_value",
+          "pass": true,
+          "detail": "finsepa=22404552000 sec=22404552000 delta%=0.000"
+        },
+        {
+          "id": "weights_sum",
+          "pass": true,
+          "detail": "100.0000"
+        },
+        {
+          "id": "top_holdings_order",
+          "pass": true,
+          "detail": "10/10 aligned"
+        },
+        {
+          "id": "shares_values_spot",
+          "pass": true,
+          "detail": "50 CUSIPs matched"
+        },
+        {
+          "id": "duplicate_rows",
+          "pass": true,
+          "detail": "none"
+        },
+        {
+          "id": "ticker_resolution",
+          "pass": true,
+          "detail": "98.5% (15 unresolved)"
+        },
+        {
+          "id": "activity_counts",
+          "pass": true,
+          "detail": "new=215 inc=0 red=0 sold=262"
+        }
+      ],
+      "dataromaNotes": [
+        {
+          "level": "info",
+          "msg": "Dataroma not available for this manager"
+        }
+      ]
+    },
+    {
+      "slug": "ken-fisher",
+      "name": "Ken Fisher",
+      "cik": "0000850529",
+      "elapsedMs": 2403,
+      "verdict": "PASS",
+      "finsepa": {
+        "segment": "000085052926000004",
+        "updatedAt": "2026-07-21T08:50:00.196+00:00",
+        "filingDate": "2026-05-05",
+        "reportDate": "2026-03-31",
+        "accession": "0000850529-26-000004",
+        "positionCount": 1016,
+        "totalValueUsd": 294892660000,
+        "source": "edgar",
+        "unresolvedTickers": 9,
+        "top5": [
+          {
+            "ticker": "NVDA",
+            "name": "NVIDIA CORP COM",
+            "weight": 5.2374274083322385,
+            "valueUsd": 15444789000,
+            "shares": 88559570,
+            "status": "add"
+          },
+          {
+            "ticker": "AAPL",
+            "name": "APPLE INC",
+            "weight": 4.8564982933112,
+            "valueUsd": 14321457000,
+            "shares": 56430341,
+            "status": "add"
+          },
+          {
+            "ticker": "IEF",
+            "name": "ISHARES TR 7 10YR TR BD ETF",
+            "weight": 4.7590268947351895,
+            "valueUsd": 14034021000,
+            "shares": 147045481,
+            "status": "add"
+          },
+          {
+            "ticker": "GOOGL",
+            "name": "ALPHABET INC CLASS A",
+            "weight": 3.807955070838318,
+            "valueUsd": 11229380000,
+            "shares": 39050562,
+            "status": "add"
+          },
+          {
+            "ticker": "MSFT",
+            "name": "MICROSOFT CORP",
+            "weight": 3.2563713182959524,
+            "valueUsd": 9602800000,
+            "shares": 25941594,
+            "status": "add"
+          }
+        ]
+      },
+      "sec": {
+        "accession": "0000850529-26-000004",
+        "form": "13F-HR",
+        "filingDate": "2026-05-05",
+        "reportDate": "2026-03-31",
+        "xmlUrl": "https://www.sec.gov/Archives/edgar/data/850529/000085052926000004/2026Q113F1.xml",
+        "equityCount": 1016,
+        "equityValue": 294892660000,
+        "withOptionsCount": 1016,
+        "optionRows": 0,
+        "unit": "dollars",
+        "top5": [
+          {
+            "name": "NVIDIA CORP COM",
+            "cusip": "67066G104",
+            "valueUsd": 15444789000,
+            "shares": 88559570
+          },
+          {
+            "name": "APPLE INC",
+            "cusip": "037833100",
+            "valueUsd": 14321457000,
+            "shares": 56430341
+          },
+          {
+            "name": "ISHARES TR 7 10YR TR BD ETF",
+            "cusip": "464287440",
+            "valueUsd": 14034021000,
+            "shares": 147045481
+          },
+          {
+            "name": "ALPHABET INC CLASS A",
+            "cusip": "02079K305",
+            "valueUsd": 11229380000,
+            "shares": 39050562
+          },
+          {
+            "name": "MICROSOFT CORP",
+            "cusip": "594918104",
+            "valueUsd": 9602800000,
+            "shares": 25941594
+          }
+        ]
+      },
+      "dataroma": {
+        "code": null,
+        "note": "not_tracked_on_dataroma"
+      },
+      "checks": [
+        {
+          "id": "filing_freshness",
+          "pass": true,
+          "detail": "segment 000085052926000004 matches SEC latest"
+        },
+        {
+          "id": "filing_date",
+          "pass": true,
+          "detail": "2026-05-05"
+        },
+        {
+          "id": "report_date",
+          "pass": true,
+          "detail": "2026-03-31"
+        },
+        {
+          "id": "holdings_count",
+          "pass": true,
+          "detail": "1016"
+        },
+        {
+          "id": "portfolio_value",
+          "pass": true,
+          "detail": "finsepa=294892660000 sec=294892660000 delta%=0.000"
+        },
+        {
+          "id": "weights_sum",
+          "pass": true,
+          "detail": "100.0000"
+        },
+        {
+          "id": "top_holdings_order",
+          "pass": true,
+          "detail": "10/10 aligned"
+        },
+        {
+          "id": "shares_values_spot",
+          "pass": true,
+          "detail": "50 CUSIPs matched"
+        },
+        {
+          "id": "duplicate_rows",
+          "pass": true,
+          "detail": "none"
+        },
+        {
+          "id": "ticker_resolution",
+          "pass": true,
+          "detail": "99.1% (9 unresolved)"
+        },
+        {
+          "id": "activity_counts",
+          "pass": true,
+          "detail": "new=118 inc=0 red=0 sold=119"
+        }
+      ],
+      "dataromaNotes": [
+        {
+          "level": "info",
+          "msg": "Dataroma not available for this manager"
+        }
+      ]
+    },
+    {
+      "slug": "primecap-management",
+      "name": "PRIMECAP",
+      "cik": "0000763212",
+      "elapsedMs": 1193,
+      "verdict": "PASS",
+      "finsepa": {
+        "segment": "000076321226000016",
+        "updatedAt": "2026-07-21T07:51:14.665+00:00",
+        "filingDate": "2026-05-11",
+        "reportDate": "2026-03-31",
+        "accession": "0000763212-26-000016",
+        "positionCount": 320,
+        "totalValueUsd": 127010589000,
+        "source": "edgar",
+        "unresolvedTickers": 4,
+        "top5": [
+          {
+            "ticker": "LLY",
+            "name": "ELI LILLY & CO",
+            "weight": 6.679313958618049,
+            "valueUsd": 8483436000,
+            "shares": 9223432,
+            "status": "reduce"
+          },
+          {
+            "ticker": "MU",
+            "name": "MICRON TECHNOLOGY INC",
+            "weight": 5.818397551089224,
+            "valueUsd": 7389981000,
+            "shares": 21874204,
+            "status": "reduce"
+          },
+          {
+            "ticker": "GOOGL",
+            "name": "ALPHABET INC",
+            "weight": 3.39325565996706,
+            "valueUsd": 4309794000,
+            "shares": 14987459,
+            "status": "reduce"
+          },
+          {
+            "ticker": "AZN",
+            "name": "ASTRAZENECA PLC",
+            "weight": 2.8281948995606974,
+            "valueUsd": 3592107000,
+            "shares": 18213708,
+            "status": "new"
+          },
+          {
+            "ticker": "KLA",
+            "name": "KLA CORP",
+            "weight": 2.825918711391851,
+            "valueUsd": 3589216000,
+            "shares": 2437647,
+            "status": "reduce"
+          }
+        ]
+      },
+      "sec": {
+        "accession": "0000763212-26-000016",
+        "form": "13F-HR",
+        "filingDate": "2026-05-11",
+        "reportDate": "2026-03-31",
+        "xmlUrl": "https://www.sec.gov/Archives/edgar/data/763212/000076321226000016/infotable.xml",
+        "equityCount": 320,
+        "equityValue": 127010589000,
+        "withOptionsCount": 320,
+        "optionRows": 0,
+        "unit": "dollars",
+        "top5": [
+          {
+            "name": "ELI LILLY & CO",
+            "cusip": "532457108",
+            "valueUsd": 8483436000,
+            "shares": 9223432
+          },
+          {
+            "name": "MICRON TECHNOLOGY INC",
+            "cusip": "595112103",
+            "valueUsd": 7389981000,
+            "shares": 21874204
+          },
+          {
+            "name": "ALPHABET INC",
+            "cusip": "02079K305",
+            "valueUsd": 4309794000,
+            "shares": 14987459
+          },
+          {
+            "name": "ASTRAZENECA PLC",
+            "cusip": "G0593M107",
+            "valueUsd": 3592107000,
+            "shares": 18213708
+          },
+          {
+            "name": "KLA CORP",
+            "cusip": "482480100",
+            "valueUsd": 3589216000,
+            "shares": 2437647
+          }
+        ]
+      },
+      "dataroma": {
+        "code": null,
+        "note": "not_tracked_on_dataroma"
+      },
+      "checks": [
+        {
+          "id": "filing_freshness",
+          "pass": true,
+          "detail": "segment 000076321226000016 matches SEC latest"
+        },
+        {
+          "id": "filing_date",
+          "pass": true,
+          "detail": "2026-05-11"
+        },
+        {
+          "id": "report_date",
+          "pass": true,
+          "detail": "2026-03-31"
+        },
+        {
+          "id": "holdings_count",
+          "pass": true,
+          "detail": "320"
+        },
+        {
+          "id": "portfolio_value",
+          "pass": true,
+          "detail": "finsepa=127010589000 sec=127010589000 delta%=0.000"
+        },
+        {
+          "id": "weights_sum",
+          "pass": true,
+          "detail": "100.0000"
+        },
+        {
+          "id": "top_holdings_order",
+          "pass": true,
+          "detail": "10/10 aligned"
+        },
+        {
+          "id": "shares_values_spot",
+          "pass": true,
+          "detail": "50 CUSIPs matched"
+        },
+        {
+          "id": "duplicate_rows",
+          "pass": true,
+          "detail": "none"
+        },
+        {
+          "id": "ticker_resolution",
+          "pass": true,
+          "detail": "98.8% (4 unresolved)"
+        },
+        {
+          "id": "activity_counts",
+          "pass": true,
+          "detail": "new=9 inc=0 red=0 sold=8"
+        }
+      ],
+      "dataromaNotes": [
+        {
+          "level": "info",
+          "msg": "Dataroma not available for this manager"
+        }
+      ]
+    },
+    {
+      "slug": "ken-griffin",
+      "name": "Ken Griffin",
+      "cik": "0001423053",
+      "elapsedMs": 2159,
+      "verdict": "FAIL",
+      "finsepa": {
+        "segment": "000110465926062477",
+        "updatedAt": "2026-07-21T08:31:05.447+00:00",
+        "filingDate": "2026-05-15",
+        "reportDate": "2026-03-31",
+        "accession": "0001104659-26-062477",
+        "positionCount": 6733,
+        "totalValueUsd": 618473217000,
+        "source": "edgar",
+        "unresolvedTickers": 165,
+        "top5": [
+          {
+            "ticker": "SPY",
+            "name": "STATE STR SPDR S&P 500 ETF T",
+            "weight": 6.789273140020224,
+            "valueUsd": 41989836000,
+            "shares": 64565975,
+            "status": "add"
+          },
+          {
+            "ticker": "NDQ",
+            "name": "INVESCO QQQ TR",
+            "weight": 5.148833470019123,
+            "valueUsd": 31844156000,
+            "shares": 55171964,
+            "status": "reduce"
+          },
+          {
+            "ticker": "NVDA",
+            "name": "NVIDIA CORPORATION",
+            "weight": 3.8700474559110942,
+            "valueUsd": 23935207000,
+            "shares": 137243161,
+            "status": "reduce"
+          },
+          {
+            "ticker": "TSLA",
+            "name": "TESLA INC",
+            "weight": 3.842234448771611,
+            "valueUsd": 23763191000,
+            "shares": 63922509,
+            "status": "reduce"
+          },
+          {
+            "ticker": "GQ9",
+            "name": "SPDR GOLD TR",
+            "weight": 2.3962119284463697,
+            "valueUsd": 14819929000,
+            "shares": 34441722,
+            "status": "add"
+          }
+        ]
+      },
+      "sec": {
+        "accession": "0001104659-26-062477",
+        "form": "13F-HR",
+        "filingDate": "2026-05-15",
+        "reportDate": "2026-03-31",
+        "xmlUrl": "https://www.sec.gov/Archives/edgar/data/1423053/000110465926062477/infotable.xml",
+        "equityCount": 6006,
+        "equityValue": 141142523000,
+        "withOptionsCount": 6733,
+        "optionRows": 7304,
+        "unit": "dollars",
+        "top5": [
+          {
+            "name": "NVIDIA CORPORATION",
+            "cusip": "67066G104",
+            "valueUsd": 3255152000,
+            "shares": 18664861
+          },
+          {
+            "name": "ISHARES TR",
+            "cusip": "464287200",
+            "valueUsd": 2652523000,
+            "shares": 4060750
+          },
+          {
+            "name": "AMAZON COM INC",
+            "cusip": "023135106",
+            "valueUsd": 1687515000,
+            "shares": 8102537
+          },
+          {
+            "name": "MICRON TECHNOLOGY INC",
+            "cusip": "595112103",
+            "valueUsd": 1552838000,
+            "shares": 4596372
+          },
+          {
+            "name": "STATE STR SPDR DOW JONES IND",
+            "cusip": "78467X109",
+            "valueUsd": 1550014000,
+            "shares": 3346389
+          }
+        ]
+      },
+      "dataroma": {
+        "code": null,
+        "note": "not_tracked_on_dataroma"
+      },
+      "checks": [
+        {
+          "id": "filing_freshness",
+          "pass": true,
+          "detail": "segment 000110465926062477 matches SEC latest"
+        },
+        {
+          "id": "filing_date",
+          "pass": true,
+          "detail": "2026-05-15"
+        },
+        {
+          "id": "report_date",
+          "pass": true,
+          "detail": "2026-03-31"
+        },
+        {
+          "id": "holdings_count",
+          "pass": false,
+          "detail": "finsepa=6733 sec_equity=6006 sec_with_opts=6733 options=7304"
+        },
+        {
+          "id": "portfolio_value",
+          "pass": false,
+          "detail": "finsepa=618473217000 sec=141142523000 delta%=338.191"
+        },
+        {
+          "id": "weights_sum",
+          "pass": true,
+          "detail": "100.0000"
+        },
+        {
+          "id": "top_holdings_order",
+          "pass": false,
+          "detail": "0 aligned; finsepa=[SPY, NDQ, NVDA, TSLA, GQ9] sec=[NVIDIA CORPORATION, ISHARES TR, AMAZON COM INC, MICRON TECHNOLOGY INC, STATE STR SPDR DOW JONES IND]"
+        },
+        {
+          "id": "shares_values_spot",
+          "pass": false,
+          "detail": "compared=49 share_mismatches=49 value_mismatches=49"
+        },
+        {
+          "id": "duplicate_rows",
+          "pass": true,
+          "detail": "none"
+        },
+        {
+          "id": "ticker_resolution",
+          "pass": true,
+          "detail": "97.5% (165 unresolved)"
+        },
+        {
+          "id": "activity_counts",
+          "pass": true,
+          "detail": "new=1324 inc=0 red=0 sold=1101"
+        }
+      ],
+      "dataromaNotes": [
+        {
+          "level": "info",
+          "msg": "Dataroma not available for this manager"
+        }
+      ]
+    },
+    {
+      "slug": "charlie-munger",
+      "name": "Charlie Munger",
+      "cik": "0000783412",
+      "elapsedMs": 2058,
+      "verdict": "PASS",
+      "finsepa": {
+        "segment": "000143774926023711",
+        "updatedAt": "2026-07-21T07:39:23.162+00:00",
+        "filingDate": "2026-07-16",
+        "reportDate": "2026-06-30",
+        "accession": "0001437749-26-023711",
+        "positionCount": 4,
+        "totalValueUsd": 256664000,
+        "source": "edgar",
+        "unresolvedTickers": 0,
+        "top5": [
+          {
+            "ticker": "WFC",
+            "name": "Wells Fargo & Co",
+            "weight": 45.49527787301687,
+            "valueUsd": 116770000,
+            "shares": 1413000,
+            "status": "unchanged"
+          },
+          {
+            "ticker": "BAC",
+            "name": "Bank of America Corp",
+            "weight": 44.40046130349406,
+            "valueUsd": 113960000,
+            "shares": 2000000,
+            "status": "unchanged"
+          },
+          {
+            "ticker": "BABA",
+            "name": "Alibaba Group Holding Ltd",
+            "weight": 7.292023813234423,
+            "valueUsd": 18716000,
+            "shares": 195000,
+            "status": "unchanged"
+          },
+          {
+            "ticker": "USB",
+            "name": "US Bancorp",
+            "weight": 2.812237010254652,
+            "valueUsd": 7218000,
+            "shares": 119500,
+            "status": "unchanged"
+          }
+        ]
+      },
+      "sec": {
+        "accession": "0001437749-26-023711",
+        "form": "13F-HR",
+        "filingDate": "2026-07-16",
+        "reportDate": "2026-06-30",
+        "xmlUrl": "https://www.sec.gov/Archives/edgar/data/783412/000143774926023711/F13InfoTable_83992.xml",
+        "equityCount": 4,
+        "equityValue": 256664000,
+        "withOptionsCount": 4,
+        "optionRows": 0,
+        "unit": "dollars",
+        "top5": [
+          {
+            "name": "Wells Fargo & Co",
+            "cusip": "949746101",
+            "valueUsd": 116770000,
+            "shares": 1413000
+          },
+          {
+            "name": "Bank of America Corp",
+            "cusip": "060505104",
+            "valueUsd": 113960000,
+            "shares": 2000000
+          },
+          {
+            "name": "Alibaba Group Holding Ltd",
+            "cusip": "01609W102",
+            "valueUsd": 18716000,
+            "shares": 195000
+          },
+          {
+            "name": "US Bancorp",
+            "cusip": "902973304",
+            "valueUsd": 7218000,
+            "shares": 119500
+          }
+        ]
+      },
+      "dataroma": {
+        "code": null,
+        "note": "not_tracked_on_dataroma"
+      },
+      "checks": [
+        {
+          "id": "filing_freshness",
+          "pass": true,
+          "detail": "segment 000143774926023711 matches SEC latest"
+        },
+        {
+          "id": "filing_date",
+          "pass": true,
+          "detail": "2026-07-16"
+        },
+        {
+          "id": "report_date",
+          "pass": true,
+          "detail": "2026-06-30"
+        },
+        {
+          "id": "holdings_count",
+          "pass": true,
+          "detail": "4"
+        },
+        {
+          "id": "portfolio_value",
+          "pass": true,
+          "detail": "finsepa=256664000 sec=256664000 delta%=0.000"
+        },
+        {
+          "id": "weights_sum",
+          "pass": true,
+          "detail": "100.0000"
+        },
+        {
+          "id": "top_holdings_order",
+          "pass": true,
+          "detail": "4/4 aligned"
+        },
+        {
+          "id": "shares_values_spot",
+          "pass": true,
+          "detail": "4 CUSIPs matched"
+        },
+        {
+          "id": "duplicate_rows",
+          "pass": true,
+          "detail": "none"
+        },
+        {
+          "id": "ticker_resolution",
+          "pass": true,
+          "detail": "100.0% (0 unresolved)"
+        },
+        {
+          "id": "activity_counts",
+          "pass": true,
+          "detail": "new=0 inc=0 red=0 sold=0"
+        }
+      ],
+      "dataromaNotes": [
+        {
+          "level": "info",
+          "msg": "Dataroma not available for this manager"
+        }
+      ]
+    },
+    {
+      "slug": "blackrock",
+      "name": "BlackRock",
+      "cik": "0002012383",
+      "elapsedMs": 3298,
+      "verdict": "FAIL",
+      "finsepa": {
+        "segment": "000201238326001841",
+        "updatedAt": "2026-07-21T08:31:19.634+00:00",
+        "filingDate": "2026-05-13",
+        "reportDate": "2026-03-31",
+        "accession": "0002012383-26-001841",
+        "positionCount": 5610,
+        "totalValueUsd": 5723531588000,
+        "source": "edgar",
+        "unresolvedTickers": 112,
+        "top5": [
+          {
+            "ticker": "NVDA",
+            "name": "NVIDIA CORPORATION",
+            "weight": 5.876667610347432,
+            "valueUsd": 336352927000,
+            "shares": 1928629174,
+            "status": "reduce"
+          },
+          {
+            "ticker": "AAPL",
+            "name": "APPLE INC",
+            "weight": 5.076764870298118,
+            "valueUsd": 290570241000,
+            "shares": 1144923925,
+            "status": "reduce"
+          },
+          {
+            "ticker": "MSFT",
+            "name": "MICROSOFT CORP",
+            "weight": 3.838183307323437,
+            "valueUsd": 219679634000,
+            "shares": 593456071,
+            "status": "reduce"
+          },
+          {
+            "ticker": "AMZN",
+            "name": "AMAZON COM INC",
+            "weight": 2.6807051667485267,
+            "valueUsd": 153431007000,
+            "shares": 736692792,
+            "status": "add"
+          },
+          {
+            "ticker": "GOOGL",
+            "name": "ALPHABET INC",
+            "weight": 2.2457088604085818,
+            "valueUsd": 128533856000,
+            "shares": 446980992,
+            "status": "add"
+          }
+        ]
+      },
+      "sec": {
+        "accession": "0002012383-26-001841",
+        "form": "13F-HR",
+        "filingDate": "2026-05-13",
+        "reportDate": "2026-03-31",
+        "xmlUrl": "https://www.sec.gov/Archives/edgar/data/2012383/000201238326001841/form13fInfoTable.xml",
+        "equityCount": 5606,
+        "equityValue": 5699208711000,
+        "withOptionsCount": 5610,
+        "optionRows": 556,
+        "unit": "dollars",
+        "top5": [
+          {
+            "name": "NVIDIA CORPORATION",
+            "cusip": "67066G104",
+            "valueUsd": 335812985000,
+            "shares": 1925533174
+          },
+          {
+            "name": "APPLE INC",
+            "cusip": "037833100",
+            "valueUsd": 290512251000,
+            "shares": 1144695425
+          },
+          {
+            "name": "MICROSOFT CORP",
+            "cusip": "594918104",
+            "valueUsd": 219632437000,
+            "shares": 593328571
+          },
+          {
+            "name": "AMAZON COM INC",
+            "cusip": "023135106",
+            "valueUsd": 153196120000,
+            "shares": 735564992
+          },
+          {
+            "name": "ALPHABET INC",
+            "cusip": "02079K305",
+            "valueUsd": 128533856000,
+            "shares": 446980992
+          }
+        ]
+      },
+      "dataroma": {
+        "code": null,
+        "note": "not_tracked_on_dataroma"
+      },
+      "checks": [
+        {
+          "id": "filing_freshness",
+          "pass": true,
+          "detail": "segment 000201238326001841 matches SEC latest"
+        },
+        {
+          "id": "filing_date",
+          "pass": true,
+          "detail": "2026-05-13"
+        },
+        {
+          "id": "report_date",
+          "pass": true,
+          "detail": "2026-03-31"
+        },
+        {
+          "id": "holdings_count",
+          "pass": false,
+          "detail": "finsepa=5610 sec_equity=5606 sec_with_opts=5610 options=556"
+        },
+        {
+          "id": "portfolio_value",
+          "pass": true,
+          "detail": "finsepa=5723531588000 sec=5699208711000 delta%=0.427"
+        },
+        {
+          "id": "weights_sum",
+          "pass": true,
+          "detail": "100.0000"
+        },
+        {
+          "id": "top_holdings_order",
+          "pass": true,
+          "detail": "10/10 aligned"
+        },
+        {
+          "id": "shares_values_spot",
+          "pass": false,
+          "detail": "compared=50 share_mismatches=29 value_mismatches=1"
+        },
+        {
+          "id": "duplicate_rows",
+          "pass": true,
+          "detail": "none"
+        },
+        {
+          "id": "ticker_resolution",
+          "pass": true,
+          "detail": "98.0% (112 unresolved)"
+        },
+        {
+          "id": "activity_counts",
+          "pass": true,
+          "detail": "new=334 inc=0 red=0 sold=211"
+        }
+      ],
+      "dataromaNotes": [
+        {
+          "level": "info",
+          "msg": "Dataroma not available for this manager"
+        }
+      ]
+    },
+    {
+      "slug": "baillie-gifford",
+      "name": "Baillie Gifford",
+      "cik": "0001088875",
+      "elapsedMs": 2042,
+      "verdict": "PASS",
+      "finsepa": {
+        "segment": "000108887526000037",
+        "updatedAt": "2026-07-21T07:53:11.776+00:00",
+        "filingDate": "2026-05-08",
+        "reportDate": "2026-03-31",
+        "accession": "0001088875-26-000037",
+        "positionCount": 271,
+        "totalValueUsd": 97893040000,
+        "source": "edgar",
+        "unresolvedTickers": 2,
+        "top5": [
+          {
+            "ticker": "NVDA",
+            "name": "NVIDIA",
+            "weight": 7.259522229568108,
+            "valueUsd": 7106567000,
+            "shares": 40748665,
+            "status": "reduce"
+          },
+          {
+            "ticker": "AMZN",
+            "name": "Amazon.Com",
+            "weight": 5.976689456165627,
+            "valueUsd": 5850763000,
+            "shares": 28092199,
+            "status": "reduce"
+          },
+          {
+            "ticker": "MLB1",
+            "name": "MercadoLibre",
+            "weight": 5.710690974557537,
+            "valueUsd": 5590369000,
+            "shares": 3233259,
+            "status": "reduce"
+          },
+          {
+            "ticker": "SPOT",
+            "name": "Spotify Technology SA",
+            "weight": 4.0708604002899484,
+            "valueUsd": 3985089000,
+            "shares": 8218203,
+            "status": "reduce"
+          },
+          {
+            "ticker": "NU",
+            "name": "Nu Holdings Ltd.",
+            "weight": 3.619390101686494,
+            "valueUsd": 3543131000,
+            "shares": 246564454,
+            "status": "reduce"
+          }
+        ]
+      },
+      "sec": {
+        "accession": "0001088875-26-000037",
+        "form": "13F-HR",
+        "filingDate": "2026-05-08",
+        "reportDate": "2026-03-31",
+        "xmlUrl": "https://www.sec.gov/Archives/edgar/data/1088875/000108887526000037/edgbgcomar26.xml",
+        "equityCount": 271,
+        "equityValue": 97893040000,
+        "withOptionsCount": 271,
+        "optionRows": 0,
+        "unit": "dollars",
+        "top5": [
+          {
+            "name": "NVIDIA",
+            "cusip": "67066G104",
+            "valueUsd": 7106567000,
+            "shares": 40748665
+          },
+          {
+            "name": "Amazon.Com",
+            "cusip": "023135106",
+            "valueUsd": 5850763000,
+            "shares": 28092199
+          },
+          {
+            "name": "MercadoLibre",
+            "cusip": "58733R102",
+            "valueUsd": 5590369000,
+            "shares": 3233259
+          },
+          {
+            "name": "Spotify Technology SA",
+            "cusip": "L8681T102",
+            "valueUsd": 3985089000,
+            "shares": 8218203
+          },
+          {
+            "name": "Nu Holdings Ltd.",
+            "cusip": "G6683N103",
+            "valueUsd": 3543131000,
+            "shares": 246564454
+          }
+        ]
+      },
+      "dataroma": {
+        "code": null,
+        "note": "not_tracked_on_dataroma"
+      },
+      "checks": [
+        {
+          "id": "filing_freshness",
+          "pass": true,
+          "detail": "segment 000108887526000037 matches SEC latest"
+        },
+        {
+          "id": "filing_date",
+          "pass": true,
+          "detail": "2026-05-08"
+        },
+        {
+          "id": "report_date",
+          "pass": true,
+          "detail": "2026-03-31"
+        },
+        {
+          "id": "holdings_count",
+          "pass": true,
+          "detail": "271"
+        },
+        {
+          "id": "portfolio_value",
+          "pass": true,
+          "detail": "finsepa=97893040000 sec=97893040000 delta%=0.000"
+        },
+        {
+          "id": "weights_sum",
+          "pass": true,
+          "detail": "100.0000"
+        },
+        {
+          "id": "top_holdings_order",
+          "pass": true,
+          "detail": "10/10 aligned"
+        },
+        {
+          "id": "shares_values_spot",
+          "pass": true,
+          "detail": "50 CUSIPs matched"
+        },
+        {
+          "id": "duplicate_rows",
+          "pass": true,
+          "detail": "none"
+        },
+        {
+          "id": "ticker_resolution",
+          "pass": true,
+          "detail": "99.3% (2 unresolved)"
+        },
+        {
+          "id": "activity_counts",
+          "pass": true,
+          "detail": "new=16 inc=0 red=0 sold=11"
+        }
+      ],
+      "dataromaNotes": [
+        {
+          "level": "info",
+          "msg": "Dataroma not available for this manager"
+        }
+      ]
+    },
+    {
+      "slug": "renaissance-technologies",
+      "name": "Jim Simons",
+      "cik": "0001037389",
+      "elapsedMs": 2467,
+      "verdict": "PASS",
+      "finsepa": {
+        "segment": "000103738926000033",
+        "updatedAt": "2026-07-21T08:31:23.775+00:00",
+        "filingDate": "2026-05-14",
+        "reportDate": "2026-03-31",
+        "accession": "0001037389-26-000033",
+        "positionCount": 3213,
+        "totalValueUsd": 63929886000,
+        "source": "edgar",
+        "unresolvedTickers": 99,
+        "top5": [
+          {
+            "ticker": "UTH",
+            "name": "UNITED THERAPEUTICS CORP DEL",
+            "weight": 1.657545580481717,
+            "valueUsd": 1059667000,
+            "shares": 1787019,
+            "status": "reduce"
+          },
+          {
+            "ticker": "PLTR",
+            "name": "PALANTIR TECHNOLOGIES INC",
+            "weight": 1.5984714879673023,
+            "valueUsd": 1021901000,
+            "shares": 6985926,
+            "status": "reduce"
+          },
+          {
+            "ticker": "AAPL",
+            "name": "APPLE INC",
+            "weight": 1.2209766806091287,
+            "valueUsd": 780569000,
+            "shares": 3075638,
+            "status": "new"
+          },
+          {
+            "ticker": "KGC",
+            "name": "KINROSS GOLD CORP",
+            "weight": 1.2195814020378513,
+            "valueUsd": 779677000,
+            "shares": 25546413,
+            "status": "add"
+          },
+          {
+            "ticker": "MU",
+            "name": "MICRON TECHNOLOGY INC",
+            "weight": 1.1430319146822818,
+            "valueUsd": 730739000,
+            "shares": 2162986,
+            "status": "reduce"
+          }
+        ]
+      },
+      "sec": {
+        "accession": "0001037389-26-000033",
+        "form": "13F-HR",
+        "filingDate": "2026-05-14",
+        "reportDate": "2026-03-31",
+        "xmlUrl": "https://www.sec.gov/Archives/edgar/data/1037389/000103738926000033/renaissance13Fq12026_holding.xml",
+        "equityCount": 3213,
+        "equityValue": 63929886000,
+        "withOptionsCount": 3213,
+        "optionRows": 0,
+        "unit": "dollars",
+        "top5": [
+          {
+            "name": "UNITED THERAPEUTICS CORP DEL",
+            "cusip": "91307C102",
+            "valueUsd": 1059667000,
+            "shares": 1787019
+          },
+          {
+            "name": "PALANTIR TECHNOLOGIES INC",
+            "cusip": "69608A108",
+            "valueUsd": 1021901000,
+            "shares": 6985926
+          },
+          {
+            "name": "APPLE INC",
+            "cusip": "037833100",
+            "valueUsd": 780569000,
+            "shares": 3075638
+          },
+          {
+            "name": "KINROSS GOLD CORP",
+            "cusip": "496902404",
+            "valueUsd": 779677000,
+            "shares": 25546413
+          },
+          {
+            "name": "MICRON TECHNOLOGY INC",
+            "cusip": "595112103",
+            "valueUsd": 730739000,
+            "shares": 2162986
+          }
+        ]
+      },
+      "dataroma": {
+        "code": null,
+        "note": "not_tracked_on_dataroma"
+      },
+      "checks": [
+        {
+          "id": "filing_freshness",
+          "pass": true,
+          "detail": "segment 000103738926000033 matches SEC latest"
+        },
+        {
+          "id": "filing_date",
+          "pass": true,
+          "detail": "2026-05-14"
+        },
+        {
+          "id": "report_date",
+          "pass": true,
+          "detail": "2026-03-31"
+        },
+        {
+          "id": "holdings_count",
+          "pass": true,
+          "detail": "3213"
+        },
+        {
+          "id": "portfolio_value",
+          "pass": true,
+          "detail": "finsepa=63929886000 sec=63929886000 delta%=0.000"
+        },
+        {
+          "id": "weights_sum",
+          "pass": true,
+          "detail": "100.0000"
+        },
+        {
+          "id": "top_holdings_order",
+          "pass": true,
+          "detail": "10/10 aligned"
+        },
+        {
+          "id": "shares_values_spot",
+          "pass": true,
+          "detail": "50 CUSIPs matched"
+        },
+        {
+          "id": "duplicate_rows",
+          "pass": true,
+          "detail": "none"
+        },
+        {
+          "id": "ticker_resolution",
+          "pass": true,
+          "detail": "96.9% (99 unresolved)"
+        },
+        {
+          "id": "activity_counts",
+          "pass": true,
+          "detail": "new=639 inc=0 red=0 sold=611"
+        }
+      ],
+      "dataromaNotes": [
+        {
+          "level": "info",
+          "msg": "Dataroma not available for this manager"
+        }
+      ]
+    },
+    {
+      "slug": "point72",
+      "name": "Steven Cohen",
+      "cik": "0001603466",
+      "elapsedMs": 1536,
+      "verdict": "FAIL",
+      "finsepa": {
+        "segment": "000091957426003476",
+        "updatedAt": "2026-07-21T08:31:26.935+00:00",
+        "filingDate": "2026-05-15",
+        "reportDate": "2026-03-31",
+        "accession": "0000919574-26-003476",
+        "positionCount": 2426,
+        "totalValueUsd": 78051200000,
+        "source": "edgar",
+        "unresolvedTickers": 52,
+        "top5": [
+          {
+            "ticker": "SPY",
+            "name": "STATE STR SPDR S&P 500 ETF T",
+            "weight": 2.0802217006272805,
+            "valueUsd": 1623638000,
+            "shares": 2496600,
+            "status": "reduce"
+          },
+          {
+            "ticker": "NVDA",
+            "name": "NVIDIA CORPORATION",
+            "weight": 1.9252426612275018,
+            "valueUsd": 1502675000,
+            "shares": 8616254,
+            "status": "reduce"
+          },
+          {
+            "ticker": "AMZN",
+            "name": "AMAZON COM INC",
+            "weight": 1.4992235865688164,
+            "valueUsd": 1170162000,
+            "shares": 5618484,
+            "status": "reduce"
+          },
+          {
+            "ticker": "NDQ",
+            "name": "INVESCO QQQ TR",
+            "weight": 1.1069105920216473,
+            "valueUsd": 863957000,
+            "shares": 1496860,
+            "status": "reduce"
+          },
+          {
+            "ticker": "ANET",
+            "name": "ARISTA NETWORKS INC",
+            "weight": 1.0724191300069696,
+            "valueUsd": 837036000,
+            "shares": 6817361,
+            "status": "reduce"
+          }
+        ]
+      },
+      "sec": {
+        "accession": "0000919574-26-003476",
+        "form": "13F-HR",
+        "filingDate": "2026-05-15",
+        "reportDate": "2026-03-31",
+        "xmlUrl": "https://www.sec.gov/Archives/edgar/data/1603466/000091957426003476/infotable.xml",
+        "equityCount": 1983,
+        "equityValue": 57502010000,
+        "withOptionsCount": 2426,
+        "optionRows": 1721,
+        "unit": "dollars",
+        "top5": [
+          {
+            "name": "NVIDIA CORPORATION",
+            "cusip": "67066G104",
+            "valueUsd": 1322764000,
+            "shares": 7584654
+          },
+          {
+            "name": "AMAZON COM INC",
+            "cusip": "023135106",
+            "valueUsd": 1032808000,
+            "shares": 4958984
+          },
+          {
+            "name": "ARISTA NETWORKS INC",
+            "cusip": "040413205",
+            "valueUsd": 803664000,
+            "shares": 6545561
+          },
+          {
+            "name": "ASML HLDG NV",
+            "cusip": "N07059210",
+            "valueUsd": 745907000,
+            "shares": 564726
+          },
+          {
+            "name": "CREDO TECHNOLOGY GROUP HOLDI",
+            "cusip": "G25457105",
+            "valueUsd": 702110000,
+            "shares": 7479599
+          }
+        ]
+      },
+      "dataroma": {
+        "code": null,
+        "note": "not_tracked_on_dataroma"
+      },
+      "checks": [
+        {
+          "id": "filing_freshness",
+          "pass": true,
+          "detail": "segment 000091957426003476 matches SEC latest"
+        },
+        {
+          "id": "filing_date",
+          "pass": true,
+          "detail": "2026-05-15"
+        },
+        {
+          "id": "report_date",
+          "pass": true,
+          "detail": "2026-03-31"
+        },
+        {
+          "id": "holdings_count",
+          "pass": false,
+          "detail": "finsepa=2426 sec_equity=1983 sec_with_opts=2426 options=1721"
+        },
+        {
+          "id": "portfolio_value",
+          "pass": false,
+          "detail": "finsepa=78051200000 sec=57502010000 delta%=35.736"
+        },
+        {
+          "id": "weights_sum",
+          "pass": true,
+          "detail": "100.0000"
+        },
+        {
+          "id": "top_holdings_order",
+          "pass": false,
+          "detail": "0 aligned; finsepa=[SPY, NVDA, AMZN, NDQ, ANET] sec=[NVIDIA CORPORATION, AMAZON COM INC, ARISTA NETWORKS INC, ASML HLDG NV, CREDO TECHNOLOGY GROUP HOLDI]"
+        },
+        {
+          "id": "shares_values_spot",
+          "pass": false,
+          "detail": "compared=50 share_mismatches=47 value_mismatches=43"
+        },
+        {
+          "id": "duplicate_rows",
+          "pass": true,
+          "detail": "none"
+        },
+        {
+          "id": "ticker_resolution",
+          "pass": true,
+          "detail": "97.9% (52 unresolved)"
+        },
+        {
+          "id": "activity_counts",
+          "pass": true,
+          "detail": "new=487 inc=0 red=0 sold=610"
+        }
+      ],
+      "dataromaNotes": [
+        {
+          "level": "info",
+          "msg": "Dataroma not available for this manager"
+        }
+      ]
+    },
+    {
+      "slug": "first-eagle",
+      "name": "First Eagle",
+      "cik": "0001325447",
+      "elapsedMs": 3213,
+      "verdict": "FAIL",
+      "finsepa": {
+        "segment": "000132544726000018",
+        "updatedAt": "2026-07-21T07:45:01.133+00:00",
+        "filingDate": "2026-05-14",
+        "reportDate": "2026-03-31",
+        "accession": "0001325447-26-000018",
+        "positionCount": 424,
+        "totalValueUsd": 58999938000,
+        "source": "edgar",
+        "unresolvedTickers": 13,
+        "top5": [
+          {
+            "ticker": "GOOG",
+            "name": "ALPHABET INC",
+            "weight": 3.6001681900072504,
+            "valueUsd": 2124097000,
+            "shares": 7404648,
+            "status": "unchanged"
+          },
+          {
+            "ticker": "BDX",
+            "name": "BECTON DICKINSON & CO",
+            "weight": 3.1787440183411717,
+            "valueUsd": 1875457000,
+            "shares": 11928111,
+            "status": "unchanged"
+          },
+          {
+            "ticker": "WPM",
+            "name": "WHEATON PRECIOUS METALS CORP",
+            "weight": 3.1434727948358185,
+            "valueUsd": 1854647000,
+            "shares": 14156511,
+            "status": "unchanged"
+          },
+          {
+            "ticker": "IMO",
+            "name": "IMPERIAL OIL LTD",
+            "weight": 3.1022439379512567,
+            "valueUsd": 1830322000,
+            "shares": 13972305,
+            "status": "unchanged"
+          },
+          {
+            "ticker": "META",
+            "name": "META PLATFORMS INC",
+            "weight": 3.0963896945112044,
+            "valueUsd": 1826868000,
+            "shares": 3193098,
+            "status": "unchanged"
+          }
+        ]
+      },
+      "sec": {
+        "accession": "0001325447-26-000018",
+        "form": "13F-HR/A",
+        "filingDate": "2026-05-14",
+        "reportDate": "2026-03-31",
+        "xmlUrl": "https://www.sec.gov/Archives/edgar/data/1325447/000132544726000018/13FFEIM20260331.Rev.xml",
+        "equityCount": 421,
+        "equityValue": 58999938000,
+        "withOptionsCount": 424,
+        "optionRows": 4,
+        "unit": "dollars",
+        "top5": [
+          {
+            "name": "ALPHABET INC",
+            "cusip": "02079K107",
+            "valueUsd": 2124097000,
+            "shares": 7404648
+          },
+          {
+            "name": "BECTON DICKINSON & CO",
+            "cusip": "075887109",
+            "valueUsd": 1875457000,
+            "shares": 11928111
+          },
+          {
+            "name": "WHEATON PRECIOUS METALS CORP",
+            "cusip": "962879102",
+            "valueUsd": 1854647000,
+            "shares": 14156511
+          },
+          {
+            "name": "IMPERIAL OIL LTD",
+            "cusip": "453038408",
+            "valueUsd": 1830322000,
+            "shares": 13972305
+          },
+          {
+            "name": "META PLATFORMS INC",
+            "cusip": "30303M102",
+            "valueUsd": 1826868000,
+            "shares": 3193098
+          }
+        ]
+      },
+      "dataroma": {
+        "code": "FE",
+        "period": "Q1 2026",
+        "portfolioDate": "31 Mar 2026",
+        "stockCount": 417,
+        "portfolioValue": 58890541000,
+        "top5": [
+          {
+            "ticker": "GOOG",
+            "weight": 3.61,
+            "valueUsd": 2124097000,
+            "shares": 7404648,
+            "activity": "Add 0.48%"
+          },
+          {
+            "ticker": "BDX",
+            "weight": 3.18,
+            "valueUsd": 1875457000,
+            "shares": 11928111,
+            "activity": "Add 2.42%"
+          },
+          {
+            "ticker": "WPM",
+            "weight": 3.15,
+            "valueUsd": 1854647000,
+            "shares": 14156511,
+            "activity": "Reduce 8.02%"
+          },
+          {
+            "ticker": "IMO",
+            "weight": 3.11,
+            "valueUsd": 1830322000,
+            "shares": 13972305,
+            "activity": "Reduce 24.90%"
+          },
+          {
+            "ticker": "META",
+            "weight": 3.1,
+            "valueUsd": 1826868000,
+            "shares": 3193098,
+            "activity": "Add 1.37%"
+          }
+        ]
+      },
+      "checks": [
+        {
+          "id": "filing_freshness",
+          "pass": true,
+          "detail": "segment 000132544726000018 matches SEC latest"
+        },
+        {
+          "id": "filing_date",
+          "pass": true,
+          "detail": "2026-05-14"
+        },
+        {
+          "id": "report_date",
+          "pass": true,
+          "detail": "2026-03-31"
+        },
+        {
+          "id": "holdings_count",
+          "pass": false,
+          "detail": "finsepa=424 sec_equity=421 sec_with_opts=424 options=4"
+        },
+        {
+          "id": "portfolio_value",
+          "pass": true,
+          "detail": "finsepa=58999938000 sec=58999938000 delta%=0.000"
+        },
+        {
+          "id": "weights_sum",
+          "pass": true,
+          "detail": "100.0000"
+        },
+        {
+          "id": "top_holdings_order",
+          "pass": true,
+          "detail": "10/10 aligned"
+        },
+        {
+          "id": "shares_values_spot",
+          "pass": true,
+          "detail": "50 CUSIPs matched"
+        },
+        {
+          "id": "duplicate_rows",
+          "pass": true,
+          "detail": "none"
+        },
+        {
+          "id": "ticker_resolution",
+          "pass": true,
+          "detail": "96.9% (13 unresolved)"
+        },
+        {
+          "id": "activity_counts",
+          "pass": true,
+          "detail": "new=0 inc=0 red=0 sold=0"
+        }
+      ],
+      "dataromaNotes": [
+        {
+          "level": "ok",
+          "msg": "Dataroma period matches reportDate 2026-03-31"
+        },
+        {
+          "level": "diff",
+          "msg": "Holdings count Finsepa=424 Dataroma=417 SEC=421",
+          "cause": "investigate_finsepa_vs_sec"
+        },
+        {
+          "level": "ok",
+          "msg": "Portfolio value within 1% of Dataroma (delta 0.186%)"
+        },
+        {
+          "level": "ok",
+          "msg": "Top-15 ticker overlap vs Dataroma: 13/15"
+        }
+      ]
+    },
+    {
+      "slug": "chris-hohn",
+      "name": "Chris Hohn",
+      "cik": "0001647251",
+      "elapsedMs": 2593,
+      "verdict": "PASS",
+      "finsepa": {
+        "segment": "000164725126000004",
+        "updatedAt": "2026-07-21T07:41:43.548+00:00",
+        "filingDate": "2026-05-15",
+        "reportDate": "2026-03-31",
+        "accession": "0001647251-26-000004",
+        "positionCount": 10,
+        "totalValueUsd": 45170871000,
+        "source": "edgar",
+        "unresolvedTickers": 0,
+        "top5": [
+          {
+            "ticker": "GE",
+            "name": "GE AEROSPACE",
+            "weight": 29.846745704770672,
+            "valueUsd": 13482035000,
+            "shares": 47510431,
+            "status": "unchanged"
+          },
+          {
+            "ticker": "V",
+            "name": "VISA INC",
+            "weight": 20.38634366824585,
+            "valueUsd": 9208689000,
+            "shares": 30468133,
+            "status": "add"
+          },
+          {
+            "ticker": "MCO",
+            "name": "MOODYS CORP",
+            "weight": 13.843476695412846,
+            "valueUsd": 6253219000,
+            "shares": 14334027,
+            "status": "add"
+          },
+          {
+            "ticker": "SPGI",
+            "name": "S&P GLOBAL INC",
+            "weight": 13.215992669258029,
+            "valueUsd": 5969779000,
+            "shares": 14035310,
+            "status": "add"
+          },
+          {
+            "ticker": "CP",
+            "name": "CANADIAN PACIFIC KANSAS CITY",
+            "weight": 8.101765405409163,
+            "valueUsd": 3659638000,
+            "shares": 46521923,
+            "status": "reduce"
+          }
+        ]
+      },
+      "sec": {
+        "accession": "0001647251-26-000004",
+        "form": "13F-HR",
+        "filingDate": "2026-05-15",
+        "reportDate": "2026-03-31",
+        "xmlUrl": "https://www.sec.gov/Archives/edgar/data/1647251/000164725126000004/Form13fInfoTable.xml",
+        "equityCount": 10,
+        "equityValue": 45170871000,
+        "withOptionsCount": 10,
+        "optionRows": 0,
+        "unit": "dollars",
+        "top5": [
+          {
+            "name": "GE AEROSPACE",
+            "cusip": "369604301",
+            "valueUsd": 13482035000,
+            "shares": 47510431
+          },
+          {
+            "name": "VISA INC",
+            "cusip": "92826C839",
+            "valueUsd": 9208689000,
+            "shares": 30468133
+          },
+          {
+            "name": "MOODYS CORP",
+            "cusip": "615369105",
+            "valueUsd": 6253219000,
+            "shares": 14334027
+          },
+          {
+            "name": "S&P GLOBAL INC",
+            "cusip": "78409V104",
+            "valueUsd": 5969779000,
+            "shares": 14035310
+          },
+          {
+            "name": "CANADIAN PACIFIC KANSAS CITY",
+            "cusip": "13646K108",
+            "valueUsd": 3659638000,
+            "shares": 46521923
+          }
+        ]
+      },
+      "dataroma": {
+        "code": "tci",
+        "period": "Q1 2026",
+        "portfolioDate": "31 Mar 2026",
+        "stockCount": 10,
+        "portfolioValue": 45170871000,
+        "top5": [
+          {
+            "ticker": "GE",
+            "weight": 29.85,
+            "valueUsd": 13482035000,
+            "shares": 47510431,
+            "activity": null
+          },
+          {
+            "ticker": "V",
+            "weight": 20.39,
+            "valueUsd": 9208689000,
+            "shares": 30468133,
+            "activity": "Add 9.90%"
+          },
+          {
+            "ticker": "MCO",
+            "weight": 13.84,
+            "valueUsd": 6253219000,
+            "shares": 14334027,
+            "activity": "Add 7.71%"
+          },
+          {
+            "ticker": "SPGI",
+            "weight": 13.22,
+            "valueUsd": 5969779000,
+            "shares": 14035310,
+            "activity": "Add 19.04%"
+          },
+          {
+            "ticker": "CP",
+            "weight": 8.1,
+            "valueUsd": 3659638000,
+            "shares": 46521923,
+            "activity": "Reduce 2.38%"
+          }
+        ]
+      },
+      "checks": [
+        {
+          "id": "filing_freshness",
+          "pass": true,
+          "detail": "segment 000164725126000004 matches SEC latest"
+        },
+        {
+          "id": "filing_date",
+          "pass": true,
+          "detail": "2026-05-15"
+        },
+        {
+          "id": "report_date",
+          "pass": true,
+          "detail": "2026-03-31"
+        },
+        {
+          "id": "holdings_count",
+          "pass": true,
+          "detail": "10"
+        },
+        {
+          "id": "portfolio_value",
+          "pass": true,
+          "detail": "finsepa=45170871000 sec=45170871000 delta%=0.000"
+        },
+        {
+          "id": "weights_sum",
+          "pass": true,
+          "detail": "100.0000"
+        },
+        {
+          "id": "top_holdings_order",
+          "pass": true,
+          "detail": "10/10 aligned"
+        },
+        {
+          "id": "shares_values_spot",
+          "pass": true,
+          "detail": "10 CUSIPs matched"
+        },
+        {
+          "id": "duplicate_rows",
+          "pass": true,
+          "detail": "none"
+        },
+        {
+          "id": "ticker_resolution",
+          "pass": true,
+          "detail": "100.0% (0 unresolved)"
+        },
+        {
+          "id": "activity_counts",
+          "pass": true,
+          "detail": "new=1 inc=0 red=0 sold=0"
+        }
+      ],
+      "dataromaNotes": [
+        {
+          "level": "ok",
+          "msg": "Dataroma period matches reportDate 2026-03-31"
+        },
+        {
+          "level": "ok",
+          "msg": "Holdings count matches Dataroma (10)"
+        },
+        {
+          "level": "ok",
+          "msg": "Portfolio value within 1% of Dataroma (delta 0.000%)"
+        },
+        {
+          "level": "ok",
+          "msg": "Top-15 ticker overlap vs Dataroma: 9/10"
+        }
+      ]
+    },
+    {
+      "slug": "jeremy-grantham",
+      "name": "Jeremy Grantham",
+      "cik": "0001352662",
+      "elapsedMs": 1313,
+      "verdict": "PASS",
+      "finsepa": {
+        "segment": "000107261326000397",
+        "updatedAt": "2026-07-21T07:59:22.121+00:00",
+        "filingDate": "2026-05-14",
+        "reportDate": "2026-03-31",
+        "accession": "0001072613-26-000397",
+        "positionCount": 628,
+        "totalValueUsd": 39095344000,
+        "source": "edgar",
+        "unresolvedTickers": 12,
+        "top5": [
+          {
+            "ticker": "MSFT",
+            "name": "MICROSOFT CORP",
+            "weight": 5.84780888486363,
+            "valueUsd": 2286221000,
+            "shares": 6176138,
+            "status": "add"
+          },
+          {
+            "ticker": "GOOGL",
+            "name": "ALPHABET INC",
+            "weight": 5.075617188583888,
+            "valueUsd": 1984330000,
+            "shares": 6900577,
+            "status": "add"
+          },
+          {
+            "ticker": "JNJ",
+            "name": "JOHNSON & JOHNSON",
+            "weight": 4.551043213739211,
+            "valueUsd": 1779246000,
+            "shares": 7278866,
+            "status": "add"
+          },
+          {
+            "ticker": "AAPL",
+            "name": "APPLE INC",
+            "weight": 4.503572087765746,
+            "valueUsd": 1760687000,
+            "shares": 6937574,
+            "status": "add"
+          },
+          {
+            "ticker": "META",
+            "name": "META PLATFORMS INC",
+            "weight": 4.497159559460584,
+            "valueUsd": 1758180000,
+            "shares": 3073041,
+            "status": "add"
+          }
+        ]
+      },
+      "sec": {
+        "accession": "0001072613-26-000397",
+        "form": "13F-HR",
+        "filingDate": "2026-05-14",
+        "reportDate": "2026-03-31",
+        "xmlUrl": "https://www.sec.gov/Archives/edgar/data/1352662/000107261326000397/infotable.xml",
+        "equityCount": 628,
+        "equityValue": 39095344000,
+        "withOptionsCount": 628,
+        "optionRows": 0,
+        "unit": "dollars",
+        "top5": [
+          {
+            "name": "MICROSOFT CORP",
+            "cusip": "594918104",
+            "valueUsd": 2286221000,
+            "shares": 6176138
+          },
+          {
+            "name": "ALPHABET INC",
+            "cusip": "02079K305",
+            "valueUsd": 1984330000,
+            "shares": 6900577
+          },
+          {
+            "name": "JOHNSON & JOHNSON",
+            "cusip": "478160104",
+            "valueUsd": 1779246000,
+            "shares": 7278866
+          },
+          {
+            "name": "APPLE INC",
+            "cusip": "037833100",
+            "valueUsd": 1760687000,
+            "shares": 6937574
+          },
+          {
+            "name": "META PLATFORMS INC",
+            "cusip": "30303M102",
+            "valueUsd": 1758180000,
+            "shares": 3073041
+          }
+        ]
+      },
+      "dataroma": {
+        "code": null,
+        "note": "not_tracked_on_dataroma"
+      },
+      "checks": [
+        {
+          "id": "filing_freshness",
+          "pass": true,
+          "detail": "segment 000107261326000397 matches SEC latest"
+        },
+        {
+          "id": "filing_date",
+          "pass": true,
+          "detail": "2026-05-14"
+        },
+        {
+          "id": "report_date",
+          "pass": true,
+          "detail": "2026-03-31"
+        },
+        {
+          "id": "holdings_count",
+          "pass": true,
+          "detail": "628"
+        },
+        {
+          "id": "portfolio_value",
+          "pass": true,
+          "detail": "finsepa=39095344000 sec=39095344000 delta%=0.000"
+        },
+        {
+          "id": "weights_sum",
+          "pass": true,
+          "detail": "100.0000"
+        },
+        {
+          "id": "top_holdings_order",
+          "pass": true,
+          "detail": "10/10 aligned"
+        },
+        {
+          "id": "shares_values_spot",
+          "pass": true,
+          "detail": "50 CUSIPs matched"
+        },
+        {
+          "id": "duplicate_rows",
+          "pass": true,
+          "detail": "none"
+        },
+        {
+          "id": "ticker_resolution",
+          "pass": true,
+          "detail": "98.1% (12 unresolved)"
+        },
+        {
+          "id": "activity_counts",
+          "pass": true,
+          "detail": "new=84 inc=0 red=0 sold=109"
+        }
+      ],
+      "dataromaNotes": [
+        {
+          "level": "info",
+          "msg": "Dataroma not available for this manager"
+        }
+      ]
+    }
+  ]
+}
