@@ -102,6 +102,32 @@ async function loadProfilePageMatchingLatestFilingHead(
 }
 
 /**
+ * Full unpaginated profile bundle for ingest / cron / force-refresh.
+ * SSR UI must use {@link loadSuperinvestorProfilePageData} (paginated holdings).
+ */
+export async function loadSuperinvestorProfilePageDataFull(
+  slug: string,
+): Promise<SuperinvestorProfilePageData | null> {
+  const item = SUPERINVESTOR_REGISTRY.find((entry) => entry.slug === slug);
+  if (!item) return null;
+
+  return devMemoProfilePage(`${slug}:full`, async () => {
+    const page = await loadProfilePageMatchingLatestFilingHead(() => item.loadProfilePage());
+    const totalPages = Math.max(
+      1,
+      Math.ceil((page.comparison.positionCount || page.comparison.rows.length) / 50),
+    );
+    return {
+      comparison: page.comparison,
+      transactions: page.transactions,
+      allocationRows: page.comparison.rows,
+      holdingsPage: 1,
+      holdingsTotalPages: totalPages,
+    };
+  });
+}
+
+/**
  * One SEC snapshot pass per profile (comparison + transactions share filings via `getInstitutional13fSnapshots`).
  * Cached by latest 13F accession — repeat visits only probe SEC submissions JSON (~1 req/hr per filer).
  * Berkshire also persists the full page + holdings-scoped tx history in `market_snapshot` (incremental on new 13F).
@@ -146,7 +172,8 @@ export async function forceRefreshSuperinvestorProfilePage(
   clearSuperinvestor13fDevMemoCaches();
   clearSuperinvestor13fInMemoryCaches();
 
-  return loadSuperinvestorProfilePageData(slug);
+  // Full book — never paginate here (cron validates + persists the complete portfolio).
+  return loadSuperinvestorProfilePageDataFull(slug);
 }
 
 /**
@@ -168,7 +195,7 @@ export async function refreshAllSuperinvestor13fPortfolios(): Promise<Superinves
         // Force SEC reload; createSuperinvestorProfilePageLoader awaits finalize+upsert.
         page = await forceRefreshSuperinvestorProfilePage(item.slug);
       } else {
-        page = await loadSuperinvestorProfilePageData(item.slug);
+        page = await loadSuperinvestorProfilePageDataFull(item.slug);
       }
 
       if (!page) {

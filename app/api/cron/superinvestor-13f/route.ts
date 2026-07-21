@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { pickProcessEnv } from "@/lib/env/pick-process-env";
 import {
   forceRefreshSuperinvestorProfilePage,
-  loadSuperinvestorProfilePageData,
+  loadSuperinvestorProfilePageDataFull,
   refreshAllSuperinvestor13fPortfolios,
 } from "@/lib/superinvestors/load-superinvestor-profile-data";
 import { SUPERINVESTOR_SLUG_CIK } from "@/lib/superinvestors/superinvestor-slug-cik";
@@ -25,7 +25,7 @@ function authorizeCron(request: Request): boolean {
 async function refreshOneSlug(slug: string, enrichOnly: boolean) {
   const started = Date.now();
   const page = enrichOnly
-    ? await loadSuperinvestorProfilePageData(slug)
+    ? await loadSuperinvestorProfilePageDataFull(slug)
     : await forceRefreshSuperinvestorProfilePage(slug);
   if (!page) {
     return {
