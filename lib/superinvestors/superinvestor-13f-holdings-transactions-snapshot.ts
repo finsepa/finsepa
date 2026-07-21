@@ -4,6 +4,9 @@ import type { Superinvestor13fProfilePageData } from "@/lib/superinvestors/types
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 import { marketSnapshotReadEnabled } from "@/lib/market/market-snapshot-store";
 import type { SuperinvestorTransactionsPayload } from "@/lib/superinvestors/types";
+import { slimSuperinvestorProfileForSnapshot } from "@/lib/superinvestors/superinvestor-13f-snapshot-slim";
+
+export { slimSuperinvestorProfileForSnapshot } from "@/lib/superinvestors/superinvestor-13f-snapshot-slim";
 
 export function superinvestor13fHoldingsTxSnapshotKey(cikPadded: string): string {
   return `superinvestor_13f_holdings_tx_v3_${cikPadded}`;
@@ -81,25 +84,37 @@ export async function readSuperinvestorHoldingsTransactionsSnapshotRow(
   };
 }
 
+export type SuperinvestorSnapshotUpsertResult = {
+  ok: boolean;
+  bytes: number;
+  error?: string;
+};
+
 export async function upsertSuperinvestorHoldingsTransactionsSnapshot(
   cikPadded: string,
   accessionSegment: string,
   payload: SuperinvestorTransactionsPayload,
-): Promise<void> {
-  if (!accessionSegment || accessionSegment === "none") return;
+): Promise<SuperinvestorSnapshotUpsertResult> {
+  if (!accessionSegment || accessionSegment === "none") {
+    return { ok: false, bytes: 0, error: "missing_accession" };
+  }
 
   const admin = getSupabaseAdminClient();
-  if (!admin) return;
+  if (!admin) return { ok: false, bytes: 0, error: "no_admin_client" };
 
-  await admin.from("market_snapshot").upsert(
+  const data = payload;
+  const bytes = JSON.stringify(data).length;
+  const { error } = await admin.from("market_snapshot").upsert(
     {
       key: superinvestor13fHoldingsTxSnapshotKey(cikPadded),
       segment: accessionSegment,
-      data: payload,
+      data,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "key" },
   );
+  if (error) return { ok: false, bytes, error: error.message };
+  return { ok: true, bytes };
 }
 
 /** Full Berkshire profile page (holdings table + scoped transactions) for fast SSR. */
@@ -115,25 +130,38 @@ export async function readSuperinvestor13fProfileSnapshot(
   return parseProfilePayload(row.data);
 }
 
+/** True when any profile snapshot row exists for this CIK (segment may be stale). */
+export async function hasSuperinvestor13fProfileSnapshot(cikPadded: string): Promise<boolean> {
+  if (!cikPadded.trim() || !marketSnapshotReadEnabled()) return false;
+  const row = await readMarketSnapshotRow(superinvestor13fProfileSnapshotKey(cikPadded));
+  return Boolean(row?.data);
+}
+
 export async function upsertSuperinvestor13fProfileSnapshot(
   cikPadded: string,
   accessionSegment: string,
   payload: Superinvestor13fProfilePageData,
-): Promise<void> {
-  if (!accessionSegment || accessionSegment === "none") return;
+): Promise<SuperinvestorSnapshotUpsertResult> {
+  if (!accessionSegment || accessionSegment === "none") {
+    return { ok: false, bytes: 0, error: "missing_accession" };
+  }
 
   const admin = getSupabaseAdminClient();
-  if (!admin) return;
+  if (!admin) return { ok: false, bytes: 0, error: "no_admin_client" };
 
-  await admin.from("market_snapshot").upsert(
+  const data = slimSuperinvestorProfileForSnapshot(payload);
+  const bytes = JSON.stringify(data).length;
+  const { error } = await admin.from("market_snapshot").upsert(
     {
       key: superinvestor13fProfileSnapshotKey(cikPadded),
       segment: accessionSegment,
-      data: payload,
+      data,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "key" },
   );
+  if (error) return { ok: false, bytes, error: error.message };
+  return { ok: true, bytes };
 }
 
 /** Drop persisted 13F profile + holdings-scoped tx rows so the next load re-fetches SEC. */

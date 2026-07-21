@@ -14,9 +14,9 @@ import {
   readSuperinvestor13fProfileSnapshot,
   readSuperinvestorHoldingsTransactionsSnapshot,
   readSuperinvestorHoldingsTransactionsSnapshotRow,
-  upsertSuperinvestor13fProfileSnapshot,
   upsertSuperinvestorHoldingsTransactionsSnapshot,
 } from "@/lib/superinvestors/superinvestor-13f-holdings-transactions-snapshot";
+import { finalizeSuperinvestorProfileIngest } from "@/lib/superinvestors/superinvestor-13f-ingest";
 import { filingHeadMatchesComparison } from "@/lib/superinvestors/superinvestor-13f-cache-utils";
 import {
   filterSuperinvestorTransactionsToCurrentHoldings,
@@ -1809,11 +1809,12 @@ function createSuperinvestorProfilePageLoader(
           )
         : fallbacks.transactionsFallback();
 
-    const page = { comparison, transactions };
+    const pageRaw = { comparison, transactions };
     if (comparison.source === "edgar" && accKey !== "none") {
-      void upsertSuperinvestor13fProfileSnapshot(paddedCik, accKey, page);
+      const finalized = await finalizeSuperinvestorProfileIngest(pageRaw);
+      return finalized.page;
     }
-    return page;
+    return pageRaw;
   };
 
   return () =>
@@ -2267,9 +2268,9 @@ async function fetchBerkshireProfilePageUncached(): Promise<Superinvestor13fProf
 
   const comparison = await fetchBerkshireComparisonUncached();
   const transactions = await loadBerkshireHoldingsScopedTransactionsForComparison(comparison, accKey);
-  const page = { comparison, transactions };
-  void upsertSuperinvestor13fProfileSnapshot(paddedCik, accKey, page);
-  return page;
+  const pageRaw = { comparison, transactions };
+  const finalized = await finalizeSuperinvestorProfileIngest(pageRaw);
+  return finalized.page;
 }
 
 async function fetchPershingHoldingsUncached(): Promise<InstitutionalHoldingsPayload> {

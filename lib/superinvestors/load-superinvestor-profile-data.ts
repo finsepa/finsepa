@@ -1,6 +1,11 @@
+import "server-only";
+
 import type { Superinvestor13fProfilePageData } from "@/lib/superinvestors/types";
 import { clearSuperinvestor13fInMemoryCaches } from "@/lib/superinvestors/berkshire-13f";
-import { deleteSuperinvestor13fSnapshotsForCik } from "@/lib/superinvestors/superinvestor-13f-holdings-transactions-snapshot";
+import {
+  deleteSuperinvestor13fSnapshotsForCik,
+  hasSuperinvestor13fProfileSnapshot,
+} from "@/lib/superinvestors/superinvestor-13f-holdings-transactions-snapshot";
 import {
   clearSuperinvestor13fDevMemoCaches,
   filingHeadMatchesComparison,
@@ -10,8 +15,34 @@ import {
   getLatest13fFilingHeadCached,
 } from "@/lib/superinvestors/superinvestor-13f-freshness";
 import { SUPERINVESTOR_REGISTRY } from "@/lib/superinvestors/superinvestor-registry";
+import { SUPERINVESTOR_SLUG_CIK } from "@/lib/superinvestors/superinvestor-slug-cik";
+import { writeSuperinvestor13fHealthFromCron } from "@/lib/superinvestors/superinvestor-13f-health";
+import { finalizeSuperinvestorProfileIngest } from "@/lib/superinvestors/superinvestor-13f-ingest";
+import { validateSuperinvestorProfilePage } from "@/lib/superinvestors/superinvestor-13f-validate";
 
 export type SuperinvestorProfilePageData = Superinvestor13fProfilePageData;
+
+export type Superinvestor13fRefreshResult = {
+  slug: string;
+  ok: boolean;
+  persisted?: boolean;
+  validationOk?: boolean;
+  unresolvedTickers?: number;
+  holdingCount?: number;
+  ingestMs?: number;
+  accession?: string | null;
+  filingDate?: string | null;
+  weightSum?: number;
+  error?: string;
+};
+
+export type Superinvestor13fRefreshSummary = {
+  at: string;
+  durationMs: number;
+  averageProcessingTimeMs: number;
+  okCount: number;
+  results: Superinvestor13fRefreshResult[];
+};
 
 function devMemoProfilePage<T>(slug: string, fn: () => Promise<T>): Promise<T> {
   if (process.env.NODE_ENV === "production") return fn();
@@ -96,47 +127,87 @@ export async function forceRefreshSuperinvestorProfilePage(
   return loadProfilePageMatchingLatestFilingHead(() => item.loadProfilePage());
 }
 
-/** Cron: probe all filers and warm portfolio cache when a new 13F-HR appears. */
-export async function refreshAllSuperinvestor13fPortfolios(): Promise<
-  {
-    slug: string;
-    ok: boolean;
-    filingDate: string | null;
-    accession: string | null;
-    error?: string;
-  }[]
-> {
-  const results: {
-    slug: string;
-    ok: boolean;
-    filingDate: string | null;
-    accession: string | null;
-    error?: string;
-  }[] = [];
+/**
+ * Cron: ensure every manager has a durable snapshot; re-enrich unresolved tickers;
+ * validate; write health blob. Soft-loads when snapshot exists (head probe still catches new filings).
+ */
+export async function refreshAllSuperinvestor13fPortfolios(): Promise<Superinvestor13fRefreshSummary> {
+  const started = Date.now();
+  const results: Superinvestor13fRefreshResult[] = [];
 
   for (const item of SUPERINVESTOR_REGISTRY) {
+    const slugStarted = Date.now();
     try {
-      const data = await forceRefreshSuperinvestorProfilePage(item.slug);
-      if (!data) {
+      const cikHint = cikPad10(SUPERINVESTOR_SLUG_CIK[item.slug] ?? "");
+      const hasSnap = cikHint ? await hasSuperinvestor13fProfileSnapshot(cikHint) : false;
+
+      let page: Superinvestor13fProfilePageData | null = null;
+      if (!hasSnap) {
+        // Force SEC reload; createSuperinvestorProfilePageLoader awaits finalize+upsert.
+        page = await forceRefreshSuperinvestorProfilePage(item.slug);
+      } else {
+        page = await loadSuperinvestorProfilePageData(item.slug);
+      }
+
+      if (!page) {
         results.push({
           slug: item.slug,
           ok: false,
+          ingestMs: Date.now() - slugStarted,
           filingDate: null,
           accession: null,
           error: "unknown_slug",
         });
         continue;
       }
+
+      const snapAfterLoad = cikHint ? await hasSuperinvestor13fProfileSnapshot(cikHint) : false;
+      const unresolvedBefore = page.comparison.rows.filter((r) => !r.ticker?.trim()).length;
+      // Re-enrich existing snapshots with unresolved tickers (no full SEC wipe).
+      const needsEnrichPersist =
+        page.comparison.source === "edgar" && unresolvedBefore > 0 && snapAfterLoad;
+
+      let persisted = snapAfterLoad;
+      let validation = validateSuperinvestorProfilePage(page);
+      let unresolved = validation.unresolvedTickerCount;
+
+      if (needsEnrichPersist) {
+        const finalized = await finalizeSuperinvestorProfileIngest(page);
+        page = finalized.page;
+        validation = finalized.validation;
+        unresolved = finalized.enrich.afterUnresolved;
+        persisted = finalized.persisted;
+      } else if (!snapAfterLoad && page.comparison.source === "edgar") {
+        // Loader finalize may have skipped on validation failure — retry once for metrics.
+        const finalized = await finalizeSuperinvestorProfileIngest(page);
+        page = finalized.page;
+        validation = finalized.validation;
+        unresolved = finalized.enrich.afterUnresolved;
+        persisted = finalized.persisted;
+      }
+
       results.push({
         slug: item.slug,
-        ok: true,
-        filingDate: data.comparison.current.filingDate,
-        accession: data.comparison.current.accessionNumber,
+        ok: validation.ok && (persisted || page.comparison.source !== "edgar"),
+        persisted,
+        validationOk: validation.ok,
+        unresolvedTickers: unresolved,
+        holdingCount: validation.holdingCount,
+        ingestMs: Date.now() - slugStarted,
+        accession: page.comparison.current.accessionNumber,
+        filingDate: page.comparison.current.filingDate,
+        weightSum: validation.weightSum,
+        error: validation.ok
+          ? persisted || page.comparison.source !== "edgar"
+            ? undefined
+            : "snapshot_not_persisted"
+          : validation.errors.join(";"),
       });
     } catch (e) {
       results.push({
         slug: item.slug,
         ok: false,
+        ingestMs: Date.now() - slugStarted,
         filingDate: null,
         accession: null,
         error: e instanceof Error ? e.message : "load_failed",
@@ -144,5 +215,22 @@ export async function refreshAllSuperinvestor13fPortfolios(): Promise<
     }
   }
 
-  return results;
+  const okTimes = results.filter((r) => r.ok && r.ingestMs != null).map((r) => r.ingestMs!);
+  const averageProcessingTimeMs =
+    okTimes.length > 0 ? Math.round(okTimes.reduce((a, b) => a + b, 0) / okTimes.length) : 0;
+  const at = new Date().toISOString();
+
+  await writeSuperinvestor13fHealthFromCron({
+    at,
+    averageProcessingTimeMs,
+    results,
+  });
+
+  return {
+    at,
+    durationMs: Date.now() - started,
+    averageProcessingTimeMs,
+    okCount: results.filter((r) => r.ok).length,
+    results,
+  };
 }
