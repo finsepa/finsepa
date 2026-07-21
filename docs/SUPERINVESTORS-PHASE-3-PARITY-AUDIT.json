@@ -1,18 +1,18 @@
 {
-  "at": "2026-07-21T10:23:37.008Z",
-  "pass": 13,
+  "at": "2026-07-21T10:57:19.162Z",
+  "pass": 18,
   "watch": 0,
-  "fail": 5,
+  "fail": 0,
   "results": [
     {
       "slug": "berkshire-hathaway",
       "name": "Warren Buffett",
       "cik": "0001067983",
-      "elapsedMs": 4466,
+      "elapsedMs": 3631,
       "verdict": "PASS",
       "finsepa": {
         "segment": "000119312526226661",
-        "updatedAt": "2026-07-21T08:48:55.705+00:00",
+        "updatedAt": "2026-07-21T10:47:13.691+00:00",
         "filingDate": "2026-05-15",
         "reportDate": "2026-03-31",
         "accession": "0001193125-26-226661",
@@ -231,11 +231,11 @@
       "slug": "bill-ackman",
       "name": "Bill Ackman",
       "cik": "0001336528",
-      "elapsedMs": 1464,
+      "elapsedMs": 1360,
       "verdict": "PASS",
       "finsepa": {
         "segment": "000117266126002336",
-        "updatedAt": "2026-07-21T07:36:47.284+00:00",
+        "updatedAt": "2026-07-21T10:47:04.93+00:00",
         "filingDate": "2026-05-15",
         "reportDate": "2026-03-31",
         "accession": "0001172661-26-002336",
@@ -454,11 +454,11 @@
       "slug": "terry-smith",
       "name": "Terry Smith",
       "cik": "0001569205",
-      "elapsedMs": 2516,
+      "elapsedMs": 2354,
       "verdict": "PASS",
       "finsepa": {
         "segment": "000156920526000005",
-        "updatedAt": "2026-07-21T07:38:03.904+00:00",
+        "updatedAt": "2026-07-21T10:47:06.65+00:00",
         "filingDate": "2026-05-15",
         "reportDate": "2026-03-31",
         "accession": "0001569205-26-000005",
@@ -677,57 +677,49 @@
       "slug": "michael-burry",
       "name": "Michael Burry",
       "cik": "0001649339",
-      "elapsedMs": 1486,
-      "verdict": "FAIL",
+      "elapsedMs": 1493,
+      "verdict": "PASS",
       "finsepa": {
         "segment": "000164933925000007",
-        "updatedAt": "2026-07-21T08:48:52.547+00:00",
+        "updatedAt": "2026-07-21T10:47:00.789+00:00",
         "filingDate": "2025-11-03",
         "reportDate": "2025-09-30",
         "accession": "0001649339-25-000007",
-        "positionCount": 8,
-        "totalValueUsd": 1381198000,
+        "positionCount": 4,
+        "totalValueUsd": 68138000,
         "source": "edgar",
         "unresolvedTickers": 0,
         "top5": [
           {
-            "ticker": "PLTR",
-            "name": "PALANTIR TECHNOLOGIES INC",
-            "weight": 66.03687523439797,
-            "valueUsd": 912100000,
-            "shares": 5000000,
-            "status": "new"
-          },
-          {
-            "ticker": "NVDA",
-            "name": "NVIDIA CORPORATION",
-            "weight": 13.508562856303005,
-            "valueUsd": 186580000,
-            "shares": 1000000,
-            "status": "new"
-          },
-          {
-            "ticker": "PFE",
-            "name": "PFIZER INC",
-            "weight": 11.06865199631045,
-            "valueUsd": 152880000,
-            "shares": 6000000,
-            "status": "new"
-          },
-          {
-            "ticker": "HAL",
-            "name": "HALLIBURTON CO",
-            "weight": 4.4526563171971,
-            "valueUsd": 61500000,
-            "shares": 2500000,
-            "status": "new"
-          },
-          {
             "ticker": "MOH",
             "name": "MOLINA HEALTHCARE INC",
-            "weight": 1.7318299041846281,
+            "weight": 35.10522762628783,
             "valueUsd": 23920000,
             "shares": 125000,
+            "status": "new"
+          },
+          {
+            "ticker": "LULU",
+            "name": "LULULEMON ATHLETICA INC",
+            "weight": 26.113182071678064,
+            "valueUsd": 17793000,
+            "shares": 100000,
+            "status": "add"
+          },
+          {
+            "ticker": "SLM",
+            "name": "SLM CORP",
+            "weight": 19.501599694737152,
+            "valueUsd": 13288000,
+            "shares": 480054,
+            "status": "new"
+          },
+          {
+            "ticker": "BRKR",
+            "name": "BRUKER CORP",
+            "weight": 19.279990607296956,
+            "valueUsd": 13137000,
+            "shares": 48334,
             "status": "new"
           }
         ]
@@ -818,13 +810,13 @@
         },
         {
           "id": "holdings_count",
-          "pass": false,
-          "detail": "finsepa=8 sec_equity=4 sec_with_opts=8 options=4"
+          "pass": true,
+          "detail": "4"
         },
         {
           "id": "portfolio_value",
-          "pass": false,
-          "detail": "finsepa=1381198000 sec=68138000 delta%=1927.060"
+          "pass": true,
+          "detail": "finsepa=68138000 sec=68138000 delta%=0.000"
         },
         {
           "id": "weights_sum",
@@ -833,8 +825,8 @@
         },
         {
           "id": "top_holdings_order",
-          "pass": false,
-          "detail": "0 aligned; finsepa=[PLTR, NVDA, PFE, HAL, MOH] sec=[MOLINA HEALTHCARE INC, LULULEMON ATHLETICA INC, SLM CORP, BRUKER CORP]"
+          "pass": true,
+          "detail": "4/4 aligned"
         },
         {
           "id": "shares_values_spot",
@@ -854,7 +846,7 @@
         {
           "id": "activity_counts",
           "pass": true,
-          "detail": "new=7 inc=0 red=0 sold=10"
+          "detail": "new=3 inc=0 red=0 sold=5"
         }
       ],
       "dataromaNotes": [
@@ -864,13 +856,13 @@
         },
         {
           "level": "diff",
-          "msg": "Holdings count Finsepa=8 Dataroma=3 SEC=4",
-          "cause": "investigate_finsepa_vs_sec"
+          "msg": "Holdings count Finsepa=4 Dataroma=3 SEC=4",
+          "cause": "dataroma_filters_or_aggregates_differently"
         },
         {
           "level": "diff",
-          "msg": "Value Finsepa=1381198000 Dataroma=55001000 delta%=2411.22 SEC_delta%=1927.060",
-          "cause": "finsepa_vs_sec_value"
+          "msg": "Value Finsepa=68138000 Dataroma=55001000 delta%=23.89 SEC_delta%=0.000",
+          "cause": "dataroma_inconsistency_or_filter"
         },
         {
           "level": "ok",
@@ -883,23 +875,23 @@
       "slug": "cathie-wood",
       "name": "Cathie Wood",
       "cik": "0001697748",
-      "elapsedMs": 1633,
+      "elapsedMs": 1546,
       "verdict": "PASS",
       "finsepa": {
         "segment": "000110465926059240",
-        "updatedAt": "2026-07-21T07:40:35.478+00:00",
+        "updatedAt": "2026-07-21T10:47:19.125+00:00",
         "filingDate": "2026-05-12",
         "reportDate": "2026-03-31",
         "accession": "0001104659-26-059240",
         "positionCount": 181,
-        "totalValueUsd": 12859486000,
+        "totalValueUsd": 12858878000,
         "source": "edgar",
-        "unresolvedTickers": 5,
+        "unresolvedTickers": 4,
         "top5": [
           {
             "ticker": "TSLA",
             "name": "Tesla Inc",
-            "weight": 8.184984998622806,
+            "weight": 8.185372005240271,
             "valueUsd": 1052547000,
             "shares": 2831329,
             "status": "reduce"
@@ -907,7 +899,7 @@
           {
             "ticker": "AMD",
             "name": "Advanced Micro Devices Inc",
-            "weight": 4.291586771042015,
+            "weight": 4.2917896880272135,
             "valueUsd": 551876000,
             "shares": 2712854,
             "status": "add"
@@ -915,7 +907,7 @@
           {
             "ticker": "CRSP",
             "name": "CRISPR Therapeutics AG",
-            "weight": 4.185151723793626,
+            "weight": 4.185349608262867,
             "valueUsd": 538189000,
             "shares": 11313623,
             "status": "add"
@@ -923,7 +915,7 @@
           {
             "ticker": "SHOP",
             "name": "Shopify Inc",
-            "weight": 3.8535988141361175,
+            "weight": 3.8537810219523037,
             "valueUsd": 495553000,
             "shares": 4177652,
             "status": "add"
@@ -931,7 +923,7 @@
           {
             "ticker": "PLTR",
             "name": "Palantir Technologies Inc",
-            "weight": 3.53756752019482,
+            "weight": 3.537734785258869,
             "valueUsd": 454913000,
             "shares": 3109881,
             "status": "reduce"
@@ -1010,7 +1002,7 @@
         {
           "id": "portfolio_value",
           "pass": true,
-          "detail": "finsepa=12859486000 sec=12858878000 delta%=0.005"
+          "detail": "finsepa=12858878000 sec=12858878000 delta%=0.000"
         },
         {
           "id": "weights_sum",
@@ -1035,7 +1027,7 @@
         {
           "id": "ticker_resolution",
           "pass": true,
-          "detail": "97.2% (5 unresolved)"
+          "detail": "97.8% (4 unresolved)"
         },
         {
           "id": "activity_counts",
@@ -1054,11 +1046,11 @@
       "slug": "li-lu",
       "name": "Li Lu",
       "cik": "0001709323",
-      "elapsedMs": 2991,
+      "elapsedMs": 2949,
       "verdict": "PASS",
       "finsepa": {
         "segment": "000204358526000013",
-        "updatedAt": "2026-07-21T07:42:17.615+00:00",
+        "updatedAt": "2026-07-21T10:47:09.359+00:00",
         "filingDate": "2026-05-15",
         "reportDate": "2026-03-31",
         "accession": "0002043585-26-000013",
@@ -1277,11 +1269,11 @@
       "slug": "ray-dalio",
       "name": "Ray Dalio",
       "cik": "0001350694",
-      "elapsedMs": 1376,
+      "elapsedMs": 1442,
       "verdict": "PASS",
       "finsepa": {
         "segment": "000135069426000002",
-        "updatedAt": "2026-07-21T08:20:18.23+00:00",
+        "updatedAt": "2026-07-21T10:47:33.097+00:00",
         "filingDate": "2026-05-15",
         "reportDate": "2026-03-31",
         "accession": "0001350694-26-000002",
@@ -1448,11 +1440,11 @@
       "slug": "ken-fisher",
       "name": "Ken Fisher",
       "cik": "0000850529",
-      "elapsedMs": 2403,
+      "elapsedMs": 2263,
       "verdict": "PASS",
       "finsepa": {
         "segment": "000085052926000004",
-        "updatedAt": "2026-07-21T08:50:00.196+00:00",
+        "updatedAt": "2026-07-21T10:47:36.353+00:00",
         "filingDate": "2026-05-05",
         "reportDate": "2026-03-31",
         "accession": "0000850529-26-000004",
@@ -1619,11 +1611,11 @@
       "slug": "primecap-management",
       "name": "PRIMECAP",
       "cik": "0000763212",
-      "elapsedMs": 1193,
+      "elapsedMs": 1243,
       "verdict": "PASS",
       "finsepa": {
         "segment": "000076321226000016",
-        "updatedAt": "2026-07-21T07:51:14.665+00:00",
+        "updatedAt": "2026-07-21T10:47:29.445+00:00",
         "filingDate": "2026-05-11",
         "reportDate": "2026-03-31",
         "accession": "0000763212-26-000016",
@@ -1790,58 +1782,58 @@
       "slug": "ken-griffin",
       "name": "Ken Griffin",
       "cik": "0001423053",
-      "elapsedMs": 2159,
-      "verdict": "FAIL",
+      "elapsedMs": 2102,
+      "verdict": "PASS",
       "finsepa": {
         "segment": "000110465926062477",
-        "updatedAt": "2026-07-21T08:31:05.447+00:00",
+        "updatedAt": "2026-07-21T10:56:27.584+00:00",
         "filingDate": "2026-05-15",
         "reportDate": "2026-03-31",
         "accession": "0001104659-26-062477",
-        "positionCount": 6733,
-        "totalValueUsd": 618473217000,
+        "positionCount": 6006,
+        "totalValueUsd": 141142523000,
         "source": "edgar",
-        "unresolvedTickers": 165,
+        "unresolvedTickers": 152,
         "top5": [
-          {
-            "ticker": "SPY",
-            "name": "STATE STR SPDR S&P 500 ETF T",
-            "weight": 6.789273140020224,
-            "valueUsd": 41989836000,
-            "shares": 64565975,
-            "status": "add"
-          },
-          {
-            "ticker": "NDQ",
-            "name": "INVESCO QQQ TR",
-            "weight": 5.148833470019123,
-            "valueUsd": 31844156000,
-            "shares": 55171964,
-            "status": "reduce"
-          },
           {
             "ticker": "NVDA",
             "name": "NVIDIA CORPORATION",
-            "weight": 3.8700474559110942,
-            "valueUsd": 23935207000,
-            "shares": 137243161,
+            "weight": 2.3062872413014754,
+            "valueUsd": 3255152000,
+            "shares": 18664861,
             "status": "reduce"
           },
           {
-            "ticker": "TSLA",
-            "name": "TESLA INC",
-            "weight": 3.842234448771611,
-            "valueUsd": 23763191000,
-            "shares": 63922509,
-            "status": "reduce"
-          },
-          {
-            "ticker": "GQ9",
-            "name": "SPDR GOLD TR",
-            "weight": 2.3962119284463697,
-            "valueUsd": 14819929000,
-            "shares": 34441722,
+            "ticker": "IVV",
+            "name": "ISHARES TR",
+            "weight": 1.879322364104261,
+            "valueUsd": 2652523000,
+            "shares": 4060750,
             "status": "add"
+          },
+          {
+            "ticker": "AMZN",
+            "name": "AMAZON COM INC",
+            "weight": 1.1956106240215076,
+            "valueUsd": 1687515000,
+            "shares": 8102537,
+            "status": "reduce"
+          },
+          {
+            "ticker": "MU",
+            "name": "MICRON TECHNOLOGY INC",
+            "weight": 1.1001914709998488,
+            "valueUsd": 1552838000,
+            "shares": 4596372,
+            "status": "add"
+          },
+          {
+            "ticker": "DON",
+            "name": "STATE STR SPDR DOW JONES IND",
+            "weight": 1.0981906565465038,
+            "valueUsd": 1550014000,
+            "shares": 3346389,
+            "status": "reduce"
           }
         ]
       },
@@ -1911,13 +1903,13 @@
         },
         {
           "id": "holdings_count",
-          "pass": false,
-          "detail": "finsepa=6733 sec_equity=6006 sec_with_opts=6733 options=7304"
+          "pass": true,
+          "detail": "6006"
         },
         {
           "id": "portfolio_value",
-          "pass": false,
-          "detail": "finsepa=618473217000 sec=141142523000 delta%=338.191"
+          "pass": true,
+          "detail": "finsepa=141142523000 sec=141142523000 delta%=0.000"
         },
         {
           "id": "weights_sum",
@@ -1926,13 +1918,13 @@
         },
         {
           "id": "top_holdings_order",
-          "pass": false,
-          "detail": "0 aligned; finsepa=[SPY, NDQ, NVDA, TSLA, GQ9] sec=[NVIDIA CORPORATION, ISHARES TR, AMAZON COM INC, MICRON TECHNOLOGY INC, STATE STR SPDR DOW JONES IND]"
+          "pass": true,
+          "detail": "10/10 aligned"
         },
         {
           "id": "shares_values_spot",
-          "pass": false,
-          "detail": "compared=49 share_mismatches=49 value_mismatches=49"
+          "pass": true,
+          "detail": "50 CUSIPs matched"
         },
         {
           "id": "duplicate_rows",
@@ -1942,12 +1934,12 @@
         {
           "id": "ticker_resolution",
           "pass": true,
-          "detail": "97.5% (165 unresolved)"
+          "detail": "97.5% (152 unresolved)"
         },
         {
           "id": "activity_counts",
           "pass": true,
-          "detail": "new=1324 inc=0 red=0 sold=1101"
+          "detail": "new=1520 inc=0 red=0 sold=1384"
         }
       ],
       "dataromaNotes": [
@@ -1961,11 +1953,11 @@
       "slug": "charlie-munger",
       "name": "Charlie Munger",
       "cik": "0000783412",
-      "elapsedMs": 2058,
+      "elapsedMs": 2246,
       "verdict": "PASS",
       "finsepa": {
         "segment": "000143774926023711",
-        "updatedAt": "2026-07-21T07:39:23.162+00:00",
+        "updatedAt": "2026-07-21T10:47:02.861+00:00",
         "filingDate": "2026-07-16",
         "reportDate": "2026-06-30",
         "accession": "0001437749-26-023711",
@@ -2118,55 +2110,55 @@
       "slug": "blackrock",
       "name": "BlackRock",
       "cik": "0002012383",
-      "elapsedMs": 3298,
-      "verdict": "FAIL",
+      "elapsedMs": 3215,
+      "verdict": "PASS",
       "finsepa": {
         "segment": "000201238326001841",
-        "updatedAt": "2026-07-21T08:31:19.634+00:00",
+        "updatedAt": "2026-07-21T10:47:59.815+00:00",
         "filingDate": "2026-05-13",
         "reportDate": "2026-03-31",
         "accession": "0002012383-26-001841",
-        "positionCount": 5610,
-        "totalValueUsd": 5723531588000,
+        "positionCount": 5606,
+        "totalValueUsd": 5699208711000,
         "source": "edgar",
-        "unresolvedTickers": 112,
+        "unresolvedTickers": 111,
         "top5": [
           {
             "ticker": "NVDA",
             "name": "NVIDIA CORPORATION",
-            "weight": 5.876667610347432,
-            "valueUsd": 336352927000,
-            "shares": 1928629174,
+            "weight": 5.8922738581559555,
+            "valueUsd": 335812985000,
+            "shares": 1925533174,
             "status": "reduce"
           },
           {
             "ticker": "AAPL",
             "name": "APPLE INC",
-            "weight": 5.076764870298118,
-            "valueUsd": 290570241000,
-            "shares": 1144923925,
+            "weight": 5.097413794291907,
+            "valueUsd": 290512251000,
+            "shares": 1144695425,
             "status": "reduce"
           },
           {
             "ticker": "MSFT",
             "name": "MICROSOFT CORP",
-            "weight": 3.838183307323437,
-            "valueUsd": 219679634000,
-            "shares": 593456071,
+            "weight": 3.8537356348450458,
+            "valueUsd": 219632437000,
+            "shares": 593328571,
             "status": "reduce"
           },
           {
             "ticker": "AMZN",
             "name": "AMAZON COM INC",
-            "weight": 2.6807051667485267,
-            "valueUsd": 153431007000,
-            "shares": 736692792,
+            "weight": 2.688024386689284,
+            "valueUsd": 153196120000,
+            "shares": 735564992,
             "status": "add"
           },
           {
             "ticker": "GOOGL",
             "name": "ALPHABET INC",
-            "weight": 2.2457088604085818,
+            "weight": 2.2552930155359596,
             "valueUsd": 128533856000,
             "shares": 446980992,
             "status": "add"
@@ -2239,13 +2231,13 @@
         },
         {
           "id": "holdings_count",
-          "pass": false,
-          "detail": "finsepa=5610 sec_equity=5606 sec_with_opts=5610 options=556"
+          "pass": true,
+          "detail": "5606"
         },
         {
           "id": "portfolio_value",
           "pass": true,
-          "detail": "finsepa=5723531588000 sec=5699208711000 delta%=0.427"
+          "detail": "finsepa=5699208711000 sec=5699208711000 delta%=0.000"
         },
         {
           "id": "weights_sum",
@@ -2259,8 +2251,8 @@
         },
         {
           "id": "shares_values_spot",
-          "pass": false,
-          "detail": "compared=50 share_mismatches=29 value_mismatches=1"
+          "pass": true,
+          "detail": "50 CUSIPs matched"
         },
         {
           "id": "duplicate_rows",
@@ -2270,12 +2262,12 @@
         {
           "id": "ticker_resolution",
           "pass": true,
-          "detail": "98.0% (112 unresolved)"
+          "detail": "98.0% (111 unresolved)"
         },
         {
           "id": "activity_counts",
           "pass": true,
-          "detail": "new=334 inc=0 red=0 sold=211"
+          "detail": "new=332 inc=0 red=0 sold=210"
         }
       ],
       "dataromaNotes": [
@@ -2289,11 +2281,11 @@
       "slug": "baillie-gifford",
       "name": "Baillie Gifford",
       "cik": "0001088875",
-      "elapsedMs": 2042,
+      "elapsedMs": 2021,
       "verdict": "PASS",
       "finsepa": {
         "segment": "000108887526000037",
-        "updatedAt": "2026-07-21T07:53:11.776+00:00",
+        "updatedAt": "2026-07-21T10:47:22.714+00:00",
         "filingDate": "2026-05-08",
         "reportDate": "2026-03-31",
         "accession": "0001088875-26-000037",
@@ -2460,11 +2452,11 @@
       "slug": "renaissance-technologies",
       "name": "Jim Simons",
       "cik": "0001037389",
-      "elapsedMs": 2467,
+      "elapsedMs": 2609,
       "verdict": "PASS",
       "finsepa": {
         "segment": "000103738926000033",
-        "updatedAt": "2026-07-21T08:31:23.775+00:00",
+        "updatedAt": "2026-07-21T10:48:05.13+00:00",
         "filingDate": "2026-05-14",
         "reportDate": "2026-03-31",
         "accession": "0001037389-26-000033",
@@ -2631,58 +2623,58 @@
       "slug": "point72",
       "name": "Steven Cohen",
       "cik": "0001603466",
-      "elapsedMs": 1536,
-      "verdict": "FAIL",
+      "elapsedMs": 1531,
+      "verdict": "PASS",
       "finsepa": {
         "segment": "000091957426003476",
-        "updatedAt": "2026-07-21T08:31:26.935+00:00",
+        "updatedAt": "2026-07-21T10:47:43.753+00:00",
         "filingDate": "2026-05-15",
         "reportDate": "2026-03-31",
         "accession": "0000919574-26-003476",
-        "positionCount": 2426,
-        "totalValueUsd": 78051200000,
+        "positionCount": 1983,
+        "totalValueUsd": 57502010000,
         "source": "edgar",
-        "unresolvedTickers": 52,
+        "unresolvedTickers": 49,
         "top5": [
-          {
-            "ticker": "SPY",
-            "name": "STATE STR SPDR S&P 500 ETF T",
-            "weight": 2.0802217006272805,
-            "valueUsd": 1623638000,
-            "shares": 2496600,
-            "status": "reduce"
-          },
           {
             "ticker": "NVDA",
             "name": "NVIDIA CORPORATION",
-            "weight": 1.9252426612275018,
-            "valueUsd": 1502675000,
-            "shares": 8616254,
+            "weight": 2.3003787171961467,
+            "valueUsd": 1322764000,
+            "shares": 7584654,
             "status": "reduce"
           },
           {
             "ticker": "AMZN",
             "name": "AMAZON COM INC",
-            "weight": 1.4992235865688164,
-            "valueUsd": 1170162000,
-            "shares": 5618484,
-            "status": "reduce"
-          },
-          {
-            "ticker": "NDQ",
-            "name": "INVESCO QQQ TR",
-            "weight": 1.1069105920216473,
-            "valueUsd": 863957000,
-            "shares": 1496860,
+            "weight": 1.7961250398029565,
+            "valueUsd": 1032808000,
+            "shares": 4958984,
             "status": "reduce"
           },
           {
             "ticker": "ANET",
             "name": "ARISTA NETWORKS INC",
-            "weight": 1.0724191300069696,
-            "valueUsd": 837036000,
-            "shares": 6817361,
+            "weight": 1.3976276655372568,
+            "valueUsd": 803664000,
+            "shares": 6545561,
             "status": "reduce"
+          },
+          {
+            "ticker": "NXPI",
+            "name": "ASML HLDG NV",
+            "weight": 1.2971842201689994,
+            "valueUsd": 745907000,
+            "shares": 564726,
+            "status": "reduce"
+          },
+          {
+            "ticker": "CRDO",
+            "name": "CREDO TECHNOLOGY GROUP HOLDI",
+            "weight": 1.2210181870164192,
+            "valueUsd": 702110000,
+            "shares": 7479599,
+            "status": "add"
           }
         ]
       },
@@ -2752,13 +2744,13 @@
         },
         {
           "id": "holdings_count",
-          "pass": false,
-          "detail": "finsepa=2426 sec_equity=1983 sec_with_opts=2426 options=1721"
+          "pass": true,
+          "detail": "1983"
         },
         {
           "id": "portfolio_value",
-          "pass": false,
-          "detail": "finsepa=78051200000 sec=57502010000 delta%=35.736"
+          "pass": true,
+          "detail": "finsepa=57502010000 sec=57502010000 delta%=0.000"
         },
         {
           "id": "weights_sum",
@@ -2767,13 +2759,13 @@
         },
         {
           "id": "top_holdings_order",
-          "pass": false,
-          "detail": "0 aligned; finsepa=[SPY, NVDA, AMZN, NDQ, ANET] sec=[NVIDIA CORPORATION, AMAZON COM INC, ARISTA NETWORKS INC, ASML HLDG NV, CREDO TECHNOLOGY GROUP HOLDI]"
+          "pass": true,
+          "detail": "10/10 aligned"
         },
         {
           "id": "shares_values_spot",
-          "pass": false,
-          "detail": "compared=50 share_mismatches=47 value_mismatches=43"
+          "pass": true,
+          "detail": "50 CUSIPs matched"
         },
         {
           "id": "duplicate_rows",
@@ -2783,12 +2775,12 @@
         {
           "id": "ticker_resolution",
           "pass": true,
-          "detail": "97.9% (52 unresolved)"
+          "detail": "97.5% (49 unresolved)"
         },
         {
           "id": "activity_counts",
           "pass": true,
-          "detail": "new=487 inc=0 red=0 sold=610"
+          "detail": "new=572 inc=0 red=0 sold=706"
         }
       ],
       "dataromaNotes": [
@@ -2802,15 +2794,15 @@
       "slug": "first-eagle",
       "name": "First Eagle",
       "cik": "0001325447",
-      "elapsedMs": 3213,
-      "verdict": "FAIL",
+      "elapsedMs": 3044,
+      "verdict": "PASS",
       "finsepa": {
         "segment": "000132544726000018",
-        "updatedAt": "2026-07-21T07:45:01.133+00:00",
+        "updatedAt": "2026-07-21T10:47:17.465+00:00",
         "filingDate": "2026-05-14",
         "reportDate": "2026-03-31",
         "accession": "0001325447-26-000018",
-        "positionCount": 424,
+        "positionCount": 421,
         "totalValueUsd": 58999938000,
         "source": "edgar",
         "unresolvedTickers": 13,
@@ -2963,8 +2955,8 @@
         },
         {
           "id": "holdings_count",
-          "pass": false,
-          "detail": "finsepa=424 sec_equity=421 sec_with_opts=424 options=4"
+          "pass": true,
+          "detail": "421"
         },
         {
           "id": "portfolio_value",
@@ -3009,8 +3001,8 @@
         },
         {
           "level": "diff",
-          "msg": "Holdings count Finsepa=424 Dataroma=417 SEC=421",
-          "cause": "investigate_finsepa_vs_sec"
+          "msg": "Holdings count Finsepa=421 Dataroma=417 SEC=421",
+          "cause": "dataroma_filters_or_aggregates_differently"
         },
         {
           "level": "ok",
@@ -3026,11 +3018,11 @@
       "slug": "chris-hohn",
       "name": "Chris Hohn",
       "cik": "0001647251",
-      "elapsedMs": 2593,
+      "elapsedMs": 2198,
       "verdict": "PASS",
       "finsepa": {
         "segment": "000164725126000004",
-        "updatedAt": "2026-07-21T07:41:43.548+00:00",
+        "updatedAt": "2026-07-21T10:47:11.659+00:00",
         "filingDate": "2026-05-15",
         "reportDate": "2026-03-31",
         "accession": "0001647251-26-000004",
@@ -3249,11 +3241,11 @@
       "slug": "jeremy-grantham",
       "name": "Jeremy Grantham",
       "cik": "0001352662",
-      "elapsedMs": 1313,
+      "elapsedMs": 1269,
       "verdict": "PASS",
       "finsepa": {
         "segment": "000107261326000397",
-        "updatedAt": "2026-07-21T07:59:22.121+00:00",
+        "updatedAt": "2026-07-21T10:47:26.873+00:00",
         "filingDate": "2026-05-14",
         "reportDate": "2026-03-31",
         "accession": "0001072613-26-000397",
