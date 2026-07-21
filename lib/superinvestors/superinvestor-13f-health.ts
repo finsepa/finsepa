@@ -105,7 +105,7 @@ export async function computeSuperinvestor13fHealthMetrics(): Promise<Superinves
     const { data: rows } = await admin
       .from("market_snapshot")
       .select("key, segment, updated_at, data")
-      .like("key", "superinvestor_13f_profile_v3_%");
+      .like("key", "superinvestor_13f_profile_v4_%");
     rowsByKey = new Map(
       (rows ?? []).map((r) => [
         r.key as string,

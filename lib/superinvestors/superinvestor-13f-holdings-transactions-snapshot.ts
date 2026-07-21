@@ -13,16 +13,16 @@ import {
 export { slimSuperinvestorProfileForSnapshot } from "@/lib/superinvestors/superinvestor-13f-snapshot-slim";
 
 export function superinvestor13fHoldingsTxSnapshotKey(cikPadded: string): string {
-  return `superinvestor_13f_holdings_tx_v3_${cikPadded}`;
+  return `superinvestor_13f_holdings_tx_v4_${cikPadded}`;
 }
 
 export function superinvestor13fProfileSnapshotKey(cikPadded: string): string {
-  return `superinvestor_13f_profile_v3_${cikPadded}`;
+  return `superinvestor_13f_profile_v4_${cikPadded}`;
 }
 
 /** Full ~85-filing transaction history for Activity search API. */
 export function superinvestor13fFullTransactionsSnapshotKey(cikPadded: string): string {
-  return `superinvestor_13f_transactions_full_v3_${cikPadded}`;
+  return `superinvestor_13f_transactions_full_v4_${cikPadded}`;
 }
 
 export type SuperinvestorHoldingsTransactionsSnapshotRow = {

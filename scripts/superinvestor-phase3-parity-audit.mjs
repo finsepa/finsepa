@@ -593,7 +593,7 @@ function compareDataroma(finsepa, dataroma, sec) {
 }
 
 async function loadFinsepaSnapshot(supabase, cik) {
-  const key = `superinvestor_13f_profile_v3_${cik}`;
+  const key = `superinvestor_13f_profile_v4_${cik}`;
   const { data, error } = await supabase
     .from("market_snapshot")
     .select("key, segment, updated_at, data")

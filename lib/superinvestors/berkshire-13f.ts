@@ -1826,7 +1826,7 @@ function createSuperinvestorProfilePageLoader(
 
   return () =>
     devMemoAsync(`13f:profile-page-v2:${paddedCik}`, () =>
-      withAccessionKeyed13fCache("superinvestor-13f-profile-page-v10-snapshot", paddedCik, uncached),
+      withAccessionKeyed13fCache("superinvestor-13f-profile-page-v11-no-options", paddedCik, uncached),
     );
 }
 
@@ -2203,7 +2203,7 @@ async function fetchBerkshireComparisonUncached(): Promise<Berkshire13fCompariso
   return got ?? loadFixtureComparisonPayload();
 }
 
-const BERKSHIRE_HOLDINGS_TX_CACHE_PREFIX = "superinvestor-13f-berkshire-holdings-tx-v3";
+const BERKSHIRE_HOLDINGS_TX_CACHE_PREFIX = "superinvestor-13f-berkshire-holdings-tx-v4-no-options";
 
 /**
  * Full 13F quarter-over-quarter history for names in the latest filing only.
@@ -2619,7 +2619,7 @@ async function fetchGmoTransactionsUncached(): Promise<SuperinvestorTransactions
 export const getBerkshireProfilePage = () =>
   devMemoAsync(`13f:profile-page:${BERKSHIRE_CIK}`, () =>
     withAccessionKeyed13fCache(
-      "superinvestor-13f-profile-page-v13-berkshire-q1-2026",
+      "superinvestor-13f-profile-page-v14-berkshire-no-options",
       BERKSHIRE_CIK,
       fetchBerkshireProfilePageUncached,
     ),
@@ -2800,13 +2800,13 @@ export const getGmoProfilePage = createSuperinvestorProfilePageLoader(GRANTHAM_M
 /** In development, skip `unstable_cache` so layout/component edits and SEC responses are not masked by a warm cache. */
 export async function getBerkshireHoldings() {
   return devMemoAsync("13f:berkshire:holdings", () =>
-    withAccessionKeyed13fCache("superinvestor-13f-holdings-v7", BERKSHIRE_CIK, fetchBerkshireHoldingsUncached),
+    withAccessionKeyed13fCache("superinvestor-13f-holdings-v8-no-options", BERKSHIRE_CIK, fetchBerkshireHoldingsUncached),
   );
 }
 
 export async function getBerkshireHoldingsComparison() {
   return devMemoAsync("13f:berkshire:comparison", () =>
-    withAccessionKeyed13fCache("superinvestor-13f-comparison-v10", BERKSHIRE_CIK, fetchBerkshireComparisonUncached),
+    withAccessionKeyed13fCache("superinvestor-13f-comparison-v11-no-options", BERKSHIRE_CIK, fetchBerkshireComparisonUncached),
   );
 }
 
@@ -2818,13 +2818,13 @@ export async function getBerkshireQuarterlyTransactions() {
 
 export async function getPershingSquareHoldings() {
   return devMemoAsync("13f:pershing:holdings", () =>
-    withAccessionKeyed13fCache("superinvestor-13f-holdings-v7", PERSHING_SQUARE_CIK, fetchPershingHoldingsUncached),
+    withAccessionKeyed13fCache("superinvestor-13f-holdings-v8-no-options", PERSHING_SQUARE_CIK, fetchPershingHoldingsUncached),
   );
 }
 
 export async function getPershingSquareHoldingsComparison() {
   return devMemoAsync("13f:pershing:comparison", () =>
-    withAccessionKeyed13fCache("superinvestor-13f-comparison-v9", PERSHING_SQUARE_CIK, fetchPershingComparisonUncached),
+    withAccessionKeyed13fCache("superinvestor-13f-comparison-v10-no-options", PERSHING_SQUARE_CIK, fetchPershingComparisonUncached),
   );
 }
 
@@ -2834,13 +2834,13 @@ export async function getPershingSquareQuarterlyTransactions() {
 
 export async function getFundsmithHoldings() {
   return devMemoAsync("13f:fundsmith:holdings", () =>
-    withAccessionKeyed13fCache("superinvestor-13f-holdings-v7", FUNDSMITH_LLP_CIK, fetchFundsmithHoldingsUncached),
+    withAccessionKeyed13fCache("superinvestor-13f-holdings-v8-no-options", FUNDSMITH_LLP_CIK, fetchFundsmithHoldingsUncached),
   );
 }
 
 export async function getFundsmithHoldingsComparison() {
   return devMemoAsync("13f:fundsmith:comparison", () =>
-    withAccessionKeyed13fCache("superinvestor-13f-comparison-v9", FUNDSMITH_LLP_CIK, fetchFundsmithComparisonUncached),
+    withAccessionKeyed13fCache("superinvestor-13f-comparison-v10-no-options", FUNDSMITH_LLP_CIK, fetchFundsmithComparisonUncached),
   );
 }
 
@@ -2850,13 +2850,13 @@ export async function getFundsmithQuarterlyTransactions() {
 
 export async function getScionHoldings() {
   return devMemoAsync("13f:scion:holdings:v2", () =>
-    withAccessionKeyed13fCache("superinvestor-13f-holdings-v7", SCION_ASSET_MANAGEMENT_CIK, fetchScionHoldingsUncached),
+    withAccessionKeyed13fCache("superinvestor-13f-holdings-v8-no-options", SCION_ASSET_MANAGEMENT_CIK, fetchScionHoldingsUncached),
   );
 }
 
 export async function getScionHoldingsComparison() {
   return devMemoAsync("13f:scion:comparison:v2", () =>
-    withAccessionKeyed13fCache("superinvestor-13f-comparison-v9", SCION_ASSET_MANAGEMENT_CIK, fetchScionComparisonUncached),
+    withAccessionKeyed13fCache("superinvestor-13f-comparison-v10-no-options", SCION_ASSET_MANAGEMENT_CIK, fetchScionComparisonUncached),
   );
 }
 
@@ -2866,13 +2866,13 @@ export async function getScionQuarterlyTransactions() {
 
 export async function getArkHoldings() {
   return devMemoAsync("13f:ark:holdings", () =>
-    withAccessionKeyed13fCache("superinvestor-13f-holdings-v7", ARK_INVEST_CIK, fetchArkHoldingsUncached),
+    withAccessionKeyed13fCache("superinvestor-13f-holdings-v8-no-options", ARK_INVEST_CIK, fetchArkHoldingsUncached),
   );
 }
 
 export async function getArkHoldingsComparison() {
   return devMemoAsync("13f:ark:comparison", () =>
-    withAccessionKeyed13fCache("superinvestor-13f-comparison-v9", ARK_INVEST_CIK, fetchArkComparisonUncached),
+    withAccessionKeyed13fCache("superinvestor-13f-comparison-v10-no-options", ARK_INVEST_CIK, fetchArkComparisonUncached),
   );
 }
 
@@ -2882,13 +2882,13 @@ export async function getArkQuarterlyTransactions() {
 
 export async function getHimalayaHoldings() {
   return devMemoAsync("13f:himalaya:holdings", () =>
-    withAccessionKeyed13fCache("superinvestor-13f-holdings-v7", HIMALAYA_CAPITAL_CIK, fetchHimalayaHoldingsUncached),
+    withAccessionKeyed13fCache("superinvestor-13f-holdings-v8-no-options", HIMALAYA_CAPITAL_CIK, fetchHimalayaHoldingsUncached),
   );
 }
 
 export async function getHimalayaHoldingsComparison() {
   return devMemoAsync("13f:himalaya:comparison", () =>
-    withAccessionKeyed13fCache("superinvestor-13f-comparison-v9", HIMALAYA_CAPITAL_CIK, fetchHimalayaComparisonUncached),
+    withAccessionKeyed13fCache("superinvestor-13f-comparison-v10-no-options", HIMALAYA_CAPITAL_CIK, fetchHimalayaComparisonUncached),
   );
 }
 
@@ -2898,13 +2898,13 @@ export async function getHimalayaQuarterlyTransactions() {
 
 export async function getBridgewaterHoldings() {
   return devMemoAsync("13f:bridgewater:holdings", () =>
-    withAccessionKeyed13fCache("superinvestor-13f-holdings-v7", BRIDGEWATER_ASSOCIATES_CIK, fetchBridgewaterHoldingsUncached),
+    withAccessionKeyed13fCache("superinvestor-13f-holdings-v8-no-options", BRIDGEWATER_ASSOCIATES_CIK, fetchBridgewaterHoldingsUncached),
   );
 }
 
 export async function getBridgewaterHoldingsComparison() {
   return devMemoAsync("13f:bridgewater:comparison", () =>
-    withAccessionKeyed13fCache("superinvestor-13f-comparison-v9", BRIDGEWATER_ASSOCIATES_CIK, fetchBridgewaterComparisonUncached),
+    withAccessionKeyed13fCache("superinvestor-13f-comparison-v10-no-options", BRIDGEWATER_ASSOCIATES_CIK, fetchBridgewaterComparisonUncached),
   );
 }
 
@@ -2914,13 +2914,13 @@ export async function getBridgewaterQuarterlyTransactions() {
 
 export async function getFisherHoldings() {
   return devMemoAsync("13f:fisher:holdings", () =>
-    withAccessionKeyed13fCache("superinvestor-13f-holdings-v7", FISHER_ASSET_MANAGEMENT_CIK, fetchFisherHoldingsUncached),
+    withAccessionKeyed13fCache("superinvestor-13f-holdings-v8-no-options", FISHER_ASSET_MANAGEMENT_CIK, fetchFisherHoldingsUncached),
   );
 }
 
 export async function getFisherHoldingsComparison() {
   return devMemoAsync("13f:fisher:comparison", () =>
-    withAccessionKeyed13fCache("superinvestor-13f-comparison-v9", FISHER_ASSET_MANAGEMENT_CIK, fetchFisherComparisonUncached),
+    withAccessionKeyed13fCache("superinvestor-13f-comparison-v10-no-options", FISHER_ASSET_MANAGEMENT_CIK, fetchFisherComparisonUncached),
   );
 }
 
@@ -2930,13 +2930,13 @@ export async function getFisherQuarterlyTransactions() {
 
 export async function getPrimecapHoldings() {
   return devMemoAsync("13f:primecap:holdings", () =>
-    withAccessionKeyed13fCache("superinvestor-13f-holdings-v7", PRIMECAP_MANAGEMENT_CIK, fetchPrimecapHoldingsUncached),
+    withAccessionKeyed13fCache("superinvestor-13f-holdings-v8-no-options", PRIMECAP_MANAGEMENT_CIK, fetchPrimecapHoldingsUncached),
   );
 }
 
 export async function getPrimecapHoldingsComparison() {
   return devMemoAsync("13f:primecap:comparison", () =>
-    withAccessionKeyed13fCache("superinvestor-13f-comparison-v9", PRIMECAP_MANAGEMENT_CIK, fetchPrimecapComparisonUncached),
+    withAccessionKeyed13fCache("superinvestor-13f-comparison-v10-no-options", PRIMECAP_MANAGEMENT_CIK, fetchPrimecapComparisonUncached),
   );
 }
 
@@ -2946,13 +2946,13 @@ export async function getPrimecapQuarterlyTransactions() {
 
 export async function getCitadelHoldings() {
   return devMemoAsync("13f:citadel:holdings", () =>
-    withAccessionKeyed13fCache("superinvestor-13f-holdings-v7", CITADEL_ADVISORS_CIK, fetchCitadelHoldingsUncached),
+    withAccessionKeyed13fCache("superinvestor-13f-holdings-v8-no-options", CITADEL_ADVISORS_CIK, fetchCitadelHoldingsUncached),
   );
 }
 
 export async function getCitadelHoldingsComparison() {
   return devMemoAsync("13f:citadel:comparison", () =>
-    withAccessionKeyed13fCache("superinvestor-13f-comparison-v9", CITADEL_ADVISORS_CIK, fetchCitadelComparisonUncached),
+    withAccessionKeyed13fCache("superinvestor-13f-comparison-v10-no-options", CITADEL_ADVISORS_CIK, fetchCitadelComparisonUncached),
   );
 }
 
@@ -2962,13 +2962,13 @@ export async function getCitadelQuarterlyTransactions() {
 
 export async function getDailyJournalHoldings() {
   return devMemoAsync("13f:daily-journal:holdings", () =>
-    withAccessionKeyed13fCache("superinvestor-13f-holdings-v7", DAILY_JOURNAL_CORP_CIK, fetchDailyJournalHoldingsUncached),
+    withAccessionKeyed13fCache("superinvestor-13f-holdings-v8-no-options", DAILY_JOURNAL_CORP_CIK, fetchDailyJournalHoldingsUncached),
   );
 }
 
 export async function getDailyJournalHoldingsComparison() {
   return devMemoAsync("13f:daily-journal:comparison", () =>
-    withAccessionKeyed13fCache("superinvestor-13f-comparison-v9", DAILY_JOURNAL_CORP_CIK, fetchDailyJournalComparisonUncached),
+    withAccessionKeyed13fCache("superinvestor-13f-comparison-v10-no-options", DAILY_JOURNAL_CORP_CIK, fetchDailyJournalComparisonUncached),
   );
 }
 
@@ -2978,13 +2978,13 @@ export async function getDailyJournalQuarterlyTransactions() {
 
 export async function getBlackrockHoldings() {
   return devMemoAsync("13f:blackrock:holdings", () =>
-    withAccessionKeyed13fCache("superinvestor-13f-holdings-v7", BLACKROCK_INC_CIK, fetchBlackrockHoldingsUncached),
+    withAccessionKeyed13fCache("superinvestor-13f-holdings-v8-no-options", BLACKROCK_INC_CIK, fetchBlackrockHoldingsUncached),
   );
 }
 
 export async function getBlackrockHoldingsComparison() {
   return devMemoAsync("13f:blackrock:comparison", () =>
-    withAccessionKeyed13fCache("superinvestor-13f-comparison-v9", BLACKROCK_INC_CIK, fetchBlackrockComparisonUncached),
+    withAccessionKeyed13fCache("superinvestor-13f-comparison-v10-no-options", BLACKROCK_INC_CIK, fetchBlackrockComparisonUncached),
   );
 }
 
@@ -2994,13 +2994,13 @@ export async function getBlackrockQuarterlyTransactions() {
 
 export async function getBaillieGiffordHoldings() {
   return devMemoAsync("13f:baillie-gifford:holdings", () =>
-    withAccessionKeyed13fCache("superinvestor-13f-holdings-v7", BAILLIE_GIFFORD_CO_CIK, fetchBaillieGiffordHoldingsUncached),
+    withAccessionKeyed13fCache("superinvestor-13f-holdings-v8-no-options", BAILLIE_GIFFORD_CO_CIK, fetchBaillieGiffordHoldingsUncached),
   );
 }
 
 export async function getBaillieGiffordHoldingsComparison() {
   return devMemoAsync("13f:baillie-gifford:comparison", () =>
-    withAccessionKeyed13fCache("superinvestor-13f-comparison-v9", BAILLIE_GIFFORD_CO_CIK, fetchBaillieGiffordComparisonUncached),
+    withAccessionKeyed13fCache("superinvestor-13f-comparison-v10-no-options", BAILLIE_GIFFORD_CO_CIK, fetchBaillieGiffordComparisonUncached),
   );
 }
 
@@ -3010,13 +3010,13 @@ export async function getBaillieGiffordQuarterlyTransactions() {
 
 export async function getRenaissanceTechnologiesHoldings() {
   return devMemoAsync("13f:renaissance:holdings", () =>
-    withAccessionKeyed13fCache("superinvestor-13f-holdings-v7", RENAISSANCE_TECHNOLOGIES_LLC_CIK, fetchRenaissanceHoldingsUncached),
+    withAccessionKeyed13fCache("superinvestor-13f-holdings-v8-no-options", RENAISSANCE_TECHNOLOGIES_LLC_CIK, fetchRenaissanceHoldingsUncached),
   );
 }
 
 export async function getRenaissanceTechnologiesHoldingsComparison() {
   return devMemoAsync("13f:renaissance:comparison", () =>
-    withAccessionKeyed13fCache("superinvestor-13f-comparison-v9", RENAISSANCE_TECHNOLOGIES_LLC_CIK, fetchRenaissanceComparisonUncached),
+    withAccessionKeyed13fCache("superinvestor-13f-comparison-v10-no-options", RENAISSANCE_TECHNOLOGIES_LLC_CIK, fetchRenaissanceComparisonUncached),
   );
 }
 
@@ -3026,13 +3026,13 @@ export async function getRenaissanceTechnologiesQuarterlyTransactions() {
 
 export async function getPoint72Holdings() {
   return devMemoAsync("13f:point72:holdings", () =>
-    withAccessionKeyed13fCache("superinvestor-13f-holdings-v7", POINT72_ASSET_MANAGEMENT_LP_CIK, fetchPoint72HoldingsUncached),
+    withAccessionKeyed13fCache("superinvestor-13f-holdings-v8-no-options", POINT72_ASSET_MANAGEMENT_LP_CIK, fetchPoint72HoldingsUncached),
   );
 }
 
 export async function getPoint72HoldingsComparison() {
   return devMemoAsync("13f:point72:comparison", () =>
-    withAccessionKeyed13fCache("superinvestor-13f-comparison-v9", POINT72_ASSET_MANAGEMENT_LP_CIK, fetchPoint72ComparisonUncached),
+    withAccessionKeyed13fCache("superinvestor-13f-comparison-v10-no-options", POINT72_ASSET_MANAGEMENT_LP_CIK, fetchPoint72ComparisonUncached),
   );
 }
 
@@ -3042,13 +3042,13 @@ export async function getPoint72QuarterlyTransactions() {
 
 export async function getFirstEagleHoldings() {
   return devMemoAsync("13f:first-eagle:holdings", () =>
-    withAccessionKeyed13fCache("superinvestor-13f-holdings-v7", FIRST_EAGLE_INVESTMENT_MANAGEMENT_LLC_CIK, fetchFirstEagleHoldingsUncached),
+    withAccessionKeyed13fCache("superinvestor-13f-holdings-v8-no-options", FIRST_EAGLE_INVESTMENT_MANAGEMENT_LLC_CIK, fetchFirstEagleHoldingsUncached),
   );
 }
 
 export async function getFirstEagleHoldingsComparison() {
   return devMemoAsync("13f:first-eagle:comparison", () =>
-    withAccessionKeyed13fCache("superinvestor-13f-comparison-v9", FIRST_EAGLE_INVESTMENT_MANAGEMENT_LLC_CIK, fetchFirstEagleComparisonUncached),
+    withAccessionKeyed13fCache("superinvestor-13f-comparison-v10-no-options", FIRST_EAGLE_INVESTMENT_MANAGEMENT_LLC_CIK, fetchFirstEagleComparisonUncached),
   );
 }
 
@@ -3058,13 +3058,13 @@ export async function getFirstEagleQuarterlyTransactions() {
 
 export async function getTciFundHoldings() {
   return devMemoAsync("13f:tci-fund:holdings", () =>
-    withAccessionKeyed13fCache("superinvestor-13f-holdings-v7", TCI_FUND_MANAGEMENT_LTD_CIK, fetchTciFundHoldingsUncached),
+    withAccessionKeyed13fCache("superinvestor-13f-holdings-v8-no-options", TCI_FUND_MANAGEMENT_LTD_CIK, fetchTciFundHoldingsUncached),
   );
 }
 
 export async function getTciFundHoldingsComparison() {
   return devMemoAsync("13f:tci-fund:comparison", () =>
-    withAccessionKeyed13fCache("superinvestor-13f-comparison-v9", TCI_FUND_MANAGEMENT_LTD_CIK, fetchTciFundComparisonUncached),
+    withAccessionKeyed13fCache("superinvestor-13f-comparison-v10-no-options", TCI_FUND_MANAGEMENT_LTD_CIK, fetchTciFundComparisonUncached),
   );
 }
 
@@ -3074,13 +3074,13 @@ export async function getTciFundQuarterlyTransactions() {
 
 export async function getGmoHoldings() {
   return devMemoAsync("13f:gmo:holdings", () =>
-    withAccessionKeyed13fCache("superinvestor-13f-holdings-v7", GRANTHAM_MAYO_VAN_OTTERLOO_LLC_CIK, fetchGmoHoldingsUncached),
+    withAccessionKeyed13fCache("superinvestor-13f-holdings-v8-no-options", GRANTHAM_MAYO_VAN_OTTERLOO_LLC_CIK, fetchGmoHoldingsUncached),
   );
 }
 
 export async function getGmoHoldingsComparison() {
   return devMemoAsync("13f:gmo:comparison", () =>
-    withAccessionKeyed13fCache("superinvestor-13f-comparison-v9", GRANTHAM_MAYO_VAN_OTTERLOO_LLC_CIK, fetchGmoComparisonUncached),
+    withAccessionKeyed13fCache("superinvestor-13f-comparison-v10-no-options", GRANTHAM_MAYO_VAN_OTTERLOO_LLC_CIK, fetchGmoComparisonUncached),
   );
 }
 
