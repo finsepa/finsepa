@@ -1,6 +1,10 @@
 import "server-only";
 
-import type { Superinvestor13fProfilePageData } from "@/lib/superinvestors/types";
+import type { Superinvestor13fProfilePageData, Berkshire13fComparisonRow } from "@/lib/superinvestors/types";
+import {
+  paginateSuperinvestorHoldingsComparison,
+  parseSuperinvestorHoldingsPage,
+} from "@/lib/superinvestors/superinvestor-holdings-page";
 import { clearSuperinvestor13fInMemoryCaches } from "@/lib/superinvestors/berkshire-13f";
 import {
   deleteSuperinvestor13fSnapshotsForCik,
@@ -20,7 +24,12 @@ import { writeSuperinvestor13fHealthFromCron } from "@/lib/superinvestors/superi
 import { finalizeSuperinvestorProfileIngest } from "@/lib/superinvestors/superinvestor-13f-ingest";
 import { validateSuperinvestorProfilePage } from "@/lib/superinvestors/superinvestor-13f-validate";
 
-export type SuperinvestorProfilePageData = Superinvestor13fProfilePageData;
+export type SuperinvestorProfilePageData = Superinvestor13fProfilePageData & {
+  /** Full book rows for allocation donut (server-side top-N). */
+  allocationRows: Berkshire13fComparisonRow[];
+  holdingsPage: number;
+  holdingsTotalPages: number;
+};
 
 export type Superinvestor13fRefreshResult = {
   slug: string;
@@ -99,13 +108,26 @@ async function loadProfilePageMatchingLatestFilingHead(
  */
 export async function loadSuperinvestorProfilePageData(
   slug: string,
+  opts?: { holdingsPage?: number },
 ): Promise<SuperinvestorProfilePageData | null> {
   const item = SUPERINVESTOR_REGISTRY.find((entry) => entry.slug === slug);
   if (!item) return null;
 
-  return devMemoProfilePage(slug, () =>
-    loadProfilePageMatchingLatestFilingHead(() => item.loadProfilePage()),
+  const holdingsPage = parseSuperinvestorHoldingsPage(
+    opts?.holdingsPage != null ? String(opts.holdingsPage) : "1",
   );
+
+  return devMemoProfilePage(`${slug}:p${holdingsPage}`, async () => {
+    const page = await loadProfilePageMatchingLatestFilingHead(() => item.loadProfilePage());
+    const paginated = paginateSuperinvestorHoldingsComparison(page.comparison, holdingsPage);
+    return {
+      comparison: paginated.comparison,
+      transactions: page.transactions,
+      allocationRows: paginated.allocationRows,
+      holdingsPage: paginated.page,
+      holdingsTotalPages: paginated.totalPages,
+    };
+  });
 }
 
 /** Bust dev memo + Supabase 13F snapshots, then reload from SEC (new filing detection). */
@@ -124,7 +146,7 @@ export async function forceRefreshSuperinvestorProfilePage(
   clearSuperinvestor13fDevMemoCaches();
   clearSuperinvestor13fInMemoryCaches();
 
-  return loadProfilePageMatchingLatestFilingHead(() => item.loadProfilePage());
+  return loadSuperinvestorProfilePageData(slug);
 }
 
 /**

@@ -29,11 +29,15 @@ export function Superinvestor13fProfileTabs({
   profileName,
   data,
   transactions,
+  holdingsPage,
+  holdingsTotalPages,
 }: {
   profileSlug: string;
   profileName: string;
   data: Berkshire13fComparisonPayload;
   transactions: SuperinvestorTransactionsPayload;
+  holdingsPage: number;
+  holdingsTotalPages: number;
 }) {
   const [tab, setTab] = useState<ProfileTab>("holdings");
   const [txCompanySearch, setTxCompanySearch] = useState("");
@@ -120,6 +124,8 @@ export function Superinvestor13fProfileTabs({
               hasPriorFiling={data.hasPriorFiling}
               transactions={holdingsTransactions}
               onViewAllTransactions={handleViewAllTransactions}
+              holdingsPage={holdingsPage}
+              totalPages={holdingsTotalPages}
             />
           </>
       ) : (

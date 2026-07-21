@@ -6,18 +6,22 @@ import { SUPERINVESTOR_REGISTRY } from "@/lib/superinvestors/superinvestor-regis
 
 export const dynamic = "force-dynamic";
 
-type PageProps = { params: Promise<{ slug: string }> };
+type PageProps = {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ holdingsPage?: string }>;
+};
 
 export function generateStaticParams() {
   return SUPERINVESTOR_REGISTRY.map((item) => ({ slug: item.slug }));
 }
 
-export default async function SuperinvestorProfilePage({ params }: PageProps) {
+export default async function SuperinvestorProfilePage({ params, searchParams }: PageProps) {
   const { slug } = await params;
+  const { holdingsPage } = await searchParams;
 
   return (
     <Suspense fallback={<SuperinvestorProfileSkeleton />}>
-      <SuperinvestorProfileBySlug slug={slug} />
+      <SuperinvestorProfileBySlug slug={slug} holdingsPage={holdingsPage} />
     </Suspense>
   );
 }

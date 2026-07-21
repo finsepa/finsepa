@@ -5,6 +5,10 @@ import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 import { marketSnapshotReadEnabled } from "@/lib/market/market-snapshot-store";
 import type { SuperinvestorTransactionsPayload } from "@/lib/superinvestors/types";
 import { slimSuperinvestorProfileForSnapshot } from "@/lib/superinvestors/superinvestor-13f-snapshot-slim";
+import {
+  parseSuperinvestorTransactionsSnapshotData,
+  type SuperinvestorTransactionsPayloadSlim,
+} from "@/lib/superinvestors/superinvestor-13f-transactions-slim";
 
 export { slimSuperinvestorProfileForSnapshot } from "@/lib/superinvestors/superinvestor-13f-snapshot-slim";
 
@@ -14,6 +18,11 @@ export function superinvestor13fHoldingsTxSnapshotKey(cikPadded: string): string
 
 export function superinvestor13fProfileSnapshotKey(cikPadded: string): string {
   return `superinvestor_13f_profile_v3_${cikPadded}`;
+}
+
+/** Full ~85-filing transaction history for Activity search API. */
+export function superinvestor13fFullTransactionsSnapshotKey(cikPadded: string): string {
+  return `superinvestor_13f_transactions_full_v3_${cikPadded}`;
 }
 
 export type SuperinvestorHoldingsTransactionsSnapshotRow = {
@@ -41,9 +50,7 @@ async function readMarketSnapshotRow(key: string): Promise<{
 }
 
 function parseTransactionsPayload(data: unknown): SuperinvestorTransactionsPayload | null {
-  const payload = data as SuperinvestorTransactionsPayload | null;
-  if (!payload?.quarters || !Array.isArray(payload.quarters)) return null;
-  return payload;
+  return parseSuperinvestorTransactionsSnapshotData(data);
 }
 
 function parseProfilePayload(data: unknown): Superinvestor13fProfilePageData | null {
@@ -164,7 +171,58 @@ export async function upsertSuperinvestor13fProfileSnapshot(
   return { ok: true, bytes };
 }
 
-/** Drop persisted 13F profile + holdings-scoped tx rows so the next load re-fetches SEC. */
+/** Full transaction history snapshot (~85 filings) for the transactions API warm path. */
+export async function readSuperinvestorFullTransactionsSnapshotSlim(
+  cikPadded: string,
+  accessionSegment: string,
+): Promise<SuperinvestorTransactionsPayloadSlim | null> {
+  if (!accessionSegment || accessionSegment === "none") return null;
+  if (!marketSnapshotReadEnabled()) return null;
+
+  const row = await readMarketSnapshotRow(superinvestor13fFullTransactionsSnapshotKey(cikPadded));
+  if (!row || row.segment !== accessionSegment) return null;
+
+  const payload = row.data as SuperinvestorTransactionsPayloadSlim | null;
+  if (!payload?.quarters || !Array.isArray(payload.quarters)) return null;
+  return payload;
+}
+
+export async function readSuperinvestorFullTransactionsSnapshot(
+  cikPadded: string,
+  accessionSegment: string,
+): Promise<SuperinvestorTransactionsPayload | null> {
+  const slim = await readSuperinvestorFullTransactionsSnapshotSlim(cikPadded, accessionSegment);
+  if (!slim) return null;
+  return parseTransactionsPayload(slim);
+}
+
+export async function upsertSuperinvestorFullTransactionsSnapshot(
+  cikPadded: string,
+  accessionSegment: string,
+  payload: SuperinvestorTransactionsPayloadSlim,
+): Promise<SuperinvestorSnapshotUpsertResult> {
+  if (!accessionSegment || accessionSegment === "none") {
+    return { ok: false, bytes: 0, error: "missing_accession" };
+  }
+
+  const admin = getSupabaseAdminClient();
+  if (!admin) return { ok: false, bytes: 0, error: "no_admin_client" };
+
+  const bytes = JSON.stringify(payload).length;
+  const { error } = await admin.from("market_snapshot").upsert(
+    {
+      key: superinvestor13fFullTransactionsSnapshotKey(cikPadded),
+      segment: accessionSegment,
+      data: payload,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "key" },
+  );
+  if (error) return { ok: false, bytes, error: error.message };
+  return { ok: true, bytes };
+}
+
+/** Drop persisted 13F profile + tx rows so the next load re-fetches SEC. */
 export async function deleteSuperinvestor13fSnapshotsForCik(cikPadded: string): Promise<boolean> {
   const admin = getSupabaseAdminClient();
   if (!admin || !cikPadded.trim()) return false;
@@ -172,6 +230,7 @@ export async function deleteSuperinvestor13fSnapshotsForCik(cikPadded: string): 
   const keys = [
     superinvestor13fProfileSnapshotKey(cikPadded),
     superinvestor13fHoldingsTxSnapshotKey(cikPadded),
+    superinvestor13fFullTransactionsSnapshotKey(cikPadded),
   ];
   const { error } = await admin.from("market_snapshot").delete().in("key", keys);
   return !error;

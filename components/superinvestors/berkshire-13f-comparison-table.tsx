@@ -3,6 +3,7 @@
 import { Fragment } from "react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { Berkshire13fComparisonRow, SuperinvestorTransactionsPayload } from "@/lib/superinvestors/types";
 import { SuperinvestorHoldingExpandButton } from "@/components/superinvestors/superinvestor-holding-expand-button";
 import { SuperinvestorHoldingTransactionsPanel } from "@/components/superinvestors/superinvestor-holding-transactions-panel";
@@ -264,22 +265,35 @@ export function Berkshire13fComparisonTable({
   hasPriorFiling,
   transactions,
   onViewAllTransactions,
+  holdingsPage,
+  totalPages,
 }: {
   rows: Berkshire13fComparisonRow[];
   hasPriorFiling: boolean;
   transactions: SuperinvestorTransactionsPayload;
   onViewAllTransactions: (searchQuery: string) => void;
+  holdingsPage: number;
+  totalPages: number;
 }) {
-  const [page, setPage] = useState(1);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [expandedRowKey, setExpandedRowKey] = useState<string | null>(null);
   const pageSize = SUPERINVESTOR_HOLDINGS_PAGE_SIZE;
-  const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
-  const safePage = Math.min(Math.max(1, page), totalPages);
+  const safePage = Math.min(Math.max(1, holdingsPage), Math.max(1, totalPages));
 
-  const pagedRows = useMemo(() => {
-    const start = (safePage - 1) * pageSize;
-    return rows.slice(start, start + pageSize);
-  }, [rows, safePage, pageSize]);
+  const pagedRows = rows;
+
+  const onPageChange = useCallback(
+    (nextPage: number) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (nextPage <= 1) params.delete("holdingsPage");
+      else params.set("holdingsPage", String(nextPage));
+      const qs = params.toString();
+      router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    },
+    [router, pathname, searchParams],
+  );
 
   const allTransactions = useMemo(
     () => flattenSuperinvestorTransactions(transactions.quarters),
@@ -417,8 +431,8 @@ export function Berkshire13fComparisonTable({
 
       <ScreenerPagination
         page={safePage}
-        totalPages={totalPages}
-        onPageChange={setPage}
+        totalPages={Math.max(1, totalPages)}
+        onPageChange={onPageChange}
         aria-label="Holdings pages"
       />
     </div>

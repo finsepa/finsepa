@@ -236,9 +236,18 @@ export function flattenSuperinvestorTransactions(
 ): SuperinvestorQuarterlyTransaction[] {
   const out: SuperinvestorQuarterlyTransaction[] = [];
   for (const group of quarters) {
-    for (const tx of group.transactions) out.push(tx);
+    for (const tx of group.transactions) {
+      out.push({
+        ...tx,
+        quarterLabel: tx.quarterLabel?.trim() ? tx.quarterLabel : group.quarterLabel,
+        reportDate: tx.reportDate?.trim() ? tx.reportDate : group.reportDate,
+        avgClosingPriceUsd: tx.avgClosingPriceUsd ?? null,
+        priceRangeLowUsd: tx.priceRangeLowUsd ?? null,
+        priceRangeHighUsd: tx.priceRangeHighUsd ?? null,
+      });
+    }
   }
-  return out.sort((a, b) => b.reportDate.localeCompare(a.reportDate));
+  return out.sort((a, b) => (b.reportDate ?? "").localeCompare(a.reportDate ?? ""));
 }
 
 export function holdingMatchesTransaction(
@@ -292,7 +301,7 @@ export function filterSuperinvestorTransactionsSince(
 ): SuperinvestorQuarterlyTransaction[] {
   const cutoff = cutoffYmd.trim();
   if (!/^\d{4}-\d{2}-\d{2}$/.test(cutoff)) return [...txs];
-  return txs.filter((tx) => tx.reportDate.trim() >= cutoff);
+  return txs.filter((tx) => (tx.reportDate ?? "").trim() >= cutoff);
 }
 
 /** Quarterly txs for a holding within the panel window (newest first). */

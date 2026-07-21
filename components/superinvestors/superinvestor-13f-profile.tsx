@@ -5,7 +5,11 @@ import { Superinvestor13fProfileTabs } from "@/components/superinvestors/superin
 import { SuperinvestorFollowButton } from "@/components/superinvestors/superinvestor-follow-button";
 import { SuperinvestorProfileAllocationDonut } from "@/components/superinvestors/superinvestor-profile-allocation-donut";
 import { SuperinvestorProfileAvatar } from "@/components/superinvestors/superinvestor-profile-avatar";
-import type { Berkshire13fComparisonPayload, SuperinvestorTransactionsPayload } from "@/lib/superinvestors/types";
+import type {
+  Berkshire13fComparisonPayload,
+  Berkshire13fComparisonRow,
+  SuperinvestorTransactionsPayload,
+} from "@/lib/superinvestors/types";
 import { formatUsdCompactSigDigits } from "@/lib/market/key-stats-basic-format";
 
 export type Superinvestor13fProfileProps = {
@@ -19,6 +23,10 @@ export type Superinvestor13fProfileProps = {
   profileDescription?: string;
   data: Berkshire13fComparisonPayload;
   transactions: SuperinvestorTransactionsPayload;
+  /** Full book for allocation donut (may be larger than `data.rows` when paginated). */
+  allocationRows: Berkshire13fComparisonRow[];
+  holdingsPage: number;
+  holdingsTotalPages: number;
 };
 
 /** SEC filer line → readable subtitle (e.g. `BERKSHIRE HATHAWAY INC` → `Berkshire Hathaway`). */
@@ -93,6 +101,9 @@ export function Superinvestor13fProfile({
   profileDescription = "",
   data,
   transactions,
+  allocationRows,
+  holdingsPage,
+  holdingsTotalPages,
 }: Superinvestor13fProfileProps) {
   const sizeLabel = formatSizeForHeader(data.totalValueUsd);
   const stocksLabel = `${data.positionCount.toLocaleString("en-US")} ${data.positionCount === 1 ? "Stock" : "Stocks"}`;
@@ -160,7 +171,7 @@ export function Superinvestor13fProfile({
           </div>
           {showAllocationDonut ? (
             <SuperinvestorProfileAllocationDonut
-              rows={data.rows}
+              rows={allocationRows}
               avatarSrc={avatarSrc}
               profileName={profileName}
             />
@@ -180,6 +191,8 @@ export function Superinvestor13fProfile({
         profileName={profileName}
         data={data}
         transactions={transactions}
+        holdingsPage={holdingsPage}
+        holdingsTotalPages={holdingsTotalPages}
       />
       </div>
     </div>
