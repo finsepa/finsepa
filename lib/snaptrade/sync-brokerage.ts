@@ -4,7 +4,11 @@ import { format } from "date-fns";
 
 import { ensureSnapTradeUser, getSnaptradeSdk } from "@/lib/snaptrade/server";
 import { buildSnapTradeSyncTransactions } from "@/lib/snaptrade/build-sync-transactions";
-import type { SnapTradeSyncDraftTransaction } from "@/lib/snaptrade/build-sync-transactions";
+import type {
+  SnapTradeReconciliation,
+  SnapTradeSyncDraftTransaction,
+  SnapTradeSyncWarning,
+} from "@/lib/snaptrade/build-sync-transactions";
 import {
   DEFAULT_PORTFOLIO_SNAPTRADE_SYNC_SETTINGS,
   normalizePortfolioSnaptradeSyncSettings,
@@ -18,7 +22,7 @@ import {
   readSnapTradeIsRealTimeConnection,
 } from "@/lib/snaptrade/brokerage-meta";
 
-export type { SnapTradeSyncDraftTransaction };
+export type { SnapTradeSyncDraftTransaction, SnapTradeSyncWarning, SnapTradeReconciliation };
 
 export type SnapTradeSyncResult = {
   authorizationId: string;
@@ -28,10 +32,25 @@ export type SnapTradeSyncResult = {
   isRealTimeConnection: boolean;
   accountIds: string[];
   transactions: SnapTradeSyncDraftTransaction[];
+  warnings: SnapTradeSyncWarning[];
+  reconciliation: SnapTradeReconciliation;
+  /** Canonical symbol → broker mark for quote fallback after sync. */
+  brokerMarks: Record<string, number>;
 };
 
 function readString(x: unknown): string | null {
   return typeof x === "string" && x.trim() ? x.trim() : null;
+}
+
+/**
+ * Module-level serialization: overlapping syncs for the same {user, authorization} are chained
+ * so they never race on the same provider connection / workspace state. Callers await the
+ * shared promise; a fresh sync starts only after any in-flight one settles.
+ */
+const inFlightSyncByKey = new Map<string, Promise<SnapTradeSyncResult>>();
+
+function syncLockKey(userId: string, authorizationId: string): string {
+  return `${userId}:${authorizationId}`;
 }
 
 export async function syncSnapTradeAuthorization(
@@ -39,6 +58,36 @@ export async function syncSnapTradeAuthorization(
   authorizationId: string,
   syncSettings: PortfolioSnaptradeSyncSettings = DEFAULT_PORTFOLIO_SNAPTRADE_SYNC_SETTINGS,
   updateFromYmd: string | null = null,
+): Promise<SnapTradeSyncResult> {
+  const key = syncLockKey(userId, authorizationId);
+  const previous = inFlightSyncByKey.get(key);
+
+  const run = (async () => {
+    // Wait for any overlapping sync on the same connection to finish first.
+    if (previous) {
+      try {
+        await previous;
+      } catch {
+        /* prior failure must not block this attempt */
+      }
+    }
+    return runSnapTradeAuthorizationSync(userId, authorizationId, syncSettings, updateFromYmd);
+  })();
+
+  inFlightSyncByKey.set(key, run);
+  try {
+    return await run;
+  } finally {
+    // Only clear if we are still the latest run for this key.
+    if (inFlightSyncByKey.get(key) === run) inFlightSyncByKey.delete(key);
+  }
+}
+
+async function runSnapTradeAuthorizationSync(
+  userId: string,
+  authorizationId: string,
+  syncSettings: PortfolioSnaptradeSyncSettings,
+  updateFromYmd: string | null,
 ): Promise<SnapTradeSyncResult> {
   const credentials = await ensureSnapTradeUser(userId);
   const snaptrade = getSnaptradeSdk();
@@ -80,11 +129,12 @@ export async function syncSnapTradeAuthorization(
     .map((a) => readString((a as { id?: unknown }).id))
     .filter((id): id is string => Boolean(id));
 
-  const transactions = await buildSnapTradeSyncTransactions(
+  const { transactions, warnings, reconciliation, brokerMarks } = await buildSnapTradeSyncTransactions(
     snaptrade,
     credentials,
     accountIds,
     syncDate,
+    authorizationId,
     normalizePortfolioSnaptradeSyncSettings(syncSettings),
     normalizeSnaptradeUpdateFromYmd(updateFromYmd),
   );
@@ -97,6 +147,9 @@ export async function syncSnapTradeAuthorization(
     isRealTimeConnection,
     accountIds,
     transactions,
+    warnings,
+    reconciliation,
+    brokerMarks,
   };
 }
 

@@ -22,6 +22,10 @@ import {
 import type { ChartScreenshotExportOptions } from "@/lib/chart/chart-screenshot-export-options";
 import type { ChartScreenshotSnapshot } from "@/lib/chart/chart-screenshot-types";
 import { stockOverviewSeriesLabel } from "@/lib/chart/chart-screenshot-types";
+import {
+  ALLOCATION_RETURN_PERIOD_DEFAULT,
+  type AllocationReturnPeriodId,
+} from "@/lib/portfolio/allocation-return-period";
 import { chartingMetricsToParam } from "@/lib/market/stock-charting-metrics";
 import { APP_MODAL_SHELL_SHADOW_CLASS } from "@/components/ui/app-modal-shell";
 import { cn } from "@/lib/utils";
@@ -203,6 +207,11 @@ export const ChartScreenshotPreview = forwardRef<HTMLDivElement, ChartScreenshot
                       portfolioLogoUrl={snapshot.portfolioAllocation!.portfolioLogoUrl}
                       avatarImageSrc={snapshot.portfolioAllocation!.avatarImageSrc}
                       avatarInitials={snapshot.portfolioAllocation!.avatarInitials}
+                      returnPct={snapshot.portfolioAllocation!.returnPct ?? null}
+                      returnPeriod={
+                        (snapshot.portfolioAllocation!.returnPeriod as AllocationReturnPeriodId | undefined) ??
+                        ALLOCATION_RETURN_PERIOD_DEFAULT
+                      }
                       showSliceLabels={exportOptions.showAllocationSliceLabels ?? true}
                       showLegend={exportOptions.showAllocationLegend ?? true}
                       showLegendValues={exportOptions.showValues}

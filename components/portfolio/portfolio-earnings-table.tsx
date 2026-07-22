@@ -1,9 +1,8 @@
 "use client";
 
 import { memo, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 
+import { EarningsPreviewModal } from "@/components/earnings/earnings-preview-modal";
 import { CompanyLogo } from "@/components/screener/company-logo";
 import { SkeletonBox } from "@/components/markets/skeleton";
 import { EarningsCountdownBars } from "@/components/stock/earnings-countdown-bars";
@@ -11,10 +10,7 @@ import {
   formatPortfolioEarningsDateLabel,
   type PortfolioEarningsDateEntry,
 } from "@/lib/portfolio/portfolio-earnings-dates";
-import {
-  portfolioHoldingAssetHref,
-  type PortfolioHoldingAssetLinkTab,
-} from "@/lib/crypto/crypto-picker-universe";
+import type { PortfolioHoldingAssetLinkTab } from "@/lib/crypto/crypto-picker-universe";
 import { isSupportedCryptoAssetSymbol } from "@/lib/crypto/crypto-logo-url";
 import { cryptoRouteBase } from "@/lib/crypto/crypto-symbol-base";
 import { displayLogoUrlForPortfolioSymbol } from "@/lib/portfolio/portfolio-asset-display-logo";
@@ -28,6 +24,7 @@ import {
   portfolioHoldingDisplayName,
   usePortfolioHoldingDisplayNames,
 } from "@/lib/portfolio/use-portfolio-holding-display-names";
+import type { EarningsCalendarItem } from "@/lib/market/earnings-calendar-types";
 import { isStockDetailEtf } from "@/lib/stock/stock-etf";
 import { cn } from "@/lib/utils";
 import type { PortfolioHolding } from "@/components/portfolio/portfolio-types";
@@ -50,6 +47,24 @@ function isCryptoOrEtfHolding(symbol: string): boolean {
 
 function formatDaysLeftLabel(daysLeft: number): string {
   return String(daysLeft);
+}
+
+function earningsPreviewItemFromHolding(args: {
+  holding: PortfolioHolding;
+  companyName: string;
+  logoUrl: string | null;
+  entry: PortfolioEarningsDateEntry | undefined;
+}): EarningsCalendarItem {
+  const ticker = holdingLookupKey(args.holding.symbol);
+  return {
+    ticker,
+    companyName: args.companyName || ticker,
+    logoUrl: args.logoUrl ?? "",
+    screenerRank: null,
+    reportDate: args.entry?.earningsDateYmd?.trim() || "",
+    timing: "unknown",
+    timingLabel: "",
+  };
 }
 
 function DaysLeftCell({
@@ -97,13 +112,14 @@ function DaysLeftCell({
 function PortfolioEarningsTableInner({
   holdings,
   className,
-  assetLinkTab = "overview",
+  assetLinkTab: _assetLinkTab = "overview",
 }: {
   holdings: PortfolioHolding[];
   className?: string;
+  /** Kept for call-site compatibility; asset click opens the earnings preview modal. */
   assetLinkTab?: PortfolioHoldingAssetLinkTab;
 }) {
-  const router = useRouter();
+  void _assetLinkTab;
   const resolvedCompanyNames = usePortfolioHoldingDisplayNames(holdings);
   const equityHoldings = useMemo(
     () => holdings.filter((holding) => !isCryptoOrEtfHolding(holding.symbol)),
@@ -122,6 +138,7 @@ function PortfolioEarningsTableInner({
   const [bySymbol, setBySymbol] = useState<Record<string, PortfolioEarningsDateEntry> | null>(
     () => cachedPayload?.bySymbol ?? null,
   );
+  const [previewItem, setPreviewItem] = useState<EarningsCalendarItem | null>(null);
 
   const sortedHoldings = useMemo(() => {
     const withMeta = equityHoldings.map((h) => {
@@ -156,7 +173,6 @@ function PortfolioEarningsTableInner({
     return withMeta.map((row) => row.holding);
   }, [equityHoldings, resolvedCompanyNames, bySymbol]);
 
-
   useEffect(() => {
     let cancelled = false;
     void fetchPortfolioEarningsDatesClient(stockSymbolsKey).then((payload) => {
@@ -186,6 +202,19 @@ function PortfolioEarningsTableInner({
     return { earningsLabel, daysLeft: entry?.daysLeft ?? null, metaLoading };
   }
 
+  function openEarningsPreview(holding: PortfolioHolding) {
+    const companyName = portfolioHoldingDisplayName(holding, resolvedCompanyNames);
+    const logo = displayLogoUrlForPortfolioSymbol(holding.symbol);
+    setPreviewItem(
+      earningsPreviewItemFromHolding({
+        holding,
+        companyName,
+        logoUrl: logo,
+        entry: bySymbol?.[holdingLookupKey(holding.symbol)],
+      }),
+    );
+  }
+
   return (
     <div
       className={cn(
@@ -196,52 +225,32 @@ function PortfolioEarningsTableInner({
       <div className="sm:hidden">
         <div>
           {sortedHoldings.map((h) => {
-            const assetHref = portfolioHoldingAssetHref(h.symbol, { tab: assetLinkTab });
             const logo = displayLogoUrlForPortfolioSymbol(h.symbol);
             const caption = portfolioAssetSymbolCaption(h.symbol);
             const companyName = portfolioHoldingDisplayName(h, resolvedCompanyNames);
             const { earningsLabel, daysLeft, metaLoading } = rowMeta(h.symbol);
 
-            const left = (
-              <div className="flex min-w-0 items-center gap-3">
-                <CompanyLogo name={companyName} logoUrl={logo} symbol={h.symbol} />
-                <div className="min-w-0">
-                  <div className={HOLDING_COMPANY_NAME_CLASS}>{companyName}</div>
-                  <div className="truncate text-[12px] font-normal leading-4 text-[#71717A]">{caption}</div>
-                </div>
-              </div>
-            );
-
             return (
               <div
                 key={h.id}
-                className={cn(
-                  "group flex min-h-[56px] items-center justify-between gap-3 border-b border-[#E4E4E7] px-4 py-[10px]",
-                  assetHref && "cursor-pointer",
-                )}
-                onClick={assetHref ? () => router.push(assetHref) : undefined}
-                onKeyDown={
-                  assetHref ?
-                    (e) => {
-                      if (e.key !== "Enter" && e.key !== " ") return;
-                      e.preventDefault();
-                      router.push(assetHref);
-                    }
-                  : undefined
-                }
-                tabIndex={assetHref ? 0 : undefined}
-                role={assetHref ? "link" : undefined}
-                aria-label={assetHref ? `Open ${companyName}` : undefined}
+                className="group flex min-h-[56px] cursor-pointer items-center justify-between gap-3 border-b border-[#E4E4E7] px-4 py-[10px]"
+                onClick={() => openEarningsPreview(h)}
+                onKeyDown={(e) => {
+                  if (e.key !== "Enter" && e.key !== " ") return;
+                  e.preventDefault();
+                  openEarningsPreview(h);
+                }}
+                tabIndex={0}
+                role="button"
+                aria-label={`Open earnings for ${companyName}`}
               >
-                {assetHref ?
-                  <Link
-                    href={assetHref}
-                    className="min-w-0 flex-1"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {left}
-                  </Link>
-                : <div className="min-w-0 flex-1">{left}</div>}
+                <div className="flex min-w-0 flex-1 items-center gap-3">
+                  <CompanyLogo name={companyName} logoUrl={logo} symbol={h.symbol} />
+                  <div className="min-w-0">
+                    <div className={HOLDING_COMPANY_NAME_CLASS}>{companyName}</div>
+                    <div className="truncate text-[12px] font-normal leading-4 text-[#71717A]">{caption}</div>
+                  </div>
+                </div>
                 <div className="flex min-w-0 shrink-0 flex-col items-end gap-1">
                   <DaysLeftCell daysLeft={daysLeft} loading={metaLoading} />
                   <div className="font-['Inter'] text-[12px] font-medium leading-4 tabular-nums text-[#71717A]">
@@ -268,57 +277,35 @@ function PortfolioEarningsTableInner({
         </thead>
         <tbody>
           {sortedHoldings.map((h) => {
-            const assetHref = portfolioHoldingAssetHref(h.symbol, { tab: assetLinkTab });
             const logo = displayLogoUrlForPortfolioSymbol(h.symbol);
             const caption = portfolioAssetSymbolCaption(h.symbol);
             const companyName = portfolioHoldingDisplayName(h, resolvedCompanyNames);
             const { earningsLabel, daysLeft, metaLoading } = rowMeta(h.symbol);
-            const assetInner = (
-              <>
-                <CompanyLogo name={companyName} logoUrl={logo} symbol={h.symbol} />
-                <div className="min-w-0 text-left">
-                  <div className={HOLDING_COMPANY_NAME_CLASS}>{companyName}</div>
-                  <div className="text-[12px] font-normal leading-4 text-[#71717A]">{caption}</div>
-                </div>
-              </>
-            );
             return (
               <tr
                 key={h.id}
-                className={cn(
-                  "group relative h-[56px] max-h-[56px] transition-colors duration-75 hover:bg-neutral-50",
-                  assetHref && "cursor-pointer",
-                )}
-                onClick={assetHref ? () => router.push(assetHref) : undefined}
-                onKeyDown={
-                  assetHref ?
-                    (e) => {
-                      if (e.key !== "Enter" && e.key !== " ") return;
-                      e.preventDefault();
-                      router.push(assetHref);
-                    }
-                  : undefined
-                }
-                tabIndex={assetHref ? 0 : undefined}
-                role={assetHref ? "link" : undefined}
-                aria-label={assetHref ? `Open ${companyName}` : undefined}
+                className="group relative h-[56px] max-h-[56px] cursor-pointer transition-colors duration-75 hover:bg-neutral-50"
+                onClick={() => openEarningsPreview(h)}
+                onKeyDown={(e) => {
+                  if (e.key !== "Enter" && e.key !== " ") return;
+                  e.preventDefault();
+                  openEarningsPreview(h);
+                }}
+                tabIndex={0}
+                role="button"
+                aria-label={`Open earnings for ${companyName}`}
               >
                 <td className="border-b border-[#E4E4E7] px-4 py-[10px] align-middle">
-                  {assetHref ?
-                    <Link
-                      href={assetHref}
-                      className="flex min-w-0 items-center gap-3"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {assetInner}
-                    </Link>
-                  : <div className="flex min-w-0 items-center gap-3">{assetInner}</div>}
+                  <div className="flex min-w-0 items-center gap-3">
+                    <CompanyLogo name={companyName} logoUrl={logo} symbol={h.symbol} />
+                    <div className="min-w-0 text-left">
+                      <div className={HOLDING_COMPANY_NAME_CLASS}>{companyName}</div>
+                      <div className="text-[12px] font-normal leading-4 text-[#71717A]">{caption}</div>
+                    </div>
+                  </div>
                 </td>
                 <td className="border-b border-[#E4E4E7] px-4 py-[10px] align-middle">
-                  <DaysLeftCell
-                    daysLeft={daysLeft}
-                    loading={metaLoading}
-                  />
+                  <DaysLeftCell daysLeft={daysLeft} loading={metaLoading} />
                 </td>
                 <td className="border-b border-[#E4E4E7] px-4 py-[10px] text-right align-middle font-['Inter'] text-[14px] font-medium leading-5 tabular-nums text-[#0F0F0F]">
                   {earningsLabel === "…" ?
@@ -330,6 +317,8 @@ function PortfolioEarningsTableInner({
           })}
         </tbody>
       </table>
+
+      <EarningsPreviewModal item={previewItem} onClose={() => setPreviewItem(null)} />
     </div>
   );
 }

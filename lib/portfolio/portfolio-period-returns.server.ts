@@ -22,17 +22,21 @@ import {
 } from "date-fns";
 
 import type { PortfolioTransaction } from "@/components/portfolio/portfolio-types";
-import { fetchEodhdCryptoDailyBars, toEodhdCryptoSymbol } from "@/lib/market/eodhd-crypto";
-import type { EodhdDailyBar } from "@/lib/market/eodhd-eod";
-import { fetchEodhdEodDaily } from "@/lib/market/eodhd-eod";
-import { toEodhdSymbol } from "@/lib/market/eodhd-symbol";
-import { netCashUsdUpTo } from "@/lib/portfolio/overview-metrics";
 import type {
   PeriodReturnGranularity,
   PortfolioPeriodReturnBar,
 } from "@/lib/portfolio/portfolio-period-returns-types";
 import { parseBodyTransactions } from "@/lib/portfolio/portfolio-value-history.server";
-import { replayTradeTransactionsToHoldingsUpTo } from "@/lib/portfolio/rebuild-holdings-from-trades";
+import {
+  comparePortfolioToBenchmark,
+} from "@/lib/portfolio/benchmark/benchmark-engine";
+import { makePriceOnOrBefore } from "@/lib/portfolio/benchmark/benchmark-compare.server";
+import {
+  loadPortfolioBenchmarkEodBars,
+  loadPortfolioEodBars,
+} from "@/lib/portfolio/data/load-portfolio-eod-bars";
+import { resolvePeriodReturnSessionMarks } from "@/lib/portfolio/portfolio-period-returns-sessions";
+import { portfolioNetWorthOnDate } from "@/lib/portfolio/returns/portfolio-nav.server";
 
 const MAX_TX = 4000;
 
@@ -76,58 +80,6 @@ function tradeSymbols(transactions: PortfolioTransaction[]): string[] {
     if (u) s.add(u);
   }
   return [...s];
-}
-
-function lastCloseOnOrBefore(bars: EodhdDailyBar[], ymdStr: string): number | null {
-  let lo = 0;
-  let hi = bars.length - 1;
-  let ans = -1;
-  while (lo <= hi) {
-    const mid = (lo + hi) >> 1;
-    const t = bars[mid]!.date;
-    if (t <= ymdStr) {
-      ans = mid;
-      lo = mid + 1;
-    } else {
-      hi = mid - 1;
-    }
-  }
-  return ans >= 0 ? bars[ans]!.close : null;
-}
-
-function lastBarDateOnOrBefore(bars: EodhdDailyBar[], ymdStr: string): string | null {
-  let lo = 0;
-  let hi = bars.length - 1;
-  let ans = -1;
-  while (lo <= hi) {
-    const mid = (lo + hi) >> 1;
-    const t = bars[mid]!.date;
-    if (t <= ymdStr) {
-      ans = mid;
-      lo = mid + 1;
-    } else {
-      hi = mid - 1;
-    }
-  }
-  return ans >= 0 ? bars[ans]!.date : null;
-}
-
-function portfolioNetWorthOnDate(
-  transactions: PortfolioTransaction[],
-  barsBySymbol: Map<string, EodhdDailyBar[]>,
-  asOfYmd: string,
-): number {
-  const holdings = replayTradeTransactionsToHoldingsUpTo(transactions, asOfYmd);
-  let equity = 0;
-  for (const h of holdings) {
-    const bars = barsBySymbol.get(h.symbol.toUpperCase()) ?? [];
-    const px = lastCloseOnOrBefore(bars, asOfYmd);
-    if (px != null && Number.isFinite(px) && h.shares > 0) {
-      equity += h.shares * px;
-    }
-  }
-  const cash = netCashUsdUpTo(transactions, asOfYmd);
-  return equity + cash;
 }
 
 type RawBucket = { label: string; periodStart: string; periodEnd: string };
@@ -208,65 +160,70 @@ export async function computePortfolioPeriodReturns(
   const now = new Date();
   const capFrom = subYears(now, 12);
   const rangeStart = maxDate([firstDt, capFrom]);
-  const fromYmd = ymd(rangeStart);
   const toYmd = ymd(now);
-
-  const symbols = tradeSymbols(transactions);
-  const benchSym = benchmarkTicker.trim().toUpperCase() || "SPY";
-  const benchEod = toEodhdSymbol(benchSym);
-
-  const fetchOne = async (sym: string): Promise<[string, EodhdDailyBar[]]> => {
-    const cryptoPair = toEodhdCryptoSymbol(sym);
-    const bars =
-      cryptoPair != null ?
-        await fetchEodhdCryptoDailyBars(cryptoPair, fromYmd, toYmd)
-      : await fetchEodhdEodDaily(toEodhdSymbol(sym), fromYmd, toYmd);
-    return [sym, bars ?? []];
-  };
-
-  const equityPairs = await Promise.all(symbols.map(fetchOne));
-  const benchBars = (await fetchEodhdEodDaily(benchEod, fromYmd, toYmd)) ?? [];
-  if (benchBars.length === 0) return [];
-
-  const barsBySymbol = new Map<string, EodhdDailyBar[]>(equityPairs);
-  const benchSorted = [...benchBars].sort((a, b) => a.date.localeCompare(b.date));
 
   let rawBuckets = buildBuckets(granularity, rangeStart, now);
   rawBuckets = sliceRecent(rawBuckets, MAX_BARS[granularity]);
 
+  /**
+   * Annual/quarter/… buckets use d0 = last session on/before day-before periodStart
+   * (e.g. 2024-12-31 for calendar 2025). Bars must start early enough for that mark
+   * even when the first trade is mid-year — otherwise the inception year is all nulls.
+   */
+  let earliestPreStart = ymd(subDays(firstDt, 1));
+  for (const b of rawBuckets) {
+    const pre = ymdSubDays(b.periodStart, 1);
+    if (pre < earliestPreStart) earliestPreStart = pre;
+  }
+  const earliestPreDt = parseYmd(earliestPreStart) ?? firstDt;
+  const fromYmd = ymd(subDays(earliestPreDt, 14));
+
+  const symbols = tradeSymbols(transactions);
+  const benchSym = benchmarkTicker.trim().toUpperCase() || "SPY";
+
+  const [barsBySymbol, benchBars] = await Promise.all([
+    loadPortfolioEodBars(symbols, fromYmd, toYmd),
+    loadPortfolioBenchmarkEodBars(benchSym, fromYmd, toYmd),
+  ]);
+  if (benchBars.length === 0) return [];
+
+  const benchSorted = [...benchBars].sort((a, b) => a.date.localeCompare(b.date));
+  const priceOnOrBefore = makePriceOnOrBefore(benchSorted);
+
   const out: PortfolioPeriodReturnBar[] = [];
 
   for (const b of rawBuckets) {
-    const preStart = ymdSubDays(b.periodStart, 1);
-    const d0 = lastBarDateOnOrBefore(benchSorted, preStart);
-    const d1 = lastBarDateOnOrBefore(benchSorted, b.periodEnd);
-    if (!d0 || !d1 || d0 >= d1) {
+    const marks = resolvePeriodReturnSessionMarks({
+      periodStart: b.periodStart,
+      periodEnd: b.periodEnd,
+      asOfYmd: toYmd,
+      firstTxYmd: firstYmd,
+      benchSorted,
+    });
+    if (!marks) {
       out.push({ ...b, portfolioPct: null, benchmarkPct: null });
       continue;
     }
+    const { d0, d1 } = marks;
 
-    const v0 = portfolioNetWorthOnDate(transactions, barsBySymbol, d0);
-    const v1 = portfolioNetWorthOnDate(transactions, barsBySymbol, d1);
-    /** Denominator floor avoids unstable % when NW rounds to ~0; both ~0 → 0% (e.g. flat cash). */
-    const tol = 1e-6;
-    const portfolioPct =
-      Number.isFinite(v0) && Number.isFinite(v1) && Math.abs(v0) > tol
-        ? (v1 / v0 - 1) * 100
-        : Number.isFinite(v0) && Number.isFinite(v1) && Math.abs(v0) <= tol && Math.abs(v1) <= tol
-          ? 0
-          : null;
-
-    const p0 = lastCloseOnOrBefore(benchSorted, d0);
-    const p1 = lastCloseOnOrBefore(benchSorted, d1);
-    const benchmarkPct =
-      p0 != null && p1 != null && p0 > 0 && d0 < d1 ? (p1 / p0 - 1) * 100 : null;
+    const portfolioVStart =
+      d0 < firstYmd ? 0 : portfolioNetWorthOnDate(transactions, barsBySymbol, d0);
+    const portfolioVEnd = portfolioNetWorthOnDate(transactions, barsBySymbol, d1);
+    const compare = comparePortfolioToBenchmark({
+      transactions,
+      portfolioVStart,
+      portfolioVEnd,
+      startYmd: d0,
+      endYmd: d1,
+      priceOnOrBefore,
+    });
 
     out.push({
       label: b.label,
       periodStart: b.periodStart,
       periodEnd: b.periodEnd,
-      portfolioPct,
-      benchmarkPct,
+      portfolioPct: compare.portfolioPct,
+      benchmarkPct: compare.benchmarkPct,
     });
   }
 

@@ -4,6 +4,11 @@ export type ConnectBrokerageCompletePayload = {
   name: string;
   privacy: PortfolioPrivacy;
   authorizationId: string;
+  /**
+   * When set, this is a RECONNECT of an already-linked portfolio: update that portfolio in
+   * place (safe-merge new broker rows) instead of creating a new one.
+   */
+  reconnectPortfolioId?: string;
 };
 
 export type PortfolioKind = "standard" | "combined";
@@ -154,6 +159,44 @@ export type PortfolioTransaction = {
   holdingId?: string;
   /** Optional memo (e.g. expense note). */
   note?: string | null;
+  /**
+   * Canonical order within the portfolio (Phase 1). Assigned on migration / new writes.
+   * Sort key: date → sequence → id.
+   */
+  sequence?: number;
+  /** ISO timestamp when the row was created or first migrated (optional, additive). */
+  createdAt?: string;
+  /**
+   * Pre-existing orphan/oversell sell discovered on migration. Display replay soft-handles these;
+   * new mutations must not introduce untagged anomalies.
+   */
+  legacyAnomaly?: boolean;
+
+  // ── Phase 5B provenance (additive, optional). Missing `source` ⇒ MANUAL. ──
+  /**
+   * Row provenance. Undefined is treated as `MANUAL` everywhere (see `transactionSource`).
+   * `SNAPTRADE` = broker-imported row; `SNAPTRADE_ADJUSTMENT` = synthetic reconciliation row.
+   * Both broker sources are immutable in the UI (read-only, managed by sync).
+   */
+  source?: "MANUAL" | "SNAPTRADE" | "SNAPTRADE_ADJUSTMENT";
+  /** Upstream provider that produced the row (only SnapTrade today). */
+  provider?: "SNAPTRADE";
+  /** Stable provider identity used for idempotent upsert (e.g. `snaptrade:activity:{acct}:{id}`). */
+  externalId?: string;
+  /** SnapTrade account id the row was imported from. */
+  externalAccountId?: string;
+  /** SnapTrade brokerage authorization id. */
+  externalAuthorizationId?: string;
+  /** Raw provider activity/order type (for diagnostics / future re-mapping). */
+  externalActivityType?: string;
+  /** Provider settlement date (yyyy-MM-dd) when distinct from trade `date`. */
+  settlementDate?: string;
+  /** ISO timestamp the row was first imported from the provider. */
+  importedAt?: string;
+  /** ISO timestamp of the most recent sync that touched the row. */
+  lastSyncedAt?: string;
+  /** ISO 4217 currency code for the row (defaults to USD when absent). */
+  currency?: string;
 };
 
 export function newTransactionRowId(): string {

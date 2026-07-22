@@ -203,6 +203,12 @@ export function toSupportedCryptoTicker(symbolOrTicker: string): SupportedCrypto
     if (CRYPTO_BY_SYMBOL[base]) return base;
   }
 
+  // Broker concatenated pairs (Alpaca / SnapTrade): BTCUSD, ETHUSDT
+  const bases = Object.keys(CRYPTO_BY_SYMBOL).sort((a, b) => b.length - a.length);
+  for (const base of bases) {
+    if (s === `${base}USD` || s === `${base}USDT`) return base;
+  }
+
   return null;
 }
 

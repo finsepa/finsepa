@@ -41,6 +41,10 @@ import { PortfoliosBreadcrumbs } from "@/components/portfolios/portfolios-breadc
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 import { totalCostBasisInvested } from "@/lib/portfolio/overview-metrics";
+import {
+  ALLOCATION_RETURN_PERIOD_DEFAULT,
+  type AllocationReturnPeriodId,
+} from "@/lib/portfolio/allocation-return-period";
 import { buildPortfolioAllocationRows } from "@/lib/portfolio/portfolio-allocation-rows";
 import { tradeSymbolsFromHistory } from "@/lib/portfolio/realized-pnl-from-trades";
 import type { ChartScreenshotSnapshot } from "@/lib/chart/chart-screenshot-types";
@@ -248,9 +252,21 @@ export function PortfolioPageView({
   );
   const { imageSrc: allocationAvatarImageSrc, initials: allocationAvatarInitials } =
     useAllocationCenterAvatar();
+  const [allocationReturnPeriod, setAllocationReturnPeriod] = useState<AllocationReturnPeriodId>(
+    ALLOCATION_RETURN_PERIOD_DEFAULT,
+  );
+  const [allocationReturnPct, setAllocationReturnPct] = useState<number | null>(null);
   const [allocationDownloadOpen, setAllocationDownloadOpen] = useState(false);
   const [allocationDownloadSnapshot, setAllocationDownloadSnapshot] =
     useState<ChartScreenshotSnapshot | null>(null);
+
+  const handleAllocationReturnMeta = useCallback(
+    (meta: { period: AllocationReturnPeriodId; returnPct: number | null }) => {
+      setAllocationReturnPeriod(meta.period);
+      setAllocationReturnPct(meta.returnPct);
+    },
+    [],
+  );
 
   const showAllocationDownload =
     showOverviewHoldingsBlock && overviewHoldingsSubTab === "allocation" && allocationRows.length > 0;
@@ -273,6 +289,8 @@ export function PortfolioPageView({
         rows: allocationRows,
         avatarImageSrc: avatarDataUrl ?? allocationAvatarImageSrc,
         avatarInitials: allocationAvatarInitials,
+        returnPct: allocationReturnPct,
+        returnPeriod: allocationReturnPeriod,
       },
     });
     setAllocationDownloadOpen(true);
@@ -282,6 +300,8 @@ export function PortfolioPageView({
     selectedPortfolio?.snaptrade?.brokerageLogoUrl,
     allocationAvatarImageSrc,
     allocationAvatarInitials,
+    allocationReturnPct,
+    allocationReturnPeriod,
   ]);
 
   const allocationDownloadButton = showAllocationDownload ? (
@@ -438,6 +458,9 @@ export function PortfolioPageView({
                       holdings={holdings}
                       transactions={transactions}
                       readOnly={readOnly}
+                      period={allocationReturnPeriod}
+                      onPeriodChange={setAllocationReturnPeriod}
+                      onReturnMetaChange={handleAllocationReturnMeta}
                     />
                   )}
                 </PortfolioHoldingsSubTabMobileCard>

@@ -79,7 +79,19 @@ export function PortfolioSnaptradeSyncModal({
         </div>
         <p className="text-xs leading-5 text-[#71717A]">
           Syncing <span className="font-medium text-[#0F0F0F]">{portfolioName}</span> with your
-          brokerage. Holdings and cash always refresh; transaction import starts from the date above.
+          brokerage.{" "}
+          {updateFromYmd ?
+            <>
+              From this date we <span className="font-medium text-[#0F0F0F]">add or refresh</span>{" "}
+              broker transactions — older rows stay. Cash/position reconcile runs only on a full
+              sync.
+            </>
+          : (
+            <>
+              <span className="font-medium text-[#0F0F0F]">First transaction</span> reloads full
+              broker history and replaces prior broker rows (manual entries are kept).
+            </>
+          )}
         </p>
       </AppModalShell>
     </AppModalOverlay>

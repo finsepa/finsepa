@@ -41,7 +41,11 @@ import {
 import {
   DEFAULT_PORTFOLIO_SNAPTRADE_SYNC_SETTINGS,
 } from "@/lib/snaptrade/sync-settings";
-import { mergePortfolioSnaptradeSync } from "@/lib/snaptrade/merge-sync-transactions";
+import { mergeSnaptradeSyncSafe } from "@/lib/snaptrade/snaptrade-sync-merge";
+import {
+  isSnaptradeBrokerRow,
+  normalizeTransactionsProvenance,
+} from "@/lib/snaptrade/snaptrade-provenance";
 import { defaultSnaptradeUpdateFromYmd } from "@/lib/snaptrade/sync-update-from";
 import { PortfolioPrivacySelect, PortfolioPrivacyFieldLabel } from "@/components/portfolio/portfolio-privacy-select";
 import { PortfolioSnaptradeConnectionInfo } from "@/components/portfolio/portfolio-snaptrade-connection-info";
@@ -58,6 +62,12 @@ import {
   type PortfolioTransaction,
 } from "@/components/portfolio/portfolio-types";
 import { mergeHoldingsBySymbol, mergeTransactionsSorted } from "@/lib/portfolio/merge-combined-portfolio";
+import {
+  stampNewTransaction,
+  validatePortfolioLedgerMutation,
+} from "@/lib/portfolio/ledger/portfolio-ledger-validate";
+import { migratePortfolioTransactionSequences } from "@/lib/portfolio/ledger/portfolio-ledger-migrate";
+import { prepareWorkspaceLedgerForPersist } from "@/lib/portfolio/ledger/portfolio-ledger-prepare";
 import {
   coalesceSelectedPortfolioId,
   loadLastSelectedPortfolioId,
@@ -792,12 +802,26 @@ export function PortfolioWorkspaceProvider({
         holdingsByPortfolioId,
         transactionsByPortfolioId,
       };
+      const { state: prepared, report } = prepareWorkspaceLedgerForPersist(snapshot);
+      if (report.changed) {
+        setTransactionsByPortfolioId(prepared.transactionsByPortfolioId);
+      }
       void fetch("/api/portfolio/workspace", {
         method: "PUT",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ state: snapshot }),
-      }).then((res) => {
+        body: JSON.stringify({ state: prepared }),
+      }).then(async (res) => {
+        if (res.status === 422) {
+          const body = (await res.json().catch(() => null)) as {
+            message?: string;
+            code?: string;
+          } | null;
+          toast.error("Portfolio not synced", {
+            description: body?.message ?? "Ledger validation failed on the server.",
+          });
+          return;
+        }
         if (!res.ok) {
           toast.error("Portfolio not synced", {
             description: "Saved on this device — we could not update your account yet.",
@@ -942,19 +966,39 @@ export function PortfolioWorkspaceProvider({
     (portfolioId: string, transaction: PortfolioTransaction) => {
       const port = portfolios.find((x) => x.id === portfolioId);
       if (port?.kind === "combined") return;
+      const list = transactionsByPortfolioId[portfolioId] ?? [];
+      const stamped = stampNewTransaction(list, transaction);
+      const next = [...list, stamped];
+      const validation = validatePortfolioLedgerMutation(portfolioId, next);
+      if (!validation.ok) {
+        const first = validation.errors[0];
+        toast.error("Transaction rejected", {
+          description: first?.message ?? "This transaction would make the portfolio invalid.",
+        });
+        return;
+      }
       setTransactionsByPortfolioId((prev) => ({
         ...prev,
-        [portfolioId]: [...(prev[portfolioId] ?? []), transaction],
+        [portfolioId]: next,
       }));
     },
-    [portfolios],
+    [portfolios, transactionsByPortfolioId],
   );
 
   const setPortfolioTransactions = useCallback(
     (portfolioId: string, transactions: PortfolioTransaction[]) => {
       const port = portfolios.find((x) => x.id === portfolioId);
       if (port?.kind === "combined") return;
-      setTransactionsByPortfolioId((prev) => ({ ...prev, [portfolioId]: transactions }));
+      const validation = validatePortfolioLedgerMutation(portfolioId, transactions);
+      if (!validation.ok) {
+        const first = validation.errors[0];
+        toast.error("Change rejected", {
+          description: first?.message ?? "This change would make the portfolio invalid.",
+        });
+        return;
+      }
+      const { transactions: migrated } = migratePortfolioTransactionSequences(transactions);
+      setTransactionsByPortfolioId((prev) => ({ ...prev, [portfolioId]: migrated }));
     },
     [portfolios],
   );
@@ -972,6 +1016,12 @@ export function PortfolioWorkspaceProvider({
     (t: PortfolioTransaction) => {
       const p = portfolios.find((x) => x.id === selectedPortfolioId);
       if (p?.kind === "combined") return;
+      if (isSnaptradeBrokerRow(t)) {
+        toast.error("This is a brokerage transaction", {
+          description: "Rows imported from your broker are read-only and managed by sync.",
+        });
+        return;
+      }
       setSelectedPortfolioId(t.portfolioId);
       setEditTransaction(t);
     },
@@ -988,7 +1038,22 @@ export function PortfolioWorkspaceProvider({
       const port = portfolios.find((x) => x.id === portfolioId);
       if (port?.kind === "combined") return;
       const list = transactionsByPortfolioId[portfolioId] ?? [];
+      const targeted = list.filter((x) => ids.has(x.id));
+      if (targeted.some((x) => isSnaptradeBrokerRow(x))) {
+        toast.error("Brokerage transactions can't be deleted", {
+          description: "Rows imported from your broker are managed by sync. Disconnect the brokerage to remove them.",
+        });
+        return;
+      }
       const next = list.filter((x) => !ids.has(x.id));
+      const validation = validatePortfolioLedgerMutation(portfolioId, next);
+      if (!validation.ok) {
+        const first = validation.errors[0];
+        toast.error("Delete rejected", {
+          description: first?.message ?? "Removing this transaction would invalidate a later sell.",
+        });
+        return;
+      }
       setPortfolioTransactions(portfolioId, next);
       setEditTransaction((cur) => (cur && ids.has(cur.id) ? null : cur));
       const rebuilt = replayTradeTransactionsToHoldings(next);
@@ -1074,6 +1139,9 @@ export function PortfolioWorkspaceProvider({
     isRealTimeConnection?: boolean;
     accountIds?: string[];
     transactions?: Omit<PortfolioTransaction, "id" | "portfolioId">[];
+    warnings?: Array<{ code?: string; message?: string }>;
+    reconciliation?: unknown;
+    brokerMarks?: Record<string, number>;
   };
 
   const applySnapTradeSyncToPortfolio = useCallback(
@@ -1084,21 +1152,32 @@ export function PortfolioWorkspaceProvider({
       options?: { updateFromYmd?: string | null; existingTransactions?: PortfolioTransaction[] },
     ) => {
       const draftTxs = Array.isArray(data.transactions) ? data.transactions : [];
-      const imported: PortfolioTransaction[] = draftTxs.map((row) => ({
+      // Broker draft rows carry SnapTrade provenance from the server; stamp local ids + portfolio.
+      const incoming: PortfolioTransaction[] = draftTxs.map((row) => ({
         ...row,
         id: newTransactionRowId(),
         portfolioId,
       }));
 
       const updateFrom = options?.updateFromYmd ?? null;
-      const existing = options?.existingTransactions ?? [];
-      const kept = updateFrom ? existing.filter((t) => t.date < updateFrom) : [];
-      const transactions =
-        updateFrom ? mergePortfolioSnaptradeSync(kept, imported) : imported;
+      // Normalize provenance (missing source ⇒ MANUAL) BEFORE the safe merge.
+      const existing = normalizeTransactionsProvenance(options?.existingTransactions ?? []);
+
+      // Phase 5B: safe merge. Full history ("first transaction") replaces stale broker rows;
+      // incremental Update-from only upserts/adds in-window rows and preserves the rest.
+      const { transactions } = mergeSnaptradeSyncSafe({
+        existing,
+        incoming,
+        updateFromYmd: updateFrom,
+        replaceMissingBrokerRows: updateFrom == null,
+      });
 
       setPortfolioTransactions(portfolioId, transactions);
       const rebuilt = replayTradeTransactionsToHoldings(transactions);
-      const quoted = await refreshHoldingMarketPrices(rebuilt);
+      const quoted = await refreshHoldingMarketPrices(rebuilt, data.brokerMarks, {
+        // Connected portfolios: brokerage marks are the sync source of truth for MV.
+        preferFallback: Boolean(data.brokerMarks && Object.keys(data.brokerMarks).length > 0),
+      });
       setPortfolioHoldings(portfolioId, quoted);
 
       setPortfolios((prev) =>
@@ -1125,7 +1204,7 @@ export function PortfolioWorkspaceProvider({
         ),
       );
 
-      return { quoted, transactions };
+      return { quoted, transactions, warnings: data.warnings ?? [] };
     },
     [setPortfolioHoldings, setPortfolioTransactions],
   );
@@ -1158,7 +1237,7 @@ export function PortfolioWorkspaceProvider({
           throw new Error(data.error ?? "Failed to sync brokerage.");
         }
 
-        const { quoted, transactions } = await applySnapTradeSyncToPortfolio(
+        const { quoted, transactions, warnings } = await applySnapTradeSyncToPortfolio(
           portfolioId,
           authorizationId,
           data,
@@ -1167,10 +1246,28 @@ export function PortfolioWorkspaceProvider({
 
         if (!silent) {
           const isRealTime = data.isRealTimeConnection === true;
+          const mismatchWarnings = warnings.filter(
+            (w) =>
+              w.code === "CASH_MISMATCH" ||
+              w.code === "POSITION_MISMATCH" ||
+              w.code === "CASH_BRIDGE" ||
+              w.code === "POSITION_BRIDGE" ||
+              w.code === "HISTORY_INCOMPLETE",
+          );
+          const warningLine =
+            mismatchWarnings.length > 0 ?
+              mismatchWarnings
+                .slice(0, 2)
+                .map((w) => w.message)
+                .filter(Boolean)
+                .join(" ")
+            : null;
           toast.success(`"${portfolio.name}" synced from ${data.brokerageName ?? "brokerage"}.`, {
             id: toastId,
             description:
-              isRealTime ? "Holdings and cash updated from SnapTrade."
+              warningLine ?
+                warningLine
+              : isRealTime ? "Holdings and cash updated from SnapTrade."
               : "Used SnapTrade daily cache (no extra refresh charge). Data may be up to 24h old.",
           });
         }
@@ -1222,9 +1319,18 @@ export function PortfolioWorkspaceProvider({
   }, [portfolios, resyncLinkedPortfolio]);
 
   const finalizeConnectBrokerage = useCallback(
-    async ({ name, privacy, authorizationId }: ConnectBrokerageCompletePayload) => {
+    async ({ name, privacy, authorizationId, reconnectPortfolioId }: ConnectBrokerageCompletePayload) => {
       const t = name.trim();
       if (!t) return;
+
+      // ── Reconnect path: update the existing linked portfolio in place (no duplicate). ──
+      const reconnectTarget = reconnectPortfolioId
+        ? portfolios.find((p) => p.id === reconnectPortfolioId)
+        : undefined;
+      if (reconnectTarget) {
+        await resyncLinkedPortfolio(reconnectTarget.id, { updateFromYmd: null });
+        return;
+      }
 
       const toastId = toast.loading("Syncing brokerage…");
       try {
@@ -1300,6 +1406,8 @@ export function PortfolioWorkspaceProvider({
     [
       applySnapTradeSyncToPortfolio,
       metricsForPublicListing,
+      portfolios,
+      resyncLinkedPortfolio,
       setSelectedPortfolioId,
     ],
   );

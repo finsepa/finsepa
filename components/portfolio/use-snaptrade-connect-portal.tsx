@@ -22,7 +22,13 @@ export function useSnapTradeConnectPortal({
   const [portalOpen, setPortalOpen] = useState(false);
   const [portalLink, setPortalLink] = useState<string | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
-  const pendingRef = useRef<{ name: string; privacy: PortfolioPrivacy } | null>(null);
+  const pendingRef = useRef<{
+    name: string;
+    privacy: PortfolioPrivacy;
+    /** Reconnect an existing linked portfolio instead of creating a new one. */
+    reconnectAuthorizationId?: string;
+    reconnectPortfolioId?: string;
+  } | null>(null);
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
 
@@ -39,14 +45,23 @@ export function useSnapTradeConnectPortal({
   }, [onClose, reset]);
 
   const startPortal = useCallback(
-    async (pending: { name: string; privacy: PortfolioPrivacy }) => {
+    async (pending: {
+      name: string;
+      privacy: PortfolioPrivacy;
+      reconnectAuthorizationId?: string;
+      reconnectPortfolioId?: string;
+    }) => {
       pendingRef.current = pending;
       setPortalLoading(true);
       try {
         const res = await fetch("/api/snaptrade/portal", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({}),
+          body: JSON.stringify(
+            pending.reconnectAuthorizationId
+              ? { reconnectAuthorizationId: pending.reconnectAuthorizationId }
+              : {},
+          ),
         });
         const data = (await res.json()) as { redirectUri?: string; error?: string };
         if (!res.ok || !data.redirectUri) {
@@ -99,7 +114,10 @@ export function useSnapTradeConnectPortal({
         await onCompleteRef.current({
           name: pending.name,
           privacy: pending.privacy,
-          authorizationId: authId,
+          authorizationId: pending.reconnectAuthorizationId || authId,
+          ...(pending.reconnectPortfolioId
+            ? { reconnectPortfolioId: pending.reconnectPortfolioId }
+            : {}),
         });
         closeAll();
       } catch (e) {

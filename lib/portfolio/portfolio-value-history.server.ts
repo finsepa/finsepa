@@ -13,19 +13,24 @@ import {
 } from "date-fns";
 
 import type { PortfolioTransaction } from "@/components/portfolio/portfolio-types";
-import { fetchEodhdCryptoDailyBars, toEodhdCryptoSymbol } from "@/lib/market/eodhd-crypto";
+import { toEodhdCryptoSymbol } from "@/lib/market/eodhd-crypto";
 import type { EodhdDailyBar } from "@/lib/market/eodhd-eod";
-import { fetchEodhdEodDaily } from "@/lib/market/eodhd-eod";
 import { fetchEodhdIntraday, type EodhdIntradayBar } from "@/lib/market/eodhd-intraday";
 import { toEodhdSymbol } from "@/lib/market/eodhd-symbol";
 import {
   intradayBarsToTwoPerDaySamples,
   type IntradayTwoPerDaySample,
 } from "@/lib/market/stock-chart-data";
-import { netCashUsdUpTo, totalHistoricalEquityCostBasisAsOf } from "@/lib/portfolio/overview-metrics";
+import { loadPortfolioEodBars } from "@/lib/portfolio/data/load-portfolio-eod-bars";
+import { netCashUsdUpTo } from "@/lib/portfolio/overview-metrics";
 import type { PortfolioChartRange, PortfolioValueHistoryPoint } from "@/lib/portfolio/portfolio-chart-types";
 import { replayTradeTransactionsToHoldingsUpTo } from "@/lib/portfolio/rebuild-holdings-from-trades";
 import { cumulativeRealizedGainUsdUpTo } from "@/lib/portfolio/realized-pnl-from-trades";
+import {
+  dietzReturnPctFromInceptionNav,
+  portfolioNetWorthOnDate,
+} from "@/lib/portfolio/returns/portfolio-nav.server";
+import { portfolioPeriodReturnDietz } from "@/lib/portfolio/returns/portfolio-return-engine";
 
 const MAX_TX = 4000;
 
@@ -316,12 +321,113 @@ function dailyYtdTwoPerDayFallback(fromYmd: string, toYmd: string): IntradayTwoP
   return out;
 }
 
+function returnWindowForChartRange(
+  range: PortfolioChartRange,
+  now: Date,
+  firstTxYmd: string | null,
+): { startYmd: string; vStartZero: boolean } {
+  if (range === "all") {
+    const first = firstTxYmd ?? ymd(now);
+    const firstDt = parseYmd(first);
+    return {
+      startYmd: firstDt ? ymd(subDays(firstDt, 1)) : first,
+      vStartZero: true,
+    };
+  }
+
+  let start: string;
+  switch (range) {
+    case "1d":
+      start = ymd(subDays(now, 1));
+      break;
+    case "7d":
+      start = ymd(subDays(now, 7));
+      break;
+    case "1m":
+      start = ymd(subMonths(now, 1));
+      break;
+    case "6m":
+      start = ymd(subMonths(now, 6));
+      break;
+    case "ytd":
+      start = ymd(startOfYear(now));
+      break;
+    case "1y":
+      start = ymd(subYears(now, 1));
+      break;
+    case "5y":
+      start = ymd(subYears(now, 5));
+      break;
+    default:
+      start = ymd(subMonths(now, 1));
+  }
+
+  // Match dietz-periods: if the window starts before first activity, use inception Dietz.
+  if (firstTxYmd && start < firstTxYmd) {
+    const firstDt = parseYmd(firstTxYmd);
+    return {
+      startYmd: firstDt ? ymd(subDays(firstDt, 1)) : firstTxYmd,
+      vStartZero: true,
+    };
+  }
+  return { startYmd: start, vStartZero: false };
+}
+
+function applyRangeReturnPcts(
+  points: PortfolioValueHistoryPoint[],
+  transactions: PortfolioTransaction[],
+  barsBySymbol: Map<string, EodhdDailyBar[]>,
+  range: PortfolioChartRange,
+  now: Date,
+  firstTxYmd: string | null,
+): PortfolioValueHistoryPoint[] {
+  if (points.length === 0) return points;
+
+  const { startYmd: windowStart, vStartZero } = returnWindowForChartRange(range, now, firstTxYmd);
+
+  if (vStartZero) {
+    // Inception Dietz — already stamped in portfolioPointAtSession.
+    return points.map((p) => {
+      if (p.returnPct != null) return p;
+      if (!firstTxYmd || p.t < firstTxYmd) return { ...p, returnPct: null };
+      return {
+        ...p,
+        returnPct: dietzReturnPctFromInceptionNav({
+          transactions,
+          firstTxYmd,
+          asOfYmd: p.t,
+          vEnd: p.value,
+        }),
+      };
+    });
+  }
+
+  // Match `/api/portfolio/dietz-returns`: V_B on the session on/before day before window start.
+  const windowStartDt = parseYmd(windowStart);
+  const d0 = windowStartDt ? ymd(subDays(windowStartDt, 1)) : windowStart;
+  const vStart = portfolioNetWorthOnDate(transactions, barsBySymbol, d0);
+  return points.map((p) => {
+    if (p.t <= d0) {
+      return { ...p, returnPct: 0 };
+    }
+    const pct = portfolioPeriodReturnDietz({
+      transactions,
+      vStart,
+      vEnd: p.value,
+      startYmd: d0,
+      endYmd: p.t,
+    }).pct;
+    return { ...p, returnPct: pct };
+  });
+}
+
 function portfolioPointAtSession(
   transactions: PortfolioTransaction[],
   sessionYmd: string,
   barsBySymbol: Map<string, EodhdDailyBar[]>,
   intradayBySymbol: Map<string, EodhdIntradayBar[]>,
   markTs: number | null,
+  firstTxYmd: string | null,
 ): PortfolioValueHistoryPoint {
   const holdings = replayTradeTransactionsToHoldingsUpTo(transactions, sessionYmd);
   let equity = 0;
@@ -343,9 +449,16 @@ function portfolioPointAtSession(
   const unrealized = equity - cost;
   const realized = cumulativeRealizedGainUsdUpTo(transactions, sessionYmd);
   const profit = unrealized + realized;
-  const denom = totalHistoricalEquityCostBasisAsOf(cost, transactions, sessionYmd);
+  /** Modified Dietz — overwritten for the selected chart range in `applyRangeReturnPcts`. */
   const returnPct =
-    Number.isFinite(denom) && denom > 0 && Number.isFinite(profit) ? (profit / denom) * 100 : null;
+    firstTxYmd != null && sessionYmd >= firstTxYmd ?
+      dietzReturnPctFromInceptionNav({
+        transactions,
+        firstTxYmd,
+        asOfYmd: sessionYmd,
+        vEnd: value,
+      })
+    : null;
   return { t: sessionYmd, value, profit, returnPct };
 }
 
@@ -355,6 +468,7 @@ async function computePortfolioValueHistoryYtd(
   barsBySymbol: Map<string, EodhdDailyBar[]>,
   fromYmd: string,
   toYmd: string,
+  firstTxYmd: string | null,
 ): Promise<PortfolioValueHistoryPoint[]> {
   const now = new Date();
   const nowSec = Math.floor(now.getTime() / 1000);
@@ -393,6 +507,7 @@ async function computePortfolioValueHistoryYtd(
       barsBySymbol,
       intradayBySymbol,
       sample.time,
+      firstTxYmd,
     );
     points.push({ ...base, time: sample.time });
   }
@@ -408,23 +523,31 @@ export async function computePortfolioValueHistory(
   const firstTx = earliestTxYmd(transactions);
   const now = new Date();
   const { fromYmd, toYmd } = rangeToFromTo(range, now, firstTx);
+  // Pad bar fetch so Dietz V_B (day before period start) has marks — same as dietz-returns.
+  const { startYmd: returnWindowStart } = returnWindowForChartRange(range, now, firstTx);
+  const returnStartDt = parseYmd(returnWindowStart);
+  const barFromYmd = ymd(
+    minDate([
+      parseYmd(fromYmd) ?? now,
+      returnStartDt ? subDays(returnStartDt, 14) : now,
+    ]),
+  );
   const maxPts = maxPointsForRange(range);
   const symbols = tradeSymbols(transactions);
 
-  const barTasks = symbols.map(async (sym) => {
-    const cryptoPair = toEodhdCryptoSymbol(sym);
-    const bars =
-      cryptoPair != null ?
-        await fetchEodhdCryptoDailyBars(cryptoPair, fromYmd, toYmd)
-      : await fetchEodhdEodDaily(toEodhdSymbol(sym), fromYmd, toYmd);
-    return [sym, bars ?? []] as const;
-  });
-
-  const barPairs = await Promise.all(barTasks);
-  const barsBySymbol = new Map<string, EodhdDailyBar[]>(barPairs);
+  const barsBySymbol = await loadPortfolioEodBars(symbols, barFromYmd, toYmd);
+  const barPairs = [...barsBySymbol.entries()];
 
   if (range === "ytd") {
-    return computePortfolioValueHistoryYtd(transactions, symbols, barsBySymbol, fromYmd, toYmd);
+    const ytdPoints = await computePortfolioValueHistoryYtd(
+      transactions,
+      symbols,
+      barsBySymbol,
+      fromYmd,
+      toYmd,
+      firstTx,
+    );
+    return applyRangeReturnPcts(ytdPoints, transactions, barsBySymbol, range, now, firstTx);
   }
 
   const dateSet = new Set<string>();
@@ -460,10 +583,12 @@ export async function computePortfolioValueHistory(
   const points: PortfolioValueHistoryPoint[] = [];
 
   for (const d of sampleDates) {
-    points.push(portfolioPointAtSession(transactions, d, barsBySymbol, new Map(), null));
+    points.push(
+      portfolioPointAtSession(transactions, d, barsBySymbol, new Map(), null, firstTx),
+    );
   }
 
-  return points;
+  return applyRangeReturnPcts(points, transactions, barsBySymbol, range, now, firstTx);
 }
 
 export function parsePortfolioValueHistoryBody(body: unknown): {

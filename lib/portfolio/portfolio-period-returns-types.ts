@@ -10,6 +10,6 @@ export type PortfolioPeriodReturnBar = {
   periodEnd: string;
   /** Total return % for the portfolio over the period (approx.; ignores intra-period timing of flows). */
   portfolioPct: number | null;
-  /** Same window total return % for the benchmark. */
+  /** Contribution-model Modified Dietz % for the benchmark (same window / flows as portfolio). */
   benchmarkPct: number | null;
 };

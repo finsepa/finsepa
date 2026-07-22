@@ -14,6 +14,10 @@ function startOfCalendarMonth(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), 1);
 }
 
+function sameCalendarMonth(a: Date, b: Date): boolean {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
+}
+
 function YearFirstCaptionDropdownNav({
   children,
   className,
@@ -52,7 +56,12 @@ export function SnaptradeUpdateFromDateField({
   onChangeYmd: (next: string | null) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const selectedDate = valueYmd ? ymdToLocalDate(valueYmd) : null;
+  // Stabilize Date identity — a fresh Date each render + useEffect([selectedDate])
+  // causes an infinite setMonth loop when the popover opens.
+  const selectedDate = useMemo(
+    () => (valueYmd ? ymdToLocalDate(valueYmd) : null),
+    [valueYmd],
+  );
   const [month, setMonth] = useState(() =>
     startOfCalendarMonth(selectedDate ?? new Date()),
   );
@@ -67,8 +76,9 @@ export function SnaptradeUpdateFromDateField({
 
   useEffect(() => {
     if (!open) return;
-    setMonth(startOfCalendarMonth(selectedDate ?? new Date()));
-  }, [open, selectedDate]);
+    const next = startOfCalendarMonth(selectedDate ?? new Date());
+    setMonth((prev) => (sameCalendarMonth(prev, next) ? prev : next));
+  }, [open, valueYmd, selectedDate]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -123,7 +133,10 @@ export function SnaptradeUpdateFromDateField({
             }}
             components={{ DropdownNav: YearFirstCaptionDropdownNav }}
             month={month}
-            onMonthChange={(m) => setMonth(startOfCalendarMonth(m))}
+            onMonthChange={(m) => {
+              const next = startOfCalendarMonth(m);
+              setMonth((prev) => (sameCalendarMonth(prev, next) ? prev : next));
+            }}
             selected={selectedDate ?? undefined}
             onSelect={(d) => {
               if (d) {

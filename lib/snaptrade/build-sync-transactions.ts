@@ -1,6 +1,6 @@
 import "server-only";
 
-import { format, parseISO, subYears } from "date-fns";
+import { format, subYears } from "date-fns";
 
 import type { PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 import { replayTradeTransactionsToHoldings } from "@/lib/portfolio/rebuild-holdings-from-trades";
@@ -8,8 +8,19 @@ import type { Snaptrade } from "snaptrade-typescript-sdk";
 
 import type { PortfolioSnaptradeSyncSettings } from "@/lib/snaptrade/sync-settings";
 import { DEFAULT_PORTFOLIO_SNAPTRADE_SYNC_SETTINGS } from "@/lib/snaptrade/sync-settings";
+import { snaptradeAdjustmentExternalId } from "@/lib/snaptrade/snaptrade-external-id";
+import { cashBridgeNote, openingCashBridgeDate } from "@/lib/snaptrade/snaptrade-cash-bridge";
+import { dedupeSnaptradeOrdersAgainstActivities } from "@/lib/snaptrade/snaptrade-order-activity-dedupe";
+import {
+  normalizeSnaptradeActivity,
+  normalizeSnaptradeOrder,
+  symbolFromPosition,
+  type SnapTradeSyncDraftTransaction,
+} from "@/lib/snaptrade/snaptrade-normalize-activity";
 
-export type SnapTradeSyncDraftTransaction = Omit<PortfolioTransaction, "id" | "portfolioId">;
+export type { SnapTradeSyncDraftTransaction };
+export { symbolFromPosition };
+export { cashBridgeNote, openingCashBridgeDate } from "@/lib/snaptrade/snaptrade-cash-bridge";
 
 type SnapTradeCredentials = {
   snaptradeUserId: string;
@@ -21,6 +32,67 @@ export type BrokerPositionSnapshot = {
   name: string;
   shares: number;
   avgPrice: number;
+  /** Broker last/mark price when available (for quote fallback). */
+  marketPrice: number;
+};
+
+// ── Structured sync diagnostics (Phase 5B) ──────────────────────────────────
+
+export type SnapTradeSyncWarningCode =
+  | "UNKNOWN_ACTIVITY"
+  | "UNMAPPED_ORDER"
+  | "MULTI_CURRENCY_UNSUPPORTED"
+  | "POSITION_MISMATCH"
+  | "POSITION_BRIDGE"
+  | "CASH_MISMATCH"
+  | "CASH_BRIDGE"
+  | "ORDER_ACTIVITY_DEDUPED"
+  | "INCREMENTAL_NO_RECONCILE"
+  | "HISTORY_INCOMPLETE";
+
+export type SnapTradeSyncWarning = {
+  code: SnapTradeSyncWarningCode;
+  message: string;
+  accountId?: string;
+  activityType?: string;
+  symbol?: string;
+  detail?: Record<string, unknown>;
+};
+
+export type SnapTradeReconcilePosition = {
+  symbol: string;
+  brokerShares: number;
+  ledgerShares: number;
+  diff: number;
+  status: "MATCHED" | "POSITION_MISMATCH";
+};
+
+export type SnapTradeReconciliation = {
+  /** REPORT_ONLY = default (never fabricates rows). ADJUSTED = synthetic rows appended. */
+  mode: "REPORT_ONLY" | "ADJUSTED";
+  multiCurrency: boolean;
+  currencies: string[];
+  positions: SnapTradeReconcilePosition[];
+  cash: {
+    brokerCash: number;
+    ledgerCash: number;
+    diff: number;
+    status: "MATCHED" | "CASH_MISMATCH";
+  } | null;
+};
+
+export type SnapTradeSyncBuildResult = {
+  transactions: SnapTradeSyncDraftTransaction[];
+  warnings: SnapTradeSyncWarning[];
+  reconciliation: SnapTradeReconciliation;
+  /** Symbol → broker mark USD (canonicalized symbols). */
+  brokerMarks: Record<string, number>;
+};
+
+type BuildContext = {
+  accountId: string;
+  authorizationId: string;
+  syncTimestamp: string;
 };
 
 function asRecord(x: unknown): Record<string, unknown> | null {
@@ -40,37 +112,12 @@ function readString(x: unknown): string | null {
   return typeof x === "string" && x.trim() ? x.trim() : null;
 }
 
-function ymdFromIso(iso: string | null | undefined): string | null {
-  if (!iso?.trim()) return null;
-  try {
-    return format(parseISO(iso), "yyyy-MM-dd");
-  } catch {
-    return null;
+function readCurrencyCode(x: unknown): string | null {
+  const rec = asRecord(x);
+  if (rec) {
+    return readString(rec.code) ?? readString(rec.currency) ?? null;
   }
-}
-
-function symbolFromUniversal(universal: unknown): { symbol: string; name: string } | null {
-  const u = asRecord(universal);
-  if (!u) return null;
-  const raw =
-    readString(u.symbol) ?? readString(u.raw_symbol) ?? readString(u.ticker);
-  if (!raw) return null;
-  const symbol = raw.toUpperCase().replace(/\.(US|NASDAQ|NYSE)$/i, "");
-  const name = readString(u.description) ?? readString(u.name) ?? symbol;
-  return { symbol, name };
-}
-
-export function symbolFromPosition(pos: Record<string, unknown>): { symbol: string; name: string } | null {
-  const universal =
-    asRecord(pos.universal_symbol) ??
-    asRecord(pos.symbol) ??
-    asRecord(pos.instrument);
-  const fromUniversal = symbolFromUniversal(universal);
-  if (fromUniversal) return fromUniversal;
-  const raw = readString(pos.symbol);
-  if (!raw) return null;
-  const symbol = raw.toUpperCase();
-  return { symbol, name: readString(pos.description) ?? symbol };
+  return readString(x);
 }
 
 export function sharesFromPosition(pos: Record<string, unknown>): number {
@@ -97,6 +144,13 @@ export function priceFromPosition(pos: Record<string, unknown>): number {
   return 0;
 }
 
+/** Last/mark unit price from the broker position (not cost basis). */
+export function marketPriceFromPosition(pos: Record<string, unknown>): number {
+  const perUnit = readNumber(pos.price) ?? readNumber(pos.current_price);
+  if (perUnit != null && perUnit > 0) return perUnit;
+  return 0;
+}
+
 export function positionsFromResponse(data: unknown): Record<string, unknown>[] {
   const root = asRecord(data);
   if (!root) return [];
@@ -118,161 +172,24 @@ export function cashAdjustmentNote(brokerCash: number, ledgerCash: number): stri
   return `Automatically generated transaction to adjust cash balance, since cash reported by broker ($${brokerCash.toFixed(2)}) does not match the imported ledger balance ($${ledgerCash.toFixed(2)}), due to sync limitations.`;
 }
 
-function txDedupeKey(t: SnapTradeSyncDraftTransaction): string {
-  const shares = Math.round(t.shares * 10000) / 10000;
-  const price = Math.round(t.price * 100) / 100;
-  return `${t.date}|${t.operation}|${t.symbol}|${shares}|${price}`;
+type MapResult = { draft: SnapTradeSyncDraftTransaction | null; warning: SnapTradeSyncWarning | null };
+
+function mapActivityToDraft(row: Record<string, unknown>, ctx: BuildContext): MapResult {
+  const r = normalizeSnaptradeActivity(row, ctx);
+  return { draft: r.draft, warning: r.warning };
 }
 
-function mergeUniqueTransactions(
-  base: SnapTradeSyncDraftTransaction[],
-  extra: SnapTradeSyncDraftTransaction[],
-): SnapTradeSyncDraftTransaction[] {
-  const seen = new Set(base.map(txDedupeKey));
-  const out = [...base];
-  for (const t of extra) {
-    const key = txDedupeKey(t);
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push(t);
-  }
-  return out;
-}
-
-function mapActivityToDraft(row: Record<string, unknown>): SnapTradeSyncDraftTransaction | null {
-  const type = (readString(row.type) ?? "").toUpperCase();
-  const sym =
-    symbolFromUniversal(row.symbol) ??
-    symbolFromUniversal(row.universal_symbol) ??
-    symbolFromPosition(row);
-  if (!sym) return null;
-
-  const date = ymdFromIso(readString(row.trade_date) ?? readString(row.date));
-  if (!date) return null;
-
-  const units = Math.abs(readNumber(row.units) ?? readNumber(row.quantity) ?? 0);
-  const price = readNumber(row.price) ?? 0;
-  const amount = readNumber(row.amount);
-  const fee = Math.abs(readNumber(row.fee) ?? 0);
-
-  if (type.includes("DIVIDEND") || type === "INCOME") {
-    const sum = amount ?? units * price;
-    if (!Number.isFinite(sum) || sum === 0) return null;
-    return {
-      kind: "income",
-      operation: "Dividend",
-      symbol: sym.symbol,
-      name: sym.name,
-      logoUrl: null,
-      date,
-      shares: units || 0,
-      price: price || Math.abs(sum),
-      fee: 0,
-      sum: Math.abs(sum),
-      profitPct: null,
-      profitUsd: null,
-    };
-  }
-
-  if (type.includes("BUY") || type === "PURCHASE") {
-    if (units <= 0 || price <= 0) return null;
-    const sum = amount ?? -(units * price + fee);
-    return {
-      kind: "trade",
-      operation: "Buy",
-      symbol: sym.symbol,
-      name: sym.name,
-      logoUrl: null,
-      date,
-      shares: units,
-      price,
-      fee,
-      sum: sum < 0 ? sum : -(units * price + fee),
-      profitPct: null,
-      profitUsd: null,
-    };
-  }
-
-  if (type.includes("SELL") || type === "SALE") {
-    if (units <= 0 || price <= 0) return null;
-    const sum = amount ?? units * price - fee;
-    return {
-      kind: "trade",
-      operation: "Sell",
-      symbol: sym.symbol,
-      name: sym.name,
-      logoUrl: null,
-      date,
-      shares: units,
-      price,
-      fee,
-      sum: sum > 0 ? sum : units * price - fee,
-      profitPct: null,
-      profitUsd: null,
-    };
-  }
-
-  if (type.includes("CONTRIBUTION") || type.includes("DEPOSIT") || type.includes("CASH")) {
-    const sum = amount ?? readNumber(row.units);
-    if (sum == null || sum === 0) return null;
-    const abs = Math.abs(sum);
-    return {
-      kind: "cash",
-      operation: sum >= 0 ? "Cash In" : "Cash Out",
-      symbol: "USD",
-      name: "US Dollar",
-      logoUrl: null,
-      date,
-      shares: abs,
-      price: 1,
-      fee: 0,
-      sum,
-      profitPct: null,
-      profitUsd: null,
-    };
-  }
-
-  return null;
-}
-
-function mapExecutedOrderToDraft(row: Record<string, unknown>): SnapTradeSyncDraftTransaction | null {
-  const status = (readString(row.status) ?? "").toUpperCase();
-  const filled = readNumber(row.filled_quantity) ?? 0;
-  if (status !== "EXECUTED" && filled <= 0) return null;
-
-  const sym = symbolFromUniversal(row.universal_symbol);
-  if (!sym) return null;
-
-  const shares = filled > 0 ? filled : readNumber(row.total_quantity) ?? 0;
-  const price = readNumber(row.execution_price) ?? 0;
-  if (shares <= 0 || price <= 0) return null;
-
-  const date =
-    ymdFromIso(readString(row.time_executed) ?? readString(row.time_placed)) ?? format(new Date(), "yyyy-MM-dd");
-  const action = (readString(row.action) ?? "BUY").toUpperCase();
-  const isBuy = action.includes("BUY");
-
-  return {
-    kind: "trade",
-    operation: isBuy ? "Buy" : "Sell",
-    symbol: sym.symbol,
-    name: sym.name,
-    logoUrl: readString(asRecord(row.universal_symbol)?.logo_url),
-    date,
-    shares,
-    price,
-    fee: 0,
-    sum: isBuy ? -(shares * price) : shares * price,
-    profitPct: null,
-    profitUsd: null,
-  };
+function mapExecutedOrderToDraft(row: Record<string, unknown>, ctx: BuildContext): MapResult {
+  const r = normalizeSnaptradeOrder(row, ctx);
+  return { draft: r.draft, warning: r.warning };
 }
 
 async function fetchAllActivities(
   snaptrade: Snaptrade,
   credentials: SnapTradeCredentials,
-  accountId: string,
+  ctx: BuildContext,
   startDateYmd: string,
+  warnings: SnapTradeSyncWarning[],
 ): Promise<SnapTradeSyncDraftTransaction[]> {
   const startDate = startDateYmd;
   const endDate = format(new Date(), "yyyy-MM-dd");
@@ -283,7 +200,7 @@ async function fetchAllActivities(
 
   while (offset < total) {
     const res = await snaptrade.accountInformation.getAccountActivities({
-      accountId,
+      accountId: ctx.accountId,
       userId: credentials.snaptradeUserId,
       userSecret: credentials.userSecret,
       startDate,
@@ -299,8 +216,9 @@ async function fetchAllActivities(
     for (const row of rows) {
       const rec = asRecord(row);
       if (!rec) continue;
-      const mapped = mapActivityToDraft(rec);
-      if (mapped) out.push(mapped);
+      const { draft, warning } = mapActivityToDraft(rec, ctx);
+      if (draft) out.push(draft);
+      if (warning) warnings.push(warning);
     }
 
     if (rows.length === 0) break;
@@ -314,10 +232,11 @@ async function fetchAllActivities(
 async function fetchExecutedOrders(
   snaptrade: Snaptrade,
   credentials: SnapTradeCredentials,
-  accountId: string,
+  ctx: BuildContext,
+  warnings: SnapTradeSyncWarning[],
 ): Promise<SnapTradeSyncDraftTransaction[]> {
   const res = await snaptrade.accountInformation.getUserAccountOrders({
-    accountId,
+    accountId: ctx.accountId,
     userId: credentials.snaptradeUserId,
     userSecret: credentials.userSecret,
     state: "all",
@@ -327,8 +246,9 @@ async function fetchExecutedOrders(
   for (const row of rows) {
     const rec = asRecord(row);
     if (!rec) continue;
-    const mapped = mapExecutedOrderToDraft(rec);
-    if (mapped) out.push(mapped);
+    const { draft, warning } = mapExecutedOrderToDraft(rec, ctx);
+    if (draft) out.push(draft);
+    if (warning) warnings.push(warning);
   }
   return out;
 }
@@ -350,16 +270,25 @@ async function fetchBrokerPositions(
     const shares = sharesFromPosition(pos);
     const avgPrice = priceFromPosition(pos);
     if (!sym || shares <= 0 || avgPrice <= 0) continue;
-    out.push({ symbol: sym.symbol, name: sym.name, shares, avgPrice });
+    const marketPrice = marketPriceFromPosition(pos);
+    out.push({
+      symbol: sym.symbol,
+      name: sym.name,
+      shares,
+      avgPrice,
+      marketPrice: marketPrice > 0 ? marketPrice : avgPrice,
+    });
   }
   return out;
 }
+
+type BrokerCashResult = { cashUsd: number; currencies: string[]; hasNonUsd: boolean };
 
 async function fetchBrokerCash(
   snaptrade: Snaptrade,
   credentials: SnapTradeCredentials,
   accountId: string,
-): Promise<number> {
+): Promise<BrokerCashResult> {
   const balanceRes = await snaptrade.accountInformation.getUserAccountBalance({
     userId: credentials.snaptradeUserId,
     userSecret: credentials.userSecret,
@@ -367,11 +296,25 @@ async function fetchBrokerCash(
   });
   const balanceRows = Array.isArray(balanceRes.data) ? balanceRes.data : [];
   let totalCash = 0;
+  const currencies = new Set<string>();
+  let hasNonUsd = false;
   for (const row of balanceRows) {
-    const cash = readNumber((row as { cash?: unknown }).cash);
-    if (cash != null && cash > 0) totalCash += cash;
+    const rec = asRecord(row);
+    const cash =
+      readNumber(rec?.cash) ??
+      readNumber(rec?.cash_balance) ??
+      readNumber(rec?.cashBalance) ??
+      readNumber(asRecord(rec?.cash)?.amount);
+    const code = (readCurrencyCode(rec?.currency) ?? "USD").toUpperCase();
+    currencies.add(code);
+    if (code !== "USD") {
+      hasNonUsd = true;
+      continue; // never sum non-USD into a USD figure
+    }
+    // Include zero; never use buying_power (margin) as cash.
+    if (cash != null && Number.isFinite(cash) && cash >= 0) totalCash += cash;
   }
-  return totalCash;
+  return { cashUsd: totalCash, currencies: [...currencies], hasNonUsd };
 }
 
 function replaySharesBySymbol(txs: SnapTradeSyncDraftTransaction[]): Map<string, number> {
@@ -388,14 +331,87 @@ function ledgerCashUsd(txs: SnapTradeSyncDraftTransaction[]): number {
   return txs.reduce((s, t) => s + t.sum, 0);
 }
 
-function reconcileHoldings(
+/** Build the REPORT-ONLY reconciliation view (no fabricated rows). */
+function buildReconciliationReport(
+  txs: SnapTradeSyncDraftTransaction[],
+  brokerPositions: BrokerPositionSnapshot[],
+  cash: BrokerCashResult,
+  mode: "REPORT_ONLY" | "ADJUSTED",
+): { reconciliation: SnapTradeReconciliation; warnings: SnapTradeSyncWarning[] } {
+  const warnings: SnapTradeSyncWarning[] = [];
+  const ledgerShares = replaySharesBySymbol(txs);
+
+  const positions: SnapTradeReconcilePosition[] = brokerPositions.map((pos) => {
+    const sym = pos.symbol.toUpperCase();
+    const ledger = ledgerShares.get(sym) ?? 0;
+    const diff = pos.shares - ledger;
+    const minDiff = Math.max(1e-6, pos.shares * 0.001);
+    const status: SnapTradeReconcilePosition["status"] =
+      Math.abs(diff) < minDiff ? "MATCHED" : "POSITION_MISMATCH";
+    if (status === "POSITION_MISMATCH") {
+      warnings.push({
+        code: "POSITION_MISMATCH",
+        message: `${sym}: broker reports ${formatSharesLabel(pos.shares)} shares but imported history replays to ${formatSharesLabel(ledger)}.`,
+        symbol: sym,
+        detail: { brokerShares: pos.shares, ledgerShares: ledger, diff },
+      });
+    }
+    return { symbol: sym, brokerShares: pos.shares, ledgerShares: ledger, diff, status };
+  });
+
+  let cashReport: SnapTradeReconciliation["cash"] = null;
+  if (cash.hasNonUsd) {
+    warnings.push({
+      code: "MULTI_CURRENCY_UNSUPPORTED",
+      message: `Multi-currency balances detected (${cash.currencies.join(", ")}). Cash is not summed as USD; cash reconciliation is skipped.`,
+      detail: { currencies: cash.currencies },
+    });
+  } else {
+    const ledgerCash = ledgerCashUsd(txs);
+    const diff = cash.cashUsd - ledgerCash;
+    const status: "MATCHED" | "CASH_MISMATCH" = Math.abs(diff) < 0.01 ? "MATCHED" : "CASH_MISMATCH";
+    if (status === "CASH_MISMATCH") {
+      warnings.push({
+        code: "CASH_MISMATCH",
+        message: `Broker cash ($${cash.cashUsd.toFixed(2)}) does not match imported ledger cash ($${ledgerCash.toFixed(2)}).`,
+        detail: { brokerCash: cash.cashUsd, ledgerCash, diff },
+      });
+    }
+    cashReport = { brokerCash: cash.cashUsd, ledgerCash, diff, status };
+  }
+
+  // History incomplete: broker holds positions but no trades were imported.
+  const hasPositions = brokerPositions.length > 0;
+  if (hasPositions && !txs.some((t) => t.kind === "trade")) {
+    warnings.push({
+      code: "HISTORY_INCOMPLETE",
+      message:
+        "Broker reports open positions but no trade history was returned by the API. Holdings may be incomplete.",
+      detail: { brokerPositions: brokerPositions.length },
+    });
+  }
+
+  return {
+    reconciliation: {
+      mode,
+      multiCurrency: cash.hasNonUsd,
+      currencies: cash.currencies,
+      positions,
+      cash: cashReport,
+    },
+    warnings,
+  };
+}
+
+/** Synthetic reconciliation rows (only when adjustPositionsToBrokerage is explicitly enabled). */
+function reconcileHoldingsAdjustments(
   txs: SnapTradeSyncDraftTransaction[],
   brokerPositions: BrokerPositionSnapshot[],
   syncDate: string,
+  ctx: BuildContext,
 ): SnapTradeSyncDraftTransaction[] {
   const ledgerShares = replaySharesBySymbol(txs);
-  const out = [...txs];
-
+  const out: SnapTradeSyncDraftTransaction[] = [];
   for (const pos of brokerPositions) {
     const sym = pos.symbol.toUpperCase();
     const ledger = ledgerShares.get(sym) ?? 0;
@@ -419,40 +435,55 @@ function reconcileHoldings(
       profitPct: null,
       profitUsd: null,
       note: holdingAdjustmentNote(pos.shares, ledger),
+      source: "SNAPTRADE_ADJUSTMENT",
+      provider: "SNAPTRADE",
+      externalId: snaptradeAdjustmentExternalId(ctx.accountId, "holding", sym),
+      externalAccountId: ctx.accountId,
+      externalAuthorizationId: ctx.authorizationId,
+      externalActivityType: "RECONCILE_HOLDING",
+      importedAt: ctx.syncTimestamp,
+      lastSyncedAt: ctx.syncTimestamp,
+      currency: "USD",
     });
   }
-
   return out;
 }
 
-function reconcileCash(
+function reconcileCashAdjustment(
   txs: SnapTradeSyncDraftTransaction[],
   brokerCash: number,
   syncDate: string,
-): SnapTradeSyncDraftTransaction[] {
+  ctx: BuildContext,
+  noteFn: (broker: number, ledger: number) => string = cashAdjustmentNote,
+): SnapTradeSyncDraftTransaction | null {
   const ledger = ledgerCashUsd(txs);
   const diff = brokerCash - ledger;
-  if (Math.abs(diff) < 0.01) return txs;
-
+  if (Math.abs(diff) < 0.01) return null;
   const abs = Math.abs(diff);
-  return [
-    ...txs,
-    {
-      kind: "cash",
-      operation: diff > 0 ? "Cash In" : "Cash Out",
-      symbol: "USD",
-      name: "US Dollar",
-      logoUrl: null,
-      date: syncDate,
-      shares: abs,
-      price: 1,
-      fee: 0,
-      sum: diff,
-      profitPct: null,
-      profitUsd: null,
-      note: cashAdjustmentNote(brokerCash, ledger),
-    },
-  ];
+  return {
+    kind: "cash",
+    operation: diff > 0 ? "Cash In" : "Cash Out",
+    symbol: "USD",
+    name: "US Dollar",
+    logoUrl: null,
+    date: syncDate,
+    shares: abs,
+    price: 1,
+    fee: 0,
+    sum: diff,
+    profitPct: null,
+    profitUsd: null,
+    note: noteFn(brokerCash, ledger),
+    source: "SNAPTRADE_ADJUSTMENT",
+    provider: "SNAPTRADE",
+    externalId: snaptradeAdjustmentExternalId(ctx.accountId, "cash", "USD"),
+    externalAccountId: ctx.accountId,
+    externalAuthorizationId: ctx.authorizationId,
+    externalActivityType: "RECONCILE_CASH",
+    importedAt: ctx.syncTimestamp,
+    lastSyncedAt: ctx.syncTimestamp,
+    currency: "USD",
+  };
 }
 
 function sortTransactions(txs: SnapTradeSyncDraftTransaction[]): SnapTradeSyncDraftTransaction[] {
@@ -471,64 +502,199 @@ function hasImportedTrades(txs: SnapTradeSyncDraftTransaction[]): boolean {
 function emulateHoldingsAsTrades(
   brokerPositions: BrokerPositionSnapshot[],
   syncDate: string,
+  ctx: BuildContext,
 ): SnapTradeSyncDraftTransaction[] {
-  return brokerPositions.map((pos) => ({
-    kind: "trade" as const,
-    operation: "Buy",
-    symbol: pos.symbol,
-    name: pos.name,
-    logoUrl: null,
-    date: syncDate,
-    shares: pos.shares,
-    price: pos.avgPrice,
-    fee: 0,
-    sum: -(pos.shares * pos.avgPrice),
-    profitPct: null,
-    profitUsd: null,
-    note: "Emulated from broker holdings because no transaction history was returned by the API.",
-  }));
+  return brokerPositions.map((pos) => {
+    const sym = pos.symbol.toUpperCase();
+    return {
+      kind: "trade" as const,
+      operation: "Buy",
+      symbol: pos.symbol,
+      name: pos.name,
+      logoUrl: null,
+      date: syncDate,
+      shares: pos.shares,
+      price: pos.avgPrice,
+      fee: 0,
+      sum: -(pos.shares * pos.avgPrice),
+      profitPct: null,
+      profitUsd: null,
+      note: "Emulated from broker holdings because no transaction history was returned by the API.",
+      source: "SNAPTRADE_ADJUSTMENT" as const,
+      provider: "SNAPTRADE" as const,
+      externalId: snaptradeAdjustmentExternalId(ctx.accountId, "emulated", sym),
+      externalAccountId: ctx.accountId,
+      externalAuthorizationId: ctx.authorizationId,
+      externalActivityType: "EMULATED_HOLDING",
+      importedAt: ctx.syncTimestamp,
+      lastSyncedAt: ctx.syncTimestamp,
+      currency: "USD",
+    };
+  });
 }
 
-/** Snowball-style sync: activities + recent orders, then reconcile to broker holdings/cash. */
+/**
+ * Snowball-style sync: activities + recent orders, then (report-only by default) reconcile
+ * to broker holdings/cash. Every mapped row carries SnapTrade provenance + a stable externalId.
+ */
 export async function buildSnapTradeSyncTransactions(
   snaptrade: Snaptrade,
   credentials: SnapTradeCredentials,
   accountIds: string[],
   syncDate: string,
+  authorizationId: string,
   syncSettings: PortfolioSnaptradeSyncSettings = DEFAULT_PORTFOLIO_SNAPTRADE_SYNC_SETTINGS,
   updateFromYmd: string | null = null,
-): Promise<SnapTradeSyncDraftTransaction[]> {
+): Promise<SnapTradeSyncBuildResult> {
   const activitiesStartDate =
     updateFromYmd ?? format(subYears(new Date(), 5), "yyyy-MM-dd");
-  let transactions: SnapTradeSyncDraftTransaction[] = [];
+  const syncTimestamp = new Date().toISOString();
+  const warnings: SnapTradeSyncWarning[] = [];
+  const transactions: SnapTradeSyncDraftTransaction[] = [];
   const brokerPositions: BrokerPositionSnapshot[] = [];
   let brokerCash = 0;
+  const currencySet = new Set<string>();
+  let hasNonUsd = false;
+
+  // Stable synthetic account id for cross-account adjustment rows.
+  const adjustmentAccountKey = [...accountIds].sort().join("+") || "all";
 
   for (const accountId of accountIds) {
+    const ctx: BuildContext = { accountId, authorizationId, syncTimestamp };
     const [activities, orders, positions, cash] = await Promise.all([
-      fetchAllActivities(snaptrade, credentials, accountId, activitiesStartDate),
-      fetchExecutedOrders(snaptrade, credentials, accountId),
+      fetchAllActivities(snaptrade, credentials, ctx, activitiesStartDate, warnings),
+      fetchExecutedOrders(snaptrade, credentials, ctx, warnings),
       fetchBrokerPositions(snaptrade, credentials, accountId),
       fetchBrokerCash(snaptrade, credentials, accountId),
     ]);
 
-    transactions = mergeUniqueTransactions(transactions, activities);
-    transactions = mergeUniqueTransactions(transactions, orders);
+    const { kept: ordersDeduped, dropped: ordersDropped } = dedupeSnaptradeOrdersAgainstActivities(
+      activities,
+      orders,
+    );
+    if (ordersDropped > 0) {
+      warnings.push({
+        code: "ORDER_ACTIVITY_DEDUPED",
+        message: `Skipped ${ordersDropped} executed order(s) already covered by activity fills.`,
+        accountId,
+        detail: { dropped: ordersDropped },
+      });
+    }
+
+    transactions.push(...activities);
+    transactions.push(...ordersDeduped);
     brokerPositions.push(...positions);
-    brokerCash += cash;
+    brokerCash += cash.cashUsd;
+    for (const c of cash.currencies) currencySet.add(c);
+    if (cash.hasNonUsd) hasNonUsd = true;
   }
+
+  const adjustmentCtx: BuildContext = {
+    accountId: adjustmentAccountKey,
+    authorizationId,
+    syncTimestamp,
+  };
+
+  const cashResult: BrokerCashResult = {
+    cashUsd: brokerCash,
+    currencies: [...currencySet],
+    hasNonUsd,
+  };
+
+  const adjustEnabled = syncSettings.adjustPositionsToBrokerage === true;
 
   if (syncSettings.emulateTransactionHistory && !hasImportedTrades(transactions)) {
-    transactions = mergeUniqueTransactions(
+    transactions.push(...emulateHoldingsAsTrades(brokerPositions, syncDate, adjustmentCtx));
+  }
+
+  if (adjustEnabled) {
+    const holdingAdj = reconcileHoldingsAdjustments(transactions, brokerPositions, syncDate, adjustmentCtx);
+    transactions.push(...holdingAdj);
+    if (!hasNonUsd) {
+      const cashAdj = reconcileCashAdjustment(transactions, brokerCash, syncDate, adjustmentCtx);
+      if (cashAdj) transactions.push(cashAdj);
+    }
+  } else if (updateFromYmd == null) {
+    // Soft bridges only on FULL history sync. Incremental windows fetch partial trades;
+    // reconciling those against full broker positions would invent duplicate buys/cash and
+    // inflate NAV when merged on top of preserved older rows.
+    const holdingAdj = reconcileHoldingsAdjustments(
       transactions,
-      emulateHoldingsAsTrades(brokerPositions, syncDate),
+      brokerPositions,
+      syncDate,
+      adjustmentCtx,
     );
+    if (holdingAdj.length > 0) {
+      transactions.push(...holdingAdj);
+      warnings.push({
+        code: "POSITION_BRIDGE",
+        message: `Adjusted ${holdingAdj.length} position(s) so share counts match the brokerage.`,
+        accountId: adjustmentAccountKey,
+        detail: {
+          symbols: holdingAdj.map((t) => t.symbol),
+        },
+      });
+    }
+
+    if (!hasNonUsd) {
+      const ledgerBefore = ledgerCashUsd(transactions);
+      const bridgeDate =
+        transactions.some((t) => t.kind === "cash") ?
+          syncDate
+        : openingCashBridgeDate(transactions, syncDate);
+      const cashAdj = reconcileCashAdjustment(
+        transactions,
+        brokerCash,
+        bridgeDate,
+        adjustmentCtx,
+        cashBridgeNote,
+      );
+      if (cashAdj) {
+        transactions.push(cashAdj);
+        warnings.push({
+          code: "CASH_BRIDGE",
+          message: `Cash ledger adjusted to brokerage balance ($${brokerCash.toFixed(2)}; was $${ledgerBefore.toFixed(2)}).`,
+          accountId: adjustmentAccountKey,
+          detail: {
+            brokerCash,
+            ledgerBefore,
+            bridgeDate,
+            sum: cashAdj.sum,
+          },
+        });
+      }
+    }
+  } else {
+    warnings.push({
+      code: "INCREMENTAL_NO_RECONCILE",
+      message:
+        "Incremental sync does not re-reconcile cash/positions. Use “first transaction” once if balances look doubled or stale.",
+      accountId: adjustmentAccountKey,
+      detail: { updateFromYmd },
+    });
   }
 
-  if (syncSettings.adjustPositionsToBrokerage) {
-    transactions = reconcileHoldings(transactions, brokerPositions, syncDate);
-    transactions = reconcileCash(transactions, brokerCash, syncDate);
+  const { reconciliation, warnings: reconWarnings } = buildReconciliationReport(
+    transactions,
+    brokerPositions,
+    cashResult,
+    adjustEnabled ||
+      transactions.some((t) => t.source === "SNAPTRADE_ADJUSTMENT") ?
+      "ADJUSTED"
+    : "REPORT_ONLY",
+  );
+  warnings.push(...reconWarnings);
+
+
+  const brokerMarks: Record<string, number> = {};
+  for (const p of brokerPositions) {
+    if (p.marketPrice > 0) brokerMarks[p.symbol.toUpperCase()] = p.marketPrice;
   }
 
-  return sortTransactions(transactions);
+  return {
+    transactions: sortTransactions(transactions),
+    warnings,
+    reconciliation,
+    brokerMarks,
+  };
 }

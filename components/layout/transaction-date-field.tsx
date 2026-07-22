@@ -13,6 +13,14 @@ function startOfCalendarMonth(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), 1);
 }
 
+function sameCalendarMonth(a: Date, b: Date): boolean {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
+}
+
+function dateKey(d: Date): string {
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+}
+
 /**
  * react-day-picker orders month/year from locale (`en-US` → month first).
  * Swap so year appears before month; keep the live caption `<span role="status">` last.
@@ -56,6 +64,7 @@ export function TransactionDateField({
 }) {
   const [open, setOpen] = useState(false);
   const [month, setMonth] = useState(() => startOfCalendarMonth(date));
+  const dateDayKey = dateKey(date);
 
   const { startMonth, endMonth } = useMemo(() => {
     const y = new Date().getFullYear();
@@ -68,8 +77,10 @@ export function TransactionDateField({
 
   useEffect(() => {
     if (!open) return;
-    setMonth(startOfCalendarMonth(date));
-  }, [open, date]);
+    const [y, m] = dateDayKey.split("-").map(Number);
+    const next = new Date(y!, m!, 1);
+    setMonth((prev) => (sameCalendarMonth(prev, next) ? prev : next));
+  }, [open, dateDayKey]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -111,7 +122,10 @@ export function TransactionDateField({
           }}
           components={{ DropdownNav: YearFirstCaptionDropdownNav }}
           month={month}
-          onMonthChange={(m) => setMonth(startOfCalendarMonth(m))}
+          onMonthChange={(m) => {
+            const next = startOfCalendarMonth(m);
+            setMonth((prev) => (sameCalendarMonth(prev, next) ? prev : next));
+          }}
           selected={date}
           onSelect={(d) => {
             if (d) {

@@ -1,5 +1,7 @@
 import type { PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 import { splitRatioFromTransaction } from "@/lib/portfolio/split-ratio-from-transaction";
+import { sortPortfolioTransactionsCanonical } from "@/lib/portfolio/ledger/portfolio-ledger-order";
+import { migratePortfolioTransactionSequences } from "@/lib/portfolio/ledger/portfolio-ledger-migrate";
 
 /** Earliest calendar day of a stock buy (YYYY-MM-DD). */
 export function earliestStockBuyYmd(transactions: PortfolioTransaction[]): string | null {
@@ -20,16 +22,13 @@ export function replayStockSharesUpTo(
   transactions: PortfolioTransaction[],
   asOfYmd: string,
 ): Map<string, number> {
-  const trades = transactions
-    .filter((t) => t.kind === "trade")
-    .sort((a, b) => {
-      if (a.date !== b.date) return a.date.localeCompare(b.date);
-      return 0;
-    });
+  const { transactions: migrated } = migratePortfolioTransactionSequences(transactions);
+  const trades = sortPortfolioTransactionsCanonical(
+    migrated.filter((t) => t.kind === "trade" && t.date <= asOfYmd),
+  );
 
   const m = new Map<string, number>();
   for (const t of trades) {
-    if (t.date > asOfYmd) break;
     const sym = t.symbol.toUpperCase();
     const prev = m.get(sym) ?? 0;
     const op = t.operation.toLowerCase();
@@ -47,7 +46,10 @@ export function replayStockSharesUpTo(
 
 /**
  * Net cash contributed to equity positions **after** {@link afterYmd} (exclusive of that day).
- * Buy rows use negative `sum` (cash out); sells positive. Sum of `-sum` matches Dietz net flow.
+ * Buy rows use negative `sum` (cash out); sells positive.
+ *
+ * @deprecated Not for portfolio NAV Modified Dietz. External capital flows are `kind === "cash"`
+ * only — see `@/lib/portfolio/returns/portfolio-return-engine`.
  */
 export function netCashIntoEquityAfter(transactions: PortfolioTransaction[], afterYmd: string): number {
   let f = 0;
@@ -60,13 +62,7 @@ export function netCashIntoEquityAfter(transactions: PortfolioTransaction[], aft
 }
 
 /**
- * Modified Dietz return (%) from inception through now for a portfolio with external flows.
- * See https://en.wikipedia.org/wiki/Modified_Dietz_method
+ * Mid-point Modified Dietz (legacy). Production period returns use day-weighted Dietz in
+ * `@/lib/portfolio/returns/modified-dietz`.
  */
-export function modifiedDietzReturnPct(vStart: number, vEnd: number, netFlow: number): number | null {
-  const denom = vStart + netFlow / 2;
-  if (!Number.isFinite(denom) || denom <= 0) return null;
-  const num = vEnd - vStart - netFlow;
-  if (!Number.isFinite(num)) return null;
-  return (num / denom) * 100;
-}
+export { modifiedDietzMidpointPct as modifiedDietzReturnPct } from "@/lib/portfolio/returns/modified-dietz";

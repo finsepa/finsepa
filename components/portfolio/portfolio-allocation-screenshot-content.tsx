@@ -3,9 +3,13 @@
 import { useMemo } from "react";
 
 import { ChartScreenshotPortfolioHeader } from "@/components/chart/chart-screenshot-portfolio-header";
+import { AllocationDonutCenterReturn } from "@/components/portfolio/allocation-donut-center-return";
 import { AllocationDonutChart } from "@/components/portfolio/allocation-donut-chart";
-import { UserAvatar } from "@/components/user/user-avatar";
 import type { AllocationDonutRow } from "@/lib/portfolio/allocation-donut-rows";
+import {
+  ALLOCATION_RETURN_PERIOD_DEFAULT,
+  type AllocationReturnPeriodId,
+} from "@/lib/portfolio/allocation-return-period";
 import { cn } from "@/lib/utils";
 
 const pct1 = new Intl.NumberFormat("en-US", {
@@ -51,6 +55,8 @@ export function PortfolioAllocationScreenshotContent({
   portfolioLogoUrl,
   avatarImageSrc,
   avatarInitials,
+  returnPct = null,
+  returnPeriod = ALLOCATION_RETURN_PERIOD_DEFAULT,
   showSliceLabels,
   showLegend,
   showLegendValues,
@@ -61,6 +67,8 @@ export function PortfolioAllocationScreenshotContent({
   portfolioLogoUrl?: string | null;
   avatarImageSrc: string | null;
   avatarInitials: string;
+  returnPct?: number | null;
+  returnPeriod?: AllocationReturnPeriodId;
   showSliceLabels: boolean;
   showLegend: boolean;
   showLegendValues: boolean;
@@ -78,12 +86,20 @@ export function PortfolioAllocationScreenshotContent({
       <ChartScreenshotPortfolioHeader
         portfolioName={portfolioName}
         logoUrl={portfolioLogoUrl}
+        avatarImageSrc={avatarImageSrc}
+        avatarInitials={avatarInitials}
         compact
       />
       <div className="mt-5 box-border flex min-w-0 items-center gap-5 rounded-[12px] border border-[#E4E4E7] bg-white px-5 py-4 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
         <AllocationDonutChart
           rows={rows}
-          center={<UserAvatar imageSrc={avatarImageSrc} initials={avatarInitials} size="xl" />}
+          center={
+            <AllocationDonutCenterReturn
+              returnPct={returnPct}
+              period={returnPeriod}
+              interactive={false}
+            />
+          }
           className="mx-0 shrink-0"
           chartSizePx={280}
           badgeOverflowPadPx={showSliceLabels ? 18 : 8}

@@ -50,6 +50,10 @@ import {
 } from "@/components/design-system/dropdown-menu-styles";
 import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
 import type { PortfolioTransaction } from "@/components/portfolio/portfolio-types";
+import {
+  buildContributionBenchmarkSeries,
+  extractAllExternalCashFlows,
+} from "@/lib/portfolio/benchmark/benchmark-engine";
 import { AssetChartSkeleton } from "@/components/ui/chart-skeleton";
 import { FormListboxSelect } from "@/components/ui/form-listbox-select";
 import type { ListboxOption } from "@/components/ui/form-listbox-select";
@@ -88,29 +92,73 @@ type OverviewYAxisLabel = { key: string; label: string; topPct: number };
 
 type OverviewMainSeries = ISeriesApi<"Area"> | ISeriesApi<"Baseline">;
 
-const BENCHMARK_COMPARE_DISABLED_HINT = "Switch to Value to compare portfolio net worth with an index.";
+const BENCHMARK_COMPARE_DISABLED_HINT =
+  "Switch to Value or Return to compare with an index.";
 
 async function fetchBenchmarkChartPoints(
   ticker: string,
   range: PortfolioChartRange,
   signal: AbortSignal,
+  coverFromYmd?: string | null,
 ): Promise<StockChartPoint[] | null> {
-  const stockRange = portfolioRangeToStockRange(range);
+  const toYmd = format(new Date(), "yyyy-MM-dd");
+  // Daily EOD via Portfolio loader — same session cadence as value-history (not weekly/monthly stock charts).
+  let fromYmd = coverFromYmd && /^\d{4}-\d{2}-\d{2}$/.test(coverFromYmd) ? coverFromYmd : toYmd;
+  // Pad so the first chart sample can resolve a prior session mark.
+  try {
+    fromYmd = format(subDays(parseISO(fromYmd), 14), "yyyy-MM-dd");
+  } catch {
+    /* keep fromYmd */
+  }
+  // Also cover the visible chart window start when it is earlier than coverFrom.
+  const windowFrom = chartWindowStartYmd(range);
+  if (windowFrom != null && windowFrom < fromYmd) fromYmd = windowFrom;
+
   const res = await fetch(
-    `/api/stocks/${encodeURIComponent(ticker)}/chart?range=${stockRange}&series=price`,
-    { credentials: "include", signal },
+    `/api/portfolio/benchmark-history?ticker=${encodeURIComponent(ticker)}&from=${encodeURIComponent(fromYmd)}&to=${encodeURIComponent(toYmd)}`,
+    { credentials: "include", signal, cache: "no-store" },
   );
   if (!res.ok) return null;
   const json = (await res.json()) as { points?: StockChartPoint[] };
   return Array.isArray(json.points) ? json.points : null;
 }
 
+/** First calendar day of the selected portfolio chart range (approx). */
+function chartWindowStartYmd(range: PortfolioChartRange): string | null {
+  const now = new Date();
+  try {
+    switch (range) {
+      case "1d":
+        return format(subDays(now, 1), "yyyy-MM-dd");
+      case "7d":
+        return format(subDays(now, 7), "yyyy-MM-dd");
+      case "1m":
+        return format(subDays(now, 31), "yyyy-MM-dd");
+      case "6m":
+        return format(subDays(now, 183), "yyyy-MM-dd");
+      case "ytd":
+        return `${now.getFullYear()}-01-01`;
+      case "1y":
+        return format(subDays(now, 365), "yyyy-MM-dd");
+      case "5y":
+        return format(subDays(now, 365 * 5), "yyyy-MM-dd");
+      case "all":
+        return format(subDays(now, 365 * 12), "yyyy-MM-dd");
+      default:
+        return null;
+    }
+  } catch {
+    return null;
+  }
+}
+
 /** Fetch S&P 500 (SPY) price history for portfolio compare overlays. */
 export async function fetchSpyBenchmarkChartPoints(
   range: PortfolioChartRange,
   signal: AbortSignal,
+  coverFromYmd?: string | null,
 ): Promise<StockChartPoint[] | null> {
-  return fetchBenchmarkChartPoints("SPY", range, signal);
+  return fetchBenchmarkChartPoints("SPY", range, signal, coverFromYmd);
 }
 
 function portfolioRangeToStockRange(r: PortfolioChartRange): StockChartRange {
@@ -135,6 +183,21 @@ function portfolioRangeToStockRange(r: PortfolioChartRange): StockChartRange {
       return "1Y";
   }
 }
+
+function earliestBenchmarkCoverYmd(
+  transactions: readonly PortfolioTransaction[],
+): string | null {
+  const flows = extractAllExternalCashFlows(transactions);
+  if (flows.length > 0) return flows[0]!.date;
+  let min: string | null = null;
+  for (const t of transactions) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(t.date)) continue;
+    if (min == null || t.date < min) min = t.date;
+  }
+  return min;
+}
+
+export { earliestBenchmarkCoverYmd };
 
 function barYmdFromStockPoint(p: StockChartPoint): string | null {
   if (typeof p.sessionDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(p.sessionDate)) {
@@ -177,23 +240,64 @@ function spyCloseOnOrBefore(sorted: readonly StockChartPoint[], ymd: string): nu
 }
 
 /**
- * Dollar path if starting capital had tracked the benchmark.
- * - `value`: absolute $ path (same basis as “$X invested” under Total value)
- * - `profit`: $ P&L vs that notional (for Portfolio return charts)
- * Uses {@link equityCostBasisInvestedUsd} when set; otherwise falls back to portfolio
- * value at the first in-range point with positive net worth.
+ * Price for contribution replay: prefer on/before `ymd`, else first available bar
+ * (deposits before the fetched window still buy shares at the first mark).
+ */
+function spyPriceForFlow(sorted: readonly StockChartPoint[], ymd: string): number | null {
+  const direct = spyCloseOnOrBefore(sorted, ymd);
+  if (direct != null && Number.isFinite(direct) && direct > 0) return direct;
+  if (sorted.length === 0) return null;
+  const first = sorted[0]!;
+  const firstYmd = barYmdFromStockPoint(first);
+  if (firstYmd != null && ymd < firstYmd && Number.isFinite(first.value) && first.value > 0) {
+    return first.value;
+  }
+  return null;
+}
+
+function portfolioPointTime(p: PortfolioValueHistoryPoint): Time {
+  return p.time != null && Number.isFinite(p.time) ? (p.time as Time) : (p.t as Time);
+}
+
+/**
+ * Dollar path if external cash flows had tracked the benchmark (contribution model).
+ * Falls back to single-notional SPY scale when the ledger has no Cash In/Out rows.
  */
 function buildBenchmarkCompareLineData(
   filtered: readonly PortfolioValueHistoryPoint[],
   rawSpy: readonly StockChartPoint[] | null | undefined,
   equityCostBasisInvestedUsd: number | null | undefined,
   mode: "value" | "profit" = "value",
+  transactions?: readonly PortfolioTransaction[],
 ): { time: Time; value: number }[] {
   if (!rawSpy?.length || filtered.length === 0) return [];
   const spy = spySortedByTime(rawSpy);
+  const priceOnOrBefore = (ymd: string) => spyPriceForFlow(spy, ymd);
+
+  if (transactions && transactions.length > 0) {
+    const flows = extractAllExternalCashFlows(transactions);
+    if (flows.length > 0) {
+      const series = buildContributionBenchmarkSeries({
+        sampleYmds: filtered.map((p) => p.t),
+        flows,
+        priceOnOrBefore,
+        mode,
+      });
+      const byT = new Map(series.map((r) => [r.t, r.value]));
+      const out: { time: Time; value: number }[] = [];
+      for (const p of filtered) {
+        const v = byT.get(p.t);
+        if (v == null || !Number.isFinite(v)) continue;
+        out.push({ time: portfolioPointTime(p), value: v });
+      }
+      return out;
+    }
+  }
+
+  // Legacy fallback: scale a single notional by SPY price ratio (no cash-flow ledger).
   const rows: { t: string; spy: number; v: number }[] = [];
   for (const p of filtered) {
-    const s = spyCloseOnOrBefore(spy, p.t);
+    const s = priceOnOrBefore(p.t);
     if (s == null || !Number.isFinite(s) || s <= 0) continue;
     if (!Number.isFinite(p.value)) continue;
     rows.push({ t: p.t, spy: s, v: p.value });
@@ -210,12 +314,36 @@ function buildBenchmarkCompareLineData(
   if (spy0 <= 0 || notional0 <= 0) return [];
   const out: { time: Time; value: number }[] = [];
   for (const p of filtered) {
-    const s = spyCloseOnOrBefore(spy, p.t);
+    const s = priceOnOrBefore(p.t);
     if (s == null || !Number.isFinite(s) || s <= 0) continue;
     const scaled = s * (notional0 / spy0);
     out.push({
-      time: p.time != null && Number.isFinite(p.time) ? (p.time as Time) : (p.t as Time),
+      time: portfolioPointTime(p),
       value: mode === "profit" ? scaled - notional0 : scaled,
+    });
+  }
+  return out;
+}
+
+/**
+ * S&P total return % from the first portfolio sample date (Return metric overlay).
+ * Same selected window as the portfolio line — does not change portfolio data.
+ */
+function buildBenchmarkReturnLineData(
+  filtered: readonly PortfolioValueHistoryPoint[],
+  rawSpy: readonly StockChartPoint[] | null | undefined,
+): { time: Time; value: number }[] {
+  if (!rawSpy?.length || filtered.length === 0) return [];
+  const spy = spySortedByTime(rawSpy);
+  const firstPx = spyPriceForFlow(spy, filtered[0]!.t);
+  if (firstPx == null || firstPx <= 0) return [];
+  const out: { time: Time; value: number }[] = [];
+  for (const p of filtered) {
+    const px = spyPriceForFlow(spy, p.t);
+    if (px == null || px <= 0) continue;
+    out.push({
+      time: portfolioPointTime(p),
+      value: (px / firstPx - 1) * 100,
     });
   }
   return out;
@@ -391,6 +519,7 @@ function PortfolioChartSettingsButton({
   compareNasdaq,
   onCompareNasdaqChange,
   benchmarkCompareDisabled,
+  nasdaqCompareDisabled,
 }: {
   showTrades: boolean;
   onShowTradesChange: (next: boolean) => void;
@@ -398,7 +527,10 @@ function PortfolioChartSettingsButton({
   onCompareSpyChange: (next: boolean) => void;
   compareNasdaq: boolean;
   onCompareNasdaqChange: (next: boolean) => void;
+  /** S&P compare — Value ($ contribution) or Return (%). */
   benchmarkCompareDisabled: boolean;
+  /** Nasdaq compare — Value only. */
+  nasdaqCompareDisabled: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -462,15 +594,23 @@ function PortfolioChartSettingsButton({
         >
           <div className={dropdownMenuPanelClassName("max-md:w-full max-md:!border-0")} role="menu" aria-label="Chart settings">
             {PORTFOLIO_CHART_SETTINGS_ROWS.map(({ key, label, ariaLabel }) => {
-              const benchmarkRow = key === "compareSpy" || key === "compareNasdaq";
+              const rowDisabled =
+                key === "compareSpy" ? benchmarkCompareDisabled
+                : key === "compareNasdaq" ? nasdaqCompareDisabled
+                : false;
+              const hint =
+                key === "compareSpy" && benchmarkCompareDisabled ? BENCHMARK_COMPARE_DISABLED_HINT
+                : key === "compareNasdaq" && nasdaqCompareDisabled ?
+                  "Switch to Value to compare portfolio net worth with Nasdaq."
+                : undefined;
               return (
                 <div key={key} role="menuitem" className={dropdownMenuPlainItemRowClassName()}>
                   <span className="min-w-0 flex-1 text-sm font-medium leading-5 text-[#0F0F0F]">{label}</span>
                   <PillSwitch
                     pressed={values[key]}
                     onPressedChange={(next) => onChangeForKey(key, next)}
-                    disabled={benchmarkRow && benchmarkCompareDisabled}
-                    title={benchmarkRow && benchmarkCompareDisabled ? BENCHMARK_COMPARE_DISABLED_HINT : undefined}
+                    disabled={rowDisabled}
+                    title={hint}
                     aria-label={ariaLabel}
                   />
                 </div>
@@ -1066,8 +1206,12 @@ export function PortfolioValueHistoryChartPane({
     },
   };
 
-  const drawCompareSpy = compareSpy && (metric === "value" || metric === "profit");
+  const drawCompareSpy =
+    compareSpy && (metric === "value" || metric === "return" || metric === "profit");
   const drawCompareNasdaq = compareNasdaq && metric === "value";
+  /** Create compare series with the chart so toggling S&P does not remount the portfolio series. */
+  const mountSpySeries = metric === "value" || metric === "return" || metric === "profit";
+  const mountNasdaqSeries = metric === "value";
 
   chartRangeRef.current = range;
 
@@ -1191,21 +1335,24 @@ export function PortfolioValueHistoryChartPane({
       lastPriceAnimation: LastPriceAnimationMode.OnDataUpdate,
       crosshairMarkerVisible: false,
       priceScaleId: "right",
+      lastValueVisible: true,
     } as const;
 
-    if (drawCompareSpy) {
+    if (mountSpySeries) {
       compareSeriesRefs.current.spy = chart.addSeries(LineSeries, {
         ...compareLineOpts,
         color: BENCHMARK_SPY_LINE,
+        visible: false,
       });
     } else {
       compareSeriesRefs.current.spy = null;
     }
 
-    if (drawCompareNasdaq) {
+    if (mountNasdaqSeries) {
       compareSeriesRefs.current.nasdaq = chart.addSeries(LineSeries, {
         ...compareLineOpts,
         color: BENCHMARK_NASDAQ_LINE,
+        visible: false,
       });
     } else {
       compareSeriesRefs.current.nasdaq = null;
@@ -1361,7 +1508,7 @@ export function PortfolioValueHistoryChartPane({
       setAxisPlotWidthPx(0);
       setYAxisLabels([]);
     };
-  }, [metric, compareSpy, compareNasdaq, chartLayout.plotHeightPx, setPeriodAxisLabelsGuarded]);
+  }, [metric, chartLayout.plotHeightPx, setPeriodAxisLabelsGuarded]);
 
   useEffect(() => {
     const chart = chartRef.current;
@@ -1422,14 +1569,17 @@ export function PortfolioValueHistoryChartPane({
       rawPoints: readonly StockChartPoint[] | null | undefined,
     ) => {
       if (series && enabled) {
-        series.setData(
-          buildBenchmarkCompareLineData(
-            filtered,
-            rawPoints ?? undefined,
-            benchmarkInvestedUsd,
-            metric === "profit" ? "profit" : "value",
-          ),
-        );
+        const data =
+          metric === "return" ?
+            buildBenchmarkReturnLineData(filtered, rawPoints ?? undefined)
+          : buildBenchmarkCompareLineData(
+              filtered,
+              rawPoints ?? undefined,
+              benchmarkInvestedUsd,
+              metric === "profit" ? "profit" : "value",
+              transactions,
+            );
+        series.setData(data);
       } else if (series) {
         series.setData([]);
       }
@@ -1595,24 +1745,18 @@ export function PortfolioValueHistoryChartPane({
         aria-hidden={periodAxisLabels.length === 0 && !hoverAxisLabel}
       >
         {hoverAxisLabel ?
-          (() => {
-            const leftmost = periodAxisLabels[0]?.leftPx ?? null;
-            const anchor = resolvePeriodAxisLabelAnchor(hoverAxisLabel.leftPx, {
-              isLeftmost: leftmost != null && hoverAxisLabel.leftPx <= leftmost + 4,
-            });
-            return (
+          (
           <span
             className={cn(
               "absolute bottom-1 inline-block whitespace-nowrap font-['Inter'] text-[11px] font-medium tabular-nums leading-none text-[#0F0F0F] sm:text-[12px]",
-              periodAxisLabelMaxWidthClass(anchor),
-              periodAxisLabelTransformClass(anchor),
+              periodAxisLabelMaxWidthClass("center"),
+              periodAxisLabelTransformClass("center"),
             )}
-            style={periodAxisLabelLayoutStyle(hoverAxisLabel.leftPx, anchor, axisPlotWidthPx)}
+            style={periodAxisLabelLayoutStyle(hoverAxisLabel.leftPx, "center", axisPlotWidthPx)}
           >
             {hoverAxisLabel.label}
           </span>
-            );
-          })()
+          )
         : periodAxisLabels.map((lab, i) => {
             const anchor = resolvePeriodAxisLabelAnchor(lab.leftPx, { isLeftmost: i === 0 });
             return (
@@ -1648,6 +1792,7 @@ function PortfolioOverviewChartInner({
   const [points, setPoints] = useState<PortfolioValueHistoryPoint[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const loadGenRef = useRef(0);
   const [showTrades, setShowTrades] = useState(false);
   const [compareSpy, setCompareSpy] = useState(false);
   const [compareNasdaq, setCompareNasdaq] = useState(false);
@@ -1655,7 +1800,8 @@ function PortfolioOverviewChartInner({
   const [nasdaqPoints, setNasdaqPoints] = useState<StockChartPoint[] | null>(null);
 
   const canLoad = transactions.length > 0;
-  const benchmarkCompareDisabled = metric !== "value";
+  const benchmarkCompareDisabled = metric !== "value" && metric !== "return";
+  const nasdaqCompareDisabled = metric !== "value";
   const chartSettingsProps = {
     showTrades,
     onShowTradesChange: setShowTrades,
@@ -1664,6 +1810,7 @@ function PortfolioOverviewChartInner({
     compareNasdaq,
     onCompareNasdaqChange: setCompareNasdaq,
     benchmarkCompareDisabled,
+    nasdaqCompareDisabled,
   } as const;
 
   const load = useCallback(async () => {
@@ -1673,6 +1820,7 @@ function PortfolioOverviewChartInner({
     }
     setLoading(true);
     setError(null);
+    const gen = ++loadGenRef.current;
     try {
       const res = await fetch("/api/portfolio/value-history", {
         method: "POST",
@@ -1684,12 +1832,14 @@ function PortfolioOverviewChartInner({
         throw new Error("Failed to load chart");
       }
       const json = (await res.json()) as { points?: PortfolioValueHistoryPoint[] };
+      if (gen !== loadGenRef.current) return;
       setPoints(Array.isArray(json.points) ? json.points : []);
     } catch {
+      if (gen !== loadGenRef.current) return;
       setError("Could not load history");
-      setPoints([]);
+      // Keep prior points on failure — avoid wiping a good chart on transient errors.
     } finally {
-      setLoading(false);
+      if (gen === loadGenRef.current) setLoading(false);
     }
   }, [canLoad, range, transactions]);
 
@@ -1697,8 +1847,9 @@ function PortfolioOverviewChartInner({
     void load();
   }, [load]);
 
-  const fetchSpy = compareSpy && metric === "value" && canLoad;
+  const fetchSpy = compareSpy && (metric === "value" || metric === "return") && canLoad;
   const fetchNasdaq = compareNasdaq && metric === "value" && canLoad;
+  const coverFromYmd = earliestBenchmarkCoverYmd(transactions);
 
   useEffect(() => {
     if (!fetchSpy) {
@@ -1706,13 +1857,13 @@ function PortfolioOverviewChartInner({
       return;
     }
     const ac = new AbortController();
-    void fetchBenchmarkChartPoints("SPY", range, ac.signal)
+    void fetchBenchmarkChartPoints("SPY", range, ac.signal, coverFromYmd)
       .then(setSpyPoints)
       .catch(() => {
         if (!ac.signal.aborted) setSpyPoints(null);
       });
     return () => ac.abort();
-  }, [fetchSpy, range, canLoad]);
+  }, [fetchSpy, range, canLoad, coverFromYmd]);
 
   useEffect(() => {
     if (!fetchNasdaq) {
@@ -1720,13 +1871,13 @@ function PortfolioOverviewChartInner({
       return;
     }
     const ac = new AbortController();
-    void fetchBenchmarkChartPoints("QQQ", range, ac.signal)
+    void fetchBenchmarkChartPoints("QQQ", range, ac.signal, coverFromYmd)
       .then(setNasdaqPoints)
       .catch(() => {
         if (!ac.signal.aborted) setNasdaqPoints(null);
       });
     return () => ac.abort();
-  }, [fetchNasdaq, range, canLoad]);
+  }, [fetchNasdaq, range, canLoad, coverFromYmd]);
 
   return (
     <section className="mb-6 w-full min-w-0 max-md:mb-4">

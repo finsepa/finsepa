@@ -6,6 +6,9 @@ import {
   parsePersistedPortfolioUnknown,
 } from "@/lib/portfolio/portfolio-storage";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { isPortfolioLedgerStrictPersistEnabled } from "@/lib/features/portfolio-correctness";
+import { prepareWorkspaceLedgerForPersist } from "@/lib/portfolio/ledger/portfolio-ledger-prepare";
+import { validateWorkspaceState } from "@/lib/portfolio/ledger/portfolio-ledger-validate";
 
 function summarizeState(s: PersistedPortfolioState): { portfolioCount: number; holdingCount: number; txCount: number } {
   let holdingCount = 0;
@@ -73,9 +76,41 @@ export async function PUT(request: Request) {
         ? (body as { state: unknown }).state
         : body;
 
-    const state = parsePersistedPortfolioUnknown(rawState);
-    if (!state) {
+    const parsed = parsePersistedPortfolioUnknown(rawState);
+    if (!parsed) {
       return NextResponse.json({ error: "Invalid portfolio state payload." }, { status: 400 });
+    }
+
+    const { state, report: migrateReport } = prepareWorkspaceLedgerForPersist(parsed);
+    const strict = isPortfolioLedgerStrictPersistEnabled();
+    const validation = validateWorkspaceState(state, {
+      allowLegacyAnomalies: true,
+      strict,
+    });
+
+    if (strict && !validation.ok) {
+      const first = validation.errors[0];
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "ledger_validation_failed",
+          code: first?.code ?? "INVALID_TRANSACTION_ORDER",
+          portfolioId: first?.portfolioId ?? null,
+          transactionId: first?.transactionId ?? null,
+          message: first?.message ?? "Portfolio ledger validation failed.",
+          errors: validation.errors,
+          warnings: validation.warnings,
+        },
+        { status: 422 },
+      );
+    }
+
+    if (validation.warnings.length > 0) {
+      console.warn("[portfolio/workspace PUT] ledger warnings", {
+        userId: user.id,
+        warnings: validation.warnings.slice(0, 20),
+        migrateReport,
+      });
     }
 
     const now = new Date().toISOString();
@@ -93,7 +128,13 @@ export async function PUT(request: Request) {
       return NextResponse.json({ ok: false, warning: "db_unavailable" as const }, { status: 200 });
     }
 
-    return NextResponse.json({ ok: true, updatedAt: now, summary: summarizeState(state) });
+    return NextResponse.json({
+      ok: true,
+      updatedAt: now,
+      summary: summarizeState(state),
+      ledgerMigrated: migrateReport.changed,
+      warnings: validation.warnings.length > 0 ? validation.warnings : undefined,
+    });
   } catch (e) {
     if (e instanceof AuthRequiredError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

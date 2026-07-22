@@ -8,12 +8,18 @@ import { REVALIDATE_WARM } from "@/lib/data/cache-policy";
 import { cryptoRouteBase } from "@/lib/crypto/crypto-symbol-base";
 import { isSupportedCryptoAssetSymbol } from "@/lib/crypto/crypto-logo-url";
 import { getCryptoLiveSpotPriceUsd } from "@/lib/market/crypto-live-price";
+import { toSupportedCryptoTicker } from "@/lib/market/crypto-meta";
 import { fetchEodhdRealtimeSymbolsRaw } from "@/lib/market/eodhd-realtime";
 import { toEodhdUsSymbol } from "@/lib/market/eodhd-symbol";
 
 function realtimeClose(payload: { close?: number } | undefined): number | null {
   const c = payload?.close;
   return typeof c === "number" && Number.isFinite(c) && c > 0 ? c : null;
+}
+
+function isPortfolioCryptoSymbol(sym: string): boolean {
+  if (toSupportedCryptoTicker(sym)) return true;
+  return isSupportedCryptoAssetSymbol(cryptoRouteBase(sym));
 }
 
 /**
@@ -29,8 +35,7 @@ export async function fetchPortfolioLivePricesUsd(symbols: string[]): Promise<Re
   const cryptoRoute: string[] = [];
 
   for (const sym of unique) {
-    const routeKey = cryptoRouteBase(sym);
-    if (isSupportedCryptoAssetSymbol(routeKey)) {
+    if (isPortfolioCryptoSymbol(sym)) {
       cryptoRoute.push(sym);
     } else {
       stockEodhd.push(toEodhdUsSymbol(sym));
@@ -40,7 +45,7 @@ export async function fetchPortfolioLivePricesUsd(symbols: string[]): Promise<Re
   if (stockEodhd.length) {
     const map = await fetchEodhdRealtimeSymbolsRaw(stockEodhd);
     for (const sym of unique) {
-      if (isSupportedCryptoAssetSymbol(cryptoRouteBase(sym))) continue;
+      if (isPortfolioCryptoSymbol(sym)) continue;
       const eodhd = toEodhdUsSymbol(sym);
       const p = realtimeClose(map.get(eodhd) ?? map.get(eodhd.split(".")[0] ?? ""));
       if (p != null) out[sym] = p;

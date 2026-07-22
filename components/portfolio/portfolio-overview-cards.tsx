@@ -17,7 +17,6 @@ import { ChevronDown } from "@/lib/icons";
 
 import { MOBILE_ELEVATED_CARD_CLASS } from "@/components/design-system/card-surface-styles";
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
-import { earliestStockBuyYmd } from "@/lib/portfolio/benchmark-inception";
 import {
   equityMarketValue,
   lifetimeEquityProfitPct,
@@ -25,7 +24,6 @@ import {
   normalizeUsdForDisplay,
   totalCostBasisInvested,
   totalNetWorth,
-  unrealizedProfitPct,
   unrealizedProfitUsd,
 } from "@/lib/portfolio/overview-metrics";
 import {
@@ -34,8 +32,8 @@ import {
   tradeSymbolsFromHistory,
 } from "@/lib/portfolio/realized-pnl-from-trades";
 import type { OverviewProfitPeriod } from "@/lib/portfolio/overview-market-types";
-import { pickPerformancePct } from "@/lib/portfolio/overview-market-types";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
+import { fetchPortfolioDietzReturnsClient } from "@/lib/portfolio/returns/fetch-dietz-returns-client";
 import { cn } from "@/lib/utils";
 
 const SPY_BENCHMARK = "SPY";
@@ -186,24 +184,10 @@ function TotalProfitBreakdownTooltip({
   );
 }
 
-/**
- * Weighted average of per-asset returns using current market value weights (equity only).
- */
-function weightedPortfolioReturn(
-  holdings: PortfolioHolding[],
-  getReturn: (sym: string) => number | null,
-): number | null {
-  let num = 0;
-  let denom = 0;
-  for (const h of holdings) {
-    const r = getReturn(h.symbol.toUpperCase());
-    if (r == null || !Number.isFinite(r)) continue;
-    num += h.currentValue * r;
-    denom += h.currentValue;
-  }
-  if (denom <= 0) return null;
-  return num / denom;
-}
+type DietzPeriodSlice = {
+  pct: number | null;
+  gainUsd: number | null;
+};
 
 function PortfolioOverviewCardsInner({
   holdings,
@@ -221,7 +205,13 @@ function PortfolioOverviewCardsInner({
     () => lifetimeEquityProfitUsd(holdings, transactions),
     [holdings, transactions],
   );
-  const profitAllPct = useMemo(() => unrealizedProfitPct(holdings), [holdings]);
+  /** Lifetime equity ROC — reconciles with All $ (not flow-adjusted Dietz). */
+  const profitAllPct = useMemo(() => {
+    const pct = lifetimeEquityProfitPct(holdings, transactions);
+    if (pct != null) return pct;
+    if (profitAllUsd === 0) return 0;
+    return null;
+  }, [holdings, transactions, profitAllUsd]);
   const realizedLifetimeUsd = useMemo(
     () => cumulativeRealizedGainUsd(transactions),
     [transactions],
@@ -234,8 +224,6 @@ function PortfolioOverviewCardsInner({
     [transactions],
   );
 
-  const inceptionYmd = useMemo(() => earliestStockBuyYmd(transactions), [transactions]);
-
   const [period, setPeriod] = useState<OverviewProfitPeriod>("all");
   /** False until overview-market finishes when any symbols need a quote. */
   const [overviewReady, setOverviewReady] = useState(false);
@@ -244,10 +232,21 @@ function PortfolioOverviewCardsInner({
   const overviewLoadGenRef = useRef(0);
   const overviewReadyRef = useRef(false);
   overviewReadyRef.current = overviewReady;
-  const [perfBySymbol, setPerfBySymbol] = useState<Record<string, StockPerformance | null>>({});
-  const [spyPerf, setSpyPerf] = useState<StockPerformance | null>(null);
+  /** Retained from overview-market payload (benchmark path); period cards use Dietz. */
+  const [, setPerfBySymbol] = useState<Record<string, StockPerformance | null>>({});
+  const [, setSpyPerf] = useState<StockPerformance | null>(null);
   const [yieldBySymbol, setYieldBySymbol] = useState<Record<string, number | null>>({});
-  const [inceptionSpyPrice0, setInceptionSpyPrice0] = useState<number | null>(null);
+  const [dietzByPeriod, setDietzByPeriod] = useState<
+    Partial<Record<Exclude<OverviewProfitPeriod, "all">, DietzPeriodSlice>>
+  >({});
+  const [benchmarkCompare, setBenchmarkCompare] = useState<{
+    portfolioPct: number | null;
+    benchmarkPct: number | null;
+    aheadPct: number | null;
+  } | null>(null);
+  /** True while first benchmark-compare is in flight (no prior values to show). */
+  const [benchmarkLoading, setBenchmarkLoading] = useState(true);
+  const hasBenchmarkCompareRef = useRef(false);
 
   const symbolsKey = useMemo(() => {
     const fromHoldings = [...new Set(holdings.map((h) => h.symbol.toUpperCase()))];
@@ -266,25 +265,17 @@ function PortfolioOverviewCardsInner({
       setPerfBySymbol({});
       setSpyPerf(null);
       setYieldBySymbol({});
-      setInceptionSpyPrice0(null);
       setOverviewReady(true);
       return;
     }
 
-    const startYmd = earliestStockBuyYmd(transactions);
-    let inceptionPriceTickers: string[] = [];
-    if (startYmd) {
-      // Keep inception benchmark fan-out bounded to current symbols set.
-      inceptionPriceTickers = [...new Set([SPY_BENCHMARK, ...symbols])];
-    }
-
-    const loadKey = `${symbols.join(",")}|${startYmd ?? ""}|${inceptionPriceTickers.join(",")}`;
+    const loadKey = symbols.join(",");
     if (loadKey === lastOverviewLoadKeyRef.current && lastOverviewLoadStateRef.current !== "error") {
       return;
     }
     lastOverviewLoadKeyRef.current = loadKey;
 
-    const sessionKey = `finsepa.portfolio.overviewMarket.v1.${loadKey}`;
+    const sessionKey = `finsepa.portfolio.overviewMarket.v2.${loadKey}`;
     const OVERVIEW_SESSION_TTL_MS = 5 * 60_000;
     try {
       const raw = sessionStorage.getItem(sessionKey);
@@ -296,7 +287,6 @@ function PortfolioOverviewCardsInner({
                 spy: StockPerformance | null;
                 performanceBySymbol: Record<string, StockPerformance | null>;
                 yieldBySymbol: Record<string, number | null>;
-                inceptionPriceByTicker: Record<string, number | null>;
               };
             }
           | null;
@@ -305,12 +295,6 @@ function PortfolioOverviewCardsInner({
           setSpyPerf(data.spy ?? null);
           setPerfBySymbol(data.performanceBySymbol ?? {});
           setYieldBySymbol(data.yieldBySymbol ?? {});
-          let spy0: number | null = null;
-          if (startYmd) {
-            const prices = data.inceptionPriceByTicker ?? {};
-            spy0 = typeof prices[SPY_BENCHMARK] === "number" ? prices[SPY_BENCHMARK]! : null;
-          }
-          setInceptionSpyPrice0(spy0);
           lastOverviewLoadStateRef.current = "done";
           setOverviewReady(true);
           return;
@@ -331,8 +315,8 @@ function PortfolioOverviewCardsInner({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           symbols,
-          inceptionYmd: startYmd,
-          inceptionPriceTickers: startYmd ? inceptionPriceTickers : [],
+          inceptionYmd: null,
+          inceptionPriceTickers: [],
         }),
       });
 
@@ -346,19 +330,11 @@ function PortfolioOverviewCardsInner({
         spy: StockPerformance | null;
         performanceBySymbol: Record<string, StockPerformance | null>;
         yieldBySymbol: Record<string, number | null>;
-        inceptionPriceByTicker: Record<string, number | null>;
       };
 
       setSpyPerf(data.spy ?? null);
       setPerfBySymbol(data.performanceBySymbol ?? {});
       setYieldBySymbol(data.yieldBySymbol ?? {});
-
-      let spy0: number | null = null;
-      if (startYmd) {
-        const prices = data.inceptionPriceByTicker ?? {};
-        spy0 = typeof prices[SPY_BENCHMARK] === "number" ? prices[SPY_BENCHMARK]! : null;
-      }
-      setInceptionSpyPrice0(spy0);
 
       lastOverviewLoadStateRef.current = "done";
       try {
@@ -368,65 +344,149 @@ function PortfolioOverviewCardsInner({
       }
     } catch {
       if (gen !== overviewLoadGenRef.current) return;
-      setSpyPerf(null);
-      setPerfBySymbol({});
-      setYieldBySymbol({});
-      setInceptionSpyPrice0(null);
+      // Keep prior market/yield snapshot on failure — avoid dividend flash to "—".
       lastOverviewLoadStateRef.current = "error";
     } finally {
       if (gen === overviewLoadGenRef.current) {
         setOverviewReady(true);
       }
     }
-  }, [symbols, transactions]);
+  }, [symbols]);
 
   useEffect(() => {
     void loadMarket();
   }, [loadMarket]);
 
-  const weightedPeriodPct = useMemo(() => {
-    if (period === "all") return null;
-    return weightedPortfolioReturn(holdings, (sym) => {
-      const p = perfBySymbol[sym];
-      return pickPerformancePct(p, period);
-    });
-  }, [holdings, perfBySymbol, period]);
+  /** Phase 2: Modified Dietz for 1M / YTD / 1Y / 5Y overview cards. */
+  useEffect(() => {
+    if (transactions.length === 0) {
+      setDietzByPeriod({});
+      return;
+    }
+    let cancelled = false;
+    const run = async () => {
+      try {
+        const data = await fetchPortfolioDietzReturnsClient(transactions, [
+          "m1",
+          "ytd",
+          "y1",
+          "y5",
+        ]);
+        if (cancelled) return;
+        const next: Partial<Record<Exclude<OverviewProfitPeriod, "all">, DietzPeriodSlice>> = {};
+        for (const key of ["m1", "ytd", "y1", "y5"] as const) {
+          const row = data[key];
+          if (row) next[key] = { pct: row.pct, gainUsd: row.gainUsd };
+        }
+        setDietzByPeriod(next);
+      } catch {
+        // Keep prior successful Dietz slices — avoid flashing "—" on transient failure.
+      }
+    };
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [transactions]);
 
-  /** Lifetime simple return on total equity cost basis — aligns with headline profit $ vs other apps. */
-  const lifetimeReturnPct = useMemo(
-    () => lifetimeEquityProfitPct(holdings, transactions),
-    [holdings, transactions],
-  );
+  /** Phase 3: contribution-model Dietz vs Dietz (Ahead / S&P card). */
+  useEffect(() => {
+    if (transactions.length === 0) {
+      setBenchmarkCompare(null);
+      hasBenchmarkCompareRef.current = false;
+      setBenchmarkLoading(false);
+      return;
+    }
+    let cancelled = false;
+    if (!hasBenchmarkCompareRef.current) setBenchmarkLoading(true);
+    const run = async (attempt: number) => {
+      try {
+        const res = await fetch("/api/portfolio/benchmark-compare", {
+          method: "POST",
+          credentials: "include",
+          cache: "no-store",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            transactions,
+            benchmark: SPY_BENCHMARK,
+          }),
+        });
+        if (cancelled) return;
+        if (!res.ok) {
+          if (attempt < 1) {
+            await new Promise((r) => setTimeout(r, 400));
+            if (!cancelled) void run(attempt + 1);
+            return;
+          }
+          if (!cancelled) setBenchmarkLoading(false);
+          return;
+        }
+        const data = (await res.json()) as {
+          portfolioPct: number | null;
+          benchmarkPct: number | null;
+          aheadPct: number | null;
+        };
+        if (cancelled) return;
+        if (data.benchmarkPct == null && data.portfolioPct == null && attempt < 1) {
+          await new Promise((r) => setTimeout(r, 400));
+          if (!cancelled) void run(attempt + 1);
+          return;
+        }
+        setBenchmarkCompare({
+          portfolioPct: data.portfolioPct,
+          benchmarkPct: data.benchmarkPct,
+          aheadPct: data.aheadPct,
+        });
+        hasBenchmarkCompareRef.current = true;
+        setBenchmarkLoading(false);
+      } catch {
+        if (cancelled) return;
+        if (attempt < 1) {
+          await new Promise((r) => setTimeout(r, 400));
+          if (!cancelled) void run(attempt + 1);
+          return;
+        }
+        // Keep prior successful compare on hard failure — avoid flashing "—".
+        setBenchmarkLoading(false);
+      }
+    };
+    void run(0);
+    return () => {
+      cancelled = true;
+    };
+  }, [transactions]);
+
+  const dietzPeriod = period === "all" ? null : (dietzByPeriod[period] ?? null);
+
+  /**
+   * Lifetime equity ROC — aligns with Total Profit $ (cost-basis simple return).
+   * Kept as fallback when Dietz is unavailable.
+   */
+  const lifetimeReturnPct = profitAllPct;
 
   const inceptionBenchmarkMetrics = useMemo(() => {
-    const rPort = lifetimeReturnPct;
-    if (inceptionSpyPrice0 == null || inceptionSpyPrice0 <= 0) {
-      return { rPort, rSpy: null as number | null, diff: null as number | null };
-    }
-    const spyNow = spyPerf?.price ?? null;
-    if (spyNow == null || !Number.isFinite(spyNow) || spyNow <= 0) {
-      return { rPort, rSpy: null, diff: null };
-    }
-    const rSpy = ((spyNow / inceptionSpyPrice0) - 1) * 100;
-    if (!Number.isFinite(rSpy)) {
-      return { rPort, rSpy: null, diff: null };
-    }
-    if (rPort == null || !Number.isFinite(rPort)) {
-      return { rPort, rSpy, diff: null };
-    }
-    return { rPort, rSpy, diff: rPort - rSpy };
-  }, [lifetimeReturnPct, inceptionSpyPrice0, spyPerf?.price]);
+    const rSpy = benchmarkCompare?.benchmarkPct ?? null;
+    const rPort = benchmarkCompare?.portfolioPct ?? null;
+    const diff = benchmarkCompare?.aheadPct ?? null;
+    return { rPort, rSpy, diff };
+  }, [benchmarkCompare]);
+
+  /**
+   * Headline % under Total profit $ (All) — Phase 2/3 Modified Dietz (same as chart Return
+   * and the portfolio leg of Ahead). Comparable to S&P card. Falls back to lifetime ROC
+   * only when Dietz cannot be computed.
+   */
+  const allPeriodProfitPct = inceptionBenchmarkMetrics.rPort ?? lifetimeReturnPct;
 
   const profitDisplayUsd = useMemo(() => {
     if (period === "all") return profitAllUsd;
-    if (weightedPeriodPct == null || equity <= 0) return null;
-    return (equity * weightedPeriodPct) / 100;
-  }, [period, profitAllUsd, weightedPeriodPct, equity]);
+    return dietzPeriod?.gainUsd ?? null;
+  }, [period, profitAllUsd, dietzPeriod]);
 
   const profitDisplayPct = useMemo(() => {
     if (period === "all") return profitAllPct;
-    return weightedPeriodPct;
-  }, [period, profitAllPct, weightedPeriodPct]);
+    return dietzPeriod?.pct ?? null;
+  }, [period, profitAllPct, dietzPeriod]);
 
   const dividendWeightedYield = useMemo(() => {
     if (equity <= 0) return null;
@@ -460,6 +520,25 @@ function PortfolioOverviewCardsInner({
   const isEmptyOverview = holdings.length === 0;
   const showEmptyPortfolioMetrics = isEmptyOverview && !hasTradeHistory;
   const showMetricSkeleton = symbols.length > 0 && !overviewReady;
+  /** S&P card: skeleton while first compare loads — never show "—" during that wait. */
+  const showSpySkeleton =
+    !showEmptyPortfolioMetrics &&
+    !showMetricSkeleton &&
+    transactions.length > 0 &&
+    benchmarkLoading &&
+    inceptionBenchmarkMetrics.rSpy == null &&
+    inceptionBenchmarkMetrics.diff == null;
+  /**
+   * All-time profit % uses Dietz (same as chart Return). Skeleton until first Dietz arrives
+   * so we don't flash lifetime ~27% then jump to ~38%.
+   */
+  const showAllProfitPctSkeleton =
+    !showEmptyPortfolioMetrics &&
+    !showMetricSkeleton &&
+    period === "all" &&
+    transactions.length > 0 &&
+    benchmarkLoading &&
+    inceptionBenchmarkMetrics.rPort == null;
 
   const totalProfitBreakdownId = useId();
 
@@ -478,19 +557,25 @@ function PortfolioOverviewCardsInner({
   const mobileProfitLine = useMemo(() => {
     if (showEmptyPortfolioMetrics) return `+${usd.format(0)} (+${pctFmt.format(0)}%)`;
     const pUsd = profitAllUsd;
-    const pPct = lifetimeReturnPct;
-    if (pUsd == null || !Number.isFinite(pUsd) || pPct == null || !Number.isFinite(pPct)) return "—";
+    if (pUsd == null || !Number.isFinite(pUsd)) return "—";
+    if (showAllProfitPctSkeleton) return null;
+    const pPct = allPeriodProfitPct;
+    if (pPct == null || !Number.isFinite(pPct)) {
+      const usdLabel = `${pUsd >= 0 ? "+" : ""}${usd.format(pUsd)}`;
+      return usdLabel;
+    }
     const usdLabel = `${pUsd >= 0 ? "+" : ""}${usd.format(pUsd)}`;
     const pctLabel = `${pPct >= 0 ? "+" : ""}${pctFmt.format(pPct)}%`;
     return `${usdLabel} (${pctLabel})`;
-  }, [showEmptyPortfolioMetrics, profitAllUsd, lifetimeReturnPct]);
+  }, [showEmptyPortfolioMetrics, profitAllUsd, showAllProfitPctSkeleton, allPeriodProfitPct]);
 
   const mobileBenchmarkPct = useMemo(() => {
     if (showEmptyPortfolioMetrics) return `+${pctFmt.format(0)}%`;
+    if (showSpySkeleton) return null;
     const r = inceptionBenchmarkMetrics.rSpy;
     if (r == null || !Number.isFinite(r)) return "—";
     return `${r >= 0 ? "+" : ""}${pctFmt.format(r)}%`;
-  }, [showEmptyPortfolioMetrics, inceptionBenchmarkMetrics.rSpy]);
+  }, [showEmptyPortfolioMetrics, showSpySkeleton, inceptionBenchmarkMetrics.rSpy]);
 
   const mobileDividendsRight = useMemo(() => {
     if (showEmptyPortfolioMetrics) return `${usd.format(0)} · ${pctFmt.format(0)}%`;
@@ -530,7 +615,11 @@ function PortfolioOverviewCardsInner({
                   {usd.format(normalizeUsdForDisplay(netWorth))}
                 </p>
                 <p className="mt-1 text-sm font-normal tabular-nums text-[#16A34A]">
-                  {mobileProfitLine}
+                  {showAllProfitPctSkeleton || mobileProfitLine == null ? (
+                    <span className="inline-block h-4 w-40 animate-pulse rounded bg-neutral-200 align-middle" aria-hidden />
+                  ) : (
+                    mobileProfitLine
+                  )}
                 </p>
               </div>
               {mobileToolbarActions ? (
@@ -541,20 +630,24 @@ function PortfolioOverviewCardsInner({
             <div className="max-md:mt-2 sm:mt-4 space-y-0">
               <div className="flex items-center justify-between gap-4 max-md:py-2 sm:py-3">
                 <span className="text-[14px] font-medium leading-5 text-[#71717A]">S&amp;P 500</span>
-                <span
-                  className={cn(
-                    "text-[14px] font-medium leading-5 tabular-nums",
-                    showEmptyPortfolioMetrics
-                      ? "text-[#16A34A]"
-                      : inceptionBenchmarkMetrics.rSpy == null
-                        ? "text-[#0F0F0F]"
-                        : inceptionBenchmarkMetrics.rSpy >= 0
-                          ? "text-[#16A34A]"
-                          : "text-[#DC2626]",
-                  )}
-                >
-                  {mobileBenchmarkPct}
-                </span>
+                {showSpySkeleton || mobileBenchmarkPct == null ? (
+                  <div className="h-4 w-14 animate-pulse rounded bg-neutral-200" aria-hidden />
+                ) : (
+                  <span
+                    className={cn(
+                      "text-[14px] font-medium leading-5 tabular-nums",
+                      showEmptyPortfolioMetrics
+                        ? "text-[#16A34A]"
+                        : inceptionBenchmarkMetrics.rSpy == null
+                          ? "text-[#0F0F0F]"
+                          : inceptionBenchmarkMetrics.rSpy >= 0
+                            ? "text-[#16A34A]"
+                            : "text-[#DC2626]",
+                    )}
+                  >
+                    {mobileBenchmarkPct}
+                  </span>
+                )}
               </div>
               <div className="flex items-center justify-between gap-4 pb-0.5">
                 <span className="text-[14px] font-medium leading-5 text-[#71717A]">Dividends</span>
@@ -617,16 +710,20 @@ function PortfolioOverviewCardsInner({
                 </p>
                 {period === "all" ? (
                   <div className="flex cursor-help flex-wrap items-center gap-2">
-                    <span
-                      className={cn(
-                        "text-sm font-medium tabular-nums",
-                        (inceptionBenchmarkMetrics.rPort ?? 0) >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
-                      )}
-                    >
-                      {inceptionBenchmarkMetrics.rPort != null
-                        ? `${inceptionBenchmarkMetrics.rPort >= 0 ? "+" : ""}${pctFmt.format(inceptionBenchmarkMetrics.rPort)}%`
-                        : "—"}
-                    </span>
+                    {showAllProfitPctSkeleton ? (
+                      <div className="h-4 w-14 animate-pulse rounded bg-neutral-200" aria-hidden />
+                    ) : (
+                      <span
+                        className={cn(
+                          "text-sm font-medium tabular-nums",
+                          (allPeriodProfitPct ?? 0) >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
+                        )}
+                      >
+                        {allPeriodProfitPct != null
+                          ? `${allPeriodProfitPct >= 0 ? "+" : ""}${pctFmt.format(allPeriodProfitPct)}%`
+                          : "—"}
+                      </span>
+                    )}
                   </div>
                 ) : (
                   <div className="flex flex-wrap items-center gap-2">
@@ -670,6 +767,11 @@ function PortfolioOverviewCardsInner({
                   +{pctFmt.format(0)}%
                 </p>
                 <p className="text-sm leading-snug text-[#71717A]">Compare to S&amp;P 500</p>
+              </>
+            ) : showSpySkeleton ? (
+              <>
+                <div className="h-8 w-[min(100%,7rem)] max-w-full animate-pulse rounded-md bg-neutral-200" aria-hidden />
+                <div className="h-4 w-28 animate-pulse rounded bg-neutral-100" aria-hidden />
               </>
             ) : (
               <>

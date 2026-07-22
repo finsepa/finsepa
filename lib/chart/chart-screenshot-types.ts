@@ -54,6 +54,10 @@ export type PortfolioAllocationScreenshotConfig = {
   rows: AllocationDonutRow[];
   avatarImageSrc: string | null;
   avatarInitials: string;
+  /** Center return % for the selected period (null → em dash). */
+  returnPct?: number | null;
+  /** Period id matching allocation donut center / chart ranges (e.g. 1d, ytd, all). */
+  returnPeriod?: string;
 };
 
 export type ChartScreenshotSnapshot = {

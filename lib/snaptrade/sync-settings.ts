@@ -10,7 +10,8 @@ export type PortfolioSnaptradeSyncSettings = {
 export const DEFAULT_PORTFOLIO_SNAPTRADE_SYNC_SETTINGS: PortfolioSnaptradeSyncSettings = {
   autoSyncDaily: true,
   emulateTransactionHistory: false,
-  adjustPositionsToBrokerage: true,
+  // Phase 5B: default reconciliation is REPORT-ONLY — never fabricate Buy/Sell/Cash rows.
+  adjustPositionsToBrokerage: false,
 };
 
 export const SNAPTRADE_SYNC_SETTING_TOOLTIPS = {
@@ -32,9 +33,7 @@ export function normalizePortfolioSnaptradeSyncSettings(
     autoSyncDaily:
       o.autoSyncDaily === false ? false : DEFAULT_PORTFOLIO_SNAPTRADE_SYNC_SETTINGS.autoSyncDaily,
     emulateTransactionHistory: o.emulateTransactionHistory === true,
-    adjustPositionsToBrokerage:
-      o.adjustPositionsToBrokerage === false ?
-        false
-      : DEFAULT_PORTFOLIO_SNAPTRADE_SYNC_SETTINGS.adjustPositionsToBrokerage,
+    // Opt-in only: any value other than an explicit `true` stays REPORT-ONLY (false).
+    adjustPositionsToBrokerage: o.adjustPositionsToBrokerage === true,
   };
 }

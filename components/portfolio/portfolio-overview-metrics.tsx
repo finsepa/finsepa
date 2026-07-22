@@ -1,10 +1,13 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { MOBILE_INSET_CARD_CLASS } from "@/components/design-system/card-surface-styles";
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
-import { tradeSymbolsFromHistory } from "@/lib/portfolio/realized-pnl-from-trades";
+import type {
+  AnalyticsMetricResult,
+  PortfolioAnalyticsSnapshot,
+} from "@/lib/portfolio/analytics/portfolio-analytics-types";
 import { cn } from "@/lib/utils";
 
 type CompareDirection = "higher" | "lower";
@@ -13,126 +16,44 @@ type PortfolioMetricDef = {
   label: string;
   tooltipTitle: string;
   portfolio: string;
-  portfolioNum: number;
+  portfolioNum: number | null;
   benchmark?: string;
   benchmarkNum?: number;
   compareDirection?: CompareDirection;
   /** No S&P comparison — always neutral (black). */
   neutral?: boolean;
+  muted: boolean;
 };
 
 type PortfolioMetricRow = PortfolioMetricDef & {
   deltaPct: number | null;
 };
 
-const PLACEHOLDER_METRICS: PortfolioMetricDef[] = [
-  {
-    label: "P/E ratio",
-    tooltipTitle: "P/E Ratio",
-    portfolio: "18.4",
-    portfolioNum: 18.4,
-    benchmark: "20.3",
-    benchmarkNum: 20.3,
-    compareDirection: "lower",
-  },
-  {
-    label: "Sharpe ratio",
-    tooltipTitle: "Sharpe Ratio",
-    portfolio: "1.12",
-    portfolioNum: 1.12,
-    benchmark: "0.88",
-    benchmarkNum: 0.88,
-    compareDirection: "higher",
-  },
-  {
-    label: "Sortino ratio",
-    tooltipTitle: "Sortino Ratio",
-    portfolio: "1.45",
-    portfolioNum: 1.45,
-    benchmark: "1.02",
-    benchmarkNum: 1.02,
-    compareDirection: "higher",
-  },
-  {
-    label: "Cash conversion",
-    tooltipTitle: "Cash Conversion",
-    portfolio: "1.08",
-    portfolioNum: 1.08,
-    benchmark: "0.96",
-    benchmarkNum: 0.96,
-    compareDirection: "higher",
-  },
-  {
-    label: "Gross margin",
-    tooltipTitle: "Gross Margin",
-    portfolio: "42.0%",
-    portfolioNum: 42.0,
-    benchmark: "38.5%",
-    benchmarkNum: 38.5,
-    compareDirection: "higher",
-  },
-  {
-    label: "Operating margin",
-    tooltipTitle: "Operating Margin",
-    portfolio: "22.4%",
-    portfolioNum: 22.4,
-    benchmark: "19.1%",
-    benchmarkNum: 19.1,
-    compareDirection: "higher",
-  },
-  {
-    label: "ROCE",
-    tooltipTitle: "ROCE",
-    portfolio: "18.6%",
-    portfolioNum: 18.6,
-    benchmark: "14.2%",
-    benchmarkNum: 14.2,
-    compareDirection: "higher",
-  },
-  {
-    label: "Volatility",
-    tooltipTitle: "Volatility",
-    portfolio: "14.2%",
-    portfolioNum: 14.2,
-    benchmark: "16.8%",
-    benchmarkNum: 16.8,
-    compareDirection: "lower",
-  },
-  {
-    label: "Portfolio turnover",
-    tooltipTitle: "Portfolio Turnover",
-    portfolio: "24%",
-    portfolioNum: 24,
-    benchmark: "32%",
-    benchmarkNum: 32,
-    compareDirection: "lower",
-  },
-  {
-    label: "Beta",
-    tooltipTitle: "Beta",
-    portfolio: "0.94",
-    portfolioNum: 0.94,
-    benchmark: "1.00",
-    benchmarkNum: 1.0,
-    compareDirection: "lower",
-  },
-];
+const pctFmt = new Intl.NumberFormat("en-US", {
+  maximumFractionDigits: 2,
+  minimumFractionDigits: 0,
+});
 
-const EMPTY_METRICS: PortfolioMetricDef[] = [
-  { label: "P/E ratio", tooltipTitle: "P/E Ratio", portfolio: "0", portfolioNum: 0 },
-  { label: "Sharpe ratio", tooltipTitle: "Sharpe Ratio", portfolio: "0", portfolioNum: 0 },
-  { label: "Sortino ratio", tooltipTitle: "Sortino Ratio", portfolio: "0", portfolioNum: 0 },
-  { label: "Cash conversion", tooltipTitle: "Cash Conversion", portfolio: "0", portfolioNum: 0 },
-  { label: "Gross margin", tooltipTitle: "Gross Margin", portfolio: "0%", portfolioNum: 0 },
-  { label: "Operating margin", tooltipTitle: "Operating Margin", portfolio: "0%", portfolioNum: 0 },
-  { label: "ROCE", tooltipTitle: "ROCE", portfolio: "0%", portfolioNum: 0 },
-  { label: "Volatility", tooltipTitle: "Volatility", portfolio: "0%", portfolioNum: 0 },
-  { label: "Portfolio turnover", tooltipTitle: "Portfolio Turnover", portfolio: "0%", portfolioNum: 0 },
-  { label: "Beta", tooltipTitle: "Beta", portfolio: "0", portfolioNum: 0 },
-];
+const ratioFmt = new Intl.NumberFormat("en-US", {
+  maximumFractionDigits: 2,
+  minimumFractionDigits: 2,
+});
 
 /** Three columns — matches portfolio overview reference layout. */
 const METRIC_COLUMN_SPLITS = [4, 4, 2] as const;
+
+const KEY_STAT_LABELS = [
+  "P/E ratio",
+  "Sharpe ratio",
+  "Sortino ratio",
+  "Cash conversion",
+  "Gross margin",
+  "Operating margin",
+  "ROCE",
+  "Volatility",
+  "Portfolio turnover",
+  "Beta",
+] as const;
 
 function portfolioAheadDeltaPct(
   portfolio: number,
@@ -149,7 +70,9 @@ function enrichMetricRows(metrics: PortfolioMetricDef[]): PortfolioMetricRow[] {
     if (
       metric.neutral ||
       metric.benchmarkNum == null ||
-      metric.compareDirection == null
+      metric.compareDirection == null ||
+      metric.portfolioNum == null ||
+      metric.muted
     ) {
       return { ...metric, deltaPct: null };
     }
@@ -187,11 +110,179 @@ function formatDelta(deltaPct: number): string {
 
 function valueToneClass(deltaPct: number | null, muted: boolean): string {
   if (muted) return "text-[#71717A]";
-  // Neutral metrics (no S&P compare) stay black.
   if (deltaPct == null) return "text-[#0F0F0F]";
   if (deltaPct === 0) return "text-[#0F0F0F]";
-  // Positive delta = better vs S&P per compareDirection (higher / lower).
   return deltaPct > 0 ? "text-[#16A34A]" : "text-[#DC2626]";
+}
+
+function formatRatioMetric(m: AnalyticsMetricResult | undefined): { text: string; num: number | null; muted: boolean } {
+  if (!m || m.status !== "available" || m.value == null || !Number.isFinite(m.value)) {
+    return { text: "—", num: null, muted: true };
+  }
+  return { text: ratioFmt.format(m.value), num: m.value, muted: false };
+}
+
+function formatPctMetric(m: AnalyticsMetricResult | undefined): { text: string; num: number | null; muted: boolean } {
+  if (!m || m.status !== "available" || m.value == null || !Number.isFinite(m.value)) {
+    return { text: "—", num: null, muted: true };
+  }
+  return { text: `${pctFmt.format(m.value)}%`, num: m.value, muted: false };
+}
+
+function metricsFromSnapshot(snap: PortfolioAnalyticsSnapshot | null): PortfolioMetricDef[] {
+  const pe = formatRatioMetric(snap?.pe);
+  const sharpe = formatRatioMetric(snap?.sharpe);
+  const sortino = formatRatioMetric(snap?.sortino);
+  const cashConv = formatRatioMetric(snap?.cashConversion);
+  const gross = formatPctMetric(snap?.grossMargin);
+  const op = formatPctMetric(snap?.operatingMargin);
+  const roce = formatPctMetric(snap?.roce);
+  const vol = formatPctMetric(snap?.volatility);
+  const turnover = formatPctMetric(snap?.turnover);
+  const beta = formatRatioMetric(snap?.beta);
+
+  const b = snap?.benchmark ?? null;
+  const bPe = formatRatioMetric(b?.pe);
+  const bSharpe = formatRatioMetric(b?.sharpe);
+  const bSortino = formatRatioMetric(b?.sortino);
+  const bCash = formatRatioMetric(b?.cashConversion);
+  const bGross = formatPctMetric(b?.grossMargin);
+  const bOp = formatPctMetric(b?.operatingMargin);
+  const bRoce = formatPctMetric(b?.roce);
+  const bVol = formatPctMetric(b?.volatility);
+  const bTurnover = formatPctMetric(b?.turnover);
+  const bBeta = formatRatioMetric(b?.beta);
+
+  const withBench = (
+    row: Omit<PortfolioMetricDef, "benchmark" | "benchmarkNum" | "compareDirection" | "neutral"> & {
+      compareDirection: CompareDirection;
+    },
+    bench: { text: string; num: number | null; muted: boolean },
+  ): PortfolioMetricDef => {
+    if (row.muted || bench.muted || bench.num == null) {
+      return { ...row, muted: row.muted, neutral: true };
+    }
+    return {
+      ...row,
+      benchmark: bench.text,
+      benchmarkNum: bench.num,
+      compareDirection: row.compareDirection,
+      neutral: false,
+    };
+  };
+
+  return [
+    withBench(
+      {
+        label: "P/E ratio",
+        tooltipTitle: "P/E Ratio",
+        portfolio: pe.text,
+        portfolioNum: pe.num,
+        muted: pe.muted,
+        compareDirection: "lower",
+      },
+      bPe,
+    ),
+    withBench(
+      {
+        label: "Sharpe ratio",
+        tooltipTitle: "Sharpe Ratio",
+        portfolio: sharpe.text,
+        portfolioNum: sharpe.num,
+        muted: sharpe.muted,
+        compareDirection: "higher",
+      },
+      bSharpe,
+    ),
+    withBench(
+      {
+        label: "Sortino ratio",
+        tooltipTitle: "Sortino Ratio",
+        portfolio: sortino.text,
+        portfolioNum: sortino.num,
+        muted: sortino.muted,
+        compareDirection: "higher",
+      },
+      bSortino,
+    ),
+    withBench(
+      {
+        label: "Cash conversion",
+        tooltipTitle: "Cash Conversion",
+        portfolio: cashConv.text,
+        portfolioNum: cashConv.num,
+        muted: cashConv.muted,
+        compareDirection: "higher",
+      },
+      bCash,
+    ),
+    withBench(
+      {
+        label: "Gross margin",
+        tooltipTitle: "Gross Margin",
+        portfolio: gross.text,
+        portfolioNum: gross.num,
+        muted: gross.muted,
+        compareDirection: "higher",
+      },
+      bGross,
+    ),
+    withBench(
+      {
+        label: "Operating margin",
+        tooltipTitle: "Operating Margin",
+        portfolio: op.text,
+        portfolioNum: op.num,
+        muted: op.muted,
+        compareDirection: "higher",
+      },
+      bOp,
+    ),
+    withBench(
+      {
+        label: "ROCE",
+        tooltipTitle: "ROCE",
+        portfolio: roce.text,
+        portfolioNum: roce.num,
+        muted: roce.muted,
+        compareDirection: "higher",
+      },
+      bRoce,
+    ),
+    withBench(
+      {
+        label: "Volatility",
+        tooltipTitle: "Volatility",
+        portfolio: vol.text,
+        portfolioNum: vol.num,
+        muted: vol.muted,
+        compareDirection: "lower",
+      },
+      bVol,
+    ),
+    withBench(
+      {
+        label: "Portfolio turnover",
+        tooltipTitle: "Portfolio Turnover",
+        portfolio: turnover.text,
+        portfolioNum: turnover.num,
+        muted: turnover.muted,
+        compareDirection: "lower",
+      },
+      bTurnover,
+    ),
+    withBench(
+      {
+        label: "Beta",
+        tooltipTitle: "Beta",
+        portfolio: beta.text,
+        portfolioNum: beta.num,
+        muted: beta.muted,
+        compareDirection: "lower",
+      },
+      bBeta,
+    ),
+  ];
 }
 
 function MetricValueDisplay({
@@ -265,10 +356,12 @@ function MobileStatCell({
   row,
   muted,
   showBorderBottom,
+  loading,
 }: {
   row: PortfolioMetricRow;
   muted: boolean;
   showBorderBottom?: boolean;
+  loading?: boolean;
 }) {
   return (
     <div
@@ -278,7 +371,11 @@ function MobileStatCell({
       )}
     >
       <span className="text-[14px] leading-4 text-[#71717A]">{row.label}</span>
-      <MetricValueDisplay row={row} muted={muted} align="left" />
+      {loading ? (
+        <div className="h-4 w-12 animate-pulse rounded bg-neutral-200" aria-hidden />
+      ) : (
+        <MetricValueDisplay row={row} muted={muted} align="left" />
+      )}
     </div>
   );
 }
@@ -287,17 +384,35 @@ function StatRow({
   row,
   muted,
   className,
+  loading,
 }: {
   row: PortfolioMetricRow;
   muted: boolean;
   className?: string;
+  loading?: boolean;
 }) {
   return (
     <div className={cn("flex items-center justify-between gap-3 md:px-0 md:py-1.5", className)}>
       <span className="min-w-0 shrink text-[14px] font-medium leading-5 text-[#0F0F0F]">{row.label}</span>
-      <MetricValueDisplay row={row} muted={muted} align="right" />
+      {loading ? (
+        <div className="h-4 w-14 shrink-0 animate-pulse rounded bg-neutral-200" aria-hidden />
+      ) : (
+        <MetricValueDisplay row={row} muted={muted} align="right" />
+      )}
     </div>
   );
+}
+
+function skeletonMetricRows(): PortfolioMetricRow[] {
+  return KEY_STAT_LABELS.map((label) => ({
+    label,
+    tooltipTitle: label,
+    portfolio: "",
+    portfolioNum: null,
+    muted: true,
+    neutral: true,
+    deltaPct: null,
+  }));
 }
 
 export function PortfolioOverviewMetrics({
@@ -307,15 +422,74 @@ export function PortfolioOverviewMetrics({
   holdings: PortfolioHolding[];
   transactions: PortfolioTransaction[];
 }) {
-  const hasTradeHistory = useMemo(
-    () => tradeSymbolsFromHistory(transactions).length > 0,
-    [transactions],
+  const [snapshot, setSnapshot] = useState<PortfolioAnalyticsSnapshot | null>(null);
+  /** True while waiting for the first analytics snapshot (no prior values). */
+  const [analyticsLoading, setAnalyticsLoading] = useState(true);
+  const hasSnapshotRef = useRef(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!hasSnapshotRef.current) setAnalyticsLoading(true);
+    const run = async (attempt: number) => {
+      try {
+        const res = await fetch("/api/portfolio/analytics", {
+          method: "POST",
+          credentials: "include",
+          cache: "no-store",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ holdings, transactions, benchmark: "SPY" }),
+        });
+        if (cancelled) return;
+        if (!res.ok) {
+          if (attempt < 1) {
+            await new Promise((r) => setTimeout(r, 400));
+            if (!cancelled) void run(attempt + 1);
+            return;
+          }
+          if (!cancelled) setAnalyticsLoading(false);
+          return;
+        }
+        const data = (await res.json()) as PortfolioAnalyticsSnapshot;
+        if (cancelled) return;
+        const riskMissing =
+          data.volatility?.status !== "available" &&
+          data.sharpe?.status !== "available" &&
+          (data.pe?.status === "available" || data.turnover?.status === "available");
+        if (riskMissing && attempt < 1) {
+          await new Promise((r) => setTimeout(r, 400));
+          if (!cancelled) void run(attempt + 1);
+          // Still apply this response so fundamentals show while retry runs.
+          setSnapshot(data);
+          hasSnapshotRef.current = true;
+          setAnalyticsLoading(false);
+          return;
+        }
+        setSnapshot(data);
+        hasSnapshotRef.current = true;
+        setAnalyticsLoading(false);
+      } catch {
+        if (cancelled) return;
+        if (attempt < 1) {
+          await new Promise((r) => setTimeout(r, 400));
+          if (!cancelled) void run(attempt + 1);
+          return;
+        }
+        // Keep previous snapshot on failure — avoid flashing "—".
+        setAnalyticsLoading(false);
+      }
+    };
+    void run(0);
+    return () => {
+      cancelled = true;
+    };
+  }, [holdings, transactions]);
+
+  const showMetricsSkeleton = analyticsLoading && snapshot == null;
+  const metricDefs = useMemo(
+    () => (showMetricsSkeleton ? skeletonMetricRows() : metricsFromSnapshot(snapshot)),
+    [showMetricsSkeleton, snapshot],
   );
-  const isEmptyPortfolio = holdings.length === 0 && !hasTradeHistory;
-  const metrics = useMemo(
-    () => enrichMetricRows(isEmptyPortfolio ? EMPTY_METRICS : PLACEHOLDER_METRICS),
-    [isEmptyPortfolio],
-  );
+  const metrics = useMemo(() => enrichMetricRows(metricDefs), [metricDefs]);
   const columns = useMemo(() => splitMetricsIntoColumns(metrics), [metrics]);
 
   return (
@@ -341,8 +515,9 @@ export function PortfolioOverviewMetrics({
                   <MobileStatCell
                     key={row.label}
                     row={row}
-                    muted={isEmptyPortfolio}
+                    muted={row.muted}
                     showBorderBottom={showBorderBottom}
+                    loading={showMetricsSkeleton}
                   />
                 ))}
               </div>
@@ -358,7 +533,8 @@ export function PortfolioOverviewMetrics({
               <StatRow
                 key={row.label}
                 row={row}
-                muted={isEmptyPortfolio}
+                muted={row.muted}
+                loading={showMetricsSkeleton}
                 className={rowIndex < column.length - 1 ? DESKTOP_STAT_ROW_BORDER_CLASS : undefined}
               />
             ))}

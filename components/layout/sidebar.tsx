@@ -243,6 +243,7 @@ function SidebarSectionTitle({ title, collapsed }: { title: string; collapsed: b
   return (
     <p
       ref={ref}
+      suppressHydrationWarning
       className={cn(
         "relative mb-1.5 max-h-8 overflow-hidden text-sm font-semibold leading-5 text-[#52525B]",
         centerDash ? "text-center" : "pl-4",

@@ -34,6 +34,7 @@
     "superinvestors:phase2a-metrics": "node --env-file=.env.local scripts/superinvestor-phase2a-metrics.mjs",
     "superinvestors:phase3-audit": "node --env-file=.env.local scripts/superinvestor-phase3-parity-audit.mjs",
     "superinvestors:phase3-validate": "node --env-file=.env.local scripts/superinvestor-phase3-validate.mjs",
+    "portfolio:test": "npx tsx --test lib/portfolio/ledger/portfolio-ledger.test.ts lib/portfolio/returns/portfolio-return-engine.test.ts lib/portfolio/benchmark/benchmark-engine.test.ts lib/portfolio/analytics/portfolio-analytics.test.ts lib/snaptrade/snaptrade-external-id.test.ts lib/snaptrade/snaptrade-sync-merge.test.ts lib/snaptrade/snaptrade-cash-activity.test.ts lib/snaptrade/snaptrade-crypto-symbol.test.ts lib/snaptrade/snaptrade-order-fill-gate.test.ts lib/portfolio/certification/portfolio-parity-certification.test.ts lib/portfolio/data/load-portfolio-eod-bars.test.ts lib/portfolio/portfolio-period-returns-sessions.test.ts",
     "stock:verify-live": "node --env-file=.env.local scripts/verify-stock-live-pipeline.mjs",
     "stock:validate-1d-session": "node --env-file=.env.local scripts/validate-live-1d-session.mjs",
     "stock:minute-ingest:status": "node --env-file=.env.local scripts/stock-minute-ingest-status.mjs",

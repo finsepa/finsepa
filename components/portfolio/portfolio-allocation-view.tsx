@@ -1,13 +1,19 @@
 "use client";
 
-import { memo, useMemo } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 
+import {
+  AllocationDonutCenterReturn,
+  useAllocationPeriodReturn,
+} from "@/components/portfolio/allocation-donut-center-return";
 import { AllocationDonutChart } from "@/components/portfolio/allocation-donut-chart";
 import { PortfolioHoldingsEmptyState } from "@/components/portfolio/portfolio-holdings-empty-state";
-import { useAllocationCenterAvatar } from "@/components/portfolio/use-allocation-center-avatar";
-import { UserAvatar } from "@/components/user/user-avatar";
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 import type { AllocationDonutRow } from "@/lib/portfolio/allocation-donut-rows";
+import {
+  ALLOCATION_RETURN_PERIOD_DEFAULT,
+  type AllocationReturnPeriodId,
+} from "@/lib/portfolio/allocation-return-period";
 import { buildPortfolioAllocationRows } from "@/lib/portfolio/portfolio-allocation-rows";
 import { cn } from "@/lib/utils";
 
@@ -48,13 +54,39 @@ function PortfolioAllocationViewInner({
   holdings,
   transactions,
   readOnly = false,
+  period: periodControlled,
+  onPeriodChange,
+  onReturnMetaChange,
 }: {
   holdings: PortfolioHolding[];
   transactions: PortfolioTransaction[];
   readOnly?: boolean;
+  period?: AllocationReturnPeriodId;
+  onPeriodChange?: (next: AllocationReturnPeriodId) => void;
+  onReturnMetaChange?: (meta: { period: AllocationReturnPeriodId; returnPct: number | null }) => void;
 }) {
+  const [periodInternal, setPeriodInternal] = useState<AllocationReturnPeriodId>(
+    ALLOCATION_RETURN_PERIOD_DEFAULT,
+  );
+  const period = periodControlled ?? periodInternal;
+  const setPeriod = onPeriodChange ?? setPeriodInternal;
+
   const rows = useMemo(() => buildPortfolioAllocationRows(holdings, transactions), [holdings, transactions]);
-  const { imageSrc, initials } = useAllocationCenterAvatar();
+  const { pct: returnPct, loading: returnLoading } = useAllocationPeriodReturn(transactions, period);
+
+  useEffect(() => {
+    onReturnMetaChange?.({ period, returnPct });
+  }, [period, returnPct, onReturnMetaChange]);
+
+  const center = (
+    <AllocationDonutCenterReturn
+      returnPct={returnPct}
+      period={period}
+      onPeriodChange={setPeriod}
+      interactive
+      loading={returnLoading}
+    />
+  );
 
   const { left, right } = useMemo(() => {
     const mid = Math.ceil(rows.length / 2);
@@ -71,7 +103,7 @@ function PortfolioAllocationViewInner({
         <div className="flex justify-center overflow-visible px-4 -mt-1 pt-0">
           <AllocationDonutChart
             rows={rows}
-            center={<UserAvatar imageSrc={imageSrc} initials={initials} size="xl" />}
+            center={center}
             badgeOverflowPadPx={18}
             className="mx-auto shrink-0"
           />
@@ -84,7 +116,7 @@ function PortfolioAllocationViewInner({
       <div className="hidden flex-col items-stretch gap-8 md:flex lg:flex-row lg:items-center lg:gap-6">
         <AllocationDonutChart
           rows={rows}
-          center={<UserAvatar imageSrc={imageSrc} initials={initials} size="xl" />}
+          center={center}
           className="mx-auto shrink-0 lg:mx-0 lg:-mr-2"
         />
 

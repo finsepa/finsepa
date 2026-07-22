@@ -38,7 +38,9 @@ import {
   refreshHoldingMarketPrices,
   replayTradeTransactionsToHoldings,
 } from "@/lib/portfolio/rebuild-holdings-from-trades";
+import { validatePortfolioLedgerMutation } from "@/lib/portfolio/ledger/portfolio-ledger-validate";
 import { formatUsdMoney2dp, parseUsdStyleNumber } from "@/lib/portfolio/amount-input-format";
+import { toast } from "sonner";
 
 function formatPriceInputFromApi(n: number): string {
   if (!Number.isFinite(n)) return "";
@@ -179,6 +181,14 @@ export function EditTransactionModal({ open, onClose, transaction }: Props) {
 
       const list = transactionsByPortfolioId[portfolioId] ?? [];
       const next = list.map((t) => (t.id === transaction.id ? updated : t));
+      const validation = validatePortfolioLedgerMutation(portfolioId, next);
+      if (!validation.ok) {
+        const first = validation.errors[0];
+        toast.error("Save rejected", {
+          description: first?.message ?? "This edit would make a later sell invalid.",
+        });
+        return;
+      }
       setPortfolioTransactions(portfolioId, next);
 
       const rebuilt = replayTradeTransactionsToHoldings(next);

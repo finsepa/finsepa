@@ -211,9 +211,11 @@ function FinsepaCalendarDropdown({
       ) : null}
       {open && !isMobileSheet ? (
         <DropdownScrollArea
+          edgeFade={false}
           className={cn(
             dropdownMenuPanelClassName(),
-            "absolute left-0 top-[calc(100%+4px)] z-[200] min-w-full max-h-60 w-max max-w-[min(18rem,calc(100vw-2rem))] overflow-y-auto",
+            // Opaque panel over the day grid — scroll-edge masks make dates show through.
+            "absolute left-0 top-[calc(100%+4px)] z-[200] min-w-full max-h-60 w-max max-w-[min(18rem,calc(100vw-2rem))] overflow-y-auto bg-white",
           )}
           role="listbox"
           aria-label={ariaLabel}

@@ -105,9 +105,16 @@ function isPortfolioTransaction(x: unknown): x is PortfolioTransaction {
   if (kind !== "trade" && kind !== "cash" && kind !== "income" && kind !== "expense") return false;
   const holdingOk = x.holdingId === undefined || typeof x.holdingId === "string";
   const noteOk = x.note === undefined || x.note === null || typeof x.note === "string";
+  const sequenceOk =
+    x.sequence === undefined || (typeof x.sequence === "number" && Number.isFinite(x.sequence));
+  const createdAtOk = x.createdAt === undefined || typeof x.createdAt === "string";
+  const legacyOk = x.legacyAnomaly === undefined || typeof x.legacyAnomaly === "boolean";
   return (
     noteOk &&
     holdingOk &&
+    sequenceOk &&
+    createdAtOk &&
+    legacyOk &&
     typeof x.id === "string" &&
     typeof x.portfolioId === "string" &&
     typeof x.operation === "string" &&

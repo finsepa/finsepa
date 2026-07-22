@@ -6,6 +6,7 @@ import { LineChart } from "@/lib/icons";
 import { PortfolioHoldingsPerformanceChart } from "@/components/portfolio/portfolio-holdings-performance-chart";
 import { PortfolioReturnsDynamicsChart } from "@/components/portfolio/portfolio-returns-dynamics-chart";
 import {
+  earliestBenchmarkCoverYmd,
   fetchSpyBenchmarkChartPoints,
   PORTFOLIO_CHART_RANGE_LABELS,
   PortfolioValueHistoryChartPane,
@@ -251,13 +252,14 @@ function PortfolioPerformancePanelInner({
       return;
     }
     const ac = new AbortController();
-    void fetchSpyBenchmarkChartPoints(range, ac.signal)
+    const coverFromYmd = earliestBenchmarkCoverYmd(transactions);
+    void fetchSpyBenchmarkChartPoints(range, ac.signal, coverFromYmd)
       .then(setSpyPoints)
       .catch(() => {
         if (!ac.signal.aborted) setSpyPoints(null);
       });
     return () => ac.abort();
-  }, [canLoad, range]);
+  }, [canLoad, range, transactions]);
 
   return (
     <>

@@ -14,9 +14,9 @@ export type PortfolioValueHistoryPoint = {
    */
   profit: number;
   /**
-   * Lifetime-style equity return % through this date: `profit` divided by total historical
-   * equity cost basis as of `t` (open basis + cost of sold shares). Matches overview
-   * “Total profit” ATH % at the last point when marks match current holdings.
+   * Modified Dietz return % through `t` for the **selected chart range window**
+   * (same period keys as Overview Total profit / Allocation center).
+   * For `all` (or windows that start before inception), this is inception Dietz.
    */
   returnPct: number | null;
 };

@@ -1,11 +1,15 @@
 "use client";
 
+import { UserAvatar } from "@/components/user/user-avatar";
 import { Briefcase } from "@/lib/icons";
 import { CHART_SCREENSHOT_ASSET_HEADER_HEIGHT_PX } from "@/lib/chart/chart-screenshot-constants";
 
 type ChartScreenshotPortfolioHeaderProps = {
   portfolioName: string;
   logoUrl?: string | null;
+  /** When set, replaces the briefcase / brokerage logo tile (allocation export). */
+  avatarImageSrc?: string | null;
+  avatarInitials?: string;
   /** Tighter header when nested inside the allocation card. */
   compact?: boolean;
 };
@@ -13,10 +17,13 @@ type ChartScreenshotPortfolioHeaderProps = {
 export function ChartScreenshotPortfolioHeader({
   portfolioName,
   logoUrl,
+  avatarImageSrc,
+  avatarInitials,
   compact = false,
 }: ChartScreenshotPortfolioHeaderProps) {
   const title = portfolioName.trim() || "Portfolio";
   const resolvedLogo = logoUrl?.trim() || "";
+  const useAvatar = avatarInitials != null && avatarInitials.length > 0;
 
   return (
     <div
@@ -29,24 +36,32 @@ export function ChartScreenshotPortfolioHeader({
             }
       }
     >
-      <div
-        className={
-          compact
-            ? "flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-[#F4F4F5]"
-            : "flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-[12px] border border-[#E4E4E7] bg-[#F4F4F5]"
-        }
-      >
-        {resolvedLogo ? (
-          // eslint-disable-next-line @next/next/no-img-element -- brokerage logo URL
-          <img src={resolvedLogo} alt="" className="h-full w-full object-contain p-1" />
-        ) : (
-          <Briefcase
-            className={compact ? "h-4 w-4 text-[#71717A]" : "h-5 w-5 text-[#71717A]"}
-            strokeWidth={2}
-            aria-hidden
-          />
-        )}
-      </div>
+      {useAvatar ? (
+        <UserAvatar
+          imageSrc={avatarImageSrc ?? null}
+          initials={avatarInitials}
+          size={compact ? "md" : "menu"}
+        />
+      ) : (
+        <div
+          className={
+            compact
+              ? "flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-[#F4F4F5]"
+              : "flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-[12px] border border-[#E4E4E7] bg-[#F4F4F5]"
+          }
+        >
+          {resolvedLogo ? (
+            // eslint-disable-next-line @next/next/no-img-element -- brokerage logo URL
+            <img src={resolvedLogo} alt="" className="h-full w-full object-contain p-1" />
+          ) : (
+            <Briefcase
+              className={compact ? "h-4 w-4 text-[#71717A]" : "h-5 w-5 text-[#71717A]"}
+              strokeWidth={2}
+              aria-hidden
+            />
+          )}
+        </div>
+      )}
       <div className="flex min-w-0 items-center gap-2">
         <span
           className={

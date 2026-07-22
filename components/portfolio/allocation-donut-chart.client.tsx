@@ -333,8 +333,8 @@ export function AllocationDonutChart({
             })
           : null}
         {center ? (
-          <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
-            {center}
+          <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
+            <div className="pointer-events-auto">{center}</div>
           </div>
         ) : null}
     </div>
