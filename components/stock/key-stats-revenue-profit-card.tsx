@@ -16,6 +16,7 @@ const LABEL_TO_METRIC: Partial<Record<string, ChartingMetricId>> = {
   EBITDA: "ebitda",
   EPS: "eps",
   FCF: "free_cash_flow",
+  CapEx: "capital_expenditures",
 };
 
 function StatRow({
@@ -58,6 +59,7 @@ const PLACEHOLDER_ROWS: Row[] = [
   { label: "EBITDA", value: "—" },
   { label: "EPS", value: "—" },
   { label: "FCF", value: "—" },
+  { label: "CapEx", value: "—" },
 ];
 
 export function KeyStatsRevenueProfitCard({

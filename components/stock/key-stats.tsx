@@ -252,6 +252,7 @@ const REVENUE_PROFIT_LABEL_TO_METRIC: Partial<Record<string, ChartingMetricId>> 
   EPS: "eps",
   /** Dollar FCF — see `eodhd-key-stats-revenue-profit` (Margins card uses “Free Cash Flow” for margin %). */
   FCF: "free_cash_flow",
+  CapEx: "capital_expenditures",
 };
 
 /** Key Stats "Margins" row labels → fundamentals chart metric (FCF row is margin %, not cash dollars). */
@@ -522,6 +523,7 @@ const RevenueProfitCard = memo(function RevenueProfitCard({
         { label: "EBITDA", value: "—" },
         { label: "EPS", value: "—" },
         { label: "FCF", value: "—" },
+        { label: "CapEx", value: "—" },
       ] satisfies Row[],
     [],
   );

@@ -28,6 +28,8 @@ const LABEL_TO_METRIC: Partial<Record<string, ChartingMetricId>> = {
   EPS: "eps",
   "Free Cash Flow": "free_cash_flow",
   FCF: "free_cash_flow",
+  CapEx: "capital_expenditures",
+  "Capital Expenditures": "capital_expenditures",
 
   "Total Assets": "total_assets",
   "Cash on Hand": "cash_on_hand",

@@ -96,6 +96,17 @@ export async function fetchEodhdKeyStatsRevenueProfit(
     : null;
   if (fcf == null && hl) fcf = num(hl.FreeCashFlowTTM ?? hl.FreeCashFlow);
 
+  const capex = cfRow
+    ? numFromRow(cfRow, [
+        "capitalExpenditures",
+        "CapitalExpenditures",
+        "capitalExpenditure",
+        "CapitalExpenditure",
+        "capex",
+        "Capex",
+      ])
+    : null;
+
   const rows: KeyStatsRevenueProfitRow[] = [
     { label: "Revenue", value: revenue != null ? formatUsdCompact(revenue) : "—" },
     { label: "Gross Profit", value: grossProfit != null ? formatUsdCompact(grossProfit) : "—" },
@@ -105,6 +116,7 @@ export async function fetchEodhdKeyStatsRevenueProfit(
     { label: "EPS", value: eps != null ? formatUsdPrice(eps) : "—" },
     /** Label `FCF` avoids clashing with Margins card row “Free Cash Flow” (FCF margin %). */
     { label: "FCF", value: fcf != null ? formatUsdCompact(fcf) : "—" },
+    { label: "CapEx", value: capex != null ? formatUsdCompact(capex) : "—" },
   ];
 
   return { rows };
