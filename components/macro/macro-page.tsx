@@ -71,6 +71,10 @@ export function MacroPage({ initialItems }: { initialItems: MacroCardModel[] }) 
     setSelectedId(urlChartId);
   }, [urlChartId]);
 
+  useEffect(() => {
+    if (selectedId === "btc_etf_net_flow") setChartVariant("bar");
+  }, [selectedId]);
+
   const selected = useMemo(
     () => sorted.find((item) => item.id === selectedId) ?? null,
     [sorted, selectedId],

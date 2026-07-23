@@ -55,7 +55,7 @@ export const MACRO_CHART_SECTIONS: readonly MacroChartSectionDef[] = [
   {
     id: "crypto",
     title: "Crypto",
-    chartIds: ["crypto_fear_greed"],
+    chartIds: ["crypto_fear_greed", "btc_etf_net_flow"],
   },
 ] as const;
 

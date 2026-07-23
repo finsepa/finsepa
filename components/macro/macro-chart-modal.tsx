@@ -38,7 +38,9 @@ export function MacroChartModal({
   rangeId: MacroRangeId;
 }) {
   const titleId = useId();
-  const [chartVariant, setChartVariant] = useState<MacroChartVariant>(initialChartVariant);
+  const [chartVariant, setChartVariant] = useState<MacroChartVariant>(
+    model.id === "btc_etf_net_flow" ? "bar" : initialChartVariant,
+  );
   const [rangeId, setRangeId] = useState<MacroRangeId>(pageRangeId);
 
   const windowedModel = useMemo(
@@ -82,9 +84,9 @@ export function MacroChartModal({
 
   useEffect(() => {
     if (!open) return;
-    setChartVariant(initialChartVariant);
+    setChartVariant(model.id === "btc_etf_net_flow" ? "bar" : initialChartVariant);
     setRangeId(pageRangeId);
-  }, [open, initialChartVariant, pageRangeId]);
+  }, [open, initialChartVariant, pageRangeId, model.id]);
 
   if (!open) return null;
 

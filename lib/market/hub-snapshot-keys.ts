@@ -28,8 +28,8 @@ export function hubNewsKey(tab: NewsTab): HubSnapshotFixedKey {
 }
 
 export function macroHubSegment(now: Date = new Date()): string {
-  // v19: Unemployment from FRED UNRATE (monthly) instead of annual EODHD macro indicator.
-  return `macro-day-v19-${nyCalendarYmd(now)}`;
+  // v20: US spot Bitcoin ETF net flows (Farside) in Crypto section.
+  return `macro-day-v20-${nyCalendarYmd(now)}`;
 }
 
 export function newsHubSegment(tab: NewsTab, now: Date = new Date()): string {

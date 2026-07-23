@@ -6,7 +6,6 @@ import { DropdownScrollArea } from "@/components/design-system/dropdown-scroll-a
 import { CompanyLogo } from "@/components/screener/company-logo";
 import {
   dropdownMenuPanelClassName,
-  dropdownMenuRichItemClassName,
 } from "@/components/design-system/dropdown-menu-styles";
 import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
 import { Spinner } from "@/components/ui/spinner";
@@ -160,10 +159,10 @@ export function EarningsOverflowHoverMenu({
             aria-label={`More companies in ${title}`}
             className={cn(
               dropdownMenuPanelClassName(),
-              "min-w-[148px] max-w-[min(200px,calc(100vw-1.5rem))]",
+              "min-w-[220px] w-[min(248px,calc(100vw-1.5rem))] max-w-[min(248px,calc(100vw-1.5rem))]",
             )}
           >
-            <DropdownScrollArea className="max-h-[min(280px,50vh)] overflow-y-auto">
+            <DropdownScrollArea className="max-h-[min(252px,50vh)] overflow-y-auto">
               {loading && displayItems.length === 0 ? (
                 <div
                   className="flex items-center justify-center px-3 py-6"
@@ -178,13 +177,13 @@ export function EarningsOverflowHoverMenu({
               ) : displayItems.length === 0 ? (
                 <p className="px-3 py-2 text-[12px] text-[#71717A]">No companies</p>
               ) : (
-                <ul className="flex flex-col gap-1">
+                <ul className="grid grid-cols-3 gap-1">
                   {displayItems.map((item) => (
-                    <li key={`${item.ticker}-${item.reportDate}`}>
+                    <li key={`${item.ticker}-${item.reportDate}`} className="min-w-0">
                       <button
                         type="button"
                         role="option"
-                        className={cn(dropdownMenuRichItemClassName(), "items-center gap-2")}
+                        className="flex w-full flex-col items-center justify-center gap-1.5 rounded-xl px-1 py-1.5 text-center transition-colors hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/10"
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => {
                           onOpenCard(item);
@@ -197,9 +196,10 @@ export function EarningsOverflowHoverMenu({
                           name={item.companyName || item.ticker}
                           logoUrl={item.logoUrl}
                           symbol={item.ticker}
-                          size="sm"
+                          size="md"
+                          fill
                         />
-                        <span className="min-w-0 flex-1 truncate text-[13px] font-semibold tabular-nums leading-5 text-[#0F0F0F]">
+                        <span className="w-full min-w-0 truncate text-[13px] font-semibold leading-5 tabular-nums text-[#0F0F0F]">
                           {item.ticker}
                         </span>
                       </button>

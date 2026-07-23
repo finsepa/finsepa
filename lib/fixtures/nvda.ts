@@ -127,6 +127,8 @@ export function getNvdaKeyStatsBundle(): StockKeyStatsBundle {
       { label: "Market Cap", value: "$2,000.00B" },
       { label: "Enterprise Value", value: "—" },
       { label: "Shares Outstanding", value: "—" },
+      { label: "% of Insiders", value: "—" },
+      { label: "Short Float", value: "—" },
       { label: "1Y Target Est", value: "—" },
       { label: "Analyst Consensus", value: "Buy" },
       { label: "Earnings Date", value: "—" },

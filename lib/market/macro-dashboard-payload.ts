@@ -73,11 +73,17 @@ function hubMacroSnapshotHasFreshCpiGdp(snap: { items?: MacroDashboardCard[] }):
   return true;
 }
 
+function hubMacroSnapshotHasBtcEtfFlows(snap: { items?: MacroDashboardCard[] }): boolean {
+  const series = snap.items?.find((i) => i.id === "btc_etf_net_flow");
+  return (series?.points?.length ?? 0) >= 30;
+}
+
 function hubMacroSnapshotIsUsable(snap: { items?: MacroDashboardCard[] }): boolean {
   return (
     hubMacroSnapshotHasFreshShiller(snap) &&
     hubMacroSnapshotHasLongTreasuryHistory(snap) &&
-    hubMacroSnapshotHasFreshCpiGdp(snap)
+    hubMacroSnapshotHasFreshCpiGdp(snap) &&
+    hubMacroSnapshotHasBtcEtfFlows(snap)
   );
 }
 
@@ -123,7 +129,7 @@ export async function buildMacroDashboardPayloadForIngest(): Promise<{
 async function getMacroDashboardPayloadCachedInner(): Promise<{ country: string; items: MacroDashboardCard[] }> {
   return unstable_cache(
     buildMacroDashboardPayloadUncached,
-    ["macro-dashboard-payload-v45-shared-bls-shiller"],
+    ["macro-dashboard-payload-v46-btc-etf-flows"],
     { revalidate: 300 },
   )();
 }

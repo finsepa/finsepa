@@ -70,6 +70,8 @@ export function KeyStatsBasicCard({ ticker }: { ticker: string }) {
       { label: "Market Cap", value: "—" },
       { label: "Enterprise Value", value: "—" },
       { label: "Shares Outstanding", value: "—" },
+      { label: "% of Insiders", value: "—" },
+      { label: "Short Float", value: "—" },
       { label: "1Y Target Est", value: "—" },
       { label: "Analyst Consensus", value: "—" },
       { label: "Earnings Date", value: "—" },

@@ -4,6 +4,7 @@ import { fetchEodhdFundamentalsJson, resolveEarningsDateDisplay } from "@/lib/ma
 import { analystConsensusDisplayForKeyStats } from "@/lib/market/stock-target-price-payload";
 import {
   formatEmployeesCount,
+  formatPercentMetric,
   formatSharesOutstanding,
   formatUsdCompact,
   formatUsdPrice,
@@ -55,10 +56,31 @@ export async function fetchEodhdKeyStatsBasic(
 
   const employees = num(gen?.FullTimeEmployees ?? gen?.Employees);
 
+  const tech = root.Technicals && typeof root.Technicals === "object" ? (root.Technicals as Record<string, unknown>) : null;
+
+  let percentInsiders = num(
+    ss?.PercentInsiders ?? ss?.PercentHeldByInsiders ?? ss?.HeldPercentInsiders,
+  );
+  if (percentInsiders == null && hl) {
+    percentInsiders = num(hl.PercentInsiders ?? hl.PercentHeldByInsiders);
+  }
+
+  let shortFloat = num(
+    ss?.ShortPercentFloat ?? ss?.ShortPercentOfFloat ?? ss?.ShortRatioPercentFloat,
+  );
+  if (shortFloat == null && tech) {
+    shortFloat = num(tech.ShortPercentFloat ?? tech.ShortPercent);
+  }
+  if (shortFloat == null && ss) {
+    shortFloat = num(ss.ShortPercentOutstanding ?? ss.ShortPercent);
+  }
+
   const rows: KeyStatsBasicRow[] = [
     { label: "Market Cap", value: marketCap != null ? formatUsdCompact(marketCap) : "—" },
     { label: "Enterprise Value", value: enterpriseValue != null ? formatUsdCompact(enterpriseValue) : "—" },
     { label: "Shares Outstanding", value: sharesOutstanding != null ? formatSharesOutstanding(sharesOutstanding) : "—" },
+    { label: "% of Insiders", value: percentInsiders != null ? formatPercentMetric(percentInsiders) : "—" },
+    { label: "Short Float", value: shortFloat != null ? formatPercentMetric(shortFloat) : "—" },
     { label: "1Y Target Est", value: target1y != null ? formatUsdPrice(target1y) : "—" },
     { label: "Analyst Consensus", value: analystConsensus ?? "—" },
     { label: "Earnings Date", value: earningsDate ?? "—" },

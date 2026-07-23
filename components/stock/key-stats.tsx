@@ -269,6 +269,8 @@ const BASIC_FALLBACK: Row[] = [
   { label: "Market Cap", value: "—" },
   { label: "Enterprise Value", value: "—" },
   { label: "Shares Outstanding", value: "—" },
+  { label: "% of Insiders", value: "—" },
+  { label: "Short Float", value: "—" },
   { label: "1Y Target Est", value: "—" },
   { label: "Analyst Consensus", value: "—" },
   { label: "Earnings Date", value: "—" },
@@ -698,15 +700,18 @@ function KeyStatsInner({
   useEffect(() => {
     let cancelled = false;
     const initialHasContent = stockKeyStatsBundleHasContent(initialBundle);
-    const initialHasBuybacks = Boolean(
-      initialBundle?.dividends?.some((r) => r.label === "Buybacks"),
+    const initialHasLatestRows = Boolean(
+      initialBundle?.dividends?.some((r) => r.label === "Buybacks") &&
+        initialBundle?.revenueProfit?.some((r) => r.label === "CapEx") &&
+        initialBundle?.basic?.some((r) => r.label === "% of Insiders") &&
+        initialBundle?.basic?.some((r) => r.label === "Short Float"),
     );
 
     if (initialHasContent) {
       setBundle(initialBundle!);
       setLoading(false);
       // Stale SSR/API cache can omit newly added rows — soft-refresh once.
-      if (initialHasBuybacks) return () => {
+      if (initialHasLatestRows) return () => {
         cancelled = true;
       };
     }

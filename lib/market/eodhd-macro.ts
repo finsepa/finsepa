@@ -11,6 +11,7 @@ import { fetchGdpDeflatorYoySeriesCached } from "@/lib/market/gdp-deflator-macro
 import { fetchFredDebtPctGdpSeriesCached, fetchFredGdpSeriesCached, fetchFredGdpGrowthYoySeriesCached, fetchFredGdpPerCapitaSeriesCached } from "@/lib/market/fred-gdp-macro";
 import { fetchFredUnrateSeriesCached } from "@/lib/market/fred-unemployment-macro";
 import { fetchCryptoFearGreedMacroSeriesCached } from "@/lib/market/alternative-fear-greed";
+import { fetchFarsideBtcEtfNetFlowMacroSeriesCached } from "@/lib/market/farside-btc-etf-flows";
 import { fetchShillerIeMacroSeriesCached, type ShillerIeMacroMetric } from "@/lib/market/shiller-ie-macro";
 import { fetchFedFundsTargetSeriesCached } from "@/lib/market/eodhd-fed-funds-macro";
 import { fetchUstParYieldTenorCached } from "@/lib/market/eodhd-ust-par-yield";
@@ -119,6 +120,13 @@ export type MacroSeriesDef =
       kind: MacroSeriesKind;
       /** Alternative.me Crypto Fear & Greed Index (0–100). */
       provider: { type: "crypto_fear_greed" };
+    }
+  | {
+      id: string;
+      title: string;
+      kind: MacroSeriesKind;
+      /** US spot Bitcoin ETF daily aggregate net flow (Farside Investors, US$m). */
+      provider: { type: "btc_etf_net_flow" };
     };
 
 /**
@@ -132,11 +140,13 @@ export type MacroSeriesDef =
  * + quarterly GDP per capita (FRED A939RC0Q052SBEA)
  * + quarterly federal debt as % of GDP (FRED GFDEGDQ188S)
  * + monthly unemployment rate (FRED UNRATE)
- * + Alternative.me Crypto Fear & Greed Index.
+ * + Alternative.me Crypto Fear & Greed Index
+ * + US spot Bitcoin ETF net flows (Farside Investors public table).
  *
  * @see https://eodhd.com/financial-apis/macroeconomics-data-and-macro-indicators-api
  * @see https://eodhd.com/financial-apis/us-treasury-ust-interest-rates-api-beta
  * @see http://www.econ.yale.edu/~shiller/data.htm
+ * @see https://farside.co.uk/bitcoin-etf-flow-all-data/
  */
 export const MACRO_SERIES: MacroSeriesDef[] = [
   { id: "shiller_pe", title: "Shiller P/E", kind: "number", provider: { type: "shiller_ie", metric: "shiller_cape" } },
@@ -154,6 +164,7 @@ export const MACRO_SERIES: MacroSeriesDef[] = [
   { id: "unemployment_total_percent", title: "Unemployment Rate", kind: "percent", provider: { type: "fred_unrate" } },
   { id: "debt_percent_gdp", title: "Debt", kind: "percent", provider: { type: "fred_debt_pct_gdp" } },
   { id: "crypto_fear_greed", title: "Crypto Fear & Greed", kind: "number", provider: { type: "crypto_fear_greed" } },
+  { id: "btc_etf_net_flow", title: "BTC ETF Net Flow", kind: "usd", provider: { type: "btc_etf_net_flow" } },
 ];
 
 function num(v: unknown): number | null {
@@ -246,6 +257,9 @@ export async function fetchMacroSeriesAll(country: string, def: MacroSeriesDef):
   }
   if (def.provider.type === "crypto_fear_greed") {
     return fetchCryptoFearGreedMacroSeriesCached();
+  }
+  if (def.provider.type === "btc_etf_net_flow") {
+    return fetchFarsideBtcEtfNetFlowMacroSeriesCached();
   }
   return fetchMacroIndicatorCached({ country, indicator: def.provider.indicator });
 }
