@@ -1,8 +1,7 @@
 import { CHART_PLOT_DOTS_PATTERN_EXPORT_CLASS } from "@/components/chart/overview-bottom-axis";
+import { imageSrcToDataUrl } from "@/lib/media/same-origin-remote-image";
 
 const EXPORT_PREP_DOTS_SWAP_ATTR = "data-chart-export-dots-swapped";
-const TRANSPARENT_PIXEL_DATA_URL =
-  "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=";
 
 function waitForAnimationFrames(count: number): Promise<void> {
   return new Promise((resolve) => {
@@ -124,15 +123,6 @@ function temporarilyFlattenClampPositions(root: HTMLElement): () => void {
   };
 }
 
-function blobToDataUrl(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(blob);
-  });
-}
-
 function waitForImageElement(img: HTMLImageElement): Promise<void> {
   if (img.complete && img.naturalWidth > 0) return Promise.resolve();
   return new Promise((resolve) => {
@@ -142,32 +132,9 @@ function waitForImageElement(img: HTMLImageElement): Promise<void> {
   });
 }
 
-async function fetchSameOriginImageDataUrl(src: string): Promise<string | null> {
-  if (src.startsWith("data:")) return null;
-  let absolute: string;
-  try {
-    absolute = new URL(src, window.location.origin).href;
-  } catch {
-    return null;
-  }
-  if (!absolute.startsWith(window.location.origin)) {
-    // Cross-origin (e.g. Google avatar) — try same-origin proxy first.
-    absolute = `${window.location.origin}/api/media/remote-image?u=${encodeURIComponent(absolute)}`;
-  }
-  try {
-    const res = await fetch(absolute, { credentials: "same-origin" });
-    if (!res.ok) return null;
-    const blob = await res.blob();
-    if (!blob.type.startsWith("image/")) return null;
-    return await blobToDataUrl(blob);
-  } catch {
-    return null;
-  }
-}
-
 /**
  * html-to-image often captures blank logos (lazy load + cross-origin redirects).
- * Inline same-origin images as data URLs before JPEG export.
+ * Inline images as data URLs before JPEG export. Never replace with a transparent pixel.
  */
 async function temporarilyInlineExportImages(root: HTMLElement): Promise<() => void> {
   const restores: Array<{ img: HTMLImageElement; src: string; loading: string }> = [];
@@ -177,13 +144,24 @@ async function temporarilyInlineExportImages(root: HTMLElement): Promise<() => v
 
   await Promise.all(
     imgs.map(async (img) => {
+      // Skip canvases we already swapped into data URLs for Lightweight Charts.
+      if (img.hasAttribute("data-chart-export-canvas-swap")) return;
+      if (img.src.startsWith("data:")) return;
+
       const prevLoading = img.loading;
+      const prevSrc = img.getAttribute("src") || img.src;
       img.loading = "eager";
 
       await waitForImageElement(img);
 
-      const fetchSrc = img.currentSrc || img.src;
-      let dataUrl = await fetchSameOriginImageDataUrl(fetchSrc);
+      const fetchSrc = img.currentSrc || img.src || prevSrc;
+      let dataUrl = await imageSrcToDataUrl(fetchSrc);
+
+      // Prefer the attribute src when currentSrc is a followed cross-origin redirect URL
+      // that we already failed to proxy (common for /api/media/logo → favicon).
+      if (!dataUrl && prevSrc && prevSrc !== fetchSrc) {
+        dataUrl = await imageSrcToDataUrl(prevSrc);
+      }
 
       if (!dataUrl && img.naturalWidth > 0) {
         try {
@@ -196,30 +174,26 @@ async function temporarilyInlineExportImages(root: HTMLElement): Promise<() => v
             dataUrl = canvas.toDataURL("image/png");
           }
         } catch {
-          // Tainted canvas — keep original src.
+          // Tainted canvas — keep original src (do not blank the tile).
         }
       }
 
-      if (dataUrl) {
-        restores.push({ img, src: img.src, loading: prevLoading });
-        img.src = dataUrl;
-      } else {
+      if (!dataUrl) {
         img.loading = prevLoading;
-        try {
-          const url = new URL(fetchSrc, window.location.origin);
-          if (url.origin !== window.location.origin) {
-            restores.push({ img, src: img.src, loading: prevLoading });
-            img.src = TRANSPARENT_PIXEL_DATA_URL;
-            await waitForImageElement(img);
-          }
-        } catch {
-          // Invalid source — leave the image unchanged.
-        }
+        return;
+      }
+
+      restores.push({ img, src: prevSrc, loading: prevLoading });
+      img.src = dataUrl;
+      try {
+        if (img.decode) await img.decode();
+      } catch {
+        await waitForImageElement(img);
       }
     }),
   );
 
-  await waitForAnimationFrames(1);
+  await waitForAnimationFrames(2);
 
   return () => {
     for (const { img, src, loading } of restores) {

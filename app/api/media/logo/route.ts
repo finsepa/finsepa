@@ -85,23 +85,28 @@ export async function GET(req: Request) {
       if (fallbackRes.ok) {
         const contentType =
           fallbackRes.headers.get("content-type")?.split(";")[0]?.trim() || "image/png";
-        if (contentType.startsWith("image/")) {
-          const bytes = Buffer.from(await fallbackRes.arrayBuffer());
-          if (bytes.length >= 32 && bytes.length <= 2_000_000) {
-            return new NextResponse(bytes, {
-              status: 200,
-              headers: {
-                "Content-Type": contentType,
-                "Cache-Control": LOGO_PROXY_CACHE_CONTROL,
-              },
-            });
-          }
+        const bytes = Buffer.from(await fallbackRes.arrayBuffer());
+        // Tiny favicons can be <32 bytes; still usable for UI / export.
+        if (bytes.length >= 8 && bytes.length <= 2_000_000) {
+          const type = contentType.startsWith("image/") ? contentType : "image/png";
+          return new NextResponse(bytes, {
+            status: 200,
+            headers: {
+              "Content-Type": type,
+              "Cache-Control": LOGO_PROXY_CACHE_CONTROL,
+            },
+          });
         }
       }
     } catch {
-      // fall through to redirect
+      // fall through
     }
-    return NextResponse.redirect(fallbackUrl, 302);
+    // Never 302 to a cross-origin URL — html-to-image / export inlining cannot follow
+    // those redirects and paints an empty logo tile. Let <img onError> show initials.
+    return new NextResponse(null, {
+      status: 404,
+      headers: { "Cache-Control": "public, max-age=300" },
+    });
   }
 
   const bytes = Buffer.from(row.base64, "base64");

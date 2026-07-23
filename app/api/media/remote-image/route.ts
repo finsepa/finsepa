@@ -2,11 +2,13 @@ import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
-/** Hosts we will proxy for screenshot export (Google OAuth avatars, etc.). */
+/** Hosts we will proxy for screenshot export (avatars, favicons, logo CDNs). */
 const ALLOWED_HOST_SUFFIXES = [
   "googleusercontent.com",
   "ggpht.com",
   "google.com",
+  "gstatic.com",
+  "logo.dev",
 ] as const;
 
 function isAllowedRemoteImageUrl(raw: string): URL | null {
