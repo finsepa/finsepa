@@ -19,6 +19,8 @@ export function MacroSparkline({
   visualWeight = "default",
   /** Default: `height` applies to the SVG only. Cards/modal pass `total` for axis labels. */
   heightMode = "svg",
+  /** Daily flow series (e.g. BTC ETF) — month ticks on All, week ticks on 1Y. */
+  dailyFlowAxis = false,
 }: {
   title: string;
   kind: MacroValueKind;
@@ -28,6 +30,7 @@ export function MacroSparkline({
   variant?: MacroChartVariant;
   visualWeight?: "default" | "prominent";
   heightMode?: "svg" | "total";
+  dailyFlowAxis?: boolean;
 }) {
   const prominent = visualWeight === "prominent";
 
@@ -60,6 +63,7 @@ export function MacroSparkline({
       variant={variant}
       animateOnAppear={prominent}
       prominent={prominent}
+      dailyFlowAxis={dailyFlowAxis}
     />
   );
 }

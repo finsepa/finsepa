@@ -151,6 +151,7 @@ export function MacroSparklineBars({
   height,
   animateBarsOnAppear = false,
   prominent = false,
+  dailyFlowAxis = false,
 }: {
   title: string;
   kind: MacroValueKind;
@@ -159,6 +160,7 @@ export function MacroSparklineBars({
   height: number;
   animateBarsOnAppear?: boolean;
   prominent?: boolean;
+  dailyFlowAxis?: boolean;
 }) {
   const plotAreaRef = useRef<HTMLDivElement>(null);
   const [plotWidthPx, setPlotWidthPx] = useState(0);
@@ -176,18 +178,25 @@ export function MacroSparklineBars({
   const barPoints = useMemo((): BarPoint[] => {
     const n = cleaned.length;
     if (!n) return [];
-    const granularity = macroChartAxisGranularity(rangeId, cleaned[0]!.time, cleaned[n - 1]!.time);
+    const granularity = macroChartAxisGranularity(rangeId, cleaned[0]!.time, cleaned[n - 1]!.time, {
+      dailySeries: dailyFlowAxis,
+    });
     return cleaned.map((p) => ({
       time: p.time,
       value: p.value,
       axisLabel: formatMacroAxisLabel(p.time, granularity),
     }));
-  }, [cleaned, rangeId]);
+  }, [cleaned, dailyFlowAxis, rangeId]);
 
   const axisLabelIndexSet = useMemo(() => {
     const granularity =
       barPoints.length > 0
-        ? macroChartAxisGranularity(rangeId, barPoints[0]!.time, barPoints[barPoints.length - 1]!.time)
+        ? macroChartAxisGranularity(
+            rangeId,
+            barPoints[0]!.time,
+            barPoints[barPoints.length - 1]!.time,
+            { dailySeries: dailyFlowAxis },
+          )
         : "year";
     return new Set(
       macroAxisLabelIndicesForTimes(
@@ -196,7 +205,7 @@ export function MacroSparklineBars({
         granularity,
       ),
     );
-  }, [barPoints, rangeId]);
+  }, [barPoints, dailyFlowAxis, rangeId]);
 
   const values = useMemo(() => barPoints.map((p) => p.value), [barPoints]);
 

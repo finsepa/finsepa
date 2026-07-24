@@ -11,7 +11,7 @@ import type { MacroRangeId } from "@/components/macro/macro-range";
 import type { CryptoFearGreedHistoryPoint } from "@/lib/market/alternative-fear-greed";
 import { cn } from "@/lib/utils";
 
-const MACRO_TO_AXIS: Record<MacroRangeId, FearGreedHistoryAxisRange> = {
+const MACRO_TO_AXIS: Partial<Record<MacroRangeId, FearGreedHistoryAxisRange>> = {
   "5y": "5Y",
   "10y": "10Y",
   "20y": "20Y",
@@ -20,8 +20,12 @@ const MACRO_TO_AXIS: Record<MacroRangeId, FearGreedHistoryAxisRange> = {
 
 function rangeStartSec(lastTs: number, rangeId: MacroRangeId): number | null {
   if (rangeId === "all") return null;
-  const years = rangeId === "5y" ? 5 : rangeId === "10y" ? 10 : 20;
-  return lastTs - years * 365 * 24 * 60 * 60;
+  if (rangeId === "5y" || rangeId === "10y" || rangeId === "20y") {
+    const years = rangeId === "5y" ? 5 : rangeId === "10y" ? 10 : 20;
+    return lastTs - years * 365 * 24 * 60 * 60;
+  }
+  // Short daily ranges are unused on Fear & Greed; fall back to full history.
+  return null;
 }
 
 export function MacroFearGreedChart({
@@ -111,7 +115,7 @@ export function MacroFearGreedChart({
     });
   }, [showIndex]);
 
-  const axisRange = MACRO_TO_AXIS[rangeId];
+  const axisRange = MACRO_TO_AXIS[rangeId] ?? "ALL";
 
   return (
     <div className="min-w-0 w-full">

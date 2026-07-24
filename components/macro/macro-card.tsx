@@ -40,7 +40,13 @@ export function MacroCard({
   const [modalOpen, setModalOpen] = useState(false);
 
   const windowedModel = useMemo(
-    () => macroModelForWindow(model, prepareMacroPointsForRange(model.points, rangeId)),
+    () =>
+      macroModelForWindow(
+        model,
+        prepareMacroPointsForRange(model.points, rangeId, {
+          dailyFlowBars: model.id === "btc_etf_net_flow",
+        }),
+      ),
     [model, rangeId],
   );
 
@@ -102,6 +108,7 @@ export function MacroCard({
           heightMode="total"
           variant={chartVariant}
           rangeId={rangeId}
+          dailyFlowAxis={model.id === "btc_etf_net_flow"}
         />
       </div>
 

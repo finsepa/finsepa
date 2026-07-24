@@ -1,20 +1,42 @@
 import type { MacroCardModel } from "@/components/macro/macro-card";
 
-/** Matches stock Multicharts range chips, plus 20Y for long macro history. */
-export type MacroRangeId = "5y" | "10y" | "20y" | "all";
+/** Long-history Macro charts (valuation, rates, inflation, economy, fear & greed). */
+export type MacroLongRangeId = "5y" | "10y" | "20y" | "all";
 
-export const MACRO_RANGE_IDS: MacroRangeId[] = ["5y", "10y", "20y", "all"];
+/** Short daily series (BTC ETF net flows). */
+export type MacroDailyRangeId = "1m" | "ytd" | "1y" | "all";
 
-export const DEFAULT_MACRO_RANGE: MacroRangeId = "20y";
+export type MacroRangeId = MacroLongRangeId | MacroDailyRangeId;
+
+export const MACRO_RANGE_IDS: MacroLongRangeId[] = ["5y", "10y", "20y", "all"];
+
+export const DEFAULT_MACRO_RANGE: MacroLongRangeId = "20y";
+
+export const BTC_ETF_FLOW_RANGE_IDS: MacroDailyRangeId[] = ["1m", "ytd", "1y", "all"];
+
+export const DEFAULT_BTC_ETF_FLOW_RANGE: MacroDailyRangeId = "ytd";
 
 export const MACRO_RANGE_LABELS: Record<MacroRangeId, string> = {
   "5y": "5Y",
   "10y": "10Y",
   "20y": "20Y",
+  "1m": "1M",
+  ytd: "YTD",
+  "1y": "1Y",
   all: "All",
 };
 
+export function isBtcEtfFlowRangeId(id: string): id is MacroDailyRangeId {
+  return (BTC_ETF_FLOW_RANGE_IDS as readonly string[]).includes(id);
+}
+
+export function isMacroLongRangeId(id: string): id is MacroLongRangeId {
+  return (MACRO_RANGE_IDS as readonly string[]).includes(id);
+}
+
 export {
+  aggregateMacroPointsMonthlySum,
+  aggregateMacroPointsWeeklySum,
   downsampleMacroPointsMonthly,
   formatMacroAxisLabel,
   macroAxisLabelIndices,

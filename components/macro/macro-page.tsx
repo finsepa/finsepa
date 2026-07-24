@@ -7,7 +7,11 @@ import { TabSwitcher } from "@/components/design-system";
 import type { MacroCardModel } from "@/components/macro/macro-card";
 import { formatMacroChange, formatMacroLatestDate, formatMacroPeriodCaption, formatMacroValue } from "@/components/macro/macro-format";
 import {
+  BTC_ETF_FLOW_RANGE_IDS,
+  DEFAULT_BTC_ETF_FLOW_RANGE,
   DEFAULT_MACRO_RANGE,
+  isBtcEtfFlowRangeId,
+  isMacroLongRangeId,
   MACRO_RANGE_IDS,
   MACRO_RANGE_LABELS,
   macroModelForWindow,
@@ -45,13 +49,22 @@ const RANGE_OPTIONS = MACRO_RANGE_IDS.map((id) => ({
   label: MACRO_RANGE_LABELS[id],
 }));
 
+const BTC_ETF_RANGE_OPTIONS = BTC_ETF_FLOW_RANGE_IDS.map((id) => ({
+  value: id,
+  label: MACRO_RANGE_LABELS[id],
+}));
+
 const MACRO_WORKSPACE_CHART_HEIGHT_PX = 420;
 
 export function MacroPage({ initialItems }: { initialItems: MacroCardModel[] }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [chartVariant, setChartVariant] = useState<MacroChartVariant>("area");
-  const [rangeId, setRangeId] = useState<MacroRangeId>(DEFAULT_MACRO_RANGE);
+  const [chartVariant, setChartVariant] = useState<MacroChartVariant>(
+    searchParams.get("chart") === "btc_etf_net_flow" ? "bar" : "area",
+  );
+  const [rangeId, setRangeId] = useState<MacroRangeId>(
+    searchParams.get("chart") === "btc_etf_net_flow" ? DEFAULT_BTC_ETF_FLOW_RANGE : DEFAULT_MACRO_RANGE,
+  );
 
   const chartVisual: MultichartVisual = chartVariant === "bar" ? "bar" : "line";
 
@@ -71,9 +84,18 @@ export function MacroPage({ initialItems }: { initialItems: MacroCardModel[] }) 
     setSelectedId(urlChartId);
   }, [urlChartId]);
 
+  const isBtcEtfFlow = selectedId === "btc_etf_net_flow";
+
   useEffect(() => {
-    if (selectedId === "btc_etf_net_flow") setChartVariant("bar");
-  }, [selectedId]);
+    if (isBtcEtfFlow) {
+      setChartVariant("bar");
+      if (!isBtcEtfFlowRangeId(rangeId)) setRangeId(DEFAULT_BTC_ETF_FLOW_RANGE);
+      return;
+    }
+    if (!isMacroLongRangeId(rangeId)) setRangeId(DEFAULT_MACRO_RANGE);
+  }, [isBtcEtfFlow, rangeId]);
+
+  const rangeOptions = isBtcEtfFlow ? BTC_ETF_RANGE_OPTIONS : RANGE_OPTIONS;
 
   const selected = useMemo(
     () => sorted.find((item) => item.id === selectedId) ?? null,
@@ -95,7 +117,12 @@ export function MacroPage({ initialItems }: { initialItems: MacroCardModel[] }) 
 
   const windowedModel = useMemo(() => {
     if (!selected) return null;
-    return macroModelForWindow(selected, prepareMacroPointsForRange(selected.points, rangeId));
+    return macroModelForWindow(
+      selected,
+      prepareMacroPointsForRange(selected.points, rangeId, {
+        dailyFlowBars: selected.id === "btc_etf_net_flow",
+      }),
+    );
   }, [selected, rangeId]);
 
   const latestValue = windowedModel?.latest?.value ?? null;
@@ -109,8 +136,11 @@ export function MacroPage({ initialItems }: { initialItems: MacroCardModel[] }) 
 
   const priorPeriodLabel = useMemo(() => {
     if (!windowedModel || windowedModel.points.length < 2) return null;
-    return formatMacroPeriodCaption(windowedModel.points[windowedModel.points.length - 2]!.time);
-  }, [windowedModel]);
+    const prior = windowedModel.points[windowedModel.points.length - 2]!.time;
+    return selected?.id === "btc_etf_net_flow"
+      ? formatMacroLatestDate(prior)
+      : formatMacroPeriodCaption(prior);
+  }, [selected?.id, windowedModel]);
 
   const latestDateLabel = useMemo(() => {
     if (!windowedModel?.latest?.time) return null;
@@ -170,7 +200,7 @@ export function MacroPage({ initialItems }: { initialItems: MacroCardModel[] }) 
             <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
               <TabSwitcher
                 size="sm"
-                options={RANGE_OPTIONS}
+                options={rangeOptions}
                 value={rangeId}
                 onChange={setRangeId}
                 aria-label="Date range"
@@ -259,6 +289,7 @@ export function MacroPage({ initialItems }: { initialItems: MacroCardModel[] }) 
                   variant={chartVariant}
                   rangeId={rangeId}
                   visualWeight="prominent"
+                  dailyFlowAxis={isBtcEtfFlow}
                 />
               )}
             </div>

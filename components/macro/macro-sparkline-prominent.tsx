@@ -116,6 +116,7 @@ function MacroProminentLineChart({
   height,
   animateOnAppear = true,
   prominent = true,
+  dailyFlowAxis = false,
 }: {
   title: string;
   kind: MacroValueKind;
@@ -124,6 +125,7 @@ function MacroProminentLineChart({
   height: number;
   animateOnAppear?: boolean;
   prominent?: boolean;
+  dailyFlowAxis?: boolean;
 }) {
   const areaGradientId = useId();
   const lineEnterClipId = useId();
@@ -201,8 +203,10 @@ function MacroProminentLineChart({
 
   const axisGranularity = useMemo(() => {
     if (!n) return "year" as const;
-    return macroChartAxisGranularity(rangeId, cleaned[0]!.time, cleaned[n - 1]!.time);
-  }, [cleaned, n, rangeId]);
+    return macroChartAxisGranularity(rangeId, cleaned[0]!.time, cleaned[n - 1]!.time, {
+      dailySeries: dailyFlowAxis,
+    });
+  }, [cleaned, dailyFlowAxis, n, rangeId]);
 
   const axisLabelIndexSet = useMemo(
     () => new Set(macroAxisLabelIndicesForTimes(cleaned.map((p) => p.time), 8, axisGranularity)),
@@ -572,6 +576,7 @@ export function MacroSparklineProminent({
   variant,
   animateOnAppear = true,
   prominent = true,
+  dailyFlowAxis = false,
 }: {
   title: string;
   kind: MacroValueKind;
@@ -582,6 +587,7 @@ export function MacroSparklineProminent({
   variant: MacroChartVariant;
   animateOnAppear?: boolean;
   prominent?: boolean;
+  dailyFlowAxis?: boolean;
 }) {
   const totalHeight = heightMode === "total" ? height : height + AXIS_ROW_PX + AXIS_BOTTOM_PAD_PX;
 
@@ -595,6 +601,7 @@ export function MacroSparklineProminent({
         rangeId={rangeId}
         animateBarsOnAppear={animateOnAppear}
         prominent={prominent}
+        dailyFlowAxis={dailyFlowAxis}
       />
     );
   }
@@ -608,6 +615,7 @@ export function MacroSparklineProminent({
       height={totalHeight}
       animateOnAppear={animateOnAppear}
       prominent={prominent}
+      dailyFlowAxis={dailyFlowAxis}
     />
   );
 }

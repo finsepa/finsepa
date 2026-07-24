@@ -9,6 +9,11 @@ import { formatMacroChange, formatMacroPeriodCaption, formatMacroValue } from "@
 import {
   MACRO_RANGE_IDS,
   MACRO_RANGE_LABELS,
+  BTC_ETF_FLOW_RANGE_IDS,
+  DEFAULT_BTC_ETF_FLOW_RANGE,
+  isBtcEtfFlowRangeId,
+  isMacroLongRangeId,
+  DEFAULT_MACRO_RANGE,
   macroModelForWindow,
   prepareMacroPointsForRange,
   type MacroRangeId,
@@ -20,6 +25,11 @@ import { MultichartVisualSwitcher } from "@/components/stock/multichart-visual-s
 const MACRO_MODAL_CHART_HEIGHT_PX = 400;
 
 const RANGE_OPTIONS = MACRO_RANGE_IDS.map((id) => ({
+  value: id,
+  label: MACRO_RANGE_LABELS[id],
+}));
+
+const BTC_ETF_RANGE_OPTIONS = BTC_ETF_FLOW_RANGE_IDS.map((id) => ({
   value: id,
   label: MACRO_RANGE_LABELS[id],
 }));
@@ -38,14 +48,25 @@ export function MacroChartModal({
   rangeId: MacroRangeId;
 }) {
   const titleId = useId();
+  const isBtcEtfFlow = model.id === "btc_etf_net_flow";
   const [chartVariant, setChartVariant] = useState<MacroChartVariant>(
-    model.id === "btc_etf_net_flow" ? "bar" : initialChartVariant,
+    isBtcEtfFlow ? "bar" : initialChartVariant,
   );
-  const [rangeId, setRangeId] = useState<MacroRangeId>(pageRangeId);
+  const [rangeId, setRangeId] = useState<MacroRangeId>(
+    isBtcEtfFlow && !isBtcEtfFlowRangeId(pageRangeId) ? DEFAULT_BTC_ETF_FLOW_RANGE : pageRangeId,
+  );
+
+  const rangeOptions = isBtcEtfFlow ? BTC_ETF_RANGE_OPTIONS : RANGE_OPTIONS;
 
   const windowedModel = useMemo(
-    () => macroModelForWindow(model, prepareMacroPointsForRange(model.points, rangeId)),
-    [model, rangeId],
+    () =>
+      macroModelForWindow(
+        model,
+        prepareMacroPointsForRange(model.points, rangeId, {
+          dailyFlowBars: isBtcEtfFlow,
+        }),
+      ),
+    [isBtcEtfFlow, model, rangeId],
   );
 
   const changeText = useMemo(() => {
@@ -84,9 +105,13 @@ export function MacroChartModal({
 
   useEffect(() => {
     if (!open) return;
-    setChartVariant(model.id === "btc_etf_net_flow" ? "bar" : initialChartVariant);
-    setRangeId(pageRangeId);
-  }, [open, initialChartVariant, pageRangeId, model.id]);
+    setChartVariant(isBtcEtfFlow ? "bar" : initialChartVariant);
+    if (isBtcEtfFlow) {
+      setRangeId(isBtcEtfFlowRangeId(pageRangeId) ? pageRangeId : DEFAULT_BTC_ETF_FLOW_RANGE);
+    } else {
+      setRangeId(isMacroLongRangeId(pageRangeId) ? pageRangeId : DEFAULT_MACRO_RANGE);
+    }
+  }, [open, initialChartVariant, pageRangeId, isBtcEtfFlow]);
 
   if (!open) return null;
 
@@ -129,7 +154,7 @@ export function MacroChartModal({
             ) : null}
             <TabSwitcher
               size="sm"
-              options={RANGE_OPTIONS}
+              options={rangeOptions}
               value={rangeId}
               onChange={setRangeId}
               aria-label="Date range"
@@ -150,6 +175,7 @@ export function MacroChartModal({
                 variant={chartVariant}
                 visualWeight="prominent"
                 heightMode="total"
+                dailyFlowAxis={isBtcEtfFlow}
               />
             )}
           </div>
