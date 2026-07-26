@@ -33,7 +33,7 @@ const EM_DASH = "\u2014";
 
 /** Matches screener / holdings company column. */
 const HOLDING_COMPANY_NAME_CLASS =
-  "truncate text-[14px] font-semibold leading-5 text-[#0F0F0F] underline-offset-2 decoration-[#71717A] group-hover:underline";
+  "truncate text-[14px] font-semibold leading-5 text-[#141414] underline-offset-2 decoration-[#5C5D5F] group-hover:underline";
 
 function holdingLookupKey(symbol: string): string {
   return symbol.trim().toUpperCase();
@@ -92,7 +92,7 @@ function DaysLeftCell({
     );
   }
   if (daysLeft == null) {
-    return <span className="tabular-nums text-[#0F0F0F]">{EM_DASH}</span>;
+    return <span className="tabular-nums text-[#141414]">{EM_DASH}</span>;
   }
   return (
     <div
@@ -101,7 +101,7 @@ function DaysLeftCell({
         align === "right" && "justify-end",
       )}
     >
-      <span className="inline-block w-7 shrink-0 text-center font-['Inter'] text-[14px] font-medium leading-5 tabular-nums text-[#0F0F0F]">
+      <span className="inline-block w-7 shrink-0 text-center font-['Inter'] text-[14px] font-medium leading-5 tabular-nums text-[#141414]">
         {formatDaysLeftLabel(daysLeft)}
       </span>
       <EarningsCountdownBars daysLeft={daysLeft} />
@@ -248,12 +248,12 @@ function PortfolioEarningsTableInner({
                   <CompanyLogo name={companyName} logoUrl={logo} symbol={h.symbol} />
                   <div className="min-w-0">
                     <div className={HOLDING_COMPANY_NAME_CLASS}>{companyName}</div>
-                    <div className="truncate text-[12px] font-normal leading-4 text-[#71717A]">{caption}</div>
+                    <div className="truncate text-[12px] font-normal leading-4 text-[#5C5D5F]">{caption}</div>
                   </div>
                 </div>
                 <div className="flex min-w-0 shrink-0 flex-col items-end gap-1">
                   <DaysLeftCell daysLeft={daysLeft} loading={metaLoading} />
-                  <div className="font-['Inter'] text-[12px] font-medium leading-4 tabular-nums text-[#71717A]">
+                  <div className="font-['Inter'] text-[12px] font-medium leading-4 tabular-nums text-[#5C5D5F]">
                     {earningsLabel === "…" ?
                       <SkeletonBox className="ml-auto h-3 w-20 rounded" />
                     : earningsLabel}
@@ -267,7 +267,7 @@ function PortfolioEarningsTableInner({
 
       <table className="hidden w-full min-w-[640px] border-separate border-spacing-0 sm:table">
         <thead>
-          <tr className="min-h-[40px] bg-white text-[14px] font-medium leading-5 text-[#71717A]">
+          <tr className="min-h-[40px] bg-white text-[14px] font-medium leading-5 text-[#5C5D5F]">
             <th className="whitespace-nowrap border-b border-[#E4E4E7] px-4 py-[10px] text-left">Asset</th>
             <th className="whitespace-nowrap border-b border-[#E4E4E7] px-4 py-[10px] text-left">Days left</th>
             <th className="whitespace-nowrap border-b border-[#E4E4E7] px-4 py-[10px] text-right">
@@ -300,14 +300,14 @@ function PortfolioEarningsTableInner({
                     <CompanyLogo name={companyName} logoUrl={logo} symbol={h.symbol} />
                     <div className="min-w-0 text-left">
                       <div className={HOLDING_COMPANY_NAME_CLASS}>{companyName}</div>
-                      <div className="text-[12px] font-normal leading-4 text-[#71717A]">{caption}</div>
+                      <div className="text-[12px] font-normal leading-4 text-[#5C5D5F]">{caption}</div>
                     </div>
                   </div>
                 </td>
                 <td className="border-b border-[#E4E4E7] px-4 py-[10px] align-middle">
                   <DaysLeftCell daysLeft={daysLeft} loading={metaLoading} />
                 </td>
-                <td className="border-b border-[#E4E4E7] px-4 py-[10px] text-right align-middle font-['Inter'] text-[14px] font-medium leading-5 tabular-nums text-[#0F0F0F]">
+                <td className="border-b border-[#E4E4E7] px-4 py-[10px] text-right align-middle font-['Inter'] text-[14px] font-medium leading-5 tabular-nums text-[#141414]">
                   {earningsLabel === "…" ?
                     <SkeletonBox className="ml-auto h-4 w-24 rounded" />
                   : earningsLabel}

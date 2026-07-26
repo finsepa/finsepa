@@ -25,18 +25,18 @@ const calendarPresets: Partial<Record<string, string>> = {
   month: "flex w-full flex-col gap-4",
   /** Reset global `.rdp-month_caption` bold/large defaults; center nav + dropdown caption. */
   month_caption:
-    "relative z-[1] flex h-9 w-full items-center justify-center gap-2 px-9 text-sm font-medium text-[#0F0F0F]",
+    "relative z-[1] flex h-9 w-full items-center justify-center gap-2 px-9 text-sm font-medium text-[#141414]",
   dropdowns: "relative z-[2] flex items-center justify-center gap-2",
   /** Wrapper for custom {@link FinsepaCalendarDropdown} (Finsepa listbox — no native `<select>` chrome). */
   dropdown_root: "relative inline-flex shrink-0",
   nav: "absolute inset-x-0 top-0 flex w-full items-center justify-between gap-1 px-0.5",
   button_previous:
-    "inline-flex size-9 items-center justify-center rounded-md border border-transparent bg-transparent text-[#0F0F0F] transition-colors hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15 disabled:pointer-events-none disabled:opacity-40 aria-disabled:pointer-events-none aria-disabled:opacity-40",
+    "inline-flex size-9 items-center justify-center rounded-md border border-transparent bg-transparent text-[#141414] transition-colors hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15 disabled:pointer-events-none disabled:opacity-40 aria-disabled:pointer-events-none aria-disabled:opacity-40",
   button_next:
-    "inline-flex size-9 items-center justify-center rounded-md border border-transparent bg-transparent text-[#0F0F0F] transition-colors hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15 disabled:pointer-events-none disabled:opacity-40 aria-disabled:pointer-events-none aria-disabled:opacity-40",
-  caption_label: "select-none text-sm font-medium text-[#0F0F0F]",
+    "inline-flex size-9 items-center justify-center rounded-md border border-transparent bg-transparent text-[#141414] transition-colors hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15 disabled:pointer-events-none disabled:opacity-40 aria-disabled:pointer-events-none aria-disabled:opacity-40",
+  caption_label: "select-none text-sm font-medium text-[#141414]",
   month_grid: "mx-auto w-full border-collapse",
-  weekday: "w-9 p-0 text-center text-[0.8rem] font-normal text-[#71717A]",
+  weekday: "w-9 p-0 text-center text-[0.8rem] font-normal text-[#5C5D5F]",
   day: "relative p-0 text-center",
   outside: "text-[#A1A1AA]",
   disabled: "text-[#A1A1AA] opacity-50",
@@ -179,9 +179,9 @@ function FinsepaCalendarDropdown({
           setOpen((v) => !v);
         }}
         className={cn(
-          "relative flex h-9 min-h-9 w-full cursor-pointer items-center rounded-[10px] bg-[#F4F4F5] py-2 text-left text-sm font-normal text-[#0F0F0F] outline-none transition-colors hover:bg-[#EBEBEB] focus-visible:ring-2 focus-visible:ring-[#2563EB]/25",
+          "relative flex h-9 min-h-9 w-full cursor-pointer items-center rounded-[10px] bg-[#F1F1F2] py-2 text-left text-sm font-normal text-[#141414] outline-none transition-colors hover:bg-[#E6E6E7] focus-visible:ring-2 focus-visible:ring-[#2563EB]/25",
           stretch ? "min-w-0 px-3" : "min-w-[6.5rem] max-w-[10rem] pl-3 pr-9",
-          disabled && "cursor-not-allowed opacity-60 hover:bg-[#F4F4F5]",
+          disabled && "cursor-not-allowed opacity-60 hover:bg-[#F1F1F2]",
         )}
       >
         <span className="min-w-0 flex-1 truncate" title={active.label}>
@@ -191,7 +191,7 @@ function FinsepaCalendarDropdown({
       {!stretch ? (
         <ChevronDown
           className={cn(
-            "pointer-events-none absolute right-2.5 top-1/2 h-5 w-5 shrink-0 -translate-y-1/2 text-[#0F0F0F] transition-transform",
+            "pointer-events-none absolute right-2.5 top-1/2 h-5 w-5 shrink-0 -translate-y-1/2 text-[#141414] transition-transform",
             open && "rotate-180",
           )}
           strokeWidth={2}
@@ -243,12 +243,12 @@ function CalendarDayButton({
       ref={ref}
       type="button"
       className={cn(
-        "flex size-9 items-center justify-center rounded-md p-0 text-sm font-normal text-[#0F0F0F]",
+        "flex size-9 items-center justify-center rounded-md p-0 text-sm font-normal text-[#141414]",
         "transition-colors hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/25",
         modifiers.today && !modifiers.selected && "bg-[#F4F4F5] font-medium",
         modifiers.outside && !modifiers.selected && "text-[#A1A1AA] opacity-80 hover:bg-[#FAFAFA] hover:opacity-100",
         modifiers.selected &&
-          "bg-white font-semibold text-[#0F0F0F] shadow-[inset_0_0_0_2px_#2563EB] hover:bg-[#EFF6FF] hover:text-[#0F0F0F] hover:shadow-[inset_0_0_0_2px_#1D4ED8]",
+          "bg-white font-semibold text-[#141414] shadow-[inset_0_0_0_2px_#2563EB] hover:bg-[#EFF6FF] hover:text-[#141414] hover:shadow-[inset_0_0_0_2px_#1D4ED8]",
         modifiers.disabled && "pointer-events-none opacity-40",
         className,
       )}

@@ -21,19 +21,19 @@ export function AuthTitleBlock({
 }) {
   return (
     <div className="mb-7">
-      <h1 className="text-[26px] font-semibold tracking-tight text-[#0F0F0F]">{title}</h1>
+      <h1 className="text-[26px] font-semibold tracking-tight text-[#141414]">{title}</h1>
       <div className="mt-2 text-sm leading-6 text-[#52525B]">{subtitle}</div>
     </div>
   );
 }
 
 export function AuthLabel({ children }: { children: ReactNode }) {
-  return <label className="mb-1.5 block text-sm font-medium text-[#0F0F0F]">{children}</label>;
+  return <label className="mb-1.5 block text-sm font-medium text-[#141414]">{children}</label>;
 }
 
 /** Figma input: 40px tall, #F4F4F5 fill, 20px left / 8px vertical padding. */
 export const authInputClassName = cn(
-  "h-10 max-h-10 w-full rounded-[10px] border border-transparent bg-[#F4F4F5] py-2 pl-5 text-sm text-[#0F0F0F]",
+  "h-10 max-h-10 w-full rounded-[10px] border border-transparent bg-[#F4F4F5] py-2 pl-5 text-sm text-[#141414]",
   "outline-none transition-colors duration-100",
   "placeholder:text-[#A1A1AA] focus:border-[#D4D4D8] focus:bg-[#EBEBEB] focus:ring-0",
   "disabled:cursor-not-allowed disabled:opacity-60",
@@ -154,7 +154,7 @@ export function AuthDivider({ label = "or" }: { label?: string }) {
   return (
     <div className="flex items-center gap-3">
       <div className="flex-1 border-t border-[#E4E4E7]" aria-hidden />
-      <span className="text-[14px] font-medium uppercase leading-6 text-[#71717A]">{label}</span>
+      <span className="text-[14px] font-medium uppercase leading-6 text-[#5C5D5F]">{label}</span>
       <div className="flex-1 border-t border-[#E4E4E7]" aria-hidden />
     </div>
   );
@@ -170,7 +170,7 @@ export function AuthMutedLink({
   return (
     <a
       href={href}
-      className="font-semibold text-[#0F0F0F] underline decoration-[#E4E4E7] underline-offset-4 transition-colors hover:decoration-[#A1A1AA]"
+      className="font-semibold text-[#141414] underline decoration-[#E4E4E7] underline-offset-4 transition-colors hover:decoration-[#A1A1AA]"
     >
       {children}
     </a>

@@ -14,27 +14,27 @@ import type { NotificationItem } from "@/lib/notifications/use-notifications-cli
 import { readScreenerCompanyIdentity } from "@/lib/screener/screener-company-identity-storage";
 import { cn } from "@/lib/utils";
 
-/** Figma — Inter Medium 14px / 20px line-height, 0 tracking, #0F0F0F. */
+/** Figma — Inter Medium 14px / 20px line-height, 0 tracking, #141414. */
 const notificationTickerTextClass =
-  "font-sans text-[14px] font-medium leading-[20px] tracking-normal text-[#0F0F0F]";
+  "font-sans text-[14px] font-medium leading-[20px] tracking-normal text-[#141414]";
 
-/** Figma — Inter Semi Bold 14px / 20px line-height, 0 tracking, #0F0F0F. */
+/** Figma — Inter Semi Bold 14px / 20px line-height, 0 tracking, #141414. */
 const notificationPeriodTextClass =
-  "font-sans text-[14px] font-semibold leading-[20px] tracking-normal text-[#0F0F0F]";
+  "font-sans text-[14px] font-semibold leading-[20px] tracking-normal text-[#141414]";
 
-/** Figma — Inter Regular 14px / 20px line-height, 0 tracking, #71717A. */
+/** Figma — Inter Regular 14px / 20px line-height, 0 tracking, #5C5D5F. */
 const notificationMetaTextClass =
-  "font-sans text-[14px] font-normal leading-[20px] tracking-normal text-[#71717A]";
+  "font-sans text-[14px] font-normal leading-[20px] tracking-normal text-[#5C5D5F]";
 
 function MetricRow({ line }: { line: EarningsMetricLine }) {
   return (
     <p className="flex flex-wrap items-baseline gap-0.5 font-sans text-[14px] leading-[20px]">
-      <span className="font-normal text-[#0F0F0F]">{line.label}:</span>
-      <span className="font-normal text-[#71717A]">{line.actualDisplay}</span>
+      <span className="font-normal text-[#141414]">{line.label}:</span>
+      <span className="font-normal text-[#5C5D5F]">{line.actualDisplay}</span>
       {line.estimateDisplay != null ? (
         <>
-          <span className="font-normal text-[#71717A]">vs</span>
-          <span className="font-normal text-[#71717A]">
+          <span className="font-normal text-[#5C5D5F]">vs</span>
+          <span className="font-normal text-[#5C5D5F]">
             {line.estimateDisplay} est
           </span>
         </>

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import { MOBILE_PANEL_CARD_CLASS, STOCK_OVERVIEW_SECTION_TITLE_CLASS } from "@/components/design-system/card-surface-styles";
 import { formatUsdPrice } from "@/lib/market/key-stats-basic-format";
 import { normalizeAnalystLabel, toneForConsensusLabel } from "@/lib/market/analyst-consensus-tone";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
@@ -10,6 +11,7 @@ import {
   fetchStockTargetPricePayloadClient,
   peekStockTargetPricePayloadClient,
 } from "@/lib/market/stock-target-price-client";
+import { cn } from "@/lib/utils";
 
 const DISTRIBUTION_FILLS = ["#16A34A", "#84CC16", "#CA8A04", "#FB923C", "#DC2626"] as const;
 
@@ -109,7 +111,7 @@ function AnalystConsensusGaugeCard({ buckets }: { buckets: StockAnalystDistribut
   }, [consensusNorm]);
 
   return (
-    <div className="w-full max-w-[358px] min-w-0 justify-self-start rounded-[12px] border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
+    <div className={cn(MOBILE_PANEL_CARD_CLASS, "w-full max-w-[358px] min-w-0 justify-self-start p-4")}>
       <div className="h-[190px] w-full">
         <svg viewBox="0 0 320 200" className="h-full w-full" role="img" aria-label="Analyst consensus gauge">
           <defs>
@@ -144,8 +146,8 @@ function AnalystConsensusGaugeCard({ buckets }: { buckets: StockAnalystDistribut
             x="160"
             y="154"
             textAnchor="middle"
-            className="fill-[#71717A]"
-            style={{ fontFamily: "Inter", fontSize: 14, fontWeight: 400, lineHeight: "20px", letterSpacing: "0px" }}
+            className="fill-[#5C5D5F]"
+            style={{ fontFamily: "Inter", fontSize: 14, fontWeight: 600, lineHeight: "20px", letterSpacing: "0px" }}
           >
             Total Consensus
           </text>
@@ -159,16 +161,16 @@ function AnalystDistributionCard({ buckets }: { buckets: StockAnalystDistributio
   const maxCount = Math.max(1, ...buckets.map((b) => b.count));
 
   return (
-    <div className="w-full min-w-0 rounded-[12px] border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
-      <h3 className="mb-4 text-[14px] font-semibold leading-5 text-[#0F0F0F]">Analyst distribution</h3>
+    <div className={cn(MOBILE_PANEL_CARD_CLASS, "w-full min-w-0 p-4")}>
+      <h3 className={cn(STOCK_OVERVIEW_SECTION_TITLE_CLASS, "mb-4")}>Analyst distribution</h3>
       <div className="space-y-3.5">
         {buckets.map((row, i) => {
           const pct = maxCount > 0 ? Math.min(100, (row.count / maxCount) * 100) : 0;
-          const fill = DISTRIBUTION_FILLS[i] ?? "#71717A";
+          const fill = DISTRIBUTION_FILLS[i] ?? "#5C5D5F";
           return (
             <div key={row.label} className="flex items-center gap-3 sm:gap-4">
-              <span className="w-[92px] shrink-0 text-[14px] leading-5 text-[#0F0F0F] sm:w-[100px]">{row.label}</span>
-              <span className="w-8 shrink-0 text-right text-[14px] tabular-nums leading-5 text-[#0F0F0F]">{row.count}</span>
+              <span className="w-[92px] shrink-0 text-[14px] leading-5 text-[#141414] sm:w-[100px]">{row.label}</span>
+              <span className="w-8 shrink-0 text-right text-[14px] tabular-nums leading-5 text-[#141414]">{row.count}</span>
               <div className="min-w-0 flex-1">
                 <div className="h-2.5 overflow-hidden rounded-full bg-[#F4F4F5]">
                   {row.count > 0 ? (
@@ -279,17 +281,17 @@ export function StockTargetPriceTab({
 
   if (loading) {
     return (
-      <div className="w-full min-w-0 space-y-4 pt-1">
-        <div className="h-40 w-full animate-pulse rounded-[12px] bg-[#F4F4F5]" />
-        <div className="h-32 w-full animate-pulse rounded-[12px] bg-[#F4F4F5]" />
+      <div className="w-full min-w-0 space-y-3">
+        <div className="h-40 w-full animate-pulse rounded-2xl bg-[#F4F4F5]" />
+        <div className="h-32 w-full animate-pulse rounded-2xl bg-[#F4F4F5]" />
       </div>
     );
   }
 
   if (!hasAnyData) {
     return (
-      <div className="w-full min-w-0 pt-1">
-        <p className="w-full text-[14px] leading-6 text-[#71717A]">
+      <div className="w-full min-w-0">
+        <p className="w-full text-[14px] leading-6 text-[#5C5D5F]">
           No analyst consensus, price target, or distribution data is available for this symbol from the current data provider.
         </p>
       </div>
@@ -297,16 +299,16 @@ export function StockTargetPriceTab({
   }
 
   return (
-    <div className="w-full min-w-0 space-y-6 pt-1">
+    <div className="w-full min-w-0 space-y-3">
       {hasAnyTarget ? (
-        <div className="w-full min-w-0 rounded-[12px] border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
-          <p className="text-[12px] font-semibold uppercase tracking-wide text-[#71717A]">Target price</p>
-          <p className="mt-1 text-[28px] font-semibold tabular-nums leading-8 tracking-tight text-[#0F0F0F]">
+        <div className={cn(MOBILE_PANEL_CARD_CLASS, "w-full min-w-0 p-4")}>
+          <p className={STOCK_OVERVIEW_SECTION_TITLE_CLASS}>Target price</p>
+          <p className="mt-1 text-[28px] font-semibold tabular-nums leading-8 tracking-tight text-[#141414]">
             {dashPrice(consensus)}
           </p>
           <p className="mt-1 text-[13px] leading-5">
             {upsideVsLast.kind === "dash" ? (
-              <span className="text-[#71717A]">—</span>
+              <span className="text-[#5C5D5F]">—</span>
             ) : (
               <>
                 <span
@@ -315,12 +317,12 @@ export function StockTargetPriceTab({
                       ? "font-medium text-[#16A34A]"
                       : upsideVsLast.pct < 0
                         ? "font-medium text-[#DC2626]"
-                        : "text-[#71717A]"
+                        : "text-[#5C5D5F]"
                   }
                 >
                   {upsideVsLast.pctLabel}
                 </span>
-                <span className="text-[#71717A]"> vs last price</span>
+                <span className="text-[#5C5D5F]"> vs last price</span>
               </>
             )}
           </p>
@@ -328,7 +330,7 @@ export function StockTargetPriceTab({
       ) : null}
 
       {hasDistribution ? (
-        <div className="grid w-full min-w-0 grid-cols-1 gap-6 lg:grid-cols-[minmax(0,358px)_minmax(0,1fr)] lg:items-start">
+        <div className="grid w-full min-w-0 grid-cols-1 gap-3 lg:grid-cols-[minmax(0,358px)_minmax(0,1fr)] lg:items-start">
           <AnalystConsensusGaugeCard buckets={buckets} />
           <AnalystDistributionCard buckets={buckets} />
         </div>

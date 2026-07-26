@@ -334,9 +334,9 @@ export function CompanyPicker({
             Most popular
           </div>
           {pickerStocksLoading && screenerList.length === 0 && !isSingleAssetMode() ? (
-            <p className="px-3 py-2 text-[12px] text-[#71717A]">Loading companies…</p>
+            <p className="px-3 py-2 text-[12px] text-[#5C5D5F]">Loading companies…</p>
           ) : screenerList.length === 0 ? (
-            <p className="px-3 py-2 text-[12px] text-[#71717A]">No companies to add.</p>
+            <p className="px-3 py-2 text-[12px] text-[#5C5D5F]">No companies to add.</p>
           ) : (
             <ul className="flex flex-col gap-1 pb-2">
               {screenerList.map((row) => (
@@ -353,9 +353,9 @@ export function CompanyPicker({
                     <CompanyLogo name={row.name} logoUrl={row.logoUrl} symbol={row.ticker} />
                     <div className="min-w-0 flex-1">
                       <div className="truncate font-medium">{row.name}</div>
-                      <div className="truncate text-[12px] text-[#71717A]">{row.ticker}</div>
+                      <div className="truncate text-[12px] text-[#5C5D5F]">{row.ticker}</div>
                     </div>
-                    <span className="shrink-0 rounded-full bg-[#F4F4F5] px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-[#71717A]">
+                    <span className="shrink-0 rounded-full bg-[#F4F4F5] px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-[#5C5D5F]">
                       Stock
                     </span>
                   </button>
@@ -369,7 +369,7 @@ export function CompanyPicker({
                 Crypto
               </div>
               {cryptoPickerList.length === 0 ? (
-                <p className="px-3 py-2 text-[12px] text-[#71717A]">No crypto to add.</p>
+                <p className="px-3 py-2 text-[12px] text-[#5C5D5F]">No crypto to add.</p>
               ) : (
                 <ul className="flex flex-col gap-1 pb-2">
                   {cryptoPickerList.map((row) => (
@@ -390,11 +390,11 @@ export function CompanyPicker({
                         />
                         <div className="min-w-0 flex-1">
                           <div className="truncate font-medium">{row.name}</div>
-                          <div className="truncate text-[12px] text-[#71717A]">
+                          <div className="truncate text-[12px] text-[#5C5D5F]">
                             {eodhdCryptoSpotTickerDisplay(row.symbol)}
                           </div>
                         </div>
-                        <span className="shrink-0 rounded-full bg-[#F4F4F5] px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-[#71717A]">
+                        <span className="shrink-0 rounded-full bg-[#F4F4F5] px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-[#5C5D5F]">
                           Crypto
                         </span>
                       </button>
@@ -408,7 +408,7 @@ export function CompanyPicker({
       ) : searchPending && !showStaleList ? (
         <SearchLoadingIndicator />
       ) : noResults ? (
-        <p className="px-3 py-2 text-[12px] text-[#71717A]">No results for &ldquo;{queryTrim}&rdquo;</p>
+        <p className="px-3 py-2 text-[12px] text-[#5C5D5F]">No results for &ldquo;{queryTrim}&rdquo;</p>
       ) : (
         <>
           {searchLoading && showStaleList ? (

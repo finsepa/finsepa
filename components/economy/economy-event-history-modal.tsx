@@ -48,13 +48,13 @@ const POSITIVE_BAR_COLOR = fundamentalsBarSolidAtIndex(0);
 const historyTableGrid =
   "grid grid-cols-[minmax(11rem,2fr)_repeat(3,minmax(5.25rem,1fr))] gap-x-2";
 const historyLabelHeaderClass =
-  "flex min-h-full min-w-0 items-center self-stretch border-r border-[#E4E4E7] pr-4 text-left font-['Inter'] text-[14px] font-medium leading-5 text-[#71717A]";
+  "flex min-h-full min-w-0 items-center self-stretch border-r border-[#E4E4E7] pr-4 text-left font-['Inter'] text-[14px] font-medium leading-5 text-[#5C5D5F]";
 const historyValueHeaderClass =
-  "flex min-h-full min-w-0 items-center justify-end self-stretch font-['Inter'] text-[14px] font-medium leading-5 text-[#71717A]";
+  "flex min-h-full min-w-0 items-center justify-end self-stretch font-['Inter'] text-[14px] font-medium leading-5 text-[#5C5D5F]";
 const historyNumCellClass =
-  "min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#0F0F0F]";
+  "min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414]";
 const historyLabelCellClass =
-  "flex min-h-full min-w-0 items-center self-stretch border-r border-[#E4E4E7] pr-4 text-left font-['Inter'] text-[14px] font-normal leading-5 text-[#0F0F0F]";
+  "flex min-h-full min-w-0 items-center self-stretch border-r border-[#E4E4E7] pr-4 text-left font-['Inter'] text-[14px] font-normal leading-5 text-[#141414]";
 
 function formatPeriodLabel(dateStr: string, period: string | null): string {
   const d = new Date(dateStr.includes("T") ? dateStr : `${dateStr.split(" ")[0]}T12:00:00Z`);
@@ -178,7 +178,7 @@ function EconomyHistoryBarChart({
   if (n === 0) {
     return (
       <div
-        className="flex items-center justify-center rounded-xl border border-dashed border-[#E4E4E7] bg-[#FAFAFA] text-[13px] text-[#71717A]"
+        className="flex items-center justify-center rounded-xl border border-dashed border-[#E4E4E7] bg-[#FAFAFA] text-[13px] text-[#5C5D5F]"
         style={{ height: CHART_TOTAL_HEIGHT_PX }}
       >
         No data
@@ -199,7 +199,7 @@ function EconomyHistoryBarChart({
             onPointerLeave={clearHover}
           >
             <div
-              className="pointer-events-none absolute inset-x-0 z-0 bg-white"
+              className="pointer-events-none absolute inset-x-0 z-0 bg-[#FCFCFD]"
               style={{ top: plotInsetTop, bottom: plotInsetBottom }}
               aria-hidden
             >
@@ -302,8 +302,8 @@ function EconomyHistoryBarChart({
                     <span className="absolute top-1/2 right-px -translate-y-1/2 border-y-[6px] border-y-transparent border-r-[7px] border-r-white" />
                   </span>
                 )}
-                <p className="text-[12px] font-semibold leading-4 text-[#0F0F0F]">{tip.periodLabel}</p>
-                <p className="mt-1.5 flex items-center gap-2 whitespace-nowrap text-[12px] font-normal leading-4 text-[#71717A]">
+                <p className="text-[12px] font-semibold leading-4 text-[#141414]">{tip.periodLabel}</p>
+                <p className="mt-1.5 flex items-center gap-2 whitespace-nowrap text-[12px] font-normal leading-4 text-[#5C5D5F]">
                   <span
                     className="h-2.5 w-2.5 shrink-0 rounded-full"
                     style={{ backgroundColor: tip.dotColor }}
@@ -319,7 +319,7 @@ function EconomyHistoryBarChart({
 
           <div
             className={cn(
-              "relative h-full shrink-0 text-right font-['Inter'] text-[12px] tabular-nums leading-none text-[#71717A]",
+              "relative h-full shrink-0 text-right font-['Inter'] text-[12px] tabular-nums leading-none text-[#5C5D5F]",
               FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS,
             )}
             style={{ width: FUNDAMENTALS_CHART_Y_AXIS_W_PX }}
@@ -332,7 +332,7 @@ function EconomyHistoryBarChart({
               {yTicks.map((t, i) => (
                 <span
                   key={i}
-                  className="absolute right-0 z-[1] block -translate-y-1/2 rounded-sm bg-white px-1 py-px"
+                  className="absolute right-0 z-[1] block -translate-y-1/2 rounded-sm bg-[#FCFCFD] px-1 py-px"
                   style={{ top: `${valueToPlotBandTopPercent(t, yMin, yMax)}%` }}
                 >
                   {formatEconomyChartAxisTick(t, yMax)}
@@ -360,7 +360,7 @@ function EconomyHistoryBarChart({
                 >
                   {show ? (
                     <span
-                      className="inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]"
+                      className="inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#5C5D5F] sm:text-[12px]"
                       style={{
                         transform: `rotate(${FUNDAMENTALS_CHART_AXIS_LABEL_ROTATE_DEG}deg)`,
                         transformOrigin: "center bottom",
@@ -472,11 +472,11 @@ export function EconomyEventHistoryModal({
         {latestActual ? (
           <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-[#E4E4E7] px-5 pt-5 pb-3">
             <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-baseline gap-x-3 text-[13px] leading-5 text-[#71717A]">
+              <div className="flex flex-wrap items-baseline gap-x-3 text-[13px] leading-5 text-[#5C5D5F]">
                 {latestActual.actual != null && (
                   <span>
                     Actual:{" "}
-                    <span className="font-medium text-[#0F0F0F]">
+                    <span className="font-medium text-[#141414]">
                       {formatEconomyMetric(latestActual.actual)}
                     </span>
                   </span>
@@ -484,7 +484,7 @@ export function EconomyEventHistoryModal({
                 {latestActual.estimate != null && (
                   <span>
                     Forecast:{" "}
-                    <span className="font-medium text-[#0F0F0F]">
+                    <span className="font-medium text-[#141414]">
                       {formatEconomyMetric(latestActual.estimate)}
                     </span>
                   </span>
@@ -492,7 +492,7 @@ export function EconomyEventHistoryModal({
                 {latestActual.previous != null && (
                   <span>
                     Prior:{" "}
-                    <span className="font-medium text-[#0F0F0F]">
+                    <span className="font-medium text-[#141414]">
                       {formatEconomyMetric(latestActual.previous)}
                     </span>
                   </span>
@@ -510,18 +510,18 @@ export function EconomyEventHistoryModal({
               aria-live="polite"
               aria-label="Loading historical data"
             >
-              <Spinner className="size-6 text-[#71717A]" />
+              <Spinner className="size-6 text-[#5C5D5F]" />
             </div>
           ) : error ? (
             <div
-              className="flex items-center justify-center text-[14px] text-[#71717A]"
+              className="flex items-center justify-center text-[14px] text-[#5C5D5F]"
               style={{ height: CHART_TOTAL_HEIGHT_PX }}
             >
               {error}
             </div>
           ) : points.length === 0 ? (
             <div
-              className="flex items-center justify-center text-[14px] text-[#71717A]"
+              className="flex items-center justify-center text-[14px] text-[#5C5D5F]"
               style={{ height: CHART_TOTAL_HEIGHT_PX }}
             >
               No historical data available

@@ -7,6 +7,7 @@ import {
   Globe01,
   Globe04,
   Grid01,
+  NavigationPointer01,
   Rows01,
   Users01,
   type AppIcon,
@@ -20,10 +21,22 @@ export type ProtectedNavItem = {
   icon: ProtectedNavIcon;
   href: string;
   available: boolean;
+  /** Optional pill next to the label (e.g. "Beta"). */
+  badge?: string;
   /** When true, item is active for any path that starts with `href` (e.g. nested routes). */
   activePathPrefix?: boolean;
   /** Additional path roots (exact or nested) that keep this item active — e.g. asset pages opened from Screener. */
   activePathPrefixes?: readonly string[];
+};
+
+/** Top of sidebar, above Markets (Linear-style primary entry). */
+export const protectedAgentItem: ProtectedNavItem = {
+  label: "Agent",
+  icon: NavigationPointer01,
+  href: "/agents",
+  available: true,
+  activePathPrefix: true,
+  badge: "Beta",
 };
 
 export const protectedMarketItems: ProtectedNavItem[] = [
@@ -106,6 +119,7 @@ function itemByLabel(items: readonly ProtectedNavItem[], label: string): Protect
 /** Mobile bottom-nav “More” menu — same order as desktop sidebar extras. */
 export const protectedMobileMoreNavItems: ProtectedNavItem[] = (
   [
+    "Agent",
     "Heatmaps",
     "News",
     "Earnings",
@@ -117,6 +131,7 @@ export const protectedMobileMoreNavItems: ProtectedNavItem[] = (
     "Portfolios",
   ] as const
 ).map((label) => {
+  if (label === "Agent") return protectedAgentItem;
   const item =
     itemByLabel(protectedMarketItems, label) ??
     itemByLabel(protectedCalendarItems, label) ??

@@ -49,8 +49,8 @@ const CHART_SEGMENT_TRACK_CLASS =
 const CHART_SEGMENT_BTN_CLASS =
   "flex-none rounded-[10px] px-3 py-1.5 text-center font-sans text-[13px] leading-5 tracking-normal";
 const CHART_SEGMENT_ACTIVE_CLASS =
-  "bg-white font-medium text-[#0F0F0F] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]";
-const CHART_SEGMENT_INACTIVE_CLASS = "font-normal text-[#71717A]";
+  "bg-white font-medium text-[#141414] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]";
+const CHART_SEGMENT_INACTIVE_CLASS = "font-normal text-[#5C5D5F]";
 
 type MetricMode = "usd" | "pct";
 
@@ -231,9 +231,9 @@ function HoldingsPerformanceBarChart({
           className={cn(FUNDAMENTALS_CHART_TOOLTIP_CLASS, "!fixed z-[200] w-[240px]")}
           style={{ left: tooltipPos.left, top: tooltipPos.top }}
         >
-          <div className="text-[12px] font-semibold leading-4 text-[#0F0F0F]">{hovered.companyName}</div>
+          <div className="text-[12px] font-semibold leading-4 text-[#141414]">{hovered.companyName}</div>
           <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-[12px] leading-4">
-            <div className="text-[#71717A]">Unrealized</div>
+            <div className="text-[#5C5D5F]">Unrealized</div>
             <div
               className={cn(
                 "text-right tabular-nums",
@@ -242,7 +242,7 @@ function HoldingsPerformanceBarChart({
             >
               {formatSignedUsd(hovered.unrealizedUsd)}
             </div>
-            <div className="text-[#71717A]">Realized</div>
+            <div className="text-[#5C5D5F]">Realized</div>
             <div
               className={cn(
                 "text-right tabular-nums",
@@ -251,7 +251,7 @@ function HoldingsPerformanceBarChart({
             >
               {formatSignedUsd(hovered.realizedUsd)}
             </div>
-            <div className="text-[#71717A]">Total</div>
+            <div className="text-[#5C5D5F]">Total</div>
             <div
               className={cn(
                 "text-right font-semibold tabular-nums",
@@ -260,7 +260,7 @@ function HoldingsPerformanceBarChart({
             >
               {formatSignedUsd(hovered.totalProfitUsd)}
               {hovered.totalProfitPct != null ? (
-                <span className="font-normal text-[#71717A]"> · {formatSignedPct(hovered.totalProfitPct)}</span>
+                <span className="font-normal text-[#5C5D5F]"> · {formatSignedPct(hovered.totalProfitPct)}</span>
               ) : null}
             </div>
           </div>
@@ -283,7 +283,7 @@ function HoldingsPerformanceBarChart({
               {rows.map((row, i) => (
                 <div
                   key={row.h.id}
-                  className="flex items-center justify-end pr-2 text-[13px] font-medium leading-5 text-[#0F0F0F]"
+                  className="flex items-center justify-end pr-2 text-[13px] font-medium leading-5 text-[#141414]"
                   style={{ height: ROW_HEIGHT_PX }}
                   onPointerEnter={(e) => updateHover(i, e.clientX, e.clientY)}
                   onPointerMove={(e) => updateHover(i, e.clientX, e.clientY)}
@@ -294,7 +294,7 @@ function HoldingsPerformanceBarChart({
             </div>
 
             <div className="relative min-w-0 flex-1 overflow-hidden">
-              <div className="pointer-events-none absolute inset-0 z-0 bg-white" aria-hidden>
+              <div className="pointer-events-none absolute inset-0 z-0 bg-[#FCFCFD]" aria-hidden>
                 <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
               </div>
 
@@ -409,7 +409,7 @@ function HoldingsPerformanceBarChart({
                   <span
                     key={tick}
                     className={cn(
-                      "absolute top-2 text-[11px] font-normal tabular-nums leading-4 text-[#71717A]",
+                      "absolute top-2 text-[11px] font-normal tabular-nums leading-4 text-[#5C5D5F]",
                       isFirst && "left-0",
                       isLast && "right-0",
                       !isFirst && !isLast && "-translate-x-1/2",
@@ -493,7 +493,7 @@ function PortfolioHoldingsPerformanceChartInner({
         <button
           type="button"
           onClick={() => setSortDesc((v) => !v)}
-          className="inline-flex items-center gap-1 rounded-md text-[13px] font-medium leading-5 text-[#71717A] transition-colors hover:text-[#0F0F0F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15"
+          className="inline-flex items-center gap-1 rounded-md text-[13px] font-medium leading-5 text-[#5C5D5F] transition-colors hover:text-[#141414] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15"
           aria-label={
             sortDesc ?
               "Sort: lowest first"

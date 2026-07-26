@@ -59,18 +59,21 @@ function GoogleMark() {
 
 const REDIRECT_AFTER_LOGIN_MS = 900;
 const EMAIL_LOOKUP_DEBOUNCE_MS = 400;
+const LOGIN_FETCH_TIMEOUT_MS = 25_000;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD_LEN = 8;
 
 export function LoginClient({ resetSuccess, callbackError, authNext, signedOut }: Props) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [passwordLoading, setPasswordLoading] = useState(false);
   const [passwordLoginSuccess, setPasswordLoginSuccess] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [emailLookup, setEmailLookup] = useState<EmailLookupStatus>("idle");
   const [emailHint, setEmailHint] = useState<string | null>(null);
 
+  const busy = googleLoading || passwordLoading;
   const emailNorm = email.trim().toLowerCase();
   const emailReady = emailNorm.length > 0 && EMAIL_RE.test(emailNorm);
   const passwordReady = password.length >= MIN_PASSWORD_LEN;
@@ -166,8 +169,8 @@ export function LoginClient({ resetSuccess, callbackError, authNext, signedOut }
 
   async function handleGoogle() {
     setErrorMessage(null);
-    if (loading) return;
-    setLoading(true);
+    if (busy) return;
+    setGoogleLoading(true);
     try {
       persistRememberMe();
       const supabase = getSupabaseBrowserClient();
@@ -175,26 +178,29 @@ export function LoginClient({ resetSuccess, callbackError, authNext, signedOut }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Something went wrong. Please try again.";
       setErrorMessage(message);
-      setLoading(false);
+      setGoogleLoading(false);
     }
   }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setErrorMessage(null);
-    if (!showPasswordStep) return;
+    if (!showPasswordStep || busy) return;
 
     const form = e.currentTarget;
     const fd = new FormData(form);
     const email = String(fd.get("email") ?? "").trim();
     const password = String(fd.get("password") ?? "");
 
-    setLoading(true);
+    setPasswordLoading(true);
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), LOGIN_FETCH_TIMEOUT_MS);
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password, next: authNext }),
+        signal: controller.signal,
       });
 
       const data = (await res.json().catch(() => ({}))) as {
@@ -219,10 +225,15 @@ export function LoginClient({ resetSuccess, callbackError, authNext, signedOut }
           : PATH_APP_ENTRY,
       );
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Something went wrong. Please try again.";
-      setErrorMessage(message);
+      if (err instanceof DOMException && err.name === "AbortError") {
+        setErrorMessage("Sign-in timed out. Check your connection and try again.");
+      } else {
+        const message = err instanceof Error ? err.message : "Something went wrong. Please try again.";
+        setErrorMessage(message);
+      }
     } finally {
-      setLoading(false);
+      window.clearTimeout(timeoutId);
+      setPasswordLoading(false);
     }
   }
 
@@ -240,10 +251,10 @@ export function LoginClient({ resetSuccess, callbackError, authNext, signedOut }
       <AuthSecondaryButton
         className={authEntryCtaClassName}
         onClick={handleGoogle}
-        disabled={loading}
+        disabled={busy}
       >
         <GoogleMark />
-        {loading ? <SpinnerLabel>Redirecting…</SpinnerLabel> : "Continue with Google"}
+        {googleLoading ? <SpinnerLabel>Redirecting…</SpinnerLabel> : "Continue with Google"}
       </AuthSecondaryButton>
 
       <form className="space-y-4" onSubmit={handleSubmit} noValidate>
@@ -255,15 +266,6 @@ export function LoginClient({ resetSuccess, callbackError, authNext, signedOut }
           className="rounded-[10px] border border-[#BBF7D0] bg-[#F0FDF4] px-3 py-2 text-sm leading-5 text-[#166534]"
         >
           Your password was updated. You can log in with your new password.
-        </div>
-      ) : null}
-
-      {signedOut ? (
-        <div
-          role="status"
-          className="rounded-[10px] border border-[#E4E4E7] bg-[#FAFAFA] px-3 py-2 text-sm leading-5 text-[#52525B]"
-        >
-          You&apos;ve been logged out.
         </div>
       ) : null}
 
@@ -292,7 +294,7 @@ export function LoginClient({ resetSuccess, callbackError, authNext, signedOut }
           label="Email"
           autoComplete="email"
           required
-          disabled={loading}
+          disabled={busy}
           value={email}
           trailingLoading={emailLookup === "checking"}
           onChange={(e) => {
@@ -322,7 +324,7 @@ export function LoginClient({ resetSuccess, callbackError, authNext, signedOut }
             label="Password"
             autoComplete="current-password"
             required
-            disabled={loading}
+            disabled={busy}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
@@ -333,9 +335,9 @@ export function LoginClient({ resetSuccess, callbackError, authNext, signedOut }
         <AuthPrimaryButton
           type="submit"
           className={authEntryCtaClassName}
-          disabled={loading || !formCanSubmit}
+          disabled={busy || !formCanSubmit}
         >
-          {loading ? <SpinnerLabel>Signing in…</SpinnerLabel> : "Log in"}
+          {passwordLoading ? <SpinnerLabel>Signing in…</SpinnerLabel> : "Log in"}
         </AuthPrimaryButton>
         <div className="text-center">
           <Link href="/forgot-password" className={cn(authAccentLinkClassName)}>

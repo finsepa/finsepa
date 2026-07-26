@@ -488,7 +488,7 @@ function PillSwitch({
         onPressedChange(!pressed);
       }}
       className={cn(
-        "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15",
+        "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15",
         pressed ? "bg-[#2563EB]" : "bg-[#E4E4E7]",
         disabled && "cursor-not-allowed opacity-50",
       )}
@@ -575,9 +575,9 @@ function PortfolioChartSettingsButton({
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#0F0F0F]",
+          "inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#141414]",
           "shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100",
-          "hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15 focus-visible:ring-offset-2",
+          "hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15 focus-visible:ring-offset-2",
           open && "bg-[#F4F4F5]",
         )}
       >
@@ -605,7 +605,7 @@ function PortfolioChartSettingsButton({
                 : undefined;
               return (
                 <div key={key} role="menuitem" className={dropdownMenuPlainItemRowClassName()}>
-                  <span className="min-w-0 flex-1 text-sm font-medium leading-5 text-[#0F0F0F]">{label}</span>
+                  <span className="min-w-0 flex-1 text-sm font-medium leading-5 text-[#141414]">{label}</span>
                   <PillSwitch
                     pressed={values[key]}
                     onPressedChange={(next) => onChangeForKey(key, next)}
@@ -1227,7 +1227,7 @@ export function PortfolioValueHistoryChartPane({
       autoSize: false,
       layout: {
         background: { type: ColorType.Solid, color: "#00000000" },
-        textColor: "#71717A",
+        textColor: "#5C5D5F",
         fontSize: 11,
         fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
         attributionLogo: false,
@@ -1257,7 +1257,7 @@ export function PortfolioValueHistoryChartPane({
       crosshair: {
         mode: CrosshairMode.Magnet,
         vertLine: {
-          color: "rgba(15, 15, 15, 0.28)",
+          color: "rgba(20, 20, 20, 0.28)",
           labelVisible: false,
           width: 1,
           style: LineStyle.Dashed,
@@ -1671,13 +1671,13 @@ export function PortfolioValueHistoryChartPane({
       }}
     >
       <div className="relative min-h-0 min-w-0 flex-1">
-        <div className="pointer-events-none absolute inset-0 z-0 max-md:bg-[#FAFAFA] bg-white" aria-hidden>
+        <div className="pointer-events-none absolute inset-0 z-0 bg-[#FCFCFD]" aria-hidden>
           <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
         </div>
         <div ref={wrapRef} className="relative z-10 h-full w-full min-w-0" />
         <div
           className={cn(
-            "pointer-events-none absolute inset-y-0 right-0 z-[9] text-right font-['Inter'] text-[11px] tabular-nums leading-none text-[#71717A] sm:text-[12px]",
+            "pointer-events-none absolute inset-y-0 right-0 z-[9] text-right font-['Inter'] text-[11px] tabular-nums leading-none text-[#5C5D5F] sm:text-[12px]",
             FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS,
           )}
           style={{ width: FUNDAMENTALS_CHART_Y_AXIS_W_PX }}
@@ -1687,7 +1687,7 @@ export function PortfolioValueHistoryChartPane({
             {yAxisLabels.map((lab) => (
               <span
                 key={lab.key}
-                className="absolute right-0 block -translate-y-1/2 rounded-sm max-md:bg-[#FAFAFA]/90 bg-white/90 px-0.5 py-px"
+                className="absolute right-0 block -translate-y-1/2 rounded-sm bg-[#FCFCFD]/90 px-0.5 py-px"
                 style={{ top: `${lab.topPct}%` }}
               >
                 {lab.label}
@@ -1702,7 +1702,7 @@ export function PortfolioValueHistoryChartPane({
             style={{ left: tooltip.x, top: tooltip.y }}
             role="status"
           >
-            <p className="text-xs font-semibold tabular-nums text-[#0F0F0F]">
+            <p className="text-xs font-semibold tabular-nums text-[#141414]">
               {metricTitle}: {tooltip.valueLabel}
             </p>
           </div>
@@ -1713,8 +1713,8 @@ export function PortfolioValueHistoryChartPane({
             style={{ left: tradeTooltip.x, top: tradeTooltip.y }}
             role="tooltip"
           >
-            <p className="text-[11px] leading-4 text-[#71717A]">{tradeTooltip.dateLabel}</p>
-            <div className="mt-1.5 space-y-0.5 text-xs leading-snug text-[#0F0F0F]">
+            <p className="text-[11px] leading-4 text-[#5C5D5F]">{tradeTooltip.dateLabel}</p>
+            <div className="mt-1.5 space-y-0.5 text-xs leading-snug text-[#141414]">
               {tradeTooltip.lines.map((line, i) => {
                 const isTxDate =
                   /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{1,2}, \d{4}$/.test(line) &&
@@ -1725,9 +1725,9 @@ export function PortfolioValueHistoryChartPane({
                     className={cn(
                       "tabular-nums",
                       line.startsWith("Cash before:") || line.startsWith("Total cash:") ?
-                        "font-semibold text-[#0F0F0F]"
+                        "font-semibold text-[#141414]"
                       : isTxDate ?
-                        "pt-1.5 text-[11px] font-medium text-[#71717A]"
+                        "pt-1.5 text-[11px] font-medium text-[#5C5D5F]"
                       : "font-medium",
                     )}
                   >
@@ -1748,7 +1748,7 @@ export function PortfolioValueHistoryChartPane({
           (
           <span
             className={cn(
-              "absolute bottom-1 inline-block whitespace-nowrap font-['Inter'] text-[11px] font-medium tabular-nums leading-none text-[#0F0F0F] sm:text-[12px]",
+              "absolute bottom-1 inline-block whitespace-nowrap font-['Inter'] text-[11px] font-medium tabular-nums leading-none text-[#141414] sm:text-[12px]",
               periodAxisLabelMaxWidthClass("center"),
               periodAxisLabelTransformClass("center"),
             )}
@@ -1763,7 +1763,7 @@ export function PortfolioValueHistoryChartPane({
             <span
               key={lab.key}
               className={cn(
-                "absolute bottom-1 inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]",
+                "absolute bottom-1 inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#5C5D5F] sm:text-[12px]",
                 periodAxisLabelMaxWidthClass(anchor),
                 periodAxisLabelTransformClass(anchor),
               )}
@@ -1897,8 +1897,8 @@ function PortfolioOverviewChartInner({
                 className={cn(
                   "flex-none rounded-[10px] px-3 py-1.5 text-center font-sans text-[13px] leading-5 tracking-normal",
                   metric === opt.value ?
-                    "bg-white font-medium text-[#0F0F0F] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]"
-                  : "font-normal text-[#71717A]",
+                    "bg-white font-medium text-[#141414] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]"
+                  : "font-normal text-[#5C5D5F]",
                 )}
               >
                 {opt.label}
@@ -1923,8 +1923,8 @@ function PortfolioOverviewChartInner({
                 className={cn(
                   "flex-none rounded-[10px] px-3 py-1.5 text-center font-sans text-[13px] leading-5 tracking-normal",
                   range === r.id ?
-                    "bg-white font-medium text-[#0F0F0F] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]"
-                  : "font-normal text-[#71717A]",
+                    "bg-white font-medium text-[#141414] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]"
+                  : "font-normal text-[#5C5D5F]",
                 )}
               >
                 {r.label}
@@ -1968,7 +1968,7 @@ function PortfolioOverviewChartInner({
           </div>
         ) : error ? (
           <div className="flex h-[240px] flex-col items-center justify-center px-6 sm:h-[320px]">
-            <p className="text-sm text-[#71717A]">{error}</p>
+            <p className="text-sm text-[#5C5D5F]">{error}</p>
           </div>
         ) : points.length === 0 ? (
           <Empty variant="plain" className="h-[240px] justify-center py-0 sm:h-[320px]">
@@ -2012,8 +2012,8 @@ function PortfolioOverviewChartInner({
               className={cn(
                 "flex-1 rounded-[10px] px-2 py-1.5 text-center font-sans text-[14px] leading-5 tracking-normal",
                 range === r.id ?
-                  "bg-white font-medium text-[#0F0F0F] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]"
-                : "font-normal text-[#71717A]",
+                  "bg-white font-medium text-[#141414] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]"
+                : "font-normal text-[#5C5D5F]",
               )}
             >
               {r.label}

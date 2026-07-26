@@ -26,16 +26,16 @@ export function ActivateSubscriptionClient() {
       <div className="flex flex-1 flex-col items-center justify-center p-4">
         <div className="flex w-full max-w-[420px] flex-col items-center rounded-[12px] bg-white p-8 shadow-[0_2px_10px_rgba(0,0,0,0.04)]">
           <AuthBrandMark />
-          <h1 className="mt-6 text-center text-[22px] font-semibold leading-7 tracking-tight text-[#0F0F0F] sm:text-[26px]">
+          <h1 className="mt-6 text-center text-[22px] font-semibold leading-7 tracking-tight text-[#141414] sm:text-[26px]">
             Unlock full access
           </h1>
-          <p className="mt-3 text-center text-sm leading-6 text-[#71717A]">
+          <p className="mt-3 text-center text-sm leading-6 text-[#5C5D5F]">
             Your trial has ended. Upgrade to continue tracking portfolios, analyzing markets, and accessing Finsepa Pro features.
           </p>
           <button
             type="button"
             onClick={() => setUpgradeOpen(true)}
-            className="mt-8 h-11 w-full rounded-[10px] bg-[#0F0F0F] text-sm font-semibold text-white transition-colors hover:bg-[#18181B]"
+            className="mt-8 h-11 w-full rounded-[10px] bg-[#141414] text-sm font-semibold text-white transition-colors hover:bg-[#18181B]"
           >
             Upgrade to Pro
           </button>
@@ -43,7 +43,7 @@ export function ActivateSubscriptionClient() {
             type="button"
             onClick={() => void signOut()}
             disabled={signingOut}
-            className="mt-4 text-sm font-medium text-[#71717A] underline-offset-4 transition-colors hover:text-[#0F0F0F] disabled:opacity-50"
+            className="mt-4 text-sm font-medium text-[#5C5D5F] underline-offset-4 transition-colors hover:text-[#141414] disabled:opacity-50"
           >
             {signingOut ? "Signing out…" : "Sign out"}
           </button>
@@ -53,11 +53,11 @@ export function ActivateSubscriptionClient() {
         </p>
       </div>
 
-      <p className="px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2 text-center text-sm leading-6 text-[#71717A]">
+      <p className="px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2 text-center text-sm leading-6 text-[#5C5D5F]">
         Need help? Contact us{" "}
         <a
           href="mailto:hi@finsepa.com"
-          className="font-medium text-[#0F0F0F] underline decoration-[#71717A] underline-offset-4 transition-colors hover:decoration-[#0F0F0F]"
+          className="font-medium text-[#141414] underline decoration-[#5C5D5F] underline-offset-4 transition-colors hover:decoration-[#141414]"
         >
           hi@finsepa.com
         </a>

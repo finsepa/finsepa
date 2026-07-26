@@ -195,12 +195,12 @@ export function HeatmapHoverTooltip({
                 : resolveEquityLogoUrlFromTicker(row.ticker);
             const changeColor =
               row.changePct == null || !Number.isFinite(row.changePct)
-                ? "#71717A"
+                ? "#5C5D5F"
                 : row.changePct > 0
                   ? HEATMAP_LABEL_POSITIVE_HEX
                   : row.changePct < 0
                     ? HEATMAP_LABEL_NEGATIVE_HEX
-                    : "#71717A";
+                    : "#5C5D5F";
             return (
               <li key={row.id}>
                 <Link
@@ -210,10 +210,10 @@ export function HeatmapHoverTooltip({
                   <CompanyLogo name={row.name} logoUrl={logoUrl} symbol={row.ticker} />
                   <div className="min-w-0 flex-1">
                     <div className="truncate font-medium">{row.name}</div>
-                    <div className="truncate text-[12px] text-[#71717A]">{row.ticker}</div>
+                    <div className="truncate text-[12px] text-[#5C5D5F]">{row.ticker}</div>
                   </div>
                   <div className="flex shrink-0 flex-col items-end text-right tabular-nums">
-                    <span className="text-[14px] font-medium leading-5 text-[#0F0F0F]">
+                    <span className="text-[14px] font-medium leading-5 text-[#141414]">
                       {formatPrice(row.price, market)}
                     </span>
                     <span className="text-[12px] font-normal leading-4" style={{ color: changeColor }}>

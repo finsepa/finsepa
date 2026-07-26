@@ -297,7 +297,7 @@ function MacroProminentLineChart({
   if (n < 2) {
     return (
       <div
-        className="flex w-full items-center justify-center rounded-xl border border-dashed border-[#E4E4E7] bg-[#FAFAFA] text-[13px] text-[#71717A]"
+        className="flex w-full items-center justify-center rounded-xl border border-dashed border-[#E4E4E7] bg-[#FAFAFA] text-[13px] text-[#5C5D5F]"
         style={{ height }}
       >
         No data
@@ -319,7 +319,7 @@ function MacroProminentLineChart({
             onMouseLeave={clearHover}
           >
             <div
-              className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%] z-0 bg-white"
+              className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%] z-0 bg-[#FCFCFD]"
               aria-hidden
             >
               <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
@@ -479,7 +479,7 @@ function MacroProminentLineChart({
                     <span className="absolute top-1/2 right-px -translate-y-1/2 border-y-[6px] border-y-transparent border-r-[7px] border-r-white" />
                   </span>
                 )}
-                <p className="text-[12px] font-semibold leading-4 text-[#0F0F0F]">{tip.periodLabel}</p>
+                <p className="text-[12px] font-semibold leading-4 text-[#141414]">{tip.periodLabel}</p>
                 <div className="mt-1.5 space-y-1">
                   <div className="flex items-baseline justify-between gap-3">
                     <span className="flex min-w-0 items-baseline gap-2">
@@ -488,11 +488,11 @@ function MacroProminentLineChart({
                         style={{ backgroundColor: SERIES_COLOR }}
                         aria-hidden
                       />
-                      <span className="truncate text-[12px] font-normal leading-4 text-[#71717A]">
+                      <span className="truncate text-[12px] font-normal leading-4 text-[#5C5D5F]">
                         {title}
                       </span>
                     </span>
-                    <span className="shrink-0 text-[12px] font-semibold leading-4 tabular-nums text-[#0F0F0F]">
+                    <span className="shrink-0 text-[12px] font-semibold leading-4 tabular-nums text-[#141414]">
                       {tip.valueLabel}
                     </span>
                   </div>
@@ -502,7 +502,7 @@ function MacroProminentLineChart({
           </div>
 
           <div
-            className="relative h-full shrink-0 pr-2 text-left font-['Inter'] text-[12px] tabular-nums leading-none text-[#71717A]"
+            className="relative h-full shrink-0 pr-2 text-left font-['Inter'] text-[12px] tabular-nums leading-none text-[#5C5D5F]"
             style={{
               width: yAxisWidthPx,
               marginLeft: MACRO_Y_AXIS_COLUMN_GAP_PX,
@@ -518,7 +518,7 @@ function MacroProminentLineChart({
               {yTicks.map((t, i) => (
                 <span
                   key={i}
-                  className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-white px-1 py-px"
+                  className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-[#FCFCFD] px-1 py-px"
                   style={{ top: `${valueToPlotBandTopPercent(t, yMin, yMax)}%` }}
                 >
                   {formatMacroChartAxisTick(t, kind)}
@@ -546,7 +546,7 @@ function MacroProminentLineChart({
                   title={formatMacroTooltipTime(pt.time)}
                 >
                   {show ? (
-                    <span className="inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]">
+                    <span className="inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#5C5D5F] sm:text-[12px]">
                       {formatMacroAxisLabel(pt.time, axisGranularity)}
                     </span>
                   ) : null}

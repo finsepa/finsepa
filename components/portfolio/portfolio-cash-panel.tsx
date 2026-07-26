@@ -42,7 +42,7 @@ function netCashUsd(transactions: { sum: number }[]): number {
 
 function balanceClassName(n: number): string {
   if (n < 0) return "text-[#DC2626]";
-  return "text-[#0F0F0F]";
+  return "text-[#141414]";
 }
 
 /** Summ column: green for cash / income inflows; red for outflows; black otherwise. */
@@ -52,7 +52,7 @@ function cashSummClassName(operation: string, sum: number): string {
     const u = operation.toLowerCase();
     if (u.includes("cash in") || u.includes("other income")) return "text-[#16A34A]";
   }
-  return "text-[#0F0F0F]";
+  return "text-[#141414]";
 }
 
 function formatSignedUsd(n: number): string {
@@ -64,7 +64,7 @@ function operationClassName(operation: string): string {
   const u = operation.toLowerCase();
   if (u.includes("cash in") || u.includes("other income")) return "text-[#16A34A]";
   if (u.includes("cash out") || u.includes("other expense")) return "text-[#DC2626]";
-  return "text-[#0F0F0F]";
+  return "text-[#141414]";
 }
 
 type CashDirectionFilter = "all" | "in" | "out";
@@ -182,7 +182,7 @@ function PortfolioCashPanelInner() {
           <div
             className={cn(
               cashBalanceGrid,
-              "min-h-[44px] bg-white px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A]",
+              "min-h-[44px] bg-white px-4 py-0 text-[14px] font-medium leading-5 text-[#5C5D5F]",
             )}
           >
             <div className="min-w-0 text-left">Currency</div>
@@ -193,8 +193,8 @@ function PortfolioCashPanelInner() {
             <div className="flex min-w-0 items-center gap-3 px-3 pr-4">
               <CompanyLogo name="US Dollar" logoUrl="" symbol="USD" />
               <div className="min-w-0">
-                <div className="truncate text-[14px] font-semibold leading-5 text-[#0F0F0F]">US Dollar</div>
-                <div className="text-[12px] font-normal leading-4 text-[#71717A]">USD</div>
+                <div className="truncate text-[14px] font-semibold leading-5 text-[#141414]">US Dollar</div>
+                <div className="text-[12px] font-normal leading-4 text-[#5C5D5F]">USD</div>
               </div>
             </div>
             <div
@@ -211,13 +211,13 @@ function PortfolioCashPanelInner() {
 
       <section className="mt-8" aria-labelledby="cash-tx-heading">
         <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-          <h3 id="cash-tx-heading" className="text-lg font-semibold leading-7 text-[#0F0F0F]">
+          <h3 id="cash-tx-heading" className="text-lg font-semibold leading-7 text-[#141414]">
             Cash Transactions
           </h3>
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative min-w-[200px] max-w-full flex-1 sm:w-[260px] sm:flex-none">
               <Search
-                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#71717A]"
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#5C5D5F]"
                 aria-hidden
               />
               <input
@@ -225,7 +225,7 @@ function PortfolioCashPanelInner() {
                 value={cashSearch}
                 onChange={(e) => setCashSearch(e.target.value)}
                 placeholder="Type to search..."
-                className="h-9 w-full rounded-[10px] border-0 bg-[#F4F4F5] py-2 pl-9 pr-3 text-sm text-[#0F0F0F] placeholder:text-[#71717A] outline-none focus:ring-2 focus:ring-[#0F0F0F]/10"
+                className="h-9 w-full rounded-[10px] border-0 bg-[#F4F4F5] py-2 pl-9 pr-3 text-sm text-[#141414] placeholder:text-[#5C5D5F] outline-none focus:ring-2 focus:ring-[#141414]/10"
                 aria-label="Search cash transactions"
               />
             </div>
@@ -233,7 +233,7 @@ function PortfolioCashPanelInner() {
               <PopoverTrigger asChild>
                 <button
                   type="button"
-                  className="inline-flex h-9 shrink-0 items-center gap-2 rounded-[10px] bg-[#F4F4F5] px-4 text-[14px] font-medium leading-5 text-[#0F0F0F] transition-colors duration-100 hover:bg-[#E4E4E7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15 focus-visible:ring-offset-2"
+                  className="inline-flex h-9 shrink-0 items-center gap-2 rounded-[10px] bg-[#F4F4F5] px-4 text-[14px] font-medium leading-5 text-[#141414] transition-colors duration-100 hover:bg-[#E4E4E7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15 focus-visible:ring-offset-2"
                 >
                   <Filter className="h-4 w-4 opacity-90" aria-hidden />
                   Filter
@@ -261,14 +261,14 @@ function PortfolioCashPanelInner() {
                         dropdownMenuPlainItemRowClassName({
                           selected: cashDirectionFilter === value,
                         }),
-                        "text-[#0F0F0F]",
+                        "text-[#141414]",
                         cashDirectionFilter === value ? "font-medium" : "font-normal",
                       )}
                     >
                       <span className="min-w-0 flex-1 truncate text-left">{label}</span>
                       <span className="flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden>
                         {cashDirectionFilter === value ? (
-                          <Check className="h-4 w-4 text-[#0F0F0F]" strokeWidth={2} />
+                          <Check className="h-4 w-4 text-[#141414]" strokeWidth={2} />
                         ) : null}
                       </span>
                     </button>
@@ -292,18 +292,18 @@ function PortfolioCashPanelInner() {
             </EmptyHeader>
           </Empty>
         ) : filteredCashRows.length === 0 ? (
-          <p className="py-8 text-center text-sm text-[#71717A]">No transactions match your search.</p>
+          <p className="py-8 text-center text-sm text-[#5C5D5F]">No transactions match your search.</p>
         ) : (
           <div className="w-full min-w-0">
             {/* Mobile: remove standalone Operation column; show operation in the holding cell. */}
             <div className="sm:hidden">
               <div className="divide-y divide-[#E4E4E7] border-t border-[#E4E4E7] bg-white">
-                <div className="flex min-h-[44px] items-center justify-between gap-3 px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A]">
+                <div className="flex min-h-[44px] items-center justify-between gap-3 px-4 py-0 text-[14px] font-medium leading-5 text-[#5C5D5F]">
                   <div className="min-w-0 text-left">Holding</div>
                   <button
                     type="button"
                     onClick={() => setCashDateAsc((v) => !v)}
-                    className="inline-flex items-center gap-1 rounded-md transition-colors hover:text-[#0F0F0F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15"
+                    className="inline-flex items-center gap-1 rounded-md transition-colors hover:text-[#141414] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15"
                   >
                     Date
                     {cashDateAsc ? (
@@ -327,14 +327,14 @@ function PortfolioCashPanelInner() {
                         >
                           {t.operation}
                         </div>
-                        <div className="truncate text-[12px] font-normal leading-4 text-[#71717A]">
+                        <div className="truncate text-[12px] font-normal leading-4 text-[#5C5D5F]">
                           {portfolioAssetSymbolCaption(t.symbol)}
                         </div>
                       </div>
                     </div>
 
                     <div className="min-w-0 shrink-0 text-right">
-                      <div className="font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#0F0F0F]">
+                      <div className="font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#141414]">
                         {format(parseISO(t.date), "MM/dd/yyyy")}
                       </div>
                       <div
@@ -357,7 +357,7 @@ function PortfolioCashPanelInner() {
                 <div
                   className={cn(
                     cashTxGrid,
-                    "min-h-[44px] bg-white px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A]",
+                    "min-h-[44px] bg-white px-4 py-0 text-[14px] font-medium leading-5 text-[#5C5D5F]",
                   )}
                 >
                   <div className="min-w-0 w-full text-left">Operation</div>
@@ -366,7 +366,7 @@ function PortfolioCashPanelInner() {
                     <button
                       type="button"
                       onClick={() => setCashDateAsc((v) => !v)}
-                      className="ml-auto inline-flex items-center gap-1 rounded-md transition-colors hover:text-[#0F0F0F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15"
+                      className="ml-auto inline-flex items-center gap-1 rounded-md transition-colors hover:text-[#141414] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15"
                     >
                       Date
                       {cashDateAsc ? (
@@ -407,17 +407,17 @@ function PortfolioCashPanelInner() {
                           symbol={t.symbol}
                         />
                         <div className="min-w-0">
-                          <div className="truncate text-[14px] font-semibold leading-5 text-[#0F0F0F]">{t.name}</div>
-                          <div className="text-[12px] font-normal leading-4 text-[#71717A]">
+                          <div className="truncate text-[14px] font-semibold leading-5 text-[#141414]">{t.name}</div>
+                          <div className="text-[12px] font-normal leading-4 text-[#5C5D5F]">
                             {portfolioAssetSymbolCaption(t.symbol)}
                           </div>
                         </div>
                       </div>
                     </div>
-                    <div className="min-w-0 w-full text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#0F0F0F]">
+                    <div className="min-w-0 w-full text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#141414]">
                       {format(parseISO(t.date), "MM/dd/yyyy")}
                     </div>
-                    <div className="min-w-0 w-full text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#0F0F0F]">
+                    <div className="min-w-0 w-full text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#141414]">
                       {t.fee > 0 ? usd0.format(t.fee) : usd0.format(0)}
                     </div>
                     <div

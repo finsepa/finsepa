@@ -4,6 +4,7 @@ import { BarChart3, LineChart } from "@/lib/icons";
 
 import type { MultichartVisual } from "@/components/stock/multichart-fundamentals-bar";
 import { SegmentedControl } from "@/components/design-system/segmented-control";
+import { whiteSurfaceButtonShadowClass } from "@/components/design-system/secondary-button-styles";
 import { cn } from "@/lib/utils";
 
 const CHART_VISUAL_OPTIONS = [
@@ -11,8 +12,7 @@ const CHART_VISUAL_OPTIONS = [
   { value: "line" as const, label: "Line" },
 ] as const;
 
-const ICON_ACTIVE_SHADOW =
-  "bg-white text-[#0F0F0F] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.12),0px_1px_1px_0px_rgba(10,10,10,0.07)]";
+const ICON_ACTIVE_CLASS = cn("bg-white text-[#141414]", whiteSurfaceButtonShadowClass);
 
 /** Stock Charting tab uses `bars` | `line`; multicharts use `bar` | `line`. */
 export type ChartingChartType = "bars" | "line";
@@ -55,7 +55,7 @@ export function MultichartVisualSwitcher({
   if (variant === "icon") {
     return (
       <div
-        className={cn("flex shrink-0 gap-0 rounded-[10px] bg-[#F4F4F5] p-0.5", className)}
+        className={cn("flex h-9 shrink-0 gap-0 rounded-[10px] bg-[#F1F1F2] p-0.5", className)}
         role="group"
         aria-label="Chart style"
       >
@@ -63,8 +63,8 @@ export function MultichartVisualSwitcher({
           type="button"
           onClick={() => onChange("bar")}
           className={cn(
-            "flex h-8 w-8 items-center justify-center rounded-[10px] transition-colors",
-            value === "bar" ? ICON_ACTIVE_SHADOW : "text-[#71717A] hover:text-[#0F0F0F]",
+            "flex h-full w-8 items-center justify-center rounded-[10px] transition-colors",
+            value === "bar" ? ICON_ACTIVE_CLASS : "text-[#5C5D5F] hover:text-[#141414]",
           )}
           aria-pressed={value === "bar"}
           aria-label="Bar chart"
@@ -75,8 +75,8 @@ export function MultichartVisualSwitcher({
           type="button"
           onClick={() => onChange("line")}
           className={cn(
-            "flex h-8 w-8 items-center justify-center rounded-[10px] transition-colors",
-            value === "line" ? ICON_ACTIVE_SHADOW : "text-[#71717A] hover:text-[#0F0F0F]",
+            "flex h-full w-8 items-center justify-center rounded-[10px] transition-colors",
+            value === "line" ? ICON_ACTIVE_CLASS : "text-[#5C5D5F] hover:text-[#141414]",
           )}
           aria-pressed={value === "line"}
           aria-label="Line chart"

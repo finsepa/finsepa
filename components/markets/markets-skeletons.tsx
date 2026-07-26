@@ -1,59 +1,132 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 import { LogoSkeleton, SkeletonBox, TextSkeleton } from "@/components/markets/skeleton";
-import { MOBILE_ELEVATED_CARD_CLASS } from "@/components/design-system/card-surface-styles";
-import { INDEX_CARD_SURFACE_CLASS, INDEX_CARDS_GRID_CLASS, INDEX_CARDS_SCROLL_CLASS, INDEX_CARDS_SCROLL_OUTER_CLASS } from "@/components/screener/index-cards";
+import { MOBILE_PANEL_CARD_CLASS } from "@/components/design-system/card-surface-styles";
+import {
+  INDEX_CARD_SURFACE_CLASS,
+  INDEX_CARDS_GRID_CLASS,
+  INDEX_CARDS_SCROLL_CLASS,
+  INDEX_CARDS_SCROLL_OUTER_CLASS,
+} from "@/components/screener/index-cards";
 import {
   SCREENER_TABLE_HEADER_STICKY_CLASS,
+  SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+  SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+  SCREENER_TABLE_ROW_HOVER_PAD_CLASS,
+  SCREENER_TABLE_STROKE_INSET_CLASS,
   ScreenerTableScroll,
 } from "@/components/screener/screener-table-scroll";
 import { SCREENER_COMPANIES_PAGE_SIZE } from "@/lib/screener/screener-markets-page-size";
 import { cn } from "@/lib/utils";
 
-/** Matches {@link ScreenerTable}: mobile hides star + 1M / YTD / M Cap / PE. */
-const stocksColLayout =
-  "grid-cols-[22px_minmax(0,1fr)_minmax(4.5rem,5.5rem)] gap-x-1.5 sm:grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr_1fr_96px] sm:gap-x-2";
-const cryptoColLayout =
-  "grid-cols-[22px_minmax(0,1fr)_minmax(4.5rem,5.5rem)] gap-x-1.5 sm:grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr_1fr] sm:gap-x-2";
-const indicesColLayout =
-  "grid-cols-[22px_minmax(0,1fr)_minmax(4.5rem,5.5rem)] gap-x-1.5 sm:grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr] sm:gap-x-2";
+/** Star sits outside; matches live tables after chrome update. */
+const stocksRowGrid =
+  "grid grid-cols-[22px_minmax(0,1fr)_minmax(4.5rem,5.5rem)] gap-x-1.5 sm:grid-cols-[48px_2fr_1fr_1fr_1fr_1fr_1fr_1fr] sm:gap-x-2";
+const cryptoRowGrid =
+  "grid grid-cols-[22px_minmax(0,1fr)_minmax(4.5rem,5.5rem)] gap-x-1.5 sm:grid-cols-[48px_2fr_1fr_1fr_1fr_1fr_1fr] sm:gap-x-2";
+const indicesRowGrid =
+  "grid grid-cols-[28px_minmax(0,2fr)_1fr] gap-x-2 sm:grid-cols-[48px_2fr_1fr_1fr_1fr_1fr] sm:gap-x-2";
+
+const desktopNumericCellClass = "hidden min-w-0 w-full justify-end pr-3 sm:flex";
+
+function TableHeaderShell({
+  children,
+  hideMobileHeader = false,
+}: {
+  children: ReactNode;
+  hideMobileHeader?: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        SCREENER_TABLE_HEADER_STICKY_CLASS,
+        SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+        SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+        "md:border-b-0",
+        hideMobileHeader && "max-md:hidden",
+      )}
+    >
+      <div className={SCREENER_TABLE_ROW_HOVER_PAD_CLASS}>{children}</div>
+      <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
+    </div>
+  );
+}
+
+function TableRowShell({
+  children,
+  showDivider,
+}: {
+  children: ReactNode;
+  showDivider: boolean;
+}) {
+  return (
+    <div>
+      <div className={SCREENER_TABLE_ROW_HOVER_PAD_CLASS}>
+        <div className="flex min-h-[60px] min-w-0 w-full items-center gap-x-1.5 sm:gap-x-2">
+          {children}
+        </div>
+      </div>
+      {showDivider ? <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden /> : null}
+    </div>
+  );
+}
+
+function StarSpacerSkeleton() {
+  return (
+    <div className="hidden w-6 shrink-0 items-center justify-center px-1 sm:flex sm:w-10 sm:px-3">
+      <SkeletonBox className="h-4 w-4 rounded" />
+    </div>
+  );
+}
+
+function StarHeaderSpacer() {
+  return <div className="hidden w-6 shrink-0 sm:block sm:w-10" aria-hidden />;
+}
+
+function CompanyCellSkeleton({ nameWidth }: { nameWidth: string }) {
+  return (
+    <div className="flex min-w-0 items-center justify-start gap-[12px] pr-0 sm:pr-4">
+      <LogoSkeleton />
+      <div className="min-w-0 flex-1 space-y-1.5">
+        <TextSkeleton wClass={nameWidth} />
+        <TextSkeleton wClass="w-10" hClass="h-3" />
+      </div>
+    </div>
+  );
+}
 
 /** Matches {@link IndexCards} — stacked label / value / change, no sparkline. */
 export function IndexCardSkeleton({ name }: { name: string }) {
   return (
     <div className={`${INDEX_CARD_SURFACE_CLASS} min-h-[112px]`}>
-      <span className="text-[14px] font-medium leading-5 text-[#A1A1AA]">{name}</span>
+      <span className="text-[14px] font-medium leading-5 text-[#5C5D5F]">{name}</span>
       <SkeletonBox className="h-8 w-[7.5rem] max-w-full rounded-md" />
       <TextSkeleton wClass="w-14" hClass="h-3.5" />
     </div>
   );
 }
 
-function StocksRowSkeleton() {
+function StocksRowSkeleton({ showDivider }: { showDivider: boolean }) {
   return (
-    <div className={`grid ${stocksColLayout} min-h-[56px] items-center px-2 sm:min-h-[60px] sm:px-4`}>
-      <div className="hidden w-10 shrink-0 items-center justify-center px-3 sm:flex">
-        <SkeletonBox className="h-4 w-4 rounded" />
-      </div>
-      <div className="flex max-md:-ml-0.5 justify-center">
-        <TextSkeleton wClass="w-4" hClass="h-3.5" />
-      </div>
-      <div className="flex min-w-0 items-center justify-start gap-3 pr-4">
-        <LogoSkeleton />
-        <div className="min-w-0 flex-1 space-y-1.5">
-          <TextSkeleton wClass="w-[45%] max-w-[140px]" />
-          <TextSkeleton wClass="w-10" hClass="h-3" />
+    <TableRowShell showDivider={showDivider}>
+      <StarSpacerSkeleton />
+      <div className={cn(stocksRowGrid, "min-h-[56px] w-full items-center sm:min-h-[60px]")}>
+        <div className="flex justify-center">
+          <TextSkeleton wClass="w-4" hClass="h-3.5" />
         </div>
-      </div>
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div
-          key={i}
-          className={`flex justify-end ${i >= 2 ? "hidden sm:flex" : ""}`}
-        >
-          <TextSkeleton wClass={i === 4 ? "w-10" : "w-12"} />
+        <CompanyCellSkeleton nameWidth="w-[45%] max-w-[140px]" />
+        <div className="flex justify-end sm:hidden">
+          <TextSkeleton wClass="w-12" />
         </div>
-      ))}
-    </div>
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className={desktopNumericCellClass}>
+            <TextSkeleton wClass={i === 4 ? "w-10" : "w-12"} />
+          </div>
+        ))}
+      </div>
+    </TableRowShell>
   );
 }
 
@@ -68,145 +141,184 @@ export function StocksTableSkeleton({
 }) {
   return (
     <ScreenerTableScroll embeddedInMobileCard={embeddedInMobileCard}>
-      <div className="divide-y divide-[#E4E4E7] bg-white">
-      <div
-        className={cn(
-          `grid ${stocksColLayout} items-center px-2 py-3 sm:px-4`,
-          SCREENER_TABLE_HEADER_STICKY_CLASS,
-          hideMobileHeader && "max-md:hidden",
-        )}
-      >
-        {Array.from({ length: 9 }).map((_, i) => (
-          <div
-            key={i}
-            className={`flex ${
-              i === 0 ? "hidden sm:flex"
-              : i === 1 ? "justify-center"
-              : i === 2 ? "justify-start"
-              : "justify-end"
-            } ${i >= 5 ? "hidden sm:flex" : ""}`}
-          >
-            <SkeletonBox className="h-3 w-10 rounded" />
+      <div className="bg-white">
+        <TableHeaderShell hideMobileHeader={hideMobileHeader}>
+          <div className="flex min-h-[44px] min-w-0 w-full items-center gap-x-1.5 py-0 sm:gap-x-2">
+            <StarHeaderSpacer />
+            <div className={cn(stocksRowGrid, "min-h-[44px] w-full items-center")}>
+              <div className="flex justify-center">
+                <SkeletonBox className="h-3 w-4 rounded" />
+              </div>
+              <div className="flex justify-start">
+                <SkeletonBox className="h-3 w-16 rounded" />
+              </div>
+              <div className="flex min-w-0 w-full justify-end pr-3">
+                <SkeletonBox className="h-3 w-10 rounded" />
+              </div>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className={desktopNumericCellClass}>
+                  <SkeletonBox className="h-3 w-10 rounded" />
+                </div>
+              ))}
+            </div>
           </div>
-        ))}
-      </div>
-      {Array.from({ length: rows }).map((_, i) => (
-        <StocksRowSkeleton key={i} />
-      ))}
+        </TableHeaderShell>
+        <div>
+          {Array.from({ length: rows }).map((_, i) => (
+            <StocksRowSkeleton key={i} showDivider={i < rows - 1} />
+          ))}
+        </div>
       </div>
     </ScreenerTableScroll>
   );
 }
 
-function CryptoRowSkeleton() {
+function CryptoRowSkeleton({ showDivider }: { showDivider: boolean }) {
   return (
-    <div className={`group grid min-h-[56px] ${cryptoColLayout} items-center bg-white px-2 sm:min-h-[60px] sm:px-4`}>
-      <div className="hidden w-10 shrink-0 items-center justify-center px-3 sm:flex">
-        <SkeletonBox className="h-4 w-4 rounded" />
-      </div>
-      <div className="flex justify-center">
-        <TextSkeleton wClass="w-4" hClass="h-3.5" />
-      </div>
-      <div className="flex min-w-0 items-center justify-start gap-3 pr-4">
-        <LogoSkeleton />
-        <div className="min-w-0 flex-1 space-y-1.5">
-          <TextSkeleton wClass="w-[40%] max-w-[160px]" />
-          <TextSkeleton wClass="w-10" hClass="h-3" />
+    <TableRowShell showDivider={showDivider}>
+      <StarSpacerSkeleton />
+      <div className={cn(cryptoRowGrid, "min-h-[56px] w-full items-center sm:min-h-[60px]")}>
+        <div className="flex justify-center">
+          <TextSkeleton wClass="w-4" hClass="h-3.5" />
+        </div>
+        <CompanyCellSkeleton nameWidth="w-[40%] max-w-[160px]" />
+        <div className="flex justify-end sm:hidden">
+          <TextSkeleton wClass="w-16" />
+        </div>
+        <div className={desktopNumericCellClass}>
+          <TextSkeleton wClass="w-16" />
+        </div>
+        <div className={desktopNumericCellClass}>
+          <TextSkeleton wClass="w-12" />
+        </div>
+        <div className={desktopNumericCellClass}>
+          <TextSkeleton wClass="w-12" />
+        </div>
+        <div className={desktopNumericCellClass}>
+          <TextSkeleton wClass="w-12" />
+        </div>
+        <div className={desktopNumericCellClass}>
+          <TextSkeleton wClass="w-14" />
         </div>
       </div>
-      <div className="flex justify-end">
-        <TextSkeleton wClass="w-16" />
-      </div>
-      <div className="hidden justify-end sm:flex">
-        <TextSkeleton wClass="w-12" />
-      </div>
-      <div className="hidden justify-end sm:flex">
-        <TextSkeleton wClass="w-12" />
-      </div>
-      <div className="hidden justify-end sm:flex">
-        <TextSkeleton wClass="w-12" />
-      </div>
-      <div className="hidden justify-end sm:flex">
-        <TextSkeleton wClass="w-14" />
-      </div>
-    </div>
+    </TableRowShell>
   );
 }
 
 export function CryptoTableSkeleton({ rows = 10 }: { rows?: number }) {
   return (
     <ScreenerTableScroll>
-      <div className="divide-y divide-[#E4E4E7] bg-white">
-      <div
-        className={`grid ${cryptoColLayout} min-h-[44px] items-center px-2 py-0 text-[14px] font-medium leading-5 text-[#71717A] sm:px-4 ${SCREENER_TABLE_HEADER_STICKY_CLASS}`}
-      >
-        <div className="hidden sm:block" aria-hidden />
-        <div className="flex justify-center">
-          <SkeletonBox className="h-3 w-4 rounded" />
+      <div className="bg-white">
+        <TableHeaderShell>
+          <div className="flex min-h-[44px] min-w-0 w-full items-center gap-x-1.5 py-0 sm:gap-x-2">
+            <StarHeaderSpacer />
+            <div className={cn(cryptoRowGrid, "min-h-[44px] w-full items-center")}>
+              <div className="flex justify-center">
+                <SkeletonBox className="h-3 w-4 rounded" />
+              </div>
+              <div className="flex justify-start">
+                <SkeletonBox className="h-3 w-16 rounded" />
+              </div>
+              <div className="flex min-w-0 w-full justify-end pr-3">
+                <SkeletonBox className="h-3 w-10 rounded" />
+              </div>
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className={desktopNumericCellClass}>
+                  <SkeletonBox className="h-3 w-10 rounded" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </TableHeaderShell>
+        <div>
+          {Array.from({ length: rows }).map((_, i) => (
+            <CryptoRowSkeleton key={i} showDivider={i < rows - 1} />
+          ))}
         </div>
-        <div className="flex justify-start">
-          <SkeletonBox className="h-3 w-16 rounded" />
-        </div>
-        <div className="flex justify-end">
-          <SkeletonBox className="h-3 w-10 rounded" />
-        </div>
-        <div className="hidden justify-end sm:flex">
-          <SkeletonBox className="h-3 w-10 rounded" />
-        </div>
-        <div className="hidden justify-end sm:flex">
-          <SkeletonBox className="h-3 w-10 rounded" />
-        </div>
-        <div className="hidden justify-end sm:flex">
-          <SkeletonBox className="h-3 w-10 rounded" />
-        </div>
-        <div className="hidden justify-end sm:flex">
-          <SkeletonBox className="h-3 w-10 rounded" />
-        </div>
-      </div>
-      {Array.from({ length: rows }).map((_, i) => (
-        <CryptoRowSkeleton key={i} />
-      ))}
       </div>
     </ScreenerTableScroll>
   );
 }
 
-function IndicesRowSkeleton() {
+function IndicesRowSkeleton({ showDivider }: { showDivider: boolean }) {
   return (
-    <div className={`group grid h-[60px] max-h-[60px] ${indicesColLayout} items-center bg-white px-2 sm:px-4`}>
-      <div className="hidden w-10 shrink-0 items-center justify-center px-3 sm:flex">
-        <SkeletonBox className="h-4 w-4 rounded" />
+    <TableRowShell showDivider={showDivider}>
+      <StarSpacerSkeleton />
+      <div className={cn(indicesRowGrid, "min-h-[56px] w-full items-center sm:min-h-[60px]")}>
+        <div className="flex justify-center">
+          <TextSkeleton wClass="w-4" hClass="h-3.5" />
+        </div>
+        <div className="flex min-w-0 justify-start">
+          <TextSkeleton wClass="w-[45%] max-w-[180px]" />
+        </div>
+        <div className="flex justify-end sm:hidden">
+          <TextSkeleton wClass="w-20" />
+        </div>
+        <div className={desktopNumericCellClass}>
+          <TextSkeleton wClass="w-20" />
+        </div>
+        <div className={desktopNumericCellClass}>
+          <TextSkeleton wClass="w-12" />
+        </div>
+        <div className={desktopNumericCellClass}>
+          <TextSkeleton wClass="w-12" />
+        </div>
+        <div className={desktopNumericCellClass}>
+          <TextSkeleton wClass="w-12" />
+        </div>
       </div>
-      <div className="flex justify-center">
-        <TextSkeleton wClass="w-4" hClass="h-3.5" />
+    </TableRowShell>
+  );
+}
+
+export function IndicesTableSkeleton({ rows = 10 }: { rows?: number }) {
+  return (
+    <ScreenerTableScroll minWidthClassName="min-w-0" className="h-fit">
+      <div className="bg-white">
+        <TableHeaderShell>
+          <div className="flex min-h-[44px] min-w-0 w-full items-center gap-x-1.5 py-0 sm:gap-x-2">
+            <StarHeaderSpacer />
+            <div className={cn(indicesRowGrid, "min-h-[44px] w-full items-center")}>
+              <div className="flex justify-center">
+                <SkeletonBox className="h-3 w-4 rounded" />
+              </div>
+              <div className="flex justify-start">
+                <SkeletonBox className="h-3 w-12 rounded" />
+              </div>
+              <div className="flex min-w-0 w-full justify-end pr-3">
+                <SkeletonBox className="h-3 w-10 rounded" />
+              </div>
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className={desktopNumericCellClass}>
+                  <SkeletonBox className="h-3 w-10 rounded" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </TableHeaderShell>
+        <div>
+          {Array.from({ length: rows }).map((_, i) => (
+            <IndicesRowSkeleton key={i} showDivider={i < rows - 1} />
+          ))}
+        </div>
       </div>
-      <div className="flex min-w-0 justify-start px-2 sm:px-4">
-        <TextSkeleton wClass="w-[45%] max-w-[180px]" />
-      </div>
-      <div className="flex justify-end">
-        <TextSkeleton wClass="w-20" />
-      </div>
-      <div className="hidden justify-end sm:flex">
-        <TextSkeleton wClass="w-12" />
-      </div>
-      <div className="hidden justify-end sm:flex">
-        <TextSkeleton wClass="w-12" />
-      </div>
-      <div className="hidden justify-end sm:flex">
-        <TextSkeleton wClass="w-12" />
-      </div>
-    </div>
+    </ScreenerTableScroll>
   );
 }
 
 function CryptoMoverCardSkeleton({ title }: { title: string }) {
   return (
-    <div className={cn("flex min-h-[220px] flex-col p-4", MOBILE_ELEVATED_CARD_CLASS)}>
-      <span className="mb-3 text-[14px] font-medium leading-5 text-[#A1A1AA]">{title}</span>
-      <div className="flex flex-1 flex-col gap-3">
+    <div
+      className={cn(
+        "flex min-h-[188px] min-w-0 flex-col gap-[12px] px-4 py-3 sm:px-5 sm:py-3",
+        MOBILE_PANEL_CARD_CLASS,
+      )}
+    >
+      <span className="h-5 text-[14px] font-semibold leading-5 text-[#5C5D5F]">{title}</span>
+      <div className="flex w-full flex-col gap-[12px]">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-3">
-            <LogoSkeleton />
+          <div key={i} className="flex items-center gap-[8px]">
+            <LogoSkeleton sizeClass="h-6 w-6" />
             <div className="min-w-0 flex-1 space-y-1.5">
               <TextSkeleton wClass="w-[55%] max-w-[140px]" />
               <TextSkeleton wClass="w-12" hClass="h-3" />
@@ -221,11 +333,18 @@ function CryptoMoverCardSkeleton({ title }: { title: string }) {
 
 function FearGreedCardSkeleton() {
   return (
-    <div className={cn("flex min-h-[220px] flex-col items-center justify-center p-4", MOBILE_ELEVATED_CARD_CLASS)}>
-      <SkeletonBox className="mb-3 h-4 w-32 rounded" />
-      <SkeletonBox className="h-[120px] w-[120px] rounded-full" />
-      <div className="mt-3">
-        <TextSkeleton wClass="w-16" hClass="h-4" />
+    <div
+      className={cn(
+        "flex h-[188px] flex-col gap-[12px] px-4 pt-3 pb-3 sm:px-5",
+        MOBILE_PANEL_CARD_CLASS,
+      )}
+    >
+      <SkeletonBox className="h-5 w-32 rounded" />
+      <div className="flex flex-1 flex-col items-center justify-center">
+        <SkeletonBox className="h-[120px] w-[120px] rounded-full" />
+        <div className="mt-3">
+          <TextSkeleton wClass="w-16" hClass="h-4" />
+        </div>
       </div>
     </div>
   );
@@ -243,7 +362,7 @@ export function StocksGainersLosersSkeleton({
 }) {
   const tableChrome = { embeddedInMobileCard, hideMobileHeader };
   return (
-    <div className={cn(embeddedInMobileCard ? "max-md:divide-y max-md:divide-solid max-md:divide-[#E4E4E7]" : "space-y-6")}>
+    <div className={cn(embeddedInMobileCard ? "max-md:space-y-4" : "space-y-6")}>
       <div>
         <div className="mb-3 hidden h-5 w-36 rounded skeleton md:block" />
         <StocksTableSkeleton rows={rows} {...tableChrome} />
@@ -263,12 +382,9 @@ export function MarketTabsSkeleton() {
   const tabWidths = ["w-12", "w-14", "w-14", "w-11"] as const;
 
   return (
-    <div className="mb-4 hidden border-b border-solid border-[#E4E4E7] md:mb-6 md:block">
+    <div className="mb-5 hidden border-b border-solid border-[#E4E4E7] md:block">
       <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 md:gap-x-3">
-        <nav
-          className="flex min-w-0 flex-1 flex-nowrap items-start gap-4 pb-px md:gap-5"
-          aria-hidden
-        >
+        <nav className="flex min-w-0 flex-1 flex-nowrap items-start gap-4 pb-px md:gap-5" aria-hidden>
           {tabWidths.map((width, index) => (
             <SkeletonBox key={index} className={`h-6 shrink-0 rounded ${width}`} />
           ))}
@@ -328,37 +444,3 @@ export function ScreenerMarketTabSkeleton({ tab }: { tab: ScreenerMarketTabSkele
     </div>
   );
 }
-
-export function IndicesTableSkeleton({ rows = 10 }: { rows?: number }) {
-  return (
-    <div className="divide-y divide-[#E4E4E7] border-t border-b border-[#E4E4E7]">
-      <div
-        className={`grid ${indicesColLayout} min-h-[44px] items-center px-2 py-0 text-[14px] font-medium leading-5 text-[#71717A] sm:px-4 ${SCREENER_TABLE_HEADER_STICKY_CLASS}`}
-      >
-        <div className="hidden sm:block" aria-hidden />
-        <div className="flex justify-center">
-          <SkeletonBox className="h-3 w-4 rounded" />
-        </div>
-        <div className="flex justify-start">
-          <SkeletonBox className="h-3 w-12 rounded" />
-        </div>
-        <div className="flex justify-end">
-          <SkeletonBox className="h-3 w-10 rounded" />
-        </div>
-        <div className="hidden justify-end sm:flex">
-          <SkeletonBox className="h-3 w-10 rounded" />
-        </div>
-        <div className="hidden justify-end sm:flex">
-          <SkeletonBox className="h-3 w-10 rounded" />
-        </div>
-        <div className="hidden justify-end sm:flex">
-          <SkeletonBox className="h-3 w-10 rounded" />
-        </div>
-      </div>
-      {Array.from({ length: rows }).map((_, i) => (
-        <IndicesRowSkeleton key={i} />
-      ))}
-    </div>
-  );
-}
-

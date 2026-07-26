@@ -22,7 +22,7 @@ function MarketsSessionStatusIcon({ display }: { display: UsEquitySessionBadgeDi
     case "post":
       return <PostMarketEarningsIcon size={24} />;
     default:
-      return <span className="h-2 w-2 shrink-0 rounded-full bg-[#71717A]" aria-hidden />;
+      return <span className="h-2 w-2 shrink-0 rounded-full bg-[#5C5D5F]" aria-hidden />;
   }
 }
 
@@ -42,7 +42,7 @@ export function UsMarketsSessionLabel({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "inline-flex max-w-full min-w-0 items-center gap-1.5 text-[13px] font-medium leading-5 text-[#71717A]",
+        "inline-flex max-w-full min-w-0 items-center gap-1.5 text-[13px] font-medium leading-5 text-[#5C5D5F]",
         className,
       )}
       role="status"

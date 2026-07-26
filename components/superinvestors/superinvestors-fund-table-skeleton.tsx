@@ -37,11 +37,11 @@ export function SuperinvestorsFundTableSkeleton({ rows = 12 }: { rows?: number }
   return (
     <div className="min-w-0 -mx-4 sm:mx-0" aria-busy aria-label="Loading superinvestors">
       <div className="divide-y divide-[#E4E4E7] border-t border-b border-[#E4E4E7] bg-white">
-        <div className="grid grid-cols-[minmax(0,1fr)_minmax(4.75rem,auto)] gap-x-3 px-4 py-3 text-[14px] font-medium text-[#71717A] sm:hidden">
+        <div className="grid grid-cols-[minmax(0,1fr)_minmax(4.75rem,auto)] gap-x-3 px-4 py-3 text-[14px] font-medium text-[#5C5D5F] sm:hidden">
           <div>Fund</div>
           <div className="text-right">Last updated</div>
         </div>
-        <div className="hidden min-h-[44px] grid-cols-[40px_48px_minmax(0,2fr)_minmax(0,1fr)_minmax(0,0.75fr)_minmax(0,1fr)_minmax(0,1.5fr)] items-center gap-x-3 px-4 text-[14px] font-medium text-[#71717A] sm:grid">
+        <div className="hidden min-h-[44px] grid-cols-[40px_48px_minmax(0,2fr)_minmax(0,1fr)_minmax(0,0.75fr)_minmax(0,1fr)_minmax(0,1.5fr)] items-center gap-x-3 px-4 text-[14px] font-medium text-[#5C5D5F] sm:grid">
           <div aria-hidden />
           <div className="col-span-2 col-start-2 pl-1">Fund</div>
           <div className="text-right">Size</div>

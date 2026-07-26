@@ -1,19 +1,19 @@
 import type { CSSProperties } from "react";
 
-import { MOBILE_CARD_SURFACE_CLASS } from "@/components/design-system/card-surface-styles";
+import { MOBILE_PANEL_CARD_CLASS } from "@/components/design-system/card-surface-styles";
 import { cn } from "@/lib/utils";
 
-/** Figma: card value titles — Inter Semi Bold 24 / 36, #0F0F0F. Shared by Earnings summary cards and Multicharts metric cards. */
+/** Figma: card value titles — Inter Semi Bold 24 / 36, #141414. Shared by Earnings summary cards and Multicharts metric cards. */
 export const EARNINGS_CARD_VALUE_CLASS =
-  "font-['Inter'] text-[24px] font-semibold leading-[36px] tracking-normal text-[#0F0F0F]";
+  "font-['Inter'] text-[24px] font-semibold leading-[36px] tracking-normal text-[#141414]";
 
-/** Figma: card labels — Inter Semi Bold 14 / 20, #71717A. */
+/** Figma: card labels — Inter Semi Bold 14 / 20, #5C5D5F. */
 export const EARNINGS_CARD_LABEL_CLASS =
-  "font-['Inter'] text-[14px] font-semibold leading-5 tracking-normal text-[#71717A]";
+  "font-['Inter'] text-[14px] font-semibold leading-5 tracking-normal text-[#5C5D5F]";
 
 /** Prior-period line under summary metric headline (e.g. "from $416.16B"). */
 export const EARNINGS_CARD_PRIOR_LINE_CLASS =
-  "font-['Inter'] text-[14px] font-medium leading-5 tracking-normal text-[#71717A] tabular-nums";
+  "font-['Inter'] text-[14px] font-medium leading-5 tracking-normal text-[#5C5D5F] tabular-nums";
 
 /** Forward / consensus-only periods in Estimates (chart bars, table columns, summary cards). */
 export const EARNINGS_FORECAST_OPACITY_CLASS = "opacity-60";
@@ -73,11 +73,10 @@ function earningsForecastHatchColors(barColor: string): { fill: string; line: st
   return { fill, line, border };
 }
 
-/** Multicharts / macro metric cards — Figma desktop: 20px padding, 12px radius, 1px stroke; mobile matches home screener table card. */
+/** Multicharts / macro metric cards — same 16px / stroke / shadow as Screener Companies containers. */
 export const MULTICHART_CARD_CLASS = cn(
-  "flex flex-col gap-2 overflow-x-hidden overflow-y-visible rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition md:hover:shadow-[0px_2px_4px_0px_rgba(10,10,10,0.08)]",
-  "max-md:rounded-2xl",
-  MOBILE_CARD_SURFACE_CLASS,
+  "flex flex-col gap-2 overflow-x-hidden overflow-y-visible p-5 transition",
+  MOBILE_PANEL_CARD_CLASS,
 );
 
 /** Default chart plot height inside a multichart / macro card. */

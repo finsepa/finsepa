@@ -3,14 +3,20 @@
 import { useMemo } from "react";
 import { IndicesTableSkeleton } from "@/components/markets/markets-skeletons";
 import {
-  SCREENER_TABLE_BODY_DIVIDE_CLASS,
+  SCREENER_TABLE_DATA_ROW_CLASS,
   SCREENER_TABLE_HEADER_STICKY_CLASS,
+  SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+  SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+  SCREENER_TABLE_ROW_HOVER_PAD_CLASS,
+  SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+  SCREENER_TABLE_STROKE_INSET_CLASS,
   ScreenerTableScroll,
 } from "@/components/screener/screener-table-scroll";
 import { WatchlistStarToggle } from "@/components/watchlist/watchlist-star-button";
 import { indexWatchlistKey } from "@/lib/watchlist/constants";
 import { SCREENER_INDICES_PAGE_SIZE } from "@/lib/screener/screener-markets-page-size";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
+import { cn } from "@/lib/utils";
 
 type IndexRow = {
   name: string;
@@ -34,7 +40,7 @@ function formatPercent(v: number | null): string {
 
 function ChangeCell({ value }: { value: number | null }) {
   if (value == null || !Number.isFinite(value)) {
-    return <div className="min-w-0 w-full text-right text-[14px] leading-5 font-medium text-[#71717A]">-</div>;
+    return <div className="min-w-0 w-full text-right text-[14px] leading-5 font-medium text-[#5C5D5F]">-</div>;
   }
   const positive = value >= 0;
   return (
@@ -48,22 +54,18 @@ function ChangeCell({ value }: { value: number | null }) {
   );
 }
 
-/** Mobile: # + index + value + 1D % (no star). `sm+`: star + # + index + … */
-const colLayout =
-  "grid-cols-[28px_minmax(0,2fr)_1fr] gap-x-2 sm:grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr]";
-
 function ValueAndChangeCell({ value, change1D }: { value: number; change1D: number | null }) {
   const hasValue = Number.isFinite(value);
   const hasChange = change1D != null && Number.isFinite(change1D);
   const positive = (change1D ?? 0) >= 0;
   return (
     <div className="min-w-0 w-full text-right">
-      <div className="min-w-0 w-full font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#0F0F0F]">
+      <div className="min-w-0 w-full font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#141414]">
         {hasValue ? formatValue(value) : "-"}
       </div>
       <div
         className={`mt-0.5 min-w-0 w-full text-[12px] font-medium leading-4 tabular-nums ${
-          !hasChange ? "text-[#71717A]" : positive ? "text-[#16A34A]" : "text-[#DC2626]"
+          !hasChange ? "text-[#5C5D5F]" : positive ? "text-[#16A34A]" : "text-[#DC2626]"
         }`}
       >
         {formatPercent(change1D)}
@@ -71,6 +73,15 @@ function ValueAndChangeCell({ value, change1D }: { value: number; change1D: numb
     </div>
   );
 }
+
+/** Mobile: # + index + price. `sm+`: # + index + … (star sits outside the grid). */
+const rowGrid =
+  "grid grid-cols-[28px_minmax(0,2fr)_1fr] gap-x-2 sm:grid-cols-[48px_2fr_1fr_1fr_1fr_1fr] sm:gap-x-2";
+
+const desktopNumericCellClass = "hidden min-w-0 w-full pr-3 text-right sm:block";
+
+const mobileRankCellClass =
+  "text-center text-[14px] font-semibold leading-5 tabular-nums text-[#5C5D5F]";
 
 export function IndicesTable({
   initialRows,
@@ -91,66 +102,89 @@ export function IndicesTable({
   }
 
   return (
-    <ScreenerTableScroll
-      minWidthClassName="min-w-0"
-      className="h-fit"
-    >
+    <ScreenerTableScroll minWidthClassName="min-w-0" className="h-fit">
       <div className="bg-white">
-      <div
-        className={`grid ${colLayout} min-h-[44px] items-center px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A] ${SCREENER_TABLE_HEADER_STICKY_CLASS}`}
-      >
-        <div className="hidden sm:block" aria-hidden />
-        <div className="text-center">#</div>
-        <div className="min-w-0 w-full text-left">Index</div>
-        <div className="min-w-0 w-full text-right">Price</div>
-        <div className="hidden min-w-0 w-full text-right sm:block">1D %</div>
-        <div className="hidden min-w-0 w-full text-right sm:block">1M %</div>
-        <div className="hidden min-w-0 w-full text-right sm:block">YTD %</div>
-      </div>
-
-        <div className={SCREENER_TABLE_BODY_DIVIDE_CLASS}>
-      {safeRows.map((r, i) => {
-        const wlKey = indexWatchlistKey(r.symbol);
-        return (
-          <div
-            key={r.symbol}
-            className={`group grid min-h-[56px] ${colLayout} items-center bg-white px-4 transition-colors duration-75 hover:bg-neutral-50 sm:min-h-[60px]`}
-          >
-            <WatchlistStarToggle
-              className="hidden w-6 shrink-0 items-center justify-center px-1 sm:flex sm:w-10 sm:px-3"
-              storageKey={wlKey}
-              label={r.name}
-              watched={watchedUnion}
-              loaded={loaded}
-              storageHydrated={storageHydrated}
-              toggleTicker={toggleTicker}
-              watchlists={watchlists}
-              activeWatchlistId={activeWatchlistId}
-            />
-            <div className="text-center text-[14px] font-semibold leading-5 tabular-nums text-[#71717A]">
-              {rankOffset + i + 1}
-            </div>
-            <div className="min-w-0 w-full px-2 text-left text-[14px] font-semibold leading-5 text-[#0F0F0F] sm:px-4">
-              {r.name}
-            </div>
-            <div className="block sm:hidden">
-              <ValueAndChangeCell value={r.value} change1D={r.change1D} />
-            </div>
-            <div className="hidden min-w-0 w-full text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#0F0F0F] sm:block">
-              {formatValue(r.value)}
-            </div>
-            <div className="hidden min-w-0 w-full sm:block">
-              <ChangeCell value={r.change1D} />
-            </div>
-            <div className="hidden min-w-0 w-full sm:block">
-              <ChangeCell value={r.change1M} />
-            </div>
-            <div className="hidden min-w-0 w-full sm:block">
-              <ChangeCell value={r.changeYTD} />
+        <div
+          className={cn(
+            SCREENER_TABLE_HEADER_STICKY_CLASS,
+            SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+            SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+            "md:border-b-0",
+          )}
+        >
+          <div className={SCREENER_TABLE_ROW_HOVER_PAD_CLASS}>
+            <div className="flex min-h-[44px] min-w-0 w-full items-center gap-x-1.5 py-0 text-[14px] font-medium leading-5 text-[#5C5D5F] sm:gap-x-2">
+              <div className="hidden w-6 shrink-0 sm:block sm:w-10" aria-hidden />
+              <div className={cn(rowGrid, "min-h-[44px] w-full items-center")}>
+                <div className={cn(mobileRankCellClass, "text-[14px] font-medium")}>#</div>
+                <div className="min-w-0 w-full text-left">Index</div>
+                <div className="min-w-0 w-full pr-3 text-right">Price</div>
+                <div className={cn(desktopNumericCellClass, "truncate")}>1D %</div>
+                <div className={cn(desktopNumericCellClass, "truncate")}>1M %</div>
+                <div className={cn(desktopNumericCellClass, "truncate")}>YTD %</div>
+              </div>
             </div>
           </div>
-        );
-      })}
+          <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
+        </div>
+
+        <div>
+          {safeRows.map((r, i) => {
+            const wlKey = indexWatchlistKey(r.symbol);
+            return (
+              <div key={r.symbol} className={SCREENER_TABLE_DATA_ROW_CLASS}>
+                <div className={SCREENER_TABLE_ROW_HOVER_PAD_CLASS}>
+                  <div
+                    className={cn(
+                      "flex min-h-[60px] min-w-0 w-full items-center gap-x-1.5 max-md:gap-x-1.5 sm:gap-x-2",
+                      SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+                    )}
+                  >
+                    <WatchlistStarToggle
+                      className="hidden w-6 shrink-0 items-center justify-center px-1 sm:flex sm:w-10 sm:px-3"
+                      storageKey={wlKey}
+                      label={r.name}
+                      watched={watchedUnion}
+                      loaded={loaded}
+                      storageHydrated={storageHydrated}
+                      toggleTicker={toggleTicker}
+                      watchlists={watchlists}
+                      activeWatchlistId={activeWatchlistId}
+                    />
+                    <div className={cn(rowGrid, "min-h-[56px] w-full items-center sm:min-h-[60px]")}>
+                      <div className={mobileRankCellClass}>{rankOffset + i + 1}</div>
+                      <div className="min-w-0 w-full text-left text-[14px] font-semibold leading-5 text-[#141414] underline-offset-2 decoration-[#5C5D5F] group-hover/row:underline">
+                        {r.name}
+                      </div>
+                      <div className="block sm:hidden">
+                        <ValueAndChangeCell value={r.value} change1D={r.change1D} />
+                      </div>
+                      <div
+                        className={cn(
+                          desktopNumericCellClass,
+                          "font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414]",
+                        )}
+                      >
+                        {formatValue(r.value)}
+                      </div>
+                      <div className={desktopNumericCellClass}>
+                        <ChangeCell value={r.change1D} />
+                      </div>
+                      <div className={desktopNumericCellClass}>
+                        <ChangeCell value={r.change1M} />
+                      </div>
+                      <div className={desktopNumericCellClass}>
+                        <ChangeCell value={r.changeYTD} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {i < safeRows.length - 1 ? (
+                  <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
+                ) : null}
+              </div>
+            );
+          })}
         </div>
       </div>
     </ScreenerTableScroll>

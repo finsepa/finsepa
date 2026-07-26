@@ -55,17 +55,17 @@ function entriesFromCards(cards: IndexCardData[]): IndexEntry[] {
 }
 
 export const INDEX_CARDS_GRID_CLASS =
-  "flex w-max flex-nowrap gap-3 md:grid md:w-full md:max-w-full md:grid-cols-3 md:gap-4 lg:grid-cols-4 xl:grid-cols-5";
+  "flex w-max flex-nowrap gap-3 md:grid md:w-full md:max-w-full md:grid-cols-3 md:gap-3 lg:grid-cols-4 xl:grid-cols-5";
 
-/** Outer shell — keeps vertical overflow visible so card shadows are not clipped. */
-export const INDEX_CARDS_SCROLL_OUTER_CLASS = "mb-4 overflow-visible sm:mb-5 md:mb-6";
+/** Outer shell — keeps vertical overflow visible so cards aren’t clipped. */
+export const INDEX_CARDS_SCROLL_OUTER_CLASS = "mb-5 overflow-visible";
 
 /** Horizontal scroll track — bleed right for peek; keep left inset with page gutter. */
 export const INDEX_CARDS_SCROLL_CLASS =
   "-mr-4 pl-1 pr-4 pt-1 mobile-scroll-x md:mx-0 md:overflow-visible md:pl-0 md:pr-0 md:pb-0 md:pt-0 md:mb-0";
 
 export const INDEX_CARD_SURFACE_CLASS = cn(
-  "flex w-[7.25625rem] shrink-0 flex-col items-start gap-0.5 max-md:py-3.5 overflow-hidden px-3 py-3 transition max-md:overflow-visible md:gap-1 md:hover:shadow-[0px_2px_6px_0px_rgba(10,10,10,0.08)] sm:px-4 sm:py-4 md:w-auto md:min-w-0 md:shrink",
+  "flex w-[7.25625rem] shrink-0 flex-col items-start gap-0.5 max-md:py-3.5 overflow-hidden px-3 py-3 transition max-md:overflow-visible md:gap-1 sm:px-4 sm:py-4 md:w-auto md:min-w-0 md:shrink",
   MOBILE_ELEVATED_CARD_CLASS,
 );
 
@@ -132,12 +132,12 @@ export function IndexCards({
           const TrendIcon = neutral ? null : positive ? ArrowUp : ArrowDown;
           return (
             <div key={name} className={INDEX_CARD_SURFACE_CLASS}>
-              <p className="w-full truncate text-left text-[13px] font-medium leading-4 text-[#0F0F0F] sm:text-[14px] sm:leading-5">
+              <p className="w-full truncate text-left text-[14px] font-medium leading-5 text-[#5C5D5F]">
                 {name}
               </p>
               <FadeIn show={fadeIn}>
                 <p
-                  className="w-full truncate text-left text-[15px] font-bold leading-5 tabular-nums text-[#0F0F0F] sm:text-base sm:leading-6"
+                  className="w-full truncate text-left text-[15px] font-bold leading-5 tabular-nums text-[#141414] sm:text-base sm:leading-6"
                   suppressHydrationWarning
                 >
                   {value}
@@ -146,7 +146,7 @@ export function IndexCards({
               <FadeIn show={fadeIn}>
                 <div
                   className={`flex w-full items-center gap-1 text-left text-[13px] font-medium leading-4 tabular-nums sm:text-[14px] sm:leading-5 ${
-                    neutral ? "text-[#71717A]" : positive ? "text-[#16A34A]" : "text-[#DC2626]"
+                    neutral ? "text-[#5C5D5F]" : positive ? "text-[#16A34A]" : "text-[#DC2626]"
                   }`}
                   suppressHydrationWarning
                 >

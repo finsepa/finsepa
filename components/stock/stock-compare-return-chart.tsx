@@ -344,7 +344,7 @@ export function StockCompareReturnChart({ primaryTicker, comparePicks, range, he
       autoSize: false,
       layout: {
         background: { type: ColorType.Solid, color: "#00000000" },
-        textColor: "#71717A",
+        textColor: "#5C5D5F",
         fontSize: 11,
         fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
         attributionLogo: false,
@@ -364,7 +364,7 @@ export function StockCompareReturnChart({ primaryTicker, comparePicks, range, he
       crosshair: {
         mode: CrosshairMode.Magnet,
         vertLine: {
-          color: "rgba(15, 15, 15, 0.28)",
+          color: "rgba(20, 20, 20, 0.28)",
           labelVisible: false,
           width: 1,
           style: LineStyle.Dashed,
@@ -597,7 +597,7 @@ export function StockCompareReturnChart({ primaryTicker, comparePicks, range, he
       }}
     >
       <div className="relative min-h-0 min-w-0 flex-1" style={{ height: plotHeight }}>
-        <div className="pointer-events-none absolute inset-0 z-0 max-md:bg-[#FAFAFA] bg-white" aria-hidden>
+        <div className="pointer-events-none absolute inset-0 z-0 bg-[#FCFCFD]" aria-hidden>
           <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
         </div>
         <div
@@ -609,7 +609,7 @@ export function StockCompareReturnChart({ primaryTicker, comparePicks, range, he
         />
         {hoverPoint && ready && !loading ? (
           <div
-            className="pointer-events-none absolute inset-y-0 right-0 z-[15] max-md:bg-[#FAFAFA]/55 bg-white/55"
+            className="pointer-events-none absolute inset-y-0 right-0 z-[15] bg-[#FCFCFD]/55"
             style={{ left: Math.max(0, hoverPoint.x) }}
             aria-hidden
           />
@@ -644,7 +644,7 @@ export function StockCompareReturnChart({ primaryTicker, comparePicks, range, he
           </div>
         ) : null}
         {empty ? (
-          <div className="absolute inset-0 z-20 flex items-center justify-center px-6 text-center text-[14px] text-[#71717A]">
+          <div className="absolute inset-0 z-20 flex items-center justify-center px-6 text-center text-[14px] text-[#5C5D5F]">
             {emptyMessage()}
           </div>
         ) : null}
@@ -663,7 +663,7 @@ export function StockCompareReturnChart({ primaryTicker, comparePicks, range, he
               });
               return (
             <span
-              className={`absolute bottom-1 inline-block whitespace-nowrap font-['Inter'] text-[11px] font-medium tabular-nums leading-none text-[#0F0F0F] sm:text-[12px] ${periodAxisLabelMaxWidthClass(anchor)} ${periodAxisLabelTransformClass(anchor)}`}
+              className={`absolute bottom-1 inline-block whitespace-nowrap font-['Inter'] text-[11px] font-medium tabular-nums leading-none text-[#141414] sm:text-[12px] ${periodAxisLabelMaxWidthClass(anchor)} ${periodAxisLabelTransformClass(anchor)}`}
               style={periodAxisLabelLayoutStyle(hoverAxisLabel.leftPx, anchor)}
             >
               {hoverAxisLabel.label}
@@ -676,7 +676,7 @@ export function StockCompareReturnChart({ primaryTicker, comparePicks, range, he
               return (
               <span
                 key={lab.key}
-                className={`absolute bottom-1 inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px] ${periodAxisLabelMaxWidthClass(anchor)} ${periodAxisLabelTransformClass(anchor)}`}
+                className={`absolute bottom-1 inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#5C5D5F] sm:text-[12px] ${periodAxisLabelMaxWidthClass(anchor)} ${periodAxisLabelTransformClass(anchor)}`}
                 style={periodAxisLabelLayoutStyle(lab.leftPx, anchor)}
               >
                 {lab.label}

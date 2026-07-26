@@ -170,12 +170,12 @@ export function EarningsOverflowHoverMenu({
                   aria-live="polite"
                   aria-label="Loading companies"
                 >
-                  <Spinner className="size-5 text-[#71717A]" />
+                  <Spinner className="size-5 text-[#5C5D5F]" />
                 </div>
               ) : error && displayItems.length === 0 ? (
                 <p className="px-3 py-2 text-[12px] text-[#DC2626]">Could not load</p>
               ) : displayItems.length === 0 ? (
-                <p className="px-3 py-2 text-[12px] text-[#71717A]">No companies</p>
+                <p className="px-3 py-2 text-[12px] text-[#5C5D5F]">No companies</p>
               ) : (
                 <ul className="grid grid-cols-3 gap-1">
                   {displayItems.map((item) => (
@@ -183,7 +183,7 @@ export function EarningsOverflowHoverMenu({
                       <button
                         type="button"
                         role="option"
-                        className="flex w-full flex-col items-center justify-center gap-1.5 rounded-xl px-1 py-1.5 text-center transition-colors hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/10"
+                        className="flex w-full flex-col items-center justify-center gap-1.5 rounded-xl px-1 py-1.5 text-center transition-colors hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/10"
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => {
                           onOpenCard(item);
@@ -199,7 +199,7 @@ export function EarningsOverflowHoverMenu({
                           size="md"
                           fill
                         />
-                        <span className="w-full min-w-0 truncate text-[13px] font-semibold leading-5 tabular-nums text-[#0F0F0F]">
+                        <span className="w-full min-w-0 truncate text-[13px] font-semibold leading-5 tabular-nums text-[#141414]">
                           {item.ticker}
                         </span>
                       </button>

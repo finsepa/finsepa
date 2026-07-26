@@ -56,7 +56,7 @@ function formatLastUpdateLabel(ymd: string | null): string {
 function ProfileHeaderDescription({ text }: { text: string }) {
   if (!text.trim()) return null;
   return (
-    <p className="mt-4 max-w-3xl text-[14px] font-normal leading-5 text-[#71717A] sm:mt-5">{text}</p>
+    <p className="mt-4 max-w-3xl text-[14px] font-normal leading-5 text-[#5C5D5F] sm:mt-5">{text}</p>
   );
 }
 
@@ -72,20 +72,20 @@ function ProfileHeaderStats({
   return (
     <dl className="mt-4 flex w-full max-w-3xl flex-row items-stretch gap-0 sm:mt-5">
       <div className="flex min-w-0 flex-1 flex-col gap-1 border-r border-[#E4E4E7] pr-4 sm:pr-8">
-        <dt className="text-[13px] font-normal leading-5 text-[#71717A]">Size</dt>
-        <dd className="text-[16px] font-semibold leading-6 tabular-nums text-[#0F0F0F] sm:text-[20px] sm:leading-7">
+        <dt className="text-[13px] font-normal leading-5 text-[#5C5D5F]">Size</dt>
+        <dd className="text-[16px] font-semibold leading-6 tabular-nums text-[#141414] sm:text-[20px] sm:leading-7">
           {sizeLabel}
         </dd>
       </div>
       <div className="flex min-w-0 flex-1 flex-col gap-1 border-r border-[#E4E4E7] px-4 sm:px-8">
-        <dt className="text-[13px] font-normal leading-5 text-[#71717A]">No. of stocks</dt>
-        <dd className="text-[16px] font-semibold leading-6 tabular-nums text-[#0F0F0F] sm:text-[20px] sm:leading-7">
+        <dt className="text-[13px] font-normal leading-5 text-[#5C5D5F]">No. of stocks</dt>
+        <dd className="text-[16px] font-semibold leading-6 tabular-nums text-[#141414] sm:text-[20px] sm:leading-7">
           {stocksLabel}
         </dd>
       </div>
       <div className="flex min-w-0 flex-1 flex-col gap-1 pl-4 sm:pl-8">
-        <dt className="text-[13px] font-normal leading-5 text-[#71717A]">Last update</dt>
-        <dd className="text-[16px] font-semibold leading-6 text-[#0F0F0F] sm:text-[20px] sm:leading-7">
+        <dt className="text-[13px] font-normal leading-5 text-[#5C5D5F]">Last update</dt>
+        <dd className="text-[16px] font-semibold leading-6 text-[#141414] sm:text-[20px] sm:leading-7">
           {lastUpdateLabel}
         </dd>
       </div>
@@ -111,13 +111,13 @@ export function Superinvestor13fProfile({
   const showAllocationDonut = data.source !== "unavailable" && data.rows.length > 0;
 
   const breadcrumbLinkClass =
-    "min-w-0 truncate transition-colors hover:text-[#0F0F0F] hover:underline";
+    "min-w-0 truncate transition-colors hover:text-[#141414] hover:underline";
 
   return (
     <div className="relative min-w-0">
       <nav
         aria-label="Breadcrumb"
-        className="flex min-w-0 items-center px-4 py-3 text-[14px] text-[#71717A] max-md:border-b-0 md:border-b md:border-[#E4E4E7] sm:px-9"
+        className="flex min-w-0 items-center px-4 py-3 text-[14px] text-[#5C5D5F] max-md:border-b-0 md:border-b md:border-[#E4E4E7] sm:px-9"
       >
         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 sm:flex-nowrap">
           <Link href="/superinvestors" className={`shrink-0 ${breadcrumbLinkClass}`}>
@@ -126,7 +126,7 @@ export function Superinvestor13fProfile({
           <span className="shrink-0 select-none" aria-hidden>
             /
           </span>
-          <span className="min-w-0 truncate font-medium text-[#0F0F0F]" aria-current="page">
+          <span className="min-w-0 truncate font-medium text-[#141414]" aria-current="page">
             {breadcrumbCurrentLabel}
           </span>
         </div>
@@ -139,8 +139,8 @@ export function Superinvestor13fProfile({
           <div className="flex items-center gap-4">
             <SuperinvestorProfileAvatar src={avatarSrc?.trim() ?? ""} name={profileName} />
             <div className="min-w-0">
-              <h1 className="text-[24px] font-semibold leading-8 tracking-tight text-[#0F0F0F]">{profileName}</h1>
-              <p className="mt-0.5 text-[14px] font-normal leading-5 text-[#71717A]">
+              <h1 className="text-[24px] font-semibold leading-8 tracking-tight text-[#141414]">{profileName}</h1>
+              <p className="mt-0.5 text-[14px] font-normal leading-5 text-[#5C5D5F]">
                 {filerSubtitle(data.filerDisplayName)}
               </p>
             </div>
@@ -157,8 +157,8 @@ export function Superinvestor13fProfile({
         {/* Desktop — name + stats left, donut right */}
         <div className="hidden items-center justify-between gap-6 sm:flex">
           <div className="min-w-0 flex-1">
-            <h1 className="text-[24px] font-semibold leading-8 tracking-tight text-[#0F0F0F]">{profileName}</h1>
-            <p className="mt-0.5 text-[14px] font-normal leading-5 text-[#71717A]">
+            <h1 className="text-[24px] font-semibold leading-8 tracking-tight text-[#141414]">{profileName}</h1>
+            <p className="mt-0.5 text-[14px] font-normal leading-5 text-[#5C5D5F]">
               {filerSubtitle(data.filerDisplayName)}
             </p>
             <ProfileHeaderStats
@@ -180,7 +180,7 @@ export function Superinvestor13fProfile({
       </header>
 
       {data.source === "unavailable" ? (
-        <p className="mt-4 max-w-3xl text-sm text-[#71717A]">
+        <p className="mt-4 max-w-3xl text-sm text-[#5C5D5F]">
           13F holdings could not be loaded from the SEC right now. Try again later, or verify the filer has recent
           13F-HR filings.
         </p>

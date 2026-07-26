@@ -41,7 +41,7 @@ const pctFmt = new Intl.NumberFormat("en-US", {
 
 /** Matches `portfolio-holdings-table.tsx` company column. */
 const HOLDING_COMPANY_NAME_CLASS =
-  "truncate text-[14px] font-semibold leading-5 text-[#0F0F0F]";
+  "truncate text-[14px] font-semibold leading-5 text-[#141414]";
 
 const TD_BORDER = "border-b border-[#E4E4E7]";
 
@@ -95,7 +95,7 @@ function StatusBadge({ status }: { status: PortfolioDividendScheduleRow["status"
     <span
       className={cn(
         "inline-flex items-center gap-1.5 text-[12px] font-normal leading-4",
-        declared ? "text-[#2563EB]" : "text-[#71717A]",
+        declared ? "text-[#2563EB]" : "text-[#5C5D5F]",
       )}
     >
       <span
@@ -123,16 +123,16 @@ function DividendRowMobile({
         <CompanyLogo name={companyName} logoUrl={logo} symbol={row.symbol} />
         <div className="min-w-0">
           <div className={HOLDING_COMPANY_NAME_CLASS}>{companyName}</div>
-          <div className="truncate text-[12px] font-normal leading-4 text-[#71717A]">
+          <div className="truncate text-[12px] font-normal leading-4 text-[#5C5D5F]">
             {caption} · {formatShortDate(row.paymentDate)}
           </div>
         </div>
       </div>
       <div className="relative z-[1] min-w-0 shrink-0 text-right">
-        <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#0F0F0F]">
+        <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#141414]">
           {usd0.format(row.totalUsd)}
         </div>
-        <div className="mt-0.5 text-[12px] font-normal leading-4 tabular-nums text-[#71717A]">
+        <div className="mt-0.5 text-[12px] font-normal leading-4 tabular-nums text-[#5C5D5F]">
           {formatSharesQty(row.shares)} × {usd0.format(row.perShareUsd)}
         </div>
       </div>
@@ -158,12 +158,12 @@ function DividendDesktopRow({
           <CompanyLogo name={companyName} logoUrl={logo} symbol={row.symbol} />
           <div className="min-w-0 text-left">
             <div className={HOLDING_COMPANY_NAME_CLASS}>{companyName}</div>
-            <div className="truncate text-[12px] font-normal leading-4 text-[#71717A]">{caption}</div>
+            <div className="truncate text-[12px] font-normal leading-4 text-[#5C5D5F]">{caption}</div>
           </div>
         </div>
       </td>
       <td className={TD_NUMERIC}>
-        <div className="inline-flex w-full items-center justify-end gap-1 font-['Inter'] text-[14px] leading-5 tabular-nums text-[#0F0F0F]">
+        <div className="inline-flex w-full items-center justify-end gap-1 font-['Inter'] text-[14px] leading-5 tabular-nums text-[#141414]">
           {formatShortDate(row.paymentDate)}
           <Clock className="h-3.5 w-3.5 shrink-0 text-[#A1A1AA]" strokeWidth={1.75} aria-hidden />
         </div>
@@ -172,13 +172,13 @@ function DividendDesktopRow({
         </div>
       </td>
       <td className={TD_NUMERIC}>
-        <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#0F0F0F]">
+        <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#141414]">
           {usd0.format(row.totalUsd)}
         </div>
-        <div className="text-[12px] font-normal leading-4 tabular-nums text-[#71717A]">{breakdown}</div>
+        <div className="text-[12px] font-normal leading-4 tabular-nums text-[#5C5D5F]">{breakdown}</div>
       </td>
       <td className={TD_NUMERIC}>
-        <div className="font-['Inter'] text-[14px] font-medium leading-5 text-[#0F0F0F]">
+        <div className="font-['Inter'] text-[14px] font-medium leading-5 text-[#141414]">
           {row.frequencyLabel ?? "—"}
         </div>
         {row.growthPct != null && Number.isFinite(row.growthPct) ? (
@@ -191,20 +191,20 @@ function DividendDesktopRow({
             {row.growthPct >= 0 ? "▲" : "▼"} {pctFmt.format(Math.abs(row.growthPct))}%
           </div>
         ) : (
-          <div className="text-[12px] font-normal leading-4 text-[#71717A]">—</div>
+          <div className="text-[12px] font-normal leading-4 text-[#5C5D5F]">—</div>
         )}
       </td>
       <td className={TD_NUMERIC}>
-        <div className="font-['Inter'] text-[14px] font-medium leading-5 tabular-nums text-[#0F0F0F]">
+        <div className="font-['Inter'] text-[14px] font-medium leading-5 tabular-nums text-[#141414]">
           {row.yieldPct != null ? `${pctFmt.format(row.yieldPct)}%` : "—"}
         </div>
-        <div className="text-[12px] font-normal leading-4 text-[#71717A]">yield</div>
+        <div className="text-[12px] font-normal leading-4 text-[#5C5D5F]">yield</div>
       </td>
       <td className={TD_NUMERIC}>
-        <div className="font-['Inter'] text-[14px] font-medium leading-5 tabular-nums text-[#0F0F0F]">
+        <div className="font-['Inter'] text-[14px] font-medium leading-5 tabular-nums text-[#141414]">
           {row.exDividendDate ? formatShortDate(row.exDividendDate) : "—"}
         </div>
-        <div className="text-[12px] font-normal leading-4 text-[#71717A]">Ex-dividend date</div>
+        <div className="text-[12px] font-normal leading-4 text-[#5C5D5F]">Ex-dividend date</div>
       </td>
     </tr>
   );
@@ -223,7 +223,7 @@ function DividendsScheduleTables({
         {months.map((month) => (
           <section key={month.monthKey} className="mb-10 last:mb-0">
             <div className="mb-4 flex flex-wrap items-center gap-3">
-              <h3 className="text-xl font-semibold tracking-tight text-[#0F0F0F]">{month.label}</h3>
+              <h3 className="text-xl font-semibold tracking-tight text-[#141414]">{month.label}</h3>
               {month.totalUsd > 0 ? (
                 <span className="rounded-md bg-[#DCFCE7] px-2 py-0.5 text-[13px] font-semibold tabular-nums leading-5 text-[#16A34A]">
                   {formatSignedUsd(month.totalUsd)}
@@ -256,7 +256,7 @@ function DividendsScheduleTables({
                       monthIndex === 0 ? "pt-0" : "pt-10",
                     )}
                   >
-                    <h3 className="text-xl font-semibold tracking-tight text-[#0F0F0F]">{month.label}</h3>
+                    <h3 className="text-xl font-semibold tracking-tight text-[#141414]">{month.label}</h3>
                     {month.totalUsd > 0 ? (
                       <span className="rounded-md bg-[#DCFCE7] px-2 py-0.5 text-[13px] font-semibold tabular-nums leading-5 text-[#16A34A]">
                         {formatSignedUsd(month.totalUsd)}
@@ -265,7 +265,7 @@ function DividendsScheduleTables({
                   </div>
                 </td>
               </tr>
-              <tr className="min-h-[44px] bg-white text-[14px] leading-5 text-[#71717A]">
+              <tr className="min-h-[44px] bg-white text-[14px] leading-5 text-[#5C5D5F]">
                 <th scope="col" className={cn(TH_CLASS, "text-left")}>
                   Company
                 </th>
@@ -457,7 +457,7 @@ function PortfolioDividendsPanelInner({
   if (error) {
     return (
       <div className="flex min-h-[240px] items-center justify-center">
-        <p className="text-sm text-[#71717A]">{error}</p>
+        <p className="text-sm text-[#5C5D5F]">{error}</p>
       </div>
     );
   }

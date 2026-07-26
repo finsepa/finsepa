@@ -10,7 +10,7 @@ import {
 import { cn } from "@/lib/utils";
 
 const soonBadgeClass =
-  "ml-auto shrink-0 rounded-md border border-[#E4E4E7] bg-[#F4F4F5] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#71717A]";
+  "ml-auto shrink-0 rounded-md border border-[#E4E4E7] bg-[#F4F4F5] px-1.5 text-[11px] font-medium leading-4 normal-case text-[#5C5D5F]";
 
 const listVariants = {
   hidden: {},
@@ -41,16 +41,17 @@ function MoreNavRow({
   const active = protectedNavItemIsActive(item, pathname);
   const rowClass = cn(
     "flex min-h-[44px] w-full items-center gap-3 rounded-xl px-3 text-left text-[15px] font-medium leading-5 transition-colors",
-    item.available ? "text-[#0F0F0F]" : "cursor-not-allowed text-[#A1A1AA]",
+    item.available ? "text-[#141414]" : "cursor-not-allowed text-[#A1A1AA]",
     item.available && (active ? "bg-[#F4F4F5]" : "active:bg-neutral-100"),
   );
-  const iconClass = cn("h-5 w-5 shrink-0", item.available ? "text-[#0F0F0F]" : "text-[#A1A1AA]");
+  const iconClass = cn("h-5 w-5 shrink-0", item.available ? "text-[#141414]" : "text-[#A1A1AA]");
 
   if (item.available) {
     return (
       <Link prefetch={false} href={item.href} className={rowClass} onClick={() => onNavigate()}>
         <Icon className={iconClass} aria-hidden />
         <span className="min-w-0 flex-1 truncate">{item.label}</span>
+        {item.badge ? <span className={soonBadgeClass}>{item.badge}</span> : null}
       </Link>
     );
   }

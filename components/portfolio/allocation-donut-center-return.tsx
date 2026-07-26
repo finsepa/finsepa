@@ -31,10 +31,10 @@ export function formatAllocationReturnPct(pct: number | null | undefined): strin
 }
 
 export function allocationReturnToneClass(pct: number | null | undefined): string {
-  if (pct == null || !Number.isFinite(pct)) return "text-[#71717A]";
+  if (pct == null || !Number.isFinite(pct)) return "text-[#5C5D5F]";
   if (pct > 0) return "text-[#16A34A]";
   if (pct < 0) return "text-[#DC2626]";
-  return "text-[#0F0F0F]";
+  return "text-[#141414]";
 }
 
 function PeriodTrigger({
@@ -51,9 +51,9 @@ function PeriodTrigger({
 
   if (!interactive || !onPeriodChange) {
     return (
-      <span className="inline-flex items-center gap-0.5 text-[12px] font-medium leading-4 text-[#71717A]">
+      <span className="inline-flex items-center gap-0.5 text-[12px] font-medium leading-4 text-[#5C5D5F]">
         {allocationReturnPeriodLabel(period)}
-        <ChevronDown className="h-3 w-3 shrink-0 text-[#71717A]" strokeWidth={2} aria-hidden />
+        <ChevronDown className="h-3 w-3 shrink-0 text-[#5C5D5F]" strokeWidth={2} aria-hidden />
       </span>
     );
   }
@@ -67,11 +67,11 @@ function PeriodTrigger({
         aria-expanded={open}
         aria-haspopup="listbox"
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex items-center gap-0.5 rounded-md px-0.5 py-0.5 text-[12px] font-medium leading-4 text-[#71717A] outline-none transition-colors hover:bg-[#F4F4F5] focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/10"
+        className="inline-flex items-center gap-0.5 rounded-md px-0.5 py-0.5 text-[12px] font-medium leading-4 text-[#5C5D5F] outline-none transition-colors hover:bg-[#F4F4F5] focus-visible:ring-2 focus-visible:ring-[#141414]/10"
       >
         {allocationReturnPeriodLabel(period)}
         <ChevronDown
-          className={cn("h-3 w-3 shrink-0 text-[#71717A] transition-transform", open && "rotate-180")}
+          className={cn("h-3 w-3 shrink-0 text-[#5C5D5F] transition-transform", open && "rotate-180")}
           strokeWidth={2}
           aria-hidden
         />
@@ -109,7 +109,7 @@ function PeriodTrigger({
                 </span>
                 <span className="flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden>
                   <Check
-                    className={cn("h-4 w-4 text-[#0F0F0F]", !selected && "invisible")}
+                    className={cn("h-4 w-4 text-[#141414]", !selected && "invisible")}
                     strokeWidth={2}
                   />
                 </span>

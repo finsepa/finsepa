@@ -7,6 +7,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 
 import { DWELL_TOOLTIP_DELAY_MS } from "@/components/layout/topbar-delayed-tooltip";
 import {
+  protectedAgentItem,
   protectedCalendarItems,
   protectedCommunityItems,
   protectedDataItems,
@@ -24,7 +25,7 @@ import {
 import { cn } from "@/lib/utils";
 
 const soonBadgeClass =
-  "shrink-0 rounded-md border border-[#E4E4E7] bg-[#F4F4F5] px-1 py-px text-[10px] font-semibold uppercase tracking-wide text-[#71717A]";
+  "shrink-0 rounded-md border border-[#E4E4E7] bg-[#F4F4F5] px-1.5 text-[11px] font-medium leading-4 normal-case text-[#5C5D5F]";
 
 type NavItem = ProtectedNavItem;
 
@@ -125,10 +126,10 @@ function CollapsedRailTooltip({
         role="tooltip"
       >
         <span
-          className="h-0 w-0 shrink-0 self-center border-y-[5px] border-r-[6px] border-y-transparent border-r-[#0F0F0F]"
+          className="h-0 w-0 shrink-0 self-center border-y-[5px] border-r-[6px] border-y-transparent border-r-[#141414]"
           aria-hidden
         />
-        <span className="whitespace-nowrap rounded-md bg-[#0F0F0F] px-2.5 py-1.5 text-xs font-medium leading-4 text-white">
+        <span className="whitespace-nowrap rounded-md bg-[#141414] px-2.5 py-1.5 text-xs font-medium leading-4 text-white">
           {label}
         </span>
       </div>
@@ -137,7 +138,7 @@ function CollapsedRailTooltip({
   return (
     <div
       ref={enabled ? rootRef : undefined}
-      className={cn(enabled && "relative flex w-full")}
+      className={enabled ? "relative flex w-full" : undefined}
       onPointerEnter={enabled ? scheduleShow : undefined}
       onPointerLeave={enabled ? hide : undefined}
       onPointerDown={enabled ? cancelPendingAndHide : undefined}
@@ -151,7 +152,14 @@ function CollapsedRailTooltip({
 }
 
 function SidebarRow({ item, pathname, collapsed }: { item: NavItem; pathname: string; collapsed: boolean }) {
-  const isActive = protectedNavItemIsActive(item, pathname);
+  const [hasMounted, setHasMounted] = useState(false);
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
+
+  // Defer active styling until after mount so SSR and the first client paint match when
+  // `usePathname()` differs (rewrites / soft routing). Avoids Link className hydration errors.
+  const isActive = hasMounted && protectedNavItemIsActive(item, pathname);
   const Icon = item.icon;
   const tooltipLabel = item.available ? item.label : `${item.label} (Soon)`;
 
@@ -159,9 +167,8 @@ function SidebarRow({ item, pathname, collapsed }: { item: NavItem; pathname: st
     "flex h-9 shrink-0 items-center gap-2 overflow-hidden rounded-lg py-2 text-sm font-medium leading-5",
     SIDEBAR_CONTENT_MOTION_CLASS,
     collapsed ? "w-[calc(100%+5px)] -mr-[5px] pl-4 pr-[11px]" : "w-full px-4",
-    item.available ? "text-[#0F0F0F]" : "cursor-not-allowed text-[#A1A1AA] select-none",
-    item.available &&
-      (isActive ? "bg-white" : "opacity-70 hover:bg-[#EBEBEB]"),
+    item.available ? "text-[#141414]" : "cursor-not-allowed text-[#A1A1AA] select-none",
+    item.available && (isActive ? "bg-[#E6E6E6]" : "opacity-70 hover:bg-[#E6E6E6]/70"),
   );
 
   const labelWrapClass = cn(
@@ -170,20 +177,31 @@ function SidebarRow({ item, pathname, collapsed }: { item: NavItem; pathname: st
     collapsed ? "max-w-0 flex-none opacity-0" : "max-w-[12rem] flex-1 opacity-100",
   );
 
-  const iconClass = cn("h-5 w-5 shrink-0", item.available ? "text-[#0F0F0F]" : "text-[#A1A1AA]");
+  const iconClass = cn("h-5 w-5 shrink-0", item.available ? "text-[#141414]" : "text-[#A1A1AA]");
 
   const content =
     item.available ? (
-      <Link prefetch={false} href={item.href} className={rowClass}>
-        <Icon className={iconClass} />
-        <span className={labelWrapClass}>
+      <Link prefetch={false} href={item.href} className={rowClass} suppressHydrationWarning>
+        <Icon className={iconClass} suppressHydrationWarning />
+        <span className={labelWrapClass} suppressHydrationWarning>
           <span className="min-w-0 flex-1 truncate">{item.label}</span>
+          {item.badge ? (
+            <span
+              className={cn(
+                soonBadgeClass,
+                SIDEBAR_CONTENT_MOTION_CLASS,
+                collapsed ? "max-w-0 opacity-0" : "max-w-[3rem] opacity-100",
+              )}
+            >
+              {item.badge}
+            </span>
+          ) : null}
         </span>
       </Link>
     ) : (
-      <div className={rowClass} aria-disabled="true">
-        <Icon className={iconClass} />
-        <span className={labelWrapClass}>
+      <div className={rowClass} aria-disabled="true" suppressHydrationWarning>
+        <Icon className={iconClass} suppressHydrationWarning />
+        <span className={labelWrapClass} suppressHydrationWarning>
           <span className="min-w-0 flex-1 truncate">{item.label}</span>
           <span
             className={cn(
@@ -350,8 +368,9 @@ export function Sidebar() {
 
   return (
     <aside
+      suppressHydrationWarning
       className={cn(
-        "flex h-full min-h-0 shrink-0 flex-col bg-[#F4F4F5] max-md:rounded-[4px] max-md:py-2 md:rounded-none md:pb-2 md:pt-[var(--shell-desktop-padding-top)]",
+        "flex h-full min-h-0 shrink-0 flex-col bg-[#F3F3F4] max-md:rounded-[4px] max-md:py-2 md:rounded-none md:pb-2 md:pt-[var(--shell-desktop-padding-top)]",
         SIDEBAR_WIDTH_MOTION_CLASS,
         collapsed ? "w-full overflow-visible" : "w-[240px] overflow-y-auto overflow-x-hidden",
       )}
@@ -367,6 +386,9 @@ export function Sidebar() {
           collapsed ? "overflow-y-auto overflow-x-visible" : "",
         )}
       >
+        <div className={cn("space-y-0.5", collapsed && "flex flex-col items-center")}>
+          <SidebarRow item={protectedAgentItem} pathname={pathname} collapsed={collapsed} />
+        </div>
         <SidebarSection title="Markets" items={protectedMarketItems} pathname={pathname} collapsed={collapsed} />
         <SidebarSection title="Calendar" items={protectedCalendarItems} pathname={pathname} collapsed={collapsed} />
         <SidebarSection title="Data" items={protectedDataItems} pathname={pathname} collapsed={collapsed} />

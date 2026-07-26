@@ -1,17 +1,30 @@
 "use client";
 
 import { Suspense, useMemo } from "react";
+import dynamic from "next/dynamic";
 import { LineChart } from "@/lib/icons";
 import { useSearchParams } from "next/navigation";
 
 import { AssetPageTopLoader } from "@/components/layout/asset-page-top-loader";
 import { ComparisonEmptyToolbar } from "@/components/comparison/comparison-empty-toolbar";
-import { ComparisonWorkspace } from "@/components/comparison/comparison-workspace";
 import type { StockPageInitialData } from "@/lib/market/stock-page-initial-data";
 import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
 import { capComparisonTickers } from "@/lib/comparison/comparison-session";
 import { isComparisonSessionReady, parseChartingTickerList } from "@/lib/market/stock-charting-metrics";
+import { ChartLoadingIndicator } from "@/components/ui/chart-loading-indicator";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
+
+const ComparisonWorkspace = dynamic(
+  () => import("@/components/comparison/comparison-workspace").then((m) => m.ComparisonWorkspace),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex min-h-[min(50vh,420px)] w-full flex-col rounded-xl border border-[#E4E4E7] bg-white p-4 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
+        <ChartLoadingIndicator className="min-h-0 flex-1" />
+      </div>
+    ),
+  },
+);
 
 type Props = {
   tickers: string[];

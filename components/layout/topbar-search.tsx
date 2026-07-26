@@ -25,12 +25,12 @@ const MOBILE_MAX_WIDTH_MQ = "(max-width: 767px)";
 
 const SEARCH_ICON_SIZE_PX = 20;
 const SEARCH_ICON_GAP_PX = 8;
-/** Icon inset inside the pill when collapsed (`pl-4`). */
-const SEARCH_ICON_INSET_PX = 16;
+/** Icon inset inside the pill when collapsed (`pl-3` / 12px — matches button horizontal padding). */
+const SEARCH_ICON_INSET_PX = 12;
 /** Room for icon + gap before placeholder text when collapsed (icon inset is on the shell). */
 const SEARCH_INPUT_COLLAPSED_PL_PX =
   SEARCH_ICON_INSET_PX + SEARCH_ICON_SIZE_PX + SEARCH_ICON_GAP_PX;
-/** Active: icon animates out — text aligns with shell `pl-4`. */
+/** Active: icon animates out — text aligns with shell `pl-3`. */
 const SEARCH_INPUT_OPEN_PL_PX = SEARCH_ICON_INSET_PX;
 /** Collapsed: reserve the trailing shortcut chip (`right-3` + 28px control). */
 const SEARCH_SHORTCUT_RESERVE_PX = 44;
@@ -133,15 +133,15 @@ export function TopbarSearch() {
         role="search"
         data-open={open ? "true" : "false"}
         className={cn(
-          "relative flex h-9 min-w-0 w-full cursor-text items-center overflow-hidden rounded-lg bg-[#EDEDEF] pl-4 pr-3 md:bg-[#F4F4F5]",
+          "relative flex h-9 min-w-0 w-full cursor-text items-center overflow-hidden rounded-lg bg-[#F1F1F2] pl-3 pr-3",
           "transition-colors motion-reduce:transition-none",
-          !open && "hover:bg-[#EBEBEB]",
+          !open && "hover:bg-[#E6E6E7]",
         )}
         style={motionStyle}
         onPointerDown={handleSearchShellPointerDown}
       >
         <span
-          className="pointer-events-none absolute top-1/2 z-10 flex h-5 w-5 items-center justify-center text-[#0F0F0F] motion-reduce:transition-none"
+          className="pointer-events-none absolute top-1/2 z-10 flex h-5 w-5 items-center justify-center text-[#141414] motion-reduce:transition-none"
           style={{
             left: SEARCH_ICON_INSET_PX,
             ...motionStyle,
@@ -166,7 +166,7 @@ export function TopbarSearch() {
           onChange={(e) => panel.setQuery(e.target.value)}
           placeholder="Search..."
           className={cn(
-            "absolute inset-0 z-[1] h-full w-full min-w-0 cursor-text bg-transparent text-sm leading-5 text-[#0F0F0F] outline-none placeholder:text-[#A1A1AA] caret-[#0F0F0F] read-only:cursor-text transition-[padding] motion-reduce:transition-none",
+            "absolute inset-0 z-[1] h-full w-full min-w-0 cursor-text bg-transparent text-sm leading-5 text-[#141414] outline-none placeholder:text-[#A1A1AA] caret-[#141414] read-only:cursor-text transition-[padding] motion-reduce:transition-none",
             !open && "pointer-events-none",
           )}
           style={{
@@ -210,9 +210,9 @@ export function TopbarSearch() {
               close();
             }}
             className={cn(
-              "pointer-events-auto absolute inset-0 flex items-center justify-center rounded-md text-[#71717A]",
+              "pointer-events-auto absolute inset-0 flex items-center justify-center rounded-md text-[#5C5D5F]",
               "transition-opacity motion-reduce:transition-none",
-              "hover:bg-[#EBEBEB] hover:text-[#0F0F0F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/10",
+              "hover:bg-[#EBEBEB] hover:text-[#141414] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/10",
               open ? "opacity-100" : "opacity-0",
             )}
             style={motionStyle}

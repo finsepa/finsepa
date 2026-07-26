@@ -75,7 +75,7 @@ export function DeleteTransactionConfirmModal({ transaction, onClose, onConfirmD
           </AppModalFooter>
         }
       >
-        <p className="text-sm leading-5 text-[#0F0F0F]">
+        <p className="text-sm leading-5 text-[#141414]">
           Remove this{" "}
           <span className="font-semibold">
             {transaction.operation}
@@ -86,7 +86,7 @@ export function DeleteTransactionConfirmModal({ transaction, onClose, onConfirmD
           </span>{" "}
           on {dateLabel}?
         </p>
-        <p className="mt-3 text-sm leading-5 text-[#71717A]">
+        <p className="mt-3 text-sm leading-5 text-[#5C5D5F]">
           Your portfolio value and holdings will be recalculated without this row.
         </p>
       </AppModalShell>
@@ -156,10 +156,10 @@ export function BulkDeleteTransactionsConfirmModal({ count, onClose, onConfirmDe
           </AppModalFooter>
         }
       >
-        <p className="text-sm leading-5 text-[#0F0F0F]">
+        <p className="text-sm leading-5 text-[#141414]">
           Permanently remove <span className="font-semibold">{label}</span> from this portfolio?
         </p>
-        <p className="mt-3 text-sm leading-5 text-[#71717A]">
+        <p className="mt-3 text-sm leading-5 text-[#5C5D5F]">
           Your portfolio value and holdings will be recalculated without these rows.
         </p>
       </AppModalShell>

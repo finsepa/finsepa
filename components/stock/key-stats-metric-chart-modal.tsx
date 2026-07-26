@@ -42,7 +42,7 @@ import {
   type FundamentalsChartTimeRange,
 } from "@/lib/market/fundamentals-chart-time-range";
 import { ChartScreenshotDownloadModal } from "@/components/chart/chart-screenshot-download-modal";
-import type { ChartType } from "@/components/charting/charting-workspace";
+import type { ChartType } from "@/components/charting/charting-time-range";
 import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
 import { MOBILE_MODAL_SHEET_OVERLAY_CLASS } from "@/components/ui/mobile-bottom-sheet";
 import { AppModalShell } from "@/components/ui/app-modal-shell";
@@ -475,7 +475,7 @@ export function KeyStatsMetricChartModal({
       return <AssetChartSkeleton heightPx={chartHeight} className="w-full min-w-0" />;
     }
     if (!hasSeries) {
-      return <p className="text-[14px] leading-6 text-[#71717A]">No data for this metric.</p>;
+      return <p className="text-[14px] leading-6 text-[#5C5D5F]">No data for this metric.</p>;
     }
     return (
       <div className="min-w-0">
@@ -499,7 +499,7 @@ export function KeyStatsMetricChartModal({
           showBrandWatermark
         />
         {!isMobile && metricId === "forward_pe" ? (
-          <p className="mt-3 text-[12px] leading-5 text-[#71717A]">
+          <p className="mt-3 text-[12px] leading-5 text-[#5C5D5F]">
             Live forward P/E in Key Stats uses current price and consensus EPS. Historical fiscal rows
             rarely include that forward multiple; when it is missing, the bar uses trailing P/E for the
             same period so year-to-year comparisons stay available.
@@ -581,11 +581,11 @@ export function KeyStatsMetricChartModal({
         <div className="flex w-full flex-col items-center gap-1 text-center">
           <h2
             id="key-stats-metric-chart-title"
-            className="text-[16px] font-semibold leading-6 text-[#0F0F0F]"
+            className="text-[16px] font-semibold leading-6 text-[#141414]"
           >
             {metricTitle}
           </h2>
-          <p className="text-[11px] leading-4 text-[#71717A]">{mobileSubtitle}</p>
+          <p className="text-[11px] leading-4 text-[#5C5D5F]">{mobileSubtitle}</p>
         </div>
       </div>
       <div className="min-h-0 flex-1 touch-pan-y overflow-x-hidden overflow-y-auto px-4 py-2">
@@ -627,13 +627,13 @@ export function KeyStatsMetricChartModal({
             className="!rounded-xl"
           />
           <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <span className="shrink-0 text-[18px] font-semibold leading-7 text-[#0F0F0F]">
+            <span className="shrink-0 text-[18px] font-semibold leading-7 text-[#141414]">
               {metricTitle}
             </span>
             {companyLine ? (
-              <span className="min-w-0 truncate text-[14px] leading-5 text-[#71717A]">{companyLine}</span>
+              <span className="min-w-0 truncate text-[14px] leading-5 text-[#5C5D5F]">{companyLine}</span>
             ) : (
-              <span className="min-w-0 truncate text-[14px] leading-5 text-[#71717A]">{ticker}</span>
+              <span className="min-w-0 truncate text-[14px] leading-5 text-[#5C5D5F]">{ticker}</span>
             )}
           </span>
         </div>

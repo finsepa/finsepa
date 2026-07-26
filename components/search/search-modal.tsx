@@ -209,20 +209,20 @@ export function SearchModal({
                 : "flex w-full items-center gap-3"
             }
           >
-            <Search className="h-5 w-5 shrink-0 text-[#71717A]" />
+            <Search className="h-5 w-5 shrink-0 text-[#5C5D5F]" />
             <input
               ref={inputRef}
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search Apple, NVIDIA, Bitcoin, Ethereum, S&P 500…"
-              className="flex-1 bg-transparent text-[15px] leading-6 text-[#0F0F0F] outline-none placeholder:text-[#A1A1AA]"
+              className="flex-1 bg-transparent text-[15px] leading-6 text-[#141414] outline-none placeholder:text-[#A1A1AA]"
               autoComplete="off"
               autoCorrect="off"
             />
             <kbd
               onClick={onClose}
-              className="cursor-pointer select-none rounded-lg border border-[#E4E4E7] bg-[#F4F4F5] px-2 py-1 text-[12px] font-medium text-[#71717A] transition-colors hover:bg-[#E4E4E7]"
+              className="cursor-pointer select-none rounded-lg border border-[#E4E4E7] bg-[#F4F4F5] px-2 py-1 text-[12px] font-medium text-[#5C5D5F] transition-colors hover:bg-[#E4E4E7]"
             >
               ESC
             </kbd>

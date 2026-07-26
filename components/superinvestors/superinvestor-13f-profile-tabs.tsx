@@ -113,7 +113,7 @@ export function Superinvestor13fProfileTabs({
       {tab === "holdings" ? (
           <>
             {!data.hasPriorFiling && data.source !== "unavailable" ? (
-              <p className="mb-4 max-w-3xl text-sm text-[#71717A]">
+              <p className="mb-4 max-w-3xl text-sm text-[#5C5D5F]">
                 Only one 13F-HR filing appears in the SEC feed; change badges and prior columns are hidden until a
                 second filing is available.
               </p>

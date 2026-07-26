@@ -10,22 +10,22 @@ export const APP_MODAL_SHELL_SHADOW_CLASS =
   "shadow-[0px_10px_16px_-3px_rgba(10,10,10,0.1),0px_4px_6px_0px_rgba(10,10,10,0.04)]";
 
 export const APP_MODAL_SHELL_OUTER_CLASS = cn(
-  "rounded-2xl bg-[#F4F4F5] p-1",
+  "rounded-2xl bg-[#F3F3F4] p-1",
   APP_MODAL_SHELL_SHADOW_CLASS,
 );
 
 export const APP_MODAL_SHELL_CARD_CLASS =
-  "flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[#E4E4E7] bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]";
+  "flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[#EBEBEC] bg-[#FCFCFD] shadow-[0px_1px_2px_0px_rgba(0,0,0,0.04)]";
 
-export const APP_MODAL_TITLE_CLASS = "text-base font-semibold leading-7 text-[#0F0F0F]";
+export const APP_MODAL_TITLE_CLASS = "text-base font-semibold leading-7 text-[#141414]";
 
 export const appModalCancelButtonClass =
-  "inline-flex min-h-9 shrink-0 items-center justify-center rounded-[10px] bg-[#F4F4F5] px-4 py-2 text-sm font-medium text-[#0F0F0F] transition-colors hover:bg-[#EBEBEB] disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex min-h-9 shrink-0 items-center justify-center rounded-[10px] bg-[#F4F4F5] px-4 py-2 text-sm font-medium text-[#141414] transition-colors hover:bg-[#EBEBEB] disabled:cursor-not-allowed disabled:opacity-50";
 
 export function appModalPrimaryButtonClass(enabled: boolean) {
   return cn(
     "inline-flex min-h-9 shrink-0 items-center justify-center rounded-[10px] px-4 py-2 text-sm font-medium text-white transition-colors",
-    enabled ? "bg-[#0F0F0F] hover:bg-[#27272A]" : "cursor-not-allowed bg-[#A1A1AA] opacity-50",
+    enabled ? "bg-[#141414] hover:bg-[#27272A]" : "cursor-not-allowed bg-[#A1A1AA] opacity-50",
   );
 }
 
@@ -51,7 +51,7 @@ export function AppModalCloseButton({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "flex h-7 w-7 shrink-0 items-center justify-center rounded-[10px] text-[#0F0F0F] transition-colors hover:bg-[#EBEBEB] disabled:cursor-not-allowed disabled:opacity-40",
+        "flex h-7 w-7 shrink-0 items-center justify-center rounded-[10px] text-[#141414] transition-colors hover:bg-[#EBEBEB] disabled:cursor-not-allowed disabled:opacity-40",
         className,
       )}
       aria-label="Close"

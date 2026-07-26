@@ -70,7 +70,7 @@ function ProtectedAppChrome({
     <div
       id="app-shell-root"
       suppressHydrationWarning
-      className={cn("mobile-document-scroll-shell relative flex min-h-[var(--app-vh)] w-full flex-1 flex-col max-md:overflow-visible md:block md:h-dvh md:max-h-dvh md:flex-none md:overflow-hidden md:bg-[#F4F4F5]", MOBILE_PAGE_BACKGROUND_CLASS)}
+      className={cn("mobile-document-scroll-shell relative flex min-h-[var(--app-vh)] w-full flex-1 flex-col max-md:overflow-visible md:block md:h-dvh md:max-h-dvh md:flex-none md:overflow-hidden md:bg-[#F3F3F4]", MOBILE_PAGE_BACKGROUND_CLASS)}
     >
       <Suspense fallback={null}>
         <NavigationTopLoader />
@@ -79,7 +79,7 @@ function ProtectedAppChrome({
         suppressHydrationWarning
         className={cn(
           "fixed inset-y-0 left-0 z-20 hidden p-1 md:block md:p-0",
-          !collapsed && "md:border-r md:border-[#E4E4E7]",
+          !collapsed && "md:border-r md:border-[#EBEBEC]",
           SIDEBAR_WIDTH_MOTION_CLASS,
         )}
         style={{ width: leftOffset }}
@@ -94,7 +94,7 @@ function ProtectedAppChrome({
       <div
         suppressHydrationWarning
         className={cn(
-          "shell-desktop-chrome-column relative flex min-h-0 min-w-0 flex-1 flex-col max-md:min-h-[var(--app-vh)] md:fixed md:inset-y-0 md:right-0 md:bg-[#F4F4F5] md:pt-[var(--shell-desktop-padding-top)] md:pr-[var(--shell-desktop-padding-right)] md:pb-[var(--shell-desktop-padding-bottom)]",
+          "shell-desktop-chrome-column relative flex min-h-0 min-w-0 flex-1 flex-col max-md:min-h-[var(--app-vh)] md:fixed md:inset-y-0 md:right-0 md:bg-[#F3F3F4] md:pt-[var(--shell-desktop-padding-top)] md:pr-[var(--shell-desktop-padding-right)] md:pb-[var(--shell-desktop-padding-bottom)]",
           "md:pl-[var(--shell-desktop-padding-left)]",
           // Hover grow extends left past the chrome box — keep overflow visible and above the sidebar so the panel/topbar aren’t clipped.
           edgeHandleActive
@@ -123,7 +123,7 @@ function ProtectedAppChrome({
           <div
             suppressHydrationWarning
             className={cn(
-              "shell-desktop-panel__header mobile-topbar-shell z-30 min-w-0 w-full max-w-full shrink-0 max-md:bg-transparent max-md:shadow-none md:border-b md:border-[#E4E4E7] md:bg-white",
+              "shell-desktop-panel__header mobile-topbar-shell z-30 min-w-0 w-full max-w-full shrink-0 max-md:bg-transparent max-md:shadow-none md:border-b md:border-[#EBEBEC] md:bg-white",
             )}
           >
             <div aria-hidden className="mobile-topbar-blur-fade md:hidden" />
@@ -153,7 +153,9 @@ function ProtectedAppChrome({
               suppressHydrationWarning
               className={cn(
                 "relative z-0 min-h-0 min-w-0 w-full max-w-full flex-1 max-md:overflow-visible max-md:pb-[var(--mobile-bottom-nav-main-clearance)] md:overflow-x-hidden md:overflow-y-auto md:overscroll-y-contain md:bg-white",
-                MOBILE_PAGE_BACKGROUND_CLASS,
+                // Scope mobile grey to max-md so it cannot override desktop white
+                // (same token as Company / Metric rail).
+                "max-md:bg-[#FAFAFA]",
                 dropdownMenuFloatingScrollbarClassName,
                 mobileTopbarVariant === "stock" && MOBILE_STOCK_TOPBAR_OFFSET_CLASS,
                 mobileTopbarVariant === "stock" && "max-md:pt-[var(--mobile-topbar-offset)]",

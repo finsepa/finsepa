@@ -5,9 +5,19 @@ import { UserRound } from "@/lib/icons";
 import { Spinner } from "@/components/ui/spinner";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { MOBILE_PANEL_CARD_CLASS, STOCK_OVERVIEW_SECTION_HEADING_CLASS } from "@/components/design-system/card-surface-styles";
 import type { HoldingsTradeMarker, HoldingsTradeTooltipItem } from "@/components/chart/PriceChart";
 import { PriceChart } from "@/components/chart/PriceChart";
 import { SegmentedControl } from "@/components/design-system";
+import {
+  SCREENER_TABLE_DATA_ROW_CLASS,
+  SCREENER_TABLE_HEADER_STICKY_CLASS,
+  SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+  SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+  SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+  SCREENER_TABLE_STROKE_INSET_CLASS,
+  ScreenerTableScroll,
+} from "@/components/screener/screener-table-scroll";
 import {
   Empty,
   EmptyDescription,
@@ -18,10 +28,19 @@ import {
 import { SkeletonBox, TextSkeleton } from "@/components/markets/skeleton";
 import type { InsiderTransactionKind, InsiderTransactionRow } from "@/lib/market/insider-transactions-types";
 import type { StockChartRange } from "@/lib/market/stock-chart-types";
+import { cn } from "@/lib/utils";
 
-/** Column layout aligned with `screener-table`: `gap-x-2`, `px-4`, fixed date + flexible rights. */
+/** Column layout aligned with `screener-table`: `gap-x-2`, fixed date + flexible rights.
+ * `px-3` insets content inside the hover pill (Companies gets this from the star column + `pr-3`).
+ * Do not change `screener-table` — that layout starts with the star icon.
+ */
 const INSIDER_GRID =
-  "grid min-w-[900px] grid-cols-[148px_minmax(0,1.1fr)_minmax(0,1.1fr)_minmax(0,0.95fr)_minmax(0,1.05fr)_minmax(0,0.8fr)_minmax(0,0.9fr)] gap-x-2 px-4";
+  "grid min-w-[900px] grid-cols-[148px_minmax(0,1.1fr)_minmax(0,1.1fr)_minmax(0,0.95fr)_minmax(0,1.05fr)_minmax(0,0.8fr)_minmax(0,0.9fr)] gap-x-2 px-3";
+
+/**
+ * Outer inset to the hover surface — matches Financials / Reports (~16px from card edge).
+ */
+const INSIDER_ROW_PAD_CLASS = "px-4";
 
 const INSIDERS_CHART_RANGES = ["1Y", "5Y"] as const satisfies readonly StockChartRange[];
 
@@ -88,8 +107,8 @@ function InsiderPeriodCard({
   const buyPct = total > 0 ? (agg.buyCount / total) * 100 : 0;
 
   return (
-    <div className="rounded-xl border border-[#E4E4E7] bg-white p-4 shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)]">
-      <p className="mb-3 text-[13px] font-semibold leading-5 text-[#71717A]">{title}</p>
+    <div className={cn(MOBILE_PANEL_CARD_CLASS, "p-4")}>
+      <p className="mb-3 text-[13px] font-semibold leading-5 text-[#5C5D5F]">{title}</p>
       <div className="mb-4 flex h-2 w-full overflow-hidden rounded-full bg-[#F4F4F5]">
         {total === 0 ? (
           <div className="h-full w-full bg-[#E4E4E7]" />
@@ -104,7 +123,7 @@ function InsiderPeriodCard({
           </>
         )}
       </div>
-      <div className="mb-2 flex items-center justify-between text-[14px] font-medium leading-5 text-[#0F0F0F]">
+      <div className="mb-2 flex items-center justify-between text-[14px] font-medium leading-5 text-[#141414]">
         <span>
           {agg.sellCount} {agg.sellCount === 1 ? "Sell" : "Sells"}
         </span>
@@ -112,7 +131,7 @@ function InsiderPeriodCard({
           {agg.buyCount} {agg.buyCount === 1 ? "Buy" : "Buys"}
         </span>
       </div>
-      <div className="flex items-center justify-between text-[14px] font-normal leading-5 text-[#71717A]">
+      <div className="flex items-center justify-between text-[14px] font-normal leading-5 text-[#5C5D5F]">
         <span className="tabular-nums">{formatCardUsd(agg.sellValue)}</span>
         <span className="tabular-nums">{formatCardUsd(agg.buyValue)}</span>
       </div>
@@ -122,9 +141,9 @@ function InsiderPeriodCard({
 
 function InsiderSummaryCardsSkeleton() {
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
       {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="rounded-xl border border-[#E4E4E7] bg-white p-4">
+        <div key={i} className={cn(MOBILE_PANEL_CARD_CLASS, "p-4")}>
           <SkeletonBox className="mb-3 h-4 w-28 rounded" />
           <SkeletonBox className="mb-4 h-2 w-full rounded-full" />
           <div className="mb-2 flex justify-between">
@@ -187,54 +206,80 @@ function TransactionBadge({ kind }: { kind: InsiderTransactionKind }) {
 
 function InsidersTableSkeleton({ rows }: { rows: number }) {
   return (
-    <div className="divide-y divide-[#E4E4E7] border-t border-b border-[#E4E4E7]">
-      <div className={`${INSIDER_GRID} min-h-[44px] items-center bg-white py-0`}>
-        <div className="flex items-center justify-start gap-1">
-          <SkeletonBox className="h-3.5 w-10 rounded" />
-        </div>
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="flex justify-end">
-            <SkeletonBox className="h-3 w-16 rounded" />
+    <ScreenerTableScroll mobileScroll>
+      <div
+        className={cn(
+          SCREENER_TABLE_HEADER_STICKY_CLASS,
+          SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+          SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+          "md:border-b-0",
+        )}
+      >
+        <div className={INSIDER_ROW_PAD_CLASS}>
+          <div className={cn(INSIDER_GRID, "min-h-[44px] items-center py-0")}>
+            <div className="flex items-center justify-start gap-1">
+              <SkeletonBox className="h-3.5 w-10 rounded" />
+            </div>
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="flex justify-end">
+                <SkeletonBox className="h-3 w-16 rounded" />
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
+        <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
       </div>
       {Array.from({ length: rows }).map((_, ri) => (
-        <div
-          key={ri}
-          className={`${INSIDER_GRID} h-[60px] max-h-[60px] items-center bg-white transition-colors duration-75 hover:bg-neutral-50`}
-        >
-          <div className="flex justify-start">
-            <TextSkeleton wClass="w-24" />
+        <div key={ri} className={SCREENER_TABLE_DATA_ROW_CLASS}>
+          <div className={INSIDER_ROW_PAD_CLASS}>
+            <div
+              className={cn(
+                INSIDER_GRID,
+                "h-[60px] max-h-[60px] items-center",
+                SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+              )}
+            >
+              <div className="flex justify-start">
+                <TextSkeleton wClass="w-24" />
+              </div>
+              <div className="flex min-w-0 justify-end">
+                <TextSkeleton wClass="w-[70%] max-w-[140px]" />
+              </div>
+              <div className="flex min-w-0 justify-end">
+                <TextSkeleton wClass="w-[80%] max-w-[120px]" />
+              </div>
+              <div className="flex justify-end">
+                <SkeletonBox className="h-5 w-16 rounded-lg" />
+              </div>
+              <div className="flex justify-end">
+                <TextSkeleton wClass="w-20" />
+              </div>
+              <div className="flex justify-end">
+                <TextSkeleton wClass="w-14" />
+              </div>
+              <div className="flex justify-end">
+                <TextSkeleton wClass="w-12" />
+              </div>
+            </div>
           </div>
-          <div className="flex min-w-0 justify-end">
-            <TextSkeleton wClass="w-[70%] max-w-[140px]" />
-          </div>
-          <div className="flex min-w-0 justify-end">
-            <TextSkeleton wClass="w-[80%] max-w-[120px]" />
-          </div>
-          <div className="flex justify-end">
-            <SkeletonBox className="h-5 w-16 rounded-lg" />
-          </div>
-          <div className="flex justify-end">
-            <TextSkeleton wClass="w-20" />
-          </div>
-          <div className="flex justify-end">
-            <TextSkeleton wClass="w-14" />
-          </div>
-          <div className="flex justify-end">
-            <TextSkeleton wClass="w-12" />
-          </div>
+          {ri < rows - 1 ? <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden /> : null}
         </div>
       ))}
-    </div>
+    </ScreenerTableScroll>
   );
 }
 
-function InsiderRow({ row }: { row: InsiderTransactionRow }) {
+function InsiderRow({
+  row,
+  showDivider,
+}: {
+  row: InsiderTransactionRow;
+  showDivider: boolean;
+}) {
   const isBuy = row.kind === "purchase";
   const isSellSide = row.kind === "sale" || row.kind === "planned_sale";
   const shareColor =
-    row.shares == null ? "text-[#71717A]" : isBuy ? "text-[#16A34A]" : isSellSide ? "text-[#DC2626]" : "text-[#0F0F0F]";
+    row.shares == null ? "text-[#5C5D5F]" : isBuy ? "text-[#16A34A]" : isSellSide ? "text-[#DC2626]" : "text-[#141414]";
   const pctColor = shareColor;
 
   const sharesText =
@@ -247,29 +292,38 @@ function InsiderRow({ row }: { row: InsiderTransactionRow }) {
       : null;
 
   return (
-    <div
-      className={`${INSIDER_GRID} h-[60px] max-h-[60px] items-center bg-white text-[14px] font-normal leading-5 transition-colors duration-75 hover:bg-neutral-50`}
-    >
-      <div className="text-left tabular-nums text-[#0F0F0F]">{formatDisplayDate(row.transactionDate)}</div>
-      <div className="min-w-0 truncate text-right text-[#0F0F0F]" title={row.ownerName}>
-        {row.ownerName}
+    <div className={SCREENER_TABLE_DATA_ROW_CLASS}>
+      <div className={INSIDER_ROW_PAD_CLASS}>
+        <div
+          className={cn(
+            INSIDER_GRID,
+            "h-[60px] max-h-[60px] items-center text-[14px] font-normal leading-5",
+            SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+          )}
+        >
+          <div className="text-left tabular-nums text-[#141414]">{formatDisplayDate(row.transactionDate)}</div>
+          <div className="min-w-0 truncate text-right text-[#141414]" title={row.ownerName}>
+            {row.ownerName}
+          </div>
+          <div className="min-w-0 truncate text-right text-[#141414]" title={row.ownerTitle ?? undefined}>
+            {row.ownerTitle?.trim() ? row.ownerTitle : "-"}
+          </div>
+          <div className="flex min-w-0 justify-end">
+            <TransactionBadge kind={row.kind} />
+          </div>
+          <div className={`min-w-0 w-full text-right tabular-nums ${shareColor}`}>
+            <span>{sharesText}</span>
+            {pctText ? <span className={`ml-2 ${pctColor}`}>{pctText}</span> : null}
+          </div>
+          <div className="min-w-0 w-full text-right font-['Inter'] font-normal tabular-nums text-[#141414]">
+            {row.price != null && Number.isFinite(row.price) ? `$${row.price.toFixed(2)}` : "-"}
+          </div>
+          <div className="min-w-0 w-full text-right font-['Inter'] font-normal tabular-nums text-[#141414]">
+            {row.value != null && Number.isFinite(row.value) ? formatCompactUsd(row.value) : "-"}
+          </div>
+        </div>
       </div>
-      <div className="min-w-0 truncate text-right text-[#0F0F0F]" title={row.ownerTitle ?? undefined}>
-        {row.ownerTitle?.trim() ? row.ownerTitle : "-"}
-      </div>
-      <div className="flex min-w-0 justify-end">
-        <TransactionBadge kind={row.kind} />
-      </div>
-      <div className={`min-w-0 w-full text-right tabular-nums ${shareColor}`}>
-        <span>{sharesText}</span>
-        {pctText ? <span className={`ml-2 ${pctColor}`}>{pctText}</span> : null}
-      </div>
-      <div className="min-w-0 w-full text-right font-['Inter'] tabular-nums text-[#0F0F0F]">
-        {row.price != null && Number.isFinite(row.price) ? `$${row.price.toFixed(2)}` : "-"}
-      </div>
-      <div className="min-w-0 w-full text-right font-['Inter'] tabular-nums text-[#0F0F0F]">
-        {row.value != null && Number.isFinite(row.value) ? formatCompactUsd(row.value) : "-"}
-      </div>
+      {showDivider ? <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden /> : null}
     </div>
   );
 }
@@ -353,43 +407,41 @@ export function StockInsidersTab({ ticker }: { ticker: string }) {
   }, [rows]);
 
   return (
-    <div className="space-y-5 pt-1">
-      <div className="mb-8 space-y-6">
-        <section className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-[18px] font-semibold leading-7 tracking-tight text-[#0F0F0F]">Insiders</h2>
-            <SegmentedControl
-              className="shrink-0"
-              options={INSIDERS_CHART_RANGES.map((r) => ({ value: r, label: r }))}
-              value={insidersChartRange}
-              onChange={setInsidersChartRange}
-              size="sm"
-              aria-label="Insiders chart range"
-            />
-          </div>
-          <div className="overflow-visible rounded-[12px] bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
-            <PriceChart
-              kind="stock"
-              symbol={sym}
-              range={insidersChartRange}
-              holdingsStyle
-              tradeMarkers={insiderTradeMarkers}
-              tradeTooltipItems={insiderTradeTooltipItems}
-            />
-          </div>
-        </section>
-
-        {loading ? (
-          <InsiderSummaryCardsSkeleton />
-        ) : error ? null : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <InsiderPeriodCard title="Last 3 Months" agg={summary.m3} />
-            <InsiderPeriodCard title="Last 6 Months" agg={summary.m6} />
-            <InsiderPeriodCard title="Last 12 Months" agg={summary.m12} />
-          </div>
-        )}
-        <h2 className="text-[18px] font-semibold leading-7 tracking-tight text-[#0F0F0F]">Latest transactions</h2>
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className={STOCK_OVERVIEW_SECTION_HEADING_CLASS}>Insiders</h2>
+        <SegmentedControl
+          className="shrink-0"
+          options={INSIDERS_CHART_RANGES.map((r) => ({ value: r, label: r }))}
+          value={insidersChartRange}
+          onChange={setInsidersChartRange}
+          size="sm"
+          aria-label="Insiders chart range"
+        />
       </div>
+
+      <div className="overflow-visible bg-[#FCFCFD]">
+        <PriceChart
+          kind="stock"
+          symbol={sym}
+          range={insidersChartRange}
+          holdingsStyle
+          tradeMarkers={insiderTradeMarkers}
+          tradeTooltipItems={insiderTradeTooltipItems}
+        />
+      </div>
+
+      {loading ? (
+        <InsiderSummaryCardsSkeleton />
+      ) : error ? null : (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <InsiderPeriodCard title="Last 3 Months" agg={summary.m3} />
+          <InsiderPeriodCard title="Last 6 Months" agg={summary.m6} />
+          <InsiderPeriodCard title="Last 12 Months" agg={summary.m12} />
+        </div>
+      )}
+
+      <h2 className={STOCK_OVERVIEW_SECTION_HEADING_CLASS}>Latest transactions</h2>
 
       {loading ? (
         <div className="space-y-3">
@@ -414,24 +466,41 @@ export function StockInsidersTab({ ticker }: { ticker: string }) {
           </EmptyHeader>
         </Empty>
       ) : (
-        <div className="overflow-x-auto">
-          <div className="inline-block min-w-full divide-y divide-[#E4E4E7] border-t border-b border-[#E4E4E7]">
-            <div
-              className={`${INSIDER_GRID} min-h-[44px] items-center bg-white py-0 text-[14px] font-medium leading-5 text-[#71717A]`}
-            >
-              <div className="text-left">Date</div>
-              <div className="min-w-0 w-full text-right">Insider</div>
-              <div className="min-w-0 w-full text-right">Position</div>
-              <div className="min-w-0 w-full text-right">Transaction type</div>
-              <div className="min-w-0 w-full text-right">Number of shares</div>
-              <div className="min-w-0 w-full text-right">Price</div>
-              <div className="min-w-0 w-full text-right">Value</div>
+        <ScreenerTableScroll mobileScroll>
+          <div
+            className={cn(
+              SCREENER_TABLE_HEADER_STICKY_CLASS,
+              SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+              SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+              "md:border-b-0",
+            )}
+          >
+            <div className={INSIDER_ROW_PAD_CLASS}>
+              <div
+                className={cn(
+                  INSIDER_GRID,
+                  "min-h-[44px] items-center py-0 text-[14px] font-medium leading-5 text-[#5C5D5F]",
+                )}
+              >
+                <div className="text-left">Date</div>
+                <div className="min-w-0 w-full text-right">Insider</div>
+                <div className="min-w-0 w-full text-right">Position</div>
+                <div className="min-w-0 w-full text-right">Transaction type</div>
+                <div className="min-w-0 w-full text-right">Number of shares</div>
+                <div className="min-w-0 w-full text-right">Price</div>
+                <div className="min-w-0 w-full text-right">Value</div>
+              </div>
             </div>
-            {rows.map((row, i) => (
-              <InsiderRow key={`${row.transactionDate}-${row.ownerName}-${row.transactionCode}-${i}`} row={row} />
-            ))}
+            <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
           </div>
-        </div>
+          {rows.map((row, i) => (
+            <InsiderRow
+              key={`${row.transactionDate}-${row.ownerName}-${row.transactionCode}-${i}`}
+              row={row}
+              showDivider={i < rows.length - 1}
+            />
+          ))}
+        </ScreenerTableScroll>
       )}
     </div>
   );

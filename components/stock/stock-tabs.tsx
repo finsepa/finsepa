@@ -24,8 +24,8 @@ export function StockTabs({
               onClick={() => onTabChange(tab)}
               className={`shrink-0 py-2 text-[14px] leading-6 cursor-pointer transition-colors whitespace-nowrap ${
                 isActive
-                  ? "font-semibold text-[#0F0F0F] border-b-2 border-[#0F0F0F] -mb-px"
-                  : "font-normal text-[#71717A] hover:text-[#0F0F0F] border-b-2 border-transparent -mb-px"
+                  ? "font-semibold text-[#141414] border-b-2 border-[#141414] -mb-px"
+                  : "font-normal text-[#5C5D5F] hover:text-[#141414] border-b-2 border-transparent -mb-px"
               }`}
             >
               {tab}

@@ -38,7 +38,7 @@ const EM_DASH = "\u2014";
 
 /** Matches screener company column (`screener-table.tsx`). */
 const HOLDING_COMPANY_NAME_CLASS =
-  "truncate text-[14px] font-semibold leading-5 text-[#0F0F0F] underline-offset-2 decoration-[#71717A] group-hover:underline";
+  "truncate text-[14px] font-semibold leading-5 text-[#141414] underline-offset-2 decoration-[#5C5D5F] group-hover:underline";
 
 /** Expand/collapse control for inline transaction history. */
 function PortfolioHoldingExpandButton({
@@ -59,8 +59,8 @@ function PortfolioHoldingExpandButton({
         onToggle();
       }}
       className={cn(
-        "inline-flex h-7 w-7 items-center justify-center rounded-full border border-transparent bg-transparent text-[#0F0F0F]",
-        "transition-colors hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15",
+        "inline-flex h-7 w-7 items-center justify-center rounded-full border border-transparent bg-transparent text-[#141414]",
+        "transition-colors hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15",
         expanded && "bg-[#F4F4F5]",
       )}
     >
@@ -160,21 +160,21 @@ function PortfolioPnlBreakdownTooltip({
   const tooltip =
     open && mounted ? (
       <div
-        className="pointer-events-none fixed z-[200] w-[240px] rounded-[10px] border border-[#E4E4E7] bg-white px-3 py-2 text-left text-[12px] leading-4 text-[#0F0F0F] shadow-[0px_8px_20px_0px_rgba(10,10,10,0.10)]"
+        className="pointer-events-none fixed z-[200] w-[240px] rounded-[10px] border border-[#E4E4E7] bg-white px-3 py-2 text-left text-[12px] leading-4 text-[#141414] shadow-[0px_8px_20px_0px_rgba(10,10,10,0.10)]"
         style={{ left: pos.left, top: pos.top }}
         role="tooltip"
       >
-        <div className="font-semibold text-[#0F0F0F]">Profit/Loss</div>
+        <div className="font-semibold text-[#141414]">Profit/Loss</div>
         <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1">
-          <div className="text-[#71717A]">Unrealized</div>
+          <div className="text-[#5C5D5F]">Unrealized</div>
           <div className={cn("text-right tabular-nums", unrealizedUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]")}>
             {formatSignedUsd(unrealizedUsd)}
           </div>
-          <div className="text-[#71717A]">Realized</div>
+          <div className="text-[#5C5D5F]">Realized</div>
           <div className={cn("text-right tabular-nums", realizedUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]")}>
             {formatSignedUsd(realizedUsd)}
           </div>
-          <div className="text-[#71717A]">Total</div>
+          <div className="text-[#5C5D5F]">Total</div>
           <div className={cn("text-right tabular-nums font-semibold", totalUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]")}>
             {formatSignedUsd(totalUsd)}
           </div>
@@ -284,10 +284,10 @@ function HoldingsSortHeader({
 }) {
   const active = activeKey === sortKey;
   return (
-    <th className="whitespace-nowrap border-b border-[#E4E4E7] px-4 py-[10px] text-right text-[14px] font-medium leading-5 text-[#71717A]">
+    <th className="whitespace-nowrap border-b border-[#E4E4E7] px-4 py-[10px] text-right text-[14px] font-medium leading-5 text-[#5C5D5F]">
       <button
         type="button"
-        className="inline-flex w-full items-center justify-end gap-1 rounded text-[14px] font-medium leading-5 text-[#71717A] hover:text-[#0F0F0F]"
+        className="inline-flex w-full items-center justify-end gap-1 rounded text-[14px] font-medium leading-5 text-[#5C5D5F] hover:text-[#141414]"
         onClick={() => onSort(sortKey)}
         aria-label={`Sort by ${label}`}
       >
@@ -438,7 +438,7 @@ function PortfolioHoldingsTableInner({
                 <CompanyLogo name={companyName} logoUrl={logo} symbol={h.symbol} />
                 <div className="min-w-0">
                   <div className={HOLDING_COMPANY_NAME_CLASS}>{companyName}</div>
-                  <div className="truncate text-[12px] font-normal leading-4 text-[#71717A]">
+                  <div className="truncate text-[12px] font-normal leading-4 text-[#5C5D5F]">
                     {caption} · {formatSharesAsShares(h.shares)}
                   </div>
                 </div>
@@ -447,7 +447,7 @@ function PortfolioHoldingsTableInner({
 
             const right = (
               <div className="min-w-0 text-right">
-                <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#0F0F0F]">
+                <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#141414]">
                   {usd0.format(h.currentValue)}
                 </div>
                 <div
@@ -469,7 +469,7 @@ function PortfolioHoldingsTableInner({
                 {assetHref ? (
                   <Link
                     href={assetHref}
-                    className="absolute inset-0 z-0 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15 focus-visible:ring-offset-2"
+                    className="absolute inset-0 z-0 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15 focus-visible:ring-offset-2"
                     aria-label={`Open ${companyName}`}
                   />
                 ) : null}
@@ -483,17 +483,17 @@ function PortfolioHoldingsTableInner({
             <div className="flex min-w-0 items-center gap-3">
               <CompanyLogo name="US Dollar" logoUrl="" symbol="USD" />
               <div className="min-w-0">
-                <div className="truncate text-[14px] font-semibold leading-5 text-[#0F0F0F]">US Dollar</div>
-                <div className="truncate text-[12px] font-normal leading-4 text-[#71717A]">
+                <div className="truncate text-[14px] font-semibold leading-5 text-[#141414]">US Dollar</div>
+                <div className="truncate text-[12px] font-normal leading-4 text-[#5C5D5F]">
                   USD · {formatSharesDisplay(cashUsd)} USD
                 </div>
               </div>
             </div>
             <div className="min-w-0 text-right">
-              <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#0F0F0F]">
+              <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#141414]">
                 {usd0.format(cashUsd)}
               </div>
-              <div className="mt-0.5 truncate text-[12px] font-medium leading-4 tabular-nums text-[#71717A]">
+              <div className="mt-0.5 truncate text-[12px] font-medium leading-4 tabular-nums text-[#5C5D5F]">
                 {EM_DASH}
               </div>
             </div>
@@ -503,12 +503,12 @@ function PortfolioHoldingsTableInner({
 
       <table className="hidden w-full min-w-[960px] border-separate border-spacing-0 sm:table">
         <thead>
-          <tr className="min-h-[40px] bg-white text-[14px] font-medium leading-5 text-[#71717A]">
+          <tr className="min-h-[40px] bg-white text-[14px] font-medium leading-5 text-[#5C5D5F]">
             <th className="w-11 border-b border-[#E4E4E7] px-2 py-[10px] font-medium" aria-hidden />
-            <th className="whitespace-nowrap border-b border-[#E4E4E7] px-4 py-[10px] text-left text-[14px] font-medium leading-5 text-[#71717A]">
+            <th className="whitespace-nowrap border-b border-[#E4E4E7] px-4 py-[10px] text-left text-[14px] font-medium leading-5 text-[#5C5D5F]">
               Asset
             </th>
-            <th className="whitespace-nowrap border-b border-[#E4E4E7] px-4 py-[10px] text-right text-[14px] font-medium leading-5 text-[#71717A]">
+            <th className="whitespace-nowrap border-b border-[#E4E4E7] px-4 py-[10px] text-right text-[14px] font-medium leading-5 text-[#5C5D5F]">
               Price
             </th>
             <HoldingsSortHeader
@@ -518,7 +518,7 @@ function PortfolioHoldingsTableInner({
               dir={sort.dir}
               onSort={onSort}
             />
-            <th className="whitespace-nowrap border-b border-[#E4E4E7] px-4 py-[10px] text-right text-[14px] font-medium leading-5 text-[#71717A]">
+            <th className="whitespace-nowrap border-b border-[#E4E4E7] px-4 py-[10px] text-right text-[14px] font-medium leading-5 text-[#5C5D5F]">
               Avg. Buy Price
             </th>
             <HoldingsSortHeader
@@ -559,7 +559,7 @@ function PortfolioHoldingsTableInner({
                 <CompanyLogo name={companyName} logoUrl={logo} symbol={h.symbol} />
                 <div className="min-w-0 text-left">
                   <div className={HOLDING_COMPANY_NAME_CLASS}>{companyName}</div>
-                  <div className="text-[12px] font-normal leading-4 text-[#71717A]">{caption}</div>
+                  <div className="text-[12px] font-normal leading-4 text-[#5C5D5F]">{caption}</div>
                 </div>
               </>
             );
@@ -613,7 +613,7 @@ function PortfolioHoldingsTableInner({
               </td>
               <td
                 className={cn(
-                  "relative z-[1] align-middle whitespace-nowrap px-4 py-[10px] text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#0F0F0F]",
+                  "relative z-[1] align-middle whitespace-nowrap px-4 py-[10px] text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#141414]",
                   holdingRowTdBorder(expanded),
                 )}
               >
@@ -625,16 +625,16 @@ function PortfolioHoldingsTableInner({
                   holdingRowTdBorder(expanded),
                 )}
               >
-                <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#0F0F0F]">
+                <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#141414]">
                   {usd0.format(h.currentValue)}
                 </div>
-                <div className="text-[12px] font-normal leading-4 tabular-nums text-[#71717A]">
+                <div className="text-[12px] font-normal leading-4 tabular-nums text-[#5C5D5F]">
                   {formatSharesWithUnit(h.shares, h.symbol)}
                 </div>
               </td>
               <td
                 className={cn(
-                  "relative z-[1] align-middle whitespace-nowrap px-4 py-[10px] text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#0F0F0F]",
+                  "relative z-[1] align-middle whitespace-nowrap px-4 py-[10px] text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#141414]",
                   holdingRowTdBorder(expanded),
                 )}
               >
@@ -655,7 +655,7 @@ function PortfolioHoldingsTableInner({
               </td>
               <td
                 className={cn(
-                  "relative z-[1] align-middle whitespace-nowrap px-4 py-[10px] text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#0F0F0F]",
+                  "relative z-[1] align-middle whitespace-nowrap px-4 py-[10px] text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#141414]",
                   holdingRowTdBorder(expanded),
                 )}
               >
@@ -716,29 +716,29 @@ function PortfolioHoldingsTableInner({
                 <CompanyLogo name="US Dollar" logoUrl="" symbol="USD" />
                 <div className="min-w-0 text-left">
                   <div className={HOLDING_COMPANY_NAME_CLASS}>US Dollar</div>
-                  <div className="text-[12px] font-normal leading-4 text-[#71717A]">USD</div>
+                  <div className="text-[12px] font-normal leading-4 text-[#5C5D5F]">USD</div>
                 </div>
               </div>
             </td>
-            <td className="relative z-[1] border-b border-[#E4E4E7] align-middle whitespace-nowrap px-4 py-[10px] text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#0F0F0F]">
+            <td className="relative z-[1] border-b border-[#E4E4E7] align-middle whitespace-nowrap px-4 py-[10px] text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#141414]">
               {formatPortfolioUsdPerUnit(1)}
             </td>
             <td className="relative z-[1] border-b border-[#E4E4E7] align-middle whitespace-nowrap px-4 py-[10px] text-right">
-              <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#0F0F0F]">
+              <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#141414]">
                 {usd0.format(cashUsd)}
               </div>
-              <div className="text-[12px] font-normal leading-4 tabular-nums text-[#71717A]">
+              <div className="text-[12px] font-normal leading-4 tabular-nums text-[#5C5D5F]">
                 {formatSharesDisplay(cashUsd)} USD
               </div>
             </td>
-            <td className="relative z-[1] border-b border-[#E4E4E7] align-middle whitespace-nowrap px-4 py-[10px] text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#0F0F0F]">
+            <td className="relative z-[1] border-b border-[#E4E4E7] align-middle whitespace-nowrap px-4 py-[10px] text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#141414]">
               {formatPortfolioUsdPerUnit(1)}
             </td>
             <td className="relative z-[1] border-b border-[#E4E4E7] align-middle whitespace-nowrap px-4 py-[10px] text-right">
-              <div className="text-[14px] font-medium tabular-nums text-[#71717A]">{EM_DASH}</div>
-              <div className="text-[12px] font-medium tabular-nums text-[#71717A]">{EM_DASH}</div>
+              <div className="text-[14px] font-medium tabular-nums text-[#5C5D5F]">{EM_DASH}</div>
+              <div className="text-[12px] font-medium tabular-nums text-[#5C5D5F]">{EM_DASH}</div>
             </td>
-            <td className="relative z-[1] border-b border-[#E4E4E7] align-middle whitespace-nowrap px-4 py-[10px] text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#0F0F0F]">
+            <td className="relative z-[1] border-b border-[#E4E4E7] align-middle whitespace-nowrap px-4 py-[10px] text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#141414]">
               {pct.format(cashWeightPct)}%
             </td>
             <td className="relative z-[1] border-b border-[#E4E4E7] align-middle px-4 py-[10px] text-right" aria-hidden />

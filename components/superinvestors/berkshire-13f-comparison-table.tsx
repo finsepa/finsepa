@@ -35,12 +35,12 @@ const cellDown = "text-[#DC2626]";
 
 /** Header: no extra horizontal padding — row lives inside `px-4` shell so label lines up with logos. */
 const thCompany =
-  "whitespace-nowrap py-0 text-left align-middle text-[14px] font-medium leading-5 text-[#71717A]";
+  "whitespace-nowrap py-0 text-left align-middle text-[14px] font-medium leading-5 text-[#5C5D5F]";
 const thRight =
-  "whitespace-nowrap py-0 text-right align-middle text-[14px] font-medium leading-5 text-[#71717A]";
+  "whitespace-nowrap py-0 text-right align-middle text-[14px] font-medium leading-5 text-[#5C5D5F]";
 const tdCompany = "min-w-0 py-1 text-left text-[14px] leading-5 whitespace-normal";
 const tdNum =
-  "whitespace-nowrap py-0 text-right align-middle font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#0F0F0F]";
+  "whitespace-nowrap py-0 text-right align-middle font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414]";
 
 const HOLDINGS_TABLE_HEADER_CLASS =
   "sticky top-0 z-20 border-b border-solid border-[#E4E4E7] bg-white";
@@ -57,7 +57,7 @@ const mobileRowGrid =
   "grid grid-cols-[minmax(0,1fr)_minmax(5.5rem,auto)] gap-x-3 items-center";
 
 const HOLDING_COMPANY_NAME_CLASS =
-  "line-clamp-1 text-[14px] font-semibold leading-5 text-[#0F0F0F] underline-offset-[3px] decoration-[#0F0F0F] group-hover/company:underline sm:line-clamp-2";
+  "line-clamp-1 text-[14px] font-semibold leading-5 text-[#141414] underline-offset-[3px] decoration-[#141414] group-hover/company:underline sm:line-clamp-2";
 
 const rowShellBase = "min-h-[60px] items-center transition-colors duration-75";
 
@@ -105,14 +105,14 @@ function HoldingCompanyCell({
         <CompanyLogo name={displayName} logoUrl={logoUrl} symbol={sym ?? undefined} size="md" />
         <div className="flex min-w-0 flex-col gap-0.5">
           <span className={HOLDING_COMPANY_NAME_CLASS}>{displayName}</span>
-          <span className="text-[12px] font-normal leading-4 text-[#71717A]">{sym ?? "—"}</span>
+          <span className="text-[12px] font-normal leading-4 text-[#5C5D5F]">{sym ?? "—"}</span>
         </div>
       </Link>
     </div>
   );
 }
 
-const holdingActivityMutedClass = "text-[14px] font-medium leading-4 tabular-nums text-[#71717A]";
+const holdingActivityMutedClass = "text-[14px] font-medium leading-4 tabular-nums text-[#5C5D5F]";
 
 function RecentActivityColumnCell({ activity }: { activity: HoldingRecentActivityDisplay | null }) {
   if (!activity) {
@@ -143,7 +143,7 @@ function MobilePortfolioCell({
 }) {
   return (
     <div className="flex flex-col items-end justify-center gap-0.5 text-right">
-      <span className="text-[14px] font-medium leading-5 tabular-nums text-[#0F0F0F]">
+      <span className="text-[14px] font-medium leading-5 tabular-nums text-[#141414]">
         {pct.format(weight)}%
       </span>
       {activity ?

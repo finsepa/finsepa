@@ -353,13 +353,13 @@ export function ComparisonReturnChart({
   }
 
   return (
-    <section className="w-full min-w-0 max-w-full overflow-hidden bg-white">
-      <h3 className="mb-4 text-[18px] font-semibold leading-7 tracking-tight text-[#0F0F0F]">Return</h3>
+    <section className="w-full min-w-0 max-w-full overflow-hidden bg-[#FCFCFD]">
+      <h3 className="mb-4 text-[18px] font-semibold leading-7 tracking-tight text-[#141414]">Return</h3>
 
       <div>
         {tickers.length === 0 ? (
           <div
-            className="flex items-center justify-center text-[14px] text-[#71717A]"
+            className="flex items-center justify-center text-[14px] text-[#5C5D5F]"
             style={{ height: RETURN_CHART_TOTAL_HEIGHT_PX }}
           >
             Add companies to compare returns.
@@ -386,7 +386,7 @@ export function ComparisonReturnChart({
                   onPointerLeave={clearHover}
                 >
                   <div
-                    className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%] z-0 bg-white"
+                    className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%] z-0 bg-[#FCFCFD]"
                     aria-hidden
                   >
                     <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
@@ -490,12 +490,12 @@ export function ComparisonReturnChart({
                           <span className="absolute top-1/2 right-px -translate-y-1/2 border-y-[6px] border-y-transparent border-r-[7px] border-r-white" />
                         </span>
                       )}
-                      <p className="text-[12px] font-semibold leading-4 text-[#0F0F0F]">{tip.periodLabel}</p>
+                      <p className="text-[12px] font-semibold leading-4 text-[#141414]">{tip.periodLabel}</p>
                       <div className="mt-1.5 space-y-0.5">
                         {tip.lines.map((line) => (
                           <p
                             key={line.ticker}
-                            className="flex items-center gap-2 whitespace-nowrap text-[12px] font-normal leading-4 text-[#0F0F0F]"
+                            className="flex items-center gap-2 whitespace-nowrap text-[12px] font-normal leading-4 text-[#141414]"
                           >
                             <span
                               className="h-2 w-2 shrink-0 rounded-full"
@@ -512,7 +512,7 @@ export function ComparisonReturnChart({
                 </div>
 
                 <div
-                  className="relative h-full shrink-0 pl-1.5 text-left font-['Inter'] text-[12px] tabular-nums leading-none text-[#71717A]"
+                  className="relative h-full shrink-0 pl-1.5 text-left font-['Inter'] text-[12px] tabular-nums leading-none text-[#5C5D5F]"
                   style={{ width: RETURN_CHART_Y_AXIS_W_PX }}
                   aria-hidden
                 >
@@ -520,7 +520,7 @@ export function ComparisonReturnChart({
                     {yTicks.map((t, i) => (
                       <span
                         key={i}
-                        className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-white px-0.5 py-px"
+                        className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-[#FCFCFD] px-0.5 py-px"
                         style={{ top: `${returnTickTopPercent(t, scale)}%` }}
                       >
                         {formatReturnAxisTick(t)}
@@ -542,7 +542,7 @@ export function ComparisonReturnChart({
                 >
                   {chartYears.map((year) => (
                     <div key={year} className="min-w-0 px-0.5 text-center">
-                      <span className="text-balance font-['Inter'] text-[11px] font-normal leading-snug text-[#71717A] sm:text-[12px]">
+                      <span className="text-balance font-['Inter'] text-[11px] font-normal leading-snug text-[#5C5D5F] sm:text-[12px]">
                         {year}
                       </span>
                     </div>
@@ -554,7 +554,7 @@ export function ComparisonReturnChart({
           </div>
         ) : (
           <div
-            className="flex items-center justify-center text-[14px] text-[#71717A]"
+            className="flex items-center justify-center text-[14px] text-[#5C5D5F]"
             style={{ height: RETURN_CHART_TOTAL_HEIGHT_PX }}
           >
             No return data for these companies.

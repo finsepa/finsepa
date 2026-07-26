@@ -515,7 +515,7 @@ export function CryptoPageContent({
           <SkeletonBox className="h-9 w-56 rounded-md" />
         </div>
       ) : !safeRow ? (
-        <p className="text-[14px] text-[#71717A]">This asset is not available.</p>
+        <p className="text-[14px] text-[#5C5D5F]">This asset is not available.</p>
       ) : (
         <CryptoHeader
           symbol={symUpper}

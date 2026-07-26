@@ -9,6 +9,10 @@ import {
   dropdownMenuRichItemClassName,
 } from "@/components/design-system/dropdown-menu-styles";
 import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
+import {
+  SCREENER_TABLE_DATA_ROW_CLASS,
+  SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+} from "@/components/screener/screener-table-scroll";
 import { Spinner } from "@/components/ui/spinner";
 import type { EarningsCalendarItem } from "@/lib/market/earnings-calendar-types";
 import { serializeAllowedScopeKeys } from "@/lib/market/earnings-scope-filter";
@@ -129,22 +133,27 @@ export function EarningsListSeeMoreMenu({
   return (
     <div
       ref={anchorRef}
-      className="relative w-full"
+      className={cn(SCREENER_TABLE_DATA_ROW_CLASS, "relative w-full")}
       onMouseEnter={show}
       onMouseLeave={scheduleHide}
     >
-      <button
-        type="button"
-        onClick={toggleOpen}
-        className="flex min-h-[44px] w-full items-center justify-center bg-white px-2 py-2 text-center transition-colors hover:bg-neutral-50 sm:px-4"
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        aria-label={`${overflowCount} more companies`}
-      >
-        <span className="text-[13px] font-semibold tabular-nums leading-5 text-[#2563EB]">
-          +{overflowCount} more
-        </span>
-      </button>
+      <div className="px-3">
+        <button
+          type="button"
+          onClick={toggleOpen}
+          className={cn(
+            "flex min-h-[44px] w-full items-center justify-center py-2 text-center",
+            SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+          )}
+          aria-haspopup="listbox"
+          aria-expanded={open}
+          aria-label={`${overflowCount} more companies`}
+        >
+          <span className="text-[13px] font-semibold tabular-nums leading-5 text-[#2563EB]">
+            +{overflowCount} more
+          </span>
+        </button>
+      </div>
 
       <TopbarDropdownPortal open={open} anchorRef={anchorRef} align="center">
         <div
@@ -169,12 +178,12 @@ export function EarningsListSeeMoreMenu({
                   aria-live="polite"
                   aria-label="Loading companies"
                 >
-                  <Spinner className="size-5 text-[#71717A]" />
+                  <Spinner className="size-5 text-[#5C5D5F]" />
                 </div>
               ) : error && displayItems.length === 0 ? (
                 <p className="px-3 py-2 text-[12px] text-[#DC2626]">Could not load</p>
               ) : displayItems.length === 0 ? (
-                <p className="px-3 py-2 text-[12px] text-[#71717A]">No companies</p>
+                <p className="px-3 py-2 text-[12px] text-[#5C5D5F]">No companies</p>
               ) : (
                 <ul className="flex flex-col gap-1">
                   {displayItems.map((item) => (
@@ -197,7 +206,7 @@ export function EarningsListSeeMoreMenu({
                           symbol={item.ticker}
                           size="sm"
                         />
-                        <span className="min-w-0 flex-1 truncate text-[13px] font-semibold tabular-nums leading-5 text-[#0F0F0F]">
+                        <span className="min-w-0 flex-1 truncate text-[13px] font-semibold tabular-nums leading-5 text-[#141414]">
                           {item.ticker}
                         </span>
                       </button>

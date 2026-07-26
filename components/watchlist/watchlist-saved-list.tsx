@@ -37,7 +37,7 @@ export function WatchlistSavedList() {
 
   if (items === null && !error) {
     return (
-      <p className="text-sm leading-6 text-[#71717A]">Loading…</p>
+      <p className="text-sm leading-6 text-[#5C5D5F]">Loading…</p>
     );
   }
 
@@ -54,7 +54,7 @@ export function WatchlistSavedList() {
         </p>
         <Link
           href="/screener"
-          className="mt-6 text-sm font-semibold text-[#0F0F0F] underline decoration-[#E4E4E7] underline-offset-4 transition-colors hover:decoration-[#A1A1AA]"
+          className="mt-6 text-sm font-semibold text-[#141414] underline decoration-[#E4E4E7] underline-offset-4 transition-colors hover:decoration-[#A1A1AA]"
         >
           Go to screener
         </Link>
@@ -64,7 +64,7 @@ export function WatchlistSavedList() {
 
   return (
     <div className="overflow-hidden rounded-xl border border-[#E4E4E7] bg-white">
-      <div className="border-b border-[#E4E4E7] px-4 py-3 text-[14px] font-semibold leading-5 text-[#71717A]">
+      <div className="border-b border-[#E4E4E7] px-4 py-3 text-[14px] font-semibold leading-5 text-[#5C5D5F]">
         Your watchlist
       </div>
       <ul className="divide-y divide-[#E4E4E7]">
@@ -81,8 +81,8 @@ export function WatchlistSavedList() {
                   {meta.initials}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-[14px] font-semibold leading-5 text-[#0F0F0F]">{meta.displayName}</div>
-                  <div className="text-[12px] font-normal leading-4 text-[#71717A]">{ticker}</div>
+                  <div className="truncate text-[14px] font-semibold leading-5 text-[#141414]">{meta.displayName}</div>
+                  <div className="text-[12px] font-normal leading-4 text-[#5C5D5F]">{ticker}</div>
                 </div>
               </Link>
             </li>

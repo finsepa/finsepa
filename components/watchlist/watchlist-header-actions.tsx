@@ -31,7 +31,7 @@ export function WatchlistHeaderActions({
   return (
     <div className="flex min-w-0 items-center gap-2">
       {showTitle ? (
-        <h1 className="truncate text-[20px] font-semibold leading-7 text-[#0F0F0F]" suppressHydrationWarning>
+        <h1 className="truncate text-[20px] font-semibold leading-7 text-[#141414]" suppressHydrationWarning>
           {name}
         </h1>
       ) : (

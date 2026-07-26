@@ -176,10 +176,10 @@ export type PortfolioTransaction = {
   /**
    * Row provenance. Undefined is treated as `MANUAL` everywhere (see `transactionSource`).
    * `SNAPTRADE` = broker-imported row; `SNAPTRADE_ADJUSTMENT` = synthetic reconciliation row.
-   * Both broker sources are immutable in the UI (read-only, managed by sync).
+   * Broker sources are immutable in the UI (read-only).
    */
   source?: "MANUAL" | "SNAPTRADE" | "SNAPTRADE_ADJUSTMENT";
-  /** Upstream provider that produced the row (only SnapTrade today). */
+  /** Upstream provider that produced the row. */
   provider?: "SNAPTRADE";
   /** Stable provider identity used for idempotent upsert (e.g. `snaptrade:activity:{acct}:{id}`). */
   externalId?: string;

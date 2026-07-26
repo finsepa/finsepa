@@ -337,7 +337,7 @@ export function PortfolioPageView({
           }}
           className={cn(
             topbarSquircleIconClass,
-            "hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15 focus-visible:ring-offset-2",
+            "hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15 focus-visible:ring-offset-2",
             "disabled:pointer-events-none disabled:opacity-40",
           )}
         >
@@ -365,13 +365,13 @@ export function PortfolioPageView({
         <div className="flex min-w-0 flex-1 items-center">
           <div className="min-w-0 flex-col gap-1">
             {showPortfoliosBreadcrumb ? (
-              <h1 className="min-w-0 truncate text-2xl font-semibold tracking-tight text-[#0F0F0F]">
+              <h1 className="min-w-0 truncate text-2xl font-semibold tracking-tight text-[#141414]">
                 {portfolioName}
               </h1>
             ) : (
               <div className="flex min-w-0 max-w-full items-center gap-2">
                 {selectedPortfolio ? <PortfolioListLogo portfolio={selectedPortfolio} /> : null}
-                <h1 className="min-w-0 truncate text-2xl font-semibold tracking-tight text-[#0F0F0F]">
+                <h1 className="min-w-0 truncate text-2xl font-semibold tracking-tight text-[#141414]">
                   {portfolioName}
                 </h1>
                 <TransactionPortfolioField variant="titleGhost" compactMenuAlign="leading" />

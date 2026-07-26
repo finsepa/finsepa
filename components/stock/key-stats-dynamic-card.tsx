@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from "react";
 
-import { STOCK_OVERVIEW_SECTION_TITLE_CLASS } from "@/components/design-system/card-surface-styles";
+import {
+  MOBILE_INSET_CARD_CLASS,
+  STOCK_OVERVIEW_SECTION_TITLE_CLASS,
+} from "@/components/design-system/card-surface-styles";
 import { cn } from "@/lib/utils";
 
 type Row = { label: string; value: string };
@@ -10,10 +13,10 @@ type Row = { label: string; value: string };
 function StatRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-3 border-b border-[#E4E4E7] py-1.5 last:border-0">
-      <span className="min-w-0 shrink cursor-pointer text-[14px] leading-5 text-[#0F0F0F] underline decoration-[#E4E4E7] underline-offset-2">
+      <span className="min-w-0 shrink cursor-pointer text-[14px] leading-5 text-[#141414] underline decoration-[#E4E4E7] underline-offset-2">
         {label}
       </span>
-      <span className="shrink-0 text-right text-[14px] font-medium leading-5 text-[#0F0F0F] tabular-nums">{value}</span>
+      <span className="shrink-0 text-right text-[14px] font-medium leading-5 text-[#141414] tabular-nums">{value}</span>
     </div>
   );
 }
@@ -62,7 +65,7 @@ export function KeyStatsDynamicCard({ ticker, title, apiPath, rowLabels }: Props
   const displayRows = rows ?? fallback;
 
   return (
-    <div className="mb-5 rounded-xl border border-[#E4E4E7] bg-white p-4">
+    <div className={cn("mb-5 p-4", MOBILE_INSET_CARD_CLASS)}>
       <h3 className={cn("mb-2", STOCK_OVERVIEW_SECTION_TITLE_CLASS)}>{title}</h3>
       {loading ? (
         <div className="space-y-2 pt-0.5" aria-hidden>

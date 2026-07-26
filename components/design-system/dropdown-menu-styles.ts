@@ -13,7 +13,7 @@ export const dropdownMenuElevationClass =
  */
 export function dropdownMenuSurfaceClassName(...extra: (string | undefined | null | false)[]) {
   return cn(
-    "rounded-2xl border border-[#E4E4E7] bg-white text-[#0F0F0F] outline-none",
+    "rounded-2xl border border-[#E4E4E7] bg-white text-[#141414] outline-none",
     dropdownMenuElevationClass,
     ...extra.filter(Boolean),
   );
@@ -27,9 +27,9 @@ export const dropdownMenuPanelBodyClassName = "flex flex-col gap-1 p-1";
 /** Search field row above a scrollable list — equal inset on all sides of the input. */
 export const dropdownMenuSearchHeaderClassName = "border-b border-[#F4F4F5] p-2";
 
-/** Matches top bar / {@link SearchInlineInputShell} search shell (`#F4F4F5`, `h-9`, `rounded-lg`). */
+/** Matches top bar / {@link SearchInlineInputShell} search shell (`#F1F1F2`, `h-9`, `rounded-lg`). */
 export const dropdownMenuSearchInputClassName =
-  "h-9 w-full rounded-lg border-0 bg-[#F4F4F5] px-3 text-sm leading-5 text-[#0F0F0F] placeholder:text-[#A1A1AA] outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/10";
+  "h-9 w-full rounded-lg border-0 bg-[#F1F1F2] px-3 text-sm leading-5 text-[#141414] placeholder:text-[#A1A1AA] outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/10";
 
 /** Overlay scrollbar — transparent track, visible thumb only. */
 export const dropdownMenuFloatingScrollbarClassName =
@@ -76,7 +76,7 @@ export const dropdownMenuMobileSheetStripPanelClassName =
   "[&>*]:!rounded-none [&>*]:!border-0 [&>*]:!bg-transparent [&>*]:!p-0 [&>*]:!shadow-none";
 
 const plainItemBase =
-  "flex w-full shrink-0 cursor-pointer items-center gap-2 rounded-lg bg-white px-4 py-2 text-left text-sm font-normal leading-5 text-[#0F0F0F] transition-colors hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/10";
+  "flex w-full shrink-0 cursor-pointer items-center gap-2 rounded-lg bg-white px-4 py-2 text-left text-sm font-normal leading-5 text-[#141414] transition-colors hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/10";
 
 /**
  * Single-line option (~40px): white row; use `dropdownMenuPlainItemRowClassName` when showing a trailing check.
@@ -103,13 +103,13 @@ export function dropdownMenuPlainItemRowClassName(opts?: { selected?: boolean })
  * Row with split hit targets (e.g. portfolio label + edit icon).
  */
 export const dropdownMenuCompositeRowClassName =
-  "flex min-h-12 w-full items-center gap-0 overflow-hidden rounded-lg bg-white text-sm text-[#0F0F0F] transition-colors hover:bg-[#F4F4F5]";
+  "flex min-h-12 w-full items-center gap-0 overflow-hidden rounded-lg bg-white text-sm text-[#141414] transition-colors hover:bg-[#F4F4F5]";
 
 /**
  * Searchable menus — slightly denser two-line rows (company / metric pickers).
  */
 export function dropdownMenuRichItemClassName() {
   return cn(
-    "flex w-full cursor-pointer items-start gap-2 rounded-lg bg-white px-3 py-2 text-left text-[13px] leading-4 text-[#0F0F0F] transition-colors hover:bg-[#F4F4F5]",
+    "flex w-full cursor-pointer items-start gap-2 rounded-lg bg-white px-3 py-2 text-left text-[13px] leading-4 text-[#141414] transition-colors hover:bg-[#F4F4F5]",
   );
 }

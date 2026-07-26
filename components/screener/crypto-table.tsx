@@ -5,8 +5,13 @@ import Link from "next/link";
 
 import { CompanyLogo } from "./company-logo";
 import {
-  SCREENER_TABLE_BODY_DIVIDE_CLASS,
+  SCREENER_TABLE_DATA_ROW_CLASS,
   SCREENER_TABLE_HEADER_STICKY_CLASS,
+  SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+  SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+  SCREENER_TABLE_ROW_HOVER_PAD_CLASS,
+  SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+  SCREENER_TABLE_STROKE_INSET_CLASS,
   ScreenerTableScroll,
 } from "@/components/screener/screener-table-scroll";
 import { CryptoTableSkeleton } from "@/components/markets/markets-skeletons";
@@ -16,6 +21,7 @@ import { SCREENER_CRYPTO_PAGE_SIZE } from "@/lib/screener/screener-markets-page-
 import { eodhdCryptoSpotTickerDisplay } from "@/lib/crypto/eodhd-crypto-ticker-display";
 import { cryptoWatchlistKey } from "@/lib/watchlist/constants";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
+import { cn } from "@/lib/utils";
 
 function formatPercent(value: number | null) {
   if (value == null || !Number.isFinite(value)) return "-";
@@ -40,7 +46,7 @@ function ChangeCell({ value }: { value: number | null }) {
   return (
     <div
       className={`min-w-0 w-full text-right tabular-nums text-[14px] leading-5 font-medium ${
-        isMissing ? "text-[#71717A]" : positive ? "text-[#16A34A]" : "text-[#DC2626]"
+        isMissing ? "text-[#5C5D5F]" : positive ? "text-[#16A34A]" : "text-[#DC2626]"
       }`}
     >
       {formatPercent(value)}
@@ -62,14 +68,14 @@ function PriceAndChangeCell({
     <div className="min-w-0 w-full text-right">
       <div
         className={`min-w-0 w-full font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums ${
-          hasPrice ? "text-[#0F0F0F]" : "text-[#71717A]"
+          hasPrice ? "text-[#141414]" : "text-[#5C5D5F]"
         }`}
       >
         {hasPrice ? formatCryptoScreenerUsdPrice(price!) : "-"}
       </div>
       <div
         className={`mt-0.5 min-w-0 w-full text-[12px] font-medium leading-4 tabular-nums ${
-          !hasChange ? "text-[#71717A]" : positive ? "text-[#16A34A]" : "text-[#DC2626]"
+          !hasChange ? "text-[#5C5D5F]" : positive ? "text-[#16A34A]" : "text-[#DC2626]"
         }`}
       >
         {formatPercent(change1D)}
@@ -78,15 +84,14 @@ function PriceAndChangeCell({
   );
 }
 
-/** Mobile: # + coin + price + 1D % (no star). `sm+`: star + # + coin + … (matches {@link ScreenerTable}). */
-const colLayout =
-  "grid-cols-[22px_minmax(0,1fr)_minmax(4.5rem,5.5rem)] gap-x-1.5 sm:grid-cols-[40px_48px_2fr_1fr_1fr_1fr_1fr_1fr] sm:gap-x-2";
-/** Columns inside `Link` — same counts as `colLayout` after the star column. */
+/** Mobile: # + coin + price + 1D % (no star). `sm+`: # + coin + … (star sits outside the link). */
 const rowLinkGrid =
-  "grid-cols-[22px_minmax(0,1fr)_minmax(4.5rem,5.5rem)] gap-x-1.5 sm:grid-cols-[48px_2fr_1fr_1fr_1fr_1fr_1fr] sm:gap-x-2";
+  "grid grid-cols-[22px_minmax(0,1fr)_minmax(4.5rem,5.5rem)] gap-x-1.5 sm:grid-cols-[48px_2fr_1fr_1fr_1fr_1fr_1fr] sm:gap-x-2";
+
+const desktopNumericCellClass = "hidden min-w-0 w-full pr-3 text-right sm:block";
 
 const mobileRankCellClass =
-  "max-md:-ml-0.5 text-center text-[14px] font-semibold leading-5 tabular-nums text-[#71717A]";
+  "max-md:-ml-0.5 text-center text-[14px] font-semibold leading-5 tabular-nums text-[#5C5D5F]";
 
 export function CryptoTable({
   initialRows,
@@ -108,93 +113,121 @@ export function CryptoTable({
   return (
     <ScreenerTableScroll>
       <div className="bg-white">
-      <div
-        className={`grid ${colLayout} min-h-[44px] items-center px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A] ${SCREENER_TABLE_HEADER_STICKY_CLASS}`}
-      >
-        <div className="hidden sm:block" aria-hidden />
-        <div className={mobileRankCellClass}>#</div>
-        <div className="text-left">Coin</div>
-        <div className="min-w-0 w-full text-right">Price</div>
-        <div className="hidden min-w-0 w-full text-right sm:block">1D %</div>
-        <div className="hidden min-w-0 w-full text-right sm:block">1M %</div>
-        <div className="hidden min-w-0 w-full text-right sm:block">YTD %</div>
-        <div className="hidden min-w-0 w-full text-right sm:block">M Cap</div>
-      </div>
-
-        <div className={SCREENER_TABLE_BODY_DIVIDE_CLASS}>
-      {safeRows.map((r, i) => {
-        const wlKey = cryptoWatchlistKey(r.symbol);
-        return (
-          <div
-            key={r.symbol}
-            className={`group grid min-h-[60px] ${colLayout} items-center bg-white px-4 transition-colors duration-75 hover:bg-neutral-50`}
-          >
-            <WatchlistStarToggle
-              className="hidden w-6 shrink-0 items-center justify-center px-1 sm:flex sm:w-10 sm:px-3"
-              storageKey={wlKey}
-              label={r.symbol}
-              watched={watchedUnion}
-              loaded={loaded}
-              storageHydrated={storageHydrated}
-              toggleTicker={toggleTicker}
-              watchlists={watchlists}
-              activeWatchlistId={activeWatchlistId}
-            />
-            <Link
-              href={`/crypto/${encodeURIComponent(r.symbol)}`}
-              prefetch={false}
-              className={`${rowLinkGrid} col-span-3 col-start-1 grid min-h-[56px] min-w-0 w-full items-center justify-items-stretch no-underline text-[#0F0F0F] visited:text-[#0F0F0F] sm:col-span-7 sm:col-start-2 sm:min-h-[60px]`}
-              aria-label={`Open ${r.name} (${eodhdCryptoSpotTickerDisplay(r.symbol)})`}
-            >
-              <div className={mobileRankCellClass}>
-                {rankOffset + i + 1}
+        <div
+          className={cn(
+            SCREENER_TABLE_HEADER_STICKY_CLASS,
+            SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+            SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+            "md:border-b-0",
+          )}
+        >
+          <div className={SCREENER_TABLE_ROW_HOVER_PAD_CLASS}>
+            <div className="flex min-h-[44px] min-w-0 w-full items-center gap-x-1.5 py-0 text-[14px] font-medium leading-5 text-[#5C5D5F] sm:gap-x-2">
+              <div className="hidden w-6 shrink-0 sm:block sm:w-10" aria-hidden />
+              <div className={cn(rowLinkGrid, "min-h-[44px] w-full items-center")}>
+                <div className={cn(mobileRankCellClass, "text-[14px] font-medium")}>#</div>
+                <div className="text-left">Coin</div>
+                <div className="min-w-0 w-full pr-3 text-right">Price</div>
+                <div className={cn(desktopNumericCellClass, "truncate")}>1D %</div>
+                <div className={cn(desktopNumericCellClass, "truncate")}>1M %</div>
+                <div className={cn(desktopNumericCellClass, "truncate")}>YTD %</div>
+                <div className={cn(desktopNumericCellClass, "truncate")}>M Cap</div>
               </div>
+            </div>
+          </div>
+          <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
+        </div>
 
-              <div className="flex min-w-0 items-center justify-start gap-3 pr-4 text-left">
-                <CompanyLogo name={r.symbol} logoUrl={r.logoUrl} symbol={r.symbol} />
-                <div className="min-w-0">
-                  <div className="truncate text-[14px] font-semibold leading-5 text-[#0F0F0F] underline-offset-2 decoration-[#71717A] group-hover:underline">
-                    {r.name}
-                  </div>
-                  <div className="text-[12px] font-normal leading-4 !text-[#71717A]">
-                    {eodhdCryptoSpotTickerDisplay(r.symbol)}
+        <div>
+          {safeRows.map((r, i) => {
+            const wlKey = cryptoWatchlistKey(r.symbol);
+            return (
+              <div key={r.symbol} className={SCREENER_TABLE_DATA_ROW_CLASS}>
+                <div className={SCREENER_TABLE_ROW_HOVER_PAD_CLASS}>
+                  <div
+                    className={cn(
+                      "flex min-h-[60px] min-w-0 w-full items-center gap-x-1.5 max-md:gap-x-1.5 sm:gap-x-2",
+                      SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+                    )}
+                  >
+                    <WatchlistStarToggle
+                      className="hidden w-6 shrink-0 items-center justify-center px-1 sm:flex sm:w-10 sm:px-3"
+                      storageKey={wlKey}
+                      label={r.symbol}
+                      watched={watchedUnion}
+                      loaded={loaded}
+                      storageHydrated={storageHydrated}
+                      toggleTicker={toggleTicker}
+                      watchlists={watchlists}
+                      activeWatchlistId={activeWatchlistId}
+                    />
+                    <Link
+                      href={`/crypto/${encodeURIComponent(r.symbol)}`}
+                      prefetch={false}
+                      className={cn(
+                        rowLinkGrid,
+                        "min-h-[56px] w-full cursor-pointer items-center justify-items-stretch no-underline text-[#141414] visited:text-[#141414] sm:min-h-[60px]",
+                      )}
+                      aria-label={`Open ${r.name} (${eodhdCryptoSpotTickerDisplay(r.symbol)})`}
+                    >
+                      <div className={mobileRankCellClass}>{rankOffset + i + 1}</div>
+
+                      <div className="flex min-w-0 items-center justify-start gap-[12px] pr-0 text-left sm:pr-4">
+                        <CompanyLogo name={r.symbol} logoUrl={r.logoUrl} symbol={r.symbol} />
+                        <div className="min-w-0">
+                          <div className="truncate text-[14px] font-semibold leading-5 text-[#141414] underline-offset-2 decoration-[#5C5D5F] group-hover/row:underline">
+                            {r.name}
+                          </div>
+                          <div className="text-[12px] font-normal leading-4 !text-[#5C5D5F]">
+                            {eodhdCryptoSpotTickerDisplay(r.symbol)}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="block sm:hidden">
+                        <PriceAndChangeCell price={r.price} change1D={r.changePercent1D} />
+                      </div>
+                      <div
+                        className={cn(
+                          desktopNumericCellClass,
+                          "font-['Inter'] text-[14px] font-normal leading-5 tabular-nums",
+                          r.price == null || !Number.isFinite(r.price) ? "text-[#5C5D5F]" : "text-[#141414]",
+                        )}
+                      >
+                        {r.price == null || !Number.isFinite(r.price)
+                          ? "-"
+                          : formatCryptoScreenerUsdPrice(r.price)}
+                      </div>
+
+                      <div className={desktopNumericCellClass}>
+                        <ChangeCell value={r.changePercent1D} />
+                      </div>
+                      <div className={desktopNumericCellClass}>
+                        <ChangeCell value={r.changePercent1M} />
+                      </div>
+                      <div className={desktopNumericCellClass}>
+                        <ChangeCell value={r.changePercentYTD} />
+                      </div>
+
+                      <div
+                        className={cn(
+                          desktopNumericCellClass,
+                          "font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414]",
+                        )}
+                      >
+                        {r.marketCap === "-" ? "-" : r.marketCap}
+                      </div>
+                    </Link>
                   </div>
                 </div>
+                {i < safeRows.length - 1 ? (
+                  <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
+                ) : null}
               </div>
-
-              <div className="block sm:hidden">
-                <PriceAndChangeCell price={r.price} change1D={r.changePercent1D} />
-              </div>
-              <div
-                className={`hidden min-w-0 w-full text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums sm:block ${
-                  r.price == null || !Number.isFinite(r.price) ? "text-[#71717A]" : "text-[#0F0F0F]"
-                }`}
-              >
-                {r.price == null || !Number.isFinite(r.price) ? "-" : formatCryptoScreenerUsdPrice(r.price)}
-              </div>
-
-              <div className="hidden min-w-0 w-full sm:block">
-                <ChangeCell value={r.changePercent1D} />
-              </div>
-
-              <div className="hidden min-w-0 w-full sm:block">
-                <ChangeCell value={r.changePercent1M} />
-              </div>
-
-              <div className="hidden min-w-0 w-full sm:block">
-                <ChangeCell value={r.changePercentYTD} />
-              </div>
-
-              <div className="hidden min-w-0 w-full text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#0F0F0F] sm:block">
-                {r.marketCap === "-" ? "-" : r.marketCap}
-              </div>
-            </Link>
-          </div>
-        );
-      })}
+            );
+          })}
         </div>
       </div>
     </ScreenerTableScroll>
   );
 }
-

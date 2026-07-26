@@ -256,7 +256,7 @@ function tooltipLineClass(tone: BarTooltipLineTone, isFirst: boolean): string {
     : "mt-0.5 max-w-[min(100vw-2rem,14rem)] truncate text-[12px] leading-4";
   if (tone === "beat") return `${base} font-semibold text-[#16A34A]`;
   if (tone === "miss") return `${base} font-semibold text-[#DC2626]`;
-  return `${base} font-normal text-[#0F0F0F]`;
+  return `${base} font-normal text-[#141414]`;
 }
 
 type PeriodBar = {
@@ -333,7 +333,7 @@ export function EarningsEstimatesHeader({
   onMetricChange,
 }: EstimatesHeaderProps) {
   return (
-    <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="mb-0 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
       <SegmentedControl
         aria-label="Estimate metric"
         options={[
@@ -439,7 +439,7 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
             <div className="flex min-h-0 w-full min-w-0 flex-1" style={{ height: plotHeight }}>
               <div ref={plotAreaRef} className="relative min-h-0 min-w-0 flex-1" onPointerLeave={clearHover}>
                 <div
-                  className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%] z-0 bg-white"
+                  className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%] z-0 bg-[#FCFCFD]"
                   aria-hidden
                 >
                   <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
@@ -584,7 +584,7 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
                         <span className="absolute top-1/2 right-px -translate-y-1/2 border-y-[6px] border-y-transparent border-r-[7px] border-r-white" />
                       </span>
                     )}
-                    <p className="text-[12px] font-semibold leading-4 text-[#0F0F0F]">{tip.periodLabel}</p>
+                    <p className="text-[12px] font-semibold leading-4 text-[#141414]">{tip.periodLabel}</p>
                     {tip.lines.map((line, i) => (
                       <p key={`${line.tone}-${line.text}`} className={tooltipLineClass(line.tone, i === 0)} title={line.text}>
                         {line.text}
@@ -595,7 +595,7 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
               </div>
 
               <div
-                className="relative h-full shrink-0 pl-1.5 text-left font-['Inter'] text-[12px] tabular-nums leading-none text-[#71717A]"
+                className="relative h-full shrink-0 pl-1.5 text-left font-['Inter'] text-[12px] tabular-nums leading-none text-[#5C5D5F]"
                 style={{ width: Y_AXIS_W_PX }}
                 aria-hidden
               >
@@ -607,7 +607,7 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
                     return (
                       <span
                         key={i}
-                        className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-white px-0.5 py-px"
+                        className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-[#FCFCFD] px-0.5 py-px"
                         style={{ top: `${(PLOT_INSET_TOP_FRAC + pct * insetSpan) * 100}%` }}
                       >
                         {formatFundamentalsAxisTickLabel(metricConfig.axisKind, t)}
@@ -635,7 +635,7 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
                     >
                       <span
                         className={cn(
-                          "inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]",
+                          "inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#5C5D5F] sm:text-[12px]",
                           p.isForecast && EARNINGS_FORECAST_OPACITY_CLASS,
                         )}
                         style={{
@@ -656,7 +656,7 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
         </div>
       ) : (
         <div
-          className="flex items-center justify-center rounded-xl border border-dashed border-[#E4E4E7] bg-[#FAFAFA] text-[13px] text-[#71717A]"
+          className="flex items-center justify-center rounded-xl border border-dashed border-[#E4E4E7] bg-[#FAFAFA] text-[13px] text-[#5C5D5F]"
           style={{ height: CHART_HEIGHT_PX }}
         >
           No estimate data for this view.

@@ -10,12 +10,13 @@ import { getNvdaStockNews } from "@/lib/fixtures/nvda";
 
 type Ctx = { params: Promise<{ ticker: string }> };
 
-function parseOffsetLimit(request: Request): { offset: number; limit: number } {
+function parseOffsetLimit(request: Request): { offset: number; limit: number; withImages: boolean } {
   const url = new URL(request.url);
   const offset = Math.max(0, Number(url.searchParams.get("offset") ?? 0) || 0);
   const limitRaw = Number(url.searchParams.get("limit") ?? String(STOCK_NEWS_PAGE_SIZE)) || STOCK_NEWS_PAGE_SIZE;
   const limit = Math.min(20, Math.max(1, limitRaw));
-  return { offset, limit };
+  const withImages = url.searchParams.get("images") === "1";
+  return { offset, limit, withImages };
 }
 
 export async function GET(request: Request, { params }: Ctx) {
@@ -30,7 +31,7 @@ export async function GET(request: Request, { params }: Ctx) {
 
   const { ticker } = await params;
   const routeTicker = decodeURIComponent(ticker).trim().toUpperCase();
-  const { offset, limit } = parseOffsetLimit(request);
+  const { offset, limit, withImages } = parseOffsetLimit(request);
 
   if (isSingleAssetMode() && isSupportedAsset(routeTicker) && routeTicker.toUpperCase() === "NVDA") {
     const all = getNvdaStockNews();
@@ -57,9 +58,9 @@ export async function GET(request: Request, { params }: Ctx) {
   }
 
   const items =
-    offset === 0 && limit === STOCK_NEWS_PAGE_SIZE
+    offset === 0 && limit === STOCK_NEWS_PAGE_SIZE && !withImages
       ? await getStockNews(routeTicker)
-      : await loadStockNewsPage(routeTicker, offset, limit);
+      : await loadStockNewsPage(routeTicker, offset, limit, { resolveOgImages: true });
 
   const body: StockNewsResponse = {
     ticker: routeTicker,

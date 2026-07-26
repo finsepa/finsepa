@@ -88,11 +88,11 @@ export function TransactionDateField({
         <button
           type="button"
           className={cn(
-            "flex h-9 w-full items-center justify-between gap-2 rounded-[10px] bg-[#F4F4F5] px-4 text-left text-sm font-normal text-[#0F0F0F] transition-colors hover:bg-[#EBEBEB]",
+            "flex h-9 w-full items-center justify-between gap-2 rounded-[10px] bg-[#F1F1F2] px-3 text-left text-sm font-normal text-[#141414] transition-colors hover:bg-[#E6E6E7]",
           )}
         >
           <span className="tabular-nums">{format(date, "MM/dd/yyyy")}</span>
-          <CalendarIcon className="h-5 w-5 shrink-0 text-[#0F0F0F]" aria-hidden />
+          <CalendarIcon className="h-5 w-5 shrink-0 text-[#141414]" aria-hidden />
         </button>
       </PopoverTrigger>
       <PopoverContent
@@ -117,7 +117,7 @@ export function TransactionDateField({
             dropdowns:
               "!relative !z-[2] grid w-full min-w-0 grid-cols-2 gap-2 !items-stretch !justify-normal",
             dropdown_root: "!relative flex w-full min-w-0 max-w-none shrink",
-            weekday: "text-[0.8rem] font-normal text-[#71717A]",
+            weekday: "text-[0.8rem] font-normal text-[#5C5D5F]",
             outside: "text-[#A1A1AA]",
           }}
           components={{ DropdownNav: YearFirstCaptionDropdownNav }}

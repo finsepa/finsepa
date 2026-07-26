@@ -14,7 +14,7 @@ export function CombinedPortfolioSourcesPicker({
   onToggle: (id: string) => void;
 }) {
   if (standardPortfolios.length < 2) {
-    return <p className="mt-2 text-sm text-[#71717A]">Create another standard portfolio first.</p>;
+    return <p className="mt-2 text-sm text-[#5C5D5F]">Create another standard portfolio first.</p>;
   }
 
   return (
@@ -25,7 +25,7 @@ export function CombinedPortfolioSourcesPicker({
           <li key={p.id}>
             <label
               className={cn(
-                "flex cursor-pointer items-center gap-3 px-4 py-3 text-sm text-[#0F0F0F] transition-colors",
+                "flex cursor-pointer items-center gap-3 px-4 py-3 text-sm text-[#141414] transition-colors",
                 on ? "bg-white" : "hover:bg-[#F4F4F5]",
               )}
             >
@@ -45,7 +45,7 @@ export function CombinedPortfolioSourcesPicker({
 
 export function CombinedPortfolioSourceHint() {
   return (
-    <p className="text-xs leading-4 text-[#71717A]">
+    <p className="text-xs leading-4 text-[#5C5D5F]">
       Choose at least two standard portfolios. Combined portfolios are read-only — trades and cash are managed in each
       source portfolio.
     </p>

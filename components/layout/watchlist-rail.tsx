@@ -166,7 +166,7 @@ function WatchlistRailRow({
           symbol={row.symbol}
           size="sm"
         />
-        <span className="min-w-0 shrink truncate text-[14px] font-normal leading-5 text-[#0F0F0F] underline-offset-2 decoration-[#71717A] group-hover:underline">
+        <span className="min-w-0 shrink truncate text-[14px] font-normal leading-5 text-[#141414] underline-offset-2 decoration-[#5C5D5F] group-hover:underline">
           {symbolLabel}
         </span>
       </Link>
@@ -175,7 +175,7 @@ function WatchlistRailRow({
       ) : (
         <div className="ml-auto flex shrink-0 items-center gap-3 font-['Inter'] tabular-nums">
           {priceText ? (
-            <span className="shrink-0 text-right text-[14px] font-normal leading-5 text-[#0F0F0F]">
+            <span className="shrink-0 text-right text-[14px] font-normal leading-5 text-[#141414]">
               {priceText}
             </span>
           ) : null}
@@ -192,12 +192,12 @@ function WatchlistRailRow({
                   e.stopPropagation();
                   onRemove(row.storageKey);
                 }}
-                className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-[#A1A1AA] outline-none hover:bg-[#EBEBEB] hover:text-[#71717A] focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/10"
+                className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-[#A1A1AA] outline-none hover:bg-[#EBEBEB] hover:text-[#5C5D5F] focus-visible:ring-2 focus-visible:ring-[#141414]/10"
               >
                 <X className="h-3.5 w-3.5" strokeWidth={2} />
               </button>
               <span
-                className="flex h-5 w-5 shrink-0 cursor-grab items-center justify-center text-[#71717A] active:cursor-grabbing"
+                className="flex h-5 w-5 shrink-0 cursor-grab items-center justify-center text-[#5C5D5F] active:cursor-grabbing"
                 aria-hidden
               >
                 <GripVertical className="h-4 w-4" strokeWidth={2} />
@@ -475,7 +475,7 @@ export function WatchlistRail() {
     <div
       suppressHydrationWarning
       className={cn(
-        "hidden h-full min-h-0 shrink-0 self-stretch overflow-hidden md:flex md:border-l md:border-[#E4E4E7]",
+        "hidden h-full min-h-0 shrink-0 self-stretch overflow-hidden bg-white md:flex md:border-l md:border-[#EBEBEC]",
         WATCHLIST_RAIL_WIDTH_MOTION_CLASS,
       )}
       style={{ width: `${outerWidthPx}px` }}

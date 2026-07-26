@@ -38,10 +38,10 @@ function AllocationColumn({
             style={{ backgroundColor: r.color }}
             aria-hidden
           />
-          <span className="min-w-0 flex-1 truncate text-left text-[14px] leading-5 text-[#0F0F0F]">
+          <span className="min-w-0 flex-1 truncate text-left text-[14px] leading-5 text-[#141414]">
             {r.name}
           </span>
-          <span className="shrink-0 text-right tabular-nums text-[14px] font-medium leading-5 text-[#0F0F0F]">
+          <span className="shrink-0 text-right tabular-nums text-[14px] font-medium leading-5 text-[#141414]">
             {pct1.format(r.weightPct)}%
           </span>
         </li>

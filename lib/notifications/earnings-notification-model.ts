@@ -106,7 +106,7 @@ function formatSurprisePct(pct: number | null | undefined): string | null {
 }
 
 export function surpriseToneClass(pct: number | null | undefined): string {
-  if (pct == null || !Number.isFinite(pct) || pct === 0) return "text-[#71717A]";
+  if (pct == null || !Number.isFinite(pct) || pct === 0) return "text-[#5C5D5F]";
   return pct > 0 ? "text-[#16A34A]" : "text-[#DC2626]";
 }
 

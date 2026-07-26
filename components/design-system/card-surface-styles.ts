@@ -7,9 +7,9 @@ export const MOBILE_PAGE_BACKGROUND_CLASS = "bg-[#FAFAFA]";
 export const MOBILE_CARD_SURFACE_CLASS =
   "max-md:border-0 max-md:shadow-[0px_1px_2px_0px_rgba(10,10,10,0.07),0px_1px_4px_0px_rgba(10,10,10,0.12)]";
 
-/** Desktop bordered card with light single shadow. */
+/** Desktop bordered card — light drop shadow (0 / 1 / 2 / 0, #000 @ 4%). */
 export const DESKTOP_CARD_CHROME_CLASS =
-  "md:border md:border-[#E4E4E7] md:shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]";
+  "md:border md:border-[#EBEBEC] md:shadow-[0px_1px_2px_0px_rgba(0,0,0,0.04)]";
 
 /** White 16px-radius card — mobile elevation, desktop border + shadow. */
 export const MOBILE_ELEVATED_CARD_CLASS = cn(
@@ -18,20 +18,20 @@ export const MOBILE_ELEVATED_CARD_CLASS = cn(
   DESKTOP_CARD_CHROME_CLASS,
 );
 
-/** Key Stats / screener table — 12px radius desktop, 16px mobile, stacked shadow on small screens. */
+/** Inset cards (Key Stats, Key Indicators) — same 16px / stroke / shadow as screener containers. */
 export const MOBILE_INSET_CARD_CLASS = cn(
-  "rounded-xl border border-[#E4E4E7] bg-white max-md:rounded-2xl",
+  "rounded-2xl border border-[#EBEBEC] bg-white shadow-[0px_1px_2px_0px_rgba(0,0,0,0.04)]",
   MOBILE_CARD_SURFACE_CLASS,
 );
 
-/** Stock overview card section titles (Key Indicators, Key Stats) — Inter Semi Bold 16/24, black. */
-export const STOCK_OVERVIEW_SECTION_TITLE_CLASS = "text-[16px] font-semibold leading-6 text-[#0F0F0F]";
+/** Stock overview card section titles (Key Stats cards) — Inter Semi Bold 14/20, secondary grey. */
+export const STOCK_OVERVIEW_SECTION_TITLE_CLASS = "text-[14px] font-semibold leading-5 text-[#5C5D5F]";
 
-/** Stock overview section headings (Key Stats, Latest news) — Inter Semi Bold 24/36, black. */
-export const STOCK_OVERVIEW_SECTION_HEADING_CLASS = "text-[24px] font-semibold leading-9 text-[#0F0F0F]";
+/** Stock overview section headings (Latest news) — Inter Semi Bold 20/28, black. */
+export const STOCK_OVERVIEW_SECTION_HEADING_CLASS = "text-[20px] font-semibold leading-7 text-[#141414]";
 
-/** Panel cards (crypto movers, empty states) — 12px desktop, 16px mobile. */
+/** Panel cards (crypto movers, empty states) — same 16px / stroke / shadow as screener containers. */
 export const MOBILE_PANEL_CARD_CLASS = cn(
-  "rounded-[12px] border border-[#E4E4E7] bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] max-md:rounded-2xl",
+  "rounded-2xl border border-[#EBEBEC] bg-white shadow-[0px_1px_2px_0px_rgba(0,0,0,0.04)]",
   MOBILE_CARD_SURFACE_CLASS,
 );

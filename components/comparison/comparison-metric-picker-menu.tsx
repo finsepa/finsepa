@@ -20,7 +20,7 @@ import { Plus } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 
 const metricPickerSectionLabelClass =
-  "px-2 pb-1 pt-2 text-[13px] font-medium text-[#0F0F0F]";
+  "px-2 pb-1 pt-2 text-[13px] font-medium text-[#141414]";
 
 function MetricPickerSectionLabel({ label }: { label: string }) {
   return <p className={metricPickerSectionLabelClass}>{label}</p>;
@@ -30,8 +30,8 @@ function metricPickerCategoryButtonClass(active: boolean) {
   return cn(
     "w-full rounded-lg px-2 py-2 text-left text-[13px] font-medium transition-colors",
     active
-      ? "bg-[#F4F4F5] text-[#0F0F0F]"
-      : "text-[#0F0F0F] hover:bg-[#F4F4F5]",
+      ? "bg-[#F4F4F5] text-[#141414]"
+      : "text-[#141414] hover:bg-[#F4F4F5]",
   );
 }
 
@@ -134,7 +134,7 @@ export function ComparisonMetricPickerMenu({
       </div>
 
       {emptyMessage ? (
-        <div className="px-3 py-6 text-center text-[13px] text-[#0F0F0F]">{emptyMessage}</div>
+        <div className="px-3 py-6 text-center text-[13px] text-[#141414]">{emptyMessage}</div>
       ) : isSearching ? (
         <DropdownScrollArea
           className={cn(dropdownMenuPanelBodyClassName, "max-h-[min(400px,calc(100vh-12rem))] overflow-y-auto")}
@@ -220,7 +220,7 @@ function MetricPickerRow({
     >
       <span className="truncate">{def?.pickerLabel ?? id}</span>
       <Plus
-        className="h-4 w-4 shrink-0 text-[#71717A] opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+        className="h-4 w-4 shrink-0 text-[#5C5D5F] opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
         aria-hidden
       />
     </button>

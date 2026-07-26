@@ -12,6 +12,7 @@ export {
   Globe04,
   Grid01,
   IntersectCircle,
+  NavigationPointer01,
   Rows01,
   Rows03,
   Users01,
@@ -126,6 +127,7 @@ export {
   Sliders03 as SlidersHorizontal,
   Star01 as Star,
   Stars01 as Sparkles,
+  Stop,
   SwitchHorizontal01 as ArrowLeftRight,
   Table as FileSpreadsheet,
   Trash01 as Trash2,
@@ -139,4 +141,4 @@ export {
   XClose as X,
 } from "@untitledui-pro/icons/line";
 
-export { CheckVerified02 as VerifiedBadge, XCircle } from "@untitledui-pro/icons/solid";
+export { CheckVerified02 as VerifiedBadge, Stop as StopSolid, XCircle } from "@untitledui-pro/icons/solid";

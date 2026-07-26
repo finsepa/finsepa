@@ -187,7 +187,7 @@ function ReturnsLegendBadge({
       onClick={onToggle}
       aria-pressed={pressed}
       className={cn(
-        "inline-flex h-6 max-w-full min-w-0 items-center gap-2 overflow-hidden rounded-[8px] border border-[#E4E4E7] bg-white px-3 py-0 text-[12px] font-medium leading-none text-[#0F0F0F] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)] transition-opacity",
+        "inline-flex h-6 max-w-full min-w-0 items-center gap-2 overflow-hidden rounded-[8px] border border-[#E4E4E7] bg-white px-3 py-0 text-[12px] font-medium leading-none text-[#141414] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)] transition-opacity",
         !pressed && "opacity-40",
       )}
     >
@@ -218,7 +218,7 @@ function ReturnsDynamicsChartSkeleton() {
           <div className="relative min-w-0 flex-1">
             <div
               className={cn(
-                "pointer-events-none absolute inset-x-0 z-0 bg-white",
+                "pointer-events-none absolute inset-x-0 z-0 bg-[#FCFCFD]",
                 CHART_PLOT_BACKDROP_INSET_CLASS,
               )}
             >
@@ -400,7 +400,7 @@ function DynamicsSvg({
           <div ref={plotRef} className="relative min-h-0 min-w-0 flex-1 overflow-visible">
             <div
               className={cn(
-                "pointer-events-none absolute inset-x-0 z-0 bg-white",
+                "pointer-events-none absolute inset-x-0 z-0 bg-[#FCFCFD]",
                 CHART_PLOT_BACKDROP_INSET_CLASS,
               )}
               aria-hidden
@@ -514,7 +514,7 @@ function DynamicsSvg({
             {barValueLabels.map((b) => (
               <div
                 key={b.key}
-                className="pointer-events-none absolute z-[15] max-w-[5.5rem] truncate text-center text-[11px] font-semibold leading-none tabular-nums text-[#0F0F0F]"
+                className="pointer-events-none absolute z-[15] max-w-[5.5rem] truncate text-center text-[11px] font-semibold leading-none tabular-nums text-[#141414]"
                 style={{
                   left: b.leftPx,
                   top: b.topPx,
@@ -537,24 +537,24 @@ function DynamicsSvg({
                   transform: "translate(-50%, calc(-100% - 10px))",
                 }}
               >
-                <p className="text-[12px] font-semibold leading-4 text-[#0F0F0F]">{hoveredBar.label}</p>
+                <p className="text-[12px] font-semibold leading-4 text-[#141414]">{hoveredBar.label}</p>
                 {showPortfolio ? (
-                  <p className="mt-1.5 text-[12px] leading-4 text-[#71717A]">
+                  <p className="mt-1.5 text-[12px] leading-4 text-[#5C5D5F]">
                     <span className="font-semibold" style={{ color: PORTFOLIO_BAR }}>
                       Portfolio
                     </span>
-                    <span className="tabular-nums text-[#0F0F0F]">
+                    <span className="tabular-nums text-[#141414]">
                       {" "}
                       {formatTooltipPct(hoveredBar.portfolioPct)}
                     </span>
                   </p>
                 ) : null}
                 {showBenchmark ? (
-                  <p className={cn("text-[12px] leading-4 text-[#71717A]", showPortfolio ? "mt-0.5" : "mt-1.5")}>
+                  <p className={cn("text-[12px] leading-4 text-[#5C5D5F]", showPortfolio ? "mt-0.5" : "mt-1.5")}>
                     <span className="font-semibold" style={{ color: BENCHMARK_BAR }}>
                       {benchmarkLabel}
                     </span>
-                    <span className="tabular-nums text-[#0F0F0F]">
+                    <span className="tabular-nums text-[#141414]">
                       {" "}
                       {formatTooltipPct(hoveredBar.benchmarkPct)}
                     </span>
@@ -566,7 +566,7 @@ function DynamicsSvg({
 
           <div
             className={cn(
-              "relative h-full shrink-0 text-right font-['Inter'] text-[12px] tabular-nums leading-none text-[#71717A]",
+              "relative h-full shrink-0 text-right font-['Inter'] text-[12px] tabular-nums leading-none text-[#5C5D5F]",
               FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS,
             )}
             style={{ width: FUNDAMENTALS_CHART_Y_AXIS_W_PX }}
@@ -576,7 +576,7 @@ function DynamicsSvg({
               {ticks.map((t) => (
                 <span
                   key={t}
-                  className="absolute right-0 z-[1] block -translate-y-1/2 rounded-sm bg-white px-0.5 py-px"
+                  className="absolute right-0 z-[1] block -translate-y-1/2 rounded-sm bg-[#FCFCFD] px-0.5 py-px"
                   style={{ top: `${tickTopPercent(t, yMin, yMax)}%` }}
                 >
                   {formatPctAxis(t)}
@@ -604,7 +604,7 @@ function DynamicsSvg({
                   title={b.label}
                 >
                   <span
-                    className="inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]"
+                    className="inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#5C5D5F] sm:text-[12px]"
                     style={
                       rotate
                         ? {
@@ -714,7 +714,7 @@ function PortfolioReturnsDynamicsChartInner({
     <section className="mb-10 w-full min-w-0">
       <div className="mb-4 flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div className="flex min-w-0 items-start justify-between gap-3">
-          <h2 className="min-w-0 shrink text-2xl font-semibold leading-9 tracking-tight text-[#0F0F0F]">
+          <h2 className="min-w-0 shrink text-2xl font-semibold leading-9 tracking-tight text-[#141414]">
             Dynamics of portfolio returns
           </h2>
         </div>
@@ -751,7 +751,7 @@ function PortfolioReturnsDynamicsChartInner({
           <ReturnsDynamicsChartSkeleton />
         ) : error ? (
           <div className="flex min-h-[320px] flex-col items-center justify-center px-6">
-            <p className="text-sm text-[#71717A]">{error}</p>
+            <p className="text-sm text-[#5C5D5F]">{error}</p>
           </div>
         ) : !hasRenderable ? (
           <Empty variant="plain" className="min-h-[320px] justify-center py-0">

@@ -179,7 +179,7 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
       }
       try {
         const buf = await file.arrayBuffer();
-        const { rows: matrix } = parseWorkbookToMatrix(buf);
+        const { rows: matrix } = await parseWorkbookToMatrix(buf);
         if (matrix.length < 2) {
           setParseError("No data rows found.");
           return;
@@ -485,11 +485,11 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
         >
           {phase === "success" ? (
             <div className="py-2">
-              <p className="text-sm leading-relaxed text-[#0F0F0F]">
+              <p className="text-sm leading-relaxed text-[#141414]">
                 You successfully imported <strong>{importedCount}</strong>{" "}
                 {importedCount === 1 ? "transaction" : "transactions"}.
               </p>
-              <p className="mt-3 text-sm leading-relaxed text-[#71717A]">
+              <p className="mt-3 text-sm leading-relaxed text-[#5C5D5F]">
                 Updating holdings and prices can take a little while. You can close this dialog and keep working; the
                 portfolio will refresh as data finishes loading.
               </p>
@@ -497,7 +497,7 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
           ) : (
             <>
               <div className="mb-4 flex flex-col gap-2">
-                <span className="text-sm font-medium leading-5 text-[#0F0F0F]">Portfolio</span>
+                <span className="text-sm font-medium leading-5 text-[#141414]">Portfolio</span>
                 <TransactionPortfolioField portfoliosOnly />
               </div>
 
@@ -517,13 +517,13 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
                   onDrop={onDrop}
                   className={cn(
                     "flex min-h-[200px] cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed px-6 py-12 transition-colors",
-                    dragOver ? "border-[#0F0F0F] bg-[#F4F4F5]" : "border-[#D4D4D8] bg-[#FAFAFA] hover:border-[#A1A1AA]",
+                    dragOver ? "border-[#141414] bg-[#F4F4F5]" : "border-[#D4D4D8] bg-[#FAFAFA] hover:border-[#A1A1AA]",
                   )}
                 >
                   <label className="flex cursor-pointer flex-col items-center gap-2 text-center">
-                    <Upload className="h-8 w-8 text-[#71717A]" aria-hidden />
-                    <span className="text-sm font-medium text-[#0F0F0F]">Drop your spreadsheet here</span>
-                    <span className="text-xs text-[#71717A]">or click to choose · .csv, .xls, .xlsx</span>
+                    <Upload className="h-8 w-8 text-[#5C5D5F]" aria-hidden />
+                    <span className="text-sm font-medium text-[#141414]">Drop your spreadsheet here</span>
+                    <span className="text-xs text-[#5C5D5F]">or click to choose · .csv, .xls, .xlsx</span>
                     <input
                       type="file"
                       accept={ACCEPT}
@@ -552,15 +552,15 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
                       import.
                     </div>
                   ) : null}
-                  <p className="mb-2 text-xs text-[#71717A]">
-                    USD is treated as cash. Red cells need a value—click <strong className="text-[#0F0F0F]">Edit</strong>,
-                    fix the row, then <strong className="text-[#0F0F0F]">Confirm</strong> (check).{" "}
-                    <strong className="text-[#0F0F0F]">Add</strong> imports when every row is valid and you are not
+                  <p className="mb-2 text-xs text-[#5C5D5F]">
+                    USD is treated as cash. Red cells need a value—click <strong className="text-[#141414]">Edit</strong>,
+                    fix the row, then <strong className="text-[#141414]">Confirm</strong> (check).{" "}
+                    <strong className="text-[#141414]">Add</strong> imports when every row is valid and you are not
                     editing a row.
                   </p>
               <div className="max-h-[min(52vh,420px)] overflow-auto rounded-lg border border-[#E4E4E7]">
                 <table className="w-full min-w-[720px] border-collapse text-left text-xs">
-                  <thead className="sticky top-0 z-[1] bg-[#F4F4F5] text-[14px] text-[#71717A]">
+                  <thead className="sticky top-0 z-[1] bg-[#F4F4F5] text-[14px] text-[#5C5D5F]">
                     <tr>
                       <th className="border-b border-[#E4E4E7] px-2 py-2 font-medium">Asset</th>
                       <th className="border-b border-[#E4E4E7] px-2 py-2 font-medium">Operation</th>
@@ -588,7 +588,7 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
                               <button
                                 type="button"
                                 onClick={() => setEditingId(r.id)}
-                                className={cn("w-full text-left font-medium text-[#0F0F0F]", r.missing.includes("asset") && "min-h-[28px]")}
+                                className={cn("w-full text-left font-medium text-[#141414]", r.missing.includes("asset") && "min-h-[28px]")}
                               >
                                 {r.asset || "—"}
                               </button>
@@ -721,7 +721,7 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
                                   <span
                                     className={cn(
                                       "tabular-nums font-medium",
-                                      r.sum > 0 ? "text-emerald-700" : r.sum < 0 ? "text-red-700" : "text-[#0F0F0F]",
+                                      r.sum > 0 ? "text-emerald-700" : r.sum < 0 ? "text-red-700" : "text-[#141414]",
                                     )}
                                   >
                                     {r.sum > 0 ? "+" : ""}
@@ -739,7 +739,7 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
                                 <button
                                   type="button"
                                   onClick={() => setEditingId(null)}
-                                  className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-[#0F0F0F] text-white hover:bg-[#27272A]"
+                                  className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-[#141414] text-white hover:bg-[#27272A]"
                                   aria-label="Confirm changes"
                                 >
                                   <Check className="h-4 w-4" strokeWidth={2.5} aria-hidden />
@@ -749,7 +749,7 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
                                   <button
                                     type="button"
                                     onClick={() => setEditingId(r.id)}
-                                    className="flex h-8 w-8 items-center justify-center rounded-[8px] text-[#71717A] hover:bg-[#F4F4F5]"
+                                    className="flex h-8 w-8 items-center justify-center rounded-[8px] text-[#5C5D5F] hover:bg-[#F4F4F5]"
                                     aria-label="Edit row"
                                   >
                                     <Pencil className="h-4 w-4" />
@@ -757,7 +757,7 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
                                   <button
                                     type="button"
                                     onClick={() => removeRow(r.id)}
-                                    className="flex h-8 w-8 items-center justify-center rounded-[8px] text-[#71717A] hover:bg-red-50 hover:text-red-700"
+                                    className="flex h-8 w-8 items-center justify-center rounded-[8px] text-[#5C5D5F] hover:bg-red-50 hover:text-red-700"
                                     aria-label="Remove row"
                                   >
                                     <Trash2 className="h-4 w-4" />
@@ -774,8 +774,8 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
               </div>
 
               <div className="mt-4 rounded-[10px] border border-[#E4E4E7] bg-[#FAFAFA] px-4 py-3">
-                <p className="text-xs font-semibold uppercase tracking-wide text-[#71717A]">Ready to import</p>
-                <ul className="mt-2 space-y-1.5 text-sm text-[#0F0F0F]">
+                <p className="text-xs font-semibold uppercase tracking-wide text-[#5C5D5F]">Ready to import</p>
+                <ul className="mt-2 space-y-1.5 text-sm text-[#141414]">
                   <li className="flex items-center justify-between gap-4">
                     <span>Trades</span>
                     <span className="tabular-nums font-medium">{importBreakdown.trades}</span>
@@ -831,11 +831,11 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
           bodyClassName="px-8 py-10 text-center"
           bodyScroll={false}
         >
-          <Spinner className="mx-auto size-10 text-[#0F0F0F]" />
-          <p id={addingStatusId} className="mt-5 text-lg font-semibold tracking-tight text-[#0F0F0F]">
+          <Spinner className="mx-auto size-10 text-[#141414]" />
+          <p id={addingStatusId} className="mt-5 text-lg font-semibold tracking-tight text-[#141414]">
             Adding
           </p>
-          <p id={`${addingStatusId}-desc`} className="mt-2 text-sm leading-relaxed text-[#71717A]">
+          <p id={`${addingStatusId}-desc`} className="mt-2 text-sm leading-relaxed text-[#5C5D5F]">
             Applying your transactions and fetching market prices. Please wait—this can take a little while if you
             imported many rows.
           </p>

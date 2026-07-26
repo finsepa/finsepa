@@ -82,7 +82,7 @@ function PerfCellMaybe({
 }) {
   if (value == null || !Number.isFinite(value)) {
     return (
-      <td className={cn(perfCellClass(showOnMobile, hideCompanyColumn), "text-[#71717A]")}>—</td>
+      <td className={cn(perfCellClass(showOnMobile, hideCompanyColumn), "text-[#5C5D5F]")}>—</td>
     );
   }
   const isPositive = value >= 0;
@@ -206,19 +206,19 @@ function OverviewCompareRow({
           )}
           <div className="min-w-0 overflow-hidden">
             <div
-              className="truncate text-[14px] font-semibold leading-5 text-[#0F0F0F]"
+              className="truncate text-[14px] font-semibold leading-5 text-[#141414]"
               title={compareDisplayName}
             >
               {compareDisplayName}
             </div>
-            <div className="truncate text-[12px] leading-4 text-[#71717A]" title={compareSym}>
+            <div className="truncate text-[12px] leading-4 text-[#5C5D5F]" title={compareSym}>
               {isCryptoOverviewSymbol(compareSym) ? eodhdCryptoSpotTickerDisplay(compareSym) : compareSym}
             </div>
           </div>
           <button
             type="button"
             onClick={onRemove}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[#71717A] transition-colors hover:bg-[#F4F4F5] hover:text-[#0F0F0F]"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[#5C5D5F] transition-colors hover:bg-[#F4F4F5] hover:text-[#141414]"
             aria-label={`Remove ${compareSym} from comparison`}
           >
             <X className="h-4 w-4" strokeWidth={2} />
@@ -326,14 +326,14 @@ export function MiniTable({
             )}
           >
             {hasCompare ? (
-              <th className="min-w-0 px-3 py-2.5 text-left text-[14px] font-medium text-[#71717A] max-md:min-w-[9.5rem] max-md:w-[52%] md:min-w-[200px]">
+              <th className="min-w-0 px-3 py-2.5 text-left text-[14px] font-medium text-[#5C5D5F] max-md:min-w-[9.5rem] max-md:w-[52%] md:min-w-[200px]">
                 Company
               </th>
             ) : null}
             {MINI_TABLE_PERF_COLUMNS.map((col) => (
               <th
                 key={col.header}
-                className={cn(perfColClass(col.showOnMobile, hideCompanyColumn), "text-[14px] font-medium text-[#71717A]")}
+                className={cn(perfColClass(col.showOnMobile, hideCompanyColumn), "text-[14px] font-medium text-[#5C5D5F]")}
               >
                 {col.header}
               </th>
@@ -352,12 +352,12 @@ export function MiniTable({
                 )}
                 <div className="min-w-0 overflow-hidden">
                   <div
-                    className="truncate text-[14px] font-semibold leading-5 text-[#0F0F0F]"
+                    className="truncate text-[14px] font-semibold leading-5 text-[#141414]"
                     title={displayName}
                   >
                     {displayName}
                   </div>
-                  <div className="truncate text-[12px] leading-4 text-[#71717A]" title={sym}>
+                  <div className="truncate text-[12px] leading-4 text-[#5C5D5F]" title={sym}>
                     {cryptoPrimary ? eodhdCryptoSpotTickerDisplay(sym) : sym}
                   </div>
                 </div>

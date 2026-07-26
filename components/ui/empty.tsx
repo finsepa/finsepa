@@ -57,7 +57,7 @@ export function EmptyMedia({
     return (
       <div
         className={cn(
-          "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#F4F4F5] text-[#71717A]",
+          "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#F4F4F5] text-[#5C5D5F]",
           className,
         )}
       >
@@ -69,8 +69,8 @@ export function EmptyMedia({
 }
 
 /** Shared empty-state typography (16/24 title, 14/20 description). */
-export const emptyTitleClassName = "text-[16px] font-semibold leading-[24px] text-[#0F0F0F]";
-export const emptyDescriptionClassName = "text-[14px] font-normal leading-[20px] text-[#71717A]";
+export const emptyTitleClassName = "text-[16px] font-semibold leading-[24px] text-[#141414]";
+export const emptyDescriptionClassName = "text-[14px] font-normal leading-[20px] text-[#5C5D5F]";
 
 export function EmptyTitle({ className, children }: { className?: string; children?: ReactNode }) {
   return (

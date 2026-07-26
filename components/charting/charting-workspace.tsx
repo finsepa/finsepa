@@ -54,6 +54,12 @@ import {
   formatBarChartDataLabel,
   formatChartingTableCell,
 } from "@/components/charting/charting-individual-company-table";
+import {
+  DEFAULT_CHART_TIME_RANGE,
+  DEFAULT_CHART_TIME_RANGE_ORDER,
+  type ChartTimeRange,
+  type ChartType,
+} from "@/components/charting/charting-time-range";
 import { ChartingDataTableSettingsMenu } from "@/components/charting/charting-data-table-settings-menu";
 import { DataFetchTopLoader } from "@/components/layout/data-fetch-top-loader";
 import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
@@ -61,6 +67,8 @@ import { ChartLoadingIndicator } from "@/components/ui/chart-loading-indicator";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { ChartingVisualSwitcher } from "@/components/stock/multichart-visual-switcher";
 import { secondaryFillButtonClassName, secondaryOutlineButtonClassName, TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
+import { topbarSquircleIconClass } from "@/components/design-system/topbar-control-classes";
+import { STOCK_OVERVIEW_SECTION_HEADING_CLASS } from "@/components/design-system/card-surface-styles";
 import { ChartingMetricPickerMenu } from "@/components/charting/charting-metric-picker-menu";
 import { cn } from "@/lib/utils";
 import {
@@ -119,6 +127,13 @@ import {
 } from "@/lib/chart/fundamentals-chart-display-options";
 import { filterPointsForChartingFundamentalsLineChart } from "@/lib/chart/fundamentals-line-chart-series";
 import { chartingFundamentalsLineTimeRange } from "@/lib/chart/fundamentals-line-chart-config";
+
+export type { ChartTimeRange, ChartType } from "@/components/charting/charting-time-range";
+export {
+  DEFAULT_CHART_TIME_RANGE,
+  DEFAULT_CHART_TIME_RANGE_ORDER,
+  STANDALONE_CHARTING_TIME_RANGE_ORDER,
+} from "@/components/charting/charting-time-range";
 
 /** Y-axis tick labels — match reference (e.g. "30 B", "15 B", "0"). */
 function formatChartAxisPrice(p: number): string {
@@ -259,12 +274,6 @@ function priceFormatForKind(kind: ChartingMetricKind) {
       return { type: "price" as const, precision: 2, minMove: 0.01 };
   }
 }
-
-export type ChartTimeRange = "1Y" | "2Y" | "3Y" | "5Y" | "10Y" | "all";
-export type ChartType = "line" | "bars";
-
-/** Default period when opening Charting (stock tab, compare, empty toolbar). */
-export const DEFAULT_CHART_TIME_RANGE: ChartTimeRange = "10Y";
 
 /** Right-edge value pills (Figma / TradingView-style) for multi-metric line charts. */
 type LineEndBadge = {
@@ -595,12 +604,6 @@ function chartingHoverBandVerticalRangePx(
   }
   return { y0: yTop, y1: yBottom };
 }
-
-/** Stock page Charting tab — 3Y through All (no 1Y/2Y). */
-export const DEFAULT_CHART_TIME_RANGE_ORDER: ChartTimeRange[] = ["3Y", "5Y", "10Y", "all"];
-
-/** Standalone `/charting` page only (not symbol tab). */
-export const STANDALONE_CHARTING_TIME_RANGE_ORDER: ChartTimeRange[] = ["3Y", "5Y", "10Y", "all"];
 
 const TIME_RANGE_LABELS: Record<ChartTimeRange, string> = {
   "1Y": "1Y",
@@ -2575,7 +2578,7 @@ export function ChartingWorkspace({
             },
             layout: {
               background: { type: ColorType.Solid, color: "transparent" },
-              textColor: "#71717A",
+              textColor: "#5C5D5F",
               fontSize: 12,
               fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
               attributionLogo: false,
@@ -3499,15 +3502,15 @@ export function ChartingWorkspace({
   return (
     <>
       {!screenshotPreviewMode ? <DataFetchTopLoader active={loading} /> : null}
-      <div className={cn(screenshotPreviewMode ? "space-y-1" : "space-y-4", !screenshotPreviewMode && "pt-1")}>
+      <div className={cn(screenshotPreviewMode ? "space-y-1" : "space-y-5")}>
       {!screenshotPreviewMode ? (
-      <div className="flex flex-col gap-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-3">
-          <h2 className="min-w-0 shrink-0 text-2xl font-semibold leading-9 tracking-tight text-[#0F0F0F] sm:flex-1">
+      <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-2">
+          <h2 className={cn("min-w-0 shrink-0 sm:flex-1", STOCK_OVERVIEW_SECTION_HEADING_CLASS)}>
             {workspaceTitle}
           </h2>
           {!showStockTabMetricEmptyState ? (
-          <div className="flex min-w-0 flex-wrap items-center gap-3 sm:flex-nowrap sm:justify-end sm:overflow-x-auto sm:pb-0.5">
+          <div className="flex min-w-0 flex-wrap items-center gap-2 sm:flex-nowrap sm:justify-end sm:overflow-x-auto sm:pb-0.5">
             <div className="flex shrink-0 flex-nowrap items-center gap-2">
               {chartType !== "line" ? (
                 <TabSwitcher
@@ -3530,7 +3533,7 @@ export function ChartingWorkspace({
             <div className="shrink-0">
               <TabSwitcher
                 className="inline-flex w-max min-w-0 flex-nowrap"
-                size={useFundamentalsLineChart ? "sm" : undefined}
+                size="sm"
                 options={timeRangeTabOptions}
                 value={timeRange}
                 onChange={(next) => {
@@ -3544,20 +3547,20 @@ export function ChartingWorkspace({
                 type="button"
                 onClick={handleOpenDownload}
                 disabled={loading || empty || noMetricData || showStockTabMetricEmptyState}
-                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#0F0F0F] transition-colors hover:bg-[#FAFAFA] disabled:cursor-not-allowed disabled:opacity-40"
+                className={cn(topbarSquircleIconClass, "disabled:cursor-not-allowed disabled:opacity-40")}
                 aria-label="Download chart"
               >
-                <Download className="h-4 w-4" strokeWidth={2} aria-hidden />
+                <Download className="h-5 w-5" strokeWidth={1.75} aria-hidden />
               </button>
             ) : null}
             {isFigmaToolbar ? (
               <button
                 type="button"
                 onClick={() => router.replace(buildStandaloneChartPath(pathRoute, [], []), { scroll: false })}
-                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#0F0F0F] transition-colors hover:bg-[#FAFAFA]"
+                className={topbarSquircleIconClass}
                 aria-label="Clear companies and metrics"
               >
-                <RefreshCw className="h-4 w-4" strokeWidth={2} aria-hidden />
+                <RefreshCw className="h-5 w-5" strokeWidth={1.75} aria-hidden />
               </button>
             ) : null}
           </div>
@@ -3570,35 +3573,33 @@ export function ChartingWorkspace({
             {selected.length > 0 && fullPageCompanyAddSlot ? fullPageCompanyAddSlot : null}
           </div>
         ) : !metricControlsInLegend || fullPageCompanyChipSlot ? (
-          <div className={metricControlsInLegend ? "pb-0" : "pb-4"}>
-            <div className="flex flex-wrap items-center gap-4">
-              {!metricControlsInLegend
-                ? selected.map((id) => (
-                    <div
-                      key={id}
-                      className="order-1 inline-flex max-w-full min-w-0 items-stretch overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white"
+          <div className="flex flex-wrap items-center gap-2">
+            {!metricControlsInLegend
+              ? selected.map((id) => (
+                  <div
+                    key={id}
+                    className="order-1 inline-flex max-w-full min-w-0 items-stretch overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white"
+                  >
+                    <span className="flex min-h-[36px] min-w-0 items-center border-r border-[#E4E4E7] px-4 py-2 text-[14px] font-medium leading-5 text-[#141414]">
+                      <span className="truncate">{CHARTING_METRIC_LABEL[id]}</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => removeMetric(id)}
+                      disabled={selected.length <= 1}
+                      className="flex w-9 shrink-0 items-center justify-center text-[#141414] transition-colors hover:bg-[#FAFAFA] disabled:pointer-events-none disabled:opacity-30"
+                      aria-label={`Remove ${CHARTING_METRIC_LABEL[id]}`}
                     >
-                      <span className="flex min-h-[36px] min-w-0 items-center border-r border-[#E4E4E7] px-4 py-2 text-[14px] font-medium leading-5 text-[#0F0F0F]">
-                        <span className="truncate">{CHARTING_METRIC_LABEL[id]}</span>
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => removeMetric(id)}
-                        disabled={selected.length <= 1}
-                        className="flex w-9 shrink-0 items-center justify-center text-[#0F0F0F] transition-colors hover:bg-[#FAFAFA] disabled:pointer-events-none disabled:opacity-30"
-                        aria-label={`Remove ${CHARTING_METRIC_LABEL[id]}`}
-                      >
-                        <X className="h-5 w-5" strokeWidth={1.5} aria-hidden />
-                      </button>
-                    </div>
-                  ))
-                : null}
-              {!metricControlsInLegend ? <div className="order-2">{addMetricPicker}</div> : null}
-              {fullPageCompanyChipSlot ? <div className="order-3">{fullPageCompanyChipSlot}</div> : null}
-              {selected.length > 0 && fullPageCompanyAddSlot ? (
-                <div className="order-4">{fullPageCompanyAddSlot}</div>
-              ) : null}
-            </div>
+                      <X className="h-5 w-5" strokeWidth={1.5} aria-hidden />
+                    </button>
+                  </div>
+                ))
+              : null}
+            {!metricControlsInLegend ? <div className="order-2">{addMetricPicker}</div> : null}
+            {fullPageCompanyChipSlot ? <div className="order-3">{fullPageCompanyChipSlot}</div> : null}
+            {selected.length > 0 && fullPageCompanyAddSlot ? (
+              <div className="order-4">{fullPageCompanyAddSlot}</div>
+            ) : null}
           </div>
         ) : null}
       </div>
@@ -3625,13 +3626,13 @@ export function ChartingWorkspace({
           className="min-h-[min(50vh,420px)]"
         />
       ) : empty ? (
-        <p className="max-w-md text-[14px] leading-6 text-[#71717A]">
+        <p className="max-w-md text-[14px] leading-6 text-[#5C5D5F]">
           Financial statement data isn&apos;t available for this symbol.
         </p>
       ) : (
         <>
           {noMetricData ? (
-            <p className="max-w-md text-[14px] leading-6 text-[#71717A]">
+            <p className="max-w-md text-[14px] leading-6 text-[#5C5D5F]">
               No series data for the selected metrics on this symbol.
             </p>
           ) : useFundamentalsLineChart ? (
@@ -3647,11 +3648,11 @@ export function ChartingWorkspace({
           ) : (
             <div className="w-full min-w-0 overflow-visible" style={{ height: chartHeight }}>
               <div className="flex min-h-0 w-full overflow-visible" style={{ height: chartPlotHeight }}>
-                <div className="relative min-h-0 min-w-0 flex-1 overflow-visible bg-white">
+                <div className="relative min-h-0 min-w-0 flex-1 overflow-visible bg-[#FCFCFD]">
                   <div className="pointer-events-none absolute inset-0 z-0" aria-hidden>
                     <div
                       className={cn(
-                        "absolute inset-x-0 bg-white",
+                        "absolute inset-x-0 bg-[#FCFCFD]",
                         CHARTING_PLOT_BACKDROP_INSET_CLASS,
                       )}
                     >
@@ -3690,7 +3691,7 @@ export function ChartingWorkspace({
                           >
                             <span
                               className={cn(
-                                "truncate text-[11px] font-semibold leading-none tabular-nums text-[#0F0F0F]",
+                                "truncate text-[11px] font-semibold leading-none tabular-nums text-[#141414]",
                                 !screenshotPreviewMode && "fundamentals-bar-value-label-in",
                               )}
                               style={{
@@ -3750,7 +3751,7 @@ export function ChartingWorkspace({
                         >
                           <span
                             className={cn(
-                              "truncate text-[11px] font-semibold leading-none tabular-nums text-[#0F0F0F]",
+                              "truncate text-[11px] font-semibold leading-none tabular-nums text-[#141414]",
                               !screenshotPreviewMode && "fundamentals-bar-value-label-in",
                             )}
                             style={{
@@ -3778,7 +3779,7 @@ export function ChartingWorkspace({
                           title={b.text}
                         >
                           <span
-                            className="truncate text-[11px] font-semibold leading-none tabular-nums text-[#0F0F0F]"
+                            className="truncate text-[11px] font-semibold leading-none tabular-nums text-[#141414]"
                             style={{
                               textShadow:
                                 "0 0 3px rgba(255,255,255,0.95), 0 1px 2px rgba(255,255,255,0.8)",
@@ -3815,7 +3816,7 @@ export function ChartingWorkspace({
                             <span className="absolute top-1/2 right-px -translate-y-1/2 border-y-[6px] border-y-transparent border-r-[7px] border-r-white" />
                           </span>
                         )}
-                        <p className="text-[12px] font-semibold leading-4 text-[#0F0F0F]">{hover.periodLabel}</p>
+                        <p className="text-[12px] font-semibold leading-4 text-[#141414]">{hover.periodLabel}</p>
                         <div className="mt-1.5 space-y-1">
                           {hover.rows.map((r) => (
                             <div key={r.id} className="flex items-baseline justify-between gap-3">
@@ -3825,11 +3826,11 @@ export function ChartingWorkspace({
                                   style={{ backgroundColor: r.color }}
                                   aria-hidden
                                 />
-                                <span className="truncate text-[12px] font-normal leading-4 text-[#71717A]">
+                                <span className="truncate text-[12px] font-normal leading-4 text-[#5C5D5F]">
                                   {r.label}
                                 </span>
                               </span>
-                              <span className="shrink-0 text-[12px] font-semibold leading-4 tabular-nums text-[#0F0F0F]">
+                              <span className="shrink-0 text-[12px] font-semibold leading-4 tabular-nums text-[#141414]">
                                 {r.value}
                               </span>
                             </div>
@@ -3844,7 +3845,7 @@ export function ChartingWorkspace({
                     {primaryYAxis ? (
                       <div
                         className={cn(
-                          "relative h-full text-left font-['Inter'] text-[12px] tabular-nums leading-none text-[#71717A]",
+                          "relative h-full text-left font-['Inter'] text-[12px] tabular-nums leading-none text-[#5C5D5F]",
                           FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS,
                         )}
                         style={{ width: FUNDAMENTALS_CHART_Y_AXIS_W_PX }}
@@ -3858,7 +3859,7 @@ export function ChartingWorkspace({
                             return (
                               <span
                                 key={`y-tick-primary-${i}`}
-                                className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-white px-1 py-px"
+                                className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-[#FCFCFD] px-1 py-px"
                                 style={{
                                   top:
                                     topPx != null && Number.isFinite(topPx)
@@ -3876,7 +3877,7 @@ export function ChartingWorkspace({
                     {percentYAxis ? (
                       <div
                         className={cn(
-                          "relative h-full text-left font-['Inter'] text-[12px] tabular-nums leading-none text-[#71717A]",
+                          "relative h-full text-left font-['Inter'] text-[12px] tabular-nums leading-none text-[#5C5D5F]",
                           FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS,
                         )}
                         style={{ width: FUNDAMENTALS_CHART_Y_AXIS_W_PX }}
@@ -3890,7 +3891,7 @@ export function ChartingWorkspace({
                             return (
                               <span
                                 key={`y-tick-percent-${i}`}
-                                className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-white px-1 py-px"
+                                className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-[#FCFCFD] px-1 py-px"
                                 style={{
                                   top:
                                     topPx != null && Number.isFinite(topPx)
@@ -3908,7 +3909,7 @@ export function ChartingWorkspace({
                     {valuationYAxis ? (
                       <div
                         className={cn(
-                          "relative h-full text-left font-['Inter'] text-[12px] tabular-nums leading-none text-[#71717A]",
+                          "relative h-full text-left font-['Inter'] text-[12px] tabular-nums leading-none text-[#5C5D5F]",
                           FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS,
                         )}
                         style={{ width: FUNDAMENTALS_CHART_Y_AXIS_W_PX }}
@@ -3922,7 +3923,7 @@ export function ChartingWorkspace({
                             return (
                               <span
                                 key={`y-tick-valuation-${i}`}
-                                className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-white px-1 py-px"
+                                className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-[#FCFCFD] px-1 py-px"
                                 style={{
                                   top:
                                     topPx != null && Number.isFinite(topPx)
@@ -3965,7 +3966,7 @@ export function ChartingWorkspace({
                       <span
                         key={lab.key}
                         className={cn(
-                          "absolute inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]",
+                          "absolute inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#5C5D5F] sm:text-[12px]",
                           horizontalPeriodAxisLabels
                             ? spacedHorizontalPeriodAxis
                               ? "top-3"
@@ -3998,13 +3999,13 @@ export function ChartingWorkspace({
             </div>
           )}
           {hasMetricSelection && !useRailMetricPicker && (!screenshotPreviewMode || screenshotShowHorizontalLegend) ? (
-          <div className={cn("flex justify-center pt-0", screenshotPreviewMode ? "-mt-1" : "-mt-0.5")}>
+          <div className={cn("flex justify-center", screenshotPreviewMode && "-mt-1")}>
             <div className="flex flex-wrap items-center justify-center gap-2">
               {selected.map((id) =>
                 metricControlsInLegend && !screenshotPreviewMode ? (
                   <div
                     key={`chart-legend-${id}`}
-                    className="inline-flex h-6 max-w-full min-w-0 items-stretch overflow-hidden rounded-[8px] border border-[#E4E4E7] bg-white text-[12px] font-medium leading-none text-[#0F0F0F] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]"
+                    className="inline-flex h-6 max-w-full min-w-0 items-stretch overflow-hidden rounded-[8px] border border-[#E4E4E7] bg-white text-[12px] font-medium leading-none text-[#141414] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]"
                   >
                     <span className="flex min-w-0 items-center gap-2 pl-3 pr-1 py-0">
                       <span
@@ -4026,7 +4027,7 @@ export function ChartingWorkspace({
                       type="button"
                       onClick={() => removeMetric(id)}
                       disabled={!stockTabStartsEmptyMetrics && selected.length <= 1}
-                      className="flex w-6 shrink-0 items-center justify-center border-l border-[#E4E4E7] text-[#0F0F0F] transition-colors hover:bg-[#FAFAFA] disabled:pointer-events-none disabled:opacity-30"
+                      className="flex w-6 shrink-0 items-center justify-center border-l border-[#E4E4E7] text-[#141414] transition-colors hover:bg-[#FAFAFA] disabled:pointer-events-none disabled:opacity-30"
                       aria-label={`Remove ${CHARTING_METRIC_LABEL[id]}`}
                     >
                       <X className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
@@ -4035,7 +4036,7 @@ export function ChartingWorkspace({
                 ) : (
                   <div
                     key={`chart-legend-${id}`}
-                    className="inline-flex h-6 max-w-full min-w-0 items-center gap-2 overflow-hidden rounded-[8px] border border-[#E4E4E7] bg-white px-3 py-0 text-[12px] font-medium leading-none text-[#0F0F0F] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]"
+                    className="inline-flex h-6 max-w-full min-w-0 items-center gap-2 overflow-hidden rounded-[8px] border border-[#E4E4E7] bg-white px-3 py-0 text-[12px] font-medium leading-none text-[#141414] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]"
                   >
                     <span
                       className="h-2.5 w-2.5 shrink-0 rounded-full"

@@ -34,7 +34,7 @@ import {
 import { cn } from "@/lib/utils";
 
 const titleGhostTriggerClass =
-  "flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-[10px] text-[#71717A] transition-colors hover:bg-[#F4F4F5] hover:text-[#0F0F0F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15 focus-visible:ring-offset-2";
+  "flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-[10px] text-[#5C5D5F] transition-colors hover:bg-[#F4F4F5] hover:text-[#141414] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15 focus-visible:ring-offset-2";
 
 type ModalStep = "closed" | "create" | "createSection" | "rename" | "deleteConfirm";
 
@@ -212,7 +212,7 @@ export function WatchlistOptionsMenu({
             aria-expanded={menuOpen}
             aria-haspopup="menu"
             onClick={toggleMenu}
-            className="flex min-w-0 flex-1 items-center gap-0.5 truncate pl-1 text-sm font-semibold leading-5 text-[#52525B] transition-colors hover:text-[#0F0F0F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15 focus-visible:rounded-[6px]"
+            className="flex min-w-0 flex-1 items-center gap-0.5 truncate pl-1 text-sm font-semibold leading-5 text-[#52525B] transition-colors hover:text-[#141414] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15 focus-visible:rounded-[6px]"
           >
             <span className="truncate" suppressHydrationWarning>
               {name}
@@ -253,11 +253,11 @@ export function WatchlistOptionsMenu({
                     }}
                     className="flex min-w-0 flex-1 items-center gap-2 py-2 pl-3 pr-2 text-left"
                   >
-                    <span className="min-w-0 flex-1 truncate text-sm font-medium leading-5 text-[#0F0F0F]">
+                    <span className="min-w-0 flex-1 truncate text-sm font-medium leading-5 text-[#141414]">
                       {list.name}
                     </span>
                     {list.id === activeWatchlistId ? (
-                      <Check className="h-4 w-4 shrink-0 text-[#0F0F0F]" strokeWidth={2} aria-hidden />
+                      <Check className="h-4 w-4 shrink-0 text-[#141414]" strokeWidth={2} aria-hidden />
                     ) : (
                       <span className="h-4 w-4 shrink-0" aria-hidden />
                     )}
@@ -362,7 +362,7 @@ export function WatchlistOptionsMenu({
           }
         >
           <label className="flex w-full flex-col gap-2">
-            <span className="text-sm font-medium leading-5 text-[#0F0F0F]">Watchlist name</span>
+            <span className="text-sm font-medium leading-5 text-[#141414]">Watchlist name</span>
             <ClearableInput
               type="text"
               value={createValue}
@@ -397,7 +397,7 @@ export function WatchlistOptionsMenu({
           }
         >
           <label className="flex w-full flex-col gap-2">
-            <span className="text-sm font-medium leading-5 text-[#0F0F0F]">Section name</span>
+            <span className="text-sm font-medium leading-5 text-[#141414]">Section name</span>
             <ClearableInput
               type="text"
               value={createSectionValue}
@@ -432,7 +432,7 @@ export function WatchlistOptionsMenu({
           }
         >
           <label className="flex w-full flex-col gap-2">
-            <span className="text-sm font-medium leading-5 text-[#0F0F0F]">Watchlist name</span>
+            <span className="text-sm font-medium leading-5 text-[#141414]">Watchlist name</span>
             <ClearableInput
               type="text"
               value={renameValue}
@@ -466,9 +466,9 @@ export function WatchlistOptionsMenu({
             </AppModalFooter>
           }
         >
-          <p className="text-sm leading-5 text-[#0F0F0F]">Are you sure to delete?</p>
-          <p className="mt-3 text-sm leading-5 text-[#71717A]">
-            <span className="font-semibold text-[#0F0F0F]">{pendingDeleteName ?? name}</span> and all of its
+          <p className="text-sm leading-5 text-[#141414]">Are you sure to delete?</p>
+          <p className="mt-3 text-sm leading-5 text-[#5C5D5F]">
+            <span className="font-semibold text-[#141414]">{pendingDeleteName ?? name}</span> and all of its
             symbols will be removed.
           </p>
         </AppModalShell>

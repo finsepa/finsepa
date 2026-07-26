@@ -90,7 +90,7 @@ export function SidebarEdgeCollapseHandle({
         aria-label={collapsed ? "Expand Menu" : "Collapse Menu"}
         className={cn(
           "absolute inset-0 cursor-pointer border-0 bg-transparent p-0 outline-none",
-          "focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15 focus-visible:ring-offset-1",
+          "focus-visible:ring-2 focus-visible:ring-[#141414]/15 focus-visible:ring-offset-1",
         )}
       >
         {/* Bar + chevron sit just inside the main panel, clear of the divider line */}

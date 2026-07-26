@@ -42,12 +42,12 @@ export function StockExtendedHoursPrice({ quote, loading = false }: Props) {
   return (
     <div className={extendedHoursShellClass}>
       <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
-        <span className="text-[22px] font-semibold leading-8 tabular-nums text-[#0F0F0F] sm:text-[24px] sm:leading-8">
+        <span className="text-[22px] font-semibold leading-8 tabular-nums text-[#141414] sm:text-[24px] sm:leading-8">
           {formatUsdPrice(quote.extendedPrice)}
         </span>
         <span className={`text-[15px] font-medium tabular-nums ${changeClass}`}>{changeText}</span>
       </div>
-      <p className="mt-0.5 flex items-center gap-1.5 text-[13px] leading-5 text-[#71717A]">
+      <p className="mt-0.5 flex items-center gap-1.5 text-[13px] leading-5 text-[#5C5D5F]">
         {quote.session === "pre" ? (
           <PreMarketEarningsIcon size={EXTENDED_HOURS_TIMING_ICON_PX} />
         ) : (

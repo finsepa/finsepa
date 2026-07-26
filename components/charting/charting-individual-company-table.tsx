@@ -19,7 +19,21 @@ import {
 } from "@/lib/market/stock-charting-metrics";
 import { ChartingDataTableSettingsMenu } from "@/components/charting/charting-data-table-settings-menu";
 import { fundamentalsBarSolidAtIndex } from "@/lib/colors/fundamentals-multi-bar-colors";
+import {
+  SCREENER_TABLE_DATA_ROW_CLASS,
+  SCREENER_TABLE_HEADER_STICKY_CLASS,
+  SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+  SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+  DEFAULT_TABLE_ROW_HOVER_PAD_CLASS,
+  SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+  SCREENER_TABLE_STROKE_INSET_CLASS,
+  ScreenerTableScroll,
+} from "@/components/screener/screener-table-scroll";
 import { cn } from "@/lib/utils";
+import {
+  chartingTableFirstColClass,
+  type ChartingTableTimeRange,
+} from "@/components/charting/charting-table-styles";
 
 function chartingRowValue(row: ChartingSeriesPoint, id: ChartingMetricId): number | null {
   return readChartingMetricValue(row, id);
@@ -65,11 +79,11 @@ export function chartingTableCellTone(id: ChartingMetricId, v: number | null): s
     v == null ||
     !Number.isFinite(v)
   ) {
-    return "text-[#0F0F0F]";
+    return "text-[#141414]";
   }
   if (v > 0) return "text-[#16A34A]";
   if (v < 0) return "text-[#DC2626]";
-  return "text-[#71717A]";
+  return "text-[#5C5D5F]";
 }
 
 function metricRowLabel(ticker: string | undefined, id: ChartingMetricId): string {
@@ -86,19 +100,24 @@ function metricColor(
   return metricColors?.get(id) ?? fundamentalsBarSolidAtIndex(metricIndex);
 }
 
-import {
-  CHARTING_TABLE_STICKY_FIRST_COL_BODY_CLASS,
-  CHARTING_TABLE_STICKY_FIRST_COL_HEAD_CLASS,
-  chartingTableFirstColClass,
-} from "@/components/charting/charting-table-styles";
+/** Screener-style track: period + equal metric columns (fills card width). */
+function chartingScreenerGridStyle(metricCount: number, firstColClass: string): {
+  className: string;
+  style: { gridTemplateColumns: string };
+} {
+  const periodTrack = firstColClass.includes("11rem") ? "minmax(11rem,1.25fr)" : "minmax(10rem,1.1fr)";
+  const metricTracks = Array.from({ length: metricCount }, () => "minmax(5.5rem,1fr)").join(" ");
+  return {
+    className: "grid w-full min-w-0 items-center gap-x-2",
+    style: { gridTemplateColumns: `${periodTrack} ${metricTracks}` },
+  };
+}
 
 type Props = {
   ordered: ChartingSeriesPoint[];
   selected: ChartingMetricId[];
   periodMode: "annual" | "quarterly";
-  /** When not `all`, caps sticky period column width so it does not stretch on sparse ranges (e.g. 1Y). */
-  timeRange?: "1Y" | "2Y" | "3Y" | "5Y" | "10Y" | "all";
-  /** Matches chart legend, e.g. `RACE Revenue`. */
+  timeRange?: ChartingTableTimeRange;
   ticker?: string;
   metricColors?: Map<ChartingMetricId, string>;
   isBarValuesVisible?: (id: ChartingMetricId) => boolean;
@@ -108,8 +127,7 @@ type Props = {
 };
 
 /**
- * Single-company charting table — fiscal periods as rows (newest first), metrics as columns.
- * Reference: Figma charting data grid (Year × PYPL Revenue / Net Income).
+ * Single-company charting table — same chrome as Stocks Companies screener.
  */
 export function ChartingIndividualCompanyTable({
   ordered,
@@ -128,90 +146,92 @@ export function ChartingIndividualCompanyTable({
   const firstColClass = chartingTableFirstColClass(timeRange);
   const periodHeaderLabel = periodMode === "quarterly" ? "Period" : "Year";
   const periodsNewestFirst = [...ordered].reverse();
+  const grid = chartingScreenerGridStyle(selected.length, firstColClass);
+  const tableMinWidthPx = 280 + selected.length * 96;
 
   return (
-    <div
-      className={cn(
-        "overflow-x-auto overscroll-x-contain pt-3 [-webkit-overflow-scrolling:touch]",
-        className,
-      )}
-    >
-      <table className="w-full min-w-max border-separate border-spacing-0 bg-white">
-        <thead>
-          <tr className="bg-white">
-            <th
-              scope="col"
+    <div className={cn(className)}>
+      <ScreenerTableScroll mobileScroll tableMinWidthPx={tableMinWidthPx}>
+        <div
+          className={cn(
+            SCREENER_TABLE_HEADER_STICKY_CLASS,
+            SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+            SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+            "md:border-b-0",
+          )}
+        >
+          <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+            <div
               className={cn(
-                CHARTING_TABLE_STICKY_FIRST_COL_HEAD_CLASS,
-                "border-t border-b border-[#E4E4E7] px-3 py-2.5 text-left align-middle text-[14px] font-medium leading-5 text-[#71717A]",
-                firstColClass,
+                grid.className,
+                "min-h-[44px] text-[14px] font-medium leading-5 text-[#5C5D5F]",
               )}
+              style={grid.style}
             >
-              {periodHeaderLabel}
-            </th>
-            {selected.map((id, metricIndex) => {
-              const color = metricColor(id, metricIndex, metricColors);
-              return (
-                <th
-                  key={id}
-                  scope="col"
-                  className="min-w-[9rem] whitespace-nowrap border-t border-b border-[#E4E4E7] px-3 py-2.5 text-right align-middle text-[14px] font-medium leading-5 text-[#71717A]"
-                >
-                  <div className="flex min-w-0 items-center justify-end gap-2 py-0.5">
-                    <span
-                      className="h-2 w-2 shrink-0 rounded-full"
-                      style={{ backgroundColor: color }}
-                      aria-hidden
-                    />
-                    <span className="min-w-0 truncate">{metricRowLabel(ticker, id)}</span>
-                    {onShowBarValuesChange && isBarValuesVisible && !hideMetricSettings ? (
-                      <ChartingDataTableSettingsMenu
-                        showBarValues={isBarValuesVisible(id)}
-                        onShowBarValuesChange={(next) => onShowBarValuesChange(id, next)}
-                        metricLabel={CHARTING_METRIC_LABEL[id]}
-                      />
-                    ) : null}
-                  </div>
-                </th>
-              );
-            })}
-          </tr>
-        </thead>
-        <tbody>
-          {periodsNewestFirst.map((periodRow) => (
-            <tr
-              key={periodRow.periodEnd}
-              className="group h-[52px] max-h-[52px] transition-colors duration-75 hover:bg-neutral-50"
-            >
-              <td
-                className={cn(
-                  CHARTING_TABLE_STICKY_FIRST_COL_BODY_CLASS,
-                  "border-b border-[#E4E4E7] px-3 align-middle text-[14px] font-semibold leading-5 text-[#0F0F0F] group-hover:bg-white",
-                  firstColClass,
-                )}
-              >
-                {formatChartingPeriodLabel(periodRow.periodEnd, periodMode)}
-              </td>
-              {selected.map((id) => {
-                const kind = CHARTING_METRIC_KIND[id];
-                const v = chartingRowValue(periodRow, id);
+              <div className="pl-3 text-left">{periodHeaderLabel}</div>
+              {selected.map((id, metricIndex) => {
+                const color = metricColor(id, metricIndex, metricColors);
                 return (
-                  <td
-                    key={`${periodRow.periodEnd}-${id}`}
-                    className={cn(
-                      "border-b border-[#E4E4E7] px-3 align-middle text-right text-[14px] font-normal leading-5 tabular-nums",
-                      kind === "percent" ? "font-medium" : "",
-                      chartingTableCellTone(id, v),
-                    )}
-                  >
-                    {formatChartingTableCellDisplay(id, v)}
-                  </td>
+                  <div key={id} className="min-w-0 w-full truncate pr-3 text-right">
+                    <div className="inline-flex max-w-full items-center justify-end gap-2">
+                      <span
+                        className="h-2 w-2 shrink-0 rounded-full"
+                        style={{ backgroundColor: color }}
+                        aria-hidden
+                      />
+                      <span className="min-w-0 truncate">{metricRowLabel(ticker, id)}</span>
+                      {onShowBarValuesChange && isBarValuesVisible && !hideMetricSettings ? (
+                        <ChartingDataTableSettingsMenu
+                          showBarValues={isBarValuesVisible(id)}
+                          onShowBarValuesChange={(next) => onShowBarValuesChange(id, next)}
+                          metricLabel={CHARTING_METRIC_LABEL[id]}
+                        />
+                      ) : null}
+                    </div>
+                  </div>
                 );
               })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+            </div>
+          </div>
+          <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
+        </div>
+
+        {periodsNewestFirst.map((periodRow, rowIdx) => (
+          <div key={periodRow.periodEnd} className={SCREENER_TABLE_DATA_ROW_CLASS}>
+            <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+              <div
+                className={cn(
+                  grid.className,
+                  "min-h-[60px] text-[14px] font-normal leading-5",
+                  SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+                )}
+                style={grid.style}
+              >
+                <div className="pl-3 text-left font-medium text-[#141414]">
+                  {formatChartingPeriodLabel(periodRow.periodEnd, periodMode)}
+                </div>
+                {selected.map((id) => {
+                  const v = chartingRowValue(periodRow, id);
+                  return (
+                    <div
+                      key={`${periodRow.periodEnd}-${id}`}
+                      className={cn(
+                        "min-w-0 w-full pr-3 text-right font-['Inter'] tabular-nums",
+                        chartingTableCellTone(id, v),
+                      )}
+                    >
+                      {formatChartingTableCellDisplay(id, v)}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            {rowIdx < periodsNewestFirst.length - 1 ? (
+              <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
+            ) : null}
+          </div>
+        ))}
+      </ScreenerTableScroll>
     </div>
   );
 }

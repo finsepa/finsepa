@@ -11,17 +11,30 @@ import {
   useRef,
   useState,
 } from "react";
+import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import { SpinnerLabel } from "@/components/ui/spinner";
 import { toast } from "sonner";
 
 import { SegmentedControl } from "@/components/design-system/segmented-control";
 import { AddCashModal } from "@/components/layout/add-cash-modal";
-import { ImportTransactionsModal } from "@/components/portfolio/import-transactions-modal";
 import { DeletePortfolioConfirmModal } from "@/components/portfolio/delete-portfolio-confirm-modal";
-import { EditTransactionModal } from "@/components/layout/edit-transaction-modal";
-import { NewTransactionModal } from "@/components/layout/new-transaction-modal";
 import { ClearableInput } from "@/components/layout/clearable-input";
+
+/** Lazy: keeps xlsx + company picker out of the shared protected-shell client graph. */
+const ImportTransactionsModal = dynamic(
+  () =>
+    import("@/components/portfolio/import-transactions-modal").then((m) => m.ImportTransactionsModal),
+  { ssr: false },
+);
+const NewTransactionModal = dynamic(
+  () => import("@/components/layout/new-transaction-modal").then((m) => m.NewTransactionModal),
+  { ssr: false },
+);
+const EditTransactionModal = dynamic(
+  () => import("@/components/layout/edit-transaction-modal").then((m) => m.EditTransactionModal),
+  { ssr: false },
+);
 import {
   CombinedPortfolioSourceHint,
   CombinedPortfolioSourcesPicker,
@@ -104,7 +117,7 @@ function ModalField({ label, children }: { label: ReactNode; children: ReactNode
   return (
     <div className="flex w-full flex-col gap-2">
       {typeof label === "string" ? (
-        <span className="text-sm font-medium leading-5 text-[#0F0F0F]">{label}</span>
+        <span className="text-sm font-medium leading-5 text-[#141414]">{label}</span>
       ) : (
         label
       )}
@@ -1017,7 +1030,7 @@ export function PortfolioWorkspaceProvider({
       const p = portfolios.find((x) => x.id === selectedPortfolioId);
       if (p?.kind === "combined") return;
       if (isSnaptradeBrokerRow(t)) {
-        toast.error("This is a brokerage transaction", {
+        toast.error("This transaction is read-only", {
           description: "Rows imported from your broker are read-only and managed by sync.",
         });
         return;
@@ -1040,8 +1053,8 @@ export function PortfolioWorkspaceProvider({
       const list = transactionsByPortfolioId[portfolioId] ?? [];
       const targeted = list.filter((x) => ids.has(x.id));
       if (targeted.some((x) => isSnaptradeBrokerRow(x))) {
-        toast.error("Brokerage transactions can't be deleted", {
-          description: "Rows imported from your broker are managed by sync. Disconnect the brokerage to remove them.",
+        toast.error("Imported transactions can't be deleted", {
+          description: "Broker imports are managed by sync.",
         });
         return;
       }
@@ -1593,18 +1606,20 @@ export function PortfolioWorkspaceProvider({
   return (
     <PortfolioWorkspaceContext.Provider value={value}>
       {children}
-      <NewTransactionModal
-        open={newTransactionOpen}
-        presetCompany={newTransactionPreset}
-        onClose={closeNewTransaction}
-      />
+      {newTransactionOpen ? (
+        <NewTransactionModal
+          open
+          presetCompany={newTransactionPreset}
+          onClose={closeNewTransaction}
+        />
+      ) : null}
       <AddCashModal open={addCashModalOpen} onClose={closeAddCash} />
-      <ImportTransactionsModal open={importTransactionsOpen} onClose={closeImportTransactions} />
-      <EditTransactionModal
-        open={editTransaction != null}
-        transaction={editTransaction}
-        onClose={closeEditTransaction}
-      />
+      {importTransactionsOpen ? (
+        <ImportTransactionsModal open onClose={closeImportTransactions} />
+      ) : null}
+      {editTransaction != null ? (
+        <EditTransactionModal open transaction={editTransaction} onClose={closeEditTransaction} />
+      ) : null}
       {snaptradeSyncPortfolioId ?
         (() => {
           const syncPortfolio = portfolios.find((p) => p.id === snaptradeSyncPortfolioId);

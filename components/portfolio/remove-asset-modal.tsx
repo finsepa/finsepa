@@ -53,14 +53,14 @@ export function RemoveAssetModal({ holding, onClose, onConfirmRemove }: Props) {
           </AppModalFooter>
         }
       >
-        <p className="text-sm leading-5 text-[#0F0F0F]">
+        <p className="text-sm leading-5 text-[#141414]">
           Are you sure you want to delete{" "}
           <span className="font-semibold">
             {holding.name} ({holding.symbol})
           </span>
           ?
         </p>
-        <p className="mt-3 text-sm leading-5 text-[#71717A]">
+        <p className="mt-3 text-sm leading-5 text-[#5C5D5F]">
           All the related transactions for this asset are going to be removed.
         </p>
       </AppModalShell>

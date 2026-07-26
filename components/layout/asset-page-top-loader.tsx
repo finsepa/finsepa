@@ -77,7 +77,7 @@ export function AssetPageTopLoader() {
       aria-hidden
     >
       <div
-        className="h-full origin-left rounded-none bg-[#0F0F0F]"
+        className="h-full origin-left rounded-none bg-[#141414]"
         style={{
           transform: `scaleX(${Math.min(1, Math.max(0, progress))})`,
           transition:

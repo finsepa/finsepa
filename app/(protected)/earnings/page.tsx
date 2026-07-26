@@ -15,7 +15,7 @@ type PageProps = {
 
 export default async function EarningsPage({ searchParams }: PageProps) {
   if (isSingleAssetMode()) {
-    return <div className="px-4 py-4 text-[#71717A] sm:px-9 sm:py-6">Temporarily unavailable in NVDA-only mode.</div>;
+    return <div className="px-4 py-4 text-[#5C5D5F] sm:px-9 sm:py-6">Temporarily unavailable in NVDA-only mode.</div>;
   }
 
   const sp = await searchParams;

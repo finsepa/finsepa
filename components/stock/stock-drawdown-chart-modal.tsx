@@ -67,7 +67,7 @@ const DRAWDOWN_VALUE_LABEL_ANCHOR_CLASS =
   "pointer-events-none absolute z-[15] max-w-[5.5rem] -translate-x-1/2 text-center";
 
 const DRAWDOWN_VALUE_LABEL_TEXT_CLASS =
-  "block truncate text-[11px] font-semibold leading-none tabular-nums text-[#0F0F0F]";
+  "block truncate text-[11px] font-semibold leading-none tabular-nums text-[#141414]";
 
 const DRAWDOWN_VALUE_LABEL_TEXT_SHADOW =
   "0 0 3px rgba(255,255,255,0.95), 0 1px 2px rgba(255,255,255,0.8)";
@@ -445,7 +445,7 @@ function DrawdownHistoryChart({
   }
 
   if (points.length < 2) {
-    return <p className="text-[14px] leading-6 text-[#71717A]">No drawdown history available.</p>;
+    return <p className="text-[14px] leading-6 text-[#5C5D5F]">No drawdown history available.</p>;
   }
 
   return (
@@ -462,7 +462,7 @@ function DrawdownHistoryChart({
             onMouseLeave={clearHover}
           >
             <div
-              className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%] z-0 bg-white"
+              className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%] z-0 bg-[#FCFCFD]"
               aria-hidden
             >
               <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
@@ -640,8 +640,8 @@ function DrawdownHistoryChart({
                 role="tooltip"
                 aria-label="Chart tooltip"
               >
-                <p className="text-[11px] leading-4 text-[#71717A]">{tip.periodLabel}</p>
-                <p className="text-[13px] font-semibold leading-5 text-[#0F0F0F] tabular-nums">
+                <p className="text-[11px] leading-4 text-[#5C5D5F]">{tip.periodLabel}</p>
+                <p className="text-[13px] font-semibold leading-5 text-[#141414] tabular-nums">
                   {tip.value}
                 </p>
               </div>
@@ -649,7 +649,7 @@ function DrawdownHistoryChart({
           </div>
 
           <div
-            className="relative h-full shrink-0 pl-0 pr-2 text-left text-[11px] leading-4 text-[#71717A] tabular-nums"
+            className="relative h-full shrink-0 pl-0 pr-2 text-left text-[11px] leading-4 text-[#5C5D5F] tabular-nums"
             style={{ width: FUNDAMENTALS_CHART_Y_AXIS_W_PX }}
             aria-hidden
           >
@@ -657,7 +657,7 @@ function DrawdownHistoryChart({
               {yDomain.ticks.map((tick) => (
                 <span
                   key={tick}
-                  className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-white px-1 py-px"
+                  className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-[#FCFCFD] px-1 py-px"
                   style={{ top: `${valueToPlotBandTopPercent(tick, yDomain.min, yDomain.max)}%` }}
                 >
                   {formatDrawdownAxisTick(tick)}
@@ -672,7 +672,7 @@ function DrawdownHistoryChart({
           {xTicks.map(({ ts, leftPct, label }) => (
             <span
               key={ts}
-              className="absolute bottom-[10px] -translate-x-1/2 text-[11px] leading-4 text-[#71717A]"
+              className="absolute bottom-[10px] -translate-x-1/2 text-[11px] leading-4 text-[#5C5D5F]"
               style={{ left: `${leftPct}%` }}
             >
               {label}
@@ -881,10 +881,10 @@ export function StockDrawdownChartModal({
       >
         <div className="h-1 w-10 shrink-0 rounded-full bg-[#D9D9D9]" aria-hidden />
         <div className="flex w-full flex-col items-center gap-1 text-center">
-          <h2 id="drawdown-chart-title" className="text-[16px] font-semibold leading-6 text-[#0F0F0F]">
+          <h2 id="drawdown-chart-title" className="text-[16px] font-semibold leading-6 text-[#141414]">
             Drawdown
           </h2>
-          <p className="text-[11px] leading-4 text-[#71717A]">{mobileSubtitle}</p>
+          <p className="text-[11px] leading-4 text-[#5C5D5F]">{mobileSubtitle}</p>
         </div>
       </div>
       <div className="min-h-0 flex-1 touch-pan-y overflow-x-hidden overflow-y-auto px-4 py-2">
@@ -912,11 +912,11 @@ export function StockDrawdownChartModal({
             className="!rounded-xl"
           />
           <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <span className="shrink-0 text-[18px] font-semibold leading-7 text-[#0F0F0F]">Drawdown</span>
+            <span className="shrink-0 text-[18px] font-semibold leading-7 text-[#141414]">Drawdown</span>
             {companyLine ? (
-              <span className="min-w-0 truncate text-[14px] leading-5 text-[#71717A]">{companyLine}</span>
+              <span className="min-w-0 truncate text-[14px] leading-5 text-[#5C5D5F]">{companyLine}</span>
             ) : (
-              <span className="min-w-0 truncate text-[14px] leading-5 text-[#71717A]">{ticker}</span>
+              <span className="min-w-0 truncate text-[14px] leading-5 text-[#5C5D5F]">{ticker}</span>
             )}
           </span>
         </div>

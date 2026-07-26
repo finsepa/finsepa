@@ -1,3 +1,4 @@
+import { STOCK_OVERVIEW_SECTION_HEADING_CLASS } from "@/components/design-system/card-surface-styles";
 import {
   MULTICHART_CARD_CHART_HEIGHT_PX,
   MULTICHART_CARD_CLASS,
@@ -17,13 +18,13 @@ const PLACEHOLDER_KEYS = [
 
 function SkeletonGrid() {
   return (
-    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
       {PLACEHOLDER_KEYS.map((id) => (
         <div key={id} className={cn(MULTICHART_CARD_CLASS, "animate-pulse")}>
           <div className="h-5 w-28 rounded bg-neutral-200/90" />
           <div className="h-9 w-44 rounded bg-neutral-200/80" />
           <div
-            className="rounded-xl bg-neutral-100"
+            className="rounded-2xl bg-neutral-100"
             style={{ height: MULTICHART_CARD_CHART_HEIGHT_PX }}
           />
         </div>
@@ -40,8 +41,8 @@ export function MultichartsTabSkeletonGrid() {
 /** Full tab shell for `dynamic(..., { ssr: false })` loading — matches client markup, safe for SSR. */
 export function MultichartsTabSkeleton() {
   return (
-    <div className="space-y-6 pt-1">
-      <h2 className="text-[20px] font-semibold leading-8 tracking-tight text-[#0F0F0F]">Multicharts</h2>
+    <div className="space-y-5">
+      <h2 className={STOCK_OVERVIEW_SECTION_HEADING_CLASS}>Multicharts</h2>
       <SkeletonGrid />
     </div>
   );

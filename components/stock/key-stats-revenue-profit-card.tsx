@@ -3,7 +3,10 @@
 import { useEffect, useState } from "react";
 
 import type { ChartingMetricId } from "@/lib/market/stock-charting-metrics";
-import { STOCK_OVERVIEW_SECTION_TITLE_CLASS } from "@/components/design-system/card-surface-styles";
+import {
+  MOBILE_INSET_CARD_CLASS,
+  STOCK_OVERVIEW_SECTION_TITLE_CLASS,
+} from "@/components/design-system/card-surface-styles";
 import { cn } from "@/lib/utils";
 
 type Row = { label: string; value: string };
@@ -32,8 +35,8 @@ function StatRow({
   if (!interactive) {
     return (
       <div className="flex items-center justify-between gap-3 border-b border-[#E4E4E7] py-1.5 last:border-0">
-        <span className="min-w-0 shrink text-[14px] leading-5 text-[#0F0F0F]">{label}</span>
-        <span className="shrink-0 text-right text-[14px] font-medium leading-5 text-[#0F0F0F] tabular-nums">{value}</span>
+        <span className="min-w-0 shrink text-[14px] leading-5 text-[#141414]">{label}</span>
+        <span className="shrink-0 text-right text-[14px] font-medium leading-5 text-[#141414] tabular-nums">{value}</span>
       </div>
     );
   }
@@ -43,10 +46,10 @@ function StatRow({
       onClick={onLabelClick}
       className="group flex w-full min-w-0 cursor-pointer items-center justify-between gap-3 border-b border-[#E4E4E7] py-1.5 text-left last:border-0 hover:bg-[#FAFAFA]"
     >
-      <span className="min-w-0 shrink text-[14px] leading-5 text-[#0F0F0F] underline-offset-2 decoration-[#71717A] group-hover:underline">
+      <span className="min-w-0 shrink text-[14px] leading-5 text-[#141414] underline-offset-2 decoration-[#5C5D5F] group-hover:underline">
         {label}
       </span>
-      <span className="shrink-0 text-right text-[14px] font-medium leading-5 text-[#0F0F0F] tabular-nums">{value}</span>
+      <span className="shrink-0 text-right text-[14px] font-medium leading-5 text-[#141414] tabular-nums">{value}</span>
     </button>
   );
 }
@@ -102,7 +105,7 @@ export function KeyStatsRevenueProfitCard({
   const displayRows = rows ?? PLACEHOLDER_ROWS;
 
   return (
-    <div className="mb-5 rounded-xl border border-[#E4E4E7] bg-white p-4">
+    <div className={cn("mb-5 p-4", MOBILE_INSET_CARD_CLASS)}>
       <h3 className={cn("mb-2", STOCK_OVERVIEW_SECTION_TITLE_CLASS)}>Revenue &amp; Profit</h3>
       {loading ? (
         <div className="space-y-2 pt-0.5" aria-hidden>

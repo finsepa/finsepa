@@ -69,14 +69,14 @@ function BadgeRow({
     case "pre_opens_soon":
       return (
         <>
-          <span className={cn(dotSizeClass, "shrink-0 rounded-full bg-[#71717A]")} aria-hidden />
+          <span className={cn(dotSizeClass, "shrink-0 rounded-full bg-[#5C5D5F]")} aria-hidden />
           <span>{formatUsEquitySessionBadgeLabel(display)}</span>
         </>
       );
     default:
       return (
         <>
-          <span className={cn(dotSizeClass, "shrink-0 rounded-full bg-[#71717A]")} aria-hidden />
+          <span className={cn(dotSizeClass, "shrink-0 rounded-full bg-[#5C5D5F]")} aria-hidden />
           <span>{formatUsEquitySessionBadgeLabel(display)}</span>
         </>
       );
@@ -105,7 +105,7 @@ export function UsEquityMarketSessionBadge({ className, variant = "default" }: P
   return (
     <div
       className={cn(
-        "inline-flex items-center text-[#71717A]",
+        "inline-flex items-center text-[#5C5D5F]",
         inline ? "gap-1 text-[12px] font-normal leading-4" : "gap-1.5 text-[13px] font-medium",
         className,
       )}

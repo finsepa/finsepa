@@ -653,16 +653,16 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
                       clearLabel="Clear shares"
                     />
                     {operation === "Sell" && selectedHoldingShares != null ? (
-                      <div className="mt-1 text-[12px] leading-4 text-[#71717A]">
+                      <div className="mt-1 text-[12px] leading-4 text-[#5C5D5F]">
                         You have{" "}
-                        <span className="font-medium text-[#0F0F0F]">
+                        <span className="font-medium text-[#141414]">
                           {formatSharesHint(selectedHoldingShares, selectedCompany?.symbol ?? "")}
                         </span>
                         {selectedHoldingWorthUsd != null ? (
                           <>
                             {" "}
                             worth of{" "}
-                            <span className="font-medium tabular-nums text-[#0F0F0F]">
+                            <span className="font-medium tabular-nums text-[#141414]">
                               {usdBalance.format(selectedHoldingWorthUsd)}
                             </span>
                           </>
@@ -766,7 +766,7 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
 
             <div className="pt-1">
               <div className="flex items-center gap-1 border-b border-dashed border-[#E4E4E7] py-2.5 text-sm">
-                <span className="flex-1 font-medium text-[#71717A]">Current cash balance</span>
+                <span className="flex-1 font-medium text-[#5C5D5F]">Current cash balance</span>
                 <span
                   className={cn(
                     "shrink-0 font-semibold tabular-nums",
@@ -774,7 +774,7 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
                       ? "text-[#DC2626]"
                       : currentCashBalanceDisplayUsd > 0
                         ? "text-[#16A34A]"
-                        : "text-[#0F0F0F]",
+                        : "text-[#141414]",
                   )}
                 >
                   {usdBalance.format(currentCashBalanceDisplayUsd)}
@@ -782,8 +782,8 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
               </div>
               {transactionTab === "Trades" ? (
                 <div className="flex items-center gap-1 py-2.5 text-sm">
-                  <span className="flex-1 font-medium text-[#71717A]">Total</span>
-                  <span className="shrink-0 font-semibold tabular-nums text-[#0F0F0F]">
+                  <span className="flex-1 font-medium text-[#5C5D5F]">Total</span>
+                  <span className="shrink-0 font-semibold tabular-nums text-[#141414]">
                     {usdFormatter.format(transactionTotal)}
                   </span>
                 </div>
@@ -791,13 +791,13 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
               {transactionTab === "Incomes" && incomeGrossUsd > 0 && incomeNetUsd > 0 ? (
                 <>
                   <div className="flex items-center gap-1 border-b border-dashed border-[#E4E4E7] py-2.5 text-sm">
-                    <span className="flex-1 font-medium text-[#71717A]">Net to cash</span>
+                    <span className="flex-1 font-medium text-[#5C5D5F]">Net to cash</span>
                     <span className="shrink-0 font-semibold tabular-nums text-[#16A34A]">
                       {usdFormatter.format(incomeNetUsd)}
                     </span>
                   </div>
                   <div className="flex items-center gap-1 py-2.5 text-sm">
-                    <span className="flex-1 font-medium text-[#71717A]">Balance after</span>
+                    <span className="flex-1 font-medium text-[#5C5D5F]">Balance after</span>
                     <span
                       className={cn(
                         "shrink-0 font-semibold tabular-nums",
@@ -805,7 +805,7 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
                           ? "text-[#DC2626]"
                           : balanceAfterIncomeUsd > 0
                             ? "text-[#16A34A]"
-                            : "text-[#0F0F0F]",
+                            : "text-[#141414]",
                       )}
                     >
                       {usdBalance.format(balanceAfterIncomeUsd)}
@@ -816,13 +816,13 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
               {transactionTab === "Expenses" && expenseAmountNum > 0 ? (
                 <>
                   <div className="flex items-center gap-1 border-b border-dashed border-[#E4E4E7] py-2.5 text-sm">
-                    <span className="flex-1 font-medium text-[#71717A]">Cash out</span>
+                    <span className="flex-1 font-medium text-[#5C5D5F]">Cash out</span>
                     <span className="shrink-0 font-semibold tabular-nums text-[#DC2626]">
                       {usdFormatter.format(-expenseAmountNum)}
                     </span>
                   </div>
                   <div className="flex items-center gap-1 py-2.5 text-sm">
-                    <span className="flex-1 font-medium text-[#71717A]">Balance after</span>
+                    <span className="flex-1 font-medium text-[#5C5D5F]">Balance after</span>
                     <span
                       className={cn(
                         "shrink-0 font-semibold tabular-nums",
@@ -830,7 +830,7 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
                           ? "text-[#DC2626]"
                           : balanceAfterExpenseUsd > 0
                             ? "text-[#16A34A]"
-                            : "text-[#0F0F0F]",
+                            : "text-[#141414]",
                       )}
                     >
                       {usdBalance.format(balanceAfterExpenseUsd)}
@@ -848,7 +848,7 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex w-full flex-col gap-2">
-      <span className="text-sm font-medium leading-5 text-[#0F0F0F]">{label}</span>
+      <span className="text-sm font-medium leading-5 text-[#141414]">{label}</span>
       {children}
     </div>
   );
@@ -933,7 +933,7 @@ function TransactionTypeTabs({
               onClick={() => onChange(tab)}
               className={cn(
                 "-mb-px shrink-0 cursor-pointer border-b-2 border-transparent py-2 text-sm font-medium leading-6 transition-[color,opacity] duration-100 hover:opacity-100",
-                isOn ? "font-semibold text-[#0F0F0F] opacity-100" : "text-[#0F0F0F] opacity-80",
+                isOn ? "font-semibold text-[#141414] opacity-100" : "text-[#141414] opacity-80",
               )}
             >
               {tab}
@@ -941,7 +941,7 @@ function TransactionTypeTabs({
           );
         })}
         <span
-          className="pointer-events-none absolute bottom-0 z-[1] h-0.5 rounded-full bg-[#0F0F0F] motion-reduce:transition-none"
+          className="pointer-events-none absolute bottom-0 z-[1] h-0.5 rounded-full bg-[#141414] motion-reduce:transition-none"
           style={{
             left: indicator.left,
             width: indicator.width,

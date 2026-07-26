@@ -15,7 +15,7 @@ function BrokerageInitials({ name, className }: { name: string; className?: stri
   return (
     <div
       className={cn(
-        "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#E4E4E7] bg-[#F4F4F5] text-[11px] font-semibold text-[#71717A]",
+        "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#E4E4E7] bg-[#F4F4F5] text-[11px] font-semibold text-[#5C5D5F]",
         className,
       )}
       aria-hidden
@@ -53,7 +53,7 @@ export function PortfolioListLogo({
   if (portfolioIsCombined(portfolio)) {
     return (
       <div className={shellClass} aria-hidden>
-        <GitMerge className={cn(iconClass, "text-[#71717A]")} strokeWidth={2} />
+        <GitMerge className={cn(iconClass, "text-[#5C5D5F]")} strokeWidth={2} />
       </div>
     );
   }
@@ -64,7 +64,7 @@ export function PortfolioListLogo({
 
   return (
     <div className={shellClass} aria-hidden>
-      <Briefcase className={cn(iconClass, "text-[#71717A]")} strokeWidth={2} />
+      <Briefcase className={cn(iconClass, "text-[#5C5D5F]")} strokeWidth={2} />
     </div>
   );
 }

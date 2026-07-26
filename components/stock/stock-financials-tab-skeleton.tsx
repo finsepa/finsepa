@@ -98,7 +98,7 @@ export function FinancialsTableSkeleton() {
 /** Full Financials tab shell for `next/dynamic` and in-tab fetch loading. */
 export function StockFinancialsTabSkeleton({ showToolbar = true }: { showToolbar?: boolean }) {
   return (
-    <div className="space-y-4 pt-1" aria-busy="true" aria-label="Loading financials">
+    <div className="space-y-5" aria-busy="true" aria-label="Loading financials">
       {showToolbar ? (
         <>
           <div className="grid min-w-0 grid-cols-[minmax(0,1.15fr)_minmax(0,0.72fr)_minmax(0,0.88fr)_2.25rem] items-center gap-1.5 sm:hidden">

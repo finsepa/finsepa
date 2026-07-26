@@ -6,7 +6,7 @@ import { SkeletonBox } from "@/components/markets/skeleton";
  */
 export function StockEarningsTabLoading() {
   return (
-    <div className="min-w-0 space-y-6 pt-1" aria-busy aria-label="Loading earnings">
+    <div className="min-w-0 space-y-5" aria-busy aria-label="Loading earnings">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-stretch gap-6">
           <div className="flex flex-col gap-1.5 border-r border-[#E4E4E7] pr-6">
@@ -35,7 +35,7 @@ export function StockEarningsTabLoading() {
         ))}
       </div>
       <SkeletonBox className="h-[320px] w-full rounded" />
-      <h3 className="text-[18px] font-semibold leading-7 tracking-tight text-[#0F0F0F]">Reports</h3>
+      <h3 className="text-[18px] font-semibold leading-7 tracking-tight text-[#141414]">Reports</h3>
       <div className="space-y-2">
         {Array.from({ length: 4 }).map((_, i) => (
           <SkeletonBox key={i} className="h-12 w-full rounded" />

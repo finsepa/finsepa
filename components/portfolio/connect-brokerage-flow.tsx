@@ -21,7 +21,7 @@ function ModalField({ label, children }: { label: React.ReactNode; children: Rea
   return (
     <div className="flex w-full flex-col gap-2">
       {typeof label === "string" ? (
-        <span className="text-sm font-medium leading-5 text-[#0F0F0F]">{label}</span>
+        <span className="text-sm font-medium leading-5 text-[#141414]">{label}</span>
       ) : (
         label
       )}
@@ -99,7 +99,7 @@ export function ConnectBrokerageFlow({
           </AppModalFooter>
         }
       >
-        <p className="text-sm text-[#71717A]">
+        <p className="text-sm text-[#5C5D5F]">
           Name your portfolio, then choose a broker to link. Holdings and cash will sync automatically.
         </p>
         <ModalField label="Name">

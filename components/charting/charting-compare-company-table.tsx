@@ -3,7 +3,6 @@
 import type { ChartingSeriesPoint } from "@/lib/market/charting-series-types";
 import { formatChartingPeriodLabel } from "@/lib/market/charting-period-display";
 import {
-  CHARTING_METRIC_KIND,
   CHARTING_METRIC_LABEL,
   readChartingMetricValue,
   type ChartingMetricId,
@@ -13,12 +12,20 @@ import {
   formatChartingTableCellDisplay,
 } from "@/components/charting/charting-individual-company-table";
 import {
-  CHARTING_TABLE_STICKY_FIRST_COL_BODY_CLASS,
-  CHARTING_TABLE_STICKY_FIRST_COL_HEAD_CLASS,
   chartingTableFirstColClass,
   type ChartingTableTimeRange,
 } from "@/components/charting/charting-table-styles";
 import { fundamentalsBarSolidAtIndex } from "@/lib/colors/fundamentals-multi-bar-colors";
+import {
+  SCREENER_TABLE_DATA_ROW_CLASS,
+  SCREENER_TABLE_HEADER_STICKY_CLASS,
+  SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+  SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+  DEFAULT_TABLE_ROW_HOVER_PAD_CLASS,
+  SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+  SCREENER_TABLE_STROKE_INSET_CLASS,
+  ScreenerTableScroll,
+} from "@/components/screener/screener-table-scroll";
 import { cn } from "@/lib/utils";
 
 export type ChartingCompareSeriesDef = {
@@ -41,8 +48,20 @@ function seriesRowValue(row: ChartingSeriesPoint, id: ChartingMetricId): number 
   return readChartingMetricValue(row, id);
 }
 
+function chartingScreenerGridStyle(metricCount: number, firstColClass: string): {
+  className: string;
+  style: { gridTemplateColumns: string };
+} {
+  const periodTrack = firstColClass.includes("11rem") ? "minmax(11rem,1.25fr)" : "minmax(10rem,1.1fr)";
+  const metricTracks = Array.from({ length: metricCount }, () => "minmax(5.5rem,1fr)").join(" ");
+  return {
+    className: "grid w-full min-w-0 items-center gap-x-2",
+    style: { gridTemplateColumns: `${periodTrack} ${metricTracks}` },
+  };
+}
+
 /**
- * Multi-company charting table — fiscal periods as rows (newest first), series as columns.
+ * Multi-company charting table — same chrome as Stocks Companies screener.
  */
 export function ChartingCompareCompanyTable({
   tableColumnLabels,
@@ -57,87 +76,87 @@ export function ChartingCompareCompanyTable({
   const firstColClass = chartingTableFirstColClass(timeRange);
   const periodHeaderLabel = periodMode === "quarterly" ? "Period" : "Year";
   const periodsNewestFirst = [...tableColumnLabels].reverse();
+  const grid = chartingScreenerGridStyle(seriesDefs.length, firstColClass);
+  const tableMinWidthPx = 280 + seriesDefs.length * 96;
 
   return (
-    <div
-      className={cn(
-        "overflow-x-auto overscroll-x-contain pt-3 [-webkit-overflow-scrolling:touch]",
-        className,
-      )}
-    >
-      <table className="w-full min-w-max border-separate border-spacing-0 bg-white">
-        <thead>
-          <tr className="bg-white">
-            <th
-              scope="col"
+    <div className={cn(className)}>
+      <ScreenerTableScroll mobileScroll tableMinWidthPx={tableMinWidthPx}>
+        <div
+          className={cn(
+            SCREENER_TABLE_HEADER_STICKY_CLASS,
+            SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+            SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+            "md:border-b-0",
+          )}
+        >
+          <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+            <div
               className={cn(
-                CHARTING_TABLE_STICKY_FIRST_COL_HEAD_CLASS,
-                "border-t border-b border-[#E4E4E7] px-3 py-2.5 text-left align-middle text-[14px] font-medium leading-5 text-[#71717A]",
-                firstColClass,
+                grid.className,
+                "min-h-[44px] text-[14px] font-medium leading-5 text-[#5C5D5F]",
               )}
+              style={grid.style}
             >
-              {periodHeaderLabel}
-            </th>
-            {seriesDefs.map((series) => (
-              <th
-                key={series.key}
-                scope="col"
-                className="min-w-[9rem] whitespace-nowrap border-t border-b border-[#E4E4E7] px-3 py-2.5 text-right align-middle text-[14px] font-medium leading-5 text-[#71717A]"
-              >
-                <div className="flex min-w-0 items-center justify-end gap-2 py-0.5">
-                  <span
-                    className="h-2 w-2 shrink-0 rounded-full"
-                    style={{ background: fundamentalsBarSolidAtIndex(series.colorIdx) }}
-                    aria-hidden
-                  />
-                  <span className="min-w-0 truncate">
-                    {series.ticker} {CHARTING_METRIC_LABEL[series.metricId]}
-                  </span>
+              <div className="pl-3 text-left">{periodHeaderLabel}</div>
+              {seriesDefs.map((series) => (
+                <div key={series.key} className="min-w-0 w-full truncate pr-3 text-right">
+                  <div className="inline-flex max-w-full items-center justify-end gap-2">
+                    <span
+                      className="h-2 w-2 shrink-0 rounded-full"
+                      style={{ background: fundamentalsBarSolidAtIndex(series.colorIdx) }}
+                      aria-hidden
+                    />
+                    <span className="min-w-0 truncate">
+                      {series.ticker} {CHARTING_METRIC_LABEL[series.metricId]}
+                    </span>
+                  </div>
                 </div>
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {periodsNewestFirst.map((label) => (
-            <tr
-              key={label}
-              className="group h-[52px] max-h-[52px] transition-colors duration-75 hover:bg-neutral-50"
-            >
-              <td
+              ))}
+            </div>
+          </div>
+          <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
+        </div>
+
+        {periodsNewestFirst.map((label, rowIdx) => (
+          <div key={label} className={SCREENER_TABLE_DATA_ROW_CLASS}>
+            <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+              <div
                 className={cn(
-                  CHARTING_TABLE_STICKY_FIRST_COL_BODY_CLASS,
-                  "border-b border-[#E4E4E7] px-3 align-middle text-[14px] font-semibold leading-5 text-[#0F0F0F] group-hover:bg-white",
-                  firstColClass,
+                  grid.className,
+                  "min-h-[60px] text-[14px] font-normal leading-5",
+                  SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
                 )}
+                style={grid.style}
               >
-                {label}
-              </td>
-              {seriesDefs.map((series) => {
-                const row = (orderedByTicker[series.ticker] ?? []).find(
-                  (periodRow) =>
-                    Boolean(periodRow.periodEnd) &&
-                    formatChartingPeriodLabel(periodRow.periodEnd, periodMode) === label,
-                );
-                const v = row ? seriesRowValue(row, series.metricId) : null;
-                const kind = CHARTING_METRIC_KIND[series.metricId];
-                return (
-                  <td
-                    key={`${label}-${series.key}`}
-                    className={cn(
-                      "border-b border-[#E4E4E7] px-3 align-middle text-right text-[14px] font-normal leading-5 tabular-nums",
-                      kind === "percent" ? "font-medium" : "",
-                      chartingTableCellTone(series.metricId, v),
-                    )}
-                  >
-                    {formatChartingTableCellDisplay(series.metricId, v)}
-                  </td>
-                );
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                <div className="pl-3 text-left font-medium text-[#141414]">{label}</div>
+                {seriesDefs.map((series) => {
+                  const row = (orderedByTicker[series.ticker] ?? []).find(
+                    (periodRow) =>
+                      Boolean(periodRow.periodEnd) &&
+                      formatChartingPeriodLabel(periodRow.periodEnd, periodMode) === label,
+                  );
+                  const v = row ? seriesRowValue(row, series.metricId) : null;
+                  return (
+                    <div
+                      key={`${label}-${series.key}`}
+                      className={cn(
+                        "min-w-0 w-full pr-3 text-right font-['Inter'] tabular-nums",
+                        chartingTableCellTone(series.metricId, v),
+                      )}
+                    >
+                      {formatChartingTableCellDisplay(series.metricId, v)}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            {rowIdx < periodsNewestFirst.length - 1 ? (
+              <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
+            ) : null}
+          </div>
+        ))}
+      </ScreenerTableScroll>
     </div>
   );
 }

@@ -1,35 +1,57 @@
 "use client";
 
 import { SkeletonBox, LogoSkeleton } from "@/components/markets/skeleton";
+import {
+  SCREENER_TABLE_DATA_ROW_CLASS,
+  SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+  SCREENER_TABLE_STROKE_INSET_CLASS,
+} from "@/components/screener/screener-table-scroll";
+import { cn } from "@/lib/utils";
 
 const RETURN_COL_COUNT = 5;
+
+const COMPARISON_ROW_PAD_CLASS = "px-4";
+const COMPARISON_GRID_INSET_CLASS = "px-3";
 
 function ComparisonTableRowSkeleton({
   gridTemplateColumns,
   cellSkeletonWidths,
+  showDivider,
+  minWidthClass,
 }: {
   gridTemplateColumns: string;
   cellSkeletonWidths: string[];
+  showDivider?: boolean;
+  minWidthClass: string;
 }) {
   return (
-    <div
-      className="grid h-[60px] max-h-[60px] items-center gap-x-2 bg-white px-4"
-      style={{ gridTemplateColumns }}
-      aria-hidden
-    >
-      <div className="flex min-w-0 items-center gap-3 pr-4">
-        <SkeletonBox className="h-4 w-1 shrink-0 rounded-full" />
-        <LogoSkeleton sizeClass="h-8 w-8" />
-        <div className="min-w-0 flex-1 space-y-1.5">
-          <SkeletonBox className="h-4 w-28 max-w-full rounded" />
-          <SkeletonBox className="h-3 w-12 rounded" />
+    <div className={SCREENER_TABLE_DATA_ROW_CLASS} aria-hidden>
+      <div className={COMPARISON_ROW_PAD_CLASS}>
+        <div
+          className={cn(
+            "grid h-[60px] max-h-[60px] items-center gap-x-2",
+            minWidthClass,
+            COMPARISON_GRID_INSET_CLASS,
+            SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+          )}
+          style={{ gridTemplateColumns }}
+        >
+          <div className="flex min-w-0 items-center gap-3 pr-4">
+            <SkeletonBox className="h-4 w-1 shrink-0 rounded-full" />
+            <LogoSkeleton sizeClass="h-8 w-8" />
+            <div className="min-w-0 flex-1 space-y-1.5">
+              <SkeletonBox className="h-4 w-28 max-w-full rounded" />
+              <SkeletonBox className="h-3 w-12 rounded" />
+            </div>
+          </div>
+          {cellSkeletonWidths.map((w, i) => (
+            <div key={i} className="flex min-w-0 justify-end">
+              <SkeletonBox className={`h-4 rounded ${w}`} />
+            </div>
+          ))}
         </div>
       </div>
-      {cellSkeletonWidths.map((w, i) => (
-        <div key={i} className="flex min-w-0 justify-end">
-          <SkeletonBox className={`h-4 rounded ${w}`} />
-        </div>
-      ))}
+      {showDivider ? <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden /> : null}
     </div>
   );
 }
@@ -38,10 +60,12 @@ export function ComparisonFundamentalsTableSkeleton({
   rowCount = 1,
   gridTemplateColumns,
   metricCount = 7,
+  showDivider = false,
 }: {
   rowCount?: number;
   gridTemplateColumns: string;
   metricCount?: number;
+  showDivider?: boolean;
 }) {
   const cellWidths = Array.from({ length: metricCount }, (_, i) =>
     ["w-14", "w-16", "w-16", "w-16", "w-10", "w-14", "w-16"][i % 7]!,
@@ -53,6 +77,8 @@ export function ComparisonFundamentalsTableSkeleton({
           key={i}
           gridTemplateColumns={gridTemplateColumns}
           cellSkeletonWidths={cellWidths}
+          showDivider={i === 0 ? showDivider : showDivider && i < rowCount - 1}
+          minWidthClass="min-w-[900px]"
         />
       ))}
     </>
@@ -62,9 +88,11 @@ export function ComparisonFundamentalsTableSkeleton({
 export function ComparisonPerformanceTableSkeleton({
   rowCount = 1,
   gridTemplateColumns,
+  showDivider = false,
 }: {
   rowCount?: number;
   gridTemplateColumns: string;
+  showDivider?: boolean;
 }) {
   const cellWidths = Array.from({ length: RETURN_COL_COUNT }, () => "w-14");
   return (
@@ -74,6 +102,8 @@ export function ComparisonPerformanceTableSkeleton({
           key={i}
           gridTemplateColumns={gridTemplateColumns}
           cellSkeletonWidths={cellWidths}
+          showDivider={i === 0 ? showDivider : showDivider && i < rowCount - 1}
+          minWidthClass="min-w-[720px]"
         />
       ))}
     </>
@@ -85,7 +115,7 @@ export function ComparisonReturnChartSkeleton() {
   const plotH = 288;
   return (
     <section className="w-full min-w-0 max-w-full overflow-x-hidden bg-white" aria-busy="true" aria-label="Loading return chart">
-      <h3 className="mb-4 text-[18px] font-semibold leading-7 tracking-tight text-[#0F0F0F]">Return</h3>
+      <h3 className="mb-4 text-[18px] font-semibold leading-7 tracking-tight text-[#141414]">Return</h3>
       <div className="px-2 sm:px-3" style={{ height: totalH }}>
         <SkeletonBox className="w-full rounded-md" style={{ height: plotH }} />
         <div className="mt-0 flex justify-between gap-2 pt-2">

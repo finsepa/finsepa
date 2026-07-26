@@ -13,7 +13,7 @@ export default function SignupPage() {
       title="Start your free trial"
       subtitle={
         <>
-          <span className="text-[#71717A]">Already have an account? </span>
+          <span className="text-[#5C5D5F]">Already have an account? </span>
           <Link href="/login" className={authAccentLinkClassName}>
             Log in
           </Link>

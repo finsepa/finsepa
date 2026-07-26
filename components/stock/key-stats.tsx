@@ -124,8 +124,8 @@ function KeyStatsSectionTabNav({
               type="button"
               onClick={() => onTabChange(id)}
               className={cn(
-                "-mb-px shrink-0 cursor-pointer border-b-2 border-solid border-transparent py-2 text-left text-[14px] font-medium leading-6 text-[#0F0F0F] transition-[color,opacity] duration-100",
-                "focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15 focus-visible:ring-offset-2",
+                "-mb-px shrink-0 cursor-pointer border-b-2 border-solid border-transparent py-2 text-left text-[14px] font-medium leading-6 text-[#141414] transition-[color,opacity] duration-100",
+                "focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15 focus-visible:ring-offset-2",
                 "hover:opacity-80",
                 isActive ? "font-semibold opacity-100" : "opacity-70",
               )}
@@ -135,7 +135,7 @@ function KeyStatsSectionTabNav({
           );
         })}
         <span
-          className="pointer-events-none absolute bottom-0 z-[1] h-0.5 rounded-full bg-[#0F0F0F] motion-reduce:transition-none"
+          className="pointer-events-none absolute bottom-0 z-[1] h-0.5 rounded-full bg-[#141414] motion-reduce:transition-none"
           style={{
             left: indicator.left,
             width: indicator.width,
@@ -300,13 +300,13 @@ function BasicValueDisplay({
 }) {
   const textClass = cn(
     "text-[14px] font-medium leading-5 tabular-nums",
-    valueClassName ?? "text-[#0F0F0F]",
+    valueClassName ?? "text-[#141414]",
   );
 
   if (label === "Earnings Date" && value !== "—") {
     return (
       <span className="inline-flex shrink-0 items-center justify-end gap-1.5 text-right">
-        <CalendarDays className="h-3.5 w-3.5 shrink-0 text-[#71717A]" strokeWidth={2} aria-hidden />
+        <CalendarDays className="h-3.5 w-3.5 shrink-0 text-[#5C5D5F]" strokeWidth={2} aria-hidden />
         <span className={textClass}>{value}</span>
       </span>
     );
@@ -349,7 +349,7 @@ function KeyStatMetricRow({
         KEY_STATS_ROW_BORDER_CLASS,
       )}
     >
-      <span className="min-w-0 shrink text-[14px] leading-5 text-[#0F0F0F] underline-offset-2 decoration-[#71717A] group-hover:underline">
+      <span className="min-w-0 shrink text-[14px] leading-5 text-[#141414] underline-offset-2 decoration-[#5C5D5F] group-hover:underline">
         {label}
       </span>
       <BasicValueDisplay label={label} value={value} valueClassName={valueClassName} />
@@ -368,7 +368,7 @@ function StatRow({
 }) {
   return (
     <div className={cn("flex items-center justify-between gap-3 last:border-0", KEY_STATS_ROW_BORDER_CLASS, KEY_STATS_ROW_PY_CLASS)}>
-      <span className="min-w-0 shrink text-[14px] leading-5 text-[#0F0F0F]">{label}</span>
+      <span className="min-w-0 shrink text-[14px] leading-5 text-[#141414]">{label}</span>
       <BasicValueDisplay label={label} value={value} valueClassName={valueClassName} />
     </div>
   );
@@ -760,7 +760,7 @@ function KeyStatsInner({
 
       {/* 3×3 grid — row 1: Basic / Revenue & Profit / Assets & Liabilities; row 2: Valuation / Margins / Returns; row 3: Growth / Dividends / Risk. */}
       {/* Default grid stretch: shorter cards in a row extend to the tallest card's height. */}
-      <div className="hidden gap-5 md:grid md:grid-cols-3">
+      <div className="hidden gap-3 md:grid md:grid-cols-3">
         <BasicCard rows={bundle?.basic ?? null} loading={loading} onMetricClick={onOpenMetricChart} />
         <RevenueProfitCard
           rows={bundle?.revenueProfit ?? null}

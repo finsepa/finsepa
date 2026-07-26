@@ -26,8 +26,8 @@ export function EarningsEstimatesSection({
     period === "annual" ? data.annual.length > 0 : data.quarterly.length > 0;
 
   return (
-    <div className="min-w-0 space-y-6">
-      <div className="min-w-0 space-y-4">
+    <div className="min-w-0 space-y-5">
+      <div className="min-w-0 space-y-5">
         {aboveHeader}
         <EarningsEstimatesHeader
           period={period}

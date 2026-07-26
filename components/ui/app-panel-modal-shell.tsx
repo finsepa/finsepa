@@ -33,7 +33,7 @@ type AppPanelModalShellProps = {
 };
 
 /**
- * Modal v2 shell — same gray frame + white card as {@link AppModalShell}, docked on the right.
+ * Modal v2 shell — same shell grey frame + main-panel card as {@link AppModalShell}, docked on the right.
  */
 export function AppPanelModalShell({
   titleId,

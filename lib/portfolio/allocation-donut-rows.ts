@@ -10,7 +10,7 @@ export const ALLOCATION_DONUT_PALETTE = FUNDAMENTALS_MULTI_BAR_COLORS;
 
 /** Pie shows top N holdings; remainder rolls into one grey “Other” slice. */
 export const TOP_ALLOCATION_SLICES = 10;
-export const OTHER_SLICE_COLOR = "#71717A";
+export const OTHER_SLICE_COLOR = "#5C5D5F";
 
 export type AllocationDonutRow = {
   id: string;

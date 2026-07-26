@@ -39,14 +39,14 @@ const ACTIVITY_SIDE_FILTER_OPTIONS = [
 ] as const;
 
 const thCompany =
-  "whitespace-nowrap py-0 text-left align-middle text-[14px] font-medium leading-5 text-[#71717A]";
+  "whitespace-nowrap py-0 text-left align-middle text-[14px] font-medium leading-5 text-[#5C5D5F]";
 const thRight =
-  "whitespace-nowrap py-0 text-right align-middle text-[14px] font-medium leading-5 text-[#71717A]";
+  "whitespace-nowrap py-0 text-right align-middle text-[14px] font-medium leading-5 text-[#5C5D5F]";
 const tdCompany = "min-w-0 py-1 text-left text-[14px] leading-5 whitespace-normal";
 const tdActivity =
   "flex min-w-0 flex-col items-end justify-center py-1 text-right text-[14px] leading-5 whitespace-normal";
 const tdNum =
-  "whitespace-nowrap py-0 text-right align-middle font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#0F0F0F]";
+  "whitespace-nowrap py-0 text-right align-middle font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414]";
 
 /** Company | Recent activity | Avg closing price | % of change to portfolio. */
 const rowGridFour =
@@ -168,10 +168,10 @@ function CompanyTickerCell({ companyName, ticker }: { companyName: string; ticke
     <div className="flex min-w-0 items-center gap-3 pr-2 text-left">
       <CompanyLogo name={displayName} logoUrl={logoUrl} symbol={sym ?? undefined} size="md" />
       <div className="flex min-w-0 max-w-[min(280px,45vw)] flex-col gap-0.5 py-0.5">
-        <span className="line-clamp-1 text-[14px] font-semibold leading-5 text-[#0F0F0F] underline-offset-[3px] decoration-[#0F0F0F] group-hover:underline sm:line-clamp-2">
+        <span className="line-clamp-1 text-[14px] font-semibold leading-5 text-[#141414] underline-offset-[3px] decoration-[#141414] group-hover:underline sm:line-clamp-2">
           {displayName}
         </span>
-        <span className="text-[12px] font-normal leading-4 text-[#71717A]">{sym ?? "—"}</span>
+        <span className="text-[12px] font-normal leading-4 text-[#5C5D5F]">{sym ?? "—"}</span>
       </div>
     </div>
   );
@@ -181,7 +181,7 @@ function MobilePricesCell({ tx }: { tx: SuperinvestorQuarterlyTransaction }) {
   return (
     <div className="flex flex-col items-end justify-center gap-1 text-right">
       <span className={cn(tdNum, "block font-medium")}>{formatSuperinvestorTxPrice(tx.avgClosingPriceUsd)}</span>
-      <span className="text-[12px] font-normal leading-4 tabular-nums text-[#71717A]">
+      <span className="text-[12px] font-normal leading-4 tabular-nums text-[#5C5D5F]">
         {formatSuperinvestorPortfolioWeightChange(tx.portfolioWeightChangePct)}
       </span>
     </div>
@@ -201,7 +201,7 @@ function ActivityTableToolbar({
 }) {
   return (
     <div className="mb-4 flex flex-col gap-3 px-4 sm:flex-row sm:items-center sm:justify-between sm:px-0">
-      <h2 className="text-[20px] font-semibold leading-7 tracking-tight text-[#0F0F0F]">Activity</h2>
+      <h2 className="text-[20px] font-semibold leading-7 tracking-tight text-[#141414]">Activity</h2>
       <div className="flex min-w-0 flex-wrap items-center justify-end gap-3 sm:ml-auto">
         <SegmentedControl
           options={ACTIVITY_SIDE_FILTER_OPTIONS}
@@ -221,7 +221,7 @@ function ActivityTableToolbar({
 function QuarterDividerRow({ quarterLabel }: { quarterLabel: string }) {
   return (
     <div className="flex h-11 min-h-[44px] items-center bg-[#F4F4F5] px-4">
-      <span className="text-[14px] font-semibold leading-5 text-[#0F0F0F]">{quarterLabel}</span>
+      <span className="text-[14px] font-semibold leading-5 text-[#141414]">{quarterLabel}</span>
     </div>
   );
 }
@@ -297,7 +297,7 @@ export function SuperinvestorTransactionsTable({
 
   if (data.source === "unavailable") {
     return (
-      <p className="text-sm text-[#71717A]">
+      <p className="text-sm text-[#5C5D5F]">
         Quarterly transaction history could not be loaded from the SEC right now. Try again later.
       </p>
     );
@@ -312,7 +312,7 @@ export function SuperinvestorTransactionsTable({
           companySearch={companySearch}
           onCompanySearchChange={onCompanySearchChange}
         />
-        <p className="px-4 text-sm text-[#71717A] sm:px-0">
+        <p className="px-4 text-sm text-[#5C5D5F] sm:px-0">
           {companySearch.trim() && historyLoading ?
             "No matches in the last five years. Loading older 13F quarters…"
           : companySearch.trim() ?
@@ -336,7 +336,7 @@ export function SuperinvestorTransactionsTable({
         onCompanySearchChange={onCompanySearchChange}
       />
       {historyLoading && companySearch.trim().length >= 2 ?
-        <p className="mb-3 px-4 text-xs text-[#71717A] sm:px-0">Loading older 13F quarters in the background…</p>
+        <p className="mb-3 px-4 text-xs text-[#5C5D5F] sm:px-0">Loading older 13F quarters in the background…</p>
       : null}
       {/* ── Mobile: single table ── */}
       <div className="sm:hidden">

@@ -220,7 +220,7 @@ export function StockFinancialsTab({
   );
 
   return (
-    <div className="space-y-4 pt-1">
+    <div className="space-y-5">
       <StockFinancialsMobileToolbar
         view={view}
         onViewChange={setView}
@@ -251,7 +251,7 @@ export function StockFinancialsTab({
       {loading ? (
         <StockFinancialsTabSkeleton showToolbar={false} />
       ) : !displayTableModel ? (
-        <p className="text-[14px] leading-6 text-[#71717A]">{EMPTY_COPY[view][periodMode]}</p>
+        <p className="text-[14px] leading-6 text-[#5C5D5F]">{EMPTY_COPY[view][periodMode]}</p>
       ) : (
         <StockIncomeStatementTable
           model={displayTableModel}

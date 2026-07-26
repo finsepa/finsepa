@@ -1,5 +1,5 @@
 import type { AllocationDonutRow } from "@/lib/portfolio/allocation-donut-rows";
-import type { ChartTimeRange, ChartType } from "@/components/charting/charting-workspace";
+import type { ChartTimeRange, ChartType } from "@/components/charting/charting-time-range";
 import type { ChartingSeriesPoint } from "@/lib/market/charting-series-types";
 import type { ChartingMetricId } from "@/lib/market/stock-charting-metrics";
 import type { FundamentalsChartDisplayOptions } from "@/lib/chart/fundamentals-chart-display-options";

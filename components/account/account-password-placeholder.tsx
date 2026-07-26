@@ -27,13 +27,13 @@ export function AccountPasswordPlaceholder({
         data-1p-ignore
         data-lpignore="true"
         data-form-type="other"
-        className="h-10 w-full cursor-default rounded-[10px] border border-[#E4E4E7] bg-[#F4F4F5] py-2 pl-3 pr-10 text-sm text-[#71717A] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)] outline-none"
+        className="h-10 w-full cursor-default rounded-[10px] border border-[#E4E4E7] bg-[#F4F4F5] py-2 pl-3 pr-10 text-sm text-[#5C5D5F] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)] outline-none"
         style={{ WebkitTextSecurity: visible ? "none" : "disc" } as React.CSSProperties}
       />
       <button
         type="button"
         onClick={() => setVisible((value) => !value)}
-        className="absolute inset-y-0 right-0 flex items-center pr-3 text-[#0F0F0F] transition-opacity hover:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/30"
+        className="absolute inset-y-0 right-0 flex items-center pr-3 text-[#141414] transition-opacity hover:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/30"
         aria-label={visible ? "Hide password" : "Show password"}
         aria-pressed={visible}
       >

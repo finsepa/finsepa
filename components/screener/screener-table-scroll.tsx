@@ -15,30 +15,66 @@ import { cn } from "@/lib/utils";
 
 /** Column label row — sticky in desktop `<main>`; static on mobile (avoids topbar-offset gap in card). */
 export const SCREENER_TABLE_HEADER_STICKY_CLASS =
-  "z-30 isolate bg-white max-md:static md:sticky md:top-0 md:border-b md:border-solid md:border-[#E4E4E7]";
+  "z-30 isolate bg-white max-md:static md:sticky md:top-0 md:border-b md:border-solid md:border-[#EFEFEF]";
+
+/** Top corners for the header inside a 16px-radius screener table card. */
+export const SCREENER_TABLE_ROUNDED_HEADER_CLASS = "md:rounded-t-2xl";
 
 /**
  * Sticky header inside an overflow scroller (e.g. Financials viewport table).
  * Opaque cells + isolation keep body values from painting through on scroll.
  */
 export const SCREENER_TABLE_HEADER_STICKY_SCROLLPORT_CLASS =
-  "sticky top-0 z-30 isolate bg-white border-b border-solid border-[#E4E4E7]";
+  "sticky top-0 z-30 isolate bg-white border-b border-solid border-[#EFEFEF]";
 
 /** Row separators (keep header outside this so the header/rule line is exactly 1px on desktop). */
 export const SCREENER_TABLE_BODY_DIVIDE_CLASS =
-  "md:divide-y md:divide-solid md:divide-[#E4E4E7]";
+  "md:divide-y md:divide-solid md:divide-[#EFEFEF]";
 
 /** Bottom rule on individual rows (e.g. industries drill). */
 export const SCREENER_TABLE_ROW_BORDER_B_CLASS =
-  "md:border-b md:border-solid md:border-[#E4E4E7]";
+  "md:border-b md:border-solid md:border-[#EFEFEF]";
 
-/** Top/bottom frame on desktop; borderless on mobile (card shadow instead). */
+/**
+ * Companies table desktop: hover fill inset 8px from the card; stroke inset 20px
+ * so the rule sits inside the hover area. Strokes hide above/below the hovered row.
+ */
+export const SCREENER_TABLE_DATA_ROW_CLASS = cn(
+  "screener-data-row group/row relative bg-white max-md:hover:bg-neutral-50",
+  // Hide this row's bottom stroke while hovered.
+  "[&:hover_.screener-row-stroke]:opacity-0",
+  // Hide this row's bottom stroke when the next row is hovered (top rule of hovered row).
+  "has-[+.screener-data-row:hover]:[&_.screener-row-stroke]:opacity-0",
+);
+
+/**
+ * Companies screener: 8px desktop inset — watchlist star sits in the left gutter.
+ * Prefer {@link DEFAULT_TABLE_ROW_HOVER_PAD_CLASS} for tables without a leading control.
+ */
+export const SCREENER_TABLE_ROW_HOVER_PAD_CLASS = "max-md:px-4 md:px-2";
+
+/**
+ * Default data tables (news, charting, financials-style): 12px cell inset from the card edge.
+ */
+export const DEFAULT_TABLE_ROW_HOVER_PAD_CLASS = "max-md:px-4 md:px-3";
+
+export const SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS =
+  "md:rounded-[10px] md:transition-colors md:duration-75 md:group-hover/row:bg-neutral-50";
+
+export const SCREENER_TABLE_STROKE_INSET_CLASS =
+  "screener-row-stroke mx-5 hidden border-b border-solid border-[#EFEFEF] transition-opacity duration-75 md:block";
+
+/** Hide header rule when the first data row is hovered. */
+export const SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS =
+  "has-[+*_.screener-data-row:first-child:hover]:[&_.screener-row-stroke]:opacity-0";
+
+/** Full frame on desktop; borderless on mobile (card shadow instead). */
 export const SCREENER_TABLE_OUTER_BORDER_CLASS =
-  "max-md:border-0 md:border-x-0 md:border-y md:border-solid md:border-[#E4E4E7]";
+  "max-md:border-0 md:border md:border-solid md:border-[#EBEBEC]";
 
-/** Matches index cards — rounded surface + stacked shadow on mobile only. */
+/** 16px rounded white surface — mobile elevation, desktop border + shadow. */
 export const SCREENER_TABLE_MOBILE_SURFACE_CLASS = cn(
-  "max-md:overflow-hidden max-md:rounded-2xl max-md:bg-white",
+  "overflow-hidden rounded-2xl bg-white md:shadow-[0px_1px_2px_0px_rgba(0,0,0,0.04)]",
   MOBILE_CARD_SURFACE_CLASS,
 );
 
@@ -66,6 +102,9 @@ function financialsBottomInsetPx(): number {
 /**
  * Caps height to the remaining viewport so both scrollbars sit on the visible frame
  * (horizontal at the bottom, vertical on the right) — not below the fold of a tall table.
+ *
+ * Outer shell owns border / radius / shadow so the scroll-fade mask never clips the
+ * container stroke. Inner port scrolls, fades, and shows classic scrollbars.
  */
 function FinancialsViewportScrollFrame({
   children,
@@ -122,26 +161,39 @@ function FinancialsViewportScrollFrame({
 
   return (
     <div
-      ref={rootRef}
       className={cn(
-        "w-full min-w-0 max-w-full overflow-auto overscroll-contain [-webkit-overflow-scrolling:touch]",
-        FINANCIALS_TABLE_VIEWPORT_SCROLLBAR_CLASS,
-        // Match sticky label col (`STOCK_TABLE_LABEL_COL_WIDTH`) so the left fade starts at TTM, not over labels.
-        canScrollX &&
-          "scroll-fade-effect-x [--mask-width:2.5rem] [--scroll-buffer:1.5rem]",
-        !embeddedInMobileCard && SCREENER_TABLE_OUTER_BORDER_CLASS,
-        !embeddedInMobileCard && SCREENER_TABLE_MOBILE_SURFACE_CLASS,
+        // Border / radius / shadow live outside the scroll mask so the right stroke stays visible.
+        "w-full min-w-0 max-w-full rounded-2xl bg-white",
+        SCREENER_TABLE_OUTER_BORDER_CLASS,
+        "md:shadow-[0px_1px_2px_0px_rgba(0,0,0,0.04)]",
+        MOBILE_CARD_SURFACE_CLASS,
         embeddedInMobileCard &&
           "max-md:rounded-none max-md:border-0 max-md:bg-transparent max-md:shadow-none",
         className,
       )}
-      style={{
-        maxHeight: maxHeightPx ?? "var(--financials-table-max-h)",
-        // Match sticky label col (`STOCK_TABLE_LABEL_COL_WIDTH`) so the left fade starts after labels.
-        ...(canScrollX ? ({ ["--mask-offset-left" as string]: "14rem" } as CSSProperties) : null),
-      }}
     >
-      {children}
+      <div
+        ref={rootRef}
+        className={cn(
+          "w-full min-w-0 overflow-auto overscroll-contain rounded-2xl [-webkit-overflow-scrolling:touch]",
+          FINANCIALS_TABLE_VIEWPORT_SCROLLBAR_CLASS,
+          // Fade content only — offset right so the scrollbar track stays fully opaque.
+          canScrollX &&
+            "scroll-fade-effect-x [--mask-width:2.5rem] [--scroll-buffer:1.5rem] [--mask-offset-right:10px]",
+          embeddedInMobileCard && "max-md:rounded-none",
+        )}
+        style={{
+          maxHeight: maxHeightPx ?? "var(--financials-table-max-h)",
+          ...(canScrollX
+            ? ({
+                // Match sticky label col (`STOCK_TABLE_LABEL_COL_WIDTH`) so the left fade starts after labels.
+                ["--mask-offset-left" as string]: "14rem",
+              } as CSSProperties)
+            : null),
+        }}
+      >
+        {children}
+      </div>
     </div>
   );
 }
@@ -269,13 +321,9 @@ export function ScreenerTableScroll({
       ref={scrollRef}
       className={cn(
         "w-full min-w-0 max-w-full",
-        !embeddedInMobileCard && SCREENER_TABLE_OUTER_BORDER_CLASS,
-        !embeddedInMobileCard &&
-          cn(
-            "max-md:rounded-2xl max-md:bg-white",
-            MOBILE_CARD_SURFACE_CLASS,
-            !scrollAlignEnd && "max-md:overflow-hidden",
-          ),
+        SCREENER_TABLE_OUTER_BORDER_CLASS,
+        SCREENER_TABLE_MOBILE_SURFACE_CLASS,
+        !scrollAlignEnd && "max-md:overflow-hidden",
         embeddedInMobileCard &&
           "max-md:rounded-none max-md:border-0 max-md:bg-transparent max-md:shadow-none",
         // `mobile-scroll-x` is mobile-only in CSS; earnings summary needs pan on all breakpoints.

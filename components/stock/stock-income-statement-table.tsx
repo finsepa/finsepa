@@ -8,8 +8,11 @@ import type {
 import type { ChartingMetricId } from "@/lib/market/stock-charting-metrics";
 import { resolveFinancialsRowChartMetric } from "@/lib/market/stock-financials-row-chart";
 import {
+  SCREENER_TABLE_DATA_ROW_CLASS,
   SCREENER_TABLE_HEADER_STICKY_CLASS,
   SCREENER_TABLE_HEADER_STICKY_SCROLLPORT_CLASS,
+  SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+  SCREENER_TABLE_STROKE_INSET_CLASS,
   ScreenerTableScroll,
 } from "@/components/screener/screener-table-scroll";
 import {
@@ -116,28 +119,28 @@ function formatCell(
 function toneClass(tone: "neutral" | "positive" | "negative"): string {
   if (tone === "positive") return "text-[#16A34A]";
   if (tone === "negative") return "text-[#DC2626]";
-  return "text-[#0F0F0F]";
+  return "text-[#141414]";
 }
 
 const numCellClass =
-  "min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#0F0F0F]";
+  "flex min-h-full min-w-0 w-full items-center justify-end self-stretch pr-3 text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414]";
 
 const headerYearClass =
-  "relative z-[1] min-w-0 w-full truncate bg-white text-right font-['Inter'] text-[14px] font-medium leading-5 tabular-nums text-[#71717A]";
+  "relative z-[1] min-w-0 w-full truncate bg-white pr-3 text-right font-['Inter'] text-[14px] font-medium leading-5 tabular-nums text-[#5C5D5F]";
 
 const headerPeriodEndClass =
-  "relative z-[1] min-w-0 w-full truncate bg-white text-right font-['Inter'] text-[14px] font-medium leading-5 tabular-nums text-[#71717A]";
+  "relative z-[1] min-w-0 w-full truncate bg-white pr-3 text-right font-['Inter'] text-[14px] font-medium leading-5 tabular-nums text-[#5C5D5F]";
 
 /** Sticky label column — stays put on horizontal scroll inside the financials scroller. */
 const stickyLabelHeadClass =
-  "sticky left-0 z-40 flex min-h-full min-w-0 items-center self-stretch bg-white pl-2 pr-4 text-left font-['Inter'] text-[14px] font-medium leading-5 text-[#71717A] sm:pl-4";
+  "sticky left-0 z-40 flex min-h-full min-w-0 items-center self-stretch bg-white pl-2 pr-4 text-left font-['Inter'] text-[14px] font-medium leading-5 text-[#5C5D5F] sm:pl-4";
 
 const stickyLabelBodyClass =
-  "sticky left-0 z-20 flex min-h-full min-w-0 items-center self-stretch bg-white pl-2 pr-4 text-left group-hover:bg-neutral-50 sm:pl-4";
+  "sticky left-0 z-20 flex min-h-full min-w-0 items-center self-stretch bg-white pl-2 pr-4 text-left group-hover/row:bg-neutral-50 sm:pl-4";
 
 /** Vertical rule between sticky labels and year columns — Financials only. */
 const stickyLabelColumnRuleClass =
-  "border-r border-[#E4E4E7] shadow-[1px_0_0_0_#E4E4E7]";
+  "border-r border-[#EFEFEF] shadow-[1px_0_0_0_#EFEFEF]";
 
 const headerValueCellClass = "relative z-[1] flex min-h-full min-w-0 items-center justify-end self-stretch bg-white";
 
@@ -159,11 +162,11 @@ function forecastColumnStyle(isForecast: boolean | undefined, isFirstForecast: b
 /** Matches {@link ScreenerTable} / {@link CryptoTable} header band. */
 const incomeHeaderRowClass = "min-h-[44px]";
 
-/** Matches screener data row height and hover ({@link ScreenerDataRow}). */
-const incomeDataRowClass = "group min-h-[60px]";
+/** Matches screener data row height ({@link ScreenerDataRow}). */
+const incomeDataRowClass = "min-h-[60px]";
 
-/** Full-width row separator (`divide-y` is overridden by `border-0` on button rows). */
-const incomeRowDividerClass = "border-b border-[#E4E4E7]";
+/** Header / period rules — same inset stroke as screener companies. */
+const incomeHeaderBorderClass = "border-b border-solid border-[#EFEFEF]";
 
 export function StockIncomeStatementTable({
   model,
@@ -258,19 +261,27 @@ export function StockIncomeStatementTable({
       scrollAlignEnd={scrollAlignEnd}
       scrollAlignKey={scrollAlignKey}
       tableMinWidthPx={
-        scrollAlignEnd ? stockTableScrollMinWidthPx(dataColumnCount) : undefined
+        scrollAlignEnd || viewportScroll
+          ? stockTableScrollMinWidthPx(dataColumnCount)
+          : undefined
       }
     >
       <div className="bg-white">
         <div
-          className={
+          className={cn(
             viewportScroll
               ? SCREENER_TABLE_HEADER_STICKY_SCROLLPORT_CLASS
-              : SCREENER_TABLE_HEADER_STICKY_CLASS
-          }
+              : SCREENER_TABLE_HEADER_STICKY_CLASS,
+            SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+            "border-b-0 md:border-b-0",
+          )}
         >
           <div
-            className={`grid items-stretch gap-x-2 border-b border-[#E4E4E7] bg-white py-0 pr-2 sm:pr-4 ${incomeHeaderRowClass}`}
+            className={cn(
+              "grid items-stretch gap-x-2 bg-white py-0 pr-0",
+              incomeHeaderBorderClass,
+              incomeHeaderRowClass,
+            )}
             style={{ gridTemplateColumns }}
           >
             <div className={cn(stickyLabelHeadClass, labelRule)}>{periodHeaderLabel}</div>
@@ -280,7 +291,10 @@ export function StockIncomeStatementTable({
           </div>
           {showPeriodEndingRow ? (
             <div
-              className={`grid items-stretch gap-x-2 border-b border-[#E4E4E7] bg-white py-0 pr-2 sm:pr-4 ${incomeHeaderRowClass}`}
+              className={cn(
+                "grid items-stretch gap-x-2 bg-white py-0 pr-0",
+                incomeHeaderRowClass,
+              )}
               style={{ gridTemplateColumns }}
             >
               <div className={cn(stickyLabelHeadClass, labelRule)}>Period Ending</div>
@@ -289,10 +303,11 @@ export function StockIncomeStatementTable({
               {!ttmLeading ? ttmPeriodHeader : null}
             </div>
           ) : null}
+          <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
         </div>
 
         <div className="relative z-0">
-          {rows.map((row) => (
+          {rows.map((row, index) => (
             <IncomeRow
               key={row.id}
               row={row}
@@ -301,6 +316,7 @@ export function StockIncomeStatementTable({
               firstForecastIndex={firstForecastValueIndex}
               onMetricClick={onMetricClick}
               showLabelColumnRule={showLabelColumnRule}
+              showDivider={index < rows.length - 1}
             />
           ))}
           {firstForecastValueIndex >= 0 && forecastColumnCount > 0 ? (
@@ -328,6 +344,7 @@ function IncomeRow({
   firstForecastIndex,
   onMetricClick,
   showLabelColumnRule,
+  showDivider,
 }: {
   row: IncomeStatementRowModel;
   gridTemplateColumns: string;
@@ -335,10 +352,11 @@ function IncomeRow({
   firstForecastIndex: number;
   onMetricClick?: (metricId: ChartingMetricId) => void;
   showLabelColumnRule?: boolean;
+  showDivider: boolean;
 }) {
   const labelClass = row.emphasize
-    ? "text-[14px] font-semibold leading-5 text-[#0F0F0F]"
-    : "text-[14px] font-normal leading-5 text-[#0F0F0F]";
+    ? "text-[14px] font-semibold leading-5 text-[#141414]"
+    : "text-[14px] font-normal leading-5 text-[#141414]";
 
   const nestedLabelPad =
     row.id === "fcf_ps" || row.id === "fcf_margin" ? "pl-3 sm:pl-6" : "";
@@ -353,7 +371,7 @@ function IncomeRow({
         showLabelColumnRule && stickyLabelColumnRuleClass,
         nestedLabelPad,
         labelClass,
-        rowInteractive && "group-hover:underline",
+        rowInteractive && "underline-offset-2 decoration-[#5C5D5F] group-hover/row:underline",
       )}
     >
       <span className="min-w-0 truncate">{row.label}</span>
@@ -377,23 +395,21 @@ function IncomeRow({
         key={i}
         className={cn(
           numCellClass,
-          "flex min-h-full justify-end self-stretch",
-          hasSub ? "flex-col items-end justify-center gap-0.5 py-2" : "items-center truncate",
-          isGrowth && "font-medium",
-          isGrowth && (growthMissing ? "text-[#71717A]" : toneClass(tone)),
+          hasSub && "flex-col items-end justify-center gap-0.5 py-2",
+          isGrowth && (growthMissing ? "text-[#5C5D5F]" : toneClass(tone)),
           isForecast && forecastMuteClass,
         )}
         style={forecastColumnStyle(isForecast, i === firstForecastIndex)}
       >
-        <span className={cn(hasSub && "leading-5")}>{text}</span>
+        <span className="block w-full text-right tabular-nums">{text}</span>
         {sub ? (
           <span
             className={cn(
-              "text-[12px] font-medium leading-4 tabular-nums",
+              "block w-full text-right text-[12px] font-normal leading-4 tabular-nums",
               isForecast
                 ? forecastMuteClass
                 : subMissing
-                  ? "text-[#71717A]"
+                  ? "text-[#5C5D5F]"
                   : toneClass(sub.tone),
             )}
           >
@@ -404,31 +420,33 @@ function IncomeRow({
     );
   });
 
-  if (rowInteractive) {
-    return (
-      <button
-        type="button"
-        className={cn(
-          "group relative z-0 grid w-full cursor-pointer items-stretch gap-x-2 border-x-0 border-t-0 bg-white py-0 pr-2 text-left font-inherit transition-colors duration-75 hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-zinc-300 sm:pr-4",
-          incomeRowDividerClass,
-          incomeDataRowClass,
-        )}
-        style={{ gridTemplateColumns }}
-        onClick={() => onMetricClick?.(metricId)}
-      >
-        {labelCell}
-        {valueCells}
-      </button>
-    );
-  }
+  const rowSurfaceClass = cn(
+    "group/row relative z-0 grid w-full items-stretch gap-x-2 border-0 bg-white py-0 pr-0 text-left font-inherit transition-colors duration-75 hover:bg-neutral-50",
+    incomeDataRowClass,
+  );
 
   return (
-    <div
-      className={`group relative z-0 grid items-stretch gap-x-2 bg-white py-0 pr-2 transition-colors duration-75 hover:bg-neutral-50 sm:pr-4 ${incomeRowDividerClass} ${incomeDataRowClass}`}
-      style={{ gridTemplateColumns }}
-    >
-      {labelCell}
-      {valueCells}
+    <div className={SCREENER_TABLE_DATA_ROW_CLASS}>
+      {rowInteractive ? (
+        <button
+          type="button"
+          className={cn(
+            rowSurfaceClass,
+            "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-zinc-300",
+          )}
+          style={{ gridTemplateColumns }}
+          onClick={() => onMetricClick?.(metricId)}
+        >
+          {labelCell}
+          {valueCells}
+        </button>
+      ) : (
+        <div className={rowSurfaceClass} style={{ gridTemplateColumns }}>
+          {labelCell}
+          {valueCells}
+        </div>
+      )}
+      {showDivider ? <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden /> : null}
     </div>
   );
 }

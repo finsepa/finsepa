@@ -43,8 +43,8 @@ function fmtPct(n: number | null): string {
 }
 
 function athReturnClass(n: number | null): string {
-  if (n == null || !Number.isFinite(n)) return "text-[#0F0F0F]";
-  if (Math.abs(n) < 0.0005) return "text-[#0F0F0F]";
+  if (n == null || !Number.isFinite(n)) return "text-[#141414]";
+  if (Math.abs(n) < 0.0005) return "text-[#141414]";
   return n >= 0 ? "text-[#16A34A]" : "text-[#DC2626]";
 }
 
@@ -83,13 +83,13 @@ export function PortfoliosDirectoryTable({ listings }: { listings: PublicListing
         <div className="min-w-[720px] divide-y divide-[#E4E4E7] border-t border-b border-[#E4E4E7]">
           <div className="bg-white">
             <div
-              className={`grid ${mobileColLayout} min-h-[44px] items-center px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A] sm:hidden`}
+              className={`grid ${mobileColLayout} min-h-[44px] items-center px-4 py-0 text-[14px] font-medium leading-5 text-[#5C5D5F] sm:hidden`}
             >
               <div className="min-w-0 text-left">Investor</div>
               <div className="min-w-0 text-right">ATH</div>
             </div>
             <div
-              className={`hidden ${colLayout} min-h-[44px] items-center px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A] sm:grid`}
+              className={`hidden ${colLayout} min-h-[44px] items-center px-4 py-0 text-[14px] font-medium leading-5 text-[#5C5D5F] sm:grid`}
             >
               <div className="min-w-0 text-left">Investor</div>
               <div className="min-w-0 text-right">Value</div>
@@ -117,7 +117,7 @@ export function PortfoliosDirectoryTable({ listings }: { listings: PublicListing
                   <Link
                     href={`/portfolios/${listing.id}`}
                     prefetch={false}
-                    className="flex min-w-0 items-center gap-3 text-[#0F0F0F] no-underline visited:text-[#0F0F0F]"
+                    className="flex min-w-0 items-center gap-3 text-[#141414] no-underline visited:text-[#141414]"
                   >
                     <UserAvatar
                       imageSrc={
@@ -132,10 +132,10 @@ export function PortfoliosDirectoryTable({ listings }: { listings: PublicListing
                       <div className="truncate text-[14px] font-semibold leading-5 underline-offset-2 group-hover:underline">
                         {listing.name}
                       </div>
-                      <div className="truncate text-[12px] font-normal leading-4 text-[#71717A]">
+                      <div className="truncate text-[12px] font-normal leading-4 text-[#5C5D5F]">
                         <PortfolioOwnerName name={ownerName} />
                       </div>
-                      <div className="mt-0.5 text-[12px] font-normal leading-4 tabular-nums text-[#71717A]">
+                      <div className="mt-0.5 text-[12px] font-normal leading-4 tabular-nums text-[#5C5D5F]">
                         {value != null ? formatUsdCompact(value) : "—"}
                         {holdingCount != null ? ` · ${Math.round(holdingCount)} holdings` : null}
                       </div>
@@ -154,7 +154,7 @@ export function PortfoliosDirectoryTable({ listings }: { listings: PublicListing
                 <Link
                   href={`/portfolios/${listing.id}`}
                   prefetch={false}
-                  className={`hidden ${rowLinkGrid} h-[60px] max-h-[60px] items-center px-4 text-[#0F0F0F] no-underline visited:text-[#0F0F0F] sm:grid`}
+                  className={`hidden ${rowLinkGrid} h-[60px] max-h-[60px] items-center px-4 text-[#141414] no-underline visited:text-[#141414] sm:grid`}
                   aria-label={`View portfolio ${listing.name} by ${ownerName}`}
                 >
                   <div className="flex min-w-0 items-center gap-3 text-left">
@@ -171,17 +171,17 @@ export function PortfoliosDirectoryTable({ listings }: { listings: PublicListing
                       <div className="truncate text-[14px] font-semibold leading-5 underline-offset-2 group-hover:underline">
                         {listing.name}
                       </div>
-                      <div className="truncate text-[12px] font-normal leading-4 text-[#71717A]">
+                      <div className="truncate text-[12px] font-normal leading-4 text-[#5C5D5F]">
                         <PortfolioOwnerName name={ownerName} />
                       </div>
                     </div>
                   </div>
 
-                  <div className="min-w-0 text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#0F0F0F]">
+                  <div className="min-w-0 text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414]">
                     {value != null ? formatUsdCompact(value) : "—"}
                   </div>
 
-                  <div className="min-w-0 text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#0F0F0F]">
+                  <div className="min-w-0 text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414]">
                     {holdingCount != null ? Math.round(holdingCount).toLocaleString("en-US") : "—"}
                   </div>
 

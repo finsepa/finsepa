@@ -24,19 +24,19 @@ const floatingShellClassName = cn(
 );
 
 const floatingInputClassName = cn(
-  "peer h-full w-full rounded-[10px] border-0 bg-transparent pt-5 pb-1.5 pl-4 text-sm text-[#0F0F0F]",
+  "peer h-full w-full rounded-[10px] border-0 bg-transparent pt-5 pb-1.5 pl-4 text-sm text-[#141414]",
   "outline-none ring-0",
   "disabled:cursor-not-allowed",
 );
 
 const floatingIconButtonClassName = cn(
-  "pointer-events-auto absolute inset-y-0 flex items-center text-[#71717A] transition-opacity",
-  "hover:text-[#0F0F0F] hover:opacity-80",
+  "pointer-events-auto absolute inset-y-0 flex items-center text-[#5C5D5F] transition-opacity",
+  "hover:text-[#141414] hover:opacity-80",
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/30",
   "disabled:cursor-not-allowed disabled:opacity-60",
 );
 
-const floatingTrailingIconClassName = "size-[18px] shrink-0 text-[#71717A]";
+const floatingTrailingIconClassName = "size-[18px] shrink-0 text-[#5C5D5F]";
 
 function FloatingLabel({
   htmlFor,
@@ -52,7 +52,7 @@ function FloatingLabel({
       htmlFor={htmlFor}
       className={cn(
         "pointer-events-none absolute left-4 top-0 origin-left text-sm leading-5",
-        floated ? "font-medium text-[#71717A]" : "font-normal text-[#A1A1AA]",
+        floated ? "font-medium text-[#5C5D5F]" : "font-normal text-[#A1A1AA]",
       )}
       style={{
         // Inline transform so the browser interpolates big→small (Tailwind class swaps can snap).
@@ -135,7 +135,7 @@ export function AuthFloatingInput({
           className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4"
           aria-hidden
         >
-          <Spinner className="size-[18px] text-[#71717A]" />
+          <Spinner className="size-[18px] text-[#5C5D5F]" />
         </div>
       ) : hasValue ? (
         <button

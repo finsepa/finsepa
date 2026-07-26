@@ -96,11 +96,11 @@ export function UnderlineTabs<T extends string>({
   }, [measureIndicator]);
 
   return (
-    <div className={cn("mb-4 border-b border-solid border-[#E4E4E7] md:mb-6", className)}>
+    <div className={cn("mb-5 border-b border-solid border-[#E4E4E7]", className)}>
       <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 md:gap-x-3">
         <nav
           ref={navRef}
-          className="relative flex min-w-0 flex-1 flex-nowrap items-start gap-4 overflow-x-auto overflow-y-hidden pb-px [-webkit-overflow-scrolling:touch] [scrollbar-width:none] md:gap-5 md:overflow-visible [&::-webkit-scrollbar]:hidden"
+          className="relative flex min-w-0 flex-1 flex-nowrap items-start gap-4 overflow-x-auto overflow-y-hidden pb-px [-webkit-overflow-scrolling:touch] [scrollbar-width:none] sm:gap-5 md:overflow-visible [&::-webkit-scrollbar]:hidden"
           aria-label={ariaLabel}
         >
           {options.map(({ value, label }) => {
@@ -114,8 +114,8 @@ export function UnderlineTabs<T extends string>({
                 }}
                 type="button"
                 onClick={() => onChange(value)}
-                className={`-mb-px shrink-0 cursor-pointer border-b-2 border-solid border-transparent py-2 text-left text-[14px] font-medium leading-6 transition-[color,opacity] duration-100 focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15 focus-visible:ring-offset-2 hover:opacity-80 ${
-                  isActive ? "font-semibold text-[#0F0F0F] opacity-100" : "text-[#71717A] opacity-100"
+                className={`-mb-px shrink-0 cursor-pointer border-b-2 border-solid border-transparent py-2 text-left text-[14px] font-medium leading-6 transition-[color,opacity] duration-100 focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15 focus-visible:ring-offset-2 hover:opacity-80 ${
+                  isActive ? "font-semibold text-[#141414] opacity-100" : "text-[#5C5D5F] opacity-100"
                 }`}
               >
                 {label}
@@ -123,7 +123,7 @@ export function UnderlineTabs<T extends string>({
             );
           })}
           <span
-            className="pointer-events-none absolute bottom-0 z-[1] h-0.5 rounded-full bg-[#0F0F0F] motion-reduce:transition-none"
+            className="pointer-events-none absolute bottom-0 z-[1] h-0.5 rounded-full bg-[#141414] motion-reduce:transition-none"
             style={{
               left: indicator.left,
               width: indicator.width,

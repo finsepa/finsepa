@@ -69,20 +69,20 @@ function opColorClass(operation: string): string {
   const u = operation.toLowerCase();
   if (u.includes("sell")) return "text-[#DC2626]";
   if (u.includes("buy")) return "text-[#16A34A]";
-  return "text-[#0F0F0F]";
+  return "text-[#141414]";
 }
 
 function sumColorClass(sum: number): string {
   if (sum > 0) return "text-[#16A34A]";
   if (sum < 0) return "text-[#DC2626]";
-  return "text-[#0F0F0F]";
+  return "text-[#141414]";
 }
 
 function PositionStat({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="min-w-0">
-      <div className="text-[13px] font-normal leading-4 text-[#71717A]">{label}</div>
-      <div className="mt-1.5 min-w-0 text-[14px] font-semibold leading-5 tabular-nums text-[#0F0F0F]">
+      <div className="text-[13px] font-normal leading-4 text-[#5C5D5F]">{label}</div>
+      <div className="mt-1.5 min-w-0 text-[14px] font-semibold leading-5 tabular-nums text-[#141414]">
         {children}
       </div>
     </div>
@@ -278,9 +278,9 @@ export function AssetPortfolioHoldingsTab({
               title={selectedPortfolioReadOnly ? "Trades are not available for combined portfolios." : undefined}
               onClick={() => openNewTransactionWithPreset({ symbol: route, name: assetDisplayName })}
               className={cn(
-                "inline-flex h-10 items-center justify-center gap-1.5 rounded-[10px] bg-[#0F0F0F] px-4 text-sm font-semibold text-white",
+                "inline-flex h-10 items-center justify-center gap-1.5 rounded-[10px] bg-[#141414] px-4 text-sm font-semibold text-white",
                 "shadow-[0px_1px_2px_0px_rgba(10,10,10,0.12)] transition-colors hover:bg-[#18181B]",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/20 focus-visible:ring-offset-2",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/20 focus-visible:ring-offset-2",
                 "disabled:pointer-events-none disabled:opacity-40",
               )}
             >
@@ -318,7 +318,7 @@ export function AssetPortfolioHoldingsTab({
   const profitTone = (n: number) => (n >= 0 ? "text-[#16A34A]" : "text-[#DC2626]");
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
       <section className="space-y-4">
         <ChartControls
           activeRange={holdingsChartRange}
@@ -341,10 +341,10 @@ export function AssetPortfolioHoldingsTab({
       </section>
 
       <section>
-        <h2 className="mb-4 text-[18px] font-semibold leading-7 tracking-tight text-[#0F0F0F]">My positions</h2>
+        <h2 className="mb-4 text-[18px] font-semibold leading-7 tracking-tight text-[#141414]">My positions</h2>
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <div className="rounded-[12px] border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
-            <h3 className="mb-4 text-[15px] font-semibold leading-5 text-[#0F0F0F]">General</h3>
+            <h3 className="mb-4 text-[15px] font-semibold leading-5 text-[#141414]">General</h3>
             <div>
               <div className="grid grid-cols-2 gap-4 border-b border-dotted border-[#E4E4E7] pb-4">
                 <PositionStat label="Shares">{sharesLabel}</PositionStat>
@@ -362,7 +362,7 @@ export function AssetPortfolioHoldingsTab({
           </div>
 
           <div className="rounded-[12px] border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
-            <h3 className="mb-4 text-[15px] font-semibold leading-5 text-[#0F0F0F]">Return</h3>
+            <h3 className="mb-4 text-[15px] font-semibold leading-5 text-[#141414]">Return</h3>
             <div>
               <div className="grid grid-cols-2 gap-4 border-b border-dotted border-[#E4E4E7] pb-4">
                 <PositionStat label="Total profit">
@@ -383,7 +383,7 @@ export function AssetPortfolioHoldingsTab({
                   </span>
                 </PositionStat>
                 <PositionStat label="Fees paid">
-                  <span className={feesUsd > 0 ? "text-[#DC2626]" : "text-[#71717A]"}>
+                  <span className={feesUsd > 0 ? "text-[#DC2626]" : "text-[#5C5D5F]"}>
                     {feesUsd <= 0 ? usd0.format(0) : `-${usd0.format(feesUsd)}`}
                   </span>
                 </PositionStat>
@@ -395,16 +395,16 @@ export function AssetPortfolioHoldingsTab({
 
       <div>
         <div className="mb-4 flex items-center justify-between gap-3">
-          <h2 className="text-[18px] font-semibold leading-7 tracking-tight text-[#0F0F0F]">Transactions</h2>
+          <h2 className="text-[18px] font-semibold leading-7 tracking-tight text-[#141414]">Transactions</h2>
           <button
             type="button"
             aria-label={`Add transaction for ${holding.name}`}
             disabled={selectedPortfolioReadOnly}
             onClick={() => openNewTransactionWithPreset({ symbol: route, name: holding.name })}
             className={cn(
-              "flex h-9 w-9 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#0F0F0F]",
+              "flex h-9 w-9 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#141414]",
               "shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5]",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15 focus-visible:ring-offset-2",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15 focus-visible:ring-offset-2",
               "disabled:pointer-events-none disabled:opacity-40",
             )}
           >
@@ -412,7 +412,7 @@ export function AssetPortfolioHoldingsTab({
           </button>
         </div>
         {tradeRows.length === 0 ? (
-          <p className="text-[14px] leading-6 text-[#71717A]">No trades recorded for this symbol in this portfolio.</p>
+          <p className="text-[14px] leading-6 text-[#5C5D5F]">No trades recorded for this symbol in this portfolio.</p>
         ) : (
           <div className="w-full min-w-0">
             <div className="overflow-x-auto pb-4">
@@ -420,7 +420,7 @@ export function AssetPortfolioHoldingsTab({
                 <div
                   className={cn(
                     assetTxGrid,
-                    "min-h-[44px] bg-white px-4 py-0 text-[14px] font-medium leading-5 text-[#71717A]",
+                    "min-h-[44px] bg-white px-4 py-0 text-[14px] font-medium leading-5 text-[#5C5D5F]",
                   )}
                 >
                   <div className="text-left">Date</div>
@@ -442,7 +442,7 @@ export function AssetPortfolioHoldingsTab({
                         "h-[60px] max-h-[60px] bg-white px-4 transition-colors duration-75 hover:bg-neutral-50",
                       )}
                     >
-                      <div className="text-left font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#0F0F0F] align-middle">
+                      <div className="text-left font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#141414] align-middle">
                         {format(parseISO(t.date), "MMM d, yyyy")}
                       </div>
                       <div
@@ -453,10 +453,10 @@ export function AssetPortfolioHoldingsTab({
                       >
                         {t.operation}
                       </div>
-                      <div className="text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#0F0F0F] align-middle">
+                      <div className="text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#141414] align-middle">
                         {new Intl.NumberFormat("en-US", { maximumFractionDigits: 6 }).format(sh)}
                       </div>
-                      <div className="text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#0F0F0F] align-middle">
+                      <div className="text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#141414] align-middle">
                         {formatPortfolioUsdPerUnit(pr)}
                       </div>
                       <div

@@ -19,7 +19,7 @@ function StockPeersTabInner({
 
   if (isSingleAssetMode()) {
     return (
-      <div className="space-y-2 pt-2 text-[#71717A]">Peers temporarily unavailable in NVDA-only mode.</div>
+      <div className="space-y-2 pt-2 text-[#5C5D5F]">Peers temporarily unavailable in NVDA-only mode.</div>
     );
   }
 
@@ -27,7 +27,7 @@ function StockPeersTabInner({
     initialPageData?.ticker === main ? { [main]: initialPageData } : {};
 
   return (
-    <div className="w-full min-w-0 pt-1">
+    <div className="w-full min-w-0">
       <ComparisonWorkspace
         tickers={[main]}
         anchorTicker={main}

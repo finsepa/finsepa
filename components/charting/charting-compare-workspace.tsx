@@ -25,8 +25,6 @@ import type { CompanyPickerOpenControls } from "@/components/charting/company-pi
 import { formatChartingTableCell } from "@/components/charting/charting-individual-company-table";
 import { ChartingCompareCompanyTable } from "@/components/charting/charting-compare-company-table";
 import {
-  DEFAULT_CHART_TIME_RANGE,
-  DEFAULT_CHART_TIME_RANGE_ORDER,
   CHARTING_HEIGHT_PX,
   CHARTING_PLOT_BACKDROP_INSET_CLASS,
   chartingAxisRowPx,
@@ -36,10 +34,14 @@ import {
   CHARTING_STOCK_GROUPED_BAR_SHIFT_FRAC,
   ChartingHoverBandPrimitive,
   layoutChartingTimeScale,
-  type ChartTimeRange,
-  type ChartType,
   type ChartingUnitScale,
 } from "@/components/charting/charting-workspace";
+import {
+  DEFAULT_CHART_TIME_RANGE,
+  DEFAULT_CHART_TIME_RANGE_ORDER,
+  type ChartTimeRange,
+  type ChartType,
+} from "@/components/charting/charting-time-range";
 import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
 import { ChartingVisualSwitcher } from "@/components/stock/multichart-visual-switcher";
 import { DataFetchTopLoader } from "@/components/layout/data-fetch-top-loader";
@@ -1081,7 +1083,7 @@ export function ChartingCompareWorkspace({
             },
             layout: {
               background: { type: ColorType.Solid, color: "transparent" },
-              textColor: "#71717A",
+              textColor: "#5C5D5F",
               fontSize: 12,
               fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
               attributionLogo: false,
@@ -1644,7 +1646,7 @@ export function ChartingCompareWorkspace({
       <div className="space-y-4 pt-1">
       <div className="flex flex-col gap-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-3">
-          <h2 className="min-w-0 shrink-0 text-2xl font-semibold leading-9 tracking-tight text-[#0F0F0F] sm:flex-1">
+          <h2 className="min-w-0 shrink-0 text-2xl font-semibold leading-9 tracking-tight text-[#141414] sm:flex-1">
             {workspaceTitle}
           </h2>
           {/* Web: keep controls on one line with range switcher (no stretch). */}
@@ -1671,7 +1673,7 @@ export function ChartingCompareWorkspace({
             <button
               type="button"
               onClick={() => router.replace(buildStandaloneChartPath(pathRoute, [], []), { scroll: false })}
-              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#0F0F0F] transition-colors hover:bg-[#FAFAFA]"
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#141414] transition-colors hover:bg-[#FAFAFA]"
               aria-label="Clear companies and metrics"
             >
               <RefreshCw className="h-4 w-4" strokeWidth={2} aria-hidden />
@@ -1730,7 +1732,7 @@ export function ChartingCompareWorkspace({
                       ))}
                     </DropdownScrollArea>
                     {totalAddable === 0 ? (
-                      <p className="px-3 py-2 text-[12px] text-[#71717A]">
+                      <p className="px-3 py-2 text-[12px] text-[#5C5D5F]">
                         {qLower ? "No metrics match" : "No additional metrics for this range"}
                       </p>
                     ) : null}
@@ -1767,14 +1769,14 @@ export function ChartingCompareWorkspace({
                 key={id}
                 className="order-1 inline-flex max-w-full min-w-0 items-stretch overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white"
               >
-                <span className="flex min-h-[36px] min-w-0 items-center border-r border-[#E4E4E7] px-4 py-2 text-[14px] font-medium leading-5 text-[#0F0F0F]">
+                <span className="flex min-h-[36px] min-w-0 items-center border-r border-[#E4E4E7] px-4 py-2 text-[14px] font-medium leading-5 text-[#141414]">
                   <span className="truncate">{CHARTING_METRIC_LABEL[id]}</span>
                 </span>
                 <button
                   type="button"
                   onClick={() => removeMetric(id)}
                   disabled={selected.length <= 1}
-                  className="flex w-9 shrink-0 items-center justify-center text-[#0F0F0F] transition-colors hover:bg-[#FAFAFA] disabled:pointer-events-none disabled:opacity-30"
+                  className="flex w-9 shrink-0 items-center justify-center text-[#141414] transition-colors hover:bg-[#FAFAFA] disabled:pointer-events-none disabled:opacity-30"
                   aria-label={`Remove ${CHARTING_METRIC_LABEL[id]}`}
                 >
                   <X className="h-5 w-5" strokeWidth={1.5} aria-hidden />
@@ -1845,7 +1847,7 @@ export function ChartingCompareWorkspace({
                       ))}
                     </DropdownScrollArea>
                     {totalAddable === 0 ? (
-                      <p className="px-3 py-2 text-[12px] text-[#71717A]">
+                      <p className="px-3 py-2 text-[12px] text-[#5C5D5F]">
                         {qLower ? "No metrics match" : "No additional metrics for this range"}
                       </p>
                     ) : null}
@@ -1861,24 +1863,24 @@ export function ChartingCompareWorkspace({
                   key={t}
                   className="order-3 inline-flex max-w-full min-w-0 items-stretch overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white"
                 >
-                  <span className="flex min-h-[36px] min-w-0 items-center border-r border-[#E4E4E7] px-4 py-2 text-[14px] font-medium leading-5 text-[#0F0F0F]">
+                  <span className="flex min-h-[36px] min-w-0 items-center border-r border-[#E4E4E7] px-4 py-2 text-[14px] font-medium leading-5 text-[#141414]">
                     <span className="truncate">{t}</span>
                   </span>
                   {chipLoading ? (
                     <span
-                      className="flex w-9 shrink-0 items-center justify-center text-[#71717A]"
+                      className="flex w-9 shrink-0 items-center justify-center text-[#5C5D5F]"
                       role="status"
                       aria-live="polite"
                       aria-label={`Loading ${t}`}
                     >
-                      <Spinner className="size-5 text-[#71717A]" />
+                      <Spinner className="size-5 text-[#5C5D5F]" />
                     </span>
                   ) : (
                     <button
                       type="button"
                       onClick={() => removeTicker(t)}
                       disabled={tickers.length <= 1}
-                      className="flex w-9 shrink-0 items-center justify-center text-[#0F0F0F] transition-colors hover:bg-[#FAFAFA] disabled:pointer-events-none disabled:opacity-30"
+                      className="flex w-9 shrink-0 items-center justify-center text-[#141414] transition-colors hover:bg-[#FAFAFA] disabled:pointer-events-none disabled:opacity-30"
                       aria-label={`Remove ${t}`}
                     >
                       <X className="h-5 w-5" strokeWidth={1.5} aria-hidden />
@@ -1909,24 +1911,24 @@ export function ChartingCompareWorkspace({
           className="min-h-[min(50vh,420px)]"
         />
       ) : empty ? (
-        <p className="max-w-md text-[14px] leading-6 text-[#71717A]">
+        <p className="max-w-md text-[14px] leading-6 text-[#5C5D5F]">
           Financial statement data isn&apos;t available for these symbols.
         </p>
       ) : (
         <>
           {noMetricData ? (
-            <p className="max-w-md text-[14px] leading-6 text-[#71717A]">
+            <p className="max-w-md text-[14px] leading-6 text-[#5C5D5F]">
               No series data for the selected metrics on these symbols.
             </p>
           ) : (
             <>
               <div className="w-full min-w-0 overflow-visible" style={{ height: chartHeight }}>
                 <div className="flex min-h-0 w-full overflow-visible" style={{ height: chartPlotHeight }}>
-                  <div className="relative min-h-0 min-w-0 flex-1 overflow-visible bg-white">
+                  <div className="relative min-h-0 min-w-0 flex-1 overflow-visible bg-[#FCFCFD]">
                     <div className="pointer-events-none absolute inset-0 z-0" aria-hidden>
                       <div
                         className={cn(
-                          "absolute inset-x-0 bg-white",
+                          "absolute inset-x-0 bg-[#FCFCFD]",
                           CHARTING_PLOT_BACKDROP_INSET_CLASS,
                         )}
                       >
@@ -1975,7 +1977,7 @@ export function ChartingCompareWorkspace({
                             <span className="absolute top-1/2 right-px -translate-y-1/2 border-y-[6px] border-y-transparent border-r-[7px] border-r-white" />
                           </span>
                         )}
-                        <p className="text-[12px] font-semibold leading-4 text-[#0F0F0F]">{hover.periodLabel}</p>
+                        <p className="text-[12px] font-semibold leading-4 text-[#141414]">{hover.periodLabel}</p>
                         <div className="mt-1.5 max-h-[min(240px,40vh)] space-y-1 overflow-y-auto">
                           {hover.rows.map((r) => (
                             <div key={r.key} className="flex items-baseline justify-between gap-3">
@@ -1985,11 +1987,11 @@ export function ChartingCompareWorkspace({
                                   style={{ backgroundColor: r.color }}
                                   aria-hidden
                                 />
-                                <span className="truncate text-[12px] font-normal leading-4 text-[#71717A]">
+                                <span className="truncate text-[12px] font-normal leading-4 text-[#5C5D5F]">
                                   {r.label}
                                 </span>
                               </span>
-                              <span className="shrink-0 text-[12px] font-semibold leading-4 tabular-nums text-[#0F0F0F]">
+                              <span className="shrink-0 text-[12px] font-semibold leading-4 tabular-nums text-[#141414]">
                                 {r.value}
                               </span>
                             </div>
@@ -2003,7 +2005,7 @@ export function ChartingCompareWorkspace({
                       {primaryYAxis ? (
                         <div
                           className={cn(
-                            "relative h-full text-left font-['Inter'] text-[12px] tabular-nums leading-none text-[#71717A]",
+                            "relative h-full text-left font-['Inter'] text-[12px] tabular-nums leading-none text-[#5C5D5F]",
                             FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS,
                           )}
                           style={{ width: FUNDAMENTALS_CHART_Y_AXIS_W_PX }}
@@ -2017,7 +2019,7 @@ export function ChartingCompareWorkspace({
                               return (
                                 <span
                                   key={`y-tick-primary-${i}`}
-                                  className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-white px-1 py-px"
+                                  className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-[#FCFCFD] px-1 py-px"
                                   style={{
                                     top:
                                       topPx != null && Number.isFinite(topPx)
@@ -2035,7 +2037,7 @@ export function ChartingCompareWorkspace({
                       {percentYAxis ? (
                         <div
                           className={cn(
-                            "relative h-full text-left font-['Inter'] text-[12px] tabular-nums leading-none text-[#71717A]",
+                            "relative h-full text-left font-['Inter'] text-[12px] tabular-nums leading-none text-[#5C5D5F]",
                             FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS,
                           )}
                           style={{ width: FUNDAMENTALS_CHART_Y_AXIS_W_PX }}
@@ -2049,7 +2051,7 @@ export function ChartingCompareWorkspace({
                               return (
                                 <span
                                   key={`y-tick-percent-${i}`}
-                                  className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-white px-1 py-px"
+                                  className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-[#FCFCFD] px-1 py-px"
                                   style={{
                                     top:
                                       topPx != null && Number.isFinite(topPx)
@@ -2090,7 +2092,7 @@ export function ChartingCompareWorkspace({
                         <span
                           key={lab.key}
                           className={cn(
-                            "absolute inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]",
+                            "absolute inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#5C5D5F] sm:text-[12px]",
                             horizontalPeriodAxisLabels
                               ? spacedHorizontalPeriodAxis
                                 ? "top-3"
@@ -2124,7 +2126,7 @@ export function ChartingCompareWorkspace({
                 {seriesDefs.map((s) => (
                   <div
                     key={s.key}
-                    className="inline-flex h-6 min-w-0 items-center gap-2 overflow-hidden rounded-[8px] border border-[#E4E4E7] bg-white px-2.5 py-0 text-[12px] font-medium leading-none text-[#0F0F0F]"
+                    className="inline-flex h-6 min-w-0 items-center gap-2 overflow-hidden rounded-[8px] border border-[#E4E4E7] bg-white px-2.5 py-0 text-[12px] font-medium leading-none text-[#141414]"
                   >
                     <span
                       className="h-2 w-2 shrink-0 rounded-full"

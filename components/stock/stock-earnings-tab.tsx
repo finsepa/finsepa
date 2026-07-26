@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { STOCK_OVERVIEW_SECTION_HEADING_CLASS } from "@/components/design-system/card-surface-styles";
 import { SkeletonBox } from "@/components/markets/skeleton";
 import { EarningsEstimatesSection } from "@/components/stock/earnings-estimates-section";
 import type { EstimatesMetric } from "@/components/stock/earnings-estimates-chart";
@@ -24,10 +25,16 @@ import { buildReportsTableRows } from "@/lib/market/enrich-earnings-history-esti
 import { fetchStockEarningsTabPayloadClient, peekStockEarningsTabPayloadClient } from "@/lib/market/stock-earnings-tab-client";
 import { StockEarningsTabLoading } from "@/components/stock/stock-earnings-tab-loading";
 import { EarningsCountdownBars } from "@/components/stock/earnings-countdown-bars";
-import { SCREENER_TABLE_HEADER_STICKY_CLASS, ScreenerTableScroll } from "@/components/screener/screener-table-scroll";
+import {
+  SCREENER_TABLE_HEADER_STICKY_CLASS,
+  SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+  SCREENER_TABLE_STROKE_INSET_CLASS,
+  ScreenerTableScroll,
+} from "@/components/screener/screener-table-scroll";
 import { STOCK_TABLE_LABEL_COL_WIDTH } from "@/components/stock/stock-income-statement-table";
 import { parseEarningsReportYmd } from "@/lib/market/earnings-countdown";
 import { cn } from "@/lib/utils";
+import { whiteSurfaceButtonChromeClass } from "@/components/design-system/secondary-button-styles";
 
 function metricSummaryValueFromPoint(p: StockEarningsEstimatesPoint, metric: EstimatesMetric): number | null {
   return metric === "revenue" ? displayRevenueUsd(p) : displayEps(p);
@@ -116,9 +123,9 @@ function formatNextEarningsLabel(
   return quarter ? `${quarter}, ${datePart}` : datePart;
 }
 
-const earningsHeaderStatLabelClass = "text-[13px] font-normal leading-5 text-[#71717A]";
+const earningsHeaderStatLabelClass = "text-[13px] font-normal leading-5 text-[#5C5D5F]";
 const earningsHeaderStatValueClass =
-  "text-[16px] font-semibold leading-6 tabular-nums text-[#0F0F0F] sm:text-[20px] sm:leading-7";
+  "text-[16px] font-semibold leading-6 tabular-nums text-[#141414] sm:text-[20px] sm:leading-7";
 
 function EarningsHeaderChangePct({ changePct }: { changePct: number | null | undefined }) {
   if (changePct == null || !Number.isFinite(changePct)) return null;
@@ -127,7 +134,7 @@ function EarningsHeaderChangePct({ changePct }: { changePct: number | null | und
       className={cn(
         earningsHeaderStatLabelClass,
         "font-semibold",
-        changePct > 0 ? "text-[#16A34A]" : changePct < 0 ? "text-[#DC2626]" : "text-[#71717A]",
+        changePct > 0 ? "text-[#16A34A]" : changePct < 0 ? "text-[#DC2626]" : "text-[#5C5D5F]",
       )}
     >
       ({formatSummaryChangePct(changePct)})
@@ -222,30 +229,29 @@ function nearestVerticalScrollParent(start: HTMLElement | null): HTMLElement | n
   return null;
 }
 
-/** Reports table chrome — aligned with {@link StockIncomeStatementTable} / Financials. */
+/** Reports table chrome — same inset stroke / padding as Stocks companies + Financials. */
 const reportsTableClass = "w-full min-w-0 table-fixed border-collapse bg-white text-[14px]";
 
 const reportsHeaderTh =
-  "min-h-[44px] px-2 py-2 align-middle font-['Inter'] text-[14px] font-medium leading-5 text-[#71717A] sm:px-4";
+  "min-h-[44px] py-2 align-middle font-['Inter'] text-[14px] font-medium leading-5 text-[#5C5D5F]";
 
-const reportsHeaderThLabel = cn(reportsHeaderTh, "text-left");
+const reportsHeaderThLabel = cn(reportsHeaderTh, "pl-2 pr-4 text-left sm:pl-4");
 
-const reportsHeaderThNum = cn(reportsHeaderTh, "text-right");
-
-const reportsDataRowClass =
-  "min-h-[60px] border-b border-[#E4E4E7] bg-white transition-colors duration-75 hover:bg-neutral-50";
+const reportsHeaderThNum = cn(reportsHeaderTh, "pr-3 text-right");
 
 const reportsYearRowClass =
-  "min-h-[44px] border-b border-[#E4E4E7] bg-[#FAFAFA] font-['Inter'] text-[14px] font-medium leading-5 text-[#71717A]";
+  "min-h-[44px] border-b border-solid border-[#EFEFEF] bg-[#FAFAFA] font-['Inter'] text-[14px] font-medium leading-5 text-[#5C5D5F]";
 
-const reportsLabelTd =
-  "min-w-0 px-2 py-3 align-middle text-left sm:px-4";
+const reportsDataRowClass =
+  "min-h-[60px] border-b border-solid border-[#EFEFEF] bg-white transition-colors duration-75 hover:bg-neutral-50";
+
+const reportsLabelTd = "min-w-0 py-3 pl-2 pr-4 align-middle text-left sm:pl-4";
 
 const reportsNumTd =
-  "px-2 py-3 text-right align-middle font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#0F0F0F] sm:px-4";
+  "py-3 pr-3 text-right align-middle font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414]";
 
-/** Wide enough for Slides + Filings buttons plus sm:px-4 cell padding — content overflows over Rev. actual otherwise. */
-const reportsActionsTd = "w-[224px] min-w-[224px] px-2 py-3 text-right align-middle sm:px-4";
+/** Wide enough for Slides + Filings buttons — content overflows over Rev. actual otherwise. */
+const reportsActionsTd = "w-[224px] min-w-[224px] py-3 pr-3 text-right align-middle";
 
 function ReportsColGroup() {
   return (
@@ -294,14 +300,14 @@ function withEarningsYearBandRows(rows: StockEarningsHistoryRow[]): EarningsHist
 function ReportsNumCell({ value }: { value: string | null | undefined }) {
   const text = tableCell(value);
   return (
-    <td className={cn(reportsNumTd, text === "-" && "font-medium text-[#71717A]")}>{text}</td>
+    <td className={cn(reportsNumTd, text === "-" && "font-medium text-[#5C5D5F]")}>{text}</td>
   );
 }
 
 function SurpriseCell({ value, pct }: { value: string | null; pct: number | null }) {
   const innerBase = "min-w-0 w-full text-right tabular-nums text-[14px] leading-5";
   if (!value || value === "—" || value === "-") {
-    return <div className={cn(innerBase, "font-medium text-[#71717A]")}>-</div>;
+    return <div className={cn(innerBase, "font-medium text-[#5C5D5F]")}>-</div>;
   }
   const n = pct;
   if (n == null || !Number.isFinite(n)) {
@@ -319,7 +325,7 @@ function SurpriseCell({ value, pct }: { value: string | null; pct: number | null
 
 function EstimatesHeaderSkeleton() {
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div className="flex flex-wrap items-stretch gap-x-6 gap-y-4">
         {Array.from({ length: 4 }).map((_, i) => (
           <div
@@ -334,7 +340,7 @@ function EstimatesHeaderSkeleton() {
           </div>
         ))}
       </div>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
         <SkeletonBox className="h-7 w-28 rounded" />
         <div className="flex flex-wrap gap-3">
           <SkeletonBox className="h-10 w-[200px] rounded-[10px]" />
@@ -347,7 +353,7 @@ function EstimatesHeaderSkeleton() {
 
 function EstimatesChartSkeleton() {
   return (
-    <div className="w-full space-y-6">
+    <div className="w-full space-y-5">
       <div>
         <SkeletonBox className="h-[320px] w-full rounded" />
         <div className="mt-4 flex justify-center gap-6">
@@ -356,7 +362,7 @@ function EstimatesChartSkeleton() {
         </div>
       </div>
       <div className="-mx-1 overflow-x-auto sm:-mx-0">
-        <div className="min-w-[640px] rounded-lg border border-[#E4E4E7] bg-white px-4 py-4 sm:rounded-none sm:border-x-0 sm:border-t sm:border-b">
+        <div className="min-w-[640px] overflow-hidden rounded-2xl border border-[#EBEBEC] bg-white px-4 py-4 shadow-[0px_1px_2px_0px_rgba(0,0,0,0.04)]">
           <SkeletonBox className="h-[200px] w-full rounded" />
         </div>
       </div>
@@ -369,8 +375,8 @@ function TableSkeleton() {
     <ScreenerTableScroll mobileScroll>
       <table className={reportsTableClass}>
         <ReportsColGroup />
-        <thead className={SCREENER_TABLE_HEADER_STICKY_CLASS}>
-          <tr className="border-b border-[#E4E4E7]">
+        <thead className={cn(SCREENER_TABLE_HEADER_STICKY_CLASS, SCREENER_TABLE_ROUNDED_HEADER_CLASS, "border-b-0")}>
+          <tr>
             {[
               reportsHeaderThLabel,
               reportsHeaderThNum,
@@ -387,10 +393,15 @@ function TableSkeleton() {
               </th>
             ))}
           </tr>
+          <tr aria-hidden>
+            <td colSpan={7} className="p-0">
+              <div className={SCREENER_TABLE_STROKE_INSET_CLASS} />
+            </td>
+          </tr>
         </thead>
         <tbody>
           {Array.from({ length: 4 }).map((_, r) => (
-            <tr key={r} className={cn(reportsDataRowClass, "last:border-b-0")}>
+            <tr key={r} className={cn(reportsDataRowClass, r === 3 && "border-b-0")}>
               <td className={reportsLabelTd}>
                 <div className="flex min-w-0 flex-col gap-1.5">
                   <SkeletonBox className="h-4 w-[55%] rounded" />
@@ -639,25 +650,30 @@ export function StockEarningsTabContent({
   }
 
   return (
-    <div className="min-w-0 space-y-6 pt-1">
+    <div className="min-w-0 space-y-5">
       {loading ? (
         <>
           <EstimatesHeaderSkeleton />
           <EstimatesChartSkeleton />
-          <h3 className="text-[18px] font-semibold leading-7 tracking-tight text-[#0F0F0F]">Reports</h3>
-          <TableSkeleton />
+          <div className="min-w-0 space-y-5">
+            <h3 className={STOCK_OVERVIEW_SECTION_HEADING_CLASS}>Reports</h3>
+            <TableSkeleton />
+          </div>
         </>
       ) : null}
 
       {!loading && loadError ? (
         <div className="space-y-3">
-          <p className="text-[14px] leading-6 text-[#71717A]">
+          <p className="text-[14px] leading-6 text-[#5C5D5F]">
             Earnings data didn&apos;t load. This can happen when the data provider is slow — try again.
           </p>
           <button
             type="button"
             onClick={() => setReloadNonce((n) => n + 1)}
-            className="inline-flex h-9 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white px-3 text-[14px] font-medium text-[#0F0F0F] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] hover:bg-[#F4F4F5]"
+            className={cn(
+              "inline-flex h-9 items-center justify-center rounded-[10px] px-3 text-[14px] font-medium text-[#141414] hover:bg-[#F4F4F5]",
+              whiteSurfaceButtonChromeClass,
+            )}
           >
             Retry
           </button>
@@ -665,7 +681,7 @@ export function StockEarningsTabContent({
       ) : null}
 
       {!loading && !loadError && empty ? (
-        <p className="text-[14px] leading-6 text-[#71717A]">No earnings history is available for this symbol.</p>
+        <p className="text-[14px] leading-6 text-[#5C5D5F]">No earnings history is available for this symbol.</p>
       ) : null}
 
       {!loading && data?.estimatesChart ? (
@@ -698,13 +714,13 @@ export function StockEarningsTabContent({
       ) : null}
 
       {!loading && data && historyRows.length > 0 ? (
-        <div className="min-w-0 space-y-6">
-          <h3 className="text-[18px] font-semibold leading-7 tracking-tight text-[#0F0F0F]">Reports</h3>
+        <div className="min-w-0 space-y-5">
+          <h3 className={STOCK_OVERVIEW_SECTION_HEADING_CLASS}>Reports</h3>
           <ScreenerTableScroll mobileScroll>
             <table className={reportsTableClass}>
               <ReportsColGroup />
-              <thead className={SCREENER_TABLE_HEADER_STICKY_CLASS}>
-                <tr className="border-b border-[#E4E4E7]">
+              <thead className={cn(SCREENER_TABLE_HEADER_STICKY_CLASS, SCREENER_TABLE_ROUNDED_HEADER_CLASS, "border-b-0")}>
+                <tr>
                   <th scope="col" className={reportsHeaderThLabel}>
                     Report date
                   </th>
@@ -727,25 +743,30 @@ export function StockEarningsTabContent({
                     <span className="sr-only">Document actions</span>
                   </th>
                 </tr>
+                <tr aria-hidden>
+                  <td colSpan={7} className="p-0">
+                    <div className={SCREENER_TABLE_STROKE_INSET_CLASS} />
+                  </td>
+                </tr>
               </thead>
               <tbody>
                 {earningsHistoryRendered.map((entry, idx) =>
                   entry.kind === "year" ? (
                     <tr key={`reports-year-${entry.year}-${idx}`} className={reportsYearRowClass}>
-                      <td colSpan={7} className="px-2 py-2 sm:px-4">
+                      <td colSpan={7} className="py-2 pl-2 sm:pl-4">
                         {entry.year}
                       </td>
                     </tr>
                   ) : (
                     <tr
                       key={`${entry.row.fiscalPeriodEndYmd ?? idx}-${entry.row.reportDateDisplay ?? idx}`}
-                      className={cn(reportsDataRowClass, "last:border-b-0")}
+                      className={cn(reportsDataRowClass, idx === earningsHistoryRendered.length - 1 && "border-b-0")}
                     >
                       <td className={reportsLabelTd}>
-                        <div className="truncate font-semibold leading-5 text-[#0F0F0F]">
+                        <div className="truncate font-semibold leading-5 text-[#141414]">
                           {tableCell(entry.row.fiscalPeriodLabel)}
                         </div>
-                        <div className="truncate font-['Inter'] text-[14px] font-medium leading-5 text-[#71717A]">
+                        <div className="truncate font-['Inter'] text-[14px] font-medium leading-5 text-[#5C5D5F]">
                           {reportDayLineFromDisplay(entry.row.reportDateDisplay)}
                         </div>
                       </td>

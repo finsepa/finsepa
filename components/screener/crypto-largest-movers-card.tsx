@@ -14,7 +14,7 @@ function formatPct(value: number | null) {
 }
 
 function pctClass(value: number | null) {
-  if (value == null || !Number.isFinite(value)) return "text-[#71717A]";
+  if (value == null || !Number.isFinite(value)) return "text-[#5C5D5F]";
   return value >= 0 ? "text-[#16A34A]" : "text-[#B91C1C]";
 }
 
@@ -37,7 +37,7 @@ export function CryptoLargestMoversCard({
         className,
       )}
     >
-      <p className="w-full text-[14px] font-semibold leading-5 text-[#71717A]">{title}</p>
+      <p className="h-5 w-full text-[14px] font-semibold leading-5 text-[#5C5D5F]">{title}</p>
 
       <div className="flex w-full flex-col gap-[12px]">
         {slice.map((r, i) => (
@@ -46,10 +46,10 @@ export function CryptoLargestMoversCard({
             href={`/crypto/${encodeURIComponent(r.symbol)}`}
             prefetch={false}
             aria-label={`Open ${r.name} (${r.symbol})`}
-            className="group flex w-full items-center justify-center rounded-md outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/20"
+            className="group flex w-full items-center justify-center rounded-md outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/20"
           >
             <div className="flex w-[24px] items-center justify-center">
-              <p className="text-[14px] font-semibold leading-5 text-[#71717A]">{i + 1}</p>
+              <p className="text-[14px] font-semibold leading-5 text-[#5C5D5F]">{i + 1}</p>
             </div>
 
             <div className="flex min-w-0 flex-1 items-center">
@@ -57,10 +57,10 @@ export function CryptoLargestMoversCard({
                 <CompanyLogo name={r.symbol} logoUrl={r.logoUrl} symbol={r.symbol} size="sm" />
                 <div className="flex flex-col items-start">
                   <div className="flex items-center gap-[4px] whitespace-nowrap">
-                    <p className="text-[14px] font-medium leading-5 text-[#0F0F0F] group-hover:underline">
+                    <p className="text-[14px] font-medium leading-5 text-[#141414] group-hover:underline">
                       {r.symbol}
                     </p>
-                    <p className="text-[12px] font-normal leading-4 text-[#71717A] group-hover:underline">
+                    <p className="text-[12px] font-normal leading-4 text-[#5C5D5F] group-hover:underline">
                       {r.name}
                     </p>
                   </div>

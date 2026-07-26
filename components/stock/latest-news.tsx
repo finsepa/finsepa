@@ -5,10 +5,18 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   MOBILE_ELEVATED_CARD_CLASS,
+  MOBILE_INSET_CARD_CLASS,
   STOCK_OVERVIEW_SECTION_HEADING_CLASS,
 } from "@/components/design-system/card-surface-styles";
 import { SkeletonBox } from "@/components/markets/skeleton";
+import { NewsSourceLogo } from "@/components/news/news-source-logo";
 import { CompanyLogo } from "@/components/screener/company-logo";
+import {
+  DEFAULT_TABLE_ROW_HOVER_PAD_CLASS,
+  SCREENER_TABLE_DATA_ROW_CLASS,
+  SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+  SCREENER_TABLE_STROKE_INSET_CLASS,
+} from "@/components/screener/screener-table-scroll";
 import { getCryptoLogoUrl } from "@/lib/crypto/crypto-logo-url";
 import {
   MOBILE_NEWS_CAROUSEL_COUNT,
@@ -19,6 +27,14 @@ import { logoDevStockLogoUrl } from "@/lib/screener/company-logo-url";
 import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = STOCK_NEWS_PAGE_SIZE;
+
+/** Fits inside meta + 2-line title without growing the row (absolute, text keeps height). */
+const NEWS_THUMB_CLASS =
+  "pointer-events-none absolute right-2 top-1/2 size-11 -translate-y-1/2 rounded-[8px] object-cover";
+const NEWS_THUMB_TEXT_PAD_CLASS = "pr-[3.25rem]";
+
+/** Desktop/full news list — same 16px / stroke / shadow as screener containers. */
+const NEWS_LIST_CONTAINER_CLASS = cn("overflow-hidden px-0 py-2", MOBILE_INSET_CARD_CLASS);
 
 const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
 
@@ -49,23 +65,24 @@ function formatPublishedLabel(iso: string): string {
   return "Just now";
 }
 
-const NEWS_GRID_CLASS = "grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-3";
-
 function assetNewsSeeAllHref(sym: string, variant: "stock" | "crypto"): string {
   const encoded = encodeURIComponent(sym);
   return variant === "crypto" ? `/crypto/${encoded}/news` : `/stock/${encoded}/news`;
 }
 
-function NewsRowSkeleton() {
+function NewsRowSkeleton({ showDivider }: { showDivider: boolean }) {
   return (
-    <div className="py-1" aria-hidden>
-      <div className="space-y-2">
-        <div className="flex items-center gap-2">
-          <SkeletonBox className="h-3 w-20" />
-          <SkeletonBox className="h-3 w-24" />
+    <div className={SCREENER_TABLE_DATA_ROW_CLASS} aria-hidden>
+      <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+        <div className={cn("space-y-2 py-3", SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS)}>
+          <div className="flex items-center gap-2">
+            <SkeletonBox className="h-3 w-20" />
+            <SkeletonBox className="h-3 w-24" />
+          </div>
+          <SkeletonBox className="h-4 w-full max-w-xl" />
         </div>
-        <SkeletonBox className="h-4 w-full" />
       </div>
+      {showDivider ? <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden /> : null}
     </div>
   );
 }
@@ -99,9 +116,53 @@ function decodeNewsTitle(title: string): string {
     .replace(/&#39;/g, "'");
 }
 
+function NewsArticleThumb({
+  imageUrl,
+  onFailed,
+}: {
+  imageUrl: string;
+  onFailed?: () => void;
+}) {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element -- remote article og:image; hide on error
+    <img
+      src={imageUrl}
+      alt=""
+      width={44}
+      height={44}
+      className={NEWS_THUMB_CLASS}
+      onError={() => onFailed?.()}
+    />
+  );
+}
+
+function NewsListRowContent({ item }: { item: StockNewsArticle }) {
+  const [thumbFailed, setThumbFailed] = useState(false);
+  const showThumb = Boolean(item.imageUrl) && !thumbFailed;
+
+  return (
+    <>
+      <div className={cn(showThumb && NEWS_THUMB_TEXT_PAD_CLASS)}>
+        <div className="mb-1 flex flex-wrap items-center gap-1.5">
+          <span className="text-[12px] text-[#5C5D5F]">{formatPublishedLabel(item.publishedAt)}</span>
+          <span className="inline-block size-1 shrink-0 rounded-full bg-[#E4E4E7]" aria-hidden />
+          <NewsSourceLogo articleUrl={item.url} />
+          <span className="text-[12px] font-medium text-[#141414]">{item.source}</span>
+        </div>
+        <h3 className="line-clamp-2 text-[14px] font-semibold leading-5 text-[#141414] underline-offset-2 decoration-[#5C5D5F] group-hover/row:underline">
+          {decodeNewsTitle(item.title)}
+        </h3>
+      </div>
+      {showThumb && item.imageUrl ? (
+        <NewsArticleThumb imageUrl={item.imageUrl} onFailed={() => setThumbFailed(true)} />
+      ) : null}
+    </>
+  );
+}
+
 /** Mobile news card title: 3 lines at `text-[14px]` / `leading-5` (20px). */
 const MOBILE_NEWS_TITLE_CLASS =
-  "overflow-hidden text-[14px] font-semibold leading-5 text-[#0F0F0F] [display:-webkit-box] [-webkit-line-clamp:3] [-webkit-box-orient:vertical] max-h-[3.75rem] break-words";
+  "overflow-hidden text-[14px] font-semibold leading-5 text-[#141414] [display:-webkit-box] [-webkit-line-clamp:3] [-webkit-box-orient:vertical] max-h-[3.75rem] break-words";
 
 function MobileNewsCard({
   item,
@@ -122,8 +183,9 @@ function MobileNewsCard({
         MOBILE_ELEVATED_CARD_CLASS,
       )}
     >
-      <p className="flex shrink-0 items-center gap-1.5 truncate text-[12px] leading-4 text-[#71717A]">
-        <span className="font-medium text-[#0F0F0F]">{item.source}</span>
+      <p className="flex shrink-0 items-center gap-1.5 truncate text-[12px] leading-4 text-[#5C5D5F]">
+        <NewsSourceLogo articleUrl={item.url} />
+        <span className="font-medium text-[#141414]">{item.source}</span>
         <span className="inline-block size-1 shrink-0 rounded-full bg-[#E4E4E7]" aria-hidden />
         {formatPublishedLabel(item.publishedAt)}
       </p>
@@ -132,7 +194,7 @@ function MobileNewsCard({
       </h3>
       <div className="mt-2 flex shrink-0 items-center gap-1.5">
         <CompanyLogo name={symbol} symbol={symbol} logoUrl={logoUrl} size="xs" />
-        <span className="inline-flex h-6 max-w-[8rem] items-center rounded-md border border-[#E4E4E7] bg-white px-2 text-[12px] font-semibold leading-4 text-[#0F0F0F] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
+        <span className="inline-flex h-6 max-w-[8rem] items-center rounded-md border border-[#E4E4E7] bg-white px-2 text-[12px] font-semibold leading-4 text-[#141414] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
           <span className="truncate">{symbol}</span>
         </span>
       </div>
@@ -150,8 +212,8 @@ function LatestNewsHeader({
   showSeeAll: boolean;
 }) {
   return (
-    <div className="mb-3 flex items-center justify-between max-md:px-0 sm:mb-4">
-      <h2 className={cn("max-md:text-[18px] max-md:leading-7", STOCK_OVERVIEW_SECTION_HEADING_CLASS)}>{title}</h2>
+    <div className="mb-5 flex items-center justify-between max-md:px-0">
+      <h2 className={STOCK_OVERVIEW_SECTION_HEADING_CLASS}>{title}</h2>
       {showSeeAll && seeAllHref ? (
         <Link
           href={seeAllHref}
@@ -211,19 +273,28 @@ function LatestNewsInner({
           setNextOffset(seed.length);
           setHasMore(seed.length > 0);
           setLoading(false);
-          if (seed.length < PAGE_SIZE) {
+          const needsImages = seed.some((row) => !row.imageUrl);
+          if (seed.length < PAGE_SIZE || needsImages) {
             void (async () => {
               try {
                 const res = await fetch(
-                  `/api/stocks/${encodeURIComponent(sym)}/news?offset=0&limit=${PAGE_SIZE}`,
+                  `/api/stocks/${encodeURIComponent(sym)}/news?offset=0&limit=${PAGE_SIZE}&images=1`,
                   { credentials: "include" },
                 );
                 if (!mounted || !res.ok) return;
                 const json = (await res.json()) as { items?: StockNewsArticle[]; hasMore?: boolean };
                 const batch = Array.isArray(json.items) ? json.items : [];
-                if (!mounted || batch.length <= seed.length) return;
-                setItems(batch);
-                setNextOffset(batch.length);
+                if (!mounted || batch.length === 0) return;
+                setItems((prev) => {
+                  if (batch.length > prev.length) return batch;
+                  const byId = new Map(batch.map((row) => [row.id, row]));
+                  return prev.map((row) => {
+                    const next = byId.get(row.id);
+                    if (!next) return row;
+                    return next.imageUrl && !row.imageUrl ? { ...row, imageUrl: next.imageUrl } : row;
+                  });
+                });
+                setNextOffset(Math.max(seed.length, batch.length));
                 setHasMore(json.hasMore ?? batch.length === PAGE_SIZE);
               } catch {
                 /* keep SSR seed */
@@ -235,7 +306,7 @@ function LatestNewsInner({
         setLoading(true);
         try {
           const res = await fetch(
-            `/api/stocks/${encodeURIComponent(sym)}/news?offset=0&limit=${PAGE_SIZE}`,
+            `/api/stocks/${encodeURIComponent(sym)}/news?offset=0&limit=${PAGE_SIZE}&images=1`,
             { credentials: "include" },
           );
           if (!mounted) return;
@@ -357,21 +428,23 @@ function LatestNewsInner({
 
       {loading ? (
         <>
-          <div className="-mr-4 overflow-visible pr-4 max-md:block md:hidden">
-            <div className="mobile-scroll-x flex flex-nowrap gap-3">
-              {Array.from({ length: MOBILE_NEWS_CAROUSEL_COUNT }).map((_, i) => (
-                <MobileNewsCardSkeleton key={i} />
-              ))}
+          {isOverview ? (
+            <div className="-mr-4 overflow-visible pr-4 max-md:block md:hidden">
+              <div className="mobile-scroll-x flex flex-nowrap gap-3">
+                {Array.from({ length: MOBILE_NEWS_CAROUSEL_COUNT }).map((_, i) => (
+                  <MobileNewsCardSkeleton key={i} />
+                ))}
+              </div>
             </div>
-          </div>
-          <div className={cn(NEWS_GRID_CLASS, "hidden max-md:px-0 sm:px-0 md:grid")}>
+          ) : null}
+          <div className={cn(NEWS_LIST_CONTAINER_CLASS, isOverview && "hidden md:block")}>
             {Array.from({ length: skeletonCount }).map((_, i) => (
-              <NewsRowSkeleton key={i} />
+              <NewsRowSkeleton key={i} showDivider={i < skeletonCount - 1} />
             ))}
           </div>
         </>
       ) : !loading && items.length === 0 ? (
-        <p className="max-md:px-0 py-2 text-[13px] leading-5 text-[#71717A] sm:px-0">No recent news found for {sym}.</p>
+        <p className="max-md:px-0 py-2 text-[13px] leading-5 text-[#5C5D5F] sm:px-0">No recent news found for {sym}.</p>
       ) : !loading ? (
         <>
           {isOverview ? (
@@ -384,40 +457,34 @@ function LatestNewsInner({
             </div>
           ) : null}
 
-          <div
-            className={cn(
-              NEWS_GRID_CLASS,
-              "max-md:px-0 sm:px-0",
-              isOverview ? "hidden md:grid" : "grid",
-            )}
-          >
-            {items.map((item) => (
-              <a
-                key={item.id}
-                href={item.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group block py-1"
-              >
-                <div className="mb-1 flex flex-wrap items-center gap-1.5">
-                  <span className="text-[12px] text-[#71717A]">{formatPublishedLabel(item.publishedAt)}</span>
-                  <span className="inline-block size-1 shrink-0 rounded-full bg-[#E4E4E7]" aria-hidden />
-                  <span className="text-[12px] font-medium text-[#0F0F0F]">{item.source}</span>
+          <div className={cn(NEWS_LIST_CONTAINER_CLASS, isOverview && "hidden md:block")}>
+            {items.map((item, index) => {
+              const showDivider = index < items.length - 1 || (isStock && loadingMore);
+              return (
+                <div key={item.id} className={SCREENER_TABLE_DATA_ROW_CLASS}>
+                  <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+                    <a
+                      href={item.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={cn(
+                        "relative block py-3 no-underline",
+                        SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,                      )}
+                    >
+                      <NewsListRowContent item={item} />
+                    </a>
+                  </div>
+                  {showDivider ? <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden /> : null}
                 </div>
-                <h3 className="line-clamp-2 text-[14px] font-semibold leading-5 text-[#0F0F0F] group-hover:underline">
-                  {decodeNewsTitle(item.title)}
-                </h3>
-              </a>
-            ))}
+              );
+            })}
+            {isStock && loadingMore
+              ? Array.from({ length: PAGE_SIZE }).map((_, i) => (
+                  <NewsRowSkeleton key={`more-${i}`} showDivider={i < PAGE_SIZE - 1} />
+                ))
+              : null}
 
-            {isStock ? (
-              <>
-                <div ref={sentinelRef} className="col-span-full h-px w-full" aria-hidden />
-                {loadingMore
-                  ? Array.from({ length: PAGE_SIZE }).map((_, i) => <NewsRowSkeleton key={`more-${i}`} />)
-                  : null}
-              </>
-            ) : null}
+            {isStock ? <div ref={sentinelRef} className="h-px w-full" aria-hidden /> : null}
           </div>
         </>
       ) : null}

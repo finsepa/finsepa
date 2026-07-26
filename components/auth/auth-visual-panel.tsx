@@ -15,7 +15,7 @@ export function AuthVisualPanel({
 }) {
   if (mode === "artwork") {
     return (
-      <div className="relative h-full w-full bg-[#0F0F0F]">
+      <div className="relative h-full w-full bg-[#141414]">
         <img
           src="/auth-left-image.png"
           alt=""

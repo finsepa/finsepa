@@ -7,10 +7,15 @@ import type { WatchlistCollection } from "@/lib/watchlist/collections";
 import { WatchlistStarToggle } from "@/components/watchlist/watchlist-star-button";
 import { CompanyLogo } from "./company-logo";
 import {
-  SCREENER_TABLE_BODY_DIVIDE_CLASS,
   SCREENER_TABLE_HEADER_STICKY_CLASS,
   SCREENER_TABLE_OUTER_BORDER_CLASS,
   SCREENER_TABLE_MOBILE_SURFACE_CLASS,
+  SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+  SCREENER_TABLE_DATA_ROW_CLASS,
+  SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+  SCREENER_TABLE_ROW_HOVER_PAD_CLASS,
+  SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+  SCREENER_TABLE_STROKE_INSET_CLASS,
   ScreenerTableScroll,
 } from "@/components/screener/screener-table-scroll";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
@@ -55,7 +60,7 @@ const screenerTableWideHeaderScrollClass =
 function ChangeCell({ value }: { value: number | null }) {
   if (value == null || !Number.isFinite(value)) {
     return (
-      <div className="min-w-0 w-full text-right text-[14px] leading-5 font-medium text-[#71717A]">-</div>
+      <div className="min-w-0 w-full text-right text-[14px] leading-5 font-medium text-[#5C5D5F]">-</div>
     );
   }
   const positive = value >= 0;
@@ -76,12 +81,12 @@ function PriceAndChangeCell({ price, change1D }: { price: number | null; change1
   const positive = (change1D ?? 0) >= 0;
   return (
     <div className="min-w-0 w-full text-right">
-      <div className="min-w-0 w-full font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#0F0F0F]">
+      <div className="min-w-0 w-full font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#141414]">
         {hasPrice ? `$${price!.toFixed(2)}` : "-"}
       </div>
       <div
         className={`mt-0.5 min-w-0 w-full text-[12px] font-medium leading-4 tabular-nums ${
-          !hasChange ? "text-[#71717A]" : positive ? "text-[#16A34A]" : "text-[#DC2626]"
+          !hasChange ? "text-[#5C5D5F]" : positive ? "text-[#16A34A]" : "text-[#DC2626]"
         }`}
       >
         {hasChange ? formatPercentValue(change1D!) : "-"}
@@ -125,13 +130,13 @@ export function screenerTableMinWidthPx(keyStatCount: number): number | undefine
   return SCREENER_TABLE_DESKTOP_BASE_MIN_WIDTH_PX + keyStatCount * SCREENER_TABLE_KEY_STAT_COL_MIN_WIDTH_PX;
 }
 
-const mobileRankCellClass = "max-md:-ml-0.5 text-center text-[14px] font-semibold leading-5 tabular-nums text-[#71717A]";
+const mobileRankCellClass = "max-md:-ml-0.5 text-center text-[14px] font-semibold leading-5 tabular-nums text-[#5C5D5F]";
 
-const desktopNumericCellFluidClass = "hidden min-w-0 w-full text-right sm:block";
+const desktopNumericCellFluidClass = "hidden min-w-0 w-full pr-3 text-right sm:block";
 const desktopNumericCellFixedClass =
-  "hidden w-full min-w-[4.5rem] max-w-[8rem] shrink-0 text-right sm:block";
+  "hidden w-full min-w-[4.5rem] max-w-[8rem] shrink-0 pr-3 text-right sm:block";
 const desktopKeyStatCellClass =
-  "hidden w-full min-w-[5.5rem] max-w-[8rem] shrink-0 truncate text-right sm:block";
+  "hidden w-full min-w-[5.5rem] max-w-[8rem] shrink-0 truncate pr-3 text-right sm:block";
 
 function screenerDesktopNumericCellClass(fluid: boolean): string {
   return fluid ? desktopNumericCellFluidClass : desktopNumericCellFixedClass;
@@ -155,6 +160,8 @@ type RowProps = {
   keyStatColumns: ScreenerTableKeyStatColumn[];
   gridClassName: string;
   desktopNumericCellClass: string;
+  /** Desktop inset rule under the row (omit on the last row). */
+  showDivider?: boolean;
 };
 
 const ScreenerDataRow = memo(function ScreenerDataRow({
@@ -169,6 +176,7 @@ const ScreenerDataRow = memo(function ScreenerDataRow({
   keyStatColumns,
   gridClassName,
   desktopNumericCellClass,
+  showDivider = true,
 }: RowProps) {
   const tickerKey = item.ticker.trim().toUpperCase();
   const keyStatDisplays = keyStatColumns.map((col) =>
@@ -176,92 +184,100 @@ const ScreenerDataRow = memo(function ScreenerDataRow({
   );
 
   return (
-    <div
-      className="group flex min-h-[60px] min-w-0 w-full items-center gap-x-1.5 bg-white px-4 transition-colors duration-75 hover:bg-neutral-50 max-md:gap-x-1.5 sm:gap-x-2"
-    >
-      <WatchlistStarToggle
-        className="hidden w-6 shrink-0 items-center justify-center px-1 sm:flex sm:w-10 sm:px-3"
-        storageKey={item.ticker}
-        label={item.ticker}
-        watched={watched}
-        loaded={loaded}
-        storageHydrated={storageHydrated}
-        toggleTicker={toggleTicker}
-        watchlists={watchlists}
-        activeWatchlistId={activeWatchlistId}
-      />
+    <div className={SCREENER_TABLE_DATA_ROW_CLASS}>
+      <div className={SCREENER_TABLE_ROW_HOVER_PAD_CLASS}>
+        <div
+          className={cn(
+            "flex min-h-[60px] min-w-0 w-full items-center gap-x-1.5 max-md:gap-x-1.5 sm:gap-x-2",
+            SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+          )}
+        >
+        <WatchlistStarToggle
+          className="hidden w-6 shrink-0 items-center justify-center px-1 sm:flex sm:w-10 sm:px-3"
+          storageKey={item.ticker}
+          label={item.ticker}
+          watched={watched}
+          loaded={loaded}
+          storageHydrated={storageHydrated}
+          toggleTicker={toggleTicker}
+          watchlists={watchlists}
+          activeWatchlistId={activeWatchlistId}
+        />
 
-      <Link
-        href={`/stock/${encodeURIComponent(item.ticker)}`}
-        prefetch={false}
-        className={cn(
-          gridClassName,
-          "min-h-[56px] cursor-pointer items-center justify-items-stretch no-underline text-[#0F0F0F] visited:text-[#0F0F0F] sm:min-h-[60px]",
-        )}
-        aria-label={`Open ${item.name} (${item.ticker})`}
-      >
-        <div className={mobileRankCellClass}>{rank}</div>
+        <Link
+          href={`/stock/${encodeURIComponent(item.ticker)}`}
+          prefetch={false}
+          className={cn(
+            gridClassName,
+            "min-h-[56px] cursor-pointer items-center justify-items-stretch no-underline text-[#141414] visited:text-[#141414] sm:min-h-[60px]",
+          )}
+          aria-label={`Open ${item.name} (${item.ticker})`}
+        >
+          <div className={mobileRankCellClass}>{rank}</div>
 
-        <div className="flex min-w-0 items-center justify-start gap-2 pr-0 text-left max-md:gap-2 sm:gap-3 sm:pr-4">
-          <CompanyLogo name={item.name} logoUrl={item.logoUrl} symbol={item.ticker} />
-          <div className="min-w-0">
-            <div className="truncate text-[14px] font-semibold leading-5 text-[#0F0F0F] underline-offset-2 decoration-[#71717A] group-hover:underline">
-              {item.name}
-            </div>
-            <div className="text-[12px] font-normal leading-4 !text-[#71717A]">
-              <span>{item.ticker}</span>
-              <span className="sm:hidden">
-                {typeof item.marketCap === "string" && item.marketCap.trim() && item.marketCap.trim() !== "-" ?
-                  ` · ${item.marketCap.trim()}`
-                : ""}
-              </span>
+          <div className="flex min-w-0 items-center justify-start gap-[12px] pr-0 text-left sm:pr-4">
+            <CompanyLogo name={item.name} logoUrl={item.logoUrl} symbol={item.ticker} />
+            <div className="min-w-0">
+              <div className="truncate text-[14px] font-semibold leading-5 text-[#141414] underline-offset-2 decoration-[#5C5D5F] group-hover/row:underline">
+                {item.name}
+              </div>
+              <div className="text-[12px] font-normal leading-4 !text-[#5C5D5F]">
+                <span>{item.ticker}</span>
+                <span className="sm:hidden">
+                  {typeof item.marketCap === "string" && item.marketCap.trim() && item.marketCap.trim() !== "-" ?
+                    ` · ${item.marketCap.trim()}`
+                  : ""}
+                </span>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="block sm:hidden">
-          <PriceAndChangeCell price={item.price} change1D={item.change1D} />
-        </div>
-        <div
-          className={`${desktopNumericCellClass} font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#0F0F0F]`}
-        >
-          {item.price != null && Number.isFinite(item.price) ? `$${item.price.toFixed(2)}` : "-"}
-        </div>
-
-        <div className={desktopNumericCellClass}>
-          <ChangeCell value={item.change1D} />
-        </div>
-        <div className={desktopNumericCellClass}>
-          <ChangeCell value={item.change1M} />
-        </div>
-        <div className={desktopNumericCellClass}>
-          <ChangeCell value={item.changeYTD} />
-        </div>
-
-        <div
-          className={`${desktopNumericCellClass} font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#0F0F0F]`}
-        >
-          {item.marketCap}
-        </div>
-
-        <div
-          className={`${desktopNumericCellClass} font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#0F0F0F]`}
-        >
-          {item.pe}
-        </div>
-
-        {keyStatColumns.map((col, i) => (
+          <div className="block sm:hidden">
+            <PriceAndChangeCell price={item.price} change1D={item.change1D} />
+          </div>
           <div
-            key={col.header}
-            className={`${desktopKeyStatCellClass} font-['Inter'] text-[14px] font-normal leading-5 tabular-nums ${
-              col.loading ? "text-[#71717A]" : "text-[#0F0F0F]"
-            }`}
-            title={keyStatDisplays[i]}
+            className={`${desktopNumericCellClass} font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414]`}
           >
-            {keyStatDisplays[i]}
+            {item.price != null && Number.isFinite(item.price) ? `$${item.price.toFixed(2)}` : "-"}
           </div>
-        ))}
-      </Link>
+
+          <div className={desktopNumericCellClass}>
+            <ChangeCell value={item.change1D} />
+          </div>
+          <div className={desktopNumericCellClass}>
+            <ChangeCell value={item.change1M} />
+          </div>
+          <div className={desktopNumericCellClass}>
+            <ChangeCell value={item.changeYTD} />
+          </div>
+
+          <div
+            className={`${desktopNumericCellClass} font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414]`}
+          >
+            {item.marketCap}
+          </div>
+
+          <div
+            className={`${desktopNumericCellClass} font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414]`}
+          >
+            {item.pe}
+          </div>
+
+          {keyStatColumns.map((col, i) => (
+            <div
+              key={col.header}
+              className={`${desktopKeyStatCellClass} font-['Inter'] text-[14px] font-normal leading-5 tabular-nums ${
+                col.loading ? "text-[#5C5D5F]" : "text-[#141414]"
+              }`}
+              title={keyStatDisplays[i]}
+            >
+              {keyStatDisplays[i]}
+            </div>
+          ))}
+        </Link>
+        </div>
+      </div>
+      {showDivider ? <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden /> : null}
     </div>
   );
 });
@@ -291,43 +307,45 @@ export function ScreenerTable({
   const { headerRef, bodyRef, onHeaderScroll, onBodyScroll } = useSyncedHorizontalScroll();
 
   const headerRow = (
-    <div
-      className={`flex min-h-[44px] max-md:min-h-10 min-w-0 w-full items-center gap-x-1.5 px-4 py-0 max-md:py-2 text-[14px] font-medium leading-5 text-[#71717A] max-md:gap-x-1.5 sm:gap-x-2`}
-    >
-      <div className="hidden w-6 shrink-0 sm:block sm:w-10" aria-hidden />
+    <div className={SCREENER_TABLE_ROW_HOVER_PAD_CLASS}>
       <div
-        className={cn(
-          gridClassName,
-          "min-h-[44px] max-md:min-h-0 items-center text-[14px] font-medium leading-5 text-[#71717A]",
-        )}
+        className={`flex min-h-[44px] max-md:min-h-10 min-w-0 w-full items-center gap-x-1.5 py-0 max-md:py-2 text-[14px] font-medium leading-5 text-[#5C5D5F] max-md:gap-x-1.5 sm:gap-x-2`}
       >
-        <div className={cn(mobileRankCellClass, "text-[14px] font-medium")}>#</div>
-        <div className="text-left">Company</div>
-        <div className={cn("min-w-0 w-full text-right", !useFluidDesktopColumns && "sm:shrink-0 sm:max-w-[8rem] sm:min-w-[5.25rem]")}>
-          <span className="sm:hidden">Price</span>
-          <span className="hidden sm:inline">Price</span>
-          <span className="hidden text-[12px] font-medium leading-4 text-[#A1A1AA] sm:hidden">1D %</span>
-        </div>
-        <div className={cn(desktopNumericCellClass, "truncate")}>1D %</div>
-        <div className={cn(desktopNumericCellClass, "truncate")}>1M %</div>
-        <div className={cn(desktopNumericCellClass, "truncate")}>YTD %</div>
-        <div className={cn(desktopNumericCellClass, "truncate")}>M Cap</div>
-        <div className={cn(desktopNumericCellClass, "truncate")}>PE</div>
-        {keyStatColumns.map((col) => (
-          <div
-            key={col.header}
-            className={cn(desktopKeyStatCellClass, "truncate")}
-            title={col.header}
-          >
-            {col.header}
+        <div className="hidden w-6 shrink-0 sm:block sm:w-10" aria-hidden />
+        <div
+          className={cn(
+            gridClassName,
+            "min-h-[44px] max-md:min-h-0 items-center text-[14px] font-medium leading-5 text-[#5C5D5F]",
+          )}
+        >
+          <div className={cn(mobileRankCellClass, "text-[14px] font-medium")}>#</div>
+          <div className="text-left">Company</div>
+          <div className={cn("min-w-0 w-full pr-3 text-right", !useFluidDesktopColumns && "sm:shrink-0 sm:max-w-[8rem] sm:min-w-[5.25rem]")}>
+            <span className="sm:hidden">Price</span>
+            <span className="hidden sm:inline">Price</span>
+            <span className="hidden text-[12px] font-medium leading-4 text-[#A1A1AA] sm:hidden">1D %</span>
           </div>
-        ))}
+          <div className={cn(desktopNumericCellClass, "truncate")}>1D %</div>
+          <div className={cn(desktopNumericCellClass, "truncate")}>1M %</div>
+          <div className={cn(desktopNumericCellClass, "truncate")}>YTD %</div>
+          <div className={cn(desktopNumericCellClass, "truncate")}>M Cap</div>
+          <div className={cn(desktopNumericCellClass, "truncate")}>PE</div>
+          {keyStatColumns.map((col) => (
+            <div
+              key={col.header}
+              className={cn(desktopKeyStatCellClass, "truncate")}
+              title={col.header}
+            >
+              {col.header}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
 
   const bodyRows = (
-    <div className={SCREENER_TABLE_BODY_DIVIDE_CLASS}>
+    <div>
       {rows.map((item, index) => (
         <ScreenerDataRow
           key={item.ticker}
@@ -342,14 +360,24 @@ export function ScreenerTable({
           keyStatColumns={keyStatColumns}
           gridClassName={gridClassName}
           desktopNumericCellClass={desktopNumericCellClass}
+          showDivider={index < rows.length - 1}
         />
       ))}
     </div>
   );
 
   const headerSection = (
-    <div className={cn(SCREENER_TABLE_HEADER_STICKY_CLASS, hideMobileHeader && "max-md:hidden")}>
+    <div
+      className={cn(
+        SCREENER_TABLE_HEADER_STICKY_CLASS,
+        SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+        SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+        "md:border-b-0",
+        hideMobileHeader && "max-md:hidden",
+      )}
+    >
       {headerRow}
+      <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
     </div>
   );
 
@@ -358,13 +386,21 @@ export function ScreenerTable({
       <div
         className={cn(
           "w-full min-w-0 max-w-full bg-white",
-          !embeddedInMobileCard && SCREENER_TABLE_OUTER_BORDER_CLASS,
-          !embeddedInMobileCard && SCREENER_TABLE_MOBILE_SURFACE_CLASS,
+          SCREENER_TABLE_OUTER_BORDER_CLASS,
+          SCREENER_TABLE_MOBILE_SURFACE_CLASS,
           embeddedInMobileCard &&
             "max-md:rounded-none max-md:border-0 max-md:bg-transparent max-md:shadow-none",
         )}
       >
-        <div className={cn(SCREENER_TABLE_HEADER_STICKY_CLASS, hideMobileHeader && "max-md:hidden")}>
+        <div
+          className={cn(
+            SCREENER_TABLE_HEADER_STICKY_CLASS,
+            SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+            SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+            "md:border-b-0",
+            hideMobileHeader && "max-md:hidden",
+          )}
+        >
           <div
             ref={headerRef}
             onScroll={onHeaderScroll}
@@ -372,6 +408,7 @@ export function ScreenerTable({
           >
             <div style={{ minWidth: tableMinWidthPx }}>{headerRow}</div>
           </div>
+          <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
         </div>
         <div ref={bodyRef} onScroll={onBodyScroll} className={screenerTableWideHorizontalScrollClass}>
           <div style={{ minWidth: tableMinWidthPx }}>{bodyRows}</div>

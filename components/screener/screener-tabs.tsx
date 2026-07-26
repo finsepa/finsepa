@@ -42,9 +42,11 @@ export function ScreenerStocksSubTabMobileToggle({
             aria-selected={isActive}
             onClick={() => onChange(item.id)}
             className={cn(
-              "shrink-0 whitespace-nowrap rounded-lg px-3 py-1.5 text-[14px] font-medium leading-5 transition-colors duration-100",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15 focus-visible:ring-offset-2",
-              isActive ? "bg-[#F4F4F5] text-[#0F0F0F]" : "bg-transparent text-[#71717A]",
+              "shrink-0 whitespace-nowrap rounded-lg px-[12px] py-1.5 text-[14px] font-medium leading-5 transition-colors duration-100",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15 focus-visible:ring-offset-2",
+              isActive
+                ? "border border-solid border-[#E8E8EB] bg-[#F1F1F2] text-[#141414]"
+                : "border border-solid border-transparent bg-transparent text-[#5C5D5F] hover:bg-[#F1F1F2]",
             )}
           >
             {item.label}

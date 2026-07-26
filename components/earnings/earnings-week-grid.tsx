@@ -11,7 +11,15 @@ import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspac
 import { PostMarketEarningsIcon } from "@/components/stock/post-market-earnings-icon";
 import { PreMarketEarningsIcon } from "@/components/stock/pre-market-earnings-icon";
 import { CompanyLogo } from "@/components/screener/company-logo";
-import { SCREENER_TABLE_HEADER_STICKY_CLASS } from "@/components/screener/screener-table-scroll";
+import {
+  SCREENER_TABLE_DATA_ROW_CLASS,
+  SCREENER_TABLE_HEADER_STICKY_CLASS,
+  SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+  SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+  SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+  SCREENER_TABLE_STROKE_INSET_CLASS,
+  ScreenerTableScroll,
+} from "@/components/screener/screener-table-scroll";
 import { LogoSkeleton, SkeletonBox, TextSkeleton } from "@/components/markets/skeleton";
 import type {
   EarningsCalendarItem,
@@ -84,43 +92,60 @@ function splitEarningsDayListForView(day: EarningsDayColumn): {
   };
 }
 
-const earningsListColLayout = "grid grid-cols-[minmax(0,2fr)_minmax(5.5rem,max-content)_1fr_1fr] gap-x-2";
+const earningsListColLayout = "grid w-full min-w-0 grid-cols-[minmax(0,2fr)_minmax(5.5rem,max-content)_1fr_1fr] gap-x-2";
 
-const earningsListTableHeaderClass = cn(
-  earningsListColLayout,
-  "min-h-[44px] items-center bg-white px-2 py-0 text-[14px] font-medium leading-5 text-[#71717A] sm:px-4",
-);
-
-const earningsListTableRowClass = cn(
-  earningsListColLayout,
-  "min-h-[60px] items-center bg-white px-2 transition-colors duration-75 hover:bg-neutral-50 sm:px-4",
-);
+/** 12px horizontal cell inset (default table — no screener star gutter). */
+const earningsListRowPadClass = "px-3";
 
 const earningsListTimeHeaderClass = "min-w-0 w-full text-right";
 
 const earningsListTimeCellClass = "flex min-w-0 w-full items-center justify-end";
 
-const earningsListNumericCellClass =
-  "min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#0F0F0F]";
+const earningsListRevenueCellClass =
+  "min-w-0 w-full text-center font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414]";
+
+const earningsListEpsCellClass =
+  "min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414]";
 
 function EarningsListDayHeader({ dateYmd, isToday }: { dateYmd: string; isToday: boolean }) {
   return (
     <div
-      className={cn(earningsListTableHeaderClass, isToday && "border-b-2 border-[#DC2626]")}
+      className={cn(
+        SCREENER_TABLE_HEADER_STICKY_CLASS,
+        SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+        SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+        "md:border-b-0",
+      )}
       role="row"
       aria-label={`${formatEconomyLongDateUtc(dateYmd)}, time, estimated revenue, estimated EPS`}
     >
+      <div className={earningsListRowPadClass}>
+        <div
+          className={cn(
+            earningsListColLayout,
+            "min-h-[44px] items-center text-[14px] font-medium leading-5 text-[#5C5D5F]",
+          )}
+        >
+          <div
+            className={cn(
+              "min-w-0 text-left text-[14px] font-semibold leading-5",
+              isToday ? "text-[#DC2626]" : "text-[#141414]",
+            )}
+          >
+            {formatEconomyLongDateUtc(dateYmd)}
+          </div>
+          <div className={earningsListTimeHeaderClass}>Time</div>
+          <div className={cn(earningsListRevenueCellClass, "font-medium text-[#5C5D5F]")}>Est. Revenue</div>
+          <div className={cn(earningsListEpsCellClass, "font-medium text-[#5C5D5F]")}>Est. EPS</div>
+        </div>
+      </div>
       <div
         className={cn(
-          "min-w-0 text-left text-[14px] font-semibold leading-5",
-          isToday ? "text-[#DC2626]" : "text-[#0F0F0F]",
+          SCREENER_TABLE_STROKE_INSET_CLASS,
+          isToday && "border-b-2 border-[#DC2626]",
         )}
-      >
-        {formatEconomyLongDateUtc(dateYmd)}
-      </div>
-      <div className={earningsListTimeHeaderClass}>Time</div>
-      <div className={cn(earningsListNumericCellClass, "font-medium text-[#71717A]")}>Est. Revenue</div>
-      <div className={cn(earningsListNumericCellClass, "font-medium text-[#71717A]")}>Est. EPS</div>
+        aria-hidden
+      />
     </div>
   );
 }
@@ -142,7 +167,7 @@ function EarningsListTimingBadge({ timing }: { timing: EarningsReportTiming }) {
       ? "bg-[#FFF7ED] text-[#EA580C]"
       : timing === "amc"
         ? "bg-[#EFF6FF] text-[#2563EB]"
-        : "bg-[#FAFAFA] text-[#71717A]";
+        : "bg-[#FAFAFA] text-[#5C5D5F]";
 
   const icon =
     timing === "bmo" ? (
@@ -150,7 +175,7 @@ function EarningsListTimingBadge({ timing }: { timing: EarningsReportTiming }) {
     ) : timing === "amc" ? (
       <PostMarketEarningsIcon size={12} />
     ) : (
-      <Clock className="text-[#71717A]" size={10} strokeWidth={2} />
+      <Clock className="text-[#5C5D5F]" size={10} strokeWidth={2} />
     );
 
   return (
@@ -172,16 +197,18 @@ function EarningsListRow({
   item,
   estRevenueDisplay,
   estEpsDisplay,
+  showDivider,
   onOpen,
 }: {
   item: EarningsCalendarItem;
   estRevenueDisplay: string | null | undefined;
   estEpsDisplay: string | null | undefined;
+  showDivider: boolean;
   onOpen: (item: EarningsCalendarItem) => void;
 }) {
   return (
     <div
-      className={cn(earningsListTableRowClass, "group cursor-pointer text-[14px] leading-5 text-[#0F0F0F]")}
+      className={cn(SCREENER_TABLE_DATA_ROW_CLASS, "cursor-pointer")}
       onClick={() => onOpen(item)}
       onPointerEnter={() => prefetchStockEarningsTabPayload(item.ticker, true)}
       onFocus={() => prefetchStockEarningsTabPayload(item.ticker, true)}
@@ -194,24 +221,35 @@ function EarningsListRow({
         }
       }}
     >
-      <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-        <CompanyLogo
-          name={item.companyName || item.ticker}
-          logoUrl={item.logoUrl}
-          symbol={item.ticker}
-        />
-        <div className="min-w-0">
-          <div className="truncate text-[14px] font-semibold leading-5 text-[#0F0F0F] underline-offset-2 group-hover:underline">
-            {item.companyName}
+      <div className={earningsListRowPadClass}>
+        <div
+          className={cn(
+            earningsListColLayout,
+            "group min-h-[60px] text-[14px] leading-5 text-[#141414]",
+            SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+          )}
+        >
+          <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+            <CompanyLogo
+              name={item.companyName || item.ticker}
+              logoUrl={item.logoUrl}
+              symbol={item.ticker}
+            />
+            <div className="min-w-0">
+              <div className="truncate text-[14px] font-semibold leading-5 text-[#141414] underline-offset-2 group-hover:underline">
+                {item.companyName}
+              </div>
+              <div className="text-[12px] font-normal leading-4 text-[#5C5D5F] tabular-nums">{item.ticker}</div>
+            </div>
           </div>
-          <div className="text-[12px] font-normal leading-4 text-[#71717A] tabular-nums">{item.ticker}</div>
+          <div className={earningsListTimeCellClass}>
+            <EarningsListTimingBadge timing={item.timing} />
+          </div>
+          <div className={earningsListRevenueCellClass}>{formatEarningsListMetric(estRevenueDisplay)}</div>
+          <div className={earningsListEpsCellClass}>{formatEarningsListMetric(estEpsDisplay)}</div>
         </div>
       </div>
-      <div className={earningsListTimeCellClass}>
-        <EarningsListTimingBadge timing={item.timing} />
-      </div>
-      <div className={earningsListNumericCellClass}>{formatEarningsListMetric(estRevenueDisplay)}</div>
-      <div className={earningsListNumericCellClass}>{formatEarningsListMetric(estEpsDisplay)}</div>
+      {showDivider ? <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden /> : null}
     </div>
   );
 }
@@ -225,7 +263,7 @@ function EarningsTimingSectionHeading({ timing, title }: { timing: EarningsRepor
       ? "bg-[#FFF7ED] text-[#EA580C]"
       : timing === "amc"
         ? "bg-[#EFF6FF] text-[#2563EB]"
-        : "bg-[#FAFAFA] text-[#71717A]";
+        : "bg-[#FAFAFA] text-[#5C5D5F]";
 
   const icon =
     timing === "bmo" ? (
@@ -233,7 +271,7 @@ function EarningsTimingSectionHeading({ timing, title }: { timing: EarningsRepor
     ) : timing === "amc" ? (
       <PostMarketEarningsIcon size={EARNINGS_CALENDAR_TIMING_ICON_PX} />
     ) : (
-      <Clock className="text-[#71717A]" size={12} strokeWidth={2} />
+      <Clock className="text-[#5C5D5F]" size={12} strokeWidth={2} />
     );
 
   const ariaLabel = timing === "bmo" ? "Before market" : timing === "amc" ? "After market" : "Time TBD";
@@ -461,7 +499,7 @@ function EarningsCard({
       className="flex w-full flex-col items-center justify-center gap-1.5 rounded-xl px-1 py-1.5 text-center transition-colors hover:bg-[#F4F4F5]"
     >
       <CompanyLogo name={companyName || ticker} logoUrl={logoUrl} symbol={ticker} size="md" fill />
-      <span className="w-full min-w-0 truncate text-[13px] font-semibold leading-5 tabular-nums text-[#0F0F0F]">
+      <span className="w-full min-w-0 truncate text-[13px] font-semibold leading-5 tabular-nums text-[#141414]">
         {ticker}
       </span>
     </button>
@@ -470,7 +508,7 @@ function EarningsCard({
 
 /** Week nav — bordered controls (arrows + Today), aligned with toolbar squircles. */
 const weekNavBtnClass = cn(
-  "inline-flex h-9 shrink-0 items-center justify-center rounded-[10px] text-[#0F0F0F] transition-all duration-100 hover:bg-[#F4F4F5]",
+  "inline-flex h-9 shrink-0 items-center justify-center rounded-[10px] text-[#141414] transition-all duration-100 hover:bg-[#F4F4F5]",
   whiteSurfaceButtonChromeClass,
 );
 
@@ -495,7 +533,7 @@ function EarningsHoldingsWatchlistSwitch({
       aria-label={ariaLabel}
       onClick={() => onPressedChange(!pressed)}
       className={cn(
-        "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15",
+        "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15",
         pressed ? "bg-[#2563EB]" : "bg-[#E4E4E7]",
       )}
     >
@@ -585,7 +623,7 @@ function EarningsWeekGridSkeleton({
                     </div>
                     <div
                       className={`text-[15px] font-semibold tabular-nums ${
-                        isToday ? "text-[#DC2626]" : "text-[#0F0F0F]"
+                        isToday ? "text-[#DC2626]" : "text-[#141414]"
                       }`}
                     >
                       {day.dayNumber}
@@ -599,7 +637,7 @@ function EarningsWeekGridSkeleton({
                   >
                     <div
                       className={`flex flex-wrap items-center justify-center gap-1 py-0.5 text-center text-[18px] leading-6 ${
-                        isToday ? "text-[#DC2626]" : "text-[#0F0F0F]"
+                        isToday ? "text-[#DC2626]" : "text-[#141414]"
                       }`}
                     >
                       <span className="font-normal">{day.weekdayLabel}</span>
@@ -623,26 +661,38 @@ function EarningsWeekGridSkeleton({
   );
 }
 
-const earningsListDayCardClass = "overflow-hidden rounded-xl border border-[#E4E4E7] bg-white";
-
 function EarningsWeekListSkeleton() {
   return (
-    <div
-      className="-mx-1 flex flex-col overflow-x-auto pb-1 md:mx-0 md:overflow-x-hidden md:overflow-y-visible"
-      aria-busy="true"
-      aria-label="Loading earnings calendar"
-    >
-      <div className="flex w-full min-w-0 flex-col rounded-2xl bg-[#F4F4F5] p-1">
-        <div className="flex flex-col gap-1">
-          <div className={cn(earningsListDayCardClass, "divide-y divide-[#E4E4E7]")}>
-            <div className={earningsListTableHeaderClass}>
+    <div className="flex min-w-0 flex-col" aria-busy="true" aria-label="Loading earnings calendar">
+      <ScreenerTableScroll>
+        <div
+          className={cn(
+            SCREENER_TABLE_HEADER_STICKY_CLASS,
+            SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+            SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+            "md:border-b-0",
+          )}
+        >
+          <div className={earningsListRowPadClass}>
+            <div className={cn(earningsListColLayout, "min-h-[44px] items-center")}>
               <TextSkeleton wClass="w-40" hClass="h-3.5" />
               <TextSkeleton wClass="w-10" hClass="h-3.5" />
               <TextSkeleton wClass="w-full" hClass="h-3.5" />
               <TextSkeleton wClass="w-full" hClass="h-3.5" />
             </div>
-            {Array.from({ length: 8 }, (_, i) => (
-              <div key={i} className={cn(earningsListTableRowClass, "gap-y-2 py-3")}>
+          </div>
+          <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
+        </div>
+        {Array.from({ length: 8 }, (_, i) => (
+          <div key={i} className={SCREENER_TABLE_DATA_ROW_CLASS}>
+            <div className={earningsListRowPadClass}>
+              <div
+                className={cn(
+                  earningsListColLayout,
+                  "min-h-[60px] items-center gap-y-2 py-3",
+                  SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+                )}
+              >
                 <div className="flex min-w-0 items-center gap-2.5">
                   <SkeletonBox className="h-8 w-8 shrink-0 rounded-full" />
                   <div className="min-w-0 flex-1 space-y-1.5">
@@ -650,14 +700,15 @@ function EarningsWeekListSkeleton() {
                     <TextSkeleton wClass="w-full max-w-[180px]" hClass="h-3.5" />
                   </div>
                 </div>
-                <SkeletonBox className="mx-auto h-5 w-12 rounded-md" />
+                <SkeletonBox className="ml-auto h-5 w-12 rounded-md" />
                 <TextSkeleton wClass="w-full" hClass="h-3.5" />
                 <TextSkeleton wClass="w-full" hClass="h-3.5" />
               </div>
-            ))}
+            </div>
+            {i < 7 ? <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden /> : null}
           </div>
-        </div>
-      </div>
+        ))}
+      </ScreenerTableScroll>
     </div>
   );
 }
@@ -790,43 +841,45 @@ export function EarningsWeekGrid({
   return (
     <div className="flex min-w-0 flex-col gap-6">
       <div className="relative z-30 flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-2">
-        <h1 className="min-w-0 text-[24px] font-semibold leading-9 tracking-tight text-[#0F0F0F]">
+        <h1 className="min-w-0 text-[24px] font-semibold leading-9 tracking-tight text-[#141414]">
           {displayWeekLabel}
         </h1>
         <div className="flex shrink-0 flex-wrap items-center gap-3">
           <div className="flex items-center gap-2">
-            <span className="text-[14px] font-medium leading-5 text-[#71717A]">Holdings &amp; Watchlist</span>
+            <span className="text-[14px] font-medium leading-5 text-[#5C5D5F]">Holdings &amp; Watchlist</span>
             <EarningsHoldingsWatchlistSwitch
               pressed={scope === "portfolio"}
               onPressedChange={setHoldingsWatchlistFilter}
               aria-label="Show only holdings and watchlist"
             />
           </div>
-          <button
-            type="button"
-            onClick={() => navigateWeek(displayPrevWeekYmd)}
-            className={weekNavArrowClass}
-            aria-label="Previous week"
-          >
-            <ChevronLeft className="h-5 w-5" strokeWidth={1.75} />
-          </button>
-          <button
-            type="button"
-            onClick={() => navigateWeek(thisWeekMondayYmd)}
-            className={weekNavTodayClass}
-            aria-label="Go to this week"
-            aria-current={displayWeekMondayYmd === thisWeekMondayYmd ? "page" : undefined}
-          >
-            Today
-          </button>
-          <button
-            type="button"
-            onClick={() => navigateWeek(displayNextWeekYmd)}
-            className={weekNavArrowClass}
-            aria-label="Next week"
-          >
-            <ChevronRight className="h-5 w-5" strokeWidth={1.75} />
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => navigateWeek(displayPrevWeekYmd)}
+              className={weekNavArrowClass}
+              aria-label="Previous week"
+            >
+              <ChevronLeft className="h-5 w-5" strokeWidth={1.75} />
+            </button>
+            <button
+              type="button"
+              onClick={() => navigateWeek(thisWeekMondayYmd)}
+              className={weekNavTodayClass}
+              aria-label="Go to this week"
+              aria-current={displayWeekMondayYmd === thisWeekMondayYmd ? "page" : undefined}
+            >
+              Today
+            </button>
+            <button
+              type="button"
+              onClick={() => navigateWeek(displayNextWeekYmd)}
+              className={weekNavArrowClass}
+              aria-label="Next week"
+            >
+              <ChevronRight className="h-5 w-5" strokeWidth={1.75} />
+            </button>
+          </div>
           <div className="flex shrink-0 rounded-[10px] bg-[#F4F4F5] p-0.5">
             <button
               type="button"
@@ -835,7 +888,7 @@ export function EarningsWeekGrid({
                 "flex h-8 w-9 items-center justify-center rounded-[10px] transition-colors",
                 view === "grid"
                   ? "bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.12),0px_1px_1px_0px_rgba(10,10,10,0.07)]"
-                  : "text-[#52525B] hover:text-[#0F0F0F]",
+                  : "text-[#52525B] hover:text-[#141414]",
               )}
               aria-pressed={view === "grid"}
               aria-label="Week grid view"
@@ -849,7 +902,7 @@ export function EarningsWeekGrid({
                 "flex h-8 w-9 items-center justify-center rounded-[10px] transition-colors",
                 view === "list"
                   ? "bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.12),0px_1px_1px_0px_rgba(10,10,10,0.07)]"
-                  : "text-[#52525B] hover:text-[#0F0F0F]",
+                  : "text-[#52525B] hover:text-[#141414]",
               )}
               aria-pressed={view === "list"}
               aria-label="List view"
@@ -886,7 +939,7 @@ export function EarningsWeekGrid({
                     </div>
                     <div
                       className={`text-[15px] font-semibold tabular-nums ${
-                        isToday ? "text-[#DC2626]" : "text-[#0F0F0F]"
+                        isToday ? "text-[#DC2626]" : "text-[#141414]"
                       }`}
                     >
                       {day.dayNumber}
@@ -900,7 +953,7 @@ export function EarningsWeekGrid({
                   >
                     <div
                       className={`flex flex-wrap items-center justify-center gap-1 py-0.5 text-center text-[18px] leading-6 ${
-                        isToday ? "text-[#DC2626]" : "text-[#0F0F0F]"
+                        isToday ? "text-[#DC2626]" : "text-[#141414]"
                       }`}
                     >
                       <span className="font-normal">{day.weekdayLabel}</span>
@@ -933,51 +986,46 @@ export function EarningsWeekGrid({
         ) : (
         <div className="flex min-w-0 flex-col space-y-0">
           {totalListItems === 0 ? (
-            <div className="rounded-xl border border-[#E4E4E7] bg-white px-4 py-12 text-center text-sm text-[#71717A]">
+            <div className="rounded-2xl border border-[#EBEBEC] bg-white px-4 py-12 text-center text-sm text-[#5C5D5F] shadow-[0px_1px_2px_0px_rgba(0,0,0,0.04)]">
               No scheduled earnings
             </div>
           ) : (
-            <div className="-mx-1 flex flex-col overflow-x-auto pb-1 md:mx-0 md:overflow-x-hidden md:overflow-y-visible">
-              <div className="flex w-full min-w-0 flex-col rounded-2xl bg-[#F4F4F5] p-1">
-                <div className="flex flex-col gap-1">
-                  {filteredData.days.map((day) => {
-                    const { visibleItems, overflowCount, preloadedOverflow } = splitEarningsDayListForView(day);
-                    if (visibleItems.length === 0 && overflowCount === 0) return null;
-                    const isToday = day.date === todayYmd;
-                    return (
-                      <section
-                        key={day.date}
-                        id={`earnings-list-${day.date}`}
-                        className={cn(earningsListDayCardClass, "divide-y divide-[#E4E4E7]")}
-                      >
-                        <EarningsListDayHeader dateYmd={day.date} isToday={isToday} />
+            <div className="flex min-w-0 flex-col gap-3">
+              {filteredData.days.map((day) => {
+                const { visibleItems, overflowCount, preloadedOverflow } = splitEarningsDayListForView(day);
+                if (visibleItems.length === 0 && overflowCount === 0) return null;
+                const isToday = day.date === todayYmd;
+                return (
+                  <section key={day.date} id={`earnings-list-${day.date}`}>
+                    <ScreenerTableScroll>
+                      <EarningsListDayHeader dateYmd={day.date} isToday={isToday} />
 
-                        {visibleItems.map((item) => (
-                          <EarningsListRow
-                            key={`${item.ticker}:${item.reportDate}`}
-                            item={item}
-                            estRevenueDisplay={item.estRevenueDisplay}
-                            estEpsDisplay={item.estEpsDisplay}
-                            onOpen={setPreviewItem}
-                          />
-                        ))}
+                      {visibleItems.map((item, index) => (
+                        <EarningsListRow
+                          key={`${item.ticker}:${item.reportDate}`}
+                          item={item}
+                          estRevenueDisplay={item.estRevenueDisplay}
+                          estEpsDisplay={item.estEpsDisplay}
+                          showDivider={index < visibleItems.length - 1 || overflowCount > 0}
+                          onOpen={setPreviewItem}
+                        />
+                      ))}
 
-                        {overflowCount > 0 ? (
-                          <EarningsListSeeMoreMenu
-                            overflowCount={overflowCount}
-                            preloadedItems={preloadedOverflow}
-                            weekMondayYmd={filteredData.weekMondayYmd}
-                            dayYmd={day.date}
-                            allowedScopeKeys={allowedScopeKeys}
-                            listOffset={visibleItems.length}
-                            onOpenCard={setPreviewItem}
-                          />
-                        ) : null}
-                      </section>
-                    );
-                  })}
-                </div>
-              </div>
+                      {overflowCount > 0 ? (
+                        <EarningsListSeeMoreMenu
+                          overflowCount={overflowCount}
+                          preloadedItems={preloadedOverflow}
+                          weekMondayYmd={filteredData.weekMondayYmd}
+                          dayYmd={day.date}
+                          allowedScopeKeys={allowedScopeKeys}
+                          listOffset={visibleItems.length}
+                          onOpenCard={setPreviewItem}
+                        />
+                      ) : null}
+                    </ScreenerTableScroll>
+                  </section>
+                );
+              })}
             </div>
           )}
         </div>

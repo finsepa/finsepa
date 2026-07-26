@@ -34,7 +34,7 @@ export function NewsCards({ items }: { items: NewsItem[] }) {
 
         const content = (
           <div className="px-0 py-4">
-            <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[13px] leading-5 text-[#71717A]">
+            <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[13px] leading-5 text-[#5C5D5F]">
               <span className="tabular-nums">
                 {formatTime(n.publishedAt)} · {formatDate(n.publishedAt)}
               </span>
@@ -46,14 +46,14 @@ export function NewsCards({ items }: { items: NewsItem[] }) {
                   logoUrl={logoUrl}
                   size="xs"
                 />
-                <span className="inline-flex h-6 max-w-[140px] items-center rounded-md border border-[#E4E4E7] bg-white px-2 text-[12px] font-semibold leading-4 text-[#0F0F0F] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
+                <span className="inline-flex h-6 max-w-[140px] items-center rounded-md border border-[#E4E4E7] bg-white px-2 text-[12px] font-semibold leading-4 text-[#141414] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
                   <span className="truncate">{n.assetSymbol}</span>
                 </span>
               </span>
               <span aria-hidden>·</span>
               <span className="min-w-0 truncate">{n.source}</span>
             </div>
-            <div className="mt-2 line-clamp-2 text-[16px] font-semibold leading-6 text-[#0F0F0F]">
+            <div className="mt-2 line-clamp-2 text-[16px] font-semibold leading-6 text-[#141414]">
               {n.title}
             </div>
           </div>

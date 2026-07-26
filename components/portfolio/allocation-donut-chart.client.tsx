@@ -180,15 +180,15 @@ function SliceExternalLabel({
         </div>
         {isHovered ? (
           <div className="flex shrink-0 flex-col gap-0.5">
-            <span className="whitespace-nowrap text-[13px] font-semibold leading-4 text-[#0F0F0F]">
+            <span className="whitespace-nowrap text-[13px] font-semibold leading-4 text-[#141414]">
               {ticker}
             </span>
-            <span className="whitespace-nowrap text-[12px] font-medium tabular-nums leading-4 text-[#0F0F0F]">
+            <span className="whitespace-nowrap text-[12px] font-medium tabular-nums leading-4 text-[#141414]">
               {pct1.format(row.weightPct)}%
             </span>
           </div>
         ) : (
-          <span className="whitespace-nowrap text-[12px] font-medium tabular-nums leading-4 text-[#0F0F0F]">
+          <span className="whitespace-nowrap text-[12px] font-medium tabular-nums leading-4 text-[#141414]">
             {pct1.format(row.weightPct)}%
           </span>
         )}

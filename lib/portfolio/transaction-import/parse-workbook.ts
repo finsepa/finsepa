@@ -1,5 +1,3 @@
-import * as XLSX from "xlsx";
-
 export type RawSheetMatrix = {
   sheetName: string;
   /** Row 0 = headers; further rows = data */
@@ -21,8 +19,10 @@ function cellToString(v: unknown): string {
 
 /**
  * Reads first worksheet as string matrix (header row + data).
+ * Loads `xlsx` on demand so the protected shell does not pay for it until import runs.
  */
-export function parseWorkbookToMatrix(file: ArrayBuffer): RawSheetMatrix {
+export async function parseWorkbookToMatrix(file: ArrayBuffer): Promise<RawSheetMatrix> {
+  const XLSX = await import("xlsx");
   const wb = XLSX.read(file, { type: "array", cellDates: true });
   const sheetName = wb.SheetNames[0] ?? "Sheet1";
   const sheet = wb.Sheets[sheetName];

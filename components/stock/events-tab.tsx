@@ -30,10 +30,10 @@ const events2023: EventRow[] = [
 ];
 
 function IconCell({ available, icon }: { available?: boolean; icon: React.ReactNode }) {
-  if (!available) return <td className="px-6 text-center text-[14px] text-[#71717A]">-</td>;
+  if (!available) return <td className="px-6 text-center text-[14px] text-[#5C5D5F]">-</td>;
   return (
     <td className="px-6 text-center">
-      <button className="inline-flex items-center justify-center text-[#71717A] hover:text-[#0F0F0F] transition-colors">
+      <button className="inline-flex items-center justify-center text-[#5C5D5F] hover:text-[#141414] transition-colors">
         {icon}
       </button>
     </td>
@@ -44,7 +44,7 @@ function EventsGroup({ year, rows }: { year: string; rows: EventRow[] }) {
   return (
     <>
       <tr className="border-b border-[#E4E4E7]">
-        <td colSpan={6} className="px-6 py-2 text-[13px] font-semibold text-[#0F0F0F]">
+        <td colSpan={6} className="px-6 py-2 text-[13px] font-semibold text-[#141414]">
           {year}
         </td>
       </tr>
@@ -57,7 +57,7 @@ function EventsGroup({ year, rows }: { year: string; rows: EventRow[] }) {
                 P
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[14px] font-medium leading-5 text-[#0F0F0F]">{row.name}</span>
+                <span className="text-[14px] font-medium leading-5 text-[#141414]">{row.name}</span>
                 {row.upcoming && (
                   <span className="rounded-full bg-orange-100 px-2 py-0.5 text-[12px] font-medium text-orange-600">
                     Upcoming
@@ -68,7 +68,7 @@ function EventsGroup({ year, rows }: { year: string; rows: EventRow[] }) {
           </td>
 
           {/* Date */}
-          <td className="px-6 text-[14px] leading-5 text-[#0F0F0F] tabular-nums">{row.date}</td>
+          <td className="px-6 text-[14px] leading-5 text-[#141414] tabular-nums">{row.date}</td>
 
           <IconCell available={row.recording} icon={<PlayCircle className="h-5 w-5" />} />
           <IconCell available={row.transcript} icon={<FileText className="h-5 w-5" />} />
@@ -89,7 +89,7 @@ export function EventsTab() {
             {["Report", "Date", "Recording", "Transcript", "Slides", "Report"].map((h, i) => (
               <th
                 key={`${h}-${i}`}
-                className={`px-6 py-3 text-[14px] font-medium leading-5 text-[#71717A] ${
+                className={`px-6 py-3 text-[14px] font-medium leading-5 text-[#5C5D5F] ${
                   i === 0 ? "text-left" : "text-center"
                 }`}
               >

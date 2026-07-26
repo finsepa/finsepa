@@ -78,8 +78,8 @@ export function NewsPage() {
                 onClick={() => setTab(t.id)}
                 className={`relative py-2 text-[14px] leading-6 font-medium transition-colors duration-100 ${
                   active
-                    ? "text-[#0F0F0F] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-[#0F0F0F] after:content-['']"
-                    : "text-[#71717A] hover:text-[#0F0F0F]"
+                    ? "text-[#141414] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-[#141414] after:content-['']"
+                    : "text-[#5C5D5F] hover:text-[#141414]"
                 }`}
               >
                 {t.label}
@@ -92,7 +92,7 @@ export function NewsPage() {
       {loading && !items ? <NewsTableSkeleton rows={25} /> : null}
 
       {!loading && error ? (
-        <div className="rounded-[12px] border border-[#E4E4E7] bg-white px-4 py-4 text-sm text-[#71717A]">
+        <div className="rounded-[12px] border border-[#E4E4E7] bg-white px-4 py-4 text-sm text-[#5C5D5F]">
           {error}
         </div>
       ) : null}
@@ -100,7 +100,7 @@ export function NewsPage() {
       {items ? <NewsTable items={items} /> : null}
 
       {showEmpty ? (
-        <div className="mt-4 rounded-[12px] border border-[#E4E4E7] bg-white px-4 py-6 text-sm text-[#71717A]">
+        <div className="mt-4 rounded-[12px] border border-[#E4E4E7] bg-white px-4 py-6 text-sm text-[#5C5D5F]">
           No news yet
         </div>
       ) : null}
@@ -110,21 +110,21 @@ export function NewsPage() {
           type="button"
           onClick={() => setPage((p) => Math.max(1, p - 1))}
           disabled={safePage <= 1 || loading}
-          className="h-9 shrink-0 rounded-[10px] border border-[#E4E4E7] bg-white px-3 text-sm font-semibold text-[#0F0F0F] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5] disabled:cursor-not-allowed disabled:opacity-60"
+          className="h-9 shrink-0 rounded-[10px] border border-[#E4E4E7] bg-white px-3 text-sm font-semibold text-[#141414] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5] disabled:cursor-not-allowed disabled:opacity-60"
         >
           Previous
         </button>
 
-        <div className="min-w-0 flex-1 px-1 text-center text-sm font-medium text-[#71717A]">
-          Page <span className="font-semibold text-[#0F0F0F]">{safePage}</span> of{" "}
-          <span className="font-semibold text-[#0F0F0F]">{totalPages}</span>
+        <div className="min-w-0 flex-1 px-1 text-center text-sm font-medium text-[#5C5D5F]">
+          Page <span className="font-semibold text-[#141414]">{safePage}</span> of{" "}
+          <span className="font-semibold text-[#141414]">{totalPages}</span>
         </div>
 
         <button
           type="button"
           onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
           disabled={safePage >= totalPages || loading}
-          className="h-9 shrink-0 rounded-[10px] border border-[#E4E4E7] bg-white px-3 text-sm font-semibold text-[#0F0F0F] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5] disabled:cursor-not-allowed disabled:opacity-60"
+          className="h-9 shrink-0 rounded-[10px] border border-[#E4E4E7] bg-white px-3 text-sm font-semibold text-[#141414] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5] disabled:cursor-not-allowed disabled:opacity-60"
         >
           Next
         </button>

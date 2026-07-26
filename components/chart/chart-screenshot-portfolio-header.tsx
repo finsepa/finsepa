@@ -55,7 +55,7 @@ export function ChartScreenshotPortfolioHeader({
             <img src={resolvedLogo} alt="" className="h-full w-full object-contain p-1" />
           ) : (
             <Briefcase
-              className={compact ? "h-4 w-4 text-[#71717A]" : "h-5 w-5 text-[#71717A]"}
+              className={compact ? "h-4 w-4 text-[#5C5D5F]" : "h-5 w-5 text-[#5C5D5F]"}
               strokeWidth={2}
               aria-hidden
             />
@@ -66,8 +66,8 @@ export function ChartScreenshotPortfolioHeader({
         <span
           className={
             compact
-              ? "truncate text-[16px] font-semibold leading-5 text-[#0F0F0F]"
-              : "truncate text-[18px] font-semibold leading-6 text-[#0F0F0F]"
+              ? "truncate text-[16px] font-semibold leading-5 text-[#141414]"
+              : "truncate text-[18px] font-semibold leading-6 text-[#141414]"
           }
         >
           {title}
@@ -75,8 +75,8 @@ export function ChartScreenshotPortfolioHeader({
         <span
           className={
             compact
-              ? "shrink-0 text-[16px] font-normal leading-5 text-[#71717A]"
-              : "shrink-0 text-[18px] font-normal leading-6 text-[#71717A]"
+              ? "shrink-0 text-[16px] font-normal leading-5 text-[#5C5D5F]"
+              : "shrink-0 text-[18px] font-normal leading-6 text-[#5C5D5F]"
           }
           aria-hidden
         >
@@ -85,8 +85,8 @@ export function ChartScreenshotPortfolioHeader({
         <span
           className={
             compact
-              ? "shrink-0 text-[16px] font-semibold leading-5 text-[#71717A]"
-              : "shrink-0 text-[18px] font-semibold leading-6 text-[#71717A]"
+              ? "shrink-0 text-[16px] font-semibold leading-5 text-[#5C5D5F]"
+              : "shrink-0 text-[18px] font-semibold leading-6 text-[#5C5D5F]"
           }
         >
           Allocation

@@ -187,7 +187,7 @@ export function StockHeader({
       ? isPositive
         ? "text-[#16A34A]"
         : "text-[#DC2626]"
-      : "text-[#0F0F0F]";
+      : "text-[#141414]";
 
   const listingSubtitle = getStockListingSubtitleParts({
     ticker: symbol,
@@ -221,7 +221,7 @@ export function StockHeader({
           mergeLogoMemory(symbol, null);
         }}
       />
-    : <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[#E4E4E7] bg-[#F4F4F5] text-[18px] font-bold text-[#0F0F0F] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
+    : <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[#E4E4E7] bg-[#F4F4F5] text-[18px] font-bold text-[#141414] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
         {meta.ticker.slice(0, 1)}
       </div>;
 
@@ -242,7 +242,7 @@ export function StockHeader({
             })()
           : formatUsdPrice(anim.price);
 
-  const periodLabelClass = "text-[13px] text-[#71717A]";
+  const periodLabelClass = "text-[13px] text-[#5C5D5F]";
   const desktopPeriodLabel = periodLabelOverride ?? periodLabel;
   const mobilePeriodLabel =
     chartHovering && scrubPeriodLabel?.trim() ? scrubPeriodLabel.trim() : desktopPeriodLabel;
@@ -263,7 +263,7 @@ export function StockHeader({
     !hasChange || anim.pct == null ? null : `(${formatSignedPercent2dp(anim.pct)})`;
 
   const periodChangeClass = `text-[15px] font-medium tabular-nums transition-colors duration-200 ease-out ${
-    hasChange ? (isPositive ? "text-[#16A34A]" : "text-[#DC2626]") : "text-[#71717A]"
+    hasChange ? (isPositive ? "text-[#16A34A]" : "text-[#DC2626]") : "text-[#5C5D5F]"
   }`;
 
   const inlinePeriodChange = showPeriodChange ? (
@@ -381,7 +381,7 @@ export function StockHeader({
     <>
       <div className="flex items-start justify-between gap-3 md:hidden">
         <div className={`min-w-0 flex-1 space-y-0.5 ${priceMotionClass}`}>
-          <h1 className="truncate text-[16px] font-medium leading-5 text-[#0F0F0F]">
+          <h1 className="truncate text-[16px] font-medium leading-5 text-[#141414]">
             <span className="inline-flex min-w-0 max-w-full items-center gap-2">
               <span className="truncate">{titleName}</span>
               {screenerRank != null ? <ScreenerRankBadge rank={screenerRank} size="sm" /> : null}
@@ -401,12 +401,12 @@ export function StockHeader({
         {logoMark}
       </div>
 
-      <div className="hidden space-y-3 md:block">
+      <div className="hidden space-y-5 md:block">
         <div className="flex items-center justify-between gap-4">
           <div className="flex min-w-0 flex-1 items-center gap-4">
             {logoMark}
             <div className="min-w-0">
-              <h1 className="text-[20px] font-semibold leading-7 text-[#0F0F0F]">
+              <h1 className="text-[20px] font-semibold leading-7 text-[#141414]">
                 <span className="inline-flex min-w-0 max-w-full flex-wrap items-center gap-2">
                   <span className="[display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical] overflow-hidden break-words">
                     {titleName}
@@ -417,7 +417,7 @@ export function StockHeader({
               {headerMetaLoading ? (
                 <div className="mt-0.5 h-4 w-24 rounded bg-neutral-200/80 animate-pulse" aria-hidden />
               ) : (
-                <p className="mt-0.5 text-[13px] leading-5 text-[#71717A]">
+                <p className="mt-0.5 text-[13px] leading-5 text-[#5C5D5F]">
                   {listingSubtitle.ticker}
                   {listingSubtitle.exchange ? <> · {listingSubtitle.exchange}</> : null}
                   {listingSubtitle.countryFlag ? (

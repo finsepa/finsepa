@@ -47,7 +47,7 @@ function PerformanceLegendBadge({
       onClick={onToggle}
       aria-pressed={pressed}
       className={cn(
-        "inline-flex h-6 max-w-full min-w-0 items-center gap-2 overflow-hidden rounded-[8px] border border-[#E4E4E7] bg-white px-3 py-0 text-[12px] font-medium leading-none text-[#0F0F0F] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)] transition-opacity",
+        "inline-flex h-6 max-w-full min-w-0 items-center gap-2 overflow-hidden rounded-[8px] border border-[#E4E4E7] bg-white px-3 py-0 text-[12px] font-medium leading-none text-[#141414] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)] transition-opacity",
         !pressed && "opacity-40",
       )}
     >
@@ -113,8 +113,8 @@ function PerformanceChartSection({
           className={cn(
             "flex-1 rounded-[10px] px-2 py-1.5 text-center font-sans text-[14px] leading-5 tracking-normal sm:flex-none sm:px-4",
             range === r.id ?
-              "bg-white font-medium text-[#0F0F0F] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]"
-            : "font-normal text-[#71717A]",
+              "bg-white font-medium text-[#141414] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]"
+            : "font-normal text-[#5C5D5F]",
           )}
         >
           {r.label}
@@ -145,7 +145,7 @@ function PerformanceChartSection({
   return (
     <section className="mb-10 w-full min-w-0">
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="shrink-0 text-2xl font-semibold leading-9 tracking-tight text-[#0F0F0F]">{title}</h2>
+        <h2 className="shrink-0 text-2xl font-semibold leading-9 tracking-tight text-[#141414]">{title}</h2>
         <div className="hidden sm:flex">{rangeSwitcher}</div>
       </div>
 
@@ -166,7 +166,7 @@ function PerformanceChartSection({
           <AssetChartSkeleton />
         ) : error ? (
           <div className="flex h-[320px] flex-col items-center justify-center px-6">
-            <p className="text-sm text-[#71717A]">{error}</p>
+            <p className="text-sm text-[#5C5D5F]">{error}</p>
           </div>
         ) : points.length === 0 ? (
           <Empty variant="plain" className="h-[320px] justify-center py-0">
@@ -294,7 +294,7 @@ function PortfolioPerformancePanelInner({
       <PortfolioReturnsDynamicsChart transactions={transactions} canLoad={canLoad} />
 
       <section className="pt-6">
-        <h2 className="mb-4 text-2xl font-semibold leading-9 tracking-tight text-[#0F0F0F]">
+        <h2 className="mb-4 text-2xl font-semibold leading-9 tracking-tight text-[#141414]">
           Holdings performance
         </h2>
         <PortfolioHoldingsPerformanceChart holdings={holdings} transactions={transactions} />

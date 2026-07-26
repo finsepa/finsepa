@@ -1,12 +1,12 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import { LineChart } from "@/lib/icons";
 import { useSearchParams } from "next/navigation";
 
 import { AssetPageTopLoader } from "@/components/layout/asset-page-top-loader";
 import { ChartingEmptyToolbar } from "@/components/charting/charting-empty-toolbar";
-import { ChartingFullPageTab } from "@/components/charting/charting-full-page-tab";
 import type { StockPageInitialData } from "@/lib/market/stock-page-initial-data";
 import { filterChartingUrlTickersForSession } from "@/lib/charting/charting-allowed-tickers";
 import {
@@ -15,6 +15,19 @@ import {
 } from "@/lib/market/stock-charting-metrics";
 import { ChartLoadingIndicator } from "@/components/ui/chart-loading-indicator";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
+
+/** Defer 4k-line workspace + lightweight-charts until a chart session is ready. */
+const ChartingFullPageTab = dynamic(
+  () => import("@/components/charting/charting-full-page-tab").then((m) => m.ChartingFullPageTab),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex min-h-[min(50vh,420px)] w-full flex-col rounded-xl border border-[#E4E4E7] bg-white p-4 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
+        <ChartLoadingIndicator className="min-h-0 flex-1" />
+      </div>
+    ),
+  },
+);
 
 type Props = {
   tickers: string[];

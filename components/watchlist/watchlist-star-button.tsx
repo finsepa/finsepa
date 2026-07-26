@@ -9,13 +9,14 @@ import {
   dropdownMenuPanelClassName,
   dropdownMenuPlainItemClassName,
 } from "@/components/design-system/dropdown-menu-styles";
+import { topbarSquircleIconClass } from "@/components/design-system/topbar-control-classes";
 import type { WatchlistCollection } from "@/lib/watchlist/collections";
 import { isWatchlistTickerWatched } from "@/lib/watchlist/normalize-storage-key";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
 import { cn } from "@/lib/utils";
 
 const watchlistRowRemoveButtonClass =
-  "flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] text-[#71717A] transition-colors hover:bg-[#F4F4F5] hover:text-[#DC2626] focus-visible:bg-[#F4F4F5] focus-visible:text-[#DC2626] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15 focus-visible:ring-offset-2";
+  "flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] text-[#5C5D5F] transition-colors hover:bg-[#F4F4F5] hover:text-[#DC2626] focus-visible:bg-[#F4F4F5] focus-visible:text-[#DC2626] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15 focus-visible:ring-offset-2";
 
 type ToggleProps = {
   /** Stored watchlist key (plain ticker, CRYPTO:BTC, INDEX:GSPC.INDX, …). */
@@ -73,7 +74,7 @@ function WatchlistPickerDropdown({
   return (
     <TopbarDropdownPortal open={open} anchorRef={anchorRef} align="trailing">
       <div ref={menuRef} className={dropdownMenuPanelClassName("w-[200px]")} role="menu">
-        <p className="px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-[#71717A]">
+        <p className="px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-[#5C5D5F]">
           Add to watchlist
         </p>
         {watchlists.map((list) => (
@@ -176,8 +177,8 @@ function WatchlistStarToggleInteractive({
           onClick={handleStarClick}
           className={
             isDetail
-              ? `flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#0F0F0F] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] outline-none transition-all duration-100 hover:bg-[#F4F4F5] focus-visible:ring-2 focus-visible:ring-neutral-900/10 ${buttonClassName}`
-              : `flex items-center justify-center rounded-md p-0.5 text-[#0F0F0F] outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/20 ${buttonClassName}`
+              ? cn(topbarSquircleIconClass, "outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15", buttonClassName)
+              : `flex items-center justify-center rounded-md p-0.5 text-[#141414] outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/20 ${buttonClassName}`
           }
         >
           <Star
@@ -186,7 +187,7 @@ function WatchlistStarToggleInteractive({
                 ? `h-5 w-5 shrink-0 transition-colors ${
                     isWatched
                       ? "fill-amber-500 text-amber-500"
-                      : "fill-none text-[#0F0F0F]"
+                      : "fill-none text-[#141414]"
                   }`
                 : `h-4 w-4 transition-colors ${
                     isWatched

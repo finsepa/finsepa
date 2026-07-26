@@ -18,6 +18,15 @@ import {
 /** Column hover band — Multicharts, Earnings, Charting. */
 export const FUNDAMENTALS_CHART_HOVER_BAND_BG = "rgba(59, 130, 246, 0.14)";
 
+/**
+ * Chart plot canvas — matches shell main panel (`md:bg-[#FCFCFD]`).
+ * Use for backdrop fills and Y-axis label chips that sit on the plot.
+ */
+export const CHART_PLOT_BACKGROUND = "#FCFCFD";
+export const CHART_PLOT_BACKGROUND_CLASS = "bg-[#FCFCFD]";
+export const CHART_PLOT_BACKGROUND_FAINT_CLASS = "bg-[#FCFCFD]/55";
+export const CHART_PLOT_BACKGROUND_LABEL_CLASS = "bg-[#FCFCFD]";
+
 /** Hollow point markers on fundamentals line charts (Key Stats modal / Multichart line). */
 export const CHARTING_LINE_POINT_MARKER_RADIUS_PX = 4.5;
 export const CHARTING_LINE_POINT_MARKER_BORDER_PX = 2;
@@ -331,7 +340,7 @@ const Y_AXIS_LABEL_ONLY = {
   lineStyle: LineStyle.Solid,
   axisLabelVisible: true,
   axisLabelColor: "#ffffff",
-  axisLabelTextColor: "#71717A",
+  axisLabelTextColor: "#5C5D5F",
   lineVisible: false,
   title: "",
 } as const;

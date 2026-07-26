@@ -29,8 +29,8 @@ export function CryptoDetailTabNav({
               onClick={() => onTabChange(id)}
               className={`-mb-px cursor-pointer border-b-2 border-solid py-2 text-left text-[14px] leading-6 transition-colors duration-100 ${
                 isActive
-                  ? "border-[#0F0F0F] font-semibold text-[#0F0F0F]"
-                  : "border-transparent font-medium text-[#71717A] hover:text-[#0F0F0F]"
+                  ? "border-[#141414] font-semibold text-[#141414]"
+                  : "border-transparent font-medium text-[#5C5D5F] hover:text-[#141414]"
               }`}
             >
               {label}

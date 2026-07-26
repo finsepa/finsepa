@@ -21,7 +21,6 @@ import { useRegisterStockDetailTabHost } from "./stock-detail-tab-host-context";
 import { MultichartsTabSkeleton } from "@/components/stock/stock-multicharts-tab-skeleton";
 import { StockFinancialsTabSkeleton } from "@/components/stock/stock-financials-tab-skeleton";
 import { StockEarningsTabLoading } from "@/components/stock/stock-earnings-tab-loading";
-import { StockChartingTab } from "./stock-charting-tab";
 import { StockInsidersTab } from "./stock-insiders-tab";
 import { StockPeersTab } from "./stock-peers-tab";
 import { StockProfileTab } from "./stock-profile-tab";
@@ -94,9 +93,22 @@ const StockTargetPriceTab = dynamic(
   () => import("./stock-target-price-tab").then((m) => m.StockTargetPriceTab),
   {
     loading: () => (
-      <div className="w-full min-w-0 space-y-4 pt-1">
-        <div className="h-40 w-full animate-pulse rounded-[12px] bg-[#F4F4F5]" />
-        <div className="h-32 w-full animate-pulse rounded-[12px] bg-[#F4F4F5]" />
+      <div className="w-full min-w-0 space-y-3">
+        <div className="h-40 w-full animate-pulse rounded-2xl bg-[#F4F4F5]" />
+        <div className="h-32 w-full animate-pulse rounded-2xl bg-[#F4F4F5]" />
+      </div>
+    ),
+  },
+);
+
+/** Same pattern as Multicharts — avoid pulling charting-workspace on every stock overview. */
+const StockChartingTab = dynamic(
+  () => import("./stock-charting-tab").then((m) => m.StockChartingTab),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex min-h-[320px] w-full items-center justify-center">
+        <div className="h-40 w-full animate-pulse rounded-2xl bg-[#F4F4F5]" />
       </div>
     ),
   },
@@ -1117,7 +1129,7 @@ export function StockPageContent({
   return (
     <div className="relative min-w-0">
       <StockBreadcrumbs ticker={ticker} headerMeta={headerMeta} isEtf={isEtf} />
-      <div className="space-y-5 px-4 py-0 max-md:pt-0 sm:space-y-5 sm:px-9 sm:py-6">
+      <div className="space-y-5 px-4 py-0 max-md:pt-0 sm:space-y-5 sm:px-9 sm:pt-5 sm:pb-6">
       <KeyStatsMetricChartModal
         key={revenueProfitModalMetric ?? "closed"}
         ticker={ticker}
@@ -1325,7 +1337,7 @@ export function StockPageContent({
             />
           ) : null}
           {!isEtf ? (
-            <div className="max-md:pt-0 md:pt-2">
+            <div>
               <KeyIndicators
                 ticker={ticker}
                 initial={initialPageData?.ticker === ticker ? initialPageData.keyIndicators : null}
@@ -1339,7 +1351,7 @@ export function StockPageContent({
             </div>
           ) : null}
           {!isEtf ? (
-            <div className="pt-2">
+            <div>
               <LatestNews
                 ticker={ticker}
                 initialItems={initialPageData?.ticker === ticker ? initialPageData.news : undefined}

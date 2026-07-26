@@ -139,19 +139,19 @@ export function TopbarDelayedTooltip({
       >
         {placement === "right" ? (
           <div
-            className="h-0 w-0 border-y-[6px] border-r-[7px] border-y-transparent border-r-[#0F0F0F]"
+            className="h-0 w-0 border-y-[6px] border-r-[7px] border-y-transparent border-r-[#141414]"
             aria-hidden
           />
         ) : null}
         {placement === "bottom" ? (
           <div
-            className="h-0 w-0 border-x-[6px] border-b-[7px] border-x-transparent border-b-[#0F0F0F]"
+            className="h-0 w-0 border-x-[6px] border-b-[7px] border-x-transparent border-b-[#141414]"
             aria-hidden
           />
         ) : null}
         <div
           className={cn(
-            "rounded-md bg-[#0F0F0F] px-2.5 py-1.5 text-xs font-medium leading-4 text-white",
+            "rounded-md bg-[#141414] px-2.5 py-1.5 text-xs font-medium leading-4 text-white",
             multiline ? "max-w-[min(calc(100vw-2rem),16rem)] whitespace-pre-line text-left" : "whitespace-nowrap text-center",
             placement === "right" ? "-ml-px" : placement === "left" ? "-mr-px" : "-mt-px",
           )}
@@ -160,7 +160,7 @@ export function TopbarDelayedTooltip({
         </div>
         {placement === "left" ? (
           <div
-            className="h-0 w-0 border-y-[6px] border-l-[7px] border-y-transparent border-l-[#0F0F0F]"
+            className="h-0 w-0 border-y-[6px] border-l-[7px] border-y-transparent border-l-[#141414]"
             aria-hidden
           />
         ) : null}

@@ -21,13 +21,13 @@ function AuthHeaderBlock({
       <div className="flex w-full flex-col gap-2 text-center">
         <h1
           className={cn(
-            "text-[26px] font-semibold leading-8 tracking-tight text-[#0F0F0F]",
+            "text-[26px] font-semibold leading-8 tracking-tight text-[#141414]",
             titleClassName,
           )}
         >
           {title}
         </h1>
-        <div className="text-sm leading-5 text-[#71717A]">{subtitle}</div>
+        <div className="text-sm leading-5 text-[#5C5D5F]">{subtitle}</div>
       </div>
     </div>
   );

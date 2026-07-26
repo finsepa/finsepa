@@ -6,7 +6,7 @@ import { X } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 
 const baseInputClass =
-  "h-9 w-full rounded-[10px] border-0 bg-[#F4F4F5] text-sm text-[#0F0F0F] placeholder:text-[#71717A] outline-none focus:ring-2 focus:ring-[#0F0F0F]/10";
+  "h-9 w-full rounded-[10px] border-0 bg-[#F1F1F2] text-sm text-[#141414] placeholder:text-[#5C5D5F] outline-none focus:ring-2 focus:ring-[#141414]/10";
 
 type ClearableInputProps = {
   id?: string;
@@ -55,7 +55,7 @@ export function ClearableInput({
         aria-label={ariaLabel}
         className={cn(
           baseInputClass,
-          hasValue ? "pl-4 pr-10" : "px-4",
+          hasValue ? "pl-3 pr-10" : "px-3",
           type === "number" &&
             "[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none",
         )}
@@ -64,7 +64,7 @@ export function ClearableInput({
         <button
           type="button"
           onClick={() => onChange("")}
-          className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-[#71717A] transition-colors hover:bg-black/5 hover:text-[#0F0F0F]"
+          className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-[#5C5D5F] transition-colors hover:bg-black/5 hover:text-[#141414]"
           aria-label={clearLabel}
         >
           <X className="h-4 w-4" strokeWidth={2} />

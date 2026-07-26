@@ -141,7 +141,7 @@ export function CryptoHeader({
           }}
         />
       </div>
-    : <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-[#E4E4E7] bg-[#F4F4F5] text-[18px] font-bold text-[#0F0F0F] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
+    : <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-[#E4E4E7] bg-[#F4F4F5] text-[18px] font-bold text-[#141414] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
         {logoLetter.slice(0, 1)}
       </div>;
 
@@ -149,7 +149,7 @@ export function CryptoHeader({
     chartHovering ? "translate-y-px" : ""
   }`;
 
-  const periodLabelClass = "text-[13px] text-[#71717A]";
+  const periodLabelClass = "text-[13px] text-[#5C5D5F]";
   const desktopPeriodLabel = periodLabelOverride ?? periodLabel;
   const mobilePeriodLabel =
     chartHovering && scrubPeriodLabel?.trim() ? scrubPeriodLabel.trim() : desktopPeriodLabel;
@@ -161,7 +161,7 @@ export function CryptoHeader({
           <span
             suppressHydrationWarning
             className={`text-[15px] font-medium tabular-nums transition-colors duration-200 ease-out ${
-              hasChange ? (isPositive ? "text-[#16A34A]" : "text-[#DC2626]") : "text-[#71717A]"
+              hasChange ? (isPositive ? "text-[#16A34A]" : "text-[#DC2626]") : "text-[#5C5D5F]"
             }`}
           >
             {chartLoading || !hasChange || anim.abs == null || anim.pct == null
@@ -187,7 +187,7 @@ export function CryptoHeader({
           <span
             suppressHydrationWarning
             className={`text-[15px] font-medium tabular-nums transition-colors duration-200 ease-out ${
-              hasChange ? (isPositive ? "text-[#16A34A]" : "text-[#DC2626]") : "text-[#71717A]"
+              hasChange ? (isPositive ? "text-[#16A34A]" : "text-[#DC2626]") : "text-[#5C5D5F]"
             }`}
           >
             {chartLoading || !hasChange || anim.abs == null || anim.pct == null
@@ -210,7 +210,7 @@ export function CryptoHeader({
       : `${isPositive ? "+" : ""}${formatCryptoChangeAbs(anim.abs, anim.price)} (${isPositive ? "+" : ""}${anim.pct.toFixed(2)}%)`;
 
   const stockStyleChangeClass = `text-[15px] font-medium tabular-nums transition-colors duration-200 ease-out ${
-    hasChange ? (isPositive ? "text-[#16A34A]" : "text-[#DC2626]") : "text-[#71717A]"
+    hasChange ? (isPositive ? "text-[#16A34A]" : "text-[#DC2626]") : "text-[#5C5D5F]"
   }`;
 
   const buildStockStyleChangeChip = (periodText: string) => (
@@ -247,7 +247,7 @@ export function CryptoHeader({
   const stockStylePriceValue = (
     <span
       suppressHydrationWarning
-      className={`text-[28px] font-semibold leading-9 tabular-nums text-[#0F0F0F] transition-[transform] duration-200 ease-out ${
+      className={`text-[28px] font-semibold leading-9 tabular-nums text-[#141414] transition-[transform] duration-200 ease-out ${
         chartHovering ? "scale-[1.01]" : "scale-100"
       }`}
     >
@@ -258,7 +258,7 @@ export function CryptoHeader({
   const priceValue = (
     <span
       suppressHydrationWarning
-      className={`block text-[28px] font-semibold leading-9 tabular-nums text-[#0F0F0F] transition-[transform] duration-200 ease-out ${
+      className={`block text-[28px] font-semibold leading-9 tabular-nums text-[#141414] transition-[transform] duration-200 ease-out ${
         chartHovering ? "scale-[1.01]" : "scale-100"
       }`}
     >
@@ -279,7 +279,7 @@ export function CryptoHeader({
     <>
       <div className="flex items-start justify-between gap-3 md:hidden">
         <div className={`min-w-0 flex-1 space-y-1 ${priceMotionClass}`}>
-          <h1 className="truncate text-[17px] font-semibold leading-6 text-[#0F0F0F]">{displayName}</h1>
+          <h1 className="truncate text-[17px] font-semibold leading-6 text-[#141414]">{displayName}</h1>
           {stockStyleLayout ? (
             <>
               <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
@@ -303,13 +303,13 @@ export function CryptoHeader({
           <div className="flex min-w-0 flex-1 items-center gap-4">
             {logoMark}
             <div className="min-w-0">
-              <h1 className="text-[20px] font-semibold leading-7 text-[#0F0F0F] [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical] overflow-hidden break-words">
+              <h1 className="text-[20px] font-semibold leading-7 text-[#141414] [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical] overflow-hidden break-words">
                 {displayName}
               </h1>
               {headerLoading ? (
                 <div className="mt-1 h-4 max-w-[min(100%,28rem)] rounded bg-neutral-200/80 animate-pulse" aria-hidden />
               ) : (
-                <p className="mt-1 text-[13px] leading-5 text-[#71717A]">
+                <p className="mt-1 text-[13px] leading-5 text-[#5C5D5F]">
                   <span className="whitespace-normal break-words">{pairLabel}</span>
                 </p>
               )}

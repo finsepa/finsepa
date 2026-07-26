@@ -98,7 +98,7 @@ export function SearchPanelResults({
       ) : searchPending && !showStaleList ? (
         <SearchLoadingIndicator />
       ) : noResults ? (
-        <p className="px-2 py-8 text-center text-[12px] leading-5 text-[#71717A]">
+        <p className="px-2 py-8 text-center text-[12px] leading-5 text-[#5C5D5F]">
           No results for &ldquo;{queryTrim}&rdquo;
         </p>
       ) : (

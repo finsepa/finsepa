@@ -23,7 +23,7 @@ export function getSupabaseServiceRoleKey(): string | undefined {
   return pickProcessEnvB64("U1VQQUJBU0VfU0VSVklDRV9LRVk=");
 }
 
-/** OpenAI API key (server-only). Used for portfolio import column mapping. */
+/** OpenAI API key (server-only). Used by Finsepa Agent chat. */
 export function getOpenAiApiKey(): string | undefined {
   const v = process.env.OPENAI_API_KEY?.trim();
   return v || undefined;

@@ -104,7 +104,7 @@ function formatSignedPct(n: number): string {
 function sumColorClass(sum: number): string {
   if (sum > 0) return "text-[#16A34A]";
   if (sum < 0) return "text-[#DC2626]";
-  return "text-[#0F0F0F]";
+  return "text-[#141414]";
 }
 
 function opColorClass(operation: string): string {
@@ -112,7 +112,7 @@ function opColorClass(operation: string): string {
   if (u.includes("sell") || u.includes("cash out")) return "text-[#DC2626]";
   if (u.includes("expense") || u.includes("fees") || u.includes("brokerage fee")) return "text-[#DC2626]";
   if (u.includes("buy") || u.includes("cash in") || u.includes("other income")) return "text-[#16A34A]";
-  return "text-[#0F0F0F]";
+  return "text-[#141414]";
 }
 
 function transactionMatchesAssetSearch(t: PortfolioTransaction, query: string): boolean {
@@ -342,10 +342,10 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
   return (
     <div>
       <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-        <h2 className="hidden text-lg font-semibold leading-7 text-[#0F0F0F] sm:block">Transactions</h2>
+        <h2 className="hidden text-lg font-semibold leading-7 text-[#141414] sm:block">Transactions</h2>
         {showBulkBar ? (
           <div className="flex w-full min-w-0 flex-wrap items-center justify-end gap-3 sm:w-auto">
-            <span className="text-sm font-medium leading-5 text-[#71717A]">
+            <span className="text-sm font-medium leading-5 text-[#5C5D5F]">
               {selectedCount === 1 ? "1 selected" : `${selectedCount} selected`}
             </span>
             <button
@@ -363,7 +363,7 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
           <div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
             <div className="relative min-w-[200px] max-w-full flex-1 sm:w-[260px] sm:flex-none">
               <Search
-                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#71717A]"
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#5C5D5F]"
                 strokeWidth={1.5}
                 aria-hidden
               />
@@ -375,14 +375,14 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                 value={txSearch}
                 onChange={(e) => setTxSearch(e.target.value)}
                 placeholder="Type to search..."
-                className="h-9 w-full rounded-[10px] border-0 bg-[#F4F4F5] py-2 pl-9 pr-9 text-sm text-[#0F0F0F] placeholder:text-[#71717A] outline-none focus:ring-2 focus:ring-[#0F0F0F]/10"
+                className="h-9 w-full rounded-[10px] border-0 bg-[#F4F4F5] py-2 pl-9 pr-9 text-sm text-[#141414] placeholder:text-[#5C5D5F] outline-none focus:ring-2 focus:ring-[#141414]/10"
                 aria-label="Search transactions by asset name or ticker"
               />
               {txSearch ? (
                 <button
                   type="button"
                   onClick={() => setTxSearch("")}
-                  className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md text-[#71717A] transition-colors hover:bg-[#EBEBEB] hover:text-[#0F0F0F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/10"
+                  className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md text-[#5C5D5F] transition-colors hover:bg-[#EBEBEB] hover:text-[#141414] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/10"
                   aria-label="Clear search"
                 >
                   <X className="h-4 w-4" strokeWidth={1.5} aria-hidden />
@@ -396,7 +396,7 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                   <button
                     type="button"
                     aria-label="Transaction filters"
-                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[#F4F4F5] text-[#0F0F0F] transition-colors duration-100 hover:bg-[#E4E4E7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15 focus-visible:ring-offset-2"
+                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[#F4F4F5] text-[#141414] transition-colors duration-100 hover:bg-[#E4E4E7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15 focus-visible:ring-offset-2"
                   >
                     <Filter className="h-4 w-4 opacity-90" aria-hidden />
                   </button>
@@ -419,7 +419,7 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                         >
                           <span className="min-w-0 flex-1 truncate text-left">{f}</span>
                           <span className="flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden>
-                            {selected ? <Check className="h-4 w-4 text-[#0F0F0F]" strokeWidth={2} /> : null}
+                            {selected ? <Check className="h-4 w-4 text-[#141414]" strokeWidth={2} /> : null}
                           </span>
                         </button>
                       );
@@ -445,7 +445,7 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
           </EmptyHeader>
         </Empty>
       ) : filtered.length === 0 ? (
-        <p className="py-8 text-center text-sm text-[#71717A]">
+        <p className="py-8 text-center text-sm text-[#5C5D5F]">
           {txSearch.trim() ? "No transactions match your search." : "No transactions in this category."}
         </p>
       ) : (
@@ -455,7 +455,7 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
               <div
                 className={cn(
                   transactionTableGrid(selectedPortfolioReadOnly),
-                  "hidden min-h-[44px] bg-white py-0 text-[14px] font-medium leading-5 text-[#71717A] sm:grid",
+                  "hidden min-h-[44px] bg-white py-0 text-[14px] font-medium leading-5 text-[#5C5D5F] sm:grid",
                   txRowPadding,
                 )}
               >
@@ -476,7 +476,7 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                   <button
                     type="button"
                     onClick={() => setDateDesc((v) => !v)}
-                    className="inline-flex items-center gap-1 rounded-md transition-colors hover:text-[#0F0F0F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15"
+                    className="inline-flex items-center gap-1 rounded-md transition-colors hover:text-[#141414] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15"
                     aria-label={dateDesc ? "Sort date oldest first" : "Sort date newest first"}
                   >
                     Date
@@ -502,7 +502,7 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
               {grouped.map((g) => (
                 <Fragment key={g.key}>
                   <div className={cn("bg-[#FAFAFA] py-2", txRowPadding)}>
-                    <span className="text-[14px] font-semibold leading-5 text-[#71717A]">{g.label}</span>
+                    <span className="text-[14px] font-semibold leading-5 text-[#5C5D5F]">{g.label}</span>
                   </div>
                   {g.rows.map((t) => (
                     <div
@@ -534,17 +534,17 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                             <div
                               className={cn(
                                 "truncate text-[14px] font-semibold leading-5",
-                                "text-[#0F0F0F] sm:text-[#0F0F0F]",
+                                "text-[#141414] sm:text-[#141414]",
                                 "sm:hidden",
                                 opColorClass(t.operation),
                               )}
                             >
                               {t.operation}
                             </div>
-                            <div className="hidden truncate text-[14px] font-semibold leading-5 text-[#0F0F0F] sm:block">
+                            <div className="hidden truncate text-[14px] font-semibold leading-5 text-[#141414] sm:block">
                               {t.name}
                             </div>
-                            <div className="text-[12px] font-normal leading-4 text-[#71717A]">
+                            <div className="text-[12px] font-normal leading-4 text-[#5C5D5F]">
                               {portfolioAssetSymbolCaption(t.symbol)}
                             </div>
                           </div>
@@ -552,7 +552,7 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                       </div>
                       {/* Mobile: right cell = date + amount */}
                       <div className="text-right align-middle sm:hidden">
-                        <div className="font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#0F0F0F]">
+                        <div className="font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#141414]">
                           {format(parseISO(t.date), "MMM d, yyyy")}
                         </div>
                         <div
@@ -573,18 +573,18 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                       >
                         {t.operation}
                       </div>
-                      <div className="hidden text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#0F0F0F] align-middle sm:block">
+                      <div className="hidden text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#141414] align-middle sm:block">
                         {format(parseISO(t.date), "MMM d, yyyy")}
                       </div>
-                      <div className="hidden text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#0F0F0F] align-middle sm:block">
+                      <div className="hidden text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#141414] align-middle sm:block">
                         {new Intl.NumberFormat("en-US", { maximumFractionDigits: 6 }).format(
                           splitAdjusted.get(t.id)?.shares ?? t.shares,
                         )}
                       </div>
-                      <div className="hidden text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#0F0F0F] align-middle sm:block">
+                      <div className="hidden text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#141414] align-middle sm:block">
                         {formatPortfolioUsdPerUnit(splitAdjusted.get(t.id)?.price ?? t.price)}
                       </div>
-                      <div className="hidden text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#0F0F0F] align-middle sm:block">
+                      <div className="hidden text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#141414] align-middle sm:block">
                         {t.fee > 0 ? usd.format(t.fee) : "—"}
                       </div>
                       <div
@@ -609,7 +609,7 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                             </div>
                           </div>
                         ) : (
-                          <span className="text-[14px] font-medium text-[#71717A]">-</span>
+                          <span className="text-[14px] font-medium text-[#5C5D5F]">-</span>
                         )}
                       </div>
                       {!selectedPortfolioReadOnly ? (

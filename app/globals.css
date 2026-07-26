@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  --background: #E4E4E7;
+  --background: #F3F3F4;
   --foreground: #171717;
   /**
    * iOS Safari can report a "wrong" 100vh when the URL bar is visible.
@@ -117,8 +117,8 @@
   }
 
   .shell-desktop-panel {
-    background: #fff;
-    border: 1px solid #e4e4e7;
+    background: #ffffff;
+    border: 1px solid #ebebec;
     border-radius: var(--shell-desktop-panel-radius);
     box-shadow: 0 1px 2px 0 rgba(10, 10, 10, 0.06);
     overflow: hidden;
@@ -132,18 +132,20 @@
     border-top-left-radius: var(--shell-desktop-panel-radius);
     border-top-right-radius: var(--shell-desktop-panel-radius);
     overflow: hidden;
+    background: #ffffff;
   }
 
   .shell-desktop-panel__content {
     border-bottom-left-radius: var(--shell-desktop-panel-radius);
     border-bottom-right-radius: var(--shell-desktop-panel-radius);
     overflow: hidden;
+    background: #ffffff;
   }
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #E4E4E7;
+    --background: #F3F3F4;
     --foreground: #171717;
   }
 }
@@ -357,7 +359,7 @@ body {
     );
     width: calc((100% / var(--mobile-bottom-nav-highlight-count, 5)) - 4px);
     border-radius: 9999px;
-    background: rgba(15, 15, 15, 0.05);
+    background: rgba(20, 20, 20, 0.05);
     transition-property: left;
     transition-duration: 280ms;
     transition-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
@@ -576,7 +578,7 @@ body {
   .mobile-topbar-shell {
     position: static;
     padding-top: 0;
-    background: #fff;
+    background: #fcfcfd;
   }
 }
 

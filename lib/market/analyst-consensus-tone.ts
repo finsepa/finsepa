@@ -10,7 +10,7 @@ export function toneForConsensusLabel(label: string): { text: string; dot: strin
   if (l === "neutral") return { text: "#CA8A04", dot: "#CA8A04" };
   if (l === "sell") return { text: "#FB923C", dot: "#FB923C" };
   if (l === "strong sell") return { text: "#DC2626", dot: "#DC2626" };
-  return { text: "#71717A", dot: "#A1A1AA" };
+  return { text: "#5C5D5F", dot: "#A1A1AA" };
 }
 
 /** Tailwind text color class for Key Stats Analyst Consensus row. */
@@ -21,5 +21,5 @@ export function consensusLabelTextClass(label: string): string {
   if (l === "neutral") return "text-[#CA8A04]";
   if (l === "sell") return "text-[#FB923C]";
   if (l === "strong sell") return "text-[#DC2626]";
-  return "text-[#71717A]";
+  return "text-[#5C5D5F]";
 }

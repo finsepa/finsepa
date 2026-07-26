@@ -200,7 +200,7 @@ function applyStockChartApiPoints(
 }
 
 const RANGE_PRICE_BADGE_CLASS =
-  "inline-block rounded-[6px] bg-[#E4E4E7] px-1.5 py-0.5 text-[11px] font-medium leading-4 tabular-nums text-[#0F0F0F]";
+  "inline-block rounded-[6px] bg-[#E4E4E7] px-1.5 py-0.5 text-[11px] font-medium leading-4 tabular-nums text-[#141414]";
 
 function findRangeHighPoint(pts: readonly StockChartPoint[]): StockChartPoint | null {
   if (!pts.length) return null;
@@ -445,7 +445,7 @@ const Y_AXIS_LABEL_ONLY = {
   lineStyle: LineStyle.Solid,
   axisLabelVisible: true,
   axisLabelColor: "#ffffff",
-  axisLabelTextColor: "#71717A",
+  axisLabelTextColor: "#5C5D5F",
   lineVisible: false,
   title: "",
 } as const;
@@ -812,7 +812,7 @@ const HoldingsQuarterBandsOverlay = memo(function HoldingsQuarterBandsOverlay({
           >
             <span className="text-[9px] font-semibold text-[#52525B] sm:text-[10px]">&lt; Earlier</span>
             {earlierLines.map((line) => (
-              <span key={line} className="text-[9px] font-medium text-[#71717A] sm:text-[10px]">
+              <span key={line} className="text-[9px] font-medium text-[#5C5D5F] sm:text-[10px]">
                 {line}
               </span>
             ))}
@@ -1769,7 +1769,7 @@ export function PriceChart({
       autoSize: false,
       layout: {
         background: { type: ColorType.Solid, color: "#00000000" },
-        textColor: "#71717A",
+        textColor: "#5C5D5F",
         fontSize: 11,
         fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
         attributionLogo: false,
@@ -1798,7 +1798,7 @@ export function PriceChart({
             ? CrosshairMode.Normal
             : CrosshairMode.Magnet,
         vertLine: {
-          color: "rgba(15, 15, 15, 0.28)",
+          color: "rgba(20, 20, 20, 0.28)",
           labelVisible: false,
           width: 1,
           style: LineStyle.Dashed,
@@ -1952,11 +1952,11 @@ export function PriceChart({
           if (body) {
             body.replaceChildren();
             const titleEl = document.createElement("div");
-            titleEl.className = "font-semibold tabular-nums text-[#0F0F0F]";
+            titleEl.className = "font-semibold tabular-nums text-[#141414]";
             titleEl.textContent = title;
             body.appendChild(titleEl);
             const list = document.createElement("div");
-            list.className = "mt-1 space-y-1 text-[#71717A]";
+            list.className = "mt-1 space-y-1 text-[#5C5D5F]";
             for (let i = 0; i < shown; i++) {
               const line = document.createElement("div");
               line.className = "whitespace-normal break-words";
@@ -1965,7 +1965,7 @@ export function PriceChart({
             }
             if (lines.length > 6) {
               const more = document.createElement("div");
-              more.className = "text-[#71717A]";
+              more.className = "text-[#5C5D5F]";
               more.textContent = `+${lines.length - 6} more`;
               list.appendChild(more);
             }
@@ -3271,7 +3271,7 @@ export function PriceChart({
       }
     >
       <div className={cn("relative min-h-0", useCustomBottomAxis ? "min-w-0 flex-1" : "absolute inset-0")} style={useCustomBottomAxis ? { height: plotHeight } : undefined}>
-      <div className="pointer-events-none absolute inset-0 z-0 max-md:bg-[#FAFAFA] bg-white" aria-hidden>
+      <div className="pointer-events-none absolute inset-0 z-0 bg-[#FCFCFD]" aria-hidden>
         {!useMobileOverviewCrosshair ? (
           <div
             className={
@@ -3303,7 +3303,7 @@ export function PriceChart({
       />
       <div
         ref={dimOverlayRef}
-        className="pointer-events-none absolute inset-y-0 right-0 z-[15] max-md:bg-[#FAFAFA]/55 bg-white/55"
+        className="pointer-events-none absolute inset-y-0 right-0 z-[15] bg-[#FCFCFD]/55"
         style={{ display: "none", left: 0 }}
         aria-hidden
       />
@@ -3315,11 +3315,11 @@ export function PriceChart({
             style={{ display: "none" }}
             role="tooltip"
           >
-            <p ref={holdingsPriceTooltipTextRef} className="text-xs font-semibold tabular-nums text-[#0F0F0F]" />
+            <p ref={holdingsPriceTooltipTextRef} className="text-xs font-semibold tabular-nums text-[#141414]" />
           </div>
           <div
             ref={holdingsTradeTooltipRef}
-            className="pointer-events-none absolute z-30 min-w-[220px] max-w-[280px] rounded-[10px] border border-[#E4E4E7] bg-white px-3 py-2 text-[12px] leading-4 text-[#0F0F0F] shadow-[0px_8px_20px_0px_rgba(10,10,10,0.10)] will-change-[left,top]"
+            className="pointer-events-none absolute z-30 min-w-[220px] max-w-[280px] rounded-[10px] border border-[#E4E4E7] bg-white px-3 py-2 text-[12px] leading-4 text-[#141414] shadow-[0px_8px_20px_0px_rgba(10,10,10,0.10)] will-change-[left,top]"
             style={{ display: "none" }}
             role="status"
           >
@@ -3358,7 +3358,7 @@ export function PriceChart({
           }}
           role="tooltip"
         >
-          <p className="text-xs font-semibold tabular-nums text-[#0F0F0F]">
+          <p className="text-xs font-semibold tabular-nums text-[#141414]">
             {overviewMetricTitle}: {overviewHoverTooltip.valueLabel}
           </p>
           {overviewHoverTooltip.changeLabel != null ? (
@@ -3369,7 +3369,7 @@ export function PriceChart({
                   ? "text-[#16A34A]"
                   : overviewHoverTooltip.changePct != null && overviewHoverTooltip.changePct < 0
                     ? "text-[#DC2626]"
-                    : "text-[#71717A]",
+                    : "text-[#5C5D5F]",
               )}
             >
               {overviewHoverTooltip.changeLabel}
@@ -3383,7 +3383,7 @@ export function PriceChart({
         </div>
       ) : null}
       {empty ? (
-        <div className="absolute inset-0 z-20 flex items-center justify-center px-6 text-center text-[14px] text-[#71717A]">
+        <div className="absolute inset-0 z-20 flex items-center justify-center px-6 text-center text-[14px] text-[#5C5D5F]">
           {kind === "stock" && series === "marketCap"
             ? "No market cap data for this range (shares outstanding unavailable)."
             : kind === "stock" && series === "return"
@@ -3410,7 +3410,7 @@ export function PriceChart({
                   <span
                     key={lab.key}
                     className={cn(
-                      "absolute bottom-1 inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]",
+                      "absolute bottom-1 inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#5C5D5F] sm:text-[12px]",
                       periodAxisLabelMaxWidthClass(anchor),
                       periodAxisLabelTransformClass(anchor),
                     )}
@@ -3427,14 +3427,14 @@ export function PriceChart({
               </div>
               <span
                 ref={holdingsHoverAxisLabelRef}
-                className="absolute bottom-1 max-w-[min(100%,calc(100%-16px))] whitespace-nowrap font-['Inter'] text-[11px] font-medium tabular-nums leading-none text-[#0F0F0F] sm:text-[12px]"
+                className="absolute bottom-1 max-w-[min(100%,calc(100%-16px))] whitespace-nowrap font-['Inter'] text-[11px] font-medium tabular-nums leading-none text-[#141414] sm:text-[12px]"
                 style={{ display: "none" }}
               />
             </>
           ) : activeBottomAxisLabel ? (
             <span
               className={cn(
-                "absolute bottom-1 inline-block whitespace-nowrap font-['Inter'] text-[11px] font-medium tabular-nums leading-none text-[#0F0F0F] sm:text-[12px]",
+                "absolute bottom-1 inline-block whitespace-nowrap font-['Inter'] text-[11px] font-medium tabular-nums leading-none text-[#141414] sm:text-[12px]",
                 periodAxisLabelMaxWidthClass(activeBottomAxisAnchor),
                 periodAxisLabelTransformClass(activeBottomAxisAnchor),
               )}
@@ -3459,7 +3459,7 @@ export function PriceChart({
                   "absolute top-1/2 inline-block -translate-y-1/2 whitespace-nowrap font-['Inter'] tabular-nums leading-none",
                   cryptoLive1DAxis
                     ? "text-[12px] font-medium text-[#8A8A8A]"
-                    : "text-[11px] font-normal text-[#71717A] sm:text-[12px]",
+                    : "text-[11px] font-normal text-[#5C5D5F] sm:text-[12px]",
                   periodAxisLabelMaxWidthClass(anchor),
                   periodAxisLabelTransformClass(anchor),
                 )}

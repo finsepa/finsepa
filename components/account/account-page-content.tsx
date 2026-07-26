@@ -40,10 +40,10 @@ export type AccountPageInitial = {
 };
 
 const fieldClass =
-  "h-10 w-full rounded-[10px] border border-[#E4E4E7] bg-[#F9FAFB] px-3 text-sm text-[#0F0F0F] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)] outline-none transition-all duration-100 placeholder:text-[#A1A1AA] focus:border-[#D4D4D8] focus:bg-white focus:shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06),0_0_0_4px_rgba(15,15,15,0.06)]";
+  "h-10 w-full rounded-[10px] border border-[#E4E4E7] bg-[#F9FAFB] px-3 text-sm text-[#141414] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)] outline-none transition-all duration-100 placeholder:text-[#A1A1AA] focus:border-[#D4D4D8] focus:bg-white focus:shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06),0_0_0_4px_rgba(20,20,20,0.06)]";
 
 const readOnlyFieldClass =
-  "h-10 w-full cursor-default rounded-[10px] border border-[#E4E4E7] bg-[#F4F4F5] px-3 text-sm text-[#71717A] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)] outline-none";
+  "h-10 w-full cursor-default rounded-[10px] border border-[#E4E4E7] bg-[#F4F4F5] px-3 text-sm text-[#5C5D5F] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)] outline-none";
 
 type AccountTabId = "profile" | "billing";
 
@@ -52,7 +52,7 @@ const PAYMENT_HISTORY_PAGE_SIZE = 10;
 
 function FieldLabel({ children, htmlFor }: { children: React.ReactNode; htmlFor?: string }) {
   return (
-    <label htmlFor={htmlFor} className="mb-1.5 block text-sm font-medium text-[#0F0F0F]">
+    <label htmlFor={htmlFor} className="mb-1.5 block text-sm font-medium text-[#141414]">
       {children}
     </label>
   );
@@ -385,8 +385,8 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
               onClick={() => setActiveTab("profile")}
               className={`inline-block border-b-2 pb-3 text-sm font-semibold transition-colors ${
                 activeTab === "profile"
-                  ? "border-[#0F0F0F] text-[#0F0F0F]"
-                  : "border-transparent text-[#71717A] hover:text-[#0F0F0F]"
+                  ? "border-[#141414] text-[#141414]"
+                  : "border-transparent text-[#5C5D5F] hover:text-[#141414]"
               }`}
             >
               Profile
@@ -396,8 +396,8 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
               onClick={() => setActiveTab("billing")}
               className={`inline-block border-b-2 pb-3 text-sm font-semibold transition-colors ${
                 activeTab === "billing"
-                  ? "border-[#0F0F0F] text-[#0F0F0F]"
-                  : "border-transparent text-[#71717A] hover:text-[#0F0F0F]"
+                  ? "border-[#141414] text-[#141414]"
+                  : "border-transparent text-[#5C5D5F] hover:text-[#141414]"
               }`}
             >
               Billing
@@ -427,14 +427,14 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
                   <button
                     type="button"
                     onClick={() => fileRef.current?.click()}
-                    className="h-10 rounded-[10px] bg-[#0F0F0F] px-4 text-sm font-semibold text-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.12)] transition-colors hover:bg-[#18181B]"
+                    className="h-10 rounded-[10px] bg-[#141414] px-4 text-sm font-semibold text-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.12)] transition-colors hover:bg-[#18181B]"
                   >
                     Upload Image
                   </button>
                   <button
                     type="button"
                     onClick={onRemoveAvatar}
-                    className="h-10 rounded-[10px] border border-[#E4E4E7] bg-white px-4 text-sm font-semibold text-[#0F0F0F] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors hover:bg-[#F4F4F5]"
+                    className="h-10 rounded-[10px] border border-[#E4E4E7] bg-white px-4 text-sm font-semibold text-[#141414] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors hover:bg-[#F4F4F5]"
                   >
                     Remove
                   </button>
@@ -483,7 +483,7 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
                     <button
                       type="button"
                       onClick={() => setChangePasswordModalOpen(true)}
-                      className="inline-flex h-10 shrink-0 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white px-4 text-sm font-semibold text-[#0F0F0F] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors hover:bg-[#F4F4F5] sm:w-auto"
+                      className="inline-flex h-10 shrink-0 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white px-4 text-sm font-semibold text-[#141414] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors hover:bg-[#F4F4F5] sm:w-auto"
                     >
                       Change Password
                     </button>
@@ -497,7 +497,7 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
                 type="button"
                 disabled={signingOut}
                 onClick={() => void handleSignOut()}
-                className="h-10 w-full rounded-[10px] border border-[#E4E4E7] bg-white px-4 text-sm font-semibold text-[#0F0F0F] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors hover:bg-[#F4F4F5] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                className="h-10 w-full rounded-[10px] border border-[#E4E4E7] bg-white px-4 text-sm font-semibold text-[#141414] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors hover:bg-[#F4F4F5] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
               >
                 {signingOut ? "Logging out…" : "Log Out"}
               </button>
@@ -547,16 +547,16 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
             {billingAccessState === "expired" ? (
               <section className="rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
                 <div className="rounded-xl bg-[#F4F4F5] px-6 py-10 text-center">
-                  <p className="text-[12px] font-medium leading-5 text-[#71717A]">Join early access</p>
+                  <p className="text-[12px] font-medium leading-5 text-[#5C5D5F]">Join early access</p>
                   <div className="mx-auto mt-6 w-full max-w-[360px] rounded-2xl border border-[#E4E4E7] bg-white p-6 shadow-[0px_10px_16px_-3px_rgba(10,10,10,0.08),0px_4px_6px_0px_rgba(10,10,10,0.03)]">
-                    <div className="text-[18px] font-semibold leading-6 text-[#0F0F0F]">Finsepa Pro</div>
-                    <div className="mt-1 text-[13px] leading-5 text-[#71717A]">
+                    <div className="text-[18px] font-semibold leading-6 text-[#141414]">Finsepa Pro</div>
+                    <div className="mt-1 text-[13px] leading-5 text-[#5C5D5F]">
                       Your Pro access has ended. Upgrade to continue using Finsepa.
                     </div>
                     <button
                       type="button"
                       onClick={() => setUpgradeModalOpen(true)}
-                      className="mt-6 h-10 w-full rounded-[10px] bg-[#0F0F0F] px-6 text-sm font-semibold text-white transition-colors hover:bg-[#18181B]"
+                      className="mt-6 h-10 w-full rounded-[10px] bg-[#141414] px-6 text-sm font-semibold text-white transition-colors hover:bg-[#18181B]"
                     >
                       Buy Pro
                     </button>
@@ -586,8 +586,8 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
               ) : (
                 <>
                   <article className="rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
-                    <p className="text-[13px] font-medium text-[#71717A]">{subscriptionStatusBelowTitle}</p>
-                    <p className="mt-2 text-[22px] font-semibold leading-7 text-[#0F0F0F]">{subscriptionTitle}</p>
+                    <p className="text-[13px] font-medium text-[#5C5D5F]">{subscriptionStatusBelowTitle}</p>
+                    <p className="mt-2 text-[22px] font-semibold leading-7 text-[#141414]">{subscriptionTitle}</p>
                     <button
                       type="button"
                       onClick={() => {
@@ -605,8 +605,8 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
                   </article>
 
                   <article className="rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
-                    <p className="text-[13px] font-medium text-[#71717A]">{recurringMeta}</p>
-                    <p className="mt-2 text-[22px] font-semibold leading-7 text-[#0F0F0F]">{recurringAmount}</p>
+                    <p className="text-[13px] font-medium text-[#5C5D5F]">{recurringMeta}</p>
+                    <p className="mt-2 text-[22px] font-semibold leading-7 text-[#141414]">{recurringAmount}</p>
                   </article>
                 </>
               )}
@@ -615,13 +615,13 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
 
             {billingAccessState === "expired" ? null : (
             <section className="rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
-              <h3 className="text-[16px] font-semibold leading-6 text-[#0F0F0F]">Payment history</h3>
+              <h3 className="text-[16px] font-semibold leading-6 text-[#141414]">Payment history</h3>
               {showBillingSkeleton || billingLoading ? (
                 <div className="mt-4">
                   <div className="-mx-5 overflow-x-auto px-5 [-webkit-overflow-scrolling:touch]">
                     <div className="min-w-[560px] divide-y divide-[#E4E4E7] bg-white lg:min-w-0">
                       <div
-                        className={`grid ${billingHistoryColLayout} min-h-[44px] items-center bg-white px-2 py-0 text-[14px] font-medium leading-5 text-[#71717A] sm:px-4`}
+                        className={`grid ${billingHistoryColLayout} min-h-[44px] items-center bg-white px-2 py-0 text-[14px] font-medium leading-5 text-[#5C5D5F] sm:px-4`}
                       >
                         <div className="text-left">Date</div>
                         <div className="min-w-0 w-full text-right">Amount</div>
@@ -664,7 +664,7 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
                   <div className="-mx-5 overflow-x-auto px-5 [-webkit-overflow-scrolling:touch]">
                     <div className="min-w-[560px] divide-y divide-[#E4E4E7] bg-white lg:min-w-0">
                       <div
-                        className={`grid ${billingHistoryColLayout} min-h-[44px] items-center bg-white px-2 py-0 text-[14px] font-medium leading-5 text-[#71717A] sm:px-4`}
+                        className={`grid ${billingHistoryColLayout} min-h-[44px] items-center bg-white px-2 py-0 text-[14px] font-medium leading-5 text-[#5C5D5F] sm:px-4`}
                       >
                         <div className="text-left">Date</div>
                         <div className="min-w-0 w-full text-right">Amount</div>
@@ -676,17 +676,17 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
                           key={row.id}
                           className={`group grid ${billingHistoryColLayout} min-h-[56px] items-center bg-white px-2 transition-colors duration-75 hover:bg-neutral-50 sm:min-h-[60px] sm:px-4`}
                         >
-                          <div className="whitespace-nowrap text-[14px] font-normal leading-5 text-[#0F0F0F]">
+                          <div className="whitespace-nowrap text-[14px] font-normal leading-5 text-[#141414]">
                             {new Date(row.date).toLocaleDateString("en-US", {
                               month: "short",
                               day: "numeric",
                               year: "numeric",
                             })}
                           </div>
-                          <div className="min-w-0 w-full whitespace-nowrap text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#0F0F0F]">
+                          <div className="min-w-0 w-full whitespace-nowrap text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414]">
                             ${row.amountUsd.toFixed(2)}
                           </div>
-                          <div className="min-w-0 truncate pl-6 text-right text-[14px] font-normal leading-5 text-[#0F0F0F]">
+                          <div className="min-w-0 truncate pl-6 text-right text-[14px] font-normal leading-5 text-[#141414]">
                             Finsepa Pro
                           </div>
                         </div>

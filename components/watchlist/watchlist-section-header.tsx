@@ -129,8 +129,8 @@ export function WatchlistSectionHeader({
   };
 
   const actionButtonClassName = cn(
-    "flex h-7 w-7 items-center justify-center rounded-[8px] text-[#71717A] opacity-0 transition-opacity",
-    "hover:bg-[#F4F4F5] hover:text-[#0F0F0F] group-hover:opacity-100 focus-visible:opacity-100",
+    "flex h-7 w-7 items-center justify-center rounded-[8px] text-[#5C5D5F] opacity-0 transition-opacity",
+    "hover:bg-[#F4F4F5] hover:text-[#141414] group-hover:opacity-100 focus-visible:opacity-100",
   );
 
   const headerContent = (
@@ -138,7 +138,7 @@ export function WatchlistSectionHeader({
       <button
         type="button"
         onClick={onToggleCollapsed}
-        className="flex min-w-0 flex-1 items-center gap-2 text-left text-[13px] font-medium text-[#71717A] transition-colors hover:text-[#0F0F0F]"
+        className="flex min-w-0 flex-1 items-center gap-2 text-left text-[13px] font-medium text-[#5C5D5F] transition-colors hover:text-[#141414]"
       >
         {collapsed ? <ChevronRight className="h-4 w-4 shrink-0" /> : <ChevronDown className="h-4 w-4 shrink-0" />}
         <span className="truncate">{label}</span>
@@ -153,7 +153,7 @@ export function WatchlistSectionHeader({
           onClick={() => setMenuOpen((open) => !open)}
           className={cn(
             actionButtonClassName,
-            menuOpen && "opacity-100 bg-[#F4F4F5] text-[#0F0F0F]",
+            menuOpen && "opacity-100 bg-[#F4F4F5] text-[#141414]",
           )}
         >
           <Pencil className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
@@ -279,7 +279,7 @@ export function WatchlistSectionHeader({
           }
         >
           <label className="flex w-full flex-col gap-2">
-            <span className="text-sm font-medium leading-5 text-[#0F0F0F]">Section name</span>
+            <span className="text-sm font-medium leading-5 text-[#141414]">Section name</span>
             <ClearableInput
               type="text"
               value={renameValue}
@@ -315,9 +315,9 @@ export function WatchlistSectionHeader({
             </AppModalFooter>
           }
         >
-          <p className="text-sm leading-5 text-[#0F0F0F]">Are you sure you want to delete this section?</p>
-          <p className="mt-3 text-sm leading-5 text-[#71717A]">
-            Assets in <span className="font-semibold text-[#0F0F0F]">{label}</span> will move to the section above, or
+          <p className="text-sm leading-5 text-[#141414]">Are you sure you want to delete this section?</p>
+          <p className="mt-3 text-sm leading-5 text-[#5C5D5F]">
+            Assets in <span className="font-semibold text-[#141414]">{label}</span> will move to the section above, or
             back to your main watchlist if this is the first section.
           </p>
         </AppModalShell>

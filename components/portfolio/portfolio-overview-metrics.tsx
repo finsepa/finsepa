@@ -101,7 +101,9 @@ function splitMetricsIntoColumns(metrics: PortfolioMetricRow[]): PortfolioMetric
 /** Mobile matches asset Key Stats card — 16px radius, stacked shadow, inset padding. */
 const PORTFOLIO_METRICS_MOBILE_CARD_CLASS = "max-md:overflow-hidden max-md:p-4";
 
-const DESKTOP_STAT_ROW_BORDER_CLASS = "border-b border-solid border-[#E4E4E7]";
+/** 4px dash / 4px gap divider — same as asset Key Stats Basic card. */
+const STAT_ROW_DASHED_DIVIDER_CLASS =
+  "relative after:absolute after:inset-x-0 after:bottom-0 after:h-px after:[background-image:repeating-linear-gradient(90deg,#E4E4E7_0,#E4E4E7_4px,transparent_4px,transparent_8px)]";
 
 function formatDelta(deltaPct: number): string {
   const sign = deltaPct > 0 ? "+" : "";
@@ -109,9 +111,9 @@ function formatDelta(deltaPct: number): string {
 }
 
 function valueToneClass(deltaPct: number | null, muted: boolean): string {
-  if (muted) return "text-[#71717A]";
-  if (deltaPct == null) return "text-[#0F0F0F]";
-  if (deltaPct === 0) return "text-[#0F0F0F]";
+  if (muted) return "text-[#5C5D5F]";
+  if (deltaPct == null) return "text-[#141414]";
+  if (deltaPct === 0) return "text-[#141414]";
   return deltaPct > 0 ? "text-[#16A34A]" : "text-[#DC2626]";
 }
 
@@ -334,9 +336,9 @@ function MetricValueDisplay({
             "transition-opacity duration-100 group-hover/value:opacity-100 group-focus-within/value:opacity-100",
           )}
         >
-          <p className="text-[12px] font-semibold leading-4 text-[#0F0F0F]">{row.tooltipTitle}</p>
-          <p className="mt-2 text-[12px] leading-4 text-[#71717A]">S&amp;P 500 - {row.benchmark}</p>
-          <p className="text-[12px] leading-4 text-[#71717A]">Portfolio - {row.portfolio}</p>
+          <p className="text-[12px] font-semibold leading-4 text-[#141414]">{row.tooltipTitle}</p>
+          <p className="mt-2 text-[12px] leading-4 text-[#5C5D5F]">S&amp;P 500 - {row.benchmark}</p>
+          <p className="text-[12px] leading-4 text-[#5C5D5F]">Portfolio - {row.portfolio}</p>
           <p className={cn("mt-2 text-[12px] font-semibold leading-4 tabular-nums", deltaTone)}>{deltaLabel}</p>
         </div>
       </div>
@@ -367,10 +369,10 @@ function MobileStatCell({
     <div
       className={cn(
         "flex min-w-0 flex-col gap-1",
-        showBorderBottom && "border-b border-dashed border-[#E4E4E7] pb-3",
+        showBorderBottom && cn(STAT_ROW_DASHED_DIVIDER_CLASS, "pb-3"),
       )}
     >
-      <span className="text-[14px] leading-4 text-[#71717A]">{row.label}</span>
+      <span className="text-[14px] leading-4 text-[#5C5D5F]">{row.label}</span>
       {loading ? (
         <div className="h-4 w-12 animate-pulse rounded bg-neutral-200" aria-hidden />
       ) : (
@@ -385,15 +387,23 @@ function StatRow({
   muted,
   className,
   loading,
+  showDivider,
 }: {
   row: PortfolioMetricRow;
   muted: boolean;
   className?: string;
   loading?: boolean;
+  showDivider?: boolean;
 }) {
   return (
-    <div className={cn("flex items-center justify-between gap-3 md:px-0 md:py-1.5", className)}>
-      <span className="min-w-0 shrink text-[14px] font-medium leading-5 text-[#0F0F0F]">{row.label}</span>
+    <div
+      className={cn(
+        "flex items-center justify-between gap-3 md:px-0 md:py-1.5",
+        showDivider && STAT_ROW_DASHED_DIVIDER_CLASS,
+        className,
+      )}
+    >
+      <span className="min-w-0 shrink text-[14px] font-medium leading-5 text-[#141414]">{row.label}</span>
       {loading ? (
         <div className="h-4 w-14 shrink-0 animate-pulse rounded bg-neutral-200" aria-hidden />
       ) : (
@@ -501,7 +511,7 @@ export function PortfolioOverviewMetrics({
       )}
     >
       <div className="md:hidden">
-        <h3 className="mb-4 text-[14px] font-medium leading-5 text-[#71717A]">Key Stats</h3>
+        <h3 className="mb-4 text-[14px] font-medium leading-5 text-[#5C5D5F]">Key Stats</h3>
         <div className="flex flex-col">
           {chunkMetricRows(metrics).map((pair, rowIndex, rows) => {
             const showBorderBottom = rowIndex < rows.length - 1;
@@ -535,7 +545,7 @@ export function PortfolioOverviewMetrics({
                 row={row}
                 muted={row.muted}
                 loading={showMetricsSkeleton}
-                className={rowIndex < column.length - 1 ? DESKTOP_STAT_ROW_BORDER_CLASS : undefined}
+                showDivider={rowIndex < column.length - 1}
               />
             ))}
           </div>

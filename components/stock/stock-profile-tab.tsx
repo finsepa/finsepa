@@ -14,7 +14,7 @@ function dash(v: string | null | undefined): string {
 
 /** Same screener destinations + hover underline as stock breadcrumbs. */
 const PROFILE_SCREENER_LINK_CLASS =
-  "text-[14px] font-normal leading-5 text-[#0F0F0F] transition-colors hover:underline";
+  "text-[14px] font-normal leading-5 text-[#141414] transition-colors hover:underline";
 
 function ProfileSectorValue({ sector }: { sector: string | null | undefined }) {
   const label = sector?.trim() || null;
@@ -54,8 +54,8 @@ function ProfileIndustryValue({
 function ProfileCell({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex flex-col gap-1">
-      <p className="w-full text-[12px] font-semibold leading-5 text-[#71717A]">{label}</p>
-      <div className="min-h-[1.25rem] text-[14px] font-normal leading-5 text-[#0F0F0F]">{children}</div>
+      <p className="w-full text-[12px] font-semibold leading-5 text-[#5C5D5F]">{label}</p>
+      <div className="min-h-[1.25rem] text-[14px] font-normal leading-5 text-[#141414]">{children}</div>
     </div>
   );
 }
@@ -79,7 +79,7 @@ function LinkValue({ url }: { url: string | null }) {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="break-all text-[14px] font-normal text-[#0F0F0F] underline decoration-solid [text-decoration-skip-ink:none] transition-colors hover:text-[#0F0F0F]"
+      className="break-all text-[14px] font-normal text-[#141414] underline decoration-solid [text-decoration-skip-ink:none] transition-colors hover:text-[#141414]"
     >
       {display}
     </a>
@@ -99,7 +99,7 @@ function ProfileDescription({ text }: { text: string | null }) {
   }, [text]);
 
   if (!text?.trim()) {
-    return <p className="text-[14px] leading-5 text-[#71717A]">—</p>;
+    return <p className="text-[14px] leading-5 text-[#5C5D5F]">—</p>;
   }
 
   return (
@@ -110,12 +110,12 @@ function ProfileDescription({ text }: { text: string | null }) {
         }`}
         id={contentId}
       >
-        <p className="w-full whitespace-pre-wrap text-[14px] font-normal leading-5 text-[#0F0F0F]">{text}</p>
+        <p className="w-full whitespace-pre-wrap text-[14px] font-normal leading-5 text-[#141414]">{text}</p>
       </div>
       {needsMore ? (
         <button
           type="button"
-          className="w-full text-left text-[14px] font-normal text-[#0F0F0F] underline decoration-solid [text-decoration-skip-ink:none] transition-opacity hover:opacity-80"
+          className="w-full text-left text-[14px] font-normal text-[#141414] underline decoration-solid [text-decoration-skip-ink:none] transition-opacity hover:opacity-80"
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
           aria-controls={contentId}
@@ -167,7 +167,7 @@ export function StockProfileTab({ ticker, initialProfile }: { ticker: string; in
   const p = profile;
 
   return (
-    <div className="flex w-full min-w-0 flex-col gap-6 pt-1">
+    <div className="flex w-full min-w-0 flex-col gap-5">
       {loading ? (
         <>
           <div className="flex justify-start" aria-hidden>

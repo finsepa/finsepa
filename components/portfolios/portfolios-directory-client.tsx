@@ -82,8 +82,8 @@ function fmtPct(n: number | null, signed: boolean): string {
 }
 
 function athReturnClass(n: number | null): string {
-  if (n == null || !Number.isFinite(n)) return "text-[#0F0F0F]";
-  if (Math.abs(n) < 0.0005) return "text-[#0F0F0F]";
+  if (n == null || !Number.isFinite(n)) return "text-[#141414]";
+  if (Math.abs(n) < 0.0005) return "text-[#141414]";
   return n >= 0 ? "text-[#16A34A]" : "text-[#DC2626]";
 }
 
@@ -97,8 +97,8 @@ function initialsFromOwnerName(name: string): string {
 function StatCell({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex min-w-0 flex-col gap-[4px]">
-      <p className="text-xs font-medium leading-5 tracking-normal text-[#71717A]">{label}</p>
-      <div className="text-sm font-medium leading-5 tracking-normal text-[#0F0F0F]">{children}</div>
+      <p className="text-xs font-medium leading-5 tracking-normal text-[#5C5D5F]">{label}</p>
+      <div className="text-sm font-medium leading-5 tracking-normal text-[#141414]">{children}</div>
     </div>
   );
 }
@@ -121,7 +121,7 @@ function PublicPortfolioBlock({ listing }: { listing: PublicListingRow }) {
   return (
     <Link
       href={`/portfolios/${listing.id}`}
-      className="group mb-6 block rounded-[12px] border border-[#E4E4E7] bg-white p-[20px] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.08)] transition-colors hover:border-[#D4D4D8] hover:bg-[#FAFAFA] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15 focus-visible:ring-offset-2"
+      className="group mb-6 block rounded-[12px] border border-[#E4E4E7] bg-white p-[20px] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.08)] transition-colors hover:border-[#D4D4D8] hover:bg-[#FAFAFA] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15 focus-visible:ring-offset-2"
       aria-label={`View public portfolio ${listing.name} by ${ownerName}`}
     >
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -137,14 +137,14 @@ function PublicPortfolioBlock({ listing }: { listing: PublicListingRow }) {
           />
           <div className="flex min-w-0 flex-col gap-[4px]">
             <h2
-              className="truncate text-xl font-semibold leading-7 tracking-normal text-[#0F0F0F]"
+              className="truncate text-xl font-semibold leading-7 tracking-normal text-[#141414]"
               title={listing.name}
             >
               {listing.name}
             </h2>
             <PortfolioOwnerName
               name={ownerName}
-              className="text-sm font-normal leading-6 tracking-normal text-[#71717A]"
+              className="text-sm font-normal leading-6 tracking-normal text-[#5C5D5F]"
             />
           </div>
         </div>
@@ -158,7 +158,7 @@ function PublicPortfolioBlock({ listing }: { listing: PublicListingRow }) {
           >
             {fmtPct(ath, true)}
           </p>
-          <p className="text-sm font-normal leading-6 tracking-normal text-[#71717A]">Returns (ATH)</p>
+          <p className="text-sm font-normal leading-6 tracking-normal text-[#5C5D5F]">Returns (ATH)</p>
         </div>
       </div>
 
@@ -176,7 +176,7 @@ function PublicPortfolioBlock({ listing }: { listing: PublicListingRow }) {
             <span className="tabular-nums">{updatedLabel}</span>
           </StatCell>
           <div className="flex min-w-0 flex-col gap-[4px] md:col-span-1">
-            <p className="text-xs font-medium leading-5 tracking-normal text-[#71717A]">Top 5 Holdings</p>
+            <p className="text-xs font-medium leading-5 tracking-normal text-[#5C5D5F]">Top 5 Holdings</p>
             <div className="flex items-center">
               {topSyms.length === 0 ? (
                 <span className="text-sm font-medium leading-5 tracking-normal text-[#A1A1AA]">—</span>
@@ -207,7 +207,7 @@ function PublicPortfolioBlock({ listing }: { listing: PublicListingRow }) {
         <div className="flex shrink-0 justify-end md:justify-center">
           <div
             className={cn(
-              "flex h-8 w-8 items-center justify-center rounded-[10px] text-[#0F0F0F] transition-colors group-hover:bg-[#F4F4F5]",
+              "flex h-8 w-8 items-center justify-center rounded-[10px] text-[#141414] transition-colors group-hover:bg-[#F4F4F5]",
               whiteSurfaceButtonChromeClass,
             )}
             aria-hidden
@@ -236,7 +236,7 @@ function PortfoliosViewToggle({
           "flex h-8 w-9 items-center justify-center rounded-[10px] transition-colors",
           view === "cards"
             ? "bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.12),0px_1px_1px_0px_rgba(10,10,10,0.07)]"
-            : "text-[#52525B] hover:text-[#0F0F0F]",
+            : "text-[#52525B] hover:text-[#141414]",
         )}
         aria-pressed={view === "cards"}
         aria-label="Card view"
@@ -250,7 +250,7 @@ function PortfoliosViewToggle({
           "flex h-8 w-9 items-center justify-center rounded-[10px] transition-colors",
           view === "list"
             ? "bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.12),0px_1px_1px_0px_rgba(10,10,10,0.07)]"
-            : "text-[#52525B] hover:text-[#0F0F0F]",
+            : "text-[#52525B] hover:text-[#141414]",
         )}
         aria-pressed={view === "list"}
         aria-label="List view"
@@ -311,7 +311,7 @@ export function PortfoliosDirectoryClient() {
     return (
       <div className="flex min-w-0 flex-col">
         <div className="mb-6 flex min-w-0 items-center justify-between gap-4 sm:mb-8">
-          <h1 className="text-2xl font-semibold tracking-tight text-[#0F0F0F]">Portfolios</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-[#141414]">Portfolios</h1>
           <PortfoliosViewToggle view={view} onChange={setView} />
         </div>
         <PortfoliosDirectorySkeleton cards={5} variant={view === "list" ? "table" : "cards"} />
@@ -323,10 +323,10 @@ export function PortfoliosDirectoryClient() {
     return (
       <div className="flex min-w-0 flex-col">
         <div className="mb-6 flex min-w-0 items-center justify-between gap-4 sm:mb-8">
-          <h1 className="text-2xl font-semibold tracking-tight text-[#0F0F0F]">Portfolios</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-[#141414]">Portfolios</h1>
           <PortfoliosViewToggle view={view} onChange={setView} />
         </div>
-        <div className="rounded-xl border border-[#E4E4E7] bg-white px-6 py-12 text-center text-sm text-[#71717A]">
+        <div className="rounded-xl border border-[#E4E4E7] bg-white px-6 py-12 text-center text-sm text-[#5C5D5F]">
           {error}
         </div>
       </div>
@@ -337,7 +337,7 @@ export function PortfoliosDirectoryClient() {
     return (
       <div className="flex min-w-0 flex-col">
         <div className="mb-6 flex min-w-0 items-center justify-between gap-4 sm:mb-8">
-          <h1 className="text-2xl font-semibold tracking-tight text-[#0F0F0F]">Portfolios</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-[#141414]">Portfolios</h1>
           <PortfoliosViewToggle view={view} onChange={setView} />
         </div>
         <Empty variant="card" className="min-h-[min(50vh,420px)] w-full">
@@ -369,7 +369,7 @@ export function PortfoliosDirectoryClient() {
   return (
     <div className="flex min-w-0 flex-col">
       <div className="mb-6 flex min-w-0 items-center justify-between gap-4 sm:mb-8">
-        <h1 className="text-2xl font-semibold tracking-tight text-[#0F0F0F]">Portfolios</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-[#141414]">Portfolios</h1>
         <PortfoliosViewToggle view={view} onChange={setView} />
       </div>
 

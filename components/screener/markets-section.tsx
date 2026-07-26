@@ -161,13 +161,13 @@ function StocksTabBody({
         ) : null}
 
         {!companiesLoading && companiesError ? (
-          <div className="rounded-[12px] border border-[#E4E4E7] bg-white px-4 py-4 text-sm text-[#71717A]">
+          <div className="rounded-2xl border border-[#E4E4E7] bg-white px-4 py-4 text-sm text-[#5C5D5F]">
             {companiesError}
           </div>
         ) : null}
 
         {!companiesLoading && !companiesError && companiesRows.length === 0 ? (
-          <div className="rounded-[12px] border border-[#E4E4E7] bg-white px-4 py-6 text-center text-[14px] leading-6 text-[#71717A]">
+          <div className="rounded-2xl border border-[#E4E4E7] bg-white px-4 py-6 text-center text-[14px] leading-6 text-[#5C5D5F]">
             {companiesIndustryFilter
               ? `No companies from "${companiesIndustryFilter.industry}" (${companiesIndustryFilter.sector}) appear in the current screener universe.`
               : companiesSectorFilter
@@ -185,7 +185,7 @@ function StocksTabBody({
         ) : null}
 
         {companiesLoading && companiesRows.length > 0 ? (
-          <p className="mt-3 text-sm font-medium text-[#71717A]">Loading companies…</p>
+          <p className="mt-3 text-sm font-medium text-[#5C5D5F]">Loading companies…</p>
         ) : null}
 
         <ScreenerPagination
@@ -221,14 +221,14 @@ function StocksTabBody({
       <>
         {companiesSectorFilter ? (
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-solid border-[#E4E4E7] bg-[#FAFAFA] px-4 py-2.5 max-md:border-b-[0.5px] md:mb-3 md:rounded-[10px] md:border md:px-3 md:py-2.5 sm:px-4">
-            <p className="text-[13px] leading-5 text-[#0F0F0F] sm:text-[14px]">
+            <p className="text-[13px] leading-5 text-[#141414] sm:text-[14px]">
               Showing companies in{" "}
-              <span className="font-semibold tabular-nums text-[#0F0F0F]">{companiesSectorFilter}</span>
+              <span className="font-semibold tabular-nums text-[#141414]">{companiesSectorFilter}</span>
             </p>
             <button
               type="button"
               onClick={onClearCompaniesSector}
-              className="shrink-0 rounded-lg border border-[#E4E4E7] bg-white px-3 py-1.5 text-[13px] font-medium leading-5 text-[#0F0F0F] transition-colors hover:bg-[#F4F4F5]"
+              className="shrink-0 rounded-lg border border-[#E4E4E7] bg-white px-3 py-1.5 text-[13px] font-medium leading-5 text-[#141414] transition-colors hover:bg-[#F4F4F5]"
             >
               Show all companies
             </button>
@@ -240,13 +240,13 @@ function StocksTabBody({
         ) : null}
 
         {!companiesLoading && companiesError ? (
-          <div className="px-4 py-4 text-sm text-[#71717A] md:rounded-[12px] md:border md:border-[#E4E4E7] md:bg-white">
+          <div className="px-4 py-4 text-sm text-[#5C5D5F] md:rounded-2xl md:border md:border-[#E4E4E7] md:bg-white">
             {companiesError}
           </div>
         ) : null}
 
         {!companiesLoading && !companiesError && companiesRows.length === 0 ? (
-          <div className="px-4 py-6 text-center text-[14px] leading-6 text-[#71717A] md:rounded-[12px] md:border md:border-[#E4E4E7] md:bg-white">
+          <div className="px-4 py-6 text-center text-[14px] leading-6 text-[#5C5D5F] md:rounded-2xl md:border md:border-[#E4E4E7] md:bg-white">
             No companies to show.
           </div>
         ) : null}
@@ -261,7 +261,7 @@ function StocksTabBody({
         ) : null}
 
         {companiesLoading && companiesRows.length > 0 ? (
-          <p className="px-4 py-3 text-sm font-medium text-[#71717A] md:px-0">Loading companies…</p>
+          <p className="px-4 py-3 text-sm font-medium text-[#5C5D5F] md:px-0">Loading companies…</p>
         ) : null}
       </>
     );
@@ -280,13 +280,13 @@ function StocksTabBody({
     panel = (
       <div className={useMobileStocksSubTabCard ? "max-md:space-y-4 md:space-y-6" : "space-y-6"}>
         <div>
-          <div className="mb-3 hidden text-[14px] font-semibold leading-5 text-[#71717A] md:block">
+          <div className="mb-3 hidden text-[14px] font-semibold leading-5 text-[#5C5D5F] md:block">
             Top gainers (1D %)
           </div>
           <ScreenerTable rows={gainersLosers.gainers} {...mobileTableChrome} />
         </div>
         <div>
-          <div className="mb-3 hidden text-[14px] font-semibold leading-5 text-[#71717A] md:block">
+          <div className="mb-3 hidden text-[14px] font-semibold leading-5 text-[#5C5D5F] md:block">
             Top losers (1D %)
           </div>
           <ScreenerTable rows={gainersLosers.losers} {...mobileTableChrome} />
@@ -377,7 +377,7 @@ function CryptoTabBody({
       />
 
       {cryptoRemoteLoading && cryptoRowsResolved.length > 0 ? (
-        <p className="mt-3 text-sm font-medium text-[#71717A]">Loading…</p>
+        <p className="mt-3 text-sm font-medium text-[#5C5D5F]">Loading…</p>
       ) : null}
 
       <ScreenerPagination
@@ -1058,7 +1058,7 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
                 >
                   <ChevronLeft className="h-5 w-5 shrink-0" aria-hidden />
                 </button>
-                <h2 className="truncate text-[18px] font-semibold leading-6 text-[#0F0F0F]">
+                <h2 className="truncate text-[18px] font-semibold leading-6 text-[#141414]">
                   {isIndustriesDrill && stocksIndustryFilter
                     ? stocksIndustryFilter.industry
                     : stocksSectorFilter}

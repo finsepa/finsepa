@@ -15,7 +15,7 @@ import type {
 } from "@/lib/market/stock-key-indicators-types";
 import { cn } from "@/lib/utils";
 
-const KEY_INDICATORS_CARD_CLASS = cn("mb-5 p-4 max-md:mb-0", MOBILE_INSET_CARD_CLASS);
+const KEY_INDICATORS_CARD_CLASS = cn("mb-3 p-4 max-md:mb-0", MOBILE_INSET_CARD_CLASS);
 
 function formatAnalyzedAt(iso: string | null): string | null {
   if (!iso) return null;
@@ -72,10 +72,10 @@ function IndicatorLine({ indicator }: { indicator: StockKeyIndicator }) {
       <span className="mt-0.5">
         <IndicatorIcon indicator={indicator} />
       </span>
-      <p className="min-w-0 pt-0.5 text-[14px] leading-5 text-[#0F0F0F]">
+      <p className="min-w-0 pt-0.5 text-[14px] leading-5 text-[#141414]">
         {indicator.parts.map((part, i) =>
           part.kind === "emphasis" ? (
-            <span key={i} className="font-semibold text-[#0F0F0F]">
+            <span key={i} className="font-semibold text-[#141414]">
               {part.value}
             </span>
           ) : (
@@ -172,7 +172,7 @@ function KeyIndicatorsInner({
 
   return (
     <section className={KEY_INDICATORS_CARD_CLASS} aria-label="Key indicators">
-      <h3 className={cn("mb-3", STOCK_OVERVIEW_SECTION_TITLE_CLASS)}>Key Indicators</h3>
+      <h3 className={cn("mb-3", STOCK_OVERVIEW_SECTION_TITLE_CLASS)}>Key indicators</h3>
 
       {singleColumn ? (
         <SingleToneIndicatorGrid items={pros.length > 0 ? pros : cons} />
@@ -184,7 +184,7 @@ function KeyIndicatorsInner({
       )}
 
       {analyzedLabel ? (
-        <p className="mt-4 text-[12px] leading-4 text-[#71717A]">Metrics analyzed at {analyzedLabel}</p>
+        <p className="mt-4 text-[12px] leading-4 text-[#5C5D5F]">Metrics analyzed at {analyzedLabel}</p>
       ) : null}
     </section>
   );

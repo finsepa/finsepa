@@ -25,6 +25,11 @@ export function isSnaptradeBrokerRow(t: Pick<PortfolioTransaction, "source">): b
   return s === "SNAPTRADE" || s === "SNAPTRADE_ADJUSTMENT";
 }
 
+/** True for any non-manual imported row. Immutable in UI. */
+export function isImportedTransaction(t: Pick<PortfolioTransaction, "source">): boolean {
+  return transactionSource(t) !== "MANUAL";
+}
+
 /** True for user-owned manual rows (the default). */
 export function isManualTransaction(t: Pick<PortfolioTransaction, "source">): boolean {
   return transactionSource(t) === "MANUAL";

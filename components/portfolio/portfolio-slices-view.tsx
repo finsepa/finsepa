@@ -463,7 +463,7 @@ function PortfolioSlicesViewInner({
 
   if (!hasAnyPositions) {
     return (
-      <div className="rounded-[12px] border border-[#E4E4E7] bg-white px-6 py-12 text-center text-sm text-[#71717A] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
+      <div className="rounded-[12px] border border-[#E4E4E7] bg-white px-6 py-12 text-center text-sm text-[#5C5D5F] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
         Add positions to see them grouped by sector.
       </div>
     );
@@ -503,14 +503,14 @@ function PortfolioSlicesViewInner({
               className="mx-auto shrink-0"
               center={
                 <div className="flex flex-col items-center gap-0.5 px-4 text-center">
-                  <div className="text-[18px] font-semibold leading-tight tabular-nums text-[#0F0F0F]">
+                  <div className="text-[18px] font-semibold leading-tight tabular-nums text-[#141414]">
                     {usd2.format(normalizeUsdForDisplay(chartCenterValue))}
                   </div>
                   <div
                     className={cn(
                       "text-[13px] font-semibold tabular-nums",
                       chartCenterGainUsd === null
-                        ? "text-[#71717A]"
+                        ? "text-[#5C5D5F]"
                         : chartCenterGainUsd >= 0
                           ? "text-[#16A34A]"
                           : "text-[#DC2626]",
@@ -528,7 +528,7 @@ function PortfolioSlicesViewInner({
                       {formatSignedPct2(chartCenterGainPct)}
                     </div>
                   ) : (
-                    <div className="text-[12px] tabular-nums text-[#71717A]">{EM_DASH}</div>
+                    <div className="text-[12px] tabular-nums text-[#5C5D5F]">{EM_DASH}</div>
                   )}
                 </div>
               }
@@ -547,23 +547,23 @@ function PortfolioSlicesViewInner({
                         type="button"
                         onClick={() => setDrilledSliceKey(null)}
                         aria-label="Back to all slices"
-                        className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[10px] text-[#0F0F0F] transition-colors hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/15"
+                        className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[10px] text-[#141414] transition-colors hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15"
                       >
                         <ChevronLeft className="h-4 w-4 shrink-0" aria-hidden />
                       </button>
                       {drilledBucket ?
-                        <div className="min-w-0 truncate text-left font-['Inter'] text-[16px] font-semibold leading-6 tracking-normal text-[#0F0F0F]">
+                        <div className="min-w-0 truncate text-left font-['Inter'] text-[16px] font-semibold leading-6 tracking-normal text-[#141414]">
                           {drilledBucket.label}
                         </div>
                       : null}
                     </div>
                     <div
-                      className={`${SLICES_TABLE_GRID} min-h-[40px] bg-white px-2 py-0 text-[14px] font-medium leading-5 text-[#71717A] sm:px-4`}
+                      className={`${SLICES_TABLE_GRID} min-h-[40px] bg-white px-2 py-0 text-[14px] font-medium leading-5 text-[#5C5D5F] sm:px-4`}
                     >
                       <div className="text-left">
                         <button
                           type="button"
-                          className="inline-flex items-center gap-1 rounded hover:text-[#0F0F0F]"
+                          className="inline-flex items-center gap-1 rounded hover:text-[#141414]"
                           onClick={() => onHoldingSort("name")}
                         >
                           Name
@@ -577,7 +577,7 @@ function PortfolioSlicesViewInner({
                       <div className="min-w-0 w-full text-right">
                         <button
                           type="button"
-                          className="inline-flex w-full items-center justify-end gap-1 rounded hover:text-[#0F0F0F]"
+                          className="inline-flex w-full items-center justify-end gap-1 rounded hover:text-[#141414]"
                           onClick={() => onHoldingSort("value")}
                         >
                           Value / invested
@@ -591,7 +591,7 @@ function PortfolioSlicesViewInner({
                       <div className="min-w-0 w-full text-right">
                         <button
                           type="button"
-                          className="inline-flex w-full items-center justify-end gap-1 rounded hover:text-[#0F0F0F]"
+                          className="inline-flex w-full items-center justify-end gap-1 rounded hover:text-[#141414]"
                           onClick={() => onHoldingSort("gain")}
                         >
                           Gain
@@ -605,7 +605,7 @@ function PortfolioSlicesViewInner({
                       <div className="min-w-0 w-full text-right">
                         <button
                           type="button"
-                          className="inline-flex w-full items-center justify-end gap-1 rounded hover:text-[#0F0F0F]"
+                          className="inline-flex w-full items-center justify-end gap-1 rounded hover:text-[#141414]"
                           onClick={() => onHoldingSort("allocation")}
                         >
                           Allocation
@@ -618,7 +618,7 @@ function PortfolioSlicesViewInner({
                       </div>
                     </div>
                     {sortedHoldingRows.length === 0 ?
-                      <div className="bg-white px-4 py-8 text-center text-[14px] leading-6 text-[#71717A]">
+                      <div className="bg-white px-4 py-8 text-center text-[14px] leading-6 text-[#5C5D5F]">
                         No positions in this slice.
                       </div>
                     : sortedHoldingRows.map((hRow) => (
@@ -642,24 +642,24 @@ function PortfolioSlicesViewInner({
                                 />
                               </div>
                               <div className="min-w-0">
-                                <div className="truncate text-[14px] font-semibold leading-5 text-[#0F0F0F]">
+                                <div className="truncate text-[14px] font-semibold leading-5 text-[#141414]">
                                   {hRow.name}
                                 </div>
-                                <div className="text-[12px] font-normal leading-4 text-[#71717A]">{hRow.symbol}</div>
+                                <div className="text-[12px] font-normal leading-4 text-[#5C5D5F]">{hRow.symbol}</div>
                               </div>
                             </div>
                           </div>
                           <div className="min-w-0 w-full text-right">
-                            <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#0F0F0F]">
+                            <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#141414]">
                               {usd2.format(hRow.valueUsd)}
                             </div>
-                            <div className="text-[12px] font-normal leading-4 text-[#71717A]">
+                            <div className="text-[12px] font-normal leading-4 text-[#5C5D5F]">
                               {usd2.format(hRow.investedUsd)} invested
                             </div>
                           </div>
                           <div className="min-w-0 w-full text-right">
                             {hRow.gainUsd === null ?
-                              <div className="w-full text-[14px] font-medium leading-5 text-[#71717A]">{EM_DASH}</div>
+                              <div className="w-full text-[14px] font-medium leading-5 text-[#5C5D5F]">{EM_DASH}</div>
                             : <>
                                 <div
                                   className={cn(
@@ -682,7 +682,7 @@ function PortfolioSlicesViewInner({
                               </>
                             }
                           </div>
-                          <div className="min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tracking-normal tabular-nums text-[#0F0F0F]">
+                          <div className="min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tracking-normal tabular-nums text-[#141414]">
                             {pct1.format(hRow.allocationPct)}%
                           </div>
                         </div>
@@ -691,12 +691,12 @@ function PortfolioSlicesViewInner({
                   </>
                 : <>
                     <div
-                      className={`${SLICES_TABLE_GRID} min-h-[40px] bg-white px-2 py-0 text-[14px] font-medium leading-5 text-[#71717A] sm:px-4`}
+                      className={`${SLICES_TABLE_GRID} min-h-[40px] bg-white px-2 py-0 text-[14px] font-medium leading-5 text-[#5C5D5F] sm:px-4`}
                     >
                       <div className="text-left">
                         <button
                           type="button"
-                          className="inline-flex items-center gap-1 rounded hover:text-[#0F0F0F]"
+                          className="inline-flex items-center gap-1 rounded hover:text-[#141414]"
                           onClick={() => onSort("name")}
                         >
                           Name
@@ -710,7 +710,7 @@ function PortfolioSlicesViewInner({
                       <div className="min-w-0 w-full text-right">
                         <button
                           type="button"
-                          className="inline-flex w-full items-center justify-end gap-1 rounded hover:text-[#0F0F0F]"
+                          className="inline-flex w-full items-center justify-end gap-1 rounded hover:text-[#141414]"
                           onClick={() => onSort("value")}
                         >
                           Value / invested
@@ -724,7 +724,7 @@ function PortfolioSlicesViewInner({
                       <div className="min-w-0 w-full text-right">
                         <button
                           type="button"
-                          className="inline-flex w-full items-center justify-end gap-1 rounded hover:text-[#0F0F0F]"
+                          className="inline-flex w-full items-center justify-end gap-1 rounded hover:text-[#141414]"
                           onClick={() => onSort("gain")}
                         >
                           Gain
@@ -738,7 +738,7 @@ function PortfolioSlicesViewInner({
                       <div className="min-w-0 w-full text-right">
                         <button
                           type="button"
-                          className="inline-flex w-full items-center justify-end gap-1 rounded hover:text-[#0F0F0F]"
+                          className="inline-flex w-full items-center justify-end gap-1 rounded hover:text-[#141414]"
                           onClick={() => onSort("allocation")}
                         >
                           Allocation
@@ -776,26 +776,26 @@ function PortfolioSlicesViewInner({
                                 <Icon className="h-4 w-4 text-white" strokeWidth={2} aria-hidden />
                               </span>
                               <div className="min-w-0">
-                                <div className="truncate text-[14px] font-semibold leading-5 text-[#0F0F0F]">
+                                <div className="truncate text-[14px] font-semibold leading-5 text-[#141414]">
                                   {row.label}
                                 </div>
-                                <div className="text-[12px] font-normal leading-4 text-[#71717A]">
+                                <div className="text-[12px] font-normal leading-4 text-[#5C5D5F]">
                                   {row.assetCount} {row.assetCount === 1 ? "asset" : "assets"}
                                 </div>
                               </div>
                             </div>
                           </div>
                           <div className="min-w-0 w-full text-right">
-                            <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#0F0F0F]">
+                            <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#141414]">
                               {usd2.format(row.valueUsd)}
                             </div>
-                            <div className="text-[12px] font-normal leading-4 text-[#71717A]">
+                            <div className="text-[12px] font-normal leading-4 text-[#5C5D5F]">
                               {usd2.format(row.investedUsd)} invested
                             </div>
                           </div>
                           <div className="min-w-0 w-full text-right">
                             {row.gainUsd === null ?
-                              <div className="w-full text-[14px] font-medium leading-5 text-[#71717A]">{EM_DASH}</div>
+                              <div className="w-full text-[14px] font-medium leading-5 text-[#5C5D5F]">{EM_DASH}</div>
                             : <>
                                 <div
                                   className={cn(
@@ -818,7 +818,7 @@ function PortfolioSlicesViewInner({
                               </>
                             }
                           </div>
-                          <div className="min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tracking-normal tabular-nums text-[#0F0F0F]">
+                          <div className="min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tracking-normal tabular-nums text-[#141414]">
                             {pct1.format(row.allocationPct)}%
                           </div>
                         </button>

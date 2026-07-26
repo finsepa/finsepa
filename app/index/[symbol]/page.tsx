@@ -13,7 +13,7 @@ export default async function IndexSymbolPage({ params }: PageProps) {
 
   if (isSingleAssetMode()) {
     return (
-      <div className="px-4 py-4 text-[#71717A] sm:px-9 sm:py-6">Temporarily unavailable in NVDA-only mode.</div>
+      <div className="px-4 py-4 text-[#5C5D5F] sm:px-9 sm:py-6">Temporarily unavailable in NVDA-only mode.</div>
     );
   }
 
@@ -26,26 +26,26 @@ export default async function IndexSymbolPage({ params }: PageProps) {
 
   return (
     <div className="min-w-0 px-4 py-5 sm:px-9 sm:py-8">
-      <div className="mb-6 flex items-center gap-1 text-[14px] text-[#71717A]">
-        <Link href={SCREENER_INDICES_HREF} className="transition-colors hover:text-[#0F0F0F]">
+      <div className="mb-6 flex items-center gap-1 text-[14px] text-[#5C5D5F]">
+        <Link href={SCREENER_INDICES_HREF} className="transition-colors hover:text-[#141414]">
           Markets
         </Link>
         <span>/</span>
-        <span className="font-medium text-[#0F0F0F]">Indices</span>
+        <span className="font-medium text-[#141414]">Indices</span>
       </div>
 
       <div className="space-y-2">
-        <h1 className="text-[22px] font-semibold leading-8 text-[#0F0F0F]">{title}</h1>
-        <p className="text-[14px] font-medium text-[#71717A]">{symbol}</p>
-        <p className="pt-2 text-[28px] font-semibold tabular-nums text-[#0F0F0F]">{displayValue}</p>
-        <p className="text-[12px] text-[#71717A]">Last update from markets data</p>
+        <h1 className="text-[22px] font-semibold leading-8 text-[#141414]">{title}</h1>
+        <p className="text-[14px] font-medium text-[#5C5D5F]">{symbol}</p>
+        <p className="pt-2 text-[28px] font-semibold tabular-nums text-[#141414]">{displayValue}</p>
+        <p className="text-[12px] text-[#5C5D5F]">Last update from markets data</p>
       </div>
 
-      <p className="mt-8 max-w-md text-[14px] leading-6 text-[#71717A]">
+      <p className="mt-8 max-w-md text-[14px] leading-6 text-[#5C5D5F]">
         Index detail view uses the same benchmark list as the markets screener. For full context, open the{" "}
         <Link
           href={SCREENER_INDICES_HREF}
-          className="font-medium text-[#0F0F0F] underline decoration-[#E4E4E7] underline-offset-4"
+          className="font-medium text-[#141414] underline decoration-[#E4E4E7] underline-offset-4"
         >
           screener
         </Link>

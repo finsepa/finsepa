@@ -38,7 +38,8 @@ export function AssetPageHeaderActions({
         }
         className={cn(
           topbarSquircleIconClass,
-          "md:inline-flex md:w-auto md:gap-1.5 md:border-0 md:bg-[#2563EB] md:px-3.5 md:text-[13px] md:font-semibold md:text-white md:shadow-[0px_1px_2px_0px_rgba(37,99,235,0.25)] md:hover:bg-[#1D4ED8] md:focus-visible:outline-none md:focus-visible:ring-2 md:focus-visible:ring-[#2563EB]/30 md:focus-visible:ring-offset-2",
+          // Desktop: primary CTA — no border; padding/shadow match Upgrade.
+          "md:inline-flex md:w-auto md:gap-1.5 md:border-0 md:bg-[#2563EB] md:px-3 md:text-[13px] md:font-semibold md:text-white md:shadow-[0px_1px_2px_0px_rgba(37,99,235,0.2)] md:hover:bg-[#1D4ED8] md:focus-visible:outline-none md:focus-visible:ring-2 md:focus-visible:ring-[#2563EB]/30 md:focus-visible:ring-offset-2",
         )}
         aria-label="Add Trade"
       >

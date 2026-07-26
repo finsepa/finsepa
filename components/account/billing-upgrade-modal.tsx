@@ -94,7 +94,7 @@ export function BillingUpgradeModal({
 
         <div className="flex items-end gap-2">
           <span className="text-[36px] font-bold leading-[40px] tracking-normal text-[#0A0A0A]">{priceText}</span>
-          <span className="pb-1 text-[14px] font-normal leading-5 tracking-normal text-[#71717A]">{suffixText}</span>
+          <span className="pb-1 text-[14px] font-normal leading-5 tracking-normal text-[#5C5D5F]">{suffixText}</span>
         </div>
 
         <ul className="space-y-4">
@@ -108,7 +108,7 @@ export function BillingUpgradeModal({
                 className="h-5 w-5 shrink-0"
                 aria-hidden
               />
-              <span className="text-[14px] leading-5 text-[#0F0F0F]">{item}</span>
+              <span className="text-[14px] leading-5 text-[#141414]">{item}</span>
             </li>
           ))}
         </ul>

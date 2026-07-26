@@ -14,7 +14,7 @@ export default function ForgotPasswordPage() {
       title="Reset your password"
       subtitle={
         <>
-          <span className="text-[#71717A]">Remember your password? </span>
+          <span className="text-[#5C5D5F]">Remember your password? </span>
           <Link href={PATH_LOGIN} className={authAccentLinkClassName}>
             Log in
           </Link>

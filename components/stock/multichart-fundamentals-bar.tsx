@@ -33,6 +33,7 @@ import {
 import { isTouchDeviceNow, triggerMobileChartHaptic } from "@/lib/haptic";
 import {
   buildFundamentalsYAxisDomain,
+  CHART_PLOT_BACKGROUND_CLASS,
   CHARTING_LINE_HOVER_HALO_BG,
   CHARTING_LINE_POINT_MARKER_DIAMETER_PX,
   computeFundamentalsChartTooltipPlacement,
@@ -329,6 +330,11 @@ type Props = {
   enableLineValueLabels?: boolean;
   /** Centered Finsepa mark behind the series (Key Stats modal + screenshot export). */
   showBrandWatermark?: boolean;
+  /**
+   * Plot canvas + Y-axis label chip fill. Defaults to shell panel `#FCFCFD`.
+   * Multicharts cards pass `bg-white` so the chart matches the card surface.
+   */
+  plotBackgroundClass?: string;
 };
 
 function plotValueTopPercent(
@@ -392,7 +398,7 @@ const BAR_VALUE_LABEL_ANCHOR_CLASS =
   "pointer-events-none absolute z-[15] max-w-[5.5rem] -translate-x-1/2 text-center";
 
 const BAR_VALUE_LABEL_TEXT_CLASS =
-  "block truncate text-[11px] font-semibold leading-none tabular-nums text-[#0F0F0F]";
+  "block truncate text-[11px] font-semibold leading-none tabular-nums text-[#141414]";
 
 const BAR_VALUE_LABEL_TEXT_SHADOW =
   "0 0 3px rgba(255,255,255,0.95), 0 1px 2px rgba(255,255,255,0.8)";
@@ -467,6 +473,7 @@ export function MultichartFundamentalsBar({
   showLinePointMarkers = true,
   enableLineValueLabels = true,
   showBrandWatermark = false,
+  plotBackgroundClass = CHART_PLOT_BACKGROUND_CLASS,
 }: Props) {
   const brandWatermark = showBrandWatermark || screenshotExportMode;
   const lineAxisMode = visual === "line" && lineTimeRange != null;
@@ -684,7 +691,7 @@ export function MultichartFundamentalsBar({
     return (
       <div className="w-full">
         <div
-          className="flex h-[196px] items-center justify-center rounded-xl border border-dashed border-[#E4E4E7] bg-[#FAFAFA] text-[13px] text-[#71717A]"
+          className="flex h-[196px] items-center justify-center rounded-xl border border-dashed border-[#E4E4E7] bg-[#FAFAFA] text-[13px] text-[#5C5D5F]"
           aria-hidden
         >
           No data
@@ -735,7 +742,10 @@ export function MultichartFundamentalsBar({
           >
             {/* Dot grid + single $0 baseline (no other horizontal rules). */}
             <div
-              className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%] z-0 bg-white"
+              className={cn(
+                "pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%] z-0",
+                plotBackgroundClass,
+              )}
               aria-hidden
             >
               <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
@@ -1147,7 +1157,7 @@ export function MultichartFundamentalsBar({
                     <span className="absolute top-1/2 right-px -translate-y-1/2 border-y-[6px] border-y-transparent border-r-[7px] border-r-white" />
                   </span>
                 )}
-                <p className="text-[12px] font-semibold leading-4 text-[#0F0F0F]">{tip.periodLabel}</p>
+                <p className="text-[12px] font-semibold leading-4 text-[#141414]">{tip.periodLabel}</p>
                 <div className="mt-1.5 space-y-1">
                   <div className="flex items-baseline justify-between gap-3">
                     <span className="flex min-w-0 items-baseline gap-2">
@@ -1156,11 +1166,11 @@ export function MultichartFundamentalsBar({
                         style={{ backgroundColor: seriesBarColor }}
                         aria-hidden
                       />
-                      <span className="truncate text-[12px] font-normal leading-4 text-[#71717A]">
+                      <span className="truncate text-[12px] font-normal leading-4 text-[#5C5D5F]">
                         {tip.metricLabel}
                       </span>
                     </span>
-                    <span className="shrink-0 text-[12px] font-semibold leading-4 tabular-nums text-[#0F0F0F]">
+                    <span className="shrink-0 text-[12px] font-semibold leading-4 tabular-nums text-[#141414]">
                       {tip.value}
                     </span>
                   </div>
@@ -1170,7 +1180,7 @@ export function MultichartFundamentalsBar({
           </div>
 
           <div
-            className={`relative h-full shrink-0 ${yAxisPlClass} text-left font-['Inter'] text-[12px] tabular-nums leading-none text-[#71717A]`}
+            className={`relative h-full shrink-0 ${yAxisPlClass} text-left font-['Inter'] text-[12px] tabular-nums leading-none text-[#5C5D5F]`}
             style={{ width: yAxisWidthPx }}
             aria-hidden
           >
@@ -1178,7 +1188,11 @@ export function MultichartFundamentalsBar({
               {yTicks.map((t, i) => (
                 <span
                   key={i}
-                  className={`absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-white py-px ${yAxisLabelPadClass}`}
+                  className={cn(
+                    "absolute left-0 z-[1] block -translate-y-1/2 rounded-sm py-px",
+                    plotBackgroundClass,
+                    yAxisLabelPadClass,
+                  )}
                   style={{ top: `${valueToPlotBandTopPercent(t, yMin, yMax)}%` }}
                 >
                   {formatAxisValue(kind, t)}
@@ -1219,7 +1233,7 @@ export function MultichartFundamentalsBar({
                   title={labels[i]}
                 >
                   <span
-                    className="inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#71717A] sm:text-[12px]"
+                    className="inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#5C5D5F] sm:text-[12px]"
                     style={{
                       transform: axisLabelRotateDeg === 0 ? undefined : `rotate(${axisLabelRotateDeg}deg)`,
                       transformOrigin: effectiveHorizontalPeriodAxisLabels ? undefined : "center bottom",

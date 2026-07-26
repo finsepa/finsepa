@@ -18,11 +18,17 @@ import { TopbarDelayedTooltip } from "@/components/layout/topbar-delayed-tooltip
 import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import {
+  createCombinedPortfolioMenuIconAnimation,
+  createPortfolioMenuIconAnimation,
+} from "@/lib/lottie/portfolio-menu-animations";
+import {
   addCashMenuIconAnimation,
   importTransactionsMenuIconAnimation,
   newTradeMenuIconAnimation,
 } from "@/lib/lottie/quick-add-menu-animations";
 import { cn } from "@/lib/utils";
+
+type QuickAddItemId = "trade" | "cash" | "import" | "createPortfolio" | "createCombined";
 
 /**
  * (+) quick menu — used on the global top bar and the Portfolio page header.
@@ -43,43 +49,68 @@ export function PortfolioQuickAddMenu({
   dwellTooltipLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
-  const [tradeIconPlaying, setTradeIconPlaying] = useState(false);
-  const [cashIconPlaying, setCashIconPlaying] = useState(false);
-  const [importIconPlaying, setImportIconPlaying] = useState(false);
+  const [playingId, setPlayingId] = useState<QuickAddItemId | null>(null);
   const {
+    portfolios,
     openNewTransaction,
     openAddCash,
     openImportTransactions,
+    openCreatePortfolio,
+    openCreateCombinedPortfolio,
     selectedPortfolioReadOnly,
     selectedPortfolioId,
   } = usePortfolioWorkspace();
   const rootRef = useRef<HTMLDivElement>(null);
   const menuPortalRef = useRef<HTMLDivElement>(null);
 
-  const items = [
+  const canCreateCombinedPortfolio = portfolios.filter((p) => p.kind !== "combined").length >= 2;
+
+  const activityItems: Array<{
+    id: QuickAddItemId;
+    label: string;
+    disabled: boolean;
+    title?: string;
+  }> = [
     {
-      id: "trade" as const,
+      id: "trade",
       label: "New Trade / Holding",
       disabled: selectedPortfolioReadOnly,
     },
     {
-      id: "cash" as const,
+      id: "cash",
       label: "Add Cash",
       disabled: selectedPortfolioReadOnly,
     },
     {
-      id: "import" as const,
+      id: "import",
       label: "Import Transactions",
       disabled: selectedPortfolioReadOnly || selectedPortfolioId == null,
     },
   ];
 
+  const createItems: Array<{
+    id: QuickAddItemId;
+    label: string;
+    disabled: boolean;
+    title?: string;
+  }> = [
+    {
+      id: "createPortfolio",
+      label: "Create New Portfolio",
+      disabled: false,
+    },
+    {
+      id: "createCombined",
+      label: "Create Combined Portfolio",
+      disabled: !canCreateCombinedPortfolio,
+      title: canCreateCombinedPortfolio
+        ? undefined
+        : "Create at least two portfolios to combine them",
+    },
+  ];
+
   useEffect(() => {
-    if (!open) {
-      setTradeIconPlaying(false);
-      setCashIconPlaying(false);
-      setImportIconPlaying(false);
-    }
+    if (!open) setPlayingId(null);
   }, [open]);
 
   useEffect(() => {
@@ -101,6 +132,70 @@ export function PortfolioQuickAddMenu({
   }, [open]);
 
   const tooltipEnabled = Boolean(dwellTooltipLabel);
+
+  function runItem(id: QuickAddItemId) {
+    if (id === "trade") openNewTransaction();
+    else if (id === "cash") openAddCash();
+    else if (id === "import") openImportTransactions();
+    else if (id === "createPortfolio") openCreatePortfolio();
+    else openCreateCombinedPortfolio();
+  }
+
+  function itemIcon(id: QuickAddItemId) {
+    const playing = playingId === id;
+    if (id === "trade") {
+      return <DropdownMenuLottieIcon animationData={newTradeMenuIconAnimation} playing={playing} />;
+    }
+    if (id === "cash") {
+      return <DropdownMenuLottieIcon animationData={addCashMenuIconAnimation} playing={playing} />;
+    }
+    if (id === "import") {
+      return (
+        <DropdownMenuLottieIcon animationData={importTransactionsMenuIconAnimation} playing={playing} />
+      );
+    }
+    if (id === "createPortfolio") {
+      return (
+        <DropdownMenuLottieIcon animationData={createPortfolioMenuIconAnimation} playing={playing} />
+      );
+    }
+    return (
+      <DropdownMenuLottieIcon
+        animationData={createCombinedPortfolioMenuIconAnimation}
+        playing={playing}
+      />
+    );
+  }
+
+  function renderItem(item: (typeof activityItems)[number]) {
+    const { id, label, disabled, title } = item;
+    return (
+      <button
+        key={id}
+        type="button"
+        role="menuitem"
+        disabled={disabled}
+        title={title}
+        onMouseEnter={() => setPlayingId(id)}
+        onMouseLeave={() => setPlayingId(null)}
+        onFocus={() => setPlayingId(id)}
+        onBlur={() => setPlayingId(null)}
+        onClick={() => {
+          if (disabled) return;
+          setOpen(false);
+          runItem(id);
+        }}
+        className={cn(
+          dropdownMenuPlainItemClassName(),
+          "font-medium whitespace-nowrap",
+          disabled ? "cursor-not-allowed text-[#A1A1AA] hover:bg-white" : "text-[#141414]",
+        )}
+      >
+        {itemIcon(id)}
+        <span className="min-w-0 flex-1 truncate text-left">{label}</span>
+      </button>
+    );
+  }
 
   const trigger = (
     <button
@@ -154,66 +249,9 @@ export function PortfolioQuickAddMenu({
             "origin-top-right [animation:quick-add-dropdown-in_220ms_ease-out_both] motion-reduce:[animation:none]",
           )}
         >
-          {items.map(({ id, label, disabled }) => (
-            <button
-              key={id}
-              type="button"
-              role="menuitem"
-              disabled={disabled}
-              onMouseEnter={() => {
-                if (id === "trade") setTradeIconPlaying(true);
-                if (id === "cash") setCashIconPlaying(true);
-                if (id === "import") setImportIconPlaying(true);
-              }}
-              onMouseLeave={() => {
-                if (id === "trade") setTradeIconPlaying(false);
-                if (id === "cash") setCashIconPlaying(false);
-                if (id === "import") setImportIconPlaying(false);
-              }}
-              onFocus={() => {
-                if (id === "trade") setTradeIconPlaying(true);
-                if (id === "cash") setCashIconPlaying(true);
-                if (id === "import") setImportIconPlaying(true);
-              }}
-              onBlur={() => {
-                if (id === "trade") setTradeIconPlaying(false);
-                if (id === "cash") setCashIconPlaying(false);
-                if (id === "import") setImportIconPlaying(false);
-              }}
-              onClick={() => {
-                if (disabled) return;
-                setOpen(false);
-                if (id === "trade") openNewTransaction();
-                if (id === "cash") openAddCash();
-                if (id === "import") openImportTransactions();
-              }}
-              className={cn(
-                dropdownMenuPlainItemClassName(),
-                "font-medium whitespace-nowrap",
-                disabled
-                  ? "cursor-not-allowed text-[#A1A1AA] hover:bg-white"
-                  : "text-[#0F0F0F]",
-              )}
-            >
-              {id === "trade" ? (
-                <DropdownMenuLottieIcon
-                  animationData={newTradeMenuIconAnimation}
-                  playing={tradeIconPlaying}
-                />
-              ) : id === "cash" ? (
-                <DropdownMenuLottieIcon
-                  animationData={addCashMenuIconAnimation}
-                  playing={cashIconPlaying}
-                />
-              ) : (
-                <DropdownMenuLottieIcon
-                  animationData={importTransactionsMenuIconAnimation}
-                  playing={importIconPlaying}
-                />
-              )}
-              <span className="min-w-0 flex-1 truncate text-left">{label}</span>
-            </button>
-          ))}
+          {activityItems.map(renderItem)}
+          <div role="separator" aria-hidden className="-mx-1 my-0.5 h-px shrink-0 bg-[#E4E4E7]" />
+          {createItems.map(renderItem)}
         </div>
       </TopbarDropdownPortal>
     </div>

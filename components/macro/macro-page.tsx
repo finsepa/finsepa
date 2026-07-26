@@ -152,7 +152,7 @@ export function MacroPage({ initialItems }: { initialItems: MacroCardModel[] }) 
   return (
     <div className="flex min-w-0 max-md:flex-col md:absolute md:inset-0 md:overflow-hidden">
       <aside
-        className="hidden min-h-0 shrink-0 flex-col overflow-hidden border-r border-[#E4E4E7] bg-white md:flex"
+        className="hidden min-h-0 shrink-0 flex-col overflow-hidden border-r border-[#E4E4E7] bg-[#FCFCFD] md:flex"
         style={{ width: SIDEBAR_OUTER_EXPANDED_PX }}
         aria-label="Macro charts"
       >
@@ -194,7 +194,7 @@ export function MacroPage({ initialItems }: { initialItems: MacroCardModel[] }) 
       <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-y-contain">
         <div className="min-w-0 space-y-5 px-4 py-4 sm:px-9 sm:py-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-            <h1 className="text-[20px] font-semibold leading-8 tracking-tight text-[#0F0F0F]">
+            <h1 className="text-[20px] font-semibold leading-8 tracking-tight text-[#141414]">
               {selected?.title ?? "Macro"}
             </h1>
             <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
@@ -217,9 +217,9 @@ export function MacroPage({ initialItems }: { initialItems: MacroCardModel[] }) 
 
           {sorted.length > 0 ? (
             <label className="flex flex-col gap-1.5 md:hidden">
-              <span className="text-[12px] font-medium leading-4 text-[#71717A]">Chart</span>
+              <span className="text-[12px] font-medium leading-4 text-[#5C5D5F]">Chart</span>
               <select
-                className="h-10 w-full rounded-[10px] border border-[#E4E4E7] bg-white px-3 text-[14px] font-medium text-[#0F0F0F] outline-none focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/10"
+                className="h-10 w-full rounded-[10px] border border-[#E4E4E7] bg-white px-3 text-[14px] font-medium text-[#141414] outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/10"
                 value={selectedId ?? ""}
                 onChange={(e) => selectChart(e.target.value)}
                 aria-label="Select macro chart"
@@ -238,7 +238,7 @@ export function MacroPage({ initialItems }: { initialItems: MacroCardModel[] }) 
           ) : null}
 
           {sorted.length === 0 ? (
-            <div className="rounded-2xl border border-[#E4E4E7] bg-white px-4 py-10 text-center text-sm text-[#71717A]">
+            <div className="rounded-2xl border border-[#E4E4E7] bg-white px-4 py-10 text-center text-sm text-[#5C5D5F]">
               No macro data available from EODHD right now.
             </div>
           ) : selected && windowedModel ? (
@@ -273,7 +273,7 @@ export function MacroPage({ initialItems }: { initialItems: MacroCardModel[] }) 
                     ) : null}
                   </div>
                 ) : (
-                  <p className="text-[14px] leading-5 text-[#71717A]">No data for this range.</p>
+                  <p className="text-[14px] leading-5 text-[#5C5D5F]">No data for this range.</p>
                 )}
               </div>
 

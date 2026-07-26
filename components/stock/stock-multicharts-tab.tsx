@@ -38,6 +38,7 @@ import {
   MULTICHART_CARD_CHART_HEIGHT_PX,
   MULTICHART_CARD_CLASS,
 } from "@/components/stock/earnings-card-styles";
+import { STOCK_OVERVIEW_SECTION_HEADING_CLASS } from "@/components/design-system/card-surface-styles";
 import { secondaryOutlineButtonClassName, TabSwitcher } from "@/components/design-system";
 import { MultichartVisualSwitcher } from "@/components/stock/multichart-visual-switcher";
 import { cn } from "@/lib/utils";
@@ -298,9 +299,9 @@ export function StockMultichartsTab({
   );
 
   return (
-    <div className="space-y-6 pt-1">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-        <h2 className="text-[20px] font-semibold leading-8 tracking-tight text-[#0F0F0F]">{title}</h2>
+    <div className="space-y-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-5">
+        <h2 className={STOCK_OVERVIEW_SECTION_HEADING_CLASS}>{title}</h2>
         <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
           <div className="flex shrink-0 flex-nowrap items-center gap-2">
             <TabSwitcher
@@ -315,7 +316,7 @@ export function StockMultichartsTab({
           <div className="relative shrink-0" ref={pickerWrapRef}>
             <button
               type="button"
-              className={cn(secondaryOutlineButtonClassName, "gap-2 px-4")}
+              className={cn(secondaryOutlineButtonClassName, "gap-2")}
               onClick={() => setPickerOpen((v) => !v)}
               aria-label="Add metric"
               title="Add metric"
@@ -339,9 +340,9 @@ export function StockMultichartsTab({
       {loading ? (
         <MultichartsTabSkeletonGrid />
       ) : !hasAny ? (
-        <p className="text-[14px] leading-6 text-[#71717A]">No fundamentals data available for this symbol.</p>
+        <p className="text-[14px] leading-6 text-[#5C5D5F]">No fundamentals data available for this symbol.</p>
       ) : (
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {metrics.map((metricId, idx) => (
             <MultichartCard
               key={metricId}
@@ -446,7 +447,7 @@ function MultichartCard({
                   <span className={comparison.delta >= 0 ? "text-[#16A34A]" : "text-[#DC2626]"}>
                     {comparison.display}
                   </span>
-                  <span className="text-[#71717A]">
+                  <span className="text-[#5C5D5F]">
                     vs {multichartPriorPeriodComparisonLabel(priorRow.periodEnd, periodMode)}
                   </span>
                 </span>
@@ -459,7 +460,7 @@ function MultichartCard({
             <button
               type="button"
               onClick={() => onOpenMetricChart(metricId)}
-              className="shrink-0 rounded-lg p-1.5 text-[#71717A] outline-none transition-colors hover:bg-black/5 hover:text-[#0F0F0F] focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/10"
+              className="shrink-0 rounded-lg p-1.5 text-[#5C5D5F] outline-none transition-colors hover:bg-black/5 hover:text-[#141414] focus-visible:ring-2 focus-visible:ring-[#141414]/10"
               aria-label={`Open ${metricLabel} in full view`}
             >
               <Maximize2 className="h-4 w-4" strokeWidth={2} aria-hidden />
@@ -468,14 +469,14 @@ function MultichartCard({
           <button
             type="button"
             onClick={onRemove}
-            className="shrink-0 rounded-lg p-1.5 text-[#71717A] outline-none transition-colors hover:bg-black/5 hover:text-[#0F0F0F] focus-visible:ring-2 focus-visible:ring-[#0F0F0F]/10"
+            className="shrink-0 rounded-lg p-1.5 text-[#5C5D5F] outline-none transition-colors hover:bg-black/5 hover:text-[#141414] focus-visible:ring-2 focus-visible:ring-[#141414]/10"
             aria-label={`Remove ${metricLabel}`}
             title="Remove"
           >
             <Trash2 className="h-4 w-4" strokeWidth={2} aria-hidden />
           </button>
           <span
-            className="shrink-0 cursor-grab rounded-lg p-1.5 text-[#71717A]"
+            className="shrink-0 cursor-grab rounded-lg p-1.5 text-[#5C5D5F]"
             title="Drag to reorder"
             aria-label="Drag to reorder"
           >
@@ -494,6 +495,7 @@ function MultichartCard({
           periodMode === "quarterly" ? MULTICHART_BAR_WIDTH_ALL_QUARTERLY_PX : undefined
         }
         showLinePointMarkers={chartVisual !== "line"}
+        plotBackgroundClass="bg-white"
       />
     </div>
   );
