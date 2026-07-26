@@ -161,7 +161,7 @@ export function Topbar({
       <div className="flex w-full min-w-0 flex-col">
         <header
           className={cn(
-            "flex min-w-0 flex-nowrap items-center gap-2 overflow-hidden max-md:bg-transparent max-md:px-4 md:min-h-[var(--shell-chrome-header-height)] md:h-auto md:gap-3 md:bg-white md:px-4 md:py-3",
+            "flex min-w-0 flex-nowrap items-center gap-2 overflow-hidden max-md:bg-transparent max-md:px-4 md:min-h-[var(--shell-chrome-header-height)] md:h-auto md:gap-3 md:bg-[#FCFCFD] md:px-4 md:py-3",
             mobileAssetRoute
               ? "max-md:min-h-[var(--mobile-topbar-height)] max-md:h-auto max-md:py-1.5"
               : mobileScreenerRoute

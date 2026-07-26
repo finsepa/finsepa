@@ -379,7 +379,7 @@ function WatchlistRailScrollContent({
 }
 
 const watchlistRailSurfaceClass =
-  "flex h-full min-h-0 flex-col overflow-hidden bg-white md:rounded-none";
+  "flex h-full min-h-0 flex-col overflow-hidden bg-[#FCFCFD] md:rounded-none";
 
 function WatchlistRailFullPageLink() {
   return (
@@ -475,7 +475,7 @@ export function WatchlistRail() {
     <div
       suppressHydrationWarning
       className={cn(
-        "hidden h-full min-h-0 shrink-0 self-stretch overflow-hidden bg-white md:flex md:border-l md:border-[#EBEBEC]",
+        "hidden h-full min-h-0 shrink-0 self-stretch overflow-hidden bg-[#FCFCFD] md:flex md:border-l md:border-[#EBEBEC]",
         WATCHLIST_RAIL_WIDTH_MOTION_CLASS,
       )}
       style={{ width: `${outerWidthPx}px` }}

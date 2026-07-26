@@ -24,9 +24,9 @@ import { SIDEBAR_OUTER_EXPANDED_PX } from "@/components/layout/sidebar-layout-co
 import { shellChromeToggleButtonClass } from "@/components/layout/shell-chrome-toggle-button";
 import { cn } from "@/lib/utils";
 
-/** Same fill as shell `<main>` (`md:bg-white`). */
+/** Same fill as shell `<main>` (`md:bg-[#FCFCFD]`). */
 const companyRailSurfaceClass =
-  "flex h-full min-h-0 flex-col overflow-hidden bg-white md:rounded-none";
+  "flex h-full min-h-0 flex-col overflow-hidden bg-[#FCFCFD] md:rounded-none";
 
 const companyRailDividerClass = "mx-3 my-2 h-px shrink-0 bg-[#E4E4E7]";
 const CompanyRailAddButton = forwardRef<
@@ -105,7 +105,7 @@ export function CompanyRail() {
     <div
       suppressHydrationWarning
       className={cn(
-        "flex h-full min-h-0 shrink-0 self-stretch overflow-hidden border-r border-[#EBEBEC] bg-white",
+        "flex h-full min-h-0 shrink-0 self-stretch overflow-hidden border-r border-[#EBEBEC] bg-[#FCFCFD]",
       )}
       style={{ width: `${SIDEBAR_OUTER_EXPANDED_PX}px` }}
       aria-label="Company panel"

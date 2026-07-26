@@ -123,7 +123,7 @@ function ProtectedAppChrome({
           <div
             suppressHydrationWarning
             className={cn(
-              "shell-desktop-panel__header mobile-topbar-shell z-30 min-w-0 w-full max-w-full shrink-0 max-md:bg-transparent max-md:shadow-none md:border-b md:border-[#EBEBEC] md:bg-white",
+              "shell-desktop-panel__header mobile-topbar-shell z-30 min-w-0 w-full max-w-full shrink-0 max-md:bg-transparent max-md:shadow-none md:border-b md:border-[#EBEBEC] md:bg-[#FCFCFD]",
             )}
           >
             <div aria-hidden className="mobile-topbar-blur-fade md:hidden" />
@@ -152,9 +152,8 @@ function ProtectedAppChrome({
               ref={mainRef}
               suppressHydrationWarning
               className={cn(
-                "relative z-0 min-h-0 min-w-0 w-full max-w-full flex-1 max-md:overflow-visible max-md:pb-[var(--mobile-bottom-nav-main-clearance)] md:overflow-x-hidden md:overflow-y-auto md:overscroll-y-contain md:bg-white",
-                // Scope mobile grey to max-md so it cannot override desktop white
-                // (same token as Company / Metric rail).
+                "relative z-0 min-h-0 min-w-0 w-full max-w-full flex-1 max-md:overflow-visible max-md:pb-[var(--mobile-bottom-nav-main-clearance)] md:overflow-x-hidden md:overflow-y-auto md:overscroll-y-contain md:bg-[#FCFCFD]",
+                // Scope mobile grey to max-md so it cannot override desktop `#FCFCFD`.
                 "max-md:bg-[#FAFAFA]",
                 dropdownMenuFloatingScrollbarClassName,
                 mobileTopbarVariant === "stock" && MOBILE_STOCK_TOPBAR_OFFSET_CLASS,

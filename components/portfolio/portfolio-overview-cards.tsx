@@ -64,16 +64,6 @@ const OVERVIEW_METRIC_CARD_CLASS = cn(
   MOBILE_ELEVATED_CARD_CLASS,
 );
 
-function OverviewMetricCardSkeleton() {
-  return (
-    <div className={OVERVIEW_METRIC_CARD_CLASS} aria-hidden>
-      <div className="h-3 w-14 animate-pulse rounded bg-neutral-200" />
-      <div className="h-8 w-[min(100%,11rem)] max-w-full animate-pulse rounded-md bg-neutral-200" />
-      <div className="h-4 w-24 animate-pulse rounded bg-neutral-100" />
-    </div>
-  );
-}
-
 function totalProfitTooltipPosition(trigger: HTMLElement) {
   const rect = trigger.getBoundingClientRect();
   const maxWidth = Math.min(window.innerWidth - 16, 280);
@@ -519,11 +509,14 @@ function PortfolioOverviewCardsInner({
 
   const isEmptyOverview = holdings.length === 0;
   const showEmptyPortfolioMetrics = isEmptyOverview && !hasTradeHistory;
-  const showMetricSkeleton = symbols.length > 0 && !overviewReady;
+  /**
+   * Dividends need `overview-market` yields. Value / lifetime Total profit $ come from
+   * local holdings — paint them immediately so the row doesn’t wait ~7s on that API.
+   */
+  const showDividendsSkeleton = symbols.length > 0 && !overviewReady;
   /** S&P card: skeleton while first compare loads — never show "—" during that wait. */
   const showSpySkeleton =
     !showEmptyPortfolioMetrics &&
-    !showMetricSkeleton &&
     transactions.length > 0 &&
     benchmarkLoading &&
     inceptionBenchmarkMetrics.rSpy == null &&
@@ -534,7 +527,6 @@ function PortfolioOverviewCardsInner({
    */
   const showAllProfitPctSkeleton =
     !showEmptyPortfolioMetrics &&
-    !showMetricSkeleton &&
     period === "all" &&
     transactions.length > 0 &&
     benchmarkLoading &&
@@ -579,98 +571,79 @@ function PortfolioOverviewCardsInner({
 
   const mobileDividendsRight = useMemo(() => {
     if (showEmptyPortfolioMetrics) return `${usd.format(0)} · ${pctFmt.format(0)}%`;
+    if (showDividendsSkeleton) return null;
     const y = dividendWeightedYield;
     const a = dividendAnnualUsd;
     if (y == null || !Number.isFinite(y) || a == null || !Number.isFinite(a)) return "—";
     return `${usd.format(a)} · ${pctFmt.format(y)}%`;
-  }, [showEmptyPortfolioMetrics, dividendWeightedYield, dividendAnnualUsd]);
+  }, [showEmptyPortfolioMetrics, showDividendsSkeleton, dividendWeightedYield, dividendAnnualUsd]);
 
   return (
     <div className="w-full min-w-0 max-md:mb-2 sm:mb-6">
       {/* Mobile: compact summary (matches design reference). */}
       <div className="sm:hidden">
-        {showMetricSkeleton ? (
-          <div className="space-y-3">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0 flex-1 space-y-2">
-                <div className="h-3 w-10 animate-pulse rounded bg-neutral-200" />
-                <div className="h-8 w-[min(100%,14rem)] max-w-full animate-pulse rounded-md bg-neutral-200" />
-                <div className="h-4 w-36 animate-pulse rounded bg-neutral-100" />
-              </div>
-              {mobileToolbarActions ? (
-                <div className="flex shrink-0 items-center gap-2">{mobileToolbarActions}</div>
-              ) : null}
-            </div>
-            <div className="mt-1 space-y-0">
-              <div className="h-5 w-full animate-pulse rounded bg-neutral-100" />
-              <div className="h-5 w-full animate-pulse rounded bg-neutral-100" />
-            </div>
-          </div>
-        ) : (
-          <div className="w-full min-w-0">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium text-[#5C5D5F]">Value</p>
-                <p className="mt-1 text-2xl font-semibold tabular-nums tracking-tight text-[#141414]">
-                  {usd.format(normalizeUsdForDisplay(netWorth))}
-                </p>
-                <p className="mt-1 text-sm font-normal tabular-nums text-[#16A34A]">
-                  {showAllProfitPctSkeleton || mobileProfitLine == null ? (
-                    <span className="inline-block h-4 w-40 animate-pulse rounded bg-neutral-200 align-middle" aria-hidden />
-                  ) : (
-                    mobileProfitLine
-                  )}
-                </p>
-              </div>
-              {mobileToolbarActions ? (
-                <div className="flex shrink-0 items-center gap-2">{mobileToolbarActions}</div>
-              ) : null}
-            </div>
-
-            <div className="max-md:mt-2 sm:mt-4 space-y-0">
-              <div className="flex items-center justify-between gap-4 max-md:py-2 sm:py-3">
-                <span className="text-[14px] font-medium leading-5 text-[#5C5D5F]">S&amp;P 500</span>
-                {showSpySkeleton || mobileBenchmarkPct == null ? (
-                  <div className="h-4 w-14 animate-pulse rounded bg-neutral-200" aria-hidden />
+        <div className="w-full min-w-0">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-medium text-[#5C5D5F]">Value</p>
+              <p className="mt-1 text-2xl font-semibold tabular-nums tracking-tight text-[#141414]">
+                {usd.format(normalizeUsdForDisplay(netWorth))}
+              </p>
+              <p className="mt-1 text-sm font-normal tabular-nums text-[#16A34A]">
+                {showEmptyPortfolioMetrics ? (
+                  `+${usd.format(0)} (+${pctFmt.format(0)}%)`
+                ) : showAllProfitPctSkeleton || mobileProfitLine == null ? (
+                  <span className="inline-block h-4 w-40 animate-pulse rounded bg-neutral-200 align-middle" aria-hidden />
                 ) : (
-                  <span
-                    className={cn(
-                      "text-[14px] font-medium leading-5 tabular-nums",
-                      showEmptyPortfolioMetrics
-                        ? "text-[#16A34A]"
-                        : inceptionBenchmarkMetrics.rSpy == null
-                          ? "text-[#141414]"
-                          : inceptionBenchmarkMetrics.rSpy >= 0
-                            ? "text-[#16A34A]"
-                            : "text-[#DC2626]",
-                    )}
-                  >
-                    {mobileBenchmarkPct}
-                  </span>
+                  mobileProfitLine
                 )}
-              </div>
-              <div className="flex items-center justify-between gap-4 pb-0.5">
-                <span className="text-[14px] font-medium leading-5 text-[#5C5D5F]">Dividends</span>
+              </p>
+            </div>
+            {mobileToolbarActions ? (
+              <div className="flex shrink-0 items-center gap-2">{mobileToolbarActions}</div>
+            ) : null}
+          </div>
+
+          <div className="max-md:mt-2 sm:mt-4 space-y-0">
+            <div className="flex items-center justify-between gap-4 max-md:py-2 sm:py-3">
+              <span className="text-[14px] font-medium leading-5 text-[#5C5D5F]">S&amp;P 500</span>
+              {showEmptyPortfolioMetrics ? (
+                <span className="text-[14px] font-medium leading-5 tabular-nums text-[#16A34A]">
+                  +{pctFmt.format(0)}%
+                </span>
+              ) : showSpySkeleton || mobileBenchmarkPct == null ? (
+                <div className="h-4 w-14 animate-pulse rounded bg-neutral-200" aria-hidden />
+              ) : (
+                <span
+                  className={cn(
+                    "text-[14px] font-medium leading-5 tabular-nums",
+                    inceptionBenchmarkMetrics.rSpy == null
+                      ? "text-[#141414]"
+                      : inceptionBenchmarkMetrics.rSpy >= 0
+                        ? "text-[#16A34A]"
+                        : "text-[#DC2626]",
+                  )}
+                >
+                  {mobileBenchmarkPct}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center justify-between gap-4 pb-0.5">
+              <span className="text-[14px] font-medium leading-5 text-[#5C5D5F]">Dividends</span>
+              {showDividendsSkeleton || mobileDividendsRight == null ? (
+                <div className="h-4 w-28 animate-pulse rounded bg-neutral-200" aria-hidden />
+              ) : (
                 <span className="text-[14px] font-medium leading-5 tabular-nums text-[#141414]">
                   {mobileDividendsRight}
                 </span>
-              </div>
+              )}
             </div>
           </div>
-        )}
+        </div>
       </div>
 
       {/* sm+: existing tile grid */}
       <div className="hidden grid-cols-2 gap-4 md:grid-cols-2 xl:grid-cols-4 [&>*]:min-w-0 sm:grid">
-      {showMetricSkeleton ? (
-        <>
-          <OverviewMetricCardSkeleton />
-          <OverviewMetricCardSkeleton />
-          <OverviewMetricCardSkeleton />
-          <OverviewMetricCardSkeleton />
-        </>
-      ) : (
-        <>
           <div className={OVERVIEW_METRIC_CARD_CLASS}>
             <p className="text-xs font-medium text-[#5C5D5F]">Value</p>
             <p className="text-2xl font-semibold tabular-nums tracking-tight text-[#141414]">
@@ -814,6 +787,11 @@ function PortfolioOverviewCardsInner({
                 </p>
                 <p className="text-sm text-[#5C5D5F]">{usd.format(0)} annually</p>
               </>
+            ) : showDividendsSkeleton ? (
+              <>
+                <div className="h-8 w-[min(100%,7rem)] max-w-full animate-pulse rounded-md bg-neutral-200" aria-hidden />
+                <div className="h-4 w-28 animate-pulse rounded bg-neutral-100" aria-hidden />
+              </>
             ) : (
               <>
                 <p className="text-2xl font-semibold tabular-nums tracking-tight text-[#141414]">
@@ -825,8 +803,6 @@ function PortfolioOverviewCardsInner({
               </>
             )}
           </div>
-        </>
-      )}
       </div>
     </div>
   );
